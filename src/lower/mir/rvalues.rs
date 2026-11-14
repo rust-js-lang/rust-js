@@ -191,7 +191,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                                     let kind = js::ExprKind::Member(Box::new(cell), "value".into());
                                     Expr {
                                         kind,
-                                        ..Expr::undefined()
+                                        ..Expr::js_undefined()
                                     }
                                 }
                                 // A handle that stores as its place does, a
@@ -562,7 +562,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             // the value is `undefined`, but a function's,
                             // which is the function (`has_no_place`).
                             let place = match self.has_no_place(self.pointee(from)) {
-                                true => Expr::undefined(),
+                                true => Expr::js_undefined(),
                                 false => self.pointee_place(value),
                             };
                             let unsized_ = self.unsize_trait(from, *to, place, span, out)?;
@@ -986,7 +986,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         // An array's item says no offset of its own, its
                         // root's says where it is: `$ptr(items[0], 1,
                         // undefined, items, 8)` (#1110).
-                        given.resize_with(3, Expr::undefined);
+                        given.resize_with(3, Expr::js_undefined);
                         given.extend([root, at]);
                         Expr::call(*callee, given)
                     }

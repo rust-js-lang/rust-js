@@ -109,7 +109,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
-        let options = self.given_to_writer(None).unwrap_or_else(Expr::undefined);
+        let options = self.given_to_writer(None).unwrap_or_else(Expr::js_undefined);
         let pretty = self.writer_pretty().alternate();
         let refused = |this: &Self, ty: Ty<'tcx>| {
             this.refused_in_a_writer(&format!("a `Debug` builder's step of a `{ty}`"), span)

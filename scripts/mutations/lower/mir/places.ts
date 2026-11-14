@@ -23,9 +23,9 @@ export const mutations: Mutation[] = [
     name: "mir-residual-err-lost",
     breaks: "`?` of an `Err` returns nothing, not the `Err`",
     file: "src/lower/mir/places.rs",
-    find: "                    Some(_) => Expr::undefined(),\n                    None => tried,\n",
+    find: "                    Some(_) => Expr::js_undefined(),\n                    None => tried,\n",
     replace:
-      "                    Some(_) => Expr::undefined(),\n                    None => Expr::undefined(),\n",
+      "                    Some(_) => Expr::js_undefined(),\n                    None => Expr::js_undefined(),\n",
     tests: ["test/corpus.test.ts", "-t", "question_early_returns"],
   },
   {
@@ -93,7 +93,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a props field with a default, left out, reads `undefined` from MIR",
     file: "src/lower/mir/places.rs",
-    find: "            Some(default) => Expr::cond(Expr::bin(js::Op::Eq, read.clone(), Expr::undefined()), default, read),\n",
+    find: "            Some(default) => Expr::cond(Expr::bin(js::Op::Eq, read.clone(), Expr::js_undefined()), default, read),\n",
     replace: "            Some(_) => read,\n",
     tests: [
       "test/lowering-bindings.test.ts",

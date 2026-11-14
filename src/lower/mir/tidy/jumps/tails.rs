@@ -509,7 +509,7 @@ pub(in crate::lower::mir::tidy) fn returned_at_ends(stmts: &mut [Stmt]) {
     let Some(last) = stmts.last_mut() else { return };
     match &mut last.kind {
         StmtKind::Assign(_, value) => {
-            let value = std::mem::replace(value, Expr::undefined());
+            let value = std::mem::replace(value, Expr::taken());
             last.kind = StmtKind::Return(Some(value));
         }
         StmtKind::If(_, then, Some(otherwise)) => {
@@ -672,7 +672,7 @@ fn returned_into_branches(stmts: &mut Vec<Stmt>, label: &str) -> bool {
                 // one of joined returns apart, no program's JS was made by
                 // taking it out here (rd499).
                 if then.is_empty() && !rest.is_empty() {
-                    *test = std::mem::replace(test, Expr::undefined()).negated_test();
+                    *test = std::mem::replace(test, Expr::taken()).negated_test();
                     *then = otherwise.take().expect("matched");
                 }
             }
@@ -680,7 +680,7 @@ fn returned_into_branches(stmts: &mut Vec<Stmt>, label: &str) -> bool {
                 into(then, exit, label);
                 match then.is_empty() {
                     true => {
-                        *test = std::mem::replace(test, Expr::undefined()).negated_test();
+                        *test = std::mem::replace(test, Expr::taken()).negated_test();
                         *then = vec![exit.clone()];
                     }
                     false => *otherwise = Some(vec![exit.clone()]),
@@ -963,7 +963,7 @@ fn linked_elses(
             && of(then, Some(cond), second, false)
         {
             let StmtKind::If(test, first, Some(second)) =
-                std::mem::replace(&mut stmts[at].kind, StmtKind::Expr(Expr::undefined()))
+                std::mem::replace(&mut stmts[at].kind, StmtKind::Expr(Expr::js_undefined()))
             else {
                 unreachable!("matched")
             };
@@ -1023,7 +1023,7 @@ fn linked_elses(
                 stmts.extend(after);
                 at += bindings::declared_before(stmts, at, &mut rest, &kept);
                 let StmtKind::If(test, mut exit, None) =
-                    std::mem::replace(&mut stmts[at].kind, StmtKind::Expr(Expr::undefined()))
+                    std::mem::replace(&mut stmts[at].kind, StmtKind::Expr(Expr::js_undefined()))
                 else {
                     unreachable!("matched")
                 };

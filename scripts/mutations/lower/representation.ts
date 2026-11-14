@@ -347,7 +347,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a constant with no byte written has no JS value, so a use of it that may change is a clone, refused",
     file: "src/lower/representation.rs",
-    find: "        .or_else(|| const_uninit(tcx, typing_env, def_id, args, span).then(Expr::undefined))\n",
+    find: "        .or_else(|| const_uninit(tcx, typing_env, def_id, args, span).then(Expr::js_undefined))\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^const_block_uninit_array.rs$"],
   },
@@ -534,7 +534,7 @@ export const mutations: Mutation[] = [
       "a namespace's value, `&Reconciler`, is `undefined`, not its module's namespace (ADR 1037)",
     file: "src/lower/representation.rs",
     find: "            return self.namespace_value(adt.did());\n",
-    replace: "            return Some(Expr::undefined());\n",
+    replace: "            return Some(Expr::js_undefined());\n",
     tests: [
       "test/namespaces.test.ts",
       "-t",

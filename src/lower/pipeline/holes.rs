@@ -24,7 +24,7 @@ pub(super) fn fill_holes(stmts: &mut Vec<js::Stmt>, holes: &mut Holes) {
     js::each_block_mut(stmts, &mut |stmts| {
         for stmt in stmts.iter_mut() {
             let StmtKind::Expr(e) = &stmt.kind else { continue };
-            let js::ExprKind::ItemHole(index) = e.kind else {
+            let js::ExprKind::Hole(js::Hole::Item(index)) = e.kind else {
                 continue;
             };
             // Where it's written, which its comments are before.
@@ -41,7 +41,7 @@ pub(super) fn fill_holes(stmts: &mut Vec<js::Stmt>, holes: &mut Holes) {
 }
 
 pub(super) fn fill_hole(e: &mut Expr, holes: &mut Holes) {
-    if let js::ExprKind::ItemHole(index) = e.kind
+    if let js::ExprKind::Hole(js::Hole::Item(index)) = e.kind
         && let Some(mut function) = holes.functions.swap_remove(&index)
     {
         fill_holes(&mut function.body, holes);

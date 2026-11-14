@@ -109,9 +109,9 @@ export const mutations: Mutation[] = [
     name: "mir-string-range-swapped",
     breaks: "`s.replace_range(a..b, t)` takes its range's end for its start",
     file: "src/lower/mir/std_calls.rs",
-    find: "                    given.splice(0..0, [start, end.unwrap_or_else(Expr::undefined)]);\n",
+    find: "                    given.splice(0..0, [start, end.unwrap_or_else(Expr::js_undefined)]);\n",
     replace:
-      "                    given.splice(0..0, [end.unwrap_or_else(Expr::undefined), start]);\n",
+      "                    given.splice(0..0, [end.unwrap_or_else(Expr::js_undefined), start]);\n",
     tests: [
       "test/corpus.test.ts",
       "-t",
@@ -676,7 +676,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`as_str()` of arguments made with a value to format is `Some` of their text, so `format_args!(\"{count} items\").as_str()` is `Some(\"3 items\")` where native Rust's is `None`, and anyhow's `format_err` takes the literal's way (#1091)",
     file: "src/lower/mir/std_calls.rs",
-    find: "                Some((false, _)) => lower(|_, _, _, _| Ok(Value::Expr(Expr::undefined()))),\n",
+    find: "                Some((false, _)) => lower(|_, _, _, _| Ok(Value::Expr(Expr::js_undefined()))),\n",
     replace: "                Some((false, _)) => lower(|_, _, values, _| Ok(values.next().expect(\"the arguments\"))),\n",
     tests: ["test/corpus.test.ts", "-t", "^fmt_arguments_as_str.rs$"],
   },

@@ -125,11 +125,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         match (drop, ends, key_drop) {
             (drop, ends, Some(key_drop)) => args.extend([
-                drop.unwrap_or_else(Expr::undefined),
-                ends.unwrap_or_else(Expr::undefined),
+                drop.unwrap_or_else(Expr::js_undefined),
+                ends.unwrap_or_else(Expr::js_undefined),
                 key_drop,
             ]),
-            (drop, Some(ends), None) => args.extend([drop.unwrap_or_else(Expr::undefined), ends]),
+            (drop, Some(ends), None) => args.extend([drop.unwrap_or_else(Expr::js_undefined), ends]),
             (drop, None, None) => args.extend(drop),
         }
         Ok(Expr::call(Expr::helper(helper), args))

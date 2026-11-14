@@ -262,11 +262,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let num = self.num(ty, span)?;
         // Of a constant, `NonZero::new(7)`: its answer.
         if let Some(value) = n.as_int().or_else(|| n.as_bigint()) {
-            return Ok(if value == 0 { Expr::undefined() } else { n });
+            return Ok(if value == 0 { Expr::js_undefined() } else { n });
         }
         let n = if n.reads_same() { n } else { self.spill(Role::N, n, out) };
         let zero = Expr::bin(Op::Eq, n.clone(), num.literal(0));
-        Ok(Expr::cond(zero, Expr::undefined(), n))
+        Ok(Expr::cond(zero, Expr::js_undefined(), n))
     }
 
     pub(in crate::lower) fn bitwise(&self, op: Op, l: Expr, r: Expr, num: Num) -> Expr {

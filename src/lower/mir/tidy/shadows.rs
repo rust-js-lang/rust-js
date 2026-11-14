@@ -203,7 +203,7 @@ fn shadow_of(
             for s in list.iter_mut() {
                 if let StmtKind::If(test, then, otherwise) = &mut s.kind {
                     if then.is_empty() && otherwise.as_ref().is_some_and(|o| !o.is_empty()) {
-                        *test = std::mem::replace(test, Expr::undefined()).negated_test();
+                        *test = std::mem::replace(test, Expr::taken()).negated_test();
                         *then = otherwise.take().unwrap_or_default();
                     } else if otherwise.as_ref().is_some_and(Vec::is_empty) {
                         *otherwise = None;
@@ -317,7 +317,7 @@ fn set_after_last_read(stmts: &[Stmt], shadow: &str, old: &str, mut set: bool) -
 fn set_binding(stmt: &mut Stmt) {
     match &mut stmt.kind {
         StmtKind::Const(name, value) => {
-            stmt.kind = StmtKind::Let(std::mem::take(name), Some(std::mem::replace(value, Expr::undefined())));
+            stmt.kind = StmtKind::Let(std::mem::take(name), Some(std::mem::replace(value, Expr::taken())));
         }
         StmtKind::Destructure { mutable, .. } => *mutable = true,
         _ => {}

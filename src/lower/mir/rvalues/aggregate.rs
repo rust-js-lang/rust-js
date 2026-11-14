@@ -93,7 +93,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .collect();
         let in_order: Vec<&Operand<'tcx>> = read.iter().map(|&i| &operands[FieldIdx::from_usize(i)]).collect();
         let mut taken: Vec<Option<Value<'tcx>>> = (operands.iter())
-            .map(|operand| unwritten(operand).then(|| Value::Expr(Expr::undefined())))
+            .map(|operand| unwritten(operand).then(|| Value::Expr(Expr::js_undefined())))
             .collect();
         for (&i, value) in read.iter().zip(self.take_operands(state, &in_order, out)?) {
             taken[i] = Some(value);
@@ -102,7 +102,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let operands: Vec<&Operand<'tcx>> = operands.iter().collect();
         match kind {
             AggregateKind::Array(_) => Ok(Value::List(values, js::Span::NONE)),
-            AggregateKind::Tuple if values.is_empty() => Ok(Value::Expr(Expr::undefined())),
+            AggregateKind::Tuple if values.is_empty() => Ok(Value::Expr(Expr::js_undefined())),
             AggregateKind::Tuple => Ok(Value::List(values, js::Span::NONE)),
             // A union, holding its one field (ADR 0406).
             AggregateKind::Adt(did, _, args, _, Some(field)) => {

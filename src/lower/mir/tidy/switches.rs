@@ -1139,7 +1139,7 @@ fn values_of(test: &Expr, constants: &[Constant], negated: bool, discriminant: &
 /// one, `X.value`, and calls nothing.
 fn read(e: &Expr) -> bool {
     match &e.kind {
-        ExprKind::Var(_) | ExprKind::ItemHole(_) | ExprKind::Symbol(_) => true,
+        ExprKind::Var(_) | ExprKind::Hole(_) | ExprKind::Symbol(_) => true,
         ExprKind::Member(of, _) => read(of),
         _ => false,
     }

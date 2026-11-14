@@ -53,9 +53,9 @@ export const mutations: Mutation[] = [
     name: "rc-get-mut-shared",
     breaks: "`get_mut` gives a `&mut` while others point at it",
     file: "src/lower/std_types/rc.rs",
-    find: "                        Expr::cond(only, given, Expr::undefined())\n",
+    find: "                        Expr::cond(only, given, Expr::js_undefined())\n",
     replace:
-      "                        Expr::cond(Expr::bool(true), given, Expr::undefined())\n",
+      "                        Expr::cond(Expr::bool(true), given, Expr::js_undefined())\n",
     tests: ["test/corpus.test.ts", "-t", "rc_counts"],
   },
   {

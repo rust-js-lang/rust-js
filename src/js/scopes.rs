@@ -501,7 +501,7 @@ impl Walk {
             | ExprKind::Super
             | ExprKind::Symbol(_)
             | ExprKind::Regex(_)
-            | ExprKind::ItemHole(_)
+            | ExprKind::Hole(_)
             | ExprKind::Import(_)
             | ExprKind::Specifier(_) => {}
             ExprKind::Member(a, _)

@@ -230,7 +230,7 @@ fn taken_whole(stmts: &mut Vec<Stmt>, name: &str) -> usize {
             continue;
         };
         let (variable, value) = taken_parts(slot).map(|(v, value)| (v.clone(), value)).expect("taken");
-        *slot = Expr::undefined();
+        *slot = Expr::js_undefined();
         let set = StmtKind::Assign(variable.clone(), value).at(span);
         count += 1;
         // What it gave unread: the variable given the new value alone.
@@ -359,7 +359,7 @@ pub(in crate::lower) fn nullable_made(made: Expr) -> Expr {
             if let Some(Prop::Field(_, value)) = props.first_mut() {
                 *value = NoneForm::Null
                     .storage()
-                    .written(std::mem::replace(value, Expr::undefined()), false);
+                    .written(std::mem::replace(value, Expr::taken()), false);
             }
             Expr {
                 kind: js::ExprKind::Object(props, layout),
@@ -380,7 +380,7 @@ pub(in crate::lower) fn imported_variables(items: &mut [js::Item], variable: &dy
     let mut changed = false;
     js::each_item_expr_mut(items, &mut |e| match &mut e.kind {
         js::ExprKind::Member(of, key) if key == js::HELD && variable(of) => {
-            let read = std::mem::replace(&mut **of, Expr::undefined());
+            let read = std::mem::replace(&mut **of, Expr::taken());
             *e = Expr {
                 span: e.span,
                 facts: js::Facts::of(js::Known::Live),

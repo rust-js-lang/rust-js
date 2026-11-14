@@ -574,7 +574,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 let mut given = vec![it, Expr::str("rfold")];
                 given.extend(values);
-                given.push(unwind.unwrap_or_else(Expr::undefined));
+                given.push(unwind.unwrap_or_else(Expr::js_undefined));
                 given.push(ends);
                 return Ok(Some(Expr::call_helper("$consume", given)));
             }
@@ -595,7 +595,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if boxed || drop.is_some() {
             given.push(match boxed {
                 true => Expr::helper("$some"),
-                false => Expr::undefined(),
+                false => Expr::js_undefined(),
             });
         }
         given.extend(drop);

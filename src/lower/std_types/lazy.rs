@@ -80,7 +80,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             LazyOp::Get if self.boxed_payload(item) => self.some(Expr::held(lazy.clone())),
             _ => Expr::held(lazy.clone()),
         };
-        let made = Expr::bin(Op::Eq, Expr::member(lazy, "init"), Expr::undefined());
-        Ok(Some(Expr::cond(made, given, Expr::undefined())))
+        let made = Expr::bin(Op::Eq, Expr::member(lazy, "init"), Expr::js_undefined());
+        Ok(Some(Expr::cond(made, given, Expr::js_undefined())))
     }
 }

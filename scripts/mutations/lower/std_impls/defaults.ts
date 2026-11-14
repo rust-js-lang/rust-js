@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "random-state-default-refused",
     breaks: "a `RandomState`'s `Default`, `HashSet::with_hasher(Default::default())`'s and generic code's, is refused",
     file: "src/lower/std_impls/defaults.rs",
-    find: "            ty::Adt(..) if std(StdItem::RandomState) => Expr::undefined(),\n",
+    find: "            ty::Adt(..) if std(StdItem::RandomState) => Expr::js_undefined(),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^random_state_holds_nothing.rs$"],
   },
@@ -14,7 +14,7 @@ export const mutations: Mutation[] = [
     name: "build-hasher-default-refused",
     breaks: "`BuildHasherDefault::<DefaultHasher>::default()`, which holds nothing, is refused, so uuid's `test_compare` is (#1155)",
     file: "src/lower/std_impls/defaults.rs",
-    find: "            ty::Adt(..) if std(StdItem::BuildHasherDefault) => Expr::undefined(),\n",
+    find: "            ty::Adt(..) if std(StdItem::BuildHasherDefault) => Expr::js_undefined(),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^build_hasher_default.rs$"],
   },
@@ -88,7 +88,7 @@ export const mutations: Mutation[] = [
     breaks:
       "an \`Element\`'s default, children not given, is \`null\`, written as a child",
     file: "src/lower/std_impls/defaults.rs",
-    find: "            return Ok(Expr::undefined());\n        }\n        // react's `Rest`: no props,",
+    find: "            return Ok(Expr::js_undefined());\n        }\n        // react's `Rest`: no props,",
     replace:
       "            return Ok(Expr::null());\n        }\n        // react's `Rest`: no props,",
     tests: [
@@ -102,7 +102,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `Rest`'s default is `{}`, which a Rust caller's struct update writes as a `rest` prop",
     file: "src/lower/std_impls/defaults.rs",
-    find: "        if bindings::is_rest(self.tcx, ty) {\n            return Ok(Expr::undefined());",
+    find: "        if bindings::is_rest(self.tcx, ty) {\n            return Ok(Expr::js_undefined());",
     replace:
       "        if bindings::is_rest(self.tcx, ty) {\n            return Ok(Expr::object(Vec::new()));",
     tests: ["test/jsx-props.test.ts", "-t", "doesn't name as ...rest"],

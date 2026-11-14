@@ -285,7 +285,7 @@ fn scope_body(body: &[Stmt]) -> (&[Stmt], &[Stmt]) {
 fn given_returned(stmt: &mut Stmt, name: &str) -> bool {
     match &mut stmt.kind {
         StmtKind::Assign(target, value) if name.is_empty() || matches!(&target.kind, ExprKind::Var(v) if v == name) => {
-            stmt.kind = StmtKind::Return(Some(std::mem::replace(value, Expr::undefined())));
+            stmt.kind = StmtKind::Return(Some(std::mem::replace(value, Expr::taken())));
             true
         }
         StmtKind::If(_, then, Some(otherwise)) => {

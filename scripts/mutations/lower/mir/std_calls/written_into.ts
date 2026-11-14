@@ -41,7 +41,7 @@ export const mutations: Mutation[] = [
     breaks: "a framed writer's `f.pad(s)` pads by no options, so `{:>6}` of it isn't padded",
     file: "src/lower/mir/std_calls/written_into.rs",
     find: "                    WriteCall::Pad => {\n                        given.push(options);\n",
-    replace: "                    WriteCall::Pad => {\n                        given.push(Expr::undefined());\n",
+    replace: "                    WriteCall::Pad => {\n                        given.push(Expr::js_undefined());\n",
     tests,
   },
   {

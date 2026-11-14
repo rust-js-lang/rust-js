@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     name: "once-take-keeps",
     breaks: "`take` leaves what it took in the cell",
     file: "src/lower/std_types/once.rs",
-    find: "                out.push(StmtKind::Assign(place, Expr::undefined()).at(self.js_span(span)));\n",
+    find: "                out.push(StmtKind::Assign(place, Expr::js_undefined()).at(self.js_span(span)));\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "once_cells"],
   },

@@ -118,7 +118,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a nullable thread-local's cell is made of what it's given, `undefined`, not `null` (ADR 0586, amended)",
     file: "src/lower/std_types/cell/variables.rs",
-    find: "                *value = NoneForm::Null\n                    .storage()\n                    .written(std::mem::replace(value, Expr::undefined()), false);\n",
+    find: "                *value = NoneForm::Null\n                    .storage()\n                    .written(std::mem::replace(value, Expr::taken()), false);\n",
     replace: "",
     tests: [
       "test/lowering-module-variables.test.ts",

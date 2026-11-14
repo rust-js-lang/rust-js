@@ -139,7 +139,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`$iterator(it, next, nextBack)` reads its `nextBack` as whether its `Some` is boxed",
     file: "src/lower/iterators.rs",
-    find: "        .map(|(at, arg)| {\n            arg.unwrap_or_else(|| match at {\n                0 => Expr::bool(false),\n                _ => Expr::undefined(),\n            })\n        })\n",
+    find: "        .map(|(at, arg)| {\n            arg.unwrap_or_else(|| match at {\n                0 => Expr::bool(false),\n                _ => Expr::js_undefined(),\n            })\n        })\n",
     replace: "        .filter_map(|(_, arg)| arg)\n",
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^generic_double_ended.rs$"],
@@ -233,7 +233,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `Box<dyn Iterator>` of the crate's iterator folds by its own `fold`, where std's `Box` folds by `next`",
     file: "src/lower/iterators.rs",
-    find: "        given[6] = Expr::undefined();\n",
+    find: "        given[6] = Expr::js_undefined();\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^own_fold_and_nth.rs$"],
   },

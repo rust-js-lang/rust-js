@@ -267,7 +267,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     _ => written,
                 }
             }
-            _ => Expr::undefined(),
+            _ => Expr::js_undefined(),
         }
     }
 
@@ -334,11 +334,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     false => shown,
                 };
                 out.push(StmtKind::Throw(Expr::panic(shown)).at(js_span));
-                Expr::undefined()
+                Expr::js_undefined()
             }
             Std::Panic | Std::PanicFmt => {
                 out.push(StmtKind::Throw(Expr::panic(arg())).at(js_span));
-                Expr::undefined()
+                Expr::js_undefined()
             }
             // A `&str` or a `String` is the panic's message, as Rust's hook
             // shows it; another payload, `panic!(5)`, has none.
@@ -350,7 +350,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     return Err(self.unsupported(span, "a panic whose payload isn't text"));
                 }
                 out.push(StmtKind::Throw(Expr::panic(arg())).at(js_span));
-                Expr::undefined()
+                Expr::js_undefined()
             }
             // A whole line is `console.log`'s, which ends it; text that may
             // not end one is written as it is (ADR 0087).

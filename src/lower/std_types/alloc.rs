@@ -104,7 +104,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         out.push(StmtKind::Expr(value).at(self.js_span(span)));
                     }
                 }
-                Expr::undefined()
+                Expr::js_undefined()
             }
         }))
     }

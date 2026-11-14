@@ -451,7 +451,7 @@ export const mutations: Mutation[] = [
       "generic code reads no `IInPlace` of its caller, `undefined`, so its `src.map(f).collect()` of a `Vec`'s `IntoIter`, which std collects in place, a panic stopping it, drops what's left before what it collected (#672)",
     file: "src/lower/mir/iter/collect.rs",
     find: "                self.type_fact_value(iter_ty, TypeFact::InPlace, span)?\n",
-    replace: "                Expr::undefined()\n",
+    replace: "                Expr::js_undefined()\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_collect_drops_rest_first.rs$"],
   },
   {
@@ -493,7 +493,7 @@ export const mutations: Mutation[] = [
     name: "in-place-of-numbers-unsaid",
     breaks: "a collect in place of items with nothing to drop isn't said to be, so its fold moves a `map`'s function, which drops before what's left (#710)",
     file: "src/lower/mir/iter/collect.rs",
-    find: "                args.extend([Expr::undefined(), Expr::bool(false), Expr::bool(true)]);\n",
+    find: "                args.extend([Expr::js_undefined(), Expr::bool(false), Expr::bool(true)]);\n",
     replace: "",
     tests: ["test/iterator-forms.test.ts", "-t", "^fold_drops_moved_function_first with std"],
   },

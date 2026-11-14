@@ -934,6 +934,36 @@ pub struct TemplateBreak {
     pub lines: bool,
 }
 
+/// What an expression isn't yet: filled, or the tree it's in made again,
+/// before anything prints it. It reads nothing and declares nothing; a
+/// module's tree that still holds one is rust-js's mistake, refused
+/// (`Module::unprintable`, `js::validate`).
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum Hole {
+    /// Where an item written in a body goes until the pipeline puts it
+    /// there: such a function, one written in a function's body (ADR 0308),
+    /// or a `const` (ADR 0031, amended); its item's index.
+    Item(u32),
+    /// A library's item the crate compiles itself, asked for as its body
+    /// was lowered: the crate is lowered again with it, and this lowering's
+    /// JS is never kept (ADR 0914, amended).
+    Asked,
+    /// What a value was taken out of, by `std::mem::replace`, until what's
+    /// made of it is put back: where it was taken, which a refusal names.
+    Taken(&'static std::panic::Location<'static>),
+}
+
+impl Hole {
+    /// What it is, as a refusal says.
+    pub fn what(self) -> &'static str {
+        match self {
+            Hole::Item(_) => "an item's hole",
+            Hole::Asked => "a library's item asked for, whose crate is lowered again",
+            Hole::Taken(_) => "a value taken out of its place and never put back",
+        }
+    }
+}
+
 #[derive(Clone, PartialEq)]
 pub enum ExprKind {
     Num(f64),
@@ -999,10 +1029,8 @@ pub enum ExprKind {
     /// `function Label(props) { .. }`: a function a block makes and gives,
     /// named, as an expression (ADR 0296).
     Function(Box<Function>),
-    /// Where an item written in a body goes until the pipeline puts it
-    /// there: such a function, one written in a function's body (ADR 0308),
-    /// or a `const` (ADR 0031, amended); its item's index.
-    ItemHole(u32),
+    /// What isn't JS yet, which no tree is printed with (`Hole`).
+    Hole(Hole),
     /// `import("./lint.js")`: the module, loaded when it's asked for (ADR 0304).
     Import(ImportFrom),
     /// `"../dep/element.js"`, what `require` loads, made from the importing file (ADR 0305).
@@ -1169,7 +1197,7 @@ mod tests {
         let literals = Expr::literal_array(vec![
             Expr::int(1),
             Expr::literal_array(vec![Expr::str("a")]),
-            Expr::undefined(),
+            Expr::js_undefined(),
         ]);
         assert!(literals.facts.has(Known::Literal));
         assert!(!literals.has_effects() && literals.reads_only_vars());

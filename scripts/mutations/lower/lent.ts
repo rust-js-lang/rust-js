@@ -111,8 +111,8 @@ export const mutations: Mutation[] = [
     name: "option-inserted-item-strideless",
     breaks: "a payload `get_or_insert` writes to an array's `Option` is recorded with no item size, so its address is its own allocation, `4096` where wasm32 gives `16` (#1114, the net's `array` rewrite of `address_of_an_option_payload`)",
     file: "src/lower/lent.rs",
-    find: "        let mut given = vec![handle, size.unwrap_or_else(Expr::undefined)];\n",
-    replace: "        let mut given = vec![handle, Expr::undefined()];\n",
+    find: "        let mut given = vec![handle, size.unwrap_or_else(Expr::js_undefined)];\n",
+    replace: "        let mut given = vec![handle, Expr::js_undefined()];\n",
     tests: ["test/corpus.test.ts", "-t", "^address_of_an_option_payload.rs$"],
   },
   {

@@ -141,7 +141,7 @@ export const mutations: Mutation[] = [
     name: "extreme-by-ends-lost",
     breaks: "`max_by`'s and its kind's function that holds what has a destructor is given its helper nothing to drop it by, so it's never dropped (#734)",
     file: "src/lower/iterators/ends.rs",
-    find: "            (drop, Some(ends), None) => args.extend([drop.unwrap_or_else(Expr::undefined), ends]),\n",
+    find: "            (drop, Some(ends), None) => args.extend([drop.unwrap_or_else(Expr::js_undefined), ends]),\n",
     replace: "            (drop, Some(_), None) => args.extend(drop),\n",
     tests: ["test/corpus.test.ts", "-t", "^max_by_drops_its_function_first.rs$"],
   },

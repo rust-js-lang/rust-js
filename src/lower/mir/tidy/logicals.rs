@@ -413,7 +413,7 @@ fn guards_before_others(stmts: &mut [Stmt], conditions: &[(js::Span, js::Span)])
         else {
             unreachable!("matched")
         };
-        let first = std::mem::replace(test, Expr::undefined());
+        let first = std::mem::replace(test, Expr::taken());
         *test = Expr::bin(Op::And, first, guard);
         *then = body;
     }
@@ -475,7 +475,7 @@ pub(super) fn and_tests(
         else {
             unreachable!("matched")
         };
-        let first = std::mem::replace(test, Expr::undefined());
+        let first = std::mem::replace(test, Expr::taken());
         *test = unimplied(Expr::bin(Op::And, first, second));
         // Of a `match`'s guarded arm, `1 if skip => {}`, whose test of its
         // pattern is where the `match` tests, shared with the arms' before
@@ -595,7 +595,11 @@ fn read_first(test: &Expr, read: &Stmt, inner: &Stmt) -> Option<(Stmt, StmtKind)
     if second.has_effects() || !tests.iter().any(|t| implies(t, &defined)) || test.mentions_var(name) {
         return None;
     }
-    let first = StmtKind::Const(name.clone(), Expr::cond(test.clone(), value.clone(), Expr::undefined())).at(read.span);
+    let first = StmtKind::Const(
+        name.clone(),
+        Expr::cond(test.clone(), value.clone(), Expr::js_undefined()),
+    )
+    .at(read.span);
     Some((first, inner.kind.clone()))
 }
 
@@ -818,7 +822,7 @@ pub(super) fn written_ors(stmts: &mut Vec<Stmt>, ifs: &[js::Span]) {
             stmts.remove(i + 1);
             if let StmtKind::If(a, ..) = &mut stmts[i].kind {
                 let span = a.span;
-                *a = Expr::bin(Op::Or, std::mem::replace(a, Expr::undefined()), b).or_at(span);
+                *a = Expr::bin(Op::Or, std::mem::replace(a, Expr::taken()), b).or_at(span);
             }
             continue;
         }
@@ -1005,7 +1009,7 @@ fn negated_as_written(test: &mut Expr, negations: &[(js::Span, bool)], logicals:
             .expect("parts")
     };
     let mut parts = Vec::new();
-    operands(std::mem::replace(test, Expr::undefined()), op, &mut parts);
+    operands(std::mem::replace(test, Expr::taken()), op, &mut parts);
     let mut kept = Vec::new();
     let mut at = 0;
     while at < parts.len() {
@@ -1190,7 +1194,7 @@ fn bit_test(test: &mut Expr, integer: &dyn Fn(&str) -> bool, matched: &dyn Fn(js
             if b.as_int() == Some(0) && (bits(a) || (*op == Op::Ne && !matched(at) && integer_value(a, integer))) =>
         {
             let ne = *op == Op::Ne;
-            let bits = match std::mem::replace(&mut **a, Expr::undefined()) {
+            let bits = match std::mem::replace(&mut **a, Expr::taken()) {
                 Expr {
                     kind: ExprKind::Binary(Op::UShr, x, zero),
                     ..

@@ -133,7 +133,7 @@ pub(super) fn counters(module: &mut js::Module) {
                 && let StmtKind::Const(_, read) | StmtKind::Let(_, Some(read)) = &mut stmts[i].kind
             {
                 let span = read.span;
-                let target = std::mem::replace(read, Expr::undefined());
+                let target = std::mem::replace(read, Expr::taken());
                 *read = Expr::stepped(op, target).or_at(span);
                 stmts.remove(i + 1);
             }

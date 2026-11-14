@@ -38,7 +38,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .map(|(at, arg)| {
                 arg.unwrap_or_else(|| match at {
                     0 => Expr::bool(false),
-                    _ => Expr::undefined(),
+                    _ => Expr::js_undefined(),
                 })
             })
             .collect();

@@ -115,7 +115,7 @@ pub(crate) fn new_of_state(class: Expr, mut args: Vec<Expr>, at: usize, keys: &[
             let fields_only = (props.iter()).all(|prop| matches!(prop, Prop::Field(name, _) if keys.contains(name)));
             (fields_only && effects.windows(2).all(|w| w[0] < w[1])).then(|| {
                 keys.iter()
-                    .map(|key| field(key).unwrap_or_else(Expr::undefined))
+                    .map(|key| field(key).unwrap_or_else(Expr::js_undefined))
                     .collect()
             })
         }

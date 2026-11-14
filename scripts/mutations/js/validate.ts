@@ -35,4 +35,20 @@ export const mutations: Mutation[] = [
     replace: "                false => *target == Target::Loop,\n",
     unitTests: "js::validate::tests::jumps_land_within_their_function",
   },
+  {
+    name: "validate-hole-let-through",
+    breaks: "a value taken out of its place and never put back is let through, printed `undefined` where Rust has a value (#1671 change 4 M1, ADR 1147)",
+    file: "src/js/validate.rs",
+    find: "            ExprKind::Hole(hole) => self.problems.push(Problem::Hole(*hole)),\n",
+    replace: "            ExprKind::Hole(_) => {}\n",
+    unitTests: "js::validate::tests::a_hole_is_refused",
+  },
+  {
+    name: "validate-asked-hole-of-a-module-let-through",
+    breaks: "a module's tree, made once its crate's lowering is final, may hold a library's item asked for, printed `undefined` where the item's function is called (ADR 1147)",
+    file: "src/js/validate.rs",
+    find: "            ExprKind::Hole(super::Hole::Asked) if !self.whole => {}\n",
+    replace: "            ExprKind::Hole(super::Hole::Asked) => {}\n",
+    unitTests: "js::validate::tests::a_hole_is_refused",
+  },
 ];

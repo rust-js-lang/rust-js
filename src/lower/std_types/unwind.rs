@@ -57,7 +57,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     thrown.facts = thrown.facts.with(Known::AsGiven);
                 }
                 out.push(StmtKind::Throw(thrown).at(self.js_span(call.span)));
-                Expr::undefined()
+                Expr::js_undefined()
             }
         }))
     }

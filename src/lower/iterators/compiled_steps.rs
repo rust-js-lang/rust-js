@@ -214,10 +214,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Its `advance_by`, std's: a `Rev`'s its source's `advance_back_by`,
         // a `Vec`'s, which drops what it passes as one slice (#286).
         let advance = self.recognition().reversed(ty).map(|source| {
-            let dictionary = self.iterator_evidence(source, iterator).unwrap_or_else(Expr::undefined);
+            let dictionary = self
+                .iterator_evidence(source, iterator)
+                .unwrap_or_else(Expr::js_undefined);
             let back = (self.recognition().double_ended_iterator())
                 .and_then(|back| self.iterator_evidence(source, back))
-                .unwrap_or_else(Expr::undefined);
+                .unwrap_or_else(Expr::js_undefined);
             ("$revAdvanceBy", vec![dictionary, back])
         });
         // Not where std's is compiled, `steps.advance` (ADR 0913).
@@ -589,7 +591,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 fn exact_len_by(hint: &Option<Expr>) -> Expr {
     let hint_of = match hint {
         Some(hint) => Expr::call(hint.clone(), vec![Expr::var("it")]),
-        None => Expr::array(vec![Expr::int(0), Expr::undefined()]),
+        None => Expr::array(vec![Expr::int(0), Expr::js_undefined()]),
     };
     let exact = Expr::call_helper("$exactLen", vec![hint_of]);
     Expr::arrow(

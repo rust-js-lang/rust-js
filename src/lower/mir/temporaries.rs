@@ -167,7 +167,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // `*w.r()`'s (#171).
             if let Value::Discriminant(subject, ..) = &mut value {
                 if !subject.reads_same() {
-                    let made_once = std::mem::replace(subject, Expr::undefined());
+                    let made_once = std::mem::replace(subject, Expr::taken());
                     *subject = self.spill(Base::Temporary, made_once, &mut made);
                 }
                 kept.push((local, value));
@@ -187,7 +187,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // it borrows, nothing changes till it's shown (borrowck says so).
             if !named && let Value::DynDebug(_, _, subject) = &mut value {
                 if subject.has_effects() {
-                    let made_once = std::mem::replace(subject, Expr::undefined());
+                    let made_once = std::mem::replace(subject, Expr::taken());
                     *subject = self.spill(Role::Value, made_once, &mut made);
                 }
                 state.places.insert(local, value);
@@ -199,7 +199,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // something; never made a value, which isn't one (#1294).
             if !named && let Value::Fmt(_, _, subject) = &mut value {
                 if subject.has_effects() {
-                    let made_once = std::mem::replace(subject, Expr::undefined());
+                    let made_once = std::mem::replace(subject, Expr::taken());
                     *subject = self.spill(Role::Value, made_once, &mut made);
                 }
                 state.places.insert(local, value);
@@ -570,7 +570,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(value.clone());
         }
         match state.locals.names[local].as_str() {
-            "" => Ok(Value::Expr(Expr::undefined())),
+            "" => Ok(Value::Expr(Expr::js_undefined())),
             // A cell a pointer is taken to (ADR 0407): its `value`.
             name if state.facts.pointed().locals.contains(&local) => Ok(Value::Expr(Expr::held(Expr::var(name)))),
             name => Ok(Value::Expr(read_by_name(state, local, name))),

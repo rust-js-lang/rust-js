@@ -577,7 +577,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // function its fold would move, said so: std's `try_fold` by
             // `&mut`, which keeps it to drop after what's left (#710).
             _ if self.folds_held_function(iter_ty) && self.collects_in_place(Some(iter_ty), item) == Some(true) => {
-                args.extend([Expr::undefined(), Expr::bool(false), Expr::bool(true)]);
+                args.extend([Expr::js_undefined(), Expr::bool(false), Expr::bool(true)]);
             }
             _ => {}
         }
@@ -1002,7 +1002,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A `ConstSize` is one where it's given, `undefined` where it isn't.
             let value = match fact {
                 crate::lower::recognition::TypeFact::ConstSize => {
-                    Expr::bin(js::Op::Ne, self.type_fact_value(of, fact, span)?, Expr::undefined())
+                    Expr::bin(js::Op::Ne, self.type_fact_value(of, fact, span)?, Expr::js_undefined())
                 }
                 _ => self.type_fact_value(of, fact, span)?,
             };

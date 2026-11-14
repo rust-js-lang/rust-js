@@ -371,7 +371,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if let Some(unmade) = unmade {
                     out.push(StmtKind::If(unmade.negated_test(), set, None).at(js_span));
                 }
-                Expr::undefined()
+                Expr::js_undefined()
             }
             // Of a flattened state's, its handle on its class's object (ADR
             // 1044): what `f` makes of a `&mut` to it, the handle, through
@@ -384,7 +384,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let made = apply(arg(), vec![Expr::stored_handle(object.clone(), storage)]);
                 let next = self.spill(Role::Next, made, out);
                 let old = match call.unread {
-                    true => Expr::undefined(),
+                    true => Expr::js_undefined(),
                     false => {
                         let copied = self.moved_out(object.clone(), item);
                         self.spill(Role::Old, copied, out)
@@ -472,7 +472,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         false => self.spill(Role::Object, *object, out),
                     };
                     let old = match call.unread {
-                        true => Expr::undefined(),
+                        true => Expr::js_undefined(),
                         false => {
                             let copied = self.moved_out(object.clone(), item);
                             self.spill(Role::Old, copied, out)
@@ -513,7 +513,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let mut dropped = Vec::new();
                     cx.drop_value(next.clone(), item, span, &mut dropped)?;
                     let drop = Expr::arrow(Vec::new(), dropped);
-                    let cell = Expr::call(Expr::helper("$borrowMut"), vec![cell, Expr::undefined(), drop]);
+                    let cell = Expr::call(Expr::helper("$borrowMut"), vec![cell, Expr::js_undefined(), drop]);
                     Ok((cell, next))
                 };
                 if self.is_value_cell(held) && !(call.quiet && a_place) {
@@ -561,7 +561,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // 1022, amended).
                 if call.unread {
                     out.push(StmtKind::Assign(place, next).at(js_span));
-                    return Ok(Some(Expr::undefined()));
+                    return Ok(Some(Expr::js_undefined()));
                 }
                 // What was moved out apart from what's written, which an
                 // in-place cell, `Cell::from_mut`'s, writes into the same
@@ -676,7 +676,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let b_moved = read(self, &b);
                 write(self, &a, b_moved, out);
                 write(self, &b, t, out);
-                Expr::undefined()
+                Expr::js_undefined()
             }
             Std::CellSwap if self.is_std_type(tys[0].peel_refs(), StdItem::RefCell) => {
                 let mut given = vec![arg(), arg()];
@@ -705,7 +705,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let b_moved = self.moved_out(Expr::held(b.clone()), item);
                 out.push(StmtKind::Assign(Expr::held(a), b_moved).at(js_span));
                 out.push(StmtKind::Assign(Expr::held(b), old).at(js_span));
-                Expr::undefined()
+                Expr::js_undefined()
             }
             Std::CellSwap => Expr::call(Expr::helper("$cellSwap"), vec![arg(), arg()]),
             // `c.value = f(c.value)`.
@@ -718,7 +718,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 let updated = apply(arg(), vec![Expr::held(cell.clone())]);
                 out.push(StmtKind::Assign(Expr::held(cell), updated).at(js_span));
-                Expr::undefined()
+                Expr::js_undefined()
             }
             // Whether a panic poisoned it, and its poison cleared (#1438).
             Std::Poison { clear } => Expr::call_helper(if clear { "$clearPoison" } else { "$isPoisoned" }, vec![arg()]),
@@ -782,14 +782,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // another, which counted nothing, nothing (ADR 0863, amended).
             Std::Drop if call.quiet => {
                 arg();
-                Expr::undefined()
+                Expr::js_undefined()
             }
             Std::Drop => {
                 let ty = tys[0];
                 let value = arg();
                 let value = self.droppable(value, ty, out);
                 self.drop_value(value, ty, span, out)?;
-                Expr::undefined()
+                Expr::js_undefined()
             }
             // What a `&mut ManuallyDrop<T>` points at, a `T`, as a
             // `ManuallyDrop` is what it holds (ADR 0406), dropped in place.
@@ -798,14 +798,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let held = self.recognition().std_wrapped(pointee).unwrap_or(pointee);
                 let value = self.droppable(value, held, out);
                 self.drop_value(value, held, span, out)?;
-                Expr::undefined()
+                Expr::js_undefined()
             }
             Std::Forget => {
                 let value = arg();
                 if value.has_effects() {
                     out.push(StmtKind::Expr(value).at(js_span));
                 }
-                Expr::undefined()
+                Expr::js_undefined()
             }
             // An atomic's operation (ADR 0096) is the plain one on its `{ value }`:
             // JS runs a module on one thread, so every ordering holds. Each
@@ -857,7 +857,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 if known == Std::AtomicStore {
                     out.push(StmtKind::Assign(slot, v.clone()).at(js_span));
-                    return Ok(Some(Expr::undefined()));
+                    return Ok(Some(Expr::js_undefined()));
                 }
                 let previous = self.spill(Role::Previous, slot.clone(), out);
                 let next = match known {

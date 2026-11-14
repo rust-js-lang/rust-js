@@ -358,7 +358,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             self.flush(state, out)?;
             for expr in &mut exprs {
                 if expr.has_effects() {
-                    let made = std::mem::replace(expr, Expr::undefined());
+                    let made = std::mem::replace(expr, Expr::taken());
                     *expr = self.spill(Role::Arg, made, out);
                 }
             }

@@ -430,7 +430,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let size = self
             .layout(option)
             .map(|layout| Expr::int(i128::from(layout.size.bytes())));
-        let mut given = vec![handle, size.unwrap_or_else(Expr::undefined)];
+        let mut given = vec![handle, size.unwrap_or_else(Expr::js_undefined)];
         if within > 0 {
             given.push(Expr::int(i128::from(within)));
         }
@@ -682,7 +682,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let lents = self.lends_object_of(def_id, receiver).expect("lend_recorded's");
         if !values[0].reads_same() {
-            let given = std::mem::replace(&mut values[0], Expr::undefined());
+            let given = std::mem::replace(&mut values[0], Expr::taken());
             values[0] = self.spill(Role::Receiver, given, out);
         }
         let held = values[0].clone();

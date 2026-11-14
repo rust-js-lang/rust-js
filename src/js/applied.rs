@@ -245,7 +245,7 @@ fn value_of(stmt: &Stmt, whole: &[Stmt]) -> Option<Vec<Stmt>> {
     // declares beside it mustn't be either: `const x` of `const x = v`.
     let mut beside = stmt.clone();
     if let Some(call) = first_call(&mut beside) {
-        *call = Expr::undefined();
+        *call = Expr::js_undefined();
     }
     let mut inlined = in_place(stmt, whole, &[beside], (params, args), body.clone(), true)?;
     let Some(Stmt {
@@ -310,7 +310,7 @@ fn tested_of(stmts: &[Stmt], at: usize, whole: &[Stmt]) -> Option<Vec<Stmt>> {
     if !leaves(&yes) || !leaves(&no) || mentions_in(whole, name) != 1 {
         return None;
     }
-    let beside = StmtKind::Const(name.clone(), Expr::undefined()).at(stmts[at].span);
+    let beside = StmtKind::Const(name.clone(), Expr::js_undefined()).at(stmts[at].span);
     let inlined = in_place(&stmts[at], whole, &[beside], (params, args), body.clone(), true)?;
     // What the branches read, none of which a block of the body declares.
     let mut read = IndexSet::default();
@@ -698,7 +698,7 @@ fn through_handles(body: &mut Vec<Stmt>) {
                     && key == crate::js::HELD
                     && let ExprKind::Handle(place, storage) = &of.kind
                 {
-                    let written = storage.written(std::mem::replace(value, Expr::undefined()), false);
+                    let written = storage.written(std::mem::replace(value, Expr::taken()), false);
                     stmt.kind = StmtKind::Assign((**place).clone(), written);
                 }
             }

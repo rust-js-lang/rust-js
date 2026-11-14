@@ -161,11 +161,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 "$ptr",
                 vec![(**cell).clone(), Expr::str(js::HELD), Expr::int(i128::from(at))],
             );
-            return Ok(Some(Expr::cond(none, Expr::undefined(), handle)));
+            return Ok(Some(Expr::cond(none, Expr::js_undefined(), handle)));
         }
         let held = self.boxed_payload(item).then(|| self.some_value(place.clone()));
         let some = self.value_expr(Value::Ref(held.unwrap_or(place)), span)?;
-        Ok(Some(Expr::cond(none, Expr::undefined(), some)))
+        Ok(Some(Expr::cond(none, Expr::js_undefined(), some)))
     }
 
     /// Whether nothing reads what the call being lowered gives: its

@@ -39,7 +39,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a guard's link turned keeps its failing's test, `else if (value != null && !Number.isNaN(value)) { level = 0.5; }`, so a number that isn't NaN takes the guard's arm",
     file: "src/lower/mir/tidy/decisions/presence.rs",
-    find: "            *test = std::mem::replace(test, Expr::undefined()).negated_test();\n",
+    find: "            *test = std::mem::replace(test, Expr::taken()).negated_test();\n",
     replace: "",
     tests: corpus,
   },

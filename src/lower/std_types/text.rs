@@ -458,7 +458,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             TextOp::ToDigit | TextOp::IsDigit => {
                 let digit = Expr::call(Expr::helper("$toDigit"), vec![arg(), arg()]);
                 if op == TextOp::IsDigit {
-                    Expr::bin(Op::Ne, digit, Expr::undefined())
+                    Expr::bin(Op::Ne, digit, Expr::js_undefined())
                 } else {
                     digit
                 }
@@ -609,7 +609,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Expr::index(items.clone(), item),
                     Expr::builtin(items, "slice", rest),
                 ]);
-                Expr::cond(empty, Expr::undefined(), split)
+                Expr::cond(empty, Expr::js_undefined(), split)
             }
             TextOp::CharFromCode => Expr::builtin(Expr::js_global("String"), "fromCodePoint", vec![arg()]),
             TextOp::FromUtf8 { owned } => {
@@ -675,7 +675,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             TextOp::IsCharBoundary => {
                 let unit = call("$charBoundary", vec![arg(), arg()]);
-                Expr::bin(Op::Ne, unit, Expr::undefined())
+                Expr::bin(Op::Ne, unit, Expr::js_undefined())
             }
             TextOp::CharLen { utf16: false } => call("$byteLen", vec![arg()]),
             TextOp::CharLen { utf16: true } => Expr::member(arg(), "length"),
@@ -980,7 +980,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 {
                     let mut dropper = |ty: Ty<'tcx>| -> R<Expr> {
                         if !self.has_drops(ty) {
-                            return Ok(Expr::undefined());
+                            return Ok(Expr::js_undefined());
                         }
                         let mut dropped = Vec::new();
                         self.drop_value(Expr::var("item"), ty, span, &mut dropped)?;

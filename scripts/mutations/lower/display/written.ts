@@ -193,7 +193,7 @@ export const mutations: Mutation[] = [
       "`{:.1e}` of a type whose `LowerExp` gives its number's prints every digit",
     file: "src/lower/display/written.rs",
     find: '                            let precision = Expr::optional_member(options.clone(), "precision");\n',
-    replace: "                            let precision = Expr::undefined();\n",
+    replace: "                            let precision = Expr::js_undefined();\n",
     tests: ["test/corpus.test.ts", "-t", "^exp_precision.rs$"],
   },
   {

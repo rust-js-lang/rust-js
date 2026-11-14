@@ -50,7 +50,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// as it is, or `converted`, its error made the function's.
     pub(in crate::lower) fn tried_returned(&self, subject: Expr, ty: Ty<'tcx>, converted: Option<Expr>) -> Expr {
         if self.option_of(ty).is_some() {
-            return Expr::undefined();
+            return Expr::js_undefined();
         }
         match converted {
             Some(converted) => err(converted),

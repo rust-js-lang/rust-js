@@ -105,7 +105,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let thrown = matches!(of.kind(), ty::Ref(_, inner, _) if self.recognition().is_js_error(*inner));
         if thrown && op != AnyOp::DowncastMut {
             let error = Expr::thrown_error(pair.clone());
-            let panicked = Expr::bin(Op::Ne, error.clone(), Expr::undefined());
+            let panicked = Expr::bin(Op::Ne, error.clone(), Expr::js_undefined());
             return Ok(Some(match op {
                 AnyOp::Is => Expr::bin(Op::Or, is, panicked),
                 AnyOp::DowncastRef => Expr::cond(is, inside, error),
@@ -125,13 +125,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 } else {
                     inside
                 };
-                Expr::cond(is, some, Expr::undefined())
+                Expr::cond(is, some, Expr::js_undefined())
             }
             // A `&mut` to a number or text is the pair, whose `value` it is
             // (ADR 0074).
             AnyOp::DowncastMut => {
                 let found = if self.mut_ref_form(of).is_cell() { pair } else { inside };
-                Expr::cond(is, found, Expr::undefined())
+                Expr::cond(is, found, Expr::js_undefined())
             }
             // A counted `Rc`'s, itself, as what it points at is (ADR 0520).
             AnyOp::Downcast => {

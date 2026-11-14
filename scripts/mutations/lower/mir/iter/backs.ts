@@ -141,7 +141,7 @@ export const mutations: Mutation[] = [
       "`nth_back` of items that could look like `None` gives `None` for a `Some(None)`",
     file: "src/lower/mir/iter/backs.rs",
     find: '                true => Expr::helper("$some"),\n',
-    replace: "                true => Expr::undefined(),\n",
+    replace: "                true => Expr::js_undefined(),\n",
     tests: ["test/corpus.test.ts", "-t", "^back_steps.rs$"],
   },
   {

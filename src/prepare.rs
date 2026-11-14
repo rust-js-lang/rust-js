@@ -363,10 +363,10 @@ fn compound(module: &mut js::Module) {
                     && inner == op
                 {
                     let (part, second) = (
-                        std::mem::replace(&mut **part, Expr::undefined()),
-                        std::mem::replace(&mut **second, Expr::undefined()),
+                        std::mem::replace(&mut **part, Expr::taken()),
+                        std::mem::replace(&mut **second, Expr::taken()),
                     );
-                    let rest = std::mem::replace(&mut **rhs, Expr::undefined());
+                    let rest = std::mem::replace(&mut **rhs, Expr::taken());
                     **rhs = Expr::bin(*op, second, rest);
                     **lhs = part;
                 }
@@ -376,12 +376,12 @@ fn compound(module: &mut js::Module) {
             // checks it, reads it, evaluates `lane` and writes, in that order,
             // as the assignment did (ADR 0894, amended).
             let checked = match (checked_item(target, lhs), checked_item(lhs, target)) {
-                (true, _) => Some(std::mem::replace(target, Expr::undefined())),
-                (_, true) => Some(std::mem::replace(&mut **lhs, Expr::undefined())),
-                _ => js::same_path(lhs, target).then(|| std::mem::replace(target, Expr::undefined())),
+                (true, _) => Some(std::mem::replace(target, Expr::taken())),
+                (_, true) => Some(std::mem::replace(&mut **lhs, Expr::taken())),
+                _ => js::same_path(lhs, target).then(|| std::mem::replace(target, Expr::taken())),
             };
             if let Some(target) = checked {
-                let (op, rhs) = (*op, std::mem::replace(&mut **rhs, Expr::undefined()));
+                let (op, rhs) = (*op, std::mem::replace(&mut **rhs, Expr::taken()));
                 stmt.kind = StmtKind::Compound(op, target, rhs);
             }
         }
@@ -1054,7 +1054,7 @@ fn expr(e: &mut Expr) {
                     },
                 ] = body.as_mut_slice()
             {
-                *value = Some(Expr::undefined());
+                *value = Some(Expr::js_undefined());
             }
         }
         ExprKind::Function(function) => function_body(&mut function.params, &mut function.body),
@@ -1157,8 +1157,8 @@ fn expr(e: &mut Expr) {
                 *e = Expr { span: e.span, ..or };
             } else if js::same_path(a, b) && passes::applies(Pass::ConditionalsAsLogicals) {
                 let (then, els) = (
-                    std::mem::replace(&mut **b, Expr::undefined()),
-                    std::mem::replace(&mut **c, Expr::undefined()),
+                    std::mem::replace(&mut **b, Expr::taken()),
+                    std::mem::replace(&mut **c, Expr::taken()),
                 );
                 *e = Expr {
                     span: e.span,
@@ -1170,8 +1170,8 @@ fn expr(e: &mut Expr) {
             // Of what reads the same each time, which `&&` reads once.
             } else if js::same_path(a, c) && a.reads_same() && passes::applies(Pass::ConditionalsAsLogicals) {
                 let (test, then) = (
-                    std::mem::replace(&mut **a, Expr::undefined()),
-                    std::mem::replace(&mut **b, Expr::undefined()),
+                    std::mem::replace(&mut **a, Expr::taken()),
+                    std::mem::replace(&mut **b, Expr::taken()),
                 );
                 *e = Expr {
                     span: e.span,
@@ -1235,7 +1235,7 @@ fn expr(e: &mut Expr) {
         | ExprKind::Super
         | ExprKind::Var(_)
         | ExprKind::Symbol(_)
-        | ExprKind::ItemHole(_)
+        | ExprKind::Hole(_)
         | ExprKind::Import(_)
         | ExprKind::Specifier(_)
         | ExprKind::Regex(_) => {}

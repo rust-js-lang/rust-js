@@ -110,7 +110,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         out.push(StmtKind::Expr(assigned).at(js_span));
                     }
                 }
-                Expr::undefined()
+                Expr::js_undefined()
             }
         }))
     }
@@ -146,7 +146,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     false => StmtKind::Expr(self.in_place(InPlaceWriter::Assign, target, vec![place, value], span)?)
                         .at(js_span),
                 });
-                Expr::undefined()
+                Expr::js_undefined()
             }
             _ => return Err(self.unsupported(span, &format!("`as_mut()` or `set()` of a `{pin}`"))),
         })

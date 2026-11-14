@@ -329,7 +329,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
-        let (_, inner) = self.through_refs(Expr::undefined(), ty);
+        let (_, inner) = self.through_refs(Expr::js_undefined(), ty);
         // Of a type parameter, its `PartialOrd` dictionary's, which holds
         // its impl's own or std's (#944).
         if self.is_unknown(inner) {
@@ -758,7 +758,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         );
         let mut args = vec![items, in_order];
         if let Some(drop) = drop {
-            args.extend([Expr::undefined(), drop]);
+            args.extend([Expr::js_undefined(), drop]);
         }
         Ok(Expr::call_helper("$isSortedBy", args))
     }
@@ -886,7 +886,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             });
             let drop = self.std_drop_function(ty, span)?;
             if show.is_some() || drop.is_some() {
-                args.push(show.unwrap_or_else(Expr::undefined));
+                args.push(show.unwrap_or_else(Expr::js_undefined));
             }
             args.extend(drop);
             return Ok(Some(Expr::call_helper("$clampBy", args)));

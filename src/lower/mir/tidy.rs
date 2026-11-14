@@ -700,8 +700,10 @@ mod tests {
             .concat()
         ));
         let written = assign("result", Expr::var("chunk"));
+        // A reset of `undefined`, JS's.
+        let reset = || take(Expr::js_undefined());
         assert!(returned(
-            [vec![declared.clone(), closure(vec![written])], take(Expr::undefined())].concat()
+            [vec![declared.clone(), closure(vec![written])], reset()].concat()
         ));
         // Refused: a closure that reads it.
         let read = s(StmtKind::Return(Some(Expr::var("result"))));
@@ -711,7 +713,7 @@ mod tests {
         // Refused: an append to what a reset of `undefined` leaves, which
         // may be an object, its `toString` called.
         assert!(!returned(
-            [vec![declared.clone(), closure(vec![append])], take(Expr::undefined())].concat()
+            [vec![declared.clone(), closure(vec![append])], reset()].concat()
         ));
         // Refused: a `finally` that reads it after the `return`.
         let shown = s(StmtKind::Expr(Expr::call(Expr::var("show"), vec![Expr::var("result")])));
@@ -819,7 +821,7 @@ mod tests {
         assert_eq!(
             one(
                 vec![assign("_0", Expr::num(1))],
-                vec![assign("_0", Expr::undefined())],
+                vec![assign("_0", Expr::js_undefined())],
                 &c
             ),
             None

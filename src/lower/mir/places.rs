@@ -91,13 +91,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return match place.projection.as_slice() {
                 [PlaceElem::Downcast(_, variant), PlaceElem::Field(..)] if variant.as_u32() == 0 => {
                     Ok(match self.is_write_result(ty) {
-                        true => Expr::undefined(),
+                        true => Expr::js_undefined(),
                         false => self.tried_value(tried, ty),
                     })
                 }
                 // The residual, `None` or the `Err` itself.
                 [PlaceElem::Downcast(..), PlaceElem::Field(..)] => Ok(match self.option_of(ty) {
-                    Some(_) => Expr::undefined(),
+                    Some(_) => Expr::js_undefined(),
                     None => tried,
                 }),
                 _ => Err(self.unsupported(span, "this part of what `?` made, from its MIR")),
@@ -113,7 +113,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 state.locals.names[place.local].as_str(),
             ) {
                 (Some(value), _) => value.clone(),
-                (None, "") => Expr::undefined(),
+                (None, "") => Expr::js_undefined(),
                 (None, name) => {
                     state.named.insert(place.local);
                     match state.facts.pointed().locals.contains(&place.local) {
@@ -124,7 +124,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         } else if state.facts.is_environment(place.local) {
             // A closure's environment, read only through its fields.
-            Expr::undefined()
+            Expr::js_undefined()
         } else {
             match self.read_local_value(state, place.local, out)? {
                 // Through a `&mut` to a place: the place.
@@ -486,7 +486,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return read;
         }
         match self.prop_default(base_ty.ty, field.as_usize(), span) {
-            Some(default) => Expr::cond(Expr::bin(js::Op::Eq, read.clone(), Expr::undefined()), default, read),
+            Some(default) => Expr::cond(Expr::bin(js::Op::Eq, read.clone(), Expr::js_undefined()), default, read),
             None => read,
         }
     }

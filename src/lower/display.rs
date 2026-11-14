@@ -89,7 +89,7 @@ impl Pretty {
     /// the writer's own, or a placeholder's.
     fn options(&self) -> Expr {
         match self {
-            Pretty::Plain => Expr::undefined(),
+            Pretty::Plain => Expr::js_undefined(),
             Pretty::Always => Expr::object(vec![js::Prop::Field("alternate".into(), Expr::bool(true))]),
             Pretty::When(options) | Pretty::Given(options, _) => options.clone(),
         }
@@ -229,22 +229,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     if result.has_effects() {
                         out.push(StmtKind::Expr(result).at(self.js_span(span)));
                     }
-                    Expr::undefined()
+                    Expr::js_undefined()
                 }
             };
             let message = message.unwrap_or_else(|| Expr::str("called `Result::unwrap_err()` on an `Ok` value"));
             return Expr::call(Expr::helper("$writeExpectErr"), vec![result, message]);
         }
         let constant = match answer {
-            FmtResultAnswer::Unwrap | FmtResultAnswer::Expect | FmtResultAnswer::UnwrapOr => Expr::undefined(),
+            FmtResultAnswer::Unwrap | FmtResultAnswer::Expect | FmtResultAnswer::UnwrapOr => Expr::js_undefined(),
             FmtResultAnswer::Is(ok) => Expr::bool(ok),
-            FmtResultAnswer::Ok => self.some(Expr::undefined()),
-            FmtResultAnswer::MapErr => crate::js::result::ok(Expr::undefined()),
+            FmtResultAnswer::Ok => self.some(Expr::js_undefined()),
+            FmtResultAnswer::MapErr => crate::js::result::ok(Expr::js_undefined()),
             // Its function given `()`, `undefined`, which one that takes
             // it as a value reads, `map(Ok)`'s.
             FmtResultAnswer::Map => {
                 let f = message.clone().expect("`map`'s function");
-                crate::js::result::ok(crate::lower::calls::apply(f, vec![Expr::undefined()]))
+                crate::js::result::ok(crate::lower::calls::apply(f, vec![Expr::js_undefined()]))
             }
             FmtResultAnswer::UnwrapErr => unreachable!("answered above"),
         };
@@ -264,18 +264,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         } else {
             self.spill(Role::Result, result, out)
         };
-        let ok = Expr::bin(Op::Eq, result.clone(), Expr::undefined());
+        let ok = Expr::bin(Op::Eq, result.clone(), Expr::js_undefined());
         match answer {
-            FmtResultAnswer::Ok => Expr::cond(ok, self.some(Expr::undefined()), Expr::undefined()),
-            FmtResultAnswer::UnwrapOr => Expr::undefined(),
+            FmtResultAnswer::Ok => Expr::cond(ok, self.some(Expr::js_undefined()), Expr::js_undefined()),
+            FmtResultAnswer::UnwrapOr => Expr::js_undefined(),
             FmtResultAnswer::Map => Expr::cond(ok, constant, crate::js::result::err(result)),
             FmtResultAnswer::MapErr => {
                 let f = message.expect("`map_err`'s function");
                 let mapped = crate::js::result::err(self.applied(f, result));
-                Expr::cond(ok, crate::js::result::ok(Expr::undefined()), mapped)
+                Expr::cond(ok, crate::js::result::ok(Expr::js_undefined()), mapped)
             }
             FmtResultAnswer::Is(true) => ok,
-            FmtResultAnswer::Is(false) => Expr::bin(Op::Ne, result, Expr::undefined()),
+            FmtResultAnswer::Is(false) => Expr::bin(Op::Ne, result, Expr::js_undefined()),
             FmtResultAnswer::Unwrap | FmtResultAnswer::Expect => {
                 let message = message.unwrap_or_else(|| Expr::str("called `Result::unwrap()` on an `Err` value"));
                 Expr::call(Expr::helper("$writeExpect"), vec![result, message])
@@ -344,7 +344,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn given_to_writer(&self, writer: Option<DefId>) -> Option<Expr> {
         match writer {
             Some(writer) if !self.takes_options(writer) => None,
-            Some(_) => Some(self.writing.given.clone().unwrap_or_else(Expr::undefined)),
+            Some(_) => Some(self.writing.given.clone().unwrap_or_else(Expr::js_undefined)),
             None => self.writing.given.clone(),
         }
     }

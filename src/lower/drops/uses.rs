@@ -31,7 +31,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         } else {
             self.drop_state.used_drops.extend(through);
         }
-        let drop = drop?.unwrap_or_else(Expr::undefined);
+        let drop = drop?.unwrap_or_else(Expr::js_undefined);
         Ok(Expr::drop_argument(
             (callee.krate.as_u32(), callee.index.as_u32()),
             index,

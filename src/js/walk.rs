@@ -203,7 +203,7 @@ macro_rules! walks {
                     | ExprKind::This
                     | ExprKind::Super
                     | ExprKind::Symbol(_)
-                    | ExprKind::ItemHole(_)
+                    | ExprKind::Hole(_)
                     | ExprKind::Import(_)
                     | ExprKind::Specifier(_)
                     | ExprKind::Regex(_) => {}

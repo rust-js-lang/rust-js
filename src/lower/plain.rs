@@ -334,7 +334,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .map(|(at, part)| self.plain_made(part, offset + at, scalar, span))
             .collect::<R<Vec<_>>>()?;
         Ok(match ty.kind() {
-            ty::Tuple(items) if items.is_empty() => Expr::undefined(),
+            ty::Tuple(items) if items.is_empty() => Expr::js_undefined(),
             ty::Tuple(_) | ty::Array(..) => Expr::array(values),
             _ => self.adt_value(ty, VariantIdx::ZERO, values, &[], None, span)?,
         })

@@ -108,7 +108,7 @@ fn given_first(stmts: &mut Vec<Stmt>, (made, declared): (&IndexSet<String>, &Ind
         let StmtKind::Const(_, made) = &mut stmts[at].kind else {
             unreachable!("`given_from`'s `const`")
         };
-        let made = std::mem::replace(made, Expr::undefined());
+        let made = std::mem::replace(made, Expr::taken());
         stmts[at].kind = StmtKind::Assign(Expr::var(&x), made);
         stmts.remove(given);
         js::each_expr_mut(&mut stmts[at + 1..given], &mut |e| {

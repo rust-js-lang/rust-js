@@ -189,10 +189,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ => None,
         };
         if op == MapOp::OrInsert && (value_drop.is_some() || key_drop.is_some()) {
-            list.push(value_drop.unwrap_or_else(Expr::undefined));
+            list.push(value_drop.unwrap_or_else(Expr::js_undefined));
         }
         if key_drop.is_some() || make_drop.is_some() {
-            list.push(key_drop.unwrap_or_else(Expr::undefined));
+            list.push(key_drop.unwrap_or_else(Expr::js_undefined));
         }
         list.extend(make_drop);
         Ok(Expr::call(Expr::helper(name), list))
@@ -236,7 +236,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         }
         self.fmt_check(tried, self.js_span(span), out);
-        Ok(Value::Branch(Expr::undefined(), ty))
+        Ok(Value::Branch(Expr::js_undefined(), ty))
     }
 
     /// What `?` tries, `tried`, of type `ty`, read once, as Rust reads it:
@@ -381,7 +381,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 self.flush(state, out)?;
                 out.push(StmtKind::Expr(e).at(self.js_span(span)));
-                Ok(Value::Expr(Expr::undefined()))
+                Ok(Value::Expr(Expr::js_undefined()))
             }
             value => Ok(value),
         }
@@ -591,7 +591,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 out.push(
                     StmtKind::Expr(self.in_place(InPlaceWriter::Exchange, pointee, vec![a, b], span)?).at(js_span),
                 );
-                return Ok(Value::Expr(Expr::undefined()));
+                return Ok(Value::Expr(Expr::js_undefined()));
             }
             return Ok(Value::Expr(crate::lower::std_types::cell::taken(
                 self,
@@ -606,7 +606,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => return Err(self.unsupported(span, "`mem::swap` of these, from its MIR")),
             },
             // `None`, and what's in a `Some`, boxed where a generic one is (ADR 0051).
-            Std::OptionTake => (Expr::undefined(), None),
+            Std::OptionTake => (Expr::js_undefined(), None),
             Std::OptionReplace => {
                 let value = self.value_expr(values.next().expect("a value"), span)?;
                 let item = self.option_of(pointee).expect("an `Option` has a `T`");
@@ -681,7 +681,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ]);
             let swap = StmtKind::Assign(Expr::array(vec![a, b.clone()]), swapped);
             out.push(swap.at(js_span));
-            return Ok(Value::Expr(Expr::undefined()));
+            return Ok(Value::Expr(Expr::js_undefined()));
         }
         let b = match b_place.is_some() {
             true => stored(a_stores, moved(self, 1, b)),
@@ -696,7 +696,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Value::Expr(match b_place {
             Some(b) => {
                 out.push(StmtKind::Assign(b, stored(b_stores, old)).at(js_span));
-                Expr::undefined()
+                Expr::js_undefined()
             }
             None => old,
         }))

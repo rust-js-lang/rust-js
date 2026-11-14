@@ -81,7 +81,7 @@ export const mutations: Mutation[] = [
       "an `f64` a `fmt` hands its `Formatter` on to ignores the precision it's given",
     file: "src/lower/display.rs",
     find: "                vec![value, options.clone(), Expr::var(show)],",
-    replace: "                vec![value, Expr::undefined(), Expr::var(show)],",
+    replace: "                vec![value, Expr::js_undefined(), Expr::var(show)],",
     tests: ["test/corpus.test.ts", "-t", "options_handed_on"],
   },
   {
@@ -196,7 +196,7 @@ export const mutations: Mutation[] = [
     name: "fmt-result-err-is-ok",
     breaks: "`is_err()` of a `fmt::Result` that may be an `Err` is `false`",
     file: "src/lower/display.rs",
-    find: "            FmtResultAnswer::Is(false) => Expr::bin(Op::Ne, result, Expr::undefined()),",
+    find: "            FmtResultAnswer::Is(false) => Expr::bin(Op::Ne, result, Expr::js_undefined()),",
     replace: "            FmtResultAnswer::Is(false) => Expr::bool(false),",
     tests: ["test/corpus.test.ts", "-t", "fmt_error_write"],
   },
@@ -222,7 +222,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`map(Ok)` of a `fmt::Result` calls `Ok` with nothing, written as an arrow called where it's made",
     file: "src/lower/display.rs",
-    find: "                crate::js::result::ok(crate::lower::calls::apply(f, vec![Expr::undefined()]))\n",
+    find: "                crate::js::result::ok(crate::lower::calls::apply(f, vec![Expr::js_undefined()]))\n",
     replace:
       "                crate::js::result::ok(crate::lower::calls::apply(f, Vec::new()))\n",
     tests: ["test/corpus.test.ts", "-t", "^fmt_result_map_err.rs$"],
@@ -242,7 +242,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a writer that takes options, called where this one has none, isn't given their place: its dictionary is",
     file: "src/lower/display.rs",
-    find: "            Some(_) => Some(self.writing.given.clone().unwrap_or_else(Expr::undefined)),\n",
+    find: "            Some(_) => Some(self.writing.given.clone().unwrap_or_else(Expr::js_undefined)),\n",
     replace: "            Some(_) => self.writing.given.clone(),\n",
     tests: ["test/crates.test.ts", "-t", "as its own crate takes them"],
   },

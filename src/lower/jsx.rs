@@ -53,7 +53,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         Prop::Spread(value) => {
                             // JSX spreads read properties now, not when the
                             // later element is built. Preserve getters too.
-                            let old = std::mem::replace(value, Expr::undefined());
+                            let old = std::mem::replace(value, Expr::taken());
                             *value = self.spill(Role::Props, Expr::object(vec![Prop::Spread(old)]), out);
                         }
                     }
@@ -127,7 +127,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         && !self.capture_jsx(value, out)
                         && !self.capture_object(value, out)
                     {
-                        let old = std::mem::replace(value, Expr::undefined());
+                        let old = std::mem::replace(value, Expr::taken());
                         *value = self.spill(Base::Named(&camel_case(&js_ident(name))), old, out);
                     }
                 }
@@ -136,7 +136,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 Prop::Spread(value) => {
                     // A spread reads its properties now.
-                    let old = std::mem::replace(value, Expr::undefined());
+                    let old = std::mem::replace(value, Expr::taken());
                     *value = self.spill(Role::Props, Expr::object(vec![Prop::Spread(old)]), out);
                 }
             }
@@ -230,7 +230,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let stable = self.reads_alike(value, out);
         if !stable && !self.capture_jsx(value, out) {
             let map = matches!(&value.kind, js::ExprKind::Call(f, _) if matches!(&f.kind, js::ExprKind::Member(_, name) if name == "map"));
-            let old = std::mem::replace(value, Expr::undefined());
+            let old = std::mem::replace(value, Expr::taken());
             *value = self.spill(if map { Base::Role(Role::Items) } else { base }, old, out);
         }
     }
@@ -536,7 +536,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Prop::Keyed(..) | Prop::KeyedMethod(..) => unreachable!("a JSX attribute is named by text (ADR 1051)"),
         };
         if !value.is_constant() {
-            let old = std::mem::replace(value, Expr::undefined());
+            let old = std::mem::replace(value, Expr::taken());
             *value = self.spill(Base::Named(&camel_case(&js_ident(name))), old, out);
         }
     }
@@ -827,13 +827,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                 };
                 if !value.is_constant() {
-                    let old = std::mem::replace(value, Expr::undefined());
+                    let old = std::mem::replace(value, Expr::taken());
                     *value = self.spill(Base::Named(&camel_case(&js_ident(base))), old, out);
                 }
             }
             for value in &mut jsx.children {
                 if !self.reads_alike(value, out) {
-                    let old = std::mem::replace(value, Expr::undefined());
+                    let old = std::mem::replace(value, Expr::taken());
                     *value = self.spill(Role::Children, old, out);
                 }
             }

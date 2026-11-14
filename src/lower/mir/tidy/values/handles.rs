@@ -19,7 +19,7 @@ fn written_as_stored(body: &mut Vec<Stmt>, storage_of: &dyn Fn(&Expr) -> Option<
                     && key == js::HELD
                     && let Some(storage) = storage_of(of)
                 {
-                    *value = storage.written(std::mem::replace(value, Expr::undefined()), false);
+                    *value = storage.written(std::mem::replace(value, Expr::taken()), false);
                 }
             }
         })
@@ -246,7 +246,7 @@ pub(in crate::lower::mir::tidy) fn read_handles(
                 && key == js::HELD
                 && matches!(&of.kind, ExprKind::Var(v) if v == name)
             {
-                *e = Expr::undefined();
+                *e = Expr::js_undefined();
             }
         });
         let mut root = &*place;

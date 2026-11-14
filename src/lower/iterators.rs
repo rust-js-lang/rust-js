@@ -61,7 +61,7 @@ pub(in crate::lower) fn behind_a_dyn(mut it: Expr) -> Expr {
     if let js::ExprKind::Call(_, given) = &mut it.kind
         && own
     {
-        given[6] = Expr::undefined();
+        given[6] = Expr::js_undefined();
         fewest_iterator_args(given);
     }
     it
@@ -135,7 +135,7 @@ pub(in crate::lower) fn stepped_ends(
         .map(|(at, arg)| {
             arg.unwrap_or_else(|| match at {
                 0 => Expr::bool(false),
-                _ => Expr::undefined(),
+                _ => Expr::js_undefined(),
             })
         })
         .collect();

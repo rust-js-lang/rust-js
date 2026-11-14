@@ -152,9 +152,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             let last = Expr::call_helper("$nextBack", vec![(**source).clone()]);
             let last = self.spill(Role::Last, last, made);
-            let none = Expr::bin(Op::Eq, last.clone(), Expr::undefined());
+            let none = Expr::bin(Op::Eq, last.clone(), Expr::js_undefined());
             let mapped = crate::lower::calls::apply(args[0].clone(), vec![last]);
-            return Ok(Some(Expr::cond(none, Expr::undefined(), mapped)));
+            return Ok(Some(Expr::cond(none, Expr::js_undefined(), mapped)));
         }
         // Of a map giving each item as it is, `v.into_iter().map(|x| x)`,
         // its source made knowing its back (`as_double_ended`'s), whose last
@@ -607,7 +607,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let result = match output.is_unit() {
             true => {
                 call.push(StmtKind::Expr(result).at(self.js_span(span)));
-                Expr::undefined()
+                Expr::js_undefined()
             }
             false => self.spill(Role::Result, result, &mut call),
         };

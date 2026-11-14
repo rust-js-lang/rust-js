@@ -350,7 +350,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             Expr::bin(Op::Eq, self.rc_count(rc.clone(), item, RcCount::Weak), Expr::int(0)),
                         );
                         let given = self.through_rc(rc, item);
-                        Expr::cond(only, given, Expr::undefined())
+                        Expr::cond(only, given, Expr::js_undefined())
                     }
                     RcOp::WeakNew | RcOp::NewCyclic | RcOp::MakeMut => unreachable!("lowered above"),
                 }

@@ -754,7 +754,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         f: Expr,
         item: ty::Ty<'tcx>,
     ) -> Expr {
-        let mut list = vec![items, start, end.unwrap_or_else(Expr::undefined), f];
+        let mut list = vec![items, start, end.unwrap_or_else(Expr::js_undefined), f];
         if self.handles_mut(item) {
             list.push(Expr::bool(true));
         }
@@ -837,7 +837,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> Expr {
         Expr::call(
             Expr::helper("$copyWithin"),
-            vec![items, start, end.unwrap_or_else(Expr::undefined), dest],
+            vec![items, start, end.unwrap_or_else(Expr::js_undefined), dest],
         )
     }
 
@@ -1035,7 +1035,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::cond(
                     Expr::bin(Op::Eq, length, Expr::int(n as i128)),
                     items,
-                    Expr::undefined(),
+                    Expr::js_undefined(),
                 )
             }
             SliceOp::ArrayWindows => {
@@ -1098,7 +1098,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::cond(
                     Expr::bin(Op::Ge, length, Expr::int(n as i128)),
                     chunk,
-                    Expr::undefined(),
+                    Expr::js_undefined(),
                 )
             }
             SliceOp::SplitBy {
@@ -1108,7 +1108,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 mutable,
             } => {
                 let items = arg();
-                let limit = if limited { arg() } else { Expr::undefined() };
+                let limit = if limited { arg() } else { Expr::js_undefined() };
                 let predicate = arg();
                 let list = vec![items, predicate, limit, Expr::bool(inclusive), Expr::bool(back)];
                 // Of a predicate that runs the program's code, std's iterator,
@@ -1187,7 +1187,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // Its clone given only where it isn't its copy, a hand-written
                 // `clone`'s.
                 let clone = clone.filter(|clone| copy.as_ref() != Some(clone));
-                let copy = copy.or_else(|| clone.is_some().then(Expr::undefined));
+                let copy = copy.or_else(|| clone.is_some().then(Expr::js_undefined));
                 helper(
                     "$repeatItems",
                     Expr::optional_args(vec![items, n, size], vec![copy, clone]),

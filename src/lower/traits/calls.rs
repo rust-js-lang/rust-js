@@ -247,7 +247,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                     // A built slot's layout no collect reads here, none (#737).
                     if !self.gives_slot(id, index, args) {
-                        values.push(Expr::undefined());
+                        values.push(Expr::js_undefined());
                         continue;
                     }
                     values.push(self.type_fact_value(of, fact, span)?);
@@ -794,7 +794,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         span,
                     )?,
                 ),
-                Slot::Fact(index, _) if !self.gives_slot(id, index, generic_args) => values.push(Expr::undefined()),
+                Slot::Fact(index, _) if !self.gives_slot(id, index, generic_args) => values.push(Expr::js_undefined()),
                 Slot::Fact(index, fact) => {
                     let of = self.drop_slot_of(id, index, generic_args);
                     values.push(self.type_fact_value(of, fact, span)?);
@@ -875,7 +875,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // normalize, so it seems no type here (#1613).
                     let value = match self.given_fact_of(of, fact) {
                         Some(given) => given,
-                        None if !self.gives_slot(method, index, args) => Expr::undefined(),
+                        None if !self.gives_slot(method, index, args) => Expr::js_undefined(),
                         None => self.type_fact_value(of, fact, span)?,
                     };
                     values.push(value);

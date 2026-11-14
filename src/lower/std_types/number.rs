@@ -327,7 +327,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             NumOp::CheckedEuclid { rem } => {
                 let min = match num.signed() {
                     true => num.literal(num.range().0),
-                    false => Expr::undefined(),
+                    false => Expr::js_undefined(),
                 };
                 call("$checkedEuclid", vec![arg(), arg(), min, Expr::bool(rem)])
             }
@@ -448,7 +448,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let (lo, hi) = num.range();
         let min = match num.signed() {
             true => num.literal(lo),
-            false => Expr::undefined(),
+            false => Expr::js_undefined(),
         };
         let helper = |name: &'static str, list: Vec<Expr>| Expr::call(Expr::helper(name), list);
         let [a, rest @ ..] = values.as_slice() else {
@@ -789,7 +789,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     self.spill(Role::By, by, out)
                 };
                 let fits = Expr::bin(Op::Lt, by.clone(), Expr::int(num.bits().into()));
-                Expr::cond(fits, self.binary(op, a, by, None, ty, span)?, Expr::undefined())
+                Expr::cond(fits, self.binary(op, a, by, None, ty, span)?, Expr::js_undefined())
             }
             NumOp::WrappingNeg => num.wrap(Expr::unary(UnaryOp::Neg, arg())),
             NumOp::SaturatingNeg { abs } => {
@@ -1090,11 +1090,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             NumOp::Pow => num.wrap(helper("$bigPow", width(vec![arg(), arg()]))),
             NumOp::CheckedPow => helper("$checkedPow", vec![arg(), arg(), lo, hi]),
             NumOp::Checked(BinOp::Rem) => {
-                let min = if num.signed() { lo.clone() } else { Expr::undefined() };
+                let min = if num.signed() { lo.clone() } else { Expr::js_undefined() };
                 helper("$checkedRem", vec![arg(), arg(), min])
             }
             NumOp::Checked(BinOp::Div) => {
-                let min = if num.signed() { lo } else { Expr::undefined() };
+                let min = if num.signed() { lo } else { Expr::js_undefined() };
                 helper("$bigCheckedDiv", vec![arg(), arg(), min])
             }
             NumOp::Checked(op) => {
@@ -1165,7 +1165,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     self.spill(Role::By, by, out)
                 };
                 let fits = Expr::bin(Op::Lt, by.clone(), Expr::int(i128::from(num.bits())));
-                Expr::cond(fits, self.binary(op, a, by, None, ty, span)?, Expr::undefined())
+                Expr::cond(fits, self.binary(op, a, by, None, ty, span)?, Expr::js_undefined())
             }
             NumOp::WrappingNeg => num.wrap(Expr::unary(UnaryOp::Neg, arg())),
             NumOp::SaturatingNeg { abs } => {
@@ -1176,11 +1176,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 helper("$clamp", vec![exact, lo, hi])
             }
             NumOp::WrappingDiv => {
-                let min = if num.signed() { lo.clone() } else { Expr::undefined() };
+                let min = if num.signed() { lo.clone() } else { Expr::js_undefined() };
                 helper("$wrappingDiv", vec![arg(), arg(), min])
             }
             NumOp::WrappingRem => {
-                let min = if num.signed() { lo.clone() } else { Expr::undefined() };
+                let min = if num.signed() { lo.clone() } else { Expr::js_undefined() };
                 helper("$wrappingRem", vec![arg(), arg(), min])
             }
             // The exact result, and it wrapped.

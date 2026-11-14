@@ -44,7 +44,7 @@ export const mutations: Mutation[] = [
     breaks: "a function as a value from MIR is `undefined`, not the function",
     file: "src/lower/mir/operands.rs",
     find: "            Some(f) => Ok(f),\n",
-    replace: "            Some(_) => Ok(Expr::undefined()),\n",
+    replace: "            Some(_) => Ok(Expr::js_undefined()),\n",
     tests: ["test/corpus.test.ts", "-t", "fn_items_as_values"],
   },
   {

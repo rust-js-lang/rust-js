@@ -120,7 +120,7 @@ export const mutations: Mutation[] = [
     name: "pointer-as-ref-unboxed",
     breaks: "`p.as_ref()` of `null` is `Some`",
     file: "src/lower/pointers.rs",
-    find: "                Expr::cond(Expr::bin(Op::Eq, pointer, Expr::null()), Expr::undefined(), some)\n",
+    find: "                Expr::cond(Expr::bin(Op::Eq, pointer, Expr::null()), Expr::js_undefined(), some)\n",
     replace: "                some\n",
     tests: ["test/corpus.test.ts", "-t", "^raw_pointers.rs$"],
   },

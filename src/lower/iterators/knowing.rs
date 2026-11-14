@@ -1004,7 +1004,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if value.has_effects() {
                     out.push(StmtKind::Expr(value).at(self.js_span(span)));
                 }
-                Expr::array(vec![Expr::int(0), Expr::undefined()])
+                Expr::array(vec![Expr::int(0), Expr::js_undefined()])
             }
         };
         Ok(Expr::call(Expr::helper("$exactLen"), vec![hint]))
@@ -1068,14 +1068,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
             let own = [rfold, nth_back, try_rfold];
             let mut given = vec![
-                back.unwrap_or_else(Expr::undefined),
-                len.unwrap_or_else(Expr::undefined),
+                back.unwrap_or_else(Expr::js_undefined),
+                len.unwrap_or_else(Expr::js_undefined),
             ];
             let last = own.iter().rposition(Option::is_some).map_or(0, |at| at + 1);
             given.extend(
                 own.into_iter()
                     .take(last)
-                    .map(|entry| entry.unwrap_or_else(Expr::undefined)),
+                    .map(|entry| entry.unwrap_or_else(Expr::js_undefined)),
             );
             return Ok(Some(IterValue::of(Form::Knowing { it, given }).emit()));
         }

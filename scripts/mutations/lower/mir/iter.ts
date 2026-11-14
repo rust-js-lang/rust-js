@@ -543,7 +543,7 @@ export const mutations: Mutation[] = [
       "whether a dictionary's `fold` took the iterator is whether it has one, not the value's answer: generic code's `sum()` of a held `map()` of what it was given, whose dictionary's `fold` is `$foldOf`, the compiled `Map`'s that took it, drops it again after: the crate's iterator with a `Drop` is dropped twice (#621, #649)",
     file: "src/lower/mir/iter.rs",
     find: '                        Expr::unary(js::UnaryOp::Not, Expr::call_helper("$took", vec![step, held.clone()]))\n',
-    replace: "                        Expr::bin(Op::Eq, step, Expr::undefined())\n",
+    replace: "                        Expr::bin(Op::Eq, step, Expr::js_undefined())\n",
     tests: ["test/corpus.test.ts", "-t", "^own_steps_a_type_parameter_may_reach.rs$"],
   },
   {

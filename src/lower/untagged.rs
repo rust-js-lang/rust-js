@@ -287,7 +287,7 @@ pub(super) fn holds_undefined_and_null(tcx: TyCtxt<'_>, adt: AdtDef<'_>) -> bool
 pub(super) fn unit_value(tcx: TyCtxt<'_>, variant: &VariantDef) -> Option<Expr> {
     Some(match unit_kind(tcx, variant)? {
         Kind::Null => Expr::null(),
-        Kind::Undefined => Expr::undefined(),
+        Kind::Undefined => Expr::js_undefined(),
         Kind::Literal(name) => Expr::str(name),
         _ => unreachable!("a variant without fields is a literal, `null` or `undefined`"),
     })
@@ -1028,7 +1028,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             // `null` and `undefined` by `===`, as each is one value: never
             // `== null`, which is both.
             Kind::Null => Expr::bin(Op::Eq, value.clone(), Expr::null()),
-            Kind::Undefined => Expr::bin(Op::Eq, value.clone(), Expr::undefined()),
+            Kind::Undefined => Expr::bin(Op::Eq, value.clone(), Expr::js_undefined()),
             other => Expr::bin(
                 Op::Eq,
                 Expr::unary(UnaryOp::Typeof, value.clone()),

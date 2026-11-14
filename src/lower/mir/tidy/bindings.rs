@@ -528,7 +528,7 @@ pub(super) fn guarded_lets(stmts: &mut Vec<Stmt>, captured: &IndexSet<String>) {
                     && (is_temporary(x) || captured.contains(x))
                     && js::mentions_in(&stmts[i + 2..], x) == 1 =>
             {
-                Some((x.clone(), Expr::cond(test.clone(), value.clone(), Expr::undefined())))
+                Some((x.clone(), Expr::cond(test.clone(), value.clone(), Expr::js_undefined())))
             }
             _ => None,
         };
@@ -758,7 +758,7 @@ fn reads_past_shadows(stmt: &Stmt, name: &str) -> bool {
         ExprKind::Arrow(params, _) | ExprKind::AsyncArrow(params, _)
             if params.iter().any(|p| p.names().contains(&name)) =>
         {
-            *e = Expr::undefined();
+            *e = Expr::js_undefined();
         }
         ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) => {
             js::statement_lists(body, &mut |list| counted(list))

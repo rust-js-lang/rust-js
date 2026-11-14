@@ -161,9 +161,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a `Vec` refused as an array gives back nothing in its `Err`, not the `Vec`",
     file: "src/lower/std_types/number/generic.rs",
-    find: "                    true => slice.clone(),\n                    false => Expr::undefined(),",
+    find: "                    true => slice.clone(),\n                    false => Expr::js_undefined(),",
     replace:
-      "                    true => Expr::undefined(),\n                    false => Expr::undefined(),",
+      "                    true => Expr::js_undefined(),\n                    false => Expr::js_undefined(),",
     tests: ["test/corpus.test.ts", "-t", "^vec_into_array.rs$"],
   },
   {
@@ -257,7 +257,7 @@ export const mutations: Mutation[] = [
       "an array of a const parameter's length is said to have no constant size, so std's flatten of them hints no upper bound, where Rust's is the rows times `N` (#813)",
     file: "src/lower/std_types/number/generic.rs",
     find: "                    None => self.const_arg(len, span),\n",
-    replace: "                    None => Ok(Expr::undefined()),\n",
+    replace: "                    None => Ok(Expr::js_undefined()),\n",
     tests: ["test/iterator-forms.test.ts", "-t", "generic_flatten_of_vecs"],
   },
   {

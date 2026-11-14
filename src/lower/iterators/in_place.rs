@@ -71,7 +71,7 @@ pub(super) fn stepped_in_place(e: &mut Expr, by_for: bool, fuse: Option<&str>) {
     // An iterator of the crate's stepped till it ends, which nothing asks
     // its size: given no `size_hint`, nor the places before it it needs.
     if own_steps {
-        given[5] = Expr::undefined();
+        given[5] = Expr::js_undefined();
         fewest_iterator_args(given);
         return;
     }

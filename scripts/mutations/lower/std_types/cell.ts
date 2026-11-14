@@ -68,7 +68,7 @@ export const mutations: Mutation[] = [
       "`Cell::take()` of a number leaves `undefined`, not its default, `0`",
     file: "src/lower/std_types/cell.rs",
     find: "                        let made = self.default_value(item, span)?;\n",
-    replace: "                        let made = Expr::undefined();\n",
+    replace: "                        let made = Expr::js_undefined();\n",
     tests: ["test/corpus.test.ts", "-t", "collection_methods"],
   },
   {
@@ -659,8 +659,8 @@ export const mutations: Mutation[] = [
     breaks:
       "what a flattened state's cell's `replace_with` gives back is its class's object, which the write of what its function made then changes, not a copy of its variant's keys (#687)",
     file: "src/lower/std_types/cell.rs",
-    find: "                let next = self.spill(Role::Next, made, out);\n                let old = match call.unread {\n                    true => Expr::undefined(),\n                    false => {\n                        let copied = self.moved_out(object.clone(), item);\n",
-    replace: "                let next = self.spill(Role::Next, made, out);\n                let old = match call.unread {\n                    true => Expr::undefined(),\n                    false => {\n                        let copied = object.clone();\n",
+    find: "                let next = self.spill(Role::Next, made, out);\n                let old = match call.unread {\n                    true => Expr::js_undefined(),\n                    false => {\n                        let copied = self.moved_out(object.clone(), item);\n",
+    replace: "                let next = self.spill(Role::Next, made, out);\n                let old = match call.unread {\n                    true => Expr::js_undefined(),\n                    false => {\n                        let copied = object.clone();\n",
     tests: ["test/classes-flattened-state.test.ts", "-t", "a copy of its variant's keys"],
   },
   {

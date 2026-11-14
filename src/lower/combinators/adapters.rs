@@ -183,7 +183,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let ok = self.variant_test(result.clone(), ty, adt, rustc_abi::VariantIdx::ZERO, false);
         let held = match self.is_write_result(ty) {
-            true => Expr::undefined(),
+            true => Expr::js_undefined(),
             false => crate::js::result::held(result),
         };
         Expr::cond(ok, Expr::array(vec![held]), Expr::array(Vec::new()))
@@ -669,7 +669,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         drops
                             .into_iter()
                             .take(last + 1)
-                            .map(|drop| drop.unwrap_or_else(Expr::undefined)),
+                            .map(|drop| drop.unwrap_or_else(Expr::js_undefined)),
                     );
                 }
                 let pairs = Expr::call(Expr::helper("$unzip"), args);

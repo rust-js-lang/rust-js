@@ -191,7 +191,7 @@ pub(super) fn const_js_by<'tcx>(tcx: TyCtxt<'tcx>, value: ty::Value<'tcx>, unit:
             },
             unit,
         ),
-        ty::Tuple(items) if items.is_empty() => Some(Expr::undefined()),
+        ty::Tuple(items) if items.is_empty() => Some(Expr::js_undefined()),
         ty::Tuple(_) | ty::Array(..) | ty::Slice(_) => Some(Expr::literal_array(all(&children()?)?)),
         ty::Adt(adt, _) if adt.is_enum() => {
             let items = children()?;
@@ -202,7 +202,7 @@ pub(super) fn const_js_by<'tcx>(tcx: TyCtxt<'tcx>, value: ty::Value<'tcx>, unit:
             // 0462, #1411); an `io::Error` is no constant's.
             if crate::lower::recognition::is_write_result_type(tcx, ty) {
                 return match tcx.is_lang_item(variant.def_id, LangItem::ResultOk) {
-                    true => Some(Expr::undefined()),
+                    true => Some(Expr::js_undefined()),
                     false => crate::lower::recognition::is_fmt_result_type(tcx, ty)
                         .then(|| Expr::new_(Expr::helper("$FmtError"), Vec::new())),
                 };
@@ -210,7 +210,7 @@ pub(super) fn const_js_by<'tcx>(tcx: TyCtxt<'tcx>, value: ty::Value<'tcx>, unit:
             if tcx.is_lang_item(adt.did(), LangItem::Option) {
                 return match fields.first() {
                     Some(&inner) => const_js_by(tcx, inner, unit).map(crate::lower::std_types::option::some_literal),
-                    None => Some(Expr::undefined()),
+                    None => Some(Expr::js_undefined()),
                 };
             }
             if let Some(n) = ordering_value(tcx, adt.did(), variant.name) {
@@ -377,7 +377,7 @@ pub(super) fn const_js_by<'tcx>(tcx: TyCtxt<'tcx>, value: ty::Value<'tcx>, unit:
                 _ => all(&children()?)?,
             };
             match variant.ctor_kind() {
-                Some(CtorKind::Const) => Some(unit_name(tcx, adt.did()).map_or_else(Expr::undefined, Expr::str)),
+                Some(CtorKind::Const) => Some(unit_name(tcx, adt.did()).map_or_else(Expr::js_undefined, Expr::str)),
                 Some(CtorKind::Fn) => Some(Expr::array(values)),
                 // A `#[rust_js::nullable]` field's `None` is `null`, its
                 // `Cell`'s too, a generic one's where it's of an `Option`,

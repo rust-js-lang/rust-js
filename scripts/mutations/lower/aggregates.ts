@@ -138,8 +138,8 @@ export const mutations: Mutation[] = [
     name: "adt-value-fmt-ok-thrown",
     breaks: "a `fmt::Result`'s `Ok` from MIR is its error, as an `Err` is",
     file: "src/lower/aggregates.rs",
-    find: "                    true => Expr::undefined(),\n",
-    replace: "                    true if false => Expr::undefined(),\n",
+    find: "                    true => Expr::js_undefined(),\n",
+    replace: "                    true if false => Expr::js_undefined(),\n",
     tests: ["test/corpus.test.ts", "-t", "^(write_to_string|fmt_error_as_a_value).rs$"],
   },
   {
@@ -147,7 +147,7 @@ export const mutations: Mutation[] = [
     breaks: "an `io::Result<()>`'s `Err` is `undefined`, `Ok`",
     file: "src/lower/aggregates.rs",
     find: '                    _ => fields.into_iter().next().expect("an `io::Error`"),\n',
-    replace: "                    _ => Expr::undefined(),\n",
+    replace: "                    _ => Expr::js_undefined(),\n",
     tests: ["test/corpus.test.ts", "-t", "^io_unit_result.rs$"],
   },
   {

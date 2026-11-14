@@ -48,7 +48,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             true => this.some(then),
                             false => then,
                         };
-                        let none = if mapped { Expr::undefined() } else { Expr::int(-1) };
+                        let none = if mapped { Expr::js_undefined() } else { Expr::int(-1) };
                         Expr::cond(crate::lower::std_types::text::found(at), then, none)
                     }))
                 })
@@ -267,8 +267,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                                                 .expect("placed");
                                             let peeked = Expr::call_helper("$peek", vec![it]);
                                             Expr::cond(
-                                                Expr::bin(Op::Eq, peeked, Expr::undefined()),
-                                                Expr::undefined(),
+                                                Expr::bin(Op::Eq, peeked, Expr::js_undefined()),
+                                                Expr::js_undefined(),
                                                 place,
                                             )
                                         }
@@ -405,7 +405,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         this.flush(state, out)?;
                         out.push(StmtKind::Expr(it).at(this.js_span(span)));
                     }
-                    Expr::array(vec![Expr::int(0), Expr::undefined()])
+                    Expr::array(vec![Expr::int(0), Expr::js_undefined()])
                 }))
             }),
             _ => return None,

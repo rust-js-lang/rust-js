@@ -161,7 +161,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let Value::List(items, _) = &mut state.pending[0].1 else {
                     unreachable!("a list")
                 };
-                let item = std::mem::replace(&mut items[k], Value::Expr(Expr::undefined()));
+                let item = std::mem::replace(&mut items[k], Value::Expr(Expr::taken()));
                 let item = self.value_expr(item, span)?;
                 let held = self.spill(Base::HeldArg, item, out);
                 let Value::List(items, _) = &mut state.pending[0].1 else {
@@ -187,7 +187,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let Value::List(items, _) = &mut state.pending[at].1 else {
             unreachable!("a list")
         };
-        let item = std::mem::replace(&mut items[field], Value::Expr(Expr::undefined()));
+        // What's left of the list, made whole where it's flushed, holds
+        // JS's `undefined` where the item was: each item is taken once, and
+        // the list's own read of it is never made, `const [, b] =
+        // [undefined, b]`, which tidy reads as `b`.
+        let item = std::mem::replace(&mut items[field], Value::Expr(Expr::js_undefined()));
         state.taken.push(place.local);
         if state.taken.iter().filter(|&&l| l == place.local).count() == items.len() {
             state.pending.remove(at);
@@ -411,7 +415,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     fn mir_const(&mut self, state: &State<'_, 'tcx>, c: &ConstOperand<'tcx>) -> R<Expr> {
         let ty = c.ty();
         if ty.is_unit() || matches!(ty.kind(), ty::FnDef(..)) {
-            return Ok(Expr::undefined());
+            return Ok(Expr::js_undefined());
         }
         let tcx = self.tcx;
         // A promoted reference to a named constant or a static, `&LOG`:

@@ -893,7 +893,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let (pointer, value) = (arg(), arg());
                 let written = self.pointee_write(pointer, value, pointee.expect("a pointer"), span)?;
                 out.push(written.at(self.js_span(span)));
-                Expr::undefined()
+                Expr::js_undefined()
             }
             PointerOp::FirstItem => helper("$ptr", vec![arg(), Expr::int(0)]),
             PointerOp::ItemsRange => {
@@ -982,7 +982,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     true => self.some(referred),
                     false => referred,
                 };
-                Expr::cond(Expr::bin(Op::Eq, pointer, Expr::null()), Expr::undefined(), some)
+                Expr::cond(Expr::bin(Op::Eq, pointer, Expr::null()), Expr::js_undefined(), some)
             }
             PointerOp::Same => arg(),
             PointerOp::SliceLen => Expr::member(arg(), "length"),
@@ -993,7 +993,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     false => self.spill(Role::Value, place, out),
                 };
                 self.drop_value(place, pointee.expect("a pointer"), span, out)?;
-                Expr::undefined()
+                Expr::js_undefined()
             }
             PointerOp::Copy { dst_first } => {
                 let (a, b, count) = (arg(), arg(), arg());
@@ -1009,7 +1009,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     ));
                 }
                 out.push(StmtKind::Expr(helper("$ptrCopy", list)).at(self.js_span(span)));
-                Expr::undefined()
+                Expr::js_undefined()
             }
             PointerOp::WriteBytes => {
                 let (dst, byte, count) = (arg(), arg(), arg());
@@ -1029,7 +1029,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     _ => Expr::bin(Op::Mul, count, size),
                 };
                 out.push(StmtKind::Expr(helper("$ptrFill", vec![bytes, byte, count])).at(self.js_span(span)));
-                Expr::undefined()
+                Expr::js_undefined()
             }
             PointerOp::Slice { mutable } => {
                 let name = if mutable { "$ptrSliceMut" } else { "$ptrSlice" };

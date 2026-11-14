@@ -370,7 +370,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // last, holds Rust's bounds in `exhausted`.
         let held = Expr::member(range.clone(), "exhausted");
         let own = Expr::bin(Op::Coalesce, held.clone(), range.clone());
-        let used = Expr::bin(Op::Ne, held, Expr::undefined());
+        let used = Expr::bin(Op::Ne, held, Expr::js_undefined());
         let [start, end] = ["start", "end"].map(|bound| Expr::member(own.clone(), bound));
         let Some(num) = num else {
             return (vec![start, end], Some(used));

@@ -602,7 +602,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             );
         }
         if variant.ctor_kind() == Some(CtorKind::Const) {
-            return Expr::undefined();
+            return Expr::js_undefined();
         }
         // Each field what it holds of its value read, as any struct made is:
         // of a cell that's the property it holds, a `Cell`'s, what the cell
@@ -627,7 +627,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 )
             }
             Shape::Array(tys) => Expr::array(items.into_iter().zip(tys).enumerate().map(held).collect()),
-            Shape::Other => Expr::undefined(),
+            Shape::Other => Expr::js_undefined(),
         }
     }
 
@@ -900,7 +900,7 @@ impl Table {
         match (self.build, self.options.is_empty()) {
             (Some(build), true) => args.push(build),
             (build, false) => {
-                args.push(build.unwrap_or_else(Expr::undefined));
+                args.push(build.unwrap_or_else(Expr::js_undefined));
                 args.push(Expr::object(self.options));
             }
             (None, true) => {}

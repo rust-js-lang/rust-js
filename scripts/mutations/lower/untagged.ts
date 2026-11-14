@@ -148,7 +148,7 @@ export const mutations: Mutation[] = [
     breaks:
       '`Kind::Undefined`\'s test is `typeof value === "undefined"`, not `value === undefined`',
     file: "src/lower/untagged.rs",
-    find: "            Kind::Undefined => Expr::bin(Op::Eq, value.clone(), Expr::undefined()),\n",
+    find: "            Kind::Undefined => Expr::bin(Op::Eq, value.clone(), Expr::js_undefined()),\n",
     replace: "",
     tests: ["test/lowering-switches.test.ts", "-t", "undefined and null"],
   },

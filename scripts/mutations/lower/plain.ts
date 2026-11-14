@@ -15,7 +15,7 @@ export const mutations: Mutation[] = [
     breaks: "a zeroed struct of a `String` is `undefined`, a value no field is",
     file: "src/lower/plain.rs",
     find: '            return Err(self.unsupported(span, &format!("a zeroed `{ty}`, which may be no value of it")));\n',
-    replace: "            return Ok(Expr::undefined());\n",
+    replace: "            return Ok(Expr::js_undefined());\n",
     tests: ["test/corpus.test.ts", "-t", "box_zeroed_struct"],
   },
   {

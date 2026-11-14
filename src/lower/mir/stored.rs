@@ -282,7 +282,9 @@ fn given_record(at: Expr, stride: Option<Expr>, within: u64) -> Vec<Expr> {
     let within = (within > 0).then_some(within);
     let mut given = vec![at];
     match (stride, within) {
-        (stride, Some(within)) => given.extend([stride.unwrap_or_else(Expr::undefined), Expr::int(i128::from(within))]),
+        (stride, Some(within)) => {
+            given.extend([stride.unwrap_or_else(Expr::js_undefined), Expr::int(i128::from(within))])
+        }
         (Some(stride), None) => given.push(stride),
         (None, None) => {}
     }

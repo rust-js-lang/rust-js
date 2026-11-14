@@ -43,7 +43,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn held_none(&self, ty: Ty<'tcx>) -> Expr {
         match self.held_form(ty) {
             Held::Value => Expr::null(),
-            Held::Nested | Held::Defined => Expr::undefined(),
+            Held::Nested | Held::Defined => Expr::js_undefined(),
         }
     }
 
@@ -178,7 +178,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<Expr> {
         Ok(match operands.iter().next() {
             None if form == Held::Value => Expr::null(),
-            None => Expr::undefined(),
+            None => Expr::js_undefined(),
             Some(operand) if form != Held::Nested => self.mir_expr(state, operand, out)?,
             Some(operand) => {
                 let nulled = self.stored_given(state, operand) == crate::lower::aggregates::Given::Nulled;
@@ -260,7 +260,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             false => self.spill(Role::Option, held, out),
         };
         let some = self.some(held.clone());
-        Expr::cond(Expr::bin(Op::Eq, held, self.held_none(ty)), Expr::undefined(), some)
+        Expr::cond(Expr::bin(Op::Eq, held, self.held_none(ty)), Expr::js_undefined(), some)
     }
 
     /// ADR 0051's box of an `Option` of type `ty`, `boxed`, held as its

@@ -136,7 +136,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // crate compiles where it's asked (ADR 0914, #1073).
             None if self.asked_of_library(id) => {
                 self.krate.asked.borrow_mut().push((id, self.module));
-                return Ok(Expr::undefined());
+                return Ok(Expr::js_undefined());
             }
             None => (self.krate.closures.get(&id).copied())
                 .ok_or_else(|| self.unsupported(span, "a trait's default of another crate"))?,
@@ -201,7 +201,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let made = forms.unboxed[i] > 0
                     || forms.rebound[i].is_some()
                     || (forms.within[i].as_ref())
-                        .is_some_and(|within| within.toward_impl(&Expr::undefined()).is_some());
+                        .is_some_and(|within| within.toward_impl(&Expr::js_undefined()).is_some());
                 let receiver = || {
                     let sig = self.tcx.fn_sig(id).instantiate(self.tcx, args).skip_normalization();
                     sig.skip_binder().inputs()[0]

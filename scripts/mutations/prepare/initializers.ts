@@ -14,7 +14,7 @@ export const mutations: Mutation[] = [
     name: "initialized-chain-end-unvalued",
     breaks: "a thread-local's chain that ends with nothing, `if (__DEV__) { return x; }`, isn't its conditional, `__DEV__ ? x : undefined` (rd247)",
     file: "src/prepare/initializers.rs",
-    find: "            [] => end.then(Expr::undefined),\n",
+    find: "            [] => end.then(Expr::js_undefined),\n",
     replace: "            [] => None,\n",
     tests: ["test/lowering-cells.test.ts", "-t", "build global.s if|None of is assigned only"],
   },

@@ -1108,7 +1108,7 @@ pub(super) fn while_tests(stmts: &mut Vec<Stmt>, loops: &[(js::Span, bool, Optio
             }
             *cond = match cond.kind {
                 ExprKind::Bool(true) => test,
-                _ => Expr::bin(Op::And, std::mem::replace(cond, Expr::undefined()), test),
+                _ => Expr::bin(Op::And, std::mem::replace(cond, Expr::taken()), test),
             };
             *body = rest;
             i += 1;

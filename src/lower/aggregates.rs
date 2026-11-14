@@ -330,7 +330,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .tcx
                     .is_lang_item(variant.def_id, rustc_hir::attrs::lang_items::LangItem::ResultOk)
                 {
-                    true => Expr::undefined(),
+                    true => Expr::js_undefined(),
                     _ if self.is_fmt_result(ty) => Expr::new_(Expr::helper("$FmtError"), Vec::new()),
                     _ => fields.into_iter().next().expect("an `io::Error`"),
                 },
@@ -354,7 +354,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(match fields.into_iter().next() {
                 Some(value) if self.boxed_payload(inner) => self.some(value),
                 Some(value) => value,
-                None => Expr::undefined(),
+                None => Expr::js_undefined(),
             });
         }
         if self.untagged(ty).is_some()
@@ -381,7 +381,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .ok_or_else(|| self.unsupported(span, "a library's `#[rust_js::namespace]` as a value"));
         }
         if variant.ctor_kind() == Some(CtorKind::Const) {
-            return Ok(bindings::unit_name(self.tcx, adt_def.did()).map_or_else(Expr::undefined, Expr::str));
+            return Ok(bindings::unit_name(self.tcx, adt_def.did()).map_or_else(Expr::js_undefined, Expr::str));
         }
         let mut fields = fields;
         // A `#[rust_js::nullable]` field's `None` is `null` (ADR 0275);
@@ -402,7 +402,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if !matches!(form, NoneForm::Null | NoneForm::Optional) {
                 continue;
             }
-            let made = std::mem::replace(value, Expr::undefined());
+            let made = std::mem::replace(value, Expr::taken());
             *value = self.nullable_field_made((form, field), field_ty, made, given);
         }
         // A keyed enum's variant is its keys, no tag, each kept where it's
@@ -563,7 +563,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // An `Option`'s the `None` it is, a read of what's only
             // `None`; a cell's as it's made, which a drop may read.
             return match self.option_of(field_ty) {
-                Some(_) => Expr::undefined(),
+                Some(_) => Expr::js_undefined(),
                 None => made,
             };
         }
@@ -616,11 +616,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         for (i, (name, field_ty)) in fields.into_iter().enumerate() {
             let replaced = given.contains(&i);
             let value = if replaced && self.is_node_param(field_ty) {
-                Expr::undefined()
+                Expr::js_undefined()
             } else {
                 let value = self.field_default(ty, i, field_ty, span)?;
                 if replaced && !value.has_effects() {
-                    Expr::undefined()
+                    Expr::js_undefined()
                 } else {
                     kept |= replaced;
                     value

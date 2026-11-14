@@ -388,7 +388,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Of generic code's, both its sides' `LengthFirst`, `$iterEqGiven`
         // (#1182).
         if let Some(sides) = given {
-            list.extend([compare, drop_a, drop_b].map(|each| each.unwrap_or_else(Expr::undefined)));
+            list.extend([compare, drop_a, drop_b].map(|each| each.unwrap_or_else(Expr::js_undefined)));
             for (side, ty) in sides.into_iter().zip([iter_ty, other_ty]) {
                 list.push(match side {
                     EqSide::Given(param) => self.type_fact_value(param, TypeFact::LengthFirst, span)?,
@@ -402,13 +402,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             });
         }
         if compare.is_some() || drop_a.is_some() || drop_b.is_some() || lengths.is_some() {
-            list.push(compare.unwrap_or_else(Expr::undefined));
+            list.push(compare.unwrap_or_else(Expr::js_undefined));
         }
         if drop_a.is_some() || drop_b.is_some() || lengths.is_some() {
-            list.push(drop_a.unwrap_or_else(Expr::undefined));
+            list.push(drop_a.unwrap_or_else(Expr::js_undefined));
         }
         if drop_b.is_some() || lengths.is_some() {
-            list.push(drop_b.unwrap_or_else(Expr::undefined));
+            list.push(drop_b.unwrap_or_else(Expr::js_undefined));
         }
         list.extend(lengths.map(|(a, b)| Expr::array(vec![a, b])));
         let same = Expr::call_helper("$iterEq", list);

@@ -40,8 +40,8 @@ export const mutations: Mutation[] = [
     name: "mir-default-size-hint-one",
     breaks: "std's `size_hint()` of an iterator of the crate's is `(1, None)`",
     file: "src/lower/mir/std_calls/iterators.rs",
-    find: "Expr::array(vec![Expr::int(0), Expr::undefined()])",
-    replace: "Expr::array(vec![Expr::int(1), Expr::undefined()])",
+    find: "Expr::array(vec![Expr::int(0), Expr::js_undefined()])",
+    replace: "Expr::array(vec![Expr::int(1), Expr::js_undefined()])",
     tests: ["test/corpus.test.ts", "-t", "size_hint"],
   },
   {
@@ -142,9 +142,9 @@ export const mutations: Mutation[] = [
     breaks:
       "`and_then` of a place found gives `undefined` where it's `None`, which isn't `-1`, so it's taken for a place",
     file: "src/lower/mir/std_calls/iterators.rs",
-    find: "                let none = if mapped { Expr::undefined() } else { Expr::int(-1) };",
+    find: "                let none = if mapped { Expr::js_undefined() } else { Expr::int(-1) };",
     replace:
-      "                let none = if mapped { Expr::undefined() } else { Expr::undefined() };",
+      "                let none = if mapped { Expr::js_undefined() } else { Expr::js_undefined() };",
     tests: ["test/lowering-string-places.test.ts", "-t", "owner stack"],
   },
   {

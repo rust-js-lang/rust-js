@@ -757,7 +757,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/dispatch.rs",
     find: "            return Ok(Some(Expr::bin(op, x, Expr::null())));\n",
     replace:
-      "            return Ok(Some(Expr::bin(op, x, Expr::undefined())));\n",
+      "            return Ok(Some(Expr::bin(op, x, Expr::js_undefined())));\n",
     tests: ["test/corpus.test.ts", "-t", "^nested_option_tests.rs$"],
   },
   {
@@ -801,7 +801,7 @@ export const mutations: Mutation[] = [
       "`is_some()` of a nullable field of what may be `undefined`, through a reference, is `!== undefined`, its `Some` a `None` (rd645)",
     file: "src/lower/mir/dispatch.rs",
     find: "            let none = self.held_none(x.ty(state.body, self.tcx));\n",
-    replace: "            let none = Expr::undefined();\n",
+    replace: "            let none = Expr::js_undefined();\n",
     tests: ["test/corpus.test.ts", "-t", "^nullable_field_of_undefined.rs$"],
   },
   {

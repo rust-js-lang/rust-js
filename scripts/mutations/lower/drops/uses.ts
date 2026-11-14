@@ -55,7 +55,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/drops/uses.rs",
     find: "kept.contains(&(local(item), index)).then_some(*drop)",
     replace:
-      "Some(if kept.contains(&(local(item), index)) { *drop } else { Expr::undefined() })",
+      "Some(if kept.contains(&(local(item), index)) { *drop } else { Expr::js_undefined() })",
     tests: ["test/crates.test.ts", "-t", "drops_by_need"],
   },
   {
@@ -74,8 +74,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a generic function given a value with a destructor isn't given its drop, and never drops it",
     file: "src/lower/drops/uses.rs",
-    find: "        let drop = drop?.unwrap_or_else(Expr::undefined);\n",
-    replace: "        let drop = drop.map(|_| Expr::undefined())?;\n",
+    find: "        let drop = drop?.unwrap_or_else(Expr::js_undefined);\n",
+    replace: "        let drop = drop.map(|_| Expr::js_undefined())?;\n",
     tests: ["test/corpus.test.ts", "-t", "drop_generic"],
   },
   {

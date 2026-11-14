@@ -78,9 +78,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a type parameter whose `Copy` bound takes no copy function, each value its callers give its own copy, is refused a `Copy` dictionary, `Copy without representation evidence`, where std's compiled `Copied` asks one (ADR 0938)",
     file: "src/lower/traits/dictionaries.rs",
-    find: "                && !self.krate.given.copied.contains(&(item, param.index))\n            {\n                return Ok(Expr::undefined());\n",
+    find: "                && !self.krate.given.copied.contains(&(item, param.index))\n            {\n                return Ok(Expr::js_undefined());\n",
     replace:
-      "                && false\n            {\n                return Ok(Expr::undefined());\n",
+      "                && false\n            {\n                return Ok(Expr::js_undefined());\n",
     tests: ["test/iterator-forms.test.ts", "-t", "^heap_pop_of_a_param with"],
   },
   {
@@ -898,7 +898,7 @@ export const mutations: Mutation[] = [
     name: "extend-dictionary-own-fold-dropped-again",
     breaks: "a list's `Extend` dictionary drops the iterator its own `fold` took and dropped, twice (#1511)",
     file: "src/lower/traits/dictionaries.rs",
-    find: "                        Expr::member(it.clone(), \"ownFold\"),\n                        Expr::undefined(),\n",
+    find: "                        Expr::member(it.clone(), \"ownFold\"),\n                        Expr::js_undefined(),\n",
     replace: "                        Expr::member(it.clone(), \"ownFold\"),\n                        Expr::var(\"dropIter\"),\n",
     tests: ["test/corpus.test.ts", "-t", "^extend_through_a_dictionary_drops_its_iterator\\.rs$"],
   },

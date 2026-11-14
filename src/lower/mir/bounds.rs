@@ -162,7 +162,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let (i, value) = (exprs.remove(0), exprs.remove(0));
                 let call = crate::lower::combinators::inserted(items, i, value, true, None);
                 out.push(StmtKind::Expr(call).at(self.js_span(span)));
-                return Ok(Value::Expr(Expr::undefined()));
+                return Ok(Value::Expr(Expr::js_undefined()));
             }
             Std::Comb(Comb::Swap) => (exprs.remove(0), exprs.remove(0)),
             _ => {
@@ -173,7 +173,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let swap = StmtKind::Assign(Expr::array(vec![at(&i), at(&j)]), Expr::array(vec![at(&j), at(&i)]));
         out.push(swap.at(self.js_span(span)));
         Ok(Value::Expr(match known {
-            Std::Comb(Comb::Swap) => Expr::undefined(),
+            Std::Comb(Comb::Swap) => Expr::js_undefined(),
             _ => Expr::call(Expr::member(items, "pop"), Vec::new()),
         }))
     }

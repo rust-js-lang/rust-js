@@ -47,7 +47,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return None;
         };
         Some(match op {
-            BacktraceOp::Capture | BacktraceOp::Disabled => Expr::undefined(),
+            BacktraceOp::Capture | BacktraceOp::Disabled => Expr::js_undefined(),
             BacktraceOp::ForceCapture => Expr::call_helper("$backtrace", Vec::new()),
             BacktraceOp::Status => Expr::call_helper("$backtraceStatus", vec![values.next().expect("a backtrace")]),
         })

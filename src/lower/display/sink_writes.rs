@@ -80,7 +80,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A `T`'s or a `dyn`'s, its dictionary's `fmtInto`.
         let given = match options {
             true => options_given(),
-            false => Expr::undefined(),
+            false => Expr::js_undefined(),
         };
         if let Some(write) = self.written_by_dictionary(value.clone(), (kind, ty), given, span)? {
             return Ok(Some(vec![write]));
@@ -171,7 +171,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::FmtDebug => {
                 let given = match options {
                     true => options_given(),
-                    false => Expr::undefined(),
+                    false => Expr::js_undefined(),
                 };
                 return self.debug_sink_writes(value, ty, (&given, &Expr::bool(spec.alternate)), span);
             }

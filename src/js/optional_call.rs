@@ -25,7 +25,7 @@ impl Expr {
             1 => args[0].clone(),
             _ => Expr::new(ExprKind::Sequence(args.clone())),
         };
-        let absent = Expr::bin(Op::Eq, callee.clone(), Expr::undefined());
+        let absent = Expr::bin(Op::Eq, callee.clone(), Expr::js_undefined());
         Expr::cond(absent, evaluated, Expr::call(callee, args))
     }
 }

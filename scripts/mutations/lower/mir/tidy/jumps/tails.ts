@@ -345,9 +345,9 @@ export const mutations: Mutation[] = [
     breaks:
       "`if (!obj) { break l; }` given the `return` it skips is `if (!obj) { return v; }`, of the paths that left",
     file: "src/lower/mir/tidy/jumps/tails.rs",
-    find: "                        *test = std::mem::replace(test, Expr::undefined()).negated_test();\n",
+    find: "                        *test = std::mem::replace(test, Expr::taken()).negated_test();\n",
     replace:
-      "                        *test = std::mem::replace(test, Expr::undefined());\n",
+      "                        *test = std::mem::replace(test, Expr::taken());\n",
     tests: [
       "test/lowering-labels.test.ts",
       "-t",

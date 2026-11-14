@@ -53,7 +53,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let fields = &adt.non_enum_variant().fields;
         let read_ty = self.field_ty(&fields[field], args);
         if read_ty.is_unit() && !union.has_effects() {
-            return Ok(Expr::undefined());
+            return Ok(Expr::js_undefined());
         }
         let key = field_key(self.tcx, &fields[field]).text().to_owned();
         let mut alike = Vec::new();

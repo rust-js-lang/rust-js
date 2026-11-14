@@ -241,7 +241,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 unreachable!("made above")
             }
         }
-        Ok(Written::Steps(Expr::undefined(), writer))
+        Ok(Written::Steps(Expr::js_undefined(), writer))
     }
 
     /// `value`, of type `ty`, written by `json`: the writer's steps, as a

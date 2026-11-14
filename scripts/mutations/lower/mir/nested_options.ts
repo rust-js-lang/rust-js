@@ -17,7 +17,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a held `Option` of an `Option`'s `None` is `null`, its `Some(None)`'s, so the two are equal (ADR 1017)",
     file: "src/lower/mir/nested_options.rs",
-    find: "            None => Expr::undefined(),\n",
+    find: "            None => Expr::js_undefined(),\n",
     replace: "            None => Expr::null(),\n",
     tests: ["test/corpus.test.ts", "-t", "^nested_option_held_as_payload.rs$"],
   },
@@ -42,7 +42,7 @@ export const mutations: Mutation[] = [
     name: "nested-field-boxed-as-held",
     breaks: "a nested field read whole is given as it's held to code that boxes: its `Some(None)`, `null`, is shown `None` (#470)",
     file: "src/lower/mir/nested_options.rs",
-    find: "        let some = self.some(held.clone());\n        Expr::cond(Expr::bin(Op::Eq, held, self.held_none(ty)), Expr::undefined(), some)\n",
+    find: "        let some = self.some(held.clone());\n        Expr::cond(Expr::bin(Op::Eq, held, self.held_none(ty)), Expr::js_undefined(), some)\n",
     replace: "        held\n",
     tests: ["test/corpus.test.ts", "-t", "^nested_option_nullable_field.rs$"],
   },
@@ -336,7 +336,7 @@ export const mutations: Mutation[] = [
       "a nullable field of what may be `undefined` is held and tested with `undefined` its `None` (rd645)",
     file: "src/lower/mir/nested_options.rs",
     find: "            Held::Value => Expr::null(),\n",
-    replace: "            Held::Value => Expr::undefined(),\n",
+    replace: "            Held::Value => Expr::js_undefined(),\n",
     tests: ["test/corpus.test.ts", "-t", "^nullable_field_of_undefined.rs$"],
   },
   {
@@ -400,7 +400,7 @@ export const mutations: Mutation[] = [
       "an `Option` of an `Option` held as its payload, a nullable field's, given a `None` that's `null`, a nullable function's result, tells it `=== undefined`, so it holds `Some(None)` where native Rust has `None` (#957)",
     file: "src/lower/mir/nested_options.rs",
     find: "        Expr::cond(Expr::bin(Op::LooseEq, boxed, Expr::null()), none, held)\n",
-    replace: "        Expr::cond(Expr::bin(Op::Eq, boxed, Expr::undefined()), none, held)\n",
+    replace: "        Expr::cond(Expr::bin(Op::Eq, boxed, Expr::js_undefined()), none, held)\n",
     tests: ["test/corpus.test.ts", "-t", "^nested_option_field_written_from_a_nullable_result.rs$"],
   },
 ];

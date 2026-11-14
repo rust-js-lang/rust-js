@@ -14,7 +14,7 @@ export const mutations: Mutation[] = [
     name: "random-state-new-unrecognized",
     breaks: "`RandomState::new()` is refused as a call rust-js doesn't know",
     file: "src/lower/std_types/hash.rs",
-    find: "            HashOp::RandomState => Expr::undefined(),\n",
+    find: "            HashOp::RandomState => Expr::js_undefined(),\n",
     replace: "            HashOp::RandomState => return Ok(None),\n",
     tests: ["test/corpus.test.ts", "-t", "^random_state_holds_nothing.rs$"],
   },

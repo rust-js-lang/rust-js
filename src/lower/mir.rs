@@ -758,7 +758,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // unless it's lowered otherwise.
         let mut placed = IndexSet::default();
         js::each_expr_mut(&mut out, &mut |e| {
-            if let js::ExprKind::ItemHole(index) = e.kind {
+            if let js::ExprKind::Hole(js::Hole::Item(index)) = e.kind {
                 placed.insert(index);
             }
         });
@@ -1195,7 +1195,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     match state.facts.pointed().locals.contains(&local) {
                         true => StmtKind::Const(
                             name,
-                            Expr::object(vec![js::Prop::Field(js::HELD.into(), Expr::undefined())]),
+                            Expr::object(vec![js::Prop::Field(js::HELD.into(), Expr::js_undefined())]),
                         ),
                         false => StmtKind::Let(name, None),
                     }

@@ -79,14 +79,14 @@ fn said_at(stmts: &[Stmt], i: usize, switches: &[Switch]) -> Option<Vec<Stmt>> {
         // x.is_nan() => a`: its test as the guard's, `else if
         // (Number.isNaN(x)) { a } else { break l; }`, the last link then.
         if matches!(&then[..], [Stmt { kind: StmtKind::Break(Some(l)), .. }] if l == label) {
-            *test = std::mem::replace(test, Expr::undefined()).negated_test();
+            *test = std::mem::replace(test, Expr::taken()).negated_test();
             std::mem::swap(then, otherwise);
         }
         if names_break(then, label) {
             return None;
         }
         if !says(subject, test, &valued) {
-            *test = Expr::bin(Op::And, present.clone(), std::mem::replace(test, Expr::undefined()));
+            *test = Expr::bin(Op::And, present.clone(), std::mem::replace(test, Expr::taken()));
         }
         match &mut otherwise[..] {
             [

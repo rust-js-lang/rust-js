@@ -28,7 +28,7 @@ export const mutations: Mutation[] = [
     breaks: "a guard dropped leaves its cell borrowed",
     file: "src/lower/drops/parts.rs",
     find: "                let mut call = Expr::call(Expr::helper(\"$unborrow\"), vec![value]);\n",
-    replace: "                let mut call = Expr::undefined();\n",
+    replace: "                let mut call = Expr::js_undefined();\n",
     tests: ["test/corpus.test.ts", "-t", "refcell_borrows"],
   },
   {

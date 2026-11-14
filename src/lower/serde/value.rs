@@ -173,11 +173,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 call("$jsonGetMut", vec![key])
             }
             JsonMethod::AsNull => {
-                let unit = self.some(Expr::undefined());
+                let unit = self.some(Expr::js_undefined());
                 Expr::cond(
                     Expr::bin(Op::Eq, receiver.clone(), Expr::str("Null")),
                     unit,
-                    Expr::undefined(),
+                    Expr::js_undefined(),
                 )
             }
             JsonMethod::Take => call("$jsonTake", Vec::new()),

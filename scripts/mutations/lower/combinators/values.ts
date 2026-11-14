@@ -28,7 +28,7 @@ export const mutations: Mutation[] = [
     name: "option-xor-both",
     breaks: "`Some(a).xor(Some(b))` is `Some(a)`",
     file: "src/lower/combinators/values.rs",
-    find: "                Expr::cond(a_some.clone(), Expr::cond(b_none, a, Expr::undefined()), b)\n",
+    find: "                Expr::cond(a_some.clone(), Expr::cond(b_none, a, Expr::js_undefined()), b)\n",
     replace: "                Expr::cond(a_some.clone(), a, b)\n",
     tests: ["test/corpus.test.ts", "-t", "option_result_methods"],
   },

@@ -616,7 +616,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if state.writer.is_some() {
                 return Ok(());
             }
-            return self.mir_store(state, place, Value::Expr(Expr::undefined()), span, out);
+            return self.mir_store(state, place, Value::Expr(Expr::js_undefined()), span, out);
         }
 
         // A union's field written: the one it holds now (ADR 0406).

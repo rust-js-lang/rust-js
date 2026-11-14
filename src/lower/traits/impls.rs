@@ -375,7 +375,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if source && !self.krate.fns.contains_key(&method) {
                 let none = Expr::arrow(
                     Vec::new(),
-                    vec![StmtKind::Return(Some(Expr::undefined())).at(js::Span::NONE)],
+                    vec![StmtKind::Return(Some(Expr::js_undefined())).at(js::Span::NONE)],
                 );
                 props.push(Prop::Field(bindings::fn_name(self.tcx, item.def_id), none));
                 continue;
@@ -562,10 +562,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let forms = self.entry_forms(item.def_id, (method, instance.args), args, count, None);
             for (i, value) in values.iter_mut().enumerate() {
                 for _ in 0..forms.unboxed[i] {
-                    *value = Expr::held(std::mem::replace(value, Expr::undefined()));
+                    *value = Expr::held(std::mem::replace(value, Expr::taken()));
                 }
                 if let Some(crossing) = forms.rebound[i] {
-                    let given = std::mem::replace(value, Expr::undefined());
+                    let given = std::mem::replace(value, Expr::taken());
                     *value = self.form_back(crate::lower::generic_facts::Form::HeldBox, crossing, given);
                 }
                 if let Some(made) = (forms.within[i].as_ref()).and_then(|within| within.toward_impl(value)) {
@@ -1093,7 +1093,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && (0..count).all(|i| self.param_is_box(method, i) == self.param_is_box(instance.def_id(), i));
         if !as_entry {
             self.krate.asked.borrow_mut().push((imp, self.module));
-            return Ok(Some((instance, Expr::undefined())));
+            return Ok(Some((instance, Expr::js_undefined())));
         }
         let dictionary = self.dictionary(tr, span)?;
         Ok(Some((

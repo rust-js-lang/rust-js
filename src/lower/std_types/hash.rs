@@ -223,11 +223,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     None => call,
                     Some(_) => {
                         Self::written_back(&hasher, vec![StmtKind::Expr(call).at(js::Span::NONE)], out);
-                        Expr::undefined()
+                        Expr::js_undefined()
                     }
                 }
             }
-            HashOp::RandomState => Expr::undefined(),
+            HashOp::RandomState => Expr::js_undefined(),
             HashOp::BuildHasher => self.built_hasher(&call)?.0,
             HashOp::HashOne => {
                 let (made, hasher_ty) = self.built_hasher(&call)?;
@@ -256,7 +256,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                 }
                 Self::written_back(&hasher, body, out);
-                Expr::undefined()
+                Expr::js_undefined()
             }
         }))
     }

@@ -303,7 +303,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             } else {
                 value.present()
             };
-            return Ok(Expr::cond(test, value, Expr::undefined()));
+            return Ok(Expr::cond(test, value, Expr::js_undefined()));
         }
         // `map_err(|e| e.to_string())` of a parse error, whose message is
         // already a string: the same `Result`. Only one just made, so no
@@ -510,7 +510,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 );
                 let mut drop = Vec::new();
                 self.drop_value(value, inner, span, &mut drop)?;
-                let unkept = Expr::bin(Op::Eq, Expr::var(&kept), Expr::undefined());
+                let unkept = Expr::bin(Op::Eq, Expr::var(&kept), Expr::js_undefined());
                 let dropped = vec![StmtKind::If(Expr::bin(Op::And, some, unkept), drop, None).at(js_span)];
                 out.push(StmtKind::Let(kept.clone(), None).at(js_span));
                 out.extend(dropped_after(body, dropped, js_span, &mut self.catch_names()));
@@ -519,7 +519,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Comb::Filter => {
                 let p = next();
                 let keep = self.call_with(p, vec![value], Role::Keep, out);
-                Expr::cond(Expr::bin(Op::And, some, keep), subject, Expr::undefined())
+                Expr::cond(Expr::bin(Op::And, some, keep), subject, Expr::js_undefined())
             }
             Comb::OkOr => {
                 let e = eager(self, next(), out);
@@ -577,18 +577,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let error = self.held_in_option(inside(), generic_args.type_at(1));
                 let then = vec![StmtKind::Assign(Expr::var(&name), error).at(js::Span::NONE)];
                 let value = (inside(), generic_args.type_at(0));
-                self.or_dropped(tag(false), name, then, value, Expr::undefined(), span, out)?
+                self.or_dropped(tag(false), name, then, value, Expr::js_undefined(), span, out)?
             }
             Comb::Err => {
                 let error = self.held_in_option(inside(), generic_args.type_at(1));
-                Expr::cond(tag(false), error, Expr::undefined())
+                Expr::cond(tag(false), error, Expr::js_undefined())
             }
             // Rust works out `b` either way: in a `const` first if it has effects.
             // A `Some`'s value `and` gives up is dropped (ADR 0496).
             Comb::And => {
                 let other = eager(self, next(), out);
                 let given_up = (value.clone(), generic_args.type_at(0));
-                self.kept_or(none(), Expr::undefined(), given_up, other, span, out)?
+                self.kept_or(none(), Expr::js_undefined(), given_up, other, span, out)?
             }
             // The one that's `Some`, where only one is.
             Comb::Xor | Comb::Zip => {
@@ -610,7 +610,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::cond(
                     some,
                     Expr::array(halves),
-                    Expr::array(vec![Expr::undefined(), Expr::undefined()]),
+                    Expr::array(vec![Expr::js_undefined(), Expr::js_undefined()]),
                 )
             }
             Comb::OptionTranspose => {
@@ -624,7 +624,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let is_ok = result::is(value, true);
                 let absent = none();
                 let inner = Expr::cond(is_ok, result::ok(ok_value), subject);
-                Expr::cond(absent, result::ok(Expr::undefined()), inner)
+                Expr::cond(absent, result::ok(Expr::js_undefined()), inner)
             }
             Comb::Inspect | Comb::ResultInspect { .. } => {
                 let f = next();
@@ -661,7 +661,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let given = if option.is_some() { value } else { inside() };
                 let pointee = self.deref_value(given, inner, span, out)?;
                 match option {
-                    Some(_) => Expr::cond(some, pointee, Expr::undefined()),
+                    Some(_) => Expr::cond(some, pointee, Expr::js_undefined()),
                     None => Expr::cond(tag(true), result::ok(pointee), subject),
                 }
             }
@@ -696,7 +696,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let present = Expr::bin(Op::LooseEq, inside(), Expr::null());
                 Expr::cond(
                     tag(true),
-                    Expr::cond(present, Expr::undefined(), result::ok(x)),
+                    Expr::cond(present, Expr::js_undefined(), result::ok(x)),
                     subject,
                 )
             }
@@ -932,7 +932,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && self.drops(self.option_of(subject_ty).expect("an `Option`")) == Drops::Nothing
             && tests_its_truth(&values[0])
         {
-            return Ok(Some(Expr::bin(Op::Or, subject.clone(), Expr::undefined())));
+            return Ok(Some(Expr::bin(Op::Or, subject.clone(), Expr::js_undefined())));
         }
         // `is_some_and` of the truth of what it holds, an `Option<bool>`'s
         // `|&w| w`: `!!o`, `o != null && o` read once, as what's not there is
@@ -1171,7 +1171,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // before.
             .at(self.js_span(span)),
         );
-        Ok(Expr::undefined())
+        Ok(Expr::js_undefined())
     }
 
     /// Whether `Extend::extend::<I>`, of its generic arguments, the trait's

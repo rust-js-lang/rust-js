@@ -185,8 +185,21 @@ impl Expr {
         Expr::new(ExprKind::Regex(literal.to_string()))
     }
 
-    pub fn undefined() -> Expr {
+    /// JS's `undefined`, a value: what's absent, `None`'s, a unit's.
+    pub fn js_undefined() -> Expr {
         Expr::new(ExprKind::Undefined)
+    }
+
+    /// What a value is taken out of, by `std::mem::replace`, till what's
+    /// made of it is put back: never printed (`Hole::Taken`).
+    #[track_caller]
+    pub fn taken() -> Expr {
+        Expr::new(ExprKind::Hole(Hole::Taken(std::panic::Location::caller())))
+    }
+
+    /// A hole, `hole`, which no tree is printed with (`Hole`).
+    pub fn hole(hole: Hole) -> Expr {
+        Expr::new(ExprKind::Hole(hole))
     }
 
     /// `list` and then each of `optional` given, `undefined` for one absent
@@ -196,7 +209,7 @@ impl Expr {
         while matches!(optional.last(), Some(None)) {
             optional.pop();
         }
-        list.extend(optional.into_iter().map(|arg| arg.unwrap_or_else(Expr::undefined)));
+        list.extend(optional.into_iter().map(|arg| arg.unwrap_or_else(Expr::js_undefined)));
         list
     }
 
@@ -847,7 +860,7 @@ impl Expr {
             && !matches!(&text.kind, ExprKind::Str(s) if s.is_empty())
             && let ExprKind::Stringed(number) = &mut part.kind
         {
-            let number = std::mem::replace(&mut **number, Expr::undefined());
+            let number = std::mem::replace(&mut **number, Expr::taken());
             **part = Expr {
                 span: part.span,
                 ..number
@@ -1128,7 +1141,7 @@ impl Expr {
         let ExprKind::Member(method, _) = &mut callee.kind else {
             return false;
         };
-        let mut method = std::mem::replace(&mut **method, Expr::undefined());
+        let mut method = std::mem::replace(&mut **method, Expr::taken());
         if let (Some(receiver), ExprKind::Member(of, _) | ExprKind::Index(of, _)) = (receiver, &mut method.kind) {
             **of = receiver;
         }

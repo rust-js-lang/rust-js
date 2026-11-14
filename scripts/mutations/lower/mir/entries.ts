@@ -105,7 +105,7 @@ export const mutations: Mutation[] = [
     name: "mir-failing-question-refused",
     breaks: "MIR's `write!(s, ..)?` that may fail is refused",
     file: "src/lower/mir/entries.rs",
-    find: "        self.fmt_check(tried, self.js_span(span), out);\n        Ok(Value::Branch(Expr::undefined(), ty))\n",
+    find: "        self.fmt_check(tried, self.js_span(span), out);\n        Ok(Value::Branch(Expr::js_undefined(), ty))\n",
     replace:
       '        let _ = tried;\n        Err(self.unsupported(span, "`?` of a write\'s result that may fail, from its MIR"))\n',
     tests: ["test/corpus.test.ts", "-t", "fmt_error_write"],
@@ -342,7 +342,7 @@ export const mutations: Mutation[] = [
     breaks: "`Err(fmt::Error)` held past a drop that may panic is held as `Ok`, so the function gives back `Ok` (#1636)",
     file: "src/lower/mir/entries.rs",
     find: "                true => Expr::call_helper(\"$writeTry\", vec![Expr::helper(\"$fmtError\")]),\n",
-    replace: "                true => Expr::undefined(),\n",
+    replace: "                true => Expr::js_undefined(),\n",
     tests: ["test/corpus.test.ts", "-t", "^write_result_err_given_back_past_drops.rs$"],
   },
 ];

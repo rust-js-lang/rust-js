@@ -205,7 +205,7 @@ fn written_extent(e: &js::Expr) -> Option<(u32, u32)> {
         if !part.span.is_none() {
             let (lo, hi) = extent.unwrap_or((part.span.lo, part.span.hi));
             extent = Some((lo.min(part.span.lo), hi.max(part.span.hi)));
-            *part = js::Expr::undefined();
+            *part = js::Expr::js_undefined();
         }
     });
     extent

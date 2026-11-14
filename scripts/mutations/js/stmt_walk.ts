@@ -336,8 +336,8 @@ export const mutations: Mutation[] = [
     name: "strict-presence-kinds-swapped",
     breaks: "`window.event`, whose `None` is `undefined`, is tested `=== null`, so an event that's none is taken for one and its `type` read of `undefined` throws (a wrong answer, ADR 0298, amended)",
     file: "src/js/stmt_walk.rs",
-    find: "        Known::NoneUndefined => Expr::undefined(),\n        _ => Expr::null(),\n",
-    replace: "        Known::NoneUndefined => Expr::null(),\n        _ => Expr::undefined(),\n",
+    find: "        Known::NoneUndefined => Expr::js_undefined(),\n        _ => Expr::null(),\n",
+    replace: "        Known::NoneUndefined => Expr::null(),\n        _ => Expr::js_undefined(),\n",
     tests: ["test/lowering-option-truth.test.ts", "-t", "None it can be"],
   },
   {
@@ -403,5 +403,13 @@ export const mutations: Mutation[] = [
     find: "                    Item::Namespace(namespace) => namespace.constants.iter().map(|c| &c.value).collect(),\n",
     replace: "                    Item::Namespace(_) => Vec::new(),\n",
     tests: ["test/corpus.test.ts", "-t", "^associated_const_of_a_later_const.rs$"],
+  },
+  {
+    name: "unprintable-hole-printed",
+    breaks: "a module holding a hole is printable, its value taken and never put back printed where Rust has a value (ADR 1147)",
+    file: "src/js/stmt_walk.rs",
+    find: "                ExprKind::Hole(hole) => hole.what(),\n",
+    replace: "                ExprKind::Hole(Hole::Item(_)) => \"an item's hole\",\n",
+    unitTests: "js::validate::tests::a_hole_is_refused",
   },
 ];

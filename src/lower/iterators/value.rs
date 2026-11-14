@@ -474,12 +474,12 @@ pub(in crate::lower) fn zip_ends(
         _ if to_shorter && !by_index => {
             let (drop_a, drop_b) = drops;
             args.extend([
-                drop_a.unwrap_or_else(Expr::undefined),
-                drop_b.unwrap_or_else(Expr::undefined),
+                drop_a.unwrap_or_else(Expr::js_undefined),
+                drop_b.unwrap_or_else(Expr::js_undefined),
                 Expr::bool(true),
             ]);
         }
-        (drop_a, Some(drop_b)) => args.extend([drop_a.unwrap_or_else(Expr::undefined), drop_b]),
+        (drop_a, Some(drop_b)) => args.extend([drop_a.unwrap_or_else(Expr::js_undefined), drop_b]),
         (drop_a, None) => args.extend(drop_a),
     }
     Expr::call_helper(if by_index { "$trustedZipEnds" } else { "$zipEnds" }, args)
@@ -595,7 +595,7 @@ pub(in crate::lower) fn is_knowing(e: &Expr) -> bool {
 /// std's struct, given its compiled `len` where it's asked (#814).
 pub(in crate::lower) fn knows_its_given_length(e: &Expr) -> bool {
     is_knowing(e)
-        && matches!(&e.kind, js::ExprKind::Call(_, args) if args.get(2).is_some_and(|len| *len != Expr::undefined()))
+        && matches!(&e.kind, js::ExprKind::Call(_, args) if args.get(2).is_some_and(|len| *len != Expr::js_undefined()))
 }
 
 /// `e`, a `rev()` its maker made knowing its back (`reversed_knowing`),
@@ -677,7 +677,7 @@ pub(in crate::lower) fn knows_its_back_by_form(e: &Expr) -> bool {
             | "$stepByEnds",
         ) => args.first().is_some_and(knows_its_back_by_form),
         Some("$lazyChain") => matches!(&args[..], [a, b, ..] if knows_its_back_by_form(a) && knows_its_back_by_form(b)),
-        Some("$iterator" | "$given") => args.get(3).is_some_and(|back| *back != Expr::undefined()),
+        Some("$iterator" | "$given") => args.get(3).is_some_and(|back| *back != Expr::js_undefined()),
         _ => false,
     }
 }

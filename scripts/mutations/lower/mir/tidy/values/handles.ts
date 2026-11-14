@@ -44,7 +44,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a nullable field's `Cell` set in a closure through a variable writes `undefined`, the handle's storage left out",
     file: "src/lower/mir/tidy/values/handles.rs",
-    find: "                    *value = storage.written(std::mem::replace(value, Expr::undefined()), false);\n",
+    find: "                    *value = storage.written(std::mem::replace(value, Expr::taken()), false);\n",
     replace: "                    let _ = storage;\n",
     tests: [
       "test/lowering-nullable.test.ts",

@@ -43,9 +43,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a constant of a unit struct named `#[rust_js::name]` is `undefined`, not its string",
     file: "src/lower/representation/consts.rs",
-    find: "                Some(CtorKind::Const) => Some(unit_name(tcx, adt.did()).map_or_else(Expr::undefined, Expr::str)),",
+    find: "                Some(CtorKind::Const) => Some(unit_name(tcx, adt.did()).map_or_else(Expr::js_undefined, Expr::str)),",
     replace:
-      "                Some(CtorKind::Const) => Some(Expr::undefined()),",
+      "                Some(CtorKind::Const) => Some(Expr::js_undefined()),",
     tests: ["test/lowering-structs-enums.test.ts", "-t", "named unit struct"],
   },
   {

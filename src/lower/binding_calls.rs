@@ -254,7 +254,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // amended).
                 let property = Expr::member(this, name).answered_by_a_setter();
                 out.push(StmtKind::Assign(property, value).at(self.js_span(span)));
-                Expr::undefined()
+                Expr::js_undefined()
             }
             // A property, written, of a global or an import: `process.exitCode
             // = 1`, `EventEmitter.captureRejections = true`. Not an import
@@ -265,7 +265,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let value = args.remove(0);
                 let property = self.js_ref(&name).or_at(fun_span).answered_by_a_setter();
                 out.push(StmtKind::Assign(property, value).at(self.js_span(span)));
-                Expr::undefined()
+                Expr::js_undefined()
             }
             // The value itself, `js::shown(n)`'s; text, a number or a
             // `bool` as its Rust type is, whose text a template makes
@@ -348,7 +348,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             (JsForm::SetIndex, Some(this)) if args.len() == 2 => {
                 let (key, value) = (args.remove(0), args.remove(0));
                 out.push(StmtKind::Assign(keyed(this, key), value).at(self.js_span(span)));
-                Expr::undefined()
+                Expr::js_undefined()
             }
             (JsForm::CallThis, Some(this)) => Expr::call(this, args),
             (JsForm::KeysIn, Some(this)) if args.is_empty() => super::iterators::keys_in(this),
@@ -416,11 +416,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     false => self.spill(Role::Kind, this, out),
                 };
                 let test = self.object_test(kind, &this);
-                Expr::cond(test, this.present(), Expr::undefined())
+                Expr::cond(test, this.present(), Expr::js_undefined())
             }
             (JsForm::Throw, Some(this)) if args.is_empty() => {
                 out.push(StmtKind::Throw(this).at(self.js_span(span)));
-                Expr::undefined()
+                Expr::js_undefined()
             }
             (JsForm::Delete, Some(this)) if args.len() == 1 => {
                 Expr::unary(UnaryOp::Delete, keyed(this, args.remove(0)))
@@ -790,7 +790,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some(js::Pattern::Name(tuple)) => {
                 let items: Vec<String> = (0..arity).map(|_| self.fresh(Base::Named(&tuple))).collect();
                 let whole = match arity {
-                    0 => Expr::undefined(),
+                    0 => Expr::js_undefined(),
                     _ => Expr::array(items.iter().map(|item| Expr::var(item)).collect()),
                 };
                 body.insert(0, StmtKind::Const(tuple, whole).at(js::Span::NONE));

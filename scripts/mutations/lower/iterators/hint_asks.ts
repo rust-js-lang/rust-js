@@ -351,7 +351,7 @@ export const mutations: Mutation[] = [
     name: "room-of-an-impls-associated-type-refused",
     breaks: "an impl's growth of an associated type's items, `I::Item`, whose size its dictionary can't give, isn't given `undefined` and is refused at compile time, the whole crate with it, itertools' `ChunkBy` (#1260)",
     file: "src/lower/iterators/hint_asks.rs",
-    find: "            (crate::lower::recognition::is_associated_type(item) && self.in_impl_method()).then(Expr::undefined)\n",
+    find: "            (crate::lower::recognition::is_associated_type(item) && self.in_impl_method()).then(Expr::js_undefined)\n",
     replace: "            None\n",
     tests: ["test/vec-capacity.test.ts", "-t", "an impl's growth of an associated type's items"],
   },

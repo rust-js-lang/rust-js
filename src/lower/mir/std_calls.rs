@@ -209,7 +209,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         })
                     })
                 }
-                Some((false, _)) => lower(|_, _, _, _| Ok(Value::Expr(Expr::undefined()))),
+                Some((false, _)) => lower(|_, _, _, _| Ok(Value::Expr(Expr::js_undefined()))),
                 None => lower(move |this, _, _, _| {
                     Err(this.unsupported(
                         span,
@@ -253,7 +253,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             if let Value::Fmt(_, _, value) = item
                                 && value.has_effects()
                             {
-                                *value = this.spill(Base::Temporary, std::mem::replace(value, Expr::undefined()), out);
+                                *value = this.spill(Base::Temporary, std::mem::replace(value, Expr::taken()), out);
                             }
                         }
                         parts = this.written_parts(&items, &written, arguments, span)?;
@@ -372,7 +372,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let written = this.written_of(operation, def_id, generic_args, vec![shown], &pretty, span, out)?;
                     this.flush(state, out)?;
                     crate::lower::display::append_written(&place, written, false, this.js_span(span), out);
-                    Expr::undefined()
+                    Expr::js_undefined()
                 }))
             }),
             // `s.push_str(t)`, `write!(s, ..)`: JS strings don't change, so `s`
@@ -452,7 +452,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         true => this.extended_text(&place, value, arg_tys[1], span, out)?,
                         false => crate::lower::display::append_written(&place, value, false, this.js_span(span), out),
                     }
-                    Expr::undefined()
+                    Expr::js_undefined()
                 }))
             }),
             // `&v[a..b]`, `s.get(a..)`, `v.drain(..b)`: of the items and the range's
@@ -628,7 +628,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             list.extend(bounds);
                             let edited = Expr::call(Expr::helper("$asciiCase"), list);
                             out.push(StmtKind::Assign(whole, edited).at(this.js_span(span)));
-                            return Ok(Value::Expr(Expr::undefined()));
+                            return Ok(Value::Expr(Expr::js_undefined()));
                         }
                         // A part another call gives, `$strGetMut(..)`'s: held,
                         // its `value` the place.
@@ -660,7 +660,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     ) {
                         let range = given.remove(0);
                         let (start, end) = this.range_value_bounds(range, arg_tys[1], span, out)?;
-                        given.splice(0..0, [start, end.unwrap_or_else(Expr::undefined)]);
+                        given.splice(0..0, [start, end.unwrap_or_else(Expr::js_undefined)]);
                     }
                     this.flush(state, out)?;
                     // Whether a closure it's given may unwind, which `retain`
@@ -672,7 +672,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     });
                     let (edited, taken) = this.string_edit_values(edit, (place.clone(), unwinds), given, out);
                     out.push(StmtKind::Assign(place, edited).at(this.js_span(span)));
-                    taken.unwrap_or_else(Expr::undefined)
+                    taken.unwrap_or_else(Expr::js_undefined)
                 }))
             }),
             // Its capacity is the engine's, but std checks the room it's
@@ -851,7 +851,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let ty = Ty::new_slice(tcx, generic_args.type_at(0));
                 this.flush(state, out)?;
                 this.drop_value(slots, ty, span, out)?;
-                Expr::undefined()
+                Expr::js_undefined()
             }))),
             // `s.split_off(..n)` and the like: the slice's place given what's
             // left (ADR 0338).
@@ -970,7 +970,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         let dest = this.dest_place(&dest, ty, span)?;
                         this.flush(state, out)?;
                         out.push(StmtKind::Expr(into.call(dest, source)).at(this.js_span(span)));
-                        return Ok(Value::Expr(Expr::undefined()));
+                        return Ok(Value::Expr(Expr::js_undefined()));
                     }
                     // Of an `Option`, its value's, where both are `Some`; of a
                     // value only the caller knows, a `T` or a `Box<T>`, or an
@@ -1027,7 +1027,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         let mut replaced = Vec::new();
                         this.replace_with_clone(state, (dest, source), (ty, def_id), arg_tys, span, &mut replaced)?;
                         out.push(StmtKind::If(test, then, Some(replaced)).at(this.js_span(span)));
-                        return Ok(Value::Expr(Expr::undefined()));
+                        return Ok(Value::Expr(Expr::js_undefined()));
                     }
                     if this.forwards_clone_from(ty, span)? {
                         return Err(this.unsupported(
@@ -1036,7 +1036,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         ));
                     }
                     this.replace_with_clone(state, (dest, source), (ty, def_id), arg_tys, span, out)?;
-                    Expr::undefined()
+                    Expr::js_undefined()
                 }))
             }),
             // `Rc::make_mut(&mut rc)` of a local `Rc` of this body, or one a
@@ -1240,7 +1240,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             }
                             false => StmtKind::Assign(target, value).at(js_span),
                         });
-                        Expr::undefined()
+                        Expr::js_undefined()
                     }
                 }))
             }),

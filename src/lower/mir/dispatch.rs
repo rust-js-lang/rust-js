@@ -107,7 +107,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if destination.projection.is_empty() {
                 let values = fields.into_iter().map(|(_, value)| value).collect();
                 state.defaults.insert(destination.local, values);
-                return Ok(Value::Expr(Expr::undefined()));
+                return Ok(Value::Expr(Expr::js_undefined()));
             }
             let props = fields
                 .into_iter()
@@ -604,7 +604,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             for (i, value) in values.iter_mut().enumerate() {
                 let form = none_form(self.tcx, NonePlace::ForeignParam(self.krate.foreign, callee.0, i));
                 if form == NoneForm::Null && nulled.get(i) != Some(&true) {
-                    let given = self.value_expr(std::mem::replace(value, Value::Expr(Expr::undefined())), span)?;
+                    let given = self.value_expr(std::mem::replace(value, Value::Expr(Expr::taken())), span)?;
                     *value = Value::Expr(form.storage().written(given, false));
                 }
             }
@@ -751,8 +751,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let held = Ty::new_option(self.tcx, payload);
             let none = Expr::bin(
                 Op::Or,
-                Expr::bin(Op::Eq, a.clone(), Expr::undefined()),
-                Expr::bin(Op::Eq, b.clone(), Expr::undefined()),
+                Expr::bin(Op::Eq, a.clone(), Expr::js_undefined()),
+                Expr::bin(Op::Eq, b.clone(), Expr::js_undefined()),
             );
             let both = self.eq_value(a.clone(), b.clone(), held, span, out)?;
             Expr::cond(none, Expr::bin(Op::Eq, a, b), both)
@@ -1201,7 +1201,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // A prop `jsx!` isn't given: none, which JSX leaves out (ADR 0213).
         if bindings::is_omitted(tcx, def_id) {
-            return Ok(Value::Expr(Expr::undefined()));
+            return Ok(Value::Expr(Expr::js_undefined()));
         }
         // A binding: the JS function, method, property or operator it names
         // (ADRs 0019, 0020), given its arguments; the registry's symbol's read too (ADR 0634).
@@ -1228,7 +1228,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
-        let value = std::mem::replace(&mut values[at], Value::Expr(Expr::undefined()));
+        let value = std::mem::replace(&mut values[at], Value::Expr(Expr::taken()));
         let value = self.value_expr(value, span)?;
         let value = match value.kind {
             js::ExprKind::Var(_) => value,

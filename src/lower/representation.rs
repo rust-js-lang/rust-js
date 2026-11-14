@@ -106,7 +106,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // caught (ADRs 0187, 0462).
         if self.is_write_result(ty) {
             let op = if variant.as_u32() == 0 { Op::Eq } else { Op::Ne };
-            return Expr::bin(op, subject, Expr::undefined());
+            return Expr::bin(op, subject, Expr::js_undefined());
         }
         // An untagged enum's variant, told by its value's kind (ADR 0214).
         if bindings::is_untagged(self.tcx, adt.did()) {
@@ -431,7 +431,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return self.some_value(base);
         }
         if self.is_write_result(ty) {
-            return Expr::undefined();
+            return Expr::js_undefined();
         }
         let variant = adt.variant(variant);
         let read = Expr::member(base, variant_field(self.tcx, variant, field.as_usize()));
@@ -518,7 +518,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 ty::Adt(adt, _) => super::recognition::transparent_field(self.tcx, *adt).unwrap_or(0),
                 _ => 0,
             };
-            return if i == held { base } else { Expr::undefined() };
+            return if i == held { base } else { Expr::js_undefined() };
         }
         // The registry's symbol's key (ADR 0634).
         if self.recognition().is_symbol_for(ty) {
@@ -886,7 +886,7 @@ pub(super) fn const_value_js<'tcx>(
     }
     eval_const(tcx, typing_env, def_id, args, span)
         .and_then(|value| const_js(tcx, keyed, value))
-        .or_else(|| const_uninit(tcx, typing_env, def_id, args, span).then(Expr::undefined))
+        .or_else(|| const_uninit(tcx, typing_env, def_id, args, span).then(Expr::js_undefined))
 }
 
 /// What rustc computed for a `const`, as a value tree (ADR 0031).

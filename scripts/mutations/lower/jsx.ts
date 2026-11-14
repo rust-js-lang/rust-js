@@ -476,9 +476,9 @@ export const mutations: Mutation[] = [
     breaks:
       "props written out of the struct's order are made in the JSX's, not Rust's: `t` logged before `h`",
     file: "src/lower/jsx.rs",
-    find: "        if !value.is_constant() {\n            let old = std::mem::replace(value, Expr::undefined());\n",
+    find: "        if !value.is_constant() {\n            let old = std::mem::replace(value, Expr::taken());\n",
     replace:
-      "        if false {\n            let old = std::mem::replace(value, Expr::undefined());\n",
+      "        if false {\n            let old = std::mem::replace(value, Expr::taken());\n",
     tests: ["test/jsx-props.test.ts", "-t", "flattened props where they"],
   },
   {

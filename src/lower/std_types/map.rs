@@ -767,7 +767,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let js_span = self.js_span(span);
                 let cleared = vec![StmtKind::Expr(cleared).at(js_span)];
                 out.extend(dropped_after(dropped, cleared, js_span, &mut self.catch_names()));
-                Expr::undefined()
+                Expr::js_undefined()
             }
             MapOp::Clear => method(arg(), "clear", Vec::new()),
             // Each entry in its order, a B-tree's its keys', `f` given a handle on
@@ -811,7 +811,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     MapOp::SetGet => method(s, "has", vec![x.clone()]),
                     _ => method(s, "delete", vec![x.clone()]),
                 };
-                Expr::cond(test, x, Expr::undefined())
+                Expr::cond(test, x, Expr::js_undefined())
             }
             // Of items whose order may panic, their drop, which drops the
             // one given as the search unwinds (#911).
@@ -966,7 +966,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let args = self.tcx.mk_args(&types.iter().map(|&t| t.into()).collect::<Vec<_>>());
                 let count = Expr::bin(Op::Add, Expr::member(m, "size"), n);
                 self.table_room(table, set, args, count, span, out);
-                Expr::undefined()
+                Expr::js_undefined()
             }
             MapOp::From { set } => {
                 let items = arg();
@@ -1059,7 +1059,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if table.has_effects() {
                     out.push(StmtKind::Expr(table).at(self.js_span(span)));
                 }
-                Expr::undefined()
+                Expr::js_undefined()
             }
             MapOp::IsEmpty => Expr::bin(Op::Eq, Expr::member(arg(), "size"), Expr::int(0)),
             // Of a map given by value, `into_keys()` or `into_values()`: the

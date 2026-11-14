@@ -90,7 +90,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if by_fold {
                     let own = Expr::cond(
                         Expr::member(it.clone(), "ownFold"),
-                        Expr::undefined(),
+                        Expr::js_undefined(),
                         Expr::var("dropIter"),
                     );
                     body.insert(1, StmtKind::Const("dropIt".into(), own).at(js::Span::NONE));
@@ -995,7 +995,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 )
                 && !self.krate.given.copied.contains(&(item, param.index))
             {
-                return Ok(Expr::undefined());
+                return Ok(Expr::js_undefined());
             }
             if self.is_unknown(ty) {
                 return Err(self.unsupported(span, "Copy without representation evidence"));
@@ -1016,7 +1016,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
             // A value that's its own copy is given none (ADR 0289, amended).
             if js::same_path(&copy, &value) && clone.is_none() {
-                return Ok(Expr::undefined());
+                return Ok(Expr::js_undefined());
             }
             let mut props = vec![Prop::Field(
                 "copy".into(),

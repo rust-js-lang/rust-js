@@ -106,12 +106,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .next()
                 .is_some()
         {
-            return Ok(Expr::undefined());
+            return Ok(Expr::js_undefined());
         }
         // react's `Rest`: no props, `undefined`, which a spread spreads
         // nothing of, and a JSX attribute isn't written for (ADR 0195).
         if bindings::is_rest(self.tcx, ty) {
-            return Ok(Expr::undefined());
+            return Ok(Expr::js_undefined());
         }
         if self.has_user_impl(default, ty) {
             let method = self.tcx.associated_item_def_ids(default)[0];
@@ -133,7 +133,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A `Box<str>`'s and a `Box<[T]>`'s, and `PhantomData`, which holds nothing.
             ty::Str => Expr::str(""),
             ty::Slice(_) => Expr::array(Vec::new()),
-            _ if self.is_lang_adt(ty, LangItem::PhantomData) => Expr::undefined(),
+            _ if self.is_lang_adt(ty, LangItem::PhantomData) => Expr::js_undefined(),
             // A C string's, its nul alone, a `&CStr`'s `c""` (#1157).
             _ if crate::lower::recognition::is_c_string_like(self.tcx, ty.peel_refs()) => {
                 Expr::literal_array(vec![Expr::int(0)])
@@ -146,7 +146,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let (items, made) = self.parts_in_turn(&parts, span, |cx, _| cx.default_value(*item, span))?;
                 Self::in_turn(Expr::array(items), made)
             }
-            _ if ty.is_unit() || self.option_of(ty).is_some() => Expr::undefined(),
+            _ if ty.is_unit() || self.option_of(ty).is_some() => Expr::js_undefined(),
             _ if self.is_lang_adt(ty, LangItem::String) => Expr::str(""),
             _ if self.is_vec_like(ty) => Expr::array(Vec::new()),
             ty::Adt(_, args) if self.is_map(ty) => {
@@ -162,7 +162,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Adt(_, args) if ty.is_box() || self.is_rc(ty) => self.default_value(args.type_at(0), span)?,
             ty::Adt(..) if recognition::weak_pointee(self.tcx, ty).is_some() => self.weak_to_nothing(ty),
             ty::Adt(..) if std(StdItem::OnceCell) => {
-                Expr::object(vec![Prop::Field(js::HELD.into(), Expr::undefined())])
+                Expr::object(vec![Prop::Field(js::HELD.into(), Expr::js_undefined())])
             }
             // `LazyCell::new(T::default)` (ADR 0318).
             ty::Adt(_, args) if std(StdItem::LazyCell) => {
@@ -190,9 +190,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // `BuildHasherDefault`'s, which holds nothing but the hasher's
             // type, a `PhantomData`, as an empty struct's (#1155).
-            ty::Adt(..) if std(StdItem::BuildHasherDefault) => Expr::undefined(),
+            ty::Adt(..) if std(StdItem::BuildHasherDefault) => Expr::js_undefined(),
             // A `RandomState`, which holds nothing JS sees (#1420).
-            ty::Adt(..) if std(StdItem::RandomState) => Expr::undefined(),
+            ty::Adt(..) if std(StdItem::RandomState) => Expr::js_undefined(),
             // A std hasher's, as its `new()` (ADR 0463).
             ty::Adt(..) if let Some(which) = self.recognition().std_hasher(ty) => {
                 std_types::hash::new_hasher(which, Vec::new())
@@ -211,7 +211,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 return Err(self.unsupported(span, &format!("`Default` of `{ty}`")));
             }
-            ty::Adt(adt, _) if adt.is_struct() && adt.non_enum_variant().fields.is_empty() => Expr::undefined(),
+            ty::Adt(adt, _) if adt.is_struct() && adt.non_enum_variant().fields.is_empty() => Expr::js_undefined(),
             // A `#[repr(transparent)]` struct's is its field's (ADR 0584).
             ty::Adt(adt, args) if let Some(at) = recognition::transparent_field(self.tcx, *adt) => {
                 let field = &adt.non_enum_variant().fields[rustc_abi::FieldIdx::from_usize(at)];

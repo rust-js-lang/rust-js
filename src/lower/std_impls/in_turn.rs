@@ -91,7 +91,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// to `made`, `made(part, drop)`, which `in_turn`'s `$madeInTurn` drops
     /// by its `drop` as a later part unwinds.
     pub(super) fn made_part(&mut self, made: &str, part: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {
-        let drop = self.drop_function(ty, span)?.unwrap_or_else(Expr::undefined);
+        let drop = self.drop_function(ty, span)?.unwrap_or_else(Expr::js_undefined);
         Ok(Expr::call(Expr::var(made), vec![part, drop]))
     }
 
@@ -124,7 +124,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
     ) -> R<Expr> {
         if may_panic && self.drops(ty) != Drops::Nothing {
-            let drop = self.drop_function(ty, span)?.unwrap_or_else(Expr::undefined);
+            let drop = self.drop_function(ty, span)?.unwrap_or_else(Expr::js_undefined);
             return Ok(Expr::call_helper("$madeEach", vec![items, make, drop]));
         }
         Ok(Expr::builtin(items, "map", vec![make]))
@@ -143,7 +143,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
     ) -> R<Expr> {
         let mut list = vec![items, make];
-        list.push(self.drop_function(entry, span)?.unwrap_or_else(Expr::undefined));
+        list.push(self.drop_function(entry, span)?.unwrap_or_else(Expr::js_undefined));
         let parts = [map.type_at(0), map.type_at(1)]
             .into_iter()
             .map(|part| self.std_drop_function(part, span))

@@ -290,7 +290,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let boxed = item.is_some_and(|item| self.boxed_payload(item));
             // Of a function it moves into its fold, `$consume`'s (#734).
             if let Some(ends) = ends {
-                let unwind = unwind.unwrap_or_else(Expr::undefined);
+                let unwind = unwind.unwrap_or_else(Expr::js_undefined);
                 let args = vec![it, Expr::str("reduce"), Expr::bool(boxed), callback, unwind, ends];
                 return Ok(Expr::call_helper("$consume", args));
             }
@@ -307,7 +307,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // What drops with `f`, its drop, `$consume(it, init, f, unwind,
         // ends)`, which drops it before what's left (#734).
         if let Some(ends) = ends {
-            let unwind = unwind.unwrap_or_else(Expr::undefined);
+            let unwind = unwind.unwrap_or_else(Expr::js_undefined);
             let step = vec![it, Expr::str("fold")];
             return Ok(Expr::call_helper("$consume", [step, args, vec![unwind, ends]].concat()));
         }
@@ -341,7 +341,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             vec!["_".into(), x.clone().into()],
             vec![StmtKind::Expr(Expr::call(f, vec![Expr::var(&x)])).at(js::Span::NONE)],
         );
-        let args = vec![it, Expr::str("fold"), Expr::undefined(), each, Expr::undefined(), ends];
+        let args = vec![
+            it,
+            Expr::str("fold"),
+            Expr::js_undefined(),
+            each,
+            Expr::js_undefined(),
+            ends,
+        ];
         Ok(Expr::call_helper("$consume", args))
     }
 
@@ -498,7 +505,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         // `try_for_each(f)`, std's `try_fold((), |(), x| f(x))` (ADR 0539).
         let (init, f) = match method {
-            IterMethod::TryForEach => (Expr::undefined(), self.unary_folded(arg())),
+            IterMethod::TryForEach => (Expr::js_undefined(), self.unary_folded(arg())),
             _ => (arg(), arg()),
         };
         // Of an accumulator, a `B`, with a destructor that a stage's panic
@@ -519,7 +526,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         crate::lower::calls::given_to_js(&mut args);
         args.extend(tried);
         match ends {
-            Some(ends) => args.extend([unwind.unwrap_or_else(Expr::undefined), ends]),
+            Some(ends) => args.extend([unwind.unwrap_or_else(Expr::js_undefined), ends]),
             None => args.extend(unwind),
         }
         Ok(Expr::call_helper(helper, args))

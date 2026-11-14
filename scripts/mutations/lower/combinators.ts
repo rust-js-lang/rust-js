@@ -15,8 +15,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`bool::then_some(v)`'s `v`, of a `Some` not boxed, isn't known there, so `if let Some(x) = wanted.then_some(item)` tests `x != null`, not `wanted` (ADR 0910)",
     file: "src/lower/combinators.rs",
-    find: "                value.present()\n            };\n            return Ok(Expr::cond(test, value, Expr::undefined()));\n",
-    replace: "                value\n            };\n            return Ok(Expr::cond(test, value, Expr::undefined()));\n",
+    find: "                value.present()\n            };\n            return Ok(Expr::cond(test, value, Expr::js_undefined()));\n",
+    replace: "                value\n            };\n            return Ok(Expr::cond(test, value, Expr::js_undefined()));\n",
     tests: ["test/corpus.test.ts", "-t", "^tested_options.rs$"],
     snapshots: true,
   },
@@ -241,7 +241,7 @@ export const mutations: Mutation[] = [
     name: "option-and-ignores-none",
     breaks: "`None.and(b)` is `b`",
     file: "src/lower/combinators.rs",
-    find: "                self.kept_or(none(), Expr::undefined(), given_up, other, span, out)?\n",
+    find: "                self.kept_or(none(), Expr::js_undefined(), given_up, other, span, out)?\n",
     replace: "                other\n",
     tests: ["test/corpus.test.ts", "-t", "option_result_methods"],
   },
@@ -249,7 +249,7 @@ export const mutations: Mutation[] = [
     name: "option-transpose-none",
     breaks: "`None.transpose()` isn't `Ok(None)`",
     file: "src/lower/combinators.rs",
-    find: "                Expr::cond(absent, result::ok(Expr::undefined()), inner)\n",
+    find: "                Expr::cond(absent, result::ok(Expr::js_undefined()), inner)\n",
     replace: "                inner\n",
     tests: ["test/corpus.test.ts", "-t", "option_result_methods"],
   },
@@ -484,9 +484,9 @@ export const mutations: Mutation[] = [
     name: "and-payload-undropped",
     breaks: "`Some(a).and(b)` leaves `a` undropped",
     file: "src/lower/combinators.rs",
-    find: "                self.kept_or(none(), Expr::undefined(), given_up, other, span, out)?\n",
+    find: "                self.kept_or(none(), Expr::js_undefined(), given_up, other, span, out)?\n",
     replace:
-      "                let _ = given_up;\n                Expr::cond(some, other, Expr::undefined())\n",
+      "                let _ = given_up;\n                Expr::cond(some, other, Expr::js_undefined())\n",
     tests: ["test/corpus.test.ts", "-t", "^and_value_drops.rs$"],
   },
   {
@@ -725,7 +725,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/combinators.rs",
     find: "            return Ok(Some(Expr::cond(kept, then, none)));\n",
     replace:
-      "            return Ok(Some(Expr::cond(kept, then, Expr::undefined())));\n",
+      "            return Ok(Some(Expr::cond(kept, then, Expr::js_undefined())));\n",
     tests: [
       "test/lowering-nullable.test.ts",
       "-t",
@@ -787,8 +787,8 @@ export const mutations: Mutation[] = [
     name: "extend-loop-unplaced",
     breaks: "the index loop of a `Vec`'s `extend` has no place, and the comments above the call, Fizz's `// TODO: Consider marking ..`, are lost (ADR 1042)",
     file: "src/lower/combinators.rs",
-    find: "            .at(self.js_span(span)),\n        );\n        Ok(Expr::undefined())\n",
-    replace: "            .at(js::Span::NONE),\n        );\n        Ok(Expr::undefined())\n",
+    find: "            .at(self.js_span(span)),\n        );\n        Ok(Expr::js_undefined())\n",
+    replace: "            .at(js::Span::NONE),\n        );\n        Ok(Expr::js_undefined())\n",
     tests: ["test/lowering-index-loops.test.ts", "-t", "extend of an indexed list"],
   },
   {

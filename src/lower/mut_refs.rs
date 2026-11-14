@@ -135,7 +135,7 @@ impl<'tcx> Within<'tcx> {
                 };
                 Some(match (inner.as_ref(), to_impl) {
                     (Within::Mut(..), true) => Expr::optional_member(value.clone(), js::HELD),
-                    _ => Expr::cond(Expr::presence(value.clone(), true), made, Expr::undefined()),
+                    _ => Expr::cond(Expr::presence(value.clone(), true), made, Expr::js_undefined()),
                 })
             }
             Within::AsItIs(_) => None,

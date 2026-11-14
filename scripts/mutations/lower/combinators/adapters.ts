@@ -477,7 +477,7 @@ export const mutations: Mutation[] = [
     name: "flattened-write-result-tagged",
     breaks: "`flatten()` of writes' results reads each as `{ TAG }`, `undefined.TAG` (#1410)",
     file: "src/lower/combinators/adapters.rs",
-    find: "            true => Expr::undefined(),\n            false => crate::js::result::held(result),\n",
+    find: "            true => Expr::js_undefined(),\n            false => crate::js::result::held(result),\n",
     replace: "            _ => crate::js::result::held(result),\n",
     tests: ["test/corpus.test.ts", "-t", "^write_result_items.rs$"],
   },

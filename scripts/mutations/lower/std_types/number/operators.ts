@@ -114,7 +114,7 @@ export const mutations: Mutation[] = [
     name: "non-zero-new-keeps-zero",
     breaks: "`NonZero::new(n)` of `0` is `Some(0)`",
     file: "src/lower/std_types/number/operators.rs",
-    find: "        Ok(Expr::cond(zero, Expr::undefined(), n))\n",
+    find: "        Ok(Expr::cond(zero, Expr::js_undefined(), n))\n",
     replace: "        Ok(Expr::cond(zero, n.clone(), n))\n",
     tests: ["test/corpus.test.ts", "-t", "nonzero"],
   },

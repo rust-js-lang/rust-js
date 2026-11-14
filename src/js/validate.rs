@@ -26,6 +26,10 @@ pub enum Problem {
     /// A global's read of a name a declaration in scope takes, which JS
     /// reads instead.
     Shadowed(String),
+    /// A hole no tree is printed with (`Hole`): a value taken and never
+    /// put back, of any tree; a library's item asked for, of a module's,
+    /// whose crate is lowered again before it's made.
+    Hole(super::Hole),
 }
 
 impl std::fmt::Display for Problem {
@@ -34,6 +38,10 @@ impl std::fmt::Display for Problem {
             Problem::Unlanded(jump) => write!(f, "`{jump}` lands on nothing around it"),
             Problem::Twice(name) => write!(f, "`{name}` is declared twice in one block"),
             Problem::Unresolved(name) => write!(f, "`{name}` is read, and nothing declares it nor made it a global"),
+            Problem::Hole(super::Hole::Taken(at)) => {
+                write!(f, "it holds {}, taken at {at}", super::Hole::Taken(at).what())
+            }
+            Problem::Hole(hole) => write!(f, "it holds {}", hole.what()),
             Problem::Shadowed(name) => {
                 write!(
                     f,
@@ -58,7 +66,10 @@ pub fn stages_checked() -> bool {
 /// resolves them (`js::scopes`, the one owner).
 pub fn module(module: &Module) -> Vec<Problem> {
     let mut problems = names(&scopes::Tree::of_module(module));
-    let mut cx = Cx::default();
+    let mut cx = Cx {
+        whole: true,
+        ..Cx::default()
+    };
     for item in &module.items {
         match item {
             Item::Namespace(namespace) => {
@@ -117,6 +128,9 @@ struct Cx {
     /// their label, within its function.
     labels: Vec<(Option<String>, Target)>,
     problems: Vec<Problem>,
+    /// Whether it's a module's tree, made once its crate's lowering is
+    /// final, which holds no library's item asked for either.
+    whole: bool,
 }
 
 impl Cx {
@@ -331,10 +345,12 @@ impl Cx {
             | ExprKind::This
             | ExprKind::Super
             | ExprKind::Symbol(_)
-            | ExprKind::ItemHole(_)
+            | ExprKind::Hole(super::Hole::Item(_))
             | ExprKind::Import(_)
             | ExprKind::Specifier(_)
             | ExprKind::Regex(_) => {}
+            ExprKind::Hole(super::Hole::Asked) if !self.whole => {}
+            ExprKind::Hole(hole) => self.problems.push(Problem::Hole(*hole)),
         }
     }
 }
@@ -376,6 +392,33 @@ mod tests {
             of(vec![read(arrow), read(Expr::var("p"))]),
             vec![Problem::Unresolved("p".into())]
         );
+    }
+
+    // A hole is never printed (change 4 of #1671): a value taken and never
+    // put back, of any tree; a library's item asked for, of a module's,
+    // which a body's tree between tidy's stages holds till its crate is
+    // lowered again; an item's, which the pipeline fills, unprintable's.
+    #[test]
+    fn a_hole_is_refused() {
+        use crate::js::Hole;
+        let taken = Expr::taken();
+        let ExprKind::Hole(at) = taken.kind else {
+            unreachable!("a hole")
+        };
+        assert_eq!(of(vec![read(taken.clone())]), vec![Problem::Hole(at)]);
+        assert!(Problem::Hole(at).to_string().contains("src/js/validate.rs"));
+        assert_eq!(
+            of(vec![read(Expr::hole(Hole::Asked))]),
+            vec![Problem::Hole(Hole::Asked)]
+        );
+        assert_eq!(body(&[read(taken.clone())]), vec![Problem::Hole(at)]);
+        assert_eq!(body(&[read(Expr::hole(Hole::Asked))]), vec![]);
+        assert_eq!(body(&[read(Expr::hole(Hole::Item(0)))]), vec![]);
+        let mut module = Module {
+            items: vec![Item::Statements(vec![read(taken)])],
+            ..Module::default()
+        };
+        assert_eq!(module.unprintable(), Some(at.what()));
     }
 
     // A global's read where a declaration of its name is in scope reads

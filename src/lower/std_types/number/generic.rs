@@ -54,7 +54,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         let a = if a.reads_same() { a } else { self.spill(Role::A, a, out) };
                         let b = if b.reads_same() { b } else { self.spill(Role::B, b, out) };
                         let less = Expr::bin(Op::Lt, a.clone(), b.clone());
-                        Expr::cond(less, Expr::undefined(), Expr::bin(Op::Sub, a, b))
+                        Expr::cond(less, Expr::js_undefined(), Expr::bin(Op::Sub, a, b))
                     }
                 }
             }
@@ -95,7 +95,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 let refused = match owned {
                     true => slice.clone(),
-                    false => Expr::undefined(),
+                    false => Expr::js_undefined(),
                 };
                 Expr::cond(fits, result::ok(value), result::err(refused))
             }
@@ -373,7 +373,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if fact == TypeFact::InPlace {
             use crate::lower::recognition::InPlaceSource;
             return match crate::lower::recognition::in_place_source(self.tcx, self.typing_env, of) {
-                Some(InPlaceSource::Never) => Ok(Expr::undefined()),
+                Some(InPlaceSource::Never) => Ok(Expr::js_undefined()),
                 Some(InPlaceSource::Items(item)) => Ok(Expr::array(vec![
                     self.type_fact_value(item, TypeFact::Size, span)?,
                     self.type_fact_value(item, TypeFact::Align, span)?,
@@ -468,7 +468,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Some(n) => Ok(Expr::int(n.into())),
                     None => self.const_arg(len, span),
                 },
-                _ => Ok(Expr::undefined()),
+                _ => Ok(Expr::js_undefined()),
             };
         }
         // What std's unstable sort of it picks by its layout (ADR 0471).

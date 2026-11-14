@@ -61,7 +61,7 @@ test("a Room size is undefined only of #934's case, by room_value", () => {
   const code = (file: string) => read(file).split("\n").filter((line) => !line.trim().startsWith("//"));
   const rust = files("src/lower").filter((file) => file.endsWith(".rs"));
   const room = body(read("src/lower/iterators/hint_asks.rs"), "room_value");
-  expect(room).toContain("(crate::lower::recognition::is_associated_type(item) && self.in_impl_method()).then(Expr::undefined)");
+  expect(room).toContain("(crate::lower::recognition::is_associated_type(item) && self.in_impl_method()).then(Expr::js_undefined)");
   expect(room.match(/undefined/g)?.length).toBe(1);
   const gated = rust.flatMap((file) => code(file).filter((line) => line.includes("is_associated_type(") && !line.includes("fn is_associated_type(")).map(() => file));
   expect(gated).toEqual(["src/lower/iterators/hint_asks.rs"]);

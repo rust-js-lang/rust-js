@@ -278,7 +278,7 @@ impl<'a> Cx<'a> {
                     b,
                 )
             }
-            ExprKind::ItemHole(_) => unreachable!("the pipeline puts each item where its hole is"),
+            ExprKind::Hole(hole) => unreachable!("no tree is printed with a hole: {}", hole.what()),
             ExprKind::Import(js::ImportFrom::Specifier(from)) => {
                 let source = Expression::new_string_literal(SPAN, self.allocator.alloc_str(from), None, b);
                 Expression::new_import_expression(sp, source, None, None, b)

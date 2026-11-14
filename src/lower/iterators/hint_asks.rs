@@ -955,7 +955,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ => self.known_fact_of(item, fact),
         };
         given(TypeFact::Room).or_else(|| given(TypeFact::Size)).or_else(|| {
-            (crate::lower::recognition::is_associated_type(item) && self.in_impl_method()).then(Expr::undefined)
+            (crate::lower::recognition::is_associated_type(item) && self.in_impl_method()).then(Expr::js_undefined)
         })
     }
 
@@ -1001,7 +1001,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             args.push(Expr::bool(deque));
         }
         if drop.is_some() || own || lost_or_asked {
-            args.push(drop.unwrap_or_else(Expr::undefined));
+            args.push(drop.unwrap_or_else(Expr::js_undefined));
         }
         if own || lost_or_asked {
             args.push(Expr::bool(own));
@@ -1052,7 +1052,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut args = vec![it];
         match room {
             Room::Nothing => {}
-            Room::Bytes => args.extend([Expr::int(1), Expr::undefined()]),
+            Room::Bytes => args.extend([Expr::int(1), Expr::js_undefined()]),
             Room::Entries(entry) => {
                 let (size, align) = self.entry_layout(entry);
                 args.extend([size, align]);
@@ -1096,7 +1096,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         if let Some(of) = of {
             if args.len() == 2 {
-                args.push(Expr::undefined());
+                args.push(Expr::js_undefined());
             }
             args.push(of);
         }

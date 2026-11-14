@@ -233,14 +233,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let made = match xor {
             true => {
                 let b_none = Expr::bin(Op::LooseEq, b.clone(), Expr::null());
-                Expr::cond(a_some.clone(), Expr::cond(b_none, a, Expr::undefined()), b)
+                Expr::cond(a_some.clone(), Expr::cond(b_none, a, Expr::js_undefined()), b)
             }
             false => {
                 let both = Expr::bin(Op::And, a_some.clone(), b_some.clone());
                 Expr::cond(
                     both,
                     Expr::array(vec![a_value.clone(), b_value.clone()]),
-                    Expr::undefined(),
+                    Expr::js_undefined(),
                 )
             }
         };

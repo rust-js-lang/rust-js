@@ -103,7 +103,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/traits/dyns.rs",
     find: "        if let js::ExprKind::Object(props, ..) = &holder.kind\n",
     replace:
-      "        if let js::ExprKind::Object(props, ..) = &Expr::undefined().kind\n",
+      "        if let js::ExprKind::Object(props, ..) = &Expr::js_undefined().kind\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_ref_cells.rs$"],
     snapshots: true,
   },
@@ -490,7 +490,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a counted `Rc` of a borrowed function made a `dyn Fn` keeps the function itself in its cell, `{ value: greet, .. }`, whose last drop runs the drop `greet` carries",
     file: "src/lower/traits/dyns.rs",
-    find: "                    *held = Expr::call_helper(\"$borrowed\", vec![std::mem::replace(held, Expr::undefined())]);\n",
+    find: "                    *held = Expr::call_helper(\"$borrowed\", vec![std::mem::replace(held, Expr::taken())]);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_of_a_borrowed_function.rs$"],
   },

@@ -42,7 +42,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let item = generic_args.type_at(0);
         let mut arg = || values.next().expect("rustc checked the arguments");
         Ok(Some(match op {
-            OnceOp::New => Expr::object(vec![Prop::Field(crate::js::HELD.into(), Expr::undefined())]),
+            OnceOp::New => Expr::object(vec![Prop::Field(crate::js::HELD.into(), Expr::js_undefined())]),
             OnceOp::Get => Expr::held(arg()),
             // A `&mut` to an object is the object; to a number or text, a
             // `{ value }` box (ADR 0074), which the cell itself is once set.
@@ -62,7 +62,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .unwrap_or_else(|| cell.clone());
                 Expr::cond(
                     Expr::bin(Op::LooseEq, Expr::held(cell.clone()), Expr::null()),
-                    Expr::undefined(),
+                    Expr::js_undefined(),
                     lent,
                 )
             }
@@ -84,7 +84,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             OnceOp::Take => {
                 let place = self.fixed_place_of(Expr::held(arg()), out);
                 let old = self.spill(Role::Old, place.clone(), out);
-                out.push(StmtKind::Assign(place, Expr::undefined()).at(self.js_span(span)));
+                out.push(StmtKind::Assign(place, Expr::js_undefined()).at(self.js_span(span)));
                 old
             }
         }))
@@ -109,14 +109,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if empty {
             let stored = self.once_stored(value, item);
             out.push(StmtKind::Assign(place, stored).at(js_span));
-            return result::ok(Expr::undefined());
+            return result::ok(Expr::js_undefined());
         }
         // Made before it's tested, as Rust makes it before the call.
         let value = match value.reads_same() || (!read && !value.has_effects()) {
             true => value,
             false => self.spill(Role::Value, value, out),
         };
-        let unset = Expr::bin(Op::Eq, place.clone(), Expr::undefined());
+        let unset = Expr::bin(Op::Eq, place.clone(), Expr::js_undefined());
         let unset = match read {
             true => self.spill(Role::Unset, unset, out),
             false => unset,
@@ -125,8 +125,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let set = vec![StmtKind::Assign(place, stored).at(js_span)];
         out.push(StmtKind::If(unset.clone(), set, None).at(js_span));
         match read {
-            true => Expr::cond(unset, result::ok(Expr::undefined()), result::err(value)),
-            false => Expr::undefined(),
+            true => Expr::cond(unset, result::ok(Expr::js_undefined()), result::err(value)),
+            false => Expr::js_undefined(),
         }
     }
 

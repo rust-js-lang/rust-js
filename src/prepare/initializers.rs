@@ -130,7 +130,7 @@ fn chained(body: &[Stmt]) -> Option<Expr> {
     fn value(list: &[Stmt], end: bool) -> Option<Expr> {
         let cond = |t: &Expr, yes: Expr, no: Expr, at: js::Span| Expr::cond(t.clone(), yes, no).or_at(at);
         match list {
-            [] => end.then(Expr::undefined),
+            [] => end.then(Expr::js_undefined),
             [
                 Stmt {
                     kind: StmtKind::Return(Some(v)),

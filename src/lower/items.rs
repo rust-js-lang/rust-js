@@ -68,7 +68,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // makes its values anew from JSON, sharing none (#341).
         if self.asked_of_library(def_id) {
             self.krate.asked.borrow_mut().push((def_id, self.module));
-            return Expr::undefined();
+            return Expr::hole(js::Hole::Asked);
         }
         // A library's, imported by the name it chose (ADR 0100).
         if let Some(item) = self.krate.foreign.item(def_id) {
@@ -101,7 +101,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.krate.named_expressions.contains(&def_id) {
             return Expr {
                 facts: js::Facts::NONE,
-                kind: js::ExprKind::ItemHole(def_id.index.as_u32()),
+                kind: js::ExprKind::Hole(js::Hole::Item(def_id.index.as_u32())),
                 span: js::Span::NONE,
                 held_as: Default::default(),
             };

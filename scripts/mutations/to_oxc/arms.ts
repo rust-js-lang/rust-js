@@ -71,7 +71,7 @@ export const mutations: Mutation[] = [
     name: "written-extent-of-a-binding",
     breaks: "an operand placed nowhere starts where a variable it reads is bound, `a` of `if let Some(a) = a && ..`, before a comment inside the test, which is then before the loop",
     file: "src/to_oxc/arms.rs",
-    find: "            *part = js::Expr::undefined();\n",
+    find: "            *part = js::Expr::js_undefined();\n",
     replace: "",
     tests: ["test/lowering-written-branches.test.ts", "-t", "continues are as written"],
   },

@@ -45,7 +45,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     && !matches!(value.kind, js::ExprKind::Var(_))
                     && !value.is_constant()
                 {
-                    *value = self.spill(Base::Temporary, std::mem::replace(value, Expr::undefined()), out);
+                    *value = self.spill(Base::Temporary, std::mem::replace(value, Expr::taken()), out);
                 }
             }
         }
@@ -145,7 +145,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if text || self.takes_arguments_function(state, (callee, generic_args), i) {
                 continue;
             }
-            let given = self.value_expr(std::mem::replace(value, Value::Expr(Expr::undefined())), span)?;
+            let given = self.value_expr(std::mem::replace(value, Value::Expr(Expr::taken())), span)?;
             *value = self.arguments_called(given, ty);
         }
         Ok(())
@@ -183,7 +183,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .and_then(|place| place.as_local())
                 .is_some_and(|local| holds_text(&self.recognition(), state.body, local));
             if !text {
-                let given = self.value_expr(std::mem::replace(value, Value::Expr(Expr::undefined())), span)?;
+                let given = self.value_expr(std::mem::replace(value, Value::Expr(Expr::taken())), span)?;
                 *value = self.arguments_called(given, ty);
             }
         }

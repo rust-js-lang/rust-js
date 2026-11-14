@@ -88,7 +88,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // `if (m === undefined) m = v; else $assign(m, v);`
             Rewritten::Tested => out.push(
                 StmtKind::If(
-                    Expr::bin(Op::Eq, target.clone(), Expr::undefined()),
+                    Expr::bin(Op::Eq, target.clone(), Expr::js_undefined()),
                     vec![StmtKind::Assign(target, value).at(js_span)],
                     Some(written),
                 )

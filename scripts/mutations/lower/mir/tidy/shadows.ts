@@ -182,7 +182,7 @@ export const mutations: Mutation[] = [
     breaks:
       "an `if` whose branch the shadow's own value left empty stays `if (list != null) {} else { .. }`, not its other way, `if (list == null) { .. }` (rd65)",
     file: "src/lower/mir/tidy/shadows.rs",
-    find: "                        *test = std::mem::replace(test, Expr::undefined()).negated_test();\n                        *then = otherwise.take().unwrap_or_default();\n",
+    find: "                        *test = std::mem::replace(test, Expr::taken()).negated_test();\n                        *then = otherwise.take().unwrap_or_default();\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^shadow_made_where_none.rs$"],
     snapshots: true,

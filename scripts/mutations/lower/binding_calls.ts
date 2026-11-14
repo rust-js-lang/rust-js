@@ -81,7 +81,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`kind.object()` is the value of any kind, a string's too, which `WeakMap.prototype.set` throws of (ADR 0910)",
     file: "src/lower/binding_calls.rs",
-    find: "                Expr::cond(test, this.present(), Expr::undefined())\n",
+    find: "                Expr::cond(test, this.present(), Expr::js_undefined())\n",
     replace:
       "                {\n                    let _ = test;\n                    this.present()\n                }\n",
     tests: ["test/js-object.test.ts", "-t", "one weak key"],
@@ -282,7 +282,7 @@ export const mutations: Mutation[] = [
     breaks:
       'a setter binding, `history.set_scroll_restoration("auto")`, calls the property, `history.scrollRestoration("auto")`, instead of assigning it',
     file: "src/lower/binding_calls.rs",
-    find: "                let value = args.remove(0);\n                // A setter may answer it, which may do anything, throw\n                // too: never a write that only makes a value (ADR 0660,\n                // amended).\n                let property = Expr::member(this, name).answered_by_a_setter();\n                out.push(StmtKind::Assign(property, value).at(self.js_span(span)));\n                Expr::undefined()\n",
+    find: "                let value = args.remove(0);\n                // A setter may answer it, which may do anything, throw\n                // too: never a write that only makes a value (ADR 0660,\n                // amended).\n                let property = Expr::member(this, name).answered_by_a_setter();\n                out.push(StmtKind::Assign(property, value).at(self.js_span(span)));\n                Expr::js_undefined()\n",
     replace: "                Expr::call(Expr::member(this, name), args)\n",
     tests: [
       "test/webapi-bindings.test.ts",
@@ -616,7 +616,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/binding_calls.rs",
     find: "            (JsForm::Null, None) if args.is_empty() => Expr::null(),\n",
     replace:
-      "            (JsForm::Null, None) if args.is_empty() => Expr::undefined(),\n",
+      "            (JsForm::Null, None) if args.is_empty() => Expr::js_undefined(),\n",
     tests: [
       "test/lowering-nullable-constants.test.ts",
       "-t",
@@ -754,7 +754,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/binding_calls.rs",
     find: "        let js::ExprKind::Arrow(mut params, mut body) = closure.kind else {\n",
     replace:
-      "        let js::ExprKind::Arrow(mut params, mut body) = closure.kind else {\n            return Ok(Expr::undefined());\n",
+      "        let js::ExprKind::Arrow(mut params, mut body) = closure.kind else {\n            return Ok(Expr::js_undefined());\n",
     tests: [
       "test/js-functions.test.ts",
       "-t",

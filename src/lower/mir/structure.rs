@@ -429,7 +429,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     && let Value::Expr(made) | Value::Discriminant(made, ..) = &mut subject
                     && made.has_effects()
                 {
-                    let value = std::mem::replace(made, Expr::undefined());
+                    let value = std::mem::replace(made, Expr::taken());
                     *made = self.spill(Base::Temporary, value, &mut out);
                 }
                 // What goes one way alone, the rest unreachable, tests
@@ -442,7 +442,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     && let Value::Expr(made) | Value::Discriminant(made, ..) = &mut subject
                     && made.has_effects()
                 {
-                    let value = std::mem::replace(made, Expr::undefined());
+                    let value = std::mem::replace(made, Expr::taken());
                     out.push(StmtKind::Expr(value).at(self.js_span(span)));
                 }
                 // Where in what a pattern matches it is, which names its
@@ -481,7 +481,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 for (test, target, value) in cases {
                     match grouped.iter_mut().find(|(_, t, _)| *t == target) {
                         Some((either, _, values)) => {
-                            *either = Expr::bin(Op::Or, std::mem::replace(either, Expr::undefined()), test);
+                            *either = Expr::bin(Op::Or, std::mem::replace(either, Expr::taken()), test);
                             values.push(value);
                         }
                         None => grouped.push((test, target, vec![value])),
@@ -588,7 +588,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 {
                     // Of an `Option<bool>`'s `Some(false)`, `o === false`, its
                     // `Some(true)`'s, that value exactly, `o === true`.
-                    *test = match std::mem::replace(test, Expr::undefined()) {
+                    *test = match std::mem::replace(test, Expr::taken()) {
                         Expr {
                             kind: js::ExprKind::Binary(Op::Eq, payload, _),
                             ..

@@ -271,7 +271,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `while (a)`'s test, joined by the rest of it, `while (t)`, which reads past the length",
     file: "src/lower/mir/tidy/loops.rs",
-    find: "                _ => Expr::bin(Op::And, std::mem::replace(cond, Expr::undefined()), test),\n",
+    find: "                _ => Expr::bin(Op::And, std::mem::replace(cond, Expr::taken()), test),\n",
     replace: "                _ => test,\n",
     tests: [
       "test/lowering-written-loops.test.ts",

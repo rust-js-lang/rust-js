@@ -428,8 +428,8 @@ export const mutations: Mutation[] = [
     breaks:
       "what's written through a handle applied in place is stored as it is, `current = noneOf(1)`, not as the handle stores it (#541)",
     file: "src/js/applied.rs",
-    find: "                    let written = storage.written(std::mem::replace(value, Expr::undefined()), false);\n",
-    replace: "                    let written = std::mem::replace(value, Expr::undefined());\n",
+    find: "                    let written = storage.written(std::mem::replace(value, Expr::taken()), false);\n",
+    replace: "                    let written = std::mem::replace(value, Expr::taken());\n",
     tests: ["test/corpus.test.ts", "-t", "^nullable_written_through_borrows.rs$"],
   },
   {

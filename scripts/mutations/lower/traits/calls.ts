@@ -233,7 +233,7 @@ export const mutations: Mutation[] = [
       "a call through a struct's `dyn` field spills its pair, `receiver.impl.to_val(receiver.value)`",
     file: "src/lower/traits/calls.rs",
     find: "            let parts = match &receiver.kind {\n",
-    replace: "            let parts = match &Expr::undefined().kind {\n",
+    replace: "            let parts = match &Expr::js_undefined().kind {\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_struct_tails.rs$"],
     snapshots: true,
   },

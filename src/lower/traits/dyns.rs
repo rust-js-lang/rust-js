@@ -440,7 +440,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && let Some(js::Prop::Field(_, held)) =
                 (props.iter_mut()).find(|prop| matches!(prop, js::Prop::Field(name, _) if name == js::HELD))
         {
-            let function = std::mem::replace(held, Expr::undefined());
+            let function = std::mem::replace(held, Expr::taken());
             *held = self.own_function(predicates, function, out);
             return rc;
         }
@@ -644,7 +644,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     && let Some(js::Prop::Field(_, held)) =
                         (props.iter_mut()).find(|prop| matches!(prop, js::Prop::Field(name, _) if name == js::HELD))
                 {
-                    *held = Expr::call_helper("$borrowed", vec![std::mem::replace(held, Expr::undefined())]);
+                    *held = Expr::call_helper("$borrowed", vec![std::mem::replace(held, Expr::taken())]);
                     return Ok(value);
                 }
                 let rc = match value.reads_same() {

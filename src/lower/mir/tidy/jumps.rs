@@ -836,7 +836,7 @@ mod tests {
     fn returns_undefined(c: &str, f: &str) -> Stmt {
         s(StmtKind::If(
             Expr::var(c),
-            vec![call(f), s(StmtKind::Return(Some(Expr::undefined())))],
+            vec![call(f), s(StmtKind::Return(Some(Expr::js_undefined())))],
             None,
         ))
     }

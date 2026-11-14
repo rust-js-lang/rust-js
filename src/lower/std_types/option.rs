@@ -164,7 +164,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         // Of an `Option` never falsy, `!!o`, as of `o != null`: `o?.m(x)`,
         // which `Expr::cond` reads (`null_test`, ADR 0298).
-        match Expr::cond(present.clone(), value, Expr::undefined()) {
+        match Expr::cond(present.clone(), value, Expr::js_undefined()) {
             Expr {
                 kind: js::ExprKind::Cond(_, value, none),
                 span,
@@ -268,7 +268,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let otherwise = match (known == Std::ResultOr).then(arg) {
                     Some(d) if d.has_effects() => self.spill(Role::Fallback, d, out),
                     Some(d) => d,
-                    None => Expr::undefined(),
+                    None => Expr::js_undefined(),
                 };
                 let ok = result::is(result.clone(), true);
                 let value = result::held(result.clone());
@@ -292,7 +292,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let otherwise = match fallback {
                     Some(d) if d.has_effects() => self.spill(Role::Fallback, d, out),
                     Some(d) => d,
-                    None => Expr::undefined(),
+                    None => Expr::js_undefined(),
                 };
                 let ok = result::is(result.clone(), true);
                 let value = result::held(result);
@@ -533,7 +533,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let e = self.fresh(Role::E);
         let shown = self.debug_string(Expr::var(&e), ty, span)?;
         if list.len() == 1 {
-            list.push(Expr::undefined());
+            list.push(Expr::js_undefined());
         }
         // `stockErrorDebug_fmt` itself, not `(e) => stockErrorDebug_fmt(e)`.
         let debug = match &shown.kind {
@@ -559,7 +559,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(());
         };
         while list.len() < 3 {
-            list.push(Expr::undefined());
+            list.push(Expr::js_undefined());
         }
         list.push(drop);
         Ok(())
@@ -672,7 +672,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && matches!(none.kind, js::ExprKind::Undefined)
             && let Some(x) = made(then)
         {
-            return Expr::cond((**test).clone(), x, Expr::undefined());
+            return Expr::cond((**test).clone(), x, Expr::js_undefined());
         }
         Expr::call(Expr::helper("$someValue"), vec![option])
     }
@@ -734,7 +734,7 @@ pub(in crate::lower) fn some_literal(inner: Expr) -> Expr {
 /// Is `value` the box of a `Some` that looks like `None` (ADR 0051), not
 /// what's in one: `value.$someNone !== undefined`.
 pub(in crate::lower) fn is_some_box(value: Expr) -> Expr {
-    Expr::bin(Op::Ne, Expr::member(value, SOME_NONE), Expr::undefined())
+    Expr::bin(Op::Ne, Expr::member(value, SOME_NONE), Expr::js_undefined())
 }
 
 /// `m ? m : d`, of an option `e` in a `const m` read only there, is
@@ -957,7 +957,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let present = Expr::bin(Op::LooseNe, place.clone(), Expr::null());
                 let take = vec![
                     StmtKind::Assign(Expr::var(&taken), place.clone()).at(js_span),
-                    StmtKind::Assign(place, Expr::undefined()).at(js_span),
+                    StmtKind::Assign(place, Expr::js_undefined()).at(js_span),
                 ];
                 out.push(StmtKind::Let(taken.clone(), None).at(js_span));
                 out.push(StmtKind::If(Expr::bin(Op::And, present, holds), take, None).at(js_span));

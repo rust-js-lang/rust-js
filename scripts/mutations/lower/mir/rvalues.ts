@@ -170,7 +170,7 @@ export const mutations: Mutation[] = [
     breaks:
       "MIR's `&mut *s` of `leak()`'s cell is its text, `\"cd\"`, not the cell",
     file: "src/lower/mir/rvalues.rs",
-    find: '                                    let kind = js::ExprKind::Member(Box::new(cell), "value".into());\n                                    Expr {\n                                        kind,\n                                        ..Expr::undefined()\n                                    }\n',
+    find: '                                    let kind = js::ExprKind::Member(Box::new(cell), "value".into());\n                                    Expr {\n                                        kind,\n                                        ..Expr::js_undefined()\n                                    }\n',
     replace:
       '                                    Expr::member(cell, "value")\n',
     tests: ["test/corpus.test.ts", "-t", "leaked_string_written"],
@@ -384,7 +384,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a raw pointer unsized to a `dyn` is a pair of the handle, not of its place's value",
     file: "src/lower/mir/rvalues.rs",
-    find: "                            let place = match self.has_no_place(self.pointee(from)) {\n                                true => Expr::undefined(),\n                                false => self.pointee_place(value),\n                            };\n",
+    find: "                            let place = match self.has_no_place(self.pointee(from)) {\n                                true => Expr::js_undefined(),\n                                false => self.pointee_place(value),\n                            };\n",
     replace: "                            let place = value;\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_pointers.rs$"],
   },
@@ -652,7 +652,7 @@ export const mutations: Mutation[] = [
       "a `match` of a nullable field of what may be `undefined` tests `!== undefined`, its `Some` a `None` (rd645)",
     file: "src/lower/mir/rvalues.rs",
     find: "                let none = self.held_none(place.ty(decls, tcx).ty);\n",
-    replace: "                let none = Expr::undefined();\n",
+    replace: "                let none = Expr::js_undefined();\n",
     tests: ["test/corpus.test.ts", "-t", "^nullable_field_of_undefined.rs$"],
   },
   {

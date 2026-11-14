@@ -138,7 +138,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let grown_size = self.capacity_item_size(generic_args.type_at(0));
                 // Of none given, unknown: never `0`, which is items of no
                 // size, whose capacity `$reserve` makes as many as asked.
-                let reserved_size = grown_size.clone().unwrap_or_else(Expr::undefined);
+                let reserved_size = grown_size.clone().unwrap_or_else(Expr::js_undefined);
                 match (op, self.krate.keeps_capacity) {
                     // Of items whose size isn't given, #934's (`room_value`),
                     // which may be of no size: not known, refused.
@@ -251,7 +251,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                 }
                 match known {
-                    Std::Nothing => Expr::undefined(),
+                    Std::Nothing => Expr::js_undefined(),
                     _ => Expr::array(vec![]),
                 }
             }
@@ -277,7 +277,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Some(drop) => Expr::call(Expr::helper("$truncate"), vec![arg(), Expr::int(0), drop]),
                 None => {
                     out.push(StmtKind::Assign(Expr::member(arg(), "length"), Expr::num(0)).at(js_span));
-                    Expr::undefined()
+                    Expr::js_undefined()
                 }
             },
             // A `VecDeque`'s is its `retain_mut`, std's: each kept swapped

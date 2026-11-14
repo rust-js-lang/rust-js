@@ -313,9 +313,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a `match` of a call's value calls it once per arm it tests, `match note(1, x) { 1 => .., 2 => .., _ => .. }`",
     file: "src/lower/mir/structure.rs",
-    find: "                    && made.has_effects()\n                {\n                    let value = std::mem::replace(made, Expr::undefined());\n                    *made = self.spill(",
+    find: "                    && made.has_effects()\n                {\n                    let value = std::mem::replace(made, Expr::taken());\n                    *made = self.spill(",
     replace:
-      "                    && made.has_effects()\n                    && false\n                {\n                    let value = std::mem::replace(made, Expr::undefined());\n                    *made = self.spill(",
+      "                    && made.has_effects()\n                    && false\n                {\n                    let value = std::mem::replace(made, Expr::taken());\n                    *made = self.spill(",
     tests: ["test/corpus.test.ts", "-t", "^match_call_once.rs$"],
   },
   {

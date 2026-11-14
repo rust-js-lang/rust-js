@@ -165,7 +165,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let own = match self.krate.self_handles.made_of(state.body.source.def_id(), def_id) {
             Some((capture, handle)) => {
                 if let Some(cell) = captured.get_mut(capture) {
-                    *cell = Value::Expr(Expr::undefined());
+                    *cell = Value::Expr(Expr::js_undefined());
                 }
                 Some(match handle {
                     Some(handle) => Expr::var(&state.locals.names[handle]),
@@ -312,7 +312,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 js::statement_lists(&mut stmts, &mut |list| {
                     for stmt in list.iter_mut() {
                         if let StmtKind::Return(Some(value)) = &mut stmt.kind {
-                            let given = std::mem::replace(value, Expr::undefined());
+                            let given = std::mem::replace(value, Expr::taken());
                             *value = Expr::call_helper("$settled", vec![given]);
                         }
                     }
@@ -428,7 +428,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     fn place_item(&self, id: rustc_span::def_id::DefId, at: u32, out: &mut Vec<Stmt>) {
         let hole = Expr {
             facts: js::Facts::NONE,
-            kind: js::ExprKind::ItemHole(id.index.as_u32()),
+            kind: js::ExprKind::Hole(js::Hole::Item(id.index.as_u32())),
             span: js::Span::NONE,
             held_as: Default::default(),
         };
@@ -443,7 +443,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let reads = |stmts: &[Stmt]| {
             let mut found = js::mentions_in(stmts, name);
             js::each_expr(stmts, &mut |e| {
-                found += usize::from(matches!(e.kind, js::ExprKind::ItemHole(index) if readers.contains(&index)));
+                found += usize::from(
+                    matches!(e.kind, js::ExprKind::Hole(js::Hole::Item(index)) if readers.contains(&index)),
+                );
             });
             found
         };

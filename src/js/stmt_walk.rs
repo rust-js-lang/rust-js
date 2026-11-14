@@ -19,7 +19,7 @@ impl Module {
         self.each_expr_mut(&mut |e| {
             let kind = match &e.kind {
                 ExprKind::Symbol(_) => "a module's symbol",
-                ExprKind::ItemHole(_) => "an item's hole",
+                ExprKind::Hole(hole) => hole.what(),
                 ExprKind::DropArgument(..) => "a drop's argument",
                 ExprKind::Handle(_, _) | ExprKind::Pair(..) => "a `&mut`'s handle",
                 ExprKind::Import(ImportFrom::Module(_)) => "an `import()` of a module without its specifier",
@@ -71,7 +71,7 @@ pub(crate) fn strict_presence(test: &Expr) -> Option<(Op, Expr)> {
         return None;
     }
     let none = match test.facts.only_none()? {
-        Known::NoneUndefined => Expr::undefined(),
+        Known::NoneUndefined => Expr::js_undefined(),
         _ => Expr::null(),
     };
     Some((if set { Op::Ne } else { Op::Eq }, none))

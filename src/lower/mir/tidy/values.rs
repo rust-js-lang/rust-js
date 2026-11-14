@@ -371,7 +371,7 @@ pub(super) fn holed_lists(body: &mut Vec<Stmt>) {
         let mut rest = body.clone();
         js::each_expr_mut(&mut rest, &mut |e| {
             if read(e) {
-                *e = Expr::undefined();
+                *e = Expr::js_undefined();
             }
         });
         if js::mentions_in(&rest, &name) != usize::from(assigned)
@@ -392,7 +392,7 @@ pub(super) fn holed_lists(body: &mut Vec<Stmt>) {
                     _ => continue,
                 };
                 if let ExprKind::Array(items) = &mut value.kind {
-                    *value = std::mem::replace(&mut items[at as usize], Expr::undefined());
+                    *value = std::mem::replace(&mut items[at as usize], Expr::taken());
                 }
             }
         });

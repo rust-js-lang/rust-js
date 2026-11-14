@@ -789,7 +789,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(in crate::lower) fn clone_arg(&mut self, ty: Ty<'tcx>, span: Span) -> R<Expr> {
         match self.needs_clone(ty) {
             true => self.clone_fn("value", ty, span),
-            false => Ok(Expr::undefined()),
+            false => Ok(Expr::js_undefined()),
         }
     }
 

@@ -241,7 +241,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     state.built.insert(root, (kind, type_name, steps, Taken::Kept));
                 }
             }
-            return Ok(Some(Value::Expr(Expr::undefined())));
+            return Ok(Some(Value::Expr(Expr::js_undefined())));
         }
         // A writer callable given the writer's `Formatter`, `with_word(word,
         // f)`: what it writes, `f += withWord(word)`, as a writer function's.
@@ -263,7 +263,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .map(Some);
             }
             self.append_to_writer(state, &name, written, false, self.js_span(span), out);
-            return Ok(Some(Value::Expr(Expr::undefined())));
+            return Ok(Some(Value::Expr(Expr::js_undefined())));
         }
         // A writer called through a `fn` pointer given the writer's
         // `Formatter`, `cb(x, f)`: what it writes, `f += cb(x)`, as a writer
@@ -295,7 +295,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .map(Some);
             }
             self.append_to_writer(state, &name, written, false, self.js_span(span), out);
-            return Ok(Some(Value::Expr(Expr::undefined())));
+            return Ok(Some(Value::Expr(Expr::js_undefined())));
         }
         // A write to the writer's `Formatter` (ADR 0054): `f += s`.
         if let Some((aliases, name)) = &state.writer
@@ -339,7 +339,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     out.push(StmtKind::Const(builder.clone(), made).at(self.js_span(span)));
                     let taken = Taken::Streamed(builder);
                     state.built.insert(destination.local, (kind, None, Vec::new(), taken));
-                    return Ok(Some(Value::Expr(Expr::undefined())));
+                    return Ok(Some(Value::Expr(Expr::js_undefined())));
                 }
                 // Held in a variable, which a branch may step or not: the
                 // array its steps add their parts to (ADR 0532).
@@ -358,7 +358,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 state
                     .built
                     .insert(destination.local, (kind, type_name, Vec::new(), taken));
-                return Ok(Some(Value::Expr(Expr::undefined())));
+                return Ok(Some(Value::Expr(Expr::js_undefined())));
             }
             let name = name.clone();
             let others: Vec<&Operand<'tcx>> = (args.iter().enumerate())
@@ -422,7 +422,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Ok(Some(Value::Expr(self.fmt_try(tried))));
             }
             out.extend(written_out);
-            return Ok(Some(Value::Expr(Expr::undefined())));
+            return Ok(Some(Value::Expr(Expr::js_undefined())));
         }
         Ok(None)
     }
@@ -905,7 +905,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             self.flush(state, out)?;
             let written = self.written_to_stderr(text, fails, self.js_span(span));
             out.extend(written);
-            return Ok(Some(Value::Expr(Expr::undefined())));
+            return Ok(Some(Value::Expr(Expr::js_undefined())));
         }
         // Of what may fail, written piece by piece, each value made apart
         // from the line, so the text before the one that fails is written,
@@ -914,7 +914,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let apart = match (fails, &mut text.kind) {
             (true, js::ExprKind::Template(_, values, _)) => {
                 for value in values.iter_mut() {
-                    *value = self.made_apart_from_the_line(std::mem::replace(value, Expr::undefined()));
+                    *value = self.made_apart_from_the_line(std::mem::replace(value, Expr::taken()));
                 }
                 text
             }

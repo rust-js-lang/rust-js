@@ -446,7 +446,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `match` of what a call gives, flushed before its switch, is refused",
     file: "src/lower/mir/temporaries.rs",
-    find: "                if !subject.reads_same() {\n                    let made_once = std::mem::replace(subject, Expr::undefined());\n                    *subject = self.spill(Base::Temporary, made_once, &mut made);\n                }\n                kept.push((local, value));\n                continue;\n",
+    find: "                if !subject.reads_same() {\n                    let made_once = std::mem::replace(subject, Expr::taken());\n                    *subject = self.spill(Base::Temporary, made_once, &mut made);\n                }\n                kept.push((local, value));\n                continue;\n",
     replace: "                if subject.reads_same() {\n                    kept.push((local, value));\n                    continue;\n                }\n",
     tests: ["test/corpus.test.ts", "-t", "^refused_drops_and_displays.rs$"],
     snapshots: true,

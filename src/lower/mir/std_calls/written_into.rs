@@ -44,7 +44,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if let Value::Fmt(_, _, value) = item
                 && value.has_effects()
             {
-                *value = self.spill(Base::Temporary, std::mem::replace(value, Expr::undefined()), out);
+                *value = self.spill(Base::Temporary, std::mem::replace(value, Expr::taken()), out);
             }
         }
         let item = |i: usize| match items.get(i) {
@@ -221,7 +221,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             true => self.fmt_try(body),
             false => {
                 out.extend(body);
-                Expr::undefined()
+                Expr::js_undefined()
             }
         }))
     }
@@ -329,7 +329,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<Value<'tcx>> {
         use crate::lower::recognition::WriteCall;
         let sink = Expr::var(&state.writer.as_ref().expect("a writer").1);
-        let options = self.given_to_writer(None).unwrap_or_else(Expr::undefined);
+        let options = self.given_to_writer(None).unwrap_or_else(Expr::js_undefined);
         let mut values = values.into_iter();
         let writes = match operation {
             WriteCall::Text => match values.next() {
@@ -477,7 +477,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     return Err(self.unsupported(span, "this derived `Debug`, from its MIR"));
                 };
                 let type_name = self.shown_in_place(type_name, span)?;
-                let options = self.given_to_writer(None).unwrap_or_else(Expr::undefined);
+                let options = self.given_to_writer(None).unwrap_or_else(Expr::js_undefined);
                 let pretty = self.writer_pretty().alternate();
                 let mut values: Vec<Value<'tcx>> = match operation {
                     WriteCall::StructFields | WriteCall::TupleFields => {
@@ -546,7 +546,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(Value::Expr(self.fmt_try(written)));
         }
         out.extend(written);
-        Ok(Value::Expr(Expr::undefined()))
+        Ok(Value::Expr(Expr::js_undefined()))
     }
 
     /// The refusal of `what`, written by a writer that writes through a
@@ -599,7 +599,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(Value::Expr(self.fmt_try(written)));
         }
         out.extend(written);
-        Ok(Value::Expr(Expr::undefined()))
+        Ok(Value::Expr(Expr::js_undefined()))
     }
 }
 

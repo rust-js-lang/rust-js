@@ -81,7 +81,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 {
                     Expr::array(Vec::new())
                 }
-                _ => Expr::undefined(),
+                _ => Expr::js_undefined(),
             },
             UninitOp::Zeroed => self.zero(item, span)?,
             UninitOp::Read => self.copy_if_needed(arg(), item),

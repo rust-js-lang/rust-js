@@ -110,7 +110,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             None => None,
         };
         let into = match (into, &drop) {
-            (None, Some(_)) => Some(Expr::undefined()),
+            (None, Some(_)) => Some(Expr::js_undefined()),
             (into, _) => into,
         };
         // Of values with a destructor alone, what drops them first (#423).
@@ -143,19 +143,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let mut list = vec![items];
             list.extend(given(vec![
                 (boxed.then(|| Expr::bool(true)), Expr::bool(false)),
-                (into, Expr::undefined()),
-                (drop, Expr::undefined()),
+                (into, Expr::js_undefined()),
+                (drop, Expr::js_undefined()),
                 (rest_first, Expr::bool(false)),
-                (size, Expr::undefined()),
+                (size, Expr::js_undefined()),
             ]));
             Expr::call(Expr::helper("$collectOptions"), list)
         } else {
             let mut list = vec![items];
             list.extend(given(vec![
-                (into, Expr::undefined()),
-                (drop, Expr::undefined()),
+                (into, Expr::js_undefined()),
+                (drop, Expr::js_undefined()),
                 (rest_first, Expr::bool(false)),
-                (size, Expr::undefined()),
+                (size, Expr::js_undefined()),
             ]));
             Expr::call(Expr::helper("$collectResults"), list)
         })
@@ -196,9 +196,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let some_boxed = matches!(self.option_of(target), Some(payload) if self.boxed_payload(payload));
         let mut args = vec![items, collect];
         let optional = match result {
-            true => vec![(drop, Expr::undefined()), (drop_err, Expr::undefined())],
+            true => vec![(drop, Expr::js_undefined()), (drop_err, Expr::js_undefined())],
             false => vec![
-                (drop, Expr::undefined()),
+                (drop, Expr::js_undefined()),
                 (boxed.then(|| Expr::bool(true)), Expr::bool(false)),
                 (some_boxed.then(|| Expr::bool(true)), Expr::bool(false)),
             ],
@@ -403,16 +403,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // One that asks its length, a JS iterator that knows it, its back
             // too where it steps it from there (ADR 0456).
             if self.exact_size_param(callee, input) {
-                let held = std::mem::replace(value, Expr::undefined());
+                let held = std::mem::replace(value, Expr::taken());
                 let back = self.double_ended_param(callee, input);
                 *value = self.as_exact_size(held, given, back, span)?;
             // One that steps it from its back, a JS iterator that knows it
             // (ADR 0429).
             } else if self.double_ended_param(callee, input) {
-                let held = std::mem::replace(value, Expr::undefined());
+                let held = std::mem::replace(value, Expr::taken());
                 *value = self.as_double_ended(held, given, span)?;
             } else if matches!(input.kind(), ty::Param(_)) && self.given_as_iterator(callee, input, given) {
-                let held = std::mem::replace(value, Expr::undefined());
+                let held = std::mem::replace(value, Expr::taken());
                 *value = match made_knowing {
                     Some((back, len)) => self.as_knowing(held, given, (back, len), span)?,
                     None => self.as_js_iterator(held, given, span)?,
@@ -421,7 +421,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // its items (ADR 0061): a `&mut` collection's handles, an
             // `Option`'s, a B-tree's in order, `iterable_items`'.
             } else if matches!(input.kind(), ty::Param(_)) && self.given_iterable(callee, input) {
-                let held = std::mem::replace(value, Expr::undefined());
+                let held = std::mem::replace(value, Expr::taken());
                 *value = match made_knowing {
                     Some((back, len)) => self.as_knowing(held, given, (back, len), span)?,
                     None => self.iterable_items(held, given, span, out)?,
@@ -435,7 +435,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 && !given_as_it_is(self.tcx, callee, *param)
             {
                 let back = self.double_ended_param(callee, input);
-                let held = std::mem::replace(value, Expr::undefined());
+                let held = std::mem::replace(value, Expr::taken());
                 *value = self.slicing(held, given, back, span)?;
             }
         }

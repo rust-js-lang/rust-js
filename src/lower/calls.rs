@@ -455,7 +455,7 @@ pub(super) fn and_then_given<'tcx>(tcx: ty::TyCtxt<'tcx>, f: Ty<'tcx>, then: Exp
             Expr::null()
         }
         ty::Closure(..) if then.facts.has(Known::Defined) && !then.facts.has(Known::NoneNull) => Expr::null(),
-        _ => Expr::undefined(),
+        _ => Expr::js_undefined(),
     };
     (given_by(tcx, f, then), none)
 }

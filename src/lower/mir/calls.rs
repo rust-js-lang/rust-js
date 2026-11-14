@@ -382,7 +382,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
             self.flush(state, out)?;
             out.push(StmtKind::Assign(place.clone(), value).at(self.js_span(span)));
-            return Ok(Some(Value::Expr(Expr::undefined())));
+            return Ok(Some(Value::Expr(Expr::js_undefined())));
         }
         Ok(None)
     }
@@ -549,7 +549,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if parts.iter().skip(1).any(runs_code) {
             for part in &mut parts {
                 if !part.reads_same() {
-                    let made = std::mem::replace(part, Expr::undefined());
+                    let made = std::mem::replace(part, Expr::taken());
                     *part = self.spill(Role::Spread, made, out);
                 }
             }
@@ -672,7 +672,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if unkept {
             for (expr, &ty) in exprs.iter_mut().zip(arg_tys) {
                 if ty.is_mutable_ptr() || !ty.is_freeze(self.tcx, self.typing_env) {
-                    *expr = Expr::call_helper("$untrackedIn", vec![std::mem::replace(expr, Expr::undefined())]);
+                    *expr = Expr::call_helper("$untrackedIn", vec![std::mem::replace(expr, Expr::taken())]);
                 }
             }
         }
@@ -689,7 +689,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.reads_this(def_id)
             && let js::ExprKind::Call(callee, _) = &mut called.kind
         {
-            **callee = Expr::unbound(std::mem::replace(&mut **callee, Expr::undefined()));
+            **callee = Expr::unbound(std::mem::replace(&mut **callee, Expr::taken()));
         }
         // A generic `&mut T`'s box, of an object `T` here: what's in it.
         let called = self.generic_result_values((def_id, generic_args), called, span)?;
