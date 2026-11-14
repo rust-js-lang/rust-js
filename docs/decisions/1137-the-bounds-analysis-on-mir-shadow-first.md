@@ -589,3 +589,26 @@ givens become each local's interval where the body starts: a shared
 reference's referent, and a copy the body never writes.
 
 5 more sites left the bridge's list; 2 remain, C's.
+
+## Amendment: a closure's result told its caller (2026-11-14, #1701 C)
+
+The last 2 sites were `while let Some(x) = KEY.with_borrow(|v| v.get(i).cloned())`
+then `i += 1`. The `Some` knows `i` is below a length inside the closure,
+but the caller, past the loop's test, knew nothing of it.
+
+Now a closure's result is summarised (`closure_results`): one whose `Some`,
+at every return, is a slice's `get(index)` of a capture gives the capture's
+field and the most an index below that slice's length is. A thread-local's
+`with`, `with_borrow` and `with_borrow_mut` (`local_key_with`) give what
+their closure gives. So the caller's result is a `get` of the local the
+capture refers to, which its `Some` narrows as a direct `v.get(i)`'s does.
+The local is the caller's own:
+- **by a shared reference,** which borrowck holds unchanged while the
+  closure lives;
+- **or by copy,** of a closure made in the block whose call it's given,
+  where nothing after it's made writes the local.
+
+The bridge's list is empty, so M4 can delete THIR's range code, the bridge
+and the list. One mutation is equivalent and not kept: a closure's MIR has
+one return block, so the join there already drops a `Some` of anything
+else, `if i < 2 { Some(0) } else { v.get(i).copied() }`.

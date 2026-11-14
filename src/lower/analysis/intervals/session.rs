@@ -14,6 +14,10 @@ use crate::lower::std_types::once::OnceOp;
 #[derive(Default)]
 pub(crate) struct Intervals {
     given: IndexMap<rustc_span::def_id::DefId, Given>,
+    /// Of each closure whose result's `Some` knows a capture by shared
+    /// reference below a length, the capture's field and the most it is
+    /// (`closure_results`, #1701).
+    results: IndexMap<rustc_span::def_id::DefId, (usize, i128)>,
     bodies: Vec<(Proofs, IndexMap<Span, bool>)>,
     /// Each body's address, of `bodies`' each: what's asked of a block is
     /// of the body proved, never another's.
@@ -32,6 +36,8 @@ pub(crate) struct Shadow {
 /// patterns call, `add(1, 2)` of `const SUM`, is given what they pass
 /// (#1742; `call_graph::crate_graph`).
 pub(in crate::lower) fn given_parameters<'tcx>(tcx: TyCtxt<'tcx>, calls: &crate::lower::call_graph::Crate<'_, 'tcx>) {
+    let results = closure_results(tcx, &calls.bodies);
+    crate::lower::session::caches(tcx).intervals.borrow_mut().results = results;
     let only_called = crate::lower::analysis::only_called::only_called(tcx);
     let mut given = parameter_intervals(tcx, &calls.graph, &calls.bodies, &only_called);
     capture_intervals(tcx, &calls.bodies, &mut given);
@@ -184,6 +190,17 @@ pub(crate) fn shadow_report(tcx: TyCtxt<'_>) -> String {
         .as_ref()
         .map(|s| s.borrow().lines.iter().map(String::as_str).collect())
         .unwrap_or_default()
+}
+
+/// What `closure`'s result's `Some` knows: a capture by shared reference,
+/// by field, at most the most it gives (`closure_results`, #1701).
+pub(super) fn closure_result(tcx: TyCtxt<'_>, closure: rustc_span::def_id::DefId) -> Option<(usize, i128)> {
+    crate::lower::session::caches(tcx)
+        .intervals
+        .borrow()
+        .results
+        .get(&closure)
+        .copied()
 }
 
 /// Whether MIR proves the bounds check `block`'s `assert` makes, of

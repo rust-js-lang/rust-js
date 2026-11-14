@@ -1154,11 +1154,10 @@ pub fn skipped(items: &[u32], i: usize) -> usize {
     if let Some(&item) = items.get(i) { item as usize } else { i + 1 }
 }
 `);
-  expect(wrapsDisagreed(dir, ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target])).toEqual(["bridged flushed"]);
+  expect(wrapsDisagreed(dir, ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target])).toEqual([]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   // `summed`'s, and `flushed`'s, whose `get(i)` is in `with_borrow`'s
-  // closure: its `Some` MIR's intervals don't carry out of it yet (#1701),
-  // so the bridge takes THIR's verdict there (ADR 1137).
+  // closure, whose `Some` tells `flushed` its `i` is below a length (#1701).
   expect(js.match(/    i\+\+;\n/g)).toHaveLength(2);
   expect(js).toContain("?? (i + 1) >>> 0");
   const lib = await import(join(dir, "lib.js"));
@@ -1282,4 +1281,56 @@ pub fn lent(mut n: u32) -> u32 {
   const lib = await import(join(dir, "lib.js"));
   expect([lib.countdown(3), lib.countdown(0)]).toEqual([[3, 2, 1], []]);
   expect(lib.lent(5)).toBe(4294967295);
+});
+
+// #1701 C: a thread-local's `with_borrow` gives what its closure gives, so
+// a closure whose `Some` is a slice's `get(i)` of an `i` it captures by
+// shared reference tells its caller `i` is below a length: `i += 1` can't
+// wrap; and by copy, of a closure made where it's given the call, its `i`
+// the caller's there. Not where a return's `Some` is of anything else.
+test("a closure's Some of a slice's get tells its caller the index is below a length", async () => {
+  const dir = fixture("closure-result-get");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::RefCell;
+
+thread_local! {
+    static ITEMS: RefCell<Vec<u32>> = const { RefCell::new(Vec::new()) };
+}
+
+pub fn fill(n: u32) {
+    ITEMS.with_borrow_mut(|items| items.extend(0..n));
+}
+
+pub fn counted() -> usize {
+    let mut i = 0;
+    while let Some(_) = ITEMS.with_borrow(|items| items.get(i).copied()) {
+        i += 1;
+    }
+    i
+}
+
+pub fn other_some() -> usize {
+    let mut i = 0;
+    while let Some(_) = ITEMS.with_borrow(|items| if i < 2 { Some(0) } else { items.get(i).copied() }) {
+        i += 1;
+    }
+    i
+}
+
+pub fn copied() -> usize {
+    let mut i = 0;
+    while let Some(_) = ITEMS.with_borrow(move |items| items.get(i).copied()) {
+        i += 1;
+    }
+    i
+}
+`);
+  expect(wrapsDisagreed(dir)).toEqual([]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const of = (name: string) => js.slice(js.indexOf(`export function ${name}(`), js.indexOf("\n}\n", js.indexOf(`export function ${name}(`)));
+  expect(of("counted")).toContain("i++;");
+  expect(of("otherSome")).toContain("i = (i + 1) >>> 0;");
+  expect(of("copied")).toContain("i++;");
+  const lib = await import(join(dir, "lib.js"));
+  lib.fill(3);
+  expect([lib.counted(), lib.otherSome(), lib.copied()]).toEqual([3, 3, 3]);
 });

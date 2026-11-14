@@ -102,7 +102,113 @@ pub(super) fn capture_intervals<'tcx>(
     }
 }
 
+/// Of each closure of `bodies` whose result, at each return, is an
+/// `Option` of a slice's `get(index)` of a capture it refers to, the
+/// capture's field and the most an index below that slice's length is:
+/// `targets.get(i).cloned()` of `KEY.with_borrow(|targets| ..)`, whose
+/// `Some` knows its caller's `i` below a length (#1701 C).
+pub(super) fn closure_results<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    bodies: &IndexMap<DefId, &Body<'tcx>>,
+) -> IndexMap<DefId, (usize, i128)> {
+    let mut results = IndexMap::default();
+    for (&closure, body) in bodies {
+        if !tcx.is_closure_like(closure) {
+            continue;
+        }
+        let returns: IndexSet<BasicBlock> = (body.basic_blocks.iter_enumerated())
+            .filter(|(_, data)| matches!(data.terminator().kind, TerminatorKind::Return))
+            .map(|(block, _)| block)
+            .collect();
+        let typing_env = ty::TypingEnv::post_analysis(tcx, closure);
+        let walk = walk(tcx, typing_env, body, Given::default());
+        let ends = walk.ends(&returns);
+        // The capture each return's `Some` knows below a length, one at
+        // every return, and the most of them.
+        let mut found: Option<(usize, i128)> = None;
+        let mut every = !returns.is_empty();
+        for block in &returns {
+            let known = (ends.get(block))
+                .and_then(|state| state.gets.get(&mir::RETURN_PLACE))
+                .and_then(|&(index, most)| {
+                    let field = walk.captured.iter().find(|&&(_, local)| local == index)?.0;
+                    Some((field, most))
+                });
+            match (known, found) {
+                (Some(now), None) => found = Some(now),
+                (Some((field, most)), Some((was, before))) if field == was => found = Some((field, most.max(before))),
+                _ => every = false,
+            }
+        }
+        if every && let Some(result) = found {
+            results.insert(closure, result);
+        }
+    }
+    results
+}
+
 impl<'tcx> Walk<'_, 'tcx> {
+    /// What `of` is assigned, and where, of a local assigned once in this
+    /// body.
+    fn made(&self, of: Local) -> Option<(Location, &Rvalue<'tcx>)> {
+        let mut writes = (self.body.basic_blocks.iter_enumerated()).flat_map(|(block, data)| {
+            (data.statements.iter().enumerate()).filter_map(move |(statement_index, statement)| match &statement.kind {
+                StatementKind::Assign(assign) if assign.0.as_local() == Some(of) => {
+                    Some((Location { block, statement_index }, &assign.1))
+                }
+                _ => None,
+            })
+        });
+        match (writes.next(), writes.next()) {
+            (Some(made), None) => Some(made),
+            _ => None,
+        }
+    }
+
+    /// The local `operand`, a shared reference made once in this body,
+    /// refers to: `i` of `&i`.
+    fn referred(&self, operand: &Operand<'tcx>) -> Option<Local> {
+        let (_, Rvalue::Ref(_, mir::BorrowKind::Shared, of)) = self.made(operand.place()?.as_local()?)? else {
+            return None;
+        };
+        of.as_local()
+    }
+
+    /// The closure `local` holds, made once in this body: which, and the
+    /// local each capture refers to, by field: by a shared reference, which
+    /// borrowck holds unchanged while the closure lives; or by copy, of a
+    /// closure made in the block whose call it's given, the local not
+    /// written after it's made, so the call sees what it captured.
+    pub(super) fn made_closure(&self, local: Local) -> Option<(DefId, Vec<Option<Local>>)> {
+        let (at, Rvalue::Aggregate(kind, operands)) = self.made(local)? else {
+            return None;
+        };
+        let mir::AggregateKind::Closure(closure, _) = **kind else {
+            return None;
+        };
+        let data = &self.body.basic_blocks[at.block];
+        let given_here = matches!(&data.terminator().kind, TerminatorKind::Call { args, .. }
+            if args.iter().any(|arg| arg.node.place().and_then(|p| p.as_local()) == Some(local)));
+        let written_after = |of: Local| {
+            data.statements[at.statement_index + 1..].iter().any(|statement| {
+                matches!(&statement.kind, StatementKind::Assign(assign)
+                    if assign.0.local == of
+                        || matches!(&assign.1, Rvalue::Ref(_, mir::BorrowKind::Mut { .. }, place) | Rvalue::RawPtr(_, place) if place.local == of))
+            })
+        };
+        let copied = |operand: &Operand<'tcx>| {
+            let of = operand.place()?.as_local()?;
+            (given_here && self.range(self.body.local_decls[of].ty).is_some() && !written_after(of)).then_some(of)
+        };
+        Some((
+            closure,
+            operands
+                .iter()
+                .map(|operand| self.referred(operand).or_else(|| copied(operand)))
+                .collect(),
+        ))
+    }
+
     /// What's known just before each of `locations`' statements: none of
     /// one no flow reaches.
     fn at(&self, locations: &[Location]) -> Vec<Option<State>> {
@@ -126,17 +232,8 @@ impl<'tcx> Walk<'_, 'tcx> {
         if self.range(self.body.local_decls[local].ty).is_some() {
             return self.operand(operand, state);
         }
-        // The one write of a reference made where it's captured, `&n`.
-        let mut writes = (self.body.basic_blocks.iter())
-            .flat_map(|data| &data.statements)
-            .filter_map(|statement| match &statement.kind {
-                StatementKind::Assign(assign) if assign.0.as_local() == Some(local) => Some(&assign.1),
-                _ => None,
-            });
-        let (Some(Rvalue::Ref(_, mir::BorrowKind::Shared, of)), None) = (writes.next(), writes.next()) else {
-            return None;
-        };
-        self.operand(&Operand::Copy(of.as_local()?.into()), state)
+        // A reference made where it's captured, `&n`.
+        self.operand(&Operand::Copy(self.referred(operand)?.into()), state)
     }
 }
 

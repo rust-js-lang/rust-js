@@ -178,6 +178,20 @@ impl<'tcx> Walk<'_, 'tcx> {
         {
             after.gets.insert(local, (state.root(index), most.hi - 1));
         }
+        // A thread-local's `with`, `with_borrow` or `with_borrow_mut`
+        // gives what its closure gives: of one whose `Some` knows a capture
+        // by shared reference below a length, `targets.get(i).cloned()`,
+        // what it refers to here, `i` (#1701 C).
+        if let Some((callee, _)) = func.const_fn_def()
+            && local_key_with(self.tcx, callee)
+            && let Some(closure) = args.get(1).and_then(|arg| arg.node.place()).and_then(|p| p.as_local())
+            && let Some((made, referred)) = self.made_closure(closure)
+            && let Some((field, most)) = closure_result(self.tcx, made)
+            && let Some(&Some(index)) = referred.get(field)
+            && !self.lent.contains(&index)
+        {
+            after.gets.insert(local, (state.root(index), most));
+        }
         // `a..=b`, `RangeInclusive::new(a, b)`'s, of integers.
         if let Some((callee, callee_args)) = func.const_fn_def()
             && self.tcx.is_lang_item(callee, LangItem::RangeInclusiveNew)

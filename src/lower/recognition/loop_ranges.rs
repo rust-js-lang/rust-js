@@ -157,6 +157,18 @@ pub(in crate::lower) fn refcell_borrow(tcx: TyCtxt<'_>, def_id: DefId) -> Option
         .map(|_| mutable)
 }
 
+/// Whether a call is a thread-local's `with`, `with_borrow` or
+/// `with_borrow_mut`, std's, which gives what its closure gives (#1701).
+pub(in crate::lower) fn local_key_with(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    matches!(
+        tcx.item_name(def_id).as_str(),
+        "with" | "with_borrow" | "with_borrow_mut"
+    ) && (tcx.inherent_impl_of_assoc(def_id)).is_some_and(|impl_| {
+        matches!(tcx.type_of(impl_).instantiate_identity().skip_normalization().kind(),
+                ty::Adt(adt, _) if is_std_def(tcx, adt.did(), StdItem::LocalKey))
+    })
+}
+
 /// Whether a call is a `Ref`'s `Deref`, std's, which lends what its
 /// `RefCell` holds and runs nothing (ADR 1137, #1741).
 pub(in crate::lower) fn ref_deref<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, args: ty::GenericArgsRef<'tcx>) -> bool {

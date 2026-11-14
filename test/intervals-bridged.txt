@@ -5,5 +5,3 @@
 # fails where a site the bridge decides isn't listed, or one listed no
 # longer is: a new one is a gap to recover first, and one MIR now proves
 # goes. M4 deletes THIR's ranges and the bridge once it's empty.
-bridged_port_shapes.rs:50:9	replay	#1701
-present_index_counts.rs:32:9	flush	#1701

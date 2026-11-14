@@ -26,8 +26,8 @@ export const mutations: Mutation[] = [
     name: "captures-shared-reference-unfollowed",
     breaks: "a shared reference a closure captures is of nothing known, so `n - step` of `step = 7` past `n > 9` keeps its wrap",
     file,
-    find: "        self.operand(&Operand::Copy(of.as_local()?.into()), state)\n",
-    replace: "        let _ = (of, state);\n        None\n",
+    find: "        self.operand(&Operand::Copy(self.referred(operand)?.into()), state)\n",
+    replace: "        let _ = (self.referred(operand)?, state);\n        None\n",
     tests,
   },
   {
@@ -37,5 +37,21 @@ export const mutations: Mutation[] = [
     find: "    if !tcx.is_closure_like(body.source.def_id()) || body.arg_count == 0 {\n",
     replace: "    if true || !tcx.is_closure_like(body.source.def_id()) || body.arg_count == 0 {\n",
     tests: ["test/intervals-bridged.test.ts"],
+  },
+  {
+    name: "closure-results-never-given",
+    breaks: "no closure's result tells its caller anything, so `i += 1` past `while let Some(_) = ITEMS.with_borrow(|items| items.get(i).copied())` keeps its wrap",
+    file,
+    find: "            results.insert(closure, result);\n",
+    replace: "            let _ = (closure, result);\n",
+    tests: ["test/lowering-integer-ranges.test.ts", "-t", "tells its caller the index"],
+  },
+  {
+    name: "closure-copied-capture-unread",
+    breaks: "an `i` a closure made where it's given the call captured by copy is none of its caller's, so `i += 1` past `with_borrow(move |items| items.get(i).copied())` keeps its wrap",
+    file,
+    find: "                .map(|operand| self.referred(operand).or_else(|| copied(operand)))\n",
+    replace: "                .map(|operand| self.referred(operand).or_else(|| copied(operand).filter(|_| false)))\n",
+    tests: ["test/lowering-integer-ranges.test.ts", "-t", "tells its caller the index"],
   },
 ];

@@ -16,8 +16,8 @@
 use crate::collections::{IndexMap, IndexSet};
 use crate::lower::bindings::{is_rest_value, reads_string_length};
 use crate::lower::recognition::{
-    RangeStep, SliceLength, counts_utf16_units, integer_min_max, option_copied, range_of_integers, range_step,
-    ref_deref, refcell_borrow, slice_get, slice_length, text_length,
+    RangeStep, SliceLength, counts_utf16_units, integer_min_max, local_key_with, option_copied, range_of_integers,
+    range_step, ref_deref, refcell_borrow, slice_get, slice_length, text_length,
 };
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_index::IndexVec;
@@ -40,7 +40,7 @@ mod session;
 mod state;
 
 use callers::parameter_intervals;
-use captures::capture_intervals;
+use captures::{capture_intervals, closure_results};
 use ranges::stepped_ranges;
 pub(in crate::lower) use session::*;
 use state::*;

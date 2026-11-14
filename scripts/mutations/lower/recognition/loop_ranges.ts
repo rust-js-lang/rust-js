@@ -26,4 +26,12 @@ export const mutations: Mutation[] = [
     replace: '            "step_by_" => RangeStep::StepBy,\n',
     tests: ["test/intervals-shadow.test.ts"],
   },
+  {
+    name: "local-key-with-unrecognized",
+    breaks: "a thread-local's `with_borrow` gives nothing of its closure's result, so `i += 1` past `while let Some(_) = ITEMS.with_borrow(|items| items.get(i).copied())` keeps its wrap",
+    file: "src/lower/recognition/loop_ranges.rs",
+    find: '        "with" | "with_borrow" | "with_borrow_mut"\n',
+    replace: '        "with" | "with_borrow" | "with_borrow_mut" if false\n',
+    tests: ["test/lowering-integer-ranges.test.ts", "-t", "tells its caller the index"],
+  },
 ];
