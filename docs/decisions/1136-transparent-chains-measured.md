@@ -228,3 +228,37 @@ reaches, by source, not only the rows the adapters it names reach. Re-landed
 with both. The readability baseline, blessed since over the flip's forms, takes
 back the shares they had: `Iterator.from` 7.7 to 8.5 and `$iter` 84.2 to
 84.3 in 10,000 lines, the pre-flip forms', each as native prints.
+
+## Amendment: the held flip re-landed, from the source outward (2026-11-14, #1780)
+
+The held flip is back, as its amendment above described it (narrowed to
+std's struct, `BackStepped::made_knowing`; never `rev()`), with the rule
+whose absence made #1780's wrong answers: **what a compiled adapter is
+given is std's struct**, as ADR 0871 says of what's given to a compiled
+body. A held chain's links are flipped from its source outward, each while
+it's a `HELD_FLIPPED` one, and none past a link that isn't (`held_links`'s
+`map_while`): `src.chain(v).map(f)`'s `map` is given a `$lazyChain` made
+in place, which the compiled `Map` stepped as std's `Chain` struct,
+folding nothing; `src.take(n).map(f)`'s was given a hand-written `take`,
+and dropped twice more. Both are the hand-written forms now, as before the
+flip, and `src.map(f).enumerate()` is std's compiled structs, each given
+std's struct. `test/architecture-iterators.test.ts` holds the rule.
+
+Proved before its push: each row the push slice picks of a change to what
+decides a chain's form (ADR 1090, amended), 82,926 of the matrix's and
+14,144 of the table's, the whole of `pairs`, 12,000, and #1780's six
+rows, all passing. 47 corpus snapshots move, each as native prints, their
+lines 10,466 to 10,949, ×1.046 (×1.051 unruled); worst
+`associated_into_iter` ×1.29, as before. The React port's regeneration is
+byte for byte what its pin committed; readability grows in no shape.
+#1574's neighbour refusal ends again. New corpus case
+held_chain_mapped_past_a_link_not_compiled (`chain`, `take` and `step_by`
+then `map` then `rfold`, with drops; `flatten` then `map`; a compiled
+`map` then `enumerate`); mutation held-flip-past-a-link-not-flipped, the
+every-link rule, caught by it, beside the flip's three, caught. Three
+mutations whose cases the flip made std's compiled structs, so they no
+longer reached the hand-written form they break, are kept caught by cases
+it leaves hand-written: cloned-owners-bounds-unasked and
+cloned-owners-unrecorded by generic_map_past_a_take_beside_a_cloned_one,
+#1318's case with each `map` past a `take`; closing-try-fold-by-next by
+skip_try_fold's `any_kept_above`, a `map` past a `filter`.

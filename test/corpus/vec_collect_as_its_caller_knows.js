@@ -13,6 +13,7 @@ import {
   $intoIter,
   $iter,
   $iterator,
+  $jsIterator,
   $last,
   $lazyChain,
   $lazyRange,
@@ -78,10 +79,14 @@ function fromItems(items, TItemSize, TIntoIterVecCollect) {
  */
 function mapped(it, JTrustedLen, JInPlace) {
   return all(
-    $mapEnds(it, (x) => {
-      console.log(`stepped ${x}`);
-      return (x + 1) >>> 0;
-    }),
+    iterator_map(
+      it,
+      (x) => {
+        console.log(`stepped ${x}`);
+        return (x + 1) >>> 0;
+      },
+      $jsIterator,
+    ),
     $vecCollectWay($collectsInPlace(JInPlace, 4, 4), JTrustedLen, JInPlace),
     4,
   );

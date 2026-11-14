@@ -7,9 +7,11 @@ import {
   $held,
   $holding,
   $iter,
+  $jsIteratorSome,
   $live,
   $next,
   $unwindsOn,
+  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -80,13 +82,7 @@ function kept(f, v, dropF) {
 }
 
 function countBy(it, f, dropF) {
-  const iter = $holding(
-    Iterator.from(it).map((item) => f(item)),
-    () => {
-      dropF?.(f);
-    },
-    "after",
-  );
+  const iter = iterator_map(it, f, $jsIteratorSome, undefined, undefined, dropF);
   let result;
   try {
     result = iter.reduce((n) => n + 1, 0);

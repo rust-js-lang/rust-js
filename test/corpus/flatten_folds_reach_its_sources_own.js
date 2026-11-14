@@ -10,10 +10,18 @@ import {
   $foldBack,
   $iter,
   $iterator,
+  $jsIterator,
+  $knowing,
   $live,
   $mapEnds,
+  $nextBack,
   $rev,
+  $tryOf,
   $unwindsOn,
+  iterator_map,
+  mapDoubleEndedIterator_nextBack,
+  mapDoubleEndedIterator_rfold,
+  mapDoubleEndedIterator_tryRfold,
 } from "@rust-js/std";
 
 export function entry() {
@@ -176,8 +184,52 @@ function pair(d) {
 /** Generic code's flatten of what it's given, folded from its back. */
 function rfolded(it, dropI) {
   return $foldBack(
-    $flattenEnds($mapEnds($closing(it, dropI, false), pair), (item) =>
-      $closing($iter(item), $dropEach(dDrop_drop)),
+    $flattenEnds(
+      $knowing(
+        iterator_map(it, pair, $jsIterator, dropI, $dropEach(dDrop_drop), undefined, dDrop_drop),
+        (iterator) =>
+          mapDoubleEndedIterator_nextBack(
+            iterator,
+            { next_back: $nextBack, rfold: $foldBack },
+            $dropEach(dDrop_drop),
+            dropI,
+            undefined,
+            dDrop_drop,
+          ),
+        undefined,
+        (iterator, init, f, unwind, ends) =>
+          mapDoubleEndedIterator_rfold(
+            iterator,
+            init,
+            f,
+            $jsIterator,
+            { next_back: $nextBack, rfold: $foldBack },
+            $dropEach(dDrop_drop),
+            dropI,
+            undefined,
+            unwind,
+            ends,
+            dDrop_drop,
+          ),
+        undefined,
+        (iterator, init, f, broke, unwind, ends) =>
+          mapDoubleEndedIterator_tryRfold(
+            iterator,
+            init,
+            f,
+            $jsIterator,
+            { next_back: $nextBack, rfold: $foldBack },
+            $tryOf(broke),
+            $dropEach(dDrop_drop),
+            dropI,
+            undefined,
+            unwind,
+            ends,
+            undefined,
+            dDrop_drop,
+          ),
+      ),
+      (item) => $closing($iter(item), $dropEach(dDrop_drop)),
     ),
     0,
     (a, d) => {

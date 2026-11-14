@@ -3,9 +3,10 @@
 //! string, a range, or a binding's boxed iterator, JS's own (#1681's step
 //! ii); no `Iterator` impl of the crate's reachable; no item
 //! nor closure capture with a destructor; and nothing escapes, the chain
-//! consumed where it's made, or a `for` loop's. A read-only query: its
-//! answers are counted (`transparent-chain`, `RUST_JS_DECISIONS`), and
-//! nothing reads them yet.
+//! consumed where it's made, or a `for` loop's. Its answers are counted
+//! (`transparent-chain`, `RUST_JS_DECISIONS`), and `in_place::decide`
+//! reads them: a `held` chain's adapters are std's compiled structs
+//! (#1681's step iii).
 
 use crate::lower::body_queries::strip;
 use crate::lower::recognition::{Recognition, StdItem, std_item};
@@ -14,18 +15,82 @@ use rustc_middle::ty::{self, Ty, TyCtxt};
 use rustc_span::DesugaringKind;
 use rustc_span::def_id::DefId;
 
-/// Counts each chain of `thir`, the body `owner`'s, by what keeps it from
-/// being transparent, the first of: an `Iterator` of the crate's; an
-/// iterator held apart it starts on; another source than an array, a
-/// `Vec`, a slice, a string or a range; an iterator that escapes; a
-/// destructor; an iterator method no table proves (`PROVED_LINKS`); an
-/// adapter's argument evaluated as it's given, whose order
-/// matters; a `Vec` collected where its capacity is read; or admitted.
+/// What keeps a chain from being transparent, the first of these, or
+/// nothing, `Admitted`.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub(in crate::lower) enum Transparency {
+    /// An `Iterator` of the crate's among its links' generic arguments.
+    UserIterator,
+    /// It starts on an iterator held apart, a variable's, a field's, a
+    /// parameter's, or a boxed one Rust made.
+    Held,
+    /// It starts on another source than an array, a `Vec`, a slice, a
+    /// string, a range or a binding's boxed iterator.
+    Source,
+    /// Its iterator escapes where it's made.
+    Escapes,
+    /// An item or a closure's capture has a destructor.
+    DropGlue,
+    /// An iterator method no table proves (`PROVED_LINKS`).
+    Unproved,
+    /// An adapter's argument evaluated as it's given, whose order matters.
+    Order,
+    /// A `Vec` collected in a crate that reads capacities.
+    Capacity,
+    Admitted,
+}
+
+impl Transparency {
+    /// Its answer's name in `transparent-chain`'s counts.
+    pub(in crate::lower) fn name(self) -> &'static str {
+        match self {
+            Transparency::UserIterator => "user-iterator",
+            Transparency::Held => "held",
+            Transparency::Source => "source",
+            Transparency::Escapes => "escapes",
+            Transparency::DropGlue => "drop-glue",
+            Transparency::Unproved => "unproved",
+            Transparency::Order => "order",
+            Transparency::Capacity => "capacity",
+            Transparency::Admitted => "admitted",
+        }
+    }
+}
+
+/// A chain of iterator calls: each link's call, its outermost first, and
+/// what keeps it from being transparent.
+pub(in crate::lower) struct Chain {
+    pub(in crate::lower) links: Vec<ExprId>,
+    /// What it starts on, its first link's first argument.
+    pub(in crate::lower) source: Option<ExprId>,
+    pub(in crate::lower) answer: Transparency,
+}
+
+/// Counts each chain of `thir`, the body `owner`'s, by its answer
+/// (`chains`), where decisions are asked.
 pub(in crate::lower) fn count_chains<'tcx>(
+    recognition: &Recognition<'_, 'tcx>,
+    body: (&Thir<'tcx>, DefId),
+    keeps_capacity: bool,
+) {
+    for chain in chains(recognition, body, keeps_capacity) {
+        crate::decisions::record("transparent-chain", chain.answer.name());
+    }
+}
+
+/// Each chain of `thir`, the body `owner`'s, and what keeps it from being
+/// transparent, the first of: an `Iterator` of the crate's; an iterator
+/// held apart it starts on; another source than an array, a `Vec`, a
+/// slice, a string, a range or a binding's boxed iterator; an iterator that
+/// escapes; a destructor; an iterator method no table proves
+/// (`PROVED_LINKS`); an adapter's argument evaluated as it's given, whose
+/// order matters; a `Vec` collected where its capacity is read; or
+/// admitted.
+pub(in crate::lower) fn chains<'tcx>(
     recognition: &Recognition<'_, 'tcx>,
     (thir, owner): (&Thir<'tcx>, DefId),
     keeps_capacity: bool,
-) {
+) -> Vec<Chain> {
     let tcx = recognition.tcx;
     let recognition = Recognition {
         typing_env: ty::TypingEnv::post_analysis(tcx, tcx.typeck_root_def_id(owner)),
@@ -72,6 +137,7 @@ pub(in crate::lower) fn count_chains<'tcx>(
     // one Rust makes, `Box::new(..)`, whose `dyn` hides what it boxes,
     // which may be an `Iterator` of the crate's, `Box::new(Counter(0))`.
     let plain = |s: ExprId| is_plain_source(&recognition, thir[s].ty.peel_refs()) || binding_boxed(tcx, thir, s);
+    let mut found = Vec::new();
     for &root in links.iter().filter(|&&e| !inner.contains(&e) && !loops_next(e)) {
         let mut chain = vec![root];
         let mut source = None;
@@ -94,37 +160,42 @@ pub(in crate::lower) fn count_chains<'tcx>(
             .iter()
             .any(|&e| link(e).is_some_and(|(_, args, _)| args.types().any(crate_iterator)))
         {
-            "user-iterator"
+            Transparency::UserIterator
         } else if source.is_some_and(|s| is_iterator(thir[s].ty) && !plain(s)) {
             // It starts on an iterator held apart, a variable's, a field's
             // or a parameter's, std's struct; not a range, which is one.
-            "held"
+            Transparency::Held
         } else if !source.is_none_or(plain) {
-            "source"
+            Transparency::Source
         } else if is_iterator(thir[root].ty) && !thir[root].span.is_desugaring(DesugaringKind::ForLoop) {
-            "escapes"
+            Transparency::Escapes
         } else if chain.iter().any(|&e| drops_in(tcx, &recognition, thir[e].ty, link(e))) {
-            "drop-glue"
+            Transparency::DropGlue
         } else if chain
             .iter()
             .filter_map(|&e| link(e))
             .any(|(callee, ..)| iterator_method(callee) && !crate::lower::recognition::is_proved_link(tcx, callee))
         {
             // An iterator method whose hand-written form no table proves.
-            "unproved"
+            Transparency::Unproved
         } else if chain.iter().any(|&e| !arguments_inert(thir, e)) {
             // An adapter's argument run as it's given, `chain(make())`,
             // whose order a hand-written form may change (#1015).
-            "order"
+            Transparency::Order
         } else if keeps_capacity && recognition.is_std_type(thir[root].ty, StdItem::Vec) {
             // A `Vec` collected in a crate that reads capacities, which
             // std's hint makes (#1635).
-            "capacity"
+            Transparency::Capacity
         } else {
-            "admitted"
+            Transparency::Admitted
         };
-        crate::decisions::record("transparent-chain", answer);
+        found.push(Chain {
+            links: chain,
+            source,
+            answer,
+        });
     }
+    found
 }
 
 /// Whether each argument of the call `e` but its first is inert: a

@@ -18,7 +18,7 @@ mod value;
 
 pub(in crate::lower) use self::hint_asks::{Room, Shunted, refuse_unknown_capacity_extends};
 pub(in crate::lower) use self::stepping::{cloned_apart, stepped_by_parts};
-pub(in crate::lower) use self::transparent::count_chains;
+pub(in crate::lower) use self::transparent::{Transparency, chains, count_chains};
 pub(in crate::lower) use self::value::{
     EnumeratedForm, Form, IterValue, back_source, bounds_of, bounds_read, chain_parts, chars_made_of, closed,
     closed_parts, count_bound, enumerated, enumerated_knowing, enumerated_of, form_lacks_a_back, held_by_its_owner,

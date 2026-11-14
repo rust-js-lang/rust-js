@@ -8,6 +8,7 @@ import {
   $iterCmp,
   $iterEq,
   $iterator,
+  $jsIterator,
   $lazyChain,
   $lazyMapWhile,
   $lazyRange,
@@ -22,6 +23,7 @@ import {
   $tryFoldOk,
   $tryFoldSome,
   $unwindsOn,
+  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -54,7 +56,28 @@ function heldIterator_nth(held, n) {
 }
 
 function anyAbove(it, n, dropI) {
-  const map = $held($closing(Iterator.from(it), dropI, false).map((x) => (x + 1) | 0));
+  const map = $held(iterator_map(it, (x) => (x + 1) | 0, $jsIterator, dropI));
+  let result;
+  try {
+    result = $lent(map).some((x) => x > n);
+  } catch (error) {
+    $cleanup(() => {
+      map.return();
+    }, error);
+    throw error;
+  }
+  map.return();
+  return result;
+}
+
+// Its `map` past a `filter`, which isn't std's compiled struct, is the
+// hand-written form, and steps what it's given by its `try_fold` too.
+function anyKeptAbove(it, n, dropI) {
+  const map = $held(
+    $closing(Iterator.from(it), dropI, false)
+      .filter((x) => x !== 0)
+      .map((x) => (x + 1) | 0),
+  );
   let result;
   try {
     result = $lent(map).some((x) => x > n);
@@ -101,6 +124,29 @@ function main() {
   );
   console.log(
     `generic ${anyAbove(
+      $closing(
+        $iterator(
+          [c()],
+          heldIterator_next,
+          false,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          heldIterator_nth,
+        ),
+        (it) => {
+          console.log(`drop held at ${it.of[0].at}`);
+        },
+      ).drop(2),
+      5,
+      (skip) => {
+        skip.return();
+      },
+    )}`,
+  );
+  console.log(
+    `generic kept ${anyKeptAbove(
       $closing(
         $iterator(
           [c()],

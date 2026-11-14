@@ -780,16 +780,16 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         (params_may_drop, (!library).then_some(&given_a_drop)),
         &cloned,
     );
-    // Which adapters each body makes in place, the second stage: once what's
-    // stepped from its back is known, the one reader of the ground, and
-    // before any reader of both stages, `type_fact_params`' (`InPlace`).
-    for bodies in [every_body.0, every_body.1] {
-        crate::lower::body_queries::decide_held(bodies);
-    }
     // What generic code asks the hint of, made knowing it where it's made,
     // by the makers of what's stepped from its back (#1236).
     let hint_asked = hint_asked::of_crate(tcx, recognition, (all_bodies, calls.names()), keeps_capacity);
     back_stepped.typed.extend(hint_asked.knowing);
+    // Which adapters each body makes in place, the second stage: once what's
+    // stepped from its back is known, the one reader of the ground, and
+    // before any reader of both stages, `type_fact_params`' (`InPlace`).
+    for bodies in [every_body.0, every_body.1] {
+        crate::lower::body_queries::decide_held(&recognition, bodies, (&back_stepped, keeps_capacity));
+    }
     let asks_whole = |kind| chars_asked::asks_whole(tcx, recognition, all_bodies, (library, keeps_capacity), kind);
     let chars_whole = asks_whole(crate::lower::recognition::TextIter::Chars);
     let searches_whole = asks_whole(crate::lower::recognition::TextIter::Search);

@@ -98,15 +98,76 @@ pub(in crate::lower) fn decide<'tcx>(
     }
 }
 
+/// The adapters the held flip makes std's compiled struct, `HELD_COMPILED`'s
+/// `enumerate()` and `map()` (#1681's step iii). Not `rev()`: `back_stepped`,
+/// which decides the flip, reads whether a `rev()` is made in place (its
+/// held-`rev()` rule marks what a held one is given made knowing its back),
+/// so flipping one would change what decides it (ADR 1136, amended).
+pub(in crate::lower) const HELD_FLIPPED: [&str; 2] = ["enumerate", "map"];
+
 /// The second stage of which adapters each body makes in place
 /// (`InPlace`), once the analysis knows what's stepped from its back: what
-/// it takes out of the ground. None yet (#1681's step iii). Of each body,
+/// it takes out of the ground. A chain that starts on a variable holding an
+/// iterator apart, `held`'s (`Transparency::Held`), whose value is std's
+/// struct, not one made knowing its back or its length
+/// (`BackStepped::made_knowing`), is std's compiled structs: its
+/// `HELD_FLIPPED` adapters are taken out, std's body the meaning where the
+/// hand-written form isn't proved to be it (#1681's step iii). Of each body,
 /// the crate's and its initializers', the harness's too, as each is
-/// lowered.
-pub(in crate::lower) fn decide_held<'tcx>(bodies: &[crate::lower::Body<'tcx>]) {
+/// lowered; none of the build of std's structs, which makes none in place.
+pub(in crate::lower) fn decide_held<'tcx>(
+    recognition: &crate::lower::recognition::Recognition<'_, 'tcx>,
+    bodies: &[crate::lower::Body<'tcx>],
+    (back_stepped, keeps_capacity): (&crate::lower::analysis::BackStepped<'tcx>, bool),
+) {
+    let tcx = recognition.tcx;
+    let iterator = crate::lower::recognition::std_item(tcx, crate::lower::recognition::StdItem::Iterator);
+    let flipped: Vec<DefId> = (HELD_FLIPPED.iter())
+        .map(|&method| crate::lower::recognition::trait_method(tcx, iterator, method))
+        .collect();
+    let meaning = crate::lower::session::caches(tcx).meaning.get();
     for body in bodies {
-        body.facts.in_place_adapters.decide_held(IndexSet::default());
+        let held = match (meaning, body.mir.as_ref()) {
+            (false, Some(mir)) => held_links(recognition, body, (&mir.body, &flipped), (back_stepped, keeps_capacity)),
+            _ => IndexSet::default(),
+        };
+        body.facts.in_place_adapters.decide_held(held);
     }
+}
+
+/// The `fn_span` of each `flipped` link of `body`'s chains that start on a
+/// variable holding std's struct apart (`decide_held`), from the source
+/// outward while each is one: what a compiled adapter is given is std's
+/// struct, the variable's or another flipped one's, never a hand-written
+/// form, as ADR 0871 says of what's given to a compiled body. Past a link
+/// that isn't flipped, `src.chain(v).map(f)`'s `chain`, a `$lazyChain` in
+/// place, none is: the compiled `Map` stepped it as std's `Chain` struct,
+/// which it isn't, and folded nothing (#1780).
+fn held_links<'tcx>(
+    recognition: &crate::lower::recognition::Recognition<'_, 'tcx>,
+    body: &crate::lower::Body<'tcx>,
+    (mir, flipped): (&rustc_middle::mir::Body<'tcx>, &[DefId]),
+    (back_stepped, keeps_capacity): (&crate::lower::analysis::BackStepped<'tcx>, bool),
+) -> IndexSet<Span> {
+    let thir = &body.thir;
+    let held_apart = |source: ExprId| {
+        matches!(thir[strip(thir, source)].kind, ExprKind::VarRef { .. })
+            && !back_stepped.made_knowing(*recognition, (body.def_id, mir), thir[source].ty)
+    };
+    let flipped_span = |link: ExprId| match thir[link].kind {
+        ExprKind::Call { fun, fn_span, .. } if matches!(*thir[fun].ty.kind(), ty::FnDef(callee, _) if flipped.contains(&callee)) => {
+            Some(fn_span)
+        }
+        _ => None,
+    };
+    let chains = crate::lower::iterators::chains(recognition, (thir, body.def_id), keeps_capacity);
+    (chains.into_iter())
+        .filter(|chain| chain.answer == crate::lower::iterators::Transparency::Held)
+        .filter(|chain| chain.source.is_some_and(held_apart))
+        // Its links are from what's called last to what's called on the
+        // source.
+        .flat_map(|chain| chain.links.into_iter().rev().map_while(flipped_span))
+        .collect()
 }
 
 /// Each `rev()`, `enumerate()` or `map()`, `HELD_COMPILED`'s, whose adapter

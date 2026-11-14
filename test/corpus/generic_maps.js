@@ -9,7 +9,6 @@ import {
   $entryOrInsertWith,
   $eq,
   $foldOf,
-  $given,
   $hashSlice,
   $iter,
   $next,
@@ -42,12 +41,10 @@ function tCounting(TIterator) {
   return $traitImpl($tCounting, [TIterator], () => ({
     countsBy(self, f, KHash, KPartialEq, KMap) {
       const counts = new KMap();
-      $given(self, TIterator, true)
-        .map((item) => f(item))
-        .forEach((k) => {
-          const orInsert = $entryOrInsert($entry(counts, k), 0, true);
-          orInsert.value = (orInsert.value + 1) >>> 0;
-        });
+      iterator_map(self, f, TIterator).forEach((k) => {
+        const orInsert = $entryOrInsert($entry(counts, k), 0, true);
+        orInsert.value = (orInsert.value + 1) >>> 0;
+      });
       return counts;
     },
     counts(self, SelfItemHash, SelfItemPartialEq, SelfItemMap) {

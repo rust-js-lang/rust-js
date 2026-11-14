@@ -3,9 +3,10 @@
 import {
   $cleanup,
   $closing,
-  $collectDropping,
   $dropEach,
   $filterDropping,
+  $foldOf,
+  $foldToArray,
   $held,
   $iter,
   $iterator,
@@ -19,6 +20,7 @@ import {
   $nthDropping,
   $rev,
   $unwindsOn,
+  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -168,13 +170,32 @@ function main() {
     }
     if (total > 0) {
       some$live = false;
-      const rest = $collectDropping(
-        some.map((d) => {
+      const iter = iterator_map(
+        some,
+        (d) => {
           const result = d[0];
           dDrop_drop(d);
           return result;
-        }),
+        },
+        { next: $next, fold: $foldOf },
+        (take) => {
+          take.return();
+        },
+        undefined,
+        undefined,
+        dDrop_drop,
       );
+      let result;
+      try {
+        result = $foldToArray(iter);
+      } catch (error) {
+        throw $unwindsOn(error);
+      } finally {
+        if ($live()) {
+          iter.return();
+        }
+      }
+      const rest = result;
       console.log(`rest [${rest.join(", ")}]`);
     }
     // Collected by JS's own `new Set(..)`, which closes nothing at its end:

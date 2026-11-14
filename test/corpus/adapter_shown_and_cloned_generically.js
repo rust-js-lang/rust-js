@@ -15,6 +15,7 @@ import {
   clonedDebug,
   clonedIterator___iteratorGetUnchecked,
   iterator_cloned,
+  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -49,8 +50,9 @@ function tTools(TIterator) {
   return $traitImpl($tTools, [TIterator], () => ({
     paired(self, other, SelfIterator, JIntoIterator, JIntoIterClone) {
       other = JIntoIterator.intoIter(other);
-      return $given(self, SelfIterator)
-        .map((a) =>
+      return iterator_map(
+        self,
+        (a) =>
           Math.imul(
             a,
             $given(JIntoIterClone.clone(other), JIntoIterator.IntoIterIterator()).reduce(
@@ -58,8 +60,8 @@ function tTools(TIterator) {
               0,
             ),
           ),
-        )
-        .reduce((a, b) => (a + b) | 0, 0);
+        SelfIterator,
+      ).reduce((a, b) => (a + b) | 0, 0);
     },
   }));
 }

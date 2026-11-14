@@ -7,6 +7,7 @@ import {
   $cellOf,
   $cmp,
   $collectVec,
+  $count,
   $debugStr,
   $extend,
   $extendMap,
@@ -18,12 +19,14 @@ import {
   $intoIter,
   $iter,
   $iterator,
+  $last,
   $lazyRange,
   $next,
   $rangeNext,
   $sortedKeys,
   $splitAtMut,
   $unwinds,
+  iterator_map,
   iterator_skip,
   skipClone,
   skipIterator___iteratorGetUnchecked,
@@ -65,7 +68,12 @@ function twice(it, IIterator, IClone) {
   const again = $givenClone(copied, IClone.clone);
   return [
     copied.reduce((a, b) => (a + b) >>> 0, 0),
-    again.map((x) => (x * 2) >>> 0).reduce((a, b) => (a + b) >>> 0, 0),
+    iterator_map(again, (x) => (x * 2) >>> 0, {
+      next: $next,
+      fold: $foldOf,
+      last: $last,
+      count: $count,
+    }).reduce((a, b) => (a + b) >>> 0, 0),
   ];
 }
 

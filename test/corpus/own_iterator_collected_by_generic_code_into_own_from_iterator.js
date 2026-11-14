@@ -8,7 +8,9 @@ import {
   $intoIter,
   $iter,
   $iterator,
+  $jsIterator,
   $next,
+  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -122,7 +124,7 @@ function collected(it, BFromIteratorIItem, ITrustedLen, IInPlace, dropI) {
 }
 
 function doubled(it, BFromIteratorU32, ITrustedLen, IInPlace, dropI) {
-  const iter = $closing(Iterator.from(it), dropI, false).map((n) => (n * 2) >>> 0);
+  const iter = iterator_map(it, (n) => (n * 2) >>> 0, $jsIterator, dropI);
   let result;
   try {
     result = BFromIteratorU32.fromIter(

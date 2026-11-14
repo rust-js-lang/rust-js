@@ -10,10 +10,8 @@ import {
   $debugStr,
   $entry,
   $entryOrInsert,
-  $enumerate,
   $eq,
   $foldOf,
-  $given,
   $hashSlice,
   $hashedMap,
   $hashedSet,
@@ -41,6 +39,7 @@ import {
   $treeFromSorted,
   $windows,
   iterator_enumerate,
+  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -224,7 +223,12 @@ function iTools_ordered(
     new ($keyClassOf(false, true, [$BTreeMap, IItemTreeMap]))(),
     $collectDropping(
       $roomForHint(
-        $enumerate($given(self, IIterator, true)).map((pair) => [pair, undefined]),
+        iterator_map(iterator_enumerate(self, IIterator), (pair) => [pair, undefined], {
+          next: $next,
+          fold: $foldOf,
+          nth: $nth,
+          count: $count,
+        }),
         UsizeIItemSize,
         false,
       ),

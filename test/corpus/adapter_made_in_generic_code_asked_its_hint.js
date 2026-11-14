@@ -9,6 +9,7 @@ import {
   $given,
   $held,
   $iter,
+  $jsIterator,
   $last,
   $lazyRange,
   $mapEnds,
@@ -20,6 +21,7 @@ import {
   $some,
   $someValue,
   $taking,
+  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -53,7 +55,7 @@ function hint(it, dropI) {
 }
 
 function doubled(it) {
-  return hint($mapEnds(it, (x) => (x * 2) >>> 0));
+  return hint(iterator_map(it, (x) => (x * 2) >>> 0, $jsIterator));
 }
 
 function firstTwo(it) {

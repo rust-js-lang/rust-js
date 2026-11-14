@@ -31,6 +31,7 @@ import {
   $stepBy,
   $stepByEnds,
   $unwindsOn,
+  iterator_map,
   iterator_peekable,
   iterator_take,
 } from "@rust-js/std";
@@ -500,12 +501,21 @@ function held(n) {
               if (n > 0) {
                 taken$5$live = false;
                 console.log(
-                  `held mapped ${taken
-                    .map((l) => {
+                  `held mapped ${iterator_map(
+                    taken,
+                    (l) => {
                       const result = l[0];
                       loudDrop_drop(l);
                       return result;
-                    })
+                    },
+                    { next: $next, fold: $foldOf },
+                    (take) => {
+                      take.return();
+                    },
+                    undefined,
+                    undefined,
+                    loudDrop_drop,
+                  )
                     .drop(3)
                     .reduce((k) => (k + 1) | 0, 0)}`,
                 );

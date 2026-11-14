@@ -57,6 +57,12 @@ fn any_above<I: Iterator<Item = i32>>(it: I, n: i32) -> bool {
     it.map(|x| x + 1).any(|x| x > n)
 }
 
+// Its `map` past a `filter`, which isn't std's compiled struct, is the
+// hand-written form, and steps what it's given by its `try_fold` too.
+fn any_kept_above<I: Iterator<Item = i32>>(it: I, n: i32) -> bool {
+    it.filter(|&x| x != 0).map(|x| x + 1).any(|x| x > n)
+}
+
 fn main() {
     println!(
         "skip_while {:?}",
@@ -66,6 +72,7 @@ fn main() {
             .any(|x| x > 25)
     );
     println!("generic {:?}", any_above(Held(c()).skip(2), 5));
+    println!("generic kept {:?}", any_kept_above(Held(c()).skip(2), 5));
     println!("{:?}", c().skip(2).nth(1));
     println!("{:?}", c().skip(2).any(|x| x > 5));
     println!("{:?}", c().skip(2).all(|x| x < 5));

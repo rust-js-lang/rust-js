@@ -11,6 +11,7 @@ import {
   $folded,
   $iter,
   $iterator,
+  $jsIterator,
   $lazyChain,
   $lazyRange,
   $next,
@@ -19,6 +20,7 @@ import {
   $some,
   iterator_flatMap,
   iterator_fuse,
+  iterator_map,
   iterator_peekable,
 } from "@rust-js/std";
 
@@ -448,8 +450,11 @@ function collected(it, dropI) {
 }
 
 function text(it, dropI) {
-  const iter = $closing(Iterator.from(it), dropI, false).map((n) =>
-    String.fromCharCode((97 + (n & 255)) & 255),
+  const iter = iterator_map(
+    it,
+    (n) => String.fromCharCode((97 + (n & 255)) & 255),
+    $jsIterator,
+    dropI,
   );
   let result;
   try {

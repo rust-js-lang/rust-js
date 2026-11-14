@@ -452,7 +452,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/stepping.rs",
     find: "                && within_its_owners(cloned_ty, ty)\n",
     replace: "                && (true || within_its_owners(cloned_ty, ty))\n",
-    tests: ["test/corpus.test.ts", "-t", "^generic_map_beside_a_cloned_one_of_other_bounds.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^generic_map_past_a_take_beside_a_cloned_one.rs$"],
   },
   {
     name: "copied-source-cloned-apart",

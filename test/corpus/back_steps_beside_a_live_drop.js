@@ -9,6 +9,7 @@ import {
   $count,
   $dropEach,
   $enumerate,
+  $foldOf,
   $held,
   $iter,
   $iterator,
@@ -29,6 +30,7 @@ import {
   $slice,
   $taking,
   $unwindsOn,
+  iterator_enumerate,
   iterator_peekable,
 } from "@rust-js/std";
 
@@ -162,11 +164,19 @@ function afterAPeekedCount() {
     }, error);
     throw error;
   }
-  console.log(
-    `count ${$count($enumerate(it), (value) => {
-      dDrop_drop(value[1]);
-    })}`,
+  const iter = iterator_enumerate(
+    it,
+    { next: $next, fold: $foldOf },
+    (peekable) => {
+      peekable.return();
+    },
+    dDrop_drop,
   );
+  const result = $count(iter, (value) => {
+    dDrop_drop(value[1]);
+  });
+  iter.return();
+  console.log(`count ${result}`);
   let v = Array.from($rev($enumerate($skipping($iter([1, 2, 3, 4]), 1))));
   console.log(`[${v.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
   v = [1, 2, 3, 4].slice(0, 3).toReversed();

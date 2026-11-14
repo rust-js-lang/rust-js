@@ -3,13 +3,16 @@
 import {
   $chars,
   $cmp,
+  $count,
   $debugStr,
-  $enumerate,
+  $foldOf,
   $folded,
-  $given,
   $mapFrom,
   $next,
+  $nth,
   $reserveHint,
+  iterator_enumerate,
+  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -39,7 +42,18 @@ function positions(make, IIterator) {
   const pairs = Array.from(
     $mapFrom(
       new Map(),
-      $reserveHint($folded($enumerate($given(it, IIterator)).map(([i, c]) => [c, i])), 8, 4),
+      $reserveHint(
+        $folded(
+          iterator_map(iterator_enumerate(it, IIterator), ([i, c]) => [c, i], {
+            next: $next,
+            fold: $foldOf,
+            nth: $nth,
+            count: $count,
+          }),
+        ),
+        8,
+        4,
+      ),
       false,
     ),
   );

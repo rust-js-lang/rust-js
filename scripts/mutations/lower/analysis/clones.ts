@@ -115,6 +115,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/clones.rs",
     find: "            cloned.owners.entry(ty).or_default().insert(owner);\n",
     replace: "            let _ = owner;\n",
-    tests: ["test/corpus.test.ts", "-t", "^generic_map_beside_a_cloned_one_of_other_bounds.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^generic_map_past_a_take_beside_a_cloned_one.rs$"],
   },
 ];
