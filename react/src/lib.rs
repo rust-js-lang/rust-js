@@ -1188,7 +1188,12 @@ pub fn static_component<P: Lifetimes, M>(component: impl ComponentType<P::Static
 
 /// A JSX component: a function from its props to what it renders, or
 /// one with no props, or one made by [`memo`], [`lazy`] or [`forward_ref`].
-/// `M` only tells them apart.
+/// `M` only tells them apart. A function whose return React doesn't
+/// render is none, which a tag of it says (#1810).
+#[diagnostic::on_unimplemented(
+    message = "`{Self}` isn't a component of these props: a component takes its props, or none, and returns what React renders, a `ReactNode`",
+    label = "returns what React doesn't render, or takes other props"
+)]
 pub trait ComponentType<P, M> {}
 
 /// [`Component`](https://react.dev/reference/react/Component), a class
@@ -1276,15 +1281,16 @@ pub struct Constructed;
 
 impl<P> ComponentType<P, Constructed> for ClassComponent<P> {}
 
-/// What a component function renders: an [`Element`], or an `Option` of
-/// one, `undefined` where it renders nothing, JS's `return null` (ADR 0286).
+/// What a component function renders: any node React renders, an
+/// [`Element`], an `Option` of one, `undefined` where it renders nothing,
+/// JS's `return null` (ADR 0286), a `Vec` of them, text or a number, as
+/// @types/react's component returns a `ReactNode` (#1810).
 // React renders a component again with the props it kept, twice in
 // `<StrictMode>`: what one changes in place of them is copied first (#1723).
 #[cfg_attr(rust_js, rust_js::gives_again)]
-pub trait Rendered {}
+pub trait Rendered: ReactNode {}
 
-impl Rendered for Element {}
-impl Rendered for Option<Element> {}
+impl<R: ReactNode> Rendered for R {}
 
 pub struct NoProps;
 pub struct WithProps;

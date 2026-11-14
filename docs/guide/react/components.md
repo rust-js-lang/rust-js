@@ -24,9 +24,12 @@ A function is a component when:
 
 - its name starts with an uppercase letter, `Greeting`, as JSX and Fast
   Refresh need;
-- it returns `JSX::Element`, or `Option<JSX::Element>` when it may render
-  nothing;
-- it takes no parameter, or one: its props struct.
+- it returns what React renders, any `ReactNode`: `JSX::Element`,
+  `Option<JSX::Element>` when it may render nothing, a `Vec` of elements,
+  text or a number, as a TypeScript component returns a `ReactNode`;
+  another return is rustc's error where it's used as a tag;
+- it takes no parameter, or one: its props struct;
+- its crate uses the react crate, as `react`.
 
 Write the name as JSX does. rustc's `non_snake_case` lint doesn't fire for a
 component, so you need no `#[allow]` ([ADR 0439](../../decisions/0439-a-component-is-named-as-jsx-names-it.md)). Any other function keeps

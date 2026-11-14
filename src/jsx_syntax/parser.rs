@@ -713,20 +713,12 @@ fn method_call(sess: &Session, receiver: TokenStream, method: &str, args: Vec<To
     call(sess, function, args, span)
 }
 
-/// Whether a function returning `ty` renders, as a component does: an
-/// `Element`, or an `Option` of one, which renders nothing where it's
-/// `None` (ADR 0286).
-fn renders(ty: &ast::Ty, optional: bool) -> bool {
-    let TyKind::Path(_, path) = &ty.kind else { return false };
-    let Some(last) = path.segments.last() else { return false };
-    match (last.ident.as_str(), last.args.as_deref()) {
-        ("Element", _) => true,
-        ("Option", Some(ast::GenericArgs::AngleBracketed(args))) if optional => matches!(
-            args.args.as_slice(),
-            [ast::AngleBracketedArg::Arg(ast::GenericArg::Type(inner))] if renders(inner, false)
-        ),
-        _ => false,
-    }
+/// Whether the crate renders with React, so a function may be a component:
+/// it's the react crate, or is given it as `react`, which a component's
+/// companion names it by. A crate that isn't, a binding's of `ContextMenu.Root`,
+/// has no component, whatever its functions return (#1810).
+fn renders_react(sess: &Session) -> bool {
+    sess.opts.crate_name.as_deref() == Some("react") || sess.opts.externs.iter().any(|(name, _)| name == "react")
 }
 
 /// A component's name, what it's called by, its props' type and, of a
@@ -749,10 +741,14 @@ fn signature(sess: &Session, item: &ast::Item, classes: &Classes) -> Option<(Ide
             )
         }
         ItemKind::Fn(f) => {
-            let FnRetTy::Ty(ret) = &f.sig.decl.output else {
+            // A component, as JSX names one, capitalized, of one props
+            // argument or none, that returns what it renders: any node React
+            // renders, which rustc checks through `react::component` (#1810).
+            let FnRetTy::Ty(_) = &f.sig.decl.output else {
                 return None;
             };
-            if !renders(ret, true) || f.sig.decl.inputs.len() > 1 {
+            if !renders_react(sess) || !f.ident.as_str().starts_with(char::is_uppercase) || f.sig.decl.inputs.len() > 1
+            {
                 return None;
             }
             let props = match f.sig.decl.inputs.first() {
@@ -765,10 +761,10 @@ fn signature(sess: &Session, item: &ast::Item, classes: &Classes) -> Option<(Ide
         // out, `const P: for<'a> fn(PProps<'a>) -> JSX::Element = T.p;`.
         ItemKind::Const(c) => {
             let TyKind::FnPtr(f) = &c.ty.kind else { return None };
-            let FnRetTy::Ty(ret) = &f.decl.output else {
+            let FnRetTy::Ty(_) = &f.decl.output else {
                 return None;
             };
-            if !renders(ret, true) || f.decl.inputs.len() > 1 {
+            if !renders_react(sess) || !c.ident.as_str().starts_with(char::is_uppercase) || f.decl.inputs.len() > 1 {
                 return None;
             }
             let props = match f.decl.inputs.first() {

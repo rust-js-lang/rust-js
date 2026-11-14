@@ -72,3 +72,27 @@ export function Label({ text, shown }) {
 - A component of `Option<JSX::Element>` is used, memoized and declared as
   one of `JSX::Element`; its declaration says `JSX.Element | null |
   undefined`, as every `Option` a function returns.
+
+## Amendment (2026-11-14): a component renders any node (#1810, Codex's shape)
+
+A component was a function whose written return was `Element` or
+`Option<Element>`, `renders` in the syntax pass, and react's `Rendered`
+was those two alone. So `fn Tokens(props: TokensProps) -> Vec<JSX::Element>`
+had no tag's macro, `<Tokens text=".." />` rustc's "cannot find macro
+`Tokens`", where React renders any `ReactNode` a component returns. Now
+which function is a component is JSX's alone, a capitalized one of one
+props argument or none, a function's or a function-pointer constant's, of a
+crate that renders with React, the react crate or one given it as `react`,
+and what it renders is rustc's to check: `Rendered: ReactNode`, every node
+one (`impl<R: ReactNode> Rendered for R`), so a `Vec`, nested `Option`s,
+text, a number or an alias of one renders as React renders it, and #1723's
+copy of the props a component changes, keyed on `Rendered`, is every
+component's. A return that's no node is refused where the component is a
+tag, by `ComponentType`'s `on_unimplemented`: "`fn() -> Size {Measured}`
+isn't a component of these props: a component takes its props, or none,
+and returns what React renders, a `ReactNode`". A component's companion
+macro is hygienic, so one of a function of another name is never mistaken
+for a macro the program names. Held by `test/jsx-renders.test.ts`, each
+return against React rendering the same nodes, the refusals, and a `Vec`
+under StrictMode.
+

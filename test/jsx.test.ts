@@ -914,7 +914,7 @@ mod inner {
     use react::{JSX, jsx};
     pub fn Badge() -> JSX::Element { jsx! { <b>{"!"}</b> } }
 }
-pub fn NotComponent() -> u32 { 1 }
+pub fn NotComponent(a: u32, b: u32) -> u32 { a + b }
 // A component that's a thread-local's value, a memo of the function it's
 // made of, as \`memo(function Icon() {..})\`, or a context, a tag too.
 thread_local! {

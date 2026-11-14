@@ -131,14 +131,6 @@ export const mutations: Mutation[] = [
     tests: ["test/jsx-evaluation-order.test.ts", "-t", "thread_local component takes props"],
   },
   {
-    name: "optional-component-not-taken",
-    breaks: "a component of an `Option<JSX::Element>` has no props `macro`, so `<Label />` names no macro",
-    file: "src/jsx_syntax/parser.rs",
-    find: "        (\"Option\", Some(ast::GenericArgs::AngleBracketed(args))) if optional => matches!(",
-    replace: "        (\"Option\", Some(ast::GenericArgs::AngleBracketed(args))) if false => matches!(",
-    tests: ["test/lowering-bindings.test.ts", "-t", "optional element"],
-  },
-  {
     name: "element-span-of-call",
     breaks: "an element is spanned by its whole `jsx!` call, not its `<tag`, so its JS maps to the call's line",
     file: "src/jsx_syntax/parser.rs",
@@ -325,5 +317,13 @@ export const mutations: Mutation[] = [
     find: " || imported;\n",
     replace: " || false && imported;\n",
     tests: ["test/jsx-imported-props.test.ts"],
+  },
+  {
+    name: "component-without-react",
+    breaks: "a crate that isn't given react has components, its capitalized functions' props `impl ::react::Lifetimes`, `cannot find react` (#1810)",
+    file: "src/jsx_syntax/parser.rs",
+    find: "    sess.opts.crate_name.as_deref() == Some(\"react\") || sess.opts.externs.iter().any(|(name, _)| name == \"react\")\n",
+    replace: "    let _ = sess;\n    true\n",
+    tests: ["test/modules.test.ts", "-t", "a namespace import is named as the module of its bindings"],
   },
 ];
