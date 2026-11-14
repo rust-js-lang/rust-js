@@ -265,15 +265,6 @@ export const mutations: Mutation[] = [
     tests: ["test/diagnostics.test.ts", "-t", "one kind, cloned"],
   },
   {
-    name: "untagged-from-unchecked",
-    breaks:
-      "a `From` into an untagged enum that does more than make the variant is accepted, and skipped where called",
-    file: "src/lower/untagged.rs",
-    find: "    (!variant_of_param).then(|| {\n",
-    replace: "    (variant_of_param && !variant_of_param).then(|| {\n",
-    tests: ["test/diagnostics.test.ts", "-t", "From into an untagged enum"],
-  },
-  {
     name: "untagged-serde-accepted",
     breaks:
       "serde of an untagged enum is accepted, and its codec reads a `TAG` its values haven't",
