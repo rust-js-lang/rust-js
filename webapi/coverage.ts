@@ -4,6 +4,7 @@
 // See docs/research/web-platform-coverage.md.
 
 import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 
 import idl from "@webref/idl";
 import { open } from "@rust-js/typescript";
@@ -102,12 +103,16 @@ export async function typescriptInterfaces(): Promise<Map<string, { members: Set
   return interfaces;
 }
 
-/** Each name TypeScript's DOM declares at its top, an interface's, a
- * type's, a value's or a namespace's: what a type it lacks is told apart
- * by, which rust-js's declarations declare (`rust_js::declares`, #1790). */
+/** Each name TypeScript's own DOM lib declares at its top, an interface's,
+ * a type's, a value's or a namespace's: what a type it lacks is told apart
+ * by, which rust-js's declarations declare (`rust_js::declares`, #1790).
+ * The `lib.dom.d.ts` the pinned TypeScript ships, which a consumer's
+ * `tsc` reads, not `@types/web`, which may be ahead of it. */
 export async function typescriptNames(): Promise<Set<string>> {
-  const session = await open([dom]);
-  const { declarations } = await session.read(dom);
+  const { default: exePath } = await import(new URL("../node_modules/typescript/lib/getExePath.js", import.meta.url).pathname);
+  const lib = join(dirname(exePath()), "lib.dom.d.ts");
+  const session = await open([lib]);
+  const { declarations } = await session.read(lib);
   await session.close();
   return new Set((declarations as any[]).map((d) => d.name).filter((name): name is string => typeof name === "string"));
 }
@@ -318,10 +323,13 @@ export async function measure(): Promise<Coverage> {
   const made = await constructible();
   const { bound, types, parents } = webapi();
   // Bound on the class or on one it derefs to, as a method call finds it.
-  const has = (x: string) => {
+  const has = (x: string): boolean => {
     const dot = x.indexOf(".");
     for (let c: string | undefined = x.slice(0, dot); c; c = parents.get(c)) if (bound.has(c + x.slice(dot))) return true;
-    return false;
+    // Or, where WebIDL moved it to the classes that inherit TypeScript's,
+    // `startContainer` from `AbstractRange` to `NodeRange`, on each of them.
+    const children = [...parents].filter(([, p]) => p === x.slice(0, dot)).map(([c]) => c);
+    return children.length > 0 && children.every((c) => has(c + x.slice(dot)));
   };
   const all: string[] = [];
   for (const [name, m] of ts) {

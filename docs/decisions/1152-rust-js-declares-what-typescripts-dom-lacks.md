@@ -67,3 +67,14 @@ same interface rather than clashing. TypeScript's factory can't make
   `BatteryManager` and `HTMLSelectedContentElement`. A TypeScript release
   that declares one takes the marker away at the next regeneration.
 - Mutations: `scripts/mutations/lower/declarations/globals.ts`.
+
+## Amendment (2026-11-14): what the pinned TypeScript's own lib lacks
+
+The marker is placed of the `lib.dom.d.ts` the pinned TypeScript ships,
+which a consumer's `tsc` reads by default, not of `@types/web`, which may
+be ahead of it: `@types/web` 0.0.366 declares `HTMLSelectedContentElement`,
+which TypeScript 7.1.0-beta's lib doesn't. Ten types are marked:
+`BatteryManager`, `HTMLSelectedContentElement`, `IDBRecord`, `NodeRange`
+(ADR 0024, amended), SpeechRecognition's four and WebTransport's two. A
+consumer that adds `@types/web` too has two declarations of it, which
+TypeScript merges as one interface where their members agree.

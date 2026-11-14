@@ -1,6 +1,6 @@
 // A type webapi binds that TypeScript's DOM doesn't declare, the Battery
 // Status API's `BatteryManager`, a spec read whole of its IDL (#1790), or
-// HTML's `HTMLSelectedContentElement`: the generator says so,
+// DOM's `NodeRange`: the generator says so,
 // `#[rust_js::declares]`, of each bound type `@types/web` lacks, and a
 // crate's declarations that name one declare it, `declare global {
 // interface BatteryManager extends EventTarget { .. } }`, of the binding,
@@ -80,8 +80,42 @@ export const name: string = tag(selected);
   expect(typeChecked(dir, "use.ts")).toEqual([]);
 });
 
-// The generator says it of each type it binds that TypeScript's DOM lacks,
-// and of no other: its placement is the @types/web reader's, never a hand's.
+// DOM's WebIDL moved `startContainer` from `AbstractRange` to `NodeRange`,
+// which `Range` and `StaticRange` inherit and TypeScript hasn't caught up
+// with: bound, a `Range` derefs to it and reads it, and it's declared.
+test("a Range reads its startContainer of NodeRange, which TypeScript lacks", async () => {
+  const dir = fixture("webapi-node-range");
+  writeFileSync(join(dir, "lib.rs"), `pub fn start(range: &webapi::Range) -> &'static webapi::Node {
+    range.start_container()
+}
+
+pub fn of(range: &webapi::Range) -> &webapi::NodeRange {
+    range
+}
+
+pub fn offset(range: &webapi::Range) -> f64 {
+    range.start_offset().into()
+}
+`);
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
+  expect(declarations).toContain("declare global {\n    interface NodeRange extends AbstractRange {\n        readonly startContainer: Node;");
+  writeFileSync(join(dir, "use.ts"), `import { of, offset, start } from "./lib.js";
+declare const range: Range;
+export const node: Node = start(range);
+export const container: Node = of(range).startContainer;
+export const at: number = offset(range);
+`);
+  expect(typeChecked(dir, "use.ts")).toEqual([]);
+  const lib = await import(join(dir, "lib.js"));
+  const node = {};
+  const range = { startContainer: node, startOffset: 3 };
+  expect([lib.start(range), lib.of(range), lib.offset(range)]).toEqual([node, range, 3]);
+});
+
+// The generator says it of each type it binds that the pinned TypeScript's
+// own DOM lib lacks, which a consumer's tsc reads, and of no other: its
+// placement is that reader's, never a hand's. `@types/web` may be ahead.
 test("rust_js::declares is on exactly the bound types TypeScript's DOM lacks", async () => {
   const crate = readFileSync(join(root, "webapi/src/lib.rs"), "utf8");
   const named = await typescriptNames();
@@ -99,5 +133,8 @@ test("rust_js::declares is on exactly the bound types TypeScript's DOM lacks", a
   const declared = typed.filter((t) => t.declares).map((t) => t.name).sort();
   const lacking = typed.filter((t) => !named.has(t.name.split(".")[0])).map((t) => t.name).sort();
   expect(declared).toEqual(lacking);
-  expect(declared).toEqual(["BatteryManager", "HTMLSelectedContentElement"]);
+  // Which they are moves with each bump (`bun run definitions`): these two,
+  // which TypeScript's lib lacks, the Battery Status API, Chromium's alone,
+  // and DOM's `NodeRange`, new in WebIDL.
+  expect(declared).toEqual(expect.arrayContaining(["BatteryManager", "NodeRange"]));
 });

@@ -80,6 +80,13 @@ bun run generate
 
 `generate.ts` holds every rule: which specs and interfaces, how WebIDL
 types map to Rust, and the names. A member is generated only if rust-js
-supports all its types; the run prints what it skipped, and why. To update
-the platform, bump `@webref/idl` in `package.json` and regenerate. The diff
-of `src/lib.rs` is what changed.
+supports all its types; the run prints what it skipped, and why.
+
+To update the platform, `bun run definitions` (`--check` only lists what's
+newer): it takes each definition the generator reads, `@types/web`,
+`@webref/*`, `webidl2`, and the TypeScript whose DOM lib places
+`rust_js::declares`, to its newest release at least three days old,
+regenerates, runs coverage, the webapi tests and the React port's regen, and
+prints the types, JS names and declared types added and removed. The
+generator's rules handle what upstream moves (ADR 0024, amended); a member
+coverage loses is named, for a rule or an issue. Then gate it as any change.

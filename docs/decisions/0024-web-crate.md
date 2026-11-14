@@ -346,3 +346,42 @@ compiled and run.
 each bound type TypeScript's DOM lacks `#[rust_js::declares]`, and a
 crate's declarations that name one declare it of the binding
 ([ADR 1152](1152-rust-js-declares-what-typescripts-dom-lacks.md)).
+
+## Amendment (2026-11-14): definitions bumped, and what WebIDL moves stays bound
+
+`@types/web` 0.0.366, `@webref/idl` 3.87.0, `@webref/elements` 2.9.2 and
+`@webref/events` 1.28.0 (TypeScript 7.1.0-beta is already its newest
+release). The bump binds 15 new types, SpeechRecognition's,
+`IDBRecord`, `ScrollResult` (`scroll`, `scroll_to` and `scroll_by` give
+`Promise<ScrollResult>`), WebTransport's send groups and others.
+
+WebIDL's `BufferSource` is `(ArrayBuffer or ArrayBufferView)` now, so a
+union of it declares `ArrayBuffer` first, `Blob | ArrayBuffer | Int8Array
+| ..`, as the IDL orders it; TypeScript's union is the same type in any
+order. The React port's `BlobPart` in `ReactFlightReplyServer.d.ts`
+reorders so at its next regeneration.
+
+Two of upstream's moves needed rules, not hands, so the next bump needs
+none:
+
+- **A class WebIDL puts between two TypeScript has is bound.** DOM moved
+  `startContainer` and `endContainer` from `AbstractRange` to a new
+  `NodeRange`, which `Range` and `StaticRange` inherit and TypeScript
+  doesn't know. The generator binds each IDL parent of a bound class that
+  sits between it and a bound ancestor, so `Range` derefs to `NodeRange`,
+  which derefs to `AbstractRange`, and `range.start_container()` still
+  compiles. `NodeRange` is marked `#[rust_js::declares]` (ADR 1152). A
+  parent with no bound ancestor, `WebGLObject`, which TypeScript dropped,
+  isn't. Of a spec not read whole, such a class keeps the members
+  TypeScript declares on its nearest bound ancestor or on its children,
+  where they were before WebIDL moved them.
+- **Coverage counts a member where WebIDL moved it.** A member TypeScript
+  declares on a class is bound when the class binds it, a class it derefs
+  to does, or each bound class that derefs to it does:
+  `AbstractRange.startContainer` is bound on `NodeRange`.
+
+One member is lost: CSS Font Loading renamed `FontFace.stretch` to
+`width`, and TypeScript has only `stretch`, which browsers ship, so
+neither is bound. Reading its type from TypeScript would be a second
+mapping to Rust beside WebIDL's; the loss is blessed in `coverage.txt` and
+tracked as an open P3 issue till TypeScript catches up.

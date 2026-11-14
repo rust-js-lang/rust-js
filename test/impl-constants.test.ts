@@ -105,7 +105,9 @@ impl<T> Wrapped<T> {
   expect(dts).toContain(
     "export const Counter: {\n    readonly START: number;\n    \"new\"(): Counter;\n    tick(counter: Counter): void;\n};",
   );
-  expect(dts).not.toContain("bump");
+  // Its private method isn't declared: no `bump(` member, whatever the
+  // header's path says.
+  expect(dts).not.toContain("bump(");
   expect(dts).toContain(
     "export const Wrapped: {\n    \"new\"<T>(value: T): Wrapped<T>;\n    get<T>(wrapped: Wrapped<T>): T;\n    map<T, U>(wrapped: Wrapped<T>, f: (t: T) => U): Wrapped<U>;\n};",
   );

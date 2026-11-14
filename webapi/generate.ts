@@ -101,9 +101,26 @@ const INTERFACES = [
 // And every other class TypeScript's DOM has (`@types/web`), from whichever
 // spec WebIDL has it in (ADR 0281).
 const typescriptDom = await typescript();
-const defined = new Set(Object.values(bySpec(await idl.parseAll() as Record<string, { type: string; name: string; partial?: boolean }[]>))
-  .flat().filter((d) => d.type === "interface" && !d.partial).map((d) => d.name));
+const idlInterfaces = Object.values(bySpec(await idl.parseAll() as Record<string, { type: string; name: string; partial?: boolean; inheritance?: string | null }[]>))
+  .flat().filter((d) => d.type === "interface" && !d.partial);
+const defined = new Set(idlInterfaces.map((d) => d.name));
 INTERFACES.push(...[...typescriptDom.keys()].filter((name) => defined.has(name) && !INTERFACES.includes(name)).sort());
+// And each class one of them inherits, as WebIDL has it, where TypeScript
+// hasn't caught up: DOM's `NodeRange`, which `Range` and `StaticRange`
+// inherit and `startContainer` moved to from `AbstractRange`, so each still
+// derefs to its parent and has what its parent has.
+// Only one between two: `WebGLObject`, which `WebGLBuffer` inherits and
+// TypeScript dropped, has no parent of TypeScript's, nor a member of its.
+const idlParent = new Map(idlInterfaces.map((d) => [d.name, d.inheritance ?? undefined]));
+const between = (name: string) => {
+  const chain: string[] = [];
+  for (let p = idlParent.get(name); p; p = idlParent.get(p)) {
+    if (INTERFACES.includes(p)) return chain;
+    chain.push(p);
+  }
+  return [];
+};
+for (const name of [...INTERFACES]) for (const p of between(name)) if (!INTERFACES.includes(p)) INTERFACES.push(p);
 const known = new Set(INTERFACES);
 
 // Members written by hand, in place of what's generated of their name. A
@@ -548,11 +565,22 @@ const typescriptDeclares = await typescriptNames();
 // (webidl2's definitions are objects with getters: the members left out
 // are marked, not the definitions copied.)
 const read: Def[] = Object.values(all).flat();
+// Of a class TypeScript's DOM lacks that WebIDL put between two it has, the
+// members TypeScript declares where they were before WebIDL moved them, on
+// its nearest parent TypeScript has or on its children: `NodeRange`'s
+// `startContainer`, `AbstractRange`'s to TypeScript.
+function typescriptMoved(name: string): { members: Set<string>; statics: Set<string>; ctor: boolean } | undefined {
+  let parent = idlParent.get(name);
+  while (parent && !typescriptDom.has(parent)) parent = idlParent.get(parent);
+  const related = [parent, ...[...idlParent].filter(([, p]) => p === name).map(([c]) => c)].flatMap((c) => (c && typescriptDom.get(c)) || []);
+  if (!related.length) return undefined;
+  return { members: new Set(related.flatMap((r) => [...r.members])), statics: new Set(), ctor: false };
+}
 const leftOut = new WeakSet<Member>();
 for (const [spec, defs] of Object.entries(all)) {
   if (SPECS.includes(spec)) continue;
   for (const d of defs) {
-    const ts = d.type === "interface" ? typescriptDom.get(d.name) : undefined;
+    const ts = d.type === "interface" ? typescriptDom.get(d.name) ?? typescriptMoved(d.name) : undefined;
     const namespace = d.type === "namespace" ? typescriptNamespace.get(d.name) : undefined;
     // A mixin's, as a class that includes it has them.
     const kept = (m: Member) =>

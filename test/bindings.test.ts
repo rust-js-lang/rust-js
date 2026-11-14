@@ -122,7 +122,7 @@ pub fn page(el: &Element, blob: &Blob, url: &str) -> (&'static Response, js::Pro
   // `Float32List`, where Rust takes each of its members; else each member,
   // `BodyInit`'s, whose `Float16Array` Rust has no type of.
   expect(readFileSync(join(join(dir, "mir"), "lib.d.ts"), "utf8")).toContain("export function count(values: Float32List): number;");
-  expect(readFileSync(join(join(dir, "mir"), "lib.d.ts"), "utf8")).toContain("export function kind(body: ReadableStream | Blob | Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ArrayBuffer | FormData | URLSearchParams | string): string;");
+  expect(readFileSync(join(join(dir, "mir"), "lib.d.ts"), "utf8")).toContain("export function kind(body: ReadableStream | Blob | ArrayBuffer | Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | FormData | URLSearchParams | string): string;");
   const js = readFileSync(join(join(dir, "mir"), "lib.js"), "utf8");
   expect(js).toContain('globalThis.upload("hello");\n  globalThis.upload(blob);\n  globalThis.upload(body);\n  globalThis.upload(maybe);');
   // Of webapi's union, a binding crate's trait, no dictionary: `kind(body)`.
