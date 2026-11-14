@@ -504,6 +504,58 @@ pub fn described(value: Option<&Unknown>) -> String {
   expect(lib.described(undefined)).toBe("");
 });
 
+// #1809: `text.match(pattern)`, TypeScript's own, one binding of one result:
+// a `g` pattern's whole matches, or a pattern without it, text too, as
+// `exec` finds, its groups `None` where they matched nothing, its index,
+// input and groups `None` of a `g` pattern's; `null`, `None`. Each run
+// against JS's own `match`, JS's white space, U+FEFF, not Rust's, U+0085.
+test("String.prototype.match is JS's, of a RegExp or text", async () => {
+  const dir = fixture("js-string-match");
+  writeFileSync(join(dir, "lib.rs"), `use js::{RegExpMatchArray, dict, reg_exp, string};
+
+pub fn tokens(text: &str) -> Option<Vec<String>> {
+    let m = string::r#match(text, reg_exp::new(r"\\S+\\s*", "g"))?;
+    Some((0..m.length()).map(|i| m.get(i).unwrap()).collect())
+}
+
+pub fn first(text: &str) -> Option<(String, Option<String>, Option<u32>, Option<String>, Option<String>, u32)> {
+    let m = string::r#match(text, reg_exp::new(r"(?<word>[a-z]+)(\\d)?", ""))?;
+    let word = m.groups().and_then(|groups| dict::get(groups, "word").cloned());
+    Some((m.full_match(), m.get(2), m.index(), m.input(), word, m.length()))
+}
+
+pub fn by_text(text: &str) -> Option<(String, Option<u32>)> {
+    let pattern = String::from("b+");
+    let m = string::r#match(text, &pattern)?;
+    Some((m.full_match(), m.index()))
+}
+
+pub fn global_metadata(text: &str) -> Option<(Option<u32>, Option<String>, bool)> {
+    let m = string::r#match(text, reg_exp::new("a", "g"))?;
+    Some((m.index(), m.input(), m.groups().is_none()))
+}
+
+pub fn found(text: &str) -> Option<&'static RegExpMatchArray> {
+    string::r#match(text, "x")
+}
+`);
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("const m = text.match(/\\S+\\s*/g);");
+  expect(js).toContain('text.match(pattern)');
+  expect(readFileSync(join(dir, "lib.d.ts"), "utf8")).toContain("export function found(text: string): RegExpMatchArray | null | undefined;");
+  const lib = await import(join(dir, "lib.js"));
+  const texts = ["ls  -la\t/tmp\n", "  lead and trail  ", "a\uFEFFb", "a\u0085b", "", "   ", "one"];
+  for (const text of texts) expect(lib.tokens(text) ?? null).toEqual(text.match(/\S+\s*/g));
+  expect(lib.first("12 ab cd7")).toEqual(["ab", undefined, 3, "12 ab cd7", "ab", 3]);
+  expect(lib.first("x9")).toEqual(["x9", "9", 0, "x9", "x", 3]);
+  expect(lib.first("123")).toBe(undefined);
+  expect(lib.byText("abbbc")).toEqual(["bbb", 1]);
+  expect(lib.byText("ac")).toBe(undefined);
+  expect(lib.globalMetadata("banana")).toEqual([undefined, undefined, true]);
+  expect(lib.found("y")).toBe(null);
+});
+
 // ADR 0718: `String.fromCharCode(...codes)`, a rest of TypeScript's
 // `number`, `f64`, which takes any number JS has as one, and a typed array
 // spread as its rest arguments, as a slice is: React's

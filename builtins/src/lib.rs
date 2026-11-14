@@ -2007,6 +2007,7 @@ mod sealed {
     impl Sealed for i64 {}
     impl Sealed for u64 {}
     impl Sealed for &super::BigInt {}
+    impl Sealed for &super::RegExp {}
     impl<F: FnOnce() + 'static> Sealed for F {}
 }
 
@@ -2261,6 +2262,65 @@ impl RegExpMatch {
     }
 }
 
+/// What [`string::r#match`] finds, TypeScript's `RegExpMatchArray`: of a
+/// `g` pattern, an array of each whole match; else, as
+/// [`exec`](RegExp::exec) finds, the match and its groups, each `None`
+/// where it matched nothing, with `index`, `input` and `groups`, which a
+/// `g` pattern's has none of.
+#[cfg_attr(rust_js, rust_js::types = "RegExpMatchArray")]
+pub struct RegExpMatchArray(PhantomData<JsObject>);
+
+impl RegExpMatchArray {
+    /// `m[0]`: the first match, or of a pattern without `g`, the match.
+    #[cfg_attr(rust_js, rust_js::link_name = "get 0")]
+    pub fn full_match(&self) -> String {
+        unreachable!()
+    }
+
+    /// `m[i]`: a `g` pattern's match `i`; else the match, 0, or its group
+    /// `i`, `None` of one that matched nothing.
+    #[cfg_attr(rust_js, rust_js::link_name = "get []")]
+    pub fn get(&self, i: u32) -> Option<String> {
+        unreachable!()
+    }
+
+    /// `m.length`: how many matches, or the match and its groups.
+    #[cfg_attr(rust_js, rust_js::link_name = "get length")]
+    pub fn length(&self) -> u32 {
+        unreachable!()
+    }
+
+    /// `m.index`: where in the text the match is, `None` of a `g` pattern's.
+    #[cfg_attr(rust_js, rust_js::link_name = "get index")]
+    pub fn index(&self) -> Option<u32> {
+        unreachable!()
+    }
+
+    /// `m.input`: the text it's in, `None` of a `g` pattern's.
+    #[cfg_attr(rust_js, rust_js::link_name = "get input")]
+    pub fn input(&self) -> Option<String> {
+        unreachable!()
+    }
+
+    /// `m.groups`: its named groups, each by its name, `None` of a `g`
+    /// pattern's or of one with none.
+    #[cfg_attr(rust_js, rust_js::link_name = "get groups")]
+    pub fn groups(&self) -> Option<&'static Dict<String>> {
+        unreachable!()
+    }
+}
+
+/// What [`string::r#match`] searches by, TypeScript's `string | RegExp`: a
+/// `RegExp`, or text, which JS makes one without `g`, `new RegExp(text)`.
+#[diagnostic::on_unimplemented(
+    message = "`{Self}` is not a `string | RegExp` a string is matched by",
+    note = "a string is matched by a `&RegExp`, `reg_exp::new(pattern, flags)`, or by text, a pattern without `g`"
+)]
+#[cfg_attr(rust_js, rust_js::types = "string | RegExp")]
+pub trait MatchPattern: sealed::Sealed {}
+impl MatchPattern for &RegExp {}
+impl MatchPattern for &str {}
+impl MatchPattern for &String {}
 
 pub mod reg_exp {
     use super::*;
@@ -2425,6 +2485,15 @@ pub mod string {
     /// match is put between, which a binding a program declares types.
     #[cfg_attr(rust_js, rust_js::link_name = "split")]
     pub fn split_by_reg_exp(this: &str, pattern: &super::RegExp) -> Vec<String> {
+        unreachable!()
+    }
+
+    /// [`text.match(pattern)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String/match):
+    /// of a `g` pattern, each whole match; else, as `exec` finds, the match,
+    /// its groups, where it is; `None` where nothing matches, JS's `null`
+    /// (#1809).
+    #[cfg_attr(rust_js, rust_js::link_name = "match")]
+    pub fn r#match(this: &str, pattern: impl super::MatchPattern) -> Option<&'static super::RegExpMatchArray> {
         unreachable!()
     }
 

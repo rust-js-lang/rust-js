@@ -391,3 +391,20 @@ object, the declaration `RangeError`, a `throw` of one caught as
 `instanceof RangeError`, and each of the six its own class; and by
 `test/builtins-coverage.test.ts`'s "the standard errors of a kind are what
 their template writes".
+
+## Amendment: `String.prototype.match` (#1809)
+
+`text.match(pattern)` is `string::r#match(text, pattern)`, one binding of
+TypeScript's own `match(regexp: string | RegExp): RegExpMatchArray | null`:
+its pattern a `js::MatchPattern`, a `&RegExp` or text, `string | RegExp`,
+and its result `Option<&RegExpMatchArray>`, `None` of `null`.
+`RegExpMatchArray` is TypeScript's: a `g` pattern's array of each whole
+match, or else `exec`'s match and its groups, so its `index` and `input`
+are `Option`s, `None` of a `g` pattern's, as TypeScript's are optional;
+`get(i)` an `Option`, a group that matched nothing `undefined`.
+`RegExpMatch` stays `exec`'s, `RegExpExecArray`, whose `index` and
+`input` are always there. One type for both of `match`'s forms, as JS and
+TypeScript have one: two bindings by the pattern's flag would be two ways
+of one JS method. A conversion of it to a `Vec<String>` is to come. Held
+by test/js-builtins.test.ts's "String.prototype.match is JS's", against
+JS's own `match` of tokens with tabs, line ends, U+FEFF and U+0085.

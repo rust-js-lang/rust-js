@@ -165,7 +165,11 @@ What it has:
 - **`RegExp`**, made by `reg_exp::new`, a literal `/^\d+$/` of a pattern
   written out, and `new RegExp(pattern)` of one made at run time and no
   flags, `""` ([ADR 0243](../../decisions/0243-regex-literals.md),
-  amended), with `test`, `exec` and `reg_exp::replace`.
+  amended), with `test`, `exec` and `reg_exp::replace`; and
+  `string::r#match(text, pattern)`, `text.match(pattern)` of a `RegExp` or
+  text, a `js::RegExpMatchArray`, TypeScript's own: of a `g` pattern each
+  whole match, else `exec`'s match and groups, its `index`, `input` and
+  `groups` `None` of a `g` pattern's; `None` where nothing matches (#1809).
 - **Timers:** `set_timeout`, `set_interval`, their `clear_*`.
 - **Where JS's answer isn't Rust's, JS's by name:** `js::string`'s
   methods count UTF-16 as JS's do, `string::slice`, `string::index_of`,

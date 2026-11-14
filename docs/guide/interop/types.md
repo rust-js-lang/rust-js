@@ -814,7 +814,7 @@ export function size(input) {
   a `js::TimeoutId` or `js::IntervalId`, `number | object`, a number in a
   browser and an object in Node, is an error, as nothing tells it from
   another number or object. A `js::RegExpMatch`, `string[] & { index:
-  number; .. }`, is an array, `Array.isArray`, and an error beside a
+  number; .. }`, and a `js::RegExpMatchArray` are arrays, `Array.isArray`, and an error beside a
   `Vec`'s. A `RefCell` of an array or an object is that, and an
   `Rc` what it points at, React's `ThenableState`, `Prod(RefCell<Vec<T>>)`
   an array, except where the crate has one as a box, `{ value }` or
