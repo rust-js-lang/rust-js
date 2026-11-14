@@ -86,10 +86,10 @@ pub fn module(module: &Module) -> Vec<Problem> {
         match item {
             Item::Namespace(namespace) => {
                 namespace.constants.iter().for_each(|c| cx.expr(&c.value));
-                namespace.methods.iter().for_each(|m| cx.function(m));
+                namespace.methods.iter().for_each(|m| cx.function(m, false));
             }
             Item::Const(constant) => cx.expr(&constant.value),
-            Item::Function(function) => cx.function(function),
+            Item::Function(function) => cx.function(function, true),
             Item::Statements(stmts) => cx.stmts(stmts),
         }
     }
@@ -187,15 +187,20 @@ impl Cx {
         self.scopes.pop();
     }
 
-    fn function(&mut self, function: &Function) {
+    /// `function`, named inside itself where `named`: a declaration's or a
+    /// function expression's name, never a type's method's, an object's
+    /// method or a function a prototype's property is given, which bind
+    /// none, so a global of its name is the global inside it,
+    /// `getComputedStyle`'s (#1681).
+    fn function(&mut self, function: &Function, named: bool) {
         let mut params: IndexSet<String> = IndexSet::default();
         for param in &function.params {
             self.pattern_defaults(param);
             params.extend(param.names().into_iter().map(str::to_string));
         }
-        // Its own name, which a function expression reads inside itself.
         let outer = std::mem::take(&mut self.labels);
-        self.scopes.push([function.name.clone()].into_iter().collect());
+        let own: IndexSet<String> = named.then(|| function.name.clone()).into_iter().collect();
+        self.scopes.push(own);
         self.block(&function.body, params);
         self.scopes.pop();
         self.labels = outer;
@@ -322,7 +327,7 @@ impl Cx {
                 self.block(body, IndexSet::default());
                 self.block(handler, param.iter().cloned().collect());
             }
-            StmtKind::Function(function) => self.function(function),
+            StmtKind::Function(function) => self.function(function, true),
             StmtKind::Break(label) => self.jump(label, false),
             StmtKind::Continue(label) => self.jump(label, true),
             StmtKind::Directive(_) | StmtKind::Comments => {}
@@ -395,7 +400,7 @@ impl Cx {
                 self.block(body, bound);
                 self.labels = outer;
             }
-            ExprKind::Function(function) => self.function(function),
+            ExprKind::Function(function) => self.function(function, true),
             ExprKind::Jsx(jsx) => {
                 if let JsxTag::Component(tag) = &jsx.tag {
                     self.expr(tag);
@@ -470,6 +475,32 @@ mod tests {
         let body = vec![local, read(Expr::global("Map"))];
         let f = Expr::arrow(Vec::new(), body);
         assert_eq!(of(vec![read(f)]), vec![Problem::Shadowed("Map".into())]);
+        // A type's method binds no name of its own: the global of its name
+        // read inside it is the global, `getComputedStyle`'s (#1681).
+        let method = Function {
+            name: "getComputedStyle".into(),
+            params: Vec::new(),
+            body: vec![read(Expr::global("getComputedStyle"))],
+            export: false,
+            is_async: false,
+            noinline: false,
+            span: Span::NONE,
+            name_span: Span::NONE,
+            param_spans: Vec::new(),
+            set_apart: false,
+        };
+        let namespace = Item::Namespace(crate::js::Namespace {
+            name: "Pseudo".into(),
+            constants: Vec::new(),
+            methods: vec![method],
+            export: false,
+            class: None,
+        });
+        let module = Module {
+            items: vec![namespace],
+            ..Module::default()
+        };
+        assert_eq!(super::module(&module), vec![]);
     }
 
     // A `break` lands on a `do .. while` too, and none crosses a function.

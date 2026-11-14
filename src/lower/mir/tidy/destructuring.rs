@@ -100,8 +100,21 @@ pub(super) fn destructured(
                 value
             }
             false => {
+                // The variable's read as it's made, a global's still,
+                // `window`'s (`js::validate`, #1681), where none is written.
+                let read = match &stmts[i].kind {
+                    StmtKind::Const(_, value) | StmtKind::Let(_, Some(value)) => part_of_read(value),
+                    _ => None,
+                };
+                let read = read.map_or_else(
+                    || Expr::var(&name),
+                    |read| Expr {
+                        span: js::Span::NONE,
+                        ..read.clone()
+                    },
+                );
                 stmts.drain(i + 1..i + count);
-                Expr::var(&name)
+                read
             }
         };
         stmts[i].kind = StmtKind::Destructure {
@@ -296,6 +309,15 @@ pub(super) fn parts(stmts: &[Stmt], name: &str) -> Vec<Part> {
 /// The variable `value` reads a part of, as `parts` reads one: `o[0]`,
 /// `o.k`, or `o.k === undefined ? d : o.k`.
 pub(super) fn part_of(value: &Expr) -> Option<&str> {
+    match &part_of_read(value)?.kind {
+        ExprKind::Var(v) => Some(v.as_str()),
+        _ => None,
+    }
+}
+
+/// The read of the variable `part_of` names, as it's made, a global's
+/// `window` (`Known::Global`, #1681).
+fn part_of_read(value: &Expr) -> Option<&Expr> {
     let read = match &value.kind {
         ExprKind::Cond(_, _, read) => read,
         _ => value,
@@ -308,7 +330,7 @@ pub(super) fn part_of(value: &Expr) -> Option<&str> {
     };
     part_read(value, v)
         .is_some_and(|(steps, _)| steps.len() == 1)
-        .then_some(v.as_str())
+        .then_some(&**of)
 }
 
 /// What takes `parts` apart, `[a, , c]` of indices, `{ a, b: c }` of keys:

@@ -371,4 +371,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^tuple_match_item_destructured.rs$"],
     snapshots: true,
   },
+  {
+    name: "destructured-global-unmarked",
+    breaks: "a destructuring of a global's properties reads a variable of its name, the global's mark gone: `const { $RX: clientRender } = window;` refused, a read nothing declares (#1681)",
+    file: "src/lower/mir/tidy/destructuring.rs",
+    find: "                        ..read.clone()\n                    },\n                );\n                stmts.drain(i + 1..i + count);\n",
+    replace: "                        ..Expr::var(&name)\n                    },\n                );\n                stmts.drain(i + 1..i + count);\n",
+    tests: ["test/validate.test.ts", "-t", "a destructuring of a global's properties"],
+  },
 ];

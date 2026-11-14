@@ -68,4 +68,12 @@ export const mutations: Mutation[] = [
     replace: "                StmtKind::Function(function) => vec![function.name.as_str()],\n                _ => continue,\n",
     unitTests: "js::validate::tests::a_block_declares_a_name_once",
   },
+  {
+    name: "validate-method-binds-its-name",
+    breaks: "a type's method is taken to bind its own name inside itself, which none does: a global of its name read there, React's `getComputedStyle`, is refused as shadowed (#1681)",
+    file: "src/js/validate.rs",
+    find: "                namespace.methods.iter().for_each(|m| cx.function(m, false));\n",
+    replace: "                namespace.methods.iter().for_each(|m| cx.function(m, true));\n",
+    unitTests: "js::validate::tests::a_global_shadowed_is_refused",
+  },
 ];
