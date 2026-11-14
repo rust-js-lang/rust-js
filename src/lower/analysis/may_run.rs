@@ -38,6 +38,9 @@ pub(in crate::lower) struct Runs<'a, 'tcx> {
     pointers: &'a FnPointers<'tcx>,
     std_runs: &'a StdRuns<'a, 'tcx>,
     drop_runs: &'a DropRuns<'a, 'tcx>,
+    /// What the crate's libraries say of their functions: which `From` of
+    /// theirs runs nothing (`cell_borrows::call_runs_nothing`).
+    foreign: &'a crate::lower::library::Foreign<'a, 'tcx>,
 }
 
 impl<'a, 'tcx> Runs<'a, 'tcx> {
@@ -49,6 +52,7 @@ impl<'a, 'tcx> Runs<'a, 'tcx> {
         bodies: &[&'a Body<'tcx>],
         (inits, fn_dyns): (&IndexMap<LocalDefId, LocalDefId>, Vec<ty::Ty<'tcx>>),
         (pointers, std_runs, drop_runs): (&'a FnPointers<'tcx>, &'a StdRuns<'a, 'tcx>, &'a DropRuns<'a, 'tcx>),
+        foreign: &'a crate::lower::library::Foreign<'a, 'tcx>,
     ) -> Self {
         Runs {
             tcx,
@@ -61,6 +65,7 @@ impl<'a, 'tcx> Runs<'a, 'tcx> {
             pointers,
             std_runs,
             drop_runs,
+            foreign,
         }
     }
 
@@ -75,7 +80,7 @@ impl<'a, 'tcx> Runs<'a, 'tcx> {
         may_run(
             self.tcx,
             (&self.bodies, &self.made_of, &self.impls, &self.fn_dyns),
-            (self.pointers, self.std_runs, self.drop_runs),
+            (self.pointers, self.std_runs, self.drop_runs, self.foreign),
             start,
         )
     }
@@ -145,7 +150,12 @@ fn may_run<'tcx>(
         &Impls,
         &[ty::Ty<'tcx>],
     ),
-    (pointers, std_runs, drop_runs): (&FnPointers<'tcx>, &StdRuns<'_, 'tcx>, &DropRuns<'_, 'tcx>),
+    (pointers, std_runs, drop_runs, foreign): (
+        &FnPointers<'tcx>,
+        &StdRuns<'_, 'tcx>,
+        &DropRuns<'_, 'tcx>,
+        &crate::lower::library::Foreign<'_, 'tcx>,
+    ),
     start: DefId,
 ) -> Option<Vec<DefId>> {
     let typing_env = ty::TypingEnv::fully_monomorphized();
@@ -330,7 +340,7 @@ fn may_run<'tcx>(
         // body runs of the crate's: std's, by the bounds it's called under;
         // a binding's that runs nothing, none; another's, what it's given.
         let runs_given = |callee: DefId, callee_args: ty::GenericArgsRef<'tcx>, work: &mut Vec<_>| {
-            if super::cell_borrows::call_runs_nothing(tcx, callee) {
+            if super::cell_borrows::call_runs_nothing(foreign, callee) {
                 return true;
             }
             match std_runs(callee, callee_args) {

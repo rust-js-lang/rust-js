@@ -3,6 +3,15 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "into-of-a-binding-untagged-unanswered",
+    breaks:
+      "a `T: Into<BlobPart>` bound given a `&Uint8Array`, a binding crate's `From` into an untagged enum that's the value, has no dictionary, and is refused (#1775)",
+    file: "src/lower/traits/dictionaries/conversions.rs",
+    find: "            } else if !tried && self.recognition().calls_from_giving_its_argument(from, from_args) {\n",
+    replace: "            } else if false {\n",
+    tests: ["test/webapi-objects.test.ts", "-t", "From into an untagged"],
+  },
+  {
     name: "into-without-from",
     breaks:
       "`Into<Name>` of a `&str` isn't the crate's `From<&str> for Name`, and is refused",

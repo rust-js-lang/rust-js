@@ -918,7 +918,7 @@ fn called<'tcx>(
             class: None,
         });
     }
-    if call_runs_nothing(tcx, id) {
+    if call_runs_nothing(recognition.foreign, id) {
         return Called::Nothing;
     }
     // A method std derives, `Clone::clone` of `#[derive(Clone)]`, runs what

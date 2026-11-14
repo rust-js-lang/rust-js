@@ -209,6 +209,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 /// field, which is the struct in JS (ADR 0584), of the struct made of its
 /// parameter, `EventPriority(lane)`, or its field read, `priority.0`: the
 /// user's decision, `EventPriority::from(lane)` is `lane` (ADR 0584,
+/// amended). Or a `From` into an untagged enum that's the variant of its
+/// argument, `Src::Text(s)` (`untagged::gives_its_variant`, ADR 0214,
 /// amended).
 pub(super) fn gives_its_argument<'tcx>(
     tcx: rustc_middle::ty::TyCtxt<'tcx>,
@@ -221,7 +223,18 @@ pub(super) fn gives_its_argument<'tcx>(
         };
         // Not one kept out of line, `#[inline(never)]` (ADR 0649): its call
         // is its call.
-        if tcx.generics_of(def_id).count() != 0 || super::recognition::is_noinline(tcx, def_id) {
+        if super::recognition::is_noinline(tcx, def_id) {
+            return false;
+        }
+        // A `From` into an untagged enum that's the variant of its argument,
+        // of any lifetimes, `impl<'a> From<&'a str> for Src<'a>`: the
+        // untagged enum's own answer (ADR 0214, amended, #1775).
+        if let Some(local) = def_id.as_local()
+            && super::untagged::gives_its_variant(tcx, local)
+        {
+            return true;
+        }
+        if tcx.generics_of(def_id).count() != 0 {
             return false;
         }
         let thir = &body.thir;

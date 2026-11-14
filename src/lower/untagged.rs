@@ -19,8 +19,8 @@ mod classes;
 pub(in crate::lower) mod displayed;
 pub(in crate::lower) mod field_reads;
 mod froms;
-pub(crate) use froms::is_untagged_from;
-use froms::untagged_from_misuse;
+pub use froms::binding_froms_give_their_variants;
+pub(in crate::lower) use froms::{from_gives_its_argument, gives_its_variant};
 
 /// What JS can tell a value is.
 #[derive(Clone, PartialEq)]
@@ -1375,9 +1375,6 @@ pub(super) fn validate<'tcx>(tcx: TyCtxt<'tcx>, foreign: &super::library::Foreig
                  it may be, `#[rust_js::test(nodeType = 3, nodeType = 4)]` (ADR 1062, amended)"
                     .to_string(),
             );
-        }
-        if let Some(message) = untagged_from_misuse(tcx, def_id.to_def_id()) {
-            error(tcx.def_span(def_id), message);
         }
         // serde's codecs read and write a tagged enum (ADR 0079): one without
         // a tag is serde's own `#[serde(untagged)]`, which is to come.

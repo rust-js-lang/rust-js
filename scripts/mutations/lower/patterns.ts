@@ -3,6 +3,15 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "untagged-variant-of-its-argument-gives-nothing",
+    breaks:
+      "a library's `From` into its untagged enum that's the variant of its argument isn't listed among what gives its argument, so its consumer calls it, `detailFromString_from(\"kept\")` (#1775)",
+    file: "src/lower/patterns.rs",
+    find: "            && super::untagged::gives_its_variant(tcx, local)\n",
+    replace: "            && super::untagged::gives_its_variant(tcx, local)\n            && false\n",
+    tests: ["test/crates.test.ts", "-t", "untagged From that's the variant"],
+  },
+  {
     name: "numbered-gives-own-name",
     breaks:
       'a `match` giving each numbered variant its name is taken as the value itself, so `name(0)` is `0`, not `"Empty"`',
@@ -141,8 +150,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a function giving each variant its name, marked `#[inline(never)]`, is its argument, uncalled",
     file: "src/lower/patterns.rs",
-    find: " || super::recognition::is_noinline(tcx, def_id) {\n",
-    replace: " {\n",
+    find: "        if super::recognition::is_noinline(tcx, def_id) {\n",
+    replace: "        if false {\n",
     tests: ["test/emission.test.ts", "-t", "inline\\(never\\)"],
   },
   {

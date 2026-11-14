@@ -200,10 +200,14 @@ impl Callbacks for Syntax {
         Compilation::Continue
     }
 
-    /// A binding crate's names are held as a program's are (ADR 0573), and
-    /// its TypeScript types read (ADR 0811).
+    /// A binding crate's names are held as a program's are (ADR 0573), its
+    /// TypeScript types read (ADR 0811), and each `From` into an untagged
+    /// enum of its the variant of its argument (ADR 0214, amended).
     fn after_analysis<'tcx>(&mut self, _compiler: &Compiler, tcx: TyCtxt<'tcx>) -> Compilation {
-        match lower::given_names_differ(tcx) & lower::validate_types(tcx) {
+        match lower::given_names_differ(tcx)
+            & lower::validate_types(tcx)
+            & lower::binding_froms_give_their_variants(tcx)
+        {
             true => Compilation::Continue,
             false => Compilation::Stop,
         }

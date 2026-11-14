@@ -71,6 +71,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::arrow(vec!["value".into()], body)
             } else if let Some(value) = self.compiled_conversion(from, from_args, span)? {
                 value
+            } else if !tried && self.recognition().calls_from_giving_its_argument(from, from_args) {
+                // A binding crate's `From` into an untagged enum, the value
+                // it's given (ADR 0214, amended): `T: Into<BlobPart>`'s.
+                Expr::arrow(
+                    vec!["value".into()],
+                    vec![StmtKind::Return(Some(Expr::var("value"))).at(js::Span::NONE)],
+                )
             } else {
                 return Err(self.no_evidence(span, tr));
             };

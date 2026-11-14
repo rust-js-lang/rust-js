@@ -119,9 +119,11 @@ and `$borrowMut(buffer).push(..)`, in a module the reply client never
 touches.
 
 **A `From` into an untagged enum runs nothing** (`call_runs_nothing`,
-asking `untagged::is_untagged_from`): ADR 0214 makes it the value it's
-given where it's called, and its `from` is checked to be the variant of
-its argument, so no code runs, a library's as the crate's. The borrow is
+asking `untagged::from_gives_its_argument`) where ADR 0214, amended
+(#1775), makes it the value it's given: its `from` the variant of its
+argument, the crate's, a library's as its contract says, or a binding
+crate's, which its metadata's compile holds to that, so no code runs.
+Any other's body is what runs. The borrow is
 plain, `const parts = buffer.slice();`, and nothing else of its type is
 checked for it.
 

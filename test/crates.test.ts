@@ -139,6 +139,17 @@ for (const name of readdirSync(pairs).sort()) {
     chain(pairs, name, ["dep", "app"]);
   }, 300_000);
 }
+
+// A library's untagged From that's the variant of its argument is in its
+// contract's list of what gives its argument, so its consumer's call of it
+// is the value; its others are called (#1775, ADR 0214, amended).
+test("a library's untagged From that's the variant of its argument is its consumer's value", () => {
+  const out = chain(pairs, "untagged_from_across_crates", ["dep", "app"]);
+  expect(contract(out).gives_argument).toHaveLength(1);
+  const app = readFileSync(join(out, "app", "lib.js"), "utf8");
+  expect(app).toContain('const kept = "kept";');
+  expect(app).toContain("const three = detailFromU32_from(3);");
+}, 300_000);
 // A library's drop given std's `Args` as one zero-sized constant, a struct
 // whose fields are of no size themselves on some platforms: compiled, or
 // refused where its value is no plain one, never a crash (#1707).

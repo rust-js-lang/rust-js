@@ -5,6 +5,7 @@
 //! given what JS reads with no code. `cell_borrows`' answers, apart.
 
 use crate::lower::bindings::{JsForm, is_binding, js_form, runs_nothing, runs_only_given};
+use crate::lower::library::Foreign;
 use crate::lower::recognition::{Recognition, StdItem, is_js_object_deref};
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::thir::{ExprId, Thir};
@@ -47,14 +48,15 @@ pub(in crate::lower) fn binding_runs_nothing(tcx: TyCtxt<'_>, id: DefId) -> bool
 /// what it's given: a binding's that runs nothing (`binding_runs_nothing`),
 /// or a JS object type's `Deref` to the class it extends, which is the
 /// object itself, `AggregateError`'s to `Error`; or a `From` into an
-/// untagged enum, the value it's given, webapi's `BlobPart::from(chunk)`
-/// (rd535). The one answer a borrow
-/// held across it and a thread-local made as its module loads ask
+/// untagged enum that's the value it's given, webapi's `BlobPart::from(chunk)`
+/// (rd535; `untagged::from_gives_its_argument`, #1775). The one answer a
+/// borrow held across it and a thread-local made as its module loads ask
 /// (`may_run::may_run`, ADR 1006, amended).
-pub(in crate::lower) fn call_runs_nothing(tcx: TyCtxt<'_>, id: DefId) -> bool {
+pub(in crate::lower) fn call_runs_nothing(foreign: &Foreign<'_, '_>, id: DefId) -> bool {
+    let tcx = foreign.tcx();
     binding_runs_nothing(tcx, id)
         || is_js_object_deref(tcx, tcx.parent(id))
-        || crate::lower::untagged::is_untagged_from(tcx, id)
+        || crate::lower::untagged::from_gives_its_argument(foreign, id)
 }
 
 /// Whether `def_id`, a binding that runs no code but its own and what it's

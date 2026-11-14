@@ -882,6 +882,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         all_bodies,
         (&thread_local_inits, closures::handed_fn_dyns(tcx, all_bodies)),
         (cell_borrows.pointers(), &std_runs, &runs_settled),
+        &foreign,
     );
     let lazy_locals::LazyLocals {
         lazy: lazy_locals,

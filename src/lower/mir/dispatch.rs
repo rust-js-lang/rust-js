@@ -1132,14 +1132,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Ok(Value::Expr(call));
             }
         }
-        // A `From` into an untagged enum, or `into()` to one, which the
-        // crate's `from` it resolves to would be: the value (ADR 0214).
-        if values.len() == 1 && self.recognition().converts_to_untagged(def_id, generic_args) {
-            return Ok(values.into_iter().next().expect("one"));
-        }
         // What a function gives what it's given of is that (ADRs 0264, 0584,
-        // amended): `section.as_str()`, `EventPriority::from(lane)`.
-        if values.len() == 1 && self.gives_its_argument(self.callee(def_id, generic_args).0) {
+        // amended): `section.as_str()`, `EventPriority::from(lane)`, and an
+        // untagged enum's `From`, `into()` too, that's the variant of its
+        // argument, a binding crate's, `BlobPart::from(chunk)` (ADR 0214).
+        if values.len() == 1
+            && (self.gives_its_argument(self.callee(def_id, generic_args).0)
+                || self.recognition().calls_from_giving_its_argument(def_id, generic_args))
+        {
             return Ok(values.into_iter().next().expect("one"));
         }
         // A trait's method: its impl's, a dictionary's, or what rust-js

@@ -7,7 +7,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `From` into an untagged enum is taken to run code rust-js can't see, so a borrow held across webapi's `BlobPart::from(chunk)` is counted, `$borrow(buffer, true)` and a `try`/`finally` (rd535)",
     file: "src/lower/analysis/cell_borrows/runs_nothing.rs",
-    find: "        || crate::lower::untagged::is_untagged_from(tcx, id)\n",
+    find: "        || crate::lower::untagged::from_gives_its_argument(foreign, id)\n",
     replace: "",
     tests: ["test/webapi-objects.test.ts", "-t", "From into an untagged"],
   },

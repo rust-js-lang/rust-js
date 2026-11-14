@@ -135,11 +135,10 @@ export const mutations: Mutation[] = [
   },
   {
     name: "mir-untagged-into-called",
-    breaks: "`into()` to an untagged enum calls `Into::into`, which isn't JS's",
+    breaks: "`into()` to an untagged enum whose `from` is the variant of its argument, a binding crate's, calls `Into::into`, which isn't JS's",
     file: "src/lower/mir/dispatch.rs",
-    find: "        if values.len() == 1 && self.recognition().converts_to_untagged(def_id, generic_args) {\n",
-    replace:
-      "        if false && values.len() == 1 && self.recognition().converts_to_untagged(def_id, generic_args) {\n",
+    find: "                || self.recognition().calls_from_giving_its_argument(def_id, generic_args))\n",
+    replace: "                || false)\n",
     tests: [
       "test/jsx-children.test.ts",
       "test/jsx-evaluation-order.test.ts",
@@ -206,8 +205,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`section.as_str()` from MIR is `Section.as_str(section)`, not `section`",
     file: "src/lower/mir/dispatch.rs",
-    find: "        if values.len() == 1 && self.gives_its_argument(self.callee(def_id, generic_args).0) {\n",
-    replace: "        if values.len() == 1 && false {\n",
+    find: "            && (self.gives_its_argument(self.callee(def_id, generic_args).0)\n",
+    replace: "            && (false\n",
     tests: [
       "test/lowering-structs-enums.test.ts",
       "-t",
@@ -329,20 +328,6 @@ export const mutations: Mutation[] = [
     replace:
       '        Err(self.unsupported(span, &format!("serde_json of {}, from its MIR", exprs.len())))\n',
     tests: ["test/serde.test.ts", "-t", "f32 is written"],
-  },
-  {
-    name: "mir-untagged-into-through-trait-call",
-    breaks:
-      "MIR's `into()` an untagged enum calls the crate's `from`, as the trait's call it resolves to",
-    file: "src/lower/mir/dispatch.rs",
-    find: "        if values.len() == 1 && self.recognition().converts_to_untagged(def_id, generic_args) {\n",
-    replace:
-      "        if values.len() == 1 && self.recognition().converts_to_untagged(def_id, generic_args) && values.is_empty() {\n",
-    tests: [
-      "test/lowering-structs-enums.test.ts",
-      "-t",
-      "into an untagged enum is the value",
-    ],
   },
   {
     name: "variadic-value-rest-unpassed",
@@ -692,9 +677,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a trait's `from` called is asked of as it's named, not as the impl it resolves to, so `EventPriority::from(lane)` is called",
     file: "src/lower/mir/dispatch.rs",
-    find: "        if values.len() == 1 && self.gives_its_argument(self.callee(def_id, generic_args).0) {\n",
-    replace:
-      "        if values.len() == 1 && self.gives_its_argument(def_id) {\n",
+    find: "            && (self.gives_its_argument(self.callee(def_id, generic_args).0)\n",
+    replace: "            && (self.gives_its_argument(def_id)\n",
     tests: ["test/corpus.test.ts", "-t", "^newtype_conversions.rs$"],
     snapshots: true,
   },

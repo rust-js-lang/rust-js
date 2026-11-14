@@ -369,6 +369,77 @@ pub fn parts(buffer: Rc<RefCell<Vec<&'static Uint8Array>>>, chunk: &'static Uint
   expect([lib.parts(buffer, new Uint8Array([2])), buffer.length]).toEqual([2, 2]);
 });
 
+// #1775: a `From` into an untagged enum is the value it's given only where
+// its body is the variant of its argument, or it's a binding crate's,
+// webapi's `BlobPart`'s, which `--rustc` holds to that (ADR 0214, amended).
+// One that makes its payload, or does more, is called, `into()` and in
+// generic code too, as native Rust prints `hello:5:7:2`.
+test("a From into an untagged enum that does more is called, a binding crate's is the value", async () => {
+  const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("webapi-untagged-from-called");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+
+use js::Uint8Array;
+use webapi::BlobPart;
+
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum Detail {
+    Text(String),
+    Number(u32),
+}
+
+impl From<&str> for Detail {
+    fn from(value: &str) -> Self {
+        Self::Text(value.to_owned())
+    }
+}
+
+thread_local! {
+    static MADE: Cell<u32> = const { Cell::new(0) };
+}
+
+impl From<u32> for Detail {
+    fn from(value: u32) -> Self {
+        MADE.with(|made| made.set(made.get() + 1));
+        Self::Number(value + 2)
+    }
+}
+
+fn detail<T: Into<Detail>>(value: T) -> Detail {
+    value.into()
+}
+
+fn show(detail: &Detail) -> String {
+    match detail {
+        Detail::Text(text) => text.clone(),
+        Detail::Number(n) => n.to_string(),
+    }
+}
+
+pub fn shown() -> String {
+    let text = detail("hello");
+    let three: Detail = 3.into();
+    let five = Detail::from(5);
+    format!("{}:{}:{}:{}", show(&text), show(&three), show(&five), MADE.with(Cell::get))
+}
+
+fn part<'a, T: Into<BlobPart<'a>>>(value: T) -> BlobPart<'a> {
+    value.into()
+}
+
+pub fn parts(chunk: &Uint8Array) -> Vec<BlobPart<'_>> {
+    vec![BlobPart::from(chunk), chunk.into(), part(chunk), part("text")]
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("return [chunk, chunk, part(chunk, ");
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.shown()).toBe("hello:5:7:2");
+  const chunk = new Uint8Array([1]);
+  expect(lib.parts(chunk)).toEqual([chunk, chunk, chunk, "text"]);
+});
+
 // rd505, rd397: `FormData`'s `append` and `set` take a value as TypeScript's
 // first overload does, `string | Blob`, a form's own entry too, as React's
 // Flight reply client copies a form's entries, `value.forEach((v, k) =>

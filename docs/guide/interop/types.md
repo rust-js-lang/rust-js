@@ -882,6 +882,16 @@ export function size(input) {
   consumer's `{}` of it is `${id}` too, and one that calls it compiles its
   own
   ([ADR 0214](../../decisions/0214-untagged-enums.md), amended, #557, rd730).
+  A `From` into one whose `from` is the variant of its argument,
+  `impl From<String> for Detail { fn from(s: String) -> Self {
+  Detail::Text(s) } }`, is the value it's given, `"kept".to_owned().into()`
+  `"kept"`, a library's too, as its contract lists it. Any other `From` is
+  its body, called as any function is, by `into()` and generic code too:
+  one that owns a `&str`, `Self::Text(value.to_owned())`, converts a
+  number, or does more. A binding crate's, which rust-js writes no JS of,
+  webapi's `BlobPart::from(chunk)`, is the value, and one there that
+  isn't the variant of its argument is an error where it's written
+  ([ADR 0214](../../decisions/0214-untagged-enums.md), amended, #1775).
 
 Arrays of different lengths, as React's Fizz server keeps a replay node,
 `[name, key, children, slots]` or a boundary's six, are told by their
@@ -2178,8 +2188,8 @@ export function shared() {
   cell, `t` would be found, and nothing pushed; not of floats, nor where
   `into` is set again
   ([ADR 0863](../../decisions/0863-a-refcell-of-an-object-is-the-object.md), amended).
-  A `From` into an untagged enum is the value it's given, so it runs
-  nothing, a library's whose body rust-js doesn't see too: a borrow held
+  A `From` into an untagged enum that's the value it's given runs
+  nothing, a binding crate's whose body rust-js doesn't see too: a borrow held
   while each item is made one, `buffer.borrow().iter().map(|&chunk|
   BlobPart::from(chunk)).collect()`, is `buffer.slice()`
   ([ADR 1058](../../decisions/1058-a-held-borrow-meets-only-its-own-class.md), amended).

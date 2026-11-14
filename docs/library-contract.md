@@ -69,7 +69,7 @@ m6-react's to see first (#1462).
 | `Calling.quiet_by_return` | summary | of those, the ones nothing it runs before it returns may call | |
 | `Calling.written_arguments` | summary | the `fmt::Arguments` parameters it writes into a writer a piece at a time, itself or by what it gives them to: a call gives each made there as the function that writes into the sink it claims (#1652) | |
 | `Library.with_this_arguments` | summary | the parameters of each `with_this` function it makes that reads `arguments` | |
-| `Library.gives_argument` | summary | its functions each call of which is what it's given | |
+| `Library.gives_argument` | summary | its functions each call of which is what it's given, an untagged enum's `From` that's the variant of its argument among them (ADR 0214, amended) | |
 | `Library.displays_value` | summary | its untagged enums whose `Display` writes each variant's value as it is | |
 | `Library.partial_cmp_is_cmp` | summary | its `PartialOrd` impls whose `partial_cmp` is `Some(self.cmp(other))` | |
 | `Library.identities` | summary | its types equal only to themselves, by their impls | |

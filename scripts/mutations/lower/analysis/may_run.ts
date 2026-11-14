@@ -30,7 +30,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a binding that runs nothing, React's `memo`, is taken to run what it's given, a `dyn Fn` rust-js can't follow, so `memo(Badge, Some(..))` is made where it's first used, which JSX can't name",
     file: "src/lower/analysis/may_run.rs",
-    find: "            if super::cell_borrows::call_runs_nothing(tcx, callee) {\n                return true;\n            }\n",
+    find: "            if super::cell_borrows::call_runs_nothing(foreign, callee) {\n                return true;\n            }\n",
     replace:
       "            if false {\n                return true;\n            }\n",
     tests: [

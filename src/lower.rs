@@ -111,6 +111,10 @@ pub(crate) use declarations::std_types::module as std_declarations;
 pub use declarations::validate_types;
 pub use instances::{Instances, instance_bodies};
 pub use pipeline::{Built, Lowered, lower_crate};
+/// Whether each `From` into an untagged enum is the variant of its
+/// argument, of a crate `--rustc` compiles, whose JS rust-js doesn't write
+/// (ADR 0214, amended).
+pub use untagged::binding_froms_give_their_variants;
 
 /// Each of tidy's passes, `stage/pass`, in the order they run (ADR 0659).
 pub fn tidy_pass_names() -> Vec<String> {

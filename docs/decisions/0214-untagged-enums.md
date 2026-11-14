@@ -22,6 +22,8 @@ Amended (2026-11-03, rd687): a `match` whose arms each do the same JS is
 that JS once, no test of the variant, below. Amended (2026-11-04, #555):
 a class is told in any realm, a DOM node by its `nodeType`, or refused,
 below and in [1062](1062-a-unions-one-class-is-what-its-other-kinds-leave.md).
+Amended (2026-11-14, #1775): only a `From` that's the variant of its
+argument is the value; any other's body is called, below.
 
 Case: A, D ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -104,7 +106,9 @@ impl<'a> From<&'a str> for Src<'a> {
 - **A `From` into one is the value itself**, at a call, `"a.png".into()`,
   as in generic code (ADR 0108): its `from` must be the variant of its
   argument, `Src::Text(s)`, which is checked where it's declared, so a
-  crate that uses another's needs no body to know.
+  crate that uses another's needs no body to know. (Superseded by the
+  amendment of #1775: only such a `from` is the value; any other's body
+  is called.)
 - **`Clone`, `==`, `{:?}` and drops** test the variant as `match` does, and
   read the payload itself where a tagged one reads `_0`.
 
@@ -660,3 +664,57 @@ isn't refused; mutations `otherwise-overlap-unrefused` and
 `otherwise-overlap-untested` (`lower/untagged.ts`). The metamorphic net's
 tuple-struct rewrite of `untagged_ref_cells`, now refused, is off its
 list.
+
+## Amendment: only a `From` that's the variant of its argument is the value (#1775, 2026-11-14)
+
+Supersedes the Decision's "A `From` into one is the value itself". A
+`From` whose `from` did more than make the variant of its argument was
+refused, as every call of a `From` into one was its argument: a port's
+`impl From<&str> for Detail { fn from(value: &str) -> Self {
+Self::Text(value.to_owned()) } }`, valid and idiomatic, couldn't be
+written, nor one that converts or counts what it's given. Erasing the
+variant's wrapper never meant erasing the body. Results change if the
+call is the value where its body does more, so Rust's behavior is kept
+(ADR 0262): the body is lowered and called as any `From`'s is.
+
+One answer, `untagged::from_gives_its_argument`, says which calls are the
+value. It's asked by lowering's calls (`mir/dispatch.rs`: `Detail::from(s)`,
+`s.into()`, the `from` an `Into` runs), by a conversion's dictionary
+(`T: Into<BlobPart>`), and by what may run across a call
+(`cell_borrows::call_runs_nothing`, `may_run`). It has three origins:
+
+- **The crate's own**: a `from` whose body is the variant of its
+  argument, read of its HIR (`gives_its_variant`), of any lifetimes.
+  `patterns::gives_its_argument` asks it too, so the rule of what gives
+  its argument (ADRs 0264, 0584) has it.
+- **A library's**: its contract's `gives_argument`, the list
+  `patterns::gives_its_argument` fills in its own compile. That list is
+  no new field, so the contract's VERSION is as it was.
+- **A crate rust-js writes no JS of**, a binding crate `--rustc` compiles,
+  webapi's `BlobPart::from(chunk)`: the value, as its body never runs.
+  `--rustc` holds it to that where it's written
+  (`binding_froms_give_their_variants`, beside `given_names_differ` and
+  `validate_types`). It also accepts the variant of its argument's
+  `Box::new` as a `Box<dyn Fn>`, react's `Ref::Callback(Box::new(callback))`,
+  which JS has as the function (ADR 0384). Any other body is refused
+  there, naming the enum.
+
+Generic code's `T: Into<Detail>` is given the `from` as its dictionary's
+`into`, `{ into: detailFromStr_from }`. Of a binding crate's identity it's
+`{ into: (value) => value }`. Before, generic code's `into()` was the
+value with no dictionary, so a generic function over a binding's untagged
+enum now takes one.
+
+Held by the corpus case `untagged_from_that_does_more` (`into()`,
+`From::from`, a function value, `map(Into::into)`, generic `T: Into` and
+`W: From`, `?`, evaluation order) against native Rust; the pair
+`untagged_from_across_crates`; and test/webapi-objects.test.ts' "a From
+into an untagged enum that does more is called, a binding crate's is the
+value" (`hello:5:7:2`, as native Rust prints); test/diagnostics.test.ts'
+"a binding crate's From into an untagged enum that does more is refused",
+and a boxed callback's accepted; test/crates.test.ts' "a library's untagged
+From that's the variant of its argument is its consumer's value". Mutations
+in `lower/untagged/froms.ts`, `lower/patterns.ts`,
+`lower/traits/dictionaries/conversions.ts`, `lower/mir/dispatch.ts`,
+`runs_nothing.ts` and `may_run.ts`, each caught. The diagnostics case
+"a From into an untagged enum that does more", now compiled, is gone.

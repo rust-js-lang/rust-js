@@ -410,7 +410,7 @@ for (const [name, source, message, crate] of [
   ["malformed binding", '#[rust_js::link_name(123)] pub fn f() {}', "a binding needs"],
   ["handwritten JSX binding", '#[rust_js::link_name = "<div>"] fn div(a: i32, b: i32) -> i32 { unreachable!() }\npub fn f() -> i32 { div(1, 2) }', "element builders are compiler-only"],
   // An untagged enum (ADR 0214): JS tells a variant by its payload's kind, so each holds one
-  // value of a kind of its own, and a `From` into one is its variant of its argument.
+  // value of a kind of its own.
   ["an untagged enum's variants of one kind", '#[rust_js::untagged] pub enum E { A(String), B(&\'static str) }\npub fn f(e: E) -> u32 { match e { E::A(_) => 1, E::B(_) => 2 } }', "which JS can't tell apart"],
   // Only made, they may share a kind; a `match` that tells them apart can't
   // be, nor an impl.
@@ -439,7 +439,6 @@ for (const [name, source, message, crate] of [
   ["an untagged enum of two classes told apart", "#[rust_js::untagged] pub enum E<'a> { A(&'a js::Date), B(&'a js::RegExp) }\npub fn f(e: E) -> u32 { match e { E::A(_) => 1, E::B(_) => 2 } }", "JS can't tell `E::A`, a `Date`, from `E`'s other variants in every realm: `instanceof Date` is `false`", "js"],
   ["a JS object type's test of a member of no number", '#[rust_js::types = "Node"]\n#[rust_js::test(nodeType = "x")]\npub struct N(std::marker::PhantomData<js::JsObject>);', "names the member that tells it apart and each number", "js"],
   ["an untagged enum's variant of what JS threw", "#[rust_js::untagged] pub enum E<'a> { A(&'a js::JsError), B(f64) }\npub fn f(e: E) -> u32 { match e { E::A(_) => 1, E::B(_) => 2 } }", "JS can't tell a `&'a js::JsError` from another variant's value", "js"],
-  ["a From into an untagged enum that does more", '#[rust_js::untagged] pub enum E { A(u32), B(String) }\nimpl From<u32> for E { fn from(n: u32) -> Self { E::A(n + 1) } }\npub fn f(n: u32) -> E { n.into() }', "is its variant of its argument"],
   ["serde of an untagged enum", '#[rust_js::untagged]\n#[derive(serde::Serialize)] pub enum E { A(u32), B(String) }\npub fn f(e: &E) -> String { serde_json::to_string(e).unwrap() }', "serde of the untagged enum", "serde"],
   // A generic `Error` impl's dictionary has no `type_id` (ADR 0331, amended).
   ["a dyn Error's downcast to a generic impl's type", '#[derive(Debug)] pub struct W<E>(E);\nimpl<E: std::fmt::Debug> std::fmt::Display for W<E> { fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result { write!(f, "{:?}", self.0) } }\nimpl<E: std::fmt::Debug> std::error::Error for W<E> {}\npub fn f(e: &(dyn std::error::Error + \'static)) -> bool { e.is::<W<u8>>() }', "whose `Error` impl is generic"],
@@ -595,6 +594,54 @@ test("another crate's function in an extern block is refused where it's called",
   // Called, and given as a value.
   expect(compile("pub fn f() -> f64 {\n    dep::max(1.0, 2.0)\n}\n")).toEqual([1, true]);
   expect(compile("pub fn f() -> Vec<f64> {\n    [1.0, 2.0].map(|x| x * 2.0).into_iter().zip([3.0, 1.0]).map(|(a, b)| (dep::max as fn(f64, f64) -> f64)(a, b)).collect()\n}\n")).toEqual([1, true]);
+});
+
+// The crate `--rustc` compiles, a binding crate's, writes no JS: a `From`
+// into an untagged enum of its that does more than make its variant of its
+// argument is refused where it's written. One of a callback it boxes as a
+// `Box<dyn Fn>`, react's `Ref::Callback(Box::new(callback))`, is the
+// function, as JS has it.
+test("a binding crate's From into an untagged enum that does more is refused", () => {
+  const dir = fixture("webapi-untagged-from-binding");
+  const compiled = (source: string) => {
+    writeFileSync(join(dir, "lib.rs"), source);
+    return runSync([compiler, "--rustc", "--edition=2024", "--crate-type=lib", "--crate-name=dep", "--emit=metadata", "--target=wasm32-unknown-unknown", `--out-dir=${dir}`, join(dir, "lib.rs")], root, 60_000);
+  };
+  const refused = compiled(`#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum Detail {
+    Text(String),
+    Number(u32),
+}
+
+impl From<&str> for Detail {
+    fn from(value: &str) -> Self {
+        Self::Text(value.to_owned())
+    }
+}
+
+impl From<String> for Detail {
+    fn from(value: String) -> Self {
+        Self::Text(value)
+    }
+}
+`);
+  expect(refused.code).not.toBe(0);
+  expect(refused.stderr).toContain("rust-js: a `From` into the untagged enum `Detail` of a crate rust-js writes no JS of, a binding crate's, is its variant of its argument");
+  expect(refused.stderr.match(/untagged enum `Detail` of a crate/g)?.length).toBe(1);
+  const boxed = compiled(`#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum Handler {
+    Name(String),
+    Callback(Box<dyn Fn(u32)>),
+}
+
+impl<F: Fn(u32) + 'static> From<F> for Handler {
+    fn from(callback: F) -> Self {
+        Handler::Callback(Box::new(callback))
+    }
+}
+`);
+  expect(boxed.stderr).toBe("");
+  expect(boxed.code).toBe(0);
 });
 
 // A copied default's THIR is in its trait's terms, and what its patterns

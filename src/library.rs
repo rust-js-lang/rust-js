@@ -596,8 +596,9 @@ pub struct Library {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub eq_by_address: Vec<String>,
     /// The keys of its functions each call of which is what it's given, a
-    /// transparent struct's `From` (ADRs 0264, 0584, amended): a consumer's
-    /// call of one is the value.
+    /// transparent struct's `From` (ADRs 0264, 0584, amended), or an
+    /// untagged enum's that's the variant of its argument (ADR 0214,
+    /// amended): a consumer's call of one is the value.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub gives_argument: Vec<String>,
     /// The keys of its untagged enums whose `Display` writes each
