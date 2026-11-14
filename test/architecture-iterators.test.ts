@@ -743,3 +743,23 @@ test("the compiled std catalogue is asked of a type, not a definition", () => {
     .filter((file) => /\bfn (is_held_compiled_def|makes_held_compiled_def|compiled_for_build_def)\b|\bis_held_compiled_def\(/.test(read(file)));
   expect(byDefinition).toEqual([]);
 });
+
+// What JS's own iterator forms know, an `Iterator.prototype`'s and a range's
+// `$lazyRange`, is `iterators::own_form`'s one answer (#1792, #1803): no
+// other lowering file matches them by name, but the range's own module,
+// which makes `$lazyRange` and reads it back as it rewrites its own form.
+test("JS's own iterator forms are known by own_form alone", () => {
+  const lowering = ["src/lower.rs", ...files("src/lower")].filter((file) => file.endsWith(".rs"));
+  const owners = ["src/lower/iterators.rs", "src/lower/std_types/range.rs"];
+  const reads = lowering
+    .filter((file) => !owners.includes(file))
+    .flatMap((file) => {
+      const source = read(file);
+      return [
+        ...[...source.matchAll(/helper_name\(\)\s*[!=]=\s*Some\((?:LAZY_RANGE|"\$lazyRange")\)/g)].map(() => `${file}: $lazyRange`),
+        ...[...source.matchAll(/"values"\s*\|\s*"keys"\s*\|\s*"entries"/g)].map(() => `${file}: values/keys/entries`),
+      ];
+    });
+  expect(reads).toEqual([]);
+  expect(read("src/lower/iterators.rs")).toContain("pub(in crate::lower) fn own_form(e: &Expr) -> Option<OwnForm>");
+});

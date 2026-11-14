@@ -23,7 +23,7 @@ function main() {
   const v = [1];
   $extend(v, some == null ? [] : [some], true);
   $extend(v, none == null ? [] : [none], true);
-  $extend(v, $lazyRange(3, 5), true);
+  $extend(v, $lazyRange(3, 5));
   const chained = [
     ...$lazyRange(0, 2),
     ...$lazyRange(5, 7),

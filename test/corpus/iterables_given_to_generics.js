@@ -105,7 +105,7 @@ function main() {
   );
   const r = { start: 1, end: 6 };
   const out = [0];
-  $extend(out, $iterator(r, $rangeNext), true);
+  $extend(out, $iterator(r, $rangeNext));
   const arg = $rangeNext(r);
   console.log(`[${out.join(", ")}] ${arg == null ? "None" : `Some(${arg})`}`);
 }

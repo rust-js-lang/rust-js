@@ -1,13 +1,13 @@
 # shape	count	per 10,000 lines
 files	2563
-lines	338370
+lines	338363
 temporaries	0	0
 labeled blocks	0	0
 while (true)	224	6.6
 $iter	2866	84.7
 Iterator.from	264	7.8
 return;	328	9.7
-renamed x$1	16169	477.8
+renamed x$1	16169	477.9
 role fallbacks	8829	260.9
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1	role fallbacks
 test/corpus/adapter_drop_past_a_panic.js	52	0	0	0	1	0	0	0	1
@@ -1233,7 +1233,7 @@ test/corpus/iterator_of_projection.js	42	0	0	0	0	0	0	0	1
 test/corpus/iterator_passed_through_a_chain_of_impls.js	161	0	0	0	4	0	0	18	10
 test/corpus/iterator_read_as_itself.js	62	0	0	0	3	0	0	4	3
 test/corpus/iterator_reduce.js	82	0	0	0	5	1	0	12	5
-test/corpus/iterator_replaced_where_capacities_are_kept.js	109	0	0	0	8	0	0	0	1
+test/corpus/iterator_replaced_where_capacities_are_kept.js	104	0	0	0	8	0	0	0	1
 test/corpus/iterator_sources.js	149	0	0	0	3	0	0	0	0
 test/corpus/iterator_stepped_by_hand.js	33	0	0	0	0	1	0	0	1
 test/corpus/iterator_values_meet.js	325	0	0	0	0	0	0	48	26
@@ -1916,7 +1916,7 @@ test/corpus/reference_given_as_its_pointer.js	263	0	0	0	0	0	0	23	13
 test/corpus/reference_returned_as_its_parameter_given_as_its_pointer.js	51	0	0	0	0	0	0	0	0
 test/corpus/references_given_to_generics.js	168	0	0	0	0	1	0	2	2
 test/corpus/references_read_before_their_field_is_written.js	61	0	0	0	0	0	0	0	0
-test/corpus/refused_drops_and_displays.js	417	0	0	1	1	0	0	2	4
+test/corpus/refused_drops_and_displays.js	416	0	0	1	1	0	0	2	4
 test/corpus/remainder_operands.js	55	0	0	0	0	0	0	0	3
 test/corpus/remainder_sign.js	23	0	0	0	0	0	0	0	0
 test/corpus/repeat_count_panics.js	130	0	0	0	1	0	0	0	5
@@ -2547,7 +2547,7 @@ test/snapshots/playground/codemirror.js	93	0	0	0	0	0	0	2	0
 test/snapshots/playground/compiler.js	340	0	0	0	0	0	0	0	2
 test/snapshots/playground/dark_mode.js	30	0	0	0	0	0	0	0	0
 test/snapshots/playground/listen.js	10	0	0	0	0	0	0	0	0
-test/snapshots/playground/programs.js	264	0	0	0	1	0	0	2	1
+test/snapshots/playground/programs.js	263	0	0	0	1	0	0	2	1
 test/snapshots/playground/projects.js	121	0	0	0	0	0	0	0	0
 test/snapshots/playground/styles.js	13	0	0	0	0	0	0	0	0
 test/snapshots/playground/tree.js	60	0	0	0	0	0	0	2	0

@@ -47,3 +47,46 @@ pub fn halves(s: &str) -> Vec<&str> {
   expect((lib.evens as (n: number) => number[])(5)).toEqual([0, 2, 4]);
   expect((lib.halves as (s: string) => string[])("a=b")).toEqual(["b", "a"]);
 });
+
+// A `Vec`'s `extend` of a `TrustedLen` iterator is by its fold, as std's
+// `extend_trusted` is, `$extend(v, it, true)`, where its fold is its own:
+// std's compiled `Zip` of items that drop and the runtime's `$lazyZip`,
+// whose `next` would take one more of the longer side (#1803). Not of one
+// whose fold is the steps its `next` takes, a range's map, `$lazyRange(..)
+// .map(f)`, as React's `rects.extend((0..n).map(f))` is written, which the
+// flag wouldn't change (`folds_as_it_steps`).
+test("a Vec extended by its fold only where the fold is its own", async () => {
+  const { js, lib } = await compiled(
+    "extended-by-fold",
+    `pub struct D(pub u32);
+
+impl Drop for D {
+    fn drop(&mut self) {}
+}
+
+pub fn zipped_drops(v: Vec<D>) -> Vec<(D, u32)> {
+    let mut out = Vec::new();
+    out.extend(v.into_iter().rev().zip(10..12u32));
+    out
+}
+
+pub fn zipped(v: Vec<u32>) -> Vec<(u32, u32)> {
+    let mut out = Vec::new();
+    out.extend(v.into_iter().rev().zip(10..12u32));
+    out
+}
+
+pub fn mapped(v: &[u32]) -> Vec<u32> {
+    let mut out = Vec::new();
+    out.extend((0..v.len()).map(|i| v[i] * 2));
+    out
+}
+`,
+  );
+  expect(js).toContain("$extend(out, iter, true);");
+  expect(js).toContain("iterator_zip(");
+  expect(js).toContain("$extend(out, $lazyZip($iter(v.toReversed()), $lazyRange(10, 12)), true);");
+  expect(js).toMatch(/\$extend\(\s*out,\s*\$lazyRange\(0, v\.length\)\.map\([^;]*?\),?\s*\);/);
+  expect(js).not.toMatch(/\$lazyRange\(0, v\.length\)\.map\([^;]*?\),\s*true/);
+  expect((lib.mapped as (v: number[]) => number[])([1, 2, 3])).toEqual([2, 4, 6]);
+});

@@ -97,12 +97,7 @@ function main() {
   }
 
   const grown = [];
-  $grew(
-    grown,
-    4,
-    grown.length,
-    $extend(grown, $iterator({ start: 0, end: 4 }, $rangeNextBack), true),
-  );
+  $grew(grown, 4, grown.length, $extend(grown, $iterator({ start: 0, end: 4 }, $rangeNextBack)));
   console.log(`${$capacity(grown, 4)}`);
 }
 //# sourceMappingURL=case.js.map

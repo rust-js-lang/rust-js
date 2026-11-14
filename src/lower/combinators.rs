@@ -1098,7 +1098,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let onto_vec = self.is_std_type(into.peel_refs(), crate::lower::recognition::StdItem::Vec);
         // Onto a `Vec`, of what the call gives, not a dictionary's entry's
         // stand-in, whatever its callers give (`call`).
-        if (onto_vec && call || self.folds_held_function(iter_ty))
+        // Not one whose fold is the steps its `next` takes, JS's own or a
+        // range's (`folds_as_it_steps`), which `true` wouldn't change, as
+        // React's `rects.extend((0..n).map(f))` is written.
+        let folds_its_own = !crate::lower::iterators::folds_as_it_steps(&items);
+        if (onto_vec && call && folds_its_own || self.folds_held_function(iter_ty))
             && crate::lower::recognition::is_trusted_len(self.tcx, self.typing_env, iter_ty)
         {
             return Ok(Expr::call_helper("$extend", vec![collection, items, Expr::bool(true)]));

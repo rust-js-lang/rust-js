@@ -58,7 +58,6 @@ function extended() {
     $extend(
       v,
       $lazyRange(2, 4).map((value) => [value]),
-      true,
     );
   } catch (error) {
     $cleanup(() => {

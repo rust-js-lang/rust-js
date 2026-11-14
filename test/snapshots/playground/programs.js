@@ -153,7 +153,6 @@ export function prepare(files, modules, styles, rootFile, main, tests, test, run
   $extend(
     sources,
     modules.values().map((item) => [item[0], item[1]]),
-    true,
   );
   let entries = [];
   if (test) {

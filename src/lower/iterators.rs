@@ -818,25 +818,71 @@ fn is_js_adapter(e: &Expr) -> bool {
             if matches!(name.as_str(), "map" | "filter" | "flatMap" | "take" | "drop") && is_js_iterator(object)))
 }
 
-/// Whether `it` is JS's own adapters, `map`, `filter`, `flatMap`, `take`
-/// or `drop`, of JS's own iterator (`hintless`): what knows no hint,
-/// whatever std's struct of its type knows. `v.iter().inspect(f)` made in
-/// place, `$iter(v).map(..)`, has none, where std's `Inspect` of a slice's
-/// knows its length (#1792).
-pub(in crate::lower) fn form_knows_no_hint(it: &Expr) -> bool {
-    matches!(&it.kind, js::ExprKind::Call(callee, _)
-        if matches!(&callee.kind, js::ExprKind::Member(object, name)
-            if matches!(name.as_str(), "map" | "filter" | "flatMap" | "take" | "drop") && hintless(object)))
+/// Which of JS's own iterators the recognizers made in place `e` is, the
+/// one answer of what its JS form knows (#1792, #1803):
+/// - `Hintless`: an `Iterator.prototype`'s, an array's `$iter(v)`, a
+///   collection's `values()`, `keys()` or `entries()`, JS's own adapters,
+///   `map`, `filter`, `flatMap`, `take` or `drop`, of one, or a variable
+///   that holds one (`Known::IterHintless`, `marks_kept`): it knows no hint
+///   and has no fold, whatever std's struct of its type knows;
+/// - `Range`: a range's `$lazyRange`, or the runtime's own adapters of one,
+///   whose hint is std's and whose fold steps it by its `next`.
+///
+/// `None` of another: std's compiled struct, a runtime `$Steps` of what
+/// isn't one of these, whose fold is its own.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(in crate::lower) enum OwnForm {
+    Hintless,
+    Range,
 }
 
-/// Whether `e` is JS's own iterator, an `Iterator.prototype`'s, which
-/// knows no hint (`Known::IterHintless`): an array's `$iter(v)`, a
-/// collection's `values()`, `keys()` or `entries()`, JS's own adapters of
-/// one, or a variable that holds one (`marks_kept`).
+pub(in crate::lower) fn own_form(e: &Expr) -> Option<OwnForm> {
+    let js::ExprKind::Call(callee, args) = &e.kind else {
+        return e.facts.has(js::Known::IterHintless).then_some(OwnForm::Hintless);
+    };
+    if e.facts.has(js::Known::IterHintless) || fresh_iter_source(e).is_some() {
+        return Some(OwnForm::Hintless);
+    }
+    // A range stepped by the runtime, `$iterator(range, $rangeNext)` as
+    // lowering makes it (`Known::IterRange`), printed `$lazyRange(a, b)`.
+    if e.facts.has(js::Known::IterRange) || callee.helper_name() == Some(super::std_types::range::LAZY_RANGE) {
+        return Some(OwnForm::Range);
+    }
+    match &callee.kind {
+        js::ExprKind::Member(_, name) if args.is_empty() && matches!(name.as_str(), "values" | "keys" | "entries") => {
+            Some(OwnForm::Hintless)
+        }
+        js::ExprKind::Member(object, name)
+            if matches!(name.as_str(), "map" | "filter" | "flatMap" | "take" | "drop") =>
+        {
+            own_form(object)
+        }
+        _ => None,
+    }
+}
+
+/// Whether `it` is JS's own adapters of JS's own iterator (`own_form`'s
+/// `Hintless`): what knows no hint, whatever std's struct of its type
+/// knows. `v.iter().inspect(f)` made in place, `$iter(v).map(..)`, has
+/// none, where std's `Inspect` of a slice's knows its length (#1792).
+pub(in crate::lower) fn form_knows_no_hint(it: &Expr) -> bool {
+    matches!(&it.kind, js::ExprKind::Call(callee, _)
+        if matches!(&callee.kind, js::ExprKind::Member(_, name)
+            if matches!(name.as_str(), "map" | "filter" | "flatMap" | "take" | "drop")))
+        && own_form(it) == Some(OwnForm::Hintless)
+}
+
+/// Whether `it`'s fold is the steps its `next` takes, so a consumer that
+/// asks it by its fold steps it as by `next` (`own_form`'s either): JS's
+/// own iterator, which has none, or a range's `$lazyRange` and its runtime
+/// adapters, whose fold steps it by `next`. `$extend(v, it, true)` of one
+/// would read as std's `extend_trusted`, and step it the same (#1803).
+pub(in crate::lower) fn folds_as_it_steps(it: &Expr) -> bool {
+    own_form(it).is_some()
+}
+
 fn hintless(e: &Expr) -> bool {
-    let own_iterator = matches!(&e.kind, js::ExprKind::Call(callee, args) if args.is_empty()
-        && matches!(&callee.kind, js::ExprKind::Member(_, name) if matches!(name.as_str(), "values" | "keys" | "entries")));
-    e.facts.has(js::Known::IterHintless) || own_iterator || fresh_iter_source(e).is_some() || form_knows_no_hint(e)
+    own_form(e) == Some(OwnForm::Hintless)
 }
 
 /// What a variable that holds `value` keeps of it, a spill's or a MIR

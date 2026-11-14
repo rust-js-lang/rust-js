@@ -863,3 +863,28 @@ grown, as `grown_ask` gives a collect's. Found by the table's `extend
 exact capacity` rows. `test/corpus/extend_by_an_inspect_of_a_slice_where_capacity_is_read.rs`
 holds it against native Rust; mutation `extend-of-a-hintless-form-unknowing`,
 caught.
+
+## Amendment (2026-11-15): what JS's own forms know, one owner (#1803)
+
+#1803's fold of a `Vec`'s `extend` of what's `TrustedLen`,
+`$extend(v, it, true)`, was given React's `rects.extend((0..n).map(f))`
+too, `$lazyRange(0, n).map(f)`, whose fold steps it as its `next` does, a
+flag that changed nothing and moved a port shape. Whether a form has a
+fold of its own to take and whether it knows a hint are two answers of one
+question, what JS's own iterator form the recognizers made it, and
+`iterators::own_form` is its one owner:
+
+- `Hintless`: an `Iterator.prototype`'s, `$iter(v)`, a collection's
+  `values()`, `keys()` or `entries()`, JS's own adapters of one, or a
+  variable that holds one (`Known::IterHintless`): no hint (#1792's
+  `form_knows_no_hint`) and no fold;
+- `Range`: a range stepped by the runtime, `$iterator(range, $rangeNext)`
+  as lowering makes it (`Known::IterRange`), printed `$lazyRange`, and the
+  runtime's adapters of one: std's hint, and a fold that's its `next`.
+
+A `Vec`'s `extend` is by its fold only of what's neither
+(`folds_as_it_steps`): std's compiled `Zip` and the runtime's `$lazyZip`
+keep it, a range's map doesn't. React's port regenerates byte for byte.
+`test/architecture-iterators.test.ts` holds that no other lowering file
+matches these forms by name but the range's own module; a lowering test
+of each of the three; mutation `extend-folds-as-it-steps-flagged`, caught.
