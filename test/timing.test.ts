@@ -1,7 +1,7 @@
 // The loop's timings (scripts/timing.ts): how a step's time is said
 // against its usual, and when it's slower.
 import { expect, test } from "bun:test";
-import { existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { keepFailedLogs } from "../scripts/checkLogs";
@@ -168,6 +168,33 @@ test("check:fast keeps each failing job's whole output, a file each, in its run'
   expect(readdirSync(run!).sort()).toEqual(["corpus-6-14.log", "test-child.test.ts.log"]);
   expect(readFileSync(join(run!, "corpus-6-14.log"), "utf8")).toBe(log);
 });
+
+// The pool starts a job once none runs, whatever the shares the ended ones
+// held left of their sum: 0.1, 1.3 and 2.7 of a core, each ended in turn,
+// leave `8.9e-16`, not 0, and a job of every one of five cores waited on it
+// with nothing running to wake it, the check idle until its outer limit
+// (2026-11-14).
+test("check:fast's pool starts a job of every core once the ones before it end, whatever their shares sum to", async () => {
+  const dir = fixture("check-pool-shares");
+  rmSync(join(dir, "times"), { recursive: true, force: true });
+  const child = join(dir, "pool.ts");
+  writeFileSync(
+    child,
+    `import { run } from ${JSON.stringify(join(root, "scripts/checkFast.ts"))};
+import { checkLogRun } from ${JSON.stringify(join(root, "scripts/checkLogs.ts"))};
+const job = (name: string, cmd: string[], weight: number, size?: number) => ({ name, cmd, env: {}, timeout: 120, weight, memory: 0, size });
+// The job of every core last, its size none: of jobs never run, the rest are of no known length.
+const ran = await run([job("a tenth of a core", ["sleep", "0.2"], 0.1), job("1.3 cores", ["sleep", "0.4"], 1.3), job("2.7 cores", ["sleep", "0.6"], 2.7), job("every core", ["true"], 5, 0)], "unused", 5, { began: Date.now(), samples: [] }, checkLogRun({ store: ${JSON.stringify(join(dir, "store"))} }), ${JSON.stringify(join(dir, "times"))});
+console.log(\`ran \${ran.length}\`);
+`,
+  );
+  const p = Bun.spawn(["bun", child], { cwd: root, stdout: "pipe", stderr: "pipe" });
+  const timer = setTimeout(() => p.kill("SIGKILL"), 30_000);
+  const out = await new Response(p.stdout).text();
+  await p.exited;
+  clearTimeout(timer);
+  expect(out).toContain("ran 4");
+}, underLoad(60_000));
 
 // A check an outer limit stops mid-pool keeps each failure it had: its
 // whole output written as its job fails, not as the pool ends (#1706).

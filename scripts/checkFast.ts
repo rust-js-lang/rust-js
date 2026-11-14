@@ -28,7 +28,7 @@ import { mappedFiles, pickChange, readersOf } from "./testMap";
 import { browsers, caseParts, compilerBuilds, machine, memoryBudget, nightly, peakGB, plainSuiteFiles, pooledParts } from "./shard";
 import { said, strays } from "./strays";
 import { type CheckLogRun, checkLogRun } from "./checkLogs";
-import { expected, readJobTimes, recordJobTimes } from "./jobTimes";
+import { expected, jobTimesStore, readJobTimes, recordJobTimes } from "./jobTimes";
 import { elapsed, loadScale, median, timed } from "./timing";
 
 const root = join(import.meta.dir, "..");
@@ -486,6 +486,7 @@ export function run(
   cores: number,
   { began, samples }: Clock,
   logs: CheckLogRun = checkLogRun(),
+  times = jobTimesStore,
 ): Promise<Ran[]> {
   const busy = busySince();
   const sampling = setInterval(() => samples.push({ at: (Date.now() - began) / 1000, busy: busy() }), 2000);
@@ -501,7 +502,7 @@ export function run(
   // once (scripts/jobTimes.ts, #1364): a worktree's own, which a new one
   // hasn't, started every job in its list's order, the iterators' slices
   // last, alone at the end.
-  const machine = readJobTimes();
+  const machine = readJobTimes(times);
   // What it usually takes, and what it may take, by which the pool starts
   // it: the longest of its last runs, so that one whose usual is cached,
   // cargo test's under a second, but whose change rebuilds it, 36 s, isn't
@@ -521,16 +522,23 @@ export function run(
   const queue = [...list].sort((a, b) => longest(b) - longest(a));
   const groups = new Map<string, Ran[]>();
   for (const { group } of list) if (group !== undefined) groups.set(group, []);
+  // The jobs running, by their count: what they hold, a sum of measured
+  // shares, `0.1 + 0.2 - 0.1 - 0.2`, is `2.8e-17` once they've all ended,
+  // not 0, so one that holds every core waited on it with none running to
+  // wake it, and the check sat idle until its outer limit (2026-11-14).
+  let running = 0;
   let held = 0;
   let heldMemory = 0;
   const budget = memoryBudget();
   let waiting: (() => void)[] = [];
   const room = async (weight: number, memory: number) => {
-    while (held > 0 && (held + weight > cores || heldMemory + memory > budget)) await new Promise<void>((wake) => waiting.push(wake));
+    while (running > 0 && (held + weight > cores || heldMemory + memory > budget)) await new Promise<void>((wake) => waiting.push(wake));
+    running++;
     held += weight;
     heldMemory += memory;
   };
   const freed = (weight: number, memory: number) => {
+    running--;
     held -= weight;
     heldMemory -= memory;
     const woken = waiting;
@@ -614,6 +622,7 @@ export function run(
         results
           .filter((r) => r.code === 0)
           .map((r) => ({ name: r.job.name, seconds: r.end - r.start, cores: kept(r.cpu, began + r.start * 1000, began + r.end * 1000), size: r.job.size })),
+        { store: times },
       );
       return results;
     })
