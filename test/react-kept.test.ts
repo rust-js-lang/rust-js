@@ -82,6 +82,21 @@ pub fn Stepped() -> JSX::Element {
     jsx! { <button onClick={move |_| dispatch.dispatch(Step { by: vec![10] })}>{*total}</button> }
 }
 
+pub struct Nudge {
+    pub points: Vec<Point>,
+}
+
+fn nudged(total: &f64, mut nudge: Nudge) -> f64 {
+    nudge.points[0].x += 1.0;
+    total + nudge.points[0].x
+}
+
+/// A reducer's action, an item of its \`Vec\` changed.
+pub fn Nudged() -> JSX::Element {
+    let (total, dispatch) = use_reducer(nudged, 0.0);
+    jsx! { <button onClick={move |_| dispatch.dispatch(Nudge { points: vec![Point { x: 10.0 }] })}>{*total}</button> }
+}
+
 fn started(mut seed: Step) -> u32 {
     seed.by.push(1);
     seed.by.iter().sum()
@@ -128,7 +143,7 @@ const driver = `import { expect, test } from "bun:test";
 import { StrictMode, createElement } from "react";
 import { flushSync } from "react-dom";
 import { createRoot } from "react-dom/client";
-import { Apart, Changed, Forwarding, Moved, Passed, Seeded, Shifted, Stepped, Updated } from "./lib.jsx";
+import { Apart, Changed, Forwarding, Moved, Nudged, Passed, Seeded, Shifted, Stepped, Updated } from "./lib.jsx";
 
 const shown = (element) => {
   const container = document.createElement("div");
@@ -153,6 +168,7 @@ test("each renders Rust's answer under StrictMode", () => {
   expect(shown(createElement(Shifted, { items })).textContent).toBe("5");
   expect(items).toEqual([{ x: 1 }, { x: 2 }]);
   expect(clicked(shown(createElement(Stepped)))).toBe("11");
+  expect(clicked(shown(createElement(Nudged)))).toBe("11");
   const seed = { by: [5] };
   expect(shown(createElement(Seeded, { seed })).textContent).toBe("6");
   expect(seed).toEqual({ by: [5] });
