@@ -1582,6 +1582,20 @@ pub fn instance_of(this: impl IntoUnknown, constructor: impl IntoUnknown) -> boo
     unreachable!()
 }
 
+/// `value` as a `T`, where it's one, else `None`: `value instanceof
+/// HTMLButtonElement ? value : undefined`, of a class [`class`] names, a
+/// binding's or a `#[rust_js::class]` struct's (#1866's follow-up, ADR
+/// 1159). What TypeScript's `closest<E extends Element>(..): E | null` or
+/// `querySelector<E>` casts unchecked, checked: so it adds an `instanceof`
+/// upstream doesn't write, which is false of an object of another realm,
+/// an iframe's element, as JS's own `instanceof` is. Of a type parameter,
+/// whose class JS doesn't know, a compile error.
+#[cfg_attr(rust_js, rust_js::link_name = "downcast")]
+#[cfg_attr(rust_js, rust_js::optional)]
+pub fn downcast<'a, T: Classed + 'a>(value: &'a (impl IntoUnknown + ?Sized)) -> Option<&'a T> {
+    unreachable!()
+}
+
 /// `key in value`: whether an object has a property of that name, its own
 /// or its prototype's, as JS's `in` asks, of any value; of what's no
 /// object, `undefined` or `null`, a `None`, or a string, JS's `TypeError`,

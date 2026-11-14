@@ -89,6 +89,10 @@ pub(in crate::lower) enum JsForm {
     /// `class`: the constructor function of the class its type argument
     /// is, `Component`, `js::class::<Component>()`'s (ADR 0761).
     Class,
+    /// `downcast`: its argument where it's an instance of the class its
+    /// type argument is, `value instanceof C ? value : undefined`,
+    /// `js::downcast`'s (ADR 1159).
+    Downcast,
     /// `?.()`: a path's method read once and called with its value as its
     /// `this` where it's there, `value.method?.(args)`, `js::optional_call`'s
     /// (#1859).
@@ -185,6 +189,7 @@ pub(in crate::lower) fn js_form(tcx: TyCtxt<'_>, def_id: DefId) -> JsForm {
         "for in" => return JsForm::KeysIn,
         "throw" if !of_self(tcx, def_id) => return JsForm::Throw,
         "class" => return JsForm::Class,
+        "downcast" => return JsForm::Downcast,
         "is when" => return JsForm::IsWhen,
         "?.()" => return JsForm::OptionalCall,
         "null" => return JsForm::Null,

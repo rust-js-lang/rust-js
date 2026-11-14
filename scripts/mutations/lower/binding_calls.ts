@@ -1034,4 +1034,28 @@ export const mutations: Mutation[] = [
     replace: "                true => self.js_ref(&name).or_at(fun_span).answered_by_a_getter(),\n",
     tests: ["test/webapi-globals.test.ts", "-t", "a global a host may lack"],
   },
+  {
+    name: "downcast-of-a-type-parameter-allowed",
+    breaks: "`js::downcast::<T>` of a type parameter isn't refused as of one whose class JS doesn't know, its refusal another's",
+    file: "src/lower/binding_calls.rs",
+    find: "                if super::generic_facts::is_type_parameter(ty) {\n",
+    replace: "                if false && super::generic_facts::is_type_parameter(ty) {\n",
+    tests: ["test/js-downcast.test.ts", "-t", "a type parameter is refused"],
+  },
+  {
+    name: "downcast-value-read-twice",
+    breaks: "`js::downcast` of a call reads it twice, `pick(elements) instanceof HTMLButtonElement ? pick(elements) : undefined`, its code run twice where Rust runs it once",
+    file: "src/lower/binding_calls.rs",
+    find: "                    false => self.spill(Role::Value, value, out),\n",
+    replace: "                    false => value,\n",
+    tests: ["test/js-downcast.test.ts", "-t", "the class's instance"],
+  },
+  {
+    name: "downcast-unchecked",
+    breaks: "`js::downcast` gives the value whatever it is, a `div` as a button, as TypeScript's cast does, where Rust's is `None`",
+    file: "src/lower/binding_calls.rs",
+    find: "                Expr::cond(test, value.present(), Expr::js_undefined())\n            }\n            // The value where it's an object or an array, as one value:\n",
+    replace: "                {\n                    let _ = test;\n                    value.present()\n                }\n            }\n            // The value where it's an object or an array, as one value:\n",
+    tests: ["test/js-downcast.test.ts", "-t", "the class's instance"],
+  },
 ];

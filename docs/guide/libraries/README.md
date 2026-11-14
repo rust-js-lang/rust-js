@@ -243,6 +243,17 @@ What it has:
   `prototype()` its `X.prototype`; `data_view::is(value)` is `value
   instanceof DataView`
   ([ADR 0878](../../decisions/0878-instanceof-of-a-constructor-value.md)).
+  A value as a class's instance, where it is one, is
+  `js::downcast::<HTMLButtonElement>(value)`, `value instanceof
+  HTMLButtonElement ? value : undefined`, of a binding's class or a
+  `#[rust_js::class]` struct's: what TypeScript's `closest<E extends
+  Element>(..): E | null` and `querySelector<E>` cast unchecked, so
+  `element.closest("button")` stays an `Element` and
+  `js::downcast::<HTMLButtonElement>(element.closest("button")?)` is the
+  button it may be. It adds an `instanceof` upstream doesn't write, false
+  of an object of another realm, an iframe's element, as JS's own is; of
+  a type parameter, whose class JS doesn't know, it's refused
+  ([ADR 1159](../../decisions/1159-a-checked-downcast.md)).
   A `Set` holds any value, as a `Map` keys one; each is made of what it
   starts with, any iterable of it, `set::new(Some(&[a, b]))`,
   `set::new(Some(other))`, or `None`

@@ -763,6 +763,7 @@ The program's own type says it by its `ptr::eq` alone, which rust-js reads
 | `"this"` | `this` | a cast, unchecked |
 | `"instanceof X"` | `this instanceof X` | a cast's test |
 | `"instanceof"` | `this instanceof constructor`, of a constructor given | `js::instance_of` ([ADR 0878](../../decisions/0878-instanceof-of-a-constructor-value.md)) |
+| `"downcast"` | `value instanceof T ? value : undefined`, of its type argument's class | `js::downcast`, a checked cast ([ADR 1159](../../decisions/1159-a-checked-downcast.md)) |
 | `"this()"` | `this(..)` | calling a JS function value |
 | `"new this()"` | `new this(..)` | `js::new` |
 | `"delete []"` | `delete this[key]` | `js::delete` |

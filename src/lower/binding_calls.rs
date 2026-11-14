@@ -426,6 +426,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                 }
             }
+            // The value where it's the class's instance, as one value,
+            // read once: `value instanceof HTMLButtonElement ? value :
+            // undefined` (ADR 1159).
+            (JsForm::Downcast, None) if args.len() == 1 => {
+                let ty = generic_args.types().next().expect("js::downcast's `T`");
+                if super::generic_facts::is_type_parameter(ty) {
+                    let what = "`js::downcast::<T>` of a type parameter, whose class JS doesn't know where it's called: downcast to the class itself, `js::downcast::<HTMLButtonElement>(value)`";
+                    return Err(self.unsupported(span, what));
+                }
+                let value = args.remove(0);
+                let value = match value.reads_same() {
+                    true => value,
+                    false => self.spill(Role::Value, value, out),
+                };
+                let Some(test) = self.kind_test_of(ty, &value) else {
+                    let what = format!(
+                        "`js::downcast::<{ty}>`, of a type JS can't tell a value is an instance of, as it can a class's"
+                    );
+                    return Err(self.unsupported(span, &what));
+                };
+                Expr::cond(test, value.present(), Expr::js_undefined())
+            }
             // The value where it's an object or an array, as one value:
             // `typeof value === "object" && value !== null ? value :
             // undefined`, which an `if let` of it tests (ADR 0910).
