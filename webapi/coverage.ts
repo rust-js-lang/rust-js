@@ -102,6 +102,34 @@ export async function typescriptInterfaces(): Promise<Map<string, { members: Set
   return interfaces;
 }
 
+/** Each namespace @webref/idl declares, and the names of its constants. */
+export async function idlNamespaceConstants(): Promise<Map<string, string[]>> {
+  const constants = new Map<string, string[]>();
+  for (const defs of Object.values(await idl.parseAll()) as { type: string; name: string; members?: { type: string; name?: string }[] }[][]) {
+    for (const d of defs.filter((d) => d.type === "namespace")) {
+      const own = (d.members ?? []).filter((m) => m.type === "const" && m.name).map((m) => m.name!);
+      constants.set(d.name, [...(constants.get(d.name) ?? []), ...own]);
+    }
+  }
+  return constants;
+}
+
+/** Each namespace TypeScript's DOM declares, `declare namespace
+ * GPUBufferUsage { const MAP_READ: 1; .. }`, and its members' names. */
+export async function typescriptNamespaces(): Promise<Map<string, Set<string>>> {
+  const session = await open([dom]);
+  const { declarations } = await session.read(dom);
+  await session.close();
+  const namespaces = new Map<string, Set<string>>();
+  for (const d of declarations as any[]) {
+    if (d.kind !== "namespace") continue;
+    const members = namespaces.get(d.name) ?? new Set<string>();
+    for (const member of d.declarations ?? []) if (member.name) members.add(member.name);
+    namespaces.set(d.name, members);
+  }
+  return namespaces;
+}
+
 export async function typescript(): Promise<Map<string, Members>> {
   const session = await open([dom]);
   const { declarations } = await session.read(dom);

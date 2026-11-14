@@ -310,3 +310,31 @@ doesn't:
 
 Held by `test/webapi-bindings.test.ts`'s "a getter gives what TypeScript
 types it as" and the generator's output test.
+
+## Amendment (2026-11-14): every WebIDL namespace, its constants too (#1779)
+
+The generator named its namespaces, `WebAssembly`, `console` and `CSS`, and
+gave each module its functions alone: WebGPU's flags, `GPUBufferUsage`,
+`GPUTextureUsage`, `GPUMapMode`, `GPUShaderStage` and `GPUColorWrite`,
+each a namespace of constants, weren't bound, and a program couldn't write
+`gpu_buffer_usage::UNIFORM | gpu_buffer_usage::COPY_DST` without a magic
+number of its own. Every namespace @webref/idl declares is read now, and a
+member of one of another spec than those the generator reads whole is kept
+where TypeScript's DOM declares it, as an interface's is
+(`typescriptNamespaces`, `declare namespace GPUBufferUsage { .. }`). Each
+namespace's module holds its constants, a Rust one of its WebIDL type read
+as its JS name, `#[rust_js::link_name = "GPUBufferUsage.UNIFORM"] pub const
+UNIFORM: u32 = 0x0040;`, as an interface's module does.
+
+The same rule keeps `CSS`'s members TypeScript declares of other specs,
+css-typed-om's `CSS.px(..)` and the like, which rd162 had left out with
+every namespace member of another spec: 64 functions. `TestUtils`, a test
+harness's namespace TypeScript doesn't declare, has none.
+
+A `u32` of two flags, `UNIFORM | COPY_DST`, is `(GPUBufferUsage.UNIFORM |
+GPUBufferUsage.COPY_DST) >>> 0`: the constants are read of JS's globals as
+it runs, so their sign isn't known (ADR 0011).
+
+Held by `test/webapi-namespaces.test.ts`: each namespace constant @webref/idl
+declares whose name TypeScript's DOM has is its module's; and WebGPU's flags,
+compiled and run.

@@ -83391,48 +83391,6 @@ impl Window {
 
 }
 
-/// The [`WebAssembly`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly) namespace.
-
-pub mod web_assembly {
-    use super::*;
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/validate)
-    #[cfg_attr(rust_js, rust_js::link_name = "WebAssembly.validate")]
-    pub fn validate(bytes: impl IntoAllowSharedBufferSource, options: Option<WebAssemblyCompileOptions<'_>>) -> bool {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/compile)
-    #[cfg_attr(rust_js, rust_js::link_name = "WebAssembly.compile")]
-    pub fn compile(bytes: impl IntoAllowSharedBufferSource, options: Option<WebAssemblyCompileOptions<'_>>) -> Promise<&'static WebAssemblyModule> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/instantiate)
-    #[cfg_attr(rust_js, rust_js::link_name = "WebAssembly.instantiate")]
-    pub fn instantiate(bytes: impl IntoAllowSharedBufferSource, import_object: Option<&dyn core::any::Any>, options: Option<WebAssemblyCompileOptions<'_>>) -> Promise<WebAssemblyInstantiatedSource> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/instantiate)
-    #[cfg_attr(rust_js, rust_js::link_name = "WebAssembly.instantiate")]
-    pub fn instantiate_with_web_assembly_module(module_object: &WebAssemblyModule, import_object: Option<&dyn core::any::Any>) -> Promise<&'static WebAssemblyInstance> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/compileStreaming)
-    #[cfg_attr(rust_js, rust_js::link_name = "WebAssembly.compileStreaming")]
-    pub fn compile_streaming(source: Promise<&'static Response>, options: Option<WebAssemblyCompileOptions<'_>>) -> Promise<&'static WebAssemblyModule> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/instantiateStreaming)
-    #[cfg_attr(rust_js, rust_js::link_name = "WebAssembly.instantiateStreaming")]
-    pub fn instantiate_streaming(source: Promise<&'static Response>, import_object: Option<&dyn core::any::Any>, options: Option<WebAssemblyCompileOptions<'_>>) -> Promise<WebAssemblyInstantiatedSource> {
-        unreachable!()
-    }
-}
-
 /// The `console` namespace as a value, the `console` global's: its functions are the `console` module's.
 #[cfg_attr(rust_js, rust_js::types = "Console")]
 pub struct Console(PhantomData<JsObject>);
@@ -83643,12 +83601,571 @@ pub mod console {
 /// The [`CSS`](https://developer.mozilla.org/docs/Web/API/CSS) namespace.
 
 pub mod css {
+    use super::*;
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSS/supports)
+    #[cfg_attr(rust_js, rust_js::link_name = "CSS.supports")]
+    pub fn supports(property: &str, value: &str) -> bool {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSS/registerProperty)
+    #[cfg_attr(rust_js, rust_js::link_name = "CSS.registerProperty")]
+    #[cfg_attr(rust_js, rust_js::returns_undefined)]
+    pub fn register_property(definition: PropertyDefinition<'_>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSS/number)
+    #[cfg_attr(rust_js, rust_js::link_name = "CSS.number")]
+    pub fn number(value: impl Into<f64>) -> &'static CSSUnitValue {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSS/percent)
+    #[cfg_attr(rust_js, rust_js::link_name = "CSS.percent")]
+    pub fn percent(value: impl Into<f64>) -> &'static CSSUnitValue {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSS/cap)
+    #[cfg_attr(rust_js, rust_js::link_name = "CSS.cap")]
+    pub fn cap(value: impl Into<f64>) -> &'static CSSUnitValue {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSS/ch)
+    #[cfg_attr(rust_js, rust_js::link_name = "CSS.ch")]
+    pub fn ch(value: impl Into<f64>) -> &'static CSSUnitValue {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSS/em)
+    #[cfg_attr(rust_js, rust_js::link_name = "CSS.em")]
+    pub fn em(value: impl Into<f64>) -> &'static CSSUnitValue {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSS/ex)
+    #[cfg_attr(rust_js, rust_js::link_name = "CSS.ex")]
+    pub fn ex(value: impl Into<f64>) -> &'static CSSUnitValue {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSS/ic)
+    #[cfg_attr(rust_js, rust_js::link_name = "CSS.ic")]
+    pub fn ic(value: impl Into<f64>) -> &'static CSSUnitValue {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSS/lh)
+    #[cfg_attr(rust_js, rust_js::link_name = "CSS.lh")]
+    pub fn lh(value: impl Into<f64>) -> &'static CSSUnitValue {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSS/rcap)
+    #[cfg_attr(rust_js, rust_js::link_name = "CSS.rcap")]
+    pub fn rcap(value: impl Into<f64>) -> &'static CSSUnitValue {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSS/rch)
+    #[cfg_attr(rust_js, rust_js::link_name = "CSS.rch")]
+    pub fn rch(value: impl Into<f64>) -> &'static CSSUnitValue {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSS/rem)
+    #[cfg_attr(rust_js, rust_js::link_name = "CSS.rem")]
+    pub fn rem(value: impl Into<f64>) -> &'static CSSUnitValue {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSS/rex)
+    #[cfg_attr(rust_js, rust_js::link_name = "CSS.rex")]
+    pub fn rex(value: impl Into<f64>) -> &'static CSSUnitValue {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSS/ric)
+    #[cfg_attr(rust_js, rust_js::link_name = "CSS.ric")]
+    pub fn ric(value: impl Into<f64>) -> &'static CSSUnitValue {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSS/rlh)
+    #[cfg_attr(rust_js, rust_js::link_name = "CSS.rlh")]
+    pub fn rlh(value: impl Into<f64>) -> &'static CSSUnitValue {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSS/vw)
+    #[cfg_attr(rust_js, rust_js::link_name = "CSS.vw")]
+    pub fn vw(value: impl Into<f64>) -> &'static CSSUnitValue {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSS/vh)
+    #[cfg_attr(rust_js, rust_js::link_name = "CSS.vh")]
+    pub fn vh(value: impl Into<f64>) -> &'static CSSUnitValue {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSS/vi)
+    #[cfg_attr(rust_js, rust_js::link_name = "CSS.vi")]
+    pub fn vi(value: impl Into<f64>) -> &'static CSSUnitValue {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSS/vb)
+    #[cfg_attr(rust_js, rust_js::link_name = "CSS.vb")]
+    pub fn vb(value: impl Into<f64>) -> &'static CSSUnitValue {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSS/vmin)
+    #[cfg_attr(rust_js, rust_js::link_name = "CSS.vmin")]
+    pub fn vmin(value: impl Into<f64>) -> &'static CSSUnitValue {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSS/vmax)
+    #[cfg_attr(rust_js, rust_js::link_name = "CSS.vmax")]
+    pub fn vmax(value: impl Into<f64>) -> &'static CSSUnitValue {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSS/svw)
+    #[cfg_attr(rust_js, rust_js::link_name = "CSS.svw")]
+    pub fn svw(value: impl Into<f64>) -> &'static CSSUnitValue {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSS/svh)
+    #[cfg_attr(rust_js, rust_js::link_name = "CSS.svh")]
+    pub fn svh(value: impl Into<f64>) -> &'static CSSUnitValue {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSS/svi)
+    #[cfg_attr(rust_js, rust_js::link_name = "CSS.svi")]
+    pub fn svi(value: impl Into<f64>) -> &'static CSSUnitValue {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSS/svb)
+    #[cfg_attr(rust_js, rust_js::link_name = "CSS.svb")]
+    pub fn svb(value: impl Into<f64>) -> &'static CSSUnitValue {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSS/svmin)
+    #[cfg_attr(rust_js, rust_js::link_name = "CSS.svmin")]
+    pub fn svmin(value: impl Into<f64>) -> &'static CSSUnitValue {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSS/svmax)
+    #[cfg_attr(rust_js, rust_js::link_name = "CSS.svmax")]
+    pub fn svmax(value: impl Into<f64>) -> &'static CSSUnitValue {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSS/lvw)
+    #[cfg_attr(rust_js, rust_js::link_name = "CSS.lvw")]
+    pub fn lvw(value: impl Into<f64>) -> &'static CSSUnitValue {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSS/lvh)
+    #[cfg_attr(rust_js, rust_js::link_name = "CSS.lvh")]
+    pub fn lvh(value: impl Into<f64>) -> &'static CSSUnitValue {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSS/lvi)
+    #[cfg_attr(rust_js, rust_js::link_name = "CSS.lvi")]
+    pub fn lvi(value: impl Into<f64>) -> &'static CSSUnitValue {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSS/lvb)
+    #[cfg_attr(rust_js, rust_js::link_name = "CSS.lvb")]
+    pub fn lvb(value: impl Into<f64>) -> &'static CSSUnitValue {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSS/lvmin)
+    #[cfg_attr(rust_js, rust_js::link_name = "CSS.lvmin")]
+    pub fn lvmin(value: impl Into<f64>) -> &'static CSSUnitValue {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSS/lvmax)
+    #[cfg_attr(rust_js, rust_js::link_name = "CSS.lvmax")]
+    pub fn lvmax(value: impl Into<f64>) -> &'static CSSUnitValue {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSS/dvw)
+    #[cfg_attr(rust_js, rust_js::link_name = "CSS.dvw")]
+    pub fn dvw(value: impl Into<f64>) -> &'static CSSUnitValue {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSS/dvh)
+    #[cfg_attr(rust_js, rust_js::link_name = "CSS.dvh")]
+    pub fn dvh(value: impl Into<f64>) -> &'static CSSUnitValue {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSS/dvi)
+    #[cfg_attr(rust_js, rust_js::link_name = "CSS.dvi")]
+    pub fn dvi(value: impl Into<f64>) -> &'static CSSUnitValue {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSS/dvb)
+    #[cfg_attr(rust_js, rust_js::link_name = "CSS.dvb")]
+    pub fn dvb(value: impl Into<f64>) -> &'static CSSUnitValue {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSS/dvmin)
+    #[cfg_attr(rust_js, rust_js::link_name = "CSS.dvmin")]
+    pub fn dvmin(value: impl Into<f64>) -> &'static CSSUnitValue {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSS/dvmax)
+    #[cfg_attr(rust_js, rust_js::link_name = "CSS.dvmax")]
+    pub fn dvmax(value: impl Into<f64>) -> &'static CSSUnitValue {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSS/cqw)
+    #[cfg_attr(rust_js, rust_js::link_name = "CSS.cqw")]
+    pub fn cqw(value: impl Into<f64>) -> &'static CSSUnitValue {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSS/cqh)
+    #[cfg_attr(rust_js, rust_js::link_name = "CSS.cqh")]
+    pub fn cqh(value: impl Into<f64>) -> &'static CSSUnitValue {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSS/cqi)
+    #[cfg_attr(rust_js, rust_js::link_name = "CSS.cqi")]
+    pub fn cqi(value: impl Into<f64>) -> &'static CSSUnitValue {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSS/cqb)
+    #[cfg_attr(rust_js, rust_js::link_name = "CSS.cqb")]
+    pub fn cqb(value: impl Into<f64>) -> &'static CSSUnitValue {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSS/cqmin)
+    #[cfg_attr(rust_js, rust_js::link_name = "CSS.cqmin")]
+    pub fn cqmin(value: impl Into<f64>) -> &'static CSSUnitValue {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSS/cqmax)
+    #[cfg_attr(rust_js, rust_js::link_name = "CSS.cqmax")]
+    pub fn cqmax(value: impl Into<f64>) -> &'static CSSUnitValue {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSS/cm)
+    #[cfg_attr(rust_js, rust_js::link_name = "CSS.cm")]
+    pub fn cm(value: impl Into<f64>) -> &'static CSSUnitValue {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSS/mm)
+    #[cfg_attr(rust_js, rust_js::link_name = "CSS.mm")]
+    pub fn mm(value: impl Into<f64>) -> &'static CSSUnitValue {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSS/Q)
+    #[cfg_attr(rust_js, rust_js::link_name = "CSS.Q")]
+    pub fn q(value: impl Into<f64>) -> &'static CSSUnitValue {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSS/pt)
+    #[cfg_attr(rust_js, rust_js::link_name = "CSS.pt")]
+    pub fn pt(value: impl Into<f64>) -> &'static CSSUnitValue {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSS/pc)
+    #[cfg_attr(rust_js, rust_js::link_name = "CSS.pc")]
+    pub fn pc(value: impl Into<f64>) -> &'static CSSUnitValue {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSS/px)
+    #[cfg_attr(rust_js, rust_js::link_name = "CSS.px")]
+    pub fn px(value: impl Into<f64>) -> &'static CSSUnitValue {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSS/deg)
+    #[cfg_attr(rust_js, rust_js::link_name = "CSS.deg")]
+    pub fn deg(value: impl Into<f64>) -> &'static CSSUnitValue {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSS/grad)
+    #[cfg_attr(rust_js, rust_js::link_name = "CSS.grad")]
+    pub fn grad(value: impl Into<f64>) -> &'static CSSUnitValue {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSS/rad)
+    #[cfg_attr(rust_js, rust_js::link_name = "CSS.rad")]
+    pub fn rad(value: impl Into<f64>) -> &'static CSSUnitValue {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSS/turn)
+    #[cfg_attr(rust_js, rust_js::link_name = "CSS.turn")]
+    pub fn turn(value: impl Into<f64>) -> &'static CSSUnitValue {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSS/s)
+    #[cfg_attr(rust_js, rust_js::link_name = "CSS.s")]
+    pub fn s(value: impl Into<f64>) -> &'static CSSUnitValue {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSS/ms)
+    #[cfg_attr(rust_js, rust_js::link_name = "CSS.ms")]
+    pub fn ms(value: impl Into<f64>) -> &'static CSSUnitValue {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSS/Hz)
+    #[cfg_attr(rust_js, rust_js::link_name = "CSS.Hz")]
+    pub fn hz(value: impl Into<f64>) -> &'static CSSUnitValue {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSS/kHz)
+    #[cfg_attr(rust_js, rust_js::link_name = "CSS.kHz")]
+    pub fn k_hz(value: impl Into<f64>) -> &'static CSSUnitValue {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSS/dpi)
+    #[cfg_attr(rust_js, rust_js::link_name = "CSS.dpi")]
+    pub fn dpi(value: impl Into<f64>) -> &'static CSSUnitValue {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSS/dpcm)
+    #[cfg_attr(rust_js, rust_js::link_name = "CSS.dpcm")]
+    pub fn dpcm(value: impl Into<f64>) -> &'static CSSUnitValue {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSS/dppx)
+    #[cfg_attr(rust_js, rust_js::link_name = "CSS.dppx")]
+    pub fn dppx(value: impl Into<f64>) -> &'static CSSUnitValue {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSS/fr)
+    #[cfg_attr(rust_js, rust_js::link_name = "CSS.fr")]
+    pub fn fr(value: impl Into<f64>) -> &'static CSSUnitValue {
+        unreachable!()
+    }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSS/escape)
     #[cfg_attr(rust_js, rust_js::link_name = "CSS.escape")]
     pub fn escape(ident: &str) -> String {
         unreachable!()
     }
+}
+
+/// The [`TestUtils`](https://developer.mozilla.org/docs/Web/API/TestUtils) namespace.
+
+/// The [`WebAssembly`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly) namespace.
+
+pub mod web_assembly {
+    use super::*;
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/validate)
+    #[cfg_attr(rust_js, rust_js::link_name = "WebAssembly.validate")]
+    pub fn validate(bytes: impl IntoAllowSharedBufferSource, options: Option<WebAssemblyCompileOptions<'_>>) -> bool {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/compile)
+    #[cfg_attr(rust_js, rust_js::link_name = "WebAssembly.compile")]
+    pub fn compile(bytes: impl IntoAllowSharedBufferSource, options: Option<WebAssemblyCompileOptions<'_>>) -> Promise<&'static WebAssemblyModule> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/instantiate)
+    #[cfg_attr(rust_js, rust_js::link_name = "WebAssembly.instantiate")]
+    pub fn instantiate(bytes: impl IntoAllowSharedBufferSource, import_object: Option<&dyn core::any::Any>, options: Option<WebAssemblyCompileOptions<'_>>) -> Promise<WebAssemblyInstantiatedSource> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/instantiate)
+    #[cfg_attr(rust_js, rust_js::link_name = "WebAssembly.instantiate")]
+    pub fn instantiate_with_web_assembly_module(module_object: &WebAssemblyModule, import_object: Option<&dyn core::any::Any>) -> Promise<&'static WebAssemblyInstance> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/compileStreaming)
+    #[cfg_attr(rust_js, rust_js::link_name = "WebAssembly.compileStreaming")]
+    pub fn compile_streaming(source: Promise<&'static Response>, options: Option<WebAssemblyCompileOptions<'_>>) -> Promise<&'static WebAssemblyModule> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/instantiateStreaming)
+    #[cfg_attr(rust_js, rust_js::link_name = "WebAssembly.instantiateStreaming")]
+    pub fn instantiate_streaming(source: Promise<&'static Response>, import_object: Option<&dyn core::any::Any>, options: Option<WebAssemblyCompileOptions<'_>>) -> Promise<WebAssemblyInstantiatedSource> {
+        unreachable!()
+    }
+}
+
+/// The [`GPUBufferUsage`](https://developer.mozilla.org/docs/Web/API/GPUBufferUsage) namespace.
+
+pub mod gpu_buffer_usage {
+
+    /// `GPUBufferUsage.MAP_READ`
+    #[cfg_attr(rust_js, rust_js::link_name = "GPUBufferUsage.MAP_READ")]
+    pub const MAP_READ: u32 = 0x0001;
+
+    /// `GPUBufferUsage.MAP_WRITE`
+    #[cfg_attr(rust_js, rust_js::link_name = "GPUBufferUsage.MAP_WRITE")]
+    pub const MAP_WRITE: u32 = 0x0002;
+
+    /// `GPUBufferUsage.COPY_SRC`
+    #[cfg_attr(rust_js, rust_js::link_name = "GPUBufferUsage.COPY_SRC")]
+    pub const COPY_SRC: u32 = 0x0004;
+
+    /// `GPUBufferUsage.COPY_DST`
+    #[cfg_attr(rust_js, rust_js::link_name = "GPUBufferUsage.COPY_DST")]
+    pub const COPY_DST: u32 = 0x0008;
+
+    /// `GPUBufferUsage.INDEX`
+    #[cfg_attr(rust_js, rust_js::link_name = "GPUBufferUsage.INDEX")]
+    pub const INDEX: u32 = 0x0010;
+
+    /// `GPUBufferUsage.VERTEX`
+    #[cfg_attr(rust_js, rust_js::link_name = "GPUBufferUsage.VERTEX")]
+    pub const VERTEX: u32 = 0x0020;
+
+    /// `GPUBufferUsage.UNIFORM`
+    #[cfg_attr(rust_js, rust_js::link_name = "GPUBufferUsage.UNIFORM")]
+    pub const UNIFORM: u32 = 0x0040;
+
+    /// `GPUBufferUsage.STORAGE`
+    #[cfg_attr(rust_js, rust_js::link_name = "GPUBufferUsage.STORAGE")]
+    pub const STORAGE: u32 = 0x0080;
+
+    /// `GPUBufferUsage.INDIRECT`
+    #[cfg_attr(rust_js, rust_js::link_name = "GPUBufferUsage.INDIRECT")]
+    pub const INDIRECT: u32 = 0x0100;
+
+    /// `GPUBufferUsage.QUERY_RESOLVE`
+    #[cfg_attr(rust_js, rust_js::link_name = "GPUBufferUsage.QUERY_RESOLVE")]
+    pub const QUERY_RESOLVE: u32 = 0x0200;
+}
+
+/// The [`GPUMapMode`](https://developer.mozilla.org/docs/Web/API/GPUMapMode) namespace.
+
+pub mod gpu_map_mode {
+
+    /// `GPUMapMode.READ`
+    #[cfg_attr(rust_js, rust_js::link_name = "GPUMapMode.READ")]
+    pub const READ: u32 = 0x0001;
+
+    /// `GPUMapMode.WRITE`
+    #[cfg_attr(rust_js, rust_js::link_name = "GPUMapMode.WRITE")]
+    pub const WRITE: u32 = 0x0002;
+}
+
+/// The [`GPUTextureUsage`](https://developer.mozilla.org/docs/Web/API/GPUTextureUsage) namespace.
+
+pub mod gpu_texture_usage {
+
+    /// `GPUTextureUsage.COPY_SRC`
+    #[cfg_attr(rust_js, rust_js::link_name = "GPUTextureUsage.COPY_SRC")]
+    pub const COPY_SRC: u32 = 0x01;
+
+    /// `GPUTextureUsage.COPY_DST`
+    #[cfg_attr(rust_js, rust_js::link_name = "GPUTextureUsage.COPY_DST")]
+    pub const COPY_DST: u32 = 0x02;
+
+    /// `GPUTextureUsage.TEXTURE_BINDING`
+    #[cfg_attr(rust_js, rust_js::link_name = "GPUTextureUsage.TEXTURE_BINDING")]
+    pub const TEXTURE_BINDING: u32 = 0x04;
+
+    /// `GPUTextureUsage.STORAGE_BINDING`
+    #[cfg_attr(rust_js, rust_js::link_name = "GPUTextureUsage.STORAGE_BINDING")]
+    pub const STORAGE_BINDING: u32 = 0x08;
+
+    /// `GPUTextureUsage.RENDER_ATTACHMENT`
+    #[cfg_attr(rust_js, rust_js::link_name = "GPUTextureUsage.RENDER_ATTACHMENT")]
+    pub const RENDER_ATTACHMENT: u32 = 0x10;
+
+    /// `GPUTextureUsage.TRANSIENT_ATTACHMENT`
+    #[cfg_attr(rust_js, rust_js::link_name = "GPUTextureUsage.TRANSIENT_ATTACHMENT")]
+    pub const TRANSIENT_ATTACHMENT: u32 = 0x20;
+}
+
+/// The [`GPUShaderStage`](https://developer.mozilla.org/docs/Web/API/GPUShaderStage) namespace.
+
+pub mod gpu_shader_stage {
+
+    /// `GPUShaderStage.VERTEX`
+    #[cfg_attr(rust_js, rust_js::link_name = "GPUShaderStage.VERTEX")]
+    pub const VERTEX: u32 = 0x1;
+
+    /// `GPUShaderStage.FRAGMENT`
+    #[cfg_attr(rust_js, rust_js::link_name = "GPUShaderStage.FRAGMENT")]
+    pub const FRAGMENT: u32 = 0x2;
+
+    /// `GPUShaderStage.COMPUTE`
+    #[cfg_attr(rust_js, rust_js::link_name = "GPUShaderStage.COMPUTE")]
+    pub const COMPUTE: u32 = 0x4;
+}
+
+/// The [`GPUColorWrite`](https://developer.mozilla.org/docs/Web/API/GPUColorWrite) namespace.
+
+pub mod gpu_color_write {
+
+    /// `GPUColorWrite.RED`
+    #[cfg_attr(rust_js, rust_js::link_name = "GPUColorWrite.RED")]
+    pub const RED: u32 = 0x1;
+
+    /// `GPUColorWrite.GREEN`
+    #[cfg_attr(rust_js, rust_js::link_name = "GPUColorWrite.GREEN")]
+    pub const GREEN: u32 = 0x2;
+
+    /// `GPUColorWrite.BLUE`
+    #[cfg_attr(rust_js, rust_js::link_name = "GPUColorWrite.BLUE")]
+    pub const BLUE: u32 = 0x4;
+
+    /// `GPUColorWrite.ALPHA`
+    #[cfg_attr(rust_js, rust_js::link_name = "GPUColorWrite.ALPHA")]
+    pub const ALPHA: u32 = 0x8;
+
+    /// `GPUColorWrite.ALL`
+    #[cfg_attr(rust_js, rust_js::link_name = "GPUColorWrite.ALL")]
+    pub const ALL: u32 = 0xF;
 }
 
 /// What every JS global scope has, a window's, a worker's or Node's, called bare: `fetch(url)`.
@@ -88348,6 +88865,17 @@ pub struct PromiseRejectionEventInit<'a> {
 }
 
 unsafe impl Defined for PromiseRejectionEventInit<'_> {}
+
+/// The [`PropertyDefinition`](https://developer.mozilla.org/docs/Web/API/PropertyDefinition) dictionary: a JS object of these fields, a `None` one not given.
+#[derive(Clone, Copy)]
+pub struct PropertyDefinition<'a> {
+    pub name: &'a str,
+    pub syntax: Option<&'a str>,
+    pub inherits: Option<bool>,
+    pub initial_value: Option<&'a str>,
+}
+
+unsafe impl Defined for PropertyDefinition<'_> {}
 
 /// The [`PublicKeyCredentialCreationOptionsJSON`](https://developer.mozilla.org/docs/Web/API/PublicKeyCredentialCreationOptionsJSON) dictionary: a JS object of these fields, a `None` one not given.
 pub struct PublicKeyCredentialCreationOptionsJSON<'a> {

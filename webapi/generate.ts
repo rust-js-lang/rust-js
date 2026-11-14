@@ -10,7 +10,7 @@
 import { readFileSync } from "node:fs";
 
 import idl from "@webref/idl";
-import { typescript, typescriptInterfaces } from "./coverage";
+import { typescript, typescriptInterfaces, typescriptNamespaces } from "./coverage";
 import { identifier, needsJsName, plain, snake, snakeWords } from "../scripts/rust-names";
 
 /** A record of each spec's, by its name, in order: what @webref lists in
@@ -437,8 +437,9 @@ const typedParams = (i: Interface, member: string, params: string[]): string[] =
     return typed === undefined ? p : `${name}: ${typed}`;
   });
 
-// Namespaces: a module of functions, like `web_assembly::compile`.
-const NAMESPACES = ["WebAssembly", "console", "CSS"];
+// Namespaces: each IDL's, a module of its functions and its constants, like
+// `web_assembly::compile` and `gpu_buffer_usage::UNIFORM` (#1779): every
+// namespace @webref/idl declares, so none is left out as the WebGPU flags were.
 
 // JS's own types that WebIDL uses, the js crate's: its buffers and typed
 // arrays, each element a Rust number of its kind (ADR 0283).
@@ -532,6 +533,9 @@ type Def = {
 
 const all = bySpec(await idl.parseAll() as Record<string, Def[]>);
 const anyClassHas = new Set([...typescriptDom.values()].flatMap((c) => [...c.members]));
+// What TypeScript's DOM declares of each namespace, `GPUBufferUsage`'s
+// constants: a namespace's members are kept as an interface's are (#1779).
+const typescriptNamespace = await typescriptNamespaces();
 // Every spec's: what the specs above have, as they have it, and of the
 // others' members those TypeScript's DOM has, not one it leaves out as
 // still an experiment (ADR 0281).
@@ -543,6 +547,7 @@ for (const [spec, defs] of Object.entries(all)) {
   if (SPECS.includes(spec)) continue;
   for (const d of defs) {
     const ts = d.type === "interface" ? typescriptDom.get(d.name) : undefined;
+    const namespace = d.type === "namespace" ? typescriptNamespace.get(d.name) : undefined;
     // A mixin's, as a class that includes it has them.
     const kept = (m: Member) =>
       m.type === "constructor"
@@ -551,7 +556,7 @@ for (const [spec, defs] of Object.entries(all)) {
           ? !!ts?.members.has("forEach")
           : m.special === "stringifier" && !m.name
           ? !!ts?.members.has("toString")
-          : !!m.name && (d.type === "interface mixin" ? anyClassHas.has(m.name) : !!ts && (m.special === "static" ? ts.statics : ts.members).has(m.name));
+          : !!m.name && (d.type === "interface mixin" ? anyClassHas.has(m.name) : d.type === "namespace" ? !!namespace?.has(m.name) : !!ts && (m.special === "static" ? ts.statics : ts.members).has(m.name));
     for (const m of d.members ?? []) if (!kept(m)) leftOut.add(m);
   }
 }
@@ -638,10 +643,11 @@ for (const d of read) {
     }
     i.members.push(...(d.members ?? []).filter((m) => !leftOut.has(m)).map((member) => ({ member, from: d.name })));
     interfaces.set(d.name, i);
-  } else if (d.type === "namespace" && NAMESPACES.includes(d.name)) {
+  } else if (d.type === "namespace") {
     const n = namespaces.get(d.name) ?? { name: d.name, members: [], constructible: false, isNamespace: true };
-    // Of another spec's partial, as its interfaces' are: CSS's `escape` is
-    // cssom's, its `px` css-typed-om's, left out (rd162).
+    // Of another spec's partial, as its interfaces' are: those TypeScript's
+    // DOM declares of it, CSS's `escape` cssom's and its `px` css-typed-om's,
+    // each kept (rd162, #1779).
     n.members.push(...(d.members ?? []).filter((m) => !leftOut.has(m)).map((member) => ({ member, from: d.name })));
     namespaces.set(d.name, n);
   } else if (d.type === "interface mixin") {
@@ -1555,8 +1561,9 @@ function root(name: string): string {
 
 function mdn(iface: string, member?: string) {
   const ns = interfaces.get(iface)?.legacyNamespace;
-  // MDN files `CSS` with the Web API's pages, the other namespaces with JS's.
-  const js = NAMESPACES.includes(iface) && iface !== "CSS";
+  // MDN files `WebAssembly` and `console` with JS's pages, the other
+  // namespaces, `CSS` and WebGPU's flags, with the Web API's.
+  const js = iface === "WebAssembly" || iface === "console";
   const page = ns ? `JavaScript/Reference/Global_Objects/${ns}/${iface}` : js ? `JavaScript/Reference/Global_Objects/${iface}` : `API/${iface}`;
   return `https://developer.mozilla.org/docs/Web/${page}${member ? `/${member}` : ""}`;
 }
@@ -2585,7 +2592,7 @@ for (const name of INTERFACES) {
   line("}");
 }
 
-for (const name of NAMESPACES) {
+for (const name of namespaces.keys()) {
   // A namespace that's a global value too, TypeScript's `declare var
   // console: Console`: the value's type, of no members of its own, as the
   // namespace's are its module's functions, read as values as any
@@ -2609,7 +2616,9 @@ for (const name of NAMESPACES) {
   line(`/// The [\`${name}\`](${mdn(name)}) namespace.`);
   // What's written by hand is bound in place of what's generated of its name.
   const extra = EXTRA[name] ?? [];
-  module(snake(name), [...functionsOf(namespaces.get(name)!).filter((f) => !extra.some((e) => e.name === f.name)), ...extra]);
+  const fns = functionsOf(namespaces.get(name)!).filter((f) => !extra.some((e) => e.name === f.name));
+  // Its constants, `GPUBufferUsage.UNIFORM`, as an interface's are.
+  module(snake(name), [...fns, ...extra], [], [...(constantsOf.get(name)?.values() ?? [])]);
 }
 
 line();
@@ -3184,6 +3193,6 @@ const unthrown = Object.keys(THROWS).filter((key) => !thrown.has(key));
 if (unthrown.length > 0) throw new Error(`THROWS names no member this crate binds: ${unthrown.join(", ")}`);
 await Bun.write(process.argv[2] ?? new URL("./src/lib.rs", import.meta.url), `${out.join("\n")}\n`);
 const reasons = [...skipped].sort((a, b) => b[1] - a[1]).map(([why, n]) => `${why} ${n}`);
-console.log(`src/lib.rs: ${INTERFACES.length} interfaces, ${NAMESPACES.length} namespaces, ${count} functions, ${unions.size} unions`);
+console.log(`src/lib.rs: ${INTERFACES.length} interfaces, ${namespaces.size} namespaces, ${count} functions, ${unions.size} unions`);
 console.log(`events: ${eventNames.length} names, ${impls} on ${listens.size} targets (${disagreeing} where specs disagree, as \`Event\`); tags: ${tagNames.length}`);
 console.log(`skipped: ${(process.env.ALL ? reasons : reasons.slice(0, 12)).join(", ")}${reasons.length > 12 && !process.env.ALL ? ", ..." : ""}`);
