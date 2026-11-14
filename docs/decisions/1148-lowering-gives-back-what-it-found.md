@@ -131,3 +131,30 @@ M3 (one call graph) and M4 (each fact declared `Local`, `Summary` or
    drops/ref_cells.rs. Output unchanged. Mutation own-callback-params-none
    is retargeted onto its finder, in `lower/pipeline/contexts.ts`, and
    caught.
+7. The rounds that settle what lowering finds are one bounded loop
+   (`pipeline/settle.rs`). Once each body queued is lowered, a protocol may
+   ask for more. There are three, asked in order: the codecs something
+   used, the own nullable parameters each call gives `null` or a value,
+   and the bodies a load cycle reads, once (`load_cycles::again`, split
+   from pipeline.rs first). Each round is one protocol's, counted by
+   `settle::Rounds`, and a round that asks for nothing more ends them.
+   The bound comes from what was measured. Over the corpus's 2,523 cases,
+   each in both builds, plus the crate pairs and triples and the serde
+   suites, the most rounds any compile took of one protocol was 2:
+   `nulled_returns_given_on`'s of its nullable parameters, and a serde
+   suite's of its codecs. A load cycle takes 1. The bound is 8 times that,
+   16 rounds a protocol. The codecs may also take as many rounds as the
+   crate has codecs, as each round lowers at least one more and never one
+   again, so a type in a type in a type takes a round each. A protocol past
+   its bound is refused as rust-js's own bug, naming the protocol: "rust-js:
+   the own nullable parameters each call gives `null` or a value didn't
+   settle in 16 rounds of lowering the crate again: a bug of rust-js's".
+   Unit tests hold that a round that changes nothing stops, the first one
+   too; that a protocol that never settles is refused by name at its
+   bound; and that the codecs take a round each. Output unchanged.
+   Mutations settle-unbounded and settle-codecs-bounded-as-the-others
+   (`lower/pipeline/settle.ts`) are caught by them.
+
+M2 is done: `CrateFacts` holds no cell, and one `Lazy`; what a body finds
+is given back; and `Settled` is the pipeline's alone, settled in bounded
+rounds.

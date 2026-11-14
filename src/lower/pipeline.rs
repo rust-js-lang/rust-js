@@ -12,6 +12,7 @@ mod load_cycles;
 mod packages;
 mod pass;
 mod reached;
+mod settle;
 mod variables;
 
 pub use self::built::Built;
@@ -469,6 +470,9 @@ pub fn lower_crate<'tcx>(
         no_facts: &no_facts,
     };
     let mut next = 0;
+    // Once each body queued is lowered, a round more, of the first protocol
+    // that asks for one, bounded (`settle`, ADR 1148).
+    let mut rounds = settle::Rounds::new(codecs.len());
     loop {
         // Then the codecs something uses, a round at a time, each in the
         // order they're declared. A shared crate derives both for its types,
@@ -483,11 +487,13 @@ pub fn lower_crate<'tcx>(
                 })
                 .map(|&id| (id, None, None))
                 .collect();
-            if !round.is_empty() {
+            let protocol = if !round.is_empty() {
                 work.extend(round);
+                settle::Protocol::Codecs
             } else if nulled_params.again(&mut settled.nulled, &mut work, |&(at, _, _)| at) {
                 // Each with an own nullable parameter each call gives `null`
                 // or a value, lowered again with its copies (ADR 0861, amended).
+                settle::Protocol::NulledParams
             } else {
                 // Each body run where its module loads that read another
                 // module's `const` by its name, where that module may load
@@ -505,8 +511,14 @@ pub fn lower_crate<'tcx>(
                             .collect();
                         settled.loads_in_cycles.extend(again);
                         work.extend(bodies);
+                        settle::Protocol::LoadCycles
                     }
                 }
+            };
+            if let Err(words) = rounds.another(protocol) {
+                tcx.dcx().err(words);
+                failed = true;
+                break;
             }
         }
         let (def_id, body, copy) = work[next];
