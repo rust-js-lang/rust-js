@@ -21,7 +21,6 @@ const lowering = readdirSync(join(root, "src", "lower"), { recursive: true, enco
 // onto the graph leaving it. instances.rs's, run before the analyses,
 // whose graph is built after the instances, is the graph's to take next.
 const scansLeft = [
-  "src/lower/analysis/written_params.rs",
   "src/lower/instances.rs",
 ];
 
@@ -30,7 +29,7 @@ test("an analysis that follows the crate's calls asks the one call graph", () =>
     (file) => file !== "src/lower/call_graph.rs" && /call_graph::names\(|instances::calls_of\(/.test(read(file)),
   );
   expect(scans).toEqual(scansLeft);
-  for (const asks of ["closures", "drops", "fmt_failures", "prints"].map((name) => `src/lower/analysis/${name}.rs`)) {
+  for (const asks of ["closures", "drops", "fmt_failures", "prints", "written_params"].map((name) => `src/lower/analysis/${name}.rs`)) {
     expect(read(asks)).toContain("graph.names_of(body.def_id)");
   }
 });
