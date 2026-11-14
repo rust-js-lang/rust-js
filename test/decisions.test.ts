@@ -93,14 +93,16 @@ test("a compile asked counts every answer of every decision, a 0 too, then what 
 }, underLoad(240_000));
 
 // Which chains are transparent (#1673), each kept from it by the first
-// of: an `Iterator` of the crate's, an iterator held apart it starts on,
-// a source not an array, a string or a range, an iterator that escapes
-// (`{:?}`'s of `v.iter()` too), a destructor in its items or a closure's
+// of: an `Iterator` of the crate's, an iterator held apart it starts on
+// (a boxed one Rust made, `boxed(..)`'s, too), a source not an array, a
+// string or a range, an iterator that escapes (`{:?}`'s of `v.iter()`, and
+// `boxed`'s own, too), a destructor in its items or a closure's
 // captures, an iterator method no table proves (`product`), an adapter's
 // argument run as it's given (`chain(more(&v))`), a `Vec` collected in a
 // crate that reads capacities; `(0..10).filter(..)`, `(1..=3).map(..)`,
-// whose `RangeInclusive::new` makes its source, and a `for` loop's
-// `v.iter().rev()` admitted.
+// whose `RangeInclusive::new` makes its source, a `for` loop's
+// `v.iter().rev()`, and a binding's boxed iterator's chain, JS's own
+// iterator, `js_values(..).map(..)` (#1681's step ii), admitted.
 test("each chain is counted by what keeps it from being transparent", () => {
   const dir = fixture("decisions-transparent");
   const source = join(dir, "main.rs");
@@ -124,6 +126,15 @@ fn more(v: &[i32]) -> std::slice::Iter<'_, i32> {
     v.iter()
 }
 
+fn boxed(v: Vec<i32>) -> Box<dyn Iterator<Item = i32>> {
+    Box::new(v.into_iter())
+}
+
+#[rust_js::link_name = "values"]
+fn js_values(this: &Vec<u32>) -> Box<dyn Iterator<Item = u32>> {
+    unreachable!()
+}
+
 pub fn main() {
     let v = vec![1, 2, 3, 4];
     let doubled: Vec<i32> = v.iter().map(|x| x * 2).collect();
@@ -143,6 +154,9 @@ pub fn main() {
     let doubled_range: i32 = (1..=3).map(|x| x * 2).sum();
     let mut drained = vec![1, 2];
     let taken: Vec<i32> = drained.drain(..).collect();
+    let from_js: u32 = js_values(&vec![1, 2]).map(|x| x + 1).sum();
+    let from_rust: i32 = boxed(vec![1, 2]).map(|x| x + 1).sum();
+    println!("{from_js} {from_rust}");
     println!("{doubled_range} {:?} {taken:?}", v.iter());
     for x in v.iter().rev() {
         print!("{x}");
@@ -157,7 +171,7 @@ pub fn main() {
   for (const [decision, answer, , , count] of readFileSync(counts, "utf8").trim().split("\n").map((line) => line.split("\t"))) {
     if (decision === "transparent-chain" && Number(count) > 0) given[answer] = (given[answer] ?? 0) + Number(count);
   }
-  expect(given).toEqual({ "user-iterator": 1, held: 1, source: 1, escapes: 3, "drop-glue": 2, unproved: 1, order: 1, capacity: 3, admitted: 3 });
+  expect(given).toEqual({ "user-iterator": 1, held: 2, source: 1, escapes: 4, "drop-glue": 2, unproved: 1, order: 1, capacity: 3, admitted: 4 });
 }, underLoad(120_000));
 
 // An answer given only by a program that reaches it is counted, not

@@ -1,6 +1,7 @@
 //! Whether a chain of iterator calls is transparent (review #1671's change
 //! 2, #1673): every link a std function, on an array, a `Vec`, a slice, a
-//! string or a range; no `Iterator` impl of the crate's reachable; no item
+//! string, a range, or a binding's boxed iterator, JS's own (#1681's step
+//! ii); no `Iterator` impl of the crate's reachable; no item
 //! nor closure capture with a destructor; and nothing escapes, the chain
 //! consumed where it's made, or a `for` loop's. A read-only query: its
 //! answers are counted (`transparent-chain`, `RUST_JS_DECISIONS`), and
@@ -66,6 +67,11 @@ pub(in crate::lower) fn count_chains<'tcx>(
     // Not a `for` loop's own `next`, which steps what its `into_iter`
     // made, that chain's.
     let loops_next = |e: ExprId| thir[e].span.is_desugaring(DesugaringKind::ForLoop) && !is_iterator(thir[e].ty);
+    // What a chain may start on: a plain source, or a binding's boxed
+    // iterator, JS's own, `keys()`'s, which runs no Rust as it steps. Not
+    // one Rust makes, `Box::new(..)`, whose `dyn` hides what it boxes,
+    // which may be an `Iterator` of the crate's, `Box::new(Counter(0))`.
+    let plain = |s: ExprId| is_plain_source(&recognition, thir[s].ty.peel_refs()) || binding_boxed(tcx, thir, s);
     for &root in links.iter().filter(|&&e| !inner.contains(&e) && !loops_next(e)) {
         let mut chain = vec![root];
         let mut source = None;
@@ -89,13 +95,11 @@ pub(in crate::lower) fn count_chains<'tcx>(
             .any(|&e| link(e).is_some_and(|(_, args, _)| args.types().any(crate_iterator)))
         {
             "user-iterator"
-        } else if source
-            .is_some_and(|s| is_iterator(thir[s].ty) && !is_plain_source(&recognition, thir[s].ty.peel_refs()))
-        {
+        } else if source.is_some_and(|s| is_iterator(thir[s].ty) && !plain(s)) {
             // It starts on an iterator held apart, a variable's, a field's
             // or a parameter's, std's struct; not a range, which is one.
             "held"
-        } else if !source.is_none_or(|s| is_plain_source(&recognition, thir[s].ty.peel_refs())) {
+        } else if !source.is_none_or(plain) {
             "source"
         } else if is_iterator(thir[root].ty) && !thir[root].span.is_desugaring(DesugaringKind::ForLoop) {
             "escapes"
@@ -171,6 +175,20 @@ fn is_plain_source<'tcx>(recognition: &Recognition<'_, 'tcx>, ty: Ty<'tcx>) -> b
         || recognition.is_std_type(ty, StdItem::Vec)
         || recognition.is_string_like(ty)
         || recognition.range_kind(ty).is_some()
+}
+
+/// Whether `e` is a binding's call that gives a boxed `dyn Iterator`, JS's
+/// own iterator, `entries()`'s (#1681's step ii).
+fn binding_boxed<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, e: ExprId) -> bool {
+    let e = strip(thir, e);
+    let ExprKind::Call { fun, .. } = thir[e].kind else {
+        return false;
+    };
+    let ty::FnDef(callee, _) = *thir[fun].ty.kind() else {
+        return false;
+    };
+    let boxed_dyn = thir[e].ty.boxed_ty().is_some_and(|inner| inner.is_trait());
+    boxed_dyn && crate::lower::bindings::is_binding(tcx, callee)
 }
 
 /// Whether `ty` holds a type of the crate's that's an `Iterator`, whose

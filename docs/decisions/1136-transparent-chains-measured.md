@@ -173,3 +173,21 @@ Every other case of both sources runs as native Rust does, in both builds:
 each adapter and consumer, at each panic site and point. So a binding's
 JS iterator behind a box is proved but for `take`'s hint (#1691), and a
 Rust iterator behind one isn't, until #1690 is fixed.
+
+## Amendment: a binding's boxed iterator is a source (2026-11-14, #1681's step ii)
+
+A chain may start on a binding's boxed iterator, `Box<dyn Iterator>` a
+binding's call gives, webapi's `keys()`, `values()` and `entries()`: JS's
+own iterator, whose steps run no Rust, so nothing of the crate's is
+reachable through it, as nothing is through an array's. It's counted as
+the array is, where it was `held`. A boxed iterator Rust makes, a
+function's `Box::new(items.into_iter())`, webapi's own `iter()` of a
+`DOMTokenList` among them, stays `held`: its `dyn` hides what it boxes,
+which may be an `Iterator` of the crate's, `Box::new(Counter(0))`, whose
+code a transparent chain never reaches. (A boxed iterator's own steps are
+proved, both sources in the iterator tables, since #1690 and #1691.) Still read-only (step iii is what reads it).
+In the corpus, its one such chain,
+`take_of_an_iterator_with_no_upper_bound_hints_its_count`'s, is admitted.
+Held by `test/decisions.test.ts`' count, a binding's chain admitted and a
+Rust-made boxed one `held`; mutation `binding-boxed-source-held`, caught,
+and `transparent-held-unseen` retargeted, caught.

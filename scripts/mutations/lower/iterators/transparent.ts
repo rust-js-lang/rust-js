@@ -15,8 +15,8 @@ export const mutations: Mutation[] = [
     name: "transparent-held-unseen",
     breaks: "a chain that starts on an iterator held apart, `evens(&v).count()`, is taken as starting on another source",
     file: "src/lower/iterators/transparent.rs",
-    find: "        } else if source\n            .is_some_and(|s| is_iterator(thir[s].ty) && !is_plain_source(",
-    replace: "        } else if false && source\n            .is_some_and(|s| is_iterator(thir[s].ty) && !is_plain_source(",
+    find: "        } else if source.is_some_and(|s| is_iterator(thir[s].ty) && !plain(s)) {\n",
+    replace: "        } else if false && source.is_some_and(|s| is_iterator(thir[s].ty) && !plain(s)) {\n",
     tests: ["test/decisions.test.ts", "-t", "each chain is counted by what keeps it from being transparent"],
   },
   {
@@ -122,5 +122,13 @@ export const mutations: Mutation[] = [
     find: "        ExprKind::Adt(ref adt) =>",
     replace: "        ExprKind::Adt(ref adt) if false =>",
     tests: ["test/decisions.test.ts", "-t", "each chain is counted by what keeps it from being transparent"],
+  },
+  {
+    name: "binding-boxed-source-held",
+    breaks: "a chain on a binding's boxed iterator, JS's own, `js_values(..).map(..)`, is counted held, not admitted (#1681's step ii)",
+    file: "src/lower/iterators/transparent.rs",
+    find: "    boxed_dyn && crate::lower::bindings::is_binding(tcx, callee)\n",
+    replace: "    boxed_dyn && crate::lower::bindings::is_binding(tcx, callee) && false\n",
+    tests: ["test/decisions.test.ts", "-t", "each chain is counted"],
   },
 ];
