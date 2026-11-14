@@ -40,12 +40,25 @@ pub(in crate::lower) struct Crate<'a, 'tcx> {
 pub(in crate::lower) struct Names<'tcx>(IndexMap<DefId, Vec<Named<'tcx>>>);
 
 impl<'tcx> Names<'tcx> {
-    /// The names of each of `all_bodies`, each once.
+    /// The names of each of `all_bodies`, each once. A library's closure
+    /// may be among them twice, made by an instance and by what rustc
+    /// inlined into one (#1029), its one MIR each time: whose names are
+    /// alike, or it's a bug of rust-js's.
     pub(in crate::lower) fn of(all_bodies: &[&Body<'tcx>]) -> Self {
         let mut names: IndexMap<DefId, Vec<Named<'tcx>>> = IndexMap::default();
         for body in all_bodies {
-            let had = names.insert(body.def_id, named_by(body));
-            assert!(had.is_none(), "a body the analyses read twice, a bug of rust-js's");
+            let named = named_by(body);
+            match names.entry(body.def_id) {
+                indexmap::map::Entry::Occupied(had) => {
+                    assert!(
+                        *had.get() == named,
+                        "two bodies of one item that name apart, a bug of rust-js's"
+                    );
+                }
+                indexmap::map::Entry::Vacant(vacant) => {
+                    vacant.insert(named);
+                }
+            }
         }
         Names(names)
     }
