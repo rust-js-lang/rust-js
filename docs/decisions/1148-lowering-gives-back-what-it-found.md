@@ -217,3 +217,52 @@ rounds.
 
 test/architecture-calls.test.ts holds the graph built once and asked. It
 also holds the scan private to the graph and run once, from ground.rs.
+
+### What isn't a walk of the call graph
+
+Three analyses follow calls by hand. They were weighed for the graph and
+two stay as they are, decided by the lead (2026-11-14):
+
+- **What a body may run (`may_run.rs`, ADR 1006) stays its own walk.** It
+  is reachability per instance: each body followed with the generic
+  arguments it's reached with, and what each `dyn Fn` parameter was
+  given, through the arguments each call gives, the impls of a type std
+  is given, every impl a call through a trait may be of, the destructors
+  a drop runs, and the thread-locals, `static`s and `const`s a body reads.
+  A graph of one node per function, its calls resolved once under the
+  function's own generic parameters, can't answer that; it would need an
+  instance's edges, and a second model of what runs.
+- **Which functions never unwind, and which are quiet (`unwinding.rs`, ADR
+  0902), stay whole-crate greatest fixed points.** Each candidate starts
+  in and is taken out once one of its ways on may panic or be seen, until
+  a round takes none out. What decides one includes more than its calls:
+  the drops it runs (`quiet_drops`), the futures it awaits, the closures
+  it's given. Deciding each strongly connected component after those it
+  calls, as the throwing functions are, would fail open wherever an edge
+  is missing: a caller decided before a callee later taken out would keep
+  "never unwinds", and its `try` would go. The whole-crate loop is right
+  whatever edges exist. Nor would visiting the candidates in the graph's
+  order inside each round buy anything, measured over the 2,478 corpus
+  cases that compile alone (the others need a crate's flags): of 4,956
+  `never_unwinding` runs, both kinds, 4,366 took two rounds, one that
+  takes some out and the one that takes none, 67 one, 508 three and 15
+  four; of 2,478 `quiet` runs, 1,840 two, 222 one, 396 three and 20 four.
+  Each run took 5 µs on average, `quiet`'s 30 µs, the slowest 447 µs of
+  317 candidates, 101 ms over the whole corpus: an order could save at
+  most a round of the tenth that took three or four, a few microseconds.
+- **The functions only calls reach (`only_called.rs`, ADR 0577)** are to
+  be a query of the names, once a naming says whether it's a call's
+  callee, after the THIR ranges' bridge goes (#1671 change 1, M4), whose
+  calls it lists by their HIR.
+
+The functions a function's body writes, each a declaration there (ADR
+0308), are found of the names too (`naming::local_functions`), which now
+cover the statics' and constants' initializers, as that analysis reads
+them; it had scanned each body's THIR for the functions it names, a map
+of its own. Output unchanged; mutation local-function-static-user, of a
+function a static's initializer names, is caught.
+
+test/architecture-calls.test.ts refuses an analysis that builds a map of
+its own of who names whom, a list that only shrinks: collected.rs's, of
+the bodies as they're collected, before any analysis, of each expression
+of a function item's type, a variable's too, is the one left.

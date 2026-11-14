@@ -45,10 +45,18 @@ impl<'tcx> Names<'tcx> {
     /// inlined into one (#1029), its one MIR each time: whose names are
     /// alike, or it's a bug of rust-js's.
     pub(in crate::lower) fn of(all_bodies: &[&Body<'tcx>]) -> Self {
-        let mut names: IndexMap<DefId, Vec<Named<'tcx>>> = IndexMap::default();
-        for body in all_bodies {
+        Names(IndexMap::default()).and(all_bodies.iter().copied())
+    }
+
+    /// And the names of each of `more`, the statics' and constants'
+    /// initializers, which the analysis reads beside the bodies (`of`).
+    pub(in crate::lower) fn and<'b>(mut self, more: impl Iterator<Item = &'b Body<'tcx>>) -> Self
+    where
+        'tcx: 'b,
+    {
+        for body in more {
             let named = named_by(body);
-            match names.entry(body.def_id) {
+            match self.0.entry(body.def_id) {
                 indexmap::map::Entry::Occupied(had) => {
                     assert!(
                         *had.get() == named,
@@ -60,7 +68,7 @@ impl<'tcx> Names<'tcx> {
                 }
             }
         }
-        Names(names)
+        self
     }
 
     /// Each function the body of `id`, one the analyses read, names, called

@@ -30,6 +30,28 @@ test("an analysis that follows the crate's calls asks the one call graph", () =>
   }
 });
 
+// Nor does an analysis build a map of its own of who names whom, each
+// function by the bodies that name it or each body by what it names: the
+// graph's names are that map, and the callers' carrier (ADR 1115,
+// instances.rs) is made of them. A list that only shrinks. What a body may
+// run, `may_run.rs`, is a walk per instance, and the functions that never
+// unwind whole-crate fixed points, no map of names (ADR 1148).
+// collected.rs' is of the bodies as they're collected, before any analysis,
+// each of a function item's type, a variable's too.
+const ownNameMaps = ["src/lower/analysis/collected.rs"];
+
+test("an analysis builds no map of who names whom of its own", () => {
+  const builds = lowering.filter(
+    (file) =>
+      !["src/lower/call_graph.rs", "src/lower/instances.rs"].includes(file) &&
+      /\.entry\(\w+\)\.or_default\(\)\.(insert|push)\(\(?(caller|root)\b/.test(read(file)),
+  );
+  expect(builds).toEqual(ownNameMaps);
+  // The functions a function's body writes, by who names them, of the
+  // graph's names (ADR 0308).
+  expect(read("src/lower/analysis/naming.rs")).toContain("for &(named, _, _) in names.names_of(body.def_id) {");
+});
+
 // The graph is built once, of the crate's bodies and its constants', and
 // what's moved onto it asks that one: the MIR intervals' caller-given
 // parameters and the throwing functions, each component after its callees.

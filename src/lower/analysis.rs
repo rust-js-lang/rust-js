@@ -415,7 +415,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // The crate's one call graph, its constants' bodies in it, and each
     // body's names (#1671 change 4 M3): each analysis that walks its calls,
     // or asks what a body names, asks it.
-    let calls = crate::lower::call_graph::crate_graph(tcx, all_bodies, names);
+    let calls = crate::lower::call_graph::crate_graph(tcx, all_bodies, names.and(initializers.iter()));
     let closures: IndexMap<DefId, &Body<'tcx>> = closures.into_iter().map(|b| (b.def_id, b)).collect();
 
     // What each module holds of a binding, and where a path reads one
@@ -980,7 +980,11 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // call it by. An import is named around every one of them.
     // A function a block makes and gives is named in itself alone (ADR 0296).
     let named_expressions = named_expressions(tcx, all_bodies.iter().copied().chain(initializers));
-    let local_functions = local_functions(tcx, all_bodies.iter().copied().chain(initializers), &named_expressions);
+    let local_functions = local_functions(
+        tcx,
+        all_bodies.iter().copied().chain(initializers),
+        (calls.names(), &named_expressions),
+    );
     // A `const` of a function's body, its function's (ADR 0031, amended).
     let local_consts = local_consts(
         tcx,
