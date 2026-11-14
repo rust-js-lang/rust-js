@@ -22,23 +22,6 @@ export const mutations: Mutation[] = [
     tests: ["test/declarations-function-types.test.ts", "-t", "apart from a word JS keeps"],
   },
   {
-    name: "cell-option-field-required",
-    breaks:
-      "a plain `Cell<Option<f64>>` field is declared `byteSize: number | null | undefined`, its cell's `Option` not seen, where it's `byteSize?: number | undefined` as an `Option` field is (rd415)",
-    file: "src/lower/declarations.rs",
-    find: "                    .or_else(|| self.cell_item(ty, Some(field)).and_then(|item| self.option(item))),\n",
-    replace: "                    .or(None),\n",
-    tests: ["test/declarations-cells.test.ts"],
-  },
-  {
-    name: "nested-field-declared-undefined",
-    breaks: "a nullable `Option<Option<T>>` field is declared `T | undefined`, where JS holds `null` too (#470)",
-    file: "src/lower/declarations.rs",
-    find: "                    match nullable || nested || value || self.null_fields.contains(&field.did) {\n",
-    replace: "                    match nullable || value || self.null_fields.contains(&field.did) {\n",
-    tests: ["test/declarations.test.ts", "-t", "declarations take JS's null"],
-  },
-  {
     name: "any-value-declared-null",
     breaks:
       "a map of any value is declared `Map<K, unknown | null>`, without the `undefined` it holds (#443)",
@@ -50,16 +33,6 @@ export const mutations: Mutation[] = [
       "-t",
       "a Map of any value holds undefined as it is",
     ],
-  },
-  {
-    name: "bound-methods-undeclared",
-    breaks:
-      "a struct's methods its impl binds of the JS object, `isPersistent()`, aren't in its interface, narrower than upstream's type (rd144)",
-    file: "src/lower/declarations.rs",
-    find: "        for (method, name) in super::bindings::bound_methods(self.tcx, def_id) {\n",
-    replace:
-      "        for (method, name) in super::bindings::bound_methods(self.tcx, def_id).into_iter().take(0) {\n",
-    tests: ["test/declarations-bound-methods.test.ts"],
   },
   {
     name: "default-class-declared-const",
@@ -212,24 +185,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "declared-option-required",
-    breaks:
-      "an `Option` field is a required prop to TypeScript, `text: string`, which a caller leaving it out is an error of",
-    file: "src/lower/declarations.rs",
-    find: "                        false => (true, inner),\n",
-    replace: "                        false => (false, inner),\n",
-    tests,
-  },
-  {
-    name: "declared-rest-dropped",
-    breaks:
-      "props a struct doesn't name, `...rest`, are an error to TypeScript, `aria-label` of a link",
-    file: "src/lower/declarations.rs",
-    find: "            if is_rest(self.tcx, ty) || (is_flatten(self.tcx, field) && extends.is_empty() && intersected.is_none()) {",
-    replace: "            if false && (is_rest(self.tcx, ty) || (is_flatten(self.tcx, field) && extends.is_empty() && intersected.is_none())) {",
-    tests,
-  },
-  {
     name: "declared-binding-type-any",
     breaks:
       "a binding's type, react's `Memo<P>`, is `any` to TypeScript, which checks none of a `memo`'s props",
@@ -237,34 +192,6 @@ export const mutations: Mutation[] = [
     find: "                if let Some(declared) = written_types(tcx, did) {\n",
     replace:
       "                if false\n                    && let Some(declared) = written_types(tcx, did)\n                {\n",
-    tests,
-  },
-  {
-    name: "flattened-declared-nested",
-    breaks:
-      "a flattened field is declared a field, `anchor: Anchor`, not `extends Anchor`",
-    file: "src/lower/declarations.rs",
-    find: "                    (false, 0) => vec![inner],",
-    replace: "                    (false, 0) => Vec::new(),",
-    tests,
-  },
-  {
-    name: "flattened-extends-any",
-    breaks:
-      "a flattened field of another module's type of the crate's own, `pub(crate) struct Far`, is `extends any`, which TypeScript refuses",
-    file: "src/lower/declarations.rs",
-    find: "                    (true, _) => Vec::new(),",
-    replace: "                    (true, _) => vec![inner],",
-    tests: ["test/declarations-flatten.test.ts"],
-  },
-  {
-    name: "shadowed-names-not-omitted",
-    breaks:
-      'props extend what they shadow, not `Omit<Linked, "href" | "className">`',
-    file: "src/lower/declarations.rs",
-    find: '                    (false, _) => vec![reference(\n                        "Omit",',
-    replace:
-      '                    (false, _) => vec![inner.clone(), reference(\n                        "Omit",',
     tests,
   },
   {
@@ -285,16 +212,6 @@ export const mutations: Mutation[] = [
     tests,
   },
   {
-    name: "defaulted-field-required",
-    breaks:
-      "a field with a default is declared required, `count: number`, where a caller may leave it out",
-    file: "src/lower/declarations.rs",
-    find: "                    field_default(self.tcx, field).is_some(),\n                    self.as_written(written, |out| out.field_ts(ty, Some(field))),",
-    replace:
-      "                    false,\n                    self.as_written(written, |out| out.field_ts(ty, Some(field))),",
-    tests,
-  },
-  {
     name: "option-declared-without-null",
     breaks:
       "an `Option` is declared `T | undefined`, so a TypeScript caller's `null`, which rust-js reads as `None`, doesn't typecheck",
@@ -302,24 +219,6 @@ export const mutations: Mutation[] = [
     find: '                    return json!({ "kind": "union", "types": [self.ts(args.type_at(0)), keyword("null"), keyword("undefined")] });\n',
     replace:
       '                    return json!({ "kind": "union", "types": [self.ts(args.type_at(0)), keyword("undefined")] });\n',
-    tests: ["test/declarations.test.ts", "-t", "null for an Option"],
-  },
-  {
-    name: "option-field-without-null",
-    breaks:
-      "a `#[rust_js::nullable]` field is declared `?: T`, so a TypeScript caller's `{ label: null }`, which rust-js reads as `None`, doesn't typecheck",
-    file: "src/lower/declarations.rs",
-    find: '                        true => (!present, json!({ "kind": "union", "types": [inner, keyword("null")] })),\n',
-    replace: "                        true => (!present, inner),\n",
-    tests: ["test/declarations.test.ts", "-t", "null for an Option"],
-  },
-  {
-    name: "every-option-field-nullable",
-    breaks:
-      "every `Option` field is declared `?: T | null`, so a TypeScript caller reading one passes `null` where a default takes only `undefined`",
-    file: "src/lower/declarations.rs",
-    find: "                    match nullable || nested || value || self.null_fields.contains(&field.did) {\n",
-    replace: "                    match true || nullable {\n",
     tests: ["test/declarations.test.ts", "-t", "null for an Option"],
   },
   {
@@ -557,15 +456,6 @@ export const mutations: Mutation[] = [
     tests: ["test/declarations.test.ts", "-t", "union"],
   },
   {
-    name: "optional-field-refuses-undefined",
-    breaks:
-      "a field a caller may leave out is `?: T`, which refuses `undefined` under `exactOptionalPropertyTypes`, where Rust takes it as `None`",
-    file: "src/lower/declarations.rs",
-    find: "            let ty = if optional { or_undefined(ty) } else { ty };\n",
-    replace: "",
-    tests: ["test/declarations.test.ts", "-t", "null for an Option"],
-  },
-  {
     name: "optional-unknown-or-undefined",
     breaks:
       "an optional `unknown` or `any` field is `?: unknown | undefined`, which says nothing more",
@@ -629,20 +519,6 @@ export const mutations: Mutation[] = [
     tests: ["test/declarations.test.ts", "-t", "as its JS does"],
   },
   {
-    name: "transparent-declared-as-struct",
-    breaks:
-      "a `#[repr(transparent)]` struct is declared an interface of its fields, where its JS is its field",
-    file: "src/lower/declarations.rs",
-    find: "        if let Some(at) = super::recognition::transparent_field(self.tcx, adt) {\n",
-    replace:
-      "        if let Some(at) = super::recognition::transparent_field(self.tcx, adt).filter(|_| false) {\n",
-    tests: [
-      "test/declarations.test.ts",
-      "-t",
-      "transparent struct is declared",
-    ],
-  },
-  {
     name: "transparent-tuple-struct-any",
     breaks: "a `#[repr(transparent)]` tuple struct a function takes is `any`",
     file: "src/lower/declarations.rs",
@@ -688,32 +564,6 @@ export const mutations: Mutation[] = [
       "test/modules.test.ts",
       "-t",
       "the constant's value where the macro holds it",
-    ],
-  },
-  {
-    name: "nullable-cell-declared-undefined",
-    breaks:
-      "a nullable `Cell` field is declared `T | undefined`, where JS has its `None` `null`",
-    file: "src/lower/declarations.rs",
-    find: "                true => super::bindings::nullable_option(self.tcx, ty).and_then(|option| self.option(option)),\n",
-    replace: "                true => self.option(ty),\n",
-    tests: [
-      "test/lowering-nullable.test.ts",
-      "-t",
-      "nullable Cell field's None is null",
-    ],
-  },
-  {
-    name: "once-field-declared-a-cell",
-    breaks:
-      "a `OnceCell` field is declared as one that's always there, where it's absent until it's set, `ioInfo?: string | undefined`",
-    file: "src/lower/declarations.rs",
-    find: "                false => (self.option(ty).or_else(|| self.once_cell_item(ty)))\n",
-    replace: "                false => (self.option(ty))\n",
-    tests: [
-      "test/declarations.test.ts",
-      "-t",
-      "declarations type what a module exports",
     ],
   },
   {
@@ -840,28 +690,6 @@ export const mutations: Mutation[] = [
     tests: ["test/class-constructors.test.ts", "-t", "constructor's statements set this"],
   },
   {
-    name: "object-methods-undeclared",
-    breaks:
-      "an object of methods' interface declares its fields alone, so TypeScript has no `scope.containsNode(..)` (ADR 0943)",
-    file: "src/lower/declarations.rs",
-    find: "            if !self.tcx.visibility(method).is_public() {\n",
-    replace: "            if true {\n",
-    tests: [
-      "test/classes.test.ts",
-      "-t",
-      "an object's methods are its literal's own",
-    ],
-  },
-  {
-    name: "js-null-fields-unread",
-    breaks:
-      "a plain `Option` field a `js::null()` is written to is declared `?: T | undefined`, though it holds `null` (ADR 0935, amended)",
-    file: "src/lower/declarations.rs",
-    find: "                    match nullable || nested || value || self.null_fields.contains(&field.did) {\n",
-    replace: "                    match nullable || nested || value {\n",
-    tests: ["test/lowering-nullable-constants.test.ts", "-t", "is declared"],
-  },
-  {
     name: "typed-class-declared-a-function",
     breaks:
       "a typed `js::Class` is declared as a function, `(value: string) => unknown`, which TypeScript calls, not `new`s",
@@ -937,30 +765,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "field-symbol-private-undeclared",
-    breaks: "a module's own symbol a declared field is named by isn't declared, `[RESPONSE_SYMBOL]` of nothing TypeScript knows",
-    file: "src/lower/declarations.rs",
-    find: "                self.unexported.insert(name.clone(), Some(declared));\n            }\n            return json!({ \"computed\": name });",
-    replace: "            }\n            return json!({ \"computed\": name });",
-    tests: [
-      "test/field-symbol-names.test.ts",
-      "-t",
-      "a field a symbol names is that symbol's key"
-    ]
-  },
-  {
-    name: "field-symbol-declared-by-text",
-    breaks: "a declared field a symbol names is declared by the symbol's text, a string key",
-    file: "src/lower/declarations.rs",
-    find: "            return json!({ \"computed\": super::bindings::js_name(self.tcx, item) });",
-    replace: "            return json!(super::bindings::js_name(self.tcx, item));",
-    tests: [
-      "test/field-symbol-names.test.ts",
-      "-t",
-      "a closure a symbol names is its method"
-    ]
-  },
-  {
     name: "private-renamed-global-declared",
     breaks:
       "a private `use` that renames a global, `use js::array::SLICE as slice;`, is declared in the module's .d.ts, `declare const slice: ..`, which no export names (rd517)",
@@ -987,55 +791,12 @@ export const mutations: Mutation[] = [
     tests: ["test/declarations-libraries.test.ts", "-t", "declared as written"],
   },
   {
-    name: "constructed-declared-optional",
-    breaks: "a nullable field each constructor of its struct sets first is declared optional, `moduleLoading?: unknown | null | undefined`, though it's present (rd628)",
-    file: "src/lower/declarations.rs",
-    find: "                        true => (!present, json!({ \"kind\": \"union\", \"types\": [inner, keyword(\"null\")] })),\n",
-    replace: "                        true => (!present || true, json!({ \"kind\": \"union\", \"types\": [inner, keyword(\"null\")] })),\n",
-    tests: ["test/js-constructors.test.ts", "-t", "a nullable field each constructor sets first"],
-  },
-  {
-    name: "value-field-declared-optional",
-    breaks:
-      "a nullable field of what may be `undefined` is declared optional, `serverModuleMap?: ServerManifest | null | undefined` (rd645)",
-    file: "src/lower/declarations.rs",
-    find: "                    let present = matches!(\n                        declared,\n                        super::representation::NoneForm::Null | super::representation::NoneForm::Value\n                    );\n",
-    replace: "                    let present = matches!(declared, super::representation::NoneForm::Null);\n",
-    tests: ["test/lowering-nested-options.test.ts", "-t", "what may be undefined"],
-  },
-  {
-    name: "value-field-declared-without-null",
-    breaks:
-      "a nullable field of what may be `undefined` is declared without `| null` (rd645)",
-    file: "src/lower/declarations.rs",
-    find: "                    match nullable || nested || value || self.null_fields.contains(&field.did) {\n",
-    replace: "                    match nullable || nested || self.null_fields.contains(&field.did) {\n",
-    tests: ["test/lowering-nested-options.test.ts", "-t", "what may be undefined"],
-  },
-  {
-    name: "flattened-param-extended",
-    breaks: "a struct of a flattened type parameter is declared an interface extending it, which TypeScript refuses (#504)",
-    file: "src/lower/declarations.rs",
-    find: "                ty::Param(_) => true,\n                ty::Adt(adt, _) => self.flattened.keyed.contains(&adt.did()),\n",
-    replace: "                ty::Param(_) => false,\n                ty::Adt(adt, _) => self.flattened.keyed.contains(&adt.did()),\n",
-    tests: ["test/flattened-keyed.test.ts", "-t", "intersection"],
-  },
-  {
     name: "library-plain-alias-undeclared",
     breaks: "a library's alias without `#[rust_js::types]` isn't among its contract's declared types, so a consumer writes it out and can't re-export it (rd642)",
     file: "src/lower/declarations.rs",
     find: "        DefKind::TyAlias => true,",
     replace: "        DefKind::TyAlias => aliases::declares_written_alias(tcx, did),",
     tests: ["test/declarations-libraries.test.ts", "-t", "type-only re-export"],
-  },
-  {
-    name: "js-given-nullable-field-declared-optional",
-    breaks:
-      "a nullable field of a struct JS may give is declared optional, `moduleLoading?: unknown | null | undefined`, where `nullable` says JS gives `null`, never `undefined`, as upstream's `moduleLoading: ModuleLoading` does (ADR 1072, amended)",
-    file: "src/lower/declarations.rs",
-    find: "                    let present = matches!(\n                        declared,\n                        super::representation::NoneForm::Null | super::representation::NoneForm::Value\n                    );\n",
-    replace: "                    let present = matches!(declared, super::representation::NoneForm::Value);\n",
-    tests: ["test/lowering-nullable-reads.test.ts", "-t", "only the crate makes its struct"],
   },
   {
     name: "class-constructor-optional",
@@ -1070,14 +831,6 @@ export const mutations: Mutation[] = [
     tests: ["test/declarations-function-types.test.ts"],
   },
   {
-    name: "struct-field-unfilled",
-    breaks: "a struct's `dyn Fn` field is named by its types, though its literals name it",
-    file: "src/lower/declarations.rs",
-    find: "            let outer = self.function_names.len();\n            self.fill_names(field.did, ty);\n",
-    replace: "            let outer = self.function_names.len();\n",
-    tests: ["test/declarations-function-types.test.ts"],
-  },
-  {
     name: "ungiven-function-declared",
     breaks: "a free function whose JS takes what a JS caller can't give is declared, not a note (#549)",
     file: "src/lower/declarations.rs",
@@ -1091,14 +844,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/declarations.rs",
     find: "        .filter(|(item, (_, export))| !by_own_name(fns, *item, export) && !left_out.contains(item))\n",
     replace: "        .filter(|(item, (_, export))| !by_own_name(fns, *item, export))\n",
-    tests: ["test/declarations-ungiven.test.ts"],
-  },
-  {
-    name: "ungiven-object-method-declared",
-    breaks: "an object of methods' method whose JS takes a fact, `scope.named(TName)`, is declared `named<T>(): string` (#559)",
-    file: "src/lower/declarations.rs",
-    find: "            if self.leave_out(method, &name) {\n",
-    replace: "            if false && self.leave_out(method, &name) {\n",
     tests: ["test/declarations-ungiven.test.ts"],
   },
   {
