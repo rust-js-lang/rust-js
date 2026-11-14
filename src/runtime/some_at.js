@@ -14,3 +14,11 @@ function $someGet(map, key) {
   }
   return map.has(key) ? $some(map.get(key)) : undefined;
 }
+
+// `Some` of what an optional call gave, `value.method?.(args)`, its `null`
+// boxed, or `None` where it's `undefined`, as `?.` gives of a method that
+// isn't there (#1859).
+function $someDefined(value) {
+  return value === undefined ? undefined : $some(value);
+}
+

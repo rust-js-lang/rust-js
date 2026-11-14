@@ -668,6 +668,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             return Expr::call(Expr::member(map.clone(), "get"), vec![key.clone()]);
         }
+        // An optional call's, `$someDefined(hop.closest?.(selector))`,
+        // flattened: the call itself, its `undefined` and its `null` a
+        // `None` alike (ADR 0950, amended, #1859).
+        if let js::ExprKind::Call(callee, args) = &option.kind
+            && callee.helper_name() == Some("$someDefined")
+            && let [called] = args.as_slice()
+        {
+            return called.clone();
+        }
         if let js::ExprKind::Cond(test, then, none) = &option.kind
             && matches!(none.kind, js::ExprKind::Undefined)
             && let Some(x) = made(then)

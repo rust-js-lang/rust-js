@@ -34,6 +34,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(method) = self.mir_method(state, def_id, args, span, out)? {
             return Ok(Some(method));
         }
+        // Its method called where it's there, `js::optional_call`'s (#1859).
+        if let Some(called) = self.mir_optional_call(state, def_id, args, span, out)? {
+            return Ok(Some(called));
+        }
         let bindings::JsForm::Asks(asked) = bindings::js_form(tcx, def_id) else {
             return Ok(None);
         };

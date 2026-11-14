@@ -1237,6 +1237,36 @@ pub trait Method<M>: sealed::Path {
     type Function: Copy;
 }
 
+/// What [`optional_call`] calls: a path of a value and a method of it, of
+/// the signature `M`, the method's `fn` pointer's, its `this` first, of each
+/// method of up to 16 parameters, given what it's given for the call alone,
+/// borrowed or not. No program names it.
+#[diagnostic::on_unimplemented(
+    message = "`{Self}` isn't a path of a value and its method",
+    note = "a method is called where it's there of a value it's a method of, `js::optional_call((hop, Element::closest), (selector,))`; a member by its key is called through `function::call(js::method((value, key)), ..)`"
+)]
+pub trait MethodCall<M>: sealed::Path {
+    /// What it's called with, after its `this`, a tuple.
+    type Arguments;
+    /// What its call gives.
+    type Output;
+}
+
+/// [`value.method?.(args)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Operators/Optional_chaining):
+/// the method a path names, read once, called with its value as its
+/// `this` where it's there, `Some` of what it gives, and `None` where it's
+/// `undefined` or `null`, as a hop that may be a `Text` node calls
+/// `closest`: `js::optional_call((hop, Element::closest), (selector,))` is
+/// `hop.closest?.(selector)`. A member that's there and no function is
+/// called, JS's `TypeError` a panic. Rust evaluates the value and then
+/// the arguments before the call, so they run whether it's there or not
+/// (#1859, ADR 1156).
+#[cfg_attr(rust_js, rust_js::link_name = "?.()")]
+pub fn optional_call<P: MethodCall<M>, M>(path: P, args: P::Arguments) -> Option<P::Output> {
+    let _ = (path, args);
+    unreachable!()
+}
+
 /// `Method` of each path of a value and a method of up to 16 parameters.
 macro_rules! methods {
     ($(($($a:ident),*))*) => {
@@ -1246,6 +1276,14 @@ macro_rules! methods {
                 F: Fn(&V, $($a),*) -> R,
             {
                 type Function = &'static dyn Fn($($a),*) -> R;
+            }
+
+            impl<T: ?Sized, V: ?Sized, F, R, $($a),*> MethodCall<fn(&V, $($a),*) -> R> for (&T, F)
+            where
+                F: Fn(&V, $($a),*) -> R,
+            {
+                type Arguments = ($($a,)*);
+                type Output = R;
             }
         )*
     };

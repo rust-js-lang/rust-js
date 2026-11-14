@@ -89,6 +89,10 @@ pub(in crate::lower) enum JsForm {
     /// `class`: the constructor function of the class its type argument
     /// is, `Component`, `js::class::<Component>()`'s (ADR 0761).
     Class,
+    /// `?.()`: a path's method read once and called with its value as its
+    /// `this` where it's there, `value.method?.(args)`, `js::optional_call`'s
+    /// (#1859).
+    OptionalCall,
     /// `is when`: whether a value is its type argument's, as JS tells one,
     /// and a test holds of it, `typeof value === "string" && test(value)`,
     /// `js::Is::when`'s (#1828).
@@ -182,6 +186,7 @@ pub(in crate::lower) fn js_form(tcx: TyCtxt<'_>, def_id: DefId) -> JsForm {
         "throw" if !of_self(tcx, def_id) => return JsForm::Throw,
         "class" => return JsForm::Class,
         "is when" => return JsForm::IsWhen,
+        "?.()" => return JsForm::OptionalCall,
         "null" => return JsForm::Null,
         "typeof object" => return JsForm::TypeofObject,
         "function" => return JsForm::WithThis,

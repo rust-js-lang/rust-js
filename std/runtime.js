@@ -711,6 +711,14 @@ export function $someGet(map, key) {
   return map.has(key) ? $some(map.get(key)) : undefined;
 }
 
+// `Some` of what an optional call gave, `value.method?.(args)`, its `null`
+// boxed, or `None` where it's `undefined`, as `?.` gives of a method that
+// isn't there (#1859).
+export function $someDefined(value) {
+  return value === undefined ? undefined : $some(value);
+}
+
+
 // A dictionary's value of `key` (ADR 0225): `Some` of it, boxed where it
 // looks like `None`, a JSON `null`'s `Some(None)`; `None` where the key
 // isn't its own, as `toString` isn't.

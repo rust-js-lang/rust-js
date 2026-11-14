@@ -30,3 +30,12 @@ gives each, one read of a JS `Map`, which runs nothing.
 - `test/lowering-collections.test.ts`, "a JS map's get flattened is its
   get".
 - Mutation: `map-get-flatten-boxed`.
+
+## Amendment: an optional call's `$someDefined` flattened is the call (#1859)
+
+`js::optional_call` of a method whose `None` is `null` boxes its
+`Some(None)`, `$someDefined(hop.closest?.(selector))`, telling a hop
+without `closest` from one whose `closest` found none. **`flatten()` of it
+is the call itself**, `hop.closest?.(selector)`: its `undefined` and its
+`null` a `None` alike, as the flattened `Option` reads them (ADR 1156).
+Mutation `optional-call-flattened-boxed`.

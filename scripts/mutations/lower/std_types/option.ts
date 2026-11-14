@@ -554,4 +554,12 @@ export const mutations: Mutation[] = [
     replace: "        let _ = drop;\n        Ok(())\n",
     tests: ["test/corpus.test.ts", "-t", "^unwrap_panic_drops_what_it_panics_over.rs$"],
   },
+  {
+    name: "optional-call-flattened-boxed",
+    breaks: "`flatten()` of an optional call's `$someDefined(..)` boxes and unboxes it again, `$someValue($someDefined(hop.closest?.(selector)))`, where upstream's `hop.closest?.(selector)` is the same value (ADR 0950, amended, #1859)",
+    file: "src/lower/std_types/option.rs",
+    find: "            && callee.helper_name() == Some(\"$someDefined\")\n",
+    replace: "            && callee.helper_name() == Some(\"$someDefinedNot\")\n",
+    tests: ["test/js-optional-call.test.ts", "-t", "upstream's"],
+  },
 ];

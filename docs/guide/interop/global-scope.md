@@ -361,6 +361,21 @@ style.setProperty === "function"`; one of a generic type, as rustc
 can't tell its argument from the value, names it, `(iterator,
 AsyncIterator::<T>::throw)`, `typeof iterator.throw === "function"`.
 
+To call a method where it's there, use `js::optional_call(path, args)`,
+JS's `value.method?.(args)`: the method read once, called with the value
+as its `this`, `Some` of what it gives, `None` where it's `undefined` or
+`null`; `js::optional_call((hop, Element::closest), (selector,)).flatten()`
+is `hop.closest?.(selector)`
+([ADR 1156](../../decisions/1156-an-optional-call-is-one-read.md)). A member
+that's there and no function is called, JS's `TypeError` a panic. Its
+arguments are Rust's, evaluated before the call whether the method is
+there or not, so one that runs code is held first, in Rust's order: where
+an argument mustn't run without the method, test it first with
+`js::is_function` and call it in the branch, the two reads a program
+asking first and then calling makes. A getter isn't called, and a method
+that may give `undefined`, which `?.` gives of one that isn't there too,
+is refused, saying to read it once with `js::method`.
+
 `js::method` of such a path is the method read as a value, the JS
 function itself, called with `function::call`, which gives its `this`:
 `js::method((element, HTMLElement::focus))` is `element.focus`, a
