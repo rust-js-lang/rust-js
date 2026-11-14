@@ -90,9 +90,9 @@ function main() {
       `${key}: ${value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`))($someValue(value))})`} ${arg}`,
     );
   }
-  nested.forEach((value$2, key) => {
+  nested.forEach((value, key) => {
     console.log(
-      `${key} = ${value$2 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$2))})`}`,
+      `${key} = ${value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`}`,
     );
   });
 

@@ -73,9 +73,8 @@ function show(s) {
   return `<${s.impl.fmt(s.value)}>`;
 }
 function main() {
-  const value = [2];
   const shapes = [
-    { value, impl: sqShape, strong: 1, weak: 0 },
+    { value: [2], impl: sqShape, strong: 1, weak: 0 },
     { value: [1], impl: ciShape, strong: 1, weak: 0 },
     { value: [1.5], impl: sqShape, strong: 1, weak: 0 },
   ];

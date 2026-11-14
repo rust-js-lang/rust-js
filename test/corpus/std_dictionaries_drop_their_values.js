@@ -59,24 +59,22 @@ function main() {
   try {
     console.log(`${r.impl.toString(r.value)}`);
     const f = (s) => s.impl.toString(s.value);
-    const value$1 = [6];
+    const value = [6];
     try {
-      console.log(
-        `${f({ value: value$1, impl: { toString: pointDisplay_fmt, $drop: pointDrop_drop } })}`,
-      );
+      console.log(`${f({ value, impl: { toString: pointDisplay_fmt, $drop: pointDrop_drop } })}`);
     } catch (error) {
       throw $unwindsOn(error);
     } finally {
       if ($live()) {
-        pointDrop_drop(value$1);
+        pointDrop_drop(value);
       }
     }
     const toText = (x) => x.impl.toString(x.value);
-    const value$2 = [7];
+    const value$1 = [7];
     try {
       console.log(
         `${toText({
-          value: value$2,
+          value: value$1,
           impl: { toString: pointDisplay_fmt, $drop: pointDrop_drop },
         })}`,
       );
@@ -84,7 +82,7 @@ function main() {
       throw $unwindsOn(error);
     } finally {
       if ($live()) {
-        pointDrop_drop(value$2);
+        pointDrop_drop(value$1);
       }
     }
     const list = {
@@ -103,9 +101,8 @@ function main() {
       throw error;
     }
     list.impl.$drop?.(list.value);
-    const value = [10];
     const counted = {
-      value: { value, strong: 1, weak: 0 },
+      value: { value: [10], strong: 1, weak: 0 },
       impl: {
         fmt(value) {
           return pointDisplay_fmt(value.value);

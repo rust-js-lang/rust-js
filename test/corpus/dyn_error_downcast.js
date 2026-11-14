@@ -122,15 +122,14 @@ function describe(e) {
 function main() {
   const os = { value: $osErrorOf(2), impl: $ioErrorDyn("core::io::error::Error") };
   const message = { value: "text", impl: $stringError() };
-  const value$1 = code(os);
-  const value$2 = code(message);
+  const value = code(os);
+  const value$1 = code(message);
   console.log(
-    `${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
+    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
   );
 
-  const value = [7];
   const errors = [
-    { value, impl: mineError },
+    { value: [7], impl: mineError },
     { impl: otherError },
     {
       value: $unwrapErr($parseInt("x", 0, 255)),

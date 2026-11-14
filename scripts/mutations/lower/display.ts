@@ -107,9 +107,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a generic `T`'s `{:>6}` of a number shows it unpadded: std's `Display` dictionary ignores the options",
     file: "src/lower/display.rs",
-    find: '                Pretty::When(Expr::var("options")),\n            ),\n            false => (vec!["value".into()], Pretty::Plain),\n        };\n        let shown = self.with_shown(shown_so, |cx| {\n',
+    find: '                Pretty::When(Expr::var("options")),\n            ),\n            false => (vec![param.as_str().into()], Pretty::Plain),\n        };\n        let shown = self.with_shown(shown_so, |cx| {\n',
     replace:
-      '                Pretty::Plain,\n            ),\n            false => (vec!["value".into()], Pretty::Plain),\n        };\n        let shown = self.with_shown(shown_so, |cx| {\n',
+      '                Pretty::Plain,\n            ),\n            false => (vec![param.as_str().into()], Pretty::Plain),\n        };\n        let shown = self.with_shown(shown_so, |cx| {\n',
     tests: ["test/corpus.test.ts", "-t", "options_handed_on"],
   },
   {

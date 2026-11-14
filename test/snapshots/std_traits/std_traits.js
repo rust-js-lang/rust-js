@@ -538,7 +538,7 @@ export function debugged(x, TDebug) {
 export function debugs(n) {
   const p = { x: n, y: -2.5 };
   const r = n > 1 ? { TAG: "Ok", _0: n } : { TAG: "Err", _0: "small" };
-  const value = posDebug_fmt(p);
+  const value$3 = posDebug_fmt(p);
   const value$4 = `${dimsDebug_fmt([n, 2])} ${nothingDebug_fmt(undefined)} ${glyphDebug_fmt("Dot")}`;
   const value$5 = `${glyphDebug_fmt({ TAG: "Ring", _0: 1.5 })} ${glyphDebug_fmt({
     TAG: "Box",
@@ -547,12 +547,12 @@ export function debugs(n) {
   })}`;
   const value$6 = sixDebug_fmt({ a: 1, b: 2, c: 3, d: 4, e: 5, f: "x" });
   const value$7 = `${boxedDebug_fmt({ item: p }, posDebug)} ${boxedDebug_fmt({ item: "s" }, { fmt: (value) => (value == null ? "None" : `Some(${$debugStr(value)})`) })}`;
-  const value$1 = [n, "a", "'"];
-  const value$2 = [5];
-  const value$8 = `Some(${$debugF64(1)}) None (${value$1[0]}, ${$debugStr(value$1[1])}, ${$debugStr(value$1[2], "'")}) (${value$2[0]},)`;
-  const value$3 = [p, p];
+  const value = [n, "a", "'"];
+  const value$1 = [5];
+  const value$8 = `Some(${$debugF64(1)}) None (${value[0]}, ${$debugStr(value[1])}, ${$debugStr(value[2], "'")}) (${value$1[0]},)`;
+  const value$2 = [p, p];
   const cmp = $cmp(n, 1);
-  const value$9 = `[${value$3.map((item) => posDebug_fmt(item)).join(", ")}] ${r.TAG === "Ok" ? `Ok(${r._0})` : `Err(${$debugStr(r._0)})`} ${
+  const value$9 = `[${value$2.map((item) => posDebug_fmt(item)).join(", ")}] ${r.TAG === "Ok" ? `Ok(${r._0})` : `Err(${$debugStr(r._0)})`} ${
     ["Less", "Equal", "Greater"][cmp + 1]
   }`;
   const value$10 = debugged([[3, 4]], {
@@ -560,7 +560,7 @@ export function debugs(n) {
       `[${value.map((item) => (item == null ? "None" : `Some(${dimsDebug_fmt(item)})`)).join(", ")}]`,
   });
   return [
-    value,
+    value$3,
     value$4,
     value$5,
     value$6,

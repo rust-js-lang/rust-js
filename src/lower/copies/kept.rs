@@ -198,10 +198,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // Read once where it's read more than once.
         if !place.reads_same() {
-            let body = self.kept_copy(Expr::var("value"), ty, span)?;
+            let param = self.unspelled("value");
+            let body = self.kept_copy(Expr::var(&param), ty, span)?;
             return Ok(Expr::call(
                 Expr::arrow(
-                    vec!["value".into()],
+                    vec![param.as_str().into()],
                     vec![js::StmtKind::Return(Some(body)).at(js::Span::NONE)],
                 ),
                 vec![place],

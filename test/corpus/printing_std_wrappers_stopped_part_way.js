@@ -422,13 +422,13 @@ function main() {
     });
   });
   shown("y", () => {
-    const value$1 = ["Pending", { TAG: "Ready", _0: [3] }, { TAG: "Ready", _0: [1] }];
+    const value = ["Pending", { TAG: "Ready", _0: [3] }, { TAG: "Ready", _0: [1] }];
     $printing(() => {
       $out("y ");
       $out(
         $composed((f) => {
           const list = $debugList(f);
-          list.entries(value$1, (entry) =>
+          list.entries(value, (entry) =>
             ((value) =>
               value.TAG === "Ready"
                 ? $composed((f) => {

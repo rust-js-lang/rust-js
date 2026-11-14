@@ -12,17 +12,16 @@ function loudDrop_drop(loud) {
 function main() {
   const option = [1];
   const other = [2];
-  const value = option != null ? (other == null ? option : undefined) : other;
+  const a = option != null ? (other == null ? option : undefined) : other;
   if (option != null && other != null) {
     loudDrop_drop(option);
     loudDrop_drop(other);
   }
-  const a = value;
   console.log(`a ${a == null}`);
   const option$1 = [3];
-  const value$1 = option$1 != null ? option$1 : undefined;
+  const value = option$1 != null ? option$1 : undefined;
   try {
-    const b = value$1;
+    const b = value;
     try {
       const value = b?.[0];
       console.log(`b ${value == null ? "None" : `Some(${value})`}`);

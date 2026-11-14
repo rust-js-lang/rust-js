@@ -215,9 +215,9 @@ export const mutations: Mutation[] = [
     name: "once-debug-boxed",
     breaks: "a `OnceCell<Option<u8>>`'s `{:?}` shows `Some`'s box",
     file: "src/lower/display/debug.rs",
-    find: '                let inside = if self.boxed_payload(item) {\n                    self.some_value(Expr::var("value"))\n                } else {\n                    Expr::var("value")\n                };\n                let shown = self.debug_string_with(inside, item, span, pretty)?;\n                let none = Expr::bin(Op::LooseEq, Expr::var("value"), Expr::null());\n                let shown = Expr::cond(none, Expr::str("<uninit>"), shown);\n',
+    find: '                let inside = if self.boxed_payload(item) {\n                    self.some_value(Expr::var(&param))\n                } else {\n                    Expr::var(&param)\n                };\n                let shown = self.debug_string_with(inside, item, span, pretty)?;\n                let none = Expr::bin(Op::LooseEq, Expr::var(&param), Expr::null());\n                let shown = Expr::cond(none, Expr::str("<uninit>"), shown);\n',
     replace:
-      '                let inside = Expr::var("value");\n                let shown = self.debug_string_with(inside, item, span, pretty)?;\n                let none = Expr::bin(Op::LooseEq, Expr::var("value"), Expr::null());\n                let shown = Expr::cond(none, Expr::str("<uninit>"), shown);\n',
+      '                let inside = Expr::var(&param);\n                let shown = self.debug_string_with(inside, item, span, pretty)?;\n                let none = Expr::bin(Op::LooseEq, Expr::var(&param), Expr::null());\n                let shown = Expr::cond(none, Expr::str("<uninit>"), shown);\n',
     tests: ["test/corpus.test.ts", "-t", "once_cells"],
   },
   {

@@ -11,6 +11,10 @@ pub(crate) fn fresh_in(taken: &mut IndexSet<String>, base: &str) -> String {
 /// `base`, or given apart from what `taken` has, `base$1`, as `fresh_in`
 /// names, of a name that's fine as it is: a property's, `new` too.
 pub(crate) fn fresh_apart(taken: &mut IndexSet<String>, base: &str) -> String {
+    // Of a name not spelled yet, `value#1`, its word, `value`, or given apart
+    // from it: a temporary named after what it holds is of its word, never
+    // `value#1$1`, which nothing would spell (#1681 change 3, M2).
+    let base = unspelled_base(base).unwrap_or(base);
     if taken.insert(base.to_string()) {
         return base.to_string();
     }

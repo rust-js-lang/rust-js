@@ -600,11 +600,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // parameter, what its caller gives, `() => TSize` (ADR 0145).
         match known {
             Std::Drop | Std::Forget => {
+                let param = self.unspelled("value");
                 let mut body = Vec::new();
                 if known == Std::Drop {
-                    self.drop_value(Expr::var("value"), args.type_at(0), span, &mut body)?;
+                    self.drop_value(Expr::var(&param), args.type_at(0), span, &mut body)?;
                 }
-                return Ok(Some(Expr::arrow(vec!["value".into()], body)));
+                return Ok(Some(Expr::arrow(vec![param.as_str().into()], body)));
             }
             _ => {}
         }

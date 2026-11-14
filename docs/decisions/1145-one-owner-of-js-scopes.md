@@ -168,3 +168,34 @@ every later temporary of the item, and doesn't now. Mutations
 `unspelled-spelled-over-a-read` and `unspelled-its-word-without-a-tree`
 are caught; `clone-fn-parameter-free-to-its-body` now changes a snapshot,
 the parameter spelled `value$1`, where the module didn't parse.
+
+## Amendment: the fifth family, the `value` a helper's arrow takes (2026-11-14)
+
+Each arrow lowering writes around one value, a `Debug`'s and a
+`Display`'s `(value) => ..`, a dictionary's `fmt(value, options)`,
+`clone`, `as_ref`, `borrow` and `copy`, a copy or a clone read once,
+`((value) => ..)(source)`, a conversion's, a `drop`'s, a constructor's
+of one field and a transmute's, wrote its parameter `value` as it is: 52
+sites in 13 files. Each is now a name not spelled yet, `FnCx::unspelled`,
+spelled by preparation (the fourth family's step), `value` where JS's
+scopes let it be. Two things the literal spelling hid:
+
+- `display_fn` wrote the function `String` for `(value) => String(value)`
+  where its argument was the literal `value`; it asks its parameter now,
+  or each `{ fmt: String }` was `{ fmt: (value) => String(value) }`.
+- A temporary named after what it holds took a made name as its base
+  and was given apart from it as written, `value#1$1`, which nothing
+  spelled: `names::fresh_apart` gives a name not spelled yet's word,
+  `value`, or apart from it, as tidy's renames do.
+
+The corpus is what it was but twelve cases, each still native's, each a
+temporary that's named or not as tidy's rules make it where no literal
+`value` took the name: `const getMut = $entryGet(..)` and `const insert =
+..` named after their call where each was `value`; `{ value: [7], impl }`
+where `const value = [7]` was declared first; a program's `if let
+Some(value)` bound where its temporary `memoizedValue` was; and
+`value`/`value$1` traded. Bodies that still declare `value` twice where
+tidy starts, 141 of the corpus's: a tree used again where it's needed
+twice, a drop function given three arguments, each copy declaring the
+same names; giving a copy names of its own is M3's, by its `VarId`s.
+Mutation `given-apart-of-an-unspelled-name`, caught; eight retargeted.

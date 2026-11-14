@@ -665,8 +665,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Its arrow reads only its own parameters, so their names can't take
         // another's: `value` of one field, and `_0`, `_1` of more, a variant's
         // own names for them.
+        let param = self.unspelled("value");
         let params: Vec<String> = match sig.inputs().len() {
-            1 => vec!["value".into()],
+            1 => vec![param.as_str().into()],
             count => (0..count).map(js::positional).collect(),
         };
         let items: Vec<Expr> = params.iter().map(|name| Expr::var(name)).collect();

@@ -113,8 +113,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let shown = match held {
                     true => self.debug_string_with(Expr::held(subject("cell")), inner, span, pretty)?,
                     false => {
-                        let shown = self.debug_string_with(Expr::var("value"), inner, span, pretty)?;
-                        let mut given = vec![subject("cell"), arrow_of("value", shown)];
+                        let param = self.unspelled("value");
+                        let shown = self.debug_string_with(Expr::var(&param), inner, span, pretty)?;
+                        let mut given = vec![subject("cell"), arrow_of(&param, shown)];
                         if self.is_value_cell(ty) {
                             given.push(Expr::bool(true));
                         }
@@ -134,10 +135,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // shows it, through std's `debug_struct` (#1530).
             ty::Adt(_, args) if std(StdItem::Mutex) || std(StdItem::RwLock) => {
                 let mutex = std(StdItem::Mutex);
-                let shown = self.debug_string_with(Expr::var("value"), args.type_at(0), span, pretty)?;
+                let param = self.unspelled("value");
+                let shown = self.debug_string_with(Expr::var(&param), args.type_at(0), span, pretty)?;
                 let data = Expr::call_helper(
                     "$lockedData",
-                    vec![subject("lock"), arrow_of("value", shown), Expr::bool(mutex)],
+                    vec![subject("lock"), arrow_of(&param, shown), Expr::bool(mutex)],
                 );
                 let poisoned = join(vec![
                     Expr::str(""),

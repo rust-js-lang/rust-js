@@ -156,20 +156,20 @@ function main() {
   const alsoSeven = { value: 7 };
   const value$4 = $some(c);
   const right = $some(m);
-  const value$5 =
+  const value$6 =
     value$4 == null || right == null
       ? value$4 == right
       : $ptrEq($someValue(value$4), $someValue(right), 4);
-  const value$6 = $some(c);
+  const value$5 = $some(c);
   const right$1 = $some(elsewhere);
   const value$7 =
-    value$6 == null || right$1 == null
-      ? value$6 == right$1
-      : $ptrEq($someValue(value$6), $someValue(right$1), 4);
+    value$5 == null || right$1 == null
+      ? value$5 == right$1
+      : $ptrEq($someValue(value$5), $someValue(right$1), 4);
   const value$8 = $some($ptr(seven, "value", 0));
   const right$2 = $some($ptr(alsoSeven, "value", 0));
   console.log(
-    `${value$5} ${value$7} ${value$8 == null || right$2 == null ? value$8 == right$2 : $ptrEq($someValue(value$8), $someValue(right$2), 4)}`,
+    `${value$6} ${value$7} ${value$8 == null || right$2 == null ? value$8 == right$2 : $ptrEq($someValue(value$8), $someValue(right$2), 4)}`,
   );
   const nothing = {};
   $stored($ptr(nothing, "value", 0), undefined, 4);

@@ -36,10 +36,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if place.reads_same() {
                 return copied(place);
             }
+            let param = self.unspelled("value");
             return Expr::call(
                 Expr::arrow(
-                    vec!["value".into()],
-                    vec![js::StmtKind::Return(Some(copied(Expr::var("value")))).at(js::Span::NONE)],
+                    vec![param.as_str().into()],
+                    vec![js::StmtKind::Return(Some(copied(Expr::var(&param)))).at(js::Span::NONE)],
                 ),
                 vec![place],
             );
@@ -52,10 +53,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Shape::Other => false,
         };
         if many && !place.reads_same() {
-            let body = self.copy(Expr::var("value"), ty);
+            let param = self.unspelled("value");
+            let body = self.copy(Expr::var(&param), ty);
             return Expr::call(
                 Expr::arrow(
-                    vec!["value".into()],
+                    vec![param.as_str().into()],
                     vec![js::StmtKind::Return(Some(body)).at(js::Span::NONE)],
                 ),
                 vec![place],
@@ -93,10 +95,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     if place.reads_same() {
                         copy(place)
                     } else {
-                        let body = copy(Expr::var("value"));
+                        let param = self.unspelled("value");
+                        let body = copy(Expr::var(&param));
                         Expr::call(
                             Expr::arrow(
-                                vec!["value".into()],
+                                vec![param.as_str().into()],
                                 vec![js::StmtKind::Return(Some(body)).at(js::Span::NONE)],
                             ),
                             vec![place],
@@ -390,10 +393,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if place.reads_same() {
             return cloned(place);
         }
+        let param = self.unspelled("value");
         Expr::call(
             Expr::arrow(
-                vec!["value".into()],
-                vec![js::StmtKind::Return(Some(cloned(Expr::var("value")))).at(js::Span::NONE)],
+                vec![param.as_str().into()],
+                vec![js::StmtKind::Return(Some(cloned(Expr::var(&param)))).at(js::Span::NONE)],
             ),
             vec![place],
         )

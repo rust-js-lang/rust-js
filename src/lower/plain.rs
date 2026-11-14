@@ -91,9 +91,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(None);
         }
         let mut body = Vec::new();
-        let made = self.transmute(Expr::var("value"), (held, read), span, &mut body)?;
+        let param = self.unspelled("value");
+        let made = self.transmute(Expr::var(&param), (held, read), span, &mut body)?;
         body.push(StmtKind::Return(Some(made)).at(js::Span::NONE));
-        Ok(Some(Expr::arrow(vec!["value".into()], body)))
+        Ok(Some(Expr::arrow(vec![param.as_str().into()], body)))
     }
 
     /// `value`, a `from`, as a `to` of the same bytes: itself, of a type

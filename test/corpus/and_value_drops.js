@@ -35,13 +35,12 @@ function main() {
     kept = f;
     loudDrop_drop(option);
   }
-  const value = kept;
+  const a = kept;
   if (option == null) {
     if (f != null) {
       loudDrop_drop(f);
     }
   }
-  const a = value;
   function map(l) {
     const result = l[0];
     loudDrop_drop(l);
@@ -130,8 +129,8 @@ function main() {
         const f = pick(undefined, [10], loudDrop_drop, loudDrop_drop);
         console.log(`f ${f == null}`);
         try {
-          const value$1 = 1 == null ? undefined : 2;
-          console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+          const value = 1 == null ? undefined : 2;
+          console.log(`${value == null ? "None" : `Some(${value})`}`);
           const g = { TAG: "Ok", _0: [11] };
           let kept;
           if (g.TAG === "Err") {

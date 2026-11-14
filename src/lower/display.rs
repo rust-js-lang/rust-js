@@ -748,15 +748,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Given a `Formatter`'s options, where the crate's writers are (ADR
         // 0058), or a library's function shows the type with them (#1331).
         let shown_so = self.krate.shown.of_type(self.tcx, ty);
+        let param = self.unspelled("value");
         let (params, pretty): (Vec<js::Pattern>, _) = match self.writers_take_options() || shown_so.any() {
             true => (
-                vec!["value".into(), "options".into()],
+                vec![param.as_str().into(), "options".into()],
                 Pretty::When(Expr::var("options")),
             ),
-            false => (vec!["value".into()], Pretty::Plain),
+            false => (vec![param.as_str().into()], Pretty::Plain),
         };
         let shown = self.with_shown(shown_so, |cx| {
-            cx.display_string_with(Expr::var("value"), ty, span, &pretty)
+            cx.display_string_with(Expr::var(&param), ty, span, &pretty)
         })?;
         // `String(value)` of a number is the function `String`. A class's
         // text is its `toString` called, `(value) => value.toString()`
@@ -767,7 +768,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         if let Some(value) = text_of
             && params.len() == 1
-            && is_var(value, "value")
+            && is_var(value, &param)
         {
             return Ok(Expr::js_global("String"));
         }

@@ -36,12 +36,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let from_args = self.tcx.mk_args(&[target.into(), source.into()]);
             // A `Box<dyn Error>` of an error or a message, std's `From`, as
             // its call makes it, `{ value, impl }` (ADR 0141, #1284).
+            let param = self.unspelled("value");
             let value = if !tried && let Some(dyn_error) = self.dyn_error_from(target, source, span)? {
                 Expr::arrow(
-                    vec!["value".into()],
+                    vec![param.as_str().into()],
                     vec![
                         StmtKind::Return(Some(Expr::object(vec![
-                            Prop::Field(js::HELD.into(), Expr::var("value")),
+                            Prop::Field(js::HELD.into(), Expr::var(&param)),
                             Prop::Field(js::DICTIONARY.into(), dyn_error),
                         ])))
                         .at(js::Span::NONE),
@@ -63,20 +64,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let tys = [source];
                 let call = crate::lower::calls::Call::given((method, tr.args), &tys, Default::default(), span);
                 let mut body = Vec::new();
-                let mut given = vec![Expr::var("value")].into_iter();
+                let mut given = vec![Expr::var(&param)].into_iter();
                 let Some(made) = self.numeric_call(known, call, &mut given, &mut body)? else {
                     return Err(self.no_evidence(span, tr));
                 };
                 body.push(StmtKind::Return(Some(made)).at(js::Span::NONE));
-                Expr::arrow(vec!["value".into()], body)
+                Expr::arrow(vec![param.as_str().into()], body)
             } else if let Some(value) = self.compiled_conversion(from, from_args, span)? {
                 value
             } else if !tried && self.recognition().calls_from_giving_its_argument(from, from_args) {
                 // A binding crate's `From` into an untagged enum, the value
                 // it's given (ADR 0214, amended): `T: Into<BlobPart>`'s.
                 Expr::arrow(
-                    vec!["value".into()],
-                    vec![StmtKind::Return(Some(Expr::var("value"))).at(js::Span::NONE)],
+                    vec![param.as_str().into()],
+                    vec![StmtKind::Return(Some(Expr::var(&param))).at(js::Span::NONE)],
                 )
             } else {
                 return Err(self.no_evidence(span, tr));
@@ -107,12 +108,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(None);
         }
         let callee = self.fn_ref(instance.def_id());
-        let mut values = vec![Expr::var("value")];
+        let param = self.unspelled("value");
+        let mut values = vec![Expr::var(&param)];
         values.extend(self.evidence_args(instance.def_id(), instance.args, span)?);
         Ok(Some(match values.len() {
             1 => callee,
             _ => Expr::arrow(
-                vec!["value".into()],
+                vec![param.as_str().into()],
                 vec![StmtKind::Return(Some(Expr::call(callee, values))).at(js::Span::NONE)],
             ),
         }))

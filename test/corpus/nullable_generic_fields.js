@@ -39,14 +39,14 @@ function hiddenLanes() {
 
 function main() {
   const stack = [];
-  const value = hiddenLanes();
-  console.log(`${value == null ? "None" : `Some(${value})`}`);
-  push(hidden, { lanes: 4 }, stack);
   const value$1 = hiddenLanes();
-  console.log(`${value$1 == null ? "None" : `Some(${value$1})`} ${stack.length}`);
-  popBoxed(hidden, stack);
+  console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+  push(hidden, { lanes: 4 }, stack);
   const value$2 = hiddenLanes();
-  console.log(`${value$2 == null ? "None" : `Some(${value$2})`} ${hidden.current == null}`);
+  console.log(`${value$2 == null ? "None" : `Some(${value$2})`} ${stack.length}`);
+  popBoxed(hidden, stack);
+  const value$3 = hiddenLanes();
+  console.log(`${value$3 == null ? "None" : `Some(${value$3})`} ${hidden.current == null}`);
 
   const cursor = { current: null };
   const was = cursor.current;
@@ -62,9 +62,8 @@ function main() {
   const dependency = { memoizedValue: 1 };
   dependency.memoizedValue = null;
   const numbers = { memoizedValue: 2 };
-  const memoizedValue = dependency.memoizedValue;
-  if (memoizedValue != null) {
-    const value = memoizedValue;
+  const value = dependency.memoizedValue;
+  if (value != null) {
     console.log(`some ${value}`);
   } else {
     console.log(`none ${numbers.memoizedValue}`);

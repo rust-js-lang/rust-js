@@ -21,8 +21,8 @@ function main() {
   const names = new $BTreeMap($range(1, 5).map((i) => [i, String(i)]));
   let first = $endEntry(names, $cmp, false);
   if (first != null) {
-    const value = $entryGet(first, true);
-    value.value += "!";
+    const getMut = $entryGet(first, true);
+    getMut.value += "!";
     console.log(`${first[1]} ${$entryGet(first)}`);
   }
   const last = $endEntry(names, $cmp, true);
@@ -43,8 +43,8 @@ function main() {
   ]);
   first = $endEntry(counts, $cmp, false);
   if (first != null) {
-    const getMut = $entryGet(first, true);
-    getMut.value = (getMut.value + 10) | 0;
+    const value = $entryGet(first, true);
+    value.value = (value.value + 10) | 0;
     const old = $entryInsert(first, 100);
     const arg = $entryGet(first);
     console.log(`${old} ${arg}`);

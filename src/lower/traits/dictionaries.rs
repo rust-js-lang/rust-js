@@ -478,14 +478,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && let Some(radix) = self.radix_trait(tr.def_id)
             && !self.has_user_impl(tr.def_id, ty)
         {
+            let param = self.unspelled("value");
             let (params, pretty): (Vec<js::Pattern>, _) = match self.writers_take_options() {
                 true => (
-                    vec!["value".into(), "options".into()],
+                    vec![param.as_str().into(), "options".into()],
                     Pretty::When(Expr::var("options")),
                 ),
-                false => (vec!["value".into()], Pretty::Plain),
+                false => (vec![param.as_str().into()], Pretty::Plain),
             };
-            let text = self.radix_text(Expr::var("value"), num, radix, &pretty);
+            let text = self.radix_text(Expr::var(&param), num, radix, &pretty);
             let fmt = Expr::arrow(params, vec![StmtKind::Return(Some(text)).at(js::Span::NONE)]);
             let mut props = vec![Prop::Field("fmt".into(), fmt)];
             props.extend(self.std_fmt_into(Std::FmtRadix(radix), ty, span)?);
@@ -518,16 +519,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // (ADRs 0058, 0137), or a library's function shows it with
                 // them (#1331).
                 let shown_so = self.krate.shown.of_type(self.tcx, ty);
+                let param = self.unspelled("value");
                 let (params, pretty): (Vec<js::Pattern>, _) = match self.writers_take_options() || shown_so.any() {
                     true => (
-                        vec!["value".into(), "options".into()],
+                        vec![param.as_str().into(), "options".into()],
                         crate::lower::display::Pretty::When(Expr::var("options")),
                     ),
-                    false => (vec!["value".into()], crate::lower::display::Pretty::Plain),
+                    false => (vec![param.as_str().into()], crate::lower::display::Pretty::Plain),
                 };
                 let mut body = Vec::new();
                 let shown = self.with_shown(shown_so, |cx| {
-                    cx.debug_string_with(Expr::var("value"), ty, span, &pretty)
+                    cx.debug_string_with(Expr::var(&param), ty, span, &pretty)
                 })?;
                 body.push(StmtKind::Return(Some(shown)).at(js::Span::NONE));
                 let fmt = Expr::arrow(params, body);
@@ -829,9 +831,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             // Through a counted `Rc`, what it points at, as far as what it's
             // asked as (#1503, #1518).
-            let inside = self.through_boxes_to(Expr::var("value"), ty.peel_refs(), tr.args.type_at(1));
+            let param = self.unspelled("value");
+            let inside = self.through_boxes_to(Expr::var(&param), ty.peel_refs(), tr.args.type_at(1));
             let same = Expr::arrow(
-                vec!["value".into()],
+                vec![param.as_str().into()],
                 vec![StmtKind::Return(Some(inside)).at(js::Span::NONE)],
             );
             return Ok(Expr::object(vec![Prop::Field(
@@ -843,14 +846,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // owns, one JS value, its `_0`, as its `Deref` is (`cow_deref`,
         // ADR 0319, amended, #1481); and its `AsRef` as what that's the same
         // JS value as, a `Cow<OsStr>`'s `AsRef<Path>`.
+        let param = self.unspelled("value");
         for (item, method) in [(StdItem::AsRef, "as_ref"), (StdItem::Borrow, "borrow")] {
             if is_std_def(self.tcx, tr.def_id, item)
-                && let Some((inside, borrowed)) = self.cow_deref(&Expr::var("value"), ty)
+                && let Some((inside, borrowed)) = self.cow_deref(&Expr::var(&param), ty)
                 && (borrowed == tr.args.type_at(1)
                     || item == StdItem::AsRef && self.recognition().as_ref_is_itself(borrowed, tr.args.type_at(1)))
             {
                 let f = Expr::arrow(
-                    vec!["value".into()],
+                    vec![param.as_str().into()],
                     vec![StmtKind::Return(Some(inside)).at(js::Span::NONE)],
                 );
                 return Ok(Expr::object(vec![Prop::Field(
@@ -875,9 +879,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && self.is_string_like(ty)
             && matches!(tr.args.type_at(1).kind(), ty::Slice(item) if *item == self.tcx.types.u8)
         {
-            let bytes = Expr::call(Expr::helper("$utf8Bytes"), vec![Expr::var("value")]);
+            let param = self.unspelled("value");
+            let bytes = Expr::call(Expr::helper("$utf8Bytes"), vec![Expr::var(&param)]);
             let as_ref = Expr::arrow(
-                vec!["value".into()],
+                vec![param.as_str().into()],
                 vec![StmtKind::Return(Some(bytes)).at(js::Span::NONE)],
             );
             return Ok(Expr::object(vec![Prop::Field(
@@ -898,9 +903,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && !self.has_user_impl(tr.def_id, ty)
             && self.recognition().borrows_as_itself(ty, tr.args.type_at(1))
         {
+            let param = self.unspelled("value");
             let same = Expr::arrow(
-                vec!["value".into()],
-                vec![StmtKind::Return(Some(in_box(Expr::var("value")))).at(js::Span::NONE)],
+                vec![param.as_str().into()],
+                vec![StmtKind::Return(Some(in_box(Expr::var(&param)))).at(js::Span::NONE)],
             );
             return Ok(Expr::object(vec![Prop::Field("borrow".into(), same)]));
         }
@@ -913,9 +919,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && self.recognition().borrows_as_itself(ty, tr.args.type_at(1))
             && (self.is_object(tr.args.type_at(1)) || ty.is_ref())
         {
+            let param = self.unspelled("value");
             let same = Expr::arrow(
-                vec!["value".into()],
-                vec![StmtKind::Return(Some(in_box(Expr::var("value")))).at(js::Span::NONE)],
+                vec![param.as_str().into()],
+                vec![StmtKind::Return(Some(in_box(Expr::var(&param)))).at(js::Span::NONE)],
             );
             let mut props = vec![Prop::Field(
                 bindings::trait_method_name(self.tcx, tr.def_id, "borrow_mut"),
@@ -963,13 +970,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(op) = crate::lower::recognition::value_operator(self.tcx, tr.def_id)
             && self.primitive_operands(tr)
         {
+            let param = self.unspelled("value");
             let params: Vec<js::Pattern> = match op {
                 Ok(_) => vec!["a".into(), "b".into()],
-                Err(_) => vec!["value".into()],
+                Err(_) => vec![param.as_str().into()],
             };
             let (a, b) = match op {
                 Ok(_) => (Expr::var("a"), Some(Expr::var("b"))),
-                Err(_) => (Expr::var("value"), None),
+                Err(_) => (Expr::var(&param), None),
             };
             let value = self.number_operator(op, a, b, tr, span)?;
             return Ok(Expr::object(vec![Prop::Field(
@@ -1024,7 +1032,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // `FnOnce` is (ADR 0246): a closure that changes what it
             // captured is a `Clone` bound's too, so the crate clones it
             // apart, and its copy is its clone (#1211).
-            let value = Expr::var("value");
+            let param = self.unspelled("value");
+            let value = Expr::var(&param);
             let copy = self.copy(value.clone(), ty);
             // Its supertrait `Clone`'s, `Clone()`, where the type's clone
             // runs code, a hand-written `Clone` of a `Copy` type, which
@@ -1041,7 +1050,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let mut props = vec![Prop::Field(
                 "copy".into(),
                 Expr::arrow(
-                    vec!["value".into()],
+                    vec![param.as_str().into()],
                     vec![StmtKind::Return(Some(copy)).at(js::Span::NONE)],
                 ),
             )];

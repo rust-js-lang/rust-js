@@ -491,17 +491,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Ok(self.pretty_or(pretty, plain, "Some(", Expr::array(vec![shown]), ")"))
             }
             _ if let Some(inner) = self.option_of(ty) => {
+                let param = self.unspelled("value");
                 let inside = if self.boxed_payload(inner) {
-                    self.some_value(Expr::var("value"))
+                    self.some_value(Expr::var(&param))
                 } else {
-                    Expr::var("value")
+                    Expr::var(&param)
                 };
                 let shown = self.debug_string_with(inside, inner, span, pretty)?;
                 let plain = join(vec![Expr::str("Some("), shown.clone(), Expr::str(")")]);
                 let some = self.pretty_or(pretty, plain, "Some(", Expr::array(vec![shown]), ")");
-                let none = Expr::bin(Op::LooseEq, Expr::var("value"), Expr::null());
+                let none = Expr::bin(Op::LooseEq, Expr::var(&param), Expr::null());
                 let f = Expr::arrow(
-                    vec!["value".into()],
+                    vec![param.as_str().into()],
                     vec![StmtKind::Return(Some(Expr::cond(none, Expr::str("None"), some))).at(js::Span::NONE)],
                 );
                 Ok(self.applied(f, value))
@@ -562,20 +563,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // `OnceCell(1)`, or `OnceCell(<uninit>)` where it holds none.
             ty::Adt(adt, args) if std(StdItem::OnceCell) => {
+                let param = self.unspelled("value");
                 let name = self.tcx.item_name(adt.did());
                 let item = args.type_at(0);
                 let inside = if self.boxed_payload(item) {
-                    self.some_value(Expr::var("value"))
+                    self.some_value(Expr::var(&param))
                 } else {
-                    Expr::var("value")
+                    Expr::var(&param)
                 };
                 let shown = self.debug_string_with(inside, item, span, pretty)?;
-                let none = Expr::bin(Op::LooseEq, Expr::var("value"), Expr::null());
+                let none = Expr::bin(Op::LooseEq, Expr::var(&param), Expr::null());
                 let shown = Expr::cond(none, Expr::str("<uninit>"), shown);
                 let plain = join(vec![Expr::str(format!("{name}(")), shown.clone(), Expr::str(")")]);
                 let shown = self.pretty_or(pretty, plain, &format!("{name}("), Expr::array(vec![shown]), ")");
                 let f = Expr::arrow(
-                    vec!["value".into()],
+                    vec![param.as_str().into()],
                     vec![StmtKind::Return(Some(shown)).at(js::Span::NONE)],
                 );
                 Ok(self.applied(f, Expr::held(value)))
@@ -583,10 +585,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // `Mutex { data: 1, poisoned: false, .. }`, or `data: <locked>`
             // while it's held so, as std's shows it (ADR 0328).
             ty::Adt(_, args) if std(StdItem::Mutex) || std(StdItem::RwLock) => {
+                let param = self.unspelled("value");
                 let mutex = std(StdItem::Mutex);
-                let shown = self.debug_string_with(Expr::var("value"), args.type_at(0), span, pretty)?;
+                let shown = self.debug_string_with(Expr::var(&param), args.type_at(0), span, pretty)?;
                 let show = Expr::arrow(
-                    vec!["value".into()],
+                    vec![param.as_str().into()],
                     vec![StmtKind::Return(Some(shown)).at(js::Span::NONE)],
                 );
                 let name = Expr::str(if mutex { "Mutex" } else { "RwLock" });
@@ -612,9 +615,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // What it holds, shown while it's borrowed, or `<borrowed>`
                     // where it's mutably borrowed (ADR 0328).
                     true => {
-                        let shown = self.debug_string_with(Expr::var("value"), args.type_at(0), span, pretty)?;
+                        let param = self.unspelled("value");
+                        let shown = self.debug_string_with(Expr::var(&param), args.type_at(0), span, pretty)?;
                         let show = Expr::arrow(
-                            vec!["value".into()],
+                            vec![param.as_str().into()],
                             vec![StmtKind::Return(Some(shown)).at(js::Span::NONE)],
                         );
                         let mut given = vec![value, show];
@@ -679,13 +683,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.debug_items(items, args.type_at(0), "{", "}", span, pretty)
             }
             ty::Adt(_, args) if self.is_map(ty) => {
+                let param = self.unspelled("value");
                 let value = self.in_order_of(value, ty, span)?;
                 let (key, item) = (args.type_at(0), args.type_at(1));
                 let key = self.debug_string_with(Expr::var("key"), key, span, pretty)?;
-                let item = self.debug_string_with(Expr::var("value"), item, span, pretty)?;
+                let item = self.debug_string_with(Expr::var(&param), item, span, pretty)?;
                 let pair = join(vec![key, Expr::str(": "), item]);
                 let f = Expr::arrow(
-                    vec![js::Pattern::Array(vec![Some("key".into()), Some("value".into())])],
+                    vec![js::Pattern::Array(vec![
+                        Some("key".into()),
+                        Some(param.as_str().into()),
+                    ])],
                     vec![StmtKind::Return(Some(pair)).at(js::Span::NONE)],
                 );
                 let entries = Expr::builtin(Expr::js_global("Array"), "from", vec![value]);
@@ -773,7 +781,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         pretty: &Pretty,
         composed: bool,
     ) -> R<Expr> {
-        let tag = Expr::member(Expr::var("value"), bindings::tag_key(self.tcx, adt.did()));
+        let param = self.unspelled("value");
+        let tag = Expr::member(Expr::var(&param), bindings::tag_key(self.tcx, adt.did()));
         let mut shown: Option<Expr> = None;
         for variant in adt.variants().iter().rev() {
             if crate::lower::recognition::never_made(self.tcx, variant) {
@@ -783,14 +792,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let js_name = bindings::variant_name(self.tcx, variant);
             let (test, this) = match variant.fields.is_empty() {
                 true => (
-                    Expr::bin(Op::Eq, Expr::var("value"), Expr::str(&js_name)),
+                    Expr::bin(Op::Eq, Expr::var(&param), Expr::str(&js_name)),
                     Expr::str(&name),
                 ),
                 false => {
                     let mut parts = Vec::new();
                     for (i, field) in variant.fields.iter().enumerate() {
-                        let held =
-                            Expr::member(Expr::var("value"), representation::variant_field(self.tcx, variant, i));
+                        let held = Expr::member(Expr::var(&param), representation::variant_field(self.tcx, variant, i));
                         parts.push(self.debug_string_with(held, self.field_ty(field, args), span, pretty)?);
                     }
                     let this = match composed {
@@ -817,7 +825,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let shown = shown.ok_or_else(|| self.unsupported(span, "`{:?}` of an enum of no variants"))?;
         let f = Expr::arrow(
-            vec!["value".into()],
+            vec![param.as_str().into()],
             vec![StmtKind::Return(Some(shown)).at(js::Span::NONE)],
         );
         Ok(self.applied(f, value))
@@ -844,12 +852,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if nullish.is_empty() {
             return self.named_variant_debug(adt, value);
         }
-        let mut shown = self.named_variant_debug(adt, Expr::var("value"));
+        let param = self.unspelled("value");
+        let mut shown = self.named_variant_debug(adt, Expr::var(&param));
         for (unit, name) in nullish.into_iter().rev() {
-            shown = Expr::cond(Expr::bin(Op::Eq, Expr::var("value"), unit), Expr::str(name), shown);
+            shown = Expr::cond(Expr::bin(Op::Eq, Expr::var(&param), unit), Expr::str(name), shown);
         }
         let f = Expr::arrow(
-            vec!["value".into()],
+            vec![param.as_str().into()],
             vec![StmtKind::Return(Some(shown)).at(js::Span::NONE)],
         );
         self.applied(f, value)

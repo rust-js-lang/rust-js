@@ -275,9 +275,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 (key_ty, may_panic(self, key)),
                 (value_ty.expect("a map's"), may_panic(self, value)),
             ];
-            let named = [("key", key), ("value", value)];
+            let param = self.unspelled("value");
+            let named = [("key", key), (param.as_str(), value)];
             let (pair, made) = self.parts_in_turn(&parts, span, |cx, i| cloned(cx, named[i].0, named[i].1))?;
-            let pattern = js::Pattern::Array(vec![Some("key".into()), Some("value".into())]);
+            let pattern = js::Pattern::Array(vec![Some("key".into()), Some(param.as_str().into())]);
             let entry = Ty::new_tup(self.tcx, &[key_ty, parts[1].0]);
             (vec![pattern], Self::in_turn(Expr::array(pair), made), entry)
         };

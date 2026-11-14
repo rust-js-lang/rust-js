@@ -42,8 +42,8 @@ function main() {
       console.log(`took ${$entryRemove(entry._0)}`);
     } else {
       const key = entry._0[1];
-      const value = $vacantInsert(entry._0, String(key), true);
-      value.value += "!";
+      const insert = $vacantInsert(entry._0, String(key), true);
+      insert.value += "!";
     }
   }
   console.log(
