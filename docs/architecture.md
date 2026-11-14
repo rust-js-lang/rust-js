@@ -113,12 +113,16 @@ analysis (including borrow checking and lints) to succeed before lowering.
 Capturing a body is not permission to emit it.
 
 Which adapters each body makes in place (`body_queries/in_place.rs`) is
-decided once, in `lower/pipeline.rs`, after the crate's ground
-(`analysis/ground.rs`: its libraries, trait impls, cloned types and
+decided in two stages. The ground, in `lower/pipeline.rs`, after the crate's
+ground (`analysis/ground.rs`: its libraries, trait impls, cloned types and
 capacity facts) gives its `Recognition`, and before the analysis lends the
 bodies out: a collect's hint the program can see decides it too (#1327).
-The bodies hold it as an undecided `InPlace` until then, which no reader
-can read (`test/architecture-iterators.test.ts`).
+Then, in `analyze_crate`, once `back_stepped` knows what's stepped from its
+back and before `type_fact_params` reads it, what's held after all
+(`decide_held`, #1681). Between the stages only `back_stepped` reads, the
+ground alone (`contains_ground`), of a `rev()`, which the second stage
+never takes out; every other reader asks `contains`, which refuses a body
+whose stages aren't both decided (`test/architecture-iterators.test.ts`).
 
 ```text
 Rust source

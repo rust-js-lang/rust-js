@@ -666,7 +666,7 @@ pub(super) fn stepped_locals<'tcx>(
                 // `rev()` of a `filter_map` a variable holds (as a struct's
                 // part is, `held_by_struct`'s).
                 if callee == rev
-                    && !body.facts.in_place_adapters.contains(fn_span)
+                    && !body.facts.in_place_adapters.contains_ground(fn_span)
                     && let Some(arg) = args.first()
                     && let mir::Operand::Move(place) | mir::Operand::Copy(place) = &arg.node
                     && let Some(local) = place.as_local()

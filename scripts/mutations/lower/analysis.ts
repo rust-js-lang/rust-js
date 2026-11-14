@@ -516,4 +516,12 @@ export const mutations: Mutation[] = [
     replace: "        if settled || closure_facts.any_dyns_drop {\n",
     tests: ["test/corpus.test.ts", "-t", "^fn_dyn_holding_an_any_dyn_drops_it.rs$"],
   },
+  {
+    name: "held-stage-never-decided",
+    breaks: "the second stage of which adapters each body makes in place is never decided, so the first reader of both, `type_fact_params`, reads a set half decided: rust-js panics, as `contains` refuses it (#1681's step iii)",
+    file: "src/lower/analysis.rs",
+    find: "        crate::lower::body_queries::decide_held(bodies);\n",
+    replace: "        let _ = bodies;\n",
+    tests: ["test/corpus.test.ts", "-t", "^map_held_then_enumerated_from_its_back.rs$"],
+  },
 ];

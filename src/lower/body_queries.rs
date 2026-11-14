@@ -33,7 +33,7 @@ use constants::constant_patterns;
 pub(super) use constants::{
     ConstantPatterns, PatternStep, PatternValue, pattern_places, pattern_value, transparent_subpattern,
 };
-pub(in crate::lower) use in_place::decide as decide_in_place;
+pub(in crate::lower) use in_place::{decide as decide_in_place, decide_held};
 pub(super) use ranges::{present_item_of_sized, ranges};
 pub(in crate::lower) use set_reads::is_option_unwrap;
 pub(super) use total_orders::orders_totally;
@@ -215,7 +215,7 @@ impl<'tcx> BodyFacts<'tcx> {
             getter_unwraps: getter_unwraps::getter_unwraps(tcx, thir),
             method_calls,
             called_methods,
-            in_place_adapters: InPlace(None),
+            in_place_adapters: InPlace::default(),
             in_place_collect_sources: collect_sources::in_place_collect_sources(tcx, thir),
             constant_patterns: constant_patterns(tcx, thir),
             jsx_given,
@@ -413,24 +413,58 @@ pub(super) fn across_bodies<'tcx>(tcx: TyCtxt<'tcx>, bodies: &mut [super::Body<'
     resumes_as_given(tcx, bodies);
 }
 
-/// Which of `HELD_COMPILED`'s adapters a body makes in place, decided once
-/// the crate's `Recognition` exists (`decide_in_place`, #1327): before then
-/// none, and nothing reads it, as its readers ask only `contains`, which an
-/// undecided one refuses. Only this module makes or decides one.
+/// Which of `HELD_COMPILED`'s adapters a body makes in place, decided in
+/// two stages, each by `in_place.rs` alone: once the crate's `Recognition`
+/// exists (`decide_in_place`, #1327), the ground; then, once the analysis
+/// knows what's stepped from its back, what it takes out of the ground,
+/// the `enumerate()`s and `map()`s of chains held apart on std's struct
+/// (`decide_held`, #1681's step iii). The one reader between the stages,
+/// `back_stepped`, asks the ground of `rev()`s alone, which the second
+/// stage never takes out (`contains_ground`); every other reader asks
+/// `contains`, which refuses one read before both are decided.
 #[derive(Default)]
-pub(in crate::lower) struct InPlace(Option<IndexSet<Span>>);
+pub(in crate::lower) struct InPlace {
+    ground: Option<IndexSet<Span>>,
+    held: std::cell::OnceCell<IndexSet<Span>>,
+}
 
 impl InPlace {
     fn decided(set: IndexSet<Span>) -> Self {
-        InPlace(Some(set))
+        InPlace {
+            ground: Some(set),
+            held: std::cell::OnceCell::new(),
+        }
     }
 
-    /// Whether the adapter made at `span` is made in place.
-    pub(in crate::lower) fn contains(&self, span: &Span) -> bool {
-        let Some(set) = &self.0 else {
+    /// The second stage: the spans the ground made in place that are held
+    /// after all, never a `rev()`'s (`decide_held`).
+    fn decide_held(&self, held: IndexSet<Span>) {
+        assert!(
+            self.held.set(held).is_ok(),
+            "rust-js: a body's held adapters decided twice (decide_held)"
+        );
+    }
+
+    fn ground(&self) -> &IndexSet<Span> {
+        let Some(set) = &self.ground else {
             panic!("rust-js: a body's in-place adapters read before they're decided (decide_in_place)");
         };
-        set.contains(span)
+        set
+    }
+
+    /// Whether the adapter made at `span` is made in place, of both stages.
+    pub(in crate::lower) fn contains(&self, span: &Span) -> bool {
+        let Some(held) = self.held.get() else {
+            panic!("rust-js: a body's in-place adapters read before the held ones are decided (decide_held)");
+        };
+        self.ground().contains(span) && !held.contains(span)
+    }
+
+    /// Whether the `rev()` made at `span` is made in place, of the ground
+    /// alone: `back_stepped`'s, the analysis's that `decide_held` reads,
+    /// asked before it, of a `rev()`, which it never takes out.
+    pub(in crate::lower) fn contains_ground(&self, span: &Span) -> bool {
+        self.ground().contains(span)
     }
 }
 

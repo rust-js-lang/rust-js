@@ -667,20 +667,34 @@ test("whether a consumer keeps each item is one catalog", () => {
 // only `body_queries` makes or decides, and its readers ask it only
 // `contains`, which an undecided one refuses. Nothing else writes the set,
 // and nothing reads it but by `contains`.
-test("in-place adapters are decided once, then read", () => {
+// In two stages (#1681's step iii): the ground, then, once the analysis
+// knows what's stepped from its back, what's held after all. Between them
+// only `back_stepped` reads, the ground alone, of a `rev()`, which the
+// second stage never takes out (`contains_ground`); every other reader asks
+// `contains`, which refuses one read before both stages are decided.
+test("in-place adapters are decided in two stages, then read", () => {
   const lowering = ["src/lower.rs", ...files("src/lower")].filter((file) => file.endsWith(".rs"));
   const outside = lowering.filter((file) => !file.startsWith("src/lower/body_queries"));
-  const writes = outside.filter((file) => /in_place_adapters\s*=[^=]|(?<![:\w])InPlace\s*\((?:None|Some)|InPlace::decided/.test(read(file)));
+  const writes = outside.filter((file) => /in_place_adapters\s*=[^=]|InPlace::decided|in_place_adapters\.decide_held\(/.test(read(file)));
   expect(writes).toEqual([]);
   const reads = outside.flatMap((file) =>
     [...read(file).matchAll(/in_place_adapters\.(\w+)/g)].map((m) => `${file}: ${m[1]}`),
   );
-  expect(reads.filter((read) => !read.endsWith(": contains"))).toEqual([]);
+  expect(reads.filter((read) => !read.endsWith(": contains") && read !== "src/lower/analysis/back_stepped.rs: contains_ground")).toEqual([]);
+  expect(reads.filter((read) => read.endsWith(": contains_ground"))).toEqual(["src/lower/analysis/back_stepped.rs: contains_ground"]);
   const source = read("src/lower/body_queries.rs");
-  expect(source).toContain("pub(in crate::lower) struct InPlace(Option<IndexSet<Span>>);");
+  expect(source).toMatch(/pub\(in crate::lower\) struct InPlace \{\n    ground: Option<IndexSet<Span>>,\n    held: std::cell::OnceCell<IndexSet<Span>>,\n\}/);
   expect(source).toMatch(/\n    fn decided\(set: IndexSet<Span>\) -> Self \{/);
   const deciding = lowering.filter((file) => /decide_in_place\(/.test(read(file)));
   expect(deciding).toEqual(["src/lower/pipeline.rs"]);
+  // The second stage, decided once in the analysis: after `back_stepped`,
+  // its one reader before it, and before `type_fact_params`, the first
+  // reader of both stages.
+  const held = lowering.filter((file) => /body_queries::decide_held\(/.test(read(file)));
+  expect(held).toEqual(["src/lower/analysis.rs"]);
+  const analysis = read("src/lower/analysis.rs");
+  const at = (text: string) => analysis.indexOf(text);
+  expect([at("back_stepped::of_crate(") < at("body_queries::decide_held("), at("body_queries::decide_held(") < at("type_fact_params(")]).toEqual([true, true]);
 });
 
 // Whether a value of std's adapter is std's struct, compiled for this build,

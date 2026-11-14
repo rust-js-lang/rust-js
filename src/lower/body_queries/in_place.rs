@@ -98,6 +98,17 @@ pub(in crate::lower) fn decide<'tcx>(
     }
 }
 
+/// The second stage of which adapters each body makes in place
+/// (`InPlace`), once the analysis knows what's stepped from its back: what
+/// it takes out of the ground. None yet (#1681's step iii). Of each body,
+/// the crate's and its initializers', the harness's too, as each is
+/// lowered.
+pub(in crate::lower) fn decide_held<'tcx>(bodies: &[crate::lower::Body<'tcx>]) {
+    for body in bodies {
+        body.facts.in_place_adapters.decide_held(IndexSet::default());
+    }
+}
+
 /// Each `rev()`, `enumerate()` or `map()`, `HELD_COMPILED`'s, whose adapter
 /// is given, as what's called or an argument, where it's stepped as a JS
 /// iterator, or a variable holds that it's stepped through alone, or by

@@ -321,6 +321,9 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // What it stands on: its bodies but rustc's test harness's, its
     // libraries and its trait impls (`ground.rs`), made before the bodies
     // were told which adapters each makes in place.
+    // Every body, the harness's too, each of which is lowered: whose held
+    // adapters `decide_held` decides.
+    let every_body = (all_bodies, initializers);
     let all_bodies = ground.harness.left_out(tcx, all_bodies);
     let keeps_capacity = ground.keeps_capacity();
     let Ground {
@@ -769,6 +772,12 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         (params_may_drop, (!library).then_some(&given_a_drop)),
         &cloned,
     );
+    // Which adapters each body makes in place, the second stage: once what's
+    // stepped from its back is known, the one reader of the ground, and
+    // before any reader of both stages, `type_fact_params`' (`InPlace`).
+    for bodies in [every_body.0, every_body.1] {
+        crate::lower::body_queries::decide_held(bodies);
+    }
     // What generic code asks the hint of, made knowing it where it's made,
     // by the makers of what's stepped from its back (#1236).
     let hint_asked = hint_asked::of_crate(tcx, recognition, all_bodies, keeps_capacity);
