@@ -691,3 +691,22 @@ each a field stepped under a test, such as `self.end -= 1` under
 `self.at < self.end`. Since MIR decides wraps (M3 step 2), the JS has them
 as JS's own: 117 corpus cases, each passing against native, and
 @rust-js/std's `iter.js`, where `take.n - 1` is under `take.n > 0`.
+
+### Step 5: an index a loop takes from its slice's `enumerate()` (2026-11-15, #1814)
+
+A downstream port's `candidates[best]` kept its check. It reads:
+`let mut best = 0; for (index, c) in candidates.iter().enumerate().skip(1)
+{ .. candidates[best] .. best = index }`. Two rules:
+- **`skip(n)` is a step of a range** (`RangeStep::Skip`). Of a range of
+  integers, a slice's iterator or its `enumerate()`, it gives the rest of
+  its values, each below the same end. So `candidates[index]` under
+  `enumerate().skip(1)` is proved.
+- **A join keeps a guarded relation** (`State::below_past`). Where one way
+  knows `x` below a slice's length and the other knows `x` at most `c`,
+  `x` is below the length wherever the slice holds more than `c` items.
+  That's so in the loop's body: there `index` below the length shows the
+  slice holds one at least (`least_of`). `best = 1` before the loop isn't
+  proved, as a slice of one item doesn't hold it.
+
+The corpus's one change is enumerate_mut_patterns' `i + 1` of an
+`enumerate().skip(1)` index, written without its cast.

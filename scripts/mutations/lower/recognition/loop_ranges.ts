@@ -42,4 +42,12 @@ export const mutations: Mutation[] = [
     replace: "    (held && ranged && false).then_some(1)\n",
     tests: ["test/intervals-shadow.test.ts", "-t", "a range's bounds"],
   },
+  {
+    name: "skip-unrecognized",
+    breaks: "`skip(n)` of an `enumerate()` gives no index below its slice's length, so `candidates[index]` in a loop over it keeps its check",
+    file: "src/lower/recognition/loop_ranges.rs",
+    find: "            \"skip\" => RangeStep::Skip,\n",
+    replace: "",
+    tests: ["test/intervals-shadow.test.ts", "-t", "0 before it"],
+  },
 ];

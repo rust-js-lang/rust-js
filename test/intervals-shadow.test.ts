@@ -437,3 +437,40 @@ pub fn main() {
 }
 `)).toEqual(["mir-only-call-bounds It::step", "mir-only-wrap It::step"]);
 });
+
+// #1814: an index a loop's `enumerate()` gives, `skip(1)` of it too, is below
+// its slice's length; and one that's 0 before the loop and such an index in
+// it, `best`, is below the length wherever the slice holds an item, as it
+// does in the loop's body. Not one that's 1 before it, which a slice of one
+// item doesn't hold.
+test("an index a loop takes from its slice's `enumerate()`, 0 before it, is below the slice's length in it", () => {
+  expect(shadowOf(`pub fn nearest(candidates: &[f64], value: f64) -> usize {
+    let mut best = 0;
+    for (index, candidate) in candidates.iter().enumerate().skip(1) {
+        if (*candidate - value).abs() < (candidates[best] - value).abs() {
+            best = index;
+        }
+    }
+    best
+}
+pub fn from_one(candidates: &[f64], value: f64) -> usize {
+    let mut best = 1;
+    for (index, candidate) in candidates.iter().enumerate() {
+        if (*candidate - value).abs() < (candidates[best] - value).abs() {
+            best = index;
+        }
+    }
+    best
+}
+pub fn summed(candidates: &[f64]) -> f64 {
+    let mut total = 0.0;
+    for (index, _) in candidates.iter().enumerate().skip(1) {
+        total += candidates[index];
+    }
+    total
+}
+pub fn main() {
+    println!("{} {} {}", nearest(&[1.0, 5.0, 3.0], 3.2), from_one(&[1.0, 5.0], 3.2), summed(&[1.0, 2.0]));
+}
+`)).toEqual(["mir-only-bounds nearest", "mir-only-bounds summed"]);
+});

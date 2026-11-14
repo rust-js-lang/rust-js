@@ -70,5 +70,6 @@ impl State {
         self.least.shift_remove(&cell);
         self.empties.retain(|_, of| *of != cell);
         self.below.retain(|&(_, y, _)| y != Term::Len(cell));
+        self.below_past.retain(|&(_, slice, _)| slice != cell);
     }
 }

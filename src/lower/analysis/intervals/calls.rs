@@ -256,7 +256,7 @@ impl<'tcx> Walk<'_, 'tcx> {
                         );
                     }
                 }
-                (Some(RangeStep::IntoIter | RangeStep::Rev | RangeStep::StepBy), Held::Range)
+                (Some(RangeStep::IntoIter | RangeStep::Rev | RangeStep::StepBy | RangeStep::Skip), Held::Range)
                     if self.stepped.contains(&local) =>
                 {
                     after.ranges.insert(local, given);

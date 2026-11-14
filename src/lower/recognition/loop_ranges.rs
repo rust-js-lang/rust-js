@@ -16,6 +16,9 @@ pub(in crate::lower) enum RangeStep {
     Rev,
     /// `step_by(n)` of a range, whose values are its own, each below its end.
     StepBy,
+    /// `skip(n)` of a range, a slice's iterator or its `enumerate()`: the
+    /// rest of its values, each below its end (#1814).
+    Skip,
     /// A slice's `iter()` or `iter_mut()`, and its `enumerate()`, each
     /// index below the slice's length.
     SliceIter,
@@ -35,6 +38,9 @@ pub(in crate::lower) fn range_of_integers<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>)
             .types()
             .next()
             .is_some_and(|inner| plain_range_of_integers(tcx, inner)),
+        ty::Adt(adt, inner) if core_adapter(tcx, adt.did(), "Skip") => {
+            inner.types().next().is_some_and(|inner| skippable(tcx, inner))
+        }
         _ => plain_range_of_integers(tcx, ty) || enumerated_slice(tcx, ty) || slice_iter(tcx, ty),
     }
 }
@@ -58,6 +64,12 @@ fn slice_iter<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
             && tcx.def_path_str(adt.did()).contains("slice"))
 }
 
+/// Whether `ty` is what a `skip(n)` of keeps its values below its end: a
+/// range of integers, a slice's iterator or its `enumerate()`.
+fn skippable<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
+    plain_range_of_integers(tcx, ty) || enumerated_slice(tcx, ty) || slice_iter(tcx, ty)
+}
+
 /// Whether `ty` is `Enumerate` of a slice's iterator.
 fn enumerated_slice<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
     matches!(ty.kind(), ty::Adt(adt, inner) if core_adapter(tcx, adt.did(), "Enumerate")
@@ -78,6 +90,7 @@ pub(in crate::lower) fn range_step<'tcx>(
             "rev" => RangeStep::Rev,
             "step_by" => RangeStep::StepBy,
             "enumerate" => RangeStep::Enumerate,
+            "skip" => RangeStep::Skip,
             _ => return None,
         }
     } else if (tcx.inherent_impl_of_assoc(def_id)).is_some_and(|impl_| {
@@ -97,6 +110,7 @@ pub(in crate::lower) fn range_step<'tcx>(
         RangeStep::Rev => plain_range_of_integers(tcx, given) || enumerated_slice(tcx, given),
         RangeStep::Enumerate => slice_iter(tcx, given),
         RangeStep::StepBy => plain_range_of_integers(tcx, given),
+        RangeStep::Skip => skippable(tcx, given),
         _ => range_of_integers(tcx, given),
     };
     of_integers.then_some(step)

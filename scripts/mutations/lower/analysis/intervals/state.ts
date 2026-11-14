@@ -28,4 +28,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^raw_pointer_written_after_its_owner_reads.rs$"],
   },
+  {
+    name: "below-past-never",
+    breaks: "a join keeps no guarded relation, so `candidates[best]` of a `best` 0 before a loop and an `enumerate()` index in it keeps its check",
+    file: "src/lower/analysis/intervals/state.rs",
+    find: "            below_past: self.below_past_joined(other),\n",
+    replace: "            below_past: IndexSet::default(),\n",
+    tests: ["test/intervals-shadow.test.ts", "-t", "0 before it"],
+  },
+  {
+    name: "least-of-below-unread",
+    breaks: "a slice's least length isn't one past what's below it, so `candidates[best]` in a loop over its `enumerate()` isn't known held, and keeps its check",
+    file: "src/lower/analysis/intervals/state.rs",
+    find: "        self.least.get(&slice).copied().unwrap_or(0).max(below.unwrap_or(0))\n",
+    replace: "        self.least.get(&slice).copied().unwrap_or(0).max(below.unwrap_or(0).min(0))\n",
+    tests: ["test/intervals-shadow.test.ts", "-t", "0 before it"],
+  },
 ];

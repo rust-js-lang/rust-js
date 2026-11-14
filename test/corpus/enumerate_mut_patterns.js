@@ -34,7 +34,7 @@ function main() {
   const item = Array.from({ length: 3 }, () => [item$1[0], item$1[1]]);
   const v = item.map((item) => [item[0], item[1]]);
   for (const [i, item] of v.entries().drop(1)) {
-    item[0] = Math.imul(item[0], ((i | 0) + 1) | 0);
+    item[0] = Math.imul(item[0], i + 1);
     item[1] = "z";
   }
   console.log(`[${v.map((item) => `(${item[0]}, ${$debugStr(item[1], "'")})`).join(", ")}]`);

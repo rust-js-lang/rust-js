@@ -154,6 +154,7 @@ impl<'tcx> Walk<'_, 'tcx> {
         let local = index.place().and_then(|p| p.as_local()).map(|i| state.root(i));
         let related = local.is_some_and(|i| {
             state.below.contains(&(i, Term::Len(slice), true))
+                || (state.below_past.iter()).any(|&(x, s, c)| (x, s) == (i, slice) && state.least_of(slice) > c)
                 || !strict && (state.below.contains(&(i, Term::Len(slice), false)) || state.length_of(i) == Some(slice))
         });
         in_least || related

@@ -62,6 +62,11 @@ pub(super) struct State {
     pub(super) copies: IndexMap<Local, Local>,
     pub(super) lens: IndexMap<Local, Local>,
     pub(super) below: IndexSet<(Local, Term, bool)>,
+    /// `x` below a slice's length wherever the slice holds more than `c`
+    /// items, `(x, slice, c)`: where a path that knew `x` below it joins
+    /// one that knew `x` at most `c`, `best = 0` before a loop and
+    /// `best = index` in it (#1814).
+    pub(super) below_past: IndexSet<(Local, Local, i128)>,
     pub(super) least: IndexMap<Local, i128>,
     pub(super) empties: IndexMap<Local, Local>,
     /// A `for` loop's range of integers, by the local holding it, a `&mut`
@@ -173,6 +178,7 @@ impl State {
             copies: both(&self.copies, &other.copies),
             lens: both(&self.lens, &other.lens),
             below: self.below_joined(other),
+            below_past: self.below_past_joined(other),
             least,
             empties: both(&self.empties, &other.empties),
             ranges,
@@ -214,6 +220,55 @@ impl State {
         joined
     }
 
+    /// Each guarded relation `below_past` keeps at a join: `x` strictly
+    /// below a slice's length on one way and at most `c` on the other, or
+    /// guarded so on one way and so or below on the other, the larger `c`.
+    pub(super) fn below_past_joined(&self, other: &State) -> IndexSet<(Local, Local, i128)> {
+        let mut joined: IndexMap<(Local, Local), i128> = IndexMap::default();
+        let mut keep = |x: Local, slice: Local, c: i128| {
+            let at = joined.entry((x, slice)).or_insert(c);
+            *at = (*at).max(c);
+        };
+        for (one, two) in [(self, other), (other, self)] {
+            let most = |x: Local| two.intervals[x].filter(|i| 0 <= i.lo).map(|i| i.hi);
+            for &(x, y, strict) in &one.below {
+                if let (Term::Len(slice), true) = (y, strict)
+                    && !two.below.contains(&(x, y, true))
+                {
+                    // Guarded on the other way, its guard; else its most.
+                    let guarded = two
+                        .below_past
+                        .iter()
+                        .find(|&&(z, s, _)| (z, s) == (x, slice))
+                        .map(|&(_, _, c)| c);
+                    if let Some(c) = guarded.or_else(|| most(x)) {
+                        keep(x, slice, c);
+                    }
+                }
+            }
+            for &(x, slice, c) in &one.below_past {
+                if two.below.contains(&(x, Term::Len(slice), true)) {
+                    keep(x, slice, c);
+                } else if let Some(&(_, _, there)) = two.below_past.iter().find(|&&(y, s, _)| (y, s) == (x, slice)) {
+                    keep(x, slice, c.max(there));
+                } else if let Some(most) = most(x) {
+                    keep(x, slice, c.max(most));
+                }
+            }
+        }
+        joined.into_iter().map(|((x, slice), c)| (x, slice, c)).collect()
+    }
+
+    /// The least a slice's length is: what's known of it, or one past the
+    /// least of what's below it.
+    pub(super) fn least_of(&self, slice: Local) -> i128 {
+        let below = (self.below.iter())
+            .filter(|&&(_, y, _)| y == Term::Len(slice))
+            .filter_map(|&(x, _, strict)| Some(self.intervals[x]?.lo + i128::from(strict)))
+            .max();
+        self.least.get(&slice).copied().unwrap_or(0).max(below.unwrap_or(0))
+    }
+
     /// Whether `x` is below `y`, strictly, as their intervals alone say:
     /// `x`'s most below, or at most, `y`'s least.
     pub(super) fn below_by_intervals(&self, x: Local, y: Term) -> Option<bool> {
@@ -240,6 +295,7 @@ impl State {
         self.lens.retain(|&holder, &mut of| holder != local && of != local);
         self.below
             .retain(|&(x, y, _)| x != local && y != Term::Len(local) && y != Term::Int(local));
+        self.below_past.retain(|&(x, slice, _)| x != local && slice != local);
         self.least.shift_remove(&local);
         self.empties.retain(|&holder, &mut of| holder != local && of != local);
         self.ranges.shift_remove(&local);

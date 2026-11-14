@@ -285,6 +285,7 @@ impl<'tcx> Walk<'_, 'tcx> {
             copies: IndexMap::default(),
             lens: IndexMap::default(),
             below,
+            below_past: IndexSet::default(),
             least: IndexMap::default(),
             empties: IndexMap::default(),
             ranges: IndexMap::default(),

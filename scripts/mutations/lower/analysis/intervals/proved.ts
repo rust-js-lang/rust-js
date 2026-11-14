@@ -62,4 +62,12 @@ export const mutations: Mutation[] = [
     replace: "        if start.is_none() && end.is_none() {\n            return false;\n",
     tests: ["test/intervals-shadow.test.ts", "-t", "a range's bounds"],
   },
+  {
+    name: "below-past-unguarded",
+    breaks: "a guarded relation is taken without its guard, so `candidates[best]` of a `best` 1 before a loop is taken in bounds, though a slice of one item doesn't hold it, a mir-only-bounds line",
+    file,
+    find: "                || (state.below_past.iter()).any(|&(x, s, c)| (x, s) == (i, slice) && state.least_of(slice) > c)\n",
+    replace: "                || (state.below_past.iter()).any(|&(x, s, c)| (x, s) == (i, slice) && (true || state.least_of(slice) > c))\n",
+    tests: ["test/intervals-shadow.test.ts", "-t", "0 before it"],
+  },
 ];
