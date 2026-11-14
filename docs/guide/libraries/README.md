@@ -331,7 +331,10 @@ How WebIDL maps to Rust, one rule for each:
   A function's parameter TypeScript types `T | null` is an `Option`
   too, `None` being `null`: `parent.insert_before(child, None)` is
   `parent.insertBefore(child, null)`, and `element.set_attribute_ns(None,
-  name, value)` of no namespace.
+  name, value)` of no namespace. A promise whose payload may be `null`,
+  WebIDL's `Promise<GPUAdapter?>`, is a `Promise` of an `Option`, through
+  a typedef too: `gpu.request_adapter(None).await.is_some()`
+  ([ADR 0030](../../decisions/0030-option.md), amended, #1768).
 - **A value the DOM converts takes any value**, `impl IntoUnknown`,
   whatever TypeScript's `string` or `number` says, as the DOM's
   `ToString` and `ToNumber` take one: `node.set_attribute("tabindex", 3)`,

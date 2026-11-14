@@ -44604,7 +44604,7 @@ pub mod cookie_store {
 impl CookieStore {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CookieStore/get)
     #[cfg_attr(rust_js, rust_js::link_name = "get")]
-    pub fn get(&self, options: Option<CookieStoreGetOptions>) -> Promise<CookieListItem> {
+    pub fn get(&self, options: Option<CookieStoreGetOptions>) -> Promise<Option<CookieListItem>> {
         unreachable!()
     }
 
@@ -44785,7 +44785,7 @@ impl Eq for CredentialsContainer {}
 impl CredentialsContainer {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CredentialsContainer/get)
     #[cfg_attr(rust_js, rust_js::link_name = "get")]
-    pub fn get(&self, options: Option<CredentialRequestOptions<'_>>) -> Promise<&'static Credential> {
+    pub fn get(&self, options: Option<CredentialRequestOptions<'_>>) -> Promise<Option<&'static Credential>> {
         unreachable!()
     }
 
@@ -44797,7 +44797,7 @@ impl CredentialsContainer {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CredentialsContainer/create)
     #[cfg_attr(rust_js, rust_js::link_name = "create")]
-    pub fn create(&self, options: Option<CredentialCreationOptions<'_>>) -> Promise<&'static Credential> {
+    pub fn create(&self, options: Option<CredentialCreationOptions<'_>>) -> Promise<Option<&'static Credential>> {
         unreachable!()
     }
 
@@ -48687,7 +48687,7 @@ impl FileSystemDirectoryHandle {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FileSystemDirectoryHandle/resolve)
     #[cfg_attr(rust_js, rust_js::link_name = "resolve")]
-    pub fn resolve(&self, possible_descendant: &FileSystemHandle) -> Promise<Vec<String>> {
+    pub fn resolve(&self, possible_descendant: &FileSystemHandle) -> Promise<Option<Vec<String>>> {
         unreachable!()
     }
 
@@ -49417,7 +49417,7 @@ impl Eq for GPU {}
 impl GPU {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPU/requestAdapter)
     #[cfg_attr(rust_js, rust_js::link_name = "requestAdapter")]
-    pub fn request_adapter(&self, options: Option<GPURequestAdapterOptions<'_>>) -> Promise<&'static GPUAdapter> {
+    pub fn request_adapter(&self, options: Option<GPURequestAdapterOptions<'_>>) -> Promise<Option<&'static GPUAdapter>> {
         unreachable!()
     }
 
@@ -50245,7 +50245,7 @@ impl GPUDevice {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUDevice/popErrorScope)
     #[cfg_attr(rust_js, rust_js::link_name = "popErrorScope")]
-    pub fn pop_error_scope(&self) -> Promise<&'static GPUError> {
+    pub fn pop_error_scope(&self) -> Promise<Option<&'static GPUError>> {
         unreachable!()
     }
 
@@ -63795,7 +63795,7 @@ impl PushManager {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PushManager/getSubscription)
     #[cfg_attr(rust_js, rust_js::link_name = "getSubscription")]
-    pub fn get_subscription(&self) -> Promise<&'static PushSubscription> {
+    pub fn get_subscription(&self) -> Promise<Option<&'static PushSubscription>> {
         unreachable!()
     }
 

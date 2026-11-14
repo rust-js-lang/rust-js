@@ -154,3 +154,21 @@ a second form of `expect` for a module's load check. Case N
 ([0262](0262-when-rust-and-js-disagree.md)): both throw `new Error` of
 the same message as the module loads, and the internals, an object, are
 falsy only where they're absent.
+
+## Amendment: a promise's payload that may be `null` is an `Option` (2026-11-14, #1768)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change; Rust's
+behavior is preserved.
+
+The webapi generator made a function's result an `Option` where WebIDL's
+type may be `null`, but not a promise's payload: `Promise<GPUAdapter?>`
+was `Promise<&'static GPUAdapter>`, so a program couldn't ask whether the
+browser gave an adapter, and used one that's `null` as one that's there.
+A payload's nullability is the result's own rule, `nullableType`, of the
+type or its typedef, asked by both: `Promise<Option<&'static GPUAdapter>>`,
+and of the seven functions webref's IDL gives one, `pop_error_scope`'s
+`GPUError?`, the credentials', the cookie store's, a push subscription's
+and `FileSystemHandle::resolve`'s `sequence<USVString>?`. Awaited, its
+`None` is the `null` JS gives, read as any `Option` is. The generator has
+no mutation list; `test/webapi-promises.test.ts` holds the generated
+signature and both answers.

@@ -856,15 +856,27 @@ function jsGives(type: string): string {
   return type.replace(/&(?!')/g, "&'static ").replace(/<'_>/g, "<'static>");
 }
 
+/** Whether `t` may be `null`, WebIDL's `T?`, of itself or through its
+ * typedef, `GPUError?` or a typedef of one: the one answer of a result's
+ * nullability, a function's and a promise's payload's (ADR 0030, #1768). */
+function nullableType(t: IdlType): boolean {
+  return !!(t.nullable || typedefs.get(t.idlType as string)?.nullable);
+}
+
 /** The Rust type for a (non-union) WebIDL type, or why there isn't one. */
 function rustType(t: IdlType, at: Position): string | { skip: string } {
   if (at === "result" && isUnion(t)) return resultUnion(t);
   if (t.union) return { skip: "union" };
   // A promise a function returns is `.await`ed in Rust (ADR 0029). One it
   // takes is passed as it is: `compile_streaming(window.fetch(..))`.
+  // Its payload `null` where it may be, an `Option`: `Promise<GPUAdapter?>`
+  // is `Promise<Option<&'static GPUAdapter>>`, its `None` the adapter none
+  // gave (#1768).
   if (t.generic === "Promise") {
-    const inner = rustType((t.idlType as IdlType[])[0], "result");
-    return typeof inner === "string" ? `Promise<${inner}>` : inner;
+    const payload = (t.idlType as IdlType[])[0];
+    const inner = rustType(payload, "result");
+    if (typeof inner !== "string") return inner;
+    return `Promise<${nullableType(payload) && !inner.startsWith("Option<") ? `Option<${inner}>` : inner}>`;
   }
   // A sequence a function takes is a slice, a JS array of its items as
   // they are (ADR 0219): `new Blob([text, "!"])` of `&[BlobPart]`.
@@ -1616,8 +1628,7 @@ function functionsOf(declared: Interface): Fn[] {
   const self = i.isNamespace ? [] : [`this: &${typeName(i.name)}`];
   const member = (name: string) => (i.isNamespace && !i.isGlobal ? `${i.name}.${name}` : name);
   // A result that may be `null` is an `Option`: `None` in Rust (ADR 0030).
-  const nullable = (t: IdlType) => t.nullable || typedefs.get(t.idlType as string)?.nullable;
-  const orNull = (rust: string, t: IdlType) => (nullable(t) ? `Option<${rust}>` : rust);
+  const orNull = (rust: string, t: IdlType) => (nullableType(t) ? `Option<${rust}>` : rust);
   // What an `Option` result's `None` is to JS, as WebIDL and TypeScript
   // type it: only `null` of a nullable type, `T | null`, which
   // `#[rust_js::nullable]` says; only `undefined` of a union with
@@ -1627,7 +1638,7 @@ function functionsOf(declared: Interface): Fn[] {
   const noneOf = (t: IdlType, result: string): Fn["none"] => {
     if (!result.startsWith("Option<")) return undefined;
     const members = isUnion(t) ? flatMembers(t) : [t];
-    const nulls = nullable(t) || members.some((m) => m.nullable);
+    const nulls = nullableType(t) || members.some((m) => m.nullable);
     const undefineds = members.some((m) => m.idlType === "undefined");
     return nulls && !undefineds ? "null" : undefineds && !nulls ? "undefined" : undefined;
   };
@@ -1662,7 +1673,7 @@ function functionsOf(declared: Interface): Fn[] {
       }
       names.push(snake(a.name));
       types.push(type);
-      if (nullable(a.idlType) && !isUnion(a.idlType) && type !== ANY && !type.startsWith("Option<")) nulls.push(snake(a.name));
+      if (nullableType(a.idlType) && !isUnion(a.idlType) && type !== ANY && !type.startsWith("Option<")) nulls.push(snake(a.name));
     }
     return { names, types, nulls };
   };
@@ -1856,7 +1867,7 @@ function functionsOf(declared: Interface): Fn[] {
         // One that takes `null`, TypeScript's `T | null`, takes a value or
         // `None`, `null`: `set_text_content("x")` and `set_text_content(None)`
         // (ADR 0275, amended).
-        const takesNull = nullable(m.idlType!) && !isUnion(m.idlType!) && !value.startsWith("&[");
+        const takesNull = nullableType(m.idlType!) && !isUnion(m.idlType!) && !value.startsWith("&[");
         // A reference it takes is of a lifetime it names, as `impl Trait`
         // can't elide one: `impl Into<Option<&'a str>>`.
         const borrows = value.startsWith("&");
