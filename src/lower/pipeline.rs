@@ -322,8 +322,8 @@ pub fn lower_crate<'tcx>(
     // What each function's lowering found of drops, gathered in the order
     // they're lowered, lowered or not, then resolved (ADRs 0190, 0300).
     let mut drops_observed = super::drops::DropsObserved::default();
-    let ref_cells = std::cell::OnceCell::new();
-    let own_callbacks = std::cell::OnceCell::new();
+    let ref_cells = super::crate_facts::Lazy::default();
+    let no_callbacks = IndexSet::default();
     // What runs where its module loads, which reads another module's
     // `const`s as their values where that module may load after its own
     // (`load_cycles`). A thread-local made where it's first used runs
@@ -405,7 +405,7 @@ pub fn lower_crate<'tcx>(
         prints: &prints,
         tidy_until,
         ref_cells: &ref_cells,
-        own_callbacks: &own_callbacks,
+        own_callbacks: &no_callbacks,
         quiet_locals: &quiet_locals,
         quiet_library_keys: &quiet_library_keys,
         lazy_locals: &lazy_locals,
@@ -416,6 +416,12 @@ pub fn lower_crate<'tcx>(
         struct_literals: &struct_literals,
         constructed: &constructed,
         nulled_params: &nulled_params,
+    };
+    // Its own callbacks' parameters, found of the facts above (ADR 1148).
+    let own_callbacks = contexts::own_callbacks(tcx, &crate_facts, &no_body);
+    let crate_facts = CrateFacts {
+        own_callbacks: &own_callbacks,
+        ..crate_facts
     };
     // What a library's manifest says of its writers (ADR 0137).
     let writers_take_options = crate_facts.writers_take_options();

@@ -138,14 +138,15 @@ pub(in crate::lower) struct CrateFacts<'a, 'tcx> {
     /// The pass tidy stops after, `--tidy-until`'s (ADR 0659).
     pub(in crate::lower) tidy_until: Option<&'a str>,
     /// The `RefCell`s a field holds as their value, never counted (ADR
-    /// 0362), and those whose borrows are counted (ADR 0863), found once
-    /// the first is asked of.
-    pub(in crate::lower) ref_cells: &'a std::cell::OnceCell<drops::RefCells<'tcx>>,
+    /// 0362), and those whose borrows are counted (ADR 0863): a `Lazy`, as
+    /// finding them is about 2% of a compile, found the first time a body
+    /// asks.
+    pub(in crate::lower) ref_cells: &'a Lazy<drops::RefCells<'tcx>>,
     /// The parameters of `dyn Fn` each of the crate's calls fills with a
     /// function that reads no `this` and none of what it's given more,
-    /// found once the first is asked of (`passed_on`'s `own_callbacks`,
-    /// rd616).
-    pub(in crate::lower) own_callbacks: &'a std::cell::OnceCell<IndexSet<rustc_hir::HirId>>,
+    /// found before any body (`contexts::own_callbacks`, rd616): under 0.1%
+    /// of a compile.
+    pub(in crate::lower) own_callbacks: &'a IndexSet<rustc_hir::HirId>,
     /// The thread-locals each `with_borrow` of which can't ask whether it's
     /// borrowed, their module's variables (ADRs 0270, 0580).
     pub(in crate::lower) quiet_locals: &'a IndexSet<rustc_span::def_id::LocalDefId>,
@@ -183,6 +184,31 @@ impl CrateFacts<'_, '_> {
     /// arguments, whether to be pretty or a placeholder's (ADRs 0058, 0137)?
     pub(in crate::lower) fn writers_take_options(&self) -> bool {
         self.pretty_debug || self.format_options
+    }
+}
+
+/// A fact of the crate before any body that's found only the first time a
+/// body asks, as finding it eagerly costs more than 1% of a compile (ADR
+/// 1148): found of the crate's facts alone, never of what a body found, so
+/// it's the same whichever body asks first. The one memo `CrateFacts` may
+/// hold; test/architecture-observations.test.ts holds who finds each.
+pub(in crate::lower) struct Lazy<T>(std::cell::OnceCell<T>);
+
+impl<T> Default for Lazy<T> {
+    fn default() -> Self {
+        Lazy(std::cell::OnceCell::new())
+    }
+}
+
+impl<T> Lazy<T> {
+    /// It, found by `find` the first time it's asked.
+    pub(in crate::lower) fn get_or_find(&self, find: impl FnOnce() -> T) -> &T {
+        self.0.get_or_init(find)
+    }
+
+    /// It, where a body asked it.
+    pub(in crate::lower) fn get(&self) -> Option<&T> {
+        self.0.get()
     }
 }
 

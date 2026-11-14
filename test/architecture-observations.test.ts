@@ -18,8 +18,9 @@ const lowering = readdirSync(join(root, "src", "lower"), { recursive: true, enco
   .sort();
 
 // Each field of `CrateFacts` a body may change, a cell: a list that only
-// shrinks, M2 moving each into what a body gives back or `Settled`.
-const cellsLeft = ["ref_cells", "own_callbacks"];
+// shrinks, M2 moving each into what a body gives back or `Settled`, now
+// empty. A fact found the first time a body asks is a `Lazy`, below.
+const cellsLeft: string[] = [];
 
 test("the crate's facts are read alike by each body: no cell but those still to move", () => {
   const source = read("src/lower/crate_facts.rs");
@@ -27,6 +28,17 @@ test("the crate's facts are read alike by each body: no cell but those still to 
   const struct = source.slice(start, source.indexOf("\n}\n", start));
   const cells = [...struct.matchAll(/pub\(in crate::lower\) (\w+): [^\n]*\b(?:Cell|RefCell|OnceCell)</g)].map((m) => m[1]);
   expect(cells).toEqual(cellsLeft);
+});
+
+// A `Lazy` is found of the crate's facts alone, its one finder each: the
+// `RefCell`s' (drops/ref_cells.rs), at about 2% of a compile (ADR 1148).
+test("each of the crate's facts a body finds the first time it asks is a Lazy, of one finder", () => {
+  const finders = lowering.filter((file) => /\.get_or_find\(/.test(read(file)));
+  expect(finders).toEqual(["src/lower/drops/ref_cells.rs"]);
+  const source = read("src/lower/crate_facts.rs");
+  const start = source.indexOf("pub(in crate::lower) struct CrateFacts");
+  const struct = source.slice(start, source.indexOf("\n}\n", start));
+  expect([...struct.matchAll(/pub\(in crate::lower\) (\w+): &'a Lazy</g)].map((m) => m[1])).toEqual(["ref_cells"]);
 });
 
 test("what the bodies lowered before settled is the pipeline's to write, a body's to read", () => {

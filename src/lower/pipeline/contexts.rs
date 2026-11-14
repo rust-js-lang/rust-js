@@ -17,6 +17,31 @@ pub(super) struct Shared<'a, 'tcx> {
     pub(super) no_facts: &'a BodyFacts<'tcx>,
 }
 
+/// The parameters each of the crate's calls fills with its own callback
+/// (`FnCx::find_own_callbacks`, rd616), found of `krate`'s facts before any
+/// body, in a context of the crate's first function, as a fact of the crate
+/// (ADR 1148): none where it has none.
+pub(super) fn own_callbacks<'tcx>(
+    tcx: ty::TyCtxt<'tcx>,
+    krate: &CrateFacts<'_, 'tcx>,
+    no_body: &Thir<'tcx>,
+) -> IndexSet<rustc_hir::HirId> {
+    use rustc_hir::def::DefKind;
+    let Some(function) = (tcx.hir_crate_items(()).definitions()).find(|&id| tcx.def_kind(id) == DefKind::Fn) else {
+        return IndexSet::default();
+    };
+    let no_facts = BodyFacts::default();
+    let shared = Shared {
+        tcx,
+        krate,
+        no_body,
+        no_facts: &no_facts,
+    };
+    let (settled, names): (Settled, IndexSet<String>) = Default::default();
+    let module = tcx.parent_module_from_def_id(function);
+    item_cx((&shared, &settled), function.to_def_id(), (module, &names)).find_own_callbacks()
+}
+
 /// The context of an item, `def_id`, as no body of it: what its signature
 /// is, or a library's contract's facts, with nothing named in it yet.
 pub(super) fn item_cx<'a, 'tcx>(

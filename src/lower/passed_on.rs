@@ -998,15 +998,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// 0577), so what each call gives it is all it's ever given, each a
     /// `dyn Fn`, as it is or through a reference, a `Box`, an `Rc` or an
     /// `Arc`, a binding never changed, that each call fills with what
-    /// `own_callback` says is one. Found the first time it's asked, of every
-    /// call at once: what a call gives may be another such parameter, which
-    /// is one while each of its own calls gives one, as nothing else fills
-    /// it.
+    /// `own_callback` says is one. Found before any body
+    /// (`contexts::own_callbacks`), of every call at once: what a call gives
+    /// may be another such parameter, which is one while each of its own
+    /// calls gives one, as nothing else fills it.
     fn own_callbacks(&self) -> &'a IndexSet<rustc_hir::HirId> {
-        self.krate.own_callbacks.get_or_init(|| self.find_own_callbacks())
+        self.krate.own_callbacks
     }
 
-    fn find_own_callbacks(&self) -> IndexSet<rustc_hir::HirId> {
+    /// The parameters `own_callbacks` are, found of the crate's facts.
+    pub(in crate::lower) fn find_own_callbacks(&self) -> IndexSet<rustc_hir::HirId> {
         use rustc_hir as hir;
         let tcx = self.tcx;
         let callback = |ty: ty::Ty<'tcx>| {

@@ -361,9 +361,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// What the crate does with its `RefCell`s (`RefCells`), found the first
-    /// time it's asked.
+    /// time it's asked (`Lazy`, ADR 1148).
     pub(in crate::lower) fn ref_cells(&self) -> &'a RefCells<'tcx> {
-        self.krate.ref_cells.get_or_init(|| self.find_ref_cells())
+        self.krate.ref_cells.get_or_find(|| self.find_ref_cells())
     }
 
     /// Whether `field`, a struct's, holds its `RefCell`'s value as the

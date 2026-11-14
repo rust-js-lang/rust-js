@@ -109,3 +109,25 @@ M3 (one call graph) and M4 (each fact declared `Local`, `Summary` or
    nulled-seen-unsettled is new, and six are retargeted, each caught. The
    check of a body's own found returns saves a lowering again, and changes
    no output, so no mutation holds it.
+6. `ref_cells` and `own_callbacks`, the two `OnceCell`s, are each found of
+   the crate's facts alone, never of what a body found. Measured with the
+   release compiler on the Mac, each found eagerly in a context of the
+   crate before the first body, over the corpus's 120 largest programs in
+   4 parts, 3 rounds, at a load of 6 to 10 (`uptime`, 1 min), no quiet
+   machine to be had:
+
+   | Fact | Of the compile |
+   |---|---|
+   | `own_callbacks` | 3.3 to 3.5 ms of 12.9 to 16.0 s, 0.02% to 0.03% |
+   | `ref_cells` | 257 to 267 ms, 1.6% to 2.1%; 3.6% to 3.9% of the worst programs, `io_buf_reader`'s, `owner_handle_quiet`'s |
+
+   So `own_callbacks`, under 1%, is a fact found before any body
+   (`contexts::own_callbacks`, in a context of the crate's first
+   function). `CrateFacts` is made once without it, then again with it.
+   `ref_cells`, over 1%, is a declared memo, `crate_facts::Lazy`: found the
+   first time a body asks, the one memo `CrateFacts` may hold.
+   test/architecture-observations.test.ts holds that `CrateFacts` has no
+   cell left and one `Lazy`, `ref_cells`, found only by
+   drops/ref_cells.rs. Output unchanged. Mutation own-callback-params-none
+   is retargeted onto its finder, in `lower/pipeline/contexts.ts`, and
+   caught.
