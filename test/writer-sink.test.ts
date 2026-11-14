@@ -538,6 +538,15 @@ test("a library's type nothing formats, held by a type written through generic c
   piecewiseChain(piecewisePairs, "librarys_unformatted_type_held_by_a_consumers_type");
 }, underLoad(300_000));
 
+// A library's formatting impls of a reference to, a `Box` of and a
+// `Pin<Box<..>>` of its own types are of those types (`formatted_adt`):
+// each is published, so its contract lists it, and a consumer writes it a
+// piece at a time, directly, through generic code and a `dyn` (#1798).
+test("a library's formatting impls of a reference, a Box or a Pin of its type write a piece at a time", () => {
+  const out = piecewiseChain(piecewisePairs, "librarys_formatting_impl_of_a_reference_box_or_pin");
+  expect(contract(out).written_into.length).toBe(3);
+}, underLoad(300_000));
+
 test("serde_json's error and an OS error write their Display a piece at a time, as their crates do", async () => {
   expect(await recorded((f, std) => std.$writeJsonError(f, { message: "expected value", line: 0, column: 0 }))).toEqual(["sexpected value"]);
   expect(await recorded((f, std) => std.$writeJsonError(f, { message: "EOF", line: 2, column: 15 }))).toEqual([

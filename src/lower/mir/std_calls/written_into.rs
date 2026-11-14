@@ -377,7 +377,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             WriteCall::Display => Std::FmtDisplay,
                             _ => Std::FmtDebug,
                         };
-                        let ty = generic_args.type_at(0).peel_refs();
+                        let ty = self.shown_ref_type(kind, generic_args.type_at(0));
                         let value = given.into_iter().next().expect("a `fmt`'s value");
                         // An `Arguments`' `Display`, `Display::fmt(&args, f)`,
                         // std's `fmt::write` of it into the `Formatter`'s

@@ -559,9 +559,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// The type `ty` shows: what a `Box` or an `Rc` holds, as they are it in
     /// JS, and `ty` itself otherwise.
-    pub(super) fn shown_type(&self, ty: Ty<'tcx>) -> Ty<'tcx> {
+    pub(super) fn shown_type(&self, ty: Ty<'tcx>, kind: Std) -> Ty<'tcx> {
         match ty.kind() {
-            ty::Adt(_, args) if self.shows_inside(ty) => args.types().next().expect("what it holds").peel_refs(),
+            ty::Adt(_, args) if self.shows_inside(ty) && !self.formats_itself(kind, ty) => {
+                args.types().next().expect("what it holds").peel_refs()
+            }
             _ => ty,
         }
     }

@@ -384,8 +384,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// shows, compares or orders one reads it: a `&` is the value (ADR 0023),
     /// a `&mut` to a value JS can't change in place a cell, whose `value` it
     /// is (ADR 0099), or the place of a `Handle` on one.
-    pub(in crate::lower) fn through_refs(&self, mut value: Expr, mut ty: Ty<'tcx>) -> (Expr, Ty<'tcx>) {
-        while let ty::Ref(_, inner, mutability) = *ty.kind() {
+    pub(in crate::lower) fn through_refs(&self, value: Expr, ty: Ty<'tcx>) -> (Expr, Ty<'tcx>) {
+        self.through_refs_until(value, ty, &|_| false)
+    }
+
+    /// `through_refs`, not past a reference `stop` says, one with a
+    /// formatting impl of its own (`shown_through`, #1798).
+    pub(in crate::lower) fn through_refs_until(
+        &self,
+        mut value: Expr,
+        mut ty: Ty<'tcx>,
+        stop: &dyn Fn(Ty<'tcx>) -> bool,
+    ) -> (Expr, Ty<'tcx>) {
+        while let ty::Ref(_, inner, mutability) = *ty.kind()
+            && !stop(ty)
+        {
             if mutability == Mutability::Mut && self.mut_ref_form(inner).is_cell() {
                 value = match value.kind {
                     js::ExprKind::Handle(place, _) => *place,

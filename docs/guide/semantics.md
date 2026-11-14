@@ -373,7 +373,10 @@ what's held before it, as a browser's console takes whole lines
   carries where a write into a writer reaches its type, or where its
   writer may print; else, formatted plainly, by its text (#1712). std's
   iterator adapters' `Debug`, `Fuse { iter: Some(..) }`, is written so by
-  `@rust-js/std`'s compiled bodies.
+  `@rust-js/std`'s compiled bodies. A formatting impl of a reference to, a
+  `Box` of or a `Pin<Box<..>>` of your own type, `impl Display for
+  &ByRef`, is that type's: `{}` of a `&ByRef` calls it, as Rust does,
+  and writes into a writer a piece at a time by it too (#1798).
 - **Generic code that writes to any writer, a `W: fmt::Write`,** is given
   a `String`, a `Formatter` or the crate's own writer in a box, with a
   dictionary of its `write_str`, `write_char` and `write_fmt`

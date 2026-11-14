@@ -57,7 +57,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::FmtDisplay => self.display_handed_on(value, ty),
             _ => (value, ty),
         };
-        let ty = ty.peel_refs();
+        let ty = self.shown_ref_type(kind, ty);
         let int = shown_num(ty).filter(|num| !num.float());
         let float = shown_num(ty).filter(|num| num.float());
         // `{:x?}` of an integer is its `{:x}` (ADR 0559); of another leaf,
@@ -195,7 +195,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
     ) -> R<Option<Vec<SinkWrite>>> {
         // What it points at, read as `{}` reads it (#1755).
-        let (value, ty) = self.shown_through(value, ty);
+        let (value, ty) = self.shown_through(value, ty, kind);
         if let Some(write) = self.written_by_dictionary(value.clone(), (kind, ty), options.clone(), span)? {
             return Ok(Some(vec![write]));
         }
@@ -299,21 +299,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let Some(fmt_trait) = self.fmt_trait_of(kind) else {
             return false;
         };
-        let Some(adt) = ty.ty_adt_def().map(|adt| adt.did()) else {
+        let fmt = crate::lower::recognition::trait_method(self.tcx, fmt_trait, "fmt");
+        let args = self.tcx.mk_args(&[ty.into()]);
+        let Ok(Some(instance)) = self.resolve_self_instance(fmt, args) else {
             return false;
         };
-        // Compiled into `@rust-js/std` for this build: of the plain one, not
-        // a `Cycle`, which the runtime holds (`held_cycle`).
-        let std_framed = |instance: DefId| {
-            crate::lower::recognition::is_compiled_std(self.tcx, instance) && self.krate.foreign.lists_fmt_into(adt)
+        // The type its impl is of, `impl Display for &ByRef`'s `ByRef` (#1798).
+        let of_impl = self.tcx.impl_of_assoc(instance.def_id());
+        let Some(adt) = of_impl.and_then(|imp| crate::lower::recognition::formatted_adt(self.tcx, imp)) else {
+            return false;
         };
         if !adt.is_local() && crate::lower::recognition::std_crate(self.tcx, adt.krate).is_none() {
             return false;
         }
-        let fmt = crate::lower::recognition::trait_method(self.tcx, fmt_trait, "fmt");
-        let args = self.tcx.mk_args(&[ty.into()]);
-        matches!(self.resolve_self_instance(fmt, args), Ok(Some(instance))
-            if (instance.def_id().is_local() && self.writes_through_sink(instance.def_id())) || std_framed(instance.def_id()))
+        // Compiled into `@rust-js/std` for this build: of the plain one, not
+        // a `Cycle`, which the runtime holds (`held_cycle`).
+        let std_framed = crate::lower::recognition::is_compiled_std(self.tcx, instance.def_id())
+            && self.krate.foreign.lists_fmt_into(adt);
+        (instance.def_id().is_local() && self.writes_through_sink(instance.def_id())) || std_framed
     }
 
     /// `ty`'s writer of `kind`, such a writer, called given `value` and

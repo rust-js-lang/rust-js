@@ -12,7 +12,7 @@ use rustc_span::def_id::DefId;
 
 use crate::js::{Expr, Op, Prop, Stmt, StmtKind};
 use crate::lower::recognition::{rc_pointee, weak_pointee};
-use crate::lower::{FnCx, R};
+use crate::lower::{FnCx, R, Std};
 
 /// How a counted `Rc` of a pointee is held (ADRs 0320, 0520, #1228).
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -433,37 +433,60 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.krate.counted.counts(self.tcx, pointee).then_some(new)
     }
 
-    /// A value as `{}` and `{:?}` show it: through its references (ADR
-    /// 0099), and its counted `Rc`s, guards and pins, `through_boxes`'s.
-    pub(in crate::lower) fn shown_through(&self, value: Expr, ty: Ty<'tcx>) -> (Expr, Ty<'tcx>) {
-        let (value, ty) = self.through_refs(value, ty);
-        self.through_boxes(value, ty)
+    /// A value as `kind`, `{}`'s or `{:?}`'s, shows it: through its
+    /// references (ADR 0099), and its counted `Rc`s, guards and pins,
+    /// `through_boxes_until`'s; not past a layer with an impl of its
+    /// formatting trait of its own, `impl Display for &ByRef`, which shows
+    /// it (#1798).
+    pub(in crate::lower) fn shown_through(&self, value: Expr, ty: Ty<'tcx>, kind: Std) -> (Expr, Ty<'tcx>) {
+        let own = |ty: Ty<'tcx>| self.formats_itself(kind, ty);
+        let (value, ty) = self.through_refs_until(value, ty, &own);
+        self.through_boxes_until(value, ty, &own)
+    }
+
+    /// Whether `ty`, a reference, a `Box` or a `Pin`, has an impl of the
+    /// formatting trait `kind` shows by of its own, not std's that passes it
+    /// on to what it holds (#1798).
+    pub(in crate::lower) fn formats_itself(&self, kind: Std, ty: Ty<'tcx>) -> bool {
+        (self.fmt_trait_of(kind)).is_some_and(|tr| self.recognition().formats_itself(tr, ty))
+    }
+
+    /// `ty` through its references as `kind` shows it, `through_refs_until`'s
+    /// type: not past one with an impl of its own (#1798).
+    pub(in crate::lower) fn shown_ref_type(&self, kind: Std, ty: Ty<'tcx>) -> Ty<'tcx> {
+        match self.fmt_trait_of(kind) {
+            Some(tr) => self.recognition().refs_shown_by(tr, ty),
+            None => ty.peel_refs(),
+        }
+    }
+
+    /// `through_boxes_until`, read only until what's left is `to`: what `AsRef<to>`
+    /// or `Borrow<to>` of a `ty` gives, a `Box<Rc<str>>`'s `Rc<str>` the
+    /// counted `Rc` itself, an `Rc<str>`'s `str` what it points at (#1503,
+    /// #1518).
+    pub(in crate::lower) fn through_boxes_to(&self, value: Expr, ty: Ty<'tcx>, to: Ty<'tcx>) -> Expr {
+        let erased = |ty: Ty<'tcx>| self.tcx.erase_and_anonymize_regions(ty);
+        let to = erased(to.peel_refs());
+        self.through_boxes_until(value, ty, &|ty| erased(ty) == to).0
     }
 
     /// What a counted `Rc` points at, or a guard guards, through any others:
     /// its `value`, as `{}` and `{:?}` show it (ADRs 0320, 0328), and what a
     /// `Pin`'s pointer does (ADR 0329); a `Box`'s or another `Rc`'s, which is
-    /// it in JS (ADR 0023). Any other value is itself.
-    pub(in crate::lower) fn through_boxes(&self, value: Expr, ty: Ty<'tcx>) -> (Expr, Ty<'tcx>) {
-        self.through_boxes_until(value, ty, None)
-    }
-
-    /// `through_boxes`, read only until what's left is `to`: what `AsRef<to>`
-    /// or `Borrow<to>` of a `ty` gives, a `Box<Rc<str>>`'s `Rc<str>` the
-    /// counted `Rc` itself, an `Rc<str>`'s `str` what it points at (#1503,
-    /// #1518).
-    pub(in crate::lower) fn through_boxes_to(&self, value: Expr, ty: Ty<'tcx>, to: Ty<'tcx>) -> Expr {
-        self.through_boxes_until(value, ty, Some(to.peel_refs())).0
-    }
-
-    fn through_boxes_until(&self, mut value: Expr, mut ty: Ty<'tcx>, until: Option<Ty<'tcx>>) -> (Expr, Ty<'tcx>) {
-        let erased = |ty: Ty<'tcx>| self.tcx.erase_and_anonymize_regions(ty);
+    /// it in JS (ADR 0023). Any other value is itself. Not past what `stop`
+    /// says, its references neither.
+    fn through_boxes_until(
+        &self,
+        mut value: Expr,
+        mut ty: Ty<'tcx>,
+        stop: &dyn Fn(Ty<'tcx>) -> bool,
+    ) -> (Expr, Ty<'tcx>) {
         loop {
-            if until.is_some_and(|to| erased(ty) == erased(to)) {
+            if stop(ty) {
                 return (value, ty);
             }
             if let Some(pointer) = self.recognition().pinned(ty) {
-                (value, ty) = self.through_refs(value, pointer);
+                (value, ty) = self.through_refs_until(value, pointer, stop);
                 continue;
             }
             let inside = match ty.kind() {
@@ -471,7 +494,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 ty::Adt(_, args) => match self.counted_rc(ty) {
                     Some(pointee) => pointee,
                     None if self.shows_inside(ty) => {
-                        (value, ty) = self.through_refs(value, args.type_at(0));
+                        (value, ty) = self.through_refs_until(value, args.type_at(0), stop);
                         continue;
                     }
                     None => return (value, ty),

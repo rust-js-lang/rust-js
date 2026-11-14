@@ -506,7 +506,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `&mut` or a `Box` shown is shown as itself, not what it points at, so `{:>6}` of a `Box<dyn Display>` pads its pointer's text, and a `&mut` is a handle read as one",
     file: "src/lower/mir/std_calls.rs",
-    find: "                    _ => this.shown_through(value, ty),\n",
+    find: "                    _ => this.shown_through(value, ty, known),\n",
     replace: "                    _ => (value, ty),\n",
     tests: ["test/corpus.test.ts", "-t", "^(formatted_through_a_box_and_an_impl_display|boxed_mut_ref_shown).rs$"],
     snapshots: true,

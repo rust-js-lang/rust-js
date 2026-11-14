@@ -406,4 +406,12 @@ export const mutations: Mutation[] = [
     replace: "    if false {\n        let functions = ",
     tests: ["test/writer-sink.test.ts", "-t", "names a fn pointer"],
   },
+  {
+    name: "writer-type-not-through-references",
+    breaks: "a writer of a formatting impl of a reference or a `Box` of the crate's type is of no type, so it isn't framed and generic code's write of it throws (#1798)",
+    file: "src/lower/analysis/prints.rs",
+    find: "    let type_of = |writer: DefId| crate::lower::recognition::formatted_adt(tcx, tcx.impl_of_assoc(writer)?);\n    // Each type shown",
+    replace: "    let type_of = |writer: DefId| {\n        Some(tcx.type_of(tcx.impl_of_assoc(writer)?).skip_binder().ty_adt_def()?.did())\n    };\n    // Each type shown",
+    tests: ["test/corpus.test.ts", "-t", "^fmt_of_a_reference_impl_given_a_formatter.rs$"],
+  },
 ];

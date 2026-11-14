@@ -232,16 +232,9 @@ fn written_into_writers<'tcx>(
                 && recognition.formatter_param(body.def_id).is_some()
         })
         .collect();
-    let type_of = |writer: DefId| {
-        let imp = tcx.impl_of_assoc(writer)?;
-        Some(
-            tcx.type_of(imp)
-                .instantiate_identity()
-                .skip_normalization()
-                .ty_adt_def()?
-                .did(),
-        )
-    };
+    // The type a writer's impl is of, `impl Display for &ByRef`'s `ByRef`
+    // (#1798).
+    let type_of = |writer: DefId| crate::lower::recognition::formatted_adt(tcx, tcx.impl_of_assoc(writer)?);
     // Each type shown, and whether it's a writer's, whose own type
     // parameters the types it's shown as give.
     let mut shown: Vec<(ty::Ty<'tcx>, bool)> = (all_bodies.iter())
@@ -492,8 +485,8 @@ fn listed_writers_compiled_here(recognition: &Recognition<'_, '_>) -> Vec<DefId>
             // Not std's, whose writers `@rust-js/std` compiles, never a
             // consumer.
             crate::lower::recognition::std_crate(tcx, imp.krate).is_none()
-                && matches!(tcx.type_of(imp).skip_binder().kind(),
-                ty::Adt(adt, _) if recognition.foreign.lists_fmt_into(adt.did()))
+                && crate::lower::recognition::formatted_adt(tcx, imp)
+                    .is_some_and(|adt| recognition.foreign.lists_fmt_into(adt))
         })
         .flat_map(|imp| tcx.associated_item_def_ids(imp).iter().copied())
         .filter(|&item| {
@@ -612,16 +605,9 @@ fn printing_writers<'tcx>(
             ) && recognition.formatter_param(body.def_id).is_some()
         })
         .collect();
-    let type_of = |writer: DefId| {
-        let imp = tcx.impl_of_assoc(writer)?;
-        Some(
-            tcx.type_of(imp)
-                .instantiate_identity()
-                .skip_normalization()
-                .ty_adt_def()?
-                .did(),
-        )
-    };
+    // The type a writer's impl is of, `impl Display for &ByRef`'s `ByRef`
+    // (#1798).
+    let type_of = |writer: DefId| crate::lower::recognition::formatted_adt(tcx, tcx.impl_of_assoc(writer)?);
     // A library's, for its contract: the types of its writers that may stop
     // part-way, by a panic, were a consumer to catch it (#1608).
     if library {

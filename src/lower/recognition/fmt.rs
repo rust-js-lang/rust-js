@@ -385,6 +385,35 @@ pub(crate) fn is_fmt_trait(tcx: TyCtxt<'_>, id: DefId) -> bool {
         || is_other_fmt_trait(tcx, id)
 }
 
+/// The type the formatting impl `imp` is of, whose writer its writer is:
+/// its self type, through the references, `Box`es and `Pin`s around it,
+/// which the orphan rules let a crate write a foreign trait's impl for
+/// where what they hold is its own, `impl Display for &ByRef` and `impl
+/// Display for Pin<Box<Pinned>>` of `ByRef` and `Pinned` (#1798). Of a
+/// wrapper of a type parameter, std's `impl<T: Display> Display for
+/// Box<T>`, the wrapper; of `&T`, none.
+pub(crate) fn formatted_adt(tcx: TyCtxt<'_>, imp: DefId) -> Option<DefId> {
+    formatted_adt_of(tcx.type_of(imp).instantiate_identity().skip_normalization())
+}
+
+/// `formatted_adt`, of `ty`, a formatting impl's self type: as it's
+/// written, or a type whose impl is its own (`Recognition::formats_itself`),
+/// `&dep::ByRef`'s, whose wrappers are none of std's that pass it on.
+pub(crate) fn formatted_adt_of(mut ty: Ty<'_>) -> Option<DefId> {
+    loop {
+        let inner = match *ty.kind() {
+            ty::Ref(_, inner, _) => inner,
+            ty::Adt(adt, args) if adt.is_fundamental() => args.types().next()?,
+            _ => break,
+        };
+        if !matches!(inner.kind(), ty::Ref(..) | ty::Adt(..)) {
+            break;
+        }
+        ty = inner;
+    }
+    ty.ty_adt_def().map(|adt| adt.did())
+}
+
 /// Is `id` std's formatting, an item of `std::fmt`: a `Formatter`'s
 /// method, a builder's, `Arguments`', `rt::Argument`'s, `format`, a
 /// formatting trait's method (#1496).

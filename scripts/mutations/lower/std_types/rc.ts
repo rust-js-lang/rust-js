@@ -130,9 +130,9 @@ export const mutations: Mutation[] = [
     breaks:
       '`println!("{y}")` of a `&mut` to a number prints its cell, `[object Object]`, not what it points at',
     file: "src/lower/std_types/rc.rs",
-    find: "        let (value, ty) = self.through_refs(value, ty);\n        self.through_boxes(value, ty)\n",
+    find: "        let (value, ty) = self.through_refs_until(value, ty, &own);\n        self.through_boxes_until(value, ty, &own)\n",
     replace:
-      "        let ty = ty.peel_refs();\n        self.through_boxes(value, ty)\n",
+      "        let ty = ty.peel_refs();\n        self.through_boxes_until(value, ty, &own)\n",
     tests: ["test/corpus.test.ts", "-t", "mut_ref_local"],
   },
   {
@@ -270,12 +270,20 @@ export const mutations: Mutation[] = [
     name: "borrowed-past-its-target",
     breaks: "generic code's `T: AsRef<Rc<str>>` of a `Box<Rc<str>>` reads through the counted `Rc` it's asked as to its text, so `Rc::strong_count(t.as_ref())` is undefined (#1518)",
     file: "src/lower/std_types/rc.rs",
-    find: "            if until.is_some_and(|to| erased(ty) == erased(to)) {\n",
-    replace: "            if false && until.is_some_and(|to| erased(ty) == erased(to)) {\n",
+    find: "        self.through_boxes_until(value, ty, &|ty| erased(ty) == to).0\n",
+    replace: "        self.through_boxes_until(value, ty, &|_| false).0\n",
     tests: [
       "test/corpus.test.ts",
       "-t",
       "^generic_borrow_of_a_counted_rc.rs$"
     ]
+  },
+  {
+    name: "shown-through-past-own-impl",
+    breaks: "a value is shown through a reference or a `Box` with a formatting impl of its own, as std's would show it, so `{}` of a `&ByRef` is refused (#1798)",
+    file: "src/lower/std_types/rc.rs",
+    find: "        let own = |ty: Ty<'tcx>| self.formats_itself(kind, ty);\n",
+    replace: "        let own = |_: Ty<'tcx>| false;\n",
+    tests: ["test/corpus.test.ts", "-t", "^display_impl_of_a_reference_box_or_pin.rs$"],
   },
 ];

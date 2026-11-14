@@ -184,7 +184,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if num.is_some_and(|n| !n.float()) {
                 return self.format_value(value, (Std::FmtRadix(radix), ty), leaf, (width, precision), span);
             }
-            if self.is_debug_leaf(self.shown_type(ty)) {
+            if self.is_debug_leaf(self.shown_type(ty, kind)) {
                 return self.format_value(value, (kind, ty), leaf, (width, precision), span);
             }
         }
@@ -194,7 +194,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // padded here. Anything else is shown given them: each part of it
         // that's one of those applies them here, and a `fmt` of the crate's
         // own, a generic `T`'s or a `dyn`'s is given them as an object.
-        let shown = self.shown_type(ty);
+        let shown = self.shown_type(ty, kind);
         let leaf = num.is_some() || shown.is_bool() || shown.is_unit() || self.is_string_like(shown);
         // An alignment, a fill or `0` is an option too, which a `fmt` may ask
         // of its `Formatter` though there's no width to pad to.

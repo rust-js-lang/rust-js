@@ -53,7 +53,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let Some(trait_id) = self.fmt_trait_of(kind) else {
             return Ok(None);
         };
-        let ty = ty.peel_refs();
+        let ty = self.shown_ref_type(kind, ty);
         let (dictionary, value) = if let ty::Dynamic(traits, ..) = ty.kind() {
             // A `dyn Debug`'s, its pair's own dictionary, its type's `Debug`
             // (ADR 0060, amended).
@@ -84,11 +84,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let tr = ty::TraitRef::new(self.tcx, trait_id, [ty]);
             let dictionary = self.evidence_for(tr).ok_or_else(|| self.no_evidence(span, tr))?;
             (dictionary, value)
-        } else if (ty.ty_adt_def()).is_some_and(|adt| {
+        } else if self.recognition().formatted_by(trait_id, ty).is_some_and(|adt| {
             // Not std's, whose compiled writer is armed itself
-            // (`writes_into_a_writer`), its dictionary made here of it.
-            self.krate.foreign.lists_fmt_into(adt.did())
-                && crate::lower::recognition::std_crate(self.tcx, adt.did().krate).is_none()
+            // (`writes_into_a_writer`), its dictionary made here of it. Of
+            // the type its impl is of, `impl Display for &dep::ByRef`'s
+            // `ByRef`, where `ty` kept a wrapper of its own (#1798).
+            self.krate.foreign.lists_fmt_into(adt)
+                && crate::lower::recognition::std_crate(self.tcx, adt.krate).is_none()
         }) {
             let tr = ty::TraitRef::new(self.tcx, trait_id, [ty]);
             (self.dictionary(tr, span)?, value)
@@ -116,15 +118,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // its own of, which its contract lists (`listed_writers_compiled_here`),
         // or of `@rust-js/std`'s build, a std type whose writer it compiles
         // and frames, `fuseDebug`'s (#1712).
-        let ty::Adt(adt, _) = tr.self_ty().kind() else {
-            return Ok(None);
-        };
-        let adt = adt.did();
         if !self.is_fmt_trait(tr.def_id) {
             return Ok(None);
         }
         let fmt = crate::lower::recognition::trait_method(self.tcx, tr.def_id, "fmt");
         let instance = self.resolve_self_instance(fmt, tr.args).ok().flatten();
+        // The type its impl is of, `impl Display for &ByRef`'s `ByRef`
+        // (#1798).
+        let of_impl = instance.and_then(|instance| self.tcx.impl_of_assoc(instance.def_id()));
+        let Some(adt) = of_impl.and_then(|imp| crate::lower::recognition::formatted_adt(self.tcx, imp)) else {
+            return Ok(None);
+        };
         let compiled_std = instance.is_some_and(|instance| {
             crate::lower::recognition::is_compiled_std(self.tcx, instance.def_id())
                 && self.writes_through_sink(instance.def_id())
@@ -235,14 +239,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let Some(ty) = args.types().next() else {
             return Ok(None);
         };
-        let shown = ty.peel_refs();
-        // Not the crate's own type's, whose writer is framed itself. What only
-        // a dictionary knows, itertools' `Format`'s `I::Item`'s, is written
-        // by it, `$writeBy`: its text where nothing's armed (#1712).
-        if matches!(shown.kind(), ty::Adt(adt, _) if adt.did().is_local()) {
+        let trait_id = self.tcx.trait_of_assoc(def_id).expect("a formatting trait's `fmt`");
+        let shown = self.recognition().refs_shown_by(trait_id, ty);
+        // Not the crate's own type's, whose writer is framed itself, its
+        // `&ByRef`'s too (#1798). What only a dictionary knows, itertools'
+        // `Format`'s `I::Item`'s, is written by it, `$writeBy`: its text
+        // where nothing's armed (#1712).
+        if (self.recognition().formatted_by(trait_id, shown)).is_some_and(|adt| adt.is_local()) {
             return Ok(None);
         }
-        let trait_id = self.tcx.trait_of_assoc(def_id).expect("a formatting trait's `fmt`");
         let kind = match (self.radix_trait(trait_id), self.exp_trait(trait_id)) {
             (Some(radix), _) => Std::FmtRadix(radix),
             (_, Some(upper)) => Std::FmtExp(upper),

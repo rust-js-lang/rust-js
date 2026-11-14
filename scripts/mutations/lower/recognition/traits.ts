@@ -688,4 +688,28 @@ export const mutations: Mutation[] = [
       "^readers_of_the_crates_own_and_boxed.rs$"
     ]
   },
+  {
+    name: "formats-itself-never",
+    breaks: "no reference or `Box` is taken to have a formatting impl of its own, so `{}` of a `&ByRef` is asked of `ByRef`, which has none, and refused (#1798)",
+    file: "src/lower/recognition/traits.rs",
+    find: "        wrapper && self.is_user_impl(ty::TraitRef::new(self.tcx, tr, [ty]))\n",
+    replace: "        wrapper && false && self.is_user_impl(ty::TraitRef::new(self.tcx, tr, [ty]))\n",
+    tests: ["test/corpus.test.ts", "-t", "^display_impl_of_a_reference_box_or_pin.rs$"],
+  },
+  {
+    name: "refs-shown-past-own-impl",
+    breaks: "a reference with a formatting impl of its own is shown through, as std's would be, so `Display::fmt(&self.0, f)` of a `&ByRef` is refused (#1798)",
+    file: "src/lower/recognition/traits.rs",
+    find: "        while let ty::Ref(_, inner, _) = *ty.kind()\n            && !self.formats_itself(tr, ty)\n",
+    replace: "        while let ty::Ref(_, inner, _) = *ty.kind()\n            && true\n",
+    tests: ["test/corpus.test.ts", "-t", "^fmt_of_a_reference_impl_given_a_formatter.rs$"],
+  },
+  {
+    name: "formatted-by-not-its-impls",
+    breaks: "a library's type whose impl of a reference is its own is asked of the reference's type, which no contract lists, so a consumer's write of it is refused (#1798)",
+    file: "src/lower/recognition/traits.rs",
+    find: "            true => super::formatted_adt_of(ty),\n",
+    replace: "            true => ty.ty_adt_def().map(|adt| adt.did()),\n",
+    tests: ["test/writer-sink.test.ts", "-t", "a library's formatting impls of a reference"],
+  },
 ];

@@ -425,4 +425,12 @@ export const mutations: Mutation[] = [
     replace: "        true => Expr::call_helper(\"$shown\", vec![value]),\n        false => Expr::call_helper(\"$shown\", vec![value]),\n",
     tests: ["test/bindings.test.ts", "-t", "js::shown"],
   },
+  {
+    name: "shown-type-past-own-box",
+    breaks: "`{}` of a `Box` with a `Display` of its own is asked of what it holds, which has none, so it's refused (#1798)",
+    file: "src/lower/display.rs",
+    find: "            ty::Adt(_, args) if self.shows_inside(ty) && !self.formats_itself(kind, ty) => {\n",
+    replace: "            ty::Adt(_, args) if self.shows_inside(ty) => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^display_impl_of_a_reference_box_or_pin.rs$"],
+  },
 ];

@@ -57,8 +57,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // The crate's impl, given this `Formatter`'s options, or std's of a
             // number, padded by them as it runs (ADR 0185).
             WriteCall::OtherFmt => {
-                let ty = generic_args.type_at(0).peel_refs();
                 let trait_id = self.tcx.trait_of_assoc(def_id).expect("a trait's `fmt`");
+                let ty = self.recognition().refs_shown_by(trait_id, generic_args.type_at(0));
                 let std_radix = (!self.has_user_impl(trait_id, ty))
                     .then(|| Num::of(ty).filter(|n| !n.float()).zip(self.radix_trait(trait_id)))
                     .flatten();
@@ -491,8 +491,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `display_string_with`'s text, which may leave the value unread.
     fn display_shown(&mut self, value: Expr, ty: Ty<'tcx>, span: Span, pretty: &Pretty) -> R<Expr> {
-        let (value, ty) = self.shown_through(value, ty);
-        let ty = self.shown_type(ty);
+        let (value, ty) = self.shown_through(value, ty, Std::FmtDisplay);
+        let ty = self.shown_type(ty, Std::FmtDisplay);
         // `js::shown`'s: the text JS's template makes of the value,
         // `${value}`, a string, which the value itself may not be (ADR 0312);
         // an untagged enum's that writes each variant's value, given no

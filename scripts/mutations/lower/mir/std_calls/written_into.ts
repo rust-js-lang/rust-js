@@ -132,4 +132,12 @@ export const mutations: Mutation[] = [
     replace: "                            _ if arguments && false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^writer_sink_arguments_kept.rs$"],
   },
+  {
+    name: "fmt-given-formatter-past-own-reference",
+    breaks: "`Display::fmt(&self.0, f)` of a `&ByRef` with a `Display` of its own, in a framed writer, is asked of `ByRef`, which has none, so it's refused (#1798)",
+    file: "src/lower/mir/std_calls/written_into.rs",
+    find: "                        let ty = self.shown_ref_type(kind, generic_args.type_at(0));\n",
+    replace: "                        let ty = generic_args.type_at(0).peel_refs();\n",
+    tests: ["test/corpus.test.ts", "-t", "^fmt_of_a_reference_impl_given_a_formatter.rs$"],
+  },
 ];

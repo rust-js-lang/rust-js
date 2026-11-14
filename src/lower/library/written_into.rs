@@ -21,18 +21,14 @@ impl Foreign<'_, '_> {
             && self.formats(adt)
     }
 
-    /// Is a formatting impl of `adt`, a library's type, or of a type made of
-    /// it, `impl Display for &Token`: only its own crate can write one, by
+    /// Is a formatting impl of `adt`, a library's type, `impl Display for
+    /// &Token`'s too (`formatted_adt`): only its own crate can write one, by
     /// the orphan rules.
     fn formats(&self, adt: DefId) -> bool {
         let tcx = self.tcx;
         (tcx.trait_impls_in_crate(adt.krate).iter()).any(|&imp| {
             crate::lower::recognition::is_fmt_trait(tcx, tcx.impl_trait_id(imp))
-                && (tcx.type_of(imp).skip_binder().walk()).any(|part| {
-                    part.as_type()
-                        .and_then(|ty| ty.ty_adt_def())
-                        .is_some_and(|of| of.did() == adt)
-                })
+                && crate::lower::recognition::formatted_adt(tcx, imp) == Some(adt)
         })
     }
 

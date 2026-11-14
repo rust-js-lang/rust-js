@@ -214,9 +214,9 @@ export const mutations: Mutation[] = [
     breaks:
       "`{:x?}` of a string inside a composite is refused, where std's `fmt` of it reads no hex flag",
     file: "src/lower/format_spec.rs",
-    find: "            if self.is_debug_leaf(self.shown_type(ty)) {\n                return self.format_value(value, (kind, ty), leaf, (width, precision), span);\n            }\n",
+    find: "            if self.is_debug_leaf(self.shown_type(ty, kind)) {\n                return self.format_value(value, (kind, ty), leaf, (width, precision), span);\n            }\n",
     replace:
-      '            if self.is_debug_leaf(self.shown_type(ty)) {\n                return Err(self.unsupported(span, "`{:x?}` of a string"));\n            }\n',
+      '            if self.is_debug_leaf(self.shown_type(ty, kind)) {\n                return Err(self.unsupported(span, "`{:x?}` of a string"));\n            }\n',
     tests: ["test/corpus.test.ts", "-t", "^debug_hex_composite.rs$"],
   },
   {

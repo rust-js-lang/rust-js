@@ -600,6 +600,31 @@ go.
         the hidden-type pair's contract emptied by hand stops as a bug of
         rust-js's; mutations unformatted-library-type-lacks-fmt-into and
         formatted-library-type-by-another-trait, caught.
+      - Amended later, #1798: the type a formatting impl is of has one
+        owner, `recognition::formatted_adt`: its self type through the
+        references, `Box`es and `Pin`s around it, which the orphan rules let
+        a crate write an impl for where what they hold is its own, `impl
+        Display for &ByRef` and `impl Display for Pin<Box<Pinned>>` of
+        `ByRef` and `Pinned`; of a wrapper of a type parameter, std's `impl<T:
+        Display> Display for Box<T>`, the wrapper, as before. Four places had
+        read the self type's `ty_adt_def()` (`impl_fmt_into`, both of
+        `prints`' `type_of`s, `listed_writers_compiled_here`) and a fifth the
+        shown value's (`writes_into_a_writer`), so such an impl's dictionary
+        carried no `fmtInto` and generic code's write of it threw, its writer
+        wasn't framed, and a library's contract didn't list the type, which
+        reached #1688's net. And a value is shown through its references and
+        `Box`es as std's impls pass a trait on (`shown_through`), not past a
+        layer with an impl of its own (`Recognition::formats_itself`, a
+        `user_impl` of a fundamental wrapper; `refs_shown_by`), so `{}` of a
+        `&ByRef` was refused naming no issue and `write!` of one naming #1652,
+        closed. Case (ADR 0262): results change, a throw or a refusal where
+        Rust writes, so Rust's. Proof: corpus cases
+        display_impl_of_a_reference_box_or_pin,
+        debug_impl_of_a_reference_box_or_pin and
+        fmt_of_a_reference_impl_given_a_formatter against native Rust in both
+        builds; the pair librarys_formatting_impl_of_a_reference_box_or_pin,
+        its contract listing the three types; test/architecture-formatting.test.ts
+        holds the owner; 15 mutations, caught, and 11 retargeted, caught.
       - Amended later, #1745: a `format_args!` the body makes, given to a
         type parameter a call writes into a writer through its dictionary,
         `own(w, &format_args!(..))`'s `T`, is followed at lowering, where

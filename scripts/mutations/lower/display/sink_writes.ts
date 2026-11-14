@@ -104,8 +104,8 @@ export const mutations: Mutation[] = [
     name: "std-compiled-writer-unarmed",
     breaks: "a std adapter `@rust-js/std` compiles isn't armed in a framed writer, which refuses it (#1712)",
     file: "src/lower/display/sink_writes.rs",
-    find: "            if (instance.def_id().is_local() && self.writes_through_sink(instance.def_id())) || std_framed(instance.def_id()))\n",
-    replace: "            if instance.def_id().is_local() && self.writes_through_sink(instance.def_id()))\n",
+    find: "        (instance.def_id().is_local() && self.writes_through_sink(instance.def_id())) || std_framed\n",
+    replace: "        instance.def_id().is_local() && self.writes_through_sink(instance.def_id())\n",
     tests: ["test/corpus.test.ts", "-t", "^(writer_sink_std_adapters)\\.rs$"],
   },
   {
@@ -115,5 +115,21 @@ export const mutations: Mutation[] = [
     find: "            Std::FmtDisplay if self.is_lang_adt(ty.peel_refs(), LangItem::FormatArguments) => {\n",
     replace: "            Std::FmtDisplay if false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^(writer_sink_arguments_made_dyn)\\.rs$"],
+  },
+  {
+    name: "written-into-a-writer-by-self-type",
+    breaks: "whether a writer of the crate's own writes `&ByRef` through a sink is asked of the reference's type, which is no type's, so `write!(log, \"{}\", &r)` is refused (#1798)",
+    file: "src/lower/display/sink_writes.rs",
+    find: "        let Some(adt) = of_impl.and_then(|imp| crate::lower::recognition::formatted_adt(self.tcx, imp)) else {\n",
+    replace: "        let Some(adt) = of_impl.and(ty.ty_adt_def().map(|adt| adt.did())) else {\n",
+    tests: ["test/corpus.test.ts", "-t", "^display_impl_of_a_reference_box_or_pin.rs$"],
+  },
+  {
+    name: "sink-writes-past-own-reference",
+    breaks: "a placeholder's value is written through a reference with a `Display` of its own, as std's `&T` would, so `write!(log, \"{}\", &r)` is refused (#1798)",
+    file: "src/lower/display/sink_writes.rs",
+    find: "        let ty = self.shown_ref_type(kind, ty);\n        let int",
+    replace: "        let ty = ty.peel_refs();\n        let int",
+    tests: ["test/corpus.test.ts", "-t", "^display_impl_of_a_reference_box_or_pin.rs$"],
   },
 ];

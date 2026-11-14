@@ -51,6 +51,41 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             ))
     }
 
+    /// Whether `ty`, a reference, a `Box` or a `Pin` (std's fundamental
+    /// wrappers), has an impl of the formatting trait `tr` of its own, not
+    /// std's that passes it on to what it holds, which isn't a `user_impl`:
+    /// `impl Display for &ByRef`, which a crate may write of its own type
+    /// (#1798).
+    pub(in crate::lower) fn formats_itself(&self, tr: DefId, ty: Ty<'tcx>) -> bool {
+        let wrapper = match ty.kind() {
+            ty::Ref(..) => true,
+            ty::Adt(adt, _) => adt.is_fundamental(),
+            _ => false,
+        };
+        wrapper && self.is_user_impl(ty::TraitRef::new(self.tcx, tr, [ty]))
+    }
+
+    /// The type whose writer shows `ty`, as its references and wrappers
+    /// leave it, by the formatting trait `tr`: of an impl of its own,
+    /// `&ByRef`'s, the type it's of (`formatted_adt_of`); else its own.
+    pub(in crate::lower) fn formatted_by(&self, tr: DefId, ty: Ty<'tcx>) -> Option<DefId> {
+        match self.formats_itself(tr, ty) {
+            true => super::formatted_adt_of(ty),
+            false => ty.ty_adt_def().map(|adt| adt.did()),
+        }
+    }
+
+    /// `ty` through its references as the formatting trait `tr` shows it:
+    /// not past one with an impl of its own (`formats_itself`, #1798).
+    pub(in crate::lower) fn refs_shown_by(&self, tr: DefId, mut ty: Ty<'tcx>) -> Ty<'tcx> {
+        while let ty::Ref(_, inner, _) = *ty.kind()
+            && !self.formats_itself(tr, ty)
+        {
+            ty = inner;
+        }
+        ty
+    }
+
     pub(in crate::lower) fn is_user_impl(&self, tr: ty::TraitRef<'tcx>) -> bool {
         self.user_impl(tr).is_some()
     }

@@ -70,7 +70,7 @@ export const mutations: Mutation[] = [
     name: "sink-debug-not-through-refs",
     breaks: "a derived `Debug`'s `&mut i32` field written into a writer writes its cell, `-[object Object]` (#1755)",
     file: "src/lower/display/sink_debug.rs",
-    find: "        let (value, ty) = self.shown_through(value, ty);\n",
+    find: "        let (value, ty) = self.shown_through(value, ty, Std::FmtDebug);\n",
     replace: "        let (value, ty) = (value, ty.peel_refs());\n",
     tests: ["test/corpus.test.ts", "-t", "^(writer_sink_mut_ref_field)\\.rs$"],
   },

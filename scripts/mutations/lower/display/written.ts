@@ -101,9 +101,9 @@ export const mutations: Mutation[] = [
     name: "rc-debug-box",
     breaks: "`{:?}` of a counted `Rc` shows its counts",
     file: "src/lower/display/written.rs",
-    find: "        let (value, ty) = self.shown_through(value, ty);\n        let ty = self.shown_type(ty);\n",
+    find: "        let (value, ty) = self.shown_through(value, ty, Std::FmtDisplay);\n        let ty = self.shown_type(ty, Std::FmtDisplay);\n",
     replace:
-      "        let (value, ty) = self.through_refs(value, ty);\n        let ty = self.shown_type(ty);\n",
+      "        let (value, ty) = self.through_refs(value, ty);\n        let ty = self.shown_type(ty, Std::FmtDisplay);\n",
     tests: ["test/corpus.test.ts", "-t", "rc_counts"],
   },
   {
@@ -366,5 +366,13 @@ export const mutations: Mutation[] = [
     find: "            if let Some(form) = self.form_of(given) {\n",
     replace: "            if let Some(form) = self.form_of(given).filter(|_| false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^(closure_gives_a_mut_to_a_generic_writer)\\.rs$"],
+  },
+  {
+    name: "other-fmt-past-own-reference",
+    breaks: "`LowerHex::fmt(&self.0, f)` of a `&ByRef` with a `LowerHex` of its own is asked of `ByRef`, which has none, so it's refused (#1798)",
+    file: "src/lower/display/written.rs",
+    find: "                let ty = self.recognition().refs_shown_by(trait_id, generic_args.type_at(0));\n",
+    replace: "                let ty = generic_args.type_at(0).peel_refs();\n",
+    tests: ["test/corpus.test.ts", "-t", "^fmt_of_a_reference_impl_given_a_formatter.rs$"],
   },
 ];

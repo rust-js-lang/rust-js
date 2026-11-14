@@ -25,7 +25,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<Option<Vec<SinkWrite>>> {
         // What it points at, read as `{:?}` reads it: a `&mut i32` a struct
         // holds, its cell's `value` (#1755), a counted `Rc`'s, a `Box`'s.
-        let (value, ty) = self.shown_through(value, ty);
+        let (value, ty) = self.shown_through(value, ty, Std::FmtDebug);
         if let Some(written) = self.sink_writes_given(value.clone(), (Std::FmtDebug, ty), options.clone(), span)? {
             return Ok(Some(written));
         }

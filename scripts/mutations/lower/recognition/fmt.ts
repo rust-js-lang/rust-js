@@ -182,4 +182,20 @@ export const mutations: Mutation[] = [
     replace: "        false && self.writes_arguments_piecewise(def_id, generic_args)\n",
     tests: ["test/corpus.test.ts", "-t", "^writer_sink_own_write_fmt.rs$"],
   },
+  {
+    name: "formatted-adt-not-through-references",
+    breaks: "a formatting impl of a reference to the crate's type, `impl Display for &ByRef`, is of no type, so its dictionary carries no `fmtInto` and generic code's write of it throws (#1798)",
+    file: "src/lower/recognition/fmt.rs",
+    find: "            ty::Ref(_, inner, _) => inner,\n            ty::Adt(adt, args) if adt.is_fundamental() => args.types().next()?,\n",
+    replace: "            ty::Ref(..) => break,\n            ty::Adt(adt, args) if adt.is_fundamental() => args.types().next()?,\n",
+    tests: ["test/corpus.test.ts", "-t", "^display_impl_of_a_reference_box_or_pin.rs$"],
+  },
+  {
+    name: "formatted-adt-not-through-boxes",
+    breaks: "a formatting impl of a `Box` of the crate's type is std's `Box`'s, so its writer isn't framed and a write of it into a writer is refused (#1798)",
+    file: "src/lower/recognition/fmt.rs",
+    find: "            ty::Adt(adt, args) if adt.is_fundamental() => args.types().next()?,\n",
+    replace: "            ty::Adt(adt, args) if false && adt.is_fundamental() => args.types().next()?,\n",
+    tests: ["test/corpus.test.ts", "-t", "^display_impl_of_a_reference_box_or_pin.rs$"],
+  },
 ];

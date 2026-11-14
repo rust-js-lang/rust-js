@@ -186,7 +186,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // `{:p}`, its address, as it is.
                     let (value, ty) = match known {
                         Std::FmtPointer => (value, ty),
-                        _ => this.shown_through(value, ty),
+                        _ => this.shown_through(value, ty, known),
                     };
                     // One read twice, `v == null ? "None" : ..`, is held first by
                     // tidy, which sees where nothing it does moves (ADR 0377).

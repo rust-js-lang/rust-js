@@ -30,7 +30,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `()`'s `"()"` or a `Weak`'s `"(Weak)"`.
     fn debug_shown(&mut self, value: Expr, ty: Ty<'tcx>, span: Span, pretty: &Pretty) -> R<Expr> {
         let made_tuple = self.unspelled("tuple");
-        let (value, ty) = self.shown_through(value, ty);
+        let (value, ty) = self.shown_through(value, ty, Std::FmtDebug);
         // A part whose writer may stop part-way, by an `Err`, or by a panic
         // where it may be caught, which a line keeps the parts before of
         // (#1521): written through std's builders' model, where it's of a
@@ -287,7 +287,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 ChannelError::Send => Expr::str("SendError { .. }"),
             });
         }
-        let (shown, options) = (self.shown_type(ty), self.options_arg(pretty));
+        let (shown, options) = (self.shown_type(ty, Std::FmtDebug), self.options_arg(pretty));
         if let Some(shown) = self.dyn_written(value.clone(), (shown, self.debug_trait()), options, span)? {
             return Ok(shown);
         }
