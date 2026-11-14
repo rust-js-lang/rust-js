@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "projected-binding-refused",
+    breaks: "a flattened struct read whole by value into a binding, `let sized = b.sized`, is refused as props taken apart (#1820)",
+    file: "src/lower/mir/assign.rs",
+    find: "            && !self\n                .krate\n                .flattened\n                .is_projected(read.ty(&state.body.local_decls, self.tcx).ty)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^flattened_struct_lent_whole.rs$"],
+  },
+  {
     name: "lent-reference-made-as-a-reference",
     breaks:
       "a reference given to a call that's given its place's pointer is made as a reference, a box of a copy",

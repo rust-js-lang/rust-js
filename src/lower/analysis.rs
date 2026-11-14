@@ -353,7 +353,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         return None;
     }
 
-    let flattened = bindings::flattened(tcx, &all_bodies, &foreign);
+    let flattened = bindings::flattened(tcx, &all_bodies, &foreign, library);
     if !reject_unsupported(tcx, &foreign, &markers)
         || !reject_static_references(tcx, &all_bodies)
         || !reject_namespace_value_reads(tcx, &all_bodies)

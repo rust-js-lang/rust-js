@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "projected-key-whole",
+    breaks: "a set's key that may be a flattened struct's parent object is found by `$key` of every key, its parent's too (#1820)",
+    file: "src/lower/std_types/map_keys.rs",
+    find: "            ty::Adt(..) if self.krate.flattened.is_projected(ty) => true,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^flattened_struct_lent_whole.rs$"],
+  },
+  {
     name: "option-keys-by-identity",
     breaks:
       "a `HashMap<Option<u32>, _>` is a plain `Map`, whose `null` key and `undefined` key are two, where Rust has one `None`, and `get(&None)` misses a nullable field's (ADR 0935)",

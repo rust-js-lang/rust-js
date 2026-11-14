@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "projected-clone-shared",
+    breaks: "a flattened struct's derived clone, of what may be its parent's object, is that object, the parent's keys too (#1820)",
+    file: "src/lower/std_impls/clones.rs",
+    find: "        if self.krate.flattened.is_projected(ty) && !self.has_user_impl(self.clone_trait(), ty) {\n",
+    replace: "        if false && self.krate.flattened.is_projected(ty) {\n",
+    tests: ["test/lowering.test.ts", "-t", "copied out of what's lent"],
+  },
+  {
     name: "random-state-clone-refused",
     breaks: "a `RandomState`'s `clone()`, of generic code too, is refused, though it holds nothing JS sees",
     file: "src/lower/std_impls/clones.rs",

@@ -279,6 +279,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Tuple(tys) => tys.iter().any(|t| self.custom_eq_in(t, seen)),
             ty::Array(item, _) | ty::Slice(item) => self.custom_eq_in(*item, seen),
             ty::Adt(..) if self.has_user_impl(self.partial_eq_trait(), ty) => true,
+            // A flattened struct that may be its parent's object, which has
+            // the parent's keys too: field by field, as the derive is (#1820).
+            ty::Adt(..) if self.krate.flattened.is_projected(ty) => true,
             // A counted `Rc` compares what it points at, not its counts (ADR 0320).
             ty::Adt(..) if self.counted_rc(ty).is_some() => true,
             // A `Cow` compares what it borrows, not its variant (ADR 0400).
@@ -773,14 +776,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             _ => {
                 let parts: Vec<(Expr, Expr, Ty<'tcx>)> = match self.shape(ty) {
+                    // A flattened field's are its parent's own keys, the
+                    // parent itself (ADR 0204, #1838).
                     Shape::Object(fields) => Self::named_fields(fields)
                         .into_iter()
                         .enumerate()
-                        .map(|(i, (name, t))| {
-                            let def = self.struct_field_def(ty, i);
-                            let x = self.held(Expr::member(a.clone(), name.clone()), def, t);
-                            (x, self.held(Expr::member(b.clone(), name), def, t), t)
-                        })
+                        .map(
+                            |(i, (name, t))| match super::bindings::is_flatten_field(self.tcx, ty, i) {
+                                true => (a.clone(), b.clone(), t),
+                                false => {
+                                    let def = self.struct_field_def(ty, i);
+                                    let x = self.held(Expr::member(a.clone(), name.clone()), def, t);
+                                    (x, self.held(Expr::member(b.clone(), name), def, t), t)
+                                }
+                            },
+                        )
                         .collect(),
                     Shape::Array(tys) => tys
                         .into_iter()

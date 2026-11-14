@@ -70,6 +70,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let held = self.value_expr(read, span)?;
             return Ok(Value::Expr(self.kept_copy(held, ty, span)?));
         }
+        // A flattened struct read whole by value, `r.range`, of its parent's
+        // object, or copied out of a reference, `*range`, which may be one
+        // lent: its own fields (#1820).
+        if let Some(place) = operand.place()
+            && let ty = operand.ty(&state.body.local_decls, self.tcx)
+            && self.krate.flattened.is_projected(ty)
+            && (matches!(place.as_ref().last_projection(), Some((base, PlaceElem::Field(field, _)))
+            if bindings::is_flatten_field(
+                self.tcx,
+                Place::ty_from(base.local, base.projection, state.body, self.tcx).ty,
+                field.as_usize(),
+            )) || (matches!(operand, Operand::Copy(_)) && place.is_indirect()))
+        {
+            let span = state.body.local_decls[place.local].source_info.span;
+            let held = self.value_expr(read, span)?;
+            return Ok(Value::Expr(self.projection(held, ty)));
+        }
         match none_read(state, operand, read) {
             Value::Expr(e) if copied => {
                 let ty = operand.ty(&state.body.local_decls, self.tcx);

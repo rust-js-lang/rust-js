@@ -3,6 +3,44 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "flattened-read-through-deref",
+    breaks:
+      "reading through a flattened reference, `report.item.line`, is refused as a read of it whole",
+    file: "src/lower/bindings/flattened.rs",
+    find: "                while let ExprKind::Deref { arg } = thir[lhs].kind {\n",
+    replace:
+      "                while let ExprKind::Deref { arg } = thir[lhs].kind && false {\n",
+    tests: [
+      "test/lowering-structs-enums.test.ts",
+      "-t",
+      "flattened field made outside JSX",
+    ],
+  },  {
+    name: "projected-read-whole-unseen",
+    breaks: "a flattened struct lent whole or read by value isn't its fields alone where it's copied, compared or hashed, so its parent's keys are read too (#1820)",
+    file: "src/lower/bindings/flattened.rs",
+    find: "                && let Some(adt) = plain_struct(tcx, expr.ty)\n            {\n                found.projected.insert(adt);\n",
+    replace: "                && let Some(adt) = plain_struct(tcx, expr.ty)\n            {\n                drop(adt);\n",
+    tests: ["test/corpus.test.ts", "-t", "^flattened_struct_lent_whole.rs$"],
+  },
+  {
+    name: "projected-read-through-too",
+    breaks: "a flattened struct only ever read through, `card.margin.top`, is taken as read whole, so its copies are its fields by name, not its spread (#1820)",
+    file: "src/lower/bindings/flattened.rs",
+    find: "                && !through.contains(&e)\n                && let Some(adt) = plain_struct(tcx, expr.ty)\n",
+    replace: "                && let Some(adt) = plain_struct(tcx, expr.ty)\n",
+    tests: ["test/corpus.test.ts", "-t", "^flattened_struct_lent_whole.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "projected-library-unreached",
+    breaks: "a library's flattened struct a consumer may lend whole is compared, hashed and cloned by the library as the object it is, its parent's keys too (#1820)",
+    file: "src/lower/bindings/flattened.rs",
+    find: "                && let Some(adt) = plain_struct(tcx, ty)\n            {\n                found.projected.insert(adt);\n",
+    replace: "                && let Some(adt) = plain_struct(tcx, ty)\n            {\n                drop(adt);\n",
+    tests: ["test/crates.test.ts", "-t", "flattened_struct_lent_by_a_consumer"],
+  },
+  {
     name: "untagged-records-unfound",
     breaks: "an untagged enum of records a field flattens isn't its parent's keys, so a numeric keyboard's event is refused (#1818)",
     file: "src/lower/bindings/flattened.rs",

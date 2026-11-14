@@ -13,7 +13,8 @@ below: a flattened field lent whole is its parent's object; and a flattened
 reference is refused wherever its parent's copy could be told from its
 referent (#1819); and a JS object is
 never flattened (#1822), superseding "a flattened field may be a JS
-object too".
+object too"; and a struct lent whole, or read whole by
+value, is its own fields wherever it's copied, compared or hashed (#1820).
 
 > **Note:** since [ADR 0438](0438-an-optional-prop-is-given-some.md), a
 > left-out optional prop is `None`, so the `{..Default::default()}` in this
@@ -275,3 +276,79 @@ refused by name; and mutations `flattened-js-object-allowed`,
 `flattened-param-js-object-allowed` (`analysis/validation.ts`).
 `test/jsx-props.test.ts`'s spread of spreads (ADR 0364) spreads a clone of
 a struct that changes now, where it spread a dictionary that did.
+
+## Amendment: a struct read whole is its own fields (2026-11-15)
+
+A UI kit's numeric stepping keeps a `NumberRange` that extends a
+`StepRange`, and gives the range to its step functions,
+`max_on_grid(&range.range)`; it makes a local copy whose step changes,
+`NumberRange { range: StepRange { step, ..range.range }, ..range }`
+(#1820). Both were refused: a flattened field lent whole was refused where
+its type had `Clone`, `PartialEq`, `PartialOrd` or `Hash`, as those read
+its object whole, the parent's keys too; one read by value, a read whole.
+
+**A flattened struct lent whole or read whole by value is its own fields
+wherever it's copied, cloned, compared, ordered or hashed** (one fact,
+`Flattened::projected`, of the flatten owner; each consumer asks it):
+
+- **The fact.** A struct a flattened field holds, of named fields of a
+  crate's (`bindings::plain_struct`, its own flattened fields so too), that
+  a body lends whole or reads by value anywhere it isn't read through
+  (`bindings::read_through`). **A library takes every one in a struct a
+  consumer can reach** (`library::reachable`): a consumer may lend it, and
+  the library's own derived `==`, hash and clone of it, compiled once,
+  must read its fields alone then too. That costs a library the spread
+  form, `{ ...r }`, of such a struct's copies, where a program keeps it of
+  each it never reads whole; no contract field is needed, as the library
+  answers for its own code and a consumer for its own.
+- **A copy or clone is its projection**, `{ min: range.min, max:
+  range.max, step: range.step }`, never `{ ...range }` or the object:
+  read by value, `range.range`, copied out of a reference, `*range`
+  (`mir/operands.rs`), a derived clone (`std_impls/clones.rs`), built by
+  the copy owner (`copies::projection`), each field copied in turn where
+  it's changed in place, and a flattened field's keys of the same object.
+  A local of one, never a parent, is shared as before.
+- **A derived `==` compares field by field** (`custom_eq`), as the derive
+  does, never `$eq` of every key; a derived order and hash do already.
+- **A map's or a set's key found by value is its fields**, `$keySet((key)
+  => ({ cols: key.cols, rows: key.rows }))` (`holds_identity`,
+  `key_parts`), so a parent object lent as a key finds what its copy was
+  kept under.
+- **Still refused:** lent mutably, `&mut range.range`, or written whole,
+  which may replace it; a name its parent has too (ADR 0205); and a keyed
+  enum's, an untagged enum's or a state's whose clone or `==` reads its
+  object whole.
+
+Codex's local copy reads `{ step: 1, min: r.min, max: r.max, largeStep:
+r.largeStep, smallStep: r.smallStep }`, its fields in the order Rust
+evaluates them (ADR 0674).
+
+And a crash it found (P1, #1838): a derived order, or a field-by-field
+`==`, of a struct with a flattened field read the field as a nested
+object, `a.range.min`, which threw. A flattened field's part is the
+parent itself (`ordering.rs`, `std_impls.rs`).
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none, as nothing reads
+the parent's other keys, a compile error lifted.
+
+Held by the corpus's `flattened_struct_lent_whole` (lent to a function,
+copied, cloned, compared, ordered, a set's and a map's key, hashed, read
+by value into a binding and a struct update, through two levels of
+flattening, and a flattened struct never read whole, whose copy is
+shared), against native Rust in both builds; the pair
+`flattened_struct_lent_by_a_consumer`, a library's `==`, hash and clone
+of a struct its consumer lends; `test/lowering.test.ts`'s "a flattened
+struct copied out of what's lent is its own fields", JS given each copy,
+and "a flattened field lent whole is refused where its type reads it
+whole, or lent mutably", a keyed enum's clone refused; and
+`test/jsx-props.test.ts`'s props read by value. Mutations
+`projected-read-whole-unseen`, `projected-read-through-too` (a snapshot's),
+`projected-library-unreached` (`bindings/flattened.ts`),
+`projected-eq-whole`, `flattened-part-eq-nested` (`std_impls.ts`),
+`projected-key-whole` (`std_types/map_keys.ts`), `projected-read-shared`,
+`projected-deref-shared` (`mir/operands.ts`), `projected-clone-shared`
+(`std_impls/clones.ts`), `projected-binding-refused` (`mir/assign.ts`),
+`projected-lent-refused`, `projected-written-read`,
+`projected-read-refused` (`analysis/validation.ts`) and
+`flattened-part-cmp-nested` (`ordering.ts`); `flattened-read-through-deref`
+retargeted to `bindings/flattened.rs`, where `read_through` is now.

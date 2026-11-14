@@ -648,9 +648,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ if self.one_value(ty) && !a.has_effects() && !b.has_effects() => Ok(Expr::int(0)),
             _ => {
                 let parts: Vec<(Expr, Expr, Ty<'tcx>)> = match self.shape(ty) {
+                    // A flattened field's are its parent's own keys, the
+                    // parent itself (ADR 0204, #1838).
                     Shape::Object(fields) => Self::named_fields(fields)
                         .into_iter()
-                        .map(|(name, t)| (Expr::member(a.clone(), name.clone()), Expr::member(b.clone(), name), t))
+                        .enumerate()
+                        .map(
+                            |(i, (name, t))| match super::bindings::is_flatten_field(self.tcx, ty, i) {
+                                true => (a.clone(), b.clone(), t),
+                                false => (Expr::member(a.clone(), name.clone()), Expr::member(b.clone(), name), t),
+                            },
+                        )
                         .collect(),
                     Shape::Array(tys) => tys
                         .into_iter()

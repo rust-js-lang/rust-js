@@ -182,6 +182,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
             return Ok(Expr::call(Expr::var(clone), vec![place]));
         }
+        // A flattened struct that may be its parent's object, whose derived
+        // clone is its own fields alone (#1820).
+        if self.krate.flattened.is_projected(ty) && !self.has_user_impl(self.clone_trait(), ty) {
+            return Ok(self.projection(place, ty));
+        }
         // A path is its text, which nothing changes in place (ADR 0173).
         if !self.needs_clone(ty) || self.recognition().is_path_like(ty) {
             return Ok(place);

@@ -2,6 +2,30 @@
 import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
+  {
+    name: "projected-lent-refused",
+    breaks: "a flattened struct of a derived `Clone` or `PartialEq` lent whole is refused, though its clone and `==` read its fields alone (#1820)",
+    file: "src/lower/analysis/validation.rs",
+    find: "                        && bindings::plain_struct(tcx, expr.ty).is_none()\n                        && reads_whole(expr.ty) =>\n",
+    replace: "                        && reads_whole(expr.ty) =>\n",
+    tests: ["test/lowering.test.ts", "-t", "flattened field lent whole"],
+  },
+  {
+    name: "projected-written-read",
+    breaks: "a flattened struct lent mutably, or written whole, is taken as read by value, its projection (#1820)",
+    file: "src/lower/analysis/validation.rs",
+    find: "                        && (bindings::plain_struct(tcx, expr.ty).is_none() || written.contains(&e))\n",
+    replace: "                        && bindings::plain_struct(tcx, expr.ty).is_none()\n",
+    tests: ["test/lowering.test.ts", "-t", "flattened field lent whole"],
+  },
+  {
+    name: "projected-read-refused",
+    breaks: "a flattened struct read whole by value, `let a = p.anchor`, is refused, though it's its fields alone (#1820)",
+    file: "src/lower/analysis/validation.rs",
+    find: "                        && (bindings::plain_struct(tcx, expr.ty).is_none() || written.contains(&e))\n",
+    replace: "",
+    tests: ["test/jsx-props.test.ts", "-t", "own props"],
+  },
 
   {
     name: "untagged-records-shadow-unchecked",
@@ -74,20 +98,7 @@ export const mutations: Mutation[] = [
       "flattened field made outside JSX",
     ],
   },
-  {
-    name: "flattened-read-through-deref",
-    breaks:
-      "reading through a flattened reference, `report.item.line`, is refused as a read of it whole",
-    file: "src/lower/analysis/validation.rs",
-    find: "                    while let ExprKind::Deref { arg } = thir[lhs].kind {\n",
-    replace:
-      "                    while let ExprKind::Deref { arg } = thir[lhs].kind && false {\n",
-    tests: [
-      "test/lowering-structs-enums.test.ts",
-      "-t",
-      "flattened field made outside JSX",
-    ],
-  },
+
   {
     name: "mixed-read-through",
     breaks:

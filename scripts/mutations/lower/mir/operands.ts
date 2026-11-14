@@ -3,6 +3,22 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "projected-read-shared",
+    breaks: "a flattened struct read by value, `r.range`, or copied out of a reference, `*range`, is its parent's object, which JS given it sees with the parent's keys (#1820)",
+    file: "src/lower/mir/operands.rs",
+    find: "            && self.krate.flattened.is_projected(ty)\n            && (matches!",
+    replace: "            && false\n            && (matches!",
+    tests: ["test/lowering.test.ts", "-t", "copied out of what's lent"],
+  },
+  {
+    name: "projected-deref-shared",
+    breaks: "a flattened struct copied out of a reference, `*range`, which may be lent from its parent, is the parent's object (#1820)",
+    file: "src/lower/mir/operands.rs",
+    find: "            )) || (matches!(operand, Operand::Copy(_)) && place.is_indirect()))\n",
+    replace: "            )))\n",
+    tests: ["test/lowering.test.ts", "-t", "copied out of what's lent"],
+  },
+  {
     name: "nested-field-read-unboxed",
     breaks: "a nested field read whole is given as it's held to code that boxes, `format!(\"{:?}\", init.sdp_mid)` of `null` `None` (#470)",
     file: "src/lower/mir/operands.rs",

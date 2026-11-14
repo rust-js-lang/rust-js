@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "flattened-part-cmp-nested",
+    breaks: "a derived order of a struct with a flattened field reads the field as nested, `a.grid.cols`, which throws (#1838)",
+    file: "src/lower/ordering.rs",
+    find: "                                true => (a.clone(), b.clone(), t),\n                                false => (Expr::member(a.clone(), name.clone()), Expr::member(b.clone(), name), t),\n",
+    replace: "                                true | false => (Expr::member(a.clone(), name.clone()), Expr::member(b.clone(), name), t),\n",
+    tests: ["test/corpus.test.ts", "-t", "^flattened_struct_lent_whole.rs$"],
+  },
+  {
     name: "less-value-le",
     breaks: "a number key's `is_less` is `<=`",
     file: "src/lower/ordering.rs",

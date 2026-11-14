@@ -535,11 +535,13 @@ pub fn og() -> OpenGraph<'static> {
 });
 
 // ADR 0204, amended: a flattened field lent whole, `&state.base`, is its
-// parent's object (the corpus's flattened_state_lent). Of a type whose
-// clone spreads it or whose `==` compares it whole, the parent's fields
-// would be read too, so it's refused; lent mutably, which may replace it
-// whole, too; and where the parent has a name it has, which JS's object
-// holds as the parent's.
+// parent's object (the corpus's flattened_state_lent). A struct's clone,
+// `==`, order and hash read its own fields alone (#1820, the corpus's
+// flattened_struct_lent_whole), so one that has them is lent too; another
+// type whose clone spreads it or whose `==` compares it whole, a keyed
+// enum's, would read the parent's fields too, so it's refused; lent
+// mutably, which may replace it whole, too; and where the parent has a
+// name it has, which JS's object holds as the parent's.
 test("a flattened field lent whole is refused where its type reads it whole, or lent mutably", () => {
   const dir = fixture("flattened-lent");
   const program = (derives: string, lend: string) => `${derives}
@@ -566,14 +568,89 @@ pub fn legacy_len(legacy: &mut Legacy) -> usize {
     const failed = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")], { cwd: root, stderr: "pipe" });
     return [failed.exitCode === 0, failed.stderr.toString()];
   };
-  expect(refusal("#[derive(Clone)]", "&")).toEqual([false, expect.stringContaining("rust-js does not support lending a flattened `Base` whole, its parent's object, where its `Clone`, `PartialEq`, `PartialOrd` or `Hash` would read the parent's fields too yet")]);
-  expect(refusal("#[derive(PartialEq)]", "&")).toEqual([false, expect.stringContaining("lending a flattened `Base` whole")]);
+  expect(refusal("#[derive(Clone)]", "&")).toEqual([true, ""]);
+  expect(refusal("#[derive(PartialEq)]", "&")).toEqual([true, ""]);
+  // A keyed enum's clone is its object, the parent's keys too.
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `#[derive(Clone)]
+pub enum Kind {
+    Signal { current: u32 },
+    Computed { value: u32 },
+}
+
+pub struct Node {
+    #[cfg_attr(rust_js, rust_js::flatten)]
+    pub kind: Kind,
+    pub flags: u32,
+}
+
+fn shown(kind: &Kind) -> u32 {
+    match kind.clone() {
+        Kind::Signal { current } => current,
+        Kind::Computed { value } => value,
+    }
+}
+
+pub fn node_shown(node: &Node) -> u32 {
+    shown(&node.kind) + node.flags
+}
+`,
+  );
+  const keyed = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")], { cwd: root, stderr: "pipe" });
+  expect([keyed.exitCode === 0, keyed.stderr.toString()]).toEqual([false, expect.stringContaining("rust-js does not support lending a flattened `Kind` whole, its parent's object, where its `Clone`, `PartialEq`, `PartialOrd` or `Hash` would read the parent's fields too yet")]);
   expect(refusal("", "&mut")).toEqual([false, expect.stringContaining("rust-js does not support reading flattened props whole")]);
   expect(refusal("", "&")).toEqual([true, ""]);
   // A name the parent has too is the parent's in JS's one object (ADR 0205).
   writeFileSync(join(dir, "lib.rs"), program("", "&").replace("    pub generate_static_markup: bool,", "    pub generate_static_markup: bool,\n    pub prefix: String,"));
   const shadowed = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")], { cwd: root, stderr: "pipe" });
   expect([shadowed.exitCode === 0, shadowed.stderr.toString()]).toEqual([false, expect.stringContaining("rust-js does not support lending a flattened `Base` whole, its parent's object, whose `prefix` is the parent's yet")]);
+});
+
+// ADR 0204, amended (#1820): a flattened struct lent whole is its parent's
+// object, which has the parent's keys too; a copy of it, out of the
+// reference, `*range`, or read by value, `r.range`, or cloned, is its own
+// fields alone, `{ min: range.min, max: range.max }`, which JS given it
+// sees as Rust's value. The corpus's flattened_struct_lent_whole compares,
+// orders and hashes it against native Rust.
+test("a flattened struct copied out of what's lent is its own fields", async () => {
+  const dir = fixture("flattened-projection");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `#[derive(Clone, Copy)]
+pub struct StepRange {
+    pub min: f64,
+    pub max: f64,
+}
+
+pub struct NumberRange {
+    #[cfg_attr(rust_js, rust_js::flatten)]
+    pub range: StepRange,
+    pub large_step: f64,
+}
+
+fn of(range: &StepRange) -> StepRange {
+    *range
+}
+
+pub fn copied(r: &NumberRange) -> StepRange {
+    of(&r.range)
+}
+
+pub fn read(r: &NumberRange) -> StepRange {
+    r.range
+}
+
+pub fn cloned(r: &NumberRange) -> StepRange {
+    r.range.clone()
+}
+`,
+  );
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain("return { min: range.min, max: range.max };");
+  const lib = await import(join(dir, "lib.js"));
+  const parent = { min: 0, max: 9, largeStep: 3 };
+  expect([lib.copied(parent), lib.read(parent), lib.cloned(parent)]).toEqual([{ min: 0, max: 9 }, { min: 0, max: 9 }, { min: 0, max: 9 }]);
 });
 
 // ADR 0204, amended (#1819): a flattened reference's parent's object is a

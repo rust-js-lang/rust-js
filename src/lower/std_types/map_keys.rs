@@ -192,6 +192,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         seen.push(ty);
         let holds = match ty.kind() {
             _ if self.js_eq(ty).is_some() => self.eq_of_objects(ty),
+            // A flattened struct that may be its parent's object, which `$key`
+            // would find by its parent's keys too: found by its own fields
+            // (#1820), as its derived `Hash` and `Eq` find it.
+            ty::Adt(..) if self.krate.flattened.is_projected(ty) => true,
             ty::Tuple(parts) => parts.iter().any(|t| self.holds_identity_in(t, seen)),
             ty::Array(item, _) | ty::Slice(item) => self.holds_identity_in(*item, seen),
             ty::Adt(_, args) if self.is_lang_adt(ty, LangItem::Option) || ty.is_box() || self.is_vec_like(ty) => {
@@ -273,6 +277,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 Ok(value)
             }
+            // A flattened struct that may be its parent's object: its own
+            // fields alone, each part's in turn (#1820).
+            ty::Adt(..) if self.krate.flattened.is_projected(ty) => {
+                let mut props = Vec::new();
+                self.projected_key_parts(&key, ty, &mut props, span)?;
+                Ok(Expr::object(props))
+            }
             _ => match self.shape(ty) {
                 crate::lower::Shape::Object(fields) => {
                     let mut props = vec![js::Prop::Spread(key.clone())];
@@ -295,6 +306,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 crate::lower::Shape::Other => Err(refused(self)),
             },
         }
+    }
+
+    /// The keys of `key_parts` of `ty`, a flattened struct `key` may be the
+    /// parent object of, each its field's parts, a flattened field's its
+    /// own fields' of `key` itself (#1820).
+    fn projected_key_parts(&mut self, key: &Expr, ty: Ty<'tcx>, props: &mut Vec<js::Prop>, span: Span) -> R<()> {
+        let ty::Adt(adt, args) = ty.kind() else {
+            unreachable!("a flattened struct")
+        };
+        for field in &adt.non_enum_variant().fields {
+            let field_ty = self.field_ty(field, args);
+            if crate::lower::bindings::is_flatten(self.tcx, field) {
+                self.projected_key_parts(key, field_ty, props, span)?;
+                continue;
+            }
+            let name = crate::lower::bindings::field_key(self.tcx, field).text().to_owned();
+            let part = self.key_parts(Expr::member(key.clone(), name.clone()), field_ty, span)?;
+            props.push(js::Prop::Field(name, part));
+        }
+        Ok(())
     }
 
     /// `items.map((item) => <item's parts>)`, `items.map($id)` of objects

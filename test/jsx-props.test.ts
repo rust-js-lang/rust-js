@@ -540,7 +540,10 @@ pub fn App() -> JSX::Element {
     const failed = Bun.spawnSync(c.args, { cwd: c.dir });
     expect([failed.exitCode === 0, failed.stderr.toString()]).toEqual([false, expect.stringContaining(says)]);
   };
-  refused(flattened + "pub fn read(p: ButtonLinkProps<()>) -> Option<&'static str> { let a = p.anchor; a.href }\n", "flattened props");
+  // Read whole by value, its own fields (#1820).
+  const whole = compile(flattened + "pub fn read(p: ButtonLinkProps<()>) -> Option<&'static str> { let a = p.anchor; a.href }\n");
+  run(whole.args);
+  expect(readFileSync(join(whole.dir, "lib.jsx"), "utf8")).toContain('const a = { href: p.href, target: p.target, "aria-label": p["aria-label"] };');
   refused(flattened + "pub fn matched(p: ButtonLinkProps<()>) -> Option<&'static str> { match p { ButtonLinkProps { anchor, .. } => anchor.href } }\n", "flattened props taken apart here");
   refused(flattened.replace("pub children: C,", "pub children: C,\n    pub rest: react::Rest,").replace("{ size, children, anchor }", "{ size, children, anchor, .. }"), "one rest");
 });

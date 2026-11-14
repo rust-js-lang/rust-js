@@ -245,7 +245,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         state.binding_var = place.projection.is_empty() && state.locals.user[place.local];
         // A flattened struct a `match`'s pattern binds, which JS's props hold
-        // flat, among their other fields.
+        // flat, among their other fields; but one read whole elsewhere, its
+        // projection, its own fields (#1820).
         if state.binding_var
             && let Rvalue::Use(Operand::Move(read) | Operand::Copy(read), _) = rvalue
             && let Some((base, PlaceElem::Field(field, _))) = read.as_ref().last_projection()
@@ -254,6 +255,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Place::ty_from(base.local, base.projection, &state.body.local_decls, self.tcx).ty,
                 field.as_usize(),
             )
+            && !self
+                .krate
+                .flattened
+                .is_projected(read.ty(&state.body.local_decls, self.tcx).ty)
         {
             return Err(self.unsupported(
                 span,

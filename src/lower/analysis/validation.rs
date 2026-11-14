@@ -393,18 +393,7 @@ pub(super) fn reject_flatten_misuse<'tcx>(
         let bases = &body.facts.jsx_bases;
         // A flattened field read through, `props.html.title`, is its parent's,
         // a reference's too, `(*report.item).line`.
-        let read_through: IndexSet<ExprId> = (thir.exprs.iter())
-            .filter_map(|expr| match expr.kind {
-                ExprKind::Field { lhs, .. } => {
-                    let mut lhs = strip(thir, lhs);
-                    while let ExprKind::Deref { arg } = thir[lhs].kind {
-                        lhs = strip(thir, arg);
-                    }
-                    Some(lhs)
-                }
-                _ => None,
-            })
-            .collect();
+        let read_through = bindings::read_through(thir);
         // Whether a value of `ty` has an impl whose JS reads its object
         // whole: a clone's spread, `==`'s `$eq`, a comparison's or a hash's.
         // Its own impl, as rustc selects it: a `RefCell<State>`'s `Clone` is
@@ -435,6 +424,20 @@ pub(super) fn reject_flatten_misuse<'tcx>(
                     borrow_kind: rustc_middle::mir::BorrowKind::Shared,
                     arg,
                 } => Some(strip(thir, arg)),
+                _ => None,
+            })
+            .collect();
+        // What's no read of a value, but a place written or lent mutably,
+        // which a struct's projection, its fields' copy, isn't (#1820).
+        let written: IndexSet<ExprId> = (thir.exprs.iter())
+            .filter_map(|expr| match expr.kind {
+                ExprKind::Borrow {
+                    borrow_kind: rustc_middle::mir::BorrowKind::Mut { .. },
+                    arg,
+                }
+                | ExprKind::RawBorrow { arg, .. }
+                | ExprKind::Assign { lhs: arg, .. }
+                | ExprKind::AssignOp { lhs: arg, .. } => Some(strip(thir, arg)),
                 _ => None,
             })
             .collect();
@@ -536,6 +539,7 @@ pub(super) fn reject_flatten_misuse<'tcx>(
                 ExprKind::Field { lhs, name, .. }
                     if bindings::is_flatten_field(tcx, thir[lhs].ty, name.as_usize())
                         && lent.contains(&e)
+                        && bindings::plain_struct(tcx, expr.ty).is_none()
                         && reads_whole(expr.ty) =>
                 {
                     refuse(
@@ -550,6 +554,8 @@ pub(super) fn reject_flatten_misuse<'tcx>(
                     if bindings::is_flatten_field(tcx, thir[lhs].ty, name.as_usize())
                         && !read_through.contains(&e)
                         && !lent.contains(&e)
+                        // A struct read by value, its projection (#1820).
+                        && (bindings::plain_struct(tcx, expr.ty).is_none() || written.contains(&e))
                         && !bases.contains(&e)
                         && !own_calls.contains(&e)
                         && !(keyed(expr.ty) && placed.contains(&e))

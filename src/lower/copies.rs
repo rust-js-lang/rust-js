@@ -369,6 +369,49 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// references. The two only disagree if one of the copies is later
     /// changed in place, which needs a type in `mutated`. So only those
     /// types are copied, and everything else stays shared.
+    /// A `ty` value of the fields of `ty`'s at `place` alone, a flattened
+    /// struct's (`Flattened::projected`, #1820), where `place` may be its
+    /// parent's object, which has the parent's keys too: `{ min: r.min,
+    /// max: r.max, step: r.step }`, each field copied in turn where it's
+    /// changed in place, and its own flattened fields' keys, which are
+    /// `place`'s too. Read once where it's read more than once.
+    pub(in crate::lower) fn projection(&self, place: Expr, ty: Ty<'tcx>) -> Expr {
+        if !place.reads_same() {
+            let param = self.unspelled("value");
+            let body = self.projection(Expr::var(&param), ty);
+            return Expr::call(
+                Expr::arrow(
+                    vec![param.as_str().into()],
+                    vec![js::StmtKind::Return(Some(body)).at(js::Span::NONE)],
+                ),
+                vec![place],
+            );
+        }
+        let mut props = Vec::new();
+        self.projected_props(&place, ty, &mut props);
+        Expr::object(props)
+    }
+
+    fn projected_props(&self, place: &Expr, ty: Ty<'tcx>, props: &mut Vec<Prop>) {
+        let ty::Adt(adt, args) = ty.kind() else {
+            unreachable!("a flattened struct")
+        };
+        for field in &adt.non_enum_variant().fields {
+            let field_ty = self.field_ty(field, args);
+            if super::bindings::is_flatten(self.tcx, field) {
+                self.projected_props(place, field_ty, props);
+                continue;
+            }
+            let key = super::bindings::field_key(self.tcx, field).text().to_owned();
+            let read = Expr::member(place.clone(), key.clone());
+            let value = match self.contains_mutated(field_ty) {
+                true => self.copy(read, field_ty),
+                false => read,
+            };
+            props.push(Prop::Field(key, value));
+        }
+    }
+
     pub(super) fn copy_if_needed(&self, place: Expr, ty: Ty<'tcx>) -> Expr {
         // An array made here, which nothing else holds, `[1, 2]` or a
         // `.slice(..)`, of items that need no copy of their own: itself.

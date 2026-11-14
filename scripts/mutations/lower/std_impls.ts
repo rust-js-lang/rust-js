@@ -3,6 +3,22 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "flattened-part-eq-nested",
+    breaks: "a field-by-field `==` of a struct with a flattened field reads the field as nested, `a.grid.cols`, which throws (#1838)",
+    file: "src/lower/std_impls.rs",
+    find: "                                true => (a.clone(), b.clone(), t),\n                                false => {\n",
+    replace: "                                true | false => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^flattened_struct_lent_whole.rs$"],
+  },
+  {
+    name: "projected-eq-whole",
+    breaks: "a flattened struct that may be its parent's object is `==` by `$eq` of every key, its parent's too (#1820)",
+    file: "src/lower/std_impls.rs",
+    find: "            ty::Adt(..) if self.krate.flattened.is_projected(ty) => true,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^flattened_struct_lent_whole.rs$"],
+  },
+  {
     name: "generic-eq-unrouted",
     breaks: "`a == b` of a `T: Ord` finds no `PartialEq` through its `Ord`, rustc's supertrait route, where Rust calls its `eq`, a derived one by its fields (#944)",
     file: "src/lower/std_impls.rs",
