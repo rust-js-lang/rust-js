@@ -105,8 +105,8 @@ test("event methods keep target types and retained callback lifetimes", () => {
     ['button.remove_event_listener_named("custom", webapi::EventListenerOrEventListenerObject::EventListener(&|_| {}), None);', 'a closure written in place is a new function'],
     ['fn off(button: &HTMLButtonElement, l: impl webapi::IntoAddedEventListener<Event>) { button.remove_event_listener_named("custom", l, None); } off(button, &|_: &Event| {});', 'a closure written in place is a new function'],
     // A media query list's legacy `removeListener` too (#439).
-    ['webapi::window.match_media("(min-width: 1px)").remove_listener(&|_: &webapi::MediaQueryListEvent| {});', 'a closure written in place is a new function, which `remove_listener` never finds'],
-    ['webapi::window.match_media("(min-width: 1px)").add_listener(|e| record(e.matches() as i32));', 'type annotations needed'],
+    ['webapi::window_global::window().match_media("(min-width: 1px)").remove_listener(&|_: &webapi::MediaQueryListEvent| {});', 'a closure written in place is a new function, which `remove_listener` never finds'],
+    ['webapi::window_global::window().match_media("(min-width: 1px)").add_listener(|e| record(e.matches() as i32));', 'type annotations needed'],
     // An event handler property's setter takes the same union, a handler
     // borrowed, which JS keeps: a closure owning what it would drop isn't
     // one, and a JS function of another argument isn't either (rd192).

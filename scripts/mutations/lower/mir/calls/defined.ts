@@ -471,4 +471,13 @@ export const mutations: Mutation[] = [
       "js::is_object is whether",
     ],
   },
+  {
+    name: "global-getter-not-the-types",
+    breaks:
+      "`js::is_defined(Window::new_error_event)` finds no global of a `Window`, its static gone (#1862), so React's `reportGlobalError`, which asks of the window's `ErrorEvent`, is refused where it asked `typeof window.ErrorEvent`",
+    file: "src/lower/mir/calls/defined.rs",
+    find: "            tcx.def_kind(id) == DefKind::Fn\n                && bindings::is_binding(tcx, id)\n",
+    replace: "            false && tcx.def_kind(id) == DefKind::Fn\n                && bindings::is_binding(tcx, id)\n",
+    tests: ["test/webapi-bindings.test.ts", "-t", "a window's constructor is the window's"],
+  },
 ];

@@ -849,15 +849,15 @@ async function fetchText(url) {
 
 ```rust
 use js::{settle, spawn};
-use webapi::window;
+use webapi::window_global::window;
 
 pub async fn fetch_text(url: &str) -> String {
-    let response = window.fetch(url, None).await;
+    let response = window().fetch(url, None).await;
     response.text().await
 }
 
 pub async fn try_fetch(url: &str) -> Result<String, String> {
-    let response = settle(window.fetch(url, None))
+    let response = settle(window().fetch(url, None))
         .await
         .map_err(|e| e.message())?;
     if !response.ok() {
@@ -915,10 +915,10 @@ export function onClick(url) {
 
 ```rust
 use js::promise;
-use webapi::window;
+use webapi::window_global::window;
 
 pub async fn fetch_text(url: &str) -> String {
-    let response = window.fetch(url, None).await;
+    let response = window().fetch(url, None).await;
     response.text().await
 }
 

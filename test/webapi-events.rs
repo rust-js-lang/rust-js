@@ -1,6 +1,7 @@
 use std::cell::Cell;
 
-use webapi::{document, window};
+use webapi::window_global::document;
+use webapi::window_global::window;
 use webapi::events::{Click, Error, Keydown, Toggle};
 use js::{PropertyDescriptor, function, object};
 use webapi::{
@@ -16,7 +17,7 @@ fn record(value: impl Into<f64>) {
 
 pub fn methods(button: &HTMLButtonElement) {
     button.add_event_listener(Click, |e: &PointerEvent| record(e.client_x()), None);
-    document.add_event_listener(Keydown, |e: &KeyboardEvent| record(if e.key() == "Enter" { 5 } else { 0 }), None);
+    document().add_event_listener(Keydown, |e: &KeyboardEvent| record(if e.key() == "Enter" { 5 } else { 0 }), None);
 }
 
 pub fn mutable(button: &HTMLButtonElement) {
@@ -232,7 +233,7 @@ pub fn settled(link: &'static HTMLLinkElement) {
 // the error's message, where it was and what was thrown.
 pub fn errors(image: &'static HTMLImageElement) {
     image.set_onerror(Some(&|e: &Event| record(if e.r#type() == "error" { 7 } else { 0 })));
-    window.set_onerror(Some(&|message: EventOrStr<'_>, _: Option<&str>, line: Option<f64>, _: Option<f64>, _: Option<&js::Unknown>| {
+    window().set_onerror(Some(&|message: EventOrStr<'_>, _: Option<&str>, line: Option<f64>, _: Option<f64>, _: Option<&js::Unknown>| {
         record(if matches!(message, EventOrStr::Str(_)) { line.unwrap_or(0.0) } else { -1.0 });
         true
     }));
@@ -240,10 +241,10 @@ pub fn errors(image: &'static HTMLImageElement) {
 
 // A window's `onerror` read and set back is the function it was.
 pub fn restored() {
-    let saved = window.onerror();
-    window.set_onerror(None);
+    let saved = window().onerror();
+    window().set_onerror(None);
     if let Some(saved) = saved {
-        window.set_onerror(Some(&saved));
+        window().set_onerror(Some(&saved));
     }
 }
 
@@ -334,12 +335,12 @@ pub fn on_removed(button: &HTMLButtonElement) {
 /// capturing listener of the document, which listens for every name of an
 /// event handler it has, `onerror` (#1817).
 pub fn resource_errors() {
-    document.add_event_listener(Error, |_: &Event| record(7), Some(&true));
+    document().add_event_listener(Error, |_: &Event| record(7), Some(&true));
 }
 
 /// A `toggle`, which no spec fires at a document, but each that fires it
 /// gives a `ToggleEvent`: a capturing listener of the document reads a
 /// details' new state (#1817).
 pub fn toggles() {
-    document.add_event_listener(Toggle, |e: &ToggleEvent| record(if e.new_state() == "open" { 1 } else { 0 }), Some(&true));
+    document().add_event_listener(Toggle, |e: &ToggleEvent| record(if e.new_state() == "open" { 1 } else { 0 }), Some(&true));
 }

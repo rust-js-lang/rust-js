@@ -5,7 +5,7 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use webapi::{document};
+use webapi::window_global::document;
 use webapi::events::Keydown;
 use webapi::{Element, Event, EventTargetExt, KeyboardEvent, html_element, html_input_element};
 
@@ -40,7 +40,7 @@ struct View {
 /// An element by its tag's name: `create_element(document, Button)` is one by
 /// its tag's type, `HTMLButtonElement` (ADR 0223).
 fn create(tag: &str) -> &'static Element {
-    document.create_element_named(tag, None)
+    document().create_element_named(tag, None)
 }
 
 fn text(tag: &str, s: &str) -> &'static Element {
@@ -118,7 +118,7 @@ fn render(state: &Shared, view: View) {
 }
 
 pub fn main() {
-    let app = document.get_element_by_id("app").expect("the page has an #app");
+    let app = document().get_element_by_id("app").expect("the page has an #app");
     let state: Shared = Rc::new(RefCell::new(State { todos: Vec::new(), next_id: 1, filter: Filter::All }));
     let view = View { list: create("ul"), left: create("span") };
 
@@ -161,7 +161,7 @@ mod tests {
 
     /// An empty page with the `<div id="app">` that `main` looks for.
     fn page() -> &'static Element {
-        let body = document.body().unwrap();
+        let body = document().body().unwrap();
         body.set_text_content("");
         let app = create("div");
         app.set_id("app");

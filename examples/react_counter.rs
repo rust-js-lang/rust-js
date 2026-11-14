@@ -4,7 +4,7 @@
 
 use react::dom::client::create_root;
 use react::{JSX, jsx, use_state};
-use webapi::document;
+use webapi::window_global::document;
 
 pub fn Counter() -> JSX::Element {
     let (count, set_count) = use_state(|| 0);
@@ -18,6 +18,6 @@ pub fn Counter() -> JSX::Element {
 }
 
 pub fn main() {
-    let app = document.get_element_by_id("app").expect("the page has an #app");
+    let app = document().get_element_by_id("app").expect("the page has an #app");
     create_root(app, None).render(jsx! { <Counter /> });
 }

@@ -9,9 +9,9 @@ calls become plain JS. See [ADR 0024](../docs/decisions/0024-web-crate.md).
 ```rust
 use webapi::events::Click;
 use webapi::tags::Button;
-use webapi::{EventTargetExt, PointerEvent, document};
+use webapi::{EventTargetExt, PointerEvent, window_global::document};
 
-let b = document.create_element(Button); // document.createElement("button"), a HTMLButtonElement
+let b = document().create_element(Button); // document.createElement("button"), a HTMLButtonElement
 b.set_text_content("+");                 // b.textContent = "+"
 b.add_event_listener(Click, |e: &PointerEvent| {
     e.client_x();                         // a button's click is a PointerEvent

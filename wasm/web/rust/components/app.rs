@@ -12,7 +12,7 @@ use std::rc::Rc;
 
 use js::{Promise, reg_exp, spawn};
 use react::{JSX, jsx, use_effect, use_memo, use_ref, use_state, use_transition};
-use webapi::window;
+use webapi::window_global::window;
 
 use super::editor::Editor;
 use super::file_tree::FileTree;
@@ -212,7 +212,7 @@ pub fn App() -> JSX::Element {
             let label = format!("compile #{n}");
             set_stats.update(move |rows| appended(rows, &label, &times));
             // For automated checks.
-            set_last_result(window, &r);
+            set_last_result(window(), &r);
         });
     });
 
@@ -247,12 +247,12 @@ pub fn App() -> JSX::Element {
 
     let open_file: Rc<dyn Fn(String)> = Rc::new(move |path: String| set_project.set(project.opening(&path, live())));
     let delete_file: Rc<dyn Fn(String)> = Rc::new(move |path: String| {
-        if window.confirm(Some(&format!("Delete {path}?"))) {
+        if window().confirm(Some(&format!("Delete {path}?"))) {
             set_project.set(project.removing(&path));
         }
     });
     let new_file = move || {
-        let answer = match window.prompt(Some("New file, e.g. math.rs or geometry/shape.rs:"), None) {
+        let answer = match window().prompt(Some("New file, e.g. math.rs or geometry/shape.rs:"), None) {
             Some(answer) => answer,
             None => return,
         };

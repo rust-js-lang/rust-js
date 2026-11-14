@@ -7,7 +7,7 @@ use std::pin::{Pin, pin};
 use std::rc::Rc;
 
 use js::{JsObject, Promise, Uint8Array, spawn, uint8_array};
-use webapi::{AddEventListenerOptions, Event, EventTargetExt, RequestInit, abort_controller, event, event_target, web_assembly, window};
+use webapi::{AddEventListenerOptions, Event, EventTargetExt, RequestInit, abort_controller, event, event_target, web_assembly, window_global::window};
 
 /// Resolves with `value` after `ms` milliseconds.
 #[cfg_attr(rust_js, rust_js::link_name = "node:timers/promises#setTimeout")]
@@ -127,7 +127,7 @@ pub fn started() -> Rc<RefCell<Vec<u32>>> {
 
 /// `fetch`, from the webapi crate: its promises, awaited one after the other.
 pub async fn load(url: &str) -> (f64, bool, String) {
-    let response = window.fetch(url, None).await;
+    let response = window().fetch(url, None).await;
     let body = response.text().await;
     (response.status(), response.ok(), body)
 }
@@ -136,7 +136,7 @@ pub async fn load(url: &str) -> (f64, bool, String) {
 /// rest `..Default::default()`, which JS reads as not given.
 pub async fn post(url: &str, body: &str) -> String {
     let init = RequestInit { method: Some("POST"), body: Some(Some(body.into())), ..Default::default() };
-    window.fetch(url, Some(init)).await.text().await
+    window().fetch(url, Some(init)).await.text().await
 }
 
 /// A listener that goes when its signal aborts: `addEventListener`'s options.
@@ -155,7 +155,7 @@ pub fn listen_until_aborted() -> u32 {
 
 /// Binary data: `bytes()`, `arrayBuffer()`, and a view of a buffer.
 pub async fn load_bytes(url: &str) -> (f64, f64, f64) {
-    let response = window.fetch(url, None).await;
+    let response = window().fetch(url, None).await;
     let copy = response.clone();
     let bytes = response.bytes().await;
     let buffer = copy.array_buffer().await;

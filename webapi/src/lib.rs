@@ -20,21 +20,6 @@ use core::ops::{Deref, Index};
 use js::{ArrayBuffer, BigInt64Array, BigUint64Array, DataView, Defined, Float32Array, Float64Array, Int16Array, Int32Array, Int8Array, IntoUnknown, JsError, JsObject, Promise, Rest, SharedArrayBuffer, StructuredClone, Takes, Uint16Array, Uint32Array, Uint8Array, Uint8ClampedArray, Unknown};
 
 unsafe extern "Rust" {
-    /// The `document` global.
-    pub safe static document: &'static Document;
-
-    /// The `window` global.
-    pub safe static window: &'static Window;
-
-    /// The `performance` global.
-    pub safe static performance: &'static Performance;
-
-    /// The `navigator` global.
-    pub safe static navigator: &'static Navigator;
-
-    /// The `history` global.
-    pub safe static history: &'static History;
-
     /// The `console` global.
     pub safe static console: &'static Console;
 
@@ -85601,6 +85586,13 @@ pub mod global {
         unreachable!()
     }
 
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/WindowOrWorkerGlobalScope/performance)
+    #[cfg_attr(rust_js, rust_js::link_name = "get performance")]
+    #[cfg_attr(rust_js, rust_js::runs_nothing)]
+    pub fn performance() -> &'static Performance {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WindowOrWorkerGlobalScope/origin)
     #[cfg_attr(rust_js, rust_js::link_name = "get origin")]
     pub fn origin() -> String {
@@ -85888,9 +85880,23 @@ pub mod window_global {
         unreachable!()
     }
 
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/window)
+    #[cfg_attr(rust_js, rust_js::link_name = "get window")]
+    #[cfg_attr(rust_js, rust_js::runs_nothing)]
+    pub fn window() -> &'static Window {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/self)
     #[cfg_attr(rust_js, rust_js::link_name = "get self")]
     pub fn self_() -> &'static Window {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/document)
+    #[cfg_attr(rust_js, rust_js::link_name = "get document")]
+    #[cfg_attr(rust_js, rust_js::runs_nothing)]
+    pub fn document() -> &'static Document {
         unreachable!()
     }
 
@@ -85903,6 +85909,13 @@ pub mod window_global {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/location)
     #[cfg_attr(rust_js, rust_js::link_name = "get location")]
     pub fn location() -> &'static Location {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/history)
+    #[cfg_attr(rust_js, rust_js::link_name = "get history")]
+    #[cfg_attr(rust_js, rust_js::runs_nothing)]
+    pub fn history() -> &'static History {
         unreachable!()
     }
 
@@ -86038,6 +86051,13 @@ pub mod window_global {
     #[cfg_attr(rust_js, rust_js::link_name = "open")]
     #[cfg_attr(rust_js, rust_js::nullable)]
     pub fn open(url: Option<&str>, target: Option<&str>, features: Option<&str>) -> Option<&'static Window> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/navigator)
+    #[cfg_attr(rust_js, rust_js::link_name = "get navigator")]
+    #[cfg_attr(rust_js, rust_js::runs_nothing)]
+    pub fn navigator() -> &'static Navigator {
         unreachable!()
     }
 

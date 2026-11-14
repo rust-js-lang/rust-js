@@ -5,7 +5,7 @@ use std::cell::Cell;
 use std::rc::Rc;
 
 use js::{Promise, set_timeout, spawn};
-use webapi::document;
+use webapi::window_global::document;
 use webapi::events::Click;
 use webapi::tags::{Button, Output};
 use webapi::{Element, EventTargetExt, PointerEvent};
@@ -28,10 +28,10 @@ async fn count_down(output: &'static Element, from: u32) {
 }
 
 pub fn main() {
-    let app = document.get_element_by_id("app").expect("the page has an #app");
-    let start = document.create_element(Button);
+    let app = document().get_element_by_id("app").expect("the page has an #app");
+    let start = document().create_element(Button);
     start.set_text_content("Start");
-    let output = document.create_element(Output);
+    let output = document().create_element(Output);
     // One countdown at a time.
     let running = Rc::new(Cell::new(false));
     start.add_event_listener(Click, move |_: &PointerEvent| {
@@ -56,9 +56,9 @@ mod tests {
 
     /// An empty page with the `<div id="app">` that `main` looks for.
     fn page() -> &'static Element {
-        let body = document.body().unwrap();
+        let body = document().body().unwrap();
         body.set_text_content("");
-        let app = document.create_element(Div);
+        let app = document().create_element(Div);
         app.set_id("app");
         body.append((app,));
         app

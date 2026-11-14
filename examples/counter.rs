@@ -9,13 +9,13 @@ use std::rc::Rc;
 // and event's name a type whose value is its string (ADR 0223):
 // `document.create_element(Button)` is `document.createElement("button")`,
 // an `HTMLButtonElement`.
-use webapi::document;
+use webapi::window_global::document;
 use webapi::events::Click;
 use webapi::tags::{Button, Output};
 use webapi::{EventTargetExt, HTMLButtonElement, HTMLOutputElement, PointerEvent};
 
 fn button(label: &str) -> &'static HTMLButtonElement {
-    let b = document.create_element(Button);
+    let b = document().create_element(Button);
     b.set_text_content(label);
     b
 }
@@ -32,11 +32,11 @@ fn stepper(label: &str, by: i32, count: &Rc<Cell<i32>>, output: &'static HTMLOut
 }
 
 pub fn main() {
-    let app = document.get_element_by_id("app").expect("the page has an #app");
+    let app = document().get_element_by_id("app").expect("the page has an #app");
     // Both buttons change one count, so they share it: `Rc` to share, `Cell`
     // to change it through a shared reference.
     let count = Rc::new(Cell::new(0));
-    let output = document.create_element(Output);
+    let output = document().create_element(Output);
     output.set_text_content("0");
     // `append` takes any number of nodes, each an element or text.
     app.append((
@@ -56,9 +56,9 @@ mod tests {
 
     /// An empty page with the `<div id="app">` that `main` looks for.
     fn page() -> &'static Element {
-        let body = document.body().unwrap();
+        let body = document().body().unwrap();
         body.set_text_content("");
-        let app = document.create_element(Div);
+        let app = document().create_element(Div);
         app.set_id("app");
         body.append((app,));
         app

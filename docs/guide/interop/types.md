@@ -3201,7 +3201,7 @@ export function logPhase(task, label, start, end) {
 
 ```rust
 use js::function;
-use webapi::{ConsoleTask, IntoStrOrPerformanceMeasureOptions, Performance, PerformanceMeasureOptions, performance};
+use webapi::{ConsoleTask, IntoStrOrPerformanceMeasureOptions, Performance, PerformanceMeasureOptions, global::performance};
 
 pub fn log_measure(task: &ConsoleTask, name: &str, start: f64, end: f64) {
     let options = PerformanceMeasureOptions {
@@ -3212,8 +3212,8 @@ pub fn log_measure(task: &ConsoleTask, name: &str, start: f64, end: f64) {
     let options: &dyn IntoStrOrPerformanceMeasureOptions = &options;
     task.run(function::bind(
         Performance::measure,
-        Some(&performance),
-        (performance, name, Some(options), None),
+        Some(&performance()),
+        (performance(), name, Some(options), None),
     ));
 }
 ```

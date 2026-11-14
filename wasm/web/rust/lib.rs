@@ -18,13 +18,13 @@ mod styles;
 mod tree;
 
 use react::dom::client::create_root;
-use webapi::document;
+use webapi::window_global::document;
 
 use components::app::App;
 use react::jsx;
 
 /// Render the page into `#app`.
 pub fn start() {
-    let root = create_root(document.get_element_by_id("app").expect("the page has an #app"), None);
+    let root = create_root(document().get_element_by_id("app").expect("the page has an #app"), None);
     root.render(jsx! { <StrictMode><App /></StrictMode> });
 }

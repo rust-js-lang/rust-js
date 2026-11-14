@@ -220,8 +220,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     false => Expr::member(this, name).answered_by_a_getter(),
                 }
             }
-            // A class's static property, read at each call: `Notification.permission`.
-            (JsForm::Get(name), None) if args.is_empty() => self.js_ref(&name).or_at(fun_span).answered_by_a_getter(),
+            // A class's static property or a global's, read at each call:
+            // `Notification.permission`, `performance`; one that runs nothing
+            // reads the same each time, as a member's does (#1862).
+            (JsForm::Get(name), None) if args.is_empty() => match super::bindings::runs_nothing(self.tcx, def_id) {
+                true => self.js_ref(&name).or_at(fun_span),
+                false => self.js_ref(&name).or_at(fun_span).answered_by_a_getter(),
+            },
             (JsForm::Set(name), Some(this)) if args.len() == 1 && !name.contains('#') => {
                 // A crate's class's prototype replaced, `js::class::<T>().set_prototype(..)`:
                 // its methods are assigned to the prototype its module made.

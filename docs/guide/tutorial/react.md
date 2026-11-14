@@ -198,7 +198,7 @@ the page's title in an effect.
 // src/todos.rs
 use react::event::{ChangeEvent, SubmitEvent};
 use react::{Dispatch, JSX, jsx, use_effect, use_reducer, use_state};
-use webapi::document;
+use webapi::window_global::document;
 
 #[derive(Clone)]
 struct Todo {
@@ -267,7 +267,7 @@ pub fn TodoList() -> JSX::Element {
     let left = todos.items.iter().filter(|todo| !todo.done).count();
 
     use_effect(
-        move || document.set_title(&format!("{left} left")),
+        move || document().set_title(&format!("{left} left")),
         Some(&(left,)),
     );
 

@@ -88,10 +88,10 @@ export function readIndex() {
 
 ```rust
 use js::encode_uri_component;
-use webapi::document;
+use webapi::window_global::document;
 
 pub fn set_title(title: &str) {
-    document.set_title(title);
+    document().set_title(title);
 }
 
 pub fn search_link(query: &str) -> String {

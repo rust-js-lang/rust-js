@@ -908,7 +908,7 @@ test("React's reportGlobalError is a conditional with its comments", () => {
 // LICENSE file in the root directory of this source tree.
 
 use js::{Kind, Unknown};
-use webapi::{ErrorEventInit, console, error_event, window};
+use webapi::{ErrorEventInit, console, error_event, window_global::window};
 
 thread_local! {
     static REPORT_GLOBAL_ERROR: fn(Option<&'static Unknown>) = if js::is_defined(webapi::global::report_error::<Option<&Unknown>>) {
@@ -933,7 +933,7 @@ thread_local! {
                         ..Default::default()
                     }),
                 );
-                let should_log = window.dispatch_event(event);
+                let should_log = window().dispatch_event(event);
                 if !should_log {
                     return;
                 }

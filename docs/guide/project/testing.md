@@ -40,7 +40,7 @@ test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
   client and the native server both depend on, and run `cargo test -p
   models`. See [Building](building.md#a-cargo-workspace).
 - **A crate that touches a JS global doesn't link natively.** A binding of
-  a global, `webapi::document` say, has nothing behind it outside
+  a global, `webapi::window_global::document()` say, has nothing behind it outside
   JavaScript, so `cargo test` of that crate fails at link time:
 
   ```

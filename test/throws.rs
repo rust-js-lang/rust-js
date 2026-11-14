@@ -89,6 +89,6 @@ fn later(value: u32) -> Promise<u32> {
 /// `localStorage` is an `Err` where it may not, a sandboxed frame's, which a
 /// program can't check first (ADR 0442).
 pub fn kept(key: &str) -> Option<String> {
-    let storage = webapi::window.local_storage().ok()?;
+    let storage = webapi::window_global::window().local_storage().ok()?;
     storage.get_item(key)
 }

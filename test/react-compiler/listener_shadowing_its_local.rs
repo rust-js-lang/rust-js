@@ -2,7 +2,7 @@
 //! `key`, as Rust writes them.
 #![allow(non_snake_case)]
 use react::{JSX, jsx, use_effect, use_state};
-use webapi::{EventTargetExt, KeyboardEvent, events, window};
+use webapi::{EventTargetExt, KeyboardEvent, events, window_global::window};
 
 pub fn Keys() -> JSX::Element {
     let (last, set_last) = use_state(String::new);
@@ -12,7 +12,7 @@ pub fn Keys() -> JSX::Element {
                 let key = event.key();
                 set_last.set(key);
             });
-            window.add_event_listener(events::Keydown, key, None);
+            window().add_event_listener(events::Keydown, key, None);
         },
         Some(&()),
     );

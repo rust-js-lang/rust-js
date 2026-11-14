@@ -473,7 +473,7 @@ test("js::is_defined of what isn't a global's binding is refused", () => {
   expect(refused("pub fn ask() -> bool {\n    let n = 1;\n    js::is_defined(&n)\n}\n")).toEqual([false, message]);
   expect(refused("static LIMIT: u32 = 3;\n\npub fn ask() -> bool {\n    js::is_defined(LIMIT)\n}\n")).toEqual([false, message]);
   // A static is given as itself, as a function binding is (ADR 0645).
-  expect(refused("pub fn ask() -> bool {\n    js::is_defined(&js::symbol::iterator)\n}\n")).toEqual([false, expect.stringContaining("given the static itself, `js::is_defined(webapi::performance)`")]);
+  expect(refused("pub fn ask() -> bool {\n    js::is_defined(&js::symbol::iterator)\n}\n")).toEqual([false, expect.stringContaining("given the static itself, `js::is_defined(webapi::console)`")]);
   // A method of a type two globals hold, which says neither.
   expect(refused(`pub struct Twin(std::marker::PhantomData<js::JsObject>);
 

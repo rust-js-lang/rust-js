@@ -7,7 +7,7 @@ use std::rc::Rc;
 
 use js::{object, set_timeout};
 use react::{JSX, jsx, use_effect, use_ref};
-use webapi::{Event, HTMLIFrameElement, abort_controller, message_event, window};
+use webapi::{Event, HTMLIFrameElement, abort_controller, message_event, window_global::window};
 
 use crate::listen::listen;
 use crate::programs::{Outcome, Program, Report, outcome};
@@ -41,7 +41,7 @@ pub fn ResultFrame(ResultFrameProps { program, on_outcome }: ResultFrameProps) -
                 let heard = reported.clone();
                 let told = on_outcome.clone();
                 listen(
-                    window,
+                    window(),
                     "message",
                     Box::new(move |e| {
                         let from_frame = match frame.current() {

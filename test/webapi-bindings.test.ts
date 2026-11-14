@@ -18,14 +18,14 @@ test("webapi's event and tag maps type a listener and an element", () => {
   const dir = fixture("webapi-maps");
   const source = `use webapi::events::{Click, Keydown};
 use webapi::tags::Button;
-use webapi::{EventTargetExt, KeyboardEvent, PointerEvent, document};
+use webapi::{EventTargetExt, KeyboardEvent, PointerEvent, window_global::document};
 pub fn wire() -> &'static webapi::HTMLButtonElement {
-    let button = document.create_element(Button);
+    let button = document().create_element(Button);
     button.set_disabled(false);
     button.add_event_listener(Click, |e: &PointerEvent| {
         let _ = e.client_x();
     }, None);
-    document.add_event_listener(Keydown, |e: &KeyboardEvent| {
+    document().add_event_listener(Keydown, |e: &KeyboardEvent| {
         let _ = e.key();
     }, None);
     button
@@ -40,7 +40,7 @@ pub fn wire() -> &'static webapi::HTMLButtonElement {
   expect(js).toContain('document.addEventListener("keydown", (e) => {');
   // A key's event isn't a mouse's, and a button takes no window's message.
   for (const [wrong, error, message] of [
-    ["document.add_event_listener(Keydown, |e: &KeyboardEvent| {\n        let _ = e.key();", "document.add_event_listener(Keydown, |e: &KeyboardEvent| {\n        let _ = e.client_x();", "no method named `client_x`"],
+    ["document().add_event_listener(Keydown, |e: &KeyboardEvent| {\n        let _ = e.key();", "document().add_event_listener(Keydown, |e: &KeyboardEvent| {\n        let _ = e.client_x();", "no method named `client_x`"],
     ["use webapi::events::{Click, Keydown};", "use webapi::events::{Click, Keydown, Message};\nfn message(b: &webapi::HTMLButtonElement) { b.add_event_listener(Message, |_: &webapi::Event| (), None); }", "the trait `webapi::Listen<webapi::events::Message>` is not implemented for `webapi::HTMLButtonElement`"],
   ]) {
     writeFileSync(join(dir, "lib.rs"), source.replace(wrong, error));
@@ -60,16 +60,16 @@ test("webapi's SVG elements are made by their tags", () => {
   const dir = fixture("webapi-svg");
   writeFileSync(join(dir, "lib.rs"), `use webapi::namespaces::Svg;
 use webapi::svg_tags::{Circle, Svg as SvgTag};
-use webapi::{SVGCircleElement, SVGSVGElement, document};
+use webapi::{SVGCircleElement, SVGSVGElement, window_global::document};
 pub fn draw() -> (&'static SVGSVGElement, &'static SVGCircleElement, bool) {
-    let svg = document.create_element_ns(Svg, SvgTag);
-    let circle = document.create_element_ns(Svg, Circle);
+    let svg = document().create_element_ns(Svg, SvgTag);
+    let circle = document().create_element_ns(Svg, Circle);
     circle.set_attribute("r", "4");
     svg.append((circle,));
     (svg, circle, circle.is_point_in_fill(None))
 }
 pub fn named() -> &'static webapi::Element {
-    document.create_element_ns_named(Some("http://www.w3.org/2000/svg"), "g", None)
+    document().create_element_ns_named(Some("http://www.w3.org/2000/svg"), "g", None)
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
@@ -131,7 +131,7 @@ pub fn twice_later(callback: Box<dyn Fn()>) {
 }
 
 pub fn framed(log: Box<dyn FnOnce(f64)>) -> f64 {
-    webapi::window.request_animation_frame(Box::new(move |time| log(time)))
+    webapi::window_global::window().request_animation_frame(Box::new(move |time| log(time)))
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
@@ -159,10 +159,10 @@ pub fn framed(log: Box<dyn FnOnce(f64)>) -> f64 {
 test("the history global is the page's history", async () => {
   const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
   const dir = fixture("history-global");
-  writeFileSync(join(dir, "lib.rs"), `use webapi::history;
+  writeFileSync(join(dir, "lib.rs"), `use webapi::window_global::history;
 
 pub fn restore() {
-    history.set_scroll_restoration("auto");
+    history().set_scroll_restoration("auto");
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
@@ -186,24 +186,24 @@ test("webapi's any parameters take any value as JS has it, and a clone only one 
   const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
   const dir = fixture("any-params");
   const source = `use js::StructuredClone;
-use webapi::window;
+use webapi::window_global::window;
 pub struct Saved {
     pub page: u32,
 }
 // Its fields are numbers, which the browser copies.
 unsafe impl StructuredClone for Saved {}
 pub fn save(page: u32) {
-    window.history().push_state(Saved { page }, "", None);
+    window().history().push_state(Saved { page }, "", None);
 }
 pub fn copy(text: &str) -> Option<&'static js::Unknown> {
-    window.structured_clone(text, None)
+    window().structured_clone(text, None)
 }
 pub fn copies(blob: &webapi::Blob) -> Option<&'static js::Unknown> {
-    window.structured_clone((vec![Some(1.5), None], "a", blob), None)
+    window().structured_clone((vec![Some(1.5), None], "a", blob), None)
 }
 pub fn send(text: String) {
     let options = webapi::WindowPostMessageOptions { target_origin: Some("*"), ..Default::default() };
-    window.post_message(Some(text), Some(options));
+    window().post_message(Some(text), Some(options));
 }
 pub fn ping(port: &webapi::MessagePort) {
     port.post_message(1, None);
@@ -218,8 +218,8 @@ pub fn listed(value: Option<&js::Unknown>) -> Option<String> {
     }
 }
 pub fn report(error: &js::JsError) {
-    window.report_error(error);
-    window.report_error(|| ());
+    window().report_error(error);
+    window().report_error(|| ());
 }
 `;
   writeFileSync(join(dir, "lib.rs"), source);
@@ -237,12 +237,12 @@ pub fn report(error: &js::JsError) {
   expect(js).toContain("return JSON.stringify(value);");
   expect(js).toContain("window.reportError(error);");
   for (const [written, error] of [
-    ["window.structured_clone(|| (), None)", "the trait `js::StructuredClone` is not implemented for closure"],
-    ["window.structured_clone(Some(None::<i32>), None)", "the trait `js::Defined` is not implemented for `std::option::Option<i32>`"],
-    ["window.structured_clone(window, None)", "the trait `js::StructuredClone` is not implemented for `webapi::Window`"],
-    ["window.structured_clone(Some(()), None)", "the trait `js::Defined` is not implemented for `()`"],
+    ["window().structured_clone(|| (), None)", "the trait `js::StructuredClone` is not implemented for closure"],
+    ["window().structured_clone(Some(None::<i32>), None)", "the trait `js::Defined` is not implemented for `std::option::Option<i32>`"],
+    ["window().structured_clone(window(), None)", "the trait `js::StructuredClone` is not implemented for `webapi::Window`"],
+    ["window().structured_clone(Some(()), None)", "the trait `js::Defined` is not implemented for `()`"],
   ]) {
-    writeFileSync(join(dir, "lib.rs"), source.replace("window.structured_clone(text, None)", written));
+    writeFileSync(join(dir, "lib.rs"), source.replace("window().structured_clone(text, None)", written));
     const result = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "wrong.js"), ...withWeb], { cwd: dir });
     expect(result.exitCode).not.toBe(0);
     expect(result.stderr.toString()).toContain(error);
@@ -279,14 +279,14 @@ test("each class a window has is constructed of the window too", () => {
 test("a window's own functions are called bare", async () => {
   const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
   const dir = fixture("window-global");
-  writeFileSync(join(dir, "lib.rs"), `use webapi::{window, window_global};
+  writeFileSync(join(dir, "lib.rs"), `use webapi::window_global;
 
 pub fn cleared() -> bool {
     window_global::confirm(Some("Clear all your edits?"))
 }
 
 pub fn asked() -> bool {
-    window.confirm(Some("Sure?"))
+    window_global::window().confirm(Some("Sure?"))
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
@@ -519,11 +519,11 @@ pub fn run_in(task: &ConsoleTask, x: f64) -> f64 {
 test("a window's constructor is the window's, apart from the global one", async () => {
   const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
   const dir = fixture("window-constructor");
-  writeFileSync(join(dir, "lib.rs"), `use webapi::{ErrorEventInit, Window, window};
+  writeFileSync(join(dir, "lib.rs"), `use webapi::{ErrorEventInit, Window, window_global::window};
 
 pub fn report(message: &str) -> Option<bool> {
     if js::is_defined(Window::new_error_event) {
-        let event = window.new_error_event(
+        let event = window().new_error_event(
             "error",
             Some(ErrorEventInit {
                 bubbles: Some(true),
@@ -531,13 +531,13 @@ pub fn report(message: &str) -> Option<bool> {
                 ..Default::default()
             }),
         );
-        return Some(window.dispatch_event(event));
+        return Some(window().dispatch_event(event));
     }
     None
 }
 
 pub fn wasm(bytes: &js::ArrayBuffer) -> &'static webapi::WebAssemblyModule {
-    window.new_web_assembly_module(bytes, None)
+    window().new_web_assembly_module(bytes, None)
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
@@ -657,7 +657,7 @@ const AbortControllerLocal =
 test("console.timeStamp is Chrome's, and a measure's times are doubles", async () => {
   const withWeb = ["--", "--edition", "2024", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
   const dir = fixture("webapi-time-stamp");
-  writeFileSync(join(dir, "lib.rs"), `use webapi::{PerformanceMeasureOptions, console, performance};
+  writeFileSync(join(dir, "lib.rs"), `use webapi::{PerformanceMeasureOptions, console, global::performance};
 
 pub fn log_render(name: &str, start_time: f64, end_time: f64, color: &str) {
     if js::is_function(console::time_stamp) {
@@ -678,7 +678,7 @@ pub fn measure(name: &str, start_time: f64, end_time: f64) {
         end: Some(end_time.into()),
         ..Default::default()
     };
-    performance.measure(name, Some(&options), None);
+    performance().measure(name, Some(&options), None);
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);

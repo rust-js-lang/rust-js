@@ -139,7 +139,7 @@ pub fn later(task: Box<dyn FnOnce()>) {
 // `setTimeout` read as a value alone, a call of it refused whatever it's
 // given (`#[rust_js::value_only]`, rd314).
 test("webapi's window.set_timeout is gone, an error naming js::set_timeout", () => {
-  for (const call of [`webapi::window.set_timeout("tick()", None)`, `webapi::window.set_timeout(|| (), None)`, `let task: Box<dyn FnOnce()> = Box::new(|| ()); webapi::window.set_timeout(task, None)`, `webapi::window.clear_timeout(Some(1.0))`, `webapi::window.set_interval("tick()", None, ())`]) {
+  for (const call of [`webapi::window_global::window().set_timeout("tick()", None)`, `webapi::window_global::window().set_timeout(|| (), None)`, `let task: Box<dyn FnOnce()> = Box::new(|| ()); webapi::window_global::window().set_timeout(task, None)`, `webapi::window_global::window().clear_timeout(Some(1.0))`, `webapi::window_global::window().set_interval("tick()", None, ())`]) {
     const { code, stderr } = compiled("window-timers-gone", `pub fn later() {
     ${call};
 }
@@ -197,11 +197,11 @@ pub fn lease(name: &'static str) -> Lease {
 // Window::set_timeout))`, it's the window's; a call stays the js crate's
 // (ADR 1020, amended, rd314, the user's decision).
 test("a window's setTimeout is read as a value, the window's own", async () => {
-  const { code, stderr, dir, js } = compiled("window-set-timeout-value", `use webapi::{Window, window};
+  const { code, stderr, dir, js } = compiled("window-set-timeout-value", `use webapi::{Window, window_global::window};
 
 thread_local! {
     static SET_TIMEOUT: &'static dyn Fn(Box<dyn FnOnce()>, Option<f64>) -> &'static js::TimeoutId =
-        js::method((window, Window::set_timeout));
+        js::method((window(), Window::set_timeout));
 }
 
 pub fn report(message: String) {

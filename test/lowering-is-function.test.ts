@@ -323,7 +323,7 @@ test("js::is_function of what isn't a global's binding is refused", () => {
   ]);
   expect(refused("pub fn ask() -> bool {\n    js::is_function(&js::symbol::iterator)\n}\n")).toEqual([
     false,
-    expect.stringContaining("given the static itself, `js::is_function(webapi::performance)`"),
+    expect.stringContaining("given the static itself, `js::is_function(webapi::console)`"),
   ]);
 });
 

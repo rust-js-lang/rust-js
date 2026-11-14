@@ -3,7 +3,7 @@
 
 use js::{encode_uri_component, settle};
 use models::{Contact, NewContact, Problem};
-use webapi::{AbortSignal, RequestInit, headers, window};
+use webapi::{AbortSignal, RequestInit, headers, window_global::window};
 
 /// Why a request failed.
 pub enum Failure {
@@ -29,7 +29,7 @@ impl Failure {
 /// not. A rejection, a network error or an abort, is an `Err` (`settle`).
 async fn call(url: &str, init: RequestInit<'_>, ok: u16) -> Result<String, Failure> {
     let signal = init.signal.flatten();
-    let response = match settle(window.fetch(url, Some(init))).await {
+    let response = match settle(window().fetch(url, Some(init))).await {
         Ok(response) => response,
         Err(_) if signal.is_some_and(AbortSignal::aborted) => return Err(Failure::Aborted),
         Err(_) => return Err(Failure::Network),

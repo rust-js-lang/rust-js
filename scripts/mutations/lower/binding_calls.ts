@@ -192,9 +192,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a call of a `get X.y` binding without a receiver, a class's static property, is rejected",
     file: "src/lower/binding_calls.rs",
-    find: "            (JsForm::Get(name), None) if args.is_empty() => self.js_ref(&name).or_at(fun_span).answered_by_a_getter(),",
+    find: "            (JsForm::Get(name), None) if args.is_empty() => match super::bindings::runs_nothing(self.tcx, def_id) {",
     replace:
-      "            (JsForm::Get(name), None) if false => self.js_ref(&name).or_at(fun_span).answered_by_a_getter(),",
+      "            (JsForm::Get(name), None) if false => match super::bindings::runs_nothing(self.tcx, def_id) {",
     tests: [
       "test/lowering-bindings.test.ts",
       "-t",
@@ -1024,5 +1024,14 @@ export const mutations: Mutation[] = [
     find: "                Expr::bin(Op::And, is, Expr::call(test, vec![value]))\n",
     replace: "                Expr::call(test, vec![value])\n",
     tests: ["test/js-predicates.test.ts", "-t", "upstream's predicate"],
+  },
+  {
+    name: "global-getter-reads-differ",
+    breaks:
+      "a global's getter that runs nothing is taken for one a getter answers, so React's `function::bind(Performance::measure, Some(&performance()), (performance(), ..))` is `((self, ..) => self.measure(..)).bind(performance, performance, ..)`, not upstream's `performance.measure.bind(performance, ..)` (#1862)",
+    file: "src/lower/binding_calls.rs",
+    find: "                true => self.js_ref(&name).or_at(fun_span),\n",
+    replace: "                true => self.js_ref(&name).or_at(fun_span).answered_by_a_getter(),\n",
+    tests: ["test/webapi-globals.test.ts", "-t", "a global a host may lack"],
   },
 ];

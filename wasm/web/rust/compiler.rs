@@ -20,8 +20,8 @@ use std::rc::Rc;
 
 use js::{JsError, JsObject, Promise, Uint8Array, js_error, number, promise, uint8_array};
 use webapi::{
-    Response, WebAssemblyInstance, WebAssemblyMemory, WebAssemblyModule, performance, text_decoder, text_encoder,
-    web_assembly, window,
+    Response, WebAssemblyInstance, WebAssemblyMemory, WebAssemblyModule, global::performance, text_decoder,
+    text_encoder, web_assembly, window_global::window,
 };
 
 // The crates a program may use, each once, as the site serves them and its
@@ -261,7 +261,7 @@ pub fn mb(n: f64) -> String {
 /// Download the compiler, the sysroot, the webapi and js crates and the examples,
 /// giving `stat` each one's time as it arrives.
 pub async fn load(stat: Stat) -> Loaded {
-    let start = performance.now();
+    let start = performance().now();
     // All downloads start here, together, each a JS promise, which runs as
     // it's made (ADR 0029, amended). Awaiting them one by one below only
     // collects the results.
@@ -285,21 +285,21 @@ pub async fn load(stat: Stat) -> Loaded {
         styles,
         examples: examples.await,
     };
-    stat("ready after".to_string(), ms(performance.now() - start));
+    stat("ready after".to_string(), ms(performance().now() - start));
     loaded
 }
 
 async fn load_compiler(start: f64, stat: Stat) -> &'static WebAssemblyModule {
-    let module = web_assembly::compile_streaming(window.fetch("./rust-js.wasm", None), None).await;
+    let module = web_assembly::compile_streaming(window().fetch("./rust-js.wasm", None), None).await;
     stat(
         "download + compile rust-js.wasm".to_string(),
-        ms(performance.now() - start),
+        ms(performance().now() - start),
     );
     module
 }
 
 async fn load_sysroot(start: f64, stat: Stat) -> HashMap<String, &'static WasiFile> {
-    let names = names_json(window.fetch("./sysroot.json", None).await).await;
+    let names = names_json(window().fetch("./sysroot.json", None).await).await;
     // Every file's download starts before the first is awaited.
     let mut downloads = Vec::new();
     for name in names {
@@ -316,7 +316,7 @@ async fn load_sysroot(start: f64, stat: Stat) -> HashMap<String, &'static WasiFi
         "download sysroot".to_string(),
         format!(
             "{} ({} files, {})",
-            ms(performance.now() - start),
+            ms(performance().now() - start),
             entries.len(),
             mb(size)
         ),
@@ -325,7 +325,7 @@ async fn load_sysroot(start: f64, stat: Stat) -> HashMap<String, &'static WasiFi
 }
 
 async fn load_sysroot_file(name: String) -> (String, &'static WasiFile) {
-    let response = window.fetch(format!("./sysroot/{name}").as_str(), None).await;
+    let response = window().fetch(format!("./sysroot/{name}").as_str(), None).await;
     let bytes = uint8_array::new_with_buffer(response.array_buffer().await, None, None);
     (name, new_file(bytes, &FileOptions { readonly: true }))
 }
@@ -333,18 +333,22 @@ async fn load_sysroot_file(name: String) -> (String, &'static WasiFile) {
 /// `@rust-js/std`'s modules and React's, and the stylesheets, for a
 /// program to import (ADR 0044).
 async fn load_packages(start: f64, stat: Stat) -> (Vec<(String, String)>, Vec<(String, String)>) {
-    let packages = packages_json(window.fetch("./packages.json", None).await).await;
-    stat("download packages".to_string(), ms(performance.now() - start));
+    let packages = packages_json(window().fetch("./packages.json", None).await).await;
+    stat("download packages".to_string(), ms(performance().now() - start));
     (text_fields(packages.modules), text_fields(packages.styles))
 }
 
 async fn load_binding_crate(name: &str, start: f64, stat: Stat) -> &'static WasiFile {
-    let bytes = (window.fetch(format!("./crates/lib{name}.rmeta").as_str(), None).await)
+    let bytes = (window().fetch(format!("./crates/lib{name}.rmeta").as_str(), None).await)
         .array_buffer()
         .await;
     stat(
         format!("download {name} crate"),
-        format!("{} ({})", ms(performance.now() - start), mb(bytes.byte_length() as f64)),
+        format!(
+            "{} ({})",
+            ms(performance().now() - start),
+            mb(bytes.byte_length() as f64)
+        ),
     );
     new_file(
         uint8_array::new_with_buffer(bytes, None, None),
@@ -353,11 +357,11 @@ async fn load_binding_crate(name: &str, start: f64, stat: Stat) -> &'static Wasi
 }
 
 async fn load_examples() -> Vec<Example> {
-    examples_json(window.fetch("./examples.json", None).await).await
+    examples_json(window().fetch("./examples.json", None).await).await
 }
 
 async fn fetch_example_file(name: String, path: String) -> (String, String) {
-    let response = window.fetch(format!("./examples/{name}/{path}").as_str(), None).await;
+    let response = window().fetch(format!("./examples/{name}/{path}").as_str(), None).await;
     (path, response.text().await)
 }
 
@@ -525,14 +529,14 @@ pub async fn compile(loaded: &Loaded, sources: &HashMap<String, String>, root_fi
         &WasiOptions { debug: false },
     );
 
-    let t0 = performance.now();
+    let t0 = performance().now();
     let imports = Imports {
         wasi_snapshot_preview1: wasi_import(wasi),
     };
     let instance = web_assembly::instantiate_with_web_assembly_module(loaded.module, Some(&imports)).await;
-    let t1 = performance.now();
+    let t1 = performance().now();
     let started = run_wasi(wasi, instance);
-    let t2 = performance.now();
+    let t2 = performance().now();
     let ok = matches!(started, Ok(0));
     let exit = match started {
         Ok(code) => code.to_string(),

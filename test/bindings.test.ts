@@ -17,14 +17,14 @@ test("a listener holding a value with a destructor is refused", () => {
   const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
   const dir = fixture("webapi-listener-drop");
   const source = `use webapi::events::Click;
-use webapi::{EventTargetExt, PointerEvent, document};
+use webapi::{EventTargetExt, PointerEvent, window_global::document};
 pub struct Guard;
 impl Drop for Guard {
     fn drop(&mut self) {}
 }
 pub fn wire() {
     let guard = Guard;
-    document.add_event_listener(Click, move |_: &PointerEvent| {
+    document().add_event_listener(Click, move |_: &PointerEvent| {
         let _g = &guard;
     }, None);
 }
@@ -42,7 +42,7 @@ pub fn wire() {
 test("a union parameter takes each member as it is", async () => {
   const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
   const dir = fixture("union-parameters");
-  const source = `use webapi::{Blob, BodyInit, Element, IntoBodyInit, IntoFloat32List, Response, response, window};
+  const source = `use webapi::{Blob, BodyInit, Element, IntoBodyInit, IntoFloat32List, Response, response, window_global::window};
 
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum UploadBody<'a> {
@@ -112,7 +112,7 @@ pub fn count<'a>(values: impl IntoFloat32List + 'a) -> u32 {
 
 pub fn page(el: &Element, blob: &Blob, url: &str) -> (&'static Response, js::Promise<&'static Response>) {
     el.before(("text",));
-    (response::new(Some(&blob), None), window.fetch(url, None))
+    (response::new(Some(&blob), None), window().fetch(url, None))
 }
 `;
   writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n');
@@ -152,7 +152,7 @@ pub fn page(el: &Element, blob: &Blob, url: &str) -> (&'static Response, js::Pro
 test("a binding's callback parameter is a closure", async () => {
   const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
   const dir = fixture("callback-parameters");
-  writeFileSync(join(dir, "lib.rs"), `use webapi::{Element, IntersectionObserver, IntersectionObserverInit, intersection_observer, window};
+  writeFileSync(join(dir, "lib.rs"), `use webapi::{Element, IntersectionObserver, IntersectionObserverInit, intersection_observer, window_global::window};
 
 pub fn watch(target: &'static Element, seen: &'static dyn Fn(bool)) -> &'static IntersectionObserver {
     let observer = intersection_observer::new(
@@ -170,7 +170,7 @@ pub fn watch(target: &'static Element, seen: &'static dyn Fn(bool)) -> &'static 
 }
 
 pub fn next_frame(then: &'static dyn Fn(f64)) -> f64 {
-    window.request_animation_frame(Box::new(move |time| then(time)))
+    window().request_animation_frame(Box::new(move |time| then(time)))
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);

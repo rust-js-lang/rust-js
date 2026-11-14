@@ -247,10 +247,10 @@ export function tagged(tag) {
 
 ```rust
 use js::JsError;
-use webapi::window;
+use webapi::window_global::window;
 
 pub async fn load_text(url: &str) -> Result<String, &'static JsError> {
-    let response = js::settle(window.fetch(url, None)).await?;
+    let response = js::settle(window().fetch(url, None)).await?;
     if !response.ok() {
         return Ok(format!("HTTP {}", response.status()));
     }
@@ -624,10 +624,10 @@ Rust has no `for await`. Read a stream by awaiting its reader's `read()`
 until it's `done`:
 
 ```rust
-use webapi::{readable_stream_default_reader, window};
+use webapi::{readable_stream_default_reader, window_global::window};
 
 pub async fn count_chunks(url: &str) -> u32 {
-    let response = window.fetch(url, None).await;
+    let response = window().fetch(url, None).await;
     let Some(body) = response.body() else {
         return 0;
     };

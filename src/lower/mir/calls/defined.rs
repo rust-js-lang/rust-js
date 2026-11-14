@@ -11,7 +11,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `js::is_defined(binding)`: `typeof MessageChannel !== "undefined"`,
     /// of the global its argument names (ADR 0597), and `js::is_function`'s
     /// `typeof setTimeout === "function"` of the same (ADR 0942): a binding
-    /// function's, by its type, or a static's, `webapi::performance`, by the
+    /// function's, by its type, or a static's, `webapi::console`, by the
     /// static it is, so no temporary between hides it. A global's own name,
     /// its `js_path`: not an import's, which isn't the host's to lack.
     /// And `js::is_function` of a value JS gave, `typeof callback ===
@@ -115,7 +115,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         span,
                         format!(
                             "`{function}` of a static is given the static itself, \
-                             `{function}(webapi::performance)`, not a reference to it"
+                             `{function}(webapi::console)`, not a reference to it"
                         ),
                     ));
                 }
@@ -496,8 +496,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// `performance.now` of `Performance::now`, a method binding of a type
-    /// one global holds, the one static of its crate of that type (ADR
-    /// 0597): its path, the global's and the method's JS name, or the
+    /// one global holds, the one static of its crate of that type, or the
+    /// one getter of the global scope named as its type is, `window()` of a
+    /// `Window`, as a global a host may lack is read by a call (ADR 0597,
+    /// #1862): its path, the global's and the method's JS name, or the
     /// constructor's it makes, `window.ErrorEvent` (ADR 0891).
     fn member_of_global(&self, method: rustc_span::def_id::DefId) -> Option<String> {
         let tcx = self.tcx;
@@ -520,15 +522,51 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 && matches!(*tcx.type_of(id).instantiate_identity().skip_normalization().peel_refs().kind(),
                     ty::Adt(held, _) if held.did() == of.did())
         };
+        // A global scope's getter, of no `this`, named as the type is.
+        let named = {
+            let type_name = tcx.item_name(of.did()).to_string();
+            let mut chars = type_name.chars();
+            chars
+                .next()
+                .map(|first| first.to_lowercase().chain(chars).collect::<String>())
+        };
+        let read = |id: rustc_span::def_id::DefId| {
+            tcx.def_kind(id) == DefKind::Fn
+                && bindings::is_binding(tcx, id)
+                && matches!(bindings::js_form(tcx, id), bindings::JsForm::Get(name) if Some(&name) == named.as_ref())
+                && tcx
+                    .fn_sig(id)
+                    .instantiate_identity()
+                    .skip_normalization()
+                    .skip_binder()
+                    .inputs()
+                    .is_empty()
+                && matches!(*tcx.fn_sig(id).instantiate_identity().skip_normalization().skip_binder().output().peel_refs().kind(),
+                    ty::Adt(held, _) if held.did() == of.did())
+        };
         let statics: Vec<rustc_span::def_id::DefId> = match of.did().as_local() {
             Some(_) => (tcx.hir_crate_items(()).foreign_items())
                 .map(|item| item.owner_id.to_def_id())
                 .filter(|&id| holds(id))
                 .collect(),
-            None => (tcx.module_children(of.did().krate.as_def_id()).iter())
-                .filter_map(|child| child.res.opt_def_id())
-                .filter(|&id| holds(id))
-                .collect(),
+            None => {
+                let root = tcx.module_children(of.did().krate.as_def_id());
+                // The root's statics, and its modules' getters, the global
+                // scope's.
+                let modules = (root.iter()).filter_map(|child| match child.res {
+                    rustc_hir::def::Res::Def(DefKind::Mod, module) => Some(module),
+                    _ => None,
+                });
+                let getters = modules
+                    .flat_map(|module| tcx.module_children(module).iter())
+                    .filter_map(|child| child.res.opt_def_id())
+                    .filter(|&id| read(id));
+                (root.iter())
+                    .filter_map(|child| child.res.opt_def_id())
+                    .filter(|&id| holds(id))
+                    .chain(getters)
+                    .collect()
+            }
         };
         let [global] = statics.as_slice() else { return None };
         Some(format!("{}.{name}", bindings::js_path(tcx, *global)?))

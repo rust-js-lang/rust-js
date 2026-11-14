@@ -2,7 +2,7 @@
 //! them a route shows, and where they're kept.
 
 use js::JsError;
-use webapi::window;
+use webapi::window_global::window;
 
 #[derive(Clone, PartialEq)]
 pub struct Todo {
@@ -108,7 +108,7 @@ fn stringify(todos: &Vec<Todo>) -> String {
 
 /// The todos kept from before, or none.
 pub fn load() -> Vec<Todo> {
-    let Ok(storage) = window.local_storage() else {
+    let Ok(storage) = window().local_storage() else {
         return Vec::new();
     };
     match storage.get_item(KEY) {
@@ -119,7 +119,7 @@ pub fn load() -> Vec<Todo> {
 
 /// The todos, kept for next time, where they can be.
 pub fn save(todos: &Vec<Todo>) {
-    if let Ok(storage) = window.local_storage() {
+    if let Ok(storage) = window().local_storage() {
         let _ = storage.set_item(KEY, &stringify(todos));
     }
 }

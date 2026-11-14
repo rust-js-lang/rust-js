@@ -411,7 +411,7 @@ React DOM is `react::dom`:
 use react::dom::client::{RootOptions, create_root};
 use react::dom::create_portal;
 use react::dom::server::render_to_string;
-use react::webapi::{Element, window};
+use react::webapi::{Element, window_global::window};
 use react::{JSX, ReactNode, jsx};
 #
 # mod app {
@@ -429,7 +429,7 @@ pub struct ModalProps<'a> {
 }
 
 pub fn Modal(ModalProps { children }: ModalProps) -> Option<JSX::Element> {
-    let body = window.document().body()?;
+    let body = window().document().body()?;
     let content = jsx! { <div className="modal">{children}</div> };
     Some(create_portal(content, body, None).element())
 }

@@ -122,3 +122,10 @@ without `scheduler`, the bare read throwing beside it; and
 `test/webapi-coverage.test.ts`, which holds the crate to what the
 generator writes.
 
+## Amendment (2026-11-15): a global a host may lack is read by a call (#1862)
+
+`webapi::document`, `window`, `navigator`, `history` and `performance`
+are no longer statics: each is its scope's getter, `window_global::document()`,
+`global::performance()`, as this ADR's rd195 amendment made the scope's
+other attributes. Only `console` and `global_this` stay statics, which
+every host has ([ADR 1157](1157-a-global-a-host-may-lack-is-read-by-a-call.md)).

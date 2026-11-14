@@ -273,15 +273,15 @@ The web platform, **generated from W3C's WebIDL**, the source TypeScript's
 ```rust
 use webapi::events::Click;
 use webapi::tags::Button;
-use webapi::{EventTargetExt, PointerEvent, document, window};
+use webapi::{EventTargetExt, PointerEvent, window_global::{document, window}};
 
 pub fn mount() {
-    let app = document.get_element_by_id("app").expect("the page has an #app");
-    let button = document.create_element(Button);
+    let app = document().get_element_by_id("app").expect("the page has an #app");
+    let button = document().create_element(Button);
     button.set_text_content("Save");
     button.add_event_listener(Click, |event: &PointerEvent| {
         let x = event.client_x();
-        if let Ok(storage) = window.local_storage() {
+        if let Ok(storage) = window().local_storage() {
             let _ = storage.set_item("clicked-at", &x.to_string());
         }
     }, None);
@@ -289,7 +289,7 @@ pub fn mount() {
 }
 
 pub async fn load(url: &str) -> String {
-    let response = window.fetch(url, None).await;
+    let response = window().fetch(url, None).await;
     response.text().await
 }
 ```

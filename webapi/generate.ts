@@ -513,15 +513,18 @@ function throwing(i: Interface, f: Fn): Fn {
 // `Promise<any>`: a promise of any value, `dyn IntoUnknown` (ADR 0654).
 const FIELD_TYPES: Record<string, string> = { "RequestInit.headers": "&'a Headers", "PromiseRejectionEventInit.promise": "&'a dyn IntoUnknown" };
 
-// The globals at the crate root: `document`, `window`, `performance`, which
-// a worker has too, `navigator`, and `history`, the page's; `console`,
-// a namespace's value (ADR 0667); and `globalThis`, `global_this`, the
-// global object, `GlobalThis`, a `Window` through its `Deref`, as
-// TypeScript's `typeof globalThis` has a window's members: its getter reads
-// a global as its property, `undefined` where the host lacks it (rd319). A
-// type of its own, so a `Window` method's global is `window`'s alone.
+// The globals at the crate root, what every JS host has, so a static, its
+// read never failing: `console`, a namespace's value `[Exposed=*]` (ADR
+// 0667); and `globalThis`, `global_this`, ES's global object,
+// `GlobalThis`, a `Window` through its `Deref`, as TypeScript's `typeof
+// globalThis` has a window's members: its getter reads a global as its
+// property, `undefined` where the host lacks it (rd319). A type of its
+// own, so a `Window` method's global is `window`'s alone. Every other
+// global, one a host may lack, `document` where a server renders, is read
+// by a call as each of the global scope's attributes is,
+// `window_global::document()`, JS's own `ReferenceError` where it's absent
+// (#1862, ADR 1157).
 const GLOBALS: [string, string][] = [
-  ["document", "Document"], ["window", "Window"], ["performance", "Performance"], ["navigator", "Navigator"], ["history", "History"],
   ["console", "Console"], ["globalThis", "GlobalThis"],
 ];
 
@@ -1385,6 +1388,30 @@ function restItem(type: string): string {
 // a blob's, and calls nothing, nor fires any event.
 const QUIET = new Set(["FormData.append", "FormData.delete", "FormData.set"]);
 
+// A global scope's getters that run no code, each the same object at each
+// read but where a program replaces it (#1862, ADR 1157), so a read of one
+// reads the same each time: `performance.measure.bind(performance, ..)`.
+// No extended attribute says it: `[LegacyUnforgeable]` is `location`'s and
+// `top`'s too, and `history` and `navigator` have none. So each is listed
+// with its IDL type and the spec's steps that say it, and one gone from
+// WebIDL or of another type fails the generator, as `THROWS` does.
+const QUIET_GLOBALS: Record<string, { type: string; steps: string }> = {
+  // HTML, "The window, frames, and self getter steps are to return this's
+  // relevant realm.[[GlobalEnv]].[[GlobalThisValue]]".
+  "Window.window": { type: "WindowProxy", steps: "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-window" },
+  // HTML, "The document getter steps are to return this's associated Document".
+  "Window.document": { type: "Document", steps: "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-document-2" },
+  // HTML, "The history getter steps are to return this's associated Document's history object".
+  "Window.history": { type: "History", steps: "https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-history" },
+  // HTML, "The navigator attribute of the Window interface must return the
+  // Window's Navigator object".
+  "Window.navigator": { type: "Navigator", steps: "https://html.spec.whatwg.org/multipage/system-state.html#dom-navigator" },
+  // High Resolution Time, "The performance getter steps are to return the
+  // Performance object associated with this".
+  "WindowOrWorkerGlobalScope.performance": { type: "Performance", steps: "https://w3c.github.io/hr-time/#the-performance-attribute" },
+};
+const quietBound = new Set<string>();
+
 // Operations that call each callback they're given once at most, a request
 // for one later call or for one answer: each a `Box<dyn FnOnce(..)>`, as
 // the js crate's `setTimeout` takes, so it may move what it holds out
@@ -1856,7 +1883,9 @@ function functionsOf(declared: Interface): Fn[] {
         const result = rustType(m.idlType!, "result");
         if (typeof result === "string") {
           const given = orNull(result, m.idlType!);
-          fns.push({ name: snake(m.name!), jsName: `get ${m.name}`, params: [], result: given, doc: [`[MDN](${mdn(i.name, m.name)})`], none: noneOf(m.idlType!, given), whole: wholeOf(m.idlType!, given) });
+          const key = `${i.name}.${m.name}`;
+          const quiet = QUIET_GLOBALS[key]?.type === m.idlType!.idlType ? (quietBound.add(key), { runsNothing: true }) : {};
+          fns.push({ name: snake(m.name!), jsName: `get ${m.name}`, params: [], result: given, doc: [`[MDN](${mdn(i.name, m.name)})`], none: noneOf(m.idlType!, given), whole: wholeOf(m.idlType!, given), ...quiet });
         } else {
           skip(result.skip);
         }
@@ -3258,6 +3287,10 @@ for (const name of INTERFACES) {
 // WebIDL, or written wrong, is no `Result` that quietly isn't.
 const unthrown = Object.keys(THROWS).filter((key) => !thrown.has(key));
 if (unthrown.length > 0) throw new Error(`THROWS names no member this crate binds: ${unthrown.join(", ")}`);
+// Each getter `QUIET_GLOBALS` names is one this crate binds, of the type
+// it lists: a name gone or retyped is no reading the same that quietly isn't.
+const unquiet = Object.keys(QUIET_GLOBALS).filter((key) => !quietBound.has(key));
+if (unquiet.length > 0) throw new Error(`QUIET_GLOBALS names no global getter this crate binds of its type: ${unquiet.join(", ")}`);
 await Bun.write(process.argv[2] ?? new URL("./src/lib.rs", import.meta.url), `${out.join("\n")}\n`);
 // Its event map to TypeScript, beside it: `webapi/index.d.ts`, or a scratch
 // file's, a check's.

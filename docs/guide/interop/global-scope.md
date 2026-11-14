@@ -84,11 +84,47 @@ export function title() {
 }
 ```
 
-The crates declare the globals every host has: `webapi::window`,
-`webapi::document`, `webapi::navigator`, `webapi::history`,
-`webapi::performance` and `webapi::console`, the `console` namespace as a
-value, whose functions are the `webapi::console` module's,
-`console::log((..))` ([ADR 0667](../../decisions/0667-console-is-a-value-and-rest-arguments-are-one.md)).
+The crates declare as `static`s the globals every JS host has:
+`webapi::console`, the `console` namespace as a value, whose functions are
+the `webapi::console` module's, `console::log((..))`
+([ADR 0667](../../decisions/0667-console-is-a-value-and-rest-arguments-are-one.md)),
+and `webapi::global_this`. A global a host may lack, `document` where a
+server renders, is read by a call, as each of the global scope's
+attributes is: `window_global::document()`, `window_global::window()`,
+`window_global::navigator()`, `window_global::history()` and
+`global::performance()`, JS's bare `document`, which throws JS's
+`ReferenceError` where there's none
+([ADR 1157](../../decisions/1157-a-global-a-host-may-lack-is-read-by-a-call.md)).
+Ask whether the host has one with `js::is_defined(window_global::document)`,
+`typeof document !== "undefined"`, and read one only where it's needed with
+`unwrap_or_else`, as clippy says:
+
+```rust
+use webapi::{Document, window_global};
+
+pub fn active(doc: Option<&'static Document>) -> bool {
+    let doc = doc.unwrap_or_else(window_global::document);
+    doc.has_focus()
+}
+
+pub fn has_document() -> bool {
+    js::is_defined(window_global::document)
+}
+```
+
+```js
+export function active(doc) {
+  doc ??= document;
+  return doc.hasFocus();
+}
+
+export function hasDocument() {
+  return typeof document !== "undefined";
+}
+```
+
+`doc ??= document` reads `document` only where no `doc` is given, so a
+server that renders with its own document never reads the global.
 
 A global `static` reads the same each time, as Rust reads an immutable
 `static`, so inside an `if` that tested it, a test of it again is decided:
@@ -164,8 +200,10 @@ The crates bind the standard ones, called bare:
   None)`, `addEventListener("submit", ..)`, and its
   attributes, `device_pixel_ratio()`, `devicePixelRatio`, which a program
   tests where there may be no window, `js::is_number(device_pixel_ratio)`
-  ([ADR 0269](../../decisions/0269-global-scope.md), amended). Not those a
-  value names already, `webapi::document` and `webapi::window`.
+  ([ADR 0269](../../decisions/0269-global-scope.md), amended), the
+  window itself, `window()`, and its `document()`, `navigator()` and
+  `history()` too, read where they're called
+  ([ADR 1157](../../decisions/1157-a-global-a-host-may-lack-is-read-by-a-call.md)).
 - `webapi::console`, `webapi::css` and `webapi::web_assembly`: a namespace's
   functions, `console.log`, `CSS.escape(name)`.
 
@@ -216,13 +254,14 @@ export function later(task) {
 
 - **It's asked of a binding**, a JS function's or a class's,
   `js::is_defined(webapi::message_channel::new)`, whose type names the
-  global, or a global value's, its static given as itself,
-  `js::is_defined(webapi::performance)`: a variable between asks of the
-  same one. A static of a path asks each part,
+  global, or a global value's, its getter's or its static's given as
+  itself, `js::is_defined(webapi::global::performance)`,
+  `js::is_defined(webapi::console)`: a variable between asks of the same
+  one. A static of a path asks each part,
   `js::is_defined(js::symbol::to_string_tag)` being `typeof Symbol !==
   "undefined" && typeof Symbol.toStringTag !== "undefined"`, nothing of it
   read before ([ADR 0647](../../decisions/0647-type-name-as-react-writes-it.md)); a reference
-  to a static, `&webapi::performance`, is refused
+  to a static, `&webapi::console`, is refused
   ([ADR 0645](../../decisions/0645-is-defined-of-a-static-is-of-the-static.md)).
 - **A binding of an `impl Trait` parameter**, which no turbofish names, is
   given as the `fn` pointer it's cast to, `js::is_defined(optional as
@@ -581,11 +620,11 @@ has one is `js::is_defined` of its method, asked of `window`, as React's
 `reportGlobalError` asks:
 
 ```rust
-use webapi::{ErrorEventInit, Window, window};
+use webapi::{ErrorEventInit, Window, window_global::window};
 
 pub fn report(message: &str) -> bool {
     if js::is_defined(Window::new_error_event) {
-        let event = window.new_error_event(
+        let event = window().new_error_event(
             "error",
             Some(ErrorEventInit {
                 cancelable: Some(true),
@@ -593,7 +632,7 @@ pub fn report(message: &str) -> bool {
                 ..Default::default()
             }),
         );
-        return window.dispatch_event(event);
+        return window().dispatch_event(event);
     }
     true
 }
@@ -1157,7 +1196,7 @@ does, keeps the `if`
 ```rust
 thread_local! {
     static GET_TIME: Box<dyn Fn() -> f64> = if js::is_defined(webapi::Performance::now) {
-        let local_performance = webapi::performance;
+        let local_performance = webapi::global::performance();
         Box::new(move || local_performance.now())
     } else {
         let start = js::date::now();

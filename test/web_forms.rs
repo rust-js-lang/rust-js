@@ -2,16 +2,16 @@
 //! check in the generated JS.
 
 use js::uint8_array;
-use webapi::{Event, EventTargetExt, event, html_input_element, node, text_decoder, text_encoder, document, window};
+use webapi::{Event, EventTargetExt, event, html_input_element, node, text_decoder, text_encoder, window_global::{document, window}};
 
 pub fn forms() -> String {
-    let input = html_input_element::unchecked_from(document.create_element_named("input", None));
+    let input = html_input_element::unchecked_from(document().create_element_named("input", None));
     input.set_value("typed");
-    let app = document.get_element_by_id("app").expect("the page has an #app");
+    let app = document().get_element_by_id("app").expect("the page has an #app");
     app.append((input, "!"));
     let ping: &Event = event::new("ping", None);
     app.add_event_listener_named("ping", |e: &Event| e.prevent_default(), None);
-    let _ = window.dispatch_event(ping);
+    let _ = window().dispatch_event(ping);
     app.text_content().unwrap() + &input.value()
 }
 
@@ -29,7 +29,7 @@ pub fn round_trip(text: &str) -> (f64, String) {
 pub fn bodies(url: &str) -> (&'static webapi::Response, js::Promise<&'static webapi::Response>) {
     let blob = webapi::blob::new(None, None);
     let response = webapi::response::new(Some(&blob), None);
-    (response, window.fetch(url, None))
+    (response, window().fetch(url, None))
 }
 
 /// A `sequence` is a slice (ADR 0219): a `Blob` of its parts, each a
@@ -37,7 +37,7 @@ pub fn bodies(url: &str) -> (&'static webapi::Response, js::Promise<&'static web
 /// Blob([text, "!"])` and `navigator.clipboard.write(items)`.
 pub fn copied(text: &str, items: &[&webapi::ClipboardItem]) -> (&'static webapi::Blob, js::Promise<()>) {
     let blob = webapi::blob::new(Some(&[text.into(), "!".into()]), None);
-    (blob, webapi::navigator.clipboard().write(items))
+    (blob, webapi::window_global::navigator().clipboard().write(items))
 }
 
 /// A frame's window, a message's sender, and the page's clock:
@@ -45,13 +45,13 @@ pub fn copied(text: &str, items: &[&webapi::ClipboardItem]) -> (&'static webapi:
 pub fn from_frame(frame: &webapi::HTMLIFrameElement, e: &Event) -> (bool, f64) {
     let sender = webapi::message_event::unchecked_from(e).source();
     let window_of = frame.content_window();
-    (js::object::is(&sender, &window_of), window.performance().now())
+    (js::object::is(&sender, &window_of), window().performance().now())
 }
 
 /// A canvas, which a library like canvas-confetti draws on: its size, set
 /// and read, `canvas.width = 320`.
 pub fn canvas_size() -> (f64, f64) {
-    let canvas = webapi::html_canvas_element::unchecked_from(document.create_element_named("canvas", None));
+    let canvas = webapi::html_canvas_element::unchecked_from(document().create_element_named("canvas", None));
     canvas.set_width(320);
     canvas.set_height(200);
     (canvas.width(), canvas.height())
@@ -76,7 +76,7 @@ pub fn kinds(
     bytes: &js::Uint8Array,
 ) -> (Vec<String>, usize, f64, f64, f64, f64) {
     let names = el.get_attribute_names();
-    let languages = webapi::navigator.languages();
+    let languages = webapi::window_global::navigator().languages();
     let into = text_encoder::new().encode_into("hi", bytes);
     (names, languages.len(), blob.size(), param.value(), f64::from(node::ELEMENT_NODE), into.written)
 }
@@ -161,12 +161,12 @@ pub fn statics_read() -> (String, &'static webapi::Response) {
 /// `onbeforeunload`'s gives the text that asks whether to leave, or none.
 pub fn on_errors(button: &webapi::HTMLButtonElement) -> bool {
     button.set_onerror(Some(&|e: &webapi::Event| e.prevent_default()));
-    webapi::window.set_onerror(Some(
+    webapi::window_global::window().set_onerror(Some(
         &|e: webapi::EventOrStr<'_>, _: Option<&str>, _: Option<f64>, _: Option<f64>, _: Option<&js::Unknown>| {
             matches!(e, webapi::EventOrStr::Str(_))
         },
     ));
-    webapi::window.set_onbeforeunload(Some(&|_: &webapi::BeforeUnloadEvent| None));
+    webapi::window_global::window().set_onbeforeunload(Some(&|_: &webapi::BeforeUnloadEvent| None));
     button.onerror().is_some()
 }
 
@@ -209,8 +209,8 @@ pub fn unions_read(reader: &webapi::FileReader, data: &webapi::FormData) -> (boo
 /// An `ObservableArray`, `adoptedStyleSheets`, is a JS array, given as a
 /// slice and read as one.
 pub fn adopted(sheet: &webapi::CSSStyleSheet) -> usize {
-    document.set_adopted_style_sheets(&[sheet]);
-    document.adopted_style_sheets().len()
+    document().set_adopted_style_sheets(&[sheet]);
+    document().adopted_style_sheets().len()
 }
 
 /// A function JS gives is an object, as an event handler's is:
@@ -227,7 +227,7 @@ pub fn hoisted(root: &webapi::DocumentOrShadowRoot) -> (f64, bool) {
 }
 
 pub fn hoisted_of_document() -> (f64, bool) {
-    hoisted(webapi::DocumentOrShadowRoot::of(document))
+    hoisted(webapi::DocumentOrShadowRoot::of(document()))
 }
 
 pub fn hoisted_of(node: &webapi::Node) -> (f64, bool) {

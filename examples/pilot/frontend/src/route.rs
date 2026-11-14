@@ -2,7 +2,7 @@
 
 use react::{use_effect, use_state};
 use webapi::events::Hashchange;
-use webapi::window;
+use webapi::window_global::window;
 use webapi::{AddEventListenerOptions, EventTargetExt, HashChangeEvent, abort_controller};
 
 #[derive(Clone, Copy, PartialEq)]
@@ -25,12 +25,12 @@ pub fn parse(hash: &str) -> Route {
 }
 
 fn hash() -> String {
-    window.location().hash()
+    window().location().hash()
 }
 
 /// Go to `hash`, as a link would.
 pub fn go(to: &str) {
-    window.location().set_hash(to);
+    window().location().set_hash(to);
 }
 
 /// The route, and a render each time it changes.
@@ -44,7 +44,7 @@ pub fn use_route() -> Route {
                 signal: Some(controller.signal()),
                 ..Default::default()
             };
-            window.add_event_listener(
+            window().add_event_listener(
                 Hashchange,
                 move |_: &HashChangeEvent| set_current.set(hash()),
                 Some(&options),

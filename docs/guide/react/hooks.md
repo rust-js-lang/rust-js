@@ -80,13 +80,13 @@ Make a new value and `set` it.
 The effect returns nothing, or the closure that cleans it up:
 
 ```rust
-use react::webapi::window;
+use react::webapi::window_global::window;
 use react::{JSX, jsx, use_effect, use_state};
 
 pub fn Title() -> JSX::Element {
     let (count, set_count) = use_state(|| 0);
     use_effect(
-        move || window.document().set_title(&format!("{count} clicks")),
+        move || window().document().set_title(&format!("{count} clicks")),
         Some(&(count,)),
     );
     jsx! { <button onClick={move |_| set_count.update(|n| n + 1)}>{count}</button> }

@@ -1423,7 +1423,7 @@ pub fn stamp(label: &str, start: f64, end: f64) {
 pub fn measure(name: &'static str) {
     let options = webapi::PerformanceMeasureOptions::default();
     let options: &dyn webapi::IntoStrOrPerformanceMeasureOptions = &options;
-    let performance = webapi::performance;
+    let performance = webapi::global::performance();
     let measured = function::bind(webapi::Performance::measure, Some(&performance), (performance, name, Some(options), None));
     measured();
 }
