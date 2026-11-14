@@ -528,9 +528,10 @@ map adjustment and final artifact assembly.
 ## Libraries and runtime
 
 A compiled library has JS plus a versioned `src/library.rs` contract embedded
-in the host manifest; [library-contract.md](library-contract.md) lists each
-fact of it by what makes it true, and, of one true of the library's whole
-crate alone, what a consumer that differs does ([ADR 1129](decisions/1129-a-fact-of-a-librarys-contract-says-what-makes-it-true.md)). It carries exported item identities, trait requirements,
+in the host manifest; each fact of it says what makes it true, its scope in
+`src/library/scopes.rs`, and, of one true of the library's whole crate
+alone, what a consumer that differs does, of which
+[library-contract.md](library-contract.md)'s table is made ([ADR 1129](decisions/1129-a-fact-of-a-librarys-contract-says-what-makes-it-true.md)). It carries exported item identities, trait requirements,
 held bindings, input fingerprints and crate identity; rustc metadata alone
 cannot describe JS linkage. Of a crate whose directory has a `package.json`,
 `src/packages.rs` reads its package and what its entry re-exports, by

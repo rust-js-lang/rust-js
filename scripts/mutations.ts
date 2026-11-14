@@ -350,8 +350,9 @@ const work = join(root, "target", "mutants");
 // And `std/`, whose manifest the compiler builds in (ADR 0561), and
 // `vendor/`, the crates Cargo.toml patches in by path (ADR 1121); and each
 // file the crate includes from beyond them, its unit tests' table of std's
-// ways to collect a `Vec` (#1239), which test/mutations.test.ts holds to
-// what `src/` includes.
+// ways to collect a `Vec` (#1239) and the contract's page its table of
+// facts is held to (#1671 change 4 M4), which test/mutations.test.ts holds
+// to what `src/` includes.
 export const crateFiles = [
   "Cargo.toml",
   "Cargo.lock",
@@ -361,6 +362,7 @@ export const crateFiles = [
   "std",
   "vendor",
   "test/vec-collect-ways.txt",
+  "docs/library-contract.md",
 ];
 const buildTimeout = 20 * 60_000;
 const testTimeout = 20 * 60_000;

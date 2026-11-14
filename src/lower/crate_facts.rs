@@ -237,3 +237,128 @@ pub(in crate::lower) struct Settled<'tcx> {
     /// body's `NulledSeen` settled.
     pub(in crate::lower) nulled: analysis::nulled_params::NulledFound,
 }
+
+/// Whether a library's consumer needs a crate fact (#1671 change 4 M4):
+/// none of what the crate alone reads, or the contract's facts that carry
+/// it across, each with its scope (`crate::library::scopes`).
+#[cfg(test)]
+enum Carried {
+    CrateOnly,
+    By(&'static [crate::library::scopes::ContractField]),
+}
+
+/// Each of the crate's facts, by whether a consumer needs it: a pattern
+/// naming every field of `CrateFacts`, so one it gains is rustc's error in
+/// `cargo test` until it says, and the list. Adding a fact asks whether a
+/// library's consumer needs it, which #1772's fact had no one decide.
+#[cfg(test)]
+macro_rules! carried {
+    ($($field:ident => $carried:expr,)*) => {
+        impl CrateFacts<'_, '_> {
+            fn named(&self) {
+                let CrateFacts { $($field),* } = self;
+                $(let _ = $field;)*
+            }
+        }
+
+        const CARRIED: &[(&str, Carried)] = &[$((stringify!($field), $carried)),*];
+    };
+}
+
+#[cfg(test)]
+use {crate::library::scopes::ContractField as F, Carried::*};
+
+#[cfg(test)]
+carried! {
+    sources => CrateOnly,
+    flattened => By(&[F::LibraryKeyed]),
+    mutated => By(&[F::LibraryChanged]),
+    counted => By(&[F::LibraryCountedRcs, F::ParamFactCounted]),
+    self_handles => By(&[F::CallingOwnedByReturn, F::CallingQuietByReturn]),
+    scopes => CrateOnly,
+    cell_borrows => By(&[F::LibraryBuilt, F::RefCellFactsBoxed, F::RefCellFactsCounted, F::RefCellFactsUnchecked, F::RefCellFactsHanded, F::FieldFactRustFunctions]),
+    wholes => CrateOnly,
+    closure_facts => By(&[F::LibraryMakesDroppingAnys, F::LibraryMakesDroppingErrors, F::LibraryMakesDroppingFnDyns, F::LibraryMakesDroppingIterators, F::LibraryClonedClosures]),
+    cloned => CrateOnly,
+    explicit_adapters => CrateOnly,
+    back_stepped => CrateOnly,
+    hinted => CrateOnly,
+    chars_whole => CrateOnly,
+    searches_whole => CrateOnly,
+    generic_consts => By(&[F::LibraryDictionaryConsts]),
+    given_again => CrateOnly,
+    changed_vecs => By(&[F::LibraryChanged]),
+    stored_places => CrateOnly,
+    drop_params => By(&[F::ParamFactDrop]),
+    given => By(&[F::ParamFactCopy, F::ParamFactClone, F::ParamFactUnboxed, F::TypeParamStepped]),
+    type_facts => By(&[F::TypeParamFacts]),
+    carried_super => By(&[F::LibraryAssociated]),
+    built_slots => By(&[F::TypeParamBuilt]),
+    caller_locations => By(&[F::ItemFactTakesLocation]),
+    failing => By(&[F::ItemFactFails, F::LibraryWritesMayFail]),
+    throwing => CrateOnly,
+    never_unwinding => CrateOnly,
+    quiet_fns => CrateOnly,
+    reads_arguments => By(&[F::ItemFactArguments, F::ItemFactThis, F::LibraryWithThisArguments]),
+    keeps_capacity => By(&[F::LibraryKeepsCapacity]),
+    takes_used_drops => CrateOnly,
+    closures => CrateOnly,
+    bodies => CrateOnly,
+    fns => CrateOnly,
+    imports => CrateOnly,
+    required => CrateOnly,
+    required_uses => CrateOnly,
+    held_reads => CrateOnly,
+    module_paths => CrateOnly,
+    foreign => CrateOnly,
+    panics_abort => CrateOnly,
+    library => CrateOnly,
+    compiled_once => CrateOnly,
+    copying => CrateOnly,
+    trait_impls => By(&[F::LibraryImpls]),
+    serde_attrs => CrateOnly,
+    pretty_debug => By(&[F::LibraryWritersTakeOptions]),
+    format_options => By(&[F::LibraryWritersTakeOptions]),
+    debug_hex => By(&[F::LibraryDebugHex]),
+    shown => By(&[F::ParamFactShownPretty, F::ParamFactShownHex, F::LibraryDynDebugPretty, F::LibraryDynDebugHex]),
+    written => By(&[F::ParamFactWrittenInto, F::CallingWrittenArguments, F::LibraryWrittenInto, F::LibraryWrittenTraitArguments, F::LibraryDynWrittenInto, F::LibraryMakesFmtDyns]),
+    prints => By(&[F::LibraryPrintingTypes, F::LibraryStoppingTypes, F::LibraryStoppingWhereCaught, F::LibraryLeavesUnended, F::LibraryFramedWriters]),
+    tidy_until => CrateOnly,
+    ref_cells => By(&[F::RefCellFactsBoxed, F::RefCellFactsCounted, F::RefCellFactsUnchecked, F::RefCellFactsHanded, F::FieldFactQuiet]),
+    own_callbacks => CrateOnly,
+    quiet_locals => CrateOnly,
+    quiet_library_keys => CrateOnly,
+    lazy_locals => By(&[F::ItemFactLazy]),
+    named_expressions => CrateOnly,
+    local_functions => CrateOnly,
+    forwarded => CrateOnly,
+    local_consts => CrateOnly,
+    struct_literals => CrateOnly,
+    constructed => CrateOnly,
+    nulled_params => By(&[F::CallingNulledParams]),
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Each crate fact says whether a consumer needs it, by the facts of
+    /// the contract that carry it, none a list of rows alone.
+    #[test]
+    fn each_crate_fact_says_whether_a_consumer_needs_it() {
+        let _ = CrateFacts::named;
+        for (name, carried) in CARRIED {
+            if let By(fields) = carried {
+                assert!(!fields.is_empty(), "{name} is carried by nothing");
+                for field in *fields {
+                    let (fact, scope, _) = field.row();
+                    assert!(
+                        scope != crate::library::scopes::FactScope::Holds,
+                        "{name} is carried by {fact}, a list"
+                    );
+                }
+            }
+        }
+        assert_eq!(CARRIED.len(), 66);
+    }
+}

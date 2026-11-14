@@ -7,6 +7,8 @@ use crate::manifest::{Compiler, Manifest};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 use std::path::Path;
+#[cfg(test)]
+pub(crate) mod scopes;
 
 /// 3: every `Rc` and `Weak` is counted, `{ value, strong, weak }`, in a
 /// library and in a crate that uses one (ADR 0523). 4: each item says the

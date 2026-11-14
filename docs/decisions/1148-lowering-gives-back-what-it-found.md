@@ -266,3 +266,30 @@ test/architecture-calls.test.ts refuses an analysis that builds a map of
 its own of who names whom, a list that only shrinks: collected.rs's, of
 the bodies as they're collected, before any analysis, of each expression
 of a function item's type, a variable's too, is the one left.
+
+## M4: each fact says whether a consumer needs it
+
+Each fact of a library's contract declares its scope, and forgetting to
+is rustc's error under `cargo test` (ADR 1129, amended):
+`src/library/scopes.rs` gives each field of `Library`, `Calling`,
+`TypeParam` and `RefCellFacts`, and each variant of `ItemFact`,
+`ParamFact` and `FieldFact`, a `ContractField`, by a pattern that names
+every field and an exhaustive `match` of every variant. Each
+`ContractField`'s `FactScope` is `Local`, `Summary`, `Holds`, or
+`ClosedWorld` with what a consumer that differs does, `Agree`,
+`CompileOwn` or `Refuse`. docs/library-contract.md's table is made of
+them.
+
+And each of `CrateFacts`' fields says whether a library's consumer needs
+it: `CrateOnly`, or carried `By` the contract's facts that take it
+across, by a pattern that names every field (`carried!`). So a new crate
+fact asks the question #1772's never had asked of it. Of 66 fields, 27
+are carried across, the rest the crate's alone.
+
+Mutations contract-closed-world-fact-a-summary, contract-fact-listed-twice
+and crate-fact-carried-by-nothing are caught by the unit tests that hold
+them.
+
+Change 4 is done: M1's holes (ADR 1147), M2's facts given back and
+settled in bounded rounds, M3's one call graph and its names, M4's
+declared scopes.

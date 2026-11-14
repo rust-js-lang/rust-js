@@ -79,3 +79,37 @@ test/manifest.test.ts reads both and holds them equal, so a new fact
 fails there until the host knows it. No observable difference in a
 program (ADR 0262): the host refused a build it now runs. The itertools
 Crater goes from 6 of 415 tests as native back to 130.
+
+## Amendment: each fact's scope is the compiler's, and the table is made of it (2026-11-14, #1671 change 4 M4)
+
+The review's change 4 asked that forgetting to decide a fact's kind be a
+compile error, not a markdown row a test reads back. Each fact is now a
+`ContractField` in `src/library/scopes.rs`, and its `FactScope` an
+exhaustive match there: `Local` (this page's `linkage` before, what the
+source declares), `Summary`, `ClosedWorld` with what a consumer that
+differs does, `Agree`, `CompileOwn` or `Refuse`, each with its words,
+and `Holds`, a list of rows, no fact of its own. Each closed-world row
+was given the policy that decides its soundness: a consumer that gives
+`?? null` and refuses a value's use agrees, as its call makes the
+library's answer hold of it; one that holds no borrow of an unchecked
+`RefCell`, or is refused, is refused.
+
+What makes a missing one an error: of each struct of the contract, a
+pattern naming every field, `Library { version, name, .. }` with no
+`..`, by its `ContractField`, and of each set of facts an exhaustive
+`match`; so a field or variant added fails to compile under `cargo test`
+until it's listed, and its `ContractField` until it has a scope. The
+module is the tests', as nothing at run time asks a fact's scope.
+
+The table of [docs/library-contract.md](../library-contract.md) is made
+of it: `cargo test contract_table` holds the page to it, and `BLESS=1`
+writes it. test/manifest.test.ts' test that read the page against the
+structs is gone; its test of the host's lists stays.
+
+And each fact of the crate's, a field of `CrateFacts`, says whether a
+library's consumer needs it, as #1772's fact had no one decide: each is
+`CrateOnly`, or carried `By` the contract's facts that take it across, a
+pattern naming every field (`carried!`, `src/lower/crate_facts.rs`).
+
+Case (ADR 0262): none. No program's JS changes, and no fact of the
+contract: `VERSION` is 38 as it was.

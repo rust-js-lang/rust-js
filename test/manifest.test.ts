@@ -270,14 +270,10 @@ test("the tooling's library ABI is the compiler's", () => {
 // what's tested: asked each time, the floor crossed mid-test under
 // check:fast's load made one of its apps a fixture, never found again
 // (#1190).
-// Each fact a library tells its consumers is listed in
-// docs/library-contract.md with what makes it true: of the library's
-// declarations, of one function alone, or of its whole crate. One of the
-// whole crate, an optimisation only sound while every use is seen, says
-// what a consumer that differs does: compile its own, agree, or be
-// refused. A new fact is given its row with it (#1462): six wrong answers
-// were such facts, answered apart by a library's compile and its
-// consumer's.
+// Each fact a library tells its consumers says what makes it true, its
+// `FactScope` in src/library/scopes.rs, whose `cargo test` asks one of each
+// field and variant of the contract and makes docs/library-contract.md's
+// table of them (#1462, #1671 change 4 M4; ADR 1129, amended).
 // The host's check of a contract knows each fact the compiler writes: its
 // lists, `tooling/manifest.js`' mirror of `src/library.rs`' enums, are
 // theirs, so a library whose type parameter is `counted` isn't refused as
@@ -293,36 +289,6 @@ test("the host's check of a contract knows each fact src/library.rs writes", () 
   expect([...ITEM_FACTS].sort()).toEqual(variants("ItemFact").sort());
   expect([...PARAM_FACTS].sort()).toEqual(variants("ParamFact").sort());
   expect([...FIELD_FACTS].sort()).toEqual(variants("FieldFact").sort());
-});
-
-test("each fact of a library's contract says what makes it true, and a closed-world one what a consumer that differs does", () => {
-  const source = readFileSync(join(repository, "src", "library.rs"), "utf8");
-  const facts: string[] = [];
-  for (const [kind, name] of [
-    ["struct", "Library"],
-    ["struct", "Calling"],
-    ["struct", "TypeParam"],
-    ["struct", "RefCellFacts"],
-    ["enum", "ItemFact"],
-    ["enum", "ParamFact"],
-    ["enum", "FieldFact"],
-  ]) {
-    const body = new RegExp(`^pub ${kind} ${name}[^{]*\\{\\n([\\s\\S]*?)\\n\\}`, "m").exec(source)?.[1];
-    expect(body, `${kind} ${name}`).toBeDefined();
-    const members = kind === "struct" ? [...body!.matchAll(/^ {4}pub (\w+):/gm)] : [...body!.matchAll(/^ {4}([A-Z]\w+),/gm)];
-    expect(members.length, name).toBeGreaterThan(1);
-    facts.push(...members.map(([, member]) => (kind === "struct" ? `${name}.${member}` : `${name}::${member}`)));
-  }
-  const page = readFileSync(join(repository, "docs", "library-contract.md"), "utf8");
-  const rows = [...page.matchAll(/^\| `([\w.:]+)` \| ([\w-]+) \| ([^|]+) \|([^|]*)\|$/gm)].map(([, fact, kind, says, differs]) => ({ fact, kind, says: says.trim(), differs: differs.trim() }));
-  const listed = rows.map((row) => row.fact);
-  expect(facts.filter((fact) => !listed.includes(fact))).toEqual([]);
-  expect(listed.filter((fact) => !facts.includes(fact))).toEqual([]);
-  expect(listed.filter((fact, at) => listed.indexOf(fact) !== at)).toEqual([]);
-  expect(rows.filter((row) => !["linkage", "summary", "closed-world", "holds"].includes(row.kind)).map((row) => row.fact)).toEqual([]);
-  expect(rows.filter((row) => row.says === "").map((row) => row.fact)).toEqual([]);
-  expect(rows.filter((row) => row.kind === "closed-world" && row.differs === "").map((row) => row.fact)).toEqual([]);
-  expect(rows.filter((row) => row.kind === "closed-world").length).toBeGreaterThan(15);
 });
 
 test("an app kept between runs is built again where what it's built from changed, and only then", async () => {

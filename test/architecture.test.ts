@@ -23,7 +23,7 @@ const files = (directory: string): string[] => readdirSync(join(root, directory)
 const layers = {
   driver: ["src/main.rs", "src/command.rs", "src/cargo.rs", "src/clippy.rs", "src/std_sysroot.rs"],
   front: ["src/lower.rs", "src/lower/", "src/jsx_syntax.rs", "src/jsx_syntax/"],
-  owned: ["src/library.rs", "src/reachability.rs", "src/link.rs", "src/names.rs", "src/program.rs", "src/comments.rs", "src/js.rs", "src/js/",
+  owned: ["src/library.rs", "src/library/", "src/reachability.rs", "src/link.rs", "src/names.rs", "src/program.rs", "src/comments.rs", "src/js.rs", "src/js/",
     "src/prepare.rs", "src/prepare/", "src/output.rs", "src/output/", "src/publish.rs", "src/manifest.rs", "src/runtime.rs", "src/settings.rs", "src/hooks.rs",
     "src/paths.rs", "src/packages.rs", "src/collections.rs", "src/lines.rs", "src/decisions.rs", "src/css_modules.rs"],
   printing: ["src/to_oxc.rs", "src/to_oxc/", "src/format.rs", "src/typescript.rs", "src/prettier.rs", "src/node_session.rs"],
@@ -309,10 +309,13 @@ test("Lightning CSS stays behind the one function that lists a CSS Module's keys
 // build and writes a report it's asked for, and keeps the `core` std's
 // bodies are lowered of (`std_sysroot.rs`, #424): no other module, by any of
 // std's ways to (found in the third architecture audit: the rule was of
-// lowering and artifact planning alone, and of four of the ways).
+// lowering and artifact planning alone, and of four of the ways). And a
+// unit test's bless, `BLESS=1 cargo test contract_table`, which writes the
+// table of the library contract's page it holds the page to: the
+// compiler's tests', no build of it (src/library/scopes.rs, `cfg(test)`).
 test("only the publisher and the driver write files", () => {
   const writes = /\bfs::(?:write|rename|remove_\w+|create_dir\w*|copy|hard_link)\b|\bFile::(?:create|options)\b|\bOpenOptions\b/;
-  const writers = ["src/publish.rs", "src/main.rs", "src/std_sysroot.rs"];
+  const writers = ["src/publish.rs", "src/main.rs", "src/std_sysroot.rs", "src/library/scopes.rs"];
   // Its code alone: a lowering of std's files names them in its comments
   // and in the paths it recognizes, `"std::fs::write"` (#1156).
   const code = (file: string) => read(file).replace(/\/\/.*$/gm, "").replace(/"(?:[^"\\\n]|\\.)*"/g, '""');
