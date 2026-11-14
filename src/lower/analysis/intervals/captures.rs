@@ -150,7 +150,7 @@ pub(super) fn closure_results<'tcx>(
 impl<'tcx> Walk<'_, 'tcx> {
     /// What `of` is assigned, and where, of a local assigned once in this
     /// body.
-    fn made(&self, of: Local) -> Option<(Location, &Rvalue<'tcx>)> {
+    pub(super) fn made(&self, of: Local) -> Option<(Location, &Rvalue<'tcx>)> {
         let mut writes = (self.body.basic_blocks.iter_enumerated()).flat_map(|(block, data)| {
             (data.statements.iter().enumerate()).filter_map(move |(statement_index, statement)| match &statement.kind {
                 StatementKind::Assign(assign) if assign.0.as_local() == Some(of) => {

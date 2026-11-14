@@ -38,4 +38,28 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-integer-ranges.test.ts", "-t", "an integer cast MIR's intervals show"],
   },
+  {
+    name: "range-start-unchecked",
+    breaks: "a range's start isn't checked at most its end, so `v[a..n]` of an `a` not known at most `n` is taken in bounds, a mir-only-call-bounds line, and would slice past its end",
+    file,
+    find: "                .is_some_and(|(start, end)| self.at_most(state, start, end)),\n",
+    replace: "                .is_some_and(|(start, end)| true || self.at_most(state, start, end)),\n",
+    tests: ["test/intervals-shadow.test.ts", "-t", "a range's bounds"],
+  },
+  {
+    name: "range-inclusive-end-at-most",
+    breaks: "`..=n`'s end is taken at most the length, not below it, so `v[..=n]` of `n <= v.len()` is taken in bounds, a mir-only-call-bounds line, and would slice one past",
+    file,
+    find: "            Some((at, inclusive)) => field(at).is_some_and(|end| self.index_below(state, slice, end, inclusive)),\n",
+    replace: "            Some((at, inclusive)) => field(at).is_some_and(|end| self.index_below(state, slice, end, inclusive && false)),\n",
+    tests: ["test/intervals-shadow.test.ts", "-t", "a range's bounds"],
+  },
+  {
+    name: "range-full-unproved",
+    breaks: "`v[..]` isn't proved in bounds, so it's no mir-only-call-bounds line",
+    file,
+    find: "        if start.is_none() && end.is_none() {\n            return true;\n",
+    replace: "        if start.is_none() && end.is_none() {\n            return false;\n",
+    tests: ["test/intervals-shadow.test.ts", "-t", "a range's bounds"],
+  },
 ];

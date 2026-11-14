@@ -34,4 +34,12 @@ export const mutations: Mutation[] = [
     replace: '        "with" | "with_borrow" | "with_borrow_mut" if false\n',
     tests: ["test/lowering-integer-ranges.test.ts", "-t", "tells its caller the index"],
   },
+  {
+    name: "range-index-unrecognized",
+    breaks: "no `v[a..b]` is a range index, so `v[..]` and `v[a..n]` under `a <= n <= v.len()` aren't proved, no mir-only-call-bounds line",
+    file: "src/lower/recognition/loop_ranges.rs",
+    find: "    (held && ranged).then_some(1)\n",
+    replace: "    (held && ranged && false).then_some(1)\n",
+    tests: ["test/intervals-shadow.test.ts", "-t", "a range's bounds"],
+  },
 ];

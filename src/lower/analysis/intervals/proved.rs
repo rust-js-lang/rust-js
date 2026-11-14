@@ -69,6 +69,20 @@ impl<'tcx> Walk<'_, 'tcx> {
             {
                 proofs.call_bounds.insert(block);
             }
+            if let TerminatorKind::Call { func, args, .. } = &data.terminator().kind
+                && let Some((callee, callee_args)) = func.const_fn_def()
+                && let Some(at) = range_index(self.tcx, callee, callee_args)
+                && let Some(holder) = (args.first())
+                    .and_then(|arg| arg.node.place())
+                    .and_then(|p| p.as_local())
+                    .filter(|l| !self.lent.contains(l))
+                    .map(|l| state.root(l))
+                && args
+                    .get(at)
+                    .is_some_and(|range| self.range_within(&state, holder, &range.node))
+            {
+                proofs.call_bounds.insert(block);
+            }
         }
         proofs
     }
@@ -88,6 +102,51 @@ impl<'tcx> Walk<'_, 'tcx> {
     /// Whether `index` is below `slice`'s length, or, not `strict`, at
     /// most it: below the least it is, or below it as a relation knows; or
     /// its length itself, `insert(v.len(), x)`.
+    /// Whether `range`, `a..b` or one of its kinds, is within `slice`'s
+    /// length: its start at most its end, its end at most the length, or
+    /// below it of `..=b`; `..` always.
+    fn range_within(&self, state: &State, slice: Local, range: &Operand<'tcx>) -> bool {
+        let ty::Adt(adt, _) = *range.ty(&*self.body, self.tcx).kind() else {
+            return false;
+        };
+        let Some((start, end)) = range_index_bounds(self.tcx, adt.did()) else {
+            return false;
+        };
+        if start.is_none() && end.is_none() {
+            return true;
+        }
+        let Some((_, Rvalue::Aggregate(_, fields))) =
+            range.place().and_then(|p| p.as_local()).and_then(|r| self.made(r))
+        else {
+            return false;
+        };
+        let field = |at: usize| fields.iter().nth(at);
+        let end_within = match end {
+            Some((at, inclusive)) => field(at).is_some_and(|end| self.index_below(state, slice, end, inclusive)),
+            None => true,
+        };
+        let start_within = match (start, end) {
+            (Some(at), None) => field(at).is_some_and(|start| self.index_below(state, slice, start, false)),
+            (Some(at), Some((to, _))) => field(at)
+                .zip(field(to))
+                .is_some_and(|(start, end)| self.at_most(state, start, end)),
+            (None, _) => true,
+        };
+        end_within && start_within
+    }
+
+    /// Whether `a` is at most `b`: by their intervals, or a relation known.
+    fn at_most(&self, state: &State, a: &Operand<'tcx>, b: &Operand<'tcx>) -> bool {
+        let by_intervals = (self.operand(a, state))
+            .zip(self.operand(b, state))
+            .is_some_and(|(a, b)| a.hi <= b.lo);
+        let local = |o: &Operand<'tcx>| o.place().and_then(|p| p.as_local()).map(|l| state.root(l));
+        let related = local(a).zip(local(b)).is_some_and(|(a, b)| {
+            a == b || state.below.contains(&(a, Term::Int(b), true)) || state.below.contains(&(a, Term::Int(b), false))
+        });
+        by_intervals || related
+    }
+
     fn index_below(&self, state: &State, slice: Local, index: &Operand<'tcx>, strict: bool) -> bool {
         let least = state.least.get(&slice).copied().unwrap_or(0);
         let in_least = (self.operand(index, state))

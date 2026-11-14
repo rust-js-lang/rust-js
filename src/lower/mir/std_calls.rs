@@ -472,6 +472,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             true => this.sliced_in_units(items, (range, arg_tys[1]), span, out)?,
                             false => {
                                 let in_bounds = this.indexes_in_bounds(def_id, span);
+                                // The shadow: MIR's proof of a range's bounds, against THIR's
+                                // (#1672 M3, step 5).
+                                let block = state.location().block;
+                                crate::lower::analysis::shadow_check(
+                                    this.tcx,
+                                    this.frame.owner,
+                                    span,
+                                    in_bounds,
+                                    || Some(crate::lower::analysis::LeftOut::CallBounds(block)),
+                                );
                                 this.slice_range_values((op, in_bounds), items, (range, arg_tys[1]), span, out)?
                             }
                         }

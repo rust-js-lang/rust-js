@@ -59,7 +59,9 @@ pub(in crate::lower) fn body_proofs<'tcx>(
     let asks = (body.basic_blocks.iter()).any(|data| {
         matches!(&data.terminator().kind, TerminatorKind::Assert { msg, .. } if matches!(**msg, AssertKind::BoundsCheck { .. }))
             || matches!(&data.terminator().kind, TerminatorKind::Call { func, .. }
-                if func.const_fn_def().is_some_and(|(callee, args)| call_indexes(tcx, callee, args).is_some()))
+                if func.const_fn_def().is_some_and(|(callee, args)| {
+                    call_indexes(tcx, callee, args).is_some() || range_index(tcx, callee, args).is_some()
+                }))
             || (data.statements.iter()).any(|statement| {
                 matches!(&statement.kind, StatementKind::Assign(assign)
                     if matches!(assign.1, Rvalue::BinaryOp(BinOp::Add | BinOp::Sub | BinOp::Mul, _) | Rvalue::Cast(mir::CastKind::IntToInt, ..)))

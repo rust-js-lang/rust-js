@@ -649,3 +649,23 @@ Main's survivors are caught or reasoned here:
   bounds check" (intervals-shadow), as thresholds alone hold its old test;
 - `intervals-unnarrowed` is held by "an index below a generic constant";
 - `inclusive-for-unranged`, THIR's, goes (ADR 0093 amended).
+
+### Step 5: a range's bounds (2026-11-15)
+
+`&v[..n]`, `&v[n..]`, `&v[a..b]`, `&v[..=b]` and `&v[..]`, a `Vec`'s, a
+slice's or an array's `Index` by a range of `usize` (`range_index`), are
+proved where:
+- **the end** is at most the length, or below it of `..=b`;
+- **the start** is at most the end, by their intervals or a relation, of
+  `a..b`, or at most the length, of `a..`.
+`&v[..]` is always in bounds. Text's ranges aren't proved, as their bounds
+are on its characters too. A range's bounds made through std's text path,
+`slice_range_values`, are compared in the shadow too.
+
+The shadow, measured anew with the call-bounds lines where THIR's facts
+decide a call's indexes or a range's: 146 THIR-only, and 103 MIR-only, each
+sound:
+- `&v[..]`, which THIR's facts never marked;
+- `insert(0, x)` and `&v[..0]`, at most any length;
+- a stepped loop's `v[i]` below `v.len()`;
+- a `swap` of a slice whose earlier bounds checks show its length.

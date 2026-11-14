@@ -376,3 +376,33 @@ pub fn main() {
 }
 `)).toEqual([]);
 });
+
+// #1672 M3, step 5: a range's bounds, `&v[..n]`, `&v[n..]`, `&v[a..b]`,
+// MIR proves where its end is at most the length, below it of `..=b`, and
+// its start at most its end; `&v[..]` always. Not `&v[a..b]` of an `a` not
+// known at most `b`, nor `&v[..=n]` of an `n` at most the length.
+test("a range's bounds are proved where its end is at most the length and its start at most its end", () => {
+  expect(shadowOf(`pub fn full(v: &[u32]) -> usize {
+    v[..].len()
+}
+pub fn to_n(v: &[u32], n: usize) -> usize {
+    if n <= v.len() { v[..n].len() } else { 0 }
+}
+pub fn from_n(v: &[u32], n: usize) -> usize {
+    if n <= v.len() { v[n..].len() } else { 0 }
+}
+pub fn between(v: &[u32], a: usize, n: usize) -> usize {
+    if n <= v.len() && a <= n { v[a..n].len() } else { 0 }
+}
+pub fn start_unknown(v: &[u32], a: usize, n: usize) -> usize {
+    if n <= v.len() { v[a..n].len() } else { 0 }
+}
+pub fn through_n(v: &[u32], n: usize) -> usize {
+    if n <= v.len() { v[..=n].len() } else { 0 }
+}
+pub fn main() {
+    let v = [1, 2, 3];
+    println!("{} {} {} {} {} {}", full(&v), to_n(&v, 2), from_n(&v, 2), between(&v, 1, 2), start_unknown(&v, 1, 2), through_n(&v, 2));
+}
+`)).toEqual(["mir-only-call-bounds full", "mir-only-call-bounds between"]);
+});

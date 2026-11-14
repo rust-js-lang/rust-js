@@ -186,6 +186,51 @@ pub(in crate::lower) fn call_indexes<'tcx>(
     }
 }
 
+/// Of `v[a..b]`'s `Index::index` or `index_mut` of a `Vec`, a slice or an
+/// array, by a range of `usize`, `..`, `a..`, `..b`, `..=b` or `a..b`: the
+/// range's argument, its bounds checked against the receiver's length
+/// (#1672 M3, step 5). Not text's, whose bounds are on its characters too.
+pub(in crate::lower) fn range_index<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    def_id: DefId,
+    args: ty::GenericArgsRef<'tcx>,
+) -> Option<usize> {
+    let indexing = (tcx.trait_of_assoc(def_id))
+        .is_some_and(|t| tcx.is_lang_item(t, LangItem::Index) || tcx.is_lang_item(t, LangItem::IndexMut));
+    if !indexing {
+        return None;
+    }
+    let (holder, index) = (args.type_at(0), args.type_at(1));
+    let held = matches!(holder.kind(), ty::Slice(_) | ty::Array(..))
+        || matches!(holder.kind(), ty::Adt(adt, _) if is_std_def(tcx, adt.did(), StdItem::Vec));
+    let ranged = matches!(index.kind(), ty::Adt(adt, args) if range_index_bounds(tcx, adt.did()).is_some()
+        && args.types().all(|t| t.is_usize()));
+    (held && ranged).then_some(1)
+}
+
+/// A range's bounds, by their fields: its start's, and its end's with
+/// whether the end is in it (`range_index_bounds`).
+pub(in crate::lower) type RangeIndexBounds = (Option<usize>, Option<(usize, bool)>);
+
+/// Which bounds a range of `..`, `a..`, `..b`, `..=b` or `a..b` has, by its
+/// struct: its start's field, its end's and whether the end is in it.
+pub(in crate::lower) fn range_index_bounds(tcx: TyCtxt<'_>, adt: DefId) -> Option<RangeIndexBounds> {
+    let lang = |item| tcx.is_lang_item(adt, item);
+    if lang(LangItem::RangeFull) {
+        Some((None, None))
+    } else if lang(LangItem::RangeFrom) {
+        Some((Some(0), None))
+    } else if lang(LangItem::RangeTo) {
+        Some((None, Some((0, false))))
+    } else if lang(LangItem::RangeToInclusive) {
+        Some((None, Some((0, true))))
+    } else if lang(LangItem::Range) {
+        Some((Some(0), Some((1, false))))
+    } else {
+        None
+    }
+}
+
 /// Whether a call keeps the length of the `Vec` it's given `&mut`:
 /// `IndexMut::index_mut`, `v[i] = x`, and `DerefMut::deref_mut`, a slice
 /// of its items (#1672 M3, step 5).
