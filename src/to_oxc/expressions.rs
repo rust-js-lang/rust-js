@@ -378,10 +378,11 @@ impl<'a> Cx<'a> {
             text[i] = writable && !text.get(i + 1).is_some_and(|&next| next);
         }
         // Of two, the later in braces where it has a space at an edge and
-        // the earlier none, as a person writes `If this is a mistake{", "}`:
-        // never a blank one, which a formatter makes a space of the text.
+        // the earlier none, as a person writes `If this is a mistake{", "}`;
+        // a lone `{" "}`, which a formatter joins to the text, the text
+        // beside it braced again below.
         let plain = |s: &str, i: usize| jsx_text(s, edges(i)) && s.trim() == s;
-        let spaced = |s: &str| !s.trim().is_empty() && s.trim() != s;
+        let spaced = |s: &str| s.trim() != s;
         for i in 0..jsx.children.len().saturating_sub(1) {
             if let (ExprKind::Str(earlier), ExprKind::Str(later)) = (&jsx.children[i].kind, &jsx.children[i + 1].kind)
                 && !text[i]

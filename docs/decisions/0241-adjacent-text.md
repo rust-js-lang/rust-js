@@ -126,3 +126,15 @@ measures its width in Chromium against React given the same strings,
 Codex's four cases, a space at a text's start, its end, both, and a formula
 that wraps; and by the mutations of `format/jsx_shape.ts`.
 
+
+## Amendment (2026-11-15): a blank later is braced as any spaced one is
+
+The first amendment kept a blank later string, `{" "}`, out of braces,
+as a formatter joins a lone `{" "}` to the text before it. Since #1807 a
+lone `{" "}` beside text braces that text again (the lone-space rule),
+so that guard decided nothing for `" "`, and main's mutation run showed
+it (`adjacent-text-blank-braced` survived). It's gone: a blank later of
+any other kind, `{"  "}`, which no formatter joins, is braced as any
+spaced string is, its earlier text JSX text, `Challenge{"  "}`, the same
+children React is given. Held by jsx-children's "adjacent text children
+stay apart", in React's render.

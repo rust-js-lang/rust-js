@@ -520,14 +520,6 @@ export const mutations: Mutation[] = [
     tests: ["test/jsx-children.test.ts", "-t", "adjacent text children stay apart"]
   },
   {
-    name: "adjacent-text-blank-braced",
-    breaks: "a blank string after text is put in braces, which a formatter makes a space of the text, one text node of two",
-    file: "src/to_oxc/expressions.rs",
-    find: "        let spaced = |s: &str| !s.trim().is_empty() && s.trim() != s;",
-    replace: "        let spaced = |s: &str| s.trim() != s;",
-    tests: ["test/jsx-children.test.ts", "-t", "adjacent text children stay apart"]
-  },
-  {
     name: "jsx-text-tabs",
     breaks: "a string of a tab is JSX text, which JSX makes a space, `\\tend\\t` ` end ` (#1807)",
     file: "src/to_oxc/expressions.rs",

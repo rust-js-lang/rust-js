@@ -504,6 +504,10 @@ pub fn Count(order: u32, total: u32) -> JSX::Element {
 pub fn Mistake(link: JSX::Element) -> JSX::Element {
     jsx! { <p>{"If this is a mistake"}{", "}{link}{", "}{"and we will fix it"}</p> }
 }
+
+pub fn Wide(order: u32) -> JSX::Element {
+    jsx! { <p>{"Challenge"}{"  "}{order}</p> }
+}
 `;
   const { dir, args } = compile(source);
   run(args);
@@ -512,9 +516,13 @@ pub fn Mistake(link: JSX::Element) -> JSX::Element {
   expect(code).toContain('{" of"} {total}');
   expect(code).toContain('If this is a mistake{", "}');
   expect(code).toContain('{", "}and we will fix it');
+  // A blank later, of more than a space, which no formatter joins to the
+  // text: in braces, its text before it JSX text, as a lone `{" "}`'s isn't.
+  expect(code).toContain('Challenge{"  "}');
   const result = await import(join(dir, "lib.jsx"));
   expect(renderToString(result.Count(1, 4))).toBe("<p>Challenge<!-- --> <!-- -->1<!-- --> of<!-- --> <!-- -->4</p>");
   expect(renderToString(result.Mistake(createElement("a")))).toBe("<p>If this is a mistake<!-- -->, <a></a>, <!-- -->and we will fix it</p>");
+  expect(renderToString(result.Wide(1))).toBe("<p>Challenge<!-- -->  <!-- -->1</p>");
 });
 
 // A component keyed first, its props captured in written order in a
