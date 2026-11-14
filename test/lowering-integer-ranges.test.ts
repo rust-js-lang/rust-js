@@ -1003,6 +1003,90 @@ pub fn big(n: u32) -> u32 {
   expect([lib.classify(3), lib.classify(4), lib.big(5)]).toEqual([1, 49, 4294967295 - 4]);
 });
 
+// A collection a `RefCell` holds has one length through each of its
+// borrows (#1741): `stack.borrow()[stack.borrow().len() - 1]` past
+// `!stack.borrow().is_empty()`, React's ReactNoopServer's, is JS's own by
+// MIR alone. Where code that may write the cell runs between, a call given
+// it, a `borrow_mut()`, a destructor or a write through a raw pointer,
+// `len() - 1` keeps its wrap.
+test("a collection a RefCell holds has one length through each of its borrows", async () => {
+  const dir = fixture("refcell-lengths");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::RefCell;
+
+pub fn last(stack: &RefCell<Vec<u32>>) -> u32 {
+    if stack.borrow().is_empty() {
+        0
+    } else {
+        stack.borrow()[stack.borrow().len() - 1]
+    }
+}
+
+pub fn cleared(stack: &RefCell<Vec<u32>>, f: fn(&RefCell<Vec<u32>>)) -> usize {
+    if stack.borrow().is_empty() {
+        return 0;
+    }
+    f(stack);
+    stack.borrow().len() - 1
+}
+
+pub fn mut_between(stack: &RefCell<Vec<u32>>) -> usize {
+    if stack.borrow().is_empty() {
+        return 0;
+    }
+    stack.borrow_mut().clear();
+    stack.borrow().len() - 1
+}
+
+struct Clears<'a>(&'a RefCell<Vec<u32>>);
+
+impl Drop for Clears<'_> {
+    fn drop(&mut self) {
+        self.0.borrow_mut().clear();
+    }
+}
+
+pub fn dropped_between(stack: &RefCell<Vec<u32>>) -> usize {
+    {
+        let _guard = Clears(stack);
+        if stack.borrow().is_empty() {
+            return 0;
+        }
+    }
+    stack.borrow().len() - 1
+}
+
+pub fn raw_between(stack: &RefCell<Vec<u32>>) -> usize {
+    let p: *mut Vec<u32> = {
+        let mut held = stack.borrow_mut();
+        &mut *held
+    };
+    let none = Vec::new();
+    if stack.borrow().is_empty() {
+        return 0;
+    }
+    unsafe { *p = none };
+    stack.borrow().len() - 1
+}
+
+pub fn ran() -> (u32, usize, usize, usize) {
+    let stack = RefCell::new(vec![4, 5]);
+    let one = || RefCell::new(vec![1]);
+    (last(&stack), cleared(&one(), |s| s.borrow_mut().clear()), mut_between(&one()), dropped_between(&one()))
+}
+`);
+  // THIR's ranges see no write through a raw pointer, and leave out
+  // `raw_between`'s wrap that MIR keeps: the bridge takes THIR's verdict
+  // there, which M4 deletes with it (#1777, ADR 1137).
+  expect(wrapsDisagreed(dir)).toEqual(["bridged raw_between"]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("stack[stack.length - 1]");
+  expect(js.match(/\(stack\.length - 1\) >>> 0/g)).toHaveLength(3);
+  const lib = await import(join(dir, "lib.js"));
+  // `raw_between` isn't run: its write through the pointer doesn't reach
+  // the cell in JS (#1777).
+  expect(lib.ran()).toEqual([5, 4294967295, 4294967295, 4294967295]);
+});
+
 // React's ReactPostPaintCallback, ported: `while let Some(callback) =
 // CALLBACKS.with_borrow(|c| c.get(i).copied()) { callback(t); i += 1; }`.
 // Where an item at `i` is there, `i` is below a slice's length, so below

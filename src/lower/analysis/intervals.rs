@@ -17,7 +17,7 @@ use crate::collections::{IndexMap, IndexSet};
 use crate::lower::bindings::{is_rest_value, reads_string_length};
 use crate::lower::recognition::{
     RangeStep, SliceLength, counts_utf16_units, integer_min_max, option_copied, range_of_integers, range_step,
-    slice_get, slice_length, text_length,
+    ref_deref, refcell_borrow, slice_get, slice_length, text_length,
 };
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_index::IndexVec;
@@ -32,6 +32,7 @@ use std::collections::BTreeSet;
 
 mod callers;
 mod calls;
+mod cells;
 mod pushed;
 mod ranges;
 mod session;
@@ -95,6 +96,9 @@ struct Walk<'a, 'tcx> {
     /// The locals a raw pointer is made of, which a push's length is never
     /// known of (`pushes`).
     pointed: IndexSet<Local>,
+    /// The locals that hold or lend a `RefCell`, whose lengths a call may
+    /// write (`cells`, #1741).
+    cells: IndexSet<Local>,
 }
 
 /// Whether `ty` is an integer a JS number holds as it is: of 32 bits at
@@ -174,6 +178,7 @@ fn walk<'a, 'tcx>(
         stepped,
         from_callers: given,
         pointed,
+        cells: cells::cells(tcx, body),
     }
 }
 
@@ -623,6 +628,14 @@ impl<'tcx> Walk<'_, 'tcx> {
     /// before it, then the local written forgotten and set.
     fn statement(&self, statement: &mir::Statement<'tcx>, state: &mut State) {
         self.pushes(statement, state);
+        // A write through a raw pointer, which may reach a cell's value with
+        // no call (`cells`, #1741).
+        if let StatementKind::Assign(assign) = &statement.kind
+            && !self.cells.is_empty()
+            && self.written_through_a_pointer(&assign.0)
+        {
+            self.cells.iter().for_each(|&cell| state.forget_lengths(cell));
+        }
         let StatementKind::Assign(assign) = &statement.kind else {
             return;
         };
@@ -1102,6 +1115,11 @@ impl<'tcx> Walk<'_, 'tcx> {
             } => {
                 let mut after = state.clone();
                 after.unpush(destination.local);
+                // A call that may write a cell: what's known of each cell's
+                // length forgotten (`cells`, #1741).
+                if !self.cells.is_empty() && self.may_write_cells(func) {
+                    self.cells.iter().for_each(|&cell| after.forget_lengths(cell));
+                }
                 if let Some(local) = destination.as_local() {
                     after.forget(local);
                     self.called(func, args, local, state, &mut after);
@@ -1112,6 +1130,13 @@ impl<'tcx> Walk<'_, 'tcx> {
             // alone, the imaginary one no run takes.
             TerminatorKind::FalseEdge { real_target, .. } | TerminatorKind::FalseUnwind { real_target, .. } => {
                 vec![(*real_target, state.clone())]
+            }
+            // A drop that may run code: of each cell, what's known of its
+            // length forgotten.
+            TerminatorKind::Drop { place, .. } if !self.cells.is_empty() && self.drop_may_write_cells(place) => {
+                let mut after = state.clone();
+                self.cells.iter().for_each(|&cell| after.forget_lengths(cell));
+                terminator.successors().map(|t| (t, after.clone())).collect()
             }
             _ => terminator.successors().map(|t| (t, state.clone())).collect(),
         }

@@ -509,3 +509,13 @@ commit:
   constants and patterns call, `add(1, 2)` of `const SUM`, is given what they
   pass; one a constant calls with large values and a body with small ones
   is given both. 2 sites, #1742's last.
+- **Refs of one `RefCell`** (#1741, `intervals/cells.rs`). A `Ref` a cell's
+  `borrow()` gives, and what the `Ref`'s `Deref` lends, are copies of the
+  cell, so a length read through any borrow of it is the cell's:
+  `stack.borrow()[stack.borrow().len() - 1]` past `!is_empty()`. Code that
+  can reach a shared `&RefCell` may write it, so what's known of a cell's
+  length is forgotten at any call but a `borrow()`, a `Ref`'s `Deref`, a
+  length, an `is_empty()` or an index's read; at a drop that may run code;
+  and at a write through a raw pointer, which reaches a cell's value with no
+  call. THIR's ranges saw no such write: the bridge left such a site's wrap
+  out, unsound (#1777), until M4 deletes it. 1 site.

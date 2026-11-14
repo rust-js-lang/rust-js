@@ -23,6 +23,9 @@ impl<'tcx> Walk<'_, 'tcx> {
             .and_then(|p| p.as_local())
             .filter(|of| !self.lent.contains(of))
             .map(|of| state.root(of));
+        // A `RefCell`'s `borrow()` and a `Ref`'s `Deref`, copies of the cell
+        // (`cells`, #1741).
+        self.borrowed_cell(func, of, local, after);
         // As recognition takes them (`slice_length`), never by name.
         if let Some((callee, callee_args)) = func.const_fn_def()
             && let Some(of) = of

@@ -6,7 +6,6 @@
 # longer is: a new one is a gap to recover first, and one MIR now proves
 # goes. M4 deletes THIR's ranges and the bridge once it's empty.
 alias_reads.rs:52:17	main::{closure#0}	#1701
-bridged_port_shapes.rs:21:37	push_child	#1741
 bridged_port_shapes.rs:37:13	flush::{closure#0}	#1701
 bridged_port_shapes.rs:50:9	replay	#1701
 catch_unwind_payloads.rs:43:54	main::{closure#6}	#1701

@@ -10,9 +10,8 @@ import { join } from "node:path";
 import { fixture, root } from "./support";
 import { underLoad } from "../scripts/timing";
 
-// The issues a site may cite: a closure's (#1701), `Ref`s of one `RefCell`
-// (#1741).
-const issues = ["#1701", "#1741"];
+// The issue a site may cite: a closure's (#1701).
+const issues = ["#1701"];
 
 test("each wrap the bridge leaves out is listed, with its issue, and each listed one still is", () => {
   const out = join(fixture("intervals-bridged"), "shadow.txt");

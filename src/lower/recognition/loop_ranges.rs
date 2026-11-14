@@ -141,6 +141,32 @@ pub(in crate::lower) fn slice_get<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, args: 
         && args.types().nth(1).is_some_and(|index| index.is_usize())
 }
 
+/// Whether a call is a `RefCell`'s `borrow()` or `borrow_mut()`, std's:
+/// `Some(true)` of `borrow_mut` (ADR 1137, #1741).
+pub(in crate::lower) fn refcell_borrow(tcx: TyCtxt<'_>, def_id: DefId) -> Option<bool> {
+    let mutable = match tcx.item_name(def_id).as_str() {
+        "borrow" => false,
+        "borrow_mut" => true,
+        _ => return None,
+    };
+    (tcx.inherent_impl_of_assoc(def_id))
+        .filter(|impl_| {
+            matches!(tcx.type_of(*impl_).instantiate_identity().skip_normalization().kind(),
+                ty::Adt(adt, _) if is_std_def(tcx, adt.did(), StdItem::RefCell))
+        })
+        .map(|_| mutable)
+}
+
+/// Whether a call is a `Ref`'s `Deref`, std's, which lends what its
+/// `RefCell` holds and runs nothing (ADR 1137, #1741).
+pub(in crate::lower) fn ref_deref<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, args: ty::GenericArgsRef<'tcx>) -> bool {
+    tcx.is_diagnostic_item(Symbol::intern("deref_method"), def_id)
+        && args
+            .types()
+            .next()
+            .is_some_and(|of| matches!(of.kind(), ty::Adt(adt, _) if is_std_def(tcx, adt.did(), StdItem::RefCellRef)))
+}
+
 /// Whether a call is an `Option`'s `cloned()` or `copied()`: `Some` where
 /// what it's given is (ADR 1137).
 pub(in crate::lower) fn option_copied(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
