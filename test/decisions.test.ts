@@ -157,6 +157,15 @@ pub fn main() {
     let total: i32 = set.iter().sum();
     let tag = String::from("tag");
     let tagged: Vec<usize> = v.iter().map(move |x| *x as usize + tag.len()).collect();
+    // A closure that holds what has a \`Drop\` of the crate's, whole, of items that drop nothing.
+    let guard = Loud(7);
+    let guarded: u32 = v
+        .iter()
+        .map(move |x| {
+            let _held = &guard;
+            *x as u32
+        })
+        .sum();
     let product: i32 = v.iter().product();
     let chained = v.iter().chain(more(&v)).count();
     let kept: Vec<i32> = v.iter().copied().collect();
@@ -169,7 +178,7 @@ pub fn main() {
     println!("{louds:?} {codes:?}");
     let from_js: u32 = js_values(&vec![1, 2]).map(|x| x + 1).sum();
     let from_rust: i32 = boxed(vec![1, 2]).map(|x| x + 1).sum();
-    println!("{from_js} {from_rust}");
+    println!("{from_js} {from_rust} {guarded}");
     println!("{doubled_range} {:?} {taken:?}", v.iter());
     for x in v.iter().rev() {
         print!("{x}");
@@ -184,7 +193,7 @@ pub fn main() {
   for (const [decision, answer, , , count] of readFileSync(counts, "utf8").trim().split("\n").map((line) => line.split("\t"))) {
     if (decision === "transparent-chain" && Number(count) > 0) given[answer] = (given[answer] ?? 0) + Number(count);
   }
-  expect(given).toEqual({ "user-iterator": 1, held: 2, source: 1, escapes: 4, "drop-glue": 1, unproved: 1, order: 1, capacity: 1, admitted: 9 });
+  expect(given).toEqual({ "user-iterator": 1, held: 2, source: 1, escapes: 4, "drop-glue": 2, unproved: 1, order: 1, capacity: 1, admitted: 9 });
 }, underLoad(120_000));
 
 // An answer given only by a program that reaches it is counted, not
