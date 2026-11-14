@@ -37,4 +37,15 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-unwind-arms.test.ts", "-t", "a catch makes its payload where it's first read"],
   },
+  {
+    name: "resumed-as-given-by-a-shared-span",
+    breaks:
+      "a `resume_unwind` is asked of the first THIR call at its span, of two a macro's repetition writes there, so a fact of one is taken of the other (#1671 change 3 M5)",
+    file: "src/lower/std_types/unwind.rs",
+    find: "                let resumed = crate::lower::body_queries::the_call_at(self.frame.thir, call.span);\n",
+    replace:
+      "                let resumed = (self.frame.thir.exprs.iter_enumerated()).find_map(|(id, e)| matches!(e.kind, rustc_middle::thir::ExprKind::Call { fn_span, .. } if fn_span == call.span).then_some(id));\n",
+    tests: ["test/corpus.test.ts", "-t", "^catch_unwind_resumed_in_a_macro.rs$"],
+    snapshots: true,
+  },
 ];

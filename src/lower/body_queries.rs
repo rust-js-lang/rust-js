@@ -167,7 +167,7 @@ pub(super) struct BodyFacts<'tcx> {
     pub(super) present_calls: IndexSet<ExprId>,
     /// Where each `resume_unwind(x)` is of a payload as it was given,
     /// `resumed_as_given`'s (rd550).
-    pub(super) resumed_as_given: IndexSet<Span>,
+    pub(super) resumed_as_given: IndexSet<ExprId>,
     /// Where each `unwrap` or `expect` is of a cell's `get` read right
     /// after it's set to a `Some`, `set_then_unwrapped`'s (rd331e).
     pub(super) set_then_unwrapped: IndexSet<ExprId>,
@@ -276,9 +276,11 @@ fn named_callbacks<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> IndexSet<Local
 /// through one is what a `Box<dyn Any>` holds written, so `x`'s holds what
 /// it was given, `catch_unwind`'s `Err` of what was thrown, whichever
 /// variables held it before (rd550); `x` itself may be set again, which
-/// its JS says, a `let`. Its `fn_span`. One of a variable a closure
+/// its JS says, a `let`. The call itself, which MIR's call asks of the one
+/// THIR call at its span (`the_call_at`), none where a macro's expansion
+/// writes two there (#1671 change 3 M5). One of a variable a closure
 /// captured is its family's, `resumes_as_given`'s.
-fn resumed_as_given<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> IndexSet<Span> {
+fn resumed_as_given<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> IndexSet<ExprId> {
     match lends_dyn_any(tcx, thir) {
         true => IndexSet::default(),
         false => resumes(tcx, thir, false),
@@ -316,9 +318,9 @@ fn lends_dyn_any<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> bool {
     })
 }
 
-/// The `fn_span` of each `resume_unwind(x)` of a variable, of the body's own
-/// or, `captured`, one a closure captured.
-fn resumes<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, captured: bool) -> IndexSet<Span> {
+/// Each call `resume_unwind(x)` of a variable, of the body's own or,
+/// `captured`, one a closure captured.
+fn resumes<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, captured: bool) -> IndexSet<ExprId> {
     use super::recognition::unwind_op;
     use super::std_types::unwind::UnwindOp;
     // A variable, as it is or as the payload's type, `dyn Any + Send +
@@ -338,14 +340,13 @@ fn resumes<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, captured: bool) -> IndexS
             _ => false,
         }
     };
-    (thir.exprs.iter())
-        .filter_map(|expr| match expr.kind {
-            ExprKind::Call {
-                fun, ref args, fn_span, ..
-            } if matches!(*thir[fun].ty.kind(), ty::FnDef(id, _) if unwind_op(tcx, id) == Some(UnwindOp::Resume))
-                && matches!(**args, [payload] if variable(payload)) =>
+    (thir.exprs.iter_enumerated())
+        .filter_map(|(at, expr)| match expr.kind {
+            ExprKind::Call { fun, ref args, .. }
+                if matches!(*thir[fun].ty.kind(), ty::FnDef(id, _) if unwind_op(tcx, id) == Some(UnwindOp::Resume))
+                    && matches!(**args, [payload] if variable(payload)) =>
             {
-                Some(fn_span)
+                Some(at)
             }
             _ => None,
         })
