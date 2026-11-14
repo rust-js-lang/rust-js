@@ -653,6 +653,97 @@ pub fn cloned(r: &NumberRange) -> StepRange {
   expect([lib.copied(parent), lib.read(parent), lib.cloned(parent)]).toEqual([{ min: 0, max: 9 }, { min: 0, max: 9 }, { min: 0, max: 9 }]);
 });
 
+// ADR 0204, amended (#1847): a copy or a clone of a struct with a flattened
+// field, changed in place, is its object's own keys, the flattened field's
+// among them: never a key of the field's name, which the object hasn't. Of
+// an object whose prototype has a getter of that name, which throws, as a
+// UI kit's numeric range was given, each own key read once, by getters
+// that count, and the copy's keys exactly its own.
+test("a copy of a struct with a flattened field reads its own keys alone", async () => {
+  const dir = fixture("flattened-own-keys");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `#[derive(Clone, Copy)]
+pub struct StepRange {
+    pub min: f64,
+    pub max: f64,
+    pub step: f64,
+}
+
+#[derive(Clone, Copy)]
+pub struct NumberRange {
+    #[cfg_attr(rust_js, rust_js::flatten)]
+    pub range: StepRange,
+    pub small_step: Option<f64>,
+}
+
+fn step_value(value: f64, range: &StepRange) -> f64 {
+    ((value - range.min) / range.step).round() * range.step + range.min
+}
+
+pub fn small_step(value: f64, range: &NumberRange) -> f64 {
+    let mut next = *range;
+    next.range.step = range.small_step.unwrap_or(f64::NAN);
+    step_value(value, &next.range)
+}
+
+pub fn cloned(range: &NumberRange) -> NumberRange {
+    let mut next = range.clone();
+    next.range.step = 2.0;
+    next
+}
+
+#[derive(Clone)]
+pub struct Labeled {
+    #[cfg_attr(rust_js, rust_js::flatten)]
+    pub range: StepRange,
+    pub label: String,
+}
+
+pub fn relabeled(labeled: &Labeled) -> Labeled {
+    let mut next = labeled.clone();
+    next.range.step = 3.0;
+    next.label.push('!');
+    next
+}
+`,
+  );
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).not.toContain("range.range");
+  const lib = await import(join(dir, "lib.js"));
+  const reads: Record<string, number> = {};
+  const range = Object.create({
+    get range() {
+      throw new Error("a nested range read");
+    },
+  });
+  for (const [key, value] of Object.entries({ min: 0, max: 10, step: 1, smallStep: 0.25 })) {
+    Object.defineProperty(range, key, {
+      enumerable: true,
+      get: () => {
+        reads[key] = (reads[key] ?? 0) + 1;
+        return value;
+      },
+    });
+  }
+  expect(lib.smallStep(1.3, range)).toBe(1.25);
+  expect(reads).toEqual({ min: 1, max: 1, step: 1, smallStep: 2 });
+  const copy = lib.cloned(range);
+  expect(Object.keys(copy).sort()).toEqual(["max", "min", "smallStep", "step"]);
+  expect(copy).toEqual({ min: 0, max: 10, step: 2, smallStep: 0.25 });
+  // A clone, of a struct no `Copy`, the same.
+  const labeled = Object.create({
+    get range() {
+      throw new Error("a nested range read");
+    },
+  });
+  Object.assign(labeled, { min: 0, max: 10, step: 1, label: "a" });
+  const relabeled = lib.relabeled(labeled);
+  expect(Object.keys(relabeled).sort()).toEqual(["label", "max", "min", "step"]);
+  expect(relabeled).toEqual({ min: 0, max: 10, step: 3, label: "a!" });
+});
+
 // ADR 0204, amended (#1819): a flattened reference's parent's object is a
 // copy of its referent, `{ ...item, severity }`, refused, by name, wherever
 // a program could tell the two apart: a `Cell` or `RefCell` of the

@@ -2,6 +2,15 @@
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
+  {
+    name: "flattened-copy-nested",
+    breaks: "a copy of a struct with a flattened field, changed in place, reads and makes a key of the field's name, `range: { ...range.range }`, which the object hasn't, and an inherited getter of that name throws (#1847)",
+    file: "src/lower/copies.rs",
+    find: "                // (`validate`, ADR 1051); a flattened one's own keys (#1847).\n                let fields = match self.own_object_fields(ty) {\n",
+    replace: "                // (`validate`, ADR 1051); a flattened one's own keys (#1847).\n                let fields = match None::<Vec<(String, Ty<'tcx>, &ty::FieldDef)>> {\n",
+    tests: ["test/lowering.test.ts", "-t", "reads its own keys alone"],
+  },
+
 
   {
     name: "closure-copy-shares-its-captures",

@@ -716,9 +716,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<Expr> {
         // A cell in a field is what it holds (`property_cell`): a clone of
         // one is a copy of that, which the spread makes if it needs none.
-        let def = |cx: &Self, i: usize| match variant {
-            Some(variant) => variant.fields.get(rustc_abi::FieldIdx::from_usize(i)),
-            None => cx.struct_field_def(ty, i),
+        // A struct with a flattened field, its object's own keys (#1847).
+        let own = variant.is_none().then(|| self.own_object_fields(ty)).flatten();
+        let (fields, own_defs): (Vec<(String, Ty<'tcx>)>, Option<Vec<&'tcx ty::FieldDef>>) = match own {
+            Some(own) => {
+                let defs = own.iter().map(|&(_, _, def)| def).collect();
+                (own.into_iter().map(|(name, t, _)| (name, t)).collect(), Some(defs))
+            }
+            None => (fields, None),
+        };
+        let def = |cx: &Self, i: usize| match (&own_defs, variant) {
+            (Some(defs), _) => defs.get(i).copied(),
+            (None, Some(variant)) => variant.fields.get(rustc_abi::FieldIdx::from_usize(i)),
+            (None, None) => cx.struct_field_def(ty, i),
         };
         let needs: Vec<bool> = (fields.iter().enumerate())
             .map(|(i, &(_, t))| {

@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "flattened-clone-nested",
+    breaks: "a clone of a struct with a flattened field, changed in place, reads and makes a key of the field's name, which the object hasn't (#1847)",
+    file: "src/lower/std_impls/clones.rs",
+    find: "        let own = variant.is_none().then(|| self.own_object_fields(ty)).flatten();\n",
+    replace: "        let own = None::<Vec<(String, Ty<'tcx>, &ty::FieldDef)>>;\n",
+    tests: ["test/lowering.test.ts", "-t", "reads its own keys alone"],
+  },
+  {
     name: "projected-clone-shared",
     breaks: "a flattened struct's derived clone, of what may be its parent's object, is that object, the parent's keys too (#1820)",
     file: "src/lower/std_impls/clones.rs",
@@ -322,8 +330,8 @@ export const mutations: Mutation[] = [
     name: "variant-clone-boxes-cells",
     breaks: "a derived `Clone` of an enum reads its variant's `RefCell` field that holds its value as `{ value }`, `{ ...a, runs: { value: $borrow(a.runs).value } }` (#503)",
     file: "src/lower/std_impls/clones.rs",
-    find: "            Some(variant) => variant.fields.get(rustc_abi::FieldIdx::from_usize(i)),\n",
-    replace: "            Some(_) => None,\n",
+    find: "            (None, Some(variant)) => variant.fields.get(rustc_abi::FieldIdx::from_usize(i)),\n",
+    replace: "            (None, Some(_)) => None,\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_variant_derives.rs$"],
   },
   {

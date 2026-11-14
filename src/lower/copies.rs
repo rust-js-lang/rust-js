@@ -67,8 +67,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Shape::Object(fields) => {
                 let mut props = vec![Prop::Spread(place.clone())];
                 // A `Copy` struct's, which a symbol names no field of
-                // (`validate`, ADR 1051).
-                for (name, t) in Self::named_fields(fields) {
+                // (`validate`, ADR 1051); a flattened one's own keys (#1847).
+                let fields = match self.own_object_fields(ty) {
+                    Some(own) => own.into_iter().map(|(name, t, _)| (name, t)).collect(),
+                    None => Self::named_fields(fields),
+                };
+                for (name, t) in fields {
                     if self.contains_mutated(t) {
                         let field = self.copy(Expr::member(place.clone(), name.clone()), t);
                         props.push(Prop::Field(name, field));
@@ -291,7 +295,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         match self.shape(ty) {
             Shape::Object(fields) => {
                 let mut props = vec![Prop::Spread(place.clone())];
-                for (name, t) in Self::named_fields(fields) {
+                // A flattened one's own keys (#1847).
+                let fields = match self.own_object_fields(ty) {
+                    Some(own) => own.into_iter().map(|(name, t, _)| (name, t)).collect(),
+                    None => Self::named_fields(fields),
+                };
+                for (name, t) in fields {
                     if inline(t) {
                         props.push(Prop::Field(
                             name.clone(),
@@ -369,6 +378,51 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// references. The two only disagree if one of the copies is later
     /// changed in place, which needs a type in `mutated`. So only those
     /// types are copied, and everything else stays shared.
+    /// The fields of `ty`, a struct, whose object's own keys they are, as
+    /// a copy, a clone or a move apart of it reads and writes each one it
+    /// copies in turn (#1847): its own fields, and in place of a flattened
+    /// field its struct's, in turn, the parent's keys too, never a key of
+    /// the flattened field's name, which the object hasn't; a flattened
+    /// field of another kind, a keyed enum's or a state's, its keys the
+    /// parent's, left to the spread. `None` of a struct with no flattened
+    /// field, whose shape's fields are these.
+    pub(in crate::lower) fn own_object_fields(
+        &self,
+        ty: Ty<'tcx>,
+    ) -> Option<Vec<(String, Ty<'tcx>, &'tcx ty::FieldDef)>> {
+        let ty::Adt(adt, _) = ty.kind() else { return None };
+        if !adt.is_struct()
+            || !adt
+                .non_enum_variant()
+                .fields
+                .iter()
+                .any(|f| super::bindings::is_flatten(self.tcx, f))
+        {
+            return None;
+        }
+        let mut fields = Vec::new();
+        self.own_fields_into(ty, &mut fields);
+        Some(fields)
+    }
+
+    fn own_fields_into(&self, ty: Ty<'tcx>, fields: &mut Vec<(String, Ty<'tcx>, &'tcx ty::FieldDef)>) {
+        let ty::Adt(adt, args) = ty.kind() else { return };
+        for field in &adt.non_enum_variant().fields {
+            let field_ty = self.field_ty(field, args);
+            if super::bindings::is_flatten(self.tcx, field) {
+                if super::bindings::plain_struct(self.tcx, field_ty).is_some() {
+                    self.own_fields_into(field_ty, fields);
+                }
+                continue;
+            }
+            fields.push((
+                super::bindings::field_key(self.tcx, field).text().to_owned(),
+                field_ty,
+                field,
+            ));
+        }
+    }
+
     /// A `ty` value of the fields of `ty`'s at `place` alone, a flattened
     /// struct's (`Flattened::projected`, #1820), where `place` may be its
     /// parent's object, which has the parent's keys too: `{ min: r.min,

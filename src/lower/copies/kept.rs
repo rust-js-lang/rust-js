@@ -226,7 +226,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         match self.shape(ty) {
             Shape::Object(fields) => {
                 let mut props = vec![Prop::Spread(place.clone())];
-                for (name, t) in Self::named_fields(fields) {
+                // A flattened one's own keys (#1847).
+                let fields = match self.own_object_fields(ty) {
+                    Some(own) => own.into_iter().map(|(name, t, _)| (name, t)).collect(),
+                    None => Self::named_fields(fields),
+                };
+                for (name, t) in fields {
                     if self.kept_may_change(t) {
                         props.push(Prop::Field(
                             name.clone(),

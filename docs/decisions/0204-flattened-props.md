@@ -352,3 +352,30 @@ whole, or lent mutably", a keyed enum's clone refused; and
 `projected-read-refused` (`analysis/validation.ts`) and
 `flattened-part-cmp-nested` (`ordering.ts`); `flattened-read-through-deref`
 retargeted to `bindings/flattened.rs`, where `read_through` is now.
+
+## Amendment: a copy reads its object's own keys (2026-11-15)
+
+A wrong answer (P0, #1847). A copy of a struct with a flattened field,
+changed in place, copied each part that's changed in place by its field's
+name: `const next = { ...range, range: { ...range.range } }` of a
+`NumberRange` whose `StepRange` is flattened. Its object has no `range`
+key: the read was `undefined`, whose spread is `{}`, so a plain object's
+copy held an extra `range: {}`, and an object whose prototype has a `range`
+getter, as a UI kit's numeric range was given, threw where upstream gives
+1.5. A copy, a clone, a move apart (ADR 0407) and React's kept copy
+(#1723) now take the struct's object's own keys (`copies::own_object_fields`,
+the copy owner's): its fields, and in place of a flattened struct its
+fields in turn, read of the same object, `{ ...range }` and `next.step =
+..`; a flattened field of another kind, a keyed enum's or a state's, its
+keys the parent's, left to the spread.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's.
+
+Held by `test/lowering.test.ts`'s "a copy of a struct with a flattened
+field reads its own keys alone": a `Copy` struct's copy out of a
+reference and its clone, and a clone of one that isn't `Copy`, of objects
+whose prototype's `range` getter throws, each own key read through a
+getter that counts, the copy's keys exactly its own; mutations
+`flattened-copy-nested` (`copies.ts`) and `flattened-clone-nested`
+(`std_impls/clones.ts`); `variant-clone-boxes-cells` retargeted.
