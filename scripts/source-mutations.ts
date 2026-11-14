@@ -21,11 +21,13 @@ import { run, type Exit } from "../test/child";
 import type { Mutation } from "./mutations";
 import { underLoad } from "./timing";
 
-/** A generator's preparation, `bun builtins/intl.ts`: about 0.01 s, warm
- * or cold, nearly all of it the process's start, which a loaded machine
- * slows; twice of that is under the start's own jitter, so a second, as the
- * load makes it (`underLoad`). Past it, a hang, not a slow generator. */
-const prepareTimeout = underLoad(1_000);
+/** A generator's preparation: 18 ms alone in a quiet workspace, but past a
+ * second for three of ten mutants run at once, which #1861 is finding the
+ * cause of. Until it's found, twice the most the measured step took, 9.5 s
+ * with the workspace's copy in a batch beside another checkout's check (ADR
+ * 1154), as the load makes it (`underLoad`): a slow spot listed in
+ * docs/dev-loop.md, not a bound the generator needs. */
+const prepareTimeout = underLoad(20_000);
 
 /** An independently writable source tree, without generated stores. The
  * caller supplies Git's tracked files, including current working-tree edits. */

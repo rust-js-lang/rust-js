@@ -40,12 +40,15 @@ README-only kill recipes are not durable CI proof. Registering JS/TS files witho
   A mutant whose tests reach its owner only through such a package isn't
   proved loaded by that route. The load marker still tells whether the
   copy ran.
-- **A generator's preparation** is the generator alone, `bun
-  builtins/intl.ts`, measured at 0.01 s warm and 0.01 s cold
-  (`BUN_RUNTIME_TRANSPILER_CACHE_PATH=0`), nearly all of it the process's
-  start. The js crate it changes is rebuilt in the mutant's test run, under
-  that test's timeout. So the preparation's timeout is a second, as the
-  load makes it (`underLoad`): twice of 0.01 s is under the start's own
-  jitter. Past it is a hang, reported as `INCONCLUSIVE: source preparation
-  timed out after N s`, apart from a preparation that failed. The 4.9–9.5
-  s "preparation" measured above counts the workspace's copy too.
+- **A generator's preparation** is the generator alone. The js crate it
+  changes is rebuilt in the mutant's test run, under that test's timeout.
+  Alone in a quiet workspace it takes 18 ms, after a 1.9 s copy of the
+  workspace; the template on main takes 0.01 s warm, cold and fresh. It
+  first landed with a 1 s timeout, from that. Three of ten Intl mutants run
+  at once then timed out at 1 s, which the quiet measurement doesn't
+  explain: #1861 is finding why, a slow spot listed in docs/dev-loop.md.
+  Until then the timeout is 20 s as the load makes it (`underLoad`), twice
+  the 9.5 s the measured step took at most, the copy with it, in the
+  15-mutant batch beside another checkout's check. Past it is a hang,
+  reported as `INCONCLUSIVE: source preparation timed out after N s`,
+  apart from a preparation that failed.
