@@ -95,8 +95,8 @@ export const mutations: Mutation[] = [
     name: "transparent-capacity-unseen",
     breaks: "a `Vec` collected in a crate that reads capacities is admitted, its hand-written capacity not std's (#1635)",
     file: "src/lower/iterators/transparent.rs",
-    find: "        } else if keeps_capacity && recognition.is_std_type(thir[root].ty, StdItem::Vec) {\n",
-    replace: "        } else if false && keeps_capacity {\n",
+    find: "        } else if keeps_capacity\n            && recognition.is_std_type(thir[root].ty, StdItem::Vec)\n",
+    replace: "        } else if false\n            && recognition.is_std_type(thir[root].ty, StdItem::Vec)\n",
     tests: ["test/decisions.test.ts", "-t", "each chain is counted by what keeps it from being transparent"],
   },
   {
@@ -129,6 +129,22 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/transparent.rs",
     find: "    boxed_dyn && crate::lower::bindings::is_binding(tcx, callee)\n",
     replace: "    boxed_dyn && crate::lower::bindings::is_binding(tcx, callee) && false\n",
+    tests: ["test/decisions.test.ts", "-t", "each chain is counted"],
+  },
+  {
+    name: "drop-glue-admits-a-user-drop",
+    breaks: "a chain whose items have a user `Drop` JS runs, `Loud`'s, is admitted, so its hand-written form may drop them otherwise than std's body (#1681)",
+    file: "src/lower/iterators/transparent.rs",
+    find: "    let needs_drop = |ty: Ty<'tcx>| drops(ty);\n",
+    replace: "    let needs_drop = |_: Ty<'tcx>| false;\n",
+    tests: ["test/decisions.test.ts", "-t", "each chain is counted"],
+  },
+  {
+    name: "capacity-admits-an-inexact-hint",
+    breaks: "a `Vec` collected, where capacities are read, by an iterator whose hand-written hint isn't std's lower bound, `chars()`'s, is admitted, so its capacity may be another (#1635)",
+    file: "src/lower/iterators/transparent.rs",
+    find: "                    recognition.grows_by_exact_len(collected)\n",
+    replace: "                    true\n",
     tests: ["test/decisions.test.ts", "-t", "each chain is counted"],
   },
 ];

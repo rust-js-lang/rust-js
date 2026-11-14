@@ -788,7 +788,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // stepped from its back is known, the one reader of the ground, and
     // before any reader of both stages, `type_fact_params`' (`InPlace`).
     for bodies in [every_body.0, every_body.1] {
-        crate::lower::body_queries::decide_held(&recognition, bodies, (&back_stepped, keeps_capacity));
+        crate::lower::body_queries::decide_held(&recognition, bodies, (&back_stepped, keeps_capacity, &drop_runs));
     }
     let asks_whole = |kind| chars_asked::asks_whole(tcx, recognition, all_bodies, (library, keeps_capacity), kind);
     let chars_whole = asks_whole(crate::lower::recognition::TextIter::Chars);

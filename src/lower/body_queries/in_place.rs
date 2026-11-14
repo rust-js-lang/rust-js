@@ -40,13 +40,6 @@ pub(in crate::lower) fn decide<'tcx>(
     std_iterators: bool,
 ) {
     let tcx = recognition.tcx;
-    // Which chains are transparent, counted where decisions are asked
-    // (#1673): a measurement, which decides nothing here.
-    if crate::decisions::path().is_some() && !std_iterators {
-        for body in bodies.iter() {
-            crate::lower::iterators::count_chains(&recognition, (&body.thir, body.def_id), keeps_capacity);
-        }
-    }
     if std_iterators {
         for body in bodies.iter_mut() {
             body.facts.in_place_adapters = super::InPlace::decided(IndexSet::default());
@@ -118,7 +111,11 @@ pub(in crate::lower) const HELD_FLIPPED: [&str; 2] = ["enumerate", "map"];
 pub(in crate::lower) fn decide_held<'tcx>(
     recognition: &crate::lower::recognition::Recognition<'_, 'tcx>,
     bodies: &[crate::lower::Body<'tcx>],
-    (back_stepped, keeps_capacity): (&crate::lower::analysis::BackStepped<'tcx>, bool),
+    (back_stepped, keeps_capacity, drops): (
+        &crate::lower::analysis::BackStepped<'tcx>,
+        bool,
+        &dyn Fn(ty::Ty<'tcx>) -> bool,
+    ),
 ) {
     let tcx = recognition.tcx;
     let iterator = crate::lower::recognition::std_item(tcx, crate::lower::recognition::StdItem::Iterator);
@@ -126,9 +123,21 @@ pub(in crate::lower) fn decide_held<'tcx>(
         .map(|&method| crate::lower::recognition::trait_method(tcx, iterator, method))
         .collect();
     let meaning = crate::lower::session::caches(tcx).meaning.get();
+    // Which chains are transparent, counted where decisions are asked
+    // (#1673), of the bodies the flip reads them of.
+    if crate::decisions::path().is_some() && !meaning {
+        for body in bodies {
+            crate::lower::iterators::count_chains(recognition, (&body.thir, body.def_id), (keeps_capacity, drops));
+        }
+    }
     for body in bodies {
         let held = match (meaning, body.mir.as_ref()) {
-            (false, Some(mir)) => held_links(recognition, body, (&mir.body, &flipped), (back_stepped, keeps_capacity)),
+            (false, Some(mir)) => held_links(
+                recognition,
+                body,
+                (&mir.body, &flipped),
+                (back_stepped, keeps_capacity, drops),
+            ),
             _ => IndexSet::default(),
         };
         body.facts.in_place_adapters.decide_held(held);
@@ -147,7 +156,11 @@ fn held_links<'tcx>(
     recognition: &crate::lower::recognition::Recognition<'_, 'tcx>,
     body: &crate::lower::Body<'tcx>,
     (mir, flipped): (&rustc_middle::mir::Body<'tcx>, &[DefId]),
-    (back_stepped, keeps_capacity): (&crate::lower::analysis::BackStepped<'tcx>, bool),
+    (back_stepped, keeps_capacity, drops): (
+        &crate::lower::analysis::BackStepped<'tcx>,
+        bool,
+        &dyn Fn(ty::Ty<'tcx>) -> bool,
+    ),
 ) -> IndexSet<Span> {
     let thir = &body.thir;
     let held_apart = |source: ExprId| {
@@ -160,7 +173,7 @@ fn held_links<'tcx>(
         }
         _ => None,
     };
-    let chains = crate::lower::iterators::chains(recognition, (thir, body.def_id), keeps_capacity);
+    let chains = crate::lower::iterators::chains(recognition, (thir, body.def_id), (keeps_capacity, drops));
     (chains.into_iter())
         .filter(|chain| chain.answer == crate::lower::iterators::Transparency::Held)
         .filter(|chain| chain.source.is_some_and(held_apart))

@@ -212,6 +212,39 @@ renamed `x$1` (483.5 to 483.6) and role fallbacks (264.2 to 264.4) in
 10,000 lines rise only as the lines they're counted against fall, the
 same names in 338 fewer lines; its baseline is blessed so.
 
+## Amendment: the held flip (2026-11-14, #1681's step iii)
+
+The first step that reads `transparent-chain`. A chain that starts on a
+variable holding std's struct apart, `held`'s, is std's compiled structs:
+its `enumerate()`s and `map()`s, `HELD_FLIPPED`, are no longer made in
+place, the recognizers' hand-written forms, but held, std's body the
+meaning where the hand-written form isn't proved to be it. Decided as the
+second stage of `InPlace` (`decide_held`), once `back_stepped` knows what's
+stepped from its back and before `type_fact_params` reads the sets.
+
+- **Narrowed to std's struct.** A source made knowing its back or its
+  length where it's made, `$mapEnds` of a map a `rev()` or a counted
+  enumeration steps (#484, #1354), is a JS iterator, not std's struct, and
+  its chain keeps its forms: `BackStepped::made_knowing`, the owner's
+  answer, of its type or a local of it. Variables only, not fields. Unnarrowed,
+  the flip moved 175 snapshots, ×1.146 their lines, and refused one,
+  `held_filter_map_reversed`.
+- **Never `rev()`.** `back_stepped`, which decides the flip, reads whether a
+  `rev()` is made in place: its held-`rev()` rule marks what a held one is
+  given made knowing its back (analysis/back_stepped.rs). Flipping a `rev()`
+  would mark its own source, un-flipping the chain: a cycle, not a fixed
+  point. `test/architecture-iterators.test.ts` holds `HELD_FLIPPED` to
+  `enumerate` and `map` and back_stepped's read to the ground.
+
+Measured: 49 corpus snapshots move, each as native prints; their lines
+11,151 to 11,716, ×1.051 (×1.065 before `$jsIterator`, which shrank the
+dictionaries the std structs are given). Worst: `associated_into_iter`
+×1.29, std's `iterator_map(iters, f, $jsIteratorSome)` where JS's own wrote
+`Iterator.from(iters).map(f)`. The React port's regeneration changes no
+iterator form. The readability measure grows in no shape. Mutations
+`held-flip-takes-none-out` and `held-flip-of-a-source-made-knowing-its-back`,
+caught by snapshots; `held-stage-never-decided` retargeted, caught.
+
 ## Amendment: the held flip reverted (2026-11-14)
 
 The held flip (bb518fcca) is reverted: it made a wrong answer of a refusal.
@@ -262,3 +295,30 @@ it leaves hand-written: cloned-owners-bounds-unasked and
 cloned-owners-unrecorded by generic_map_past_a_take_beside_a_cloned_one,
 #1318's case with each `map` past a `take`; closing-try-fold-by-next by
 skip_try_fold's `any_kept_above`, a `map` past a `filter`.
+
+## Amendment: two reasons asked of their owners (2026-11-14, #1681)
+
+Two of the predicate's reasons approximated questions another module
+answers, and kept out React's everyday chains, which the map and enumerate
+flip would then have moved: `invalidProps.map(f).join(", ")` as
+`$foldToArray(iterator_map($iter(invalidProps), f))`.
+
+- **`drop-glue`** asked rustc's `needs_drop`, which is true of a `String`'s
+  or a `Vec`'s items, whose freeing JS never sees. It asks the drops owner
+  now, `drop_runs`: whether a user `Drop` runs.
+- **`capacity`** kept out every `Vec` collected in a crate that reads
+  capacities. It asks the capacity owner now (#1180, #1200): whether the
+  collected iterator is collected knowing its exact length
+  (`grows_by_exact_len`) or its hand-written hint is std's lower bound
+  (`lower_bound_is_stds`, `lower_bound_kept_by_parts`). An exact-sized
+  `v.iter().map(f)`'s or `(0..n).map(f)`'s is.
+
+The chains are counted where the flip reads them, `decide_held`, once
+`drop_runs` exists, not in the ground's pass: one predicate, asked in one
+place. Byte-identical: no corpus snapshot and no file of the React port
+moves (the flip's set, `held`'s, comes before both reasons). The decisions
+test's count keeps one chain of each, a user `Drop`'s items, `Loud`'s, and
+a `chars()` collect whose hint isn't std's; mutations
+`drop-glue-admits-a-user-drop` and `capacity-admits-an-inexact-hint`,
+caught, and `transparent-capacity-unseen` and `held-stage-never-decided`
+retargeted, caught.

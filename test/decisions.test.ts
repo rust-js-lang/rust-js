@@ -96,10 +96,12 @@ test("a compile asked counts every answer of every decision, a 0 too, then what 
 // of: an `Iterator` of the crate's, an iterator held apart it starts on
 // (a boxed one Rust made, `boxed(..)`'s, too), a source not an array, a
 // string or a range, an iterator that escapes (`{:?}`'s of `v.iter()`, and
-// `boxed`'s own, too), a destructor in its items or a closure's
-// captures, an iterator method no table proves (`product`), an adapter's
+// `boxed`'s own, too), a destructor JS runs in its items or a closure's
+// captures, a user `Drop`'s (`Loud`'s), not a `String`'s, whose freeing JS
+// never sees, an iterator method no table proves (`product`), an adapter's
 // argument run as it's given (`chain(more(&v))`), a `Vec` collected in a
-// crate that reads capacities; `(0..10).filter(..)`, `(1..=3).map(..)`,
+// crate that reads capacities by what its hand-written hint isn't std's
+// lower bound of (`chars()`'s), not an exact-sized one's; `(0..10).filter(..)`, `(1..=3).map(..)`,
 // whose `RangeInclusive::new` makes its source, a `for` loop's
 // `v.iter().rev()`, and a binding's boxed iterator's chain, JS's own
 // iterator, `js_values(..).map(..)` (#1681's step ii), admitted.
@@ -124,6 +126,14 @@ fn evens(v: &[i32]) -> impl Iterator<Item = &i32> {
 
 fn more(v: &[i32]) -> std::slice::Iter<'_, i32> {
     v.iter()
+}
+
+struct Loud(u32);
+
+impl Drop for Loud {
+    fn drop(&mut self) {
+        println!("drop {}", self.0);
+    }
 }
 
 fn boxed(v: Vec<i32>) -> Box<dyn Iterator<Item = i32>> {
@@ -154,6 +164,9 @@ pub fn main() {
     let doubled_range: i32 = (1..=3).map(|x| x * 2).sum();
     let mut drained = vec![1, 2];
     let taken: Vec<i32> = drained.drain(..).collect();
+    let louds: Vec<u32> = vec![Loud(1), Loud(2)].into_iter().map(|l| l.0).collect();
+    let codes: Vec<u32> = "abc".chars().map(|c| c as u32).collect();
+    println!("{louds:?} {codes:?}");
     let from_js: u32 = js_values(&vec![1, 2]).map(|x| x + 1).sum();
     let from_rust: i32 = boxed(vec![1, 2]).map(|x| x + 1).sum();
     println!("{from_js} {from_rust}");
@@ -171,7 +184,7 @@ pub fn main() {
   for (const [decision, answer, , , count] of readFileSync(counts, "utf8").trim().split("\n").map((line) => line.split("\t"))) {
     if (decision === "transparent-chain" && Number(count) > 0) given[answer] = (given[answer] ?? 0) + Number(count);
   }
-  expect(given).toEqual({ "user-iterator": 1, held: 2, source: 1, escapes: 4, "drop-glue": 2, unproved: 1, order: 1, capacity: 3, admitted: 4 });
+  expect(given).toEqual({ "user-iterator": 1, held: 2, source: 1, escapes: 4, "drop-glue": 1, unproved: 1, order: 1, capacity: 1, admitted: 9 });
 }, underLoad(120_000));
 
 // An answer given only by a program that reaches it is counted, not

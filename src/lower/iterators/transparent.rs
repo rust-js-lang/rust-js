@@ -71,9 +71,9 @@ pub(in crate::lower) struct Chain {
 pub(in crate::lower) fn count_chains<'tcx>(
     recognition: &Recognition<'_, 'tcx>,
     body: (&Thir<'tcx>, DefId),
-    keeps_capacity: bool,
+    facts: (bool, &dyn Fn(Ty<'tcx>) -> bool),
 ) {
-    for chain in chains(recognition, body, keeps_capacity) {
+    for chain in chains(recognition, body, facts) {
         crate::decisions::record("transparent-chain", chain.answer.name());
     }
 }
@@ -82,14 +82,16 @@ pub(in crate::lower) fn count_chains<'tcx>(
 /// transparent, the first of: an `Iterator` of the crate's; an iterator
 /// held apart it starts on; another source than an array, a `Vec`, a
 /// slice, a string, a range or a binding's boxed iterator; an iterator that
-/// escapes; a destructor; an iterator method no table proves
-/// (`PROVED_LINKS`); an adapter's argument evaluated as it's given, whose
-/// order matters; a `Vec` collected where its capacity is read; or
-/// admitted.
+/// escapes; a destructor JS runs, the drops owner's `drop_runs`, `drops`;
+/// an iterator method no table proves (`PROVED_LINKS`); an adapter's
+/// argument evaluated as it's given, whose order matters; a `Vec`
+/// collected, in a crate that reads capacities, `keeps_capacity`, by an
+/// iterator whose hand-written hint isn't std's lower bound, the capacity
+/// owner's answer; or admitted.
 pub(in crate::lower) fn chains<'tcx>(
     recognition: &Recognition<'_, 'tcx>,
     (thir, owner): (&Thir<'tcx>, DefId),
-    keeps_capacity: bool,
+    (keeps_capacity, drops): (bool, &dyn Fn(Ty<'tcx>) -> bool),
 ) -> Vec<Chain> {
     let tcx = recognition.tcx;
     let recognition = Recognition {
@@ -169,7 +171,10 @@ pub(in crate::lower) fn chains<'tcx>(
             Transparency::Source
         } else if is_iterator(thir[root].ty) && !thir[root].span.is_desugaring(DesugaringKind::ForLoop) {
             Transparency::Escapes
-        } else if chain.iter().any(|&e| drops_in(tcx, &recognition, thir[e].ty, link(e))) {
+        } else if chain
+            .iter()
+            .any(|&e| drops_in(&recognition, drops, thir[e].ty, link(e)))
+        {
             Transparency::DropGlue
         } else if chain
             .iter()
@@ -182,9 +187,22 @@ pub(in crate::lower) fn chains<'tcx>(
             // An adapter's argument run as it's given, `chain(make())`,
             // whose order a hand-written form may change (#1015).
             Transparency::Order
-        } else if keeps_capacity && recognition.is_std_type(thir[root].ty, StdItem::Vec) {
+        } else if keeps_capacity
+            && recognition.is_std_type(thir[root].ty, StdItem::Vec)
+            && !link(root)
+                .and_then(|(.., collected)| collected)
+                .is_some_and(|collected| {
+                    let collected = thir[collected].ty;
+                    recognition.grows_by_exact_len(collected)
+                        || recognition.lower_bound_is_stds_where(collected, false)
+                        || recognition.lower_bound_kept_by_parts_where(collected, false)
+                })
+        {
             // A `Vec` collected in a crate that reads capacities, which
-            // std's hint makes (#1635).
+            // std's hint makes (#1635), by an iterator whose hand-written
+            // form's hint isn't std's lower bound, as the capacity owner
+            // finds it (`lower_bound_is_stds`, #1180): not one collected
+            // knowing its exact length (`grows_by_exact_len`, #1200).
             Transparency::Capacity
         } else {
             Transparency::Admitted
@@ -271,14 +289,16 @@ fn crate_iterator_in<'tcx>(recognition: &Recognition<'_, 'tcx>, iterator: DefId,
 }
 
 /// Whether a link's item, or a capture of a closure among its generic
-/// arguments, has a destructor.
+/// arguments, has a destructor JS runs, as the drops owner finds it,
+/// `drops`: a user `Drop`'s, not a `String`'s or a `Vec`'s, whose freeing JS
+/// never sees.
 fn drops_in<'tcx>(
-    tcx: TyCtxt<'tcx>,
     recognition: &Recognition<'_, 'tcx>,
+    drops: &dyn Fn(Ty<'tcx>) -> bool,
     made: Ty<'tcx>,
     link: Option<(DefId, ty::GenericArgsRef<'tcx>, Option<ExprId>)>,
 ) -> bool {
-    let needs_drop = |ty: Ty<'tcx>| ty.needs_drop(tcx, recognition.typing_env);
+    let needs_drop = |ty: Ty<'tcx>| drops(ty);
     let item = recognition.iterator_item(made.peel_refs()).is_some_and(needs_drop);
     let captures = link.is_some_and(|(_, args, _)| {
         args.types()
