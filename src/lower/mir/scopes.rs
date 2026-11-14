@@ -77,7 +77,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let copy = self.copy.take();
         self.scope_self = Some(value.to_string());
         let nested = super::super::Nested::Closure {
-            names: self.names.clone(),
+            names: self.names.borrow().clone(),
         };
         let mut stmts = Vec::new();
         let lowered = self.lowered_in(body, method, nested, |cx| cx.mir_signature(body, mir, &mut stmts));

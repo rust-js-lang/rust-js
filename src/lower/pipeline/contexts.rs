@@ -59,7 +59,7 @@ pub(super) fn fn_cx<'a, 'tcx>(
         },
         module,
         locals: Locals::default(),
-        names,
+        names: std::cell::RefCell::new(names),
         module_names,
         jsx: false,
         writing: Default::default(),

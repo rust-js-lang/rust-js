@@ -33,7 +33,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> Expr {
         let held = (held_name(&value).filter(|held| named && !(held.read && bound)))
             .map(|held| &held.name)
-            .filter(|name| !self.names.contains(*name) || self.locals.mir.subjects.contains(*name))
+            .filter(|name| !self.names.borrow().contains(*name) || self.locals.mir.subjects.contains(*name))
             .cloned();
         let Some(held) = held else {
             return self.spill(base, value, out);

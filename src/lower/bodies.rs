@@ -67,7 +67,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut default_drops = None;
         let kind = match nested {
             Nested::Closure { names } => EnclosingKind::Closure {
-                names: std::mem::replace(&mut self.names, names),
+                names: self.names.replace(names),
             },
             Nested::Default {
                 given,
@@ -76,8 +76,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 slots,
             } => {
                 default_drops = Some((drops, slots));
+                let names = self.names.borrow().clone();
                 EnclosingKind::Default(Box::new(ItemScope {
-                    names: self.names.clone(),
+                    names,
                     locals: std::mem::take(&mut self.locals),
                     given: self.enter_default(*given),
                     typing_env: std::mem::replace(&mut self.typing_env, typing_env),
@@ -107,7 +108,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.frame = frame;
         match kind {
             EnclosingKind::Closure { names } => {
-                self.names = names;
+                self.names.replace(names);
             }
             EnclosingKind::Default(scope) => {
                 let ItemScope {
@@ -116,7 +117,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     given,
                     typing_env,
                 } = *scope;
-                self.names = names;
+                self.names.replace(names);
                 self.locals = locals;
                 self.leave_default(given);
                 self.typing_env = typing_env;

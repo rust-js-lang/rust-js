@@ -320,7 +320,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 merge(&mut self.dependencies.borrow_mut(), uses, self.item);
             }
             drop(module_fns);
-            self.names.insert(name.clone());
+            self.names.borrow_mut().insert(name.clone());
             return Ok(name);
         }
         // Apart from the module's names, its other functions', and this
@@ -328,7 +328,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut taken: IndexSet<String> = (self.module_names.iter().cloned())
             .chain(module_fns.names(self.module).map(str::to_owned))
             .collect();
-        taken.extend(self.names.iter().cloned());
+        taken.extend(self.names.borrow().iter().cloned());
         let name = super::fresh_in(&mut taken, base);
         let made_before = module_fns.made.len();
         module_fns.made.insert(
@@ -346,7 +346,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         module_fns.called(key, self.item);
         module_fns.building.push(key);
         drop(module_fns);
-        self.names.insert(name.clone());
+        self.names.borrow_mut().insert(name.clone());
         // Its body, lowered as a function of its own: its names apart from
         // this body's, what it uses its own, given no dictionary of this
         // item's.
@@ -354,13 +354,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .chain(self.krate.module_fns.borrow().names(self.module).map(str::to_owned))
             .collect();
         let params: Vec<String> = params.iter().map(|p| super::fresh_in(&mut names, &p.word())).collect();
-        let names = std::mem::replace(&mut self.names, names);
+        let names = self.names.replace(names);
         let uses = self.dependencies.replace(Dependencies::default());
         let given = self.set_given_aside();
         let mut body = Vec::new();
         let value = make(self, params.iter().map(|p| Expr::var(p)).collect(), &mut body);
         self.restore_given(given);
-        self.names = names;
+        self.names.replace(names);
         let own = self.dependencies.replace(uses);
         self.krate.module_fns.borrow_mut().building.pop();
         body.push(StmtKind::Return(Some(value?)).at(js::Span::NONE));

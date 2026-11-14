@@ -362,7 +362,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let body = (self.krate.closures.get(&id).copied())
             .ok_or_else(|| self.unsupported(span, "a generic impl's constant of its parameters"))?;
         let nested = crate::lower::Nested::Closure {
-            names: self.names.clone(),
+            names: self.names.borrow().clone(),
         };
         // From its MIR (ADR 0364), its value given back.
         let mut stmts = Vec::new();

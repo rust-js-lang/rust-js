@@ -420,8 +420,10 @@ struct FnCx<'a, 'tcx> {
     module: LocalModId,
     /// What this body knows of its variables.
     locals: Locals,
-    /// JS names already taken in this function.
-    names: IndexSet<String>,
+    /// JS names already taken in this function, its item's: given out of
+    /// `&self` too, so each name a body declares is the item's own
+    /// wherever it's made (#1681 change 3, M2).
+    names: std::cell::RefCell<IndexSet<String>>,
     /// Those taken by the module: its functions, imports and globals.
     module_names: &'a IndexSet<String>,
     /// Whether this function makes JSX.
@@ -596,13 +598,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         strip(self.frame.thir, e)
     }
 
-    fn fresh<'b>(&mut self, base: impl Into<Base<'b>>) -> String {
-        fresh_in(&mut self.names, &base.into().word())
+    fn fresh<'b>(&self, base: impl Into<Base<'b>>) -> String {
+        fresh_in(&mut self.names.borrow_mut(), &base.into().word())
     }
 
     /// A `catch`'s parameter each time it's asked, of the item's names,
     /// each its own (#1681 change 3, M2), as preparation spells it.
-    fn catch_names(&mut self) -> impl FnMut() -> String + '_ {
+    fn catch_names(&self) -> impl FnMut() -> String + '_ {
         move || self.fresh(Role::Error)
     }
 

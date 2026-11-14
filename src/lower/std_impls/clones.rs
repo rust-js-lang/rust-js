@@ -538,7 +538,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             .last()
                             .is_some_and(|s| matches!(&s.kind, StmtKind::Const(name, _) if name == held))
                     {
-                        self.names.swap_remove(held);
+                        self.names.borrow_mut().swap_remove(held);
                         out.pop();
                         return Ok(written);
                     }
@@ -798,11 +798,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Its parameter is a name its body's own may not take, `const value
         // = $someValue(value)` of a nested `Option` (#1246), taken while
         // the body's made, its scope's alone.
-        let taken = self.names.insert(name.to_string());
+        let taken = self.names.borrow_mut().insert(name.to_string());
         let mut body = Vec::new();
         let value = self.clone_value(Expr::var(name), ty, span, &mut body);
         if taken {
-            self.names.shift_remove(name);
+            self.names.borrow_mut().shift_remove(name);
         }
         body.push(StmtKind::Return(Some(value?)).at(js::Span::NONE));
         Ok(Expr::arrow(vec![name.into()], body))
