@@ -18,4 +18,20 @@ export const mutations: Mutation[] = [
     replace: "                    .and_then(|_| None::<Vec<u32>>)\n",
     tests: ["test/writer-sink.test.ts", "-t", "a consumer's Arguments given a library's trait's method through a dyn"],
   },
+  {
+    name: "unformatted-library-type-lacks-fmt-into",
+    breaks: "a library's type no formatting impl is of, held by a consumer's type whose `Display` never shows it, is taken to lack `fmtInto`, so writing that type through generic code stops as a bug of rust-js's (#1688)",
+    file: "src/lower/library/written_into.rs",
+    find: "            && self.formats(adt)\n",
+    replace: "\n",
+    tests: ["test/writer-sink.test.ts", "-t", "a library's type nothing formats"],
+  },
+  {
+    name: "formatted-library-type-by-another-trait",
+    breaks: "a library's type is taken to be formatted only where an impl of a trait not of formatting is of it, so one with a `Display` its contract doesn't list is written through a dictionary with no `fmtInto`, unchecked (#1688)",
+    file: "src/lower/library/written_into.rs",
+    find: "            crate::lower::recognition::is_fmt_trait(tcx, tcx.impl_trait_id(imp))\n",
+    replace: "            !crate::lower::recognition::is_fmt_trait(tcx, tcx.impl_trait_id(imp))\n",
+    tests: ["test/writer-sink.test.ts", "-t", "one its contract doesn't list is a bug"],
+  },
 ];

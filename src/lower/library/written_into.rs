@@ -7,14 +7,33 @@ use super::{Foreign, key};
 use rustc_span::def_id::DefId;
 
 impl Foreign<'_, '_> {
-    /// Is `adt` a library's type whose formatting dictionaries its contract
-    /// doesn't say carry `fmtInto` (#1652, #1688)? Not `@rust-js/std`'s,
-    /// whose dictionaries are made where they're given.
+    /// Is `adt` a library's type with a formatting dictionary, one its
+    /// contract doesn't say carries `fmtInto` (#1652, #1688)? Not
+    /// `@rust-js/std`'s, whose dictionaries are made where they're given;
+    /// and not one no formatting impl is of, which has no dictionary, a
+    /// `Token` a consumer's `Labeled<Token>` holds, whose `Display` never
+    /// writes it.
     pub(in crate::lower) fn lacks_fmt_into(&self, adt: DefId) -> bool {
         !adt.is_local()
             && self
                 .library(adt.krate)
                 .is_some_and(|library| !library.builtin && !library.written_into.contains(&key(self.tcx, adt)))
+            && self.formats(adt)
+    }
+
+    /// Is a formatting impl of `adt`, a library's type, or of a type made of
+    /// it, `impl Display for &Token`: only its own crate can write one, by
+    /// the orphan rules.
+    fn formats(&self, adt: DefId) -> bool {
+        let tcx = self.tcx;
+        (tcx.trait_impls_in_crate(adt.krate).iter()).any(|&imp| {
+            crate::lower::recognition::is_fmt_trait(tcx, tcx.impl_trait_id(imp))
+                && (tcx.type_of(imp).skip_binder().walk()).any(|part| {
+                    part.as_type()
+                        .and_then(|ty| ty.ty_adt_def())
+                        .is_some_and(|of| of.did() == adt)
+                })
+        })
     }
 
     /// Is `adt` a library's type whose formatting dictionaries its contract

@@ -505,8 +505,8 @@ pub struct Library {
     pub leaves_unended: [bool; 2],
     /// Its types whose formatting impls' dictionaries carry `fmtInto`,
     /// which writes a value into a writer a piece at a time, by key (#1652,
-    /// step 5 of ADR 1135): a consumer that writes another of its types so,
-    /// through generic code or a `dyn`, is refused (#1688).
+    /// step 5 of ADR 1135): each a consumer can hold that a formatting impl is
+    /// of, so writing another so stops as a bug of rust-js's (#1688).
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub written_into: Vec<String>,
     /// Its writer functions, given a `Formatter`, not a formatting impl's,

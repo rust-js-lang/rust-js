@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/written_params.rs",
     find: "    if let Some(lacked) = lacked {\n",
     replace: "    if let Some(lacked) = lacked.filter(|_| false) {\n",
-    tests: ["test/writer-sink.test.ts", "-t", "one its contract doesn't list is refused"],
+    tests: ["test/writer-sink.test.ts", "-t", "one its contract doesn't list is a bug"],
   },
   {
     name: "written-arguments-copies-unfollowed",

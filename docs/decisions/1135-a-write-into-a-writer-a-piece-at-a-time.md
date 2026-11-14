@@ -580,6 +580,26 @@ go.
         dyn_of_a_librarys_private_type (refused); mutations
         published-dyn-flagged, derived-dyn-unflagged and
         private-dyn-unflagged, caught.
+      - Amended later, #1688's close: a library's type written through
+        generic code that its contract doesn't list (`refuse_lacked`) is no
+        refusal of the program's but a check of the contract, which lists
+        each of its types a consumer can hold that a formatting impl is of:
+        a consumer can hold only a type its library makes reachable or an
+        `impl Trait` hides, and rustc's type privacy refuses any other. So
+        it says it's a bug of rust-js's, and the suites count it a crash.
+        A type no formatting impl is of has no dictionary to lack `fmtInto`
+        (`Foreign::lacks_fmt_into` asks `formats`): `Labeled<dep::Token>`,
+        whose `Display` never shows its `Token`, was refused, naming #1688,
+        and writes as native now. Probes of a private type in a public
+        signature, a `pub` type in a private module, an associated type and
+        a closure an `impl Fn` hides found the contract complete; a
+        formatting impl of a reference or a `Box` of the type, `impl
+        Display for &ByRef`, wasn't, as four places took the type an impl
+        is of by `ty_adt_def()` (#1798). Proof: the pair
+        librarys_unformatted_type_held_by_a_consumers_type against native;
+        the hidden-type pair's contract emptied by hand stops as a bug of
+        rust-js's; mutations unformatted-library-type-lacks-fmt-into and
+        formatted-library-type-by-another-trait, caught.
       - Amended later, #1745: a `format_args!` the body makes, given to a
         type parameter a call writes into a writer through its dictionary,
         `own(w, &format_args!(..))`'s `T`, is followed at lowering, where
