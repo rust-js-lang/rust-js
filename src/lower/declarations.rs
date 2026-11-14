@@ -1233,6 +1233,13 @@ impl<'tcx> Declarations<'_, 'tcx> {
                 if let Some(declared) = written_types(tcx, did) {
                     return self.written(did, &declared, args);
                 }
+                // A `Cow`, what it borrowed or owns, `{ TAG: "Borrowed"; _0:
+                // string } | { TAG: "Owned"; _0: string }`, each variant as
+                // an enum's is (ADR 0033), its `Owned` what `ToOwned` makes
+                // of what it borrows (#1748).
+                if super::recognition::is_cow_type(tcx, ty) {
+                    return union(self.tagged_variants(did, args, true));
+                }
                 // Another crate's untagged enum, `js::Json`: declared here, as
                 // this crate's are, the union of its payloads (ADR 0225).
                 if !did.is_local() && adt.is_enum() && is_untagged(tcx, did) {

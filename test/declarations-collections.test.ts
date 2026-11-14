@@ -1,7 +1,8 @@
 // What a crate's declarations (ADR 0196) say of std's collections: a
 // `HashMap` or `BTreeMap` a `Map`, a `HashSet` or `BTreeSet` a `Set`, of
-// what each holds, as the JS is one (ADR 0876), and TypeScript that uses
-// them is checked against them.
+// what each holds, as the JS is one (ADR 0876); and of a `Cow`, the tagged
+// union of what it borrowed or owns (#1748). TypeScript that uses them is
+// checked against them.
 
 import { expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
@@ -94,4 +95,50 @@ export const age: number | undefined = ages().get("Ada");
 export const first: string[] | undefined = ranks().get(1);
 `);
   expect(typeChecked(dir, "use.ts")).toEqual([]);
+});
+
+// #1748, found porting a WebGPU page: a function giving back a buffer as it
+// was given, or one it made, `Cow<'_, [f32; 16]>`, was `any` where its JS
+// is `{ TAG: "Borrowed", _0: value }`. Declared as each variant of an enum
+// is (ADR 0033), its `Owned` what `ToOwned` makes of what it borrows.
+test("a Cow is declared the tagged union of what it borrowed or owns", async () => {
+  const dir = fixture("declarations-cow");
+  writeFileSync(join(dir, "lib.rs"), `use std::borrow::Cow;
+
+pub fn text(value: &str) -> Cow<'_, str> {
+    Cow::Borrowed(value)
+}
+
+pub fn numbers(value: &[f32; 16]) -> Cow<'_, [f32; 16]> {
+    Cow::Borrowed(value)
+}
+
+pub fn shouted(value: &str) -> Cow<'_, str> {
+    if value.ends_with('!') {
+        Cow::Borrowed(value)
+    } else {
+        Cow::Owned(format!("{value}!"))
+    }
+}
+`);
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
+  const cow = (borrowed: string, owned: string) =>
+    `{\n    TAG: "Borrowed";\n    _0: ${borrowed};\n} | {\n    TAG: "Owned";\n    _0: ${owned};\n};`;
+  expect(declarations).toContain(`export function text(value: string): ${cow("string", "string")}`);
+  expect(declarations).toContain(`export function numbers(value: number[]): ${cow("number[]", "number[]")}`);
+  expect(declarations).toContain(`export function shouted(value: string): ${cow("string", "string")}`);
+  writeFileSync(join(dir, "use.ts"), `import { numbers, shouted } from "./lib.js";
+const said = shouted("hi");
+export const owned: boolean = said.TAG === "Owned";
+export const shown: string = said._0;
+export const first: number | undefined = numbers(new Array<number>(16).fill(1))._0[0];
+`);
+  expect(typeChecked(dir, "use.ts")).toEqual([]);
+  writeFileSync(join(dir, "wrong.ts"), `import { shouted } from "./lib.js";
+export const wrong: number = shouted("hi")._0;
+`);
+  expect(typeChecked(dir, "wrong.ts")).toEqual([expect.stringContaining("error TS2322")]);
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.shouted("hi"), lib.shouted("hi!")]).toEqual([{ TAG: "Owned", _0: "hi!" }, { TAG: "Borrowed", _0: "hi!" }]);
 });

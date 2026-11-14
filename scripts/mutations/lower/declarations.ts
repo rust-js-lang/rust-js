@@ -1197,4 +1197,19 @@ export const mutations: Mutation[] = [
     replace: "                    && !self.counted.counts(tcx, pointee)\n",
     tests: ["test/class-constructors.test.ts", "-t", "a class's constructor that gives an Rc of it the crate counts gives the instance"],
   },
-];
+  {
+    name: "cow-declared-any",
+    breaks: "a `Cow` a function gives back is declared `any`, though its JS is the tagged union of what it borrowed or owns (#1748)",
+    file: "src/lower/declarations.rs",
+    find: "                if super::recognition::is_cow_type(tcx, ty) {\n",
+    replace: "                if false {\n",
+    tests: ["test/declarations-collections.test.ts", "-t", "a Cow is declared the tagged union"],
+  },
+  {
+    name: "cow-owned-unnormalized",
+    breaks: "a `Cow`'s `Owned` is declared of `<B as ToOwned>::Owned` as written, a projection TypeScript has no type of, not the `String` it is (#1748)",
+    file: "src/lower/declarations.rs",
+    find: "                    return union(self.tagged_variants(did, args, true));\n",
+    replace: "                    return union(self.tagged_variants(did, args, false));\n",
+    tests: ["test/declarations-collections.test.ts", "-t", "a Cow is declared the tagged union"],
+  },];

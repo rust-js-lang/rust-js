@@ -37,38 +37,7 @@ impl<'tcx> Declarations<'_, 'tcx> {
             // its tag, one of no fields too (ADR 0284).
             false => {
                 let args = ty::GenericArgs::identity_for_item(self.tcx, def_id);
-                let key = tag_key(self.tcx, def_id);
-                let tagged = declared_tag(self.tcx, def_id).is_some();
-                // A keyed enum's variant is an object of its keys alone,
-                // `{}` of one without fields (#504).
-                let keyed = self.flattened.keyed.contains(&def_id);
-                let types: Vec<Value> = (adt.variants().iter())
-                    .map(|v| {
-                        // An `otherwise`, the object it holds (ADR 0284).
-                        if tagged
-                            && is_otherwise(self.tcx, v.def_id)
-                            && let Some(field) = v.fields.iter().next()
-                        {
-                            return self.ts(field.ty(self.tcx, args).skip_normalization());
-                        }
-                        let name = self.variant_literal(v);
-                        if v.fields.is_empty() && !tagged && !keyed {
-                            return name;
-                        }
-                        let tag = (!keyed).then(|| json!({ "kind": "property", "name": key, "optional": false, "readonly": false, "type": name }));
-                        let fields = v.fields.iter().enumerate().map(|(i, field)| {
-                            let ty = field.ty(self.tcx, args).skip_normalization();
-                            let outer = self.function_names.len();
-                            self.fill_names(field.did, ty);
-                            let ty = self.field_ts(ty, Some(field));
-                            self.function_names.truncate(outer);
-                            let name = crate::lower::representation::variant_field(self.tcx, v, i);
-                            json!({ "kind": "property", "name": name, "optional": false, "readonly": false, "type": ty })
-                        });
-                        json!({ "kind": "object", "members": tag.into_iter().chain(fields).collect::<Vec<_>>() })
-                    })
-                    .collect();
-                union(types)
+                union(self.tagged_variants(def_id, args, false))
             }
         };
         json!({
@@ -79,6 +48,63 @@ impl<'tcx> Declarations<'_, 'tcx> {
             "typeParameters": self.generics(def_id),
             "type": union,
         })
+    }
+
+    /// Each variant of tagged enum `def_id` of `args` as rust-js makes it,
+    /// `{ TAG: "Circle"; _0: number }`, one of no fields its name. Each field
+    /// of a type `normalized`, of another crate's enum given its arguments,
+    /// `Cow`'s `<str as ToOwned>::Owned` its `String` (#1748).
+    pub(super) fn tagged_variants(
+        &mut self,
+        def_id: DefId,
+        args: ty::GenericArgsRef<'tcx>,
+        normalized: bool,
+    ) -> Vec<Value> {
+        let adt = self.tcx.adt_def(def_id);
+        let key = tag_key(self.tcx, def_id);
+        let tagged = declared_tag(self.tcx, def_id).is_some();
+        // A keyed enum's variant is an object of its keys alone,
+        // `{}` of one without fields (#504).
+        let keyed = self.flattened.keyed.contains(&def_id);
+        let tcx = self.tcx;
+        let field_ty = move |field: &ty::FieldDef| {
+            let ty = field.ty(tcx, args);
+            let written = ty.skip_normalization();
+            match normalized {
+                true => tcx
+                    .try_normalize_erasing_regions(ty::TypingEnv::fully_monomorphized(), ty)
+                    .unwrap_or(written),
+                false => written,
+            }
+        };
+        (adt.variants().iter())
+            .map(|v| {
+                // An `otherwise`, the object it holds (ADR 0284).
+                if tagged
+                    && is_otherwise(self.tcx, v.def_id)
+                    && let Some(field) = v.fields.iter().next()
+                {
+                    return self.ts(field_ty(field));
+                }
+                let name = self.variant_literal(v);
+                if v.fields.is_empty() && !tagged && !keyed {
+                    return name;
+                }
+                let tag = (!keyed).then(
+                    || json!({ "kind": "property", "name": key, "optional": false, "readonly": false, "type": name }),
+                );
+                let fields = v.fields.iter().enumerate().map(|(i, field)| {
+                    let ty = field_ty(field);
+                    let outer = self.function_names.len();
+                    self.fill_names(field.did, ty);
+                    let ty = self.field_ts(ty, Some(field));
+                    self.function_names.truncate(outer);
+                    let name = crate::lower::representation::variant_field(self.tcx, v, i);
+                    json!({ "kind": "property", "name": name, "optional": false, "readonly": false, "type": ty })
+                });
+                json!({ "kind": "object", "members": tag.into_iter().chain(fields).collect::<Vec<_>>() })
+            })
+            .collect()
     }
 
     /// A variant's value as its literal type, `"Empty"`, `0` or `true`.

@@ -229,3 +229,22 @@ the constructor's names, since its fields have none. Asking rustc for the
 names of a constructor's arguments crashed rust-js. Corpus case
 `constructor_given_as_a_field_function`, mutation
 `constructor-parameters-asked`.
+
+## Amendment: a `Cow` is declared the tagged union its JS is (#1748, 2026-11-14)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none; a declaration says
+what the JS is.
+
+A function giving back a `Cow`, a buffer as it was given or one it made,
+`Cow<'_, [f32; 16]>`, was declared `any`: another crate's enum, std's,
+that no branch of `ts` named. Its JS is an enum's, `{ TAG: "Borrowed", _0:
+value }` (ADR 0033, [0319](0319-cows.md)), so its declaration is the one
+an enum's variants get, `enumeration`'s, made `tagged_variants`, given
+`Cow`'s arguments, each field's type normalized, its `Owned` what
+`ToOwned` makes of what it borrows: `Cow<'_, str>` is `{ TAG: "Borrowed";
+_0: string } | { TAG: "Owned"; _0: string }`, `Cow<'_, [f32; 16]>`'s
+payloads `number[]`. Recognition says it's a `Cow`, `is_cow_type`, the
+method's rule of `tcx` alone, no catalog of its own. A crate's own enums
+are declared as they were. `test/declarations-collections.test.ts` checks
+TypeScript that narrows one against it, and one that reads its payload as
+a number refused; mutations `cow-declared-any` and `cow-owned-unnormalized`.

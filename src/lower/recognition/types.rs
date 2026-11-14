@@ -456,7 +456,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 
     /// A `Cow`, `{ TAG, _0 }` (ADR 0033): what it borrowed, or owns.
     pub(in crate::lower) fn is_cow(&self, ty: Ty<'tcx>) -> bool {
-        matches!(ty.kind(), ty::Adt(adt, _) if std_path(self.tcx, adt.did()) == "std::borrow::Cow")
+        is_cow_type(self.tcx, ty)
     }
 
     /// What a `Cow` borrows and what it owns, where they're one JS value,
@@ -1273,4 +1273,9 @@ pub(in crate::lower) fn is_str_repeat(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
 /// `Recognition::is_backtrace`, of `tcx` alone.
 pub(in crate::lower) fn is_backtrace_type<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
     matches!(ty.kind(), ty::Adt(b, _) if std_path(tcx, b.did()) == "std::backtrace::Backtrace")
+}
+
+/// `Recognition::is_cow`, of `tcx` alone: a declaration's type (#1748).
+pub(in crate::lower) fn is_cow_type<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
+    matches!(ty.kind(), ty::Adt(adt, _) if std_path(tcx, adt.did()) == "std::borrow::Cow")
 }

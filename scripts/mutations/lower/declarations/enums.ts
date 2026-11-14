@@ -59,8 +59,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a tagged enum's variant of no fields is declared its name, where JS has an object of its tag",
     file: "src/lower/declarations/enums.rs",
-    find: "                        if v.fields.is_empty() && !tagged && !keyed {",
-    replace: "                        if v.fields.is_empty() {",
+    find: "                if v.fields.is_empty() && !tagged && !keyed {",
+    replace: "                if v.fields.is_empty() {",
     tests,
   },
   {
@@ -77,8 +77,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a discriminated union's `otherwise` is declared `{ kind: \"Other\"; _0: any }`, where it's the object",
     file: "src/lower/declarations/enums.rs",
-    find: "                            && is_otherwise(self.tcx, v.def_id)\n",
-    replace: "                            && false\n",
+    find: "                    && is_otherwise(self.tcx, v.def_id)\n",
+    replace: "                    && false\n",
     tests: [
       "test/declarations.test.ts",
       "-t",
@@ -98,24 +98,25 @@ export const mutations: Mutation[] = [
     name: "keyed-declared-tagged",
     breaks: "a keyed enum is declared with its `TAG`, which its objects haven't (#504)",
     file: "src/lower/declarations/enums.rs",
-    find: "                let keyed = self.flattened.keyed.contains(&def_id);\n",
-    replace: "                let keyed = false;\n",
+    find: "        let keyed = self.flattened.keyed.contains(&def_id);\n",
+    replace: "        let keyed = false;\n",
     tests: ["test/flattened-keyed.test.ts", "-t", "intersection"],
   },
   {
     name: "variant-refcell-declared-box",
     breaks: "a variant's `RefCell` field that holds its value is declared `{ value: T }`, where it's the `T` (#503)",
     file: "src/lower/declarations/enums.rs",
-    find: "                            let ty = self.field_ts(ty, Some(field));\n",
-    replace: "                            let ty = self.field_ts(ty, None);\n",
+    find: "                    let ty = self.field_ts(ty, Some(field));\n",
+    replace: "                    let ty = self.field_ts(ty, None);\n",
     tests: ["test/lowering-field-cells.test.ts", "-t", "an enum variant's RefCell field"],
   },
   {
     name: "variant-field-unfilled",
     breaks: "a variant's `dyn Fn` field, `getter: Box<dyn Fn(Option<u32>) -> u32>`, is named by its types, though its literal names it `previous_value`",
     file: "src/lower/declarations/enums.rs",
-    find: "                            self.fill_names(field.did, ty);\n",
+    find: "                    self.fill_names(field.did, ty);\n",
     replace: "",
     tests: ["test/declarations-function-types.test.ts"],
   },
+
 ];

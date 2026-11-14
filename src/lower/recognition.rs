@@ -28,6 +28,7 @@ mod own_steps;
 pub(in crate::lower) use chars::{TextIter, reaches_text_iter};
 pub(in crate::lower) use lengths::EqSide;
 pub(in crate::lower) use own_steps::{OwnStep, Reach};
+pub(in crate::lower) use types::is_cow_type;
 mod lends;
 mod owners;
 pub(super) mod registry;
