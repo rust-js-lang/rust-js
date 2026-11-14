@@ -99,7 +99,7 @@ pub(super) fn failing_fns<'tcx>(
         }
         // Each function it names, as its THIR names it, or a body of MIR
         // alone, a library's the crate compiles (ADR 0914), its MIR.
-        for &(callee, args, _) in graph.names_of(body.def_id) {
+        for &(callee, args, _, _) in graph.names_of(body.def_id) {
             // `?` of a value's `Result` of a write's error,
             // `parse(s)?` of an `io::Result<u32>`: its `Err`, given on.
             if tcx.is_lang_item(callee, rustc_hir::attrs::lang_items::LangItem::TryTraitBranch)

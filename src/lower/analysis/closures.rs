@@ -552,7 +552,7 @@ pub(super) fn error_dyns_drop<'tcx>(
     let mut boxed = Vec::new();
     for body in all_bodies {
         boxed.extend(dyn_sources(tcx, &body.thir, of_error).map(|(_, from)| from));
-        for &(callee, args, _) in graph.names_of(body.def_id) {
+        for &(callee, args, _, _) in graph.names_of(body.def_id) {
             let types: Vec<Ty<'tcx>> = args.types().collect();
             // Asked only of `io::Error`'s own functions, as the one catalogue
             // of them says which make one of an error (`classify`).

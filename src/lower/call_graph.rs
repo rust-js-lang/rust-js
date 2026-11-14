@@ -79,8 +79,17 @@ impl<'tcx> Names<'tcx> {
 }
 
 /// A function a body names, called or as a value: it, its generic
-/// arguments there, and where.
-pub(in crate::lower) type Named<'tcx> = (DefId, ty::GenericArgsRef<'tcx>, Span);
+/// arguments there, where, and how.
+pub(in crate::lower) type Named<'tcx> = (DefId, ty::GenericArgsRef<'tcx>, Span, Naming);
+
+/// How a body names a function: as what a call calls, `f(x)`, `x.f()`,
+/// whose arguments are what's given there; or as a value, `let g = f;`, a
+/// function pointer or a callback, which anything may call with anything.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub(in crate::lower) enum Naming {
+    Called,
+    Value,
+}
 
 impl<'tcx> Crate<'_, 'tcx> {
     /// Each function the body of `id`, one the analyses read, names, called
@@ -134,28 +143,65 @@ pub(in crate::lower) fn crate_graph<'a, 'tcx>(
 fn named_by<'tcx>(body: &Body<'tcx>) -> Vec<Named<'tcx>> {
     use rustc_middle::thir::ExprKind;
     if body.root().is_some() {
-        return (body.thir.exprs.iter())
-            .filter_map(|expr| match (&expr.kind, crate::lower::fn_def(expr.ty)) {
-                (ExprKind::ZstLiteral { .. }, Some((callee, args))) => Some((callee, args, expr.span)),
+        let thir = &body.thir;
+        // What each call calls, beneath its scopes.
+        let callees: IndexSet<rustc_middle::thir::ExprId> = (thir.exprs.iter())
+            .filter_map(|expr| match expr.kind {
+                ExprKind::Call { mut fun, .. } => {
+                    while let ExprKind::Scope { value, .. } = thir[fun].kind {
+                        fun = value;
+                    }
+                    Some(fun)
+                }
+                _ => None,
+            })
+            .collect();
+        return (thir.exprs.iter_enumerated())
+            .filter_map(|(at, expr)| match (&expr.kind, crate::lower::fn_def(expr.ty)) {
+                (ExprKind::ZstLiteral { .. }, Some((callee, args))) => {
+                    let naming = match callees.contains(&at) {
+                        true => Naming::Called,
+                        false => Naming::Value,
+                    };
+                    Some((callee, args, expr.span, naming))
+                }
                 _ => None,
             })
             .collect();
     }
     struct Called<'tcx>(Vec<Named<'tcx>>);
     impl<'tcx> mir::visit::Visitor<'tcx> for Called<'tcx> {
+        // What a call calls, a function's constant: called; what it's given,
+        // as any operand.
+        fn visit_terminator(&mut self, terminator: &mir::Terminator<'tcx>, location: mir::Location) {
+            match &terminator.kind {
+                TerminatorKind::Call { func, args, .. } | TerminatorKind::TailCall { func, args, .. } => {
+                    match func.constant().and_then(|constant| {
+                        crate::lower::fn_def(constant.ty()).map(|(callee, generic)| (callee, generic, constant.span))
+                    }) {
+                        Some((callee, generic, span)) => self.0.push((callee, generic, span, Naming::Called)),
+                        None => self.visit_operand(func, location),
+                    }
+                    for arg in args.iter() {
+                        self.visit_operand(&arg.node, location);
+                    }
+                }
+                _ => self.super_terminator(terminator, location),
+            }
+        }
         // And each one a closure it names as a constant holds, which optimized
         // MIR makes of one that captures only functions, std's inlined
         // `filter_map_fold` of `into_item` and `last`'s `some` (#645).
         // A reference to one too, a promoted `&FnDef` (#1210).
         fn visit_const_operand(&mut self, constant: &mir::ConstOperand<'tcx>, _: mir::Location) {
             if let Some((callee, args)) = crate::lower::fn_def(constant.ty().peel_refs()) {
-                self.0.push((callee, args, constant.span));
+                self.0.push((callee, args, constant.span, Naming::Value));
             } else if constant.ty().is_closure() {
                 for part in constant.ty().walk() {
                     if let Some(ty) = part.as_type()
                         && let Some((callee, args)) = crate::lower::fn_def(ty)
                     {
-                        self.0.push((callee, args, constant.span));
+                        self.0.push((callee, args, constant.span, Naming::Value));
                     }
                 }
             }

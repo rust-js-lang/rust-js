@@ -28,4 +28,12 @@ export const mutations: Mutation[] = [
     replace: "            } else if false {\n",
     tests: ["test/std-package.test.ts"],
   },
+  {
+    name: "named-value-taken-as-called",
+    breaks: "a function a body's THIR names as a value is taken as called (`Naming`), so an `fmt::Arguments` given it through the value isn't refused (#1793)",
+    file: "src/lower/call_graph.rs",
+    find: "                    let naming = match callees.contains(&at) {\n",
+    replace: "                    let naming = match callees.contains(&at) || true {\n",
+    tests: ["test/limitations.test.ts", "-t", "of a function named as a value"],
+  },
 ];

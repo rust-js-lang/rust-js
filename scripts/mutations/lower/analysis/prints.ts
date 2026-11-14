@@ -177,9 +177,9 @@ export const mutations: Mutation[] = [
     name: "instance-writer-prints-unseen",
     breaks: "a print in a library's body the program compiles itself (ADR 0914), read from its MIR alone, isn't seen, so its `print!` lands before the line formatted so far (#1608)",
     file: "src/lower/analysis/prints.rs",
-    find: "    (graph.names_of(body.def_id).iter()).any(|&(id, args, _)| recognition.writes_stream(id, args, error))\n",
+    find: "    (graph.names_of(body.def_id).iter()).any(|&(id, args, _, _)| recognition.writes_stream(id, args, error))\n",
     replace:
-      "    (graph.names_of(body.def_id).iter()).any(|&(id, args, _)| body.root().is_some() && recognition.writes_stream(id, args, error))\n",
+      "    (graph.names_of(body.def_id).iter()).any(|&(id, args, _, _)| body.root().is_some() && recognition.writes_stream(id, args, error))\n",
     tests: ["test/crates.test.ts", "-t", "library_writer_prints_in_a_programs_line"],
   },
   {

@@ -186,7 +186,7 @@ pub(super) fn prints<'tcx>(
             .filter(|body| failing.contains(&body.def_id) && recognition.formatter_param(body.def_id).is_some())
             .filter(|body| {
                 (graph.names_of(body.def_id).iter())
-                    .any(|&(callee, _, _)| crate::lower::recognition::writes_debug_builder(recognition.tcx, callee))
+                    .any(|&(callee, _, _, _)| crate::lower::recognition::writes_debug_builder(recognition.tcx, callee))
             })
             .map(|body| body.def_id),
     );
@@ -261,7 +261,7 @@ fn written_into_writers<'tcx>(
     // And what's given a library's function's parameter it writes into a
     // writer through its dictionary, as its manifest says (#1652, step 5).
     for body in all_bodies {
-        for &(callee, args, _) in graph.names_of(body.def_id) {
+        for &(callee, args, _, _) in graph.names_of(body.def_id) {
             if callee.is_local() {
                 continue;
             }
@@ -454,7 +454,7 @@ fn written_into_writers<'tcx>(
                 }
             }
             let calls = by_body.map_or(&[][..], |by| graph.names_of(by.def_id));
-            for &(callee, args, _) in calls {
+            for &(callee, args, _, _) in calls {
                 // A closure of the crate's it calls, given its `Formatter`,
                 // `w(f)`, its `Fn` trait's call of the closure's type.
                 let callee = match args.types().next().map(|ty| *ty.kind()) {
@@ -514,7 +514,7 @@ pub(super) fn shown_by<'tcx>(
     use crate::lower::recognition::{WriteCall, is_fmt_argument};
     let tcx = recognition.tcx;
     (graph.names_of(body.def_id).iter())
-        .filter_map(|&(callee, args, _)| {
+        .filter_map(|&(callee, args, _, _)| {
             let shown = is_fmt_argument(tcx, callee)
                 || matches!(
                     recognition.write_call(callee, false),
@@ -1031,7 +1031,7 @@ fn prints_to<'tcx>(
     body: &Body<'tcx>,
     error: bool,
 ) -> bool {
-    (graph.names_of(body.def_id).iter()).any(|&(id, args, _)| recognition.writes_stream(id, args, error))
+    (graph.names_of(body.def_id).iter()).any(|&(id, args, _, _)| recognition.writes_stream(id, args, error))
 }
 
 /// Whether `body` may leave stdout's line, or of `error`, stderr's,

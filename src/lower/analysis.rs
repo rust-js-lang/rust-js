@@ -121,7 +121,7 @@ use validation::{
     reject_rest_misuse, reject_static_references, reject_unsupported,
 };
 pub(super) use validation::{init_of, is_thread_local};
-pub(super) use written_params::{WrittenParams, given_to_a_write};
+pub(super) use written_params::{WrittenParams, given_to_a_write, holds_arguments};
 
 /// The `const`s written in a function's body, each a `const` there (ADR
 /// 0031, amended): by each, the block it's in and the bodies that read it.
@@ -1150,7 +1150,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         &recognition,
         all_bodies,
         (library, !prints.framed.is_empty()),
-        &written_params.arguments,
+        &written_params,
     );
     let caller_locations = caller_locations::caller_location_fns(tcx, all_bodies, &foreign);
     // A scope struct whose methods are given nothing besides their

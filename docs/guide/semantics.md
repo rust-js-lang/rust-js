@@ -344,6 +344,9 @@ what's held before it, as a browser's console takes whole lines
   f.done(); }`, so each piece is a call of the writer's, and called plainly
   it gives its text
   ([1135](../decisions/1135-a-write-into-a-writer-a-piece-at-a-time.md)).
+  So does one given to generic code that writes its `T` into a writer,
+  `own(w, &format_args!("a{}", n))`, by reference or by value, in an
+  array or a struct, the crate's function or a library's (#1745).
 - **`{:x}`, `{:e}` and `{:p}` of the crate's types call its own `LowerHex`,
   `LowerExp`, `Pointer` and the like,** given the placeholder's options
   ([0165](../decisions/0165-other-fmt-traits.md)).

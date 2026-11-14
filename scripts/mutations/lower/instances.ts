@@ -122,7 +122,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`function::name(&signal_oper::<()>)` counts as a call giving `()`, so `signalOper` boxes its `Some` and `signal` binds a copy, `signalOperUnboxed`: `isSignal` is false (#565)",
     file: "src/lower/instances.rs",
-    find: "        .filter(|&(callee, _, at)| !alone.iter().any(|&(f, given)| f == callee && given.contains(at)))\n",
+    find: "        .filter(|&(callee, _, at, _)| !alone.iter().any(|&(f, given)| f == callee && given.contains(at)))\n",
     replace: "        .filter(|_| true)\n",
     tests: ["test/rest-parameters.test.ts", "-t", "a generic function of rest arguments JS alone reads is its own JS"],
   },

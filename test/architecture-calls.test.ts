@@ -49,7 +49,7 @@ test("an analysis builds no map of who names whom of its own", () => {
   expect(builds).toEqual(ownNameMaps);
   // The functions a function's body writes, by who names them, of the
   // graph's names (ADR 0308).
-  expect(read("src/lower/analysis/naming.rs")).toContain("for &(named, _, _) in names.names_of(body.def_id) {");
+  expect(read("src/lower/analysis/naming.rs")).toContain("for &(named, _, _, _) in names.names_of(body.def_id) {");
 });
 
 // The graph is built once, of the crate's bodies and its constants', and

@@ -1217,7 +1217,7 @@ pub(super) fn local_functions<'a, 'tcx: 'a>(
     let mut users: IndexMap<DefId, IndexSet<DefId>> = IndexMap::default();
     for body in bodies {
         let user = tcx.typeck_root_def_id(body.def_id);
-        for &(named, _, _) in names.names_of(body.def_id) {
+        for &(named, _, _, _) in names.names_of(body.def_id) {
             users.entry(named).or_default().insert(user);
         }
     }

@@ -148,7 +148,7 @@ pub(super) fn drop_params<'tcx>(
     let mut items: IndexMap<DefId, Vec<Ty<'tcx>>> = IndexMap::default();
     for body in all_bodies {
         let caller = tcx.typeck_root_def_id(body.def_id);
-        for &(callee, args, span) in graph.names_of(body.def_id) {
+        for &(callee, args, span, _) in graph.names_of(body.def_id) {
             if !fns.contains(&callee) || tcx.trait_of_assoc(callee).is_some() {
                 continue;
             }

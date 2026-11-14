@@ -122,6 +122,18 @@ impl<'tcx> WrittenParams<'tcx> {
         self.params.get(&owner).into_iter().flatten().copied()
     }
 
+    /// Whether a call of `callee` writes what it's given at `at` into a
+    /// writer through its dictionaries: the input there, as it's declared,
+    /// holds a type parameter written so, `own`'s `t: &T`, the crate's
+    /// (`of_fn`) or a library's, as its manifest says (#1745).
+    pub(in crate::lower) fn writes_at(&self, recognition: &Recognition<'_, 'tcx>, callee: DefId, at: usize) -> bool {
+        let written: Vec<u32> = match callee.is_local() {
+            true => self.of_fn(callee).collect(),
+            false => recognition.foreign.written_marks(callee),
+        };
+        !written.is_empty() && param_in_input(recognition.tcx, callee, at, &written)
+    }
+
     /// `owner` writes `ty` so: each of its type parameters `ty` holds, and
     /// each type `ty` is made of, reach it.
     fn give(&mut self, tcx: TyCtxt<'tcx>, owner: DefId, ty: Ty<'tcx>) -> bool {
@@ -231,7 +243,7 @@ pub(super) fn written_params<'tcx>(
     // values, and a writer's shown into one, what it shows; and where a
     // `dyn` is among them, where.
     let mut dyns_written: Vec<Span> = Vec::new();
-    let mut calls: Vec<(DefId, DefId, ty::GenericArgsRef<'tcx>, Span)> = Vec::new();
+    let mut calls: Vec<(DefId, crate::lower::call_graph::Named<'tcx>)> = Vec::new();
     for body in all_bodies {
         let owner = tcx.typeck_root_def_id(body.def_id);
         let recognition = &within(recognition, body.def_id);
@@ -267,8 +279,8 @@ pub(super) fn written_params<'tcx>(
         }
         // Each function it calls or names, a `fn` pointer of an instance
         // too, `bumped::<Point>`, which writes what it's given so (#1710).
-        for &(callee, args, span) in graph.names_of(body.def_id) {
-            calls.push((owner, callee, args, span));
+        for &named in graph.names_of(body.def_id) {
+            calls.push((owner, named));
         }
     }
     // Where a `dyn` is written so, here or by a library given one, each
@@ -293,11 +305,12 @@ pub(super) fn written_params<'tcx>(
             "std writes it a piece at a time through its dictionary, which the library's doesn't say it can (#1688)";
         crate::lower::refusal::refuse(tcx, span, crate::lower::refusal::Refused::Because(what, why));
     }
-    // What each call gives a parameter its callee writes so, to a fixed point.
-    let mut given: IndexSet<(Ty<'tcx>, Span)> = IndexSet::default();
+    // What each call gives a parameter its callee writes so, to a fixed point;
+    // and whether a call's argument holds it (`followed`).
+    let mut given: IndexSet<(Ty<'tcx>, Span, bool)> = IndexSet::default();
     loop {
         let mut changed = false;
-        for &(owner, callee, args, span) in &calls {
+        for &(owner, (callee, args, span, naming)) in &calls {
             let written: Vec<u32> = match callee.is_local() {
                 true => found.of_fn(callee).collect(),
                 false => foreign.written_marks(callee),
@@ -305,7 +318,10 @@ pub(super) fn written_params<'tcx>(
             for index in written {
                 if let Some(ty) = args.get(index as usize).and_then(|arg| arg.as_type()) {
                     changed |= found.give(tcx, owner, ty);
-                    given.insert((ty, span));
+                    let followed = naming == crate::lower::call_graph::Naming::Called
+                        && (0..tcx.fn_sig(callee).skip_binder().inputs().skip_binder().len())
+                            .any(|at| param_in_input(tcx, callee, at, &[index]));
+                    given.insert((ty, span, followed));
                 }
             }
         }
@@ -313,24 +329,44 @@ pub(super) fn written_params<'tcx>(
             break;
         }
     }
-    for (ty, span) in given {
+    for (ty, span, followed) in given {
         refuse_lacked(tcx, foreign, ty, span);
-        refuse_arguments(tcx, ty, span);
+        if !followed {
+            refuse_arguments(tcx, ty, span);
+        }
     }
     found
+}
+
+/// Whether `ty` holds an `fmt::Arguments`.
+pub(in crate::lower) fn holds_arguments<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
+    use rustc_hir::attrs::lang_items::LangItem;
+    (ty.walk().filter_map(|part| part.as_type()))
+        .any(|part| matches!(part.kind(), ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::FormatArguments)))
+}
+
+/// Whether the input at `at` of `callee`, as it's declared, holds one of
+/// its type parameters `params`, by index.
+fn param_in_input(tcx: TyCtxt<'_>, callee: DefId, at: usize, params: &[u32]) -> bool {
+    (tcx.fn_sig(callee).skip_binder().inputs().skip_binder().get(at)).is_some_and(|&input| {
+        (params.iter()).any(|&param| crate::lower::generic_facts::holds_type_parameter(input, param))
+    })
 }
 
 /// Refuses `ty`, given at `span` to generic code that writes it into a
 /// writer through its dictionaries, if it holds an `fmt::Arguments`, which
 /// is the function that writes into the sink it claims only where a write
-/// of it is followed, or it's made a `dyn` (#1652, `given_to_a_write`).
+/// of it is followed, or it's made a `dyn` (#1652, `given_to_a_write`): of
+/// what isn't a call's argument, an instance named as a value,
+/// `own::<Log, Arguments>` as a `fn` pointer, or a type parameter no
+/// argument holds. One a call's argument holds the lowering follows, or
+/// refuses where it isn't (`arguments_given_to_writers`, #1745).
 fn refuse_arguments<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>, span: Span) {
-    use rustc_hir::attrs::lang_items::LangItem;
-    let arguments = (ty.walk().filter_map(|part| part.as_type()))
-        .any(|part| matches!(part.kind(), ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::FormatArguments)));
-    if arguments {
-        let what = format!("an `fmt::Arguments` given to generic code that writes a `{ty}` into a writer");
-        let why = "std writes it a piece at a time, which isn't followed for one given so (#1745)";
+    if holds_arguments(tcx, ty) {
+        let what = format!(
+            "an `fmt::Arguments` given to generic code that writes a `{ty}` into a writer, not as a call's argument"
+        );
+        let why = "std writes it a piece at a time, which isn't followed for one given so (#1793)";
         crate::lower::refusal::refuse(tcx, span, crate::lower::refusal::Refused::Because(&what, why));
     }
 }
@@ -526,7 +562,7 @@ pub(super) fn written_arguments<'tcx>(
         for &(body, mir, ref params) in &params {
             let recognition = within(recognition, body.def_id);
             for &param in params {
-                if given_to_a_write(&recognition, &found, mir, param) {
+                if given_to_a_write(&recognition, (&found, None), mir, param) {
                     changed |= found.mark(tcx, body.def_id, param.as_u32() - 1);
                 }
             }
@@ -545,10 +581,13 @@ pub(super) fn written_arguments<'tcx>(
 /// value returned, or a generic function's parameter, `Some(args)`,
 /// `Box::new(args)`. What's read of a place, of a call's result, is then
 /// the function that writes into the sink it claims (`sink_form_given`),
-/// so a `Display::fmt(&self.0, f)` writes it a piece at a time.
+/// so a `Display::fmt(&self.0, f)` writes it a piece at a time. And given
+/// to a type parameter a call writes so through its dictionary,
+/// `own(w, &args)`'s `T`, where the analysis knows them (`written`, at
+/// lowering; #1745).
 pub(in crate::lower) fn given_to_a_write<'tcx>(
     recognition: &Recognition<'_, 'tcx>,
-    marks: &WrittenArguments,
+    (marks, written): (&WrittenArguments, Option<&WrittenParams<'tcx>>),
     body: &mir::Body<'tcx>,
     local: mir::Local,
 ) -> bool {
@@ -599,7 +638,9 @@ pub(in crate::lower) fn given_to_a_write<'tcx>(
                 && let Some(callee) = fn_def(func.ty(&body.local_decls, tcx))
                 && (args.iter().enumerate()).any(|(i, arg)| {
                     is_holder(&arg.node, holder)
-                        && (marks.writes(recognition, callee, i) || kept_by_a_generic(recognition, callee, i))
+                        && (marks.writes(recognition, callee, i)
+                            || kept_by_a_generic(recognition, callee, i)
+                            || written.is_some_and(|written| written.writes_at(recognition, callee.0, i)))
                 })
             {
                 return true;
@@ -663,14 +704,17 @@ fn kept_by_a_generic<'tcx>(
 /// or a call that writes one it's given into a writer a piece at a time,
 /// `w.write_fmt(args)` of a writer of the crate's own or a generic one,
 /// `fmt::write`, a function of the crate's or a library's that does
-/// (`WrittenArguments::writes`). A `Formatter`'s `write_fmt`, or a writer
-/// function's given its `Formatter`, of a writer not framed writes its text.
+/// (`WrittenArguments::writes`), or a type parameter whose dictionary it
+/// writes so, `own(w, &args)`'s `T` (`WrittenParams::writes_at`, #1745). A
+/// `Formatter`'s `write_fmt`, or a writer function's given its `Formatter`,
+/// of a writer not framed writes its text.
 pub(super) fn arms_sinks<'tcx>(
     recognition: &Recognition<'_, 'tcx>,
     all_bodies: &[&Body<'tcx>],
     (library, framed): (bool, bool),
-    marks: &WrittenArguments,
+    written: &WrittenParams<'tcx>,
 ) -> bool {
+    let marks = &written.arguments;
     use rustc_hir::attrs::lang_items::LangItem;
     use rustc_middle::mir::TerminatorKind;
     let tcx = recognition.tcx;
@@ -689,9 +733,10 @@ pub(super) fn arms_sinks<'tcx>(
                     };
                     (args.iter().enumerate()).any(|(i, arg)| {
                         is_arguments(arg.node.ty(&mir.local_decls, tcx))
-                            && !(i == 1 && recognition.formatter_write_fmt(callee.0, callee.1))
-                            && recognition.formatter_param(callee.0).is_none()
-                            && marks.writes(&recognition, callee, i)
+                            && (!(i == 1 && recognition.formatter_write_fmt(callee.0, callee.1))
+                                && recognition.formatter_param(callee.0).is_none()
+                                && marks.writes(&recognition, callee, i)
+                                || written.writes_at(&recognition, callee.0, i))
                     })
                 }
                 _ => false,

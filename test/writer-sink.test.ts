@@ -419,6 +419,13 @@ test("a consumer's type given only to a library's generic writer writes a piece 
   piecewiseChain(piecewisePairs, "own_type_into_a_librarys_generic_writer");
 }, underLoad(300_000));
 
+// A consumer's `format_args!` given to a library's generic writer, whose
+// `T` it writes into a writer, as its contract says (`written_into` of the
+// parameter): the function that writes into the sink it claims (#1745).
+test("a consumer's Arguments given to a library's generic writer writes a piece at a time", () => {
+  piecewiseChain(piecewisePairs, "arguments_into_a_librarys_generic_writer");
+}, underLoad(300_000));
+
 // Step 6: a library's function that writes an `Arguments` it's given into
 // a writer, itself or through another, says so in its contract
 // (`written_arguments`), so a consumer's `format_args!` given it is the

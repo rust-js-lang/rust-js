@@ -205,8 +205,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// into a writer a piece at a time (`WrittenArguments::writes`): the
     /// function that writes into the sink it claims (#1652, step 6).
     pub(super) fn given_to_a_writer(&self, body: &mir::Body<'tcx>, local: Local) -> bool {
-        let marks = &self.krate.written.arguments;
-        marks.arms && crate::lower::analysis::given_to_a_write(&self.recognition(), marks, body, local)
+        let written = &self.krate.written;
+        written.arguments.arms
+            && crate::lower::analysis::given_to_a_write(
+                &self.recognition(),
+                (&written.arguments, Some(written)),
+                body,
+                local,
+            )
     }
 
     /// Whether `operand`, an `Arguments` given to what writes it into a
@@ -216,7 +222,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// makes so; a parameter of the function being lowered that it writes
     /// so (`WrittenArguments`), whose every caller gives one; or one kept, a
     /// field's, a call's result, which only one kept so is
-    /// (`given_to_a_write`).
+    /// (`given_to_a_write`). Of what holds one, `&[a, b]` given a generic
+    /// writer's `&[T]`, each `Arguments` it's made of (#1745).
     pub(super) fn sink_form_given(&self, body: &mir::Body<'tcx>, operand: &Operand<'tcx>) -> bool {
         // A constant's, which is made so as what it returns.
         let Some(place) = operand.place() else {
@@ -270,6 +277,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Rvalue::Use(Operand::Constant(_), _) => continue,
                     Rvalue::Use(from, _) => from.place(),
                     Rvalue::Ref(_, _, from) => Some(*from),
+                    // Made a slice, `&[a, b]` as a `&[T]`.
+                    Rvalue::Cast(
+                        mir::CastKind::PointerCoercion(ty::adjustment::PointerCoercion::Unsize, _),
+                        from,
+                        _,
+                    ) => from.place(),
+                    // Made of what it holds, `[a, b]`: each `Arguments` there.
+                    Rvalue::Aggregate(_, operands) => {
+                        for operand in operands.iter() {
+                            if let Some(from) = operand.place()
+                                && crate::lower::analysis::holds_arguments(self.tcx, from.ty(body, self.tcx).ty)
+                                && !read(from)
+                                && !sources.contains(&from.local)
+                            {
+                                sources.push(from.local);
+                            }
+                        }
+                        continue;
+                    }
                     _ => None,
                 };
                 match from {
@@ -317,6 +343,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Err(self.refused_piecewise(
                     span,
                     "an `fmt::Arguments` made elsewhere given to a function that writes it into a writer",
+                ));
+            }
+        }
+        // A type parameter it writes into a writer through its dictionary,
+        // `own(w, &args)`'s `T`, given an `Arguments`: the function that
+        // writes into the sink it claims where the body makes it, or it's
+        // kept, as `given_to_a_writer` makes it; one of the function's own
+        // parameters isn't followed so (#1793).
+        for (i, operand) in operands.iter().enumerate() {
+            if crate::lower::analysis::holds_arguments(self.tcx, operand.ty(&state.body.local_decls, self.tcx))
+                && self.krate.written.writes_at(&recognition, callee, i)
+                && !self.sink_form_given(state.body, operand)
+            {
+                let what = "an `fmt::Arguments` a parameter gives, or a value holds, given to generic code that writes it into a writer";
+                let why = "std writes it a piece at a time, which isn't followed for one given so (#1793)";
+                return Err(crate::lower::refusal::refuse(
+                    self.tcx,
+                    span,
+                    crate::lower::refusal::Refused::Because(what, why),
                 ));
             }
         }

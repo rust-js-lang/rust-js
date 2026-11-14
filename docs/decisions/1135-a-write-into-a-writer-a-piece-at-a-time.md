@@ -556,6 +556,35 @@ go.
       only a dictionary knows, itertools' `Format`'s `I::Item`, writes by
       `$writeBy`. One given to generic code that writes it is refused
       where it's given, naming #1745.
+      - Amended later, #1745: a `format_args!` the body makes, given to a
+        type parameter a call writes into a writer through its dictionary,
+        `own(w, &format_args!(..))`'s `T`, is followed at lowering, where
+        `WrittenParams` is complete: `given_to_a_write` counts a call whose
+        input there, as it's declared, holds such a parameter
+        (`WrittenParams::writes_at`, the crate's or a library's as its
+        manifest says), so it's the function that writes into the sink it
+        claims, and `arms_sinks` arms for it. By reference and by value,
+        in a variable, in an array a `&[T]` is given (`sink_form_given`
+        follows what an aggregate or an unsizing is made of), in a struct
+        whose `Display` writes it, and given a library's generic writer.
+        What isn't followed is refused, naming #1793: at lowering, an
+        `Arguments` a parameter gives, or one a value holds that isn't
+        made so (`arguments_given_to_writers`); at the analysis, a writing
+        generic named as a value, `let f = own::<Log, _>`, or a type
+        parameter no argument holds, which only the call graph's `Naming`
+        tells (`Naming::Called`, a call's callee, or `Naming::Value`; one
+        flag `only_called` will read too). Following an `Arguments`
+        parameter needs `written_arguments`, `prints` and `written_params`
+        in one fixed point (#1793). Case (ADR 0262): results change, so
+        Rust's, or a compile error. Corpus case
+        arguments_given_to_a_generic_writer, the pair
+        arguments_into_a_librarys_generic_writer, the guide's two
+        limitations; mutations arguments-given-to-a-written-param-unfollowed,
+        -unarmed, arguments-held-in-an-array-unfollowed,
+        arguments-given-as-a-parameter-unrefused,
+        arguments-given-generic-by-a-value-followed and
+        named-value-taken-as-called, caught; arguments-given-generic-unrefused
+        retargeted to the value's refusal.
 
     - What the nightly's metamorphic net found in the write model (#1747),
       each fixed, each its own case against native in both builds:

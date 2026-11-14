@@ -387,7 +387,8 @@ pub(super) fn given_calls_of<'tcx>(
         None => read_by_js_alone(tcx, None, body.mir.as_ref().map(|mir| &mir.body)),
     };
     (names.names_of(body.def_id).iter().copied())
-        .filter(|&(callee, _, at)| !alone.iter().any(|&(f, given)| f == callee && given.contains(at)))
+        .filter(|&(callee, _, at, _)| !alone.iter().any(|&(f, given)| f == callee && given.contains(at)))
+        .map(|(callee, args, at, _)| (callee, args, at))
         .collect()
 }
 
