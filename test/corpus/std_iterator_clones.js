@@ -4,16 +4,13 @@ import {
   $charIndices,
   $chars,
   $collectDropping,
-  $count,
   $debugStr,
   $foldBack,
-  $foldOf,
   $foldToArray,
   $iter,
-  $last,
+  $jsIterator,
   $next,
   $nextBack,
-  $nth,
   $range,
   $rest,
   $rev,
@@ -39,11 +36,7 @@ function reversedTwice(it, IIterator, IDoubleEndedIterator, IClone) {
 }
 
 function backLen(it) {
-  const back = iterator_rev(
-    it,
-    { next: $next, fold: $foldOf, nth: $nth, last: $last, count: $count },
-    { next_back: $nextBack, rfold: $foldBack },
-  );
+  const back = iterator_rev(it, $jsIterator, { next_back: $nextBack, rfold: $foldBack });
   $next(back);
   return revExactSizeIterator_len(back, { len: (iterator) => iterator.len() });
 }

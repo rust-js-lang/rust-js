@@ -369,6 +369,32 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let advance_by = crate::lower::bindings::trait_method_name(self.tcx, iterator, "advance_by");
             props.push(js::Prop::Field(advance_by, Expr::helper("$advanceSlice")));
         }
+        // Of a JS iterator whose every entry is the runtime's step that asks
+        // what it has of its own, the one named dictionary of it,
+        // `$jsIterator`, or of items that look like `None`, `$jsIteratorSome`
+        // (#1681): any other entry, the crate's own or one left out, keeps
+        // its own object.
+        let named = |next: &'static str, nth: &'static str, last: &'static str| {
+            let entry = |name: &str, step: &'static str| {
+                js::Prop::Field(
+                    crate::lower::bindings::trait_method_name(self.tcx, iterator, name),
+                    Expr::helper(step),
+                )
+            };
+            vec![
+                js::Prop::Field("next".into(), Expr::helper(next)),
+                entry("fold", "$foldOf"),
+                entry("nth", nth),
+                entry("last", last),
+                entry("count", "$count"),
+            ]
+        };
+        if props == named("$next", "$nth", "$last") {
+            return Ok(Expr::helper("$jsIterator"));
+        }
+        if props == named("$nextSome", "$nthSome", "$lastSome") {
+            return Ok(Expr::helper("$jsIteratorSome"));
+        }
         Ok(Expr::object(props))
     }
 

@@ -3,20 +3,16 @@
 import {
   $cleanup,
   $collectDropping,
-  $count,
   $debugStr,
   $dedupByCells,
-  $foldOf,
   $force,
   $heapFrom,
   $heapSorted,
   $intsOrdered,
   $iter,
-  $last,
+  $jsIterator,
   $live,
   $mutItems,
-  $next,
-  $nth,
   $partiallyOrdered,
   $peekCell,
   $peekMut,
@@ -108,13 +104,7 @@ function lazyForceMut(c, v) {
 }
 
 function peekMut(items, v, TSize) {
-  items = iterator_peekable(items, {
-    next: $next,
-    fold: $foldOf,
-    nth: $nth,
-    last: $last,
-    count: $count,
-  });
+  items = iterator_peekable(items, $jsIterator);
   const x = $peekCell(items);
   if (x != null) {
     x.value = v;

@@ -191,3 +191,23 @@ In the corpus, its one such chain,
 Held by `test/decisions.test.ts`' count, a binding's chain admitted and a
 Rust-made boxed one `held`; mutation `binding-boxed-source-held`, caught,
 and `transparent-held-unseen` retargeted, caught.
+
+## Amendment: one named dictionary of a JS iterator's steps (2026-11-14, #1681's step iii)
+
+Generic code given a JS iterator, a type parameter's, a binding's or one
+std's compiled struct steps, was given its `Iterator` dictionary as an
+object of the runtime's steps, written out each time, `{ next: $next, fold:
+$foldOf, nth: $nth, last: $last, count: $count }`, or its boxing form of
+items that look like `None`. Each is now one named object of the runtime's,
+`$jsIterator` or `$jsIteratorSome`, frozen: the same entries, each of which
+asks what the iterator has of its own, else steps it as std's default does.
+A dictionary any entry of which differs, the crate's own, or one that leaves
+an entry out (`{ next: $next, fold: $foldOf }`, of an iterator whose `nth`
+`$nth` would call it hasn't), keeps its own object. 31 corpus snapshots move,
+a net 338 lines fewer; the held flip's step gives each std struct over a JS
+iterator the name rather than the object. Mutations
+`js-iterator-dictionary-inline` and `js-iterator-some-dictionary-inline`,
+caught by their cases' snapshots. The readability measure's shares of
+renamed `x$1` (483.5 to 483.6) and role fallbacks (264.2 to 264.4) in
+10,000 lines rise only as the lines they're counted against fall, the
+same names in 338 fewer lines; its baseline is blessed so.

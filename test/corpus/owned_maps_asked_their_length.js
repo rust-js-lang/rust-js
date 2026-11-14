@@ -3,17 +3,13 @@
 import {
   $cleanup,
   $closing,
-  $count,
   $dropEach,
-  $foldOf,
   $held,
   $iter,
-  $last,
+  $jsIterator,
   $live,
   $mapEnds,
-  $next,
   $nextBack,
-  $nth,
   $rev,
   $sizeHint,
   $slicing,
@@ -73,7 +69,7 @@ function hinted(src, dropI) {
         loudDrop_drop(x);
         return result;
       },
-      { next: $next, fold: $foldOf, nth: $nth, last: $last, count: $count },
+      $jsIterator,
       dropI,
       undefined,
       (value) => {

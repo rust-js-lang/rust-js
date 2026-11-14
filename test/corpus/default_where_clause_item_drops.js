@@ -14,11 +14,10 @@ import {
   $intoIter,
   $iter,
   $iterator,
-  $lastSome,
+  $jsIteratorSome,
   $live,
   $next,
   $nextSome,
-  $nthSome,
   $rangeInclusiveNext,
   $rangeNext,
   $someValue,
@@ -294,7 +293,7 @@ function wide(w) {
 // Through generic code, which gives the default's drop as its caller gave it.
 function heldThrough(iter, dropI) {
   return tHolding(
-    { next: $nextSome, fold: $foldOf, nth: $nthSome, last: $lastSome, count: $count },
+    $jsIteratorSome,
     dropI,
     (option) => {
       if (option != null) {
@@ -313,13 +312,10 @@ function heldThrough(iter, dropI) {
 
 // And of a caller's own type parameter's item.
 function heldOf(iter, IItemIntoIterator, dropI, dropIItem, dropIItemItem, dropIItemIntoIter) {
-  return tHolding(
-    { next: $nextSome, fold: $foldOf, nth: $nthSome, last: $lastSome, count: $count },
-    dropI,
-    dropIItem,
-    dropIItemItem,
-    dropIItemIntoIter,
-  ).heldAll(iter, IItemIntoIterator);
+  return tHolding($jsIteratorSome, dropI, dropIItem, dropIItemItem, dropIItemIntoIter).heldAll(
+    iter,
+    IItemIntoIterator,
+  );
 }
 
 function main() {

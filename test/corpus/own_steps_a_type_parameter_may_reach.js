@@ -4,7 +4,6 @@ import {
   $byteLen,
   $catchUnwind,
   $cleanup,
-  $count,
   $dropEach,
   $foldBack,
   $foldDropping,
@@ -13,12 +12,11 @@ import {
   $held,
   $iter,
   $iterator,
+  $jsIterator,
   $knowing,
-  $last,
   $live,
   $next,
   $nextBack,
-  $nth,
   $peek,
   $rev,
   $slicing,
@@ -210,7 +208,7 @@ function mappedFused(it, IFused, dropI) {
         dDrop_drop(d);
         return result;
       },
-      { next: $next, fold: $foldOf, nth: $nth, last: $last, count: $count },
+      $jsIterator,
       dropI,
       dDrop_drop,
       undefined,
@@ -241,14 +239,7 @@ function mappedFused(it, IFused, dropI) {
 }
 
 function peekedReversed(it, dropI) {
-  it = $held(
-    iterator_peekable(
-      it,
-      { next: $next, fold: $foldOf, nth: $nth, last: $last, count: $count },
-      dropI,
-      dDrop_drop,
-    ),
-  );
+  it = $held(iterator_peekable(it, $jsIterator, dropI, dDrop_drop));
   let peek;
   try {
     peek = $peek(it);
@@ -276,7 +267,7 @@ function peekedReversed(it, dropI) {
           iterator,
           init,
           f,
-          { next: $next, fold: $foldOf, nth: $nth, last: $last, count: $count },
+          $jsIterator,
           { next_back: $nextBack, rfold: $foldBack },
           dropI,
           unwind,
@@ -289,7 +280,7 @@ function peekedReversed(it, dropI) {
           iterator,
           init,
           f,
-          { next: $next, fold: $foldOf, nth: $nth, last: $last, count: $count },
+          $jsIterator,
           { next_back: $nextBack, rfold: $foldBack },
           $tryOf(broke),
           dropI,
@@ -308,11 +299,7 @@ function peekedReversed(it, dropI) {
 
 function fusedTotal(it, IFused) {
   const total = $foldDropping(
-    iterator_fuse(
-      it,
-      { next: $next, fold: $foldOf, nth: $nth, last: $last, count: $count },
-      IFused,
-    ),
+    iterator_fuse(it, $jsIterator, IFused),
     [0],
     (total, n) => {
       total[0] = (total[0] + n) >>> 0;
@@ -378,23 +365,12 @@ const Holder = {
 };
 
 function heldTotal(it, dropI) {
-  return Holder.total(
-    { it },
-    { next: $next, fold: $foldOf, nth: $nth, last: $last, count: $count },
-    dropI,
-  );
+  return Holder.total({ it }, $jsIterator, dropI);
 }
 
 function heldMappedTotal(it, dropI) {
   return Holder.total(
-    {
-      it: iterator_map(
-        it,
-        (n) => (n + 1) >>> 0,
-        { next: $next, fold: $foldOf, nth: $nth, last: $last, count: $count },
-        dropI,
-      ),
-    },
+    { it: iterator_map(it, (n) => (n + 1) >>> 0, $jsIterator, dropI) },
     { next: $next, fold: $foldOf },
     (map) => {
       map.return();

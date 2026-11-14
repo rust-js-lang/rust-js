@@ -5,8 +5,8 @@ import {
   $cycleOf,
   $foldOf,
   $iter,
+  $jsIteratorSome,
   $last,
-  $lastSome,
   $lazyRange,
   $next,
   $nextSome,
@@ -24,15 +24,7 @@ export function entry() {
 }
 
 function firstTwo(items, IFused) {
-  const window = {
-    rest: iterator_take(items, 2, {
-      next: $nextSome,
-      fold: $foldOf,
-      nth: $nthSome,
-      last: $lastSome,
-      count: $count,
-    }),
-  };
+  const window = { rest: iterator_take(items, 2, $jsIteratorSome) };
   return $sizeHint(
     iterator_fuse(window.rest, { next: $nextSome, fold: $foldOf, nth: $nthSome }, false),
   );

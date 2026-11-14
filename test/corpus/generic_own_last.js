@@ -2,16 +2,14 @@
 
 import {
   $chars,
-  $count,
   $debugStr,
-  $foldOf,
   $folded,
   $iter,
   $iterator,
+  $jsIteratorSome,
   $lastSome,
   $lazyChain,
   $lent,
-  $nextSome,
   $nthSome,
   iterator_fuse,
   iterator_peekable,
@@ -48,25 +46,11 @@ function skip(it) {
 }
 
 function fuse(it, IFused) {
-  return $lastSome(
-    iterator_fuse(
-      it,
-      { next: $nextSome, fold: $foldOf, nth: $nthSome, last: $lastSome, count: $count },
-      IFused,
-    ),
-  );
+  return $lastSome(iterator_fuse(it, $jsIteratorSome, IFused));
 }
 
 function peek(it) {
-  return $lastSome(
-    iterator_peekable(it, {
-      next: $nextSome,
-      fold: $foldOf,
-      nth: $nthSome,
-      last: $lastSome,
-      count: $count,
-    }),
-  );
+  return $lastSome(iterator_peekable(it, $jsIteratorSome));
 }
 
 function chain(a, b) {
@@ -78,16 +62,7 @@ function mapped(it) {
 }
 
 function fuseNth(it, IFused) {
-  return $nthSome(
-    $lent(
-      iterator_fuse(
-        it,
-        { next: $nextSome, fold: $foldOf, nth: $nthSome, last: $lastSome, count: $count },
-        IFused,
-      ),
-    ),
-    1,
-  );
+  return $nthSome($lent(iterator_fuse(it, $jsIteratorSome, IFused)), 1);
 }
 
 function nthOf(it) {

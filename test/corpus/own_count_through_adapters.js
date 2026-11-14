@@ -5,15 +5,12 @@ import {
   $closing,
   $count,
   $enumerate,
-  $foldOf,
   $iter,
   $iterator,
-  $lastSome,
+  $jsIteratorSome,
   $lazyChain,
   $lent,
   $live,
-  $nextSome,
-  $nthSome,
   $skipping,
   $unwindsOn,
   iterator_fuse,
@@ -65,13 +62,7 @@ function skipCounted(it) {
 }
 
 function fuseCounted(it, IFused) {
-  return $count(
-    iterator_fuse(
-      it,
-      { next: $nextSome, fold: $foldOf, nth: $nthSome, last: $lastSome, count: $count },
-      IFused,
-    ),
-  );
+  return $count(iterator_fuse(it, $jsIteratorSome, IFused));
 }
 
 function ds() {

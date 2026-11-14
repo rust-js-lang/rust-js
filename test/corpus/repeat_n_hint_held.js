@@ -6,6 +6,7 @@ import {
   $foldOf,
   $foldToArray,
   $fromFn,
+  $jsIterator,
   $last,
   $next,
   $nth,
@@ -64,7 +65,7 @@ function main() {
         { next: $next, nth: $nth, last: $last, count: $count },
         true,
       ),
-      { next: $next, fold: $foldOf, nth: $nth, last: $last, count: $count },
+      $jsIterator,
     ),
   );
   console.log(`(${value$3[0]}, ${value$3[1] == null ? "None" : `Some(${value$3[1]})`})`);
@@ -97,14 +98,14 @@ function main() {
           IntoIterIterator: () => ({ next: $next, nth: $nth, last: $last, count: $count }),
         },
       ),
-      { next: $next, fold: $foldOf, nth: $nth, last: $last, count: $count },
+      $jsIterator,
     ),
   );
   console.log(`(${value$5[0]}, ${value$5[1] == null ? "None" : `Some(${value$5[1]})`})`);
   const value$6 = $sizeHint(
     iterator_peekable(
       iterator_skip($repeatingN(1, 4), 1, { next: $next, nth: $nth, last: $last, count: $count }),
-      { next: $next, fold: $foldOf, nth: $nth, last: $last, count: $count },
+      $jsIterator,
     ),
   );
   console.log(`(${value$6[0]}, ${value$6[1] == null ? "None" : `Some(${value$6[1]})`})`);

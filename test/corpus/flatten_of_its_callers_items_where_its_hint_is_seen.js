@@ -3,14 +3,10 @@
 import {
   $collectDropping,
   $collectVec,
-  $count,
-  $foldOf,
   $iter,
   $iterator,
-  $lastSome,
+  $jsIteratorSome,
   $next,
-  $nextSome,
-  $nthSome,
   $roomForHint,
   iterator_flatMap,
   iterator_flatten,
@@ -37,7 +33,7 @@ function flat(it, IItemIntoIterator, IFused, IItemConstSize, IItemIntoIterOneSho
     $roomForHint(
       iterator_flatten(
         it,
-        { next: $nextSome, fold: $foldOf, nth: $nthSome, last: $lastSome, count: $count },
+        $jsIteratorSome,
         IItemIntoIterator,
         IFused,
         IItemConstSize,

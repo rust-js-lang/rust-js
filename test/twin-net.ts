@@ -224,6 +224,8 @@ export const shared: Record<string, keyof typeof why> = {
   "$mutGet": "collections",
   "$mutValues": "collections",
   "$newCyclic": "glue",
+  "$jsIterator": "js-own", // ADR 1136, amended: the dictionary of any JS iterator generic code is given, its steps `$next`'s
+  "$jsIteratorSome": "js-own", // ADRs 1136, 0051: the same of items that may look like `None`, boxed
   "$next": "js-own", // ADR 0140: the step of any JS iterator, its item or `undefined`
   "$nextSome": "js-own", // ADRs 0140, 0051: the step of any JS iterator, its item boxed where it may look like `None`
   "$nth": "consumers",

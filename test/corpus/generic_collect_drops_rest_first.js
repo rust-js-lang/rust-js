@@ -7,7 +7,6 @@ import {
   $collectDropping,
   $collectResults,
   $collectsInPlace,
-  $count,
   $dropEach,
   $dropItems,
   $filterDropping,
@@ -15,11 +14,10 @@ import {
   $foldToArray,
   $iter,
   $iterator,
-  $last,
+  $jsIterator,
   $lazyChain,
   $mapEnds,
   $next,
-  $nth,
   $roomForHint,
   $slicing,
   iterator_fuse,
@@ -63,7 +61,7 @@ function fused(src, IFused, dropI) {
             dDrop_drop(x);
             return result;
           },
-          { next: $next, fold: $foldOf, nth: $nth, last: $last, count: $count },
+          $jsIterator,
           dropI,
           dDrop_drop,
           undefined,
@@ -100,7 +98,7 @@ function peeked(src, dropI) {
             dDrop_drop(x);
             return result;
           },
-          { next: $next, fold: $foldOf, nth: $nth, last: $last, count: $count },
+          $jsIterator,
           dropI,
           dDrop_drop,
           undefined,

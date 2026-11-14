@@ -357,4 +357,22 @@ export const mutations: Mutation[] = [
     replace: "        if false && double_ended {\n            let rfold = crate::lower::bindings::trait_method_name(self.tcx, trait_id, \"rfold\");\n",
     tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^into_iter_bound_stepped_from_its_back.rs$|^into_iter_bound_stepped_from_its_back with"],
   },
+  {
+    name: "js-iterator-dictionary-inline",
+    breaks: "generic code given a JS iterator's steps gets its own object of the runtime's steps, `{ next: $next, fold: $foldOf, nth: $nth, last: $last, count: $count }`, not the one named dictionary, `$jsIterator` (#1681)",
+    file: "src/lower/iterators/dictionaries.rs",
+    find: "        if props == named(\"$next\", \"$nth\", \"$last\") {\n",
+    replace: "        if false && props == named(\"$next\", \"$nth\", \"$last\") {\n",
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^associated_iterator_given_as_it_is.rs$"],
+  },
+  {
+    name: "js-iterator-some-dictionary-inline",
+    breaks: "generic code given a JS iterator of items that look like `None` gets its own object of the runtime's boxing steps, not `$jsIteratorSome` (#1681)",
+    file: "src/lower/iterators/dictionaries.rs",
+    find: "        if props == named(\"$nextSome\", \"$nthSome\", \"$lastSome\") {\n",
+    replace: "        if false && props == named(\"$nextSome\", \"$nthSome\", \"$lastSome\") {\n",
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^blanket_default_beside_an_unmet_clause.rs$"],
+  },
 ];

@@ -4,6 +4,7 @@ import {
   $count,
   $foldOf,
   $iterator,
+  $jsIterator,
   $lazyRange,
   $lent,
   $next,
@@ -44,7 +45,12 @@ function countIterator_fold(count, init, f) {
 
 function halves(it, IFused) {
   const fused = iterator_fuse(
-    iterator_map($lent(it), (x) => (x / 2) >>> 0, { next: $next, nth: $nth }),
+    iterator_map($lent(it), (x) => (x / 2) >>> 0, {
+      next: $jsIterator.next,
+      sizeHint: $jsIterator.sizeHint,
+      nth: $jsIterator.nth,
+      advanceBy: $jsIterator.advanceBy,
+    }),
     { next: $next, fold: $foldOf },
     false,
   );

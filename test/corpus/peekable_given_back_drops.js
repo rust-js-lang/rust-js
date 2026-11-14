@@ -5,14 +5,12 @@ import {
   $cleanup,
   $count,
   $dropEach,
-  $foldOf,
   $held,
   $iter,
   $iterator,
-  $last,
+  $jsIterator,
   $live,
   $next,
-  $nth,
   $peek,
   $unwindsOn,
   iterator_peekable,
@@ -38,11 +36,7 @@ function counterIterator_next(counter) {
 }
 
 function consumed(it, dropI) {
-  const iter = iterator_peekable(
-    it,
-    { next: $next, fold: $foldOf, nth: $nth, last: $last, count: $count },
-    dropI,
-  );
+  const iter = iterator_peekable(it, $jsIterator, dropI);
   let result;
   try {
     result = iter.reduce((a, b) => (a + b) >>> 0, 0);

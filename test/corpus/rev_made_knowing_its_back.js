@@ -4,7 +4,6 @@ import {
   $catchUnwind,
   $cleanup,
   $closing,
-  $count,
   $dropEach,
   $filterEnds,
   $findBack,
@@ -13,12 +12,11 @@ import {
   $held,
   $iter,
   $iterator,
-  $last,
+  $jsIterator,
   $lazyChain,
   $mapEnds,
   $next,
   $nextBack,
-  $nth,
   $nthBack,
   $rangeInclusiveNext,
   $rangeInclusiveNextBack,
@@ -101,13 +99,7 @@ function nthBack(it, dropI) {
 
 function ends(it, dropI) {
   const r = $held(
-    iterator_rev(
-      it,
-      { next: $next, fold: $foldOf, nth: $nth, last: $last, count: $count },
-      { next_back: $nextBack, rfold: $foldBack },
-      dropI,
-      dDrop_drop,
-    ),
+    iterator_rev(it, $jsIterator, { next_back: $nextBack, rfold: $foldBack }, dropI, dDrop_drop),
   );
   let nextBack;
   function map(d) {
@@ -117,12 +109,7 @@ function ends(it, dropI) {
   }
   let a;
   try {
-    nextBack = revDoubleEndedIterator_nextBack(
-      r,
-      { next: $next, fold: $foldOf, nth: $nth, last: $last, count: $count },
-      dropI,
-      dDrop_drop,
-    );
+    nextBack = revDoubleEndedIterator_nextBack(r, $jsIterator, dropI, dDrop_drop);
     a = nextBack != null ? map(nextBack) : undefined;
   } catch (error) {
     $cleanup(() => {

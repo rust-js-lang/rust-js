@@ -7,14 +7,12 @@ import {
   $enumerate,
   $extend,
   $foldBack,
-  $foldOf,
   $iter,
   $iterator,
+  $jsIterator,
   $knowing,
-  $last,
   $next,
   $nextBack,
-  $nth,
   $rangeNext,
   $rangeNextBack,
   $rev,
@@ -40,13 +38,7 @@ function backPairs(it) {
 }
 
 function ends(it) {
-  const e = iterator_enumerate(it, {
-    next: $next,
-    fold: $foldOf,
-    nth: $nth,
-    last: $last,
-    count: $count,
-  });
+  const e = iterator_enumerate(it, $jsIterator);
   const first = $next(e);
   const last = enumerateDoubleEndedIterator_nextBack(
     e,
@@ -57,22 +49,14 @@ function ends(it) {
 }
 
 function fusedLen(it, IFused) {
-  const f = iterator_fuse(
-    it,
-    { next: $next, fold: $foldOf, nth: $nth, last: $last, count: $count },
-    IFused,
-  );
+  const f = iterator_fuse(it, $jsIterator, IFused);
   $next(f);
   const left = fuseExactSizeIterator_len(f, { len: (iterator) => iterator.len() });
   return [left, $count(f)];
 }
 
 function fusedBack(it, IFused) {
-  const f = iterator_fuse(
-    it,
-    { next: $next, fold: $foldOf, nth: $nth, last: $last, count: $count },
-    IFused,
-  );
+  const f = iterator_fuse(it, $jsIterator, IFused);
   const last = fuseDoubleEndedIterator_nextBack(
     f,
     { next_back: $nextBack, rfold: $foldBack },
@@ -95,7 +79,7 @@ function fusedBack(it, IFused) {
               iterator,
               init,
               f,
-              { next: $next, fold: $foldOf, nth: $nth, last: $last, count: $count },
+              $jsIterator,
               { next_back: $nextBack, rfold: $foldBack },
               undefined,
               unwind,
@@ -105,7 +89,7 @@ function fusedBack(it, IFused) {
             fuseDoubleEndedIterator_nthBack(
               iterator,
               k,
-              { next: $next, fold: $foldOf, nth: $nth, last: $last, count: $count },
+              $jsIterator,
               { next_back: $nextBack, rfold: $foldBack },
               IFused,
             ),
@@ -114,7 +98,7 @@ function fusedBack(it, IFused) {
               iterator,
               init,
               f,
-              { next: $next, fold: $foldOf, nth: $nth, last: $last, count: $count },
+              $jsIterator,
               { next_back: $nextBack, rfold: $foldBack },
               $tryOf(broke),
               IFused,
