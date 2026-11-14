@@ -961,6 +961,48 @@ pub fn bumps() -> u8 {
   expect([lib.walked(), lib.upped(), lib.parity(), lib.grown(), lib.bumps()]).toEqual([21, 4, 6, 7, 10]);
 });
 
+// A `const fn` constants and patterns call is given what they pass, its
+// callers' MIR rustc evaluates them by (#1742): `add(1, 2)` of `const SUM`
+// and `square(7)` of an inline `const { .. }`, so `a + b` and `n * n` are
+// JS's own by MIR alone. Of one a constant calls with large values and a
+// body with small ones, `a + b` may pass `u32`'s most, and keeps its wrap.
+test("a const fn constants and patterns call is given what they pass", async () => {
+  const dir = fixture("const-context-callers");
+  writeFileSync(join(dir, "lib.rs"), `const fn add(a: u32, b: u32) -> u32 {
+    a + b
+}
+
+const fn square(n: u32) -> u32 {
+    n * n
+}
+
+const fn joined(a: u32, b: u32) -> u32 {
+    a + b
+}
+
+const SUM: u32 = add(1, 2);
+const BIG: u32 = joined(u32::MAX - 1, 1);
+
+pub fn classify(n: u32) -> u32 {
+    match n {
+        SUM => 1,
+        _ => const { square(7) },
+    }
+}
+
+pub fn big(n: u32) -> u32 {
+    BIG.wrapping_sub(joined(n % 4, 3))
+}
+`);
+  expect(wrapsDisagreed(dir)).toEqual([]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("return a + b;");
+  expect(js).toContain("return n * n;");
+  expect(js).toContain("return (a + b) >>> 0;");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.classify(3), lib.classify(4), lib.big(5)]).toEqual([1, 49, 4294967295 - 4]);
+});
+
 // React's ReactPostPaintCallback, ported: `while let Some(callback) =
 // CALLBACKS.with_borrow(|c| c.get(i).copied()) { callback(t); i += 1; }`.
 // Where an item at `i` is there, `i` is below a slice's length, so below

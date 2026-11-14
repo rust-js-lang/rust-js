@@ -503,3 +503,9 @@ commit:
   yet isn't walked that round, so two that call each other aren't seeded
   with nothing known. Past four rounds, what its own calls still change is
   forgotten (ADR 0577's rule); past 64, all of it. 1 site.
+- **Constants' callers** (#1742). Each constant's MIR, a `const`'s, a
+  `static`'s or an inline `const { .. }`'s, the MIR rustc evaluates it by
+  (`mir_for_ctfe`), is a caller in the call graph. A `const fn` only
+  constants and patterns call, `add(1, 2)` of `const SUM`, is given what they
+  pass; one a constant calls with large values and a body with small ones
+  is given both. 2 sites, #1742's last.
