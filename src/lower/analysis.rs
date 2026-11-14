@@ -1114,7 +1114,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         kept,
     );
     let (failing, writes_may_fail, dictionaries_fail) = fmt_failures::failing_fns(tcx, all_bodies, &foreign, library);
-    let throwing = throwing::throwing_fns(tcx, &recognition, all_bodies);
+    let throwing = throwing::throwing_fns(tcx, &recognition, &calls);
     let unwinding::Found {
         never_unwinding,
         quiet: quiet_fns,

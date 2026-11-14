@@ -226,6 +226,16 @@ fn through(f: fn(&str) -> Result<Option<&'static Unknown>, &'static JsError>, te
 pub fn as_value(text: &str) -> bool {
     through(read, text)
 }
+
+// One whose result is another throwing function's call, which the call
+// graph finds first, its callee (#1671 change 4 M3).
+fn relayed(text: &str) -> Result<Option<&'static Unknown>, &'static JsError> {
+    parsed(text)
+}
+
+pub fn relays(text: &str) -> bool {
+    relayed(text).is_ok()
+}
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
@@ -234,6 +244,7 @@ pub fn as_value(text: &str) -> bool {
   expect(js).toContain("    return testStringCoercion(value);\n");
   expect(js).toContain("function valid(text) {\n  try {\n    parsed(text);\n    return true;\n  } catch {\n    return false;\n  }\n}");
   expect(js).toContain("$try(() => parsed(text))");
+  expect(js).toContain("function relayed(text) {\n  return parsed(text);\n}");
   expect(js).toContain('function coerced(value) {\n  return $try(() => "" + value);\n}');
   expect(js).toContain('$try(() => "" + value)');
   const lib = await import(join(dir, "lib.js"));

@@ -5,6 +5,14 @@ const tests = ["test/throwing-calls.test.ts", "-t", "is a throwing function"];
 
 export const mutations: Mutation[] = [
   {
+    name: "throwing-fn-before-its-callees",
+    breaks: "the call graph's components are walked callers first, so a function whose result is another throwing function's call is asked before that one is found, and isn't one, its `$try` kept (#1671 change 4 M3)",
+    file: "src/lower/analysis/throwing.rs",
+    find: "    for component in &calls.graph.sccs {\n",
+    replace: "    for component in calls.graph.sccs.iter().rev() {\n",
+    tests,
+  },
+  {
     name: "throwing-fn-call-uncaught",
     breaks:
       "a throwing function's call isn't a throwing call: `testStringCoercion(value).is_err()` is a `TAG` of what it threw",
@@ -34,8 +42,8 @@ export const mutations: Mutation[] = [
     name: "throwing-fn-named-as-a-value",
     breaks: "a private function whose result is a binding's `Result`, named as a value, is a throwing function, so a call through a `fn` pointer reads its plain value as a `Result` and lets its throw go (#1670)",
     file: "src/lower/analysis/throwing.rs",
-    find: "        .filter(|body| only_called.contains_key(&body.def_id) && candidate(tcx, recognition, body.def_id))\n",
-    replace: "        .filter(|body| candidate(tcx, recognition, body.def_id))\n",
+    find: "    let candidate = |id: &DefId| only_called.contains_key(id) && candidate(tcx, recognition, *id);\n",
+    replace: "    let candidate = |id: &DefId| candidate(tcx, recognition, *id);\n",
     tests: ["test/throwing-calls.test.ts", "-t", "a function whose result is a throwing call's is a throwing function"],
   },
 ];

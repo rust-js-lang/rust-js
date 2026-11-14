@@ -6,8 +6,9 @@
 
 use crate::collections::IndexSet;
 use crate::lower::bindings::is_binding;
+use crate::lower::call_graph::Crate;
+use crate::lower::fn_def;
 use crate::lower::recognition::{Catching, Recognition, StdItem};
-use crate::lower::{Body, fn_def};
 use rustc_hir::def::DefKind;
 use rustc_middle::mir::{self, RETURN_PLACE, StatementKind, TerminatorKind};
 use rustc_middle::ty::{self, TyCtxt};
@@ -38,28 +39,35 @@ pub(in crate::lower) fn call_throws<'tcx>(
 /// whose callers read its `Result` too (#1670): each is one only calls
 /// reach, `only_called`'s; nor a trait's method, called through a
 /// dictionary; nor a generic one, nor a closure. Found from the least: a
-/// function that returns its own call is none, its `$try` kept.
+/// function that returns its own call is none, its `$try` kept. Of the
+/// crate's call graph, each strongly connected component's after those it
+/// calls, as whether one is depends only on its callees: each found from
+/// none of its own, to a fixed point (#1671 change 4 M3).
 pub(super) fn throwing_fns<'tcx>(
     tcx: TyCtxt<'tcx>,
     recognition: &Recognition<'_, 'tcx>,
-    bodies: &[&Body<'tcx>],
+    calls: &Crate<'_, 'tcx>,
 ) -> IndexSet<DefId> {
     let only_called = super::only_called::only_called(tcx);
-    let candidates: Vec<(DefId, &mir::Body<'tcx>)> = (bodies.iter())
-        .filter(|body| only_called.contains_key(&body.def_id) && candidate(tcx, recognition, body.def_id))
-        .filter_map(|body| Some((body.def_id, &body.mir.as_ref()?.body)))
-        .collect();
+    let candidate = |id: &DefId| only_called.contains_key(id) && candidate(tcx, recognition, *id);
     let mut throwing = IndexSet::default();
-    loop {
-        let found: Vec<DefId> = (candidates.iter())
-            .filter(|(id, mir)| !throwing.contains(id) && returns_throws(tcx, recognition, &throwing, mir))
-            .map(|&(id, _)| id)
+    for component in &calls.graph.sccs {
+        let members: Vec<(DefId, &mir::Body<'tcx>)> = (component.iter())
+            .filter(|id| candidate(id))
+            .filter_map(|&id| Some((id, *calls.bodies.get(&id)?)))
             .collect();
-        if found.is_empty() {
-            return throwing;
+        loop {
+            let found: Vec<DefId> = (members.iter())
+                .filter(|(id, mir)| !throwing.contains(id) && returns_throws(tcx, recognition, &throwing, mir))
+                .map(|&(id, _)| id)
+                .collect();
+            if found.is_empty() {
+                break;
+            }
+            throwing.extend(found);
         }
-        throwing.extend(found);
     }
+    throwing
 }
 
 /// Whether `id` may be a throwing function: the crate's own, of no type

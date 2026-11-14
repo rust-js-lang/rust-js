@@ -158,3 +158,27 @@ M3 (one call graph) and M4 (each fact declared `Local`, `Summary` or
 M2 is done: `CrateFacts` holds no cell, and one `Lazy`; what a body finds
 is given back; and `Settled` is the pipeline's alone, settled in bounded
 rounds.
+
+## M3: one call graph
+
+1. The crate's call graph is built once, in analysis.rs
+   (`call_graph::crate_graph`). It covers each function's MIR the emitter
+   reads, and each constant's MIR rustc evaluates it by (a `const`'s, a
+   `static`'s, an inline `const { .. }`'s), whose calls are a function's
+   callers too: m3-max's const callers (#1742), folded in from
+   `intervals::given_parameters`, which now asks the shared graph.
+   Mutation intervals-constants-call-nothing follows its code into
+   `lower/call_graph.ts`, and is caught.
+2. The throwing functions (ADR 0644) are found over the graph's
+   components, each after those it calls, each to a fixed point from none
+   of its own. Whether a function is one depends only on its callees, so
+   this is the least fixed point the whole-crate rounds found, in one pass.
+   Output unchanged. test/throwing-calls.test.ts gains one whose result is
+   another throwing function's call. Mutation throwing-fn-before-its-callees,
+   the components walked callers first, is caught by it;
+   throwing-fn-named-as-a-value is retargeted, and caught.
+
+test/architecture-calls.test.ts holds the graph built once and asked, and
+the list of analyses that still scan each body's calls for their own edges,
+`instances::calls_of`'s users, a list that only shrinks: closures.rs,
+drops.rs, fmt_failures.rs, prints.rs and written_params.rs.
