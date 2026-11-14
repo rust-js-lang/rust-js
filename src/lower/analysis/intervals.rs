@@ -303,7 +303,8 @@ impl<'tcx> Walk<'_, 'tcx> {
     }
 
     /// The constants the body compares an integer with, each one less and one
-    /// more too, in order: where a widened bound stops before its type's
+    /// more too, and its collections' most lengths, in order: where a
+    /// widened bound stops before its type's
     /// (ADR 1137). A counter a loop breaks out of past 10, `count > 10`, which
     /// a `continue` brings back to the head as it was, widened to its type's
     /// is a fixed point no narrowing leaves, as the `continue` keeps it; to
@@ -328,6 +329,17 @@ impl<'tcx> Walk<'_, 'tcx> {
             })
             .flat_map(|c| [c - 1, c, c + 1])
             .collect();
+        // And each of its collections' most length, and one less, the most
+        // an index below it is: `r` of `while let Some(row) = rows.get(r)`,
+        // which grows by the outer loop's turns, widened at an inner loop's
+        // head to its type's, is a fixed point no narrowing leaves, as the
+        // inner loop's back edge keeps it; to the most `get`'s `Some` puts
+        // it below, `r + 1` is JS's own (#1742).
+        thresholds.extend(
+            (self.body.local_decls.iter())
+                .filter_map(|decl| self.length_of_collection(decl.ty))
+                .flat_map(|most| [most.hi - 1, most.hi]),
+        );
         thresholds.sort_unstable();
         thresholds.dedup();
         thresholds

@@ -252,4 +252,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-integer-ranges.test.ts", "-t", "an integer cast MIR's intervals show"],
   },
+  {
+    name: "intervals-widen-past-lengths",
+    breaks: "a widened index goes to its type's, past the most its collections' lengths are, so an outer loop's `r` of `rows.get(r)` across an inner loop keeps its wrap, left to the bridge (#1742)",
+    file: "src/lower/analysis/intervals.rs",
+    find: "                .flat_map(|most| [most.hi - 1, most.hi]),\n",
+    replace: "                .flat_map(|_: Interval| Vec::<i128>::new()),\n",
+    tests: ["test/lowering-integer-ranges.test.ts", "-t", "an outer loop's index stays below"],
+  },
 ];

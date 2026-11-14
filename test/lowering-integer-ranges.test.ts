@@ -823,6 +823,35 @@ pub fn negative(n: i32) -> u32 {
   expect([lib.width([1, 2, 3]), lib.low(199), lib.low(200), lib.any(300), lib.wide(5), lib.signed(-1), lib.negative(-1)]).toEqual([3, 199, 0, 44, 5n, 0, 4294967295]);
 });
 
+// An index an outer loop's `get` shows below its slice's length stays
+// below it across an inner loop: widened at the inner loop's head, as it
+// grows by the outer's turns, to the most an index of the slice is, not its
+// type's, which no narrowing leaves (#1742). Each `+ 1` is JS's own, by MIR
+// alone.
+test("an outer loop's index stays below its slice's length across an inner loop", async () => {
+  const dir = fixture("outer-index-inner-loop");
+  writeFileSync(join(dir, "lib.rs"), `pub fn summed(rows: &[Vec<u32>]) -> u32 {
+    let mut r = 0;
+    let mut total: u32 = 0;
+    while let Some(row) = rows.get(r) {
+        let mut i = 0;
+        while let Some(&n) = row.get(i) {
+            total = total.wrapping_add(n);
+            i += 1;
+        }
+        r += 1;
+    }
+    total
+}
+`);
+  expect(wrapsDisagreed(dir)).toEqual([]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("      i++;\n");
+  expect(js).toContain("    r++;\n");
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.summed([[1, 2], [], [3]])).toBe(6);
+});
+
 // React's ReactPostPaintCallback, ported: `while let Some(callback) =
 // CALLBACKS.with_borrow(|c| c.get(i).copied()) { callback(t); i += 1; }`.
 // Where an item at `i` is there, `i` is below a slice's length, so below
