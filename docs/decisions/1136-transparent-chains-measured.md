@@ -294,7 +294,11 @@ longer reached the hand-written form they break, are kept caught by cases
 it leaves hand-written: cloned-owners-bounds-unasked and
 cloned-owners-unrecorded by generic_map_past_a_take_beside_a_cloned_one,
 #1318's case with each `map` past a `take`; closing-try-fold-by-next by
-skip_try_fold's `any_kept_above`, a `map` past a `filter`.
+skip_try_fold's `any_kept_above`, a `map` past a `filter`; and, found
+after, generic-instance-unknown-bound-unmet (`instance_within_bounds`'s
+bound no parameter decides, #955, #1109) by
+generic_map_past_a_take_cloned_beside_another_bound, its case's `map` past
+a `take`.
 
 ## Amendment: two reasons asked of their owners (2026-11-14, #1681)
 

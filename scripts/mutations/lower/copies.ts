@@ -75,7 +75,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/copies.rs",
     find: "        bound.has_param() || {\n",
     replace: "        {\n",
-    tests: ["test/corpus.test.ts", "-t", "^generic_map_cloned_beside_another_bound.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^generic_map_past_a_take_cloned_beside_another_bound.rs$"],
   },
   {
     name: "generic-instance-unmatched",
