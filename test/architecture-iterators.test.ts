@@ -665,13 +665,17 @@ test("whether a consumer keeps each item is one catalog", () => {
 // once the crate's `Recognition` exists and before the analysis reads the
 // bodies (#1327): a body holds an undecided `InPlace` until then, which
 // only `body_queries` makes or decides, and its readers ask it only
-// `contains`, which an undecided one refuses. Nothing else writes the set,
-// and nothing reads it but by `contains`.
+// `made_at`, which an undecided one refuses. Nothing else writes the set,
+// and nothing reads it but by `made_at`.
 // In two stages (#1681's step iii): the ground, then, once the analysis
 // knows what's stepped from its back, what's held after all. Between them
 // only `back_stepped` reads, the ground alone, of a `rev()`, which the
-// second stage never takes out (`contains_ground`); every other reader asks
-// `contains`, which refuses one read before both stages are decided.
+// second stage never takes out (`ground_made_at`); every other reader asks
+// `made_at`, which refuses one read before both stages are decided.
+// Each stage holds THIR calls, and a reader asks of MIR's call at a span,
+// of each THIR call there (`each_call_at`), InPlace's own join, so no
+// reader takes one of two a macro's repetition writes there of the other
+// (#1791, ADR 1151).
 // The held flip's adapters, `HELD_FLIPPED`, never `rev()`: `back_stepped`,
 // which decides the flip, reads whether a `rev()` is made in place (its
 // held-`rev()` rule, analysis/back_stepped.rs), so flipping one would change
@@ -679,7 +683,7 @@ test("whether a consumer keeps each item is one catalog", () => {
 test("the held flip never takes out a rev(), which back_stepped reads", () => {
   const source = read("src/lower/body_queries/in_place.rs");
   expect(source).toMatch(/pub\(in crate::lower\) const HELD_FLIPPED: \[&str; 2\] = \["enumerate", "map"\];/);
-  expect(read("src/lower/analysis/back_stepped.rs")).toMatch(/callee == rev\n\s+&& !body\.facts\.in_place_adapters\.contains_ground\(fn_span\)/);
+  expect(read("src/lower/analysis/back_stepped.rs")).toMatch(/callee == rev\n\s+&& !body\.facts\.in_place_adapters\.ground_made_at\(&body\.thir, \*fn_span\)/);
 });
 
 // What a compiled adapter is given is std's struct (ADR 0871): the flip
@@ -689,8 +693,8 @@ test("the held flip never takes out a rev(), which back_stepped reads", () => {
 test("the held flip flips from the source outward, while each link is flipped", () => {
   const source = read("src/lower/body_queries/in_place.rs");
   const held = source.slice(source.indexOf("fn held_links"), source.indexOf("pub(super) fn in_place_adapters"));
-  expect(held).toContain(".flat_map(|chain| chain.links.into_iter().rev().map_while(flipped_span))");
-  expect(held.match(/flipped_span/g)?.length).toBe(2);
+  expect(held).toContain(".flat_map(|chain| chain.links.into_iter().rev().map_while(flipped_link))");
+  expect(held.match(/flipped_link/g)?.length).toBe(2);
   expect(read("src/lower/iterators/transparent.rs")).toMatch(/each link's call, its outermost first/);
 });
 
@@ -702,11 +706,15 @@ test("in-place adapters are decided in two stages, then read", () => {
   const reads = outside.flatMap((file) =>
     [...read(file).matchAll(/in_place_adapters\.(\w+)/g)].map((m) => `${file}: ${m[1]}`),
   );
-  expect(reads.filter((read) => !read.endsWith(": contains") && read !== "src/lower/analysis/back_stepped.rs: contains_ground")).toEqual([]);
-  expect(reads.filter((read) => read.endsWith(": contains_ground"))).toEqual(["src/lower/analysis/back_stepped.rs: contains_ground"]);
+  expect(reads.filter((read) => !read.endsWith(": made_at") && read !== "src/lower/analysis/back_stepped.rs: ground_made_at")).toEqual([]);
+  expect(reads.filter((read) => read.endsWith(": ground_made_at"))).toEqual(["src/lower/analysis/back_stepped.rs: ground_made_at"]);
   const source = read("src/lower/body_queries.rs");
-  expect(source).toMatch(/pub\(in crate::lower\) struct InPlace \{\n    ground: Option<IndexSet<Span>>,\n    held: std::cell::OnceCell<IndexSet<Span>>,\n\}/);
-  expect(source).toMatch(/\n    fn decided\(set: IndexSet<Span>\) -> Self \{/);
+  expect(source).toMatch(/pub\(in crate::lower\) struct InPlace \{\n    ground: Option<IndexSet<ExprId>>,\n    held: std::cell::OnceCell<IndexSet<ExprId>>,\n\}/);
+  expect(source).toMatch(/\n    fn decided\(set: IndexSet<ExprId>\) -> Self \{/);
+  // Its one join, each THIR call at MIR's span, and no reader of a node alone.
+  const in_place = source.slice(source.indexOf("impl InPlace {"), source.indexOf("pub(super) fn strip("));
+  expect(in_place.match(/pub\(in crate::lower\) fn \w+/g)).toEqual(["pub(in crate::lower) fn made_at", "pub(in crate::lower) fn ground_made_at"]);
+  expect(in_place.match(/each_call_at\(thir, span, /g)?.length).toBe(2);
   const deciding = lowering.filter((file) => /decide_in_place\(/.test(read(file)));
   expect(deciding).toEqual(["src/lower/pipeline.rs"]);
   // The second stage, decided once in the analysis: after `back_stepped`,

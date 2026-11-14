@@ -120,9 +120,13 @@ bodies out: a collect's hint the program can see decides it too (#1327).
 Then, in `analyze_crate`, once `back_stepped` knows what's stepped from its
 back and before `type_fact_params` reads it, what's held after all
 (`decide_held`, #1681). Between the stages only `back_stepped` reads, the
-ground alone (`contains_ground`), of a `rev()`, which the second stage
-never takes out; every other reader asks `contains`, which refuses a body
+ground alone (`ground_made_at`), of a `rev()`, which the second stage
+never takes out; every other reader asks `made_at`, which refuses a body
 whose stages aren't both decided (`test/architecture-iterators.test.ts`).
+Each stage holds THIR calls; a reader asks of MIR's call at a span, of
+each THIR call there (`each_call_at`), the one join, so of two a macro's
+repetition writes at one span where one is held, both are (#1791, ADR
+1151).
 
 ```text
 Rust source

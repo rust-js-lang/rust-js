@@ -5,8 +5,9 @@ beside m6-lily's M3; in progress, a fact a commit, each recorded here).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
 Rust's. A fact keyed by a span was taken of every call a macro's
-expansion writes at that span (#1787, #1788, wrong answers); where Rust's
-can't be kept yet, a compile error (#1789). Elsewhere no output changes.
+expansion writes at that span (#1787, #1788, #1791, wrong answers); where
+Rust's can't be kept yet, a compile error (#1789). Elsewhere no output
+changes.
 
 ## Context
 
@@ -59,9 +60,38 @@ a span inside a macro:
    collect_in_place_in_a_macro, the guide's limitations; mutation
    collects-at-one-span-of-sources-apart, caught.
 
-Still to move: the in-place adapters (`body_queries/in_place.rs`, read by
-`mir/iter.rs`, `back_stepped` and `type_facts`), once m1-lisa's change 2
-step (a) lands in the `InPlace` decision.
+4. The in-place adapters (`body_queries/in_place.rs`, the `InPlace`
+   decision in `body_queries.rs`), whether a `rev()`, an `enumerate()`
+   or a `map()` is the recognizers' form or std's compiled struct (ADR
+   0871): of two a macro's repetition writes at one span, one given to a
+   generic function's `I`, which steps it as a JS iterator, and one to a
+   function that holds it as std's struct, both were made in place, so
+   the held one stepped the in-place form from its back: an
+   `Enumerate`'s `next_back` gave `7` where Rust's is `3007`, a `Rev`'s
+   and a `Map`'s threw (#1791, a wrong answer). Both stages hold THIR
+   calls, and the join is `InPlace`'s own, one API for every reader:
+   `made_at` (`mir/iter.rs`' `adapter_in_place`, `type_facts`, which asks
+   it of a THIR call's own span so what it asks is what the lowering
+   makes) and `ground_made_at` (`back_stepped`, before the held stage).
+   What the analysis asks of another adapter to make one in place asks
+   the same join: the call it's given to (`a.iter().rev()` a macro gives
+   its `enumerate()`), the `rev()` a variable is made of (`ma` of
+   `$f(ma.rev())`), and the `flat_map` whose closure gives what's made in
+   place; a node's own answer alone made `ma` `$mapEnds(..)` beneath std's
+   held `Rev`, which threw. Of two apart, both are std's struct; of two
+   alike, the recognizers' form, as one alone. Corpus case
+   in_place_adapters_in_a_macro, each adapter both ways round and alike,
+   a variable's `rev()` and a chain the macro is given; mutations
+   in-place-by-a-shared-span (any call at the span taken),
+   in-place-given-to-a-node-of-a-shared-span and
+   in-place-made-of-a-node-of-a-shared-span (a node's own answer), caught,
+   and the module's mutations retargeted to its THIR calls.
+   `back_stepped`'s `ground_made_at` takes the same join; any call at the
+   span there survives the case, as a held `rev()`'s source is marked by
+   the variable's own rules too, so it has no mutation of its own.
+
+Still to move: the collect sources' lowering side (#1789), after
+m6-lily's S4.
 
 ## Consequences
 

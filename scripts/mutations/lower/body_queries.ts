@@ -385,4 +385,15 @@ export const mutations: Mutation[] = [
     replace: "    let Some(e) = Some(tail(thir, root)) else {\n",
     tests: ["test/corpus.test.ts", "-t", "^utf16_comparator_with_effects.rs$"],
   },
+  {
+    name: "in-place-by-a-shared-span",
+    breaks:
+      "MIR's call of an adapter is taken as made in place where any THIR call at its span is, of two a macro's repetition writes there, so one held as std's struct is given the other's in-place form: `held_numbered`'s `Enumerate` steps `$enumerate(..)` from its back, `7` where Rust's is `3007`, and a `Rev`'s or a `Map`'s throws (#1791)",
+    file: "src/lower/body_queries.rs",
+    find: "        each_call_at(thir, span, |at| self.ground().contains(&at) && !held.contains(&at))\n",
+    replace:
+      "        thir.exprs.iter_enumerated().any(|(at, e)| matches!(e.kind, ExprKind::Call { fn_span, .. } if fn_span == span) && self.ground().contains(&at) && !held.contains(&at))\n",
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^in_place_adapters_in_a_macro.rs$"],
+  },
 ];

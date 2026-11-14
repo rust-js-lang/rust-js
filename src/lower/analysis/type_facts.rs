@@ -138,7 +138,9 @@ pub(super) fn type_fact_params<'tcx>(
         // where it's made: the recognizers', which ask nothing (ADR 0871).
         let in_place: IndexSet<ExprId> = (body.thir.exprs.iter())
             .filter_map(|expr| match expr.kind {
-                ExprKind::Call { fun, fn_span, .. } if body.facts.in_place_adapters.contains(&fn_span) => Some(fun),
+                ExprKind::Call { fun, fn_span, .. } if body.facts.in_place_adapters.made_at(&body.thir, fn_span) => {
+                    Some(fun)
+                }
                 _ => None,
             })
             .collect();

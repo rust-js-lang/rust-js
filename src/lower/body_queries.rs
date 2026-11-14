@@ -425,51 +425,57 @@ pub(super) fn across_bodies<'tcx>(tcx: TyCtxt<'tcx>, bodies: &mut [super::Body<'
 /// the `enumerate()`s and `map()`s of chains held apart on std's struct
 /// (`decide_held`, #1681's step iii). The one reader between the stages,
 /// `back_stepped`, asks the ground of `rev()`s alone, which the second
-/// stage never takes out (`contains_ground`); every other reader asks
-/// `contains`, which refuses one read before both are decided.
+/// stage never takes out (`ground_made_at`); every other reader asks
+/// `made_at`, which refuses one read before both are decided. Each stage
+/// holds THIR calls, and a reader asks of MIR's call at a span, of each
+/// THIR call there (`each_call_at`): two a macro's repetition writes share
+/// one, and where one is held, std's struct, both are, never one given the
+/// other's in-place form (#1791; #1671 change 3 M5).
 #[derive(Default)]
 pub(in crate::lower) struct InPlace {
-    ground: Option<IndexSet<Span>>,
-    held: std::cell::OnceCell<IndexSet<Span>>,
+    ground: Option<IndexSet<ExprId>>,
+    held: std::cell::OnceCell<IndexSet<ExprId>>,
 }
 
 impl InPlace {
-    fn decided(set: IndexSet<Span>) -> Self {
+    fn decided(set: IndexSet<ExprId>) -> Self {
         InPlace {
             ground: Some(set),
             held: std::cell::OnceCell::new(),
         }
     }
 
-    /// The second stage: the spans the ground made in place that are held
+    /// The second stage: the calls the ground made in place that are held
     /// after all, never a `rev()`'s (`decide_held`).
-    fn decide_held(&self, held: IndexSet<Span>) {
+    fn decide_held(&self, held: IndexSet<ExprId>) {
         assert!(
             self.held.set(held).is_ok(),
             "rust-js: a body's held adapters decided twice (decide_held)"
         );
     }
 
-    fn ground(&self) -> &IndexSet<Span> {
+    fn ground(&self) -> &IndexSet<ExprId> {
         let Some(set) = &self.ground else {
             panic!("rust-js: a body's in-place adapters read before they're decided (decide_in_place)");
         };
         set
     }
 
-    /// Whether the adapter made at `span` is made in place, of both stages.
-    pub(in crate::lower) fn contains(&self, span: &Span) -> bool {
+    /// Whether the adapter MIR's call at `span` makes, of `thir`, is made in
+    /// place, of both stages: of each THIR call there, and there's one.
+    pub(in crate::lower) fn made_at(&self, thir: &Thir<'_>, span: Span) -> bool {
         let Some(held) = self.held.get() else {
             panic!("rust-js: a body's in-place adapters read before the held ones are decided (decide_held)");
         };
-        self.ground().contains(span) && !held.contains(span)
+        each_call_at(thir, span, |at| self.ground().contains(&at) && !held.contains(&at))
     }
 
-    /// Whether the `rev()` made at `span` is made in place, of the ground
-    /// alone: `back_stepped`'s, the analysis's that `decide_held` reads,
-    /// asked before it, of a `rev()`, which it never takes out.
-    pub(in crate::lower) fn contains_ground(&self, span: &Span) -> bool {
-        self.ground().contains(span)
+    /// Whether the `rev()` MIR's call at `span` makes is made in place, of
+    /// the ground alone: `back_stepped`'s, the analysis's that
+    /// `decide_held` reads, asked before it, of a `rev()`, which it never
+    /// takes out.
+    pub(in crate::lower) fn ground_made_at(&self, thir: &Thir<'_>, span: Span) -> bool {
+        each_call_at(thir, span, |at| self.ground().contains(&at))
     }
 }
 

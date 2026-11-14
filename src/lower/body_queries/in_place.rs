@@ -10,7 +10,6 @@ use crate::collections::{IndexMap, IndexSet};
 use rustc_hir::{BindingMode, ByRef};
 use rustc_middle::thir::{self, ExprId, ExprKind, LocalVarId, PatKind, Thir};
 use rustc_middle::ty::{self, TyCtxt};
-use rustc_span::Span;
 use rustc_span::def_id::DefId;
 
 /// A call's callee, its generic arguments and the index of what it's given.
@@ -64,16 +63,17 @@ pub(in crate::lower) fn decide<'tcx>(
             (&hint_asked, &observed, &hint_lost),
         )
     };
-    let mut sets: Vec<IndexSet<Span>> = bodies.iter().map(|body| made(body, None)).collect();
+    let mut sets: Vec<IndexSet<ExprId>> = bodies.iter().map(|body| made(body, None)).collect();
     // Each closure given a `flat_map` made in place.
     let mut given = IndexSet::default();
     for (body, set) in bodies.iter().zip(&sets) {
         for e in body.thir.exprs.iter() {
+            // Of each call at its span, as its readers ask (`InPlace::made_at`).
             if let ExprKind::Call {
                 fun, ref args, fn_span, ..
             } = e.kind
                 && matches!(*body.thir[fun].ty.kind(), ty::FnDef(id, _) if crate::lower::recognition::is_flat_map(tcx, id))
-                && set.contains(&fn_span)
+                && super::each_call_at(&body.thir, fn_span, |at| set.contains(&at))
                 && let Some(&f) = args.get(1)
                 && let ExprKind::Closure(ref closure) = body.thir[strip(&body.thir, f)].kind
             {
@@ -144,7 +144,7 @@ pub(in crate::lower) fn decide_held<'tcx>(
     }
 }
 
-/// The `fn_span` of each `flipped` link of `body`'s chains that start on a
+/// Each `flipped` link of `body`'s chains that start on a
 /// variable holding std's struct apart (`decide_held`), from the source
 /// outward while each is one: what a compiled adapter is given is std's
 /// struct, the variable's or another flipped one's, never a hand-written
@@ -161,15 +161,15 @@ fn held_links<'tcx>(
         bool,
         &dyn Fn(ty::Ty<'tcx>) -> bool,
     ),
-) -> IndexSet<Span> {
+) -> IndexSet<ExprId> {
     let thir = &body.thir;
     let held_apart = |source: ExprId| {
         matches!(thir[strip(thir, source)].kind, ExprKind::VarRef { .. })
             && !back_stepped.made_knowing(*recognition, (body.def_id, mir), thir[source].ty)
     };
-    let flipped_span = |link: ExprId| match thir[link].kind {
-        ExprKind::Call { fun, fn_span, .. } if matches!(*thir[fun].ty.kind(), ty::FnDef(callee, _) if flipped.contains(&callee)) => {
-            Some(fn_span)
+    let flipped_link = |link: ExprId| match thir[link].kind {
+        ExprKind::Call { fun, .. } if matches!(*thir[fun].ty.kind(), ty::FnDef(callee, _) if flipped.contains(&callee)) => {
+            Some(link)
         }
         _ => None,
     };
@@ -179,7 +179,7 @@ fn held_links<'tcx>(
         .filter(|chain| chain.source.is_some_and(held_apart))
         // Its links are from what's called last to what's called on the
         // source.
-        .flat_map(|chain| chain.links.into_iter().rev().map_while(flipped_span))
+        .flat_map(|chain| chain.links.into_iter().rev().map_while(flipped_link))
         .collect()
 }
 
@@ -191,7 +191,7 @@ fn held_links<'tcx>(
 /// compiled, `v.iter().rev().filter(f)`'s `filter`, an iterator trait's
 /// method on it, `rfold`, a `for` loop's `into_iter`,
 /// `zip(a, v.iter().rev())`, or to a type parameter of the crate's
-/// function given a JS iterator, not as it is (ADR 0061): its `fn_span`,
+/// function given a JS iterator, not as it is (ADR 0061): its THIR call,
 /// and that call's. No one else holds it, so it's what the recognizers
 /// make of it, `v.toReversed()`; one held, by a `let`, a field, a
 /// parameter of its own type or one given as it is, or given to a compiled
@@ -206,7 +206,7 @@ pub(super) fn in_place_adapters<'tcx>(
         &impl Fn(Called<'tcx>, ty::Ty<'tcx>) -> bool,
         &impl Fn(ty::Ty<'tcx>) -> bool,
     ),
-) -> IndexSet<Span> {
+) -> IndexSet<ExprId> {
     use crate::lower::recognition::{StdItem, std_item};
     let iterator_traits = [std_item(tcx, StdItem::Iterator), std_item(tcx, StdItem::IntoIterator)];
     // `cycle()`, which holds what it's given and clones it, as std's
@@ -222,17 +222,11 @@ pub(super) fn in_place_adapters<'tcx>(
             || (tcx.trait_of_assoc(callee)).is_some_and(|tr| crate::lower::recognition::is_double_ended(tcx, tr))
     };
     // Each call of a `rev()`, an `enumerate()` or a `map()` given, as what's called or
-    // an argument, borrowed for it or not, to another call: its `fn_span`,
-    // and the call's, its callee, and the argument's place.
+    // an argument, borrowed for it or not, to another call: it, and the
+    // call, its callee, and the argument's place.
     let mut given = Vec::new();
     for e in thir.exprs.indices() {
-        let ExprKind::Call {
-            fun,
-            ref args,
-            fn_span: at,
-            ..
-        } = thir[e].kind
-        else {
+        let ExprKind::Call { fun, ref args, .. } = thir[e].kind else {
             continue;
         };
         let ty::FnDef(callee, _) = *thir[fun].ty.kind() else {
@@ -245,7 +239,7 @@ pub(super) fn in_place_adapters<'tcx>(
                 ExprKind::Borrow { arg, .. } => strip(thir, arg),
                 _ => strip(thir, arg),
             };
-            let ExprKind::Call { fun, fn_span, .. } = thir[arg].kind else {
+            let ExprKind::Call { fun, .. } = thir[arg].kind else {
                 continue;
             };
             // Not one held to be cloned, by `cycle()` or as a part of an
@@ -260,7 +254,7 @@ pub(super) fn in_place_adapters<'tcx>(
                 && !held_to_clone
                 && (!crate::lower::recognition::folds_apart(tcx, thir[arg].ty) || from_its_back(callee))
             {
-                given.push((fn_span, at, (callee, thir[e].ty), index, (maker, thir[arg].ty)));
+                given.push((arg, e, (callee, thir[e].ty), index, (maker, thir[arg].ty)));
             }
         }
     }
@@ -282,7 +276,7 @@ pub(super) fn in_place_adapters<'tcx>(
     // a `for` loop's `into_iter`, a `by_ref()` whose `&mut` they step, or
     // `drop`, never given anywhere else: nothing tells what it is, so it's
     // what the recognizers make of it too, `s.entries()`.
-    let made: IndexMap<LocalVarId, Span> = (thir.stmts.iter())
+    let made: IndexMap<LocalVarId, ExprId> = (thir.stmts.iter())
         .filter_map(|stmt| match stmt.kind {
             thir::StmtKind::Let {
                 ref pattern,
@@ -297,10 +291,10 @@ pub(super) fn in_place_adapters<'tcx>(
                         subpattern: None,
                         ..
                     },
-                    &ExprKind::Call { fun, fn_span, .. },
+                    &ExprKind::Call { fun, .. },
                     made,
                 ) if matches!(*thir[fun].ty.kind(), ty::FnDef(id, _) if crate::lower::recognition::makes_held_compiled(tcx, id, made)) => {
-                    Some((var, fn_span))
+                    Some((var, strip(thir, init)))
                 }
                 _ => None,
             },
@@ -326,8 +320,8 @@ pub(super) fn in_place_adapters<'tcx>(
     // as an iterator an iterator's method whose own call is holds, which
     // gives its hint of it: its receiver, `flat_map(f).filter(g)`'s, or
     // another it's given, a `chain`'s or a `zip`'s, whose hint sums or takes
-    // the fewer of both (#1528): to the fixed point (#1323), each call's
-    // `fn_span`, and each variable `hint_seen`.
+    // the fewer of both (#1528): to the fixed point (#1323), each call, and
+    // each variable `hint_seen`.
     let library = |callee: DefId| !callee.is_local() && !crate::lower::recognition::is_std_crate(tcx, callee);
     // The type parameter `callee` is given what's at `index` for, `zip`'s
     // `U`, whatever it's bound by.
@@ -338,18 +332,12 @@ pub(super) fn in_place_adapters<'tcx>(
             _ => None,
         }
     };
-    let mut wanted: IndexSet<Span> = IndexSet::default();
+    let mut wanted: IndexSet<ExprId> = IndexSet::default();
     let mut hint_seen: IndexSet<LocalVarId> = IndexSet::default();
     loop {
         let before = wanted.len() + hint_seen.len();
         for e in thir.exprs.indices() {
-            let ExprKind::Call {
-                fun,
-                ref args,
-                fn_span: at,
-                ..
-            } = thir[e].kind
-            else {
+            let ExprKind::Call { fun, ref args, .. } = thir[e].kind else {
                 continue;
             };
             let Some((callee, generic_args)) = crate::lower::fn_def(thir[fun].ty) else {
@@ -367,12 +355,12 @@ pub(super) fn in_place_adapters<'tcx>(
                         .is_some_and(|param| crate::lower::iterators::bound_as_iterator(tcx, callee, param));
                 let asks = match inputs.get(index) {
                     _ if observed((callee, generic_args, index), thir[arg].ty) => true,
-                    _ if adapts && held_iterator => wanted.contains(&at),
+                    _ if adapts && held_iterator => wanted.contains(&e),
                     Some(_) => callee == size_hint || hint_asked.contains(&callee) || library(callee),
                     None => false,
                 };
                 match thir[arg].kind {
-                    ExprKind::Call { fn_span: given, .. } if asks => _ = wanted.insert(given),
+                    ExprKind::Call { .. } if asks => _ = wanted.insert(arg),
                     ExprKind::VarRef { id } if asks && made.contains_key(&id) && holds_flatten(thir[arg].ty) => {
                         _ = hint_seen.insert(id)
                     }
@@ -384,11 +372,20 @@ pub(super) fn in_place_adapters<'tcx>(
             break;
         }
     }
+    // Whether the call `at` is made in place as its readers ask it, of each
+    // THIR call at its span (`InPlace::made_at`): what's asked of another
+    // to make one in place, the call it's given to, or that a variable's
+    // made of, is what the lowering makes of that one, never a node's of
+    // two a macro's repetition writes there whose other is held (#1791).
+    let joined = |found: &IndexSet<ExprId>, at: ExprId| match thir[at].kind {
+        ExprKind::Call { fn_span, .. } => super::each_call_at(thir, fn_span, |call| found.contains(&call)),
+        _ => found.contains(&at),
+    };
     let steps_as_js = |(callee, called): (DefId, ty::Ty<'tcx>),
                        index: usize,
-                       in_place: &IndexSet<Span>,
-                       at: Span,
-                       (made, maker, made_ty): (Span, DefId, ty::Ty<'tcx>)| {
+                       in_place: &IndexSet<ExprId>,
+                       at: ExprId,
+                       (made, maker, made_ty): (ExprId, DefId, ty::Ty<'tcx>)| {
         // A flatten whose hint is asked where it's given (`wanted`): held,
         // std's struct, which knows its items' constant size, as of
         // `size_hint()` itself; JS's own `flatMap` knows none (ADR 0899,
@@ -407,7 +404,7 @@ pub(super) fn in_place_adapters<'tcx>(
         // Another of them, itself made in place, `enumerate().rev()`'s: in
         // place too.
         if crate::lower::recognition::makes_held_compiled(tcx, callee, called) {
-            return in_place.contains(&at);
+            return joined(in_place, at);
         }
         if callee == size_hint && !sized(maker, made_ty) {
             return false;
@@ -416,7 +413,9 @@ pub(super) fn in_place_adapters<'tcx>(
         // unstepped, `iproduct!`'s to `cartesian_product`, which may hold
         // and clone it: in place only where a `for` loop's steps it there
         // (#1409).
-        if callee == into_iter && !at.is_desugaring(rustc_span::DesugaringKind::ForLoop) {
+        let for_loop = matches!(thir[at].kind,
+            ExprKind::Call { fn_span, .. } if fn_span.is_desugaring(rustc_span::DesugaringKind::ForLoop));
+        if callee == into_iter && !for_loop {
             return false;
         }
         let std = crate::lower::recognition::is_std_crate(tcx, callee)
@@ -436,10 +435,10 @@ pub(super) fn in_place_adapters<'tcx>(
     // What a closure gives that's stepped where it's given, `flat_map`'s:
     // made in place, as one given to it would be.
     if let Some(result) = stepped_result.map(|e| tail(thir, e))
-        && let ExprKind::Call { fun, fn_span, .. } = thir[result].kind
+        && let ExprKind::Call { fun, .. } = thir[result].kind
         && matches!(*thir[fun].ty.kind(), ty::FnDef(id, _) if crate::lower::recognition::makes_held_compiled(tcx, id, thir[result].ty))
     {
-        found.insert(fn_span);
+        found.insert(result);
     }
 
     let mut reads: IndexMap<LocalVarId, usize> = IndexMap::default();
@@ -453,17 +452,11 @@ pub(super) fn in_place_adapters<'tcx>(
     // Each call that steps what it's given as a JS iterator, by `Iterator`'s
     // methods but `by_ref()`, and `mem::drop`, which closes either: what
     // it's given.
-    let mut js_steps: Vec<(ExprId, Span)> = Vec::new();
+    let mut js_steps: Vec<(ExprId, ExprId)> = Vec::new();
     let mut lent: Vec<(ExprId, ExprId)> = Vec::new();
-    let mut makers: Vec<(ExprId, Span)> = Vec::new();
+    let mut makers: Vec<(ExprId, ExprId)> = Vec::new();
     for e in thir.exprs.indices() {
-        let ExprKind::Call {
-            fun,
-            ref args,
-            fn_span: at,
-            ..
-        } = thir[e].kind
-        else {
+        let ExprKind::Call { fun, ref args, .. } = thir[e].kind else {
             continue;
         };
         let ty::FnDef(callee, _) = *thir[fun].ty.kind() else {
@@ -486,15 +479,15 @@ pub(super) fn in_place_adapters<'tcx>(
                 _ if by_ref => lent.push((e, arg)),
                 // Another of them made of it, `it.rev()`, which steps it as
                 // a JS iterator where that's made in place.
-                _ if crate::lower::recognition::makes_held_compiled(tcx, callee, thir[e].ty) => makers.push((arg, at)),
-                _ if by_iterator || crate::lower::recognition::is_mem_drop(tcx, callee) => js_steps.push((arg, at)),
+                _ if crate::lower::recognition::makes_held_compiled(tcx, callee, thir[e].ty) => makers.push((arg, e)),
+                _ if by_iterator || crate::lower::recognition::is_mem_drop(tcx, callee) => js_steps.push((arg, e)),
                 _ => {}
             }
         }
     }
-    let stepped_at: IndexMap<ExprId, Span> = js_steps.iter().copied().collect();
-    let mut stepped: IndexMap<LocalVarId, Vec<Span>> = IndexMap::default();
-    let mut note = |e: ExprId, at: Span| {
+    let stepped_at: IndexMap<ExprId, ExprId> = js_steps.iter().copied().collect();
+    let mut stepped: IndexMap<LocalVarId, Vec<ExprId>> = IndexMap::default();
+    let mut note = |e: ExprId, at: ExprId| {
         if let ExprKind::VarRef { id } = thir[e].kind
             && made.contains_key(&id)
         {
@@ -509,7 +502,7 @@ pub(super) fn in_place_adapters<'tcx>(
             note(arg, at);
         }
     }
-    let mut made_of: IndexMap<LocalVarId, Vec<Span>> = IndexMap::default();
+    let mut made_of: IndexMap<LocalVarId, Vec<ExprId>> = IndexMap::default();
     for &(arg, at) in &makers {
         if let ExprKind::VarRef { id } = thir[arg].kind
             && made.contains_key(&id)
@@ -535,7 +528,7 @@ pub(super) fn in_place_adapters<'tcx>(
                 && !hint_seen.contains(&var)
                 && all > 0
                 && reads.get(&var) == Some(&all)
-                && of.iter().all(|maker| found.contains(maker))
+                && of.iter().all(|&maker| joined(&found, maker))
             {
                 found.insert(at);
             }

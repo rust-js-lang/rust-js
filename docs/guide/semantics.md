@@ -862,7 +862,10 @@ What's refused is in [the limitations](limitations.md).
   mut cs = s.chars().enumerate()` is `s[Symbol.iterator]().map((x, i) => [i,
   x])`. One given on by `IntoIterator::into_iter` outside a `for` loop,
   as `iproduct!` gives what it's given to `cartesian_product`, is std's
-  struct, as what it's given to may hold and clone it (#1409). One
+  struct, as what it's given to may hold and clone it (#1409). Of two a
+  macro's repetition writes at one place, `vec![$($f($v.iter().rev())),*]`,
+  each reads as a JS chain only where both would; where one is held, both
+  are std's struct (#1791). One
   asked its `size_hint()` is std's struct, which knows it, but a `rev()`,
   `enumerate()`, `map()` or `inspect()` made in place, sized as its source
   is; a flatten's, and a flat map's, counts what's left of its items, an

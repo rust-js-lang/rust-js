@@ -704,9 +704,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// made, `body_queries::in_place_adapters` says: what the recognizers
     /// make of it, not std's compiled one (ADR 0871). It records only the
     /// calls of `HELD_COMPILED`'s makers of a type compiled for this build
-    /// (`makes_held_compiled`), each by its span, so the span says it.
+    /// (`makes_held_compiled`), each its THIR call, asked of each at the
+    /// span (`each_call_at`, #1671 change 3 M5).
     pub(in crate::lower::mir) fn adapter_in_place(&self, _def_id: rustc_span::def_id::DefId, span: Span) -> bool {
-        self.frame.facts.in_place_adapters.contains(&span)
+        self.frame.facts.in_place_adapters.made_at(self.frame.thir, span)
     }
 
     /// `made`, what a call of `def_id` at `span` gives: of a `rev()`, an

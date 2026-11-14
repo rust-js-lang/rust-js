@@ -20,8 +20,8 @@ export const mutations: Mutation[] = [
     "name": "rev-borrowed-held",
     "breaks": "a `rev()` borrowed for what steps it, `rev().nth(n)`, is taken as held",
     "file": "src/lower/body_queries/in_place.rs",
-    "find": "                ExprKind::Borrow { arg, .. } => strip(thir, arg),\n                _ => strip(thir, arg),\n            };\n            let ExprKind::Call { fun, fn_span, .. } = thir[arg].kind else {",
-    "replace": "                _ => strip(thir, arg),\n            };\n            let ExprKind::Call { fun, fn_span, .. } = thir[arg].kind else {",
+    "find": "                ExprKind::Borrow { arg, .. } => strip(thir, arg),\n                _ => strip(thir, arg),\n            };\n            let ExprKind::Call { fun, .. } = thir[arg].kind else {",
+    "replace": "                _ => strip(thir, arg),\n            };\n            let ExprKind::Call { fun, .. } = thir[arg].kind else {",
     "snapshots": true,
     "tests": [
       "test/corpus.test.ts",
@@ -96,8 +96,8 @@ export const mutations: Mutation[] = [
     "name": "local-adapter-dropped-held",
     "breaks": "a variable's `enumerate()` that's dropped is std's struct",
     "file": "src/lower/body_queries/in_place.rs",
-    "find": "                _ if by_iterator || crate::lower::recognition::is_mem_drop(tcx, callee) => js_steps.push((arg, at)),\n",
-    "replace": "                _ if by_iterator => js_steps.push((arg, at)),\n",
+    "find": "                _ if by_iterator || crate::lower::recognition::is_mem_drop(tcx, callee) => js_steps.push((arg, e)),\n",
+    "replace": "                _ if by_iterator => js_steps.push((arg, e)),\n",
     "snapshots": true,
     "tests": [
       "test/corpus.test.ts",
@@ -109,7 +109,7 @@ export const mutations: Mutation[] = [
     "name": "adapter-chain-held",
     "breaks": "an adapter given to another made in place, `rev().rev()`'s first, is std's struct, which the other steps from a back it hasn't",
     "file": "src/lower/body_queries/in_place.rs",
-    "find": "            return in_place.contains(&at);\n",
+    "find": "            return joined(in_place, at);\n",
     "replace": "            return false;\n",
     "snapshots": true,
     "tests": [
@@ -122,7 +122,7 @@ export const mutations: Mutation[] = [
     "name": "local-adapter-made-of-held",
     "breaks": "a variable's `enumerate()` read only by a `map()` made in place of it is std's struct, not `entries()`",
     "file": "src/lower/body_queries/in_place.rs",
-    "find": "                _ if crate::lower::recognition::makes_held_compiled(tcx, callee, thir[e].ty) => makers.push((arg, at)),\n",
+    "find": "                _ if crate::lower::recognition::makes_held_compiled(tcx, callee, thir[e].ty) => makers.push((arg, e)),\n",
     "replace": "",
     "snapshots": true,
     "tests": [
@@ -135,7 +135,7 @@ export const mutations: Mutation[] = [
     "name": "local-adapter-made-of-held-maker",
     "breaks": "a variable read by a `rev()` that's held is taken to be in place, a JS iterator the held `rev()`'s struct steps",
     "file": "src/lower/body_queries/in_place.rs",
-    "find": "                && of.iter().all(|maker| found.contains(maker))\n",
+    "find": "                && of.iter().all(|&maker| joined(&found, maker))\n",
     "replace": "",
     "snapshots": true,
     "tests": [
@@ -208,7 +208,7 @@ export const mutations: Mutation[] = [
     "name": "held-flat-map-results-in-place",
     "breaks": "what the closure of a `flat_map()` held in a variable gives is made in place, a JS `.map()` chain, which std's compiled `FlatMap` steps from its back as its struct and throws (#726)",
     "file": "src/lower/body_queries/in_place.rs",
-    "find": "                && set.contains(&fn_span)\n",
+    "find": "                && super::each_call_at(&body.thir, fn_span, |at| set.contains(&at))\n",
     "replace": "",
     "tests": [
       "test/corpus.test.ts",
@@ -241,7 +241,7 @@ export const mutations: Mutation[] = [
     name: "hint-wanted-not-through-adapters",
     breaks: "a flatten under another adapter given where its hint is asked, `flat_map(f).filter(g)`, is made in place, its hint `(0, None)` (#1323)",
     file: "src/lower/body_queries/in_place.rs",
-    find: "                    _ if adapts && held_iterator => wanted.contains(&at),\n",
+    find: "                    _ if adapts && held_iterator => wanted.contains(&e),\n",
     replace: "                    _ if adapts && held_iterator => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_given_where_its_hint_is_asked.rs$"],
   },
@@ -283,7 +283,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`IntoIterator::into_iter` of a `map()` given on to generic code that clones it, as `iproduct!` gives what it's given to `cartesian_product`, is taken to step it there, so it's made the recognizers' JS iterator while its `Clone` is std's struct's: \"Cannot read properties of undefined\" (#1409)",
     file: "src/lower/body_queries/in_place.rs",
-    find: "        if callee == into_iter && !at.is_desugaring(rustc_span::DesugaringKind::ForLoop) {\n",
+    find: "        if callee == into_iter && !for_loop {\n",
     replace: "        if callee == into_iter && false {\n",
     tests: ["test/corpus.test.ts", "-t", "^(into_iter_of_a_map_given_on|adapter_shown_and_cloned_generically).rs$"],
   },
@@ -345,9 +345,29 @@ export const mutations: Mutation[] = [
     name: "held-flip-past-a-link-not-flipped",
     breaks: "the held flip takes out each `map()` of a chain on a variable, past a link that isn't flipped: `src.chain(v).map(f)`'s compiled `Map` is given a `$lazyChain` made in place and steps it as std's `Chain` struct, folding nothing (#1780)",
     file: "src/lower/body_queries/in_place.rs",
-    find: "        .flat_map(|chain| chain.links.into_iter().rev().map_while(flipped_span))",
-    replace: "        .flat_map(|chain| chain.links.into_iter().filter_map(flipped_span))",
+    find: "        .flat_map(|chain| chain.links.into_iter().rev().map_while(flipped_link))",
+    replace: "        .flat_map(|chain| chain.links.into_iter().filter_map(flipped_link))",
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^held_chain_mapped_past_a_link_not_compiled.rs$"],
+  },
+  {
+    name: "in-place-given-to-a-node-of-a-shared-span",
+    breaks:
+      "an adapter given to another of them is made in place where that THIR call is, not as the lowering makes it of each at its span: `a.iter().rev()` a macro gives its `enumerate()` is `a.toReversed()` where both `enumerate()`s are std's struct, which steps it as one and throws (#1791)",
+    file: "src/lower/body_queries/in_place.rs",
+    find: "            return joined(in_place, at);\n",
+    replace: "            return in_place.contains(&at);\n",
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^in_place_adapters_in_a_macro.rs$"],
+  },
+  {
+    name: "in-place-made-of-a-node-of-a-shared-span",
+    breaks:
+      "a variable a `rev()` is made of is made in place where that THIR call is, not as the lowering makes it of each at its span: `ma` is `$mapEnds(..)` where both `rev()`s a macro writes are std's `Rev`, which steps it as std's `Map` and throws (#1791)",
+    file: "src/lower/body_queries/in_place.rs",
+    find: "                && of.iter().all(|&maker| joined(&found, maker))\n",
+    replace: "                && of.iter().all(|maker| found.contains(maker))\n",
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^in_place_adapters_in_a_macro.rs$"],
   },
 ];
