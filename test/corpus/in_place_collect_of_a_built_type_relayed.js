@@ -16,6 +16,7 @@ import {
   $index,
   $intoIter,
   $iter,
+  $iterator,
   $jsIteratorSome,
   $live,
   $mapEnds,
@@ -408,41 +409,33 @@ function run(name, f) {
 
 function main() {
   run("relayed", () =>
-    relayed($iter([[1n], undefined]), [16, 8], 16, 8, dDrop_drop, (intoIter) => {
-      for (const item of intoIter) {
-        if (item != null) {
-          dDrop_drop(item);
+    relayed(
+      $iter([[1n], undefined]),
+      [16, 8],
+      16,
+      8,
+      dDrop_drop,
+      $dropEach((option) => {
+        if (option != null) {
+          dDrop_drop(option);
         }
-      }
-    }),
+      }),
+    ),
   );
   run("relayed, a panic", () => {
-    const wides = $foldToArray(
-      $roomForHint(
-        iterator_map(
-          { start: 1n, end: 4n },
-          (n) => [n],
-          { next: $rangeInclusiveNext },
-          undefined,
-          (option) => {
-            if (option != null) {
-              dDrop_drop(option);
-            }
-          },
-        ),
-        16,
-        true,
-      ),
+    const wides = Array.from(
+      $iterator({ start: 1n, end: 4n }, $rangeInclusiveNext).map((n) => [n]),
     );
     return relayed(
       $mapEnds(
-        $closing($iter(wides), (intoIter) => {
-          for (const item of intoIter) {
-            if (item != null) {
-              dDrop_drop(item);
+        $closing(
+          $iter(wides),
+          $dropEach((option) => {
+            if (option != null) {
+              dDrop_drop(option);
             }
-          }
-        }),
+          }),
+        ),
         wide,
       ),
       [16, 8],
@@ -491,13 +484,11 @@ function main() {
         $dropItem: dDrop_drop,
         $dropIntoIter: $dropEach(dDrop_drop),
       },
-      (intoIter) => {
-        for (const item of intoIter) {
-          if (item != null) {
-            dDrop_drop(item);
-          }
+      $dropEach((option) => {
+        if (option != null) {
+          dDrop_drop(option);
         }
-      },
+      }),
       (option) => {
         if (option != null) {
           dDrop_drop(option);
@@ -573,22 +564,8 @@ function main() {
     }
   });
   run("held of", () => {
-    const wides = $foldToArray(
-      $roomForHint(
-        iterator_map(
-          { start: 1n, end: 2n },
-          (n) => [n],
-          { next: $rangeInclusiveNext },
-          undefined,
-          (option) => {
-            if (option != null) {
-              dDrop_drop(option);
-            }
-          },
-        ),
-        16,
-        true,
-      ),
+    const wides = Array.from(
+      $iterator({ start: 1n, end: 2n }, $rangeInclusiveNext).map((n) => [n]),
     );
     return heldOf(
       wides,
@@ -606,34 +583,18 @@ function main() {
           dDrop_drop(option);
         }
       },
-      (intoIter) => {
-        for (const item of intoIter) {
-          if (item != null) {
-            dDrop_drop(item);
-          }
+      $dropEach((option) => {
+        if (option != null) {
+          dDrop_drop(option);
         }
-      },
+      }),
       dDrop_drop,
       $dropEach(dDrop_drop),
     );
   });
   run("a default, a panic", () => {
-    const wides = $foldToArray(
-      $roomForHint(
-        iterator_map(
-          { start: 1n, end: 4n },
-          (n) => [n],
-          { next: $rangeInclusiveNext },
-          undefined,
-          (option) => {
-            if (option != null) {
-              dDrop_drop(option);
-            }
-          },
-        ),
-        16,
-        true,
-      ),
+    const wides = Array.from(
+      $iterator({ start: 1n, end: 4n }, $rangeInclusiveNext).map((n) => [n]),
     );
     const heldAll = tHolding(
       { next: $nextSome, fold: $foldOf },
@@ -655,13 +616,11 @@ function main() {
         $iter(wides),
         wide,
         { next: $nextSome, advanceBy: $advanceSlice },
-        (intoIter) => {
-          for (const item of intoIter) {
-            if (item != null) {
-              dDrop_drop(item);
-            }
+        $dropEach((option) => {
+          if (option != null) {
+            dDrop_drop(option);
           }
-        },
+        }),
         (option) => {
           if (option != null) {
             dDrop_drop(option);
@@ -690,18 +649,8 @@ function main() {
     return heldAll.length;
   });
   run("a default, narrow, a panic", () => {
-    const narrows = $foldToArray(
-      $roomForHint(
-        iterator_map(
-          { start: 1n, end: 4n },
-          (n) => [[n]],
-          { next: $rangeInclusiveNext },
-          undefined,
-          $dropEach(dDrop_drop),
-        ),
-        12,
-        true,
-      ),
+    const narrows = $collectDropping(
+      $iterator({ start: 1n, end: 4n }, $rangeInclusiveNext).map((n) => [[n]]),
       $dropEach(dDrop_drop),
       true,
     );
@@ -721,13 +670,7 @@ function main() {
         $iter(narrows),
         narrow,
         { next: $next, advanceBy: $advanceSlice },
-        (intoIter) => {
-          for (const item of intoIter) {
-            for (const item$1 of item) {
-              dDrop_drop(item$1);
-            }
-          }
-        },
+        $dropEach($dropEach(dDrop_drop)),
         $dropEach(dDrop_drop),
         undefined,
         $dropEach(dDrop_drop),

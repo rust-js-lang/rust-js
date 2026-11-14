@@ -10,7 +10,6 @@ import {
   $dropEach,
   $filterEnds,
   $foldOf,
-  $foldToArray,
   $intoIter,
   $iter,
   $iterator,
@@ -23,10 +22,10 @@ import {
   $mapEnds,
   $next,
   $nth,
+  $range,
   $rangeNext,
   $rangeNextBack,
   $repeating,
-  $roomForHint,
   $unwindsOn,
   $vecCollectWay,
   iterator_map,
@@ -256,19 +255,7 @@ function main() {
   // By its fold, of a `Vec`'s items made bigger, not in place: what's
   // left of the source dropped before what it collected.
   r = $catchUnwind(() => {
-    const source = $foldToArray(
-      $roomForHint(
-        iterator_map(
-          { start: 1, end: 5 },
-          (value) => [value],
-          { next: $rangeNext },
-          undefined,
-          loudDrop_drop,
-        ),
-        4,
-        true,
-      ),
-    );
+    const source = $range(1, 5).map((value) => [value]);
     const value = all(
       iterator_map(
         iterator_zip(
@@ -329,19 +316,7 @@ function main() {
   console.log(`zipped bigger, of items that drop: ${r.TAG === "Err"}`);
   // In place, the source's items left dropped after what it collected.
   r = $catchUnwind(() => {
-    const source = $foldToArray(
-      $roomForHint(
-        iterator_map(
-          { start: 1, end: 5 },
-          (value) => [value],
-          { next: $rangeNext },
-          undefined,
-          loudDrop_drop,
-        ),
-        4,
-        true,
-      ),
-    );
+    const source = $range(1, 5).map((value) => [value]);
     const value = all(
       $mapEnds($closing($iter(source), $dropEach(loudDrop_drop)), (l) => {
         try {
@@ -415,19 +390,7 @@ function main() {
     ),
   );
   console.log(`kept, by next: ${r.TAG === "Err"}`);
-  source = $foldToArray(
-    $roomForHint(
-      iterator_map(
-        { start: 1, end: 5 },
-        (value) => [value],
-        { next: $rangeNext },
-        undefined,
-        loudDrop_drop,
-      ),
-      4,
-      true,
-    ),
-  );
+  source = $range(1, 5).map((value) => [value]);
   r = $catchUnwind(() => kept($iter(source), [4, 4], $dropEach(loudDrop_drop)));
   console.log(`kept, in place: ${r.TAG === "Err"}`);
   // Endless and `TrustedLen`, stepped once first: nothing more is stepped.

@@ -111,11 +111,7 @@ pub(in crate::lower) const HELD_FLIPPED: [&str; 2] = ["enumerate", "map"];
 pub(in crate::lower) fn decide_held<'tcx>(
     recognition: &crate::lower::recognition::Recognition<'_, 'tcx>,
     bodies: &[crate::lower::Body<'tcx>],
-    (back_stepped, keeps_capacity, drops): (
-        &crate::lower::analysis::BackStepped<'tcx>,
-        bool,
-        &dyn Fn(ty::Ty<'tcx>) -> bool,
-    ),
+    (back_stepped, keeps_capacity): (&crate::lower::analysis::BackStepped<'tcx>, bool),
 ) {
     let tcx = recognition.tcx;
     let iterator = crate::lower::recognition::std_item(tcx, crate::lower::recognition::StdItem::Iterator);
@@ -127,17 +123,12 @@ pub(in crate::lower) fn decide_held<'tcx>(
     // (#1673), of the bodies the flip reads them of.
     if crate::decisions::path().is_some() && !meaning {
         for body in bodies {
-            crate::lower::iterators::count_chains(recognition, (&body.thir, body.def_id), (keeps_capacity, drops));
+            crate::lower::iterators::count_chains(recognition, (&body.thir, body.def_id), keeps_capacity);
         }
     }
     for body in bodies {
         let held = match (meaning, body.mir.as_ref()) {
-            (false, Some(mir)) => held_links(
-                recognition,
-                body,
-                (&mir.body, &flipped),
-                (back_stepped, keeps_capacity, drops),
-            ),
+            (false, Some(mir)) => held_links(recognition, body, (&mir.body, &flipped), (back_stepped, keeps_capacity)),
             _ => IndexSet::default(),
         };
         body.facts.in_place_adapters.decide_held(held);
@@ -156,11 +147,7 @@ fn held_links<'tcx>(
     recognition: &crate::lower::recognition::Recognition<'_, 'tcx>,
     body: &crate::lower::Body<'tcx>,
     (mir, flipped): (&rustc_middle::mir::Body<'tcx>, &[DefId]),
-    (back_stepped, keeps_capacity, drops): (
-        &crate::lower::analysis::BackStepped<'tcx>,
-        bool,
-        &dyn Fn(ty::Ty<'tcx>) -> bool,
-    ),
+    (back_stepped, keeps_capacity): (&crate::lower::analysis::BackStepped<'tcx>, bool),
 ) -> IndexSet<ExprId> {
     let thir = &body.thir;
     let held_apart = |source: ExprId| {
@@ -174,7 +161,7 @@ fn held_links<'tcx>(
         _ => None,
     };
     let made_knowing = |source: ExprId| back_stepped.made_knowing(*recognition, (body.def_id, mir), thir[source].ty);
-    let chains = crate::lower::iterators::chains(recognition, (thir, body.def_id), (keeps_capacity, drops));
+    let chains = crate::lower::iterators::chains(recognition, (thir, body.def_id), keeps_capacity);
     (chains.into_iter())
         .filter(|chain| match chain.answer {
             crate::lower::iterators::Transparency::Admitted => false,

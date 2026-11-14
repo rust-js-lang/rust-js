@@ -44,22 +44,6 @@ export const mutations: Mutation[] = [
     tests: ["test/decisions.test.ts", "-t", "each chain is counted by what keeps it from being transparent"],
   },
   {
-    name: "transparent-item-drops-unseen",
-    breaks: "an item with a destructor, `names.into_iter().map(..)`'s `String`, is taken as dropping nothing",
-    file: "src/lower/iterators/transparent.rs",
-    find: "    let item = recognition.iterator_item(made.peel_refs()).is_some_and(needs_drop);\n",
-    replace: "    let item = recognition.iterator_item(made.peel_refs()).is_some_and(needs_drop) && false;\n",
-    tests: ["test/decisions.test.ts", "-t", "each chain is counted by what keeps it from being transparent"],
-  },
-  {
-    name: "transparent-capture-drops-unseen",
-    breaks: "a closure's capture with a destructor, a `move` closure's `String`, is taken as dropping nothing",
-    file: "src/lower/iterators/transparent.rs",
-    find: "                ty::Closure(_, closure_args) => closure_args.as_closure().upvar_tys().iter().any(needs_drop),\n",
-    replace: "                ty::Closure(..) => false,\n",
-    tests: ["test/decisions.test.ts", "-t", "each chain is counted by what keeps it from being transparent"],
-  },
-  {
     name: "transparent-loops-next-counted",
     breaks: "a `for` loop's own `next` is counted as a chain of its own, held",
     file: "src/lower/iterators/transparent.rs",
@@ -129,14 +113,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/transparent.rs",
     find: "    boxed_dyn && crate::lower::bindings::is_binding(tcx, callee)\n",
     replace: "    boxed_dyn && crate::lower::bindings::is_binding(tcx, callee) && false\n",
-    tests: ["test/decisions.test.ts", "-t", "each chain is counted"],
-  },
-  {
-    name: "drop-glue-admits-a-user-drop",
-    breaks: "a chain whose items have a user `Drop` JS runs, `Loud`'s, is admitted, so its hand-written form may drop them otherwise than std's body (#1681)",
-    file: "src/lower/iterators/transparent.rs",
-    find: "    let needs_drop = |ty: Ty<'tcx>| drops(ty);\n",
-    replace: "    let needs_drop = |_: Ty<'tcx>| false;\n",
     tests: ["test/decisions.test.ts", "-t", "each chain is counted"],
   },
   {

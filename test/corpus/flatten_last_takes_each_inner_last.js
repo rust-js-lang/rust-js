@@ -63,15 +63,8 @@ function main() {
   }
   const nested = [[[40], [41]], [], [[42]], []];
   const last$1 = $lastDropping(
-    $flatMap(
-      $closing($iter(nested), (intoIter) => {
-        for (const item of intoIter) {
-          for (const item$1 of item) {
-            dDrop_drop(item$1);
-          }
-        }
-      }),
-      (item) => $closing($iter(item), $dropEach(dDrop_drop)),
+    $flatMap($closing($iter(nested), $dropEach($dropEach(dDrop_drop))), (item) =>
+      $closing($iter(item), $dropEach(dDrop_drop)),
     ),
     dDrop_drop,
   );
@@ -87,13 +80,7 @@ function main() {
           [[50], [51]],
           [[52], [53]],
         ]),
-        (intoIter) => {
-          for (const item of intoIter) {
-            for (const item$1 of item) {
-              dDrop_drop(item$1);
-            }
-          }
-        },
+        $dropEach($dropEach(dDrop_drop)),
       ),
       (item) => $closing($iter(item), $dropEach(dDrop_drop)),
     ),
@@ -163,13 +150,14 @@ function main() {
   });
   console.log(`panicked ${r.TAG === "Err"}`);
   const last$4 = $lastDropping(
-    $closing($iter([[80], undefined, [81], [82]]), (intoIter) => {
-      for (const item of intoIter) {
-        if (item != null) {
-          dDrop_drop(item);
+    $closing(
+      $iter([[80], undefined, [81], [82]]),
+      $dropEach((option) => {
+        if (option != null) {
+          dDrop_drop(option);
         }
-      }
-    }).filter((item) => item != null),
+      }),
+    ).filter((item) => item != null),
     dDrop_drop,
   );
   console.log(`last ${last$4?.[0] ?? 0}`);

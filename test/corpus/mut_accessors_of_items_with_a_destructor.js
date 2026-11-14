@@ -12,7 +12,6 @@ import {
   $endEntry,
   $entryInsert,
   $eq,
-  $foldToArray,
   $heapFrom,
   $heapSorted,
   $insertMut,
@@ -27,9 +26,8 @@ import {
   $peekMutTop,
   $pushFrontMut,
   $pushMut,
-  $rangeNext,
+  $range,
   $rchunksMut,
-  $roomForHint,
   $some,
   $sortedEntries,
   $sortedKeys,
@@ -39,7 +37,6 @@ import {
   $treeRange,
   $unwindsOn,
   $view,
-  iterator_map,
 } from "@rust-js/std";
 
 const dPartialOrd = $partialOrd({
@@ -401,21 +398,7 @@ function main() {
       }
       const m = $treeFrom(
         new $BTreeMap(),
-        $foldToArray(
-          $roomForHint(
-            iterator_map(
-              { start: 1, end: 4 },
-              (i) => [i, [i]],
-              { next: $rangeNext },
-              undefined,
-              (value) => {
-                dDrop_drop(value[1]);
-              },
-            ),
-            8,
-            true,
-          ),
-        ),
+        $range(1, 4).map((i) => [i, [i]]),
         false,
         $cmp,
         dDrop_drop,
@@ -610,19 +593,7 @@ function main() {
       try {
         s = $treeFrom(
           new ($btreeSet((a, b) => $cmp(a[0], b[0]), $KeySet))(),
-          $foldToArray(
-            $roomForHint(
-              iterator_map(
-                { start: 1, end: 4 },
-                (value) => [value],
-                { next: $rangeNext },
-                undefined,
-                dDrop_drop,
-              ),
-              4,
-              true,
-            ),
-          ),
+          $range(1, 4).map((value) => [value]),
           true,
           (a, b) => $cmp(a[0], b[0]),
           undefined,

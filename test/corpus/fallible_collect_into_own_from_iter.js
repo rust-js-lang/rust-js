@@ -6,6 +6,7 @@ import {
   $closing,
   $count,
   $debugStr,
+  $dropEach,
   $extend,
   $held,
   $intoIter,
@@ -512,11 +513,12 @@ function main() {
   let left;
   try {
     left = $tryProcessOptions(
-      $closing($iter(value$1), (intoIter) => {
-        for (const item of intoIter) {
-          loudDrop_drop(item[1]);
-        }
-      }).map(([x, _l]) => {
+      $closing(
+        $iter(value$1),
+        $dropEach((value) => {
+          loudDrop_drop(value[1]);
+        }),
+      ).map(([x, _l]) => {
         loudDrop_drop(_l);
         return x;
       }),
@@ -604,11 +606,12 @@ function main() {
   try {
     through = collectAs(
       $mapEnds(
-        $closing($iter(value$2), (intoIter) => {
-          for (const item of intoIter) {
-            loudDrop_drop(item[1]);
-          }
-        }),
+        $closing(
+          $iter(value$2),
+          $dropEach((value) => {
+            loudDrop_drop(value[1]);
+          }),
+        ),
         ([x, _l]) => {
           loudDrop_drop(_l);
           return x;
@@ -713,11 +716,12 @@ function main() {
   let kept;
   try {
     kept = $tryProcessOptions(
-      $closing($iter(value$3), (intoIter) => {
-        for (const item of intoIter) {
-          loudDrop_drop(item[1]);
-        }
-      }).map(([x, _l]) => {
+      $closing(
+        $iter(value$3),
+        $dropEach((value) => {
+          loudDrop_drop(value[1]);
+        }),
+      ).map(([x, _l]) => {
         loudDrop_drop(_l);
         return x;
       }),
@@ -939,13 +943,14 @@ function main() {
   let r;
   try {
     r = $tryProcessResults(
-      $closing($iter(value$6), (intoIter) => {
-        for (const item of intoIter) {
-          if (item.TAG === "Err") {
-            loudDrop_drop(item._0);
+      $closing(
+        $iter(value$6),
+        $dropEach((result) => {
+          if (result.TAG === "Err") {
+            loudDrop_drop(result._0);
           }
-        }
-      }),
+        }),
+      ),
       (iter) =>
         pastFromIteratorI32_fromIter(
           iter,
@@ -1101,13 +1106,11 @@ function main() {
           { TAG: "Err", _0: [4] },
           { TAG: "Ok", _0: 2 },
         ]),
-        (intoIter) => {
-          for (const item of intoIter) {
-            if (item.TAG === "Err") {
-              loudDrop_drop(item._0);
-            }
+        $dropEach((result) => {
+          if (result.TAG === "Err") {
+            loudDrop_drop(result._0);
           }
-        },
+        }),
       ),
       (iter) =>
         pickyFromIteratorI32_fromIter(

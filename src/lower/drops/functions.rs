@@ -73,6 +73,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(drop) = self.item_drop(ty) {
             return Ok(Some((drop, true)));
         }
+        // Of what drops as an array's items: `$dropEach(drop)`, its item's
+        // drop, which a slice it passes over is dropped by, front to back,
+        // the rest though one panics (#234, #416, #1854). Not of a drop that
+        // may be none where it's run, a caller's `dropT`, which its loop
+        // asks, `dropT?.(item)`.
+        if let Some(item) = self.dropped_as_items(ty)
+            && let Some((each, false)) = self.found_drop(item, None, span)?
+        {
+            return Ok(Some((Expr::call_helper("$dropEach", vec![each]), false)));
+        }
         let param = match (param, ty.kind()) {
             (Some(param), _) => self.fresh(Base::Named(param)),
             (None, ty::Adt(adt, _)) => self.fresh(Base::Named(&lower_first(self.tcx.item_name(adt.did()).as_str()))),
@@ -93,53 +103,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && callee.is_named()
         {
             return Ok(Some(((**callee).clone(), false)));
-        }
-        // `(intoIter) => { for (const item of intoIter) nDrop_drop(item); }`,
-        // what drops each an iterator hasn't given, is `$dropEach(nDrop_drop)`.
-        if let [
-            Stmt {
-                kind:
-                    StmtKind::ForOf {
-                        label: None,
-                        pattern: js::Pattern::Name(item),
-                        iterable,
-                        body: each,
-                        ..
-                    },
-                ..
-            },
-        ] = body.as_slice()
-            && matches!(&iterable.kind, js::ExprKind::Var(name) if *name == param)
-            && let [
-                Stmt {
-                    kind: StmtKind::Expr(call),
-                    ..
-                },
-            ] = each.as_slice()
-            && let js::ExprKind::Call(callee, args) = &call.kind
-            && let [arg] = args.as_slice()
-            && matches!(&arg.kind, js::ExprKind::Var(name) if name == item)
-            && callee.is_named()
-        {
-            return Ok(Some((Expr::call_helper("$dropEach", vec![(**callee).clone()]), false)));
-        }
-        // And of items whose drop may throw, `(intoIter) => {
-        // $dropItems(intoIter, dDrop_drop); }`, which `$dropEach` is too: so
-        // what its iterator passes over is still dropped as one slice, std's
-        // `advance_by`'s (#670).
-        if let [
-            Stmt {
-                kind: StmtKind::Expr(call),
-                ..
-            },
-        ] = body.as_slice()
-            && let js::ExprKind::Call(helper, args) = &call.kind
-            && helper.helper_name() == Some("$dropItems")
-            && let [items, each] = args.as_slice()
-            && matches!(&items.kind, js::ExprKind::Var(name) if *name == param)
-            && each.is_named()
-        {
-            return Ok(Some((Expr::call_helper("$dropEach", vec![each.clone()]), false)));
         }
         Ok(Some((Expr::arrow(vec![param.into()], body), false)))
     }

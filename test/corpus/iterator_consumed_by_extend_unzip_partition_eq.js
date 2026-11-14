@@ -337,11 +337,9 @@ function main() {
                       loudIterator_next(
                         iterator,
                         { next: $next, advanceBy: $advanceSlice },
-                        (intoIter) => {
-                          for (const item of intoIter) {
-                            dDrop_drop(item[0]);
-                          }
-                        },
+                        $dropEach((value) => {
+                          dDrop_drop(value[0]);
+                        }),
                         (value) => {
                           dDrop_drop(value[0]);
                         },
@@ -349,11 +347,12 @@ function main() {
                     true,
                   ),
                   (it) => {
-                    loudDrop_drop(it.of, (intoIter) => {
-                      for (const item of intoIter) {
-                        dDrop_drop(item[0]);
-                      }
-                    });
+                    loudDrop_drop(
+                      it.of,
+                      $dropEach((value) => {
+                        dDrop_drop(value[0]);
+                      }),
+                    );
                     for (const item of it.of[0]) {
                       dDrop_drop(item[0]);
                     }

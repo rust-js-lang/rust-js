@@ -5,17 +5,14 @@ import {
   $closing,
   $dropEach,
   $findDropping,
-  $foldToArray,
   $held,
   $iter,
   $lent,
   $live,
   $next,
   $range,
-  $rangeNext,
   $rev,
   $unwindsOn,
-  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -27,15 +24,7 @@ function loudDrop_drop(loud) {
 }
 
 function main() {
-  let ll = $foldToArray(
-    iterator_map(
-      { start: 30, end: 33 },
-      (value) => [value],
-      { next: $rangeNext },
-      undefined,
-      loudDrop_drop,
-    ),
-  );
+  let ll = $range(30, 33).map((value) => [value]);
   const value = $iter(ll);
   let first;
   try {
@@ -56,15 +45,7 @@ function main() {
     }
   }
   console.log(`${first == null ? "None" : `Some(${first})`}`);
-  ll = $foldToArray(
-    iterator_map(
-      { start: 40, end: 44 },
-      (value) => [value],
-      { next: $rangeNext },
-      undefined,
-      loudDrop_drop,
-    ),
-  );
+  ll = $range(40, 44).map((value) => [value]);
   const value$1 = $iter(ll);
   let found;
   try {
@@ -85,15 +66,7 @@ function main() {
     }
   }
   console.log(`${found == null ? "None" : `Some(${found})`}`);
-  ll = $foldToArray(
-    iterator_map(
-      { start: 50, end: 53 },
-      (value) => [value],
-      { next: $rangeNext },
-      undefined,
-      loudDrop_drop,
-    ),
-  );
+  ll = $range(50, 53).map((value) => [value]);
   try {
     ll.unshift([49]);
   } catch (error) {

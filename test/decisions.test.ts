@@ -157,7 +157,10 @@ pub fn main() {
     let total: i32 = set.iter().sum();
     let tag = String::from("tag");
     let tagged: Vec<usize> = v.iter().map(move |x| *x as usize + tag.len()).collect();
-    // A closure that holds what has a \`Drop\` of the crate's, whole, of items that drop nothing.
+    // A closure that holds what has a \`Drop\` of the crate's, whole, of
+    // items that drop nothing, and items with one: admitted, as no
+    // destructor keeps a chain out, the item shapes' rows proving the
+    // hand-written forms drop as std's bodies do (#1826).
     let guard = Loud(7);
     let guarded: u32 = v
         .iter()
@@ -200,7 +203,7 @@ pub fn main() {
   for (const [decision, answer, , , count] of readFileSync(counts, "utf8").trim().split("\n").map((line) => line.split("\t"))) {
     if (decision === "transparent-chain" && Number(count) > 0) given[answer] = (given[answer] ?? 0) + Number(count);
   }
-  expect(given).toEqual({ "user-iterator": 1, held: 2, source: 1, escapes: 4, "drop-glue": 2, unproved: 1, order: 1, capacity: 2, admitted: 10 });
+  expect(given).toEqual({ "user-iterator": 1, held: 2, source: 1, escapes: 4, unproved: 1, order: 1, capacity: 2, admitted: 12 });
 }, underLoad(120_000));
 
 // An answer given only by a program that reaches it is counted, not

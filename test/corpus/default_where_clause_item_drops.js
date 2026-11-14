@@ -9,18 +9,17 @@ import {
   $dropEach,
   $dropItems,
   $foldOf,
-  $foldToArray,
   $given,
   $held,
   $intoIter,
   $iter,
+  $iterator,
   $jsIteratorSome,
   $live,
   $next,
   $nextSome,
   $rangeInclusiveNext,
   $rangeNext,
-  $roomForHint,
   $someValue,
   $took,
   $traitImpl,
@@ -327,22 +326,8 @@ function main() {
     $dropIntoIter: $dropEach(dDrop_drop),
   };
   const r = $catchUnwind(() => {
-    const wides = $foldToArray(
-      $roomForHint(
-        iterator_map(
-          { start: 1n, end: 4n },
-          (n) => [n],
-          { next: $rangeInclusiveNext },
-          undefined,
-          (option) => {
-            if (option != null) {
-              dDrop_drop(option);
-            }
-          },
-        ),
-        16,
-        true,
-      ),
+    const wides = Array.from(
+      $iterator({ start: 1n, end: 4n }, $rangeInclusiveNext).map((n) => [n]),
     );
     return tHolding(
       { next: $nextSome, fold: $foldOf },
@@ -361,13 +346,11 @@ function main() {
         $iter(wides),
         wide,
         { next: $nextSome, advanceBy: $advanceSlice },
-        (intoIter) => {
-          for (const item of intoIter) {
-            if (item != null) {
-              dDrop_drop(item);
-            }
+        $dropEach((option) => {
+          if (option != null) {
+            dDrop_drop(option);
           }
-        },
+        }),
         (option) => {
           if (option != null) {
             dDrop_drop(option);
@@ -386,33 +369,15 @@ function main() {
   const value = r.TAG === "Ok" ? r._0 : undefined;
   console.log(`${value == null ? "None" : `Some(${value})`}`);
 
-  const wides = $foldToArray(
-    $roomForHint(
-      iterator_map(
-        { start: 5n, end: 6n },
-        (n) => [n],
-        { next: $rangeInclusiveNext },
-        undefined,
-        (option) => {
-          if (option != null) {
-            dDrop_drop(option);
-          }
-        },
-      ),
-      16,
-      true,
-    ),
-  );
+  const wides = Array.from($iterator({ start: 5n, end: 6n }, $rangeInclusiveNext).map((n) => [n]));
   console.log(
     `${tHolding(
       { next: $nextSome, advanceBy: $advanceSlice },
-      (intoIter) => {
-        for (const item of intoIter) {
-          if (item != null) {
-            dDrop_drop(item);
-          }
+      $dropEach((option) => {
+        if (option != null) {
+          dDrop_drop(option);
         }
-      },
+      }),
       (option) => {
         if (option != null) {
           dDrop_drop(option);
@@ -426,13 +391,7 @@ function main() {
   let nested = [[[7n], [8n]], [[9n]]];
   console.log(
     `${heldThrough(
-      $closing($iter(nested), (intoIter) => {
-        for (const item of intoIter) {
-          for (const item$1 of item) {
-            dDrop_drop(item$1);
-          }
-        }
-      }).map((v) => {
+      $closing($iter(nested), $dropEach($dropEach(dDrop_drop))).map((v) => {
         const value = $iter(v);
         try {
           return $next(value);
@@ -462,13 +421,7 @@ function main() {
         $dropItem: dDrop_drop,
         $dropIntoIter: $dropEach(dDrop_drop),
       },
-      (intoIter) => {
-        for (const item of intoIter) {
-          for (const item$1 of item) {
-            dDrop_drop(item$1);
-          }
-        }
-      },
+      $dropEach($dropEach(dDrop_drop)),
       $dropEach(dDrop_drop),
       dDrop_drop,
       $dropEach(dDrop_drop),
@@ -485,13 +438,11 @@ function main() {
 
   const first = tHolding(
     { next: $nextSome, advanceBy: $advanceSlice },
-    (intoIter) => {
-      for (const item of intoIter) {
-        if (item != null) {
-          dDrop_drop(item);
-        }
+    $dropEach((option) => {
+      if (option != null) {
+        dDrop_drop(option);
       }
-    },
+    }),
     (option) => {
       if (option != null) {
         dDrop_drop(option);
@@ -527,13 +478,11 @@ function main() {
   console.log(
     `${tJoining(
       { next: $nextSome, advanceBy: $advanceSlice },
-      (intoIter) => {
-        for (const item of intoIter) {
-          if (item != null) {
-            dDrop_drop(item);
-          }
+      $dropEach((option) => {
+        if (option != null) {
+          dDrop_drop(option);
         }
-      },
+      }),
       (option) => {
         if (option != null) {
           dDrop_drop(option);

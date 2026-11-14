@@ -208,11 +208,7 @@ function main() {
         true,
         undefined,
         false,
-        (intoIter) => {
-          $dropItems(intoIter, (item) => {
-            $dropItems(item, dDrop_drop);
-          });
-        },
+        $dropEach($dropEach(dDrop_drop)),
         $dropEach(dDrop_drop),
         dDrop_drop,
         $dropEach(dDrop_drop),
@@ -247,11 +243,7 @@ function main() {
         { next_back: $nextBack },
         true,
         false,
-        (intoIter) => {
-          $dropItems(intoIter, (item) => {
-            $dropItems(item, dDrop_drop);
-          });
-        },
+        $dropEach($dropEach(dDrop_drop)),
         $dropEach(dDrop_drop),
         $dropEach(dDrop_drop),
         dDrop_drop,

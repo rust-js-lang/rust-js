@@ -7,15 +7,12 @@ import {
   $btreeSet,
   $cleanup,
   $cmp,
-  $foldToArray,
   $iter,
   $mapFrom,
-  $rangeNext,
-  $roomForHint,
+  $range,
   $sortedEntries,
   $sortedKeys,
   $treeFrom,
-  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -83,28 +80,10 @@ function main() {
   try {
     c = $treeFrom(
       new $BTreeMap(),
-      $foldToArray(
-        $roomForHint(
-          iterator_map(
-            { start: 0, end: 4 },
-            (i) => {
-              console.log(`make ${i}`);
-              return [i % 2, [(10 + i) & 255]];
-            },
-            { next: $rangeNext },
-            undefined,
-            (value) => {
-              loudDrop_drop(value[1]);
-            },
-          ),
-          2,
-          true,
-        ),
-        (value) => {
-          loudDrop_drop(value[1]);
-        },
-        true,
-      ),
+      $range(0, 4).map((i) => {
+        console.log(`make ${i}`);
+        return [i % 2, [(10 + i) & 255]];
+      }),
       false,
       $cmp,
       loudDrop_drop,

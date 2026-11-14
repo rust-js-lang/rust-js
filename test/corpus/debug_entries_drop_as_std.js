@@ -102,11 +102,12 @@ function pairsDebug_fmt(pairs) {
   const f = $sink();
   const map = $debugMap(f);
   map.entries(
-    $closing(Iterator.from(pairs[0]()), (vec) => {
-      for (const item of vec) {
-        dDrop_drop(item[1]);
-      }
-    }),
+    $closing(
+      Iterator.from(pairs[0]()),
+      $dropEach((value) => {
+        dDrop_drop(value[1]);
+      }),
+    ),
     (entry) => String(entry[0]),
     (entry) => dDebug_fmt(entry[1]),
     (value) => {

@@ -30,7 +30,7 @@ import { random } from "./generate";
 import { prelude } from "./iterator-matrix-prelude";
 import { pointsRunner } from "./panic-points";
 import { casesOf, tableOf } from "./matrix-tables";
-import { root, target } from "./support";
+import { knownHeading, root, target } from "./support";
 import { partSetting } from "./part-settings";
 
 /** The builds each case is compiled in: the recognizers' rewrites, and
@@ -91,13 +91,13 @@ export function parseKnown(text: string): Known {
     }
     if (version) known.versions[(version[1] as Table | undefined) ?? "matrix"] = version[2];
     if (line === "" || line.startsWith("//")) continue;
-    if (/^#\d+ /.test(line)) {
+    if (knownHeading(line) !== undefined) {
       known.issues.push({ heading: line, cases: new Map() });
       continue;
     }
     const at = known.issues.at(-1);
     const row = /^((?:(\w+):)?\w+) (\d+(?:-\d+)?(?:,\d+(?:-\d+)?)*)$/.exec(line);
-    if (!at || !row || (row[2] !== undefined && !(tables as string[]).includes(row[2]))) throw new Error(`test/iterator-matrix-known.txt: \`${line}\` is no build's cases under an issue`);
+    if (!at || !row || (row[2] !== undefined && !(tables as string[]).includes(row[2]))) throw new Error(`test/iterator-matrix-known.txt: \`${line}\` is no build's cases under an \`#<issue>\` or a \`#difference <number>\``);
     const numbers = row[3].split(",").flatMap((range) => {
       const [from, to = from] = range.split("-").map(Number);
       return Array.from({ length: to - from + 1 }, (_, k) => from + k);
@@ -107,11 +107,12 @@ export function parseKnown(text: string): Known {
   return known;
 }
 
-/** Each known case, `<build> <n>`, and its issue. */
-export function knownCases(known: Known): Map<string, number> {
-  const out = new Map<string, number>();
+/** Each known case, `<build> <n>`, and its issue, `1180`, or its decided
+ * difference, `difference 2`. */
+export function knownCases(known: Known): Map<string, string> {
+  const out = new Map<string, string>();
   for (const { heading, cases } of known.issues) {
-    const issue = Number(/^#(\d+)/.exec(heading)![1]);
+    const issue = knownHeading(heading)!;
     for (const [build, numbers] of cases) {
       for (const n of numbers) {
         if (out.has(`${build} ${n}`)) throw new Error(`test/iterator-matrix-known.txt: ${build} ${n} is listed twice`);
@@ -166,7 +167,12 @@ export function version(cases: Row[]): string {
  * `String` of a number's digits, `S`, whose freeing JS never sees, a
  * collection's items no `Drop` of the crate's runs on (#1681's step (a));
  * a reference to one; or a pair an `enumerate` or a `zip` makes. */
-type Item = "D" | "N" | "S" | "&D" | "&N" | "&S" | "pair";
+type Item = "D" | "N" | "S" | "&D" | "&N" | "&S" | "pair" | Nested;
+/** An item whose drop is its type's drop glue, not a `Drop` of its own: an
+ * `Option<D>`, a `Vec<D>`, a `(D, D)` or a struct holding a `D`, `Held`
+ * (#1826). */
+type Nested = "OD" | "VD" | "DD" | "HD";
+const nested = (item: Item): item is Nested => item === "OD" || item === "VD" || item === "DD" || item === "HD";
 
 /** An iterator so far: what it yields, whether a `D` it owns is in it
  * (whose `Drop` may panic), and the traits it has. */
@@ -233,6 +239,12 @@ export const sources: Source[] = [
   // crate's, whose freeing JS never sees (#1681's step (a)).
   { name: "strings", shape: { item: "S", owns: false, back: true, exact: true }, expr: () => "texts().into_iter()", own: false },
   { name: "strings iter", shape: { item: "&S", owns: false, back: true, exact: true }, before: "let words = texts();", expr: () => "words.iter()", own: false },
+  // Items whose drop is their type's drop glue, not a `Drop` of their own,
+  // each dropping the `D`s it holds (#1826).
+  { name: "options", shape: { item: "OD", owns: true, back: true, exact: true }, expr: () => "options().into_iter()", own: false },
+  { name: "vecs", shape: { item: "VD", owns: true, back: true, exact: true }, expr: () => "vecs().into_iter()", own: false },
+  { name: "d pairs", shape: { item: "DD", owns: true, back: true, exact: true }, expr: () => "pairs_of_d().into_iter()", own: false },
+  { name: "helds", shape: { item: "HD", owns: true, back: true, exact: true }, expr: () => "helds().into_iter()", own: false },
 ];
 
 /** Two items of each of `from`'s, past 10 and itself, in a `vec!` or an
@@ -261,9 +273,18 @@ export const adapters: Adapter[] = [
     closure: true,
     shape: (from) => (from.item === "D" || from.item === "S" ? from : { item: "N", owns: false, back: from.back, exact: from.exact }),
     text: (from, panics) => {
-      const body = { D: "D(x.0 + 100)", N: "x + 100", S: "(x.v() + 100).to_string()", "&D": "x.0 + 100", "&N": "x + 100", "&S": "x.v() + 100", pair: "x.v()" }[from.item];
+      const body = nested(from.item) ? "x.v() + 100" : { D: "D(x.0 + 100)", N: "x + 100", S: "(x.v() + 100).to_string()", "&D": "x.0 + 100", "&N": "x + 100", "&S": "x.v() + 100", pair: "x.v()" }[from.item];
       return `.map(|x| ${counted(panics, "map", body)})`;
     },
+  },
+  {
+    // Items with a destructor made of what has none, a number's, a
+    // reference's or a `String`'s: `(1..7).map(D)`'s, whose drops a
+    // consumer, a panic and what's left run (#1826).
+    name: "map made",
+    closure: true,
+    shape: (from) => (from.item === "D" || from.item === "pair" || nested(from.item) ? undefined : { item: "D", owns: true, back: from.back, exact: from.exact }),
+    text: (_, panics) => `.map(|x| ${counted(panics, "map", "D(x.v() + 100)")})`,
   },
   { name: "filter", closure: true, shape: (from) => ({ ...from, exact: false }), text: (_, panics) => `.filter(|x| ${counted(panics, "filter", "x.v() % 2 == 1")})` },
   { name: "skip", closure: false, shape: (from) => ({ ...from, back: from.back && from.exact }), text: () => ".skip(1)" },
@@ -286,7 +307,8 @@ export const adapters: Adapter[] = [
     name: "chain",
     closure: false,
     shape: (from) => (base(from.item) ? { ...from, exact: false } : undefined),
-    text: (from) => `.chain(${{ D: "vec![D(6), D(7)]", N: "6..8u32", S: "texts_of(&[6, 7])", "&D": "tail.iter()", "&N": "[6u32, 7].iter()", "&S": "tail.iter()", pair: "" }[from.item]})`,
+    text: (from) =>
+      `.chain(${{ D: "vec![D(6), D(7)]", N: "6..8u32", S: "texts_of(&[6, 7])", "&D": "tail.iter()", "&N": "[6u32, 7].iter()", "&S": "tail.iter()", pair: "", OD: "vec![Some(D(6)), None]", VD: "vec![vec![D(6)], vec![]]", DD: "vec![(D(6), D(16)), (D(7), D(17))]", HD: "vec![Held(D(6)), Held(D(7))]" }[from.item]})`,
   },
   { name: "rev", closure: false, shape: (from) => (from.back ? from : undefined), text: () => ".rev()" },
   { name: "copied", closure: false, shape: (from) => (from.item === "&N" ? { ...from, item: "N" } : undefined), text: () => ".copied()" },
@@ -375,7 +397,7 @@ export const consumers: Consumer[] = [
   {
     name: "sum",
     closure: false,
-    takes: (shape) => shape.item !== "pair",
+    takes: (shape) => shape.item !== "pair" && !nested(shape.item),
     text: (it) => `let s: Total = ${it}.sum();\n    println!("sum {}", s.0);`,
   },
   {
@@ -604,7 +626,8 @@ function setterText(setter: Setter, it: string): string {
 // double-ended, and a type parameter of a `Vec`'s and of the crate's.
 
 /** What a `map` makes of an item of `from`, its number past 100. */
-const mapped = (from: Shape) => ({ D: "D(x.0 + 100)", N: "x + 100", S: "(x.v() + 100).to_string()", "&D": "x.0 + 100", "&N": "x + 100", "&S": "x.v() + 100", pair: "x.v()" })[from.item];
+const mapped = (from: Shape) =>
+  nested(from.item) ? "x.v() + 100" : { D: "D(x.0 + 100)", N: "x + 100", S: "(x.v() + 100).to_string()", "&D": "x.0 + 100", "&N": "x + 100", "&S": "x.v() + 100", pair: "x.v()" }[from.item];
 
 /** The adapters only the table runs, besides the matrix's. */
 export const stepAdapters: Adapter[] = [
@@ -883,7 +906,7 @@ export const stepConsumers: Consumer[] = [
 
 // The crate's own `Hints` and `Exact` print as their `size_hint` runs, which
 // a collect into a `Vec` reserves by (#733).
-const tableSources = ["vec", "rev vec", "range", "vec iter", "own Plain", "own Hints", "own Exact", "own Every", "own Backs", "generic vec", "generic own Every", "boxed dyn", "js values", "strings", "strings iter"];
+const tableSources = ["vec", "rev vec", "range", "vec iter", "own Plain", "own Hints", "own Exact", "own Every", "own Backs", "generic vec", "generic own Every", "boxed dyn", "js values", "strings", "strings iter", "options", "vecs", "d pairs", "helds"];
 // The sources whose `size_hint` prints as it runs, of which alone a
 // consumer that asks it shows when (#820).
 const hinting = ["own Hints", "own Exact", "own Every", "generic own Every"];
@@ -962,7 +985,7 @@ export function adapterCalls(): Map<string, Set<string>> {
   const word = (a: Adapter) => a.name.split(" ")[0];
   const names = new Set(adapters.map(word));
   const out = new Map<string, Set<string>>();
-  const items: Item[] = ["D", "N", "S", "&D", "&N", "&S", "pair"];
+  const items: Item[] = ["D", "N", "S", "&D", "&N", "&S", "pair", "OD", "VD", "DD", "HD"];
   const flags = [true, false];
   for (const a of adapters) {
     for (const from of items.flatMap((item) => flags.flatMap((owns) => flags.flatMap((back) => flags.map((exact) => ({ item, owns, back, exact })))))) {
@@ -1247,7 +1270,8 @@ const header = `// The iterator matrix's cases (ADR 1090), the conformance table
 // of either table found running as Rust does, taken off the list. `add
 // <issue> <title> <regex>`: the failures written to target/iterator-matrix/
 // whose names match, `plain: ..` or `conformance:plain: ..`, put under the
-// issue, for an issue filed for them. `program <n>`: case n's program
+// issue, for an issue filed for them, or `"difference <n>"`, under a decided
+// difference's number in the guide's list. `program <n>`: case n's program
 // alone, of `ITERATOR_TABLE`'s table, to run it natively and as JS.
 if (import.meta.main) {
   const [command, ...args] = process.argv.slice(2);

@@ -134,6 +134,14 @@ function main() {
     $dropItem: dDrop_drop,
     $dropIntoIter: $dropEach(dDrop_drop),
   };
+  const IntoIterExt = tExt(
+    { next: $next, advanceBy: $advanceSlice },
+    4,
+    $dropEach($dropEach(dDrop_drop)),
+    $dropEach(dDrop_drop),
+    dDrop_drop,
+    $dropEach(dDrop_drop),
+  );
   let tmp$1;
   const value = ds([1]);
   let item$live = true;
@@ -152,20 +160,7 @@ function main() {
     }, error);
     throw error;
   }
-  const flat = tExt(
-    { next: $next, advanceBy: $advanceSlice },
-    4,
-    (intoIter) => {
-      for (const item of intoIter) {
-        for (const item$1 of item) {
-          dDrop_drop(item$1);
-        }
-      }
-    },
-    $dropEach(dDrop_drop),
-    dDrop_drop,
-    $dropEach(dDrop_drop),
-  ).flat($iter(tmp$1), intoIterator, undefined, false);
+  const flat = IntoIterExt.flat($iter(tmp$1), intoIterator, undefined, false);
   try {
     console.log(`flat [${numbers(flat).join(", ")}]`);
   } catch (error) {
@@ -213,20 +208,7 @@ function main() {
     }, error);
     throw error;
   }
-  const flattened = tExt(
-    { next: $next, advanceBy: $advanceSlice },
-    4,
-    (intoIter) => {
-      for (const item of intoIter) {
-        for (const item$1 of item) {
-          dDrop_drop(item$1);
-        }
-      }
-    },
-    $dropEach(dDrop_drop),
-    dDrop_drop,
-    $dropEach(dDrop_drop),
-  ).flattened($iter(tmp$4), intoIterator, undefined, false);
+  const flattened = IntoIterExt.flattened($iter(tmp$4), intoIterator, undefined, false);
   try {
     console.log(`flattened [${numbers(flattened).join(", ")}]`);
   } catch (error) {
@@ -256,20 +238,7 @@ function main() {
     }, error);
     throw error;
   }
-  const second = tExt(
-    { next: $next, advanceBy: $advanceSlice },
-    4,
-    (intoIter) => {
-      for (const item of intoIter) {
-        for (const item$1 of item) {
-          dDrop_drop(item$1);
-        }
-      }
-    },
-    $dropEach(dDrop_drop),
-    dDrop_drop,
-    $dropEach(dDrop_drop),
-  ).firstOfEach($iter(tmp$6), intoIterator);
+  const second = IntoIterExt.firstOfEach($iter(tmp$6), intoIterator);
   try {
     const value = second?.[0];
     console.log(`second ${value == null ? "None" : `Some(${value})`}`);

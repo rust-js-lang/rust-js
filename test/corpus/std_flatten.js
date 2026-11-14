@@ -254,13 +254,7 @@ function main() {
   // Its items dropped as it steps past them, the rest with it.
   const loud = $held(
     $flatMap(
-      $closing($iter([[["a"], ["b"]], [["c"]]]), (intoIter) => {
-        for (const item of intoIter) {
-          for (const item$1 of item) {
-            loudDrop_drop(item$1);
-          }
-        }
-      }),
+      $closing($iter([[["a"], ["b"]], [["c"]]]), $dropEach($dropEach(loudDrop_drop))),
       (item) => $closing($iter(item), $dropEach(loudDrop_drop)),
     ),
   );

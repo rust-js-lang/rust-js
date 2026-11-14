@@ -5,11 +5,11 @@ import {
   $catchUnwind,
   $cleanup,
   $cmp,
+  $collectDropping,
   $dropItems,
   $entry,
   $entryOrInsert,
   $extendMap,
-  $foldToArray,
   $insert,
   $iterator,
   $lazyChain,
@@ -24,7 +24,6 @@ import {
   $rangeNext,
   $rem,
   $remove,
-  $roomForHint,
   $setReplace,
   $sortedEntries,
   $sortedKeys,
@@ -611,28 +610,8 @@ function main() {
     each("collect", n, 40, (m) => {
       const made = $treeFromSorted(
         new ($ordTreeMap(keyOrd_cmp))(),
-        $foldToArray(
-          $roomForHint(
-            iterator_map(
-              { start: 0, end: n },
-              (i) => [key(random(n)), [(800 + i) >>> 0]],
-              { next: $rangeNext },
-              undefined,
-              (value) => {
-                try {
-                  keyDrop_drop(value[0]);
-                } catch (error) {
-                  $cleanup(() => {
-                    valDrop_drop(value[1]);
-                  }, error);
-                  throw error;
-                }
-                valDrop_drop(value[1]);
-              },
-            ),
-            12,
-            true,
-          ),
+        $collectDropping(
+          $lazyRange(0, n).map((i) => [key(random(n)), [(800 + i) >>> 0]]),
           (value) => {
             try {
               keyDrop_drop(value[0]);
@@ -717,18 +696,8 @@ function main() {
       try {
         collected = $treeFromSorted(
           new ($ordTreeSet(keyOrd_cmp))(),
-          $foldToArray(
-            $roomForHint(
-              iterator_map(
-                { start: 0, end: n },
-                () => key(random(span)),
-                { next: $rangeNext },
-                undefined,
-                keyDrop_drop,
-              ),
-              8,
-              true,
-            ),
+          $collectDropping(
+            $lazyRange(0, n).map(() => key(random(span))),
             keyDrop_drop,
             true,
           ),

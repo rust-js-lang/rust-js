@@ -7,22 +7,19 @@ import {
   $exactLen,
   $filterEnds,
   $foldBack,
-  $foldToArray,
   $iter,
   $iterator,
   $knowing,
   $mapEnds,
   $next,
   $nextBack,
-  $rangeInclusiveNext,
+  $range,
   $rangeLen,
   $rangeNext,
   $rangeNextBack,
   $rangeNthBack,
-  $roomForHint,
   $sizeHint,
   $zipEnds,
-  iterator_map,
   iterator_zip,
   zipDoubleEndedIterator_nextBack,
 } from "@rust-js/std";
@@ -36,19 +33,7 @@ function dDrop_drop(d) {
 }
 
 function ds() {
-  return $foldToArray(
-    $roomForHint(
-      iterator_map(
-        { start: 1, end: 5 },
-        (value) => [value],
-        { next: $rangeInclusiveNext },
-        undefined,
-        dDrop_drop,
-      ),
-      4,
-      true,
-    ),
-  );
+  return $range(1, 6).map((value) => [value]);
 }
 
 function zipped() {

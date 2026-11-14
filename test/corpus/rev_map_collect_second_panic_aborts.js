@@ -6,12 +6,9 @@ import {
   $collectDropping,
   $dropEach,
   $dropItems,
-  $foldToArray,
   $iter,
-  $rangeInclusiveNext,
+  $range,
   $rev,
-  $roomForHint,
-  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -35,19 +32,7 @@ function noisyDrop_drop(noisy) {
 
 function main() {
   const r = $catchUnwind(() => {
-    const items = $foldToArray(
-      $roomForHint(
-        iterator_map(
-          { start: 1, end: 5 },
-          (value) => [value],
-          { next: $rangeInclusiveNext },
-          undefined,
-          noisyDrop_drop,
-        ),
-        4,
-        true,
-      ),
-    );
+    const items = $range(1, 6).map((value) => [value]);
     const moved = $collectDropping(
       $rev($closing($iter(items), $dropEach(noisyDrop_drop))).map((n) => {
         const result = [(n[0] + 100) >>> 0];

@@ -51,7 +51,7 @@ beforeAll(() => {
 }, 900_000);
 
 const which = partSetting("ITERATOR_MATRIX");
-const issue = /^#(\d+)$/.exec(which ?? "")?.[1];
+const issue = /^#(\d+|difference \d+)$/.exec(which ?? "")?.[1];
 const picking = /^(pairs(?::(\d+))?)?(?:\/(.+)\/)?$/.exec(which ?? "");
 const paired = picking?.[1] === undefined ? undefined : Number(picking[2] ?? (table === "matrix" ? 60 : 10));
 const rows = picking?.[3];

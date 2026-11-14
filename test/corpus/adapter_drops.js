@@ -7,7 +7,6 @@ import {
   $closing,
   $dropEach,
   $filterDropping,
-  $foldToArray,
   $held,
   $intoIter,
   $iter,
@@ -21,12 +20,10 @@ import {
   $live,
   $next,
   $partialEq,
-  $rangeNext,
-  $roomForHint,
+  $range,
   $unwindsOn,
   iterator_chain,
   iterator_fuse,
-  iterator_map,
   iterator_take,
   iterator_zip,
 } from "@rust-js/std";
@@ -185,19 +182,7 @@ function equal(
 }
 
 function louds(base, n) {
-  return $foldToArray(
-    $roomForHint(
-      iterator_map(
-        { start: base, end: base + n },
-        (value) => [value],
-        { next: $rangeNext },
-        undefined,
-        loudDrop_drop,
-      ),
-      4,
-      true,
-    ),
-  );
+  return $range(base, base + n, 4).map((value) => [value]);
 }
 
 function main() {

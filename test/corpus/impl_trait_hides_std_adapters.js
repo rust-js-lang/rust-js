@@ -6,15 +6,13 @@ import {
   $closing,
   $dropEach,
   $foldOf,
-  $foldToArray,
   $held,
   $iter,
   $lazyTakeWhile,
   $next,
   $nextBack,
   $peek,
-  $rangeNext,
-  $roomForHint,
+  $range,
   iterator_chain,
   iterator_flatten,
   iterator_fuse,
@@ -45,19 +43,7 @@ export function loudDrop_drop(loud) {
 }
 
 export function louds(from) {
-  return $foldToArray(
-    $roomForHint(
-      iterator_map(
-        { start: from, end: from + 4 },
-        (value) => [value],
-        { next: $rangeNext },
-        undefined,
-        loudDrop_drop,
-      ),
-      4,
-      true,
-    ),
-  );
+  return $range(from, from + 4, 4).map((value) => [value]);
 }
 
 export function peeked() {
@@ -218,13 +204,7 @@ export function flattened() {
     true,
     undefined,
     false,
-    (intoIter) => {
-      for (const item of intoIter) {
-        for (const item$1 of item) {
-          loudDrop_drop(item$1);
-        }
-      }
-    },
+    $dropEach($dropEach(loudDrop_drop)),
     $dropEach(loudDrop_drop),
     loudDrop_drop,
     $dropEach(loudDrop_drop),

@@ -16,13 +16,11 @@ import {
   $pad,
   $plus,
   $range,
-  $rangeNext,
   $repeatingWith,
   $sortedEntries,
   $sortedKeys,
   $treeSplitOff,
   $unwindsOn,
-  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -54,27 +52,17 @@ function manuallyDropped() {
   console.log("end");
 }
 
-function exDrop_drop(ex) {
-  console.log(`drop ${ex[0]}`);
-}
 function extended() {
   const v = [[1]];
   try {
     $extend(
       v,
-      iterator_map(
-        { start: 2, end: 4 },
-        (value) => [value],
-        { next: $rangeNext },
-        undefined,
-        exDrop_drop,
-      ),
-      true,
+      $lazyRange(2, 4).map((value) => [value]),
     );
   } catch (error) {
     $cleanup(() => {
       for (const item of v) {
-        exDrop_drop(item);
+        console.log(`drop ${item[0]}`);
       }
     }, error);
     throw error;
@@ -90,7 +78,7 @@ function extended() {
   } catch (error) {
     $cleanup(() => {
       for (const item of v) {
-        exDrop_drop(item);
+        console.log(`drop ${item[0]}`);
       }
     }, error);
     throw error;
@@ -100,7 +88,7 @@ function extended() {
   } catch (error) {
     $cleanup(() => {
       for (const item of v) {
-        exDrop_drop(item);
+        console.log(`drop ${item[0]}`);
       }
     }, error);
     throw error;
@@ -111,10 +99,10 @@ function extended() {
   } catch (error) {
     $cleanup(() => {
       for (const item of w) {
-        exDrop_drop(item);
+        console.log(`drop ${item[0]}`);
       }
       for (const item of v) {
-        exDrop_drop(item);
+        console.log(`drop ${item[0]}`);
       }
     }, error);
     throw error;
@@ -122,7 +110,7 @@ function extended() {
   console.log(`${w.length}`);
   try {
     for (const item of v) {
-      exDrop_drop(item);
+      console.log(`drop ${item[0]}`);
     }
     console.log("end");
   } catch (error) {
@@ -130,7 +118,7 @@ function extended() {
   } finally {
     if ($live()) {
       for (const item of w) {
-        exDrop_drop(item);
+        console.log(`drop ${item[0]}`);
       }
     }
   }

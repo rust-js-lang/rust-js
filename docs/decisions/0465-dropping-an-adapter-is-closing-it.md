@@ -2583,3 +2583,43 @@ panicking drop, over the crate's own `fold`, a plain iterator and a
 holds it against native Rust in both builds: each of the six, of a type
 parameter's, of one item and none, a step's panic, and no panic.
 Mutation `extreme-keeps-what-it-gave-back` (`runtime/max_by.ts`).
+
+## Amendment: what drops as an array's items is `$dropEach`, by its type (2026-11-15, #1854)
+
+`$dropEach(drop)` is what drops what an owning iterator passes over, as one
+slice, front to back, as std's `advance_by` and `advance_back_by` drop it.
+`drop_function` made it by reading the drop it had written back:
+`(intoIter) => { for (const item of intoIter) dDrop_drop(item); }` and
+`(intoIter) => { $dropItems(intoIter, dDrop_drop); }` were `$dropEach` only
+where the item's drop had a name. Of items whose drop is their drop glue,
+a struct's that holds a `D`, an `Option<D>`'s, a pair's or a `Vec<D>`'s, the
+drop stayed an arrow, which drops by stepping what's left, so a `Vec`'s
+`IntoIter` stepped past from its back dropped what it passed back to
+front: `helds.into_iter().rev().skip(1).nth(1)` printed `drop 5 drop 4`,
+where Rust prints `drop 4 drop 5`, and `take(3).rev()` the same.
+
+The type answers it now, once. `dropped_as_items` (drops/parts.rs) is what
+drops as an array's items, each in order: a `Vec`'s or a `VecDeque`'s, an
+iterator's that owns an array's items, an array's and a slice's. Its drop
+writes the items' loop, and its drop function is `$dropEach` of its item's
+drop function, whatever that is: `$dropEach(dDrop_drop)`,
+`$dropEach((held) => { dDrop_drop(held[0]); })`,
+`$dropEach($dropEach(dDrop_drop))` of a `Vec<Vec<D>>`. That's every item
+kind's, whether its drop is its own or its glue. Not of an item whose drop
+may be none where it runs, a caller's `dropT`, whose loop asks
+`dropT?.(item)`. The three readings of the drop's JS are gone. A hashed
+set's drop, a loop that stops where an item's drop panics, as hashbrown's
+`drop_elements` does (#920), isn't `$dropEach` any more: it read as one
+where its item's drop had a name.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's order is kept. Corpus snapshots that dropped items in an arrow of a
+loop read `$dropEach(..)` now, shorter. `test/corpus/glue_dropped_items_passed_from_a_vecs_back.rs`
+holds it against native Rust: a struct's, an `Option`'s, a pair's, a
+`Vec<D>`'s and a `D`'s items, passed over from the back by
+`rev().skip(..).nth(..)`, `nth_back` and `rev().nth(..)`. The matrix's item
+kinds (#1826) found it. Mutation `drop-each-written-out`
+(`lower/drops/functions.ts`) is the rule's now, caught by a `D`'s items,
+by items whose drop may panic and by a struct's that holds a `D`.
+`drop-each-of-a-throwing-drop-unseen` is gone with the reading it broke;
+`owned-iter-left-undropped` is retargeted to `dropped_as_items`.

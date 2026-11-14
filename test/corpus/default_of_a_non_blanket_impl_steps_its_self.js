@@ -455,13 +455,11 @@ function main() {
   console.log(
     `${wrapperKeeping(
       { next: $nextSome, advanceBy: $advanceSlice },
-      (intoIter) => {
-        for (const item of intoIter) {
-          if (item != null) {
-            dDrop_drop(item);
-          }
+      $dropEach((option) => {
+        if (option != null) {
+          dDrop_drop(option);
         }
-      },
+      }),
       (option) => {
         if (option != null) {
           dDrop_drop(option);

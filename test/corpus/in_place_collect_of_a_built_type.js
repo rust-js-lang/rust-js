@@ -12,6 +12,7 @@ import {
   $held,
   $index,
   $iter,
+  $iterator,
   $jsIteratorSome,
   $live,
   $mapEnds,
@@ -152,13 +153,11 @@ function main() {
       [16, 8],
       16,
       8,
-      (intoIter) => {
-        for (const item$1 of intoIter) {
-          if (item$1 != null) {
-            dDrop_drop(item$1);
-          }
+      $dropEach((option) => {
+        if (option != null) {
+          dDrop_drop(option);
         }
-      },
+      }),
       (option) => {
         if (option != null) {
           dDrop_drop(option);
@@ -182,32 +181,19 @@ function main() {
     }
   });
   run("wide, a panic", () => {
-    const wides = $foldToArray(
-      $roomForHint(
-        iterator_map(
-          { start: 1n, end: 4n },
-          (n) => [n],
-          { next: $rangeInclusiveNext },
-          undefined,
-          (option) => {
-            if (option != null) {
-              dDrop_drop(option);
-            }
-          },
-        ),
-        16,
-        true,
-      ),
+    const wides = Array.from(
+      $iterator({ start: 1n, end: 4n }, $rangeInclusiveNext).map((n) => [n]),
     );
     const value = held(
       $mapEnds(
-        $closing($iter(wides), (intoIter) => {
-          for (const item of intoIter) {
-            if (item != null) {
-              dDrop_drop(item);
+        $closing(
+          $iter(wides),
+          $dropEach((option) => {
+            if (option != null) {
+              dDrop_drop(option);
             }
-          }
-        }),
+          }),
+        ),
         wide,
       ),
       {
@@ -249,13 +235,7 @@ function main() {
       [12, 4],
       16,
       4,
-      (intoIter) => {
-        for (const item of intoIter) {
-          for (const item$1 of item) {
-            dDrop_drop(item$1);
-          }
-        }
-      },
+      $dropEach($dropEach(dDrop_drop)),
       $dropEach(dDrop_drop),
       $dropEach(dDrop_drop),
     );
@@ -275,32 +255,13 @@ function main() {
     }
   });
   run("narrow, a panic", () => {
-    const narrows = $foldToArray(
-      $roomForHint(
-        iterator_map(
-          { start: 1n, end: 4n },
-          (n) => [[n]],
-          { next: $rangeInclusiveNext },
-          undefined,
-          $dropEach(dDrop_drop),
-        ),
-        12,
-        true,
-      ),
+    const narrows = $collectDropping(
+      $iterator({ start: 1n, end: 4n }, $rangeInclusiveNext).map((n) => [[n]]),
       $dropEach(dDrop_drop),
       true,
     );
     const value = held(
-      $mapEnds(
-        $closing($iter(narrows), (intoIter) => {
-          for (const item of intoIter) {
-            for (const item$1 of item) {
-              dDrop_drop(item$1);
-            }
-          }
-        }),
-        narrow,
-      ),
+      $mapEnds($closing($iter(narrows), $dropEach($dropEach(dDrop_drop))), narrow),
       {
         intoIter: (items) => $iter(items),
         IntoIterIterator: () => ({ next: $next, advanceBy: $advanceSlice }),

@@ -31,9 +31,9 @@ import {
   $next,
   $partition,
   $print,
+  $range,
   $rangeNext,
   $reduce,
-  $roomForHint,
   $skipping,
   $stepBy,
   iterator_fuse,
@@ -60,19 +60,7 @@ function zero(guard) {
 }
 
 function ds() {
-  return $foldToArray(
-    $roomForHint(
-      iterator_map(
-        { start: 1, end: 6 },
-        (value) => [value],
-        { next: $rangeNext },
-        undefined,
-        dDrop_drop,
-      ),
-      4,
-      true,
-    ),
-  );
+  return $range(1, 6).map((value) => [value]);
 }
 
 function countingIterator_next(counting) {

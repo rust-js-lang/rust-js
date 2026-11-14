@@ -5,17 +5,16 @@ import {
   $catchUnwind,
   $dropEach,
   $foldOf,
-  $foldToArray,
   $held,
   $iter,
+  $iterator,
   $live,
   $next,
   $rangeNext,
-  $roomForHint,
+  $roomFor,
   $unwindsOn,
   iterator_fuse,
   iterator_inspect,
-  iterator_map,
   iterator_peekable,
 } from "@rust-js/std";
 
@@ -28,13 +27,9 @@ function dDrop_drop(d) {
 }
 
 function ds(r) {
-  return $foldToArray(
-    $roomForHint(
-      iterator_map(r, (value) => [value], { next: $rangeNext }, undefined, dDrop_drop),
-      4,
-      true,
-    ),
-  );
+  const it = $iterator(r, $rangeNext).map((value) => [value]);
+  $roomFor(Math.max(r.end - r.start, 0), 4);
+  return Array.from(it);
 }
 
 function boom(d, at) {

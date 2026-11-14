@@ -5,6 +5,7 @@ import {
   $closing,
   $collectDropping,
   $collectsInPlace,
+  $dropEach,
   $foldToArray,
   $iter,
   $roomForHint,
@@ -50,13 +51,15 @@ function firsts(items, IInPlace, dropI) {
   return result;
 }
 function main() {
-  for (const item of firsts($iter([[7], undefined, [9]]), [8, 4], (intoIter) => {
-    for (const item of intoIter) {
-      if (item != null) {
-        dDrop_drop(item);
+  for (const item of firsts(
+    $iter([[7], undefined, [9]]),
+    [8, 4],
+    $dropEach((option) => {
+      if (option != null) {
+        dDrop_drop(option);
       }
-    }
-  })) {
+    }),
+  )) {
     dDrop_drop(item);
   }
 }

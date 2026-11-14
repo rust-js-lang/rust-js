@@ -7,7 +7,7 @@
 //! closes in its place, as Rust leaves the iterator to go on.
 
 mod backs;
-pub(in crate::lower::mir) use backs::reversed_in_place;
+pub(in crate::lower::mir) use backs::reversed_in_body;
 mod closing;
 mod collect;
 mod consumers;

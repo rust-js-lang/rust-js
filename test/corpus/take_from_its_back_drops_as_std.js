@@ -16,13 +16,12 @@ import {
   $live,
   $mapEnds,
   $nthBack,
-  $rangeInclusiveNext,
+  $range,
   $rev,
   $roomForHint,
   $slicing,
   $taking,
   $unwindsOn,
-  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -38,19 +37,7 @@ function accDrop_drop(acc) {
 }
 
 function ds() {
-  return $foldToArray(
-    $roomForHint(
-      iterator_map(
-        { start: 1, end: 5 },
-        (value) => [value],
-        { next: $rangeInclusiveNext },
-        undefined,
-        dDrop_drop,
-      ),
-      4,
-      true,
-    ),
-  );
+  return $range(1, 6).map((value) => [value]);
 }
 
 function collected(src, ITrustedLen, dropI) {

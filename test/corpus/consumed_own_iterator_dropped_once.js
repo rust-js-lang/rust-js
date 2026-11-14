@@ -7,14 +7,12 @@ import {
   $collectDropping,
   $filterDropping,
   $findDropping,
-  $foldToArray,
   $iterator,
   $lastDropping,
   $lent,
   $live,
   $position,
-  $rangeNext,
-  $roomForHint,
+  $range,
   $tryFoldOk,
   $tryFoldSome,
   $unwindsOn,
@@ -34,21 +32,7 @@ function itIterator_next(it) {
 }
 
 function it(n) {
-  return {
-    items: $foldToArray(
-      $roomForHint(
-        iterator_map(
-          { start: n, end: n + 3 },
-          (value) => [value],
-          { next: $rangeNext },
-          undefined,
-          dDrop_drop,
-        ),
-        4,
-        true,
-      ),
-    ),
-  };
+  return { items: $range(n, n + 3, 4).map((value) => [value]) };
 }
 
 function run(name, f) {

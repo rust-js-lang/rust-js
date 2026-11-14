@@ -6,17 +6,14 @@ import {
   $cmp,
   $collectDropping,
   $dropEach,
-  $foldToArray,
   $iter,
   $live,
   $ord,
   $partialEq,
   $partialOrd,
-  $rangeNext,
-  $roomForHint,
+  $roomFor,
   $selectNthUnstable,
   $sortUnstable,
-  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -60,21 +57,8 @@ function dOrd_cmp(d, other) {
 }
 
 function items(len) {
-  return $foldToArray(
-    $roomForHint(
-      iterator_map(
-        { start: 0, end: len },
-        (i) => [((((i * 37) >>> 0) + 11) >>> 0) % 101],
-        { next: $rangeNext },
-        undefined,
-        dDrop_drop,
-      ),
-      4,
-      true,
-    ),
-    dDrop_drop,
-    true,
-  );
+  $roomFor(len, 4);
+  return Array.from({ length: len }, (_, i) => [((((i * 37) >>> 0) + 11) >>> 0) % 101]);
 }
 
 function shown(v) {

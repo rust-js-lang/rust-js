@@ -7,7 +7,6 @@ import {
   $collectDropping,
   $debugStr,
   $dropEach,
-  $dropItems,
   $iter,
   $traitImpl,
   $unwrap,
@@ -21,22 +20,18 @@ const $vecStoreMutKV = new WeakMap();
 
 export function vecStoreMutKV(dropK, dropV) {
   return $traitImpl($vecStoreMutKV, [dropK, dropV], () => ({
-    lmGetMut(arg0, arg1) {
-      return vecStoreMutKV_lmGetMut(arg0.value, arg1, dropK, dropV);
-    },
-    $drop(vec) {
-      $dropItems(vec, (item) => {
-        try {
-          dropK?.(item[0]);
-        } catch (error) {
-          $cleanup(() => {
-            dropV?.(item[1]);
-          }, error);
-          throw error;
-        }
-        dropV?.(item[1]);
-      });
-    },
+    lmGetMut: (arg0, arg1) => vecStoreMutKV_lmGetMut(arg0.value, arg1, dropK, dropV),
+    $drop: $dropEach((value) => {
+      try {
+        dropK?.(value[0]);
+      } catch (error) {
+        $cleanup(() => {
+          dropV?.(value[1]);
+        }, error);
+        throw error;
+      }
+      dropV?.(value[1]);
+    }),
   }));
 }
 function vecStoreMutKV_lmGetMut(vec, i, dropK, dropV) {

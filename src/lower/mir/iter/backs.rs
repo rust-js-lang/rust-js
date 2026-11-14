@@ -717,7 +717,49 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 /// it's made of the array's items first, where nothing's called before.
 /// `$rev(chain)` of a chain read in place after it was made, a
 /// temporary's: `reversed_inward`'s of it, where it says (#205).
-pub(in crate::lower::mir) fn reversed_in_place(e: &mut Expr) {
+/// Each `rev()` of `b` read in place, `reversed_in_place`'s, but one a
+/// step from its back is given, `$foldBack($rev(c))`, whose chain
+/// reversed inward would have no back (#1855).
+pub(in crate::lower::mir) fn reversed_in_body(b: &mut [js::Stmt]) {
+    let mut stepped: Vec<*const Expr> = Vec::new();
+    js::each_expr_mut(b, &mut |e| {
+        if let Some(it) = stepped_from_its_back(e) {
+            stepped.push(it as *const Expr);
+        }
+    });
+    js::each_expr_mut(b, &mut |e| {
+        if !stepped.contains(&(e as *const Expr)) {
+            reversed_in_place(e);
+        }
+    })
+}
+
+/// Of `e`, a step from its back of what it's given, `$foldBack(it, ..)`,
+/// `$nthBack`, `$advanceBackBy`, `$findBack`, `$tryRfoldOf`, `$nthBackOf`,
+/// or a `Rev`'s own, `$rev(it)`, a `try_rfold`'s `$tryFoldSome($rev(it))`:
+/// `it`, where it's a `rev()` read in place, which
+/// `reversed_in_place` leaves as it is, as what it would turn it into, the
+/// chain over the items reversed, JS's own, has no back to step (#1855).
+fn stepped_from_its_back(e: &Expr) -> Option<&Expr> {
+    let js::ExprKind::Call(callee, args) = &e.kind else {
+        return None;
+    };
+    let backs = [
+        "$foldBack",
+        "$nthBack",
+        "$advanceBackBy",
+        "$findBack",
+        "$tryRfoldOf",
+        "$nthBackOf",
+        "$rev",
+    ];
+    let it = args
+        .first()
+        .filter(|_| callee.helper_name().is_some_and(|name| backs.contains(&name)))?;
+    crate::lower::iterators::reversed_of(it).map(|_| it)
+}
+
+fn reversed_in_place(e: &mut Expr) {
     // A `Rev`'s `rev()`, `$rev($rev(it))`: `it` itself, of an array's
     // items or a range, whose steps a `Rev` passes on or that give what
     // std's default does.

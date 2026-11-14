@@ -13,7 +13,7 @@ import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, renameS
 import { join } from "node:path";
 
 import { cases, corpus, directives } from "./corpus-cases";
-import { root, target } from "./support";
+import { knownHeading, root, target } from "./support";
 import { runSync } from "./child";
 import { compileJs, runJs, runNative, runtimes, type Run } from "./programs";
 import { same } from "./oracle";
@@ -234,11 +234,9 @@ export function readKnown(text = existsSync(knownFile) ? readFileSync(knownFile,
   let issue: string | undefined;
   for (const line of text.split("\n")) {
     if (line === "" || line.startsWith("//")) continue;
-    // An issue's, `#1032`, or a decided difference's, by its number in the
-    // guide's list, `#difference 39` (ADR 0262).
-    const heading = /^#(\d+|difference \d+) /.exec(line);
-    if (heading) {
-      issue = heading[1];
+    const heading = knownHeading(line);
+    if (heading !== undefined) {
+      issue = heading;
       continue;
     }
     const words = line.split(" ");

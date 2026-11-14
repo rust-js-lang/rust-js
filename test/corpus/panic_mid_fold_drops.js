@@ -11,7 +11,6 @@ import {
   $filterEnds,
   $flatMap,
   $foldDropping,
-  $foldToArray,
   $iter,
   $iterator,
   $lastDropping,
@@ -29,11 +28,10 @@ import {
   $rangeNextBack,
   $reduce,
   $rev,
-  $roomForHint,
+  $roomFor,
   $skipping,
   $stepBy,
   $unwindsOn,
-  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -44,13 +42,9 @@ function dDrop_drop(d) {
   console.log(`drop ${d[0]}`);
 }
 function ds(r) {
-  return $foldToArray(
-    $roomForHint(
-      iterator_map(r, (value) => [value], { next: $rangeNext }, undefined, dDrop_drop),
-      4,
-      true,
-    ),
-  );
+  const it = $iterator(r, $rangeNext).map((value) => [value]);
+  $roomFor(Math.max(r.end - r.start, 0), 4);
+  return Array.from(it);
 }
 function boom(d, at) {
   if (d[0] === at) {
@@ -947,7 +941,7 @@ function main() {
     const x = $foldDropping(
       $rev($closing($iter(ds({ start: 30, end: 34 })), $dropEach(dDrop_drop)))
         .map((d) => {
-          let d$60$live = true;
+          let d$118$live = true;
           try {
             boom(d, 32);
           } catch (error) {
@@ -960,10 +954,10 @@ function main() {
           if (d[0] === 31) {
             result = undefined;
           } else {
-            d$60$live = false;
+            d$118$live = false;
             result = d;
           }
-          if (d$60$live) {
+          if (d$118$live) {
             dDrop_drop(d);
           }
           return result;

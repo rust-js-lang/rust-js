@@ -5,6 +5,7 @@ import {
   $closing,
   $collectDropping,
   $collectsInPlace,
+  $dropEach,
   $foldToArray,
   $iter,
   $live,
@@ -63,13 +64,15 @@ function main() {
     [[], 0n],
     [[[9]], 1n],
   ];
-  for (const item of firsts($iter(items), [24, 8], (intoIter) => {
-    for (const item of intoIter) {
-      for (const item$1 of item[0]) {
-        dDrop_drop(item$1);
+  for (const item of firsts(
+    $iter(items),
+    [24, 8],
+    $dropEach((wide) => {
+      for (const item of wide[0]) {
+        dDrop_drop(item);
       }
-    }
-  })) {
+    }),
+  )) {
     dDrop_drop(item);
   }
 }

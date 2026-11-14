@@ -7,17 +7,14 @@ import {
   $exactLen,
   $filterEnds,
   $foldOf,
-  $foldToArray,
   $held,
   $iter,
   $knowing,
   $next,
   $nextBack,
-  $rangeInclusiveNext,
-  $roomForHint,
+  $range,
   $sizeHint,
   $tryOf,
-  iterator_map,
   iterator_rev,
   iterator_take,
   revDoubleEndedIterator_nextBack,
@@ -40,19 +37,7 @@ function noteDrop_drop(note) {
 }
 
 function notes() {
-  return $foldToArray(
-    $roomForHint(
-      iterator_map(
-        { start: 1, end: 5 },
-        (value) => [value],
-        { next: $rangeInclusiveNext },
-        undefined,
-        noteDrop_drop,
-      ),
-      4,
-      true,
-    ),
-  );
+  return $range(1, 6).map((value) => [value]);
 }
 
 function newestFirst(it, IIterator, IDoubleEndedIterator, dropI, dropIItem) {

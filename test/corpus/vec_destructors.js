@@ -8,25 +8,22 @@ import {
   $dedupBy,
   $dequeInsert,
   $dropEach,
-  $foldToArray,
   $insertAt,
   $iter,
   $lastDropping,
   $live,
-  $rangeNext,
+  $range,
   $removeOpt,
   $removeOutOfBounds,
   $resizeWith,
   $retain,
   $retainDeque,
-  $roomForHint,
   $rotateLeft,
   $sortUnstable,
   $splitOff,
   $swapRemove,
   $truncate,
   $unwindsOn,
-  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -195,19 +192,7 @@ function main() {
 
     try {
       try {
-        const w = $foldToArray(
-          $roomForHint(
-            iterator_map(
-              { start: 10, end: 20 },
-              (value) => [value],
-              { next: $rangeNext },
-              undefined,
-              noisyDrop_drop,
-            ),
-            4,
-            true,
-          ),
-        );
+        const w = $range(10, 20).map((value) => [value]);
         try {
           $retain(
             w,
@@ -266,19 +251,7 @@ function main() {
               $truncate(deque, 0, noisyDrop_drop);
 
               // `last()`: each item before it dropped as the next comes.
-              const items = $foldToArray(
-                $roomForHint(
-                  iterator_map(
-                    { start: 50, end: 53 },
-                    (value) => [value],
-                    { next: $rangeNext },
-                    undefined,
-                    noisyDrop_drop,
-                  ),
-                  4,
-                  true,
-                ),
-              );
+              const items = $range(50, 53).map((value) => [value]);
               const last = $lastDropping(
                 $closing($iter(items), $dropEach(noisyDrop_drop)).map((n) => {
                   console.log(`pass ${n[0]}`);

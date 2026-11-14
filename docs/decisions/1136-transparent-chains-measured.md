@@ -379,3 +379,61 @@ transparent-extend-capacity-unasked, knowing-held-back-unasked and
 widened-flip-of-a-chain-made-knowing, caught; transparent-escapes-unseen,
 transparent-for-loop-escapes, transparent-capacity-unseen and
 capacity-admits-an-inexact-hint retargeted, caught.
+
+## Amendment: drop-glue retired, the item shapes proved (2026-11-15, #1826)
+
+`drop-glue` kept a chain out where an item, or a closure's capture, has a
+destructor JS runs, the drops owner's `drop_runs`: its hand-written form
+wasn't proved to drop as std's body does. The tables prove it now. The
+matrix, the conformance table and the panic points take four nested item
+kinds beside `D`, `&D` and `String`: an `Option<D>`'s, a `Vec<D>`'s, a
+`(D, D)`'s and a struct's that holds a `D` (sources `options`, `vecs`,
+`d pairs`, `helds`), and the adapter `map made`, `.map(|x| D(x.v() + 100))`,
+over each item kind. Each kind is tested at the drop, stage and consumer
+sites, with closures that capture a `D`, in both builds, the twin net's
+too: 30,920, 7,766 and 2,561 new cases.
+
+Run with `drop-glue` kept and retired, the new rows fail the same 439
+case-builds, none of them caused by admission. Grouped by cause:
+
+- **Two wrong answers**, fixed first. #1854: what a `Vec`'s `IntoIter`
+  passes over from its back dropped back to front, of items whose drop is
+  their glue (ADR 0465, amended: what drops as an array's items is
+  `$dropEach`, by its type). #1855: a `rev()` a step from its back is
+  given, reversed inward into JS's own chain, which has no back, threw
+  `it[by] is not a function` (ADR 0516, amended). With those fixed, 322
+  remain.
+- **282 refused at run time** under #1180: `capacity()` of a `Vec` std may
+  collect in place, whose capacity JS doesn't keep, of each nested kind.
+- **40 the guide's difference 2** (#1651), listed under `#difference 2`:
+  a `Vec<String>`'s or a `Vec<Vec<D>>`'s items mapped to `u32`s or `D`s,
+  which std collects in place on wasm32, whose layouts are rust-js's
+  (ADR 0090), and not on a 64-bit machine. So the closure, what's left and
+  the capacity drop and read as on wasm32 (#1856, closed so). The same
+  collect into `usize`s, in place on both, runs as native Rust does.
+  test/iterator-matrix-known.txt takes `#difference <n>` headings as
+  test/metamorphic-known.txt does, read by one reader of both,
+  `knownHeading` (test/support.ts).
+
+So the reason is retired: `Transparency::DropGlue`, `drops_in` and the
+predicate's `drops` are gone, and `decide_held` no longer asks
+`drop_runs`. The decisions test's chain of a closure holding a `Loud` and
+its `Loud` items are admitted (12 admitted, none `drop-glue`). Mutations
+`drop-glue-admits-a-user-drop`, `transparent-item-drops-unseen` and
+`transparent-capture-drops-unseen` are retired with the reason they held.
+
+Measured: 121 corpus snapshots move, each as native prints, 45,166 lines
+to 43,162 (×0.956). 70 of the 171 that step (b) moved are byte for byte
+what they were before it. 26 more of (b)'s move part of the way back.
+25 outside
+(b) move by #1854's `$dropEach`. The React port's JS regenerates byte for
+byte. Readability's shares are blessed a little up, as their counts held
+while the corpus's JS shrank by 1,647 lines: `while (true)` 224 both, 6.5
+to 6.6 in 10,000 lines; `$iter` 2,868 to 2,875, `renamed x$1` 16,214 to
+16,166 and role fallbacks 8,850 to 8,866, the new cases' 7, none and 15.
+The new rows take two helpers both builds import into the twin net's
+`shared`, `$nextBackSome` and `$peekSome`, the boxed forms (ADR 0051) of
+`$nextSome`'s and `$peek`'s. With std's iterator structs (ADR 0908),
+reversed_map_stepped_from_its_back's `try_rfold` of an `Option` is refused,
+std's `Try` of one not given to its generic code yet (#1864, in
+iterator-forms' `differs`).

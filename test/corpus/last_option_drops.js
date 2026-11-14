@@ -2,6 +2,7 @@
 
 import {
   $closing,
+  $dropEach,
   $iter,
   $lastDropping,
   $lazyChain,
@@ -21,13 +22,14 @@ function loudDrop_drop(loud) {
 
 function main() {
   const noneLast = $lastDropping(
-    $closing($iter([[1], undefined]), (intoIter) => {
-      for (const item of intoIter) {
-        if (item != null) {
-          loudDrop_drop(item);
+    $closing(
+      $iter([[1], undefined]),
+      $dropEach((option) => {
+        if (option != null) {
+          loudDrop_drop(option);
         }
-      }
-    }),
+      }),
+    ),
     (option) => {
       if (option != null) {
         loudDrop_drop(option);
@@ -40,13 +42,14 @@ function main() {
 
   try {
     const someLast = $lastDropping(
-      $closing($iter([undefined, [2]]), (intoIter) => {
-        for (const item of intoIter) {
-          if (item != null) {
-            loudDrop_drop(item);
+      $closing(
+        $iter([undefined, [2]]),
+        $dropEach((option) => {
+          if (option != null) {
+            loudDrop_drop(option);
           }
-        }
-      }),
+        }),
+      ),
       (option) => {
         if (option != null) {
           loudDrop_drop(option);
@@ -62,20 +65,22 @@ function main() {
 
       const chained = $lastDropping(
         $lazyChain(
-          $closing($iter([[3]]), (intoIter) => {
-            for (const item of intoIter) {
-              if (item != null) {
-                loudDrop_drop(item);
+          $closing(
+            $iter([[3]]),
+            $dropEach((option) => {
+              if (option != null) {
+                loudDrop_drop(option);
               }
-            }
-          }),
-          $closing($iter([undefined]), (vec) => {
-            for (const item of vec) {
-              if (item != null) {
-                loudDrop_drop(item);
+            }),
+          ),
+          $closing(
+            $iter([undefined]),
+            $dropEach((option) => {
+              if (option != null) {
+                loudDrop_drop(option);
               }
-            }
-          }),
+            }),
+          ),
         ),
         (option) => {
           if (option != null) {
@@ -88,13 +93,14 @@ function main() {
 
       try {
         const empty = $lastDropping(
-          $closing($iter([]), (intoIter) => {
-            for (const item of intoIter) {
-              if (item != null) {
-                loudDrop_drop(item);
+          $closing(
+            $iter([]),
+            $dropEach((option) => {
+              if (option != null) {
+                loudDrop_drop(option);
               }
-            }
-          }),
+            }),
+          ),
           (option) => {
             if (option != null) {
               loudDrop_drop(option);

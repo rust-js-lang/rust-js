@@ -6,10 +6,8 @@ import {
   $closing,
   $collectDropping,
   $dropEach,
-  $dropItems,
   $enumerate,
   $foldBack,
-  $foldToArray,
   $iter,
   $jsIterator,
   $knowing,
@@ -17,7 +15,7 @@ import {
   $mapEnds,
   $next,
   $nextBack,
-  $rangeNext,
+  $range,
   $rev,
   $roomForHint,
   $slicing,
@@ -28,7 +26,6 @@ import {
   flattenDoubleEndedIterator_rfold,
   flattenDoubleEndedIterator_tryRfold,
   iterator_flatten,
-  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -231,19 +228,7 @@ function mapped(src, dropI) {
 }
 
 function ds() {
-  return $foldToArray(
-    $roomForHint(
-      iterator_map(
-        { start: 1, end: 6 },
-        (value) => [value],
-        { next: $rangeNext },
-        undefined,
-        dDrop_drop,
-      ),
-      4,
-      true,
-    ),
-  );
+  return $range(1, 6).map((value) => [value]);
 }
 
 function main() {
@@ -258,11 +243,7 @@ function main() {
   );
   const nested = [[[1], [2]], [], [[3]]];
   console.log(
-    `flattened [${flattened($slicing($iter(nested), $dropEach(dDrop_drop)), true, (intoIter) => {
-      $dropItems(intoIter, (item) => {
-        $dropItems(item, dDrop_drop);
-      });
-    }).join(", ")}] after ${drops()}`,
+    `flattened [${flattened($slicing($iter(nested), $dropEach(dDrop_drop)), true, $dropEach($dropEach(dDrop_drop))).join(", ")}] after ${drops()}`,
   );
   console.log(
     `mapped [${mapped($slicing($iter(ds()), dDrop_drop), $dropEach(dDrop_drop))

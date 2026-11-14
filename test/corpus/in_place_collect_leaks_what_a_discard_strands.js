@@ -10,9 +10,7 @@ import {
   $foldToArray,
   $iter,
   $lazyTakeWhile,
-  $rangeNext,
-  $roomForHint,
-  iterator_map,
+  $range,
 } from "@rust-js/std";
 
 export function entry() {
@@ -30,19 +28,7 @@ function dDrop_drop(d) {
 }
 
 function ds() {
-  return $foldToArray(
-    $roomForHint(
-      iterator_map(
-        { start: 1, end: 8 },
-        (value) => [value],
-        { next: $rangeNext },
-        undefined,
-        dDrop_drop,
-      ),
-      4,
-      true,
-    ),
-  );
+  return $range(1, 8).map((value) => [value]);
 }
 
 function run(name, boom$1, case$) {

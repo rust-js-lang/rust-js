@@ -12,6 +12,13 @@ import { shard } from "../scripts/shard";
 import { checkoutTarget, helpersModule, stdDir, target } from "./packages-of";
 
 export const root = join(import.meta.dir, "..");
+
+/** A known list's heading, its issue's, `#1032 <title>`, `1032`, or a
+ * decided difference's, by its number in the guide's list, `#difference 39
+ * <title>`, `difference 39` (ADR 0262): no wrong answer, and taken off
+ * where it runs as Rust does too. `undefined` of another line. The one
+ * reader of test/metamorphic-known.txt's and test/iterator-matrix-known.txt's. */
+export const knownHeading = (line: string): string | undefined => /^#(\d+|difference \d+) /.exec(line)?.[1];
 // The tests' target, a mutant's tests' own with `RUST_JS_TARGET`, and the
 // `@rust-js/std` the JS written in it imports: the checkout's, or a
 // runtime mutant's own in its target (#720).

@@ -15,8 +15,7 @@ import {
   $lazyChain,
   $lazyRange,
   $lazyTakeWhile,
-  $rangeNext,
-  $roomForHint,
+  $range,
   iterator_fuse,
   iterator_map,
 } from "@rust-js/std";
@@ -57,19 +56,7 @@ function tickIterator_next(tick) {
 }
 
 function ds() {
-  return $foldToArray(
-    $roomForHint(
-      iterator_map(
-        { start: 1, end: 6 },
-        (value) => [value],
-        { next: $rangeNext },
-        undefined,
-        dDrop_drop,
-      ),
-      4,
-      true,
-    ),
-  );
+  return $range(1, 6).map((value) => [value]);
 }
 
 function run(name, boom, case$) {

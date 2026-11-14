@@ -2,12 +2,13 @@
 
 import {
   $catchUnwind,
+  $collectDropping,
   $collectVec,
   $dropEach,
   $foldToArray,
   $intoIter,
+  $lazyRange,
   $rangeInclusiveNext,
-  $roomForHint,
   iterator_map,
 } from "@rust-js/std";
 
@@ -27,39 +28,11 @@ function made(n) {
 }
 
 function concrete() {
-  return $foldToArray(
-    $roomForHint(
-      iterator_map(
-        { start: 1, end: 3 },
-        made,
-        { next: $rangeInclusiveNext },
-        undefined,
-        dDrop_drop,
-      ),
-      4,
-      true,
-    ),
-    dDrop_drop,
-    true,
-  );
+  return $collectDropping($lazyRange(1, 4).map(made), dDrop_drop, true);
 }
 
 function held() {
-  const v = $foldToArray(
-    $roomForHint(
-      iterator_map(
-        { start: 1, end: 4 },
-        made,
-        { next: $rangeInclusiveNext },
-        undefined,
-        dDrop_drop,
-      ),
-      4,
-      true,
-    ),
-    dDrop_drop,
-    true,
-  );
+  const v = $collectDropping($lazyRange(1, 5).map(made), dDrop_drop, true);
   for (const item of v) {
     dDrop_drop(item);
   }

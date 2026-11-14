@@ -14,13 +14,11 @@ import {
   $lazySkipWhile,
   $lent,
   $live,
-  $rangeNext,
   $skipping,
   $stepBy,
   $tryFoldOk,
   $tryFoldSome,
   $unwindsOn,
-  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -459,16 +457,12 @@ function main() {
     const g = ["f"];
     let map;
     try {
-      map = iterator_map(
-        { start: 1, end: 4 },
-        (x) => {
-          if (x === 2) {
-            throw new Error("map");
-          }
-          return x;
-        },
-        { next: $rangeNext },
-      );
+      map = $lazyRange(1, 4).map((x) => {
+        if (x === 2) {
+          throw new Error("map");
+        }
+        return x;
+      });
     } catch (error) {
       $cleanup(() => {
         dDrop_drop(g);

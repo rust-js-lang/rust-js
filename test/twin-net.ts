@@ -229,6 +229,7 @@ export const shared: Record<string, keyof typeof why> = {
   "$jsIteratorSome": "js-own", // ADRs 1136, 0051: the same of items that may look like `None`, boxed
   "$next": "js-own", // ADR 0140: the step of any JS iterator, its item or `undefined`
   "$nextSome": "js-own", // ADRs 0140, 0051: the step of any JS iterator, its item boxed where it may look like `None`
+  "$nextBackSome": "js-own", // ADRs 0164, 0051: the step from its back of any JS iterator, its item boxed where it may look like `None`, of an `Option`'s items (#1826)
   "$nth": "consumers",
   "$nthBack": "consumers",
   "$nthDropping": "consumers",
@@ -247,6 +248,7 @@ export const shared: Record<string, keyof typeof why> = {
   "$partitionPoint": "collections",
   "$pathJoin": "collections",
   "$peek": "memory", // ADR 0561: `Peekable::peek`, whose body reaches memory
+  "$peekSome": "memory", // ADRs 0561, 0051: `$peek`'s of items that may look like `None`, each boxed, an `Option`'s items (#1826)
   "$peekMut": "collections",
   "$peekMutDrop": "collections",
   "$peekMutTop": "collections",

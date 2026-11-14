@@ -5,7 +5,6 @@ import {
   $dropEach,
   $exactLen,
   $findBack,
-  $foldToArray,
   $held,
   $iter,
   $iterator,
@@ -15,17 +14,15 @@ import {
   $next,
   $nextBack,
   $nthBack,
-  $rangeInclusiveNext,
+  $range,
   $rangeLen,
   $rangeNext,
   $rangeNextBack,
-  $roomForHint,
   $sizeHint,
   $skipping,
   $taking,
   $tryOf,
   $unwindsOn,
-  iterator_map,
   iterator_skip,
   skipDoubleEndedIterator_nextBack,
   skipDoubleEndedIterator_nthBack,
@@ -41,19 +38,7 @@ function lDrop_drop(l) {
 }
 
 function ls(n) {
-  return $foldToArray(
-    $roomForHint(
-      iterator_map(
-        { start: 1, end: n },
-        (value) => [value],
-        { next: $rangeInclusiveNext },
-        undefined,
-        lDrop_drop,
-      ),
-      4,
-      true,
-    ),
-  );
+  return $range(1, n + 1, 4).map((value) => [value]);
 }
 
 function main() {

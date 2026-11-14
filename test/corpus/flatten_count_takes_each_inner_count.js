@@ -387,13 +387,7 @@ function main() {
   );
   console.log(
     `vecs ${$flatMap(
-      $closing($iter([[[1], [2]], [[3]]]), (intoIter) => {
-        for (const item of intoIter) {
-          for (const item$1 of item) {
-            dDrop_drop(item$1);
-          }
-        }
-      }),
+      $closing($iter([[[1], [2]], [[3]]]), $dropEach($dropEach(dDrop_drop))),
       (item) => $closing($iter(item), $dropEach(dDrop_drop)),
     ).reduce((n, item) => {
       dDrop_drop(item);
@@ -430,11 +424,12 @@ function main() {
   );
   console.log(
     `kept ${$flatMap(
-      $closing($iter([kept(40, 2), kept(41, 1)]), (intoIter) => {
-        for (const item of intoIter) {
-          dDrop_drop(item._held);
-        }
-      }),
+      $closing(
+        $iter([kept(40, 2), kept(41, 1)]),
+        $dropEach((kept) => {
+          dDrop_drop(kept._held);
+        }),
+      ),
       (item) =>
         $closing($iterator(item, keptIterator_next), (it) => {
           dDrop_drop(it.of._held);
@@ -443,11 +438,12 @@ function main() {
   );
   const value$4 = Array.from(
     $flatMap(
-      $closing($iter([kept(42, 2), kept(43, 1)]), (intoIter) => {
-        for (const item of intoIter) {
-          dDrop_drop(item._held);
-        }
-      }),
+      $closing(
+        $iter([kept(42, 2), kept(43, 1)]),
+        $dropEach((kept) => {
+          dDrop_drop(kept._held);
+        }),
+      ),
       (item) =>
         $closing($iterator(item, keptIterator_next), (it) => {
           dDrop_drop(it.of._held);

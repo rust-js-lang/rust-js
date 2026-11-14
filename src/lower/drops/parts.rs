@@ -80,16 +80,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Adt(_, args) if ty.is_box() || self.recognition().pinned(ty).is_some() => {
                 self.drop_in(value, args.type_at(0), span, made, out)?
             }
-            ty::Adt(_, args) if self.is_vec_like(ty) => self.drop_items(value, args.type_at(0), span, made, out)?,
+            ty::Adt(..) if let Some(item) = self.dropped_as_items(ty) => {
+                self.drop_items(value, item, span, made, out)?
+            }
             // A `Vec`'s `Splice`: closed, `$splicing`'s, which drops what it
             // took out that it hasn't given, then puts its replacement in
             // place (#1149).
             ty::Adt(..) if self.recognition().is_vec_splice(ty) => {
                 out.push(StmtKind::Expr(Expr::call(Expr::member(value, "return"), Vec::new())).at(js_span));
-            }
-            // An iterator owning an array's items: each it hasn't given yet.
-            ty::Adt(..) if let Some(item) = self.recognition().owned_items(ty) => {
-                self.drop_items(value, item, span, made, out)?
             }
             // Closed, `it.return()`, which drops what it holds (ADR 0422), and
             // an adapter that holds a function with a destructor, made closing
@@ -311,7 +309,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Alias(..) if let Some(drop) = self.item_drop(ty) => {
                 out.push(StmtKind::Expr(Expr::optional_call(drop, vec![value]).or_at(js_span)).at(js_span));
             }
-            ty::Array(item, _) | ty::Slice(item) => self.drop_items(value, *item, span, made, out)?,
+            ty::Array(..) | ty::Slice(..) if let Some(item) = self.dropped_as_items(ty) => {
+                self.drop_items(value, item, span, made, out)?
+            }
             // A struct's, an enum's, a union's and a tuple's: rustc's drop
             // glue, its own `drop`, then each field's, of an enum its
             // variant's, the rest run though one panics (#887). A union's
@@ -350,6 +350,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             call = call.never_throws();
         }
         Ok(Some(call))
+    }
+
+    /// What drops as an array's items, each in order: a `Vec`'s or a
+    /// `VecDeque`'s (`is_vec_like`), an iterator's that owns an array's
+    /// items, each it hasn't given yet, an array's and a slice's; its
+    /// items' type. Not a `Vec`'s `Splice`, which is closed (#1149). As a
+    /// function, its drop is `$dropEach` of its item's (`found_drop`), so
+    /// what an iterator passes over is dropped as one slice, front to back,
+    /// as std's `advance_by` and `advance_back_by` drop it, of any item
+    /// kind (#1854).
+    pub(super) fn dropped_as_items(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+        match *ty.kind() {
+            ty::Adt(_, args) if self.is_vec_like(ty) => Some(args.type_at(0)),
+            ty::Adt(..) if self.recognition().is_vec_splice(ty) => None,
+            ty::Adt(..) => self.recognition().owned_items(ty),
+            ty::Array(item, _) | ty::Slice(item) => Some(item),
+            _ => None,
+        }
     }
 
     /// Each item of an array, in order: `for (const item of v) { .. }`.

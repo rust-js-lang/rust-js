@@ -74,15 +74,8 @@ function sourceLeft() {
   console.log(`[${firsts.join(", ")}]`);
   const nested = [[[20], [21]], [[22]], [[23]]];
   const flat = Array.from(
-    $flatMap(
-      $closing($iter(nested), (intoIter) => {
-        for (const item of intoIter) {
-          for (const item$1 of item) {
-            loudDrop_drop(item$1);
-          }
-        }
-      }),
-      (item) => $closing($iter(item), $dropEach(loudDrop_drop)),
+    $flatMap($closing($iter(nested), $dropEach($dropEach(loudDrop_drop))), (item) =>
+      $closing($iter(item), $dropEach(loudDrop_drop)),
     ).take(2),
   );
   console.log(`flat ${flat.length}`);
@@ -114,15 +107,8 @@ function bothLeft() {
   }
   const nested = [[[50], [51]], [[52]]];
   const one = Array.from(
-    $flatMap(
-      $closing($iter(nested), (intoIter) => {
-        for (const item of intoIter) {
-          for (const item$1 of item) {
-            loudDrop_drop(item$1);
-          }
-        }
-      }),
-      (item) => $closing($iter(item), $dropEach(loudDrop_drop)),
+    $flatMap($closing($iter(nested), $dropEach($dropEach(loudDrop_drop))), (item) =>
+      $closing($iter(item), $dropEach(loudDrop_drop)),
     ).take(1),
   );
   console.log(`one of nested ${one.length}`);
@@ -140,13 +126,14 @@ function options() {
     })
     .filter((item) => item != null);
   const opts = Array.from(
-    $closing($iter([[60], undefined, [61]]), (intoIter) => {
-      for (const item of intoIter) {
-        if (item != null) {
-          loudDrop_drop(item);
+    $closing(
+      $iter([[60], undefined, [61]]),
+      $dropEach((option) => {
+        if (option != null) {
+          loudDrop_drop(option);
         }
-      }
-    })
+      }),
+    )
       .filter((item) => item != null)
       .take(1),
   );

@@ -9,6 +9,7 @@ import {
   $collectVec,
   $collectsInPlace,
   $debugStr,
+  $dropEach,
   $foldToArray,
   $given,
   $givenDrop,
@@ -227,13 +228,11 @@ function main() {
     [8, 4],
     undefined,
     undefined,
-    (vec) => {
-      for (const item of vec) {
-        if (item.TAG === "Ok") {
-          loudDrop_drop(item._0);
-        }
+    $dropEach((result) => {
+      if (result.TAG === "Ok") {
+        loudDrop_drop(result._0);
       }
-    },
+    }),
   );
   console.log(`${v.length}`);
   try {
@@ -281,13 +280,11 @@ function main() {
           { next: $next, advanceBy: $advanceSlice },
           mapOkCallResult(8, 4, undefined, loudDrop_drop, loudDrop_drop),
           [8, 4],
-          (intoIter) => {
-            for (const item of intoIter) {
-              if (item.TAG === "Ok") {
-                loudDrop_drop(item._0);
-              }
+          $dropEach((result) => {
+            if (result.TAG === "Ok") {
+              loudDrop_drop(result._0);
             }
-          },
+          }),
         );
         for (const item of vec) {
           if (item.TAG === "Ok") {

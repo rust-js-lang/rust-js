@@ -7,16 +7,14 @@ import {
   $dropEach,
   $flatMap,
   $foldDropping,
-  $foldToArray,
   $iter,
   $iterator,
   $lastDropping,
   $live,
   $next,
   $rangeNext,
-  $roomForHint,
+  $roomFor,
   $unwindsOn,
-  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -65,13 +63,9 @@ function madeIterator_next(made) {
 }
 
 function ds(r) {
-  return $foldToArray(
-    $roomForHint(
-      iterator_map(r, (value) => [value], { next: $rangeNext }, undefined, dDrop_drop),
-      4,
-      true,
-    ),
-  );
+  const it = $iterator(r, $rangeNext).map((value) => [value]);
+  $roomFor(Math.max(r.end - r.start, 0), 4);
+  return Array.from(it);
 }
 
 function run(name, f) {
@@ -225,15 +219,8 @@ function main() {
       }
     }
     const x = $foldDropping(
-      $flatMap(
-        $closing($iter(tmp$1), (intoIter) => {
-          for (const item of intoIter) {
-            for (const item$1 of item) {
-              dDrop_drop(item$1);
-            }
-          }
-        }),
-        (item) => $closing($iter(item), $dropEach(dDrop_drop)),
+      $flatMap($closing($iter(tmp$1), $dropEach($dropEach(dDrop_drop))), (item) =>
+        $closing($iter(item), $dropEach(dDrop_drop)),
       ).map((item) => {
         try {
           inspect(item);

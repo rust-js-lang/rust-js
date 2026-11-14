@@ -36,9 +36,8 @@ export const mutations: Mutation[] = [
     breaks:
       "what a `vec::IntoIter` hasn't given yet isn't dropped when a loop leaves early",
     file: "src/lower/drops/parts.rs",
-    find: "            ty::Adt(..) if let Some(item) = self.recognition().owned_items(ty) => {\n",
-    replace:
-      "            ty::Adt(..) if let Some(item) = self.recognition().owned_items(ty).filter(|_| false) => {\n",
+    find: "            ty::Adt(..) => self.recognition().owned_items(ty),\n",
+    replace: "            ty::Adt(..) => self.recognition().owned_items(ty).filter(|_| false),\n",
     tests: ["test/corpus.test.ts", "-t", "loop_drops"],
   },
   {

@@ -9,9 +9,9 @@ import {
   $dropEach,
   $foldBack,
   $foldDropping,
-  $foldToArray,
   $held,
   $iter,
+  $iterator,
   $knowing,
   $lazyTakeWhile,
   $live,
@@ -20,7 +20,7 @@ import {
   $nextBack,
   $rangeNext,
   $rev,
-  $roomForHint,
+  $roomFor,
   $tryFoldInto,
   $tryOf,
   $unwindsOn,
@@ -39,13 +39,9 @@ function dDrop_drop(d) {
 }
 
 function ds(r) {
-  return $foldToArray(
-    $roomForHint(
-      iterator_map(r, (value) => [value], { next: $rangeNext }, undefined, dDrop_drop),
-      4,
-      true,
-    ),
-  );
+  const it = $iterator(r, $rangeNext).map((value) => [value]);
+  $roomFor(Math.max(r.end - r.start, 0), 4);
+  return Array.from(it);
 }
 
 function boom(d, at) {

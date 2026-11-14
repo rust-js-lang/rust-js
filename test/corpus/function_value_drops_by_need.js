@@ -53,13 +53,7 @@ function main() {
   console.log(`${kept.length}`);
   try {
     const firsts = $foldToArray(
-      $closing($iter([[[3], [4]]]), (intoIter) => {
-        for (const item of intoIter) {
-          for (const item$1 of item) {
-            loudDrop_drop(item$1);
-          }
-        }
-      }).map(firstLoud),
+      $closing($iter([[[3], [4]]]), $dropEach($dropEach(loudDrop_drop))).map(firstLoud),
       (option) => {
         if (option != null) {
           loudDrop_drop(option);

@@ -65,3 +65,25 @@ stepped till it ends as `$iter(v.toReversed())`, which #205's tidy pass
 "reversed inward" already does to every `$rev($iter(v))`, so nothing reached
 it: the nightly's mutation `rev-of-items-kept-in-place` survived (#228).
 `reversed_inward` is the one rule; `rev-of-items-not-reversed-inward` holds it.
+
+## Amendment: a `rev()` stepped from its back isn't reversed inward (2026-11-15, #1855)
+
+Tidy's "reversed inward" turns a `$rev(c)` read in place into a chain over
+the reversed items, which a step from the front reads as `$rev(c)` does.
+A step from the back can't: JS's own chain has no back. So
+`words.into_iter().map(f).rev().rfold(..)`, `$foldBack($rev(..))`, threw
+"it[by] is not a function". The same was true of `$nthBack`,
+`$advanceBackBy`, `$findBack`, `$tryRfoldOf` and `$nthBackOf`, and of a
+`$rev` given a `rev()`, as `try_rfold` is `$tryFoldSome($rev(it))`: that
+`$rev` steps the `rev()` it's given from its back. Each of those leaves
+the `rev()` it's given as `$rev(..)` now. Backs.rs owns which helpers step
+what they're given from its back (`stepped_from_its_back`); the tidy pass
+asks it, before it reverses the others inward.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, as JS
+threw. `test/corpus/reversed_map_stepped_from_its_back.rs` holds it
+against native Rust: `rfold`, `nth_back`, `rfind` and `try_rfold` of a
+`rev()` of a `Vec<String>`'s map, of a slice's and of a `Vec<D>`'s. The
+matrix's `map made` adapter (#1826) found it. Mutations
+`back-stepped-rev-reversed-inward` (`lower/mir/tidy/stages.ts`) and
+`rev-no-back-stepper` (`lower/mir/iter/backs.ts`).

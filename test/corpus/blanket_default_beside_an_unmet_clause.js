@@ -216,6 +216,16 @@ function main() {
     $dropItem: dDrop_drop,
     $dropIntoIter: $dropEach(dDrop_drop),
   };
+  const IntoIterExt = tExt(
+    { next: $next, advanceBy: $advanceSlice },
+    [12, 4],
+    4,
+    4,
+    $dropEach($dropEach(dDrop_drop)),
+    $dropEach(dDrop_drop),
+    dDrop_drop,
+    $dropEach(dDrop_drop),
+  );
   const first = firstOf([[1], [2], [3]], [4, 4], dDrop_drop, $dropEach(dDrop_drop));
   try {
     const value = first?.[0];
@@ -229,22 +239,7 @@ function main() {
       }
     }
   }
-  const flat = tExt(
-    { next: $next, advanceBy: $advanceSlice },
-    [12, 4],
-    4,
-    4,
-    (intoIter) => {
-      for (const item of intoIter) {
-        for (const item$1 of item) {
-          dDrop_drop(item$1);
-        }
-      }
-    },
-    $dropEach(dDrop_drop),
-    dDrop_drop,
-    $dropEach(dDrop_drop),
-  ).flat($iter([[[4]], [[5], [6]]]), intoIterator);
+  const flat = IntoIterExt.flat($iter([[[4]], [[5], [6]]]), intoIterator);
   try {
     console.log(`flat [${flat.map((d) => d[0]).join(", ")}]`);
   } catch (error) {
@@ -256,22 +251,7 @@ function main() {
       }
     }
   }
-  const firsts = tExt(
-    { next: $next, advanceBy: $advanceSlice },
-    [12, 4],
-    4,
-    4,
-    (intoIter) => {
-      for (const item of intoIter) {
-        for (const item$1 of item) {
-          dDrop_drop(item$1);
-        }
-      }
-    },
-    $dropEach(dDrop_drop),
-    dDrop_drop,
-    $dropEach(dDrop_drop),
-  ).firsts($iter([[[7], [8]], [], [[9]]]), intoIterator);
+  const firsts = IntoIterExt.firsts($iter([[[7], [8]], [], [[9]]]), intoIterator);
   try {
     console.log(`firsts [${firsts.map((d) => d[0]).join(", ")}]`);
   } catch (error) {

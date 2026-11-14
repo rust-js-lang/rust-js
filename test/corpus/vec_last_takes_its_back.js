@@ -247,11 +247,7 @@ function main() {
   run("flat-mapped, an inner's last panics", () => {
     const last = $lastDropping(
       $flatMap(
-        $closing($iter([[[1], [2]], [[3], [4]], [[5]]]), (intoIter) => {
-          $dropItems(intoIter, (item) => {
-            $dropItems(item, dDrop_drop);
-          });
-        }),
+        $closing($iter([[[1], [2]], [[3], [4]], [[5]]]), $dropEach($dropEach(dDrop_drop))),
         (v) => $closing($iter(v), $dropEach(dDrop_drop)),
       ),
       dDrop_drop,
@@ -344,13 +340,8 @@ function main() {
   });
   run("flat-mapped, the one it's in panics", () => {
     const it = $held(
-      $flatMap(
-        $closing($iter([[[1], [3], [4]], [[5]]]), (intoIter) => {
-          $dropItems(intoIter, (item) => {
-            $dropItems(item, dDrop_drop);
-          });
-        }),
-        (v) => $closing($iter(v), $dropEach(dDrop_drop)),
+      $flatMap($closing($iter([[[1], [3], [4]], [[5]]]), $dropEach($dropEach(dDrop_drop))), (v) =>
+        $closing($iter(v), $dropEach(dDrop_drop)),
       ),
     );
     let next;
@@ -386,40 +377,34 @@ function main() {
   });
   run("flat-mapped, its function panics", () => {
     const last = $lastDropping(
-      $flatMap(
-        $closing($iter([[[1]], [[2]], [[4]]]), (intoIter) => {
-          $dropItems(intoIter, (item) => {
-            $dropItems(item, dDrop_drop);
-          });
-        }),
-        (item) =>
-          $closing(
-            $iter(
-              ((v) => {
-                let tmp;
+      $flatMap($closing($iter([[[1]], [[2]], [[4]]]), $dropEach($dropEach(dDrop_drop))), (item) =>
+        $closing(
+          $iter(
+            ((v) => {
+              let tmp;
+              try {
+                tmp = $index(v, 0)[0] === 2;
+              } catch (error) {
+                $cleanup(() => {
+                  $dropItems(v, dDrop_drop);
+                }, error);
+                throw error;
+              }
+              if (tmp) {
                 try {
-                  tmp = $index(v, 0)[0] === 2;
+                  throw new Error("made");
                 } catch (error) {
                   $cleanup(() => {
                     $dropItems(v, dDrop_drop);
                   }, error);
                   throw error;
                 }
-                if (tmp) {
-                  try {
-                    throw new Error("made");
-                  } catch (error) {
-                    $cleanup(() => {
-                      $dropItems(v, dDrop_drop);
-                    }, error);
-                    throw error;
-                  }
-                }
-                return v;
-              })(item),
-            ),
-            $dropEach(dDrop_drop),
+              }
+              return v;
+            })(item),
           ),
+          $dropEach(dDrop_drop),
+        ),
       ),
       dDrop_drop,
     );

@@ -7,7 +7,6 @@ import {
   $count,
   $dropEach,
   $dropItems,
-  $foldToArray,
   $held,
   $iter,
   $lent,
@@ -69,19 +68,7 @@ function splitFirst(iter, k, IItemSize, dropI, dropIItem) {
   return [first, result];
 }
 function main() {
-  const v = $foldToArray(
-    $roomForHint(
-      iterator_map(
-        { start: 1, end: 5 },
-        (value) => [value],
-        { next: $rangeInclusiveNext },
-        undefined,
-        nDrop_drop,
-      ),
-      4,
-      true,
-    ),
-  );
+  const v = $range(1, 6).map((value) => [value]);
   let iter = $closing($iter(v), $dropEach(nDrop_drop)).take(2);
   try {
     let n;
@@ -97,19 +84,7 @@ function main() {
     }
   }
   console.log("after loop");
-  const w = $foldToArray(
-    $roomForHint(
-      iterator_map(
-        { start: 6, end: 9 },
-        (value) => [value],
-        { next: $rangeInclusiveNext },
-        undefined,
-        nDrop_drop,
-      ),
-      4,
-      true,
-    ),
-  );
+  const w = $range(6, 10).map((value) => [value]);
   iter = $closing($iter(w), $dropEach(nDrop_drop)).take(3);
   try {
     let n;
@@ -130,35 +105,11 @@ function main() {
     }
   }
   console.log("after break");
-  const x = $foldToArray(
-    $roomForHint(
-      iterator_map(
-        { start: 10, end: 12 },
-        (value) => [value],
-        { next: $rangeInclusiveNext },
-        undefined,
-        nDrop_drop,
-      ),
-      4,
-      true,
-    ),
-  );
+  const x = $range(10, 13).map((value) => [value]);
   const firsts = Array.from($closing($iter(x), $dropEach(nDrop_drop)).take(1));
   console.log(`collected ${firsts.length}`);
   try {
-    const y = $foldToArray(
-      $roomForHint(
-        iterator_map(
-          { start: 20, end: 22 },
-          (value) => [value],
-          { next: $rangeInclusiveNext },
-          undefined,
-          nDrop_drop,
-        ),
-        4,
-        true,
-      ),
-    );
+    const y = $range(20, 23).map((value) => [value]);
     const t = $held($closing($iter(y), $dropEach(nDrop_drop)).take(2));
     let one;
     let t$live;
@@ -179,36 +130,12 @@ function main() {
     if (one != null) {
       nDrop_drop(one);
     }
-    const z = $foldToArray(
-      $roomForHint(
-        iterator_map(
-          { start: 30, end: 31 },
-          (value) => [value],
-          { next: $rangeInclusiveNext },
-          undefined,
-          nDrop_drop,
-        ),
-        4,
-        true,
-      ),
-    );
+    const z = $range(30, 32).map((value) => [value]);
     const all = Array.from($closing($iter(z), $dropEach(nDrop_drop)).take(5));
     console.log(`all ${all.length}`);
     let s;
     try {
-      s = $foldToArray(
-        $roomForHint(
-          iterator_map(
-            { start: 40, end: 44 },
-            (value) => [value],
-            { next: $rangeInclusiveNext },
-            undefined,
-            nDrop_drop,
-          ),
-          4,
-          true,
-        ),
-      );
+      s = $range(40, 45).map((value) => [value]);
     } catch (error) {
       $cleanup(() => {
         for (const item of all) {
@@ -264,19 +191,7 @@ function main() {
     }
     let unstepped;
     try {
-      unstepped = $foldToArray(
-        $roomForHint(
-          iterator_map(
-            { start: 50, end: 52 },
-            (value) => [value],
-            { next: $rangeInclusiveNext },
-            undefined,
-            nDrop_drop,
-          ),
-          4,
-          true,
-        ),
-      );
+      unstepped = $range(50, 53).map((value) => [value]);
     } catch (error) {
       $cleanup(() => {
         for (const item of all) {
@@ -317,19 +232,7 @@ function main() {
     skipped.return();
     let both;
     try {
-      both = $foldToArray(
-        $roomForHint(
-          iterator_map(
-            { start: 60, end: 64 },
-            (value) => [value],
-            { next: $rangeInclusiveNext },
-            undefined,
-            nDrop_drop,
-          ),
-          4,
-          true,
-        ),
-      );
+      both = $range(60, 65).map((value) => [value]);
     } catch (error) {
       $cleanup(() => {
         for (const item of all) {

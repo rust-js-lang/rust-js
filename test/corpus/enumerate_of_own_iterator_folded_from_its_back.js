@@ -8,16 +8,14 @@ import {
   $exactLen,
   $foldBack,
   $foldOf,
-  $foldToArray,
   $held,
   $iter,
   $iterator,
   $live,
   $next,
   $nthBack,
-  $rangeInclusiveNext,
+  $range,
   $rev,
-  $roomForHint,
   $skipping,
   $stepByEnds,
   $taking,
@@ -25,7 +23,6 @@ import {
   $unwindsOn,
   enumerateDoubleEndedIterator_rfold,
   iterator_enumerate,
-  iterator_map,
   iterator_rev,
   iterator_stepBy,
   revDoubleEndedIterator_nextBack,
@@ -283,19 +280,7 @@ function main() {
     dDrop_drop,
   );
   console.log(`[${seen.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}] then ${rest}`);
-  let v = $foldToArray(
-    $roomForHint(
-      iterator_map(
-        { start: 1, end: 5 },
-        (value) => [value],
-        { next: $rangeInclusiveNext },
-        undefined,
-        dDrop_drop,
-      ),
-      4,
-      true,
-    ),
-  );
+  let v = $range(1, 6).map((value) => [value]);
   const w = $foldBack(
     $enumerate($stepByEnds($rev($closing($iter(v), $dropEach(dDrop_drop))), 2, dDrop_drop)),
     0,
@@ -304,19 +289,7 @@ function main() {
   console.log(`vec ${w}`);
   // A step past two or more, which a `Vec` drops as one slice, front to
   // back, the crate's iterator each as its `next_back` gives it.
-  v = $foldToArray(
-    $roomForHint(
-      iterator_map(
-        { start: 1, end: 8 },
-        (value) => [value],
-        { next: $rangeInclusiveNext },
-        undefined,
-        dDrop_drop,
-      ),
-      4,
-      true,
-    ),
-  );
+  v = $range(1, 9).map((value) => [value]);
   const stepBy = $held($stepByEnds($rev($closing($iter(v), $dropEach(dDrop_drop))), 3, dDrop_drop));
   try {
     const nthBack = $nthBack(stepBy, 1, undefined, dDrop_drop);
@@ -334,19 +307,7 @@ function main() {
       stepBy.return();
     }
   }
-  v = $foldToArray(
-    $roomForHint(
-      iterator_map(
-        { start: 1, end: 8 },
-        (value) => [value],
-        { next: $rangeInclusiveNext },
-        undefined,
-        dDrop_drop,
-      ),
-      4,
-      true,
-    ),
-  );
+  v = $range(1, 9).map((value) => [value]);
   const value = $held($stepByEnds($closing($iter(v), $dropEach(dDrop_drop)), 3, dDrop_drop));
   try {
     const nthBack = $nthBack(value, 1, undefined, dDrop_drop);

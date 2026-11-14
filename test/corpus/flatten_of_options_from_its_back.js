@@ -2,6 +2,7 @@
 
 import {
   $closing,
+  $dropEach,
   $filterEnds,
   $findBack,
   $foldBack,
@@ -32,13 +33,14 @@ function main() {
   const v = [[1], undefined, [2], [3]];
   const total = $foldBack(
     $filterEnds(
-      $closing($iter(v), (intoIter) => {
-        for (const item of intoIter) {
-          if (item != null) {
-            console.log(`drop ${item[0]}`);
+      $closing(
+        $iter(v),
+        $dropEach((option) => {
+          if (option != null) {
+            console.log(`drop ${option[0]}`);
           }
-        }
-      }),
+        }),
+      ),
       (item) => item != null,
     ),
     0,

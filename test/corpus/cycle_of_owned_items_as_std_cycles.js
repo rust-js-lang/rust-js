@@ -409,11 +409,9 @@ function main() {
           (iterator) => $iter(iterator.items.slice(iterator.at, iterator.end)),
           $nextSome,
           true,
-          (intoIter) => {
-            for (const item of intoIter) {
-              console.log("drop guard");
-            }
-          },
+          $dropEach((guard) => {
+            console.log("drop guard");
+          }),
         ).take(2),
         (guard) => {
           console.log("drop guard");

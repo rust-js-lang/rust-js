@@ -99,13 +99,11 @@ function main() {
             iterator_peekable(
               $iter([[7], undefined]),
               { next: $nextSome, advanceBy: $advanceSlice },
-              (intoIter) => {
-                for (const item of intoIter) {
-                  if (item != null) {
-                    loudDrop_drop(item);
-                  }
+              $dropEach((option) => {
+                if (option != null) {
+                  loudDrop_drop(option);
                 }
-              },
+              }),
               (option) => {
                 if (option != null) {
                   loudDrop_drop(option);

@@ -6,15 +6,13 @@ import {
   $dropEach,
   $exactLen,
   $foldBack,
-  $foldToArray,
   $iter,
   $iterator,
   $knowing,
   $lastDropping,
   $live,
-  $rangeNext,
+  $range,
   $rev,
-  $roomForHint,
   $tryOf,
   $unwindsOn,
   enumerateDoubleEndedIterator_nextBack,
@@ -23,7 +21,6 @@ import {
   enumerateDoubleEndedIterator_tryRfold,
   enumerateExactSizeIterator_len,
   iterator_enumerate,
-  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -386,19 +383,7 @@ function main() {
     },
   );
   console.log(`enumerate rev rfold ${n}`);
-  const v = $foldToArray(
-    $roomForHint(
-      iterator_map(
-        { start: 1, end: 4 },
-        (value) => [value],
-        { next: $rangeNext },
-        undefined,
-        dDrop_drop,
-      ),
-      4,
-      true,
-    ),
-  );
+  const v = $range(1, 4).map((value) => [value]);
   const last$1 = $lastDropping($rev($rev($closing($iter(v), $dropEach(dDrop_drop)))), dDrop_drop);
   function map$1(d) {
     const result = d[0];

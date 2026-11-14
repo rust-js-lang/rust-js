@@ -54,13 +54,14 @@ function firstOf(it, dropI) {
 
 function main() {
   const last = lastOf(
-    $closing($iter([[1], undefined, [2], [3]]), (intoIter) => {
-      for (const item of intoIter) {
-        if (item != null) {
-          dDrop_drop(item);
+    $closing(
+      $iter([[1], undefined, [2], [3]]),
+      $dropEach((option) => {
+        if (option != null) {
+          dDrop_drop(option);
         }
-      }
-    }).filter((item) => item != null),
+      }),
+    ).filter((item) => item != null),
     (flatten) => {
       flatten.return();
     },
@@ -74,13 +75,14 @@ function main() {
   const value = last != null ? map(last) : undefined;
   console.log(`last ${value == null ? "None" : `Some(${value})`}`);
   const first = firstOf(
-    $closing($iter([undefined, [4], [5]]), (intoIter) => {
-      for (const item of intoIter) {
-        if (item != null) {
-          dDrop_drop(item);
+    $closing(
+      $iter([undefined, [4], [5]]),
+      $dropEach((option) => {
+        if (option != null) {
+          dDrop_drop(option);
         }
-      }
-    }).filter((item) => item != null),
+      }),
+    ).filter((item) => item != null),
     (flatten) => {
       flatten.return();
     },

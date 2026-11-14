@@ -7,7 +7,6 @@ import {
   $collectVec,
   $dropEach,
   $foldOf,
-  $foldToArray,
   $fromFn,
   $held,
   $iter,
@@ -21,6 +20,7 @@ import {
   $lazyZip,
   $lent,
   $next,
+  $range,
   $rangeNext,
   $roomForHint,
   $stepBy,
@@ -229,19 +229,7 @@ function main() {
   );
   // A zip isn't done with at its first end: its other side, which drops
   // what it holds, is still stepped after (#279).
-  const louds = $foldToArray(
-    $roomForHint(
-      iterator_map(
-        { start: 20, end: 25 },
-        (value) => [value],
-        { next: $rangeNext },
-        undefined,
-        loudDrop_drop,
-      ),
-      4,
-      true,
-    ),
-  );
+  const louds = $range(20, 25).map((value) => [value]);
   const zipped = $held(
     iterator_zip(
       f(),

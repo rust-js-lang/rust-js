@@ -8,18 +8,17 @@ import {
   $enumerate,
   $foldBack,
   $foldDropping,
-  $foldToArray,
   $held,
   $iter,
+  $iterator,
   $lazyChain,
   $live,
   $mapEnds,
   $rangeNext,
-  $roomForHint,
+  $roomFor,
   $tryFoldOk,
   $tryFoldSome,
   $unwindsOn,
-  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -31,13 +30,9 @@ function dDrop_drop(d) {
 }
 
 function ds(r) {
-  return $foldToArray(
-    $roomForHint(
-      iterator_map(r, (value) => [value], { next: $rangeNext }, undefined, dDrop_drop),
-      4,
-      true,
-    ),
-  );
+  const it = $iterator(r, $rangeNext).map((value) => [value]);
+  $roomFor(Math.max(r.end - r.start, 0), 4);
+  return Array.from(it);
 }
 
 function boom(at) {

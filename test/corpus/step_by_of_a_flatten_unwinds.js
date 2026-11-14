@@ -13,12 +13,10 @@ import {
   $iter,
   $live,
   $mapFrom,
-  $rangeInclusiveNext,
+  $range,
   $rev,
-  $roomForHint,
   $stepBy,
   $unwindsOn,
-  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -34,19 +32,7 @@ function accDrop_drop(acc) {
 }
 
 function ds() {
-  return $foldToArray(
-    $roomForHint(
-      iterator_map(
-        { start: 1, end: 4 },
-        (value) => [value],
-        { next: $rangeInclusiveNext },
-        undefined,
-        dDrop_drop,
-      ),
-      4,
-      true,
-    ),
-  );
+  return $range(1, 5).map((value) => [value]);
 }
 
 function pairs(d) {
@@ -73,15 +59,8 @@ function main() {
   run("fold", () => {
     let seen = 0;
     const acc = $stepBy(
-      $flatMap(
-        $closing($iter(nested()), (intoIter) => {
-          for (const item of intoIter) {
-            for (const item$1 of item) {
-              dDrop_drop(item$1);
-            }
-          }
-        }),
-        (item) => $closing($iter(item), $dropEach(dDrop_drop)),
+      $flatMap($closing($iter(nested()), $dropEach($dropEach(dDrop_drop))), (item) =>
+        $closing($iter(item), $dropEach(dDrop_drop)),
       ),
       2,
       dDrop_drop,
@@ -138,17 +117,8 @@ function main() {
     const s = $foldToArray(
       $folded(
         $stepBy(
-          $flatMap(
-            $rev(
-              $closing($iter(nested()), (intoIter) => {
-                for (const item of intoIter) {
-                  for (const item$1 of item) {
-                    dDrop_drop(item$1);
-                  }
-                }
-              }),
-            ),
-            (item) => $closing($iter(item), $dropEach(dDrop_drop)),
+          $flatMap($rev($closing($iter(nested()), $dropEach($dropEach(dDrop_drop)))), (item) =>
+            $closing($iter(item), $dropEach(dDrop_drop)),
           ),
           2,
           dDrop_drop,
@@ -176,15 +146,8 @@ function main() {
       new Set(),
       $folded(
         $stepBy(
-          $flatMap(
-            $closing($iter(nested()), (intoIter) => {
-              for (const item of intoIter) {
-                for (const item$1 of item) {
-                  dDrop_drop(item$1);
-                }
-              }
-            }),
-            (item) => $closing($iter(item), $dropEach(dDrop_drop)),
+          $flatMap($closing($iter(nested()), $dropEach($dropEach(dDrop_drop))), (item) =>
+            $closing($iter(item), $dropEach(dDrop_drop)),
           ),
           2,
           dDrop_drop,
@@ -209,15 +172,8 @@ function main() {
   });
   run("no panic", () => {
     const acc = $stepBy(
-      $flatMap(
-        $closing($iter(nested()), (intoIter) => {
-          for (const item of intoIter) {
-            for (const item$1 of item) {
-              dDrop_drop(item$1);
-            }
-          }
-        }),
-        (item) => $closing($iter(item), $dropEach(dDrop_drop)),
+      $flatMap($closing($iter(nested()), $dropEach($dropEach(dDrop_drop))), (item) =>
+        $closing($iter(item), $dropEach(dDrop_drop)),
       ),
       3,
       dDrop_drop,

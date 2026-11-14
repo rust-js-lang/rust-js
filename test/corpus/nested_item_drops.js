@@ -280,20 +280,8 @@ function main() {
   const got = firsts(
     groups,
     intoIterator,
-    (vec) => {
-      for (const item of vec) {
-        for (const item$1 of item) {
-          loudDrop_drop(item$1);
-        }
-      }
-    },
-    (intoIter) => {
-      for (const item of intoIter) {
-        for (const item$1 of item) {
-          loudDrop_drop(item$1);
-        }
-      }
-    },
+    $dropEach($dropEach(loudDrop_drop)),
+    $dropEach($dropEach(loudDrop_drop)),
     loudDrop_drop,
     $dropEach(loudDrop_drop),
   );
@@ -316,13 +304,7 @@ function main() {
     intoIterator,
     [4, 4],
     $dropEach(loudDrop_drop),
-    (intoIter) => {
-      for (const item of intoIter) {
-        for (const item$1 of item) {
-          loudDrop_drop(item$1);
-        }
-      }
-    },
+    $dropEach($dropEach(loudDrop_drop)),
     $dropEach(loudDrop_drop),
   );
   console.log(`all ${all?.length ?? 0}`);
@@ -344,13 +326,7 @@ function main() {
     impl: groupsFirstOfNext(
       { next: $next, advanceBy: $advanceSlice },
       intoIterator,
-      (intoIter) => {
-        for (const item of intoIter) {
-          for (const item$1 of item) {
-            loudDrop_drop(item$1);
-          }
-        }
-      },
+      $dropEach($dropEach(loudDrop_drop)),
       $dropEach(loudDrop_drop),
       loudDrop_drop,
       $dropEach(loudDrop_drop),

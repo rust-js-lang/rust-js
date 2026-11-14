@@ -4,17 +4,14 @@ import {
   $cleanup,
   $closing,
   $dropEach,
-  $foldToArray,
   $held,
   $iter,
   $live,
   $next,
-  $rangeNext,
+  $range,
   $rev,
-  $roomForHint,
   $skipping,
   $unwindsOn,
-  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -55,34 +52,10 @@ function second(items, dropI) {
 }
 
 function main() {
-  let ds = $foldToArray(
-    $roomForHint(
-      iterator_map(
-        { start: 1, end: 6 },
-        (value) => [value],
-        { next: $rangeNext },
-        undefined,
-        dDrop_drop,
-      ),
-      4,
-      true,
-    ),
-  );
+  let ds = $range(1, 6).map((value) => [value]);
   const value = second($iter(ds), $dropEach(dDrop_drop));
   console.log(`generic ${value == null ? "None" : `Some(${value})`}`);
-  ds = $foldToArray(
-    $roomForHint(
-      iterator_map(
-        { start: 1, end: 6 },
-        (value) => [value],
-        { next: $rangeNext },
-        undefined,
-        dDrop_drop,
-      ),
-      4,
-      true,
-    ),
-  );
+  ds = $range(1, 6).map((value) => [value]);
   const it = $held($skipping($rev($closing($iter(ds), $dropEach(dDrop_drop))), 1, dDrop_drop));
   try {
     const next = $next(it);

@@ -802,20 +802,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "rev-of-closed-chain-unturned",
-    breaks:
-      "a chain `rev()` was given in a temporary isn't turned inward once it's read in place: `$rev($iter(Array.from(s)))` where it's `Array.from(s).toReversed()`, and `$rev($rev(it))` where it's `it` (#205)",
-    file: "src/lower/mir/tidy/stages.rs",
-    find: "                js::each_expr_mut(b, &mut crate::lower::mir::iter::reversed_in_place)\n",
-    replace: "                let _ = b;\n",
-    snapshots: true,
-    tests: [
-      "test/corpus.test.ts",
-      "-t",
-      "^(rev_of_closed_items|fused_iterator).rs$",
-    ],
-  },
-  {
     name: "given-last-unasked",
     breaks:
       "`node = match .. { None => { let node = make(); ..; node } .. }` is `const node$1 = make(); ..; node = node$1;`",

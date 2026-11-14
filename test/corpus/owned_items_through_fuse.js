@@ -7,7 +7,6 @@ import {
   $dropEach,
   $enumerate,
   $foldOf,
-  $foldToArray,
   $held,
   $iter,
   $jsIterator,
@@ -18,9 +17,8 @@ import {
   $next,
   $nextBack,
   $nthDropping,
-  $rangeNext,
   $rev,
-  $roomForHint,
+  $roomFor,
   $slicing,
   $tryOf,
   $unwindsOn,
@@ -46,19 +44,8 @@ function loudDrop_drop(loud) {
   console.log(`drop ${loud[0]}`);
 }
 function louds(n) {
-  return $foldToArray(
-    $roomForHint(
-      iterator_map(
-        { start: 0, end: n },
-        (value) => [value],
-        { next: $rangeNext },
-        undefined,
-        loudDrop_drop,
-      ),
-      4,
-      true,
-    ),
-  );
+  $roomFor(n, 4);
+  return Array.from({ length: n }, (_, value) => [value]);
 }
 function firsts(it, dropI) {
   const map = $held(

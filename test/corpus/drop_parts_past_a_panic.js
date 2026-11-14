@@ -11,6 +11,7 @@ import {
   $cmp,
   $collectOptions,
   $dedupBy,
+  $dropEach,
   $dropItems,
   $dropReceiver,
   $dropSender,
@@ -514,18 +515,19 @@ function main() {
   caught("collect", () => {
     const items = [{ TAG: "Loud", _0: [26] }, { TAG: "Quiet", _0: [27] }, undefined];
     const all = $collectOptions(
-      $closing($iter(items), (intoIter) => {
-        $dropItems(intoIter, (item) => {
-          if (item != null) {
-            if (item.TAG === "Quiet") {
-              loudDrop_drop(item._0);
+      $closing(
+        $iter(items),
+        $dropEach((option) => {
+          if (option != null) {
+            if (option.TAG === "Quiet") {
+              loudDrop_drop(option._0);
             }
-            if (item.TAG === "Loud") {
-              boomDrop_drop(item._0);
+            if (option.TAG === "Loud") {
+              boomDrop_drop(option._0);
             }
           }
-        });
-      }),
+        }),
+      ),
       false,
       undefined,
       (item) => {

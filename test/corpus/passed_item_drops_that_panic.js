@@ -5,14 +5,12 @@ import {
   $cleanup,
   $closing,
   $collectDropping,
+  $dropEach,
   $dropItems,
-  $foldToArray,
   $iter,
-  $rangeInclusiveNext,
-  $roomForHint,
+  $range,
   $skipping,
   $stepBy,
-  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -25,34 +23,13 @@ function main() {
       $stepBy(
         $skipping(
           $closing(
-            $iter(
-              $foldToArray(
-                $roomForHint(
-                  iterator_map(
-                    { start: 1, end: 6 },
-                    (n) => ({ d: [n] }),
-                    { next: $rangeInclusiveNext },
-                    undefined,
-                    (pair) => {
-                      console.log(`drop boom ${pair.d[0]}`);
-                      if (pair.d[0] === 3) {
-                        throw new Error("boom");
-                      }
-                    },
-                  ),
-                  4,
-                  true,
-                ),
-              ),
-            ),
-            (intoIter) => {
-              $dropItems(intoIter, (item) => {
-                console.log(`drop boom ${item.d[0]}`);
-                if (item.d[0] === 3) {
-                  throw new Error("boom");
-                }
-              });
-            },
+            $iter($range(1, 7).map((n) => ({ d: [n] }))),
+            $dropEach((pair) => {
+              console.log(`drop boom ${pair.d[0]}`);
+              if (pair.d[0] === 3) {
+                throw new Error("boom");
+              }
+            }),
           ),
           1,
           (pair) => {

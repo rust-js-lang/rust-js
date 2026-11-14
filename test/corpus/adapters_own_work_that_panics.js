@@ -17,6 +17,7 @@ import {
   $lazyRange,
   $lazyZip,
   $next,
+  $range,
   $rangeLen,
   $rangeNext,
   $repeating,
@@ -96,19 +97,7 @@ function twiceIterator_next(twice) {
 }
 
 function ds() {
-  return $foldToArray(
-    $roomForHint(
-      iterator_map(
-        { start: 1, end: 6 },
-        (value) => [value],
-        { next: $rangeNext },
-        undefined,
-        dDrop_drop,
-      ),
-      4,
-      true,
-    ),
-  );
+  return $range(1, 6).map((value) => [value]);
 }
 
 function once(held) {
@@ -449,11 +438,12 @@ function main() {
     () =>
       $collectDropping(
         $flatMap(
-          $closing($iter([once(7), once(6)]), (intoIter) => {
-            $dropItems(intoIter, (item) => {
-              dDrop_drop(item._held);
-            });
-          }),
+          $closing(
+            $iter([once(7), once(6)]),
+            $dropEach((once) => {
+              dDrop_drop(once._held);
+            }),
+          ),
           (item) =>
             $closing($iterator(item, onceIterator_next), (it) => {
               dDrop_drop(it.of._held);
@@ -566,11 +556,12 @@ function main() {
       result =
         (value$1 +
           $flatMap(
-            $closing($iter(value$2), (intoIter) => {
-              $dropItems(intoIter, (item) => {
-                dDrop_drop(item._held);
-              });
-            }),
+            $closing(
+              $iter(value$2),
+              $dropEach((once) => {
+                dDrop_drop(once._held);
+              }),
+            ),
             (item) =>
               $closing($iterator(item, onceIterator_next), (it) => {
                 dDrop_drop(it.of._held);

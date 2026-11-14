@@ -11,14 +11,12 @@ import {
   $mapEnds,
   $mapFrom,
   $range,
-  $rangeNext,
   $reserveHint,
   $rev,
   $roomForHint,
   $skipping,
   $slice,
   $taking,
-  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -44,15 +42,7 @@ function main() {
   const m = $mapFrom(
     new Map(),
     $reserveHint(
-      iterator_map(
-        { start: 1, end: 2 },
-        (n) => [n, [n]],
-        { next: $rangeNext },
-        undefined,
-        (value) => {
-          loudDrop_drop(value[1]);
-        },
-      ),
+      $lazyRange(1, 2).map((n) => [n, [n]]),
       8,
       4,
     ),

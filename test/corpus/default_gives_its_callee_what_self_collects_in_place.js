@@ -163,13 +163,7 @@ function main() {
     tTools(
       { next: $next, advanceBy: $advanceSlice },
       [12, 4],
-      (intoIter) => {
-        for (const item of intoIter) {
-          for (const item$1 of item) {
-            loudDrop_drop(item$1);
-          }
-        }
-      },
+      $dropEach($dropEach(loudDrop_drop)),
       $dropEach(loudDrop_drop),
       loudDrop_drop,
       $dropEach(loudDrop_drop),

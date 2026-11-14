@@ -184,12 +184,10 @@ function main() {
             stepsIterator_next(
               iterator,
               { next: $next, advanceBy: $advanceSlice },
-              (intoIter) => {
-                for (const item of intoIter) {
-                  dDrop_drop(item[0]);
-                  dDrop_drop(item[1]);
-                }
-              },
+              $dropEach((value) => {
+                dDrop_drop(value[0]);
+                dDrop_drop(value[1]);
+              }),
               (value) => {
                 dDrop_drop(value[0]);
                 dDrop_drop(value[1]);
@@ -239,12 +237,10 @@ function main() {
           [[1], [11]],
           [[2], [12]],
         ]),
-        (intoIter) => {
-          for (const item of intoIter) {
-            dDrop_drop(item[0]);
-            dDrop_drop(item[1]);
-          }
-        },
+        $dropEach((value) => {
+          dDrop_drop(value[0]);
+          dDrop_drop(value[1]);
+        }),
       ).map((p) => {
         if (p[0][0] === 2) {
           try {
@@ -294,12 +290,10 @@ function main() {
           stepsIterator_next(
             iterator,
             { next: $next, advanceBy: $advanceSlice },
-            (intoIter) => {
-              for (const item of intoIter) {
-                dDrop_drop(item[0]);
-                dDrop_drop(item[1]);
-              }
-            },
+            $dropEach((value) => {
+              dDrop_drop(value[0]);
+              dDrop_drop(value[1]);
+            }),
             (value) => {
               dDrop_drop(value[0]);
               dDrop_drop(value[1]);
@@ -324,12 +318,10 @@ function main() {
           stepsIterator_next(
             iterator,
             { next: $next, advanceBy: $advanceSlice },
-            (intoIter) => {
-              for (const item of intoIter) {
-                dDrop_drop(item[0]);
-                dDrop_drop(item[1]);
-              }
-            },
+            $dropEach((value) => {
+              dDrop_drop(value[0]);
+              dDrop_drop(value[1]);
+            }),
             (value) => {
               dDrop_drop(value[0]);
               dDrop_drop(value[1]);

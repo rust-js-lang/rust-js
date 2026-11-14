@@ -4,6 +4,7 @@ import {
   $closing,
   $collectOptions,
   $collectResults,
+  $dropEach,
   $iter,
   $iterator,
   $live,
@@ -48,13 +49,11 @@ function main() {
         { TAG: "Err", _0: 7 },
         { TAG: "Ok", _0: [2] },
       ]),
-      (intoIter) => {
-        for (const item of intoIter) {
-          if (item.TAG === "Ok") {
-            dDrop_drop(item._0);
-          }
+      $dropEach((result) => {
+        if (result.TAG === "Ok") {
+          dDrop_drop(result._0);
         }
-      },
+      }),
     ),
     undefined,
     dDrop_drop,
@@ -62,13 +61,14 @@ function main() {
   console.log(`err ${r.TAG === "Err"}`);
   try {
     const o = $collectOptions(
-      $closing($iter([[3], undefined, [4]]), (intoIter) => {
-        for (const item of intoIter) {
-          if (item != null) {
-            dDrop_drop(item);
+      $closing(
+        $iter([[3], undefined, [4]]),
+        $dropEach((option) => {
+          if (option != null) {
+            dDrop_drop(option);
           }
-        }
-      }),
+        }),
+      ),
       false,
       undefined,
       dDrop_drop,
@@ -76,13 +76,14 @@ function main() {
     console.log(`none ${o == null}`);
     try {
       const all = $collectResults(
-        $closing($iter([{ TAG: "Ok", _0: [5] }]), (intoIter) => {
-          for (const item of intoIter) {
-            if (item.TAG === "Ok") {
-              dDrop_drop(item._0);
+        $closing(
+          $iter([{ TAG: "Ok", _0: [5] }]),
+          $dropEach((result) => {
+            if (result.TAG === "Ok") {
+              dDrop_drop(result._0);
             }
-          }
-        }),
+          }),
+        ),
         undefined,
         dDrop_drop,
       );

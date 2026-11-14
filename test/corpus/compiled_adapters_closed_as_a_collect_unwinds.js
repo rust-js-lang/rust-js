@@ -17,8 +17,7 @@ import {
   $live,
   $mapFrom,
   $next,
-  $rangeInclusiveNext,
-  $roomForHint,
+  $range,
   $skipping,
   $stepBy,
   $unwindsOn,
@@ -303,24 +302,7 @@ function main() {
     const v = $collectDropping(
       $stepBy(
         $skipping(
-          $closing(
-            $iter(
-              $foldToArray(
-                $roomForHint(
-                  iterator_map(
-                    { start: 1, end: 6 },
-                    (value) => [value],
-                    { next: $rangeInclusiveNext },
-                    undefined,
-                    boomDrop_drop,
-                  ),
-                  4,
-                  true,
-                ),
-              ),
-            ),
-            $dropEach(boomDrop_drop),
-          ),
+          $closing($iter($range(1, 7).map((value) => [value])), $dropEach(boomDrop_drop)),
           1,
           boomDrop_drop,
         ),

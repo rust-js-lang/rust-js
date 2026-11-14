@@ -38,7 +38,6 @@ pub(crate) const CATALOGUE: &[Decision] = &[
             "held",
             "source",
             "escapes",
-            "drop-glue",
             "unproved",
             "order",
             "capacity",

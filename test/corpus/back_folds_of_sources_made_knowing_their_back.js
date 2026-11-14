@@ -7,7 +7,6 @@ import {
   $enumerate,
   $exactLen,
   $foldBack,
-  $foldToArray,
   $iter,
   $iterator,
   $knowing,
@@ -15,8 +14,7 @@ import {
   $mapEnds,
   $next,
   $nextBack,
-  $rangeInclusiveNext,
-  $roomForHint,
+  $range,
   $sizeHint,
   $skipping,
   $tryOf,
@@ -26,7 +24,6 @@ import {
   fuseDoubleEndedIterator_tryRfold,
   fuseExactSizeIterator_len,
   iterator_fuse,
-  iterator_map,
   iterator_peekable,
   peekableDoubleEndedIterator_nextBack,
   peekableDoubleEndedIterator_tryRfold,
@@ -48,19 +45,7 @@ function accDrop_drop(acc) {
 }
 
 function ds() {
-  return $foldToArray(
-    $roomForHint(
-      iterator_map(
-        { start: 1, end: 5 },
-        (value) => [value],
-        { next: $rangeInclusiveNext },
-        undefined,
-        dDrop_drop,
-      ),
-      4,
-      true,
-    ),
-  );
+  return $range(1, 6).map((value) => [value]);
 }
 
 function everyIterator_next(every) {

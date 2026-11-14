@@ -845,4 +845,34 @@ export const mutations: Mutation[] = [
     replace: "        let it = match false && self.iterator_given_as_it_is(iter_ty) && !crate::lower::iterators::is_js_iterator(&it) {\n",
     tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^into_iter_bound_stepped_from_its_back.rs$|^into_iter_bound_stepped_from_its_back with"],
   },
+  {
+    name: "rev-no-back-stepper",
+    breaks: "a `try_rfold` of a `rev()`, `$tryFoldSome($rev(it))`, whose `$rev` steps the `rev()` it's given from its back, has it reversed inward into a chain over reversed items, JS's own, with no back: `it.back is not a function` (#1855)",
+    file: "src/lower/mir/iter/backs.rs",
+    find: '        "$rev",\n',
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^reversed_map_stepped_from_its_back.rs$"],
+  },
+  {
+    name: "rev-of-closed-chain-unturned",
+    breaks:
+      "a chain `rev()` was given in a temporary isn't turned inward once it's read in place: `$rev($iter(Array.from(s)))` where it's `Array.from(s).toReversed()`, and `$rev($rev(it))` where it's `it` (#205)",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "            reversed_in_place(e);\n",
+    replace: "            let _ = e;\n",
+    snapshots: true,
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(rev_of_closed_items|fused_iterator|rev_given_to_generic_code|try_rfold).rs$",
+    ],
+  },
+  {
+    name: "back-stepped-rev-reversed-inward",
+    breaks: "a `rev()` a step from its back is given, `$foldBack($rev(c))`, is reversed inward into a chain over reversed items, JS's own, with no back: `it[by] is not a function` (#1855)",
+    file: "src/lower/mir/iter/backs.rs",
+    find: "        if !stepped.contains(&(e as *const Expr)) {\n",
+    replace: "        if stepped.len() < usize::MAX {\n",
+    tests: ["test/corpus.test.ts", "-t", "^reversed_map_stepped_from_its_back.rs$"],
+  },
 ];

@@ -7,17 +7,14 @@ import {
   $filterEnds,
   $findBack,
   $foldBack,
-  $foldToArray,
   $held,
   $iter,
   $live,
   $mapEnds,
   $nextBack,
   $nthBack,
-  $rangeInclusiveNext,
-  $roomForHint,
+  $range,
   $unwindsOn,
-  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -29,19 +26,7 @@ function dDrop_drop(d) {
 }
 
 function ds() {
-  return $foldToArray(
-    $roomForHint(
-      iterator_map(
-        { start: 1, end: 5 },
-        (value) => [value],
-        { next: $rangeInclusiveNext },
-        undefined,
-        dDrop_drop,
-      ),
-      4,
-      true,
-    ),
-  );
+  return $range(1, 6).map((value) => [value]);
 }
 
 function main() {

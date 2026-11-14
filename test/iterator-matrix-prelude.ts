@@ -117,6 +117,27 @@ impl V for String {
     }
 }
 
+impl V for Option<D> {
+    fn v(&self) -> u32 {
+        self.as_ref().map_or(0, |d| d.0)
+    }
+}
+
+impl V for Vec<D> {
+    fn v(&self) -> u32 {
+        self.iter().map(|d| d.0).sum()
+    }
+}
+
+/** A struct whose drop is its field's, its drop glue. */
+struct Held(D);
+
+impl V for Held {
+    fn v(&self) -> u32 {
+        self.0.0
+    }
+}
+
 impl V for usize {
     fn v(&self) -> u32 {
         *self as u32
@@ -142,6 +163,22 @@ fn ds() -> Vec<D> {
 /** Each number's digits, a \`String\`'s. */
 fn texts_of(numbers: &[u32]) -> Vec<String> {
     numbers.iter().map(|n| n.to_string()).collect()
+}
+
+fn options() -> Vec<Option<D>> {
+    vec![Some(D(1)), None, Some(D(3)), Some(D(4)), Some(D(5))]
+}
+
+fn vecs() -> Vec<Vec<D>> {
+    vec![vec![D(1)], vec![D(2), D(12)], vec![], vec![D(4)], vec![D(5), D(15)]]
+}
+
+fn pairs_of_d() -> Vec<(D, D)> {
+    vec![(D(1), D(11)), (D(2), D(12)), (D(3), D(13)), (D(4), D(14)), (D(5), D(15))]
+}
+
+fn helds() -> Vec<Held> {
+    vec![Held(D(1)), Held(D(2)), Held(D(3)), Held(D(4)), Held(D(5))]
 }
 
 fn texts() -> Vec<String> {

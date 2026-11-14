@@ -17,14 +17,12 @@ import {
   $live,
   $next,
   $nextBack,
-  $rangeInclusiveNext,
+  $range,
   $rev,
-  $roomForHint,
   $sizeHint,
   $taking,
   $tryOf,
   $unwindsOn,
-  iterator_map,
   iterator_take,
   takeIDoubleEndedIterator_nextBack,
   takeIDoubleEndedIterator_nthBack,
@@ -41,19 +39,7 @@ function dDrop_drop(d) {
 }
 
 function ds() {
-  return $foldToArray(
-    $roomForHint(
-      iterator_map(
-        { start: 1, end: 5 },
-        (value) => [value],
-        { next: $rangeInclusiveNext },
-        undefined,
-        dDrop_drop,
-      ),
-      4,
-      true,
-    ),
-  );
+  return $range(1, 6).map((value) => [value]);
 }
 
 function taken() {

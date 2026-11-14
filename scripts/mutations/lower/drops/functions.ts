@@ -23,11 +23,11 @@ export const mutations: Mutation[] = [
   {
     name: "drop-each-written-out",
     breaks:
-      "what drops each item an iterator hasn't given is an arrow of a loop, not `$dropEach(drop)`",
+      "what drops each item an iterator hasn't given, of what drops as an array's items, is an arrow of a loop, not `$dropEach(drop)`, so what a `Vec`'s `IntoIter` passes over from its back drops back to front, one by one, where std's `advance_back_by` drops it as one slice, front to back: of items with a `Drop` of their own whose drop may panic, a reversed `take(n).count()`'s, and of items whose drop is their drop glue, a struct's that holds a `D` (#670, #1854)",
     file: "src/lower/drops/functions.rs",
-    find: '            return Ok(Some((Expr::call_helper("$dropEach", vec![(**callee).clone()]), false)));\n',
-    replace: "            let _ = callee;\n",
-    tests: ["test/corpus.test.ts", "-t", "^take_destructors.rs$"],
+    find: "            && let Some((each, false)) = self.found_drop(item, None, span)?\n",
+    replace: "            && let Some((each, false)) = self.found_drop(item, None, span)?.filter(|_| false)\n",
+    tests: ["test/corpus.test.ts", "-t", "^(take_destructors|rev_take_count_drops_a_slice|glue_dropped_items_passed_from_a_vecs_back).rs$"],
     snapshots: true,
   },
   {
@@ -38,14 +38,6 @@ export const mutations: Mutation[] = [
     find: "        Ok(Some(match given {\n",
     replace: "        Ok(Some(match given && false {\n",
     tests: ["test/corpus.test.ts", "-t", "^option_insert_given_drops.rs$"],
-  },
-  {
-    name: "drop-each-of-a-throwing-drop-unseen",
-    breaks: "an iterator's drop of items whose drop may panic, `$dropItems(intoIter, dDrop_drop)`, isn't `$dropEach(dDrop_drop)`, so a reversed `Vec`'s `take(n).count()` drops what it passes back to front, one by one (#670)",
-    file: "src/lower/drops/functions.rs",
-    find: "            && helper.helper_name() == Some(\"$dropItems\")\n",
-    replace: "            && helper.helper_name() == Some(\"$dropItemz\")\n",
-    tests: ["test/corpus.test.ts", "-t", "^rev_take_count_drops_a_slice.rs$"],
   },
   {
     name: "compiled-struct-dropped-as-made-of",

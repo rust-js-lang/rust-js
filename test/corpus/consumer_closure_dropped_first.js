@@ -475,11 +475,12 @@ function main() {
     let flatten;
     try {
       flatten = $flatMap(
-        $closing($iter(value), (intoIter) => {
-          for (const item of intoIter) {
-            dDrop_drop(item._held);
-          }
-        }),
+        $closing(
+          $iter(value),
+          $dropEach((it) => {
+            dDrop_drop(it._held);
+          }),
+        ),
         (item) =>
           $closing($iterator(item, itIterator_next), (it) => {
             dDrop_drop(it.of._held);

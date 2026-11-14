@@ -3,25 +3,23 @@
 import {
   $IoError,
   $cleanup,
+  $collectDropping,
   $debugStruct,
   $dropItems,
   $fmtPrintFailed,
   $fmtWritten,
-  $foldToArray,
   $ioErrorDebug,
   $ioErrorDisplay,
   $ioErrorDrop,
   $ioErrorDyn,
   $ioThrow,
+  $lazyRange,
   $out,
   $printing,
-  $rangeNext,
-  $roomForHint,
   $sink,
   $stringError,
   $writeCheck,
   $writeTry,
-  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -200,18 +198,8 @@ function main() {
   }
   $out("after through\n");
 
-  const errors = $foldToArray(
-    $roomForHint(
-      iterator_map(
-        { start: 10, end: 13 },
-        (n) => new $IoError("Other", { value: [n], impl: loudError }),
-        { next: $rangeNext },
-        undefined,
-        $ioErrorDrop,
-      ),
-      8,
-      true,
-    ),
+  const errors = $collectDropping(
+    $lazyRange(10, 13).map((n) => new $IoError("Other", { value: [n], impl: loudError })),
     $ioErrorDrop,
     true,
   );

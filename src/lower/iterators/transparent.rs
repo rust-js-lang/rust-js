@@ -29,8 +29,6 @@ pub(in crate::lower) enum Transparency {
     Source,
     /// Its iterator escapes where it's made.
     Escapes,
-    /// An item or a closure's capture has a destructor.
-    DropGlue,
     /// An iterator method no table proves (`PROVED_LINKS`).
     Unproved,
     /// An adapter's argument evaluated as it's given, whose order matters.
@@ -48,7 +46,6 @@ impl Transparency {
             Transparency::Held => "held",
             Transparency::Source => "source",
             Transparency::Escapes => "escapes",
-            Transparency::DropGlue => "drop-glue",
             Transparency::Unproved => "unproved",
             Transparency::Order => "order",
             Transparency::Capacity => "capacity",
@@ -71,9 +68,9 @@ pub(in crate::lower) struct Chain {
 pub(in crate::lower) fn count_chains<'tcx>(
     recognition: &Recognition<'_, 'tcx>,
     body: (&Thir<'tcx>, DefId),
-    facts: (bool, &dyn Fn(Ty<'tcx>) -> bool),
+    keeps_capacity: bool,
 ) {
-    for chain in chains(recognition, body, facts) {
+    for chain in chains(recognition, body, keeps_capacity) {
         crate::decisions::record("transparent-chain", chain.answer.name());
     }
 }
@@ -82,8 +79,7 @@ pub(in crate::lower) fn count_chains<'tcx>(
 /// transparent, the first of: an `Iterator` of the crate's; an iterator
 /// held apart it starts on; another source than an array, a `Vec`, a
 /// slice, a string, a range or a binding's boxed iterator; an iterator that
-/// escapes; a destructor JS runs, the drops owner's `drop_runs`, `drops`;
-/// an iterator method no table proves (`PROVED_LINKS`); an adapter's
+/// escapes; an iterator method no table proves (`PROVED_LINKS`); an adapter's
 /// argument evaluated as it's given, whose order matters; a `Vec`
 /// collected, in a crate that reads capacities, `keeps_capacity`, by an
 /// iterator whose hand-written hint isn't std's lower bound, the capacity
@@ -91,7 +87,7 @@ pub(in crate::lower) fn count_chains<'tcx>(
 pub(in crate::lower) fn chains<'tcx>(
     recognition: &Recognition<'_, 'tcx>,
     (thir, owner): (&Thir<'tcx>, DefId),
-    (keeps_capacity, drops): (bool, &dyn Fn(Ty<'tcx>) -> bool),
+    keeps_capacity: bool,
 ) -> Vec<Chain> {
     let tcx = recognition.tcx;
     let recognition = Recognition {
@@ -208,11 +204,6 @@ pub(in crate::lower) fn chains<'tcx>(
             Transparency::Escapes
         } else if chain
             .iter()
-            .any(|&e| drops_in(&recognition, drops, thir[e].ty, link(e)))
-        {
-            Transparency::DropGlue
-        } else if chain
-            .iter()
             .filter_map(|&e| link(e))
             .any(|(callee, ..)| iterator_method(callee) && !crate::lower::recognition::is_proved_link(tcx, callee))
         {
@@ -325,27 +316,4 @@ fn crate_iterator_in<'tcx>(recognition: &Recognition<'_, 'tcx>, iterator: DefId,
     ty.walk().filter_map(|part| part.as_type()).any(|part| {
         matches!(part.kind(), ty::Adt(adt, _) if adt.did().is_local()) && recognition.implements_trait(part, iterator)
     })
-}
-
-/// Whether a link's item, or a capture of a closure among its generic
-/// arguments, has a destructor JS runs, as the drops owner finds it,
-/// `drops`: a user `Drop`'s, not a `String`'s or a `Vec`'s, whose freeing JS
-/// never sees.
-fn drops_in<'tcx>(
-    recognition: &Recognition<'_, 'tcx>,
-    drops: &dyn Fn(Ty<'tcx>) -> bool,
-    made: Ty<'tcx>,
-    link: Option<(DefId, ty::GenericArgsRef<'tcx>, Option<ExprId>)>,
-) -> bool {
-    let needs_drop = |ty: Ty<'tcx>| drops(ty);
-    let item = recognition.iterator_item(made.peel_refs()).is_some_and(needs_drop);
-    let captures = link.is_some_and(|(_, args, _)| {
-        args.types()
-            .flat_map(|ty| ty.walk().filter_map(|part| part.as_type()))
-            .any(|part| match part.kind() {
-                ty::Closure(_, closure_args) => closure_args.as_closure().upvar_tys().iter().any(needs_drop),
-                _ => false,
-            })
-    });
-    item || captures
 }
