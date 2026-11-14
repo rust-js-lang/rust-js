@@ -4,13 +4,16 @@ import {
   $BTreeMap,
   $chars,
   $cmp,
+  $collectDropping,
   $collectResults,
   $collectVec,
   $collectsInPlace,
   $debugStr,
+  $foldToArray,
   $folded,
   $intoIter,
   $lazyRange,
+  $mapFrom,
   $parseInt,
   $reserveHint,
   $rev,
@@ -41,7 +44,7 @@ function bagDebug_fmt(bag) {
 export const bagFromIteratorU32 = { fromIter: bagFromIteratorU32_fromIter };
 function bagFromIteratorU32_fromIter(items) {
   return [
-    Array.from(
+    $collectDropping(
       $roomForHint(
         $intoIter(items).filter((x) => x % 3 !== 0),
         4,
@@ -73,12 +76,13 @@ function main() {
   };
   const v = gather(3, vecFromIterator);
   const s = gather(2, {
-    fromIter: (items, ITrustedLen, IInPlace) => new Set($reserveHint($folded(items), 4, 4)),
+    fromIter: (items, ITrustedLen, IInPlace) =>
+      $mapFrom(new Set(), $reserveHint($folded(items), 4, 4), true),
   });
   const b = gather(4, bagFromIteratorU32);
   const t = made("abc", {
     fromIter: (items, ITrustedLen, IInPlace) =>
-      Array.from($reserveHint($folded(items), 1)).join(""),
+      $foldToArray($reserveHint($folded(items), 1)).join(""),
   });
   const pairs = new $BTreeMap(
     gather(2, vecFromIterator)

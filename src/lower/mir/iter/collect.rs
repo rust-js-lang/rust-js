@@ -399,7 +399,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Or of an iterator that holds what has a destructor, its type's
         // answer: its closing drops it as the panic leaves it, a
         // `$closing`'s or std's compiled struct's (#653).
-        let holds = iter_ty.is_some_and(|ty| self.drops(ty) != crate::lower::drops::Drops::Nothing);
+        // And of one that is, or holds by value, its caller's iterator, a type
+        // parameter's, whose drop is its caller's to give, the `$closing`
+        // generic code is handed (ADR 0190): closed as a panic leaves it,
+        // so that drop runs (#1753). Not a slice's iterator of a type
+        // parameter's items, which holds none of them.
+        let holds = iter_ty
+            .is_some_and(|ty| self.drops(ty) != crate::lower::drops::Drops::Nothing || self.holds_callers_iterator(ty));
         if drop.is_none() && !holds {
             return Ok(None);
         }
@@ -434,6 +440,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// type holds whose steps no JS shows, `unseen_steps_may_panic`'s; or
     /// what a std iterator does itself as it's stepped, a drop or a clone
     /// that may panic, `std_work_may_panic`'s.
+    /// Whether an iterator of type `ty` is its caller's, a type
+    /// parameter's or its associated type's, `I` or `I::IntoIter`, or holds
+    /// one by value, an adapter of one, `Map<I, F>`.
+    fn holds_callers_iterator(&self, ty: Ty<'tcx>) -> bool {
+        let ty = ty.peel_refs();
+        let projection = matches!(
+            ty.kind(),
+            ty::Alias(
+                _,
+                ty::AliasTy {
+                    kind: ty::Projection { .. },
+                    ..
+                },
+            )
+        );
+        crate::lower::generic_facts::type_parameter_of(ty).is_some()
+            || projection
+            || crate::lower::recognition::adapted_iterators(self.tcx, self.typing_env, ty)
+                .is_some_and(|held| held.into_iter().any(|part| self.holds_callers_iterator(part)))
+    }
+
     pub(in crate::lower) fn steps_may_panic(&self, iter_ty: Ty<'tcx>) -> bool {
         self.panicking_steps(iter_ty) > 0 || self.unseen_steps_may_panic(iter_ty) || self.std_work_may_panic(iter_ty)
     }

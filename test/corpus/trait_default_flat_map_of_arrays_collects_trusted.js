@@ -2,6 +2,7 @@
 
 import {
   $capacity,
+  $collectDropping,
   $foldToArray,
   $grownVec,
   $iter,
@@ -36,14 +37,16 @@ export function tExt(TIterator, TTrustedLen, TItemConstSize, TItemItemSize) {
           TTrustedLen && TItemConstSize !== undefined,
         ),
         (grown) =>
-          TTrustedLen && TItemConstSize !== undefined ? $foldToArray(grown) : Array.from(grown),
+          TTrustedLen && TItemConstSize !== undefined
+            ? $foldToArray(grown)
+            : $collectDropping(grown),
       ),
   }));
 }
 
 function chained(it, ITrustedLen) {
   return $grownVec($roomForHint($lazyChain(Iterator.from(it), ["x"]), 8, ITrustedLen), (grown) =>
-    ITrustedLen ? $foldToArray(grown) : Array.from(grown),
+    ITrustedLen ? $foldToArray(grown) : $collectDropping(grown),
   );
 }
 

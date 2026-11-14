@@ -5,16 +5,19 @@ import {
   $BTreeSet,
   $catchUnwind,
   $closing,
+  $collectDropping,
   $collectOptions,
   $collectResults,
   $collectVec,
   $collectsInPlace,
   $dropEach,
+  $foldToArray,
   $folded,
   $fromDigit,
   $heapFrom,
   $iter,
   $live,
+  $mapFrom,
   $partiallyOrdered,
   $repeatingN,
   $reserveHint,
@@ -165,7 +168,9 @@ function main() {
     });
   });
   run("list", () => {
-    collected(ds(), { fromIter: (items, ITrustedLen, IInPlace) => Array.from($folded(items)) });
+    collected(ds(), {
+      fromIter: (items, ITrustedLen, IInPlace) => $collectDropping($folded(items)),
+    });
   });
   run("heap", () => {
     collected(ds(), {
@@ -194,7 +199,8 @@ function main() {
   });
   run("hashset", () => {
     collected(ds(), {
-      fromIter: (items, ITrustedLen, IInPlace) => new Set($reserveHint($folded(items), 4, 4)),
+      fromIter: (items, ITrustedLen, IInPlace) =>
+        $mapFrom(new Set(), $reserveHint($folded(items), 4, 4), true),
     });
   });
   run("boxed", () => {
@@ -221,13 +227,14 @@ function main() {
   });
   run("hashmap", () => {
     pairs(ds(), {
-      fromIter: (items, ITrustedLen, IInPlace) => new Map($reserveHint($folded(items), 8, 4)),
+      fromIter: (items, ITrustedLen, IInPlace) =>
+        $mapFrom(new Map(), $reserveHint($folded(items), 8, 4), false),
     });
   });
   run("string", () => {
     chars(ds(), {
       fromIter: (items, ITrustedLen, IInPlace) =>
-        Array.from($reserveHint($folded(items), 1)).join(""),
+        $foldToArray($reserveHint($folded(items), 1)).join(""),
     });
   });
   run("option", () => {
@@ -271,7 +278,8 @@ function main() {
   });
   run("hashset huge", () => {
     repeated(4294967295, {
-      fromIter: (items, ITrustedLen, IInPlace) => new Set($reserveHint($folded(items), 4, 4)),
+      fromIter: (items, ITrustedLen, IInPlace) =>
+        $mapFrom(new Set(), $reserveHint($folded(items), 4, 4), true),
     });
   });
   run("boxed huge", () => {

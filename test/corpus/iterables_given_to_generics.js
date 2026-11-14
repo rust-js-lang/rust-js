@@ -4,6 +4,7 @@ import {
   $BTreeMap,
   $chars,
   $cmp,
+  $collectDropping,
   $count,
   $debugStr,
   $extend,
@@ -35,7 +36,7 @@ function count(i) {
   return $count($intoIter(i));
 }
 function firsts(i, IItemDebug) {
-  return Array.from(
+  return $collectDropping(
     $roomForHint(
       $intoIter(i)
         .take(2)

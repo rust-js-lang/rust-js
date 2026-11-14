@@ -2,6 +2,7 @@
 
 import {
   $cleanup,
+  $collectDropping,
   $count,
   $debugStr,
   $dedupByCells,
@@ -118,7 +119,7 @@ function peekMut(items, v, TSize) {
   if (x != null) {
     x.value = v;
   }
-  return Array.from($roomForHint(items, TSize, false));
+  return $collectDropping($roomForHint(items, TSize, false));
 }
 
 function dedup(v, TPartialEq) {

@@ -4,6 +4,7 @@ import {
   $BTreeMap,
   $BTreeSet,
   $catchUnwind,
+  $collectDropping,
   $collectVec,
   $collectsInPlace,
   $given,
@@ -51,7 +52,7 @@ function items(it, IVecCollect, IItemSize) {
 
 /** Of a filter's, which passes on its source's hint's upper bound. */
 function kept(it, keep, TSize) {
-  return Array.from(
+  return $collectDropping(
     $roomForHint(
       Iterator.from(it).filter((item) => keep(item)),
       TSize,
@@ -89,7 +90,7 @@ function queued(it, TSize, IVecCollect) {
 
 /** Of items built of a type parameter, whose layout its caller gives. */
 function tagged(it, TU8Size) {
-  return Array.from(
+  return $collectDropping(
     $roomForHint(
       Iterator.from(it).map((x) => [x, 0]),
       TU8Size,
@@ -99,7 +100,7 @@ function tagged(it, TU8Size) {
 }
 
 function wrapped(it, OptionSize) {
-  return Array.from(
+  return $collectDropping(
     $roomForHint(
       Iterator.from(it).map((value) => $some(value)),
       OptionSize,

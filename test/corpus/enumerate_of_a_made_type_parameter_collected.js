@@ -7,6 +7,7 @@ import {
   $enumerate,
   $folded,
   $given,
+  $mapFrom,
   $next,
   $reserveHint,
 } from "@rust-js/std";
@@ -36,7 +37,11 @@ function lettersIterator_fold(letters, init, f) {
 function positions(make, IIterator) {
   const it = make();
   const pairs = Array.from(
-    new Map($reserveHint($folded($enumerate($given(it, IIterator)).map(([i, c]) => [c, i])), 8, 4)),
+    $mapFrom(
+      new Map(),
+      $reserveHint($folded($enumerate($given(it, IIterator)).map(([i, c]) => [c, i])), 8, 4),
+      false,
+    ),
   );
   pairs.sort((a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]));
   return pairs;

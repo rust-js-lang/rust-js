@@ -6,6 +6,7 @@ import {
   $KeyMap,
   $arrayKeyClassOf,
   $cmp,
+  $collectDropping,
   $count,
   $debugStr,
   $entry,
@@ -120,10 +121,12 @@ function iTools(IIterator, IItemMap, UsizeIItemSize) {
       const PartialEq = SelfItemOrd.PartialOrd().PartialEq();
       return $treeFromSorted(
         new ($keyClassOf(false, true, [$BTreeMap, SelfItemTreeMap]))(),
-        $roomForHint(
-          $enumerate($given(self, IIterator, true)).map((pair) => [pair, undefined]),
-          UsizeIItemSize,
-          false,
+        $collectDropping(
+          $roomForHint(
+            $enumerate($given(self, IIterator, true)).map((pair) => [pair, undefined]),
+            UsizeIItemSize,
+            false,
+          ),
         ),
         $ord({
           PartialOrd: () =>

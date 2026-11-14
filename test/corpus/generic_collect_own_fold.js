@@ -6,9 +6,11 @@ import {
   $collectVec,
   $debugStr,
   $enumerate,
+  $foldToArray,
   $folded,
   $iter,
   $iterator,
+  $mapFrom,
   $reserveHint,
 } from "@rust-js/std";
 
@@ -44,27 +46,27 @@ function plainIterator_next(plain) {
 }
 
 function text(it) {
-  return Array.from($reserveHint($folded(Iterator.from(it)), 1)).join("");
+  return $foldToArray($reserveHint($folded(Iterator.from(it)), 1)).join("");
 }
 
 function set(it) {
-  return new Set($reserveHint($folded(Iterator.from(it)), 4, 4)).size;
+  return $mapFrom(new Set(), $reserveHint($folded(Iterator.from(it)), 4, 4), true).size;
 }
 
 function map(it) {
   const pairs = Array.from(
-    new Map($reserveHint($folded($enumerate(it).map(([i, c]) => [c, i])), 8, 4)),
+    $mapFrom(new Map(), $reserveHint($folded($enumerate(it).map(([i, c]) => [c, i])), 8, 4), false),
   );
   pairs.sort((a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]));
   return pairs;
 }
 
 function textImpl(it) {
-  return Array.from($reserveHint($folded(Iterator.from(it)), 1)).join("");
+  return $foldToArray($reserveHint($folded(Iterator.from(it)), 1)).join("");
 }
 
 function upper(it) {
-  return Array.from(
+  return $foldToArray(
     $reserveHint(
       $folded(Iterator.from(it).map((c) => c.replace(/[a-z]/, (letter) => letter.toUpperCase()))),
       1,

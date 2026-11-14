@@ -3,6 +3,7 @@
 import {
   $cleanup,
   $closing,
+  $collectDropping,
   $exactLen,
   $foldBack,
   $folded,
@@ -97,7 +98,9 @@ function lenOf(t, TIntoIterExactSizeIterator) {
 }
 
 function doubledFromTheBack(t, TIntoIterDoubleEndedIterator) {
-  return Array.from($roomForHint($rev($mapEnds($intoIter(t), (x) => (x * 2) >>> 0)), 4, false));
+  return $collectDropping(
+    $roomForHint($rev($mapEnds($intoIter(t), (x) => (x * 2) >>> 0)), 4, false),
+  );
 }
 
 function countedFromTheBack(t, TIntoIterDoubleEndedIterator) {

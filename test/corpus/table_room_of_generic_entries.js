@@ -8,6 +8,7 @@ import {
   $extendMap,
   $folded,
   $lazyRange,
+  $mapFrom,
   $panicMessage,
   $partialEq,
   $reserveHint,
@@ -90,7 +91,7 @@ function collectedThrough(v, n, VCopy, UsizeVAlign, UsizeVSize) {
     $lazyRange(0, n).map((i) => [i, VCopy ? VCopy.copy(v) : v]),
     {
       fromIter: (items, ITrustedLen, IInPlace) =>
-        new Map($reserveHint($folded(items), UsizeVSize, UsizeVAlign)),
+        $mapFrom(new Map(), $reserveHint($folded(items), UsizeVSize, UsizeVAlign), false),
     },
     true,
   ).size;

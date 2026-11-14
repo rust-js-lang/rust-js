@@ -3,6 +3,7 @@
 import {
   $charIndices,
   $chars,
+  $collectDropping,
   $count,
   $debugStr,
   $foldBack,
@@ -32,8 +33,8 @@ function reversedTwice(it, IIterator, IDoubleEndedIterator, IClone) {
   const back = iterator_rev(it, IIterator, IDoubleEndedIterator);
   $next(back);
   return [
-    Array.from($roomForHint(revClone_clone(back, IClone), 4, false)),
-    Array.from($roomForHint(back, 4, false)),
+    $collectDropping($roomForHint(revClone_clone(back, IClone), 4, false)),
+    $collectDropping($roomForHint(back, 4, false)),
   ];
 }
 

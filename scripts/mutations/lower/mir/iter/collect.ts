@@ -391,7 +391,7 @@ export const mutations: Mutation[] = [
     name: "collect-holding-unclosed",
     breaks: "a collect of std's compiled `fuse()` of a `Vec`'s items, mapped by a closure that panics, is `Array.from(..)`, which never closes what the source has left (#653)",
     file: "src/lower/mir/iter/collect.rs",
-    find: "        let holds = iter_ty.is_some_and(|ty| self.drops(ty) != crate::lower::drops::Drops::Nothing);\n",
+    find: "        let holds = iter_ty\n            .is_some_and(|ty| self.drops(ty) != crate::lower::drops::Drops::Nothing || self.holds_callers_iterator(ty));\n",
     replace: "        let holds = false;\n",
     tests: ["test/corpus.test.ts", "-t", "^compiled_adapters_closed_as_a_collect_unwinds.rs$"],
   },
@@ -790,5 +790,13 @@ export const mutations: Mutation[] = [
     find: "            if let Some((item, how)) = given_counted {\n",
     replace: "            if let Some((item, how)) = given_counted.filter(|_| false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^collect_into_an_rc_slice_(unwinding|room).rs$"],
+  },
+  {
+    name: "callers-iterator-not-closed-on-a-panic",
+    breaks: "a collect in generic code of the caller's iterator whose step panics leaves it unclosed, so the caller's drop of what it holds, given in its closing, never runs (#1753)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "self.drops(ty) != crate::lower::drops::Drops::Nothing || self.holds_callers_iterator(ty)",
+    replace: "self.drops(ty) != crate::lower::drops::Drops::Nothing",
+    tests: ["test/corpus.test.ts", "-t", "^generic_collect_of_a_panicking_chain_drops_its_source.rs$"],
   },
 ];

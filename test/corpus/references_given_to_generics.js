@@ -5,6 +5,7 @@ import {
   $byteLen,
   $cellOf,
   $cmp,
+  $collectDropping,
   $debugStr,
   $eq,
   $hashSlice,
@@ -70,7 +71,7 @@ function hashed(t, THash) {
   return h.finish();
 }
 function take2(it) {
-  return Array.from($roomForHint(Iterator.from(it).take(2), 4, false));
+  return $collectDropping($roomForHint(Iterator.from(it).take(2), 4, false));
 }
 function twice(f) {
   return f(f(1));

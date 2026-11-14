@@ -3,6 +3,7 @@
 import {
   $clone,
   $cloning,
+  $collectDropping,
   $cycleOf,
   $given,
   $iter,
@@ -33,7 +34,7 @@ function chainCycled(a, b, JIterator, JClone) {
     $cloning($lazyChain($given(a, JIterator), $given(b, JIterator)), () =>
       makeChain(JClone.clone(a), JClone.clone(b)),
     );
-  return Array.from($roomForHint($cycleOf(makeChain(a, b), $clone, $next).take(5), 4, false));
+  return $collectDropping($roomForHint($cycleOf(makeChain(a, b), $clone, $next).take(5), 4, false));
 }
 
 function main() {

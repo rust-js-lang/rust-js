@@ -5,9 +5,11 @@ import {
   $collectVec,
   $collectsInPlace,
   $filterEnds,
+  $foldToArray,
   $folded,
   $iter,
   $iterator,
+  $mapFrom,
   $reserveHint,
   $rev,
   $roomForHint,
@@ -74,14 +76,17 @@ function main() {
     $rev($chars("abc")),
     {
       fromIter: (items, ITrustedLen, IInPlace) =>
-        Array.from($reserveHint($folded(items), 1)).join(""),
+        $foldToArray($reserveHint($folded(items), 1)).join(""),
     },
     false,
   );
   console.log(`${text}`);
   let set = collect(
     $iterator([0, 2], loudIterator_next, false, undefined, undefined, loudIterator_sizeHint),
-    { fromIter: (items, ITrustedLen, IInPlace) => new Set($reserveHint($folded(items), 4, 4)) },
+    {
+      fromIter: (items, ITrustedLen, IInPlace) =>
+        $mapFrom(new Set(), $reserveHint($folded(items), 4, 4), true),
+    },
     false,
   );
   set = Array.from(set);

@@ -78,7 +78,7 @@ pub fn mapped(n: u32) -> u32 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  expect(readFileSync(join(dir, "mir.js"), "utf8")).toContain("return Array.from($roomForHint(Iterator.from(items).drop(1).take(k), 4, false));");
+  expect(readFileSync(join(dir, "mir.js"), "utf8")).toContain("return $collectDropping($roomForHint(Iterator.from(items).drop(1).take(k), 4, false));");
   const lib = await import(join(dir, "mir.js"));
   expect([lib.ofCountdown(5), lib.middle([7, 8, 9, 10], 2), lib.mapped(3)]).toEqual([[3, 2], [8, 9], 6]);
 });
@@ -127,7 +127,7 @@ pub fn of_str(text: &str) -> String {
   );
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain('  return Array.from($reserveHint($folded(Iterator.from(it).drop(1)), 1)).join("");\n');
+  expect(js).toContain('  return $foldToArray($reserveHint($folded(Iterator.from(it).drop(1)), 1)).join("");\n');
   const lib = await import(join(dir, "lib.js"));
   expect([lib.ofVec(["a", "b", "c"]), lib.ofStr("xyz"), lib.ofStr("")]).toEqual(["bc", "yz", ""]);
 });

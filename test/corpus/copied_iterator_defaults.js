@@ -147,7 +147,7 @@ function tTotals(TIterator, dropT) {
       return n;
     },
     firstTwo(self) {
-      return Array.from($roomForHint($lent($given(self, TIterator)).take(2), 1, false));
+      return $collectDropping($roomForHint($lent($given(self, TIterator)).take(2), 1, false));
     },
     $drop: dropT,
   }));

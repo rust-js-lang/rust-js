@@ -3,6 +3,7 @@
 import {
   $clone,
   $cloning,
+  $collectDropping,
   $cycleOf,
   $given,
   $iter,
@@ -22,7 +23,9 @@ export function cycled(items, f, label, IIterator, IClone, FClone, LDisplay) {
       $given(it, IIterator).map((item) => f(item)),
       () => makeMap(IClone.clone(it), f),
     );
-  return Array.from($roomForHint($cycleOf(makeMap(items, f), $clone, $next).take(5), 4, false));
+  return $collectDropping(
+    $roomForHint($cycleOf(makeMap(items, f), $clone, $next).take(5), 4, false),
+  );
 }
 
 function main() {

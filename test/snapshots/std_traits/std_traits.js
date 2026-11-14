@@ -12,6 +12,7 @@ import {
   $cmp,
   $cmpIn,
   $cmpItems,
+  $collectDropping,
   $debugF64,
   $debugFields,
   $debugStr,
@@ -588,7 +589,7 @@ export function total(items) {
 }
 
 export function middle(items, k) {
-  return Array.from($roomForHint(Iterator.from(items).drop(1).take(k), 4, false));
+  return $collectDropping($roomForHint(Iterator.from(items).drop(1).take(k), 4, false));
 }
 
 export function looped(items) {

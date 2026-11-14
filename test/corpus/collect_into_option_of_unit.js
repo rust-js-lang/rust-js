@@ -5,6 +5,7 @@ import {
   $folded,
   $iter,
   $lazyRange,
+  $mapFrom,
   $reserveHint,
   $some,
   $someValue,
@@ -68,7 +69,8 @@ function main() {
   const unit = gathered([{ $someNone: 0 }, { $someNone: 0 }], unitFromIterator);
   console.log(`${unit == null ? "None" : "Some(())"}`);
   const set = gathered([4, 4], {
-    fromIter: (items, ITrustedLen, IInPlace) => new Set($reserveHint($folded(items), 1, 1)),
+    fromIter: (items, ITrustedLen, IInPlace) =>
+      $mapFrom(new Set(), $reserveHint($folded(items), 1, 1), true),
   });
   console.log(`${set?.size == null ? "None" : `Some(${set?.size})`}`);
   const none = gathered([{ $someNone: 0 }, undefined], unitFromIterator);

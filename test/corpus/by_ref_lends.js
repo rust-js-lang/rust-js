@@ -2,6 +2,7 @@
 
 import {
   $cleanup,
+  $collectDropping,
   $dropEach,
   $exactLen,
   $findDropping,
@@ -276,7 +277,7 @@ function mapped(src, dropI) {
   const held = src;
   let firsts;
   try {
-    firsts = Array.from(
+    firsts = $collectDropping(
       $roomForHint(
         $mapEnds($lent(held), (d) => {
           const result = (d[0] * 10) >>> 0;
@@ -312,7 +313,7 @@ function mapped(src, dropI) {
   }
   let all;
   try {
-    all = Array.from(
+    all = $collectDropping(
       $roomForHint(
         $mapEnds($lent(held), (d) => {
           const result = d[0];

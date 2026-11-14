@@ -17,6 +17,7 @@ import {
   $isSortedBy,
   $iter,
   $live,
+  $mapFrom,
   $out,
   $partiallyOrdered,
   $repeatingN,
@@ -135,7 +136,8 @@ function main() {
   r = $catchUnwind(
     () =>
       repeated([4], 4294967295, {
-        fromIter: (items, ITrustedLen, IInPlace) => new Set($reserveHint($folded(items), 4, 4)),
+        fromIter: (items, ITrustedLen, IInPlace) =>
+          $mapFrom(new Set(), $reserveHint($folded(items), 4, 4), true),
       }).size,
   );
   console.log(`reserved ${r.TAG === "Err"}`);

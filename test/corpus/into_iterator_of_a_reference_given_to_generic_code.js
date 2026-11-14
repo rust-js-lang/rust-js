@@ -7,6 +7,7 @@ import {
   $debugStr,
   $extend,
   $extendMap,
+  $foldToArray,
   $folded,
   $grownBy,
   $grownVec,
@@ -39,9 +40,9 @@ function refWordIntoIterator_intoIter(word) {
 function all(word, IRefIntoIterator) {
   const z = $grownVec(
     $roomForHint($lazyZip($iter([1, 2, 3]), IRefIntoIterator.intoIter(word)), 8, false),
-    (grown) => Array.from(grown),
+    (grown) => $collectDropping(grown),
   );
-  const c = Array.from(
+  const c = $foldToArray(
     $reserveHint($folded($lazyChain("x"[Symbol.iterator](), IRefIntoIterator.intoIter(word))), 1),
   ).join("");
   $print(`${c}\n`);
@@ -71,7 +72,7 @@ function all(word, IRefIntoIterator) {
       12,
       false,
     ),
-    (grown) => Array.from(grown),
+    (grown) => $collectDropping(grown),
   );
   $print(
     `[${zz.map((item) => `((${item[0][0]}, ${$debugStr(item[0][1], "'")}), ${$debugStr(item[1], "'")})`).join(", ")}]\n`,
@@ -82,10 +83,10 @@ function all(word, IRefIntoIterator) {
 function more(word, IRefIntoIterator) {
   const z = $grownVec(
     $roomForHint($lazyZip([1, 2], IRefIntoIterator.intoIter(word)), 8, false),
-    (grown) => Array.from(grown),
+    (grown) => $collectDropping(grown),
   );
   $print(`[${z.map((item) => `(${item[0]}, ${$debugStr(item[1], "'")})`).join(", ")}]\n`);
-  const s = Array.from($reserveHint($folded(IRefIntoIterator.intoIter(word)), 1)).join("");
+  const s = $foldToArray($reserveHint($folded(IRefIntoIterator.intoIter(word)), 1)).join("");
   $print(`${s}\n`);
   const w = ["x", "y", "z"];
   $keepCapacity(w);

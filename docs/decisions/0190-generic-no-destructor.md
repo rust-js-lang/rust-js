@@ -91,3 +91,23 @@ refused.
 ## Amended by
 
 [ADR 0712](0712-what-lowering-finds-of-drops-is-returned-with-it.md): what a function's lowering finds of drops is returned with it, `DropsObserved`, and gathered by the pipeline, not written into the crate's facts.
+
+## Amendment: generic code closes its caller's iterator as a panic unwinds (2026-11-14, #1753)
+
+Generic code's type parameters drop nothing of its own; their caller gives
+the drop, here as the `$closing` generic code is handed. So a collect in
+generic code of the caller's iterator, `it.collect()` of an `I`, took it as
+holding nothing to drop and collected it as JS does, `Array.from`, which
+never closes an iterator whose `next` throws: a panic in a step left the
+caller's iterator unclosed, and its drop, a crate's `Own` iterator's, never
+ran. Now an iterator that is, or holds by value, its caller's, a type
+parameter's or its associated type's (`I`, `I::IntoIter`, `Map<I, F>`,
+`holds_callers_iterator`), is collected as one that holds what drops
+(`unwinding_collect`), closed as the panic leaves it. Not a slice's
+iterator of a type parameter's items, which holds none of them. The
+corpus's 53 generic collects of a caller's iterator move from
+`Array.from(..)` to `$foldToArray(..)` or `$collectDropping(..)`, each
+printing what native does. New corpus
+`generic_collect_of_a_panicking_chain_drops_its_source`, into a `String` and
+a `Vec`; mutation `callers-iterator-not-closed-on-a-panic`, caught, and
+`collect-holding-unclosed` retargeted, caught.

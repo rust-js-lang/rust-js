@@ -5,6 +5,7 @@ import {
   $BTreeSet,
   $arrayKeyClassOf,
   $cmp,
+  $collectDropping,
   $count,
   $debugStr,
   $entry,
@@ -221,10 +222,12 @@ function iTools_ordered(
   const PartialEq = IItemOrd.PartialOrd().PartialEq();
   return $treeFromSorted(
     new ($keyClassOf(false, true, [$BTreeMap, IItemTreeMap]))(),
-    $roomForHint(
-      $enumerate($given(self, IIterator, true)).map((pair) => [pair, undefined]),
-      UsizeIItemSize,
-      false,
+    $collectDropping(
+      $roomForHint(
+        $enumerate($given(self, IIterator, true)).map((pair) => [pair, undefined]),
+        UsizeIItemSize,
+        false,
+      ),
     ),
     $ord({
       PartialOrd: () =>

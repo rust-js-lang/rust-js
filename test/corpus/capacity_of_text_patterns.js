@@ -4,6 +4,7 @@ import {
   $byteLen,
   $capacity,
   $chars,
+  $collectDropping,
   $extend,
   $foldToArray,
   $grownBy,
@@ -28,7 +29,7 @@ export function entry() {
 function chained(it, ITrustedLen) {
   const v = $grownVec(
     $roomForHint($lazyChain(Iterator.from(it), $iter(["x"])), 4, ITrustedLen),
-    (grown) => (ITrustedLen ? $foldToArray(grown) : Array.from(grown)),
+    (grown) => (ITrustedLen ? $foldToArray(grown) : $collectDropping(grown)),
   );
   return $capacity(v, 4);
 }
@@ -36,7 +37,7 @@ function chained(it, ITrustedLen) {
 function words(it, ITrustedLen) {
   const v = $grownVec(
     $roomForHint($lazyChain(Iterator.from(it), $iter(["x"])), 8, ITrustedLen),
-    (grown) => (ITrustedLen ? $foldToArray(grown) : Array.from(grown)),
+    (grown) => (ITrustedLen ? $foldToArray(grown) : $collectDropping(grown)),
   );
   return $capacity(v, 8);
 }

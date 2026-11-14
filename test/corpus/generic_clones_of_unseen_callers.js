@@ -4,6 +4,7 @@ import {
   $clone,
   $cloning,
   $closing,
+  $collectDropping,
   $cycleOf,
   $debugStr,
   $dropEach,
@@ -33,7 +34,7 @@ function loudDrop_drop(loud) {
 }
 
 export function firsts(iter, n, IIterator, IClone, IItemSize) {
-  return Array.from(
+  return $collectDropping(
     $roomForHint($cycleOf(iter, IClone.clone, IIterator.next, true).take(n), IItemSize, false),
   );
 }

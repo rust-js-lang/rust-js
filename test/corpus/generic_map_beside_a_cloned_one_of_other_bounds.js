@@ -5,6 +5,7 @@ import {
   $clone,
   $cloning,
   $closing,
+  $collectDropping,
   $collectOptions,
   $collectsInPlace,
   $cycleOf,
@@ -26,7 +27,9 @@ export function cycled(items, f, IIterator, IClone, FClone) {
       $given(it, IIterator).map((item) => f(item)),
       () => makeMap(IClone.clone(it), f),
     );
-  return Array.from($roomForHint($cycleOf(makeMap(items, f), $clone, $next).take(5), 4, false));
+  return $collectDropping(
+    $roomForHint($cycleOf(makeMap(items, f), $clone, $next).take(5), 4, false),
+  );
 }
 
 function dDrop_drop(d) {

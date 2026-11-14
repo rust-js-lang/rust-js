@@ -2,6 +2,7 @@
 
 import {
   $chars,
+  $collectDropping,
   $iter,
   $iterator,
   $lent,
@@ -51,7 +52,7 @@ function word(it) {
 }
 
 function take2(it) {
-  return Array.from($roomForHint($lent(it).take(2), 4, false));
+  return $collectDropping($roomForHint($lent(it).take(2), 4, false));
 }
 
 function untilZero(it) {

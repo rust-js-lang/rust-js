@@ -2,6 +2,7 @@
 
 import {
   $chars,
+  $collectDropping,
   $debugStr,
   $iter,
   $iterator,
@@ -33,7 +34,10 @@ const $peekableLayout = new Map();
 function peekableLayout(IItemSize, IItemAlign) {
   return $traitImpl($peekableLayout, [IItemSize, IItemAlign], () => ({
     itemLayout: (peekable) => [IItemSize, IItemAlign],
-    collectLayout: (peekable) => [Array.from($roomForHint(peekable, IItemSize, false)), IItemSize],
+    collectLayout: (peekable) => [
+      $collectDropping($roomForHint(peekable, IItemSize, false)),
+      IItemSize,
+    ],
   }));
 }
 
