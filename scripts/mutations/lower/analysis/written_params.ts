@@ -151,4 +151,28 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^formatter_write_fmt_of_held_arguments.rs$"],
   },
+  {
+    name: "fmt-impls-asked-unfollowed",
+    breaks: "an instance of a framed generic type's impl formatted plainly, `println!(\"{}\", Wrap(String::from(\"s\")))`, gives its `T` a dictionary with no `fmtInto`, which its writer calls (#1738)",
+    file: "src/lower/analysis/written_params.rs",
+    find: "                    changed |= found.give(tcx, tcx.typeck_root_def_id(asked.body), ty);\n",
+    replace: "                    let _ = ty;\n",
+    tests: ["test/corpus.test.ts", "-t", "^writer_sink_generic_instances.rs$"],
+  },
+  {
+    name: "fmt-impls-asked-calls-unread",
+    breaks: "an instance asked for by a type given a function, `Argument::new_display::<Wrap<String>>`, isn't seen, so its `T`'s dictionary has no `fmtInto` (#1738)",
+    file: "src/lower/analysis/written_params.rs",
+    find: "            .flat_map(|(_, args, span)| args.types().map(move |ty| (ty, span)))\n",
+    replace: "            .flat_map(|(_, args, span)| args.types().map(move |ty| (ty, span)).filter(|_| false))\n",
+    tests: ["test/corpus.test.ts", "-t", "^writer_sink_generic_instances.rs$"],
+  },
+  {
+    name: "fmt-impls-asked-dyns-unread",
+    breaks: "an instance made a `Box<dyn Display>`, `Box::new(Wrap(true))`, isn't seen, so its `T`'s dictionary has no `fmtInto` (#1738)",
+    file: "src/lower/analysis/written_params.rs",
+    find: "                } => Some((body.thir[source].ty, expr.span)),\n",
+    replace: "                } => None::<(Ty<'tcx>, Span)>,\n",
+    tests: ["test/corpus.test.ts", "-t", "^writer_sink_generic_instances.rs$"],
+  },
 ];

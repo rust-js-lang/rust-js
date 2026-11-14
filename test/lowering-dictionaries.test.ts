@@ -427,7 +427,7 @@ pub mod hidden {
     expect(libraryQueue).toContain(line);
   }
   expect(libraryQueue).not.toContain("PartialEq");
-  expect(libraryQueue).toContain("fmtInto: (f, value, options) => $writingInto(f, updateDisplay_fmt, value, options)");
+  expect(libraryQueue).toContain("fmtInto: (f, value) => $writingInto(f, updateDisplay_fmt, value)");
 });
 
 // #944: an `Ord` dictionary holds its `PartialOrd()`, which holds its

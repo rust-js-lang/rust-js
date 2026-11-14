@@ -120,11 +120,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(None);
         }
         let fmt = crate::lower::recognition::trait_method(self.tcx, tr.def_id, "fmt");
-        let writes_through_sink = match self.resolve_self_instance(fmt, tr.args) {
-            Ok(Some(instance)) => {
-                (instance.def_id().is_local() || listed) && self.writes_through_sink(instance.def_id())
-            }
-            _ => false,
+        let (writes_through_sink, takes_options) = match self.resolve_self_instance(fmt, tr.args) {
+            Ok(Some(instance)) => (
+                (instance.def_id().is_local() || listed) && self.writes_through_sink(instance.def_id()),
+                self.takes_options(instance.def_id()),
+            ),
+            _ => (false, false),
         };
         let entry = (props.iter()).find_map(|prop| match prop {
             js::Prop::Field(name, value) if name == "fmt" => Some(value.clone()),
@@ -153,15 +154,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ => None,
         }
         .unwrap_or((entry, Vec::new()));
-        let mut args = vec![Expr::var(&sink), writer, Expr::var(&value), Expr::var(&options)];
+        // Its options only where it takes them, as `writer_given` calls it:
+        // a generic impl's dictionaries come next, `pairDisplay_fmt(pair,
+        // TDisplay)` (#1739).
+        let mut args = vec![Expr::var(&sink), writer, Expr::var(&value)];
+        let mut params: Vec<js::Pattern> = vec![sink.into(), value.into()];
+        if takes_options {
+            args.push(Expr::var(&options));
+            params.push(options.into());
+        }
         args.extend(extra);
         let armed = Expr::call_helper("$writingInto", args);
         Ok(Some(js::Prop::Field(
             FMT_INTO.into(),
-            Expr::arrow(
-                vec![sink.into(), value.into(), options.into()],
-                vec![StmtKind::Return(Some(armed)).at(js::Span::NONE)],
-            ),
+            Expr::arrow(params, vec![StmtKind::Return(Some(armed)).at(js::Span::NONE)]),
         )))
     }
 

@@ -450,6 +450,45 @@ go.
      that text. Pairs arguments_through_a_librarys_dyn_trait and
      consumers_closure_called_by_a_librarys_writer.
 
+10. After the switch-over (amended 2026-11-14, #1738, #1739), two throws
+    in programs that ran before it, each a generic type of the crate's
+    own written into a writer, so its writer is framed:
+    - **Each instance of a generic formatting impl the crate asks for gives
+      its type parameters dictionaries that carry `fmtInto`** (#1738). A
+      framed writer writes its parameters by its dictionaries,
+      `TDisplay.fmtInto(f, x)`, however it's called, so
+      `println!("{}", Wrap(String::from("s")))` beside a `write!` of
+      `Wrap(3)` into a writer threw, `String`'s dictionary carrying none.
+      `written_params::fmt_impls_asked` lists each instance the crate's
+      bodies ask for: each part of each type a body gives a function,
+      `Argument::new_display::<Wrap<String>>`, `to_string`'s, a generic
+      caller's bound's, or makes a `dyn` of, of the crate's own generic
+      types and of a library's its contract lists, is asked of each
+      formatting trait it has an impl of, by trait selection within the
+      body. `written_params` gives what each instance's arguments are at
+      the parameters its impl's writer writes, to its fixed point, so a
+      generic caller's own parameter, `format!("{}", Wrap(t))`'s `T`, is
+      written so too. And framing frames what each instance of a framed
+      writer gives it, as a type shown: `Wrap(Point(1, 2))` formatted
+      plainly frames `Point`'s writer, whose dictionary's `fmtInto` arms
+      it. A dictionary of a type put in a framed generic type may carry
+      `fmtInto` where nothing formats it: the answer is by type, as
+      `reach`'s already was (the lead accepted the cost). Measured: no
+      other corpus case's dictionary gains one, nor the React port's.
+    - **A generic impl's dictionary's `fmtInto` gives its writer its
+      options only where it takes them** (#1739), as `writer_given` calls
+      it, asking `takes_options`: `$writingInto(f, wrapDisplay_fmt, value,
+      TDisplay)`. It gave them always, so where the crate's writers take
+      none they landed where its dictionaries belong, and a
+      `Wrap<Wrap<f64>>` written into a writer threw. A non-generic impl's
+      `fmtInto` there reads `(f, value) => $writingInto(f,
+      pointDisplay_fmt, value)`, 7 corpus snapshots.
+
+    Proof, each against native Rust in both builds and by its metamorphic
+    rewrites: the corpus cases writer_sink_generic_instances and
+    writer_sink_generic_instances_with_options, the second's writers
+    taking options; 6 mutations.
+
 ## Alternatives
 
 - **Keep ADR 0166's whole text**, listed as a difference: rejected, since

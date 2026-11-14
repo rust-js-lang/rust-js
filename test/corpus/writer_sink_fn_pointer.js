@@ -44,7 +44,7 @@ function bumped(n, TDisplay) {
 
 export const pointDisplay = {
   fmt: pointDisplay_fmt,
-  fmtInto: (f, value, options) => $writingInto(f, pointDisplay_fmt, value, options),
+  fmtInto: (f, value) => $writingInto(f, pointDisplay_fmt, value),
 };
 
 const bumpedPoint = (n) => bumped(n, pointDisplay);
@@ -59,7 +59,7 @@ function pointDisplay_fmt(point) {
 
 export const viaDisplay = {
   fmt: viaDisplay_fmt,
-  fmtInto: (f, value, options) => $writingInto(f, viaDisplay_fmt, value, options),
+  fmtInto: (f, value) => $writingInto(f, viaDisplay_fmt, value),
 };
 function viaDisplay_fmt(via) {
   const f = $sink();

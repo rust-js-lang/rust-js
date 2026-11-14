@@ -45,7 +45,7 @@ function bracketed(n) {
 
 export const viaDisplay = {
   fmt: viaDisplay_fmt,
-  fmtInto: (f, value, options) => $writingInto(f, viaDisplay_fmt, value, options),
+  fmtInto: (f, value) => $writingInto(f, viaDisplay_fmt, value),
 };
 function viaDisplay_fmt(via) {
   const f = $sink();
@@ -59,7 +59,7 @@ function viaDisplay_fmt(via) {
 
 export const boxedDisplay = {
   fmt: boxedDisplay_fmt,
-  fmtInto: (f, value, options) => $writingInto(f, boxedDisplay_fmt, value, options),
+  fmtInto: (f, value) => $writingInto(f, boxedDisplay_fmt, value),
 };
 function boxedDisplay_fmt(boxed) {
   const f = $sink();

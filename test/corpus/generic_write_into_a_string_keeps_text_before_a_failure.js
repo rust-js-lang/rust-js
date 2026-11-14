@@ -20,7 +20,7 @@ export function entry() {
 
 export const refusedDisplay = {
   fmt: refusedDisplay_fmt,
-  fmtInto: (f, value, options) => $writingInto(f, refusedDisplay_fmt, value, options),
+  fmtInto: (f, value) => $writingInto(f, refusedDisplay_fmt, value),
 };
 function refusedDisplay_fmt(refused) {
   try {

@@ -46,7 +46,7 @@ function failingWrite_writeStr(failing, s) {
 
 export const effectsDisplayDisplay = {
   fmt: effectsDisplayDisplay_fmt,
-  fmtInto: (f, value, options) => $writingInto(f, effectsDisplayDisplay_fmt, value, options),
+  fmtInto: (f, value) => $writingInto(f, effectsDisplayDisplay_fmt, value),
 };
 function effectsDisplayDisplay_fmt(effectsDisplay) {
   const f = $sink();
@@ -65,7 +65,7 @@ const Effects = {
 
 export const styleDisplay = {
   fmt: styleDisplay_fmt,
-  fmtInto: (f, value, options) => $writingInto(f, styleDisplay_fmt, value, options),
+  fmtInto: (f, value) => $writingInto(f, styleDisplay_fmt, value),
 };
 function styleDisplay_fmt(style) {
   const f = $sink();

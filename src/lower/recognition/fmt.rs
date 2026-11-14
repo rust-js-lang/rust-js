@@ -373,13 +373,16 @@ const OTHER_FMT_TRAITS: [&str; 7] = [
 /// `OTHER_FMT_TRAITS`'? Its dictionary's entry isn't the method: it takes
 /// the value and gives its text, no `Formatter` (#1477).
 pub(crate) fn is_fmt_method(tcx: TyCtxt<'_>, id: DefId) -> bool {
-    tcx.item_name(id).as_str() == "fmt"
-        && tcx.trait_of_assoc(id).is_some_and(|tr| {
-            [sym::Display, sym::Debug]
-                .iter()
-                .any(|&item| tcx.is_diagnostic_item(item, tr))
-                || is_other_fmt_trait(tcx, tr)
-        })
+    tcx.item_name(id).as_str() == "fmt" && tcx.trait_of_assoc(id).is_some_and(|tr| is_fmt_trait(tcx, tr))
+}
+
+/// Is `id` a formatting trait: `Display`, `Debug` or one of core's
+/// `OTHER_FMT_TRAITS`?
+pub(crate) fn is_fmt_trait(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    [sym::Display, sym::Debug]
+        .iter()
+        .any(|&item| tcx.is_diagnostic_item(item, id))
+        || is_other_fmt_trait(tcx, id)
 }
 
 /// Is `id` std's formatting, an item of `std::fmt`: a `Formatter`'s

@@ -25,7 +25,7 @@ export function entry() {
 
 export const noisyDebug = {
   fmt: noisyDebug_fmt,
-  fmtInto: (f, value, options) => $writingInto(f, noisyDebug_fmt, value, options),
+  fmtInto: (f, value) => $writingInto(f, noisyDebug_fmt, value),
 };
 function noisyDebug_fmt(noisy) {
   const f = $sink();
@@ -37,7 +37,7 @@ function noisyDebug_fmt(noisy) {
 
 export const showsDisplay = {
   fmt: showsDisplay_fmt,
-  fmtInto: (f, value, options) => $writingInto(f, showsDisplay_fmt, value, options),
+  fmtInto: (f, value) => $writingInto(f, showsDisplay_fmt, value),
 };
 function showsDisplay_fmt(shows) {
   const f = $sink();
@@ -53,7 +53,7 @@ function panicsDebug_fmt(panics) {
 
 export const badDebug = {
   fmt: badDebug_fmt,
-  fmtInto: (f, value, options) => $writingInto(f, badDebug_fmt, value, options),
+  fmtInto: (f, value) => $writingInto(f, badDebug_fmt, value),
 };
 function badDebug_fmt(bad) {
   const f = $sink();

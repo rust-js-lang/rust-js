@@ -161,7 +161,7 @@ test("a library's generic function is its program's, alone or a dependency, and 
   // The same but for its formatted types, which a library publishes, as a
   // consumer may write one into a writer a piece at a time, and a program
   // alone doesn't (ADR 1135).
-  expect(dep).toContain("fmtInto: (f, value, options) => $writingInto(f, hourDisplay_fmt, value, options)");
+  expect(dep).toContain("fmtInto: (f, value) => $writingInto(f, hourDisplay_fmt, value)");
   expect(readFileSync(join(alone, "lib.js"), "utf8")).not.toContain("fmtInto");
   expect(dep).toContain("export function createContext(defaultValue) {\n  return {\n    currentValue: defaultValue,\n");
   expect(dep).toContain("export function useState(initialState, dispatcher) {\n  dispatcher = resolveDispatcher(dispatcher);\n");

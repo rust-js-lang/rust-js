@@ -94,4 +94,20 @@ export const mutations: Mutation[] = [
     replace: "        if true {\n",
     tests: ["test/corpus.test.ts", "-t", "^writer_sink_fn_value_of_a_std_fmt.rs$"],
   },
+  {
+    name: "impl-fmt-into-options-always",
+    breaks: "a generic impl's `fmtInto` gives its writer the options where it takes none, so they land where its dictionaries belong, `TDisplay` undefined (#1739)",
+    file: "src/lower/display/fmt_into.rs",
+    find: "        if takes_options {\n",
+    replace: "        if true {\n",
+    tests: ["test/corpus.test.ts", "-t", "^writer_sink_generic_instances.rs$"],
+  },
+  {
+    name: "impl-fmt-into-options-never",
+    breaks: "a generic impl's `fmtInto` gives its writer no options where it takes them, so its dictionary lands where its options belong (#1739)",
+    file: "src/lower/display/fmt_into.rs",
+    find: "        if takes_options {\n",
+    replace: "        if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "^writer_sink_generic_instances_with_options.rs$"],
+  },
 ];

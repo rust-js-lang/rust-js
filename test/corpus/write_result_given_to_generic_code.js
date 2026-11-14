@@ -178,7 +178,7 @@ function tried(fail) {
 
 export const shownDisplay = {
   fmt: shownDisplay_fmt,
-  fmtInto: (f, value, options) => $writingInto(f, shownDisplay_fmt, value, options),
+  fmtInto: (f, value) => $writingInto(f, shownDisplay_fmt, value),
 };
 function shownDisplay_fmt(shown) {
   const f = $sink();

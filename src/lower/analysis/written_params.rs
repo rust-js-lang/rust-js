@@ -151,7 +151,7 @@ pub(super) fn written_params<'tcx>(
     all_bodies: &[&Body<'tcx>],
     prints: &Prints,
     foreign: &Foreign<'_, 'tcx>,
-    arguments: WrittenArguments,
+    (arguments, asked): (WrittenArguments, &[Asked<'tcx>]),
 ) -> WrittenParams<'tcx> {
     let tcx = recognition.tcx;
     let mut found = WrittenParams {
@@ -268,6 +268,19 @@ pub(super) fn written_params<'tcx>(
                 }
             }
         }
+        // And what each instance of a formatting impl asked for gives the
+        // type parameters its writer writes so (#1738).
+        for asked in asked {
+            let Some(fmt) = impl_fmt(tcx, asked.imp) else { continue };
+            // Its `fmt`'s parameters are its impl's, by the same indexes.
+            let written: Vec<u32> = found.of_fn(fmt).collect();
+            for index in written {
+                if let Some(ty) = asked.args.get(index as usize).and_then(|arg| arg.as_type()) {
+                    changed |= found.give(tcx, tcx.typeck_root_def_id(asked.body), ty);
+                    given.insert((ty, asked.span));
+                }
+            }
+        }
         if !changed {
             break;
         }
@@ -276,6 +289,107 @@ pub(super) fn written_params<'tcx>(
         refuse_lacked(tcx, foreign, ty, span);
     }
     found
+}
+
+/// An instance of a generic formatting impl a body asks for (#1738): by a
+/// type it gives a function, `Argument::new_display::<Wrap<String>>` of a
+/// `{}`, `to_string::<Wrap<u8>>`, `shown::<Wrap<T>>` of a bound, or by one
+/// it makes a `dyn` of. The impl's writer, framed where its type is written
+/// into a writer anywhere, writes its type parameters by the dictionaries
+/// this instance gives, `TDisplay.fmtInto(f, x, options)`, however it's
+/// called, so what it gives them reaches a parameter written so.
+pub(super) struct Asked<'tcx> {
+    /// The body that asks for it.
+    pub(super) body: DefId,
+    /// The impl, the crate's or a library's.
+    pub(super) imp: DefId,
+    /// The impl's arguments, of the instance asked for.
+    pub(super) args: ty::GenericArgsRef<'tcx>,
+    /// The type it's of, `Wrap<String>`.
+    pub(super) ty: Ty<'tcx>,
+    pub(super) span: Span,
+}
+
+/// Each instance of a generic formatting impl `all_bodies` ask for, by a
+/// type each gives a function or makes a `dyn` of, as trait selection,
+/// within the body, finds it (`Asked`): of the crate's own types, and of a
+/// library's whose contract lists them as written into a writer a piece at
+/// a time.
+pub(super) fn fmt_impls_asked<'tcx>(
+    recognition: &Recognition<'_, 'tcx>,
+    all_bodies: &[&Body<'tcx>],
+) -> Vec<Asked<'tcx>> {
+    let tcx = recognition.tcx;
+    // Of each generic type, the formatting traits it has generic impls of.
+    let mut impls: IndexMap<DefId, IndexSet<DefId>> = IndexMap::default();
+    let crates = std::iter::once(rustc_span::def_id::LOCAL_CRATE).chain(tcx.crates(()).iter().copied());
+    for imp in crates.flat_map(|krate| tcx.trait_impls_in_crate(krate).iter().copied()) {
+        let ty::Adt(adt, _) = *tcx.type_of(imp).skip_binder().kind() else {
+            continue;
+        };
+        if !(adt.did().is_local() || recognition.foreign.lists_fmt_into(adt.did()))
+            || !tcx.generics_of(imp).requires_monomorphization(tcx)
+        {
+            continue;
+        }
+        let tr = tcx.impl_trait_id(imp);
+        if crate::lower::recognition::is_fmt_trait(tcx, tr) {
+            impls.entry(adt.did()).or_default().insert(tr);
+        }
+    }
+    let mut asked: Vec<Asked<'tcx>> = Vec::new();
+    if impls.is_empty() {
+        return asked;
+    }
+    let mut seen: IndexSet<(DefId, DefId, Ty<'tcx>)> = IndexSet::default();
+    for body in all_bodies {
+        let recognition = within(recognition, body.def_id);
+        let typing_env = recognition.typing_env;
+        let given = (crate::lower::instances::calls_of(body).into_iter())
+            .flat_map(|(_, args, span)| args.types().map(move |ty| (ty, span)))
+            .chain((body.thir.exprs.iter()).filter_map(|expr| match expr.kind {
+                ExprKind::PointerCoercion {
+                    cast: PointerCoercion::Unsize,
+                    source,
+                    ..
+                } => Some((body.thir[source].ty, expr.span)),
+                _ => None,
+            }));
+        for (ty, span) in given {
+            for part in ty.walk().filter_map(|part| part.as_type()) {
+                let Some(of_adt) = part.ty_adt_def().and_then(|adt| impls.get(&adt.did())) else {
+                    continue;
+                };
+                let Ok(part) = tcx.try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(part)) else {
+                    continue;
+                };
+                for &tr in of_adt {
+                    if !seen.insert((body.def_id, tr, part)) {
+                        continue;
+                    }
+                    let tr = ty::TraitRef::new(tcx, tr, [part]);
+                    if let Ok(rustc_middle::traits::ImplSource::UserDefined(found)) =
+                        crate::lower::traits::select(tcx, typing_env, tr)
+                    {
+                        asked.push(Asked {
+                            body: body.def_id,
+                            imp: found.impl_def_id,
+                            args: found.args,
+                            ty: part,
+                            span,
+                        });
+                    }
+                }
+            }
+        }
+    }
+    asked
+}
+
+/// The `fmt` method of `imp`, a formatting impl.
+pub(super) fn impl_fmt(tcx: TyCtxt<'_>, imp: DefId) -> Option<DefId> {
+    (tcx.associated_item_def_ids(imp).iter().copied())
+        .find(|&item| tcx.opt_item_name(item).is_some_and(|name| name.as_str() == "fmt"))
 }
 
 /// Refuses `ty`, given at `span` where it's written into a writer through

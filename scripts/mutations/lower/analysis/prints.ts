@@ -224,7 +224,7 @@ export const mutations: Mutation[] = [
     name: "written-into-writers-unseen",
     breaks: "a writer of the crate's own shown into a writer by `write!` doesn't write through a sink, so its `write!` is refused where Rust writes each piece into the writer (#1652)",
     file: "src/lower/analysis/prints.rs",
-    find: "    (found.framed, found.published) = written_into_writers(recognition, all_bodies, (library, arguments));\n",
+    find: "    (found.framed, found.published) = written_into_writers(recognition, all_bodies, (library, arguments), asked);\n",
     replace: "",
     tests: ["test/writer-sink.test.ts", "test/corpus.test.ts", "-t", "^writer_sink_|^(?!.*\\.rs$)"],
   },
@@ -331,5 +331,13 @@ export const mutations: Mutation[] = [
     find: "    if recognition.foreign.writes_piecewise() {\n",
     replace: "    if false {\n",
     tests: ["test/writer-sink.test.ts", "-t", "a consumer's closure and fn pointer a library's writer calls"],
+  },
+  {
+    name: "fmt-impls-asked-unframed",
+    breaks: "a type of the crate's in an instance of a framed generic type formatted plainly, `Wrap(Point(1, 2))`, has its writer unframed, so its `fmtInto` is refused (#1738)",
+    file: "src/lower/analysis/prints.rs",
+    find: "                    shown.push((asked.ty, in_writer));\n",
+    replace: "                    let _ = (asked.ty, in_writer);\n",
+    tests: ["test/corpus.test.ts", "-t", "^writer_sink_generic_instances.rs$"],
   },
 ];

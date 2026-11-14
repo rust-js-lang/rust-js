@@ -24,7 +24,7 @@ use rustc_middle::ty;
 use rustc_span::def_id::DefId;
 
 use super::may_run::Runs;
-use super::written_params::WrittenArguments;
+use super::written_params::{Asked, WrittenArguments};
 
 /// What `prints` found of a crate.
 #[derive(Default)]
@@ -158,7 +158,7 @@ pub(super) fn prints<'tcx>(
     all_bodies: &[&Body<'tcx>],
     runs: &Runs<'_, 'tcx>,
     unwinding: (&IndexSet<DefId>, &IndexSet<DefId>),
-    (library, arguments): (bool, &WrittenArguments),
+    (library, arguments, asked): (bool, &WrittenArguments, &[Asked<'tcx>]),
 ) -> Prints {
     let mut found = printing_writers(recognition, all_bodies, runs, unwinding, library);
     for error in [false, true] {
@@ -175,7 +175,7 @@ pub(super) fn prints<'tcx>(
             })
             .map(|body| body.def_id),
     );
-    (found.framed, found.published) = written_into_writers(recognition, all_bodies, (library, arguments));
+    (found.framed, found.published) = written_into_writers(recognition, all_bodies, (library, arguments), asked);
     found.framed.extend(listed_writers_compiled_here(recognition));
     found.through_sink.extend(found.framed.iter().copied());
     found
@@ -198,6 +198,7 @@ fn written_into_writers<'tcx>(
     recognition: &Recognition<'_, 'tcx>,
     all_bodies: &[&Body<'tcx>],
     (library, arguments): (bool, &WrittenArguments),
+    asked: &[Asked<'tcx>],
 ) -> (IndexSet<DefId>, IndexSet<DefId>) {
     let tcx = recognition.tcx;
     let shown_by = |body: &Body<'tcx>| shown_by(recognition, body);
@@ -335,6 +336,15 @@ fn written_into_writers<'tcx>(
         while let Some(by) = found.get_index(called_up_to).copied() {
             called_up_to += 1;
             let by_body = writers.iter().find(|writer| writer.def_id == by);
+            // Each instance of its impl the crate asks for, which its writer
+            // writes the type parameters of by what that gives (#1738): as
+            // shown, a writer's of its own type parameters, instantiated.
+            if let Some(imp) = tcx.impl_of_assoc(by) {
+                for asked in asked.iter().filter(|asked| asked.imp == imp) {
+                    let in_writer = writers.iter().any(|writer| writer.def_id == asked.body);
+                    shown.push((asked.ty, in_writer));
+                }
+            }
             // A callable only a value says may be any of them.
             if by_body.is_some_and(|by| calls_held(by)) {
                 for &held in &held_writers {
