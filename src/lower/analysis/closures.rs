@@ -524,10 +524,11 @@ pub(super) fn iterator_dyns_drop<'tcx>(
 /// std conversion it calls that boxes its error, `From<E> for Box<dyn
 /// Error>`'s, `?`'s or `.into()`'s, and `io::Error::new` and `other`'s, as a
 /// `dyn Any`'s are found (ADR 0691). Else a `dyn Error`, and the `io::Error`
-/// that holds one, drop nothing, whatever else in the crate does.
+/// that holds one, drop nothing, whatever else in the crate does. What each
+/// body names, the call graph's.
 pub(super) fn error_dyns_drop<'tcx>(
     recognition: &crate::lower::recognition::Recognition<'_, 'tcx>,
-    all_bodies: &[&Body<'tcx>],
+    (all_bodies, graph): (&[&Body<'tcx>], &crate::lower::call_graph::Crate<'_, 'tcx>),
     (params_may_drop, foreign_drops): (bool, bool),
     drops: impl Fn(Ty<'tcx>) -> bool,
 ) -> bool {
@@ -551,7 +552,7 @@ pub(super) fn error_dyns_drop<'tcx>(
     let mut boxed = Vec::new();
     for body in all_bodies {
         boxed.extend(dyn_sources(tcx, &body.thir, of_error).map(|(_, from)| from));
-        for (callee, args, _) in crate::lower::call_graph::names(body) {
+        for &(callee, args, _) in graph.names_of(body.def_id) {
             let types: Vec<Ty<'tcx>> = args.types().collect();
             // Asked only of `io::Error`'s own functions, as the one catalogue
             // of them says which make one of an error (`classify`).

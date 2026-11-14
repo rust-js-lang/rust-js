@@ -698,7 +698,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         let error_dyns_drop = closure_facts.error_dyns_drop
             || closures::error_dyns_drop(
                 &recognition,
-                all_bodies,
+                (all_bodies, &calls),
                 (params_may_drop, foreign.makes_dropping_errors()),
                 drop_runs,
             );
