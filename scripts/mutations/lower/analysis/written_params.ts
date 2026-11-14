@@ -199,4 +199,12 @@ export const mutations: Mutation[] = [
     replace: "        if false {\n",
     tests: ["test/writer-sink.test.ts", "-t", "a library's hidden types are written"],
   },
+  {
+    name: "library-dyn-written-any-impl",
+    breaks: "a library that writes a `dyn` it's given makes every formatting impl of the crate's one a `dyn` may be, so a derived `Debug` no `dyn` is made of, `Viewport`'s, is refused where generic code writes it (#1772)",
+    file: "src/lower/analysis/written_params.rs",
+    find: "    found.dyn_written = !dyns_written.is_empty() || foreign.writes_dyns_given();\n",
+    replace: "    found.dyn_written = !dyns_written.is_empty() || foreign.writes_dyns_given();\n    found.dyn_any |= foreign.writes_dyns_given();\n",
+    tests: ["test/crates.test.ts", "-t", "derived_debug_beside_a_library_that_writes_a_dyn"],
+  },
 ];

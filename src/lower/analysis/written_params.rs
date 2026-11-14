@@ -47,9 +47,12 @@ pub(in crate::lower) struct WrittenParams<'tcx> {
     /// or a library it gives one to: every impl of the crate's own carries
     /// `fmtInto`.
     pub(in crate::lower) dyn_written: bool,
-    /// Of a `dyn` written so, the traits it may be of, each with its
-    /// supertraits, `dyn Display`'s `Display`; where any may, none here and
-    /// `dyn_any` (a library's given one, or a `dyn Any`).
+    /// Of a `dyn` the crate writes so, the traits it may be of, each with
+    /// its supertraits, `dyn Display`'s `Display`; where any may, none here
+    /// and `dyn_any`, a `dyn Any`'s. Not of a library's that writes a `dyn`
+    /// it's given: what the crate gives it is each `dyn` it makes, whose
+    /// value's dictionary is given so below, not every impl of the trait,
+    /// which refused each of the Canvas app's derived `Debug`s (#1772).
     dyn_traits: IndexSet<DefId>,
     dyn_any: bool,
     /// Whether the crate makes a `dyn Display` or a `dyn Error`, a pair of
@@ -275,9 +278,9 @@ pub(super) fn written_params<'tcx>(
         }
     }
     // Where a `dyn` is written so, here or by a library given one, each
-    // value the crate makes a `dyn` of: its pair's dictionary writes it.
+    // value the crate makes a `dyn` of: its pair's dictionary writes it,
+    // the one way a value of the crate's reaches a library's `dyn` (#1772).
     found.dyn_written = !dyns_written.is_empty() || foreign.writes_dyns_given();
-    found.dyn_any |= foreign.writes_dyns_given();
     if found.dyn_written {
         for body in all_bodies {
             let owner = tcx.typeck_root_def_id(body.def_id);

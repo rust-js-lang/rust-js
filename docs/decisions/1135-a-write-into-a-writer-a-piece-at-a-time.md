@@ -582,6 +582,14 @@ go.
         a line at its newline; the rest of the line stays lost, the guide's
         difference 57 (#1761, a wrong answer,
         writer_prints_a_line_then_panics).
+      - Amended later, #1772, a regression of this step: a library that
+        writes a `dyn` it's given, serde_json's error and so any library
+        using it, no longer makes every formatting impl of its consumer's
+        one a `dyn` may be. What the consumer gives such a library is each
+        `dyn` the consumer makes, whose value's dictionary is given so, so
+        a derived `Debug` nothing makes a `dyn` of compiles again: the
+        Canvas app's `Viewport` and `Region`, and the pair
+        derived_debug_beside_a_library_that_writes_a_dyn.
 
     Measured: the corpus, 2,499 cases, all as native; 6 snapshots of the
     `writer_sink_` cases take `$writeBy`, 15 cases' library form is their
