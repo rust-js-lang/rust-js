@@ -852,6 +852,43 @@ test("an outer loop's index stays below its slice's length across an inner loop"
   expect(lib.summed([[1, 2], [], [3]])).toBe(6);
 });
 
+// A generic constant, `N` of `while i < N`, is one of its type's range: `i`
+// below it is below the type's most, and `i + 1` JS's own, by MIR alone
+// (#1742). Past it, `i >= N`, `i` is at least none, so `i - 1` keeps its
+// wrap.
+test("an index below a generic constant counts on without its wrap", async () => {
+  const dir = fixture("generic-constant-bound");
+  writeFileSync(join(dir, "lib.rs"), `pub fn made<const N: usize>() -> [u8; N] {
+    let mut bytes = [0u8; N];
+    let mut i = 0;
+    while i < N {
+        bytes[i] = (i % 251) as u8;
+        i += 1;
+    }
+    bytes
+}
+
+pub fn past<const N: usize>(i: usize) -> usize {
+    if i < N { 0 } else { i - 1 }
+}
+
+pub fn made_four() -> [u8; 4] {
+    made::<4>()
+}
+
+pub fn past_none(i: usize) -> usize {
+    past::<0>(i)
+}
+`);
+  expect(wrapsDisagreed(dir)).toEqual([]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("i < N; i++)");
+  expect(js).toContain("(i - 1) >>> 0");
+  const lib = await import(join(dir, "lib.js"));
+  expect([...lib.madeFour()]).toEqual([0, 1, 2, 3]);
+  expect(lib.pastNone(0)).toBe(4294967295);
+});
+
 // React's ReactPostPaintCallback, ported: `while let Some(callback) =
 // CALLBACKS.with_borrow(|c| c.get(i).copied()) { callback(t); i += 1; }`.
 // Where an item at `i` is there, `i` is below a slice's length, so below

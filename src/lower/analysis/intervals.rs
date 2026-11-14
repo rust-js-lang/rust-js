@@ -607,29 +607,15 @@ impl<'tcx> Walk<'_, 'tcx> {
     /// one it's a copy of where it's one.
     fn value(&self, operand: &Operand<'tcx>, state: &State) -> Option<Value> {
         match operand {
-            Operand::Constant(_) => self.operand(operand, &self.empty()).map(|i| Value::Constant(i.lo)),
+            Operand::Constant(c) => match self.constant(c) {
+                Some(n) => Some(Value::Constant(n)),
+                None => self.range(c.ty()).map(|range| Value::Range(range.lo, range.hi)),
+            },
             Operand::Copy(place) | Operand::Move(place) => place
                 .as_local()
                 .filter(|local| !self.lent.contains(local))
                 .map(|local| Value::Local(state.copies.get(&local).copied().unwrap_or(local))),
             Operand::RuntimeChecks(_) => None,
-        }
-    }
-
-    fn empty(&self) -> State {
-        State {
-            intervals: IndexVec::from_elem_n(None, self.body.local_decls.len()),
-            comparisons: IndexMap::default(),
-            copies: IndexMap::default(),
-            lens: IndexMap::default(),
-            below: IndexSet::default(),
-            least: IndexMap::default(),
-            empties: IndexMap::default(),
-            ranges: IndexMap::default(),
-            sums: IndexMap::default(),
-            gets: IndexMap::default(),
-            pushed: IndexSet::default(),
-            lending: IndexMap::default(),
         }
     }
 
@@ -771,6 +757,7 @@ impl<'tcx> Walk<'_, 'tcx> {
             {
                 let most = |v: Value| match v {
                     Value::Constant(n) => Some(n),
+                    Value::Range(_, hi) => Some(hi),
                     Value::Local(l) => state.intervals[l]
                         .or_else(|| self.range(self.body.local_decls[l].ty))
                         .map(|i| i.hi),
@@ -1146,13 +1133,14 @@ impl<'tcx> Walk<'_, 'tcx> {
         };
         let get = |v: Value, state: &State| match v {
             Value::Constant(n) => Some(Interval { lo: n, hi: n }),
+            Value::Range(lo, hi) => Some(Interval { lo, hi }),
             Value::Local(l) => state.intervals[l].or_else(|| self.range(self.body.local_decls[l].ty)),
         };
         // `x < y` or `x <= y` known, `y` a slice's length where a local
         // holds one, else an integer local.
         let term = |v: Value, state: &State| match v {
             Value::Local(l) => Some(state.length_of(l).map_or(Term::Int(l), Term::Len)),
-            Value::Constant(_) => None,
+            Value::Constant(_) | Value::Range(..) => None,
         };
         let related = match op {
             BinOp::Lt | BinOp::Le => Some((c.a, c.b, op == BinOp::Lt)),

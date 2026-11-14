@@ -32,6 +32,10 @@ pub(super) struct Comparison {
 pub(super) enum Value {
     Local(Local),
     Constant(i128),
+    /// A constant that doesn't evaluate, a generic one, `N` of
+    /// `[u8; N]`: one of its type's range, at least the one and at most the
+    /// other (#1742).
+    Range(i128, i128),
 }
 
 /// What a relation's greater side is: a slice's length, by the local the
@@ -108,7 +112,9 @@ impl End {
     pub(super) fn of(self, local: Local) -> bool {
         match self {
             End::Below(Value::Local(l)) | End::AtMost(Value::Local(l)) | End::Items(l) | End::Indexes(l) => l == local,
-            End::Below(Value::Constant(_)) | End::AtMost(Value::Constant(_)) => false,
+            End::Below(Value::Constant(_) | Value::Range(..)) | End::AtMost(Value::Constant(_) | Value::Range(..)) => {
+                false
+            }
         }
     }
 }

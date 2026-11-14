@@ -260,4 +260,20 @@ export const mutations: Mutation[] = [
     replace: "                .flat_map(|_: Interval| Vec::<i128>::new()),\n",
     tests: ["test/lowering-integer-ranges.test.ts", "-t", "an outer loop's index stays below"],
   },
+  {
+    name: "intervals-generic-constant-unknown",
+    breaks: "a generic constant, `N` of `while i < N`, is no value a comparison narrows by, so `i += 1` below it keeps its wrap, left to the bridge (#1742)",
+    file: "src/lower/analysis/intervals.rs",
+    find: "                None => self.range(c.ty()).map(|range| Value::Range(range.lo, range.hi)),\n",
+    replace: "                None => None,\n",
+    tests: ["test/lowering-integer-ranges.test.ts", "-t", "an index below a generic constant"],
+  },
+  {
+    name: "intervals-generic-constant-its-least",
+    breaks: "a generic constant is taken as its type's least, so past `i < N`, `i - 1` of `i >= N` is JS's own and gives `-1` where `i` is 0",
+    file: "src/lower/analysis/intervals.rs",
+    find: "            Value::Range(lo, hi) => Some(Interval { lo, hi }),\n",
+    replace: "            Value::Range(_, hi) => Some(Interval { lo: hi, hi }),\n",
+    tests: ["test/lowering-integer-ranges.test.ts", "-t", "an index below a generic constant"],
+  },
 ];
