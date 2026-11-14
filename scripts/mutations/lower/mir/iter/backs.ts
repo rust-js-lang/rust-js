@@ -830,10 +830,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "counted-take-unmade",
-    breaks: "a `take(n)` whose length alone a crate that reads a `Vec`'s capacity asks isn't made knowing it, and is refused (#1317)",
+    breaks: "a `take(n)` whose length alone a crate that reads a `Vec`'s capacity asks isn't made knowing it, its JS another form than `$taking` (#1317; refused before #1792 gave hintless forms their length)",
     file: "src/lower/mir/iter/backs.rs",
     find: "                if (self.made_stepped_from_its_back() || self.made_counted_from_its_back()) && !held.is_ref() =>\n",
     replace: "                if self.made_stepped_from_its_back() && !held.is_ref() =>\n",
+    snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^counted_adapters_where_capacity_is_read.rs$"],
   },
   {

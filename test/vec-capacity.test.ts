@@ -458,10 +458,18 @@ pub fn lengths() -> Vec<usize> {
     let mut pairs = Pairs { buffer: Buffer { it: 0u8..20, buffer: Vec::new() } };
     vec![pairs.next().unwrap(), pairs.next().unwrap(), pairs.next().unwrap()]
 }
+
+// Of what isn't \`TrustedLen\`, a string's \`chars()\`, stepped by \`next\`,
+// as std's \`extend_desugared\` steps it, not by its fold (#1805).
+pub fn char_lengths() -> Vec<usize> {
+    let mut pairs = Pairs { buffer: Buffer { it: "abcdefghijklmnop".chars(), buffer: Vec::new() } };
+    vec![pairs.next().unwrap(), pairs.next().unwrap(), pairs.next().unwrap()]
+}
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const lib = await import(join(dir, "lib.js"));
   expect(lib.lengths()).toEqual([2, 4, 6]);
+  expect(lib.charLengths()).toEqual([2, 4, 6]);
 });
 
 // A \`reserve\` of a trait's default's \`Vec<Option<Self::Item>>\` an impl

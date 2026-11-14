@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/extend.js",
     find: "    () => it.return?.(),\n  );\n}",
     replace: "    () => undefined,\n  );\n}",
-    tests: ["test/corpus.test.ts", "-t", "^panic_mid_iteration_drops.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(panic_mid_iteration_drops|consumer_closes_what_it_steps_on_a_panic|panic_part_way_drops).rs$"],
   },
   {
     name: "extend-by-next",
