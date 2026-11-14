@@ -396,4 +396,12 @@ export const mutations: Mutation[] = [
     replace: "        let exact = kept && self.recognition().grows_by_exact_len(iter_ty);\n",
     tests: ["test/corpus.test.ts", "-t", "^held_step_by_of_a_reversed_range_grows_as_std.rs$"],
   },
+  {
+    name: "compiled-chain-hint-unknown",
+    breaks: "in the build of std's structs, a `Vec` grown by std's compiled `Chain` of a compiled `Inspect` and an array's, whose hint is std's, is refused where its capacity is read (#1737)",
+    file: "src/lower/iterators/hint_asks.rs",
+    find: "        if self.compiled_struct(ty, &it) && self.compiled_hint_is_stds(ty) {\n",
+    replace: "        if false && self.compiled_struct(ty, &it) && self.compiled_hint_is_stds(ty) {\n",
+    tests: ["test/iterator-forms.test.ts", "-t", "^vec_grown_by_a_chain_of_an_inspect"],
+  },
 ];

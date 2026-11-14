@@ -76,6 +76,10 @@ const few = [
   // array, of a crate that reads a capacity: a B-tree's `range(..)`'s, none,
   // and a heap's `iter()`'s, its length (#1215).
   "capacity_of_what_std_hints_less.rs",
+  // A chain of a compiled `Inspect` and an array's grown into a `Vec`
+  // whose capacity is read: std's compiled `Chain`'s hint, its parts'
+  // summed, std's (#1737).
+  "vec_grown_by_a_chain_of_an_inspect_where_capacity_is_read.rs",
   // A boxed function a compiled `Scan` holds through an arrow that gives it
   // the state's box, dropped with it (#1220).
   "boxed_fn_through_a_call_drops.rs",

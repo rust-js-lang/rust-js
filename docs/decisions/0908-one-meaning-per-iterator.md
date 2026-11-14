@@ -64,3 +64,16 @@ whose dropped item's drop panics, which `differs` lists.
 `scripts/shard.ts`, to where its part runs: per push, by a file that sets it
 and that a push runs, or at night, with why. A part like this one can't be
 left to the nightly unsaid again (ADR 1093, amended).
+
+## Amendment: a compiled chain's hint, of compiled parts (2026-11-14, #1737)
+
+In this build a `Vec` grown by std's compiled `Chain` of a compiled
+`Inspect` of a `Vec`'s items and an array's was refused where its capacity
+is read: the check of its parts' hints (`parts_knowing_lengths`) asked of
+the runtime's `$lazyChain(a, b)`, which this build doesn't make. A compiled
+chain or zip's `size_hint` is std's body's over its parts', so it's std's
+where each part's is: a source whose own is std's, or std's compiled
+adapter of such ones (`compiled_hint_is_stds`). New corpus
+`vec_grown_by_a_chain_of_an_inspect_where_capacity_is_read`, in this
+suite's cases; mutation `compiled-chain-hint-unknown`, caught. The plain
+build's held form of it stays refused (#1744).

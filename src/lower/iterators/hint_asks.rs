@@ -552,6 +552,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.recognition().lower_bound_is_stds(ty) {
             return Ok(it);
         }
+        // std's compiled chain or zip, as the build of std's structs makes
+        // each (ADR 0908): its hint is std's body's over its parts', std's
+        // where each part's is (`compiled_hint_is_stds`, #1737).
+        if self.compiled_struct(ty, &it) && self.compiled_hint_is_stds(ty) {
+            return Ok(it);
+        }
         let sources = crate::lower::recognition::chained_sources(self.tcx, ty)
             .map(|sources| ("$lazyChain", sources))
             .or_else(|| crate::lower::recognition::zipped_sources(self.tcx, ty).map(|sources| ("$lazyZip", sources)));
@@ -577,6 +583,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 "a `Vec` grown by a `{ty}` in a crate that reads a `Vec`'s capacity, which std grows by that iterator's `size_hint()`, whose lower bound JS's doesn't have"
             ),
         ))
+    }
+
+    /// Whether an iterator of type `ty`, std's compiled struct's part,
+    /// hints std's lower bound: a source whose own is std's, or std's
+    /// compiled adapter of such ones, whose `size_hint` is std's body's over
+    /// what it holds, as the build of std's structs makes each (ADR 0908),
+    /// a chain of an `inspect()` of a `Vec`'s items and an array's (#1737).
+    fn compiled_hint_is_stds(&self, ty: Ty<'tcx>) -> bool {
+        let ty = ty.peel_refs();
+        if self.recognition().lower_bound_is_stds(ty) {
+            return true;
+        }
+        crate::lower::recognition::is_compiled_std_iterator(self.tcx, ty)
+            && crate::lower::recognition::adapted_iterators(self.tcx, self.typing_env, ty)
+                .is_some_and(|held| held.into_iter().all(|part| self.compiled_hint_is_stds(part)))
     }
 
     /// Whether a chain or a zip of type `ty`, or a copy of one, knows std's
