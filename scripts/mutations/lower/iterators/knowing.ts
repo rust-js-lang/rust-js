@@ -57,7 +57,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/knowing.rs",
     find: "            // source's, the range it steps (#385).\n            let value = stepped_value(&value).unwrap_or(value);\n",
     replace: "            // source's, the range it steps (#385).\n",
-    tests: ["test/corpus.test.ts", "-t", "^lengths_and_backs_given_on.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(lengths_and_backs_given_on|zip_from_its_back|back_steps_beside_a_live_drop).rs$"],
   },
   {
     name: "made-skipping-reread",

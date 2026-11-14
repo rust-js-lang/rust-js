@@ -1551,3 +1551,24 @@ before; mutations `any-call-asks-nothing-seen`,
 `pointer-of-any-asks-nothing-seen`, `seen-std-given-any-unasked`,
 `library-call-may-be-the-crates` and `fn-bound-parameter-runs-nothing`;
 `unseen-never` now holds the library half.
+
+## Amendment (2026-11-15, #1841): a guard kept in an aggregate, written whole
+
+A cell's `RefMut` kept in a tuple's, a struct's or an array's place, or in
+one nested in another, written whole through, `*(items.0) = v`, replaced
+the place: `items[0] = [7]; $unborrow(items[0])`, so the cell kept its old
+value and stayed borrowed, "RefCell already mutably borrowed" where
+native prints `[7]` (case C of ADR 0262). A guard a variable holds was
+written as the cell, `$assign(g, [7])`, only as its place was no member
+nor index (`names_place`). What a guard's `deref_mut` gives isn't the
+guard's place: of a cell of an object the cell is (`is_value_cell`), it's
+that object, which the guard is as it is; so it's no place reference
+(`mir_place_references`), and the write of it whole writes the object,
+`$assign(items[0], [7])`, wherever the guard's kept. A `{ value }` cell's
+guard, of what isn't an object or of one the crate boxes, a `dyn`'s, gives
+its `value`, a place, written as before. Found by the metamorphic net's
+rewrites of `refcell_guard_bounds`, its four lines off
+`test/metamorphic-known.txt`. `test/corpus/guard_held_in_an_aggregate_written_whole.rs`
+holds a tuple's, a struct field's, an array item's and a nested one's, and
+a number's and a `String`'s, against native Rust; mutation
+`cell-guard-deref-a-place`, caught.

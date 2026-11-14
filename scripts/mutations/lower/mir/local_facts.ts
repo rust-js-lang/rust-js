@@ -316,4 +316,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^refcell_vec_bounds.rs$"],
     snapshots: true,
   },
+  {
+    name: "cell-guard-deref-a-place",
+    breaks: "a `RefCell`'s `RefMut` kept in a tuple's, a struct's or an array's place, written whole through, `*(items.0) = v`, replaces the place, `items[0] = v`, so the cell keeps its old value and stays borrowed: \"already mutably borrowed\" (#1841)",
+    file: "src/lower/mir/local_facts.rs",
+    find: "                    !guard\n",
+    replace: "                    true\n",
+    tests: ["test/corpus.test.ts", "-t", "^guard_held_in_an_aggregate_written_whole.rs$"],
+  },
 ];

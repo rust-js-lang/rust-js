@@ -557,10 +557,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 && destination.projection.is_empty()
                 && reference(destination.local)
             {
-                let gives_place = func.const_fn_def().is_some_and(|(def_id, _)| {
-                    (self.tcx.trait_of_assoc(def_id)).is_some_and(|t| {
-                        self.tcx.is_lang_item(t, LangItem::IndexMut) || self.tcx.is_lang_item(t, LangItem::DerefMut)
-                    })
+                // Not a `RefCell` guard's `deref_mut` of an object the cell
+                // is (`is_value_cell`, ADR 0863): what it gives is that
+                // object, which the guard is as it is, not the guard's place,
+                // so a write of it whole writes the object, wherever the
+                // guard's kept, a tuple's, a field's or an item's (#1841). A
+                // `{ value }` cell's guard, of what isn't an object or of one
+                // the crate boxes, `dyn`'s, gives its `value`, a place.
+                let gives_place = func.const_fn_def().is_some_and(|(def_id, args)| {
+                    let guard = args.types().next().is_some_and(|this| {
+                        crate::lower::recognition::is_cell_guard(self.tcx, this)
+                            && matches!(this.kind(), ty::Adt(_, guard_args)
+                                if guard_args.types().next().is_some_and(|held| self.is_value_cell(self.ref_cell_of(held))))
+                    });
+                    !guard
+                        && (self.tcx.trait_of_assoc(def_id)).is_some_and(|t| {
+                            self.tcx.is_lang_item(t, LangItem::IndexMut) || self.tcx.is_lang_item(t, LangItem::DerefMut)
+                        })
                 });
                 let how = if gives_place { Made::Place } else { Made::Other };
                 made.entry(destination.local).or_default().push(how);
