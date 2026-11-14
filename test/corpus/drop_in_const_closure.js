@@ -75,7 +75,7 @@ const LABELED = (label, depth) => {
     return result;
   }
   try {
-    result = CALL(() => (depth + (isRendering ? 1 : 0)) >>> 0);
+    result = CALL(() => depth + (isRendering ? 1 : 0));
   } catch (error) {
     $cleanup(() => {
       labeledDrop_drop(_labeled);

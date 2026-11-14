@@ -116,6 +116,18 @@ pub(in crate::lower) fn range_step<'tcx>(
     of_integers.then_some(step)
 }
 
+/// Whether a call is std's `From<bool>` of an integer, `usize::from(apple)`:
+/// 0 or 1 (#1863).
+pub(in crate::lower) fn integer_from_bool<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    def_id: DefId,
+    args: ty::GenericArgsRef<'tcx>,
+) -> bool {
+    (tcx.trait_of_assoc(def_id)).is_some_and(|t| is_std_def(tcx, t, StdItem::From))
+        && args.types().next().is_some_and(|of| of.is_integral())
+        && args.types().nth(1).is_some_and(|from| from.is_bool())
+}
+
 /// Whether a call is an integer's `min` or `max`, `Ord`'s or `cmp`'s, by
 /// their diagnostic items: of `max`, true (ADR 1137).
 pub(in crate::lower) fn integer_min_max<'tcx>(

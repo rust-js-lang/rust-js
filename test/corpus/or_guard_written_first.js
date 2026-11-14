@@ -39,7 +39,7 @@ function main() {
   for (const x of [0, 1, 4, 5, 10]) {
     for (const boundary of [undefined, 1, 3]) {
       const thrown = throwException(x, boundary, log);
-      log.push(((thrown ? 1 : 0) + 10) >>> 0);
+      log.push((thrown ? 1 : 0) + 10);
     }
   }
   console.log(`[${log.join(", ")}]`);

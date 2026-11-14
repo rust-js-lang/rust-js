@@ -176,7 +176,7 @@ export function quadrant(x, y) {
     }
     x = value.x;
     if (x < 0) {
-      return (2 + (y < 0 ? 1 : 0)) | 0;
+      return 2 + (y < 0 ? 1 : 0);
     }
     y$1 = value.y;
     return (y$1 * 4) | 0;

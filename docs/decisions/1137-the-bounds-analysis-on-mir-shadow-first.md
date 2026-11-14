@@ -822,3 +822,27 @@ lends for a view, `board.iter_mut()`, forgets its rows, so the 4 lines of
   `[guard][0]`;
 - `right_max_levels[i + 1]` under `i < terraces.len() - 1`;
 - `pattern_table[prefix_index - 1]` past `p[prefix_index]`, as long as `p`.
+
+### Step 5: triage before the switch (2026-11-15)
+
+Of the 31 call-bounds lines left, three small rules close five, and a
+sixth closes a readability report:
+- **A test held in a `bool`**, `let truncated = len > LIMIT; if truncated`,
+  is switched on as its copy. The switch looks the comparison up through
+  the copy's root (`State::comparison_of`). A negated one, `!short`,
+  carries the comparison inverted through the `Not`
+  (`Comparison::negated`). What it compares written between forgets it, as
+  any comparison of a written local is forgotten. So does a slice whose
+  length changes between: the length's temporary no longer holds it
+  (`slice_ranges_known`'s `cleared` and `rewritten`, each panicking against
+  native).
+- **A shared reference to a struct that holds no cell itself** keeps its
+  fields as locals where it's also used whole, returned or compared
+  (`fields_as_locals`): nothing changes its fields while it's borrowed.
+  That proves `find(&node.children[0])` under `node.children.len() == 1`
+  beside `node` returned. A `&mut` one used whole, `reset(node)`, doesn't.
+- **A `bool` made an integer**, `usize::from(apple)` or `apple as usize`,
+  is 0 or 1 (`integer_from_bool`). So of an array of two its index is JS's
+  own, `parsed[apple ? 1 : 0]`, through a thread-local's `with` too
+  (#1863). Of an array of one, `true` is past it, checked
+  (`bool_indexed_arrays`).

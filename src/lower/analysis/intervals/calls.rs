@@ -83,6 +83,12 @@ impl<'tcx> Walk<'_, 'tcx> {
                 _ => {}
             }
         }
+        // `usize::from(apple)` of a `bool`: 0 or 1 (#1863).
+        if let Some((callee, callee_args)) = func.const_fn_def()
+            && integer_from_bool(self.tcx, callee, callee_args)
+        {
+            after.intervals[local] = Some(Interval { lo: 0, hi: 1 });
+        }
         // An integer's `min` or `max`: between its operands, and
         // below what the one, or both, are below, a length held
         // among them; `xs[i.min(xs.len() - 1)]`.

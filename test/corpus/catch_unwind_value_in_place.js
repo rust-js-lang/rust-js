@@ -67,7 +67,7 @@ function twice(n) {
     if (found) {
       return 1;
     }
-    return ((found ? 1 : 0) + 2) >>> 0;
+    return (found ? 1 : 0) + 2;
   } catch (error) {
     $catchable(error);
     return 3;

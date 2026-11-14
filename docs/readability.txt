@@ -1,14 +1,14 @@
 # shape	count	per 10,000 lines
-files	2572
-lines	342414
+files	2573
+lines	342475
 temporaries	0	0
 labeled blocks	0	0
 while (true)	224	6.5
-$iter	2868	83.8
+$iter	2868	83.7
 Iterator.from	266	7.8
 return;	331	9.7
-renamed x$1	16214	473.5
-role fallbacks	8850	258.5
+renamed x$1	16214	473.4
+role fallbacks	8850	258.4
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1	role fallbacks
 test/corpus/adapter_drop_past_a_panic.js	52	0	0	0	1	0	0	0	1
 test/corpus/adapter_drops.js	1859	0	0	1	19	2	1	98	61
@@ -142,6 +142,7 @@ test/corpus/blanket_unsized_impl.js	45	0	0	0	2	0	0	4	3
 test/corpus/block_modules.js	28	0	0	0	0	0	0	4	0
 test/corpus/block_results_read_as_another_width.js	129	0	0	0	0	0	0	0	2
 test/corpus/bool_call_of_another_module.js	21	0	0	0	0	0	0	0	0
+test/corpus/bool_indexed_arrays.js	37	0	0	0	0	0	0	0	0
 test/corpus/bool_ops_by_ref.js	31	0	0	0	1	0	0	0	0
 test/corpus/borrow_loop_inner_break_outer.js	54	0	0	0	0	0	0	0	0
 test/corpus/borrow_mut_of_a_value_as_itself.js	98	0	0	0	0	0	0	3	2
@@ -2084,7 +2085,7 @@ test/corpus/slice_range_past_length_panic.js	24	0	0	0	0	0	0	0	0
 test/corpus/slice_range_reverse.js	264	0	0	0	0	0	0	6	3
 test/corpus/slice_range_reversed_panic.js	18	0	0	0	0	0	0	0	0
 test/corpus/slice_range_tested_panic.js	22	0	0	0	0	0	0	0	0
-test/corpus/slice_ranges_known.js	49	0	0	0	0	0	0	0	0
+test/corpus/slice_ranges_known.js	73	0	0	0	0	0	0	0	0
 test/corpus/slice_searches_ask_a_predicate_as_they_step.js	241	0	0	0	0	0	0	9	7
 test/corpus/slice_split.js	85	0	0	0	0	0	0	14	9
 test/corpus/slice_split_at_panic.js	16	0	0	0	0	0	0	0	0

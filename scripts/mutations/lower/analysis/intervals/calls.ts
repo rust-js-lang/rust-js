@@ -84,4 +84,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/intervals-shadow.test.ts", "-t", "guard keeps"],
   },
+  {
+    name: "integer-from-bool-unbounded-low",
+    breaks: "`usize::from(apple)` is taken as 0 only, so `one[usize::from(apple)]` of an array of one is unchecked and reads `undefined` where Rust panics (#1863)",
+    file: "src/lower/analysis/intervals/calls.rs",
+    find: "            after.intervals[local] = Some(Interval { lo: 0, hi: 1 });\n",
+    replace: "            after.intervals[local] = Some(Interval { lo: 0, hi: 0 });\n",
+    tests: ["test/corpus.test.ts", "-t", "^bool_indexed_arrays\\.rs$"],
+  },
 ];

@@ -16,9 +16,9 @@
 use crate::collections::{IndexMap, IndexSet};
 use crate::lower::bindings::{is_rest_value, reads_string_length};
 use crate::lower::recognition::{
-    RangeStep, SliceLength, call_indexes, counts_utf16_units, integer_min_max, local_key_with, option_copied,
-    range_index, range_index_bounds, range_of_integers, range_step, ref_deref, refcell_borrow, slice_get, slice_length,
-    text_length,
+    RangeStep, SliceLength, call_indexes, counts_utf16_units, integer_from_bool, integer_min_max, local_key_with,
+    option_copied, range_index, range_index_bounds, range_of_integers, range_step, ref_deref, refcell_borrow,
+    slice_get, slice_length, text_length,
 };
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_index::IndexVec;
@@ -874,11 +874,18 @@ impl<'tcx> Walk<'_, 'tcx> {
             }
             // A held test negated, `!short` of `short = len <= LIMIT`.
             Rvalue::UnaryOp(mir::UnOp::Not, Operand::Copy(of) | Operand::Move(of)) => {
-                comparison = of.as_local().and_then(|of| state.comparison_of(of)).and_then(Comparison::negated);
+                comparison = of
+                    .as_local()
+                    .and_then(|of| state.comparison_of(of))
+                    .and_then(Comparison::negated);
                 None
             }
             // A cast that keeps its value, what it casts fitting its type:
             // a copy of it, its relations its own, `s as usize` of `s >= 1`.
+            // A `bool`'s cast, `apple as usize`, is 0 or 1 (#1863).
+            Rvalue::Cast(CastKind::IntToInt, operand, _) if operand.ty(&*self.body, self.tcx).is_bool() => {
+                Some(Interval { lo: 0, hi: 1 }).filter(fits)
+            }
             Rvalue::Cast(CastKind::IntToInt, operand, _) => {
                 let kept = self.operand(operand, state).filter(fits);
                 if kept.is_some()
