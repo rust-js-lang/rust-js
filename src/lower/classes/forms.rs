@@ -56,8 +56,9 @@ pub(crate) fn es_classes(tcx: TyCtxt<'_>) -> Vec<DefId> {
 pub(crate) fn es_prototype_refused(tcx: TyCtxt<'_>, adt: DefId) -> String {
     let class = tcx.item_name(adt);
     match superclass(tcx, adt) {
-        Some((_, (_, extends))) => format!(
-            "replacing the prototype of `{class}`, an ES class extending `{extends}`, whose `prototype` JS doesn't let be written"
+        Some((_, base)) => format!(
+            "replacing the prototype of `{class}`, an ES class extending `{}`, whose `prototype` JS doesn't let be written",
+            base.name()
         ),
         None => format!(
             "replacing the prototype of `{class}`, an ES class, `#[rust_js::class(es)]`, whose `prototype` JS doesn't let be written: a constructor function's is, `#[rust_js::class]` (rd682)"

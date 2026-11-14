@@ -20,6 +20,7 @@ it writes, without its header comment and source-map line.
 - [Catch an unwind: `catch_unwind`](#catch-an-unwind-catch_unwind)
 - [Catch a stack overflow: `js::catch_stack_overflow`](#catch-a-stack-overflow-jscatch_stack_overflow)
 - [Throw a JS value: `js::throw`](#throw-a-js-value-jsthrow)
+- [A class that extends `Error`: `js::ErrorClass`](#a-class-that-extends-error-jserrorclass)
 - [Exiting the process](#exiting-the-process)
 
 ## A panic is a thrown `Error`
@@ -1145,6 +1146,101 @@ export function lazyInitializer(payload) {
 - **What it throws unwinds as any JS throw**: `catch_unwind` catches it,
   and its payload's `downcast_ref::<&JsError>()` is the value thrown, a
   string's or a promise's too, as [above](#catch-an-unwind-catch_unwind).
+
+## A class that extends `Error`: `js::ErrorClass`
+
+A `#[rust_js::class]` struct that implements `js::ErrorClass` is an ES
+class that extends JS's `Error`, as an SDK writes its own errors, so a
+caller's `instanceof` and `catch` see a real `Error`, of its stack, and
+its own fields beside
+([ADR 1158](../../decisions/1158-a-class-that-extends-error.md)).
+vercel-labs/vgpu's `VGPUError`:
+
+```rust
+use js::{ErrorClass, Unknown};
+
+pub struct VgpuErrorData {
+    pub code: String,
+    pub message: String,
+    pub severity: Option<&'static str>,
+    pub cause: Option<&'static Unknown>,
+}
+
+#[cfg_attr(rust_js, rust_js::class, rust_js::name = "VGPUError")]
+pub struct VgpuError {
+    message: String,
+    cause: Option<&'static Unknown>,
+    name: &'static str,
+    pub code: String,
+    pub severity: &'static str,
+}
+
+impl ErrorClass for VgpuError {}
+
+#[cfg_attr(rust_js, rust_js::class)]
+impl VgpuError {
+    pub fn new(data: VgpuErrorData) -> Self {
+        Self {
+            message: data.message,
+            cause: data.cause,
+            name: "VGPUError",
+            code: data.code,
+            severity: data.severity.unwrap_or("error"),
+        }
+    }
+}
+
+pub fn fail(code: &str) -> ! {
+    let error = VgpuError::new(VgpuErrorData {
+        code: code.to_string(),
+        message: format!("{code} failed"),
+        severity: None,
+        cause: None,
+    });
+    js::throw(Some(js::unknown(error.error())))
+}
+```
+
+```js
+export class VGPUError extends Error {
+  constructor(data) {
+    super(data.message, { cause: data.cause });
+    this.name = "VGPUError";
+    this.code = data.code;
+    this.severity = data.severity ?? "error";
+  }
+}
+
+export function fail(code) {
+  const error = new VGPUError({
+    code,
+    message: `${code} failed`,
+  });
+  throw error;
+}
+```
+
+- **What `Error`'s constructor sets is the struct's fields of its
+  names.** A `message` field, of text, `String` or `&str`, is
+  `super(message)`'s; a `cause` field is its options', `{ cause }`, there
+  where the struct has one, `None`'s `undefined` too, and left out where
+  it has none, as `new Error(message)` makes no `cause`. Each is the own
+  property `Error` makes, which `Object.keys` and `JSON.stringify` leave
+  out, as JS's own subclass's are, where `this.message = ..` would list
+  it. A `message` of another type is refused, saying so.
+- **Every other field is set after `super`**, in the order Rust writes
+  them, `name` too, as upstream's `this.name = "VGPUError"`. One written
+  before `message` whose value runs code is held first, `const code =
+  next();`, so it runs where Rust runs it.
+- **It writes its constructor**, `fn new`, which JS's `new VGPUError(..)`
+  calls; one that writes none is refused, as `Error` makes no class of
+  its own.
+- **It's an `Error` to Rust too**: `error.error()` is it as the
+  `js::Error` it is, given or thrown as one, and `error.stack()` its
+  stack, or `None` where the host keeps none.
+- **Its declaration extends `Error`**, `export declare class VGPUError
+  extends Error { constructor(data: VgpuErrorData); message: string;
+  cause?: unknown; .. }`.
 
 ## Exiting the process
 

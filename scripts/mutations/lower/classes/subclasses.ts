@@ -51,8 +51,8 @@ export const mutations: Mutation[] = [
     name: "subclass-extends-nothing",
     breaks: "a class component's class extends nothing, printed as a constructor function whose `super(props)` is a SyntaxError",
     file: "src/lower/classes/subclasses.rs",
-    find: "        extends: (adt.and_then(|adt| superclass(tcx, adt))).map(|(_, export)| imports[&export].clone()),\n",
-    replace: "        extends: (adt.and_then(|adt| superclass(tcx, adt)).filter(|_| false)).map(|(_, export)| imports[&export].clone()),\n",
+    find: "        extends: (adt.and_then(|adt| superclass(tcx, adt))).map(|(_, base)| match base {\n",
+    replace: "        extends: (adt.and_then(|adt| superclass(tcx, adt)).filter(|_| false)).map(|(_, base)| match base {\n",
     tests: [
       "test/class-components.test.ts",
       "-t",
@@ -82,5 +82,13 @@ export const mutations: Mutation[] = [
     find: "    if tcx.parent_module_from_def_id(class.expect_local()) != module {\n",
     replace: "    if false {\n",
     tests: ["test/class-components.test.ts", "-t", "beside its struct"],
+  },
+  {
+    name: "base-class-global-unread",
+    breaks: "a binding's class trait that names a global class, `js::ErrorClass`'s `Error`, is no class's, so a struct that implements it is refused as no binding's subclass",
+    file: "src/lower/classes/subclasses.rs",
+    find: "        } => Some(BaseClass::Global(name)),\n",
+    replace: "        } => Some(name).and(None),\n",
+    tests: ["test/error-classes.test.ts", "-t", "JS's own subclass of Error"],
   },
 ];

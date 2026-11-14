@@ -189,3 +189,11 @@ pub(in crate::lower) fn is_js_is_when(tcx: TyCtxt<'_>, did: DefId) -> bool {
                     ty::Adt(adt, _) if is_js_is(tcx, adt.did()))
         })
 }
+
+/// Whether `did` is `js::ErrorClass`, the binding's class trait of JS's
+/// `Error`, whose constructor sets a class's `message` and `cause` (#1808).
+pub(in crate::lower) fn is_js_error_class(tcx: TyCtxt<'_>, did: DefId) -> bool {
+    tcx.crate_name(did.krate).as_str() == "js"
+        && tcx.item_name(did).as_str() == "ErrorClass"
+        && tcx.opt_parent(did).is_some_and(|parent| parent.is_crate_root())
+}

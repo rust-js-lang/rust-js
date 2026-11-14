@@ -456,8 +456,8 @@ export const mutations: Mutation[] = [
     name: "subclass-new-of-any-arity",
     breaks: "a class component's `fn new(props, more)` is allowed, its `super(props, more)` given what React never passes",
     file: "src/lower/classes.rs",
-    find: "                            if superclass(tcx, class).is_some() && sig.inputs().len() != 1 {\n",
-    replace: "                            if false {\n",
+    find: "                                && sig.inputs().len() != 1\n",
+    replace: "                                && false\n",
     tests: [
       "test/class-components.test.ts",
       "-t",
@@ -556,5 +556,13 @@ export const mutations: Mutation[] = [
     find: "                if !tcx.impl_trait_id(id).is_local() && is_class_trait(tcx, tcx.impl_trait_id(id)) =>\n",
     replace: "                if false =>\n",
     tests: ["test/library-classes.test.ts", "-t", "implements it for a class alone"],
+  },
+  {
+    name: "error-class-constructor-arity-refused",
+    breaks: "a class that extends `Error` is held to a component's one parameter, `fn new(props: P)`, so `Uncaused::new(prefix, count)` is refused where its `super` is given its fields",
+    file: "src/lower/classes.rs",
+    find: "                                && !errors::extends_error(tcx, class)\n",
+    replace: "                                && !false\n",
+    tests: ["test/error-classes.test.ts", "-t", "JS's own subclass of Error"],
   },
 ];

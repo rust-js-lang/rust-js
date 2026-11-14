@@ -768,7 +768,7 @@ impl UsesWritten {
             // A binding's class a class of the module's extends, `use
             // react::Component;`'s `import { Component } from "react"`
             // (rd629).
-            DefKind::Trait => crate::lower::classes::base_class(tcx, id).is_some_and(of),
+            DefKind::Trait => crate::lower::classes::imported_base(tcx, id).is_some_and(of),
             _ => own(id),
         }
     }

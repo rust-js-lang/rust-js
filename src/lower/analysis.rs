@@ -496,7 +496,8 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // Component` (rd331).
     for adt in tcx.hir_crate_items(()).definitions().map(|def| def.to_def_id()) {
         if tcx.def_kind(adt) == DefKind::Struct
-            && let Some((imp, export)) = super::classes::superclass(tcx, adt)
+            && let Some((imp, base)) = super::classes::superclass(tcx, adt)
+            && let Some(export) = base.imported().cloned()
             && let Some(home) = super::classes::home(tcx, adt)
         {
             uses.bound_to

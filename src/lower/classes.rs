@@ -18,6 +18,7 @@ use rustc_span::def_id::DefId;
 mod accessors;
 mod constructors;
 mod defaults;
+mod errors;
 mod fields;
 mod forms;
 mod getters;
@@ -31,6 +32,7 @@ pub(crate) use accessors::{field_accessor, fields_given, gives_its_field};
 use constructors::gives_instance;
 pub(crate) use constructors::set_where_constructed;
 pub(in crate::lower) use defaults::{prototype_defaults, take_default};
+pub(crate) use errors::extends_error;
 pub(crate) use forms::{declares_fields, es_classes, es_prototype_refused, is_es_class};
 use forms::{form_misuse, impl_form_misuse};
 pub(crate) use getters::extended_getter;
@@ -43,7 +45,7 @@ pub(in crate::lower) use receivers::body_receiver;
 pub(crate) use receivers::{Receiver, receiver};
 use states::spread_state;
 pub(crate) use states::{flattened_parameter, new_of_state};
-pub(crate) use subclasses::{base_class, js_class, member_naming, subclass_impl_class, superclass};
+pub(crate) use subclasses::{base_class, imported_base, js_class, member_naming, subclass_impl_class, superclass};
 use subclasses::{starts_undefined, superclass_impls};
 
 /// The name of a class's constructor, Rust's own for one, `fn new(..) ->
@@ -579,7 +581,14 @@ pub(super) fn reject_misuse<'tcx>(
                         "extends one class, a binding's it implements, `impl Component<P> for Surface`, not two",
                     );
                 }
+                // Of `Error`'s, what its constructor sets (#1808).
+                if errors::extends_error(tcx, id) {
+                    for (at, why) in errors::error_class_misuse(tcx, id) {
+                        refuse(at, &why);
+                    }
+                }
                 match constructor_of(tcx, id) {
+                    None if errors::extends_error(tcx, id) => {}
                     None if extends.is_empty() => refuse(
                         span,
                         "is made by its constructor, `fn new(..) -> Self`, in its impl, or by the class it extends, a binding's it implements, `impl Component<P> for Surface`",
@@ -688,7 +697,11 @@ pub(super) fn reject_misuse<'tcx>(
                             }
                             // `super(props)`: what its superclass is
                             // constructed with, its own parameter (rd331).
-                            if superclass(tcx, class).is_some() && sig.inputs().len() != 1 {
+                            // Not `Error`'s, given what its fields are (#1808).
+                            if superclass(tcx, class).is_some()
+                                && !errors::extends_error(tcx, class)
+                                && sig.inputs().len() != 1
+                            {
                                 refuse(
                                     item_span,
                                     "constructor of a class that extends one takes what it's constructed with, its props, `fn new(props: P) -> Self`, which `super(props)` gives the class it extends",

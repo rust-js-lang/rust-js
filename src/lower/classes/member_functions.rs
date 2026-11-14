@@ -32,7 +32,11 @@ pub(in crate::lower) fn as_member(
             this_outside_accessors(class, &mut function.body);
             // Of a class that extends one, its superclass constructs `this` first,
             // `super(props);`, at its name: a comment its body starts with follows.
-            if class_of(tcx, def_id).is_some_and(|adt| superclass(tcx, adt).is_some()) {
+            // Of `Error`'s, the fields its constructor sets, `super(message,
+            // { cause })` (#1808).
+            if let Some(adt) = class_of(tcx, def_id).filter(|&adt| super::extends_error(tcx, adt)) {
+                super::errors::super_of_fields(tcx, adt, &mut function.body, function.name_span)?;
+            } else if class_of(tcx, def_id).is_some_and(|adt| superclass(tcx, adt).is_some()) {
                 let given = (function.params.iter())
                     .map(|param| match param {
                         Pattern::Name(name) => Ok(Expr::var(name)),

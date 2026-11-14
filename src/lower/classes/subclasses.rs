@@ -10,12 +10,38 @@ use rustc_span::def_id::DefId;
 use super::{class_of, class_of_impl, home, is_class};
 use crate::lower::recognition::{StdItem, is_std_def};
 
+/// The class a class that implements a binding's class trait extends: a
+/// module's export, imported where the class is, `("react", "Component")`
+/// (rd331), or a global, JS's `Error` (#1808), which is named as it is.
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub(crate) enum BaseClass {
+    Imported((String, String)),
+    Global(String),
+}
+
+impl BaseClass {
+    /// Its JS name, `Component`, `Error`.
+    pub(crate) fn name(&self) -> &str {
+        match self {
+            BaseClass::Imported((_, name)) | BaseClass::Global(name) => name,
+        }
+    }
+
+    /// The export it's imported as, of a module's, `("react", "Component")`.
+    pub(crate) fn imported(&self) -> Option<&(String, String)> {
+        match self {
+            BaseClass::Imported(export) => Some(export),
+            BaseClass::Global(_) => None,
+        }
+    }
+}
+
 /// The JS class `trait_id` is, a binding's trait of methods whose
-/// `#[rust_js::types]` names a module's export, react's `Component`,
-/// `react#Component<P, S>`: the export a class that implements it extends,
-/// `("react", "Component")` (rd331). `None` of any other trait, a marker
-/// or a union, react's `ReactNode`.
-pub(crate) fn base_class(tcx: TyCtxt<'_>, trait_id: DefId) -> Option<(String, String)> {
+/// `#[rust_js::types]` names a class, a module's export, react's
+/// `Component`, `react#Component<P, S>`, or a global, `js::ErrorClass`'s
+/// `Error`: the class a class that implements it extends (rd331, #1808).
+/// `None` of any other trait, a marker or a union, react's `ReactNode`.
+pub(crate) fn base_class(tcx: TyCtxt<'_>, trait_id: DefId) -> Option<BaseClass> {
     if trait_id.is_local() || tcx.def_kind(trait_id) != DefKind::Trait {
         return None;
     }
@@ -26,7 +52,12 @@ pub(crate) fn base_class(tcx: TyCtxt<'_>, trait_id: DefId) -> Option<(String, St
     match crate::lower::declarations::written_types(tcx, trait_id)? {
         crate::lower::declarations::Written::Reference {
             from: Some(from), name, ..
-        } => Some((from, name)),
+        } => Some(BaseClass::Imported((from, name))),
+        crate::lower::declarations::Written::Reference {
+            from: None,
+            name,
+            args: None,
+        } => Some(BaseClass::Global(name)),
         _ => None,
     }
 }
@@ -56,12 +87,19 @@ pub(super) fn superclass_impls(tcx: TyCtxt<'_>, adt: DefId) -> Vec<DefId> {
         .collect()
 }
 
-/// What `adt`, a class, extends: its impl of a binding's class and that
-/// class's export, `("react", "Component")` of `impl Component<P> for
+/// The export `trait_id`'s class is, of a binding's class trait that
+/// names a module's, imported where a class extends it: `("react",
+/// "Component")`; `None` of a global's, `Error`, which no module exports.
+pub(crate) fn imported_base(tcx: TyCtxt<'_>, trait_id: DefId) -> Option<(String, String)> {
+    base_class(tcx, trait_id)?.imported().cloned()
+}
+
+/// What `adt`, a class, extends: its impl of a binding's class and the
+/// class it is, `("react", "Component")` of `impl Component<P> for
 /// Surface`, an ES class's `extends` (rd331); `None` of a class that
 /// extends nothing, a constructor function (ADR 0761), and of what's no
 /// class.
-pub(crate) fn superclass(tcx: TyCtxt<'_>, adt: DefId) -> Option<(DefId, (String, String))> {
+pub(crate) fn superclass(tcx: TyCtxt<'_>, adt: DefId) -> Option<(DefId, BaseClass)> {
     let imp = *superclass_impls(tcx, adt).first()?;
     Some((imp, base_class(tcx, tcx.impl_trait_id(imp))?))
 }
@@ -160,7 +198,10 @@ pub(crate) fn js_class(
 ) -> crate::js::Class {
     let adt = class_of(tcx, member);
     crate::js::Class {
-        extends: (adt.and_then(|adt| superclass(tcx, adt))).map(|(_, export)| imports[&export].clone()),
+        extends: (adt.and_then(|adt| superclass(tcx, adt))).map(|(_, base)| match base {
+            BaseClass::Imported(export) => imports[&export].clone(),
+            BaseClass::Global(name) => name,
+        }),
         es: adt.is_some_and(|adt| super::is_es_class(tcx, adt)),
         ..Default::default()
     }

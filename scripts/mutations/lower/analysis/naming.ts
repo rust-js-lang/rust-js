@@ -842,7 +842,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `use` of a binding's class a class extends, `use react::Component;`, places no import, so ReactART's `import { Component } from \"react\"` goes after its own modules' (rd629)",
     file: "src/lower/analysis/naming.rs",
-    find: "            DefKind::Trait => crate::lower::classes::base_class(tcx, id).is_some_and(of),\n",
+    find: "            DefKind::Trait => crate::lower::classes::imported_base(tcx, id).is_some_and(of),\n",
     replace: "            DefKind::Trait => false,\n",
     tests: ["test/class-components.test.ts", "-t", "superclass is imported where its use is"],
   },

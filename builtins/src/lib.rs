@@ -2959,6 +2959,51 @@ pub mod error {
     }
 }
 
+/// A class that extends JS's [`Error`]: a `#[rust_js::class]` struct that
+/// implements it is an ES class, `class VGPUError extends Error`, as
+/// react's `Component` makes one extend React's (ADR 1041, #1808). What
+/// `Error`'s constructor sets is the struct's fields of its names: a
+/// `message` of text is `super(message)`'s, and a `cause`, `super(message,
+/// { cause })`'s, each the own property JS makes, which no `Object.keys`
+/// lists; every other field is set after, `this.name = "VGPUError"`, as
+/// JS's own subclass sets it. Its constructor is its `fn new`, which JS's
+/// `new VGPUError(..)` calls.
+///
+/// ```ignore
+/// #[cfg_attr(rust_js, rust_js::class, rust_js::name = "VGPUError")]
+/// pub struct VgpuError {
+///     message: String,
+///     cause: Option<&'static js::Unknown>,
+///     name: &'static str,
+///     pub code: String,
+/// }
+///
+/// impl js::ErrorClass for VgpuError {}
+///
+/// #[cfg_attr(rust_js, rust_js::class)]
+/// impl VgpuError {
+///     pub fn new(code: String, message: String, cause: Option<&'static js::Unknown>) -> Self {
+///         Self { message, cause, name: "VGPUError", code }
+///     }
+/// }
+/// ```
+#[cfg_attr(rust_js, rust_js::types = "Error")]
+pub trait ErrorClass: 'static {
+    /// [`stack`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Error/stack):
+    /// where it was made, as the host writes it, or `None` where the host
+    /// keeps none.
+    #[cfg_attr(rust_js, rust_js::link_name = "get stack")]
+    fn stack(&self) -> Option<String> {
+        unreachable!()
+    }
+
+    /// It, as the [`Error`] it is: what's thrown, given or caught as one.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    fn error(&self) -> &Error {
+        unreachable!()
+    }
+}
+
 /// What [`error::new`] is given, TypeScript's `ErrorOptions`.
 /// A JS object of these fields, a `None` one not given: `..Default::default()` the rest.
 #[derive(Default)]

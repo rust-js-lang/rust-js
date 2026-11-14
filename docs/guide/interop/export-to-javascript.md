@@ -800,6 +800,10 @@ amended). A class that implements a binding's class, react's `Component`,
 extends it instead, an ES class, `class Surface extends Component { .. }`:
 see [class components](../react/components.md#class-components) ([ADR
 1041](../../decisions/1041-a-class-that-implements-a-bindings-class-extends-it.md)).
+One that implements `js::ErrorClass` extends JS's `Error`, `class
+VGPUError extends Error`, its `message` and `cause` fields given `super`:
+see [a class that extends `Error`](exceptions.md#a-class-that-extends-error-jserrorclass)
+([ADR 1158](../../decisions/1158-a-class-that-extends-error.md)).
 One whose struct is marked `#[cfg_attr(rust_js, rust_js::class(es))]` is
 an ES class too, where upstream writes one: `class Plugin {
 constructor(options) { .. } apply(compiler) { .. } get count() { .. }
