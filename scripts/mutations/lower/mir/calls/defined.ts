@@ -257,6 +257,15 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-is-function.test.ts", "-t", "cast to a fn pointer"],
   },
   {
+    name: "fn-pointer-of-a-binding-a-value",
+    breaks:
+      "`js::is_function(hosted as fn(&'static str))`, a binding of `rustJsHost.optional` cast to a `fn` pointer, is taken as a value JS gave, `typeof rustJsHost.optional === \"function\"`, which throws a ReferenceError where the host has no `rustJsHost` (#1786)",
+    file: "src/lower/mir/calls/defined.rs",
+    find: "            && self.cast_from(body, &arg.node).is_none()\n",
+    replace: "",
+    tests: ["test/lowering-is-function.test.ts", "-t", "cast to a fn pointer|isn't a global's binding is refused"],
+  },
+  {
     name: "is-number-of-a-function-asked",
     breaks:
       '`js::is_number(callable)`, a function\'s binding, is `typeof rustJsCallable === "number"`, always false, not refused (rd195)',

@@ -308,8 +308,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// of a value, not of a global: one argument, of a type whose value is
     /// a function JS may give, which JS may give as anything else, React's
     /// SchedulerMock's task `callback` (`function_given`); not a static,
-    /// which is asked as the global it is (ADR 0645). Its argument is read,
-    /// where a global's isn't (`unread_defined_operands`).
+    /// which is asked as the global it is (ADR 0645), nor a pointer cast
+    /// from a function item, which is that function (`cast_from`, #1786):
+    /// a binding's, asked as its global, each part of its path before the
+    /// last whether it's there, or the crate's own, refused. Its argument
+    /// is read, where a global's isn't (`unread_defined_operands`).
     pub(in crate::lower::mir) fn asks_of_value(
         &self,
         body: &mir::Body<'tcx>,
@@ -324,6 +327,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .static_given(body, &arg.node)
                 .filter(|&s| tcx.is_foreign_item(s))
                 .is_none()
+            && self.cast_from(body, &arg.node).is_none()
     }
 
     /// Whether `ty` is a function a JS caller may give, so may give as

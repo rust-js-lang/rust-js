@@ -146,6 +146,10 @@ pub fn hosted_available() -> bool {
     js::is_defined(hosted as fn(&'static str))
 }
 
+pub fn hosted_callable() -> bool {
+    js::is_function(hosted as fn(&'static str))
+}
+
 pub fn bitmaps() -> bool {
     js::is_defined(
         webapi::global::create_image_bitmap
@@ -162,11 +166,14 @@ pub fn bitmaps() -> bool {
   expect(js).toContain('export function copied() {\n  return typeof optionalHostFunction !== "undefined";\n}');
   expect(js).toContain('export function callable() {\n  return typeof optionalHostFunction === "function";\n}');
   expect(js).toContain('return typeof rustJsHost !== "undefined" && typeof rustJsHost.optional !== "undefined";');
+  // Of `is_function` too, a path's first part is asked whether it's
+  // there, never read where it isn't (#1786).
+  expect(js).toContain('return typeof rustJsHost !== "undefined" && typeof rustJsHost.optional === "function";');
   expect(js).toContain('export function bitmaps() {\n  return typeof createImageBitmap !== "undefined";\n}');
   const global = globalThis as Record<string, unknown>;
   const lib = await import(join(dir, "lib.js"));
-  const asked = () => [lib.available(), lib.copied(), lib.callable(), lib.hostedAvailable()];
-  expect(asked()).toEqual([false, false, false, false]);
+  const asked = () => [lib.available(), lib.copied(), lib.callable(), lib.hostedAvailable(), lib.hostedCallable()];
+  expect(asked()).toEqual([false, false, false, false, false]);
   let reads = 0;
   let calls = 0;
   Object.defineProperty(globalThis, "optionalHostFunction", {
@@ -180,15 +187,18 @@ pub fn bitmaps() -> bool {
   try {
     expect(lib.available()).toBe(true);
     expect(reads).toBe(1);
-    expect(asked()).toEqual([true, true, true, true]);
+    expect(asked()).toEqual([true, true, true, true, true]);
     expect(calls).toBe(0);
     Object.defineProperty(globalThis, "optionalHostFunction", { configurable: true, value: 1 });
-    expect(asked()).toEqual([true, true, false, true]);
+    global.rustJsHost = { optional: 1 };
+    expect(asked()).toEqual([true, true, false, true, false]);
+    global.rustJsHost = {};
+    expect([lib.hostedAvailable(), lib.hostedCallable()]).toEqual([false, false]);
   } finally {
     delete global.optionalHostFunction;
     delete global.rustJsHost;
   }
-  expect(asked()).toEqual([false, false, false, false]);
+  expect(asked()).toEqual([false, false, false, false, false]);
 });
 
 // React DOM's estimateImageBytes: `typeof devicePixelRatio === 'number' ?
@@ -304,6 +314,9 @@ test("js::is_function of what isn't a global's binding is refused", () => {
     false,
     expect.stringContaining("`js::is_defined` of what isn't a JS global's binding"),
   ]);
+  // Nor is one of `is_function`'s a value JS gave: it's the crate's own
+  // function, no global's (#1786).
+  expect(refused("fn helper(_: &str) {}\n\npub fn ask() -> bool {\n    js::is_function(helper as fn(&'static str))\n}\n")).toEqual([false, message]);
   expect(refused("pub fn ask(given: fn(&'static str)) -> bool {\n    js::is_defined(given)\n}\n")).toEqual([
     false,
     expect.stringContaining("`js::is_defined` of what isn't a JS global's binding"),

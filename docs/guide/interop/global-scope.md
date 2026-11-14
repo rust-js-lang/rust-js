@@ -228,8 +228,10 @@ export function later(task) {
   given as the `fn` pointer it's cast to, `js::is_defined(optional as
   fn(&'static str))` being `typeof optionalHostFunction !== "undefined"`,
   of the binding it's cast from, a copy of the pointer between too, as a
-  path's step is; nothing is read before or called. A pointer of the
-  crate's own function, or one the program's given, is refused
+  path's step is, and `js::is_function` of one alike, each part of its
+  path before the last asked whether it's there; nothing is read before
+  or called. A pointer of the crate's own function is refused, and so
+  is `js::is_defined` of one the program's given
   ([ADR 0597](../../decisions/0597-whether-the-host-has-a-global-is-is-defined.md),
   amended).
 - **Each part of a path is asked**, `js::is_defined(webapi::Performance::now)`

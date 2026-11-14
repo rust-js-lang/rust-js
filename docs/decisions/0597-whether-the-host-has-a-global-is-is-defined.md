@@ -147,3 +147,17 @@ cast to a fn pointer asks the binding's global" runs it with the global
 absent, a function read through a getter once, and a number; and the
 refusals beside the others'. Mutation fn-pointer-of-a-binding-unnamed is
 caught.
+
+And `js::is_function` of one (#1786): a `fn` pointer is what a JS caller
+may give, so `is_function` of one asked `typeof` of the value, which of
+`rustJsHost.optional as fn(&'static str)` was `typeof rustJsHost.optional
+=== "function"`, a `ReferenceError` where the host has no `rustJsHost`,
+and of the crate's own function cast so was no refusal. A pointer
+`cast_from` knows the function of is no value JS gave: it's asked as the
+binding is, each part of its path before the last whether it's there,
+`typeof rustJsHost !== "undefined" && typeof rustJsHost.optional ===
+"function"`, and the crate's own is refused. A pointer the program's
+given is still asked as a value. Case (ADR 0262): results change, a
+throw where Rust's answer is `false`, so Rust's. The test runs the
+dotted binding absent, of no such member, and of a member that's no
+function; mutation fn-pointer-of-a-binding-a-value is caught.
