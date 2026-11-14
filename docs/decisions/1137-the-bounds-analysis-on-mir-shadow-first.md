@@ -563,3 +563,29 @@ Now a closure's captures are given where it's made (`capture_intervals`):
   is, an inlined copy, is given nothing.
 
 17 sites left the bridge's list; 7 remain, B's and C's.
+
+## Amendment: a closure's captures as locals (2026-11-14, #1701 B)
+
+A's captures are known where the closure is made, but a test in the body
+couldn't narrow one. `from_fn(|| ..)`'s `n -= 1` past `n == 0`, of a
+`&mut n` capture, reads and writes `*(*_1).0`, which is no local, so the
+walk learned nothing from the test.
+
+Now the walk reads a closure's body with each capture a local of its own
+(`as_locals`). The blocks and statements are the body's, each where it
+was:
+- **What a reference it captures refers to,** `*(*_1).k`, where the body
+  only ever reads it through the reference.
+- **The field, `(*_1).k`,** of any other capture.
+- **Not at all** where the body reads itself whole, which may reach any
+  capture.
+
+The walk's rules of a local are then the capture's, one rule and not a
+second copy for closures. A test narrows it, and a copy is one of it. A
+`&mut` of it lends it: `bump(&mut n)` forgets `n` as #1782 forgets a lent
+local, so `n -= 1` after keeps its wrap. A raw pointer or a `Box` it
+captures stays a field, as other code may reach what it points at. A's
+givens become each local's interval where the body starts: a shared
+reference's referent, and a copy the body never writes.
+
+5 more sites left the bridge's list; 2 remain, C's.

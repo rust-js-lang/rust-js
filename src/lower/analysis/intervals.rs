@@ -94,7 +94,8 @@ pub(in crate::lower) struct Proofs {
 struct Walk<'a, 'tcx> {
     tcx: TyCtxt<'tcx>,
     typing_env: ty::TypingEnv<'tcx>,
-    body: &'a Body<'tcx>,
+    /// The body, of a closure's its captures each a local (`as_locals`).
+    body: std::borrow::Cow<'a, Body<'tcx>>,
     /// The locals whose place is lent `&mut` or as a raw pointer.
     lent: IndexSet<Local>,
     /// The ranges of integers only their `next()` steps (`stepped_ranges`).
@@ -108,9 +109,9 @@ struct Walk<'a, 'tcx> {
     /// The locals that hold or lend a `RefCell`, whose lengths a call may
     /// write (`cells`, #1741).
     cells: IndexSet<Local>,
-    /// Of a closure's body, the captures it writes, by field
-    /// (`captures_written`, #1701).
-    captures_written: IndexSet<usize>,
+    /// Of a closure's body, each capture's local given what it was made
+    /// with, by field (`as_locals`, #1701).
+    captured: Vec<(usize, Local)>,
 }
 
 /// Whether `ty` is an integer a JS number holds as it is: of 32 bits at
@@ -150,6 +151,31 @@ fn walk<'a, 'tcx>(
     body: &'a Body<'tcx>,
     given: Given,
 ) -> Walk<'a, 'tcx> {
+    let (body, captured) = match captures::as_locals(tcx, body) {
+        Some((rewritten, captured)) => (std::borrow::Cow::Owned(rewritten), captured),
+        None => (std::borrow::Cow::Borrowed(body), Vec::new()),
+    };
+    let (lent, stepped, pointed, cells) = facts(tcx, &body);
+    Walk {
+        tcx,
+        typing_env,
+        body,
+        lent,
+        stepped,
+        from_callers: given,
+        pointed,
+        cells,
+        captured,
+    }
+}
+
+/// What a walk of `body` knows before it starts: the locals lent, the
+/// ranges only their `next()` steps, the locals a raw pointer is made of,
+/// and those that hold or lend a `RefCell`.
+fn facts<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    body: &Body<'tcx>,
+) -> (IndexSet<Local>, IndexSet<Local>, IndexSet<Local>, IndexSet<Local>) {
     // A local whose own place is lent; not a reference to a slice, an
     // array or text whose pointee is, `&mut (*heap)` of `heap.swap(..)`,
     // which no write through changes the length of.
@@ -182,17 +208,7 @@ fn walk<'a, 'tcx>(
             _ => None,
         })
         .collect();
-    Walk {
-        tcx,
-        typing_env,
-        body,
-        lent,
-        stepped,
-        from_callers: given,
-        pointed,
-        cells: cells::cells(tcx, body),
-        captures_written: captures::captures_written(body),
-    }
+    (lent, stepped, pointed, cells::cells(tcx, body))
 }
 
 impl<'tcx> Walk<'_, 'tcx> {
@@ -229,6 +245,12 @@ impl<'tcx> Walk<'_, 'tcx> {
             let param = Local::from_usize(at + 1);
             if at < self.body.arg_count && !self.lent.contains(&param) {
                 intervals[param] = interval;
+            }
+        }
+        // Of a closure's, each capture given what it was made with (#1701).
+        for &(field, local) in &self.captured {
+            if !self.lent.contains(&local) {
+                intervals[local] = self.from_callers.captures.get(field).copied().flatten();
             }
         }
         let param =
@@ -412,7 +434,7 @@ impl<'tcx> Walk<'_, 'tcx> {
                 // `BigInt`, its value the same but not the JS value.
                 if let StatementKind::Assign(assign) = &statement.kind
                     && let Rvalue::Cast(CastKind::IntToInt, operand, to) = &assign.1
-                    && held_by_a_number(operand.ty(self.body, self.tcx))
+                    && held_by_a_number(operand.ty(&*self.body, self.tcx))
                     && held_by_a_number(*to)
                     && let Some(range) = self.range(*to)
                     && let Some(value) = self.operand(operand, &state)
@@ -519,8 +541,7 @@ impl<'tcx> Walk<'_, 'tcx> {
                             _ => known,
                         }
                     }
-                    // A capture's, of a closure's body (#1701).
-                    _ => self.capture(place).unwrap_or(range),
+                    _ => range,
                 })
             }
             Operand::RuntimeChecks(_) => None,
@@ -663,7 +684,7 @@ impl<'tcx> Walk<'_, 'tcx> {
         // written through the borrow, until it's assigned again.
         if let Rvalue::Ref(_, mir::BorrowKind::Mut { .. }, of) = rvalue
             && let Some(of) = of.as_local()
-            && lent_where_borrowed(self.body, &mir::Place::from(of))
+            && lent_where_borrowed(&self.body, &mir::Place::from(of))
         {
             state.forget(of);
             state.lent_away.insert(of);
@@ -875,7 +896,7 @@ impl<'tcx> Walk<'_, 'tcx> {
                 if let Operand::Copy(of) | Operand::Move(of) = operand {
                     length_of = unlent(of).map(|of| state.root(of));
                 }
-                self.length(operand.ty(self.body, self.tcx))
+                self.length(operand.ty(&*self.body, self.tcx))
             }
             _ => None,
         };

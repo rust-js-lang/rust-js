@@ -66,7 +66,7 @@ pub(super) fn capture_intervals<'tcx>(
         let walk = walk(tcx, typing_env, body, given.get(&maker).cloned().unwrap_or_default());
         for (location, state) in sites.iter().zip(walk.at(&sites)) {
             let StatementKind::Assign(assign) =
-                &body.basic_blocks[location.block].statements[location.statement_index].kind
+                &walk.body.basic_blocks[location.block].statements[location.statement_index].kind
             else {
                 continue;
             };
@@ -138,33 +138,133 @@ impl<'tcx> Walk<'_, 'tcx> {
         };
         self.operand(&Operand::Copy(of.as_local()?.into()), state)
     }
+}
 
-    /// Of a closure's body, what a read of `place` knows of a capture: its
-    /// value's interval, by copy, or, by a shared reference, what it refers
-    /// to, of one the body never writes. None of any other place.
-    pub(super) fn capture(&self, place: &mir::Place<'tcx>) -> Option<Interval> {
-        let def_id = self.body.source.def_id();
-        if !self.tcx.is_closure_like(def_id) || place.local != Local::from_usize(1) {
-            return None;
-        }
-        // `(*_1).k` of a closure the call lends, `_1.k` of one it's given,
-        // and of a reference it captures, `*(*_1).k`: a shared one's alone
-        // is given (`captured_at`).
-        let (field, by_reference) = match place.projection.as_slice() {
-            [mir::PlaceElem::Deref, mir::PlaceElem::Field(k, _)] | [mir::PlaceElem::Field(k, _)] => (*k, false),
-            [
-                mir::PlaceElem::Deref,
-                mir::PlaceElem::Field(k, _),
-                mir::PlaceElem::Deref,
-            ]
-            | [mir::PlaceElem::Field(k, _), mir::PlaceElem::Deref] => (*k, true),
+/// The field a place of a closure reads, and whether it reads it through
+/// it, a reference: none of one that reads the closure whole.
+type FieldOf<'a, 'tcx> = &'a dyn Fn(&[mir::PlaceElem<'tcx>]) -> Option<(usize, bool)>;
+
+/// A closure's body with each of its captures a local of its own (#1701
+/// B): what it captures by a reference only ever read through, the place
+/// it refers to, `*(*_1).k`; any other, the field, `(*_1).k`. The walk's
+/// rules of a local are then the capture's: a test narrows it, a copy is
+/// one of it, and a `&mut` of it lends it (#1782). Its blocks and
+/// statements are the body's, each where it was. None of a body that isn't
+/// a closure's, or that reads itself whole, `&*_1` given a call, which
+/// may reach any capture. With it, each capture given what it was made
+/// with, by field: one by a shared reference, and one by copy its body
+/// never writes.
+pub(super) fn as_locals<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> Option<(Body<'tcx>, Vec<(usize, Local)>)> {
+    use rustc_middle::mir::visit::{MutVisitor, PlaceContext, Visitor};
+    const ENV: Local = Local::from_u32(1);
+    if !tcx.is_closure_like(body.source.def_id()) || body.arg_count == 0 {
+        return None;
+    }
+    let env = body.local_decls[ENV].ty;
+    let by_reference = env.builtin_deref(true).is_some();
+    let ty::Closure(_, args) = *env.builtin_deref(true).unwrap_or(env).kind() else {
+        return None;
+    };
+    let upvars = args.as_closure().upvar_tys();
+    // The field a place of the closure reads, and whether it reads it
+    // through it, a reference: none of one that reads the closure whole.
+    let field = |projection: &[mir::PlaceElem<'tcx>]| -> Option<(usize, bool)> {
+        let rest = match (by_reference, projection) {
+            (true, [mir::PlaceElem::Deref, rest @ ..]) | (false, rest) => rest,
             _ => return None,
         };
-        if !by_reference && self.captures_written.contains(&field.index()) {
-            return None;
+        match rest {
+            [mir::PlaceElem::Field(k, _), then @ ..] => {
+                Some((k.index(), matches!(then.first(), Some(mir::PlaceElem::Deref))))
+            }
+            _ => None,
         }
-        *self.from_callers.captures.get(field.index())?
+    };
+    struct Uses<'a, 'tcx> {
+        field: FieldOf<'a, 'tcx>,
+        whole: bool,
+        itself: IndexSet<usize>,
     }
+    impl<'tcx> Visitor<'tcx> for Uses<'_, 'tcx> {
+        fn visit_place(&mut self, place: &mir::Place<'tcx>, _: PlaceContext, _: Location) {
+            if place.local != ENV {
+                return;
+            }
+            match (self.field)(place.projection.as_slice()) {
+                Some((k, false)) => {
+                    self.itself.insert(k);
+                }
+                Some((_, true)) => {}
+                None => self.whole = true,
+            }
+        }
+    }
+    let mut uses = Uses {
+        field: &field,
+        whole: false,
+        itself: IndexSet::default(),
+    };
+    uses.visit_body(body);
+    if uses.whole {
+        return None;
+    }
+    let written = captures_written(body);
+    let mut rewritten = body.clone();
+    // Each field's local, and whether it's what its reference refers to.
+    let mut locals: Vec<(Local, bool)> = Vec::new();
+    let mut seeded: Vec<(usize, Local)> = Vec::new();
+    for (k, upvar) in upvars.iter().enumerate() {
+        // A reference's alone: what a raw pointer or a `Box` it captures
+        // points at other code may reach.
+        let referent = match *upvar.kind() {
+            ty::Ref(_, to, _) if !uses.itself.contains(&k) => Some(to),
+            _ => None,
+        };
+        let local = rewritten
+            .local_decls
+            .push(mir::LocalDecl::new(referent.unwrap_or(upvar), body.span));
+        locals.push((local, referent.is_some()));
+        // A `&mut` one's referent is given nothing where it's made
+        // (`captured_at`).
+        if referent.is_some() || ty_is_value(upvar) && !written.contains(&k) {
+            seeded.push((k, local));
+        }
+    }
+    struct Rewrite<'a, 'tcx> {
+        tcx: TyCtxt<'tcx>,
+        field: FieldOf<'a, 'tcx>,
+        locals: &'a [(Local, bool)],
+        by_reference: bool,
+    }
+    impl<'tcx> MutVisitor<'tcx> for Rewrite<'_, 'tcx> {
+        fn tcx(&self) -> TyCtxt<'tcx> {
+            self.tcx
+        }
+        fn visit_place(&mut self, place: &mut mir::Place<'tcx>, _: PlaceContext, _: Location) {
+            if place.local != ENV {
+                return;
+            }
+            let Some((k, _)) = (self.field)(place.projection.as_slice()) else {
+                return;
+            };
+            let (local, referent) = self.locals[k];
+            // Past the closure's deref, if a reference, and the field; and
+            // past the field's deref of a referent.
+            let skip = usize::from(self.by_reference) + 1 + usize::from(referent);
+            *place = mir::Place {
+                local,
+                projection: self.tcx.mk_place_elems(&place.projection[skip..]),
+            };
+        }
+    }
+    Rewrite {
+        tcx,
+        field: &field,
+        locals: &locals,
+        by_reference,
+    }
+    .visit_body(&mut rewritten);
+    Some((rewritten, seeded))
 }
 
 /// The captures `body`, a closure's, writes, by their field's index: a
@@ -196,4 +296,10 @@ pub(super) fn captures_written(body: &Body<'_>) -> IndexSet<usize> {
         }
     }
     written
+}
+
+/// Whether `ty` is a value a capture by copy holds itself, not a pointer
+/// to one.
+fn ty_is_value(ty: Ty<'_>) -> bool {
+    ty.builtin_deref(true).is_none()
 }

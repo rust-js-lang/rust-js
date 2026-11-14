@@ -18,8 +18,8 @@ export const mutations: Mutation[] = [
     name: "captures-written-read",
     breaks: "a capture its closure's body writes is what it was made with, so `at -= 1` of a `move` closure's own `at = 2`, called a third time, is taken as 1 and gives `-1` for `u32::MAX`",
     file,
-    find: "        if !by_reference && self.captures_written.contains(&field.index()) {\n",
-    replace: "        if false && !by_reference && self.captures_written.contains(&field.index()) {\n",
+    find: "        if referent.is_some() || ty_is_value(upvar) && !written.contains(&k) {\n",
+    replace: "        if referent.is_some() || ty_is_value(upvar) {\n",
     tests,
   },
   {
@@ -29,5 +29,13 @@ export const mutations: Mutation[] = [
     find: "        self.operand(&Operand::Copy(of.as_local()?.into()), state)\n",
     replace: "        let _ = (of, state);\n        None\n",
     tests,
+  },
+  {
+    name: "captures-not-locals",
+    breaks: "a closure's captures are no locals of the body the walk reads, so `from_fn(|| ..)`'s `n -= 1` past `n == 0` of a `&mut n` capture is left to the bridge again, test/intervals-bridged.txt's 5 sites of #1701 B",
+    file,
+    find: "    if !tcx.is_closure_like(body.source.def_id()) || body.arg_count == 0 {\n",
+    replace: "    if true || !tcx.is_closure_like(body.source.def_id()) || body.arg_count == 0 {\n",
+    tests: ["test/intervals-bridged.test.ts"],
   },
 ];

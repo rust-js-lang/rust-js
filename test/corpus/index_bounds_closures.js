@@ -78,7 +78,7 @@ function changedByTheClosure(items) {
     let i$1 = i;
     function step() {
       const item = $index(items, i$1);
-      i$1 = (i$1 + 1) >>> 0;
+      i$1++;
       return item;
     }
     while (found.length <= items.length) {
@@ -94,7 +94,7 @@ function changedThroughABorrow(items) {
   if (i < items.length) {
     function step() {
       const item = $index(items, i);
-      i = (i + 1) >>> 0;
+      i++;
       return item;
     }
     while (found.length <= items.length) {

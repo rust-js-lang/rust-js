@@ -1239,3 +1239,47 @@ pub fn lent() -> u32 {
   const lib = await import(join(dir, "lib.js"));
   expect([lib.doubled(), lib.shared(12), lib.shared(3), lib.written(), lib.lent()]).toEqual([20, 5, 0, 4294967295, 4294967295]);
 });
+
+// #1701 B: a closure's captures are locals of the body the walk reads, so a
+// test of one narrows it, `n -= 1` past `n == 0` of a `&mut n` capture, as
+// of any local. Lent on, `bump(n)` of a reborrow, it's forgotten as a lent
+// local is (#1782): the call may write it.
+test("a closure's capture is narrowed as a local is, and forgotten where it's lent", async () => {
+  const dir = fixture("closure-captures-as-locals");
+  writeFileSync(join(dir, "lib.rs"), `pub fn countdown(mut n: u32) -> Vec<u32> {
+    std::iter::from_fn(|| {
+        if n == 0 {
+            None
+        } else {
+            n -= 1;
+            Some(n + 1)
+        }
+    })
+    .collect()
+}
+
+fn bump(n: &mut u32) {
+    *n = 0;
+}
+
+pub fn lent(mut n: u32) -> u32 {
+    let mut down = || {
+        if n == 0 {
+            return 0;
+        }
+        bump(&mut n);
+        n -= 1;
+        n
+    };
+    down()
+}
+`);
+  expect(wrapsDisagreed(dir)).toEqual([]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("        n--;\n        return n + 1;\n");
+  expect(js).toContain("    n = (n - 1) >>> 0;\n");
+  expect(js.match(/>>> 0/g)?.length).toBe(1);
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.countdown(3), lib.countdown(0)]).toEqual([[3, 2, 1], []]);
+  expect(lib.lent(5)).toBe(4294967295);
+});

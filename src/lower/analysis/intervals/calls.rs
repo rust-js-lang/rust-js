@@ -34,7 +34,7 @@ impl<'tcx> Walk<'_, 'tcx> {
                 Some(SliceLength::Len) => {
                     after.lens.insert(local, of);
                     // At most what an allocation holds of its items.
-                    let receiver = args.first().map(|arg| arg.node.ty(self.body, self.tcx));
+                    let receiver = args.first().map(|arg| arg.node.ty(&*self.body, self.tcx));
                     if let Some(most) = receiver.and_then(|ty| self.length_of_collection(ty)) {
                         after.intervals[local] = Some(most);
                     }
@@ -60,7 +60,7 @@ impl<'tcx> Walk<'_, 'tcx> {
                     }
                 }
                 Some(SliceLength::Len) if state.pushed.contains(&given) => {
-                    let receiver = args.first().map(|arg| arg.node.ty(self.body, self.tcx));
+                    let receiver = args.first().map(|arg| arg.node.ty(&*self.body, self.tcx));
                     if let Some(most) = receiver.and_then(|ty| self.length_of_collection(ty)) {
                         after.intervals[local] = Some(Interval {
                             lo: most.lo.max(1),
@@ -126,7 +126,7 @@ impl<'tcx> Walk<'_, 'tcx> {
         if let Some((callee, _)) = func.const_fn_def()
             && (self.tcx.trait_of_assoc(callee)).is_some_and(|t| self.tcx.is_lang_item(t, LangItem::Deref))
             && let [given] = args
-            && is_rest_value(self.tcx, given.node.ty(self.body, self.tcx))
+            && is_rest_value(self.tcx, given.node.ty(&*self.body, self.tcx))
             && let Some(of) = given
                 .node
                 .place()
@@ -174,7 +174,7 @@ impl<'tcx> Walk<'_, 'tcx> {
                 .place()
                 .and_then(|p| p.as_local())
                 .filter(|i| !self.lent.contains(i))
-            && let Some(most) = self.length_of_collection(slice.node.ty(self.body, self.tcx))
+            && let Some(most) = self.length_of_collection(slice.node.ty(&*self.body, self.tcx))
         {
             after.gets.insert(local, (state.root(index), most.hi - 1));
         }

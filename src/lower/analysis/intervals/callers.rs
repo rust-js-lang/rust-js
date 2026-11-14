@@ -174,9 +174,10 @@ fn passes<'tcx>(
         if !only_called.contains_key(&callee) {
             continue;
         }
-        let (Some(state), TerminatorKind::Call { args, .. }) =
-            (ends.get(&call.block), &body.basic_blocks[call.block].terminator().kind)
-        else {
+        let (Some(state), TerminatorKind::Call { args, .. }) = (
+            ends.get(&call.block),
+            &walk.body.basic_blocks[call.block].terminator().kind,
+        ) else {
             continue;
         };
         let roots: Vec<Option<Local>> = (args.iter())

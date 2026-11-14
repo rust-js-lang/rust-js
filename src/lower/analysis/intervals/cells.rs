@@ -50,14 +50,14 @@ impl<'tcx> Walk<'_, 'tcx> {
 
     /// Whether dropping `place` may run code that writes a cell.
     pub(super) fn drop_may_write_cells(&self, place: &mir::Place<'tcx>) -> bool {
-        drop_runs_code(self.tcx, self.typing_env, place.ty(self.body, self.tcx).ty)
+        drop_runs_code(self.tcx, self.typing_env, place.ty(&*self.body, self.tcx).ty)
     }
 
     /// Whether a statement's write to `place` is through a raw pointer.
     pub(super) fn written_through_a_pointer(&self, place: &mir::Place<'tcx>) -> bool {
         place
             .iter_projections()
-            .any(|(base, elem)| matches!(elem, mir::PlaceElem::Deref) && base.ty(self.body, self.tcx).ty.is_raw_ptr())
+            .any(|(base, elem)| matches!(elem, mir::PlaceElem::Deref) && base.ty(&*self.body, self.tcx).ty.is_raw_ptr())
     }
 }
 
