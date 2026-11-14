@@ -111,6 +111,29 @@ error: rust-js: `image_url` is `imageUrl` in JSX, as React names it
 A missing prop, a prop the struct doesn't have, and a value of the wrong
 type are compile errors too: ``missing prop `subtitle` of `CardProps` ``.
 
+The props struct may be another module's or another crate's, imported,
+renamed, re-exported or aliased: a wrapper of a library's component takes
+the library's own props and is given them as its component is, a
+flattened field's attributes flat and an `Option` left out
+([ADR 0213](../../decisions/0213-props-as-written.md#since), #1794):
+
+```rust
+use next::image::{Image, ImageProps, IntoImageSrc};
+use react::{JSX, jsx};
+
+pub fn DeferredImage<S: IntoImageSrc + Copy>(props: ImageProps<'_, S>) -> JSX::Element {
+    jsx! { <Image {...props} /> }
+}
+
+pub fn Example() -> JSX::Element {
+    jsx! { <DeferredImage src="/example.png" alt="Example" fill={Some(true)} fetchPriority={Some("low")} /> }
+}
+```
+
+Its fields must each be as visible as the struct, as a struct literal's
+must: one of private fields is refused where another module takes it,
+saying to make them so.
+
 ### Optional props
 
 A prop JS callers may leave out is an `Option`. Leave it out in `jsx!`, or

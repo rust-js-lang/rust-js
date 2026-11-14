@@ -327,11 +327,32 @@ impl Expand<'_> {
                 _ => None,
             })
             .collect();
+        // The macros the module defines, whose names no companion takes, and
+        // a function's, whose component's companion has it; and the types it
+        // defines, whose props it builds as it sees them (#1794).
+        let macros: IndexSet<String> = (items.iter())
+            .filter(|item| matches!(item.kind, ItemKind::MacroDef(..) | ItemKind::Fn(_)))
+            .filter_map(|item| item.kind.ident().map(|ident| ident.to_string()))
+            .collect();
+        let local: IndexSet<String> = (items.iter())
+            .filter(|item| {
+                matches!(
+                    item.kind,
+                    ItemKind::Struct(..) | ItemKind::Enum(..) | ItemKind::Union(..) | ItemKind::TyAlias(_)
+                )
+            })
+            .filter_map(|item| item.kind.ident().map(|ident| ident.to_string()))
+            .collect();
         let mut companions = Vec::new();
         let mut built = IndexSet::default();
         for item in items.iter() {
             if configured_attrs(self.sess, &item.attrs).is_some()
-                && let Some(companion) = props::props_companion(self.sess, item, &props, &written_default)
+                && let Some(companion) = props::alias_companion(self.sess, item, &macros)
+            {
+                companions.push(companion);
+            }
+            if configured_attrs(self.sess, &item.attrs).is_some()
+                && let Some(companion) = props::props_companion(self.sess, item, &props, &written_default, &macros)
             {
                 if let Some(ident) = companion.kind.ident() {
                     built.insert(ident.as_str().to_string());
@@ -351,13 +372,13 @@ impl Expand<'_> {
                 continue;
             };
             self.item(item, &attrs);
-            companions.extend(parser::thread_local_components(self.sess, item, &built));
-            if let Some(tokens) = parser::thread_local_named_as_jsx(self.sess, item, &built)
+            companions.extend(parser::thread_local_components(self.sess, item, &built, &local));
+            if let Some(tokens) = parser::thread_local_named_as_jsx(self.sess, item, &built, &local)
                 && let ItemKind::MacCall(mac) = &mut item.kind
             {
                 mac.args.tokens = tokens;
             }
-            if let Some(companion) = parser::component(self.sess, item, &built, &classes) {
+            if let Some(companion) = parser::component(self.sess, item, &built, &local, &classes) {
                 companions.push(companion);
                 // A component is named as JSX names it, capitalized, which
                 // rustc's lint would flag: rust-js allows it, so no crate

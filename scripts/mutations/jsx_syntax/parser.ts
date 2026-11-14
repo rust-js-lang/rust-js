@@ -46,8 +46,8 @@ export const mutations: Mutation[] = [
     name: "component-props-literal",
     breaks: "a component's props are a struct literal, where a flattened struct's names aren't its fields",
     file: "src/jsx_syntax/parser.rs",
-    find: "    let companion = props.rsplit(\"::\").next().is_some_and(|name| built.contains(name))\n",
-    replace: "    let companion = props.rsplit(\"::\").next().is_some_and(|_| false)\n",
+    find: "    let companion = props.rsplit(\"::\").next().is_some_and(|name| built.contains(name)) || imported;\n",
+    replace: "    let companion = props.rsplit(\"::\").next().is_some_and(|_| false) || imported;\n",
     tests: ["test/jsx-props.test.ts", "-t", "flattened props where they"],
   },
   {
@@ -227,28 +227,12 @@ export const mutations: Mutation[] = [
     tests: ["test/jsx-types.test.ts", "-t", "children declared any node"]
   },
   {
-    name: "const-component-props-literal",
-    breaks: "a constant's component, of props in another module, builds them as a struct literal, without their companion's defaults",
-    file: "src/jsx_syntax/parser.rs",
-    find: "        || (matches!(item.kind, ItemKind::Const(_)) && !props.is_empty())\n",
-    replace: "",
-    tests: ["test/jsx-types.test.ts", "-t", "children declared any node"]
-  },
-  {
     name: "lone-struct-update-whole",
     breaks: "a component given only `{..posts[0]}` takes the struct whole, a move out of the slice rustc refuses",
     file: "src/jsx_syntax/parser.rs",
     find: "            && !struct_update\n            && let Some(props) = spread.clone()",
     replace: "            && let Some(props) = spread.clone()",
     tests: ["test/jsx-props.test.ts", "-t", "props updated from a reference are spread"]
-  },
-  {
-    name: "static-component-props-literal",
-    breaks: "a thread_local memo of a component in another module builds its props as a struct literal, an Option not given an error",
-    file: "src/jsx_syntax/parser.rs",
-    find: "        || (matches!(item.kind, ItemKind::Static(_)) && !props.is_empty() && !props.starts_with(\"::react::\"));",
-    replace: ";",
-    tests: ["test/jsx-evaluation-order.test.ts", "-t", "another module's props leaves out"]
   },
   {
     name: "aria-attribute-unnamed",
@@ -333,5 +317,13 @@ export const mutations: Mutation[] = [
       "-t",
       "a symbol name where it can't be one is refused"
     ]
+  },
+  {
+    name: "imported-props-a-literal",
+    breaks: "a component of another module's or crate's props, `DeferredImage(props: ImageProps<'_, S>)`, builds them as a struct literal, which has no flattened field's attributes and no `Option` left out (#1794)",
+    file: "src/jsx_syntax/parser.rs",
+    find: " || imported;\n",
+    replace: " || false && imported;\n",
+    tests: ["test/jsx-imported-props.test.ts"],
   },
 ];

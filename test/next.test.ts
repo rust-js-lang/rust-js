@@ -616,6 +616,7 @@ js::export_default!(handler);
 const linked = `#![allow(non_snake_case)]
 js::directive!("use client");
 
+use next::image::{Image, ImageProps, IntoImageSrc};
 use next::link::Link;
 use react::webapi::HTMLAnchorElement;
 use react::{JSX, jsx, use_ref};
@@ -656,6 +657,23 @@ pub fn Guarded() -> JSX::Element {
 // An image titled, as react.dev's TopNav titles its logo.
 pub fn Titled() -> JSX::Element {
     jsx! { <next::image::Image src="/next.svg" alt="Next.js logo" title={Some("Next.js")} width={Some(90)} height={Some(18)} /> }
+}
+
+// An ordinary component that spreads Next's own props on its Image, given
+// an image's attributes flat (#1794).
+pub fn DeferredImage<S: IntoImageSrc + Copy>(props: ImageProps<'_, S>) -> JSX::Element {
+    jsx! { <Image {...props} /> }
+}
+
+pub fn Deferred() -> JSX::Element {
+    jsx! {
+        <DeferredImage
+            src="/example.png"
+            alt="Example"
+            fill={Some(true)}
+            fetchPriority={Some("low")}
+        />
+    }
 }
 
 pub struct LocatedProps<'a> {
@@ -901,6 +919,7 @@ test("next build builds a Next.js app whose routes and components are Rust, rust
   expect([routePath.includes('import Router, { useRouter } from "next/router";'), routePath.includes("Router.push(url);")]).toEqual([true, true]);
   expect(readFileSync(join(dir, "app/linked.jsx"), "utf8")).toContain('import Head from "next/head";');
   expect(readFileSync(join(dir, "app/linked.jsx"), "utf8")).toContain('<Image src="/next.svg" alt="Next.js logo" title="Next.js" width={90} height={18} />');
+  expect(readFileSync(join(dir, "app/linked.jsx"), "utf8")).toContain('<DeferredImage src="/example.png" alt="Example" fill fetchPriority="low" />');
   const linkedJsx = readFileSync(join(dir, "app/linked.jsx"), "utf8");
   expect([linkedJsx.includes("export const Located = withRouter(({ prefix, router }) => ("), linkedJsx.includes('return <Located prefix="at " />;')]).toEqual([true, true]);
   expect([routePath.includes("const events = useRouter().events;"), routePath.includes('events.on("routeChangeStart", started);'), routePath.includes('events.off("routeChangeStart", started)')]).toEqual([true, true, true]);

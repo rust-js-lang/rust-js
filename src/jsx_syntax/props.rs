@@ -22,18 +22,29 @@ use crate::collections::IndexSet;
 /// before. A `Default` struct of only `Option`s and the like, none
 /// flattened, is its literal with its `Default`.
 ///
-/// It's made for the crate's components' props structs, `props`, and for
-/// every `Default` struct, as a flattened one is: derived, or written for
-/// it, `written_default`.
+/// It's made for the crate's components' props structs, `props`, for every
+/// `Default` struct, as a flattened one is: derived, or written for it,
+/// `written_default`; and for every other struct whose fields are each as
+/// visible as it, which a component of another module or crate may take
+/// as its props, imported, renamed or re-exported with it (#1794). A
+/// struct a field of which is less visible than it has one that refuses,
+/// as a `macro` fills what's left out where it's defined, past the privacy
+/// rustc checks where it's used. A module that has a macro of its name,
+/// `macros`, keeps it, and the struct has none. Each is
+/// `#[doc(hidden)]`, and may go unused.
 pub(super) fn props_companion(
     sess: &Session,
     item: &ast::Item,
     props: &IndexSet<String>,
     written_default: &IndexSet<String>,
+    macros: &IndexSet<String>,
 ) -> Option<Box<ast::Item>> {
     let ItemKind::Struct(ident, generics, ast::VariantData::Struct { fields, .. }) = &item.kind else {
         return None;
     };
+    if macros.contains(ident.as_str()) {
+        return None;
+    }
     // Its type parameters, `C` of `children: C`, whose type a prop left out
     // doesn't say.
     let params: Vec<String> = (generics.params.iter())
@@ -50,7 +61,24 @@ pub(super) fn props_companion(
     let name = ident.as_str().to_string();
     let derives_default = derives_default || written_default.contains(&name);
     if !derives_default && !props.contains(&name) {
-        return None;
+        // A class's macro is its own, its component's or the refusal of one
+        // whose impl is elsewhere (ADR 1041).
+        if attrs.iter().any(|attr| super::is_rust_js_attr(attr, "class")) {
+            return None;
+        }
+        if fields.iter().all(|field| as_visible(sess, &field.vis, &item.vis)) {
+            // Every field as visible as it: built as its own components'.
+        } else if matches!(item.vis.kind, ast::VisibilityKind::Inherited) {
+            return None;
+        } else {
+            let message = format!(
+                "rust-js: `jsx!` builds `{name}` as a component's props only where each of its fields is as visible as it: make them so (#1794)"
+            );
+            let source = format!(
+                "#[doc(hidden)] #[allow(unused_macros)] macro {name} {{ ($($tokens:tt)*) => {{ ::core::compile_error!({message:?}) }} }}"
+            );
+            return companion_item(sess, template(sess, source, item.span), "JSX props", item);
+        }
     }
     let tool = |attrs: &ast::AttrVec, wanted: &str| attrs.iter().any(|attr| super::is_rust_js_attr(attr, wanted));
     // Each own field, how a slot of it left empty is filled, and whether it
@@ -200,7 +228,11 @@ pub(super) fn props_companion(
         );
         arms
     };
-    let source = format!("macro {name} {{ {} }}", arms.join(", ")).replace("NAME", &name);
+    let source = format!(
+        "#[doc(hidden)] #[allow(unused_macros)] macro {name} {{ {} }}",
+        arms.join(", ")
+    )
+    .replace("NAME", &name);
     companion_item(sess, template(sess, source, item.span), "JSX props", item)
 }
 
@@ -257,5 +289,39 @@ pub(super) fn props_lifetimes(sess: &Session, item: &ast::Item) -> Option<Box<as
             e.emit();
             None
         }
+    }
+}
+
+/// A type alias's companion, its target's, `macro Shown { ($($t:tt)*) =>
+/// { ImageProps!($($t)*) } }` of `type Shown<'a> = ImageProps<'a>;`: an
+/// alias another module's component takes as its props is built by its
+/// struct's companion, as the struct's own name is (#1794). None where the
+/// module has a macro of its name, or of another type.
+pub(super) fn alias_companion(sess: &Session, item: &ast::Item, macros: &IndexSet<String>) -> Option<Box<ast::Item>> {
+    let ItemKind::TyAlias(alias) = &item.kind else {
+        return None;
+    };
+    let target = props_path(alias.ty.as_ref()?)?;
+    if target.is_empty() || macros.contains(alias.ident.as_str()) {
+        return None;
+    }
+    let source = format!(
+        "#[doc(hidden)] #[allow(unused_macros)] macro {} {{ ($($tokens:tt)*) => {{ {target}!($($tokens)*) }} }}",
+        alias.ident
+    );
+    companion_item(sess, template(sess, source, item.span), "JSX props", item)
+}
+
+/// Whether a field of `field`'s visibility is seen wherever its struct, of
+/// `of`'s, is: `pub`, or as the struct is, `pub(crate)` of a `pub(crate)`
+/// one, or private of a private one.
+fn as_visible(sess: &Session, field: &ast::Visibility, of: &ast::Visibility) -> bool {
+    let snippet = |vis: &ast::Visibility| sess.source_map().span_to_snippet(vis.span).ok();
+    match (&field.kind, &of.kind) {
+        (ast::VisibilityKind::Public, _) | (_, ast::VisibilityKind::Inherited) => true,
+        (ast::VisibilityKind::Restricted { .. }, ast::VisibilityKind::Restricted { .. }) => {
+            snippet(field) == snippet(of)
+        }
+        _ => false,
     }
 }

@@ -862,20 +862,32 @@ pub(super) fn props_names(sess: &Session, item: &ast::Item, classes: &Classes) -
 /// type in the definition's module, including aliases and private imports.
 /// Calling it through an imported/renamed component uses Rust's macro
 /// namespace. Its props are built by their type's companion where it has
-/// one, `built` (ADR 0213), else they're a struct literal.
+/// one, `built` (ADR 0213), or where they're another module's or crate's,
+/// not of the types the module defines, `local`, which have one beside
+/// them, imported, renamed or re-exported with them (#1794); else they're
+/// a struct literal.
 pub(super) fn component(
     sess: &Session,
     item: &ast::Item,
     built: &IndexSet<String>,
+    local: &IndexSet<String>,
     classes: &Classes,
 ) -> Option<Box<ast::Item>> {
     let (ident, target, props, handle) = signature(sess, item, classes)?;
-    // A constant's props, or a `thread_local!`'s memo's, are another
-    // component's, wherever it is, whose companion is beside them, imported
-    // with them.
-    let companion = props.rsplit("::").next().is_some_and(|name| built.contains(name))
-        || (matches!(item.kind, ItemKind::Const(_)) && !props.is_empty())
-        || (matches!(item.kind, ItemKind::Static(_)) && !props.is_empty() && !props.starts_with("::react::"));
+    // A function's type parameter, `P` of `fn Wrap<P>(props: P)`, is no
+    // type's.
+    let parameter = |name: &str| matches!(&item.kind, ItemKind::Fn(f) if f.generics.params.iter().any(|p| p.ident.as_str() == name));
+    let imported = match props.split_once("::") {
+        _ if props.is_empty() || props.starts_with("::react::") => false,
+        None => !local.contains(&props) && !parameter(&props) && props != "Self",
+        Some(("self", name)) => !name.contains("::") && !local.contains(name),
+        Some(("Self", _)) => false,
+        Some(_) => true,
+    };
+    // A constant's props, or a `thread_local!`'s memo's, another component's
+    // wherever it is, are built as any component's are: by the companion
+    // beside them, imported with them.
+    let companion = props.rsplit("::").next().is_some_and(|name| built.contains(name)) || imported;
     let pattern = if props.is_empty() {
         ""
     } else {
@@ -1094,9 +1106,10 @@ pub(super) fn thread_local_components(
     sess: &Session,
     item: &ast::Item,
     built: &IndexSet<String>,
+    local: &IndexSet<String>,
 ) -> Vec<Box<ast::Item>> {
     (thread_local_declarations(sess, item).into_iter().flatten())
-        .filter_map(|declaration| component(sess, &declaration, built, &Classes::default()))
+        .filter_map(|declaration| component(sess, &declaration, built, local, &Classes::default()))
         .collect()
 }
 
@@ -1109,10 +1122,11 @@ pub(super) fn thread_local_named_as_jsx(
     sess: &Session,
     item: &ast::Item,
     built: &IndexSet<String>,
+    local: &IndexSet<String>,
 ) -> Option<TokenStream> {
     let declarations = thread_local_declarations(sess, item)?;
     let named: Vec<bool> = (declarations.iter())
-        .map(|declaration| component(sess, declaration, built, &Classes::default()).is_some())
+        .map(|declaration| component(sess, declaration, built, local, &Classes::default()).is_some())
         .collect();
     let ItemKind::MacCall(mac) = &item.kind else {
         return None;

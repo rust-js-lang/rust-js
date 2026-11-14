@@ -102,8 +102,10 @@ error: missing prop `href` of `ButtonLinkProps`
 ## Costs
 
 - **A Rust caller still writes `Some(..)`** of an `Option` prop.
-- **A component's props type beside it, or a `Default` struct, has a
-  companion**: one elsewhere is given a struct literal, as before.
+- **Every struct a component may take has a companion**: a macro beside
+  each struct whose fields are as visible as it, `#[doc(hidden)]`, which
+  compiling the js, webapi and react crates' metadata pays 2.0% for (1.71 s
+  to 1.75 s, the median of nine) and next's 10 ms of 0.13 s (#1794).
 
 ## Since
 
@@ -124,3 +126,31 @@ error: missing prop `href` of `ButtonLinkProps`
   `test/jsx.test.ts`'s "a companion macro needs no docs in a crate that
   denies missing_docs" holds it, and that an item of the crate's own is
   still flagged.
+- **A component's props of another module or crate are built by their
+  struct's companion** (2026-11-14, #1794, P1): an ordinary wrapper of a
+  library's component, `DeferredImage<S>(props: ImageProps<'_, S>)` of
+  Next's own `ImageProps`, imported, was given its props as a struct
+  literal, the companion being chosen only of the module's own props, so
+  its flattened `img`'s attributes given flat, `fetchPriority`, were
+  rustc's E0560 and an `Option` left out its E0063. A companion is beside
+  its struct and as visible, so the `use` that imports, renames or
+  re-exports the struct brings it: a component whose props type the
+  module doesn't define, by a path, a `use`, a `use .. as` or a `pub use`,
+  builds them by it. So each struct has one that a component of another
+  module may take, every struct whose fields are each as visible as it
+  (`props::props_companion`), and a type alias's forwards to its target's
+  (`alias_companion`). A struct a field of which is less visible than it
+  has one that refuses, saying to make them as visible: a `macro` fills
+  what's left out where it's defined, so a companion of it would build
+  what rustc's privacy forbids where it's used. A module's macro of a
+  struct's name, an exported one at the crate's root where a companion
+  would be defined twice, keeps it, and the struct has none. Each is
+  `#[doc(hidden)]`. A type parameter, `P` of `fn Wrap<P>(props: P)`, and
+  `Self` are no type's. A constant's component's props and a
+  `thread_local!`'s memo's, which were taken to have a companion whatever
+  they were, are built by the same rule, one for every component. No catalog of Next's: the companion is the
+  struct's own. Case: none; it compiled what it refused.
+  `test/jsx-imported-props.test.ts` holds a wrapper of another crate's
+  component given its flattened attributes, each way of naming another
+  module's props, a required prop left out, the refusal and a macro's
+  name; `test/next.test.ts` compiles the issue's program in its app.
