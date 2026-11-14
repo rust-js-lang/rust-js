@@ -412,4 +412,13 @@ export const mutations: Mutation[] = [
     replace: "        let hint_known = self.adapted_hint_known(iter_ty);\n",
     tests: ["test/corpus.test.ts", "-t", "^inspect_of_a_slice_collected_where_capacity_is_read.rs$"],
   },
+  {
+    name: "extend-of-a-hintless-form-unknowing",
+    breaks: "an empty `Vec` extended by a slice's `inspect()`, `$iter(v).map(..)`, JS's own, which knows no hint, where a capacity is read, grows from 4 to 8, where std's `Inspect` reserves the slice's length, 5 (#1804)",
+    file: "src/lower/iterators/hint_asks.rs",
+    find: "        let items = match crate::lower::iterators::form_knows_no_hint(&items)\n",
+    replace: "        let items = match false\n",
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^extend_by_an_inspect_of_a_slice_where_capacity_is_read.rs$"],
+  },
 ];

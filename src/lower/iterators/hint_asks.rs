@@ -833,6 +833,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok((collection, items));
         }
         self.refuse_unkept_lower_bound(iter_ty, span)?;
+        // Of one whose JS form knows no hint, whatever its type's struct
+        // knows, an `ExactSizeIterator`'s, `v.iter().inspect(f)`'s
+        // `$iter(v).map(..)`: given knowing its length, as a collect of it is
+        // (`form_knows_no_hint`, #1792, #1804).
+        let items = match crate::lower::iterators::form_knows_no_hint(&items)
+            && self.recognition().grows_by_exact_len(iter_ty)
+        {
+            true => self.as_exact_size(items, iter_ty, false, span)?,
+            false => items,
+        };
         // Of one whose hint is the crate's own, its type known here, not its
         // caller's, whose callers decide (`refuse_unknown_capacity_extends`).
         let own = self.recognition().hint_reaches_own_where(iter_ty, !binding);

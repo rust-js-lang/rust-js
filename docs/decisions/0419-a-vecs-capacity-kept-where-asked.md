@@ -851,3 +851,15 @@ Found by the conformance table's `exact capacity` rows (ADR 1090, amended).
 it against native Rust. Mutation `js-own-of-values-hint-known`, caught;
 `exact-size-collect-unknowing` and `exact-length-made-though-hint-known`
 retargeted, caught.
+
+## Amendment (2026-11-14, #1804): an `extend` of a form that knows no hint
+
+#1792's rule, of a `Vec` collected, is a `Vec` extended's too: an empty
+`Vec` extended by a slice's `inspect()`, `$iter(v).map(..)`, JS's own,
+which knows no hint, where a capacity is read, grew from 4 to 8, where
+std's `Inspect` reserves the slice's length, 5. `extended_grown` gives
+such a form its length (`form_knows_no_hint`, `as_exact_size`) before it's
+grown, as `grown_ask` gives a collect's. Found by the table's `extend
+exact capacity` rows. `test/corpus/extend_by_an_inspect_of_a_slice_where_capacity_is_read.rs`
+holds it against native Rust; mutation `extend-of-a-hintless-form-unknowing`,
+caught.
