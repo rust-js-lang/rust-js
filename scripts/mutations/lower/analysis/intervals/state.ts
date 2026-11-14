@@ -52,4 +52,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/intervals-shadow.test.ts", "-t", "contains_key"],
   },
+  {
+    name: "comparison-kept-when-its-operand-is-written",
+    breaks: "a held test's comparison is kept when what it compares is written, so `items[..n]` under `fits = n <= items.len()` past `n += 10` is taken in bounds, a mir-only-call-bounds line, and would read past the slice where Rust panics",
+    file: "src/lower/analysis/intervals/state.rs",
+    find: "        self.comparisons\n            .retain(|_, c| c.a != Value::Local(local) && c.b != Value::Local(local));\n",
+    replace: "",
+    tests: ["test/intervals-shadow.test.ts", "-t", "a test held in"],
+  },
+  {
+    name: "held-test-unread-through-its-copy",
+    breaks: "a test held in a `bool` and switched on as its copy narrows nothing, so `items[..LIMIT]` under `if truncated` keeps its check, a call-bounds line",
+    file: "src/lower/analysis/intervals/state.rs",
+    find: "            .or_else(|| self.comparisons.get(&self.root(local)))\n",
+    replace: "",
+    tests: ["test/intervals-shadow.test.ts", "-t", "a test held in"],
+  },
 ];

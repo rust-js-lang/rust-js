@@ -32,6 +32,22 @@ fn changed(mut items: Vec<u32>) -> Vec<u32> {
     if truncated { items[..1].to_vec() } else { Vec::new() }
 }
 
+/// A held test whose slice is emptied before it's taken: `items[..LIMIT]`
+/// is checked, and panics as Rust's does.
+fn cleared(mut items: Vec<u32>) -> Vec<u32> {
+    let truncated = items.len() > LIMIT;
+    items.clear();
+    if truncated { items[..LIMIT].to_vec() } else { items }
+}
+
+/// A held test of an integer written before it's taken: `items[..n]` is
+/// checked, and panics as Rust's does.
+fn rewritten(items: &[u32], mut n: usize) -> Vec<u32> {
+    let fits = n <= items.len();
+    n += 10;
+    if fits { items[..n].to_vec() } else { Vec::new() }
+}
+
 fn main() {
     let items = [1, 2, 3, 4, 5];
     println!("{:?} {:?}", head(&items), head(&items[..2]));
@@ -40,4 +56,8 @@ fn main() {
     println!("{:?} {:?}", middle(&items), middle(&items[..4]));
     println!("{:?} {:?}", negated(&items), negated(&items[..3]));
     println!("{:?} {:?}", changed(items.to_vec()), changed(vec![1]));
+    let r = std::panic::catch_unwind(|| cleared(items.to_vec()));
+    println!("cleared: {}", if r.is_ok() { "ran" } else { "panicked" });
+    let r = std::panic::catch_unwind(|| rewritten(&items, 2));
+    println!("rewritten: {}", if r.is_ok() { "ran" } else { "panicked" });
 }

@@ -825,3 +825,67 @@ pub fn main() {
 }
 `)).toEqual(["mir-only-cast sums"]);
 });
+
+// #1672 M3, step 5: a test held in a `bool`, `let truncated = len >
+// LIMIT`, switched on as its copy, narrows what it compares, a negated one,
+// `!short`, as its negation. Not where what it compares changes between,
+// the slice emptied or the integer written: its comparison is forgotten.
+test("a test held in a `bool` narrows where it's switched on, until what it compares changes", () => {
+  expect(shadowOf(`const LIMIT: usize = 3;
+pub fn head(items: &[u32]) -> Vec<u32> {
+    let truncated = items.len() > LIMIT;
+    if truncated { items[..LIMIT].to_vec() } else { items.to_vec() }
+}
+pub fn negated(items: &[u32]) -> Vec<u32> {
+    let short = items.len() <= LIMIT;
+    if !short { items[..LIMIT].to_vec() } else { items.to_vec() }
+}
+pub fn cleared(mut items: Vec<u32>) -> Vec<u32> {
+    let truncated = items.len() > LIMIT;
+    items.clear();
+    if truncated { items[..LIMIT].to_vec() } else { items }
+}
+pub fn rewritten(items: &[u32], mut n: usize) -> Vec<u32> {
+    let fits = n <= items.len();
+    n += 10;
+    if fits { items[..n].to_vec() } else { Vec::new() }
+}
+pub fn main() {
+    let items = [1, 2, 3, 4, 5];
+    println!("{:?} {:?}", head(&items), negated(&items));
+    println!("{:?} {:?}", cleared(vec![1]), rewritten(&items, 9));
+}
+`)).toEqual([]);
+});
+
+// #1672 M3, step 5: a shared reference parameter to a struct that holds
+// no cell itself keeps its fields as locals where it's also used whole,
+// returned or compared, as nothing changes its fields while it's borrowed:
+// `find(&node.children[0])` under `node.children.len() == 1`. Not a `&mut`
+// one used whole, `reset(node)`, which may change any field.
+test("a shared reference's fields are locals beside its whole uses, a mutable one's aren't", () => {
+  expect(shadowOf(`pub struct Node {
+    pub children: Vec<Node>,
+}
+pub fn find(node: &Node) -> &Node {
+    if node.children.len() == 1 {
+        return find(&node.children[0]);
+    }
+    node
+}
+fn reset(node: &mut Node) {
+    node.children.clear();
+}
+pub fn reset_first(node: &mut Node) -> usize {
+    if node.children.len() == 1 {
+        reset(node);
+        return node.children[0].children.len();
+    }
+    0
+}
+pub fn main() {
+    let mut node = Node { children: vec![Node { children: Vec::new() }] };
+    println!("{} {}", find(&node).children.len(), reset_first(&mut node));
+}
+`)).toEqual([]);
+});

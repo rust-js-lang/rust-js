@@ -27,6 +27,23 @@ pub(super) struct Comparison {
     pub(super) b: Value,
 }
 
+impl Comparison {
+    /// The comparison that holds where this one doesn't: `a > b` of
+    /// `a <= b`, `a != b` of `a == b`.
+    pub(super) fn negated(self) -> Option<Comparison> {
+        let op = match self.op {
+            BinOp::Lt => BinOp::Ge,
+            BinOp::Le => BinOp::Gt,
+            BinOp::Gt => BinOp::Le,
+            BinOp::Ge => BinOp::Lt,
+            BinOp::Eq => BinOp::Ne,
+            BinOp::Ne => BinOp::Eq,
+            _ => return None,
+        };
+        Some(Comparison { op, ..self })
+    }
+}
+
 /// What a comparison compares: a local or a constant.
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub(super) enum Value {
@@ -335,6 +352,14 @@ impl State {
     /// Whether a held guard guards `cell`.
     pub(super) fn is_guarded(&self, cell: Local) -> bool {
         self.guarded.values().any(|&c| c == cell)
+    }
+
+    /// The comparison a `bool` holds, or what it copies holds: a test held
+    /// in a `let`, `truncated = len > LIMIT`, switched on as its copy.
+    pub(super) fn comparison_of(&self, local: Local) -> Option<Comparison> {
+        (self.comparisons.get(&local))
+            .or_else(|| self.comparisons.get(&self.root(local)))
+            .copied()
     }
 
     /// What `local` is a copy or a reborrow of, else itself.

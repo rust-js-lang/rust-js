@@ -872,6 +872,11 @@ impl<'tcx> Walk<'_, 'tcx> {
                 }
                 None
             }
+            // A held test negated, `!short` of `short = len <= LIMIT`.
+            Rvalue::UnaryOp(mir::UnOp::Not, Operand::Copy(of) | Operand::Move(of)) => {
+                comparison = of.as_local().and_then(|of| state.comparison_of(of)).and_then(Comparison::negated);
+                None
+            }
             // A cast that keeps its value, what it casts fitting its type:
             // a copy of it, its relations its own, `s as usize` of `s >= 1`.
             Rvalue::Cast(CastKind::IntToInt, operand, _) => {
@@ -1026,7 +1031,7 @@ impl<'tcx> Walk<'_, 'tcx> {
         match &terminator.kind {
             TerminatorKind::SwitchInt { discr, targets } => {
                 let switched = discr.place().and_then(|p| p.as_local());
-                let tested = switched.and_then(|l| state.comparisons.get(&l).copied());
+                let tested = switched.and_then(|l| state.comparison_of(l));
                 // A slice's `is_empty()` switched on: of its `false`, a length
                 // of one at least.
                 let emptied = switched.and_then(|l| state.empties.get(&l).copied());

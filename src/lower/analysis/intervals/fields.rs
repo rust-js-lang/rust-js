@@ -9,7 +9,8 @@ use super::*;
 /// `body` with each field of a struct a reference parameter points to, a
 /// local of its own: `(*self).at`, `at`. Of a parameter only ever read
 /// through its fields, `(*self).f`, never itself, `&mut *self` given a
-/// method, which may reach any field. Its blocks and statements are the
+/// method, which may reach any field; or of a shared one to a struct that
+/// holds no cell itself, whose fields can't change while it's borrowed. Its blocks and statements are the
 /// body's, each where it was. None where no parameter is so.
 pub(super) fn fields_as_locals<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> Option<Body<'tcx>> {
     use rustc_middle::mir::visit::{MutVisitor, PlaceContext, Visitor};
@@ -57,7 +58,13 @@ pub(super) fn fields_as_locals<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> Op
         fields: IndexMap::default(),
     };
     uses.visit_body(body);
-    uses.fields.retain(|&(pointer, _), _| !uses.whole.contains(&pointer));
+    // Of a shared reference to what holds no cell itself, whose fields
+    // nothing changes while it's borrowed, also where it's used whole,
+    // returned or compared, `find(&node.children[0])` beside `node`.
+    let typing_env = ty::TypingEnv::post_analysis(tcx, body.source.def_id());
+    let frozen = |pointer: Local| matches!(*body.local_decls[pointer].ty.kind(), ty::Ref(_, to, ty::Mutability::Not) if to.is_freeze(tcx, typing_env));
+    uses.fields
+        .retain(|&(pointer, _), _| !uses.whole.contains(&pointer) || frozen(pointer));
     if uses.fields.is_empty() {
         return None;
     }
