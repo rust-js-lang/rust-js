@@ -184,7 +184,7 @@ pub(super) fn prints<'tcx>(
         (all_bodies.iter())
             .filter(|body| failing.contains(&body.def_id) && recognition.formatter_param(body.def_id).is_some())
             .filter(|body| {
-                (crate::lower::instances::calls_of(body).into_iter())
+                (crate::lower::call_graph::names(body).into_iter())
                     .any(|(callee, _, _)| crate::lower::recognition::writes_debug_builder(recognition.tcx, callee))
             })
             .map(|body| body.def_id),
@@ -254,7 +254,7 @@ fn written_into_writers<'tcx>(
     // And what's given a library's function's parameter it writes into a
     // writer through its dictionary, as its manifest says (#1652, step 5).
     for body in all_bodies {
-        for (callee, args, _) in crate::lower::instances::calls_of(body) {
+        for (callee, args, _) in crate::lower::call_graph::names(body) {
             if callee.is_local() {
                 continue;
             }
@@ -447,7 +447,7 @@ fn written_into_writers<'tcx>(
                 }
             }
             let calls = by_body
-                .map(|by| crate::lower::instances::calls_of(by))
+                .map(|by| crate::lower::call_graph::names(by))
                 .unwrap_or_default();
             for (callee, args, _) in calls {
                 // A closure of the crate's it calls, given its `Formatter`,
@@ -503,7 +503,7 @@ fn listed_writers_compiled_here(recognition: &Recognition<'_, '_>) -> Vec<DefId>
 pub(super) fn shown_by<'tcx>(recognition: &Recognition<'_, 'tcx>, body: &Body<'tcx>) -> Vec<ty::Ty<'tcx>> {
     use crate::lower::recognition::{WriteCall, is_fmt_argument};
     let tcx = recognition.tcx;
-    (crate::lower::instances::calls_of(body).into_iter())
+    (crate::lower::call_graph::names(body).into_iter())
         .filter_map(|(callee, args, _)| {
             let shown = is_fmt_argument(tcx, callee)
                 || matches!(
@@ -1016,8 +1016,7 @@ fn catches_unwinding<'tcx>(recognition: &Recognition<'_, 'tcx>, body: &Body<'tcx
 /// `print!` or `eprint!` and their lines, or a write to `io::stdout()` or
 /// `io::stderr()`.
 fn prints_to<'tcx>(recognition: &Recognition<'_, 'tcx>, body: &Body<'tcx>, error: bool) -> bool {
-    (crate::lower::instances::calls_of(body).into_iter())
-        .any(|(id, args, _)| recognition.writes_stream(id, args, error))
+    (crate::lower::call_graph::names(body).into_iter()).any(|(id, args, _)| recognition.writes_stream(id, args, error))
 }
 
 /// Whether `body` may leave stdout's line, or of `error`, stderr's,

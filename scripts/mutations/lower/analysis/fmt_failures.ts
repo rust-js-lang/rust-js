@@ -32,9 +32,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a library's function its consumer compiles from its MIR, which writes what may fail, is taken as one that never fails, and its error escapes `{:?}` of its result: a private helper an instance calls, which no manifest lists (ADR 0914, amended; #1043)",
     file: "src/lower/analysis/fmt_failures.rs",
-    find: "        for (callee, args, _) in crate::lower::instances::calls_of(body) {\n",
+    find: "        for &(callee, args, _) in graph.names_of(body.def_id) {\n",
     replace:
-      "        for (callee, args, _) in crate::lower::instances::calls_of(body).into_iter().filter(|_| body.root().is_some()) {\n",
+      "        for &(callee, args, _) in graph.names_of(body.def_id).iter().filter(|_| body.root().is_some()) {\n",
     tests: ["test/crates.test.ts", "-t", "two crates: library_private_writer_fails"],
   },
   {

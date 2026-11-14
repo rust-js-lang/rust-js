@@ -273,7 +273,7 @@ pub(super) fn written_params<'tcx>(
         }
         // Each function it calls or names, a `fn` pointer of an instance
         // too, `bumped::<Point>`, which writes what it's given so (#1710).
-        for (callee, args, span) in crate::lower::instances::calls_of(body) {
+        for (callee, args, span) in crate::lower::call_graph::names(body) {
             calls.push((owner, callee, args, span));
         }
     }

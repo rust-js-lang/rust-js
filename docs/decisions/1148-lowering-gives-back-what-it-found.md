@@ -177,8 +177,26 @@ rounds.
    another throwing function's call. Mutation throwing-fn-before-its-callees,
    the components walked callers first, is caught by it;
    throwing-fn-named-as-a-value is retargeted, and caught.
+3. The graph holds each body's names beside its calls, `Crate::names_of`:
+   each function the body calls or names as a value, of its generic
+   arguments there, and where, as its THIR names it, or of a body of MIR
+   alone (a library's the crate compiles, ADR 0914) its MIR. This was
+   `instances::calls_of`, a scan each analysis ran of its own. The five
+   analyses that ran it can't ask the graph's calls instead: those are
+   MIR's terminators, resolved, with no generic arguments and no function
+   named as a value, where these ask which functions the source names and
+   of what types. So one owner, call_graph.rs, has two tables: who calls
+   whom at run time, and who names whom as written. The scan is
+   `call_graph::names`; the graph runs it once of each body the analyses
+   read, and is built before the first of them, `drop_params`. The
+   formatting failures (`fmt_failures::failing_fns`) ask `names_of` first.
+   Output unchanged. Mutation closure-constant-functions-uncalled follows
+   its code into `lower/call_graph.ts`; fmt-failing-call-of-mir-unseen is
+   retargeted. Both are caught.
 
 test/architecture-calls.test.ts holds the graph built once and asked, and
-the list of analyses that still scan each body's calls for their own edges,
-`instances::calls_of`'s users, a list that only shrinks: closures.rs,
-drops.rs, fmt_failures.rs, prints.rs and written_params.rs.
+the list of files that still run the graph's scan of their own rather than
+ask its table, a list that only shrinks: closures.rs, drops.rs, prints.rs,
+written_params.rs and instances.rs. instances.rs's runs before the
+analyses, since the instances are an input to them; the graph is to be
+built before the instances, so the scan has the graph as its one caller.

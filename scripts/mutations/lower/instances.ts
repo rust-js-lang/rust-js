@@ -145,14 +145,6 @@ export const mutations: Mutation[] = [
     tests: ["test/rest-parameters.test.ts", "-t", "a generic function of rest arguments JS alone reads is its own JS"],
   },
   {
-    name: "closure-constant-functions-uncalled",
-    breaks: "a function a closure constant holds, std's `Iterator::last`'s `some` in `FlattenCompat`'s inlined `last` of `Option`s, is given no drop of its type parameter, so `flatten().last()` of `Some`s never drops the one it passes (#645)",
-    file: "src/lower/instances.rs",
-    find: "            } else if constant.ty().is_closure() {\n",
-    replace: "            } else if false {\n",
-    tests: ["test/std-package.test.ts"],
-  },
-  {
     name: "copies-settled-alone",
     breaks:
       "of functions that call each other, only the last asked is settled with the first's answer: the first stays asked, and each asked of it after answers no copy, so `outer`, which calls `inner`, which calls it and one that copies, is the library's, sharing what Rust copies (#884)",

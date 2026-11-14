@@ -372,48 +372,8 @@ pub(super) fn named(body: &Body<'_>) -> Vec<DefId> {
     called(&mir.body).into_iter().map(|(id, _)| id).collect()
 }
 
-/// Each function `body` names, called or as a value, of its generic
-/// arguments there, and where: as its THIR names it, or, of a body of MIR
-/// alone, a library's the crate compiles (ADR 0914), its MIR.
-pub(super) fn calls_of<'tcx>(body: &Body<'tcx>) -> Vec<(DefId, ty::GenericArgsRef<'tcx>, rustc_span::Span)> {
-    use rustc_middle::thir::ExprKind;
-    if body.root().is_some() {
-        return (body.thir.exprs.iter())
-            .filter_map(|expr| match (&expr.kind, super::fn_def(expr.ty)) {
-                (ExprKind::ZstLiteral { .. }, Some((callee, args))) => Some((callee, args, expr.span)),
-                _ => None,
-            })
-            .collect();
-    }
-    struct Called<'tcx>(Vec<(DefId, ty::GenericArgsRef<'tcx>, rustc_span::Span)>);
-    impl<'tcx> mir::visit::Visitor<'tcx> for Called<'tcx> {
-        // And each one a closure it names as a constant holds, which optimized
-        // MIR makes of one that captures only functions, std's inlined
-        // `filter_map_fold` of `into_item` and `last`'s `some` (#645).
-        // A reference to one too, a promoted `&FnDef` (#1210).
-        fn visit_const_operand(&mut self, constant: &mir::ConstOperand<'tcx>, _: mir::Location) {
-            if let Some((callee, args)) = super::fn_def(constant.ty().peel_refs()) {
-                self.0.push((callee, args, constant.span));
-            } else if constant.ty().is_closure() {
-                for part in constant.ty().walk() {
-                    if let Some(ty) = part.as_type()
-                        && let Some((callee, args)) = super::fn_def(ty)
-                    {
-                        self.0.push((callee, args, constant.span));
-                    }
-                }
-            }
-        }
-    }
-    let mut called = Called(Vec::new());
-    if let Some(mir) = &body.mir {
-        mir::visit::Visitor::visit_body(&mut called, &mir.body);
-    }
-    called.0
-}
-
-/// Each function `body` calls or names as a value, as `calls_of` gives
-/// them, that's given its type parameters' values: not one of rest
+/// Each function `body` calls or names as a value, as the call graph's
+/// `names` gives them, that's given its type parameters' values: not one of rest
 /// arguments given where JS alone reads it (`read_by_js_alone`), which no
 /// call gives anything, so needs no copy of its own (ADR 0051, amended,
 /// #565).
@@ -425,7 +385,7 @@ pub(super) fn given_calls_of<'tcx>(
         Some(_) => read_by_js_alone(tcx, Some(&body.thir), None),
         None => read_by_js_alone(tcx, None, body.mir.as_ref().map(|mir| &mir.body)),
     };
-    (calls_of(body).into_iter())
+    (super::call_graph::names(body).into_iter())
         .filter(|&(callee, _, at)| !alone.iter().any(|&(f, given)| f == callee && given.contains(at)))
         .collect()
 }

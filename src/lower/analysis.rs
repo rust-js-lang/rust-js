@@ -411,6 +411,10 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         .iter()
         .partition(|body| matches!(tcx.def_kind(body.def_id), DefKind::Fn | DefKind::AssocFn));
     let all_bodies = &all_bodies;
+    // The crate's one call graph, its constants' bodies in it, and each
+    // body's names (#1671 change 4 M3): each analysis that walks its calls,
+    // or asks what a body names, asks it.
+    let calls = crate::lower::call_graph::crate_graph(tcx, all_bodies);
     let closures: IndexMap<DefId, &Body<'tcx>> = closures.into_iter().map(|b| (b.def_id, b)).collect();
 
     // What each module holds of a binding, and where a path reads one
@@ -1019,13 +1023,6 @@ pub(super) fn analyze_crate<'a, 'tcx>(
 
     // What each function only calls reach is given at its calls, for the
     // MIR intervals (ADR 1137, M2b-2).
-    let mirs: IndexMap<DefId, &rustc_middle::mir::Body<'tcx>> = (all_bodies.iter())
-        .filter(|body| body.def_id.is_local())
-        .filter_map(|body| Some((body.def_id, &body.mir.as_ref()?.body)))
-        .collect();
-    // The crate's one call graph, its constants' bodies in it (#1671
-    // change 4 M3): each analysis that walks its calls asks it.
-    let calls = crate::lower::call_graph::crate_graph(tcx, &mirs);
     given_parameters(tcx, &calls);
     let mutated = mutated_types(tcx, all_bodies);
     // Less what the session forgets of it, to see that a write in place
@@ -1113,7 +1110,8 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         (&recognition, &counted, &stored_places),
         kept,
     );
-    let (failing, writes_may_fail, dictionaries_fail) = fmt_failures::failing_fns(tcx, all_bodies, &foreign, library);
+    let (failing, writes_may_fail, dictionaries_fail) =
+        fmt_failures::failing_fns(tcx, (all_bodies, &calls), &foreign, library);
     let throwing = throwing::throwing_fns(tcx, &recognition, &calls);
     let unwinding::Found {
         never_unwinding,

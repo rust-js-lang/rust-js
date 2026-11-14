@@ -6,29 +6,53 @@
 //! walks the crate's calls asks it. Of the MIR the emitter reads, not the
 //! optimized one, where a call rustc inlined is no call, though the JS
 //! makes it.
+//!
+//! And beside it, each body's names (`Crate::names_of`): each function it
+//! calls or names as a value, of its generic arguments there, and where, as
+//! its THIR names it, or of a body of MIR alone its MIR. Two tables of one
+//! owner: who calls whom at run time, resolved, and who names whom as
+//! written, of what types.
 
 use crate::collections::{IndexMap, IndexSet};
+use crate::lower::Body;
 use rustc_hir::def::DefKind;
 use rustc_middle::mir::{self, BasicBlock, TerminatorKind};
 use rustc_middle::ty::{self, TyCtxt};
+use rustc_span::Span;
 use rustc_span::def_id::DefId;
 
 /// The crate's call graph, built once of what its analyses walk: each of
 /// its functions' MIR the emitter reads, `bodies`, and each constant's, a
 /// `const`'s, a `static`'s or an inline `const { .. }`'s, by the MIR rustc
 /// evaluates it by, whose calls are a function's callers too (#1742): a
-/// `const fn` only constants and patterns call. The bodies it's of, and it.
+/// `const fn` only constants and patterns call. The bodies it's of, and it;
+/// and the names of each body the analyses read.
 pub(in crate::lower) struct Crate<'a, 'tcx> {
     pub(in crate::lower) bodies: IndexMap<DefId, &'a mir::Body<'tcx>>,
     pub(in crate::lower) graph: CallGraph,
+    names: IndexMap<DefId, Vec<Named<'tcx>>>,
 }
 
-/// The crate's one call graph (`Crate`), of `bodies` and its constants'.
-pub(in crate::lower) fn crate_graph<'a, 'tcx>(
-    tcx: TyCtxt<'tcx>,
-    bodies: &IndexMap<DefId, &'a mir::Body<'tcx>>,
-) -> Crate<'a, 'tcx> {
-    let mut callers: IndexMap<DefId, &'a mir::Body<'tcx>> = bodies.clone();
+/// A function a body names, called or as a value: it, its generic
+/// arguments there, and where.
+pub(in crate::lower) type Named<'tcx> = (DefId, ty::GenericArgsRef<'tcx>, Span);
+
+impl<'tcx> Crate<'_, 'tcx> {
+    /// Each function the body of `id`, one the analyses read, names, called
+    /// or as a value, as `names` gives them.
+    pub(in crate::lower) fn names_of(&self, id: DefId) -> &[Named<'tcx>] {
+        &self.names[&id]
+    }
+}
+
+/// The crate's one call graph (`Crate`), of the MIR the emitter reads of
+/// `all_bodies`' own functions and of the crate's constants', and the names
+/// of each of `all_bodies`.
+pub(in crate::lower) fn crate_graph<'a, 'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&'a Body<'tcx>]) -> Crate<'a, 'tcx> {
+    let mut callers: IndexMap<DefId, &'a mir::Body<'tcx>> = (all_bodies.iter())
+        .filter(|body| body.def_id.is_local())
+        .filter_map(|body| Some((body.def_id, &body.mir.as_ref()?.body)))
+        .collect();
     for owner in tcx.hir_body_owners() {
         let owner = owner.to_def_id();
         if !callers.contains_key(&owner)
@@ -42,7 +66,57 @@ pub(in crate::lower) fn crate_graph<'a, 'tcx>(
     }
     let listed: Vec<(DefId, &mir::Body<'tcx>)> = callers.iter().map(|(&id, &body)| (id, body)).collect();
     let graph = call_graph(tcx, &listed);
-    Crate { bodies: callers, graph }
+    let mut names: IndexMap<DefId, Vec<Named<'tcx>>> = IndexMap::default();
+    for body in all_bodies {
+        let had = names.insert(body.def_id, self::names(body));
+        assert!(had.is_none(), "a body the analyses read twice, a bug of rust-js's");
+    }
+    Crate {
+        bodies: callers,
+        graph,
+        names,
+    }
+}
+
+/// Each function `body` names, called or as a value, of its generic
+/// arguments there, and where: as its THIR names it, or, of a body of MIR
+/// alone, a library's the crate compiles (ADR 0914), its MIR. The graph's
+/// scan, `Crate::names_of`'s.
+pub(in crate::lower) fn names<'tcx>(body: &Body<'tcx>) -> Vec<Named<'tcx>> {
+    use rustc_middle::thir::ExprKind;
+    if body.root().is_some() {
+        return (body.thir.exprs.iter())
+            .filter_map(|expr| match (&expr.kind, crate::lower::fn_def(expr.ty)) {
+                (ExprKind::ZstLiteral { .. }, Some((callee, args))) => Some((callee, args, expr.span)),
+                _ => None,
+            })
+            .collect();
+    }
+    struct Called<'tcx>(Vec<Named<'tcx>>);
+    impl<'tcx> mir::visit::Visitor<'tcx> for Called<'tcx> {
+        // And each one a closure it names as a constant holds, which optimized
+        // MIR makes of one that captures only functions, std's inlined
+        // `filter_map_fold` of `into_item` and `last`'s `some` (#645).
+        // A reference to one too, a promoted `&FnDef` (#1210).
+        fn visit_const_operand(&mut self, constant: &mir::ConstOperand<'tcx>, _: mir::Location) {
+            if let Some((callee, args)) = crate::lower::fn_def(constant.ty().peel_refs()) {
+                self.0.push((callee, args, constant.span));
+            } else if constant.ty().is_closure() {
+                for part in constant.ty().walk() {
+                    if let Some(ty) = part.as_type()
+                        && let Some((callee, args)) = crate::lower::fn_def(ty)
+                    {
+                        self.0.push((callee, args, constant.span));
+                    }
+                }
+            }
+        }
+    }
+    let mut called = Called(Vec::new());
+    if let Some(mir) = &body.mir {
+        mir::visit::Visitor::visit_body(&mut called, &mir.body);
+    }
+    called.0
 }
 
 /// What a call calls: a function, as rustc resolves it, an impl's method

@@ -13,6 +13,7 @@
 
 use crate::collections::IndexSet;
 use crate::lower::Body;
+use crate::lower::call_graph::Crate;
 use crate::lower::library::Foreign;
 use crate::lower::recognition::{
     StdItem, fmt_trait_called, formatted_parts, is_err_variant, is_generic_fmt_result, is_std_def,
@@ -54,10 +55,10 @@ pub(in crate::lower) struct Failing<'a> {
 /// those may, or a writer's own `write` may, whose `io::Result<usize>`'s
 /// `Err` std's `write_all` gives on, where nothing of the crate's that
 /// returns a write's result does (#1072); and whether a dictionary's may,
-/// `Failing::dictionaries`.
+/// `Failing::dictionaries`. What each body names, the call graph's.
 pub(super) fn failing_fns<'tcx>(
     tcx: TyCtxt<'tcx>,
-    all_bodies: &[&Body<'tcx>],
+    (all_bodies, graph): (&[&Body<'tcx>], &Crate<'_, 'tcx>),
     foreign: &Foreign<'_, 'tcx>,
     library: bool,
 ) -> (IndexSet<DefId>, bool, bool) {
@@ -98,7 +99,7 @@ pub(super) fn failing_fns<'tcx>(
         }
         // Each function it names, as its THIR names it, or a body of MIR
         // alone, a library's the crate compiles (ADR 0914), its MIR.
-        for (callee, args, _) in crate::lower::instances::calls_of(body) {
+        for &(callee, args, _) in graph.names_of(body.def_id) {
             // `?` of a value's `Result` of a write's error,
             // `parse(s)?` of an `io::Result<u32>`: its `Err`, given on.
             if tcx.is_lang_item(callee, rustc_hir::attrs::lang_items::LangItem::TryTraitBranch)
