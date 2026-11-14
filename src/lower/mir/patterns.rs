@@ -231,7 +231,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let fixed: Vec<Local> = (1..=body.arg_count)
             .map(Local::from_usize)
             .filter(|&param| {
-                self.krate.nulled_params.is_nulled(def_id, param.as_usize() - 1)
+                self.settled.nulled.is_nulled(def_id, param.as_usize() - 1)
                     && !locals.borrowed[param]
                     && option(body.local_decls[param].ty)
                     && assigned.get(&param).copied().unwrap_or(0) == locals.writes[param]

@@ -3,12 +3,21 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "nulled-seen-unsettled",
+    breaks:
+      "what a body saw of the calls of the crate's functions with own nullable parameters is never settled, so none is found given `null` or a value at each, `!= null` still (#1671 change 4, M2)",
+    file: "src/lower/pipeline.rs",
+    find: "        settled.nulled.settle(seen);\n",
+    replace: "        drop(seen);\n",
+    tests: ["test/lowering-nullable-reads.test.ts", "-t", "each call gives null or a value"],
+  },
+  {
     name: "module-fns-made-unsettled",
     breaks:
       "the module's functions a body made are never settled, so none is written, and each call of one reads what nothing declares (#1671 change 4, M2)",
     file: "src/lower/pipeline.rs",
-    find: "        drop(cx);\n        settled.module_fns.settle(made);\n        match result {\n",
-    replace: "        drop((cx, made));\n        match result {\n",
+    find: "        settled.module_fns.settle(made);\n        settled.nulled.settle(seen);\n",
+    replace: "        settled.nulled.settle(seen);\n",
     tests: ["test/corpus.test.ts", "-t", "^recursive_fns_per_module.rs$"],
   },
   {

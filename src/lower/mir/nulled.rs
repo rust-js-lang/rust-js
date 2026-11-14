@@ -233,9 +233,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// it's given on (`given_on_param`, rd624).
     pub(super) fn stored_given(&self, state: &State<'_, 'tcx>, operand: &Operand<'tcx>) -> Given {
         match self.stored_from(state, operand) {
-            (Given::Nulled, Some(param))
-                if !(self.krate.nulled_params).is_nulled(state.body.source.def_id(), param) =>
-            {
+            (Given::Nulled, Some(param)) if !self.settled.nulled.is_nulled(state.body.source.def_id(), param) => {
                 Given::Unknown
             }
             (given, _) => given,
@@ -440,7 +438,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 })
         });
         if nulled {
-            self.krate.nulled_params.returned_nulled(id);
+            self.nulled_seen.borrow_mut().returned_nulled(id);
         }
     }
 
@@ -451,7 +449,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     fn returns_null_or_value(&self, def_id: rustc_span::def_id::DefId) -> bool {
         crate::lower::calls::gives_null_for_none(self.tcx, def_id)
             || (crate::lower::analysis::nulled_params::may_return_nulled(self.tcx, def_id)
-                && self.krate.nulled_params.returns_nulled(self.item, def_id))
+                && (self.settled.nulled).returns_nulled(&mut self.nulled_seen.borrow_mut(), self.item, def_id))
     }
 
     /// The function or closure that `catch_unwind` calls whose result
@@ -699,7 +697,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             None => (vec![false; inputs], vec![None; inputs]),
         };
         let caller = (self.item, (state.body.source.def_id(), state.at));
-        self.krate.nulled_params.record(caller, f, &nulled, &given_on);
+        self.nulled_call_seen(caller, f, (&nulled, &given_on));
+    }
+
+    /// The call of `callee` in `caller`'s block, giving each parameter
+    /// what's `null` or a value where `nulled` says, and each the caller's
+    /// own given on, as `given_on` says: what this body saw, given back
+    /// (`NulledParams::record`, ADR 1148).
+    pub(super) fn nulled_call_seen(
+        &self,
+        caller: (rustc_span::def_id::DefId, (rustc_span::def_id::DefId, mir::BasicBlock)),
+        callee: rustc_span::def_id::DefId,
+        (nulled, given_on): (&[bool], &[Option<usize>]),
+    ) {
+        let seen = &mut self.nulled_seen.borrow_mut();
+        self.krate.nulled_params.record(seen, caller, callee, nulled, given_on);
     }
 
     /// Each read of a local, an `Option`, that a nullable parameter takes or

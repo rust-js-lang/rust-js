@@ -206,4 +206,8 @@ pub(in crate::lower) struct Settled<'tcx> {
     /// and its dictionaries' and instances' values, made by the bodies
     /// lowered before (`recursive_fns`): each body's own given back.
     pub(in crate::lower) module_fns: recursive_fns::ModuleFns<'tcx>,
+    /// What the bodies lowered before found of the own nullable parameters
+    /// each call gives `null` or a value (ADR 0861, amended, rd613): each
+    /// body's `NulledSeen` settled.
+    pub(in crate::lower) nulled: analysis::nulled_params::NulledFound,
 }

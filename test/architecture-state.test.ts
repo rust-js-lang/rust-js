@@ -61,6 +61,9 @@ const owners: Record<string, string[]> = {
   // The module's functions a body made and called, which the pipeline
   // settles after it, recursive_fns.rs's to write (ADR 1148).
   "self.module_fns_made": ["src/lower/recursive_fns.rs"],
+  // What a body saw of the calls and returns of the crate's functions with
+  // own nullable parameters, mir/nulled.rs's to write (ADR 1148).
+  "self.nulled_seen": ["src/lower/mir/nulled.rs"],
   "self.asked_of_libraries": ["src/lower/items.rs", "src/lower/traits/impls.rs", "src/lower/traits/impls/defaults.rs"],
   "self.writing": ["src/lower/display.rs", "src/lower/display/debug.rs", "src/lower/display/written.rs"],
   "self.recursive": ["src/lower/recursive_fns.rs"],

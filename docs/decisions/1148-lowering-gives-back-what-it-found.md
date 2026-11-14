@@ -92,3 +92,20 @@ M3 (one call graph) and M4 (each fact declared `Local`, `Summary` or
    recursive_fns.rs. Output unchanged. Mutations module-fn-made-before-unseen
    and module-fns-made-unsettled are new, and three are retargeted, each
    caught.
+5. `nulled_params`' three `RefCell`s, what lowering saw of the calls of
+   the crate's functions with own nullable parameters, the parameters
+   found `null` or a value at every call, and the functions found to
+   return so (ADR 0861, amended, rd613, rd632), are `Settled::nulled`, a
+   `NulledFound`. `NulledParams` keeps only what its scan found before any
+   body, and holds no cell. A body's own sightings are `FnCx::nulled_seen`,
+   a `NulledSeen`: each call it lowers (`nulled_call_seen`, the one writer,
+   mir/nulled.rs), each function it finds returns `null` or a value, and
+   each it asks of that isn't found yet. Its asks read what's settled and
+   its own, so a closure found so by its maker's body is seen there, as
+   before, with no round more. The pipeline settles it after the body, and
+   `again` reads and writes what's settled, as it read the cells, so the
+   rounds are as before. test/architecture-state.test.ts holds
+   `nulled_seen` to mir/nulled.rs. Output unchanged. Mutation
+   nulled-seen-unsettled is new, and six are retargeted, each caught. The
+   check of a body's own found returns saves a lowering again, and changes
+   no output, so no mutation holds it.

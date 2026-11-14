@@ -36,7 +36,6 @@ use rustc_hir::def::DefKind;
 use rustc_middle::mir::{self, BasicBlock, visit::Visitor};
 use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::def_id::DefId;
-use std::cell::RefCell;
 
 /// The crate's functions whose own nullable parameters may be such, and
 /// where the crate's MIR calls them or uses them otherwise.
@@ -48,18 +47,34 @@ pub(in crate::lower) struct NulledParams {
     calls: IndexMap<(DefId, BasicBlock), DefId>,
     /// Each used but as a call's function, given or kept as a value.
     as_values: IndexSet<DefId>,
-    /// What lowering sees of their calls (`record`).
-    seen: RefCell<NulledCalls>,
-    /// The parameters found so, once every body's calls are seen (`again`).
-    nulled: RefCell<IndexSet<(DefId, usize)>>,
     /// Each namespace's method that's the function it passes its parameters
     /// on to, and that function (`reached::forwarded`).
     forwarded: IndexMap<DefId, DefId>,
-    /// The functions found to return `null` or a value (`returns_nulled`).
-    returns: RefCell<Returns>,
     /// The crate's nullable thread-locals nothing reads apart, `null` from
     /// `undefined` (`reads_alike`, #665).
     alike: IndexSet<DefId>,
+}
+
+/// What the bodies lowered so far found of them, `Settled`'s, which the
+/// pipeline settles each body's `NulledSeen` into, never a body itself
+/// (#1671 change 4, M2; ADR 1148).
+#[derive(Default)]
+pub(in crate::lower) struct NulledFound {
+    /// What lowering saw of their calls (`NulledParams::record`).
+    seen: NulledCalls,
+    /// The parameters found so, once every body's calls are seen (`again`).
+    nulled: IndexSet<(DefId, usize)>,
+    /// The functions found to return `null` or a value (`returns_nulled`).
+    returns: Returns,
+}
+
+/// What a body's lowering saw of them, given back, which the pipeline
+/// settles (`NulledFound::settle`): its calls of them, each function it
+/// found returns `null` or a value, and each it asked of that wasn't yet.
+#[derive(Default)]
+pub(in crate::lower) struct NulledSeen {
+    calls: NulledCalls,
+    returns: Returns,
 }
 
 /// What lowering saw of the calls of the crate's functions with nullable
@@ -151,10 +166,7 @@ impl NulledParams {
             candidates,
             calls,
             as_values,
-            seen: Default::default(),
-            nulled: Default::default(),
             forwarded: forwarded.clone(),
-            returns: Default::default(),
             alike: read_alike::found(recognition, everywhere),
         }
     }
@@ -187,6 +199,7 @@ impl NulledParams {
     /// function's, given each argument past its `self` (#601).
     pub(in crate::lower) fn record(
         &self,
+        seen: &mut NulledSeen,
         (item, (caller, at)): (DefId, (DefId, BasicBlock)),
         callee: DefId,
         nulled: &[bool],
@@ -197,7 +210,7 @@ impl NulledParams {
             nulled.get(past..).unwrap_or_default(),
             given_on.get(past..).unwrap_or_default(),
         );
-        let mut seen = self.seen.borrow_mut();
+        let seen = &mut seen.calls;
         seen.seen.insert((item, (caller, at)));
         for (i, &nulled) in nulled.iter().enumerate() {
             if !nulled {
@@ -210,34 +223,6 @@ impl NulledParams {
         }
     }
 
-    /// Whether `callee`'s every return is found `null` or a value, never
-    /// `undefined`, as its lowering found (`returned_nulled`); as lowering
-    /// `item` asks, which is lowered again once it's found, where it wasn't
-    /// yet.
-    pub(in crate::lower) fn returns_nulled(&self, item: DefId, callee: DefId) -> bool {
-        let mut returns = self.returns.borrow_mut();
-        if returns.found.contains(&callee) {
-            return true;
-        }
-        returns.asked.entry(callee).or_default().insert(item);
-        false
-    }
-
-    /// That `id`'s every return is `null` or a value, as its own lowering
-    /// found: what's assigned its result each a `Some(..)`, a nullable
-    /// field's read, a call of what gives `null` for `None` (`stored_given`).
-    /// What its lowering again finds is found once, as what it's found of
-    /// only grows.
-    pub(in crate::lower) fn returned_nulled(&self, id: DefId) {
-        self.returns.borrow_mut().found.insert(id);
-    }
-
-    /// Whether `id`'s parameter `index` is found so: its body tests it
-    /// `!== null`.
-    pub(in crate::lower) fn is_nulled(&self, id: DefId, index: usize) -> bool {
-        self.nulled.borrow().contains(&(id, index))
-    }
-
     /// Once every body's calls are seen, each item of `work`, by its
     /// function, `id`'s, of one newly found to have such a parameter,
     /// queued again, to be lowered again, its tests of it `!== null`;
@@ -248,10 +233,14 @@ impl NulledParams {
     /// value before it was found to, queued again, what it saw of calls
     /// forgotten to be seen anew; the parameters are found only once none
     /// is (rd632).
-    pub(in crate::lower) fn again<W: Clone>(&self, work: &mut Vec<W>, id: impl Fn(&W) -> DefId) -> bool {
+    pub(in crate::lower) fn again<W: Clone>(
+        &self,
+        settled: &mut NulledFound,
+        work: &mut Vec<W>,
+        id: impl Fn(&W) -> DefId,
+    ) -> bool {
         let askers: IndexSet<DefId> = {
-            let mut returns = self.returns.borrow_mut();
-            let Returns { found, asked } = &mut *returns;
+            let Returns { found, asked } = &mut settled.returns;
             let newly: Vec<DefId> = asked.keys().filter(|callee| found.contains(*callee)).copied().collect();
             newly
                 .iter()
@@ -259,11 +248,10 @@ impl NulledParams {
                 .collect()
         };
         if !askers.is_empty() {
-            let mut seen = self.seen.borrow_mut();
+            let seen = &mut settled.seen;
             seen.seen.retain(|(item, _)| !askers.contains(item));
             seen.unnulled.retain(|(item, _)| !askers.contains(item));
             seen.given_on.retain(|(item, _)| !askers.contains(item));
-            drop(seen);
             let asked: Vec<W> = work
                 .iter()
                 .filter(|&item| askers.contains(&id(item)))
@@ -276,8 +264,8 @@ impl NulledParams {
                 return true;
             }
         }
-        let found = self.nulled(&self.seen.borrow());
-        let mut nulled = self.nulled.borrow_mut();
+        let found = self.nulled(&settled.seen);
+        let nulled = &mut settled.nulled;
         let again: IndexSet<DefId> = (found.iter().map(|&(id, _)| id))
             .filter(|&id| !nulled.iter().any(|&(of, _)| of == id))
             .collect();
@@ -291,8 +279,8 @@ impl NulledParams {
     /// The parameters found so, by function and index, which a library's
     /// contract says: of a namespace's method that's its function, the
     /// function's, each past its `self` (#601).
-    pub(in crate::lower) fn found(&self) -> IndexSet<(DefId, usize)> {
-        let nulled = self.nulled.borrow();
+    pub(in crate::lower) fn found(&self, settled: &NulledFound) -> IndexSet<(DefId, usize)> {
+        let nulled = &settled.nulled;
         let methods = (self.forwarded.iter()).flat_map(|(&method, &function)| {
             (nulled.iter())
                 .filter(move |&&(of, _)| of == function)
@@ -339,6 +327,50 @@ impl NulledParams {
                 nulled.swap_remove(&key);
             }
         }
+    }
+}
+
+impl NulledFound {
+    /// What a body saw, `seen`, settled: its calls, each function it found
+    /// returns `null` or a value, and each it asked of before.
+    pub(in crate::lower) fn settle(&mut self, seen: NulledSeen) {
+        let NulledSeen { calls, returns } = seen;
+        self.seen.seen.extend(calls.seen);
+        self.seen.unnulled.extend(calls.unnulled);
+        self.seen.given_on.extend(calls.given_on);
+        self.returns.found.extend(returns.found);
+        for (callee, items) in returns.asked {
+            self.returns.asked.entry(callee).or_default().extend(items);
+        }
+    }
+
+    /// Whether `id`'s parameter `index` is found so: its body tests it
+    /// `!== null`.
+    pub(in crate::lower) fn is_nulled(&self, id: DefId, index: usize) -> bool {
+        self.nulled.contains(&(id, index))
+    }
+
+    /// Whether `callee`'s every return is found `null` or a value, never
+    /// `undefined`, as its lowering found (`NulledSeen::returned_nulled`),
+    /// before or in the body `seen` is of; as lowering `item` asks, which is
+    /// lowered again once it's found, where it wasn't yet.
+    pub(in crate::lower) fn returns_nulled(&self, seen: &mut NulledSeen, item: DefId, callee: DefId) -> bool {
+        if self.returns.found.contains(&callee) || seen.returns.found.contains(&callee) {
+            return true;
+        }
+        seen.returns.asked.entry(callee).or_default().insert(item);
+        false
+    }
+}
+
+impl NulledSeen {
+    /// That `id`'s every return is `null` or a value, as its own lowering
+    /// found: what's assigned its result each a `Some(..)`, a nullable
+    /// field's read, a call of what gives `null` for `None` (`stored_given`).
+    /// What its lowering again finds is found once, as what it's found of
+    /// only grows.
+    pub(in crate::lower) fn returned_nulled(&mut self, id: DefId) {
+        self.returns.found.insert(id);
     }
 }
 

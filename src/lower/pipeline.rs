@@ -479,7 +479,7 @@ pub fn lower_crate<'tcx>(
                 .collect();
             if !round.is_empty() {
                 work.extend(round);
-            } else if nulled_params.again(&mut work, |&(at, _, _)| at) {
+            } else if nulled_params.again(&mut settled.nulled, &mut work, |&(at, _, _)| at) {
                 // Each with an own nullable parameter each call gives `null`
                 // or a value, lowered again with its copies (ADR 0861, amended).
             } else {
@@ -569,9 +569,10 @@ pub fn lower_crate<'tcx>(
         // Of one that failed too, whose calls are checked as each other's.
         drops_observed.gather(cx.drops_observed.take());
         asked.extend(cx.asked_of_libraries.take());
-        let made = cx.module_fns_made.take();
+        let (made, seen) = (cx.module_fns_made.take(), cx.nulled_seen.take());
         drop(cx);
         settled.module_fns.settle(made);
+        settled.nulled.settle(seen);
         match result {
             Ok(lowered) => {
                 used.extend(lowered.dependencies.uses.iter().map(|&(_, to)| to));
@@ -1326,7 +1327,7 @@ pub fn lower_crate<'tcx>(
                         built: cell_borrows.pointers().built().collect(),
                         cloned_closures: closure_facts.clones(),
                         owned_by_return: self_handles.owned_by_return(),
-                        nulled_params: &nulled_params.found(),
+                        nulled_params: &nulled_params.found(&settled.nulled),
                     },
                     (&trait_impls, &held.modules),
                     dependencies,

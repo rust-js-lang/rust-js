@@ -422,6 +422,10 @@ struct FnCx<'a, 'tcx> {
     /// The module's functions this body made and called, beside those
     /// `settled` holds, which the pipeline settles after it (ADR 1148).
     module_fns_made: RefCell<recursive_fns::MadeHere<'tcx>>,
+    /// What this body saw of the calls and returns of the crate's functions
+    /// with own nullable parameters, which the pipeline settles after it
+    /// (ADR 1148).
+    nulled_seen: RefCell<analysis::nulled_params::NulledSeen>,
     tcx: TyCtxt<'tcx>,
     typing_env: ty::TypingEnv<'tcx>,
     /// What the generic item being lowered is given, besides its arguments.

@@ -582,7 +582,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let declared: Vec<bool> = (nulled.iter().zip(&given_on))
                 .map(|(&n, on)| n || on.is_some())
                 .collect();
-            self.krate.nulled_params.record(caller, callee.0, &declared, &given_on);
+            self.nulled_call_seen(caller, callee.0, (&declared, &given_on));
         }
         self.record_bound(state, callee, operands);
         // An `fmt::Arguments` given on is a function that makes its text,
