@@ -600,13 +600,24 @@ This is how `webapi` lays out each interface: the type, its members in an
   ModuleDependency from ".."`, or of
   a namespace, `NodeJS.TypedArray`, with its arguments, `Map<string, T>`;
   a keyword, `string`; a string, `"auto"`; a union, `string | URL`; an
-  array, `T[]` or `readonly T[]`; a function, `(f: () => T) => T`; or an
-  object, `{ expire?: number; run<T>(f: () => T): T; [key: string]: T }`.
-  A name that's one of the Rust type's type parameters, `T`, is the type
-  it's given, but in a method or function of a `T` of its own. A name
-  alone, `chart.js#Chart`, takes the Rust type's arguments, and `Name<>`
-  none. A value it doesn't read, `A & B` or `import("m").T`, is a compile
-  error that says what it reads: write `m#T`.
+  intersection, `string[] & { index: number }`; an array, `T[]` or
+  `readonly T[]`; a property's type, `M[K]`; a function, `(f: () => T) =>
+  T`; or an object, `{ expire?: number; run<T>(f: () => T): T; [key:
+  string]: T }`. A name that's one of the Rust type's type parameters,
+  `T`, is the type it's given, but in a method or function of a `T` of
+  its own. A name alone, `chart.js#Chart`, takes the Rust type's
+  arguments, and `Name<>` none. A value it doesn't read, `typeof x` or
+  `import("m").T`, is a compile error that says what it reads: write
+  `m#T`.
+- **On a trait's associated type**, `#[rust_js::types]` is what its
+  projection is, written in the trait's `Self` and parameters: webapi's
+  `Listen<E>`'s `type Event` is `@rust-js/webapi#EventMapOf<Self>[E]`, so
+  `<Target as Listen<Name>>::Event` is `EventMapOf<Target>[Name]`, and a
+  bound `Target: Listen<Name>` makes `Name extends keyof
+  EventMapOf<Target>`
+  ([ADR 1153](../../decisions/1153-a-binding-traits-projection-is-its-type-function.md)).
+  On a trait, it's what a type the trait bounds is. On a function, a
+  method or a constant, it's a compile error.
 
 ### A method on another crate's type
 

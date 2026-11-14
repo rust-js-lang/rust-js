@@ -84,6 +84,7 @@
     "@rolldown/plugin-babel": "0.2.4",
     "@rust-js/std": "workspace:*",
     "@rust-js/typescript": "workspace:*",
+    "@rust-js/webapi": "workspace:*",
     "@tailwindcss/vite": "4.3.3",
     "@types/babel__core": "7.20.5",
     "@types/bun": "1.4.4",

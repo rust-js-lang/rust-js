@@ -29,6 +29,23 @@ pub struct Task(PhantomData<u8>);
   }
 });
 
+// One attribute of what a type is: a type's, a trait's, what a type it
+// bounds is, and a trait's associated type's, what its projection is
+// (#1817); on a function, a method or a constant it's refused, never left
+// unread, so no second form grows beside it.
+test("a #[rust_js::types] on what isn't a type is refused, naming what it says", () => {
+  const dir = fixture("declarations-written-not-a-type");
+  for (const item of ["pub fn made() {}", "pub const LIMIT: u8 = 1;", "pub trait Listen<E> {\n    #[cfg_attr(rust_js, rust_js::types = \"string\")]\n    fn listen(&self);\n}"]) {
+    const attribute = item.startsWith("pub trait") ? "" : `#[cfg_attr(rust_js, rust_js::types = "string")]\n`;
+    writeFileSync(join(dir, "lib.rs"), `${attribute}${item}\n`);
+    const refused = runSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")], root, 60_000);
+    expect([refused.code === 0, refused.stderr]).toEqual([
+      false,
+      expect.stringContaining("rust-js: `#[rust_js::types]` says what a type is to TypeScript: a struct's, an enum's, an alias's, a trait's, what a type it bounds is, or a trait's associated type's, what its projection is; not a"),
+    ]);
+  }
+});
+
 // An intersection, `string[] & { index: number }`, a `RegExpExecArray`'s,
 // is read and declared as written (#303, ADR 0811, amended).
 test("a #[rust_js::types] intersection is declared as written", () => {

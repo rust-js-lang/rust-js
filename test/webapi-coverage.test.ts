@@ -8,7 +8,7 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { functionsAsObjects, measure, render } from "../webapi/coverage";
-import { generatorOutput, root } from "./support";
+import { generatedBeside, generatorOutput, root } from "./support";
 import { underLoad } from "../scripts/timing";
 
 const baseline = join(root, "webapi/coverage.txt");
@@ -28,6 +28,8 @@ test("the webapi crate binds what it bound of TypeScript's DOM", async () => {
 // each name as scripts/rust-names.ts names it (ADR 0376).
 test("the webapi crate is what its generator writes", () => {
   expect(generatorOutput("webapi/generate.ts")).toBe(readFileSync(join(root, "webapi/src/lib.rs"), "utf8"));
+  // And its event map to TypeScript, `index.d.ts` (#1817).
+  expect(generatedBeside("webapi/generate.ts", "index.d.ts")).toBe(readFileSync(join(root, "webapi/index.d.ts"), "utf8"));
 });
 
 // ADR 0653: a function JS gives is a `dyn Fn` of its signature, the one

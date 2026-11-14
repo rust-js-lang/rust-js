@@ -55,6 +55,8 @@ import { isIdentifierText } from "typescript/ast/scanner";
  *   | { kind: "union", types: Type[] }
  *   | { kind: "intersection", types: Type[] }
  *   | { kind: "array", element: Type, readonly: boolean }
+ *   | { kind: "indexed", object: Type, index: Type }
+ *   | { kind: "keyof", type: Type }
  *   | { kind: "tuple", elements: Type[] }
  *   | { kind: "function", typeParameters: TypeParameter[], params: Param[], returns: Type }
  *   | { kind: "object", members: Member[] }
@@ -880,6 +882,12 @@ function typeNode(t) {
     }
     case "tuple":
       return f.createTupleTypeNode(t.elements.map(typeNode));
+    // A property's type by its key's, `EventMapOf<Target>[Name]`, and the
+    // keys of a type, `keyof EventMapOf<Target>` (#1817).
+    case "indexed":
+      return f.createIndexedAccessTypeNode(element(t.object), typeNode(t.index));
+    case "keyof":
+      return f.createTypeOperatorNode(SyntaxKind.KeyOfKeyword, element(t.type));
     case "function":
       // A constructor's, `new (a: A) => T`, of a typed `js::Class` (ADR 1009).
       if (t.construct) {

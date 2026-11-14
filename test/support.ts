@@ -56,9 +56,21 @@ export function wrapsDisagreed(dir: string, args: string[] = []): string[] {
  * committed, without writing over it.
  */
 export function generatorOutput(script: string, ...args: string[]): string {
-  const out = join(fixture(`generated-${script.replace(/\W/g, "-")}`), "out");
+  const dir = fixture(`generated-${script.replace(/\W/g, "-")}`);
+  generatedIn.set(script, dir);
+  const out = join(dir, "out");
   run([process.execPath, script, ...args, out]);
   return readFileSync(out, "utf8");
+}
+
+const generatedIn = new Map<string, string>();
+
+/** A file generator `script` wrote beside its output in its last
+ * `generatorOutput`, webapi's `index.d.ts` beside its `lib.rs` (#1817). */
+export function generatedBeside(script: string, name: string): string {
+  const dir = generatedIn.get(script);
+  if (!dir) throw new Error(`${script} hasn't run: \`generatorOutput\` it first`);
+  return readFileSync(join(dir, name), "utf8");
 }
 
 let rustcVersion: string | undefined;

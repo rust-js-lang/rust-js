@@ -32,6 +32,7 @@ mod globals;
 mod imports;
 mod namespaces;
 mod parts;
+mod projections;
 mod representation;
 pub(super) mod std_types;
 mod structures;
@@ -485,11 +486,23 @@ impl<'tcx> Declarations<'_, 'tcx> {
     fn generics(&mut self, def_id: DefId) -> Vec<Value> {
         let erased = erasures(self.tcx, def_id);
         let callables = self.callables(def_id);
+        let mut indexed = self.indexed_params(def_id);
         (self.tcx.generics_of(def_id).own_params.iter())
             .filter(|param| matches!(param.kind, ty::GenericParamDefKind::Type { synthetic: false, .. }))
             .filter(|param| !erased.iter().any(|(index, _)| *index == param.index))
             .filter(|param| !callables.iter().any(|callable| callable.index == param.index))
-            .map(|param| json!({ "name": param.name.as_str() }))
+            .map(|param| match indexed.swap_remove(&param.index) {
+                // Of a key a binding trait's projection is indexed by,
+                // `Name extends keyof EventMapOf<Target>` (#1817).
+                Some(mut keys) => {
+                    let constraint = match keys.len() {
+                        1 => keys.pop().expect("a key"),
+                        _ => json!({ "kind": "intersection", "types": keys }),
+                    };
+                    json!({ "name": param.name.as_str(), "constraint": constraint })
+                }
+                None => json!({ "name": param.name.as_str() }),
+            })
             .collect()
     }
 
@@ -640,6 +653,11 @@ impl<'tcx> Declarations<'_, 'tcx> {
             Written::Array { element, readonly } => {
                 let element = self.written_value(element, param, bound)?;
                 json!({ "kind": "array", "element": element, "readonly": readonly })
+            }
+            Written::Indexed { object, index } => {
+                let object = self.written_value(object, param, bound)?;
+                let index = self.written_value(index, param, bound)?;
+                json!({ "kind": "indexed", "object": object, "index": index })
             }
             Written::Function(signature) => {
                 let (type_parameters, params, returns) = self.written_signature(signature, param, bound)?;
@@ -892,6 +910,18 @@ impl<'tcx> Declarations<'_, 'tcx> {
             {
                 self.written(t, &declared, ty::List::empty())
             }
+            // A binding trait's associated type that says what it is, of
+            // the projection's `Self` and arguments: `<Target as
+            // Listen<Name>>::Event`, `EventMapOf<Target>[Name]` (#1817).
+            ty::Alias(
+                _,
+                alias @ ty::AliasTy {
+                    kind: ty::Projection { def_id },
+                    ..
+                },
+            ) if written_types(tcx, *def_id).is_some() => self
+                .projection(*def_id, alias.args)
+                .expect("a projection that says what it is"),
             // An `impl Future`, an `async fn`'s result: the `Promise` its JS
             // gives, of what it resolves to, `Promise<string[]>`, of nothing
             // `Promise<void>` (ADR 0029, #1769).

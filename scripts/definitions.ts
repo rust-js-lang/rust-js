@@ -127,7 +127,7 @@ if (lost.length) {
   failed.push("coverage");
   console.log(`FAIL coverage: lost ${lost.join(", ")} (blessed in coverage.txt: keep only with an issue tracking each)`);
 } else console.log(`ok   coverage: ${now.covered.length} of ${now.all.length} members`);
-step("webapi tests", ["bun", "test", "test/webapi-coverage.test.ts", "test/webapi-declares.test.ts", "test/webapi-namespaces.test.ts"]);
+step("webapi tests", ["bun", "test", "test/webapi-coverage.test.ts", "test/webapi-declares.test.ts", "test/webapi-namespaces.test.ts", "test/webapi-event-map.test.ts"]);
 step("React port: regen", ["bun", "scripts/react-in-rust.ts", "regen"], root, 1_800_000);
 console.log(failed.length ? `\nNot ready: ${failed.join(", ")}. Fix or report each, then gate as any change.` : "\nReady: gate it as any change (check:fast --all), then commit with the summary above.");
 process.exit(failed.length ? 1 : 0);

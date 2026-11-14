@@ -486,7 +486,13 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                     Some(Kind::Array)
                 }
                 Some(Written::Function(_)) => Some(Kind::Function),
-                Some(Written::Keyword(_) | Written::Literal(_) | Written::Union(_) | Written::Intersection(_)) => None,
+                Some(
+                    Written::Keyword(_)
+                    | Written::Literal(_)
+                    | Written::Union(_)
+                    | Written::Intersection(_)
+                    | Written::Indexed { .. },
+                ) => None,
             };
         }
         let fn_trait = |id: DefId| self.tcx.fn_trait_kind_from_def_id(id).is_some();

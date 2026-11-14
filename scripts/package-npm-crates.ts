@@ -8,7 +8,7 @@
 //
 //   bun scripts/package-npm-crates.ts <out-dir>   # <out-dir>/builtins.tgz, webapi.tgz, react.tgz, next.tgz, node.tgz, react-native.tgz
 
-import { copyFileSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { crates } from "../tooling/crates.js";
@@ -77,6 +77,8 @@ try {
       keywords: ["rust-js", "rust"],
       "rust-js": { crate: crate.name },
       ...(Object.keys(peers).length ? { peerDependencies: peers } : {}),
+      // Its types to TypeScript, webapi's event map (#1817).
+      ...(existsSync(join(staging, "index.d.ts")) ? { types: "index.d.ts" } : {}),
       // What Cargo packaged, a build script and what it reads too.
       files: readdirSync(staging).filter((file) => file !== "package.json").sort(),
     };

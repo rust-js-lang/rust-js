@@ -9,7 +9,7 @@ license = "MIT"
 repository = "https://github.com/rust-js-lang/rust-js"
 readme = "README.md"
 # Its Rust, not the repository's tools that build or generate it.
-include = ["src", "README.md"]
+include = ["src", "index.d.ts", "README.md"]
 
 [lib]
 name = "webapi"

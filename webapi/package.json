@@ -1,7 +1,8 @@
 {
-  "name": "@rust-js/webapi-generator",
+  "name": "@rust-js/webapi",
   "private": true,
-  "description": "Generates the webapi crate (src/lib.rs) from W3C's WebIDL. See docs/decisions/0024-web-crate.md.",
+  "description": "The webapi crate, generated with its event map to TypeScript (src/lib.rs, index.d.ts) from W3C's WebIDL. See docs/decisions/0024-web-crate.md.",
+  "types": "index.d.ts",
   "devDependencies": {
     "@types/web": "0.0.366",
     "@webref/elements": "2.9.2",

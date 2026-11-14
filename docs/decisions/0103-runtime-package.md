@@ -206,3 +206,12 @@ second name, no re-export of the old package.
   runs", which compiles a program that uses a helper and a std body, finds
   its one import, bundles it with Vite in an app with nothing else of
   rust-js's installed, and runs it as native Rust does.
+
+## Amendment: the webapi workspace is `@rust-js/webapi` (#1817)
+
+The webapi crate's workspace, `@rust-js/webapi-generator` above, is
+`@rust-js/webapi`, the name its npm package has: it holds the crate's
+event map to TypeScript, `index.d.ts`, which a crate's declarations
+import, `import type { EventMapOf } from "@rust-js/webapi"`, so this
+repository's tests resolve it as a consumer does, as `@rust-js/std` is
+std's ([ADR 1153](1153-a-binding-traits-projection-is-its-type-function.md)).

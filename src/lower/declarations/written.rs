@@ -4,6 +4,7 @@
 //! where it's written, saying what it reads: never a declaration made of
 //! the text it couldn't.
 
+use rustc_hir::def::DefKind;
 use rustc_middle::ty::TyCtxt;
 use rustc_span::Symbol;
 use rustc_span::def_id::DefId;
@@ -29,6 +30,9 @@ pub(in crate::lower) enum Written {
     Intersection(Vec<Written>),
     /// `T[]`, `readonly T[]`.
     Array { element: Box<Written>, readonly: bool },
+    /// `EventMapOf<Self>[E]`: a type's property's type, by a key's type, a
+    /// binding trait's associated type's (#1817).
+    Indexed { object: Box<Written>, index: Box<Written> },
     /// `<T>(f: () => T) => T`.
     Function(Signature),
     /// `{ expire?: number; run<T>(f: () => T): T; [key: string]: T }`.
@@ -123,7 +127,7 @@ const KEYWORDS: [&str; 12] = [
 /// writes yet, `typeof x`, isn't (ADR 0811, amended).
 const READS: &str = "it reads a name, `Element`, of a module, `react#ReactNode`, or of a namespace, \
     `NodeJS.TypedArray`, with its arguments, `Map<string, T>`, none, `ReactNode<>`; a keyword, `string`; \
-    a string, `\"auto\"`; a union, `string | URL`; an intersection, `string[] & { index: number }`; an array, `T[]`, `readonly T[]`; a function, \
+    a string, `\"auto\"`; a union, `string | URL`; an intersection, `string[] & { index: number }`; an array, `T[]`, `readonly T[]`; a property's type, `M[K]`; a function, \
     `(f: () => T) => T`; and an object, `{ expire?: number; run<T>(f: () => T): T; [key: string]: T }`";
 
 /// The attribute's path.
@@ -152,6 +156,30 @@ pub fn validate_types(tcx: TyCtxt<'_>) -> bool {
     let mut valid = true;
     for def in tcx.hir_crate_items(()).definitions() {
         for attr in tcx.get_attrs_by_path(def.to_def_id(), &path()) {
+            // One attribute of what a type is: a type's, a trait's, what
+            // it bounds is (`erasures`), and a trait's associated type's,
+            // what its projection is (#1817); of nothing else.
+            let typed = matches!(
+                tcx.def_kind(def),
+                DefKind::Struct
+                    | DefKind::Enum
+                    | DefKind::Union
+                    | DefKind::TyAlias
+                    | DefKind::ForeignTy
+                    | DefKind::Trait
+                    | DefKind::AssocTy
+            );
+            if !typed {
+                tcx.dcx().span_err(
+                    attr.span(),
+                    format!(
+                        "rust-js: `#[rust_js::types]` says what a type is to TypeScript: a struct's, an enum's, an alias's, a trait's, what a type it bounds is, or a trait's associated type's, what its projection is; not a {}'s",
+                        tcx.def_descr(def.to_def_id())
+                    ),
+                );
+                valid = false;
+                continue;
+            }
             let why = match attr.value_str() {
                 Some(declared) => read(declared.as_str()).err().map(|why| unread(declared.as_str(), &why)),
                 None => Some(format!(
@@ -270,15 +298,23 @@ impl<'a> Reader<'a> {
         })
     }
 
-    /// `T[]`, `readonly T[]`.
+    /// `T[]`, `readonly T[]`, and `M[K]`, the type of `M`'s property `K`.
     fn array(&mut self) -> Result<Written, String> {
         let readonly = self.eat_word("readonly");
         let mut ty = self.primary()?;
         while self.eat("[") {
+            if self.eat("]") {
+                ty = Written::Array {
+                    element: Box::new(ty),
+                    readonly: false,
+                };
+                continue;
+            }
+            let index = self.ty()?;
             self.expect("]")?;
-            ty = Written::Array {
-                element: Box::new(ty),
-                readonly: false,
+            ty = Written::Indexed {
+                object: Box::new(ty),
+                index: Box::new(index),
             };
         }
         match (readonly, &mut ty) {

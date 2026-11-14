@@ -106787,6 +106787,9 @@ mod sealed {
 /// What an event of a name is on a target, from `@webref/events` (ADR 0223):
 /// a button's `Click` is a `PointerEvent`, a document's `Keydown` a `KeyboardEvent`.
 pub trait Listen<E> {
+    /// To TypeScript, `@rust-js/webapi`'s `EventMapOf<Self>[E]`, the event map its
+    /// `index.d.ts` declares of these impls (#1817).
+    #[cfg_attr(rust_js, rust_js::types = "@rust-js/webapi#EventMapOf<Self>[E]")]
     type Event;
 }
 

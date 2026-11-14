@@ -358,3 +358,47 @@ export function render(c: Coverage): string {
     "",
   ].join("\n");
 }
+
+/** TypeScript's event maps, of the pinned TypeScript's `lib.dom.d.ts`
+ * (#1817): each interface's, `addEventListener<K extends keyof
+ * HTMLElementEventMap>`'s, by its name, the interfaces each extends, and
+ * each map's events, its own and those it extends, each the type it says,
+ * its name where it's a name alone, `PointerEvent`, else its text,
+ * `ProgressEvent<XMLHttpRequestEventTarget>`. */
+export async function typescriptEventMaps(): Promise<{
+  mapOf: Map<string, string>;
+  extendsOf: Map<string, string[]>;
+  maps: Map<string, Map<string, string>>;
+}> {
+  const { default: exePath } = await import(new URL("../node_modules/typescript/lib/getExePath.js", import.meta.url).pathname);
+  const lib = join(dirname(exePath()), "lib.dom.d.ts");
+  const session = await open([lib]);
+  const { declarations } = await session.read(lib);
+  await session.close();
+  const text = (t: any): string =>
+    t.kind === "reference" ? (t.args?.length ? `${t.name}<${t.args.map(text).join(", ")}>` : t.name) : t.kind === "other" ? t.text : JSON.stringify(t);
+  const mapOf = new Map<string, string>();
+  const extendsOf = new Map<string, string[]>();
+  const own = new Map<string, { extends: string[]; events: Map<string, string> }>();
+  for (const d of declarations as any[]) {
+    if (d.kind !== "interface") continue;
+    const parents = (d.extends as any[]).filter((e) => e.kind === "reference").map((e) => e.name as string);
+    extendsOf.set(d.name, [...(extendsOf.get(d.name) ?? []), ...parents]);
+    const listen = (d.members as any[]).find((m) => m.kind === "method" && m.name === "addEventListener" && m.typeParameters?.length);
+    const map = listen?.typeParameters[0].constraint?.text?.match(/^keyof (\w+)$/)?.[1];
+    if (map) mapOf.set(d.name, map);
+    if (d.name.endsWith("EventMap")) {
+      const events = own.get(d.name)?.events ?? new Map<string, string>();
+      for (const m of d.members as any[]) if (m.kind === "property") events.set(m.name, text(m.type));
+      own.set(d.name, { extends: [...(own.get(d.name)?.extends ?? []), ...parents], events });
+    }
+  }
+  const flat = (name: string): Map<string, string> => {
+    const m = own.get(name);
+    const out = new Map<string, string>();
+    for (const e of m?.extends ?? []) for (const [k, v] of flat(e)) out.set(k, v);
+    for (const [k, v] of m?.events ?? []) out.set(k, v);
+    return out;
+  };
+  return { mapOf, extendsOf, maps: new Map([...own.keys()].map((name) => [name, flat(name)])) };
+}

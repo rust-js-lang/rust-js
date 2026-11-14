@@ -975,4 +975,14 @@ export const mutations: Mutation[] = [
     replace: "                if let Some(opaque) = std_types::opaque(tcx, did).filter(|_| false) {\n",
     tests: ["test/declarations-lazy.test.ts"],
   },
+  {
+    name: "projection-declared-any",
+    breaks:
+      "a binding trait's associated type whose `#[rust_js::types]` says what it is is `any`, so the vercel UI kernel's `on` takes a listener of any value, `(value: any) => void`",
+    file: "src/lower/declarations.rs",
+    find: "            ) if written_types(tcx, *def_id).is_some() => self\n",
+    replace: "            ) if false && written_types(tcx, *def_id).is_some() => self\n",
+    tests: ["test/webapi-event-map.test.ts", "-t", "a binding trait's projection"],
+  },
 ];
+

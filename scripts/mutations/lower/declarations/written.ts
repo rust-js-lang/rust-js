@@ -101,4 +101,22 @@ export const mutations: Mutation[] = [
       "an untagged enum's JS object is tested by the class TypeScript names",
     ],
   },
+  {
+    name: "indexed-access-unread",
+    breaks:
+      "`EventMapOf<Self>[E]`, a property's type by its key's, is read as its object alone, so a listener of `on` is given the whole map, `(value: EventMapOf<Target>) => void`",
+    file: "src/lower/declarations/written.rs",
+    find: "            ty = Written::Indexed {\n                object: Box::new(ty),\n                index: Box::new(index),\n            };\n",
+    replace: "            let _ = index;\n",
+    tests: ["test/webapi-event-map.test.ts", "-t", "a binding trait's projection"],
+  },
+  {
+    name: "types-on-anything",
+    breaks:
+      "`#[rust_js::types]` on a function or a constant is left unread, a second form of the attribute that says nothing",
+    file: "src/lower/declarations/written.rs",
+    find: "            if !typed {\n",
+    replace: "            if false && !typed {\n",
+    tests: ["test/declarations-written.test.ts", "-t", "isn't a type is refused"],
+  },
 ];

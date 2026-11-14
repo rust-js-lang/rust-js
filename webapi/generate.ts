@@ -8,9 +8,10 @@
 // are counted and skipped, and rerunning after rust-js grows picks them up.
 
 import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 
 import idl from "@webref/idl";
-import { typescript, typescriptInterfaces, typescriptNamespaces, typescriptNames } from "./coverage";
+import { typescript, typescriptEventMaps, typescriptInterfaces, typescriptNamespaces, typescriptNames } from "./coverage";
 import { identifier, needsJsName, plain, snake, snakeWords } from "../scripts/rust-names";
 
 /** A record of each spec's, by its name, in order: what @webref lists in
@@ -3111,6 +3112,9 @@ line();
 line(`/// What an event of a name is on a target, from \`@webref/events\` (ADR 0223):`);
 line(`/// a button's \`Click\` is a \`PointerEvent\`, a document's \`Keydown\` a \`KeyboardEvent\`.`);
 line(`pub trait Listen<E> {`);
+line(`    /// To TypeScript, \`@rust-js/webapi\`'s \`EventMapOf<Self>[E]\`, the event map its`);
+line(`    /// \`index.d.ts\` declares of these impls (#1817).`);
+line(`    #[cfg_attr(rust_js, rust_js::types = "@rust-js/webapi#EventMapOf<Self>[E]")]`);
 line(`    type Event;`);
 line(`}`);
 line();
@@ -3255,7 +3259,109 @@ for (const name of INTERFACES) {
 const unthrown = Object.keys(THROWS).filter((key) => !thrown.has(key));
 if (unthrown.length > 0) throw new Error(`THROWS names no member this crate binds: ${unthrown.join(", ")}`);
 await Bun.write(process.argv[2] ?? new URL("./src/lib.rs", import.meta.url), `${out.join("\n")}\n`);
+// Its event map to TypeScript, beside it: `webapi/index.d.ts`, or a scratch
+// file's, a check's.
+await Bun.write(process.argv[2] ? join(dirname(process.argv[2]), "index.d.ts") : new URL("./index.d.ts", import.meta.url), await eventMapDeclarations());
 const reasons = [...skipped].sort((a, b) => b[1] - a[1]).map(([why, n]) => `${why} ${n}`);
 console.log(`src/lib.rs: ${INTERFACES.length} interfaces, ${namespaces.size} namespaces, ${count} functions, ${unions.size} unions`);
 console.log(`events: ${eventNames.length} names, ${impls} on ${listens.size} targets (${disagreeing} where specs disagree, as \`Event\`); tags: ${tagNames.length}`);
 console.log(`skipped: ${(process.env.ALL ? reasons : reasons.slice(0, 12)).join(", ")}${reasons.length > 12 && !process.env.ALL ? ", ..." : ""}`);
+
+// ── The event map to TypeScript (#1817) ─────────────────────────────────
+
+/** `index.d.ts`, `@rust-js/webapi`'s: `EventMapOf<T>`, what a target's
+ * events are, each name's event, of the `Listen` impls this crate has,
+ * which `Listen::Event`'s `#[rust_js::types]` indexes, `EventMapOf<Self>[E]`.
+ * A target's map is TypeScript's own where it's the same, else TypeScript's
+ * with what differs taken out and given as Rust's, `Omit<HTMLElementEventMap,
+ * "error"> & { error: Event }`, else its own; each form once, by the
+ * shallowest target of it. A target is found by its type exactly first,
+ * shallowest first, so of two TypeScript can't tell apart, an
+ * `XMLHttpRequestUpload` and its parent, the parent's map, the wider; then
+ * a type that extends one, a custom element's, deepest first. A name
+ * TypeScript's DOM lacks is declared an empty global interface, which a
+ * consumer's own declaration of it (`rust_js::declares`) fills. */
+async function eventMapDeclarations(): Promise<string> {
+  const ts = await typescriptEventMaps();
+  const version = (path: string) => JSON.parse(readFileSync(new URL(path, import.meta.url), "utf8")).version;
+  const tsVersion = version("../node_modules/typescript/package.json");
+  const webrefEventsVersion = version("./node_modules/@webref/events/package.json");
+  const depth = (name: string) => chain(name).length;
+  const absent = new Set<string>();
+  const named = (name: string) => {
+    if (!typescriptDeclares.has(name)) absent.add(name);
+    return name;
+  };
+  const entries = (events: [string, string][]) =>
+    events.sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)).map(([event, of]) => `  ${JSON.stringify(event)}: ${named(of)};`);
+  // Each target's form, and the targets of each.
+  const formOf = new Map<string, string>();
+  const targetsOf = new Map<string, string[]>();
+  for (const [target, events] of listens) {
+    const map = ts.mapOf.get(target);
+    const theirs = map ? ts.maps.get(map)! : undefined;
+    let form: string;
+    if (!map || !theirs) form = `{\n${entries([...events]).join("\n")}\n}`;
+    else {
+      const differ = [...events].filter(([event, of]) => theirs.get(event) !== of);
+      const left = [...theirs.keys()].filter((event) => !events.has(event));
+      const omitted = [...new Set([...differ.map(([event]) => event).filter((event) => theirs.has(event)), ...left])].sort();
+      if (!differ.length && !omitted.length) form = map;
+      else {
+        const base = omitted.length ? `Omit<${map}, ${omitted.map((event) => JSON.stringify(event)).join(" | ")}>` : map;
+        form = differ.length ? `${base} & {\n${entries(differ).join("\n")}\n}` : base;
+      }
+    }
+    formOf.set(target, form);
+    targetsOf.set(form, [...(targetsOf.get(form) ?? []), named(target)]);
+  }
+  const byDepth = (a: string, b: string) => depth(a) - depth(b) || (a < b ? -1 : a > b ? 1 : 0);
+  // Each form's name: TypeScript's map's, or its shallowest target's.
+  const nameOf = new Map<string, string>();
+  const declared: string[] = [];
+  for (const [form, targets] of [...targetsOf].sort(([, a], [, b]) => byDepth(a.sort(byDepth)[0], b.sort(byDepth)[0]))) {
+    if (/^\w+$/.test(form)) {
+      nameOf.set(form, form);
+      continue;
+    }
+    const name = `${targets[0]}Events`;
+    nameOf.set(form, name);
+    declared.push(form.startsWith("{") ? `interface ${name} ${form}` : `type ${name} = ${form};`);
+  }
+  // Exactly, each form by its shallowest target's depth.
+  const exact = [...targetsOf]
+    .sort(([, a], [, b]) => byDepth(a[0], b[0]))
+    .map(([form, targets]) => `  true extends ${targets.map((t) => `Is<T, ${t}>`).join(" | ")} ? ${nameOf.get(form)} :`);
+  // Of a subtype, deepest first, of those TypeScript has.
+  const subtype: [string[], string][] = [];
+  for (const target of [...listens.keys()].filter((t) => !absent.has(t)).sort((a, b) => byDepth(b, a))) {
+    const name = nameOf.get(formOf.get(target)!)!;
+    const last = subtype.at(-1);
+    if (last && last[1] === name) last[0].push(target);
+    else subtype.push([[target], name]);
+  }
+  const globals = [...absent].sort().map((name) => `  interface ${name} {}`);
+  return [
+    `// Generated by webapi/generate.ts of @webref/events ${webrefEventsVersion} and TypeScript ${tsVersion}'s lib.dom.d.ts. Do not edit.`,
+    `// What an event of a name is on a target, webapi's \`Listen\` impls,`,
+    `// \`EventMapOf<HTMLButtonElement>["click"]\` a \`PointerEvent\` (ADR 0223, #1817).`,
+    ``,
+    `declare global {`,
+    `  // Of webapi's types TypeScript's DOM lacks, which a crate's declarations`,
+    `  // that name one declare (\`rust_js::declares\`): none where none do.`,
+    ...globals,
+    `}`,
+    ``,
+    `type Is<T, X> = [T] extends [X] ? ([X] extends [T] ? true : false) : false;`,
+    ``,
+    `export type EventMapOf<T> =`,
+    ...exact,
+    `  OfSubtype<T>;`,
+    ``,
+    `type OfSubtype<T> =`,
+    ...subtype.map(([targets, name]) => `  T extends ${targets.join(" | ")} ? ${name} :`),
+    `  {};`,
+    ``,
+    ...declared.flatMap((d) => [d, ``]),
+  ].join("\n");
+}
