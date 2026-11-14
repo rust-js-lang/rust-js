@@ -390,7 +390,6 @@ pub(super) fn reject_flatten_misuse<'tcx>(
                 );
             }
         }
-        let bases = &body.facts.jsx_bases;
         // A flattened field read through, `props.html.title`, is its parent's,
         // a reference's too, `(*report.item).line`.
         let read_through = bindings::read_through(thir);
@@ -556,7 +555,6 @@ pub(super) fn reject_flatten_misuse<'tcx>(
                         && !lent.contains(&e)
                         // A struct read by value, its projection (#1820).
                         && (bindings::plain_struct(tcx, expr.ty).is_none() || written.contains(&e))
-                        && !bases.contains(&e)
                         && !own_calls.contains(&e)
                         && !(keyed(expr.ty) && placed.contains(&e))
                         && !(flattened.enum_of_keys(expr.ty) && matched.contains(&e)) =>

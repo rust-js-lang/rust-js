@@ -60,19 +60,7 @@ export const mutations: Mutation[] = [
     replace: "        if false && tcx.def_kind(id) == DefKind::Enum {",
     tests: ["test/lowering.test.ts", "-t", "flattened field of an enum"],
   },
-  {
-    name: "flattened-base-refused",
-    breaks:
-      "a flattened field read whole as an update's base, `..props.html`, is refused, where it's the object its parent is",
-    file: "src/lower/analysis/validation.rs",
-    find: "                        && !bases.contains(&e)\n",
-    replace: "                        && true\n",
-    tests: [
-      "test/jsx-props.test.ts",
-      "-t",
-      "flattened props with a field of them set",
-    ],
-  },
+
   {
     name: "init-of-nested-function",
     breaks:
@@ -336,11 +324,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "flattened-lent-refused",
-    breaks: "a flattened field lent whole, `&state.base`, is refused, so a struct that extends another can't be given to its base's functions",
+    breaks: "a flattened keyed enum lent whole, `&node.kind`, is refused, so a node can't be given to its kind's functions (a struct lent whole is its projection since #1820)",
     file: "src/lower/analysis/validation.rs",
     find: "                        && !lent.contains(&e)\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^flattened_state_lent.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^flattened_keyed_enum.rs$"],
   },
   {
     name: "flattened-reference-lent-whole",
