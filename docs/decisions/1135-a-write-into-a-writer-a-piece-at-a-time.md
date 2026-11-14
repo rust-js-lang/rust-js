@@ -599,6 +599,17 @@ go.
         crate's own still gives what its fields hold (`reach`). The pair
         gains `Nested`, written directly and by generic code; mutation
         derived-debug-dyn-given-to-a-library, caught.
+      - Amended later, #1774: what the consumer makes a `dyn` of and gives
+        such a library, `describe(&mut log, &view)` of a derived `Debug`'s
+        `Viewport` and an `Option` of one, was given `fmtInto` by
+        `WrittenParams` while `Prints` framed no writer of it, as it framed
+        only for a `dyn` the crate writes itself; so both were refused.
+        One rule now, `written_params::dyns_made`: each value the crate
+        makes a `dyn` of, but a derived impl's, is shown into a writer, its
+        writers framed, where a library writes a `dyn` it's given, as its
+        dictionary is given `fmtInto`. The pair
+        derived_debug_made_a_dyn_a_library_writes prints each piece as
+        native does; mutation dyn-given-a-library-unshown, caught.
 
     Measured: the corpus, 2,499 cases, all as native; 6 snapshots of the
     `writer_sink_` cases take `$writeBy`, 15 cases' library form is their

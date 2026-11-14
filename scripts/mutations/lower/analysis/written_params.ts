@@ -11,9 +11,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a derived `Debug`'s `dyn` of its field, which only std's builder is given, is taken for one a library writing a `dyn` it's given may write, so `Nested { region }`'s `Region` is refused (#1778)",
     file: "src/lower/analysis/written_params.rs",
-    find: "        for body in all_bodies.iter().filter(|body| !derived(body)) {\n",
-    replace: "        for body in all_bodies.iter() {\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: derived_debug_beside_a_library_that_writes_a_dyn"],
+    find: "    for body in all_bodies.iter().filter(|body| !of_a_derived_impl(tcx, body)) {\n",
+    replace: "    for body in all_bodies.iter() {\n",
+    tests: ["test/crates.test.ts", "-t", "no library is given a dyn of writes as it is"],
   },
   {
     name: "written-params-calls-unfollowed",
@@ -27,7 +27,7 @@ export const mutations: Mutation[] = [
     name: "written-params-dyn-made-unseen",
     breaks: "a value made a `Box<dyn Display>`, `7`, has a dictionary with no `fmtInto`, which a `write!` of the `dyn` into a writer calls",
     file: "src/lower/analysis/written_params.rs",
-    find: "                        found.give(tcx, owner, made_of);\n",
+    find: "            found.give(tcx, owner, made_of);\n",
     replace: "",
     tests: sink,
   },

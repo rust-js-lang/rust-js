@@ -202,13 +202,7 @@ pub(super) fn written_params<'tcx>(
                 if traits.principal_def_id().is_some_and(|id| recognition.is_pair_trait(id)))
         })
     };
-    // Not a derived `Debug`'s, whose `&dyn Debug`s of its fields std's
-    // `debug_struct_fields_finish` alone is given, which never leave it.
-    let derived = |body: &Body<'tcx>| {
-        (tcx.opt_parent(body.def_id)).is_some_and(|imp| {
-            tcx.def_kind(imp) == rustc_hir::def::DefKind::Impl { of_trait: true } && tcx.is_automatically_derived(imp)
-        })
-    };
+    let derived = |body: &Body<'tcx>| of_a_derived_impl(tcx, body);
     // What makes a pair `dyn`: a coercion of what isn't one, `Box::new(e)`
     // as a `Box<dyn Error>`, or std's conversion into one, `?`'s
     // `from_residual` or a `From<E> for Box<dyn Error>`; not one passed on,
@@ -284,23 +278,9 @@ pub(super) fn written_params<'tcx>(
     // is given, as `makes_dyns` leaves them out (#1778).
     found.dyn_written = !dyns_written.is_empty() || foreign.writes_dyns_given();
     if found.dyn_written {
-        for body in all_bodies.iter().filter(|body| !derived(body)) {
-            let owner = tcx.typeck_root_def_id(body.def_id);
-            for expr in body.thir.exprs.iter() {
-                if let ExprKind::PointerCoercion {
-                    cast: PointerCoercion::Unsize,
-                    source,
-                    ..
-                } = expr.kind
-                    && matches!(pointer_target(tcx, expr.ty).kind(), ty::Dynamic(..))
-                {
-                    let made_of = pointer_target(tcx, body.thir[source].ty);
-                    if !matches!(made_of.kind(), ty::Dynamic(..)) {
-                        found.give(tcx, owner, made_of);
-                        refuse_lacked(tcx, foreign, made_of, expr.span);
-                    }
-                }
-            }
+        for (owner, made_of, span) in dyns_made(tcx, all_bodies) {
+            found.give(tcx, owner, made_of);
+            refuse_lacked(tcx, foreign, made_of, span);
         }
     }
     // A library's `dyn` written so may hold a dictionary of its own without
@@ -476,6 +456,43 @@ fn implementor<'tcx>(
     }
     let imp = recognition.user_impl(tr)?;
     tcx.impl_item_implementor_ids(imp).get(&callee).copied()
+}
+
+/// Whether `body` is a derived impl's, a derived `Debug`'s, whose `&dyn
+/// Debug`s of its fields std's `debug_struct_fields_finish` alone is
+/// given, which never leave it.
+fn of_a_derived_impl(tcx: TyCtxt<'_>, body: &Body<'_>) -> bool {
+    (tcx.opt_parent(body.def_id)).is_some_and(|imp| {
+        tcx.def_kind(imp) == rustc_hir::def::DefKind::Impl { of_trait: true } && tcx.is_automatically_derived(imp)
+    })
+}
+
+/// Each value `all_bodies` make a `dyn` of, `&view` as a `&dyn Debug`, but
+/// of a derived impl's (`of_a_derived_impl`, #1778): its body's owner, its
+/// type, and where. Where a `dyn` is written into a writer a piece at a
+/// time, by the crate or a library given one, each is what's written so:
+/// its dictionary carries `fmtInto` (`written_params`) and it's shown, its
+/// writers framed (`prints`), one rule (#1772, #1774).
+pub(super) fn dyns_made<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>]) -> Vec<(DefId, Ty<'tcx>, Span)> {
+    let mut made = Vec::new();
+    for body in all_bodies.iter().filter(|body| !of_a_derived_impl(tcx, body)) {
+        let owner = tcx.typeck_root_def_id(body.def_id);
+        for expr in body.thir.exprs.iter() {
+            if let ExprKind::PointerCoercion {
+                cast: PointerCoercion::Unsize,
+                source,
+                ..
+            } = expr.kind
+                && matches!(pointer_target(tcx, expr.ty).kind(), ty::Dynamic(..))
+            {
+                let made_of = pointer_target(tcx, body.thir[source].ty);
+                if !matches!(made_of.kind(), ty::Dynamic(..)) {
+                    made.push((owner, made_of, expr.span));
+                }
+            }
+        }
+    }
+    made
 }
 
 /// Each function's `fmt::Arguments` parameters `all_bodies` write into a

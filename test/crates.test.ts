@@ -140,6 +140,17 @@ for (const name of readdirSync(pairs).sort()) {
   }, 300_000);
 }
 
+// A program's derived `Debug`s beside a library that writes a `dyn` it's
+// given, none made a `dyn` but by a derived `Debug` of its field, which
+// only std's builder is given: no writer framed, no dictionary given
+// `fmtInto`, as nothing writes them a piece at a time (#1772, #1778).
+test("a program's derived Debug no library is given a dyn of writes as it is", () => {
+  const out = chain(pairs, "derived_debug_beside_a_library_that_writes_a_dyn", ["dep", "app"]);
+  const app = readFileSync(join(out, "app", "lib.js"), "utf8");
+  expect(app).not.toMatch(/fmtInto[:(]/);
+  expect(app).not.toContain("$writingInto(");
+}, 300_000);
+
 // A library's untagged From that's the variant of its argument is in its
 // contract's list of what gives its argument, so its consumer's call of it
 // is the value; its others are called (#1775, ADR 0214, amended).

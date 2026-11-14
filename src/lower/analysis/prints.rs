@@ -252,6 +252,12 @@ fn written_into_writers<'tcx>(
         .flat_map(|(body, shown)| shown.unwrap_or_else(|| shown_by(body)))
         .map(|ty| (ty, false))
         .collect();
+    // And each value the crate makes a `dyn` of where a library writes a
+    // `dyn` it's given so, as its dictionary is given `fmtInto` (#1774).
+    if recognition.foreign.writes_dyns_given() {
+        let made = super::written_params::dyns_made(tcx, all_bodies);
+        shown.extend(made.into_iter().map(|(_, made_of, _)| (made_of, false)));
+    }
     // And what's given a library's function's parameter it writes into a
     // writer through its dictionary, as its manifest says (#1652, step 5).
     for body in all_bodies {

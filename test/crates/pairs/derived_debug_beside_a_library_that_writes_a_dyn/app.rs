@@ -40,5 +40,7 @@ pub fn main() {
     println!("{} {}", shown(&view), shown(&bounds));
     let nested = Nested { region: Region { left: 1.0, top: -1.0 } };
     println!("{nested:?} {}", shown(&nested));
+    // Its field's own dictionary, which generic code writes (#1774).
+    println!("{}", shown(&nested.region));
     println!("{}", label());
 }

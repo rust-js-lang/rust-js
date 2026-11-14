@@ -3,6 +3,15 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "dyn-given-a-library-unshown",
+    breaks:
+      "a consumer's `Viewport`, a derived `Debug`, made a `&dyn Debug` and given a library that writes it a piece at a time, has `fmtInto` in its dictionary but no writer framed, so it's refused (#1774)",
+    file: "src/lower/analysis/prints.rs",
+    find: "    if recognition.foreign.writes_dyns_given() {\n",
+    replace: "    if false {\n",
+    tests: ["test/crates.test.ts", "-t", "two crates: derived_debug_made_a_dyn_a_library_writes"],
+  },
+  {
     name: "writer-that-prints-unseen",
     breaks: "a writer that prints as it formats is taken to print nothing, so `println!` builds its line whole and the print comes before it (#1490)",
     file: "src/lower/analysis/prints.rs",
