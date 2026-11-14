@@ -9,7 +9,6 @@ import {
   $next,
   $nextBack,
   $restBytes,
-  $slice,
   $unwrapOk,
 } from "@rust-js/std";
 
@@ -35,7 +34,7 @@ function debugByteDebug_fmt(debugByte) {
     bytes[$at(bytes, len)] = b;
     len++;
   }
-  return $unwrapOk($fromUtf8($slice(bytes, 0, len)), undefined, $debugUtf8Error);
+  return $unwrapOk($fromUtf8(bytes.slice(0, len)), undefined, $debugUtf8Error);
 }
 
 function main() {

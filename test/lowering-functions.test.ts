@@ -553,7 +553,9 @@ pub fn popped(v: &mut Vec<u32>) -> u32 {
   expect(js).toContain("export function half(n) {\n  return (n - 1) >>> 0;\n}");
   // Its own calls' too, until what it's given holds.
   expect(js).toContain("count(n - 1, (total + 1) >>> 0)");
-  expect(js).toContain("  v.push(7);\n  return v[n];\n");
+  // `n` of the length before the push, below it after: MIR doesn't relate
+  // them since it decides call indexes, which THIR's ranges did (#1949).
+  expect(js).toContain("  v.push(7);\n  return $index(v, n);\n");
   expect(js).toContain("return $index(v, n - 1);");
   const lib = await import(join(dir, "lib.js"));
   const heap: number[] = [];

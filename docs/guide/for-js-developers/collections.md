@@ -180,7 +180,7 @@ pub fn has_float(xs: &[f64], x: f64) -> bool {
 ```
 
 ```js
-import { $position } from "@rust-js/std";
+import { $position, $removeOutOfBounds } from "@rust-js/std";
 
 export function names(items) {
   return items.map((item) => item.name);
@@ -205,6 +205,9 @@ export function position(items, name) {
 export function removeNamed(items, name) {
   const index = items.findIndex((item) => item.name === name);
   if (index !== -1) {
+    if (index >= items.length) {
+      $removeOutOfBounds(items, index);
+    }
     items.splice(index, 1);
   }
 }
@@ -212,6 +215,9 @@ export function removeNamed(items, name) {
 export function moveToEnd(xs, x) {
   const index = xs.indexOf(x);
   if (index !== -1) {
+    if (index >= xs.length) {
+      $removeOutOfBounds(xs, index);
+    }
     xs.splice(index, 1);
   }
   xs.push(x);

@@ -201,7 +201,7 @@ export function indexed(i) {
   v[$at(v, 0)] = (v[0] + 5) >>> 0;
   const slice = v;
   slice[2] = (slice[$at(slice, 2)] * 2) >>> 0;
-  return [read, $index(v, i), v];
+  return [read, v[i], v];
 }
 
 /** An element's fields are written in place, and a copy of one is its own. */

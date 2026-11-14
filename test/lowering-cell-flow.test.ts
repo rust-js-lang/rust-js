@@ -146,11 +146,14 @@ pub mod batch {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withBindings]);
-  // The batch's borrows: the array itself.
+  // The batch's borrows: the array itself. Its `batch[i]` of a loop stepped
+  // by 2 is checked: MIR doesn't prove it since it decides call indexes,
+  // which THIR's ranges did (#1949).
   expect(fn(readFileSync(join(dir, "batch.js"), "utf8"), "reveal")).toBe(`export function reveal(batch) {
   let total = 0;
-  for (let i = 0; i < batch.length; i += 2) {
-    total = (total + batch[i]) >>> 0;
+  const end = batch.length;
+  for (let i = 0; i < end; i += 2) {
+    total = (total + $index(batch, i)) >>> 0;
   }
   batch.length = 0;
   return total;`);

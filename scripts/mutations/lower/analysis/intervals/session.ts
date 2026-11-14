@@ -30,4 +30,21 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/intervals-shadow.test.ts", "-t", "contains_key"],
   },
+  {
+    name: "call-bounds-proved-of-every-call",
+    breaks: "MIR is taken to prove every call's indexes, so `cell.borrow()[i]` under `i < len()`, past a write through a pointer the body is given that empties it, reads `undefined` where Rust panics (#1944)",
+    file: "src/lower/analysis/intervals/session.rs",
+    find: "        && (intervals.bodies.last()).is_some_and(|(proofs, _)| proofs.call_bounds.contains(&block))\n",
+    replace: "        || true\n",
+    tests: ["test/bounds-matrix.test.ts", "-t", "shape_unsound_directions"],
+  },
+  {
+    name: "call-bounds-proved-of-none",
+    breaks: "no call's indexes are taken as proved, so a `Vec`'s `v[i]` under `i < v.len()` is `$index(v, i)`: right, but not the JS a person writes (#1672 M3, step 5)",
+    file: "src/lower/analysis/intervals/session.rs",
+    find: "        && (intervals.bodies.last()).is_some_and(|(proofs, _)| proofs.call_bounds.contains(&block))\n",
+    replace: "        && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^refcell_borrow_loops.rs$"],
+    snapshots: true,
+  },
 ];

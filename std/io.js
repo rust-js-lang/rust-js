@@ -395,7 +395,7 @@ export function takeBufRead_fillBuf(take, TBufRead, dropT) {
   }
   const value = result._0;
   const cap = Number(BigInt.asUintN(32, $bigMin(BigInt(value.length), take.limit)));
-  return { TAG: "Ok", _0: $slice(value, 0, cap) };
+  return { TAG: "Ok", _0: value.slice(0, cap) };
 }
 
 export function takeBufRead_consume(take, amt, TBufRead, dropT) {

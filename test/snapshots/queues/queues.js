@@ -103,7 +103,7 @@ export function dijkstra(edges, n, src) {
     if (best != null && d > best) {
       continue;
     }
-    for (const [v, w] of $index(adj, u)) {
+    for (const [v, w] of adj[u]) {
       const nd = (d + w) >>> 0;
       const best = $index(dist, v);
       if (best == null || nd < best) {

@@ -945,3 +945,32 @@ same hole there is #1944, which the switch closes. Held by the bounds
 matrix's `emptied through a pointer` row, which differed from native
 before, and catches cells-raw-write-quiet now that no other rule decides
 its site.
+
+## M3, step 5 landed: MIR decides a call's indexes (2026-11-15, #1944)
+
+A call's indexes are MIR's now, as its bounds asserts, wraps and casts
+were: a `Vec`'s `v[i]`, `remove(i)` and `insert(i, x)`, a range's
+`&v[a..b]` and `drain(a..b)`, and a map's `m[k]` of a key held are
+unchecked only where `call_bounds_proved` says MIR's intervals prove them
+(`call_bounds` of the body's proofs), not where THIR's ranges did
+(`indexes_in_bounds`), which the shadow alone still asks. THIR's ranges saw
+no write through a raw pointer a body is given: `cell.borrow()[i]` under
+`i < cell.borrow().len()`, past `*p = empty` that emptied the cell's
+`Vec`, read `undefined` where Rust panics (#1944, the same hole as #1943's
+wrap). MIR's cells rule forgets the cell's length at the write, and keeps
+the check.
+
+Before it landed, the audit's ablation against native (ADR 0093's rule),
+on the switch rebased on main: the bounds matrix and the corpus, its
+snapshots ignored, all as native runs them; the ten mutations of the
+unsound direction, eight caught by `shape_unsound_directions`' rows and
+two answered on #1672 (sound as written; a shape only Stacked Borrows'
+undefined behaviour reaches). 36 corpus snapshots change, each run as
+native does; React's port, 30 more checks than it had, each where THIR's
+ranges proved what MIR doesn't yet (a `Vec::remove`'s guard, #1814's
+shape; the Flight node loaders' `exportedEntries[nextEntryIdx]`;
+`SchedulerMinHeap`'s; and five fewer, where MIR proves an index THIR
+didn't), the pin moved with them. Mutations call-bounds-proved-of-every-call
+(the matrix's `indexed through a pointer`, #1944's row) and
+call-bounds-proved-of-none (a snapshot's) hold it. M4 deletes THIR's
+ranges.

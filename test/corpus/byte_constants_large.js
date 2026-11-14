@@ -826,7 +826,7 @@ function main() {
   const copy = PAST_THE_LIMIT.slice();
   copy[$at(copy, 0)] = 99;
   console.log(`${$index(copy, 0)} ${PAST_THE_LIMIT[0]} ${$eq(copy, PAST_THE_LIMIT.slice())}`);
-  console.log(`${$eq($slice(PAST_THE_LIMIT, 0, 16384), AT_THE_LIMIT)}`);
+  console.log(`${$eq(PAST_THE_LIMIT.slice(0, 16384), AT_THE_LIMIT)}`);
   console.log(`${sum(PAST_THE_LIMIT.slice(), itemsAsRef) === sum(PAST_THE_LIMIT, itemsAsRef)}`);
   const inline = [115, 104, 111, 114, 116, 32, 98, 121, 116, 101, 115];
   console.log(`[${inline.join(", ")}] ${sum(inline, itemsAsRef)}`);

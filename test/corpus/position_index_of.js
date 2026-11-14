@@ -3,6 +3,7 @@
 import {
   $at,
   $displayF64,
+  $insertAt,
   $iter,
   $lent,
   $mutItems,
@@ -25,6 +26,9 @@ function appendChild(parent, child) {
   const children = parent.children;
   const index = children.indexOf(child);
   if (index !== -1) {
+    if (index >= children.length) {
+      $removeOutOfBounds(children, index);
+    }
     children.splice(index, 1);
   }
   children.push(child);
@@ -34,7 +38,7 @@ function insertBefore(parent, child, beforeChild) {
   const children = parent.children;
   const index = children.indexOf(beforeChild);
   if (index !== -1) {
-    children.splice(index, 0, child);
+    $insertAt(children, index, child);
   }
 }
 
@@ -42,6 +46,9 @@ function removeChild(parent, child) {
   const children = parent.children;
   const index = children.indexOf(child);
   if (index !== -1) {
+    if (index >= children.length) {
+      $removeOutOfBounds(children, index);
+    }
     children.splice(index, 1);
   } else {
     console.log(`no ${child.name}`);
@@ -54,6 +61,9 @@ function removeFirstNamed(parent, name) {
   const index = children.findIndex((c) => c.name === name);
   if (index === -1) {
     return;
+  }
+  if (index >= children.length) {
+    $removeOutOfBounds(children, index);
   }
   children.splice(index, 1);
 }

@@ -126,7 +126,7 @@ function main() {
   }
   const last = pairs[3];
   last[0] = 1;
-  $swap(pairs, 0, 2);
+  [pairs[0], pairs[2]] = [pairs[2], pairs[0]];
   console.log(
     `[${kept.join(", ")}] [${pairs.map((item) => `[${item.join(", ")}]`).join(", ")}] [${e.join(", ")}]`,
   );

@@ -497,7 +497,10 @@ pub fn twice() -> u32 {
   expect(js).toContain("for (let i = 0; i < args.length; i++) {\n    formatted += ` ${args[i]}`;");
   // Changed before the loop only, by a closure even, as Rust's borrows
   // allow nothing else while the loop reads it.
-  expect(js).toMatch(/export function shifted\(args\) \{[^]*for \(let i = 0; i < args\.length; i\+\+\) \{\n    formatted \+= ` \$\{args\[i\]\}`;/);
+  // `shifted`'s `args[i]` is checked, and its length held: MIR forgets the
+  // deque's length past the `take` closure's `&mut`, though its borrow has
+  // ended, since it decides call indexes; the promise comes back with #1946.
+  expect(js).toMatch(/export function shifted\(args\) \{[^]*const end = args\.length;\n  for \(let i = 0; i < end; i\+\+\) \{\n    formatted \+= ` \$\{\$index\(args, i, "out of bounds access"\)\}`;/);
   // One whose body changes the length reads its end once, as Rust does.
   expect(js).toContain("const end = args.length;");
   expect(js).toContain("return [...prev, ...next];");

@@ -612,7 +612,9 @@ pub fn ordered(mut k: usize) -> usize {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("    for (let j = i + 1; j < m.length; j++) {\n");
-  expect(js).toContain("    const end = m.length;\n    for (let j = i * 2; j < end; j++) {\n");
+  // MIR proves the swap's indexes in bounds, so nothing in the body changes
+  // `m`'s length and the loop reads it where it's tested (#1672 M3, step 5).
+  expect(js).toContain("    for (let j = i * 2; j < m.length; j++) {\n");
   expect(js).not.toContain("$rangeNext");
   const lib = await import(join(dir, "lib.js"));
   const m = [1, 2, 3];

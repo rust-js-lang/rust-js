@@ -35,7 +35,7 @@ function main() {
   const s = [1, 2, 3];
   const u = s.slice();
   u.push(4);
-  u[0] = 7;
+  u[$at(u, 0)] = 7;
   console.log(`[${s.join(", ")}] [${u.join(", ")}]`);
   const kept = s.slice();
   const taken = $unwrap(kept == null ? kept : kept.slice());

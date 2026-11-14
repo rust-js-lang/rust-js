@@ -6,6 +6,7 @@ import {
   $capacity,
   $cmp,
   $copyRange,
+  $drain,
   $drainAll,
   $enumerate,
   $grownVec,
@@ -326,7 +327,7 @@ function exact(n) {
   const hd = $grownVec($roomForHint($iter($drainAll(hm)), 8, false), (grown) => Array.from(grown));
   const hsd = $grownVec($roomForHint($iter($drainAll(hs)), 4, false), (grown) => Array.from(grown));
   $keepCapacity(dq);
-  const dd = $grownVec($roomForHint($iter(dq.splice(Math.min(dq.length, 3))), 4, false), (grown) =>
+  const dd = $grownVec($roomForHint($iter($drain(dq, Math.min(dq.length, 3))), 4, false), (grown) =>
     Array.from(grown),
   );
   const capacity = $capacity(heapEnumerated, 8);

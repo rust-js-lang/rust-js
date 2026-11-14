@@ -21,7 +21,7 @@ function patternTable(word) {
       patternTable[suffixIndex] = 0;
       suffixIndex++;
     } else {
-      prefixIndex = $index(patternTable, prefixIndex - 1);
+      prefixIndex = patternTable[prefixIndex - 1];
     }
   }
   return patternTable;

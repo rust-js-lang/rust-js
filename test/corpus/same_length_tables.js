@@ -23,8 +23,8 @@ function rainWater(terraces) {
   const index = (terraces.length - 1) >>> 0;
   rightMaxLevels[$at(rightMaxLevels, index)] = last;
   for (let i = ((terraces.length - 1) >>> 0) - 1; i >= 0; i--) {
-    const max = $f64Max($index(terraces, i), $index(rightMaxLevels, i + 1));
-    rightMaxLevels[$at(rightMaxLevels, i)] = max;
+    const value = $f64Max($index(terraces, i), $index(rightMaxLevels, i + 1));
+    rightMaxLevels[i] = value;
   }
   let water = 0;
   for (const [i, terrace] of terraces.entries()) {

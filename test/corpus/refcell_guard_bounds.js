@@ -148,7 +148,7 @@ function takeFirst(queue, f) {
   try {
     const end = items.length;
     for (let i = 0; i < end; i++) {
-      if (f($index(items, i))) {
+      if (f(items[i])) {
         return items.splice(i, 1)[0];
       }
     }

@@ -4,7 +4,6 @@ import {
   $cleanup,
   $closing,
   $count,
-  $drain,
   $dropEach,
   $filterDropping,
   $held,
@@ -166,7 +165,7 @@ function main() {
     }
     const drained = louds(24, 4);
     try {
-      const drain = $iter($drain(drained, 0));
+      const drain = $iter(drained.splice(0));
       try {
         const nthBack = $nthBack(drain, 2, undefined, loudDrop_drop);
         function map(l) {

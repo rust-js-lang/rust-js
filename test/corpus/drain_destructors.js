@@ -50,7 +50,7 @@ function main() {
       console.log(`after loop [${ids(v).join(", ")}]`);
       const w = $range(10, 14).map((value) => [value]);
       try {
-        const d = $iter($drain(w, 0));
+        const d = $iter(w.splice(0));
         let first;
         try {
           first = $next(d);

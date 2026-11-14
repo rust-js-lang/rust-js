@@ -17,7 +17,6 @@ import {
   $nthBack,
   $range,
   $sizeHint,
-  $slice,
   iterator_stepBy,
 } from "@rust-js/std";
 
@@ -92,7 +91,7 @@ function main() {
   const v = [1, 2, 3, 4, 5, 6, 7, 8];
   console.log(`${Math.ceil(v.length / 3)}`);
   console.log(`${v.length}`);
-  console.log(`${Math.ceil($slice(v, 0, 0).length / 2)}`);
+  console.log(`${Math.ceil(v.slice(0, 0).length / 2)}`);
   console.log(`${Math.ceil(Math.max(v.length - 1, 0) / 3)}`);
   console.log(`${Math.ceil(v.length / 4)}`);
   console.log(`${Math.ceil(v.length / 3)}`);

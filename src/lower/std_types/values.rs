@@ -599,11 +599,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `Result`'s combinator, of their values: the subject one just made
         // where it's a call's.
         match known {
-            // `m[k]`, held where the body's tests show the map holds `k` (rd558).
+            // `m[k]`, held where MIR proves the map holds `k` (rd558, #1672 M3).
             Std::Map(MapOp::Index { .. }) => {
-                let held = MapOp::Index {
-                    held: self.indexes_in_bounds(def_id, call.span),
-                };
+                let held = MapOp::Index { held: call.in_bounds };
                 return self.map_values(held, (values.collect(), tys), generic_args, call.span, out);
             }
             Std::Map(op) => return self.map_values(op, (values.collect(), tys), generic_args, call.span, out),

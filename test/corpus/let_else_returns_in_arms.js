@@ -6,6 +6,7 @@ import {
   $catchable,
   $debugStr,
   $drain,
+  $index,
   $roomFor,
   $unwinding,
   $unwound,
@@ -99,7 +100,7 @@ function flushCompletedQueues(request, out) {
     }
     let i = 0;
     while (i < request.queue.length) {
-      const item = request.queue[i];
+      const item = $index(request.queue, i);
       if (!flushItem(out, item)) {
         i++;
         $drain(request.queue, 0, i);

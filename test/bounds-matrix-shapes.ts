@@ -389,7 +389,8 @@ fn picked(v: &[u32; 4], k: usize) -> [u32; 2] {
   // calls give one value and its caller outside another, `down(5, d - 1)`
   // of `down(0, 0)`, and a cell's `Vec` emptied under `!is_empty()`
   // through a pointer it's given, with no call, whose root isn't the cell
-  // (#1943). Each runs as native does only where its rule forgets.
+  // (#1943), and indexed so, a call's index MIR decides (#1944). Each runs
+  // as native does only where its rule forgets.
   unsound_directions: {
     fns: `fn walk(k: u32, d: u32) -> u32 {
     if d == 0 {
@@ -494,6 +495,13 @@ fn emptied_through_a_pointer(cell: &RefCell<Vec<u32>>, p: *mut Vec<u32>, empty: 
     }
     9
 }
+fn indexed_through_a_pointer(cell: &RefCell<Vec<u32>>, p: *mut Vec<u32>, empty: Vec<u32>, i: usize) -> u32 {
+    if i < cell.borrow().len() {
+        unsafe { *p = empty };
+        return cell.borrow()[i];
+    }
+    9
+}
 fn pointer_to(cell: &RefCell<Vec<u32>>) -> *mut Vec<u32> {
     let mut guard = cell.borrow_mut();
     &mut *guard
@@ -527,6 +535,10 @@ fn through_its_end(v: &[u32], n: usize) -> usize {
       `check("emptied through a pointer", || {
         let cell = RefCell::new(vec![1, 2]);
         emptied_through_a_pointer(&cell, pointer_to(&cell), Vec::new())
+    })`,
+      `check("indexed through a pointer", || {
+        let cell = RefCell::new(vec![1, 2]);
+        indexed_through_a_pointer(&cell, pointer_to(&cell), Vec::new(), 1)
     })`,
       `check("past its bound", past_its_bound::<0>)`,
       `check("through its end", || through_its_end(&[1, 2, 3], 3) as u32)`,

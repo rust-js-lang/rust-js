@@ -6,7 +6,6 @@ import {
   $cleanup,
   $closing,
   $cmp,
-  $drain,
   $dropEach,
   $dropItems,
   $eq,
@@ -218,7 +217,7 @@ function main() {
     const v = ds();
     let r;
     try {
-      r = lastOf($iter($drain(v, 0)), $dropEach(dDrop_drop));
+      r = lastOf($iter(v.splice(0)), $dropEach(dDrop_drop));
     } catch (error) {
       $cleanup(() => {
         $dropItems(v, dDrop_drop);

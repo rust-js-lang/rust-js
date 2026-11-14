@@ -199,6 +199,17 @@ pub(in crate::lower) fn bounds_proved(tcx: TyCtxt<'_>, body: &Body<'_>, block: B
         && (intervals.bodies.last()).is_some_and(|(proofs, _)| proofs.bounds.contains(&block))
 }
 
+/// Whether MIR proves the indexes of the call ending `block` of `body`
+/// are in bounds, a `Vec`'s `v[i]`, `remove(i)` or `insert(i, x)`, a
+/// range's `&v[a..b]` or `drain(a..b)`, a map's `m[k]` of a key held
+/// (#1672 M3, step 5): none of a body not the one being lowered.
+pub(in crate::lower) fn call_bounds_proved(tcx: TyCtxt<'_>, body: &Body<'_>, block: BasicBlock) -> bool {
+    let caches = crate::lower::session::caches(tcx);
+    let intervals = caches.intervals.borrow();
+    intervals.proved.last() == Some(&std::ptr::from_ref(body).addr())
+        && (intervals.bodies.last()).is_some_and(|(proofs, _)| proofs.call_bounds.contains(&block))
+}
+
 /// Whether MIR proves the `OnceCell` the `set` ending `block` of `body` sets
 /// is still empty there (#1672 M3): none of a body not the one being lowered.
 pub(in crate::lower) fn empty_set_proved(tcx: TyCtxt<'_>, body: &Body<'_>, block: BasicBlock) -> bool {

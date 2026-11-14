@@ -1130,7 +1130,9 @@ pub fn each(width: usize, height: usize) -> f64 {
   expect(js.match(/\$index\(board\[r\], c\)/g)?.length).toBe(4);
   expect(js).toContain("sum += $index($index(board, r), c);");
   // Each row at least 2 long, of a count of 2, till one's cleared.
-  expect(js).toContain("const first = $index(board, 0)[1];");
+  // A table's row as long as its row count: MIR doesn't prove it since it
+  // decides call indexes (#1949).
+  expect(js).toContain("const first = $index($index(board, 0), 1);");
   expect(js).toContain("return first + $index($index(board, 0), 1);");
   const lib = await import(join(dir, "lib.js"));
   expect(lib.paths(3, 3)).toBe(6);

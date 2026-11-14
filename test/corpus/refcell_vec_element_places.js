@@ -33,9 +33,8 @@ function entangle(root, index, lane) {
 
 function entangleHeld(root, lanes) {
   const held = root.lanes;
-  const end = held.length;
-  for (let index = 0; index < end; index++) {
-    if ($index(held, index) & lanes) {
+  for (let index = 0; index < held.length; index++) {
+    if (held[index] & lanes) {
       held[index] = (held[index] | lanes) >>> 0;
     }
   }

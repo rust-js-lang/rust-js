@@ -5,6 +5,7 @@ import {
   $cellOf,
   $cleanup,
   $debugStr,
+  $index,
   $iter,
   $iterator,
   $lent,
@@ -193,6 +194,14 @@ function main() {
   }
   try {
     g.log.push("pushed");
+  } catch (error) {
+    $cleanup(() => {
+      guardDrop_drop(g, vecDebug);
+    }, error);
+    throw error;
+  }
+  try {
+    $index(g.target.value, 0);
   } catch (error) {
     $cleanup(() => {
       guardDrop_drop(g, vecDebug);

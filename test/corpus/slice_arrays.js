@@ -48,7 +48,7 @@ function main() {
   }
   chunks$2[0][2] = 0;
   chunks$2[$at(chunks$2, 1)] = [9, 9, 9];
-  $swap(chunks$2, 0, 1);
+  [chunks$2[0], chunks$2[1]] = [chunks$2[1], chunks$2[0]];
   const kept = chunks$2[0].slice();
   chunks$2[0][0] = 8;
   $print(`[${kept.join(", ")}] `);

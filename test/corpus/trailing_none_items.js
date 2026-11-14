@@ -7,6 +7,7 @@ import {
   $cmp,
   $dequeInsert,
   $extend,
+  $insertAt,
   $maxBy,
   $resize,
   $someValue,
@@ -25,7 +26,7 @@ function shown(items) {
 function main() {
   const v = [1];
   v.push(undefined);
-  v.splice(1, 0, undefined);
+  $insertAt(v, 1, undefined);
   v.push(2, undefined);
   const value = [undefined, undefined];
   for (let i = 0; i < value.length; i++) {

@@ -59,6 +59,9 @@ pub(super) struct Call<'c, 'tcx> {
     /// Of `io::Read::read_to_string`, whether the `String` it's given is
     /// provably fresh-empty (`fresh_string_given`, #1297).
     pub(super) fresh_string: bool,
+    /// Whether MIR proves the call's indexes in bounds, a `Vec`'s, a
+    /// range's or a map's key held (`call_bounds_proved`, #1672 M3).
+    pub(super) in_bounds: bool,
     pub(super) span: Span,
 }
 
@@ -78,6 +81,8 @@ pub(super) struct Given<'c> {
     pub(super) lent: bool,
     pub(super) written_whole: bool,
     pub(super) fresh_string: bool,
+    /// Whether MIR proves the call's indexes in bounds (`call_bounds_proved`).
+    pub(super) in_bounds: bool,
 }
 
 impl<'c, 'tcx> Call<'c, 'tcx> {
@@ -100,6 +105,7 @@ impl<'c, 'tcx> Call<'c, 'tcx> {
             lent,
             written_whole,
             fresh_string,
+            in_bounds,
         } = given;
         Call {
             def_id,
@@ -115,6 +121,7 @@ impl<'c, 'tcx> Call<'c, 'tcx> {
             lent,
             written_whole,
             fresh_string,
+            in_bounds,
             span,
         }
     }

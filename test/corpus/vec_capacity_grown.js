@@ -71,7 +71,9 @@ function grown(v, x, n, TSize) {
       TSize,
     ),
   );
-  $grew(v, TSize, v.length, v.unshift(x));
+  const length = v.length;
+  v.unshift(x);
+  $grew(v, TSize, length);
   return $capacity(v, TSize);
 }
 
@@ -114,23 +116,25 @@ function main() {
   $print(`[${pushes(undefined, 3, clone, 0).join(", ")}]\n`);
 
   const w = [1n, 2n, 3n];
-  $grew(w, 8, w.length, w.unshift(9n));
+  const length = w.length;
+  w.unshift(9n);
+  $grew(w, 8, length);
   $grew(w, 8, w.length, w.push(4n, 5n, 6n, 7n));
   $print(`${w.length} ${$capacity(w, 8)}\n`);
   const a = [1];
   const o = new Array(5).fill(2);
-  const length = a.length;
+  const length$1 = a.length;
   $keepCapacity(o);
-  $grew(a, 4, length, $append(a, o));
+  $grew(a, 4, length$1, $append(a, o));
   $print(`${$capacity(a, 4)} ${o.length} ${$capacity(o, 4)}\n`);
   const r = new Array(3).fill(0);
-  const length$1 = r.length;
-  $keepCapacity(r);
-  $grew(r, 2, length$1, $resize(r, 10, 1));
-  $print(`${$capacity(r, 2)} `);
   const length$2 = r.length;
   $keepCapacity(r);
-  $grew(r, 2, length$2, $resize(r, 2, 1));
+  $grew(r, 2, length$2, $resize(r, 10, 1));
+  $print(`${$capacity(r, 2)} `);
+  const length$3 = r.length;
+  $keepCapacity(r);
+  $grew(r, 2, length$3, $resize(r, 2, 1));
   $print(`${$capacity(r, 2)}\n`);
 
   const e = [];
@@ -147,12 +151,12 @@ function main() {
     ),
   );
   $print(`${$capacity(e, 4)} `);
-  const length$3 = e.length;
+  const length$4 = e.length;
   const items = new Array(9).fill(7);
   for (let i = 0; i < items.length; i++) {
     e.push(items[i]);
   }
-  $grew(e, 4, length$3);
+  $grew(e, 4, length$4);
   $print(`${$capacity(e, 4)}\n`);
   // Grown item by item, `4` then `8`, where reserving all five it adds
   // first would give `5`.
@@ -265,9 +269,9 @@ function main() {
   const h = [];
   $grew(h, 4, h.length, $heapPush(h, 1, $partiallyOrdered));
   const other = $heapFrom([5, 6, 7, 8, 9], $partiallyOrdered);
-  const length$4 = h.length;
+  const length$5 = h.length;
   $keepCapacity(other);
-  $grew(h, 4, length$4, $heapAppend(h, other, $partiallyOrdered));
+  $grew(h, 4, length$5, $heapAppend(h, other, $partiallyOrdered));
   $print(`${$capacity(h, 4)} ${$capacity(other, 4)}\n`);
 }
 //# sourceMappingURL=case.js.map

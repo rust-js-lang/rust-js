@@ -131,7 +131,10 @@ pub fn later(items: &mut Vec<u32>) -> u32 {
 `);
   expect(wrapsDisagreed(dir)).toEqual([]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("    const leftIndex = (index + 1) * 2 - 1;\n    const rightIndex = leftIndex + 1;\n    if (heap[leftIndex] < heap[index]) {\n      if (rightIndex < length && heap[rightIndex] < heap[leftIndex]) {\n        [heap[index], heap[rightIndex]] = [heap[rightIndex], heap[index]];\n");
+  // `heap[leftIndex]` under `leftIndex < length` of the length its
+  // callers give: MIR doesn't carry the relation since it decides call
+  // indexes (#1948).
+  expect(js).toContain("    const leftIndex = (index + 1) * 2 - 1;\n    const rightIndex = leftIndex + 1;\n    if ($index(heap, leftIndex) < $index(heap, index)) {\n      if (rightIndex < length && heap[rightIndex] < heap[leftIndex]) {\n        [heap[index], heap[rightIndex]] = [heap[rightIndex], heap[index]];\n");
   expect(js).toContain("  const halfLength = length >>> 1;\n");
   expect(js).toContain("  [heap[0], heap[heap.length - 1]] = [heap[heap.length - 1], heap[0]];\n  const first = heap.pop();\n");
   expect(js).toContain("items[items.length - 1]");
@@ -677,7 +680,9 @@ pub fn first_of_some(keys: &[String]) -> String {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   // `prevLength - 1` is JS's own: the `push` before made the vector at
   // least one long (#1700).
-  expect(js).toContain('properties[prevLength - 1][1] = "unchanged";');
+  // A length held in a variable, then tested again: MIR doesn't prove
+  // `prevLength - 1` below it since it decides call indexes (#1949).
+  expect(js).toContain('$index(properties, prevLength - 1)[1] = "unchanged";');
   expect(js).toContain('return length === 1 && keys[0] === "children";');
   expect(js).toContain("length >= 2 ? keys[1] : $index(keys, 0)");
   const lib = await import(join(dir, "lib.js"));
@@ -690,8 +695,9 @@ pub fn first_of_some(keys: &[String]) -> String {
   expect(lib.firstOfSome(["ab", "c"])).toBe("c");
   expect(() => lib.firstOfSome([])).toThrow("index out of bounds");
   const of = performanceTrack();
-  // As above, past its `push` (#1700).
-  expect(of("addObjectDiffToProperties")).toContain("properties[prevLength - 1][1] =");
+  // As above, past its `push` (#1700), checked since MIR decides call
+  // indexes (#1949).
+  expect(of("addObjectDiffToProperties")).toContain("$index(properties, prevLength - 1)[1] =");
   expect(of("addValueToProperties")).toContain('(propsLength === 1 && propsKeys[0] === "children" && key == null)');
 }, underLoad(60_000));
 

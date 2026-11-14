@@ -27,7 +27,6 @@ import {
   $rev,
   $roomForHint,
   $skipping,
-  $slice,
   $taking,
   $unwindsOn,
   iterator_enumerate,
@@ -65,7 +64,7 @@ function besideALiveDrop() {
     console.log(`[${v.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
     v = Array.from($rev($enumerate($skipping($iter([5, 6, 7]), 1))));
     console.log(`[${v.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
-    v = Array.from($rev($enumerate($skipping($iter($slice([5, 6, 7, 8], 1)), 1))));
+    v = Array.from($rev($enumerate($skipping($iter([5, 6, 7, 8].slice(1)), 1))));
     console.log(`[${v.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
     v = Array.from(
       $rev(

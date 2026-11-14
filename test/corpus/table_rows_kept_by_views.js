@@ -2,6 +2,7 @@
 
 import {
   $assign,
+  $at,
   $catchUnwind,
   $displayF64,
   $index,
@@ -28,11 +29,12 @@ function uniquePaths(width, height) {
   }
   for (let rowIndex = 1; rowIndex < height; rowIndex++) {
     for (let columnIndex = 1; columnIndex < width; columnIndex++) {
-      board[rowIndex][columnIndex] =
-        board[rowIndex - 1][columnIndex] + board[rowIndex][columnIndex - 1];
+      const value = $index(board[rowIndex - 1], columnIndex);
+      const value$1 = $index(board[rowIndex], columnIndex - 1);
+      board[rowIndex][$at(board[rowIndex], columnIndex)] = value + value$1;
     }
   }
-  return board[height - 1][width - 1];
+  return $index(board[height - 1], width - 1);
 }
 
 function truncated(width, height) {

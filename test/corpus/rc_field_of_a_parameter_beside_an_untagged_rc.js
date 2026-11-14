@@ -8,6 +8,7 @@ import {
   $index,
   $rcClone,
   $rcDrop,
+  $removeOutOfBounds,
   $truncate,
   $unborrow,
   $unwrap,
@@ -78,7 +79,11 @@ export function stack(initial, settings) {
       try {
         history.entries.push(state);
         if (history.entries.length > limit + 1) {
-          $rcDrop(history.entries.shift());
+          const result = history.entries;
+          if (0 >= result.length) {
+            $removeOutOfBounds(result, 0);
+          }
+          $rcDrop(result.splice(0, 1)[0]);
         }
         history.index = (history.entries.length - 1) >>> 0;
       } finally {

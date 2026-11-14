@@ -88,7 +88,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 || Some(crate::lower::analysis::LeftOut::CallBounds(block)),
             );
         }
-        indexed && self.indexes_in_bounds(def_id, span)
+        indexed && crate::lower::analysis::call_bounds_proved(self.tcx, state.body, state.location().block)
     }
 
     /// Whether THIR's call of `def_id` at `span` has its indexes in bounds,
@@ -131,7 +131,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out: &mut Vec<Stmt>,
     ) -> R<Value<'tcx>> {
         if self.index_mut_place(state, known, def_id, output) {
-            let checked = !self.indexes_in_bounds(def_id, span);
+            let checked = !crate::lower::analysis::call_bounds_proved(self.tcx, state.body, state.location().block);
             let mut exprs = (values.into_iter())
                 .map(|v| self.value_expr(v, span))
                 .collect::<R<Vec<_>>>()?;

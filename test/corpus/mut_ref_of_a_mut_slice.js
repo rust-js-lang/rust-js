@@ -16,6 +16,7 @@ import {
   $sliceWriter,
   $splitEndMut,
   $splitOnce,
+  $swap,
   $unwindsOn,
   $unwrapOk,
   $view,
@@ -109,8 +110,7 @@ function split() {
 function swapEnds(buf) {
   const n = buf.value.length;
   if (n > 1) {
-    const j = n - 1;
-    [buf.value[0], buf.value[j]] = [buf.value[j], buf.value[0]];
+    $swap(buf.value, 0, n - 1);
   }
   const taken = buf.value;
   buf.value = [];

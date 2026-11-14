@@ -5,7 +5,6 @@ import {
   $catchUnwind,
   $cleanup,
   $closing,
-  $drain,
   $dropEach,
   $dropItems,
   $iter,
@@ -110,7 +109,7 @@ function main() {
     const v = [[1], [2], [3]];
     let result;
     try {
-      result = last($iter($drain(v, 0)), $dropEach(dDrop_drop));
+      result = last($iter(v.splice(0)), $dropEach(dDrop_drop));
     } catch (error) {
       $cleanup(() => {
         $dropItems(v, dDrop_drop);

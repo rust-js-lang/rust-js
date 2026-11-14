@@ -8,7 +8,6 @@ import {
   $cleanup,
   $closing,
   $cmp,
-  $drain,
   $dropEach,
   $dropItems,
   $eq,
@@ -426,7 +425,7 @@ function main() {
   }
   let h$3;
   try {
-    h$3 = { it: $iter($drain(v, 0)) };
+    h$3 = { it: $iter(v.splice(0)) };
   } catch (error) {
     $cleanup(() => {
       $dropItems(v, dDrop_drop);
@@ -518,7 +517,7 @@ function main() {
     held(
       "held drain nth",
       2,
-      $iter($drain(v$1, 0)),
+      $iter(v$1.splice(0)),
       (it) => {
         const nth = $nthDropping($lent(it), 3, dDrop_drop, false);
         function map(d) {
@@ -558,7 +557,7 @@ function main() {
     held(
       "held drain nth_back",
       6,
-      $iter($drain(v$2, 0)),
+      $iter(v$2.splice(0)),
       (it) => {
         const nthBack = $nthBack(it, 3, undefined, dDrop_drop);
         function map(d) {
@@ -600,7 +599,7 @@ function main() {
     held(
       "held drain rev nth",
       6,
-      $iter($drain(v$3, 0)),
+      $iter(v$3.splice(0)),
       (it) => {
         const nth = $nthDropping($lent($rev($lent(it))), 3, dDrop_drop, false);
         function map(d) {
@@ -854,7 +853,7 @@ function main() {
       const v = seven();
       let drain;
       try {
-        drain = $iter($drain(v, 0));
+        drain = $iter(v.splice(0));
       } catch (error) {
         $cleanup(() => {
           $dropItems(v, dDrop_drop);
@@ -907,7 +906,7 @@ function main() {
       const v = seven();
       let drain;
       try {
-        drain = $iter($drain(v, 0));
+        drain = $iter(v.splice(0));
       } catch (error) {
         $cleanup(() => {
           $dropItems(v, dDrop_drop);
@@ -960,7 +959,7 @@ function main() {
       const v = seven();
       let rev;
       try {
-        rev = $held($rev($closing($iter($drain(v, 0)), $dropEach(dDrop_drop), false)));
+        rev = $held($rev($closing($iter(v.splice(0)), $dropEach(dDrop_drop), false)));
       } catch (error) {
         $cleanup(() => {
           $dropItems(v, dDrop_drop);
@@ -1013,7 +1012,7 @@ function main() {
       const v = seven();
       let d;
       try {
-        d = nthBackOf($iter($drain(v, 0)), 3, $dropEach(dDrop_drop));
+        d = nthBackOf($iter(v.splice(0)), 3, $dropEach(dDrop_drop));
       } catch (error) {
         $cleanup(() => {
           $dropItems(v, dDrop_drop);
@@ -1041,7 +1040,7 @@ function main() {
       const v = seven();
       let d;
       try {
-        d = revNthOf($iter($drain(v, 0)), 3, $dropEach(dDrop_drop));
+        d = revNthOf($iter(v.splice(0)), 3, $dropEach(dDrop_drop));
       } catch (error) {
         $cleanup(() => {
           $dropItems(v, dDrop_drop);
