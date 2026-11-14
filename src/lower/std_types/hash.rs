@@ -202,21 +202,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             HashOp::New(which) => new_hasher(which, Vec::new()),
             HashOp::NewWithKeys => new_hasher(StdHasher::Sip, values.collect()),
             HashOp::Own => {
-                let mut hasher = values.next().expect("a hasher");
-                // The hasher its receiver, `&self` or `&mut self`, points at,
-                // through each `&mut` to it, of std's `impl Hasher for &mut
-                // H`, read where it's a cell, as each forwards to it (#1488).
-                let sig = self.tcx.fn_sig(call.def_id).instantiate(self.tcx, call.generic_args);
-                let mut pointer = sig.skip_binder().inputs()[0];
-                if let ty::Ref(_, inner, ty::Mutability::Not) = *pointer.kind() {
-                    pointer = inner;
-                }
-                while let ty::Ref(_, pointee, ty::Mutability::Mut) = *pointer.kind() {
-                    if !self.mut_ref_form(pointee).read_is_itself() {
-                        hasher = Expr::member(hasher, js::HELD);
-                    }
-                    pointer = pointee;
-                }
+                // The hasher its receiver is, `&self`'s or `&mut self`'s, the
+                // object itself: a call through each `&mut` std's `impl Hasher
+                // for &mut H` forwards is the hasher's own, its receiver read
+                // through them, before it's asked here (`passed_through`,
+                // #1488, #1709, #1724).
+                let hasher = values.next().expect("a hasher");
                 let method = crate::lower::bindings::fn_name(self.tcx, call.def_id);
                 Expr::call(Expr::member(hasher, method), values.collect())
             }

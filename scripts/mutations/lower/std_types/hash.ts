@@ -220,14 +220,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^std_types_hashed_as_std_does.rs$"],
   },
   {
-    name: "hasher-mut-not-read-through",
-    breaks: "a `Hasher` method of a `&mut` to a `&mut` to std's hasher calls the cell's method, not the hasher's, and throws (#1488)",
-    file: "src/lower/std_types/hash.rs",
-    find: "                    if !self.mut_ref_form(pointee).read_is_itself() {\n                        hasher = Expr::member(hasher, js::HELD);\n                    }\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^hasher_finished_through_its_mut.rs$"],
-  },
-  {
     name: "own-mut-hasher-taken-as-std-forwarding",
     breaks: "the crate's own `impl Hasher for &mut Tally` given to generic code is taken for std's `impl Hasher for &mut H`, which asks a `Tally: Hasher` there's none of, and is refused (#1730)",
     file: "src/lower/std_types/hash.rs",
