@@ -423,9 +423,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             (self.resolve_instance(fold, args)?).ok_or_else(|| self.unsupported(span, "this implementation"))?;
         // The method's own first type parameter, its `B`.
         let acc = self.tcx.generics_of(instance.def_id()).parent_count as u32;
-        let params = ["iterator", "init", "f", "unwind", "ends"];
-        let dropped = vec![(acc, Expr::var("unwind")), (acc + 1, Expr::var("ends"))];
-        let mut values = params[..3].iter().map(|&name| Expr::var(name)).collect::<Vec<_>>();
+        // Its parameters, named of the item's names, each its own (#1681's
+        // change 3, M2), as preparation spells them (ADR 0352).
+        let params =
+            ["iterator", "init", "f", "unwind", "ends"].map(|name| self.fresh(crate::lower::Base::Named(name)));
+        let [_, _, _, unwind, ends] = &params;
+        let dropped = vec![(acc, Expr::var(unwind)), (acc + 1, Expr::var(ends))];
+        let mut values = params[..3].iter().map(|name| Expr::var(name)).collect::<Vec<_>>();
         let location = self.caller_location(span);
         values.extend(self.evidence_args_given(
             instance.def_id(),
@@ -484,14 +488,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(None);
         };
         let try_trait = tcx.require_lang_item(rustc_hir::attrs::lang_items::LangItem::Try, span);
+        // Its parameters, named of the item's names, as `fold_entry`'s.
+        let params = ["iterator", "init", "f", "broke", "unwind", "ends"]
+            .map(|name| self.fresh(crate::lower::Base::Named(name)));
+        let [iterator, init, f, broke, unwind, ends] = &params;
         let given = [(
             ty::TraitRef::new(tcx, try_trait, [tried]),
-            Expr::call_helper("$tryOf", vec![Expr::var("broke")]),
+            Expr::call_helper("$tryOf", vec![Expr::var(broke)]),
         )];
         // Given `unwind`, as its `B`'s drop, and `ends`, as its `F`'s, as
         // `compiled_fold` is.
         let acc = tcx.generics_of(instance.def_id()).parent_count as u32;
-        let mut values = ["iterator", "init", "f"].map(Expr::var).to_vec();
+        let mut values = [iterator, init, f].map(|name| Expr::var(name)).to_vec();
         let location = self.caller_location(span);
         values.extend(self.evidence_args_given(
             instance.def_id(),
@@ -499,15 +507,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             location,
             crate::lower::traits::GivenEvidence {
                 bounds: &given,
-                drops: &[(acc, Expr::var("unwind")), (acc + 1, Expr::var("ends"))],
+                drops: &[(acc, Expr::var(unwind)), (acc + 1, Expr::var(ends))],
             },
             span,
         )?);
         let call = Expr::call(self.fn_ref(instance.def_id()), values);
         Ok(Some(Expr::arrow(
-            ["iterator", "init", "f", "broke", "unwind", "ends"]
-                .map(Into::into)
-                .to_vec(),
+            params.iter().map(|name| js::Pattern::Name(name.clone())).collect(),
             vec![StmtKind::Return(Some(call)).at(js::Span::NONE)],
         )))
     }

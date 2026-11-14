@@ -73,3 +73,15 @@ apart.
   (`passes::run`), which `==` asks rightly; 17 compare against a tree no
   declaration is in, `Expr::undefined()`, a variable, a place; and the 4
   of dictionaries are `alpha_eq`'s.
+
+## Amendment: the first family, the compiled folds' parameters (2026-11-14)
+
+A std struct's compiled `fold` and `try_fold`, given as its steps' `rfold`
+and `tryRfold` (`compiled_steps.rs`), name their parameters, `(iterator,
+init, f, broke, unwind, ends) =>`, of the item's names (`fresh`), each
+its own, where each was written as it is: 214 of the bodies that declared
+a name twice where tidy starts. Spelled as preparation spells them
+(ADR 0352), the corpus is what it was but one case, each dictionary of
+them alike by `alpha_eq`; `held_enumerate.rs` reads shorter, an outer
+`f` no longer named apart from a parameter of its name, `const f$1 = f;`
+gone.

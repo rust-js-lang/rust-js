@@ -54,7 +54,6 @@ function positionsDoubleEndedIterator_nextBack(
   IExactSizeIterator,
 ) {
   const f = positions.f;
-  const f$1 = f;
   return $lent(
     $rev(
       $knowing(
@@ -98,7 +97,7 @@ function positionsDoubleEndedIterator_nextBack(
       ),
     ),
   )
-    .map(([count, val]) => (f$1(val) ? count : undefined))
+    .map(([count, val]) => (f(val) ? count : undefined))
     .find((item) => item != null);
 }
 

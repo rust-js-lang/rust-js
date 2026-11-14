@@ -193,9 +193,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a compiled std fold, a `Fuse`'s, is given no drop of its accumulator, so a stage's panic inside it leaves it undropped (#424)",
     file: "src/lower/iterators/compiled_steps.rs",
-    find: "        let dropped = vec![(acc, Expr::var(\"unwind\")), (acc + 1, Expr::var(\"ends\"))];\n",
+    find: "        let dropped = vec![(acc, Expr::var(unwind)), (acc + 1, Expr::var(ends))];\n",
     replace:
-      "        let dropped = vec![(acc + 1, Expr::var(\"ends\"))];\n",
+      "        let dropped = vec![(acc + 1, Expr::var(ends))];\n",
     tests: [
       "test/std-package.test.ts",
       "-t",
@@ -207,8 +207,8 @@ export const mutations: Mutation[] = [
     breaks:
       "std's compiled `try_fold` of its struct, `TakeWhile`'s, which its `fold` is, is given no drop of its accumulator: a stage's panic leaves it undropped (#423)",
     file: "src/lower/iterators/compiled_steps.rs",
-    find: '                drops: &[(acc, Expr::var("unwind")), (acc + 1, Expr::var("ends"))],\n',
-    replace: '                drops: &[(acc + 1, Expr::var("ends"))],\n',
+    find: '                drops: &[(acc, Expr::var(unwind)), (acc + 1, Expr::var(ends))],\n',
+    replace: '                drops: &[(acc + 1, Expr::var(ends))],\n',
     tests: [
       "test/std-package.test.ts",
       "test/iterator-forms.test.ts",
@@ -236,16 +236,16 @@ export const mutations: Mutation[] = [
     name: "compiled-fold-f-undropped",
     breaks: "std's compiled fold isn't given its `F`'s drop, what drops with `f`, so it never drops it before what it has left (#710)",
     file: "src/lower/iterators/compiled_steps.rs",
-    find: "        let dropped = vec![(acc, Expr::var(\"unwind\")), (acc + 1, Expr::var(\"ends\"))];\n",
-    replace: "        let dropped = vec![(acc, Expr::var(\"unwind\"))];\n",
+    find: "        let dropped = vec![(acc, Expr::var(unwind)), (acc + 1, Expr::var(ends))];\n",
+    replace: "        let dropped = vec![(acc, Expr::var(unwind))];\n",
     tests: ["test/std-package.test.ts"],
   },
   {
     name: "compiled-try-fold-given-no-ends",
     breaks: "std's compiled `try_fold` of its struct, `SkipWhile`'s, is given no drop of its `F`, so a panic in its first step drops the accumulator first (#768)",
     file: "src/lower/iterators/compiled_steps.rs",
-    find: '                drops: &[(acc, Expr::var("unwind")), (acc + 1, Expr::var("ends"))],\n',
-    replace: '                drops: &[(acc, Expr::var("unwind"))],\n',
+    find: '                drops: &[(acc, Expr::var(unwind)), (acc + 1, Expr::var(ends))],\n',
+    replace: '                drops: &[(acc, Expr::var(unwind))],\n',
     tests: [
       "test/std-package.test.ts",
       "test/iterator-forms.test.ts",
