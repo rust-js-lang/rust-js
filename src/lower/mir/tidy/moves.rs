@@ -153,9 +153,9 @@ fn moved(stmt: &Stmt, rest: &[Stmt], facts: &MoveFacts) -> Option<(Moved, Why)> 
         // the statement after it (`paired_temporaries`).
         StmtKind::Assign(target, value)
             if let ExprKind::Var(name) = &target.kind
-                && facts.paired.contains(name) =>
+                && facts.paired.contains(name.as_str()) =>
         {
-            (name, value, true)
+            (&**name, value, true)
         }
         _ => return None,
     };

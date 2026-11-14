@@ -911,7 +911,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 })
                 .collect();
             let name = match &callee.kind {
-                js::ExprKind::Var(name) => name.clone(),
+                js::ExprKind::Var(name) => name.to_string(),
                 _ => camel_case(self.tcx.item_name(def_id).as_str()),
             };
             // And its options where it takes them, which a call through the

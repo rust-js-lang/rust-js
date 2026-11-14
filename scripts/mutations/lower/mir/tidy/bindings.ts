@@ -43,9 +43,9 @@ export const mutations: Mutation[] = [
     breaks:
       "an `Rc`'s clone of a parameter is a variable of its own, `const resolved = payload`, where it's the same object, read by its name (ADR 0846)",
     file: "src/lower/mir/tidy/bindings.rs",
-    find: "                && fixed.contains(a)\n                && clones.contains(b)\n",
+    find: "                && fixed.contains(a.as_str())\n                && clones.contains(b)\n",
     replace:
-      "                && fixed.contains(a)\n                && clones.contains(b)\n                && false\n",
+      "                && fixed.contains(a.as_str())\n                && clones.contains(b)\n                && false\n",
     tests: ["test/corpus.test.ts", "-t", "^rc_shared_by_closures.rs$"],
     snapshots: true,
   },
@@ -63,8 +63,8 @@ export const mutations: Mutation[] = [
     breaks:
       "any `const b = a` of a parameter is read as `a`, the name the program gave `b` lost: `const gas = n`'s `gas`",
     file: "src/lower/mir/tidy/bindings.rs",
-    find: "                && fixed.contains(a)\n                && clones.contains(b)\n",
-    replace: "                && fixed.contains(a)\n",
+    find: "                && fixed.contains(a.as_str())\n                && clones.contains(b)\n",
+    replace: "                && fixed.contains(a.as_str())\n",
     tests: ["test/corpus.test.ts", "-t", "^sort_unstable_adversary.rs$"],
     snapshots: true,
   },
@@ -328,7 +328,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a temporary assigned then read once each time stays a `let` assigned and read, `tmp$7 = make(8); tmp$8 = [tmp$6, tmp$7]` (ADR 0564)",
     file: "src/lower/mir/tidy/bindings.rs",
-    find: "                        true => *pairs.entry(name.clone()).or_default() += 1,\n",
+    find: "                        true => *pairs.entry(name.to_string()).or_default() += 1,\n",
     replace: "                        true => {}\n",
     tests: [
       "test/std-package.test.ts",
@@ -610,8 +610,8 @@ export const mutations: Mutation[] = [
     name: "alias-read-by-a-pair-dropped",
     breaks: "`const _10 = index` read by a pair's place, `lanes[_10]`, is `index` where it's read, so the pair made before `index++` reads the next item (#968)",
     file: "src/lower/mir/tidy/bindings.rs",
-    find: "                let deferred = set.contains(of) && handles_read(&stmts[i + 1..]).contains(alias);\n",
-    replace: "                let deferred = false && set.contains(of);\n",
+    find: "                let deferred = set.contains(of.as_str()) && handles_read(&stmts[i + 1..]).contains(alias);\n",
+    replace: "                let deferred = false && set.contains(of.as_str());\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_of_a_generic_impl_written_whole.rs$"],
   },
   {

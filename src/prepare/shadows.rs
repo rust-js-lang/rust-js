@@ -68,7 +68,7 @@ fn shadows(body: &mut Vec<Stmt>, own: &IndexSet<String>) {
         js::outside_shadows(body, &alias, |body| {
             js::each_expr_mut(body, &mut |e| {
                 if matches!(&e.kind, ExprKind::Var(name) if *name == alias) {
-                    e.kind = ExprKind::Var(of.clone());
+                    e.kind = ExprKind::Var(of.clone().into());
                     if global {
                         e.facts = e.facts.with(js::Known::Global);
                     }
@@ -394,7 +394,7 @@ impl Walk {
                     if let ExprKind::Var(of) = &value.kind
                         && crate::names::apart(alias).is_some_and(|(base, _)| base == of)
                     {
-                        self.shadows.push((self.at, looped, alias.clone(), of.clone()));
+                        self.shadows.push((self.at, looped, alias.clone(), of.to_string()));
                     }
                 }
                 // Each variable it sets, as `js::Writes` says: each of a
@@ -402,7 +402,7 @@ impl Walk {
                 StmtKind::Assign(..) | StmtKind::Compound(..) => {
                     for place in js::Writes::places(std::slice::from_ref(stmt)) {
                         if let ExprKind::Var(name) = place.kind {
-                            self.sets.push((self.at, name));
+                            self.sets.push((self.at, name.into_word()));
                         }
                     }
                 }
@@ -467,7 +467,7 @@ fn written_back(body: &mut Vec<Stmt>, own: &IndexSet<String>) {
         });
         js::each_expr_mut(body, &mut |e| {
             if matches!(&e.kind, ExprKind::Var(name) if *name == alias) {
-                e.kind = ExprKind::Var(of.clone());
+                e.kind = ExprKind::Var(of.clone().into());
             }
         });
     }
@@ -482,7 +482,7 @@ fn write_back(body: &[Stmt], own: &IndexSet<String>) -> Option<(String, String)>
                 && let ExprKind::Var(of) = &value.kind
                 && crate::names::apart(alias).is_some_and(|(base, _)| base == of)
             {
-                lets.push((alias.clone(), of.clone()));
+                lets.push((alias.clone(), of.to_string()));
             }
         }
     });

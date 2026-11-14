@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     breaks:
       "an `Option` of a variable that changes where it's read is read as the variable, so `changed(true)` says `after then after` (ADR 0910)",
     file: "src/lower/mir/tidy/options.rs",
-    find: "    if !matches!(none.kind, ExprKind::Undefined) || !present || changing.contains(v) {\n",
+    find: "    if !matches!(none.kind, ExprKind::Undefined) || !present || changing.contains(v.as_str()) {\n",
     replace: "    if !matches!(none.kind, ExprKind::Undefined) || !present {\n",
     tests: ["test/corpus.test.ts", "-t", "tested_options"],
   },

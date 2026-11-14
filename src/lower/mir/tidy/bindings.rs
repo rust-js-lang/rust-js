@@ -116,7 +116,7 @@ pub(in crate::lower::mir) fn unsuffixed_params(body: &mut [Stmt], module: &Index
                     if let ExprKind::Var(v) = &mut e.kind
                         && *v == name
                     {
-                        *v = base.to_string();
+                        *v = base.into();
                     }
                 });
                 *params[i].names_mut().swap_remove(k) = base.to_string();
@@ -177,7 +177,7 @@ pub(super) fn alias_variables(body: &mut Vec<Stmt>, fixed: &IndexSet<String>) {
                 // set only past each read on every way, `const _15 =
                 // newLast; if (_15 == null) { .. } else { _15.next = clone;
                 // newLast = clone; }`.
-                let deferred = set.contains(of) && handles_read(&stmts[i + 1..]).contains(alias);
+                let deferred = set.contains(of.as_str()) && handles_read(&stmts[i + 1..]).contains(alias);
                 let kept = deferred
                     || last.is_some_and(|last| {
                         let reads = &stmts[i + 1..=last];
@@ -430,7 +430,7 @@ pub(super) fn named_temporaries(body: &mut Vec<Stmt>) {
                         if let ExprKind::Var(v) = &mut e.kind
                             && v == name
                         {
-                            *v = b.clone();
+                            *v = b.clone().into();
                         }
                     });
                 });
@@ -645,7 +645,7 @@ pub(super) fn aliases(
                         if let ExprKind::Var(v) = &mut e.kind
                             && *v == b
                         {
-                            v.clone_from(&a);
+                            *v = js::Name::from(&a);
                         }
                     });
                 } else {
@@ -701,7 +701,7 @@ fn clones_read_as(body: &mut Vec<Stmt>, fixed: &IndexSet<String>, clones: &Index
         while i < stmts.len() {
             if let StmtKind::Const(b, value) = &stmts[i].kind
                 && let ExprKind::Var(a) = &value.kind
-                && fixed.contains(a)
+                && fixed.contains(a.as_str())
                 && clones.contains(b)
                 && !rebinds(&stmts[i + 1..], b)
             {
@@ -731,7 +731,7 @@ fn cloned_from(body: &mut Vec<Stmt>, clones: &IndexSet<String>) -> Vec<(String, 
                 && let ExprKind::Var(a) = &value.kind
                 && clones.contains(b)
             {
-                found.push((b.clone(), a.clone()));
+                found.push((b.clone(), a.to_string()));
             }
         }
     });
@@ -1052,9 +1052,9 @@ pub(super) fn paired_temporaries(body: &[Stmt]) -> IndexSet<String> {
                     let read_next =
                         (list.get(k + 1)).is_some_and(|s| js::mentions_in(std::slice::from_ref(s), name) == 1);
                     match !value.mentions_var(name) && read_next {
-                        true => *pairs.entry(name.clone()).or_default() += 1,
+                        true => *pairs.entry(name.to_string()).or_default() += 1,
                         false => {
-                            unpaired.insert(name.clone());
+                            unpaired.insert(name.to_string());
                         }
                     }
                 }

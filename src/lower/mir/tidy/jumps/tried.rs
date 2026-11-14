@@ -39,7 +39,7 @@ pub(in crate::lower::mir::tidy) fn binding(body: &[Stmt], item: &str) -> Option<
                 if let ExprKind::Var(bound) = &target.kind
                     && parts.is_empty() =>
             {
-                (bound, value, js::Writes::sets(&body[1..], bound))
+                (&**bound, value, js::Writes::sets(&body[1..], bound))
             }
             _ => break,
         };

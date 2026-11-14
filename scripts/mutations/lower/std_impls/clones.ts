@@ -331,7 +331,7 @@ export const mutations: Mutation[] = [
     breaks:
       "an `Option<&T>`'s `cloned()` of a type parameter's, whose clone is itself, is held in a `const` first, `const value = items.at(-1); return value;` (#587)",
     file: "src/lower/std_impls/clones.rs",
-    find: "                        self.names.borrow_mut().swap_remove(held);\n                        out.pop();\n                        return Ok(written);\n",
+    find: "                        self.names.borrow_mut().swap_remove(held.as_str());\n                        out.pop();\n                        return Ok(written);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^cloned_option_of_a_type_parameter.rs$"],
     snapshots: true,

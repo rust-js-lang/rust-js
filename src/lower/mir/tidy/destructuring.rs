@@ -188,7 +188,7 @@ pub(super) fn assigned_parts(stmts: &mut Vec<Stmt>) {
                             kind: ExprKind::Var(read),
                             ..
                         },
-                    )) if read == part => Some(target.clone()),
+                    )) if read == part => Some(target.to_string()),
                     _ => None,
                 })
                 .collect()
@@ -610,7 +610,7 @@ pub(super) fn tuple_reads(
                     root = of;
                 }
                 if let ExprKind::Var(v) = &root.kind {
-                    parts_set.insert(v.clone());
+                    parts_set.insert(v.to_string());
                 }
             }
         });
@@ -627,7 +627,7 @@ pub(super) fn tuple_reads(
                         root = of;
                     }
                     if let ExprKind::Var(of) = &root.kind {
-                        aliased.push((alias.clone(), of.clone()));
+                        aliased.push((alias.clone(), of.to_string()));
                     }
                 }
             }
@@ -648,7 +648,7 @@ pub(super) fn tuple_reads(
         };
         let acts = |item: &Expr| {
             (!inert(item) || reads_parts_set(item))
-                && !matches!(&item.kind, ExprKind::Var(v) if !js::Writes::sets(after, v) && !set_elsewhere.contains(v))
+                && !matches!(&item.kind, ExprKind::Var(v) if !js::Writes::sets(after, v) && !set_elsewhere.contains(v.as_str()))
         };
         let last = items.iter().rposition(acts);
         let fixed = |item: &Expr| {

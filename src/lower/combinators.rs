@@ -424,7 +424,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     },
                     Some(_) => None,
                     None => match &subject.kind {
-                        js::ExprKind::Var(name) => Some((name.clone(), subject.clone(), false)),
+                        js::ExprKind::Var(name) => Some((name.to_string(), subject.clone(), false)),
                         _ => None,
                     },
                 };

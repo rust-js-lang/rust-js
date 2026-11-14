@@ -417,7 +417,8 @@ impl<'a> Run<'a> {
             StmtKind::Return(None) => true,
             StmtKind::Return(Some(value)) => match &value.kind {
                 ExprKind::Var(name) => {
-                    name == self.result || self.declared.contains(name) && !self.set_by_closures.contains(name)
+                    name == self.result
+                        || self.declared.contains(name.as_str()) && !self.set_by_closures.contains(name.as_str())
                 }
                 _ => value.is_constant(),
             },

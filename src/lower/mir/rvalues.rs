@@ -39,7 +39,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let handle = self.spill(Role::Place, handle, out);
         if let (js::ExprKind::Var(name), Some(on)) = (&handle.kind, on) {
-            self.locals.mir.made.handles.insert(name.clone(), on);
+            self.locals.mir.made.handles.insert(name.to_string(), on);
         }
         Expr::held(handle)
     }
@@ -49,7 +49,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn unhandled(&self, place: &Expr) -> Option<Expr> {
         match &place.kind {
             js::ExprKind::Member(of, key) if key == js::HELD => match &of.kind {
-                js::ExprKind::Var(name) => self.locals.mir.made.handles.get(name).cloned(),
+                js::ExprKind::Var(name) => self.locals.mir.made.handles.get(name.as_str()).cloned(),
                 _ => None,
             },
             _ => None,

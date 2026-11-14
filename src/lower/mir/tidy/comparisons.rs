@@ -23,7 +23,7 @@ pub(super) fn turned(e: &mut Expr, numbers: &IndexSet<String>) {
         _ => return,
     };
     let never_nan = |x: &Expr| match &x.kind {
-        ExprKind::Var(v) => numbers.contains(v),
+        ExprKind::Var(v) => numbers.contains(v.as_str()),
         ExprKind::Num(n) => n.fract() == 0.0,
         ExprKind::Binary(Op::BitOr | Op::BitAnd | Op::BitXor | Op::Shl | Op::Shr | Op::UShr, ..) => true,
         ExprKind::Member(_, m) => m == "length",
@@ -64,7 +64,7 @@ pub(super) fn ordered_floats(e: &mut Expr, floats: &IndexSet<String>) {
         _ => return,
     };
     let number = |x: &Expr| match &x.kind {
-        ExprKind::Var(v) => floats.contains(v),
+        ExprKind::Var(v) => floats.contains(v.as_str()),
         ExprKind::Num(_) => true,
         _ => false,
     };

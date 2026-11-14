@@ -82,7 +82,7 @@ pub(super) fn named_flags(body: &mut Vec<Stmt>, flags: &IndexSet<String>) {
             if let ExprKind::Var(v) = &mut e.kind
                 && v == flag
             {
-                v.clone_from(&to);
+                *v = js::Name::from(&to);
             }
         });
     }
@@ -123,7 +123,7 @@ fn tests_flag(test: &Expr, flag: &str) -> bool {
 
 fn flag_of<'e>(e: &'e Expr, flags: &IndexSet<String>) -> Option<&'e str> {
     match &e.kind {
-        ExprKind::Var(v) if flags.contains(v) => Some(v),
+        ExprKind::Var(v) if flags.contains(v.as_str()) => Some(v),
         _ => None,
     }
 }

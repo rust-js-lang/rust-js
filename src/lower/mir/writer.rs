@@ -592,7 +592,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(None);
         };
         match captures.get(at).map(|(e, _)| &e.kind) {
-            Some(js::ExprKind::Var(name)) => Ok(Some((FieldIdx::from_usize(at), name.clone()))),
+            Some(js::ExprKind::Var(name)) => Ok(Some((FieldIdx::from_usize(at), name.to_string()))),
             _ => Err(self.unsupported(self.tcx.def_span(body.source.def_id()), "this `Formatter`")),
         }
     }

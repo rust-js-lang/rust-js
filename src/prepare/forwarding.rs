@@ -221,7 +221,7 @@ pub(super) fn fields(module: &mut js::Module) {
         let taken = (i, field.clone(), function.name.clone());
         match by_value.iter_mut().find(|(v, _)| v == value) {
             Some((_, fields)) => fields.push(taken),
-            None => by_value.push((value.clone(), vec![taken])),
+            None => by_value.push((value.to_string(), vec![taken])),
         }
     }
     let mut gone = IndexSet::default();

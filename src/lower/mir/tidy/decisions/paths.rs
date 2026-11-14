@@ -421,7 +421,7 @@ pub(super) fn part(test: &Expr) -> Option<(String, f64)> {
         let (ExprKind::Var(tuple), ExprKind::Num(n)) = (&of.kind, &at.kind) else {
             return None;
         };
-        Some((tuple.clone(), *n))
+        Some((tuple.to_string(), *n))
     };
     let places = places(test)?;
     let (first, rest) = places.split_first()?;

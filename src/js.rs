@@ -14,6 +14,8 @@ mod expr_walk;
 mod imports;
 mod known;
 mod make;
+mod name;
+pub use name::Name;
 mod optional_call;
 pub mod result;
 pub mod scopes;
@@ -986,7 +988,7 @@ pub enum ExprKind {
     GivenUndefined,
     /// Only to test against: `o != null` (ADR 0030).
     Null,
-    Var(String),
+    Var(Name),
     /// `this`: a class's own, its constructor's and its prototype's
     /// methods', Rust's `self` (ADR 0761).
     This,

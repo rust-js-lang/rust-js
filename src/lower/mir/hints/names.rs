@@ -106,8 +106,8 @@ impl<'tcx> FnCx<'_, 'tcx> {
             for (ty, (capture, _)) in args.as_closure().upvar_tys().iter().zip(state.facts.captures()) {
                 if let js::ExprKind::Var(name) = &capture.kind {
                     match ty.peel_refs().is_bool() {
-                        true => booleans.insert(name.clone()),
-                        false => others.insert(name.clone()),
+                        true => booleans.insert(name.to_string()),
+                        false => others.insert(name.to_string()),
                     };
                 }
             }

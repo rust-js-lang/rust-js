@@ -158,9 +158,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a static's component made before it's used is a `const` of a temporary's name, no tag",
     file: "src/lower/mir/temporaries.rs",
-    find: "            js::ExprKind::Var(name) => self.module_names.contains(name) || self.locals.mir.alike.contains(name),\n",
+    find: "                self.module_names.contains(name.as_str()) || self.locals.mir.alike.contains(name.as_str())\n",
     replace:
-      "            js::ExprKind::Var(name) => self.locals.mir.alike.contains(name),\n",
+      "                self.locals.mir.alike.contains(name.as_str())\n",
     tests: [
       "test/jsx-children.test.ts",
       "test/jsx-evaluation-order.test.ts",
@@ -176,9 +176,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a variable nothing changes, a tag, made before it's used is a `const` of a temporary's name, no tag",
     file: "src/lower/mir/temporaries.rs",
-    find: "            js::ExprKind::Var(name) => self.module_names.contains(name) || self.locals.mir.alike.contains(name),\n",
+    find: "                self.module_names.contains(name.as_str()) || self.locals.mir.alike.contains(name.as_str())\n",
     replace:
-      "            js::ExprKind::Var(name) => self.module_names.contains(name),\n",
+      "                self.module_names.contains(name.as_str())\n",
     tests: [
       "test/jsx-children.test.ts",
       "test/jsx-evaluation-order.test.ts",
@@ -212,7 +212,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a field of plain data read twice is a `const _5 = route.title;`, not read where it's used",
     file: "src/lower/mir/temporaries.rs",
-    find: "                matches!(&root.kind, js::ExprKind::Var(name) if self.locals.mir.plain.contains(name))\n",
+    find: "                matches!(&root.kind, js::ExprKind::Var(name) if self.locals.mir.plain.contains(name.as_str()))\n",
     replace: "                false\n",
     tests: [
       "test/lowering-matches.test.ts",
@@ -623,7 +623,7 @@ export const mutations: Mutation[] = [
     name: "pair-place-holder-unnamed",
     breaks: "what a pair's place is reached through, a reassigned `x` of `x.value`, isn't named where the pair's made, so the pair reads what `x` is later (#968)",
     file: "src/lower/mir/temporaries.rs",
-    find: "            js::ExprKind::Var(name) if !self.alike_local(name) && !self.module_names.contains(name) => {\n",
+    find: "            js::ExprKind::Var(name) if !self.alike_local(name) && !self.module_names.contains(name.as_str()) => {\n",
     replace: "            js::ExprKind::Var(name) if false && !self.alike_local(name) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_of_a_generic_impl_written_whole.rs$"],
   },

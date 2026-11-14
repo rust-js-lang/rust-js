@@ -122,7 +122,7 @@ pub(super) fn array_values(e: &mut Expr) {
 /// Whether `f` is `(x, i) => [i, x]`, an item paired with its index.
 pub(super) fn pairs_index(f: &Expr) -> bool {
     let var = |e: &Expr| match &e.kind {
-        ExprKind::Var(v) => Some(v.clone()),
+        ExprKind::Var(v) => Some(v.to_string()),
         _ => None,
     };
     if let ExprKind::Arrow(params, body) = &f.kind
@@ -148,7 +148,7 @@ pub(in crate::lower::mir) fn call_path(e: &Expr) -> Option<String> {
         return None;
     };
     let callee = match &callee.kind {
-        ExprKind::Var(name) => name.clone(),
+        ExprKind::Var(name) => name.to_string(),
         _ => field_path(callee)?,
     };
     Some(format!("{callee}()"))
@@ -160,7 +160,7 @@ pub(in crate::lower::mir) fn field_path(e: &Expr) -> Option<String> {
     match &e.kind {
         ExprKind::Member(of, field) => {
             let of = match &of.kind {
-                ExprKind::Var(name) => name.clone(),
+                ExprKind::Var(name) => name.to_string(),
                 ExprKind::This => "this".to_string(),
                 _ => field_path(of)?,
             };
@@ -312,7 +312,7 @@ pub(super) fn unread_maps(body: &mut Vec<Stmt>) {
                 && let ExprKind::Var(name) = &target.kind
                 && iterators::lazily_mapped(value)
             {
-                assigned.push(name.clone());
+                assigned.push(name.to_string());
             }
         }
     });
@@ -324,7 +324,7 @@ pub(super) fn unread_maps(body: &mut Vec<Stmt>) {
     }
     js::statement_lists(body, &mut |stmts| {
         stmts.retain(|s| match &s.kind {
-            StmtKind::Assign(target, _) => !matches!(&target.kind, ExprKind::Var(name) if gone.contains(name)),
+            StmtKind::Assign(target, _) => !matches!(&target.kind, ExprKind::Var(name) if gone.contains(name.as_str())),
             StmtKind::Let(name, None) => !gone.contains(name),
             _ => true,
         });
@@ -348,7 +348,7 @@ pub(super) fn holed_lists(body: &mut Vec<Stmt>) {
                         ..
                     },
                     value,
-                ) => (name.clone(), value, true),
+                ) => (name.to_string(), value, true),
                 _ => continue,
             };
             let ExprKind::Array(items) = &value.kind else { continue };
@@ -472,7 +472,7 @@ pub(super) fn nulled_as_they_are(body: &mut Vec<Stmt>) {
     js::each_expr_mut(body, &mut |e| {
         if let ExprKind::Binary(Op::Coalesce, made, null) = &e.kind
             && matches!(null.kind, ExprKind::Null)
-            && matches!(&made.kind, ExprKind::Var(x) if defined.contains(x))
+            && matches!(&made.kind, ExprKind::Var(x) if defined.contains(x.as_str()))
         {
             let span = e.span;
             *e = (**made).clone().or_at(span);
@@ -497,12 +497,12 @@ fn lets_never_undefined(body: &[Stmt], declared: &IndexMap<String, usize>) -> In
                     if let ExprKind::Var(name) = &target.kind
                         && value.may_be_undefined()
                     {
-                        not.insert(name.clone());
+                        not.insert(name.to_string());
                     }
                 }
                 StmtKind::Compound(_, target, _) => {
                     if let ExprKind::Var(name) = &target.kind {
-                        not.insert(name.clone());
+                        not.insert(name.to_string());
                     }
                 }
                 StmtKind::Destructure { pattern, .. } => not.extend(pattern.names().into_iter().map(str::to_string)),
@@ -571,7 +571,7 @@ fn shown_defined(test: &Expr) -> Option<String> {
         ),
         _ => false,
     };
-    defined.then(|| var.clone())
+    defined.then(|| var.to_string())
 }
 
 /// `e`, `x ?? null`: `x`, which isn't `undefined` there
@@ -640,7 +640,7 @@ pub(super) fn plain_cells(body: &mut Vec<Stmt>) {
                     cells.push(name.clone());
                 }
                 StmtKind::Const(name, value) if let ExprKind::Var(of) = &value.kind => {
-                    clones.insert(name.clone(), of.clone());
+                    clones.insert(name.clone(), of.to_string());
                 }
                 _ => {}
             }
@@ -695,7 +695,7 @@ pub(super) fn plain_cells(body: &mut Vec<Stmt>) {
         if let ExprKind::Member(of, key) = &e.kind
             && key == js::HELD
             && let ExprKind::Var(v) = &of.kind
-            && let Some(cell) = named.get(v)
+            && let Some(cell) = named.get(v.as_str())
         {
             *kept.entry(cell.clone()).or_default() += 1;
         }
@@ -705,7 +705,7 @@ pub(super) fn plain_cells(body: &mut Vec<Stmt>) {
             if let StmtKind::Const(name, value) = &stmt.kind
                 && let ExprKind::Var(of) = &value.kind
                 && named.contains_key(name)
-                && let Some(cell) = named.get(of)
+                && let Some(cell) = named.get(of.as_str())
             {
                 *kept.entry(cell.clone()).or_default() += 1;
             }

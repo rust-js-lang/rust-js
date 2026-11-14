@@ -15,7 +15,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`!(x < 50)` of a float is `x >= 50`, which a `NaN` makes `false` where Rust's test is `true`",
     file: "src/lower/mir/tidy/comparisons.rs",
-    find: "        ExprKind::Var(v) => numbers.contains(v),\n",
+    find: "        ExprKind::Var(v) => numbers.contains(v.as_str()),\n",
     replace: "        ExprKind::Var(_) => true,\n",
     tests: ["test/corpus.test.ts", "-t", "loop_exits"],
   },
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`$partialCmp(a, b) !== -1` of two values of any shape is `!(a < b)`, which runs a `valueOf` once where the helper may twice (ADR 0966)",
     file: "src/lower/mir/tidy/comparisons.rs",
-    find: "        ExprKind::Var(v) => floats.contains(v),\n",
+    find: "        ExprKind::Var(v) => floats.contains(v.as_str()),\n",
     replace: "        ExprKind::Var(_) => true,\n",
     tests: ["test/lowering-bindings.test.ts", "-t", "js::Unknown's < is JS's"],
   },

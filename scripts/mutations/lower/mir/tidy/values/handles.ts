@@ -132,8 +132,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`Cell::from_mut(&mut *state)` of a flattened state's guard given to a function, or `&mut *state` given to one that gives it back, is a handle on the class's object, `set value(value) { task = value; }`, which assigns the variable, not each key (#659)",
     file: "src/lower/mir/tidy/values/handles.rs",
-    find: "            && matches!(&of.kind, ExprKind::Var(v) if states.contains(v))\n",
-    replace: "            && matches!(&of.kind, ExprKind::Var(v) if states.contains(v) && v.is_empty())\n",
+    find: "            && matches!(&of.kind, ExprKind::Var(v) if states.contains(v.as_str()))\n",
+    replace: "            && matches!(&of.kind, ExprKind::Var(v) if states.contains(v.as_str()) && v.is_empty())\n",
     tests: ["test/corpus.test.ts", "-t", "^flattened_state_handed_on.rs$"],
   },
   {

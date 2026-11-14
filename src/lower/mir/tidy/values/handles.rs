@@ -178,7 +178,7 @@ pub(in crate::lower::mir::tidy) fn read_handles(
         if let ExprKind::Handle(place, js::Storage::AsGiven) = &e.kind
             && let ExprKind::Member(of, key) = &place.kind
             && key == js::HELD
-            && matches!(&of.kind, ExprKind::Var(v) if states.contains(v))
+            && matches!(&of.kind, ExprKind::Var(v) if states.contains(v.as_str()))
         {
             *e = Expr {
                 span: e.span,
@@ -202,7 +202,7 @@ pub(in crate::lower::mir::tidy) fn read_handles(
                 && key == js::HELD
                 && let ExprKind::Var(v) = &of.kind
             {
-                written_whole.insert(v.clone());
+                written_whole.insert(v.to_string());
             }
         }
     });

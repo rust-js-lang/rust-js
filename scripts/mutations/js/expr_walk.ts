@@ -100,7 +100,7 @@ export const mutations: Mutation[] = [
     "file": "src/js/expr_walk.rs",
     "find": "                        \"BigInt\" => matches!(name.as_str(), \"asIntN\" | \"asUintN\"),\n",
     "replace": "                        \"BigInt\" => false,\n",
-    "tests": ["test/corpus.test.ts", "-t", "^value_keys.rs$"],
+    "tests": ["test/corpus.test.ts", "-t", "^(stock_orders|byte_constants_large).rs$"],
     "snapshots": true
   },
   {
@@ -125,8 +125,7 @@ export const mutations: Mutation[] = [
     file: "src/js/expr_walk.rs",
     find: "with(n).filter(|_| !names.contains(&n))?",
     replace: "with(n)?",
-    tests: ["test/corpus.test.ts", "-t", "^iter_next_back.rs$"],
-    snapshots: true,
+    unitTests: "js::expr_walk::tests::a_callback_keeps_a_name_it_binds_from_a_substitution",
   },
   {
     name: "symbol-key-has-effects",

@@ -106,7 +106,7 @@ impl Writes {
                 if let ExprKind::Var(name) = &place.kind
                     && storage.rebinds()
                 {
-                    self.handled.insert(name.clone());
+                    self.handled.insert(name.to_string());
                     self.set(name);
                 }
             }
@@ -176,9 +176,9 @@ impl Writes {
             true => (&mut self.replaced, &mut self.replaced_in_closures),
             false => (&mut self.changed, &mut self.changed_in_closures),
         };
-        all.insert(name.clone());
+        all.insert(name.to_string());
         if in_closure {
-            closures.insert(name.clone());
+            closures.insert(name.to_string());
         }
     }
 }

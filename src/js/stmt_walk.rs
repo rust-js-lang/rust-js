@@ -705,7 +705,7 @@ pub fn this_outside_accessors(body: &mut Vec<Stmt>, name: &str) -> bool {
         if let ExprKind::Handle(place, _) | ExprKind::Pair(place, ..) = &mut e.kind {
             place.each_mut(&mut |part| {
                 if matches!(part.kind, ExprKind::This) {
-                    part.kind = ExprKind::Var(instance.clone());
+                    part.kind = ExprKind::Var(instance.clone().into());
                     kept = true;
                 }
             });

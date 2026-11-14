@@ -144,7 +144,7 @@ impl<'tcx> ModuleFns<'tcx> {
         if !aliases.is_empty() {
             let alias = |e: &mut Expr| {
                 if let js::ExprKind::Var(name) = &e.kind
-                    && let Some(target) = aliases.get(name)
+                    && let Some(target) = aliases.get(name.as_str())
                 {
                     *e = target.clone();
                 }

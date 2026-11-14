@@ -222,7 +222,7 @@ fn advanced(stmts: &mut Vec<Stmt>, label: Option<&str>, advances: &mut Vec<Advan
             if !(l.is_none() || l.as_deref() == label) {
                 return None;
             }
-            let (variable, value, test) = (variable.clone(), value.clone(), test.clone());
+            let (variable, value, test) = (variable.to_string(), value.clone(), test.clone());
             // Its value a `const` made right before it, read nowhere else:
             // what made it, given in its place.
             let at = stmts.len() - 1;

@@ -42,7 +42,7 @@ pub(in crate::lower::mir::tidy) fn bound(body: &[Stmt], guards: &[Guard]) -> Ind
             // they're the name's (#771).
             let (name, value, set) = match &stmt.kind {
                 StmtKind::Assign(target, value) => match &target.kind {
-                    ExprKind::Var(name) => (name, value, 1),
+                    ExprKind::Var(name) => (&**name, value, 1),
                     _ => continue,
                 },
                 StmtKind::Const(name, value) | StmtKind::Let(name, Some(value)) => (name, value, 0),
@@ -234,7 +234,7 @@ impl<'s> Walk<'s, '_> {
         let binding = |s: &'s Stmt| match &s.kind {
             StmtKind::Const(name, value) | StmtKind::Let(name, Some(value)) => Some((name, value, true)),
             StmtKind::Assign(target, value) => match &target.kind {
-                ExprKind::Var(name) if self.told.bound.contains(name) => Some((name, value, false)),
+                ExprKind::Var(name) if self.told.bound.contains(name.as_str()) => Some((&**name, value, false)),
                 _ => None,
             },
             _ => None,
@@ -419,7 +419,7 @@ fn site(list: &[Stmt], i: usize, told: &Told) -> Option<Site> {
     let binding = |s: &Stmt| match &s.kind {
         StmtKind::Assign(target, value) if within(s.span, *pattern) && !s.span.is_none() && pure(value) => {
             match &target.kind {
-                ExprKind::Var(name) => Some((name.clone(), value.clone())),
+                ExprKind::Var(name) => Some((name.to_string(), value.clone())),
                 _ => None,
             }
         }

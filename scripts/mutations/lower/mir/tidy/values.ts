@@ -222,9 +222,9 @@ export const mutations: Mutation[] = [
     breaks:
       "`x === undefined` is taken to show `x` defined, its `?? null` dropped where it's `undefined`",
     file: "src/lower/mir/tidy/values.rs",
-    find: "    defined.then(|| var.clone())\n",
+    find: "    defined.then(|| var.to_string())\n",
     replace:
-      "    Some(var.clone()).filter(|_| defined || matches!(op, Op::Eq))\n",
+      "    Some(var.to_string()).filter(|_| defined || matches!(op, Op::Eq))\n",
     tests: [
       "test/lowering-nullable.test.ts",
       "-t",

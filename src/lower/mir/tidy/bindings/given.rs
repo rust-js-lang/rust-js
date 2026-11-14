@@ -132,7 +132,7 @@ fn given_from(
     let (ExprKind::Var(x), ExprKind::Var(y)) = (&target.kind, &value.kind) else {
         return None;
     };
-    if !kin(x, y) || !declared.contains(x) {
+    if !kin(x, y) || !declared.contains(x.as_str()) {
         return None;
     }
     let captured = captured(&stmts[..given]);
@@ -149,7 +149,7 @@ fn given_from(
         || js::mentions_in(between, x) > 0
         || jumps(between)
         || js::mentions_in(&stmts[given + 1..], y) > 0;
-    (!kept).then(|| (at, x.clone(), y.clone()))
+    (!kept).then(|| (at, x.to_string(), y.to_string()))
 }
 
 /// Whether a `break` or a `continue` is anywhere in `stmts`.

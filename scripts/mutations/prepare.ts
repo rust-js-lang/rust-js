@@ -706,8 +706,8 @@ export const mutations: Mutation[] = [
     name: "module-members-read-together",
     breaks: "constants side by side of a JS module's members, or a global's, are destructured as one Rust value's fields, `export const { log, unstable_setDisableYieldValue } = Scheduler;` (#633)",
     file: "src/prepare.rs",
-    find: "        if !values.contains(value) {\n",
-    replace: "        if false && !values.contains(value) {\n",
+    find: "        if !values.contains(value.as_str()) {\n",
+    replace: "        if false && !values.contains(value.as_str()) {\n",
     tests: ["test/lowering-constants.test.ts", "-t", "a JS module's members are each their own"],
   },
   {

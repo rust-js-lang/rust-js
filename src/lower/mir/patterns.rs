@@ -761,7 +761,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let named: Option<Vec<(Local, String)>> = (bound.iter().zip(locals))
                 .map(
                     |(&(var, _), local)| match self.locals.vars.get(&var).map(|v| &v.place.kind) {
-                        Some(js::ExprKind::Var(name)) => Some((local, name.clone())),
+                        Some(js::ExprKind::Var(name)) => Some((local, name.to_string())),
                         _ => None,
                     },
                 )

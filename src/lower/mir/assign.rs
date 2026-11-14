@@ -574,7 +574,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return false;
         };
         root != local
-            && self.locals.mir.settled.contains(name)
+            && self.locals.mir.settled.contains(name.as_str())
             && !written_before_read(state.body, state.location(), root, local)
     }
 
@@ -1125,7 +1125,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let js::ExprKind::Member(boxed, field) = &place.kind
             && field == js::HELD
             && let js::ExprKind::Var(name) = &boxed.kind
-            && state.naming.boxes().contains(name)
+            && state.naming.boxes().contains(name.as_str())
         {
             return Some((**boxed).clone());
         }

@@ -99,7 +99,7 @@ pub(in crate::lower::mir) fn kept_captures(
     (state.facts.captures().iter().enumerate())
         .filter(|(i, (_, place))| !place || fixed.as_ref().is_some_and(|fixed| fixed[*i]))
         .filter_map(|(_, (capture, _))| match &capture.kind {
-            js::ExprKind::Var(name) => Some(name.clone()),
+            js::ExprKind::Var(name) => Some(name.to_string()),
             _ => None,
         })
         .collect()

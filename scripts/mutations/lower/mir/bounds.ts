@@ -171,7 +171,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a parameter MIR checks an element's place at is copied first, `const index = i;`, and the item a handle, where what's lent there is used after more runs (`at_once` the rest, ADR 0881, amended)",
     file: "src/lower/mir/bounds.rs",
-    find: "js::ExprKind::Var(v) if at_once || self.locals.mir.alike.contains(v));\n",
+    find: "js::ExprKind::Var(v) if at_once || self.locals.mir.alike.contains(v.as_str()));\n",
     replace: "js::ExprKind::Var(v) if at_once);\n",
     tests: [
       "test/lowering-collections.test.ts",

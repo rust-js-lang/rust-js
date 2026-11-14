@@ -55,7 +55,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // each (ADR 0522).
         let taken: Vec<(String, Ty<'tcx>)> = (self.closure_held(def_id).into_iter())
             .filter_map(|(e, ty)| match e.kind {
-                js::ExprKind::Var(name) => Some((name, ty)),
+                js::ExprKind::Var(name) => Some((name.into_word(), ty)),
                 _ => None,
             })
             .collect();
@@ -255,7 +255,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     if let js::ExprKind::Var(name) = &e.kind
                         && by_value.get(i).copied().unwrap_or(false)
                     {
-                        moved.push(name.clone());
+                        moved.push(name.to_string());
                     }
                     (e, false)
                 }

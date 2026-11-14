@@ -533,7 +533,7 @@ fn in_place(
     let names = || {
         let mut others = whole.to_vec();
         statement_lists(&mut others, &mut |stmts| stmts.retain(|s| s != stmt));
-        let mut names: IndexSet<String> = given.into_iter().cloned().collect();
+        let mut names: IndexSet<String> = given.into_iter().cloned().map(String::from).collect();
         names_in(&others, &mut names);
         names_in(beside, &mut names);
         if held && let Some((_, arg)) = parameter {
@@ -1094,7 +1094,7 @@ fn set_where_made(
             && mentions_in(&tried[set + 1..], value) == 0
             && !read_in_a_closure(between, value)
             && (between.iter().all(Stmt::cannot_throw) || binding != Some(variable.as_str()) && unseen(caught));
-        same.then(|| (made, set, variable.clone()))
+        same.then(|| (made, set, variable.to_string()))
     })
 }
 

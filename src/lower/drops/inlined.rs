@@ -542,7 +542,7 @@ fn argument(stmt: &Stmt) -> Option<String> {
     let StmtKind::Expr(e) = &stmt.kind else { return None };
     let ExprKind::Call(_, args) = &e.kind else { return None };
     match &args.first()?.kind {
-        ExprKind::Var(v) => Some(v.clone()),
+        ExprKind::Var(v) => Some(v.to_string()),
         _ => None,
     }
 }
@@ -605,7 +605,7 @@ fn fields_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &str) -> Vec<Strin
     // `const` of its own, its key, where that names nothing else.
     let kept = kept_variables(body, params, guard, &fields);
     let read_as = |(key, value): &(String, Expr)| match &value.kind {
-        ExprKind::Var(v) if !written.contains(key) && kept.contains(v) => Some(v.clone()),
+        ExprKind::Var(v) if !written.contains(key) && kept.contains(v.as_str()) => Some(v.to_string()),
         _ => None,
     };
     if fields
@@ -756,7 +756,7 @@ fn one_field_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &str) -> Option
     // The variable it was made of; or read now, so not by Rust's name for
     // what's only dropped, `_restore`, where `restore` is free.
     let variable = match &item.kind {
-        ExprKind::Var(v) if kept_variables(body, params, guard, &[]).contains(v) => Some(v.clone()),
+        ExprKind::Var(v) if kept_variables(body, params, guard, &[]).contains(v.as_str()) => Some(v.to_string()),
         _ => None,
     };
     let mut names = IndexSet::default();

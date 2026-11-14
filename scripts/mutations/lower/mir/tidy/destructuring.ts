@@ -14,7 +14,7 @@ export const mutations: Mutation[] = [
     name: "tuple-part-set-through-a-handle-unseen",
     breaks: "`match (v.pop(), x.0)`'s `x.0` is read after a guard's call is given a handle on it that sets it (#1035)",
     file: "src/lower/mir/tidy/destructuring.rs",
-    find: "                    parts_set.insert(v.clone());\n",
+    find: "                    parts_set.insert(v.to_string());\n",
     replace: "                    let _ = v;\n",
     tests: ["test/corpus.test.ts", "-t", "^field_rewrite_singles.rs$"],
   },
@@ -268,8 +268,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a variable a guard sets after the tuple is made is read as the guard left it",
     file: "src/lower/mir/tidy/destructuring.rs",
-    find: "if !js::Writes::sets(after, v) && !set_elsewhere.contains(v))",
-    replace: "if !set_elsewhere.contains(v))",
+    find: "if !js::Writes::sets(after, v) && !set_elsewhere.contains(v.as_str()))",
+    replace: "if !set_elsewhere.contains(v.as_str()))",
     tests: ["test/corpus.test.ts", "-t", "tuple_scrutinee_calls"],
   },
   {

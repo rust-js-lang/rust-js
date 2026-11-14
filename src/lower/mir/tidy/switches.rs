@@ -304,7 +304,7 @@ fn named_value(list: &mut Vec<Stmt>, i: usize) {
         if let ExprKind::Var(v) = &mut e.kind
             && *v == temporary
         {
-            *v = name.clone();
+            *v = name.clone().into();
         }
     });
     list.remove(i + 1);

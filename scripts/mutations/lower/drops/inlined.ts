@@ -75,9 +75,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a one-field tuple guard of a variable nothing sets once it's made is a copy of its own, `const restore = previousFiber;`, read in the `finally` (ADR 0705, amended)",
     file: "src/lower/drops/inlined.rs",
-    find: "        ExprKind::Var(v) if kept_variables(body, params, guard, &[]).contains(v) => Some(v.clone()),\n",
+    find: "        ExprKind::Var(v) if kept_variables(body, params, guard, &[]).contains(v.as_str()) => Some(v.to_string()),\n",
     replace:
-      "        ExprKind::Var(v) if kept_variables(body, params, guard, &[]).contains(v) && false => Some(v.clone()),\n",
+      "        ExprKind::Var(v) if kept_variables(body, params, guard, &[]).contains(v.as_str()) && false => Some(v.to_string()),\n",
     tests: [
       "test/lowering-drop-guards.test.ts",
       "-t",
@@ -89,8 +89,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a one-field tuple guard of a variable set once it's made reads as that variable, what it's set to later, not what the guard was made of (ADR 0705, amended)",
     file: "src/lower/drops/inlined.rs",
-    find: "        ExprKind::Var(v) if kept_variables(body, params, guard, &[]).contains(v) => Some(v.clone()),\n",
-    replace: "        ExprKind::Var(v) => Some(v.clone()),\n",
+    find: "        ExprKind::Var(v) if kept_variables(body, params, guard, &[]).contains(v.as_str()) => Some(v.to_string()),\n",
+    replace: "        ExprKind::Var(v) => Some(v.to_string()),\n",
     tests: [
       "test/lowering-drop-guards.test.ts",
       "-t",
@@ -236,9 +236,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a guard's field of a variable stays `const _restoreProps = { prototype, prevProps }`, read `_restoreProps.prototype`",
     file: "src/lower/drops/inlined.rs",
-    find: "        ExprKind::Var(v) if !written.contains(key) && kept.contains(v) => Some(v.clone()),\n",
+    find: "        ExprKind::Var(v) if !written.contains(key) && kept.contains(v.as_str()) => Some(v.to_string()),\n",
     replace:
-      "        ExprKind::Var(v) if !written.contains(key) && kept.contains(v) && false => Some(v.clone()),\n",
+      "        ExprKind::Var(v) if !written.contains(key) && kept.contains(v.as_str()) && false => Some(v.to_string()),\n",
     tests: [
       "test/lowering-drop-guards.test.ts",
       "-t",

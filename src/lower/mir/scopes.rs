@@ -228,7 +228,7 @@ pub(super) fn scope_fields(value: &str, params: &[js::Pattern], out: &mut Vec<St
     for (key, e) in fields {
         let given = e.as_ref().and_then(|e| match &e.kind {
             js::ExprKind::Var(p) if param_names.contains(&p.as_str()) && !assigned(p) && !written.contains(&key) => {
-                Some(p.clone())
+                Some(p.to_string())
             }
             _ => None,
         });

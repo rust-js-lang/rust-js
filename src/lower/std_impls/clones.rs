@@ -539,7 +539,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             .last()
                             .is_some_and(|s| matches!(&s.kind, StmtKind::Const(name, _) if name == held))
                     {
-                        self.names.borrow_mut().swap_remove(held);
+                        self.names.borrow_mut().swap_remove(held.as_str());
                         out.pop();
                         return Ok(written);
                     }

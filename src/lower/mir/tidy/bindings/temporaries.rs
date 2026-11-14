@@ -105,7 +105,7 @@ pub(in crate::lower::mir::tidy) fn readable_temporaries(
             && is_temporary(v)
         {
             given
-                .entry(v.clone())
+                .entry(v.to_string())
                 .or_insert_with(|| Role::Receiver.word().to_string());
         }
         if let ExprKind::Jsx(jsx) = &e.kind {
@@ -115,7 +115,7 @@ pub(in crate::lower::mir::tidy) fn readable_temporaries(
                     && (is_temporary(v) || is_held_arg(v))
                     && key.chars().all(|c| c.is_ascii_alphanumeric())
                 {
-                    given.entry(v.clone()).or_insert_with(|| key.clone());
+                    given.entry(v.to_string()).or_insert_with(|| key.clone());
                 }
             }
             for child in &jsx.children {
@@ -123,7 +123,7 @@ pub(in crate::lower::mir::tidy) fn readable_temporaries(
                     && (is_temporary(v) || is_held_arg(v))
                 {
                     given
-                        .entry(v.clone())
+                        .entry(v.to_string())
                         .or_insert_with(|| Role::Children.word().to_string());
                 }
             }
@@ -213,7 +213,7 @@ pub(in crate::lower::mir::tidy) fn readable_temporaries(
                 if let ExprKind::Var(v) = &mut e.kind
                     && *v == from
                 {
-                    *v = to.clone();
+                    *v = to.clone().into();
                 }
             });
         });

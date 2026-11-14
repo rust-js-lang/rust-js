@@ -305,7 +305,7 @@ fn expr(e: &mut Expr, visitor: &mut Visitor<'_>) {
             replacements
                 .get(symbol)
                 .expect("every symbolic module reference has a dependency")
-                .clone(),
+                .into(),
         );
     }
     match &mut e.kind {

@@ -62,7 +62,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> Expr {
         let held = self.spill(name, value, out);
         if let js::ExprKind::Var(name) = &held.kind {
-            self.locals.mir.made.fixed.insert(name.clone());
+            self.locals.mir.made.fixed.insert(name.to_string());
         }
         held
     }
@@ -94,7 +94,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// now, as `h.node = other` may follow (#988).
     fn reached_where_made(&mut self, e: Expr, out: &mut Vec<Stmt>) -> Expr {
         match &e.kind {
-            js::ExprKind::Var(name) if !self.alike_local(name) && !self.module_names.contains(name) => {
+            js::ExprKind::Var(name) if !self.alike_local(name) && !self.module_names.contains(name.as_str()) => {
                 let name = name.clone();
                 self.spill(Base::Named(&name), e, out)
             }
@@ -694,7 +694,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// nothing changes or a field of plain data in one, of type `ty`.
     pub(super) fn reads_same_anywhere(&self, e: &Expr, ty: Ty<'tcx>) -> bool {
         let alike = |e: &Expr| match &e.kind {
-            js::ExprKind::Var(name) => self.module_names.contains(name) || self.locals.mir.alike.contains(name),
+            js::ExprKind::Var(name) => {
+                self.module_names.contains(name.as_str()) || self.locals.mir.alike.contains(name.as_str())
+            }
             js::ExprKind::Symbol(_) => true,
             // Of a plain variable, but not a read a getter may answer, which
             // may give another value each time (`Expr::reads_same`).
@@ -706,7 +708,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                     root = object;
                 }
-                matches!(&root.kind, js::ExprKind::Var(name) if self.locals.mir.plain.contains(name))
+                matches!(&root.kind, js::ExprKind::Var(name) if self.locals.mir.plain.contains(name.as_str()))
             }
             _ => e.is_constant(),
         };
@@ -754,7 +756,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             root = object;
         }
         !std::ptr::eq(root, &**place)
-            && matches!(&root.kind, js::ExprKind::Var(name) if self.locals.mir.alike.contains(name))
+            && matches!(&root.kind, js::ExprKind::Var(name) if self.locals.mir.alike.contains(name.as_str()))
     }
 
     /// How an `Assert`, `terminator`, isn't an `if` that throws: left out,

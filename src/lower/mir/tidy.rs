@@ -471,7 +471,7 @@ pub(super) fn plain_field(e: &Expr, plain: &IndexSet<String>) -> bool {
         root = of;
     }
     matches!(e.kind, ExprKind::Member(..))
-        && (matches!(&root.kind, ExprKind::Var(v) if plain.contains(v))
+        && (matches!(&root.kind, ExprKind::Var(v) if plain.contains(v.as_str()))
             || field_path(e).is_some_and(|path| plain.contains(&path)))
 }
 
@@ -488,9 +488,9 @@ fn read_past_calls(e: &Expr, set: &IndexSet<String>, plain: &IndexSet<String>) -
     while let ExprKind::Member(of, _) | ExprKind::Index(of, _) = &root.kind {
         root = of;
     }
-    let plain_root = matches!(&root.kind, ExprKind::Var(v) if plain.contains(v) && !set.contains(v));
+    let plain_root = matches!(&root.kind, ExprKind::Var(v) if plain.contains(v.as_str()) && !set.contains(v.as_str()));
     match &e.kind {
-        ExprKind::Var(v) => !set.contains(v),
+        ExprKind::Var(v) => !set.contains(v.as_str()),
         // An item of a plain value, `pair[0]`, as a field of one is.
         ExprKind::Index(_, index) => plain_root && past(index),
         ExprKind::Symbol(_) => true,
@@ -499,11 +499,11 @@ fn read_past_calls(e: &Expr, set: &IndexSet<String>, plain: &IndexSet<String>) -
             // Of a variable no closure sets, a plain field of it, `a.id` of
             // an `&A` with a `Cell` beside it, too (#1045).
             plain_root
-                || (plain_field(e, plain) && matches!(&root.kind, ExprKind::Var(v) if !set.contains(v)))
+                || (plain_field(e, plain) && matches!(&root.kind, ExprKind::Var(v) if !set.contains(v.as_str())))
                 // One of JS's own globals, `Math.max`, as lowering named it
                 // (`Known::BuiltIn`), never a name the crate's may share
                 // (#1674).
-                || matches!(&of.kind, ExprKind::Var(v) if !set.contains(v))
+                || matches!(&of.kind, ExprKind::Var(v) if !set.contains(v.as_str()))
                     && (of.facts.has(js::Known::BuiltIn) || of.facts.has(js::Known::Lasting))
         }
         ExprKind::Jsx(_) => inert_element(e, set),
@@ -511,7 +511,7 @@ fn read_past_calls(e: &Expr, set: &IndexSet<String>, plain: &IndexSet<String>) -
         // value's, an iterator's, a function's `inspect(see)`, which
         // spreading steps, running what it calls (#1015).
         ExprKind::Spread(a) => matches!(&a.kind, ExprKind::Var(v)
-            if !set.contains(v) && plain.contains(&format!("...{v}"))),
+            if !set.contains(v.as_str()) && plain.contains(&format!("...{v}"))),
         ExprKind::Unary(UnaryOp::Not, a) => past(a),
         ExprKind::Binary(
             Op::Eq
@@ -576,7 +576,7 @@ fn inert_element(e: &Expr, changing: &IndexSet<String>) -> bool {
         })
     };
     match &e.kind {
-        ExprKind::Var(v) => !changing.contains(v),
+        ExprKind::Var(v) => !changing.contains(v.as_str()),
         ExprKind::Symbol(_) | ExprKind::Arrow(..) | ExprKind::AsyncArrow(..) => true,
         ExprKind::Array(items) => items.iter().all(|i| inert_element(i, changing)),
         ExprKind::Object(fields, ..) => props(fields),

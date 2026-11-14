@@ -426,7 +426,8 @@ impl Expr {
             (ExprKind::BigInt(x), ExprKind::BigInt(y)) => x == y,
             (ExprKind::BigUint(x), ExprKind::BigUint(y)) => x == y,
             (ExprKind::Bool(x), ExprKind::Bool(y)) => x == y,
-            (ExprKind::Str(x), ExprKind::Str(y)) | (ExprKind::Var(x), ExprKind::Var(y)) => x == y,
+            (ExprKind::Str(x), ExprKind::Str(y)) => x == y,
+            (ExprKind::Var(x), ExprKind::Var(y)) => x == y,
             (ExprKind::Undefined, ExprKind::Undefined) | (ExprKind::Null, ExprKind::Null) => true,
             (ExprKind::Member(x, p), ExprKind::Member(y, q)) => p == q && x.written_alike(y),
             (ExprKind::Index(x, i), ExprKind::Index(y, j)) => x.written_alike(y) && i.written_alike(j),
@@ -822,4 +823,24 @@ pub fn each_declared(stmts: &[Stmt], f: &mut dyn FnMut(&str)) {
         ExprKind::Function(function) => params(&function.params, f),
         _ => {}
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // A callback that binds a name a substitution replaces keeps its own:
+    // of `f((value) => value, value)`, `value` replaced by `x`, the
+    // callback's `value` is its parameter still, a tree used again binding
+    // what it's given in, till each copy's binders are its own (#1681 M3).
+    #[test]
+    fn a_callback_keeps_a_name_it_binds_from_a_substitution() {
+        let callback = Expr::arrow(
+            vec![Pattern::Name("value".into())],
+            vec![StmtKind::Return(Some(Expr::var("value"))).at(Span::NONE)],
+        );
+        let e = Expr::call(Expr::var("f"), vec![callback.clone(), Expr::var("value")]);
+        let replaced = e.substitute_in_callbacks(&|n| (n == "value").then(|| Expr::var("x")));
+        assert!(replaced == Some(Expr::call(Expr::var("f"), vec![callback, Expr::var("x")])));
+    }
 }

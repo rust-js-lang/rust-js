@@ -254,7 +254,7 @@ fn read_together(module: &mut js::Module) {
         let ExprKind::Var(value) = &object.kind else {
             return None;
         };
-        if !values.contains(value) {
+        if !values.contains(value.as_str()) {
             return None;
         }
         let readable = crate::names::is_identifier(property)

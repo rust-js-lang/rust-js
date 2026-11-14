@@ -155,7 +155,7 @@ pub(super) fn reads_only_at_top(e: &Expr, given: &IndexSet<String>) -> bool {
                 || crate::names::is_js_global(name)
                 || part.facts.has(js::Known::Item)
                 || bound.contains(name)
-                || given.contains(name);
+                || given.contains(name.as_str());
         }
     });
     only

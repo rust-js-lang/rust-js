@@ -878,7 +878,7 @@ pub(super) fn is_boolean(e: &Expr, booleans: &IndexSet<String>) -> bool {
     match &e.kind {
         ExprKind::Bool(_) | ExprKind::Unary(UnaryOp::Not, _) => true,
         _ if e.facts.has(js::Known::Boolean) => true,
-        ExprKind::Var(name) => booleans.contains(name),
+        ExprKind::Var(name) => booleans.contains(name.as_str()),
         ExprKind::Member(..) => field_path(e).is_some_and(|path| booleans.contains(&path)),
         ExprKind::Call(..) if call_path(e).is_some_and(|path| booleans.contains(&path)) => true,
         ExprKind::Binary(
@@ -967,7 +967,7 @@ pub(super) fn filtered_guards(stmts: &mut Vec<Stmt>, changing: &IndexSet<String>
             continue;
         };
         let variable = match &x.kind {
-            ExprKind::Var(x) if changing.contains(x) => continue,
+            ExprKind::Var(x) if changing.contains(x.as_str()) => continue,
             ExprKind::Var(x) => Some(x.clone()),
             _ => None,
         };

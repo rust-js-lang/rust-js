@@ -344,7 +344,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether `range` is a variable no step can leave exhausted, a `let`
     /// not `mut` of `a..=b` (`fresh_ranges`, #418).
     pub(in crate::lower) fn never_exhausted(&self, range: &Expr) -> bool {
-        matches!(&range.kind, js::ExprKind::Var(name) if self.locals.mir.fresh_ranges.contains(name))
+        matches!(&range.kind, js::ExprKind::Var(name) if self.locals.mir.fresh_ranges.contains(name.as_str()))
     }
 }
 

@@ -158,7 +158,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a variable of `booleans` isn't a `bool` to `conditional`, `!!expanded`",
     file: "src/lower/mir/tidy/branches.rs",
-    find: "        ExprKind::Var(name) => booleans.contains(name),\n",
+    find: "        ExprKind::Var(name) => booleans.contains(name.as_str()),\n",
     replace: "",
     tests: [
       "test/lowering-branches.test.ts",

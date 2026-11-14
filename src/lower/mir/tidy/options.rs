@@ -70,7 +70,7 @@ fn filtered_names(made: &Stmt) -> Option<(String, String)> {
         return None;
     };
     let ExprKind::Var(v) = &value.kind else { return None };
-    tests_present_first(test, v).then(|| (x.clone(), v.clone()))
+    tests_present_first(test, v).then(|| (x.clone(), v.to_string()))
 }
 
 /// `tested_options`'s rewrite of `made`, the `Option`'s `const`, and
@@ -90,7 +90,7 @@ fn tested_option(
     };
     let ExprKind::Var(v) = &value.kind else { return None };
     let present = value.facts.has(js::Known::Present) || tests_present_first(test, v);
-    if !matches!(none.kind, ExprKind::Undefined) || !present || changing.contains(v) {
+    if !matches!(none.kind, ExprKind::Undefined) || !present || changing.contains(v.as_str()) {
         return None;
     }
     let StmtKind::If(presence, then, otherwise) = &tested.kind else {

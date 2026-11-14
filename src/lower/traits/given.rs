@@ -251,7 +251,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         (self.given.evidence.iter())
             .filter(|(tr, _)| keep(*tr))
             .filter_map(|(_, value)| match &value.kind {
-                js::ExprKind::Var(name) => Some(name.clone()),
+                js::ExprKind::Var(name) => Some(name.to_string()),
                 _ => None,
             })
             .collect()
@@ -271,7 +271,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         for value in given {
             value.clone().each_mut(&mut |part| {
                 if let js::ExprKind::Var(name) = &part.kind {
-                    names.insert(name.clone());
+                    names.insert(name.to_string());
                 }
             });
         }

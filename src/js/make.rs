@@ -218,7 +218,7 @@ impl Expr {
     }
 
     pub fn var(name: &str) -> Expr {
-        Expr::new(ExprKind::Var(name.to_string()))
+        Expr::new(ExprKind::Var(name.into()))
     }
 
     /// The runtime's helper `name` exports, `$cmp`: asked for by being

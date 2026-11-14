@@ -221,7 +221,7 @@ fn copy_read_in_place(stmts: &mut Vec<Stmt>, k: usize, locals: &IndexSet<String>
     let js::ExprKind::Var(of) = &value.kind else {
         return false;
     };
-    if !super::is_temporary(copy) || !locals.contains(of) || value.facts.has(js::Known::LocalRead) {
+    if !super::is_temporary(copy) || !locals.contains(of.as_str()) || value.facts.has(js::Known::LocalRead) {
         return false;
     }
     let (copy, of) = (copy.clone(), Expr::var(of).or_at(value.span));

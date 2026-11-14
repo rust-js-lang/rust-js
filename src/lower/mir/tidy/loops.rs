@@ -75,7 +75,7 @@ fn held_end(stmt: &Stmt, mentions: &IndexMap<String, usize>, captured: &IndexSet
     let [js::Prop::Field(start_key, start), js::Prop::Field(end_key, end)] = props.as_mut_slice() else {
         return None;
     };
-    let same = start.is_constant() || matches!(&start.kind, ExprKind::Var(v) if !captured.contains(v));
+    let same = start.is_constant() || matches!(&start.kind, ExprKind::Var(v) if !captured.contains(v.as_str()));
     if start_key != "start" || end_key != "end" || !same || !end.has_effects() {
         return None;
     }
@@ -158,9 +158,9 @@ pub(super) fn for_of(
         StmtKind::Const(iter, source) => (iter, source),
         StmtKind::Assign(target, source)
             if let ExprKind::Var(iter) = &target.kind
-                && mentions.get(iter) == Some(&2) =>
+                && mentions.get(iter.as_str()) == Some(&2) =>
         {
-            (iter, source)
+            (&**iter, source)
         }
         _ => return None,
     };
@@ -290,7 +290,7 @@ pub(super) fn for_of(
     for (alias, of) in &aliases {
         js::each_expr_mut(&mut body, &mut |e| {
             if matches!(&e.kind, ExprKind::Var(v) if v == alias) {
-                e.kind = ExprKind::Var(of.clone());
+                e.kind = ExprKind::Var(of.clone().into());
             }
         });
     }
@@ -463,7 +463,7 @@ fn counted_range(
     // its code point, past the surrogates, as `$rangeNext` does.
     // Of arithmetic, `i + 1`, an integer's: a `char` has none.
     let counted = start.as_int().is_some()
-        || matches!(&start.kind, ExprKind::Var(v) if numbers.contains(v))
+        || matches!(&start.kind, ExprKind::Var(v) if numbers.contains(v.as_str()))
         || matches!(&start.kind, ExprKind::Unary(UnaryOp::Neg, n) if n.as_int().is_some())
         || matches!(&start.kind, ExprKind::Binary(op, ..) if matches!(op, Op::Add | Op::Sub | Op::Mul
             | Op::Div | Op::Rem | Op::BitOr | Op::BitAnd | Op::BitXor | Op::Shl | Op::Shr | Op::UShr));
@@ -697,7 +697,7 @@ fn from_the_end(
     // JS's `--` steps a number: of a `char`'s range, text, none.
     fn number(e: &Expr, numbers: &IndexSet<String>) -> bool {
         e.as_int().is_some()
-            || matches!(&e.kind, ExprKind::Var(v) if numbers.contains(v))
+            || matches!(&e.kind, ExprKind::Var(v) if numbers.contains(v.as_str()))
             || matches!(&e.kind, ExprKind::Unary(UnaryOp::Neg, n) if n.as_int().is_some())
             || matches!(&e.kind, ExprKind::Member(_, length) if length == "length")
             || matches!(&e.kind, ExprKind::Binary(op, ..) if matches!(op, Op::Sub | Op::Mul | Op::Div | Op::Rem
