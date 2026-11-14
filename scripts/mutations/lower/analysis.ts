@@ -495,8 +495,9 @@ export const mutations: Mutation[] = [
     breaks:
       "an `Rc<dyn Fn>` made of a closure cloned in generic code, `Rc::new(dup(&read))`, isn't counted, so it and `Rc::new(read)` are one JS function, `Rc::ptr_eq` `true` (#1249)",
     file: "src/lower/analysis.rs",
-    find: "                (all_bodies, &self_handles, &cloned, library),\n",
-    replace: "                (all_bodies, &self_handles, &clones::cloned_types(tcx, &[], library), library),\n",
+    find: "                (all_bodies, calls.names(), &self_handles, &cloned, library),\n",
+    replace:
+      "                (all_bodies, calls.names(), &self_handles, &clones::cloned_types(tcx, (&[], calls.names()), library), library),\n",
     tests: ["test/corpus.test.ts", "-t", "^rc_fn_ptr_eq_of_a_closure_cloned_in_generic_code.rs$"],
   },
   {

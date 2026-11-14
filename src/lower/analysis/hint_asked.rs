@@ -74,7 +74,7 @@ pub(in crate::lower) struct Hinted<'tcx> {
 pub(super) fn of_crate<'tcx>(
     tcx: TyCtxt<'tcx>,
     recognition: Recognition<'_, 'tcx>,
-    all_bodies: &[&Body<'tcx>],
+    (all_bodies, names): (&[&Body<'tcx>], &crate::lower::call_graph::Names<'tcx>),
     keeps_capacity: bool,
 ) -> HintAsked<'tcx> {
     let mut asked = HintAsked {
@@ -196,8 +196,8 @@ pub(super) fn of_crate<'tcx>(
             }
         }
     }
-    let callers =
-        (!of_params.is_empty() || !grown.is_empty()).then(|| crate::lower::instances::callers_of(tcx, all_bodies));
+    let callers = (!of_params.is_empty() || !grown.is_empty())
+        .then(|| crate::lower::instances::callers_of(tcx, names, all_bodies));
     // Each `Vec` generic code grows by what one of its callers gives whose
     // JS hint's lower bound isn't std's (#1180's (3)). Where callers can't
     // be seen, a library's `pub` function's, asked of each value its

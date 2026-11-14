@@ -373,19 +373,20 @@ pub(super) fn named(body: &Body<'_>) -> Vec<DefId> {
 }
 
 /// Each function `body` calls or names as a value, as the call graph's
-/// `names` gives them, that's given its type parameters' values: not one of rest
+/// `names` give them, that's given its type parameters' values: not one of rest
 /// arguments given where JS alone reads it (`read_by_js_alone`), which no
 /// call gives anything, so needs no copy of its own (ADR 0051, amended,
 /// #565).
 pub(super) fn given_calls_of<'tcx>(
     tcx: TyCtxt<'tcx>,
+    names: &super::call_graph::Names<'tcx>,
     body: &Body<'tcx>,
 ) -> Vec<(DefId, ty::GenericArgsRef<'tcx>, rustc_span::Span)> {
     let alone = match body.root() {
         Some(_) => read_by_js_alone(tcx, Some(&body.thir), None),
         None => read_by_js_alone(tcx, None, body.mir.as_ref().map(|mir| &mir.body)),
     };
-    (super::call_graph::names(body).into_iter())
+    (names.names_of(body.def_id).iter().copied())
         .filter(|&(callee, _, at)| !alone.iter().any(|&(f, given)| f == callee && given.contains(at)))
         .collect()
 }
@@ -662,13 +663,13 @@ pub(super) fn params_given<'a, 'tcx>(
 /// for an analysis that carries what a caller needs to what it calls.
 pub(super) fn calls_by_caller<'tcx>(
     tcx: TyCtxt<'tcx>,
-    all_bodies: &[&Body<'tcx>],
+    (all_bodies, names): (&[&Body<'tcx>], &super::call_graph::Names<'tcx>),
     called: &dyn Fn(DefId) -> bool,
 ) -> IndexMap<DefId, Vec<(DefId, ty::GenericArgsRef<'tcx>)>> {
     let mut calls: IndexMap<DefId, Vec<(DefId, ty::GenericArgsRef<'tcx>)>> = IndexMap::default();
     for body in all_bodies {
         let caller = tcx.typeck_root_def_id(body.def_id);
-        let named = given_calls_of(tcx, body)
+        let named = given_calls_of(tcx, names, body)
             .into_iter()
             .filter(|&(callee, ..)| called(callee));
         (calls.entry(caller).or_default()).extend(named.map(|(callee, args, _)| (callee, args)));
@@ -685,11 +686,15 @@ pub(super) type Callers<'tcx> = IndexMap<DefId, Vec<(DefId, ty::GenericArgsRef<'
 /// parameters' values, `given_calls_of`'s, not one of rest arguments JS
 /// alone reads, which gives it nothing. Every analysis of what callers give
 /// generic code reads it, `instances_of` and `given_params` alike.
-pub(super) fn callers_of<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>]) -> Callers<'tcx> {
+pub(super) fn callers_of<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    names: &super::call_graph::Names<'tcx>,
+    all_bodies: &[&Body<'tcx>],
+) -> Callers<'tcx> {
     let mut callers: Callers<'tcx> = IndexMap::default();
     for body in all_bodies {
         let caller = tcx.typeck_root_def_id(body.def_id);
-        for (callee, args, span) in given_calls_of(tcx, body) {
+        for (callee, args, span) in given_calls_of(tcx, names, body) {
             callers.entry(callee).or_default().push((caller, args, span));
         }
     }

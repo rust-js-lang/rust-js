@@ -193,10 +193,27 @@ rounds.
    Output unchanged. Mutation closure-constant-functions-uncalled follows
    its code into `lower/call_graph.ts`; fmt-failing-call-of-mir-unseen is
    retargeted. Both are caught.
+4. The rest of the analyses ask `names_of` too, one a commit, each
+   unchanged in output: the type parameters given drops
+   (`drops::drop_params`), whether a `dyn Error` drops
+   (`closures::error_dyns_drop`), what prints and what's written into a
+   writer (`prints::prints`, `shown_by`, `prints_to`; `shown_by` scanned
+   each writer again on each round of its fixed point), and the parameters
+   written into a writer (`written_params::written_params`). Their loops'
+   mutations are caught; instance-writer-prints-unseen and
+   written-into-writers-unseen are retargeted.
+5. The names are scanned once, and the instances' callers ask them too.
+   `call_graph::Names::of` makes the table with what the analysis stands
+   on (ground.rs). That is before the bodies are told which adapters each
+   makes in place, which changes nothing a body names, and before the
+   clones ask the callers' carrier (ADR 1115). The graph then holds the
+   table. `instances::given_calls_of`, the carrier `callers_of` and
+   `calls_by_caller` ask `names_of`, where `given_calls_of` had scanned
+   each body again for each of the seven analyses that built the carrier.
+   The scan, `named_by`, is private to call_graph.rs, and `Names::of` is
+   its one caller. Output unchanged. Mutation
+   generic-clones-unseen-by-rc-counts is retargeted; it and
+   js-alone-given-counted are caught.
 
-test/architecture-calls.test.ts holds the graph built once and asked, and
-the list of files that still run the graph's scan of their own rather than
-ask its table, a list that only shrinks: closures.rs, drops.rs, prints.rs,
-written_params.rs and instances.rs. instances.rs's runs before the
-analyses, since the instances are an input to them; the graph is to be
-built before the instances, so the scan has the graph as its one caller.
+test/architecture-calls.test.ts holds the graph built once and asked. It
+also holds the scan private to the graph and run once, from ground.rs.

@@ -42,7 +42,7 @@ enum Asked<'tcx> {
 pub(super) fn refuse_what_callers_decide<'tcx>(
     tcx: TyCtxt<'tcx>,
     recognition: Recognition<'_, 'tcx>,
-    all_bodies: &[&Body<'tcx>],
+    (all_bodies, names): (&[&Body<'tcx>], &crate::lower::call_graph::Names<'tcx>),
     drops: impl Fn(Ty<'tcx>) -> bool,
 ) {
     let iterator = std_item(tcx, StdItem::Iterator);
@@ -94,7 +94,7 @@ pub(super) fn refuse_what_callers_decide<'tcx>(
     let mut refused = IndexSet::default();
     // Each call, as the callers' instances are carried (ADR 1115): of a
     // library's function the crate compiles itself too, of MIR alone.
-    let callers = crate::lower::instances::callers_of(tcx, all_bodies);
+    let callers = crate::lower::instances::callers_of(tcx, names, all_bodies);
     // Through what calls each caller in turn, as far as 32 calls deep, as a
     // function calling itself with a type made of its own would go on.
     for _ in 0..32 {

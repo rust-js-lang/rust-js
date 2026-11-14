@@ -24,6 +24,8 @@ pub(in crate::lower) struct Ground<'a, 'tcx> {
     /// Whether the crate asks a `Vec`'s capacity, which is kept as std grows
     /// it (ADR 0419).
     pub(super) asks_capacity: bool,
+    /// Each body's names, the call graph's (#1671 change 4 M3).
+    pub(super) names: crate::lower::call_graph::Names<'tcx>,
 }
 
 impl<'a, 'tcx> Ground<'a, 'tcx> {
@@ -125,7 +127,9 @@ pub(in crate::lower) fn of<'a, 'tcx>(
             }
             impls
         });
-    let cloned = clones::cloned_types(tcx, &all_bodies, library);
+    // What each body names, of which the instances' callers are found.
+    let names = crate::lower::call_graph::Names::of(&all_bodies);
+    let cloned = clones::cloned_types(tcx, (&all_bodies, &names), library);
     let recognition = Recognition {
         tcx,
         typing_env: ty::TypingEnv::fully_monomorphized(),
@@ -144,5 +148,6 @@ pub(in crate::lower) fn of<'a, 'tcx>(
         trait_impls,
         cloned,
         asks_capacity,
+        names,
     }
 }

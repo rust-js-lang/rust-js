@@ -15,20 +15,16 @@ const lowering = readdirSync(join(root, "src", "lower"), { recursive: true, enco
   .map((file) => `src/lower/${file}`)
   .sort();
 
-// Each analysis that scans each body for the functions it names, the call
-// graph's own scan, `call_graph::names`, rather than asking the graph's
-// table of them, `Crate::names_of`: a list that only shrinks, each moved
-// onto the graph leaving it. instances.rs's, run before the analyses,
-// whose graph is built after the instances, is the graph's to take next.
-const scansLeft = [
-  "src/lower/instances.rs",
-];
-
+// What each body names, each function it calls or names as a value, is
+// scanned once, by the call graph's `Names::of`, its scan private to it:
+// each analysis, and the instances' callers, ask its table, `names_of`.
 test("an analysis that follows the crate's calls asks the one call graph", () => {
-  const scans = lowering.filter(
-    (file) => file !== "src/lower/call_graph.rs" && /call_graph::names\(|instances::calls_of\(/.test(read(file)),
-  );
-  expect(scans).toEqual(scansLeft);
+  const graph = read("src/lower/call_graph.rs");
+  expect(graph).toContain("\nfn named_by<'tcx>(body: &Body<'tcx>)");
+  expect(graph.match(/named_by\(/g)).toHaveLength(1);
+  const namers = lowering.filter((file) => /Names::of\(/.test(read(file)));
+  expect(namers).toEqual(["src/lower/analysis/ground.rs"]);
+  expect(read("src/lower/instances.rs")).toContain("names.names_of(body.def_id)");
   for (const asks of ["closures", "drops", "fmt_failures", "prints", "written_params"].map((name) => `src/lower/analysis/${name}.rs`)) {
     expect(read(asks)).toContain("graph.names_of(body.def_id)");
   }

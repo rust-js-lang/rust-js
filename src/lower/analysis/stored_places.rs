@@ -180,7 +180,10 @@ fn takes_slice_addresses<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> bool {
 /// passes through and of what it points at; then each struct, enum or
 /// union of the crate's or its libraries' that holds one of those by value,
 /// in a field of any variant, again till none is added.
-pub(in crate::lower) fn stored_places<'tcx>(tcx: TyCtxt<'tcx>, bodies: &[&Body<'tcx>]) -> StoredPlaces<'tcx> {
+pub(in crate::lower) fn stored_places<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    (bodies, names): (&[&Body<'tcx>], &crate::lower::call_graph::Names<'tcx>),
+) -> StoredPlaces<'tcx> {
     // A crate that asks no address, whose pointers are only compared, read
     // and written, `ptr::eq`'s, records nothing: where an object is stored
     // says nothing it asks.
@@ -191,7 +194,7 @@ pub(in crate::lower) fn stored_places<'tcx>(tcx: TyCtxt<'tcx>, bodies: &[&Body<'
             ..StoredPlaces::default()
         };
     }
-    let callers = callers_of(tcx, bodies);
+    let callers = callers_of(tcx, names, bodies);
     let mut pointees: IndexSet<Ty<'tcx>> = IndexSet::default();
     let mut recorded: IndexSet<DefId> = IndexSet::default();
     // Each struct, enum or union type the crate's code has, with its

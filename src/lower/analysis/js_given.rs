@@ -66,7 +66,7 @@ impl JsGiven {
     /// their calls needs, named apart in its module by `name`.
     pub(in crate::lower) fn of_crate<'tcx>(
         recognition: &Recognition<'_, 'tcx>,
-        all_bodies: &[&Body<'tcx>],
+        (all_bodies, names): (&[&Body<'tcx>], &crate::lower::call_graph::Names<'tcx>),
         (items, unboxed): (&IndexSet<DefId>, &IndexSet<(DefId, u32)>),
         copyable: &dyn Fn(DefId) -> bool,
         name: &mut dyn FnMut(DefId, &str) -> String,
@@ -94,7 +94,9 @@ impl JsGiven {
         };
         // What each function's bodies, its closures' too, call, the
         // carrier's (ADR 1115).
-        let calls = crate::lower::instances::calls_by_caller(tcx, all_bodies, &|callee| given.routed.contains(&callee));
+        let calls = crate::lower::instances::calls_by_caller(tcx, (all_bodies, names), &|callee| {
+            given.routed.contains(&callee)
+        });
         // From each function's own JS, a generic one's or not.
         let mut work: Vec<(DefId, Params)> = (calls.keys().copied()).map(|id| (id, given.main(tcx, id))).collect();
         while let Some((caller, params)) = work.pop() {

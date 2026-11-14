@@ -308,8 +308,9 @@ pub(super) type DropGiven<'a, 'tcx> = dyn Fn(DefId, u32, Ty<'tcx>) -> bool + 'a;
 /// `dyn Fn`s may drop, and its consumer counts what it hands (ADR 0959).
 pub(super) fn counted_rcs<'tcx>(
     tcx: TyCtxt<'tcx>,
-    (all_bodies, self_handles, cloned, library): (
+    (all_bodies, names, self_handles, cloned, library): (
         &[&Body<'tcx>],
+        &crate::lower::call_graph::Names<'tcx>,
         &super::SelfHandles<'tcx>,
         &super::clones::Cloned<'tcx>,
         bool,
@@ -672,7 +673,7 @@ pub(super) fn counted_rcs<'tcx>(
     // or an impl's, a trait's or an impl's method called by dictionary, a
     // `pub` one JS or a consumer calls, or one given what's resolved no
     // further (#1009).
-    let callers = (!origins.is_empty()).then(|| callers_of(tcx, all_bodies));
+    let callers = (!origins.is_empty()).then(|| callers_of(tcx, names, all_bodies));
     let instances: IndexMap<Ty<'tcx>, Option<IndexSet<Ty<'tcx>>>> = (origins.iter())
         .map(|(&pointee, of)| {
             let callers = callers.as_ref().expect("callers of what has origins");

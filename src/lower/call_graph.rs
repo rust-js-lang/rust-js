@@ -30,7 +30,31 @@ use rustc_span::def_id::DefId;
 pub(in crate::lower) struct Crate<'a, 'tcx> {
     pub(in crate::lower) bodies: IndexMap<DefId, &'a mir::Body<'tcx>>,
     pub(in crate::lower) graph: CallGraph,
-    names: IndexMap<DefId, Vec<Named<'tcx>>>,
+    names: Names<'tcx>,
+}
+
+/// Each body's names, of every body the analyses read (`Names::of`): made
+/// with what the analysis stands on, before the bodies are told which
+/// adapters each makes in place, which changes nothing a body names, and
+/// before the instances' callers are asked; then the call graph's.
+pub(in crate::lower) struct Names<'tcx>(IndexMap<DefId, Vec<Named<'tcx>>>);
+
+impl<'tcx> Names<'tcx> {
+    /// The names of each of `all_bodies`, each once.
+    pub(in crate::lower) fn of(all_bodies: &[&Body<'tcx>]) -> Self {
+        let mut names: IndexMap<DefId, Vec<Named<'tcx>>> = IndexMap::default();
+        for body in all_bodies {
+            let had = names.insert(body.def_id, named_by(body));
+            assert!(had.is_none(), "a body the analyses read twice, a bug of rust-js's");
+        }
+        Names(names)
+    }
+
+    /// Each function the body of `id`, one the analyses read, names, called
+    /// or as a value, as `named_by` gives them.
+    pub(in crate::lower) fn names_of(&self, id: DefId) -> &[Named<'tcx>] {
+        &self.0[&id]
+    }
 }
 
 /// A function a body names, called or as a value: it, its generic
@@ -39,16 +63,25 @@ pub(in crate::lower) type Named<'tcx> = (DefId, ty::GenericArgsRef<'tcx>, Span);
 
 impl<'tcx> Crate<'_, 'tcx> {
     /// Each function the body of `id`, one the analyses read, names, called
-    /// or as a value, as `names` gives them.
+    /// or as a value (`Names::names_of`).
     pub(in crate::lower) fn names_of(&self, id: DefId) -> &[Named<'tcx>] {
-        &self.names[&id]
+        self.names.names_of(id)
+    }
+
+    /// Each body's names.
+    pub(in crate::lower) fn names(&self) -> &Names<'tcx> {
+        &self.names
     }
 }
 
 /// The crate's one call graph (`Crate`), of the MIR the emitter reads of
-/// `all_bodies`' own functions and of the crate's constants', and the names
-/// of each of `all_bodies`.
-pub(in crate::lower) fn crate_graph<'a, 'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&'a Body<'tcx>]) -> Crate<'a, 'tcx> {
+/// `all_bodies`' own functions and of the crate's constants', and `names`,
+/// those of each of `all_bodies`.
+pub(in crate::lower) fn crate_graph<'a, 'tcx>(
+    tcx: TyCtxt<'tcx>,
+    all_bodies: &[&'a Body<'tcx>],
+    names: Names<'tcx>,
+) -> Crate<'a, 'tcx> {
     let mut callers: IndexMap<DefId, &'a mir::Body<'tcx>> = (all_bodies.iter())
         .filter(|body| body.def_id.is_local())
         .filter_map(|body| Some((body.def_id, &body.mir.as_ref()?.body)))
@@ -66,11 +99,6 @@ pub(in crate::lower) fn crate_graph<'a, 'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&
     }
     let listed: Vec<(DefId, &mir::Body<'tcx>)> = callers.iter().map(|(&id, &body)| (id, body)).collect();
     let graph = call_graph(tcx, &listed);
-    let mut names: IndexMap<DefId, Vec<Named<'tcx>>> = IndexMap::default();
-    for body in all_bodies {
-        let had = names.insert(body.def_id, self::names(body));
-        assert!(had.is_none(), "a body the analyses read twice, a bug of rust-js's");
-    }
     Crate {
         bodies: callers,
         graph,
@@ -81,8 +109,8 @@ pub(in crate::lower) fn crate_graph<'a, 'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&
 /// Each function `body` names, called or as a value, of its generic
 /// arguments there, and where: as its THIR names it, or, of a body of MIR
 /// alone, a library's the crate compiles (ADR 0914), its MIR. The graph's
-/// scan, `Crate::names_of`'s.
-pub(in crate::lower) fn names<'tcx>(body: &Body<'tcx>) -> Vec<Named<'tcx>> {
+/// scan, `Names::of`'s, its one caller.
+fn named_by<'tcx>(body: &Body<'tcx>) -> Vec<Named<'tcx>> {
     use rustc_middle::thir::ExprKind;
     if body.root().is_some() {
         return (body.thir.exprs.iter())

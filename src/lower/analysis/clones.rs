@@ -104,14 +104,18 @@ impl<'tcx> Cloned<'tcx> {
 /// clone, to a fixed point; of a `library`, what each of its public
 /// functions gives behind an `impl .. + Clone` too, which any consumer may
 /// clone (#1032).
-pub(super) fn cloned_types<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>], library: bool) -> Cloned<'tcx> {
+pub(super) fn cloned_types<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    (all_bodies, names): (&[&Body<'tcx>], &crate::lower::call_graph::Names<'tcx>),
+    library: bool,
+) -> Cloned<'tcx> {
     let mut cloned = Cloned {
         types: IndexSet::default(),
         compiled_here: (all_bodies.iter())
             .flat_map(|body| mir_called_clones(tcx, body))
             .map(|ty| tcx.erase_and_anonymize_regions(ty))
             .collect(),
-        callers: crate::lower::instances::callers_of(tcx, all_bodies),
+        callers: crate::lower::instances::callers_of(tcx, names, all_bodies),
         owners: IndexMap::default(),
     };
     // A clone in generic code of a type of its own parameters, `Chain<J,

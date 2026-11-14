@@ -452,14 +452,14 @@ fn ref_mut_holders<'tcx>(
 /// function, and an `Option` of one is its own copy.
 pub(in crate::lower) fn copied_params<'tcx>(
     tcx: TyCtxt<'tcx>,
-    all_bodies: &[&Body<'tcx>],
+    (all_bodies, names): (&[&Body<'tcx>], &crate::lower::call_graph::Names<'tcx>),
     fns: &IndexMap<DefId, FnInfo>,
     foreign: &crate::lower::library::Foreign<'_, 'tcx>,
 ) -> IndexSet<(DefId, u32)> {
     let bounded = |id| copy_bounded(tcx, id);
     given_params(
         tcx,
-        all_bodies,
+        (all_bodies, names),
         (fns.keys(), &|id| fns.contains_key(&id)),
         foreign,
         &bounded,
@@ -476,7 +476,7 @@ pub(in crate::lower) fn copied_params<'tcx>(
 /// clone is one more of the count.
 pub(in crate::lower) fn cloned_params<'tcx>(
     tcx: TyCtxt<'tcx>,
-    all_bodies: &[&Body<'tcx>],
+    (all_bodies, names): (&[&Body<'tcx>], &crate::lower::call_graph::Names<'tcx>),
     items: &IndexSet<DefId>,
     foreign: &crate::lower::library::Foreign<'_, 'tcx>,
     counted: &super::Counted<'tcx>,
@@ -485,7 +485,7 @@ pub(in crate::lower) fn cloned_params<'tcx>(
     let itself = |ty| clones_itself(tcx, counted, ty);
     given_params(
         tcx,
-        all_bodies,
+        (all_bodies, names),
         (items.iter(), &|id| items.contains(&id)),
         foreign,
         &bounded,
@@ -503,14 +503,14 @@ pub(in crate::lower) fn cloned_params<'tcx>(
 /// says; a library's consumer that gives one compiles its own (ADR 0914).
 pub(in crate::lower) fn unboxed_params<'tcx>(
     recognition: &crate::lower::recognition::Recognition<'_, 'tcx>,
-    all_bodies: &[&Body<'tcx>],
+    (all_bodies, names): (&[&Body<'tcx>], &crate::lower::call_graph::Names<'tcx>),
     items: &IndexSet<DefId>,
 ) -> IndexSet<(DefId, u32)> {
     let tcx = recognition.tcx;
     let foreign = recognition.foreign;
     let nullish = given_params(
         tcx,
-        all_bodies,
+        (all_bodies, names),
         (items.iter(), &|id| items.contains(&id)),
         foreign,
         &|id| type_params(tcx, id),
@@ -551,13 +551,13 @@ pub(super) fn type_params(tcx: TyCtxt<'_>, id: DefId) -> Vec<u32> {
 /// policy of a function seen whole (ADR 1115).
 fn given_params<'a, 'tcx>(
     tcx: TyCtxt<'tcx>,
-    all_bodies: &[&Body<'tcx>],
+    (all_bodies, names): (&[&Body<'tcx>], &crate::lower::call_graph::Names<'tcx>),
     (items, is_item): (impl Iterator<Item = &'a DefId>, &dyn Fn(DefId) -> bool),
     foreign: &crate::lower::library::Foreign<'_, 'tcx>,
     bounded: &dyn Fn(DefId) -> Vec<u32>,
     itself: &dyn Fn(Ty<'tcx>) -> bool,
 ) -> IndexSet<(DefId, u32)> {
-    let callers = crate::lower::instances::callers_of(tcx, all_bodies);
+    let callers = crate::lower::instances::callers_of(tcx, names, all_bodies);
     crate::lower::instances::params_given(
         tcx,
         &callers,

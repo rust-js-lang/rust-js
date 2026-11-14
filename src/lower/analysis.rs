@@ -337,6 +337,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         trait_impls,
         cloned,
         asks_capacity,
+        names,
     } = ground;
     if !bindings::validate(tcx)
         || !super::declarations::validate_types(tcx)
@@ -414,7 +415,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // The crate's one call graph, its constants' bodies in it, and each
     // body's names (#1671 change 4 M3): each analysis that walks its calls,
     // or asks what a body names, asks it.
-    let calls = crate::lower::call_graph::crate_graph(tcx, all_bodies);
+    let calls = crate::lower::call_graph::crate_graph(tcx, all_bodies, names);
     let closures: IndexMap<DefId, &Body<'tcx>> = closures.into_iter().map(|b| (b.def_id, b)).collect();
 
     // What each module holds of a binding, and where a path reads one
@@ -632,7 +633,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         loop {
             let counted = counted_rcs(
                 tcx,
-                (all_bodies, &self_handles, &cloned, library),
+                (all_bodies, calls.names(), &self_handles, &cloned, library),
                 (params_may_drop, &reached.counted_rcs, &|owner, index, pointee| {
                     library && !foreign.counts_no_rc_of_its_type(pointee) || given.contains(&(owner, index))
                 }),
@@ -787,7 +788,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     }
     // What generic code asks the hint of, made knowing it where it's made,
     // by the makers of what's stepped from its back (#1236).
-    let hint_asked = hint_asked::of_crate(tcx, recognition, all_bodies, keeps_capacity);
+    let hint_asked = hint_asked::of_crate(tcx, recognition, (all_bodies, calls.names()), keeps_capacity);
     back_stepped.typed.extend(hint_asked.knowing);
     let asks_whole = |kind| chars_asked::asks_whole(tcx, recognition, all_bodies, (library, keeps_capacity), kind);
     let chars_whole = asks_whole(crate::lower::recognition::TextIter::Chars);
@@ -795,7 +796,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // What generic code compares by `eq` of two `TrustedLen` iterators
     // given it, which it can't count: refused where comparing runs code
     // (#386).
-    callers_decide::refuse_what_callers_decide(tcx, recognition, all_bodies, |item| {
+    callers_decide::refuse_what_callers_decide(tcx, recognition, (all_bodies, calls.names()), |item| {
         super::drops::drop_runs(recognition, (library, &closure_facts), &counted, item)
     });
     // A closure cloned apart, made by a function of what it holds, where a
@@ -820,10 +821,10 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     let runs_settled = |ty: Ty<'tcx>, owner: DefId| dropping.runs(typing_env_where(ty, owner), ty);
     // The type parameters whose `Clone` bound takes its dictionary: those a
     // caller gives what isn't its own clone (ADR 0914, amended).
-    let clones = cloned_params(tcx, all_bodies, &item_set, &foreign, &counted);
+    let clones = cloned_params(tcx, (all_bodies, calls.names()), &item_set, &foreign, &counted);
     // The type parameters a `Some` of which is the value: those no caller
     // gives what may look like `None` (ADR 0051, amended).
-    let unboxed = unboxed_params(&recognition, all_bodies, &item_set);
+    let unboxed = unboxed_params(&recognition, (all_bodies, calls.names()), &item_set);
 
     // What each body may borrow, of the crate's cells (ADR 0580).
     let cell_borrows = CellBorrows::of_crate(
@@ -1034,7 +1035,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         .filter(|ty| !forgotten.contains(&ty.to_string()))
         .collect();
     let changed_vecs = vec_uses::changed_vecs(tcx, all_bodies);
-    let stored_places = stored_places::stored_places(tcx, all_bodies);
+    let stored_places = stored_places::stored_places(tcx, (all_bodies, calls.names()));
     // What a caller gives generic code whose drop runs something, a value
     // of a destructor, a counted `Rc`'s or a guard's: the one answer the
     // lowering's drops give (ADR 0451).
@@ -1044,7 +1045,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     let runs = runs_settled;
     let drop_params = drop_params(tcx, (all_bodies, &calls), &item_set, &foreign, library, runs);
     let drops_any = drops::drops_any(tcx, all_bodies, runs);
-    let copied = copied_params(tcx, all_bodies, &fns, &foreign);
+    let copied = copied_params(tcx, (all_bodies, calls.names()), &fns, &foreign);
     let stepped = iterator_steps::stepped_params(tcx, all_bodies, &fns, &foreign);
     // The functions JS calls, whose JS takes their type parameters as JS
     // gives them, and the copies their crate's calls need otherwise, each
@@ -1073,7 +1074,13 @@ pub(super) fn analyze_crate<'a, 'tcx>(
                 None => crate::names::fresh_in(taken.entry(info.module).or_default(), &base),
             }
         };
-        JsGiven::of_crate(&recognition, all_bodies, (&item_set, &unboxed), &copyable, &mut name)
+        JsGiven::of_crate(
+            &recognition,
+            (all_bodies, calls.names()),
+            (&item_set, &unboxed),
+            &copyable,
+            &mut name,
+        )
     };
     let given = crate::lower::traits::Given {
         copied: &copied,
