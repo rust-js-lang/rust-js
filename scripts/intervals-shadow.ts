@@ -10,10 +10,10 @@ import { mkdtempSync, readFileSync, readdirSync, writeFileSync, existsSync } fro
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { directives } from "../test/corpus-cases";
+import { compiler } from "../test/support";
 import { atOnce } from "./shard";
 
 const root = join(import.meta.dir, "..");
-const compiler = join(root, "target/debug/rust-js");
 const corpus = join(root, "test/corpus");
 const outAt = process.argv.indexOf("--out");
 const out = outAt >= 0 ? process.argv[outAt + 1] : undefined;

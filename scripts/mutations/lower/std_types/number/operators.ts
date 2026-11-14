@@ -123,7 +123,7 @@ export const mutations: Mutation[] = [
     breaks:
       "an operator the body's ranges show in range keeps its wrap, `(index + 1) * 2 - 1` as `(Math.imul((index + 1) >>> 0, 2) - 1) >>> 0`",
     file: "src/lower/std_types/number/operators.rs",
-    find: "        let exact = arithmetic && proved;\n",
+    find: "        let exact = arithmetic && (proved || thir_exact);\n",
     replace: "        let exact = arithmetic && false;\n",
     tests: ["test/lowering-integer-ranges.test.ts", "-t", "integer ranges show"],
   },
@@ -269,5 +269,21 @@ export const mutations: Mutation[] = [
     find: "                    (true, false) if v.as_bigint().is_some() => target.wrap(v),\n",
     replace: "                    (true, false) if let Some(n) = v.as_bigint() => target.wrap(Expr::int(n)),\n",
     tests: ["test/corpus.test.ts", "-t", "^wide_literals_cast_narrower.rs$"],
+  },
+  {
+    name: "bridge-off",
+    breaks: "where MIR's intervals don't prove a wrap THIR's ranges know never happens, it's kept, so `flushed`'s `i += 1` past `with_borrow`'s `get(i)` is `(i + 1) >>> 0` and React's port regresses (ADR 1137)",
+    file: "src/lower/std_types/number/operators.rs",
+    find: "        let exact = arithmetic && (proved || thir_exact);\n",
+    replace: "        let exact = arithmetic && proved;\n",
+    tests: ["test/lowering-integer-ranges.test.ts", "-t", "an index an item is there"],
+  },
+  {
+    name: "bridged-unlisted",
+    breaks: "a wrap the bridge leaves out is no `bridged` line of the shadow, so test/intervals-bridged.txt's entries go stale unseen and the bridge can grow (ADR 1137)",
+    file: "src/lower/std_types/number/operators.rs",
+    find: "            crate::lower::analysis::shadow_bridged(self.tcx, self.frame.owner, span);\n",
+    replace: "",
+    tests: ["test/intervals-bridged.test.ts"],
   },
 ];

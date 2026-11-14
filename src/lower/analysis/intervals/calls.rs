@@ -42,6 +42,32 @@ impl<'tcx> Walk<'_, 'tcx> {
                 _ => {}
             }
         }
+        // A `Vec`'s `push`: what it's given a `&mut` of holds an item at
+        // least (`pushes`); and its `len()`, of one that does, is at least
+        // one, `prev_length - 1` of `prev_length = properties.len()` past a
+        // push (#1700).
+        let given = args.first().and_then(|arg| arg.node.place()).and_then(|p| p.as_local());
+        if let Some((callee, callee_args)) = func.const_fn_def()
+            && let Some(given) = given
+        {
+            match slice_length(self.tcx, callee, callee_args) {
+                Some(SliceLength::Push) => {
+                    if let Some(&root) = state.lending.get(&given) {
+                        after.pushed.insert(root);
+                    }
+                }
+                Some(SliceLength::Len) if state.pushed.contains(&given) => {
+                    let receiver = args.first().map(|arg| arg.node.ty(self.body, self.tcx));
+                    if let Some(most) = receiver.and_then(|ty| self.length_of_collection(ty)) {
+                        after.intervals[local] = Some(Interval {
+                            lo: most.lo.max(1),
+                            ..most
+                        });
+                    }
+                }
+                _ => {}
+            }
+        }
         // An integer's `min` or `max`: between its operands, and
         // below what the one, or both, are below, a length held
         // among them; `xs[i.min(xs.len() - 1)]`.

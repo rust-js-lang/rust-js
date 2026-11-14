@@ -18,7 +18,7 @@ function first(items) {
 function makeSystem(offset) {
   return {
     add(a, b) {
-      return (((a + b) >>> 0) + offset) >>> 0;
+      return ((a + b) >>> 0) + offset;
     },
     log(s) {
       console.log(`log: ${s}`);

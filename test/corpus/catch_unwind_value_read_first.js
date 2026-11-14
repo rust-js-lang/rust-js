@@ -47,7 +47,7 @@ function checked(limit) {
 function summed(n, limit) {
   let twice;
   try {
-    twice = (n * 2) >>> 0;
+    twice = n * 2;
   } catch (error) {
     $catchable(error);
     return 0;

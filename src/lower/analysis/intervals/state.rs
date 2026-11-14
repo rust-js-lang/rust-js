@@ -72,6 +72,12 @@ pub(super) struct State {
     /// the index, and the most an index below the slice's length is, which
     /// its `Some` knows it is.
     pub(super) gets: IndexMap<Local, (Local, i128)>,
+    /// Each local holding a `Vec`, or a reference to one, a `push` made
+    /// hold an item at least, nothing lending it `&mut` since (#1700).
+    pub(super) pushed: IndexSet<Local>,
+    /// Each `&mut` of a `Vec` whole, `&mut _1` or `&mut (*_1)`, by the
+    /// local it's held in: what it lends, a `push` of it makes pushed.
+    pub(super) lending: IndexMap<Local, Local>,
 }
 
 /// A range of integers `next()` alone steps (`stepped_ranges`): what its
@@ -166,6 +172,11 @@ impl State {
                 .filter(|&(k, v)| other.gets.get(k) == Some(v))
                 .map(|(&k, &v)| (k, v))
                 .collect(),
+            pushed: (self.pushed.iter())
+                .filter(|l| other.pushed.contains(*l))
+                .copied()
+                .collect(),
+            lending: both(&self.lending, &other.lending),
         }
     }
 

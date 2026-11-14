@@ -12,7 +12,7 @@ function countdown(step) {
     if (n < step) {
       return n;
     }
-    return (1 + countdown((n - step) >>> 0)) >>> 0;
+    return (1 + countdown(n - step)) >>> 0;
   };
   return countdown;
 }

@@ -250,8 +250,13 @@ pub fn every_other(v: &[u32]) -> u32 {
     total
 }
 `);
-  const out = runSync([compiler, join(dir, "case.rs"), "-o", join(dir, "case.js"), "--", "--edition=2024", "--crate-type=lib"], dir, 60_000);
+  const log = join(dir, "shadow.txt");
+  writeFileSync(log, "");
+  const out = runSync([compiler, "--intervals-shadow", log, join(dir, "case.rs"), "-o", join(dir, "case.js"), "--", "--edition=2024", "--crate-type=lib"], dir, 60_000);
   expect(out.code, out.stderr).toBe(0);
+  // Each by MIR alone: none left to the bridge, which takes THIR's ranges'
+  // verdict where MIR doesn't prove a wrap (ADR 1137).
+  expect(readFileSync(log, "utf8").split("\n").filter((line) => line.startsWith("bridged\t"))).toEqual([]);
   const js = readFileSync(join(dir, "case.js"), "utf8");
   expect(js).toContain("return (v[i >>> 1] + v[i]) >>> 0;");
   // `i <= v.len()` at the loop's head, of `i = 0` by its interval and

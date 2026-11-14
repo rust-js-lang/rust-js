@@ -11,6 +11,21 @@ import { underLoad } from "../scripts/timing";
 
 beforeAll(buildReact, 600_000);
 
+// `lib.rs` of `dir` compiled to `lib.js`, and the functions it leaves to
+// the bridge (ADR 1137): each with a wrap THIR's ranges leave out that MIR's
+// intervals don't prove. A test of a rule of MIR's says which, none where
+// the rule is all it needs, so the rule lost fails the test though THIR's
+// ranges, which the bridge takes, write the same JS.
+function bridgedOf(dir: string, args: string[] = []): string[] {
+  const log = join(dir, "shadow.txt");
+  writeFileSync(log, "");
+  run([compiler, "--intervals-shadow", log, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...args]);
+  return readFileSync(log, "utf8")
+    .split("\n")
+    .filter((line) => line.startsWith("bridged\t"))
+    .map((line) => line.split("\t")[1]);
+}
+
 // ADR 0576: what a body's integers can be, walked as it runs, shows an index
 // in bounds and an operator that can't wrap: React's scheduler heap reads
 // `heap[leftIndex]`, `(index + 1) * 2 - 1` and a swap of two items, as
@@ -253,7 +268,7 @@ pub fn upto(n: u8) -> u8 {
     i
 }
 `);
-  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  expect(bridgedOf(dir, ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target])).toEqual([]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   // \`i + 1 < n\` puts \`i\` below \`n - 1\`, at most 253 of a \`u8\`: its \`+= 1\`
   // can't wrap, and it settles round the loop at most 254.
@@ -364,7 +379,7 @@ pub fn sum_below(xs: &[u32], n: usize) -> u32 {
     sum
 }
 `);
-  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  expect(bridgedOf(dir)).toEqual([]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("    found.push(n - k - 1);\n");
   expect(js).toContain("    found.push(line - k + 1);\n");
@@ -661,9 +676,9 @@ pub fn first_of_some(keys: &[String]) -> String {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  // `prevLength - 1` keeps its wrap: that `push` made the vector at least
-  // one long is what MIR's intervals don't know yet (#1700).
-  expect(js).toContain('properties[(prevLength - 1) >>> 0][1] = "unchanged";');
+  // `prevLength - 1` is JS's own: the `push` before made the vector at
+  // least one long (#1700).
+  expect(js).toContain('properties[prevLength - 1][1] = "unchanged";');
   expect(js).toContain('return length === 1 && keys[0] === "children";');
   expect(js).toContain("length >= 2 ? keys[1] : $index(keys, 0)");
   const lib = await import(join(dir, "lib.js"));
@@ -676,10 +691,108 @@ pub fn first_of_some(keys: &[String]) -> String {
   expect(lib.firstOfSome(["ab", "c"])).toBe("c");
   expect(() => lib.firstOfSome([])).toThrow("index out of bounds");
   const of = performanceTrack();
-  // As above, its wrap kept until MIR knows `push`'s length (#1700).
-  expect(of("addObjectDiffToProperties")).toContain("properties[(prevLength - 1) >>> 0][1] =");
+  // As above, past its `push` (#1700).
+  expect(of("addObjectDiffToProperties")).toContain("properties[prevLength - 1][1] =");
   expect(of("addValueToProperties")).toContain('(propsLength === 1 && propsKeys[0] === "children" && key == null)');
 }, underLoad(60_000));
+
+// A counter a loop breaks out of at a bound, which a `continue` brings back
+// to the loop's head as it was, React's `estimateBandwidth`'s `count` and
+// `addObjectToProperties`' `addedProperties`: widened to the constant it's
+// compared with, not its type's, which no narrowing leaves, `count + 1` is
+// JS's own (ADR 1137). And past a `push`, a vector's length at least one
+// (#1700), until it's lent `&mut` again, written or pointed to raw.
+test("a counter a loop breaks out of at a bound, and a length past a push, never wrap", async () => {
+  const dir = fixture("counter-thresholds");
+  writeFileSync(join(dir, "lib.rs"), `pub fn average(items: &[f64]) -> f64 {
+    let mut count = 0;
+    let mut total = 0.0;
+    let mut i = 0;
+    while i < items.len() {
+        if items[i] < 0.0 {
+            i += 1;
+            continue;
+        }
+        total += items[i];
+        i += 1;
+        count += 1;
+        if count > 10 {
+            break;
+        }
+    }
+    if count > 0 { total / f64::from(count) } else { 0.0 }
+}
+
+pub fn shown(keys: &[&str]) -> u32 {
+    let mut added: u32 = 0;
+    for key in keys {
+        if !key.starts_with('_') {
+            added += 1;
+            if added >= 3 {
+                break;
+            }
+        }
+    }
+    added
+}
+
+pub fn last(mut items: Vec<u32>) -> u32 {
+    items.push(7);
+    items[items.len() - 1]
+}
+
+pub fn cleared(v: &mut Vec<u32>, f: fn(&mut Vec<u32>)) -> usize {
+    v.push(1);
+    f(v);
+    v.len() - 1
+}
+
+pub fn before(v: &mut Vec<u32>) -> usize {
+    let n = v.len();
+    v.push(1);
+    n - 1
+}
+
+pub fn one_branch(v: &mut Vec<u32>, b: bool) -> usize {
+    if b {
+        v.push(1);
+    }
+    v.len() - 1
+}
+
+pub fn popped(mut v: Vec<u32>) -> usize {
+    v.push(1);
+    v.pop();
+    v.len() - 1
+}
+
+pub fn through_raw(mut v: Vec<u32>) -> usize {
+    let p = &raw mut v;
+    v.push(1);
+    unsafe { (*p).clear() };
+    v.len() - 1
+}
+`);
+  expect(bridgedOf(dir)).toEqual([]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("    count++;\n");
+  expect(js).toContain("      added++;\n");
+  expect(js).toContain("  return items[items.length - 1];\n");
+  // Where the vector may be empty again, or the length is the one before
+  // the push, `- 1` keeps its wrap.
+  expect(js.match(/\(v\.length - 1\) >>> 0/g)).toHaveLength(4);
+  expect(js).toContain("  return (n - 1) >>> 0;\n");
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.average(Array.from({ length: 20 }, (_, i) => i))).toBe(5);
+  expect(lib.average([-1, 4])).toBe(4);
+  expect(lib.shown(["a", "_b", "c", "d", "e"])).toBe(3);
+  expect(lib.last([1, 2])).toBe(7);
+  expect(lib.cleared([5], (v: number[]) => { v.length = 0; })).toBe(4294967295);
+  expect(lib.before([])).toBe(4294967295);
+  expect(lib.oneBranch([], false)).toBe(4294967295);
+  expect(lib.popped([])).toBe(4294967295);
+  expect(lib.throughRaw([])).toBe(4294967295);
+});
 
 // React's ReactPostPaintCallback, ported: `while let Some(callback) =
 // CALLBACKS.with_borrow(|c| c.get(i).copied()) { callback(t); i += 1; }`.
@@ -736,12 +849,12 @@ pub fn skipped(items: &[u32], i: usize) -> usize {
     if let Some(&item) = items.get(i) { item as usize } else { i + 1 }
 }
 `);
-  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  expect(bridgedOf(dir, ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target])).toEqual(["flushed"]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  // `summed`'s; `flushed`'s `get(i)` is in `with_borrow`'s closure, whose
-  // `Some` MIR's intervals don't carry out of it yet (#1701).
-  expect(js.match(/    i\+\+;\n/g)).toHaveLength(1);
-  expect(js).toContain("i = (i + 1) >>> 0;");
+  // `summed`'s, and `flushed`'s, whose `get(i)` is in `with_borrow`'s
+  // closure: its `Some` MIR's intervals don't carry out of it yet (#1701),
+  // so the bridge takes THIR's verdict there (ADR 1137).
+  expect(js.match(/    i\+\+;\n/g)).toHaveLength(2);
   expect(js).toContain("?? (i + 1) >>> 0");
   const lib = await import(join(dir, "lib.js"));
   expect([lib.flushed(3 as never), lib.summed([1, 2, 3] as never), lib.counted(4 as never)]).toEqual([14, 6, 4]);

@@ -137,6 +137,19 @@ pub(in crate::lower) fn shadow_check(
     shadow.borrow_mut().lines.insert(line);
 }
 
+/// A wrap the bridge leaves out (ADR 1137): one THIR's ranges know never
+/// wraps that MIR's intervals don't prove yet, a `bridged` line of the
+/// shadow, test/intervals-bridged.txt's list.
+pub(in crate::lower) fn shadow_bridged(tcx: TyCtxt<'_>, owner: rustc_span::def_id::DefId, span: Span) {
+    let caches = crate::lower::session::caches(tcx);
+    let Some(shadow) = &caches.intervals_shadow else {
+        return;
+    };
+    let at = tcx.sess.source_map().span_to_diagnostic_string(span);
+    let line = format!("bridged\t{}\t{at}\n", tcx.def_path_str(owner));
+    shadow.borrow_mut().lines.insert(line);
+}
+
 /// Each check THIR's facts leave out that MIR doesn't prove, a line each,
 /// `kind<TAB>function<TAB>where`: what `--intervals-shadow` writes.
 pub(crate) fn shadow_report(tcx: TyCtxt<'_>) -> String {

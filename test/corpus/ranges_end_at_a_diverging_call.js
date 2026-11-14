@@ -89,7 +89,7 @@ function main() {
       if (n > 100) {
         throw new Error(`too big in a closure: ${n}`);
       }
-      return (n + 1) >>> 0;
+      return n + 1;
     });
     const past = (n + 1) >>> 0;
     console.log(

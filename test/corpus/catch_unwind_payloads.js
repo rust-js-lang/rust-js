@@ -97,7 +97,7 @@ function main() {
   );
   caught(
     "divide",
-    $catchUnwind(() => halve(n, (n - 7) | 0)),
+    $catchUnwind(() => halve(n, n - 7)),
     debug,
   );
 
@@ -139,7 +139,7 @@ function main() {
     if (count > 0) {
       throw new Error("counted");
     }
-    count = (count + 100) | 0;
+    count += 100;
   });
   console.log(`count ${count}, ${result.TAG === "Err"}`);
 

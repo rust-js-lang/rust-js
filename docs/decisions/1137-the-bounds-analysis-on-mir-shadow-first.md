@@ -385,3 +385,47 @@ was dropped. The readability gate holds.
 The concept splits, each a commit of its own:
 - `intervals/calls.rs`, what a call tells the walk;
 - `test/lowering-integer-ranges.test.ts`, out of `lowering-numbers`.
+
+## M3, step 2 amended: widening to thresholds, a push's length, and the bridge (2026-11-14)
+
+The wrap switch regressed 9 lines of React's port, wraps THIR's ranges left
+out that MIR didn't prove. They came from five gaps.
+
+Two are recovered by MIR's precision:
+- **Widening to thresholds.** A bound still moving after three visits
+  widens to the next constant the body compares an integer with (each one
+  less and one more too), and only past them all to its type's. A counter
+  a loop breaks out of, `if count > 10 { break }`, that a `continue` brings
+  back to the head unchanged, widened to its type's, is a fixed point no
+  narrowing leaves: the `continue` edge carries the widened bound back.
+  Widened to 10, the test holds it there. This recovers `estimateBandwidth`'s
+  `count++` and `addObjectToProperties`' `addedProperties++`. The
+  thresholds are finite, so widening still ends.
+- **A push's length** (#1700). Past `push`, a `Vec`, held by a local or
+  behind a `&mut` one, holds an item at least, until it's lent `&mut`
+  again or written. A shared reborrow of it, as `len()` takes, carries the
+  fact. A local a raw pointer is made of anywhere in the body is never
+  known pushed, as the pointer may write it after. This recovers
+  `properties[prevLength - 1]`.
+
+The other three are more than a day of MIR precision each:
+- `Ref`s of one `RefCell` sharing a length (#1741);
+- a closure's result telling its caller nothing, and a `&mut` capture's
+  place (#1701).
+
+For those, **the bridge**: where MIR doesn't prove a wrap that THIR's ranges
+know never wraps, THIR's verdict. Both are sound, so their union is too.
+- **Where:** exactly one place, `binary_proved`, the consumer of a wrap
+  verdict.
+- **The list:** each site the bridge decides is a `bridged` line of the
+  shadow. test/intervals-bridged.txt lists each one in the corpus, with
+  the issue that would prove it (#1701, #1741, #1742). Its test fails when
+  a site isn't listed, or a listed one no longer is. A new one is a gap to
+  recover first.
+- **The exit:** M4 deletes THIR's range code and the bridge together, once
+  the list is empty.
+
+Corpus case bridged_port_shapes holds the port's three shapes the corpus
+lacked: a `Vec` behind a `RefCell` indexed at `len() - 1` past
+`!is_empty()`; a `&mut`-captured counter in `catch_unwind`; and
+`with_borrow`'s `get(i).cloned()`.

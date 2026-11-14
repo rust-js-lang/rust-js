@@ -116,11 +116,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
         // What MIR's intervals prove stays in range, `proved`, the caller's
         // of the statement it lowers, is JS's own (ADRs 0576, 1137); the
-        // shadow compares what THIR's ranges knew (#1672 M3).
+        // shadow compares what THIR's ranges knew (#1672 M3). And the bridge,
+        // until MIR's precision covers it: what THIR's ranges know never
+        // wraps, where MIR doesn't prove it, is JS's own too, each such site
+        // a `bridged` line of the shadow, test/intervals-bridged.txt's list,
+        // which M4 empties and deletes with THIR's ranges (ADR 1137).
         let arithmetic = matches!(op, BinOp::Add | BinOp::Sub | BinOp::Mul);
-        let exact = arithmetic && proved;
+        let thir_exact = arithmetic && self.exact_at(span);
+        let exact = arithmetic && (proved || thir_exact);
+        if thir_exact && !proved {
+            crate::lower::analysis::shadow_bridged(self.tcx, self.frame.owner, span);
+        }
         if arithmetic {
-            let thir_exact = self.exact_at(span);
             crate::lower::analysis::shadow_check(self.tcx, self.frame.owner, span, thir_exact, || {
                 Some(crate::lower::analysis::LeftOut::Wrap)
             });

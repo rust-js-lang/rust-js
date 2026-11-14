@@ -50,7 +50,7 @@ function each(n) {
   const made = [];
   const end = n + 7;
   for (let i = n; i < end; i++) {
-    made.push(() => (i * 10) >>> 0);
+    made.push(() => i * 10);
   }
   return made;
 }

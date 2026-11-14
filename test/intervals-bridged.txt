@@ -1,0 +1,37 @@
+# Each wrap the bridge leaves out (ADR 1137, #1672): a `+`, `-` or `*` of a
+# corpus case that THIR's ranges know never wraps and MIR's intervals don't
+# prove yet, where it is (`case.rs:line:col`), its function, and the issue
+# of the MIR precision that would prove it. test/intervals-bridged.test.ts
+# fails where a site the bridge decides isn't listed, or one listed no
+# longer is: a new one is a gap to recover first, and one MIR now proves
+# goes. M4 deletes THIR's ranges and the bridge once it's empty.
+alias_reads.rs:52:17	main::{closure#0}	#1701
+bridged_port_shapes.rs:21:37	push_child	#1741
+bridged_port_shapes.rs:37:13	flush::{closure#0}	#1701
+bridged_port_shapes.rs:50:9	replay	#1701
+byte_constants_large.rs:13:9	made	#1742
+catch_unwind_payloads.rs:43:54	main::{closure#6}	#1701
+catch_unwind_payloads.rs:65:9	main::{closure#11}	#1701
+catch_unwind_value_read_first.rs:45:34	summed::{closure#0}	#1701
+const_blocks_and_let_guards.rs:6:5	square	#1742
+const_fn_in_patterns.rs:5:5	add	#1742
+copied_closures_compared.rs:19:22	main::{closure#0}	#1701
+copied_closures_lent_to_generic_code.rs:18:22	main::{closure#0}	#1701
+default_value_exits.rs:120:23	observed::{closure#0}	#1701
+default_value_exits.rs:256:23	observed_rows::{closure#0}	#1701
+generic_drops_judged_per_use.rs:106:33	reported::{closure#0}	#1701
+given_last_unwinds.rs:43:21	caught::{closure#0}	#1701
+impl_fn_that_panics_keeps_its_cleanup.rs:21:9	checked::{closure#0}	#1701
+inclusive_range_loops.rs:46:36	counters::{closure#0}	#1701
+iterator_sources.rs:34:13	countdown::{closure#0}	#1701
+iterator_sources.rs:35:18	countdown::{closure#0}	#1701
+labeled_loop_left_from_inner.rs:21:9	first_zero	#1742
+lent_place_set_read_in_place.rs:129:31	guarded::{closure#0}	#1701
+moved_closure.rs:14:21	main::{closure#1}	#1701
+present_index_counts.rs:32:9	flush	#1701
+ranges_end_at_a_diverging_call.rs:75:13	main::{closure#0}	#1701
+ranges_kept_of_what_stops_changing.rs:9:16	walk	#1742
+rc_of_functions_uncounted_beside_a_counted_one.rs:16:29	main::{closure#0}	#1701
+self_handle.rs:26:27	countdown::{closure#0}	#1701
+stepped_range_loops.rs:50:36	each::{closure#0}	#1701
+thread_local_field_forwarders.rs:31:34	make_system::{closure#0}	#1701

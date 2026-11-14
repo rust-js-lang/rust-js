@@ -214,7 +214,7 @@ export function countdown(step) {
     if (n < step) {
       return n;
     }
-    return (1 + countdown((n - step) >>> 0)) >>> 0;
+    return (1 + countdown(n - step)) >>> 0;
   };
   return countdown;
 }
@@ -1276,8 +1276,8 @@ export function countdown(from) {
   return Iterator.from(
     $fromFn(() => {
       if (n$1 !== 0) {
-        n$1 = (n$1 - 1) >>> 0;
-        return (n$1 + 1) >>> 0;
+        n$1--;
+        return n$1 + 1;
       }
     }),
   );

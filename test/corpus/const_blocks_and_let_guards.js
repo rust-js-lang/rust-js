@@ -7,7 +7,7 @@ export function entry() {
 }
 
 function square(n) {
-  return Math.imul(n, n) >>> 0;
+  return n * n;
 }
 
 function genericSize() {

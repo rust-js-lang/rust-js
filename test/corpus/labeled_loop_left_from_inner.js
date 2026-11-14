@@ -21,7 +21,7 @@ function firstZero(rows, log) {
       total = (total + n) >>> 0;
       i++;
     }
-    r = (r + 1) >>> 0;
+    r++;
   }
   return total;
 }

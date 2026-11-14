@@ -228,4 +228,12 @@ export const mutations: Mutation[] = [
     replace: "                if let Some(strict) = state.below_by_intervals(x, Term::Int(y)).filter(|_| false) {\n",
     tests: ["test/intervals-shadow.test.ts","-t","MIR decides"],
   },
+  {
+    name: "intervals-widen-past-thresholds",
+    breaks: "a widened bound goes to its type's, past the constants the body compares it with, so a counter a `continue` brings back to its loop's head as it was, `count > 10`'s, keeps its wrap",
+    file: "src/lower/analysis/intervals.rs",
+    find: "                now.hi = (thresholds.iter().copied())\n                    .find(|&t| now.hi <= t && t <= range.hi)\n                    .unwrap_or(range.hi);\n",
+    replace: "                now.hi = range.hi;\n",
+    tests: ["test/lowering-integer-ranges.test.ts", "-t", "a counter a loop breaks out of at a bound"],
+  },
 ];

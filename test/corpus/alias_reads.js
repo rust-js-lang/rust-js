@@ -49,7 +49,7 @@ function main() {
   // A closure made before it changes, called after.
   let count = 10;
   const at = count;
-  const shown = () => (at * 2) | 0;
+  const shown = () => at * 2;
   count++;
   console.log(`${shown()} ${count}`);
 }

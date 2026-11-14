@@ -9,7 +9,8 @@
 //! known; a `bool` a comparison made holds that comparison, which narrows
 //! its operands on each side of a switch of it, and past an `assert` of it.
 //! A local whose place is lent `&mut` or as a raw pointer is never known.
-//! At a loop's head, a bound still moving after a few visits widens to its
+//! At a loop's head, a bound still moving after a few visits widens to the
+//! next constant the body compares an integer with, or past them all to its
 //! type's.
 
 use crate::collections::{IndexMap, IndexSet};
@@ -31,6 +32,7 @@ use std::collections::BTreeSet;
 
 mod callers;
 mod calls;
+mod pushed;
 mod ranges;
 mod session;
 mod state;
@@ -84,6 +86,9 @@ struct Walk<'a, 'tcx> {
     /// What its callers give each of its parameters, of a function only
     /// calls reach (`parameter_intervals`); none where it's anything.
     from_callers: Given,
+    /// The locals a raw pointer is made of, which a push's length is never
+    /// known of (`pushes`).
+    pointed: IndexSet<Local>,
 }
 
 /// What MIR proves of `body`, the one the emitter reads.
@@ -134,6 +139,16 @@ fn walk<'a, 'tcx>(
         .map(|place| place.local)
         .collect();
     let stepped = stepped_ranges(tcx, body);
+    let pointed = (body.basic_blocks.iter())
+        .flat_map(|data| &data.statements)
+        .filter_map(|statement| match &statement.kind {
+            StatementKind::Assign(assign) => match &assign.1 {
+                Rvalue::RawPtr(_, place) => Some(place.local),
+                _ => None,
+            },
+            _ => None,
+        })
+        .collect();
     Walk {
         tcx,
         typing_env,
@@ -141,6 +156,7 @@ fn walk<'a, 'tcx>(
         lent,
         stepped,
         from_callers: given,
+        pointed,
     }
 }
 
@@ -196,6 +212,8 @@ impl<'tcx> Walk<'_, 'tcx> {
             ranges: IndexMap::default(),
             sums: IndexMap::default(),
             gets: IndexMap::default(),
+            pushed: IndexSet::default(),
+            lending: IndexMap::default(),
         });
         // Each block waiting, once, by its place in reverse postorder: what
         // flows into a block is visited before it, so each is visited
@@ -204,6 +222,7 @@ impl<'tcx> Walk<'_, 'tcx> {
         for (at, &block) in self.body.basic_blocks.reverse_postorder().iter().enumerate() {
             rank[block] = at;
         }
+        let thresholds = self.thresholds();
         let mut work: BTreeSet<(usize, BasicBlock)> = BTreeSet::from([(rank[mir::START_BLOCK], mir::START_BLOCK)]);
         while let Some((_, block)) = work.pop_first() {
             let Some(mut state) = entry[block].clone() else {
@@ -219,7 +238,7 @@ impl<'tcx> Walk<'_, 'tcx> {
                     Some(old) => {
                         let mut joined = old.join(&out);
                         if visits[target] >= VISITS_BEFORE_WIDENING {
-                            self.widen(old, &mut joined);
+                            self.widen(old, &mut joined, &thresholds);
                         }
                         joined
                     }
@@ -266,8 +285,40 @@ impl<'tcx> Walk<'_, 'tcx> {
         entry
     }
 
-    /// Each bound of `joined` that moved from `old`, its type's.
-    fn widen(&self, old: &State, joined: &mut State) {
+    /// The constants the body compares an integer with, each one less and one
+    /// more too, in order: where a widened bound stops before its type's
+    /// (ADR 1137). A counter a loop breaks out of past 10, `count > 10`, which
+    /// a `continue` brings back to the head as it was, widened to its type's
+    /// is a fixed point no narrowing leaves, as the `continue` keeps it; to
+    /// 10, the test keeps it there, and `count + 1` is JS's own.
+    fn thresholds(&self) -> Vec<i128> {
+        let mut thresholds: Vec<i128> = (self.body.basic_blocks.iter())
+            .flat_map(|data| &data.statements)
+            .filter_map(|statement| match &statement.kind {
+                StatementKind::Assign(assign) => match &assign.1 {
+                    Rvalue::BinaryOp(
+                        BinOp::Lt | BinOp::Le | BinOp::Gt | BinOp::Ge | BinOp::Eq | BinOp::Ne,
+                        operands,
+                    ) => Some(operands),
+                    _ => None,
+                },
+                _ => None,
+            })
+            .flat_map(|operands| [&operands.0, &operands.1])
+            .filter_map(|operand| match operand {
+                Operand::Constant(c) if self.range(c.ty()).is_some() => self.constant(c),
+                _ => None,
+            })
+            .flat_map(|c| [c - 1, c, c + 1])
+            .collect();
+        thresholds.sort_unstable();
+        thresholds.dedup();
+        thresholds
+    }
+
+    /// Each bound of `joined` that moved from `old`, to the next of
+    /// `thresholds` past it, or its type's.
+    fn widen(&self, old: &State, joined: &mut State, thresholds: &[i128]) {
         for (local, interval) in joined.intervals.iter_enumerated_mut() {
             let (Some(now), Some(was)) = (interval.as_mut(), old.intervals[local]) else {
                 continue;
@@ -276,10 +327,14 @@ impl<'tcx> Walk<'_, 'tcx> {
                 continue;
             };
             if now.lo < was.lo {
-                now.lo = range.lo;
+                now.lo = (thresholds.iter().rev().copied())
+                    .find(|&t| t <= now.lo && range.lo <= t)
+                    .unwrap_or(range.lo);
             }
             if now.hi > was.hi {
-                now.hi = range.hi;
+                now.hi = (thresholds.iter().copied())
+                    .find(|&t| now.hi <= t && t <= range.hi)
+                    .unwrap_or(range.hi);
             }
         }
     }
@@ -350,16 +405,18 @@ impl<'tcx> Walk<'_, 'tcx> {
 
     /// What `operand` holds: its interval, else its type's range; none of
     /// what isn't an integer.
+    /// An integer constant's value.
+    fn constant(&self, c: &mir::ConstOperand<'tcx>) -> Option<i128> {
+        let n = c.const_.try_eval_scalar_int(self.tcx, self.typing_env)?;
+        Some(match c.ty().is_signed() {
+            true => n.to_int(n.size()),
+            false => n.to_uint(n.size()) as i128,
+        })
+    }
+
     fn operand(&self, operand: &Operand<'tcx>, state: &State) -> Option<Interval> {
         match operand {
-            Operand::Constant(c) => {
-                let n = c.const_.try_eval_scalar_int(self.tcx, self.typing_env)?;
-                let value = match c.ty().is_signed() {
-                    true => n.to_int(n.size()),
-                    false => n.to_uint(n.size()) as i128,
-                };
-                Some(Interval { lo: value, hi: value })
-            }
+            Operand::Constant(c) => self.constant(c).map(|value| Interval { lo: value, hi: value }),
             Operand::Copy(place) | Operand::Move(place) => {
                 let range = self.range(place.ty(&self.body.local_decls, self.tcx).ty)?;
                 Some(match place.as_local() {
@@ -526,12 +583,15 @@ impl<'tcx> Walk<'_, 'tcx> {
             ranges: IndexMap::default(),
             sums: IndexMap::default(),
             gets: IndexMap::default(),
+            pushed: IndexSet::default(),
+            lending: IndexMap::default(),
         }
     }
 
     /// `statement`'s write, what it writes worked out first, of what's known
     /// before it, then the local written forgotten and set.
     fn statement(&self, statement: &mir::Statement<'tcx>, state: &mut State) {
+        self.pushes(statement, state);
         let StatementKind::Assign(assign) = &statement.kind else {
             return;
         };
@@ -1009,6 +1069,7 @@ impl<'tcx> Walk<'_, 'tcx> {
                 ..
             } => {
                 let mut after = state.clone();
+                after.unpush(destination.local);
                 if let Some(local) = destination.as_local() {
                     after.forget(local);
                     self.called(func, args, local, state, &mut after);

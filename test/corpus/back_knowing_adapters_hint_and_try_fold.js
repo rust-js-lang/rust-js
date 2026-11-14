@@ -256,7 +256,7 @@ function main() {
     if (!fired || k === 60) {
       break;
     }
-    k = (k + 1) >>> 0;
+    k++;
   }
 }
 //# sourceMappingURL=case.js.map

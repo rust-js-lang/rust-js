@@ -68,4 +68,12 @@ export const mutations: Mutation[] = [
     replace: "                    let _ = of;\n                }\n            } else if text_length(self.tcx, callee) {\n",
     tests: ["test/lowering-integer-ranges.test.ts", "-t", "a counter below a JS string"],
   },
+  {
+    name: "pushed-push-unknown",
+    breaks: "a `push` makes nothing known pushed, so `items[items.len() - 1]` past one keeps its wrap (#1700)",
+    file: "src/lower/analysis/intervals/calls.rs",
+    find: "                        after.pushed.insert(root);\n",
+    replace: "",
+    tests: ["test/lowering-integer-ranges.test.ts", "-t", "a counter a loop breaks out of at a bound"],
+  },
 ];

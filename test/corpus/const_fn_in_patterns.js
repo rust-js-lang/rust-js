@@ -5,7 +5,7 @@ export function entry() {
 }
 
 function add(a, b) {
-  return (a + b) >>> 0;
+  return a + b;
 }
 
 const P = {

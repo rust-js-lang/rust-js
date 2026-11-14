@@ -6,7 +6,7 @@ export function entry() {
 
 function walk(n, k) {
   if (n % 7 === 3) {
-    return (k + 1) & 255;
+    return k + 1;
   }
   return (walk((n + 1) >>> 0, k) + 1) >>> 0;
 }
