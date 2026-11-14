@@ -85,3 +85,21 @@ literal beside any string, or the same literal, tells nothing, as before.
 Held by `test/untagged-members.test.ts`'s "a member of one literal tells
 its struct by that literal", run; mutations
 `untagged-one-name-enum-any-string` and `untagged-member-literals-alike`.
+
+## Amended (2026-11-15): a member of another untagged enum
+
+A crash (P1, #1832). A struct told by a member that holds another
+untagged enum, a wrapped event's `native_event: NativeCompositionEvent`
+of an `Event` or a record, is told by any of that enum's kinds (ADR 1039),
+`Kind::Union`, which the member's test had no arm for: the compiler
+panicked, "a `typeof` kind". Its test is each kind's, `||`, and an
+object's `typeof` takes in each kind that's an object too, a class's, an
+array's, a member's or a test function's, so `typeof event.nativeEvent
+=== "object"` runs no `instanceof Event`, which another realm's fails
+(ADR 1062). Telling the inner enum's class from its record is still
+refused as ADR 1062 refuses it.
+
+Held by `test/untagged-members.test.ts`'s "a member holding another
+untagged enum tells its struct by any of its kinds" (of a `RegExp`, a
+record and a string, run; the inner `match` refused); mutations
+`union-member-test-unmade` and `union-member-class-instanceof`.

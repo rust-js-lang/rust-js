@@ -1015,6 +1015,22 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             Kind::Class(name, _) => Expr::bin(Op::InstanceOf, value.clone(), class(name)),
             Kind::Test(test) => Expr::call(class(test), vec![value.clone()]),
             Kind::Member(key, kind) => self.kind_test(kind, &Expr::member(value.clone(), key.clone()), class),
+            // Another untagged enum's, a member's, any of its kinds (rd305):
+            // a wrapped event's `nativeEvent`, an `Event` or a record (#1832).
+            // An object's `typeof` takes in each kind that's an object, an
+            // array, a class's, a member's or a test function's, so no
+            // `instanceof` runs, which another realm's fails (ADR 1062).
+            Kind::Union(parts) => (parts.iter())
+                .filter(|part| {
+                    !parts.contains(&Kind::Object)
+                        || !matches!(
+                            part,
+                            Kind::Array | Kind::Tuple(_) | Kind::Class(..) | Kind::Test(_) | Kind::Member(..)
+                        )
+                })
+                .map(|part| self.kind_test(part, value, class))
+                .reduce(|either, test| Expr::bin(Op::Or, either, test))
+                .expect("a kind or more"),
             Kind::Literal(name) => Expr::bin(Op::Eq, value.clone(), Expr::str(name)),
             // Each of the numbers, `node.nodeType === 9`, `||` (#555).
             Kind::Constants(values) => (values.iter())

@@ -3,11 +3,14 @@
 // `Instance | TextInstance`, `isArray(child.children)`. Each test is a
 // program of its own, compiled and run.
 
-import { expect, test } from "bun:test";
+import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { runSync } from "./child";
-import { compiler, fixture, root, run, target } from "./support";
+import { buildReact, compiler, fixture, root, run, target } from "./support";
+
+// The js crate, whose `RegExp` a member's enum holds.
+beforeAll(buildReact, 600_000);
 
 const flags = (dir: string) => [join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
 
@@ -143,6 +146,51 @@ test("a member that tells a struct apart is of a kind JS tells", () => {
   const ran = runSync([compiler, ...flags(dir)], root, 60_000);
   expect(ran.code).not.toBe(0);
   expect(ran.stderr).toContain("is told apart by its `children`, `#[rust_js::test]`, which holds a string, a number, a `bool`, an array or a class");
+});
+
+// A member that holds another untagged enum tells its struct by any of that
+// enum's kinds, a wrapped event's `nativeEvent`, an `Event` or a record:
+// `typeof event.nativeEvent === "object"`, an object's `typeof` taking in
+// the class, so no `instanceof` another realm's fails runs (ADR 1062). It
+// panicked, "a `typeof` kind" (#1832). Telling the inner enum's class from
+// its record is refused as ADR 1062 refuses any.
+test("a member holding another untagged enum tells its struct by any of its kinds", async () => {
+  const dir = fixture("untagged-members-union");
+  const program = (body: string) => `pub struct Fields {
+    pub key_code: Option<f64>,
+}
+
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum Native<'a> {
+    Pattern(&'a js::RegExp),
+    Fields(&'a Fields),
+    Name(&'a str),
+}
+
+pub struct Wrapped<'a> {
+    #[cfg_attr(rust_js, rust_js::test)]
+    pub native_event: Native<'a>,
+}
+
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum Input<'a> {
+    Wrapped(Wrapped<'a>),
+    #[cfg_attr(rust_js, rust_js::otherwise)]
+    Direct(&'a Fields),
+}
+
+pub fn wrapped(input: &Input) -> bool {
+${body}
+}
+`;
+  writeFileSync(join(dir, "lib.rs"), program("    matches!(input, Input::Wrapped(_))"));
+  run([compiler, ...flags(dir)]);
+  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain('return typeof input.nativeEvent === "object" || typeof input.nativeEvent === "string";');
+  const { wrapped } = await import(join(dir, "lib.js"));
+  expect([wrapped({ nativeEvent: /x/ }), wrapped({ nativeEvent: {} }), wrapped({ nativeEvent: "x" }), wrapped({ keyCode: 1 })]).toEqual([true, true, true, false]);
+  writeFileSync(join(dir, "lib.rs"), program("    matches!(input, Input::Wrapped(Wrapped { native_event: Native::Fields(_) }))"));
+  const ran = runSync([compiler, ...flags(dir)], root, 60_000);
+  expect([ran.code === 0, ran.stderr]).toEqual([false, expect.stringContaining("JS can't tell `Native::Fields`")]);
 });
 
 // Another untagged enum a variant holds is each of its kinds (rd305): one

@@ -3,6 +3,22 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "union-member-test-unmade",
+    breaks: "a member that holds another untagged enum has no test of its kinds, and the compiler panics, `a typeof kind` (#1832)",
+    file: "src/lower/untagged.rs",
+    find: "                .reduce(|either, test| Expr::bin(Op::Or, either, test))\n                .expect(\"a kind or more\"),\n",
+    replace: "                .next()\n                .expect(\"a kind or more\"),\n",
+    tests: ["test/untagged-members.test.ts", "-t", "holding another untagged"],
+  },
+  {
+    name: "union-member-class-instanceof",
+    breaks: "a member that holds another untagged enum of an object and a class tests the class by `instanceof` too, which another realm's fails (#1832, ADR 1062)",
+    file: "src/lower/untagged.rs",
+    find: "                    !parts.contains(&Kind::Object)\n",
+    replace: "                    true\n",
+    tests: ["test/untagged-members.test.ts", "-t", "holding another untagged"],
+  },
+  {
     name: "otherwise-overlap-untested",
     breaks: "a `match` of an untagged enum whose `otherwise` variant's payload is of another's kind tests it as what the others aren't, so the other's test takes it (#1083)",
     file: "src/lower/untagged.rs",
