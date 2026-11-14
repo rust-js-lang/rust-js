@@ -237,6 +237,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             true => crate::lower::calls::own_absent(&mut exprs, absent),
             false => crate::lower::calls::given_to_js_but(&mut exprs, absent),
         }
+        // Of one that may be JS's, each `Option` Rust's `None` (#1840).
+        if !own && let Some((state, output)) = &unbound {
+            self.ones_given_to_a_callback(state, (arg_tys[0], arg_tys[1], *output), &tys, &mut exprs);
+        }
         // And its options, where the crate's writers take them (ADR 0137).
         if writes.is_some() {
             exprs.extend(self.given_to_writer(None));

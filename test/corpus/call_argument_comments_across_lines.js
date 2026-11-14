@@ -16,7 +16,7 @@ export function preinitModuleForSsr(internals, href, nonce) {
   Internals.d(internals) /* ReactDOMCurrentDispatcher */
     .preinitModuleScript(
       /* preinitModuleScript */ href,
-      nonce != null ? (nonce + 1000000000) >>> 0 : undefined,
+      (nonce != null ? (nonce + 1000000000) >>> 0 : undefined) ?? undefined,
     );
 }
 
@@ -30,7 +30,7 @@ export function dispatchHint(dispatcher, href, options) {
     if ($byteLen(href) > 4) {
       if ($byteLen(href) > 5) {
         if ($byteLen(href) > 6) {
-          dispatcher.preinitModuleScript(/* preinitModuleScript */ href, options);
+          dispatcher.preinitModuleScript(/* preinitModuleScript */ href, options ?? undefined);
         }
       }
     }

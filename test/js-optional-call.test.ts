@@ -44,10 +44,10 @@ test("an optional call is upstream's, its method read once of its this", async (
   const built = Bun.spawnSync([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...flags], { cwd: root, stderr: "pipe" });
   expect([built.exitCode, built.stderr.toString()]).toEqual([0, ""]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("export function closestOf(hop, selector) {\n  return hop.closest?.(selector);\n}");
+  expect(js).toContain("export function closestOf(hop, selector) {\n  return hop.closest?.(selector) ?? undefined;\n}");
   expect(js).toContain("$someDefined(hop.closest?.(selector))");
   // The receiver, then the argument, each run as Rust runs them.
-  expect(js).toContain('  const log = globalThis.log("receiver");\n  const arg = globalThis.log("argument").tagName;\n  return log.closest?.(arg);');
+  expect(js).toContain('  const log = globalThis.log("receiver");\n  const arg = globalThis.log("argument").tagName;\n  return log.closest?.(arg) ?? undefined;');
   expect(readFileSync(join(dir, "lib.d.ts"), "utf8")).toContain("export function closestOf(hop: Element, selector: string): Element | null | undefined;");
   const lib = await import(join(dir, "lib.js"));
   // Codex's regression: one read of a getter, the receiver its `this`,
@@ -64,7 +64,7 @@ test("an optional call is upstream's, its method read once of its this", async (
   expect(reads).toEqual(["get", ["invoke", true, "button"]]);
   // A hop with no `closest`, one whose `closest` finds none, one that finds.
   expect([lib.found({}, "a"), lib.found({ closest: () => null }, "a"), lib.found({ closest: () => ({}) }, "a")]).toEqual([0, 1, 2]);
-  expect([lib.closestOf({}, "a"), lib.closestOf({ closest: () => null }, "a")]).toEqual([undefined, null]);
+  expect([lib.closestOf({}, "a"), lib.closestOf({ closest: () => null }, "a")]).toEqual([undefined, undefined]);
   // A member that's there and no function is called: JS's TypeError.
   expect(() => lib.closestOf({ closest: 5 }, "a")).toThrow(TypeError);
   // In Rust's order: the receiver, then the argument, then the read.

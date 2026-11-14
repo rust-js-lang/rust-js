@@ -1377,7 +1377,7 @@ pub fn at(text: &str, index: f64) -> Option<&'static str> {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("if (startValue[startLength - end] != endValue[endLength - end]) {");
-  expect(js).toContain("export function at(text, index) {\n  return text[index];\n}");
+  expect(js).toContain("export function at(text, index) {\n  return text[index] ?? undefined;\n}");
   const lib = await import(join(dir, "lib.js"));
   expect([lib.inserted("abc", "abXc"), lib.inserted("", "hi"), lib.inserted("ab", "ab")]).toEqual(["X", "hi", ""]);
   expect([lib.at("ab", 1), lib.at("ab", 2), lib.at("ab", -1), lib.at("ab", 0.5), lib.at("😀", 0).length]).toEqual(["b", undefined, undefined, undefined, 1]);

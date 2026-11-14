@@ -1,6 +1,8 @@
 // Mutations of src/lower/mir/rvalues/aggregate.rs, an aggregate MIR makes, as JS.
 import type { Mutation } from "../../../../mutations";
 
+const given1840 = ["test/none-given.test.ts", "-t", "in Bun and in Chromium"];
+
 export const mutations: Mutation[] = [
   {
     name: "nested-field-literal-boxed",
@@ -148,5 +150,21 @@ export const mutations: Mutation[] = [
     find: "            Some(crossing) => self.form_given(Form::Box, crossing, value, span)?,\n",
     replace: "            Some(_) => value,\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_ref_fields_of_a_type_parameter.rs$"],
+  },
+  {
+    name: "struct-fields-given-as-they-are",
+    breaks: "a `pub` struct made of JS's `null` holds it in its plain `Option` field, which JS reads (#1840)",
+    file: "src/lower/mir/rvalues/aggregate.rs",
+    find: "                            let e = self.one_none_field(state, field, operand, e);\n",
+    replace: "",
+    tests: given1840,
+  },
+  {
+    name: "spread-fields-given-as-they-are",
+    breaks: "a `pub` struct remade of another, `S { digits, ..base }`, holds JS's `null` in its plain `Option` field (#1840)",
+    file: "src/lower/mir/rvalues/aggregate.rs",
+    find: "                let value = self.one_none_field(state, field, &operands[FieldIdx::from_usize(i)], value);\n",
+    replace: "",
+    tests: given1840,
   },
 ];

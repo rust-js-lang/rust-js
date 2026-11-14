@@ -94,6 +94,6 @@ export function kept(key) {
   if (storage == null) {
     return;
   }
-  return storage.getItem(key);
+  return storage.getItem(key) ?? undefined;
 }
 //# sourceMappingURL=throws.js.map

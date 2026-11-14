@@ -562,7 +562,7 @@ pub fn found(text: &str) -> Option<&'static RegExpMatchArray> {
   expect(lib.byText("abbbc")).toEqual(["bbb", 1]);
   expect(lib.byText("ac")).toBe(undefined);
   expect(lib.globalMetadata("banana")).toEqual([undefined, undefined, true]);
-  expect(lib.found("y")).toBe(null);
+  expect(lib.found("y")).toBe(undefined);
   // Its items, `array::from(m)`, a group that matched nothing `None`, which
   // `unwrap` panics of, never `""`.
   expect(lib.items("ab")).toEqual(["ab", "ab", undefined]);
@@ -1328,8 +1328,8 @@ pub fn stepped(distance: f64, step: f64) -> f64 {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("return x.toFixed(digits);");
-  expect(js).toContain("return x.toPrecision(precision);");
+  expect(js).toContain("return x.toFixed(digits ?? undefined);");
+  expect(js).toContain("return x.toPrecision(precision ?? undefined);");
   const lib = await import(join(dir, "lib.js"));
   const said = (f: () => string) => {
     try {

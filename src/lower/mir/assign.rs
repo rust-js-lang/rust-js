@@ -293,9 +293,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // What's `null` or a value already, as it is (ADR 0949).
             Rvalue::Use(operand, _) => {
                 let nulled = self.nulled(state, operand);
-                self.nullable_written(state, *place, value?, nulled, span)?
+                let value = self.nullable_written(state, *place, value?, nulled, span)?;
+                self.one_none_returned(state, *place, Some(operand), value, span)?
             }
-            _ => self.nullable_written(state, *place, value?, false, span)?,
+            _ => {
+                let value = self.nullable_written(state, *place, value?, false, span)?;
+                self.one_none_returned(state, *place, None, value, span)?
+            }
         };
         // A `#[rust_js::nullable]` field assigned, `p.title = None`: its
         // `None` `null`, as its cell's `set` writes it (ADRs 0772, 0810); a
@@ -339,7 +343,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     ..value
                 })
             }
-            false => value,
+            // A plain `Option` field's, Rust's `None` (#1840).
+            false => match rvalue {
+                Rvalue::Use(operand, _) => self.one_none_stored(state, *place, operand, value, span)?,
+                _ => value,
+            },
         };
         let value = self.returned_write_result(state, (*place, rvalue), value, span)?;
         self.mir_store(state, *place, value, span, out)

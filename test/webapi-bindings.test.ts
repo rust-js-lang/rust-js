@@ -234,7 +234,7 @@ pub fn report(error: &js::JsError) {
   // \`()\` is \`undefined\`, which the browser copies as it is (ADR 0225 amended).
   expect(js).toContain("port.postMessage(undefined);");
   // \`Kind::Array\`'s slice is the array, its value \`js::unknown(items)\` (ADR 0225 amended).
-  expect(js).toContain("return JSON.stringify(value);");
+  expect(js).toContain("return JSON.stringify(value) ?? undefined;");
   expect(js).toContain("window.reportError(error);");
   for (const [written, error] of [
     ["window().structured_clone(|| (), None)", "the trait `js::StructuredClone` is not implemented for closure"],
@@ -488,8 +488,8 @@ pub fn run_in(task: &ConsoleTask, x: f64) -> f64 {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("const createTask = __DEV__ ? console.createTask : undefined;\n");
-  expect(js).toContain("return createTask != null ? createTask(name) : undefined;");
-  expect(js).toContain('export function debugTask() {\n  const createTask = console.createTask;\n  return createTask != null ? createTask("lazy()") : undefined;\n}');
+  expect(js).toContain("return (createTask != null ? createTask(name) : undefined) ?? undefined;");
+  expect(js).toContain('export function debugTask() {\n  const createTask = console.createTask;\n  return (createTask != null ? createTask("lazy()") : undefined) ?? undefined;\n}');
   expect(js).toContain("return task.run(() => x * 2);");
   const host = console as any;
   expect(host.createTask).toBeUndefined();
@@ -823,7 +823,7 @@ pub fn node_document(node: &Node) -> Option<&Document> {
   const document = {};
   expect(lib.declared({ style: { length: 2 } })).toBe(2);
   expect(lib.documentOf({ ownerDocument: document })).toBe(document);
-  expect(lib.nodeDocument({ ownerDocument: null })).toBe(null);
+  expect(lib.nodeDocument({ ownerDocument: null })).toBe(undefined);
 });
 
 // React port gap rd68: TypeScript's index signature, `[index: number]:
@@ -1096,7 +1096,7 @@ pub fn parent_name(node: Option<&Node>) -> Option<String> {
   expect(js).not.toContain(": null");
   const lib = await import(join(dir, "lib.js"));
   const leaf = { firstChild: null };
-  expect([lib.getLeafNode({ firstChild: { firstChild: leaf } }), lib.getLeafNode(null), lib.getLeafNode(undefined)]).toEqual([leaf, null, undefined]);
+  expect([lib.getLeafNode({ firstChild: { firstChild: leaf } }), lib.getLeafNode(null), lib.getLeafNode(undefined)]).toEqual([leaf, undefined, undefined]);
   expect([lib.parentName({ parentNode: { nodeName: "DIV" } }), lib.parentName({ parentNode: null }), lib.parentName(undefined)]).toEqual(["DIV", undefined, undefined]);
 });
 

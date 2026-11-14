@@ -143,7 +143,7 @@ pub fn counts(words: &[&str]) -> indexmap::IndexMap<String, u32> {
 import { $memchr, $orInsert } from "@rust-js/std";
 
 export function firstComma(text) {
-  return $memchr(text, [44]);
+  return $memchr(text, [44]) ?? undefined;
 }
 
 export function counts(words) {

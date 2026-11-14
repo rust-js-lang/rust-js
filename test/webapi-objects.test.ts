@@ -226,7 +226,7 @@ pub fn close() {
   run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain(`return new ReadableStream({
-    type,
+    type: type ?? undefined,
     start(c) {
       controller = c;
     },
@@ -918,12 +918,12 @@ pub fn first_of(source: ElementOrFragment<'_>) -> Option<&'static Node> {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("export function first(source) {\n  return source.firstChild;\n}");
+  expect(js).toContain("export function first(source) {\n  return source.firstChild ?? undefined;\n}");
   expect(js).toContain('  const scripts = source.querySelectorAll("script");\n');
   // Arms that differ are told by each node's `nodeType` (#555).
   expect(js).not.toContain("instanceof");
   expect(js).toContain('return source.nodeType === 9 ? "document" : source.tagName;');
-  expect(js).toContain("return source.nodeType === 1 ? source.firstChild : source.firstChild;");
+  expect(js).toContain("return source.nodeType === 1\n    ? (source.firstChild ?? undefined)\n    : (source.firstChild ?? undefined);");
   const lib = await import(join(dir, "lib.js"));
   // A host without the global, as Jest's node environment is.
   expect(typeof (globalThis as Record<string, unknown>).Document).toBe("undefined");

@@ -39,11 +39,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .into_iter()
             .map(|v| self.value_expr(v, span))
             .collect::<R<Vec<_>>>()?;
-        let callee = exprs.remove(0);
         // Of a pointer the crate makes of a binding's function, what its
         // parameter takes (ADR 0443, amended).
         let fn_ptr = func.ty(&state.body.local_decls, self.tcx);
         let pointers = self.krate.cell_borrows.pointers();
+        // Of one that may be JS's, each `Option` Rust's `None` (#1840).
+        if !pointers.rust_only(self.tcx, fn_ptr) {
+            self.ones_given_to_a_pointer(state, fn_ptr, &operands[1..], &mut exprs[1..]);
+        }
+        let callee = exprs.remove(0);
         let bindings: Vec<rustc_span::def_id::DefId> = (pointers.may_be(self.tcx, fn_ptr).into_iter().flatten())
             .map(|&(f, _)| f)
             .filter(|&f| bindings::is_binding(self.tcx, f))
@@ -608,6 +612,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     *value = Value::Expr(form.storage().written(given, false));
                 }
             }
+        }
+        // Of a binding, each `Option` it takes as `undefined` alone for
+        // `None`: what may hold a `None` JS gave given Rust's (#1840).
+        if let Some((binding, _)) = self.binding_called(callee.0, callee.1) {
+            self.ones_given_to_a_binding(state, binding, operands, &mut values, span)?;
+        } else {
+            self.ones_given_to_a_dyn(state, callee, operands, &mut values, span)?;
+            self.ones_given_by_std(state, callee.0, operands, &mut values, span)?;
         }
         // Of one given to a writer a piece at a time, the function that
         // writes into the sink it claims (#1652, step 6).

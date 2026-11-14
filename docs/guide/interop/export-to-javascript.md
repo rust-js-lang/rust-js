@@ -1672,11 +1672,11 @@ export function computed(getter) {
 
 export function read(node) {
   if ("current" in node) {
-    return node.current;
+    return node.current ?? undefined;
   }
   if ("getter" in node) {
     node.value = node.getter();
-    return node.value;
+    return node.value ?? undefined;
   }
 }
 

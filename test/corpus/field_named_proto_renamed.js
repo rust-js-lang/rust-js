@@ -18,15 +18,15 @@ function shapeDebug_fmt(shape) {
 }
 
 export function Chained(proto) {
-  this.link = proto;
+  this.link = proto ?? undefined;
 }
 
 Chained.prototype.proto = function () {
-  return this.link;
+  return this.link ?? undefined;
 };
 
 Chained.prototype.set = function (proto) {
-  this.link = proto;
+  this.link = proto ?? undefined;
 };
 
 function made(proto) {

@@ -1337,7 +1337,7 @@ pub fn props_twice(prototype: u32) -> u32 {
   } catch (error) {
     $cleanup(() => {
       reentry = false;
-      globalThis.restored(previous, dispatcher);
+      globalThis.restored(previous, dispatcher ?? undefined);
     }, error);
     throw error;
   }
@@ -1346,12 +1346,12 @@ pub fn props_twice(prototype: u32) -> u32 {
       const frame = \`\\n\${lines[s]}\`;
       const result = frame;
       reentry = false;
-      globalThis.restored(previous, dispatcher);
+      globalThis.restored(previous, dispatcher ?? undefined);
       return result;
     }
   }
   reentry = false;
-  globalThis.restored(previous, dispatcher);
+  globalThis.restored(previous, dispatcher ?? undefined);
   return "";
 }`);
   expect(js).toContain(`  try {
@@ -1380,7 +1380,7 @@ pub fn props_twice(prototype: u32) -> u32 {
   }`);
   // A variable set once the guard's made isn't what the guard holds.
   expect(js).toContain("const _restore = {\n    previous,\n    dispatcher: previous,\n  };");
-  expect(js).toContain("globalThis.restored(_restore.previous, _restore.dispatcher);");
+  expect(js).toContain("globalThis.restored(_restore.previous, _restore.dispatcher ?? undefined);");
   const lib = await import(join(dir, "lib.js"));
   const g = globalThis as Record<string, unknown>;
   const calls: unknown[][] = [];

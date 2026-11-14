@@ -201,5 +201,5 @@ pub fn node(text: &Text) -> Option<&'static str> {
   lib.attach(made, "n");
   expect(lib.node(made)).toBe("n");
   lib.attach(made, null);
-  expect([made.node, lib.node(made)]).toEqual([null, null]);
+  expect([made.node, lib.node(made)]).toEqual([null, undefined]);
 });

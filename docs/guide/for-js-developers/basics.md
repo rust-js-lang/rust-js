@@ -3335,7 +3335,7 @@ export function displayName(p) {
 }
 
 export function ageNextYear(p) {
-  return p.age != null ? (p.age + 1) >>> 0 : undefined;
+  return (p.age != null ? (p.age + 1) >>> 0 : undefined) ?? undefined;
 }
 
 export function initial(p) {

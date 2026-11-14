@@ -475,7 +475,7 @@ pub fn run(callback: Option<Callback>, did_timeout: bool) -> Option<f64> {
 ```js
 export function run(callback, didTimeout) {
   if (typeof callback === "function") {
-    return callback(didTimeout);
+    return callback(didTimeout) ?? undefined;
   }
 }
 ```
@@ -534,7 +534,7 @@ pub fn render_in(task: Option<&ConsoleTask>, render: impl FnOnce() -> u32) -> u3
 ```js
 export function debugTask(name) {
   const createTask = console.createTask;
-  return createTask != null ? createTask(name) : undefined;
+  return (createTask != null ? createTask(name) : undefined) ?? undefined;
 }
 
 export function renderIn(task, render) {
@@ -1096,7 +1096,7 @@ if (__DEV__) {
 }
 
 export function render(setDispatcher) {
-  setDispatcher(HooksDispatcherOnMountInDEV);
+  setDispatcher(HooksDispatcherOnMountInDEV ?? undefined);
 }
 ```
 
@@ -1341,7 +1341,7 @@ const { link, unlink } = createReactiveSystem(0);
 
 export function run(dep) {
   link(dep, 1);
-  return unlink(dep);
+  return unlink(dep) ?? undefined;
 }
 ```
 
@@ -1437,6 +1437,6 @@ const createTask = (() => {
 })();
 
 export function task(name) {
-  return createTask(name);
+  return createTask(name) ?? undefined;
 }
 ```

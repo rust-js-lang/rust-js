@@ -297,7 +297,13 @@ impl<'tcx> FnPointers<'tcx> {
     /// `dyn Fn` of a signature a value of which may be one; a generic one,
     /// which its caller may give one, where the crate's code may hold any;
     /// and a binding's function.
-    fn may_be_js(&self, tcx: TyCtxt<'tcx>, callee: Ty<'tcx>, args: Ty<'tcx>, output: Ty<'tcx>) -> bool {
+    pub(in crate::lower) fn may_be_js(
+        &self,
+        tcx: TyCtxt<'tcx>,
+        callee: Ty<'tcx>,
+        args: Ty<'tcx>,
+        output: Ty<'tcx>,
+    ) -> bool {
         match *callee.peel_refs().kind() {
             ty::Dynamic(..) => self.all_open || self.js_dyns.contains(&signature(tcx, args, output)),
             ty::FnDef(f, _) => is_binding(tcx, f),

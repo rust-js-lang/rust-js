@@ -1,6 +1,8 @@
 // Mutations of src/lower/mir/dispatch.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
+const given1840 = ["test/none-given.test.ts", "-t", "in Bun and in Chromium"];
+
 export const mutations: Mutation[] = [
   {
     name: "trait-method-value-takes-generic-forms",
@@ -854,5 +856,29 @@ export const mutations: Mutation[] = [
     find: "        if let Some(at) = self.recognition().formatter_param(def_id)\n            && let evidence = self.evidence_args(def_id, args, span)?\n",
     replace: "        if let Some(at) = None::<usize>\n            && let evidence = self.evidence_args(def_id, args, span)?\n",
     tests: ["test/crates.test.ts", "-t", "library_writer_fn_pointer_at_an_instance"],
+  },
+  {
+    name: "binding-arguments-given-as-they-are",
+    breaks: "a binding's optional argument of what JS may have given `null` is given it as it is (#1840)",
+    file: "src/lower/mir/dispatch.rs",
+    find: "            self.ones_given_to_a_binding(state, binding, operands, &mut values, span)?;\n",
+    replace: "",
+    tests: given1840,
+  },
+  {
+    name: "dyn-arguments-given-as-they-are",
+    breaks: "a trait object's method, its impl JS's where JS made its pair, is given JS's `null` as it is (#1840)",
+    file: "src/lower/mir/dispatch.rs",
+    find: "            self.ones_given_to_a_dyn(state, callee, operands, &mut values, span)?;\n",
+    replace: "",
+    tests: given1840,
+  },
+  {
+    name: "pointer-arguments-given-as-they-are",
+    breaks: "a fn pointer JS gave is called with JS's `null` as it is (#1840)",
+    file: "src/lower/mir/dispatch.rs",
+    find: "            self.ones_given_to_a_pointer(state, fn_ptr, &operands[1..], &mut exprs[1..]);\n",
+    replace: "",
+    tests: given1840,
   },
 ];

@@ -555,8 +555,8 @@ export function v8Stack(error) {
   const prevPrepareStackTrace = Error.prepareStackTrace;
   Error.prepareStackTrace = prepareStackTrace;
   const stack = error.stack;
-  Error.prepareStackTrace = prevPrepareStackTrace;
-  return stack;
+  Error.prepareStackTrace = prevPrepareStackTrace ?? undefined;
+  return stack ?? undefined;
 }
 
 export function unhooked() {

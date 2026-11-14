@@ -198,12 +198,12 @@ Component.prototype.isReactComponent = {};
 
 /** Sets a subset of the state. */
 Component.prototype.setState = function (partialState, callback) {`);
-  expect(js).toContain(`  this.updater.enqueueSetState(this, partialState, callback, "setState");
+  expect(js).toContain(`  this.updater.enqueueSetState(this, partialState, callback ?? undefined, "setState");
 };
 
 /** Forces an update. */
 Component.prototype.forceUpdate = function (callback) {
-  this.updater.enqueueForceUpdate(this, callback, "forceUpdate");
+  this.updater.enqueueForceUpdate(this, callback ?? undefined, "forceUpdate");
 };
 
 function ComponentDummy() {}

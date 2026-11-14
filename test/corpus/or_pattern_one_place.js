@@ -78,7 +78,7 @@ export function take(chunk, text) {
   }
   chunk.status = "fulfilled";
   chunk.value = text;
-  return listeners;
+  return listeners ?? undefined;
 }
 
 export function read(chunk) {

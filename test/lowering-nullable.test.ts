@@ -1088,8 +1088,8 @@ pub fn info(owner: Option<&js::Unknown>) -> String {
   expect(js).toContain("  const ownerName = owner ? nameOfOwner(owner) : null;\n");
   expect(js).not.toContain(": undefined;\n");
   const lib = await import(join(dir, "lib.js"));
-  expect([lib.logged({ source: { id: 3 } } as never), lib.logged({ source: { id: 1 } } as never), lib.logged({ source: null } as never)]).toEqual(["3", null, null]);
-  expect([lib.maybeLogged({ source: { id: 1 } } as never), lib.maybeLogged({ source: { id: 4 } } as never)]).toEqual([null, "4"]);
+  expect([lib.logged({ source: { id: 3 } } as never), lib.logged({ source: { id: 1 } } as never), lib.logged({ source: null } as never)]).toEqual(["3", undefined, undefined]);
+  expect([lib.maybeLogged({ source: { id: 1 } } as never), lib.maybeLogged({ source: { id: 4 } } as never)]).toEqual([undefined, "4"]);
   expect([lib.info({ name: "App" }), lib.info({ name: "" }), lib.info(0), lib.info(undefined)]).toEqual(["Check App", "", "", ""]);
 });
 
@@ -1489,5 +1489,5 @@ pub fn read(dependency: &ContextDependency<Option<u32>>) -> Option<u32> {
   const dependency = lib.madeOf(undefined);
   expect([dependency.memoizedValue, lib.read(lib.madeOf(2))]).toEqual([null, 2]);
   lib.cleared(dependency);
-  expect([dependency.memoizedValue, lib.read(dependency), lib.numbers().memoizedValue]).toEqual([null, null, 1]);
+  expect([dependency.memoizedValue, lib.read(dependency), lib.numbers().memoizedValue]).toEqual([null, undefined, 1]);
 });

@@ -43,7 +43,7 @@ export function tripledBack(items, f) {
 }
 
 export function chainedBack(a, b) {
-  return $nextBack($mapEnds($lazyChain(Iterator.from(a), b), (x) => (x + 1) >>> 0));
+  return $nextBack($mapEnds($lazyChain(Iterator.from(a), b), (x) => (x + 1) >>> 0)) ?? undefined;
 }
 
 export function mapped(items, f, IIterator) {

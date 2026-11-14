@@ -1,6 +1,8 @@
 // Mutations of src/lower/mir/structure.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
+const given1840 = ["test/none-given.test.ts", "-t", "in Bun and in Chromium"];
+
 export const mutations: Mutation[] = [
   {
     name: "untagged-arms-refusal-unsaid",
@@ -749,5 +751,13 @@ export const mutations: Mutation[] = [
     find: "            // name nothing made (#1395).\n            let mut out = Vec::new();\n            self.flush(state, &mut out)?;\n",
     replace: "            // name nothing made (#1395).\n            let mut out = Vec::new();\n            self.flush(state, &mut Vec::new())?;\n",
     tests: ["test/corpus.test.ts", "-t", "^value_made_before_a_loop_argument.rs$"],
+  },
+  {
+    name: "returned-calls-as-they-are",
+    breaks: "what a function JS calls returns of a call, `id(value)` of JS's `null`, is `null` (#1840)",
+    file: "src/lower/mir/structure.rs",
+    find: "                        let value = self.one_none_returned(state, *destination, None, value, span)?;\n",
+    replace: "",
+    tests: given1840,
   },
 ];

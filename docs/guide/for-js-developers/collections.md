@@ -1109,7 +1109,7 @@ export function stashed(errors, id) {
   if (errors.has(id)) {
     error = errors.get(id);
   }
-  return error;
+  return error ?? undefined;
 }
 
 export function removed(counts, key) {
@@ -1599,7 +1599,7 @@ export function headers(token) {
 }
 
 export function header(headers, name) {
-  return headers[name];
+  return headers[name] ?? undefined;
 }
 ```
 
@@ -1904,7 +1904,7 @@ export function titleOf(text) {
   if (value == null) {
     return;
   }
-  return $jsonValueAs($jsonIndex(value, "title"), "String");
+  return $jsonValueAs($jsonIndex(value, "title"), "String") ?? undefined;
 }
 ```
 

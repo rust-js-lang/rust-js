@@ -49,7 +49,7 @@ pub fn measurer(name: &'static str) -> &'static dyn Fn() -> &'static webapi::Per
   const calls: string[] = [];
   const doc = { get activeElement() { calls.push("active"); return null; } };
   // Given a document, the global's never read.
-  expect(lib.activeElement(doc)).toBeNull();
+  expect(lib.activeElement(doc)).toBeUndefined();
   expect(calls).toEqual(["active"]);
   expect(lib.hasDocument()).toBe(false);
   // None given, and none there: JS's own error, as upstream's default

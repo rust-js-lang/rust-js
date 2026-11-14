@@ -58,6 +58,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             for (i, value) in given.into_iter().zip(values) {
                 let value = self.value_expr(value, span)?;
                 let field = &self.tcx.adt_def(did).non_enum_variant().fields[FieldIdx::from_usize(i)];
+                let value = self.one_none_field(state, field, &operands[FieldIdx::from_usize(i)], value);
                 let value = self.given_field(state, field, &operands[FieldIdx::from_usize(i)], value, out);
                 let value = self.holding(value, Some(field), names[i].1);
                 let value = self.given_boxed_field(ty, VariantIdx::ZERO, i, value, span)?;
@@ -132,6 +133,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         let fields = &self.tcx.adt_def(*did).non_enum_variant().fields;
                         let mut given = Vec::with_capacity(exprs.len());
                         for ((field, operand), e) in fields.iter().zip(&operands).zip(exprs) {
+                            let e = self.one_none_field(state, field, operand, e);
                             given.push(self.given_field(state, field, operand, e, out));
                         }
                         given

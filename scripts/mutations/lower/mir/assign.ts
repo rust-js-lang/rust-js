@@ -1,6 +1,8 @@
 // Mutations of src/lower/mir/assign.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
+const given1840 = ["test/none-given.test.ts", "-t", "in Bun and in Chromium"];
+
 export const mutations: Mutation[] = [
   {
     name: "projected-binding-refused",
@@ -606,8 +608,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a nullable result is a variable each branch sets, so `pop` returns `result ?? null` and its `return`s aren't where they're written",
     file: "src/lower/mir/assign.rs",
-    find: "                self.nullable_written(state, *place, value?, nulled, span)?\n",
-    replace: "                value?\n",
+    find: "                let value = self.nullable_written(state, *place, value?, nulled, span)?;\n",
+    replace: "                let value = value?;\n",
     tests: [
       "test/lowering-options.test.ts",
       "-t",
@@ -1049,5 +1051,21 @@ export const mutations: Mutation[] = [
     find: "            && (state.writer.is_some() || self.write_thrown_here(state))\n",
     replace: "\n",
     tests: ["test/corpus.test.ts", "-t", "^write_result_err_given_back_past_drops.rs$"],
+  },
+  {
+    name: "field-writes-as-they-are",
+    breaks: "a `pub` struct's plain `Option` field set to JS's `null` holds it (#1840)",
+    file: "src/lower/mir/assign.rs",
+    find: "                Rvalue::Use(operand, _) => self.one_none_stored(state, *place, operand, value, span)?,\n",
+    replace: "                Rvalue::Use(..) => value,\n",
+    tests: given1840,
+  },
+  {
+    name: "returned-uses-as-they-are",
+    breaks: "what a function JS calls returns, its parameter JS gave `null`, is `null` (#1840)",
+    file: "src/lower/mir/assign.rs",
+    find: "                self.one_none_returned(state, *place, Some(operand), value, span)?\n",
+    replace: "                value\n",
+    tests: given1840,
   },
 ];

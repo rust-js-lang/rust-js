@@ -37,11 +37,13 @@ const MIN = { t: 0n };
 const MAX = { t: 100n };
 
 export function inRange(at) {
-  return at != null &&
+  return (
+    (at != null &&
     atPartialOrdAt_partialCmp(at, { t: 0n }) >= 0 &&
     atPartialOrdAt_partialCmp(at, { t: 100n }) <= 0
-    ? at
-    : undefined;
+      ? at
+      : undefined) ?? undefined
+  );
 }
 
 function before(a, b) {

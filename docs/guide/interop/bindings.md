@@ -1288,6 +1288,40 @@ A setter's value is never left out: a `set x` binding's `None` is `x =
 undefined`, `Error.prepareStackTrace = undefined`
 ([ADR 0648](../../decisions/0648-v8s-stack-trace-api-is-the-node-crates.md)).
 
+An optional parameter takes Rust's one `None`, `undefined`, which a
+native tells from `null`: `(1.25).toPrecision(null)` throws where
+`toPrecision()` doesn't. So what may hold a `None` JS gave, `null`, a
+parameter of a function JS calls, a nullable place's, what a binding gives
+that declares neither form, is given `value ?? undefined`; what holds
+Rust's own is given as it is
+([ADR 0030](../../decisions/0030-option.md), amended, #1840):
+
+```rust
+pub fn digits(value: Option<f64>) -> String {
+    js::number::to_precision(1.25, value)
+}
+
+pub fn digits_none() -> String {
+    js::number::to_precision(1.25, None)
+}
+```
+
+```js
+export function digits(value) {
+  return (1.25).toPrecision(value ?? undefined);
+}
+
+export function digitsNone() {
+  return (1.25).toPrecision();
+}
+```
+
+The same holds where else a `None` leaves for JS as `undefined` alone:
+what a function JS calls returns, a `pub` struct's plain `Option` field,
+and an argument a callback JS may have given is called with. A nullable
+parameter keeps its `null` (ADR 0861), and an `Option<&Unknown>` JS's
+own `undefined` or `null`.
+
 There's one Rust function for each JS function. Don't write a second one
 for fewer arguments, `update_with_mode`: give the parameter an `Option`.
 Separate functions are for signatures that differ in a parameter's type or

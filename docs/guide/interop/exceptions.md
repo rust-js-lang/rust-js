@@ -875,7 +875,7 @@ export function controlStack() {
   } catch (x) {
     $catchable(x);
     const control = x;
-    return control?.stack;
+    return control?.stack ?? undefined;
   }
 }
 

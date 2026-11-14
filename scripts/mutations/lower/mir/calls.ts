@@ -1,6 +1,8 @@
 // Mutations of src/lower/mir/calls.rs (ADR 0093).
 import type { Mutation } from "../../../mutations";
 
+const given1840 = ["test/none-given.test.ts", "-t", "in Bun and in Chromium"];
+
 export const mutations: Mutation[] = [
   {
     name: "closure-call-of-a-write-error-uncaught",
@@ -804,5 +806,13 @@ export const mutations: Mutation[] = [
       "^any_mapped_to_a_nullable_parameter.rs$"
     ],
     snapshots: true
+  },
+  {
+    name: "callback-arguments-given-as-they-are",
+    breaks: "a `dyn Fn` JS gave is called with JS's `null` as it is (#1840)",
+    file: "src/lower/mir/calls.rs",
+    find: "            self.ones_given_to_a_callback(state, (arg_tys[0], arg_tys[1], *output), &tys, &mut exprs);\n",
+    replace: "",
+    tests: given1840,
   },
 ];

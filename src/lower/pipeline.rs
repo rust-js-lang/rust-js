@@ -261,9 +261,11 @@ pub fn lower_crate<'tcx>(
         trait_impls: &trait_impls,
         foreign: &foreign,
     };
-    let nulled_params = NulledParams::scan(&recognition, (&with_closures, &named_anywhere), &forwarded, &|id| {
-        foreign.has_nulled_params(id)
-    });
+    let nulled_params = NulledParams::scan(
+        &recognition,
+        (&with_closures, &named_anywhere, &forwarded),
+        &cell_borrows,
+    );
     failed |= !super::classes::exported_by_property(tcx, &fns, &forwarded);
     // A function that only passes its parameters on to a function at one
     // instantiation, which its module re-exports where its JS is that call
@@ -1274,12 +1276,6 @@ pub fn lower_crate<'tcx>(
     }
     // What the library does with its `RefCell`s, which its consumers agree
     // with (ADR 0863).
-    let recognition = super::recognition::Recognition {
-        tcx,
-        typing_env: ty::TypingEnv::fully_monomorphized(),
-        trait_impls: &trait_impls,
-        foreign: &foreign,
-    };
     let drop_runs = |t| super::drops::drop_runs(recognition, (library, &closure_facts), &counted, t);
     let ref_cell_facts = || {
         let no_ref_cells = super::drops::RefCells::default();

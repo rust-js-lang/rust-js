@@ -440,7 +440,7 @@ pub fn read_twice(o: &'static Unknown) -> Option<&'static Unknown> {
   expect(js).toContain("export function present(value) {\n  return !!value;\n}");
   expect(js).toContain('export function shown(value) {\n  return value ? "yes" : "no";\n}');
   expect(js).toContain('export function named(name) {\n  return !name ? "none" : "some";\n}');
-  expect(js).toContain("export function text(value) {\n  return value;\n}");
+  expect(js).toContain("export function text(value) {\n  return value ?? undefined;\n}");
   // `a ? b : a` is `a && b`, as React's enqueueTask has `module &&
   // module[requireString]`; not of a read a getter may answer, read twice.
   expect(js).toContain("export function and(module, key) {\n  return module && module[key];\n}");

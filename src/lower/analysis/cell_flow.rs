@@ -1052,7 +1052,7 @@ impl<'r, 'tcx> Flow<'r, 'tcx> {
 
 /// Whether `id` is a thread-local's key, the `const` of a `LocalKey` its
 /// macro makes.
-fn thread_local_key(tcx: TyCtxt<'_>, id: DefId) -> bool {
+pub(super) fn thread_local_key(tcx: TyCtxt<'_>, id: DefId) -> bool {
     matches!(tcx.def_kind(id), rustc_hir::def::DefKind::Const)
         && matches!(tcx.type_of(id).instantiate_identity().skip_normalization().kind(),
             ty::Adt(key, _) if crate::lower::recognition::is_std_def(tcx, key.did(), StdItem::LocalKey))

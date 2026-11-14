@@ -35,7 +35,7 @@ test("event methods and reusable listeners emit direct JavaScript", () => {
   expect(js).toContain("  list.addListener(changed);\n  list.removeListener(changed);\n  list.addListener(onCustomMedia);\n  list.removeListener(onCustomMedia);");
   // An event's name given as a value, copied to remove its listener later,
   // is the string itself, as the vercel UI kernel's `on` (#1817).
-  expect(js).toContain("export function on(target, name, listener, options) {\n  target.addEventListener(name, listener, options);\n  return () => {\n    target.removeEventListener(name, listener, options);\n  };\n}");
+  expect(js).toContain("export function on(target, name, listener, options) {\n  target.addEventListener(name, listener, options ?? undefined);\n  return () => {\n    target.removeEventListener(name, listener, options ?? undefined);\n  };\n}");
   expect(js).not.toMatch(/unreachable|\.add_event_listener|\.client_x|\.prevent_default/);
   // A listener JS gave is passed as it is, and called as JS would (rd185).
   expect(js).toContain('export function givenRemoved(button, given) {\n  button.addEventListener("custom", given);\n  button.removeEventListener("custom", given);\n}');

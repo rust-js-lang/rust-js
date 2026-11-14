@@ -956,7 +956,7 @@ export function isElement(node) {
 
 export function track(node, fallback, id) {
   if (node.length === 4) {
-    node[4] = fallback;
+    node[4] = fallback ?? undefined;
     node[5] = id;
   }
 }
@@ -3485,7 +3485,7 @@ export function createSyntheticEvent(Interface) {
 
 export function dispatched(ctor, nativeEvent) {
   const event = new ctor("onClick", nativeEvent);
-  return event._reactName;
+  return event._reactName ?? undefined;
 }
 ```
 - **`==` of two is JS's `===`**; of two `Option<&Unknown>`, std's

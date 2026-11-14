@@ -60,7 +60,7 @@ test("a library's functions that may merge what its consumer compares are compil
   const out = chain(pairs, "library_identities_kept_apart", ["dep", "app"]);
   const dep = readFileSync(join(out, "dep", "lib.js"), "utf8");
   expect(dep).toContain("  const read = () => count.value;\n  const first = read;\n  const second = read;\n");
-  expect(dep).toContain("  return { compute: getter };\n");
+  expect(dep).toContain("  return { compute: (previous) => getter(previous ?? undefined) };\n");
   expect(dep).toContain("  const first = bump;\n  const second = bump;\n");
   expect(dep).toContain("  return [ping, ping];\n");
   expect(contract(out).merges_identities).toHaveLength(7);

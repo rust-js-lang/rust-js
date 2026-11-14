@@ -818,7 +818,7 @@ pub fn got(value: &Unknown, names: &[&str]) -> Vec<Option<&'static Unknown>> {
 }
 `);
   expect(js).toContain("$dictGet(config, entry.id)");
-  expect(js).toContain("  return config[n];");
+  expect(js).toContain("  return config[n] ?? undefined;");
   expect(js).toContain("  config[id] = value;");
   const lib = await import(join(dir, "lib.js"));
   const config = lib.filled();

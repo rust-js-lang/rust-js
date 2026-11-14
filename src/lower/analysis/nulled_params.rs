@@ -26,7 +26,10 @@
 //! reads apart, `null` from `undefined` (`reads_alike`, #665), which a
 //! write stores as it's given: `?? null` only where a read can tell.
 
+mod js_nones;
 mod read_alike;
+
+pub(in crate::lower) use js_nones::{JsNones, one_none, optional_argument, returns_one_none};
 
 use crate::collections::{IndexMap, IndexSet};
 use crate::lower::Body;
@@ -53,6 +56,8 @@ pub(in crate::lower) struct NulledParams {
     /// The crate's nullable thread-locals nothing reads apart, `null` from
     /// `undefined` (`reads_alike`, #665).
     alike: IndexSet<DefId>,
+    /// The places that may hold a `None` JS gave, `null` (#1840).
+    js_nones: JsNones,
 }
 
 /// What the bodies lowered so far found of them, `Settled`'s, which the
@@ -110,14 +115,16 @@ impl NulledParams {
     /// its body, that function's JS, calls nothing, and a call or use of it
     /// is the function's (#601).
     /// And of `everywhere`, `bodies` and the initializers, the nullable
-    /// thread-locals nothing reads apart (`read_alike::found`, #665).
+    /// thread-locals nothing reads apart (`read_alike::found`, #665), and
+    /// the places that may hold a `None` JS gave (`js_nones::found`, #1840),
+    /// of what `cell_borrows`' fn pointers say JS may make.
     pub(in crate::lower) fn scan<'tcx>(
         recognition: &Recognition<'_, 'tcx>,
-        (bodies, everywhere): (&[&Body<'tcx>], &[&Body<'tcx>]),
-        forwarded: &IndexMap<DefId, DefId>,
-        foreign: &dyn Fn(DefId) -> bool,
+        (bodies, everywhere, forwarded): (&[&Body<'tcx>], &[&Body<'tcx>], &IndexMap<DefId, DefId>),
+        cell_borrows: &crate::lower::analysis::CellBorrows<'tcx>,
     ) -> NulledParams {
         let tcx = recognition.tcx;
+        let foreign = &|id| recognition.foreign.has_nulled_params(id);
         let mut candidates = IndexMap::default();
         for body in bodies {
             let id = body.def_id;
@@ -168,6 +175,7 @@ impl NulledParams {
             as_values,
             forwarded: forwarded.clone(),
             alike: read_alike::found(recognition, everywhere),
+            js_nones: js_nones::found(recognition, everywhere, cell_borrows.pointers()),
         }
     }
 
@@ -176,6 +184,12 @@ impl NulledParams {
     /// write of it stores what it's given as it is, its `None` `null`.
     pub(in crate::lower) fn reads_alike(&self, key: DefId) -> bool {
         self.alike.contains(&key)
+    }
+
+    /// The places that may hold a `None` JS gave, `null` (`js_nones`,
+    /// #1840), which `mir::nulled`'s `none_trusted` asks.
+    pub(in crate::lower) fn js_nones(&self) -> &JsNones {
+        &self.js_nones
     }
 
     /// Of `callee`, the function a call of it is, and how many of the

@@ -805,8 +805,8 @@ pub fn has_function(error: &JsError) -> bool {
   const prevPrepareStackTrace = Error.prepareStackTrace;
   Error.prepareStackTrace = DEFAULT_PREPARE_STACK_TRACE;
   const stack = error.stack;
-  Error.prepareStackTrace = prevPrepareStackTrace;
-  return stack;
+  Error.prepareStackTrace = prevPrepareStackTrace ?? undefined;
+  return stack ?? undefined;
 }`);
   expect(js).toContain("  Error.prepareStackTrace = files;\n  const stack = error.stack;\n  Error.prepareStackTrace = undefined;\n");
   expect(js).toContain("  const previous = Error.stackTraceLimit;\n  Error.stackTraceLimit = limit;\n");

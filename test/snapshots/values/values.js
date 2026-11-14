@@ -20,12 +20,12 @@ import {
 export const Value = {
   get(value, key) {
     if (value.TAG === "Obj") {
-      return value._0.get(key);
+      return value._0.get(key) ?? undefined;
     }
   },
   at(value, i) {
     if (value.TAG === "List") {
-      return value._0[i];
+      return value._0[i] ?? undefined;
     }
   },
   asNum(value) {

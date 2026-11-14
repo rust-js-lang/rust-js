@@ -754,7 +754,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 continue;
             };
             if is_binding(tcx, f) {
-                *arg = self.binding_fn_pointer(f, f_args.skip_binder(), span, span)?;
+                *arg = self.binding_fn_pointer(f, f_args.skip_binder(), (span, false), span)?;
             } else if itself == Itself::Unreturned
                 && let Some(itself) = self.rest_function_itself(f, f_args.skip_binder(), span)?
             {

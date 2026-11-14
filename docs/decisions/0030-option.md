@@ -172,3 +172,73 @@ and `FileSystemHandle::resolve`'s `sequence<USVString>?`. Awaited, its
 `None` is the `null` JS gives, read as any `Option` is. The generator has
 no mutation list; `test/webapi-promises.test.ts` holds the generated
 signature and both answers.
+
+## Amended (2026-11-15): Rust's one `None` where it leaves for JS as `undefined` (#1840, #1843)
+
+A wrong answer (P0, #1840, #1843). An `Option` JS gives, a public
+function's parameter, is declared `T | null | undefined`, and `is_none` is
+true of either, so inside Rust's code the two read alike. But given on to
+a native optional argument as it was, JS took `null` for a value:
+`(1.25).toPrecision(null)` threw a RangeError where Rust's
+`to_precision(1.25, None)` is "1.25", and `Intl.DateTimeFormat#format(null)`
+gave 1970 where `None` means now. A `#[rust_js::nullable(..)]` parameter,
+whose `None` is `null` (ADR 0861), given on to a binding's optional
+argument was the same (#1843). Rust has one `None`.
+
+**Where a `None` leaves for JS as `undefined` alone, what may hold one JS
+gave is given `value ?? undefined`.** One owner answers whether it may,
+`analysis/nulled_params/js_nones.rs`, asked through `mir::nulled`'s
+`none_trusted`: a flow-insensitive taint of every body's MIR, unknown taken
+as may, so the answer is sound by construction. Its sources are what JS or
+code not seen gives: a parameter of what JS or a consumer calls
+(`js_facing`, `library::reachable`, a trait's impl among them), whose
+fields an object JS made holds are read through it; a binding's result
+that declares neither form, or `null`, and what it writes through a
+`&mut`; a nullable parameter, field, result or thread-local; a closure or
+function given where its callers aren't seen, to a binding, a `dyn`, a fn
+pointer or the crate's own generic function; a call through a `dyn` or a
+type parameter's; another crate's result; and std's
+result of what it's given of a type parameter, a `dyn` or an opaque type. They flow through moves, copies and aggregates,
+both ways through what shares what it points at (a `&mut`, a shared
+reference to what isn't `Freeze`, an `Rc`), through the crate's calls,
+arguments to parameters and returns to results, and through std's calls by
+the `Option` types each value carries, so `position()`'s fresh `None`
+holds Rust's. The exits:
+
+- a binding's argument it declares an `Option`, not a nullable one's, nor
+  a type parameter's, `js::set`'s `T`, which JS takes as it's given; what
+  `function::bind` binds of a binding, its `.bind(..)` kept; and a binding's
+  function as a value, `values.map(text)`, whose arrow gives each so;
+- each write of what a function JS calls returns, not a nullable one's
+  (ADR 0841), at the write, so its returns are structured as before;
+- a write of a `pub` or another crate's struct's plain `Option` field,
+  which JS reads of the object;
+- an argument a callback that may be JS's is given: a `dyn Fn`, a generic
+  `Fn` or a pointer that `FnPointers` says may be a JS function, of a value
+  the taint says JS may have given; and a trait object's method where JS
+  may have made its pair.
+
+Unchanged: a nullable place, which stores `null` (ADR 0275); an `Option`
+of a value of any shape, `Option<&Unknown>` or `Option<&dyn IntoUnknown>`,
+whose `undefined` and `null` are each a value of JS's own (rd275, #443);
+`js::null()`, JS's `null` on purpose (ADR 0935); what's never `null`, a
+literal, an object, `Some(..)` or `None` made; and comparisons, which read
+the two alike. A Rust callee behind a `dyn` or a generic is no exit: it
+holds what it's given as it may be and gives Rust's at its own exits.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's. The react-in-rust port gains 198 `?? undefined` in 72 files, most
+of a nullable place's `None` or a callback JS calls, which are needed; the
+corpus 10 snapshots. Approach (a), making a `None` JS gives Rust's where
+it's first held, was measured at 900 in 147 files and rejected. Trusting a
+binding's result its declaration types `T | undefined`, and a plain
+`Option` parameter's or field's as #1845 declares it, are follow-ups.
+
+Held by `test/none-given.test.ts` (Bun and Chromium, and a library a
+consumer gives JS's `null`), and the corpus case
+`none_given_to_an_optional_argument`, against native Rust: a nullable
+parameter, field, result and thread-local given to `String(value)` through
+a function, a trait object, `map`, a fn pointer and a `dyn Fn`. Mutations in
+`analysis/nulled_params/js_nones.ts`, `mir/nulled.ts`, `mir/dispatch.ts`,
+`mir/calls.ts`, `mir/assign.ts`, `mir/structure.ts`,
+`mir/rvalues/aggregate.ts`, `items.ts` and `binding_calls.ts`.

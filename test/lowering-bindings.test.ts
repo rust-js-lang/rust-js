@@ -717,8 +717,8 @@ pub fn stopped(id: Option<&js::IntervalId>) {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("  clearTimeout(id);");
-  expect(js).toContain("  clearInterval(id);");
+  expect(js).toContain("  clearTimeout(id ?? undefined);");
+  expect(js).toContain("  clearInterval(id ?? undefined);");
   const lib = await import(join(dir, "lib.js"));
   let ran = false;
   const timer = setTimeout(() => { ran = true; }, 0);
@@ -1449,7 +1449,7 @@ pub fn task(name: &str) -> Option<&'static ConsoleTask> {
     // Where the host has none: `noTask`'s `null`.
     Object.defineProperty(console, "createTask", { configurable: true, value: undefined });
     const none = await import(`${join(dir, "lib.js")}?none`);
-    expect(none.task("a")).toBeNull();
+    expect(none.task("a")).toBeUndefined();
   } finally {
     if (own) Object.defineProperty(console, "createTask", own);
     else delete (console as { createTask?: unknown }).createTask;

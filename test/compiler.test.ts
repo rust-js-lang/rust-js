@@ -795,7 +795,7 @@ test("concat of parts written out is an array of them, spread", async () => {
 // What's there's field, or nothing, is an optional chain.
 test("a field of an Option's value is an optional chain", async () => {
   const js = await Bun.file(join(target, "combinators.js")).text();
-  expect(js).toContain("export function nameOf(named) {\n  return named?.name;\n}");
+  expect(js).toContain("export function nameOf(named) {\n  return named?.name ?? undefined;\n}");
 });
 
 // A closure called in place is its value, closures in it too.

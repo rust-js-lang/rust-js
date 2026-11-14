@@ -396,7 +396,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         &mut self,
         def_id: DefId,
         args: ty::GenericArgsRef<'tcx>,
-        named: Span,
+        (named, normalized): (Span, bool),
         span: Span,
     ) -> R<Expr> {
         // One in an `extern` block is refused by its call, `binding_values`,
@@ -430,9 +430,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             )
             .collect();
         // Each given as its call gives it (ADR 0604): a nullable one's
-        // `None`, `null`.
+        // `None`, `null`; and, `normalized`, one it takes as `undefined`
+        // alone, of what std's code that calls it may have of JS, Rust's
+        // (#1840). Not of the function as a value, whose identity a caller
+        // may compare, and whose callers the crate's code gives Rust's.
         let values: Vec<Expr> = (params.iter().zip(&inputs).enumerate())
-            .map(|(i, (name, &ty))| self.binding_arg(def_id, (i, false), Expr::var(name), ty))
+            .map(|(i, (name, &ty))| {
+                let given = match normalized
+                    && crate::lower::analysis::nulled_params::one_none(self.tcx, ty)
+                    && crate::lower::analysis::nulled_params::optional_argument(self.tcx, def_id, i)
+                    && self.option_of(ty).is_some_and(|payload| {
+                        crate::lower::representation::none_form(
+                            self.tcx,
+                            crate::lower::representation::NonePlace::BindingArg(def_id, i, Some(payload)),
+                        ) == crate::lower::representation::NoneForm::Undefined
+                    }) {
+                    true => Expr::bin(js::Op::Coalesce, Expr::var(name), Expr::js_undefined()),
+                    false => Expr::var(name),
+                };
+                self.binding_arg(def_id, (i, false), given, ty)
+            })
             .collect();
         let mut made = Vec::new();
         let body = self.binding_values((def_id, args), values, (self.js_span(span), named), span, &mut made)?;
@@ -475,10 +492,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         &mut self,
         def_id: DefId,
         args: ty::GenericArgsRef<'tcx>,
-        named: Span,
+        (named, normalized): (Span, bool),
         span: Span,
     ) -> R<Expr> {
-        let mut arrow = self.binding_value(def_id, args, named, span)?;
+        let mut arrow = self.binding_value(def_id, args, (named, normalized), span)?;
         // A constructor JS makes alike called, `Error(m)` as `new Error(m)`:
         // its arrow's call, so the value is the class where it only passes
         // its parameters on, `Error` (rd404).
@@ -510,7 +527,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
     ) -> R<Option<Expr>> {
         if super::bindings::is_binding(self.tcx, def_id) {
-            return self.binding_fn_pointer(def_id, args, named, span).map(Some);
+            return self.binding_fn_pointer(def_id, args, (named, false), span).map(Some);
         }
         Ok(self.math_function(def_id, args))
     }

@@ -875,6 +875,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             value => value,
                         };
                         let value = self.nullable_written(state, *destination, value, nulled, span)?;
+                        let value = self.one_none_returned(state, *destination, None, value, span)?;
                         // A `&mut` it gives to a place that stores `null` for
                         // `None`, a nullable field's `RefCell`'s `get_mut()`
                         // or an item of its items, `&mut v[i]` (#541).

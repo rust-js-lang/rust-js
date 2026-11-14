@@ -40,7 +40,7 @@ Counted.prototype.readCount = function () {
 };
 
 Counted.prototype.lastRead = function () {
-  return this.last;
+  return this.last ?? undefined;
 };
 
 function main() {

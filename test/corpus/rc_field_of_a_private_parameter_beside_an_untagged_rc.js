@@ -16,7 +16,7 @@ export const Source = {
 export function positionOf(items, of) {
   const entries = { all: items.map((item) => $rcClone(item)) };
   try {
-    return $position(entries.all, (item) => item === of);
+    return $position(entries.all, (item) => item === of) ?? undefined;
   } catch (error) {
     throw $unwindsOn(error);
   } finally {

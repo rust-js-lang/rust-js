@@ -217,7 +217,7 @@ if (__DEV__) {
   componentFrameCache = new PossiblyWeakMap();
 }
 `);
-  expect(out).toContain("return componentFrameCache?.get(key);");
+  expect(out).toContain("return componentFrameCache?.get(key) ?? undefined;");
 });
 
 // rd137: a module that reads a function another re-exports, through the

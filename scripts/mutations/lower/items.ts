@@ -15,8 +15,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a binding taken as a `fn` or lent as a `&dyn Fn` is its arrow, which reads the global at each call, a new function each time (ADR 0602)",
     file: "src/lower/items.rs",
-    find: "        if super::bindings::is_binding(self.tcx, def_id) {\n            return self.binding_fn_pointer(def_id, args, named, span).map(Some);\n",
-    replace: "        if false {\n            return self.binding_fn_pointer(def_id, args, named, span).map(Some);\n",
+    find: "        if super::bindings::is_binding(self.tcx, def_id) {\n            return self.binding_fn_pointer(def_id, args, (named, false), span).map(Some);\n",
+    replace: "        if false {\n            return self.binding_fn_pointer(def_id, args, (named, false), span).map(Some);\n",
     tests: [
       "test/lowering-functions.test.ts",
       "test/js-functions.test.ts",
@@ -112,8 +112,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a nullable binding as a value is given `undefined`, `(to) => rustJsReset(to)`, where its call gives `null`",
     file: "src/lower/items.rs",
-    find: "            .map(|(i, (name, &ty))| self.binding_arg(def_id, (i, false), Expr::var(name), ty))\n",
-    replace: "            .map(|(_, (name, _))| Expr::var(name))\n",
+    find: "                self.binding_arg(def_id, (i, false), given, ty)\n",
+    replace: "                given\n",
     tests: ["test/lowering-functions.test.ts", "-t", "a binding taken as a fn"],
   },
   {
@@ -499,5 +499,13 @@ export const mutations: Mutation[] = [
     find: "        if copy.is_some() {\n            self.dependencies.borrow_mut().uses.push((self.item, def_id));\n        }\n",
     replace: "",
     tests: ["test/crates.test.ts", "-t", "library_generic_called_only_from_a_middle_generic"],
+  },
+  {
+    name: "binding-values-given-as-they-are",
+    breaks: "a binding's function std's code calls, `values.map(text)`, is given a nullable place's `null` as it is (#1843)",
+    file: "src/lower/items.rs",
+    find: "                let given = match normalized\n",
+    replace: "                let given = match false\n",
+    tests: ["test/corpus.test.ts", "-t", "^none_given_to_an_optional_argument.rs$"],
   },
 ];

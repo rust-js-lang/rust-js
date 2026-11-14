@@ -411,7 +411,7 @@ pub fn cleaned(node: &Node) -> Option<u32> {
   expect(js).toContain('    TAG: "Effect",\n    cleanup: undefined,\n');
   expect(js).toContain("    kind.cleanup = cleanup;\n");
   expect(js).toContain('  if (!("cleanup" in node)) {\n');
-  expect(js).toContain("  const old = node.cleanup;\n  node.cleanup = node.flags;\n  return old;\n");
+  expect(js).toContain("  const old = node.cleanup;\n  node.cleanup = node.flags;\n  return old ?? undefined;\n");
   expect(js).not.toContain("$fieldCell");
   expect(js).not.toContain(".value");
   const types = readFileSync(join(dir, "lib.d.ts"), "utf8");

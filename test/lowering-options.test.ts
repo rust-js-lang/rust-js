@@ -1283,7 +1283,7 @@ pub fn tag_shown(value: &Unknown) -> (String, bool) {
   expect(js).toContain("export function kept(a) {\n  return a || null;\n}");
   expect(js).toContain('export function label(a) {\n  return a || "Memo";\n}');
   expect(js).toContain('export function typeName(value) {\n  const type = value.tag || value.name || "Object";\n  return type;\n}');
-  expect(js).toContain("export function shout(a) {\n  return a ? a.toUpperCase() : undefined;\n}");
+  expect(js).toContain("export function shout(a) {\n  return (a ? a.toUpperCase() : undefined) ?? undefined;\n}");
   // A predicate that isn't the truth of what it holds is its own test.
   expect(js).toContain("export function falsyOr(a, b) {\n  return a != null && !a ? a : b;\n}");
   expect(js).toContain("export function named(a) {\n  return a != null && a.name ? a : undefined;\n}");

@@ -153,11 +153,11 @@ export function shifted(by, items) {
 }
 // A field of what's there, or nothing: `named?.name`, as a person writes it.
 export function nameOf(named) {
-  return named?.name;
+  return named?.name ?? undefined;
 }
 // Not of another's, nor where nothing isn't `undefined`.
 export function otherName(flag, named) {
-  return flag != null ? named.name : undefined;
+  return (flag != null ? named.name : undefined) ?? undefined;
 }
 export function labelOf(named) {
   return named?.label ?? "none";

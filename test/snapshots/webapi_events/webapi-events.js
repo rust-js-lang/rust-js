@@ -302,9 +302,9 @@ export function localNavigationListeners(button) {
  * to remove it later, as the vercel UI kernel's `on` (#1817).
  */
 export function on(target, name, listener, options) {
-  target.addEventListener(name, listener, options);
+  target.addEventListener(name, listener, options ?? undefined);
   return () => {
-    target.removeEventListener(name, listener, options);
+    target.removeEventListener(name, listener, options ?? undefined);
   };
 }
 

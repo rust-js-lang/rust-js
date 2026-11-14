@@ -820,7 +820,7 @@ pub fn of_any() -> Option<String> {
   } catch (x) {
     $catchable(x);
     const control = x;
-    return control?.stack;
+    return control?.stack ?? undefined;
   }
 }`);
   expect(js).toContain(`  } catch (x) {
@@ -1181,7 +1181,7 @@ pub fn named(name: &str) -> bool {
     const stack = x.stack ?? "";
     return $trim(stack);
   }`);
-  expect(js).toContain("  } catch (x) {\n    $catchable(x);\n    return x;\n  }");
+  expect(js).toContain("  } catch (x) {\n    $catchable(x);\n    return x ?? undefined;\n  }");
   expect(js).toContain("  } catch (payload) {\n    $catchable(payload);\n    return payload.message;\n  }");
   expect(js).toContain("  } catch (payload) {\n    $catchable(payload);\n    return payload.message === name;\n  }");
   expect(js).not.toContain("?.");

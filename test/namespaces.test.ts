@@ -771,7 +771,7 @@ test("a namespace's method through a value whose call needs a copy unlike its ow
   const namespace = await import(join(dir, "reconciler.js"));
   expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain("renderer.batchedUpdates(");
   expect(lib.batched(namespace)).toBe(true);
-  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain("  return renderer.flushSync(f);\n");
+  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain("  return renderer.flushSync(f) ?? undefined;\n");
   expect([lib.flattened(namespace, 0), lib.flattened(namespace, 1), lib.flattened(namespace, 2)]).toEqual([
     undefined,
     1,
@@ -911,7 +911,7 @@ pub fn nested(renderer: &Reconciler, given: u32) -> String {
   );
   expect(ran.stderr).toBe("");
   const app = readFileSync(join(dir, "app", "lib.js"), "utf8");
-  expect(app).toContain("  return renderer.flushSync(f);\n");
+  expect(app).toContain("  return renderer.flushSync(f) ?? undefined;\n");
   expect(app).not.toContain("DEPTH");
   const lib = await import(join(dir, "app", "lib.js"));
   const namespace = await import(join(dir, "dep", "reconciler.js"));
@@ -953,7 +953,7 @@ pub fn flusher() -> Box<dyn Fn(Option<&dyn Fn() -> Option<u32>>) -> Option<u32>>
   expect(ran.stderr).toBe("");
   const app = readFileSync(join(dir, "app", "lib.js"), "utf8");
   expect(app).not.toContain("DEPTH");
-  expect(app).toContain("  return flushSync(f);\n");
+  expect(app).toContain("  return flushSync(f) ?? undefined;\n");
   // The closure that only passes its argument on to it is it, as one
   // through a value is (the user's decision, 2026-11-01).
   expect(app).toContain("  return flushSync;\n");

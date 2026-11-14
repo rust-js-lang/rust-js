@@ -463,7 +463,7 @@ pub fn maybe(callback: &Option<Callback>) -> bool {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain('if (typeof callback === "function") {\n    return callback(didTimeout);\n  }');
+  expect(js).toContain('if (typeof callback === "function") {\n    return callback(didTimeout) ?? undefined;\n  }');
   expect(js).toContain('export function pointer(f) {\n  return typeof f === "function";\n}');
   expect(js).toContain('export function lent(f) {\n  return typeof f === "function";\n}');
   expect(js).toContain('export function generic(f) {\n  return typeof f === "function";\n}');

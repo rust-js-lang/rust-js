@@ -104,7 +104,7 @@ export function updateShown(state, gesture) {
   } else {
     previous = previousOf(state, gesture);
   }
-  return [measureShown(previous), String(previous)];
+  return [measureShown(previous), String(previous ?? undefined)];
 }
 
 export function updateReturned(state, gesture) {
@@ -125,7 +125,7 @@ export function updateStored(state, gesture) {
     previous = previousOf(state, gesture);
   }
   const measured$1 = measureStored(previous);
-  return [measured$1, { previous }];
+  return [measured$1, { previous: previous ?? undefined }];
 }
 
 export function updateCaptured(state, gesture) {

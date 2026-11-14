@@ -345,7 +345,7 @@ pub fn popped(mut items: Vec<Option<u32>>) -> Option<u32> {
   expect(js).toContain("const first = args.shift();");
   expect(js).toContain("const last = args.pop();");
   expect(js).toContain("return [items[0], items[i], items.at(-1)];");
-  expect(js).toContain("return items.pop();");
+  expect(js).toContain("return items.pop() ?? undefined;");
   expect(js).not.toContain("$someValue");
   const lib = await import(join(dir, "mir.js"));
   expect([lib.shifted([1, undefined, 3]), lib.shifted([undefined]), lib.shifted([])]).toEqual([[1, 3, 1], [undefined, undefined, 0], [undefined, undefined, 0]]);
@@ -838,7 +838,7 @@ pub fn evens(n: u32) -> Vec<u32> {
   const js = readFileSync(join(dir, "mir.js"), "utf8");
   // Of a filter, which may keep few of many, no array of them all either.
   expect(js).toContain("return Array.from($lazyRange(0, n).filter((i) => i % 2 === 0));");
-  expect(js).toContain("return $lazyRange(0, n).find(f);");
+  expect(js).toContain("return $lazyRange(0, n).find(f) ?? undefined;");
   expect(js).toContain("return Array.from(\n    $lazyRange(0, v.length)\n      .map(");
   // A billion numbers, the first that holds the third: as quick as Rust's.
   const { first } = await import(join(dir, "mir.js"));

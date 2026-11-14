@@ -80,7 +80,7 @@ pub fn truth(v: Option<&Unknown>, n: u32) -> bool {
   expect(js).toContain("  return dev && globalThis.bigIt(n);\n");
   expect(js).toContain("  const wide = dev && big(n);\n");
   expect(js).toContain("  const any = n === 0 || dev;\n");
-  expect(js).toContain("  return dev ? n : false;\n");
+  expect(js).toContain("  return dev ? (n ?? undefined) : false;\n");
   expect(js).toContain("  return v ? n > 2 : false;\n");
   expect([lib.small("abc" as never), lib.small("aaab" as never), lib.small("x" as never)]).toEqual([true, false, false]);
   const big = (n: number) => n > 2;

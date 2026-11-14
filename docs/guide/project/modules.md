@@ -1540,7 +1540,7 @@ pub fn now() -> f64 /* Milliseconds. */ {
 
 ```js
 export function encode(value) /* Not yet one. */ {
-  return value;
+  return value ?? undefined;
 }
 
 export function now() /* Milliseconds. */ {

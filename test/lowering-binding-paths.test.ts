@@ -354,13 +354,13 @@ export default ReactSharedInternalsServer;
 `);
   const flight = readFileSync(join(dir, "flight.js"), "utf8");
   expect(flight).toContain('import ReactSharedInternals from "./server.js";\n');
-  expect(flight).toContain("  const before = ReactSharedInternals.a;\n  ReactSharedInternals.a = dispatcher;\n  return before;\n");
+  expect(flight).toContain("  const before = ReactSharedInternals.a;\n  ReactSharedInternals.a = dispatcher;\n  return before ?? undefined;\n");
   expect(flight).toContain("  return ReactSharedInternals;\n");
   expect(flight).not.toContain("$unwrap");
   const lib = await import(join(dir, "flight.js"));
   const react = await import(join(dir, "node_modules/react/index.js"));
   expect(lib.internals()).toBe(react.__SERVER_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE);
-  expect(lib.install(3)).toBeNull();
+  expect(lib.install(3)).toBeUndefined();
   expect(lib.install(4)).toBe(3);
   // Where \`react\` has no server internals, the module's load throws.
   const absent = join(dir, "absent");

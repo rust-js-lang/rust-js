@@ -1046,7 +1046,7 @@ pub fn current() -> Option<u32> {
     CURRENT.with_borrow(|current| *current)
 }
 `);
-  expect(app).toContain("export function current() {\n  return current$1;\n}\n");
+  expect(app).toContain("export function current() {\n  return current$1 ?? undefined;\n}\n");
   expect(() => compiled(dir, dep, `use dep::CURRENT;
 
 pub fn clash() {
@@ -1279,7 +1279,7 @@ pub fn swapped(action: &ServerAction, permalink: &str) -> Option<String> {
   expect(app).toContain('  if (permalink != null) {\n    metadata.action = "" + permalink;\n  }\n');
   expect(app).toContain('  const metadata = action.$$FORM_ACTION("p");\n  metadata.action = undefined;\n}');
   expect(app).not.toContain("const old = metadata.action;\n    metadata.action =");
-  expect(app).toContain("  const old = metadata.action;\n  metadata.action = permalink;\n  return old;\n");
+  expect(app).toContain("  const old = metadata.action;\n  metadata.action = permalink;\n  return old ?? undefined;\n");
   const { overridden, cleared, swapped } = await import(join(dir, "app", "lib.js"));
   // An action whose `action` a getter answers, which counts its reads.
   let reads = 0;

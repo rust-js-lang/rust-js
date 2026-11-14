@@ -996,7 +996,7 @@ pub(super) fn field_default_const(tcx: TyCtxt<'_>, field: &FieldDef) -> Option<S
 }
 
 /// Whether field `i` of `ty`, a struct, is flattened (ADR 0204).
-pub(super) fn is_flatten_field(tcx: TyCtxt<'_>, ty: Ty<'_>, i: usize) -> bool {
+pub(in crate::lower) fn is_flatten_field(tcx: TyCtxt<'_>, ty: Ty<'_>, i: usize) -> bool {
     matches!(ty.kind(), ty::Adt(adt, _) if adt.is_struct()
         && adt.non_enum_variant().fields.iter().nth(i).is_some_and(|field| is_flatten(tcx, field)))
 }

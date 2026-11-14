@@ -10,7 +10,7 @@ function first(it) {
   return $next(it);
 }
 export function f(p) {
-  return first(p.v);
+  return first(p.v) ?? undefined;
 }
 function main() {
   const p = { v: $iter([1, 2]) };

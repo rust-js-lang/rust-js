@@ -115,7 +115,7 @@ pub fn dropped(first: bool) -> Option<&'static Unknown> {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("return first ? JSON.parse(text) : JSON.parse(other);");
-  expect(js).toContain('return short ? JSON.stringify("…") : JSON.stringify(value);');
+  expect(js).toContain('return (short ? JSON.stringify("…") : JSON.stringify(value)) ?? undefined;');
   expect(js.match(/\$unwrapOk\(/g)?.length).toBe(4);
   const lib = await import(join(dir, "lib.js"));
   expect([lib.either("[1]", "{", true), lib.either("{", "2", false)]).toEqual([[1], 2]);

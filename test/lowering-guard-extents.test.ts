@@ -207,7 +207,7 @@ pub fn log_renamed(response: &Response) {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withBindings]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("  globalThis.prepare(loading, response.nonce);\n");
+  expect(js).toContain("  globalThis.prepare(loading, response.nonce ?? undefined);\n");
   expect(js).toContain("  target.nonce = response.nonce;\n");
   expect(js).not.toContain('$fieldCell(response, "nonce")');
   expect(js).toContain('  globalThis.logTime($borrow($fieldCell(response, "time")).value, "now");\n');
