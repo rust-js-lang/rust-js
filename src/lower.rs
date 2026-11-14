@@ -105,6 +105,7 @@ pub use bindings::given_names_differ;
 use bindings::{Export, is_binding};
 use casing::{camel_case, namespace_name, unhyphenated, variable_case};
 pub(super) use casing::{lower_first, upper_first};
+pub(crate) use declarations::std_types::module as std_declarations;
 /// Whether each `#[rust_js::types]` is a TypeScript type rust-js reads, of
 /// a crate `--rustc` compiles for its metadata too (ADR 0811).
 pub use declarations::validate_types;

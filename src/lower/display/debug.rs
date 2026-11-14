@@ -550,7 +550,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Adt(adt, args) if std(StdItem::LazyCell) => {
                 let name = self.tcx.item_name(adt.did());
                 let shown = self.debug_string_with(Expr::held(Expr::var("lazy")), args.type_at(0), span, pretty)?;
-                let made = Expr::bin(Op::Eq, Expr::member(Expr::var("lazy"), "init"), Expr::js_undefined());
+                let made = crate::lower::std_types::lazy::is_made(Expr::var("lazy"));
                 let shown = Expr::cond(made, shown, Expr::str("<uninit>"));
                 let plain = join(vec![Expr::str(format!("{name}(")), shown.clone(), Expr::str(")")]);
                 let shown = self.pretty_or(pretty, plain, &format!("{name}("), Expr::array(vec![shown]), ")");

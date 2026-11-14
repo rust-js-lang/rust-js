@@ -1,6 +1,7 @@
 // `@rust-js/std` (ADRs 0103, 0561, #1095), Rust's std for JS, the one
 // package the JS rust-js writes imports, built the one way: `bun run std`
 // writes, in `std/`, the helpers' module, `runtime.js`, `--runtime-module`'s;
+// its types, `index.d.ts`, `--std-declarations`' (ADR 1149);
 // std's bodies compiled, `iter.js`, its map and `manifest.json`; and its one
 // entry, `index.js`, which re-exports both. `test/std-package.test.ts` builds
 // it again elsewhere and compares.
@@ -36,6 +37,10 @@ export function buildStd(compiler: string, root: string): { code: number; stderr
   const helpers = spawnSync(compiler, ["--runtime-module"], { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
   if (helpers.status !== 0) return { code: helpers.status ?? 1, stderr: helpers.stderr };
   writeFileSync(join(std, "runtime.js"), helpers.stdout);
+  // Its types, what a crate's declarations name of std (ADR 1149).
+  const declarations = spawnSync(compiler, ["--std-declarations"], { encoding: "utf8" });
+  if (declarations.status !== 0) return { code: declarations.status ?? 1, stderr: declarations.stderr };
+  writeFileSync(join(std, "index.d.ts"), declarations.stdout);
   const { cmd, cwd } = stdBuild(compiler, root);
   const bodies = spawnSync(cmd[0], cmd.slice(1), { cwd, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
   if (bodies.status !== 0) return { code: bodies.status ?? 1, stderr: bodies.stderr };

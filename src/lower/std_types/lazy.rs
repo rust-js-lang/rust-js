@@ -9,6 +9,25 @@ use crate::lower::temporary_names::Role;
 use crate::lower::{FnCx, R};
 use rustc_middle::ty;
 
+/// The property of a `LazyCell`'s or `LazyLock`'s object that makes its
+/// value: its `init` until the value's made, `null` while that runs or once
+/// it panicked, `undefined` once it's made; the value then the object's
+/// held value, `value` (`js::HELD`). The one spelling of the cell's object,
+/// which its lowering, its `Debug`, its `Default` and its declaration read
+/// (#1752); the runtime's `$force` and `$forceLock`, which JS can't share
+/// it with, read it as written there.
+pub(in crate::lower) const INIT: &str = "init";
+
+/// A cell that `init` makes the value of, `{ init }`.
+pub(in crate::lower) fn lazy_of(init: Expr) -> Expr {
+    Expr::object(vec![Prop::Field(INIT.into(), init)])
+}
+
+/// Whether `lazy`'s value is made, `lazy.init === undefined`.
+pub(in crate::lower) fn is_made(lazy: Expr) -> Expr {
+    Expr::bin(Op::Eq, Expr::member(lazy, INIT), Expr::js_undefined())
+}
+
 /// A `LazyCell`'s or `LazyLock`'s own functions, and its `Deref`.
 #[derive(Clone, Copy, PartialEq)]
 pub(in crate::lower) enum LazyOp {
@@ -47,7 +66,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let lazy = values.next().expect("rustc checked the arguments");
         if op == LazyOp::New {
-            return Ok(Some(Expr::object(vec![Prop::Field("init".into(), lazy)])));
+            return Ok(Some(lazy_of(lazy)));
         }
         // A `LazyLock`'s init that uses it deadlocks in Rust: rust-js's error.
         let force = match self.recognition().is_lock_cell(tys[0].peel_refs()) {
@@ -80,7 +99,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             LazyOp::Get if self.boxed_payload(item) => self.some(Expr::held(lazy.clone())),
             _ => Expr::held(lazy.clone()),
         };
-        let made = Expr::bin(Op::Eq, Expr::member(lazy, "init"), Expr::js_undefined());
-        Ok(Some(Expr::cond(made, given, Expr::js_undefined())))
+        Ok(Some(Expr::cond(is_made(lazy), given, Expr::js_undefined())))
     }
 }

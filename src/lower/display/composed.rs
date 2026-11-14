@@ -168,7 +168,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let field = match self.is_std_type(ty, StdItem::LazyCell) {
                     true => {
                         let shown = self.debug_string_with(held, item, span, pretty)?;
-                        let made = Expr::bin(Op::Eq, Expr::member(subject("cell"), "init"), Expr::js_undefined());
+                        let made = crate::lower::std_types::lazy::is_made(subject("cell"));
                         Expr::cond(made, shown, Expr::str("<uninit>"))
                     }
                     false => {

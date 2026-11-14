@@ -32,6 +32,7 @@ mod imports;
 mod namespaces;
 mod parts;
 mod representation;
+pub(super) mod std_types;
 mod written;
 
 use super::representation::{SignatureForms, held_ts as held};
@@ -1243,6 +1244,13 @@ impl<'tcx> Declarations<'_, 'tcx> {
                     let mut constructor = self.function_type(sig.inputs(), sig.output(), &named, false);
                     constructor["construct"] = json!(true);
                     return constructor;
+                }
+                // One of std's opaque to TypeScript, `LazyLock<Point>`, as
+                // `@rust-js/std` declares it, which only rust-js's JS gives
+                // a value of (ADR 1149).
+                if let Some(opaque) = std_types::opaque(tcx, did) {
+                    let name = self.imported_from(Some(std_types::PACKAGE), opaque.name, None);
+                    return reference(&name, vec![self.ts(args.type_at(0))]);
                 }
                 // A binding's, as it says it's typed: React's `MemoExoticComponent<P>`,
                 // `react#NamedExoticComponent`, is `NamedExoticComponent<P>`,

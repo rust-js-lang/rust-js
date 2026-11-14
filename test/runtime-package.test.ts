@@ -23,7 +23,7 @@ test("the committed @rust-js/std's helpers are the compiler's, each exported onc
   expect(new Set(names).size).toBe(names.length);
   const pkg = JSON.parse(readFileSync(join(stdDir, "package.json"), "utf8"));
   const version = readFileSync(join(root, "Cargo.toml"), "utf8").match(/^version = "([^"]+)"/m)![1];
-  expect([pkg.name, pkg.version, pkg.exports["."], pkg.sideEffects]).toEqual(["@rust-js/std", version, "./index.js", false]);
+  expect([pkg.name, pkg.version, pkg.exports["."], pkg.sideEffects]).toEqual(["@rust-js/std", version, { types: "./index.d.ts", default: "./index.js" }, false]);
   expect(readFileSync(join(stdDir, "index.js"), "utf8")).toContain('export * from "./runtime.js";\n');
 });
 

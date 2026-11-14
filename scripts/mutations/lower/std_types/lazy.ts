@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     name: "lazy-get-unmade",
     breaks: "`get_mut` gives the cell before its value's made",
     file: "src/lower/std_types/lazy.rs",
-    find: "        Ok(Some(Expr::cond(made, given, Expr::js_undefined())))\n",
+    find: "        Ok(Some(Expr::cond(is_made(lazy), given, Expr::js_undefined())))\n",
     replace: "        Ok(Some(given))\n",
     tests: ["test/corpus.test.ts", "-t", "lazy_cells"],
   },

@@ -1221,4 +1221,12 @@ export const mutations: Mutation[] = [
     replace: "            ) if let Some(output) = opaque_future_output(tcx, *alias).filter(|_| false) => {\n",
     tests: ["test/declarations-async.test.ts"],
   },
+  {
+    name: "std-opaque-undeclared",
+    breaks: "a `LazyLock<Point>` a crate exports is declared `any`, where it's `@rust-js/std`'s opaque `LazyLock<Point>` (#1752)",
+    file: "src/lower/declarations.rs",
+    find: "                if let Some(opaque) = std_types::opaque(tcx, did) {\n",
+    replace: "                if let Some(opaque) = std_types::opaque(tcx, did).filter(|_| false) {\n",
+    tests: ["test/declarations-lazy.test.ts"],
+  },
 ];

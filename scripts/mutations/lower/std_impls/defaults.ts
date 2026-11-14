@@ -137,7 +137,7 @@ export const mutations: Mutation[] = [
     name: "lazy-default-made",
     breaks: "`LazyCell::default()` is made already, not on first use",
     file: "src/lower/std_impls/defaults.rs",
-    find: '                let init = Expr::arrow(vec![], vec![StmtKind::Return(Some(made)).at(js::Span::NONE)]);\n                Expr::object(vec![Prop::Field("init".into(), init)])\n',
+    find: '                let init = Expr::arrow(vec![], vec![StmtKind::Return(Some(made)).at(js::Span::NONE)]);\n                crate::lower::std_types::lazy::lazy_of(init)\n',
     replace:
       '                Expr::object(vec![Prop::Field("value".into(), made)])\n',
     tests: ["test/corpus.test.ts", "-t", "lazy_cells"],

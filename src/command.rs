@@ -7,6 +7,8 @@ use std::path::PathBuf;
 pub(crate) enum Command {
     /// `--runtime-module`: `@rust-js/std`'s helpers' module, `runtime.js` (ADR 0103).
     RuntimeModule,
+    /// `--std-declarations`: `@rust-js/std`'s types, `index.d.ts` (ADR 1149).
+    StdDeclarations,
     /// `--version-json`: the compiler's identity, as a manifest records it.
     VersionJson,
     /// `--version`.
@@ -140,6 +142,7 @@ const USAGE: &str = "usage: rust-js [--test] <input.rs> [-o <output.js>] [--mani
 pub(crate) fn parse(args: Vec<String>) -> Result<Command, String> {
     match args.first().map(String::as_str) {
         Some("--runtime-module") if args.len() == 1 => return Ok(Command::RuntimeModule),
+        Some("--std-declarations") if args.len() == 1 => return Ok(Command::StdDeclarations),
         Some("--version-json") if args.len() == 1 => return Ok(Command::VersionJson),
         Some("--version") if args.len() == 1 => return Ok(Command::Version),
         Some("--layout-identity") if args.len() == 1 => return Ok(Command::LayoutIdentity),

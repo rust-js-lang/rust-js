@@ -168,7 +168,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Adt(_, args) if std(StdItem::LazyCell) => {
                 let made = self.default_value(args.type_at(0), span)?;
                 let init = Expr::arrow(vec![], vec![StmtKind::Return(Some(made)).at(js::Span::NONE)]);
-                Expr::object(vec![Prop::Field("init".into(), init)])
+                crate::lower::std_types::lazy::lazy_of(init)
             }
             // A `RefCell` of an object, the object (ADR 0863).
             ty::Adt(_, args) if std(StdItem::RefCell) && self.is_value_cell(ty) => {

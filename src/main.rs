@@ -562,6 +562,10 @@ fn run() -> ExitCode {
             print!("{}", runtime::package_module());
             return ExitCode::SUCCESS;
         }
+        Ok(command::Command::StdDeclarations) => {
+            print!("{}", lower::std_declarations());
+            return ExitCode::SUCCESS;
+        }
         Ok(command::Command::VersionJson) => {
             println!(
                 "{}",

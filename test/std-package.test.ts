@@ -121,3 +121,20 @@ test("a std body's JS has no test its early return decided, no once-read bool, n
   // the formatter writes on one line.
   expect(std).not.toMatch(/\n(\s*)\s{2}(return [^\n]*;)\n\1} else \{[^]*?\n\1\s{2}\2\n/);
 });
+
+// Its types are the catalog's, what a crate's declarations name of std
+// (ADR 1149): the committed `index.d.ts` is what `--std-declarations` writes,
+// the package's `types`, and TypeScript, strict, checks it.
+test("the committed @rust-js/std's types are the catalog's, and TypeScript checks them", () => {
+  const written = runSync([compiler, "--std-declarations"], root, 60_000);
+  expect(written.code).toBe(0);
+  expect(readFileSync(join(stdDir, "index.d.ts"), "utf8")).toBe(written.stdout);
+  const pkg = JSON.parse(readFileSync(join(stdDir, "package.json"), "utf8"));
+  expect([pkg.exports["."].types, pkg.files.includes("index.d.ts")]).toEqual(["./index.d.ts", true]);
+  const checked = runSync(
+    [process.execPath, join(root, "node_modules/typescript/bin/tsc"), "--ignoreConfig", "--strict", "--noEmit", "--skipLibCheck", "false", "index.d.ts"],
+    stdDir,
+    60_000,
+  );
+  expect(checked.stdout).toBe("");
+});
