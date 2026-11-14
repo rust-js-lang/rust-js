@@ -293,3 +293,19 @@ them.
 Change 4 is done: M1's holes (ADR 1147), M2's facts given back and
 settled in bounded rounds, M3's one call graph and its names, M4's
 declared scopes.
+
+## Amendment: why lowering stopped is a value, `Refusal` (#1797)
+
+`R<T>` was `Result<T, ErrorGuaranteed>`: a refusal emitted rustc's error
+where it was made, which nothing could take back, so a lowering that may
+not be followed (#1797's writer framed best-effort) couldn't be tried and
+given back. It's `Result<T, Refusal>` now, made in `refusal.rs` alone:
+`refuse` of a feature, `error` of a message, `emitted` of rustc's own,
+an instance's resolution. Its one variant so far is `Emitted`, so the
+JS is byte for byte the same; a refusal the pipeline consumes, to lower
+again another way, is the next variant. `R`'s error converts from no
+`ErrorGuaranteed`, so a lowering can't give an error it emitted itself
+as its refusal, as 12 places did, `Err(self.tcx.dcx().span_err(..))`:
+each is `refusal::error`'s now. An analysis's diagnostic that's no body's
+refusal, a name that collides, is emitted where it's found, as before.
+test/architecture-observations.test.ts holds both.

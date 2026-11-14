@@ -208,11 +208,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         &self,
         def_id: DefId,
         args: ty::GenericArgsRef<'tcx>,
-    ) -> Result<Option<ty::Instance<'tcx>>, rustc_span::ErrorGuaranteed> {
+    ) -> R<Option<ty::Instance<'tcx>>> {
         // The impl's, with the default's own bounds, which its own type
         // parameters need, `[B]: Index<PatternID>` (ADR 0560).
         let typing_env = self.typing_env;
         crate::lower::items::resolve_instance_in(self.tcx, typing_env, def_id, args)
+            .map_err(crate::lower::refusal::emitted)
     }
 
     /// Is this a trait's default body copied into an impl (ADR 0049), whose

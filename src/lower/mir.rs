@@ -638,7 +638,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // So does one's marked `#[rust_js::rest]` (ADR 0664).
         if self.takes_rest(def_id) && !evidence.is_empty() {
-            return Err(self.tcx.dcx().span_err(
+            return Err(crate::lower::refusal::error(
+                self.tcx,
                 span,
                 "rust-js: a function whose last parameter is `#[rust_js::rest]` given a dictionary, a fact, \
                  a drop or its caller's location, which JS's rest parameter can't come before",

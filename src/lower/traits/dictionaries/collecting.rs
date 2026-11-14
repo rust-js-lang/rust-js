@@ -62,7 +62,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if let Some(lent) = lent {
                 cx.return_drop_param(lent);
             }
-            Ok::<_, rustc_span::ErrorGuaranteed>((made?, shunted))
+            Ok::<_, crate::lower::refusal::Refusal>((made?, shunted))
         });
         let (made, shunted) = made?;
         if shunted {

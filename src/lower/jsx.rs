@@ -270,7 +270,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 {
                     let message =
                         format!("rust-js: a React component's name starts with an uppercase letter, not `{name}`");
-                    return Err(self.tcx.dcx().span_err(component.span, message));
+                    return Err(crate::lower::refusal::error(self.tcx, component.span, message));
                 }
                 let (props, children) = self.jsx_props(args.next().expect("two"), out)?;
                 (js::JsxTag::Component(tag), props, children)
@@ -775,9 +775,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// An attribute set on what isn't an element being made.
-    pub(super) fn one_expression(&self, span: Span) -> rustc_span::ErrorGuaranteed {
+    pub(super) fn one_expression(&self, span: Span) -> crate::lower::refusal::Refusal {
         let message = "rust-js makes JSX from one expression: set an element's props in the chain that makes it";
-        self.tcx.dcx().span_err(span, message)
+        crate::lower::refusal::error(self.tcx, span, message)
     }
 
     /// Where `e`'s value is written, its own span: a block's, `{ let mut n

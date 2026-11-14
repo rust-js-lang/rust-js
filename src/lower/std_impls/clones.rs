@@ -685,7 +685,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// The refusal of a clone of `ty`.
-    fn uncloned(&self, ty: Ty<'tcx>, span: Span) -> rustc_span::ErrorGuaranteed {
+    fn uncloned(&self, ty: Ty<'tcx>, span: Span) -> crate::lower::refusal::Refusal {
         self.unsupported(span, &format!("cloning `{ty}`"))
     }
 

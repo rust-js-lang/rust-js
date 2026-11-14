@@ -48,3 +48,16 @@ test("what the bodies lowered before settled is the pipeline's to write, a body'
     .filter((file) => /\bsettled\.\w+\.(?:insert|extend|push|remove|clear)\(/.test(read(file)));
   expect(writers).toEqual(["src/lower/pipeline.rs"]);
 });
+
+// Why lowering stopped is a value, `Refusal`, the pipeline reads (#1797 step
+// (1), ADR 1148, amended): made in refusal.rs alone, by `refuse`, `error`
+// and `emitted`, and `R`'s error is it, with no conversion from rustc's
+// `ErrorGuaranteed`, so a lowering can't give an error it emitted itself as
+// its refusal, as 12 places did, `Err(self.tcx.dcx().span_err(..))`.
+test("a refusal is refusal.rs's to make, and R's error is it, from nothing else", () => {
+  const all = [...lowering, "src/lower.rs"];
+  expect(all.filter((file) => file !== "src/lower/refusal.rs" && /\bRefusal::\w+\(/.test(read(file)))).toEqual([]);
+  expect(read("src/lower.rs")).toContain("type R<T> = Result<T, refusal::Refusal>;");
+  expect(all.filter((file) => /impl\s+From<[^>]*ErrorGuaranteed>\s+for\s+(?:crate::lower::refusal::)?Refusal/.test(read(file)))).toEqual([]);
+  expect(all.filter((file) => /Err\(\s*(?:self\.|cx\.)?tcx\s*\.dcx\(\)/.test(read(file)))).toEqual([]);
+});

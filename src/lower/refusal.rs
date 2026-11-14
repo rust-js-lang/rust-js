@@ -23,9 +23,28 @@ pub(crate) enum Refused<'a, 'tcx> {
     Memory(&'a str),
 }
 
+/// Why lowering stopped, a value the pipeline reads (ADR 1148, amended):
+/// an error emitted, which rustc counts. Made here alone.
+#[derive(Clone, Copy, Debug)]
+pub(crate) enum Refusal {
+    Emitted(ErrorGuaranteed),
+}
+
+/// The error `message` at `span`, emitted, of what isn't a refusal of a
+/// feature, `refuse`'s: a binding used as it can't be, a component's JSX.
+pub(crate) fn error(tcx: TyCtxt<'_>, span: Span, message: impl Into<String>) -> Refusal {
+    Refusal::Emitted(tcx.dcx().span_err(span, message.into()))
+}
+
+/// An error rustc emitted already, resolving an instance: lowering stops
+/// there too.
+pub(crate) fn emitted(error: ErrorGuaranteed) -> Refusal {
+    Refusal::Emitted(error)
+}
+
 /// The error that `refused` isn't supported, in its `words`: of
 /// addressable memory, with why.
-pub(crate) fn refuse<'tcx>(tcx: TyCtxt<'tcx>, span: Span, refused: Refused<'_, 'tcx>) -> ErrorGuaranteed {
+pub(crate) fn refuse<'tcx>(tcx: TyCtxt<'tcx>, span: Span, refused: Refused<'_, 'tcx>) -> Refusal {
     let mut error = tcx.dcx().struct_span_err(span, words(tcx, refused));
     if of_memory(tcx, refused) {
         error = error.with_note(MEMORY);
@@ -37,7 +56,7 @@ pub(crate) fn refuse<'tcx>(tcx: TyCtxt<'tcx>, span: Span, refused: Refused<'_, '
             "its crate is its types alone: rust-js couldn't compile it (ADR 0415): {why}"
         ));
     }
-    error.emit_err()
+    Refusal::Emitted(error.emit_err())
 }
 
 /// Why rust-js didn't compile the crate of `id`, a crate of crates.io's it

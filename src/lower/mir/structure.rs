@@ -652,7 +652,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         .map(|(variant, _)| adt.variant(variant))
                         .collect();
                     if let Some(refused) = self.untold_class(*enum_ty, &variants) {
-                        return Err(self.tcx.dcx().span_err(span, refused));
+                        return Err(crate::lower::refusal::error(self.tcx, span, refused));
                     }
                 }
                 out.extend(alike.or(chain).unwrap_or_default());
@@ -990,7 +990,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             "rust-js: `{}` and `{other}` hold values of one kind, which JS can't tell apart in an untagged enum (ADR 0214)",
                             adt.variant(variant).name
                         );
-                        return Err(self.tcx.dcx().span_err(span, message));
+                        return Err(crate::lower::refusal::error(self.tcx, span, message));
                     }
                 }
                 Ok(self.mir_variant_test(enum_value.clone(), *enum_ty, *adt, &[variant], &[], *present))

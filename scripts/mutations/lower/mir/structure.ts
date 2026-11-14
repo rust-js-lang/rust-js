@@ -721,8 +721,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `match` of `Dropped::Blob` and `Dropped::Element` is refused nowhere, its `instanceof Blob` `false` of another realm's (#555)",
     file: "src/lower/mir/structure.rs",
-    find: "                    if let Some(refused) = self.untold_class(*enum_ty, &variants) {\n                        return Err(self.tcx.dcx().span_err(span, refused));\n",
-    replace: "                    if let Some(refused) = self.untold_class(*enum_ty, &variants).filter(|_| false) {\n                        return Err(self.tcx.dcx().span_err(span, refused));\n",
+    find: "                    if let Some(refused) = self.untold_class(*enum_ty, &variants) {\n                        return Err(crate::lower::refusal::error(self.tcx, span, refused));\n",
+    replace: "                    if let Some(refused) = self.untold_class(*enum_ty, &variants).filter(|_| false) {\n                        return Err(crate::lower::refusal::error(self.tcx, span, refused));\n",
     tests: ["test/webapi-objects.test.ts", "-t", "told by their nodeType"],
   },
   {

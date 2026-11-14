@@ -316,7 +316,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// call that asks a `Future` or an `IntoFuture` of it, `.await`'s
     /// `into_future` or a generic function's `F: Future`, or as a `dyn
     /// Future`. No promise is one (ADR 0425).
-    pub(super) fn unlowered_future_awaited(&self, future: Ty<'tcx>, span: Span) -> rustc_span::ErrorGuaranteed {
+    pub(super) fn unlowered_future_awaited(&self, future: Ty<'tcx>, span: Span) -> crate::lower::refusal::Refusal {
         let what = format!("`{future}` as a promise");
         let why = "its `Future` is the crate's own, which rust-js never compiles (ADR 0425)";
         refuse(self.tcx, span, Refused::Because(&what, why))

@@ -555,8 +555,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         &self,
         def_id: DefId,
         args: ty::GenericArgsRef<'tcx>,
-    ) -> Result<Option<ty::Instance<'tcx>>, rustc_span::ErrorGuaranteed> {
-        resolve_instance_in(self.tcx, self.typing_env, def_id, args)
+    ) -> R<Option<ty::Instance<'tcx>>> {
+        resolve_instance_in(self.tcx, self.typing_env, def_id, args).map_err(super::refusal::emitted)
     }
 
     /// `Into::<U>::into` of a `T` as `<U as From<T>>::from`, and

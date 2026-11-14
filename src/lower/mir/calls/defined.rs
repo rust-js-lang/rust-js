@@ -106,7 +106,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // it is refused, naming the one way (ADR 0645).
                 Some(s) if refs(given) > refs(tcx.type_of(s).instantiate_identity().skip_normalization()) => {
                     let function = asked.function();
-                    return Err(self.tcx.dcx().span_err(
+                    return Err(crate::lower::refusal::error(
+                        self.tcx,
                         span,
                         format!(
                             "`{function}` of a static is given the static itself, \
@@ -278,7 +279,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(());
         }
         let function = asked.function();
-        Err(self.tcx.dcx().span_err(
+        Err(crate::lower::refusal::error(
+            self.tcx,
             span,
             format!(
                 "`{function}` of what isn't {of} in Rust is false: it's asked of a getter's or a \

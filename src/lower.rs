@@ -28,7 +28,7 @@ use rustc_hir::find_attr;
 use rustc_middle::thir::{ExprId, LocalVarId, Pat, PatKind, Thir};
 use rustc_middle::ty::{self, GenericArgsRef, Ty, TyCtxt, TypeVisitableExt};
 use rustc_span::def_id::{CRATE_MOD_ID, DefId, LocalModId};
-use rustc_span::{ErrorGuaranteed, SourceFile, Span};
+use rustc_span::{SourceFile, Span};
 
 use crate::js::{self, Expr, Prop, Stmt, StmtKind};
 
@@ -128,7 +128,7 @@ use body_queries::strip;
 use crate_facts::{CrateFacts, Settled};
 use parameter_names::{default_parameter_name, parameter_name, written_parameter_name};
 
-type R<T> = Result<T, ErrorGuaranteed>;
+type R<T> = Result<T, refusal::Refusal>;
 
 /// A function's THIR, copied out of rustc before borrowck steals it: read
 /// for the shape and facts its MIR is lowered with.
@@ -807,7 +807,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.tcx.trait_of_assoc(def_id).is_none()
             && let Some(why) = self.krate.foreign.unlisted(def_id)
         {
-            return Err(self.tcx.dcx().span_err(span, why));
+            return Err(crate::lower::refusal::error(self.tcx, span, why));
         }
         // A std formatting trait's `fmt` where a writer is shown into a
         // writer: the function that writes into the sink it claims (#1652).
@@ -1051,13 +1051,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         held
     }
 
-    fn unsupported(&self, span: Span, what: &str) -> ErrorGuaranteed {
+    fn unsupported(&self, span: Span, what: &str) -> crate::lower::refusal::Refusal {
         refusal::refuse(self.tcx, span, refusal::Refused::Feature(what))
     }
 
     /// No dictionary for `tr` was given: a component's, which React never
     /// gives one (ADR 0201), or one rust-js doesn't make.
-    fn no_evidence(&self, span: Span, tr: ty::TraitRef<'tcx>) -> ErrorGuaranteed {
+    fn no_evidence(&self, span: Span, tr: ty::TraitRef<'tcx>) -> crate::lower::refusal::Refusal {
         if bindings::is_component(self.tcx, self.item) {
             let what = format!("a component's `{tr}`");
             refusal::refuse(

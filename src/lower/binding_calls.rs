@@ -26,7 +26,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<Expr> {
         if self.tcx.is_foreign_item(def_id) {
             let refused = super::bindings::extern_fn_refused(self.tcx, def_id);
-            return Err(self.tcx.dcx().span_err(span, refused));
+            return Err(crate::lower::refusal::error(self.tcx, span, refused));
         }
         // A type parameter's value as any value is `js::any_of`'s; of a
         // type that's known, its own conversion's, the one way (ADR 0909);
@@ -37,7 +37,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && !ty::TypeVisitableExt::has_param(&generic_args.type_at(0))
             && !self.nullish_as_it_is(generic_args.type_at(0))
         {
-            return Err(self.tcx.dcx().span_err(
+            return Err(crate::lower::refusal::error(
+                self.tcx,
                 span,
                 "`js::any_of` is of a type parameter's value, or of one that may be `undefined` or `null` as it is, \
                  not of a value of a type that's known: `js::unknown_of(value)` of one that's always there, \
@@ -66,7 +67,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .last())
             .copied();
             if declared.is_some_and(collection) {
-                return Err(self.tcx.dcx().span_err(
+                return Err(crate::lower::refusal::error(
+                    self.tcx,
                     span,
                     "a `#[rust_js::variadic]` binding's rest parameter is `impl js::Rest<T>`, \
                      given a tuple of its arguments or a slice or a `Vec` to spread, not a slice",
@@ -749,8 +751,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `const this$ = this;`, as one that sets it, `let this$ = this;`.
     /// Anonymous: preparation names it where it's stored (ADR 0972).
     fn function_with_this(&mut self, closure: Expr, parameters: Option<ty::Ty<'tcx>>, span: Span) -> R<Expr> {
-        let refuse =
-            |cx: &Self, why: &str| Err(cx.tcx.dcx().span_err(span, format!("`js::function::with_this` {why}")));
+        let refuse = |cx: &Self, why: &str| {
+            Err(crate::lower::refusal::error(
+                cx.tcx,
+                span,
+                format!("`js::function::with_this` {why}"),
+            ))
+        };
         let js::ExprKind::Arrow(mut params, mut body) = closure.kind else {
             return refuse(
                 self,
