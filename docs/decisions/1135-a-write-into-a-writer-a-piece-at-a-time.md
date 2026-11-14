@@ -489,6 +489,19 @@ go.
     writer_sink_generic_instances_with_options, the second's writers
     taking options; 6 mutations.
 
+    And a third (#1743): **a library's type it gives out as an `impl
+    Trait` is published**, as one reachable from outside it is, through a
+    private function's `impl Trait` too: `pub fn hidden() -> impl Display {
+    Hidden(3) }`, its `Hidden` written through a consumer's generic writer,
+    threw, as `effective_visibilities` doesn't call `Hidden` reachable, so
+    its writer wasn't framed and its dictionary carried no `fmtInto`; and
+    `refuse_lacked` didn't see through the `impl Display` to refuse it.
+    Each reachable function's `impl Trait`, revealed, publishes each type
+    of the crate's it hides, and a consumer refusing a library's type its
+    contract doesn't list asks of the type an `impl Trait` hides. Proof:
+    the pair librarys_hidden_type_through_generic_code against native, and
+    of a contract that doesn't list them, refused; 3 mutations.
+
 ## Alternatives
 
 - **Keep ADR 0166's whole text**, listed as a difference: rejected, since

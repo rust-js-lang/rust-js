@@ -361,10 +361,11 @@ what's held before it, as a browser's console takes whole lines
   $writePadded(f, "zoë", { width: 6, align: "Right" });
   ```
 
-  A library's type reachable from outside it, of no type parameters, is
-  written so too, by its dictionary, `Dep.hexyDebug.fmtInto(f, h,
-  options)`: its library compiles its writer to write through a sink. A
-  generic one's isn't yet (#1712). A generic type of the crate's own
+  A library's type reachable from outside it, of no type parameters, or
+  one it gives out as an `impl Trait`, is written so too, by its
+  dictionary, `Dep.hexyDebug.fmtInto(f, h, options)`: its library
+  compiles its writer to write through a sink. A generic one's isn't yet
+  (#1712). A generic type of the crate's own
   written into a writer writes its parameters by their dictionaries,
   `TDisplay.fmtInto(f, x)`, wherever it's formatted, so each instance of
   it the crate formats gives its parameters dictionaries that write so

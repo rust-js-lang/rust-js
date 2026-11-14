@@ -10,7 +10,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { chain, contract } from "./crates";
+import { chain, contract, counting } from "./crates";
 import { helpersModule } from "./packages-of";
 import { compileJs, runJs, runNative, runtimes, show } from "./programs";
 import { buildCompiler, fixture, root } from "./support";
@@ -428,6 +428,21 @@ test("a library's generic type written through generic code is refused, naming #
     "#1688",
   ]);
   expect(native).toBe('["[", "<", "3", ">", "]"]\n');
+}, underLoad(300_000));
+
+// A library's types it gives out as an `impl Display`, one through a
+// private function's, are published as its reachable ones are (#1743).
+// Where a library's contract doesn't list one, a consumer writing it
+// through generic code is refused, naming #1688, as the type it hides.
+test("a library's hidden types are written into a consumer's writer; one its contract doesn't list is refused", () => {
+  const out = piecewiseChain(piecewisePairs, "librarys_hidden_type_through_generic_code");
+  const manifest = join(out, "dep", "lib.manifest.json");
+  const read = JSON.parse(readFileSync(manifest, "utf8"));
+  expect(read.library.written_into.length).toBe(2);
+  read.library.written_into = [];
+  writeFileSync(manifest, JSON.stringify(read));
+  const app = readFileSync(join(piecewisePairs, "librarys_hidden_type_through_generic_code", "app.rs"), "utf8");
+  expect(() => counting(out, app)).toThrow("writing a `dep::Hidden` into a writer");
 }, underLoad(300_000));
 
 test("serde_json's error and an OS error write their Display a piece at a time, as their crates do", async () => {

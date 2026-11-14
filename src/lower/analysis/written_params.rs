@@ -396,6 +396,8 @@ pub(super) fn impl_fmt(tcx: TyCtxt<'_>, imp: DefId) -> Option<DefId> {
 /// its dictionaries, if it holds a library's type whose dictionaries its
 /// contract doesn't say carry `fmtInto` (#1688).
 fn refuse_lacked<'tcx>(tcx: TyCtxt<'tcx>, foreign: &Foreign<'_, 'tcx>, ty: Ty<'tcx>, span: Span) {
+    // An `impl Display` a library gives out, as the type it hides (#1743).
+    let ty = crate::lower::mir::revealed(tcx, ty);
     let lacked = (ty.walk().filter_map(|part| part.as_type()))
         .find(|part| part.ty_adt_def().is_some_and(|adt| foreign.lacks_fmt_into(adt.did())));
     if let Some(lacked) = lacked {

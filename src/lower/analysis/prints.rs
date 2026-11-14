@@ -284,13 +284,31 @@ fn written_into_writers<'tcx>(
     // writer of its own formats, of no type or constant parameters: a
     // consumer may write it into a writer, so each is shown so. A generic
     // one's writer writes what its parameters are by dictionaries a
-    // consumer gives, which may carry no `fmtInto`: not yet (#1712).
+    // consumer gives, which may carry no `fmtInto`: not yet (#1712). And
+    // each of its types an `impl Trait` it gives out hides, through a
+    // private function's too, which a consumer writes as that type (#1743).
+    let reachable = |id: rustc_span::def_id::LocalDefId| tcx.effective_visibilities(()).is_reachable(id);
+    let hidden: IndexSet<DefId> = match library {
+        true => (tcx.hir_crate_items(()).opaques())
+            // Not a trait's declared method's, which hides nothing.
+            .filter(|&opaque| tcx.trait_of_assoc(tcx.local_parent(opaque).to_def_id()).is_none())
+            .filter(|&opaque| reachable(opaque) || reachable(tcx.local_parent(opaque)))
+            .flat_map(|opaque| {
+                let hides =
+                    crate::lower::mir::revealed(tcx, tcx.type_of(opaque).instantiate_identity().skip_normalization());
+                (hides.walk().filter_map(|part| part.as_type()))
+                    .filter_map(|part| part.ty_adt_def().map(|adt| adt.did()))
+                    .collect::<Vec<_>>()
+            })
+            .collect(),
+        false => IndexSet::default(),
+    };
     let published: IndexSet<DefId> = match library {
         true => (writers.iter())
             .filter_map(|writer| type_of(writer.def_id))
             .filter(|&adt| {
                 adt.as_local()
-                    .is_some_and(|adt| tcx.effective_visibilities(()).is_reachable(adt))
+                    .is_some_and(|local| reachable(local) || hidden.contains(&adt))
                     && !tcx.generics_of(adt).requires_monomorphization(tcx)
             })
             .collect(),

@@ -340,4 +340,28 @@ export const mutations: Mutation[] = [
     replace: "                    let _ = (asked.ty, in_writer);\n",
     tests: ["test/corpus.test.ts", "-t", "^writer_sink_generic_instances.rs$"],
   },
+  {
+    name: "hidden-types-unpublished",
+    breaks: "a library's type it gives out as an `impl Display` isn't published, so a consumer writing it through generic code is refused (#1743)",
+    file: "src/lower/analysis/prints.rs",
+    find: "                    .is_some_and(|local| reachable(local) || hidden.contains(&adt))\n",
+    replace: "                    .is_some_and(|local| reachable(local))\n",
+    tests: ["test/writer-sink.test.ts", "-t", "a library's hidden types are written"],
+  },
+  {
+    name: "hidden-types-not-revealed-through-another",
+    breaks: "a library's type hidden by an `impl Display` a private function gives, given out by a public one's, isn't published (#1743)",
+    file: "src/lower/analysis/prints.rs",
+    find: "                    crate::lower::mir::revealed(tcx, tcx.type_of(opaque).instantiate_identity().skip_normalization());\n",
+    replace: "                    tcx.type_of(opaque).instantiate_identity().skip_normalization();\n",
+    tests: ["test/writer-sink.test.ts", "-t", "a library's hidden types are written"],
+  },
+  {
+    name: "hidden-types-of-trait-declarations",
+    breaks: "a trait's declared method's `impl Trait`, which hides nothing, is asked what it hides, and rustc crashes (#1743)",
+    file: "src/lower/analysis/prints.rs",
+    find: "            .filter(|&opaque| tcx.trait_of_assoc(tcx.local_parent(opaque).to_def_id()).is_none())\n",
+    replace: "",
+    tests: ["test/crates.test.ts", "-t", "drops a consumer's impl Trait by its dictionary"],
+  },
 ];
