@@ -3,4 +3,4 @@
 # compares their JS with what it committed, and each push that changes the
 # bindings `cargo check`s it (react-in-rust.yml). A change to its JS that's
 # intended is accepted by moving this to the port's commit that has it.
-d91337a46fab5344de0b52c3d44eb427b2d26fff
+ec4cb08cea6ec9b0a24c256c806f7a21e349b5d3
