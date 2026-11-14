@@ -9,7 +9,7 @@
 //! the writer's, and called plainly it gives its text (#1652, step 6 of
 //! ADR 1135).
 
-use super::arguments_use::{ArgumentsUse, arguments_use, holds_text, resolves_to_own, std_formats_param};
+use super::arguments_use::{ArgumentsUse, arguments_use, holds_text, std_formats_param};
 use super::*;
 use crate::lower::display::SinkWrite;
 use rustc_middle::mir::{Local, Rvalue, StatementKind, TerminatorKind};
@@ -125,11 +125,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         values: &mut [Value<'tcx>],
         span: Span,
     ) -> R<()> {
-        // Not a std trait's method an impl of the crate's defines, which
-        // takes the function as any of the crate's does (#1695).
-        if !crate::lower::recognition::is_std_crate(self.tcx, callee)
-            || resolves_to_own(&self.recognition(), callee, generic_args)
-        {
+        // Only std's own calls; a std trait's method an impl of the crate's
+        // defines, a writer's own `write_fmt` (#1695), is held by the
+        // checks below: its `Arguments` holds its text, or the function is
+        // what it writes (`takes_arguments_function`).
+        if !crate::lower::recognition::is_std_crate(self.tcx, callee) {
             return Ok(());
         }
         for (i, value) in values.iter_mut().enumerate() {

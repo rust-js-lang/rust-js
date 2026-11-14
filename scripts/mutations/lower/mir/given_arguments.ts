@@ -38,14 +38,6 @@ export const mutations: Mutation[] = [
     tests: grid,
   },
   {
-    name: "own-write-fmt-given-called",
-    breaks: "the function of a `write!`'s `Arguments` given a writer's own `write_fmt` is called first, its text given, which the body calls (#1695)",
-    file: "src/lower/mir/given_arguments.rs",
-    find: "            || resolves_to_own(&self.recognition(), callee, generic_args)\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^writer_with_its_own_write_fmt.rs$|^own_write_fmt_given_a_held_arguments.rs$"],
-  },
-  {
     name: "given-to-a-writer-failing-text-lost",
     breaks: "an `Arguments` given to a writer whose value fails loses what it wrote before the `Err` where it's made a `String`'s text, `\"\"` where native Rust has `\"x1y\"`",
     file: "src/lower/mir/given_arguments.rs",
