@@ -474,3 +474,100 @@ pub fn main() {
 }
 `)).toEqual(["mir-only-bounds nearest", "mir-only-bounds summed"]);
 });
+
+// #1815: a `RefCell`'s `borrow_mut()` guard, held while nothing else
+// reaches the cell, keeps what's known of the cell's length past a call or
+// a drop that runs code, until it drops: `take_first`'s `items.remove(i)`
+// past `f(items[i])`. Through it, `index_mut` keeps the length, an index
+// it gives is below it, and a drain to that index is in bounds. Not past a
+// guard's `truncate`, a call of the crate's given its `&mut Vec`, a write
+// through it, or a call once it's dropped, each of which may change it;
+// nor is a `RefMut` a function of the crate's gives one of the cell it's
+// given, `elsewhere(queue, other)` another's.
+// MIR proves `take_first`'s `items[i]` too, below the loop's range's end,
+// the guard's length.
+test("a `RefCell`'s guard keeps its cell's length until it drops, but past what its `&mut` is given to", () => {
+  expect(shadowOf(`use std::cell::{RefCell, RefMut};
+use std::rc::Rc;
+pub fn take_first(queue: &RefCell<Vec<u32>>, f: &dyn Fn(u32) -> bool) -> Option<u32> {
+    let mut items = queue.borrow_mut();
+    for i in 0..items.len() {
+        if f(items[i]) {
+            return Some(items.remove(i));
+        }
+    }
+    None
+}
+pub fn settle(queue: &RefCell<Vec<Rc<dyn Fn() -> u32>>>, i: usize, task: Rc<dyn Fn() -> u32>) -> usize {
+    if i < queue.borrow().len() {
+        queue.borrow_mut()[i] = task;
+        queue.borrow_mut().drain(0..i);
+    }
+    queue.borrow().len()
+}
+pub fn settle_after(queue: &RefCell<Vec<u32>>, i: usize, touch: &dyn Fn()) -> usize {
+    touch();
+    queue.borrow_mut()[i] = 0;
+    queue.borrow_mut().drain(0..i);
+    queue.borrow().len()
+}
+pub fn truncated(queue: &RefCell<Vec<u32>>, i: usize) -> u32 {
+    let mut items = queue.borrow_mut();
+    if i < items.len() {
+        items.truncate(0);
+        items[i] = 1;
+    }
+    0
+}
+fn shrink(items: &mut Vec<u32>) {
+    items.clear();
+}
+pub fn shrunk(queue: &RefCell<Vec<u32>>, i: usize) -> u32 {
+    let mut items = queue.borrow_mut();
+    if i < items.len() {
+        shrink(&mut items);
+        return items[i];
+    }
+    0
+}
+pub fn replaced(queue: &RefCell<Vec<u32>>, i: usize) -> u32 {
+    let mut items = queue.borrow_mut();
+    if i < items.len() {
+        *items = Vec::new();
+        return items[i];
+    }
+    0
+}
+fn elsewhere<'a>(_queue: &'a RefCell<Vec<u32>>, other: &'a RefCell<Vec<u32>>) -> RefMut<'a, Vec<u32>> {
+    other.borrow_mut()
+}
+pub fn borrowed_elsewhere(queue: &RefCell<Vec<u32>>, other: &RefCell<Vec<u32>>, i: usize) -> u32 {
+    if i < queue.borrow().len() {
+        let mut items = elsewhere(queue, other);
+        items[i] = 1;
+    }
+    0
+}
+pub fn after_its_guard(queue: &RefCell<Vec<u32>>, clear: &dyn Fn(), i: usize) -> u32 {
+    {
+        let items = queue.borrow_mut();
+        if i >= items.len() {
+            return 0;
+        }
+    }
+    clear();
+    queue.borrow()[i]
+}
+pub fn main() {
+    let queue = Rc::new(RefCell::new(vec![1, 2, 3]));
+    println!("{:?}", take_first(&queue, &|x| x > 1));
+    let tasks: RefCell<Vec<Rc<dyn Fn() -> u32>>> = RefCell::new(vec![Rc::new(|| 1), Rc::new(|| 2)]);
+    println!("{}", settle(&tasks, 1, Rc::new(|| 3)));
+    println!("{}", settle_after(&queue, 0, &|| {}));
+    println!("{} {} {}", truncated(&queue, 5), shrunk(&queue, 5), replaced(&queue, 5));
+    println!("{}", borrowed_elsewhere(&queue, &RefCell::new(Vec::new()), 0));
+    let other = Rc::clone(&queue);
+    println!("{}", after_its_guard(&queue, &|| other.borrow_mut().clear(), 5));
+}
+`)).toEqual(["mir-only-call-bounds take_first"]);
+});

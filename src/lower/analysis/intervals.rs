@@ -37,6 +37,7 @@ mod calls;
 mod captures;
 mod cells;
 mod fields;
+mod guards;
 mod proved;
 mod pushed;
 mod ranges;
@@ -123,6 +124,8 @@ struct Walk<'a, 'tcx> {
     /// Each `&mut` of a `Vec` a local holds, lent only to the calls it's
     /// given to, by the local holding it (`called_on`).
     called_on: IndexMap<Local, Local>,
+    /// The `borrow_mut()` guards held while they live (`guards`).
+    guards: guards::Guards,
 }
 
 /// Whether `ty` is an integer a JS number holds as it is: of 32 bits at
@@ -172,7 +175,8 @@ fn walk<'a, 'tcx>(
         None => body,
     };
     let called_on = called_on::called_on(tcx, &body);
-    let (lent, stepped, pointed, cells) = facts(tcx, &body, &called_on);
+    let guards = guards::guards(tcx, &body);
+    let (lent, stepped, pointed, cells) = facts(tcx, &body, &called_on, &guards);
     Walk {
         tcx,
         typing_env,
@@ -184,6 +188,7 @@ fn walk<'a, 'tcx>(
         cells,
         captured,
         called_on,
+        guards,
     }
 }
 
@@ -194,6 +199,7 @@ fn facts<'tcx>(
     tcx: TyCtxt<'tcx>,
     body: &Body<'tcx>,
     called_on: &IndexMap<Local, Local>,
+    guards: &guards::Guards,
 ) -> (IndexSet<Local>, IndexSet<Local>, IndexSet<Local>, IndexSet<Local>) {
     // A local whose own place is lent; not a reference to a slice, an
     // array or text whose pointee is, `&mut (*heap)` of `heap.swap(..)`,
@@ -216,6 +222,8 @@ fn facts<'tcx>(
         .filter(|place| !lent_where_borrowed(body, place))
         // A `Vec` lent only to the calls it's given to, and those `&mut`s.
         .filter(|place| !called_on.contains_key(&place.local) && !called_on.values().any(|&of| of == place.local))
+        // A held guard, lent only to its `deref_mut`, and what that lends.
+        .filter(|place| !guards.held.contains(&place.local) && !guards.lends.contains(&place.local))
         .map(|place| place.local)
         .collect();
     let stepped = stepped_ranges(tcx, body);
@@ -294,6 +302,7 @@ impl<'tcx> Walk<'_, 'tcx> {
             pushed: IndexSet::default(),
             lending: IndexMap::default(),
             lent_away: IndexSet::default(),
+            guarded: IndexMap::default(),
         });
         // Each block waiting, once, by its place in reverse postorder: what
         // flows into a block is visited before it, so each is visited
@@ -1107,15 +1116,20 @@ impl<'tcx> Walk<'_, 'tcx> {
                 let mut after = state.clone();
                 after.unpush(destination.local);
                 // A call that may write a cell: what's known of each cell's
-                // length forgotten (`cells`, #1741).
-                if !self.cells.is_empty() && self.may_write_cells(func) {
-                    self.cells.iter().for_each(|&cell| after.forget_lengths(cell));
+                // length forgotten (`cells`, #1741), but of one a held guard
+                // guards, and at none of a held guard's own (`guards`).
+                if !self.cells.is_empty() && self.may_write_cells(func) && !self.guard_call(func, args, destination) {
+                    (self.cells.iter())
+                        .filter(|&&cell| !state.is_guarded(cell))
+                        .for_each(|&cell| after.forget_lengths(cell));
                 }
                 self.called_on_mut(func, args, state, &mut after);
+                self.guard_lent(func, args, state, &mut after);
                 if let Some(local) = destination.as_local() {
                     after.forget(local);
                     self.called(func, args, local, state, &mut after);
                     self.derefed(func, args, local, state, &mut after);
+                    self.guarded(args, local, func, state, &mut after);
                 }
                 target.map(|t| vec![(t, after)]).unwrap_or_default()
             }
@@ -1124,11 +1138,20 @@ impl<'tcx> Walk<'_, 'tcx> {
             TerminatorKind::FalseEdge { real_target, .. } | TerminatorKind::FalseUnwind { real_target, .. } => {
                 vec![(*real_target, state.clone())]
             }
-            // A drop that may run code: of each cell, what's known of its
-            // length forgotten.
+            // A held guard's drop, which runs none of the crate's code: its
+            // cell no longer guarded (`guards`).
+            TerminatorKind::Drop { place, .. } if place.as_local().is_some_and(|g| self.guards.held.contains(&g)) => {
+                let mut after = state.clone();
+                after.guarded.shift_remove(&place.local);
+                terminator.successors().map(|t| (t, after.clone())).collect()
+            }
+            // A drop that may run code: of each cell but one a held guard
+            // guards, what's known of its length forgotten.
             TerminatorKind::Drop { place, .. } if !self.cells.is_empty() && self.drop_may_write_cells(place) => {
                 let mut after = state.clone();
-                self.cells.iter().for_each(|&cell| after.forget_lengths(cell));
+                (self.cells.iter())
+                    .filter(|&&cell| !state.is_guarded(cell))
+                    .for_each(|&cell| after.forget_lengths(cell));
                 terminator.successors().map(|t| (t, after.clone())).collect()
             }
             _ => terminator.successors().map(|t| (t, state.clone())).collect(),

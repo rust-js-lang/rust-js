@@ -42,6 +42,18 @@ impl<'tcx> Walk<'_, 'tcx> {
                 Some(SliceLength::IsEmpty) => {
                     after.empties.insert(local, of);
                 }
+                // An index `v[i]` gave its item at: below the length, as it
+                // panics otherwise, so a later `v[i]` or a drain to it is in
+                // bounds (ADR 0881's, #1815).
+                Some(SliceLength::Index) => {
+                    if let Some(i) = (args.get(1))
+                        .and_then(|arg| arg.node.place())
+                        .and_then(|p| p.as_local())
+                        .filter(|i| !self.lent.contains(i))
+                    {
+                        after.related(i, Term::Len(of), true);
+                    }
+                }
                 _ => {}
             }
         }

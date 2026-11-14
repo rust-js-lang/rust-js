@@ -111,3 +111,9 @@ plain std loud-drop thread_local_with_nested.rs
 #difference 12 a value with a destructor that JS holds is never dropped, a function handed to a binding too, even where JS gives it back to Rust (ADR 0873)
 plain std loud-call dyn_fn_handed_only.rs
 
+
+#1841 P0: a RefMut held in a tuple's, struct's or array's place, written whole through, `*(items.0) = v`, replaces the place instead of the cell's value, which stays borrowed
+plain std array refcell_guard_bounds.rs
+plain std field refcell_guard_bounds.rs
+plain std rc-refcell refcell_guard_bounds.rs
+plain std tuple refcell_guard_bounds.rs

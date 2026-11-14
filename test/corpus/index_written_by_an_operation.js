@@ -43,7 +43,7 @@ function main() {
   let i = 0;
   for (const n of [4, -2, 7]) {
     signs[$at(signs, i)] = (-n << 24) >> 24;
-    i = (i + 1) >>> 0;
+    i++;
   }
   console.log(`[${signs.join(", ")}]`);
 
@@ -55,7 +55,7 @@ function main() {
   let k = 0;
   for (const wide of [300, 7]) {
     bytes[$at(bytes, k)] = wide & 255;
-    k = (k + 1) >>> 0;
+    k++;
   }
   console.log(`[${bytes.join(", ")}]`);
 

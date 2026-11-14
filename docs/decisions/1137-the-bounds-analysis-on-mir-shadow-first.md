@@ -710,3 +710,48 @@ A downstream port's `candidates[best]` kept its check. It reads:
 
 The corpus's one change is enumerate_mut_patterns' `i + 1` of an
 `enumerate().skip(1)` index, written without its cast.
+
+### Step 5: a `RefCell`'s guard (2026-11-15, #1815)
+
+A history a `RefCell` holds kept its checks: `queue.borrow_mut()[i] = x`
+under `i < queue.borrow().len()`, and `items.remove(i)` past a callback
+`f(items[i])` while `items`, a `borrow_mut()` guard, is held. #1741's rule
+forgot each cell's length at any `borrow_mut()` and at any call. Now ADR
+0881's rules are MIR's too (`guards`):
+- **A held guard guards its cell** (`State::guarded`). A guard is held
+  where only its own `deref` and `deref_mut` read it and its drop ends it,
+  and a `RefCell`'s own `borrow_mut()` made it. A function of the
+  crate's that returns a `RefMut` may give one of another cell, so its
+  `RefMut` isn't held. While a guard lives, any other borrow of the cell
+  panics, so a call, or a drop that runs code, can't change what the cell
+  holds. The guard and its `deref` are copies of the cell, for its length.
+  At the guard's drop the cell isn't guarded any more.
+- **What the guard's `deref_mut` lends** keeps the length only past a call
+  that keeps it, `index_mut` or a `deref_mut` to a slice. Given to
+  `truncate`, `push` or a function of the crate's, the length is
+  forgotten. Used any other way, a write through it, `*items =
+  Vec::new()`, or one moved on, the length is forgotten at the
+  `deref_mut`. A reborrow of it, `&mut (*m)`, given only to calls is it.
+- **An index `v[i]` gives its item at is below the length** past the call,
+  as the call panics otherwise. So a later `v[i]`, or a drain to it, is
+  in bounds.
+- **A `Ref`'s or a `RefMut`'s own drop runs no code**: it gives its
+  borrow back and drops none of what the cell holds. Before, a guard of a
+  `Vec<Rc<dyn Fn()>>` was taken to run its items' drops.
+- **A `Vec`'s `drain(a..b)`** is a range proved as `&v[a..b]` is.
+
+The shadow's call-bounds lines fall from 132 to 110. Of the cells'
+cases, `refcell_listeners_momentary`'s one line remains: its cell is
+reached through an `Rc` a closure captured, each `listeners.borrow()` a
+`deref` of the `Rc` to a new `&RefCell` local, which isn't a copy of the
+last. That's #1839. MIR now proves 20 call-bounds sites
+THIR's facts keep, each sound:
+- `v.drain(..)`, always in bounds;
+- a guard's `items[i]` under its loop's range;
+- `bounding_rects[j]` of `j < i < len`;
+- `flush`'s `queue.borrow_mut()[at]`, as its callers give `task` at
+  least one.
+Two wraps it proves are new, `i += 1` past `signs[i] = -n`, now JS's own
+in `index_written_by_an_operation`. `refcell_guard_bounds`, a new case,
+runs each way the guard's length is forgotten against native Rust, each
+panicking as Rust does.

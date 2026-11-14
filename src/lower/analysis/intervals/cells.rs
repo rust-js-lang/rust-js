@@ -48,9 +48,14 @@ impl<'tcx> Walk<'_, 'tcx> {
         !reads
     }
 
-    /// Whether dropping `place` may run code that writes a cell.
+    /// Whether dropping `place` may run code that writes a cell. Not a
+    /// `Ref`'s or a `RefMut`'s, which gives its borrow back and drops
+    /// none of what the cell holds (#1815).
     pub(super) fn drop_may_write_cells(&self, place: &mir::Place<'tcx>) -> bool {
-        drop_runs_code(self.tcx, self.typing_env, place.ty(&*self.body, self.tcx).ty)
+        let ty = place.ty(&*self.body, self.tcx).ty;
+        let guard = matches!(ty.kind(), ty::Adt(adt, _)
+            if is_std_def(self.tcx, adt.did(), StdItem::RefCellRef) || is_std_def(self.tcx, adt.did(), StdItem::RefCellRefMut));
+        !guard && drop_runs_code(self.tcx, self.typing_env, ty)
     }
 
     /// Whether a statement's write to `place` is through a raw pointer.

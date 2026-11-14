@@ -253,4 +253,28 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-integer-ranges.test.ts", "-t", "what it was made with"],
   },
 
+  {
+    name: "guard-drop-keeps-guard",
+    breaks: "a held guard's drop leaves its cell guarded, so a call past it, which may clear the cell through another `Rc`, forgets nothing, and `queue.borrow()[i]` is taken in bounds, a mir-only-call-bounds line (#1815)",
+    file: "src/lower/analysis/intervals.rs",
+    find: "                after.guarded.shift_remove(&place.local);\n",
+    replace: "",
+    tests: ["test/intervals-shadow.test.ts", "-t", "guard keeps"],
+  },
+  {
+    name: "guarded-cells-forgotten-at-calls",
+    breaks: "a call forgets the length of a cell a held guard guards, so `items.remove(i)` past `f(items[i])` keeps its check, a call-bounds line (#1815)",
+    file: "src/lower/analysis/intervals.rs",
+    find: "                if !self.cells.is_empty() && self.may_write_cells(func) && !self.guard_call(func, args, destination) {\n                    (self.cells.iter())\n                        .filter(|&&cell| !state.is_guarded(cell))\n",
+    replace: "                if !self.cells.is_empty() && self.may_write_cells(func) && !self.guard_call(func, args, destination) {\n                    (self.cells.iter())\n",
+    tests: ["test/intervals-shadow.test.ts", "-t", "guard keeps"],
+  },
+  {
+    name: "guard-calls-write-cells",
+    breaks: "a held guard's `borrow_mut()` and `deref_mut` forget each cell's length, so `queue.borrow_mut()[i]` under `i < queue.borrow().len()` keeps its check, a call-bounds line (#1815)",
+    file: "src/lower/analysis/intervals.rs",
+    find: "                if !self.cells.is_empty() && self.may_write_cells(func) && !self.guard_call(func, args, destination) {\n",
+    replace: "                if !self.cells.is_empty() && self.may_write_cells(func) {\n",
+    tests: ["test/intervals-shadow.test.ts", "-t", "guard keeps"],
+  },
 ];

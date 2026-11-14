@@ -201,25 +201,31 @@ pub(in crate::lower) fn call_indexes<'tcx>(
 }
 
 /// Of `v[a..b]`'s `Index::index` or `index_mut` of a `Vec`, a slice or an
-/// array, by a range of `usize`, `..`, `a..`, `..b`, `..=b` or `a..b`: the
-/// range's argument, its bounds checked against the receiver's length
-/// (#1672 M3, step 5). Not text's, whose bounds are on its characters too.
+/// array, by a range of `usize`, `..`, `a..`, `..b`, `..=b` or `a..b`, and
+/// of a `Vec`'s `drain(a..b)` (#1815): the range's argument, its bounds
+/// checked against the receiver's length (#1672 M3, step 5). Not text's,
+/// whose bounds are on its characters too.
 pub(in crate::lower) fn range_index<'tcx>(
     tcx: TyCtxt<'tcx>,
     def_id: DefId,
     args: ty::GenericArgsRef<'tcx>,
 ) -> Option<usize> {
+    let vec = |ty: Ty<'tcx>| matches!(ty.kind(), ty::Adt(adt, _) if is_std_def(tcx, adt.did(), StdItem::Vec));
+    let ranged = |index: Ty<'tcx>| {
+        matches!(index.kind(), ty::Adt(adt, args) if range_index_bounds(tcx, adt.did()).is_some()
+            && args.types().all(|t| t.is_usize()))
+    };
     let indexing = (tcx.trait_of_assoc(def_id))
         .is_some_and(|t| tcx.is_lang_item(t, LangItem::Index) || tcx.is_lang_item(t, LangItem::IndexMut));
     if !indexing {
-        return None;
+        let drain = tcx.item_name(def_id).as_str() == "drain"
+            && (tcx.inherent_impl_of_assoc(def_id))
+                .is_some_and(|impl_| vec(tcx.type_of(impl_).instantiate_identity().skip_normalization()));
+        return (drain && args.types().last().is_some_and(ranged)).then_some(1);
     }
     let (holder, index) = (args.type_at(0), args.type_at(1));
-    let held = matches!(holder.kind(), ty::Slice(_) | ty::Array(..))
-        || matches!(holder.kind(), ty::Adt(adt, _) if is_std_def(tcx, adt.did(), StdItem::Vec));
-    let ranged = matches!(index.kind(), ty::Adt(adt, args) if range_index_bounds(tcx, adt.did()).is_some()
-        && args.types().all(|t| t.is_usize()));
-    (held && ranged).then_some(1)
+    let held = matches!(holder.kind(), ty::Slice(_) | ty::Array(..)) || vec(holder);
+    (held && ranged(index)).then_some(1)
 }
 
 /// A range's bounds, by their fields: its start's, and its end's with
@@ -251,6 +257,11 @@ pub(in crate::lower) fn range_index_bounds(tcx: TyCtxt<'_>, adt: DefId) -> Optio
 pub(in crate::lower) fn keeps_vec_length(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     (tcx.trait_of_assoc(def_id)).is_some_and(|t| tcx.is_lang_item(t, LangItem::IndexMut))
         || tcx.is_diagnostic_item(Symbol::intern("deref_mut_method"), def_id)
+}
+
+/// Whether a call is `DerefMut::deref_mut`.
+pub(in crate::lower) fn deref_mut_call(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    tcx.is_diagnostic_item(Symbol::intern("deref_mut_method"), def_id)
 }
 
 /// Whether a call is `Deref::deref` or `DerefMut::deref_mut`.

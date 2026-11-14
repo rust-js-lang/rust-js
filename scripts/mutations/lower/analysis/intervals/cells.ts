@@ -34,8 +34,16 @@ export const mutations: Mutation[] = [
     name: "cells-drop-writes-nothing",
     breaks: "a drop whose destructor writes a `RefCell` is taken as writing nothing of it, so past it `len() - 1` is JS's own and gives `-1`",
     file,
-    find: "        drop_runs_code(self.tcx, self.typing_env, place.ty(&*self.body, self.tcx).ty)\n",
-    replace: "        false && drop_runs_code(self.tcx, self.typing_env, place.ty(&*self.body, self.tcx).ty)\n",
+    find: "        !guard && drop_runs_code(self.tcx, self.typing_env, ty)\n",
+    replace: "        false && drop_runs_code(self.tcx, self.typing_env, ty)\n",
     tests,
+  },
+  {
+    name: "guard-drop-runs-code",
+    breaks: "a `Ref`'s drop of a `Vec` of `Rc<dyn Fn>`s is taken to run the items' code, forgetting the cell's length, so `queue.borrow_mut()[i] = task` under `i < queue.borrow().len()` keeps its check, a call-bounds line (#1815)",
+    file,
+    find: "        !guard && drop_runs_code(self.tcx, self.typing_env, ty)\n",
+    replace: "        drop_runs_code(self.tcx, self.typing_env, ty)\n",
+    tests: ["test/intervals-shadow.test.ts", "-t", "guard keeps"],
   },
 ];

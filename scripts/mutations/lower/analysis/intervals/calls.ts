@@ -76,4 +76,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-integer-ranges.test.ts", "-t", "a counter a loop breaks out of at a bound"],
   },
+  {
+    name: "index-not-given-back",
+    breaks: "an index `v[i]` gave its item at isn't known below the length after, so a drain to it, `drain(0..i)` past `queue.borrow_mut()[i] = 0`, keeps its check, a call-bounds line (#1815)",
+    file: "src/lower/analysis/intervals/calls.rs",
+    find: "                        after.related(i, Term::Len(of), true);\n",
+    replace: "",
+    tests: ["test/intervals-shadow.test.ts", "-t", "guard keeps"],
+  },
 ];

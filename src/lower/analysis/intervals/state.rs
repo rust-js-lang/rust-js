@@ -93,6 +93,10 @@ pub(super) struct State {
     /// through it leaves the pointer able to, so no test of it, nor any
     /// relation, tells what it is (#1782).
     pub(super) lent_away: IndexSet<Local>,
+    /// Each held guard's cell, by the guard, from its `borrow_mut()` to
+    /// its drop: no code but through the guard changes it (`guards`,
+    /// #1815).
+    pub(super) guarded: IndexMap<Local, Local>,
 }
 
 /// A range of integers `next()` alone steps (`stepped_ranges`): what its
@@ -196,6 +200,7 @@ impl State {
                 .copied()
                 .collect(),
             lending: both(&self.lending, &other.lending),
+            guarded: both(&self.guarded, &other.guarded),
         }
     }
 
@@ -303,6 +308,12 @@ impl State {
         self.sums.retain(|&sum, &mut (of, _, _)| sum != local && of != local);
         self.gets
             .retain(|&gave, &mut (index, _)| gave != local && index != local);
+        self.guarded.retain(|&guard, &mut cell| guard != local && cell != local);
+    }
+
+    /// Whether a held guard guards `cell`.
+    pub(super) fn is_guarded(&self, cell: Local) -> bool {
+        self.guarded.values().any(|&c| c == cell)
     }
 
     /// What `local` is a copy or a reborrow of, else itself.

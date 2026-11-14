@@ -38,8 +38,8 @@ export const mutations: Mutation[] = [
     name: "range-index-unrecognized",
     breaks: "no `v[a..b]` is a range index, so `v[..]` and `v[a..n]` under `a <= n <= v.len()` aren't proved, no mir-only-call-bounds line",
     file: "src/lower/recognition/loop_ranges.rs",
-    find: "    (held && ranged).then_some(1)\n",
-    replace: "    (held && ranged && false).then_some(1)\n",
+    find: "    (held && ranged(index)).then_some(1)\n",
+    replace: "    (held && ranged(index) && false).then_some(1)\n",
     tests: ["test/intervals-shadow.test.ts", "-t", "a range's bounds"],
   },
   {
@@ -49,5 +49,13 @@ export const mutations: Mutation[] = [
     find: "            \"skip\" => RangeStep::Skip,\n",
     replace: "",
     tests: ["test/intervals-shadow.test.ts", "-t", "0 before it"],
+  },
+  {
+    name: "drain-unranged",
+    breaks: "a `Vec`'s `drain(0..i)` isn't a range MIR proves, so a drain to an index known in bounds keeps its check, a call-bounds line (#1815)",
+    file: "src/lower/recognition/loop_ranges.rs",
+    find: "        return (drain && args.types().last().is_some_and(ranged)).then_some(1);\n",
+    replace: "        return None;\n",
+    tests: ["test/intervals-shadow.test.ts", "-t", "guard keeps"],
   },
 ];
