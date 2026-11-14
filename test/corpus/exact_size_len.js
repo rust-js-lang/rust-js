@@ -3,12 +3,14 @@
 import {
   $iter,
   $iterator,
-  $mapEnds,
+  $jsIterator,
   $next,
   $nextBack,
   $rangeLen,
   $rangeNext,
   $rangeNextBack,
+  iterator_map,
+  mapExactSizeIterator_len,
 } from "@rust-js/std";
 
 export function entry() {
@@ -26,7 +28,10 @@ function both(it) {
 }
 
 function mapped(it) {
-  return $mapEnds(it, (n) => (n * 2) >>> 0).len();
+  return mapExactSizeIterator_len(
+    iterator_map(it, (n) => (n * 2) >>> 0, $jsIterator),
+    { len: (iterator) => iterator.len() },
+  );
 }
 
 function last(it) {

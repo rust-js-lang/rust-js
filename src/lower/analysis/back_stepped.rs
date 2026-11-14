@@ -422,6 +422,27 @@ pub(in crate::lower) struct BackStepped<'tcx> {
     pub(in crate::lower) counted: IndexSet<(rustc_span::def_id::DefId, rustc_middle::mir::Local)>,
 }
 
+impl<'tcx> BackStepped<'tcx> {
+    /// Whether a value of type `ty`, in `owner`'s body `mir`, is made knowing
+    /// its back or its length where it's made: of a type whose question is a
+    /// type's, or of the type of a local this body steps from its back or
+    /// counts there. The one answer of what's stepped from its back, which
+    /// the held flip asks of a chain's source (`decide_held`, #1681).
+    pub(in crate::lower) fn made_knowing(
+        &self,
+        recognition: Recognition<'_, 'tcx>,
+        (owner, mir): (rustc_span::def_id::DefId, &rustc_middle::mir::Body<'tcx>),
+        ty: Ty<'tcx>,
+    ) -> bool {
+        let tcx = recognition.tcx;
+        let erased = |ty: Ty<'tcx>| tcx.erase_and_anonymize_regions(recognition.reveal(ty.peel_refs()));
+        let ty = erased(ty);
+        self.typed.contains(&ty)
+            || (self.locals.keys().chain(&self.counted))
+                .any(|&(of, local)| of == owner && erased(mir.local_decls[local].ty) == ty)
+    }
+}
+
 /// The body that makes what a call of `callee` with `args` gives: its own,
 /// or of a closure called through its `Fn` trait, the closure's (#851).
 pub(in crate::lower) fn made_by<'tcx>(

@@ -11,6 +11,8 @@ import {
   $intsOrdered,
   $iter,
   $iterator,
+  $jsIterator,
+  $jsIteratorSome,
   $lazyRange,
   $rangeFromStep,
   $roomForHint,
@@ -18,6 +20,7 @@ import {
   $traitImpl,
   $treeFromSorted,
   $vecCollectWay,
+  iterator_map,
 } from "@rust-js/std";
 
 const endlessU32 = () => endless({ default: () => 0 }, 4);
@@ -70,7 +73,7 @@ function relayed(it, USize, JVecCollect) {
 function relayedTwice(it, JTrustedLen, JInPlace, JItemSize, JItemAlign) {
   return (
     (relayed(
-      Iterator.from(it).map((x) => x),
+      iterator_map(it, (x) => x, $jsIteratorSome),
       JItemSize,
       $vecCollectWay($collectsInPlace(JInPlace, JItemSize, JItemAlign), JTrustedLen, JInPlace),
     ) +
@@ -92,7 +95,7 @@ function queued(it, TSize, IVecCollect) {
 function tagged(it, TU8Size) {
   return $collectDropping(
     $roomForHint(
-      Iterator.from(it).map((x) => [x, 0]),
+      iterator_map(it, (x) => [x, 0], $jsIterator),
       TU8Size,
       false,
     ),
@@ -102,7 +105,7 @@ function tagged(it, TU8Size) {
 function wrapped(it, OptionSize) {
   return $collectDropping(
     $roomForHint(
-      Iterator.from(it).map((value) => $some(value)),
+      iterator_map(it, (value) => $some(value), $jsIteratorSome),
       OptionSize,
       false,
     ),

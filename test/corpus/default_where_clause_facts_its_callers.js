@@ -6,10 +6,8 @@ import {
   $debugStr,
   $entry,
   $entryOrInsert,
-  $enumerate,
   $eq,
   $foldOf,
-  $given,
   $iter,
   $iterator,
   $keyClassOf,
@@ -24,6 +22,7 @@ import {
   $strictlyEqual,
   $toBytes,
   $traitImpl,
+  iterator_enumerate,
   iterator_map,
   mapIterator___iteratorGetUnchecked,
 } from "@rust-js/std";
@@ -38,7 +37,7 @@ function iTally(IIterator) {
   return $traitImpl($iTally, [IIterator], () => ({
     counts(self, SelfItemHash, SelfItemPartialEq, SelfItemMap) {
       const counts = new ($keyClassOf(false, false, [Map, SelfItemMap]))();
-      for (const [i, item] of $enumerate($given(self, IIterator, true))) {
+      for (const [i, item] of iterator_enumerate(self, IIterator)) {
         const orInsert = $entryOrInsert($entry(counts, [i % 2, item]), 0, true);
         orInsert.value = (orInsert.value + 1) >>> 0;
       }

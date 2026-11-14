@@ -7,6 +7,7 @@ import {
   $dropEach,
   $held,
   $iter,
+  $jsIterator,
   $lazyChain,
   $lent,
   $nthDropping,
@@ -14,6 +15,7 @@ import {
   $rev,
   $roomForHint,
   $skipping,
+  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -27,11 +29,21 @@ function noisyDrop_drop(noisy) {
 function skipped(it, dropI) {
   return $collectDropping(
     $roomForHint(
-      $skipping($closing(Iterator.from(it), dropI, false), 2, noisyDrop_drop).map((n) => {
-        const result = n[0];
-        noisyDrop_drop(n);
-        return result;
-      }),
+      iterator_map(
+        $skipping($closing(Iterator.from(it), dropI, false), 2, noisyDrop_drop),
+        (n) => {
+          const result = n[0];
+          noisyDrop_drop(n);
+          return result;
+        },
+        $jsIterator,
+        (skip) => {
+          skip.return();
+        },
+        undefined,
+        undefined,
+        noisyDrop_drop,
+      ),
       4,
       false,
     ),

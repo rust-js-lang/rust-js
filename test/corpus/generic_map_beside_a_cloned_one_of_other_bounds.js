@@ -2,19 +2,18 @@
 
 import {
   $cleanup,
-  $clone,
-  $cloning,
-  $closing,
   $collectDropping,
   $collectOptions,
   $collectsInPlace,
   $cycleOf,
   $dropEach,
-  $given,
   $iter,
+  $jsIterator,
   $next,
   $rangeNext,
   $roomForHint,
+  iterator_map,
+  mapClone_clone,
 } from "@rust-js/std";
 
 export function entry() {
@@ -22,13 +21,16 @@ export function entry() {
 }
 
 export function cycled(items, f, IIterator, IClone, FClone) {
-  const makeMap = (it, f) =>
-    $cloning(
-      $given(it, IIterator).map((item) => f(item)),
-      () => makeMap(IClone.clone(it), f),
-    );
   return $collectDropping(
-    $roomForHint($cycleOf(makeMap(items, f), $clone, $next).take(5), 4, false),
+    $roomForHint(
+      $cycleOf(
+        iterator_map(items, f, IIterator),
+        (iterator) => mapClone_clone(iterator, IClone, FClone),
+        $next,
+      ).take(5),
+      4,
+      false,
+    ),
   );
 }
 
@@ -37,7 +39,19 @@ function dDrop_drop(d) {
 }
 
 function tried(src, IInPlace, dropI) {
-  const iter = $closing(Iterator.from(src), dropI, false).map((value) => value);
+  const iter = iterator_map(
+    src,
+    (value) => value,
+    $jsIterator,
+    dropI,
+    (option) => {
+      if (option != null) {
+        dDrop_drop(option);
+      }
+    },
+    undefined,
+    dDrop_drop,
+  );
   let result;
   try {
     result = $collectOptions(

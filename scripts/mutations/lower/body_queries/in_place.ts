@@ -323,4 +323,22 @@ export const mutations: Mutation[] = [
     replace: "                let held_iterator = index == 0\n                    || false && param_at(callee, index)\n",
     tests: ["test/corpus.test.ts", "-t", "^flat_map_collected_where_capacity_is_read.rs$"],
   },
+  {
+    name: "held-flip-takes-none-out",
+    breaks: "a chain that starts on a variable holding std's struct apart keeps its `enumerate()` and `map()` made in place, the hand-written forms, where std's compiled body is the meaning (#1681's step iii)",
+    file: "src/lower/body_queries/in_place.rs",
+    find: "            (false, Some(mir)) => held_links(",
+    replace: "            (false, Some(mir)) if false => held_links(",
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^adapter_made_in_generic_code_asked_its_hint.rs$"],
+  },
+  {
+    name: "held-flip-of-a-source-made-knowing-its-back",
+    breaks: "the held flip takes out the adapters of a chain whose source is made knowing its back, `$mapEnds`, a JS iterator, not std's struct, giving std's compiled structs a hand-made source (#1681's step iii)",
+    file: "src/lower/body_queries/in_place.rs",
+    find: "            && !back_stepped.made_knowing(*recognition, (body.def_id, mir), thir[source].ty)",
+    replace: "            && !false",
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^map_held_then_enumerated_from_its_back.rs$"],
+  },
 ];

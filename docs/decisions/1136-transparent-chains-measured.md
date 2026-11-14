@@ -211,3 +211,36 @@ caught by their cases' snapshots. The readability measure's shares of
 renamed `x$1` (483.5 to 483.6) and role fallbacks (264.2 to 264.4) in
 10,000 lines rise only as the lines they're counted against fall, the
 same names in 338 fewer lines; its baseline is blessed so.
+
+## Amendment: the held flip (2026-11-14, #1681's step iii)
+
+The first step that reads `transparent-chain`. A chain that starts on a
+variable holding std's struct apart, `held`'s, is std's compiled structs:
+its `enumerate()`s and `map()`s, `HELD_FLIPPED`, are no longer made in
+place, the recognizers' hand-written forms, but held, std's body the
+meaning where the hand-written form isn't proved to be it. Decided as the
+second stage of `InPlace` (`decide_held`), once `back_stepped` knows what's
+stepped from its back and before `type_fact_params` reads the sets.
+
+- **Narrowed to std's struct.** A source made knowing its back or its
+  length where it's made, `$mapEnds` of a map a `rev()` or a counted
+  enumeration steps (#484, #1354), is a JS iterator, not std's struct, and
+  its chain keeps its forms: `BackStepped::made_knowing`, the owner's
+  answer, of its type or a local of it. Variables only, not fields. Unnarrowed,
+  the flip moved 175 snapshots, ×1.146 their lines, and refused one,
+  `held_filter_map_reversed`.
+- **Never `rev()`.** `back_stepped`, which decides the flip, reads whether a
+  `rev()` is made in place: its held-`rev()` rule marks what a held one is
+  given made knowing its back (analysis/back_stepped.rs). Flipping a `rev()`
+  would mark its own source, un-flipping the chain: a cycle, not a fixed
+  point. `test/architecture-iterators.test.ts` holds `HELD_FLIPPED` to
+  `enumerate` and `map` and back_stepped's read to the ground.
+
+Measured: 49 corpus snapshots move, each as native prints; their lines
+11,151 to 11,716, ×1.051 (×1.065 before `$jsIterator`, which shrank the
+dictionaries the std structs are given). Worst: `associated_into_iter`
+×1.29, std's `iterator_map(iters, f, $jsIteratorSome)` where JS's own wrote
+`Iterator.from(iters).map(f)`. The React port's regeneration changes no
+iterator form. The readability measure grows in no shape. Mutations
+`held-flip-takes-none-out` and `held-flip-of-a-source-made-knowing-its-back`,
+caught by snapshots; `held-stage-never-decided` retargeted, caught.
