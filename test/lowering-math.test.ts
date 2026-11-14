@@ -119,6 +119,44 @@ pub fn roots(v: Vec<f64>) -> Vec<f64> {
   expect(lib.roots([4, 9])).toEqual([2, 3]);
 });
 
+// A port of vercel-ui's number scale (#1812): `&f64::ln` lent as a `&dyn
+// Fn` is `Math.log`, read where it's lent, as `f64::ln` taken as a `fn` is
+// and as upstream's `to: Math.log`, so a `Math.log` set after the module
+// loads changes neither. One that isn't `Math`'s for every value stays its
+// arrow.
+test("a std function that's Math's lent as a dyn Fn is its function", async () => {
+  const dir = fixture("math-lent");
+  writeFileSync(join(dir, "lib.rs"), `struct Scale {
+    to: &'static dyn Fn(f64) -> f64,
+}
+
+thread_local! {
+    static SCALE: Scale = Scale { to: &f64::ln };
+}
+
+pub fn position(value: f64) -> f64 {
+    SCALE.with(|s| (s.to)(value))
+}
+
+pub fn rounded(value: f64) -> f64 {
+    let round: &dyn Fn(f64) -> f64 = &f64::round;
+    round(value)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("const scale = { to: Math.log };");
+  expect(js).toContain("const round = (n) => $round(n);");
+  const lib = await import(join(dir, "lib.js"));
+  const log = Math.log;
+  try {
+    Math.log = () => -1;
+    expect([lib.position(Math.E), lib.position(1), lib.rounded(-2.5)]).toEqual([1, 0, -3]);
+  } finally {
+    Math.log = log;
+  }
+});
+
 // `js::is_defined` of a std function that isn't `Math`'s is refused, as one
 // of what isn't a global's binding is.
 test("js::is_defined of a std function that isn't Math's is refused", () => {

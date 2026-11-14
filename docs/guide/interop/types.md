@@ -118,8 +118,9 @@ export function half(x) {
   operation.
 
 A number's methods are JS's `Math` where they answer as Rust's do:
-`x.sqrt()` is `Math.sqrt(x)`. Such a function taken as a `fn`, and a
-constant of `std::f64::consts` that `Math` has, is `Math`'s itself
+`x.sqrt()` is `Math.sqrt(x)`. Such a function taken as a `fn` or lent
+as a `&dyn Fn`, and a constant of `std::f64::consts` that `Math` has, is
+`Math`'s itself, read where it's taken
 ([ADR 0887](../../decisions/0887-std-items-that-are-math-are-math.md)):
 
 ```rust
@@ -134,6 +135,10 @@ pub fn area(radius: f64) -> f64 {
 pub fn rounding() -> fn(f64) -> f64 {
     f64::round
 }
+
+pub fn scale() -> &'static dyn Fn(f64) -> f64 {
+    &f64::ln
+}
 ```
 
 ```js
@@ -147,6 +152,10 @@ export function area(radius) {
 
 export function rounding() {
   return (n) => $round(n);
+}
+
+export function scale() {
+  return Math.log;
 }
 ```
 

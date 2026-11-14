@@ -75,12 +75,17 @@ export const mutations: Mutation[] = [
   {
     name: "binding-reified-as-arrow",
     breaks:
-      "a binding taken as a `fn` is its arrow, which reads the global at each call",
+      "a function taken as a `fn` is its arrow, which reads the global at each call: a binding's, and `u32::leading_zeros`'s, not `Math.clz32`, which the program's polyfill captures",
     file: "src/lower/mir/rvalues.rs",
-    find: "                            && bindings::is_binding(tcx, def_id)\n                        {\n",
+    find: "                            if let Some(function) = self.fn_item_pointer(def_id, args, named, span)? {\n",
     replace:
-      "                            && false\n                        {\n",
-    tests: ["test/lowering-functions.test.ts", "-t", "a binding taken as a fn"],
+      "                            if let Some(function) = self.fn_item_pointer(def_id, args, named, span)?.filter(|_| false) {\n",
+    tests: [
+      "test/lowering-functions.test.ts",
+      "test/lowering-math.test.ts",
+      "-t",
+      "a binding taken as a fn|Math's is its function, and is_defined asks of it",
+    ],
   },
   {
     name: "mir-shared-temporary-a-place",
@@ -553,20 +558,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "math-pointer-arrow",
-    breaks:
-      "`u32::leading_zeros` taken as a `fn` is the arrow of its call, `(n) => Math.clz32(n)`, not `Math.clz32`, which the program's polyfill captures",
-    file: "src/lower/mir/rvalues.rs",
-    find: "                            && let Some(function) = self.math_function(def_id, args)\n                        {\n                            return Ok(Value::Expr(function));\n",
-    replace:
-      "                            && let Some(function) = self.math_function(def_id, args).filter(|_| false)\n                        {\n                            return Ok(Value::Expr(function));\n",
-    tests: [
-      "test/lowering-math.test.ts",
-      "-t",
-      "a std function that's Math's is its function, and is_defined asks of it",
-    ],
-  },
-  {
     name: "closure-fn-pointer-kept-arrow",
     breaks:
       "a closure as a `fn` that only calls the crate's function is an arrow of it, React's `ContextOnlyDispatcher`'s `useCallback() { throwInvalidHookError(); }` (ADR 0605, amended)",
@@ -625,12 +616,12 @@ export const mutations: Mutation[] = [
   {
     name: "binding-lent-as-dyn-arrow",
     breaks:
-      "a binding's function lent as a `&dyn Fn` is a new arrow each time, `() => defaultIndicator()`, so React's registerDefaultIndicator sees another indicator per root (rd289)",
+      "a function lent as a `&dyn Fn` is a new arrow each time: a binding's, `() => defaultIndicator()`, so React's registerDefaultIndicator sees another indicator per root (rd289), and `&f64::ln`'s, `(n) => Math.log(n)`, reading a `Math.log` set later (#1812)",
     file: "src/lower/mir/rvalues.rs",
-    find: "                            && bindings::is_binding(self.tcx, def_id)\n",
+    find: "                            && let Some(function) = self.fn_item_pointer(def_id, args.skip_binder(), span, span)?\n",
     replace:
-      "                            && bindings::is_binding(self.tcx, def_id) && false\n",
-    tests: ["test/js-functions.test.ts", "-t", "lent as a dyn Fn"],
+      "                            && let Some(function) = self.fn_item_pointer(def_id, args.skip_binder(), span, span)?.filter(|_| false)\n",
+    tests: ["test/js-functions.test.ts", "test/lowering-math.test.ts", "-t", "lent as a dyn Fn is"],
   },
   {
     name: "constant-pattern-test-constant-first",

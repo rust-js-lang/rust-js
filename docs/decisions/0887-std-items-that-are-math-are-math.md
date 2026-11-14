@@ -205,3 +205,33 @@ the value, `js::is_defined` and a constant's read all ask it:
   `math-defined-refused` (`mir/calls.ts`), `math-constant-literal`
   (`lower.ts`), `math-written-constant-literal` (`pipeline.ts`), and
   `f32-fn-value-unrounded` (`items.ts`), moved to the table.
+
+## Amendment: one lent as a `&dyn Fn` is its function too (2026-11-14, #1812)
+
+A port of vercel-ui's number scale keeps the mapping chosen where the
+scale is made, upstream's `{ to: Math.log }`, as `Scale { to: &f64::ln }`,
+a `&'static dyn Fn(f64) -> f64` field. Lent as a `&dyn Fn`, the function
+was its arrow, `(n) => Math.log(n)`, which reads `Math.log` at each call:
+a `Math.log` set after the module loads changed the compiled scale and not
+upstream's. A `dyn Fn` is called with what its signature gives, as a `fn`
+is, and what hands one to JS gives it no more than Rust does,
+`.reduce((a, b) => f(a, b), 0)`, as it does a `fn` pointer (ADR 0602's
+amendment of rd289).
+
+**A function lent as a `&dyn Fn` is what it is taken as a `fn`**: one
+answer for both, `fn_item_pointer` (`src/lower/items.rs`), a binding's
+function (ADR 0602) or the `Math` function of the table, read where it's
+lent, `{ to: Math.log }`; any other, `&f64::round`, its arrow, as it was.
+A function item handed to an iterator by reference, `.map(&f64::ln)`, is
+no `dyn` and stays its arrow, as the item is. Case (ADR 0262): N, as the
+`fn`'s.
+
+Held by `test/lowering-math.test.ts`' "a std function that's Math's lent
+as a dyn Fn is its function", the issue's program, its `Math.log` replaced
+after import; corpus `math_values_lent` against native Rust, a log scale in
+a `thread_local!`, the exact functions and those not in the table lent,
+two of two numbers folded, an integer's and an `f32`'s; its loud rewrites
+are difference 58's, a thread-local's value never dropped. Mutations
+`binding-pointer-arrow` and `math-pointer-arrow` (`items.ts`), and
+`binding-reified-as-arrow` and `binding-lent-as-dyn-arrow`
+(`mir/rvalues.ts`), now of the shared answer.

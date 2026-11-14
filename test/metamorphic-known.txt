@@ -69,6 +69,10 @@ plain std loud-drop let_chain_else_of_reads.rs
 plain std loud loop_over_a_thread_local.rs
 plain std loud-call loop_over_a_thread_local.rs
 plain std loud-drop loop_over_a_thread_local.rs
+plain std loud math_values_lent.rs
+plain std loud-call math_values_lent.rs
+plain std loud-drop math_values_lent.rs
+plain std loud-step math_values_lent.rs
 plain std loud nullable_generic_fields.rs
 plain std loud-call nullable_generic_fields.rs
 plain std loud-drop nullable_generic_fields.rs

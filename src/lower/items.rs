@@ -497,6 +497,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(passed_on(&arrow, Taker::Made, &[]).unwrap_or(arrow))
     }
 
+    /// A function item taken as a pointer, a `fn` or lent as a `&dyn Fn`,
+    /// where that pointer is a JS function itself, read where it's taken:
+    /// a binding's (ADR 0602) or a std function that's `Math`'s, `Math.log`
+    /// of `f64::ln` (ADR 0887). `None` of any other, whose pointer is its
+    /// value. The one answer both forms of pointer ask (#1812).
+    pub(super) fn fn_item_pointer(
+        &mut self,
+        def_id: DefId,
+        args: ty::GenericArgsRef<'tcx>,
+        named: Span,
+        span: Span,
+    ) -> R<Option<Expr>> {
+        if super::bindings::is_binding(self.tcx, def_id) {
+            return self.binding_fn_pointer(def_id, args, named, span).map(Some);
+        }
+        Ok(self.math_function(def_id, args))
+    }
+
     /// The JS component binding `def_id` names, if it names one.
     pub(super) fn binding_component_of(&self, def_id: DefId) -> Option<Expr> {
         match js_form(self.tcx, def_id) {

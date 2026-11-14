@@ -541,16 +541,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         {
                             return Err(self.unsupported(span, "a `dyn` of a value with a destructor"));
                         }
-                        // A binding's function lent as a `&dyn Fn`, as one as
-                        // a `fn`: the JS function itself (ADR 0602, amended),
-                        // whose identity a caller may compare, React's
-                        // default transition indicator (rd289).
+                        // A function lent as a `&dyn Fn`, as one as a `fn`:
+                        // a binding's the JS function itself (ADR 0602,
+                        // amended), whose identity a caller may compare,
+                        // React's default transition indicator (rd289); a
+                        // std one that's `Math`'s, its function, `&f64::ln`
+                        // `Math.log`, read where it's lent (ADR 0887, #1812).
                         if from.is_ref()
                             && let ty::FnDef(def_id, args) = *self.pointee(from).kind()
-                            && bindings::is_binding(self.tcx, def_id)
+                            && let Some(function) = self.fn_item_pointer(def_id, args.skip_binder(), span, span)?
                         {
-                            let args = args.skip_binder();
-                            return Ok(Value::Expr(self.binding_fn_pointer(def_id, args, span, span)?));
+                            return Ok(Value::Expr(function));
                         }
                         let value = self.mir_expr(state, operand, out)?;
                         // A raw pointer's: its place's value made the `dyn`,
@@ -689,22 +690,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     | PointerCoercion::UnsafeFnPointer
                     | PointerCoercion::ClosureFnPointer(_) => {
                         // A binding's, its JS function itself (ADR 0602), read
-                        // where its path names it (ADR 0633).
-                        if let Some((def_id, args)) = crate::lower::fn_def(operand.ty(decls, tcx))
-                            && bindings::is_binding(tcx, def_id)
-                        {
+                        // where its path names it (ADR 0633); a std function
+                        // that's `Math`'s, its function, `Math.clz32` of
+                        // `u32::leading_zeros` (ADR 0887).
+                        if let Some((def_id, args)) = crate::lower::fn_def(operand.ty(decls, tcx)) {
                             let named = match operand {
                                 Operand::Constant(c) => c.span,
                                 _ => span,
                             };
-                            return Ok(Value::Expr(self.binding_fn_pointer(def_id, args, named, span)?));
-                        }
-                        // A std function that's `Math`'s, its function,
-                        // `Math.clz32` of `u32::leading_zeros` (ADR 0887).
-                        if let Some((def_id, args)) = crate::lower::fn_def(operand.ty(decls, tcx))
-                            && let Some(function) = self.math_function(def_id, args)
-                        {
-                            return Ok(Value::Expr(function));
+                            if let Some(function) = self.fn_item_pointer(def_id, args, named, span)? {
+                                return Ok(Value::Expr(function));
+                            }
                         }
                         // A function's value, a generic function's instance's
                         // in its callers' forms, its `fn` pointer (#1187, #1324).

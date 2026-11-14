@@ -3,6 +3,29 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "binding-pointer-arrow",
+    breaks:
+      "a binding taken as a `fn` or lent as a `&dyn Fn` is its arrow, which reads the global at each call, a new function each time (ADR 0602)",
+    file: "src/lower/items.rs",
+    find: "        if super::bindings::is_binding(self.tcx, def_id) {\n            return self.binding_fn_pointer(def_id, args, named, span).map(Some);\n",
+    replace: "        if false {\n            return self.binding_fn_pointer(def_id, args, named, span).map(Some);\n",
+    tests: [
+      "test/lowering-functions.test.ts",
+      "test/js-functions.test.ts",
+      "-t",
+      "a binding taken as a fn|a binding lent as a dyn Fn",
+    ],
+  },
+  {
+    name: "math-pointer-arrow",
+    breaks:
+      "a std function that's `Math`'s taken as a `fn` or lent as a `&dyn Fn` is the arrow of its call, `(n) => Math.log(n)`, not `Math.log`, which a polyfill or a scale captures where it's taken (ADR 0887, #1812)",
+    file: "src/lower/items.rs",
+    find: "        Ok(self.math_function(def_id, args))\n",
+    replace: "        Ok(None)\n",
+    tests: ["test/lowering-math.test.ts", "-t", "is its function"],
+  },
+  {
     name: "type-constant-read-by-name",
     breaks: "an exported impl constant's use reads its object, `ReactiveFlags.MUTABLE`, where TypeScript's `const enum` and every other impl constant is its value (#498)",
     file: "src/lower/items.rs",
