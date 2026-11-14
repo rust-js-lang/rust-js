@@ -522,3 +522,11 @@ intervals decide that index now (`empties`, of `SliceLength::IsEmpty`),
 which `intervals-empty-unknown` holds, and no bridged site's wrap reads
 THIR's test: test/intervals-bridged.test.ts, its one test, passes with
 it. Its code stays until M4 deletes THIR's ranges with the bridge.
+
+## Amendment: THIR's inclusive `for` once the bridge decides nothing (2026-11-14, #1701)
+
+`inclusive-for-unranged` goes. It made THIR's `for i in a..=b` give `i` no
+range, held by test/intervals-bridged.test.ts alone. That list is empty
+since #1701 C (66ffa61c8): MIR proves every wrap THIR's ranges did, so
+THIR's facts decide no wrap and the mutation changes nothing a test reads.
+Its code goes with M4.

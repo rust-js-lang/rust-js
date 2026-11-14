@@ -612,3 +612,40 @@ The bridge's list is empty, so M4 can delete THIR's range code, the bridge
 and the list. One mutation is equivalent and not kept: a closure's MIR has
 one return block, so the join there already drops a `Some` of anything
 else, `if i < 2 { Some(0) } else { v.get(i).copied() }`.
+
+## M3, step 5 begun: a call's indexes, in shadow (2026-11-14)
+
+THIR's facts still decide one thing outside the bridge: the indexes made
+through calls. That covers a `Vec`'s `v[i]` and `index_mut`, `swap`,
+`swap_remove`, `remove` and `insert`, `&v[a..b]`, and a map's `m[k]`.
+M4 can't delete THIR's range code until MIR decides them. In the corpus,
+THIR's facts decide 219 such calls.
+
+The first step proves them in shadow, and nothing is decided by it yet:
+- **The proof.** A call that checks its indexes against its receiver's
+  length (`call_indexes`) is proved where each index is below the length,
+  or at most it for `insert` (`Proofs::call_bounds`, by block). Each site
+  is compared with THIR's facts as a `call-bounds` line.
+- **A `Vec` lent only to calls** (`called_on`). A local holding a `Vec`, or
+  a `&mut Vec` pointing to one, was lent for the whole body by any `&mut`
+  of it. Now one whose `&mut`s are given only to calls isn't. A call that
+  may change its length, `push` or `clear()`, forgets the length past it.
+  One that keeps it, `index_mut`'s `v[i] = x` or `deref_mut`, keeps it. A
+  `Vec`'s `deref` is a slice of its length, a copy of it for its length,
+  so `v.swap(i, j)` is of the `Vec`'s. What a call does with a `&mut` it's
+  given happens before the `Vec` is used again, as borrowck holds. A
+  `&mut` moved to another local, or read any way but given to a call or
+  reborrowed, lends the `Vec` as before.
+
+The shadow's `call-bounds` lines fall from 212 to 202. What remains, in
+the order the lead approved:
+- **range indexes,** about 100 sites: `X[..]`, `X[1..]`, `X[..n]`;
+- **field places as roots:** `self.items[self.i]`;
+- **the map's key-held fact,** as a MIR dataflow of its own;
+- **lengths related across two `Vec`s:** tables.
+
+Main's survivors are caught or reasoned here:
+- `intervals-relations-bound-nothing` is now held by "MIR decides a
+  bounds check" (intervals-shadow), as thresholds alone hold its old test;
+- `intervals-unnarrowed` is held by "an index below a generic constant";
+- `inclusive-for-unranged`, THIR's, goes (ADR 0093 amended).

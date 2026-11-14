@@ -54,6 +54,21 @@ impl<'tcx> Walk<'_, 'tcx> {
             {
                 proofs.bounds.insert(block);
             }
+            if let TerminatorKind::Call { func, args, .. } = &data.terminator().kind
+                && let Some((callee, callee_args)) = func.const_fn_def()
+                && let Some(indexes) = call_indexes(self.tcx, callee, callee_args)
+                && let Some(holder) = (args.first())
+                    .and_then(|arg| arg.node.place())
+                    .and_then(|p| p.as_local())
+                    .filter(|l| !self.lent.contains(l))
+                    .map(|l| state.root(l))
+                && (indexes.iter()).all(|&(at, strict)| {
+                    args.get(at)
+                        .is_some_and(|i| self.index_below(&state, holder, &i.node, strict))
+                })
+            {
+                proofs.call_bounds.insert(block);
+            }
         }
         proofs
     }
@@ -67,10 +82,21 @@ impl<'tcx> Walk<'_, 'tcx> {
         let Some(slice) = state.length_of(holder) else {
             return false;
         };
+        self.index_below(state, slice, index, true)
+    }
+
+    /// Whether `index` is below `slice`'s length, or, not `strict`, at
+    /// most it: below the least it is, or below it as a relation knows; or
+    /// its length itself, `insert(v.len(), x)`.
+    fn index_below(&self, state: &State, slice: Local, index: &Operand<'tcx>, strict: bool) -> bool {
         let least = state.least.get(&slice).copied().unwrap_or(0);
-        let in_least = self.operand(index, state).is_some_and(|i| 0 <= i.lo && i.hi < least);
-        let related = (index.place().and_then(|p| p.as_local()))
-            .is_some_and(|i| state.below.contains(&(state.root(i), Term::Len(slice), true)));
+        let in_least = (self.operand(index, state))
+            .is_some_and(|i| 0 <= i.lo && if strict { i.hi < least } else { i.hi <= least });
+        let local = index.place().and_then(|p| p.as_local()).map(|i| state.root(i));
+        let related = local.is_some_and(|i| {
+            state.below.contains(&(i, Term::Len(slice), true))
+                || !strict && (state.below.contains(&(i, Term::Len(slice), false)) || state.length_of(i) == Some(slice))
+        });
         in_least || related
     }
 }

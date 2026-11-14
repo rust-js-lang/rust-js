@@ -16,8 +16,8 @@
 use crate::collections::{IndexMap, IndexSet};
 use crate::lower::bindings::{is_rest_value, reads_string_length};
 use crate::lower::recognition::{
-    RangeStep, SliceLength, counts_utf16_units, integer_min_max, local_key_with, option_copied, range_of_integers,
-    range_step, ref_deref, refcell_borrow, slice_get, slice_length, text_length,
+    RangeStep, SliceLength, call_indexes, counts_utf16_units, integer_min_max, local_key_with, option_copied,
+    range_of_integers, range_step, ref_deref, refcell_borrow, slice_get, slice_length, text_length,
 };
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_index::IndexVec;
@@ -30,6 +30,7 @@ use rustc_middle::ty::{self, Ty, TyCtxt};
 use rustc_span::Span;
 use std::collections::BTreeSet;
 
+mod called_on;
 mod callers;
 mod calls;
 mod captures;
@@ -86,6 +87,10 @@ pub(in crate::lower) struct Proofs {
     /// The blocks whose terminator is a `OnceCell`'s `set` of a cell known
     /// empty there (`empty_sets`, ADR 0847, #1672 M3).
     pub(in crate::lower) empty_sets: IndexSet<BasicBlock>,
+    /// The blocks whose terminator is a call that checks its indexes
+    /// against its receiver's length, each known in bounds there: a
+    /// `Vec`'s `v[i]`, `swap`, `remove` (`call_indexes`, #1672 M3, step 5).
+    pub(in crate::lower) call_bounds: IndexSet<BasicBlock>,
     /// Whether the body makes a raw pointer, or lends an integer local
     /// `&mut`: where THIR's ranges, which see neither's write after, aren't
     /// to be taken for a wrap MIR doesn't prove (the bridge, #1782).
@@ -113,6 +118,9 @@ struct Walk<'a, 'tcx> {
     /// Of a closure's body, each capture's local given what it was made
     /// with, by field (`as_locals`, #1701).
     captured: Vec<(usize, Local)>,
+    /// Each `&mut` of a `Vec` a local holds, lent only to the calls it's
+    /// given to, by the local holding it (`called_on`).
+    called_on: IndexMap<Local, Local>,
 }
 
 /// Whether `ty` is an integer a JS number holds as it is: of 32 bits at
@@ -156,7 +164,8 @@ fn walk<'a, 'tcx>(
         Some((rewritten, captured)) => (std::borrow::Cow::Owned(rewritten), captured),
         None => (std::borrow::Cow::Borrowed(body), Vec::new()),
     };
-    let (lent, stepped, pointed, cells) = facts(tcx, &body);
+    let called_on = called_on::called_on(tcx, &body);
+    let (lent, stepped, pointed, cells) = facts(tcx, &body, &called_on);
     Walk {
         tcx,
         typing_env,
@@ -167,6 +176,7 @@ fn walk<'a, 'tcx>(
         pointed,
         cells,
         captured,
+        called_on,
     }
 }
 
@@ -176,6 +186,7 @@ fn walk<'a, 'tcx>(
 fn facts<'tcx>(
     tcx: TyCtxt<'tcx>,
     body: &Body<'tcx>,
+    called_on: &IndexMap<Local, Local>,
 ) -> (IndexSet<Local>, IndexSet<Local>, IndexSet<Local>, IndexSet<Local>) {
     // A local whose own place is lent; not a reference to a slice, an
     // array or text whose pointee is, `&mut (*heap)` of `heap.swap(..)`,
@@ -196,6 +207,8 @@ fn facts<'tcx>(
         })
         .filter(|place| !(matches!(place.projection.first(), Some(mir::PlaceElem::Deref)) && fixed_length(place.local)))
         .filter(|place| !lent_where_borrowed(body, place))
+        // A `Vec` lent only to the calls it's given to, and those `&mut`s.
+        .filter(|place| !called_on.contains_key(&place.local) && !called_on.values().any(|&of| of == place.local))
         .map(|place| place.local)
         .collect();
     let stepped = stepped_ranges(tcx, body);
@@ -1090,9 +1103,11 @@ impl<'tcx> Walk<'_, 'tcx> {
                 if !self.cells.is_empty() && self.may_write_cells(func) {
                     self.cells.iter().for_each(|&cell| after.forget_lengths(cell));
                 }
+                self.called_on_mut(func, args, state, &mut after);
                 if let Some(local) = destination.as_local() {
                     after.forget(local);
                     self.called(func, args, local, state, &mut after);
+                    self.derefed(func, args, local, state, &mut after);
                 }
                 target.map(|t| vec![(t, after)]).unwrap_or_default()
             }

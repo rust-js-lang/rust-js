@@ -326,3 +326,53 @@ test("a comparison narrows each copy of what it compares: `a[j]` of `let j = i` 
   expect(readFileSync(join(dir, "case.js"), "utf8")).toContain("a[j]");
   expect(readFileSync(join(dir, "case.js"), "utf8")).not.toContain("$index");
 });
+
+// #1672 M3, step 5: a call's indexes, a `Vec`'s `v[i]`, `remove(i)`,
+// `insert(i, x)` and `swap(i, j)`, MIR proves as THIR's facts do, of a
+// `Vec` a local holds, or a `&mut Vec` points to, lent `&mut` only to the
+// calls it's given to: `push` forgets its length, `v[i] = x` keeps it. Past
+// `clear()` it's forgotten, `v[i]` checked by both; and of one whose `&mut`
+// is moved on before a call clears it, as THIR's facts do.
+test("a call's indexes are proved of a Vec lent `&mut` only to calls: `push` forgets its length, `v[i] = x` keeps it", () => {
+  expect(shadowOf(`pub fn pushed(i: usize) -> u32 {
+    let mut v = vec![1, 2, 3];
+    v.push(4);
+    if i < v.len() { v[i] } else { 0 }
+}
+pub fn written(i: usize) -> u32 {
+    let mut v = vec![1, 2, 3];
+    if i < v.len() { v[i] = 9; }
+    v[0]
+}
+pub fn removed(targets: &mut Vec<u32>) -> u32 {
+    if targets.len() > 2 {
+        targets.insert(1, 5);
+        return targets.remove(2);
+    }
+    0
+}
+pub fn swapped(i: usize, j: usize) -> u32 {
+    let mut v = vec![1, 2, 3];
+    if i < v.len() && j < v.len() { v.swap(i, j); }
+    v[0]
+}
+pub fn cleared(i: usize) -> u32 {
+    let mut v = vec![1, 2, 3];
+    if i < v.len() { v.clear(); return v[i]; }
+    0
+}
+pub fn moved(i: usize) -> u32 {
+    let mut v = vec![1, 2, 3];
+    if i < v.len() {
+        let r = &mut v;
+        let s = r;
+        s.clear();
+        return v[i];
+    }
+    0
+}
+pub fn main() {
+    println!("{} {} {} {} {} {}", pushed(1), written(1), removed(&mut vec![1, 2, 3]), swapped(0, 1), cleared(5), moved(5));
+}
+`)).toEqual([]);
+});

@@ -157,6 +157,49 @@ pub(in crate::lower) fn refcell_borrow(tcx: TyCtxt<'_>, def_id: DefId) -> Option
         .map(|_| mutable)
 }
 
+/// The indexes a call checks against its receiver's length, its first
+/// argument's, by argument, each below it or, of `insert`, at most it:
+/// `v[i]`'s `Index::index` and `index_mut` of a `Vec`, a `VecDeque`, a
+/// slice or an array; a slice's `swap(i, j)`; and a `Vec`'s `swap_remove(i)`,
+/// `remove(i)` and `insert(i, x)`, std's (#1672 M3, step 5).
+pub(in crate::lower) fn call_indexes<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    def_id: DefId,
+    args: ty::GenericArgsRef<'tcx>,
+) -> Option<Vec<(usize, bool)>> {
+    let vec = |ty: Ty<'tcx>, items: &[StdItem]| matches!(ty.kind(), ty::Adt(adt, _) if items.iter().any(|&item| is_std_def(tcx, adt.did(), item)));
+    if (tcx.trait_of_assoc(def_id))
+        .is_some_and(|t| tcx.is_lang_item(t, LangItem::Index) || tcx.is_lang_item(t, LangItem::IndexMut))
+    {
+        let (holder, index) = (args.type_at(0), args.type_at(1));
+        let held =
+            matches!(holder.kind(), ty::Slice(_) | ty::Array(..)) || vec(holder, &[StdItem::Vec, StdItem::VecDeque]);
+        return (held && index.is_usize()).then(|| vec![(1, true)]);
+    }
+    let impl_ = tcx.inherent_impl_of_assoc(def_id)?;
+    let of = tcx.type_of(impl_).instantiate_identity().skip_normalization();
+    match tcx.item_name(def_id).as_str() {
+        "swap" if of.is_slice() => Some(vec![(1, true), (2, true)]),
+        "swap_remove" | "remove" if vec(of, &[StdItem::Vec]) => Some(vec![(1, true)]),
+        "insert" if vec(of, &[StdItem::Vec]) => Some(vec![(1, false)]),
+        _ => None,
+    }
+}
+
+/// Whether a call keeps the length of the `Vec` it's given `&mut`:
+/// `IndexMut::index_mut`, `v[i] = x`, and `DerefMut::deref_mut`, a slice
+/// of its items (#1672 M3, step 5).
+pub(in crate::lower) fn keeps_vec_length(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    (tcx.trait_of_assoc(def_id)).is_some_and(|t| tcx.is_lang_item(t, LangItem::IndexMut))
+        || tcx.is_diagnostic_item(Symbol::intern("deref_mut_method"), def_id)
+}
+
+/// Whether a call is `Deref::deref` or `DerefMut::deref_mut`.
+pub(in crate::lower) fn deref_call(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    tcx.is_diagnostic_item(Symbol::intern("deref_method"), def_id)
+        || tcx.is_diagnostic_item(Symbol::intern("deref_mut_method"), def_id)
+}
+
 /// Whether a call is a thread-local's `with`, `with_borrow` or
 /// `with_borrow_mut`, std's, which gives what its closure gives (#1701).
 pub(in crate::lower) fn local_key_with(tcx: TyCtxt<'_>, def_id: DefId) -> bool {

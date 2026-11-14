@@ -42,11 +42,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         the_one(at).is_some_and(|id| self.frame.facts.exact.contains(&id))
     }
 
+    /// Whether an index's call is `index_call`'s: in bounds as
+    /// `call_in_bounds` knows it, or through `index_mut`, `index_mut_place`.
+    pub(super) fn index_call_taken(
+        &self,
+        state: &State<'_, 'tcx>,
+        known: Std,
+        (def_id, output): (rustc_span::def_id::DefId, ty::Ty<'tcx>),
+        values: &[Value<'tcx>],
+        span: Span,
+    ) -> bool {
+        self.call_in_bounds(state, known, def_id, values, span) || self.index_mut_place(state, known, def_id, output)
+    }
+
     /// Whether THIR's call of `def_id` at `span` is one whose indexes the
     /// body's ranges show in bounds: a `Vec`'s `v[i]`, `v[0]` after
     /// `v.is_empty()`'s test fails, `swap(i, j)` or `swap_remove(i)`.
     pub(super) fn call_in_bounds(
         &self,
+        state: &State<'_, 'tcx>,
         known: Std,
         def_id: rustc_span::def_id::DefId,
         values: &[Value<'tcx>],
@@ -57,6 +71,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::Comb(Comb::Swap | Comb::SwapRemove | Comb::Remove | Comb::Insert) => true,
             _ => false,
         };
+        // The shadow: MIR's proof of a call's indexes, against THIR's
+        // (#1672 M3, step 5).
+        if matches!(
+            known,
+            Std::Index | Std::Comb(Comb::Swap | Comb::SwapRemove | Comb::Remove | Comb::Insert)
+        ) {
+            let block = state.location().block;
+            crate::lower::analysis::shadow_check(
+                self.tcx,
+                self.frame.owner,
+                span,
+                self.indexes_in_bounds(def_id, span),
+                || Some(crate::lower::analysis::LeftOut::CallBounds(block)),
+            );
+        }
         indexed && self.indexes_in_bounds(def_id, span)
     }
 

@@ -110,11 +110,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "intervals-relations-bound-nothing",
-    breaks: "what a value is below doesn't bound its interval, so a signed counter below a length isn't known to stay below it past its loop",
+    breaks: "what a value is below doesn't bound its interval, so `v[i >> 1]`, below what `i` is below, keeps its check",
     file: "src/lower/analysis/intervals.rs",
     find: "                            Some(most) if known.lo <= most => Interval {\n",
     replace: "                            Some(most) if false && known.lo <= most => Interval {\n",
-    tests: ["test/lowering-integer-ranges.test.ts", "-t", "a signed counter below a length"],
+    tests: ["test/intervals-shadow.test.ts", "-t", "MIR decides a bounds check"],
   },
   {
     name: "intervals-sums-unshared",
@@ -170,7 +170,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/intervals.rs",
     find: "const NARROWING_PASSES: u32 = 2;\n",
     replace: "const NARROWING_PASSES: u32 = 0;\n",
-    tests: ["test/intervals-shadow.test.ts"],
+    tests: ["test/lowering-integer-ranges.test.ts", "-t", "an index below a generic constant"],
   },
   {
     name: "intervals-sum-again-unknown",

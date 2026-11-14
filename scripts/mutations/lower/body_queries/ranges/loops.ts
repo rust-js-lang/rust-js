@@ -3,15 +3,6 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "inclusive-for-unranged",
-    breaks:
-      "`for k in 1..=n` gives `k` no range, so `k - 1` keeps its wrap (#337)",
-    file: "src/lower/body_queries/ranges/loops.rs",
-    find: "                Some((start, end, 0))\n",
-    replace: "                None\n",
-    tests: ["test/intervals-bridged.test.ts"],
-  },
-  {
     name: "inclusive-for-past-its-end",
     breaks:
       "`for k in 1..=n` is taken to reach `n + 1`, so `n - k` keeps its wrap",

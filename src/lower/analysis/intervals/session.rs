@@ -58,6 +58,8 @@ pub(in crate::lower) fn body_proofs<'tcx>(
     // cast, nothing to prove, its walk left out.
     let asks = (body.basic_blocks.iter()).any(|data| {
         matches!(&data.terminator().kind, TerminatorKind::Assert { msg, .. } if matches!(**msg, AssertKind::BoundsCheck { .. }))
+            || matches!(&data.terminator().kind, TerminatorKind::Call { func, .. }
+                if func.const_fn_def().is_some_and(|(callee, args)| call_indexes(tcx, callee, args).is_some()))
             || (data.statements.iter()).any(|statement| {
                 matches!(&statement.kind, StatementKind::Assign(assign)
                     if matches!(assign.1, Rvalue::BinaryOp(BinOp::Add | BinOp::Sub | BinOp::Mul, _) | Rvalue::Cast(mir::CastKind::IntToInt, ..)))
@@ -127,6 +129,8 @@ pub(in crate::lower) enum LeftOut {
     Cast(Location),
     /// A `OnceCell`'s `set` of a cell known empty, by the block its call ends.
     EmptySet(BasicBlock),
+    /// A call's indexes known in bounds, by the block it ends.
+    CallBounds(BasicBlock),
 }
 
 /// A check THIR's facts leave out or keep, `left_out`, against MIR's
@@ -157,6 +161,7 @@ pub(in crate::lower) fn shadow_check(
         LeftOut::Wrap => ("wrap", exact.get(&span).copied().unwrap_or(false)),
         LeftOut::Cast(location) => ("cast", proofs.casts.contains(&location)),
         LeftOut::EmptySet(block) => ("empty-set", proofs.empty_sets.contains(&block)),
+        LeftOut::CallBounds(block) => ("call-bounds", proofs.call_bounds.contains(&block)),
     };
     let kind = match (left_out, proved) {
         (true, false) => kind,
