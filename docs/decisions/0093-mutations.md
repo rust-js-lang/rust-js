@@ -539,3 +539,11 @@ bridge's `bridged` shadow line. Since #1701 C (66ffa61c8), MIR proves every
 wrap the bridge decided in the corpus, and test/intervals-bridged.txt
 lists none. So neither changes what a test reads: `flushed`'s `i += 1`,
 the first's case, is MIR's now. The bridge and its list go with M4.
+
+## Amendment: tracked source-owner mutations (#1848)
+
+[ADR 1154](1154-source-mutations-run-in-isolated-workspaces.md) extends the
+existing runner to isolated ECMAScript/TypeScript module inputs, with actual
+load evidence, unchanged-source controls, per-workspace package aliases and
+the same lease, lock and target isolation. Generator chains use existing
+build workers; pure module tests use existing test slots.

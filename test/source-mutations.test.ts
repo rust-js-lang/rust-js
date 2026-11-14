@@ -1,0 +1,179 @@
+import { expect, test } from "bun:test";
+import { mkdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+import { fixture } from "./support";
+import {
+  makeSourceWorkspace,
+  markSourceLoad,
+  sourceWasLoaded,
+} from "../scripts/source-mutations";
+import { existsSync } from "node:fs";
+import { sourceMutation } from "../scripts/source-mutations";
+import { judge, mutate, type Mutation } from "../scripts/mutations";
+import { run, stopped } from "./child";
+import { passed, summary } from "../scripts/test-summary";
+
+// A workspace alias must resolve inside the independent copy, while a normal
+// installed package is shared read-only. Mutating the copy cannot change source.
+test("source mutation workspaces isolate sources and workspace package aliases", () => {
+  const dir = fixture("source-mutation-isolation");
+  const source = join(dir, "source");
+  const workspace = join(dir, "copy");
+  mkdirSync(join(source, "typescript"), { recursive: true });
+  mkdirSync(join(source, "node_modules", "external"), { recursive: true });
+  writeFileSync(
+    join(source, "package.json"),
+    JSON.stringify({ workspaces: ["typescript"] }),
+  );
+  writeFileSync(
+    join(source, "typescript", "package.json"),
+    JSON.stringify({ name: "@rust-js/typescript", main: "index.js" }),
+  );
+  writeFileSync(
+    join(source, "typescript", "index.js"),
+    "export const value = 1;\n",
+  );
+  writeFileSync(
+    join(source, "node_modules", "external", "index.js"),
+    "export const value = 2;\n",
+  );
+  makeSourceWorkspace(source, workspace, [
+    "package.json",
+    "typescript/package.json",
+    "typescript/index.js",
+  ]);
+  expect(
+    realpathSync(join(workspace, "node_modules", "@rust-js", "typescript")),
+  ).toBe(join(workspace, "typescript"));
+  expect(realpathSync(join(workspace, "node_modules", "external"))).toBe(
+    join(source, "node_modules", "external"),
+  );
+  writeFileSync(
+    join(workspace, "typescript", "index.js"),
+    "export const value = 3;\n",
+  );
+  expect(
+    readFileSync(join(source, "typescript", "index.js"), "utf8"),
+  ).toContain("value = 1");
+});
+
+test("a source mutant is loaded only when its instrumented module actually executes", async () => {
+  const dir = fixture("source-mutation-marker");
+  const file = join(dir, "owner.js");
+  const marker = join(dir, "loaded");
+  writeFileSync(
+    file,
+    markSourceLoad("export const value = 1;\n", marker, "owner"),
+  );
+  expect(sourceWasLoaded(marker, "owner")).toBe(false);
+  expect((await import(file)).value).toBe(1);
+  expect(sourceWasLoaded(marker, "owner")).toBe(true);
+  expect(sourceWasLoaded(marker, "other-owner")).toBe(false);
+});
+
+// These cases use real child test processes; a simulated pass/fail would not
+// prove that an unloaded or already-failing control is judged inconclusive.
+function exampleSource(name: string, testSource: string) {
+  const dir = fixture(name);
+  const root = join(dir, "source");
+  mkdirSync(join(root, "test"), { recursive: true });
+  writeFileSync(
+    join(root, "package.json"),
+    JSON.stringify({ type: "module", workspaces: [] }),
+  );
+  writeFileSync(
+    join(root, "owner.js"),
+    '"use strict";\nexport const value = 1;\n',
+  );
+  writeFileSync(join(root, "test", "owner.test.ts"), testSource);
+  return {
+    root,
+    work: join(dir, "work"),
+    files: ["package.json", "owner.js", "test/owner.test.ts"],
+  };
+}
+
+const ownerTest =
+  'import {test, expect} from "bun:test"; import {value} from "../owner.js"; test("value", () => expect(value).toBe(1));';
+const mutation: Mutation = {
+  name: "owner-value",
+  breaks: "wrong exported value",
+  file: "owner.js",
+  find: "value = 1",
+  replace: "value = 2",
+  tests: ["test/owner.test.ts"],
+};
+
+async function executeSource(
+  example: ReturnType<typeof exampleSource>,
+  own = mutation,
+) {
+  return sourceMutation(
+    own,
+    example.root,
+    example.work,
+    example.files,
+    async (workspace, env) => {
+      const exit = await run(
+        [process.execPath, "test", ...own.tests!],
+        workspace,
+        10000,
+        env,
+      );
+      const output = exit.stdout + exit.stderr;
+      const counts = summary(output);
+      return {
+        exit,
+        output,
+        passed: passed(exit.code, !stopped(exit, 10000), output),
+        ran: counts.pass + counts.fail,
+      };
+    },
+    judge,
+    mutate,
+  );
+}
+
+test("a loaded source mutant is caught by its actual test and cleaned without touching source", async () => {
+  const example = exampleSource("source-mutation-real", ownerTest);
+  const result = await executeSource(example);
+  expect(result.result).toBe("caught");
+  expect(result.output).toContain("1 pass");
+  expect(result.output).toContain("1 fail");
+  expect(readFileSync(join(example.root, "owner.js"), "utf8")).toContain(
+    "value = 1",
+  );
+  expect(existsSync(join(example.work, "sources", "owner-value-mutant"))).toBe(
+    false,
+  );
+});
+
+test("passing tests that never load their owner are inconclusive", async () => {
+  const example = exampleSource(
+    "source-mutation-unloaded",
+    'import {test, expect} from "bun:test"; test("unrelated", () => expect(1).toBe(1));',
+  );
+  expect((await executeSource(example)).result).toContain(
+    "INCONCLUSIVE: mutated source was not executed",
+  );
+});
+
+test("an already failing source control is inconclusive", async () => {
+  const example = exampleSource(
+    "source-mutation-bad-control",
+    ownerTest.replace("toBe(1)", "toBe(3)"),
+  );
+  expect((await executeSource(example)).result).toBe(
+    "INCONCLUSIVE: unchanged source control did not pass",
+  );
+});
+
+test("failed mutation setup still removes its independently copied workspace", async () => {
+  const example = exampleSource("source-mutation-bad-edit", ownerTest);
+  await expect(
+    executeSource(example, { ...mutation, find: "not in source" }),
+  ).rejects.toThrow("doesn't apply");
+  expect(existsSync(join(example.work, "sources", "owner-value-mutant"))).toBe(
+    false,
+  );
+});

@@ -182,10 +182,12 @@ test("every source file of more than 80 lines has mutations, or says why it need
 });
 
 // So code that moves takes its mutations with it, to the list of where it went.
-test("each source file's mutations are in its own list", () => {
+test("each mutation list names one existing source file", () => {
+  const owners = lists.flatMap(list => list.mutations.length ? [list.mutations[0].file] : []);
+  expect(new Set(owners).size).toBe(owners.length);
   for (const list of lists) {
-    const source = `src/${list.path.replace(/\.ts$/, "")}`;
-    for (const m of list.mutations) expect([m.name, m.file.replace(/\.[a-z]+$/, "")]).toEqual([m.name, source]);
+    expect(new Set(list.mutations.map(m => m.file)).size).toBe(list.mutations.length ? 1 : 0);
+    for (const m of list.mutations) expect(existsSync(join(root, m.file))).toBe(true);
   }
 });
 

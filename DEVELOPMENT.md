@@ -1080,3 +1080,29 @@ builds the guide's site and deploys it to GitHub Pages (`bun run deploy`).
   rustc's known failures are Linux's, so CI blesses their lists.
 - **The react.dev port stays local.** It has no remote, so its build and its
   823 pages compared stay in its own loop.
+
+### Tracked source-owner mutations (#1848, ADR 1154)
+
+The existing mutation command also runs non-crate ECMAScript/TypeScript
+module owners in independently writable copies of a tracked-source
+template. Workspace package aliases resolve inside each copy; installed
+third-party packages are read-only inputs. Source-load markers and executed
+unchanged controls prevent unrelated tests from claiming a mutant caught.
+A list names one real source file through its file field. Pure module
+mutants use existing test slots and reuse the read-only compiler binary;
+a prepare command marks a generator chain and occupies a build worker,
+with its real test rebuilding binding metadata in its own target.
+
+The first complete15-owner proof took about 62 s, including the 1.6 s template,
+91,021,312 bytes; each active source workspace peaked at91,025,408 bytes.
+These are concurrent batch costs; individual isolated warm/cold costs have
+not been separated. The source workspaces are below target/mutants, counted
+by disk.ts, checked against its disk floor and removed before releasing
+the checkout mutation lock, including setup failures and normal signals.
+A previous killed process's source copies are cleared at the next locked
+run. See docs/dev-loop.md for all attempted measurements.
+
+The independently scoped core passed check:fast --all on 4652f8773 in
+7 min 57 s (14 corpus parts, 8 browser files, 296 other files, all five
+self-mutants and the native/tooling gates). This is not a full check of
+separately reviewed Intl/model feature changes.

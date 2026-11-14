@@ -14,6 +14,11 @@ The new `table_rows_resized_unseen.rs` covers each way a table's row may
 resize with no row's `&mut` given to a call (#1849).
 The historical suite totals and CI timings below have not been remeasured.
 
+Added source-owner mutation coverage on 2026-11-15 (#1848): six real
+workspace/load/control/cleanup tests and five self-mutants through the
+existing runner. Feature-owner registrations are reviewed separately.
+Historical suite totals below are not a recount.
+
 As of 2026-10-30, `main` at `120772e2`; times are CI's, check run 41022723550.
 
 | Suite | Size | What it proves | Time |

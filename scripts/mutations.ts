@@ -18,7 +18,7 @@
 import { createHash } from "node:crypto";
 import { chmodSync, cpSync, existsSync, linkSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { basename, dirname, join } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 
 import { run, runSync, stopped, type Exit } from "../test/child";
 import { corpusHarness, corpusMutantCases, corpusMutants, mutantOf } from "../test/corpus-mutants";
@@ -28,6 +28,7 @@ import { casesReaching } from "./testMap";
 import { elapsed, shown, timed } from "./timing";
 import { passed, summary } from "./test-summary";
 import { acquire, holdLease, ownShare } from "./leases";
+import { makeSourceWorkspace, sourceMutation } from "./source-mutations";
 
 const root = join(import.meta.dir, "..");
 
@@ -45,14 +46,16 @@ export type Mutation = {
    * module's, from the crate's root, `lower::mir::tidy::jumps::tests::x`.
    * A mutation names this or `tests`, not both (#915). */
   unitTests?: string;
+  /** A non-crate source generator prerequisite, charged as a build. */
+  prepare?: string[];
   /** Its tests check the corpus's JS snapshots too: it changes only how
    * the JS reads, as one that takes away the readable form of something
    * a more general one also does right, and how it reads is what's checked. */
   snapshots?: boolean;
 };
 
-// The mutations, one list for each source file, by its path from `src/`:
-// `src/lower/traits.rs`'s are in `mutations/lower/traits.ts`.
+// Mutations are grouped by their repository source file. Each list's
+// explicit Mutation.file owns the path; a catalog filename is not inferred.
 export const lists: { path: string; mutations: Mutation[] }[] = [];
 for (const path of [...new Bun.Glob("**/*.ts").scanSync(join(import.meta.dir, "mutations"))].sort()) {
   lists.push({ path, mutations: (await import(`./mutations/${path}`)).mutations });
@@ -777,7 +780,7 @@ async function test(
   tests: string[],
   compiler: string,
   snapshots: Snapshots = false,
-  { bail = true, env = {} }: { bail?: boolean; env?: Record<string, string> } = {},
+  { bail = true, env = {}, directory = root }: { bail?: boolean; env?: Record<string, string>; directory?: string } = {},
 ): Promise<{ passed: boolean; ran: number; output: string; exit: Exit }> {
   // What the JS does is what's checked: a corpus snapshot differs with
   // nearly any change to the compiler, a mutation's or not. One that only
@@ -803,7 +806,7 @@ async function test(
   // and its mutation was inconclusive.
   const p = await run(
     [process.execPath, "test", "--timeout=60000", ...(bail ? ["--bail"] : []), ...tests],
-    root,
+    directory,
     testTimeout,
     testsEnv(compiler, own, snapshots, env),
     testsMemory(),
@@ -958,7 +961,12 @@ async function main() {
     waiting: "waiting for this checkout's other mutation run, which builds in target/mutants",
   });
   if (!released) throw new Error("this checkout's other mutation run held target/mutants for 6 hours");
-  process.on("exit", released);
+  const sourceWorkspaces = join(work, "sources");
+  rmSync(sourceWorkspaces, {recursive: true, force: true});
+  process.on("exit", () => {
+    rmSync(sourceWorkspaces, {recursive: true, force: true});
+    released();
+  });
   // A killed run's compilers, which it didn't get to remove; not the one
   // built without a mutation, kept while the crate is what it was built from.
   for (const entry of existsSync(join(work, "bin")) ? readdirSync(join(work, "bin")) : []) {
@@ -966,8 +974,12 @@ async function main() {
   }
   // Each mutation's tests pass as the compiler is, and run at all, so
   // their failing is the mutation's doing.
-  const unmutated = await build();
+  const sources = new Set(chosen.filter(m => !crateFiles.some(path => m.file === path || m.file.startsWith(path + "/"))));
+  const unmutated = chosen.every(m => sources.has(m)) && !harness
+    ? resolve(process.env.RUST_JS_COMPILER ?? join(root, "target/debug/rust-js"))
+    : await build();
   if (typeof unmutated !== "string") throw new Error(`the compiler as it is ${unmutated.problem}`);
+  if (!existsSync(unmutated)) throw new Error("build the read-only compiler with cargo build before running source mutations");
   // And they use the compiler they're given: with one that compiles
   // nothing, each fails, or a mutation passing them would say nothing.
   const broken = join(work, "bin", "broken");
@@ -979,7 +991,7 @@ async function main() {
   // runs of their own were most of a run's time (ADR 1031). The corpus in
   // parts, each a process, as the suite runs it; as many at once as there
   // are cores.
-  const sets = [...new Map(chosen.filter((m) => m.tests).map((m) => [[m.snapshots ? "snapshots" : "", ...m.tests!].join("\0"), m])).values()].map((m) => ({
+  const sets = [...new Map(chosen.filter((m) => m.tests && !sources.has(m)).map((m) => [[m.snapshots ? "snapshots" : "", ...m.tests!].join("\0"), m])).values()].map((m) => ({
     snapshots: m.snapshots === true,
     tests: m.tests!,
     ...testSet(m.tests!),
@@ -1062,6 +1074,7 @@ async function main() {
   // many with it in splits down to it, twenty minutes of a shard (#479).
   const sited: Sited[] = [];
   for (const mutation of chosen) {
+    if (sources.has(mutation)) { sited.push({mutation}); continue; }
     const at = size > 1 ? site(mutation, read) : undefined;
     const problem = unparsed(mutation, at, read);
     if (problem) results.set(mutation, problem);
@@ -1127,7 +1140,36 @@ async function main() {
   // The builds' tests, which run on after their workers go on to build.
   const buildsTesting: Promise<unknown>[] = [];
   let builds = 0;
+  const sourceFiles = sources.size ? runSync(["git", "ls-files", "-z"], root, 10_000) : undefined;
+  if (sourceFiles && sourceFiles.code !== 0) throw new Error(sourceFiles.stderr);
+  const tracked = sourceFiles?.stdout.split("\0").filter(file => file && existsSync(join(root, file))) ?? [];
+  const template = join(sourceWorkspaces, ".template");
+  if (sources.size) {
+    const started = performance.now();
+    const bytes = makeSourceWorkspace(root, template, tracked);
+    console.log(`source template: ${bytes} bytes in ${shown((performance.now() - started) / 1000)}`);
+  }
   const one = async (batch: Sited[], slot: number) => {
+    if (sources.has(batch[0].mutation)) {
+      const mutation = batch[0].mutation;
+      const execute = async (ownsTestSlot = false) => {
+        const answer = await sourceMutation(mutation, template, work, tracked,
+          (directory, env) => {
+            const run = () => test(mutation.tests!, unmutated, mutation.snapshots, {directory, env});
+            return ownsTestSlot ? run() : beside(run);
+          }, judge, mutate);
+        results.set(mutation, answer.result);
+        took.set(mutation, {build: answer.build, tests: answer.tests});
+        mkdirSync(join(work, "logs"), {recursive: true});
+        writeFileSync(join(work, "logs", mutation.name + ".log"), answer.output);
+        console.log(`source ${mutation.name}: ${answer.result}; peak workspace ${answer.bytes} bytes`);
+      };
+      // Generator chains occupy an existing build worker; pure modules do
+      // not hold one while their tests use the existing test-slot budget.
+      if (mutation.prepare) await execute();
+      else buildsTesting.push(beside(() => execute(true)));
+      return;
+    }
     const began = performance.now();
     const files = schema(batch, read);
     const unit = batch[0].mutation.unitTests !== undefined;

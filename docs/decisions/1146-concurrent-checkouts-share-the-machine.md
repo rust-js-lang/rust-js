@@ -62,3 +62,11 @@ the load, at the same wall times. One alone, backfilled, took 268 s against
 its usual 322 s. docs/dev-loop.md has the times.
 A run alone keeps the whole machine. A lease is per process, not per
 checkout, so two runs in one checkout each take their share as well.
+
+## Amendment: tracked source-owner mutations (#1848)
+
+[ADR 1154](1154-source-mutations-run-in-isolated-workspaces.md) extends the
+existing runner to isolated ECMAScript/TypeScript module inputs, with actual
+load evidence, unchanged-source controls, per-workspace package aliases and
+the same lease, lock and target isolation. Generator chains use existing
+build workers; pure module tests use existing test slots.
