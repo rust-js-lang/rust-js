@@ -1064,7 +1064,9 @@ impl<'tcx> Declarations<'_, 'tcx> {
                 // string } | { TAG: "Owned"; _0: string }`, each variant as
                 // an enum's is (ADR 0033), its `Owned` what `ToOwned` makes
                 // of what it borrows (#1748).
-                if super::recognition::is_cow_type(tcx, ty) {
+                // A `Result` too, the value JS reads its `TAG` of, `{ TAG:
+                // "Ok"; _0: string[] } | { TAG: "Err"; _0: any }` (#1835).
+                if super::recognition::is_cow_type(tcx, ty) || is_std_def(tcx, did, StdItem::Result) {
                     return union(self.tagged_variants(did, args, true));
                 }
                 // Another crate's untagged enum, `js::Json`: declared here, as

@@ -2392,6 +2392,7 @@ export { delete$ as delete };
 | an `async fn`'s result, an `impl Future<Output = T>` | `Promise<T>`, the promise its JS gives, `async fn names() -> Vec<String>`'s `Promise<string[]>`, of nothing `Promise<void>` (#1769) |
 | a binding's type, a React hook's setter, dispatch or ref, `&Dispatch<SetStateAction<u32>>`, `RefObject<T>`, `ForwardedRef<T>`, `SetOptimistic<S>` | its `#[rust_js::types]`, as @types/react names it, `Dispatch<SetStateAction<number>>`, imported from `react`, and `useOptimistic`'s setter as @types/react writes it; a binding's type without one, `any` (#1763) |
 | a type named by `#[rust_js::name]`, `#[rust_js::name = "ISODate"] pub type IsoDate = String;` | by that name, its export and every reference, of its module and another's: `export type ISODate = string;`, `addDays(date: ISODate, ..)` (#1829, [ADR 0196](../../decisions/0196-typescript-declarations.md), amended) |
+| a `Result<Vec<String>, &js::JsError>` | its JS, `{ TAG: "Ok"; _0: string[] } \| { TAG: "Err"; _0: any }`, as an enum's, of its type arguments, what JS threw `any` as everywhere (#1835, [ADR 0196](../../decisions/0196-typescript-declarations.md), amended) |
 | a webapi dictionary, `Option<&webapi::AddEventListenerOptions>` | TypeScript's DOM lib's interface of its name, `AddEventListenerOptions \| null \| undefined` (#1817) |
 | a projection of a binding trait whose associated type says what it is, `&dyn Fn(&<Target as Listen<Name>>::Event)` of `Target: Listen<Name>` | its type, of the projection's: `(value: EventMapOf<Target>[Name]) => void`, `EventMapOf` imported from `@rust-js/webapi`, and `Name extends keyof EventMapOf<Target>`, of the bound, named or not; one whose associated type says nothing, `any` (#1817, [ADR 1153](../../decisions/1153-a-binding-traits-projection-is-its-type-function.md)) |
 | a binding's type TypeScript's DOM lacks, `#[rust_js::declares]`, `webapi::BatteryManager` | its name, `Promise<BatteryManager>`, and once, `declare global { interface BatteryManager extends EventTarget { readonly charging: boolean; .. } }`, of the binding's getters, setters and methods, as the DOM declares its own ([ADR 1152](../../decisions/1152-rust-js-declares-what-typescripts-dom-lacks.md), #1790) |
@@ -2492,8 +2493,7 @@ export function zeros(N: number): number[];
 app.ts:3:7`, and `zeros(3)` is `[0, 0, 0]`, as `zeros::<3>()`.
 
 Some types aren't declared yet, and a caller of them isn't checked: a
-`Result` and an `async fn`'s result are `any`, as are a tuple struct,
-an `impl Iterator` and a counted `Rc`, and a type's methods object, `Counter`, has its
+tuple struct, an `impl Iterator` and a counted `Rc` are `any`, and a type's methods object, `Counter`, has its
 `interface` but no declaration of its methods.
 
 ## Calling Rust from a JS file in your app

@@ -938,8 +938,8 @@ export const mutations: Mutation[] = [
     name: "cow-declared-any",
     breaks: "a `Cow` a function gives back is declared `any`, though its JS is the tagged union of what it borrowed or owns (#1748)",
     file: "src/lower/declarations.rs",
-    find: "                if super::recognition::is_cow_type(tcx, ty) {\n",
-    replace: "                if false {\n",
+    find: "super::recognition::is_cow_type(tcx, ty) || is_std_def(",
+    replace: "false || is_std_def(",
     tests: ["test/declarations-collections.test.ts", "-t", "a Cow is declared the tagged union"],
   },
   {
@@ -983,6 +983,14 @@ export const mutations: Mutation[] = [
     find: "    super::bindings::given_name(tcx, did).unwrap_or_else(|| tcx.item_name(did).to_string())\n",
     replace: "    tcx.item_name(did).to_string()\n",
     tests: ["test/declarations-named.test.ts"],
+  },
+  {
+    name: "result-declared-any",
+    breaks: "an exported `Result` is declared `any`, so a consumer reading `_0` of `{ TAG: \"Ok\" }` is unchecked (#1835)",
+    file: "src/lower/declarations.rs",
+    find: "is_cow_type(tcx, ty) || is_std_def(tcx, did, StdItem::Result) {",
+    replace: "is_cow_type(tcx, ty) || false {",
+    tests: ["test/declarations-results.test.ts"],
   },
 ];
 

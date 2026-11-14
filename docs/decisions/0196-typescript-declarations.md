@@ -292,3 +292,21 @@ ReactDOMServerFB.d.ts imports Fizz's `RequestInstance`, the class
 `#[rust_js::name]` names and ReactFizzServer.d.ts exports, where it
 imported `Request`, which no module exports: the library's record of its
 types now names them as its declarations do.
+
+## Amendment: a `Result` is declared the tagged union its JS is (#1835, 2026-11-15)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none. Only its
+declaration changes.
+
+An exported `Result<Vec<String>, &'static js::JsError>`, Intl's
+`getCanonicalLocales` keeping what it threw, was declared `any`, though its
+JS is `{ TAG: "Ok", _0: ["ok"] }` or `{ TAG: "Err", _0: error }`. **A
+`Result` is declared as a `Cow` is**, each variant as an enum's
+(`tagged_variants`, the layout's own answer, ADR 0033), of its type
+arguments, `{ TAG: "Ok"; _0: string[] } | { TAG: "Err"; _0: any }`, a
+`js::JsError` what it's declared everywhere, `any`, what JS threw (whether
+that's `unknown` is a decision of its own, every declaration's). A
+variant's `()` field is declared `_0: undefined` where its JS leaves the
+key out, as every enum's is: #1851. Held by declarations-results, a
+consumer reading each branch under strict tsc and a `Result` taken for its
+value refused; mutation result-declared-any.
