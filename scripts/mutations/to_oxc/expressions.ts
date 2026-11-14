@@ -171,22 +171,6 @@ export const mutations: Mutation[] = [
     tests: ["test/emission.test.ts", "-t", "copied trait defaults map to their original source file"],
   },
   {
-    name: "adjacent-text-earlier-always",
-    breaks: "of two strings side by side, the earlier is always in braces, `{\"If this is a mistake\"}, `",
-    file: "src/to_oxc/expressions.rs",
-    find: "                && spaced(later)",
-    replace: "                && spaced(later)\n                && false",
-    tests: ["test/jsx-children.test.ts", "-t", "adjacent text children stay apart"]
-  },
-  {
-    name: "adjacent-text-blank-braced",
-    breaks: "a blank string after text is put in braces, which a formatter makes a space of the text, one text node of two",
-    file: "src/to_oxc/expressions.rs",
-    find: "        let spaced = |s: &str| !s.trim().is_empty() && s.trim() != s;",
-    replace: "        let spaced = |s: &str| s.trim() != s;",
-    tests: ["test/jsx-children.test.ts", "-t", "adjacent text children stay apart"]
-  },
-  {
     name: "number-as-written-unread",
     breaks: "`1e4` and `0xff` are written as JS's own digits, `10000` and `255`",
     file: "src/to_oxc/expressions.rs",
@@ -510,5 +494,29 @@ export const mutations: Mutation[] = [
     find: "                && let [oxc_ast::ast::Argument::StringLiteral(source)] = it.arguments.as_slice()\n            {\n                self.add(source);",
     replace: "                && let [oxc_ast::ast::Argument::StringLiteral(source)] = it.arguments.as_slice()\n            {\n                let _ = source;",
     tests: ["test/cargo-in-source.test.ts", "-t", "and require from a module placed outside"],
+  },
+  {
+    name: "jsx-text-space-runs",
+    breaks: "a string of a run of spaces is JSX text, which a formatter lays out as one space, `{\"  \"}` a space short (#1807)",
+    file: "src/to_oxc/expressions.rs",
+    find: "        && !s.contains(\"  \")\n",
+    replace: "",
+    tests: ["test/jsx.test.ts", "-t", "keeps its whitespace"],
+  },
+  {
+    name: "jsx-text-edge-spaces",
+    breaks: "a string of a space at its edge is JSX text, which a formatter breaking the line there splits into two text nodes, `[span, \" 0.55 + 0.45 *\", \" \", span]` (#1807)",
+    file: "src/to_oxc/expressions.rs",
+    find: "        && (s == \" \" || s.trim() == s)\n",
+    replace: "",
+    tests: ["test/jsx.test.ts", "-t", "keeps its whitespace"],
+  },
+  {
+    name: "jsx-text-tabs",
+    breaks: "a string of a tab is JSX text, which JSX makes a space, `\\tend\\t` ` end ` (#1807)",
+    file: "src/to_oxc/expressions.rs",
+    find: "        && !s.chars().any(|c| c.is_whitespace() && c != ' ')\n",
+    replace: "",
+    tests: ["test/jsx.test.ts", "-t", "keeps its whitespace"],
   },
 ];

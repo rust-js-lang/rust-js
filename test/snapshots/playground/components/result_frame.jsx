@@ -69,10 +69,12 @@ export function ResultFrame({ program, onOutcome }) {
   return (
     <section id="result-section" className="mt-3" hidden={program == null}>
       <h2 className={HEADING}>
-        Result{" "}
+        {"Result "}
         <span className="font-normal">
-          the root module's <code>main()</code>, or with Test its <code>#[test]</code>s, in a frame
-          of their own
+          {"the root module's "}
+          <code>main()</code>
+          {", or with Test its "}
+          <code>#[test]</code>s, in a frame of their own
         </span>
       </h2>
       <iframe

@@ -45,7 +45,11 @@ export function Counter() {
   const [count, setCount] = useState(0);
   return (
     <>
-      <p>Clicked {count} times</p>
+      <p>
+        {"Clicked "}
+        {count}
+        {" times"}
+      </p>
       <button onClick={() => setCount((n) => (n + 1) | 0)}>+1</button>
       <button onClick={() => setCount(0)}>Reset</button>
     </>
@@ -250,7 +254,10 @@ export function TodoList({ todos, tab }) {
   const pick = useCallback((n) => setPicked(n), []);
   return (
     <p onClick={() => pick(visible.length)}>
-      {visible.length} shown, {picked} picked
+      {visible.length}
+      {" shown, "}
+      {picked}
+      {" picked"}
     </p>
   );
 }

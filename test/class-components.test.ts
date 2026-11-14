@@ -595,7 +595,8 @@ pub fn Bare(props: NoteProps) -> JSX::Element {
           this._node = n;
         }}
       >
-        note {this.props.id}
+        {"note "}
+        {this.props.id}
       </T>`);
   expect(js).toContain("  return <T {...props} />;");
   const ran = rendered(dir, `import { expect, test } from "bun:test";

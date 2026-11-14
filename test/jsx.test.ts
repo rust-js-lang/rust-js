@@ -1102,3 +1102,43 @@ mod inner {
   const warned = built.stderr.toString().split("\n").filter((line) => line.startsWith("warning:") && !/warnings? emitted/.test(line));
   expect([built.exitCode, warned]).toEqual([0, ["warning: unused variable: `y`"]]);
 });
+
+// A string child is the text React is given, its whitespace whole (#1807,
+// P0): JSX text isn't, as JSX trims what touches a line break and turns a
+// tab into a space, and a printer lays text out by words, so a string whose
+// whitespace JSX text can't carry stays `{"  "}`. Each against React given
+// the same strings natively: runs, tabs and newlines, and single spaces at
+// a text's edges in an element long enough to be laid out on many lines.
+test("a string child keeps its whitespace, as React given it natively renders it", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::{JSX, jsx};
+pub fn Code() -> JSX::Element {
+    jsx! { <pre>{"  "}<b>{"let"}</b>{"  value  =  1;  "}{"\\tend\\t"}{"\\n  next"}<i>{"a  b"}</i><u>{"a\\tb"}</u></pre> }
+}
+pub fn Formula() -> JSX::Element {
+    jsx! { <code><span>{"return"}</span>{" 0.55 + 0.45 * "}<span>{"cos"}</span></code> }
+}
+pub fn Edges() -> JSX::Element {
+    jsx! {
+        <p>{" lead"}<b>{"bold words that make the element too long for one line"}</b>{"trail "}<i>{"italic words that are long as well"}</i>{" both "}<code>{"x"}</code>{" "}</p>
+    }
+}
+`);
+  run(args);
+  const { Code, Edges, Formula } = await import(join(dir, "lib.jsx"));
+  // Its children as React has them, each text node one: a text split in
+  // two renders alike, and isn't laid out alike.
+  const tree = (node: any): unknown =>
+    typeof node === "string" ? node : Array.isArray(node) ? node.flat().map(tree) : [node.type, tree(node.props.children ?? [])];
+  const code = createElement("pre", null, "  ", createElement("b", null, "let"), "  value  =  1;  ", "\tend\t", "\n  next",
+    createElement("i", null, "a  b"), createElement("u", null, "a\tb"));
+  const edges = createElement("p", null, " lead", createElement("b", null, "bold words that make the element too long for one line"), "trail ",
+    createElement("i", null, "italic words that are long as well"), " both ", createElement("code", null, "x"), " ");
+  // Codex's, of the port that found it: a formatter's `{" "}` made two
+  // text nodes of one, `[span, " 0.55 + 0.45 *", " ", span]`.
+  const formula = createElement("code", null, createElement("span", null, "return"), " 0.55 + 0.45 * ", createElement("span", null, "cos"));
+  for (const [made, native] of [[Code(), code], [Edges(), edges], [Formula(), formula]]) {
+    expect(renderToStaticMarkup(made)).toBe(renderToStaticMarkup(native));
+    expect(tree(made)).toEqual(tree(native));
+  }
+});

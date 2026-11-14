@@ -363,32 +363,14 @@ impl<'a> Cx<'a> {
     fn jsx(&self, sp: Span, jsx: &js::Jsx) -> Expression<'a> {
         let b = &self.b;
         let mut children = ArenaVec::new_in(b);
-        // Which children are JSX text: text that JSX can write, but not
-        // right before text, which JSX would read as one with it, and React
-        // render as one text node, not two. So the earlier is in braces,
-        // `{" of"} {total}`: a formatter makes a later `{" "}` a space, of
-        // the text before it.
+        // Which children are JSX text: text that JSX carries as it is,
+        // `jsx_text`, but not right before text, which JSX would read as
+        // one with it, and React render as one text node, not two. So the
+        // earlier is in braces, `{"Challenge"} {order}`.
         let mut text = vec![false; jsx.children.len()];
         for i in (0..jsx.children.len()).rev() {
-            let writable = matches!(&jsx.children[i].kind, ExprKind::Str(s) if jsx_text_safe(s) && !s.is_empty());
+            let writable = matches!(&jsx.children[i].kind, ExprKind::Str(s) if jsx_text(s));
             text[i] = writable && !text.get(i + 1).is_some_and(|&next| next);
-        }
-        // Of two, the later in braces where it has a space at an edge and
-        // the earlier none, as a person writes `If this is a mistake{", "}`:
-        // never a blank one, which a formatter makes a space of the text.
-        let plain = |s: &str| jsx_text_safe(s) && !s.is_empty() && s.trim() == s;
-        let spaced = |s: &str| !s.trim().is_empty() && s.trim() != s;
-        for i in 0..jsx.children.len().saturating_sub(1) {
-            if let (ExprKind::Str(earlier), ExprKind::Str(later)) = (&jsx.children[i].kind, &jsx.children[i + 1].kind)
-                && !text[i]
-                && text[i + 1]
-                && plain(earlier)
-                && spaced(later)
-                && (i == 0 || !text[i - 1])
-            {
-                text[i] = true;
-                text[i + 1] = false;
-            }
         }
         for (child, &text) in jsx.children.iter().zip(&text) {
             children.push(self.jsx_child(child, text));
@@ -759,6 +741,22 @@ fn without_empty_flags<'e>(callee: &js::Expr, args: &'e [js::Expr]) -> &'e [js::
 /// entity, and JSX drops whitespace at the start or end of a line.
 fn jsx_text_safe(s: &str) -> bool {
     !s.contains(['{', '}', '<', '>', '&', '\n', '\r'])
+}
+
+/// Can `s`, a child, be JSX text, one text node of React's, its whitespace
+/// whole (#1807, Codex's rule, browser-checked)? Not what JSX text can't
+/// carry, `jsx_text_safe`; nor whitespace but a single space between words:
+/// a tab, which JSX makes a space, or any other, a run of spaces, which a
+/// formatter lays out as one, or a space at its start or end, which a
+/// formatter breaking the line there writes `{" "}`, a text node of its
+/// own. `{"  "}`, `{"\tend"}` and `{" lead"}` stay strings; a space alone,
+/// `{" "}`, is text, one node however it's laid out.
+fn jsx_text(s: &str) -> bool {
+    !s.is_empty()
+        && jsx_text_safe(s)
+        && (s == " " || s.trim() == s)
+        && !s.contains("  ")
+        && !s.chars().any(|c| c.is_whitespace() && c != ' ')
 }
 
 pub(super) fn span(s: js::Span) -> Span {

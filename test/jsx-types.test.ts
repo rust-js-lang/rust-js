@@ -873,7 +873,8 @@ pub fn Missing() -> JSX::Element {
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
   expect(jsx).toContain("const Picked = TABLE.card;");
   expect(jsx).toContain('<Picked title="t">');
-  expect(jsx).toContain("<Card>Hello, {name}</Card>");
+  // A string of a space at its edge is one text node, in braces (#1807).
+  expect(jsx).toContain('<Card>\n        {"Hello, "}\n        {name}\n      </Card>');
   expect(jsx).toContain("<Note>a{name}</Note>\n      <Note />");
   expect(jsx).toContain("{$byteLen(name) > 1 && <i />}");
   const { Page } = await import(join(dir, "lib.jsx"));

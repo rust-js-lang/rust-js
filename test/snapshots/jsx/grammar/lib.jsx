@@ -6,8 +6,8 @@ export function Empty() {
 export function Literals() {
   return (
     <div>
-      {" "}
-      leading {"<&>"}raw "quote"{42}
+      {" leading "}
+      {"<&>"}raw "quote"{42}
       {1.5}
       {true}
       {false}

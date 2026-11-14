@@ -9,7 +9,7 @@ export function FileItem({ name, path, depth, open, root, onOpen, onDelete }) {
   let end;
   if (onDelete != null) {
     end = root ? (
-      <span className="text-[11px] text-muted">root </span>
+      <span className="text-[11px] text-muted">{"root "}</span>
     ) : (
       <button
         className="invisible cursor-pointer px-1.5 text-muted group-hover:visible focus:visible"

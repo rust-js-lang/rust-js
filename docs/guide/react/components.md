@@ -405,7 +405,7 @@ export function People({ people }) {
     return (
       <li key={id} className={selected === id ? "selected" : ""} onClick={() => setSelected(id)}>
         {person.name}
-        {person.admin && <b> (admin)</b>}
+        {person.admin && <b>{" (admin)"}</b>}
       </li>
     );
   });
@@ -506,7 +506,12 @@ export function Score({ points }) {
       label = <span>1 point</span>;
       break;
     default:
-      label = <b>{points} points</b>;
+      label = (
+        <b>
+          {points}
+          {" points"}
+        </b>
+      );
       break;
   }
   return <p>{label}</p>;
@@ -617,7 +622,9 @@ export function Panel() {
     >
       <Button label="Like" onClick={() => setClicks((n) => (n + 1) | 0)} />
       <SizePicker onPick={(picked) => setSize(picked)} />
-      {clicks} likes, size {size}
+      {clicks}
+      {" likes, size "}
+      {size}
     </div>
   );
 }

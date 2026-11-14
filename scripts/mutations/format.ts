@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     file: "src/format.rs",
     find: "        if !(space || spaces || kind == AstType::JSXText) {",
     replace: "        if true {",
-    tests: ["test/settings.test.ts", "-t", "Prettier's layout"],
+    unitTests: "format::tests::a_space_laid_out_as_braces_is_the_same_program",
   },
   {
     name: "transform-unchecked",

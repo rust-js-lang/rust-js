@@ -25,7 +25,10 @@ export function App() {
         <div>
           <h1>Get started</h1>
           <p>
-            Edit <code>src/App.rs</code> and save to test <code>HMR</code>
+            {"Edit "}
+            <code>src/App.rs</code>
+            {" and save to test "}
+            <code>HMR</code>
           </p>
         </div>
         <button
@@ -33,7 +36,7 @@ export function App() {
           className="counter"
           onClick={() => setCount((count) => (count + 1) | 0)}
         >
-          Count is{" "}
+          {"Count is "}
           <span
             className={count % 2 === 0 ? "font-bold text-emerald-500" : "font-bold text-sky-500"}
           >

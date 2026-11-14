@@ -238,7 +238,12 @@ import { useState } from "react";
 
 function About() {
   const [likes, setLikes] = useState(0);
-  return <button onClick={() => setLikes((likes) => (likes + 1) | 0)}>Likes: {likes}</button>;
+  return (
+    <button onClick={() => setLikes((likes) => (likes + 1) | 0)}>
+      {"Likes: "}
+      {likes}
+    </button>
+  );
 }
 
 export default About;

@@ -588,6 +588,20 @@ mod tests {
     use super::*;
     use std::path::Path;
 
+    /// A layout that breaks a line at a lone space between two elements,
+    /// `<b>a</b> <i>b</i>` to `<b>a</b>{" "}` and `<i>b</i>`, as Prettier
+    /// does, is the same program: the space is still one text child.
+    #[test]
+    fn a_space_laid_out_as_braces_is_the_same_program() {
+        let code = "const p = <p><b>aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa</b> <i>bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb</i></p>;\n";
+        let text = "const p = (\n  <p>\n    <b>aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa</b>{\" \"}\n    <i>bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb</i>\n  </p>\n);\n";
+        let mut map = SourceMapBuilder::default();
+        map.set_source_and_content("a.rs", "");
+        map.add_token(0, 0, 0, 0, Some(0), None);
+        let map = map.into_sourcemap().to_json_string();
+        assert!(transformed(code, text.to_string(), &map, "a.jsx").is_ok());
+    }
+
     /// A mapping inside a node the formatter wrote shorter, `a      + b`'s
     /// `+`, is moved as far into it as it was, past where the next node,
     /// `b`, now starts: the map's tokens are written in order of where they
