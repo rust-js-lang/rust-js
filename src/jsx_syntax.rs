@@ -5,6 +5,7 @@
 pub mod formatting;
 mod literals;
 mod parser;
+mod props;
 
 use crate::collections::{IndexMap, IndexSet};
 pub(crate) use parser::snake;
@@ -330,7 +331,7 @@ impl Expand<'_> {
         let mut built = IndexSet::default();
         for item in items.iter() {
             if configured_attrs(self.sess, &item.attrs).is_some()
-                && let Some(companion) = parser::props_companion(self.sess, item, &props, &written_default)
+                && let Some(companion) = props::props_companion(self.sess, item, &props, &written_default)
             {
                 if let Some(ident) = companion.kind.ident() {
                     built.insert(ident.as_str().to_string());
@@ -338,7 +339,7 @@ impl Expand<'_> {
                 // A component's props, whose `'static` form a `thread_local!`'s
                 // is typed with (ADR 0265).
                 if item.kind.ident().is_some_and(|ident| props.contains(ident.as_str())) {
-                    companions.extend(parser::props_lifetimes(self.sess, item));
+                    companions.extend(props::props_lifetimes(self.sess, item));
                 }
                 companions.push(companion);
             }
