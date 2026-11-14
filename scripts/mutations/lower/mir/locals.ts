@@ -178,4 +178,12 @@ export const mutations: Mutation[] = [
     replace: "    decl.is_user_variable()\n",
     tests: ["test/corpus.test.ts", "-t", "const_fn_evaluated_for_a_const_generic"],
   },
+  {
+    name: "cleanup-reads-uncounted",
+    breaks: "the temporary a cleanup makes to write a `Drop`'s replacing value through isn't counted where it writes through it: its read is of a variable nothing declares, a `ReferenceError` in `$cleanup`, an abort where Rust unwinds (#1681)",
+    file: "src/lower/mir/locals.rs",
+    find: "                        own(place.local, place.projection.is_empty());\n",
+    replace: "                        if place.projection.is_empty() {\n                            own(place.local, true);\n                        }\n",
+    tests: ["test/crates.test.ts", "-t", "run_leftover_overwritten_as_a_drop_panics"],
+  },
 ];

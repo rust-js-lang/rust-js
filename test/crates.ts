@@ -38,13 +38,16 @@ export function chain(cases: string, name: string, files: string[], refused?: st
   const out = join(dir, "js");
   const source = (file: string) => join(cases, name, `${file}.rs`);
   const crates = files.map((file) => readFileSync(source(file), "utf8").match(/^\/\/@ crate-name: (\w+)\n/)?.[1] ?? file);
+  // A crate's edition, `//@ edition: 2018`, as the corpus's directive says
+  // a case's: itertools' closures capture as 2018's do (#1681).
+  const editions = files.map((file) => readFileSync(source(file), "utf8").match(/^\/\/@ edition: (\d+)\n/m)?.[1]);
   const given = (i: number) => crates.slice(0, i)
     .filter((used) => used !== "std" || readFileSync(source(files[i]), "utf8").includes("#![no_std]"));
   // Natively, each crate a library and a program of the last, kept by what
   // they're made of (`nativeCrates`).
   const app = crates[crates.length - 1];
   const built = nativeCrates(
-    crates.map((crate, i) => ({ name: crate, file: source(files[i]), uses: given(i) })),
+    crates.map((crate, i) => ({ name: crate, file: source(files[i]), uses: given(i), edition: editions[i] })),
     `fn main() {\n    ${app}::main();\n}\n`,
     ["--edition=2024", "-Coverflow-checks=off"],
   );
@@ -58,7 +61,7 @@ export function chain(cases: string, name: string, files: string[], refused?: st
     const metadata = i < crates.length - 1 ? [`--emit=metadata=${join(out, crate, `lib${crate}.rmeta`)}`] : [];
     run([compiler, source(files[i]), "-o", join(out, crate, "lib.js"), ...library,
       ...used.flatMap((u) => ["--dependency", join(out, u, "lib.manifest.json")]),
-      "--", "--crate-name", crate, ...metadata,
+      "--", "--crate-name", crate, ...metadata, ...(editions[i] ? [`--edition=${editions[i]}`] : []),
       ...given(i).flatMap((u) => ["--extern", `${u}=${join(out, u, `lib${u}.rmeta`)}`]),
       ...used.flatMap((u) => ["-L", `dependency=${join(out, u)}`])], 600_000, env);
   };

@@ -887,34 +887,42 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => None,
             };
             let mut discriminant = None;
+            // A `Drop`'s replacing value, written as the old one's drop
+            // unwinds, of variables: made of nothing made before the
+            // cleanup, and what the cleanup makes to write it, a 2018
+            // closure's `_19 = copy (*_18)` of the `&mut` it captures, read
+            // by what follows in it, none left at its end (#1681).
+            let made = std::mem::take(&mut state.pending);
+            let mut written = Ok(());
             for (index, statement) in data.statements.iter().enumerate() {
-                match &statement.kind {
-                    StatementKind::StorageDead(_) | StatementKind::StorageLive(_) | StatementKind::Nop => {}
+                let step = match &statement.kind {
+                    StatementKind::StorageDead(_) | StatementKind::StorageLive(_) | StatementKind::Nop => Ok(()),
                     StatementKind::Assign(assign)
                         if matches!(&assign.1, mir::Rvalue::Discriminant(_)) && assign.0.as_local() == tested =>
                     {
                         discriminant = Some(&assign.1);
+                        Ok(())
                     }
-                    // A `Drop`'s replacing value, written as the old one's
-                    // drop unwinds: of variables, made of nothing made before.
                     StatementKind::Assign(assign) => {
                         let at = Location {
                             block,
                             statement_index: index,
                         };
-                        let made = std::mem::take(&mut state.pending);
                         let (place, rvalue) = &**assign;
-                        let written = self
-                            .flag_sets(state, at, &mut out)
-                            .and_then(|()| self.mir_assign(state, place, rvalue, span, &mut out));
-                        let left = std::mem::replace(&mut state.pending, made);
-                        written?;
-                        if !left.is_empty() {
-                            return Err(self.unsupported(span, "this cleanup, from its MIR"));
-                        }
+                        self.flag_sets(state, at, &mut out)
+                            .and_then(|()| self.mir_assign(state, place, rvalue, span, &mut out))
                     }
-                    _ => return Err(self.unsupported(span, "this cleanup, from its MIR")),
+                    _ => Err(self.unsupported(span, "this cleanup, from its MIR")),
+                };
+                if step.is_err() {
+                    written = step;
+                    break;
                 }
+            }
+            let left = std::mem::replace(&mut state.pending, made);
+            written?;
+            if !left.is_empty() {
+                return Err(self.unsupported(span, "this cleanup, from its MIR"));
             }
             match data.terminator().kind {
                 TerminatorKind::Drop { place, target, .. } => {

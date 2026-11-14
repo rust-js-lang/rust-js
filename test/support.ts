@@ -141,9 +141,10 @@ export type NativeBuild = { binary: string; built: boolean; kept: boolean } | { 
  * rustc's version, the flags, each crate's name, file and text, and `main`,
  * and used again while what each build read is unchanged. crates.test.ts's
  * chains of crates built each crate and its program again every run, some
- * 290 compiles, 15–20 CPU-seconds of it (#882).
+ * 290 compiles, 15–20 CPU-seconds of it (#882). A crate's `edition` is
+ * its own, in place of `flags`' (#1681).
  */
-export function nativeCrates(crates: { name: string; file: string; uses: string[] }[], main: string, flags: string[], timeout = 120_000): NativeBuild {
+export function nativeCrates(crates: { name: string; file: string; uses: string[]; edition?: string }[], main: string, flags: string[], timeout = 120_000): NativeBuild {
   rustcVersion ??= run(["rustc", "-vV"]);
   const wrapper = join(contentDirectory("crates", main, ...crates.map((c) => c.file)), "main.rs");
   writeWhole(wrapper, main);
@@ -151,8 +152,8 @@ export function nativeCrates(crates: { name: string; file: string; uses: string[
   for (const { name, file, uses } of crates) hash.update(`${name}\0${uses.join(",")}\0${portable(file)}\0${readFileSync(file, "utf8")}\0`);
   const app = crates[crates.length - 1].name;
   return keptNative(hash.digest("hex"), wrapper, timeout, (into, depInfo) => [
-    ...crates.map(({ name, file, uses }) => [
-      "rustc", ...flags, "--crate-type=rlib", "--crate-name", name, file, "-o", join(into, `lib${name}.rlib`),
+    ...crates.map(({ name, file, uses, edition }) => [
+      "rustc", ...(edition ? [...flags.filter((f) => !f.startsWith("--edition")), `--edition=${edition}`] : flags), "--crate-type=rlib", "--crate-name", name, file, "-o", join(into, `lib${name}.rlib`),
       ...uses.flatMap((used) => ["--extern", `${used}=${join(into, `lib${used}.rlib`)}`]), "-L", `dependency=${into}`,
       ...(depInfo ? [`--emit=link,dep-info=${depInfo(name)}`] : []),
     ]),

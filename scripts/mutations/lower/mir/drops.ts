@@ -62,8 +62,8 @@ export const mutations: Mutation[] = [
     name: "mir-cleanup-write-dropped",
     breaks: "a cleanup's write of the replacing value is left out",
     file: "src/lower/mir/drops.rs",
-    find: "                            .and_then(|()| self.mir_assign(state, place, rvalue, span, &mut out));\n",
-    replace: "                            .and_then(|()| Ok(()));\n",
+    find: "                            .and_then(|()| self.mir_assign(state, place, rvalue, span, &mut out))\n                    }\n",
+    replace: "                            .and_then(|()| Ok(()))\n                    }\n",
     tests: ["test/corpus.test.ts", "-t", "drop_replace_panics"],
   },
   {
@@ -418,5 +418,13 @@ export const mutations: Mutation[] = [
     find: "        let mut out = self.kept_starts(state.body, &state.parts, &|local| state.locals.names[local].clone())?;\n",
     replace: "        let mut out = Vec::new();\n",
     tests: ["test/react-kept.test.ts", "-t", "copied where it's changed"],
+  },
+  {
+    name: "cleanup-temporaries-one-each",
+    breaks: "each statement of a cleanup must leave nothing it made, though what follows in it reads it: a 2018 closure's write through the `&mut` it captures, itertools' `coalesce`, refused (#1681)",
+    file: "src/lower/mir/drops.rs",
+    find: "                        self.flag_sets(state, at, &mut out)\n                            .and_then(|()| self.mir_assign(state, place, rvalue, span, &mut out))\n",
+    replace: "                        self.flag_sets(state, at, &mut out)\n                            .and_then(|()| self.mir_assign(state, place, rvalue, span, &mut out))\n                            .and_then(|()| match state.pending.is_empty() {\n                                true => Ok(()),\n                                false => Err(self.unsupported(span, \"this cleanup, from its MIR\")),\n                            })\n",
+    tests: ["test/crates.test.ts", "-t", "coalesce_of_a_library_as_itertools_writes_it"],
   },
 ];

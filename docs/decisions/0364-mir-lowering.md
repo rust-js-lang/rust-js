@@ -1640,3 +1640,40 @@ against native Rust in both builds. Mutations
 `given-before-stopped-by-declarations`, `bound-stopped-by-declarations`,
 `given-left-unread` (`decisions/guarded.ts`) and
 `guard-calling-before-no-value-dropped` (`decisions/paths.ts`).
+
+## Amendment: a cleanup's replacing write reads what it reads, counted (#1681, 2026-11-14)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change; Rust's
+behavior is preserved.
+
+A `Drop` that replaces a value, `*last = Some(next)`, writes the new value
+in its cleanup too, as the old one's drop unwinds: `_15 = copy ((*_1).1)`
+then `(*_15) = move _10` of `bb6 (cleanup)`, which `mir_cleanup` lowers,
+`_15` the cleanup's own temporary, the `&mut` a closure captures. But the
+count of each local's reads (`locals.rs`) took nothing of a cleanup but
+the drop flag its switch tests. So `_15` was read nowhere, its write made
+nothing, and the write through it read a variable nothing declares: the
+cleanup's
+`$cleanup(() => { _15$1.value = value$1; dropIItem?.(done); }, error)`
+threw a `ReferenceError` in `$cleanup`, an abort, where Rust writes the new
+value, drops the run so far and unwinds on to the `catch_unwind` that
+catches it. A consumer's instance of a library's generic `next`, compiled
+from its optimized MIR (ADR 0914), wrote it so; itertools' `coalesce` is
+one, its probe's JS refused once `js::validate` checks a tree's reads
+(ADR 1143).
+
+The temporaries a cleanup makes of its own, those no other block uses,
+are counted where it writes and reads them, so the write through `_15`
+reads the value written, `runs.last = value$1`, as the body's does; what
+the body uses keeps the body's count, so no body's JS changes. And of a
+2018 closure, which captures the `&mut` itself, the cleanup makes two to
+reach the place, `_18 = copy ((*_1).1)`, `_19 = copy (*_18)`, `(*_19) =
+move _9`: what it makes may be folded into what follows in it, so long as
+none is left at its end, where each statement had to leave none.
+
+`test/crates/pairs/run_leftover_overwritten_as_a_drop_panics` holds the
+wrong answer against native Rust: the write's drop panics, the new
+leftover is written and the run dropped after. `coalesce_of_a_library_as_itertools_writes_it`
+holds itertools' `next` as it writes it, its dep of the edition its crate
+is, `//@ edition: 2018`, a directive the pairs read as the corpus's cases
+do. Mutations `cleanup-reads-uncounted` and `cleanup-temporaries-one-each`.

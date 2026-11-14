@@ -179,10 +179,49 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         }
         let indirect = |place: &Place<'tcx>| crate::lower::body_queries::indirect(self.tcx, &body.local_decls, place);
+        // Each local a block that isn't a cleanup uses: what a cleanup makes
+        // of its own is none of them.
+        let mut in_body = Uses(Vec::new());
+        for (block, data) in body.basic_blocks.iter_enumerated().filter(|(_, data)| !data.is_cleanup) {
+            in_body.visit_basic_block_data(block, data);
+        }
+        let in_body = in_body
+            .0
+            .into_iter()
+            .fold(IndexVec::from_elem(false, &body.local_decls), |mut set, local| {
+                set[local] = true;
+                set
+            });
         for (block, data) in body.basic_blocks.iter_enumerated() {
-            // Of a cleanup, only the drop flag it tests, which optimized MIR
-            // keeps, another crate's (ADRs 0561, 0914): read where it unwinds.
+            // Of a cleanup, the drop flag it tests, which optimized MIR
+            // keeps, another crate's (ADRs 0561, 0914): read where it
+            // unwinds; and the temporaries it makes itself to write a
+            // `Drop`'s replacing value as the old one's drop unwinds, as
+            // `mir_cleanup` lowers it, `_15 = copy ((*_1).1)` then `(*_15) =
+            // move _10` of a closure's `*last = Some(next)`, each written
+            // and read there, so the read is of the value written, never of
+            // a variable nothing declares (#1681). What the body uses keeps
+            // the body's count.
             if data.is_cleanup {
+                for statement in &data.statements {
+                    if let StatementKind::Assign(assign) = &statement.kind
+                        && !matches!(assign.1, Rvalue::Discriminant(_))
+                    {
+                        let (place, rvalue) = &**assign;
+                        let mut own = |local: Local, written: bool| {
+                            if !in_body[local] {
+                                match written {
+                                    true => locals.writes[local] += 1,
+                                    false => locals.reads[local] += 1,
+                                }
+                            }
+                        };
+                        own(place.local, place.projection.is_empty());
+                        let mut read = Uses(Vec::new());
+                        read.visit_rvalue(rvalue, mir::Location::START);
+                        read.0.into_iter().for_each(|local| own(local, false));
+                    }
+                }
                 if let TerminatorKind::SwitchInt { discr, .. } = &data.terminator().kind {
                     count_operand(&mut locals, discr);
                 }
@@ -419,4 +458,15 @@ pub(super) fn bound_for_a_guarded_arm(body: &mir::Body<'_>, local: Local) -> boo
         matches!(&decl.local_info, mir::ClearCrossCrate::Set(info)
             if matches!(**info, mir::LocalInfo::User(mir::BindingForm::RefForGuard(arm)) if arm == local))
     })
+}
+
+/// Each local a part of MIR uses, in the order it's met.
+struct Uses(Vec<Local>);
+
+impl<'tcx> mir::visit::Visitor<'tcx> for Uses {
+    fn visit_local(&mut self, local: Local, context: mir::visit::PlaceContext, _: mir::Location) {
+        if !matches!(context, mir::visit::PlaceContext::NonUse(_)) {
+            self.0.push(local);
+        }
+    }
 }
