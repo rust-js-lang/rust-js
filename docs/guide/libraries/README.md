@@ -169,7 +169,10 @@ What it has:
   `string::r#match(text, pattern)`, `text.match(pattern)` of a `RegExp` or
   text, a `js::RegExpMatchArray`, TypeScript's own: of a `g` pattern each
   whole match, else `exec`'s match and groups, its `index`, `input` and
-  `groups` `None` of a `g` pattern's; `None` where nothing matches (#1809).
+  `groups` `None` of a `g` pattern's; `None` where nothing matches. Its
+  items are `array::from(m)`, each `None` of a group that matched nothing:
+  `array::from(m).into_iter().map(Option::unwrap).collect()` of a `g`
+  pattern's, whose every item is a string (#1809).
 - **Timers:** `set_timeout`, `set_interval`, their `clear_*`.
 - **Where JS's answer isn't Rust's, JS's by name:** `js::string`'s
   methods count UTF-16 as JS's do, `string::slice`, `string::index_of`,

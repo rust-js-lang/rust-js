@@ -511,11 +511,20 @@ pub fn described(value: Option<&Unknown>) -> String {
 // against JS's own `match`, JS's white space, U+FEFF, not Rust's, U+0085.
 test("String.prototype.match is JS's, of a RegExp or text", async () => {
   const dir = fixture("js-string-match");
-  writeFileSync(join(dir, "lib.rs"), `use js::{RegExpMatchArray, dict, reg_exp, string};
+  writeFileSync(join(dir, "lib.rs"), `use js::{RegExpMatchArray, array, dict, reg_exp, string};
 
 pub fn tokens(text: &str) -> Option<Vec<String>> {
     let m = string::r#match(text, reg_exp::new(r"\\S+\\s*", "g"))?;
-    Some((0..m.length()).map(|i| m.get(i).unwrap()).collect())
+    Some(array::from(m).into_iter().map(Option::unwrap).collect())
+}
+
+pub fn items(text: &str) -> Option<Vec<Option<String>>> {
+    string::r#match(text, reg_exp::new(r"([a-z]+)(\\d)?", "")).map(|m| array::from(m))
+}
+
+pub fn every_item_a_string(text: &str) -> Vec<String> {
+    let m = string::r#match(text, reg_exp::new(r"([a-z]+)(\\d)?", ""));
+    m.map(|m| array::from(m).into_iter().map(Option::unwrap).collect()).unwrap_or_default()
 }
 
 pub fn first(text: &str) -> Option<(String, Option<String>, Option<u32>, Option<String>, Option<String>, u32)> {
@@ -554,6 +563,11 @@ pub fn found(text: &str) -> Option<&'static RegExpMatchArray> {
   expect(lib.byText("ac")).toBe(undefined);
   expect(lib.globalMetadata("banana")).toEqual([undefined, undefined, true]);
   expect(lib.found("y")).toBe(null);
+  // Its items, `array::from(m)`, a group that matched nothing `None`, which
+  // `unwrap` panics of, never `""`.
+  expect(lib.items("ab")).toEqual(["ab", "ab", undefined]);
+  expect(lib.everyItemAString("ab7")).toEqual(["ab7", "ab", "7"]);
+  expect(() => lib.everyItemAString("ab")).toThrow("called `Option::unwrap()` on a `None` value");
 });
 
 // ADR 0718: `String.fromCharCode(...codes)`, a rest of TypeScript's

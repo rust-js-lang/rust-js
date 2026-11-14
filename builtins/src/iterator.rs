@@ -110,3 +110,7 @@ impl Iterable<Option<&'static crate::Unknown>> for crate::Unknown {}
 /// A string's characters, each a string of its own, as JS steps it: by
 /// code point, `"a😀"` two (ADR 1052).
 impl Iterable<String> for &str {}
+/// A match's items, `text.match(pattern)`'s, each a string, or `None` of
+/// a group that matched nothing (#1809): `array::from(m)`, every item
+/// unwrapped where each is a string, as a `g` pattern's are.
+impl Iterable<Option<String>> for crate::RegExpMatchArray {}

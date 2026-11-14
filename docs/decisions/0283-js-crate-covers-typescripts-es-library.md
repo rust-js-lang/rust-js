@@ -405,6 +405,11 @@ are `Option`s, `None` of a `g` pattern's, as TypeScript's are optional;
 `RegExpMatch` stays `exec`'s, `RegExpExecArray`, whose `index` and
 `input` are always there. One type for both of `match`'s forms, as JS and
 TypeScript have one: two bindings by the pattern's flag would be two ways
-of one JS method. A conversion of it to a `Vec<String>` is to come. Held
-by test/js-builtins.test.ts's "String.prototype.match is JS's", against
-JS's own `match` of tokens with tabs, line ends, U+FEFF and U+0085.
+of one JS method. Its items are an `Iterable<Option<String>>`, so
+`array::from(m)`, JS's `Array.from(m)`, is the one conversion, the js
+crate's own, no helper of its own: `array::from(m).into_iter().map(Option::unwrap)`
+where every item is a string, as a `g` pattern's are, and `unwrap`'s
+panic, never `""`, of a group that matched nothing. Held by
+test/js-builtins.test.ts's "String.prototype.match is JS's", against
+JS's own `match` of tokens with tabs, line ends, U+FEFF and U+0085, and
+the panic of an unmatched group's item.
