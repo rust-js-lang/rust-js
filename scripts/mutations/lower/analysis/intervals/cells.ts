@@ -46,4 +46,12 @@ export const mutations: Mutation[] = [
     replace: "        drop_runs_code(self.tcx, self.typing_env, ty)\n",
     tests: ["test/intervals-shadow.test.ts", "-t", "guard keeps"],
   },
+  {
+    name: "keys-kept-when-cells-change",
+    breaks: "a key a `RefCell`'s map holds is kept past a call that may write the cell, so `cache.borrow()[&k]` past `clear()` is taken in bounds, a mir-only-call-bounds line",
+    file: "src/lower/analysis/intervals/cells.rs",
+    find: "        self.keys.retain(|&(map, _)| map != cell);\n",
+    replace: "",
+    tests: ["test/intervals-shadow.test.ts", "-t", "contains_key"],
+  },
 ];

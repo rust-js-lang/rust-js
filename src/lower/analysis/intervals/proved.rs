@@ -70,6 +70,11 @@ impl<'tcx> Walk<'_, 'tcx> {
                 proofs.call_bounds.insert(block);
             }
             if let TerminatorKind::Call { func, args, .. } = &data.terminator().kind
+                && self.key_held(func, args, &state)
+            {
+                proofs.call_bounds.insert(block);
+            }
+            if let TerminatorKind::Call { func, args, .. } = &data.terminator().kind
                 && let Some((callee, callee_args)) = func.const_fn_def()
                 && let Some(at) = range_index(self.tcx, callee, callee_args)
                 && let Some(holder) = (args.first())

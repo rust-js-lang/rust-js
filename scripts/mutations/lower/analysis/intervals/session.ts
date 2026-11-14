@@ -22,4 +22,12 @@ export const mutations: Mutation[] = [
     replace: "))\n",
     tests: ["test/lowering-integer-ranges.test.ts", "-t", "an integer cast MIR's intervals show"],
   },
+  {
+    name: "map-index-unasked",
+    breaks: "a body whose one check is a map's index isn't walked, so `errors[id]` under `errors.contains_key(id)` keeps its check, a call-bounds line",
+    file: "src/lower/analysis/intervals/session.rs",
+    find: "                        || map_key(tcx, callee, args) == Some(MapKey::Index)\n",
+    replace: "",
+    tests: ["test/intervals-shadow.test.ts", "-t", "contains_key"],
+  },
 ];

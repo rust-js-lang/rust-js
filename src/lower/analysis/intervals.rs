@@ -38,6 +38,7 @@ mod captures;
 mod cells;
 mod fields;
 mod guards;
+mod keys;
 mod proved;
 mod pushed;
 mod ranges;
@@ -303,6 +304,8 @@ impl<'tcx> Walk<'_, 'tcx> {
             lending: IndexMap::default(),
             lent_away: IndexSet::default(),
             guarded: IndexMap::default(),
+            keys: IndexSet::default(),
+            has_keys: IndexMap::default(),
         });
         // Each block waiting, once, by its place in reverse postorder: what
         // flows into a block is visited before it, so each is visited
@@ -1024,6 +1027,8 @@ impl<'tcx> Walk<'_, 'tcx> {
                 // A slice's `get(index)`'s discriminant: of `Some`, the index
                 // below the slice's length.
                 let gotten = switched.and_then(|l| state.gets.get(&l).copied());
+                // A map's `contains_key(&k)` switched on: of its `true`, the key held.
+                let keyed = switched.and_then(|l| state.has_keys.get(&l).copied());
                 let values: Vec<u128> = targets.iter().map(|(value, _)| value).collect();
                 let mut out = Vec::new();
                 for (value, target) in targets.iter() {
@@ -1033,6 +1038,9 @@ impl<'tcx> Walk<'_, 'tcx> {
                         && !self.narrow(c, value != 0, &mut narrowed)
                     {
                         continue;
+                    }
+                    if let Some(held) = keyed.filter(|_| value != 0) {
+                        narrowed.keys.insert(held);
                     }
                     if let Some(slice) = emptied
                         && value == 0
@@ -1089,6 +1097,9 @@ impl<'tcx> Walk<'_, 'tcx> {
                         *least = (*least).max(known.lo);
                     }
                 }
+                if let Some(held) = keyed.filter(|_| values == [0]) {
+                    otherwise.keys.insert(held);
+                }
                 out.push((targets.otherwise(), otherwise));
                 out
             }
@@ -1130,6 +1141,7 @@ impl<'tcx> Walk<'_, 'tcx> {
                     self.called(func, args, local, state, &mut after);
                     self.derefed(func, args, local, state, &mut after);
                     self.guarded(args, local, func, state, &mut after);
+                    self.asked_key(func, args, local, state, &mut after);
                 }
                 target.map(|t| vec![(t, after)]).unwrap_or_default()
             }

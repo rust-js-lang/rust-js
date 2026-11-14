@@ -3,7 +3,7 @@
 //! `--intervals-shadow`'s, each check compared with THIR's ranges.
 
 use super::*;
-use crate::lower::recognition::once_method;
+use crate::lower::recognition::{MapKey, map_key, once_method};
 use crate::lower::std_types::once::OnceOp;
 
 /// What MIR proves of the session's bodies: what each function only calls
@@ -54,13 +54,15 @@ pub(in crate::lower) fn body_proofs<'tcx>(
 ) -> ProofsScope<'tcx> {
     let caches = crate::lower::session::caches(tcx);
     let given = (caches.intervals.borrow().given.get(&body.source.def_id()).cloned()).unwrap_or_default();
-    // Of a body with no bounds check, no `+`, `-` or `*` and no integer
-    // cast, nothing to prove, its walk left out.
+    // Of a body with no bounds check, no index of a map, no `+`, `-` or `*`
+    // and no integer cast, nothing to prove, its walk left out.
     let asks = (body.basic_blocks.iter()).any(|data| {
         matches!(&data.terminator().kind, TerminatorKind::Assert { msg, .. } if matches!(**msg, AssertKind::BoundsCheck { .. }))
             || matches!(&data.terminator().kind, TerminatorKind::Call { func, .. }
                 if func.const_fn_def().is_some_and(|(callee, args)| {
-                    call_indexes(tcx, callee, args).is_some() || range_index(tcx, callee, args).is_some()
+                    call_indexes(tcx, callee, args).is_some()
+                        || range_index(tcx, callee, args).is_some()
+                        || map_key(tcx, callee, args) == Some(MapKey::Index)
                 }))
             || (data.statements.iter()).any(|statement| {
                 matches!(&statement.kind, StatementKind::Assign(assign)

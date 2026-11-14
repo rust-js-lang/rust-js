@@ -76,5 +76,7 @@ impl State {
         self.empties.retain(|_, of| *of != cell);
         self.below.retain(|&(_, y, _)| y != Term::Len(cell));
         self.below_past.retain(|&(_, slice, _)| slice != cell);
+        self.keys.retain(|&(map, _)| map != cell);
+        self.has_keys.retain(|_, &mut (map, _)| map != cell);
     }
 }

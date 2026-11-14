@@ -571,3 +571,74 @@ pub fn main() {
 }
 `)).toEqual(["mir-only-call-bounds take_first"]);
 });
+
+// #1672 M3, step 5: a map's `m[&k]` where `m.contains_key(&k)` holds, or
+// past a first `m[&k]`, is proved, of a map a local holds or a `RefCell`
+// does (rd558). Not past a `clear()`, a write of the key, a call that may
+// write the cell, nor of a key with a `Cell` in it, which a call between
+// may change.
+test("a map's index of a key its `contains_key` showed it holds is proved, until the map or the key changes", () => {
+  expect(shadowOf(`use std::cell::{Cell, RefCell};
+use std::collections::HashMap;
+use std::hash::{Hash, Hasher};
+/// A key whose hash and equality read its Cell.
+pub struct Counted(Cell<u32>);
+impl PartialEq for Counted {
+    fn eq(&self, other: &Self) -> bool {
+        self.0.get() == other.0.get()
+    }
+}
+impl Eq for Counted {}
+impl Hash for Counted {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.0.get().hash(state);
+    }
+}
+pub fn stashed(errors: &HashMap<String, u32>, id: &String) -> u32 {
+    if errors.contains_key(id) { errors[id] } else { 0 }
+}
+pub fn cached(cache: &RefCell<HashMap<u32, u32>>, k: u32) -> u32 {
+    if cache.borrow().contains_key(&k) { cache.borrow()[&k] } else { 0 }
+}
+pub fn twice(m: &HashMap<u32, u32>, k: u32) -> u32 {
+    m[&k] + m[&k]
+}
+pub fn cleared(m: &mut HashMap<u32, u32>, k: u32) -> u32 {
+    if m.contains_key(&k) {
+        m.clear();
+        return m[&k];
+    }
+    0
+}
+pub fn rekeyed(m: &HashMap<u32, u32>, mut k: u32) -> u32 {
+    if m.contains_key(&k) {
+        k += 1;
+        return m[&k];
+    }
+    0
+}
+pub fn called(cache: &RefCell<HashMap<u32, u32>>, k: u32, clear: &dyn Fn()) -> u32 {
+    if cache.borrow().contains_key(&k) {
+        clear();
+        return cache.borrow()[&k];
+    }
+    0
+}
+pub fn celled(m: &HashMap<Counted, u32>, k: &Counted, bump: &dyn Fn()) -> u32 {
+    if m.contains_key(k) {
+        bump();
+        return m[k];
+    }
+    0
+}
+pub fn main() {
+    let m = HashMap::from([(String::from("a"), 1)]);
+    let c = RefCell::new(HashMap::from([(1, 2)]));
+    println!("{} {} {}", stashed(&m, &String::from("a")), cached(&c, 1), twice(&HashMap::from([(1, 2)]), 1));
+    println!("{} {}", cleared(&mut HashMap::new(), 1), rekeyed(&HashMap::new(), 1));
+    println!("{}", called(&c, 3, &|| c.borrow_mut().clear()));
+    let key = Counted(Cell::new(0));
+    println!("{}", celled(&HashMap::new(), &key, &|| key.0.set(1)));
+}
+`)).toEqual(["mir-only-call-bounds twice"]);
+});

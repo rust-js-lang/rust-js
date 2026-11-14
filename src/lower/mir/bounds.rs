@@ -75,7 +75,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // (#1672 M3, step 5).
         if matches!(
             known,
-            Std::Index | Std::Comb(Comb::Swap | Comb::SwapRemove | Comb::Remove | Comb::Insert)
+            Std::Index
+                | Std::Comb(Comb::Swap | Comb::SwapRemove | Comb::Remove | Comb::Insert)
+                | Std::Map(MapOp::Index { .. })
         ) {
             let block = state.location().block;
             crate::lower::analysis::shadow_check(

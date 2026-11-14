@@ -97,6 +97,10 @@ pub(super) struct State {
     /// its drop: no code but through the guard changes it (`guards`,
     /// #1815).
     pub(super) guarded: IndexMap<Local, Local>,
+    /// Each map and key, by their roots, the map holds the key of (`keys`).
+    pub(super) keys: IndexSet<(Local, Local)>,
+    /// Each `bool` a `contains_key` gave, by the map and the key it asks.
+    pub(super) has_keys: IndexMap<Local, (Local, Local)>,
 }
 
 /// A range of integers `next()` alone steps (`stepped_ranges`): what its
@@ -201,6 +205,11 @@ impl State {
                 .collect(),
             lending: both(&self.lending, &other.lending),
             guarded: both(&self.guarded, &other.guarded),
+            keys: self.keys.intersection(&other.keys).copied().collect(),
+            has_keys: (self.has_keys.iter())
+                .filter(|&(k, v)| other.has_keys.get(k) == Some(v))
+                .map(|(&k, &v)| (k, v))
+                .collect(),
         }
     }
 
@@ -309,6 +318,9 @@ impl State {
         self.gets
             .retain(|&gave, &mut (index, _)| gave != local && index != local);
         self.guarded.retain(|&guard, &mut cell| guard != local && cell != local);
+        self.keys.retain(|&(map, key)| map != local && key != local);
+        self.has_keys
+            .retain(|&gave, &mut (map, key)| gave != local && map != local && key != local);
     }
 
     /// Whether a held guard guards `cell`.

@@ -755,3 +755,29 @@ Two wraps it proves are new, `i += 1` past `signs[i] = -n`, now JS's own
 in `index_written_by_an_operation`. `refcell_guard_bounds`, a new case,
 runs each way the guard's length is forgotten against native Rust, each
 panicking as Rust does.
+
+### Step 5: a map's key held (2026-11-15)
+
+THIR's facts decided a map's `m[k]` (rd558) with no MIR counterpart and
+no shadow line: it was never compared. Now the shadow compares each map
+index, and MIR proves it too (`keys`):
+- **`contains_key(&k)` switched on** shows the map holds the key on its
+  `true` way (`State::has_keys`, then `State::keys`), by the roots of the
+  map and the key. A `RefCell`'s map is its cell's, as a `Vec`'s is.
+- **An `m[&k]` that gave its value** holds the key past it, as it panics
+  otherwise.
+- **What forgets it:** a write of the map or the key, a `&mut` of the map
+  lent, and of a cell's map, any call or drop that may write the cell
+  (`forget_lengths`).
+- **Of a key whose lookup reads the same until it's written** alone
+  (`key_stays`, #1844, ADR 0059 amended). A key whose hand-written `Hash`
+  reads a `Cell`, or a static, may change through a shared reference.
+- **A body is walked** where its one check is a map's index.
+
+All the corpus's map indexes THIR decides are proved too, but two. Both
+are `Rc<RefCell<HashMap>>`s a closure captured,
+`map_index_of_a_key_held`'s `handle_error` and
+`closure_function_comments`'s. Each `borrow()` is of a new `&RefCell` an
+`Rc`'s `deref` gave, the shape #1839 tracks. So the shadow's call-bounds
+lines go from 110 to 112: two map sites now compared, not two lost. MIR
+proves a second `m[&k]` of the same key where THIR keeps its check.

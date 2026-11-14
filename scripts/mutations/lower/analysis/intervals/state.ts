@@ -44,4 +44,12 @@ export const mutations: Mutation[] = [
     replace: "        self.least.get(&slice).copied().unwrap_or(0).max(below.unwrap_or(0).min(0))\n",
     tests: ["test/intervals-shadow.test.ts", "-t", "0 before it"],
   },
+  {
+    name: "keys-kept-when-written",
+    breaks: "a key held is kept when its local is written, so `m[&k]` past `k += 1` is taken in bounds, a mir-only-call-bounds line",
+    file: "src/lower/analysis/intervals/state.rs",
+    find: "        self.keys.retain(|&(map, key)| map != local && key != local);\n",
+    replace: "",
+    tests: ["test/intervals-shadow.test.ts", "-t", "contains_key"],
+  },
 ];
