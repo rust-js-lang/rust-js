@@ -34,4 +34,12 @@ export const mutations: Mutation[] = [
     replace: "            !crate::lower::recognition::is_fmt_trait(tcx, tcx.impl_trait_id(imp))\n",
     tests: ["test/writer-sink.test.ts", "-t", "one its contract doesn't list is a bug"],
   },
+  {
+    name: "writes-dyns-given-by-none",
+    breaks: "no library's function is taken to write the `dyn`s it's given, so a library's `dyn` that may carry no `fmtInto` given to one isn't refused, and the write throws (#1802)",
+    file: "src/lower/library/written_into.rs",
+    find: "        !id.is_local() && (self.library(id.krate)).is_some_and(|library| !library.builtin && library.dyn_written_into)\n",
+    replace: "        !id.is_local() && (self.library(id.krate)).is_some_and(|_| false)\n",
+    tests: ["test/writer-sink.test.ts", "-t", "a library's dyn Debug written through generic code"],
+  },
 ];

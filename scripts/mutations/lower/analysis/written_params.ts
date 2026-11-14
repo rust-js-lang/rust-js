@@ -264,4 +264,20 @@ export const mutations: Mutation[] = [
     replace: "    found.dyn_written = !dyns_written.is_empty() || foreign.writes_dyns_given();\n    found.dyn_any |= foreign.writes_dyns_given();\n",
     tests: ["test/crates.test.ts", "-t", "derived_debug_beside_a_library_that_writes_a_dyn"],
   },
+  {
+    name: "library-dyn-through-generic-code-unrefused",
+    breaks: "a library's `dyn` that may carry no `fmtInto`, given to the consumer's generic code that writes it into a writer, isn't refused, and the write throws (#1802)",
+    file: "src/lower/analysis/written_params.rs",
+    find: "            .or_else(|| (given.iter()).find(|&&(ty, ..)| is_dyn(ty)).map(|&(_, span, _)| span))\n",
+    replace: "",
+    tests: ["test/writer-sink.test.ts", "-t", "a library's dyn Debug written through generic code"],
+  },
+  {
+    name: "library-dyn-given-to-a-writing-library-unrefused",
+    breaks: "a library's `dyn` that may carry no `fmtInto`, given to a sibling library that writes the `dyn`s it's given, isn't refused, and the write throws (#1802)",
+    file: "src/lower/analysis/written_params.rs",
+    find: "            .or_else(|| dyn_given_to_a_writing_library(recognition, all_bodies));\n",
+    replace: ";\n",
+    tests: ["test/writer-sink.test.ts", "-t", "a library's dyn Debug written through generic code"],
+  },
 ];

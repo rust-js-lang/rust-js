@@ -451,6 +451,21 @@ test("a library's dyn Debug written into a writer is refused", () => {
   expect(native).toBe('["Some", "(", "7", ")"]\n');
 }, underLoad(300_000));
 
+// The same `dyn`, written through the consumer's generic code, or given to
+// another library that writes the `dyn`s it's given: refused at compile
+// time, naming #1797, as a direct `write!` is, never thrown by the
+// dictionary with no `fmtInto` as it's written (#1802).
+test("a library's dyn Debug written through generic code, or by another library, is refused, not thrown", () => {
+  const refusal = [
+    "writing a `dyn` into a writer of the crate's own or a generic one where a library it uses makes such a `dyn`",
+    "#1797",
+  ];
+  const generic = piecewiseChain(piecewisePairs, "dyn_debug_of_a_librarys_through_generic_code", refusal);
+  expect(generic).toBe('["[", "Some", "(", "7", ")", "]"]\n');
+  const given = chain(piecewisePairs, "dyn_of_a_library_given_to_a_library_that_writes_it", ["dep", "mid", "app"], refusal);
+  expect(given).toBe('["[", "Some", "(", "7", ")", "]"]\n');
+}, underLoad(300_000));
+
 // A library's `dyn`s of published types of its own whose formatting impls
 // are written by hand, a `Box<dyn Display>` and `?`'s `Box<dyn Error>`:
 // their dictionaries carry `fmtInto`, so its contract doesn't say it makes

@@ -70,6 +70,12 @@ impl Foreign<'_, '_> {
         (self.dependencies.libraries.values()).any(|library| !library.builtin && library.dyn_written_into)
     }
 
+    /// Is `id` a library's function whose library writes a `dyn` it's given
+    /// into a writer a piece at a time (#1802)?
+    pub(in crate::lower) fn writes_dyns_given_by(&self, id: DefId) -> bool {
+        !id.is_local() && (self.library(id.krate)).is_some_and(|library| !library.builtin && library.dyn_written_into)
+    }
+
     /// May any of the libraries make a `dyn` whose dictionary carries no
     /// `fmtInto` (#1652, #1688)?
     pub(in crate::lower) fn makes_fmt_dyns(&self) -> bool {

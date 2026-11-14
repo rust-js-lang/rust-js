@@ -30,7 +30,8 @@ export const triples = join(root, "test", "crates", "triples");
  * the native program does; where each crate's JS is. A crate's file names
  * it, `dep.rs` the crate `dep`, but where its first line says otherwise,
  * `//@ crate-name: core`; one named `std` is given to a `#![no_std]` crate
- * alone, as another's `std` is std's (ADR 1054). Where `refused` is given,
+ * alone, as another's `std` is std's (ADR 1054); and each is given those
+ * before it, or those its `//@ uses: dep` names. Where `refused` is given,
  * the app's compile is refused instead, saying each of them: what the
  * native program prints. Each rust-js compile is given `env`. */
 export function chain(cases: string, name: string, files: string[], refused?: string[], throws?: string, env: Record<string, string> = {}): string {
@@ -41,7 +42,13 @@ export function chain(cases: string, name: string, files: string[], refused?: st
   // A crate's edition, `//@ edition: 2018`, as the corpus's directive says
   // a case's: itertools' closures capture as 2018's do (#1681).
   const editions = files.map((file) => readFileSync(source(file), "utf8").match(/^\/\/@ edition: (\d+)\n/m)?.[1]);
-  const given = (i: number) => crates.slice(0, i)
+  // The crates a crate uses: each before it, or those its directive names,
+  // `//@ uses: dep`, none of `//@ uses:`, as Cargo gives a crate its own
+  // dependencies alone, a sibling none of another's (#1802).
+  const declared = files.map((file) => readFileSync(source(file), "utf8").match(/^\/\/@ uses:(.*)\n/m)?.[1]);
+  const before = (i: number) => crates.slice(0, i)
+    .filter((crate) => declared[i] === undefined || declared[i].split(",").map((s) => s.trim()).includes(crate));
+  const given = (i: number) => before(i)
     .filter((used) => used !== "std" || readFileSync(source(files[i]), "utf8").includes("#![no_std]"));
   // Natively, each crate a library and a program of the last, kept by what
   // they're made of (`nativeCrates`).
@@ -54,7 +61,7 @@ export function chain(cases: string, name: string, files: string[], refused?: st
   if ("error" in built) throw new Error(built.error);
   const program = built.binary;
   const compile = (crate: string, i: number) => {
-    const used = crates.slice(0, i);
+    const used = before(i);
     const library = i < crates.length - 1
       ? ["--library", "--manifest", join(out, crate, "lib.manifest.json")]
       : [];

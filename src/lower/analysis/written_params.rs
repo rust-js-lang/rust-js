@@ -336,16 +336,6 @@ pub(super) fn written_params<'tcx>(
             refuse_lacked(tcx, foreign, made_of, span);
         }
     }
-    // A library's `dyn` written so may hold a dictionary of its own without
-    // `fmtInto`, which its contract says it may make.
-    if let Some(&span) = dyns_written.first()
-        && foreign.makes_fmt_dyns()
-    {
-        let what = "writing a `dyn` into a writer of the crate's own or a generic one where a library it uses makes such a `dyn`";
-        let why =
-            "std writes it a piece at a time through its dictionary, which the library's doesn't say it can (#1797)";
-        crate::lower::refusal::refuse(tcx, span, crate::lower::refusal::Refused::Because(what, why));
-    }
     // What each call gives a parameter its callee writes so, to a fixed point;
     // and whether a call's argument holds it (`followed`).
     let mut given: IndexSet<(Ty<'tcx>, Span, bool)> = IndexSet::default();
@@ -370,6 +360,20 @@ pub(super) fn written_params<'tcx>(
             break;
         }
     }
+    // A library's `dyn` written so may hold a dictionary of its own without
+    // `fmtInto`, which its contract says it may make: refused however it's
+    // written, by the crate's own `write!`, given to generic code that writes
+    // it (#1802), or given to a library that writes the `dyn`s it's given.
+    if foreign.makes_fmt_dyns() {
+        let written = (dyns_written.first().copied())
+            .or_else(|| (given.iter()).find(|&&(ty, ..)| is_dyn(ty)).map(|&(_, span, _)| span))
+            .or_else(|| dyn_given_to_a_writing_library(recognition, all_bodies));
+        if let Some(span) = written {
+            let what = "writing a `dyn` into a writer of the crate's own or a generic one where a library it uses makes such a `dyn`";
+            let why = "std writes it a piece at a time through its dictionary, which the library's doesn't say it can (#1797)";
+            crate::lower::refusal::refuse(tcx, span, crate::lower::refusal::Refused::Because(what, why));
+        }
+    }
     for (ty, span, followed) in given {
         refuse_lacked(tcx, foreign, ty, span);
         if !followed {
@@ -377,6 +381,28 @@ pub(super) fn written_params<'tcx>(
         }
     }
     found
+}
+
+/// Where the crate first gives a `dyn` to a library's function whose
+/// library writes the `dyn`s it's given into a writer a piece at a time
+/// (`Foreign::writes_dyns_given_by`): an argument that holds one.
+fn dyn_given_to_a_writing_library<'tcx>(
+    recognition: &Recognition<'_, 'tcx>,
+    all_bodies: &[&Body<'tcx>],
+) -> Option<Span> {
+    let holds_dyn = |ty: Ty<'tcx>| {
+        ty.walk()
+            .any(|part| matches!(part.as_type().map(|t| *t.kind()), Some(ty::Dynamic(..))))
+    };
+    (all_bodies.iter()).find_map(|body| {
+        (body.thir.exprs.iter()).find_map(|expr| match expr.kind {
+            ExprKind::Call { fun, ref args, .. } => fn_def(body.thir[fun].ty)
+                .filter(|&(callee, _)| recognition.foreign.writes_dyns_given_by(callee))
+                .filter(|_| args.iter().any(|&arg| holds_dyn(body.thir[arg].ty)))
+                .map(|_| expr.span),
+            _ => None,
+        })
+    })
 }
 
 /// Whether `ty` holds an `fmt::Arguments`.

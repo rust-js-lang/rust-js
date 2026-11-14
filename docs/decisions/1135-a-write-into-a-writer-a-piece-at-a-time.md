@@ -625,6 +625,22 @@ go.
         builds; the pair librarys_formatting_impl_of_a_reference_box_or_pin,
         its contract listing the three types; test/architecture-formatting.test.ts
         holds the owner; 15 mutations, caught, and 11 retargeted, caught.
+      - Amended later, #1802: where a library it uses may make a `dyn` whose
+        dictionary carries no `fmtInto` (`makes_fmt_dyns`), a consumer is
+        refused, naming #1797, however it writes a `dyn` a piece at a time:
+        by its own `write!`, as before; given to a type parameter its
+        generic code writes, `own(&mut log, &dep::shown())`, which threw as
+        the dictionary had no `fmtInto`; or given to a library's function
+        whose library writes the `dyn`s it's given (`dyn_written_into`,
+        `Foreign::writes_dyns_given_by`), a sibling that doesn't use the
+        first, which threw the same. Case (ADR 0262): results change, a
+        throw where Rust writes, so a compile error until #1797. Proof: the
+        pair dyn_debug_of_a_librarys_through_generic_code and the three
+        crates dyn_of_a_library_given_to_a_library_that_writes_it, whose
+        `mid` uses nothing (`chain`'s `//@ uses:`), each refused; mutations
+        library-dyn-through-generic-code-unrefused,
+        library-dyn-given-to-a-writing-library-unrefused and
+        writes-dyns-given-by-none, caught.
       - Amended later, #1745: a `format_args!` the body makes, given to a
         type parameter a call writes into a writer through its dictionary,
         `own(w, &format_args!(..))`'s `T`, is followed at lowering, where
