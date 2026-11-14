@@ -304,3 +304,28 @@ pub fn local_navigation_listeners(button: &'static HTMLButtonElement) -> &'stati
         button.remove_event_listener(Keydown, on_error, None);
     })
 }
+
+/// A listener added by an event's name given as a value, its marker copied
+/// to remove it later, as the vercel UI kernel's `on` (#1817).
+pub fn on<'a, Target, Name>(
+    target: &'a Target,
+    name: Name,
+    listener: &'static dyn Fn(&'static <Target as webapi::Listen<Name>>::Event),
+    options: Option<&'a AddEventListenerOptions<'a>>,
+) -> impl Fn() + 'a
+where
+    Target: EventTargetExt + webapi::Listen<Name>,
+    Name: Copy + 'a,
+{
+    target.add_event_listener(name, listener, options.map(|options| options as &dyn webapi::IntoAddEventListenerOptionsOrBool));
+    move || target.remove_event_listener(name, listener, options.map(|options| options as &dyn webapi::IntoEventListenerOptionsOrBool))
+}
+
+pub fn on_added(button: &HTMLButtonElement) {
+    let _remove = on(button, Click, &|e: &PointerEvent| record(e.client_x()), None);
+}
+
+pub fn on_removed(button: &HTMLButtonElement) {
+    let off = on(button, Click, &|e: &PointerEvent| record(e.client_x()), None);
+    off();
+}

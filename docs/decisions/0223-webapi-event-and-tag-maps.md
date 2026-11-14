@@ -164,3 +164,19 @@ Held by `test/webapi-canvas.test.ts`: each form's JS, no `instanceof`, run
 against a canvas of no constructor global, as another realm's is, its
 context and its `null`.
 
+
+## Amendment: an event's or a tag's name is `Copy` (#1817)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): None. Each name's
+value is its string, so a copy of it is the same JS.
+
+The markers were bare `pub struct Click;`: generic code that keeps a name
+to use twice, as the vercel UI kernel's `on<Target, Name: Copy>` adds a
+listener and returns what removes it, couldn't be given one, rustc's
+E0277 of `events::Click: Copy`. **Each of `events`, `tags` and
+`svg_tags` derives `Clone` and `Copy`**, from the generator; the copy is
+the string itself (ADR 0289, amended), so `on(button, Click, ..)` is
+`on(button, "click", ..)`, and its remover `target.removeEventListener(name,
+listener, options)`.
+
+What holds it: webapi-events' `on`, added and removed in Chromium.

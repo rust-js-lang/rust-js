@@ -173,3 +173,42 @@ consumer's type with a hand-written `Clone`, one a unit struct whose copy
 is the value), against native Rust; mutations
 `clone-through-copy-bound-copies`, `copy-dictionary-holds-no-clone` and
 `copy-dictionary-dropped-with-its-clone`.
+
+## Amendment: what JS holds as a primitive is its own copy (#1817)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): None. A unit struct is
+its `#[rust_js::name]` string or `undefined` (ADRs 0013, 0223), a
+fieldless enum its string or number (ADRs 0013, 0722): JS primitives,
+which nothing changes in place, so a copy and the value can't be told
+apart.
+
+The vercel UI kernel's `on<Target, Name: Copy>` adds a listener by an
+event's name and keeps it to remove the listener later. Given webapi's
+`events::Click`, `"click"`, it was
+`on(target, name, listener, options, NameCopy)`, reading
+`NameCopy ? NameCopy.copy(name) : name` three times and naming a
+`name$1`, where upstream writes `target.addEventListener(type, listener,
+options)`. **A unit struct and a fieldless enum are their own copies**
+(`copies_itself`), so a function given only them takes none:
+
+```js
+export function on(target, name, listener, options) {
+  target.addEventListener(name, listener, options);
+  return () => {
+    target.removeEventListener(name, listener, options);
+  };
+}
+```
+
+Not one whose clone runs code, a hand-written `Clone` of a `Copy` unit
+struct, which generic code cloning through the `Copy` bound calls (the
+amendment above): its copy is the value, but its dictionary still holds
+its `Clone()`. Both ask std's one answer of a clone that is its bits,
+`TrivialClone` (`std_impls::trivially_cloned`).
+
+What holds it: lowering-functions' "a Copy bound takes a copy only where
+a copy isn't the value" (`twice(mode)`, `twice(level)`,
+`twice(undefined)`), webapi-events' `on` in Chromium, and crate pair
+`library_clones_through_a_copy_bound`'s loud `Unit`; mutations
+`unit-struct-copies-apart`, `string-enum-copies-apart`,
+`numbered-enum-copies-apart` and `loud-unit-copies-itself`.

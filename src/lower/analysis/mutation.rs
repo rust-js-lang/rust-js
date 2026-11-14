@@ -512,7 +512,8 @@ fn ref_mut_holders<'tcx>(
 /// value whose copy may not be the value itself, or a type parameter of its
 /// own that is one: a library's public one too, whose consumer that gives
 /// one more compiles it itself (ADR 0914). A reference, a number, text, a
-/// function, and an `Option` of one is its own copy.
+/// function, a unit struct, a fieldless enum, and an `Option` of one is its
+/// own copy (`copies_itself`).
 pub(in crate::lower) fn copied_params<'tcx>(
     tcx: TyCtxt<'tcx>,
     (all_bodies, names): (&[&Body<'tcx>], &crate::lower::call_graph::Names<'tcx>),
@@ -680,7 +681,8 @@ fn bounded_by(tcx: TyCtxt<'_>, id: DefId, trait_id: DefId) -> Vec<u32> {
 
 /// Is a copy of `ty` the value itself, whatever changes: a shared
 /// reference, a number, `bool`, text, a function, a closure that changes
-/// nothing it captured, and an `Option` of one?
+/// nothing it captured, a value JS holds as a primitive, and an `Option`
+/// of one?
 pub(in crate::lower) fn copies_itself<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
     match ty.kind() {
         ty::Ref(_, _, Mutability::Not) => true,
@@ -691,6 +693,22 @@ pub(in crate::lower) fn copies_itself<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> 
         ty::Closure(_, args) => args.as_closure().kind() == ty::ClosureKind::Fn,
         ty::Tuple(items) => items.is_empty(),
         ty::Adt(adt, args) if tcx.is_lang_item(adt.did(), LangItem::Option) => copies_itself(tcx, args.type_at(0)),
+        // What JS holds as a primitive: a unit struct, its
+        // `#[rust_js::name]` string or `undefined`, webapi's `events::Click`
+        // `"click"` (ADR 0223); a fieldless enum's string or number (ADRs
+        // 0013, 0722). Not one whose clone runs code, which generic code
+        // cloning through a `Copy` bound calls (ADR 0289, amended).
+        ty::Adt(adt, _) => {
+            let primitive = match adt.is_struct() {
+                true => adt.non_enum_variant().ctor_kind() == Some(rustc_hir::def::CtorKind::Const),
+                false => {
+                    crate::lower::representation::is_string_enum(tcx, *adt)
+                        || crate::lower::bindings::numbered(tcx, *adt)
+                }
+            };
+            // Of no type parameter: a unit struct and a fieldless enum hold none.
+            primitive && crate::lower::std_impls::trivially_cloned(tcx, ty::TypingEnv::fully_monomorphized(), ty)
+        }
         _ => false,
     }
 }

@@ -34,14 +34,47 @@ export const mutations: Mutation[] = [
     breaks:
       "a struct changed in place counts as its own copy, so `kept(p)` shares `p`'s object",
     file: "src/lower/analysis/mutation.rs",
-    find: "        ty::Adt(adt, args) if tcx.is_lang_item(adt.did(), LangItem::Option) => copies_itself(tcx, args.type_at(0)),\n        _ => false,",
-    replace:
-      "        ty::Adt(adt, args) if tcx.is_lang_item(adt.did(), LangItem::Option) => copies_itself(tcx, args.type_at(0)),\n        _ => true,",
+    find: "            let primitive = match adt.is_struct() {\n",
+    replace: "            let primitive = true || match adt.is_struct() {\n",
     tests: [
       "test/lowering-functions.test.ts",
       "-t",
       "a Copy bound takes a copy only",
     ],
+  },
+  {
+    name: "unit-struct-copies-apart",
+    breaks:
+      "a unit struct, `undefined` or its name's string in JS, takes a copy function, so `twice(Marker)` and the vercel UI kernel's `on(target, Click, ..)` are given one",
+    file: "src/lower/analysis/mutation.rs",
+    find: "adt.non_enum_variant().ctor_kind() == Some(rustc_hir::def::CtorKind::Const)",
+    replace: "false",
+    tests: ["test/lowering-functions.test.ts", "-t", "a Copy bound takes a copy only"],
+  },
+  {
+    name: "loud-unit-copies-itself",
+    breaks:
+      "a unit struct whose hand-written `Clone` prints counts as its own copy, so `units_of(&[Unit, Unit])` takes no copy function and never runs its clone",
+    file: "src/lower/analysis/mutation.rs",
+    find: "primitive && crate::lower::std_impls::trivially_cloned(",
+    replace: "primitive || crate::lower::std_impls::trivially_cloned(",
+    tests: ["test/corpus.test.ts", "-t", "^copied_of_a_copy_with_its_own_clone.rs$"],
+  },
+  {
+    name: "string-enum-copies-apart",
+    breaks: "a fieldless enum, a string in JS, takes a copy function, so `twice(mode)` is given one",
+    file: "src/lower/analysis/mutation.rs",
+    find: "crate::lower::representation::is_string_enum(tcx, *adt)\n",
+    replace: "false\n",
+    tests: ["test/lowering-functions.test.ts", "-t", "a Copy bound takes a copy only"],
+  },
+  {
+    name: "numbered-enum-copies-apart",
+    breaks: "a `#[repr(u8)]` fieldless enum, a number in JS, takes a copy function, so `twice(level)` is given one",
+    file: "src/lower/analysis/mutation.rs",
+    find: "|| crate::lower::bindings::numbered(tcx, *adt)\n",
+    replace: "|| false\n",
+    tests: ["test/lowering-functions.test.ts", "-t", "a Copy bound takes a copy only"],
   },
   {
     name: "option-copies-not-itself",

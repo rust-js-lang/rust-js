@@ -412,7 +412,9 @@ How WebIDL maps to Rust, one rule for each:
   `webapi::tags::Button`: a listener is given the event its target and
   name give, a `PointerEvent` of a button's click, and `create_element`
   the element of its tag
-  ([ADR 0223](../../decisions/0223-webapi-event-and-tag-maps.md)). So is
+  ([ADR 0223](../../decisions/0223-webapi-event-and-tag-maps.md)). Each
+  is `Copy`, its value the string, so generic code may keep one to add a
+  listener and later remove it, `Name: Copy`. So is
   a canvas context's id, `webapi::contexts::Context2d`: a canvas's
   `get_context(Context2d, None)` is an `Option<&CanvasRenderingContext2D>`,
   `canvas.getContext("2d")`, `None` of its `null`, its options a struct,

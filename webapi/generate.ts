@@ -3156,12 +3156,13 @@ line(`/// \`Self\` is a \`T\`, or extends one, as WebIDL says: an \`HTMLButtonEl
 line(`/// Unsafe to implement: something that takes a \`T\` is given a \`Self\` unchecked.`);
 line(`pub unsafe trait IsA<T> {}`);
 line();
-line(`/// Each event's name, a type whose value is its string: \`Click\` is \`"click"\` (ADR 0223).`);
+line(`/// Each event's name, a type whose value is its string: \`Click\` is \`"click"\`, and its copy is (ADR 0223).`);
 line(`pub mod events {`);
 eventNames.forEach((name, k) => {
   if (k > 0) line();
   line(`    /// \`"${name}"\``);
   line(`    #[cfg_attr(rust_js, rust_js::name = ${JSON.stringify(name)})]`);
+  line(`    #[derive(Clone, Copy)]`);
   line(`    pub struct ${nameType(name)};`);
 });
 line(`}`);
@@ -3172,6 +3173,7 @@ tagNames.forEach((name, k) => {
   if (k > 0) line();
   line(`    /// \`<${name}>\``);
   line(`    #[cfg_attr(rust_js, rust_js::name = ${JSON.stringify(name)})]`);
+  line(`    #[derive(Clone, Copy)]`);
   line(`    pub struct ${nameType(name)};`);
 });
 line(`}`);
@@ -3182,6 +3184,7 @@ svgTagNames.forEach((name, k) => {
   if (k > 0) line();
   line(`    /// \`<${name}>\``);
   line(`    #[cfg_attr(rust_js, rust_js::name = ${JSON.stringify(name)})]`);
+  line(`    #[derive(Clone, Copy)]`);
   line(`    pub struct ${nameType(name)};`);
 });
 line(`}`);

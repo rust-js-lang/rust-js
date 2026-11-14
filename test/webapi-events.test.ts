@@ -33,6 +33,9 @@ test("event methods and reusable listeners emit direct JavaScript", () => {
   expect(js).toContain('  return function () {\n    isCancelled = true;\n    button.removeEventListener("click", handleNavigateComplete);\n    button.removeEventListener("keydown", handleNavigateComplete);\n  };');
   // A media query list's legacy listener methods, the one kept (#439).
   expect(js).toContain("  list.addListener(changed);\n  list.removeListener(changed);\n  list.addListener(onCustomMedia);\n  list.removeListener(onCustomMedia);");
+  // An event's name given as a value, copied to remove its listener later,
+  // is the string itself, as the vercel UI kernel's `on` (#1817).
+  expect(js).toContain("export function on(target, name, listener, options) {\n  target.addEventListener(name, listener, options);\n  return () => {\n    target.removeEventListener(name, listener, options);\n  };\n}");
   expect(js).not.toMatch(/unreachable|\.add_event_listener|\.client_x|\.prevent_default/);
   // A listener JS gave is passed as it is, and called as JS would (rd185).
   expect(js).toContain('export function givenRemoved(button, given) {\n  button.addEventListener("custom", given);\n  button.removeEventListener("custom", given);\n}');
@@ -124,7 +127,7 @@ test("event listeners dispatch and remove by identity in Chromium", async () => 
   const js = compileEvents();
   const browser = await chromium.launch({ headless: true });
   try {
-    for (const [name, expected] of Object.entries({ methods: [17, 17, 5], mutable: [1, 2], sharedMutable: [1, 2], removed: [], duplicate: [17, 17], different: [17, 17], once: [17], aborted: [], capture: [17, 17], captureRemoved: [], named: [1, 1], namedOnce: [1], namedRemoved: [], namedFnRemoved: [], namedCaptureRemoved: [] })) {
+    for (const [name, expected] of Object.entries({ methods: [17, 17, 5], mutable: [1, 2], sharedMutable: [1, 2], removed: [], duplicate: [17, 17], different: [17, 17], once: [17], aborted: [], capture: [17, 17], captureRemoved: [], named: [1, 1], namedOnce: [1], namedRemoved: [], namedFnRemoved: [], namedCaptureRemoved: [], onAdded: [17, 17], onRemoved: [] })) {
       const page = await browser.newPage();
       await page.setContent('<button id="button">Test</button>');
       const result = await page.evaluate(async ({ js, name }) => {

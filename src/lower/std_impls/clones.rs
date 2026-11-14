@@ -293,8 +293,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// say is its bits, `TrivialClone`, rustc's answer of this toolchain's
     /// std: `#[derive(Clone, Copy)]`'s, a reference's, an array of such.
     pub(in crate::lower) fn copy_clone_runs_code(&self, ty: Ty<'tcx>) -> bool {
-        let trivial = self.tcx.lang_items().get(LangItem::TrivialClone);
-        if trivial.is_some_and(|trivial| self.recognition().implements_trait(ty, trivial)) {
+        if trivially_cloned(self.tcx, self.recognition().typing_env, ty) {
             return false;
         }
         match ty.kind() {
@@ -810,4 +809,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         body.push(StmtKind::Return(Some(value?)).at(js::Span::NONE));
         Ok(Expr::arrow(vec![name.as_str().into()], body))
     }
+}
+
+/// Whether std's own impls say a clone of `ty` is its bits, `TrivialClone`,
+/// rustc's answer of this toolchain's std: `#[derive(Clone, Copy)]`'s, a
+/// reference's, an array of such. What `copy_clone_runs_code` asks first,
+/// and `copies_itself` of a value JS holds as a primitive.
+pub(in crate::lower) fn trivially_cloned<'tcx>(
+    tcx: ty::TyCtxt<'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+    ty: Ty<'tcx>,
+) -> bool {
+    (tcx.lang_items().get(LangItem::TrivialClone))
+        .is_some_and(|trivial| crate::lower::recognition::trait_holds_in(tcx, typing_env, ty, trivial) == Some(true))
 }

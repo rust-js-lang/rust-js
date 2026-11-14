@@ -296,4 +296,28 @@ export function localNavigationListeners(button) {
     button.removeEventListener("keydown", handleNavigateComplete);
   };
 }
+
+/**
+ * A listener added by an event's name given as a value, its marker copied
+ * to remove it later, as the vercel UI kernel's `on` (#1817).
+ */
+export function on(target, name, listener, options) {
+  target.addEventListener(name, listener, options);
+  return () => {
+    target.removeEventListener(name, listener, options);
+  };
+}
+
+export function onAdded(button) {
+  on(button, "click", (e) => {
+    globalThis.record(e.clientX);
+  });
+}
+
+export function onRemoved(button) {
+  const off = on(button, "click", (e) => {
+    globalThis.record(e.clientX);
+  });
+  off();
+}
 //# sourceMappingURL=webapi-events.js.map

@@ -503,8 +503,8 @@ export const mutations: Mutation[] = [
     name: "copy-clone-derive-not-bits",
     breaks: "a clone of a `#[derive(Clone, Copy)]` type of no type parameters calls its fields' hand-written `clone`, where std's derive copies its bits",
     file: "src/lower/std_impls/clones.rs",
-    find: "        if trivial.is_some_and(|trivial| self.recognition().implements_trait(ty, trivial)) {\n",
-    replace: "        if trivial.is_some_and(|_| false) {\n",
+    find: "        if trivially_cloned(self.tcx, self.recognition().typing_env, ty) {\n",
+    replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^copied_of_a_copy_with_its_own_clone.rs$"],
   },
   {

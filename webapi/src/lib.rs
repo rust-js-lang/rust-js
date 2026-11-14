@@ -106865,1034 +106865,1291 @@ pub mod namespaces {
 /// Unsafe to implement: something that takes a `T` is given a `Self` unchecked.
 pub unsafe trait IsA<T> {}
 
-/// Each event's name, a type whose value is its string: `Click` is `"click"` (ADR 0223).
+/// Each event's name, a type whose value is its string: `Click` is `"click"`, and its copy is (ADR 0223).
 pub mod events {
     /// `"DOMActivate"`
     #[cfg_attr(rust_js, rust_js::name = "DOMActivate")]
+    #[derive(Clone, Copy)]
     pub struct DOMActivate;
 
     /// `"DOMContentLoaded"`
     #[cfg_attr(rust_js, rust_js::name = "DOMContentLoaded")]
+    #[derive(Clone, Copy)]
     pub struct DOMContentLoaded;
 
     /// `"DOMFocusIn"`
     #[cfg_attr(rust_js, rust_js::name = "DOMFocusIn")]
+    #[derive(Clone, Copy)]
     pub struct DOMFocusIn;
 
     /// `"DOMFocusOut"`
     #[cfg_attr(rust_js, rust_js::name = "DOMFocusOut")]
+    #[derive(Clone, Copy)]
     pub struct DOMFocusOut;
 
     /// `"abort"`
     #[cfg_attr(rust_js, rust_js::name = "abort")]
+    #[derive(Clone, Copy)]
     pub struct Abort;
 
     /// `"addsourcebuffer"`
     #[cfg_attr(rust_js, rust_js::name = "addsourcebuffer")]
+    #[derive(Clone, Copy)]
     pub struct Addsourcebuffer;
 
     /// `"addtrack"`
     #[cfg_attr(rust_js, rust_js::name = "addtrack")]
+    #[derive(Clone, Copy)]
     pub struct Addtrack;
 
     /// `"afterprint"`
     #[cfg_attr(rust_js, rust_js::name = "afterprint")]
+    #[derive(Clone, Copy)]
     pub struct Afterprint;
 
     /// `"animationcancel"`
     #[cfg_attr(rust_js, rust_js::name = "animationcancel")]
+    #[derive(Clone, Copy)]
     pub struct Animationcancel;
 
     /// `"animationend"`
     #[cfg_attr(rust_js, rust_js::name = "animationend")]
+    #[derive(Clone, Copy)]
     pub struct Animationend;
 
     /// `"animationiteration"`
     #[cfg_attr(rust_js, rust_js::name = "animationiteration")]
+    #[derive(Clone, Copy)]
     pub struct Animationiteration;
 
     /// `"animationstart"`
     #[cfg_attr(rust_js, rust_js::name = "animationstart")]
+    #[derive(Clone, Copy)]
     pub struct Animationstart;
 
     /// `"appinstalled"`
     #[cfg_attr(rust_js, rust_js::name = "appinstalled")]
+    #[derive(Clone, Copy)]
     pub struct Appinstalled;
 
     /// `"audioend"`
     #[cfg_attr(rust_js, rust_js::name = "audioend")]
+    #[derive(Clone, Copy)]
     pub struct Audioend;
 
     /// `"audioprocess"`
     #[cfg_attr(rust_js, rust_js::name = "audioprocess")]
+    #[derive(Clone, Copy)]
     pub struct Audioprocess;
 
     /// `"audiostart"`
     #[cfg_attr(rust_js, rust_js::name = "audiostart")]
+    #[derive(Clone, Copy)]
     pub struct Audiostart;
 
     /// `"autofill"`
     #[cfg_attr(rust_js, rust_js::name = "autofill")]
+    #[derive(Clone, Copy)]
     pub struct Autofill;
 
     /// `"auxclick"`
     #[cfg_attr(rust_js, rust_js::name = "auxclick")]
+    #[derive(Clone, Copy)]
     pub struct Auxclick;
 
     /// `"beforeinput"`
     #[cfg_attr(rust_js, rust_js::name = "beforeinput")]
+    #[derive(Clone, Copy)]
     pub struct Beforeinput;
 
     /// `"beforeinstallprompt"`
     #[cfg_attr(rust_js, rust_js::name = "beforeinstallprompt")]
+    #[derive(Clone, Copy)]
     pub struct Beforeinstallprompt;
 
     /// `"beforematch"`
     #[cfg_attr(rust_js, rust_js::name = "beforematch")]
+    #[derive(Clone, Copy)]
     pub struct Beforematch;
 
     /// `"beforeprint"`
     #[cfg_attr(rust_js, rust_js::name = "beforeprint")]
+    #[derive(Clone, Copy)]
     pub struct Beforeprint;
 
     /// `"beforetoggle"`
     #[cfg_attr(rust_js, rust_js::name = "beforetoggle")]
+    #[derive(Clone, Copy)]
     pub struct Beforetoggle;
 
     /// `"beforeunload"`
     #[cfg_attr(rust_js, rust_js::name = "beforeunload")]
+    #[derive(Clone, Copy)]
     pub struct Beforeunload;
 
     /// `"beforexrselect"`
     #[cfg_attr(rust_js, rust_js::name = "beforexrselect")]
+    #[derive(Clone, Copy)]
     pub struct Beforexrselect;
 
     /// `"begin"`
     #[cfg_attr(rust_js, rust_js::name = "begin")]
+    #[derive(Clone, Copy)]
     pub struct Begin;
 
     /// `"blocked"`
     #[cfg_attr(rust_js, rust_js::name = "blocked")]
+    #[derive(Clone, Copy)]
     pub struct Blocked;
 
     /// `"blur"`
     #[cfg_attr(rust_js, rust_js::name = "blur")]
+    #[derive(Clone, Copy)]
     pub struct Blur;
 
     /// `"boundary"`
     #[cfg_attr(rust_js, rust_js::name = "boundary")]
+    #[derive(Clone, Copy)]
     pub struct Boundary;
 
     /// `"bufferedamountlow"`
     #[cfg_attr(rust_js, rust_js::name = "bufferedamountlow")]
+    #[derive(Clone, Copy)]
     pub struct Bufferedamountlow;
 
     /// `"cancel"`
     #[cfg_attr(rust_js, rust_js::name = "cancel")]
+    #[derive(Clone, Copy)]
     pub struct Cancel;
 
     /// `"canplay"`
     #[cfg_attr(rust_js, rust_js::name = "canplay")]
+    #[derive(Clone, Copy)]
     pub struct Canplay;
 
     /// `"canplaythrough"`
     #[cfg_attr(rust_js, rust_js::name = "canplaythrough")]
+    #[derive(Clone, Copy)]
     pub struct Canplaythrough;
 
     /// `"captureaction"`
     #[cfg_attr(rust_js, rust_js::name = "captureaction")]
+    #[derive(Clone, Copy)]
     pub struct Captureaction;
 
     /// `"capturehandlechange"`
     #[cfg_attr(rust_js, rust_js::name = "capturehandlechange")]
+    #[derive(Clone, Copy)]
     pub struct Capturehandlechange;
 
     /// `"change"`
     #[cfg_attr(rust_js, rust_js::name = "change")]
+    #[derive(Clone, Copy)]
     pub struct Change;
 
     /// `"chargingchange"`
     #[cfg_attr(rust_js, rust_js::name = "chargingchange")]
+    #[derive(Clone, Copy)]
     pub struct Chargingchange;
 
     /// `"chargingtimechange"`
     #[cfg_attr(rust_js, rust_js::name = "chargingtimechange")]
+    #[derive(Clone, Copy)]
     pub struct Chargingtimechange;
 
     /// `"click"`
     #[cfg_attr(rust_js, rust_js::name = "click")]
+    #[derive(Clone, Copy)]
     pub struct Click;
 
     /// `"clipboardchange"`
     #[cfg_attr(rust_js, rust_js::name = "clipboardchange")]
+    #[derive(Clone, Copy)]
     pub struct Clipboardchange;
 
     /// `"close"`
     #[cfg_attr(rust_js, rust_js::name = "close")]
+    #[derive(Clone, Copy)]
     pub struct Close;
 
     /// `"closing"`
     #[cfg_attr(rust_js, rust_js::name = "closing")]
+    #[derive(Clone, Copy)]
     pub struct Closing;
 
     /// `"command"`
     #[cfg_attr(rust_js, rust_js::name = "command")]
+    #[derive(Clone, Copy)]
     pub struct Command;
 
     /// `"complete"`
     #[cfg_attr(rust_js, rust_js::name = "complete")]
+    #[derive(Clone, Copy)]
     pub struct Complete;
 
     /// `"compositionend"`
     #[cfg_attr(rust_js, rust_js::name = "compositionend")]
+    #[derive(Clone, Copy)]
     pub struct Compositionend;
 
     /// `"compositionstart"`
     #[cfg_attr(rust_js, rust_js::name = "compositionstart")]
+    #[derive(Clone, Copy)]
     pub struct Compositionstart;
 
     /// `"compositionupdate"`
     #[cfg_attr(rust_js, rust_js::name = "compositionupdate")]
+    #[derive(Clone, Copy)]
     pub struct Compositionupdate;
 
     /// `"configurationchange"`
     #[cfg_attr(rust_js, rust_js::name = "configurationchange")]
+    #[derive(Clone, Copy)]
     pub struct Configurationchange;
 
     /// `"connect"`
     #[cfg_attr(rust_js, rust_js::name = "connect")]
+    #[derive(Clone, Copy)]
     pub struct Connect;
 
     /// `"connecting"`
     #[cfg_attr(rust_js, rust_js::name = "connecting")]
+    #[derive(Clone, Copy)]
     pub struct Connecting;
 
     /// `"connectionstatechange"`
     #[cfg_attr(rust_js, rust_js::name = "connectionstatechange")]
+    #[derive(Clone, Copy)]
     pub struct Connectionstatechange;
 
     /// `"contentvisibilityautostatechange"`
     #[cfg_attr(rust_js, rust_js::name = "contentvisibilityautostatechange")]
+    #[derive(Clone, Copy)]
     pub struct Contentvisibilityautostatechange;
 
     /// `"contextlost"`
     #[cfg_attr(rust_js, rust_js::name = "contextlost")]
+    #[derive(Clone, Copy)]
     pub struct Contextlost;
 
     /// `"contextmenu"`
     #[cfg_attr(rust_js, rust_js::name = "contextmenu")]
+    #[derive(Clone, Copy)]
     pub struct Contextmenu;
 
     /// `"contextrestored"`
     #[cfg_attr(rust_js, rust_js::name = "contextrestored")]
+    #[derive(Clone, Copy)]
     pub struct Contextrestored;
 
     /// `"controllerchange"`
     #[cfg_attr(rust_js, rust_js::name = "controllerchange")]
+    #[derive(Clone, Copy)]
     pub struct Controllerchange;
 
     /// `"copy"`
     #[cfg_attr(rust_js, rust_js::name = "copy")]
+    #[derive(Clone, Copy)]
     pub struct Copy;
 
     /// `"cuechange"`
     #[cfg_attr(rust_js, rust_js::name = "cuechange")]
+    #[derive(Clone, Copy)]
     pub struct Cuechange;
 
     /// `"currententrychange"`
     #[cfg_attr(rust_js, rust_js::name = "currententrychange")]
+    #[derive(Clone, Copy)]
     pub struct Currententrychange;
 
     /// `"cut"`
     #[cfg_attr(rust_js, rust_js::name = "cut")]
+    #[derive(Clone, Copy)]
     pub struct Cut;
 
     /// `"dataavailable"`
     #[cfg_attr(rust_js, rust_js::name = "dataavailable")]
+    #[derive(Clone, Copy)]
     pub struct Dataavailable;
 
     /// `"datachannel"`
     #[cfg_attr(rust_js, rust_js::name = "datachannel")]
+    #[derive(Clone, Copy)]
     pub struct Datachannel;
 
     /// `"dblclick"`
     #[cfg_attr(rust_js, rust_js::name = "dblclick")]
+    #[derive(Clone, Copy)]
     pub struct Dblclick;
 
     /// `"dequeue"`
     #[cfg_attr(rust_js, rust_js::name = "dequeue")]
+    #[derive(Clone, Copy)]
     pub struct Dequeue;
 
     /// `"devicechange"`
     #[cfg_attr(rust_js, rust_js::name = "devicechange")]
+    #[derive(Clone, Copy)]
     pub struct Devicechange;
 
     /// `"devicemotion"`
     #[cfg_attr(rust_js, rust_js::name = "devicemotion")]
+    #[derive(Clone, Copy)]
     pub struct Devicemotion;
 
     /// `"deviceorientation"`
     #[cfg_attr(rust_js, rust_js::name = "deviceorientation")]
+    #[derive(Clone, Copy)]
     pub struct Deviceorientation;
 
     /// `"deviceorientationabsolute"`
     #[cfg_attr(rust_js, rust_js::name = "deviceorientationabsolute")]
+    #[derive(Clone, Copy)]
     pub struct Deviceorientationabsolute;
 
     /// `"dischargingtimechange"`
     #[cfg_attr(rust_js, rust_js::name = "dischargingtimechange")]
+    #[derive(Clone, Copy)]
     pub struct Dischargingtimechange;
 
     /// `"disconnect"`
     #[cfg_attr(rust_js, rust_js::name = "disconnect")]
+    #[derive(Clone, Copy)]
     pub struct Disconnect;
 
     /// `"dispose"`
     #[cfg_attr(rust_js, rust_js::name = "dispose")]
+    #[derive(Clone, Copy)]
     pub struct Dispose;
 
     /// `"drag"`
     #[cfg_attr(rust_js, rust_js::name = "drag")]
+    #[derive(Clone, Copy)]
     pub struct Drag;
 
     /// `"dragend"`
     #[cfg_attr(rust_js, rust_js::name = "dragend")]
+    #[derive(Clone, Copy)]
     pub struct Dragend;
 
     /// `"dragenter"`
     #[cfg_attr(rust_js, rust_js::name = "dragenter")]
+    #[derive(Clone, Copy)]
     pub struct Dragenter;
 
     /// `"dragleave"`
     #[cfg_attr(rust_js, rust_js::name = "dragleave")]
+    #[derive(Clone, Copy)]
     pub struct Dragleave;
 
     /// `"dragover"`
     #[cfg_attr(rust_js, rust_js::name = "dragover")]
+    #[derive(Clone, Copy)]
     pub struct Dragover;
 
     /// `"dragstart"`
     #[cfg_attr(rust_js, rust_js::name = "dragstart")]
+    #[derive(Clone, Copy)]
     pub struct Dragstart;
 
     /// `"drop"`
     #[cfg_attr(rust_js, rust_js::name = "drop")]
+    #[derive(Clone, Copy)]
     pub struct Drop;
 
     /// `"durationchange"`
     #[cfg_attr(rust_js, rust_js::name = "durationchange")]
+    #[derive(Clone, Copy)]
     pub struct Durationchange;
 
     /// `"emptied"`
     #[cfg_attr(rust_js, rust_js::name = "emptied")]
+    #[derive(Clone, Copy)]
     pub struct Emptied;
 
     /// `"encrypted"`
     #[cfg_attr(rust_js, rust_js::name = "encrypted")]
+    #[derive(Clone, Copy)]
     pub struct Encrypted;
 
     /// `"end"`
     #[cfg_attr(rust_js, rust_js::name = "end")]
+    #[derive(Clone, Copy)]
     pub struct End;
 
     /// `"ended"`
     #[cfg_attr(rust_js, rust_js::name = "ended")]
+    #[derive(Clone, Copy)]
     pub struct Ended;
 
     /// `"enter"`
     #[cfg_attr(rust_js, rust_js::name = "enter")]
+    #[derive(Clone, Copy)]
     pub struct Enter;
 
     /// `"enterpictureinpicture"`
     #[cfg_attr(rust_js, rust_js::name = "enterpictureinpicture")]
+    #[derive(Clone, Copy)]
     pub struct Enterpictureinpicture;
 
     /// `"error"`
     #[cfg_attr(rust_js, rust_js::name = "error")]
+    #[derive(Clone, Copy)]
     pub struct Error;
 
     /// `"exit"`
     #[cfg_attr(rust_js, rust_js::name = "exit")]
+    #[derive(Clone, Copy)]
     pub struct Exit;
 
     /// `"fencedtreeclick"`
     #[cfg_attr(rust_js, rust_js::name = "fencedtreeclick")]
+    #[derive(Clone, Copy)]
     pub struct Fencedtreeclick;
 
     /// `"finish"`
     #[cfg_attr(rust_js, rust_js::name = "finish")]
+    #[derive(Clone, Copy)]
     pub struct Finish;
 
     /// `"focus"`
     #[cfg_attr(rust_js, rust_js::name = "focus")]
+    #[derive(Clone, Copy)]
     pub struct Focus;
 
     /// `"focusin"`
     #[cfg_attr(rust_js, rust_js::name = "focusin")]
+    #[derive(Clone, Copy)]
     pub struct Focusin;
 
     /// `"focusout"`
     #[cfg_attr(rust_js, rust_js::name = "focusout")]
+    #[derive(Clone, Copy)]
     pub struct Focusout;
 
     /// `"formdata"`
     #[cfg_attr(rust_js, rust_js::name = "formdata")]
+    #[derive(Clone, Copy)]
     pub struct Formdata;
 
     /// `"freeze"`
     #[cfg_attr(rust_js, rust_js::name = "freeze")]
+    #[derive(Clone, Copy)]
     pub struct Freeze;
 
     /// `"fullscreenchange"`
     #[cfg_attr(rust_js, rust_js::name = "fullscreenchange")]
+    #[derive(Clone, Copy)]
     pub struct Fullscreenchange;
 
     /// `"fullscreenerror"`
     #[cfg_attr(rust_js, rust_js::name = "fullscreenerror")]
+    #[derive(Clone, Copy)]
     pub struct Fullscreenerror;
 
     /// `"gamepadconnected"`
     #[cfg_attr(rust_js, rust_js::name = "gamepadconnected")]
+    #[derive(Clone, Copy)]
     pub struct Gamepadconnected;
 
     /// `"gamepaddisconnected"`
     #[cfg_attr(rust_js, rust_js::name = "gamepaddisconnected")]
+    #[derive(Clone, Copy)]
     pub struct Gamepaddisconnected;
 
     /// `"gatheringstatechange"`
     #[cfg_attr(rust_js, rust_js::name = "gatheringstatechange")]
+    #[derive(Clone, Copy)]
     pub struct Gatheringstatechange;
 
     /// `"gotpointercapture"`
     #[cfg_attr(rust_js, rust_js::name = "gotpointercapture")]
+    #[derive(Clone, Copy)]
     pub struct Gotpointercapture;
 
     /// `"hashchange"`
     #[cfg_attr(rust_js, rust_js::name = "hashchange")]
+    #[derive(Clone, Copy)]
     pub struct Hashchange;
 
     /// `"icecandidate"`
     #[cfg_attr(rust_js, rust_js::name = "icecandidate")]
+    #[derive(Clone, Copy)]
     pub struct Icecandidate;
 
     /// `"icecandidateerror"`
     #[cfg_attr(rust_js, rust_js::name = "icecandidateerror")]
+    #[derive(Clone, Copy)]
     pub struct Icecandidateerror;
 
     /// `"icecandidatepairadd"`
     #[cfg_attr(rust_js, rust_js::name = "icecandidatepairadd")]
+    #[derive(Clone, Copy)]
     pub struct Icecandidatepairadd;
 
     /// `"icecandidatepairnominate"`
     #[cfg_attr(rust_js, rust_js::name = "icecandidatepairnominate")]
+    #[derive(Clone, Copy)]
     pub struct Icecandidatepairnominate;
 
     /// `"icecandidatepairremove"`
     #[cfg_attr(rust_js, rust_js::name = "icecandidatepairremove")]
+    #[derive(Clone, Copy)]
     pub struct Icecandidatepairremove;
 
     /// `"iceconnectionstatechange"`
     #[cfg_attr(rust_js, rust_js::name = "iceconnectionstatechange")]
+    #[derive(Clone, Copy)]
     pub struct Iceconnectionstatechange;
 
     /// `"icegatheringstatechange"`
     #[cfg_attr(rust_js, rust_js::name = "icegatheringstatechange")]
+    #[derive(Clone, Copy)]
     pub struct Icegatheringstatechange;
 
     /// `"input"`
     #[cfg_attr(rust_js, rust_js::name = "input")]
+    #[derive(Clone, Copy)]
     pub struct Input;
 
     /// `"installresult"`
     #[cfg_attr(rust_js, rust_js::name = "installresult")]
+    #[derive(Clone, Copy)]
     pub struct Installresult;
 
     /// `"invalid"`
     #[cfg_attr(rust_js, rust_js::name = "invalid")]
+    #[derive(Clone, Copy)]
     pub struct Invalid;
 
     /// `"isolationchange"`
     #[cfg_attr(rust_js, rust_js::name = "isolationchange")]
+    #[derive(Clone, Copy)]
     pub struct Isolationchange;
 
     /// `"keydown"`
     #[cfg_attr(rust_js, rust_js::name = "keydown")]
+    #[derive(Clone, Copy)]
     pub struct Keydown;
 
     /// `"keypress"`
     #[cfg_attr(rust_js, rust_js::name = "keypress")]
+    #[derive(Clone, Copy)]
     pub struct Keypress;
 
     /// `"keystatuseschange"`
     #[cfg_attr(rust_js, rust_js::name = "keystatuseschange")]
+    #[derive(Clone, Copy)]
     pub struct Keystatuseschange;
 
     /// `"keyup"`
     #[cfg_attr(rust_js, rust_js::name = "keyup")]
+    #[derive(Clone, Copy)]
     pub struct Keyup;
 
     /// `"languagechange"`
     #[cfg_attr(rust_js, rust_js::name = "languagechange")]
+    #[derive(Clone, Copy)]
     pub struct Languagechange;
 
     /// `"leavepictureinpicture"`
     #[cfg_attr(rust_js, rust_js::name = "leavepictureinpicture")]
+    #[derive(Clone, Copy)]
     pub struct Leavepictureinpicture;
 
     /// `"levelchange"`
     #[cfg_attr(rust_js, rust_js::name = "levelchange")]
+    #[derive(Clone, Copy)]
     pub struct Levelchange;
 
     /// `"load"`
     #[cfg_attr(rust_js, rust_js::name = "load")]
+    #[derive(Clone, Copy)]
     pub struct Load;
 
     /// `"loadeddata"`
     #[cfg_attr(rust_js, rust_js::name = "loadeddata")]
+    #[derive(Clone, Copy)]
     pub struct Loadeddata;
 
     /// `"loadedmetadata"`
     #[cfg_attr(rust_js, rust_js::name = "loadedmetadata")]
+    #[derive(Clone, Copy)]
     pub struct Loadedmetadata;
 
     /// `"loadend"`
     #[cfg_attr(rust_js, rust_js::name = "loadend")]
+    #[derive(Clone, Copy)]
     pub struct Loadend;
 
     /// `"loading"`
     #[cfg_attr(rust_js, rust_js::name = "loading")]
+    #[derive(Clone, Copy)]
     pub struct Loading;
 
     /// `"loadingdone"`
     #[cfg_attr(rust_js, rust_js::name = "loadingdone")]
+    #[derive(Clone, Copy)]
     pub struct Loadingdone;
 
     /// `"loadingerror"`
     #[cfg_attr(rust_js, rust_js::name = "loadingerror")]
+    #[derive(Clone, Copy)]
     pub struct Loadingerror;
 
     /// `"loadstart"`
     #[cfg_attr(rust_js, rust_js::name = "loadstart")]
+    #[derive(Clone, Copy)]
     pub struct Loadstart;
 
     /// `"lostpointercapture"`
     #[cfg_attr(rust_js, rust_js::name = "lostpointercapture")]
+    #[derive(Clone, Copy)]
     pub struct Lostpointercapture;
 
     /// `"mark"`
     #[cfg_attr(rust_js, rust_js::name = "mark")]
+    #[derive(Clone, Copy)]
     pub struct Mark;
 
     /// `"message"`
     #[cfg_attr(rust_js, rust_js::name = "message")]
+    #[derive(Clone, Copy)]
     pub struct Message;
 
     /// `"messageerror"`
     #[cfg_attr(rust_js, rust_js::name = "messageerror")]
+    #[derive(Clone, Copy)]
     pub struct Messageerror;
 
     /// `"midimessage"`
     #[cfg_attr(rust_js, rust_js::name = "midimessage")]
+    #[derive(Clone, Copy)]
     pub struct Midimessage;
 
     /// `"mousedown"`
     #[cfg_attr(rust_js, rust_js::name = "mousedown")]
+    #[derive(Clone, Copy)]
     pub struct Mousedown;
 
     /// `"mouseenter"`
     #[cfg_attr(rust_js, rust_js::name = "mouseenter")]
+    #[derive(Clone, Copy)]
     pub struct Mouseenter;
 
     /// `"mouseleave"`
     #[cfg_attr(rust_js, rust_js::name = "mouseleave")]
+    #[derive(Clone, Copy)]
     pub struct Mouseleave;
 
     /// `"mousemove"`
     #[cfg_attr(rust_js, rust_js::name = "mousemove")]
+    #[derive(Clone, Copy)]
     pub struct Mousemove;
 
     /// `"mouseout"`
     #[cfg_attr(rust_js, rust_js::name = "mouseout")]
+    #[derive(Clone, Copy)]
     pub struct Mouseout;
 
     /// `"mouseover"`
     #[cfg_attr(rust_js, rust_js::name = "mouseover")]
+    #[derive(Clone, Copy)]
     pub struct Mouseover;
 
     /// `"mouseup"`
     #[cfg_attr(rust_js, rust_js::name = "mouseup")]
+    #[derive(Clone, Copy)]
     pub struct Mouseup;
 
     /// `"mute"`
     #[cfg_attr(rust_js, rust_js::name = "mute")]
+    #[derive(Clone, Copy)]
     pub struct Mute;
 
     /// `"navbeforefocus"`
     #[cfg_attr(rust_js, rust_js::name = "navbeforefocus")]
+    #[derive(Clone, Copy)]
     pub struct Navbeforefocus;
 
     /// `"navigate"`
     #[cfg_attr(rust_js, rust_js::name = "navigate")]
+    #[derive(Clone, Copy)]
     pub struct Navigate;
 
     /// `"navigateerror"`
     #[cfg_attr(rust_js, rust_js::name = "navigateerror")]
+    #[derive(Clone, Copy)]
     pub struct Navigateerror;
 
     /// `"navigatesuccess"`
     #[cfg_attr(rust_js, rust_js::name = "navigatesuccess")]
+    #[derive(Clone, Copy)]
     pub struct Navigatesuccess;
 
     /// `"navnotarget"`
     #[cfg_attr(rust_js, rust_js::name = "navnotarget")]
+    #[derive(Clone, Copy)]
     pub struct Navnotarget;
 
     /// `"negotiationneeded"`
     #[cfg_attr(rust_js, rust_js::name = "negotiationneeded")]
+    #[derive(Clone, Copy)]
     pub struct Negotiationneeded;
 
     /// `"nomatch"`
     #[cfg_attr(rust_js, rust_js::name = "nomatch")]
+    #[derive(Clone, Copy)]
     pub struct Nomatch;
 
     /// `"offline"`
     #[cfg_attr(rust_js, rust_js::name = "offline")]
+    #[derive(Clone, Copy)]
     pub struct Offline;
 
     /// `"online"`
     #[cfg_attr(rust_js, rust_js::name = "online")]
+    #[derive(Clone, Copy)]
     pub struct Online;
 
     /// `"open"`
     #[cfg_attr(rust_js, rust_js::name = "open")]
+    #[derive(Clone, Copy)]
     pub struct Open;
 
     /// `"orientationchange"`
     #[cfg_attr(rust_js, rust_js::name = "orientationchange")]
+    #[derive(Clone, Copy)]
     pub struct Orientationchange;
 
     /// `"pagehide"`
     #[cfg_attr(rust_js, rust_js::name = "pagehide")]
+    #[derive(Clone, Copy)]
     pub struct Pagehide;
 
     /// `"pagereveal"`
     #[cfg_attr(rust_js, rust_js::name = "pagereveal")]
+    #[derive(Clone, Copy)]
     pub struct Pagereveal;
 
     /// `"pageshow"`
     #[cfg_attr(rust_js, rust_js::name = "pageshow")]
+    #[derive(Clone, Copy)]
     pub struct Pageshow;
 
     /// `"pageswap"`
     #[cfg_attr(rust_js, rust_js::name = "pageswap")]
+    #[derive(Clone, Copy)]
     pub struct Pageswap;
 
     /// `"paste"`
     #[cfg_attr(rust_js, rust_js::name = "paste")]
+    #[derive(Clone, Copy)]
     pub struct Paste;
 
     /// `"pause"`
     #[cfg_attr(rust_js, rust_js::name = "pause")]
+    #[derive(Clone, Copy)]
     pub struct Pause;
 
     /// `"payerdetailchange"`
     #[cfg_attr(rust_js, rust_js::name = "payerdetailchange")]
+    #[derive(Clone, Copy)]
     pub struct Payerdetailchange;
 
     /// `"paymentmethodchange"`
     #[cfg_attr(rust_js, rust_js::name = "paymentmethodchange")]
+    #[derive(Clone, Copy)]
     pub struct Paymentmethodchange;
 
     /// `"play"`
     #[cfg_attr(rust_js, rust_js::name = "play")]
+    #[derive(Clone, Copy)]
     pub struct Play;
 
     /// `"playing"`
     #[cfg_attr(rust_js, rust_js::name = "playing")]
+    #[derive(Clone, Copy)]
     pub struct Playing;
 
     /// `"pointercancel"`
     #[cfg_attr(rust_js, rust_js::name = "pointercancel")]
+    #[derive(Clone, Copy)]
     pub struct Pointercancel;
 
     /// `"pointerdown"`
     #[cfg_attr(rust_js, rust_js::name = "pointerdown")]
+    #[derive(Clone, Copy)]
     pub struct Pointerdown;
 
     /// `"pointerenter"`
     #[cfg_attr(rust_js, rust_js::name = "pointerenter")]
+    #[derive(Clone, Copy)]
     pub struct Pointerenter;
 
     /// `"pointerleave"`
     #[cfg_attr(rust_js, rust_js::name = "pointerleave")]
+    #[derive(Clone, Copy)]
     pub struct Pointerleave;
 
     /// `"pointerlockchange"`
     #[cfg_attr(rust_js, rust_js::name = "pointerlockchange")]
+    #[derive(Clone, Copy)]
     pub struct Pointerlockchange;
 
     /// `"pointerlockerror"`
     #[cfg_attr(rust_js, rust_js::name = "pointerlockerror")]
+    #[derive(Clone, Copy)]
     pub struct Pointerlockerror;
 
     /// `"pointermove"`
     #[cfg_attr(rust_js, rust_js::name = "pointermove")]
+    #[derive(Clone, Copy)]
     pub struct Pointermove;
 
     /// `"pointerout"`
     #[cfg_attr(rust_js, rust_js::name = "pointerout")]
+    #[derive(Clone, Copy)]
     pub struct Pointerout;
 
     /// `"pointerover"`
     #[cfg_attr(rust_js, rust_js::name = "pointerover")]
+    #[derive(Clone, Copy)]
     pub struct Pointerover;
 
     /// `"pointerrawupdate"`
     #[cfg_attr(rust_js, rust_js::name = "pointerrawupdate")]
+    #[derive(Clone, Copy)]
     pub struct Pointerrawupdate;
 
     /// `"pointerup"`
     #[cfg_attr(rust_js, rust_js::name = "pointerup")]
+    #[derive(Clone, Copy)]
     pub struct Pointerup;
 
     /// `"popstate"`
     #[cfg_attr(rust_js, rust_js::name = "popstate")]
+    #[derive(Clone, Copy)]
     pub struct Popstate;
 
     /// `"portalactivate"`
     #[cfg_attr(rust_js, rust_js::name = "portalactivate")]
+    #[derive(Clone, Copy)]
     pub struct Portalactivate;
 
     /// `"prerenderingchange"`
     #[cfg_attr(rust_js, rust_js::name = "prerenderingchange")]
+    #[derive(Clone, Copy)]
     pub struct Prerenderingchange;
 
     /// `"prioritychange"`
     #[cfg_attr(rust_js, rust_js::name = "prioritychange")]
+    #[derive(Clone, Copy)]
     pub struct Prioritychange;
 
     /// `"processorerror"`
     #[cfg_attr(rust_js, rust_js::name = "processorerror")]
+    #[derive(Clone, Copy)]
     pub struct Processorerror;
 
     /// `"progress"`
     #[cfg_attr(rust_js, rust_js::name = "progress")]
+    #[derive(Clone, Copy)]
     pub struct Progress;
 
     /// `"promptaction"`
     #[cfg_attr(rust_js, rust_js::name = "promptaction")]
+    #[derive(Clone, Copy)]
     pub struct Promptaction;
 
     /// `"promptdismiss"`
     #[cfg_attr(rust_js, rust_js::name = "promptdismiss")]
+    #[derive(Clone, Copy)]
     pub struct Promptdismiss;
 
     /// `"ratechange"`
     #[cfg_attr(rust_js, rust_js::name = "ratechange")]
+    #[derive(Clone, Copy)]
     pub struct Ratechange;
 
     /// `"readystatechange"`
     #[cfg_attr(rust_js, rust_js::name = "readystatechange")]
+    #[derive(Clone, Copy)]
     pub struct Readystatechange;
 
     /// `"rejectionhandled"`
     #[cfg_attr(rust_js, rust_js::name = "rejectionhandled")]
+    #[derive(Clone, Copy)]
     pub struct Rejectionhandled;
 
     /// `"release"`
     #[cfg_attr(rust_js, rust_js::name = "release")]
+    #[derive(Clone, Copy)]
     pub struct Release;
 
     /// `"remove"`
     #[cfg_attr(rust_js, rust_js::name = "remove")]
+    #[derive(Clone, Copy)]
     pub struct Remove;
 
     /// `"removesourcebuffer"`
     #[cfg_attr(rust_js, rust_js::name = "removesourcebuffer")]
+    #[derive(Clone, Copy)]
     pub struct Removesourcebuffer;
 
     /// `"removetrack"`
     #[cfg_attr(rust_js, rust_js::name = "removetrack")]
+    #[derive(Clone, Copy)]
     pub struct Removetrack;
 
     /// `"repeat"`
     #[cfg_attr(rust_js, rust_js::name = "repeat")]
+    #[derive(Clone, Copy)]
     pub struct Repeat;
 
     /// `"reset"`
     #[cfg_attr(rust_js, rust_js::name = "reset")]
+    #[derive(Clone, Copy)]
     pub struct Reset;
 
     /// `"resize"`
     #[cfg_attr(rust_js, rust_js::name = "resize")]
+    #[derive(Clone, Copy)]
     pub struct Resize;
 
     /// `"resourcetimingbufferfull"`
     #[cfg_attr(rust_js, rust_js::name = "resourcetimingbufferfull")]
+    #[derive(Clone, Copy)]
     pub struct Resourcetimingbufferfull;
 
     /// `"result"`
     #[cfg_attr(rust_js, rust_js::name = "result")]
+    #[derive(Clone, Copy)]
     pub struct Result;
 
     /// `"resume"`
     #[cfg_attr(rust_js, rust_js::name = "resume")]
+    #[derive(Clone, Copy)]
     pub struct Resume;
 
     /// `"scroll"`
     #[cfg_attr(rust_js, rust_js::name = "scroll")]
+    #[derive(Clone, Copy)]
     pub struct Scroll;
 
     /// `"scrollend"`
     #[cfg_attr(rust_js, rust_js::name = "scrollend")]
+    #[derive(Clone, Copy)]
     pub struct Scrollend;
 
     /// `"securitypolicyviolation"`
     #[cfg_attr(rust_js, rust_js::name = "securitypolicyviolation")]
+    #[derive(Clone, Copy)]
     pub struct Securitypolicyviolation;
 
     /// `"seeked"`
     #[cfg_attr(rust_js, rust_js::name = "seeked")]
+    #[derive(Clone, Copy)]
     pub struct Seeked;
 
     /// `"seeking"`
     #[cfg_attr(rust_js, rust_js::name = "seeking")]
+    #[derive(Clone, Copy)]
     pub struct Seeking;
 
     /// `"select"`
     #[cfg_attr(rust_js, rust_js::name = "select")]
+    #[derive(Clone, Copy)]
     pub struct Select;
 
     /// `"selectedcandidatepairchange"`
     #[cfg_attr(rust_js, rust_js::name = "selectedcandidatepairchange")]
+    #[derive(Clone, Copy)]
     pub struct Selectedcandidatepairchange;
 
     /// `"selectionchange"`
     #[cfg_attr(rust_js, rust_js::name = "selectionchange")]
+    #[derive(Clone, Copy)]
     pub struct Selectionchange;
 
     /// `"selectstart"`
     #[cfg_attr(rust_js, rust_js::name = "selectstart")]
+    #[derive(Clone, Copy)]
     pub struct Selectstart;
 
     /// `"shippingaddresschange"`
     #[cfg_attr(rust_js, rust_js::name = "shippingaddresschange")]
+    #[derive(Clone, Copy)]
     pub struct Shippingaddresschange;
 
     /// `"shippingoptionchange"`
     #[cfg_attr(rust_js, rust_js::name = "shippingoptionchange")]
+    #[derive(Clone, Copy)]
     pub struct Shippingoptionchange;
 
     /// `"show"`
     #[cfg_attr(rust_js, rust_js::name = "show")]
+    #[derive(Clone, Copy)]
     pub struct Show;
 
     /// `"signalingstatechange"`
     #[cfg_attr(rust_js, rust_js::name = "signalingstatechange")]
+    #[derive(Clone, Copy)]
     pub struct Signalingstatechange;
 
     /// `"sinkchange"`
     #[cfg_attr(rust_js, rust_js::name = "sinkchange")]
+    #[derive(Clone, Copy)]
     pub struct Sinkchange;
 
     /// `"slotchange"`
     #[cfg_attr(rust_js, rust_js::name = "slotchange")]
+    #[derive(Clone, Copy)]
     pub struct Slotchange;
 
     /// `"soundend"`
     #[cfg_attr(rust_js, rust_js::name = "soundend")]
+    #[derive(Clone, Copy)]
     pub struct Soundend;
 
     /// `"soundstart"`
     #[cfg_attr(rust_js, rust_js::name = "soundstart")]
+    #[derive(Clone, Copy)]
     pub struct Soundstart;
 
     /// `"sourceclose"`
     #[cfg_attr(rust_js, rust_js::name = "sourceclose")]
+    #[derive(Clone, Copy)]
     pub struct Sourceclose;
 
     /// `"sourceended"`
     #[cfg_attr(rust_js, rust_js::name = "sourceended")]
+    #[derive(Clone, Copy)]
     pub struct Sourceended;
 
     /// `"sourceopen"`
     #[cfg_attr(rust_js, rust_js::name = "sourceopen")]
+    #[derive(Clone, Copy)]
     pub struct Sourceopen;
 
     /// `"speechend"`
     #[cfg_attr(rust_js, rust_js::name = "speechend")]
+    #[derive(Clone, Copy)]
     pub struct Speechend;
 
     /// `"speechstart"`
     #[cfg_attr(rust_js, rust_js::name = "speechstart")]
+    #[derive(Clone, Copy)]
     pub struct Speechstart;
 
     /// `"stalled"`
     #[cfg_attr(rust_js, rust_js::name = "stalled")]
+    #[derive(Clone, Copy)]
     pub struct Stalled;
 
     /// `"start"`
     #[cfg_attr(rust_js, rust_js::name = "start")]
+    #[derive(Clone, Copy)]
     pub struct Start;
 
     /// `"statechange"`
     #[cfg_attr(rust_js, rust_js::name = "statechange")]
+    #[derive(Clone, Copy)]
     pub struct Statechange;
 
     /// `"stop"`
     #[cfg_attr(rust_js, rust_js::name = "stop")]
+    #[derive(Clone, Copy)]
     pub struct Stop;
 
     /// `"storage"`
     #[cfg_attr(rust_js, rust_js::name = "storage")]
+    #[derive(Clone, Copy)]
     pub struct Storage;
 
     /// `"submit"`
     #[cfg_attr(rust_js, rust_js::name = "submit")]
+    #[derive(Clone, Copy)]
     pub struct Submit;
 
     /// `"success"`
     #[cfg_attr(rust_js, rust_js::name = "success")]
+    #[derive(Clone, Copy)]
     pub struct Success;
 
     /// `"suspend"`
     #[cfg_attr(rust_js, rust_js::name = "suspend")]
+    #[derive(Clone, Copy)]
     pub struct Suspend;
 
     /// `"textInput"`
     #[cfg_attr(rust_js, rust_js::name = "textInput")]
+    #[derive(Clone, Copy)]
     pub struct TextInput;
 
     /// `"timeout"`
     #[cfg_attr(rust_js, rust_js::name = "timeout")]
+    #[derive(Clone, Copy)]
     pub struct Timeout;
 
     /// `"timeupdate"`
     #[cfg_attr(rust_js, rust_js::name = "timeupdate")]
+    #[derive(Clone, Copy)]
     pub struct Timeupdate;
 
     /// `"toggle"`
     #[cfg_attr(rust_js, rust_js::name = "toggle")]
+    #[derive(Clone, Copy)]
     pub struct Toggle;
 
     /// `"tonechange"`
     #[cfg_attr(rust_js, rust_js::name = "tonechange")]
+    #[derive(Clone, Copy)]
     pub struct Tonechange;
 
     /// `"touchcancel"`
     #[cfg_attr(rust_js, rust_js::name = "touchcancel")]
+    #[derive(Clone, Copy)]
     pub struct Touchcancel;
 
     /// `"touchend"`
     #[cfg_attr(rust_js, rust_js::name = "touchend")]
+    #[derive(Clone, Copy)]
     pub struct Touchend;
 
     /// `"touchmove"`
     #[cfg_attr(rust_js, rust_js::name = "touchmove")]
+    #[derive(Clone, Copy)]
     pub struct Touchmove;
 
     /// `"touchstart"`
     #[cfg_attr(rust_js, rust_js::name = "touchstart")]
+    #[derive(Clone, Copy)]
     pub struct Touchstart;
 
     /// `"track"`
     #[cfg_attr(rust_js, rust_js::name = "track")]
+    #[derive(Clone, Copy)]
     pub struct Track;
 
     /// `"transitioncancel"`
     #[cfg_attr(rust_js, rust_js::name = "transitioncancel")]
+    #[derive(Clone, Copy)]
     pub struct Transitioncancel;
 
     /// `"transitionend"`
     #[cfg_attr(rust_js, rust_js::name = "transitionend")]
+    #[derive(Clone, Copy)]
     pub struct Transitionend;
 
     /// `"transitionrun"`
     #[cfg_attr(rust_js, rust_js::name = "transitionrun")]
+    #[derive(Clone, Copy)]
     pub struct Transitionrun;
 
     /// `"transitionstart"`
     #[cfg_attr(rust_js, rust_js::name = "transitionstart")]
+    #[derive(Clone, Copy)]
     pub struct Transitionstart;
 
     /// `"uncapturederror"`
     #[cfg_attr(rust_js, rust_js::name = "uncapturederror")]
+    #[derive(Clone, Copy)]
     pub struct Uncapturederror;
 
     /// `"unhandledrejection"`
     #[cfg_attr(rust_js, rust_js::name = "unhandledrejection")]
+    #[derive(Clone, Copy)]
     pub struct Unhandledrejection;
 
     /// `"unload"`
     #[cfg_attr(rust_js, rust_js::name = "unload")]
+    #[derive(Clone, Copy)]
     pub struct Unload;
 
     /// `"unmute"`
     #[cfg_attr(rust_js, rust_js::name = "unmute")]
+    #[derive(Clone, Copy)]
     pub struct Unmute;
 
     /// `"update"`
     #[cfg_attr(rust_js, rust_js::name = "update")]
+    #[derive(Clone, Copy)]
     pub struct Update;
 
     /// `"updateend"`
     #[cfg_attr(rust_js, rust_js::name = "updateend")]
+    #[derive(Clone, Copy)]
     pub struct Updateend;
 
     /// `"updatefound"`
     #[cfg_attr(rust_js, rust_js::name = "updatefound")]
+    #[derive(Clone, Copy)]
     pub struct Updatefound;
 
     /// `"updatestart"`
     #[cfg_attr(rust_js, rust_js::name = "updatestart")]
+    #[derive(Clone, Copy)]
     pub struct Updatestart;
 
     /// `"upgradeneeded"`
     #[cfg_attr(rust_js, rust_js::name = "upgradeneeded")]
+    #[derive(Clone, Copy)]
     pub struct Upgradeneeded;
 
     /// `"validationstatuschange"`
     #[cfg_attr(rust_js, rust_js::name = "validationstatuschange")]
+    #[derive(Clone, Copy)]
     pub struct Validationstatuschange;
 
     /// `"versionchange"`
     #[cfg_attr(rust_js, rust_js::name = "versionchange")]
+    #[derive(Clone, Copy)]
     pub struct Versionchange;
 
     /// `"visibilitychange"`
     #[cfg_attr(rust_js, rust_js::name = "visibilitychange")]
+    #[derive(Clone, Copy)]
     pub struct Visibilitychange;
 
     /// `"voiceschanged"`
     #[cfg_attr(rust_js, rust_js::name = "voiceschanged")]
+    #[derive(Clone, Copy)]
     pub struct Voiceschanged;
 
     /// `"volumechange"`
     #[cfg_attr(rust_js, rust_js::name = "volumechange")]
+    #[derive(Clone, Copy)]
     pub struct Volumechange;
 
     /// `"waiting"`
     #[cfg_attr(rust_js, rust_js::name = "waiting")]
+    #[derive(Clone, Copy)]
     pub struct Waiting;
 
     /// `"waitingforkey"`
     #[cfg_attr(rust_js, rust_js::name = "waitingforkey")]
+    #[derive(Clone, Copy)]
     pub struct Waitingforkey;
 
     /// `"webglcontextcreationerror"`
     #[cfg_attr(rust_js, rust_js::name = "webglcontextcreationerror")]
+    #[derive(Clone, Copy)]
     pub struct Webglcontextcreationerror;
 
     /// `"webglcontextlost"`
     #[cfg_attr(rust_js, rust_js::name = "webglcontextlost")]
+    #[derive(Clone, Copy)]
     pub struct Webglcontextlost;
 
     /// `"webglcontextrestored"`
     #[cfg_attr(rust_js, rust_js::name = "webglcontextrestored")]
+    #[derive(Clone, Copy)]
     pub struct Webglcontextrestored;
 
     /// `"wheel"`
     #[cfg_attr(rust_js, rust_js::name = "wheel")]
+    #[derive(Clone, Copy)]
     pub struct Wheel;
 }
 
@@ -107900,494 +108157,617 @@ pub mod events {
 pub mod tags {
     /// `<a>`
     #[cfg_attr(rust_js, rust_js::name = "a")]
+    #[derive(Clone, Copy)]
     pub struct A;
 
     /// `<abbr>`
     #[cfg_attr(rust_js, rust_js::name = "abbr")]
+    #[derive(Clone, Copy)]
     pub struct Abbr;
 
     /// `<address>`
     #[cfg_attr(rust_js, rust_js::name = "address")]
+    #[derive(Clone, Copy)]
     pub struct Address;
 
     /// `<area>`
     #[cfg_attr(rust_js, rust_js::name = "area")]
+    #[derive(Clone, Copy)]
     pub struct Area;
 
     /// `<article>`
     #[cfg_attr(rust_js, rust_js::name = "article")]
+    #[derive(Clone, Copy)]
     pub struct Article;
 
     /// `<aside>`
     #[cfg_attr(rust_js, rust_js::name = "aside")]
+    #[derive(Clone, Copy)]
     pub struct Aside;
 
     /// `<audio>`
     #[cfg_attr(rust_js, rust_js::name = "audio")]
+    #[derive(Clone, Copy)]
     pub struct Audio;
 
     /// `<b>`
     #[cfg_attr(rust_js, rust_js::name = "b")]
+    #[derive(Clone, Copy)]
     pub struct B;
 
     /// `<base>`
     #[cfg_attr(rust_js, rust_js::name = "base")]
+    #[derive(Clone, Copy)]
     pub struct Base;
 
     /// `<bdi>`
     #[cfg_attr(rust_js, rust_js::name = "bdi")]
+    #[derive(Clone, Copy)]
     pub struct Bdi;
 
     /// `<bdo>`
     #[cfg_attr(rust_js, rust_js::name = "bdo")]
+    #[derive(Clone, Copy)]
     pub struct Bdo;
 
     /// `<blockquote>`
     #[cfg_attr(rust_js, rust_js::name = "blockquote")]
+    #[derive(Clone, Copy)]
     pub struct Blockquote;
 
     /// `<body>`
     #[cfg_attr(rust_js, rust_js::name = "body")]
+    #[derive(Clone, Copy)]
     pub struct Body;
 
     /// `<br>`
     #[cfg_attr(rust_js, rust_js::name = "br")]
+    #[derive(Clone, Copy)]
     pub struct Br;
 
     /// `<button>`
     #[cfg_attr(rust_js, rust_js::name = "button")]
+    #[derive(Clone, Copy)]
     pub struct Button;
 
     /// `<camera>`
     #[cfg_attr(rust_js, rust_js::name = "camera")]
+    #[derive(Clone, Copy)]
     pub struct Camera;
 
     /// `<canvas>`
     #[cfg_attr(rust_js, rust_js::name = "canvas")]
+    #[derive(Clone, Copy)]
     pub struct Canvas;
 
     /// `<caption>`
     #[cfg_attr(rust_js, rust_js::name = "caption")]
+    #[derive(Clone, Copy)]
     pub struct Caption;
 
     /// `<cite>`
     #[cfg_attr(rust_js, rust_js::name = "cite")]
+    #[derive(Clone, Copy)]
     pub struct Cite;
 
     /// `<code>`
     #[cfg_attr(rust_js, rust_js::name = "code")]
+    #[derive(Clone, Copy)]
     pub struct Code;
 
     /// `<col>`
     #[cfg_attr(rust_js, rust_js::name = "col")]
+    #[derive(Clone, Copy)]
     pub struct Col;
 
     /// `<colgroup>`
     #[cfg_attr(rust_js, rust_js::name = "colgroup")]
+    #[derive(Clone, Copy)]
     pub struct Colgroup;
 
     /// `<data>`
     #[cfg_attr(rust_js, rust_js::name = "data")]
+    #[derive(Clone, Copy)]
     pub struct Data;
 
     /// `<datalist>`
     #[cfg_attr(rust_js, rust_js::name = "datalist")]
+    #[derive(Clone, Copy)]
     pub struct Datalist;
 
     /// `<dd>`
     #[cfg_attr(rust_js, rust_js::name = "dd")]
+    #[derive(Clone, Copy)]
     pub struct Dd;
 
     /// `<del>`
     #[cfg_attr(rust_js, rust_js::name = "del")]
+    #[derive(Clone, Copy)]
     pub struct Del;
 
     /// `<details>`
     #[cfg_attr(rust_js, rust_js::name = "details")]
+    #[derive(Clone, Copy)]
     pub struct Details;
 
     /// `<dfn>`
     #[cfg_attr(rust_js, rust_js::name = "dfn")]
+    #[derive(Clone, Copy)]
     pub struct Dfn;
 
     /// `<dialog>`
     #[cfg_attr(rust_js, rust_js::name = "dialog")]
+    #[derive(Clone, Copy)]
     pub struct Dialog;
 
     /// `<div>`
     #[cfg_attr(rust_js, rust_js::name = "div")]
+    #[derive(Clone, Copy)]
     pub struct Div;
 
     /// `<dl>`
     #[cfg_attr(rust_js, rust_js::name = "dl")]
+    #[derive(Clone, Copy)]
     pub struct Dl;
 
     /// `<dt>`
     #[cfg_attr(rust_js, rust_js::name = "dt")]
+    #[derive(Clone, Copy)]
     pub struct Dt;
 
     /// `<em>`
     #[cfg_attr(rust_js, rust_js::name = "em")]
+    #[derive(Clone, Copy)]
     pub struct Em;
 
     /// `<embed>`
     #[cfg_attr(rust_js, rust_js::name = "embed")]
+    #[derive(Clone, Copy)]
     pub struct Embed;
 
     /// `<fencedframe>`
     #[cfg_attr(rust_js, rust_js::name = "fencedframe")]
+    #[derive(Clone, Copy)]
     pub struct Fencedframe;
 
     /// `<fieldset>`
     #[cfg_attr(rust_js, rust_js::name = "fieldset")]
+    #[derive(Clone, Copy)]
     pub struct Fieldset;
 
     /// `<figcaption>`
     #[cfg_attr(rust_js, rust_js::name = "figcaption")]
+    #[derive(Clone, Copy)]
     pub struct Figcaption;
 
     /// `<figure>`
     #[cfg_attr(rust_js, rust_js::name = "figure")]
+    #[derive(Clone, Copy)]
     pub struct Figure;
 
     /// `<footer>`
     #[cfg_attr(rust_js, rust_js::name = "footer")]
+    #[derive(Clone, Copy)]
     pub struct Footer;
 
     /// `<form>`
     #[cfg_attr(rust_js, rust_js::name = "form")]
+    #[derive(Clone, Copy)]
     pub struct Form;
 
     /// `<geolocation>`
     #[cfg_attr(rust_js, rust_js::name = "geolocation")]
+    #[derive(Clone, Copy)]
     pub struct Geolocation;
 
     /// `<h1>`
     #[cfg_attr(rust_js, rust_js::name = "h1")]
+    #[derive(Clone, Copy)]
     pub struct H1;
 
     /// `<h2>`
     #[cfg_attr(rust_js, rust_js::name = "h2")]
+    #[derive(Clone, Copy)]
     pub struct H2;
 
     /// `<h3>`
     #[cfg_attr(rust_js, rust_js::name = "h3")]
+    #[derive(Clone, Copy)]
     pub struct H3;
 
     /// `<h4>`
     #[cfg_attr(rust_js, rust_js::name = "h4")]
+    #[derive(Clone, Copy)]
     pub struct H4;
 
     /// `<h5>`
     #[cfg_attr(rust_js, rust_js::name = "h5")]
+    #[derive(Clone, Copy)]
     pub struct H5;
 
     /// `<h6>`
     #[cfg_attr(rust_js, rust_js::name = "h6")]
+    #[derive(Clone, Copy)]
     pub struct H6;
 
     /// `<head>`
     #[cfg_attr(rust_js, rust_js::name = "head")]
+    #[derive(Clone, Copy)]
     pub struct Head;
 
     /// `<header>`
     #[cfg_attr(rust_js, rust_js::name = "header")]
+    #[derive(Clone, Copy)]
     pub struct Header;
 
     /// `<hgroup>`
     #[cfg_attr(rust_js, rust_js::name = "hgroup")]
+    #[derive(Clone, Copy)]
     pub struct Hgroup;
 
     /// `<hr>`
     #[cfg_attr(rust_js, rust_js::name = "hr")]
+    #[derive(Clone, Copy)]
     pub struct Hr;
 
     /// `<html>`
     #[cfg_attr(rust_js, rust_js::name = "html")]
+    #[derive(Clone, Copy)]
     pub struct Html;
 
     /// `<i>`
     #[cfg_attr(rust_js, rust_js::name = "i")]
+    #[derive(Clone, Copy)]
     pub struct I;
 
     /// `<iframe>`
     #[cfg_attr(rust_js, rust_js::name = "iframe")]
+    #[derive(Clone, Copy)]
     pub struct Iframe;
 
     /// `<img>`
     #[cfg_attr(rust_js, rust_js::name = "img")]
+    #[derive(Clone, Copy)]
     pub struct Img;
 
     /// `<input>`
     #[cfg_attr(rust_js, rust_js::name = "input")]
+    #[derive(Clone, Copy)]
     pub struct Input;
 
     /// `<ins>`
     #[cfg_attr(rust_js, rust_js::name = "ins")]
+    #[derive(Clone, Copy)]
     pub struct Ins;
 
     /// `<install>`
     #[cfg_attr(rust_js, rust_js::name = "install")]
+    #[derive(Clone, Copy)]
     pub struct Install;
 
     /// `<kbd>`
     #[cfg_attr(rust_js, rust_js::name = "kbd")]
+    #[derive(Clone, Copy)]
     pub struct Kbd;
 
     /// `<label>`
     #[cfg_attr(rust_js, rust_js::name = "label")]
+    #[derive(Clone, Copy)]
     pub struct Label;
 
     /// `<legend>`
     #[cfg_attr(rust_js, rust_js::name = "legend")]
+    #[derive(Clone, Copy)]
     pub struct Legend;
 
     /// `<li>`
     #[cfg_attr(rust_js, rust_js::name = "li")]
+    #[derive(Clone, Copy)]
     pub struct Li;
 
     /// `<link>`
     #[cfg_attr(rust_js, rust_js::name = "link")]
+    #[derive(Clone, Copy)]
     pub struct Link;
 
     /// `<main>`
     #[cfg_attr(rust_js, rust_js::name = "main")]
+    #[derive(Clone, Copy)]
     pub struct Main;
 
     /// `<map>`
     #[cfg_attr(rust_js, rust_js::name = "map")]
+    #[derive(Clone, Copy)]
     pub struct Map;
 
     /// `<mark>`
     #[cfg_attr(rust_js, rust_js::name = "mark")]
+    #[derive(Clone, Copy)]
     pub struct Mark;
 
     /// `<menu>`
     #[cfg_attr(rust_js, rust_js::name = "menu")]
+    #[derive(Clone, Copy)]
     pub struct Menu;
 
     /// `<meta>`
     #[cfg_attr(rust_js, rust_js::name = "meta")]
+    #[derive(Clone, Copy)]
     pub struct Meta;
 
     /// `<meter>`
     #[cfg_attr(rust_js, rust_js::name = "meter")]
+    #[derive(Clone, Copy)]
     pub struct Meter;
 
     /// `<microphone>`
     #[cfg_attr(rust_js, rust_js::name = "microphone")]
+    #[derive(Clone, Copy)]
     pub struct Microphone;
 
     /// `<model>`
     #[cfg_attr(rust_js, rust_js::name = "model")]
+    #[derive(Clone, Copy)]
     pub struct Model;
 
     /// `<nav>`
     #[cfg_attr(rust_js, rust_js::name = "nav")]
+    #[derive(Clone, Copy)]
     pub struct Nav;
 
     /// `<noscript>`
     #[cfg_attr(rust_js, rust_js::name = "noscript")]
+    #[derive(Clone, Copy)]
     pub struct Noscript;
 
     /// `<object>`
     #[cfg_attr(rust_js, rust_js::name = "object")]
+    #[derive(Clone, Copy)]
     pub struct Object;
 
     /// `<ol>`
     #[cfg_attr(rust_js, rust_js::name = "ol")]
+    #[derive(Clone, Copy)]
     pub struct Ol;
 
     /// `<optgroup>`
     #[cfg_attr(rust_js, rust_js::name = "optgroup")]
+    #[derive(Clone, Copy)]
     pub struct Optgroup;
 
     /// `<option>`
     #[cfg_attr(rust_js, rust_js::name = "option")]
+    #[derive(Clone, Copy)]
     pub struct Option;
 
     /// `<output>`
     #[cfg_attr(rust_js, rust_js::name = "output")]
+    #[derive(Clone, Copy)]
     pub struct Output;
 
     /// `<p>`
     #[cfg_attr(rust_js, rust_js::name = "p")]
+    #[derive(Clone, Copy)]
     pub struct P;
 
     /// `<picture>`
     #[cfg_attr(rust_js, rust_js::name = "picture")]
+    #[derive(Clone, Copy)]
     pub struct Picture;
 
     /// `<portal>`
     #[cfg_attr(rust_js, rust_js::name = "portal")]
+    #[derive(Clone, Copy)]
     pub struct Portal;
 
     /// `<pre>`
     #[cfg_attr(rust_js, rust_js::name = "pre")]
+    #[derive(Clone, Copy)]
     pub struct Pre;
 
     /// `<progress>`
     #[cfg_attr(rust_js, rust_js::name = "progress")]
+    #[derive(Clone, Copy)]
     pub struct Progress;
 
     /// `<q>`
     #[cfg_attr(rust_js, rust_js::name = "q")]
+    #[derive(Clone, Copy)]
     pub struct Q;
 
     /// `<rb>`
     #[cfg_attr(rust_js, rust_js::name = "rb")]
+    #[derive(Clone, Copy)]
     pub struct Rb;
 
     /// `<rp>`
     #[cfg_attr(rust_js, rust_js::name = "rp")]
+    #[derive(Clone, Copy)]
     pub struct Rp;
 
     /// `<rt>`
     #[cfg_attr(rust_js, rust_js::name = "rt")]
+    #[derive(Clone, Copy)]
     pub struct Rt;
 
     /// `<rtc>`
     #[cfg_attr(rust_js, rust_js::name = "rtc")]
+    #[derive(Clone, Copy)]
     pub struct Rtc;
 
     /// `<ruby>`
     #[cfg_attr(rust_js, rust_js::name = "ruby")]
+    #[derive(Clone, Copy)]
     pub struct Ruby;
 
     /// `<s>`
     #[cfg_attr(rust_js, rust_js::name = "s")]
+    #[derive(Clone, Copy)]
     pub struct S;
 
     /// `<samp>`
     #[cfg_attr(rust_js, rust_js::name = "samp")]
+    #[derive(Clone, Copy)]
     pub struct Samp;
 
     /// `<script>`
     #[cfg_attr(rust_js, rust_js::name = "script")]
+    #[derive(Clone, Copy)]
     pub struct Script;
 
     /// `<search>`
     #[cfg_attr(rust_js, rust_js::name = "search")]
+    #[derive(Clone, Copy)]
     pub struct Search;
 
     /// `<section>`
     #[cfg_attr(rust_js, rust_js::name = "section")]
+    #[derive(Clone, Copy)]
     pub struct Section;
 
     /// `<select>`
     #[cfg_attr(rust_js, rust_js::name = "select")]
+    #[derive(Clone, Copy)]
     pub struct Select;
 
     /// `<selectedcontent>`
     #[cfg_attr(rust_js, rust_js::name = "selectedcontent")]
+    #[derive(Clone, Copy)]
     pub struct Selectedcontent;
 
     /// `<slot>`
     #[cfg_attr(rust_js, rust_js::name = "slot")]
+    #[derive(Clone, Copy)]
     pub struct Slot;
 
     /// `<small>`
     #[cfg_attr(rust_js, rust_js::name = "small")]
+    #[derive(Clone, Copy)]
     pub struct Small;
 
     /// `<source>`
     #[cfg_attr(rust_js, rust_js::name = "source")]
+    #[derive(Clone, Copy)]
     pub struct Source;
 
     /// `<span>`
     #[cfg_attr(rust_js, rust_js::name = "span")]
+    #[derive(Clone, Copy)]
     pub struct Span;
 
     /// `<strong>`
     #[cfg_attr(rust_js, rust_js::name = "strong")]
+    #[derive(Clone, Copy)]
     pub struct Strong;
 
     /// `<style>`
     #[cfg_attr(rust_js, rust_js::name = "style")]
+    #[derive(Clone, Copy)]
     pub struct Style;
 
     /// `<sub>`
     #[cfg_attr(rust_js, rust_js::name = "sub")]
+    #[derive(Clone, Copy)]
     pub struct Sub;
 
     /// `<summary>`
     #[cfg_attr(rust_js, rust_js::name = "summary")]
+    #[derive(Clone, Copy)]
     pub struct Summary;
 
     /// `<sup>`
     #[cfg_attr(rust_js, rust_js::name = "sup")]
+    #[derive(Clone, Copy)]
     pub struct Sup;
 
     /// `<table>`
     #[cfg_attr(rust_js, rust_js::name = "table")]
+    #[derive(Clone, Copy)]
     pub struct Table;
 
     /// `<tbody>`
     #[cfg_attr(rust_js, rust_js::name = "tbody")]
+    #[derive(Clone, Copy)]
     pub struct Tbody;
 
     /// `<td>`
     #[cfg_attr(rust_js, rust_js::name = "td")]
+    #[derive(Clone, Copy)]
     pub struct Td;
 
     /// `<template>`
     #[cfg_attr(rust_js, rust_js::name = "template")]
+    #[derive(Clone, Copy)]
     pub struct Template;
 
     /// `<textarea>`
     #[cfg_attr(rust_js, rust_js::name = "textarea")]
+    #[derive(Clone, Copy)]
     pub struct Textarea;
 
     /// `<tfoot>`
     #[cfg_attr(rust_js, rust_js::name = "tfoot")]
+    #[derive(Clone, Copy)]
     pub struct Tfoot;
 
     /// `<th>`
     #[cfg_attr(rust_js, rust_js::name = "th")]
+    #[derive(Clone, Copy)]
     pub struct Th;
 
     /// `<thead>`
     #[cfg_attr(rust_js, rust_js::name = "thead")]
+    #[derive(Clone, Copy)]
     pub struct Thead;
 
     /// `<time>`
     #[cfg_attr(rust_js, rust_js::name = "time")]
+    #[derive(Clone, Copy)]
     pub struct Time;
 
     /// `<title>`
     #[cfg_attr(rust_js, rust_js::name = "title")]
+    #[derive(Clone, Copy)]
     pub struct Title;
 
     /// `<tr>`
     #[cfg_attr(rust_js, rust_js::name = "tr")]
+    #[derive(Clone, Copy)]
     pub struct Tr;
 
     /// `<track>`
     #[cfg_attr(rust_js, rust_js::name = "track")]
+    #[derive(Clone, Copy)]
     pub struct Track;
 
     /// `<u>`
     #[cfg_attr(rust_js, rust_js::name = "u")]
+    #[derive(Clone, Copy)]
     pub struct U;
 
     /// `<ul>`
     #[cfg_attr(rust_js, rust_js::name = "ul")]
+    #[derive(Clone, Copy)]
     pub struct Ul;
 
     /// `<usermedia>`
     #[cfg_attr(rust_js, rust_js::name = "usermedia")]
+    #[derive(Clone, Copy)]
     pub struct Usermedia;
 
     /// `<var>`
     #[cfg_attr(rust_js, rust_js::name = "var")]
+    #[derive(Clone, Copy)]
     pub struct Var;
 
     /// `<video>`
     #[cfg_attr(rust_js, rust_js::name = "video")]
+    #[derive(Clone, Copy)]
     pub struct Video;
 
     /// `<wbr>`
     #[cfg_attr(rust_js, rust_js::name = "wbr")]
+    #[derive(Clone, Copy)]
     pub struct Wbr;
 }
 
@@ -108395,254 +108775,317 @@ pub mod tags {
 pub mod svg_tags {
     /// `<a>`
     #[cfg_attr(rust_js, rust_js::name = "a")]
+    #[derive(Clone, Copy)]
     pub struct A;
 
     /// `<animate>`
     #[cfg_attr(rust_js, rust_js::name = "animate")]
+    #[derive(Clone, Copy)]
     pub struct Animate;
 
     /// `<animateMotion>`
     #[cfg_attr(rust_js, rust_js::name = "animateMotion")]
+    #[derive(Clone, Copy)]
     pub struct AnimateMotion;
 
     /// `<animateTransform>`
     #[cfg_attr(rust_js, rust_js::name = "animateTransform")]
+    #[derive(Clone, Copy)]
     pub struct AnimateTransform;
 
     /// `<circle>`
     #[cfg_attr(rust_js, rust_js::name = "circle")]
+    #[derive(Clone, Copy)]
     pub struct Circle;
 
     /// `<clipPath>`
     #[cfg_attr(rust_js, rust_js::name = "clipPath")]
+    #[derive(Clone, Copy)]
     pub struct ClipPath;
 
     /// `<defs>`
     #[cfg_attr(rust_js, rust_js::name = "defs")]
+    #[derive(Clone, Copy)]
     pub struct Defs;
 
     /// `<desc>`
     #[cfg_attr(rust_js, rust_js::name = "desc")]
+    #[derive(Clone, Copy)]
     pub struct Desc;
 
     /// `<ellipse>`
     #[cfg_attr(rust_js, rust_js::name = "ellipse")]
+    #[derive(Clone, Copy)]
     pub struct Ellipse;
 
     /// `<feBlend>`
     #[cfg_attr(rust_js, rust_js::name = "feBlend")]
+    #[derive(Clone, Copy)]
     pub struct FeBlend;
 
     /// `<feColorMatrix>`
     #[cfg_attr(rust_js, rust_js::name = "feColorMatrix")]
+    #[derive(Clone, Copy)]
     pub struct FeColorMatrix;
 
     /// `<feComponentTransfer>`
     #[cfg_attr(rust_js, rust_js::name = "feComponentTransfer")]
+    #[derive(Clone, Copy)]
     pub struct FeComponentTransfer;
 
     /// `<feComposite>`
     #[cfg_attr(rust_js, rust_js::name = "feComposite")]
+    #[derive(Clone, Copy)]
     pub struct FeComposite;
 
     /// `<feConvolveMatrix>`
     #[cfg_attr(rust_js, rust_js::name = "feConvolveMatrix")]
+    #[derive(Clone, Copy)]
     pub struct FeConvolveMatrix;
 
     /// `<feDiffuseLighting>`
     #[cfg_attr(rust_js, rust_js::name = "feDiffuseLighting")]
+    #[derive(Clone, Copy)]
     pub struct FeDiffuseLighting;
 
     /// `<feDisplacementMap>`
     #[cfg_attr(rust_js, rust_js::name = "feDisplacementMap")]
+    #[derive(Clone, Copy)]
     pub struct FeDisplacementMap;
 
     /// `<feDistantLight>`
     #[cfg_attr(rust_js, rust_js::name = "feDistantLight")]
+    #[derive(Clone, Copy)]
     pub struct FeDistantLight;
 
     /// `<feDropShadow>`
     #[cfg_attr(rust_js, rust_js::name = "feDropShadow")]
+    #[derive(Clone, Copy)]
     pub struct FeDropShadow;
 
     /// `<feFlood>`
     #[cfg_attr(rust_js, rust_js::name = "feFlood")]
+    #[derive(Clone, Copy)]
     pub struct FeFlood;
 
     /// `<feFuncA>`
     #[cfg_attr(rust_js, rust_js::name = "feFuncA")]
+    #[derive(Clone, Copy)]
     pub struct FeFuncA;
 
     /// `<feFuncB>`
     #[cfg_attr(rust_js, rust_js::name = "feFuncB")]
+    #[derive(Clone, Copy)]
     pub struct FeFuncB;
 
     /// `<feFuncG>`
     #[cfg_attr(rust_js, rust_js::name = "feFuncG")]
+    #[derive(Clone, Copy)]
     pub struct FeFuncG;
 
     /// `<feFuncR>`
     #[cfg_attr(rust_js, rust_js::name = "feFuncR")]
+    #[derive(Clone, Copy)]
     pub struct FeFuncR;
 
     /// `<feGaussianBlur>`
     #[cfg_attr(rust_js, rust_js::name = "feGaussianBlur")]
+    #[derive(Clone, Copy)]
     pub struct FeGaussianBlur;
 
     /// `<feImage>`
     #[cfg_attr(rust_js, rust_js::name = "feImage")]
+    #[derive(Clone, Copy)]
     pub struct FeImage;
 
     /// `<feMerge>`
     #[cfg_attr(rust_js, rust_js::name = "feMerge")]
+    #[derive(Clone, Copy)]
     pub struct FeMerge;
 
     /// `<feMergeNode>`
     #[cfg_attr(rust_js, rust_js::name = "feMergeNode")]
+    #[derive(Clone, Copy)]
     pub struct FeMergeNode;
 
     /// `<feMorphology>`
     #[cfg_attr(rust_js, rust_js::name = "feMorphology")]
+    #[derive(Clone, Copy)]
     pub struct FeMorphology;
 
     /// `<feOffset>`
     #[cfg_attr(rust_js, rust_js::name = "feOffset")]
+    #[derive(Clone, Copy)]
     pub struct FeOffset;
 
     /// `<fePointLight>`
     #[cfg_attr(rust_js, rust_js::name = "fePointLight")]
+    #[derive(Clone, Copy)]
     pub struct FePointLight;
 
     /// `<feSpecularLighting>`
     #[cfg_attr(rust_js, rust_js::name = "feSpecularLighting")]
+    #[derive(Clone, Copy)]
     pub struct FeSpecularLighting;
 
     /// `<feSpotLight>`
     #[cfg_attr(rust_js, rust_js::name = "feSpotLight")]
+    #[derive(Clone, Copy)]
     pub struct FeSpotLight;
 
     /// `<feTile>`
     #[cfg_attr(rust_js, rust_js::name = "feTile")]
+    #[derive(Clone, Copy)]
     pub struct FeTile;
 
     /// `<feTurbulence>`
     #[cfg_attr(rust_js, rust_js::name = "feTurbulence")]
+    #[derive(Clone, Copy)]
     pub struct FeTurbulence;
 
     /// `<filter>`
     #[cfg_attr(rust_js, rust_js::name = "filter")]
+    #[derive(Clone, Copy)]
     pub struct Filter;
 
     /// `<foreignObject>`
     #[cfg_attr(rust_js, rust_js::name = "foreignObject")]
+    #[derive(Clone, Copy)]
     pub struct ForeignObject;
 
     /// `<g>`
     #[cfg_attr(rust_js, rust_js::name = "g")]
+    #[derive(Clone, Copy)]
     pub struct G;
 
     /// `<image>`
     #[cfg_attr(rust_js, rust_js::name = "image")]
+    #[derive(Clone, Copy)]
     pub struct Image;
 
     /// `<line>`
     #[cfg_attr(rust_js, rust_js::name = "line")]
+    #[derive(Clone, Copy)]
     pub struct Line;
 
     /// `<linearGradient>`
     #[cfg_attr(rust_js, rust_js::name = "linearGradient")]
+    #[derive(Clone, Copy)]
     pub struct LinearGradient;
 
     /// `<marker>`
     #[cfg_attr(rust_js, rust_js::name = "marker")]
+    #[derive(Clone, Copy)]
     pub struct Marker;
 
     /// `<mask>`
     #[cfg_attr(rust_js, rust_js::name = "mask")]
+    #[derive(Clone, Copy)]
     pub struct Mask;
 
     /// `<metadata>`
     #[cfg_attr(rust_js, rust_js::name = "metadata")]
+    #[derive(Clone, Copy)]
     pub struct Metadata;
 
     /// `<mpath>`
     #[cfg_attr(rust_js, rust_js::name = "mpath")]
+    #[derive(Clone, Copy)]
     pub struct Mpath;
 
     /// `<path>`
     #[cfg_attr(rust_js, rust_js::name = "path")]
+    #[derive(Clone, Copy)]
     pub struct Path;
 
     /// `<pattern>`
     #[cfg_attr(rust_js, rust_js::name = "pattern")]
+    #[derive(Clone, Copy)]
     pub struct Pattern;
 
     /// `<polygon>`
     #[cfg_attr(rust_js, rust_js::name = "polygon")]
+    #[derive(Clone, Copy)]
     pub struct Polygon;
 
     /// `<polyline>`
     #[cfg_attr(rust_js, rust_js::name = "polyline")]
+    #[derive(Clone, Copy)]
     pub struct Polyline;
 
     /// `<radialGradient>`
     #[cfg_attr(rust_js, rust_js::name = "radialGradient")]
+    #[derive(Clone, Copy)]
     pub struct RadialGradient;
 
     /// `<rect>`
     #[cfg_attr(rust_js, rust_js::name = "rect")]
+    #[derive(Clone, Copy)]
     pub struct Rect;
 
     /// `<script>`
     #[cfg_attr(rust_js, rust_js::name = "script")]
+    #[derive(Clone, Copy)]
     pub struct Script;
 
     /// `<set>`
     #[cfg_attr(rust_js, rust_js::name = "set")]
+    #[derive(Clone, Copy)]
     pub struct Set;
 
     /// `<stop>`
     #[cfg_attr(rust_js, rust_js::name = "stop")]
+    #[derive(Clone, Copy)]
     pub struct Stop;
 
     /// `<style>`
     #[cfg_attr(rust_js, rust_js::name = "style")]
+    #[derive(Clone, Copy)]
     pub struct Style;
 
     /// `<svg>`
     #[cfg_attr(rust_js, rust_js::name = "svg")]
+    #[derive(Clone, Copy)]
     pub struct Svg;
 
     /// `<switch>`
     #[cfg_attr(rust_js, rust_js::name = "switch")]
+    #[derive(Clone, Copy)]
     pub struct Switch;
 
     /// `<symbol>`
     #[cfg_attr(rust_js, rust_js::name = "symbol")]
+    #[derive(Clone, Copy)]
     pub struct Symbol;
 
     /// `<text>`
     #[cfg_attr(rust_js, rust_js::name = "text")]
+    #[derive(Clone, Copy)]
     pub struct Text;
 
     /// `<textPath>`
     #[cfg_attr(rust_js, rust_js::name = "textPath")]
+    #[derive(Clone, Copy)]
     pub struct TextPath;
 
     /// `<title>`
     #[cfg_attr(rust_js, rust_js::name = "title")]
+    #[derive(Clone, Copy)]
     pub struct Title;
 
     /// `<tspan>`
     #[cfg_attr(rust_js, rust_js::name = "tspan")]
+    #[derive(Clone, Copy)]
     pub struct Tspan;
 
     /// `<use>`
     #[cfg_attr(rust_js, rust_js::name = "use")]
+    #[derive(Clone, Copy)]
     pub struct Use;
 
     /// `<view>`
     #[cfg_attr(rust_js, rust_js::name = "view")]
+    #[derive(Clone, Copy)]
     pub struct View;
 }
 

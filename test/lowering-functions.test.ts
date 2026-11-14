@@ -319,6 +319,36 @@ pub fn named(name: Option<&'static str>) -> (Option<&'static str>, Option<&'stat
     twice(name)
 }
 
+// What JS holds as a primitive is its own copy: a fieldless enum's string
+// or number, a unit struct's name or \`undefined\` (#1817).
+#[derive(Clone, Copy)]
+pub enum Mode {
+    On,
+    Off,
+}
+
+#[derive(Clone, Copy)]
+#[repr(u8)]
+pub enum Level {
+    Low = 1,
+    High = 2,
+}
+
+#[derive(Clone, Copy)]
+pub struct Marker;
+
+pub fn modes(mode: Mode) -> (Mode, Mode) {
+    twice(mode)
+}
+
+pub fn levels(level: Level) -> (Level, Level) {
+    twice(level)
+}
+
+pub fn markers() -> (Marker, Marker) {
+    twice(Marker)
+}
+
 pub fn moved(p: Point) -> u32 {
     let mut q = kept(p);
     q.x += 1;
@@ -416,6 +446,9 @@ pub fn shared<T: Copy>(value: T) -> T {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("function twice(value) {");
   expect(js).toContain("return twice(name);");
+  expect(js).toContain("return twice(mode);");
+  expect(js).toContain("return twice(level);");
+  expect(js).toContain("return twice(undefined);");
   expect(js).toContain("function kept(value, TCopy) {");
   const lib = await import(join(dir, "lib.js"));
   expect([lib.named("a"), lib.moved({ x: 1 }), lib.relayed({ x: 1 }), lib.held({ x: 1 }), lib.duped(), lib.got()]).toEqual([["a", "a"], 3, 3, 3, ["a", "a"], 4]);

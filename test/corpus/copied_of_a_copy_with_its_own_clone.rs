@@ -22,6 +22,31 @@ struct Wrapped<T>(T);
 #[derive(Clone, Copy, Debug)]
 struct Plain(P);
 
+// A unit struct and a fieldless enum are their own copies, but a
+// hand-written `Clone` of one still runs where generic code clones (#1817).
+#[derive(Copy, Debug)]
+struct Unit;
+
+impl Clone for Unit {
+    fn clone(&self) -> Self {
+        println!("clone unit");
+        Unit
+    }
+}
+
+#[derive(Copy, Debug)]
+enum Side {
+    Left,
+    Right,
+}
+
+impl Clone for Side {
+    fn clone(&self) -> Self {
+        println!("clone side");
+        *self
+    }
+}
+
 // A clone, through generic code's `Clone`, as clippy would have a `Copy`
 // value's written as its copy.
 fn cloned<T: Clone>(value: &T) -> T {
@@ -40,6 +65,16 @@ fn cloned_of<T: Copy>(v: &[T]) -> Vec<T> {
 
 fn repeated_of<T: Copy>(v: &[T]) -> Vec<T> {
     v.repeat(2)
+}
+
+// Given a unit alone, and an enum alone: each value its own copy, but a
+// clone through the `Copy` bound runs theirs.
+fn units_of<T: Copy>(v: &[T]) -> Vec<T> {
+    v.to_vec()
+}
+
+fn sides_of<T: Copy>(v: &[T]) -> Vec<T> {
+    v.iter().cloned().collect()
 }
 
 fn copied_in_generic_code<T: Copy>(v: &[T]) -> Vec<T> {
@@ -70,6 +105,8 @@ fn main() {
     println!("generic cloned {:?}", cloned_of(&ps[1..]));
     println!("generic repeat {:?}", repeated_of(&ps[..1]));
     println!("generic of a derive {:?}", to_vec_of(&[Plain(P(3))]));
+    println!("generic of a unit {:?}", units_of(&[Unit, Unit]));
+    println!("generic of an enum {:?}", sides_of(&[Side::Left, Side::Right]));
     println!("option {:?}", ps.first().copied());
     let mut one = P(4);
     println!("option of a &mut {:?}", Some(&mut one).copied());

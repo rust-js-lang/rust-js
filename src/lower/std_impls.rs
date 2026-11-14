@@ -4,6 +4,7 @@
 //! `defaults`.
 
 mod clones;
+pub(in crate::lower) use clones::trivially_cloned;
 mod defaults;
 mod in_turn;
 mod not_equal;

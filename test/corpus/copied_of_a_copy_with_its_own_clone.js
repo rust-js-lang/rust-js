@@ -38,6 +38,23 @@ function plainDebug_fmt(plain) {
   return `Plain(${pDebug_fmt(plain[0])})`;
 }
 
+// A unit struct and a fieldless enum are their own copies, but a
+// hand-written `Clone` of one still runs where generic code clones (#1817).
+function unitDebug_fmt(unit) {
+  return "Unit";
+}
+
+export const unitClone = { clone: unitClone_clone };
+function unitClone_clone(unit) {
+  $print("clone unit\n");
+}
+
+export const sideClone = { clone: sideClone_clone };
+function sideClone_clone(side) {
+  $print("clone side\n");
+  return side;
+}
+
 // A clone, through generic code's `Clone`, as clippy would have a `Copy`
 // value's written as its copy.
 function cloned(value, TClone) {
@@ -65,6 +82,20 @@ function repeatedOf(v, TCopy, TSize) {
     TSize,
     (item) => (TCopy ? TCopy.copy(item) : item),
     (item) => (TCopy?.Clone ? TCopy.Clone().clone(item) : TCopy ? TCopy.copy(item) : item),
+  );
+}
+
+// Given a unit alone, and an enum alone: each value its own copy, but a
+// clone through the `Copy` bound runs theirs.
+function unitsOf(v, TCopy) {
+  return v.map((item) =>
+    TCopy?.Clone ? TCopy.Clone().clone(item) : TCopy ? TCopy.copy(item) : item,
+  );
+}
+
+function sidesOf(v, TCopy) {
+  return v.map((item) =>
+    TCopy?.Clone ? TCopy.Clone().clone(item) : TCopy ? TCopy.copy(item) : item,
   );
 }
 
@@ -142,6 +173,20 @@ function main() {
     `generic of a derive [${toVecOf([[[3]]], { copy: (value) => [[value[0][0]]] })
       .map((item) => plainDebug_fmt(item))
       .join(", ")}]\n`,
+  );
+  $print(
+    `generic of a unit [${unitsOf([undefined, undefined], {
+      copy: (value) => value,
+      Clone: () => unitClone,
+    })
+      .map((item) => unitDebug_fmt(item))
+      .join(", ")}]\n`,
+  );
+  $print(
+    `generic of an enum [${sidesOf(["Left", "Right"], {
+      copy: (value) => value,
+      Clone: () => sideClone,
+    }).join(", ")}]\n`,
   );
   const value$2 = ps[0] == null ? ps[0] : [ps[0][0]];
   $print(`option ${value$2 == null ? "None" : `Some(${pDebug_fmt(value$2)})`}\n`);
