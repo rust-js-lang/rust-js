@@ -205,7 +205,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 && (self.grown_ask(
                     output,
                     item,
-                    (iter_ty, crate::lower::iterators::binding_made(&it)),
+                    (
+                        iter_ty,
+                        crate::lower::iterators::binding_made(&it),
+                        crate::lower::iterators::form_knows_no_hint(&it),
+                    ),
                     self.compiled_struct(iter_ty, &it),
                     span,
                 )?)
@@ -214,7 +218,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 match self.grown_ask(
                     output,
                     item,
-                    (iter_ty, crate::lower::iterators::binding_made(&it)),
+                    (
+                        iter_ty,
+                        crate::lower::iterators::binding_made(&it),
+                        crate::lower::iterators::form_knows_no_hint(&it),
+                    ),
                     true,
                     span,
                 )? {
@@ -849,7 +857,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let grown = self.grown_ask(
             output,
             item,
-            (iter_ty, crate::lower::iterators::binding_made(given)),
+            (
+                iter_ty,
+                crate::lower::iterators::binding_made(given),
+                crate::lower::iterators::form_knows_no_hint(given),
+            ),
             self.compiled_struct(iter_ty, given),
             span,
         )?;

@@ -1030,7 +1030,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// `const <base> = value;`, so it's evaluated here, then its name, which
-    /// keeps what's known of an iterator's value (`iterators::held_marks`).
+    /// keeps what's known of an iterator's value (`iterators::marks_kept`).
     /// A role's name is the body's naming table's (`note_spilled`), which
     /// tidy picks again, a call's name first (#890).
     fn spill<'b>(&mut self, base: impl Into<Base<'b>>, value: Expr, out: &mut Vec<Stmt>) -> Expr {
@@ -1040,7 +1040,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Base::Role(role) = base {
             self.note_spilled(&name, role);
         }
-        let (span, marks) = (value.span, iterators::held_marks(value.facts));
+        let (span, marks) = (value.span, iterators::marks_kept(&value));
         out.push(StmtKind::Const(name.clone().into(), value).at(span));
         let mut held = Expr::var(&name);
         held.facts = held.facts.and(marks);

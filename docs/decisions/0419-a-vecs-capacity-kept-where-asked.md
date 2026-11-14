@@ -819,3 +819,35 @@ std's.
 `test/corpus/vec_side_of_a_chain_counts_in_its_hint.rs` holds it against
 native Rust in both builds, a `Vec` first and second, an empty one, and a
 zip. Mutation `steps-of-an-array-hintless` (`runtime/steps.ts`).
+
+## Amendment (2026-11-14, #1792): a form that knows no hint isn't its struct's
+
+#1573 left a `Vec` grown by what's known by its hint as it's made to ask
+that hint as it is (`adapted_hint_known`). That answer is of the type, as
+std's struct of it knows its hint: `Inspect` of a slice's `Iter` does,
+`struct_hint_known`. But the recognizers make `v.iter().inspect(f)` in
+place, `$iter(v).map(..)`, printed `v.values().map(..)`: JS's own adapter
+of JS's own iterator, which knows no hint. Collected where a capacity is
+read, it grew from 4 to 8, where std reserves the slice's length after the
+first item, 5 (case C of ADR 0262: results change).
+
+What's grown is asked of its form too. JS's own `map`, `filter`, `flatMap`,
+`take` or `drop` of a collection's own iterator, `values()`, `keys()` or
+`entries()`, or of an array's `$iter(v)`, knows no hint, whatever its type's
+struct knows (`iterators::form_knows_no_hint`); and so does a variable a
+spill or a MIR local of one holds, which keeps it as a fact,
+`Known::IterHintless` (`iterators::marks_kept`), as a boxed `dyn FnMut`
+given an adapter holds what it's called on in one. Such an iterator is given
+knowing its length, as #1200 gives any other, so the inspect is
+`$mapEnds($iter(v), ..)`: an `inspect()` past a `map()`, and one an
+`enumerate()` holds, too. Nothing else moves: one snapshot,
+vec_grown_by_iterators_whose_hint_is_stds's, an inspect `$mapEnds` now, as
+native prints. Of the other adapters over a slice's iterator, `map`,
+`enumerate`, `skip`, `take`, `fuse`, `step_by`, `rev`, `cloned`, `zip` and
+`chain`, each already had native's capacity.
+
+Found by the conformance table's `exact capacity` rows (ADR 1090, amended).
+`test/corpus/inspect_of_a_slice_collected_where_capacity_is_read.rs` holds
+it against native Rust. Mutation `js-own-of-values-hint-known`, caught;
+`exact-size-collect-unknowing` and `exact-length-made-though-hint-known`
+retargeted, caught.

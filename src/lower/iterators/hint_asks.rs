@@ -469,7 +469,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         &self,
         output: Ty<'tcx>,
         item: Option<Ty<'tcx>>,
-        (iter_ty, binding_made): (Ty<'tcx>, bool),
+        (iter_ty, binding_made, form_hintless): (Ty<'tcx>, bool, bool),
         std_struct: bool,
         span: Span,
     ) -> R<Option<Grown<'tcx>>> {
@@ -498,8 +498,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Of an `ExactSizeIterator`, it's given knowing its length, whose
         // hint then is std's (#1200); not one whose hint is known as it's
         // made (`adapted_hint_known`), the crate's own's too, which it asks
-        // as it is (#1573).
-        let exact = kept && self.recognition().grows_by_exact_len(iter_ty) && !self.adapted_hint_known(iter_ty);
+        // as it is (#1573). Not one whose JS form knows none, whatever its
+        // type's struct knows: JS's own adapters of a collection's own
+        // iterator, `form_hintless` (`form_knows_no_hint`, #1792).
+        let hint_known = !form_hintless && self.adapted_hint_known(iter_ty);
+        let exact = kept && self.recognition().grows_by_exact_len(iter_ty) && !hint_known;
         if kept && !exact {
             self.refuse_unkept_lower_bound(iter_ty, span)?;
         }

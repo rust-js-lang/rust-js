@@ -818,6 +818,38 @@ fn is_js_adapter(e: &Expr) -> bool {
             if matches!(name.as_str(), "map" | "filter" | "flatMap" | "take" | "drop") && is_js_iterator(object)))
 }
 
+/// Whether `it` is JS's own adapters, `map`, `filter`, `flatMap`, `take`
+/// or `drop`, of JS's own iterator (`hintless`): what knows no hint,
+/// whatever std's struct of its type knows. `v.iter().inspect(f)` made in
+/// place, `$iter(v).map(..)`, has none, where std's `Inspect` of a slice's
+/// knows its length (#1792).
+pub(in crate::lower) fn form_knows_no_hint(it: &Expr) -> bool {
+    matches!(&it.kind, js::ExprKind::Call(callee, _)
+        if matches!(&callee.kind, js::ExprKind::Member(object, name)
+            if matches!(name.as_str(), "map" | "filter" | "flatMap" | "take" | "drop") && hintless(object)))
+}
+
+/// Whether `e` is JS's own iterator, an `Iterator.prototype`'s, which
+/// knows no hint (`Known::IterHintless`): an array's `$iter(v)`, a
+/// collection's `values()`, `keys()` or `entries()`, JS's own adapters of
+/// one, or a variable that holds one (`marks_kept`).
+fn hintless(e: &Expr) -> bool {
+    let own_iterator = matches!(&e.kind, js::ExprKind::Call(callee, args) if args.is_empty()
+        && matches!(&callee.kind, js::ExprKind::Member(_, name) if matches!(name.as_str(), "values" | "keys" | "entries")));
+    e.facts.has(js::Known::IterHintless) || own_iterator || fresh_iter_source(e).is_some() || form_knows_no_hint(e)
+}
+
+/// What a variable that holds `value` keeps of it, a spill's or a MIR
+/// local's: its marks (`held_marks`), and whether it's JS's own iterator,
+/// which knows no hint (`hintless`, #1792).
+pub(in crate::lower) fn marks_kept(value: &Expr) -> js::Facts {
+    let marks = held_marks(value.facts);
+    match hintless(value) {
+        true => marks.with(js::Known::IterHintless),
+        false => marks,
+    }
+}
+
 pub(super) fn is_js_iterator(e: &Expr) -> bool {
     if e.facts.has(js::Known::Iterator) {
         return true;

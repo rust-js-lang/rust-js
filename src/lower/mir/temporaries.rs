@@ -982,7 +982,7 @@ pub(super) fn read_by_name(state: &State<'_, '_>, local: Local, name: &str) -> E
 /// once (`IterLocals::once`), else none.
 pub(super) fn note_marks(state: &mut State<'_, '_>, local: Local, expr: &Expr) {
     let marks = match state.iter_locals.once.contains(&local) {
-        true => crate::lower::iterators::held_marks(expr.facts),
+        true => crate::lower::iterators::marks_kept(expr),
         false => js::Facts::NONE,
     };
     match marks == js::Facts::NONE {

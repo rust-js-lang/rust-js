@@ -452,4 +452,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^boxed_iterator_steps_as_std_box_does.rs$"],
     snapshots: true,
   },
+  {
+    name: "hintless-form-forgotten-by-its-variable",
+    breaks: "a variable that holds JS's own iterator, a map of a slice's `values()` a `let` holds, keeps no fact of it, so a `Vec` grown of its `inspect()` where a capacity is read is taken for std's `Inspect`, whose hint is the slice's length, and grows from 4 to 8 where std's capacity is 5 (#1792)",
+    file: "src/lower/iterators.rs",
+    find: "    match hintless(value) {\n        true => marks.with(js::Known::IterHintless),\n",
+    replace: "    match false {\n        true => marks.with(js::Known::IterHintless),\n",
+    tests: ["test/diagnostics.test.ts", "-t", "a held map's inspect collected where its capacity is read"],
+  },
 ];

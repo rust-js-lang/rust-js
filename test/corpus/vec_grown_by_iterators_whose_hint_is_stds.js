@@ -17,6 +17,7 @@ import {
   $iterator,
   $knowing,
   $lazyZip,
+  $mapEnds,
   $next,
   $nextBack,
   $rangeNext,
@@ -197,13 +198,13 @@ function main() {
   }
   const seen = $grownVec(
     $roomForHint(
-      [4, 5, 6]
-        .values()
-        .map((item) => {
+      $mapEnds(
+        $mapEnds($iter([4, 5, 6]), (item) => {
           inspect(item);
           return item;
-        })
-        .map((item) => BigInt(item)),
+        }),
+        (item) => BigInt(item),
+      ),
       8,
       false,
     ),

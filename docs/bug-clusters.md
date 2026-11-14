@@ -225,7 +225,7 @@ didn't stop their clusters.
 ## The decisions amended most
 
 As of 2026-11-12: 2,617 amendments of 591 of the 1,039 decisions; 12 are
-amended 25 times or more, 57 more 10 to 24 times. What each of the 12's
+amended 25 times or more (13 since 0419's #1792, 2026-11-14), 57 more 10 to 24 times. What each of the 12's
 amendments are, and what would end them:
 
 | ADR | Amendments | What each amendment is | The refactor, or why none |
@@ -240,6 +240,7 @@ amendments are, and what would end them:
 | 0454 | 32 | One boundary where generic code's box of a `&mut` meets its caller's form | ADR 1115's one boundary, `generic_facts.rs`, for those between a function and its callers; #1459 for the rest: a form that's a type, its change a node only its owner makes |
 | 0863 | 29 | One place a `RefCell`'s borrow comes from, or one way a cell is reached | `analysis/cell_flow.rs`, the cells' value flow (#445), ended the reaching; what's left is #1459's, as 0454's |
 | 0562 | 28 | One more operation on a pointer or on plain data's bytes that's lowered, where it was refused | None: addressable memory grows one refusal lifted at a time, which is the safe order; its wrong answers (#1081, #1113) are judged in the audit's `mut-refs` row |
+| 0419 | 25 | One iterator or collection whose JS form grows a `Vec` by another hint than std's, so a capacity read differs: an adapter of JS's own that knows none (#1792), an in-place collect, a set's merge, a chain's side | The hand-written forms each answer std's hint again; #1458 ends the kind, std's compiled bodies, whose hint is std's own, the default (#1681's change 2), where the conformance table's `exact capacity` rows prove each form that stays |
 
 ## Proposed refactors
 

@@ -302,6 +302,13 @@ knowns! {
     /// An enumeration made knowing its back and its length, `$enumerate(it)`
     /// (value.rs's `enumerated_knowing`, #764).
     IterEnumerate,
+    /// JS's own iterator, an `Iterator.prototype`'s, whose hint is none,
+    /// whatever std's struct of its Rust type knows: an array's `$iter(v)`,
+    /// a collection's `values()`, `keys()` or `entries()`, or JS's own
+    /// adapters of one, `map`, `filter`, `flatMap`, `take` or `drop`, as
+    /// a variable that holds it keeps (`iterators::marks_kept`,
+    /// #1792).
+    IterHintless,
     /// A map whose function gives each item as it is, its source's value as
     /// it is (`mir/iter.rs`): what makes it knowing its back or its length
     /// makes its source so (value.rs's `mapped_as_it_is` and
@@ -427,6 +434,7 @@ impl Known {
             | Known::IterKnowsBack
             | Known::IterKnowsLength
             | Known::IterEnumerate
+            | Known::IterHintless
             | Known::IterMappedAsItIs
             | Known::NullStored
             | Known::HandledObject

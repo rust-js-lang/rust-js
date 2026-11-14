@@ -258,8 +258,8 @@ export const mutations: Mutation[] = [
     name: "exact-size-collect-unknowing",
     breaks: "in a crate that reads a capacity, a `Vec` collected of an `ExactSizeIterator` that isn't `TrustedLen`, `b.iter().skip(1)`, is grown by JS's own `drop(n)`'s hint, none, its capacity 64 where std's is 39 (#1200)",
     file: "src/lower/iterators/hint_asks.rs",
-    find: "        let exact = kept && self.recognition().grows_by_exact_len(iter_ty) && !self.adapted_hint_known(iter_ty);\n",
-    replace: "        let exact = false && kept && self.recognition().grows_by_exact_len(iter_ty) && !self.adapted_hint_known(iter_ty);\n",
+    find: "        let exact = kept && self.recognition().grows_by_exact_len(iter_ty) && !hint_known;\n",
+    replace: "        let exact = false && kept && self.recognition().grows_by_exact_len(iter_ty) && !hint_known;\n",
     tests: ["test/corpus.test.ts", "-t", "^capacity_exact_size_adapters.rs$"],
   },
   {
@@ -392,7 +392,7 @@ export const mutations: Mutation[] = [
     name: "exact-length-made-though-hint-known",
     breaks: "a `Vec` grown by what isn't `TrustedLen` whose hint is known std's as it's made, a held `step_by(n)` of a reversed range, `$lazyRangeBack`, is made knowing its length where it's collected, which the variable that holds it can't be, and refused (#1573)",
     file: "src/lower/iterators/hint_asks.rs",
-    find: "        let exact = kept && self.recognition().grows_by_exact_len(iter_ty) && !self.adapted_hint_known(iter_ty);\n",
+    find: "        let exact = kept && self.recognition().grows_by_exact_len(iter_ty) && !hint_known;\n",
     replace: "        let exact = kept && self.recognition().grows_by_exact_len(iter_ty);\n",
     tests: ["test/corpus.test.ts", "-t", "^held_step_by_of_a_reversed_range_grows_as_std.rs$"],
   },
@@ -403,5 +403,13 @@ export const mutations: Mutation[] = [
     find: "        if self.compiled_struct(ty, &it) && self.compiled_hint_is_stds(ty) {\n",
     replace: "        if false && self.compiled_struct(ty, &it) && self.compiled_hint_is_stds(ty) {\n",
     tests: ["test/iterator-forms.test.ts", "-t", "^vec_grown_by_a_chain_of_an_inspect"],
+  },
+  {
+    name: "js-own-of-values-hint-known",
+    breaks: "a `Vec` collected of a slice's `inspect()`, made in place as JS's own `values().map(..)`, which knows no hint, is taken for std's `Inspect`, whose hint is the slice's length, and grows from 4 to 8 where std's capacity is 5 (#1792)",
+    file: "src/lower/iterators/hint_asks.rs",
+    find: "        let hint_known = !form_hintless && self.adapted_hint_known(iter_ty);\n",
+    replace: "        let hint_known = self.adapted_hint_known(iter_ty);\n",
+    tests: ["test/corpus.test.ts", "-t", "^inspect_of_a_slice_collected_where_capacity_is_read.rs$"],
   },
 ];

@@ -166,7 +166,7 @@ pub(in crate::lower) fn lent_string_iterator(e: &Expr) -> Option<&Expr> {
 }
 
 /// Each fact `emit` marks a value's JS with.
-const VALUE_FACTS: [Known; 12] = [
+const VALUE_FACTS: [Known; 13] = [
     Known::IterStepped,
     Known::IterRange,
     Known::IterOwn,
@@ -179,6 +179,7 @@ const VALUE_FACTS: [Known; 12] = [
     Known::IterKnowsBack,
     Known::IterKnowsLength,
     Known::IterEnumerate,
+    Known::IterHintless,
 ];
 
 /// Of `facts`, those `emit` marked a value's JS with: what a value made

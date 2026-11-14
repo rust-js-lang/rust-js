@@ -342,6 +342,10 @@ for (const [name, source, message, crate] of [
   // A map of a range stepped from its end, made in place, isn't read as its source's map, which
   // would step the range forward: `Some(2)` where Rust gives `Some(9)` (ADR 0987).
   ["a map of a reversed range given where its length is asked", "fn first<I: ExactSizeIterator<Item = u32>>(mut it: I) -> Option<u32> { it.next() }\npub fn f() -> Option<u32> { first((1..9u32).map(|x| x + 1).rev()) }", "as an `ExactSizeIterator`, which rust-js can't count"],
+  // A map a variable holds made in place, JS's own `values().map(..)`, which knows no hint,
+  // inspected and collected where a capacity is read: refused, not grown 4 then 8 where std's
+  // `Inspect` of it reserves 5 (#1792).
+  ["a held map's inspect collected where its capacity is read", "pub fn f(v: &[u32]) -> usize { let d = v.iter().map(|x| x * 2); let w: Vec<u32> = d.inspect(|_| ()).collect(); w.capacity() }", "as an `ExactSizeIterator`, which rust-js can't count"],
   // A builder's steps are a chain's (ADR 0136): one a loop steps is no chain.
   ["a map's key looked up through the crate's Borrow", "use std::borrow::Borrow;\n#[derive(PartialEq, Eq, Hash)]\npub struct Name(pub String);\nimpl Borrow<str> for Name { fn borrow(&self) -> &str { &self.0 } }\npub fn f(m: &std::collections::HashMap<Name, i32>) -> Option<&i32> { m.get(\"a\") }", "`std::collections::HashMap::<K, V, S, A>::get` of a `Name` as what its own `Borrow` gives"],
   ["items joined through the crate's Borrow", "use std::borrow::Borrow;\n#[derive(PartialEq, Eq, Hash)]\npub struct Name(pub String);\nimpl Borrow<str> for Name { fn borrow(&self) -> &str { &self.0 } }\npub fn f(v: &[Name]) -> String { v.join(\",\") }", "`std::slice::<impl [T]>::join` of a `Name` as what its own `Borrow` gives"],
