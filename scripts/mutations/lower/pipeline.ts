@@ -3,6 +3,15 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "module-fns-made-unsettled",
+    breaks:
+      "the module's functions a body made are never settled, so none is written, and each call of one reads what nothing declares (#1671 change 4, M2)",
+    file: "src/lower/pipeline.rs",
+    find: "        drop(cx);\n        settled.module_fns.settle(made);\n        match result {\n",
+    replace: "        drop((cx, made));\n        match result {\n",
+    tests: ["test/corpus.test.ts", "-t", "^recursive_fns_per_module.rs$"],
+  },
+  {
     name: "type-reexport-an-import",
     breaks:
       "every re-export rustc lists, a type's too, which has no JS, is an import in the load-order graph, as fdec315a7 had it, so a `pub` thread-local made of the re-exporting module's function is refused as in an import cycle (rd116)",
@@ -422,7 +431,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a function lowered after its module's `eqExpr` was made names its variable `eq_expr` `eqExpr`, which hides the module's: `const eqExpr = eqExpr(a, b)` throws (#517)",
     file: "src/lower/pipeline.rs",
-    find: "        names.extend(crate_facts.module_fns.borrow().names(module).map(str::to_owned));\n",
+    find: "        names.extend(settled.module_fns.names(module).map(str::to_owned));\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^recursive_fns_per_module.rs$"],
   },
@@ -515,8 +524,8 @@ export const mutations: Mutation[] = [
     name: "asked-ungathered",
     breaks: "what of its libraries a body found the crate compiles itself isn't gathered, so the crate isn't lowered again with it, and the hole where it's called is refused, a library's item its JS doesn't export (ADR 0914, amended; ADR 1148)",
     file: "src/lower/pipeline.rs",
-    find: "        asked.extend(cx.asked_of_libraries.take());\n        drop(cx);\n",
-    replace: "        drop(cx);\n",
+    find: "        drops_observed.gather(cx.drops_observed.take());\n        asked.extend(cx.asked_of_libraries.take());\n",
+    replace: "        drops_observed.gather(cx.drops_observed.take());\n",
     tests: ["test/crates-compiled-here.test.ts", "-t", "merge what its consumer compares"],
   },
 ];

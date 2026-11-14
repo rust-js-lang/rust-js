@@ -58,6 +58,9 @@ const owners: Record<string, string[]> = {
   // What of its libraries lowering a function found the crate compiles
   // itself, which the pipeline gathers, as `drops_observed` (ADR 1148):
   // asked where an item is named, and of a library's impl or default.
+  // The module's functions a body made and called, which the pipeline
+  // settles after it, recursive_fns.rs's to write (ADR 1148).
+  "self.module_fns_made": ["src/lower/recursive_fns.rs"],
   "self.asked_of_libraries": ["src/lower/items.rs", "src/lower/traits/impls.rs", "src/lower/traits/impls/defaults.rs"],
   "self.writing": ["src/lower/display.rs", "src/lower/display/debug.rs", "src/lower/display/written.rs"],
   "self.recursive": ["src/lower/recursive_fns.rs"],

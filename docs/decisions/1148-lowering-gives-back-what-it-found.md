@@ -76,3 +76,19 @@ M3 (one call graph) and M4 (each fact declared `Local`, `Summary` or
    library's impl that isn't its dictionary's entry, and a library's trait
    of classes' default. Both are `Hole::Asked` now, and
    test/architecture-holes.test.ts holds every ask to give one.
+4. `module_fns`, each module's function of a recursive type's `==`, clone
+   or order, and its dictionaries' and instances' values, is
+   `Settled::module_fns` for those the bodies before made. What a body
+   makes and calls is its own (`FnCx::module_fns_made`, a `MadeHere`): its
+   lookups are of both, and each one it makes counts both as made before
+   it, `made_before`, as the module writes them in that order. Its calls
+   are kept in order, each with the one it was made in, and the pipeline
+   settles them after the body (`ModuleFns::settle`), replaying them as
+   the one cell did, so who calls what, and so where each is written, is
+   as before. Nothing a body reads is a call's: only the pipeline's
+   `written_before` and the drops' settling read those. The names a body
+   may not take are asked, `FnCx::module_fn_names`, of both.
+   test/architecture-state.test.ts holds `module_fns_made` to
+   recursive_fns.rs. Output unchanged. Mutations module-fn-made-before-unseen
+   and module-fns-made-unsettled are new, and three are retargeted, each
+   caught.

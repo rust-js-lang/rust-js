@@ -43,12 +43,25 @@ impl Kind {
 }
 
 /// The crate's modules' functions, made as their bodies are lowered: each
-/// by its module, what it is and its type.
+/// by its module, what it is and its type. What the bodies lowered before
+/// made, `Settled`'s, which the pipeline settles each body's into
+/// (`settle`), never a body itself (#1671 change 4, M2).
 #[derive(Default)]
 pub(super) struct ModuleFns<'tcx> {
     made: IndexMap<Key<'tcx>, Made<'tcx>>,
+}
+
+/// What a body made and called of its module's functions, beside those
+/// settled before it: its own, given back, which the pipeline settles
+/// (`ModuleFns::settle`, ADR 1148).
+#[derive(Default)]
+pub(super) struct MadeHere<'tcx> {
+    made: IndexMap<Key<'tcx>, Made<'tcx>>,
     /// Those whose bodies are being lowered, the innermost last.
     building: Vec<Key<'tcx>>,
+    /// Each call of one, by the item, in the one being made then, if any,
+    /// in order: what `ModuleFns::called` makes of each as it's settled.
+    calls: Vec<(Option<Key<'tcx>>, Key<'tcx>, DefId)>,
 }
 
 type Key<'tcx> = (LocalModId, Kind, Ty<'tcx>);
@@ -86,10 +99,23 @@ impl WrittenBefore {
 }
 
 impl<'tcx> ModuleFns<'tcx> {
-    /// `item` calls the function of `key`: and so the ones it calls, and
-    /// the one being lowered, if any, calls it.
-    fn called(&mut self, key: Key<'tcx>, item: DefId) {
-        if let Some(&outer) = self.building.last() {
+    /// What a body made and called, `here`, settled: each it made, in the
+    /// order it made them, then each call, in the order it made them.
+    pub(super) fn settle(&mut self, here: MadeHere<'tcx>) {
+        debug_assert!(
+            here.building.is_empty(),
+            "a module's function is settled while it's made"
+        );
+        self.made.extend(here.made);
+        for (outer, key, item) in here.calls {
+            self.called(outer, key, item);
+        }
+    }
+
+    /// `item` calls the function of `key`, in `outer`, the one being
+    /// lowered then, if any: and so the ones it calls, and `outer` calls it.
+    fn called(&mut self, outer: Option<Key<'tcx>>, key: Key<'tcx>, item: DefId) {
+        if let Some(outer) = outer {
             self.made.get_mut(&outer).expect("being made").calls.insert(key);
         }
         let mut todo = vec![key];
@@ -194,9 +220,7 @@ impl<'tcx> ModuleFns<'tcx> {
     /// The names `module`'s functions have, which no other name of its may
     /// be.
     pub(super) fn names(&self, module: LocalModId) -> impl Iterator<Item = &str> {
-        (self.made.iter())
-            .filter(move |((at, ..), _)| *at == module)
-            .map(|(_, made)| made.name.as_str())
+        names(&self.made, module)
     }
 
     /// The functions `item` calls not yet written, each then written: its
@@ -238,12 +262,29 @@ impl<'tcx> ModuleFns<'tcx> {
     }
 }
 
+/// The names `module`'s functions of `made` have.
+fn names<'m>(made: &'m IndexMap<Key<'_>, Made<'_>>, module: LocalModId) -> impl Iterator<Item = &'m str> {
+    (made.iter())
+        .filter(move |((at, ..), _)| *at == module)
+        .map(|(_, made)| made.name.as_str())
+}
+
 /// The functions a type only a caller knows has, being made: each by its
 /// kind and type, its name, which one inside it calls.
 #[derive(Default)]
 pub(super) struct Making<'tcx>(Vec<(Kind, Ty<'tcx>, String)>);
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// The names this body's module's functions have, those the bodies
+    /// before it made and its own, which none of its names may be.
+    pub(super) fn module_fn_names(&self) -> Vec<String> {
+        let here = self.module_fns_made.borrow();
+        (self.settled.module_fns.names(self.module))
+            .chain(names(&here.made, self.module))
+            .map(str::to_owned)
+            .collect()
+    }
+
     /// The function that's `ty`'s `kind`, recursive (`is_recursive`), named
     /// of `base` and the type, `eqHir`: made the first time it's asked of
     /// `params`, the names of its parameters, whose body `make` lowers,
@@ -309,29 +350,31 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         make: impl FnOnce(&mut Self, Vec<Expr>, &mut Vec<Stmt>) -> R<Expr>,
     ) -> R<String> {
         let key = (self.module, kind, self.tcx.erase_and_anonymize_regions(ty));
-        let mut module_fns = self.krate.module_fns.borrow_mut();
-        if module_fns.made.contains_key(&key) {
-            module_fns.called(key, self.item);
-            let made = &module_fns.made[&key];
+        let mut here = self.module_fns_made.borrow_mut();
+        let outer = here.building.last().copied();
+        if let Some(made) = (self.settled.module_fns.made.get(&key)).or_else(|| here.made.get(&key)) {
             let name = made.name.clone();
             // What it uses, this item's to import and reach too; none yet
             // of the one being made, which its own body calls.
             if let Some((_, uses)) = &made.lowered {
                 merge(&mut self.dependencies.borrow_mut(), uses, self.item);
             }
-            drop(module_fns);
+            here.calls.push((outer, key, self.item));
+            drop(here);
             self.names.borrow_mut().insert(name.clone());
             return Ok(name);
         }
         // Apart from the module's names, its other functions', and this
         // body's, which mustn't hide it.
+        drop(here);
         let mut taken: IndexSet<String> = (self.module_names.iter().cloned())
-            .chain(module_fns.names(self.module).map(str::to_owned))
+            .chain(self.module_fn_names())
             .collect();
         taken.extend(self.names.borrow().iter().cloned());
         let name = super::fresh_in(&mut taken, base);
-        let made_before = module_fns.made.len();
-        module_fns.made.insert(
+        let mut here = self.module_fns_made.borrow_mut();
+        let made_before = self.settled.module_fns.made.len() + here.made.len();
+        here.made.insert(
             key,
             Made {
                 name: name.clone(),
@@ -343,15 +386,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 constant: matches!(kind, Kind::Dictionary(_)) || kind.is_fn_value(),
             },
         );
-        module_fns.called(key, self.item);
-        module_fns.building.push(key);
-        drop(module_fns);
+        here.calls.push((outer, key, self.item));
+        here.building.push(key);
+        drop(here);
         self.names.borrow_mut().insert(name.clone());
         // Its body, lowered as a function of its own: its names apart from
         // this body's, what it uses its own, given no dictionary of this
         // item's.
         let mut names: IndexSet<String> = (self.module_names.iter().cloned())
-            .chain(self.krate.module_fns.borrow().names(self.module).map(str::to_owned))
+            .chain(self.module_fn_names())
             .collect();
         let params: Vec<String> = params.iter().map(|p| super::fresh_in(&mut names, &p.word())).collect();
         let names = self.names.replace(names);
@@ -362,7 +405,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.restore_given(given);
         self.names.replace(names);
         let own = self.dependencies.replace(uses);
-        self.krate.module_fns.borrow_mut().building.pop();
+        self.module_fns_made.borrow_mut().building.pop();
         body.push(StmtKind::Return(Some(value?)).at(js::Span::NONE));
         merge(&mut self.dependencies.borrow_mut(), &own, self.item);
         let function = js::Function {
@@ -377,8 +420,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             param_spans: Vec::new(),
             set_apart: false,
         };
-        let mut module_fns = self.krate.module_fns.borrow_mut();
-        let made = module_fns.made.get_mut(&key).expect("made above");
+        let mut here = self.module_fns_made.borrow_mut();
+        let made = here.made.get_mut(&key).expect("made above");
         made.lowered = Some((function, own));
         Ok(name)
     }

@@ -408,7 +408,7 @@ struct Dependencies {
 struct FnCx<'a, 'tcx> {
     krate: &'a CrateFacts<'a, 'tcx>,
     /// What the crate's bodies lowered before it settled (`Settled`).
-    settled: &'a Settled,
+    settled: &'a Settled<'tcx>,
     dependencies: RefCell<Dependencies>,
     /// What lowering this function found of drops, which the pipeline
     /// gathers, of each function lowered or not, and resolves (ADRs 0190,
@@ -419,6 +419,9 @@ struct FnCx<'a, 'tcx> {
     /// the module that asked, which the pipeline gathers: the crate is
     /// lowered again with them (ADR 0914, amended; ADR 1148).
     asked_of_libraries: RefCell<Vec<(DefId, LocalModId)>>,
+    /// The module's functions this body made and called, beside those
+    /// `settled` holds, which the pipeline settles after it (ADR 1148).
+    module_fns_made: RefCell<recursive_fns::MadeHere<'tcx>>,
     tcx: TyCtxt<'tcx>,
     typing_env: ty::TypingEnv<'tcx>,
     /// What the generic item being lowered is given, besides its arguments.

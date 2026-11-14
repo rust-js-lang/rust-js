@@ -5,6 +5,15 @@ const perModule = ["test/corpus.test.ts", "-t", "^recursive_fns_per_module.rs$"]
 
 export const mutations: Mutation[] = [
   {
+    name: "module-fn-made-before-unseen",
+    breaks:
+      "a body doesn't see the module's functions the bodies before it made, `Settled`'s, so each makes its own, `eqHir$1` beside `eqHir` (#1671 change 4, M2)",
+    file: "src/lower/recursive_fns.rs",
+    find: "        if let Some(made) = (self.settled.module_fns.made.get(&key)).or_else(|| here.made.get(&key)) {\n",
+    replace: "        if let Some(made) = here.made.get(&key) {\n",
+    tests: perModule,
+  },
+  {
     name: "fn-pointer-keyed-as-its-value",
     breaks:
       "a generic function's pointer is keyed as its value is, and the instance's value, which takes generic code's forms, is the pointer's `const` too, or the other way round",
@@ -44,8 +53,8 @@ export const mutations: Mutation[] = [
     breaks:
       "each place that compares a recursive type makes its module's function again, which takes the first one's place, so the places before it call a function no module writes (#517)",
     file: "src/lower/recursive_fns.rs",
-    find: "        if module_fns.made.contains_key(&key) {\n",
-    replace: "        if false && module_fns.made.contains_key(&key) {\n",
+    find: "        if let Some(made) = (self.settled.module_fns.made.get(&key)).or_else(|| here.made.get(&key)) {\n",
+    replace: "        if let Some(made) = None::<&Made<'tcx>> {\n",
     tests: perModule,
   },
   {

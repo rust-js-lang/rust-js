@@ -415,7 +415,6 @@ pub fn lower_crate<'tcx>(
         local_consts: &local_consts,
         struct_literals: &struct_literals,
         constructed: &constructed,
-        module_fns: Default::default(),
         nulled_params: &nulled_params,
     };
     // What a library's manifest says of its writers (ADR 0137).
@@ -524,7 +523,7 @@ pub fn lower_crate<'tcx>(
         // they mustn't be either (ADR 0267).
         // And its recursive types' functions' (`recursive_fns`).
         let mut names = taken[&module].clone();
-        names.extend(crate_facts.module_fns.borrow().names(module).map(str::to_owned));
+        names.extend(settled.module_fns.names(module).map(str::to_owned));
         if super::bindings::is_on_load(tcx, def_id) {
             let earlier = lowered_items
                 .iter()
@@ -570,7 +569,9 @@ pub fn lower_crate<'tcx>(
         // Of one that failed too, whose calls are checked as each other's.
         drops_observed.gather(cx.drops_observed.take());
         asked.extend(cx.asked_of_libraries.take());
+        let made = cx.module_fns_made.take();
         drop(cx);
+        settled.module_fns.settle(made);
         match result {
             Ok(lowered) => {
                 used.extend(lowered.dependencies.uses.iter().map(|&(_, to)| to));
@@ -606,12 +607,15 @@ pub fn lower_crate<'tcx>(
         let cx = contexts::item_cx((&shared, &settled), id.to_def_id(), given);
         cx.ref_cells();
         asked.extend(cx.asked_of_libraries.take());
+        let made = cx.module_fns_made.take();
+        drop(cx);
+        settled.module_fns.settle(made);
     }
     // What of its libraries the crate's lowering found it compiles itself,
     // which their JS doesn't export: the crate lowered again with them, as
     // with what its calls give more (ADR 0914, amended).
     // Each module's recursive types' functions (`recursive_fns`).
-    let mut module_fns = crate_facts.module_fns.take();
+    let mut module_fns = std::mem::take(&mut settled.module_fns);
     if !asked.is_empty() && tcx.dcx().has_errors().is_none() {
         return Lowered::Instances(super::instances::asked(tcx, asked));
     }

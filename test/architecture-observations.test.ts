@@ -19,7 +19,7 @@ const lowering = readdirSync(join(root, "src", "lower"), { recursive: true, enco
 
 // Each field of `CrateFacts` a body may change, a cell: a list that only
 // shrinks, M2 moving each into what a body gives back or `Settled`.
-const cellsLeft = ["ref_cells", "own_callbacks", "module_fns"];
+const cellsLeft = ["ref_cells", "own_callbacks"];
 
 test("the crate's facts are read alike by each body: no cell but those still to move", () => {
   const source = read("src/lower/crate_facts.rs");
@@ -31,7 +31,7 @@ test("the crate's facts are read alike by each body: no cell but those still to 
 
 test("what the bodies lowered before settled is the pipeline's to write, a body's to read", () => {
   // A body holds it by a shared reference alone.
-  expect(read("src/lower.rs")).toContain("    settled: &'a Settled,\n");
+  expect(read("src/lower.rs")).toContain("    settled: &'a Settled<'tcx>,\n");
   const writers = lowering
     .filter((file) => /\bsettled\.\w+\.(?:insert|extend|push|remove|clear)\(/.test(read(file)));
   expect(writers).toEqual(["src/lower/pipeline.rs"]);

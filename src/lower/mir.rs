@@ -1283,7 +1283,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return IndexSet::default();
         }
         (self.module_names.iter().cloned())
-            .chain(self.krate.module_fns.borrow().names(self.module).map(str::to_owned))
+            .chain(self.module_fn_names())
             .collect()
     }
 

@@ -173,8 +173,6 @@ pub(in crate::lower) struct CrateFacts<'a, 'tcx> {
     pub(in crate::lower) struct_literals: &'a IndexMap<DefId, usize>,
     /// The nullable fields present, set first (`classes::set_where_constructed`).
     pub(in crate::lower) constructed: &'a IndexSet<DefId>,
-    /// Each module's function of a recursive type's `==`, clone or order.
-    pub(in crate::lower) module_fns: RefCell<recursive_fns::ModuleFns<'tcx>>,
     /// The own nullable parameters each call gives `null` or a value, as
     /// lowering sees their calls (ADR 0861, amended, rd613).
     pub(in crate::lower) nulled_params: &'a analysis::nulled_params::NulledParams,
@@ -193,7 +191,7 @@ impl CrateFacts<'_, '_> {
 /// body's own (#1671 change 4, M2). A body reads it, and gives back what it
 /// found in its `LoweredFn`, which the pipeline settles here.
 #[derive(Default)]
-pub(in crate::lower) struct Settled {
+pub(in crate::lower) struct Settled<'tcx> {
     /// Each method that reads each variant's field, its JS's parameter and
     /// read, of one lowered (rd317): lowered before its callers.
     pub(in crate::lower) field_reads: IndexMap<DefId, (String, Expr)>,
@@ -204,4 +202,8 @@ pub(in crate::lower) struct Settled {
     /// (`FnCx::reads_by_name`, `pipeline::load_cycles`, ADR 0031, amended).
     /// Lowered again once it's known.
     pub(in crate::lower) loads_in_cycles: IndexSet<DefId>,
+    /// Each module's function of a recursive type's `==`, clone or order,
+    /// and its dictionaries' and instances' values, made by the bodies
+    /// lowered before (`recursive_fns`): each body's own given back.
+    pub(in crate::lower) module_fns: recursive_fns::ModuleFns<'tcx>,
 }
