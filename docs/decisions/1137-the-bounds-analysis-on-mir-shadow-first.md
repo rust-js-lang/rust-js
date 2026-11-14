@@ -669,3 +669,25 @@ sound:
 - `insert(0, x)` and `&v[..0]`, at most any length;
 - a stepped loop's `v[i]` below `v.len()`;
 - a `swap` of a slice whose earlier bounds checks show its length.
+
+### Step 5: a struct's fields as locals (2026-11-15)
+
+A method's `self.items[self.at]` read its fields through `&mut self`,
+places of `(*_1).f`, which the walk knew nothing of. Now the walk reads a
+body with each field a reference parameter to a struct is read through as
+a local of its own (`fields_as_locals`), as #1701 B made a closure's
+captures. The walk's rules of a local are then the field's:
+- a test narrows it;
+- a copy is one of it;
+- a `&mut` of it lends it;
+- a `Vec` field lent only to calls keeps its length: `self.0.remove(0)`
+  past `!self.0.is_empty()`.
+A parameter given on whole, `self.reset()` or `&mut *self` given a call,
+may change any field, and its fields stay places.
+
+The shadow's call-bounds lines fall from 146 to 132. Beyond them, MIR now
+proves 173 more wraps than THIR's facts did, mir-only-wrap 103 to 276,
+each a field stepped under a test, such as `self.end -= 1` under
+`self.at < self.end`. Since MIR decides wraps (M3 step 2), the JS has them
+as JS's own: 117 corpus cases, each passing against native, and
+@rust-js/std's `iter.js`, where `take.n - 1` is under `take.n > 0`.

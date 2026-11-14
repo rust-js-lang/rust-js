@@ -24,7 +24,7 @@ function genDebug_fmt(gen) {
 
 function genIterator_next(gen) {
   if (gen[0] !== 0) {
-    gen[0] = (gen[0] - 1) >>> 0;
+    gen[0]--;
     return gen[0];
   }
 }

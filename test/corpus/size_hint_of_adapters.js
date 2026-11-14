@@ -42,7 +42,7 @@ function ownIterator_next(own) {
 }
 function ownIterator_sizeHint(own) {
   console.log(`  own hint at ${own.at}`);
-  const left = (own.end - Math.min(own.at, own.end)) >>> 0;
+  const left = own.end - Math.min(own.at, own.end);
   return [left, left];
 }
 

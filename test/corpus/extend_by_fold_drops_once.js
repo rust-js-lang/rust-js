@@ -32,7 +32,7 @@ export function entry() {
 
 function upIterator_next(up) {
   if (up.n < 3) {
-    up.n = (up.n + 1) >>> 0;
+    up.n++;
     return up.n;
   }
 }
@@ -70,7 +70,7 @@ function up() {
 
 function lettersIterator_next(letters) {
   if (letters.n < 3) {
-    letters.n = (letters.n + 1) >>> 0;
+    letters.n++;
     return $fromDigit(letters.n, 10);
   }
 }

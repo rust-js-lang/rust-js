@@ -42,7 +42,7 @@ function circularIterator_next(circular, IClone) {
   if (circular.len === 0) {
     return;
   }
-  circular.len = (circular.len - 1) >>> 0;
+  circular.len--;
   return $nextSome(circular.iter);
 }
 

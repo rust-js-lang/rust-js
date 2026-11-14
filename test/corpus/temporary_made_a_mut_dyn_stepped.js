@@ -20,7 +20,7 @@ const Count = {
     if (count.n === 0) {
       return;
     }
-    count.n = (count.n - 1) >>> 0;
+    count.n--;
     return count.n;
   },
 };

@@ -1,13 +1,13 @@
 # shape	count	per 10,000 lines
-files	2563
-lines	338363
+files	2564
+lines	338392
 temporaries	0	0
 labeled blocks	0	0
 while (true)	224	6.6
 $iter	2866	84.7
 Iterator.from	264	7.8
 return;	328	9.7
-renamed x$1	16169	477.9
+renamed x$1	16169	477.8
 role fallbacks	8829	260.9
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1	role fallbacks
 test/corpus/adapter_drop_past_a_panic.js	52	0	0	0	1	0	0	0	1
@@ -819,6 +819,7 @@ test/corpus/flatten_of_options_given_to_generic_code.js	125	0	0	0	3	1	0	9	9
 test/corpus/flattened_keyed_const.js	54	0	0	0	0	0	0	0	0
 test/corpus/flattened_keyed_enum.js	153	0	0	0	0	0	1	5	7
 test/corpus/flattened_keyed_param.js	69	0	0	0	0	0	0	0	0
+test/corpus/flattened_reference_shared.js	29	0	0	0	0	0	0	0	0
 test/corpus/flattened_rows_apart.js	26	0	0	0	1	0	0	2	0
 test/corpus/flattened_state_cell.js	111	0	0	0	0	0	0	0	0
 test/corpus/flattened_state_cell_swapped.js	135	0	0	0	0	0	0	20	1

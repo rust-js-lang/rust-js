@@ -20,14 +20,14 @@ function loudDrop_drop(loud) {
 
 function sourceIterator_next(source) {
   if (source[0] !== 0) {
-    source[0] = (source[0] - 1) >>> 0;
+    source[0]--;
     return $some(source[0] !== 5 ? source[0] : undefined);
   }
 }
 
 function loudsIterator_next(louds) {
   if (louds[0] !== 0) {
-    louds[0] = (louds[0] - 1) >>> 0;
+    louds[0]--;
     return $some(louds[0] !== 1 ? [louds[0]] : undefined);
   }
 }

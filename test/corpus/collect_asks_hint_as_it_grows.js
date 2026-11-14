@@ -46,7 +46,7 @@ function ownIterator_sizeHint(own, dropT, dropF) {
   if (own.at === own.panicsAt) {
     throw new Error("hint");
   }
-  const left = (own.end - Math.min(own.at, own.end)) >>> 0;
+  const left = own.end - Math.min(own.at, own.end);
   return [own.lower(left), undefined];
 }
 

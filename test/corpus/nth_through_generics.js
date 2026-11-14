@@ -19,7 +19,7 @@ export function entry() {
 
 function plainIterator_next(plain) {
   if (plain[1] < 3) {
-    plain[1] = (plain[1] + 1) >>> 0;
+    plain[1]++;
     return plain[1];
   }
 }

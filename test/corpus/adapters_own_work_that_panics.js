@@ -69,7 +69,7 @@ function dClone_clone(d) {
 
 function onceIterator_next(once) {
   if (once.left !== 0) {
-    once.left = (once.left - 1) >>> 0;
+    once.left--;
     return once.left;
   }
 }
@@ -90,7 +90,7 @@ function twiceClone_clone(twice) {
 
 function twiceIterator_next(twice) {
   if (twice[0] !== 0) {
-    twice[0] = (twice[0] - 1) >>> 0;
+    twice[0]--;
     return twice[0];
   }
 }
@@ -108,7 +108,7 @@ function once(held) {
 
 function tickIterator_next(tick) {
   if (tick[0] < 100) {
-    tick[0] = (tick[0] + 100) >>> 0;
+    tick[0] += 100;
     return tick[0];
   }
 }

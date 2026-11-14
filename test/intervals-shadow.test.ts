@@ -406,3 +406,34 @@ pub fn main() {
 }
 `)).toEqual(["mir-only-call-bounds full", "mir-only-call-bounds between"]);
 });
+
+// #1672 M3, step 5: a struct's fields a reference parameter is read
+// through are locals of the body the walk reads: `self.0.remove(0)` past
+// `!self.0.is_empty()` is proved, as THIR's facts do, and `self.items[self.at]`
+// past `self.at < self.items.len()`, which they don't. Not of a method that
+// gives `self` on, `self.reset()`, which may change any field.
+test("a struct's fields read through a reference parameter are locals: a test of one narrows it", () => {
+  expect(shadowOf(`pub struct Queue(Vec<u32>);
+impl Queue {
+    pub fn next(&mut self) -> Option<u32> {
+        if self.0.is_empty() { None } else { Some(self.0.remove(0)) }
+    }
+}
+pub struct It { items: Vec<u32>, at: usize }
+impl It {
+    pub fn step(&mut self) -> Option<u32> {
+        if self.at < self.items.len() { let x = self.items[self.at]; self.at += 1; Some(x) } else { None }
+    }
+    pub fn whole(&mut self) -> u32 {
+        if self.at < self.items.len() { self.reset(); return self.items[self.at]; }
+        0
+    }
+    fn reset(&mut self) { self.items.clear(); }
+}
+pub fn main() {
+    let mut q = Queue(vec![1]);
+    let mut it = It { items: vec![1, 2], at: 0 };
+    println!("{:?} {:?} {}", q.next(), it.step(), it.whole());
+}
+`)).toEqual(["mir-only-call-bounds It::step", "mir-only-wrap It::step"]);
+});

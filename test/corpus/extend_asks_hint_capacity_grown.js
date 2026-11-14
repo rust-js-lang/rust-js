@@ -24,7 +24,7 @@ function loudIterator_next(loud) {
   if (loud[0] === 0) {
     return;
   }
-  loud[0] = (loud[0] - 1) >>> 0;
+  loud[0]--;
   return loud[0];
 }
 function loudIterator_sizeHint(loud) {

@@ -19,7 +19,7 @@ export function entry() {
 
 function countdownIterator_next(countdown) {
   if (countdown[0] !== 0) {
-    countdown[0] = (countdown[0] - 1) >>> 0;
+    countdown[0]--;
     return countdown[0];
   }
 }

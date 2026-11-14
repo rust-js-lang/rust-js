@@ -23,7 +23,7 @@ export function entry() {
 
 function countdownIterator_next(countdown) {
   if (countdown.lo < countdown.hi) {
-    countdown.lo = (countdown.lo + 1) >>> 0;
+    countdown.lo++;
     return countdown.lo;
   }
 }
@@ -33,8 +33,8 @@ function countdownIterator_sizeHint(countdown) {
 }
 function countdownDoubleEndedIterator_nextBack(countdown) {
   if (countdown.lo < countdown.hi) {
-    countdown.hi = (countdown.hi - 1) >>> 0;
-    return (countdown.hi + 1) >>> 0;
+    countdown.hi--;
+    return countdown.hi + 1;
   }
 }
 function cd(n) {

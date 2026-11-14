@@ -32,7 +32,7 @@ export function entry() {
 
 function countIterator_next(count) {
   if (count.at < count.end) {
-    count.at = (count.at + 1) | 0;
+    count.at++;
     return count.at;
   }
 }

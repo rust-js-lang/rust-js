@@ -32,7 +32,7 @@ export function entry() {
 
 function upIterator_next(up) {
   if (up[0] < up[1]) {
-    up[0] = (up[0] + 1) >>> 0;
+    up[0]++;
     return up[0];
   }
 }
@@ -44,8 +44,8 @@ function upIterator_sizeHint(up) {
 
 function upDoubleEndedIterator_nextBack(up) {
   if (up[0] < up[1]) {
-    up[1] = (up[1] - 1) >>> 0;
-    return (up[1] + 1) >>> 0;
+    up[1]--;
+    return up[1] + 1;
   }
 }
 

@@ -10,7 +10,7 @@ function counterIterator_next(counter) {
   if (counter.at >= counter.end) {
     return;
   }
-  counter.at = (counter.at + 1) >>> 0;
+  counter.at++;
   return counter.at;
 }
 

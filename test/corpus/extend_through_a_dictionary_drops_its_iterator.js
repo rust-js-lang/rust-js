@@ -25,7 +25,7 @@ export function entry() {
 
 function upIterator_next(up) {
   if (up.n < 3) {
-    up.n = (up.n + 1) >>> 0;
+    up.n++;
     return up.n;
   }
 }
@@ -62,7 +62,7 @@ function downIterator_next(down) {
     throw new Error("seven");
   }
   if (down.n > 0) {
-    down.n = (down.n - 1) >>> 0;
+    down.n--;
     return down.n;
   }
 }

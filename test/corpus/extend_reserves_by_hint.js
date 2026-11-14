@@ -19,7 +19,7 @@ function loudIterator_next(loud) {
   if (loud.n === 0) {
     return;
   }
-  loud.n = (loud.n - 1) >>> 0;
+  loud.n--;
   return loud.n;
 }
 function loudIterator_sizeHint(loud) {

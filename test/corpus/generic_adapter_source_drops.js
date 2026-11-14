@@ -8,7 +8,7 @@ export function entry() {
 
 function counterIterator_next(counter) {
   if (counter[0] < 3) {
-    counter[0] = (counter[0] + 1) >>> 0;
+    counter[0]++;
     return counter[0];
   }
 }

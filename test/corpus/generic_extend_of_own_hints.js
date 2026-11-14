@@ -23,7 +23,7 @@ function quietIterator_next(quiet) {
   if (quiet[0] === 0) {
     return;
   }
-  quiet[0] = (quiet[0] - 1) >>> 0;
+  quiet[0]--;
   return quiet[0];
 }
 
@@ -31,7 +31,7 @@ function loudIterator_next(loud) {
   if (loud[0] === 0) {
     return;
   }
-  loud[0] = (loud[0] - 1) >>> 0;
+  loud[0]--;
   return loud[0];
 }
 function loudIterator_sizeHint(loud) {

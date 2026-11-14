@@ -32,7 +32,7 @@ function flakyIterator_next(flaky) {
 }
 function countIterator_next(count) {
   if (count[0] < 4) {
-    count[0] = (count[0] + 1) >>> 0;
+    count[0]++;
     return count[0];
   }
 }

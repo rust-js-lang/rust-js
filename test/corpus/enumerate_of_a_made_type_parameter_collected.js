@@ -23,8 +23,8 @@ function lettersIterator_next(letters) {
   if (letters[0] >= 3) {
     return;
   }
-  letters[0] = (letters[0] + 1) & 255;
-  return String.fromCharCode((97 + letters[0]) & 255);
+  letters[0]++;
+  return String.fromCharCode(97 + letters[0]);
 }
 
 function lettersIterator_fold(letters, init, f) {

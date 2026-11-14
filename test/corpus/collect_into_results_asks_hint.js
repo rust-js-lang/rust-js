@@ -21,7 +21,7 @@ function loudIterator_next(loud) {
   if (loud.n === 0) {
     return;
   }
-  loud.n = (loud.n - 1) >>> 0;
+  loud.n--;
   return loud.failAt === loud.n ? { TAG: "Err", _0: `at ${loud.n}` } : { TAG: "Ok", _0: loud.n };
 }
 function loudIterator_sizeHint(loud) {
@@ -58,7 +58,7 @@ function panickyIterator_next(panicky) {
   if (panicky.n === 0) {
     return;
   }
-  panicky.n = (panicky.n - 1) >>> 0;
+  panicky.n--;
   return [panicky.n];
 }
 function panickyIterator_sizeHint(panicky) {

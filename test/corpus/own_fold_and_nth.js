@@ -37,7 +37,7 @@ export function entry() {
 function upIterator_next(up) {
   console.log("next");
   if (up.n < 3) {
-    up.n = (up.n + 1) >>> 0;
+    up.n++;
     return up.n;
   }
 }

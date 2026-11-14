@@ -8,7 +8,7 @@ export function entry() {
 
 function uptoIterator_next(upto) {
   if (upto[0] < 5) {
-    upto[0] = (upto[0] + 1) >>> 0;
+    upto[0]++;
     return upto[0];
   }
 }

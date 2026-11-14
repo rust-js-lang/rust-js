@@ -25,7 +25,7 @@ export function entry() {
 
 function countIterator_next(count) {
   if (count.at < count.end) {
-    count.at = (count.at + 1) | 0;
+    count.at++;
     return count.at;
   }
 }
@@ -48,7 +48,7 @@ function countIterator_fold(count, init, f) {
 
 function nthsIterator_next(nths) {
   if (nths[0] < 9) {
-    nths[0] = (nths[0] + 1) | 0;
+    nths[0]++;
     return nths[0];
   }
 }

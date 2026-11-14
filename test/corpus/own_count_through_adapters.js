@@ -27,7 +27,7 @@ function dDrop_drop(d) {
 
 function countIterator_next(count) {
   if (count[0] < 5) {
-    count[0] = (count[0] + 1) >>> 0;
+    count[0]++;
     return count[0];
   }
 }

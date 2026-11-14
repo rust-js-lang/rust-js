@@ -22,7 +22,7 @@ function loggedRead_read(logged, buf) {
   const n = Math.min(buf.length, logged[0]);
   $print(` ${buf.length}->${n}`);
   $view(buf, 0, n).fill(114);
-  logged[0] = (logged[0] - n) >>> 0;
+  logged[0] -= n;
   return { TAG: "Ok", _0: n };
 }
 

@@ -10,8 +10,8 @@ function spanIterator_next(span) {
   if (span.low >= span.high) {
     return;
   }
-  span.low = (span.low + 1) >>> 0;
-  return (span.low - 1) >>> 0;
+  span.low++;
+  return span.low - 1;
 }
 function spanIterator_sizeHint(span) {
   const n = (span.high - span.low) >>> 0;
@@ -22,7 +22,7 @@ function spanDoubleEndedIterator_nextBack(span) {
   if (span.low >= span.high) {
     return;
   }
-  span.high = (span.high - 1) >>> 0;
+  span.high--;
   console.log(`back ${span.high}`);
   return span.high;
 }

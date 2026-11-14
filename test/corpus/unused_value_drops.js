@@ -29,7 +29,7 @@ function maybe(keep, v, dropT) {
 function genIterator_next(gen) {
   gen[0] = (gen[0] + 1) & 255;
   if (gen[0] < 3) {
-    return [(gen[0] + 30) & 255];
+    return [gen[0] + 30];
   }
 }
 

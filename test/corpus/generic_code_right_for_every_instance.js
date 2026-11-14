@@ -54,7 +54,7 @@ function ownIterator_next(own) {
 
 function oddIterator_next(odd) {
   if (odd.n !== 0) {
-    odd.n = (odd.n - 1) >>> 0;
+    odd.n--;
     return odd.n;
   }
 }

@@ -24,7 +24,7 @@ export function entry() {
 
 function countsIterator_next(counts) {
   if (counts.n < 3) {
-    counts.n = (counts.n + 1) >>> 0;
+    counts.n++;
     return counts.n;
   }
 }
@@ -37,7 +37,7 @@ function countsIterator_count(counts) {
 
 function bothIterator_next(both) {
   if (both.n < 3) {
-    both.n = (both.n + 1) >>> 0;
+    both.n++;
     return both.n;
   }
 }
@@ -77,7 +77,7 @@ function bothIterator_fold(both, init, f, dropB, dropF) {
 
 function stepsIterator_next(steps) {
   if (steps.n < 3) {
-    steps.n = (steps.n + 1) >>> 0;
+    steps.n++;
     return steps.n;
   }
 }

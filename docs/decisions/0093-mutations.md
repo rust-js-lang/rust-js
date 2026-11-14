@@ -530,3 +530,12 @@ range, held by test/intervals-bridged.test.ts alone. That list is empty
 since #1701 C (66ffa61c8): MIR proves every wrap THIR's ranges did, so
 THIR's facts decide no wrap and the mutation changes nothing a test reads.
 Its code goes with M4.
+
+## Amendment: the bridge once it decides nothing (2026-11-15, #1701)
+
+`bridge-off` and `bridged-unlisted` go. The first turned off the bridge,
+THIR's verdict taken for a wrap MIR doesn't prove. The second dropped the
+bridge's `bridged` shadow line. Since #1701 C (66ffa61c8), MIR proves every
+wrap the bridge decided in the corpus, and test/intervals-bridged.txt
+lists none. So neither changes what a test reads: `flushed`'s `i += 1`,
+the first's case, is MIR's now. The bridge and its list go with M4.

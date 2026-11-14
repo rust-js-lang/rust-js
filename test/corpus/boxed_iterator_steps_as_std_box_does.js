@@ -8,7 +8,7 @@ export function entry() {
 
 function upIterator_next(up) {
   if (up[0] < up[1]) {
-    up[0] = (up[0] + 1) >>> 0;
+    up[0]++;
     return up[0];
   }
 }

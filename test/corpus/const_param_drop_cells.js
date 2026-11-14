@@ -17,7 +17,7 @@ const Builder = {
       throw new Error(`index out of bounds: the len is ${N} but the index is ${len}`);
     }
     builder.items[len] = value;
-    builder.len = (builder.len + 1) >>> 0;
+    builder.len++;
   },
 };
 

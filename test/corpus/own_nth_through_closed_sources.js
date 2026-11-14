@@ -26,7 +26,7 @@ function loudDrop_drop(loud) {
 
 function loudsIterator_next(louds) {
   if (louds.at < louds.end) {
-    louds.at = (louds.at + 1) >>> 0;
+    louds.at++;
     return [louds.at];
   }
 }

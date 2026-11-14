@@ -22,7 +22,7 @@ function foldsIterator_next(folds) {
   if (folds[0] === 0) {
     return;
   }
-  folds[0] = (folds[0] - 1) >>> 0;
+  folds[0]--;
   return folds[0];
 }
 function foldsIterator_fold(folds, init, f, dropB, dropF) {
@@ -50,7 +50,7 @@ function countsIterator_next(counts) {
   if (counts[0] >= 4) {
     return;
   }
-  counts[0] = (counts[0] + 1) >>> 0;
+  counts[0]++;
   return [counts[0]];
 }
 function countsIterator_count(counts) {
@@ -62,7 +62,7 @@ function nthsIterator_next(nths) {
   if (nths[0] === 0) {
     return;
   }
-  nths[0] = (nths[0] - 1) >>> 0;
+  nths[0]--;
   return nths[0];
 }
 

@@ -26,7 +26,7 @@ function loudDrop_drop(loud) {
 
 function countIterator_next(count) {
   if (count.n < 2) {
-    count.n = (count.n + 1) >>> 0;
+    count.n++;
     return count.n;
   }
 }

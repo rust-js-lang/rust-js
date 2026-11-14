@@ -45,7 +45,7 @@ function pairsIterator_next(pairs) {
   if (pairs[0] === 0) {
     return;
   }
-  pairs[0] = (pairs[0] - 1) & 255;
+  pairs[0]--;
   return [(pairs[0] * 70000) >>> 0, pairs[0]];
 }
 

@@ -28,8 +28,8 @@ function lettersIterator_next(letters) {
   if (letters[0] >= 3) {
     return;
   }
-  letters[0] = (letters[0] + 1) & 255;
-  return String.fromCharCode((97 + letters[0]) & 255);
+  letters[0]++;
+  return String.fromCharCode(97 + letters[0]);
 }
 
 function lettersIterator_fold(letters, init, f) {
@@ -46,9 +46,9 @@ function plainIterator_next(plain) {
   if (plain[0] >= 2) {
     return;
   }
-  plain[0] = (plain[0] + 1) & 255;
+  plain[0]++;
   console.log(`plain next ${plain[0]}`);
-  return String.fromCharCode((120 + plain[0]) & 255);
+  return String.fromCharCode(120 + plain[0]);
 }
 
 function text(it) {

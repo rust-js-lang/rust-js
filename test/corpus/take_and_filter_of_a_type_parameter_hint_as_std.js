@@ -8,7 +8,7 @@ export function entry() {
 
 function hintedIterator_next(hinted) {
   if (hinted[0] !== 0) {
-    hinted[0] = (hinted[0] - 1) >>> 0;
+    hinted[0]--;
     return hinted[0];
   }
 }

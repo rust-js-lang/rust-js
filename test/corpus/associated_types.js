@@ -9,7 +9,7 @@ export function entry() {
 const countSource = { nextItem: (arg0) => countSource_nextItem(arg0.value) };
 function countSource_nextItem(count) {
   if (count.n !== 0) {
-    count.n = (count.n - 1) >>> 0;
+    count.n--;
     return count.n;
   }
 }

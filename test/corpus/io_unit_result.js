@@ -94,7 +94,7 @@ function limitedWrite_write(limited, bytes) {
   for (let i = 0; i < items.length; i++) {
     limited.out.push(items[i]);
   }
-  limited.room = (limited.room - n) >>> 0;
+  limited.room -= n;
   return { TAG: "Ok", _0: n };
 }
 

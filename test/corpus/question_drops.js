@@ -12,7 +12,7 @@ function dDrop_drop(d) {
 
 function step(d) {
   if (d[0] < 3) {
-    return [(d[0] + 1) >>> 0];
+    return [d[0] + 1];
   }
 }
 
@@ -96,7 +96,7 @@ function go(d) {
 const dCheckedDouble = { checkedDouble: dCheckedDouble_checkedDouble, $drop: dDrop_drop };
 function dCheckedDouble_checkedDouble(d) {
   if (d[0] < 10) {
-    return [(d[0] * 2) >>> 0];
+    return [d[0] * 2];
   }
 }
 

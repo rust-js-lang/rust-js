@@ -45,7 +45,7 @@ function stepsIterator_next(steps) {
   if (steps[0] >= 2) {
     throw new Error("stepped too far");
   }
-  steps[0] = (steps[0] + 1) >>> 0;
+  steps[0]++;
   return steps[0];
 }
 

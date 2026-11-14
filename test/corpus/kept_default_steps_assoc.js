@@ -23,7 +23,7 @@ function iDigits_digitIter(self) {
 }
 function countIterator_next(count) {
   if (count[0] !== 0) {
-    count[0] = (count[0] - 1) & 255;
+    count[0]--;
     return count[0];
   }
 }

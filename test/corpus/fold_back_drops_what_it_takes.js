@@ -18,7 +18,7 @@ export function entry() {
 
 function countIterator_next(count) {
   if (count.at < count.end) {
-    count.at = (count.at + 1) | 0;
+    count.at++;
     return count.at;
   }
 }
@@ -35,8 +35,8 @@ function countIterator_sizeHint(count) {
 
 function countDoubleEndedIterator_nextBack(count) {
   if (count.at < count.end) {
-    count.end = (count.end - 1) | 0;
-    return (count.end + 1) | 0;
+    count.end--;
+    return count.end + 1;
   }
 }
 

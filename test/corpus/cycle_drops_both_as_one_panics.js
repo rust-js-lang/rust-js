@@ -8,7 +8,7 @@ export function entry() {
 
 function stepsIterator_next(steps) {
   if (steps[1] < 2) {
-    steps[1] = (steps[1] + 1) >>> 0;
+    steps[1]++;
     return steps[1];
   }
 }

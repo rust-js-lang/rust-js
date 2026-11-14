@@ -52,7 +52,7 @@ const Buf = {
     if (buf.len === 0) {
       return;
     }
-    buf.len = (buf.len - 1) >>> 0;
+    buf.len--;
     return $ptrAdd(buf.ptr, buf.len).value;
   },
 

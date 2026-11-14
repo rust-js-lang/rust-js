@@ -16,7 +16,7 @@ export function entry() {
 
 function cIterator_next(c) {
   if (c[0] < 5) {
-    c[0] = (c[0] + 1) >>> 0;
+    c[0]++;
     return c[0];
   }
 }
@@ -27,8 +27,8 @@ function cIterator_sizeHint(c) {
 function cDoubleEndedIterator_nextBack(c) {
   if (c[0] < 5) {
     const v = 5;
-    c[0] = (c[0] + 1) >>> 0;
-    return (((v + c[0]) >>> 0) - 1) >>> 0;
+    c[0]++;
+    return v + c[0] - 1;
   }
 }
 function main() {

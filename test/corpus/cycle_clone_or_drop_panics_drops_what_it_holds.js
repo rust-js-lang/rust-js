@@ -22,7 +22,7 @@ function stepsIterator_next(steps) {
   if (steps.left === 0) {
     return;
   }
-  steps.left = (steps.left - 1) >>> 0;
+  steps.left--;
   return steps.id;
 }
 

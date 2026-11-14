@@ -6761,7 +6761,7 @@ export function skipIterator_nth(skip, n, IIterator = { next: $next }, dropI, dr
   } else {
     const nth = $nthDropping(
       $lent($given(skip.iter, IIterator, true)),
-      (skip$1 - 1) >>> 0,
+      skip$1 - 1,
       dropIItem,
       true,
     );
@@ -7421,13 +7421,13 @@ export function takeIterator_sizeHint(take, IIterator = { next: $next }, dropI, 
 
 export function takeIterator_nth(take, n, IIterator = { next: $next }, dropI, dropIItem) {
   if (take.n > n) {
-    take.n = (take.n - (n + 1)) >>> 0;
+    take.n -= n + 1;
     return $nthDropping($lent($given(take.iter, IIterator, true)), n, dropIItem, true);
   }
   if (take.n > 0) {
     const nth = $nthDropping(
       $lent($given(take.iter, IIterator, true)),
-      (take.n - 1) >>> 0,
+      take.n - 1,
       dropIItem,
       true,
     );
@@ -7591,7 +7591,7 @@ export function takeIDoubleEndedIterator_nthBack(
   const len = IExactSizeIterator.len(take.iter);
   if (take.n > n) {
     const m = (Math.max(len - take.n, 0) + n) >>> 0;
-    take.n = (take.n - (n + 1)) >>> 0;
+    take.n -= n + 1;
     return $nthBack($given(take.iter, IIterator, true, IDoubleEndedIterator), m, $some, dropIItem);
   }
   if (len > 0) {
@@ -7644,7 +7644,7 @@ export function takeIDoubleEndedIterator_tryRfold(
         try {
           nthBack = $nthBack(
             $given(take.iter, IIterator, true, IDoubleEndedIterator),
-            (((len - take.n) >>> 0) - 1) >>> 0,
+            len - take.n - 1,
             $some,
             dropIItem,
           );
@@ -13734,7 +13734,7 @@ export function zipZipImplABTrustedRandomAccessTrustedRandomAccess_next(
 ) {
   if (zip.index < zip.len$) {
     const i = zip.index;
-    zip.index = (zip.index + 1) >>> 0;
+    zip.index++;
     const value = $getUnchecked(zip.a, i, AIterator);
     let result;
     try {
@@ -14199,7 +14199,7 @@ export function zipZipImplABTrustedRandomAccessTrustedRandomAccess_nextBack(
 ) {
   if (zip.index < zip.len$) {
     const oldLen = zip.len$;
-    zip.len$ = (zip.len$ - 1) >>> 0;
+    zip.len$--;
     const szA = trustedRandomAccessNoCoerce_size(zip.a, AIterator, dropA, dropAItem);
     const szB = trustedRandomAccessNoCoerce_size(zip.b, BIterator, dropB, dropBItem);
     if (szA !== szB) {

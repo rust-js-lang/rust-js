@@ -10,8 +10,8 @@ function countdownIterator_next(countdown) {
   if (countdown.from === 0) {
     return;
   }
-  countdown.from = (countdown.from - 1) >>> 0;
-  return (countdown.from + 1) >>> 0;
+  countdown.from--;
+  return countdown.from + 1;
 }
 
 function popped(stack) {

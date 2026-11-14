@@ -52,7 +52,7 @@ function countedRead_read(counted, buf) {
     b.value = counted.next;
     counted.next = counted.next === 122 ? 97 : (counted.next + 1) & 255;
   }
-  counted.left = (counted.left - n) >>> 0;
+  counted.left -= n;
   return { TAG: "Ok", _0: n };
 }
 

@@ -21,7 +21,7 @@ export function entry() {
 
 function upIterator_next(up) {
   if (up.n < 3) {
-    up.n = (up.n + 1) >>> 0;
+    up.n++;
     return up.n;
   }
 }
@@ -54,7 +54,7 @@ function upIterator_fold(up, init, f, dropB, dropF) {
 
 function stepsIterator_next(steps) {
   if (steps.n < 3) {
-    steps.n = (steps.n + 1) >>> 0;
+    steps.n++;
     return steps.n;
   }
 }

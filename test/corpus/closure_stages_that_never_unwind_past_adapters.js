@@ -49,7 +49,7 @@ function tickDrop_drop(tick) {
 
 function tickIterator_next(tick) {
   if (tick[0] < 100) {
-    tick[0] = (tick[0] + 100) >>> 0;
+    tick[0] += 100;
     return tick[0];
   }
 }

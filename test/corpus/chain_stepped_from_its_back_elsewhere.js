@@ -43,7 +43,7 @@ function ownIterator_next(own) {
   if (own[0] === 0) {
     return;
   }
-  own[0] = (own[0] - 1) >>> 0;
+  own[0]--;
   return [own[0]];
 }
 function ownIterator_fold(own, init, f, dropB, dropF) {

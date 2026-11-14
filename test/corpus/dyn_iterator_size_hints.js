@@ -30,13 +30,13 @@ export function entry() {
 
 function countdownIterator_next(countdown) {
   if (countdown[0] !== 0) {
-    countdown[0] = (countdown[0] - 1) >>> 0;
+    countdown[0]--;
     return countdown[0];
   }
 }
 function sized3Iterator_next(sized3) {
   if (sized3[0] !== 0) {
-    sized3[0] = (sized3[0] - 1) >>> 0;
+    sized3[0]--;
     return sized3[0];
   }
 }

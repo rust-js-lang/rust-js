@@ -35,7 +35,7 @@ function ownDrop_drop(own) {
 function ownIterator_next(own) {
   console.log(`next ${own[0]}`);
   if (own[1] < 3) {
-    own[1] = (own[1] + 1) >>> 0;
+    own[1]++;
     return own[1];
   }
 }
@@ -80,7 +80,7 @@ function plainDrop_drop(plain) {
 
 function plainIterator_next(plain) {
   if (plain[1] < 3) {
-    plain[1] = (plain[1] + 1) >>> 0;
+    plain[1]++;
     return plain[1];
   }
 }

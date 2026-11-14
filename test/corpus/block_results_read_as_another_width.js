@@ -86,7 +86,7 @@ export const BlockRng64 = {
     }
 
     const value = $index(RResultsAsRefU64Slice.asRef(blockRng64.results), blockRng64.index);
-    blockRng64.index = (blockRng64.index + 1) >>> 0;
+    blockRng64.index++;
     blockRng64.halfUsed = false;
     return value;
   },

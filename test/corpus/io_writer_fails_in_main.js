@@ -18,7 +18,7 @@ const Full = {
     if (n > full[0]) {
       return { TAG: "Err", _0: new $IoError("Other", { value: "full", impl: $stringError() }) };
     }
-    full[0] = (full[0] - n) >>> 0;
+    full[0] -= n;
     return { TAG: "Ok", _0: n };
   },
 };

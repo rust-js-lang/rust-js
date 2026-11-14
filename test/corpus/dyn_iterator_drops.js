@@ -26,7 +26,7 @@ function counterIterator_next(counter) {
   if (counter.left === 0) {
     return;
   }
-  counter.left = (counter.left - 1) >>> 0;
+  counter.left--;
   return (counter.left + counter.guard[0]) >>> 0;
 }
 

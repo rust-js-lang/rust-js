@@ -27,7 +27,7 @@ function countdownIterator_next(countdown) {
   if (countdown[0] === 0) {
     return;
   }
-  countdown[0] = (countdown[0] - 1) >>> 0;
+  countdown[0]--;
   return countdown[0];
 }
 
@@ -53,7 +53,7 @@ function counterIterator_next(counter) {
   if (counter.n === 0) {
     return;
   }
-  counter.n = (counter.n - 1) & 255;
+  counter.n--;
   return counter.n;
 }
 

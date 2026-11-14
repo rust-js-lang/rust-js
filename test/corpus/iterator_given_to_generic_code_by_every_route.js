@@ -26,7 +26,7 @@ function countDebug_fmt(count) {
 }
 function countIterator_next(count) {
   if (count.n < 3) {
-    count.n = (count.n + 1) >>> 0;
+    count.n++;
     return count.n;
   }
 }

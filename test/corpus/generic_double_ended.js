@@ -26,15 +26,15 @@ function spanIterator_next(span) {
   if (span.low >= span.high) {
     return;
   }
-  span.low = (span.low + 1) >>> 0;
-  return (span.low - 1) >>> 0;
+  span.low++;
+  return span.low - 1;
 }
 
 function spanDoubleEndedIterator_nextBack(span) {
   if (span.low >= span.high) {
     return;
   }
-  span.high = (span.high - 1) >>> 0;
+  span.high--;
   return span.high;
 }
 

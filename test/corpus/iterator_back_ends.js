@@ -19,14 +19,14 @@ export function entry() {
 
 function spanIterator_next(span) {
   if (span[0] < span[1]) {
-    span[0] = (span[0] + 1) >>> 0;
-    return (span[0] - 1) >>> 0;
+    span[0]++;
+    return span[0] - 1;
   }
 }
 
 function spanDoubleEndedIterator_nextBack(span) {
   if (span[0] < span[1]) {
-    span[1] = (span[1] - 1) >>> 0;
+    span[1]--;
     return span[1];
   }
 }

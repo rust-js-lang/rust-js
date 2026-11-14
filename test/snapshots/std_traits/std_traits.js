@@ -324,8 +324,8 @@ export function displays() {
 
 function countdownIterator_next(countdown) {
   if (countdown.n !== 0) {
-    countdown.n = (countdown.n - 1) >>> 0;
-    return (countdown.n + 1) >>> 0;
+    countdown.n--;
+    return countdown.n + 1;
   }
 }
 
@@ -340,7 +340,7 @@ function repeatIterator_next(repeat, TClone) {
   if (repeat.times === 0) {
     return;
   }
-  repeat.times = (repeat.times - 1) >>> 0;
+  repeat.times--;
   return $some(TClone.clone(repeat.item));
 }
 

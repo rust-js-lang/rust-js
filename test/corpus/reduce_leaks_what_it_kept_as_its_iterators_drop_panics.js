@@ -54,7 +54,7 @@ function ksIterator_next(ks) {
   if (ks.at >= ks.end) {
     return;
   }
-  ks.at = (ks.at + 1) >>> 0;
+  ks.at++;
   if (ks.at === ks.panicsAt) {
     throw new Error("a step");
   }

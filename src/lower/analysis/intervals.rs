@@ -36,6 +36,7 @@ mod callers;
 mod calls;
 mod captures;
 mod cells;
+mod fields;
 mod proved;
 mod pushed;
 mod ranges;
@@ -164,6 +165,11 @@ fn walk<'a, 'tcx>(
     let (body, captured) = match captures::as_locals(tcx, body) {
         Some((rewritten, captured)) => (std::borrow::Cow::Owned(rewritten), captured),
         None => (std::borrow::Cow::Borrowed(body), Vec::new()),
+    };
+    // A struct's fields a reference parameter is read through, locals too.
+    let body = match fields::fields_as_locals(tcx, &body) {
+        Some(rewritten) => std::borrow::Cow::Owned(rewritten),
+        None => body,
     };
     let called_on = called_on::called_on(tcx, &body);
     let (lent, stepped, pointed, cells) = facts(tcx, &body, &called_on);
