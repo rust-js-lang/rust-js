@@ -219,3 +219,34 @@ and the mutations `map-key-test-unshown` (`ranges/narrowing.ts`),
 `held-keys-joined-as-either`, `held-key-kept-when-changed`,
 `held-key-kept-when-cells-change` and `held-key-unseen-by-scope-drops`
 (`ranges/known.ts`).
+
+## Amendment: a key held only while its lookup reads the same (#1844, 2026-11-15)
+
+rd558's rule took a key as held from `m.contains_key(k)` to `m[k]` while
+neither the map nor `k`'s variable was written or lent `&mut`. A key's
+lookup can change with neither. Its hand-written `Hash` and `Eq` may read
+a `Cell` in it, or a static, which a call between changes through a
+shared reference. Then Rust's `m[k]` panics, where `m.get(k)` gave
+`undefined`. Now a key is held only where its lookup reads the same until
+it's written (`key_stays`, `recognition/stable_keys.rs`). That holds where
+the key's type and the map's key type each have `Hash`, `PartialEq`, `Eq`,
+`PartialOrd` and `Ord` that are std's or derived, all the way down, and no
+`Borrow` of the crate's. The rule is the same through std's types,
+which read what their type arguments hold where they hold no cell
+themselves (`Freeze`). A hand-written impl anywhere is unknown, as is a
+type parameter's, a `dyn`'s, a function's or a raw pointer's. MIR's
+key-held fact (ADR 1137) asks the same owner.
+
+`Freeze` alone isn't the rule: an `Rc<Cell<i32>>` and a `&Cell<i32>` are
+`Freeze` and key a `BTreeMap` by std's own `Ord`, which reads the cell.
+rust-js refuses comparing `Cell`s for now, so no corpus case reaches them,
+and no mutation of the check of std's types is kept, as none is caught.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N where it's held, the
+check unneeded. Elsewhere the check stays, with Rust's message.
+`map_key_changed_between_test_and_index.rs` runs a key whose `Hash` reads
+its `Cell`, one whose `Hash` and `Eq` read a static atomic, and a type
+parameter's key against native Rust, each panicking as Rust does, and a
+`String` key, the map's `get`. Mutations `map-key-changing-held`
+(`ranges/keys.ts`), `key-stays-of-hand-written-impls` and
+`key-stays-of-any-type` (`recognition/stable_keys.ts`) are each caught.

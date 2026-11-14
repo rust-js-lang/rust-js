@@ -22,4 +22,12 @@ export const mutations: Mutation[] = [
     replace: "            *self.indexes.entry(fun).or_insert(true) &= k.keys.iter().any(|(_, key)| *key == held.1);\n",
     tests: corpus,
   },
+  {
+    name: "map-key-changing-held",
+    breaks: "a key whose lookup a call may change, of a `Cell` its hand-written `Hash` reads, is held past `contains_key(k)`, so `m[k]` past the call is `m.get(k)`, `undefined` where Rust panics (#1844)",
+    file: "src/lower/body_queries/ranges/keys.rs",
+    find: "        (held_keys && stays(thir[*args.get(1)?].ty.peel_refs())).then_some(())?;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^map_key_changed_between_test_and_index\.rs$"],
+  },
 ];

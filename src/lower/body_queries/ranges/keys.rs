@@ -6,18 +6,20 @@
 //! is a variable, as it is or borrowed. What may change either forgets it,
 //! as it does a slice's length: a variable set or bound again, a `&mut` of
 //! it lent or kept, and of a `RefCell`'s, any call but one that only views
-//! it, and a drop that may run code.
+//! it, and a drop that may run code. A key whose lookup may read what a
+//! call changes, a `Cell` its `Hash` reads or a hand-written `Eq`, is
+//! never held, nor of a map whose keys' may (`key_stays`, #1844).
 
 use super::known::Known;
 use super::{Slice, Walk};
 use crate::lower::body_queries::strip;
 use crate::lower::fn_def;
-use crate::lower::recognition::{MapKey, map_key};
+use crate::lower::recognition::{MapKey, key_stays, map_key};
 use rustc_middle::mir::BorrowKind;
 use rustc_middle::thir::{ExprId, ExprKind, LocalVarId};
 use rustc_middle::ty;
 
-impl Walk<'_, '_> {
+impl<'tcx> Walk<'_, 'tcx> {
     /// Of a call `e` that asks a map of a key (`MapKey`), what it asks, its
     /// function, and the map and the key's variable.
     fn map_key_of(&self, e: ExprId) -> Option<(MapKey, ExprId, (Slice, LocalVarId))> {
@@ -27,6 +29,13 @@ impl Walk<'_, '_> {
         };
         let (def_id, generic_args) = fn_def(thir[strip(thir, fun)].ty)?;
         let asked = map_key(self.tcx, def_id, generic_args)?;
+        // A key whose lookup reads the same until it's written, and the
+        // map's keys so: of a `Cell` its `Hash` reads, a call between
+        // could change it, and the map not hold it (`key_stays`, #1844).
+        let stays = |ty: ty::Ty<'tcx>| key_stays(self.tcx, self.typing_env, ty);
+        let held_keys =
+            matches!(thir[*args.first()?].ty.peel_refs().kind(), ty::Adt(_, a) if a.types().next().is_some_and(stays));
+        (held_keys && stays(thir[*args.get(1)?].ty.peel_refs())).then_some(())?;
         let map = self.slice(*args.first()?)?;
         let key = self.key_var(*args.get(1)?)?;
         Some((asked, fun, (map, key)))
