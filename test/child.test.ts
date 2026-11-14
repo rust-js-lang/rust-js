@@ -2,7 +2,7 @@
 // rust-js's rejection, or a crash, whatever it said first.
 
 import { expect, test } from "bun:test";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 
 import { compileFailure, footprintLimit, footprints, processTree, run, runSync, treeBytes, type Exit } from "./child";
@@ -61,12 +61,18 @@ test("a process that doesn't end, or prints without end, is stopped and says so"
 
 // What a process started, holding its output open, is stopped with it, so
 // a deadline is kept. Found in review: `sleep 3 & wait` took 3s of 100ms.
+// The fixture must have started its descendant before the deadline stops
+// it, or there's nothing to see stopped: under load `sh` took more than
+// 100 ms to get there, and the test read a PID file never written (#1770).
+// So that's its precondition, said where it isn't met: the async run is
+// watched for the file, written whole by a rename, as it runs to its
+// deadline; the sync one finds it once it returns.
 test("a process's descendants are stopped with it, and its deadline kept", async () => {
   const pidFile = join(fixture("child-descendant"), "pid");
-  const started = Date.now();
-  const slow = await run(["sh", "-c", `sleep 30 & echo $! > ${pidFile}; wait`], ".", 100);
-  expect(slow.timedOut).toBe(true);
-  expect(Date.now() - started).toBeLessThan(2000);
+  const fixtureCmd = ["sh", "-c", `sleep 30 & echo $! > ${pidFile}.part && mv ${pidFile}.part ${pidFile}; wait`];
+  const deadline = 1000;
+  const unmet = `precondition not met: the fixture didn't start its descendant within the ${deadline} ms deadline`;
+  const descendant = () => (existsSync(pidFile) ? Number(readFileSync(pidFile, "utf8")) : undefined);
   const alive = (pid: number) => {
     try {
       process.kill(pid, 0);
@@ -83,11 +89,28 @@ test("a process's descendants are stopped with it, and its deadline kept", async
     for (const until = Date.now() + 5000; alive(pid) && Date.now() < until; ) await Bun.sleep(20);
     return !alive(pid);
   };
-  expect(await gone(Number(readFileSync(pidFile, "utf8")))).toBe(true);
-  const sync = runSync(["sh", "-c", `sleep 30 & echo $! > ${pidFile}; wait`], ".", 100);
+  rmSync(pidFile, { force: true });
+  const started = Date.now();
+  let ended = false;
+  const running = run(fixtureCmd, ".", deadline).finally(() => (ended = true));
+  let pid = descendant();
+  while (pid === undefined && !ended) {
+    await Bun.sleep(10);
+    pid = descendant();
+  }
+  const slow = await running;
+  pid ??= descendant();
+  expect(pid, unmet).toBeDefined();
+  expect(slow.timedOut).toBe(true);
+  expect(Date.now() - started).toBeLessThan(deadline + 2000);
+  expect(await gone(pid!)).toBe(true);
+  rmSync(pidFile, { force: true });
+  const sync = runSync(fixtureCmd, ".", deadline);
+  const syncPid = descendant();
+  expect(syncPid, unmet).toBeDefined();
   expect(sync.timedOut).toBe(true);
-  expect(await gone(Number(readFileSync(pidFile, "utf8")))).toBe(true);
-});
+  expect(await gone(syncPid!)).toBe(true);
+}, underLoad(30_000));
 
 // A process that ends, leaving what it started holding its output open,
 // ended as it did; what it started goes with it. Found in review: it
