@@ -3,6 +3,15 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "declared-function-not-set-apart",
+    breaks:
+      "a function declared beside a shadow of its maker's, `const value$1 = value`, isn't set apart, so its own `value$1`, its `match`'s `Result`, is read as its `value`: `rejected undefined Some(2)` where native Rust has `2:2` (#1766, a wrong answer)",
+    file: "src/js/stmt_walk.rs",
+    find: "            if let StmtKind::Function(function) = &mut stmt.kind {\n                set_apart(&mut function.params, &mut function.body);\n",
+    replace: "            if let StmtKind::Function(function) = &mut stmt.kind {\n                _ = function;\n",
+    tests: ["test/corpus.test.ts", "-t", "^shadow_in_an_else_beside_a_declared_function.rs$"],
+  },
+  {
     name: "same-without-facts",
     breaks:
       "statements alike but for what's known of their parts are the same, so one arm's field read stands for another's getter, its facts taken for both (rd687)",

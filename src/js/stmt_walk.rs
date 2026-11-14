@@ -574,7 +574,10 @@ pub fn renamed(stmts: &mut [Stmt], from: &str, to: &str) {
 /// name, a closure's `(_2) => _2[0]`, or declares one in its own blocks, a
 /// closure's `const value$1` its own tidy named apart from what it reads
 /// alone, not from its maker's `value$1` (#457), reads its own there, so
-/// it's set apart while `change` runs, then given back.
+/// it's set apart while `change` runs, then given back. A function
+/// declared in them too, `function retry(id) { const value$1 = .. }`
+/// written in its maker's body, whose reads of its own `value$1` its
+/// maker's `const value$1 = value` made `value` (#1766).
 pub fn outside_shadows(stmts: &mut Vec<Stmt>, name: &str, change: impl FnOnce(&mut Vec<Stmt>)) {
     const APART: &str = "\u{0}apart";
     let set_apart = |params: &mut Vec<Pattern>, body: &mut Vec<Stmt>| {
@@ -593,6 +596,13 @@ pub fn outside_shadows(stmts: &mut Vec<Stmt>, name: &str, change: impl FnOnce(&m
         ExprKind::Arrow(params, body) | ExprKind::AsyncArrow(params, body) => set_apart(params, body),
         ExprKind::Function(function) => set_apart(&mut function.params, &mut function.body),
         _ => {}
+    });
+    statement_lists(stmts, &mut |list| {
+        for stmt in list.iter_mut() {
+            if let StmtKind::Function(function) = &mut stmt.kind {
+                set_apart(&mut function.params, &mut function.body);
+            }
+        }
     });
     change(stmts);
     renamed(stmts, APART, name);
