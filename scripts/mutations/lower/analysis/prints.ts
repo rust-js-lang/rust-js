@@ -168,8 +168,9 @@ export const mutations: Mutation[] = [
     name: "instance-writer-prints-unseen",
     breaks: "a print in a library's body the program compiles itself (ADR 0914), read from its MIR alone, isn't seen, so its `print!` lands before the line formatted so far (#1608)",
     file: "src/lower/analysis/prints.rs",
-    find: "        .any(|(id, args, _)| recognition.writes_stream(id, args, error))\n",
-    replace: "        .any(|(id, args, _)| body.root().is_some() && recognition.writes_stream(id, args, error))\n",
+    find: "    (graph.names_of(body.def_id).iter()).any(|&(id, args, _)| recognition.writes_stream(id, args, error))\n",
+    replace:
+      "    (graph.names_of(body.def_id).iter()).any(|&(id, args, _)| body.root().is_some() && recognition.writes_stream(id, args, error))\n",
     tests: ["test/crates.test.ts", "-t", "library_writer_prints_in_a_programs_line"],
   },
   {
@@ -224,7 +225,7 @@ export const mutations: Mutation[] = [
     name: "written-into-writers-unseen",
     breaks: "a writer of the crate's own shown into a writer by `write!` doesn't write through a sink, so its `write!` is refused where Rust writes each piece into the writer (#1652)",
     file: "src/lower/analysis/prints.rs",
-    find: "    (found.framed, found.published) = written_into_writers(recognition, all_bodies, (library, arguments));\n",
+    find: "    (found.framed, found.published) = written_into_writers(recognition, (all_bodies, graph), (library, arguments));\n",
     replace: "",
     tests: ["test/writer-sink.test.ts", "test/corpus.test.ts", "-t", "^writer_sink_|^(?!.*\\.rs$)"],
   },

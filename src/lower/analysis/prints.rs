@@ -16,6 +16,7 @@
 
 use crate::collections::IndexSet;
 use crate::lower::Body;
+use crate::lower::call_graph::Crate;
 use crate::lower::recognition::Recognition;
 use rustc_hir::def::DefKind;
 use rustc_middle::thir::visit::{Visitor, walk_expr};
@@ -169,12 +170,12 @@ impl Prints {
 /// builder's step or a derived `Debug`'s field (`through_sink`, #1557).
 pub(super) fn prints<'tcx>(
     recognition: &Recognition<'_, 'tcx>,
-    all_bodies: &[&Body<'tcx>],
+    (all_bodies, graph): (&[&Body<'tcx>], &Crate<'_, 'tcx>),
     runs: &Runs<'_, 'tcx>,
     unwinding: (&IndexSet<DefId>, &IndexSet<DefId>),
     (library, arguments): (bool, &WrittenArguments),
 ) -> Prints {
-    let mut found = printing_writers(recognition, all_bodies, runs, unwinding, library);
+    let mut found = printing_writers(recognition, (all_bodies, graph), runs, unwinding, library);
     for error in [false, true] {
         found.unended[usize::from(error)] = recognition.foreign.leaves_unended(error)
             || all_bodies.iter().any(|body| leaves_unended(recognition, body, error));
@@ -184,12 +185,12 @@ pub(super) fn prints<'tcx>(
         (all_bodies.iter())
             .filter(|body| failing.contains(&body.def_id) && recognition.formatter_param(body.def_id).is_some())
             .filter(|body| {
-                (crate::lower::call_graph::names(body).into_iter())
-                    .any(|(callee, _, _)| crate::lower::recognition::writes_debug_builder(recognition.tcx, callee))
+                (graph.names_of(body.def_id).iter())
+                    .any(|&(callee, _, _)| crate::lower::recognition::writes_debug_builder(recognition.tcx, callee))
             })
             .map(|body| body.def_id),
     );
-    (found.framed, found.published) = written_into_writers(recognition, all_bodies, (library, arguments));
+    (found.framed, found.published) = written_into_writers(recognition, (all_bodies, graph), (library, arguments));
     found.framed.extend(listed_writers_compiled_here(recognition));
     found.through_sink.extend(found.framed.iter().copied());
     found.framed_generic = (found.framed.iter()).any(|&writer| {
@@ -216,11 +217,11 @@ pub(super) fn prints<'tcx>(
 /// `types` or `while_formatting`, which route what's printed.
 fn written_into_writers<'tcx>(
     recognition: &Recognition<'_, 'tcx>,
-    all_bodies: &[&Body<'tcx>],
+    (all_bodies, graph): (&[&Body<'tcx>], &Crate<'_, 'tcx>),
     (library, arguments): (bool, &WrittenArguments),
 ) -> (IndexSet<DefId>, IndexSet<DefId>) {
     let tcx = recognition.tcx;
-    let shown_by = |body: &Body<'tcx>| shown_by(recognition, body);
+    let shown_by = |body: &Body<'tcx>| shown_by(recognition, graph, body);
     // The crate's, and of `@rust-js/std`'s build, std's compiled bodies,
     // `fuseDebug_fmt` of a `Fuse<I>`'s derived `Debug` (#1712).
     let compiled_std = |id: DefId| crate::lower::recognition::is_compiled_std(tcx, id);
@@ -254,7 +255,7 @@ fn written_into_writers<'tcx>(
     // And what's given a library's function's parameter it writes into a
     // writer through its dictionary, as its manifest says (#1652, step 5).
     for body in all_bodies {
-        for (callee, args, _) in crate::lower::call_graph::names(body) {
+        for &(callee, args, _) in graph.names_of(body.def_id) {
             if callee.is_local() {
                 continue;
             }
@@ -446,10 +447,8 @@ fn written_into_writers<'tcx>(
                     }
                 }
             }
-            let calls = by_body
-                .map(|by| crate::lower::call_graph::names(by))
-                .unwrap_or_default();
-            for (callee, args, _) in calls {
+            let calls = by_body.map_or(&[][..], |by| graph.names_of(by.def_id));
+            for &(callee, args, _) in calls {
                 // A closure of the crate's it calls, given its `Formatter`,
                 // `w(f)`, its `Fn` trait's call of the closure's type.
                 let callee = match args.types().next().map(|ty| *ty.kind()) {
@@ -499,12 +498,17 @@ fn listed_writers_compiled_here(recognition: &Recognition<'_, '_>) -> Vec<DefId>
 
 /// The types `body`, a writer shown into a writer, shows: each a `write!`
 /// into its `Formatter`, or any `fmt` it gives its `Formatter`, shows, and
-/// each it makes a `&dyn Debug` of, which std's `Debug` of it shows.
-pub(super) fn shown_by<'tcx>(recognition: &Recognition<'_, 'tcx>, body: &Body<'tcx>) -> Vec<ty::Ty<'tcx>> {
+/// each it makes a `&dyn Debug` of, which std's `Debug` of it shows. What
+/// it names, the call graph's.
+pub(super) fn shown_by<'tcx>(
+    recognition: &Recognition<'_, 'tcx>,
+    graph: &Crate<'_, 'tcx>,
+    body: &Body<'tcx>,
+) -> Vec<ty::Ty<'tcx>> {
     use crate::lower::recognition::{WriteCall, is_fmt_argument};
     let tcx = recognition.tcx;
-    (crate::lower::call_graph::names(body).into_iter())
-        .filter_map(|(callee, args, _)| {
+    (graph.names_of(body.def_id).iter())
+        .filter_map(|&(callee, args, _)| {
             let shown = is_fmt_argument(tcx, callee)
                 || matches!(
                     recognition.write_call(callee, false),
@@ -558,13 +562,13 @@ fn unsized_in_mir<'tcx>(tcx: ty::TyCtxt<'tcx>, body: &Body<'tcx>) -> Vec<ty::Ty<
 /// those; `prints`'.
 fn printing_writers<'tcx>(
     recognition: &Recognition<'_, 'tcx>,
-    all_bodies: &[&Body<'tcx>],
+    (all_bodies, graph): (&[&Body<'tcx>], &Crate<'_, 'tcx>),
     runs: &Runs<'_, 'tcx>,
     unwinding: (&IndexSet<DefId>, &IndexSet<DefId>),
     library: bool,
 ) -> Prints {
     let printing: IndexSet<DefId> = (all_bodies.iter())
-        .filter(|body| prints_to(recognition, body, false))
+        .filter(|body| prints_to(recognition, graph, body, false))
         .map(|body| body.def_id)
         .collect();
     let mut found = Prints::default();
@@ -721,7 +725,7 @@ fn printing_writers<'tcx>(
     // had written by that write is known only of a writer that writes as it
     // goes (#1490).
     let stderr_while_formatting = (all_bodies.iter())
-        .any(|body| found.while_formatting.contains(&body.def_id) && prints_to(recognition, body, true));
+        .any(|body| found.while_formatting.contains(&body.def_id) && prints_to(recognition, graph, body, true));
     if stderr_while_formatting {
         let debug = crate::lower::recognition::std_item(tcx, crate::lower::recognition::StdItem::Debug);
         let printing_debug = (found.through_sink.iter())
@@ -1014,9 +1018,14 @@ fn catches_unwinding<'tcx>(recognition: &Recognition<'_, 'tcx>, body: &Body<'tcx
 
 /// Whether `body` prints to stdout itself, or of `error`, to stderr:
 /// `print!` or `eprint!` and their lines, or a write to `io::stdout()` or
-/// `io::stderr()`.
-fn prints_to<'tcx>(recognition: &Recognition<'_, 'tcx>, body: &Body<'tcx>, error: bool) -> bool {
-    (crate::lower::call_graph::names(body).into_iter()).any(|(id, args, _)| recognition.writes_stream(id, args, error))
+/// `io::stderr()`. What it names, the call graph's.
+fn prints_to<'tcx>(
+    recognition: &Recognition<'_, 'tcx>,
+    graph: &Crate<'_, 'tcx>,
+    body: &Body<'tcx>,
+    error: bool,
+) -> bool {
+    (graph.names_of(body.def_id).iter()).any(|&(id, args, _)| recognition.writes_stream(id, args, error))
 }
 
 /// Whether `body` may leave stdout's line, or of `error`, stderr's,

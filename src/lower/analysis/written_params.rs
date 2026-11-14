@@ -175,7 +175,7 @@ impl<'tcx> WrittenParams<'tcx> {
 /// (#1688).
 pub(super) fn written_params<'tcx>(
     recognition: &Recognition<'_, 'tcx>,
-    all_bodies: &[&Body<'tcx>],
+    (all_bodies, graph): (&[&Body<'tcx>], &crate::lower::call_graph::Crate<'_, 'tcx>),
     prints: &Prints,
     foreign: &Foreign<'_, 'tcx>,
     arguments: WrittenArguments,
@@ -250,10 +250,10 @@ pub(super) fn written_params<'tcx>(
             _ => false,
         });
         if let Some(shown) = shown_into_writers(recognition, body, &found.arguments) {
-            written.extend(shown.unwrap_or_else(|| shown_by(recognition, body)));
+            written.extend(shown.unwrap_or_else(|| shown_by(recognition, graph, body)));
         }
         if prints.writes_into_writers(body.def_id) {
-            written.extend(shown_by(recognition, body));
+            written.extend(shown_by(recognition, graph, body));
         }
         for ty in written {
             if is_dyn(ty) {
