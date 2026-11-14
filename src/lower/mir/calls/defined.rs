@@ -66,7 +66,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let Some(arg) = args.first() else {
             return self.mir_defined_parts(None, None, asked, span);
         };
+        // A `fn` pointer, of the function it's cast from, as a path's step
+        // is (`steps_named`, #1785).
         let given = arg.node.ty(&body.local_decls, tcx);
+        let given = match given.kind() {
+            ty::FnPtr(..) => self.cast_from(body, &arg.node).unwrap_or(given),
+            _ => given,
+        };
         // A std function that's `Math`'s, its function's, `typeof
         // Math.clz32 !== "undefined"` (ADR 0887).
         if let Some((f, f_args)) = crate::lower::fn_def(given)
@@ -202,46 +208,45 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         tuple: &Operand<'tcx>,
         steps: &[Ty<'tcx>],
     ) -> Vec<Ty<'tcx>> {
-        let assigned = |local: mir::Local| {
-            let mut found = (body.basic_blocks.iter())
-                .flat_map(|block| &block.statements)
-                .filter_map(|s| match &s.kind {
-                    StatementKind::Assign(assign) if assign.0.as_local() == Some(local) => Some(&assign.1),
-                    _ => None,
-                });
-            match (found.next(), found.next()) {
-                (Some(rvalue), None) => Some(rvalue),
-                _ => None,
-            }
-        };
-        let items = match tuple.place().and_then(|place| place.as_local()).and_then(assigned) {
+        let items = match tuple
+            .place()
+            .and_then(|place| place.as_local())
+            .and_then(|t| assigned_once(body, t))
+        {
             Some(Rvalue::Aggregate(kind, items)) if matches!(**kind, mir::AggregateKind::Tuple) => Some(items),
             _ => None,
         };
-        // Through the copies MIR makes of the cast, `_5 = copy _6`.
-        let cast_from = |k: usize| {
-            let mut item = items?.get(rustc_abi::FieldIdx::from_usize(k))?;
-            loop {
-                match assigned(item.place()?.as_local()?)? {
-                    Rvalue::Use(copied, _) => item = copied,
-                    Rvalue::Cast(
-                        mir::CastKind::PointerCoercion(ty::adjustment::PointerCoercion::ReifyFnPointer(_), _),
-                        from,
-                        _,
-                    ) => {
-                        let from = from.ty(&body.local_decls, self.tcx);
-                        return crate::lower::fn_def(from).map(|_| from);
-                    }
-                    _ => return None,
-                }
-            }
-        };
         (steps.iter().enumerate())
             .map(|(k, &step)| match step.kind() {
-                ty::FnPtr(..) => cast_from(k).unwrap_or(step),
+                ty::FnPtr(..) => (items.and_then(|items| items.get(rustc_abi::FieldIdx::from_usize(k))))
+                    .and_then(|item| self.cast_from(body, item))
+                    .unwrap_or(step),
                 _ => step,
             })
             .collect()
+    }
+
+    /// Of `operand`, a `fn` pointer, the function item it's cast from, as
+    /// the body casts it once, through the copies MIR makes of the cast,
+    /// `_5 = copy _6` (rd154): `optional as fn(&'static str)`, a binding's
+    /// whose `impl IntoUnknown` no turbofish names, is the binding (#1785).
+    /// None of a pointer it's given, or one it may hold apart.
+    fn cast_from(&self, body: &mir::Body<'tcx>, operand: &Operand<'tcx>) -> Option<Ty<'tcx>> {
+        let mut item = operand;
+        loop {
+            match assigned_once(body, item.place()?.as_local()?)? {
+                Rvalue::Use(copied, _) => item = copied,
+                Rvalue::Cast(
+                    mir::CastKind::PointerCoercion(ty::adjustment::PointerCoercion::ReifyFnPointer(_), _),
+                    from,
+                    _,
+                ) => {
+                    let from = from.ty(&body.local_decls, self.tcx);
+                    return crate::lower::fn_def(from).map(|_| from);
+                }
+                _ => return None,
+            }
+        }
     }
 
     /// `js::is_number` of what's a number in Rust, `f64`, or an `Option`
@@ -588,6 +593,20 @@ fn read_by<'tcx>(
 pub(super) fn value_first<'tcx>(steps: &[ty::Ty<'tcx>]) -> Option<ty::Ty<'tcx>> {
     let first = *steps.first()?;
     (steps.len() > 1 && crate::lower::fn_def(first).is_none()).then_some(first)
+}
+
+/// The value `local` is assigned, where `body` assigns it once.
+fn assigned_once<'b, 'tcx>(body: &'b mir::Body<'tcx>, local: mir::Local) -> Option<&'b Rvalue<'tcx>> {
+    let mut found = (body.basic_blocks.iter())
+        .flat_map(|block| &block.statements)
+        .filter_map(|s| match &s.kind {
+            StatementKind::Assign(assign) if assign.0.as_local() == Some(local) => Some(&assign.1),
+            _ => None,
+        });
+    match (found.next(), found.next()) {
+        (Some(rvalue), None) => Some(rvalue),
+        _ => None,
+    }
 }
 
 /// Whether every JS host has `global`, one of ECMAScript's first edition's

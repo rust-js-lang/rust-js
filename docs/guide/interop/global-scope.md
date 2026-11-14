@@ -224,6 +224,14 @@ export function later(task) {
   read before ([ADR 0647](../../decisions/0647-type-name-as-react-writes-it.md)); a reference
   to a static, `&webapi::performance`, is refused
   ([ADR 0645](../../decisions/0645-is-defined-of-a-static-is-of-the-static.md)).
+- **A binding of an `impl Trait` parameter**, which no turbofish names, is
+  given as the `fn` pointer it's cast to, `js::is_defined(optional as
+  fn(&'static str))` being `typeof optionalHostFunction !== "undefined"`,
+  of the binding it's cast from, a copy of the pointer between too, as a
+  path's step is; nothing is read before or called. A pointer of the
+  crate's own function, or one the program's given, is refused
+  ([ADR 0597](../../decisions/0597-whether-the-host-has-a-global-is-is-defined.md),
+  amended).
 - **Each part of a path is asked**, `js::is_defined(webapi::Performance::now)`
   of the one global that type is, `typeof performance !== "undefined" &&
   typeof performance.now !== "undefined"`: a host may lack any of them.

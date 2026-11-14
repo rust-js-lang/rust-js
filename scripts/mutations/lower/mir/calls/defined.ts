@@ -234,9 +234,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`js::is_function((style, CSSStyleDeclaration::set_property as fn(..)))`, a method no turbofish names, is refused as a step of no method (rd154)",
     file: "src/lower/mir/calls/defined.rs",
-    find: "                ty::FnPtr(..) => cast_from(k).unwrap_or(step),\n",
-    replace:
-      "                ty::FnPtr(..) if false => cast_from(k).unwrap_or(step),\n",
+    find: "                ty::FnPtr(..) => (items.and_then(|items| items.get(rustc_abi::FieldIdx::from_usize(k))))\n",
+    replace: "                ty::FnPtr(..) if false => (items.and_then(|items| items.get(rustc_abi::FieldIdx::from_usize(k))))\n",
     tests: ["test/lowering-is-function.test.ts", "-t", "path from a value"],
   },
   {
@@ -244,9 +243,18 @@ export const mutations: Mutation[] = [
     breaks:
       "a step's `fn` pointer MIR copies, `_5 = copy _6`, isn't followed to its cast, so hideInstance's test is refused (rd154)",
     file: "src/lower/mir/calls/defined.rs",
-    find: "                    Rvalue::Use(copied, _) => item = copied,\n",
-    replace: "                    Rvalue::Use(..) => return None,\n",
-    tests: ["test/lowering-is-function.test.ts", "-t", "path from a value"],
+    find: "                Rvalue::Use(copied, _) => item = copied,\n",
+    replace: "                Rvalue::Use(..) => return None,\n",
+    tests: ["test/lowering-is-function.test.ts", "-t", "path from a value|cast to a fn pointer"],
+  },
+  {
+    name: "fn-pointer-of-a-binding-unnamed",
+    breaks:
+      "`js::is_defined(optional as fn(&'static str))`, a binding no turbofish names cast to a `fn` pointer, is refused as no global's binding, where a path's step is the binding it's cast from (#1785)",
+    file: "src/lower/mir/calls/defined.rs",
+    find: "            ty::FnPtr(..) => self.cast_from(body, &arg.node).unwrap_or(given),\n",
+    replace: "            ty::FnPtr(..) => given,\n",
+    tests: ["test/lowering-is-function.test.ts", "-t", "cast to a fn pointer"],
   },
   {
     name: "is-number-of-a-function-asked",

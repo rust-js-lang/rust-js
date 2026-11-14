@@ -110,6 +110,87 @@ pub fn dated() -> bool {
   }
 });
 
+// A binding of an `impl Trait` parameter, which no turbofish names, is
+// given `js::is_defined` cast to a `fn` pointer: the binding it's cast
+// from, as a path's step is (rd154), through the copies MIR makes, asked
+// of its global and never read or called (#1785). A pointer of a Rust
+// function, or one the program's given, is refused.
+test("js::is_defined of a binding cast to a fn pointer asks the binding's global", async () => {
+  const withWeb = ["--", "--edition", "2024", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("is-defined-cast");
+  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "optionalHostFunction")]
+pub fn optional(input: impl js::IntoUnknown) {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "rustJsHost.optional")]
+pub fn hosted(input: impl js::IntoUnknown) {
+    unreachable!()
+}
+
+pub fn available() -> bool {
+    js::is_defined(optional as fn(&'static str))
+}
+
+pub fn copied() -> bool {
+    let pointer = optional as fn(&'static str);
+    let again = pointer;
+    js::is_defined(again)
+}
+
+pub fn callable() -> bool {
+    js::is_function(optional as fn(f64))
+}
+
+pub fn hosted_available() -> bool {
+    js::is_defined(hosted as fn(&'static str))
+}
+
+pub fn bitmaps() -> bool {
+    js::is_defined(
+        webapi::global::create_image_bitmap
+            as fn(
+                &'static webapi::Blob,
+                Option<webapi::ImageBitmapOptions<'static>>,
+            ) -> js::Promise<&'static webapi::ImageBitmap>,
+    )
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('export function available() {\n  return typeof optionalHostFunction !== "undefined";\n}');
+  expect(js).toContain('export function copied() {\n  return typeof optionalHostFunction !== "undefined";\n}');
+  expect(js).toContain('export function callable() {\n  return typeof optionalHostFunction === "function";\n}');
+  expect(js).toContain('return typeof rustJsHost !== "undefined" && typeof rustJsHost.optional !== "undefined";');
+  expect(js).toContain('export function bitmaps() {\n  return typeof createImageBitmap !== "undefined";\n}');
+  const global = globalThis as Record<string, unknown>;
+  const lib = await import(join(dir, "lib.js"));
+  const asked = () => [lib.available(), lib.copied(), lib.callable(), lib.hostedAvailable()];
+  expect(asked()).toEqual([false, false, false, false]);
+  let reads = 0;
+  let calls = 0;
+  Object.defineProperty(globalThis, "optionalHostFunction", {
+    configurable: true,
+    get() {
+      reads += 1;
+      return () => void (calls += 1);
+    },
+  });
+  global.rustJsHost = { optional: () => void (calls += 1) };
+  try {
+    expect(lib.available()).toBe(true);
+    expect(reads).toBe(1);
+    expect(asked()).toEqual([true, true, true, true]);
+    expect(calls).toBe(0);
+    Object.defineProperty(globalThis, "optionalHostFunction", { configurable: true, value: 1 });
+    expect(asked()).toEqual([true, true, false, true]);
+  } finally {
+    delete global.optionalHostFunction;
+    delete global.rustJsHost;
+  }
+  expect(asked()).toEqual([false, false, false, false]);
+});
+
 // React DOM's estimateImageBytes: `typeof devicePixelRatio === 'number' ?
 // devicePixelRatio : 1`. `js::is_number` asks it of a global a getter or a
 // static reads, as `js::is_function` asks whether it's a function (rd195):
@@ -217,6 +298,16 @@ test("js::is_function of what isn't a global's binding is refused", () => {
   const message = expect.stringContaining("`js::is_function` of what isn't a JS global's binding");
   expect(refused("pub fn ask() -> bool {\n    js::is_function(|| 1)\n}\n")).toEqual([false, message]);
   expect(refused("fn helper() {}\n\npub fn ask() -> bool {\n    helper();\n    js::is_function(helper)\n}\n")).toEqual([false, message]);
+  // A pointer of a Rust function, or one the program's given, is no
+  // binding's, cast or not (#1785).
+  expect(refused("fn helper(_: &str) {}\n\npub fn ask() -> bool {\n    js::is_defined(helper as fn(&'static str))\n}\n")).toEqual([
+    false,
+    expect.stringContaining("`js::is_defined` of what isn't a JS global's binding"),
+  ]);
+  expect(refused("pub fn ask(given: fn(&'static str)) -> bool {\n    js::is_defined(given)\n}\n")).toEqual([
+    false,
+    expect.stringContaining("`js::is_defined` of what isn't a JS global's binding"),
+  ]);
   expect(refused("pub fn ask() -> bool {\n    js::is_function(&js::symbol::iterator)\n}\n")).toEqual([
     false,
     expect.stringContaining("given the static itself, `js::is_function(webapi::performance)`"),

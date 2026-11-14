@@ -126,3 +126,24 @@ An `Option` static is now what its type says of the value, `undefined` or
 - The guide's [global scope](../guide/interop/global-scope.md#a-global-some-hosts-lack).
 - Mutations: the `typeof` unwritten, of any path, of the crate's own
   function.
+
+## Amendment: a binding cast to a `fn` pointer is the binding (2026-11-14, #1785)
+
+A binding of an `impl Trait` parameter, `optional(input: impl
+js::IntoUnknown)`, can't be named with its type's arguments, as no
+turbofish names an `impl Trait`; a program names it by casting it to a
+`fn` pointer, `js::is_defined(optional as fn(&'static str))`, and that
+was refused as "of what isn't a JS global's binding". A path's step was
+already read so, the function its pointer is cast from (rd154, ADR 0942,
+amended), so the one argument and a path's step disagreed. Now both ask
+`cast_from`, one rule: a pointer the body casts once from a function
+item, through the copies MIR makes of it, is that function, so
+`typeof optionalHostFunction !== "undefined"`, never read before or
+called. A pointer of the crate's own function is no binding's and is
+refused, as is one the program's given, whose function can't be known.
+Case (ADR 0262): none: a refusal of valid Rust becomes what the binding
+says. test/lowering-is-function.test.ts' "js::is_defined of a binding
+cast to a fn pointer asks the binding's global" runs it with the global
+absent, a function read through a getter once, and a number; and the
+refusals beside the others'. Mutation fn-pointer-of-a-binding-unnamed is
+caught.
