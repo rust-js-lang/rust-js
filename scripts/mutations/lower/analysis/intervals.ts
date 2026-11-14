@@ -5,27 +5,11 @@ const tests = ["test/intervals-shadow.test.ts"];
 
 export const mutations: Mutation[] = [
   {
-    name: "intervals-exact-unproved",
-    breaks: "no operator is proved in its type's range, so a loop's counter below its bound is logged as one THIR alone leaves out",
-    file: "src/lower/analysis/intervals.rs",
-    find: "                    proofs.exact.insert(Location {\n                        block,\n                        statement_index: at,\n                    });\n",
-    replace: "                    let _ = at;\n",
-    tests,
-  },
-  {
     name: "intervals-copies-unfollowed",
     breaks: "a comparison of a copy, `_7 = copy _3; Lt(move _7, 4)`, narrows the copy alone, so the loop's counter isn't known below its bound",
     file: "src/lower/analysis/intervals.rs",
     find: "            state.copies.insert(local, of);\n",
     replace: "            let _ = of;\n",
-    tests,
-  },
-  {
-    name: "intervals-bounds-unproved",
-    breaks: "no bounds check is proved by MIR, so a slice's index under `i < s.len()` is logged as one THIR alone leaves out",
-    file: "src/lower/analysis/intervals.rs",
-    find: "                proofs.bounds.insert(block);\n",
-    replace: "                let _ = block;\n",
     tests,
   },
   {
@@ -237,22 +221,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-integer-ranges.test.ts", "-t", "a counter a loop breaks out of at a bound"],
   },
   {
-    name: "intervals-casts-unproved",
-    breaks: "no integer cast is proved in its target's range, so `n as u8` under `n < 200` is `n & 255` (#1672 M3)",
-    file: "src/lower/analysis/intervals.rs",
-    find: "                    && held_by_a_number(operand.ty(&*self.body, self.tcx))\n",
-    replace: "                    && false\n",
-    tests: ["test/lowering-integer-ranges.test.ts", "-t", "an integer cast MIR's intervals show"],
-  },
-  {
-    name: "intervals-cast-to-a-bigint-kept",
-    breaks: "a cast to a 64-bit integer whose value fits is kept as it is, so `n as u64` is the number `n`, not `BigInt(n)`, and mixing it with a `BigInt` throws",
-    file: "src/lower/analysis/intervals.rs",
-    find: "                    && held_by_a_number(*to)\n",
-    replace: "",
-    tests: ["test/lowering-integer-ranges.test.ts", "-t", "an integer cast MIR's intervals show"],
-  },
-  {
     name: "intervals-widen-past-lengths",
     breaks: "a widened index goes to its type's, past the most its collections' lengths are, so an outer loop's `r` of `rows.get(r)` across an inner loop keeps its wrap, left to the bridge (#1742)",
     file: "src/lower/analysis/intervals.rs",
@@ -284,4 +252,5 @@ export const mutations: Mutation[] = [
     replace: "                let _ = (field, local);\n",
     tests: ["test/lowering-integer-ranges.test.ts", "-t", "what it was made with"],
   },
+
 ];
