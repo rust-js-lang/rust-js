@@ -17,12 +17,15 @@
 // pairing of an adapter with a consumer as fit, but the rows of what a hunk
 // removes, which decides for every row of what it names, each (#823). A
 // hunk in what every adapter shares (`shared`), or that names none, runs
-// `pairs` of all of them.
+// `pairs` of all of them. A hunk in what decides each chain's form
+// (`deciding`) decides for each row of what it names, as a removal does,
+// and each runs; and a name reaches each adapter whose text calls it,
+// `flatten`'s `map` (`adapterCalls`), which its rows' ids don't name.
 //
 //   bun scripts/iteratorRows.ts [base [head]]   what the change picks, and why
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { allCases, conformanceCases, pairs, type Case, type Table } from "../test/iterator-matrix";
+import { adapterCalls, allCases, conformanceCases, pairs, type Case, type Table } from "../test/iterator-matrix";
 
 const root = join(import.meta.dir, "..");
 
@@ -34,6 +37,30 @@ const shared = {
   files: ["src/runtime/forward.js", "src/runtime/closing.js", "src/lower/iterators/value.rs"],
   functions: ["$consume", "$consumed", "$closing", "$closed", "$forward", "$given", "$givenDrop", "$knowing", "$held", "$iterator"],
 };
+
+/** What decides, of each chain, whether it's std's compiled structs or the
+ * hand-written forms (ADR 1136): the in-place adapters' stages and the
+ * transparent-chain predicate. A hunk there decides for each row of the
+ * adapters it names, whatever its source, as a removal does: every one
+ * runs. The held flip's (bb518fcca) ran a sample of its `map` rows, and
+ * none of `chain.flatten`'s, whose `map` its id doesn't name (#1780). */
+export const deciding = ["src/lower/body_queries/in_place.rs", "src/lower/iterators/transparent.rs"];
+
+/** `names` and each adapter whose text calls one of them (`adapterCalls`):
+ * a change to `map` reaches `flatten`'s rows, whose per-item `map` their
+ * ids don't name. */
+export function reached(names: Set<string>, calls: Map<string, Set<string>> = adapterCalls()): Set<string> {
+  const out = new Set(names);
+  for (let grew = true; grew; ) {
+    grew = false;
+    for (const [caller, called] of calls) {
+      if (out.has(caller) || ![...called].some((name) => out.has(name))) continue;
+      out.add(caller);
+      grew = true;
+    }
+  }
+  return out;
+}
 
 // The points tables, the iterators' (#817) and the unwind table's (#854),
 // have no rows a change picks yet: #818 decides. The formatting grid
@@ -239,8 +266,21 @@ export function named(hunk: Hunk, adapters: Set<string>, consumers: Set<string>)
     consumers: a.length > 0 ? [] : of(consumers, called, true),
     generic: ids.some((id) => id.startsWith("$given")),
     shared: shared.files.includes(hunk.file) || identifiers(hunk.head).some((id) => shared.functions.includes(id)),
+    decides: deciding.includes(hunk.file),
     removes: hunk.removed.filter((line) => line.trim() !== "").length > hunk.added.filter((line) => line.trim() !== "").length,
   };
+}
+
+/** What of `hunk` names rows: the hunk, in a function; outside any, a
+ * comment after the last one, nothing (#986), but in what decides each
+ * chain's form, where a `const` decides as a function's code does, the held
+ * flip's `HELD_FLIPPED` (#1780), what it names of adapters, of no
+ * function's head. */
+export function naming(hunk: Hunk, adapters: Set<string>, consumers: Set<string>): Hunk | undefined {
+  if (!hunk.outside) return hunk;
+  if (!deciding.includes(hunk.file)) return undefined;
+  const alone = { ...hunk, head: "", arm: undefined };
+  return named(alone, adapters, consumers).adapters.length > 0 ? alone : undefined;
 }
 
 /** The rows of a table's cases each name is of: of adapters, those whose
@@ -269,22 +309,30 @@ export function pick(base: string, head: string | undefined, files: string[], pa
     const picked = { adapters: new Set<string>(), consumers: new Set<string>(), generic: false };
     const removing = new Set<string>();
     let everyAdapter = false;
-    for (const hunk of found) {
-      // Outside any function, a comment after the last one: no rows (#986).
-      if (hunk.outside) {
-        why.push(`${hunk.file}:${hunk.at}: outside any function: none`);
+    for (const found_ of found) {
+      const hunk = naming(found_, adapters, consumers);
+      if (hunk === undefined) {
+        why.push(`${found_.file}:${found_.at}: outside any function: none`);
         continue;
       }
-      const { adapters: a, consumers: c, generic, shared: sharedHunk, removes } = named(hunk, adapters, consumers);
-      // What's taken away more than put back decides for each row of what
-      // it names: every one runs (#823).
-      for (const name of a) (removes ? removing : picked.adapters).add(name);
+      const { adapters: a, consumers: c, generic, shared: sharedHunk, removes, decides } = named(hunk, adapters, consumers);
+      // What's taken away more than put back, or what decides each chain's
+      // form, decides for each row of what it names: every one runs (#823,
+      // #1780).
+      for (const name of a) (removes || decides ? removing : picked.adapters).add(name);
       for (const name of c) picked.consumers.add(name);
       picked.generic ||= generic;
       const none = a.length === 0 && c.length === 0 && !generic;
       if (sharedHunk || none) everyAdapter = true;
       const said = [...a, ...c, ...(generic ? ["generic"] : [])].join(", ") || "none";
-      why.push(`${hunk.file}:${hunk.at}: ${said}${removes && a.length > 0 ? " (removes: each row)" : ""}${sharedHunk ? " (shared: pairs)" : none ? " (names none: pairs)" : ""}`);
+      why.push(`${hunk.file}:${hunk.at}: ${said}${a.length === 0 ? "" : decides ? " (decides: each row)" : removes ? " (removes: each row)" : ""}${sharedHunk ? " (shared: pairs)" : none ? " (names none: pairs)" : ""}`);
+    }
+    // Each name reaches what calls it, `map` the rows of `flatten`.
+    for (const set of [removing, picked.adapters]) {
+      const all = reached(set);
+      const more = [...all].filter((name) => !set.has(name));
+      if (more.length > 0) why.push(`${[...set].sort().join(", ")} reach ${more.sort().join(", ")}, whose text calls them`);
+      for (const name of more) set.add(name);
     }
     const picks: Picked[] = [];
     // One budget for the change, its rows taken in turn: what's removed,
@@ -319,7 +367,7 @@ export function pick(base: string, head: string | undefined, files: string[], pa
       const removed = cases.filter((c) => whole.test(c.id));
       picks.push({ table, setting: `/${whole.source}/`, rows: removed.length, why: [] });
       left -= removed.length;
-      if (left < 0) why.push(`what's removed: ${removed.length} rows, past ${budget[table]}, each run (#823)`);
+      if (left < 0) why.push(`what's removed or decided: ${removed.length} rows, past ${budget[table]}, each run (#823, #1780)`);
     }
     const shared = everyAdapter ? pairs(cases, table === "matrix" ? 60 : 10) : [];
     const sharedCap = Math.min(shared.length, Math.floor(budget[table] / 5));

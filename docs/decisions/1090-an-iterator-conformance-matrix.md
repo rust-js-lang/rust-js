@@ -683,3 +683,36 @@ and `hash walks of a counted key` (`values_mut`, `iter_mut`, `retain`,
 fix taken back, both builds fail: the walks print `hashed 12` where std's
 print `hashed 0`, `get_disjoint_mut` 7 where std's 5, and the entries and
 the set's `extract_if` likewise. 183 cases of 136 templates.
+
+## Amendment: what decides each chain's form runs each row it reaches (#1780, 2026-11-14)
+
+The held flip (bb518fcca) made two wrong answers its push's rows didn't
+run: `generic own Every | chain.flatten | rfold`, nothing folded, and
+`take.flatten | rfold | stage`, a drop run twice more. Its decision, the
+in-place adapters' `HELD_FLIPPED = ["enumerate", "map"]`, a `const`
+outside any function, named nothing, as #986 says of a comment there;
+and had it named `map`, `chain.flatten`'s rows run a `map`, the per-item
+one `flatten` is given, which their ids don't name. A change's rows now:
+
+- **What decides.** A hunk in what decides each chain's form, std's
+  compiled structs or the hand-written forms (`deciding`:
+  `body_queries/in_place.rs` and `iterators/transparent.rs`, ADR 1136),
+  decides for each row of the adapters it names, whatever its source, as
+  a removal does: each runs, not a sample of them. Outside any function
+  there, a `const` names what it says, of no function's head; a comment
+  there names nothing still (`naming`).
+- **What calls a name.** Each adapter whose text calls another reaches its
+  rows (`adapterCalls`, of the generator's own texts, every shape): a
+  name of `map` runs `flatten`'s rows too (`reached`). It's of every
+  hunk's names, not only what decides.
+
+Replayed, bb518fcca's change runs each row of `chain`, `enumerate`,
+`filter`, `flatten` and `map`, 78,096 of the matrix's and 13,600 of the
+table's, both wrong answers' rows among them, past the budget: 567 s and
+102 s on the 8-core M1 in 8 parts, quiet before it, about 11 minutes,
+paid by a change to what decides a chain's form alone (the loop's
+ledger). Its
+`transparent.rs` hunks name `chain` by its variable, `chain`, as the
+naming of identifiers does elsewhere. `test/iterator-rows.test.ts` holds
+both rules; scripts have no mutations (ADR 0093), so its assertions are
+the check.

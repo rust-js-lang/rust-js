@@ -892,6 +892,29 @@ export function batches<C extends Row>(cases: C[], perBatch = 60, alone: (c: C) 
 /** Of the iterator tables, a case that aborts natively (#847). */
 export const aborts = (c: Case) => c.variant.kind === "aborts";
 
+/** The adapters each adapter's text calls besides itself, each by its
+ * name's first word, of every shape it applies to: `flatten`'s per-item
+ * `map`, which makes what it flattens. A row whose chain has `flatten`
+ * runs a `map` its id doesn't name (scripts/iteratorRows.ts). */
+export function adapterCalls(): Map<string, Set<string>> {
+  const word = (a: Adapter) => a.name.split(" ")[0];
+  const names = new Set(adapters.map(word));
+  const out = new Map<string, Set<string>>();
+  const items: Item[] = ["D", "N", "&D", "&N", "pair"];
+  const flags = [true, false];
+  for (const a of adapters) {
+    for (const from of items.flatMap((item) => flags.flatMap((owns) => flags.flatMap((back) => flags.map((exact) => ({ item, owns, back, exact })))))) {
+      if (!a.shape(from)) continue;
+      for (const panics of flags) {
+        for (const [, called] of a.text(from, panics).matchAll(/\.(\w+)\(/g)) {
+          if (names.has(called) && called !== word(a)) out.set(word(a), (out.get(word(a)) ?? new Set()).add(called));
+        }
+      }
+    }
+  }
+  return out;
+}
+
 /** What a change to what every adapter shares runs, of `cases` (#818): of
  * each pairing of an adapter, or of none, with a consumer, `perPair` of its
  * cases, `sample`'s, in their order. */

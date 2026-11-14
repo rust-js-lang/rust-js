@@ -5,7 +5,8 @@
 
 import { expect, test } from "bun:test";
 
-import { budgetOf, enclosingArm, named, outsideFunctions, pattern, rowsPerPart, type Hunk } from "../scripts/iteratorRows";
+import { budgetOf, enclosingArm, named, naming, outsideFunctions, pattern, reached, rowsPerPart, type Hunk } from "../scripts/iteratorRows";
+import { adapterCalls } from "./iterator-matrix";
 
 const adapters = new Set(["map", "filter", "skip", "take", "fuse", "enumerate", "chain", "rev", "step_by", "zip", "take_while", "copied", "cloned"]);
 const consumers = new Set(["fold", "rfold", "any", "all", "count", "nth", "for", "nth_back"]);
@@ -43,6 +44,33 @@ test("a name's rows are those whose chain has it, or whose consumer it begins", 
   const rfold = pattern(new Set(), new Set(["rfold"]), false)!;
   expect(rfold.test("vec | map | rfold holding | none") && !rfold.test("vec | map | fold | none")).toBe(true);
   expect(pattern(new Set(), new Set(), true)!.test("generic vec | - | fold | none")).toBe(true);
+});
+
+// The held flip (bb518fcca) named `map` in what decides each chain's form,
+// and its slice ran a sample of `map`'s rows and none of `chain.flatten`'s,
+// whose per-item `map` the id doesn't name: #1780's wrong answers, which the
+// matrix's `generic own Every | chain.flatten | rfold` and `take.flatten`
+// rows hold.
+test("what decides each chain's form runs each row of what it names, and of each adapter that calls it", () => {
+  const decided = named(hunk(['pub(in crate::lower) const HELD_FLIPPED: [&str; 2] = ["enumerate", "map"];'], [], "", "src/lower/body_queries/in_place.rs"), adapters, consumers);
+  expect(decided).toMatchObject({ adapters: ["enumerate", "map"], decides: true, removes: false });
+  expect(named(hunk(["  const taking = $taking(iter, n, drop);"]), adapters, consumers).decides).toBe(false);
+  // Its `HELD_FLIPPED`, outside any function, names what it says; a
+  // comment there, or a `const` elsewhere, nothing.
+  const outside = (added: string[], file: string): Hunk => ({ ...hunk(added, [], "fn decide_held() {", file), outside: true });
+  expect(naming(outside(['const HELD_FLIPPED: [&str; 2] = ["enumerate", "map"];'], "src/lower/body_queries/in_place.rs"), adapters, consumers)).toMatchObject({ head: "" });
+  expect(naming(outside(["// what a `map` decides"], "src/lower/body_queries/in_place.rs"), adapters, consumers)).toBeUndefined();
+  expect(naming(outside(['const NAMES: [&str; 1] = ["map"];'], "src/runtime/back_steps.js"), adapters, consumers)).toBeUndefined();
+  expect(adapterCalls().get("flatten")).toEqual(new Set(["map"]));
+  const reach = reached(new Set(["map"]));
+  expect([...reach].sort()).toEqual(["flatten", "map"]);
+  // #1780's wrong answers: nothing folded, and a drop run twice more, each
+  // row it failed (m6-lily's `pairs` run) and the one it was found by.
+  const failed = ["take.flatten | rfold | stage", "chain.flatten | rfold | next", "flatten.flatten | rfold | next", "flatten.flatten | rfold | stage", "step_by.flatten | rfold | none", "chain.flatten | rfold | none"];
+  for (const id of failed.map((row) => `generic own Every | ${row}`)) {
+    expect(pattern(reach, new Set(), false)!.test(id)).toBe(true);
+  }
+  expect(pattern(new Set(["map"]), new Set(), false)!.test("generic own Every | chain.flatten | rfold | none")).toBe(false);
 });
 
 // #850's hunk changed only the arm's body: what the arm matches, though that
