@@ -178,7 +178,10 @@ What it has:
   methods count UTF-16 as JS's do, `string::slice`, `string::index_of`,
   for an index a JS API gives or takes; a place found in a Rust string is
   std's `find` and slicing, which are JS's own there (ADR 0642);
-  `js::number::to_fixed` rounds a tie away from zero, and
+  `js::number::to_fixed(x, Some(2.0))` rounds a tie away from zero,
+  `js::number::to_precision(x, Some(15.0))` is `x.toPrecision(15)`, its
+  significant digits, each of TypeScript's `number?`, converted as JS
+  converts it, a count out of range a `RangeError`, a panic (#1813), and
   `js::number::to_string(x, Some(36))` is `x.toString(36)`; `js::math`'s
   `round`, `sign`, `max`, `min` and `random` are `Math`'s
   ([ADR 0247](../../decisions/0247-js-string-methods.md),

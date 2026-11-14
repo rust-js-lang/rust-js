@@ -1307,3 +1307,44 @@ pub fn each(iterator: &'static js::AsyncIterator<f64>, f: Rc<dyn Fn(f64)>, done:
   await new Promise<void>((resolve) => lib.each(counted(), (n: number) => seen.push(n), resolve));
   expect(seen).toEqual([1, 2]);
 });
+
+// #1813: `toFixed` and `toPrecision` take TypeScript's `number?`, as JS
+// converts it, each against JS's own of every number beside every count.
+test("Number's toFixed and toPrecision take any number JS's do", async () => {
+  const dir = fixture("js-number-digits");
+  writeFileSync(join(dir, "lib.rs"), `use js::number;
+
+pub fn fixed(x: f64, digits: Option<f64>) -> String {
+    number::to_fixed(x, digits)
+}
+
+pub fn precision(x: f64, precision: Option<f64>) -> String {
+    number::to_precision(x, precision)
+}
+
+pub fn stepped(distance: f64, step: f64) -> f64 {
+    number::to_precision(distance / step, Some(15.0)).parse().unwrap_or(f64::NAN)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("return x.toFixed(digits);");
+  expect(js).toContain("return x.toPrecision(precision);");
+  const lib = await import(join(dir, "lib.js"));
+  const said = (f: () => string) => {
+    try {
+      return f();
+    } catch (e) {
+      return (e as Error).name;
+    }
+  };
+  const xs = [123.456, 0.000001234, 1.005, 2.5, -2.5, 0, -0, 1e21, 0.1 + 0.2, NaN, Infinity, -Infinity];
+  for (const x of xs) {
+    for (const n of [0, 1, 2.7, 15, 100, 101, -1, NaN, Infinity, undefined]) {
+      expect(said(() => lib.fixed(x, n)), `${x}.toFixed(${n})`).toBe(said(() => x.toFixed(n)));
+      expect(said(() => lib.precision(x, n)), `${x}.toPrecision(${n})`).toBe(said(() => x.toPrecision(n)));
+    }
+  }
+  expect([said(() => lib.fixed(1, 101)), said(() => lib.precision(1, 0))]).toEqual(["RangeError", "RangeError"]);
+  expect(lib.stepped(0.3, 0.1)).toBe(Number((0.3 / 0.1).toPrecision(15)));
+});

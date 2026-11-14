@@ -142,7 +142,7 @@ pub async fn thrown() -> (String, String) {
 
 /// `x.toFixed(digits)`, as JS rounds, and `format!`'s, as Rust does.
 pub fn fixed(x: f64, digits: usize) -> (String, String) {
-    (js::number::to_fixed(x, digits as u32), format!("{x:.digits$}"))
+    (js::number::to_fixed(x, Some(digits as f64)), format!("{x:.digits$}"))
 }
 
 /// `Math.round(x)`, as JS rounds, a half up, and `x.round()`, as Rust

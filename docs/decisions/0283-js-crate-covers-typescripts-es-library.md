@@ -413,3 +413,29 @@ panic, never `""`, of a group that matched nothing. Held by
 test/js-builtins.test.ts's "String.prototype.match is JS's", against
 JS's own `match` of tokens with tabs, line ends, U+FEFF and U+0085, and
 the panic of an unmatched group's item.
+
+## Amendment: `toFixed` and `toPrecision` take what TypeScript's do (#1813)
+
+`number::to_fixed` took a `u32`, where TypeScript's `toFixed(fractionDigits?:
+number)` takes any number or none, which JS converts (ToIntegerOrInfinity:
+`2.7` is 2, `NaN` and `undefined` 0) before it throws a `RangeError` of one
+past 0 to 100; and `Number.prototype.toPrecision` was unbound, which a port
+of vercel-ui's numeric stepping needs, `Number((distance /
+step).toPrecision(15))`, and its `roundTo(value, decimals)`,
+`Number(value.toFixed(Math.min(decimals, 100)))` of an `f64` it's given.
+Narrowing to an integer changes what a call gives and when it throws, and
+Rust's `format!` has no significant digits, nor JS's exponent text.
+
+**Each takes TypeScript's `number?` as `Option<f64>`**: `to_fixed(x,
+Some(2.0))` is `x.toFixed(2)`, `to_precision(x, None)` `x.toPrecision()`,
+`String(x)`, each JS's own call, direct. One binding each, its
+conversion and its `RangeError` JS's: the error, as `string::repeat`'s
+of a count out of range, a panic. Existing calls migrated, the
+playground's `to_fixed(t, Some(0.0))` and test/builtins.rs's. Case
+([0262](0262-when-rust-and-js-disagree.md)): none, JS's own methods.
+Held by test/js-builtins.test.ts's "Number's toFixed and toPrecision take
+any number JS's do": twelve numbers, `-0`, `1e21`, `0.1 + 0.2`, `NaN` and
+the infinities among them, each beside counts 0, 1, 2.7, 15, 100, 101, -1,
+`NaN`, `Infinity` and none, each answer or error against JS's own; the
+stepping's `Number((distance / step).toPrecision(15))`; and the JS,
+`x.toFixed(digits)` and `x.toPrecision(precision)`.

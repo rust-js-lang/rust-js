@@ -251,11 +251,11 @@ struct FileOptions {
 }
 
 pub fn ms(t: f64) -> String {
-    format!("{} ms", number::to_fixed(t, 0))
+    format!("{} ms", number::to_fixed(t, Some(0.0)))
 }
 
 pub fn mb(n: f64) -> String {
-    format!("{} MB", number::to_fixed(n / 1048576.0, 1))
+    format!("{} MB", number::to_fixed(n / 1048576.0, Some(1.0)))
 }
 
 /// Download the compiler, the sysroot, the webapi and js crates and the examples,

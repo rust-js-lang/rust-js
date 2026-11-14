@@ -2572,9 +2572,28 @@ pub mod number {
     /// `2.5` is `"3"`, where `format!("{:.0}", 2.5)` is `"2"`, to even, as
     /// Rust rounds it. Between ties they agree. `-0` is `"0"`, `1e21` and up
     /// is `String(x)`, `"1e+21"`, and `Infinity` is `"Infinity"`, where
-    /// `format!`'s is `"inf"`. `digits` is 0 to 100: more throws a `RangeError`.
+    /// `format!`'s is `"inf"`. `digits` is TypeScript's `fractionDigits?:
+    /// number`, converted as JS converts it: `None` and `NaN` are 0, `2.7`
+    /// is 2. Of 0 to 100 alone: another, `-1`, `101` or an infinity, throws
+    /// a `RangeError`, a panic.
     #[cfg_attr(rust_js, rust_js::link_name = "toFixed")]
-    pub fn to_fixed(this: f64, digits: u32) -> String {
+    pub fn to_fixed(this: f64, digits: Option<f64>) -> String {
+        unreachable!()
+    }
+
+    /// [`x.toPrecision(precision)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number/toPrecision):
+    /// `x` to `precision` significant digits, as JS rounds, a tie away
+    /// from zero, in exponent form where its exponent is below -6 or not
+    /// below `precision`: `toPrecision(123.456, Some(2.0))` is `"1.2e+2"`,
+    /// and `Number((distance / step).toPrecision(15))` drops a sum's last
+    /// bits, `0.30000000000000004`'s `"0.300000000000000"`. Rust's `format!`
+    /// writes no significant digits. `precision` is TypeScript's
+    /// `precision?: number`, converted as JS converts it, `2.7` 2: `None`
+    /// is `String(x)`. `NaN` and the infinities are `"NaN"` and
+    /// `"Infinity"` of any; another's 1 to 100 alone: `0`, `101`, `NaN`'s
+    /// 0, throws a `RangeError`, a panic.
+    #[cfg_attr(rust_js, rust_js::link_name = "toPrecision")]
+    pub fn to_precision(this: f64, precision: Option<f64>) -> String {
         unreachable!()
     }
 

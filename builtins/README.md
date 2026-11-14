@@ -68,9 +68,11 @@ spawn(Box::new(async move {                            // runs, unawaited
   later, or every so often, and `clear_timeout` and `clear_interval` of what
   they gave stop it: every JS runtime has them, browsers', workers' and
   Node's. Their delay is optional, as JS's: `None` leaves it out.
-- `number::to_fixed(x, digits)` is `x.toFixed(digits)`, JS's rounding: a tie
-  away from zero, `2.5` to `"3"`, where `format!("{:.0}", 2.5)` is `"2"`; and
-  `number::to_string(x, Some(36))` is `x.toString(36)`.
+- `number::to_fixed(x, Some(digits))` is `x.toFixed(digits)`, JS's rounding:
+  a tie away from zero, `2.5` to `"3"`, where `format!("{:.0}", 2.5)` is
+  `"2"`; `number::to_precision(x, Some(15.0))` is `x.toPrecision(15)`, its
+  significant digits; each takes TypeScript's `number?`, converted as JS
+  converts it. `number::to_string(x, Some(36))` is `x.toString(36)`.
 - `Iterator<T>` is TypeScript's, JS's iterator protocol: `iterator.next()` is
   an `IteratorResult<T>`, its `done` an `Option<bool>` left out until the end,
   and its `value` ([ADR 0860](../docs/decisions/0860-the-iterator-protocol-and-a-loop-of-what-its-test-makes.md)).
