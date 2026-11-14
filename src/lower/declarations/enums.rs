@@ -100,7 +100,9 @@ impl<'tcx> Declarations<'_, 'tcx> {
                     let ty = self.field_ts(ty, Some(field));
                     self.function_names.truncate(outer);
                     let name = crate::lower::representation::variant_field(self.tcx, v, i);
-                    json!({ "kind": "property", "name": name, "optional": false, "readonly": false, "type": ty })
+                    // One always `undefined`, its key there or not (#1851).
+                    let optional = crate::lower::representation::always_undefined(self.tcx, field_ty(field));
+                    json!({ "kind": "property", "name": name, "optional": optional, "readonly": false, "type": ty })
                 });
                 json!({ "kind": "object", "members": tag.into_iter().chain(fields).collect::<Vec<_>>() })
             })

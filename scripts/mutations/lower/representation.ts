@@ -658,4 +658,22 @@ export const mutations: Mutation[] = [
     replace: "                Op::Shl if (0..127).contains(&b) => a.checked_mul(1i128 << b)?,\n                Op::Shr if (0..127).contains(&b) => a >> b,\n",
     tests: ["test/corpus.test.ts", "-t", "^wide_constant_shifts_folded.rs$"],
   },
+  {
+    name: "unit-field-always-there",
+    breaks:
+      "a `()` field is declared required, `_0: undefined`, where the JS rust-js makes leaves its key out, so `{ TAG: \"Done\" }` isn't a `Step` under `exactOptionalPropertyTypes` (#1851)",
+    file: "src/lower/representation.rs",
+    find: "        ty::Tuple(items) => items.is_empty(),\n        ty::Adt(adt, _) => {\n            adt.is_struct()",
+    replace: "        ty::Tuple(items) => items.is_empty() && false,\n        ty::Adt(adt, _) => {\n            adt.is_struct()",
+    tests: ["test/declarations-results.test.ts", "-t", "always undefined"],
+  },
+  {
+    name: "unit-struct-field-always-there",
+    breaks: "a unit struct's field, `undefined` in JS, is declared required, its key left out of what rust-js makes (#1851)",
+    file: "src/lower/representation.rs",
+    find: "                && adt.non_enum_variant().ctor_kind() == Some(CtorKind::Const)\n                && bindings::unit_name(",
+    replace: "                && adt.non_enum_variant().ctor_kind() == Some(CtorKind::Fn)\n                && bindings::unit_name(",
+    tests: ["test/declarations-results.test.ts", "-t", "always undefined"],
+  },
 ];
+

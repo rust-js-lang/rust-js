@@ -389,17 +389,18 @@ fn union(types: Vec<Value>) -> Value {
     json!({ "kind": "union", "types": types })
 }
 
-/// `ty | undefined`, as @types/react writes an optional property; `any` and
-/// `unknown` have it already.
+/// `ty | undefined`, as @types/react writes an optional property, of an
+/// `undefined` that alone; `any | undefined` and `unknown | undefined` are
+/// printed `any` and `unknown` (#1850).
 fn or_undefined(ty: Value) -> Value {
-    if ty["kind"] == "keyword" && (ty["keyword"] == "any" || ty["keyword"] == "unknown") {
-        return ty;
-    }
     let mut types = match ty["kind"].as_str() {
         Some("union") => ty["types"].as_array().cloned().unwrap_or_default(),
         _ => vec![ty],
     };
-    types.push(keyword("undefined"));
+    // Once, where it's there already, `T | undefined`'s (#1851).
+    if !types.contains(&keyword("undefined")) {
+        types.push(keyword("undefined"));
+    }
     json!({ "kind": "union", "types": types })
 }
 

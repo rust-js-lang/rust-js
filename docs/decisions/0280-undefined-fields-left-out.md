@@ -384,3 +384,22 @@ and the program's `js::has`, run), and the mutations
 `commented-optional-none-kept` (`lower/aggregates.ts`),
 `left-out-fields-unknown`, `left-out-fields-every-written` and
 `left-out-line-of-other-code` (`to_oxc/closing.ts`).
+
+## Amendment: a field always `undefined` is declared optional (#1851, 2026-11-15)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none. Only declarations
+change.
+
+A value of a type always `undefined` in JS, `()` and a unit struct of no
+`#[rust_js::name]` (`representation::always_undefined`, the one owner),
+is written `undefined`, so this pass leaves its key out: `Step::Done(())`
+is `{ TAG: "Done" }`, and that's a fact of the type, not of each object.
+It was declared `{ TAG: "Done"; _0: undefined }`, which under
+`exactOptionalPropertyTypes` a JS caller can't give as `{ TAG: "Done" }`.
+**A field of one is declared optional, `_0?: undefined`**, true of what
+rust-js makes and of `{ TAG: "Done", _0: undefined }` a caller may give, of
+a variant's (`tagged_variants`) and a struct's field (`structure`) alike,
+a `Result<(), E>`'s `Ok` too. Held by declarations-results' "a field
+always undefined is declared optional", each shape given back to Rust
+under strict tsc; mutations unit-field-always-there and
+unit-struct-field-always-there.

@@ -148,8 +148,11 @@ impl<'tcx> Declarations<'_, 'tcx> {
                         false => (true, inner),
                     }
                 }
+                // One always `undefined`, a `()`'s, its key there or not
+                // (#1851).
                 None => (
-                    field_default(self.tcx, field).is_some(),
+                    field_default(self.tcx, field).is_some()
+                        || crate::lower::representation::always_undefined(self.tcx, ty),
                     self.as_written(written, |out| out.field_ts(ty, Some(field))),
                 ),
             };

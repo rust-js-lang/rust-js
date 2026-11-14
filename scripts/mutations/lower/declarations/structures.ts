@@ -90,8 +90,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a field with a default is declared required, `count: number`, where a caller may leave it out",
     file: "src/lower/declarations/structures.rs",
-    find: "                    field_default(self.tcx, field).is_some(),\n                    self.as_written(written, |out| out.field_ts(ty, Some(field))),",
-    replace: "                    false,\n                    self.as_written(written, |out| out.field_ts(ty, Some(field))),",
+    find: "                    field_default(self.tcx, field).is_some()\n                        || crate::lower::representation::always_undefined(self.tcx, ty),\n",
+    replace: "                    crate::lower::representation::always_undefined(self.tcx, ty),\n",
     tests,
   },
   {

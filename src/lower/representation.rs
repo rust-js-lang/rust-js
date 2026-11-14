@@ -792,6 +792,25 @@ fn const_bigint(e: &Expr) -> bool {
     }
 }
 
+/// Whether a value of `ty` is always `undefined` in JS: `()`, and a unit
+/// struct of no `#[rust_js::name]`, which is no class (ADR 0013). The JS
+/// rust-js makes leaves the key of one out, as an object does of each key
+/// whose value is written `undefined` (ADR 0280), and a JS caller may give
+/// it, `{ TAG: "Done", _0: undefined }`, so a field of one is declared
+/// optional, `_0?: undefined`, true of both (#1851).
+pub(in crate::lower) fn always_undefined(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
+    match ty.kind() {
+        ty::Tuple(items) => items.is_empty(),
+        ty::Adt(adt, _) => {
+            adt.is_struct()
+                && adt.non_enum_variant().ctor_kind() == Some(CtorKind::Const)
+                && bindings::unit_name(tcx, adt.did()).is_none()
+                && !super::classes::is_class(tcx, adt.did())
+        }
+        _ => false,
+    }
+}
+
 /// Whether `adt` is a tuple struct, `struct P(u8, u8)`, laid out as an
 /// array of its fields, `[1, 2]`, which `shape` says of it: each field an
 /// item, its value by its type alone, never a property its cell holds.

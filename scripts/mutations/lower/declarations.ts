@@ -444,15 +444,6 @@ export const mutations: Mutation[] = [
     tests: ["test/declarations.test.ts", "-t", "union"],
   },
   {
-    name: "optional-unknown-or-undefined",
-    breaks:
-      "an optional `unknown` or `any` field is `?: unknown | undefined`, which says nothing more",
-    file: "src/lower/declarations.rs",
-    find: '    if ty["kind"] == "keyword" && (ty["keyword"] == "any" || ty["keyword"] == "unknown") {\n        return ty;\n    }\n',
-    replace: "",
-    tests: ["test/declarations.test.ts", "-t", "null for an Option"],
-  },
-  {
     name: "optional-union-nested",
     breaks:
       "an optional field of a union holds it whole, `(string | null) | undefined`",
