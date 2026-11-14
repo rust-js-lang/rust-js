@@ -139,7 +139,7 @@ test("the builder builds an app's Cargo package, and a failed build leaves its J
     const options = cargoApp(root, "pub fn answer() -> u32 {\n    42\n}\n");
     const builder = createNativeBuilder({ root, rustJs: compiler });
     const built = await builder.checkCargo(options);
-    const result = built.manifests.get("app");
+    const result = built.crates.find((c) => c.crate === "app")!.contract;
     const version = Bun.spawnSync([compiler, "--version-json"], { stdout: "pipe", stderr: "pipe" });
     expect(version.exitCode).toBe(0);
     expect(parseCompilerIdentity(version.stdout.toString())).toEqual(result.compiler);

@@ -1,12 +1,14 @@
 //! Translate checked Rust identities to the library contract (ADR 0100): the
 //! items a library exports, and the ones a consumer imports.
 
+mod bound;
 mod built_types;
 mod cells;
 mod compiled_here;
 mod exports;
 mod reached;
 mod written_into;
+pub(super) use bound::bound;
 pub(super) use compiled_here::merging;
 pub(super) use exports::exports;
 
@@ -100,6 +102,11 @@ fn crate_id(tcx: TyCtxt<'_>, krate: rustc_span::def_id::CrateNum) -> String {
     format!("{:016x}", tcx.stable_crate_id(krate).as_u64())
 }
 
+/// `krate`'s name, as a library's manifest writes it (`Library::name`).
+fn crate_name(tcx: TyCtxt<'_>, krate: rustc_span::def_id::CrateNum) -> String {
+    tcx.crate_name(krate).to_string()
+}
+
 /// Can another crate reach `id`, a local item? rustc's own answer, which
 /// follows `pub use`; and every trait impl, and its methods: the library's
 /// generic code may ask a consumer that instantiates it for an impl of a
@@ -167,6 +174,9 @@ pub(super) struct Contracts<'a, 'tcx> {
     /// Its functions whose JS may merge what Rust keeps apart, each that
     /// calls one among them (`merging`, #1052).
     pub(super) merges_identities: &'a IndexSet<DefId>,
+    /// The npm packages its JS imports through bindings, its libraries' too
+    /// (#1799).
+    pub(super) bound: &'a [crate::library::Bound],
     /// Whether it makes a `dyn Any` of what drops (ADR 0691, amended).
     pub(super) makes_dropping_anys: bool,
     /// Whether it makes a `dyn Error` of what drops (ADR 0462, amended).

@@ -55,6 +55,15 @@ begin` and `# rust-js: end` ([ADR 0118](../../decisions/0118-bindings-on-npm-onl
 it. A crate installed twice, at two versions, is refused, naming who asked
 for each.
 
+Two releases of one Rust crate in your build, two semver-incompatible
+versions as Cargo allows, are two libraries, whose types never mix, as in
+Rust. Two releases of one binding crate over the same npm package are
+refused, naming the crates that use each: your app installs the package
+once, and both releases would call that one copy. Depend on one release,
+or bind the other through an npm alias of its own,
+`"dom-v0": "npm:@floating-ui/dom@0.5"`
+([ADR 0100](../../decisions/0100-separate-crates.md), amended; #1799).
+
 ### Use one
 
 ```rust

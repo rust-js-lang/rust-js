@@ -307,10 +307,11 @@ export function createNativeBuilder({ root, rustJs }) {
       const { root: workspace, ids } = await builder.cargoWorkspace({ manifestPath: options.manifestPath, offline: options.offline, targetDir: options.targetDir });
       const built = await builder.checkCargo({ ...options, packageIds: ids });
       for (const warning of built.warnings) warn?.(warning);
-      for (const [crate, manifest] of built.manifests) {
+      // Each crate's, two releases of one name each its own (#1799).
+      for (const { contract, files } of built.crates) {
         // The app's own crates' checks, not an npm package's (ADR 0414).
-        if (manifest.input.startsWith(workspace + sep) && !packageOf(options.packages ?? [], manifest.input)) {
-          await checks({ input: manifest.input, files: built.files.get(crate) ?? [], warn });
+        if (contract.input.startsWith(workspace + sep) && !packageOf(options.packages ?? [], contract.input)) {
+          await checks({ input: contract.input, files, warn });
         }
       }
       return { ...built, workspace };

@@ -49,7 +49,7 @@ test("a Cargo workspace built with rust-js as its wrapper prints what native Rus
   // `models` built first on its own, the package Cargo was asked for, then used.
   await check(manifest, { packageNames: ["models"] });
   const { js, crates } = await check(manifest);
-  expect([...crates.keys()].sort()).toEqual(["frontend", "models", "validation"]);
+  expect(crates.map((c) => c.crate).sort()).toEqual(["frontend", "models", "validation"]);
   // serde's crates, which rust-js reads as rustc builds them (ADR 0077),
   // aren't tried, as another crate of crates.io's is (ADR 0415): none says
   // why it isn't compiled.
@@ -155,13 +155,13 @@ test("a Cargo build of rust-js's crates is done when their JS is, and not before
   // A library's JS gone from a build Cargo has as done: refused, not given to
   // an app that imports it, until Cargo is told to build it again. Found in
   // review.
-  rmSync(crates.get("models")!.js);
+  rmSync(crates.find((c) => c.crate === "models")!.js!);
   await expect(check(manifest)).rejects.toThrow("cargo clean -p models --target wasm32-unknown-unknown");
   run(cargo(manifest, "clean", "-p", "models", "--target", "wasm32-unknown-unknown"));
   expect(printed((await check(manifest)).js!)).toBe(printed(js!));
   // A library's manifest gone, the crates using it are refused, not compiled
   // as if it were a crate rustc built.
-  rmSync(dirname(crates.get("validation")!.manifest), { recursive: true });
+  rmSync(dirname(crates.find((c) => c.crate === "validation")!.manifest), { recursive: true });
   const models = join(dir, "models", "src", "lib.rs");
   writeFileSync(models, readFileSync(models, "utf8") + "\npub fn more() {}\n");
   await expect(check(manifest)).rejects.toThrow("`cargo clean` to build it again");
@@ -363,7 +363,7 @@ test("the app's crate is a program where no crate uses it, and a library, the sa
   // no drop; a library's may hold a consumer's that does (ADRs 0163, 0360).
   const disposed = (js: string) => readFileSync(js, "utf8").includes("shape.impl.$drop?.(shape.value);");
   expect([printed(user.js!), counted(user.js!), copied(user.js!), disposed(user.js!)]).toEqual(["5 5 2\n2\n4\n5 5\n", false, false, false]);
-  expect(readFileSync(user.crates.get("app")!.js, "utf8")).toBe(alone);
+  expect(readFileSync(user.crates.find((c) => c.crate === "app")!.js!, "utf8")).toBe(alone);
   const own = readFileSync(user.js!, "utf8");
   const again = await check(manifest, { packageNames: ["app"] });
   expect(readFileSync(again.js!, "utf8")).toBe(alone);
@@ -377,7 +377,7 @@ test("the app's crate is a program where no crate uses it, and a library, the sa
   // amended); there is no one package's JS.
   const whole = await check(manifest, { packageNames: [] });
   expect(whole.js).toBeUndefined();
-  expect([readFileSync(whole.crates.get("user")!.js, "utf8"), readFileSync(whole.crates.get("app")!.js, "utf8")]).toEqual([own, alone]);
+  expect([readFileSync(whole.crates.find((c) => c.crate === "user")!.js!, "utf8"), readFileSync(whole.crates.find((c) => c.crate === "app")!.js!, "utf8")]).toEqual([own, alone]);
   expect(checked()).toBe(first);
   // Once a crate of the workspace uses `user`, it's a library, built again,
   // whose trait object may hold a consumer's that drops: which crates are
@@ -388,9 +388,9 @@ test("the app's crate is a program where no crate uses it, and a library, the sa
   writeFileSync(manifest, '[workspace]\nmembers = ["app", "user", "shell"]\nresolver = "2"\n');
   run(cargo(manifest, "generate-lockfile"));
   const used = await check(manifest, { packageNames: ["shell"] });
-  expect([printed(used.js!), disposed(used.crates.get("user")!.js)]).toEqual(["5 5 2\n2\n4\n5 5\n", true]);
+  expect([printed(used.js!), disposed(used.crates.find((c) => c.crate === "user")!.js!)]).toEqual(["5 5 2\n2\n4\n5 5\n", true]);
   // Built alone, the package asked for, it's the same library.
-  const library = readFileSync(used.crates.get("user")!.js, "utf8");
+  const library = readFileSync(used.crates.find((c) => c.crate === "user")!.js!, "utf8");
   expect(readFileSync((await check(manifest, { packageNames: ["user"] })).js!, "utf8")).toBe(library);
 }, 600_000);
 

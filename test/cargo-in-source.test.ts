@@ -22,7 +22,7 @@ test("a Cargo build's JS in source has each inline module where its file would b
   writeFileSync(join(src, "lib.rs"), "mod api;\n\npub mod inner {\n    pub fn value() -> u32 {\n        42\n    }\n}\n\npub fn answer() -> u32 {\n    inner::value() + api::nested::one()\n}\n");
   writeFileSync(join(src, "api.rs"), "pub mod nested {\n    pub fn one() -> u32 {\n        1\n    }\n}\n");
   const built = await checkCargo({ manifestPath: join(dir, "Cargo.toml"), toolchain: channel, compiler, offline: true, packageNames: ["app"], inSource: true });
-  const { js } = built, files = built.files.get("app") ?? [];
+  const { js } = built, files = built.crates.find((c: { crate: string }) => c.crate === "app")?.files ?? [];
   expect(js).toBe(join(src, "lib.js"));
   // `api` has nothing of its own, so no JS: `nested` is still in `src/api/`.
   expect([...files].sort()).toEqual([join(src, "api", "nested.js"), join(src, "inner.js"), join(src, "lib.js")]);
@@ -140,7 +140,7 @@ test("a Cargo build's declarations in source are beside each module's JS", async
   expect(app).toContain('import type { Flags, PluginName } from "./plugin_types.js";');
   expect(readFileSync(join(src, "plugin_types.d.ts"), "utf8")).toContain("export type PluginName = string;\n\nexport type Flags = number;");
   expect([existsSync(join(src, "plugin_types.js")), existsSync(join(src, "plugin_types.js.map"))]).toEqual([false, false]);
-  expect((built.files.get("app") ?? []).map((file: string) => basename(file)).sort()).toEqual(["App.js", "util.js"]);
+  expect((built.crates.find((c: { crate: string }) => c.crate === "app")?.files ?? []).map((file: string) => basename(file)).sort()).toEqual(["App.js", "util.js"]);
 }, 600_000);
 
 // Where a module names another's file is where the compiler's own parse
@@ -180,7 +180,7 @@ test("a Cargo build of a root of `mod`s alone writes its modules' JS, and none o
   writeFileSync(join(dir, "src", "components", "Answer.rs"), "pub fn answer() -> u32 {\n    42\n}\n");
   const built = await checkCargo({ manifestPath: join(dir, "Cargo.toml"), toolchain: channel, compiler, offline: true, packageNames: ["app"], inSource: true });
   expect(built.js).toBeUndefined();
-  expect(built.files.get("app")).toContain(join(dir, "src", "components", "Answer.js"));
+  expect(built.crates.find((c: { crate: string }) => c.crate === "app")?.files).toContain(join(dir, "src", "components", "Answer.js"));
   expect(existsSync(join(dir, "src", "lib.js"))).toBe(false);
   const answer = join(dir, "src", "components", "Answer.js");
   expect(run([node ?? "node", "--input-type=module", "--eval", `console.log((await import(${JSON.stringify(answer)})).answer());`]).trim()).toBe("42");

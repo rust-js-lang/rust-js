@@ -186,6 +186,8 @@ or a box (ADR 0074). ADR 0099's handles have the same `value`.
   library's, which a consumer would import. A `const` is its value, as
   within a crate (ADR 0031), and a copy of it the consumer's own.
 - Two versions of one crate in one build, still an error (ADR 0085).
+  (Amended: two releases of a Rust crate are two libraries since #1130,
+  and two of a binding crate over one npm package a refusal, #1799.)
 - A stable API for hand-written JS importing a library's modules: the
   shape of its JS belongs to the compiler that wrote it.
 - Build scripts, and crates from a registry.
@@ -404,3 +406,36 @@ metadata of a library the crate does load is refused as before. Held by
 `cfg-if`, and the mutation `library-checked-against-sysroot-crates`;
 `library-check-every-crate-of-its-name` is now caught by two releases of
 cfg-if in one graph, as std's crate isn't asked.
+
+## Amendment (2026-11-14): two releases of a binding over one npm package (#1799, Tu's decision)
+
+Two releases of one Rust crate are two libraries, as rustc has them
+(#1130): their types never mix, which rustc's E0308 says, and each
+release's JS is its own module. Two releases of a binding crate are
+different. A binding's import specifier, `"@floating-ui/dom"`, is written
+into its caller's JS, and an app installs a package once, so both
+releases, whoever imports them, read the one copy npm put at the top: a
+0.1 binding called 1.0's JavaScript and gave a wrong answer, silently. A
+crate refuses it now, of its own imports and its libraries': each
+library's contract records the npm packages its JS imports through
+bindings, with each binding's crate by its name and identity and the
+crate whose JS imports it, its libraries' records too
+(`Library::bound`, `lower::library::bound`); a crate that sees one binding
+crate's two identities over one package says so, naming both releases'
+users, `two releases of `dom` bind the npm package `@floating-ui/dom`,
+one used by `a`, the other by `b``. Two releases over two npm names, an
+alias, `"dom-v0": "npm:@floating-ui/dom@0.5"`, are two packages, and
+build. Two binding crates of other names over one package are each their
+author's. react, webapi and js stay one release each (ADR 0116).
+
+`checkCargo` gives every crate it built, its name, its root module's JS,
+its manifest and its files, two releases of a name each its own, where it
+gave the last of a name: `rust-js build` ran an app's checks of one
+release alone.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's behavior is preserved where it can be, and where it can't, two
+bindings calling one copy, it's a compile error. Held by
+`test/binding-releases.test.ts`, and the mutations of
+`scripts/mutations/lower/library/bound.ts`.
+

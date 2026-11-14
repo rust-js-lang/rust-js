@@ -87,6 +87,7 @@ new one is m6-react's to see first (#1462).
 | `Library.associated` | summary | each of its traits' associated types whose facts its dictionaries carry, `Size` and `Align` among them (ADR 0145, #1420) | |
 | `Library.types` | local | the types its declarations export by name | |
 | `Library.package` | local | its npm package, where its crate has one | |
+| `Library.bound` | summary | each npm package its JS imports through a binding, its libraries' too, and the binding's crate by its name and identity: a consumer that sees two releases of one binding crate over one package refuses them (#1799) | |
 | `Calling.params` | holds | each type parameter it asks anything of: `TypeParam` | |
 | `Calling.facts` | holds | `ItemFact` | |
 | `Calling.owned_by_return` | summary | the parameters what it returns alone owns | |

@@ -247,6 +247,9 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     /// Whether a write through a dictionary may, a generic `T`'s: in a
     /// library, not where only what no consumer compiles may (#1392).
     pub dictionaries_fail: bool,
+    /// The npm packages its JS imports through bindings, its libraries'
+    /// too (#1799).
+    pub bound: Vec<crate::library::Bound>,
     /// The throwing functions, whose result is a throwing JS call's (ADR 0644).
     pub throwing: IndexSet<DefId>,
     /// The functions that never unwind, whose call throws only where what
@@ -425,6 +428,9 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // fn() -> f64 = toast`, imports what it reads as a function does.
     let with_initializers: Vec<&Body<'tcx>> = all_bodies.iter().copied().chain(initializers).collect();
     let mut uses = js_uses(tcx, &with_initializers, &held, instances);
+    // The npm packages it imports through bindings, its libraries' too,
+    // two releases of one binding of a package refused (#1799).
+    let bound = super::library::bound(tcx, &uses.bound_to, &foreign);
     // What the crate's libraries export (ADR 0100) is named before lowering,
     // after its name there, a module's default too, `import noop from
     // "../shared/noop.js"` (ADR 0773), and imported by the modules that turn
@@ -1220,6 +1226,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         failing,
         writes_may_fail,
         dictionaries_fail,
+        bound,
         throwing,
         never_unwinding,
         quiet_fns,

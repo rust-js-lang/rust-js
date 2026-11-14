@@ -53,6 +53,7 @@ pub(crate) enum ContractField {
     LibraryLibraries,
     LibraryInputs,
     LibraryPackage,
+    LibraryBound,
     LibraryItems,
     LibraryImpls,
     LibraryHeld,
@@ -165,6 +166,11 @@ impl ContractField {
             ),
             LibraryInputs => ("Library.inputs", Local, "the files it was made of, each with its hash"),
             LibraryPackage => ("Library.package", Local, "its npm package, where its crate has one"),
+            LibraryBound => (
+                "Library.bound",
+                Summary,
+                "each npm package its JS imports through a binding, its libraries' too, and the binding's crate by its name and identity: a consumer that sees two releases of one binding crate over one package refuses them (#1799)",
+            ),
             LibraryItems => (
                 "Library.items",
                 Local,
@@ -631,6 +637,7 @@ fields! {
     associated => LibraryAssociated,
     types => LibraryTypes,
     package => LibraryPackage,
+    bound => LibraryBound,
 }
 
 fields! {

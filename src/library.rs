@@ -656,6 +656,23 @@ pub struct Library {
     /// whose manifests are refused (ADR 1003).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub package: Option<crate::packages::Package>,
+    /// Each npm package its JS imports through a binding, its own and its
+    /// libraries' (#1799): what a consumer checks, as an app installs one
+    /// copy of a package, which every release of a binding of it reads.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub bound: Vec<Bound>,
+}
+
+/// An npm package a crate's JS imports through a binding, `package`; the
+/// binding's crate, `binding`, by its name and identity, `crate_id`, which
+/// tells two releases of it apart (#1130); and the crate whose JS imports
+/// it, `by`, which a refusal names (#1799).
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
+pub struct Bound {
+    pub package: String,
+    pub binding: String,
+    pub crate_id: String,
+    pub by: String,
 }
 
 impl Library {
@@ -846,6 +863,9 @@ pub struct Exports {
     /// its bodies are the toolchain's std's, which the compiler links, so
     /// no metadata is checked against its hash.
     pub builtin: bool,
+    /// The npm packages its JS imports through bindings, its own and its
+    /// libraries' (#1799).
+    pub bound: Vec<Bound>,
     pub keeps_capacity: bool,
     pub writes_may_fail: bool,
     pub writers_take_options: bool,
@@ -1031,8 +1051,10 @@ impl Exports {
             associated,
             types,
             package,
+            bound,
         } = library;
         let exports = Exports {
+            bound,
             name: builtin.map_or(name, str::to_string),
             crate_hash,
             builtin: builtin.is_some(),

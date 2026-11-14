@@ -38,6 +38,7 @@ pub(in crate::lower) fn exports<'tcx>(
         debug_hex,
         reads_formatter_options,
         merges_identities,
+        bound,
         makes_dropping_anys,
         makes_dropping_errors,
         makes_dropping_fn_dyns,
@@ -203,6 +204,7 @@ pub(in crate::lower) fn exports<'tcx>(
         reads_formatter_options: sorted_keys(tcx, reads_formatter_options.iter()),
         // Its own: what it compiles of another library's is that one's.
         merges_identities: sorted_keys(tcx, merges_identities.iter().filter(|id| id.is_local())),
+        bound: bound.to_vec(),
         makes_dropping_anys: *makes_dropping_anys,
         makes_dropping_errors: *makes_dropping_errors,
         makes_dropping_fn_dyns: *makes_dropping_fn_dyns,

@@ -400,4 +400,12 @@ export const mutations: Mutation[] = [
     replace: "                written_arguments: Vec::new(),\n",
     tests: ["test/writer-sink.test.ts", "-t", "an Arguments, and a library"],
   },
+  {
+    name: "library-bound-unrecorded",
+    breaks: "a library's contract records no npm package its bindings import, so its consumer can't see two releases of one binding (#1799)",
+    file: "src/lower/library/exports.rs",
+    find: "        bound: bound.to_vec(),\n",
+    replace: "        bound: Vec::new(),\n",
+    tests: ["test/binding-releases.test.ts", "-t", "over one npm package are refused"],
+  },
 ];

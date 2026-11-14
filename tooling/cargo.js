@@ -345,13 +345,15 @@ const exactToolchain = toolchain => /^(\d+\.\d+\.\d+|nightly-\d{4}-\d{2}-\d{2})$
  * declarations. With `check` too, nothing is written: a JS or `.d.ts`
  * file beside the Rust that isn't what it compiles to is an error, which
  * names each (ADR 0412).
- * `files` is each crate's modules' JS, by its name, where it's served from.
  * `targetDir` is where Cargo builds, its own `target/` without one.
  * @param {{ manifestPath: string, toolchain: string, compiler: string, packageNames?: string[], packageIds?: Map<string, string>, features?: string[], noDefaultFeatures?: boolean, offline?: boolean, react?: string, inSource?: boolean, check?: boolean, routes?: string[], targetDir?: string }} options
- * `manifests` is each crate's, validated, as the compiler wrote it.
+ * `crates` is every crate it built, two releases of one name each its
+ * own (#1799): its name, its root module's JS, its manifest's file, the
+ * manifest, validated, as the compiler wrote it, `contract`, and its
+ * modules' JS, where it's served from, `files`.
  * `warnings` are what rust-js says of a build that succeeds, past rustc's
  * diagnostics, each a line.
- * @returns {Promise<{ js?: string, crates: Map<string, { js: string, manifest: string }>, manifests: Map<string, any>, files: Map<string, string[]>, warnings: string[] }>}
+ * @returns {Promise<{ js?: string, crates: { crate: string, js?: string, manifest: string, contract: any, files: string[] }[], warnings: string[] }>}
  */
 export async function checkCargo({ manifestPath, toolchain, compiler, packageNames = [], packageIds = new Map(), features = [], noDefaultFeatures = false, offline = false, react, inSource = false, check = false, routes = [], packages = [], targetDir, tests = false, integrationTests = [] }) {
   if (!exactToolchain(toolchain)) throw new Error("Cargo builds require an exact toolchain pin");
@@ -379,11 +381,11 @@ export async function checkCargo({ manifestPath, toolchain, compiler, packageNam
     const rendered = messages.filter(m => m.reason === "compiler-message" && !quiet(m)).map(m => m.message.rendered).join("");
     throw new Error(`cargo check failed:\n${rendered}${rendered && !error.stderr ? "" : cargoSaid(error)}`);
   });
-  const crates = new Map();
-  const ledger = ledgerOf(targetDir ?? build.targetDirectory);
   // Every crate it built, two of one name too, two releases of cfg-if,
-  // each a library of its own (#1130): `crates` has the last of a name.
-  const everyBuilt = [];
+  // each a library of its own (#1130), never one of a name for both
+  // (#1799): its name, its root module's JS and its manifest's file.
+  const crates = [];
+  const ledger = ledgerOf(targetDir ?? build.targetDirectory);
   let js;
   // The packages asked for that rust-js compiled, by their names.
   const compiled = new Set();
@@ -408,9 +410,7 @@ export async function checkCargo({ manifestPath, toolchain, compiler, packageNam
     }
     // The crate root's module: `lib.jsx` when it has JSX (ADR 0075); none
     // for a root of `mod`s alone, an app's list of its files (ADR 0382).
-    const entry = { js: built.modules.find(module => module.module.length === 0)?.file, manifest: library };
-    crates.set(message.target.name, entry);
-    everyBuilt.push({ crate: message.target.name, manifest: library });
+    crates.push({ crate: message.target.name, js: built.modules.find(module => module.module.length === 0)?.file, manifest: library });
     const name = packageNameOf(message.package_id);
     const ours = packageNames.length ? packageNames.includes(name) : message.manifest_path === manifest;
     // Of a test build, each of the package's test targets, its library's
@@ -420,7 +420,7 @@ export async function checkCargo({ manifestPath, toolchain, compiler, packageNam
       compiled.add(name);
       if (tests) {
         if (built.tests) testRuns.push(built.tests);
-      } else js = entry.js;
+      } else js = crates.at(-1).js;
     }
   }
   // Each package asked for, or the manifest's own, where it has one: a
@@ -436,17 +436,20 @@ export async function checkCargo({ manifestPath, toolchain, compiler, packageNam
   if (tests) return { tests: testRuns, crates, warnings };
   // Each with its crate's name, as Cargo has it: the app's manifest, a
   // program's, has no library to say it (ADR 0360).
-  const validated = new Map([...crates].map(([crate, { manifest }]) => [crate, parseManifest(readFileSync(manifest, "utf8"))]));
-  const manifests = everyBuilt.map(({ crate, manifest }) => ({ crate, ...parseManifest(readFileSync(manifest, "utf8")) }));
-  // Each crate's modules' JS, where it's served from: none of one of
-  // types alone (ADR 1005).
-  const served = (where) => new Map(manifests.map(({ crate, modules }) => [crate, modules.filter((module) => !module.types_only).map((module) => where(module.file))]));
-  if (!inSource) return { js, crates, manifests: validated, files: served((file) => file), warnings };
+  const manifests = crates.map(({ crate, manifest }) => ({ crate, ...parseManifest(readFileSync(manifest, "utf8")) }));
+  // Each crate's manifest, and its modules' JS, where it's served from:
+  // none of one of types alone (ADR 1005).
+  const served = (where) => crates.map((entry, at) => ({
+    ...entry,
+    js: entry.js && where(entry.js),
+    contract: manifests[at],
+    files: manifests[at].modules.filter((module) => !module.types_only).map((module) => where(module.file)),
+  }));
+  if (!inSource) return { js, crates: served((file) => file), warnings };
   // A crate of crates.io's JS is the app's, where its Cargo.toml is (ADR 0415).
   const vendored = build.dependencies.map((dependency) => ({ ...dependency, to: join(dirname(manifest), "rust-js", "crates", `${dependency.name}-${dependency.version}`) }));
   const moved = writeInSource(manifests, ledger, routes, { check, packages, vendored });
-  for (const entry of crates.values()) entry.js = moved.get(entry.js);
-  return { js: moved.get(js), crates, manifests: validated, files: served((file) => moved.get(file)), warnings };
+  return { js: moved.get(js), crates: served((file) => moved.get(file)), warnings };
 }
 
 /**

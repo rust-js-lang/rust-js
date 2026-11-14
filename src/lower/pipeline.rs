@@ -89,6 +89,7 @@ pub fn lower_crate<'tcx>(
     }
     let (all_bodies, initializers): (&[Body<'tcx>], &[Body<'tcx>]) = (all_bodies, initializers);
     let AnalyzedCrate {
+        bound,
         bodies,
         flattened,
         closures,
@@ -1312,6 +1313,7 @@ pub fn lower_crate<'tcx>(
                         debug_hex: writer_facts.debug_hex,
                         reads_formatter_options: &writer_facts.reads_options,
                         merges_identities: &merges_identities,
+                        bound: &bound,
                         makes_dropping_anys: closure_facts.any_dyns_drop,
                         makes_dropping_errors: closure_facts.error_dyns_drop,
                         makes_dropping_fn_dyns: closure_facts.fn_dyns_drop.any(),
