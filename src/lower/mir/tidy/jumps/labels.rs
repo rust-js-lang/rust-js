@@ -3,6 +3,7 @@
 
 use super::*;
 use crate::collections::{IndexMap, IndexSet};
+use crate::js::Name;
 use crate::lower::mir::tidy::bindings::declared;
 
 /// Of `exits_after`, the loop at `i` of `stmts`: what it does after it, its
@@ -29,7 +30,7 @@ pub(super) fn exit_after(
         return None;
     }
     // The labels inside it, whose jumps don't leave it.
-    let mut inner: IndexSet<String> = label.iter().cloned().collect();
+    let mut inner: IndexSet<String> = label.iter().map(Name::to_string).collect();
     js::each_list(body, &mut |list| {
         for stmt in list.iter() {
             match &stmt.kind {
@@ -37,7 +38,7 @@ pub(super) fn exit_after(
                 | StmtKind::While { label: Some(l), .. }
                 | StmtKind::ForOf { label: Some(l), .. }
                 | StmtKind::For { label: Some(l), .. } => {
-                    inner.insert(l.clone());
+                    inner.insert(l.to_string());
                 }
                 _ => {}
             }
@@ -80,9 +81,9 @@ pub(super) fn exit_after(
                     | StmtKind::While { label: Some(l), .. }
                     | StmtKind::ForOf { label: Some(l), .. }
                     | StmtKind::For { label: Some(l), .. } => {
-                        own.insert(l.clone());
+                        own.insert(l.to_string());
                     }
-                    StmtKind::Break(Some(l)) | StmtKind::Continue(Some(l)) => jumps.push(l.clone()),
+                    StmtKind::Break(Some(l)) | StmtKind::Continue(Some(l)) => jumps.push(l.to_string()),
                     _ => {}
                 }
             }
@@ -96,7 +97,7 @@ pub(super) fn exit_after(
     // a label in this one, `break bb22` of a block it's in.
     let leaves = |s: &Stmt| match &s.kind {
         StmtKind::Return(_) | StmtKind::Throw(_) => true,
-        StmtKind::Break(Some(l)) | StmtKind::Continue(Some(l)) => !inner.contains(l),
+        StmtKind::Break(Some(l)) | StmtKind::Continue(Some(l)) => !inner.contains(l.as_str()),
         StmtKind::While { label, cond, body } => {
             matches!(cond.kind, ExprKind::Bool(true)) && !breaks(body, label.as_deref()) && stays(s)
         }
@@ -208,7 +209,7 @@ pub(super) fn exit_after(
             let around = around_span(&kept, &path);
             // An `if`'s span is its test's.
             let written_at = (written_breaks.iter()).find(|(test, _)| !around.is_none() && *test == around);
-            StmtKind::Break(written).at(written_at.map_or(js::Span::NONE, |(_, at)| *at))
+            StmtKind::Break(written.map(Into::into)).at(written_at.map_or(js::Span::NONE, |(_, at)| *at))
         }
         false => StmtKind::Break(None).at(at),
     };
@@ -229,7 +230,7 @@ pub(super) fn exit_after(
     let mut declared_lets = Vec::new();
     for name in &given {
         declared_lets.extend(given_at_break(&mut kept, &path, name)?);
-        before.push(StmtKind::Let(name.clone(), None).at(js::Span::NONE));
+        before.push(StmtKind::Let(name.into(), None).at(js::Span::NONE));
     }
     at_path(&mut kept, &path).push(jump);
     // Each `let` the loop declared of what's given, declared before it now,
@@ -372,9 +373,9 @@ pub(in crate::lower::mir::tidy) fn named_labels(stmts: &mut [Stmt], loops: &[(js
                 && !around.contains(to)
             {
                 relabeled(body, label, to);
-                *label = to.clone();
+                *label = to.into();
             }
-            around.push(label.clone());
+            around.push(label.to_string());
             walk(body, loops, around);
             around.pop();
         }
@@ -396,7 +397,7 @@ pub(in crate::lower::mir::tidy) fn written_loop_breaks(
     body: &mut Vec<Stmt>,
     loops: &[(js::Span, bool, Option<String>)],
 ) {
-    fn parts(stmt: &mut Stmt) -> Option<(&mut Option<String>, &mut Vec<Stmt>)> {
+    fn parts(stmt: &mut Stmt) -> Option<(&mut Option<Name>, &mut Vec<Stmt>)> {
         match &mut stmt.kind {
             StmtKind::While { label, body, .. }
             | StmtKind::DoWhile { label, body, .. }
@@ -436,13 +437,13 @@ pub(in crate::lower::mir::tidy) fn written_loop_breaks(
             let Some((_, _, Some(to))) = around else {
                 continue;
             };
-            if own.is_some_and(|(_, _, l)| l.is_some()) || !taken.insert(to.clone()) {
+            if own.is_some_and(|(_, _, l)| l.is_some()) || !taken.insert(to.into()) {
                 continue;
             }
             let Some((label, inner)) = parts(s) else {
                 unreachable!("matched")
             };
-            let from = label.replace(to.clone()).expect("labeled");
+            let from = label.replace(to.into()).expect("labeled");
             relabeled(inner, &from, to);
         }
     });
@@ -465,7 +466,7 @@ pub(in crate::lower::mir::tidy) fn written_blocks(body: &mut Vec<Stmt>, blocks: 
     js::each_list(body, &mut |list| {
         for stmt in list {
             if let StmtKind::Labeled(l, _) = &stmt.kind {
-                spans.insert(l.clone(), stmt.span);
+                spans.insert(l.to_string(), stmt.span);
             }
         }
     });
@@ -479,7 +480,7 @@ pub(in crate::lower::mir::tidy) fn written_blocks(body: &mut Vec<Stmt>, blocks: 
             };
             if let Some(to) = to
                 && written(stmts[i].span).is_some()
-                && spans.get(&to) == Some(&stmts[i].span)
+                && spans.get(to.as_str()) == Some(&stmts[i].span)
                 && let StmtKind::Labeled(label, inner) = &mut stmts[i].kind
                 && crate::lower::mir::is_block_label(label)
             {
@@ -513,7 +514,7 @@ pub(in crate::lower::mir::tidy) fn written_blocks(body: &mut Vec<Stmt>, blocks: 
             | StmtKind::ForOf { label: Some(l), .. }
             | StmtKind::For { label: Some(l), .. } = &stmt.kind
             {
-                *taken.entry(l.clone()).or_default() += 1;
+                *taken.entry(l.to_string()).or_default() += 1;
             }
         }
     });
@@ -531,7 +532,7 @@ pub(in crate::lower::mir::tidy) fn written_blocks(body: &mut Vec<Stmt>, blocks: 
             {
                 relabeled(inner, label, &to);
                 taken.insert(to.clone(), 2);
-                *label = to;
+                *label = to.into();
             }
         }
     });
@@ -779,7 +780,7 @@ pub(in crate::lower::mir::tidy) fn labeled_switches(body: &mut [Stmt]) {
             if let Some(label) = left_by(&mut stmts[i], leaving, returned.as_ref()) {
                 let switch = std::mem::replace(&mut stmts[i], StmtKind::Comments.at(js::Span::NONE));
                 let span = switch.span;
-                stmts[i] = StmtKind::Labeled(label, vec![switch]).at(span);
+                stmts[i] = StmtKind::Labeled(label.into(), vec![switch]).at(span);
             }
         }
         for i in 0..n {
@@ -787,7 +788,7 @@ pub(in crate::lower::mir::tidy) fn labeled_switches(body: &mut [Stmt]) {
             let returned = next(stmts, i);
             match &mut stmts[i].kind {
                 StmtKind::Labeled(label, body) => {
-                    let ending: Vec<String> = ending.iter().cloned().chain([label.clone()]).collect();
+                    let ending: Vec<String> = ending.iter().cloned().chain([label.to_string()]).collect();
                     walk(body, &ending, returned.as_ref());
                 }
                 StmtKind::If(_, a, b) => {
@@ -823,7 +824,7 @@ pub(in crate::lower::mir::tidy) fn labeled_switches(body: &mut [Stmt]) {
 fn left_by(switch: &mut Stmt, leaving: &[String], returned: Option<&Option<Expr>>) -> Option<String> {
     let leaves = |stmt: Option<&Stmt>| match (stmt.map(|s| &s.kind), returned) {
         (Some(StmtKind::Break(None)), _) => true,
-        (Some(StmtKind::Break(Some(to))), _) => leaving.contains(to),
+        (Some(StmtKind::Break(Some(to))), _) => leaving.iter().any(|l| l == to),
         (Some(StmtKind::Return(None)), Some(None)) => true,
         (Some(StmtKind::Return(Some(value))), Some(Some(after))) => super::super::switches::alike(value, after),
         _ => false,
@@ -837,7 +838,7 @@ fn left_by(switch: &mut Stmt, leaving: &[String], returned: Option<&Option<Expr>
                         && js::names_jump(body, label)
                         && fits_in_place(stmts, k, body) =>
                 {
-                    found.push(label.clone());
+                    found.push(label.to_string());
                 }
                 StmtKind::Labeled(_, body) => blocks(body, leaves, found),
                 StmtKind::If(_, a, b) => {

@@ -8,7 +8,7 @@
 //! the variable its drop is of (ADR 0372).
 
 use crate::collections::{IndexMap, IndexSet};
-use crate::js::{self, Expr, ExprKind, Stmt, StmtKind};
+use crate::js::{self, Expr, ExprKind, Name, Stmt, StmtKind};
 
 /// What's known of each flag where a statement runs: `true` or `false`.
 type Known = IndexMap<String, bool>;
@@ -51,7 +51,7 @@ pub(super) fn named_flags(body: &mut Vec<Stmt>, flags: &IndexSet<String>) {
     js::statement_lists(body, &mut |list| {
         for stmt in list.iter() {
             if let StmtKind::Let(name, _) = &stmt.kind
-                && flags.contains(name)
+                && flags.contains(name.as_str())
             {
                 declared.push(name.clone());
             }
@@ -74,7 +74,7 @@ pub(super) fn named_flags(body: &mut Vec<Stmt>, flags: &IndexSet<String>) {
                 if let StmtKind::Let(name, _) = &mut stmt.kind
                     && name == flag
                 {
-                    name.clone_from(&to);
+                    *name = Name::from(&to);
                 }
             }
         });
@@ -208,8 +208,8 @@ fn settle(stmts: &mut Vec<Stmt>, known: &mut Known, flags: &IndexSet<String>) {
     while i < stmts.len() {
         // What a flag is set to: one set again to what it is goes.
         let set = match &stmts[i].kind {
-            StmtKind::Let(name, value) if flags.contains(name) => {
-                Some((name.clone(), value.as_ref().and_then(bool_of), false))
+            StmtKind::Let(name, value) if flags.contains(name.as_str()) => {
+                Some((name.to_string(), value.as_ref().and_then(bool_of), false))
             }
             StmtKind::Assign(target, value) if let Some(flag) = flag_of(target, flags) => {
                 Some((flag.to_string(), bool_of(value), true))

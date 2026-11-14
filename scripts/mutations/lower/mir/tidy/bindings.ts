@@ -43,9 +43,9 @@ export const mutations: Mutation[] = [
     breaks:
       "an `Rc`'s clone of a parameter is a variable of its own, `const resolved = payload`, where it's the same object, read by its name (ADR 0846)",
     file: "src/lower/mir/tidy/bindings.rs",
-    find: "                && fixed.contains(a.as_str())\n                && clones.contains(b)\n",
+    find: "                && fixed.contains(a.as_str())\n                && clones.contains(b.as_str())\n",
     replace:
-      "                && fixed.contains(a.as_str())\n                && clones.contains(b)\n                && false\n",
+      "                && fixed.contains(a.as_str())\n                && clones.contains(b.as_str())\n                && false\n",
     tests: ["test/corpus.test.ts", "-t", "^rc_shared_by_closures.rs$"],
     snapshots: true,
   },
@@ -63,7 +63,7 @@ export const mutations: Mutation[] = [
     breaks:
       "any `const b = a` of a parameter is read as `a`, the name the program gave `b` lost: `const gas = n`'s `gas`",
     file: "src/lower/mir/tidy/bindings.rs",
-    find: "                && fixed.contains(a.as_str())\n                && clones.contains(b)\n",
+    find: "                && fixed.contains(a.as_str())\n                && clones.contains(b.as_str())\n",
     replace: "                && fixed.contains(a.as_str())\n",
     tests: ["test/corpus.test.ts", "-t", "^sort_unstable_adversary.rs$"],
     snapshots: true,
@@ -179,7 +179,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a named variable moved into a held prop takes the prop's name, `const code = ..`, and is read away",
     file: "src/lower/mir/tidy/bindings.rs",
-    find: "                if !is_temporary(a) && (captured.contains(&b) || is_temporary(&b) || named) {",
+    find: "                if !is_temporary(a) && (captured.contains(b.as_str()) || is_temporary(&b) || named) {",
     replace: "                if false {",
     tests: [
       "test/jsx-children.test.ts",
@@ -209,8 +209,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a variable the program names, `const props = {..}`, aliased by a temporary, takes the temporary's place and is read away",
     file: "src/lower/mir/tidy/bindings.rs",
-    find: "if !is_temporary(a) && (captured.contains(&b) || is_temporary(&b) || named) {",
-    replace: "if !is_temporary(a) && (captured.contains(&b) || named) {",
+    find: "if !is_temporary(a) && (captured.contains(b.as_str()) || is_temporary(&b) || named) {",
+    replace: "if !is_temporary(a) && (captured.contains(b.as_str()) || named) {",
     tests: [
       "test/jsx-children.test.ts",
       "test/jsx-evaluation-order.test.ts",
@@ -545,7 +545,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a variable a `let`'s `#[rust_js::name]` names, moved into another, `let made = synthetic_event`, takes the other's name: `const made = createSyntheticEvent(..)`, the name the program gave gone",
     file: "src/lower/mir/tidy/bindings.rs",
-    find: "                let named = given.contains(a.as_str()) && !given.contains(&b);\n",
+    find: "                let named = given.contains(a.as_str()) && !given.contains(b.as_str());\n",
     replace:
       "                let named = given.contains(a.as_str()) && false;\n",
     tests: [
@@ -559,7 +559,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a temporary a drop guard's `try` sets, `let _8; try { _8 = descriptorOf(name); }`, isn't named for the pattern that binds it, `const descriptorOf = ..` (#444)",
     file: "src/lower/mir/tidy/bindings.rs",
-    find: "                StmtKind::Let(a, None) if set_once_in_try(&stmts[i + 1..], a) => a.clone(),\n",
+    find: "                StmtKind::Let(a, None) if set_once_in_try(&stmts[i + 1..], a) => a.to_string(),\n",
     replace: "",
     tests: ["test/lowering-drop-guards.test.ts", "-t", "a field read of what JS made in a guard's scope"],
   },
@@ -588,8 +588,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `&mut` field binding of a flattened state, `Pending { value } | Blocked { value }`, holds its chunk under a name of its own, `const value = chunk; value.value ??= [];`, where upstream reads `chunk.value` (rd482)",
     file: "src/lower/mir/tidy/bindings.rs",
-    find: "                && (is_temporary(alias) || fixed.contains(alias))\n",
-    replace: "                && (is_temporary(alias) || fixed.is_empty() && fixed.contains(alias))\n",
+    find: "                && (is_temporary(alias) || fixed.contains(alias.as_str()))\n",
+    replace: "                && (is_temporary(alias) || fixed.is_empty() && fixed.contains(alias.as_str()))\n",
     // or_pattern_one_place's chunk is read in place without it now; the
     // flattened state of one variant's, `listen`'s `get_or_insert_with`,
     // isn't (the Nightly of 3c71ee8f9).
@@ -610,7 +610,7 @@ export const mutations: Mutation[] = [
     name: "alias-read-by-a-pair-dropped",
     breaks: "`const _10 = index` read by a pair's place, `lanes[_10]`, is `index` where it's read, so the pair made before `index++` reads the next item (#968)",
     file: "src/lower/mir/tidy/bindings.rs",
-    find: "                let deferred = set.contains(of.as_str()) && handles_read(&stmts[i + 1..]).contains(alias);\n",
+    find: "                let deferred = set.contains(of.as_str()) && handles_read(&stmts[i + 1..]).contains(alias.as_str());\n",
     replace: "                let deferred = false && set.contains(of.as_str());\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_of_a_generic_impl_written_whole.rs$"],
   },

@@ -72,7 +72,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 "$fmtPrintFailed",
                 vec![Expr::var(&caught), Expr::str(""), Expr::bool(false)],
             );
-            body = vec![StmtKind::TryCatch(body, Some(caught), vec![StmtKind::Expr(failed).at(js_span)]).at(js_span)];
+            body = vec![
+                StmtKind::TryCatch(body, Some(caught.into()), vec![StmtKind::Expr(failed).at(js_span)]).at(js_span),
+            ];
         }
         Expr::call_helper("$printing", vec![Expr::arrow(Vec::new(), body)])
     }
@@ -100,7 +102,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 "$fmtPrintFailed",
                 vec![Expr::var(&caught), Expr::str(""), Expr::bool(true)],
             );
-            body = vec![StmtKind::TryCatch(body, Some(caught), vec![StmtKind::Expr(failed).at(js_span)]).at(js_span)];
+            body = vec![
+                StmtKind::TryCatch(body, Some(caught.into()), vec![StmtKind::Expr(failed).at(js_span)]).at(js_span),
+            ];
         }
         body
     }

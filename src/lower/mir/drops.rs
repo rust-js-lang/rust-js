@@ -1028,7 +1028,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let error = self.fresh(Role::Error);
         let mut handler = cleanup;
         handler.push(StmtKind::Throw(Expr::var(&error)).at(span));
-        out.push(StmtKind::TryCatch(inner, Some(error), handler).at(span));
+        out.push(StmtKind::TryCatch(inner, Some(error.into()), handler).at(span));
     }
 }
 

@@ -57,7 +57,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(value);
         }
         let name = self.fresh(Base::Named(method));
-        shared.push(StmtKind::Const(name.clone(), value).at(js::Span::NONE));
+        shared.push(StmtKind::Const(name.clone().into(), value).at(js::Span::NONE));
         for prop in props.iter_mut() {
             if let Prop::Field(field, value) = prop
                 && field == method
@@ -746,13 +746,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let call = call.unwrap_or_else(|| Expr::call(callee, values));
             let body = match given_back {
                 Some(adapted) => vec![
-                    StmtKind::Const(given, call).at(js::Span::NONE),
+                    StmtKind::Const(given.into(), call).at(js::Span::NONE),
                     StmtKind::Return(Some(adapted)).at(js::Span::NONE),
                 ],
                 None => vec![StmtKind::Return(Some(call)).at(js::Span::NONE)],
             };
             let patterns = params.into_iter().map(|name| match &defaulted {
-                Some((location, at)) if *location == name => js::Pattern::Defaulted(name, at.clone()),
+                Some((location, at)) if *location == name => js::Pattern::Defaulted(name.into(), at.clone()),
                 _ => name.into(),
             });
             let arrow = Expr::arrow(patterns.collect(), body);
@@ -806,7 +806,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // name, `$smallWrite_writeStr`.
             let renamed: Vec<(String, String)> = (shared.iter())
                 .filter_map(|stmt| match &stmt.kind {
-                    StmtKind::Const(name, _) => Some((name.clone(), format!("{cache}_{name}"))),
+                    StmtKind::Const(name, _) => Some((name.to_string(), format!("{cache}_{name}"))),
                     _ => None,
                 })
                 .collect();
@@ -831,7 +831,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             for stmt in &mut shared {
                 if let StmtKind::Const(name, value) = &mut stmt.kind {
                     *value = renamed_in(value).ok_or_else(dangling)?;
-                    *name = format!("{cache}_{name}");
+                    *name = format!("{cache}_{name}").into();
                 }
             }
             body.extend(shared);
@@ -875,7 +875,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             );
         }
         let function = js::Function {
-            name: self.krate.fns[&id].name.clone(),
+            name: self.krate.fns[&id].name.clone().into(),
             params,
             body,
             // Not a library's the crate compiles itself, its own (ADR 0914).

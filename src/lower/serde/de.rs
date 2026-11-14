@@ -127,7 +127,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let value = self.read_adt(&json, adt, args, span)?;
         let js_span = self.js_span(span);
         Ok(js::Function {
-            name: self.krate.fns[&method].name.clone(),
+            name: self.krate.fns[&method].name.clone().into(),
             params,
             body: vec![StmtKind::Return(Some(value)).at(js_span)],
             export: false,

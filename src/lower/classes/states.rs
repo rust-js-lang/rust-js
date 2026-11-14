@@ -52,10 +52,10 @@ pub(super) fn spread_state(tcx: TyCtxt<'_>, ctor: DefId, function: &mut js::Func
     js::names_in(&function.body, &mut taken);
     for param in &function.params {
         if let Pattern::Name(name) = param {
-            taken.insert(name.clone());
+            taken.insert(name.to_string());
         }
     }
-    taken.swap_remove(&state);
+    taken.swap_remove(state.as_str());
     let names: Vec<String> = (keys.iter())
         .map(|key| crate::lower::fresh_in(&mut taken, key))
         .collect();
@@ -84,7 +84,7 @@ pub(super) fn spread_state(tcx: TyCtxt<'_>, ctor: DefId, function: &mut js::Func
             "a constructor that reads its flattened state but to make its instance's: it's given as its keys, `function ReactPromise(status, value, reason)`",
         );
     }
-    function.params.splice(at..=at, names.into_iter().map(Pattern::Name));
+    function.params.splice(at..=at, names.into_iter().map(Pattern::from));
     Ok(())
 }
 

@@ -252,7 +252,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a named function expression reading what's named as it is reads itself: `<Count>` in `Count` renders the unmemoized function",
     file: "src/lower/pipeline.rs",
-    find: "                        function.name = super::fresh_in(&mut read, &function.name);\n",
+    find: "                        function.name = super::fresh_in(&mut read, &function.name).into();\n",
     replace: "",
     tests: [
       "test/jsx-children.test.ts",

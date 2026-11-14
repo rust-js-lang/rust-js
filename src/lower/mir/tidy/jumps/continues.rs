@@ -45,7 +45,7 @@ fn looped(stmt: &mut Stmt) -> Option<(Option<String>, &mut Vec<Stmt>)> {
     match &mut stmt.kind {
         StmtKind::While { label, body, .. }
         | StmtKind::ForOf { label, body, .. }
-        | StmtKind::For { label, body, .. } => Some((label.clone(), body)),
+        | StmtKind::For { label, body, .. } => Some((label.clone().map(String::from), body)),
         _ => None,
     }
 }
@@ -441,7 +441,7 @@ pub(in crate::lower::mir::tidy) fn turn_rests(body: &[Stmt]) -> IndexMap<String,
             let after = later.max(latest(&stmts[i + 1..]));
             match &stmt.kind {
                 StmtKind::Labeled(label, inner) => {
-                    rests.insert(label.clone(), after);
+                    rests.insert(label.to_string(), after);
                     walk(inner, after, rests);
                 }
                 StmtKind::If(_, then, otherwise) => {
@@ -566,7 +566,7 @@ fn named_continues(stmts: &mut [Stmt], looped: &str) {
         for stmt in stmts {
             match &mut stmt.kind {
                 StmtKind::While { body, .. } | StmtKind::ForOf { body, .. } | StmtKind::For { body, .. } => {
-                    rejump(body, label, &StmtKind::Continue(Some(looped.to_owned())))
+                    rejump(body, label, &StmtKind::Continue(Some(looped.into())))
                 }
                 StmtKind::If(_, a, b) => {
                     in_loops(a, label, looped);
@@ -848,7 +848,7 @@ pub(in crate::lower::mir::tidy) fn blocks_breaking_loops(
                 continue;
             };
             super::tails::relabeled(&mut broken, &block, named);
-            *looped = Some(named.clone());
+            *looped = Some(named.into());
         }
         body.splice(at..=at, broken);
         if body[..body.len() - 1].last().is_some_and(ends) {
@@ -1104,7 +1104,7 @@ pub(in crate::lower::mir::tidy) fn continues(
                         false => None,
                     };
                     if write {
-                        stmt.kind = StmtKind::Continue(label);
+                        stmt.kind = StmtKind::Continue(label.map(Into::into));
                     }
                 }
                 StmtKind::If(_, a, b) => {

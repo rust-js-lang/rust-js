@@ -45,7 +45,7 @@ pub(in crate::lower) fn prototype_defaults(
             body.insert(0, StmtKind::Const(receiver, Expr::this()).at(js::Span::NONE));
         }
         defaults.push(js::Function {
-            name,
+            name: name.into(),
             params,
             body,
             export: false,
@@ -82,7 +82,7 @@ pub(in crate::lower) fn take_default(
         n.name != owner
             && n.class
                 .as_ref()
-                .is_some_and(|class| class.prototype.contains(&function.name))
+                .is_some_and(|class| class.prototype.iter().any(|p| p == &function.name))
             && n.methods
                 .iter()
                 .any(|f| f.name == function.name && f.params == function.params && f.body == function.body)
@@ -92,13 +92,13 @@ pub(in crate::lower) fn take_default(
     {
         match class.shared.iter_mut().find(|(method, _)| *method == function.name) {
             Some((_, others)) => others.push(owner.to_owned()),
-            None => class.shared.push((function.name.clone(), vec![owner.to_owned()])),
+            None => class.shared.push((function.name.to_string(), vec![owner.to_owned()])),
         }
         return Ok(());
     }
     let namespace = &mut namespaces[at];
     if let Some(class) = &mut namespace.class {
-        class.prototype.push(function.name.clone());
+        class.prototype.push(function.name.to_string());
     }
     namespace.methods.push(function);
     Ok(())

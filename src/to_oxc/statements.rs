@@ -2,6 +2,7 @@
 //! namespace, a constant, a pattern, and each statement.
 
 use super::*;
+use crate::js::Name;
 use oxc_ast::ast::{
     ClassBody, ClassElement, ClassHeritage, ClassType, Function, MethodDefinitionKind, MethodDefinitionType,
     PropertyDefinitionType,
@@ -181,7 +182,7 @@ impl<'a> Cx<'a> {
             assigned.push(js::StmtKind::Assign(to, c.value.clone()).at(c.span));
         }
         for f in n.methods.iter().filter(|f| f.name != class.constructor) {
-            if class.getters.contains(&f.name) {
+            if class.getters.iter().any(|g| g == &f.name) {
                 let at = |kind| js::Expr {
                     kind,
                     span: f.span,
@@ -193,17 +194,17 @@ impl<'a> Cx<'a> {
                 let define = js::Expr::member(js::Expr::global("Object"), "defineProperty");
                 let call = js::Expr::call(
                     define,
-                    vec![prototype(), at(js::ExprKind::Str(f.name.clone())), descriptor],
+                    vec![prototype(), at(js::ExprKind::Str(f.name.to_string())), descriptor],
                 );
                 assigned.push(js::StmtKind::Expr(call).at(f.span));
                 continue;
             }
-            let of = match class.prototype.contains(&f.name) {
+            let of = match class.prototype.iter().any(|p| p == &f.name) {
                 true => prototype(),
                 false => js::Expr::var(&n.name),
             };
             let mut function = f.clone();
-            function.name = String::new();
+            function.name = Name::default();
             function.export = false;
             // One that's the function it passes on to, that function,
             // `X.prototype.m = f;` (rd715).
@@ -221,7 +222,7 @@ impl<'a> Cx<'a> {
             // `ReactDOMHydrationRoot.prototype.render =
             // ReactDOMRoot.prototype.render = function (..) { .. }` (rd283).
             let shared = class.shared.iter().find(|(method, _)| *method == f.name);
-            if class.prototype_set && class.prototype.contains(&f.name) {
+            if class.prototype_set && class.prototype.iter().any(|p| p == &f.name) {
                 assigned.push(defined(&f.name, value, f.span));
                 // Each other class that shares it, its own prototype's.
                 for other in shared.into_iter().flat_map(|(_, others)| others) {
@@ -281,11 +282,13 @@ impl<'a> Cx<'a> {
         let elements = n.methods.iter().map(|f| {
             let (kind, key, is_static) = match f.name == class.constructor {
                 true => (MethodDefinitionKind::Constructor, "constructor", false),
-                false if class.getters.contains(&f.name) => (MethodDefinitionKind::Get, f.name.as_str(), false),
+                false if class.getters.iter().any(|g| g == &f.name) => {
+                    (MethodDefinitionKind::Get, f.name.as_str(), false)
+                }
                 false => (
                     MethodDefinitionKind::Method,
                     f.name.as_str(),
-                    !class.prototype.contains(&f.name),
+                    !class.prototype.iter().any(|p| p == &f.name),
                 ),
             };
             let params = self.params_at(FormalParameterKind::UniqueFormalParameters, &f.params, &f.param_spans);

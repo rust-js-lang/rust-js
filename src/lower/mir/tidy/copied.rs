@@ -74,7 +74,7 @@ pub(super) fn copied_bindings(stmts: &mut Vec<Stmt>, user: &IndexSet<String>) {
             && !is_temporary(b)
             && a != b
         {
-            let (a, b) = (a.to_string(), b.clone());
+            let (a, b) = (a.to_string(), b.to_string());
             let rest = &stmts[i + 2..];
             if !set_before_read(rest, &a, &b) && !rebinds(rest, &b) && !in_closure(rest, &b) {
                 // Of a variable rust-js named, `old` of `take()`'s value,
@@ -96,7 +96,7 @@ pub(super) fn copied_bindings(stmts: &mut Vec<Stmt>, user: &IndexSet<String>) {
                     if let StmtKind::Const(n, _) | StmtKind::Let(n, _) = &mut stmt.kind
                         && *n == from
                     {
-                        *n = to.clone();
+                        *n = to.clone().into();
                     }
                 }
                 js::each_expr_mut(&mut stmts[at..], &mut |e| {
@@ -169,7 +169,7 @@ fn named_for_bindings(stmts: &mut [Stmt], user: &IndexSet<String>) {
             if let ExprKind::Var(v) = &mut e.kind
                 && *v == a
             {
-                *v = b.clone().into();
+                *v = b.clone();
             }
         });
     }

@@ -181,10 +181,10 @@ fn unnamed(e: &Expr) -> Expr {
     let mut stmts = vec![StmtKind::Expr(e.clone()).at(js::Span::NONE)];
     let pattern = |p: &mut Pattern| unnamed_pattern(p);
     js::each_expr_mut(&mut stmts, &mut |e| match &mut e.kind {
-        ExprKind::Var(name) => name.clear(),
+        ExprKind::Var(name) => name.respell(""),
         ExprKind::Arrow(params, _) | ExprKind::AsyncArrow(params, _) => params.iter_mut().for_each(pattern),
         ExprKind::Function(function) => {
-            function.name.clear();
+            function.name.respell("");
             function.params.iter_mut().for_each(pattern);
         }
         _ => {}
@@ -192,11 +192,11 @@ fn unnamed(e: &Expr) -> Expr {
     js::each_block_mut(&mut stmts, &mut |list| {
         for stmt in list.iter_mut() {
             match &mut stmt.kind {
-                StmtKind::Const(name, _) | StmtKind::Let(name, _) | StmtKind::For { name, .. } => name.clear(),
-                StmtKind::TryCatch(_, Some(name), _) => name.clear(),
+                StmtKind::Const(name, _) | StmtKind::Let(name, _) | StmtKind::For { name, .. } => name.respell(""),
+                StmtKind::TryCatch(_, Some(name), _) => name.respell(""),
                 StmtKind::Destructure { pattern, .. } | StmtKind::ForOf { pattern, .. } => unnamed_pattern(pattern),
                 StmtKind::Function(function) => {
-                    function.name.clear();
+                    function.name.respell("");
                     function.params.iter_mut().for_each(unnamed_pattern);
                 }
                 _ => {}
@@ -212,12 +212,12 @@ fn unnamed(e: &Expr) -> Expr {
 
 fn unnamed_pattern(pattern: &mut Pattern) {
     match pattern {
-        Pattern::Name(name) | Pattern::Rest(name) | Pattern::Defaulted(name, _) => name.clear(),
+        Pattern::Name(name) | Pattern::Rest(name) | Pattern::Defaulted(name, _) => name.respell(""),
         Pattern::Array(items) => items.iter_mut().flatten().for_each(unnamed_pattern),
         Pattern::Object(fields, rest) => {
             fields.iter_mut().for_each(|(_, field, _)| unnamed_pattern(field));
             if let Some(rest) = rest {
-                rest.clear();
+                rest.respell("");
             }
         }
     }

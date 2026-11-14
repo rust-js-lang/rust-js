@@ -471,7 +471,7 @@ impl Model<'_> {
     fn unchanged(&self, test: &Expr) -> bool {
         let mut places = Vec::new();
         read_places(test, &mut places)
-            && (places.iter()).all(|place| matches!(&place.kind, ExprKind::Var(v) if self.fixed.contains(v)))
+            && (places.iter()).all(|place| matches!(&place.kind, ExprKind::Var(v) if self.fixed.iter().any(|f| f == v)))
     }
 
     fn read(&self, part: &Expr) -> Option<Read> {

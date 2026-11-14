@@ -496,7 +496,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         body.push(StmtKind::Return(Some(value)).at(self.js_span(span)));
         let mut patterns: Vec<js::Pattern> = params.into_iter().map(Into::into).collect();
-        patterns.extend(variadic.map(js::Pattern::Rest));
+        patterns.extend(variadic.map(|v| js::Pattern::Rest(v.into())));
         let arrow = Expr::arrow(patterns, body);
         let taker = crate::lower::passed_on::Taker::FnValue;
         Ok(crate::lower::passed_on::passed_on(&arrow, taker, &[]).unwrap_or(arrow))

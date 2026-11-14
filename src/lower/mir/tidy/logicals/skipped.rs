@@ -63,7 +63,7 @@ pub(in crate::lower::mir::tidy) fn skipped_test(
     };
     let (test, then, span) = skipped(body, label, &within, &mut hoisting)?;
     let mut stmts: Vec<Stmt> = (hoisting.names.into_iter())
-        .map(|name| StmtKind::Let(name, None).at(js::Span::NONE))
+        .map(|name| StmtKind::Let(name.into(), None).at(js::Span::NONE))
         .collect();
     stmts.push(StmtKind::If(test, then, None).at(span));
     Some(stmts)

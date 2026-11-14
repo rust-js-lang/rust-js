@@ -44,9 +44,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a module whose load calls a function isn't one that runs code, so a dictionary it may reach through a cycle compiles",
     file: "src/lower/pipeline/load_cycles.rs",
-    find: "!pass.dictionary_names.contains(&c.name) && runs(&c.value))",
+    find: "!pass.dictionary_names.contains(c.name.as_str()) && runs(&c.value))",
     replace:
-      "!pass.dictionary_names.contains(&c.name) && runs(&c.value) && false)",
+      "!pass.dictionary_names.contains(c.name.as_str()) && runs(&c.value) && false)",
     tests: [
       "test/lowering-dictionaries.test.ts",
       "-t",
@@ -58,7 +58,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a generic dictionary's cache, `new WeakMap()`, is code its module's load runs, so a cycle of dictionaries alone, either's, is refused",
     file: "src/lower/pipeline/load_cycles.rs",
-    find: "(consts.iter()).any(|c| !pass.dictionary_names.contains(&c.name) && runs(&c.value))",
+    find: "(consts.iter()).any(|c| !pass.dictionary_names.contains(c.name.as_str()) && runs(&c.value))",
     replace: "(consts.iter()).any(|c| runs(&c.value))",
     tests: [
       "test/lowering-dictionaries.test.ts",

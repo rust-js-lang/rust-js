@@ -497,7 +497,8 @@ pub(super) fn and_tests(
         // rd706).
         let kept = bound - (made - then.len());
         for at in (0..kept).rev() {
-            if matches!(&then[at].kind, StmtKind::Const(name, _) if is_temporary(name) || own_field.contains(name)) {
+            if matches!(&then[at].kind, StmtKind::Const(name, _) if is_temporary(name) || own_field.contains(name.as_str()))
+            {
                 read_again(then, at);
             }
         }

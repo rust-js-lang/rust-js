@@ -6,8 +6,8 @@ export const mutations: Mutation[] = [
     name: "dropped-unwinding-not-rethrown",
     breaks: "what a call holds dropped as it unwinds swallows the panic, so `inspect`'s closure's panic ends no `catch_unwind` (#903)",
     file: "src/lower/drops/parts.rs",
-    find: "    let mut handler = cleanup(dropped, Some(&error), js_span);\n    handler.push(StmtKind::Throw(Expr::var(&error)).at(js_span));\n    vec![StmtKind::TryCatch(body, Some(error), handler).at(js_span)]\n",
-    replace: "    let handler = cleanup(dropped, Some(&error), js_span);\n    vec![StmtKind::TryCatch(body, Some(error), handler).at(js_span)]\n",
+    find: "    let mut handler = cleanup(dropped, Some(&error), js_span);\n    handler.push(StmtKind::Throw(Expr::var(&error)).at(js_span));\n    vec![StmtKind::TryCatch(body, Some(error.into()), handler).at(js_span)]\n",
+    replace: "    let handler = cleanup(dropped, Some(&error), js_span);\n    vec![StmtKind::TryCatch(body, Some(error.into()), handler).at(js_span)]\n",
     tests: ["test/corpus.test.ts", "-t", "^inspect_unwinds_its_value.rs$"],
   },
   {
@@ -297,8 +297,8 @@ export const mutations: Mutation[] = [
     name: "hash-map-drop-goes-on",
     breaks: "a hashed map's drop of its keys or values alone goes on past one whose drop panics, where hashbrown's stops (#920)",
     file: "src/lower/drops/parts.rs",
-    find: "                    out.push(loop_dropped(items, js::Pattern::Name(name), body, js_span));\n",
-    replace: "                    out.push(items_dropped(items, js::Pattern::Name(name), body, js_span));\n",
+    find: "                    out.push(loop_dropped(items, js::Pattern::Name(name.into()), body, js_span));\n",
+    replace: "                    out.push(items_dropped(items, js::Pattern::Name(name.into()), body, js_span));\n",
     tests: ["test/corpus.test.ts", "-t", "^hash_map_drop_stops_at_a_panic.rs$"],
   },
   {

@@ -29,7 +29,7 @@ fn declared_in(stmts: &[Stmt], declared: &mut IndexSet<String>) {
     for stmt in stmts {
         match &stmt.kind {
             StmtKind::Const(name, _) | StmtKind::Let(name, _) | StmtKind::For { name, .. } => {
-                declared.insert(name.clone());
+                declared.insert(name.to_string());
             }
             StmtKind::Destructure { pattern, .. } => declared.extend(pattern.names().into_iter().map(str::to_string)),
             _ => {}

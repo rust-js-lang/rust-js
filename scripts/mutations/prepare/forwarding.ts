@@ -54,8 +54,8 @@ export const mutations: Mutation[] = [
     name: "forwarding-function-unexported",
     breaks: "the variable a `pub fn` became isn't exported, `export { getTime }`",
     file: "src/prepare/forwarding.rs",
-    find: "                if export {\n                    module.aliases.push((name.clone(), name.clone()));\n",
-    replace: "                if false {\n                    module.aliases.push((name.clone(), name.clone()));\n",
+    find: "                if export {\n                    module.aliases.push((name.to_string(), name.to_string()));\n",
+    replace: "                if false {\n                    module.aliases.push((name.to_string(), name.to_string()));\n",
     tests: ["test/lowering-functions.test.ts", "-t", "a function that only calls a module variable"],
   },
   {

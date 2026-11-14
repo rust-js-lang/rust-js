@@ -35,14 +35,14 @@ pub(in crate::lower::mir::tidy) fn bound(body: &[Stmt], guards: &[Guard]) -> Ind
                 && pure(value)
                 && let Some(reads) = tested_reads(block, name).filter(|&n| n > 0)
             {
-                *given.entry(name.clone()).or_default() += reads;
+                *given.entry(name.to_string()).or_default() += reads;
             }
             // An assignment, or a `const` of another arm's binding of the
             // name, `const x$3 = _6[1];`, whose reads are counted too, as
             // they're the name's (#771).
             let (name, value, set) = match &stmt.kind {
                 StmtKind::Assign(target, value) => match &target.kind {
-                    ExprKind::Var(name) => (&**name, value, 1),
+                    ExprKind::Var(name) => (name, value, 1),
                     _ => continue,
                 },
                 StmtKind::Const(name, value) | StmtKind::Let(name, Some(value)) => (name, value, 0),
@@ -64,7 +64,7 @@ pub(in crate::lower::mir::tidy) fn bound(body: &[Stmt], guards: &[Guard]) -> Ind
                 let reads = js::mentions_in(&[StmtKind::Expr(test.clone()).at(list[at].span)], name)
                     + tested_reads(then, name).unwrap_or(0)
                     + otherwise.and_then(|o| tested_reads(o, name)).unwrap_or(0);
-                *given.entry(name.clone()).or_default() += set + reads;
+                *given.entry(name.to_string()).or_default() += set + reads;
             }
         }
     });
@@ -126,7 +126,7 @@ pub(super) fn given_before(before: &[Stmt], body: &[Stmt], after: &[Stmt]) -> Ve
             && tested_reads(body, name).is_some_and(|n| n > 0)
             && js::mentions_in(after, name) == 0
         {
-            given.push((name.clone(), value.clone()));
+            given.push((name.to_string(), value.clone()));
         }
     }
     given.reverse();
@@ -234,7 +234,7 @@ impl<'s> Walk<'s, '_> {
         let binding = |s: &'s Stmt| match &s.kind {
             StmtKind::Const(name, value) | StmtKind::Let(name, Some(value)) => Some((name, value, true)),
             StmtKind::Assign(target, value) => match &target.kind {
-                ExprKind::Var(name) if self.told.bound.contains(name.as_str()) => Some((&**name, value, false)),
+                ExprKind::Var(name) if self.told.bound.contains(name.as_str()) => Some((name, value, false)),
                 _ => None,
             },
             _ => None,
@@ -252,7 +252,7 @@ impl<'s> Walk<'s, '_> {
         // Each read by the test alone, or by nothing, a binding the guard
         // doesn't read, `const x = s[0];` of `&[x, .., y] if y * 2 > 1`; one
         // at least by the test.
-        let read = |(name, value, local): &(&String, &Expr, bool)| {
+        let read = |(name, value, local): &(&Name, &Expr, bool)| {
             let unread = !test.mentions_var(name)
                 && pure(value)
                 && !value.mentions_var(name)
@@ -264,7 +264,7 @@ impl<'s> Walk<'s, '_> {
         };
         // Or none read at all, a binding the arm doesn't read either, `(2,
         // x) | (x, 0) if g(c, a * 2, 1) => break` (#771).
-        let dead = |(name, ..): &(&String, &Expr, bool)| {
+        let dead = |(name, ..): &(&Name, &Expr, bool)| {
             tested_reads(then, name) == Some(0) && otherwise.is_none_or(|o| tested_reads(o, name) == Some(0))
         };
         let tested = run.iter().any(|(name, ..)| test.mentions_var(name)) || run.iter().all(dead);
@@ -272,7 +272,7 @@ impl<'s> Walk<'s, '_> {
             return None;
         }
         let bound: Vec<(String, Expr)> = (run.iter())
-            .map(|(name, value, _)| Some(((*name).clone(), given_in(value, given)?)))
+            .map(|(name, value, _)| Some((name.to_string(), given_in(value, given)?)))
             .collect::<Option<_>>()?;
         let given = [given, &bound].concat();
         Some(Test {
@@ -284,7 +284,7 @@ impl<'s> Walk<'s, '_> {
             given: bound,
             locals: (run.iter())
                 .filter(|(.., local)| *local)
-                .map(|(name, ..)| (*name).clone())
+                .map(|(name, ..)| name.to_string())
                 .collect(),
         })
     }

@@ -237,7 +237,7 @@ impl Item {
 /// `export const Counter = { new(step) { .. }, tick(counter) { .. } };`.
 #[derive(Clone, PartialEq)]
 pub struct Namespace {
-    pub name: String,
+    pub name: Name,
     /// Its constants, `ID: (s) => s`, properties before its methods (ADR 0410).
     pub constants: Vec<Const>,
     /// Its methods, as functions: the object's properties.
@@ -256,7 +256,7 @@ impl Namespace {
             Some(at) => &mut namespaces[at],
             None => {
                 namespaces.push(Namespace {
-                    name: name.to_owned(),
+                    name: name.into(),
                     constants: Vec::new(),
                     methods: Vec::new(),
                     export: false,
@@ -323,7 +323,7 @@ impl Class {
     /// and it stays a function (rd715). Never an ES class's, whose
     /// methods are written in its body (`passed_on::forwarded_function`).
     pub fn forwarded(&self, method: &Function) -> Option<Expr> {
-        if !self.forwarding.contains(&method.name) {
+        if !self.forwarding.iter().any(|f| f == &method.name) {
             return None;
         }
         let callee = passes_on(&method.params, &method.body, true).filter(|callee| callee.is_named())?;
@@ -337,7 +337,7 @@ impl Class {
 /// `const SIZE = 4096;`, maybe exported.
 #[derive(Clone, PartialEq)]
 pub struct Const {
-    pub name: String,
+    pub name: Name,
     pub value: Expr,
     pub export: bool,
     /// `let`: a thread-local its module sets (ADR 0270).
@@ -368,7 +368,7 @@ impl Fields {
 
 #[derive(Clone, PartialEq)]
 pub struct Function {
-    pub name: String,
+    pub name: Name,
     pub params: Vec<Pattern>,
     pub body: Vec<Stmt>,
     pub export: bool,
@@ -405,26 +405,26 @@ impl Function {
 /// array or object, `[count, setCount]` or `{ initial, label }`.
 #[derive(Clone, PartialEq)]
 pub enum Pattern {
-    Name(String),
+    Name(Name),
     /// `None` skips an element: `[, b]`. An element may be taken apart in
     /// turn, `[i, { name }]`.
     Array(Vec<Option<Pattern>>),
     /// Each field, what it goes in, a variable or a pattern of its own, and
     /// its default where it's missing, `{ size = "md" }` (ADR 0212), a
     /// literal; and the variable the rest go in, `...rest` (ADR 0195).
-    Object(Vec<(String, Pattern, Option<Expr>)>, Option<String>),
+    Object(Vec<(String, Pattern, Option<Expr>)>, Option<Name>),
     /// A function's last parameter that gathers what it's given past the
     /// rest, `...args`: a C-variadic function's (ADR 0428).
-    Rest(String),
+    Rest(Name),
     /// A function's parameter and what it is where it's given none,
     /// `location = { file, line, column }`: a dictionary's entry's of an impl
     /// that tracks its caller, which a `dyn`'s call gives none (ADR 0427).
-    Defaulted(String, Expr),
+    Defaulted(Name, Expr),
 }
 
 impl Pattern {
     /// Each name it declares.
-    pub fn each_name_mut(&mut self, f: &mut dyn FnMut(&mut String)) {
+    pub fn each_name_mut(&mut self, f: &mut dyn FnMut(&mut Name)) {
         match self {
             Pattern::Name(name) | Pattern::Rest(name) | Pattern::Defaulted(name, _) => f(name),
             Pattern::Array(items) => items.iter_mut().flatten().for_each(|p| p.each_name_mut(f)),
@@ -439,7 +439,7 @@ impl Pattern {
 
     /// An array of variables, `[count, setCount]`; `None` skips one.
     pub fn names_array(names: impl IntoIterator<Item = Option<String>>) -> Pattern {
-        Pattern::Array(names.into_iter().map(|name| name.map(Pattern::Name)).collect())
+        Pattern::Array(names.into_iter().map(|name| name.map(Pattern::from)).collect())
     }
 
     /// The variables it binds.
@@ -456,7 +456,7 @@ impl Pattern {
     }
 
     /// The variables it binds, to rename.
-    pub fn names_mut(&mut self) -> Vec<&mut String> {
+    pub fn names_mut(&mut self) -> Vec<&mut Name> {
         match self {
             Pattern::Name(name) | Pattern::Rest(name) | Pattern::Defaulted(name, _) => vec![name],
             Pattern::Array(items) => items.iter_mut().flatten().flat_map(Pattern::names_mut).collect(),
@@ -505,13 +505,13 @@ impl Pattern {
 
 impl From<String> for Pattern {
     fn from(name: String) -> Pattern {
-        Pattern::Name(name)
+        Pattern::Name(name.into())
     }
 }
 
 impl From<&str> for Pattern {
     fn from(name: &str) -> Pattern {
-        Pattern::Name(name.to_string())
+        Pattern::Name(name.into())
     }
 }
 
@@ -564,8 +564,8 @@ impl Step {
 
 #[derive(Clone, PartialEq)]
 pub enum StmtKind {
-    Const(String, Expr),
-    Let(String, Option<Expr>),
+    Const(Name, Expr),
+    Let(Name, Option<Expr>),
     /// `const [a, b] = value;`, or `let` if one of them is reassigned.
     Destructure {
         pattern: Pattern,
@@ -581,7 +581,7 @@ pub enum StmtKind {
     Expr(Expr),
     If(Expr, Vec<Stmt>, Option<Vec<Stmt>>),
     While {
-        label: Option<String>,
+        label: Option<Name>,
         cond: Expr,
         body: Vec<Stmt>,
     },
@@ -589,7 +589,7 @@ pub enum StmtKind {
     /// giving its variable its next value and testing it, preparation's
     /// alone, last (ADR 0978).
     DoWhile {
-        label: Option<String>,
+        label: Option<Name>,
         body: Vec<Stmt>,
         cond: Expr,
     },
@@ -598,7 +598,7 @@ pub enum StmtKind {
     /// Of `keys`, `for (const key in iterable)`, the keys JS's `for…in`
     /// visits of it (ADR 0719): a loop as the other is, its object read once.
     ForOf {
-        label: Option<String>,
+        label: Option<Name>,
         pattern: Pattern,
         mutable: bool,
         iterable: Expr,
@@ -610,15 +610,15 @@ pub enum StmtKind {
     /// its end (ADR 0904); or, `Step::By`, `name += value`, a `while` that
     /// counts its variable last, preparation's (ADR 0974).
     For {
-        label: Option<String>,
-        name: String,
+        label: Option<Name>,
+        name: Name,
         start: Expr,
         test: Expr,
         step: Step,
         body: Vec<Stmt>,
     },
     /// `label: { .. }`, which a `break label` leaves: a let chain's (ADR 0048).
-    Labeled(String, Vec<Stmt>),
+    Labeled(Name, Vec<Stmt>),
     /// `switch (discriminant) { case 1: case 2: .. default: .. }`: a `match`
     /// of constants the program wrote (ADR 0629). Each case is its values,
     /// stacked, and its statements, which end it as an `if`'s branch's do:
@@ -637,9 +637,9 @@ pub enum StmtKind {
     /// `try { .. } catch (error) { .. }`: a writer's `fmt::Error`, given
     /// what it wrote, or taken as a `fmt::Result` (ADR 0187); or `catch {
     /// .. }`, what a JS call threw, unread (ADR 0035).
-    TryCatch(Vec<Stmt>, Option<String>, Vec<Stmt>),
-    Break(Option<String>),
-    Continue(Option<String>),
+    TryCatch(Vec<Stmt>, Option<Name>, Vec<Stmt>),
+    Break(Option<Name>),
+    Continue(Option<Name>),
     /// `function name(..) { .. }`: a function written in a body (ADR 0308).
     Function(Box<Function>),
     Return(Option<Expr>),
@@ -1295,7 +1295,7 @@ mod tests {
         let inner = Expr::arrow(vec![], ret(Expr::var("x")));
         let outer = Expr::arrow(vec![], ret(inner));
         let function = Function {
-            name: String::new(),
+            name: Name::default(),
             params: Vec::new(),
             body: ret(Expr::var("y")),
             export: false,

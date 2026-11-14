@@ -856,7 +856,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     return Ok(None);
                 };
                 let mut patterns: Vec<js::Pattern> = params.into_iter().map(Into::into).collect();
-                patterns.extend(variadic.map(js::Pattern::Rest));
+                patterns.extend(variadic.map(|v| js::Pattern::Rest(v.into())));
                 let arrow = Expr::arrow(patterns, vec![StmtKind::Return(Some(call)).at(js_span)]);
                 // Its call's function, where the arrow only passes on what it's
                 // given (ADR 0538).
@@ -1041,7 +1041,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             self.note_spilled(&name, role);
         }
         let (span, marks) = (value.span, iterators::held_marks(value.facts));
-        out.push(StmtKind::Const(name.clone(), value).at(span));
+        out.push(StmtKind::Const(name.clone().into(), value).at(span));
         let mut held = Expr::var(&name);
         held.facts = held.facts.and(marks);
         held

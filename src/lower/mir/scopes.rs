@@ -96,7 +96,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let local = method.expect_local();
         let whole = self.tcx.hir_span_with_body(self.tcx.local_def_id_to_hir_id(local));
         let function = js::Function {
-            name: self.scope_functions[&method].clone(),
+            name: self.scope_functions[&method].clone().into(),
             params,
             body: stmts,
             export: false,
@@ -129,8 +129,8 @@ pub(super) fn scope_fields(value: &str, params: &[js::Pattern], out: &mut Vec<St
     loop {
         let more: Vec<String> = (statements())
             .filter_map(|stmt| match &stmt.kind {
-                StmtKind::Const(alias, e) if !holders.contains(alias) => match &e.kind {
-                    js::ExprKind::Var(of) if holders.contains(of) => Some(alias.clone()),
+                StmtKind::Const(alias, e) if !holders.iter().any(|h| h == alias) => match &e.kind {
+                    js::ExprKind::Var(of) if holders.iter().any(|h| h == of) => Some(alias.to_string()),
                     _ => None,
                 },
                 _ => None,
@@ -141,7 +141,7 @@ pub(super) fn scope_fields(value: &str, params: &[js::Pattern], out: &mut Vec<St
         }
         holders.extend(more);
     }
-    let held = |e: &Expr| matches!(&e.kind, js::ExprKind::Var(name) if holders.contains(name));
+    let held = |e: &Expr| matches!(&e.kind, js::ExprKind::Var(name) if holders.iter().any(|h| h == name));
     // Its literal, the one statement that makes it.
     let literal = statements().find_map(|stmt| match &stmt.kind {
         StmtKind::Const(name, e) | StmtKind::Let(name, Some(e)) if name == value => match &e.kind {
@@ -162,7 +162,7 @@ pub(super) fn scope_fields(value: &str, params: &[js::Pattern], out: &mut Vec<St
     let (mut reads, mut fields_read, mut written) = (0, 0, IndexSet::<String>::default());
     let mut whole = false;
     js::each_expr(out, &mut |e| match &e.kind {
-        js::ExprKind::Var(name) if holders.contains(name) => reads += 1,
+        js::ExprKind::Var(name) if holders.iter().any(|h| h == name) => reads += 1,
         // A field's read, its literal's own: a `None` is written there,
         // `undefined`, until preparation leaves its key out.
         js::ExprKind::Member(of, key) if held(of) => {
@@ -179,12 +179,12 @@ pub(super) fn scope_fields(value: &str, params: &[js::Pattern], out: &mut Vec<St
     for place in js::Writes::places(out) {
         match place.kind {
             js::ExprKind::Member(of, key) if held(&of) => _ = written.insert(key),
-            js::ExprKind::Var(name) if holders.contains(&name) => whole = true,
+            js::ExprKind::Var(name) if holders.iter().any(|h| h == &name) => whole = true,
             _ => {}
         }
     }
     let aliases = (statements())
-        .filter(|stmt| matches!(&stmt.kind, StmtKind::Const(alias, e) if alias != value && holders.contains(alias) && held(e)))
+        .filter(|stmt| matches!(&stmt.kind, StmtKind::Const(alias, e) if alias != value && holders.iter().any(|h| h == alias) && held(e)))
         .count();
     // Each holder declared once, never named again.
     let mut declared = 0;
@@ -241,8 +241,8 @@ pub(super) fn scope_fields(value: &str, params: &[js::Pattern], out: &mut Vec<St
                 let at = e.as_ref().map_or(js::Span::NONE, |e| e.span);
                 lets.push(
                     match (written.contains(&key), e) {
-                        (false, Some(e)) => StmtKind::Const(name.clone(), e),
-                        (_, e) => StmtKind::Let(name.clone(), e),
+                        (false, Some(e)) => StmtKind::Const(name.clone().into(), e),
+                        (_, e) => StmtKind::Let(name.clone().into(), e),
                     }
                     .at(at),
                 );
@@ -278,7 +278,7 @@ pub(super) fn scope_fields(value: &str, params: &[js::Pattern], out: &mut Vec<St
                     list.splice(i..=i, made);
                     i += n;
                 }
-                StmtKind::Const(name, _) if holders.contains(name) => {
+                StmtKind::Const(name, _) if holders.iter().any(|h| h == name) => {
                     list.remove(i);
                 }
                 _ => i += 1,

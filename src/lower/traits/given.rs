@@ -456,7 +456,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     self.given.evidence.push((tr, Expr::var(&name)));
                     // A std body's default, where a call gives none (ADR 0995).
                     if let Some(default) = self.default_dictionary(id, tr.def_id) {
-                        params.push(js::Pattern::Defaulted(name, plain_dictionary(default)));
+                        params.push(js::Pattern::Defaulted(name.into(), plain_dictionary(default)));
                         continue;
                     }
                     name

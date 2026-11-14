@@ -717,7 +717,7 @@ pub(super) const STAGES: &[Stage] = &[
                 js::each_list(b, &mut |s| {
                     for stmt in s {
                         if let StmtKind::Let(name, _) | StmtKind::Const(name, _) = &stmt.kind {
-                            *declared.entry(name.clone()).or_default() += 1;
+                            *declared.entry(name.to_string()).or_default() += 1;
                         }
                     }
                 });
@@ -725,15 +725,18 @@ pub(super) const STAGES: &[Stage] = &[
                     let unread: Vec<String> = (s.iter())
                         .filter_map(|stmt| match &stmt.kind {
                             StmtKind::Let(name, None)
-                                if !mentions.contains_key(name)
-                                    || declared.get(name).is_some_and(|&n| n > 1) && redeclared_only(s, name) =>
+                                if !mentions.contains_key(name.as_str())
+                                    || declared.get(name.as_str()).is_some_and(|&n| n > 1)
+                                        && redeclared_only(s, name) =>
                             {
-                                Some(name.clone())
+                                Some(name.to_string())
                             }
                             _ => None,
                         })
                         .collect();
-                    s.retain(|stmt| !matches!(&stmt.kind, StmtKind::Let(name, None) if unread.contains(name)));
+                    s.retain(
+                        |stmt| !matches!(&stmt.kind, StmtKind::Let(name, None) if unread.iter().any(|u| u == name)),
+                    );
                     // A function made that nothing reads, which making does
                     // nothing: a binding's value MIR held in a variable of
                     // its function's type, whose `&` is read by the type,
@@ -741,7 +744,7 @@ pub(super) const STAGES: &[Stage] = &[
                     // or read, the program's, an instance's `noopU32` (#974).
                     s.retain(|stmt| {
                         !matches!(&stmt.kind, StmtKind::Const(name, value)
-                            if !mentions.contains_key(name)
+                            if !mentions.contains_key(name.as_str())
                                 && (matches!(value.kind, js::ExprKind::Arrow(..) | js::ExprKind::AsyncArrow(..))
                                     || matches!(value.kind, js::ExprKind::Var(_)) && value.facts.has(js::Known::Item)))
                     })

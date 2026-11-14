@@ -611,7 +611,7 @@ export const mutations: Mutation[] = [
     breaks:
       "an owner handle's cell is no `let`, so the call that makes the request assigns a variable never declared, which a module's strict JS throws at",
     file: "src/lower/mir/structure.rs",
-    find: "                out.push(StmtKind::Let(name, None).at(self.js_span(span)));\n",
+    find: "                out.push(StmtKind::Let(name.into(), None).at(self.js_span(span)));\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^owner_handle.rs$"],
   },

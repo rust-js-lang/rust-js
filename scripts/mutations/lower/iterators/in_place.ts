@@ -60,7 +60,7 @@ export const mutations: Mutation[] = [
     breaks:
       'a closure that only sets what it declares, `let sign; if (x < 0) { sign = "-"; } ..`, is taken to do something, so its chain is `Array.from(xs.values().map(..))`, not `xs.map(..)` (rd187)',
     file: "src/lower/iterators/in_place.rs",
-    find: "                !matches!(&target.kind, js::ExprKind::Var(name) if declared.contains(name)) || acts(e)\n",
+    find: "                !matches!(&target.kind, js::ExprKind::Var(name) if declared.iter().any(|d| d == name)) || acts(e)\n",
     replace: "                true\n",
     tests: [
       "test/lowering-iterators.test.ts",

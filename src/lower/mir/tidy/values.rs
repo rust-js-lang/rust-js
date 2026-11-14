@@ -300,7 +300,7 @@ pub(super) fn unread_maps(body: &mut Vec<Stmt>) {
     js::statement_lists(body, &mut |stmts| {
         stmts.retain(|s| {
             !matches!(&s.kind, StmtKind::Const(name, value)
-                if !read.contains(name) && (iterators::is_items_map(value) || iterators::lazily_mapped(value)))
+                if !read.contains(name.as_str()) && (iterators::is_items_map(value) || iterators::lazily_mapped(value)))
         });
     });
     // And MIR's `let` and the assignment a call's `try` holds, `let _5; try
@@ -325,7 +325,7 @@ pub(super) fn unread_maps(body: &mut Vec<Stmt>) {
     js::statement_lists(body, &mut |stmts| {
         stmts.retain(|s| match &s.kind {
             StmtKind::Assign(target, _) => !matches!(&target.kind, ExprKind::Var(name) if gone.contains(name.as_str())),
-            StmtKind::Let(name, None) => !gone.contains(name),
+            StmtKind::Let(name, None) => !gone.contains(name.as_str()),
             _ => true,
         });
     });
@@ -341,7 +341,7 @@ pub(super) fn holed_lists(body: &mut Vec<Stmt>) {
     js::each_list(body, &mut |stmts| {
         for stmt in stmts.iter() {
             let (name, value, assigned) = match &stmt.kind {
-                StmtKind::Const(name, value) | StmtKind::Let(name, Some(value)) => (name.clone(), value, false),
+                StmtKind::Const(name, value) | StmtKind::Let(name, Some(value)) => (name.to_string(), value, false),
                 StmtKind::Assign(
                     Expr {
                         kind: ExprKind::Var(name),
@@ -422,9 +422,9 @@ pub(super) fn nulled_as_they_are(body: &mut Vec<Stmt>) {
         for stmt in stmts {
             if let StmtKind::Const(name, value) = &stmt.kind
                 && !value.may_be_undefined()
-                && declared.get(name) == Some(&1)
+                && declared.get(name.as_str()) == Some(&1)
             {
-                defined.insert(name.clone());
+                defined.insert(name.to_string());
             }
         }
     });
@@ -490,8 +490,10 @@ fn lets_never_undefined(body: &[Stmt], declared: &IndexMap<String, usize>) -> In
     js::each_list(body, &mut |stmts| {
         for stmt in stmts {
             match &stmt.kind {
-                StmtKind::Let(name, Some(value)) if declared.get(name) == Some(&1) && !value.may_be_undefined() => {
-                    lets.insert(name.clone());
+                StmtKind::Let(name, Some(value))
+                    if declared.get(name.as_str()) == Some(&1) && !value.may_be_undefined() =>
+                {
+                    lets.insert(name.to_string());
                 }
                 StmtKind::Assign(target, value) => {
                     if let ExprKind::Var(name) = &target.kind
@@ -637,10 +639,10 @@ pub(super) fn plain_cells(body: &mut Vec<Stmt>) {
                     if matches!(&value.kind, ExprKind::Object(props, ..)
                         if matches!(props.as_slice(), [js::Prop::Field(key, _)] if key == js::HELD)) =>
                 {
-                    cells.push(name.clone());
+                    cells.push(name.to_string());
                 }
                 StmtKind::Const(name, value) if let ExprKind::Var(of) = &value.kind => {
-                    clones.insert(name.clone(), of.to_string());
+                    clones.insert(name.to_string(), of.to_string());
                 }
                 _ => {}
             }
@@ -652,7 +654,7 @@ pub(super) fn plain_cells(body: &mut Vec<Stmt>) {
     js::each_block_mut(&mut body.clone(), &mut |stmts| {
         for stmt in stmts.iter() {
             if let StmtKind::Const(name, _) | StmtKind::Let(name, _) = &stmt.kind {
-                *bound.entry(name.clone()).or_default() += 1;
+                *bound.entry(name.to_string()).or_default() += 1;
             }
         }
     });
@@ -704,26 +706,28 @@ pub(super) fn plain_cells(body: &mut Vec<Stmt>) {
         for stmt in stmts.iter() {
             if let StmtKind::Const(name, value) = &stmt.kind
                 && let ExprKind::Var(of) = &value.kind
-                && named.contains_key(name)
+                && named.contains_key(name.as_str())
                 && let Some(cell) = named.get(of.as_str())
             {
                 *kept.entry(cell.clone()).or_default() += 1;
             }
         }
     });
-    let plain: IndexSet<&String> = (cells.iter()).filter(|c| reads.get(*c) == kept.get(*c)).collect();
+    let plain: IndexSet<&str> = (cells.iter().map(String::as_str))
+        .filter(|c| reads.get(*c) == kept.get(*c))
+        .collect();
     if plain.is_empty() {
         return;
     }
-    let of_plain = |v: &str| named.get(v).filter(|c| plain.contains(c)).cloned();
+    let of_plain = |v: &str| named.get(v).filter(|c| plain.contains(c.as_str())).cloned();
     js::each_block_mut(body, &mut |stmts| {
         stmts.retain(|stmt| {
             !matches!(&stmt.kind, StmtKind::Const(name, value)
-            if matches!(value.kind, ExprKind::Var(_)) && !plain.contains(name) && of_plain(name).is_some())
+            if matches!(value.kind, ExprKind::Var(_)) && !plain.contains(name.as_str()) && of_plain(name).is_some())
         });
         for stmt in stmts.iter_mut() {
             if let StmtKind::Const(name, value) = &mut stmt.kind
-                && plain.contains(name)
+                && plain.contains(name.as_str())
                 && let ExprKind::Object(props, ..) = &mut value.kind
                 && let Some(js::Prop::Field(_, init)) = props.pop()
             {
@@ -758,9 +762,9 @@ pub(super) fn plain_cells(body: &mut Vec<Stmt>) {
 pub(super) fn unread_resets(body: &mut Vec<Stmt>) {
     let mut declared: IndexMap<String, usize> = IndexMap::default();
     js::each_declared(body, &mut |name| *declared.entry(name.to_string()).or_default() += 1);
-    let lets: IndexSet<&String> = (body.iter())
+    let lets: IndexSet<&str> = (body.iter())
         .filter_map(|stmt| match &stmt.kind {
-            StmtKind::Let(name, _) if declared.get(name) == Some(&1) => Some(name),
+            StmtKind::Let(name, _) if declared.get(name.as_str()) == Some(&1) => Some(name.as_str()),
             _ => None,
         })
         .collect();
@@ -781,7 +785,7 @@ pub(super) fn unread_resets(body: &mut Vec<Stmt>) {
                     reset.kind,
                     ExprKind::Str(_) | ExprKind::Num(_) | ExprKind::BigInt(_) | ExprKind::BigUint(_)
                 );
-                resets.push((name.clone(), appended));
+                resets.push((name.to_string(), appended));
             }
         }
     });
@@ -828,7 +832,7 @@ pub(super) fn unread_resets(body: &mut Vec<Stmt>) {
 
 /// `const old = x; x = c; return old;` of a constant `c`, `old` read
 /// nowhere else: `x`, and `c`.
-fn returned_reset<'a>(stmts: &'a [Stmt], mentions: &IndexMap<String, usize>) -> Option<(&'a String, &'a Expr)> {
+fn returned_reset<'a>(stmts: &'a [Stmt], mentions: &IndexMap<String, usize>) -> Option<(&'a str, &'a Expr)> {
     let [read, written, returned] = stmts else { return None };
     let StmtKind::Const(old, value) = &read.kind else {
         return None;
@@ -841,8 +845,8 @@ fn returned_reset<'a>(stmts: &'a [Stmt], mentions: &IndexMap<String, usize>) -> 
         return None;
     };
     let same = matches!(&target.kind, ExprKind::Var(v) if v == name) && name != old;
-    let read_once = matches!(&of.kind, ExprKind::Var(v) if v == old) && mentions.get(old) == Some(&1);
-    (same && read_once && reset.is_constant()).then_some((name, reset))
+    let read_once = matches!(&of.kind, ExprKind::Var(v) if v == old) && mentions.get(old.as_str()) == Some(&1);
+    (same && read_once && reset.is_constant()).then_some((name.as_str(), reset))
 }
 
 /// Whether a closure in `body`, or a function declared in it, reads
@@ -969,7 +973,7 @@ pub(super) fn named_callbacks(stmts: &mut Vec<Stmt>, callbacks: &IndexSet<String
     let mut i = 0;
     while i < stmts.len() {
         if let StmtKind::Const(name, value) = &stmts[i].kind
-            && callbacks.contains(name)
+            && callbacks.contains(name.as_str())
             && matches!(value.kind, ExprKind::Arrow(..) | ExprKind::AsyncArrow(..))
             && !value.mentions_var(name)
             // Nor one reading what it would be named, `step` of `step$1`
@@ -1042,7 +1046,7 @@ pub(in crate::lower::mir) fn writer_body(out: &mut Vec<Stmt>, name: &str) {
             {
                 let first = (**first).clone();
                 let span = rest[0].span;
-                rest[0] = StmtKind::Let(name.to_string(), Some(first)).at(span);
+                rest[0] = StmtKind::Let(name.into(), Some(first)).at(span);
             }
             _ => rest.insert(0, made),
         }
@@ -1098,7 +1102,7 @@ pub(super) fn applied_values(
         // Taken out, and the statement looked at again, for the next.
         if let Some(value) = first_applied(root, &mut before, &name, set, plain) {
             let span = stmts[i].span;
-            stmts.insert(i, StmtKind::Const(name.clone(), value).at(span));
+            stmts.insert(i, StmtKind::Const(name.clone().into(), value).at(span));
             taken.insert(name);
         }
         i += 1;
@@ -1170,4 +1174,32 @@ fn first_applied(
 pub(super) struct Before {
     past: bool,
     reads: bool,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // A cell a callback's parameter shadows stays a cell: of `const item =
+    // { value: 5 }; item.value = 6; f((item) => item.value)`, the callback's
+    // `item` is its own, whose `value` isn't the cell's. Since M2 a name
+    // lowering makes is the item's own, so only a tree used again declares
+    // one twice, till M3's S7 gives each copy binders of its own.
+    #[test]
+    fn a_cell_a_callback_shadows_stays_a_cell() {
+        let at = |kind: StmtKind| kind.at(js::Span::NONE);
+        let held = |of: Expr| Expr::member(of, js::HELD);
+        let cell = Expr::object(vec![js::Prop::Field(js::HELD.into(), Expr::int(5))]);
+        let callback = Expr::arrow(
+            vec![js::Pattern::Name("item".into())],
+            vec![at(StmtKind::Return(Some(held(Expr::var("item")))))],
+        );
+        let mut body = vec![
+            at(StmtKind::Const("item".into(), cell.clone())),
+            at(StmtKind::Assign(held(Expr::var("item")), Expr::int(6))),
+            at(StmtKind::Expr(Expr::call(Expr::var("f"), vec![callback]))),
+        ];
+        plain_cells(&mut body);
+        assert!(matches!(&body[0].kind, StmtKind::Const(name, value) if name == "item" && *value == cell));
+    }
 }

@@ -25,7 +25,7 @@ pub(in crate::lower) fn inlined_drops(items: &mut Vec<Item>, drops: &IndexSet<St
     // never a set's, which would change the JS from one build to the next.
     let mut left: Vec<String> = (items.iter())
         .filter_map(|item| match item {
-            Item::Function(f) if drops.contains(&f.name) => Some(f.name.clone()),
+            Item::Function(f) if drops.contains(f.name.as_str()) => Some(f.name.to_string()),
             _ => None,
         })
         .collect();
@@ -654,8 +654,8 @@ fn fields_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &str) -> Vec<Strin
             let consts = (fields.iter())
                 .filter(|field| read_as(field).is_none())
                 .map(|(key, value)| match written.contains(key) {
-                    true => StmtKind::Let(key.clone(), Some(value.clone())).at(span),
-                    false => StmtKind::Const(key.clone(), value.clone()).at(span),
+                    true => StmtKind::Let(key.into(), Some(value.clone())).at(span),
+                    false => StmtKind::Const(key.into(), value.clone()).at(span),
                 });
             stmts.splice(k..=k, consts.collect::<Vec<_>>());
         }
@@ -684,7 +684,7 @@ fn kept_variables(body: &[Stmt], params: &[Pattern], guard: &str, fields: &[(Str
                 && fields
                     .iter()
                     .any(|(k, v)| k == key && matches!(&v.kind, ExprKind::Var(v) if v == name))
-                && let Some(count) = declared.get_mut(name)
+                && let Some(count) = declared.get_mut(name.as_str())
             {
                 *count -= 1;
             }
@@ -802,7 +802,7 @@ fn one_field_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &str) -> Option
                 && let StmtKind::Const(n, value) = &mut s.kind
                 && let ExprKind::Array(items) = &mut value.kind
             {
-                *n = read.clone();
+                *n = read.clone().into();
                 *value = items.remove(0);
             }
         }

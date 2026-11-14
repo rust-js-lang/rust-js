@@ -130,7 +130,7 @@ fn shadow_of(
     let kin = |name: &str| name == base || crate::names::apart(name).is_some_and(|(b, _)| b == base);
     let declaring = |s: &Stmt| -> Vec<String> {
         match &s.kind {
-            StmtKind::Const(name, _) | StmtKind::Let(name, _) => vec![name.clone()],
+            StmtKind::Const(name, _) | StmtKind::Let(name, _) => vec![name.to_string()],
             StmtKind::Destructure { pattern, .. } => pattern.names().into_iter().map(str::to_string).collect(),
             _ => Vec::new(),
         }
@@ -139,7 +139,7 @@ fn shadow_of(
         Some(at) => (Some(at), declaring(&stmts[at]).into_iter().rev().find(|n| kin(n))?),
         None => (None, heads.iter().rev().find(|n| kin(n))?.clone()),
     };
-    if !user.contains(&shadow) || !user.contains(&binding) || captured.contains(&binding) {
+    if !user.contains(shadow.as_str()) || !user.contains(&binding) || captured.contains(&binding) {
         return None;
     }
     // `let x$1;`, `undefined` till it's set, where `x` isn't: set where a
@@ -213,7 +213,7 @@ fn shadow_of(
         });
         js::renamed(&mut rest, &shadow, &binding);
         stmts.append(&mut rest);
-        if captured.contains(&shadow) {
+        if captured.contains(shadow.as_str()) {
             captured.insert(binding);
         }
         return Some(Shadowed {
@@ -237,7 +237,7 @@ fn shadow_of(
             *e = Expr::var(&binding).or_at(e.span);
         }
     });
-    if captured.contains(&shadow) {
+    if captured.contains(shadow.as_str()) {
         captured.insert(binding);
     }
     Some(Shadowed { at, set, assigned })

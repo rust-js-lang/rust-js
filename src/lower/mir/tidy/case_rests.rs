@@ -2,7 +2,7 @@
 //! case's, as a case's body is written after a `// Fallthrough` to it
 //! (ADR 0905, amended).
 
-use crate::js::{self, Stmt, StmtKind};
+use crate::js::{self, Name, Stmt, StmtKind};
 use crate::lower::mir::hints::Switch;
 
 /// Of a block `outer: { ..; inner: { ..; switch (..) { .. } break outer; }
@@ -107,7 +107,7 @@ fn placed(case: &mut Vec<Stmt>, inner: &str, outer: &str, rest: &mut Option<Vec<
         let ends = rest.last().is_some_and(js::ends);
         case.extend(rest);
         if !ends {
-            case.push(StmtKind::Break(Some(outer.to_string())).at(js::Span::NONE));
+            case.push(StmtKind::Break(Some(outer.into())).at(js::Span::NONE));
         }
         return true;
     }
@@ -317,7 +317,7 @@ pub(super) fn loops_left_by_cases(stmts: &mut [Stmt], loops: &[(js::Span, bool, 
             continue;
         };
         let written = written.clone();
-        let own = |l: &Option<String>| l.is_none() || *l == *label;
+        let own = |l: &Option<Name>| l.is_none() || *l == *label;
         // `b: { ..; continue; } break;`, a block MIR made of the turn whose
         // `break`s leave the loop, as its end does: its statements, each
         // `break b` the loop's `break` of the program's label.
@@ -336,7 +336,7 @@ pub(super) fn loops_left_by_cases(stmts: &mut [Stmt], loops: &[(js::Span, bool, 
             inner.pop();
             relabel(&mut inner, &b, &written);
             body.extend(inner);
-            *label = Some(written);
+            *label = Some(written.into());
             continue;
         }
         let [.., switch, last] = &body[..] else {
@@ -371,11 +371,11 @@ pub(super) fn loops_left_by_cases(stmts: &mut [Stmt], loops: &[(js::Span, bool, 
             leaving(&mut case.body, &written);
             if !case.falls && !case.body.last().is_some_and(js::ends) {
                 case.body
-                    .push(StmtKind::Break(Some(written.clone())).at(js::Span::NONE));
+                    .push(StmtKind::Break(Some(written.clone().into())).at(js::Span::NONE));
             }
         }
         body.extend(rest);
-        *label = Some(written);
+        *label = Some(written.into());
     }
 }
 
@@ -385,7 +385,7 @@ pub(super) fn loops_left_by_cases(stmts: &mut [Stmt], loops: &[(js::Span, bool, 
 fn leaving(stmts: &mut [Stmt], written: &str) {
     for stmt in stmts {
         match &mut stmt.kind {
-            StmtKind::Break(l @ None) => *l = Some(written.to_string()),
+            StmtKind::Break(l @ None) => *l = Some(written.into()),
             StmtKind::If(_, a, b) => {
                 leaving(a, written);
                 if let Some(b) = b {
@@ -406,7 +406,7 @@ fn relabel(stmts: &mut Vec<Stmt>, from: &str, to: &str) {
     js::statement_lists(stmts, &mut |list| {
         for stmt in list.iter_mut() {
             if matches!(&stmt.kind, StmtKind::Break(Some(l)) if l == from) {
-                stmt.kind = StmtKind::Break(Some(to.to_string()));
+                stmt.kind = StmtKind::Break(Some(to.into()));
             }
         }
     });

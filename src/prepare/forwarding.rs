@@ -4,7 +4,7 @@
 //! where it's made (ADR 0610, amended).
 
 use crate::collections::IndexSet;
-use crate::js::{self, Expr, ExprKind, Stmt, StmtKind};
+use crate::js::{self, Expr, ExprKind, Name, Stmt, StmtKind};
 
 /// `function getTime(n) { return GET_TIME(n); }`, a function that only
 /// calls a module variable's function with its parameters, a thread-local's
@@ -99,9 +99,9 @@ pub(super) fn functions(module: &mut js::Module) {
             unreachable!("found")
         };
         let at = if at > i { at - 1 } else { at };
-        let rename = |n: &mut String| {
+        let rename = |n: &mut Name| {
             if *n == variable {
-                n.clone_from(&name);
+                n.respell(name.word());
             }
         };
         js::each_item_expr_mut(&mut module.items, &mut |e| {
@@ -120,7 +120,7 @@ pub(super) fn functions(module: &mut js::Module) {
                     rename(n);
                 }
                 if export {
-                    module.aliases.push((name.clone(), name.clone()));
+                    module.aliases.push((name.to_string(), name.to_string()));
                 }
                 stmts[0].span
             }
@@ -189,7 +189,7 @@ fn called_only_privately(module: &js::Module, at: usize) -> bool {
 pub(super) fn fields(module: &mut js::Module) {
     // Each such function, by the constant it reads: where it is, the field
     // and its name.
-    type Taken = (usize, String, String);
+    type Taken = (usize, String, Name);
     let mut by_value: Vec<(String, Vec<Taken>)> = Vec::new();
     for (i, item) in module.items.iter().enumerate() {
         let js::Item::Function(function) = item else {
@@ -285,7 +285,7 @@ pub(super) fn members(module: &mut js::Module) {
     for item in &module.items {
         match item {
             js::Item::Const(constant) => {
-                names.insert(constant.name.clone());
+                names.insert(constant.name.to_string());
                 js::names_in(&[StmtKind::Expr(constant.value.clone()).at(constant.span)], &mut names);
             }
             js::Item::Statements(stmts) => js::names_in(stmts, &mut names),
@@ -294,7 +294,7 @@ pub(super) fn members(module: &mut js::Module) {
                 &mut names,
             ),
             js::Item::Namespace(namespace) => {
-                names.insert(namespace.name.clone());
+                names.insert(namespace.name.to_string());
                 for method in &namespace.methods {
                     js::names_in(
                         &[StmtKind::Function(Box::new(method.clone())).at(method.span)],
@@ -358,7 +358,7 @@ pub(super) fn members(module: &mut js::Module) {
             unreachable!("found")
         };
         let pattern = (members.iter())
-            .map(|member| (member.clone(), js::Pattern::Name(member.clone()), None))
+            .map(|member| (member.clone(), js::Pattern::Name(member.into()), None))
             .collect();
         let destructure = StmtKind::Destructure {
             pattern: js::Pattern::Object(pattern, None),

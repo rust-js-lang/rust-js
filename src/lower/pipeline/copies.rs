@@ -7,7 +7,7 @@ use rustc_span::def_id::{DefId, LocalModId};
 
 use super::super::analysis::JsGiven;
 use super::super::{FnInfo, LoweredFn};
-use crate::js::{self, Expr, ExprKind};
+use crate::js::{self, Expr, ExprKind, Name};
 
 /// A function by where it's named: its module, its type's object of
 /// methods if it's a method, and its name.
@@ -147,7 +147,7 @@ fn refuse_through_unlike(tcx: rustc_middle::ty::TyCtxt<'_>, through: &[ThroughCo
 fn alike(function: &js::Function, module: LocalModId, renamed: &IndexMap<Named, Renamed>) -> js::Function {
     let mut function = function.clone();
     rename(&mut function, module, renamed);
-    function.name = String::new();
+    function.name = Name::default();
     function.export = false;
     function
 }
@@ -180,7 +180,7 @@ fn keep_apart(function: &mut js::Function, module: LocalModId, renamed: &IndexMa
         for param in &mut function.params {
             param.each_name_mut(&mut |name| {
                 if *name == to {
-                    *name = apart.clone();
+                    *name = apart.clone().into();
                 }
             });
         }

@@ -68,7 +68,7 @@ pub(in crate::lower::mir::tidy) fn readable_temporaries(
     js::statement_lists(body, &mut |list| {
         for stmt in list.iter() {
             if let StmtKind::Const(name, _) | StmtKind::Let(name, _) = &stmt.kind {
-                *declared.entry(name.clone()).or_default() += 1;
+                *declared.entry(name.to_string()).or_default() += 1;
             }
         }
     });
@@ -145,7 +145,7 @@ pub(in crate::lower::mir::tidy) fn readable_temporaries(
                         true => Role::Arg,
                         false => Role::Value,
                     };
-                    let names = match (given.get(name), &value.kind) {
+                    let names = match (given.get(name.as_str()), &value.kind) {
                         (Some(prop), _) => vec![prop.clone()],
                         (None, _) if is_held_arg(name) => Vec::new(),
                         // Not a positional field's, `_0`, a temporary's name.
@@ -154,7 +154,7 @@ pub(in crate::lower::mir::tidy) fn readable_temporaries(
                         {
                             vec![field.clone()]
                         }
-                        (None, _) => suggested.get(name).cloned().unwrap_or_default(),
+                        (None, _) => suggested.get(name.as_str()).cloned().unwrap_or_default(),
                     };
                     // Else what made its value suggests, its call's name
                     // (#890, #837); not an argument held, which MIR's rule
@@ -171,7 +171,7 @@ pub(in crate::lower::mir::tidy) fn readable_temporaries(
                 StmtKind::Let(name, _) if is_temporary(name) => {
                     renames.push((
                         name.clone(),
-                        suggested.get(name).cloned().unwrap_or_default(),
+                        suggested.get(name.as_str()).cloned().unwrap_or_default(),
                         Role::BranchSet,
                     ));
                 }
@@ -188,7 +188,7 @@ pub(in crate::lower::mir::tidy) fn readable_temporaries(
         first.entry(name.to_string()).or_insert(at);
         at += 1;
     });
-    renames.sort_by_key(|(from, ..)| first.get(from).copied().unwrap_or(usize::MAX));
+    renames.sort_by_key(|(from, ..)| first.get(from.as_str()).copied().unwrap_or(usize::MAX));
     for (from, names, role) in renames {
         // A spilled value's name changes only to what made it suggests, its
         // call's, where that's free: else it keeps the one it has, which
@@ -205,7 +205,7 @@ pub(in crate::lower::mir::tidy) fn readable_temporaries(
                     if let StmtKind::Const(name, _) | StmtKind::Let(name, _) = &mut stmt.kind
                         && *name == from
                     {
-                        *name = to.clone();
+                        *name = to.clone().into();
                     }
                 }
             });

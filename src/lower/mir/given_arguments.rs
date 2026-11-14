@@ -72,14 +72,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let written: Vec<Stmt> = (writes.into_iter())
                 .map(|write| write.written_into(&Expr::var(&f), js::Span::NONE))
                 .collect();
-            let mut body = vec![StmtKind::Const(f.clone(), Expr::call_helper("$sink", Vec::new())).at(js::Span::NONE)];
+            let mut body = vec![StmtKind::Const(f.into(), Expr::call_helper("$sink", Vec::new())).at(js::Span::NONE)];
             match fails || self.krate.failing.any {
                 true => {
                     let error = self.fresh(Role::Error);
                     let thrown = Expr::call_helper("$fmtWritten", vec![Expr::var(&error), done.clone()]);
                     body.push(
-                        StmtKind::TryCatch(written, Some(error), vec![StmtKind::Throw(thrown).at(js::Span::NONE)])
-                            .at(js::Span::NONE),
+                        StmtKind::TryCatch(
+                            written,
+                            Some(error.into()),
+                            vec![StmtKind::Throw(thrown).at(js::Span::NONE)],
+                        )
+                        .at(js::Span::NONE),
                     );
                 }
                 false => body.extend(written),
@@ -102,9 +106,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let error = self.fresh(Role::Error);
                 let thrown = Expr::call_helper("$fmtWritten", vec![Expr::var(&error), made.clone()]);
                 vec![
-                    StmtKind::Let(name, Some(Expr::str(""))).at(js::Span::NONE),
-                    StmtKind::TryCatch(written, Some(error), vec![StmtKind::Throw(thrown).at(js::Span::NONE)])
-                        .at(js::Span::NONE),
+                    StmtKind::Let(name.into(), Some(Expr::str(""))).at(js::Span::NONE),
+                    StmtKind::TryCatch(
+                        written,
+                        Some(error.into()),
+                        vec![StmtKind::Throw(thrown).at(js::Span::NONE)],
+                    )
+                    .at(js::Span::NONE),
                     StmtKind::Return(Some(made)).at(js::Span::NONE),
                 ]
             }

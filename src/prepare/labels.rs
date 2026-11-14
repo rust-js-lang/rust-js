@@ -142,8 +142,8 @@ fn rejumped(stmts: &mut [Stmt], jump: &StmtKind, label: Option<&str>, around: (b
         match &mut stmt.kind {
             StmtKind::Return(None) => {
                 stmt.kind = match jump {
-                    StmtKind::Break(None) if around.0 || around.1 => StmtKind::Break(Some(label?.to_string())),
-                    StmtKind::Continue(None) if around.1 => StmtKind::Continue(Some(label?.to_string())),
+                    StmtKind::Break(None) if around.0 || around.1 => StmtKind::Break(Some(label?.into())),
+                    StmtKind::Continue(None) if around.1 => StmtKind::Continue(Some(label?.into())),
                     _ => jump.clone(),
                 };
             }

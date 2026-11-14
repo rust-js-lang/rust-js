@@ -70,7 +70,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let closure = self.closure_carrying_drop(closure, ty, span)?;
         let params = taken.iter().map(|(name, _)| name.as_str().into()).collect();
         let maker = Expr::arrow(params, vec![StmtKind::Return(Some(closure)).at(js::Span::NONE)]);
-        out.push(StmtKind::Let(make.clone(), Some(maker)).at(self.js_span(span)));
+        out.push(StmtKind::Let(make.clone().into(), Some(maker)).at(self.js_span(span)));
         Ok(Expr::call(
             Expr::var(&make),
             taken.iter().map(|(name, _)| Expr::var(name)).collect(),
@@ -222,7 +222,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         js::ExprKind::Var(name) => Base::Named(name),
                         _ => Base::Role(Role::Captured),
                     });
-                    out.push(StmtKind::Let(name.clone(), Some(e)).at(self.js_span(span)));
+                    out.push(StmtKind::Let(name.clone().into(), Some(e)).at(self.js_span(span)));
                     (Expr::var(&name), false)
                 }
                 value => {

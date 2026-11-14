@@ -286,7 +286,7 @@ export const mutations: Mutation[] = [
     name: "getter-printed-as-method",
     breaks: "a class's getter is printed as a prototype method, `QueenPosition.prototype.leftDiagonal = function () { .. }` (#357)",
     file: "src/to_oxc/statements.rs",
-    find: "            if class.getters.contains(&f.name) {\n",
+    find: "            if class.getters.iter().any(|g| g == &f.name) {\n",
     replace: "            if false {\n",
     tests: ["test/classes.test.ts", "-t", "getter is its prototype"],
   },
@@ -362,7 +362,7 @@ export const mutations: Mutation[] = [
     name: "subclass-static-on-the-prototype",
     breaks: "a class component's function of no `self`, `Label.greeting()`, is its prototype's, undefined on the class",
     file: "src/to_oxc/statements.rs",
-    find: "                    !class.prototype.contains(&f.name),\n",
+    find: "                    !class.prototype.iter().any(|p| p == &f.name),\n",
     replace: "                    false,\n",
     tests: [
       "test/class-components.test.ts",
@@ -386,7 +386,7 @@ export const mutations: Mutation[] = [
     name: "replaced-prototype-method-assigned",
     breaks: "a method of a class whose prototype its load replaced is assigned, which throws where Promise.prototype is frozen (SES), the module never loading (#448, rd393)",
     file: "src/to_oxc/statements.rs",
-    find: "            if class.prototype_set && class.prototype.contains(&f.name) {\n",
+    find: "            if class.prototype_set && class.prototype.iter().any(|p| p == &f.name) {\n",
     replace: "            if false {\n",
     tests: [
       "test/classes.test.ts",
@@ -430,8 +430,8 @@ export const mutations: Mutation[] = [
     name: "subclass-getter-printed-as-method",
     breaks: "a getter of an ES class, one that extends a binding's, is printed as a method, `type() { .. }` (rd679)",
     file: "src/to_oxc/statements.rs",
-    find: "                false if class.getters.contains(&f.name) => (MethodDefinitionKind::Get, f.name.as_str(), false),\n",
-    replace: "                false if false => (MethodDefinitionKind::Get, f.name.as_str(), false),\n",
+    find: "                false if class.getters.iter().any(|g| g == &f.name) => {\n",
+    replace: "                false if false => {\n",
     tests: ["test/binding-subclasses.test.ts", "-t", "is its class's getter"],
   },
   {

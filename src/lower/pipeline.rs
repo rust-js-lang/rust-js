@@ -731,7 +731,7 @@ pub fn lower_crate<'tcx>(
                 .as_local()
                 .map_or(js::Span::NONE, |local| sources.item_span(tcx, local));
             let constant = |name: String, value: Expr, export: bool| js::Const {
-                name,
+                name: name.into(),
                 value,
                 mutable: false,
                 fields: js::Fields::default(),
@@ -757,19 +757,19 @@ pub fn lower_crate<'tcx>(
                 };
                 for stmt in body {
                     if let StmtKind::Const(name, value) = stmt.kind {
-                        consts.push(constant(name, value, false));
+                        consts.push(constant(name.into_word(), value, false));
                     }
                 }
                 consts.push(constant(fns[&def_id].name.clone(), object, export));
                 pass.dictionary_names
-                    .extend(consts[made..].iter().map(|c| c.name.clone()));
+                    .extend(consts[made..].iter().map(|c| c.name.to_string()));
                 if lowered.jsx {
                     pass.jsx.insert(module);
                 }
                 continue;
             }
             pass.dictionary_names
-                .extend(consts[made..].iter().map(|c| c.name.clone()));
+                .extend(consts[made..].iter().map(|c| c.name.to_string()));
         }
         pass.prototypes.read.extend(&lowered.dependencies.prototypes_read);
         match lowered {
@@ -810,7 +810,7 @@ pub fn lower_crate<'tcx>(
                 };
                 let info = &fns[&key.to_def_id()];
                 let constant = js::Const {
-                    name: info.name.clone(),
+                    name: info.name.clone().into(),
                     value,
                     mutable: false,
                     // A namespace's, its module's exports (ADR 1037, amended).
@@ -884,7 +884,7 @@ pub fn lower_crate<'tcx>(
                         js::visit_stmts(&function.body, &mut |name| {
                             read.insert(name.to_owned());
                         });
-                        function.name = super::fresh_in(&mut read, &function.name);
+                        function.name = super::fresh_in(&mut read, &function.name).into();
                         function.export = false;
                         pass.holes.functions.insert(def_id.index.as_u32(), function);
                     }
@@ -1060,7 +1060,7 @@ pub fn lower_crate<'tcx>(
                 (module_held.iter())
                     .filter(|held| held.through.is_none())
                     .map(|held| js::Const {
-                        name: held.name.clone(),
+                        name: held.name.clone().into(),
                         value: super::path_read(&held.path, &required, |export| {
                             names.expect("its imports")[export].clone()
                         }),

@@ -62,7 +62,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let caught = Expr::call_helper("$writeCaught", vec![Expr::var(&error)]);
             let converted = conversion.map_or_else(|| caught.clone(), |conversion| conversion.of(caught.clone()));
             let handler = vec![StmtKind::Return(Some(crate::js::result::err(converted))).at(js::Span::NONE)];
-            *out = vec![StmtKind::TryCatch(std::mem::take(out), Some(error), handler).at(js::Span::NONE)];
+            *out = vec![StmtKind::TryCatch(std::mem::take(out), Some(error.into()), handler).at(js::Span::NONE)];
         }
     }
 
@@ -88,7 +88,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let error = self.fresh(Role::Error);
                 let written = Expr::call(Expr::helper("$fmtWritten"), vec![Expr::var(&error), Expr::str("")]);
                 let handler = vec![StmtKind::Throw(written).at(js::Span::NONE)];
-                *out = vec![StmtKind::TryCatch(std::mem::take(out), Some(error), handler).at(js::Span::NONE)];
+                *out = vec![StmtKind::TryCatch(std::mem::take(out), Some(error.into()), handler).at(js::Span::NONE)];
             }
             true => {
                 // Its declaration, a `let`, or a `const` where tidy found it
@@ -103,7 +103,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let error = self.fresh(Role::Error);
                 let written = Expr::call(Expr::helper("$fmtWritten"), vec![Expr::var(&error), written_so_far()]);
                 let handler = vec![StmtKind::Throw(written).at(js::Span::NONE)];
-                out.push(StmtKind::TryCatch(body, Some(error), handler).at(js::Span::NONE));
+                out.push(StmtKind::TryCatch(body, Some(error.into()), handler).at(js::Span::NONE));
                 out.push(StmtKind::Return(Some(written_so_far())).at(js::Span::NONE));
             }
             false if sink => {}
@@ -336,7 +336,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let (made, role) = self.streamed_builder(kind, sink, type_name);
                     let builder = self.fresh(role);
                     self.flush(state, out)?;
-                    out.push(StmtKind::Const(builder.clone(), made).at(self.js_span(span)));
+                    out.push(StmtKind::Const(builder.clone().into(), made).at(self.js_span(span)));
                     let taken = Taken::Streamed(builder);
                     state.built.insert(destination.local, (kind, None, Vec::new(), taken));
                     return Ok(Some(Value::Expr(Expr::js_undefined())));
@@ -350,7 +350,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     true => {
                         let parts = self.fresh(Role::Parts);
                         self.flush(state, out)?;
-                        out.push(StmtKind::Let(parts.clone(), Some(Expr::array(Vec::new()))).at(self.js_span(span)));
+                        out.push(
+                            StmtKind::Let(parts.clone().into(), Some(Expr::array(Vec::new()))).at(self.js_span(span)),
+                        );
                         Taken::Parts(parts)
                     }
                     false => Taken::Kept,
@@ -418,7 +420,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let mut handler = Vec::new();
                 self.append_to_writer(state, &name, partial, false, js_span, &mut handler);
                 handler.push(StmtKind::Throw(Expr::var(&caught)).at(js_span));
-                let tried = vec![StmtKind::TryCatch(written_out, Some(caught), handler).at(js_span)];
+                let tried = vec![StmtKind::TryCatch(written_out, Some(caught.into()), handler).at(js_span)];
                 return Ok(Some(Value::Expr(self.fmt_try(tried))));
             }
             out.extend(written_out);
@@ -933,7 +935,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// a sink, `const f = $sink()`, first of its body.
     pub(super) fn writer_text_declared(&self, state: &State<'_, 'tcx>, out: &mut Vec<Stmt>) {
         let Some(name) = state.made_writing() else { return };
-        let made = StmtKind::Let(name.clone(), Some(self.writer_text_made(state))).at(js::Span::NONE);
+        let made = StmtKind::Let(name.into(), Some(self.writer_text_made(state))).at(js::Span::NONE);
         // A sink first, before anything of the body runs, so it claims what
         // `$writingInto` armed for this writer and nothing else does (#1652,
         // ADR 1135).

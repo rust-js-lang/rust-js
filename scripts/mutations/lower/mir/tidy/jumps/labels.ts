@@ -70,9 +70,9 @@ export const mutations: Mutation[] = [
     breaks:
       "the `break outer;` left in an inner loop has no place, so the comment written above `break 'outer` is before the inner loop, not before the `break` (rd148)",
     file: "src/lower/mir/tidy/jumps/labels.rs",
-    find: "            StmtKind::Break(written).at(written_at.map_or(js::Span::NONE, |(_, at)| *at))\n",
+    find: "            StmtKind::Break(written.map(Into::into)).at(written_at.map_or(js::Span::NONE, |(_, at)| *at))\n",
     replace:
-      "            StmtKind::Break(written).at(written_at.map_or(js::Span::NONE, |_| js::Span::NONE))\n",
+      "            StmtKind::Break(written.map(Into::into)).at(written_at.map_or(js::Span::NONE, |_| js::Span::NONE))\n",
     tests: ["test/corpus.test.ts", "-t", "^loop_value_then_tail.rs$"],
     snapshots: true,
   },
@@ -270,7 +270,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a block the program labeled followed by a `break` of a block the `switch` ends, getTag's in an `else`, labels nothing (ADR 0944)",
     file: "src/lower/mir/tidy/jumps/labels.rs",
-    find: "        (Some(StmtKind::Break(Some(to))), _) => leaving.contains(to),\n",
+    find: "        (Some(StmtKind::Break(Some(to))), _) => leaving.iter().any(|l| l == to),\n",
     replace:
       "        (Some(StmtKind::Break(Some(to))), _) => leaving.is_empty() && to.is_empty(),\n",
     tests: ["test/lowering-labels.test.ts", "-t", "inner switch leaves"],
@@ -377,7 +377,7 @@ export const mutations: Mutation[] = [
     name: "written-loop-label-unnamed",
     breaks: "a `for` MIR labels in a `'outer: loop` that runs once keeps MIR's label, `bb5: for (..)`, not the program's `outer:` (D1, #523)",
     file: "src/lower/mir/tidy/jumps/labels.rs",
-    find: "            let from = label.replace(to.clone()).expect(\"labeled\");\n            relabeled(inner, &from, to);\n",
+    find: "            let from = label.replace(to.into()).expect(\"labeled\");\n            relabeled(inner, &from, to);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^loop_exit_moves.rs$"],
     snapshots: true,

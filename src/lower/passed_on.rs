@@ -462,7 +462,7 @@ fn left_out(tcx: TyCtxt<'_>, thir: &rustc_middle::thir::Thir<'_>, e: rustc_middl
 /// performWork(request))`, or one of parameters JS leaves out, `move |_|
 /// ping_task(&request, task)`, which ignores what it's given.
 pub(in crate::lower) fn binds(f: &Expr, fact: &Forwarding, moved: &[String], kept: bool) -> bool {
-    let taken = |e: &Expr| matches!(&e.kind, js::ExprKind::Var(v) if moved.contains(v));
+    let taken = |e: &Expr| matches!(&e.kind, js::ExprKind::Var(v) if moved.iter().any(|m| m == v));
     fact.item
         && fact.callee == Callee::Own
         && !fact.statement

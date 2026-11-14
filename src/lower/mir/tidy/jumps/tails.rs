@@ -211,7 +211,7 @@ fn returns_past(
                 ] = pair
                     && *l == label
                 {
-                    inner.insert(own.clone());
+                    inner.insert(own.to_string());
                 }
             }
         });
@@ -767,7 +767,7 @@ pub(in crate::lower::mir::tidy) fn relabeled(stmts: &mut Vec<Stmt>, from: &str, 
             if let StmtKind::Break(Some(l)) | StmtKind::Continue(Some(l)) = &mut stmt.kind
                 && l == from
             {
-                *l = to.to_string();
+                *l = to.into();
             }
         }
     });

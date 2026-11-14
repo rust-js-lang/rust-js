@@ -9,7 +9,7 @@
 
 use crate::collections::IndexSet;
 
-use crate::js::{self, Expr, ExprKind, Stmt, StmtKind};
+use crate::js::{self, Expr, ExprKind, Name, Stmt, StmtKind};
 
 /// `stmts`, each run of statements a value's drop ends, which a panic in
 /// any of them drops too, one `try { .. } finally { .. }`. The values
@@ -346,7 +346,7 @@ impl<'a> Run<'a> {
         js::each_list(stmts, &mut |list| {
             for stmt in list {
                 if let StmtKind::Const(name, _) | StmtKind::Let(name, _) = &stmt.kind {
-                    declared.insert(name.clone());
+                    declared.insert(name.to_string());
                 }
             }
         });
@@ -384,20 +384,20 @@ impl<'a> Run<'a> {
                         && b.as_deref().is_none_or(|b| self.covers(b, loops, labels))
                 }
                 StmtKind::While { label, cond, body } => {
-                    labels.extend(label.clone());
+                    labels.extend(label.as_ref().map(Name::to_string));
                     let covered = !cond.may_throw() && self.covers(body, loops + 1, labels);
                     labels.truncate(labels.len() - usize::from(label.is_some()));
                     covered
                 }
                 StmtKind::Labeled(label, body) => {
-                    labels.push(label.clone());
+                    labels.push(label.to_string());
                     let covered = self.covers(body, loops, labels);
                     labels.pop();
                     covered
                 }
                 // A jump that stays in the run.
                 StmtKind::Break(None) | StmtKind::Continue(None) => loops > 0,
-                StmtKind::Break(Some(label)) | StmtKind::Continue(Some(label)) => labels.contains(label),
+                StmtKind::Break(Some(label)) | StmtKind::Continue(Some(label)) => labels.iter().any(|l| l == label),
                 // One made of values, which can't throw, or the run ends.
                 _ => stmt.only_makes_values(),
             };
@@ -423,7 +423,7 @@ impl<'a> Run<'a> {
                 _ => value.is_constant(),
             },
             StmtKind::Break(None) | StmtKind::Continue(None) => loops == 0,
-            StmtKind::Break(Some(label)) | StmtKind::Continue(Some(label)) => !labels.contains(label),
+            StmtKind::Break(Some(label)) | StmtKind::Continue(Some(label)) => !labels.iter().any(|l| l == label),
             _ => false,
         }
     }
@@ -772,11 +772,11 @@ fn own_labels(stmts: &mut Vec<Stmt>) -> Vec<String> {
     let mut labels = Vec::new();
     js::statement_lists(stmts, &mut |list| {
         labels.extend(list.iter().filter_map(|stmt| match &stmt.kind {
-            StmtKind::Labeled(label, _) => Some(label.clone()),
+            StmtKind::Labeled(label, _) => Some(label.to_string()),
             StmtKind::While { label, .. }
             | StmtKind::DoWhile { label, .. }
             | StmtKind::For { label, .. }
-            | StmtKind::ForOf { label, .. } => label.clone(),
+            | StmtKind::ForOf { label, .. } => label.as_ref().map(Name::to_string),
             _ => None,
         }))
     });
@@ -790,10 +790,10 @@ fn escapes(stmts: &[Stmt]) -> bool {
         stmts.iter().any(|stmt| match &stmt.kind {
             StmtKind::Return(_) | StmtKind::Throw(_) | StmtKind::Switch { .. } => true,
             StmtKind::Break(None) | StmtKind::Continue(None) => loops == 0,
-            StmtKind::Break(Some(l)) | StmtKind::Continue(Some(l)) => !inner.contains(l),
+            StmtKind::Break(Some(l)) | StmtKind::Continue(Some(l)) => !inner.iter().any(|i| i == l),
             StmtKind::If(_, a, b) => out(a, inner, loops) || b.as_deref().is_some_and(|b| out(b, inner, loops)),
             StmtKind::Labeled(l, body) => {
-                inner.push(l.clone());
+                inner.push(l.to_string());
                 let out = out(body, inner, loops);
                 inner.pop();
                 out
@@ -802,7 +802,7 @@ fn escapes(stmts: &[Stmt]) -> bool {
             | StmtKind::DoWhile { label, body, .. }
             | StmtKind::ForOf { label, body, .. }
             | StmtKind::For { label, body, .. } => {
-                inner.extend(label.clone());
+                inner.extend(label.as_ref().map(Name::to_string));
                 let out = out(body, inner, loops + 1);
                 inner.truncate(inner.len() - usize::from(label.is_some()));
                 out
@@ -1032,10 +1032,12 @@ fn dropped_at_each_exit(stmts: &mut Vec<Stmt>, drop: &Stmt, (depth, caught, insi
             // it, as a loop's in it does, `continue bb10;`; another label's
             // leaves it, as a `return` does, the program's `break
             // 'get_instance` out of the block the loop's in (rd200).
-            StmtKind::Break(Some(label)) => !inside.labels.contains(label),
+            StmtKind::Break(Some(label)) => !inside.labels.iter().any(|l| l == label),
             // The loop's own `continue bb5`, in a loop in it too, is a turn
             // (#440).
-            StmtKind::Continue(Some(label)) => !inside.labels.contains(label) && inside.own != Some(label.as_str()),
+            StmtKind::Continue(Some(label)) => {
+                !inside.labels.iter().any(|l| l == label) && inside.own != Some(label.as_str())
+            }
             _ => false,
         };
         if exit {
@@ -1069,7 +1071,7 @@ fn dropped_at_each_exit(stmts: &mut Vec<Stmt>, drop: &Stmt, (depth, caught, insi
             }
             // What goes on in it, a block's own `break`, a turn's `continue`.
             StmtKind::Break(_) | StmtKind::Continue(_) => true,
-            StmtKind::Labeled(label, body) if inside.labels.contains(label) => {
+            StmtKind::Labeled(label, body) if inside.labels.iter().any(|l| l == label) => {
                 dropped_at_each_exit(body, drop, (depth, caught, inside))
             }
             StmtKind::Labeled(..)

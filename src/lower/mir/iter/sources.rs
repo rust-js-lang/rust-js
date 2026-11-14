@@ -453,7 +453,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(size) = item.and_then(|item| self.room_size_of(&count, item)) {
             self.room_for((None, count.clone()), size, span, made);
         }
-        let mut given = vec![js::Pattern::Name("_".to_string())];
+        let mut given = vec![js::Pattern::Name("_".into())];
         given.extend(params.iter().cloned());
         let given = match params.is_empty() {
             true => Vec::new(),

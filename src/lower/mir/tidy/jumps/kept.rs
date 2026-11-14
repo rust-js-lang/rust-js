@@ -255,14 +255,14 @@ pub(in crate::lower::mir::tidy) fn tail_continues(
 /// before it (#610, the user's decision).
 fn ends_going_on(
     stmts: &mut Vec<Stmt>,
-    looped: &Option<String>,
+    looped: &Option<Name>,
     written: &crate::lower::mir::hints::Written,
     commented: &[js::Span],
 ) {
     let continues = &written.continues;
     // The `if` of a `continue` the program wrote, what goes on after it its
     // `else`: that after it, as written, its `continue` kept.
-    let going_on = |l: &Option<String>| l.is_none() || l == looped;
+    let going_on = |l: &Option<Name>| l.is_none() || l == looped;
     if let Some(Stmt {
         kind: StmtKind::If(test, then, otherwise @ Some(_)),
         span,

@@ -450,7 +450,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let count = params.len();
         let params = (params.into_iter().enumerate())
             .map(|(i, name)| match rest && i + 1 == count {
-                true => Pattern::Rest(name),
+                true => Pattern::Rest(name.into()),
                 false => name.into(),
             })
             .collect();

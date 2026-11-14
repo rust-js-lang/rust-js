@@ -56,7 +56,7 @@ pub(in crate::lower::mir::tidy) fn chains_in_blocks(stmts: &mut Vec<Stmt>, lets:
             continue;
         };
         let declared: Vec<Stmt> = (hoisting.names.into_iter())
-            .map(|name| StmtKind::Let(name, None).at(js::Span::NONE))
+            .map(|name| StmtKind::Let(name.into(), None).at(js::Span::NONE))
             .collect();
         let n = declared.len() + 1;
         stmts.splice(i..=i, declared.into_iter().chain([made]));

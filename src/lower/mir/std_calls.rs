@@ -417,7 +417,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             StmtKind::Assign(place.clone(), Expr::bin(Op::Add, place.clone(), partial)).at(js_span),
                             StmtKind::Throw(Expr::var(&caught)).at(js_span),
                         ];
-                        let tried = vec![StmtKind::TryCatch(written, Some(caught), handler).at(js_span)];
+                        let tried = vec![StmtKind::TryCatch(written, Some(caught.into()), handler).at(js_span)];
                         return Ok(Value::Expr(this.fmt_try(tried)));
                     }
                     let value = this.value_expr(given, span)?;
@@ -1013,7 +1013,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         let mut then = Vec::new();
                         if let Some(name) = &made {
                             then.push(
-                                StmtKind::Const(name.clone(), crate::lower::mut_refs::boxed(to.clone()))
+                                StmtKind::Const(name.into(), crate::lower::mut_refs::boxed(to.clone()))
                                     .at(this.js_span(span)),
                             );
                         }

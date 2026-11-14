@@ -155,14 +155,14 @@ fn moved(stmt: &Stmt, rest: &[Stmt], facts: &MoveFacts) -> Option<(Moved, Why)> 
             if let ExprKind::Var(name) = &target.kind
                 && facts.paired.contains(name.as_str()) =>
         {
-            (&**name, value, true)
+            (name, value, true)
         }
         _ => return None,
     };
     // A temporary MIR made, or an element made ahead of a branch: what the
     // program didn't name.
-    let element = facts.captured.contains(name);
-    if !is_temporary(name) && !element && !facts.fixed.contains(name) {
+    let element = facts.captured.contains(name.as_str());
+    if !is_temporary(name) && !element && !facts.fixed.contains(name.as_str()) {
         return None;
     }
     // What may run before it's read: what does nothing, where it does
@@ -192,7 +192,7 @@ fn moved(stmt: &Stmt, rest: &[Stmt], facts: &MoveFacts) -> Option<(Moved, Why)> 
     // it whenever its `value` is read or written: a value made there, `{
     // n: 3 }`, would be another each time (#985). A variable is a place.
     if !matches!(value.kind, ExprKind::Var(_))
-        && super::bindings::handles_read(std::slice::from_ref(&rest[at])).contains(name)
+        && super::bindings::handles_read(std::slice::from_ref(&rest[at])).contains(name.as_str())
     {
         return None;
     }
@@ -511,7 +511,7 @@ fn tested_binding(test: &Expr, then: &[Stmt], named: &IndexSet<String>) -> bool 
         return false;
     };
     let own_name = matches!(&value.kind, ExprKind::Member(_, property) if property == name);
-    if !own_name || named.contains(name) || !place_read(value, name) || test.has_effects() {
+    if !own_name || named.contains(name.as_str()) || !place_read(value, name) || test.has_effects() {
         return false;
     }
     let mut read = false;
@@ -537,7 +537,7 @@ fn tested_read(stmt: &Stmt, rest: &[Stmt], named: &IndexSet<String>) -> Option<(
     // The property's own name, `const autoName = instance.autoName`, of a
     // pattern's binding, not a `let` the program wrote.
     let own_name = matches!(&value.kind, ExprKind::Member(_, property) if property == name);
-    if !own_name || named.contains(name) {
+    if !own_name || named.contains(name.as_str()) {
         return None;
     }
     let place = place_read(value, name);
@@ -581,7 +581,7 @@ pub(super) fn ended_borrows(stmts: &mut Vec<Stmt>, ends_borrow: &IndexSet<String
     let mut i = 0;
     while i + 1 < stmts.len() {
         if let StmtKind::Const(name, value) = &stmts[i].kind
-            && ends_borrow.contains(name)
+            && ends_borrow.contains(name.as_str())
             && matches!(&value.kind, ExprKind::Member(..))
             && place_read(value, name)
             && stored_whole(&stmts[i + 1], name)
@@ -620,7 +620,7 @@ fn fallback_read(stmts: &mut Vec<Stmt>, at: usize, named: &IndexSet<String>) -> 
         return false;
     };
     let own_name = matches!(&value.kind, ExprKind::Member(_, property) if property == name);
-    if !named.contains(name) || !own_name || js::mentions_in(&stmts[at + 1..], name) != 1 {
+    if !named.contains(name.as_str()) || !own_name || js::mentions_in(&stmts[at + 1..], name) != 1 {
         return false;
     }
     let Some(read) = read_of(next, name, false) else {
@@ -676,7 +676,7 @@ fn receiver_read(stmts: &mut Vec<Stmt>, at: usize, lets: &LetNames) -> bool {
     let StmtKind::Const(name, value) = &made[at].kind else {
         return false;
     };
-    if !lets.named.contains(name) || lets.mutable.contains(name) || js::mentions_in(rest, name) != 2 {
+    if !lets.named.contains(name.as_str()) || lets.mutable.contains(name.as_str()) || js::mentions_in(rest, name) != 2 {
         return false;
     }
     // The statement right after it, that call alone.

@@ -11,7 +11,7 @@
 //! of a compile (ADR 1143); each body between tidy's stages where
 //! `stages_checked()`.
 
-use super::{Case, Expr, ExprKind, Function, Item, JsxTag, Module, Pattern, Prop, Stmt, StmtKind, scopes};
+use super::{Case, Expr, ExprKind, Function, Item, JsxTag, Module, Name, Pattern, Prop, Stmt, StmtKind, scopes};
 
 /// What's wrong of a tree, by its rule.
 #[derive(Clone, Debug, PartialEq)]
@@ -133,7 +133,7 @@ enum Target {
 struct Cx {
     /// The loops, switches and labeled blocks around what's walked, by
     /// their label, within its function.
-    labels: Vec<(Option<String>, Target)>,
+    labels: Vec<(Option<Name>, Target)>,
     problems: Vec<Problem>,
     /// Whether it's a module's tree, made once its crate's lowering is
     /// final, which holds no library's item asked for either.
@@ -163,13 +163,13 @@ impl Cx {
         }
     }
 
-    fn looped(&mut self, label: &Option<String>, body: &[Stmt]) {
+    fn looped(&mut self, label: &Option<Name>, body: &[Stmt]) {
         self.labels.push((label.clone(), Target::Loop));
         self.stmts(body);
         self.labels.pop();
     }
 
-    fn jump(&mut self, label: &Option<String>, is_continue: bool) {
+    fn jump(&mut self, label: &Option<Name>, is_continue: bool) {
         let lands = match label {
             Some(label) => (self.labels.iter().rev())
                 .any(|(l, target)| l.as_ref() == Some(label) && (!is_continue || *target == Target::Loop)),
@@ -433,7 +433,7 @@ mod tests {
     #[test]
     fn an_unspelled_name_is_refused() {
         let value = crate::names::unspelled("value", 1);
-        let arrow = Expr::arrow(vec![Pattern::Name(value.clone())], vec![read(Expr::var(&value))]);
+        let arrow = Expr::arrow(vec![Pattern::Name(value.clone().into())], vec![read(Expr::var(&value))]);
         assert_eq!(of(vec![read(arrow)]), vec![Problem::Unspelled(value)]);
         assert_eq!(crate::names::unspelled_base("value#1"), Some("value"));
         assert_eq!(crate::names::unspelled_base("value$1"), None);

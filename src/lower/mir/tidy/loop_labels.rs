@@ -8,7 +8,7 @@
 
 use crate::collections::IndexSet;
 
-use crate::js::{self, Expr, Op, Stmt, StmtKind};
+use crate::js::{self, Expr, Name, Op, Stmt, StmtKind};
 
 /// The label a loop's given where the program named it none and a `switch`
 /// of guarded arms that fall through, which MIR's tests give no `if` chain
@@ -22,7 +22,7 @@ pub(super) const LOOP_LABEL: &str = "loop";
 pub(super) fn labeled_breaks(stmts: &mut [Stmt], label: &str) {
     for stmt in stmts {
         match &mut stmt.kind {
-            StmtKind::Break(l @ None) => *l = Some(label.to_string()),
+            StmtKind::Break(l @ None) => *l = Some(label.into()),
             StmtKind::If(_, a, b) => {
                 labeled_breaks(a, label);
                 if let Some(b) = b {
@@ -46,11 +46,11 @@ pub(super) fn labels_in(stmts: &[Stmt], labels: &mut IndexSet<String>) {
             StmtKind::While { label, body, .. }
             | StmtKind::ForOf { label, body, .. }
             | StmtKind::For { label, body, .. } => {
-                labels.extend(label.clone());
+                labels.extend(label.as_ref().map(Name::to_string));
                 labels_in(body, labels);
             }
             StmtKind::Labeled(label, body) => {
-                labels.insert(label.clone());
+                labels.insert(label.to_string());
                 labels_in(body, labels);
             }
             StmtKind::If(_, a, b) => {
@@ -138,7 +138,7 @@ fn jumped_labels(stmts: &[Stmt], labels: &mut IndexSet<String>) {
     js::each_list(stmts, &mut |list| {
         for stmt in list {
             if let StmtKind::Break(Some(l)) | StmtKind::Continue(Some(l)) = &stmt.kind {
-                labels.insert(l.clone());
+                labels.insert(l.to_string());
             }
         }
     });

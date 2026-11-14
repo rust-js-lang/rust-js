@@ -312,7 +312,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let args = self.fresh(Role::Args);
                 let called = Expr::call(Expr { kind, ..f }, vec![Expr::spread(Expr::var(&args))]);
                 Expr::arrow(
-                    vec![js::Pattern::Rest(args)],
+                    vec![js::Pattern::Rest(args.into())],
                     vec![
                         StmtKind::Return(Some(
                             self.fmt_try(vec![StmtKind::Return(Some(called)).at(js::Span::NONE)]),

@@ -61,3 +61,19 @@ constant is folded now (216a72342), so no `BigInt.asIntN` was left in it
 and the mutation survived main's run; it asks `stock_orders.rs` and
 `byte_constants_large.rs`, whose wraps are held where they'd be read
 after what else they do, and is caught.
+
+## S1a-2 and S1b's first part (2026-11-14)
+
+Every other name the tree holds is a `Name` too: a pattern's names, its
+rest and its defaults; `Const`'s and `Let`'s; a catch's parameter; each
+label; a function's, a module constant's and a namespace's name. Then
+`Name` derefs to `str`, not a `String`, and nothing writes through it: a
+rename is `Name::respell`, and each walker that renames takes `&mut Name`.
+An `Option<Name>` reads as `.as_deref()` again, so no file grew. The
+corpus, the snapshots and the port are as they were.
+
+Two mutations no program reaches since M2 made each callback's name the
+item's own, `js-substitute-shadowed` and `mir-tidy-plain-cell-shadowed`,
+are each held by a unit test of a tree that binds a name twice, as a tree
+used again still does till S7. `held-builder-finished-first-lost` is
+#1776's, its branch unreachable since #1760.

@@ -95,7 +95,7 @@ export const mutations: Mutation[] = [
     breaks: "an `Err` arm that binds the error keeps `$try` and its `TAG`, not `catch (error)`",
     file: "src/prepare/catches.rs",
     find: "    let (value_name, error) = (bound(ok).map(|(name, _)| name), bound(err));\n",
-    replace: "    let (value_name, error) = (bound(ok).map(|(name, _)| name), None::<(String, bool)>);\n",
+    replace: "    let (value_name, error) = (bound(ok).map(|(name, _)| name), None::<(Name, bool)>);\n",
     tests: ["test/lowering-bindings.test.ts", "-t", "a match of a throwing call"],
   },
   {
@@ -368,7 +368,7 @@ export const mutations: Mutation[] = [
     breaks: "`Ok(Some(f)) => return f` keeps its pattern's alias of the `try`'s value, `const value = ..; if (value) { const f = value; return f; }`",
     file: "src/prepare/catches.rs",
     find: "            let name = match whole_binding(&ok, result, &call) {\n",
-    replace: "            let name = match None::<String> {\n",
+    replace: "            let name = match None::<Name> {\n",
     tests: ["test/corpus.test.ts", "-t", "^catch_unwind_(guard_returned|nested_ok).rs$"],
     snapshots: true,
   },

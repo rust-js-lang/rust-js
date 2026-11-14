@@ -243,7 +243,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if !named && let Some(held) = self.cell_box_value(&mut expr, state.body.local_decls[local].ty) {
                 let name = state.locals.names[local].clone();
                 let value = std::mem::replace(held, Expr::var(&name));
-                made.push(StmtKind::Const(name.clone(), value).at(js::Span::NONE));
+                made.push(StmtKind::Const(name.clone().into(), value).at(js::Span::NONE));
                 self.locals.mir.made.captured.insert(name.clone());
                 self.locals.mir.alike.insert(name.clone());
                 state.own_names.insert(name);
@@ -256,15 +256,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 for stmt in &made[before..] {
                     match &stmt.kind {
                         StmtKind::Const(name, _) => {
-                            self.locals.mir.made.captured.insert(name.clone());
-                            self.locals.mir.alike.insert(name.clone());
-                            state.own_names.insert(name.clone());
+                            self.locals.mir.made.captured.insert(name.to_string());
+                            self.locals.mir.alike.insert(name.to_string());
+                            state.own_names.insert(name.to_string());
                         }
                         // What a branch's element reads, set where its test
                         // holds: no `const`, but MIR's too.
                         StmtKind::Let(name, None) => {
-                            self.locals.mir.made.captured.insert(name.clone());
-                            state.own_names.insert(name.clone());
+                            self.locals.mir.made.captured.insert(name.to_string());
+                            state.own_names.insert(name.to_string());
                         }
                         _ => {}
                     }
@@ -275,7 +275,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let name = state.locals.names[local].clone();
             state.locals.declared[local] = true;
             note_marks(state, local, &expr);
-            made.push(StmtKind::Const(name, expr).at(js::Span::NONE));
+            made.push(StmtKind::Const(name.into(), expr).at(js::Span::NONE));
         }
         state.pending = kept;
         self.unwinding_to(state, unwind, made, out, Vec::new())

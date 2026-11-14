@@ -5,7 +5,7 @@
 
 use crate::collections::IndexSet;
 
-use crate::js::{self, Expr, ExprKind, Op, Stmt, StmtKind, UnaryOp};
+use crate::js::{self, Expr, ExprKind, Name, Op, Stmt, StmtKind, UnaryOp};
 use crate::lower::mir::hints::{Constant, Switch, SwitchArm, Written};
 use crate::lower::untagged::TypeofCase;
 
@@ -162,7 +162,7 @@ fn walk(
                     ..
                 }) = body.last_mut()
                 {
-                    let of_it = |l: &Option<String>| l.is_none() || l.as_deref() == label.as_deref();
+                    let of_it = |l: &Option<Name>| l.is_none() || l.as_deref() == label.as_deref();
                     for case in js::case_lists_mut(cases, default) {
                         made_continues_broken(case, &of_it, program);
                     }
@@ -173,7 +173,7 @@ fn walk(
                     {
                         relabeled(body, from, &readable);
                     }
-                    *label = Some(readable);
+                    *label = Some(readable.into());
                 }
             }
             _ => {}
@@ -189,7 +189,7 @@ fn walk(
 /// `continue` (`Written::continues`, `else_continues`), React DOM's
 /// diffHydratedGenericElement's `if (value === '' ..) { ..; continue; }`
 /// in its `case 'src':` (rd604).
-fn made_continues_broken(stmts: &mut [Stmt], of_it: &dyn Fn(&Option<String>) -> bool, written: &Written) {
+fn made_continues_broken(stmts: &mut [Stmt], of_it: &dyn Fn(&Option<Name>) -> bool, written: &Written) {
     for stmt in stmts.iter_mut() {
         let span = stmt.span;
         let StmtKind::If(_, then, otherwise) = &mut stmt.kind else {
@@ -304,7 +304,7 @@ fn named_value(list: &mut Vec<Stmt>, i: usize) {
         if let ExprKind::Var(v) = &mut e.kind
             && *v == temporary
         {
-            *v = name.clone().into();
+            *v = name.clone();
         }
     });
     list.remove(i + 1);

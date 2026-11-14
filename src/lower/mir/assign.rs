@@ -503,13 +503,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .map(|(_, (key, _))| key.text())
             .collect();
         let named = (keys.iter().zip(self.left_out(&keys)))
-            .map(|(key, unused)| (key.to_string(), js::Pattern::Name(unused), None))
+            .map(|(key, unused)| (key.to_string(), js::Pattern::Name(unused.into()), None))
             .collect();
         self.flush(state, out)?;
         state.locals.declared[local] = true;
         out.push(
             StmtKind::Destructure {
-                pattern: js::Pattern::Object(named, Some(state.locals.names[local].clone())),
+                pattern: js::Pattern::Object(named, Some(state.locals.names[local].clone().into())),
                 value,
                 mutable: false,
             }
@@ -721,7 +721,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     StmtKind::Const(_, made) if state.locals.declared[bound] => {
                         StmtKind::Assign(Expr::var(&name), made)
                     }
-                    StmtKind::Const(_, made) => StmtKind::Const(name.clone(), made),
+                    StmtKind::Const(_, made) => StmtKind::Const(name.clone().into(), made),
                     kind => kind,
                 };
                 tried = Expr::var(&name);
@@ -921,14 +921,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // One a pointer is taken to, a cell (ADR 0407).
             if state.facts.pointed().locals.contains(&local) {
                 let cell = Expr::object(vec![js::Prop::Field(js::HELD.into(), expr)]);
-                out.push(StmtKind::Const(name, cell).at(js_span));
+                out.push(StmtKind::Const(name.into(), cell).at(js_span));
                 return Ok(());
             }
             super::temporaries::note_marks(state, local, &expr);
             out.push(
                 match state.locals.borrowed[local] {
-                    true => StmtKind::Let(name, Some(expr)),
-                    false => StmtKind::Const(name, expr),
+                    true => StmtKind::Let(name.into(), Some(expr)),
+                    false => StmtKind::Const(name.into(), expr),
                 }
                 .at(js_span),
             );

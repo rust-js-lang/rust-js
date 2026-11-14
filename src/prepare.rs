@@ -232,7 +232,7 @@ fn tested_assignments(stmts: &mut Vec<Stmt>) {
 fn read_together(module: &mut js::Module) {
     let values: IndexSet<String> = (module.items.iter())
         .filter_map(|item| match item {
-            js::Item::Const(constant) => Some(constant.name.clone()),
+            js::Item::Const(constant) => Some(constant.name.to_string()),
             _ => None,
         })
         .chain(
@@ -316,7 +316,7 @@ fn read_together(module: &mut js::Module) {
                 fields: js::Fields {
                     names: run
                         .into_iter()
-                        .map(|(_, constant)| (constant.name, constant.span))
+                        .map(|(_, constant)| (constant.name.into_word(), constant.span))
                         .collect(),
                     declared: span,
                 },
@@ -496,7 +496,7 @@ fn left_out(body: &mut [Stmt]) {
         } = &mut body[i].kind
             && passes::applies(Pass::LeftOutFields)
         {
-            fields[k].1 = js::Pattern::Name("_".to_string());
+            fields[k].1 = js::Pattern::Name("_".into());
         }
     }
 }
@@ -517,7 +517,7 @@ fn left_out_params(params: &mut [js::Pattern], body: &[Stmt]) {
         if let js::Pattern::Object(fields, _) = &mut params[i]
             && passes::applies(Pass::LeftOutFields)
         {
-            fields[k].1 = js::Pattern::Name("_".to_string());
+            fields[k].1 = js::Pattern::Name("_".into());
         }
     }
 }
@@ -883,7 +883,7 @@ fn unread(body: &mut Vec<Stmt>) {
     js::each_block_mut(body, &mut |stmts| {
         stmts.retain(|s| {
             !matches!(&s.kind, StmtKind::Const(name, value)
-                if !read.contains(name) && value.reads_only_vars())
+                if !read.contains(name.as_str()) && value.reads_only_vars())
         });
     });
 }

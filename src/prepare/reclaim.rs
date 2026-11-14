@@ -7,7 +7,7 @@
 
 use crate::collections::{IndexMap, IndexSet};
 use crate::js::scopes;
-use crate::js::{self, Expr, ExprKind, Stmt, StmtKind};
+use crate::js::{self, Expr, ExprKind, Name, Stmt, StmtKind};
 
 pub(super) fn module(module: &mut js::Module) {
     aliased_imports(module);
@@ -54,11 +54,11 @@ pub(super) fn spelled(module: &mut js::Module) {
             });
             let to = in_scope.unwrap_or_else(|| crate::names::fresh_apart(&mut taken, base));
             taken.insert(to.clone());
-            spelled.insert(name, to);
+            spelled.insert(name.into_word(), to);
         }
         names_mut(item, true, &mut |name| {
-            if let Some(to) = spelled.get(name) {
-                name.clone_from(to);
+            if let Some(to) = spelled.get(name.as_str()) {
+                *name = to.into();
             }
         });
     }
@@ -129,7 +129,7 @@ fn aliased_imports(module: &mut js::Module) {
         }
         let rename = |name: &mut String| {
             if *name == local {
-                name.clone_from(&alias);
+                *name = alias.to_string();
             }
         };
         for package in &mut module.packages {
@@ -165,9 +165,17 @@ fn imports(module: &mut js::Module) {
         let Some(base) = reclaimable(&local, &mentioned).map(str::to_string) else {
             continue;
         };
+        // The one rule, `local` named `base`, of a name and of the text an
+        // import's local is still (`Name` in M3's later steps).
+        let to = |name: &str| (name == local).then_some(base.as_str());
         let mut rename = |name: &mut String| {
-            if *name == local {
-                name.clone_from(&base);
+            if let Some(to) = to(name) {
+                *name = to.to_string();
+            }
+        };
+        let mut respell = |name: &mut Name| {
+            if let Some(to) = to(name) {
+                name.respell(to);
             }
         };
         for package in &mut module.packages {
@@ -181,7 +189,7 @@ fn imports(module: &mut js::Module) {
         }
         module.default_export.iter_mut().for_each(&mut rename);
         for item in &mut module.items {
-            names_mut(item, true, &mut rename);
+            names_mut(item, true, &mut respell);
         }
         mentioned.insert(base);
     }
@@ -193,8 +201,8 @@ fn imports(module: &mut js::Module) {
 fn own_items(module: &mut js::Module) {
     let own: Vec<String> = (module.items.iter())
         .filter_map(|item| match item {
-            js::Item::Function(function) if !function.export => Some(function.name.clone()),
-            js::Item::Const(constant) if !constant.export => Some(constant.name.clone()),
+            js::Item::Function(function) if !function.export => Some(function.name.to_string()),
+            js::Item::Const(constant) if !constant.export => Some(constant.name.to_string()),
             _ => None,
         })
         .collect();
@@ -203,9 +211,17 @@ fn own_items(module: &mut js::Module) {
         let Some(base) = reclaimable(&local, &mentioned).map(str::to_string) else {
             continue;
         };
+        // The one rule, `local` named `base`, of a name and of the text an
+        // import's local is still (`Name` in M3's later steps).
+        let to = |name: &str| (name == local).then_some(base.as_str());
         let mut rename = |name: &mut String| {
-            if *name == local {
-                name.clone_from(&base);
+            if let Some(to) = to(name) {
+                *name = to.to_string();
+            }
+        };
+        let mut respell = |name: &mut Name| {
+            if let Some(to) = to(name) {
+                name.respell(to);
             }
         };
         module.default_export.iter_mut().for_each(&mut rename);
@@ -214,9 +230,9 @@ fn own_items(module: &mut js::Module) {
         module.aliases.iter_mut().map(|(local, _)| local).for_each(&mut rename);
         for item in &mut module.items {
             if let js::Item::Const(constant) = item {
-                rename(&mut constant.name);
+                respell(&mut constant.name);
             }
-            names_mut(item, true, &mut rename);
+            names_mut(item, true, &mut respell);
         }
         mentioned.insert(base);
     }
@@ -240,7 +256,7 @@ fn own_items(module: &mut js::Module) {
     }
     module
         .aliases
-        .retain(|alias| !(own_name(alias) && folded.contains(&alias.0)));
+        .retain(|alias| !(own_name(alias) && folded.contains(alias.0.as_str())));
 }
 
 /// Each local of `item`'s, of a name where each read is still of what it
@@ -279,12 +295,12 @@ fn locals(item: &mut js::Item) {
                 now.clone_from(&to);
             }
         }
-        renamed.insert(local, to);
+        renamed.insert(local.into_word(), to);
     }
     if !renamed.is_empty() {
         names_mut(item, true, &mut |name| {
-            if let Some(to) = renamed.get(name) {
-                name.clone_from(to);
+            if let Some(to) = renamed.get(name.as_str()) {
+                *name = to.into();
             }
         });
     }
@@ -317,7 +333,7 @@ pub(super) fn mentions(module: &mut js::Module) -> IndexSet<String> {
             names.insert(name.to_string());
         }
         names_mut(item, true, &mut |name| {
-            names.insert(name.clone());
+            names.insert(name.to_string());
         });
     }
     for package in &module.packages {
@@ -336,8 +352,8 @@ pub(super) fn mentions(module: &mut js::Module) -> IndexSet<String> {
 
 /// The names `item` declares, anywhere in it, and with `reads` those it
 /// reads too, its own name a function's.
-pub(super) fn names_mut(item: &mut js::Item, reads: bool, f: &mut dyn FnMut(&mut String)) {
-    let function = |function: &mut js::Function, f: &mut dyn FnMut(&mut String)| {
+pub(super) fn names_mut(item: &mut js::Item, reads: bool, f: &mut dyn FnMut(&mut Name)) {
+    let function = |function: &mut js::Function, f: &mut dyn FnMut(&mut Name)| {
         if reads {
             f(&mut function.name);
         }
@@ -359,10 +375,10 @@ pub(super) fn names_mut(item: &mut js::Item, reads: bool, f: &mut dyn FnMut(&mut
 /// An expression's names: a variable or a component tag it reads, with
 /// `reads`, `String` of a template's conversion; a closure's parameters,
 /// and what its body declares.
-fn expr_mut(e: &mut Expr, reads: bool, f: &mut dyn FnMut(&mut String)) {
+fn expr_mut(e: &mut Expr, reads: bool, f: &mut dyn FnMut(&mut Name)) {
     match &mut e.kind {
         ExprKind::Var(name) if reads => f(name),
-        ExprKind::Stringed(_) if reads => f(&mut "String".to_string()),
+        ExprKind::Stringed(_) if reads => f(&mut "String".into()),
         ExprKind::Arrow(params, body) | ExprKind::AsyncArrow(params, body) => {
             params.iter_mut().for_each(|p| pattern_mut(p, f));
             declared_mut(body, f);
@@ -378,7 +394,7 @@ fn expr_mut(e: &mut Expr, reads: bool, f: &mut dyn FnMut(&mut String)) {
 
 /// What `stmts` declare, in each of their blocks and the functions written
 /// in them; not in their closures, which their expressions hold.
-fn declared_mut(stmts: &mut [Stmt], f: &mut dyn FnMut(&mut String)) {
+fn declared_mut(stmts: &mut [Stmt], f: &mut dyn FnMut(&mut Name)) {
     for stmt in stmts {
         match &mut stmt.kind {
             StmtKind::Const(name, _) | StmtKind::Let(name, _) => f(name),
@@ -432,7 +448,7 @@ fn declared_mut(stmts: &mut [Stmt], f: &mut dyn FnMut(&mut String)) {
     }
 }
 
-fn pattern_mut(pattern: &mut js::Pattern, f: &mut dyn FnMut(&mut String)) {
+fn pattern_mut(pattern: &mut js::Pattern, f: &mut dyn FnMut(&mut Name)) {
     pattern.names_mut().into_iter().for_each(f);
 }
 

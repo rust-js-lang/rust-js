@@ -401,7 +401,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let mut dropped = Vec::new();
                 self.drop_value(fallback.clone(), tys[1], span, &mut dropped)?;
                 let js_span = self.js_span(span);
-                out.push(StmtKind::Let(result.clone(), None).at(js_span));
+                out.push(StmtKind::Let(result.clone().into(), None).at(js_span));
                 out.push(
                     StmtKind::If(
                         some,
@@ -419,7 +419,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // `e?.[1] ?? d`, as a `match` of it is (ADR 0309).
                 let option = match spilled_at {
                     Some(at) if out.len() == at + 1 => match &out[at].kind {
-                        StmtKind::Const(name, option) => Some((name.clone(), option.clone(), true)),
+                        StmtKind::Const(name, option) => Some((name.to_string(), option.clone(), true)),
                         _ => None,
                     },
                     Some(_) => None,
@@ -512,7 +512,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.drop_value(value, inner, span, &mut drop)?;
                 let unkept = Expr::bin(Op::Eq, Expr::var(&kept), Expr::js_undefined());
                 let dropped = vec![StmtKind::If(Expr::bin(Op::And, some, unkept), drop, None).at(js_span)];
-                out.push(StmtKind::Let(kept.clone(), None).at(js_span));
+                out.push(StmtKind::Let(kept.clone().into(), None).at(js_span));
                 out.extend(dropped_after(body, dropped, js_span, &mut self.catch_names()));
                 Expr::var(&kept)
             }
@@ -1161,7 +1161,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out.push(
             StmtKind::For {
                 label: None,
-                name: i.clone(),
+                name: i.clone().into(),
                 start: Expr::int(0),
                 test: Expr::bin(Op::Lt, Expr::var(&i), Expr::member(list, "length")),
                 step: js::Step::Up,

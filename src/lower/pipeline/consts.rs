@@ -164,7 +164,7 @@ pub(super) fn lower_consts<'b, 'tcx>(
         };
         let info = &fns[&named.to_def_id()];
         let constant = js::Const {
-            name: info.name.clone(),
+            name: info.name.clone().into(),
             value,
             mutable: false,
             fields: js::Fields::default(),
@@ -222,7 +222,7 @@ pub(super) fn place_consts(
         let info = &fns[&id];
         let adt = tcx.adt_def(tcx.parent(id));
         const_items.entry(info.module).or_default().push(js::Const {
-            name: info.name.clone(),
+            name: info.name.clone().into(),
             value: crate::lower::bindings::variant_tag(tcx, adt.variant_with_id(id)),
             mutable: false,
             fields: js::Fields::default(),

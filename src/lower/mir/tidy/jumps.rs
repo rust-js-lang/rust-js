@@ -11,6 +11,7 @@ mod tried;
 pub(super) use self::{branch_ends::*, continues::*, kept::*, labels::*, tails::*, tried::*};
 
 use super::*;
+use crate::js::Name;
 use crate::js::result;
 
 /// A loop's body that ends `if (c) { a; continue l; } break;`, `l` the loop

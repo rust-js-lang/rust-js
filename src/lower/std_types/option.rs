@@ -959,7 +959,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     StmtKind::Assign(Expr::var(&taken), place.clone()).at(js_span),
                     StmtKind::Assign(place, Expr::js_undefined()).at(js_span),
                 ];
-                out.push(StmtKind::Let(taken.clone(), None).at(js_span));
+                out.push(StmtKind::Let(taken.clone().into(), None).at(js_span));
                 out.push(StmtKind::If(Expr::bin(Op::And, present, holds), take, None).at(js_span));
                 return Ok(Expr::var(&taken));
             }

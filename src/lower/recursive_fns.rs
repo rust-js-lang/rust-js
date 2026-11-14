@@ -94,7 +94,7 @@ pub(super) struct WrittenBefore {
 impl WrittenBefore {
     /// Its `const`s' names, each a dictionary's.
     pub(super) fn const_names(&self) -> impl Iterator<Item = String> + '_ {
-        self.consts.iter().map(|c| c.name.clone())
+        self.consts.iter().map(|c| c.name.to_string())
     }
 }
 
@@ -409,8 +409,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         body.push(StmtKind::Return(Some(value?)).at(js::Span::NONE));
         merge(&mut self.dependencies.borrow_mut(), &own, self.item);
         let function = js::Function {
-            name: name.clone(),
-            params: params.into_iter().map(js::Pattern::Name).collect(),
+            name: name.clone().into(),
+            params: params.into_iter().map(js::Pattern::from).collect(),
             body,
             export: false,
             is_async: false,
@@ -447,7 +447,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.recursive.0.pop();
         body.push(StmtKind::Return(Some(value?)).at(js::Span::NONE));
         let f = Expr::arrow(params.into_iter().map(Into::into).collect(), body);
-        out.push(StmtKind::Const(name.clone(), f).at(js::Span::NONE));
+        out.push(StmtKind::Const(name.clone().into(), f).at(js::Span::NONE));
         Ok(name)
     }
 }

@@ -375,7 +375,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 None => place.clone(),
             };
             let boxed = crate::lower::mut_refs::boxed(held);
-            out.push(StmtKind::Const(name.clone(), boxed).at(self.js_span(span)));
+            out.push(StmtKind::Const(name.clone().into(), boxed).at(self.js_span(span)));
             if fixed_place(&place) {
                 let back = Expr::held(Expr::var(&name));
                 let back = match inner {

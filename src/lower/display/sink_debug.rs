@@ -257,7 +257,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .map(|w| w.written_into(&Expr::var(&sink), js::Span::NONE))
             .collect();
         Ok(Some(Expr::arrow(
-            vec![js::Pattern::Name(sink), js::Pattern::Name(value)],
+            vec![js::Pattern::Name(sink.into()), js::Pattern::Name(value.into())],
             body,
         )))
     }

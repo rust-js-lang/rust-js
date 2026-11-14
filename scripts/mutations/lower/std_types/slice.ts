@@ -609,8 +609,8 @@ export const mutations: Mutation[] = [
     name: "result-clone-from-old-shared",
     breaks: "a `Result` written over through an in-place cell drops what's now there, not what it held (#927)",
     file: "src/lower/std_types/slice.rs",
-    find: "        let held = self.moved_out(to.clone(), ty);\n        replaced.push(StmtKind::Const(old.clone(), held).at(js::Span::NONE));\n        replaced.push(StmtKind::Assign(to.clone(), clone).at(js::Span::NONE));\n        self.drop_value(Expr::var(&old), ty, span, &mut replaced)?;\n        let mut otherwise",
-    replace: "        replaced.push(StmtKind::Const(old.clone(), to.clone()).at(js::Span::NONE));\n        replaced.push(StmtKind::Assign(to.clone(), clone).at(js::Span::NONE));\n        self.drop_value(Expr::var(&old), ty, span, &mut replaced)?;\n        let mut otherwise",
+    find: "        let held = self.moved_out(to.clone(), ty);\n        replaced.push(StmtKind::Const(old.clone().into(), held).at(js::Span::NONE));\n        replaced.push(StmtKind::Assign(to.clone(), clone).at(js::Span::NONE));\n        self.drop_value(Expr::var(&old), ty, span, &mut replaced)?;\n        let mut otherwise",
+    replace: "        replaced.push(StmtKind::Const(old.clone().into(), to.clone()).at(js::Span::NONE));\n        replaced.push(StmtKind::Assign(to.clone(), clone).at(js::Span::NONE));\n        self.drop_value(Expr::var(&old), ty, span, &mut replaced)?;\n        let mut otherwise",
     tests: ["test/corpus.test.ts", "-t", "^clone_from_of_a_result_given_to_generic_code.rs$"],
   },
   {

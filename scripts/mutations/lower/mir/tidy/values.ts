@@ -17,8 +17,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a cell given whole, `bump(c)`, is a variable too, and what it's given reads `undefined`",
     file: "src/lower/mir/tidy/values.rs",
-    find: "    let plain: IndexSet<&String> = (cells.iter()).filter(|c| reads.get(*c) == kept.get(*c)).collect();\n",
-    replace: "    let plain: IndexSet<&String> = cells.iter().collect();\n",
+    find: "    let plain: IndexSet<&str> = (cells.iter().map(String::as_str))\n        .filter(|c| reads.get(*c) == kept.get(*c))\n        .collect();\n",
+    replace: "    let plain: IndexSet<&str> = cells.iter().map(String::as_str).collect();\n",
     tests: [
       "test/lowering-cells.test.ts",
       "-t",
@@ -115,11 +115,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/values.rs",
     find: "    cells.retain(|c| bound.get(c).copied().unwrap_or(0) <= 1);\n",
     replace: "",
-    tests: [
-      "test/lowering-cells.test.ts",
-      "-t",
-      "callback's parameter shadows",
-    ],
+    unitTests: "lower::mir::tidy::values::tests::a_cell_a_callback_shadows_stays_a_cell",
   },
   {
     name: "lazy-flatmap-stepped",

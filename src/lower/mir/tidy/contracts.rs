@@ -260,13 +260,13 @@ mod tests {
     fn a_jump_lands_where_it_may() {
         let loop_ = |label: Option<&str>, body| {
             stmt(StmtKind::While {
-                label: label.map(String::from),
+                label: label.map(Into::into),
                 cond: Expr::bool(true),
                 body,
             })
         };
-        let break_ = |label: Option<&str>| stmt(StmtKind::Break(label.map(String::from)));
-        let continue_ = |label: Option<&str>| stmt(StmtKind::Continue(label.map(String::from)));
+        let break_ = |label: Option<&str>| stmt(StmtKind::Break(label.map(Into::into)));
+        let continue_ = |label: Option<&str>| stmt(StmtKind::Continue(label.map(Into::into)));
         assert!(holds(&JUMPS_LAND, &[loop_(None, vec![break_(None), continue_(None)])]));
         assert!(holds(
             &JUMPS_LAND,

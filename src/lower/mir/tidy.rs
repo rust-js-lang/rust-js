@@ -255,19 +255,23 @@ fn unread_result(body: &mut Vec<Stmt>, result: &str) {
 /// `undefined`. A test of one read there alone is read for its truth:
 /// `!!a || b`'s, `a || b`.
 fn falsy_values(body: &mut Vec<Stmt>, falsy: &IndexSet<String>, tested: &IndexSet<String>) {
-    let falsy: IndexSet<&String> = falsy.iter().filter(|name| js::mentions_in(body, name) == 1).collect();
-    let tested: IndexSet<&String> = tested.iter().filter(|name| js::mentions_in(body, name) == 1).collect();
+    let falsy: IndexSet<&str> = (falsy.iter().map(String::as_str))
+        .filter(|n| js::mentions_in(body, n) == 1)
+        .collect();
+    let tested: IndexSet<&str> = (tested.iter().map(String::as_str))
+        .filter(|n| js::mentions_in(body, n) == 1)
+        .collect();
     js::statement_lists(body, &mut |stmts| {
         for stmt in stmts.iter_mut() {
             if let StmtKind::Const(name, value) = &mut stmt.kind
-                && falsy.contains(name)
+                && falsy.contains(name.as_str())
                 && let ExprKind::Cond(test, then, none) = &value.kind
                 && matches!(none.kind, ExprKind::Undefined)
             {
                 *value = Expr::bin(Op::And, test.tested(), (**then).clone());
             }
             if let StmtKind::Const(name, value) = &mut stmt.kind
-                && tested.contains(name)
+                && tested.contains(name.as_str())
             {
                 *value = value.tested();
             }
@@ -551,7 +555,7 @@ fn read_past_calls(e: &Expr, set: &IndexSet<String>, plain: &IndexSet<String>) -
                 && let [given] = args.as_slice() =>
         {
             let mut plain = plain.clone();
-            plain.swap_remove(param);
+            plain.swap_remove(param.as_str());
             past(given) && read_past_calls(result, set, &plain)
         }
         _ => e.is_made_of_constants(),
@@ -611,7 +615,7 @@ fn changing(body: &mut Vec<Stmt>) -> IndexSet<String> {
     js::each_block_mut(body, &mut |stmts| {
         for stmt in stmts.iter() {
             if let StmtKind::Let(name, _) = &stmt.kind {
-                changing.insert(name.clone());
+                changing.insert(name.to_string());
             }
         }
     });
@@ -857,12 +861,12 @@ mod tests {
         use super::decisions::default_values;
         let none = js::Span::NONE;
         let set = |v: Expr| StmtKind::Assign(Expr::var("n"), v).at(none);
-        let leave = || StmtKind::Break(Some("bb7".to_string())).at(none);
+        let leave = || StmtKind::Break(Some("bb7".into())).at(none);
         let branch =
             |test: &str, v: f64| StmtKind::If(Expr::var(test), vec![set(Expr::num(v)), leave()], None).at(none);
         let block = |mut body: Vec<Stmt>| {
             body.push(set(Expr::var("v")));
-            vec![StmtKind::Labeled("bb7".to_string(), body).at(none)]
+            vec![StmtKind::Labeled("bb7".into(), body).at(none)]
         };
         let mut copied = block(vec![branch("a", 1.0)]);
         default_values(&mut copied);
@@ -1157,8 +1161,8 @@ mod tests {
             ]
         };
         let mut body = vec![
-            StmtKind::Let(t5.clone(), None).at(js::Span::NONE),
-            StmtKind::Let(t6.clone(), None).at(js::Span::NONE),
+            StmtKind::Let(t5.clone().into(), None).at(js::Span::NONE),
+            StmtKind::Let(t6.clone().into(), None).at(js::Span::NONE),
         ];
         body.extend(pair("a", "f"));
         body.extend(pair("b", "g"));

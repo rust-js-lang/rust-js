@@ -64,7 +64,7 @@ pub(in crate::lower::mir::tidy) fn ending(stmts: &mut Vec<Stmt>, label: &str) {
         js::statement_lists(&mut body, &mut |stmts| {
             for stmt in stmts {
                 if matches!(&stmt.kind, StmtKind::Break(Some(l)) if *l == inner) {
-                    stmt.kind = StmtKind::Break(Some(label.to_string()));
+                    stmt.kind = StmtKind::Break(Some(label.into()));
                 }
             }
         });

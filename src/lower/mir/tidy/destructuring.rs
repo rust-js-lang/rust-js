@@ -21,7 +21,7 @@ pub(super) fn destructured(
         // statement makes, the statements after it; or a variable this one
         // reads a part of, here.
         let (name, first) = match &stmts[i].kind {
-            StmtKind::Const(name, _) if is_temporary(name) => (name.clone(), i + 1),
+            StmtKind::Const(name, _) if is_temporary(name) => (name.to_string(), i + 1),
             StmtKind::Const(_, value) | StmtKind::Let(_, Some(value))
                 if let Some(v) = part_of(value)
                     && !is_temporary(v) =>
@@ -80,8 +80,8 @@ pub(super) fn destructured(
                 .map(|(part, bound, mutable, _)| {
                     let item = items[*part.as_ref().expect("indexed")].clone();
                     match mutable {
-                        true => StmtKind::Let(bound.clone(), Some(item)),
-                        false => StmtKind::Const(bound.clone(), item),
+                        true => StmtKind::Let(bound.into(), Some(item)),
+                        false => StmtKind::Const(bound.into(), item),
                     }
                     .at(span)
                 })
@@ -171,7 +171,7 @@ pub(super) fn assigned_parts(stmts: &mut Vec<Stmt>) {
         };
         let parts: Option<Vec<String>> = (items.iter())
             .map(|item| match item {
-                Some(js::Pattern::Name(name)) if is_temporary(name) => Some(name.clone()),
+                Some(js::Pattern::Name(name)) if is_temporary(name) => Some(name.to_string()),
                 _ => None,
             })
             .collect();
@@ -301,7 +301,7 @@ pub(super) fn parts(stmts: &[Stmt], name: &str) -> Vec<Part> {
         if parts.iter().any(|(p, ..)| *p == part) {
             break;
         }
-        parts.push((part, bound.clone(), mutable, default));
+        parts.push((part, bound.to_string(), mutable, default));
     }
     parts
 }
@@ -348,7 +348,7 @@ pub(super) fn pattern_of(parts: &[Part]) -> Option<js::Pattern> {
         return Some(js::Pattern::names_array(items));
     }
     let keyed: Option<Vec<_>> = (parts.iter())
-        .map(|(part, bound, _, default)| Some((part.clone().err()?, js::Pattern::Name(bound.clone()), default.clone())))
+        .map(|(part, bound, _, default)| Some((part.clone().err()?, js::Pattern::Name(bound.into()), default.clone())))
         .collect();
     Some(js::Pattern::Object(keyed?, None))
 }
@@ -488,7 +488,7 @@ pub(super) fn nested_parts(stmts: &[Stmt], name: &str) -> Vec<(Vec<Step>, String
         let Some((steps, default)) = part_read(value, name) else {
             break;
         };
-        parts.push((steps, bound.clone(), default));
+        parts.push((steps, bound.to_string(), default));
     }
     parts
 }
@@ -508,7 +508,7 @@ pub(super) fn nested_pattern(parts: &[(&[Step], &str, Option<&Expr>)]) -> Option
         }
     }
     let part = |group: &Group| match group.as_slice() {
-        [([], bound, default)] => Some((js::Pattern::Name(bound.to_string()), default.cloned())),
+        [([], bound, default)] => Some((js::Pattern::Name((*bound).into()), default.cloned())),
         _ if group.iter().all(|(rest, ..)| !rest.is_empty()) => Some((nested_pattern(group)?, None)),
         _ => None,
     };
@@ -560,7 +560,7 @@ pub(super) fn tuple_reads(
         let found = match &stmts[i].kind {
             StmtKind::Const(t, value)
                 if let ExprKind::Array(items) = &value.kind
-                    && (is_temporary(t) || (captured.contains(t) && items.iter().all(inert))) =>
+                    && (is_temporary(t) || (captured.contains(t.as_str()) && items.iter().all(inert))) =>
             {
                 Some((t.clone(), items.clone()))
             }
@@ -581,8 +581,8 @@ pub(super) fn tuple_reads(
         js::each_expr_mut(&mut stmts[i + 1..], &mut |e| indexed += usize::from(item(e).is_some()));
         // Read only, not set through, `children[0] = ..`.
         let writes = js::Writes::of(&stmts[i + 1..]);
-        if writes.replaced.contains(&t)
-            || writes.changed.contains(&t)
+        if writes.replaced.contains(t.as_str())
+            || writes.changed.contains(t.as_str())
             || indexed == 0
             || indexed != js::mentions_in(&stmts[i + 1..], &t)
         {
@@ -634,7 +634,7 @@ pub(super) fn tuple_reads(
         });
         while let Some((_, of)) = aliased
             .iter()
-            .find(|(alias, of)| parts_set.contains(alias) && !parts_set.contains(of))
+            .find(|(alias, of)| parts_set.contains(alias.as_str()) && !parts_set.contains(of))
         {
             parts_set.insert(of.clone());
         }
@@ -681,7 +681,7 @@ pub(super) fn tuple_reads(
         for (k, item) in items.iter_mut().enumerate() {
             if last.is_some_and(|last| k < last && !fixed(item) || k == last) {
                 let name = crate::names::given_apart(&t, k);
-                held.push(StmtKind::Const(name.clone(), std::mem::replace(item, Expr::var(&name))).at(span));
+                held.push(StmtKind::Const(name.clone().into(), std::mem::replace(item, Expr::var(&name))).at(span));
             }
         }
         js::each_expr_mut(&mut stmts[i + 1..], &mut |e| {
@@ -836,7 +836,7 @@ pub(super) fn conditional_tuples(stmts: &mut Vec<Stmt>) {
         } = &stmts[i].kind
             && let Some(names) = (items.iter())
                 .map(|item| match item {
-                    Some(js::Pattern::Name(name)) => Some(name.clone()),
+                    Some(js::Pattern::Name(name)) => Some(name.to_string()),
                     _ => None,
                 })
                 .collect::<Option<Vec<String>>>()
@@ -845,7 +845,7 @@ pub(super) fn conditional_tuples(stmts: &mut Vec<Stmt>) {
         {
             let span = stmts[i].span;
             let mut made: Vec<Stmt> = (names.iter())
-                .map(|name| StmtKind::Let(name.clone(), None).at(span))
+                .map(|name| StmtKind::Let(name.into(), None).at(span))
                 .collect();
             made.extend(assigned);
             let count = made.len();
@@ -887,7 +887,7 @@ fn assigned_tuple(stmts: &mut Vec<Stmt>, i: usize) -> Option<usize> {
                     && matches!(&of.kind, ExprKind::Var(v) if *v == t)
                     && at.as_int() == i128::try_from(k).ok() =>
             {
-                Some(name.clone())
+                Some(name.to_string())
             }
             _ => None,
         })
@@ -906,7 +906,7 @@ fn assigned_tuple(stmts: &mut Vec<Stmt>, i: usize) -> Option<usize> {
     }
     let span = stmts[i].span;
     let mut made: Vec<Stmt> = (names.iter())
-        .map(|name| StmtKind::Let(name.clone(), None).at(span))
+        .map(|name| StmtKind::Let(name.into(), None).at(span))
         .collect();
     made.push(branches);
     let count = made.len();

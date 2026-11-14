@@ -67,7 +67,7 @@ export const mutations: Mutation[] = [
     breaks:
       "an `on_load!` body from MIR returns at its module's top, which JS has no `return` at",
     file: "src/lower/mir.rs",
-    find: "                        stmt.kind = StmtKind::Break(Some(label.clone()));\n",
+    find: "                        stmt.kind = StmtKind::Break(Some(label.clone().into()));\n",
     replace: "",
     tests: ["test/lowering-bindings.test.ts", "-t", "on_load body's loop"],
   },
@@ -448,7 +448,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a drop function whose drop tidy took out is declared at its function's top anyway, `list`'s `dropList` (#306)",
     file: "src/lower/mir.rs",
-    find: "        .filter(|def| name(def).is_none_or(|n| read.contains(&n)))\n",
+    find: "        .filter(|def| name(def).is_none_or(|n| read.contains(n.as_str())))\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^drop_functions.rs$"],
     snapshots: true,

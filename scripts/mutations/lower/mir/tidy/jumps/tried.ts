@@ -137,9 +137,9 @@ export const mutations: Mutation[] = [
     breaks:
       "`for (i, (a, b)) in v.iter_mut().enumerate()`'s second read of the element overwrites the first's name in the loop's head, so the body reads a name nothing declares",
     file: "src/lower/mir/tidy/jumps/tried.rs",
-    find: "            Some((_, first, false)) if !mutable => aliases.push((bound.clone(), first.clone())),\n",
+    find: "            Some((_, first, false)) if !mutable => aliases.push((bound.to_string(), first.clone())),\n",
     replace:
-      "            Some((_, _, false)) if !mutable => parts.push((part, bound.clone(), mutable)),\n",
+      "            Some((_, _, false)) if !mutable => parts.push((part, bound.to_string(), mutable)),\n",
     tests: ["test/corpus.test.ts", "-t", "^enumerate_mut_patterns.rs$"],
   },
   {

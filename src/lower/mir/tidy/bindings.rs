@@ -19,7 +19,7 @@ pub(super) fn unread_made(stmts: &mut Vec<Stmt>, mentions: &IndexMap<String, usi
     let mut i = 0;
     while i < stmts.len() {
         if let StmtKind::Const(name, value) = &stmts[i].kind
-            && !mentions.contains_key(name)
+            && !mentions.contains_key(name.as_str())
             && !value.has_effects()
             && let read = match &value.kind {
                 ExprKind::Call(callee, args) if callee.helper_name() == Some("$apart") && args.len() == 1 => &args[0],
@@ -32,7 +32,7 @@ pub(super) fn unread_made(stmts: &mut Vec<Stmt>, mentions: &IndexMap<String, usi
             continue;
         }
         if let StmtKind::Const(name, value) = &stmts[i].kind
-            && !mentions.contains_key(name)
+            && !mentions.contains_key(name.as_str())
             && let ExprKind::Array(parts) = &value.kind
             // A spread's effect is the stepping it does, which only an
             // array or a call's arguments write: the array whole (#256).
@@ -49,7 +49,7 @@ pub(super) fn unread_made(stmts: &mut Vec<Stmt>, mentions: &IndexMap<String, usi
             continue;
         }
         if let StmtKind::Const(name, value) = &stmts[i].kind
-            && !mentions.contains_key(name)
+            && !mentions.contains_key(name.as_str())
             && matches!(value.kind, ExprKind::Call(..))
         {
             stmts[i].kind = StmtKind::Expr(value.clone());
@@ -119,7 +119,7 @@ pub(in crate::lower::mir) fn unsuffixed_params(body: &mut [Stmt], module: &Index
                         *v = base.into();
                     }
                 });
-                *params[i].names_mut().swap_remove(k) = base.to_string();
+                *params[i].names_mut().swap_remove(k) = base.into();
             }
         }
     });
@@ -167,7 +167,7 @@ pub(super) fn alias_variables(body: &mut Vec<Stmt>, fixed: &IndexSet<String>) {
         let mut i = 0;
         while i < stmts.len() {
             if let StmtKind::Const(alias, value) = &stmts[i].kind
-                && (is_temporary(alias) || fixed.contains(alias))
+                && (is_temporary(alias) || fixed.contains(alias.as_str()))
                 && let ExprKind::Var(of) = &value.kind
             {
                 let last = (i + 1..stmts.len())
@@ -177,7 +177,7 @@ pub(super) fn alias_variables(body: &mut Vec<Stmt>, fixed: &IndexSet<String>) {
                 // set only past each read on every way, `const _15 =
                 // newLast; if (_15 == null) { .. } else { _15.next = clone;
                 // newLast = clone; }`.
-                let deferred = set.contains(of.as_str()) && handles_read(&stmts[i + 1..]).contains(alias);
+                let deferred = set.contains(of.as_str()) && handles_read(&stmts[i + 1..]).contains(alias.as_str());
                 let kept = deferred
                     || last.is_some_and(|last| {
                         let reads = &stmts[i + 1..=last];
@@ -318,7 +318,7 @@ pub(super) fn plain_reads(stmts: &mut Vec<Stmt>, plain: &IndexSet<String>, captu
     let mut i = 0;
     while i < stmts.len() {
         let read = match &stmts[i].kind {
-            StmtKind::Const(name, value) if is_temporary(name) || captured.contains(name) => {
+            StmtKind::Const(name, value) if is_temporary(name) || captured.contains(name.as_str()) => {
                 (value.reads_same() && super::plain_field(value, plain)).then(|| (name.clone(), value.clone()))
             }
             _ => None,
@@ -370,8 +370,8 @@ pub(super) fn named_temporaries(body: &mut Vec<Stmt>) {
             // guard's, `let _8; try { _8 = descriptorOf(name); } catch ..`,
             // and never again: as a `const` from there on (#444).
             let a = match &stmts[i].kind {
-                StmtKind::Const(a, _) => a.clone(),
-                StmtKind::Let(a, None) if set_once_in_try(&stmts[i + 1..], a) => a.clone(),
+                StmtKind::Const(a, _) => a.to_string(),
+                StmtKind::Let(a, None) if set_once_in_try(&stmts[i + 1..], a) => a.to_string(),
                 // Or the one name a `const` takes apart, a cell's value read
                 // while its guard is, `const { value: _4 } = $borrow(cell)`,
                 // `let Some(chunk) = cell.borrow().clone() else ..`'s (#452).
@@ -418,8 +418,8 @@ pub(super) fn named_temporaries(body: &mut Vec<Stmt>) {
                 dropping(stmts, &a, name);
             }
             match &mut stmts[i].kind {
-                StmtKind::Const(name, _) | StmtKind::Let(name, _) => *name = b.clone(),
-                StmtKind::Destructure { pattern, .. } => pattern.each_name_mut(&mut |name| *name = b.clone()),
+                StmtKind::Const(name, _) | StmtKind::Let(name, _) => *name = b.clone().into(),
+                StmtKind::Destructure { pattern, .. } => pattern.each_name_mut(&mut |name| *name = b.clone().into()),
                 _ => unreachable!("matched"),
             }
             // Not a closure's own of a name, its parameter `(_2) => _2[0]`
@@ -463,7 +463,7 @@ pub(super) fn taking(stmts: &[Stmt], a: &str, found: &mut Vec<(String, usize)>) 
     for (j, stmt) in stmts.iter().enumerate() {
         match &stmt.kind {
             StmtKind::Const(b, value) if !is_temporary(b) && matches!(&value.kind, ExprKind::Var(v) if v == a) => {
-                found.push((b.clone(), js::mentions_in(&stmts[j + 1..], b)));
+                found.push((b.to_string(), js::mentions_in(&stmts[j + 1..], b)));
             }
             StmtKind::If(_, then, otherwise) => {
                 taking(then, a, found);
@@ -525,7 +525,7 @@ pub(super) fn guarded_lets(stmts: &mut Vec<Stmt>, captured: &IndexSet<String>) {
                     },
                 ] = then.as_slice()
                     && matches!(&target.kind, ExprKind::Var(v) if v == x)
-                    && (is_temporary(x) || captured.contains(x))
+                    && (is_temporary(x) || captured.contains(x.as_str()))
                     && js::mentions_in(&stmts[i + 2..], x) == 1 =>
             {
                 Some((x.clone(), Expr::cond(test.clone(), value.clone(), Expr::js_undefined())))
@@ -638,14 +638,14 @@ pub(super) fn aliases(
                 // A variable the program names, of one MIR's lowering made
                 // for a prop, `const code = activeCode`, or a temporary,
                 // `const _5 = props`: the variable, read where that was.
-                let named = given.contains(a.as_str()) && !given.contains(&b);
-                if !is_temporary(a) && (captured.contains(&b) || is_temporary(&b) || named) {
+                let named = given.contains(a.as_str()) && !given.contains(b.as_str());
+                if !is_temporary(a) && (captured.contains(b.as_str()) || is_temporary(&b) || named) {
                     let a = a.clone();
                     js::each_expr_mut(&mut stmts[j..], &mut |e| {
                         if let ExprKind::Var(v) = &mut e.kind
                             && *v == b
                         {
-                            *v = js::Name::from(&a);
+                            *v = a.clone();
                         }
                     });
                 } else {
@@ -702,7 +702,7 @@ fn clones_read_as(body: &mut Vec<Stmt>, fixed: &IndexSet<String>, clones: &Index
             if let StmtKind::Const(b, value) = &stmts[i].kind
                 && let ExprKind::Var(a) = &value.kind
                 && fixed.contains(a.as_str())
-                && clones.contains(b)
+                && clones.contains(b.as_str())
                 && !rebinds(&stmts[i + 1..], b)
             {
                 let (a, b) = (a.clone(), b.clone());
@@ -729,9 +729,9 @@ fn cloned_from(body: &mut Vec<Stmt>, clones: &IndexSet<String>) -> Vec<(String, 
         for stmt in stmts.iter() {
             if let StmtKind::Const(b, value) = &stmt.kind
                 && let ExprKind::Var(a) = &value.kind
-                && clones.contains(b)
+                && clones.contains(b.as_str())
             {
-                found.push((b.clone(), a.to_string()));
+                found.push((b.to_string(), a.to_string()));
             }
         }
     });
@@ -869,7 +869,7 @@ pub(super) fn declared_in_branches(name: &str, chain: &mut Stmt) -> bool {
         return false;
     }
     for branch in named {
-        branch.insert(0, StmtKind::Let(name.to_string(), None).at(js::Span::NONE));
+        branch.insert(0, StmtKind::Let(name.into(), None).at(js::Span::NONE));
         declarations(branch);
     }
     true
@@ -1043,7 +1043,7 @@ pub(super) fn paired_temporaries(body: &[Stmt]) -> IndexSet<String> {
         for (k, stmt) in list.iter().enumerate() {
             match &stmt.kind {
                 StmtKind::Let(name, None) if is_temporary(name) => {
-                    lets.insert(name.clone());
+                    lets.insert(name.to_string());
                 }
                 StmtKind::Assign(target, value)
                     if let ExprKind::Var(name) = &target.kind
@@ -1063,8 +1063,12 @@ pub(super) fn paired_temporaries(body: &[Stmt]) -> IndexSet<String> {
         }
     });
     (lets.into_iter())
-        .filter(|name| !unpaired.contains(name))
-        .filter(|name| pairs.get(name).is_some_and(|&n| mentions.get(name) == Some(&(2 * n))))
+        .filter(|name| !unpaired.contains(name.as_str()))
+        .filter(|name| {
+            pairs
+                .get(name.as_str())
+                .is_some_and(|&n| mentions.get(name.as_str()) == Some(&(2 * n)))
+        })
         .collect()
 }
 
@@ -1124,7 +1128,7 @@ pub(super) fn filled_lazily(stmts: &mut Vec<Stmt>) {
             let StmtKind::Const(_, made) = &stmts[at].kind else {
                 unreachable!("a `const` of what's read")
             };
-            let declared = StmtKind::Let(var.clone(), Some(made.clone())).at(stmts[at].span);
+            let declared = StmtKind::Let(var.clone().into(), Some(made.clone())).at(stmts[at].span);
             let StmtKind::If(test, then, Some(otherwise)) =
                 std::mem::replace(&mut stmts[i + 2].kind, StmtKind::Comments)
             else {
@@ -1168,7 +1172,7 @@ fn lazily_filled(stmts: &[Stmt], i: usize) -> Option<(String, String)> {
         || js::mentions_in(other, read) > 0
         || js::mentions_in(&stmts[i + 3..], read) > 0
         || !renamed;
-    (!kept).then(|| (read.clone(), var.clone()))
+    (!kept).then(|| (read.to_string(), var.to_string()))
 }
 
 /// Whether `branch` is `var = read;` alone.
@@ -1201,10 +1205,10 @@ pub(super) fn kept_declarations(moved: &[Stmt], after: &[Stmt]) -> Option<Vec<St
 /// `kept`'s late `let`s, `kept_declarations`', taken out of `moved` and
 /// declared in `stmts` before its `at`th: how many.
 pub(super) fn declared_before(stmts: &mut Vec<Stmt>, at: usize, moved: &mut Vec<Stmt>, kept: &[String]) -> usize {
-    moved.retain(|s| !matches!(&s.kind, StmtKind::Let(name, None) if kept.contains(name)));
+    moved.retain(|s| !matches!(&s.kind, StmtKind::Let(name, None) if kept.iter().any(|k| k == name)));
     let declared = kept
         .iter()
-        .map(|name| StmtKind::Let(name.clone(), None).at(js::Span::NONE));
+        .map(|name| StmtKind::Let(name.into(), None).at(js::Span::NONE));
     stmts.splice(at..at, declared);
     kept.len()
 }

@@ -517,7 +517,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         )?);
         let call = Expr::call(self.fn_ref(instance.def_id()), values);
         Ok(Some(Expr::arrow(
-            params.iter().map(|name| js::Pattern::Name(name.clone())).collect(),
+            params.iter().map(|name| js::Pattern::Name(name.into())).collect(),
             vec![StmtKind::Return(Some(call)).at(js::Span::NONE)],
         )))
     }

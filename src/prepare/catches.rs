@@ -4,7 +4,7 @@
 
 use crate::collections::IndexSet;
 
-use crate::js::{self, Expr, ExprKind, Pattern, Stmt, StmtKind};
+use crate::js::{self, Expr, ExprKind, Name, Pattern, Stmt, StmtKind};
 
 /// What a `catch` of an unwind names what it caught, where it reads the
 /// payload `$unwound` makes of it: `thrown`, or a name given apart,
@@ -351,7 +351,7 @@ fn made_where_tested(stmt: &Stmt) -> Option<(Stmt, Stmt)> {
         })) => **at = test,
         _ => unreachable!("matched above"),
     }
-    Some((StmtKind::Const(TESTED.to_string(), call).at(stmt.span), tested))
+    Some((StmtKind::Const(TESTED.into(), call).at(stmt.span), tested))
 }
 
 /// `if (c && $catchUnwind(f).TAG === "Err" && d) { .. }`, with no `else`,
@@ -751,7 +751,10 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt], ends: b
             // Where its `if let Err(e)` binds it, after what's said above
             // that `if`, of one the program wrote (#489).
             .at(said.as_ref().map_or(span, |said| said.span));
-            (Some(thrown), std::iter::once(made).chain(err.iter().cloned()).collect())
+            (
+                Some(thrown.into()),
+                std::iter::once(made).chain(err.iter().cloned()).collect(),
+            )
         }
         _ => (error.clone(), err.to_vec()),
     };
@@ -833,7 +836,7 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt], ends: b
     // Else after it, where the `Err` arm leaves, its value set by the `try`:
     // a `let` of a name nothing else here reads or declares.
     let unread =
-        |name: &String| js::mentions_in(before, name) + js::mentions_in(err, name) + js::mentions_in(after, name) == 0;
+        |name: &Name| js::mentions_in(before, name) + js::mentions_in(err, name) + js::mentions_in(after, name) == 0;
     if !leaves(err) || !value_name.as_ref().is_none_or(unread) {
         return None;
     }
@@ -926,7 +929,7 @@ fn cannot_throw(stmt: &Stmt) -> bool {
 /// which the `try` runs first, neither reads nor declares, nor one given
 /// apart from it, `picked$1`, which it would keep from being that name
 /// (ADR 0352).
-fn whole_binding(ok: &[Stmt], result: &str, call: &Expr) -> Option<String> {
+fn whole_binding(ok: &[Stmt], result: &str, call: &Expr) -> Option<Name> {
     let mut found = None;
     let mut aliases = 0;
     js::each_list(ok, &mut |list| {
@@ -1033,7 +1036,7 @@ fn unwound_let(before: &[Stmt], stmt: &Stmt, rest: &[Stmt]) -> Option<(Stmt, usi
     let mut handler = vec![made.at(stmt.span)];
     handler.extend(rest[..caught].iter().cloned());
     let tried = js::applied_tried(vec![StmtKind::Expr(call).at(stmt.span)]);
-    let (binding, handler) = read_as_thrown(Some(thrown), handler);
+    let (binding, handler) = read_as_thrown(Some(thrown.into()), handler);
     let (binding, handler) = catchable(js::Caught::Unwound, binding, handler, stmt.span);
     Some((
         StmtKind::TryCatch(tried, binding, handler).at(stmt.span),
@@ -1085,10 +1088,10 @@ fn caught_run(payload: &str, rest: &[Stmt]) -> Option<usize> {
 /// where it had none. Of a JS call's throw, `$try`'s, as it is.
 fn catchable(
     caught: js::Caught,
-    binding: Option<String>,
+    binding: Option<Name>,
     mut handler: Vec<Stmt>,
     span: js::Span,
-) -> (Option<String>, Vec<Stmt>) {
+) -> (Option<Name>, Vec<Stmt>) {
     if caught != js::Caught::Unwound {
         return (binding, handler);
     }
@@ -1097,7 +1100,7 @@ fn catchable(
         while js::mentions_in(&handler, &name) > 0 {
             name.push('_');
         }
-        name
+        name.into()
     });
     handler.insert(
         0,
@@ -1106,7 +1109,7 @@ fn catchable(
     (Some(name), handler)
 }
 
-fn read_as_thrown(binding: Option<String>, handler: Vec<Stmt>) -> (Option<String>, Vec<Stmt>) {
+fn read_as_thrown(binding: Option<Name>, handler: Vec<Stmt>) -> (Option<Name>, Vec<Stmt>) {
     let Some(thrown) = binding else {
         return (binding, handler);
     };

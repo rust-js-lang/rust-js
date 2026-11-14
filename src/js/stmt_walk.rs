@@ -491,9 +491,9 @@ fn canonical(stmts: &[Stmt], facts: bool) -> Vec<Stmt> {
     let names: IndexMap<String, String> = (declared.into_iter().enumerate())
         .map(|(i, name)| (name, format!("${i}")))
         .collect();
-    let rename = |name: &mut String| {
+    let rename = |name: &mut Name| {
         if let Some(to) = names.get(name.as_str()) {
-            *name = to.clone();
+            name.respell(to.clone());
         }
     };
     rename_binders(&mut stmts, &mut |n| rename(n));
@@ -546,9 +546,9 @@ pub fn declares(stmts: &[Stmt], name: &str) -> bool {
 /// in them too, of `to`, which none of them mentions: the same program,
 /// where `from` is one `stmts` declare at their top.
 pub fn renamed(stmts: &mut [Stmt], from: &str, to: &str) {
-    let rename = |name: &mut String| {
-        if name == from {
-            *name = to.to_string();
+    let rename = |name: &mut Name| {
+        if *name == from {
+            name.respell(to);
         }
     };
     rename_binders(stmts, &mut |n| rename(n));
@@ -585,7 +585,7 @@ pub fn outside_shadows(stmts: &mut Vec<Stmt>, name: &str, change: impl FnOnce(&m
             for param in params.iter_mut() {
                 param.each_name_mut(&mut |n| {
                     if n == name {
-                        *n = APART.to_string();
+                        *n = APART.into();
                     }
                 });
             }
@@ -727,7 +727,7 @@ pub fn this_outside_accessors(body: &mut Vec<Stmt>, name: &str) -> bool {
         }
     });
     if kept {
-        body.insert(0, StmtKind::Const(instance, Expr::this()).at(Span::NONE));
+        body.insert(0, StmtKind::Const(instance.into(), Expr::this()).at(Span::NONE));
     }
     kept
 }
@@ -749,7 +749,7 @@ pub fn reads_this(stmts: &[Stmt]) -> bool {
 /// The variables a statement declares where it is: `const x`, `let [a, b]`.
 pub fn declared_here(statement: &Stmt) -> Vec<String> {
     match &statement.kind {
-        StmtKind::Const(name, _) | StmtKind::Let(name, _) => vec![name.clone()],
+        StmtKind::Const(name, _) | StmtKind::Let(name, _) => vec![name.to_string()],
         StmtKind::Destructure { pattern, .. } => pattern.names().into_iter().map(str::to_owned).collect(),
         _ => Vec::new(),
     }
@@ -764,7 +764,7 @@ pub fn declared_names(stmts: &[Stmt]) -> Vec<String> {
     each_expr_mut(&mut stmts, &mut |e| {
         if let ExprKind::Function(function) = &mut e.kind {
             for param in function.params.iter_mut() {
-                param.each_name_mut(&mut |n| declared.push(n.clone()));
+                param.each_name_mut(&mut |n| declared.push(n.to_string()));
             }
         }
     });
@@ -773,16 +773,16 @@ pub fn declared_names(stmts: &[Stmt]) -> Vec<String> {
 
 /// The names `stmts` declare, in order, an arrow's in them too.
 fn binders(stmts: &mut [Stmt], declared: &mut Vec<String>) {
-    rename_binders(stmts, &mut |name| declared.push(name.clone()));
+    rename_binders(stmts, &mut |name| declared.push(name.to_string()));
     each_expr_mut(stmts, &mut |e| match &mut e.kind {
         ExprKind::Arrow(params, body) | ExprKind::AsyncArrow(params, body) => {
             params
                 .iter_mut()
-                .for_each(|p| p.each_name_mut(&mut |n| declared.push(n.clone())));
-            rename_binders(body, &mut |n: &mut String| declared.push(n.clone()));
+                .for_each(|p| p.each_name_mut(&mut |n| declared.push(n.to_string())));
+            rename_binders(body, &mut |n: &mut Name| declared.push(n.to_string()));
         }
         ExprKind::Function(function) => {
-            rename_binders(&mut function.body, &mut |n: &mut String| declared.push(n.clone()))
+            rename_binders(&mut function.body, &mut |n: &mut Name| declared.push(n.to_string()))
         }
         _ => {}
     });
@@ -790,7 +790,7 @@ fn binders(stmts: &mut [Stmt], declared: &mut Vec<String>) {
 
 /// `rename` given each name `stmts`' statements declare, however deep, not
 /// an arrow's in their expressions.
-fn rename_binders(stmts: &mut [Stmt], rename: &mut dyn FnMut(&mut String)) {
+fn rename_binders(stmts: &mut [Stmt], rename: &mut dyn FnMut(&mut Name)) {
     for stmt in stmts {
         match &mut stmt.kind {
             StmtKind::Const(name, _) | StmtKind::Let(name, _) => rename(name),

@@ -31,15 +31,15 @@ fn own_names(params: &[Pattern], body: &mut Vec<Stmt>) -> IndexSet<String> {
         for stmt in stmts.iter() {
             match &stmt.kind {
                 StmtKind::Const(name, _) | StmtKind::Let(name, _) | StmtKind::For { name, .. } => {
-                    _ = own.insert(name.clone());
+                    _ = own.insert(name.to_string());
                 }
                 // Each name a pattern declares, `const [id, chunks] =
                 // metadata;`'s, an or-pattern's alike arms' (rd712).
                 StmtKind::Destructure { pattern, .. } => {
                     own.extend(pattern.names().into_iter().map(str::to_string));
                 }
-                StmtKind::TryCatch(_, Some(name), _) => _ = own.insert(name.clone()),
-                StmtKind::Function(function) => _ = own.insert(function.name.clone()),
+                StmtKind::TryCatch(_, Some(name), _) => _ = own.insert(name.to_string()),
+                StmtKind::Function(function) => _ = own.insert(function.name.to_string()),
                 _ => {}
             }
         }
@@ -394,7 +394,7 @@ impl Walk {
                     if let ExprKind::Var(of) = &value.kind
                         && crate::names::apart(alias).is_some_and(|(base, _)| base == of)
                     {
-                        self.shadows.push((self.at, looped, alias.clone(), of.to_string()));
+                        self.shadows.push((self.at, looped, alias.to_string(), of.to_string()));
                     }
                 }
                 // Each variable it sets, as `js::Writes` says: each of a
@@ -416,7 +416,7 @@ impl Walk {
                     self.stmts(body, true)
                 }
                 StmtKind::For { name, body, .. } => {
-                    self.sets.push((self.at, name.clone()));
+                    self.sets.push((self.at, name.to_string()));
                     self.stmts(body, true);
                 }
                 StmtKind::Labeled(_, body) => self.stmts(body, looped),
@@ -482,7 +482,7 @@ fn write_back(body: &[Stmt], own: &IndexSet<String>) -> Option<(String, String)>
                 && let ExprKind::Var(of) = &value.kind
                 && crate::names::apart(alias).is_some_and(|(base, _)| base == of)
             {
-                lets.push((alias.clone(), of.to_string()));
+                lets.push((alias.to_string(), of.to_string()));
             }
         }
     });

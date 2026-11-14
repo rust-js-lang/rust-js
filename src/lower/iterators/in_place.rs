@@ -172,18 +172,18 @@ pub(in crate::lower) fn does(f: &Expr) -> bool {
     fn body_does(stmts: &[Stmt], declared: &mut Vec<String>) -> bool {
         stmts.iter().any(|stmt| match &stmt.kind {
             StmtKind::Const(name, e) | StmtKind::Let(name, Some(e)) => {
-                declared.push(name.clone());
+                declared.push(name.to_string());
                 acts(e)
             }
             StmtKind::Return(Some(e)) | StmtKind::Expr(e) => acts(e),
             StmtKind::Destructure { value, .. } => acts(value),
             StmtKind::Let(name, None) => {
-                declared.push(name.clone());
+                declared.push(name.to_string());
                 false
             }
             StmtKind::Return(None) => false,
             StmtKind::Assign(target, e) => {
-                !matches!(&target.kind, js::ExprKind::Var(name) if declared.contains(name)) || acts(e)
+                !matches!(&target.kind, js::ExprKind::Var(name) if declared.iter().any(|d| d == name)) || acts(e)
             }
             StmtKind::If(test, then, otherwise) => {
                 acts(test)

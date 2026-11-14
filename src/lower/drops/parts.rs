@@ -149,7 +149,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let name = self.fresh(Role::Item);
                     let mut body = Vec::new();
                     self.drop_in(Expr::var(&name), item, span, made, &mut body)?;
-                    out.push(loop_dropped(items, js::Pattern::Name(name), body, js_span));
+                    out.push(loop_dropped(items, js::Pattern::Name(name.into()), body, js_span));
                 } else {
                     let entries = match self.is_sorted(ty) {
                         true => self.in_order_of(value, ty, span)?,
@@ -160,7 +160,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let pattern = match value_ty {
                         None => {
                             self.drop_in(Expr::var(&key), key_ty, span, made, &mut body)?;
-                            js::Pattern::Name(key)
+                            js::Pattern::Name(key.into())
                         }
                         Some(value_ty) => {
                             let mut value_dropped = Vec::new();
@@ -365,7 +365,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut body = Vec::new();
         self.drop_in(Expr::var(&name), item, span, made, &mut body)?;
         let js_span = self.js_span(span);
-        out.push(items_dropped(items, js::Pattern::Name(name), body, js_span));
+        out.push(items_dropped(items, js::Pattern::Name(name.into()), body, js_span));
         Ok(())
     }
 
@@ -529,7 +529,7 @@ fn caught(
 ) -> Vec<Stmt> {
     let mut handler = unwinding;
     handler.push(StmtKind::Throw(Expr::var(&error)).at(js_span));
-    let mut out = vec![StmtKind::TryCatch(body, Some(error), handler).at(js_span)];
+    let mut out = vec![StmtKind::TryCatch(body, Some(error.into()), handler).at(js_span)];
     out.extend(dropped);
     out
 }
@@ -549,7 +549,7 @@ pub(in crate::lower) fn dropped_unwinding(
     let error = error();
     let mut handler = cleanup(dropped, Some(&error), js_span);
     handler.push(StmtKind::Throw(Expr::var(&error)).at(js_span));
-    vec![StmtKind::TryCatch(body, Some(error), handler).at(js_span)]
+    vec![StmtKind::TryCatch(body, Some(error.into()), handler).at(js_span)]
 }
 
 /// What a panic runs as it unwinds, `cleanup`, the drops of what the frames

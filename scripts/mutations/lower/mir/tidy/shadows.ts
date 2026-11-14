@@ -73,8 +73,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a binding a closure made before reads is assigned, so the closure sees the new value",
     file: "src/lower/mir/tidy/shadows.rs",
-    find: "    if !user.contains(&shadow) || !user.contains(&binding) || captured.contains(&binding) {\n",
-    replace: "    if !user.contains(&shadow) || !user.contains(&binding) {\n",
+    find: "    if !user.contains(shadow.as_str()) || !user.contains(&binding) || captured.contains(&binding) {\n",
+    replace: "    if !user.contains(shadow.as_str()) || !user.contains(&binding) {\n",
     tests: ["test/lowering-shadows.test.ts", "-t", "something still sees"],
   },
   {
@@ -92,7 +92,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a temporary rust-js holds, `tmp`, is reused for unrelated values, `tmp = tmp(next)`",
     file: "src/lower/mir/tidy/shadows.rs",
-    find: "    if !user.contains(&shadow) || !user.contains(&binding) || captured.contains(&binding) {\n",
+    find: "    if !user.contains(shadow.as_str()) || !user.contains(&binding) || captured.contains(&binding) {\n",
     replace: "    if captured.contains(&binding) {\n",
     tests: ["test/corpus.test.ts", "-t", "^iter_next_back.rs$"],
     snapshots: true,

@@ -23,6 +23,12 @@ impl Name {
         &self.0
     }
 
+    /// Spelled `word` from now on: a rename, preparation's spelling and
+    /// reclaiming, and tidy's of a name given apart.
+    pub fn respell(&mut self, word: impl Into<String>) {
+        self.0 = word.into();
+    }
+
     /// It, as a `String` of its word, for what keeps names as text.
     pub fn into_word(self) -> String {
         self.0
@@ -30,18 +36,13 @@ impl Name {
 }
 
 /// Its word, while every pass still reads one (S1a): taken away a part at a
-/// time (S1b), each site then asking the API above.
+/// time (S1b), each site then asking the API above. Nothing writes through
+/// it: a rename is `respell`'s.
 impl std::ops::Deref for Name {
-    type Target = String;
+    type Target = str;
 
-    fn deref(&self) -> &String {
+    fn deref(&self) -> &str {
         &self.0
-    }
-}
-
-impl std::ops::DerefMut for Name {
-    fn deref_mut(&mut self) -> &mut String {
-        &mut self.0
     }
 }
 

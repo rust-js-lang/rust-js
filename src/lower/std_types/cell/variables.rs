@@ -36,7 +36,7 @@ pub(in crate::lower) fn plain_statics(
     let cells: Vec<String> = (items.iter())
         .filter_map(|item| match item {
             js::Item::Const(c) if (!c.export || quiet.contains(c.name.as_str())) && is_box(&c.value) => {
-                Some(c.name.clone())
+                Some(c.name.to_string())
             }
             _ => None,
         })
@@ -114,7 +114,7 @@ pub(in crate::lower) fn plain_statics(
     // module writes the one it reads in place, as before.
     let objects: Vec<String> = (items.iter())
         .filter_map(|item| match item {
-            js::Item::Const(c) if quiet.contains(c.name.as_str()) && !is_box(&c.value) => Some(c.name.clone()),
+            js::Item::Const(c) if quiet.contains(c.name.as_str()) && !is_box(&c.value) => Some(c.name.to_string()),
             _ => None,
         })
         .collect();
@@ -161,7 +161,7 @@ pub(in crate::lower) fn plain_statics(
     let boxed = (items.iter())
         .filter_map(|item| match item {
             js::Item::Const(c) if c.export && held_values.contains(c.name.as_str()) && is_box(&c.value) => {
-                Some(c.name.clone())
+                Some(c.name.to_string())
             }
             _ => None,
         })
@@ -258,7 +258,7 @@ fn taken_whole(stmts: &mut Vec<Stmt>, name: &str) -> usize {
             _ => unreachable!("a slot"),
         };
         *slot = Expr::var(&old);
-        stmts.splice(i..i, [StmtKind::Const(old, variable).at(span), set]);
+        stmts.splice(i..i, [StmtKind::Const(old.into(), variable).at(span), set]);
         i += 3;
     }
     count
@@ -293,7 +293,7 @@ fn outside_own_bindings<T>(items: &mut [js::Item], name: &str, change: impl FnOn
             for param in function.params.iter_mut() {
                 param.each_name_mut(&mut |n| {
                     if n == from {
-                        *n = to.to_string();
+                        *n = to.into();
                     }
                 });
             }
@@ -307,7 +307,7 @@ fn outside_own_bindings<T>(items: &mut [js::Item], name: &str, change: impl FnOn
         for param in function.params.iter_mut() {
             param.each_name_mut(&mut |n| {
                 if n == APART {
-                    *n = name.to_string();
+                    *n = name.into();
                 }
             });
         }

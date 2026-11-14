@@ -563,7 +563,8 @@ impl<'tcx> State<'_, 'tcx> {
     /// The `let` of each value settled before a drop (`settle_reads`),
     /// first in the function's body.
     fn settled_lets(&self) -> impl Iterator<Item = Stmt> + '_ {
-        (self.settled.iter()).map(|&local| StmtKind::Let(self.locals.names[local].clone(), None).at(js::Span::NONE))
+        (self.settled.iter())
+            .map(|&local| StmtKind::Let(self.locals.names[local].clone().into(), None).at(js::Span::NONE))
     }
 }
 
@@ -622,8 +623,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let error = self.fresh(super::Role::Error);
             let thrown = Expr::call_helper("$cannotUnwind", vec![Expr::var(&error)]);
             out = vec![
-                js::StmtKind::TryCatch(out, Some(error), vec![js::StmtKind::Throw(thrown).at(js::Span::NONE)])
-                    .at(js::Span::NONE),
+                js::StmtKind::TryCatch(
+                    out,
+                    Some(error.into()),
+                    vec![js::StmtKind::Throw(thrown).at(js::Span::NONE)],
+                )
+                .at(js::Span::NONE),
             ];
         }
         // A C-variadic one's last parameter gathers the rest, which nothing
@@ -661,8 +666,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             function: js::Function {
                 // A copy its callers need, by its own name (ADR 0051, amended).
                 name: match self.copy {
-                    Some(at) => self.krate.given.js_given.name(def_id, at).to_owned(),
-                    None => self.krate.fns[&def_id].name.clone(),
+                    Some(at) => self.krate.given.js_given.name(def_id, at).into(),
+                    None => self.krate.fns[&def_id].name.clone().into(),
                 },
                 params,
                 body: out,
@@ -732,13 +737,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             js::statement_lists(&mut out, &mut |stmts| {
                 for stmt in stmts.iter_mut() {
                     if let StmtKind::Return(None) = stmt.kind {
-                        stmt.kind = StmtKind::Break(Some(label.clone()));
+                        stmt.kind = StmtKind::Break(Some(label.clone().into()));
                         returns = true;
                     }
                 }
             });
             if returns {
-                out = vec![StmtKind::Labeled(label, out).at(js::Span::NONE)];
+                out = vec![StmtKind::Labeled(label.into(), out).at(js::Span::NONE)];
             }
         }
         let is_async = self.tcx.asyncness(def_id).is_async();
@@ -853,9 +858,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let cell = self.fresh(Base::Named(&name));
             state.locals.names[local].clone_from(&cell);
             cell_params.push((cell, name.clone()));
-            return js::Pattern::Name(name);
+            return js::Pattern::Name(name.into());
         }
-        js::Pattern::Name(name)
+        js::Pattern::Name(name.into())
     }
 
     /// A function's last parameters, as JS takes them. A C-variadic
@@ -1158,7 +1163,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Each parameter a pointer is taken to, its cell, of what it's given.
         for (name, given) in cell_params {
             let cell = Expr::object(vec![js::Prop::Field(js::HELD.into(), Expr::var(&given))]);
-            out.push(StmtKind::Const(name, cell).at(js::Span::NONE));
+            out.push(StmtKind::Const(name.into(), cell).at(js::Span::NONE));
         }
         // Each flag that says whether a value is there to drop, and the
         // values: a drop may be where their `const` isn't seen.
@@ -1173,7 +1178,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let place = drops.move_data.move_paths[path].place;
                 flagged[place.local.as_usize()] = true;
                 let flag = self.flag_name(&state, place);
-                out.push(StmtKind::Let(flag.clone(), Some(Expr::bool(drops.initial[path]))).at(js::Span::NONE));
+                out.push(StmtKind::Let(flag.clone().into(), Some(Expr::bool(drops.initial[path]))).at(js::Span::NONE));
                 flags[path] = Some(flag);
             }
         }
@@ -1192,10 +1197,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 out.push(
                     match state.facts.pointed().locals.contains(&local) {
                         true => StmtKind::Const(
-                            name,
+                            name.into(),
                             Expr::object(vec![js::Prop::Field(js::HELD.into(), Expr::js_undefined())]),
                         ),
-                        false => StmtKind::Let(name, None),
+                        false => StmtKind::Let(name.into(), None),
                     }
                     .at(js::Span::NONE),
                 );
@@ -1210,7 +1215,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Its scope struct's methods, declared after its `let` (ADR 1043).
         self.declare_scope_functions(&state, captures.is_none(), &mut out)?;
         if let Some(options) = options {
-            params.push(js::Pattern::Name(options));
+            params.push(js::Pattern::Name(options.into()));
         }
         // Each bounds check moved to where its element is read, made there.
         if !state.deferred.is_empty() {
@@ -1315,7 +1320,7 @@ fn drops_read(hoisted: Vec<Stmt>, body: &[Stmt]) -> Vec<Stmt> {
     loop {
         let before = read.len();
         let called: Vec<&Stmt> = (hoisted.iter())
-            .filter(|def| name(def).is_some_and(|n| read.contains(&n)))
+            .filter(|def| name(def).is_some_and(|n| read.contains(n.as_str())))
             .collect();
         for def in called {
             js::visit_stmts(std::slice::from_ref(def), &mut |v| _ = read.insert(v.to_string()));
@@ -1325,6 +1330,6 @@ fn drops_read(hoisted: Vec<Stmt>, body: &[Stmt]) -> Vec<Stmt> {
         }
     }
     (hoisted.into_iter())
-        .filter(|def| name(def).is_none_or(|n| read.contains(&n)))
+        .filter(|def| name(def).is_none_or(|n| read.contains(n.as_str())))
         .collect()
 }

@@ -489,8 +489,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a let chain's binding the program named otherwise than the field it reads, `prev_state` of `current.memoized_state`, is read again in its place, `current.memoizedState.hydrationErrors = ..`, where upstream keeps `const prevState` (rd226, rd706)",
     file: "src/lower/mir/tidy/logicals.rs",
-    find: "            if matches!(&then[at].kind, StmtKind::Const(name, _) if is_temporary(name) || own_field.contains(name)) {\n",
-    replace: "            if matches!(&then[at].kind, StmtKind::Const(..)) {\n",
+    find: "            if matches!(&then[at].kind, StmtKind::Const(name, _) if is_temporary(name) || own_field.contains(name.as_str()))\n",
+    replace: "            if matches!(&then[at].kind, StmtKind::Const(..))\n",
     tests: ["test/lowering-moves.test.ts", "-t", "binding named otherwise than its field keeps its const"],
   },
   {
@@ -498,8 +498,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a let chain's temporary the compiler made, of what a struct pattern takes apart, is held in a `const _5` where the body reads it once, not the field read again (rd706)",
     file: "src/lower/mir/tidy/logicals.rs",
-    find: "            if matches!(&then[at].kind, StmtKind::Const(name, _) if is_temporary(name) || own_field.contains(name)) {\n",
-    replace: "            if matches!(&then[at].kind, StmtKind::Const(name, _) if own_field.contains(name)) {\n",
+    find: "            if matches!(&then[at].kind, StmtKind::Const(name, _) if is_temporary(name) || own_field.contains(name.as_str()))\n",
+    replace: "            if matches!(&then[at].kind, StmtKind::Const(name, _) if own_field.contains(name.as_str()))\n",
     tests: ["test/lowering-moves.test.ts", "-t", "binding named otherwise than its field keeps its const"],
   },
 

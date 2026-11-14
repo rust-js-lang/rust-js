@@ -2,7 +2,7 @@
 //! value and testing it, or ends testing whether to leave, as a `do { .. }
 //! while (test)` (ADR 0978).
 
-use crate::js::{self, Expr, ExprKind, Stmt, StmtKind};
+use crate::js::{self, Expr, ExprKind, Name, Stmt, StmtKind};
 
 /// `while (true) { if (a) { ..; if (T(e)) { x = e; continue; } } else {
 /// ..; const next = e2; if (T(next)) { x = next; continue; } } break; }`,
@@ -46,7 +46,7 @@ fn do_while(before: &[Stmt], looped: &Stmt, after: &[Stmt]) -> Option<StmtKind> 
     if !matches!(cond.kind, ExprKind::Bool(true)) {
         return None;
     }
-    let ours = |l: &Option<String>| l.is_none() || l == label;
+    let ours = |l: &Option<Name>| l.is_none() || l == label;
     if let Some(looped) = tested_last(label, body, looped.span) {
         return Some(looped);
     }
@@ -106,8 +106,8 @@ fn do_while(before: &[Stmt], looped: &Stmt, after: &[Stmt]) -> Option<StmtKind> 
 /// which is out of the `do`'s test's scope. Comments above the `if`, or
 /// before its `break`, are the body's last, above the test, `// Past the
 /// end.\n } while (..)`, as a block that ends in comments (ADR 0753).
-fn tested_last(label: &Option<String>, body: &[Stmt], looped: js::Span) -> Option<StmtKind> {
-    let ours = |l: &Option<String>| l.is_none() || l == label;
+fn tested_last(label: &Option<Name>, body: &[Stmt], looped: js::Span) -> Option<StmtKind> {
+    let ours = |l: &Option<Name>| l.is_none() || l == label;
     let (last, turn) = body.split_last()?;
     let StmtKind::If(done, then, None) = &last.kind else {
         return None;
@@ -150,7 +150,7 @@ fn ended_by_advance(body: &mut Vec<Stmt>, label: Option<&str>) {
     let StmtKind::If(test, then, None) = &left.kind else {
         return;
     };
-    let ours = |l: &Option<String>| l.is_none() || l.as_deref() == label;
+    let ours = |l: &Option<Name>| l.is_none() || l.as_deref() == label;
     if !matches!(&then[..], [Stmt { kind: StmtKind::Break(l), .. }] if ours(l))
         || !matches!(&given.kind, StmtKind::Assign(target, _) if matches!(target.kind, ExprKind::Var(_)))
     {
@@ -169,7 +169,7 @@ fn ended_by_advance(body: &mut Vec<Stmt>, label: Option<&str>) {
 /// their own, whose `break` is theirs: `x = e;` and the `continue` it goes
 /// on to the test by, `ADVANCED` until the others are checked.
 fn turned(stmts: &mut Vec<Stmt>, label: Option<&str>, advances: &mut Vec<Advance>) -> Option<()> {
-    let ours = |l: &Option<String>| l.is_none() || l.as_deref() == label;
+    let ours = |l: &Option<Name>| l.is_none() || l.as_deref() == label;
     let mut i = 0;
     while i < stmts.len() {
         if let StmtKind::If(_, then, otherwise) = &mut stmts[i].kind {

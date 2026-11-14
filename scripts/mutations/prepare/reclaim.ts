@@ -40,8 +40,8 @@ export const mutations: Mutation[] = [
     name: "reclaim-conversion-unread",
     breaks: "a local is `String` where a conversion, `String(n)`, reads the global",
     file: "src/prepare/reclaim.rs",
-    find: "        ExprKind::Stringed(_) if reads => f(&mut \"String\".to_string()),",
-    replace: "        ExprKind::Stringed(_) if false => f(&mut \"String\".to_string()),",
+    find: "        ExprKind::Stringed(_) if reads => f(&mut \"String\".into()),",
+    replace: "        ExprKind::Stringed(_) if false => f(&mut \"String\".into()),",
     tests: ["test/lowering-names.test.ts", "-t", "an import named as a global"],
   },
   {
@@ -81,8 +81,8 @@ export const mutations: Mutation[] = [
     "name": "own-item-exported-reclaimed",
     "breaks": "an exported function named apart by its `#[rust_js::name]`, `query$`, is reclaimed, `export function query`, and JS importing `query$` finds nothing",
     "file": "src/prepare/reclaim.rs",
-    "find": "            js::Item::Function(function) if !function.export => Some(function.name.clone()),",
-    "replace": "            js::Item::Function(function) => Some(function.name.clone()),",
+    "find": "            js::Item::Function(function) if !function.export => Some(function.name.to_string()),",
+    "replace": "            js::Item::Function(function) => Some(function.name.to_string()),",
     "tests": ["test/lowering-names.test.ts", "-t", "own function named as a global"]
   },
   {

@@ -602,7 +602,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if !parts::may_throw(&body) {
                 self.drop_state.quiet.insert(name.clone());
             }
-            let def = StmtKind::Const(name.clone(), Expr::arrow(vec![param.into()], body)).at(js_span);
+            let def = StmtKind::Const(name.clone().into(), Expr::arrow(vec![param.into()], body)).at(js_span);
             match self.drop_state.hoisted.as_mut() {
                 Some(hoisted) => hoisted.defs.push(def),
                 None => made.defs.push(def),

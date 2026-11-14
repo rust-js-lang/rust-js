@@ -90,7 +90,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-unused-let-kept",
     breaks: "a `let iter;` nothing assigns any more stays declared",
     file: "src/lower/mir/tidy/stages.rs",
-    find: "                    s.retain(|stmt| !matches!(&stmt.kind, StmtKind::Let(name, None) if unread.contains(name)));\n",
+    find: "                    s.retain(\n                        |stmt| !matches!(&stmt.kind, StmtKind::Let(name, None) if unread.iter().any(|u| u == name)),\n                    );\n",
     replace: "                    let _ = &unread;\n",
     tests: [
       "test/lowering-loops.test.ts",
@@ -1091,7 +1091,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `let x;` whose every read is in a block that declares `x` again, an index loop's item, `const x = v[i];`, stays before the loop, read by nothing (ADR 1042)",
     file: "src/lower/mir/tidy/stages.rs",
-    find: "                                    || declared.get(name).is_some_and(|&n| n > 1) && redeclared_only(s, name) =>\n",
+    find: "                                    || declared.get(name.as_str()).is_some_and(|&n| n > 1)\n                                        && redeclared_only(s, name) =>\n",
     replace: "                                    =>\n",
     tests: ["test/lowering-index-loops.test.ts", "-t", "a for loop of a mut binding"],
   },

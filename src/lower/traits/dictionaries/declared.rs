@@ -36,7 +36,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
             js::each_expr_mut(body, &mut put);
             js::each_expr_mut(&mut declared, &mut put);
-            declared.insert(0, StmtKind::Const(name, dictionary).at(js::Span::NONE));
+            declared.insert(0, StmtKind::Const(name.into(), dictionary).at(js::Span::NONE));
         }
         declared
     }
@@ -135,12 +135,12 @@ pub(super) fn reads_only_at_top(e: &Expr, given: &IndexSet<String>) -> bool {
     each.each_mut(&mut |part| {
         if let js::ExprKind::Arrow(params, body) = &mut part.kind {
             for param in params {
-                param.each_name_mut(&mut |name| bound.push(name.clone()));
+                param.each_name_mut(&mut |name| bound.push(name.to_string()));
             }
             // And what its body declares, a std `Extend`'s `const it` (#1511).
             for stmt in body.iter() {
                 if let StmtKind::Const(name, _) | StmtKind::Let(name, _) = &stmt.kind {
-                    bound.push(name.clone());
+                    bound.push(name.to_string());
                 }
             }
         }
@@ -154,7 +154,7 @@ pub(super) fn reads_only_at_top(e: &Expr, given: &IndexSet<String>) -> bool {
             only &= part.helper_name().is_some()
                 || crate::names::is_js_global(name)
                 || part.facts.has(js::Known::Item)
-                || bound.contains(name)
+                || bound.iter().any(|b| b == name)
                 || given.contains(name.as_str());
         }
     });
@@ -188,7 +188,7 @@ fn entries_to_declare(
 
 /// The name of the dictionary an entry call is of, through each entry
 /// before it, `S` of `S.A().B()`.
-fn root_name(e: &Expr) -> Option<&String> {
+fn root_name(e: &Expr) -> Option<&str> {
     match &e.kind {
         js::ExprKind::Var(name) => Some(name),
         js::ExprKind::Call(callee, _) => root_name(callee),

@@ -13,7 +13,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 
 use rustc_middle::mir::{BasicBlock, Body};
 
-use crate::js::{Stmt, StmtKind};
+use crate::js::{Name, Stmt, StmtKind};
 
 /// Whether this compile records the labels left.
 static RECORDS: AtomicBool = AtomicBool::new(false);
@@ -73,7 +73,12 @@ enum Around {
 /// label where it has one: each `bbN` left, and each jump to one.
 fn walk(stmts: &[Stmt], around: &mut Vec<(Around, Option<String>)>, left: &mut BTreeMap<String, Left>) {
     for stmt in stmts {
-        let label = |label: &Option<String>| label.clone().filter(|name| super::queries::is_block_label(name));
+        let label = |label: &Option<Name>| {
+            label
+                .clone()
+                .map(String::from)
+                .filter(|name| super::queries::is_block_label(name))
+        };
         let (inside, kind, label, bodies): (Around, &'static str, Option<String>, Vec<&[Stmt]>) = match &stmt.kind {
             StmtKind::While { label: l, body, .. } => (Around::Loop, "while", label(l), vec![body]),
             StmtKind::DoWhile { label: l, body, .. } => (Around::Loop, "do-while", label(l), vec![body]),
@@ -101,7 +106,7 @@ fn walk(stmts: &[Stmt], around: &mut Vec<(Around, Option<String>)>, left: &mut B
                 if let Some(at) = around
                     .iter()
                     .rposition(|(_, label)| label.as_deref() == Some(to.as_str()))
-                    && let Some(found) = left.get_mut(to)
+                    && let Some(found) = left.get_mut(to.as_str())
                 {
                     let crossed = &around[at + 1..];
                     found.jumps += 1;

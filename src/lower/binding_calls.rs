@@ -6,7 +6,7 @@ use super::calls::{given_to_js_but, spread_rest};
 use super::recognition::StdItem;
 use super::{FnCx, R};
 use crate::js;
-use crate::js::{Expr, Op, StmtKind, UnaryOp};
+use crate::js::{Expr, Name, Op, StmtKind, UnaryOp};
 use crate::lower::temporary_names::{Base, Role};
 use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::Span;
@@ -784,7 +784,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 for item in items {
                     own.push(match item {
                         Some(pattern) => pattern,
-                        None => js::Pattern::Name(self.fresh(Role::Unread)),
+                        None => js::Pattern::Name(self.fresh(Role::Unread).into()),
                     });
                 }
             }
@@ -795,7 +795,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     _ => Expr::array(items.iter().map(|item| Expr::var(item)).collect()),
                 };
                 body.insert(0, StmtKind::Const(tuple, whole).at(js::Span::NONE));
-                own.extend(items.into_iter().map(js::Pattern::Name));
+                own.extend(items.into_iter().map(js::Pattern::from));
             }
             Some(_) => return refuse(self, "is given a closure whose parameters aren't a tuple"),
             None => {}
@@ -823,7 +823,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // variable apart, a shadow too, so a read of its name is of it.
         let aliases: Vec<String> = (body.iter())
             .filter_map(|stmt| match &stmt.kind {
-                StmtKind::Const(name, value) if matches!(value.kind, js::ExprKind::This) => Some(name.clone()),
+                StmtKind::Const(name, value) if matches!(value.kind, js::ExprKind::This) => Some(name.to_string()),
                 _ => None,
             })
             .collect();
@@ -835,7 +835,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             js::read_as_this(&mut body, &alias);
         }
         let function = js::Function {
-            name: String::new(),
+            name: Name::default(),
             params: own,
             body,
             export: false,

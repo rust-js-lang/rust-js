@@ -174,8 +174,8 @@ export const mutations: Mutation[] = [
     name: "exports-unlisted",
     breaks: "a module's exported function isn't in its manifest's `exports`, and a host can't tell a program has a `main`",
     file: "src/output.rs",
-    find: "        js::Item::Function(function) if function.export => Some(function.name.clone()),\n",
-    replace: "        js::Item::Function(function) if false => Some(function.name.clone()),\n",
+    find: "        js::Item::Function(function) if function.export => Some(function.name.to_string()),\n",
+    replace: "        js::Item::Function(function) if false => Some(function.name.to_string()),",
     tests: ["test/manifest.test.ts", "-t", "what each module exports"],
   },
   {

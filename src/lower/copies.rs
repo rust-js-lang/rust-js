@@ -320,7 +320,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         place,
                         "map",
                         vec![Expr::arrow(
-                            vec![js::Pattern::Name(name)],
+                            vec![js::Pattern::Name(name.into())],
                             vec![js::StmtKind::Return(Some(copied)).at(js::Span::NONE)],
                         )],
                     ))

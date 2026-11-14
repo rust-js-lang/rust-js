@@ -120,7 +120,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/loops.rs",
     find: "        StmtKind::Labeled(l, within) if let [only] = within.as_slice() => (only, Some(l.clone())),\n",
     replace:
-      "        StmtKind::Labeled(_, within) if let [_] = within.as_slice() => (second, None::<String>),\n",
+      "        StmtKind::Labeled(_, within) if let [_] = within.as_slice() => (second, None::<Name>),\n",
     tests: [
       "test/lowering-loops.test.ts",
       "-t",
@@ -149,7 +149,7 @@ export const mutations: Mutation[] = [
     breaks:
       "MIR's two loops each holding a range's end both name it `end`, two `const end`s of one block",
     file: "src/lower/mir/tidy/loops.rs",
-    find: "                    *mentions.entry(name.clone()).or_default() += 1;\n",
+    find: "                    *mentions.entry(name.to_string()).or_default() += 1;\n",
     replace: "",
     tests: [
       "test/lowering-names.test.ts",

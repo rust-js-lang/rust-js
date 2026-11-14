@@ -279,9 +279,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a loop over a borrow that leaves the block it's in, `break 'get_instance`, keeps a `catch` of the drop around each step, React Float's hydrateHoistable's `bb93:` (rd200)",
     file: "src/lower/mir/tidy/unwinds.rs",
-    find: "            StmtKind::Break(Some(label)) => !inside.labels.contains(label),\n",
+    find: "            StmtKind::Break(Some(label)) => !inside.labels.iter().any(|l| l == label),\n",
     replace:
-      "            StmtKind::Break(Some(label)) if inside.labels.contains(label) => false,\n            StmtKind::Break(Some(_)) => return false,\n",
+      "            StmtKind::Break(Some(label)) if inside.labels.iter().any(|l| l == label) => false,\n            StmtKind::Break(Some(_)) => return false,\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_borrow_loops.rs$"],
     snapshots: true,
   },
@@ -290,7 +290,7 @@ export const mutations: Mutation[] = [
     breaks:
       "every labeled `continue` is a way out of the loop that drops, an inner loop's `continue bb10` and its own `continue bb5` alike: the drop of a value given again in an inner loop is the outer loop's `finally`, run once at its end (generated program 12454574), or a loop over a borrow with a `continue 'outer` keeps a `catch` of the drop around each step (#440)",
     file: "src/lower/mir/tidy/unwinds.rs",
-    find: "            StmtKind::Continue(Some(label)) => !inside.labels.contains(label) && inside.own != Some(label.as_str()),\n",
+    find: "            StmtKind::Continue(Some(label)) => {\n                !inside.labels.iter().any(|l| l == label) && inside.own != Some(label.as_str())\n            }\n",
     replace: "            StmtKind::Continue(Some(_)) => true,\n",
     tests: [
       "test/corpus.test.ts",
@@ -304,7 +304,7 @@ export const mutations: Mutation[] = [
     breaks:
       "the labels of the loops inside a loop that drops a value aren't its own, so an inner loop's `continue bb10` leaves it: a value given again there was dropped once, at the outer loop's end (generated program 12454574), which `names_dropped` now refuses too (#463), and a loop over a borrow with an inner loop's `continue` is a `catch` of the drop around each step, not one `try`",
     file: "src/lower/mir/tidy/unwinds.rs",
-    find: "            StmtKind::While { label, .. }\n            | StmtKind::DoWhile { label, .. }\n            | StmtKind::For { label, .. }\n            | StmtKind::ForOf { label, .. } => label.clone(),\n",
+    find: "            StmtKind::While { label, .. }\n            | StmtKind::DoWhile { label, .. }\n            | StmtKind::For { label, .. }\n            | StmtKind::ForOf { label, .. } => label.as_ref().map(Name::to_string),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^(drop_reassigned_in_inner_loop|looped_drops_jumps)\\.rs$"],
     snapshots: true,
@@ -314,9 +314,9 @@ export const mutations: Mutation[] = [
     breaks:
       "the loop's own `continue bb2`, kept in a loop in it, is a way out of it, so a loop over a borrow with one stays a `catch` of the drop around each step (#440)",
     file: "src/lower/mir/tidy/unwinds.rs",
-    find: "            StmtKind::Continue(Some(label)) => !inside.labels.contains(label) && inside.own != Some(label.as_str()),\n",
+    find: "            StmtKind::Continue(Some(label)) => {\n                !inside.labels.iter().any(|l| l == label) && inside.own != Some(label.as_str())\n            }\n",
     replace:
-      "            StmtKind::Continue(Some(label)) => !inside.labels.contains(label),\n",
+      "            StmtKind::Continue(Some(label)) => !inside.labels.iter().any(|l| l == label),\n",
     tests: ["test/corpus.test.ts", "-t", "^looped_drops_jumps.rs$"],
     snapshots: true,
   },
@@ -363,7 +363,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a block's `break` of itself is taken for a way out of it, so an early run stops at it (#442)",
     file: "src/lower/mir/tidy/unwinds.rs",
-    find: "            StmtKind::Break(Some(l)) | StmtKind::Continue(Some(l)) => !inner.contains(l),\n",
+    find: "            StmtKind::Break(Some(l)) | StmtKind::Continue(Some(l)) => !inner.iter().any(|i| i == l),\n",
     replace:
       "            StmtKind::Break(Some(_)) | StmtKind::Continue(Some(_)) => true,\n",
     tests: ["test/corpus.test.ts", "-t", "^refused_drops_and_displays.rs$"],

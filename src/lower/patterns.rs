@@ -97,7 +97,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         true => rest = Some(bound),
                         false => {
                             let default = self.prop_default(pat.ty, i, pat.span);
-                            named.push((fields[i].0.text().to_owned(), js::Pattern::Name(bound), default))
+                            named.push((fields[i].0.text().to_owned(), js::Pattern::Name(bound.into()), default))
                         }
                     }
                 }
@@ -113,14 +113,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         .map(|(_, (key, _))| key.text())
                         .collect();
                     for (key, unused) in keys.iter().zip(self.left_out(&keys)) {
-                        named.push((key.to_string(), js::Pattern::Name(unused), None));
+                        named.push((key.to_string(), js::Pattern::Name(unused.into()), None));
                     }
                 }
                 if let Some(rest) = &rest {
                     let taken = named.iter().map(|(key, _, _)| key.clone()).collect();
                     self.locals.rests.insert(rest.clone(), taken);
                 }
-                js::Pattern::Object(named, rest)
+                js::Pattern::Object(named, rest.map(Into::into))
             }
             Shape::Other => return None,
         };

@@ -542,7 +542,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     true => place,
                     false => {
                         let name = self.fresh(Role::Cell);
-                        out.push(StmtKind::Let(name.clone(), Some(place)).at(js_span));
+                        out.push(StmtKind::Let(name.clone().into(), Some(place)).at(js_span));
                         Expr::var(&name)
                     }
                 };

@@ -1,6 +1,7 @@
 //! Tidy's loops: MIR's `loop`s, made `for` and `while` loops.
 
 use super::*;
+use crate::js::Name;
 
 /// A `for` loop as MIR has it, `const iter = $iter(xs); while (true) {
 /// const t = $next(iter); if (t == null) { exit } const x = t; body }`, is
@@ -37,7 +38,7 @@ pub(super) fn loops(
                 if let StmtKind::Let(name, _) | StmtKind::Const(name, _) | StmtKind::For { name, .. } = &stmt.kind
                     && !counts(std::slice::from_ref(stmt), name)
                 {
-                    *mentions.entry(name.clone()).or_default() += 1;
+                    *mentions.entry(name.to_string()).or_default() += 1;
                 }
             }
             let count = held.len();
@@ -85,7 +86,7 @@ fn held_end(stmt: &Stmt, mentions: &IndexMap<String, usize>, captured: &IndexSet
         .expect("a name");
     let read = std::mem::replace(end, Expr::var(&name));
     let held = vec![
-        StmtKind::Let(name.clone(), None).at(js::Span::NONE),
+        StmtKind::Let(name.clone().into(), None).at(js::Span::NONE),
         StmtKind::TryCatch(
             vec![StmtKind::Assign(Expr::var(&name), read).at(made.span)],
             error.clone(),
@@ -160,7 +161,7 @@ pub(super) fn for_of(
             if let ExprKind::Var(iter) = &target.kind
                 && mentions.get(iter.as_str()) == Some(&2) =>
         {
-            (&**iter, source)
+            (iter, source)
         }
         _ => return None,
     };
@@ -326,7 +327,7 @@ pub(super) fn for_of(
                 // `for…in`, each turn of which ends `n++`, as a person counts.
                 let mut body = body;
                 counted(&mut body, &counter, label.as_deref());
-                let mut out = vec![StmtKind::Let(counter.clone(), Some(Expr::int(0))).at(js::Span::NONE)];
+                let mut out = vec![StmtKind::Let(counter, Some(Expr::int(0))).at(js::Span::NONE)];
                 out.push(
                     StmtKind::ForOf {
                         label: label.clone(),
@@ -359,7 +360,7 @@ pub(super) fn for_of(
                 let (name, start, test, body) = down;
                 StmtKind::For {
                     label: label.clone(),
-                    name,
+                    name: name.into(),
                     start,
                     test,
                     step: js::Step::Down,
@@ -370,7 +371,7 @@ pub(super) fn for_of(
             {
                 StmtKind::For {
                     label: label.clone(),
-                    name,
+                    name: name.into(),
                     start,
                     test,
                     step: js::Step::Up,
@@ -444,7 +445,7 @@ struct Counted<'e> {
 /// as `$rangeInclusiveNext`'s doesn't.
 fn counted_range(
     range: Counted<'_>,
-    (label, pattern, mutable, body, exit, span): (&Option<String>, js::Pattern, bool, Vec<Stmt>, Vec<Stmt>, js::Span),
+    (label, pattern, mutable, body, exit, span): (&Option<Name>, js::Pattern, bool, Vec<Stmt>, Vec<Stmt>, js::Span),
     (numbers, mentions): (&IndexSet<String>, &IndexMap<String, usize>),
 ) -> Option<Vec<Stmt>> {
     let Counted {
@@ -476,7 +477,7 @@ fn counted_range(
             .chain((1..).map(|k| format!("i${k}")))
             .find(|n| !mentions.contains_key(n))
             .expect("a name"),
-        _ => name,
+        _ => name.into_word(),
     };
     let held = (!same).then(|| {
         let unused = |n: &String| !mentions.contains_key(n);
@@ -499,14 +500,14 @@ fn counted_range(
     let looped = StmtKind::For {
         label: label.clone(),
         test: Expr::bin(if inclusive { Op::Le } else { Op::Lt }, Expr::var(&name), test),
-        name,
+        name: name.into(),
         start: start.clone(),
         step,
         body,
     };
     let mut out: Vec<Stmt> = held
         .into_iter()
-        .map(|(n, e)| StmtKind::Const(n, e).at(js::Span::NONE))
+        .map(|(n, e)| StmtKind::Const(n.into(), e).at(js::Span::NONE))
         .collect();
     out.push(looped.at(span));
     out.extend(exit);
@@ -727,7 +728,7 @@ fn from_the_end(
     }
     let name = match name.as_str() {
         "_" => fresh("i"),
-        _ => name.clone(),
+        _ => name.to_string(),
     };
     let start = match (range.inclusive, range.end.as_int()) {
         (true, _) => range.end.clone(),
@@ -771,7 +772,7 @@ pub(super) fn counted_to_lengths(stmts: &mut [Stmt], present_breaks: &[js::Span]
             let (name, start, test, step, body) = counted;
             stmt.kind = StmtKind::For {
                 label: label.clone(),
-                name,
+                name: name.into(),
                 start,
                 test,
                 step,
@@ -854,7 +855,7 @@ fn counted_to_length(
         }
     };
     stepped.extend(rest.iter().cloned());
-    Some((name.clone(), start.clone(), test, step, stepped))
+    Some((name.to_string(), start.clone(), test, step, stepped))
 }
 
 /// Of a loop of `[n, key]` of the keys `for…in` visits, enumerated,
@@ -863,7 +864,7 @@ fn counted_to_length(
 /// see it change, where each turn's `const` is its own (ADR 0719). A name
 /// is the function's one variable of it here, as the `i` a range's loop
 /// takes is; preparation names the counter apart from another's.
-fn counted_keys(iterable: &Expr, pattern: &js::Pattern, body: &[Stmt]) -> Option<(String, String, Expr)> {
+fn counted_keys(iterable: &Expr, pattern: &js::Pattern, body: &[Stmt]) -> Option<(Name, Name, Expr)> {
     let object = crate::lower::iterators::keys_in_source(
         crate::lower::iterators::enumerated_of(iterable)
             .filter(|e| e.form == crate::lower::iterators::EnumeratedForm::Mapped)

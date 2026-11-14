@@ -206,7 +206,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             },
                         ] = body.as_slice() =>
                 {
-                    (name.clone(), value.clone())
+                    (name.to_string(), value.clone())
                 }
                 _ => {
                     let item = self.fresh(Role::Item);
@@ -253,7 +253,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             },
                         ] = body.as_slice() =>
                 {
-                    (name.clone(), value.clone())
+                    (name.to_string(), value.clone())
                 }
                 _ => {
                     let item = self.fresh(Role::Item);

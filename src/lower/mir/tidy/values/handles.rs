@@ -87,7 +87,7 @@ fn written_whole_in_place(body: &mut Vec<Stmt>) {
                     value.clone(),
                     &mut |name, value, out| {
                         let fresh = crate::names::fresh_in(&mut taken, name);
-                        out.push(StmtKind::Const(fresh.clone(), value).at(stmt.span));
+                        out.push(StmtKind::Const(fresh.clone().into(), value).at(stmt.span));
                         Expr::var(&fresh)
                     },
                     stmt.span,
@@ -143,8 +143,8 @@ pub(in crate::lower::mir::tidy) fn read_handles(
                         && (place.reads_same()
                             || matches!(&place.kind, ExprKind::Index(of, at) if of.reads_same() && at.reads_same())))
             {
-                let at_once = frozen.contains(name) || read_at_once(stmts, k, name);
-                handles.push((name.clone(), (**place).clone(), at_once, *storage));
+                let at_once = frozen.contains(name.as_str()) || read_at_once(stmts, k, name);
+                handles.push((name.to_string(), (**place).clone(), at_once, *storage));
             }
         }
     });

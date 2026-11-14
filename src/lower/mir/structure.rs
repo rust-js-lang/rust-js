@@ -32,7 +32,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .map_or(data.terminator().source_info.span, |s| s.source_info.span);
             out.push(
                 StmtKind::While {
-                    label: Some(label(block)),
+                    label: Some(label(block).into()),
                     cond: Expr::bool(true),
                     body,
                 }
@@ -70,7 +70,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Where the block the program labeled is, that MIR's breaks leave:
         // tidy names it its label (ADR 0742).
         let span = (state.left.get(&merge)).map_or(js::Span::NONE, |&b| state.facts.jumps().blocks[b].span);
-        let mut out = vec![StmtKind::Labeled(label(merge), within).at(span)];
+        let mut out = vec![StmtKind::Labeled(label(merge).into(), within).at(span)];
         out.extend(self.mir_tree(state, merge)?);
         Ok(out)
     }
@@ -122,7 +122,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if state.facts.graph().backward(from, to) {
             let mut out = Vec::new();
             self.flush(state, &mut out)?;
-            out.push(StmtKind::Continue(Some(label(to))).at(js::Span::NONE));
+            out.push(StmtKind::Continue(Some(label(to).into())).at(js::Span::NONE));
             return Ok(out);
         }
         // To the block that returns, and does nothing else: the `return`,
@@ -157,7 +157,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let mut out = Vec::new();
             self.flush(state, &mut out)?;
             let written = left.map_or(js::Span::NONE, |(_, w)| w);
-            out.push(StmtKind::Break(Some(label(to))).at(written));
+            out.push(StmtKind::Break(Some(label(to).into())).at(written));
             return Ok(out);
         }
         self.mir_tree(state, to)
@@ -361,7 +361,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.flush(state, &mut out)?;
                 state.locals.declared[declared] = true;
                 let name = state.locals.names[declared].clone();
-                out.push(StmtKind::Let(name, None).at(self.js_span(span)));
+                out.push(StmtKind::Let(name.into(), None).at(self.js_span(span)));
             }
             out.extend(self.mir_branch(state, block, *target)?);
             return Ok(out);

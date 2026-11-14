@@ -324,7 +324,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `break 'rows` of an inner loop, which MIR makes a `break` of a block the outer turn ends, stays `bb22:` in a `while (true)`, not the outer loop's `break rows;` and its test (uz3)",
     file: "src/lower/mir/tidy/jumps/continues.rs",
-    find: "            super::tails::relabeled(&mut broken, &block, named);\n            *looped = Some(named.clone());\n",
+    find: "            super::tails::relabeled(&mut broken, &block, named);\n            *looped = Some(named.into());\n",
     replace: "            continue;\n",
     tests: ["test/corpus.test.ts", "-t", "^labeled_loop_left_from_inner.rs$"],
     snapshots: true,
@@ -377,7 +377,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a block's `break` in an inner loop, which goes on with the outer loop, is `continue;`, which goes on with the inner one, a wrong total (#442)",
     file: "src/lower/mir/tidy/jumps/continues.rs",
-    find: "                    rejump(body, label, &StmtKind::Continue(Some(looped.to_owned())))\n",
+    find: "                    rejump(body, label, &StmtKind::Continue(Some(looped.into())))\n",
     replace:
       "                    rejump(body, label, &StmtKind::Continue(None))\n",
     tests: ["test/corpus.test.ts", "-t", "^continue_outer_past_block.rs$"],

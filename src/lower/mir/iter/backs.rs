@@ -231,7 +231,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             named.iter().map(|part| part.as_str().into()).collect(),
             vec![StmtKind::Return(Some(carried)).at(js::Span::NONE)],
         );
-        made.push(StmtKind::Let(make.clone(), Some(maker)).at(self.js_span(span)));
+        made.push(StmtKind::Let(make.clone().into(), Some(maker)).at(self.js_span(span)));
         Ok(Expr::call(Expr::var(&make), parts))
     }
 

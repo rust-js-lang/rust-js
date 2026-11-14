@@ -10,7 +10,7 @@
 use crate::collections::{IndexMap, IndexSet};
 use std::cmp::Ordering;
 
-use crate::js::{self, Expr, ExprKind, Op, Stmt, StmtKind, UnaryOp};
+use crate::js::{self, Expr, ExprKind, Name, Op, Stmt, StmtKind, UnaryOp};
 use crate::lower::mir::hints::{Constant, Guard, Switch};
 
 use super::{ends, first_written, made_where, names_break};
@@ -81,7 +81,7 @@ pub(super) fn fixed_params(params: &[js::Pattern], body: &[Stmt]) -> Vec<String>
         let mut param = param.clone();
         param.each_name_mut(&mut |name| {
             if !writes.may_replace(name) && !js::declares(body, name) {
-                fixed.push(name.clone());
+                fixed.push(name.to_string());
             }
         });
     }
@@ -98,7 +98,7 @@ pub(super) fn loop_labels(body: &[Stmt]) -> IndexSet<String> {
             | StmtKind::ForOf { label: Some(l), .. }
             | StmtKind::For { label: Some(l), .. } = &stmt.kind
             {
-                labels.insert(l.clone());
+                labels.insert(l.to_string());
             }
         }
     });
@@ -310,7 +310,7 @@ fn chain(
     for s in arms_and_after.chain(after) {
         js::each_list(std::slice::from_ref(s), &mut |list| {
             breaking |= (list.iter()).any(|s| match &s.kind {
-                StmtKind::Break(l) => l.as_ref().is_none_or(|l| told.loops.contains(l)),
+                StmtKind::Break(l) => l.as_ref().is_none_or(|l| told.loops.contains(l.as_str())),
                 _ => false,
             });
         });

@@ -197,7 +197,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a tuple MIR sets an item of, `t[0] = x`, is read as its items, which crashes printing what's assigned",
     file: "src/lower/mir/tidy/destructuring.rs",
-    find: "        if writes.replaced.contains(&t)\n            || writes.changed.contains(&t)\n            || indexed == 0\n",
+    find: "        if writes.replaced.contains(t.as_str())\n            || writes.changed.contains(t.as_str())\n            || indexed == 0\n",
     replace: "        if indexed == 0\n",
     tests: ["test/corpus.test.ts", "-t", "mut_ref_temporary"],
   },

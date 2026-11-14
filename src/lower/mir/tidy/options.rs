@@ -70,7 +70,7 @@ fn filtered_names(made: &Stmt) -> Option<(String, String)> {
         return None;
     };
     let ExprKind::Var(v) = &value.kind else { return None };
-    tests_present_first(test, v).then(|| (x.clone(), v.to_string()))
+    tests_present_first(test, v).then(|| (x.to_string(), v.to_string()))
 }
 
 /// `tested_options`'s rewrite of `made`, the `Option`'s `const`, and

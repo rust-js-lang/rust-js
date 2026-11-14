@@ -1339,7 +1339,7 @@ pub(in crate::lower) fn counted_entries(stmts: &mut Vec<Stmt>) {
             };
             let set = Expr::call(Expr::member(map.clone(), "set"), vec![key.clone(), value]);
             let span = stmts[i + 2].span;
-            stmts[i].kind = StmtKind::Const(name, inserted.clone());
+            stmts[i].kind = StmtKind::Const(name.into(), inserted.clone());
             stmts.splice(i + 1..i + 3, [StmtKind::Expr(set).at(span)]);
         }
         i += 1;

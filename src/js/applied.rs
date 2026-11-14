@@ -578,8 +578,8 @@ fn in_place(
         renamed(&mut after, param, &to);
         let again = Writes::sets(&after, &to);
         body[first].kind = match again {
-            true => StmtKind::Let(to, Some(value)),
-            false => StmtKind::Const(to, value),
+            true => StmtKind::Let(to.into(), Some(value)),
+            false => StmtKind::Const(to.into(), value),
         };
         body.extend(after);
     }
@@ -593,7 +593,7 @@ fn in_place(
     for s in &body {
         match &s.kind {
             StmtKind::Const(name, _) | StmtKind::Let(name, _) => declared.push(name.clone()),
-            StmtKind::Destructure { pattern, .. } => declared.extend(pattern.names().into_iter().map(str::to_string)),
+            StmtKind::Destructure { pattern, .. } => declared.extend(pattern.names().into_iter().map(Name::from)),
             StmtKind::Function(function) => declared.push(function.name.clone()),
             _ => {}
         }
@@ -602,7 +602,7 @@ fn in_place(
         let names = names();
         let mut mentioned = names.clone();
         names_in(&body, &mut mentioned);
-        for from in declared.into_iter().filter(|name| names.contains(name)) {
+        for from in declared.into_iter().filter(|name| names.contains(name.as_str())) {
             let to = (1..)
                 .map(|k| crate::names::given_apart(&from, k))
                 .find(|to| !mentioned.contains(to))
@@ -1012,7 +1012,7 @@ pub fn tried_set_where_made(body: &mut [Stmt]) {
         let lets = &body[i - declared.max(1)..i];
         let declared: Vec<String> = (lets.iter())
             .filter_map(|s| match &s.kind {
-                StmtKind::Let(name, _) => Some(name.clone()),
+                StmtKind::Let(name, _) => Some(name.to_string()),
                 _ => None,
             })
             .collect();

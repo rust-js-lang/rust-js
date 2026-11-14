@@ -380,7 +380,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.write_adt(Expr::var(&value), &json, adt, args, span, &mut body)?;
         let js_span = self.js_span(span);
         Ok(js::Function {
-            name: self.krate.fns[&method].name.clone(),
+            name: self.krate.fns[&method].name.clone().into(),
             params,
             body,
             export: false,
@@ -609,7 +609,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out.push(
             StmtKind::ForOf {
                 label: None,
-                pattern: js::Pattern::Name(item),
+                pattern: js::Pattern::Name(item.into()),
                 mutable: false,
                 iterable: items,
                 body,
