@@ -897,15 +897,31 @@ export function manifestsHash(read: (file: string) => string): string {
   return hash.digest("hex");
 }
 
-/** `bun install --frozen-lockfile` where the manifests changed since this
- * checkout's last install, as a rebase over a new workspace or package
- * leaves them, else nothing: its stamp, `node_modules/.rust-js-installed`,
- * the manifests' hash it installed. A lockfile the manifests don't match
- * fails it, saying what to run. */
+/** Why this checkout's install isn't of its manifests, or `undefined`
+ * where it is: the manifests changed since the hash its last install
+ * stamped, `stamp`, or a workspace the root depends on, `workspace:*`,
+ * isn't linked in `node_modules`, as of a checkout whose install predates
+ * it, its stamp missing or not (#1817). */
+export function installNeeded(read: (file: string) => string, stamp: string | undefined, linked: (name: string) => boolean): string | undefined {
+  if (stamp !== manifestsHash(read)) return "the manifests changed since the last install";
+  const manifest = JSON.parse(read("package.json"));
+  const unlinked = Object.entries({ ...manifest.dependencies, ...manifest.devDependencies })
+    .filter(([name, version]) => String(version).startsWith("workspace:") && !linked(name))
+    .map(([name]) => name);
+  if (unlinked.length) return `${unlinked.join(", ")} isn't linked in node_modules`;
+}
+
+/** `bun install --frozen-lockfile` where the install isn't of the
+ * manifests (`installNeeded`), as a rebase over a new workspace or package
+ * leaves it, before anything runs, else nothing: its stamp,
+ * `node_modules/.rust-js-installed`, the manifests' hash it installed. A
+ * lockfile the manifests don't match fails it, saying what to run. */
 function installed() {
   const stamp = join(root, "node_modules", ".rust-js-installed");
-  const now = manifestsHash((file) => readFileSync(join(root, file), "utf8"));
-  if (existsSync(stamp) && readFileSync(stamp, "utf8") === now) return;
+  const read = (file: string) => readFileSync(join(root, file), "utf8");
+  const why = installNeeded(read, existsSync(stamp) ? readFileSync(stamp, "utf8") : undefined, (name) => existsSync(join(root, "node_modules", name)));
+  if (!why) return;
+  const now = manifestsHash(read);
   const installing = Date.now();
   const install = Bun.spawnSync(["bun", "install", "--frozen-lockfile"], { cwd: root, stdout: "inherit", stderr: "inherit" });
   if (install.exitCode !== 0) {
@@ -913,6 +929,6 @@ function installed() {
     process.exit(1);
   }
   writeFileSync(stamp, now);
-  console.log(timed("bun install", (Date.now() - installing) / 1000, "the manifests changed since the last install"));
+  console.log(timed("bun install", (Date.now() - installing) / 1000, why));
 }
 

@@ -26,7 +26,7 @@ import {
   testSet,
   unitTestsModule,
 } from "../scripts/mutations";
-import { jobs, leftToCi, manifestsHash, readabilityPaths, type Scope, touchesReadability } from "../scripts/checkFast";
+import { installNeeded, jobs, leftToCi, manifestsHash, readabilityPaths, type Scope, touchesReadability } from "../scripts/checkFast";
 import { changedCases, runs, touchesCrates, touchesPort } from "../scripts/iteratorSlice";
 import { loadScale, underLoad } from "../scripts/timing";
 import { caseOf, partsOf, runParts, verdict } from "../scripts/parts";
@@ -1026,3 +1026,23 @@ test("check:fast's install is of every manifest and the lockfile", () => {
   expect(hashOf({ "package.json": JSON.stringify({ workspaces: ["webapi"] }) })).not.toBe(now);
   expect(hashOf({ "react/package.json": "{}" })).toBe(now);
 });
+
+// And where the hash is the one installed but a workspace the root depends
+// on isn't linked, a checkout whose install predates it: m1-lisa's
+// check:fast failed `@rust-js/webapi`'s import so (#1817).
+test("check:fast installs where a workspace the root depends on isn't linked, its hash as installed", () => {
+  const files: Record<string, string> = {
+    "package.json": JSON.stringify({ workspaces: ["webapi", "react"], devDependencies: { "@rust-js/webapi": "workspace:*", typescript: "7.1.0-beta" } }),
+    "bun.lock": "lock",
+    "webapi/package.json": '{ "name": "@rust-js/webapi" }',
+    "react/package.json": '{ "name": "@rust-js/react-generator" }',
+  };
+  const read = (file: string) => files[file] ?? "";
+  const stamp = manifestsHash(read);
+  expect(installNeeded(read, stamp, () => true)).toBeUndefined();
+  expect(installNeeded(read, stamp, (name) => name !== "@rust-js/webapi")).toBe("@rust-js/webapi isn't linked in node_modules");
+  // Only a workspace the root depends on is linked: the React generator's isn't.
+  expect(installNeeded(read, stamp, (name) => name !== "@rust-js/react-generator")).toBeUndefined();
+  expect(installNeeded(read, undefined, () => true)).toBe("the manifests changed since the last install");
+});
+
