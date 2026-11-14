@@ -14,6 +14,14 @@ The new `table_rows_resized_unseen.rs` covers each way a table's row may
 resize with no row's `&mut` given to a call (#1849).
 The historical suite totals and CI timings below have not been remeasured.
 
+Added on 2026-11-15: `test/deep-chain.test.ts`, the deep-chain harness's
+first step, one test of about 10 s on a seeded target. An app four crates
+deep over the react crate (app, kit and forms, primitives, geometry; kit
+and forms a diamond over primitives) is built by Cargo through rust-js;
+what it computes is what native Rust prints, its page renders on the
+server, and a TypeScript caller of the kit and forms crates type-checks
+under strict tsc through each crate's declarations.
+
 Added source-owner mutation coverage on 2026-11-15 (#1848): six real
 workspace/load/control/cleanup tests and five self-mutants through the
 existing runner. Feature-owner registrations are reviewed separately.
