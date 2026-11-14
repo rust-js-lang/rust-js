@@ -158,7 +158,7 @@ function counted(n) {
   const later = [];
   for (let i = 0; i < n; i++) {
     const captured = i;
-    later.push(() => (captured * 10) >>> 0);
+    later.push(() => captured * 10);
   }
   return later.map((f) => f());
 }

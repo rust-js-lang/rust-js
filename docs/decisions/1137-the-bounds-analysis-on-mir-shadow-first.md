@@ -543,3 +543,23 @@ Corpus case raw_pointer_written_after_its_owner_reads holds both. The
 corpus, snapshots and port are otherwise unchanged. Found with it: #1781,
 where a pointer a callee keeps of a `&mut` writes the caller's box, which
 the caller had copied back out, so the write is never seen.
+
+## Amendment: a closure's captures (2026-11-14, #1701 A)
+
+A closure's body is its own MIR body. It reads what it captures as fields
+of its first parameter, `(*_1).k`, and of a reference it captures, the
+place it refers to, `*(*_1).k`. The walk knew nothing of either, so 17 of
+the bridge's 24 sites were wraps of a capture: `move || at * 2` of
+`at = 10`.
+
+Now a closure's captures are given where it's made (`capture_intervals`):
+- **By copy, its value there.** It doesn't change unless the body writes
+  it (`captures_written`): `at -= 1` of a `move` closure's own `at` keeps
+  its wrap.
+- **By shared reference, what it refers to there.** Borrowck holds that
+  unchanged while the closure lives. A `&mut` capture is given nothing.
+- **Joined over each place it's made.** Its makers are walked first, by
+  how deep in closures each is; one made where a closure as deep or deeper
+  is, an inlined copy, is given nothing.
+
+17 sites left the bridge's list; 7 remain, B's and C's.

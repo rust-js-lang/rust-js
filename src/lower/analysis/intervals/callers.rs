@@ -202,6 +202,7 @@ fn passes<'tcx>(
             Given {
                 intervals: args.iter().map(|arg| walk.operand(&arg.node, state)).collect(),
                 below,
+                captures: Vec::new(),
             },
         ));
     }
@@ -232,6 +233,9 @@ fn joined(a: &Given, b: &Given) -> Given {
                 let there = b.below.iter().find(|&&(i, o, _)| (i, o) == (index, of))?.2;
                 Some((index, of, strict && there))
             })
+            .collect(),
+        captures: (a.captures.iter().zip(&b.captures))
+            .map(|(a, b)| a.zip(*b).map(|(a, b)| a.join(b)))
             .collect(),
     }
 }

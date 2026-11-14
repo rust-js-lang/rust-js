@@ -1189,3 +1189,53 @@ pub fn read(v: &RefCell<Vec<u32>>, i: usize) -> u32 {
   const lib = await import(join(dir, "lib.js"));
   expect(() => lib.read([1, 2], 0)).toThrow("index out of bounds: the len is 0 but the index is 0");
 });
+
+// #1701 A: a closure's capture is what its maker's walk knows where it's
+// made, a value by copy or what a shared reference refers to, which
+// borrowck holds unchanged while the closure lives. Not one its body
+// writes, `at -= 1` of a `move` closure's own `at`, nor a `&mut` capture,
+// each changed between calls.
+test("a closure's capture is what it was made with, unless it writes it", async () => {
+  const dir = fixture("closure-captures");
+  writeFileSync(join(dir, "lib.rs"), `pub fn doubled() -> u32 {
+    let at = 10u32;
+    let shown = move || at * 2;
+    shown()
+}
+
+pub fn shared(n: u32) -> u32 {
+    let step = 7u32;
+    let back = |n: u32| if n > 9 { n - step } else { 0 };
+    back(n)
+}
+
+pub fn written() -> u32 {
+    let mut at = 2u32;
+    let mut down = move || {
+        at -= 1;
+        at
+    };
+    down();
+    down();
+    down()
+}
+
+pub fn lent() -> u32 {
+    let mut n = 2u32;
+    let mut down = || {
+        n -= 1;
+        n
+    };
+    down();
+    down();
+    down()
+}
+`);
+  expect(wrapsDisagreed(dir)).toEqual([]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("at * 2;");
+  expect(js).toContain("n - step");
+  expect(js.match(/>>> 0/g)?.length).toBe(2);
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.doubled(), lib.shared(12), lib.shared(3), lib.written(), lib.lent()]).toEqual([20, 5, 0, 4294967295, 4294967295]);
+});

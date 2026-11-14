@@ -32,6 +32,7 @@ use std::collections::BTreeSet;
 
 mod callers;
 mod calls;
+mod captures;
 mod cells;
 mod pushed;
 mod ranges;
@@ -39,6 +40,7 @@ mod session;
 mod state;
 
 use callers::parameter_intervals;
+use captures::capture_intervals;
 use ranges::stepped_ranges;
 pub(in crate::lower) use session::*;
 use state::*;
@@ -51,6 +53,9 @@ use state::*;
 pub(crate) struct Given {
     intervals: Vec<Option<Interval>>,
     below: Vec<(usize, usize, bool)>,
+    /// Of a closure, what each of its captures is where it's made, by
+    /// field (`capture_intervals`, #1701).
+    captures: Vec<Option<Interval>>,
 }
 
 /// The most a JS string's `length` is: `2^31 - 1`, as every engine's
@@ -103,6 +108,9 @@ struct Walk<'a, 'tcx> {
     /// The locals that hold or lend a `RefCell`, whose lengths a call may
     /// write (`cells`, #1741).
     cells: IndexSet<Local>,
+    /// Of a closure's body, the captures it writes, by field
+    /// (`captures_written`, #1701).
+    captures_written: IndexSet<usize>,
 }
 
 /// Whether `ty` is an integer a JS number holds as it is: of 32 bits at
@@ -183,6 +191,7 @@ fn walk<'a, 'tcx>(
         from_callers: given,
         pointed,
         cells: cells::cells(tcx, body),
+        captures_written: captures::captures_written(body),
     }
 }
 
@@ -510,7 +519,8 @@ impl<'tcx> Walk<'_, 'tcx> {
                             _ => known,
                         }
                     }
-                    _ => range,
+                    // A capture's, of a closure's body (#1701).
+                    _ => self.capture(place).unwrap_or(range),
                 })
             }
             Operand::RuntimeChecks(_) => None,

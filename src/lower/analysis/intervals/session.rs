@@ -33,7 +33,8 @@ pub(crate) struct Shadow {
 /// (#1742; `call_graph::crate_graph`).
 pub(in crate::lower) fn given_parameters<'tcx>(tcx: TyCtxt<'tcx>, calls: &crate::lower::call_graph::Crate<'_, 'tcx>) {
     let only_called = crate::lower::analysis::only_called::only_called(tcx);
-    let given = parameter_intervals(tcx, &calls.graph, &calls.bodies, &only_called);
+    let mut given = parameter_intervals(tcx, &calls.graph, &calls.bodies, &only_called);
+    capture_intervals(tcx, &calls.bodies, &mut given);
     crate::lower::session::caches(tcx).intervals.borrow_mut().given = given;
 }
 

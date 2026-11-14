@@ -276,4 +276,12 @@ export const mutations: Mutation[] = [
     replace: "            Value::Range(_, hi) => Some(Interval { lo: hi, hi }),\n",
     tests: ["test/lowering-integer-ranges.test.ts", "-t", "an index below a generic constant"],
   },
+  {
+    name: "intervals-capture-unread",
+    breaks: "a closure's read of a capture is its type's range, so `move || at * 2` of `at = 10` keeps its wrap",
+    file: "src/lower/analysis/intervals.rs",
+    find: "                    _ => self.capture(place).unwrap_or(range),\n",
+    replace: "                    _ => range,\n",
+    tests: ["test/lowering-integer-ranges.test.ts", "-t", "what it was made with"],
+  },
 ];

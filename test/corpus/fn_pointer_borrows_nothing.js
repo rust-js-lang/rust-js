@@ -20,7 +20,7 @@ function clz32Fallback(x) {
 }
 
 function pickArbitraryLaneIndex(lanes) {
-  return (31 - clz32(lanes >>> 0)) >>> 0;
+  return (31 - clz32(lanes)) >>> 0;
 }
 
 function entangledLanes(root, renderLanes) {
