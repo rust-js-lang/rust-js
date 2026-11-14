@@ -512,3 +512,37 @@ test of a library counting another library's `Rc`s refuses a trait
 method's too, whose callers stay unseen, which holds
 `library-rcs-of-own-calls-unsettled`; rc_per_type's and ref_cells_counted's
 assertions say the new contract and output.
+
+## Amendment: a field's `Rc<T>` is a wildcard only of a type a consumer can reach (2026-11-14, #1816)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none, Rust's behavior
+kept; a refusal lifted. A port of vercel-ui's undo stack compiled as a
+library, and its tests, built by `rust-js test`, were refused: `History<State>`'s
+field `Vec<Rc<State>>` gave `State` a field's origin, which may
+be any type (#1009's wildcard), and the tests' `Rc::ptr_eq` of an
+`Rc<i32>` counts it (ADR 0582), so `State` may be the counted `i32`, was
+counted itself, and as a bare parameter counted every `Rc`
+(`Counted.all`): the settings' untagged
+`UndoStackSettings::Options(Rc<UndoStackOptions>)`, which nothing counts,
+couldn't be told apart (ADR 0214). The library, whose code compares no `Rc<i32>`, counted none.
+
+**A field's `Rc<T>` is a wildcard only of a library's type another crate
+can reach** (`library::reachable`), whose values a consumer may make of
+any `T`. A program's types, and a library's that no consumer can name,
+hold only what the crate's own bodies make, which `found` already reads,
+each holding with its type's arguments and a type parameter's by the
+function that holds it; JS gives nothing that counts, as #1112 says of a
+program's `pub` functions. A test build is a program (`program: tested`),
+so it counts the `Rc<i32>` its tests compare and the `Rc<State>` its
+`i32`, no other; the library build counts nothing, as before. An impl
+header's `Rc<T>` keeps its wildcard, whose instances are dictionaries.
+
+Held by corpus cases `rc_field_of_a_parameter_beside_an_untagged_rc`, the
+undo stack as a program against native Rust (as a library, its `pub
+Stack<State>`'s fields are a consumer's to make: refused there, its
+`library-refused`), and
+`rc_field_of_a_private_parameter_beside_an_untagged_rc`, a private
+`Entries<T>` both ways; test/test-files.test.ts'
+"a test build's Rc counted by ptr_eq counts no other type a field's
+parameter may be", run by Node's runner. Mutations `program-field-rc-any`
+and `library-private-field-rc-any` (`analysis/rc_counts.ts`), caught.

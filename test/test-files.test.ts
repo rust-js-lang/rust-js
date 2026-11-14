@@ -185,3 +185,86 @@ test("the runner the crate names is the one its test files import test from", ()
     expect(crate.manifest.tests).toEqual({ runner, module, files: [join(crate.out, "lib.test.js")] });
   }
 });
+
+// #1816: a crate's tests that compare an `Rc<i32>` by `Rc::ptr_eq`, which
+// counts it, beside its own generic `History<State>` whose field holds an
+// `Rc<State>`, and an untagged enum of an `Rc<Options>`: a test build is a
+// program, whose fields hold only what its own bodies make, `State` the
+// `i32` its tests give, so the enum's `Rc<Options>` isn't counted, as the
+// library's isn't, and its variants are told apart.
+test("a test build's Rc counted by ptr_eq counts no other type a field's parameter may be", () => {
+  const crate = compiled("test-files-rc-field", {
+    "lib.rs": `use std::cell::{Cell, RefCell};
+use std::rc::Rc;
+
+#[derive(Default)]
+pub struct Options {
+    pub limit: Cell<Option<f64>>,
+}
+
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum Settings {
+    Options(Rc<Options>),
+    Getter(Box<dyn Fn() -> Option<Rc<Options>>>),
+}
+
+struct History<State> {
+    entries: Vec<Rc<State>>,
+    index: usize,
+}
+
+pub struct Stack<State> {
+    pub record: Box<dyn Fn(Rc<State>)>,
+    pub undo: Box<dyn Fn() -> Option<Rc<State>>>,
+}
+
+pub fn stack<State: 'static>(initial: Rc<State>, settings: Option<Settings>) -> Stack<State> {
+    let history = Rc::new(RefCell::new(History {
+        entries: vec![initial],
+        index: 0,
+    }));
+    let record = {
+        let history = Rc::clone(&history);
+        Box::new(move |state| {
+            let limit = match &settings {
+                Some(Settings::Options(options)) => options.limit.get(),
+                Some(Settings::Getter(get)) => get().and_then(|options| options.limit.get()),
+                None => None,
+            };
+            let mut history = history.borrow_mut();
+            history.entries.push(state);
+            if history.entries.len() as f64 > limit.unwrap_or(100.0) + 1.0 {
+                history.entries.remove(0);
+            }
+            history.index = history.entries.len() - 1;
+        })
+    };
+    let undo = Box::new(move || {
+        let mut history = history.borrow_mut();
+        if history.index == 0 {
+            return None;
+        }
+        history.index -= 1;
+        Some(Rc::clone(&history.entries[history.index]))
+    });
+    Stack { record, undo }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn undo_gives_back_the_state_recorded() {
+        let initial = Rc::new(0);
+        let stack = stack(Rc::clone(&initial), None);
+        (stack.record)(Rc::new(1));
+        assert!(Rc::ptr_eq(&(stack.undo)().unwrap(), &initial));
+        assert!((stack.undo)().is_none());
+    }
+}
+`,
+  });
+  const { code, pass, said } = crate.tested();
+  expect([code, pass], said).toEqual([0, 1]);
+});

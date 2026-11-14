@@ -560,10 +560,19 @@ pub(super) fn counted_rcs<'tcx>(
     // whose dictionary holds `Rc<T>`'s `Deref` and drop, though no body of
     // it names it: of a `T` that may be one counted, every `Rc` given it is
     // counted, as generic code's is (ADR 0852, #949).
+    // Only of a type another crate can reach, a library's: a program's
+    // types, and a library's no consumer can name, hold only what the
+    // crate's own bodies make, which `found` reads each holding with its
+    // type's arguments, a type parameter's by the function that holds it;
+    // JS gives nothing that counts (ADR 0852, amended for #1112). So their
+    // fields' `Rc<T>` is no wildcard, as a program's `pub` function's
+    // callers are its own; a test build is a program (#1816).
     let mut seen = IndexSet::default();
     for id in tcx.hir_crate_items(()).definitions() {
         match tcx.def_kind(id) {
-            DefKind::Struct | DefKind::Enum | DefKind::Union => {
+            DefKind::Struct | DefKind::Enum | DefKind::Union
+                if library && crate::lower::library::reachable(tcx, id.to_def_id()) =>
+            {
                 for field in tcx.adt_def(id).all_fields() {
                     found(
                         tcx.type_of(field.did).instantiate_identity().skip_normalization(),

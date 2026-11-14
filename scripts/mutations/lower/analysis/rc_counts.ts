@@ -3,6 +3,29 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "program-field-rc-any",
+    breaks:
+      "a program's struct whose field holds an `Rc<T>` takes `T` for any type, so a test build's `Rc::ptr_eq` of an `Rc<i32>` counts every `Rc`, and an untagged enum's `Rc<Options>` beside it is refused where the library's isn't (#1816)",
+    file: "src/lower/analysis/rc_counts.rs",
+    find: "                if library && crate::lower::library::reachable(tcx, id.to_def_id()) =>\n",
+    replace: "                if true =>\n",
+    tests: [
+      "test/corpus.test.ts",
+      "test/test-files.test.ts",
+      "-t",
+      "^rc_field_of_a_parameter_beside_an_untagged_rc.rs$|counts no other type a field's parameter may be",
+    ],
+  },
+  {
+    name: "library-private-field-rc-any",
+    breaks:
+      "a library's private struct whose field holds an `Rc<T>`, which no consumer can make, takes `T` for any type, so an `Rc<u8>` its `ptr_eq` counts counts every `Rc`, and an untagged enum's `Rc<Shape>` is refused as a library (#1816)",
+    file: "src/lower/analysis/rc_counts.rs",
+    find: "                if library && crate::lower::library::reachable(tcx, id.to_def_id()) =>\n",
+    replace: "                if library =>\n",
+    tests: ["test/corpus.test.ts", "-t", "^rc_field_of_a_private_parameter_beside_an_untagged_rc.rs$"],
+  },
+  {
     name: "lent-closure-unseen",
     breaks: "a closure a reference to which is made a `&dyn Fn` isn't one whose copies are apart, so `ptr::eq(&c1, &c2)` of a copy is `true` where native Rust's is `false` (#1090)",
     file: "src/lower/analysis/rc_counts.rs",

@@ -2005,10 +2005,13 @@ export function share(doc) {
   an `Rc` is counted where the crate reads the count of its type's, or of
   a type that may be the same, or its last owner runs a destructor.
   Generic code's `Rc<Slot<T>>` stands for each `Rc<Slot<_>>` its callers
-  give; where they can't all be seen, a field's, an impl header's or a
-  library's `pub` function's, for every `Rc<Slot<_>>`, and an `Rc<T>` for
-  every `Rc`. A program's callers are its own calls, as what JS gives drops
-  nothing and reads no count (#1112). A generic `Rc` of a type parameter's value that
+  give; where they can't all be seen, a field of a library's type a
+  consumer can reach, an impl header's or a library's `pub` function's,
+  for every `Rc<Slot<_>>`, and an `Rc<T>` for every `Rc`. A program's
+  callers are its own calls, and its types' fields hold what its own bodies
+  make, as what JS gives drops nothing and reads no count (#1112, #1816):
+  its tests' `Rc::ptr_eq` of an `Rc<i32>` counts an undo stack's
+  `History<State>`'s `Rc<State>` of that `i32`, no other `Rc`. A generic `Rc` of a type parameter's value that
   may have a destructor is counted where a body owns one, not behind a
   reference or a `Weak`: React's `use_context<T>(context:
   &ReactContext<T>)` only reads its context and counts nothing, so
