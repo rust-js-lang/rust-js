@@ -203,16 +203,20 @@ test("a file compiled alone keeps rust-js's layout, whatever Prettier config is 
   expect(alone.js).toContain("\n  return greeting;\n");
 });
 
-// Prettier lays JSX out otherwise than oxfmt, here at 40 columns: it
-// breaks lines rust-js's hadn't, and it's the same program, so it's kept,
-// and the map finds the Rust each probe did. (A string of a space at its
-// edge, which Prettier would break into a `{" "}`, is in braces, #1807.)
-test("Prettier's layout of the app's JSX is kept, and the map still finds the Rust", async () => {
+// The app's Prettier lays its JSX out, here at 40 columns, and the map
+// finds the Rust each probe did. Prettier breaks a line at a JSX text's
+// space beside an element, `{" "}`, a text node of its own, so under it
+// that text is in braces, `{" and save to test "}`, which it can't split,
+// and its layout is the same program, kept. rust-js's own layout, oxfmt's,
+// never breaks there, and writes it as JSX text (jsx.test.ts, #1807).
+test("Prettier's layout of the app's JSX is kept, its texts braced, and the map still finds the Rust", async () => {
   const source = `#![allow(non_snake_case)]\n${readFileSync(join(root, "examples", "vite-react", "src", "App.rs"), "utf8")}`;
   const crates = ["react", "js"].map((name) => `${name} = { package = "rust-js-${name === "js" ? "builtins" : name}", path = ${JSON.stringify(join(root, name === "js" ? "builtins" : name))} }\n`).join("");
   const app = (prettier?: object) => cargoBuilt(source, prettier, undefined, undefined, crates);
   const plain = await app();
   const pretty = await app({ printWidth: 40 });
+  // The repository's Prettier lays both out, its defaults the first's.
+  for (const laid of [plain, pretty]) expect(laid.js).toContain('{" and save to test "}');
   expect(pretty.js.split("\n").length).toBeGreaterThan(plain.js.split("\n").length);
   for (const word of ["useState(0)", "setCount(", "font-bold text-emerald-500", "Get started", "heroImg}"]) {
     expect([word, rustOf(pretty.js, pretty.map, word)]).toEqual([word, rustOf(plain.js, plain.map, word)]);

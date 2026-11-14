@@ -25,8 +25,7 @@ export function Counter() {
   const [count, setCount] = useState(0);
   return (
     <button className="counter" onClick={() => setCount((n) => (n + 1) | 0)}>
-      {"Count is "}
-      {count}
+      Count is {count}
     </button>
   );
 }
@@ -110,10 +109,7 @@ export function Basics({ items }) {
   const first = items[0]?.name;
   return (
     <div className="list" aria-label="Items" data-count={count}>
-      <h2>
-        {"Items: "}
-        {count}
-      </h2>
+      <h2>Items: {count}</h2>
       <input type="checkbox" disabled />
       <p style={{ color: "gray", fontSize: 12 }}>{"A & B"}</p>
       <div dangerouslySetInnerHTML={{ __html: "<b>raw</b>" }} />

@@ -119,6 +119,7 @@ pub fn emit(
     primary: Option<usize>,
     source_path: &str,
     js_file_name: &str,
+    prettier: bool,
 ) -> Output {
     let rust_source = sources.text.as_str();
     let allocator = Allocator::default();
@@ -144,6 +145,7 @@ pub fn emit(
         source: rust_source,
         across_lines: Default::default(),
         interpolations: Default::default(),
+        prettier,
         commented_branches: arms.iter().map(|&(lo, ..)| lo).collect(),
         // Where a comment of the Rust, not a blank line's, is before what starts there.
         commented: (comments.iter())
@@ -1268,6 +1270,10 @@ struct Cx<'a> {
     /// The template literals some of whose values the source writes across
     /// lines, by where each is in the arena, and which (ADR 0641, amended).
     interpolations: std::cell::RefCell<IndexMap<*const TemplateLiteral<'a>, Vec<bool>>>,
+    /// Whether the app's Prettier lays it out (`prettier::lays_out`), which
+    /// breaks a line at a JSX text's edge space beside a child, `{" "}`, a
+    /// text node of its own: its JSX text has no space at an edge (#1807).
+    prettier: bool,
     /// Where a conditional's branch its comments are before starts (ADR
     /// 0658), whose first JS is placed there (`Cx::branch`).
     commented_branches: IndexSet<u32>,

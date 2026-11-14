@@ -176,6 +176,21 @@ pub struct LaidOut {
     pub configs: Vec<PathBuf>,
 }
 
+/// Which Prettier lays out the JS of the crates rust-js compiles, `layout`'s
+/// hash, as the tooling asks it once a build: each crate rust-js compiles
+/// names it in its dep-info, as an `env!`'s variable, so another is a
+/// build of those crates again, and of no crate rustc builds, a binding
+/// crate's or a host's (ADR 1003, amended; #684, #892).
+pub const LAYOUT: &str = "RUST_JS_LAYOUT";
+
+/// Whether the app's Prettier lays out what this build writes: a Cargo
+/// build whose tooling found one, `RUST_JS_LAYOUT` (#892), as `laid_out`
+/// asks it. Its JSX text has no space at an edge, which Prettier would break
+/// a line at, a text node of its own (#1807, ADR 0381 amended).
+pub fn lays_out(settings: &Settings) -> bool {
+    settings.cargo && !cfg!(target_os = "wasi") && std::env::var(LAYOUT).is_ok_and(|identity| !identity.is_empty())
+}
+
 /// `files`, each where it goes, beside its Rust, whose config Prettier
 /// reads, as the app's `prettier --check` does, and its text, as the app's
 /// Prettier lays them out, or why it couldn't.

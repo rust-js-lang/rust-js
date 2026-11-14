@@ -110,12 +110,10 @@ export function App() {
       <footer className="info">
         <p>Double-click to edit a todo</p>
         <p>
-          {"Written in Rust, compiled by "}
-          <a href="https://github.com/rust-js-lang/rust-js">rust-js</a>
+          Written in Rust, compiled by <a href="https://github.com/rust-js-lang/rust-js">rust-js</a>
         </p>
         <p>
-          {"Part of "}
-          <a href="http://todomvc.com">TodoMVC</a>
+          Part of <a href="http://todomvc.com">TodoMVC</a>
         </p>
       </footer>
     </>

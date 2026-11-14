@@ -165,4 +165,12 @@ export const mutations: Mutation[] = [
     replace: "                | Statement::ExportAllDeclaration(_)\n",
     tests: ["test/lowering-comments-items.test.ts", "-t", "a pub use of what the module imports exports its binding"],
   },
+  {
+    name: "hook-layout-split-kept",
+    breaks: "a hook's layout that splits a JSX text into two text nodes, Prettier's `text{\" \"}`, is kept as the same program (#1807)",
+    file: "src/format.rs",
+    find: "    if source_type.is_jsx() && jsx_shape::shape(code, source_type) != jsx_shape::shape(&text, source_type) {\n",
+    replace: "    if false {\n",
+    unitTests: "format::tests::a_text_split_by_a_layout_is_another_program",
+  },
 ];

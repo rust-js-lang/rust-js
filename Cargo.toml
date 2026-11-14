@@ -71,5 +71,9 @@ lto = "off"
 # oxc_formatter_core with #1269's fix: each interned element's `will_break`
 # asked once, not twice, so layout is linear in how deep calls nest
 # (vendor/oxc_formatter_core/README.md, ADR 1121).
+# oxc_formatter with #1807's change: a JSX text's edge space beside an
+# element or expression is never where a line breaks, so a formatter can't
+# make it a text node of its own (vendor/oxc_formatter/README.md, ADR 0241).
 [patch."https://github.com/oxc-project/oxc"]
 oxc_formatter_core = { path = "vendor/oxc_formatter_core" }
+oxc_formatter = { path = "vendor/oxc_formatter" }

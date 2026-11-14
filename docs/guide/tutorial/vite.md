@@ -131,8 +131,7 @@ export function App() {
     <main>
       <h1>{greet("Vite")}</h1>
       <button type="button" onClick={() => setCount((count) => (count + 1) | 0)}>
-        {"Count is "}
-        {count}
+        Count is {count}
       </button>
     </main>
   );

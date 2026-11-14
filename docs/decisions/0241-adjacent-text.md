@@ -91,3 +91,38 @@ React's children arrays and markup with React given the same strings
 natively, Codex's two cases among them, and the mutations
 `jsx-text-space-runs`, `jsx-text-edge-spaces` and `jsx-text-tabs`.
 
+## Amendment (2026-11-14): the printer never breaks at a text's edge space (#1807's follow-up)
+
+The strict rule above braced every string of a space at its edge, so the
+plainest JSX was braces, `<p>{"Clicked "}{count}{" times"}</p>`, where the
+same text on one line gives React the same children: only a line break at
+the edge space split a text node. The printer owns where lines break, so
+it never breaks there now: rust-js's oxc formatter (`vendor/oxc_formatter`,
+its one change in `print/jsx/child_list.rs`) writes the whitespace between
+a text's word and an element or an expression beside it as a plain space,
+where upstream wrote `{" "}` and a line break wherever the children didn't
+fit. A break between two words of a text stays, as JSX joins the lines
+with a space. So a string with a space at its edge beside another child is
+JSX text again, `<p>Clicked {count} times</p>`, and the amendment above's
+loop, the later in braces, `If this is a mistake{", "}`, chooses again. At
+the start or end of an element's children a line break beside the tag
+would drop it, so there it's still in braces, `{" lead"}`, and under the
+app's Prettier, which breaks there, every one is (ADR 0381, amended).
+
+What it costs: a text glued to the element beside it can make a line
+longer than the print width, five lines of the guide's JSX and the
+snapshots', none of the corpus'.
+
+**It's checked of every layout.** `format::jsx_shape` reads each JSX
+element's children as React is given them, JSX text by JSX's own rules,
+Babel's `cleanJSXElementLiteralChild`; rust-js asserts of each JSX module
+it lays out that its children are what they were, an internal error
+otherwise, so the corpus, the guide and the port prove it on every build,
+and a hook's layout that changes them is refused (ADR 0381, amended). The
+assertion caught a bug of its own reading while it was written. Held by
+`test/jsx.test.ts`'s "a string child keeps its whitespace" and
+`test/jsx-text-browser.test.ts`, which counts each case's text nodes and
+measures its width in Chromium against React given the same strings,
+Codex's four cases, a space at a text's start, its end, both, and a formula
+that wraps; and by the mutations of `format/jsx_shape.ts`.
+

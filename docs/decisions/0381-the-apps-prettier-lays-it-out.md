@@ -132,6 +132,24 @@ crate's checks say (ADR 0117). Case N: what's printed.
 Held by `test/settings.test.ts`, "rust-js build says why the app's
 Prettier's layout wasn't taken", of a Prettier that adds a statement.
 
+## Amendment (2026-11-14): under the app's Prettier, a JSX text's edge space is braced, because Prettier splits it (#1807)
+
+Prettier breaks a line at a JSX text's space beside an element, writing
+it `text{" "}` and a newline, so one text node of React's, `"Clicked "`,
+becomes two, `"Clicked"` and `" "`: the same markup, laid out otherwise in
+a browser. rust-js's own layout never breaks there (ADR 0241, amended), but
+Prettier's can't be told not to. So where the build's layout is the app's
+Prettier, as the tooling tells Cargo, `RUST_JS_LAYOUT` (`prettier::lays_out`),
+a string child with a space at an edge is in braces, `{" and save to test "}`,
+which Prettier keeps as it is; the build's one fact decides it, per build,
+so every crate of an app with a Prettier is written so. And a layout of a
+hook, Prettier's or a transform's, that changes an element's children as
+React is given them, splitting or joining a text, is another program,
+refused with its warning, rust-js's own kept (`format::transformed`, of
+`format::jsx_shape`). Held by `test/settings.test.ts`'s "Prettier's layout
+of the app's JSX is kept, its texts braced", and the mutations
+`jsx-text-braced-under-prettier` and `hook-layout-split-kept`.
+
 ## Amended by
 
 - [1079](1079-a-node-sessions-input-is-read-whole.md): its session reads its input whole, as one UTF-8 text, `node_session`'s

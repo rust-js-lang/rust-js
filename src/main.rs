@@ -305,7 +305,7 @@ impl Callbacks for RustJs {
         // each app, and each `-vV` started a Node session (ADR 1003,
         // amended; #892).
         if self.cargo {
-            for var in [cargo::APPS, cargo::TEST_BUILD, cargo::LAYOUT] {
+            for var in [cargo::APPS, cargo::TEST_BUILD, prettier::LAYOUT] {
                 let value = std::env::var(var).ok().map(|value| Symbol::intern(&value));
                 compiler.sess.env_depinfo.lock().insert((Symbol::intern(var), value));
             }

@@ -368,9 +368,44 @@ impl<'a> Cx<'a> {
         // one with it, and React render as one text node, not two. So the
         // earlier is in braces, `{"Challenge"} {order}`.
         let mut text = vec![false; jsx.children.len()];
+        // Where a text's edge space is braced: at its element's start or end,
+        // or anywhere, where the app's Prettier, which breaks a line there,
+        // lays it out (#1807).
+        let last = jsx.children.len().saturating_sub(1);
+        let edges = |i: usize| (i == 0 || self.prettier, i == last || self.prettier);
         for i in (0..jsx.children.len()).rev() {
-            let writable = matches!(&jsx.children[i].kind, ExprKind::Str(s) if jsx_text(s));
+            let writable = matches!(&jsx.children[i].kind, ExprKind::Str(s) if jsx_text(s, edges(i)));
             text[i] = writable && !text.get(i + 1).is_some_and(|&next| next);
+        }
+        // Of two, the later in braces where it has a space at an edge and
+        // the earlier none, as a person writes `If this is a mistake{", "}`:
+        // never a blank one, which a formatter makes a space of the text.
+        let plain = |s: &str, i: usize| jsx_text(s, edges(i)) && s.trim() == s;
+        let spaced = |s: &str| !s.trim().is_empty() && s.trim() != s;
+        for i in 0..jsx.children.len().saturating_sub(1) {
+            if let (ExprKind::Str(earlier), ExprKind::Str(later)) = (&jsx.children[i].kind, &jsx.children[i + 1].kind)
+                && !text[i]
+                && text[i + 1]
+                && plain(earlier, i)
+                && spaced(later)
+                && (i == 0 || !text[i - 1])
+            {
+                text[i] = true;
+                text[i + 1] = false;
+            }
+        }
+        // A `{" "}` beside text is no text node of its own to a formatter,
+        // which joins it to that text, `{" "}— ` to ` — `, one node of two:
+        // so the text beside it is in braces too (#1807).
+        let lone = |i: usize| matches!(&jsx.children[i].kind, ExprKind::Str(s) if s == " ");
+        for i in 0..jsx.children.len() {
+            if lone(i) && !text[i] {
+                for beside in [i.checked_sub(1), Some(i + 1)].into_iter().flatten() {
+                    if let Some(text) = text.get_mut(beside) {
+                        *text = false;
+                    }
+                }
+            }
         }
         for (child, &text) in jsx.children.iter().zip(&text) {
             children.push(self.jsx_child(child, text));
@@ -745,18 +780,19 @@ fn jsx_text_safe(s: &str) -> bool {
 
 /// Can `s`, a child, be JSX text, one text node of React's, its whitespace
 /// whole (#1807, Codex's rule, browser-checked)? Not what JSX text can't
-/// carry, `jsx_text_safe`; nor whitespace but a single space between words:
-/// a tab, which JSX makes a space, or any other, a run of spaces, which a
-/// formatter lays out as one, or a space at its start or end, which a
-/// formatter breaking the line there writes `{" "}`, a text node of its
-/// own. `{"  "}`, `{"\tend"}` and `{" lead"}` stay strings; a space alone,
-/// `{" "}`, is text, one node however it's laid out.
-fn jsx_text(s: &str) -> bool {
+/// carry, `jsx_text_safe`; nor whitespace but single spaces: a tab, which JSX
+/// makes a space, or any other, or a run of spaces, which a formatter lays
+/// out as one. A space at its edge beside another child is text, as the
+/// formatter never breaks a line there (`vendor/oxc_formatter`); at the start
+/// or end of an element's children, `edges`, a line break beside the tag
+/// would drop it, so it's in braces, `{" lead"}`. A space alone, `{" "}`, is
+/// text, one node however it's laid out.
+fn jsx_text(s: &str, (first, last): (bool, bool)) -> bool {
     !s.is_empty()
         && jsx_text_safe(s)
-        && (s == " " || s.trim() == s)
         && !s.contains("  ")
         && !s.chars().any(|c| c.is_whitespace() && c != ' ')
+        && (s == " " || ((!first || !s.starts_with(' ')) && (!last || !s.ends_with(' '))))
 }
 
 pub(super) fn span(s: js::Span) -> Span {

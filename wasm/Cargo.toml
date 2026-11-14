@@ -77,6 +77,7 @@ lightningcss = { version = "=1.0.0-alpha.72", default-features = false }
 # browser's compiler lays out JS as the native one does (ADR 1121).
 [patch."https://github.com/oxc-project/oxc"]
 oxc_formatter_core = { path = "../vendor/oxc_formatter_core" }
+oxc_formatter = { path = "../vendor/oxc_formatter" }
 
 [profile.release]
 debug = false

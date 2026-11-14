@@ -55,13 +55,6 @@ pub const CRATES: &str = "RUST_JS_CRATES";
 /// types alone (ADR 0415).
 pub const DEPENDENCIES: &str = "RUST_JS_DEPENDENCIES";
 
-/// Which Prettier lays out the JS of the crates rust-js compiles, `layout`'s
-/// hash, as the tooling asks it once a build: each crate rust-js compiles
-/// names it in its dep-info, as an `env!`'s variable, so another is a
-/// build of those crates again, and of no crate rustc builds, a binding
-/// crate's or a host's (ADR 1003, amended; #684, #892).
-pub const LAYOUT: &str = "RUST_JS_LAYOUT";
-
 /// Set in the process that tries a dependency, which compiles it as its own.
 const TRYING: &str = "RUST_JS_TRYING";
 

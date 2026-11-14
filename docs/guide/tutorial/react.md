@@ -101,12 +101,9 @@ export function Counter({ label, step }) {
 
   return (
     <p>
-      {label}
-      {": "}
-      {count}{" "}
+      {label}: {count}{" "}
       <button type="button" onClick={() => setCount((count) => (count + step) | 0)}>
-        {"Add "}
-        {step}
+        Add {step}
       </button>
       <button type="button" disabled={count === 0} onClick={() => setCount(0)}>
         Reset

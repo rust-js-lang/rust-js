@@ -253,12 +253,7 @@ function unused() {}
 
 /** Putting React on a page, and rendering it on a server, with options. */
 export function Page() {
-  return (
-    <p className="page">
-      {"id "}
-      {useId()}
-    </p>
-  );
+  return <p className="page">id {useId()}</p>;
 }
 
 export function pageHtml() {

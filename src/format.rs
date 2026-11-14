@@ -15,6 +15,8 @@
 //! programs have the same nodes in the same order. It can add a few (JSX's
 //! `{" "}`), which the pairing steps over.
 
+mod jsx_shape;
+
 use crate::collections::{IndexMap, IndexSet};
 
 use oxc_allocator::Allocator;
@@ -62,6 +64,19 @@ fn formatted(code: &str, map: &SourceMap<'_>, js_file_name: &str, across_lines: 
         .print()
         .ok()?
         .into_code();
+    // Its layout keeps each element's children as React is given them,
+    // each text node whole (#1807): the formatter never breaks a line at a
+    // text's edge space beside a child (`vendor/oxc_formatter`).
+    if source_type.is_jsx() {
+        let (was, is) = (
+            jsx_shape::shape(code, source_type),
+            jsx_shape::shape(&text, source_type),
+        );
+        assert!(
+            was == is,
+            "rust-js's layout changed a JSX element's children as React is given them (#1807): {was:?} to {is:?}"
+        );
+    }
     let before = node_starts(&allocator, code, source_type).ok()?;
     let after = node_starts(&allocator, &text, source_type).ok()?;
     let map = moved(code, &text, map, &before, &after, js_file_name);
@@ -94,6 +109,11 @@ pub fn transformed(code: &str, text: String, map: &str, js_file_name: &str) -> R
             (None, None) => unreachable!("the kinds differ at {at}"),
         };
         return Err(format!("changed the program: it {change}"));
+    }
+    // Each element's children as React is given them, each text node whole:
+    // a line broken at a text's edge space makes it two (#1807).
+    if source_type.is_jsx() && jsx_shape::shape(code, source_type) != jsx_shape::shape(&text, source_type) {
+        return Err("changed the program: it split or joined a JSX text, a text node of React's".to_string());
     }
     // Of the same nodes, what one means: a name, a value, an operator.
     for (was, is) in layout_free(&before, code).into_iter().zip(layout_free(&after, &text)) {
@@ -587,6 +607,20 @@ pub(crate) fn moved_positions(map: &SourceMap<'_>, to: impl Fn(u32, u32) -> (u32
 mod tests {
     use super::*;
     use std::path::Path;
+
+    /// A layout that breaks a line at a text's edge space, as Prettier
+    /// does, `Clicked{" "}` and `{count}`, makes one text node two: another
+    /// program, refused (#1807).
+    #[test]
+    fn a_text_split_by_a_layout_is_another_program() {
+        let code = "const p = <p>Clicked {count}</p>;\n";
+        let text = "const p = (\n  <p>\n    Clicked{\" \"}\n    {count}\n  </p>\n);\n";
+        let mut map = SourceMapBuilder::default();
+        map.set_source_and_content("a.rs", "");
+        map.add_token(0, 0, 0, 0, Some(0), None);
+        let map = map.into_sourcemap().to_json_string();
+        assert!(transformed(code, text.to_string(), &map, "a.jsx").is_err());
+    }
 
     /// A layout that breaks a line at a lone space between two elements,
     /// `<b>a</b> <i>b</i>` to `<b>a</b>{" "}` and `<i>b</i>`, as Prettier

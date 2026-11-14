@@ -505,6 +505,7 @@ impl OutputPlan {
             resolved.iter().position(|source| *source == own),
             &relative_resolved(&dir, &own),
             &js_file_name,
+            crate::prettier::lays_out(&self.settings),
         );
         Ok(Laid {
             js_file_name,

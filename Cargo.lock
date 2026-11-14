@@ -760,7 +760,6 @@ source = "git+https://github.com/oxc-project/oxc?tag=crates_v0.151.0#bec650f15b4
 [[package]]
 name = "oxc_formatter"
 version = "0.68.0"
-source = "git+https://github.com/oxc-project/oxc?tag=crates_v0.151.0#bec650f15b457f3bffb6d79b65bf74bfcbaecdce"
 dependencies = [
  "cow-utils",
  "fast-glob",
@@ -772,7 +771,6 @@ dependencies = [
  "oxc_ast",
  "oxc_diagnostics",
  "oxc_formatter_core",
- "oxc_formatter_tests",
  "oxc_jsdoc",
  "oxc_parser",
  "oxc_span",
@@ -794,15 +792,6 @@ dependencies = [
  "oxc_span",
  "rustc-hash",
  "unicode-width",
-]
-
-[[package]]
-name = "oxc_formatter_tests"
-version = "0.62.0"
-source = "git+https://github.com/oxc-project/oxc?tag=crates_v0.151.0#bec650f15b457f3bffb6d79b65bf74bfcbaecdce"
-dependencies = [
- "oxc_formatter_core",
- "serde_json",
 ]
 
 [[package]]

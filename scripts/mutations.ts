@@ -70,6 +70,7 @@ export const readabilityOwners = [
   "src/to_oxc.rs",
   "src/to_oxc/**",
   "src/format.rs",
+  "src/format/**",
   "src/typescript.rs",
   "src/prettier.rs",
   "src/node_session.rs",

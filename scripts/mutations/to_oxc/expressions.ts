@@ -505,11 +505,27 @@ export const mutations: Mutation[] = [
   },
   {
     name: "jsx-text-edge-spaces",
-    breaks: "a string of a space at its edge is JSX text, which a formatter breaking the line there splits into two text nodes, `[span, \" 0.55 + 0.45 *\", \" \", span]` (#1807)",
+    breaks: "a string of a space at the start or end of an element's children is JSX text, which a line break beside the tag drops (#1807)",
     file: "src/to_oxc/expressions.rs",
-    find: "        && (s == \" \" || s.trim() == s)\n",
+    find: "        && (s == \" \" || ((!first || !s.starts_with(' ')) && (!last || !s.ends_with(' '))))\n",
     replace: "",
     tests: ["test/jsx.test.ts", "-t", "keeps its whitespace"],
+  },
+  {
+    name: "adjacent-text-earlier-always",
+    breaks: "of two strings side by side, the earlier is always in braces, `{\"If this is a mistake\"}, `",
+    file: "src/to_oxc/expressions.rs",
+    find: "                && spaced(later)",
+    replace: "                && spaced(later)\n                && false",
+    tests: ["test/jsx-children.test.ts", "-t", "adjacent text children stay apart"]
+  },
+  {
+    name: "adjacent-text-blank-braced",
+    breaks: "a blank string after text is put in braces, which a formatter makes a space of the text, one text node of two",
+    file: "src/to_oxc/expressions.rs",
+    find: "        let spaced = |s: &str| !s.trim().is_empty() && s.trim() != s;",
+    replace: "        let spaced = |s: &str| s.trim() != s;",
+    tests: ["test/jsx-children.test.ts", "-t", "adjacent text children stay apart"]
   },
   {
     name: "jsx-text-tabs",
@@ -518,5 +534,21 @@ export const mutations: Mutation[] = [
     find: "        && !s.chars().any(|c| c.is_whitespace() && c != ' ')\n",
     replace: "",
     tests: ["test/jsx.test.ts", "-t", "keeps its whitespace"],
+  },
+  {
+    name: "jsx-text-braced-under-prettier",
+    breaks: "under the app's Prettier, a JSX text's edge space beside a child is JSX text, which Prettier breaks a line at, a text node of its own (#1807)",
+    file: "src/to_oxc/expressions.rs",
+    find: "        let edges = |i: usize| (i == 0 || self.prettier, i == last || self.prettier);\n",
+    replace: "        let edges = |i: usize| (i == 0, i == last);\n",
+    tests: ["test/settings.test.ts", "-t", "its texts braced"],
+  },
+  {
+    name: "lone-space-beside-text",
+    breaks: "a `{\" \"}` beside JSX text stays braced, which a formatter joins to the text, `{\" \"}— ` to ` — `, one text node of two (#1807)",
+    file: "src/to_oxc/expressions.rs",
+    find: "                    if let Some(text) = text.get_mut(beside) {\n                        *text = false;\n                    }\n",
+    replace: "                    let _ = beside;\n",
+    tests: ["test/jsx-evaluation-order.test.ts", "-t", "a tag broken onto lines keeps its mappings in order"],
   },
 ];
