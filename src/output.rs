@@ -452,13 +452,11 @@ impl OutputPlan {
                 *import = js::ImportFrom::Specifier(specifier);
             }
         });
-        // As it was lowered, kept where trees are checked, to say which
-        // pass broke one (`js::validate`, #1681).
-        let lowered = crate::js::validate::checking().then(|| js_module.clone());
+        // As it was lowered, kept to say which pass broke a tree the check
+        // refuses (`js::validate`, #1681): checked in every build.
+        let lowered = js_module.clone();
         let fired = crate::prepare::module(&mut js_module, self.prepare.0);
-        if let Some(lowered) = lowered
-            && let Some(problem) = crate::js::validate::module(&js_module).into_iter().next()
-        {
+        if let Some(problem) = crate::js::validate::module(&js_module).into_iter().next() {
             let broken = |module: &js::Module| crate::js::validate::module(module).contains(&problem);
             let by = match broken(&lowered) {
                 true => "as it was lowered".to_string(),

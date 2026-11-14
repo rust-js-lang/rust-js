@@ -3,7 +3,8 @@
 Status: Accepted (2026-11-14, #1681's change 3, M1; the plan the lead
 approved: on in every build the tests and CI run, by a flag the harness
 sets, not by `debug_assertions` alone; in a user's release build only once
-its cost is measured, under 2%).
+its cost is measured, under 2%. Amended the same day: measured, each
+module's check is on in every build, the user's too).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): none; this is a check of
 rust-js's own trees, not a difference. What it refuses is rust-js's mistake.
@@ -27,10 +28,9 @@ a destructuring's names nor a function's.
 
 ## Decision
 
-**`js/validate.rs` is the one owner of what a tree must be**, checked where
-`checking()`: in a debug build, and where `RUST_JS_VALIDATE` is set, as
-`.env.test` sets it of every process `bun test` starts, the nightly's
-suites run with the release compiler included. It keeps no list of names:
+**`js/validate.rs` is the one owner of what a tree must be**, each
+module's tree checked in every build (the amendment below). It keeps no
+list of names:
 
 - each read resolves: to a declaration in scope, by JS's scopes, each
   block's declarations hoisted, a function's parameters and its own name,
@@ -50,7 +50,10 @@ suites run with the release compiler included. It keeps no list of names:
 too; `validate::body` a body alone, but its reads, which only its module
 resolves: tidy's two contracts are its answers, `JUMPS_LAND` its
 `Unlanded` problems and `DECLARED_ONCE` its `Twice`, run after each stage
-where `checking()`, no longer `debug_assertions` alone.
+with tidy's others where `stages_checked()`: in a debug build, and where
+`RUST_JS_VALIDATE` is set, as `.env.test` sets it of every process `bun
+test` starts, the nightly's suites run with the release compiler
+included, no longer `debug_assertions` alone.
 
 **A global's read is made one way, `Expr::global(name)`**, which marks it
 `Known::Global`, a form ([1127](1127-a-fact-has-a-role-and-the-js-is-right-without-one-that-permits.md)), never forgotten
@@ -88,6 +91,24 @@ with each pass left out in turn, only of a module refused):
   `global-binding-read-unmarked`, `prepare/shadows.ts`'s
   `shadow-of-a-global-unmarked`, `output.ts`'s `tree-unvalidated` and
   `prepare.ts`'s `breaking-pass-of-every-pass`.
-- A user's release build doesn't check, until its cost is measured.
+- A user's release build checks each module's tree, the amendment below.
 - M3 makes `Global(name)` a kind of its own, where the mark is a fact a
   pass may drop today; the check then refuses a local spelled as a global.
+
+## Amendment: each module's tree is checked in every build (2026-11-14)
+
+Measured with the release compiler on the Mac, the check's own work timed
+in the compile, the copy of the lowered module that names a pass, the
+module's check and tidy's stage contracts apart:
+
+| Workload | Load (`uptime`, 1 min) | Compile | Module check (copy + check) | Tidy's stage contracts |
+|---|---|---|---|---|
+| The corpus's 120 largest programs, 3 rounds | under 4 | 36.92 s | 0.53% with the contracts | (in the 0.53%) |
+| std's bodies (`std/lib.rs --std-bodies`), 3 rounds | 4.9 to 5.3, none of it compiling | 0.433 s | 1.9 ms, 0.44% | 8.5 ms of 7,822 checks, about 2% |
+
+So each module's check, at about 0.5%, is under the 2% the plan set, and
+is on in every build: a user's tree that breaks a rule is refused, not
+printed. Tidy's stage contracts, a check of each body between stages,
+about 2% of std's compile, stay where `stages_checked()`; a module's
+check is of the tree it prints, its jumps' and declarations' too.
+`RUST_JS_VALIDATE` is that flag alone.

@@ -6,8 +6,9 @@
 //! lands on a loop, a `switch` or a label around it, within its function.
 //! It keeps no list of names: what may be read undeclared is what its
 //! owners made so. A tree that breaks one is rust-js's own mistake, refused,
-//! never printed. Checked where `checking()`: in a debug build, and in every
-//! build the tests and CI run, which set `RUST_JS_VALIDATE`.
+//! never printed. Each module's tree is checked in every build, about 0.5%
+//! of a compile (ADR 1143); each body between tidy's stages where
+//! `stages_checked()`.
 
 use super::{Case, Expr, ExprKind, Function, Item, JsxTag, Known, Module, Pattern, Prop, Stmt, StmtKind};
 use crate::collections::IndexSet;
@@ -43,10 +44,12 @@ impl std::fmt::Display for Problem {
     }
 }
 
-/// Whether trees are checked: in a debug build, and where `RUST_JS_VALIDATE`
-/// is set, as `.env.test` sets it of every process a test starts and CI's
-/// workflows of theirs.
-pub fn checking() -> bool {
+/// Whether each body is checked between tidy's stages, its contracts
+/// (`mir/tidy/contracts.rs`), these rules' and its own, about 2% of a
+/// compile: in a debug build, and where `RUST_JS_VALIDATE` is set, as
+/// `.env.test` sets it of every process a test starts and CI's workflows of
+/// theirs. A module's tree is checked in every build.
+pub fn stages_checked() -> bool {
     static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
     *ON.get_or_init(|| cfg!(debug_assertions) || std::env::var_os("RUST_JS_VALIDATE").is_some())
 }

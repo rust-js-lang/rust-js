@@ -1,7 +1,7 @@
 // `js::validate` (#1681 change 3, M1, ADR 1143): every tree the compiler
-// prints is checked first where trees are checked, a debug build or one
-// `RUST_JS_VALIDATE` sets, as `.env.test` does of every process a test
-// starts. A read nothing declares nor made a global is rust-js's own
+// prints is checked first, in every build; each body between tidy's stages
+// too where `RUST_JS_VALIDATE` is set, as `.env.test` does of every process
+// a test starts. A read nothing declares nor made a global is rust-js's own
 // mistake: the compile is refused, naming the module, the read and what
 // broke it. Nothing a program writes makes one, so the test makes one:
 // `--without-known Global` forgets each global's mark.
