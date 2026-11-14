@@ -11,6 +11,7 @@ use rustc_span::{ErrorGuaranteed, Ident, Span};
 
 use super::formatting::Layout;
 use super::literals;
+use super::props::Scope;
 use super::{TagNames, rust_expression, template};
 
 type R<T> = Result<T, ErrorGuaranteed>;
@@ -870,20 +871,14 @@ pub(super) fn component(
     sess: &Session,
     item: &ast::Item,
     built: &IndexSet<String>,
-    local: &IndexSet<String>,
+    scope: &Scope,
     classes: &Classes,
 ) -> Option<Box<ast::Item>> {
     let (ident, target, props, handle) = signature(sess, item, classes)?;
     // A function's type parameter, `P` of `fn Wrap<P>(props: P)`, is no
     // type's.
     let parameter = |name: &str| matches!(&item.kind, ItemKind::Fn(f) if f.generics.params.iter().any(|p| p.ident.as_str() == name));
-    let imported = match props.split_once("::") {
-        _ if props.is_empty() || props.starts_with("::react::") => false,
-        None => !local.contains(&props) && !parameter(&props) && props != "Self",
-        Some(("self", name)) => !name.contains("::") && !local.contains(name),
-        Some(("Self", _)) => false,
-        Some(_) => true,
-    };
+    let imported = scope.companioned(&props, parameter);
     // A constant's props, or a `thread_local!`'s memo's, another component's
     // wherever it is, are built as any component's are: by the companion
     // beside them, imported with them.
@@ -1106,10 +1101,10 @@ pub(super) fn thread_local_components(
     sess: &Session,
     item: &ast::Item,
     built: &IndexSet<String>,
-    local: &IndexSet<String>,
+    scope: &Scope,
 ) -> Vec<Box<ast::Item>> {
     (thread_local_declarations(sess, item).into_iter().flatten())
-        .filter_map(|declaration| component(sess, &declaration, built, local, &Classes::default()))
+        .filter_map(|declaration| component(sess, &declaration, built, scope, &Classes::default()))
         .collect()
 }
 
@@ -1122,11 +1117,11 @@ pub(super) fn thread_local_named_as_jsx(
     sess: &Session,
     item: &ast::Item,
     built: &IndexSet<String>,
-    local: &IndexSet<String>,
+    scope: &Scope,
 ) -> Option<TokenStream> {
     let declarations = thread_local_declarations(sess, item)?;
     let named: Vec<bool> = (declarations.iter())
-        .map(|declaration| component(sess, declaration, built, local, &Classes::default()).is_some())
+        .map(|declaration| component(sess, declaration, built, scope, &Classes::default()).is_some())
         .collect();
     let ItemKind::MacCall(mac) = &item.kind else {
         return None;

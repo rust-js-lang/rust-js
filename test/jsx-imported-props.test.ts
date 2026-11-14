@@ -279,3 +279,94 @@ pub fn All() -> JSX::Element {
   const lib = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(lib.All())).toBe('<b data-color="red" data-weight="700">x</b>');
 });
+
+// Codex's constraints on #1794: a struct of a crate rust-js didn't compile,
+// std's `Range`, has no companion, and is built as a literal still, by its
+// path or a `use`; a macro of a module's own of an imported props type's
+// name isn't its companion; and React's attributes are props by their path,
+// a `use` and a `use .. as`.
+test("std's Range as props is a literal, and a module's own macro of an imported type's name isn't its companion", async () => {
+  const dir = fixture("jsx-foreign-props");
+  written(dir, {
+    "lib.rs": `#![allow(non_snake_case)]
+use react::{JSX, jsx};
+
+pub mod types {
+    pub struct CardProps<'a> {
+        pub title: &'a str,
+        pub subtitle: Option<&'a str>,
+    }
+}
+
+pub mod spans {
+    use react::{JSX, jsx};
+    use std::ops::Range;
+
+    pub fn Span(props: Range<u32>) -> JSX::Element {
+        jsx! { <i>{props.end - props.start}</i> }
+    }
+
+    pub fn Pathed(props: std::ops::Range<u32>) -> JSX::Element {
+        jsx! { <i>{props.start}</i> }
+    }
+}
+
+#[allow(unused_macros)]
+macro_rules! CardProps {
+    ($($tokens:tt)*) => {
+        compile_error!("the crate's CardProps! was taken for the companion")
+    };
+}
+
+pub mod cards {
+    use super::types::CardProps;
+    use react::{JSX, jsx};
+
+    #[allow(unused_macros)]
+    macro_rules! CardProps {
+        ($($tokens:tt)*) => {
+            compile_error!("the module's own CardProps! was taken for the companion")
+        };
+    }
+
+    pub fn Card(props: CardProps<'_>) -> JSX::Element {
+        jsx! { <h2>{props.title}</h2> }
+    }
+}
+
+pub mod anchors {
+    use react::attributes::AnchorHTMLAttributes;
+    use react::attributes::AnchorHTMLAttributes as Anchor;
+    use react::{JSX, jsx};
+
+    pub fn Used(props: AnchorHTMLAttributes<'_>) -> JSX::Element {
+        jsx! { <a {...props}>{"u"}</a> }
+    }
+
+    pub fn Renamed(props: Anchor<'_>) -> JSX::Element {
+        jsx! { <a {...props}>{"r"}</a> }
+    }
+
+    pub fn Pathed(props: react::attributes::AnchorHTMLAttributes<'_>) -> JSX::Element {
+        jsx! { <a {...props}>{"p"}</a> }
+    }
+}
+
+pub fn All() -> JSX::Element {
+    jsx! {
+        <>
+            <spans::Span start={1} end={4} />
+            <spans::Pathed start={2} end={3} />
+            <cards::Card title="c" />
+            <anchors::Used className={Some("x")} href={Some("/u")} />
+            <anchors::Renamed className={Some("y")} />
+            <anchors::Pathed className={Some("z")} />
+        </>
+    }
+}
+`,
+  });
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", ...react]);
+  const lib = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(lib.All())).toBe('<i>3</i><i>2</i><h2>c</h2><a class="x" href="/u">u</a><a class="y">r</a><a class="z">p</a>');
+});

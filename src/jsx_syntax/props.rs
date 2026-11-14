@@ -325,3 +325,98 @@ fn as_visible(sess: &Session, field: &ast::Visibility, of: &ast::Visibility) -> 
         _ => false,
     }
 }
+
+/// What a module's components' props types are, as the module names them,
+/// before rustc resolves a name (#1794): the types it defines, `local`, the
+/// modules it declares, `modules`, what each `use` names, `imports`, of
+/// its last name or its `as`, and the crates its build is given, `externs`,
+/// each compiled by rust-js, so each struct of it of fields as visible as
+/// it has a companion. std, core and alloc, of the sysroot, aren't given,
+/// and have none.
+pub(super) struct Scope {
+    pub(super) local: IndexSet<String>,
+    modules: IndexSet<String>,
+    imports: crate::collections::IndexMap<String, String>,
+    externs: IndexSet<String>,
+}
+
+impl Scope {
+    pub(super) fn of(sess: &Session, items: &[Box<ast::Item>]) -> Scope {
+        let named = |kinds: fn(&ItemKind) -> bool| -> IndexSet<String> {
+            (items.iter())
+                .filter(|item| kinds(&item.kind))
+                .filter_map(|item| item.kind.ident().map(|ident| ident.to_string()))
+                .collect()
+        };
+        let mut imports = crate::collections::IndexMap::default();
+        for item in items {
+            if let ItemKind::Use(tree) = &item.kind {
+                used(tree, &[], &mut imports);
+            }
+        }
+        Scope {
+            local: named(|kind| {
+                matches!(
+                    kind,
+                    ItemKind::Struct(..) | ItemKind::Enum(..) | ItemKind::Union(..) | ItemKind::TyAlias(_)
+                )
+            }),
+            modules: named(|kind| matches!(kind, ItemKind::Mod(..))),
+            imports,
+            externs: sess.opts.externs.iter().map(|(name, _)| name.clone()).collect(),
+        }
+    }
+
+    /// Whether `props`, a path a component's parameter names, is another
+    /// module's struct, or another crate's that rust-js compiled, which its
+    /// companion builds; not one of the module's own types, nor a type
+    /// parameter, `parameter`, nor a sysroot crate's or one no `use` names,
+    /// a glob's, which is built as a literal, as before.
+    pub(super) fn companioned(&self, props: &str, parameter: impl Fn(&str) -> bool) -> bool {
+        // A path's crate: this one, or one the build is given.
+        let compiled = |path: &str| {
+            let first = path.split("::").next().unwrap_or_default();
+            matches!(first, "crate" | "self" | "super")
+                || self.modules.contains(first)
+                || self.externs.contains(first)
+                || self.imports.get(first).is_some_and(|whole| {
+                    let first = whole.split("::").next().unwrap_or_default();
+                    matches!(first, "crate" | "self" | "super") || self.externs.contains(first)
+                })
+        };
+        match props.split_once("::") {
+            _ if props.is_empty() || props.starts_with("::") => false,
+            None if self.local.contains(props) || parameter(props) || props == "Self" => false,
+            None => self.imports.get(props).is_some_and(|whole| compiled(whole)),
+            Some(("self", name)) => name.contains("::") || !self.local.contains(name),
+            Some(("Self", _)) => false,
+            Some(_) => compiled(props),
+        }
+    }
+}
+
+/// Each name a `use` tree gives, its last name or its `as`, and the path it
+/// names: `use std::ops::Range;` gives `Range`, `std::ops::Range`. A glob
+/// gives none.
+fn used(tree: &ast::UseTree, prefix: &[String], into: &mut crate::collections::IndexMap<String, String>) {
+    let mut path: Vec<String> = prefix.to_vec();
+    path.extend(tree.prefix.segments.iter().map(|segment| segment.ident.to_string()));
+    match &tree.kind {
+        ast::UseTreeKind::Simple(rename) => {
+            // `use super::types::{self, ..}` names the module.
+            if path.last().is_some_and(|last| last == "self") {
+                path.pop();
+            }
+            let name = rename.map(|ident| ident.to_string()).or_else(|| path.last().cloned());
+            if let Some(name) = name {
+                into.insert(name, path.join("::"));
+            }
+        }
+        ast::UseTreeKind::Nested { items, .. } => {
+            for nested in items {
+                used(&nested.inner, &path, into);
+            }
+        }
+        ast::UseTreeKind::Glob(..) => {}
+    }
+}

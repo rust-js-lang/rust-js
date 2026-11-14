@@ -154,3 +154,26 @@ error: missing prop `href` of `ButtonLinkProps`
   component given its flattened attributes, each way of naming another
   module's props, a required prop left out, the refusal and a macro's
   name; `test/next.test.ts` compiles the issue's program in its app.
+- **Only a struct of a crate rust-js compiled is built by its companion**
+  (2026-11-14, Codex's constraints on #1794): 4f7dfc12b took every props
+  type the module didn't define for one with a companion, so a component
+  of std's `Range<u32>`, `use std::ops::Range;`, asked for `Range!`, which
+  std, compiled without rust-js, doesn't have, where it was a struct
+  literal. The module's `Scope` (`props.rs`) tells, before rustc resolves
+  a name, which of its props types have one: a path into this crate, its
+  `crate::`, `self::`, `super::` or a module it declares, or into a crate
+  its build is given with `--extern`, each compiled by rust-js; std, core
+  and alloc, of the sysroot, aren't given. A bare name is of the `use`
+  that names it, its last name or its `as`; one no `use` names, a glob's
+  or the prelude's, is built as a literal, as before. The companion is
+  called by the name the module knows it by: a `macro_rules!` of that
+  name, of the module or of its parent, isn't taken for it, as the
+  component's `macro` resolves where it's defined, past what's textual;
+  a path-scoped macro of that name beside the `use` is rustc's E0252. A
+  case of each, React's `AnchorHTMLAttributes` by a `use`, an `as` and its
+  path among them, is in `test/jsx-imported-props.test.ts`.
+  What's left: a library's props type a glob imports, `use ui::*;`, or
+  the prelude names, is built as a literal, as before, so its flattened
+  attributes fail as #1794's did. Resolving it needs rustc's names, after
+  expansion, which this pass runs before; Codex's prototype resolves it
+  there, and whether to take it is a decision of its own.

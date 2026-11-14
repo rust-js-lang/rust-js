@@ -328,21 +328,13 @@ impl Expand<'_> {
             })
             .collect();
         // The macros the module defines, whose names no companion takes, and
-        // a function's, whose component's companion has it; and the types it
-        // defines, whose props it builds as it sees them (#1794).
+        // a function's, whose component's companion has it; and what its
+        // components' props types are, as it names them (#1794).
         let macros: IndexSet<String> = (items.iter())
             .filter(|item| matches!(item.kind, ItemKind::MacroDef(..) | ItemKind::Fn(_)))
             .filter_map(|item| item.kind.ident().map(|ident| ident.to_string()))
             .collect();
-        let local: IndexSet<String> = (items.iter())
-            .filter(|item| {
-                matches!(
-                    item.kind,
-                    ItemKind::Struct(..) | ItemKind::Enum(..) | ItemKind::Union(..) | ItemKind::TyAlias(_)
-                )
-            })
-            .filter_map(|item| item.kind.ident().map(|ident| ident.to_string()))
-            .collect();
+        let scope = props::Scope::of(self.sess, items);
         let mut companions = Vec::new();
         let mut built = IndexSet::default();
         for item in items.iter() {
@@ -372,13 +364,13 @@ impl Expand<'_> {
                 continue;
             };
             self.item(item, &attrs);
-            companions.extend(parser::thread_local_components(self.sess, item, &built, &local));
-            if let Some(tokens) = parser::thread_local_named_as_jsx(self.sess, item, &built, &local)
+            companions.extend(parser::thread_local_components(self.sess, item, &built, &scope));
+            if let Some(tokens) = parser::thread_local_named_as_jsx(self.sess, item, &built, &scope)
                 && let ItemKind::MacCall(mac) = &mut item.kind
             {
                 mac.args.tokens = tokens;
             }
-            if let Some(companion) = parser::component(self.sess, item, &built, &local, &classes) {
+            if let Some(companion) = parser::component(self.sess, item, &built, &scope, &classes) {
                 companions.push(companion);
                 // A component is named as JSX names it, capitalized, which
                 // rustc's lint would flag: rust-js allows it, so no crate

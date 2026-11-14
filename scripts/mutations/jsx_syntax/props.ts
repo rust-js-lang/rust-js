@@ -138,4 +138,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/class-components.test.ts"],
   },
+  {
+    name: "sysroot-props-companioned",
+    breaks: "std's `Range` as a component's props, named by a `use`, is built by a companion std doesn't have, `cannot find macro Range` (#1794, Codex's constraint)",
+    file: "src/jsx_syntax/props.rs",
+    find: "            None => self.imports.get(props).is_some_and(|whole| compiled(whole)),\n",
+    replace: "            None => self.imports.contains_key(props),\n",
+    tests: ["test/jsx-imported-props.test.ts", "-t", "std's Range"],
+  },
+  {
+    name: "extern-crate-props-literal",
+    breaks: "another crate's props, which rust-js compiled with their companion, are built as a struct literal, their flattened attributes refused (#1794)",
+    file: "src/jsx_syntax/props.rs",
+    find: "                || self.externs.contains(first)\n",
+    replace: "",
+    tests: ["test/jsx-imported-props.test.ts", "-t", "another crate's props"],
+  },
 ];
