@@ -207,6 +207,16 @@ pub fn count(format_string: &str) -> u32 {
     n
 }
 
+pub fn tail(format: &str) -> u32 {
+    let mut i = 0;
+    let mut last = 0;
+    while i < js::string::length(format) {
+        last = js::string::length(format) - i - 1;
+        i += 1;
+    }
+    last
+}
+
 pub fn pairs(items: &[u32]) -> u32 {
     let mut s = 0;
     let mut i = 0;
@@ -253,7 +263,7 @@ pub fn upto(n: u8) -> u8 {
     i
 }
 `);
-  expect(wrapsDisagreed(dir, ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target])).toEqual(["mir-only-wrap skips", "mir-only-wrap skips", "mir-only-wrap skips"]);
+  expect(wrapsDisagreed(dir, ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target])).toEqual(["mir-only-wrap skips", "mir-only-wrap skips", "mir-only-wrap skips", "mir-only-wrap tail", "mir-only-wrap tail"]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   // \`i + 1 < n\` puts \`i\` below \`n - 1\`, at most 253 of a \`u8\`: its \`+= 1\`
   // can't wrap, and it settles round the loop at most 254.
@@ -262,6 +272,9 @@ pub fn upto(n: u8) -> u8 {
   // loop, its `i + 1` and its steps of two in range (MIR's intervals).
   expect(js).toContain("  while (i + 1 < format.length) {\n");
   expect(js).toContain("    if (formatString.charCodeAt(i) !== 37) {\n      i++;\n      continue;\n    }\n    i++;\n    n = (n + 1) >>> 0;\n    i++;\n");
+  // Below the text's JS length, `i` leaves `length - i` at least 1: a
+  // length of it, so its `- 1` can't wrap.
+  expect(js).toContain("    last = format.length - i - 1;\n");
   expect(js).toContain("  for (let i = 0; i + 1 < items.length; i++) {\n");
   expect(js).toContain("    s = (s ^ (items[i] ^ items[i + 1])) >>> 0;\n  }\n  return s;");
   // `items[i]`'s check is made before each step, so `i` is at most the
@@ -272,6 +285,7 @@ pub fn upto(n: u8) -> u8 {
   const lib = await import(join(dir, "lib.js"));
   expect([lib.count("a%b%c"), lib.count("%%%%"), lib.count(""), lib.count("%")]).toEqual([2, 2, 0, 0]);
   expect([lib.pairs([1, 2, 4]), lib.pairs([]), lib.pairs([5])]).toEqual([5, 0, 0]);
+  expect([lib.tail("abc"), lib.tail(""), lib.tail("%")]).toEqual([0, 0, 0]);
   expect([lib.skips([0, 1, 0, 0, 2]), lib.skips([])]).toEqual([2, 0]);
   expect([lib.upto(0), lib.upto(1), lib.upto(255)]).toEqual([0, 0, 254]);
   // \`i + 1\` of \`u32::MAX\` wraps to 0, below 5, so \`i\` steps on from 1.

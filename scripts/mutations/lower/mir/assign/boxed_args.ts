@@ -165,8 +165,16 @@ export const mutations: Mutation[] = [
     name: "mut-given-pointer-kept-unseen",
     breaks: "a `&mut` given to a function that keeps a raw pointer of it is a box copied back, so the pointer's later write, `*kept = 0`, reaches the box and not the caller's `n`, which prints `4` where Rust's is `u32::MAX` (#1781)",
     file: "src/lower/mir/assign/boxed_args.rs",
-    find: "            if self.borrow_outlives_call(def_id, i) || self.pointer_may_keep(def_id, i, param) {\n",
+    find: "            if self.borrow_outlives_call(def_id, i) || self.pointer_may_keep((def_id, generic_args), param) {\n",
     replace: "            if self.borrow_outlives_call(def_id, i) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^pointer_kept_of_a_mut_given.rs$"],
+  },
+  {
+    name: "pointer-kept-of-generic-code-unseen",
+    breaks: "a raw pointer generic code keeps of a `&mut impl GetMut` it's given, of the `u32` it gets, isn't one to what the call gives it, so its caller's box copied back misses the pointer's write (#1781)",
+    file: "src/lower/mir/assign/boxed_args.rs",
+    find: "                        .instantiate(self.tcx, generic_args)\n                        .skip_normalization(),\n                )\n                .inputs()[i];\n",
+    replace: "                        .instantiate_identity()\n                        .skip_normalization(),\n                )\n                .inputs()[i];\n",
     tests: ["test/corpus.test.ts", "-t", "^pointer_kept_of_a_mut_given.rs$"],
   },
 ];

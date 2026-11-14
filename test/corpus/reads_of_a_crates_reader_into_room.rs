@@ -1,3 +1,4 @@
+//@ library-differs
 // A reader of the crate's own sees each read std's `read_to_end` makes, of
 // the spare capacity of what it reads into: a `Vec::with_capacity`'s, and a
 // `String::new()`'s, none. The crate never asks a capacity, but its reader

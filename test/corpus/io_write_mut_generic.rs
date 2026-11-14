@@ -1,3 +1,4 @@
+//@ library-differs
 // An `io::Write` given by `&mut`, `W = &mut Vec<u8>`, to generic code: its
 // writes are the `Vec`'s, through the box the `&mut` is, as a `fmt::Write`
 // given so writes its `String`.

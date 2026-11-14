@@ -1,3 +1,4 @@
+//@ library-differs
 // Generic code that writes to any `fmt::Write`, as chrono formats its dates:
 // given a `String`, the `Formatter` a `Display` has, and a writer of the
 // crate's own, through helpers that write a `char`, a `&str` and a

@@ -70,18 +70,17 @@ function main() {
       headers = headers$2.value;
     }
   }
-  const headers$3 = { value: headers };
-  let tmp$2;
-  try {
-    tmp$2 = deinit(headers$3);
-  } catch (error) {
-    throw $unwindsOn(error);
-  } finally {
-    if ($live()) {
-      headers = headers$3.value;
-    }
-  }
-  const n = (((tmp + tmp$1) >>> 0) + tmp$2) >>> 0;
+  const n =
+    (((tmp + tmp$1) >>> 0) +
+      deinit({
+        get value() {
+          return headers;
+        },
+        set value(value) {
+          headers = value;
+        },
+      })) >>>
+    0;
   console.log(`${n} [${storage.join(", ")}]`);
 
   const v = [1];

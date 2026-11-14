@@ -123,15 +123,21 @@ function main() {
   tmp$1 = o$3.value;
   console.log(`${value$1}`);
   let tmp$2;
-  const o$4 = { value: tmp$2 };
-  const value$2 = callTwice(o$4);
-  tmp$2 = o$4.value;
-  console.log(`${value$2}`);
+  console.log(
+    `${callTwice({
+      get value() {
+        return tmp$2;
+      },
+      set value(value) {
+        tmp$2 = value;
+      },
+    })}`,
+  );
   const items = { start: 3, end: 6 };
   let someItems = items;
-  const o$5 = { value: someItems };
-  const stepped = nextTwice(o$5, { next: $rangeNext });
-  someItems = o$5.value;
+  const o$4 = { value: someItems };
+  const stepped = nextTwice(o$4, { next: $rangeNext });
+  someItems = o$4.value;
   const arg = onesTwice();
   console.log(`${stepped} ${arg}`);
 }

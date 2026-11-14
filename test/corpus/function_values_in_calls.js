@@ -52,13 +52,33 @@ function sumInto(total, items) {
 function main() {
   let x = 1;
   let y = 2;
-  const n$1 = { value: x };
-  const value = apply(n$1, (arg0, arg1) => i32Step.step(arg0, arg1));
-  x = n$1.value;
-  const n$2 = { value: y };
-  const value$1 = apply(n$2, (arg0, arg1) => i32Step.step(arg0, arg1));
-  y = n$2.value;
-  console.log(`${(value + value$1) | 0} ${x}`);
+  console.log(
+    `${
+      (apply(
+        {
+          get value() {
+            return x;
+          },
+          set value(value) {
+            x = value;
+          },
+        },
+        (arg0, arg1) => i32Step.step(arg0, arg1),
+      ) +
+        apply(
+          {
+            get value() {
+              return y;
+            },
+            set value(value) {
+              y = value;
+            },
+          },
+          (arg0, arg1) => i32Step.step(arg0, arg1),
+        )) |
+      0
+    } ${x}`,
+  );
   console.log(`${y}`);
   const ys = [4, 5];
   let acc = 1;
@@ -93,17 +113,26 @@ function main() {
   $mutItems(xs).forEach(bump);
   console.log(`[${xs.join(", ")}]`);
   let n = 5;
-  const n$3 = { value: n };
-  const value$2 = twice(n$3, bump);
-  n = n$3.value;
-  console.log(`${value$2}`);
+  console.log(
+    `${twice(
+      {
+        get value() {
+          return n;
+        },
+        set value(value) {
+          n = value;
+        },
+      },
+      bump,
+    )}`,
+  );
   console.log(`${n}`);
   let total = 0;
-  const value$3 = [["a"], ["bb"]];
+  const value = [["a"], ["bb"]];
   const total$2 = { value: total };
   try {
     try {
-      tally(total$2, value$3.map(show));
+      tally(total$2, value.map(show));
     } catch (error) {
       throw $unwindsOn(error);
     } finally {
@@ -115,49 +144,49 @@ function main() {
     throw $unwindsOn(error);
   } finally {
     if ($live()) {
-      for (const item of value$3) {
+      for (const item of value) {
         console.log(`drop ${item[0]}`);
       }
     }
   }
   console.log(`${total}`);
   const held = ["held"];
-  const value$4 = [["c"], ["ddd"]];
+  const value$1 = [["c"], ["ddd"]];
   try {
     let lens;
     try {
-      lens = [...value$4.values().map(show), show(held)];
+      lens = [...value$1.values().map(show), show(held)];
     } catch (error) {
       throw $unwindsOn(error);
     } finally {
       if ($live()) {
-        for (const item of value$4) {
+        for (const item of value$1) {
           console.log(`drop ${item[0]}`);
         }
       }
     }
     console.log(`[${lens.join(", ")}]`);
     let m = 1;
-    const n = { value: m };
-    let tmp;
-    try {
-      tmp = twice(n, bump);
-    } catch (error) {
-      throw $unwindsOn(error);
-    } finally {
-      if ($live()) {
-        m = n.value;
-      }
-    }
-    const value = [["e"]];
+    const value = twice(
+      {
+        get value() {
+          return m;
+        },
+        set value(value) {
+          m = value;
+        },
+      },
+      bump,
+    );
+    const value$2 = [["e"]];
     let got;
     try {
-      got = (tmp + value.map(show).reduce((a, b) => (a + b) >>> 0, 0)) >>> 0;
+      got = (value + value$2.map(show).reduce((a, b) => (a + b) >>> 0, 0)) >>> 0;
     } catch (error) {
       throw $unwindsOn(error);
     } finally {
       if ($live()) {
-        for (const item of value) {
+        for (const item of value$2) {
           console.log(`drop ${item[0]}`);
         }
       }

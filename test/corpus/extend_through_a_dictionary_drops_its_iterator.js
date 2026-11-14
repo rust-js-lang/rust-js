@@ -99,9 +99,15 @@ function bagExtendU32_extend(bag, iter, dropT, dropTIntoIter) {
 }
 
 function up(c, CExtendU32) {
-  const self = { value: c };
   CExtendU32.extend(
-    self,
+    {
+      get value() {
+        return c;
+      },
+      set value(value) {
+        c = value;
+      },
+    },
     $iterator({ n: 0 }, upIterator_next, false, undefined, undefined, undefined, upIterator_fold),
     undefined,
     (it) => {
@@ -111,14 +117,19 @@ function up(c, CExtendU32) {
       console.log(`drop Up ${it.of.n}`);
     },
   );
-  c = self.value;
   return c;
 }
 
 function down(c, n, CExtendU32) {
-  const self = { value: c };
   CExtendU32.extend(
-    self,
+    {
+      get value() {
+        return c;
+      },
+      set value(value) {
+        c = value;
+      },
+    },
     $iterator({ n }, downIterator_next),
     undefined,
     (it) => {
@@ -128,7 +139,6 @@ function down(c, n, CExtendU32) {
       console.log(`drop Down ${it.of.n}`);
     },
   );
-  c = self.value;
   return c;
 }
 

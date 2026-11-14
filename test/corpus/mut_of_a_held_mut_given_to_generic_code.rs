@@ -1,3 +1,4 @@
+//@ library-differs
 // A `&mut` to a local that holds a `&mut` to an object, given where generic
 // code has a box of its type parameter, `&mut W` of `&mut by` (#1300): the
 // box holds the object's in-place cell, as a `W` given `&mut v` by value

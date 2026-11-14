@@ -1,3 +1,4 @@
+//@ library-differs
 // A reader of the crate's own, an `io::Read` impl writing only `read`, has
 // std's provided methods over it: `read_exact`, a loop of `read` that tries
 // an interrupted read again and fails past the end; `read_to_end` and

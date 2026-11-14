@@ -1,3 +1,4 @@
+//@ library-differs
 // Generic code's `extend` of a collection its caller gives, through its
 // dictionary, where nothing the crate's own `size_hint` runs reaches a
 // collection that asks it as it fills (#849, the user's (b)): a `Vec` by

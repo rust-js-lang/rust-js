@@ -1,3 +1,4 @@
+//@ library-differs
 // A `Vec`'s capacity after std's byte sources read to their end into it
 // (#1338): a slice's, a `Cursor`'s and a `VecDeque`'s `read_to_end` each
 // reserve all they add first, `try_reserve(len)`, grown as std's growth

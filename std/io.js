@@ -10,7 +10,6 @@ import {
   $index,
   $ioThrow,
   $keepCapacity,
-  $live,
   $memchr,
   $partialEq,
   $readByte,
@@ -20,7 +19,6 @@ import {
   $strPop,
   $takeReadBuf,
   $traitImpl,
-  $unwindsOn,
   $view,
   $writeBy,
   $writeDebugStruct,
@@ -94,19 +92,27 @@ const $cursorDefault = new WeakMap();
 
 export function linesIterator_next(lines, BBufRead, dropB) {
   let buf = "";
-  const self = { value: lines.buf };
-  const buf$1 = { value: buf };
-  let readLine;
-  try {
-    readLine = bufRead_readLine(self, buf$1, BBufRead, BBufRead.Read(), dropB);
-  } catch (error) {
-    throw $unwindsOn(error);
-  } finally {
-    if ($live()) {
-      lines.buf = self.value;
-      buf = buf$1.value;
-    }
-  }
+  const readLine = bufRead_readLine(
+    {
+      get value() {
+        return lines.buf;
+      },
+      set value(value) {
+        lines.buf = value;
+      },
+    },
+    {
+      get value() {
+        return buf;
+      },
+      set value(value) {
+        buf = value;
+      },
+    },
+    BBufRead,
+    BBufRead.Read(),
+    dropB,
+  );
   if (readLine.TAG === "Ok") {
     if (readLine._0 !== 0) {
       const _n = readLine._0;
@@ -128,17 +134,21 @@ export function linesIterator_next(lines, BBufRead, dropB) {
 
 export function splitIterator_next(split, BBufRead, dropB) {
   const buf = [];
-  const self = { value: split.buf };
-  let readUntil;
-  try {
-    readUntil = bufRead_readUntil(self, split.delim, buf, BBufRead, BBufRead.Read(), dropB);
-  } catch (error) {
-    throw $unwindsOn(error);
-  } finally {
-    if ($live()) {
-      split.buf = self.value;
-    }
-  }
+  const readUntil = bufRead_readUntil(
+    {
+      get value() {
+        return split.buf;
+      },
+      set value(value) {
+        split.buf = value;
+      },
+    },
+    split.delim,
+    buf,
+    BBufRead,
+    BBufRead.Read(),
+    dropB,
+  );
   if (readUntil.TAG === "Ok") {
     if (readUntil._0 !== 0) {
       const _n = readUntil._0;
@@ -156,73 +166,75 @@ export function splitIterator_next(split, BBufRead, dropB) {
 
 export function chainRead_read(chain, buf, TRead, URead, dropT, dropU) {
   if (!chain.doneFirst) {
-    const self = { value: chain.first };
-    let read;
-    try {
-      read = TRead.read(self, buf);
-    } catch (error) {
-      throw $unwindsOn(error);
-    } finally {
-      if ($live()) {
-        chain.first = self.value;
-      }
+    const result = TRead.read(
+      {
+        get value() {
+          return chain.first;
+        },
+        set value(value) {
+          chain.first = value;
+        },
+      },
+      buf,
+    );
+    if (result.TAG === "Err") {
+      return result;
     }
-    if (read.TAG === "Err") {
-      return read;
-    }
-    if (read._0 === 0 && buf.length !== 0) {
+    const value = result._0;
+    if (value === 0 && buf.length !== 0) {
       chain.doneFirst = true;
     } else {
-      return { TAG: "Ok", _0: read._0 };
+      return { TAG: "Ok", _0: value };
     }
   }
-  const self = { value: chain.second };
-  try {
-    return URead.read(self, buf);
-  } catch (error) {
-    throw $unwindsOn(error);
-  } finally {
-    if ($live()) {
-      chain.second = self.value;
-    }
-  }
+  return URead.read(
+    {
+      get value() {
+        return chain.second;
+      },
+      set value(value) {
+        chain.second = value;
+      },
+    },
+    buf,
+  );
 }
 
 export function chainRead_readToEnd(chain, buf, TRead, URead, dropT, dropU) {
   let read = 0;
   if (!chain.doneFirst) {
-    const self = { value: chain.first };
-    let readToEnd;
-    try {
-      readToEnd = TRead.readToEnd(self, buf);
-    } catch (error) {
-      throw $unwindsOn(error);
-    } finally {
-      if ($live()) {
-        chain.first = self.value;
-      }
+    const result = TRead.readToEnd(
+      {
+        get value() {
+          return chain.first;
+        },
+        set value(value) {
+          chain.first = value;
+        },
+      },
+      buf,
+    );
+    if (result.TAG === "Err") {
+      return result;
     }
-    if (readToEnd.TAG === "Err") {
-      return readToEnd;
-    }
-    read += readToEnd._0;
+    read += result._0;
     chain.doneFirst = true;
   }
-  const self = { value: chain.second };
-  let tmp;
-  try {
-    tmp = URead.readToEnd(self, buf);
-  } catch (error) {
-    throw $unwindsOn(error);
-  } finally {
-    if ($live()) {
-      chain.second = self.value;
-    }
+  const result = URead.readToEnd(
+    {
+      get value() {
+        return chain.second;
+      },
+      set value(value) {
+        chain.second = value;
+      },
+    },
+    buf,
+  );
+  if (result.TAG === "Err") {
+    return result;
   }
-  if (tmp.TAG === "Err") {
-    return tmp;
-  }
-  read = (read + tmp._0) >>> 0;
+  read = (read + result._0) >>> 0;
   return { TAG: "Ok", _0: read };
 }
 
@@ -257,73 +269,84 @@ export function chainBufRead_fillBuf(chain, TBufRead, UBufRead, dropT, dropU) {
 
 export function chainBufRead_consume(chain, amt, TBufRead, UBufRead, dropT, dropU) {
   if (!chain.doneFirst) {
-    const self = { value: chain.first };
-    try {
-      TBufRead.consume(self, amt);
-    } catch (error) {
-      throw $unwindsOn(error);
-    } finally {
-      if ($live()) {
-        chain.first = self.value;
-      }
-    }
+    TBufRead.consume(
+      {
+        get value() {
+          return chain.first;
+        },
+        set value(value) {
+          chain.first = value;
+        },
+      },
+      amt,
+    );
   } else {
-    const self = { value: chain.second };
-    try {
-      UBufRead.consume(self, amt);
-    } catch (error) {
-      throw $unwindsOn(error);
-    } finally {
-      if ($live()) {
-        chain.second = self.value;
-      }
-    }
+    UBufRead.consume(
+      {
+        get value() {
+          return chain.second;
+        },
+        set value(value) {
+          chain.second = value;
+        },
+      },
+      amt,
+    );
   }
 }
 
 export function chainBufRead_readUntil(chain, byte, buf, TBufRead, UBufRead, dropT, dropU) {
   let read = 0;
   if (!chain.doneFirst) {
-    const self = { value: chain.first };
-    let readUntil;
-    try {
-      readUntil = bufRead_readUntil(self, byte, buf, TBufRead, TBufRead.Read(), dropT);
-    } catch (error) {
-      throw $unwindsOn(error);
-    } finally {
-      if ($live()) {
-        chain.first = self.value;
-      }
+    const result = bufRead_readUntil(
+      {
+        get value() {
+          return chain.first;
+        },
+        set value(value) {
+          chain.first = value;
+        },
+      },
+      byte,
+      buf,
+      TBufRead,
+      TBufRead.Read(),
+      dropT,
+    );
+    if (result.TAG === "Err") {
+      return result;
     }
-    if (readUntil.TAG === "Err") {
-      return readUntil;
-    }
-    read += readUntil._0;
+    const value = result._0;
+    read += value;
     const b = buf.at(-1);
     if (b != null) {
       if (b === byte) {
-        if (readUntil._0 !== 0) {
+        if (value) {
           return { TAG: "Ok", _0: read };
         }
       }
     }
     chain.doneFirst = true;
   }
-  const self = { value: chain.second };
-  let tmp;
-  try {
-    tmp = bufRead_readUntil(self, byte, buf, UBufRead, UBufRead.Read(), dropU);
-  } catch (error) {
-    throw $unwindsOn(error);
-  } finally {
-    if ($live()) {
-      chain.second = self.value;
-    }
+  const result = bufRead_readUntil(
+    {
+      get value() {
+        return chain.second;
+      },
+      set value(value) {
+        chain.second = value;
+      },
+    },
+    byte,
+    buf,
+    UBufRead,
+    UBufRead.Read(),
+    dropU,
+  );
+  if (result.TAG === "Err") {
+    return result;
   }
-  if (tmp.TAG === "Err") {
-    return tmp;
-  }
-  read = (read + tmp._0) >>> 0;
+  read = (read + result._0) >>> 0;
   return { TAG: "Ok", _0: read };
 }
 
@@ -332,26 +355,27 @@ export function takeRead_read(take, buf, TRead, dropT) {
     return { TAG: "Ok", _0: 0 };
   }
   const max = Number(BigInt.asUintN(32, $bigMin(BigInt(buf.length), take.limit)));
-  const self = { value: take.inner };
-  let read;
-  try {
-    read = TRead.read(self, $view(buf, 0, max));
-  } catch (error) {
-    throw $unwindsOn(error);
-  } finally {
-    if ($live()) {
-      take.inner = self.value;
-    }
+  const result = TRead.read(
+    {
+      get value() {
+        return take.inner;
+      },
+      set value(value) {
+        take.inner = value;
+      },
+    },
+    $view(buf, 0, max),
+  );
+  if (result.TAG === "Err") {
+    return result;
   }
-  if (read.TAG === "Err") {
-    return read;
-  }
-  const value = BigInt(read._0);
-  if (!(value <= take.limit)) {
+  const value = result._0;
+  const value$1 = BigInt(value);
+  if (!(value$1 <= take.limit)) {
     throw new Error("number of read bytes exceeds limit");
   }
-  take.limit = BigInt.asUintN(64, take.limit - value);
-  return { TAG: "Ok", _0: read._0 };
+  take.limit = BigInt.asUintN(64, take.limit - value$1);
+  return { TAG: "Ok", _0: value };
 }
 
 export function takeBufRead_fillBuf(take, TBufRead, dropT) {
@@ -378,29 +402,32 @@ export function takeBufRead_consume(take, amt, TBufRead, dropT) {
   amt = Number(BigInt.asUintN(32, $bigMin(BigInt(amt), take.limit)));
   const value = BigInt(amt);
   take.limit = BigInt.asUintN(64, take.limit - value);
-  const self = { value: take.inner };
-  try {
-    TBufRead.consume(self, amt);
-  } catch (error) {
-    throw $unwindsOn(error);
-  } finally {
-    if ($live()) {
-      take.inner = self.value;
-    }
-  }
+  TBufRead.consume(
+    {
+      get value() {
+        return take.inner;
+      },
+      set value(value) {
+        take.inner = value;
+      },
+    },
+    amt,
+  );
 }
 
 export function bytesIterator_next(bytes, RRead, dropR) {
-  const self = { value: bytes.inner };
-  try {
-    return rSpecReadByte_specReadByte(self, RRead, dropR);
-  } catch (error) {
-    throw $unwindsOn(error);
-  } finally {
-    if ($live()) {
-      bytes.inner = self.value;
-    }
-  }
+  return rSpecReadByte_specReadByte(
+    {
+      get value() {
+        return bytes.inner;
+      },
+      set value(value) {
+        bytes.inner = value;
+      },
+    },
+    RRead,
+    dropR,
+  );
 }
 
 export function cursorClone_clone(cursor, TClone, dropT) {

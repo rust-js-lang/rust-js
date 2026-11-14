@@ -171,3 +171,36 @@ prints `u32::MAX`). `pointer_may_keep` looks for a raw pointer to what the
 of a function of the crate's it calls, four calls down: a pointer to that
 type as the call gives it too, `u32` of generic code's `&mut impl GetMut`.
 Where none is, the box stays.
+
+### It fails closed (2026-11-14, #1781)
+
+Four calls down was a cut-off that answered "doesn't keep" past it: a
+`keep` five calls down wrote the box (`12` where Rust prints `u32::MAX`),
+and so did one given through a function pointer (`14`). There is no
+cut-off now. `pointer_may_keep` walks every body the call may run, each
+as the call instantiates it, until none is left, and answers "may keep"
+where it can't see:
+
+- **A call it can't follow,** through a function pointer, a closure or a
+  `dyn` of the `Fn` traits, or into a library's function not std's, may
+  keep what it's given: a reference or raw pointer to the type, or a type
+  parameter, which may be one.
+- **A trait's method generic code calls,** or one through a `dyn`, is each
+  of its impls, walked as its own generic code, and the trait's default.
+  A program's impls are all known, and a library's of a trait no other
+  crate sees; another crate may implement any other, std's among them, so
+  of a library it's a call it can't follow.
+- **std's functions,** and the crates std is built of, hashbrown's and the
+  rest, keep no `&mut` past their call. The code they run is walked: what
+  a body holds, or gives a call, runs too, a closure, a function, and each
+  method of the crate's types, so `once(()).for_each(|()| ..)`'s closure,
+  `once(n).for_each(keep)`'s `keep` and a type's `Drop` are each looked
+  into; a function pointer, or a `dyn` of the `Fn` traits, may be any
+  code, so `Box<dyn FnMut>`, which std's `impl FnMut for
+  Box` calls, may keep it.
+- **A raw pointer of generic code to a type parameter** may be one to the
+  type.
+
+So where a callee holds a raw pointer of the type for its own work,
+`deinit_slice_mut`'s cast of a `&mut &mut [T]`, the `&mut` is a handle:
+the same value, read through a getter and setter.

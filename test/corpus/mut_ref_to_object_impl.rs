@@ -1,3 +1,4 @@
+//@ library-differs
 // An impl for `&mut Money`, rust_decimal's `impl AddAssign for &mut Decimal`:
 // its `&mut self`, a `&mut` to a `&mut` to an object, a cell of the object,
 // called where its type is known and through generic code's dictionary.

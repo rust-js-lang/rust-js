@@ -6,9 +6,7 @@ import {
   $heldCellOf,
   $heldObjectOf,
   $index,
-  $live,
   $mutWriter,
-  $unwindsOn,
   $unwrap,
   $vecWriter,
 } from "@rust-js/std";
@@ -110,16 +108,14 @@ function main() {
   };
   const result = $unwrap(option != null ? stampedRefMutVecFn(option) : undefined).value;
   result.push(109);
-  const w$1 = { value: into };
-  try {
-    stampTwice(stampRefMutVecFn, w$1);
-  } catch (error) {
-    throw $unwindsOn(error);
-  } finally {
-    if ($live()) {
-      into = w$1.value;
-    }
-  }
+  stampTwice(stampRefMutVecFn, {
+    get value() {
+      return into;
+    },
+    set value(value) {
+      into = value;
+    },
+  });
   const t = { value: text };
   generic(t, (t) => {
     t.value += "c";

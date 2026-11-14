@@ -1,3 +1,4 @@
+//@ library-differs
 // std's files (#1156), through Node's fs: a `File` is `{ fd, pos }`, read
 // and written at its position, which `Seek` moves; `OpenOptions` are std's
 // flags, and an error of the OS's is std's `Os` error, its kind and message

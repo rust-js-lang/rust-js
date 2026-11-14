@@ -1,4 +1,5 @@
 //@ native: wasm32
+//@ library-differs
 // Generic code bounded by `Hasher`, given std's hasher: by value, through
 // `&mut`, `&` and a `Box`, `&mut &mut` and a `Default` one made there, each write a `&mut self` of its
 // cell and `finish` a `&self` of the hasher itself, as std's dictionary

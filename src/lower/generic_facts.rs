@@ -24,6 +24,7 @@
 //! | what dropping one runs, its drop slot (ADR 0421) | Given | `src/lower/traits/drop_params.rs drop_slot` |
 //! | whether a derived `Clone` or `Default` of a type makes a field of it before another, which it drops as a later one panics, so the derive is given drops (#1517) | Given | `src/lower/generic_facts.rs makes_a_param_field_first` |
 //! | whether a type holds a function's type parameter, as `repeat_n`'s `RepeatN<T>` holds its `T`, so a std maker of a compiled iterator is given its drop (#1458) | Given | `src/lower/generic_facts.rs holds_type_parameter` |
+//! | whether a type of generic code a walk for a kept raw pointer meets names a type parameter, which may be the `&mut`'s pointee or a reference to it, so it may keep it (#1781) | Given | `src/lower/generic_facts.rs may_be_any_type` |
 //! | whether each parameter a type names, of the body that made it, is another body's own, by index and name, so what its drop runs is asked in that body's env, where a caller's `SIZE` isn't and rustc crashes (#1608) | Instances | `src/lower/generic_facts.rs params_owned_by` |
 //! | whether what a `Box<I>` holds is stepped by a dictionary its caller gives, which may carry the crate's own `fold` or `count` std's `Box<I>` never calls, so no default passes on to it (#1611) | Given | `src/lower/generic_facts.rs boxed_steps_given` |
 //! | whether a clone of it is its caller's, which may run any code, so a `cycle()` of an array's items of it clones as std's `Cycle` does (#1630) | Given | `src/lower/generic_facts.rs clone_given_by_caller` |
@@ -614,6 +615,13 @@ pub(in crate::lower) fn holds_type_parameter(ty: Ty<'_>, index: u32) -> bool {
     ty.walk()
         .filter_map(|part| part.as_type())
         .any(|part| matches!(part.kind(), ty::Param(param) if param.index == index))
+}
+
+/// Whether `ty` names a type parameter, of generic code `pointer_may_keep`
+/// walks as its own: what it's instantiated as isn't known, so it may be
+/// the `&mut`'s pointee, or a reference or raw pointer to it (#1781).
+pub(in crate::lower) fn may_be_any_type(ty: Ty<'_>) -> bool {
+    ty.has_param()
 }
 
 /// Whether each parameter `ty` names, a type's or a const's, is one of

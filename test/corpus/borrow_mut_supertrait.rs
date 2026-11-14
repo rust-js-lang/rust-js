@@ -1,3 +1,4 @@
+//@ library-differs
 // `self.borrow()` and `self.borrow_mut()` of a trait whose supertrait is
 // `BorrowMut<[usize]>`, as itertools' `PoolIndex` is: its dictionary's, its
 // `BorrowMut` entry's, and that one's `Borrow` entry's, std's of a `Vec` and

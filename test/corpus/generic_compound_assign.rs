@@ -1,3 +1,4 @@
+//@ library-differs
 // A `T: AddAssign` and its kin are given a dictionary (ADR 0396): std's of
 // numbers and of text assigns the box's `value`, as `a += b` of a known
 // number does; the crate's own is its impl's. Each side runs in Rust's

@@ -30,16 +30,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-integer-ranges.test.ts", "-t", "below a JS string"],
   },
   {
-    name: "ranges-is-empty-unread",
-    breaks:
-      "`is_empty()` false shows nothing, so `items[0]` in its `else` is `$index(items, 0)`",
-    file: "src/lower/body_queries/ranges/narrowing.rs",
-    find: "                if !holds\n                    && let Some(slice) = self.slice(items)",
-    replace:
-      "                if false\n                    && let Some(slice) = self.slice(items)",
-    tests: ["test/intervals-bridged.test.ts"],
-  },
-  {
     name: "ranges-not-unflipped",
     breaks:
       "`!c` shows what `c` does, so `!items.is_empty()` shows nothing and `items[0]` is checked",

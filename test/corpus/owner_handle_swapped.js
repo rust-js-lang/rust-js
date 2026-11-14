@@ -131,18 +131,16 @@ function main() {
     strong: 1,
     weak: 0,
   });
-  const other$1 = { value: other };
   let request;
   try {
-    try {
-      request = render("a", other$1);
-    } catch (error) {
-      throw $unwindsOn(error);
-    } finally {
-      if ($live()) {
-        other = other$1.value;
-      }
-    }
+    request = render("a", {
+      get value() {
+        return other;
+      },
+      set value(value) {
+        other = value;
+      },
+    });
   } catch (error) {
     $cleanup(() => {
       $rcDrop(other, (value) => {

@@ -513,3 +513,12 @@ of `lent_away` when assigned again, and no program shows the difference:
 MIR assigns a local through a temporary, so a test of it narrows that
 temporary, its root, either way. The rule only adds precision; keeping a
 local lent away longer is more conservative, never wrong.
+
+## Amendment: THIR's `is_empty()` test (2026-11-14, #1672)
+
+`ranges-is-empty-unread` goes. It made THIR's `is_empty()` false show
+nothing of the slice, so `items[0]` in its `else` would be checked. MIR's
+intervals decide that index now (`empties`, of `SliceLength::IsEmpty`),
+which `intervals-empty-unknown` holds, and no bridged site's wrap reads
+THIR's test: test/intervals-bridged.test.ts, its one test, passes with
+it. Its code stays until M4 deletes THIR's ranges with the bridge.

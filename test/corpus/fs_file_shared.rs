@@ -1,3 +1,4 @@
+//@ library-differs
 // std's files shared (#1397): a `&File` reads, writes and seeks as the
 // `File` does, at the one position each handle to it moves; and `{:?}` of a
 // `File` is std's of unix, `File { fd, path, read, write }`, its path what
