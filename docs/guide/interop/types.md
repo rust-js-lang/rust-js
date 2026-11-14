@@ -3813,8 +3813,13 @@ export { delete$ as delete };
   exported one, or a generic one given its dictionaries after them, keeps
   them (ADR 0678, amended).
 - **A `const` keeps its name**, `MAX_SIZE`, as JS writes a constant.
-- **A `thread_local!` is named as a module variable**, `CLICK_COUNT` as
-  `clickCount` ([ADR 0579](../../decisions/0579-a-thread-local-is-named-as-a-variable.md)).
+- **A `thread_local!` is named as a module variable**, `CLICK_COUNT` of a
+  `Cell` as `clickCount` ([ADR 0579](../../decisions/0579-a-thread-local-is-named-as-a-variable.md));
+  one of a primitive, a number, text, a `bool` or a symbol, keeps its Rust
+  name, as a `const` does, `MAX_RETRIES`
+  ([ADR 0619](../../decisions/0619-a-primitive-thread-local-is-a-constant.md)),
+  and `#[rust_js::name]` names one JS names otherwise
+  ([Export to JavaScript](export-to-javascript.md#names)).
 - **A struct, an enum and a variant keep their names**, `Point`, `"Red"`.
 
 Where JS needs another name, give it with `#[rust_js::name]`: a JSON key

@@ -128,15 +128,42 @@ variant's field ([ADR 0573](../../decisions/0573-every-rust-name-is-camel-case-i
   ([ADR 1084](../../decisions/1084-a-field-named-proto-is-refused.md)).
 - **A `const` is named as written**, `MAX_RESULTS`: JS's own convention
   for a constant ([ADR 0579](../../decisions/0579-a-thread-local-is-named-as-a-variable.md)).
-- **A `thread_local!` is named as a module's variable**: `CLICK_COUNT` is
-  `clickCount` ([ADR 0579](../../decisions/0579-a-thread-local-is-named-as-a-variable.md)).
+- **A `thread_local!` of a function, an object or a `Cell` is named as a
+  module's variable**: `CLICK_COUNT` of a `Cell` is `clickCount`
+  ([ADR 0579](../../decisions/0579-a-thread-local-is-named-as-a-variable.md)).
+  **One of a primitive, a number, text, a `bool` or a symbol, keeps its
+  Rust name, as a `const` does**: nothing writes it, so it's a constant,
+  `REACT_ELEMENT_TYPE` as React exports one
+  ([ADR 0619](../../decisions/0619-a-primitive-thread-local-is-a-constant.md)).
   One named as another function, `const` or static of its module keeps
   its Rust name, `CACHE` beside `fn cache()`; an exported one, only
-  beside another export.
+  beside another export. Where JS names one otherwise than either rule,
+  a primitive upstream writes camelCase, say, `#[rust_js::name]` gives
+  its name, as below.
 - **An export's name is what its importers read, and never changes**:
   a module's `pub` items are named first, and an item it keeps to itself
   of the same name is named apart
   ([ADR 0922](../../decisions/0922-an-export-is-named-first.md)).
+
+A thread-local of a primitive keeps its name, one of a `Cell` is
+camelCase, and `#[rust_js::name]` names one JS names otherwise:
+
+```rust
+use std::cell::Cell;
+
+thread_local! {
+    pub static MAX_RETRIES: u32 = 3;
+    pub static CLICK_COUNT: Cell<u32> = const { Cell::new(0) };
+    #[cfg_attr(rust_js, rust_js::name = "defaultLabel")]
+    pub static DEFAULT_LABEL: &'static str = "untitled";
+}
+```
+
+```js
+export const MAX_RETRIES = 3;
+export const clickCount = 0;
+export const defaultLabel = "untitled";
+```
 
 An exported thread-local is `clickCount` beside a private `fn
 click_count()`, which is named apart, `clickCount$1`:
