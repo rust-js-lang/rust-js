@@ -20,7 +20,7 @@ import { mayBeUndefined, miriInstalled, undefinedBehaviour } from "./miri";
 import { agreesUpToHashOrder, buildRewriter, libraryCrate, middleEvent, overlapping, readKnown, rewritable, rewrites, rewritten, sampled, type Rewrite } from "./metamorphic";
 import { deadlineOf, reducedRepros, toReduce, type Reduction } from "./reduced";
 import { agree, compileJs, compileJsLibrary, nativeFlags, runJs, runNative, runtimes, show, type Run } from "./programs";
-import { buildCompiler, caseShard, fixture, root } from "./support";
+import { buildCompiler, caseShard, firstPart, fixture, root } from "./support";
 import { generatedTexts, record, runKey, shared, verified } from "./verified-runs";
 import { shard } from "../scripts/shard";
 import { partSetting } from "./part-settings";
@@ -217,22 +217,22 @@ const natives = [
   ["~loud 1 drop Holder", "~loud 2 drop Dot", "~loud 3 drop Rect", "~loud 4 drop Circle(3)", "end"],
 ].map((lines) => run(lines));
 
-test("a hash table's drops agree in another order", () => {
+firstPart("a hash table's drops agree in another order", () => {
   const js = run(["~loud 1 drop Holder", "~loud 2 drop Dot", "~loud 3 drop Circle(3)", "~loud 4 drop Rect", "end"]);
   expect(agreesUpToHashOrder(natives, js)).toBe(true);
 });
 
-test("a drop no hash table orders, swapped into one's, doesn't agree", () => {
+firstPart("a drop no hash table orders, swapped into one's, doesn't agree", () => {
   const js = run(["~loud 1 drop Dot", "~loud 2 drop Holder", "~loud 3 drop Circle(3)", "~loud 4 drop Rect", "end"]);
   expect(agreesUpToHashOrder(natives, js)).toBe(false);
 });
 
-test("a hash table's drops agree only with their counts in place", () => {
+firstPart("a hash table's drops agree only with their counts in place", () => {
   const js = run(["~loud 1 drop Holder", "~loud 3 drop Dot", "~loud 2 drop Circle(3)", "~loud 4 drop Rect", "end"]);
   expect(agreesUpToHashOrder(natives, js)).toBe(false);
 });
 
-test("a hash table's iteration that prints, not drops, doesn't agree reordered", () => {
+firstPart("a hash table's iteration that prints, not drops, doesn't agree reordered", () => {
   const printed = [
     ["Circle(3)", "Dot", "end"],
     ["Dot", "Circle(3)", "end"],
@@ -245,12 +245,12 @@ const printing = [
   ["~loud 1 drop K", "drop key 2", "~loud 2 drop K", "drop key 1", "end"],
 ].map((lines) => run(lines));
 
-test("a hash table's drops agree reordered with what each drop prints", () => {
+firstPart("a hash table's drops agree reordered with what each drop prints", () => {
   expect(agreesUpToHashOrder([printing[0]], run(["~loud 1 drop K", "drop key 2", "~loud 2 drop K", "drop key 1", "end"]))).toBe(false);
   expect(agreesUpToHashOrder(printing, run(["~loud 1 drop K", "drop key 2", "~loud 2 drop K", "drop key 1", "end"]))).toBe(true);
 });
 
-test("a hash table's calls and clones agree in another order; two calls no table orders don't", () => {
+firstPart("a hash table's calls and clones agree in another order; two calls no table orders don't", () => {
   const seeded = [
     ["~loud 1 call 1", "~loud 2 clone P(1)", "~loud 3 clone P(2)", "~loud 4 call 3", "~loud 5 call 4"],
     ["~loud 1 call 1", "~loud 2 clone P(2)", "~loud 3 clone P(1)", "~loud 4 call 3", "~loud 5 call 4"],
@@ -259,7 +259,7 @@ test("a hash table's calls and clones agree in another order; two calls no table
   expect(agreesUpToHashOrder(seeded, run(["~loud 1 call 1", "~loud 2 clone P(1)", "~loud 3 clone P(2)", "~loud 4 call 4", "~loud 5 call 3"]))).toBe(false);
 });
 
-test("a drop given another drop's lines doesn't agree", () => {
+firstPart("a drop given another drop's lines doesn't agree", () => {
   const two = [
     ["~loud 1 drop A", "drop a", "~loud 2 drop B", "drop b", "end"],
     ["~loud 1 drop B", "drop b", "~loud 2 drop A", "drop a", "end"],
@@ -268,7 +268,7 @@ test("a drop given another drop's lines doesn't agree", () => {
   expect(agreesUpToHashOrder(two, run(["~loud 1 drop B", "drop b", "~loud 2 drop A", "drop a", "end"]))).toBe(true);
 });
 
-test("a hash table's drops in another order with another outcome don't agree", () => {
+firstPart("a hash table's drops in another order with another outcome don't agree", () => {
   const js = run(["~loud 1 drop Holder", "~loud 2 drop Dot", "~loud 3 drop Circle(3)", "~loud 4 drop Rect", "end"], { panic: "x" });
   expect(agreesUpToHashOrder(natives, js)).toBe(false);
 });
@@ -307,7 +307,7 @@ for (const { name, edition, native } of all.filter(({ name }) => chosen.has(name
 }
 
 // The harness's own parts.
-test("a push's sample is stable: a case added changes only whether it's sampled", () => {
+firstPart("a push's sample is stable: a case added changes only whether it's sampled", () => {
   const names = Array.from({ length: 2000 }, (_, i) => `c${i}.rs`);
   const sample = names.filter((name) => sampled(name));
   expect(sample.length).toBeGreaterThan(5);
@@ -332,7 +332,7 @@ fn main() {
 }
 `;
 
-test("emi-prune makes each block no run reaches `unreachable!()`, and keeps what one reaches", () => {
+firstPart("emi-prune makes each block no run reaches `unreachable!()`, and keeps what one reaches", () => {
   const dir = fixture("metamorphic-emi-prune-harness");
   mkdirSync(dir, { recursive: true });
   const file = join(dir, "case.rs");
@@ -344,7 +344,7 @@ test("emi-prune makes each block no run reaches `unreachable!()`, and keeps what
   expect(made?.program).not.toMatch(/\b7\b/);
 });
 
-test("emi-insert adds code never run: a borrow after each `let`, and a call of each function that takes nothing", () => {
+firstPart("emi-insert adds code never run: a borrow after each `let`, and a call of each function that takes nothing", () => {
   const dir = fixture("metamorphic-emi-insert-harness");
   mkdirSync(dir, { recursive: true });
   const file = join(dir, "case.rs");
@@ -359,13 +359,13 @@ test("emi-insert adds code never run: a borrow after each `let`, and a call of e
 // `closure-fn` one: a generic function's instance is one function in no
 // promise of Rust's across crates (ADR 0395, amended, #987, #1027). One that
 // compares what Rust does promise, two `Rc`s, is.
-test("a case that compares functions is moved into no library", () => {
+firstPart("a case that compares functions is moved into no library", () => {
   expect(rewritten("library", join(corpus, "fn_addr_eq_compares_functions.rs"), "2024")).toBeUndefined();
   expect(rewritten("library", join(corpus, "generic_fn_value_is_one_function.rs"), "2024")).toBeUndefined();
   expect(rewritten("library", join(corpus, "rc_fn_ptr_eq_of_cloned.rs"), "2024")).toBeDefined();
 });
 
-test("a listed rewrite is read under its issue or its decision, and a malformed line is refused", () => {
+firstPart("a listed rewrite is read under its issue or its decision, and a malformed line is refused", () => {
   expect(readKnown("#7 P0: a title\nplain std boxed a.rs\n")).toEqual([{ issue: "7", builds: ["plain", "std"], rewrite: "boxed", name: "a.rs" }]);
   // A difference the user decided, under its decision's id (ADR 0262).
   expect(readKnown("#difference 39 a decision\nplain library a.rs\n")).toEqual([{ issue: "difference 39", builds: ["plain"], rewrite: "library", name: "a.rs" }]);
@@ -391,7 +391,7 @@ fn main() {
 }
 `;
 
-test("loud makes the case's drops, clones, calls and steps a numbered line each", () => {
+firstPart("loud makes the case's drops, clones, calls and steps a numbered line each", () => {
   const dir = fixture("metamorphic-loud-harness");
   mkdirSync(dir, { recursive: true });
   const file = join(dir, "case.rs");
@@ -423,7 +423,7 @@ test("loud makes the case's drops, clones, calls and steps a numbered line each"
   expect(middleEvent(ran.stdout, "panic")).toBeUndefined();
 });
 
-test("loud-call panics at the middle call, and what's held is dropped as it unwinds", () => {
+firstPart("loud-call panics at the middle call, and what's held is dropped as it unwinds", () => {
   const dir = fixture("metamorphic-loud-call-harness");
   mkdirSync(dir, { recursive: true });
   const file = join(dir, "case.rs");
@@ -461,7 +461,7 @@ function context(rewrite: Rewrite): string | undefined {
   return rewritten(rewrite, file, "2024")?.program.replaceAll(/\s+/g, " ");
 }
 
-test("opaque gives each iterator on as an `impl Iterator`, promising what it is, and leaves one whose use needs more", () => {
+firstPart("opaque gives each iterator on as an `impl Iterator`, promising what it is, and leaves one whose use needs more", () => {
   const program = context("opaque") ?? "";
   // `peekable()`'s `peek` is a `Peekable`'s own, its error where the
   // variable that holds it is used: left as it was. And an `Option`'s
@@ -475,13 +475,13 @@ test("opaque gives each iterator on as an `impl Iterator`, promising what it is,
   );
 });
 
-test("dyn-fn calls each closure through a `Box<dyn Fn>` of rustc's types", () => {
+firstPart("dyn-fn calls each closure through a `Box<dyn Fn>` of rustc's types", () => {
   expect(context("dyn-fn")).toContain(
     "(metamorph_dyn :: at_0 (:: std :: boxed :: Box :: new (| x : & u32 | x + 1)) as :: std :: boxed :: Box < dyn Fn (& u32) -> u32 + '_ >)",
   );
 });
 
-test("a fact's neighbour is never run, and a case with nothing for it to name is no variant", () => {
+firstPart("a fact's neighbour is never run, and a case with nothing for it to name is no variant", () => {
   const program = context("fact-capacity") ?? "";
   expect(program).toContain("fn main () { if :: std :: hint :: black_box (false) { metamorph_fact () ; }");
   expect(program).toContain('println ! ("{}" , v . capacity ())');
@@ -489,7 +489,7 @@ test("a fact's neighbour is never run, and a case with nothing for it to name is
   expect(context("fact-clones")).toBeUndefined();
 });
 
-test("generic-instances calls each consumer and adapter of an iterator the case makes in generic code, given another instance", () => {
+firstPart("generic-instances calls each consumer and adapter of an iterator the case makes in generic code, given another instance", () => {
   const program = context("generic-instances") ?? "";
   // A held `Peekable`'s isn't one: it's a variable, used again.
   expect(program).toContain("let mut peeked = v . iter () . peekable ()");
@@ -503,7 +503,7 @@ test("generic-instances calls each consumer and adapter of an iterator the case 
   expect(program).toContain("pub fn at_1 < I : :: std :: iter :: Iterator > (it : I) -> usize { it . count () }");
 });
 
-test("generic-instances copies, clones, wraps in `Some` and drops in generic code each value the case does", () => {
+firstPart("generic-instances copies, clones, wraps in `Some` and drops in generic code each value the case does", () => {
   const dir = fixture("metamorphic-generic-values-harness");
   mkdirSync(dir, { recursive: true });
   const file = join(dir, "case.rs");
@@ -538,7 +538,7 @@ fn main() {
 // the net's own iterator at a `skip`, an `nth`, a `count`, a `last`, a `min`
 // or a `max`, which step each by Rust's own semantics (#1109). Without it,
 // the same places turn through every instance.
-test("generic-instances keeps each place's cost of a case that says its point is what it skips at once", () => {
+firstPart("generic-instances keeps each place's cost of a case that says its point is what it skips at once", () => {
   const dir = fixture("metamorphic-instances-keep-cost-harness");
   mkdirSync(dir, { recursive: true });
   const places = ["skip(3).next()", "nth(2)", "count()", "last()", "min()", "max()", "skip(1).next()"]

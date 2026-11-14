@@ -191,6 +191,20 @@ test("the readability passes run where readability-passes.yml's paths say, of --
   expect(() => readabilityPaths("on:\n  push:\n")).toThrow("no `on.push.paths`");
 });
 
+// `--all` runs the metamorphic net's push sample in parts, as the corpus's,
+// each a process the pool starts where a core is free: one `bun test` of
+// it, 204 to 238 s on about one core, ran on alone at a check's end, past a
+// consumer's 720 s (#1749). Each part once, `RUST_JS_CASES=i/n`, none of
+// the whole file beside them.
+test("--all runs the metamorphic sample in parts, each once, and never the whole file beside them", () => {
+  const sample = (cores: number) =>
+    jobs({ all: true, changed: [], branch: [], added: [], extra: [], cores }).jobs.filter((job) => job.cmd.join(" ") === "bun test test/metamorphic.test.ts");
+  for (const cores of [4, 12]) {
+    const parts = pooledParts(cores);
+    expect(sample(cores).map((job) => job.env.RUST_JS_CASES)).toEqual(Array.from({ length: parts }, (_, i) => `${i + 1}/${parts}`));
+  }
+});
+
 // Plain check:fast runs the JSX, snapshot and diagnostics tests of a change
 // committed before its check, as one on `main` is, as it does of the working
 // tree's: 216a72342, checked committed, skipped them and left bindings.test.ts's

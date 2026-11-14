@@ -258,11 +258,25 @@ export function jobs({ all, changed, branch, added, extra, cores, picked, forms,
   const testFiles = readdirSync(join(root, "test"))
     .filter((name) => name.endsWith(".test.ts"))
     .map((name) => `test/${name}`);
-  const everyFile = testFiles
-    .filter((file) => file !== "test/corpus.test.ts" && !nightly.includes(file))
-    .map((file) =>
-      job(file, ["bun", "test", file], { group: browsers.includes(file) ? "the browsers' test files" : "every other test file", ci: "bun run test" }),
-    );
+  // And the metamorphic net's push sample in parts too, `RUST_JS_CASES=i/n`,
+  // as many as the corpus's, its own tests the first's: one `bun test` of
+  // it, 204 to 238 s on about one core, ran on alone at a check's end, past
+  // a consumer's 720 s (#1749).
+  const metamorphic = runs.metamorphic[0].file;
+  const metamorphicParts = pooledParts(cores);
+  const everyFile = [
+    ...testFiles
+      .filter((file) => file !== "test/corpus.test.ts" && file !== metamorphic && !nightly.includes(file))
+      .map((file) =>
+        job(file, ["bun", "test", file], { group: browsers.includes(file) ? "the browsers' test files" : "every other test file", ci: "bun run test" }),
+      ),
+    ...Array.from({ length: metamorphicParts }, (_, i) =>
+      job(`the metamorphic sample ${i + 1}/${metamorphicParts}`, ["bun", "test", metamorphic], {
+        env: { RUST_JS_CASES: `${i + 1}/${metamorphicParts}` },
+        ci: "bun run test",
+      }),
+    ),
+  ];
   // The plain suites (scripts/shard.ts), each file a job of the pool's, said
   // as its suite: as one `bun test` a suite, lowering's 74 files ran one
   // after another, 70 s, the last job of every plain check, the cores half
