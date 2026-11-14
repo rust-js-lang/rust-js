@@ -24,11 +24,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "bare-array-iterator-trusted",
-    breaks: "a variable of an array's iterator's type alone is taken to have a back, though it may hold the array, so a chain of one `w` is `$lazyChain(.., w)`, which throws `it.back is not a function` (#851)",
+    breaks: "a variable of an array's iterator's type alone is taken to have a back, though it may hold the array, so a chain of one `w` is `$lazyChain($iter(v), w)`, the array itself where a JS iterator is written, which once threw `it.back is not a function` and now steps only as the runtime tolerates an array there (#851, #1734)",
     file: "src/lower/iterators/back_facts.rs",
     find: "                    && (wrapped || !self.steps_an_array(ty))\n",
     replace: "                    && true\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_chain.rs$"],
+    snapshots: true,
   },
   {
     name: "compiled-variable-trusted",
