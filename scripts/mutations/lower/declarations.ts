@@ -163,9 +163,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a `types` written with its arguments, `react#ReactNode<>`, takes the Rust type's too: `ReactNode<any>`",
     file: "src/lower/declarations.rs",
-    find: "        if let Written::Reference { from, name, args: None } = declared {",
+    find: "        if let Written::Reference { from, name, args: None } = declared\n",
     replace:
-      "        if let Written::Reference { from, name, args: _ } = declared {",
+      "        if let Written::Reference { from, name, args: _ } = declared\n",
     tests: [
       "test/declarations.test.ts",
       "-t",
@@ -969,5 +969,28 @@ export const mutations: Mutation[] = [
     replace: "is_cow_type(tcx, ty) || false {",
     tests: ["test/declarations-results.test.ts"],
   },
+  {
+    name: "bound-constraint-never",
+    breaks: "a bound whose parameter's identity shows prints no constraint, `selected<T>(value: T): T`, which accepts a string where Rust's `IsA<Element>` refuses it",
+    file: "src/lower/declarations.rs",
+    find: "                indexed.entry(index).or_default().insert(0, constraint);\n",
+    replace: "                let _ = (index, constraint);\n",
+    tests: ["test/declarations-bounds.test.ts", "-t", "an IsA bound is TypeScript's constraint"],
+  },
+  {
+    name: "bound-erased-of-no-arguments",
+    breaks: "an erased bound's type is read of none of its arguments, so `IsA<Element>`'s `T` isn't `Element`",
+    file: "src/lower/declarations.rs",
+    find: "                erased.insert(index, self.written(bound.def_id, &declared, bound.args));\n",
+    replace: "                erased.insert(index, self.written(bound.def_id, &declared, ty::List::empty()));\n",
+    tests: ["test/declarations-bounds.test.ts", "-t", "an IsA bound is TypeScript's constraint"],
+  },
+  {
+    name: "written-own-param-taken-for-a-type",
+    breaks: "a trait's written type that names its own parameter, `IsA<T>`'s `T`, is a type of that name, `T<Element>`, not what it's given",
+    file: "src/lower/declarations.rs",
+    find: "            && (from.is_some() || !own_param(name))\n",
+    replace: "            && (from.is_some() || true)\n",
+    tests: ["test/declarations-bounds.test.ts", "-t", "an IsA bound is TypeScript's constraint"],
+  },
 ];
-

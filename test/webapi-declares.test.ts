@@ -169,3 +169,30 @@ test("rust_js::declares is on exactly the bound types TypeScript's DOM lacks", a
   // and DOM's `NodeRange`, new in WebIDL.
   expect(declared).toEqual(expect.arrayContaining(["BatteryManager", "NodeRange"]));
 });
+
+// A UI SDK selector's T extends Element is an IsA<Element> in Rust.
+// Erasing that bound admits non-elements in a public TypeScript consumer.
+test("exported WebAPI inheritance bounds constrain generic declarations", () => {
+  const dir = fixture("webapi-inheritance-bounds");
+  writeFileSync(join(dir, "lib.rs"), `use webapi::{Element, IsA as Extends};
+pub fn selected<T: Extends<Element>>(value: &T) -> &T { value }
+`);
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
+  writeFileSync(join(dir, "valid.ts"), `import {selected} from "./lib.js";
+const button: HTMLButtonElement = selected(document.createElement("button"));
+const element: Element = selected<Element>(document.body);
+void [button, element];
+`);
+  writeFileSync(join(dir, "invalid.ts"), `import {selected} from "./lib.js";
+selected<string>("button");
+selected<Text>(document.createTextNode("button"));
+`);
+  expect({declarations,valid:typeChecked(dir,"valid.ts"),invalid:typeChecked(dir,"invalid.ts")}).toEqual({
+    declarations:expect.stringContaining("selected<T extends Element>"),
+    valid:[],
+    // A text node's is TS2740, its missing members, as tsc says of the
+    // same declaration written by hand.
+    invalid:[expect.stringContaining("error TS2344"),expect.stringContaining("error TS2740")],
+  });
+});

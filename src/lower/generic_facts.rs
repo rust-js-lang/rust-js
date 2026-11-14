@@ -612,9 +612,17 @@ pub(in crate::lower) fn writes_through_its_box(declared: Ty<'_>) -> bool {
 /// any type it's made of, as `repeat_n`'s `RepeatN<T>` holds its `T`, which
 /// a std maker of a compiled iterator is given the drop of (#1458).
 pub(in crate::lower) fn holds_type_parameter(ty: Ty<'_>, index: u32) -> bool {
+    type_parameter_count(ty, index) > 0
+}
+
+/// How many times `ty` names the type parameter of index `index`, itself
+/// or in the types it's made of: whether a declaration shows its identity,
+/// `selected<T>(value: &T) -> &T` twice (#1866).
+pub(in crate::lower) fn type_parameter_count(ty: Ty<'_>, index: u32) -> usize {
     ty.walk()
         .filter_map(|part| part.as_type())
-        .any(|part| matches!(part.kind(), ty::Param(param) if param.index == index))
+        .filter(|part| matches!(part.kind(), ty::Param(param) if param.index == index))
+        .count()
 }
 
 /// Whether `ty` names a type parameter, of generic code `pointer_may_keep`

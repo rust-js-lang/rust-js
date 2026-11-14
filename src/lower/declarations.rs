@@ -22,6 +22,7 @@ use super::recognition::{StdItem, is_std_def};
 use super::representation::Num;
 
 mod aliases;
+mod bounds;
 mod cells;
 mod classes;
 mod comments;
@@ -39,6 +40,7 @@ mod structures;
 mod written;
 
 use super::representation::{SignatureForms, held_ts as held};
+use bounds::{constraints, erasures};
 use classes::exported_class;
 use comments::documented;
 pub(in crate::lower) use comments::jsdoc_of;
@@ -313,19 +315,6 @@ pub(in crate::lower) fn type_name(tcx: TyCtxt<'_>, did: DefId) -> String {
     super::bindings::given_name(tcx, did).unwrap_or_else(|| tcx.item_name(did).to_string())
 }
 
-/// An item's type parameters bound by a trait that says what it is to
-/// TypeScript, each with the trait: `(0, ReactNode)` of `fn Tag<C: ReactNode>`.
-fn erasures(tcx: TyCtxt<'_>, def_id: DefId) -> Vec<(u32, DefId)> {
-    (tcx.clauses_of(def_id).clauses.iter())
-        .filter_map(|(clause, _)| clause.as_trait_clause())
-        .map(|bound| bound.skip_binder())
-        .filter_map(|bound| match bound.self_ty().kind() {
-            ty::Param(param) if written_types(tcx, bound.def_id()).is_some() => Some((param.index, bound.def_id())),
-            _ => None,
-        })
-        .collect()
-}
-
 /// A parameter's name, of its type's: `event` of a `MouseEvent`, `element`
 /// of an `HTMLButtonElement`, its last word's, named apart where JS keeps
 /// it, `function$` of a `ResolveFunction`; `value` of any other.
@@ -491,13 +480,22 @@ impl<'tcx> Declarations<'_, 'tcx> {
         let erased = erasures(self.tcx, def_id);
         let callables = self.callables(def_id);
         let mut indexed = self.indexed_params(def_id);
+        // Of a bound that says what a type it bounds is, where its identity
+        // shows, that type, `T extends Element` (#1866).
+        for (index, bound) in constraints(self.tcx, def_id) {
+            if let Some(declared) = written_types(self.tcx, bound.def_id) {
+                let constraint = self.written(bound.def_id, &declared, bound.args);
+                indexed.entry(index).or_default().insert(0, constraint);
+            }
+        }
         (self.tcx.generics_of(def_id).own_params.iter())
             .filter(|param| matches!(param.kind, ty::GenericParamDefKind::Type { synthetic: false, .. }))
             .filter(|param| !erased.iter().any(|(index, _)| *index == param.index))
             .filter(|param| !callables.iter().any(|callable| callable.index == param.index))
             .map(|param| match indexed.swap_remove(&param.index) {
                 // Of a key a binding trait's projection is indexed by,
-                // `Name extends keyof EventMapOf<Target>` (#1817).
+                // `Name extends keyof EventMapOf<Target>` (#1817), and of
+                // a bound that says what it is, `T extends Element`.
                 Some(mut keys) => {
                     let constraint = match keys.len() {
                         1 => keys.pop().expect("a key"),
@@ -537,9 +535,9 @@ impl<'tcx> Declarations<'_, 'tcx> {
         let mut erased = IndexMap::default();
         for (index, bound) in erasures(self.tcx, def_id) {
             if !erased.contains_key(&index)
-                && let Some(declared) = written_types(self.tcx, bound)
+                && let Some(declared) = written_types(self.tcx, bound.def_id)
             {
-                erased.insert(index, self.written(bound, &declared, ty::List::empty()));
+                erased.insert(index, self.written(bound.def_id, &declared, bound.args));
             }
         }
         // A function's type parameter it's given a JS function of, `F:
@@ -574,7 +572,18 @@ impl<'tcx> Declarations<'_, 'tcx> {
         // written are all of TypeScript's type's, `<>` none: react's
         // `JSX::Element<T>` is a `JSX.Element` whatever its tag's element
         // (ADR 0224).
-        if let Written::Reference { from, name, args: None } = declared {
+        // Not one of its own parameters, `IsA<T>`'s `T`, which is what it's
+        // given, below (#1866).
+        let own_param = |name: &str| {
+            self.tcx
+                .generics_of(did)
+                .own_params
+                .iter()
+                .any(|p| p.name.as_str() == name)
+        };
+        if let Written::Reference { from, name, args: None } = declared
+            && (from.is_some() || !own_param(name))
+        {
             let name = &self.imported_from(from.as_deref(), name, Some(did));
             // Of a trait's, a binding's class a class extends, not its
             // `Self`, which TypeScript's class has no parameter of:

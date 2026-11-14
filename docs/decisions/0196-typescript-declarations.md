@@ -332,3 +332,37 @@ parameter's `?` stays the one trailing-`Option` rule's (#1845's to
 decide). Held by typescript.test's "print writes a union with unknown or
 any as that keyword"; every declaration test and the guide's fences
 updated with it.
+
+## Amendment: a bound's parameter is its constraint where its identity shows (#1866, 2026-11-15)
+
+A type parameter bound by a binding trait that says what a type it bounds
+is was always erased to that type, `children: ReactNode` of `children: C`
+(above), and webapi's `IsA<T>` said nothing, so `selected<T:
+IsA<Element>>(value: &T) -> &T` was `selected<T>(value: T): T`, which a
+strict caller gives a string, or a `Text`, that Rust's bound refuses
+(Codex's report, of upstream's `composedClosest<T extends Element>`).
+
+**`IsA<T>` says a type it bounds is its `T`**, `#[rust_js::types = "T"]`,
+a name of the trait's own parameter, which is what the bound gives it
+(`Declarations::written`), not a type of that name. **And one rule for a
+parameter such a trait bounds** (`declarations/bounds.rs`): where its
+identity shows in the signature, in a function's result, written more than
+once among its parameters or a struct's fields, or in a callback's bound,
+`F: Fn(&T)`, it's TypeScript's constraint, `selected<T extends
+Element>(value: T): T`, `each<T extends Element>(items: T[], f: (t: T) =>
+void): void`; where it's one value's type alone it's erased to the type,
+as before, `count(items: Element[])`, `children: ReactNode`. Erasing one
+whose identity shows would say two values may be of different types, or
+give back a looser type than Rust's: wrong, not only looser. The lead's
+decision of 2026-11-15; ReactNode's components keep their erasure, so no
+committed declaration changes. Case ([0262](0262-when-rust-and-js-disagree.md)):
+none, declarations alone.
+
+Held by `test/declarations-bounds.test.ts`, the trait imported by another
+name, a strict consumer refusing a string and a text node as Rust does;
+mutations bound-identity-in-result-unseen,
+bound-identity-written-twice-unseen, bound-identity-in-other-bounds-unseen
+(`declarations/bounds.rs`), bound-constraint-never,
+bound-erased-of-no-arguments, written-own-param-taken-for-a-type
+(`declarations.rs`).
+

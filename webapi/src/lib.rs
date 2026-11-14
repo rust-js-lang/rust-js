@@ -106885,7 +106885,9 @@ pub mod namespaces {
 }
 
 /// `Self` is a `T`, or extends one, as WebIDL says: an `HTMLButtonElement` is an `Element` (ADR 0223).
-/// Unsafe to implement: something that takes a `T` is given a `Self` unchecked.
+/// Unsafe to implement: something that takes a `T` is given a `Self` unchecked. To TypeScript,
+/// a type it bounds is a `T`: `T extends Element` of a `T: IsA<Element>` (#1866).
+#[cfg_attr(rust_js, rust_js::types = "T")]
 pub unsafe trait IsA<T> {}
 
 /// Each event's name, a type whose value is its string: `Click` is `"click"`, and its copy is (ADR 0223).
