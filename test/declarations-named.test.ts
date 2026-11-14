@@ -67,3 +67,37 @@ export const later: string = start(addDays(typed, 1), { year: 2024 });
 `);
   expect(typeChecked(dir, "use.ts")).toEqual([]);
 });
+
+// Re-exported from the crate's root by that name too, `export type {
+// ISODate } from "./plain_date.js";`, renamed by its `as` (#1829), as Codex's
+// root-calendar.ts imports it from the root.
+test("a type a #[rust_js::name] names is re-exported by it", () => {
+  const dir = fixture("declarations-named-reexported");
+  writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n');
+  writeFileSync(join(dir, "lib.rs"), `pub mod plain_date;
+
+pub use plain_date::{IsoDate, iso_date};
+pub use plain_date::IsoDate as Iso;
+`);
+  writeFileSync(join(dir, "plain_date.rs"), `#[cfg_attr(rust_js, rust_js::name = "ISODate")]
+pub type IsoDate = String;
+
+pub fn iso_date(year: f64, month: f64, day: f64) -> Option<IsoDate> {
+    (month <= 12.0).then(|| format!("{year}-{month:02}-{day:02}"))
+}
+`);
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
+  expect(declarations).toContain('export type { ISODate } from "./plain_date.js";');
+  expect(declarations).toContain('export type { ISODate as Iso } from "./plain_date.js";');
+  expect(declarations).not.toContain("IsoDate");
+  // Codex's root-calendar.ts, as written but its import.
+  writeFileSync(join(dir, "root-calendar.ts"), `import {isoDate, type ISODate} from "./lib.js";
+const value: ISODate = "2024-02-29";
+const formatted: ISODate | null | undefined = isoDate(2024, 2, 29);
+// @ts-expect-error ISO dates retain the string representation.
+const invalid: ISODate = 20240229;
+void [value, formatted, invalid];
+`);
+  expect(typeChecked(dir, "root-calendar.ts")).toEqual([]);
+});

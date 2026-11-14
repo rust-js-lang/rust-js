@@ -332,16 +332,16 @@ export const mutations: Mutation[] = [
     name: "type-reexports-left-out",
     breaks: "a `pub use` of a type re-exports nothing in the declarations, so a consumer can't name react-client's `TemporaryReferenceSet` through the Flight client (rd642)",
     file: "src/lower/reexports.rs",
-    find: "        found.push((statement_of(&leaf), from, (export, ident.to_string())));\n",
-    replace: "        let _ = (from, export, ident);\n",
+    find: "        found.push((statement_of(&leaf), from, (export, local)));\n",
+    replace: "        let _ = (from, export, local);\n",
     tests: ["test/declarations-libraries.test.ts", "-t", "type-only re-export"],
   },
   {
     name: "type-reexport-by-its-own-name",
     breaks: "a `pub use .. as` of a type re-exports it by its own name, `Size`, not the name the `use` gives it, `Measure` (rd642)",
     file: "src/lower/reexports.rs",
-    find: "        found.push((statement_of(&leaf), from, (export, ident.to_string())));\n",
-    replace: "        found.push((statement_of(&leaf), from, (export.clone(), export)));\n",
+    find: "            false => ident.to_string(),\n",
+    replace: "            false => export.clone(),\n",
     tests: ["test/declarations-libraries.test.ts", "-t", "type-only re-export"],
   },
   {
@@ -515,4 +515,14 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/crates.test.ts", "-t", "two crates: std_items_reexported_by_a_library"],
   },
+  {
+    name: "reexported-type-by-its-rust-name",
+    breaks:
+      "a `pub use` of a type a `#[rust_js::name]` names re-exports it by its Rust name, `export type { IsoDate }`, which its module doesn't export, so the root's `import type { ISODate }` is TS2724 (#1829)",
+    file: "src/lower/reexports.rs",
+    find: "                let name = super::declarations::type_name(tcx, named);\n",
+    replace: "                let name = tcx.item_name(named).to_string();\n",
+    tests: ["test/declarations-named.test.ts", "-t", "re-exported by it"],
+  },
 ];
+

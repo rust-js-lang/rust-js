@@ -306,16 +306,17 @@ pub(super) fn type_reexports(
         if !tcx.visibility(leaf.def_id).is_public() || super::classes::is_class(tcx, named) {
             continue;
         }
-        let (from, export) = match named.as_local() {
+        // Each by the name its declarations give it, `ISODate` of
+        // `#[rust_js::name = "ISODate"] pub type IsoDate` (#1829), and
+        // re-exported by it, or by the name a `use .. as` gives it.
+        let (from, export, own) = match named.as_local() {
             Some(local) => {
                 let home = tcx.parent_module_from_def_id(local);
                 let declared = tcx.visibility(named).is_public() && super::declarations::declares_type(tcx, named);
+                let name = super::declarations::type_name(tcx, named);
                 match paths.get(&home) {
-                    Some(_) if declared && home == module => (None, tcx.item_name(named).to_string()),
-                    Some(from) if declared => (
-                        Some(js::ImportFrom::Module(from.clone())),
-                        tcx.item_name(named).to_string(),
-                    ),
+                    Some(_) if declared && home == module => (None, name.clone(), name),
+                    Some(from) if declared => (Some(js::ImportFrom::Module(from.clone())), name.clone(), name),
                     _ => continue,
                 }
             }
@@ -323,11 +324,16 @@ pub(super) fn type_reexports(
                 Some((from, name, default)) => (
                     Some(js::ImportFrom::Specifier(from.clone())),
                     if *default { "default".to_string() } else { name.clone() },
+                    name.clone(),
                 ),
                 None => continue,
             },
         };
-        found.push((statement_of(&leaf), from, (export, ident.to_string())));
+        let local = match ident.name == tcx.item_name(named) {
+            true => own,
+            false => ident.to_string(),
+        };
+        found.push((statement_of(&leaf), from, (export, local)));
     }
     found
 }

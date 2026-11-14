@@ -291,7 +291,13 @@ class-declared-by-its-struct-name, which survived. React's port's
 ReactDOMServerFB.d.ts imports Fizz's `RequestInstance`, the class
 `#[rust_js::name]` names and ReactFizzServer.d.ts exports, where it
 imported `Request`, which no module exports: the library's record of its
-types now names them as its declarations do.
+types now names them as its declarations do. A `pub use` of one re-exports it by
+that name too, `export type { ISODate } from "./plain_date.js";`, its
+`as` name where it's renamed, `export type { ISODate as Iso }`: the
+crate root's had `IsoDate`, which the leaf doesn't export, so Codex's
+root-calendar.ts, `import { type ISODate }` of the root, was TS2724
+(declarations-named's "re-exported by it"; mutation
+reexported-type-by-its-rust-name).
 
 ## Amendment: a `Result` is declared the tagged union its JS is (#1835, 2026-11-15)
 
