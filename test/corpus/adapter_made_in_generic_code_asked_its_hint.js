@@ -6,15 +6,13 @@ import {
   $closing,
   $dropEach,
   $filterEnds,
-  $foldOf,
   $given,
   $held,
   $iter,
-  $jsIterator,
   $last,
   $lazyRange,
+  $mapEnds,
   $next,
-  $nth,
   $rangeNext,
   $sizeHint,
   $skipping,
@@ -22,7 +20,6 @@ import {
   $some,
   $someValue,
   $taking,
-  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -56,17 +53,11 @@ function hint(it, dropI) {
 }
 
 function doubled(it) {
-  return hint(iterator_map(it, (x) => (x * 2) >>> 0, $jsIterator));
+  return hint($mapEnds(it, (x) => (x * 2) >>> 0));
 }
 
 function firstTwo(it) {
-  return hint(
-    iterator_map($taking(Iterator.from(it), 2), (x) => (x + 1) >>> 0, {
-      next: $next,
-      fold: $foldOf,
-      nth: $nth,
-    }),
-  );
+  return hint($mapEnds($taking(Iterator.from(it), 2), (x) => (x + 1) >>> 0));
 }
 
 function rest(it) {
@@ -84,21 +75,13 @@ function twoHinted(it, dropI) {
 }
 
 function lastOfFour(it, dropI) {
-  const iter = iterator_map(
-    $closing(Iterator.from(it), dropI, false).take(4),
-    (d) => {
+  const iter = $closing(Iterator.from(it), dropI, false)
+    .take(4)
+    .map((d) => {
       const result = d[0];
       dDrop_drop(d);
       return result;
-    },
-    { next: $next, fold: $foldOf, nth: $nth },
-    (take) => {
-      take.return();
-    },
-    undefined,
-    undefined,
-    dDrop_drop,
-  );
+    });
   let result;
   try {
     result = $last(iter);

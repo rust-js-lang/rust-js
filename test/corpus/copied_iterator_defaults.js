@@ -3,8 +3,10 @@
 import {
   $catchUnwind,
   $cleanup,
+  $closing,
   $collectDropping,
   $given,
+  $givenDrop,
   $held,
   $iter,
   $lent,
@@ -16,7 +18,6 @@ import {
   $took,
   $traitImpl,
   $unwindsOn,
-  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -118,7 +119,7 @@ function tTotals(TIterator, dropT) {
     doubled(self) {
       return $collectDropping(
         $roomForHint(
-          iterator_map(self, (x) => (x * 2) & 255, TIterator, dropT),
+          $closing($given(self, TIterator), $givenDrop(dropT), false).map((x) => (x * 2) & 255),
           1,
           false,
         ),

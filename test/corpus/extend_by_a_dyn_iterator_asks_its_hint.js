@@ -8,7 +8,6 @@ import {
   $panicMessage,
   $rangeFromStep,
   $unwound,
-  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -94,7 +93,7 @@ function main() {
         v,
         $grownBy(
           v,
-          iterator_map(items, (n) => (n * 10) >>> 0),
+          items.map((n) => (n * 10) >>> 0),
           4,
           false,
           undefined,

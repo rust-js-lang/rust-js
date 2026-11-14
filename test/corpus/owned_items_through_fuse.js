@@ -9,7 +9,6 @@ import {
   $foldOf,
   $held,
   $iter,
-  $jsIterator,
   $knowing,
   $lent,
   $live,
@@ -28,7 +27,6 @@ import {
   fuseDoubleEndedIterator_tryRfold,
   fuseExactSizeIterator_len,
   iterator_fuse,
-  iterator_map,
   iterator_rev,
   revDoubleEndedIterator_nextBack,
   revDoubleEndedIterator_nthBack,
@@ -49,19 +47,11 @@ function louds(n) {
 }
 function firsts(it, dropI) {
   const map = $held(
-    iterator_map(
-      it,
-      (l) => {
-        const result = l[0];
-        loudDrop_drop(l);
-        return result;
-      },
-      $jsIterator,
-      dropI,
-      undefined,
-      undefined,
-      loudDrop_drop,
-    ),
+    $closing(Iterator.from(it), dropI, false).map((l) => {
+      const result = l[0];
+      loudDrop_drop(l);
+      return result;
+    }),
   );
   let result;
   try {

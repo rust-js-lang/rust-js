@@ -1,3 +1,4 @@
+//@ library-differs
 // A `pub` generic function cycles the `Map<I, F>` it makes, of an `I:
 // Iterator<Item = i32>` and an `F: FnMut(i32) -> i32`, any types its
 // callers may give within those bounds, so it's cloned apart. Another

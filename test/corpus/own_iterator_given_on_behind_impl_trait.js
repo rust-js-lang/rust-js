@@ -6,7 +6,6 @@ import {
   $given,
   $iter,
   $iterator,
-  $jsIteratorSome,
   $next,
   $roomForHint,
   iterator_map,
@@ -59,14 +58,11 @@ function squared(it, IIterator) {
 function sums(items, IItemIntoIterator) {
   return $collectDropping(
     $roomForHint(
-      iterator_map(
-        items,
-        (item) =>
-          $given(
-            hidden(IItemIntoIterator.intoIter(item)),
-            IItemIntoIterator.IntoIterIterator(),
-          ).reduce((a, b) => (a + b) | 0, 0),
-        $jsIteratorSome,
+      Iterator.from(items).map((item) =>
+        $given(
+          hidden(IItemIntoIterator.intoIter(item)),
+          IItemIntoIterator.IntoIterIterator(),
+        ).reduce((a, b) => (a + b) | 0, 0),
       ),
       4,
       false,

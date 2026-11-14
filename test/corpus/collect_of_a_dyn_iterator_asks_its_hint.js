@@ -119,7 +119,7 @@ function main() {
       );
       return Array.from(
         $roomForHint(
-          iterator_map(items, (n) => (n * 10) >>> 0),
+          items.map((n) => (n * 10) >>> 0),
           4,
           false,
         ),

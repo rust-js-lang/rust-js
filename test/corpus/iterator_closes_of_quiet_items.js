@@ -5,14 +5,12 @@ import {
   $catchUnwind,
   $cleanup,
   $dropEach,
-  $foldOf,
   $held,
   $iter,
   $live,
   $next,
   $peek,
   $unwindsOn,
-  iterator_map,
   iterator_peekable,
 } from "@rust-js/std";
 
@@ -111,21 +109,11 @@ function mappedPeekedLoud(n) {
     throw error;
   }
   const it = $held(
-    iterator_map(
-      inner,
-      (l) => {
-        const result = (l[0] * 10) >>> 0;
-        loudDrop_drop(l);
-        return result;
-      },
-      { next: $next, fold: $foldOf },
-      (peekable) => {
-        peekable.return();
-      },
-      undefined,
-      undefined,
-      loudDrop_drop,
-    ),
+    inner.map((l) => {
+      const result = (l[0] * 10) >>> 0;
+      loudDrop_drop(l);
+      return result;
+    }),
   );
   let second;
   try {

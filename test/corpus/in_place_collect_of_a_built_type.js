@@ -13,14 +13,12 @@ import {
   $index,
   $iter,
   $iterator,
-  $jsIteratorSome,
   $live,
   $mapEnds,
   $next,
   $rangeInclusiveNext,
   $roomForHint,
   $unwindsOn,
-  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -31,28 +29,10 @@ function dDrop_drop(d) {
   console.log(`drop ${d[0]}`);
 }
 
-function held(
-  iters,
-  HItemIntoIterator,
-  HInPlace,
-  HeldSize,
-  HeldAlign,
-  dropH,
-  dropHItem,
-  dropHItemIntoIter,
-) {
-  const iter = iterator_map(
-    iters,
-    (i) => ({ iter: $held(HItemIntoIterator.intoIter(i)) }),
-    $jsIteratorSome,
-    dropH,
-    (held) => {
-      console.log("drop held");
-      dropHItemIntoIter?.(held.iter);
-    },
-    undefined,
-    dropHItem,
-  );
+function held(iters, HItemIntoIterator, HInPlace, HeldSize, HeldAlign, dropH, dropHItemIntoIter) {
+  const iter = $closing(Iterator.from(iters), dropH, false).map((i) => ({
+    iter: $held(HItemIntoIterator.intoIter(i)),
+  }));
   let result;
   try {
     result = $collectsInPlace(HInPlace, HeldSize, HeldAlign)
@@ -160,11 +140,6 @@ function main() {
           }
         }
       },
-      (option) => {
-        if (option != null) {
-          dDrop_drop(option);
-        }
-      },
       $dropEach(dDrop_drop),
     );
     try {
@@ -209,11 +184,6 @@ function main() {
       (map) => {
         map.return();
       },
-      (option) => {
-        if (option != null) {
-          dDrop_drop(option);
-        }
-      },
       $dropEach(dDrop_drop),
     );
     for (const item of value) {
@@ -243,7 +213,6 @@ function main() {
           }
         }
       },
-      $dropEach(dDrop_drop),
       $dropEach(dDrop_drop),
     );
     try {
@@ -291,7 +260,6 @@ function main() {
         map.return();
       },
       $dropEach(dDrop_drop),
-      $dropEach(dDrop_drop),
     );
     for (const item of value) {
       console.log("drop held");
@@ -314,7 +282,6 @@ function main() {
       16,
       4,
       undefined,
-      $dropEach(dDrop_drop),
       $dropEach(dDrop_drop),
     );
     for (const item of value) {

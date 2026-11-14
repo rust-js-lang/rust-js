@@ -3,17 +3,15 @@
 import {
   $chars,
   $debugStr,
+  $folded,
   $iter,
   $iterator,
-  $jsIterator,
   $jsIteratorSome,
-  $last,
   $lastSome,
   $lazyChain,
   $lent,
   $nthSome,
   iterator_fuse,
-  iterator_map,
   iterator_peekable,
 } from "@rust-js/std";
 
@@ -60,7 +58,7 @@ function chain(a, b) {
 }
 
 function mapped(it) {
-  return $last(iterator_map(it, (x) => (x + 1) >>> 0, $jsIterator));
+  return Array.from($folded(Iterator.from(it).map((x) => (x + 1) >>> 0))).at(-1);
 }
 
 function fuseNth(it, IFused) {

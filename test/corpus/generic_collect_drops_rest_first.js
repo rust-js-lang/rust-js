@@ -20,7 +20,6 @@ import {
   $next,
   $roomForHint,
   $slicing,
-  iterator_enumerate,
   iterator_fuse,
   iterator_map,
   iterator_peekable,
@@ -128,19 +127,11 @@ function chained(src, dropI) {
   const v = $collectDropping(
     $roomForHint(
       $lazyChain(
-        iterator_map(
-          src,
-          (x) => {
-            const result = [(x[0] + 100) >>> 0];
-            dDrop_drop(x);
-            return result;
-          },
-          $jsIterator,
-          dropI,
-          dDrop_drop,
-          undefined,
-          dDrop_drop,
-        ),
+        $closing(Iterator.from(src), dropI, false).map((x) => {
+          const result = [(x[0] + 100) >>> 0];
+          dDrop_drop(x);
+          return result;
+        }),
         $closing($iter([[6]]), $dropEach(dDrop_drop)),
       ),
       4,
@@ -157,19 +148,11 @@ function chained(src, dropI) {
 
 function mapped(src, IInPlace, dropI) {
   BOOM = 3;
-  const iter = iterator_map(
-    src,
-    (x) => {
-      const result = [(x[0] + 100) >>> 0];
-      dDrop_drop(x);
-      return result;
-    },
-    $jsIterator,
-    dropI,
-    dDrop_drop,
-    undefined,
-    dDrop_drop,
-  );
+  const iter = $closing(Iterator.from(src), dropI, false).map((x) => {
+    const result = [(x[0] + 100) >>> 0];
+    dDrop_drop(x);
+    return result;
+  });
   let result;
   try {
     result = $collectsInPlace(IInPlace, 4, 4)
@@ -189,26 +172,13 @@ function mapped(src, IInPlace, dropI) {
 
 function counted(src, IInPlace, dropI) {
   BOOM = 3;
-  const iter = iterator_enumerate(
-    iterator_map(
-      src,
-      (x) => {
-        const result = [(x[0] + 100) >>> 0];
-        dDrop_drop(x);
-        return result;
-      },
-      $jsIterator,
-      dropI,
-      dDrop_drop,
-      undefined,
-      dDrop_drop,
-    ),
-    { next: $next, fold: $foldOf },
-    (map) => {
-      map.return();
-    },
-    dDrop_drop,
-  );
+  const iter = $closing(Iterator.from(src), dropI, false)
+    .map((x) => {
+      const result = [(x[0] + 100) >>> 0];
+      dDrop_drop(x);
+      return result;
+    })
+    .map((x, i) => [i, x]);
   let result;
   try {
     result = $collectsInPlace(IInPlace, 8, 4)
@@ -274,19 +244,11 @@ function kept(src, TSize, TAlign, IInPlace, dropT, dropI) {
 
 function passed(src, JInPlace, dropJ) {
   return mapped(
-    iterator_map(
-      src,
-      (x) => {
-        const result = [(x[0] + 10) >>> 0];
-        dDrop_drop(x);
-        return result;
-      },
-      $jsIterator,
-      dropJ,
-      dDrop_drop,
-      undefined,
-      dDrop_drop,
-    ),
+    $mapEnds($closing(src, dropJ, false), (x) => {
+      const result = [(x[0] + 10) >>> 0];
+      dDrop_drop(x);
+      return result;
+    }),
     JInPlace,
     (map) => {
       map.return();
@@ -296,23 +258,11 @@ function passed(src, JInPlace, dropJ) {
 
 function tried(src, IInPlace, dropI) {
   BOOM = 3;
-  const iter = iterator_map(
-    src,
-    (x) => {
-      const value = [(x[0] + 100) >>> 0];
-      dDrop_drop(x);
-      return { TAG: "Ok", _0: value };
-    },
-    $jsIterator,
-    dropI,
-    (result) => {
-      if (result.TAG === "Ok") {
-        dDrop_drop(result._0);
-      }
-    },
-    undefined,
-    dDrop_drop,
-  );
+  const iter = $closing(Iterator.from(src), dropI, false).map((x) => {
+    const value = [(x[0] + 100) >>> 0];
+    dDrop_drop(x);
+    return { TAG: "Ok", _0: value };
+  });
   let result$1;
   try {
     result$1 = $collectResults(iter, undefined, dDrop_drop, !$collectsInPlace(IInPlace, 4, 4), 4);

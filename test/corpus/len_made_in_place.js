@@ -3,14 +3,11 @@
 import {
   $iter,
   $iterator,
-  $jsIterator,
   $mapEnds,
   $rangeLen,
   $rangeNext,
   $rangeNextBack,
   $rev,
-  iterator_map,
-  mapExactSizeIterator_len,
 } from "@rust-js/std";
 
 export function entry() {
@@ -26,10 +23,7 @@ function reversedLen(it) {
 }
 
 function mappedLen(it) {
-  return mapExactSizeIterator_len(
-    iterator_map(it, (x) => (x + 1) >>> 0, $jsIterator),
-    { len: (iterator) => iterator.len() },
-  );
+  return $mapEnds(it, (x) => (x + 1) >>> 0).len();
 }
 
 function takenLen(it) {

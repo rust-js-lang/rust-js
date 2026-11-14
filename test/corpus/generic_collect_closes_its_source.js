@@ -10,8 +10,6 @@ import {
   $dropEach,
   $iter,
   $iterator,
-  $jsIterator,
-  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -40,19 +38,7 @@ function collected(src, IVecCollect, dropI) {
 }
 
 function tried(src, IInPlace, dropI) {
-  const iter = iterator_map(
-    src,
-    (value) => value,
-    $jsIterator,
-    dropI,
-    (option) => {
-      if (option != null) {
-        dDrop_drop(option);
-      }
-    },
-    undefined,
-    dDrop_drop,
-  );
+  const iter = $closing(Iterator.from(src), dropI, false).map((value) => value);
   let result;
   try {
     result = $collectOptions(

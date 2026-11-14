@@ -9,9 +9,12 @@ import {
   $collectsInPlace,
   $dropEach,
   $dropItems,
+  $enumerate,
   $foldOf,
   $foldToArray,
   $folded,
+  $given,
+  $givenDrop,
   $held,
   $index,
   $intoIter,
@@ -28,7 +31,6 @@ import {
   $roomForHint,
   $traitImpl,
   $unwindsOn,
-  iterator_enumerate,
   iterator_map,
 } from "@rust-js/std";
 
@@ -44,28 +46,10 @@ function heldDrop_drop(held, dropI) {
   console.log("drop held");
 }
 
-function held(
-  iters,
-  HItemIntoIterator,
-  HInPlace,
-  HeldSize,
-  HeldAlign,
-  dropH,
-  dropHItem,
-  dropHItemIntoIter,
-) {
-  const iter = iterator_map(
-    iters,
-    (i) => ({ iter: $held(HItemIntoIterator.intoIter(i)) }),
-    $jsIteratorSome,
-    dropH,
-    (held) => {
-      heldDrop_drop(held, dropHItemIntoIter);
-      dropHItemIntoIter?.(held.iter);
-    },
-    undefined,
-    dropHItem,
-  );
+function held(iters, HItemIntoIterator, HInPlace, HeldSize, HeldAlign, dropH, dropHItemIntoIter) {
+  const iter = $closing(Iterator.from(iters), dropH, false).map((i) => ({
+    iter: $held(HItemIntoIterator.intoIter(i)),
+  }));
   let result;
   try {
     result = $collectsInPlace(HInPlace, HeldSize, HeldAlign)
@@ -116,11 +100,6 @@ function relayed(options, JInPlace, HeldSize, HeldAlign, dropT, dropJ) {
     HeldSize,
     HeldAlign,
     dropJ,
-    (option) => {
-      if (option != null) {
-        dropT?.(option);
-      }
-    },
     (intoIter) => {
       $dropItems(intoIter, (item) => {
         dropT?.(item);
@@ -172,21 +151,12 @@ function ranged(t, HeldSize, HeldAlign) {
  * room and collecting nothing in place: nothing of its items' layout is
  * asked (#1443).
  */
-function listed(iters, HItemIntoIterator, dropH, dropHItem, dropHItemIntoIter) {
+function listed(iters, HItemIntoIterator, dropH, dropHItemIntoIter) {
   return $collectDropping(
     $folded(
-      iterator_map(
-        iters,
-        (i) => ({ iter: $held(HItemIntoIterator.intoIter(i)) }),
-        $jsIteratorSome,
-        dropH,
-        (held) => {
-          heldDrop_drop(held, dropHItemIntoIter);
-          dropHItemIntoIter?.(held.iter);
-        },
-        undefined,
-        dropHItem,
-      ),
+      $closing(Iterator.from(iters), dropH, false).map((i) => ({
+        iter: $held(HItemIntoIterator.intoIter(i)),
+      })),
     ),
     (held) => {
       heldDrop_drop(held, dropHItemIntoIter);
@@ -225,12 +195,12 @@ function listedRanged(t) {
 function holding(items, JInPlace, HeldSize, HeldAlign) {
   return $collectsInPlace(JInPlace, HeldSize, HeldAlign)
     ? $foldToArray(
-        iterator_map(items, (iter) => ({ iter }), $jsIteratorSome, undefined, heldDrop_drop),
+        Iterator.from(items).map((iter) => ({ iter })),
         heldDrop_drop,
       )
     : $collectDropping(
         $roomForHint(
-          iterator_map(items, (iter) => ({ iter }), $jsIteratorSome, undefined, heldDrop_drop),
+          Iterator.from(items).map((iter) => ({ iter })),
           HeldSize,
           false,
           false,
@@ -243,7 +213,7 @@ function holding(items, JInPlace, HeldSize, HeldAlign) {
 
 /** Of a tuple built of its own, `(usize, I::Item)`. */
 function enumerated(items, IInPlace, UsizeIItemSize, UsizeIItemAlign, dropI, dropIItem) {
-  const iter = iterator_enumerate(items, $jsIteratorSome, dropI, dropIItem);
+  const iter = $enumerate($closing(items, dropI, false));
   let result;
   try {
     result = $collectsInPlace(IInPlace, UsizeIItemSize, UsizeIItemAlign)
@@ -286,18 +256,9 @@ function tHolding(
     [TIterator, TInPlace, HeldSize, HeldAlign, dropT, dropTItem, dropTItemItem, dropTItemIntoIter],
     () => ({
       heldAll(self, SelfItemIntoIterator) {
-        const iter = iterator_map(
-          self,
-          (i) => ({ iter: $held(SelfItemIntoIterator.intoIter(i)) }),
-          TIterator,
-          dropT,
-          (held) => {
-            heldDrop_drop(held, dropTItemIntoIter);
-            dropTItemIntoIter?.(held.iter);
-          },
-          undefined,
-          dropTItem,
-        );
+        const iter = $closing($given(self, TIterator, true), $givenDrop(dropT), false).map((i) => ({
+          iter: $held(SelfItemIntoIterator.intoIter(i)),
+        }));
         let result;
         try {
           result = $collectsInPlace(TInPlace, HeldSize, HeldAlign)
@@ -476,11 +437,6 @@ function main() {
           }
         }
       },
-      (option) => {
-        if (option != null) {
-          dDrop_drop(option);
-        }
-      },
       $dropEach(dDrop_drop),
     );
     for (const item of value) {
@@ -501,11 +457,6 @@ function main() {
         $dropIntoIter: $dropEach(dDrop_drop),
       },
       undefined,
-      (option) => {
-        if (option != null) {
-          dDrop_drop(option);
-        }
-      },
       $dropEach(dDrop_drop),
     );
     for (const item of value) {

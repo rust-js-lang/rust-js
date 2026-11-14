@@ -2,18 +2,20 @@
 
 import {
   $cleanup,
+  $closing,
   $collectDropping,
   $collectsInPlace,
   $dropEach,
   $dropItems,
   $foldToArray,
+  $given,
+  $givenDrop,
   $held,
   $iter,
   $next,
   $roomForHint,
   $some,
   $traitImpl,
-  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -80,18 +82,9 @@ function iKeeping_held(
   dropIItemItem,
   dropIItemIntoIter,
 ) {
-  const iter = iterator_map(
-    self,
-    (i) => ({ iter: $held(IItemIntoIterator.intoIter(i)) }),
-    IIterator,
-    dropI,
-    (held) => {
-      console.log("drop held");
-      dropIItemIntoIter?.(held.iter);
-    },
-    undefined,
-    dropIItem,
-  );
+  const iter = $closing($given(self, IIterator, true), $givenDrop(dropI), false).map((i) => ({
+    iter: $held(IItemIntoIterator.intoIter(i)),
+  }));
   let result$1;
   try {
     result$1 = $collectsInPlace(IInPlace, HeldSize, HeldAlign)

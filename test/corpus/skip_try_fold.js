@@ -8,7 +8,6 @@ import {
   $iterCmp,
   $iterEq,
   $iterator,
-  $jsIterator,
   $lazyChain,
   $lazyMapWhile,
   $lazyRange,
@@ -23,7 +22,6 @@ import {
   $tryFoldOk,
   $tryFoldSome,
   $unwindsOn,
-  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -56,7 +54,7 @@ function heldIterator_nth(held, n) {
 }
 
 function anyAbove(it, n, dropI) {
-  const map = $held(iterator_map(it, (x) => (x + 1) | 0, $jsIterator, dropI));
+  const map = $held($closing(Iterator.from(it), dropI, false).map((x) => (x + 1) | 0));
   let result;
   try {
     result = $lent(map).some((x) => x > n);

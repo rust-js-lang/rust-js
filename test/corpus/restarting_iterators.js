@@ -24,7 +24,6 @@ import {
   $stepBy,
   iterator_flatMap,
   iterator_fuse,
-  iterator_map,
   iterator_peekable,
   iterator_zip,
 } from "@rust-js/std";
@@ -201,7 +200,7 @@ function main() {
     }),
   );
   const value$18 = twice(
-    iterator_map(from, (x) => (x + 1) >>> 0),
+    from.map((x) => (x + 1) >>> 0),
     "next",
   );
   console.log(

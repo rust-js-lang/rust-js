@@ -4,20 +4,14 @@ import {
   $chars,
   $cmp,
   $collectVec,
-  $count,
   $debugStr,
-  $foldOf,
+  $enumerate,
   $foldToArray,
   $folded,
   $iter,
   $iterator,
-  $jsIterator,
   $mapFrom,
-  $next,
-  $nth,
   $reserveHint,
-  iterator_enumerate,
-  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -61,22 +55,7 @@ function set(it) {
 
 function map(it) {
   const pairs = Array.from(
-    $mapFrom(
-      new Map(),
-      $reserveHint(
-        $folded(
-          iterator_map(iterator_enumerate(it, $jsIterator), ([i, c]) => [c, i], {
-            next: $next,
-            fold: $foldOf,
-            nth: $nth,
-            count: $count,
-          }),
-        ),
-        8,
-        4,
-      ),
-      false,
-    ),
+    $mapFrom(new Map(), $reserveHint($folded($enumerate(it).map(([i, c]) => [c, i])), 8, 4), false),
   );
   pairs.sort((a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]));
   return pairs;
@@ -89,9 +68,7 @@ function textImpl(it) {
 function upper(it) {
   return $foldToArray(
     $reserveHint(
-      $folded(
-        iterator_map(it, (c) => c.replace(/[a-z]/, (letter) => letter.toUpperCase()), $jsIterator),
-      ),
+      $folded(Iterator.from(it).map((c) => c.replace(/[a-z]/, (letter) => letter.toUpperCase()))),
       1,
     ),
   ).join("");

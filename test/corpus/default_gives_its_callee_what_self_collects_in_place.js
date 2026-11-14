@@ -4,6 +4,7 @@ import {
   $advanceSlice,
   $catchUnwind,
   $cleanup,
+  $closing,
   $collectDropping,
   $collectsInPlace,
   $dropEach,
@@ -13,11 +14,9 @@ import {
   $givenDrop,
   $held,
   $iter,
-  $jsIteratorSome,
   $next,
   $roomForHint,
   $traitImpl,
-  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -39,33 +38,19 @@ function heldAll(
   dropHItemIntoIter,
 ) {
   let n = 0;
-  const iter = iterator_map(
-    iters,
-    (i) => {
-      n = (n + 1) >>> 0;
-      if (n >= 3) {
-        $cleanup(() => {
-          dropHItem?.(i);
-        });
-        throw new Error(`at ${n}`);
-      }
-      return {
-        _it: $held(HItemIntoIterator.intoIter(i)),
-        tag: [n],
-      };
-    },
-    $jsIteratorSome,
-    dropH,
-    (held) => {
-      try {
-        dropHItemIntoIter?.(held._it);
-      } finally {
-        loudDrop_drop(held.tag);
-      }
-    },
-    undefined,
-    dropHItem,
-  );
+  const iter = $closing(Iterator.from(iters), dropH, false).map((i) => {
+    n = (n + 1) >>> 0;
+    if (n >= 3) {
+      $cleanup(() => {
+        dropHItem?.(i);
+      });
+      throw new Error(`at ${n}`);
+    }
+    return {
+      _it: $held(HItemIntoIterator.intoIter(i)),
+      tag: [n],
+    };
+  });
   let result;
   try {
     result = $collectsInPlace(HInPlace, HeldSize, HeldAlign)

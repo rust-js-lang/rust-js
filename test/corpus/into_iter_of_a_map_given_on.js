@@ -4,7 +4,6 @@ import {
   $foldOf,
   $given,
   $iter,
-  $jsIterator,
   $next,
   iterator_map,
   mapClone,
@@ -16,15 +15,14 @@ export function entry() {
 }
 
 function paired(a, b, JIterator, JClone) {
-  return iterator_map(
-    a,
-    (x) =>
+  return Iterator.from(a)
+    .map((x) =>
       Math.imul(
         x,
         $given(JClone.clone(b), JIterator).reduce((a, b) => (a + b) | 0, 0),
       ),
-    $jsIterator,
-  ).reduce((a, b) => (a + b) | 0, 0);
+    )
+    .reduce((a, b) => (a + b) | 0, 0);
 }
 
 function main() {

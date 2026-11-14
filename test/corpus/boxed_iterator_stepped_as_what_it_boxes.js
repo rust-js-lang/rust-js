@@ -10,7 +10,6 @@ import {
   $next,
   $rangeNext,
   $rangeNextBack,
-  $roomForHint,
   iterator_map,
 } from "@rust-js/std";
 
@@ -78,15 +77,7 @@ function main() {
   let boxed = { start: 0, end: 5 };
   console.log(`[${Array.from($iterator(boxed, $rangeNext).take(2)).join(", ")}]`);
   boxed = $iter([1, 2, 3]);
-  console.log(
-    `[${Array.from(
-      $roomForHint(
-        iterator_map(boxed, (x) => (x * 10) | 0),
-        4,
-        false,
-      ),
-    ).join(", ")}]`,
-  );
+  console.log(`[${Array.from(boxed.map((x) => (x * 10) | 0)).join(", ")}]`);
   for (const c of "ab") {
     console.log(`${c}`);
   }

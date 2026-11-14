@@ -3,6 +3,7 @@
 import {
   $count,
   $enumerate,
+  $given,
   $iter,
   $iterator,
   $next,
@@ -14,7 +15,6 @@ import {
   $sizeHint,
   $skipping,
   $taking,
-  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -31,7 +31,7 @@ function counted(it) {
 }
 
 function hint(it, IIterator, IClone) {
-  return $sizeHint(iterator_map(it, (x) => (x + 1) >>> 0, IIterator));
+  return $sizeHint($given(it, IIterator));
 }
 
 function main() {

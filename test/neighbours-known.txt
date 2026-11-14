@@ -31,6 +31,9 @@ plain std mut_ref_fields_of_a_type_parameter.rs beside thread_local_lazy_where_o
 #1513 P2 (pointers): a lent object std keeps in a $some box (OnceCell<Option<T>>, Peekable of Options) or lends in generic code is refused in a crate that asks its address
 plain std buf_reader_of_a_borrowed_reader.rs beside address_of_a_field_through_a_reference.rs reference_given_as_its_pointer.rs
 
+#1574 P2 (neighbours): cloning a generic Map made where T isn't bound by Clone is refused beside another case's generic map
+plain adapter_shown_and_cloned_generically.rs beside generic_map_beside_a_cloned_one_of_other_bounds.rs
+
 #1576 P2 (neighbours): size_of of a where-clause's item type is refused beside a case that asks a hint as it fills
 plain std default_where_clause_item_drops.rs beside extend_asks_hint_as_it_fills.rs
 

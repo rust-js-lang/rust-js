@@ -9,7 +9,6 @@ import {
   $held,
   $lent,
   $roomForHint,
-  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -33,7 +32,9 @@ function firstTwo(items, IIterator, IClone, dropI) {
   return v;
 }
 function found(items, IIterator, IClone, dropI) {
-  const map = $held(iterator_map(items, (x) => (x * 3) >>> 0, IIterator, dropI));
+  const map = $held(
+    $closing($given(items, IIterator), $givenDrop(dropI), false).map((x) => (x * 3) >>> 0),
+  );
   let r;
   try {
     r = $lent(map).find((x) => x % 2 === 0);

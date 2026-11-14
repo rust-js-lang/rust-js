@@ -672,16 +672,6 @@ test("whether a consumer keeps each item is one catalog", () => {
 // only `back_stepped` reads, the ground alone, of a `rev()`, which the
 // second stage never takes out (`contains_ground`); every other reader asks
 // `contains`, which refuses one read before both stages are decided.
-// The held flip's adapters, `HELD_FLIPPED`, never `rev()`: `back_stepped`,
-// which decides the flip, reads whether a `rev()` is made in place (its
-// held-`rev()` rule, analysis/back_stepped.rs), so flipping one would change
-// what decides it, a cycle (#1681, ADR 1136, amended).
-test("the held flip never takes out a rev(), which back_stepped reads", () => {
-  const source = read("src/lower/body_queries/in_place.rs");
-  expect(source).toMatch(/pub\(in crate::lower\) const HELD_FLIPPED: \[&str; 2\] = \["enumerate", "map"\];/);
-  expect(read("src/lower/analysis/back_stepped.rs")).toMatch(/callee == rev\n\s+&& !body\.facts\.in_place_adapters\.contains_ground\(fn_span\)/);
-});
-
 test("in-place adapters are decided in two stages, then read", () => {
   const lowering = ["src/lower.rs", ...files("src/lower")].filter((file) => file.endsWith(".rs"));
   const outside = lowering.filter((file) => !file.startsWith("src/lower/body_queries"));

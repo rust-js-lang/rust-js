@@ -1,3 +1,4 @@
+//@ library-differs
 // Generic code that cycles the `Map<I, F>` it makes in place, bound by
 // `Clone`: what its type stands for is cloned each round, whatever its
 // bounds say, so it's made cloned apart, each round from where it started

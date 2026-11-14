@@ -212,35 +212,19 @@ renamed `x$1` (483.5 to 483.6) and role fallbacks (264.2 to 264.4) in
 10,000 lines rise only as the lines they're counted against fall, the
 same names in 338 fewer lines; its baseline is blessed so.
 
-## Amendment: the held flip (2026-11-14, #1681's step iii)
+## Amendment: the held flip reverted (2026-11-14)
 
-The first step that reads `transparent-chain`. A chain that starts on a
-variable holding std's struct apart, `held`'s, is std's compiled structs:
-its `enumerate()`s and `map()`s, `HELD_FLIPPED`, are no longer made in
-place, the recognizers' hand-written forms, but held, std's body the
-meaning where the hand-written form isn't proved to be it. Decided as the
-second stage of `InPlace` (`decide_held`), once `back_stepped` knows what's
-stepped from its back and before `type_fact_params` reads the sets.
-
-- **Narrowed to std's struct.** A source made knowing its back or its
-  length where it's made, `$mapEnds` of a map a `rev()` or a counted
-  enumeration steps (#484, #1354), is a JS iterator, not std's struct, and
-  its chain keeps its forms: `BackStepped::made_knowing`, the owner's
-  answer, of its type or a local of it. Variables only, not fields. Unnarrowed,
-  the flip moved 175 snapshots, ×1.146 their lines, and refused one,
-  `held_filter_map_reversed`.
-- **Never `rev()`.** `back_stepped`, which decides the flip, reads whether a
-  `rev()` is made in place: its held-`rev()` rule marks what a held one is
-  given made knowing its back (analysis/back_stepped.rs). Flipping a `rev()`
-  would mark its own source, un-flipping the chain: a cycle, not a fixed
-  point. `test/architecture-iterators.test.ts` holds `HELD_FLIPPED` to
-  `enumerate` and `map` and back_stepped's read to the ground.
-
-Measured: 49 corpus snapshots move, each as native prints; their lines
-11,151 to 11,716, ×1.051 (×1.065 before `$jsIterator`, which shrank the
-dictionaries the std structs are given). Worst: `associated_into_iter`
-×1.29, std's `iterator_map(iters, f, $jsIteratorSome)` where JS's own wrote
-`Iterator.from(iters).map(f)`. The React port's regeneration changes no
-iterator form. The readability measure grows in no shape. Mutations
-`held-flip-takes-none-out` and `held-flip-of-a-source-made-knowing-its-back`,
-caught by snapshots; `held-stage-never-decided` retargeted, caught.
+The held flip (bb518fcca) is reverted: it made a wrong answer of a refusal.
+Of the matrix's generic sources, `src.chain(v).map(f).flatten().rfold(..)`,
+its flipped `map`, std's compiled `Map`, was given its source, a chain made
+in place, the runtime's `$lazyChain`, with a dictionary that steps it from
+its back as std's compiled `Chain` struct, which a JS chain isn't: it
+stepped nothing, `rfold 0 after 0` where native's is `rfold 126 after 14`,
+and where the hand-written form refused it ("a `Chain<I, IntoIter<D>>` as a
+`DoubleEndedIterator`"). A flip must make what a compiled adapter is given
+std's struct too, as ADR 0871 says of what's given to a compiled body, or
+refuse; and its push must run every matrix and conformance row its decision
+reaches, by source, not only the rows the adapters it names reach. Re-landed
+with both. The readability baseline, blessed since over the flip's forms, takes
+back the shares they had: `Iterator.from` 7.7 to 8.5 and `$iter` 84.2 to
+84.3 in 10,000 lines, the pre-flip forms', each as native prints.

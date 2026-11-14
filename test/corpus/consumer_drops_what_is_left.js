@@ -31,7 +31,6 @@ import {
   $stepBy,
   $stepByEnds,
   $unwindsOn,
-  iterator_map,
   iterator_peekable,
   iterator_take,
 } from "@rust-js/std";
@@ -401,64 +400,29 @@ function held(n) {
   let taken$live = true;
   if (n > 0) {
     taken$live = false;
-    const iter = iterator_map(
-      $lazySkipWhile(taken, (l) => l[0] < 99, loudDrop_drop),
-      (l) => {
+    const max = $max(
+      $lazySkipWhile(taken, (l) => l[0] < 99, loudDrop_drop).map((l) => {
         const result = l[0];
         loudDrop_drop(l);
         return result;
-      },
-      { next: $next },
-      (skipWhile) => {
-        skipWhile.return();
-      },
-      undefined,
-      undefined,
-      loudDrop_drop,
+      }),
     );
-    let result;
-    try {
-      result = $max(iter);
-    } catch (error) {
-      throw $unwindsOn(error);
-    } finally {
-      if ($live()) {
-        iter.return();
-      }
-    }
-    console.log(`held max ${result == null ? "None" : `Some(${result})`}`);
+    console.log(`held max ${max == null ? "None" : `Some(${max})`}`);
   }
   try {
     const taken = $held($closing($iter(three()), $dropEach(loudDrop_drop)).take(n));
     let taken$1$live = true;
     if (n > 0) {
       taken$1$live = false;
-      const iter = iterator_map(
-        $filterDropping(taken, (l) => l[0] > 99, loudDrop_drop),
-        (l) => {
+      const reduce = $reduce(
+        $filterDropping(taken, (l) => l[0] > 99, loudDrop_drop).map((l) => {
           const result = l[0];
           loudDrop_drop(l);
           return result;
-        },
-        { next: $next },
-        (filter) => {
-          filter.return();
-        },
-        undefined,
-        undefined,
-        loudDrop_drop,
+        }),
+        (a, b) => (a + b) >>> 0,
       );
-      let result;
-      try {
-        result = $reduce(iter, (a, b) => (a + b) >>> 0);
-      } catch (error) {
-        throw $unwindsOn(error);
-      } finally {
-        if ($live()) {
-          iter.return();
-        }
-      }
-      console.log(`held sum ${result == null ? "None" : `Some(${result})`}`);
+      console.log(`held sum ${reduce == null ? "None" : `Some(${reduce})`}`);
     }
     try {
       const taken = $held($closing($iter(three()), $dropEach(loudDrop_drop)).take(n));
@@ -536,21 +500,12 @@ function held(n) {
               if (n > 0) {
                 taken$5$live = false;
                 console.log(
-                  `held mapped ${iterator_map(
-                    taken,
-                    (l) => {
+                  `held mapped ${taken
+                    .map((l) => {
                       const result = l[0];
                       loudDrop_drop(l);
                       return result;
-                    },
-                    { next: $next, fold: $foldOf },
-                    (take) => {
-                      take.return();
-                    },
-                    undefined,
-                    undefined,
-                    loudDrop_drop,
-                  )
+                    })
                     .drop(3)
                     .reduce((k) => (k + 1) | 0, 0)}`,
                 );

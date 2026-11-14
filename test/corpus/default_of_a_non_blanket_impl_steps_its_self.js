@@ -12,11 +12,9 @@ import {
   $iterator,
   $next,
   $nextSome,
-  $roomForHint,
   $some,
   $someValue,
   $traitImpl,
-  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -83,31 +81,16 @@ function wrapperKeeping(IIterator, dropI, dropIItem) {
     },
     collected(wrapper) {
       const all = $collectDropping(
-        $roomForHint(
-          iterator_map(
+        $closing(
+          $iterator(
             wrapper,
-            (value) => $some(value),
-            { next: (iterator) => wrapperIterator_next(iterator, IIterator, dropI, dropIItem) },
-            (wrapper) => {
-              dropI?.(wrapper[0]);
-            },
-            (option) => {
-              if (option != null) {
-                dropIItem?.($someValue(option));
-              }
-            },
-            undefined,
-            dropIItem,
+            (iterator) => wrapperIterator_next(iterator, IIterator, dropI, dropIItem),
+            true,
           ),
-          0,
-          false,
-          false,
-          (option) => {
-            if (option != null) {
-              dropIItem?.($someValue(option));
-            }
+          (it) => {
+            dropI?.(it.of[0]);
           },
-        ),
+        ).map((value) => $some(value)),
         (option) => {
           if (option != null) {
             dropIItem?.($someValue(option));
@@ -147,29 +130,16 @@ function wrapperKeeping(IIterator, dropI, dropIItem) {
     },
     held(wrapper, SelfItemIntoIterator) {
       const all = $collectDropping(
-        $roomForHint(
-          iterator_map(
+        $closing(
+          $iterator(
             wrapper,
-            (i) => ({ iter: $held(SelfItemIntoIterator.intoIter(i)) }),
-            { next: (iterator) => wrapperIterator_next(iterator, IIterator, dropI, dropIItem) },
-            (wrapper) => {
-              dropI?.(wrapper[0]);
-            },
-            (held) => {
-              console.log("drop held");
-              SelfItemIntoIterator.$dropIntoIter?.(held.iter);
-            },
-            undefined,
-            dropIItem,
+            (iterator) => wrapperIterator_next(iterator, IIterator, dropI, dropIItem),
+            true,
           ),
-          0,
-          false,
-          false,
-          (held) => {
-            console.log("drop held");
-            SelfItemIntoIterator.$dropIntoIter?.(held.iter);
+          (it) => {
+            dropI?.(it.of[0]);
           },
-        ),
+        ).map((i) => ({ iter: $held(SelfItemIntoIterator.intoIter(i)) })),
         (held) => {
           console.log("drop held");
           SelfItemIntoIterator.$dropIntoIter?.(held.iter);
@@ -272,41 +242,24 @@ function pairedKeeping(IIterator, dropI, dropU, dropIItem) {
     },
     collected(paired) {
       const all = $collectDropping(
-        $roomForHint(
-          iterator_map(
+        $closing(
+          $iterator(
             paired,
-            (value) => $some(value),
-            {
-              next: (iterator) => pairedIterator_next(iterator, IIterator, dropI, dropU, dropIItem),
-            },
-            (paired) => {
-              try {
-                dropI?.(paired[0]);
-              } catch (error) {
-                $cleanup(() => {
-                  dropU?.(paired[1]);
-                }, error);
-                throw error;
-              }
-              dropU?.(paired[1]);
-            },
-            (option) => {
-              if (option != null) {
-                dropIItem?.($someValue(option));
-              }
-            },
-            undefined,
-            dropIItem,
+            (iterator) => pairedIterator_next(iterator, IIterator, dropI, dropU, dropIItem),
+            true,
           ),
-          0,
-          false,
-          false,
-          (option) => {
-            if (option != null) {
-              dropIItem?.($someValue(option));
+          (it) => {
+            try {
+              dropI?.(it.of[0]);
+            } catch (error) {
+              $cleanup(() => {
+                dropU?.(it.of[1]);
+              }, error);
+              throw error;
             }
+            dropU?.(it.of[1]);
           },
-        ),
+        ).map((value) => $some(value)),
         (option) => {
           if (option != null) {
             dropIItem?.($someValue(option));
@@ -354,39 +307,24 @@ function pairedKeeping(IIterator, dropI, dropU, dropIItem) {
     },
     held(paired, SelfItemIntoIterator) {
       const all = $collectDropping(
-        $roomForHint(
-          iterator_map(
+        $closing(
+          $iterator(
             paired,
-            (i) => ({ iter: $held(SelfItemIntoIterator.intoIter(i)) }),
-            {
-              next: (iterator) => pairedIterator_next(iterator, IIterator, dropI, dropU, dropIItem),
-            },
-            (paired) => {
-              try {
-                dropI?.(paired[0]);
-              } catch (error) {
-                $cleanup(() => {
-                  dropU?.(paired[1]);
-                }, error);
-                throw error;
-              }
-              dropU?.(paired[1]);
-            },
-            (held) => {
-              console.log("drop held");
-              SelfItemIntoIterator.$dropIntoIter?.(held.iter);
-            },
-            undefined,
-            dropIItem,
+            (iterator) => pairedIterator_next(iterator, IIterator, dropI, dropU, dropIItem),
+            true,
           ),
-          0,
-          false,
-          false,
-          (held) => {
-            console.log("drop held");
-            SelfItemIntoIterator.$dropIntoIter?.(held.iter);
+          (it) => {
+            try {
+              dropI?.(it.of[0]);
+            } catch (error) {
+              $cleanup(() => {
+                dropU?.(it.of[1]);
+              }, error);
+              throw error;
+            }
+            dropU?.(it.of[1]);
           },
-        ),
+        ).map((i) => ({ iter: $held(SelfItemIntoIterator.intoIter(i)) })),
         (held) => {
           console.log("drop held");
           SelfItemIntoIterator.$dropIntoIter?.(held.iter);
