@@ -17,7 +17,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // but not what it refers to, a static's.
         let copied = matches!(operand, Operand::Copy(place)
             if (place.is_indirect() || !state.pending.iter().any(|(l, _)| *l == place.local))
-                && !self.owned_item(state, place));
+                && !self.owned_item(state, place)
+                && !self.argument_uncopied(state, place));
         // A copy of a closure that changes what it captured would share it,
         // as a copy of a JS function does (ADR 0246).
         if let Operand::Copy(place) = operand
@@ -76,6 +77,39 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             value => Ok(value),
         }
+    }
+
+    /// Whether `place`, read by a copy, is an argument of the call this
+    /// block ends with whose callee only reads it, given uncopied
+    /// (`given_uncopied`, #1801): read there, at each of the call's
+    /// arguments it is, or by this statement into the temporary the call
+    /// is given, `_4 = copy _1; f(move _4)`.
+    fn argument_uncopied(&self, state: &State<'_, 'tcx>, place: &Place<'tcx>) -> bool {
+        let data = &state.body.basic_blocks[state.at];
+        let TerminatorKind::Call { func, args, .. } = &data.terminator().kind else {
+            return false;
+        };
+        let Some(callee) = crate::lower::fn_def(func.ty(&state.body.local_decls, self.tcx)) else {
+            return false;
+        };
+        let given = match data.statements.get(state.statement).map(|statement| &statement.kind) {
+            None => Operand::Copy(*place),
+            Some(StatementKind::Assign(assign))
+                if assign.0.projection.is_empty()
+                    && matches!(&assign.1, Rvalue::Use(Operand::Copy(read), _) if read == place) =>
+            {
+                Operand::Move(assign.0)
+            }
+            Some(_) => return false,
+        };
+        let mut at = (args.iter().enumerate())
+            .filter(|(_, arg)| arg.node == given)
+            .map(|(at, _)| at);
+        at.next().is_some_and(|first| {
+            std::iter::once(first)
+                .chain(at)
+                .all(|at| self.given_uncopied(state.body, callee, at, *place))
+        })
     }
 
     /// Whether `place` is an item an owning iterator gave, `(_9 as

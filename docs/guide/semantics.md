@@ -425,7 +425,11 @@ What's refused of formatting is in [the limitations](limitations.md#formatting).
   somewhere,** `{ ...p }`; otherwise sharing the object can't be told apart
   from copying it. A whole write through a `&mut` changes it in place, and
   so does a closure's write of what it took by reference, `|x| p = Point {
-  x }`: `let q = p;` before it is `const q = { ...p };`. A derived
+  x }`: `let q = p;` before it is `const q = { ...p };`. Given to a
+  function of the crate's that only reads it, its fields, never changing,
+  moving or borrowing it, it isn't copied, `incidenceAt(c, y)`, where
+  nothing can change the caller's value while the call runs: one a
+  closure, a `&mut` or a raw pointer can reach is still copied (#1801). A derived
   `clone()` copies what needs copying, and `vec![x; n]` makes `n` separate
   values. A hand-written `Clone` of a `Copy` type runs where std's code
   calls it, `cloned()`, `to_vec()` or a clone of an `Option` or a tuple of

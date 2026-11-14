@@ -197,7 +197,7 @@ pub fn lower_crate<'tcx>(
     // Which of its libraries' functions may copy what the crate changes in place, which their
     // JS, copying what their own crates change, may share (ADR 0914, amended).
     let changed = super::copies::Changed {
-        mutated: &mutated,
+        mutated: &mutated.types,
         vecs: &changed_vecs,
     };
     let copying = super::instances::Copying::new((&trait_impls, &foreign), changed);

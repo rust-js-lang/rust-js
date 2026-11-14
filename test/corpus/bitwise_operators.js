@@ -64,17 +64,17 @@ function refFlagsBitOr_bitor(flags, other) {
 
 const Flags = {
   has(flags, other) {
-    return $eq(flagsBitAnd_bitand([flags[0]], [other[0]]), other);
+    return $eq(flagsBitAnd_bitand(flags, other), other);
   },
 };
 
 function main() {
   const rw = flagsBitOr_bitor([READ[0]], [WRITE[0]]);
-  const flags = flagsBitAnd_bitand([rw[0]], [WRITE[0]]);
-  const value = flagsBitXor_bitxor([rw[0]], [RUN[0]]);
+  const flags = flagsBitAnd_bitand(rw, [WRITE[0]]);
+  const value = flagsBitXor_bitxor(rw, [RUN[0]]);
   console.log(`${flagsDebug_fmt(rw)} ${flagsDebug_fmt(flags)} ${flagsDebug_fmt(value)}`);
-  console.log(`${Flags.has([rw[0]], [WRITE[0]])} ${Flags.has([rw[0]], [RUN[0]])}`);
-  const value$1 = flagsNot_not([rw[0]]);
+  console.log(`${Flags.has(rw, [WRITE[0]])} ${Flags.has(rw, [RUN[0]])}`);
+  const value$1 = flagsNot_not(rw);
   const value$2 = flagsShlU8_shl([READ[0]], 2);
   const value$3 = flagsShrU32_shr([RUN[0]], 1);
   console.log(`${flagsDebug_fmt(value$1)} ${flagsDebug_fmt(value$2)} ${flagsDebug_fmt(value$3)}`);

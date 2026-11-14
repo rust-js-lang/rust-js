@@ -11,7 +11,7 @@ pub(in crate::lower) struct CrateFacts<'a, 'tcx> {
     /// handle (#478), and the enums told by their keys (#504):
     /// `bindings::flattened`.
     pub(in crate::lower) flattened: &'a bindings::Flattened,
-    pub(in crate::lower) mutated: &'a IndexSet<Ty<'tcx>>,
+    pub(in crate::lower) mutated: &'a super::analysis::Mutated<'tcx>,
     /// The `Rc`s counted (ADR 0320).
     pub(in crate::lower) counted: &'a analysis::Counted<'tcx>,
     /// Each closure's handle on itself that's no JS (ADR 0843, amended).

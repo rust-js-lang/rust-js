@@ -331,6 +331,40 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// Whether a call's argument `at`, a `Copy` value read at `place` of the
+    /// caller's `body`, is given uncopied, though its type is changed in
+    /// place somewhere: its callee, `callee` of `args` as it resolves to a
+    /// function of the crate's, only reads that parameter
+    /// (`Mutated::params_only_read`), and nothing changes what `place` holds
+    /// while the call runs, so Rust's copy is a snapshot nothing changes, as
+    /// JS's shared object is. That is a local of the caller's or a part of
+    /// one, not through a reference nor a static's, which the caller never
+    /// borrows `&mut` or raw, by a closure it gives the call too,
+    /// `incidence_at(c, || c.y += 1)` (#1801).
+    pub(super) fn given_uncopied(
+        &self,
+        body: &rustc_middle::mir::Body<'tcx>,
+        (callee, args): (rustc_span::def_id::DefId, ty::GenericArgsRef<'tcx>),
+        at: usize,
+        place: rustc_middle::mir::Place<'tcx>,
+    ) -> bool {
+        use rustc_middle::mir::{Rvalue, StatementKind};
+        let resolved = match self.resolve_instance(callee, args) {
+            Ok(Some(instance)) if matches!(instance.def, ty::InstanceKind::Item(_)) => instance.def_id(),
+            _ => return false,
+        };
+        let only_read = (self.krate.mutated.params_only_read.get(&resolved)).is_some_and(|read| read.contains(&at));
+        let own = !place.is_indirect();
+        let lent = (body.basic_blocks.iter().flat_map(|data| data.statements.iter())).any(|statement| {
+            matches!(&statement.kind, StatementKind::Assign(assign) if match &assign.1 {
+                Rvalue::Ref(_, kind, lent) => kind.mutability().is_mut() && lent.local == place.local,
+                Rvalue::RawPtr(_, lent) => lent.local == place.local,
+                _ => false,
+            })
+        });
+        only_read && own && !lent
+    }
+
     /// Rust copies a `Copy` value when it's read, and JS objects are shared
     /// references. The two only disagree if one of the copies is later
     /// changed in place, which needs a type in `mutated`. So only those
@@ -571,7 +605,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// Is `ty` itself changed in place somewhere, not just a part of it?
     pub(super) fn mutated_itself(&self, ty: Ty<'tcx>) -> bool {
-        self.crosses_crates(ty) || self.krate.mutated.iter().any(|&mutated| self.instance_of(ty, mutated))
+        self.crosses_crates(ty) || (self.krate.mutated.types.iter()).any(|&mutated| self.instance_of(ty, mutated))
     }
 
     /// Might another crate change `ty` in place (ADR 0100)? Any crate using a

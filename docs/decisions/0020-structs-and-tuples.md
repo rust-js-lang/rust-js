@@ -385,3 +385,42 @@ React under `<StrictMode>` to Rust's answer, React's objects unchanged,
 and the updater's clone; props given on unchanged not copied; the refusal.
 Thirteen mutations, each caught.
 
+
+## Amendment: a value given to a function that only reads it isn't copied (#1801)
+
+Whether a type is changed in place is the crate's (`mutated_types`), so
+once one function wrote a `Controls` field, every later `Copy` of one was
+`{ ...c }`, `incidenceAt({ ...c }, y)` too, though `incidence_at` only
+reads its fields. A copy is a snapshot no one can tell from the shared
+object where neither side changes during the call, so a call's argument
+is given uncopied (`copies::given_uncopied`) where both hold:
+
+- **the callee only reads that parameter** (`Mutated::params_only_read`,
+  `analysis/mutation.rs`, of its MIR): it never changes it in place,
+  moves it, nor borrows it, a closure capturing it so neither. A shared
+  borrow counts, as `ptr::eq(&a, b)` tells a copy by its address, a
+  closure's `.bind()`. Each other way the value leaves it, `let d = p`,
+  `return p`, a capture by value or another call's argument, is a copy
+  decided where it's made;
+- **nothing changes the caller's value while the call runs**: a local of
+  the caller's or a part of one, not read through a reference or a
+  static, which the caller never borrows `&mut` or raw, so a closure given
+  the call that changes it, `spread_around(d, || d.high += 1.0)`, a `&mut`
+  held beside it, or a raw pointer to it keep the copy.
+
+The callee is the crate's function the call resolves to; a `fn` pointer, a
+`dyn`'s method or a library's is copied for, as before. The argument is
+the temporary MIR gives the call, `_4 = copy _1; f(move _4)`, or a copy
+read at the call itself.
+
+Case (ADR 0262): none, sharing can't be told from copying under these
+conditions. Proof: corpus case copy_given_to_a_function_that_only_reads_it
+against native Rust in both builds and its metamorphic rewrites, of each
+condition (a callee that changes its parameter, one copied into what's
+made beside the call, a closure, a `&mut` and two raw pointers that change
+the caller's value); bitwise_operators', mut_ref_to_object_impl's and the
+numbers snapshot lose their copies; copied_closures_lent_to_generic_code
+keeps its `.bind()`. Mutations param-changed-taken-as-only-read,
+param-borrowed-taken-as-only-read, given-uncopied-though-lent,
+given-uncopied-though-pointed, given-uncopied-through-a-reference and
+given-uncopied-never, caught.

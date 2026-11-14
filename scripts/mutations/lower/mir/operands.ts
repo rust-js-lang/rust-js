@@ -263,8 +263,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an item an owning iterator gives, nothing else holding it, is copied, `const p = [value[0], value[1]];` in a `while` over `$next(iter)`, not `for (const p of ..)` (#141)",
     file: "src/lower/mir/operands.rs",
-    find: "                && !self.owned_item(state, place));",
-    replace: ");",
+    find: "                && !self.owned_item(state, place)\n",
+    replace: "\n",
     tests: ["test/corpus.test.ts", "-t", "^owned_items_uncopied.rs$"],
     snapshots: true,
   },

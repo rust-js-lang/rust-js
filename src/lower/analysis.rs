@@ -96,9 +96,10 @@ pub(super) use debug::{FormatCall, format_calls};
 pub(super) use debug::{WriterFacts, Writes};
 use drops::drop_params;
 use generic_consts::generic_consts;
+pub(in crate::lower) use mutation::Mutated;
 pub(super) use mutation::clones_by_itself;
 pub(super) use mutation::{clone_bounded, clones_itself, copies_itself, copy_bounded};
-use mutation::{cloned_params, copied_params, mutated_types, unboxed_params};
+use mutation::{cloned_params, copied_params, mutated_types, params_only_read, unboxed_params};
 use naming::{
     exported_across_modules, js_uses, local_consts, local_functions, name_imports, name_items, named_expressions,
     refuse_two_names, required_uses,
@@ -170,7 +171,7 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     pub called_from_elsewhere: IndexSet<DefId>,
     pub tests: crate::program::Tests,
     pub paths: IndexMap<LocalModId, Vec<String>>,
-    pub mutated: IndexSet<Ty<'tcx>>,
+    pub mutated: Mutated<'tcx>,
     /// The `Rc`s counted, whose counts the crate reads (ADR 0320).
     pub counted: Counted<'tcx>,
     /// Each closure's handle on itself, or on what owns it, of those uncounted (ADRs 0843, 0317).
@@ -1040,10 +1041,12 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // Less what the session forgets of it, to see that a write in place
     // refuses where its copies are left out (#1665).
     let forgotten = &crate::lower::session::caches(tcx).without_mutated;
-    let mutated: IndexSet<Ty<'tcx>> = mutated
-        .into_iter()
-        .filter(|ty| !forgotten.contains(&ty.to_string()))
-        .collect();
+    let mutated = Mutated {
+        types: (mutated.into_iter())
+            .filter(|ty| !forgotten.contains(&ty.to_string()))
+            .collect(),
+        params_only_read: params_only_read(tcx, all_bodies),
+    };
     let changed_vecs = vec_uses::changed_vecs(tcx, all_bodies);
     let stored_places = stored_places::stored_places(tcx, (all_bodies, calls.names()));
     // What a caller gives generic code whose drop runs something, a value

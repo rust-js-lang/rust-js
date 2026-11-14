@@ -294,4 +294,20 @@ export const mutations: Mutation[] = [
     replace: "            let _ = to;\n        }\n    }\n    for data in mir.basic_blocks.iter() {\n",
     tests: ["test/corpus.test.ts", "-t", "^copy_written_whole_through_a_dyn_is_its_own.rs$"],
   },
+  {
+    name: "param-changed-taken-as-only-read",
+    breaks: "a parameter its function changes in place is taken as only read, so `normalize(a)` changes the caller's `a` (#1801)",
+    file: "src/lower/analysis/mutation.rs",
+    find: "                PlaceContext::MutatingUse(_)\n",
+    replace: "                PlaceContext::MutatingUse(rustc_middle::mir::visit::MutatingUseContext::Borrow)\n",
+    tests: ["test/corpus.test.ts", "-t", "^copy_given_to_a_function_that_only_reads_it.rs$"],
+  },
+  {
+    name: "param-borrowed-taken-as-only-read",
+    breaks: "a parameter its function borrows shared is taken as only read, so a copied closure given uncopied has its original's address, and `ptr::eq` of the two holds (#1801)",
+    file: "src/lower/analysis/mutation.rs",
+    find: "                            | NonMutatingUseContext::SharedBorrow\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^copied_closures_lent_to_generic_code.rs$"],
+  },
 ];

@@ -90,6 +90,69 @@ fn held_by_ref_cells<'tcx>(tcx: TyCtxt<'tcx>, mir: &rustc_middle::mir::Body<'tcx
     }
 }
 
+/// What's changed in place (ADR 0020): the types whose JS objects get
+/// changed in place somewhere (`mutated_types`), and of each of the crate's
+/// functions, the parameters it only reads (`params_only_read`), which a
+/// caller holding what it gives unchanged through the call gives uncopied
+/// (`copies::given_uncopied`, #1801).
+#[derive(Default)]
+pub(in crate::lower) struct Mutated<'tcx> {
+    pub(in crate::lower) types: IndexSet<Ty<'tcx>>,
+    pub(in crate::lower) params_only_read: IndexMap<DefId, IndexSet<usize>>,
+}
+
+/// Of each of the crate's functions, by its MIR, its parameters it only
+/// reads, by index: it reads one by copies of it or of its parts, `c.low`,
+/// and never changes it in place, moves it, nor borrows it, a closure
+/// capturing it so neither, nor even gives it a whole value (#1801). A
+/// borrow, even a shared one, may compare its address, `ptr::eq(&a, b)`,
+/// which a copy makes another's, as a closure's `.bind()` is. Each other
+/// way what it was given leaves it, `let d = p`, `return p`, a capture by
+/// value or another call's argument, is a copy of it decided where it's
+/// made, so nothing keeps the caller's object.
+pub(super) fn params_only_read<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    all_bodies: &[&Body<'tcx>],
+) -> IndexMap<DefId, IndexSet<usize>> {
+    use rustc_middle::mir::visit::{NonMutatingUseContext, PlaceContext, Visitor};
+    #[derive(Default)]
+    struct Changed(IndexSet<rustc_middle::mir::Local>);
+    impl<'tcx> Visitor<'tcx> for Changed {
+        fn visit_place(
+            &mut self,
+            place: &rustc_middle::mir::Place<'tcx>,
+            context: PlaceContext,
+            _: rustc_middle::mir::Location,
+        ) {
+            if matches!(
+                context,
+                PlaceContext::MutatingUse(_)
+                    | PlaceContext::NonMutatingUse(
+                        NonMutatingUseContext::Move
+                            | NonMutatingUseContext::RawBorrow
+                            | NonMutatingUseContext::SharedBorrow
+                            | NonMutatingUseContext::FakeBorrow
+                    )
+            ) {
+                self.0.insert(place.local);
+            }
+        }
+    }
+    let functions =
+        (all_bodies.iter()).filter(|body| matches!(tcx.def_kind(body.def_id), DefKind::Fn | DefKind::AssocFn));
+    (functions.filter_map(|body| Some((body.def_id, body.mir.as_ref()?))))
+        .map(|(id, mir)| {
+            let mut changed = Changed::default();
+            changed.visit_body(&mir.body);
+            let read = (1..=mir.body.arg_count)
+                .filter(|&at| !changed.0.contains(&rustc_middle::mir::Local::from_usize(at)))
+                .map(|at| at - 1)
+                .collect();
+            (id, read)
+        })
+        .collect()
+}
+
 /// The types whose JS objects get changed in place somewhere in the crate:
 /// `a.b.c = ..` changes the object `a.b`, so it's `a.b`'s type. Only these
 /// ever need copying (ADR 0020).

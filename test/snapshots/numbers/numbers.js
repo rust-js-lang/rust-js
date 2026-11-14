@@ -61,13 +61,13 @@ function vec2AddAssign_addAssign(vec2, o) {
 export function vectors() {
   const a = Vec2.new(3, 4);
   const b = Vec2.new(1, -2);
-  const c = vec2Add_add(
-    vec2Sub_sub(vec2Add_add({ ...a }, vec2MulF64_mul({ ...b }, 2)), vec2Neg_neg({ ...a })),
-    { x: 0, y: 0 },
-  );
-  vec2AddAssign_addAssign(c, { ...b });
+  const c = vec2Add_add(vec2Sub_sub(vec2Add_add({ ...a }, vec2MulF64_mul(b, 2)), vec2Neg_neg(a)), {
+    x: 0,
+    y: 0,
+  });
+  vec2AddAssign_addAssign(c, b);
   const len = Vec2.len(a);
-  const value = Vec2.len(vec2Sub_sub({ ...a }, { ...b }));
+  const value = Vec2.len(vec2Sub_sub(a, b));
   return `${vec2Debug_fmt(c)} ${$displayF64(len)} ${$debugF64(value)} ${$displayF64(0)}`;
 }
 

@@ -18,7 +18,7 @@ export const refMutMoneyAddAssignMoney = {
   addAssign: (arg0, arg1) => refMutMoneyAddAssignMoney_addAssign($heldObjectOf(arg0), arg1),
 };
 function refMutMoneyAddAssignMoney_addAssign(money, other) {
-  moneyAddAssign_addAssign(money.value, { ...other });
+  moneyAddAssign_addAssign(money.value, other);
 }
 
 function bump(total, by, TAddAssignMoney) {
@@ -34,7 +34,7 @@ function main() {
   let r = m;
   const self = { value: r };
   try {
-    refMutMoneyAddAssignMoney_addAssign(self, { ...five });
+    refMutMoneyAddAssignMoney_addAssign(self, five);
   } catch (error) {
     throw $unwindsOn(error);
   } finally {
@@ -42,14 +42,14 @@ function main() {
       r = self.value;
     }
   }
-  r = bump($cellOf(r), { ...five }, refMutMoneyAddAssignMoney).value;
+  r = bump($cellOf(r), five, refMutMoneyAddAssignMoney).value;
   r.cents = BigInt.asIntN(64, r.cents + 1n);
   const other = {
     cents: 100n,
     note: [0, 0],
   };
   r = other;
-  moneyAddAssign_addAssign(r, { ...five });
+  moneyAddAssign_addAssign(r, five);
   console.log(`${moneyDebug_fmt(m)} ${moneyDebug_fmt(other)} ${m.note.length}`);
 }
 //# sourceMappingURL=case.js.map
