@@ -167,4 +167,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^vec_entry_of_an_adapter_generic_code_makes.rs$"],
   },
+  {
+    name: "generic-impl-trait-drop-unmade",
+    breaks: "a dictionary leaves out the drop of a trait method's `impl Trait` of generics of its own, so what it holds, its `Loud`, is never dropped (#1575)",
+    file: "src/lower/traits/drop_params.rs",
+    find: "        for (item, item_ty) in self.item_types(tr).into_iter().chain(self.generic_impl_trait_types(tr)) {\n",
+    replace: "        for (item, item_ty) in self.item_types(tr) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^impl_trait_of_a_method_with_its_own_generics_dropped.rs$"],
+  },
 ];

@@ -198,9 +198,8 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
             return None;
         };
         // A trait method's `impl Trait`'s, where its dictionary has one
-        // (`item_types`, #1296).
-        let carried = !tcx.is_impl_trait_in_trait(def_id)
-            || crate::lower::traits::one_impl_trait_of(tcx, def_id) && tcx.generics_of(def_id).own_params.is_empty();
+        // (`drop_carried_impl_trait`, #1296, #1575).
+        let carried = !tcx.is_impl_trait_in_trait(def_id) || crate::lower::traits::drop_carried_impl_trait(tcx, def_id);
         carried.then(|| (alias.trait_ref(tcx), def_id))
     }
 

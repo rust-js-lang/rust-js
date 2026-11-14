@@ -517,6 +517,48 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(drop.map(|drop| Prop::Field(js::DICTIONARY_DROP.into(), drop)))
     }
 
+    /// Of `tr`, each trait method's `impl Trait` of generics of its own whose
+    /// drop is carried (`drop_carried_impl_trait`, #1575), and its type for
+    /// `tr`, those generics `()` and zero: a lifetime's, a constant's or a
+    /// type's bound by `Copy`, which no drop of it reads.
+    fn generic_impl_trait_types(&self, tr: ty::TraitRef<'tcx>) -> Vec<(DefId, ty::Ty<'tcx>)> {
+        let tcx = self.tcx;
+        (tcx.associated_items(tr.def_id).in_definition_order())
+            .filter(|item| {
+                item.is_impl_trait_in_trait()
+                    && !tcx.generics_of(item.def_id).own_params.is_empty()
+                    && drop_carried_impl_trait(tcx, item.def_id)
+            })
+            .filter_map(|item| {
+                let own = &tcx.generics_of(item.def_id).own_params;
+                let free = own.iter().map(|param| -> Option<ty::GenericArg<'tcx>> {
+                    Some(match param.kind {
+                        ty::GenericParamDefKind::Lifetime => tcx.lifetimes.re_erased.into(),
+                        ty::GenericParamDefKind::Type { .. } => tcx.types.unit.into(),
+                        ty::GenericParamDefKind::Const { .. } => {
+                            let of = tcx.type_of(param.def_id).instantiate_identity().skip_normalization();
+                            let size = tcx.layout_of(self.typing_env.as_query_input(of)).ok()?.size;
+                            let zero = rustc_middle::ty::ValTree::from_scalar_int(
+                                tcx,
+                                rustc_middle::ty::ScalarInt::null(size),
+                            );
+                            <rustc_middle::ty::Const<'tcx> as rustc_middle::ty::consts::ConstExt<'tcx>>::new_value(
+                                tcx, zero, of,
+                            )
+                            .into()
+                        }
+                    })
+                });
+                let free: Vec<ty::GenericArg<'tcx>> = free.collect::<Option<_>>()?;
+                let args = tcx.mk_args_from_iter(tr.args.iter().chain(free));
+                let projection = ty::Ty::new_projection(tcx, ty::IsRigid::No, item.def_id, args);
+                let normalized =
+                    tcx.try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(projection));
+                Some((item.def_id, normalized.ok()?))
+            })
+            .collect()
+    }
+
     /// Rust's built-in `impl Trait for dyn Trait`, of `tr`, the `dyn`'s
     /// principal or a supertrait of it, as generic code is given it: each
     /// method calls the pair's own, as a call on the `dyn` does,
@@ -529,7 +571,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `IntoIterator` of a type known here (ADR 0552), the value itself.
     pub(super) fn item_drops(&mut self, tr: ty::TraitRef<'tcx>, as_it_is: bool, span: Span) -> R<Vec<Prop>> {
         let mut props = Vec::new();
-        for (item, item_ty) in self.item_types(tr) {
+        for (item, item_ty) in self.item_types(tr).into_iter().chain(self.generic_impl_trait_types(tr)) {
             // Of one generic code has as the JS iterator the dictionary made
             // of it, what it was made of (#978).
             let iterated = !as_it_is && self.item_made_js_iterator(item, item_ty);

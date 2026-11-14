@@ -1,6 +1,7 @@
 # 0178. An impl's dictionary has its associated types' drops
 
-Status: Accepted. Extends [0098](0098-destructors.md),
+Status: Accepted. Amended last: an `impl Trait` of generics its drop can't
+read (#1575). Extends [0098](0098-destructors.md),
 [0106](0106-generic-traits.md) and [0163](0163-trait-method-drops.md).
 
 Case: C, D ([0262](0262-when-rust-and-js-disagree.md)).
@@ -158,3 +159,33 @@ caller gives, a fact of recognition (`of_serde_backend`), not a caller's.
 A `Visitor`'s `Value`, the crate's own, is asked as before. Native-compared
 in test/serde.test.ts as a program and as a library; mutation
 `serde-backend-type-may-drop`.
+
+## Amendment (2026-11-14, #1575): an `impl Trait` of generics its drop can't read
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none; a refusal lifted,
+each drop as Rust's.
+
+Left out above, a trait method's `impl Trait` of generics of its own,
+`hidden<const M: u32>`'s or `tagged<U: Copy>`'s, was refused wherever a
+type may have a destructor, "a value of an associated type": its type is
+one of each instance, so no one drop of it was carried. A neighbour with a
+destructor beside a case of these, `btree_append_drops.rs`, refused it (the
+neighbour shuffle). But where each of those generics is one its drop can't
+read, a lifetime, a constant, or a type bound by `Copy`, which has no
+destructor, nor holds what has, the drop is the same of every instance.
+So the dictionary carries it as of one of no generics: `$dropHidden`, made
+of its type for the impl with `()` and zero for those generics
+(`drop_params.rs`'s `generic_impl_trait_types`), and generic code reads it
+(`item_drop_of`). One rule says which, `drop_carried_impl_trait`
+(`traits/words.rs`), which the dictionary and the reader both ask, and
+which takes in the case of no generics of its own. A type parameter not
+bound by `Copy`, whose instances may each hold a destructor of their own,
+stays refused (#1312).
+
+Held by `test/corpus/impl_trait_of_a_method_with_its_own_generics_dropped.rs`
+(a `U: Copy` and a `const M` method each holding a `Loud`, held and dropped
+by generic code, against native Rust, in both builds), the diagnostics'
+refusal of a non-`Copy` one, #1575's neighbour pair off
+`test/neighbours-known.txt`, and the mutations `impl-trait-of-any-generic-carried`,
+`impl-trait-of-own-generics-uncarried` and `generic-impl-trait-drop-unmade`.
+

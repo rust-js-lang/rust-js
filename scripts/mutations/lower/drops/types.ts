@@ -431,7 +431,7 @@ export const mutations: Mutation[] = [
     name: "impl-trait-item-drop-unasked",
     breaks: "generic code holding what a trait method gives behind an `impl Trait` asks no dictionary for its drop, and is refused (#1296)",
     file: "src/lower/drops/types.rs",
-    find: "        let carried = !tcx.is_impl_trait_in_trait(def_id)\n            || crate::lower::traits::one_impl_trait_of(tcx, def_id) && tcx.generics_of(def_id).own_params.is_empty();\n",
+    find: "        let carried = !tcx.is_impl_trait_in_trait(def_id) || crate::lower::traits::drop_carried_impl_trait(tcx, def_id);\n",
     replace: "        let carried = !tcx.is_impl_trait_in_trait(def_id);\n",
     tests: ["test/corpus.test.ts", "-t", "^impl_trait_of_a_trait_method_dropped_by_its_dictionary.rs$"],
   },

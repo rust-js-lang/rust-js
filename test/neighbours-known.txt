@@ -34,9 +34,6 @@ plain std buf_reader_of_a_borrowed_reader.rs beside address_of_a_field_through_a
 #1574 P2 (neighbours): cloning a generic Map made where T isn't bound by Clone is refused beside another case's generic map
 plain adapter_shown_and_cloned_generically.rs beside generic_map_beside_a_cloned_one_of_other_bounds.rs
 
-#1575 P2 (neighbours, std build): an associated type impl DoubleEndedIterator of a method with its own generics is refused beside btree_append_drops.rs
-std associated_iterator_of_a_method_with_its_own_generics.rs beside btree_append_drops.rs
-
 #1576 P2 (neighbours): size_of of a where-clause's item type is refused beside a case that asks a hint as it fills
 plain std default_where_clause_item_drops.rs beside extend_asks_hint_as_it_fills.rs
 

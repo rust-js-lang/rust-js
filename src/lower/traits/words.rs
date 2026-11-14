@@ -163,6 +163,36 @@ pub(in crate::lower) fn item_word(tcx: TyCtxt<'_>, item: DefId) -> String {
     }
 }
 
+/// Whether a dictionary carries the drop of `item`, a trait method's `impl
+/// Trait` the one its signature has (`one_impl_trait_of`), as of an
+/// associated type (#1296): of a method of no generics of its own, or of
+/// those its drop can't depend on, each a lifetime, a constant or a type
+/// bound by `Copy`, which has no destructor, `tagged<U: Copy>`'s, `hidden<const
+/// M: u32>`'s (#1575). Its drop, the impl's, is then one function of every
+/// instance, made of its type with `()` and zero for those
+/// (`drop_free_args`).
+pub(in crate::lower) fn drop_carried_impl_trait(tcx: TyCtxt<'_>, item: DefId) -> bool {
+    let Some(ty::ImplTraitInTraitData::Trait { fn_def_id, .. }) = tcx.opt_rpitit_info(item) else {
+        return false;
+    };
+    if !one_impl_trait_of(tcx, item) {
+        return false;
+    }
+    let generics = tcx.generics_of(fn_def_id);
+    let copy = tcx.lang_items().copy_trait();
+    let bounds = tcx.param_env(fn_def_id).caller_bounds();
+    generics.own_params.iter().all(|param| match param.kind {
+        ty::GenericParamDefKind::Lifetime | ty::GenericParamDefKind::Const { .. } => true,
+        ty::GenericParamDefKind::Type { .. } => {
+            let param_ty = tcx.mk_param_from_def(param).expect_ty();
+            bounds.clone().any(|bound| {
+                matches!(bound.as_trait_clause(), Some(tr)
+                    if Some(tr.def_id()) == copy && tr.self_ty().skip_binder() == param_ty)
+            })
+        }
+    })
+}
+
 /// Whether `item`, a trait method's `impl Trait`, is the one its method's
 /// signature has, which `item_word` names after it; two of one method's,
 /// `-> (impl A, impl B)`, would share its name.

@@ -132,4 +132,20 @@ export const mutations: Mutation[] = [
     replace: "                .map_or(name.clone(), |first| std::iter::once(first).chain(chars).collect())\n",
     tests: ["test/crates.test.ts", "-t", "drops a consumer's impl Trait by its dictionary"],
   },
+  {
+    name: "impl-trait-of-any-generic-carried",
+    breaks: "a trait method's `impl Trait` of a type parameter not bound by `Copy` is taken to have one drop of every instance, its dictionary's, made of `()`, which drops nothing of what an instance holds (#1575)",
+    file: "src/lower/traits/words.rs",
+    find: "                    if Some(tr.def_id()) == copy && tr.self_ty().skip_binder() == param_ty)\n",
+    replace: "                    if true || Some(tr.def_id()) == copy && tr.self_ty().skip_binder() == param_ty)\n",
+    tests: ["test/diagnostics.test.ts", "-t", "an impl Trait of a method's own generic held"],
+  },
+  {
+    name: "impl-trait-of-own-generics-uncarried",
+    breaks: "a trait method's `impl Trait` of generics of its own is never carried, so generic code holding `S::counted::<5>(4)` beside a destructor is refused (#1575)",
+    file: "src/lower/traits/words.rs",
+    find: "    generics.own_params.iter().all(|param| match param.kind {\n",
+    replace: "    generics.own_params.is_empty() && generics.own_params.iter().all(|param| match param.kind {\n",
+    tests: ["test/corpus.test.ts", "-t", "^impl_trait_of_a_method_with_its_own_generics_dropped.rs$"],
+  },
 ];
