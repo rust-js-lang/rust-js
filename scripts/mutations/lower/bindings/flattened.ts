@@ -3,6 +3,22 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "flattened-js-object-allowed",
+    breaks: "a flattened JS object is copied into its parent, which misses a key `js::dict::set` sets later (#1822)",
+    file: "src/lower/bindings/flattened.rs",
+    find: "    if matches!(referent.kind(), ty::Adt(adt, args) if crate::lower::representation::marks_js_object(tcx, *adt, args)) {\n",
+    replace: "    if false {\n",
+    tests: ["test/lowering.test.ts", "-t", "flattened JS object is refused"],
+  },
+  {
+    name: "flattened-js-object-by-value-unasked",
+    breaks: "a `Copy` handle on a JS object flattened by value is copied into its parent, whose copies share the object (#1822)",
+    file: "src/lower/bindings/flattened.rs",
+    find: "        ty::Adt(adt, args) if crate::lower::representation::marks_js_object(tcx, *adt, args) => vec![ty],\n",
+    replace: "        ty::Adt(..) => Vec::new(),\n",
+    tests: ["test/lowering.test.ts", "-t", "flattened JS object is refused"],
+  },
+  {
     name: "flattened-reference-uncopied",
     breaks: "a flattened reference is no copy of its referent, so a `&mut`'s writes through its parent, or a `Cell`'s through either, are lost to the other (#1819)",
     file: "src/lower/bindings/flattened.rs",
@@ -22,7 +38,7 @@ export const mutations: Mutation[] = [
     name: "flattened-reference-cell-allowed",
     breaks: "a flattened reference to a struct with a `Cell` is copied into its parent, so a write through either isn't seen through the other (#1819)",
     file: "src/lower/bindings/flattened.rs",
-    find: "    if !js_object && !referent.is_freeze(tcx, typing_env) {\n",
+    find: "    if !referent.is_freeze(tcx, typing_env) {\n",
     replace: "    if false {\n",
     tests: ["test/lowering.test.ts", "-t", "flattened reference is refused"],
   },

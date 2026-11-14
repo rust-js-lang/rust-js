@@ -297,14 +297,14 @@ pub(super) fn reject_flatten_misuse<'tcx>(
                 refuse(
                     tcx.def_span(field.did),
                     format!(
-                        "flattening `{ty}`: a flattened field is a struct of named fields, a JS object, a `RefCell` of a `#[rust_js::tag]` enum, or an enum whose variants each have a field no other variant has, with at most one variant of no fields"
+                        "flattening `{ty}`: a flattened field is a struct of named fields, a `RefCell` of a `#[rust_js::tag]` enum, or an enum whose variants each have a field no other variant has, with at most one variant of no fields"
                     ),
                 );
             }
             // A reference its parent's object copies, which must be seen
             // to be its referent (#1819).
             let typing_env = ty::TypingEnv::non_body_analysis(tcx, id.to_def_id());
-            for reference in bindings::copied_references(ty) {
+            for reference in bindings::copied_references(tcx, ty) {
                 if let Some(why) = bindings::copy_seen(tcx, typing_env, reference) {
                     refuse(tcx.def_span(field.did), format!("flattening `{reference}`, {why}"));
                 }
@@ -341,10 +341,12 @@ pub(super) fn reject_flatten_misuse<'tcx>(
                             None => continue,
                         }
                     }
-                    // A struct or a JS object, flattened as a field of one is
-                    // (ADR 0204).
+                    // A JS object, which its parent's object would copy, as a
+                    // flattened field of one is refused (#1822).
+                    ty::Adt(adt, args) if marks_js_object(tcx, *adt, args) => bindings::js_object_copied().into(),
+                    // A struct, flattened as a field of one is (ADR 0204).
                     ty::Adt(adt, args) if plain(*adt, args) => continue,
-                    _ => "a flattened type parameter is given a struct of named fields, a JS object, or an enum whose variants each have a field no other variant has, with at most one variant of no fields".into(),
+                    _ => "a flattened type parameter is given a struct of named fields or an enum whose variants each have a field no other variant has, with at most one variant of no fields".into(),
                 };
                 refuse(
                     expr.span,
@@ -556,7 +558,7 @@ pub(super) fn reject_flattened_copies<'tcx>(
         }
         for field in (tcx.adt_def(id).non_enum_variant().fields.iter()).filter(|f| bindings::is_flatten(tcx, f)) {
             let ty = tcx.type_of(field.did).instantiate_identity().skip_normalization();
-            for reference in bindings::copied_references(ty) {
+            for reference in bindings::copied_references(tcx, ty) {
                 let ty::Ref(_, referent, _) = *reference.kind() else {
                     continue;
                 };

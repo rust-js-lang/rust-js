@@ -609,24 +609,6 @@ pub fn mixed(base: &'static Base, over: &'static Over) -> Both<'static> {
     const failed = Bun.spawnSync(c.args, { cwd: c.dir });
     expect([failed.exitCode === 0, failed.stderr.toString()]).toEqual([false, expect.stringContaining(says)]);
   };
-  // A dictionary's keys spread as well, react.dev's `files`.
-  const dictionary = compile(`pub struct Base {
-    pub a: Option<u32>,
-}
-pub struct Over<'x> {
-    #[cfg_attr(rust_js, rust_js::flatten)]
-    pub base: &'x Base,
-    #[cfg_attr(rust_js, rust_js::flatten)]
-    pub extra: &'x js::Dict<u32>,
-}
-pub fn over(base: &'static Base, extra: &'static js::Dict<u32>) -> Over<'static> {
-    Over { base, extra }
-}
-`);
-  run([...dictionary.args, "--extern", `js=${join(target, "libjs.rmeta")}`]);
-  expect(readFileSync(join(dictionary.dir, "lib.js"), "utf8")).toContain("return { ...base, ...extra };");
-  const { over } = await import(join(dictionary.dir, "lib.js"));
-  expect(over({ a: 1 }, { a: 2, z: 3 })).toEqual({ a: 2, z: 3 });
   refused(both + "pub fn read(p: &Both) -> Option<u32> { p.base.a }\n", "more than one rest through one of them");
   refused(both + "pub fn taken(Both { size, base, over }: Both) -> u32 { size + base.a.unwrap_or(0) + over.b.unwrap_or(0) }\n", "more than one rest taken apart");
 });
@@ -1307,10 +1289,11 @@ pub fn Link(LinkProps { href, class_name, props }: LinkProps) -> JSX::Element {
   expect(renderToStaticMarkup(lib.Link({ href: "https://x", className: "b", title: "t" }))).toBe("<a href=\"https://x\" title=\"t\" class=\"a b\">x</a>");
 });
 
-// ADR 0364: what MIR copies of a dictionary that changes, spread into an
-// object it makes ahead of a later read, `{ ...{ ...extra } }`, is spread
-// itself, `{ ...base, ...extra }`: an object of spreads alone gives what they
-// give, as react.dev's SandpackRoot gives Sandpack its files.
+// ADR 0364: a clone of a struct that changes, `{ ...extra }`, spread into an
+// object it makes, `{ ...{ ...extra } }`, is spread itself, `{ ...base,
+// ...extra }`: an object of spreads alone gives what they give. (A
+// dictionary, as react.dev's SandpackRoot gave Sandpack its files, is no
+// flattened field since #1822.)
 test("a spread of an object of spreads alone is those spreads", async () => {
   const made = compile(`#![allow(non_snake_case)]
 use react::{JSX, jsx};
@@ -1321,7 +1304,12 @@ pub struct Over<'x> {
     #[cfg_attr(rust_js, rust_js::flatten)]
     pub base: &'x Base,
     #[cfg_attr(rust_js, rust_js::flatten)]
-    pub extra: &'x js::Dict<u32>,
+    pub extra: Extra,
+}
+#[derive(Clone)]
+pub struct Extra {
+    pub b: Option<u32>,
+    pub z: Option<u32>,
 }
 unsafe impl js::Defined for Over<'_> {}
 pub struct ShownProps<'x> {
@@ -1332,17 +1320,17 @@ pub fn Shown(ShownProps { over, count }: ShownProps) -> JSX::Element {
     let keys = ["a", "b", "z"].iter().filter(|k| over.as_ref().is_some_and(|o| js::has(js::unknown(o), **k))).count();
     jsx! { <b>{format!("{keys} {count}")}</b> }
 }
-fn made(given: &'static js::Dict<u32>) -> &'static js::Dict<u32> {
-    given
+fn made(given: &Extra) -> Extra {
+    given.clone()
 }
-fn counted(extra: &js::Dict<u32>) -> usize {
-    js::dict::keys(extra).len()
+fn counted(extra: &Extra) -> usize {
+    usize::from(extra.b.is_some()) + usize::from(extra.z.is_some())
 }
-pub fn App(base: &'static Base, given: &'static js::Dict<u32>) -> JSX::Element {
-    let extra = made(given);
-    js::dict::set(extra, "z", 3);
+pub fn App(base: &'static Base, given: &'static Extra) -> JSX::Element {
+    let mut extra = made(given);
+    extra.z = Some(3);
     let outer = |base: &'static Base| {
-        let shown = |n: usize| jsx! { <div><Shown over={Some(Over { base, extra })} count={n + counted(extra)} /></div> };
+        let shown = |n: usize| jsx! { <div><Shown over={Some(Over { base, extra: extra.clone() })} count={n + counted(&extra)} /></div> };
         shown(1)
     };
     outer(base)
@@ -1352,5 +1340,5 @@ pub fn App(base: &'static Base, given: &'static js::Dict<u32>) -> JSX::Element {
   const jsx = readFileSync(join(made.dir, "lib.jsx"), "utf8");
   expect(jsx).toContain("<Shown over={{ ...base, ...extra }}");
   const { App } = await import(join(made.dir, "lib.jsx"));
-  expect(renderToStaticMarkup(App({ a: 1 }, { b: 2 }))).toBe("<div><b>3 3</b></div>");
+  expect(renderToStaticMarkup(App({ a: 1 }, { b: 2, z: undefined }))).toBe("<div><b>3 3</b></div>");
 });

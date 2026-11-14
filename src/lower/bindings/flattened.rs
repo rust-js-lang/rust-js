@@ -270,43 +270,58 @@ pub(in crate::lower) fn flattened<'tcx>(
     found
 }
 
-/// The references a flattened field's value holds whose referents its
-/// parent's object copies, `{ ...item, severity }` (ADR 0204, amended):
-/// a field's own `&Item`. Each is shared with its source in Rust, and a
-/// copy in JS, so each is asked `copy_seen`, and its referent
+/// What a flattened field's value holds that its parent's object copies,
+/// `{ ...item, severity }` (ADR 0204, amended), while something else may
+/// hold it too: a field's own `&Item`, and a JS object, whose handle any
+/// copy of shares it. Each is shared with its source in Rust, and a copy
+/// in JS, so each is asked `copy_seen`, and a reference's referent
 /// `copy_seen_in_crate`, which must find nothing that tells them apart
-/// (#1819).
-pub(in crate::lower) fn copied_references<'tcx>(ty: Ty<'tcx>) -> Vec<Ty<'tcx>> {
+/// (#1819, #1822).
+pub(in crate::lower) fn copied_references<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Vec<Ty<'tcx>> {
     match ty.kind() {
         ty::Ref(..) => vec![ty],
+        ty::Adt(adt, args) if crate::lower::representation::marks_js_object(tcx, *adt, args) => vec![ty],
         _ => Vec::new(),
     }
 }
 
+/// Why a flattened JS object is refused (#1822): JS may write it through
+/// any handle on it, `dict::set` or a function it's given, so its parent's
+/// object, a copy of its keys, would miss a key set after it's made. The
+/// copy upstream's `{ ...files }` makes, `js::object::spread`, says so.
+const JS_OBJECT_COPIED: &str = "a JS object, which anything holding it may write, `js::dict::set` or a JS function it's given, so its parent's object, a copy of its keys made once, would miss a key set later: copy it where it's made instead, `js::object::spread(..)`, as JS's `{ ...files }` does";
+
+/// Why a type parameter given a JS object is refused flattened, as a
+/// flattened field of one is (#1822).
+pub(in crate::lower) fn js_object_copied() -> &'static str {
+    JS_OBJECT_COPIED
+}
+
 /// Of `reference`, one `copied_references` gives, what of its type alone
-/// would tell its parent's copy from its referent (#1819): a `&mut`,
-/// whose writes through the parent its referent wouldn't see; or a
-/// referent with a cell among its own keys, `Cell` or `RefCell`, whose
-/// writes through either the other wouldn't see, as rustc's `Freeze`
-/// says. A JS object, which Rust reads no key of through its parent, is
-/// neither (ADR 0204, amended). `typing_env` is where the field is
-/// declared.
+/// would tell its parent's copy from its referent (#1819): a JS object,
+/// which anything holding it may write (#1822); a `&mut`, whose writes
+/// through the parent its referent wouldn't see; or a referent with a cell
+/// among its own keys, `Cell` or `RefCell`, whose writes through either
+/// the other wouldn't see, as rustc's `Freeze` says. `typing_env` is where
+/// the field is declared.
 pub(in crate::lower) fn copy_seen<'tcx>(
     tcx: TyCtxt<'tcx>,
     typing_env: ty::TypingEnv<'tcx>,
     reference: Ty<'tcx>,
 ) -> Option<&'static str> {
-    let ty::Ref(_, referent, mutability) = *reference.kind() else {
-        return None;
+    let (referent, mutability) = match *reference.kind() {
+        ty::Ref(_, referent, mutability) => (referent, mutability),
+        _ => (reference, ty::Mutability::Not),
     };
+    if matches!(referent.kind(), ty::Adt(adt, args) if crate::lower::representation::marks_js_object(tcx, *adt, args)) {
+        return Some(JS_OBJECT_COPIED);
+    }
     if mutability.is_mut() {
         return Some(
             "a `&mut`, whose writes through its parent's object, a copy of what it refers to, wouldn't be its referent's",
         );
     }
-    let js_object =
-        matches!(referent.kind(), ty::Adt(adt, args) if crate::lower::representation::marks_js_object(tcx, *adt, args));
-    if !js_object && !referent.is_freeze(tcx, typing_env) {
+    if !referent.is_freeze(tcx, typing_env) {
         return Some(
             "of a type with a `Cell` or `RefCell` of its own, which its parent's object would hold a copy of, so a write through either wouldn't be seen through the other",
         );

@@ -315,6 +315,14 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering.test.ts", "-t", "flattened reference is refused"],
   },
   {
+    name: "flattened-param-js-object-allowed",
+    breaks: "a JS object given to a flattened type parameter is copied into its parent, as a flattened field of one would be (#1822)",
+    file: "src/lower/analysis/validation.rs",
+    find: "                    ty::Adt(adt, args) if marks_js_object(tcx, *adt, args) => bindings::js_object_copied().into(),\n",
+    replace: "",
+    tests: ["test/lowering.test.ts", "-t", "flattened JS object is refused"],
+  },
+  {
     name: "flattened-lent-mutably",
     breaks: "a flattened field lent mutably, which may replace it whole, is taken as its parent's object",
     file: "src/lower/analysis/validation.rs",
@@ -374,7 +382,7 @@ export const mutations: Mutation[] = [
     name: "keyed-param-given-anything",
     breaks: "a struct's flattened type parameter given a number compiles, though it has no keys (#504)",
     file: "src/lower/analysis/validation.rs",
-    find: "                    _ => \"a flattened type parameter is given a struct of named fields, a JS object, or an enum whose variants each have a field no other variant has, with at most one variant of no fields\".into(),\n",
+    find: "                    _ => \"a flattened type parameter is given a struct of named fields or an enum whose variants each have a field no other variant has, with at most one variant of no fields\".into(),\n",
     replace: "                    _ => continue,\n",
     tests: ["test/flattened-keyed.test.ts", "-t", "no key tells"],
   },

@@ -11,7 +11,9 @@ name both have to the props; and by
 field made outside JSX is found by its name, where it's written. Amended
 below: a flattened field lent whole is its parent's object; and a flattened
 reference is refused wherever its parent's copy could be told from its
-referent (#1819).
+referent (#1819); and a JS object is
+never flattened (#1822), superseding "a flattened field may be a JS
+object too".
 
 > **Note:** since [ADR 0438](0438-an-optional-prop-is-given-some.md), a
 > left-out optional prop is `None`, so the `{..Default::default()}` in this
@@ -123,7 +125,8 @@ the earlier's, as react.dev's SandpackRoot gives Sandpack
 `{...template, ...files}`. JS's object has their keys mixed, so such a
 struct is neither taken apart, which would be two rests, nor read
 through one of them, whose keys another may have; each is refused. A
-flattened field may be a JS object too, a `Dict` whose keys spread. A
+flattened field may be a JS object too, a `Dict` whose keys spread
+(superseded below, #1822: a JS object is never flattened). A
 struct of more than one rest was refused whole. A JSX test makes one of
 a struct and one of a struct and a `Dict`, and refuses the read and the
 taking apart; mutations take a struct of one rest as one of two, allow
@@ -215,8 +218,7 @@ field, naming it, otherwise:
   `Clone` and `PartialEq`; it's refused for what it is now.
 
 Read through, `report.item.line`, it's the parent's key, which holds the
-referent's value. A reference to a JS object is left as before here; it
-is #1822's.
+referent's value. A reference to a JS object is the next amendment's.
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N where it's allowed,
 since no program can tell the copy from its referent; D where it could,
@@ -233,3 +235,43 @@ whole, each refused by name; read through alone, compiled); and mutations
 `flattened-reference-cell-allowed` and
 `flattened-reference-changed-unasked` (`bindings/flattened.ts`), and
 `flattened-reference-lent-whole` (`analysis/validation.ts`).
+
+## Amendment: a JS object is never flattened (2026-11-15)
+
+A wrong answer (P0, #1822), of the family above. A flattened JS object,
+`extra: &'a js::Dict<u32>`, made its parent `{ size: 1, ...extra }`, a copy
+of its keys. Anything holding a JS object may write it through `&`,
+`js::dict::set` or a JS function it's given, so a key set after the parent
+is made was in Rust's parent, which holds the object, and not in JS's copy:
+`js::has(js::unknown(&props), "k")`, of a parent that's `js::Defined`, was
+`false` where Rust's is `true`, and JS given the parent read `p.k` as
+`undefined`. rustc calls such a type `Freeze`, so the rule above didn't
+see it, and no crate-level fact can show the object unwritten while the
+parent lives: a binding, or JS, may write it.
+
+**A JS object is never flattened** (`bindings::copy_seen`, its
+`JS_OBJECT_COPIED`): by reference, a `&Dict` or a `&js::Unknown`; by
+value, a `Copy` handle, whose copies are one object; or given to a
+flattened type parameter (`validation.rs`). The refusal names what to
+write: copy it where it's made, `js::object::spread(..)`, the copy JS's
+`{ ...files }` is, `js::object::spread((Some(js::unknown(template)),
+Some(js::unknown(files))))`, `{ ...template, ...files }`. This supersedes
+"a flattened field may be a JS object too" above. Its one known user,
+react.dev's SandpackRoot (`files: &'a Dict<SandpackFile>` beside `template:
+&'a Template`, in the port at nguyenyou/rust-js-react.dev 6cd15a6), would
+write that spread; its result is a `&JsObject`, looser than TypeScript's
+intersection, #1825.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): D, a compile error: the
+copy can be told apart, and Rust's sharing can't be kept in one object.
+
+Held by `test/lowering.test.ts`'s "a flattened JS object is refused, by
+reference, by value or given to a type parameter" (the key set after the
+parent is made, read through `js::has`; a `Copy` handle; a type parameter
+given one), `test/lowering-structs-enums.test.ts`'s `&js::Unknown` and
+`&js::Dict` rows and `test/jsx-props.test.ts`'s dictionary row, each
+refused by name; and mutations `flattened-js-object-allowed`,
+`flattened-js-object-by-value-unasked` (`bindings/flattened.ts`) and
+`flattened-param-js-object-allowed` (`analysis/validation.ts`).
+`test/jsx-props.test.ts`'s spread of spreads (ADR 0364) spreads a clone of
+a struct that changes now, where it spread a dictionary that did.

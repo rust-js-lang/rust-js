@@ -374,23 +374,22 @@ pub fn reread<'a>(link: &Link<'a>, title: &'a str) -> Attrs<'a> {
 });
 
 // ADR 0204: a struct with flattened fields made outside JSX is one object of
-// their fields, `{ ...template, ...files }`.
+// their fields, `{ ...template, ...files }`; a JS object is none (#1822).
 test("a struct of flattened fields made outside JSX is one object", async () => {
   const dir = fixture("flattened-made");
-  writeFileSync(join(dir, "lib.rs"), `pub struct Inner {
-    pub a: u32,
-}
+  writeFileSync(join(dir, "lib.rs"), `pub struct Inner { pub a: u32 }
+pub struct More { pub b: u32 }
 pub struct Files<'a> {
     #[cfg_attr(rust_js, rust_js::flatten)]
     pub template: &'a Inner,
     #[cfg_attr(rust_js, rust_js::flatten)]
-    pub files: &'a js::Unknown,
+    pub files: &'a More,
 }
-pub fn made<'a>(template: &'a Inner, files: &'a js::Unknown) -> Files<'a> {
+pub fn made<'a>(template: &'a Inner, files: &'a More) -> Files<'a> {
     Files { template, files }
 }
 `);
-  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const lib = await import(join(dir, "mir.js"));
   expect(lib.made({ a: 1 }, { b: 2 })).toEqual({ a: 1, b: 2 });
 });

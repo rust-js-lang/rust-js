@@ -627,6 +627,77 @@ ${body}
   expect(refusal("&'a Item", "", `${plain}\n    report.item.line + report.severity + item.line`)).toEqual([true, ""]);
 });
 
+// ADR 0204, amended (#1822): a flattened JS object is refused, naming
+// `js::object::spread(..)`, the copy JS's `{ ...files }` is: anything holding
+// it may write it, `js::dict::set` after the parent is made, which the
+// parent's object, a copy of its keys made once, would miss, where Rust's
+// parent holds the object and a `js::has(js::unknown(&props), "k")` finds
+// it. By reference, a `&Dict` or a `&js::Unknown`; by value, a `Copy`
+// handle, which its copies share; and given to a flattened type parameter.
+test("a flattened JS object is refused, by reference, by value or given to a type parameter", () => {
+  const dir = fixture("flattened-js-object");
+  const refusal = (rust: string) => {
+    writeFileSync(join(dir, "lib.rs"), rust);
+    const failed = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], { cwd: root, stderr: "pipe" });
+    return [failed.exitCode === 0, failed.stderr.toString()];
+  };
+  const why = "a JS object, which anything holding it may write, `js::dict::set` or a JS function it's given, so its parent's object, a copy of its keys made once, would miss a key set later: copy it where it's made instead, `js::object::spread(..)`, as JS's `{ ...files }` does";
+  // The key set after the parent is made, which Rust's parent has.
+  expect(refusal(`pub struct Props<'a> {
+    pub size: u32,
+    #[cfg_attr(rust_js, rust_js::flatten)]
+    pub extra: &'a js::Dict<u32>,
+}
+unsafe impl js::Defined for Props<'_> {}
+pub fn has_key() -> bool {
+    let extra = js::dict::new::<u32>();
+    let props = Props { size: 1, extra };
+    js::dict::set(extra, "k", 5);
+    js::has(js::unknown(&props), "k")
+}
+`)).toEqual([false, expect.stringContaining(`rust-js does not support flattening \`&'a js::Dict<u32>\`, ${why} yet`)]);
+  // Beside a struct, react.dev's SandpackRoot's `{ ...template, ...files }`:
+  // a `&js::Unknown` and a `&Dict`.
+  for (const files of ["&'a js::Unknown", "&'a js::Dict<u32>"]) {
+    expect(refusal(`pub struct Inner {
+    pub a: u32,
+}
+pub struct Files<'a> {
+    #[cfg_attr(rust_js, rust_js::flatten)]
+    pub template: &'a Inner,
+    #[cfg_attr(rust_js, rust_js::flatten)]
+    pub files: ${files},
+}
+pub fn made<'a>(template: &'a Inner, files: ${files}) -> Files<'a> {
+    Files { template, files }
+}
+`)).toEqual([false, expect.stringContaining(`rust-js does not support flattening \`${files}\`, ${why} yet`)]);
+  }
+  // A `Copy` handle by value, whose copies are one object.
+  const handle = `#[derive(Clone, Copy)]
+pub struct Handle(std::marker::PhantomData<js::JsObject>);
+`;
+  expect(refusal(`${handle}pub struct Props {
+    pub size: u32,
+    #[cfg_attr(rust_js, rust_js::flatten)]
+    pub handle: Handle,
+}
+pub fn props(handle: Handle) -> Props {
+    Props { size: 1, handle }
+}
+`)).toEqual([false, expect.stringContaining(`flattening \`Handle\`, ${why}`)]);
+  // Given to a flattened type parameter.
+  expect(refusal(`${handle}pub struct Node<K> {
+    pub flags: u32,
+    #[cfg_attr(rust_js, rust_js::flatten)]
+    pub kind: K,
+}
+pub fn node(handle: Handle) -> Node<Handle> {
+    Node { flags: 1, kind: handle }
+}
+`)).toEqual([false, expect.stringContaining(`flattening \`Handle\` into \`Node\`: ${why}`)]);
+});
+
 // A parameter of a type JS can't hold, a pointer to text (ADR 0390), is
 // refused where MIR declares it.
 test("a parameter of a type JS can't hold is refused from MIR", () => {
