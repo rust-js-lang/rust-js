@@ -49,6 +49,8 @@ pub mod atomics;
 pub use atomics::{AtomicArray, WaitAsyncResult, WaitAsyncValue, WaitResult, WaitableArray};
 pub mod date;
 pub use date::Date;
+mod errors;
+pub use errors::*;
 pub mod intl;
 mod iterator;
 pub use iterator::{AsyncIterable, AsyncIterator, Iterable, Iterator, IteratorResult};

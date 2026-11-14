@@ -15,7 +15,9 @@ import { open } from "@rust-js/typescript";
 
 /** The built-ins measured: classes, namespaces and objects of functions. */
 export const SCOPE = [
-  "Date", "RegExp", "Error", "AggregateError", "Promise", "Symbol",
+  "Date", "RegExp", "Error", "AggregateError",
+  "EvalError", "RangeError", "ReferenceError", "SyntaxError", "TypeError", "URIError",
+  "Promise", "Symbol",
   "ArrayBuffer", "SharedArrayBuffer", "DataView",
   "Int8Array", "Uint8Array", "Uint8ClampedArray", "Int16Array", "Uint16Array", "Int32Array", "Uint32Array",
   "Float32Array", "Float64Array", "BigInt64Array", "BigUint64Array",

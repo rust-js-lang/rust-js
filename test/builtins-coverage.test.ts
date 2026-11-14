@@ -30,6 +30,12 @@ test("the typed arrays are what their template writes", () => {
   expect(generatorOutput("builtins/typed_arrays.ts")).toBe(readFileSync(join(root, "builtins/src/typed_arrays.rs"), "utf8"));
 });
 
+// JS's six standard errors of a kind, one shape written once in
+// builtins/errors.ts: what's committed is what it writes (#1773).
+test("the standard errors of a kind are what their template writes", () => {
+  expect(generatorOutput("builtins/errors.ts")).toBe(readFileSync(join(root, "builtins/src/errors.rs"), "utf8"));
+});
+
 // Intl's formatters and their options, written once in builtins/intl.ts:
 // what's committed is what it writes.
 test("Intl is what its template writes", () => {

@@ -316,6 +316,15 @@ export function hasConfig(path) {
   is what it holds, and it's an `&Error` by `Deref`, declared
   `AggregateError`, `as_unknown()` the value to throw. Making one runs none of your code, so a `RefCell`
   borrowed for it isn't counted ([ADR 0867](../../decisions/0867-a-binding-that-runs-nothing-and-aggregate-error.md)).
+- **An error of a kind is its class's**: `js::range_error::new(Some(message),
+  None)` is `new RangeError(message)`, of `message` and `options` as
+  `error::new`'s are, an `&Error` by `Deref`, declared `RangeError`, its
+  object JS's own `RangeError`'s, so `instanceof RangeError` holds where
+  JS reads it; so are `eval_error`, `reference_error`, `syntax_error`,
+  `type_error` and `uri_error`, ECMAScript's six. Throw one by
+  `js::throw(range_error::new(Some("invalid length"), None).as_unknown())`,
+  `throw new RangeError("invalid length");`
+  ([ADR 0283](../../decisions/0283-js-crate-covers-typescripts-es-library.md), amended).
 - **The crates say which JS calls may throw.** The `js` crate's
   `decode_uri_component` and `Json::parse` return a `Result`, and
   `concat_text`, `"" + value`, of a value of any shape. webapi's

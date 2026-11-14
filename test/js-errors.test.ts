@@ -266,3 +266,76 @@ js::export_default!(INTERNALS);
   expect(lib.default.thrownErrors).toEqual([]);
   expect(lib.named([a, undefined])).toEqual(["AggregateError", "several", 2, true]);
 });
+
+// #1773: JS's standard errors of a kind, ECMAScript's six NativeErrors,
+// each made by its module's `new` as `error::new` makes an `Error`
+// (builtins/errors.ts): the object is that class's, its prototype and
+// constructor JS's own, so `instanceof RangeError` holds where JS reads it,
+// and a function that gives one is declared that class.
+test("a RangeError and each standard error of a kind is its own class", async () => {
+  const withJs = ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("js-native-errors");
+  writeFileSync(join(dir, "lib.rs"), `use js::{ErrorOptions, RangeError, Unknown};
+use js::{eval_error, range_error, reference_error, syntax_error, type_error, uri_error};
+
+pub fn make(message: Option<&str>) -> &'static RangeError {
+    range_error::new(message, None)
+}
+
+pub fn caused(message: &str, cause: &Unknown) -> &'static RangeError {
+    range_error::new(Some(message), Some(&ErrorOptions { cause: Some(cause) }))
+}
+
+pub fn shown(error: &RangeError) -> String {
+    format!("{}: {}", error.name(), error.message())
+}
+
+pub fn target_length(length: usize, expected: usize) -> usize {
+    if length != expected {
+        js::throw(range_error::new(Some("invalid target buffer length"), None).as_unknown());
+    }
+    length
+}
+
+pub fn each() -> Vec<Option<&'static Unknown>> {
+    vec![
+        eval_error::new(Some("eval"), None).as_unknown(),
+        range_error::new(Some("range"), None).as_unknown(),
+        reference_error::new(Some("reference"), None).as_unknown(),
+        syntax_error::new(Some("syntax"), None).as_unknown(),
+        type_error::new(Some("type"), None).as_unknown(),
+        uri_error::new(Some("uri"), None).as_unknown(),
+    ]
+}
+`);
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('throw new RangeError("invalid target buffer length");');
+  const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
+  expect(declarations).toContain("export function make(message?: string | null | undefined): RangeError;");
+  expect(declarations).toContain("export function shown(error: RangeError): string;");
+  const lib = await import(join(dir, "lib.js"));
+  const made = lib.make("boom");
+  expect([made instanceof RangeError, made instanceof Error, Object.getPrototypeOf(made) === RangeError.prototype, made.constructor === RangeError]).toEqual([true, true, true, true]);
+  expect([made.name, made.message, lib.shown(made)]).toEqual(["RangeError", "boom", "RangeError: boom"]);
+  expect(Object.hasOwn(lib.make(undefined), "message")).toBe(false);
+  expect(Object.hasOwn(lib.make(""), "message")).toBe(true);
+  const cause = { why: 1 };
+  expect(lib.caused("bad", cause).cause).toBe(cause);
+  expect(lib.targetLength(4, 4)).toBe(4);
+  expect(() => lib.targetLength(3, 4)).toThrow(new RangeError("invalid target buffer length"));
+  try {
+    lib.targetLength(3, 4);
+  } catch (thrown) {
+    expect(thrown).toBeInstanceOf(RangeError);
+  }
+  const classes = [EvalError, RangeError, ReferenceError, SyntaxError, TypeError, URIError];
+  expect(lib.each().map((e: Error, i: number) => [Object.getPrototypeOf(e) === classes[i].prototype, e.name, e.message])).toEqual([
+    [true, "EvalError", "eval"],
+    [true, "RangeError", "range"],
+    [true, "ReferenceError", "reference"],
+    [true, "SyntaxError", "syntax"],
+    [true, "TypeError", "type"],
+    [true, "URIError", "uri"],
+  ]);
+});

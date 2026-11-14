@@ -103,7 +103,8 @@ export function first(text) {
 A constructor's binding, `new C(..)`, as a value is an arrow that
 constructs, `(a) => new C(a)`, as `C(a)` alone may throw; one marked
 `#[rust_js::called_constructs]`, which JS makes alike called without
-`new`, Error's and AggregateError's, is the class itself, so
+`new`, Error's, AggregateError's and RangeError's and the other errors of
+a kind, is the class itself, so
 `function::bind(js::error::new, Some(&Kind::Null), (message, options))` is
 `Error.bind(null, message, options)`, as React's Flight client binds it,
 and the stack it makes has no frame of a function of the module's

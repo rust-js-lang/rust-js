@@ -30,7 +30,10 @@ spawn(Box::new(async move {                            // runs, unawaited
   `&JsError` by `Deref` ([ADR 0283](../docs/decisions/0283-js-crate-covers-typescripts-es-library.md));
   `aggregate_error::new(errors,
   None, None)` is `new AggregateError(errors)`, an `Error` of several, its `errors()`
-  what it holds ([ADR 0867](../docs/decisions/0867-a-binding-that-runs-nothing-and-aggregate-error.md)).
+  what it holds ([ADR 0867](../docs/decisions/0867-a-binding-that-runs-nothing-and-aggregate-error.md));
+  `range_error::new(Some(message), None)` is `new RangeError(message)`, its class's, an
+  `Error` by `Deref`, as are ECMAScript's other five, `TypeError`'s and the rest, written
+  by `builtins/errors.ts`.
 - `RegExp` is there for what Rust would use `regex` for: `reg_exp::new(r"^\d+$", "")`,
   and `reg_exp::replace(text, pattern, "$1")`. A replacer closure, and `matchAll`,
   are a program's own bindings, typed for its pattern's groups.

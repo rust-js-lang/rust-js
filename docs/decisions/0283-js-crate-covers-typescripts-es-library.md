@@ -364,3 +364,30 @@ Node; the compiler's two forms by the mutations
 `keyed-method-a-member`, `keyed-method-quoted`, `keyed-method-key-unchecked` and
 `keyed-function-unrefused`. `coverage.txt` is unchanged: `prototype` and
 the iterator protocol's interfaces aren't measured.
+
+## Amendment (2026-11-14): the standard errors of a kind (#1773)
+
+ECMAScript's six NativeErrors, `EvalError`, `RangeError`, `ReferenceError`,
+`SyntaxError`, `TypeError` and `URIError`, are bound as `AggregateError`
+is: each an opaque type of its name, declared that class, an `&Error` by
+`Deref`, and made by its module's `new(message, options)`, `range_error::new`,
+of the shape `error::new` has, `called_constructs` too. A port that throws
+`new RangeError(..)`, a mesh builder's of a target buffer of the wrong
+length, keeps it: the object is JS's own `RangeError`'s, its prototype and
+constructor that class's, where an `Error` whose `name` is changed would
+pass `instanceof Error` and fail `instanceof RangeError`.
+
+The six are one shape, so they're written once, a catalog of their names
+and what JS throws each of, by `builtins/errors.ts`, into
+`builtins/src/errors.rs`, as the typed arrays are; `Error` and
+`AggregateError`, each a shape of its own, stay in `src/lib.rs`. Each is in
+`coverage.ts`'s scope, its `message`, `name`, `stack`, `cause` and
+`constructor` bound through its `Deref`: 748 of 748 members.
+
+Held by `test/js-errors.test.ts`'s "a RangeError and each standard error
+of a kind is its own class", run in Bun: the class, prototype and
+constructor, a message left out having none of its own, a cause the same
+object, the declaration `RangeError`, a `throw` of one caught as
+`instanceof RangeError`, and each of the six its own class; and by
+`test/builtins-coverage.test.ts`'s "the standard errors of a kind are what
+their template writes".

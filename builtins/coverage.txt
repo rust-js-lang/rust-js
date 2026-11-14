@@ -1,5 +1,5 @@
 # The js crate against TypeScript's ES2024 library, where Rust has no type of its own: bun test test/builtins-coverage.test.ts
-# members: 718 of 718 (100.0%)
+# members: 748 of 748 (100.0%)
 AggregateError.cause
 AggregateError.constructor
 AggregateError.errors
@@ -184,6 +184,11 @@ Error.constructor
 Error.message
 Error.name
 Error.stack
+EvalError.cause
+EvalError.constructor
+EvalError.message
+EvalError.name
+EvalError.stack
 FinalizationRegistry.constructor
 FinalizationRegistry.register
 FinalizationRegistry.unregister
@@ -486,6 +491,16 @@ Promise.static:withResolvers
 Promise.then
 Proxy.constructor
 Proxy.static:revocable
+RangeError.cause
+RangeError.constructor
+RangeError.message
+RangeError.name
+RangeError.stack
+ReferenceError.cause
+ReferenceError.constructor
+ReferenceError.message
+ReferenceError.name
+ReferenceError.stack
 Reflect.static:apply
 Reflect.static:construct
 Reflect.static:defineProperty
@@ -535,6 +550,21 @@ Symbol.static:toStringTag
 Symbol.static:unscopables
 Symbol.toString
 Symbol.valueOf
+SyntaxError.cause
+SyntaxError.constructor
+SyntaxError.message
+SyntaxError.name
+SyntaxError.stack
+TypeError.cause
+TypeError.constructor
+TypeError.message
+TypeError.name
+TypeError.stack
+URIError.cause
+URIError.constructor
+URIError.message
+URIError.name
+URIError.stack
 Uint16Array.BYTES_PER_ELEMENT
 Uint16Array.at
 Uint16Array.buffer

@@ -751,7 +751,7 @@ test("a binding's keyword name is its raw identifier", () => {
   const crates = ["builtins/src", "webapi/src", "react/src", "node/src", "next/src"].flatMap(files).filter((f) => f.endsWith(".rs"));
   expect(crates.length).toBeGreaterThan(10);
   expect(crates.filter((file) => pattern.test(read(file)))).toEqual([]);
-  const generators = ["react/generate.ts", "react/attributes.ts", "react/literals.ts", "react/names.ts", "webapi/generate.ts", "builtins/intl.ts", "builtins/typed_arrays.ts"];
+  const generators = ["react/generate.ts", "react/attributes.ts", "react/literals.ts", "react/names.ts", "webapi/generate.ts", "builtins/errors.ts", "builtins/intl.ts", "builtins/typed_arrays.ts"];
   expect(generators.filter((file) => /KEYWORDS|`r#\$\{|replace\(\/\(\[a-z0-9\]\)\(\[A-Z\]\)/.test(read(file)))).toEqual([]);
 });
 
@@ -765,7 +765,7 @@ test("a binding is written with no allow of unused variables", () => {
   const sources = ["builtins/src", "webapi/src", "react/src", "node/src", "next/src", "examples", "test"]
     .flatMap(files)
     .filter((f) => /\.(rs|ts)$/.test(f) && f !== "test/architecture.test.ts");
-  const generators = ["react/generate.ts", "react/attributes.ts", "react/literals.ts", "webapi/generate.ts", "builtins/intl.ts", "builtins/typed_arrays.ts"];
+  const generators = ["react/generate.ts", "react/attributes.ts", "react/literals.ts", "webapi/generate.ts", "builtins/errors.ts", "builtins/intl.ts", "builtins/typed_arrays.ts"];
   const root = "#![cfg_attr(not(rust_js), allow(unused_variables))]";
   const allowed = [...sources, ...generators].filter((file) => /allow\((?:[^)]*, )?unused_variables/.test(read(file).replaceAll(root, "")));
   // One test's function that's no binding, whose unread `let` is the case.
