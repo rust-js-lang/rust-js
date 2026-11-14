@@ -1,7 +1,10 @@
 # 1144. The structurer keeps what it knows only if a week's measurement says so; its kill criterion is written first
 
-Status: Measuring (2026-11-14, #1671's change 5; the criterion the lead
-approved, written before any run; decided by 2026-11-21).
+Status: Rejected, as measured (2026-11-14, #1671's change 5; the criterion
+the lead approved, written before any run, decided by it the same day: k2
+and k3 fail, "Results" below). Amended: `--no-thir-hints` stays, a net of
+`test/tidy-stages.test.ts`, as its first run found a wrong answer on main
+(#1766).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): none; this is how
 rust-js's JS is shaped, not a difference. Behaviour must not change.
@@ -83,3 +86,25 @@ fixed whatever the measurement decides.
   recorded here as an amendment, with the guide updated if output changes.
 - If it is killed, the review's change 5 is closed with these numbers,
   and nobody reopens it without new evidence against this criterion.
+
+## Results (2026-11-14)
+
+The decision, against the criterion as written above.
+
+Arm A was run over the corpus's 2,479 cases in both builds. Arm C was run in the plain build. Arm B was not built, because the arithmetic below decides k2 without it.
+
+- **k1 holds, after two fixes inside the structurer.** The first run had 7 cases whose JS ran unlike the build's. drop_glue_second_panic_aborts exited normally where native aborts, because a `break` dropped as a tail stopped being one. `early_exit` writes a case's branch inside an `if` and puts what's left after it, and it writes a chain that panics first. Neither is a tail now. The re-run had none in either build.
+- **k2 fails.** As `scripts/tidy-fired.ts` counts them, the control-shape stages (`jumps`, `jumps again`, `loops`, `logicals`: 49 passes) changed 15,688 bodies as built and 14,892 with arm A. That is 5.1% fewer, against the third the criterion asks. No pass stopped firing, against the five asked. `jumps/tail jumps` fell from 2,434 to 1,727, while `jumps/branch ends` rose from 109 to 189. A+B together would need about 4,400 more bodies gone. The `loops` stage, which rustc's marks would serve, changed 3,133 bodies in all, so B could not have made up the difference.
+- **k3 fails.** 15 outputs changed, and most read worse:
+  - a `match` the program wrote lost its `switch`;
+  - a `for (const n of ..)` became `while (true)` with `$rangeFromNext`;
+  - arms tidy had merged as alike stayed apart, as two equal branches of a ternary;
+  - a `bb57:` label was kept, and the label census went from none kept to one;
+  - a destructuring was lost.
+
+  Tidy's passes recognize those forms by the explicit jumps the arm removed.
+- **k4 holds.** Arm A added 69 lines to `structure.rs` and `cfg.rs`, under the 300 allowed.
+
+**Killed.** `--structure-keeps`, its code and `State::tail` are deleted, and tidy stays the owner of control shape. The dead `State::labels`, which the arm's `tail` replaced, stays deleted. Change 5 of #1671 is closed with these numbers.
+
+**Arm C, `--no-thir-hints`, kept as a net (the amendment).** 521 outputs changed, and one ran unlike native: #1766. It was a wrong answer on main without the switch, `js::outside_shadows` not setting apart a function declared in the body, found because the switch moved a shadow into an `else`. It was fixed in 248713920. So the switch stays, as `--without-known` does (ADR 1127). Its static lives in `mir/hints.rs`, the hints' owner, and it is a test hook, not a way to build. Each case's variants in `test/tidy-stages.test.ts` include one compiled with it, every case of the corpus in the nightly (`TIDY_STAGES=corpus`) and the few of a push's run. A case whose JS then does otherwise than native is a P0: a readability hint is carrying a meaning.

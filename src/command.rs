@@ -125,6 +125,11 @@ pub(crate) struct Build {
     /// may answer. A test hook, not a way to build: the object model's net
     /// reads a library's values through counting proxies (ADR 1105).
     pub js_made_all: bool,
+    /// `--no-thir-hints`: tidy is told nothing of where the program writes
+    /// its constructs, so its JS reads worse and must run the same. A test
+    /// hook, not a way to build: `test/tidy-stages.test.ts`' variant of
+    /// each case (ADR 1144, amended).
+    pub no_thir_hints: bool,
     /// What's after `--`, rustc's as-is, e.g. `-- --sysroot /sysroot`.
     pub rustc: Vec<String>,
 }
@@ -178,6 +183,7 @@ pub(crate) fn parse(args: Vec<String>) -> Result<Command, String> {
     let std_bodies = flag(&mut ours, "--std-bodies");
     let std_iterators = flag(&mut ours, "--std-iterators");
     let js_made_all = flag(&mut ours, "--js-made-all");
+    let no_thir_hints = flag(&mut ours, "--no-thir-hints");
     let mut dependencies = Vec::new();
     while let Some(path) = valued(&mut ours, "--dependency", "a manifest path")? {
         dependencies.push(PathBuf::from(path));
@@ -266,6 +272,7 @@ pub(crate) fn parse(args: Vec<String>) -> Result<Command, String> {
         recognizers_found,
         std_iterators,
         js_made_all,
+        no_thir_hints,
         rustc: rustc.to_vec(),
     })))
 }

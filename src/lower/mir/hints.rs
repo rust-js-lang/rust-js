@@ -16,7 +16,25 @@ mod names;
 mod negations;
 mod present_breaks;
 
+/// Whether this compile forgets where the program writes its constructs,
+/// `--no-thir-hints`: tidy is told nothing of them, its JS reads worse, and
+/// must run the same, as a readability hint carries no meaning (ADR 1144,
+/// amended: a net of `test/tidy-stages.test.ts`).
+static NO_THIR_HINTS: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+/// Forgets, for the rest of the compile, where the program writes its
+/// constructs (`--no-thir-hints`).
+pub(in crate::lower) fn forget_thir_hints() {
+    NO_THIR_HINTS.store(true, std::sync::atomic::Ordering::Relaxed);
+}
+
+/// Whether tidy is told where the program writes its constructs.
+fn thir_hints() -> bool {
+    !NO_THIR_HINTS.load(std::sync::atomic::Ordering::Relaxed)
+}
+
 /// Where the program writes what tidy reads a body's JS by.
+#[derive(Default)]
 pub(super) struct Written {
     /// Each literal a pattern names by a `const`, its place, its text and
     /// that `const` read, which tidy's last pass names (ADR 0590, amended).
@@ -127,6 +145,7 @@ pub(super) struct LabeledBlock {
 
 /// The jumps the program wrote in a body: where each `return` is, and each
 /// block it labeled (ADR 0742).
+#[derive(Default)]
 pub(super) struct Jumps {
     pub returns: Vec<js::Span>,
     pub blocks: Vec<LabeledBlock>,
@@ -215,6 +234,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Where the program writes what tidy reads the body's JS by, of the
     /// body THIR has.
     pub(super) fn written(&self) -> Written {
+        // None, of `--no-thir-hints` (ADR 1144).
+        if !thir_hints() {
+            return Written::default();
+        }
         // Where each `match` is written whose arms are each a variant of its
         // own, with no field, guard or binding: one that may read a table by
         // what's matched (ADR 0233), as tidy's `table_reads` tells.
@@ -586,6 +609,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// The jumps the program wrote in the body (`Jumps`), none left yet.
     pub(super) fn written_jumps(&self) -> Jumps {
+        if !thir_hints() {
+            return Jumps::default();
+        }
         Jumps {
             returns: (self.frame.thir.exprs.iter())
                 .filter(|e| matches!(e.kind, thir::ExprKind::Return { .. }))

@@ -606,4 +606,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^switch_arms_continue.rs$"],
     snapshots: true,
   },
+  {
+    name: "no-thir-hints-told-anyway",
+    breaks: "`--no-thir-hints` tells tidy where the program writes its constructs all the same, so the tidy-stages variant without them tries the JS as built, and a meaning a hint carries goes unseen (#1766, ADR 1144, amended)",
+    file: "src/lower/mir/hints.rs",
+    find: "        // None, of `--no-thir-hints` (ADR 1144).\n        if !thir_hints() {\n",
+    replace: "        // None, of `--no-thir-hints` (ADR 1144).\n        if false {\n",
+    tests: ["test/tidy-stages.test.ts", "-t", "without the THIR hints isn't its JS"],
+  },
 ];

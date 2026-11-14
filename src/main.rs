@@ -714,6 +714,7 @@ fn compile(build: command::Build) -> Result<ExitCode, String> {
         intervals_shadow,
         std_iterators,
         js_made_all,
+        no_thir_hints,
         ..
     } = build;
     // Before anything is lowered: a fact forgotten is one never said, and
@@ -724,6 +725,9 @@ fn compile(build: command::Build) -> Result<ExitCode, String> {
     }
     if label_census.is_some() {
         lower::session::record_label_census();
+    }
+    if no_thir_hints {
+        lower::session::forget_thir_hints();
     }
     let command::Staged { metadata, dep_info, .. } = staged;
     let recorded = cargo.then(|| (manifest.clone(), metadata.clone()));

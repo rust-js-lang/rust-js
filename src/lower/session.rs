@@ -99,6 +99,12 @@ pub(crate) fn tidy_fired() -> String {
     super::mir::tidy_fired_report(&super::mir::tidy_pass_names())
 }
 
+/// Forgets, for the rest of the compile, where the program writes its
+/// constructs, which tidy reads its JS by: `--no-thir-hints` (ADR 1144).
+pub(crate) fn forget_thir_hints() {
+    super::mir::forget_thir_hints();
+}
+
 /// Records which compiler-made labels each body keeps after tidy, by the
 /// MIR shape that left it: `--label-census`'s (#1461).
 pub(crate) fn record_label_census() {

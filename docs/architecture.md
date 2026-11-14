@@ -276,7 +276,10 @@ permits a plainer form is forgotten in turn, `--without-known <fact>`, the
 program running the same ([ADR 1127](decisions/1127-a-fact-has-a-role-and-the-js-is-right-without-one-that-permits.md));
 and each std function's recogniser is left out in turn,
 `--without-recognizer <std path>`, the program refused or running the same
-([ADR 1128](decisions/1128-what-no-recogniser-takes-is-refused-or-right.md)). The printer owns spelling and layout, including
+([ADR 1128](decisions/1128-what-no-recogniser-takes-is-refused-or-right.md));
+and tidy is told nothing of where the program writes its constructs,
+`--no-thir-hints` (`mir/hints.rs`), the program running the same
+([ADR 1144](decisions/1144-the-structurer-keeps-what-it-knows-if-measured-so.md), amended). The printer owns spelling and layout, including
 expression forms determined while converting to oxc; Rust decisions stay upstream.
 
 ### Semantic owners

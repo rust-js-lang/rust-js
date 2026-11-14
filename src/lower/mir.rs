@@ -49,6 +49,7 @@ mod prepared;
 pub use prepared::Mir;
 mod queries;
 mod revealed;
+pub(in crate::lower) use hints::forget_thir_hints;
 pub(in crate::lower) use queries::{referred_constant, referred_key};
 pub(in crate::lower) use revealed::revealed;
 pub(in crate::lower) mod result_use;
@@ -478,8 +479,6 @@ struct State<'m, 'tcx> {
     pending: Vec<(Local, Value<'tcx>)>,
     /// Each list read by its fields, once for each taken.
     taken: Vec<Local>,
-    /// The blocks being lowered whose label a `break` or a `continue` names.
-    labels: Vec<BasicBlock>,
     /// The names of the body's own locals: another variable, a static's, may
     /// change by any call.
     own_names: IndexSet<String>,
@@ -1009,7 +1008,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             locals,
             pending: Vec::new(),
             taken: Vec::new(),
-            labels: Vec::new(),
             naming: Default::default(),
             own_names: Default::default(),
             unwind: None,

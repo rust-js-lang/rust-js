@@ -15,13 +15,18 @@
 // rewrite that drops a fact must leave it. One whose JS does otherwise
 // names a fact its reader needs, a form's, not a permission.
 //
+// And where the program writes its constructs, which tidy reads its JS by
+// (ADR 1144, amended): a program compiled with tidy told none of it,
+// `--no-thir-hints`, reads worse and does the same, as a readability hint
+// carries no meaning. Its first run found #1766, a wrong answer on main.
+//
 // And each std function a recogniser took (ADR 1128): a program compiled
 // with that recogniser left out, `--without-recognizer`, is refused, or
 // does the same. What rust-js does of a call no recogniser takes is then
 // never a wrong answer: a missing case of a recogniser is a refusal.
 //
 //   case.rs ─┬─ rustc ──► native ──────────────────────────────────────────────────────────┐
-//            └─ rust-js --tidy-until <stage> | --prepare-without <r> | --without-known <k> ──► node ─┴─► the same?
+//            └─ rust-js --tidy-until <stage> | --prepare-without <r> | --without-known <k> | --no-thir-hints ──► node ─┴─► the same?
 //            └─ rust-js --without-recognizer <std fn> ──► refused, or node ──────────────────────────┴─► the same?
 //
 //   bun test test/tidy-stages.test.ts                                        # a few cases, every variant
@@ -161,6 +166,7 @@ function variants(fired: string[], found: string[], recognized: string[] = []): 
     ...fired.map((pass) => ({ name: `without preparation's ${pass}`, flags: ["--prepare-without", pass] })),
     ...(forgettable().filter((known) => found.includes(known))).map((known) => ({ name: `without knowing ${known}`, flags: ["--without-known", known] })),
     ...(recognized.filter((path) => unrecognizedDiffers[path] === undefined)).map((path) => ({ name: `without the recogniser of ${path}`, flags: ["--without-recognizer", path] })),
+    { name: "without the THIR hints", flags: ["--no-thir-hints"] },
     {
       name: `after ${stageEnds()[0]}, without any of preparation's rewrites`,
       flags: ["--tidy-until", stageEnds()[0], ...all.flatMap((pass) => ["--prepare-without", pass])],
@@ -383,6 +389,21 @@ test("a case's JS without a fact a reader found isn't its JS with it", async () 
   const unknown = Bun.spawnSync([compiler, join(corpus, name), "-o", join(dir, "unknown.js"), "--without-known", "Nothing"]);
   expect(unknown.exitCode).not.toBe(0);
   expect(unknown.stderr.toString()).toContain("--without-known: no fact `Nothing`; `rust-js --knowns` lists them");
+});
+
+// Tidy told nothing of where the program writes its constructs reads its
+// JS otherwise, so the variant of each case without them tries what it
+// says (ADR 1144, amended): `calculator`'s `if`s and `match`es, read by
+// where they're written, are written apart.
+test("a case's JS without the THIR hints isn't its JS with them", async () => {
+  buildCompiler();
+  const name = "calculator.rs";
+  const dir = caseDir(name);
+  const { compiled } = await compileFull(join(corpus, name), dir, "2024");
+  if (!("js" in compiled)) throw new Error(compiled.error);
+  const without = await compile(join(corpus, name), dir, "2024", ["--no-thir-hints"]);
+  if (!("js" in without)) throw new Error(without.error);
+  expect(code(without.js)).not.toBe(code(compiled.js));
 });
 
 // A std function whose recogniser is left out is one no recogniser takes,

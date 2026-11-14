@@ -18,10 +18,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // name nothing made (#1395).
             let mut out = Vec::new();
             self.flush(state, &mut out)?;
-            state.labels.push(block);
             let mut body = self.mir_statements(state, block)?;
             body.extend(self.mir_within(state, block, &merges)?);
-            state.labels.pop();
             // Where it starts, what the program wrote: a `while`'s test.
             let data = &state.body.basic_blocks[block];
             let start = (data.statements.iter())
@@ -67,9 +65,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             out.extend(self.mir_within(state, block, merges)?);
             return Ok(out);
         }
-        state.labels.push(merge);
         let mut within = self.mir_within(state, block, inner)?;
-        state.labels.pop();
         self.flush(state, &mut within)?;
         // Where the block the program labeled is, that MIR's breaks leave:
         // tidy names it its label (ADR 0742).
