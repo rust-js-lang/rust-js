@@ -49,7 +49,7 @@ compiled for WASI; it is a separate build package, not a second compiler.
 | Reachability, linking and names | `src/reachability.rs`, `src/link.rs`, `src/names.rs` |
 | The compiler's maps and sets, each walked in the order its entries were put in, never a hasher's (ADR 1098); a session's answers that never change, each kept as first found, `OnceMap` (ADR 1100) | `src/collections.rs` |
 | Readability and printing | `src/prepare.rs`, `src/prepare/`, `src/to_oxc.rs`, `src/to_oxc/`, `src/format.rs`, `src/typescript.rs`, `src/prettier.rs`, `src/node_session.rs` (the Node session each of the last two runs, its JSON read whole as UTF-8, ADR 1079); `typescript/` prints the declaration model |
-| Library contracts, configuration, hooks and path utilities; a crate's npm package, what its entry re-exports (ADR 1008) and the subpaths its `exports` resolves (ADR 0770) | `src/library.rs`, `src/settings.rs`, `src/hooks.rs`, `src/paths.rs`, `src/packages.rs` |
+| Library contracts, configuration, hooks and path utilities; a crate's npm package, what its entry re-exports (ADR 1008) and the subpaths its `exports` resolves (ADR 0770) | `src/library.rs`, `src/library/dependencies.rs` (the libraries a crate is compiled against, read and checked before it, and `@rust-js/std`'s), `src/settings.rs`, `src/hooks.rs`, `src/paths.rs`, `src/packages.rs` |
 | Artifact planning, manifest and publication; the program's own files lowering reads, `LocalJs` | `src/output.rs`, `src/output/`, `src/manifest.rs`, `src/publish.rs` |
 | The class names a CSS Module exports, the one thing read of a stylesheet, by Lightning CSS (ADR 1133) | `src/css_modules.rs` |
 | Runtime helper catalog and implementations | `src/runtime.rs`, `src/runtime/`; generated package in `runtime/` |
