@@ -168,7 +168,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let mut dropped = Vec::new();
         self.drop_value(given, held, span, &mut dropped)?;
-        Ok(crate::lower::drops::dropped_unwinding(call, dropped, js_span))
+        Ok(crate::lower::drops::dropped_unwinding(
+            call,
+            dropped,
+            js_span,
+            &mut self.catch_names(),
+        ))
     }
 
     /// `name`, set by `then` where `test` holds, and otherwise to
@@ -194,7 +199,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // as it unwinds too, `unwrap_or_default`'s `T::default()` (#903).
         let made = vec![StmtKind::Assign(Expr::var(&name), otherwise.clone()).at(js_span)];
         let mut dropped = match otherwise.may_throw() {
-            true => crate::lower::drops::dropped_unwinding(made, given_up_dropped.clone(), js_span),
+            true => {
+                crate::lower::drops::dropped_unwinding(made, given_up_dropped.clone(), js_span, &mut self.catch_names())
+            }
             false => made,
         };
         dropped.extend(given_up_dropped);
@@ -251,7 +258,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // `b` dropped even where `a`'s drop panics, as Rust's unwinding
             // drops it (ADR 0502).
             let both = Expr::bin(Op::And, a_some, b_some);
-            let dropped = crate::lower::drops::each_dropped(vec![dropped_a, dropped_b], js_span);
+            let dropped =
+                crate::lower::drops::each_dropped(vec![dropped_a, dropped_b], js_span, &mut self.catch_names());
             out.push(StmtKind::If(both, dropped, None).at(js_span));
         } else {
             let only_a = Expr::bin(Op::And, a_some.clone(), not(b_some.clone()));

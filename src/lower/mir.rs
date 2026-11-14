@@ -620,14 +620,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             self.tcx.fn_sig(def_id).skip_binder().abi(),
         ) && !self.krate.never_unwinding.contains(&def_id)
         {
-            let thrown = Expr::call_helper("$cannotUnwind", vec![Expr::var("error")]);
+            let error = self.fresh(super::Role::Error);
+            let thrown = Expr::call_helper("$cannotUnwind", vec![Expr::var(&error)]);
             out = vec![
-                js::StmtKind::TryCatch(
-                    out,
-                    Some("error".into()),
-                    vec![js::StmtKind::Throw(thrown).at(js::Span::NONE)],
-                )
-                .at(js::Span::NONE),
+                js::StmtKind::TryCatch(out, Some(error), vec![js::StmtKind::Throw(thrown).at(js::Span::NONE)])
+                    .at(js::Span::NONE),
             ];
         }
         // A C-variadic one's last parameter gathers the rest, which nothing

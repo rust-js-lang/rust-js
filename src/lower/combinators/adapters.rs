@@ -616,7 +616,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let mut inspected = vec![inspected];
                 if throws && let Some(dropped) = self.item_drop_call(receiver_ty, item.clone(), span)? {
                     let dropped = vec![StmtKind::Expr(dropped).at(js::Span::NONE)];
-                    inspected = crate::lower::drops::dropped_unwinding(inspected, dropped, js::Span::NONE);
+                    inspected = crate::lower::drops::dropped_unwinding(
+                        inspected,
+                        dropped,
+                        js::Span::NONE,
+                        &mut self.catch_names(),
+                    );
                 }
                 inspected.push(StmtKind::Return(Some(item)).at(js::Span::NONE));
                 let each = Expr::arrow(vec![param.into()], inspected);

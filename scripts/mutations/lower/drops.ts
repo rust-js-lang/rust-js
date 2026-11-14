@@ -109,7 +109,7 @@ export const mutations: Mutation[] = [
     name: "closure-captures-dropped-in-a-row",
     breaks: "a closure's captures are dropped one after another with no `try`, so where the first one's drop panics, the second is never dropped (#846)",
     file: "src/lower/drops.rs",
-    find: "        out.extend(parts::each_dropped(parts, self.js_span(span)));\n",
+    find: "        out.extend(parts::each_dropped(parts, self.js_span(span), &mut self.catch_names()));\n",
     replace: "        out.extend(parts.into_iter().flatten());\n",
     tests: ["test/corpus.test.ts", "-t", "^closure_captures_dropped_past_a_panic.rs$"],
   },

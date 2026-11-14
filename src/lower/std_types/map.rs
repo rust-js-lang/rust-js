@@ -5,6 +5,7 @@
 use crate::js::{self, Expr, Op, Stmt, StmtKind};
 use crate::lower::temporary_names::Role;
 
+use crate::lower::drops::dropped_after;
 use crate::lower::recognition::{KeyParts, StdItem, TypeFact, std_item};
 use crate::lower::{FnCx, R};
 use rustc_middle::ty::{self, Ty};
@@ -763,8 +764,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     out.extend(dropped);
                     return Ok(cleared);
                 }
-                let cleared = vec![StmtKind::Expr(cleared).at(self.js_span(span))];
-                out.extend(crate::lower::drops::dropped_after(dropped, cleared, self.js_span(span)));
+                let js_span = self.js_span(span);
+                let cleared = vec![StmtKind::Expr(cleared).at(js_span)];
+                out.extend(dropped_after(dropped, cleared, js_span, &mut self.catch_names()));
                 Expr::undefined()
             }
             MapOp::Clear => method(arg(), "clear", Vec::new()),

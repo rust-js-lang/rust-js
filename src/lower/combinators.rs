@@ -11,7 +11,7 @@ mod values;
 pub(in crate::lower) use self::adapters::inserted;
 
 use super::calls::apply;
-use super::drops::Drops;
+use super::drops::{Drops, dropped_after};
 use super::recognition::trait_method;
 use super::{FnCx, R, representation::Num};
 use crate::js::result;
@@ -405,7 +405,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 out.push(
                     StmtKind::If(
                         some,
-                        crate::lower::drops::dropped_after(body, dropped, js_span),
+                        dropped_after(body, dropped, js_span, &mut self.catch_names()),
                         Some(vec![StmtKind::Assign(Expr::var(&result), fallback).at(js_span)]),
                     )
                     .at(js_span),
@@ -469,7 +469,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.drop_value(fallback.clone(), fallback_ty, span, &mut unused)?;
                 let then = match unused.is_empty() {
                     true => body,
-                    false => crate::lower::drops::dropped_after(body, unused, self.js_span(span)),
+                    false => dropped_after(body, unused, self.js_span(span), &mut self.catch_names()),
                 };
                 let error = (inside(), generic_args.type_at(1));
                 self.or_dropped(tag(true), name, then, error, fallback, span, out)?
@@ -513,7 +513,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let unkept = Expr::bin(Op::Eq, Expr::var(&kept), Expr::undefined());
                 let dropped = vec![StmtKind::If(Expr::bin(Op::And, some, unkept), drop, None).at(js_span)];
                 out.push(StmtKind::Let(kept.clone(), None).at(js_span));
-                out.extend(crate::lower::drops::dropped_after(body, dropped, js_span));
+                out.extend(dropped_after(body, dropped, js_span, &mut self.catch_names()));
                 Expr::var(&kept)
             }
             Comb::Filter => {

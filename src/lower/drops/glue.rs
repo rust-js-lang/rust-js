@@ -203,10 +203,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 UnwindAction::Cleanup(cleanup) => self.glue_from(glue, cleanup, true, made, out)?,
                 _ => Vec::new(),
             };
+            let js_span = self.js_span(glue.span);
             return Ok(parts::dropped_after_unwinding(
                 part,
                 (unwinding, rest),
-                self.js_span(glue.span),
+                js_span,
+                &mut self.catch_names(),
             ));
         }
     }

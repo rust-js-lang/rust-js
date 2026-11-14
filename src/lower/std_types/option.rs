@@ -1001,7 +1001,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // with the place, not the old one again (#904).
             (OptionPlaceOp::Insert, Some(dropped)) if self.drop_may_panic(item) => {
                 let old_dropped = vec![StmtKind::If(present, dropped, None).at(js_span)];
-                out.extend(crate::lower::drops::dropped_after(old_dropped, vec![assign], js_span));
+                out.extend(crate::lower::drops::dropped_after(
+                    old_dropped,
+                    vec![assign],
+                    js_span,
+                    &mut self.catch_names(),
+                ));
             }
             (OptionPlaceOp::Insert, Some(dropped)) => {
                 out.push(StmtKind::If(present, dropped, None).at(js_span));

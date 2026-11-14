@@ -6,8 +6,8 @@ export const mutations: Mutation[] = [
     name: "dropped-unwinding-not-rethrown",
     breaks: "what a call holds dropped as it unwinds swallows the panic, so `inspect`'s closure's panic ends no `catch_unwind` (#903)",
     file: "src/lower/drops/parts.rs",
-    find: "    let mut handler = cleanup(dropped, Some(\"error\"), js_span);\n    handler.push(StmtKind::Throw(Expr::var(\"error\")).at(js_span));\n    vec![StmtKind::TryCatch(body, Some(\"error\".into()), handler).at(js_span)]\n",
-    replace: "    let handler = cleanup(dropped, Some(\"error\"), js_span);\n    vec![StmtKind::TryCatch(body, Some(\"error\".into()), handler).at(js_span)]\n",
+    find: "    let mut handler = cleanup(dropped, Some(&error), js_span);\n    handler.push(StmtKind::Throw(Expr::var(&error)).at(js_span));\n    vec![StmtKind::TryCatch(body, Some(error), handler).at(js_span)]\n",
+    replace: "    let handler = cleanup(dropped, Some(&error), js_span);\n    vec![StmtKind::TryCatch(body, Some(error), handler).at(js_span)]\n",
     tests: ["test/corpus.test.ts", "-t", "^inspect_unwinds_its_value.rs$"],
   },
   {
@@ -166,7 +166,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a closure's captures after one whose destructor panics are never dropped, its throw past them (#416, #846)",
     file: "src/lower/drops/parts.rs",
-    find: "                dropped_after_unwinding(part.clone(), (unwinding, rest), js_span)\n",
+    find: "                dropped_after_unwinding(part.clone(), (unwinding, rest), js_span, error)\n",
     replace: "                part.iter().cloned().chain(rest).collect::<Vec<Stmt>>()\n",
     tests: ["test/corpus.test.ts", "-t", "^closure_captures_dropped_past_a_panic.rs$"],
   },
@@ -184,7 +184,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a compiled std adapter's close stops at the first part whose drop panics: a peekable's peeked item after its source's, a chain's second side, never dropped (#677)",
     file: "src/lower/drops/parts.rs",
-    find: "        Ok(each_dropped(each, js_span))\n",
+    find: "        Ok(each_dropped(each, js_span, &mut self.catch_names()))\n",
     replace: "        let _ = js_span;\n        Ok(each.into_iter().flatten().collect())\n",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std"],
   },
@@ -259,8 +259,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a closure's captures' `catch` of one runs each later capture in a `try` of its own, so where one of those panics too the captures after it still drop before the abort, `drop 4`, where Rust aborts at once (#865)",
     file: "src/lower/drops/parts.rs",
-    find: "                dropped_after_unwinding(part.clone(), (unwinding, rest), js_span)\n",
-    replace: "                dropped_after_unwinding(part.clone(), (rest.clone(), rest), js_span)\n",
+    find: "                dropped_after_unwinding(part.clone(), (unwinding, rest), js_span, error)\n",
+    replace: "                dropped_after_unwinding(part.clone(), (rest.clone(), rest), js_span, error)\n",
     tests: ["test/corpus.test.ts", "-t", "^closure_captures_second_panic_aborts.rs$"],
   },
   {
@@ -314,8 +314,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a drop after a body leaves its cleanup unguarded where it's made, so a closure's drop of its captures, an arrow no tidy guards, goes on past a second panic where Rust aborts (#938)",
     file: "src/lower/drops/parts.rs",
-    find: "    after(body, (cleanup(unwinding, Some(\"error\"), js_span), dropped), js_span)\n",
-    replace: "    after(body, (unwinding, dropped), js_span)\n",
+    find: "    caught(body, (cleanup(unwinding, Some(&name), js_span), dropped), js_span, name)\n",
+    replace: "    caught(body, (unwinding, dropped), js_span, name)\n",
     tests: ["test/corpus.test.ts", "-t", "^closure_captures_dropped_after_a_sum_abort.rs$"],
   },
   {

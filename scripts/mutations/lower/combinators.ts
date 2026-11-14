@@ -214,7 +214,7 @@ export const mutations: Mutation[] = [
     name: "map-or-fallback-kept",
     breaks: "`map_or`'s fallback with a destructor, unused, is never dropped",
     file: "src/lower/combinators.rs",
-    find: "                        crate::lower::drops::dropped_after(body, dropped, js_span),\n",
+    find: "                        dropped_after(body, dropped, js_span, &mut self.catch_names()),\n",
     replace: "                        body,\n",
     tests: ["test/corpus.test.ts", "-t", "option_combinator_drops"],
   },

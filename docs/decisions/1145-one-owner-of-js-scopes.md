@@ -85,3 +85,13 @@ a name twice where tidy starts. Spelled as preparation spells them
 them alike by `alpha_eq`; `held_enumerate.rs` reads shorter, an outer
 `f` no longer named apart from a parameter of its name, `const f$1 = f;`
 gone.
+
+## Amendment: the second family, a catch's parameter (2026-11-14)
+
+What lowering makes to catch a panic as it unwinds, `try { .. } catch
+(error) { ..; throw error; }`, `dropped_after`'s, `dropped_unwinding`'s,
+`each_dropped`'s and the `$cannotUnwind` of a function that can't unwind,
+names its parameter of the item's names, `FnCx::catch_names`, each its own,
+where each was `error` as it is. The corpus is what it was, byte for byte.
+Tidy's own catches, `aborting_finally`'s and a poisoned lock's, are made
+after M2's names are, where tidy starts; M3's `VarId`s name them.

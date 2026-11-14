@@ -600,6 +600,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         fresh_in(&mut self.names, &base.into().word())
     }
 
+    /// A `catch`'s parameter each time it's asked, of the item's names,
+    /// each its own (#1681 change 3, M2), as preparation spells it.
+    fn catch_names(&mut self) -> impl FnMut() -> String + '_ {
+        move || self.fresh(Role::Error)
+    }
+
     /// The names a pattern gives the fields it leaves out, so the rest
     /// after them holds only the others (ADR 0205), each `_field`: one left
     /// out is `_` once it's known, as preparation names it.

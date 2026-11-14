@@ -470,7 +470,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             self.drop_in(place, ty, span, made, &mut dropped)?;
             parts.push(dropped);
         }
-        out.extend(parts::each_dropped(parts, self.js_span(span)));
+        out.extend(parts::each_dropped(parts, self.js_span(span), &mut self.catch_names()));
         Ok(())
     }
 

@@ -62,7 +62,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             self.drop_value(value, ty, span, &mut out)?;
             each.push(out);
         }
-        Ok(each_dropped(each, js_span))
+        Ok(each_dropped(each, js_span, &mut self.catch_names()))
     }
 
     /// A `ty`'s drop, written in place: its own `drop`, then its parts'.
@@ -166,7 +166,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             let mut value_dropped = Vec::new();
                             self.drop_in(Expr::var(&key), key_ty, span, made, &mut body)?;
                             self.drop_in(Expr::var(&item), value_ty, span, made, &mut value_dropped)?;
-                            body = each_dropped(vec![body, value_dropped], js_span);
+                            body = each_dropped(vec![body, value_dropped], js_span, &mut self.catch_names());
                             js::Pattern::names_array([keys.then_some(key), values.then_some(item)])
                         }
                     };
@@ -446,7 +446,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 /// as it is, `try { a } catch (error) { b; c; throw error; } try { b } ..`,
 /// so the JS grows as the square of its parts, never twice for each (#865:
 /// num-traits' 20-tuple `Bounded`, 240 MB).
-pub(in crate::lower) fn each_dropped(parts: Vec<Vec<Stmt>>, js_span: js::Span) -> Vec<Stmt> {
+pub(in crate::lower) fn each_dropped(
+    parts: Vec<Vec<Stmt>>,
+    js_span: js::Span,
+    error: &mut dyn FnMut() -> String,
+) -> Vec<Stmt> {
     let parts: Vec<Vec<Stmt>> = parts.into_iter().filter(|part| !part.is_empty()).collect();
     let mut rest: Vec<Stmt> = Vec::new();
     for (at, part) in parts.iter().enumerate().rev() {
@@ -454,7 +458,7 @@ pub(in crate::lower) fn each_dropped(parts: Vec<Vec<Stmt>>, js_span: js::Span) -
             true => part.iter().cloned().chain(rest).collect(),
             false => {
                 let unwinding: Vec<Stmt> = parts[at + 1..].iter().flatten().cloned().collect();
-                dropped_after_unwinding(part.clone(), (unwinding, rest), js_span)
+                dropped_after_unwinding(part.clone(), (unwinding, rest), js_span, error)
             }
         };
     }
@@ -470,8 +474,15 @@ pub(in crate::lower) fn each_dropped(parts: Vec<Vec<Stmt>>, js_span: js::Span) -
 /// where the drops were, and name what it captures apart (#938). Of a
 /// `body` with no way out but its end or a throw. The one form of what runs
 /// after a body as it ends either way, of what's dropped where it's emitted.
-pub(in crate::lower) fn dropped_after(body: Vec<Stmt>, dropped: Vec<Stmt>, js_span: js::Span) -> Vec<Stmt> {
-    after(body, (dropped.clone(), dropped), js_span)
+/// Each `catch`'s parameter is `error`'s, the item's name for it, each its
+/// own (#1681 change 3, M2), as preparation spells it (ADR 0352).
+pub(in crate::lower) fn dropped_after(
+    body: Vec<Stmt>,
+    dropped: Vec<Stmt>,
+    js_span: js::Span,
+    error: &mut dyn FnMut() -> String,
+) -> Vec<Stmt> {
+    after(body, (dropped.clone(), dropped), js_span, error)
 }
 
 /// Drop glue's `dropped_after`, where what runs as `body` unwinds,
@@ -484,20 +495,41 @@ pub(super) fn dropped_after_unwinding(
     body: Vec<Stmt>,
     (unwinding, dropped): (Vec<Stmt>, Vec<Stmt>),
     js_span: js::Span,
+    error: &mut dyn FnMut() -> String,
 ) -> Vec<Stmt> {
-    after(body, (cleanup(unwinding, Some("error"), js_span), dropped), js_span)
+    if finally_holds(&dropped) {
+        return vec![StmtKind::Try(body, dropped).at(js_span)];
+    }
+    let name = error();
+    caught(body, (cleanup(unwinding, Some(&name), js_span), dropped), js_span, name)
 }
 
 /// `try { body } finally { dropped }` where `dropped` can't throw (its
 /// body thrown on through `$unwindsOn` later, `aborting_finally`); else
 /// `try { body } catch (error) { unwinding; throw error; } dropped`.
-fn after(body: Vec<Stmt>, (unwinding, dropped): (Vec<Stmt>, Vec<Stmt>), js_span: js::Span) -> Vec<Stmt> {
+fn after(
+    body: Vec<Stmt>,
+    (unwinding, dropped): (Vec<Stmt>, Vec<Stmt>),
+    js_span: js::Span,
+    error: &mut dyn FnMut() -> String,
+) -> Vec<Stmt> {
     if finally_holds(&dropped) {
         return vec![StmtKind::Try(body, dropped).at(js_span)];
     }
+    caught(body, (unwinding, dropped), js_span, error())
+}
+
+/// `try { body } catch (error) { unwinding; throw error; } dropped`, of
+/// `error` the `catch`'s parameter.
+fn caught(
+    body: Vec<Stmt>,
+    (unwinding, dropped): (Vec<Stmt>, Vec<Stmt>),
+    js_span: js::Span,
+    error: String,
+) -> Vec<Stmt> {
     let mut handler = unwinding;
-    handler.push(StmtKind::Throw(Expr::var("error")).at(js_span));
-    let mut out = vec![StmtKind::TryCatch(body, Some("error".into()), handler).at(js_span)];
+    handler.push(StmtKind::Throw(Expr::var(&error)).at(js_span));
+    let mut out = vec![StmtKind::TryCatch(body, Some(error), handler).at(js_span)];
     out.extend(dropped);
     out
 }
@@ -505,13 +537,19 @@ fn after(body: Vec<Stmt>, (unwinding, dropped): (Vec<Stmt>, Vec<Stmt>), js_span:
 /// `body`, and `dropped` as it unwinds alone, what a call holds that its
 /// caller drops: `try { body } catch (error) { $cleanup(..); throw error;
 /// }`, `inspect`'s value as its closure panics (#903).
-pub(in crate::lower) fn dropped_unwinding(body: Vec<Stmt>, dropped: Vec<Stmt>, js_span: js::Span) -> Vec<Stmt> {
+pub(in crate::lower) fn dropped_unwinding(
+    body: Vec<Stmt>,
+    dropped: Vec<Stmt>,
+    js_span: js::Span,
+    error: &mut dyn FnMut() -> String,
+) -> Vec<Stmt> {
     if dropped.is_empty() {
         return body;
     }
-    let mut handler = cleanup(dropped, Some("error"), js_span);
-    handler.push(StmtKind::Throw(Expr::var("error")).at(js_span));
-    vec![StmtKind::TryCatch(body, Some("error".into()), handler).at(js_span)]
+    let error = error();
+    let mut handler = cleanup(dropped, Some(&error), js_span);
+    handler.push(StmtKind::Throw(Expr::var(&error)).at(js_span));
+    vec![StmtKind::TryCatch(body, Some(error), handler).at(js_span)]
 }
 
 /// What a panic runs as it unwinds, `cleanup`, the drops of what the frames

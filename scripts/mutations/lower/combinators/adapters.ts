@@ -437,7 +437,7 @@ export const mutations: Mutation[] = [
     name: "inspect-item-undropped-as-it-panics",
     breaks: "an `inspect(f)` whose `f` panics drops nothing of the item it was given, which Rust's `inspect` drops as it unwinds (#423, #938)",
     file: "src/lower/combinators/adapters.rs",
-    find: "                    inspected = crate::lower::drops::dropped_unwinding(inspected, dropped, js::Span::NONE);\n",
+    find: "                    inspected = crate::lower::drops::dropped_unwinding(\n                        inspected,\n                        dropped,\n                        js::Span::NONE,\n                        &mut self.catch_names(),\n                    );\n",
     replace: "                    let _ = dropped;\n",
     tests: ["test/corpus.test.ts", "-t", "^panic_part_way_drops.rs$"],
   },
