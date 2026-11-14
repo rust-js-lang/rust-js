@@ -29,6 +29,7 @@ import { browsers, caseParts, compilerBuilds, machine, memoryBudget, nightly, pe
 import { said, strays } from "./strays";
 import { type CheckLogRun, checkLogRun } from "./checkLogs";
 import { expected, jobTimesStore, readJobTimes, recordJobTimes } from "./jobTimes";
+import { fairShare, holdLease, leaseStore, liveLeases } from "./leases";
 import { elapsed, loadScale, median, timed } from "./timing";
 
 const root = join(import.meta.dir, "..");
@@ -501,6 +502,7 @@ export function run(
   { began, samples }: Clock,
   logs: CheckLogRun = checkLogRun(),
   times = jobTimesStore,
+  leases = leaseStore,
 ): Promise<Ran[]> {
   const busy = busySince();
   const sampling = setInterval(() => samples.push({ at: (Date.now() - began) / 1000, busy: busy() }), 2000);
@@ -531,7 +533,7 @@ export function run(
   // the cores sat a third idle (2026-11-07).
   const weight = ({ name, weight: said }: Job) => {
     const measured = machine[name]?.cores ?? [];
-    return Math.min(cores, measured.length > 0 ? Math.max(0.25, median(measured)) : said);
+    return Math.min(share(cores), measured.length > 0 ? Math.max(0.25, median(measured)) : said);
   };
   const queue = [...list].sort((a, b) => longest(b) - longest(a));
   const groups = new Map<string, Ran[]>();
@@ -545,11 +547,25 @@ export function run(
   let heldMemory = 0;
   const budget = memoryBudget();
   let waiting: (() => void)[] = [];
-  const room = async (weight: number, memory: number) => {
-    while (running > 0 && (held + weight > cores || heldMemory + memory > budget)) await new Promise<void>((wake) => waiting.push(wake));
-    running++;
-    held += weight;
-    heldMemory += memory;
+  // Its share of them where concurrent runs hold leases, the cores and the
+  // memory divided by the others live and itself (scripts/leases.ts), asked
+  // at most each second as a job waits for room.
+  let shares = { count: 1, at: 0 };
+  const share = (whole: number) => {
+    if (Date.now() - shares.at > 1000) shares = { count: liveLeases(leases).filter((lease) => lease.pid !== process.pid).length + 1, at: Date.now() };
+    return fairShare(whole, shares.count);
+  };
+  // The next job to start, of those still queued: the first, longest
+  // first, that fits the room left, so one that can't yet doesn't hold back
+  // those after it that can, as it did (#1762); and of none that fits where
+  // none runs, the first, alone, as one heavier than the machine runs.
+  const pending = [...queue];
+  const next = async (): Promise<Job> => {
+    for (;;) {
+      const at = pending.findIndex((job) => running === 0 || (held + weight(job) <= share(cores) && heldMemory + job.memory <= share(budget)));
+      if (at >= 0) return pending.splice(at, 1)[0];
+      await new Promise<void>((wake) => waiting.push(wake));
+    }
   };
   const freed = (weight: number, memory: number) => {
     running--;
@@ -573,17 +589,20 @@ export function run(
   };
   const ran: Promise<Ran>[] = [];
   const started = (async () => {
-    for (const job of queue) {
+    while (pending.length > 0) {
+      const job = await next();
       const { name, cmd, env, timeout: given, group } = job;
       const holds = weight(job);
-      await room(holds, job.memory);
+      running++;
+      held += holds;
+      heldMemory += job.memory;
       ran.push(
         (async () => {
           const start = Date.now();
           const expected = Math.max(2, scale);
           const p = Bun.spawn(cmd, {
             cwd: root,
-            env: { ...process.env, RUST_JS_COMPILER: compiler, RUST_JS_LOAD_SCALE: String(expected), ...env },
+            env: { ...process.env, RUST_JS_COMPILER: compiler, RUST_JS_LOAD_SCALE: String(expected), RUST_JS_LEASED: "1", ...env },
             stdout: "pipe",
             stderr: "pipe",
           });
@@ -699,6 +718,8 @@ if (import.meta.main) {
   }
   const args = process.argv.slice(2);
   const all = args.includes("--all");
+  // The machine shared with concurrent runs, each its share (scripts/leases.ts).
+  holdLease("check");
   const extra = args.filter((arg) => !arg.startsWith("--"));
   // What the loop left running, which takes the cores this run times
   // (scripts/strays.ts): said first, and again with its profile.

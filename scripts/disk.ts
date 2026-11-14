@@ -23,6 +23,7 @@ import { join, resolve } from "node:path";
 import { bytesOf, evict, freeBytes, type Kept } from "../tooling/bounded.js";
 import { checkout, floorBytes, machineStore, mainCheckoutOf, tempRoot } from "../test/bounded";
 import { checkLogsCap, checkLogsStore } from "./checkLogs";
+import { leasedIn } from "./leases";
 import { worktreeRoots } from "./strays";
 import { jobTimesCap, jobTimesStore } from "./jobTimes";
 import { compileCache, capBytes as compileCap, prune as pruneCompiles } from "../test/compiles";
@@ -156,13 +157,17 @@ export function stores(): Store[] {
   for (const tree of worktrees.length ? worktrees : [main]) {
     const at = (path: string) => join(tree, "target", path);
     const own = tree === checkout;
+    // Another checkout's stores, while a run there holds a lease, are its
+    // to bound: one it's using, a crate's project mid-build, isn't taken
+    // from under it (scripts/leases.ts). Counted all the same.
+    const bounded = own || !leasedIn(tree);
     const label = (path: string) => (tree === main ? `target/${path}` : `${resolve(tree).split("/").pop()}/target/${path}`);
     inChecks.push(
-      { name: label("crate-corpus"), dir: at("crate-corpus"), cap: crateProjectsCap, bound: (free) => void boundCrateProjects({ dir: at("crate-corpus"), free }) },
-      { name: label("crater"), dir: at("crater"), cap: craterCap, bound: (free) => void boundCrater({ dir: at("crater"), free }) },
+      { name: label("crate-corpus"), dir: at("crate-corpus"), cap: crateProjectsCap, bound: bounded ? (free) => void boundCrateProjects({ dir: at("crate-corpus"), free }) : undefined },
+      { name: label("crater"), dir: at("crater"), cap: craterCap, bound: bounded ? (free) => void boundCrater({ dir: at("crater"), free }) : undefined },
       { name: label("kept-apps"), dir: at("kept-apps"), cap: keptAppsCap },
       { name: label("compile-cache"), dir: at("compile-cache"), cap: compileCap(), bound: own ? (free) => void pruneCompiles({ root: compileCache, free }) : undefined },
-      { name: label("mutants"), dir: at("mutants"), cap: mutantsCap, bound: (free) => void boundEntries(at("mutants"), mutantsCap, free) },
+      { name: label("mutants"), dir: at("mutants"), cap: mutantsCap, bound: bounded ? (free) => void boundEntries(at("mutants"), mutantsCap, free) : undefined },
       { name: label("native-sources"), dir: at("native-sources"), cap: 64 * 2 ** 20 },
       { name: label("the build"), dir: join(tree, "target"), entries: (name) => !storedIn.has(name) },
     );

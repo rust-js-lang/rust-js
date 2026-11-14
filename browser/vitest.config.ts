@@ -7,6 +7,7 @@
 // `[package.metadata.rust-js.test]` says `runner = "vitest"` (ADR 1076).
 
 import { readFileSync } from "node:fs";
+import { createServer, type AddressInfo } from "node:net";
 import { relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -27,10 +28,24 @@ const files = manifests.flatMap((path) => {
   return (tests.files as string[]).map((file) => relative(root, file));
 });
 
+// Its browser server on a port the system gives, free: by default 63315, or
+// the next one free, which a concurrent run in another checkout raced it for,
+// a browser left waiting on the other's server (ADR 1146). A port of 0 is
+// Vitest's default again.
+const port = await new Promise<number>((done, failed) => {
+  const probe = createServer();
+  probe.on("error", failed);
+  probe.listen(0, "127.0.0.1", () => {
+    const { port } = probe.address() as AddressInfo;
+    probe.close(() => done(port));
+  });
+});
+
 export default defineConfig({
   root,
   test: {
     include: files,
+    api: { port },
     browser: {
       enabled: true,
       headless: true,

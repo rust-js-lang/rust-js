@@ -20,6 +20,7 @@ import { join } from "node:path";
 
 import { freeBytes } from "../tooling/bounded.js";
 import { floorBytes, machineStore } from "../test/bounded";
+import { withLock } from "./leases";
 import { median } from "./timing";
 
 /** Where the machine keeps its jobs' times. */
@@ -79,6 +80,15 @@ export function recordJobTimes(
   { store = jobTimesStore, now = Date.now(), free = () => freeBytes(machineStore) }: { store?: string; now?: number; free?: () => number } = {},
 ) {
   if (runs.length === 0 || free() < floorBytes) return;
+  // Read, changed and written again under the store's lock: two checks
+  // ending together each wrote what it read, and the first's runs were lost.
+  // Past its wait, not written, the times being a guide.
+  if (!existsSync(store)) mkdirSync(store, { recursive: true });
+  withLock(join(store, "lock"), () => recordUnder(runs, store, now));
+}
+
+/** `recordJobTimes`'s change of `store`, its lock held. */
+function recordUnder(runs: { name: string; seconds: number; cores: number; size?: number }[], store: string, now: number) {
   const kept = readJobTimes(store);
   for (const { name, seconds, cores, size } of runs) {
     const was = kept[name] ?? { seconds: [], cores: [], at: now };
@@ -93,7 +103,6 @@ export function recordJobTimes(
   const newest = Object.entries(kept)
     .sort((a, b) => b[1].at - a[1].at)
     .slice(0, keptJobs);
-  if (!existsSync(store)) mkdirSync(store, { recursive: true });
   const written = `${file(store)}.${process.pid}`;
   writeFileSync(written, JSON.stringify(Object.fromEntries(newest)));
   renameSync(written, file(store));

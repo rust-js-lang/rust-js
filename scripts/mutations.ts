@@ -27,6 +27,7 @@ import { caseParts, compilerBuilds, machine, memoryBudget, shard, shardArg } fro
 import { casesReaching } from "./testMap";
 import { elapsed, shown, timed } from "./timing";
 import { passed, summary } from "./test-summary";
+import { acquire, holdLease, ownShare } from "./leases";
 
 const root = join(import.meta.dir, "..");
 
@@ -944,6 +945,17 @@ async function main() {
     console.log("no mutations to run");
     return;
   }
+  // The machine shared with concurrent runs, this one its share
+  // (scripts/leases.ts); and the checkout's mutants' build, `target/mutants`,
+  // one run's at a time: two in one checkout built each other's mutants
+  // there, and judged them.
+  holdLease("mutations");
+  const released = acquire(join(root, "target", "mutants.lock"), {
+    wait: 6 * 3_600_000,
+    waiting: "waiting for this checkout's other mutation run, which builds in target/mutants",
+  });
+  if (!released) throw new Error("this checkout's other mutation run held target/mutants for 6 hours");
+  process.on("exit", released);
   // A killed run's compilers, which it didn't get to remove; not the one
   // built without a mutation, kept while the crate is what it was built from.
   for (const entry of existsSync(join(work, "bin")) ? readdirSync(join(work, "bin")) : []) {
@@ -1036,7 +1048,7 @@ async function main() {
   // on a CI machine's four cores, the second's first build cold, a minute or
   // two of the hours its shard takes.
   const said = Number(args.find((arg) => arg.startsWith("--jobs="))?.slice("--jobs=".length));
-  const jobs = said >= 1 ? said : compilerBuilds(machine().cores);
+  const jobs = said >= 1 ? said : compilerBuilds(ownShare(machine().cores));
   // And of up to `--batch` mutations each, every one chosen by name as the
   // compiler runs (ADR 1031): a build of each alone was 85% of a run's time.
   // `--batch=1` builds each alone.
@@ -1066,7 +1078,7 @@ async function main() {
   const waiters: (() => void)[] = [];
   const wake = () => waiters.splice(0).forEach((resume) => resume());
   const turn = () => new Promise<void>((resume) => waiters.push(resume));
-  const testsAtOnce = Number(args.find((arg) => arg.startsWith("--tests="))?.slice("--tests=".length)) || machine().cores;
+  const testsAtOnce = Number(args.find((arg) => arg.startsWith("--tests="))?.slice("--tests=".length)) || ownShare(machine().cores);
   const beside = async <T>(work: () => Promise<T>) => {
     while (testing >= testsAtOnce) await turn();
     testing++;

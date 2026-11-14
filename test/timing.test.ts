@@ -196,6 +196,47 @@ console.log(\`ran \${ran.length}\`);
   expect(out).toContain("ran 4");
 }, underLoad(60_000));
 
+// The pool starts what fits the room left, longest first, not only the
+// queue's next job: of 2 cores, A of one waits for C of one to start, and
+// B, of both, or of more memory than the machine's, must run alone. Waiting
+// for B to fit, the pool held C back, and A's wait ran out (#1762).
+test("check:fast's pool starts a later job that fits while an earlier one can't yet, of cores and of memory", async () => {
+  for (const heavy of ["cores", "memory"] as const) {
+    const dir = fixture(`check-pool-backfill-${heavy}`);
+    rmSync(dir, { recursive: true, force: true });
+    mkdirSync(dir, { recursive: true });
+    const released = join(dir, "released");
+    const times = join(dir, "times");
+    // Their usual lengths put them A, B, C; their cores, as measured, 1, 2 or 1, 1.
+    recordJobTimes(
+      [
+        { name: "A", seconds: 30, cores: 1 },
+        { name: "B", seconds: 20, cores: heavy === "cores" ? 2 : 1 },
+        { name: "C", seconds: 10, cores: 1 },
+      ],
+      { store: times, free: () => Infinity },
+    );
+    const child = join(dir, "pool.ts");
+    writeFileSync(
+      child,
+      `import { run } from ${JSON.stringify(join(root, "scripts/checkFast.ts"))};
+import { checkLogRun } from ${JSON.stringify(join(root, "scripts/checkLogs.ts"))};
+const job = (name: string, cmd: string[], memory = 0) => ({ name, cmd, env: {}, timeout: 120, weight: 1, memory });
+const ran = await run([
+  job("A", ["sh", "-c", "for i in $(seq 1 50); do [ -e ${released} ] && exit 0; sleep 0.1; done; exit 1"]),
+  job("B", ["true"], ${heavy === "memory" ? "1e6" : "0"}),
+  job("C", ["touch", ${JSON.stringify(released)}]),
+], "unused", 2, { began: Date.now(), samples: [] }, checkLogRun({ store: ${JSON.stringify(join(dir, "logs"))} }), ${JSON.stringify(times)}, ${JSON.stringify(join(dir, "leases"))});
+console.log(ran.map((r) => \`\${r.job.name} \${r.code}\`).join(", "));
+`,
+    );
+    const p = Bun.spawn(["bun", child], { cwd: root, stdout: "pipe", stderr: "pipe", env: { ...process.env, RUST_JS_LEASED: "" } });
+    const out = await new Response(p.stdout).text();
+    await p.exited;
+    expect([heavy, out.trim().split("\n").at(-1)]).toEqual([heavy, "A 0, C 0, B 0"]);
+  }
+}, underLoad(60_000));
+
 // A check an outer limit stops mid-pool keeps each failure it had: its
 // whole output written as its job fails, not as the pool ends (#1706).
 // The pool runs a job that fails at once beside one that would run on; the

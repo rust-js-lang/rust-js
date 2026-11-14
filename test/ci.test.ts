@@ -75,7 +75,7 @@ test("the compiler's builds at once are as many as the cores and the memory hold
   expect(mutations.cmd).toContain(`--jobs=${compilerBuilds(8)}`);
   expect(mutations.memory).toBe(compilerBuilds(8) * peakGB.compilerBuild);
   expect(check.find((job) => job.name === "clippy")!.memory).toBe(peakGB.compilerCheck);
-  expect(readFileSync(join(root, "scripts/mutations.ts"), "utf8")).toContain(": compilerBuilds(machine().cores);");
+  expect(readFileSync(join(root, "scripts/mutations.ts"), "utf8")).toContain(": compilerBuilds(ownShare(machine().cores));");
 });
 
 // How many of each kind of job a run starts at once, from the machine as
