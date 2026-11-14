@@ -5,7 +5,6 @@
 use super::*;
 use crate::lower::recognition::once_method;
 use crate::lower::std_types::once::OnceOp;
-use rustc_hir::def::DefKind;
 
 /// What MIR proves of the session's bodies: what each function only calls
 /// reach is given (`parameter_intervals`), and the proofs of each body
@@ -27,32 +26,14 @@ pub(crate) struct Shadow {
     lines: IndexSet<String>,
 }
 
-/// The crate's caller-given parameters, of `bodies`, each a function's
-/// MIR the emitter reads, by the call graph of them (#1672 M2b-2); and of
-/// each constant's, a `const`'s, a `static`'s or an inline `const { .. }`'s,
-/// the MIR rustc evaluates it by, its calls a function's callers too: a
-/// `const fn` only constants and patterns call, `add(1, 2)` of `const SUM`,
-/// is given what they pass (#1742).
-pub(in crate::lower) fn given_parameters<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    bodies: &IndexMap<rustc_span::def_id::DefId, &Body<'tcx>>,
-) {
-    let mut callers: IndexMap<rustc_span::def_id::DefId, &Body<'tcx>> = bodies.clone();
-    for owner in tcx.hir_body_owners() {
-        let owner = owner.to_def_id();
-        if !callers.contains_key(&owner)
-            && matches!(
-                tcx.def_kind(owner),
-                DefKind::Const | DefKind::AssocConst | DefKind::AnonConst | DefKind::Static { .. }
-            )
-        {
-            callers.insert(owner, tcx.mir_for_ctfe(owner));
-        }
-    }
-    let listed: Vec<(rustc_span::def_id::DefId, &Body<'tcx>)> = callers.iter().map(|(&id, &body)| (id, body)).collect();
-    let graph = crate::lower::call_graph::call_graph(tcx, &listed);
+/// The crate's caller-given parameters, of the crate's call graph, its
+/// functions' MIR the emitter reads (#1672 M2b-2) and its constants', whose
+/// calls are a function's callers too: a `const fn` only constants and
+/// patterns call, `add(1, 2)` of `const SUM`, is given what they pass
+/// (#1742; `call_graph::crate_graph`).
+pub(in crate::lower) fn given_parameters<'tcx>(tcx: TyCtxt<'tcx>, calls: &crate::lower::call_graph::Crate<'_, 'tcx>) {
     let only_called = crate::lower::analysis::only_called::only_called(tcx);
-    let given = parameter_intervals(tcx, &graph, &callers, &only_called);
+    let given = parameter_intervals(tcx, &calls.graph, &calls.bodies, &only_called);
     crate::lower::session::caches(tcx).intervals.borrow_mut().given = given;
 }
 

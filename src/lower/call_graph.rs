@@ -8,9 +8,42 @@
 //! makes it.
 
 use crate::collections::{IndexMap, IndexSet};
+use rustc_hir::def::DefKind;
 use rustc_middle::mir::{self, BasicBlock, TerminatorKind};
 use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::def_id::DefId;
+
+/// The crate's call graph, built once of what its analyses walk: each of
+/// its functions' MIR the emitter reads, `bodies`, and each constant's, a
+/// `const`'s, a `static`'s or an inline `const { .. }`'s, by the MIR rustc
+/// evaluates it by, whose calls are a function's callers too (#1742): a
+/// `const fn` only constants and patterns call. The bodies it's of, and it.
+pub(in crate::lower) struct Crate<'a, 'tcx> {
+    pub(in crate::lower) bodies: IndexMap<DefId, &'a mir::Body<'tcx>>,
+    pub(in crate::lower) graph: CallGraph,
+}
+
+/// The crate's one call graph (`Crate`), of `bodies` and its constants'.
+pub(in crate::lower) fn crate_graph<'a, 'tcx>(
+    tcx: TyCtxt<'tcx>,
+    bodies: &IndexMap<DefId, &'a mir::Body<'tcx>>,
+) -> Crate<'a, 'tcx> {
+    let mut callers: IndexMap<DefId, &'a mir::Body<'tcx>> = bodies.clone();
+    for owner in tcx.hir_body_owners() {
+        let owner = owner.to_def_id();
+        if !callers.contains_key(&owner)
+            && matches!(
+                tcx.def_kind(owner),
+                DefKind::Const | DefKind::AssocConst | DefKind::AnonConst | DefKind::Static { .. }
+            )
+        {
+            callers.insert(owner, tcx.mir_for_ctfe(owner));
+        }
+    }
+    let listed: Vec<(DefId, &mir::Body<'tcx>)> = callers.iter().map(|(&id, &body)| (id, body)).collect();
+    let graph = call_graph(tcx, &listed);
+    Crate { bodies: callers, graph }
+}
 
 /// What a call calls: a function, as rustc resolves it, an impl's method
 /// of a trait's; or anything, of a call through a `dyn` or a function

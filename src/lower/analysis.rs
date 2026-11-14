@@ -1023,7 +1023,10 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         .filter(|body| body.def_id.is_local())
         .filter_map(|body| Some((body.def_id, &body.mir.as_ref()?.body)))
         .collect();
-    given_parameters(tcx, &mirs);
+    // The crate's one call graph, its constants' bodies in it (#1671
+    // change 4 M3): each analysis that walks its calls asks it.
+    let calls = crate::lower::call_graph::crate_graph(tcx, &mirs);
+    given_parameters(tcx, &calls);
     let mutated = mutated_types(tcx, all_bodies);
     // Less what the session forgets of it, to see that a write in place
     // refuses where its copies are left out (#1665).
