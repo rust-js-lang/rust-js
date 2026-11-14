@@ -126,9 +126,15 @@ function main() {
   console.log(`[${readAll([7, 8]).join(", ")}]`);
   droppedTail();
   let count = 4;
-  const count$1 = { value: count };
-  const value = peeked(count$1);
-  count = count$1.value;
-  console.log(`${value} ${count}`);
+  console.log(
+    `${peeked({
+      get value() {
+        return count;
+      },
+      set value(value) {
+        count = value;
+      },
+    })} ${count}`,
+  );
 }
 //# sourceMappingURL=case.js.map

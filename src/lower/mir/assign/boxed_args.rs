@@ -330,9 +330,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if !fixed_place(&place) && !one_value {
                 return Err(self.unsupported(span, "a `&mut` of a number given, from its MIR"));
             }
-            // What it returns, or another parameter, can hold the borrow: a
-            // box would be copied back before it's used.
-            if self.borrow_outlives_call(def_id, i) {
+            // What it returns, or another parameter, can hold the borrow, or a
+            // raw pointer it keeps of it (#1781): a box would be copied back
+            // before it's used.
+            if self.borrow_outlives_call(def_id, i) || self.pointer_may_keep(def_id, i, param) {
                 // Of a type of one value, `()`'s: a box of it, which no write
                 // changes, whatever keeps it (#1061).
                 if one_value && !fixed_place(&place) {

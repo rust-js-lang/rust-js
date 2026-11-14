@@ -978,6 +978,64 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             || bounds.into_iter().any(named)
     }
 
+    /// Whether `fn_id` may keep a raw pointer to what its `i`th parameter, a
+    /// `&mut`, refers to, past its call (#1781): a raw pointer of that type
+    /// among the locals of its body, of a closure it makes, or of a function
+    /// of the crate's it calls, a few calls down. Its signature can't say: a
+    /// raw pointer has no lifetime, so `keep(n: &mut u32)` that stores
+    /// `n as *mut u32` away borrows nothing past its call that the signature
+    /// names, and its caller's box copied back is a place the pointer no
+    /// longer writes.
+    ///
+    /// `given` is the parameter as the call instantiates it: of generic code,
+    /// `&mut impl GetMut<u32>`, a raw pointer to the `u32` it gives is one to
+    /// it.
+    pub(super) fn pointer_may_keep(&self, fn_id: DefId, i: usize, given: Ty<'tcx>) -> bool {
+        let sig = (self.tcx.fn_sig(fn_id).instantiate_identity().skip_normalization()).skip_binder();
+        let erased = |ty: Ty<'tcx>| self.tcx.erase_and_anonymize_regions(ty);
+        let pointees: Vec<Ty<'tcx>> = [sig.inputs().get(i).copied(), Some(given)]
+            .into_iter()
+            .flatten()
+            .filter_map(|input| input.builtin_deref(true))
+            .map(erased)
+            .collect();
+        if pointees.is_empty() {
+            return false;
+        }
+        let pointer_to_it = |ty: Ty<'tcx>| {
+            ty.walk().filter_map(|part| part.as_type()).any(|t| {
+                crate::lower::pointers::raw_pointee(self.tcx, t).is_some_and(|(to, _)| pointees.contains(&erased(to)))
+            })
+        };
+        let mut seen: IndexSet<DefId> = IndexSet::default();
+        let mut work = vec![(fn_id, 0usize)];
+        while let Some((function, depth)) = work.pop() {
+            if depth > 4 || !function.is_local() || !seen.insert(function) || !self.tcx.is_mir_available(function) {
+                continue;
+            }
+            let body = self.tcx.optimized_mir(function);
+            if body.local_decls.iter().any(|decl| pointer_to_it(decl.ty)) {
+                return true;
+            }
+            for data in body.basic_blocks.iter() {
+                if let rustc_middle::mir::TerminatorKind::Call { func, .. } = &data.terminator().kind
+                    && let Some((callee, _)) = func.const_fn_def()
+                {
+                    work.push((callee, depth + 1));
+                }
+                for statement in &data.statements {
+                    if let rustc_middle::mir::StatementKind::Assign(assign) = &statement.kind
+                        && let rustc_middle::mir::Rvalue::Aggregate(kind, _) = &assign.1
+                        && let rustc_middle::mir::AggregateKind::Closure(closure, _) = **kind
+                    {
+                        work.push((closure, depth + 1));
+                    }
+                }
+            }
+        }
+        false
+    }
+
     /// What the call of `def_id`, given `generic_args`, gives, `value`, as
     /// its caller has it: a `&mut` generic code boxes, its `value` (ADR 0099).
     /// A trait's method, called through a dictionary, by the trait's

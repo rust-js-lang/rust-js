@@ -158,3 +158,16 @@ React port's JS is the same as main's. Held by the corpus case
 `written_through_a_guard_or_a_reference_to_an_object` and the mutations
 `guard-box-not-copied-back-on-unwind` and `box-unthrowing-wrapped`.
 
+
+## Amendment: a `&mut` a callee keeps a raw pointer of (2026-11-14, #1781)
+
+A `&mut` given to a function that may keep a raw pointer of it is the
+place's handle, not a box copied back. A raw pointer has no lifetime, so the
+signature can't say it outlives the call: `keep(n: &mut u32)`, which stores
+`n as *mut u32` away, wrote through the pointer later into the box the
+caller had copied back out, and the caller never saw it (`4` where Rust
+prints `u32::MAX`). `pointer_may_keep` looks for a raw pointer to what the
+`&mut` refers to among the locals of the callee, of a closure it makes, and
+of a function of the crate's it calls, four calls down: a pointer to that
+type as the call gives it too, `u32` of generic code's `&mut impl GetMut`.
+Where none is, the box stays.

@@ -475,4 +475,28 @@ export const mutations: Mutation[] = [
     replace: "            Some(crate::lower::generic_facts::Form::Valued) => Expr::call_helper(\"$writeCheck\", vec![value]),\n            None => value,\n",
     tests: ["test/corpus.test.ts", "-t", "^write_result_through_a_dictionary.rs$"],
   },
+  {
+    name: "pointer-kept-closures-unwalked",
+    breaks: "a closure a function makes isn't looked into for a raw pointer of its `&mut`, so `keep`'s `KEPT.with(|kept| kept.set(n))` keeps none, and its caller's box copied back misses the pointer's write (#1781)",
+    file: "src/lower/mut_refs.rs",
+    find: "                        work.push((closure, depth + 1));\n",
+    replace: "                        let _ = closure;\n",
+    tests: ["test/corpus.test.ts", "-t", "^pointer_kept_of_a_mut_given.rs$"],
+  },
+  {
+    name: "pointer-kept-callees-unwalked",
+    breaks: "a function a function calls isn't looked into for a raw pointer of its `&mut`, so `passed_on(n)`, which gives it to `keep`, keeps none, and its caller's box copied back misses the pointer's write (#1781)",
+    file: "src/lower/mut_refs.rs",
+    find: "                    work.push((callee, depth + 1));\n",
+    replace: "                    let _ = callee;\n",
+    tests: ["test/corpus.test.ts", "-t", "^pointer_kept_of_a_mut_given.rs$"],
+  },
+  {
+    name: "pointer-kept-of-generic-code-unseen",
+    breaks: "a raw pointer generic code keeps of a `&mut impl GetMut` it's given, of the `u32` it gets, isn't one to what the call gives it, so its caller's box copied back misses the pointer's write (#1781)",
+    file: "src/lower/mut_refs.rs",
+    find: "        let pointees: Vec<Ty<'tcx>> = [sig.inputs().get(i).copied(), Some(given)]\n",
+    replace: "        let pointees: Vec<Ty<'tcx>> = [sig.inputs().get(i).copied(), None]\n",
+    tests: ["test/corpus.test.ts", "-t", "^pointer_kept_of_a_mut_given.rs$"],
+  },
 ];
