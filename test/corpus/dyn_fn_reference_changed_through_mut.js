@@ -22,14 +22,9 @@ export function call(f) {
       g = value;
     },
   });
-  other({
-    get value() {
-      return g;
-    },
-    set value(value) {
-      g = value;
-    },
-  });
+  const g$1 = { value: g };
+  other(g$1);
+  g = g$1.value;
   return (((before * 10) >>> 0) + g()) >>> 0;
 }
 

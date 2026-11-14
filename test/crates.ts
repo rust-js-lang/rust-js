@@ -6,7 +6,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { cargoBuild, cargoEnv, checkCargo } from "../tooling/cargo.js";
 import { node } from "./programs";
-import { compiler, fixture, nativeCrates, root, run } from "./support";
+import { compiler, fixture, nativeCrates, root, run, target } from "./support";
 import { channel } from "../scripts/toolchain.ts";
 
 export const cargo = (manifest: string, ...args: string[]) => ["cargo", `+${channel}`, ...args, "--offline", "--quiet", "--manifest-path", manifest];
@@ -99,4 +99,18 @@ export function counting(out: string, source: string, uses = ["dep"]) {
   writeFileSync(file, source);
   run([compiler, file, "-o", join(out, "counting", "lib.js"), ...uses.flatMap((u) => ["--dependency", join(out, u, "lib.manifest.json")]),
     "--", "--crate-name", "counting", ...uses.flatMap((u) => ["--extern", `${u}=${join(out, u, `lib${u}.rmeta`)}`, "-L", `dependency=${join(out, u)}`])]);
+}
+
+export const js = ["--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+
+/** `dep`, a library, and `app`, a crate that uses it, compiled in `dir`:
+ * each one's JS. */
+export function compiled(dir: string, dep: string, app: string): { dep: string; app: string } {
+  writeFileSync(join(dir, "dep.rs"), dep);
+  run([compiler, join(dir, "dep.rs"), "-o", join(dir, "dep", "lib.js"), "--library", "--manifest", join(dir, "dep", "lib.manifest.json"),
+    "--", "--crate-name", "dep", `--emit=metadata=${join(dir, "libdep.rmeta")}`, ...js]);
+  writeFileSync(join(dir, "app.rs"), app);
+  run([compiler, join(dir, "app.rs"), "-o", join(dir, "app", "lib.js"), "--dependency", join(dir, "dep", "lib.manifest.json"),
+    "--", "--crate-name", "app", "--extern", `dep=${join(dir, "libdep.rmeta")}`, "-L", dir, ...js]);
+  return { dep: readFileSync(join(dir, "dep", "lib.js"), "utf8"), app: readFileSync(join(dir, "app", "lib.js"), "utf8") };
 }

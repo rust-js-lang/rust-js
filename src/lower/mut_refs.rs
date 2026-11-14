@@ -1094,17 +1094,45 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .filter(|&item| tcx.def_kind(item) == rustc_hir::def::DefKind::AssocFn)
                 .collect::<Vec<_>>()
         };
+        // A function of a library rust-js compiles, not std's.
+        let library = |function: DefId| !function.is_local() && self.krate.foreign.is_library(function.krate);
+        // std's keep no `&mut` past their call, nor the crates std is built
+        // of, hashbrown's `impl Extend` for its `HashSet`: a crate rust-js
+        // compiles is the program's or a library's.
+        let std_own = |function: DefId| {
+            super::recognition::is_std_crate(tcx, function) || !function.is_local() && !library(function)
+        };
+        // A function pointer, or a `dyn` of the `Fn` traits, which may be any
+        // code.
+        let any_code = |ty: Ty<'tcx>| {
+            // A closure, walked where it's held, is code it sees: its type's
+            // signature, a function pointer's, no value is.
+            let mut walker = ty.walk();
+            while let Some(part) = walker.next() {
+                let Some(t) = part.as_type() else {
+                    continue;
+                };
+                match *t.kind() {
+                    ty::Closure(..) | ty::CoroutineClosure(..) | ty::Coroutine(..) => walker.skip_current_subtree(),
+                    ty::FnPtr(..) => return true,
+                    ty::Dynamic(predicates, ..)
+                        if predicates.principal_def_id().is_some_and(|trait_id| {
+                            tcx.is_fn_trait(trait_id) || tcx.async_fn_trait_kind_from_def_id(trait_id).is_some()
+                        }) =>
+                    {
+                        return true;
+                    }
+                    _ => {}
+                }
+            }
+            false
+        };
         let Some(mut work) = runs(fn_id, generic_args, self.typing_env) else {
             return true;
         };
         let mut seen: IndexSet<(DefId, ty::GenericArgsRef<'tcx>)> = IndexSet::default();
         while let Some((function, args, typing_env)) = work.pop() {
-            // std's keep no `&mut` past their call, nor the crates std
-            // is built of, hashbrown's `impl Extend` for its `HashSet`:
-            // a crate rust-js compiles is the program's or a library's.
-            let std_own = super::recognition::is_std_crate(tcx, function)
-                || !function.is_local() && !self.krate.foreign.is_library(function.krate);
-            if !seen.insert((function, args)) || std_own {
+            if !seen.insert((function, args)) || std_own(function) {
                 continue;
             }
             if !function.is_local() || !tcx.is_mir_available(function) {
@@ -1138,14 +1166,35 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         let callee_args = instantiated_args(tcx, args, typing_env, callee_args)?;
                         runs(callee, callee_args, typing_env)
                     });
-                    match bodies {
-                        Some(bodies) => work.extend(bodies),
-                        None if given_args
+                    // A library's function, which it can't look into, may keep
+                    // what it's given that may carry it, and nothing else:
+                    // `js::get(error, "message")` keeps no `&mut String`. And
+                    // std's, given it and code that may be any, a function
+                    // pointer or a `dyn Fn`, may give that code it: a
+                    // `Box<dyn FnMut>`'s `call_mut`, `once(n).for_each(f)`.
+                    let given = |which: &dyn Fn(Ty<'tcx>) -> bool| {
+                        given_args
                             .iter()
-                            .any(|arg| instantiated(arg.node.ty(body, tcx)).is_none_or(carries)) =>
-                        {
-                            return true;
+                            .any(|arg| instantiated(arg.node.ty(body, tcx)).is_none_or(which))
+                    };
+                    let given_it = || given(&carries);
+                    match bodies {
+                        Some(bodies) => {
+                            for (callee, callee_args, callee_env) in bodies {
+                                if library(callee) {
+                                    if given_it() {
+                                        return true;
+                                    }
+                                } else if std_own(callee) {
+                                    if given_it() && given(&any_code) {
+                                        return true;
+                                    }
+                                } else {
+                                    work.push((callee, callee_args, callee_env));
+                                }
+                            }
                         }
+                        None if given_it() => return true,
                         None => {}
                     }
                 }
@@ -1183,18 +1232,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             None => return true,
                         },
                         ty::Adt(adt, _) if adt.did().is_local() => work.extend(methods(adt.did()).into_iter().map(own)),
-                        // A `dyn` of the `Fn` traits, or a function pointer,
-                        // may be any code; of another trait, its impls run
-                        // where it's called, which `runs` follows, as std's
-                        // code gives them nothing of its own to keep.
-                        ty::Dynamic(predicates, ..)
-                            if predicates.principal_def_id().is_some_and(|trait_id| {
-                                tcx.is_fn_trait(trait_id) || tcx.async_fn_trait_kind_from_def_id(trait_id).is_some()
-                            }) =>
-                        {
-                            return true;
-                        }
-                        ty::FnPtr(..) => return true,
                         _ => {}
                     }
                 }

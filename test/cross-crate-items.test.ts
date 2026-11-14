@@ -5,23 +5,10 @@
 import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { buildReact, compiler, fixture, run, target } from "./support";
+import { compiled, js } from "./crates";
+import { buildReact, compiler, fixture, run } from "./support";
 
 beforeAll(buildReact, 600_000);
-
-const js = ["--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
-
-/** `dep`, a library, and `app`, a crate that uses it, compiled in `dir`:
- * each one's JS. */
-function compiled(dir: string, dep: string, app: string): { dep: string; app: string } {
-  writeFileSync(join(dir, "dep.rs"), dep);
-  run([compiler, join(dir, "dep.rs"), "-o", join(dir, "dep", "lib.js"), "--library", "--manifest", join(dir, "dep", "lib.manifest.json"),
-    "--", "--crate-name", "dep", `--emit=metadata=${join(dir, "libdep.rmeta")}`, ...js]);
-  writeFileSync(join(dir, "app.rs"), app);
-  run([compiler, join(dir, "app.rs"), "-o", join(dir, "app", "lib.js"), "--dependency", join(dir, "dep", "lib.manifest.json"),
-    "--", "--crate-name", "app", "--extern", `dep=${join(dir, "libdep.rmeta")}`, "-L", dir, ...js]);
-  return { dep: readFileSync(join(dir, "dep", "lib.js"), "utf8"), app: readFileSync(join(dir, "app", "lib.js"), "utf8") };
-}
 
 // React's `REACT_MEMO_TYPE`, shared's, which ReactMemo imports by its name
 // from `shared/ReactSymbols`: read in its crate and in another alike.
@@ -1488,3 +1475,4 @@ impl Tally {
   const { tally } = await import(join(dir, "app", "lib.js"));
   expect(tally()).toEqual([3, [[4], [5]], [[4, 6], [5]]]);
 });
+

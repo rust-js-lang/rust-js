@@ -195,12 +195,24 @@ where it can't see:
   a body holds, or gives a call, runs too, a closure, a function, and each
   method of the crate's types, so `once(()).for_each(|()| ..)`'s closure,
   `once(n).for_each(keep)`'s `keep` and a type's `Drop` are each looked
-  into; a function pointer, or a `dyn` of the `Fn` traits, may be any
-  code, so `Box<dyn FnMut>`, which std's `impl FnMut for
-  Box` calls, may keep it.
+  into. A function pointer, or a `dyn` of the `Fn` traits, may be any
+  code, so a std function given one and what may carry the reference may
+  give it the reference: `Box<dyn FnMut>`, which std's `impl FnMut for
+  Box` calls.
 - **A raw pointer of generic code to a type parameter** may be one to the
   type.
 
 So where a callee holds a raw pointer of the type for its own work,
 `deinit_slice_mut`'s cast of a `&mut &mut [T]`, the `&mut` is a handle:
 the same value, read through a getter and setter.
+
+**Narrowed (2026-11-14).** A callee keeps only what reaches it. The first
+cut took any call of a library's function, and any function pointer or
+`dyn Fn` a walked body held, for "may keep". So React's
+`describeErrorValue`, which writes `name` and `env` through its `&mut`s,
+was given handles: it calls its libraries' functions given neither,
+and `Request::new`, a method of a type it holds, holds a `dyn Fn`. Now a
+library's function counts where it's given what may carry the reference,
+a closure that captures it among them, and code that may be any where
+std's function is given it with the reference, or it's called given it
+(a call it can't follow).
