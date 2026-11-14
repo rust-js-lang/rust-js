@@ -3,6 +3,8 @@
 //! `--intervals-shadow`'s, each check compared with THIR's ranges.
 
 use super::*;
+use crate::lower::recognition::once_method;
+use crate::lower::std_types::once::OnceOp;
 
 /// What MIR proves of the session's bodies: what each function only calls
 /// reach is given (`parameter_intervals`), and the proofs of each body
@@ -56,10 +58,18 @@ pub(in crate::lower) fn body_proofs<'tcx>(
                     if matches!(assign.1, Rvalue::BinaryOp(BinOp::Add | BinOp::Sub | BinOp::Mul, _) | Rvalue::Cast(mir::CastKind::IntToInt, ..)))
             })
     });
-    let proofs = match asks {
+    let mut proofs = match asks {
         true => proofs(tcx, typing_env, body, given),
         false => Proofs::default(),
     };
+    // Of a body that sets a `OnceCell`, which cells are still empty there.
+    let sets = (body.basic_blocks.iter()).any(|data| {
+        matches!(&data.terminator().kind, TerminatorKind::Call { func, .. }
+            if func.const_fn_def().is_some_and(|(def_id, _)| once_method(tcx, def_id) == Some(OnceOp::Set)))
+    });
+    if sets {
+        proofs.empty_sets = crate::lower::analysis::empty_sets(tcx, typing_env, body);
+    }
     let mut exact: IndexMap<Span, bool> = IndexMap::default();
     if caches.intervals_shadow.is_some() {
         for (block, data) in body.basic_blocks.iter_enumerated() {
@@ -100,6 +110,8 @@ pub(in crate::lower) enum LeftOut {
     Wrap,
     /// An integer cast, by its statement's location.
     Cast(Location),
+    /// A `OnceCell`'s `set` of a cell known empty, by the block its call ends.
+    EmptySet(BasicBlock),
 }
 
 /// A check THIR's facts leave out or keep, `left_out`, against MIR's
@@ -129,6 +141,7 @@ pub(in crate::lower) fn shadow_check(
         LeftOut::Bounds(block) => ("bounds", proofs.bounds.contains(&block)),
         LeftOut::Wrap => ("wrap", exact.get(&span).copied().unwrap_or(false)),
         LeftOut::Cast(location) => ("cast", proofs.casts.contains(&location)),
+        LeftOut::EmptySet(block) => ("empty-set", proofs.empty_sets.contains(&block)),
     };
     let kind = match (left_out, proved) {
         (true, false) => kind,
@@ -172,6 +185,15 @@ pub(in crate::lower) fn bounds_proved(tcx: TyCtxt<'_>, body: &Body<'_>, block: B
     let intervals = caches.intervals.borrow();
     intervals.proved.last() == Some(&std::ptr::from_ref(body).addr())
         && (intervals.bodies.last()).is_some_and(|(proofs, _)| proofs.bounds.contains(&block))
+}
+
+/// Whether MIR proves the `OnceCell` the `set` ending `block` of `body` sets
+/// is still empty there (#1672 M3): none of a body not the one being lowered.
+pub(in crate::lower) fn empty_set_proved(tcx: TyCtxt<'_>, body: &Body<'_>, block: BasicBlock) -> bool {
+    let caches = crate::lower::session::caches(tcx);
+    let intervals = caches.intervals.borrow();
+    intervals.proved.last() == Some(&std::ptr::from_ref(body).addr())
+        && (intervals.bodies.last()).is_some_and(|(proofs, _)| proofs.empty_sets.contains(&block))
 }
 
 /// Whether MIR proves the integer cast at `location` of `body` is of a

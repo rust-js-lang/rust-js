@@ -1110,11 +1110,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     this.option_place_values(op, place, item, (given, &arg_tys[1..]), span, out)?
                 }))
             }),
-            // A `OnceCell`'s `set`: of a cell the body's ranges show still
-            // empty there, and of a `Result` read or not (ADR 0847).
+            // A `OnceCell`'s `set`: of a cell MIR shows still empty there
+            // (`empty_sets`, #1672 M3), and of a `Result` read or not (ADR
+            // 0847); the shadow compares what THIR's ranges knew.
             Std::Once(OnceOp::Set) => {
-                let empty =
+                let thir_empty =
                     (self.thir_call(def_id, span)).is_some_and(|(fun, _)| self.frame.facts.set_empty.contains(&fun));
+                let block = state.location().block;
+                crate::lower::analysis::shadow_check(self.tcx, self.frame.owner, span, thir_empty, || {
+                    Some(crate::lower::analysis::LeftOut::EmptySet(block))
+                });
+                let empty = crate::lower::analysis::empty_set_proved(self.tcx, state.body, block);
                 let read = !self.result_unread(state);
                 let item = generic_args.type_at(0);
                 lower(move |this, state, values, out| {

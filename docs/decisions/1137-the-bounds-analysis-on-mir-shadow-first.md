@@ -458,3 +458,28 @@ Measured against main:
 - **Snapshots, guide and std:** unchanged.
 - **The port:** it couldn't be regenerated. On main, `js::validate`
   (eeeffeafa) refuses two of its files, for reasons unrelated to casts.
+
+## M3, step 4: a `OnceCell` still empty, decided by MIR (2026-11-14)
+
+A `OnceCell`'s `set` is an assignment where MIR shows its cell still empty
+there (ADR 0847), each time it's reached (`analysis/once_empty.rs`,
+`empty_sets`). It's a dataflow of its own, beside the intervals, run only
+on bodies that call `set`. Its rules are THIR's:
+- **A cell** is the local whose value holds it and the fields to it,
+  through `Rc`s and `Box`es: `(fresh, [1])` of `fresh.cache`.
+- **What a move, a struct or a tuple, or `Rc::new`/`Box::new` gives a
+  local** holds what its operand held there.
+- **A reference** is the place it lends; an `Rc`'s `Deref` lends what the
+  `Rc` holds.
+- **An `Rc`'s clone** reaches the cells of what it's cloned from.
+- **What reaches a cell** is used any other way than these: given to a
+  call, captured, lent raw, or dropped where dropping it may run code
+  (`drop_runs_code`, moved here). Then every cell it reaches is forgotten,
+  as it is where the cell is set.
+- **A join** keeps what both ways know empty.
+
+THIR's `set_empty` is now the shadow's alone (an `empty-set` line). In shadow
+first, the corpus showed no disagreement: MIR proves each of the 11 sites
+THIR did, in once_cell_known_empty.rs and once_cell_fields.rs, and no
+others. The corpus, snapshots and port are unchanged. THIR's 11 once-cell
+mutations went, each with a MIR twin; 11 new ones of MIR's are caught.

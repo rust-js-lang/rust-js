@@ -10,12 +10,12 @@ use super::super::strip;
 use super::Slice;
 use crate::collections::IndexSet;
 use crate::lower::fn_def;
-use crate::lower::recognition::{is_pointer_new, is_rc_clone, is_rc_deref, is_std_crate, once_method};
+use crate::lower::recognition::{is_pointer_new, is_rc_clone, is_rc_deref, once_method};
 use crate::lower::std_types::once::OnceOp;
 use rustc_hir::{BindingMode, ByRef};
 use rustc_middle::mir::BorrowKind;
 use rustc_middle::thir::{ExprId, ExprKind, LocalVarId, PatKind, StmtKind, Thir};
-use rustc_middle::ty::{self, Ty, TyCtxt};
+use rustc_middle::ty::{self, TyCtxt};
 
 /// The reads of variables that give nothing their cells: the variable a
 /// `get()` or a `set()` is of a cell of, and in a `let` that binds one
@@ -173,29 +173,4 @@ pub(super) fn cell_place<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, mut e: Expr
     }
 }
 
-/// Whether dropping a `ty` may run code that could set a cell: a
-/// destructor of the crate's or a binding's, or one rust-js can't see, a
-/// `dyn`'s or a type parameter's. std's own run none but their items'.
-pub(super) fn drop_runs_code<'tcx>(tcx: TyCtxt<'tcx>, typing_env: ty::TypingEnv<'tcx>, ty: Ty<'tcx>) -> bool {
-    let mut seen = IndexSet::default();
-    let mut work = vec![ty];
-    while let Some(ty) = work.pop() {
-        if !ty.needs_drop(tcx, typing_env) || !seen.insert(ty) {
-            continue;
-        }
-        match ty.kind() {
-            ty::Adt(adt, args) if is_std_crate(tcx, adt.did()) => work.extend(args.types()),
-            ty::Adt(adt, args) => {
-                if tcx.adt_destructor(adt.did()).is_some() {
-                    return true;
-                }
-                work.extend(adt.all_fields().map(|f| f.ty(tcx, args).skip_normalization()));
-            }
-            ty::Tuple(items) => work.extend(items.iter()),
-            ty::Array(item, _) | ty::Slice(item) => work.push(*item),
-            ty::Closure(_, args) => work.extend(args.as_closure().upvar_tys()),
-            _ => return true,
-        }
-    }
-    false
-}
+pub(super) use crate::lower::analysis::drop_runs_code;

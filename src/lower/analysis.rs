@@ -46,6 +46,8 @@ mod mutation;
 mod namespaces;
 pub(super) use namespaces::{Through, module_paths, namespace_in, namespace_of};
 mod naming;
+mod once_empty;
+pub(in crate::lower) use once_empty::{drop_runs_code, empty_sets};
 pub(super) mod nulled_params;
 pub(super) mod only_called;
 pub(super) mod owned_by_return;
@@ -66,8 +68,8 @@ mod tests;
 mod throwing;
 pub(in crate::lower) use intervals::shadow_report as intervals_shadow_report;
 pub(in crate::lower) use intervals::{
-    Intervals, LeftOut, Shadow, body_proofs, bounds_proved, cast_proved, exact_proved, given_parameters,
-    shadow_bridged, shadow_check,
+    Intervals, LeftOut, Shadow, body_proofs, bounds_proved, cast_proved, empty_set_proved, exact_proved,
+    given_parameters, shadow_bridged, shadow_check,
 };
 mod unwinding;
 pub(in crate::lower) use unwinding::{never_unwinds_given, std_call_never_unwinds, std_quiet};

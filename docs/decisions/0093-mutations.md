@@ -484,3 +484,15 @@ range rules' mutations, each caught on `main` only through a cast, survived:
   site. Their code stays until M4 deletes THIR's ranges with the bridge.
   They are:
   `let-else-present-index-unknown`, `cast-kept-out-of-range`, `utf16-count-any-usize`, `ranges-callees-walked-as-a-stack`, `ranges-each-tell-counted`, `join-unbound-forgets`, `join-one-bound`, `widened-counter-forgets-bound`, `widened-counter-past-bound`, `widened-length-counter-below-type-most`, `enumerate-slice-rebound-kept`, `uncast-out-of-range`, `length-arm-unknown`, `length-arm-guard-passed`, `length-arm-not-next-passed`, `utf16-count-impure`, `string-deref-not-read`, `rest-value-read-unread`.
+
+## Amendment: THIR's still-empty cells once MIR decides each `set` (2026-11-14, #1672)
+
+M3's step 4 makes MIR decide whether a `OnceCell`'s `set` is of a cell still
+empty (`analysis/once_empty.rs`). THIR's `set_empty` is the shadow's alone,
+so its 11 once-cell mutations survived; they go. Each rule has a MIR
+mutation in `scripts/mutations/lower/analysis/once_empty.ts`, all caught,
+except "judged once", which MIR's fixed point holds (`mir-once-join-either`),
+and "made by any call", as MIR makes a cell known empty only at
+`OnceCell::new`. THIR's `once-drop-runs-nothing` moved there with
+`drop_runs_code`, as `mir-once-destructor-runs-nothing`. The 11 gone:
+`once-set-leaves-empty`, `once-set-through-holder-unforgotten`, `once-set-judged-once`, `once-mention-quiet`, `once-place-unmentioned`, `once-holder-reaches-nothing`, `once-raw-borrow-unread`, `once-made-unknown`, `once-made-by-any-call`, `once-rc-clone-gives-cells`, `once-rc-deref-unfollowed`.

@@ -76,6 +76,9 @@ pub(in crate::lower) struct Proofs {
     /// Each integer `as` another whose value is in its target's range, the
     /// same number, `s as usize` of `s >= 0` (ADR 0701, #1672 M3).
     pub(in crate::lower) casts: IndexSet<Location>,
+    /// The blocks whose terminator is a `OnceCell`'s `set` of a cell known
+    /// empty there (`empty_sets`, ADR 0847, #1672 M3).
+    pub(in crate::lower) empty_sets: IndexSet<BasicBlock>,
 }
 
 struct Walk<'a, 'tcx> {
