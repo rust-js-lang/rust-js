@@ -7,6 +7,14 @@ const sink = ["test/corpus.test.ts", "-t", "^writer_sink_generic_and_dyn.rs$"];
 
 export const mutations: Mutation[] = [
   {
+    name: "listed-writer-given-mut-ref-unboxed",
+    breaks: "a library's formatting impl of a `&mut` of its type, written a piece at a time, is given the object where its dictionary reads generic code's box of it, `arg0.value` of no box (#1824)",
+    file: "src/lower/display/fmt_into.rs",
+    find: "            let value = match self.in_generic_box(ty) {\n",
+    replace: "            let value = match false {\n",
+    tests: ["test/writer-sink.test.ts", "-t", "of a &mut of its type"],
+  },
+  {
     name: "fmt-into-dyn-unwritten",
     breaks: "a `dyn Display` written into a writer is refused, as its pair's dictionary isn't asked",
     file: "src/lower/display/fmt_into.rs",

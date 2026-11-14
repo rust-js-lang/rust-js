@@ -625,6 +625,24 @@ go.
         builds; the pair librarys_formatting_impl_of_a_reference_box_or_pin,
         its contract listing the three types; test/architecture-formatting.test.ts
         holds the owner; 15 mutations, caught, and 11 retargeted, caught.
+      - Amended later, #1824 (P0): a consumer writing a library's type a
+        piece at a time by the dictionary its contract lists, of an impl of
+        a `&mut` of it, `impl Display for &mut dep::ByRef`, gave that
+        dictionary the object, where it reads its `Self` as a type
+        parameter given a `&mut` holds it, generic code's box
+        (`arg0.value`, ADR 0454): `write!(log, "{}", mr)` threw "Cannot read
+        properties of undefined" where Rust writes `m7`. Since #1798, latent
+        till adb5d06d7 let the metamorphic library rewrite of
+        debug_impl_of_a_reference_box_or_pin compile (its `dyn` had refused
+        it). The value is given in the form the dictionary takes,
+        `form_given` of `Form::Box` where `in_generic_box` says, as a `dyn`
+        of one is (`written_by_dictionary`). Case (ADR 0262): results
+        change, a throw where Rust writes, so Rust's. Proof: the pair
+        librarys_formatting_impl_of_a_mut_reference against native (directly,
+        with options, through generic code and a `dyn`, then changed
+        through the `&mut`), failing at adb5d06d7's parent too; the
+        metamorphic rewrites of debug_impl_of_a_reference_box_or_pin pass;
+        mutation listed-writer-given-mut-ref-unboxed, caught.
       - Amended later, #1802: where a library it uses may make a `dyn` whose
         dictionary carries no `fmtInto` (`makes_fmt_dyns`), a consumer is
         refused, naming #1797, however it writes a `dyn` a piece at a time:

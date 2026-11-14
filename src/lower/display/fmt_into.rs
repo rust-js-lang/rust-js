@@ -9,6 +9,7 @@
 //! parameter written so, or a `dyn` written so, so no other JS changes.
 
 use super::*;
+use crate::lower::generic_facts::Form;
 use crate::lower::temporary_names::Role;
 
 /// The entry's name, on each formatting dictionary that carries it.
@@ -93,6 +94,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 && crate::lower::recognition::std_crate(self.tcx, adt.krate).is_none()
         }) {
             let tr = ty::TraitRef::new(self.tcx, trait_id, [ty]);
+            // Given as its dictionary takes its `Self`, as a type parameter
+            // given it holds it: a `&mut` to an object, `impl Display for
+            // &mut dep::ByRef`'s, generic code's box, as a `dyn` of it is
+            // given (#1824).
+            let value = match self.in_generic_box(ty) {
+                true => {
+                    let declared = ty::GenericArgs::identity_for_item(self.tcx, trait_id).type_at(0);
+                    self.form_given(Form::Box, (trait_id, declared, ty), value, span)?
+                }
+                false => value,
+            };
             (self.dictionary(tr, span)?, value)
         } else {
             return Ok(None);

@@ -582,6 +582,14 @@ test("a library's formatting impls of a reference, a Box or a Pin of its type wr
   expect(contract(out).written_into.length).toBe(3);
 }, underLoad(300_000));
 
+// A library's formatting impl of a `&mut` of its type takes the `&mut` as
+// its dictionary does, generic code's handle on it, wherever a consumer
+// writes it a piece at a time: directly, with options, through generic code
+// and a `dyn`, as native Rust does (#1824).
+test("a library's formatting impl of a &mut of its type is given the &mut as its dictionary takes it", () => {
+  piecewiseChain(piecewisePairs, "librarys_formatting_impl_of_a_mut_reference");
+}, underLoad(300_000));
+
 test("serde_json's error and an OS error write their Display a piece at a time, as their crates do", async () => {
   expect(await recorded((f, std) => std.$writeJsonError(f, { message: "expected value", line: 0, column: 0 }))).toEqual(["sexpected value"]);
   expect(await recorded((f, std) => std.$writeJsonError(f, { message: "EOF", line: 2, column: 15 }))).toEqual([
