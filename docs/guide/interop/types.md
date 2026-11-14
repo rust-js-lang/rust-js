@@ -3621,6 +3621,55 @@ export function isValid(name) {
 }
 ```
 
+### A validator TypeScript narrows by: `js::Is`
+
+A function that tells whether a value JS gave is a `T` returns a
+`js::Is<T>`, made by `js::Is::when(value, test)`: JS's boolean, declared
+TypeScript's type predicate, `value is T`
+([ADR 1155](../../decisions/1155-a-validator-is-a-type-predicate.md)).
+`when` tests that the value is a `T` first, as `typeof` or `instanceof`
+tells one, then runs `test` of what a `T` lends, a `String`'s `&str`, so
+it never says so of what isn't. `holds()` reads it in Rust.
+
+```rust
+#[cfg_attr(rust_js, rust_js::name = "ISODate")]
+pub type IsoDate = String;
+
+fn year(date: &str) -> Option<&str> {
+    let (year, rest) = date.split_once('-')?;
+    (rest.len() == 5).then_some(year)
+}
+
+#[cfg_attr(rust_js, rust_js::name = "isISODate")]
+pub fn is_iso_date(value: Option<&js::Unknown>) -> js::Is<IsoDate> {
+    js::Is::when(value, |text| year(text).is_some())
+}
+```
+
+```js
+import { $byteLen, $splitOnce } from "@rust-js/std";
+
+function year(date) {
+  const splitOnce = $splitOnce(date, "-");
+  if (splitOnce == null) {
+    return;
+  }
+  const [year, rest] = splitOnce;
+  return $byteLen(rest) === 5 ? year : undefined;
+}
+
+export function isISODate(value) {
+  return typeof value === "string" && year(value) != null;
+}
+```
+
+`isISODate(value?: unknown | null | undefined): value is ISODate`.
+TypeScript narrows a predicate's parameter both ways, so `when` is given
+the function's own parameter, as it was passed, of `Option<&js::Unknown>`,
+TypeScript's `unknown`, whose false branch narrows nothing: of any other
+value, one changed or made of another type, a compile error saying to
+return a `bool`, declared `boolean`.
+
 ## Symbols
 
 A symbol of JS's registry, `Symbol.for(key)`, is a `js::SymbolFor`: a

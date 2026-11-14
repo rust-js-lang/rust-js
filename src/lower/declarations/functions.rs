@@ -379,6 +379,31 @@ impl<'tcx> Declarations<'_, 'tcx> {
             Some((returns, _)) => returns,
             None => keyword("void"),
         };
+        // A `js::Is<T>` its body makes of a parameter, which the owner
+        // proves, is a predicate of it: `value is ISODate` (#1828).
+        let output = self
+            .tcx
+            .fn_sig(def_id)
+            .instantiate_identity()
+            .skip_normalization()
+            .output()
+            .skip_binder();
+        let returns = match crate::lower::predicates::predicate_of(self.tcx, output) {
+            Some(of) if let Some(at) = self.guarded_param(def_id) => {
+                let guarded =
+                    (signature.params.iter()).find(|param| matches!(param.origin, Origin::Rust(i) if i == at));
+                // Of the type as written, `js::Is<IsoDate>`'s alias by its name.
+                let argument = written.and_then(written_argument);
+                match guarded {
+                    Some(param) => {
+                        let of = self.as_written(argument, |out| out.ts(of));
+                        json!({ "kind": "predicate", "parameter": param.name, "type": of })
+                    }
+                    None => returns,
+                }
+            }
+            _ => returns,
+        };
         json!({
             "kind": "function",
             "name": self.js_name(def_id),
@@ -474,5 +499,31 @@ impl<'tcx> Declarations<'_, 'tcx> {
             }
         }
         members
+    }
+}
+
+impl<'tcx> Declarations<'_, 'tcx> {
+    /// The parameter, by its index, a function's `js::Is` guards, as its
+    /// MIR proves it (`predicates::guarded`), a local function's; `None`
+    /// of one lowering refused, or another crate's.
+    fn guarded_param(&self, def_id: DefId) -> Option<usize> {
+        let local = def_id.as_local()?;
+        (self.tcx.is_mir_available(local)).then(|| {
+            crate::lower::predicates::guarded(self.tcx, self.tcx.optimized_mir(local))
+                .ok()
+                .flatten()
+        })?
+    }
+}
+
+/// The one type argument a written type gives its path, `IsoDate` of
+/// `js::Is<IsoDate>`.
+fn written_argument<'tcx>(written: &'tcx hir::Ty<'tcx>) -> Option<&'tcx hir::Ty<'tcx>> {
+    let hir::TyKind::Path(hir::QPath::Resolved(None, path)) = &written.kind else {
+        return None;
+    };
+    match path.segments.last()?.args?.args {
+        [hir::GenericArg::Type(argument)] => Some(argument.as_unambig_ty()),
+        _ => None,
     }
 }

@@ -75,6 +75,7 @@ mod pipeline;
 mod places;
 mod plain;
 mod pointers;
+mod predicates;
 mod recognition;
 mod recursive_fns;
 mod reexports;

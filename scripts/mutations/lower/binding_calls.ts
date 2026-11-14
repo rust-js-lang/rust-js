@@ -1017,4 +1017,12 @@ export const mutations: Mutation[] = [
     replace: "                match self.frame.thir.exprs.iter_enumerated().any(|(at, e)| matches!(e.kind, rustc_middle::thir::ExprKind::Call { fn_span, .. } if fn_span == span) && own(at)) {\n",
     tests: ["test/lowering-is-function.test.ts", "-t", "a macro's repetition writes is asked of its own call"],
   },
+  {
+    name: "is-when-untested",
+    breaks: "`js::Is::when` runs its test of any value, `year(2024)` of a number, where it tells first that it's a `T`, `typeof value === \"string\"` (#1828)",
+    file: "src/lower/binding_calls.rs",
+    find: "                Expr::bin(Op::And, is, Expr::call(test, vec![value]))\n",
+    replace: "                Expr::call(test, vec![value])\n",
+    tests: ["test/js-predicates.test.ts", "-t", "upstream's predicate"],
+  },
 ];

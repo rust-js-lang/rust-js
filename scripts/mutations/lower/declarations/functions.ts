@@ -228,4 +228,20 @@ export const mutations: Mutation[] = [
     replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^constructor_given_as_a_field_function.rs$"],
   },
+  {
+    name: "predicate-declared-any",
+    breaks: "a function that gives a `js::Is<T>` is declared as giving `any`, not `value is ISODate`, so Codex's consumer's `const date: string = value` is unchecked (#1828)",
+    file: "src/lower/declarations/functions.rs",
+    find: "            Some(of) if let Some(at) = self.guarded_param(def_id) => {\n",
+    replace: "            Some(of) if false && let Some(at) = self.guarded_param(def_id) => {\n",
+    tests: ["test/js-predicates.test.ts", "-t", "upstream's predicate"],
+  },
+  {
+    name: "predicate-of-the-type-resolved",
+    breaks: "a predicate's type is the alias's resolved type, `value is string`, not `value is ISODate`, which upstream's declaration names (#1828)",
+    file: "src/lower/declarations/functions.rs",
+    find: "                        let of = self.as_written(argument, |out| out.ts(of));\n",
+    replace: "                        let of = self.ts(of);\n",
+    tests: ["test/js-predicates.test.ts", "-t", "upstream's predicate"],
+  },
 ];

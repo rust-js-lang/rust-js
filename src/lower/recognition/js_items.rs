@@ -171,3 +171,21 @@ pub(in crate::lower) fn is_symbol_for_read(tcx: TyCtxt<'_>, did: DefId) -> bool 
                     ty::Adt(adt, _) if is_symbol_for_def(tcx, adt.did()))
         })
 }
+
+/// Whether `did` is `js::Is`, a type predicate to TypeScript (#1828).
+pub(in crate::lower) fn is_js_is(tcx: TyCtxt<'_>, did: DefId) -> bool {
+    tcx.crate_name(did.krate).as_str() == "js"
+        && tcx.item_name(did).as_str() == "Is"
+        && tcx.opt_parent(did).is_some_and(|parent| parent.is_crate_root())
+}
+
+/// Whether `did` is `js::Is::when`, the one way a `js::Is` is made.
+pub(in crate::lower) fn is_js_is_when(tcx: TyCtxt<'_>, did: DefId) -> bool {
+    tcx.crate_name(did.krate).as_str() == "js"
+        && tcx.item_name(did).as_str() == "when"
+        && tcx.opt_parent(did).is_some_and(|imp| {
+            tcx.def_kind(imp) == DefKind::Impl { of_trait: false }
+                && matches!(tcx.type_of(imp).instantiate_identity().skip_normalization().kind(),
+                    ty::Adt(adt, _) if is_js_is(tcx, adt.did()))
+        })
+}

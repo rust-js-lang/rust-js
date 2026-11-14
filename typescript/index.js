@@ -57,6 +57,7 @@ import { isIdentifierText } from "typescript/ast/scanner";
  *   | { kind: "array", element: Type, readonly: boolean }
  *   | { kind: "indexed", object: Type, index: Type }
  *   | { kind: "keyof", type: Type }
+ *   | { kind: "predicate", parameter: string, type: Type }
  *   | { kind: "tuple", elements: Type[] }
  *   | { kind: "function", typeParameters: TypeParameter[], params: Param[], returns: Type }
  *   | { kind: "object", members: Member[] }
@@ -888,6 +889,10 @@ function typeNode(t) {
       return f.createIndexedAccessTypeNode(element(t.object), typeNode(t.index));
     case "keyof":
       return f.createTypeOperatorNode(SyntaxKind.KeyOfKeyword, element(t.type));
+    // A function's result that says what its parameter is, `value is
+    // ISODate`, `js::Is<T>`'s (#1828).
+    case "predicate":
+      return f.createTypePredicateNode(undefined, id(t.parameter), typeNode(t.type));
     case "function":
       // A constructor's, `new (a: A) => T`, of a typed `js::Class` (ADR 1009).
       if (t.construct) {

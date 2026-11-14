@@ -907,6 +907,46 @@ pub unsafe fn cast<T>(this: Option<&Unknown>) -> T {
     unreachable!()
 }
 
+/// Whether a value JS gave is a `T`, to TypeScript a type predicate,
+/// `value is T`, as upstream's `isISODate(value: unknown): value is
+/// ISODate` is: JS's boolean. Made only by [`Is::when`], which tests that
+/// the value is a `T`, as `typeof` or `instanceof` tells one, before its
+/// own test, so it never says so of what isn't (#1828, ADR 1155).
+///
+/// ```ignore
+/// pub fn is_iso_date(value: Option<&js::Unknown>) -> js::Is<IsoDate> {
+///     js::Is::when(value, |text| date_parts(Some(text)).is_some())
+/// }
+/// ```
+#[repr(transparent)]
+pub struct Is<T: ?Sized> {
+    holds: bool,
+    of: PhantomData<fn() -> T>,
+}
+
+impl<T: ?Sized> Is<T> {
+    /// Whether `value`, a parameter of the function that gives it, is a
+    /// `T` and `test` holds of it, of what a `T` lends, as `HashMap::get`
+    /// takes a key, a `String`'s `&str`: `typeof value === "string" &&
+    /// test(value)` of text. TypeScript narrows a predicate's parameter
+    /// both ways, so `value` is one TypeScript types `unknown`, whose false
+    /// branch narrows nothing; of another, a compile error.
+    #[cfg_attr(rust_js, rust_js::link_name = "is when")]
+    pub fn when<V: ?Sized>(value: Option<&Unknown>, test: impl FnOnce(&V) -> bool) -> Is<T>
+    where
+        T: core::borrow::Borrow<V>,
+    {
+        let _ = (value, test);
+        unreachable!()
+    }
+
+    /// Whether it holds: the boolean itself.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    pub fn holds(&self) -> bool {
+        self.holds
+    }
+}
+
 /// What JS takes as text where it wants text, which TypeScript's `string`
 /// is given: text, or any value, which JS makes text, `"undefined"` of
 /// `None` (ADR 0310); a number as JS writes it, `1e+21`.

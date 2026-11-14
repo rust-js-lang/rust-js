@@ -1012,7 +1012,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     }
 
     /// The test that `value` is of `kind`.
-    fn kind_test(&self, kind: &Kind, value: &Expr, class: &dyn Fn(&str) -> Expr) -> Expr {
+    pub(super) fn kind_test(&self, kind: &Kind, value: &Expr, class: &dyn Fn(&str) -> Expr) -> Expr {
         match kind {
             Kind::Array => Expr::builtin(Expr::js_global("Array"), "isArray", vec![value.clone()]),
             // Of a member, an array: another struct's of that member tells
@@ -1104,6 +1104,15 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// The test that `value` is a `ty`, as JS tells one (`untagged_kind`):
+    /// `typeof value === "string"` of text, `value instanceof Date` of a
+    /// class's; `None` where JS can tell nothing of it. `js::Is::when`'s
+    /// (#1828).
+    pub(super) fn kind_test_of(&self, ty: Ty<'tcx>, value: &Expr) -> Option<Expr> {
+        let kind = self.recognition().untagged_kind(ty)?;
+        Some(self.recognition().kind_test(&kind, value, &|name| self.js_ref(name)))
+    }
+
     /// Whether `ty` is an untagged enum, `#[rust_js::untagged]` (ADR 0214).
     pub(super) fn untagged(&self, ty: Ty<'tcx>) -> Option<(AdtDef<'tcx>, GenericArgsRef<'tcx>)> {
         untagged_adt(self.tcx, ty)

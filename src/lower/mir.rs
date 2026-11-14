@@ -604,6 +604,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         for param in &self.frame.thir.params {
             self.check_props_taken_apart(param.ty, param.pat.as_deref(), param.ty_span.unwrap_or(span))?;
         }
+        // A `js::Is` it makes guards its parameter as TypeScript says (#1828).
+        if let Err((at, why)) = crate::lower::predicates::guarded(self.tcx, &mir.body) {
+            return Err(crate::lower::refusal::error(self.tcx, at, why));
+        }
         // Its dictionaries, for its bounds, after its parameters (ADR 0049).
         let evidence = self.evidence_params(def_id);
         let mut out = Vec::new();

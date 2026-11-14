@@ -377,6 +377,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     None => Expr::new_(this, args),
                 }
             }
+            // A value JS tells is a `T`, and its test, `typeof value ===
+            // "string" && dateParts(value) !== undefined`, upstream's
+            // predicate's body (#1828).
+            (JsForm::IsWhen, None) if args.len() == 2 => {
+                let ty = generic_args.type_at(0);
+                let test = args.pop().expect("the test");
+                let value = match args.pop().expect("the value") {
+                    value if value.reads_same() => value,
+                    value => self.spill(Role::Kind, value, out),
+                };
+                let Some(is) = self.kind_test_of(ty, &value) else {
+                    let what =
+                        format!("`js::Is<{ty}>`, of a type JS can't tell a value is, by `typeof` or `instanceof`,");
+                    return Err(self.unsupported(span, &what));
+                };
+                Expr::bin(Op::And, is, Expr::call(test, vec![value]))
+            }
             (JsForm::Class, None) if args.is_empty() => {
                 let ty = generic_args.types().next();
                 let constructor = ty.and_then(|ty| match ty.kind() {
