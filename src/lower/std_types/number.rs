@@ -715,7 +715,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             NumOp::TotalCmp => helper("$totalCmp", vec![arg(), arg()]),
             NumOp::IsNan => number("isNaN", vec![arg()]),
             NumOp::IsFinite => number("isFinite", vec![arg()]),
-            NumOp::IsInfinite => Expr::bin(Op::Eq, math("abs", vec![arg()]), Expr::var("Infinity")),
+            NumOp::IsInfinite => Expr::bin(Op::Eq, math("abs", vec![arg()]), Expr::global("Infinity")),
             // By the type's smallest normal value, `MIN_POSITIVE`.
             NumOp::IsNormal { .. } | NumOp::Classify => {
                 let min = Expr::num(match num {

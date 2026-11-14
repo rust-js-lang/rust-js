@@ -401,8 +401,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Expr {
                         // A global no call changes (`Known::Lasting`), whose
                         // methods aren't JS's own that only read (#1674).
-                        facts: js::Facts::of(js::Known::Lasting),
-                        ..Expr::var("console")
+                        facts: js::Facts::of(js::Known::Lasting).with(js::Known::Global),
+                        ..Expr::global("console")
                     },
                     if error { "error" } else { "log" },
                 ),

@@ -710,4 +710,12 @@ export const mutations: Mutation[] = [
     replace: "        if false && !values.contains(value) {\n",
     tests: ["test/lowering-constants.test.ts", "-t", "a JS module's members are each their own"],
   },
+  {
+    name: "breaking-pass-of-every-pass",
+    breaks: "what broke a module refused is said to be the first of preparation's passes, whichever did: a refusal that names a pass that didn't (#1681)",
+    file: "src/prepare.rs",
+    find: "            self::module(&mut module, passes.and_without(*pass));\n            !broken(&module)\n",
+    replace: "            self::module(&mut module, passes.and_without(*pass));\n            true\n",
+    unitTests: "prepare::tests::the_breaking_pass_is_the_one_without_which_it_holds",
+  },
 ];

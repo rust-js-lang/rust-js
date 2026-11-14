@@ -950,7 +950,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 return Ok(Expr::array(vec![item; n as usize]));
             }
-            let array = Expr::new_(Expr::var("Array"), vec![length]);
+            let array = Expr::new_(Expr::global("Array"), vec![length]);
             return Ok(Expr::call(Expr::member(array, "fill"), vec![item]));
         }
         // A constant's use is its copy already, `EMPTY.slice()`: made again
@@ -966,7 +966,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         };
         let length = Expr::object(vec![Prop::Field("length".into(), length)]);
-        let from = Expr::member(Expr::var("Array"), "from");
+        let from = Expr::member(Expr::global("Array"), "from");
         Ok(Expr::call(
             from,
             vec![
@@ -1021,19 +1021,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 fn path_read(path: &str, required: &IndexSet<Export>, import: impl FnOnce(&Export) -> String) -> Expr {
     match bindings::js_import(path) {
         Some((export, rest)) if required.contains(&export) => bindings::read_path(bindings::required(&export), rest),
-        Some((export, rest)) => global(&format!("{}{rest}", import(&export))),
-        None => global(path),
+        // The import's name, which its declaration declares.
+        Some((export, rest)) => rooted(&format!("{}{rest}", import(&export)), Expr::var),
+        None => rooted(path, Expr::global),
     }
 }
 
-/// A JS global, like `document`, or a path from one, like `console.log`
+/// A path from `root` of its first name, a JS global, like `document`, or
+/// an import's name: the name itself, or a path from it, like `console.log`
 /// or `window['$RT']` (ADR 1033), or one read unbound, `(0, eval)`.
-fn global(name: &str) -> Expr {
+fn rooted(name: &str, root: fn(&str) -> Expr) -> Expr {
     if let Some(inner) = bindings::unbound(name) {
-        return Expr::unbound(global(inner));
+        return Expr::unbound(rooted(inner, root));
     }
     let first = bindings::first_name(name);
-    bindings::read_path(Expr::var(first), &name[first.len()..])
+    bindings::read_path(root(first), &name[first.len()..])
 }
 
 /// A fieldless enum's variants, each its name and its discriminant, in the

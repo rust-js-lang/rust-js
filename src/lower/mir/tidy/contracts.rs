@@ -4,7 +4,7 @@
 //! jump, each label is one a jump names, no `if` is empty and none tests a
 //! constant. A check that fails names the first stage that broke it.
 
-use crate::collections::IndexSet;
+use crate::js::validate::{self, Problem};
 use crate::js::{ExprKind, Stmt, StmtKind};
 
 /// A property of a body, and why a body doesn't have it.
@@ -20,13 +20,13 @@ pub(super) const ALWAYS: &[Contract] = &[JUMPS_LAND, DECLARED_ONCE];
 /// `continue` in a loop, the one it names: JS that parses.
 pub(super) const JUMPS_LAND: Contract = Contract {
     name: "each jump lands",
-    broken: |body| unlanded(body, &mut Vec::new()),
+    broken: |body| first(body, |p| matches!(p, Problem::Unlanded(_))),
 };
 
 /// No list declares a name twice, which JS refuses.
 pub(super) const DECLARED_ONCE: Contract = Contract {
     name: "each name declared once in a list",
-    broken: |body| twice_declared(body),
+    broken: |body| first(body, |p| matches!(p, Problem::Twice(_))),
 };
 
 /// No statement follows a `return`, a `throw`, a `break` or a `continue` in
@@ -161,76 +161,13 @@ fn jumps(stmt: &Stmt) -> bool {
     )
 }
 
-/// What a jump may land on, innermost last: a loop, by its label if it has
-/// one, a `switch`, or a labeled block.
-enum Target<'a> {
-    Loop(Option<&'a str>),
-    Switch,
-    Block(&'a str),
-}
-
-fn unlanded<'a>(stmts: &'a [Stmt], targets: &mut Vec<Target<'a>>) -> Option<String> {
-    for stmt in stmts {
-        let found = match &stmt.kind {
-            StmtKind::Break(None) => (!targets.iter().any(|t| matches!(t, Target::Loop(_) | Target::Switch)))
-                .then(|| "a `break` outside a loop or a `switch`".to_string()),
-            StmtKind::Continue(None) => (!targets.iter().any(|t| matches!(t, Target::Loop(_))))
-                .then(|| "a `continue` outside a loop".to_string()),
-            StmtKind::Break(Some(label)) => (!targets
-                .iter()
-                .any(|t| matches!(t, Target::Loop(Some(l)) | Target::Block(l) if l == label)))
-            .then(|| format!("a `break {label}` outside `{label}`")),
-            StmtKind::Continue(Some(label)) => {
-                (!targets.iter().any(|t| matches!(t, Target::Loop(Some(l)) if l == label)))
-                    .then(|| format!("a `continue {label}` outside its loop"))
-            }
-            _ => None,
-        };
-        if found.is_some() {
-            return found;
-        }
-        let mut inside = |target: Option<Target<'a>>, body: &'a [Stmt]| {
-            let pushed = target.is_some();
-            targets.extend(target);
-            let found = unlanded(body, targets);
-            if pushed {
-                targets.pop();
-            }
-            found
-        };
-        let found = match &stmt.kind {
-            StmtKind::While { label, body, .. }
-            | StmtKind::ForOf { label, body, .. }
-            | StmtKind::For { label, body, .. } => inside(Some(Target::Loop(label.as_deref())), body),
-            StmtKind::Labeled(label, body) => inside(Some(Target::Block(label)), body),
-            StmtKind::Switch { cases, default, .. } => {
-                crate::js::case_lists(cases, default).find_map(|body| inside(Some(Target::Switch), body))
-            }
-            StmtKind::If(_, a, b) => inside(None, a).or_else(|| b.as_deref().and_then(|b| inside(None, b))),
-            StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => inside(None, a).or_else(|| inside(None, b)),
-            _ => None,
-        };
-        if found.is_some() {
-            return found;
-        }
-    }
-    None
-}
-
-fn twice_declared(body: &[Stmt]) -> Option<String> {
-    let mut found = None;
-    crate::js::each_list(body, &mut |stmts| {
-        let mut seen = IndexSet::default();
-        for stmt in stmts {
-            if let StmtKind::Let(name, _) | StmtKind::Const(name, _) = &stmt.kind
-                && !seen.insert(name.as_str())
-                && found.is_none()
-            {
-                found = Some(format!("`{name}` declared twice"));
-            }
-        }
-    });
-    found
+/// The first of `body`'s problems of a rule, as `js::validate` finds it:
+/// the one place each rule is (#1681).
+fn first(body: &[Stmt], of: fn(&Problem) -> bool) -> Option<String> {
+    validate::body(body)
+        .into_iter()
+        .find(of)
+        .map(|problem| problem.to_string())
 }
 
 /// What runs as a panic unwinds is guarded where it may throw (#847): no

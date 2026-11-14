@@ -78,7 +78,7 @@ pub(super) fn stepped_in_place(e: &mut Expr, by_for: bool, fuse: Option<&str>) {
     let fused = matches!(&callee.kind, js::ExprKind::Var(name) if Some(name.as_str()) == fuse);
     let replacement = match callee.helper_name() {
         Some("$intoIter") if by_for => given[0].clone(),
-        Some("$intoIter") => Expr::call(Expr::member(Expr::var("Iterator"), "from"), given.clone()),
+        Some("$intoIter") => Expr::call(Expr::member(Expr::global("Iterator"), "from"), given.clone()),
         // A `fuse()` given no drops, its dictionary and its fact alone, the
         // drops it doesn't use left off (ADR 0300): its source. One given
         // its source's drop stays, which drops what it didn't give as it's

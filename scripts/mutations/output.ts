@@ -431,4 +431,12 @@ export const mutations: Mutation[] = [
     replace: "                    .of_no_build(),\n",
     tests: ["test/std-package.test.ts", "-t", "crate hash"],
   },
+  {
+    name: "tree-unvalidated",
+    breaks: "a module's tree isn't checked before it's printed: a read nothing declares is printed, a `ReferenceError` where it runs, not refused as rust-js's mistake (#1681)",
+    file: "src/output.rs",
+    find: "        if let Some(lowered) = lowered\n            && let Some(problem) = crate::js::validate::module(&js_module).into_iter().next()\n",
+    replace: "        if let Some(lowered) = lowered.filter(|_| false)\n            && let Some(problem) = crate::js::validate::module(&js_module).into_iter().next()\n",
+    tests: ["test/validate.test.ts"],
+  },
 ];

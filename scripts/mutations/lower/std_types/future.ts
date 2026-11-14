@@ -6,8 +6,8 @@ export const mutations: Mutation[] = [
     name: "future-ready-rejected",
     breaks: "`future::ready(v)` is a promise rejected with `v`, not resolved",
     file: "src/lower/std_types/future.rs",
-    find: `Expr::member(Expr::var("Promise"), "resolve")`,
-    replace: `Expr::member(Expr::var("Promise"), "reject")`,
+    find: `Expr::member(Expr::global("Promise"), "resolve")`,
+    replace: `Expr::member(Expr::global("Promise"), "reject")`,
     tests: ["test/compiler.test.ts", "-t", "async code"],
   },
   {

@@ -413,4 +413,20 @@ export const mutations: Mutation[] = [
     replace: "                .filter(|_| true)\n                .map(|i| match idents.get(i).copied().flatten() {\n",
     tests: ["test/corpus.test.ts", "-t", "^writer_fn_pointer_at_an_instance.rs$"],
   },
+  {
+    name: "import-read-made-global",
+    breaks: "a binding's read of what its module imports, React's `useState`, is made a global's, though its import declares the name: refused, a global's read where a declaration of its name is in scope (#1681)",
+    file: "src/lower.rs",
+    find: "        Some((export, rest)) => rooted(&format!(\"{}{rest}\", import(&export)), Expr::var),\n",
+    replace: "        Some((export, rest)) => rooted(&format!(\"{}{rest}\", import(&export)), Expr::global),\n",
+    tests: ["test/react-kept.test.ts", "-t", "what React keeps and gives again is copied where it's changed"],
+  },
+  {
+    name: "global-binding-read-unmarked",
+    breaks: "a binding's read of a global, `performance`, isn't made a global's: refused, a read nothing declares (#1681)",
+    file: "src/lower.rs",
+    find: "        None => rooted(path, Expr::global),\n",
+    replace: "        None => rooted(path, Expr::var),\n",
+    tests: ["test/js-object.test.ts", "-t", "a function bound to its first arguments is a function of the parameters left"],
+  },
 ];

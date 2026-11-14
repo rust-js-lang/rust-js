@@ -33,6 +33,24 @@ pub fn module(module: &mut js::Module, passes: Passes) -> Fired {
     passes::with(passes, || prepared_module(module))
 }
 
+/// The first of preparation's passes, of those `passes` runs, that makes
+/// `lowered` a module `broken` holds of: the one without which it isn't so.
+/// `None` where no one alone does. Asked only of a module `js::validate`
+/// refuses, to say what broke it (#1681).
+pub fn breaking_pass(
+    lowered: &js::Module,
+    passes: Passes,
+    broken: &dyn Fn(&js::Module) -> bool,
+) -> Option<&'static str> {
+    (PASSES.iter().filter(|(pass, _)| passes.runs(*pass)))
+        .find(|(pass, _)| {
+            let mut module = lowered.clone();
+            self::module(&mut module, passes.and_without(*pass));
+            !broken(&module)
+        })
+        .map(|(_, name)| *name)
+}
+
 fn prepared_module(module: &mut js::Module) {
     // `(0, f)` is `f` (rd579).
     passes::run(Pass::UnboundReads, module, |module| {
@@ -972,12 +990,7 @@ fn expr(e: &mut Expr) {
         && matches!(&tested.kind, ExprKind::Var(name) if name == param)
         && passes::applies(Pass::BooleanCallbacks)
     {
-        *e = Expr {
-            facts: js::Facts::NONE,
-            kind: ExprKind::Var("Boolean".into()),
-            span: e.span,
-            held_as: Default::default(),
-        };
+        *e = Expr::global("Boolean").or_at(e.span);
         return;
     }
     // `x == null || !x` is `!x`: `null` and `undefined` are falsy (ADR 0313);
@@ -1254,5 +1267,35 @@ fn truth_of(e: &Expr) -> Option<&Expr> {
             _ => None,
         },
         _ => None,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // What broke a module is the pass without which it isn't so
+    // (`breaking_pass`, #1681): of `items.filter((x) => !!x)`, the read of
+    // `Boolean` that `boolean callbacks` makes; of what every variant keeps,
+    // none.
+    #[test]
+    fn the_breaking_pass_is_the_one_without_which_it_holds() {
+        let not = |e| Expr::unary(UnaryOp::Not, e);
+        let returned = StmtKind::Return(Some(not(not(Expr::var("x"))))).at(js::Span::NONE);
+        let arrow = Expr::arrow(vec![js::Pattern::Name("x".into())], vec![returned]);
+        let filtered = Expr::call(Expr::member(Expr::var("items"), "filter"), vec![arrow]);
+        let module = js::Module {
+            items: vec![js::Item::Statements(vec![StmtKind::Expr(filtered).at(js::Span::NONE)])],
+            ..js::Module::default()
+        };
+        let reads_boolean = |m: &js::Module| m.read_vars().contains("Boolean");
+        assert!(!reads_boolean(&module));
+        assert_eq!(
+            breaking_pass(&module, Passes::default(), &reads_boolean),
+            Some("boolean callbacks")
+        );
+        // What every pass's absence leaves so, no one alone made.
+        let reads_items = |m: &js::Module| m.read_vars().contains("items");
+        assert_eq!(breaking_pass(&module, Passes::default(), &reads_items), None);
     }
 }

@@ -452,7 +452,26 @@ impl OutputPlan {
                 *import = js::ImportFrom::Specifier(specifier);
             }
         });
+        // As it was lowered, kept where trees are checked, to say which
+        // pass broke one (`js::validate`, #1681).
+        let lowered = crate::js::validate::checking().then(|| js_module.clone());
         let fired = crate::prepare::module(&mut js_module, self.prepare.0);
+        if let Some(lowered) = lowered
+            && let Some(problem) = crate::js::validate::module(&js_module).into_iter().next()
+        {
+            let broken = |module: &js::Module| crate::js::validate::module(module).contains(&problem);
+            let by = match broken(&lowered) {
+                true => "as it was lowered".to_string(),
+                false => match crate::prepare::breaking_pass(&lowered, self.prepare.0, &broken) {
+                    Some(pass) => format!("by preparation's `{pass}`"),
+                    None => "by preparation".to_string(),
+                },
+            };
+            return Err(format!(
+                "rust-js made {} wrong {by}: {problem}: a bug of rust-js's",
+                js_path.display()
+            ));
+        }
         // What only an earlier phase resolves, left: a compiler's
         // mistake, refused, not printed.
         if let Some(what) = js_module.unprintable() {

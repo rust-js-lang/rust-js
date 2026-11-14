@@ -323,7 +323,7 @@ test("only the publisher and the driver write files", () => {
 // A panic's `Error` is made one way, `Expr::panic` (ADR 0706): five
 // places wrote `new Error(..)` each, and `panic!("")` was `new Error("")`.
 test("a panic's Error is made in one place", () => {
-  const made = /Expr::var\("Error"\)/;
+  const made = /Expr::(?:var|global)\("Error"\)/;
   expect(sources.filter(file => made.test(read(file)))).toEqual(["src/js/make.rs"]);
 });
 

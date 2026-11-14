@@ -126,7 +126,7 @@ impl<'a> Cx<'a> {
             // `String(n)` where it isn't in a template (ADR 0066), placed
             // where it is, as a call is.
             ExprKind::Stringed(value) => {
-                self.expr(&js::Expr::call(js::Expr::var("String"), vec![(**value).clone()]).or_at(e.span))
+                self.expr(&js::Expr::call(js::Expr::global("String"), vec![(**value).clone()]).or_at(e.span))
             }
             // `(a, b)`, wrapped where what's around it needs it (#523).
             ExprKind::Sequence(items) => Expression::new_sequence_expression(

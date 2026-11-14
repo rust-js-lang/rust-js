@@ -164,7 +164,7 @@ impl<'a> Cx<'a> {
                 field("configurable", js::Expr::bool(true)),
                 field("value", value),
             ]);
-            let define = js::Expr::member(js::Expr::var("Object"), "defineProperty");
+            let define = js::Expr::member(js::Expr::global("Object"), "defineProperty");
             js::StmtKind::Expr(js::Expr::call(
                 define,
                 vec![prototype(), js::Expr::str(name), descriptor],
@@ -190,7 +190,7 @@ impl<'a> Cx<'a> {
                 };
                 let get = js::Prop::Method("get".to_owned(), at(js::ExprKind::Arrow(Vec::new(), f.body.clone())));
                 let descriptor = at(js::ExprKind::Object(vec![get], js::ObjectLayout::default()));
-                let define = js::Expr::member(js::Expr::var("Object"), "defineProperty");
+                let define = js::Expr::member(js::Expr::global("Object"), "defineProperty");
                 let call = js::Expr::call(
                     define,
                     vec![prototype(), at(js::ExprKind::Str(f.name.clone())), descriptor],

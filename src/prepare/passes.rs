@@ -155,6 +155,19 @@ impl Passes {
             recording,
         }
     }
+
+    /// These, and `pass` left out too.
+    pub fn and_without(self, pass: Pass) -> Passes {
+        Passes {
+            without: self.without | pass.bit(),
+            ..self
+        }
+    }
+
+    /// Whether `pass` is among those it runs.
+    pub fn runs(self, pass: Pass) -> bool {
+        self.without & pass.bit() == 0
+    }
 }
 
 /// The passes a preparation's rewrites changed something by, of those it

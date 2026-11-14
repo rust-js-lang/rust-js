@@ -42,7 +42,17 @@ impl Expr {
     /// `name`, one of JS's own globals, `Math` or `console`, which no call
     /// changes (`Known::BuiltIn`, #1674).
     pub fn js_global(name: &str) -> Expr {
-        Expr::var(name).built_in()
+        Expr::global(name).built_in()
+    }
+
+    /// A read of the global `name`, JS's `Array` or a binding's `document`,
+    /// which the module declares nowhere (`Known::Global`): the one way a
+    /// read of a global is made, which `js::validate` takes for resolved.
+    /// One of JS's own, which no call changes, is `js_global`'s.
+    pub fn global(name: &str) -> Expr {
+        let mut read = Expr::var(name);
+        read.facts = read.facts.with(Known::Global);
+        read
     }
 
     /// This, a call of one of JS's own functions or methods
@@ -254,7 +264,7 @@ impl Expr {
             ExprKind::Str(text) if text.is_empty() => Vec::new(),
             _ => vec![message],
         };
-        Expr::new_(Expr::var("Error"), args)
+        Expr::new_(Expr::global("Error"), args)
     }
 
     /// Of `new Error(..)`, a panic: what it's made of.
@@ -351,7 +361,7 @@ impl Expr {
             }
             kind => Expr { kind, ..it },
         };
-        Expr::call(Expr::member(Expr::var("Array"), "from"), vec![it])
+        Expr::call(Expr::member(Expr::global("Array"), "from"), vec![it])
     }
 
     /// Of `Array.from(it)`, `collected`'s, `it`.
@@ -398,7 +408,7 @@ impl Expr {
 
     /// `require("x")`, of the module `from` names (ADR 0305).
     pub fn require(from: ImportFrom) -> Expr {
-        Expr::call(Expr::var("require"), vec![Expr::new(ExprKind::Specifier(from))])
+        Expr::call(Expr::global("require"), vec![Expr::new(ExprKind::Specifier(from))])
     }
 
     pub fn handle(place: Expr) -> Expr {

@@ -21,6 +21,7 @@ mod storage;
 mod template;
 pub mod undefined_arguments;
 pub mod undefined_keys;
+pub mod validate;
 mod walk;
 mod writes;
 
@@ -1196,7 +1197,7 @@ mod tests {
     fn only_a_built_in_call_is_js_own() {
         let own = Expr::builtin(Expr::var("parts"), "join", vec![Expr::str(", ")]);
         assert!(own.only_reads() && !own.runs_program_code());
-        let global = Expr::call(Expr::var("String"), vec![Expr::var("n")]).built_in();
+        let global = Expr::call(Expr::global("String"), vec![Expr::var("n")]).built_in();
         assert!(global.only_reads() && !global.runs_program_code());
         for named in [
             Expr::call(Expr::member(Expr::var("store"), "join"), Vec::new()),

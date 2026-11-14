@@ -510,7 +510,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             Some(key) if self.is_value_key(key) && !self.is_js_key(key) => ["$KeyMap", "$KeySet"][usize::from(set)],
             Some(key) => return self.btree_class((set, sorted), key, None, span),
-            None => return Ok(Expr::var(["Map", "Set"][usize::from(set)])),
+            None => return Ok(Expr::global(["Map", "Set"][usize::from(set)])),
         };
         match key {
             Some(key) => self.btree_class((set, sorted), key, Some(Expr::helper(name)), span),
@@ -525,7 +525,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// orders (ADR 0404, amended; #237).
     fn btree_class(&mut self, (set, sorted): (bool, bool), key: Ty<'tcx>, base: Option<Expr>, span: Span) -> R<Expr> {
         if !sorted {
-            return Ok(base.unwrap_or_else(|| Expr::var(["Map", "Set"][usize::from(set)])));
+            return Ok(base.unwrap_or_else(|| Expr::global(["Map", "Set"][usize::from(set)])));
         }
         let cmp = self.cmp_fn(key, false, span)?;
         if base.is_none() && cmp.helper_name() == Some("$cmp") {

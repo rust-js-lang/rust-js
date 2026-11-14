@@ -844,7 +844,7 @@ pub(super) fn is_js_iterator(e: &Expr) -> bool {
 /// iterator, `s[Symbol.iterator]()`, which steps its `char`s as Rust's does
 /// (#1186): a JS iterator, of what JS's own iteration of `s` steps.
 pub(in crate::lower) fn string_iterator(s: Expr) -> Expr {
-    let it = Expr::call(Expr::index(s, Expr::member(Expr::var("Symbol"), "iterator")), vec![]);
+    let it = Expr::call(Expr::index(s, Expr::member(Expr::global("Symbol"), "iterator")), vec![]);
     Expr {
         facts: it.facts.with(js::Known::Iterator).with(js::Known::ReceiverIterated),
         ..it

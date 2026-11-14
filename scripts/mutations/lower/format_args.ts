@@ -192,8 +192,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`console.log` isn't read past a call, and a value it prints `{:?}` of stays a function called in place",
     file: "src/lower/format_args.rs",
-    find: "                        facts: js::Facts::of(js::Known::Lasting),\n",
-    replace: "                        facts: js::Facts::NONE,\n",
+    find: "                        facts: js::Facts::of(js::Known::Lasting).with(js::Known::Global),\n",
+    replace: "                        facts: js::Facts::of(js::Known::Global),\n",
     tests: [
       "test/lowering-strings.test.ts",
       "-t",

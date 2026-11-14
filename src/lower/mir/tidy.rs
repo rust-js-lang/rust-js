@@ -180,8 +180,8 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     }
 }
 
-/// `stage`'s passes in turn, named under `name`, then in a debug build,
-/// what it ensures, checked. Whether `hints.until` stopped it.
+/// `stage`'s passes in turn, named under `name`, then where trees are
+/// checked (`js::validate::checking`), what it ensures, checked. Whether `hints.until` stopped it.
 fn run_stage(body: &mut Vec<Stmt>, hints: &Hints, stage: &stages::Stage, name: &str) -> bool {
     for pass in stage.passes {
         let was = fired::before(body);
@@ -191,7 +191,7 @@ fn run_stage(body: &mut Vec<Stmt>, hints: &Hints, stage: &stages::Stage, name: &
             return true;
         }
     }
-    if cfg!(debug_assertions) {
+    if crate::js::validate::checking() {
         for contract in contracts::ALWAYS.iter().chain(stage.ensures) {
             // Of every fact said, one `--without-known` forgets too: what's
             // tried without it is the passes, not their check (ADR 1127).

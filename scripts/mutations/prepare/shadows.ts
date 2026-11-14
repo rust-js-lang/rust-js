@@ -227,4 +227,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^shadow_of_a_destructured_binding.rs$"],
     snapshots: true,
   },
+  {
+    name: "shadow-of-a-global-unmarked",
+    breaks: "a `const performance$1 = performance;` made `performance` leaves each read of it unmarked, the global's read no longer the global's: refused, a read nothing declares (#1681)",
+    file: "src/prepare/shadows.rs",
+    find: "                    if global {\n                        e.facts = e.facts.with(js::Known::Global);\n",
+    replace: "                    if false {\n                        e.facts = e.facts.with(js::Known::Global);\n",
+    tests: ["test/js-object.test.ts", "-t", "a function bound to its first arguments is a function of the parameters left"],
+  },
 ];

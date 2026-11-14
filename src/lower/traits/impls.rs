@@ -847,7 +847,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 true => "WeakMap",
                 false => "Map",
             };
-            made = Some(Expr::new_(Expr::var(map), Vec::new()));
+            made = Some(Expr::new_(Expr::global(map), Vec::new()));
             // One dictionary for each set of what it's given: its const
             // parameters' values, its dictionaries, what it asks of its type
             // parameters, `TSize` (ADR 0145), and its drops, which may be none.

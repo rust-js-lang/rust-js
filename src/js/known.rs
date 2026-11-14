@@ -339,6 +339,12 @@ knowns! {
     /// none, `Array.from(set.values())`, where one of a `dyn` Rust made
     /// asks it (`iterators::binding_made`, the user's decision, #1359).
     BindingIterator,
+    /// A read of a global, JS's `Array` or a binding's `document`, that the
+    /// module declares nowhere: `Expr::global`'s, the one way one is made,
+    /// which `js::validate` takes for resolved where nothing in scope
+    /// declares its name (#1681). Its read, not what it holds: `BuiltIn`
+    /// says no call changes it.
+    Global,
 }
 
 /// What a `Known` is to those that read it: whether the JS is right
@@ -424,7 +430,8 @@ impl Known {
             | Known::IterMappedAsItIs
             | Known::NullStored
             | Known::HandledObject
-            | Known::Momentary => Role::Form,
+            | Known::Momentary
+            | Known::Global => Role::Form,
         }
     }
 

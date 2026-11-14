@@ -11,7 +11,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if is_lent(&value) || is_js_iterator(&value) {
             return value;
         }
-        Expr::call(Expr::member(Expr::var("Iterator"), "from"), vec![value])
+        Expr::call(Expr::member(Expr::global("Iterator"), "from"), vec![value])
     }
 
     /// `items`, each a `Result` or an `Option` (of `item`), collected into

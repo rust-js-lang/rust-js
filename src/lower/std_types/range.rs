@@ -793,7 +793,7 @@ fn range_step(e: &Expr) -> Option<Expr> {
         && let Some((start, end, None)) = lazy_range_parts(source)
     {
         let mut list = vec![start];
-        list.push(end.unwrap_or_else(|| Expr::var("Infinity")));
+        list.push(end.unwrap_or_else(|| Expr::global("Infinity")));
         list.push(n.clone());
         return Some(Expr::call_helper(LAZY_RANGE, list));
     }
@@ -803,7 +803,7 @@ fn range_step(e: &Expr) -> Option<Expr> {
     let (start, end, step) = lazy_range_parts(source)?;
     let made = |start: Expr, step: Option<Expr>| {
         let mut list = vec![start];
-        list.extend(end.clone().or_else(|| step.is_some().then(|| Expr::var("Infinity"))));
+        list.extend(end.clone().or_else(|| step.is_some().then(|| Expr::global("Infinity"))));
         list.extend(step);
         Expr::call_helper(LAZY_RANGE, list)
     };

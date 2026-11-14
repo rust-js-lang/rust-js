@@ -38,7 +38,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             FutureOp::Ready => {
                 let value = values.next().expect("its value");
                 Expr::call(
-                    Expr::member(Expr::var("Promise"), "resolve"),
+                    Expr::member(Expr::global("Promise"), "resolve"),
                     vec![self.settled(value, tys[0])],
                 )
             }

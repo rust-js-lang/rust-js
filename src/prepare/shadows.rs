@@ -50,12 +50,28 @@ fn own_names(params: &[Pattern], body: &mut Vec<Stmt>) -> IndexSet<String> {
 /// Each `const n$1 = n;` of `body` that's `n` (`shadow`), `n` in its place.
 fn shadows(body: &mut Vec<Stmt>, own: &IndexSet<String>) {
     while let Some((alias, of)) = shadow(body, own) {
+        // Of a global, `const performance$1 = performance;`, each read the
+        // global's still, as `Expr::global` made it (`js::validate`).
+        let mut global = false;
+        js::each_block_mut(body, &mut |stmts| {
+            for s in stmts.iter() {
+                if let StmtKind::Const(name, value) = &s.kind
+                    && *name == alias
+                    && matches!(&value.kind, ExprKind::Var(v) if *v == of)
+                {
+                    global |= value.facts.has(js::Known::Global);
+                }
+            }
+        });
         // Not a closure's own of the name, its `catch_unwind`'s result
         // named `value$1` apart from the `value` it captures (#457).
         js::outside_shadows(body, &alias, |body| {
             js::each_expr_mut(body, &mut |e| {
                 if matches!(&e.kind, ExprKind::Var(name) if *name == alias) {
                     e.kind = ExprKind::Var(of.clone());
+                    if global {
+                        e.facts = e.facts.with(js::Known::Global);
+                    }
                 }
             });
             js::each_block_mut(body, &mut |stmts| {

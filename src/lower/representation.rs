@@ -1185,12 +1185,12 @@ pub(super) fn symbol_for(key: Expr) -> Expr {
 /// registry's function, which reads no `this` and only its first argument
 /// (ADR 0964).
 pub(super) fn symbol_for_function() -> Expr {
-    Expr::member(Expr::var("Symbol"), "for")
+    Expr::member(Expr::global("Symbol"), "for")
 }
 
 /// A `js::SymbolFor`'s key, its `.0`: `Symbol.keyFor(symbol)` (ADR 0634).
 fn symbol_key(symbol: Expr) -> Expr {
-    Expr::call(Expr::member(Expr::var("Symbol"), "keyFor"), vec![symbol])
+    Expr::call(Expr::member(Expr::global("Symbol"), "keyFor"), vec![symbol])
 }
 
 /// The symbol whose key `read` is, where it's a `js::SymbolFor`'s,
