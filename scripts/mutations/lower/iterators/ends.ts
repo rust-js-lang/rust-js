@@ -77,12 +77,12 @@ export const mutations: Mutation[] = [
   {
     name: "extreme-by-unboxed",
     breaks:
-      "`max()` of items that may look like `None` isn't boxed, so the greatest `None` is no item",
+      "`max_by()` and its kind of items that may look like `None` isn't boxed, so the greatest `None` is no item, `None` where native Rust has `Some(None)`",
     file: "src/lower/iterators/ends.rs",
     find: "        let boxed = self.boxed_payload(item);\n        let drop = self.std_drop_function(item, span)?;\n",
     replace:
       "        let boxed = false;\n        let drop = self.std_drop_function(item, span)?;\n",
-    tests: ["test/corpus.test.ts", "-t", "^extreme_drops.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^extreme_drops.rs$|^extreme_by_of_items_like_none.rs$"],
   },
   {
     name: "repeat-n-is-repeat",
