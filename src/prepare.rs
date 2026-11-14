@@ -83,6 +83,7 @@ fn prepared_module(module: &mut js::Module) {
     each_block(Pass::AssignedBreaks, module, &mut |stmts| {
         assigned_breaks::assigned_breaks(stmts)
     });
+    reclaim::spelled(module);
     passes::run(Pass::NamesReclaimed, module, reclaim::module);
     passes::run(Pass::CompoundAssignments, module, compound);
     each_block(Pass::SteppedWhiles, module, &mut stepped_whiles::stepped_whiles);

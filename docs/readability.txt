@@ -7,7 +7,7 @@ while (true)	224	6.7
 $iter	2820	84.2
 Iterator.from	257	7.7
 return;	328	9.8
-renamed x$1	16126	481.5
+renamed x$1	16125	481.5
 role fallbacks	8798	262.7
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1	role fallbacks
 test/corpus/adapter_drop_past_a_panic.js	52	0	0	0	1	0	0	0	1
@@ -315,7 +315,7 @@ test/corpus/clone_changed_part.js	38	0	0	0	0	0	0	0	0
 test/corpus/clone_dictionary_of_a_nested_option.js	95	0	0	0	0	0	0	8	7
 test/corpus/clone_from.js	67	0	0	0	0	0	0	0	1
 test/corpus/clone_from_generic_option_own.js	48	0	0	0	0	0	0	0	0
-test/corpus/clone_from_generic_std_own.js	628	0	0	0	0	0	0	25	10
+test/corpus/clone_from_generic_std_own.js	628	0	0	0	0	0	0	24	10
 test/corpus/clone_from_of_a_result_given_to_generic_code.js	531	0	0	0	0	0	0	31	9
 test/corpus/clone_from_of_an_option_given_to_generic_code.js	449	0	0	0	0	0	0	34	8
 test/corpus/clone_from_option_own.js	31	0	0	0	0	0	0	0	0

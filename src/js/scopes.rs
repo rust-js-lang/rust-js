@@ -61,6 +61,12 @@ impl Tree {
         walk.tree.twice.is_empty().then_some(walk.tree)
     }
 
+    /// Each name declared or read, in the order first met.
+    pub(crate) fn names(&self) -> impl Iterator<Item = &str> {
+        let declared = self.declaring.keys().filter(|name| !self.reads.contains_key(*name));
+        self.reads.keys().chain(declared).map(String::as_str)
+    }
+
     /// `module`'s scopes: its imports', its packages' and its items' names
     /// the outermost's, then each item's own.
     pub(crate) fn of_module(module: &js::Module) -> Tree {

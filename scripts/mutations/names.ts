@@ -42,4 +42,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^js_global_names.rs$"],
   },
+  {
+    name: "unspelled-never-known",
+    breaks: "a name lowering made not spelled yet, `value#1`, is taken for any other name: preparation spells none, and it's printed (#1681)",
+    file: "src/names.rs",
+    find: "    (!base.is_empty() && !k.is_empty() && k.bytes().all(|b| b.is_ascii_digit())).then_some(base)\n",
+    replace: "    let _ = (base, k);\n    None\n",
+    unitTests: "js::validate::tests::an_unspelled_name_is_refused",
+  },
 ];

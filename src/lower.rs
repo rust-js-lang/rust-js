@@ -615,6 +615,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         fresh_in(&mut self.names.borrow_mut(), &base.into().word())
     }
 
+    /// A name lowering makes for a variable of its own, `base`'s, not
+    /// spelled yet (`names::unspelled`): spelled by preparation once the
+    /// program's names are all made, apart from them, so a name it makes
+    /// early, of a closure's clone before the closure's own `key` is named,
+    /// never costs the program its name (#1681 change 3, M2).
+    fn unspelled(&self, base: &str) -> String {
+        let mut names = self.names.borrow_mut();
+        (1..)
+            .map(|k| crate::names::unspelled(base, k))
+            .find(|name| names.insert(name.clone()))
+            .unwrap()
+    }
+
     /// A `catch`'s parameter each time it's asked, of the item's names,
     /// each its own (#1681 change 3, M2), as preparation spells it.
     fn catch_names(&self) -> impl FnMut() -> String + '_ {

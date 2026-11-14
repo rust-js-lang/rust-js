@@ -508,12 +508,12 @@ function main() {
       }
     });
     run("a local of T", boom, () => {
-      const value = [[7], [8]];
-      const value$1 = [[3], [1]];
+      const value$1 = [[7], [8]];
+      const value = [[3], [1]];
       try {
         assignLocal(
-          value,
           value$1,
+          value,
           {
             clone(value) {
               return $madeEach(value, (item) => dClone_clone(item), dDrop_drop);
@@ -532,7 +532,7 @@ function main() {
         throw $unwindsOn(error);
       } finally {
         if ($live()) {
-          for (const item of value$1) {
+          for (const item of value) {
             dDrop_drop(item);
           }
         }

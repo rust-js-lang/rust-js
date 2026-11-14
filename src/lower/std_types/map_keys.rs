@@ -304,9 +304,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Expr::builtin(items, "map", vec![each]))
     }
 
-    /// `(name) => <name's parts>`, the function of a `ty`'s `key_parts`, or
-    /// `$id` itself, of an object found by itself.
-    pub(super) fn key_parts_fn(&mut self, name: &str, ty: Ty<'tcx>, span: Span) -> R<Expr> {
+    /// `(base) => <base's parts>`, the function of a `ty`'s `key_parts`, or
+    /// `$id` itself, of an object found by itself; its parameter a name not
+    /// spelled yet (`FnCx::unspelled`, #1681 change 3, M2).
+    pub(super) fn key_parts_fn(&mut self, base: &str, ty: Ty<'tcx>, span: Span) -> R<Expr> {
+        let name = &self.unspelled(base);
         let parts = self.key_parts(Expr::var(name), ty, span)?;
         Ok(match &parts.kind {
             js::ExprKind::Call(callee, args)
@@ -316,7 +318,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 (**callee).clone()
             }
             _ => Expr::arrow(
-                vec![name.into()],
+                vec![name.as_str().into()],
                 vec![StmtKind::Return(Some(parts)).at(js::Span::NONE)],
             ),
         })

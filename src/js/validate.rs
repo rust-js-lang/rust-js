@@ -26,6 +26,9 @@ pub enum Problem {
     /// A global's read of a name a declaration in scope takes, which JS
     /// reads instead.
     Shadowed(String),
+    /// A name lowering made that was never spelled, `value#1`
+    /// (`names::unspelled`).
+    Unspelled(String),
     /// A hole no tree is printed with (`Hole`): a value taken and never
     /// put back, of any tree; a library's item asked for, of a module's,
     /// whose crate is lowered again before it's made.
@@ -38,6 +41,7 @@ impl std::fmt::Display for Problem {
             Problem::Unlanded(jump) => write!(f, "`{jump}` lands on nothing around it"),
             Problem::Twice(name) => write!(f, "`{name}` is declared twice in one block"),
             Problem::Unresolved(name) => write!(f, "`{name}` is read, and nothing declares it nor made it a global"),
+            Problem::Unspelled(name) => write!(f, "`{name}`, a name lowering made, was never spelled"),
             Problem::Hole(super::Hole::Taken(at)) => {
                 write!(f, "it holds {}, taken at {at}", super::Hole::Taken(at).what())
             }
@@ -65,7 +69,10 @@ pub fn stages_checked() -> bool {
 /// Each problem of `module`'s tree, its names' too, of its scopes as JS
 /// resolves them (`js::scopes`, the one owner).
 pub fn module(module: &Module) -> Vec<Problem> {
-    let mut problems = names(&scopes::Tree::of_module(module));
+    let tree = scopes::Tree::of_module(module);
+    let mut problems = names(&tree);
+    let unspelled = tree.names().filter(|name| crate::names::unspelled_base(name).is_some());
+    problems.extend(unspelled.map(|name| Problem::Unspelled(name.to_string())));
     let mut cx = Cx {
         whole: true,
         ..Cx::default()
@@ -419,6 +426,17 @@ mod tests {
             ..Module::default()
         };
         assert_eq!(module.unprintable(), Some(at.what()));
+    }
+
+    // A name lowering made that was never spelled, `value#1`, is never
+    // printed: preparation spells each (#1681 change 3, M2).
+    #[test]
+    fn an_unspelled_name_is_refused() {
+        let value = crate::names::unspelled("value", 1);
+        let arrow = Expr::arrow(vec![Pattern::Name(value.clone())], vec![read(Expr::var(&value))]);
+        assert_eq!(of(vec![read(arrow)]), vec![Problem::Unspelled(value)]);
+        assert_eq!(crate::names::unspelled_base("value#1"), Some("value"));
+        assert_eq!(crate::names::unspelled_base("value$1"), None);
     }
 
     // A global's read where a declaration of its name is in scope reads

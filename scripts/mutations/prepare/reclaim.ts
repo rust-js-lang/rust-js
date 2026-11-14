@@ -109,4 +109,20 @@ export const mutations: Mutation[] = [
     replace: "        if false && module.aliases.iter().any(|alias| own_name(alias) && alias.0 == *name) {\n",
     tests: ["test/lowering-module-variables.test.ts", "-t", "an export its module names apart is exported by its own name"],
   },
+  {
+    name: "unspelled-spelled-over-a-read",
+    breaks: "a name lowering made is spelled its word where that takes a read of another's, `(item) => item(item)` beside a module's function `item` (#1681)",
+    file: "src/prepare/reclaim.rs",
+    find: "                    .find(|to| tree.renames(&name, to))?;\n",
+    replace: "                    .find(|_| true)?;\n",
+    unitTests: "prepare::reclaim::tests::an_unspelled_name_is_spelled_apart_from_the_modules",
+  },
+  {
+    name: "unspelled-its-word-without-a-tree",
+    breaks: "of an item whose scopes declare a name twice, a name lowering made is spelled its word, which may be one of the module's (#1681)",
+    file: "src/prepare/reclaim.rs",
+    find: "            let to = in_scope.unwrap_or_else(|| crate::names::fresh_apart(&mut taken, base));\n",
+    replace: "            let to = in_scope.unwrap_or_else(|| base.to_string());\n",
+    unitTests: "prepare::reclaim::tests::an_unspelled_name_is_spelled_apart_from_the_modules",
+  },
 ];

@@ -489,14 +489,14 @@ function main() {
       }, error);
       throw error;
     }
-    const value$1 = once(8);
+    const value = once(8);
     let chain;
     try {
       chain = $lazyChain(
         $closing($iterator(tmp$1, onceIterator_next), (it) => {
           dDrop_drop(it.of._held);
         }),
-        $closing($iterator(value$1, onceIterator_next), (it) => {
+        $closing($iterator(value, onceIterator_next), (it) => {
           dDrop_drop(it.of._held);
         }),
       );
@@ -540,12 +540,12 @@ function main() {
       }, error);
       throw error;
     }
-    const value = (zipped + repeated) >>> 0;
+    const value$1 = (zipped + repeated) >>> 0;
     const value$2 = [once(6)];
     let result;
     try {
       result =
-        (value +
+        (value$1 +
           $flatMap(
             $closing($iter(value$2), (intoIter) => {
               $dropItems(intoIter, (item) => {

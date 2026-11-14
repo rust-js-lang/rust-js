@@ -718,4 +718,12 @@ export const mutations: Mutation[] = [
     replace: "            self::module(&mut module, passes.and_without(*pass));\n            true\n",
     unitTests: "prepare::tests::the_breaking_pass_is_the_one_without_which_it_holds",
   },
+  {
+    name: "unspelled-left-unspelled",
+    breaks: "preparation leaves a name lowering made unspelled, `value#1`, which the validator refuses (#1681)",
+    file: "src/prepare.rs",
+    find: "    reclaim::spelled(module);\n",
+    replace: "",
+    unitTests: "prepare::reclaim::tests::an_unspelled_name_is_spelled_apart_from_the_modules",
+  },
 ];

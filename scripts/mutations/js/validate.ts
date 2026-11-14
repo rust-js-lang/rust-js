@@ -51,4 +51,12 @@ export const mutations: Mutation[] = [
     replace: "            ExprKind::Hole(super::Hole::Asked) => {}\n",
     unitTests: "js::validate::tests::a_hole_is_refused",
   },
+  {
+    name: "unspelled-printed",
+    breaks: "a name lowering made that was never spelled, `value#1`, is printed, JS that doesn't parse (#1681)",
+    file: "src/js/validate.rs",
+    find: "    problems.extend(unspelled.map(|name| Problem::Unspelled(name.to_string())));\n",
+    replace: "    drop(unspelled);\n",
+    unitTests: "js::validate::tests::an_unspelled_name_is_refused",
+  },
 ];

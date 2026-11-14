@@ -793,18 +793,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    /// `(name) => <clone of name>`.
-    pub(in crate::lower) fn clone_fn(&mut self, name: &str, ty: Ty<'tcx>, span: Span) -> R<Expr> {
-        // Its parameter is a name its body's own may not take, `const value
-        // = $someValue(value)` of a nested `Option` (#1246), taken while
-        // the body's made, its scope's alone.
-        let taken = self.names.borrow_mut().insert(name.to_string());
+    /// `(base) => <clone of base>`, its parameter a name not spelled yet
+    /// (`FnCx::unspelled`, #1681 change 3, M2).
+    pub(in crate::lower) fn clone_fn(&mut self, base: &str, ty: Ty<'tcx>, span: Span) -> R<Expr> {
+        let name = self.unspelled(base);
+        // Its body's own names apart from its parameter's word, so the
+        // parameter is spelled `value` where it can be, `const value$1 =
+        // $someValue(value)` of a nested `Option` (#1246).
+        let taken = self.names.borrow_mut().insert(base.to_string());
         let mut body = Vec::new();
-        let value = self.clone_value(Expr::var(name), ty, span, &mut body);
+        let value = self.clone_value(Expr::var(&name), ty, span, &mut body);
         if taken {
-            self.names.borrow_mut().shift_remove(name);
+            self.names.borrow_mut().shift_remove(base);
         }
         body.push(StmtKind::Return(Some(value?)).at(js::Span::NONE));
-        Ok(Expr::arrow(vec![name.into()], body))
+        Ok(Expr::arrow(vec![name.as_str().into()], body))
     }
 }

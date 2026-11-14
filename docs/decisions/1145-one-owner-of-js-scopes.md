@@ -131,3 +131,40 @@ locals and take the program's own `key` and `value`, `key$1` for the
 program's. They are the next family: compiler-made names of the start of
 M3's names table, spelled once by preparation, and refused by the
 validator if one reaches printing.
+
+## Amendment: the fourth family, names spelled once the program's are made (2026-11-14)
+
+`clone_fn`'s and `key_parts_fn`'s parameter, `(value) => ..` of a clone
+and `(item) => ..` of a key's parts, is a name lowering makes before
+every name the program's is made: a closure's clone is made before the
+closure's own `key` is named. Given of the item's names as it's made, it
+took the program's `key`, and the program's was `key$1`. So it is made
+not spelled yet, the start of M3's names table for the names the
+compiler makes:
+
+- `names::unspelled(base, k)` writes one, `value#1`, which no JS reads and
+  `names::apart` doesn't take apart, so tidy takes it for no kin of a
+  program's `value`; `names::unspelled_base` reads it.
+- `FnCx::unspelled(base)` alone makes one, unique in its item's names.
+- Preparation spells each once, `reclaim::spelled`, before reclaiming
+  and outside the passes `--prepare-without` leaves out: its word, or
+  given apart from it, the first that JS's scopes let it be, as `locals`
+  reclaims (ADR 0357), the program's names all made by then keeping
+  theirs. Of an item whose scopes declare a name twice, which has no tree
+  to ask, apart from every name its module has.
+- The validator refuses one that reaches printing, `Problem::Unspelled`.
+
+An architecture test holds that `FnCx::unspelled` alone makes one and the
+validator and the spelling alone read one. `clone_fn` keeps its body's
+names apart from its parameter's word, so the parameter is spelled
+`value` where it can be, `const value$1 = $someValue(value)` (#1246).
+
+The corpus is what it was but two cases, each still native's, in each
+of which two of the compiler's temporaries trade `value` and `value$1`:
+a dictionary declared at `main`'s top, `{ clone: (value) => value }`,
+whose parameter was written `value` as it was made, took `value` from
+every later temporary of the item, and doesn't now. Mutations
+`unspelled-never-known`, `unspelled-printed`, `unspelled-left-unspelled`,
+`unspelled-spelled-over-a-read` and `unspelled-its-word-without-a-tree`
+are caught; `clone-fn-parameter-free-to-its-body` now changes a snapshot,
+the parameter spelled `value$1`, where the module didn't parse.
