@@ -180,3 +180,32 @@ the string itself (ADR 0289, amended), so `on(button, Click, ..)` is
 listener, options)`.
 
 What holds it: webapi-events' `on`, added and removed in Chromium.
+
+## Amendment: a target listens for each name of an event handler it has (#1817)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): None. JS lets any
+target listen for any name; this says which names rustc accepts.
+
+A target listened for the names `@webref/events` fires at it or bubbles
+to it, so a name only an event handler attribute gives was missing: a
+document has `set_onerror`, but `document.add_event_listener(Error, ..,
+Some(&true))`, the capturing listener that catches an image's error,
+which doesn't bubble, was rustc's E0277; every element's
+`GlobalEventHandlers` names, `ended`, `toggle`, `close`, `invalid`,
+`resize` and the rest, were missing alike, where TypeScript's maps,
+made of the handlers, have them. **A target listens for each name of
+an event handler it has, its own or a mixin's, `onX` of `X`**, typed as
+that handler's event is: the one its webref entries give where one
+fires it here, else `Event`, the generator's one rule, so a handler and
+a listener of a name always take the same event.
+
+Of TypeScript 7.1's maps: 146 of the 241 targets lacked a name
+TypeScript's map has; none do now. 4,707 more `Listen` impls, 19,530 on
+242 targets, `XMLHttpRequestEventTarget` new, of its handlers alone. A
+name given only by a handler is `Event` where TypeScript says more,
+`toggle`'s `ToggleEvent`: sound, as no spec says what fires it here.
+Where specs give `Event` and UI Events `FocusEvent`, `focus` and `blur`
+stay `Event` (#1823).
+
+What holds it: webapi-events' document capturing an image's error in
+Chromium.

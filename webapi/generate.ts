@@ -2090,6 +2090,17 @@ for (const name of INTERFACES) {
       map.set(event, given.size === 1 ? [...given][0] : "Event");
     }
   }
+  // An event handler it has, `onended` of every element's
+  // `GlobalEventHandlers`, is a name it listens for too, as TypeScript's
+  // maps are made of them (#1817): `document.add_event_listener(Error, ..,
+  // capture)`, where `set_onerror` sets one. Its event the one its `onX`
+  // is given, which is `Event` where no spec fires it at this target.
+  for (const level of [name, ...chain(name)]) {
+    for (const { member: m } of interfaces.get(level)?.members ?? []) {
+      if (m.type !== "attribute" || !m.name?.startsWith("on") || !HANDLERS[m.idlType!.idlType as string]) continue;
+      if (!map.has(m.name.slice(2))) map.set(m.name.slice(2), "Event");
+    }
+  }
   if (map.size > 0) listens.set(name, map);
 }
 const eventNames = [...new Set([...listens.values()].flatMap((m) => [...m.keys()]))].sort();

@@ -320,4 +320,19 @@ export function onRemoved(button) {
   });
   off();
 }
+
+/**
+ * A resource's error, which doesn't bubble, caught on its way down by a
+ * capturing listener of the document, which listens for every name of an
+ * event handler it has, `onerror` (#1817).
+ */
+export function resourceErrors() {
+  document.addEventListener(
+    "error",
+    () => {
+      globalThis.record(7);
+    },
+    true,
+  );
+}
 //# sourceMappingURL=webapi-events.js.map

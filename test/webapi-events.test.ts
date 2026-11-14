@@ -154,6 +154,38 @@ test("event listeners dispatch and remove by identity in Chromium", async () => 
   }
 }, underLoad(60_000));
 
+// A target listens for each name of an event handler it has, as
+// TypeScript's maps are made of them (#1817): a document's `onerror`, so a
+// capturing listener of the document catches an image's error, which
+// doesn't bubble, on its way down.
+test("a document's capturing listener catches an image's error in Chromium", async () => {
+  const js = compileEvents();
+  expect(js).toContain('export function resourceErrors() {\n  document.addEventListener(\n    "error",\n    () => {\n      globalThis.record(7);\n    },\n    true,\n  );\n}');
+  const browser = await chromium.launch({ headless: true });
+  try {
+    const page = await browser.newPage();
+    await page.setContent("<p>page</p>");
+    const result = await page.evaluate(async (js) => {
+      const values: number[] = [];
+      Object.assign(globalThis, { record: (n: number) => values.push(n) });
+      const url = URL.createObjectURL(new Blob([js], { type: "text/javascript" }));
+      const program = await import(url);
+      program.resourceErrors();
+      const image = document.createElement("img");
+      document.body.append(image);
+      await new Promise((resolve) => {
+        image.onerror = resolve;
+        image.src = "data:image/png;base64,AAAA";
+      });
+      URL.revokeObjectURL(url);
+      return values;
+    }, js);
+    expect(result).toEqual([7]);
+  } finally {
+    await browser.close();
+  }
+}, underLoad(60_000));
+
 test("a listener JS gave, a function or a handleEvent object, is added and removed as it is in Chromium", async () => {
   const js = compileEvents();
   const browser = await chromium.launch({ headless: true });

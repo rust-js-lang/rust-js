@@ -410,8 +410,9 @@ How WebIDL maps to Rust, one rule for each:
   ([ADR 0442](../../decisions/0442-a-web-api-that-may-throw-is-a-result.md)).
 - **An event's name and a tag are types,** `webapi::events::Click` and
   `webapi::tags::Button`: a listener is given the event its target and
-  name give, a `PointerEvent` of a button's click, and `create_element`
-  the element of its tag
+  name give, a `PointerEvent` of a button's click, any name of an event
+  handler it has too, a document's `Error` as its `onerror`, and
+  `create_element` the element of its tag
   ([ADR 0223](../../decisions/0223-webapi-event-and-tag-maps.md)). Each
   is `Copy`, its value the string, so generic code may keep one to add a
   listener and later remove it, `Name: Copy`. So is

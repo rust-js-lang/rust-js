@@ -1,7 +1,7 @@
 use std::cell::Cell;
 
 use webapi::{document, window};
-use webapi::events::{Click, Keydown};
+use webapi::events::{Click, Error, Keydown};
 use js::{PropertyDescriptor, function, object};
 use webapi::{
     AddEventListenerOptions, Event, EventListenerObject, EventListenerOptions, EventListenerOrEventListenerObject, EventTargetExt,
@@ -328,4 +328,11 @@ pub fn on_added(button: &HTMLButtonElement) {
 pub fn on_removed(button: &HTMLButtonElement) {
     let off = on(button, Click, &|e: &PointerEvent| record(e.client_x()), None);
     off();
+}
+
+/// A resource's error, which doesn't bubble, caught on its way down by a
+/// capturing listener of the document, which listens for every name of an
+/// event handler it has, `onerror` (#1817).
+pub fn resource_errors() {
+    document.add_event_listener(Error, |_: &Event| record(7), Some(&true));
 }
