@@ -43,10 +43,10 @@ pub(super) fn drops_any<'tcx>(
 /// gives a value with a destructor (ADR 0098), directly or through a
 /// generic function of its own: those functions drop a `T` through a drop
 /// function they're given. Only they are, so generic code nothing gives such
-/// a value to is what it was.
+/// a value to is what it was. What each body names, the call graph's.
 pub(super) fn drop_params<'tcx>(
     tcx: TyCtxt<'tcx>,
-    all_bodies: &[&Body<'tcx>],
+    (all_bodies, graph): (&[&Body<'tcx>], &crate::lower::call_graph::Crate<'_, 'tcx>),
     fns: &IndexSet<DefId>,
     foreign: &crate::lower::library::Foreign<'_, 'tcx>,
     library: bool,
@@ -148,7 +148,7 @@ pub(super) fn drop_params<'tcx>(
     let mut items: IndexMap<DefId, Vec<Ty<'tcx>>> = IndexMap::default();
     for body in all_bodies {
         let caller = tcx.typeck_root_def_id(body.def_id);
-        for (callee, args, span) in crate::lower::call_graph::names(body) {
+        for &(callee, args, span) in graph.names_of(body.def_id) {
             if !fns.contains(&callee) || tcx.trait_of_assoc(callee).is_some() {
                 continue;
             }

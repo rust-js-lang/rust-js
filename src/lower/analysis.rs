@@ -639,10 +639,11 @@ pub(super) fn analyze_crate<'a, 'tcx>(
                 |counted, pointee| super::drops::drop_runs(recognition, (library, closure_facts), counted, pointee),
             );
             let runs = |ty, owner| runs_where(closure_facts, &counted, ty, owner);
-            let more: IndexSet<(DefId, u32)> = (drop_params(tcx, all_bodies, &item_set, &foreign, library, runs))
-                .into_iter()
-                .flat_map(|(id, indices)| indices.into_iter().map(move |index| (id, index)))
-                .collect();
+            let more: IndexSet<(DefId, u32)> =
+                (drop_params(tcx, (all_bodies, &calls), &item_set, &foreign, library, runs))
+                    .into_iter()
+                    .flat_map(|(id, indices)| indices.into_iter().map(move |index| (id, index)))
+                    .collect();
             if more.is_subset(&given) {
                 return (counted, given);
             }
@@ -1041,7 +1042,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // parameters, whose drops are passed on as they are.
     let may_run = runs;
     let runs = runs_settled;
-    let drop_params = drop_params(tcx, all_bodies, &item_set, &foreign, library, runs);
+    let drop_params = drop_params(tcx, (all_bodies, &calls), &item_set, &foreign, library, runs);
     let drops_any = drops::drops_any(tcx, all_bodies, runs);
     let copied = copied_params(tcx, all_bodies, &fns, &foreign);
     let stepped = iterator_steps::stepped_params(tcx, all_bodies, &fns, &foreign);
