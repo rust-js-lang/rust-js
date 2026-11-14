@@ -494,3 +494,18 @@ collect whose hint reaches the crate's own (#1327), and a `Vec` a crate
 that reads capacities grows (#1528). So the runtime's flat forms answer
 `$flatHint` only where nothing sees it. With `$flatHint` made to throw
 whenever it's asked of a front, all 2,345 corpus cases passed.
+
+## Amendment: what a held `rev()` holds is made knowing its back by its type (2026-11-14)
+
+A held `rev()`, std's compiled `Rev`, marks the local it's given made
+knowing its back (`back_stepped`, #851). But the struct steps what it holds
+through that type's `DoubleEndedIterator` dictionary, which asks the type,
+not the value, so a `filter_map` a variable holds, whose `rev()` is given
+to std's compiled adapter, `kept.rev().fuse()`, was refused: "the
+`DoubleEndedIterator` of a `FilterMap`", whatever its function, a
+constructor, a closure or a function. Now the rule marks the local's type
+too, as a struct's part's is (`held_by_struct`): each value of it is made
+knowing its back where it's made. New corpus
+`reversed_filter_map_given_to_a_compiled_adapter`, native-compared;
+mutation `held-rev-source-type-unmarked`, caught. (Found by #1681's held
+flip, where it's `held_filter_map_reversed`'s `filter_map(Some)`.)

@@ -557,4 +557,12 @@ export const mutations: Mutation[] = [
     replace: "                                    if false && !user_variable(decl) && erased(decl.ty) == ty {\n",
     tests: ["test/corpus.test.ts", "-t", "^counted_adapters_where_capacity_is_read.rs$"],
   },
+  {
+    name: "held-rev-source-type-unmarked",
+    breaks: "the `rev()` of a `filter_map` a variable holds, given to std's compiled `fuse()`, is std's compiled `Rev`, whose dictionary of what it holds is by type, and that type isn't made knowing its back: refused, the `DoubleEndedIterator` of a `FilterMap`",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "                    typed_sources.insert(erased(mir.local_decls[origin(local)].ty));\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^reversed_filter_map_given_to_a_compiled_adapter.rs$"],
+  },
 ];

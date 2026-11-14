@@ -661,7 +661,10 @@ pub(super) fn stepped_locals<'tcx>(
                 // A `rev()` held, std's compiled `Rev`, which steps what it's
                 // given by its `next_back`, not one a std method's form
                 // reverses where it's made (ADR 0871): what it's given made
-                // knowing its back (#851).
+                // knowing its back (#851). And its type's, as the struct
+                // steps it by its type's dictionary, a `fuse()` given the
+                // `rev()` of a `filter_map` a variable holds (as a struct's
+                // part is, `held_by_struct`'s).
                 if callee == rev
                     && !body.facts.in_place_adapters.contains(fn_span)
                     && let Some(arg) = args.first()
@@ -669,6 +672,7 @@ pub(super) fn stepped_locals<'tcx>(
                     && let Some(local) = place.as_local()
                 {
                     mark(&mut stepped, (owner, origin(local)), SteppedLocal::Given);
+                    typed_sources.insert(erased(mir.local_decls[origin(local)].ty));
                 }
                 // A zip that reads its sides by index (ADR 0973), which asks
                 // the length of `b`, a map whose closure has a destructor:
