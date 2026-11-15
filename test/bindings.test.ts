@@ -1283,8 +1283,8 @@ pub fn counted() -> f64 {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain('return (addRule("p") + addRule(undefined, undefined, 1)) | 0;');
-  expect(js).toContain('toDataURL() + toDataURL("image/png", q) + toDataURL(undefined, "x")');
-  expect(js).toContain('return toDataURL("a", q?.value);');
+  expect(js).toContain('toDataURL() +\n    (q != null ? toDataURL("image/png", q) : toDataURL("image/png")) +\n    toDataURL(undefined, "x")');
+  expect(js).toContain('return q?.value != null ? toDataURL("a", q?.value) : toDataURL("a");');
   expect(js).toContain("return Math.max(1, undefined);");
 });
 

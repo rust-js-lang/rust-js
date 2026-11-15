@@ -181,7 +181,7 @@ export function App() {
       <button type="button" onClick={() => setLast(toast("Hello from Rust"))}>
         Say hello
       </button>
-      <button type="button" onClick={() => toast.dismiss(last ?? undefined)}>
+      <button type="button" onClick={() => (last != null ? toast.dismiss(last) : toast.dismiss())}>
         Dismiss
       </button>
     </main>

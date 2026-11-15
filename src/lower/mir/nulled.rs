@@ -18,8 +18,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// (`made_some_or_none`).
     pub(super) fn none_trusted(&self, state: &State<'_, 'tcx>, operand: &Operand<'tcx>) -> bool {
         let Some(place) = operand.place() else { return true };
-        self.made_some_or_none(state, place, 0)
+        self.made_some_or_none(state, place, (0, false))
             || !(self.krate.nulled_params.js_nones()).may_hold_null(self.tcx, state.body, place)
+    }
+
+    /// Whether `operand`, an `Option`, is a `Some` where it's read: a
+    /// variable each write of which makes one, `Some(view.byte_length())`,
+    /// or moves or copies what does, or a field so (`made_some_or_none`).
+    /// Not a constant, whose JS is its value, nor a parameter.
+    pub(super) fn made_some(&self, state: &State<'_, 'tcx>, operand: &Operand<'tcx>) -> bool {
+        operand
+            .place()
+            .is_some_and(|place| self.made_some_or_none(state, place, (0, true)))
     }
 
     /// Whether `place` holds what's made `Some(..)` or `None`, or a
@@ -28,7 +38,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// made once of, `jsx!`'s props' tuple's, a field of its field too, `props.anchor.title` of `LinkProps {
     /// anchor: Anchor { title: Some("Home"), .. }, .. }`, what it's made of.
     /// Not a parameter, which holds what its caller gave before any write.
-    fn made_some_or_none(&self, state: &State<'_, 'tcx>, place: Place<'tcx>, depth: usize) -> bool {
+    /// `some`, only what's made `Some(..)` (`made_some`).
+    fn made_some_or_none(&self, state: &State<'_, 'tcx>, place: Place<'tcx>, (depth, some): (usize, bool)) -> bool {
         let param = (1..=state.body.arg_count).contains(&place.local.as_usize());
         if depth > 8 || param || !place.projection.iter().all(|elem| matches!(elem, PlaceElem::Field(..))) {
             return false;
@@ -40,32 +51,34 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let Some(writes) = self.whole_writes(state, place.local) else {
             return false;
         };
-        !writes.is_empty()
-            && writes.iter().all(|write| match (field, write) {
-                (None, Write::Assign(Rvalue::Aggregate(kind, _))) => {
-                    matches!(**kind, AggregateKind::Adt(did, ..) if self.tcx.is_lang_item(did, LangItem::Option))
-                }
-                (None, Write::Assign(Rvalue::Use(Operand::Constant(c), _))) => c.check_static_ptr(self.tcx).is_none(),
-                (None, Write::Assign(Rvalue::Use(Operand::Move(read) | Operand::Copy(read), _))) => {
-                    self.made_some_or_none(state, *read, depth + 1)
-                }
-                // Not a nullable field's, which holds `None` as `null`.
-                (Some(field), Write::Assign(Rvalue::Aggregate(kind, operands)))
-                    if matches!(**kind, AggregateKind::Tuple)
-                        || matches!(**kind, AggregateKind::Adt(did, _, _, _, None) if self.tcx.adt_def(did).is_struct()
+        !writes.is_empty() && writes.iter().all(|write| match (field, write) {
+            (None, Write::Assign(Rvalue::Aggregate(kind, _))) => {
+                matches!(**kind, AggregateKind::Adt(did, variant, ..) if self.tcx.is_lang_item(did, LangItem::Option)
+                        && (!some || variant.as_u32() == 1))
+            }
+            (None, Write::Assign(Rvalue::Use(Operand::Constant(c), _))) => {
+                !some && c.check_static_ptr(self.tcx).is_none()
+            }
+            (None, Write::Assign(Rvalue::Use(Operand::Move(read) | Operand::Copy(read), _))) => {
+                self.made_some_or_none(state, *read, (depth + 1, some))
+            }
+            // Not a nullable field's, which holds `None` as `null`.
+            (Some(field), Write::Assign(Rvalue::Aggregate(kind, operands)))
+                if matches!(**kind, AggregateKind::Tuple)
+                    || matches!(**kind, AggregateKind::Adt(did, _, _, _, None) if self.tcx.adt_def(did).is_struct()
                         && self.plain_option_field(did, field)) =>
-                {
-                    match &operands[field] {
-                        Operand::Constant(_) => true,
-                        Operand::Move(read) | Operand::Copy(read) => {
-                            let read = read.project_deeper(&place.projection[1..], self.tcx);
-                            self.made_some_or_none(state, read, depth + 1)
-                        }
-                        _ => false,
+            {
+                match &operands[field] {
+                    Operand::Constant(_) => !some,
+                    Operand::Move(read) | Operand::Copy(read) => {
+                        let read = read.project_deeper(&place.projection[1..], self.tcx);
+                        self.made_some_or_none(state, read, (depth + 1, some))
                     }
+                    _ => false,
                 }
-                _ => false,
-            })
+            }
+            _ => false,
+        })
     }
 
     /// Whether field `field` of `adt`, a struct, holds `None` as `undefined`,
@@ -438,7 +451,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Of a call of `binding`, given `operands` as `values`: each it takes
     /// as `undefined` alone for `None`, a native optional argument's, not a
     /// nullable one's, given Rust's `None` (`one_none_given`), whatever
-    /// it's of, a nullable parameter's `null` too (#1843).
+    /// it's of, a nullable parameter's `null` too (#1843); and each that's
+    /// a `Some` where it's given (`made_some`) known there,
+    /// `Known::Present`.
     pub(super) fn ones_given_to_a_binding(
         &mut self,
         state: &State<'_, 'tcx>,
@@ -454,6 +469,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         for (i, (operand, value)) in operands.iter().zip(values.iter_mut()).enumerate() {
             let ty = operand.ty(state.body, self.tcx);
             let Some(payload) = self.option_of(ty) else { continue };
+            // A `Some` where it's given is there, `Some(view.byte_length())`'s
+            // value, which a call of each count needs no test of (#1842).
+            if crate::lower::analysis::nulled_params::one_none(self.tcx, ty)
+                && crate::lower::analysis::nulled_params::optional_argument(self.tcx, binding, i)
+                && self.made_some(state, operand)
+            {
+                let given = self.value_expr(std::mem::replace(value, Value::Expr(Expr::taken())), span)?;
+                *value = Value::Expr(Expr {
+                    facts: given.facts.with(js::Known::Present),
+                    ..given
+                });
+                continue;
+            }
             // A pair's, `{ value, impl }`, is given its value, `q?.value`,
             // `undefined` of either `None` already (ADR 0331).
             let pair = matches!(payload.peel_refs().kind(), ty::Dynamic(traits, ..)

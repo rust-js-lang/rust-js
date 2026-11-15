@@ -29,7 +29,7 @@
 mod js_nones;
 mod read_alike;
 
-pub(in crate::lower) use js_nones::{JsNones, one_none, optional_argument, returns_one_none};
+pub(in crate::lower) use js_nones::{AnyValue, JsNones, any_value, one_none, optional_argument, returns_one_none};
 
 use crate::collections::{IndexMap, IndexSet};
 use crate::lower::Body;

@@ -127,9 +127,18 @@ pub fn later(task: Box<dyn FnOnce()>) {
 }
 `);
   expect([code, stderr]).toEqual([0, ""]);
+  // A timer as a value is the arrow of its call, one of each count of a
+  // trailing `None` its caller gives (#1842), until its caller's call is
+  // (#1876); `queueMicrotask` takes none.
   expect(js).toContain(
-    'export const scheduleTimeout = typeof setTimeout === "function" ? setTimeout : undefined;\n' +
-      'export const cancelTimeout = typeof clearTimeout === "function" ? clearTimeout : undefined;\n' +
+    "export const scheduleTimeout =\n" +
+      '  typeof setTimeout === "function"\n' +
+      "    ? (handler, ms) => (ms != null ? setTimeout(handler, ms) : setTimeout(handler))\n" +
+      "    : undefined;\n" +
+      "export const cancelTimeout =\n" +
+      '  typeof clearTimeout === "function"\n' +
+      "    ? (id) => (id != null ? clearTimeout(id) : clearTimeout())\n" +
+      "    : undefined;\n" +
       'export const scheduleMicrotask = typeof queueMicrotask === "function" ? queueMicrotask : undefined;\n',
   );
   expect(js).toContain("    scheduleTimeout(task, 5);\n");

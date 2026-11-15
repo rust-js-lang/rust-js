@@ -402,3 +402,20 @@ export async function typescriptEventMaps(): Promise<{
   };
   return { mapOf, extendsOf, maps: new Map([...own.keys()].map((name) => [name, flat(name)])) };
 }
+
+/** The name of each operation and each constructor (its interface's)
+ * WebIDL defines, which a call of a webapi binding is of (#1842). */
+export async function webidlCalls(): Promise<Set<string>> {
+  const names = new Set<string>();
+  type Member = { type: string; name?: string };
+  type Definition = { type: string; name: string; members?: Member[] };
+  for (const definitions of Object.values(await idl.parseAll()) as Definition[][]) {
+    for (const definition of definitions) {
+      for (const member of definition.members ?? []) {
+        if (member.type === "operation" && member.name) names.add(member.name);
+        if (member.type === "constructor") names.add(definition.name);
+      }
+    }
+  }
+  return names;
+}

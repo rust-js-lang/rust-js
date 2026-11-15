@@ -728,4 +728,12 @@ export const mutations: Mutation[] = [
     replace: "    if true {\n        return false;\n    }\n",
     tests: ["test/corpus.test.ts", "-t", "^then_export_refused.rs$"],
   },
+  {
+    name: "undefined-is-absent-of-the-webapi-crate",
+    breaks: "each webapi binding is taken for a WebIDL operation, `scheduler.yield(options)`, Chrome's form no WebIDL declares, among them, given its trailing `undefined` where `#[rust_js::undefined_is_absent]` doesn't say it takes one as none (#1842)",
+    file: "src/lower/bindings.rs",
+    find: "    let path = [Symbol::intern(\"rust_js\"), Symbol::intern(\"undefined_is_absent\")];\n    tcx.get_attrs_by_path(def_id, &path).next().is_some()\n",
+    replace: "    tcx.crate_name(def_id.krate).as_str() == \"webapi\"\n",
+    tests: ["test/none-given.test.ts", "-t", "a WebIDL operation's trailing None"],
+  },
 ];

@@ -115,6 +115,7 @@ pub mod event {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Event/Event)
     #[cfg_attr(rust_js, rust_js::link_name = "new Event")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(r#type: &str, event_init_dict: Option<EventInit>) -> &'static Event {
         unreachable!()
     }
@@ -244,6 +245,7 @@ impl Event {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Event/initEvent)
     #[cfg_attr(rust_js, rust_js::link_name = "initEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn init_event(&self, r#type: &str, bubbles: Option<bool>, cancelable: Option<bool>) {
         unreachable!()
@@ -391,6 +393,7 @@ impl Node {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Node/getRootNode)
     #[cfg_attr(rust_js, rust_js::link_name = "getRootNode")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn get_root_node(&self, options: Option<GetRootNodeOptions>) -> &'static Node {
         unreachable!()
     }
@@ -486,6 +489,7 @@ impl Node {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Node/cloneNode)
     #[cfg_attr(rust_js, rust_js::link_name = "cloneNode")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn clone_node(&self, subtree: Option<bool>) -> &'static Node {
         unreachable!()
     }
@@ -493,6 +497,7 @@ impl Node {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Node/isEqualNode)
     #[cfg_attr(rust_js, rust_js::link_name = "isEqualNode")]
     #[cfg_attr(rust_js, rust_js::nullable(other_node))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn is_equal_node(&self, other_node: Option<&Node>) -> bool {
         unreachable!()
     }
@@ -500,6 +505,7 @@ impl Node {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Node/isSameNode)
     #[cfg_attr(rust_js, rust_js::link_name = "isSameNode")]
     #[cfg_attr(rust_js, rust_js::nullable(other_node))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn is_same_node(&self, other_node: Option<&Node>) -> bool {
         unreachable!()
     }
@@ -514,6 +520,7 @@ impl Node {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Node/contains)
     #[cfg_attr(rust_js, rust_js::link_name = "contains")]
     #[cfg_attr(rust_js, rust_js::nullable(other))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn contains(&self, other: Option<&Node>) -> bool {
         unreachable!()
     }
@@ -522,6 +529,7 @@ impl Node {
     #[cfg_attr(rust_js, rust_js::link_name = "lookupPrefix")]
     #[cfg_attr(rust_js, rust_js::nullable(namespace))]
     #[cfg_attr(rust_js, rust_js::nullable)]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn lookup_prefix(&self, namespace: Option<&str>) -> Option<String> {
         unreachable!()
     }
@@ -530,6 +538,7 @@ impl Node {
     #[cfg_attr(rust_js, rust_js::link_name = "lookupNamespaceURI")]
     #[cfg_attr(rust_js, rust_js::nullable(prefix))]
     #[cfg_attr(rust_js, rust_js::nullable)]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn lookup_namespace_uri(&self, prefix: Option<&str>) -> Option<String> {
         unreachable!()
     }
@@ -537,6 +546,7 @@ impl Node {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Node/isDefaultNamespace)
     #[cfg_attr(rust_js, rust_js::link_name = "isDefaultNamespace")]
     #[cfg_attr(rust_js, rust_js::nullable(namespace))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn is_default_namespace(&self, namespace: Option<&str>) -> bool {
         unreachable!()
     }
@@ -544,6 +554,7 @@ impl Node {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Node/insertBefore)
     #[cfg_attr(rust_js, rust_js::link_name = "insertBefore")]
     #[cfg_attr(rust_js, rust_js::nullable(child))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn insert_before(&self, node: &Node, child: Option<&Node>) -> &'static Node {
         unreachable!()
     }
@@ -671,6 +682,7 @@ impl CharacterData {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CharacterData/beforeHTML)
     #[cfg_attr(rust_js, rust_js::link_name = "beforeHTML")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn before_html(&self, html: &str, options: Option<SetHTMLOptions<'_>>) {
         unreachable!()
@@ -678,6 +690,7 @@ impl CharacterData {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CharacterData/afterHTML)
     #[cfg_attr(rust_js, rust_js::link_name = "afterHTML")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn after_html(&self, html: &str, options: Option<SetHTMLOptions<'_>>) {
         unreachable!()
@@ -685,6 +698,7 @@ impl CharacterData {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CharacterData/replaceWithHTML)
     #[cfg_attr(rust_js, rust_js::link_name = "replaceWithHTML")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn replace_with_html(&self, html: &str, options: Option<SetHTMLOptions<'_>>) {
         unreachable!()
@@ -692,24 +706,28 @@ impl CharacterData {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CharacterData/streamBeforeHTML)
     #[cfg_attr(rust_js, rust_js::link_name = "streamBeforeHTML")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn stream_before_html(&self, options: Option<SetHTMLOptions<'_>>) -> &'static WritableStream {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CharacterData/streamAfterHTML)
     #[cfg_attr(rust_js, rust_js::link_name = "streamAfterHTML")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn stream_after_html(&self, options: Option<SetHTMLOptions<'_>>) -> &'static WritableStream {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CharacterData/streamReplaceWithHTML)
     #[cfg_attr(rust_js, rust_js::link_name = "streamReplaceWithHTML")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn stream_replace_with_html(&self, options: Option<SetHTMLOptions<'_>>) -> &'static WritableStream {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CharacterData/beforeHTMLUnsafe)
     #[cfg_attr(rust_js, rust_js::link_name = "beforeHTMLUnsafe")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn before_html_unsafe(&self, html: &str, options: Option<SetHTMLUnsafeOptions<'_>>) {
         unreachable!()
@@ -717,6 +735,7 @@ impl CharacterData {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CharacterData/afterHTMLUnsafe)
     #[cfg_attr(rust_js, rust_js::link_name = "afterHTMLUnsafe")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn after_html_unsafe(&self, html: &str, options: Option<SetHTMLUnsafeOptions<'_>>) {
         unreachable!()
@@ -724,6 +743,7 @@ impl CharacterData {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CharacterData/replaceWithHTMLUnsafe)
     #[cfg_attr(rust_js, rust_js::link_name = "replaceWithHTMLUnsafe")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn replace_with_html_unsafe(&self, html: &str, options: Option<SetHTMLUnsafeOptions<'_>>) {
         unreachable!()
@@ -731,18 +751,21 @@ impl CharacterData {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CharacterData/streamBeforeHTMLUnsafe)
     #[cfg_attr(rust_js, rust_js::link_name = "streamBeforeHTMLUnsafe")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn stream_before_html_unsafe(&self, options: Option<SetHTMLUnsafeOptions<'_>>) -> &'static WritableStream {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CharacterData/streamAfterHTMLUnsafe)
     #[cfg_attr(rust_js, rust_js::link_name = "streamAfterHTMLUnsafe")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn stream_after_html_unsafe(&self, options: Option<SetHTMLUnsafeOptions<'_>>) -> &'static WritableStream {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CharacterData/streamReplaceWithHTMLUnsafe)
     #[cfg_attr(rust_js, rust_js::link_name = "streamReplaceWithHTMLUnsafe")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn stream_replace_with_html_unsafe(&self, options: Option<SetHTMLUnsafeOptions<'_>>) -> &'static WritableStream {
         unreachable!()
     }
@@ -815,6 +838,7 @@ pub mod text {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Text/Text)
     #[cfg_attr(rust_js, rust_js::link_name = "new Text")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(data: Option<&str>) -> &'static Text {
         unreachable!()
     }
@@ -841,24 +865,28 @@ impl Text {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Text/getBoxQuads)
     #[cfg_attr(rust_js, rust_js::link_name = "getBoxQuads")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn get_box_quads(&self, options: Option<BoxQuadOptions<'_>>) -> Vec<&'static DOMQuad> {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Text/convertQuadFromNode)
     #[cfg_attr(rust_js, rust_js::link_name = "convertQuadFromNode")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn convert_quad_from_node(&self, quad: DOMQuadInit, from: impl IntoGeometryNode, options: Option<ConvertCoordinateOptions<'_>>) -> &'static DOMQuad {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Text/convertRectFromNode)
     #[cfg_attr(rust_js, rust_js::link_name = "convertRectFromNode")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn convert_rect_from_node(&self, rect: &DOMRectReadOnly, from: impl IntoGeometryNode, options: Option<ConvertCoordinateOptions<'_>>) -> &'static DOMQuad {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Text/convertPointFromNode)
     #[cfg_attr(rust_js, rust_js::link_name = "convertPointFromNode")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn convert_point_from_node(&self, point: DOMPointInit, from: impl IntoGeometryNode, options: Option<ConvertCoordinateOptions<'_>>) -> &'static DOMPoint {
         unreachable!()
     }
@@ -901,6 +929,7 @@ pub mod comment {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Comment/Comment)
     #[cfg_attr(rust_js, rust_js::link_name = "new Comment")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(data: Option<&str>) -> &'static Comment {
         unreachable!()
     }
@@ -967,18 +996,21 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/checkVisibility)
     #[cfg_attr(rust_js, rust_js::link_name = "checkVisibility")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn check_visibility(&self, options: Option<CheckVisibilityOptions>) -> bool {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/scrollIntoView)
     #[cfg_attr(rust_js, rust_js::link_name = "scrollIntoView")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn scroll_into_view(&self, arg: Option<&dyn IntoBoolOrScrollIntoViewOptions>) -> Promise<ScrollResult> {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/scroll)
     #[cfg_attr(rust_js, rust_js::link_name = "scroll")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn scroll(&self, options: Option<ScrollToOptions<'_>>) -> Promise<ScrollResult> {
         unreachable!()
     }
@@ -991,6 +1023,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/scrollTo)
     #[cfg_attr(rust_js, rust_js::link_name = "scrollTo")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn scroll_to(&self, options: Option<ScrollToOptions<'_>>) -> Promise<ScrollResult> {
         unreachable!()
     }
@@ -1003,6 +1036,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/scrollBy)
     #[cfg_attr(rust_js, rust_js::link_name = "scrollBy")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn scroll_by(&self, options: Option<ScrollToOptions<'_>>) -> Promise<ScrollResult> {
         unreachable!()
     }
@@ -1182,6 +1216,7 @@ impl Element {
     #[cfg_attr(rust_js, rust_js::link_name = "getAttributeNS")]
     #[cfg_attr(rust_js, rust_js::nullable(namespace))]
     #[cfg_attr(rust_js, rust_js::nullable)]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn get_attribute_ns(&self, namespace: Option<&str>, local_name: &str) -> Option<String> {
         unreachable!()
     }
@@ -1196,6 +1231,7 @@ impl Element {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/setAttributeNS)
     #[cfg_attr(rust_js, rust_js::link_name = "setAttributeNS")]
     #[cfg_attr(rust_js, rust_js::nullable(namespace))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn set_attribute_ns(&self, namespace: Option<&str>, qualified_name: &str, value: impl IntoUnknown) {
         unreachable!()
@@ -1211,6 +1247,7 @@ impl Element {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/removeAttributeNS)
     #[cfg_attr(rust_js, rust_js::link_name = "removeAttributeNS")]
     #[cfg_attr(rust_js, rust_js::nullable(namespace))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn remove_attribute_ns(&self, namespace: Option<&str>, local_name: &str) {
         unreachable!()
@@ -1218,6 +1255,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/toggleAttribute)
     #[cfg_attr(rust_js, rust_js::link_name = "toggleAttribute")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn toggle_attribute(&self, qualified_name: &str, force: Option<bool>) -> bool {
         unreachable!()
     }
@@ -1231,6 +1269,7 @@ impl Element {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/hasAttributeNS)
     #[cfg_attr(rust_js, rust_js::link_name = "hasAttributeNS")]
     #[cfg_attr(rust_js, rust_js::nullable(namespace))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn has_attribute_ns(&self, namespace: Option<&str>, local_name: &str) -> bool {
         unreachable!()
     }
@@ -1246,6 +1285,7 @@ impl Element {
     #[cfg_attr(rust_js, rust_js::link_name = "getAttributeNodeNS")]
     #[cfg_attr(rust_js, rust_js::nullable(namespace))]
     #[cfg_attr(rust_js, rust_js::nullable)]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn get_attribute_node_ns(&self, namespace: Option<&str>, local_name: &str) -> Option<&'static Attr> {
         unreachable!()
     }
@@ -1318,6 +1358,7 @@ impl Element {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/getElementsByTagNameNS)
     #[cfg_attr(rust_js, rust_js::link_name = "getElementsByTagNameNS")]
     #[cfg_attr(rust_js, rust_js::nullable(namespace))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn get_elements_by_tag_name_ns(&self, namespace: Option<&str>, local_name: &str) -> &'static HTMLCollection {
         unreachable!()
     }
@@ -1344,6 +1385,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/requestFullscreen)
     #[cfg_attr(rust_js, rust_js::link_name = "requestFullscreen")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn request_fullscreen(&self, options: Option<FullscreenOptions<'_>>) -> Promise<()> {
         unreachable!()
     }
@@ -1380,6 +1422,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/setHTML)
     #[cfg_attr(rust_js, rust_js::link_name = "setHTML")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn set_html(&self, html: &str, options: Option<SetHTMLOptions<'_>>) {
         unreachable!()
@@ -1387,6 +1430,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/appendHTML)
     #[cfg_attr(rust_js, rust_js::link_name = "appendHTML")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn append_html(&self, html: &str, options: Option<SetHTMLOptions<'_>>) {
         unreachable!()
@@ -1394,6 +1438,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/prependHTML)
     #[cfg_attr(rust_js, rust_js::link_name = "prependHTML")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn prepend_html(&self, html: &str, options: Option<SetHTMLOptions<'_>>) {
         unreachable!()
@@ -1401,24 +1446,28 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/streamHTML)
     #[cfg_attr(rust_js, rust_js::link_name = "streamHTML")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn stream_html(&self, options: Option<SetHTMLOptions<'_>>) -> &'static WritableStream {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/streamAppendHTML)
     #[cfg_attr(rust_js, rust_js::link_name = "streamAppendHTML")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn stream_append_html(&self, options: Option<SetHTMLOptions<'_>>) -> &'static WritableStream {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/streamPrependHTML)
     #[cfg_attr(rust_js, rust_js::link_name = "streamPrependHTML")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn stream_prepend_html(&self, options: Option<SetHTMLOptions<'_>>) -> &'static WritableStream {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/setHTMLUnsafe)
     #[cfg_attr(rust_js, rust_js::link_name = "setHTMLUnsafe")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn set_html_unsafe(&self, html: &str, options: Option<SetHTMLUnsafeOptions<'_>>) {
         unreachable!()
@@ -1426,6 +1475,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/appendHTMLUnsafe)
     #[cfg_attr(rust_js, rust_js::link_name = "appendHTMLUnsafe")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn append_html_unsafe(&self, html: &str, options: Option<SetHTMLUnsafeOptions<'_>>) {
         unreachable!()
@@ -1433,6 +1483,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/prependHTMLUnsafe)
     #[cfg_attr(rust_js, rust_js::link_name = "prependHTMLUnsafe")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn prepend_html_unsafe(&self, html: &str, options: Option<SetHTMLUnsafeOptions<'_>>) {
         unreachable!()
@@ -1440,24 +1491,28 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/streamHTMLUnsafe)
     #[cfg_attr(rust_js, rust_js::link_name = "streamHTMLUnsafe")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn stream_html_unsafe(&self, options: Option<SetHTMLUnsafeOptions<'_>>) -> &'static WritableStream {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/streamAppendHTMLUnsafe)
     #[cfg_attr(rust_js, rust_js::link_name = "streamAppendHTMLUnsafe")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn stream_append_html_unsafe(&self, options: Option<SetHTMLUnsafeOptions<'_>>) -> &'static WritableStream {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/streamPrependHTMLUnsafe)
     #[cfg_attr(rust_js, rust_js::link_name = "streamPrependHTMLUnsafe")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn stream_prepend_html_unsafe(&self, options: Option<SetHTMLUnsafeOptions<'_>>) -> &'static WritableStream {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/getHTML)
     #[cfg_attr(rust_js, rust_js::link_name = "getHTML")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn get_html(&self, options: Option<GetHTMLOptions<'_>>) -> String {
         unreachable!()
     }
@@ -1515,30 +1570,35 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/requestPointerLock)
     #[cfg_attr(rust_js, rust_js::link_name = "requestPointerLock")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn request_pointer_lock(&self, options: Option<PointerLockOptions>) -> Promise<()> {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/getBoxQuads)
     #[cfg_attr(rust_js, rust_js::link_name = "getBoxQuads")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn get_box_quads(&self, options: Option<BoxQuadOptions<'_>>) -> Vec<&'static DOMQuad> {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/convertQuadFromNode)
     #[cfg_attr(rust_js, rust_js::link_name = "convertQuadFromNode")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn convert_quad_from_node(&self, quad: DOMQuadInit, from: impl IntoGeometryNode, options: Option<ConvertCoordinateOptions<'_>>) -> &'static DOMQuad {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/convertRectFromNode)
     #[cfg_attr(rust_js, rust_js::link_name = "convertRectFromNode")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn convert_rect_from_node(&self, rect: &DOMRectReadOnly, from: impl IntoGeometryNode, options: Option<ConvertCoordinateOptions<'_>>) -> &'static DOMQuad {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/convertPointFromNode)
     #[cfg_attr(rust_js, rust_js::link_name = "convertPointFromNode")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn convert_point_from_node(&self, point: DOMPointInit, from: impl IntoGeometryNode, options: Option<ConvertCoordinateOptions<'_>>) -> &'static DOMPoint {
         unreachable!()
     }
@@ -1597,6 +1657,7 @@ impl Element {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/moveBefore)
     #[cfg_attr(rust_js, rust_js::link_name = "moveBefore")]
     #[cfg_attr(rust_js, rust_js::nullable(child))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn move_before(&self, node: &Node, child: Option<&Node>) {
         unreachable!()
@@ -1631,6 +1692,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/beforeHTML)
     #[cfg_attr(rust_js, rust_js::link_name = "beforeHTML")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn before_html(&self, html: &str, options: Option<SetHTMLOptions<'_>>) {
         unreachable!()
@@ -1638,6 +1700,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/afterHTML)
     #[cfg_attr(rust_js, rust_js::link_name = "afterHTML")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn after_html(&self, html: &str, options: Option<SetHTMLOptions<'_>>) {
         unreachable!()
@@ -1645,6 +1708,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/replaceWithHTML)
     #[cfg_attr(rust_js, rust_js::link_name = "replaceWithHTML")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn replace_with_html(&self, html: &str, options: Option<SetHTMLOptions<'_>>) {
         unreachable!()
@@ -1652,24 +1716,28 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/streamBeforeHTML)
     #[cfg_attr(rust_js, rust_js::link_name = "streamBeforeHTML")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn stream_before_html(&self, options: Option<SetHTMLOptions<'_>>) -> &'static WritableStream {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/streamAfterHTML)
     #[cfg_attr(rust_js, rust_js::link_name = "streamAfterHTML")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn stream_after_html(&self, options: Option<SetHTMLOptions<'_>>) -> &'static WritableStream {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/streamReplaceWithHTML)
     #[cfg_attr(rust_js, rust_js::link_name = "streamReplaceWithHTML")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn stream_replace_with_html(&self, options: Option<SetHTMLOptions<'_>>) -> &'static WritableStream {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/beforeHTMLUnsafe)
     #[cfg_attr(rust_js, rust_js::link_name = "beforeHTMLUnsafe")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn before_html_unsafe(&self, html: &str, options: Option<SetHTMLUnsafeOptions<'_>>) {
         unreachable!()
@@ -1677,6 +1745,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/afterHTMLUnsafe)
     #[cfg_attr(rust_js, rust_js::link_name = "afterHTMLUnsafe")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn after_html_unsafe(&self, html: &str, options: Option<SetHTMLUnsafeOptions<'_>>) {
         unreachable!()
@@ -1684,6 +1753,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/replaceWithHTMLUnsafe)
     #[cfg_attr(rust_js, rust_js::link_name = "replaceWithHTMLUnsafe")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn replace_with_html_unsafe(&self, html: &str, options: Option<SetHTMLUnsafeOptions<'_>>) {
         unreachable!()
@@ -1691,18 +1761,21 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/streamBeforeHTMLUnsafe)
     #[cfg_attr(rust_js, rust_js::link_name = "streamBeforeHTMLUnsafe")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn stream_before_html_unsafe(&self, options: Option<SetHTMLUnsafeOptions<'_>>) -> &'static WritableStream {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/streamAfterHTMLUnsafe)
     #[cfg_attr(rust_js, rust_js::link_name = "streamAfterHTMLUnsafe")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn stream_after_html_unsafe(&self, options: Option<SetHTMLUnsafeOptions<'_>>) -> &'static WritableStream {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/streamReplaceWithHTMLUnsafe)
     #[cfg_attr(rust_js, rust_js::link_name = "streamReplaceWithHTMLUnsafe")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn stream_replace_with_html_unsafe(&self, options: Option<SetHTMLUnsafeOptions<'_>>) -> &'static WritableStream {
         unreachable!()
     }
@@ -2468,6 +2541,7 @@ impl Element {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/ariaNotify)
     #[cfg_attr(rust_js, rust_js::link_name = "ariaNotify")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn aria_notify(&self, announcement: &str, options: Option<AriaNotificationOptions<'_>>) {
         unreachable!()
@@ -2476,12 +2550,14 @@ impl Element {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/animate)
     #[cfg_attr(rust_js, rust_js::link_name = "animate")]
     #[cfg_attr(rust_js, rust_js::nullable(keyframes))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn animate(&self, keyframes: Option<&dyn core::any::Any>, options: Option<&dyn IntoNumberOrKeyframeAnimationOptions>) -> &'static Animation {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/getAnimations)
     #[cfg_attr(rust_js, rust_js::link_name = "getAnimations")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn get_animations(&self, options: Option<GetAnimationsOptions<'_>>) -> Vec<&'static Animation> {
         unreachable!()
     }
@@ -2529,12 +2605,14 @@ pub mod document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/parseHTMLUnsafe)
     #[cfg_attr(rust_js, rust_js::link_name = "Document.parseHTMLUnsafe")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn parse_html_unsafe(html: &str, options: Option<ParseHTMLUnsafeOptions<'_>>) -> &'static Document {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/parseHTML)
     #[cfg_attr(rust_js, rust_js::link_name = "Document.parseHTML")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn parse_html(html: &str, options: Option<SetHTMLOptions<'_>>) -> &'static Document {
         unreachable!()
     }
@@ -2556,6 +2634,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/startViewTransition)
     #[cfg_attr(rust_js, rust_js::link_name = "startViewTransition")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn start_view_transition(&self, callback_options: Option<&dyn IntoViewTransitionUpdateCallbackOrStartViewTransitionOptions>) -> &'static ViewTransition {
         unreachable!()
     }
@@ -2583,6 +2662,7 @@ impl Document {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/caretPositionFromPoint)
     #[cfg_attr(rust_js, rust_js::link_name = "caretPositionFromPoint")]
     #[cfg_attr(rust_js, rust_js::nullable)]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn caret_position_from_point(&self, x: impl Into<f64>, y: impl Into<f64>, options: Option<CaretPositionFromPointOptions<'_>>) -> Option<&'static CaretPosition> {
         unreachable!()
     }
@@ -2665,6 +2745,7 @@ impl Document {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/getElementsByTagNameNS)
     #[cfg_attr(rust_js, rust_js::link_name = "getElementsByTagNameNS")]
     #[cfg_attr(rust_js, rust_js::nullable(namespace))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn get_elements_by_tag_name_ns(&self, namespace: Option<&str>, local_name: &str) -> &'static HTMLCollection {
         unreachable!()
     }
@@ -2677,6 +2758,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/createElement)
     #[cfg_attr(rust_js, rust_js::link_name = "createElement")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn create_element_named(&self, local_name: &str, options: Option<&dyn IntoStrOrElementCreationOptions>) -> &'static Element {
         unreachable!()
     }
@@ -2684,6 +2766,7 @@ impl Document {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/createElementNS)
     #[cfg_attr(rust_js, rust_js::link_name = "createElementNS")]
     #[cfg_attr(rust_js, rust_js::nullable(namespace))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn create_element_ns_named(&self, namespace: Option<&str>, qualified_name: &str, options: Option<&dyn IntoStrOrElementCreationOptions>) -> &'static Element {
         unreachable!()
     }
@@ -2720,6 +2803,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/importNode)
     #[cfg_attr(rust_js, rust_js::link_name = "importNode")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn import_node(&self, node: &Node, options: Option<&dyn IntoBoolOrImportNodeOptions>) -> &'static Node {
         unreachable!()
     }
@@ -2739,6 +2823,7 @@ impl Document {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/createAttributeNS)
     #[cfg_attr(rust_js, rust_js::link_name = "createAttributeNS")]
     #[cfg_attr(rust_js, rust_js::nullable(namespace))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn create_attribute_ns(&self, namespace: Option<&str>, qualified_name: &str) -> &'static Attr {
         unreachable!()
     }
@@ -2757,12 +2842,14 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/createNodeIterator)
     #[cfg_attr(rust_js, rust_js::link_name = "createNodeIterator")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn create_node_iterator(&self, root: &Node, what_to_show: Option<f64>) -> &'static NodeIterator {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/createTreeWalker)
     #[cfg_attr(rust_js, rust_js::link_name = "createTreeWalker")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn create_tree_walker(&self, root: &Node, what_to_show: Option<f64>) -> &'static TreeWalker {
         unreachable!()
     }
@@ -2962,6 +3049,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/open)
     #[cfg_attr(rust_js, rust_js::link_name = "open")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn open(&self, unused1: Option<&str>, unused2: Option<&str>) -> &'static Document {
         unreachable!()
     }
@@ -3023,6 +3111,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/execCommand)
     #[cfg_attr(rust_js, rust_js::link_name = "execCommand")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn exec_command(&self, command_id: &str, show_ui: Option<bool>, value: Option<&str>) -> bool {
         unreachable!()
     }
@@ -3286,24 +3375,28 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/getBoxQuads)
     #[cfg_attr(rust_js, rust_js::link_name = "getBoxQuads")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn get_box_quads(&self, options: Option<BoxQuadOptions<'_>>) -> Vec<&'static DOMQuad> {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/convertQuadFromNode)
     #[cfg_attr(rust_js, rust_js::link_name = "convertQuadFromNode")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn convert_quad_from_node(&self, quad: DOMQuadInit, from: impl IntoGeometryNode, options: Option<ConvertCoordinateOptions<'_>>) -> &'static DOMQuad {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/convertRectFromNode)
     #[cfg_attr(rust_js, rust_js::link_name = "convertRectFromNode")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn convert_rect_from_node(&self, rect: &DOMRectReadOnly, from: impl IntoGeometryNode, options: Option<ConvertCoordinateOptions<'_>>) -> &'static DOMQuad {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/convertPointFromNode)
     #[cfg_attr(rust_js, rust_js::link_name = "convertPointFromNode")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn convert_point_from_node(&self, point: DOMPointInit, from: impl IntoGeometryNode, options: Option<ConvertCoordinateOptions<'_>>) -> &'static DOMPoint {
         unreachable!()
     }
@@ -3428,6 +3521,7 @@ impl Document {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/moveBefore)
     #[cfg_attr(rust_js, rust_js::link_name = "moveBefore")]
     #[cfg_attr(rust_js, rust_js::nullable(child))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn move_before(&self, node: &Node, child: Option<&Node>) {
         unreachable!()
@@ -4981,6 +5075,7 @@ impl Document {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ariaNotify)
     #[cfg_attr(rust_js, rust_js::link_name = "ariaNotify")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn aria_notify(&self, announcement: &str, options: Option<AriaNotificationOptions<'_>>) {
         unreachable!()
@@ -5106,6 +5201,7 @@ impl DocumentFragment {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentFragment/moveBefore)
     #[cfg_attr(rust_js, rust_js::link_name = "moveBefore")]
     #[cfg_attr(rust_js, rust_js::nullable(child))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn move_before(&self, node: &Node, child: Option<&Node>) {
         unreachable!()
@@ -5196,6 +5292,7 @@ impl DOMTokenList {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMTokenList/toggle)
     #[cfg_attr(rust_js, rust_js::link_name = "toggle")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn toggle(&self, token: &str, force: Option<bool>) -> bool {
         unreachable!()
     }
@@ -5426,6 +5523,7 @@ impl AbortController {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AbortController/abort)
     #[cfg_attr(rust_js, rust_js::link_name = "abort")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn abort(&self, reason: Option<&dyn IntoUnknown>) {
         unreachable!()
@@ -5461,6 +5559,7 @@ pub mod abort_signal {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AbortSignal/abort)
     #[cfg_attr(rust_js, rust_js::link_name = "AbortSignal.abort")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn abort(reason: Option<&dyn IntoUnknown>) -> &'static AbortSignal {
         unreachable!()
     }
@@ -5675,6 +5774,7 @@ impl DocumentOrShadowRoot {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentOrShadowRoot/moveBefore)
     #[cfg_attr(rust_js, rust_js::link_name = "moveBefore")]
     #[cfg_attr(rust_js, rust_js::nullable(child))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn move_before(&self, node: &Node, child: Option<&Node>) {
         unreachable!()
@@ -5968,6 +6068,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/showPopover)
     #[cfg_attr(rust_js, rust_js::link_name = "showPopover")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn show_popover(&self, options: Option<ShowPopoverOptions<'_>>) {
         unreachable!()
@@ -5982,6 +6083,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/togglePopover)
     #[cfg_attr(rust_js, rust_js::link_name = "togglePopover")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn toggle_popover(&self, options: Option<&dyn IntoTogglePopoverOptionsOrBool>) -> bool {
         unreachable!()
     }
@@ -7639,6 +7741,7 @@ impl HTMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/focus)
     #[cfg_attr(rust_js, rust_js::link_name = "focus")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn focus(&self, options: Option<FocusOptions>) {
         unreachable!()
@@ -8480,6 +8583,7 @@ impl HTMLFormElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFormElement/requestSubmit)
     #[cfg_attr(rust_js, rust_js::link_name = "requestSubmit")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn request_submit(&self, submitter: Option<&HTMLElement>) {
         unreachable!()
@@ -9406,6 +9510,7 @@ impl HTMLInputElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLInputElement/stepUp)
     #[cfg_attr(rust_js, rust_js::link_name = "stepUp")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn step_up(&self, n: Option<f64>) {
         unreachable!()
@@ -9413,6 +9518,7 @@ impl HTMLInputElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLInputElement/stepDown)
     #[cfg_attr(rust_js, rust_js::link_name = "stepDown")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn step_down(&self, n: Option<f64>) {
         unreachable!()
@@ -9515,6 +9621,7 @@ impl HTMLInputElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLInputElement/setRangeText)
     #[cfg_attr(rust_js, rust_js::link_name = "setRangeText")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn set_range_text(&self, replacement: &str, start: Option<f64>, end: Option<f64>, selection_mode: Option<&str>) {
         unreachable!()
@@ -9522,6 +9629,7 @@ impl HTMLInputElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLInputElement/setSelectionRange)
     #[cfg_attr(rust_js, rust_js::link_name = "setSelectionRange")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn set_selection_range(&self, start: impl Into<f64>, end: impl Into<f64>, direction: Option<&str>) {
         unreachable!()
@@ -10305,6 +10413,7 @@ impl HTMLSelectElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLSelectElement/add)
     #[cfg_attr(rust_js, rust_js::link_name = "add")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn add(&self, element: impl IntoHTMLOptionElementOrHTMLOptGroupElement, before: Option<&dyn IntoHTMLElementOrNumber>) {
         unreachable!()
@@ -10312,6 +10421,7 @@ impl HTMLSelectElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLSelectElement/remove)
     #[cfg_attr(rust_js, rust_js::link_name = "remove")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn remove(&self, index: Option<f64>) {
         unreachable!()
@@ -10751,6 +10861,7 @@ impl HTMLTextAreaElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTextAreaElement/setRangeText)
     #[cfg_attr(rust_js, rust_js::link_name = "setRangeText")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn set_range_text(&self, replacement: &str, start: Option<f64>, end: Option<f64>, selection_mode: Option<&str>) {
         unreachable!()
@@ -10758,6 +10869,7 @@ impl HTMLTextAreaElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTextAreaElement/setSelectionRange)
     #[cfg_attr(rust_js, rust_js::link_name = "setSelectionRange")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn set_selection_range(&self, start: impl Into<f64>, end: impl Into<f64>, direction: Option<&str>) {
         unreachable!()
@@ -10962,6 +11074,7 @@ impl HTMLTableElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTableElement/insertRow)
     #[cfg_attr(rust_js, rust_js::link_name = "insertRow")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn insert_row(&self, index: Option<f64>) -> &'static HTMLTableRowElement {
         unreachable!()
     }
@@ -11126,6 +11239,7 @@ impl HTMLTableSectionElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTableSectionElement/insertRow)
     #[cfg_attr(rust_js, rust_js::link_name = "insertRow")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn insert_row(&self, index: Option<f64>) -> &'static HTMLTableRowElement {
         unreachable!()
     }
@@ -11244,6 +11358,7 @@ impl HTMLTableRowElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLTableRowElement/insertCell)
     #[cfg_attr(rust_js, rust_js::link_name = "insertCell")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn insert_cell(&self, index: Option<f64>) -> &'static HTMLTableCellElement {
         unreachable!()
     }
@@ -11839,6 +11954,7 @@ impl HTMLCanvasElement {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLCanvasElement/getContext)
     #[cfg_attr(rust_js, rust_js::link_name = "getContext")]
     #[cfg_attr(rust_js, rust_js::nullable)]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn get_context_named(&self, context_id: &str, options: Option<&dyn IntoUnknown>) -> Option<RenderingContext<'static>> {
         unreachable!()
     }
@@ -11846,6 +11962,7 @@ impl HTMLCanvasElement {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLCanvasElement/toDataURL)
     /// `Err`: a `SecurityError` where an image of another origin, not shared by CORS, was drawn on it.
     #[cfg_attr(rust_js, rust_js::link_name = "toDataURL")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn to_data_url(&self, r#type: Option<&str>, quality: Option<&dyn IntoUnknown>) -> Result<String, &'static JsError> {
         unreachable!()
     }
@@ -11853,6 +11970,7 @@ impl HTMLCanvasElement {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLCanvasElement/toBlob)
     /// `Err`: a `SecurityError` where an image of another origin, not shared by CORS, was drawn on it.
     #[cfg_attr(rust_js, rust_js::link_name = "toBlob")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn to_blob(&self, callback: Box<dyn FnOnce(Option<&'static Blob>)>, r#type: Option<&str>, quality: Option<&dyn IntoUnknown>) -> Result<(), &'static JsError> {
         unreachable!()
     }
@@ -11865,6 +11983,7 @@ impl HTMLCanvasElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLCanvasElement/captureStream)
     #[cfg_attr(rust_js, rust_js::link_name = "captureStream")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn capture_stream(&self, frame_request_rate: Option<f64>) -> &'static MediaStream {
         unreachable!()
     }
@@ -14547,6 +14666,7 @@ impl HTMLMediaElement {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/setMediaKeys)
     #[cfg_attr(rust_js, rust_js::link_name = "setMediaKeys")]
     #[cfg_attr(rust_js, rust_js::nullable(media_keys))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn set_media_keys(&self, media_keys: Option<&MediaKeys>) -> Promise<()> {
         unreachable!()
     }
@@ -14850,6 +14970,7 @@ impl HTMLMediaElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/addTextTrack)
     #[cfg_attr(rust_js, rust_js::link_name = "addTextTrack")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn add_text_track(&self, kind: &str, label: Option<&str>, language: Option<&str>) -> &'static TextTrack {
         unreachable!()
     }
@@ -15988,6 +16109,7 @@ impl HTMLDialogElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLDialogElement/close)
     #[cfg_attr(rust_js, rust_js::link_name = "close")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn close(&self, return_value: Option<&str>) {
         unreachable!()
@@ -15995,6 +16117,7 @@ impl HTMLDialogElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLDialogElement/requestClose)
     #[cfg_attr(rust_js, rust_js::link_name = "requestClose")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn request_close(&self, return_value: Option<&str>) {
         unreachable!()
@@ -16410,12 +16533,14 @@ impl HTMLSlotElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLSlotElement/assignedNodes)
     #[cfg_attr(rust_js, rust_js::link_name = "assignedNodes")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn assigned_nodes(&self, options: Option<AssignedNodesOptions>) -> Vec<&'static Node> {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLSlotElement/assignedElements)
     #[cfg_attr(rust_js, rust_js::link_name = "assignedElements")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn assigned_elements(&self, options: Option<AssignedNodesOptions>) -> Vec<&'static Element> {
         unreachable!()
     }
@@ -16504,6 +16629,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/getComputedStyle)
     #[cfg_attr(rust_js, rust_js::link_name = "getComputedStyle")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn get_computed_style(&self, elt: &Element, pseudo_elt: Option<&str>) -> &'static CSSStyleProperties {
         unreachable!()
     }
@@ -16595,6 +16721,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scroll)
     #[cfg_attr(rust_js, rust_js::link_name = "scroll")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn scroll(&self, options: Option<ScrollToOptions<'_>>) -> Promise<ScrollResult> {
         unreachable!()
     }
@@ -16607,6 +16734,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scrollTo)
     #[cfg_attr(rust_js, rust_js::link_name = "scrollTo")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn scroll_to(&self, options: Option<ScrollToOptions<'_>>) -> Promise<ScrollResult> {
         unreachable!()
     }
@@ -16619,6 +16747,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scrollBy)
     #[cfg_attr(rust_js, rust_js::link_name = "scrollBy")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn scroll_by(&self, options: Option<ScrollToOptions<'_>>) -> Promise<ScrollResult> {
         unreachable!()
     }
@@ -16875,6 +17004,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/open)
     #[cfg_attr(rust_js, rust_js::link_name = "open")]
     #[cfg_attr(rust_js, rust_js::nullable)]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn open(&self, url: Option<&str>, target: Option<&str>, features: Option<&str>) -> Option<&'static Window> {
         unreachable!()
     }
@@ -16899,6 +17029,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/alert)
     #[cfg_attr(rust_js, rust_js::link_name = "alert")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn alert(&self, message: Option<&str>) {
         unreachable!()
@@ -16906,6 +17037,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/confirm)
     #[cfg_attr(rust_js, rust_js::link_name = "confirm")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn confirm(&self, message: Option<&str>) -> bool {
         unreachable!()
     }
@@ -16913,6 +17045,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/prompt)
     #[cfg_attr(rust_js, rust_js::link_name = "prompt")]
     #[cfg_attr(rust_js, rust_js::nullable)]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn prompt(&self, message: Option<&str>, default: Option<&str>) -> Option<String> {
         unreachable!()
     }
@@ -16926,6 +17059,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/postMessage)
     #[cfg_attr(rust_js, rust_js::link_name = "postMessage")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn post_message<M: StructuredClone>(&self, message: M, options: Option<WindowPostMessageOptions<'_>>) {
         unreachable!()
@@ -16999,6 +17133,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/requestIdleCallback)
     #[cfg_attr(rust_js, rust_js::link_name = "requestIdleCallback")]
     #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn request_idle_callback(&self, callback: Box<dyn FnOnce(&'static IdleDeadline)>, options: Option<IdleRequestOptions>) -> f64 {
         unreachable!()
     }
@@ -18846,6 +18981,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/fetch)
     #[cfg_attr(rust_js, rust_js::link_name = "fetch")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn fetch(&self, input: impl IntoRequestInfo, init: Option<RequestInit<'_>>) -> Promise<&'static Response> {
         unreachable!()
     }
@@ -18902,18 +19038,21 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/createImageBitmap)
     #[cfg_attr(rust_js, rust_js::link_name = "createImageBitmap")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn create_image_bitmap(&self, image: impl IntoImageBitmapSource, options: Option<ImageBitmapOptions<'_>>) -> Promise<&'static ImageBitmap> {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/createImageBitmap)
     #[cfg_attr(rust_js, rust_js::link_name = "createImageBitmap")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn create_image_bitmap_with_sx_and_sy_and_sw_and_sh(&self, image: impl IntoImageBitmapSource, sx: impl Into<f64>, sy: impl Into<f64>, sw: impl Into<f64>, sh: impl Into<f64>, options: Option<ImageBitmapOptions<'_>>) -> Promise<&'static ImageBitmap> {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/structuredClone)
     #[cfg_attr(rust_js, rust_js::link_name = "structuredClone")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn structured_clone<V: StructuredClone>(&self, value: V, options: Option<StructuredSerializeOptions<'_>>) -> Option<&'static Unknown> {
         unreachable!()
     }
@@ -19191,6 +19330,7 @@ impl History {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/History/go)
     #[cfg_attr(rust_js, rust_js::link_name = "go")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn go(&self, delta: Option<f64>) {
         unreachable!()
@@ -19213,6 +19353,7 @@ impl History {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/History/pushState)
     /// `Err`: a `SecurityError` in a document no longer shown, or where the browser limits how often it's called.
     #[cfg_attr(rust_js, rust_js::link_name = "pushState")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn push_state<D: StructuredClone>(&self, data: D, unused: &str, url: Option<&str>) -> Result<(), &'static JsError> {
         unreachable!()
     }
@@ -19220,6 +19361,7 @@ impl History {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/History/replaceState)
     /// `Err`: a `SecurityError` in a document no longer shown, or where the browser limits how often it's called.
     #[cfg_attr(rust_js, rust_js::link_name = "replaceState")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn replace_state<D: StructuredClone>(&self, data: D, unused: &str, url: Option<&str>) -> Result<(), &'static JsError> {
         unreachable!()
     }
@@ -19368,6 +19510,7 @@ impl DataTransfer {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DataTransfer/clearData)
     #[cfg_attr(rust_js, rust_js::link_name = "clearData")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn clear_data(&self, format: Option<&str>) {
         unreachable!()
@@ -19409,6 +19552,7 @@ pub mod drag_event {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DragEvent/DragEvent)
     #[cfg_attr(rust_js, rust_js::link_name = "new DragEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(r#type: &str, event_init_dict: Option<DragEventInit<'_>>) -> &'static DragEvent {
         unreachable!()
     }
@@ -19458,6 +19602,7 @@ pub mod toggle_event {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ToggleEvent/ToggleEvent)
     #[cfg_attr(rust_js, rust_js::link_name = "new ToggleEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(r#type: &str, event_init_dict: Option<ToggleEventInit<'_>>) -> &'static ToggleEvent {
         unreachable!()
     }
@@ -19519,6 +19664,7 @@ pub mod message_event {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MessageEvent/MessageEvent)
     #[cfg_attr(rust_js, rust_js::link_name = "new MessageEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(r#type: &str, event_init_dict: Option<MessageEventInit<'_>>) -> &'static MessageEvent {
         unreachable!()
     }
@@ -19557,6 +19703,7 @@ impl MessageEvent {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MessageEvent/initMessageEvent)
     #[cfg_attr(rust_js, rust_js::link_name = "initMessageEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn init_message_event(&self, r#type: &str, bubbles: Option<bool>, cancelable: Option<bool>, data: Option<&dyn IntoUnknown>, origin: Option<&str>, last_event_id: Option<&str>, source: Option<&dyn IntoMessageEventSource>, ports: Option<&[&MessagePort]>) {
         unreachable!()
@@ -19599,6 +19746,7 @@ pub mod submit_event {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SubmitEvent/SubmitEvent)
     #[cfg_attr(rust_js, rust_js::link_name = "new SubmitEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(r#type: &str, event_init_dict: Option<SubmitEventInit<'_>>) -> &'static SubmitEvent {
         unreachable!()
     }
@@ -19711,6 +19859,7 @@ impl Performance {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Performance/getEntriesByName)
     #[cfg_attr(rust_js, rust_js::link_name = "getEntriesByName")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn get_entries_by_name(&self, name: &str, r#type: Option<&str>) -> Vec<&'static PerformanceEntry> {
         unreachable!()
     }
@@ -19746,12 +19895,14 @@ impl Performance {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Performance/mark)
     #[cfg_attr(rust_js, rust_js::link_name = "mark")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn mark(&self, mark_name: &str, mark_options: Option<PerformanceMarkOptions<'_>>) -> &'static PerformanceMark {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Performance/clearMarks)
     #[cfg_attr(rust_js, rust_js::link_name = "clearMarks")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn clear_marks(&self, mark_name: Option<&str>) {
         unreachable!()
@@ -19759,12 +19910,14 @@ impl Performance {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Performance/measure)
     #[cfg_attr(rust_js, rust_js::link_name = "measure")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn measure(&self, measure_name: &str, start_or_measure_options: Option<&dyn IntoStrOrPerformanceMeasureOptions>, end_mark: Option<&str>) -> &'static PerformanceMeasure {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Performance/clearMeasures)
     #[cfg_attr(rust_js, rust_js::link_name = "clearMeasures")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn clear_measures(&self, measure_name: Option<&str>) {
         unreachable!()
@@ -19800,6 +19953,7 @@ pub mod ui_event {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/UIEvent/UIEvent)
     #[cfg_attr(rust_js, rust_js::link_name = "new UIEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(r#type: &str, event_init_dict: Option<UIEventInit<'_>>) -> &'static UIEvent {
         unreachable!()
     }
@@ -19828,6 +19982,7 @@ impl UIEvent {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/UIEvent/initUIEvent)
     #[cfg_attr(rust_js, rust_js::link_name = "initUIEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn init_ui_event(&self, type_arg: &str, bubbles_arg: Option<bool>, cancelable_arg: Option<bool>, view_arg: Option<&Window>, detail_arg: Option<f64>) {
         unreachable!()
@@ -19870,6 +20025,7 @@ pub mod focus_event {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FocusEvent/FocusEvent)
     #[cfg_attr(rust_js, rust_js::link_name = "new FocusEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(r#type: &str, event_init_dict: Option<FocusEventInit<'_>>) -> &'static FocusEvent {
         unreachable!()
     }
@@ -19919,6 +20075,7 @@ pub mod mouse_event {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/MouseEvent)
     #[cfg_attr(rust_js, rust_js::link_name = "new MouseEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(r#type: &str, event_init_dict: Option<MouseEventInit<'_>>) -> &'static MouseEvent {
         unreachable!()
     }
@@ -20062,6 +20219,7 @@ impl MouseEvent {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/initMouseEvent)
     #[cfg_attr(rust_js, rust_js::link_name = "initMouseEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn init_mouse_event(&self, type_arg: &str, bubbles_arg: Option<bool>, cancelable_arg: Option<bool>, view_arg: Option<&Window>, detail_arg: Option<f64>, screen_x_arg: Option<f64>, screen_y_arg: Option<f64>, client_x_arg: Option<f64>, client_y_arg: Option<f64>, ctrl_key_arg: Option<bool>, alt_key_arg: Option<bool>, shift_key_arg: Option<bool>, meta_key_arg: Option<bool>, button_arg: Option<f64>, related_target_arg: Option<&EventTarget>) {
         unreachable!()
@@ -20125,6 +20283,7 @@ pub mod keyboard_event {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyboardEvent/KeyboardEvent)
     #[cfg_attr(rust_js, rust_js::link_name = "new KeyboardEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(r#type: &str, event_init_dict: Option<KeyboardEventInit<'_>>) -> &'static KeyboardEvent {
         unreachable!()
     }
@@ -20200,6 +20359,7 @@ impl KeyboardEvent {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyboardEvent/initKeyboardEvent)
     #[cfg_attr(rust_js, rust_js::link_name = "initKeyboardEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn init_keyboard_event(&self, type_arg: &str, bubbles_arg: Option<bool>, cancelable_arg: Option<bool>, view_arg: Option<&Window>, key_arg: Option<&str>, location_arg: Option<f64>, ctrl_key: Option<bool>, alt_key: Option<bool>, shift_key: Option<bool>, meta_key: Option<bool>) {
         unreachable!()
@@ -20249,6 +20409,7 @@ pub mod input_event {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/InputEvent/InputEvent)
     #[cfg_attr(rust_js, rust_js::link_name = "new InputEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(r#type: &str, event_init_dict: Option<InputEventInit<'_>>) -> &'static InputEvent {
         unreachable!()
     }
@@ -20335,6 +20496,7 @@ pub mod wheel_event {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WheelEvent/WheelEvent)
     #[cfg_attr(rust_js, rust_js::link_name = "new WheelEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(r#type: &str, event_init_dict: Option<WheelEventInit<'_>>) -> &'static WheelEvent {
         unreachable!()
     }
@@ -20408,6 +20570,7 @@ pub mod composition_event {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CompositionEvent/CompositionEvent)
     #[cfg_attr(rust_js, rust_js::link_name = "new CompositionEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(r#type: &str, event_init_dict: Option<CompositionEventInit<'_>>) -> &'static CompositionEvent {
         unreachable!()
     }
@@ -20428,6 +20591,7 @@ impl CompositionEvent {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CompositionEvent/initCompositionEvent)
     #[cfg_attr(rust_js, rust_js::link_name = "initCompositionEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn init_composition_event(&self, type_arg: &str, bubbles_arg: Option<bool>, cancelable_arg: Option<bool>, view_arg: Option<&Window>, data_arg: Option<&str>) {
         unreachable!()
@@ -20463,6 +20627,7 @@ pub mod touch_event {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/TouchEvent/TouchEvent)
     #[cfg_attr(rust_js, rust_js::link_name = "new TouchEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(r#type: &str, event_init_dict: Option<TouchEventInit<'_>>) -> &'static TouchEvent {
         unreachable!()
     }
@@ -20553,6 +20718,7 @@ pub mod animation_event {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AnimationEvent/AnimationEvent)
     #[cfg_attr(rust_js, rust_js::link_name = "new AnimationEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(r#type: &str, animation_event_init_dict: Option<AnimationEventInit<'_>>) -> &'static AnimationEvent {
         unreachable!()
     }
@@ -20620,6 +20786,7 @@ pub mod transition_event {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/TransitionEvent/TransitionEvent)
     #[cfg_attr(rust_js, rust_js::link_name = "new TransitionEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(r#type: &str, transition_event_init_dict: Option<TransitionEventInit<'_>>) -> &'static TransitionEvent {
         unreachable!()
     }
@@ -20687,6 +20854,7 @@ pub mod clipboard_event {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ClipboardEvent/ClipboardEvent)
     #[cfg_attr(rust_js, rust_js::link_name = "new ClipboardEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(r#type: &str, event_init_dict: Option<ClipboardEventInit<'_>>) -> &'static ClipboardEvent {
         unreachable!()
     }
@@ -20736,6 +20904,7 @@ pub mod pointer_event {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PointerEvent/PointerEvent)
     #[cfg_attr(rust_js, rust_js::link_name = "new PointerEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(r#type: &str, event_init_dict: Option<PointerEventInit<'_>>) -> &'static PointerEvent {
         unreachable!()
     }
@@ -20910,6 +21079,7 @@ impl CSSStyleDeclaration {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSStyleDeclaration/setProperty)
     #[cfg_attr(rust_js, rust_js::link_name = "setProperty")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn set_property(&self, property: &str, value: impl IntoUnknown, priority: Option<&str>) {
         unreachable!()
@@ -27430,12 +27600,14 @@ pub mod dom_rect_read_only {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMRectReadOnly/DOMRectReadOnly)
     #[cfg_attr(rust_js, rust_js::link_name = "new DOMRectReadOnly")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(x: Option<f64>, y: Option<f64>, width: Option<f64>, height: Option<f64>) -> &'static DOMRectReadOnly {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMRectReadOnly/fromRect)
     #[cfg_attr(rust_js, rust_js::link_name = "DOMRectReadOnly.fromRect")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn from_rect(other: Option<DOMRectInit>) -> &'static DOMRectReadOnly {
         unreachable!()
     }
@@ -27526,12 +27698,14 @@ pub mod dom_rect {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMRect/DOMRect)
     #[cfg_attr(rust_js, rust_js::link_name = "new DOMRect")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(x: Option<f64>, y: Option<f64>, width: Option<f64>, height: Option<f64>) -> &'static DOMRect {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMRect/fromRect)
     #[cfg_attr(rust_js, rust_js::link_name = "DOMRect.fromRect")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn from_rect(other: Option<DOMRectInit>) -> &'static DOMRect {
         unreachable!()
     }
@@ -27699,6 +27873,7 @@ pub mod media_query_list_event {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaQueryListEvent/MediaQueryListEvent)
     #[cfg_attr(rust_js, rust_js::link_name = "new MediaQueryListEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(r#type: &str, event_init_dict: Option<MediaQueryListEventInit<'_>>) -> &'static MediaQueryListEvent {
         unreachable!()
     }
@@ -27744,6 +27919,7 @@ pub mod intersection_observer {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IntersectionObserver/IntersectionObserver)
     #[cfg_attr(rust_js, rust_js::link_name = "new IntersectionObserver")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(callback: Box<dyn FnMut(&'static [&'static IntersectionObserverEntry], &'static IntersectionObserver)>, options: Option<IntersectionObserverInit<'_>>) -> &'static IntersectionObserver {
         unreachable!()
     }
@@ -27912,6 +28088,7 @@ pub mod headers {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Headers/Headers)
     #[cfg_attr(rust_js, rust_js::link_name = "new Headers")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(init: Option<&dyn IntoHeadersInit>) -> &'static Headers {
         unreachable!()
     }
@@ -28010,6 +28187,7 @@ pub mod request {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Request/Request)
     #[cfg_attr(rust_js, rust_js::link_name = "new Request")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(input: impl IntoRequestInfo, init: Option<RequestInit<'_>>) -> &'static Request {
         unreachable!()
     }
@@ -28194,6 +28372,7 @@ pub mod response {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Response/Response)
     #[cfg_attr(rust_js, rust_js::link_name = "new Response")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(body: Option<&dyn IntoBodyInit>, init: Option<ResponseInit<'_>>) -> &'static Response {
         unreachable!()
     }
@@ -28206,12 +28385,14 @@ pub mod response {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Response/redirect)
     #[cfg_attr(rust_js, rust_js::link_name = "Response.redirect")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn redirect(url: &str, status: Option<f64>) -> &'static Response {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Response/json)
     #[cfg_attr(rust_js, rust_js::link_name = "Response.json")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn json<D>(data: D, init: Option<ResponseInit<'_>>) -> &'static Response {
         unreachable!()
     }
@@ -28343,6 +28524,7 @@ pub mod form_data {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FormData/FormData)
     #[cfg_attr(rust_js, rust_js::link_name = "new FormData")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(form: Option<&HTMLFormElement>, submitter: Option<&HTMLElement>) -> &'static FormData {
         unreachable!()
     }
@@ -28460,6 +28642,7 @@ pub mod readable_stream {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ReadableStream/ReadableStream)
     #[cfg_attr(rust_js, rust_js::link_name = "new ReadableStream")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(underlying_source: Option<&dyn IntoUnderlyingSource>, strategy: Option<QueuingStrategy>) -> &'static ReadableStream {
         unreachable!()
     }
@@ -28474,18 +28657,21 @@ impl ReadableStream {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ReadableStream/cancel)
     #[cfg_attr(rust_js, rust_js::link_name = "cancel")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn cancel(&self, reason: Option<&dyn IntoUnknown>) -> Promise<()> {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ReadableStream/pipeThrough)
     #[cfg_attr(rust_js, rust_js::link_name = "pipeThrough")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn pipe_through(&self, transform: ReadableWritablePair<'_>, options: Option<StreamPipeOptions<'_>>) -> &'static ReadableStream {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ReadableStream/pipeTo)
     #[cfg_attr(rust_js, rust_js::link_name = "pipeTo")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn pipe_to(&self, destination: &WritableStream, options: Option<StreamPipeOptions<'_>>) -> Promise<()> {
         unreachable!()
     }
@@ -28711,6 +28897,7 @@ pub mod text_encoder {
 impl TextEncoder {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/TextEncoder/encode)
     #[cfg_attr(rust_js, rust_js::link_name = "encode")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn encode(&self, input: Option<&str>) -> &'static Uint8Array {
         unreachable!()
     }
@@ -28748,6 +28935,7 @@ pub mod text_decoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/TextDecoder/TextDecoder)
     #[cfg_attr(rust_js, rust_js::link_name = "new TextDecoder")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(label: Option<&str>, options: Option<TextDecoderOptions>) -> &'static TextDecoder {
         unreachable!()
     }
@@ -28756,6 +28944,7 @@ pub mod text_decoder {
 impl TextDecoder {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/TextDecoder/decode)
     #[cfg_attr(rust_js, rust_js::link_name = "decode")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn decode(&self, input: Option<&dyn IntoAllowSharedBufferSource>, options: Option<TextDecodeOptions>) -> String {
         unreachable!()
     }
@@ -28800,6 +28989,7 @@ pub mod web_assembly_module {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/Module/Module)
     #[cfg_attr(rust_js, rust_js::link_name = "new WebAssembly.Module")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(bytes: impl IntoAllowSharedBufferSource, options: Option<WebAssemblyCompileOptions<'_>>) -> &'static WebAssemblyModule {
         unreachable!()
     }
@@ -28843,6 +29033,7 @@ pub mod web_assembly_instance {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/Instance/Instance)
     #[cfg_attr(rust_js, rust_js::link_name = "new WebAssembly.Instance")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(module: &WebAssemblyModule, import_object: Option<&dyn core::any::Any>) -> &'static WebAssemblyInstance {
         unreachable!()
     }
@@ -28928,6 +29119,7 @@ pub mod blob {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Blob/Blob)
     #[cfg_attr(rust_js, rust_js::link_name = "new Blob")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(blob_parts: Option<&[BlobPart<'_>]>, options: Option<BlobPropertyBag<'_>>) -> &'static Blob {
         unreachable!()
     }
@@ -28949,6 +29141,7 @@ impl Blob {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Blob/slice)
     #[cfg_attr(rust_js, rust_js::link_name = "slice")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn slice(&self, start: Option<f64>, end: Option<f64>, content_type: Option<&str>) -> &'static Blob {
         unreachable!()
     }
@@ -29013,6 +29206,7 @@ pub mod file {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/File/File)
     #[cfg_attr(rust_js, rust_js::link_name = "new File")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(file_bits: &[BlobPart<'_>], file_name: &str, options: Option<FilePropertyBag<'_>>) -> &'static File {
         unreachable!()
     }
@@ -29078,6 +29272,7 @@ pub mod url {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/URL/URL)
     #[cfg_attr(rust_js, rust_js::link_name = "new URL")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(url: &str, base: Option<&str>) -> &'static URL {
         unreachable!()
     }
@@ -29085,12 +29280,14 @@ pub mod url {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/URL/parse)
     #[cfg_attr(rust_js, rust_js::link_name = "URL.parse")]
     #[cfg_attr(rust_js, rust_js::nullable)]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn parse(url: &str, base: Option<&str>) -> Option<&'static URL> {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/URL/canParse)
     #[cfg_attr(rust_js, rust_js::link_name = "URL.canParse")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn can_parse(url: &str, base: Option<&str>) -> bool {
         unreachable!()
     }
@@ -29266,6 +29463,7 @@ impl Navigator {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigator/sendBeacon)
     #[cfg_attr(rust_js, rust_js::link_name = "sendBeacon")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn send_beacon(&self, url: &str, data: Option<&dyn IntoBodyInit>) -> bool {
         unreachable!()
     }
@@ -29369,24 +29567,28 @@ impl Navigator {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigator/share)
     #[cfg_attr(rust_js, rust_js::link_name = "share")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn share(&self, data: Option<ShareData<'_>>) -> Promise<()> {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigator/canShare)
     #[cfg_attr(rust_js, rust_js::link_name = "canShare")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn can_share(&self, data: Option<ShareData<'_>>) -> bool {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigator/requestMIDIAccess)
     #[cfg_attr(rust_js, rust_js::link_name = "requestMIDIAccess")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn request_midi_access(&self, options: Option<MIDIOptions>) -> Promise<&'static MIDIAccess> {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigator/setAppBadge)
     #[cfg_attr(rust_js, rust_js::link_name = "setAppBadge")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn set_app_badge(&self, contents: Option<f64>) -> Promise<()> {
         unreachable!()
     }
@@ -29594,6 +29796,7 @@ pub mod clipboard {
 impl Clipboard {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Clipboard/read)
     #[cfg_attr(rust_js, rust_js::link_name = "read")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn read(&self, formats: Option<ClipboardUnsanitizedFormats<'_>>) -> Promise<Vec<&'static ClipboardItem>> {
         unreachable!()
     }
@@ -29637,6 +29840,7 @@ pub mod clipboard_item {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ClipboardItem/ClipboardItem)
     #[cfg_attr(rust_js, rust_js::link_name = "new ClipboardItem")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(items: &dyn Record<Value = Promise<StrOrBlob<'static>>>, options: Option<ClipboardItemOptions<'_>>) -> &'static ClipboardItem {
         unreachable!()
     }
@@ -31284,6 +31488,7 @@ impl SVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/focus)
     #[cfg_attr(rust_js, rust_js::link_name = "focus")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn focus(&self, options: Option<FocusOptions>) {
         unreachable!()
@@ -31353,6 +31558,7 @@ impl SVGGraphicsElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGGraphicsElement/getBBox)
     #[cfg_attr(rust_js, rust_js::link_name = "getBBox")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn get_b_box(&self, options: Option<SVGBoundingBoxOptions>) -> &'static DOMRect {
         unreachable!()
     }
@@ -31428,12 +31634,14 @@ impl SVGGeometryElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGGeometryElement/isPointInFill)
     #[cfg_attr(rust_js, rust_js::link_name = "isPointInFill")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn is_point_in_fill(&self, point: Option<DOMPointInit>) -> bool {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGGeometryElement/isPointInStroke)
     #[cfg_attr(rust_js, rust_js::link_name = "isPointInStroke")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn is_point_in_stroke(&self, point: Option<DOMPointInit>) -> bool {
         unreachable!()
     }
@@ -31532,6 +31740,7 @@ impl SVGSVGElement {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/getIntersectionList)
     #[cfg_attr(rust_js, rust_js::link_name = "getIntersectionList")]
     #[cfg_attr(rust_js, rust_js::nullable(reference_element))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn get_intersection_list(&self, rect: &DOMRect, reference_element: Option<&SVGElement>) -> &'static NodeList {
         unreachable!()
     }
@@ -31539,6 +31748,7 @@ impl SVGSVGElement {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/getEnclosureList)
     #[cfg_attr(rust_js, rust_js::link_name = "getEnclosureList")]
     #[cfg_attr(rust_js, rust_js::nullable(reference_element))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn get_enclosure_list(&self, rect: &DOMRect, reference_element: Option<&SVGElement>) -> &'static NodeList {
         unreachable!()
     }
@@ -31606,6 +31816,7 @@ impl SVGSVGElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/createSVGTransformFromMatrix)
     #[cfg_attr(rust_js, rust_js::link_name = "createSVGTransformFromMatrix")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn create_svg_transform_from_matrix(&self, matrix: Option<DOMMatrix2DInit>) -> &'static SVGTransform {
         unreachable!()
     }
@@ -32993,6 +33204,7 @@ impl SVGTextContentElement {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGTextContentElement/getCharNumAtPosition)
     #[cfg_attr(rust_js, rust_js::link_name = "getCharNumAtPosition")]
     #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn get_char_num_at_position(&self, point: Option<DOMPointInit>) -> f64 {
         unreachable!()
     }
@@ -37133,6 +37345,7 @@ pub mod analyser_node {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AnalyserNode/AnalyserNode)
     #[cfg_attr(rust_js, rust_js::link_name = "new AnalyserNode")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(context: &BaseAudioContext, options: Option<AnalyserOptions<'_>>) -> &'static AnalyserNode {
         unreachable!()
     }
@@ -37259,6 +37472,7 @@ pub mod animation {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Animation/Animation)
     #[cfg_attr(rust_js, rust_js::link_name = "new Animation")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(effect: Option<&AnimationEffect>, timeline: Option<&AnimationTimeline>) -> &'static Animation {
         unreachable!()
     }
@@ -37518,6 +37732,7 @@ impl AnimationEffect {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AnimationEffect/updateTiming)
     #[cfg_attr(rust_js, rust_js::link_name = "updateTiming")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn update_timing(&self, timing: Option<OptionalEffectTiming<'_>>) {
         unreachable!()
@@ -37553,6 +37768,7 @@ pub mod animation_playback_event {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AnimationPlaybackEvent/AnimationPlaybackEvent)
     #[cfg_attr(rust_js, rust_js::link_name = "new AnimationPlaybackEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(r#type: &str, event_init_dict: Option<AnimationPlaybackEventInit<'_>>) -> &'static AnimationPlaybackEvent {
         unreachable!()
     }
@@ -37764,6 +37980,7 @@ impl AudioBuffer {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioBuffer/copyFromChannel)
     #[cfg_attr(rust_js, rust_js::link_name = "copyFromChannel")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn copy_from_channel(&self, destination: &Float32Array, channel_number: impl Into<f64>, buffer_offset: Option<f64>) {
         unreachable!()
@@ -37771,6 +37988,7 @@ impl AudioBuffer {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioBuffer/copyToChannel)
     #[cfg_attr(rust_js, rust_js::link_name = "copyToChannel")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn copy_to_channel(&self, source: &Float32Array, channel_number: impl Into<f64>, buffer_offset: Option<f64>) {
         unreachable!()
@@ -37806,6 +38024,7 @@ pub mod audio_buffer_source_node {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioBufferSourceNode/AudioBufferSourceNode)
     #[cfg_attr(rust_js, rust_js::link_name = "new AudioBufferSourceNode")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(context: &BaseAudioContext, options: Option<AudioBufferSourceOptions<'_>>) -> &'static AudioBufferSourceNode {
         unreachable!()
     }
@@ -37910,6 +38129,7 @@ pub mod audio_context {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioContext/AudioContext)
     #[cfg_attr(rust_js, rust_js::link_name = "new AudioContext")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(context_options: Option<AudioContextOptions<'_>>) -> &'static AudioContext {
         unreachable!()
     }
@@ -38457,12 +38677,14 @@ pub mod audio_node {
 impl AudioNode {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioNode/connect)
     #[cfg_attr(rust_js, rust_js::link_name = "connect")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn connect(&self, destination_node: &AudioNode, output: Option<f64>, input: Option<f64>) -> &'static AudioNode {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioNode/connect)
     #[cfg_attr(rust_js, rust_js::link_name = "connect")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn connect_with_audio_param(&self, destination_param: &AudioParam, output: Option<f64>) {
         unreachable!()
@@ -38470,6 +38692,7 @@ impl AudioNode {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioNode/disconnect)
     #[cfg_attr(rust_js, rust_js::link_name = "disconnect")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn disconnect(&self, output: Option<f64>) {
         unreachable!()
@@ -38477,6 +38700,7 @@ impl AudioNode {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioNode/disconnect)
     #[cfg_attr(rust_js, rust_js::link_name = "disconnect")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn disconnect_with_destination_node(&self, destination_node: &AudioNode, output: Option<f64>, input: Option<f64>) {
         unreachable!()
@@ -38484,6 +38708,7 @@ impl AudioNode {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioNode/disconnect)
     #[cfg_attr(rust_js, rust_js::link_name = "disconnect")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn disconnect_with_destination_param(&self, destination_param: &AudioParam, output: Option<f64>) {
         unreachable!()
@@ -38820,6 +39045,7 @@ impl AudioScheduledSourceNode {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioScheduledSourceNode/start)
     #[cfg_attr(rust_js, rust_js::link_name = "start")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn start(&self, when: Option<f64>) {
         unreachable!()
@@ -38827,6 +39053,7 @@ impl AudioScheduledSourceNode {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioScheduledSourceNode/stop)
     #[cfg_attr(rust_js, rust_js::link_name = "stop")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn stop(&self, when: Option<f64>) {
         unreachable!()
@@ -38895,6 +39122,7 @@ pub mod audio_worklet_node {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioWorkletNode/AudioWorkletNode)
     #[cfg_attr(rust_js, rust_js::link_name = "new AudioWorkletNode")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(context: &BaseAudioContext, name: &str, options: Option<AudioWorkletNodeOptions<'_>>) -> &'static AudioWorkletNode {
         unreachable!()
     }
@@ -39216,12 +39444,14 @@ impl BaseAudioContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/BaseAudioContext/createChannelMerger)
     #[cfg_attr(rust_js, rust_js::link_name = "createChannelMerger")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn create_channel_merger(&self, number_of_inputs: Option<f64>) -> &'static ChannelMergerNode {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/BaseAudioContext/createChannelSplitter)
     #[cfg_attr(rust_js, rust_js::link_name = "createChannelSplitter")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn create_channel_splitter(&self, number_of_outputs: Option<f64>) -> &'static ChannelSplitterNode {
         unreachable!()
     }
@@ -39240,6 +39470,7 @@ impl BaseAudioContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/BaseAudioContext/createDelay)
     #[cfg_attr(rust_js, rust_js::link_name = "createDelay")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn create_delay(&self, max_delay_time: Option<f64>) -> &'static DelayNode {
         unreachable!()
     }
@@ -39276,12 +39507,14 @@ impl BaseAudioContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/BaseAudioContext/createPeriodicWave)
     #[cfg_attr(rust_js, rust_js::link_name = "createPeriodicWave")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn create_periodic_wave(&self, real: &[f64], imag: &[f64], constraints: Option<PeriodicWaveConstraints>) -> &'static PeriodicWave {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/BaseAudioContext/createScriptProcessor)
     #[cfg_attr(rust_js, rust_js::link_name = "createScriptProcessor")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn create_script_processor(&self, buffer_size: Option<f64>, number_of_input_channels: Option<f64>, number_of_output_channels: Option<f64>) -> &'static ScriptProcessorNode {
         unreachable!()
     }
@@ -39300,6 +39533,7 @@ impl BaseAudioContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/BaseAudioContext/decodeAudioData)
     #[cfg_attr(rust_js, rust_js::link_name = "decodeAudioData")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn decode_audio_data(&self, audio_data: &ArrayBuffer, success_callback: Option<Box<dyn FnOnce(&'static AudioBuffer)>>, error_callback: Option<Box<dyn FnOnce(&'static DOMException)>>) -> Promise<&'static AudioBuffer> {
         unreachable!()
     }
@@ -39382,6 +39616,7 @@ pub mod biquad_filter_node {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/BiquadFilterNode/BiquadFilterNode)
     #[cfg_attr(rust_js, rust_js::link_name = "new BiquadFilterNode")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(context: &BaseAudioContext, options: Option<BiquadFilterOptions<'_>>) -> &'static BiquadFilterNode {
         unreachable!()
     }
@@ -40305,6 +40540,7 @@ impl CSSGroupingRule {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSGroupingRule/insertRule)
     #[cfg_attr(rust_js, rust_js::link_name = "insertRule")]
     #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn insert_rule(&self, rule: &str, index: Option<f64>) -> f64 {
         unreachable!()
     }
@@ -41133,6 +41369,7 @@ pub mod css_matrix_component {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSMatrixComponent/CSSMatrixComponent)
     #[cfg_attr(rust_js, rust_js::link_name = "new CSSMatrixComponent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(matrix: &DOMMatrixReadOnly, options: Option<CSSMatrixComponentOptions>) -> &'static CSSMatrixComponent {
         unreachable!()
     }
@@ -42588,6 +42825,7 @@ pub mod css_scale {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSScale/CSSScale)
     #[cfg_attr(rust_js, rust_js::link_name = "new CSSScale")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(x: impl IntoCSSNumberish, y: impl IntoCSSNumberish, z: Option<&dyn IntoCSSNumberish>) -> &'static CSSScale {
         unreachable!()
     }
@@ -42983,6 +43221,7 @@ pub mod css_style_sheet {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSStyleSheet/CSSStyleSheet)
     #[cfg_attr(rust_js, rust_js::link_name = "new CSSStyleSheet")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(options: Option<CSSStyleSheetInit<'_>>) -> &'static CSSStyleSheet {
         unreachable!()
     }
@@ -43013,6 +43252,7 @@ impl CSSStyleSheet {
     /// `Err`: a `SecurityError` of a stylesheet of another origin, not shared by CORS.
     #[cfg_attr(rust_js, rust_js::link_name = "insertRule")]
     #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn insert_rule(&self, rule: &str, index: Option<f64>) -> Result<f64, &'static JsError> {
         unreachable!()
     }
@@ -43048,6 +43288,7 @@ impl CSSStyleSheet {
     /// `Err`: a `SecurityError` of a stylesheet of another origin, not shared by CORS.
     #[cfg_attr(rust_js, rust_js::link_name = "addRule")]
     #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn add_rule(&self, selector: Option<&str>, style: Option<&str>, index: Option<f64>) -> Result<f64, &'static JsError> {
         unreachable!()
     }
@@ -43055,6 +43296,7 @@ impl CSSStyleSheet {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSStyleSheet/removeRule)
     /// `Err`: a `SecurityError` of a stylesheet of another origin, not shared by CORS.
     #[cfg_attr(rust_js, rust_js::link_name = "removeRule")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn remove_rule(&self, index: Option<f64>) -> Result<(), &'static JsError> {
         unreachable!()
     }
@@ -43346,6 +43588,7 @@ pub mod css_translate {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSTranslate/CSSTranslate)
     #[cfg_attr(rust_js, rust_js::link_name = "new CSSTranslate")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(x: &CSSNumericValue, y: &CSSNumericValue, z: Option<&CSSNumericValue>) -> &'static CSSTranslate {
         unreachable!()
     }
@@ -43555,6 +43798,7 @@ pub mod css_variable_reference_value {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSVariableReferenceValue/CSSVariableReferenceValue)
     #[cfg_attr(rust_js, rust_js::link_name = "new CSSVariableReferenceValue")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(variable: &str, fallback: Option<&CSSUnparsedValue>) -> &'static CSSVariableReferenceValue {
         unreachable!()
     }
@@ -43647,12 +43891,14 @@ impl Eq for Cache {}
 impl Cache {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Cache/match)
     #[cfg_attr(rust_js, rust_js::link_name = "match")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn r#match(&self, request: impl IntoRequestInfo, options: Option<CacheQueryOptions>) -> Promise<Option<&'static Response>> {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Cache/matchAll)
     #[cfg_attr(rust_js, rust_js::link_name = "matchAll")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn match_all(&self, request: Option<&dyn IntoRequestInfo>, options: Option<CacheQueryOptions>) -> Promise<&'static [&'static Response]> {
         unreachable!()
     }
@@ -43677,12 +43923,14 @@ impl Cache {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Cache/delete)
     #[cfg_attr(rust_js, rust_js::link_name = "delete")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn delete(&self, request: impl IntoRequestInfo, options: Option<CacheQueryOptions>) -> Promise<bool> {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Cache/keys)
     #[cfg_attr(rust_js, rust_js::link_name = "keys")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn keys(&self, request: Option<&dyn IntoRequestInfo>, options: Option<CacheQueryOptions>) -> Promise<&'static [&'static Request]> {
         unreachable!()
     }
@@ -43706,6 +43954,7 @@ impl Eq for CacheStorage {}
 impl CacheStorage {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CacheStorage/match)
     #[cfg_attr(rust_js, rust_js::link_name = "match")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn r#match(&self, request: impl IntoRequestInfo, options: Option<MultiCacheQueryOptions<'_>>) -> Promise<Option<&'static Response>> {
         unreachable!()
     }
@@ -43826,6 +44075,7 @@ impl Eq for CanvasPattern {}
 impl CanvasPattern {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasPattern/setTransform)
     #[cfg_attr(rust_js, rust_js::link_name = "setTransform")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn set_transform(&self, transform: Option<DOMMatrix2DInit>) {
         unreachable!()
@@ -43923,6 +44173,7 @@ impl CanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D/setTransform)
     #[cfg_attr(rust_js, rust_js::link_name = "setTransform")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn set_transform(&self, transform: Option<DOMMatrix2DInit>) {
         unreachable!()
@@ -44122,6 +44373,7 @@ impl CanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D/fill)
     #[cfg_attr(rust_js, rust_js::link_name = "fill")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn fill(&self, fill_rule: Option<&str>) {
         unreachable!()
@@ -44129,6 +44381,7 @@ impl CanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D/fill)
     #[cfg_attr(rust_js, rust_js::link_name = "fill")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn fill_with_path(&self, path: &Path2D, fill_rule: Option<&str>) {
         unreachable!()
@@ -44136,6 +44389,7 @@ impl CanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D/stroke)
     #[cfg_attr(rust_js, rust_js::link_name = "stroke")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn stroke(&self, path: Option<&Path2D>) {
         unreachable!()
@@ -44143,6 +44397,7 @@ impl CanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D/clip)
     #[cfg_attr(rust_js, rust_js::link_name = "clip")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn clip(&self, fill_rule: Option<&str>) {
         unreachable!()
@@ -44150,6 +44405,7 @@ impl CanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D/clip)
     #[cfg_attr(rust_js, rust_js::link_name = "clip")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn clip_with_path(&self, path: &Path2D, fill_rule: Option<&str>) {
         unreachable!()
@@ -44157,12 +44413,14 @@ impl CanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D/isPointInPath)
     #[cfg_attr(rust_js, rust_js::link_name = "isPointInPath")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn is_point_in_path(&self, x: impl Into<f64>, y: impl Into<f64>, fill_rule: Option<&str>) -> bool {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D/isPointInPath)
     #[cfg_attr(rust_js, rust_js::link_name = "isPointInPath")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn is_point_in_path_with_path2_d_and_y(&self, path: &Path2D, x: impl Into<f64>, y: impl Into<f64>, fill_rule: Option<&str>) -> bool {
         unreachable!()
     }
@@ -44195,6 +44453,7 @@ impl CanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D/fillText)
     #[cfg_attr(rust_js, rust_js::link_name = "fillText")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn fill_text(&self, text: &str, x: impl Into<f64>, y: impl Into<f64>, max_width: Option<f64>) {
         unreachable!()
@@ -44202,6 +44461,7 @@ impl CanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D/strokeText)
     #[cfg_attr(rust_js, rust_js::link_name = "strokeText")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn stroke_text(&self, text: &str, x: impl Into<f64>, y: impl Into<f64>, max_width: Option<f64>) {
         unreachable!()
@@ -44215,6 +44475,7 @@ impl CanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D/drawImage)
     #[cfg_attr(rust_js, rust_js::link_name = "drawImage")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn draw_image(&self, image: impl IntoCanvasImageSource, dx: impl Into<f64>, dy: impl Into<f64>, dw: Option<f64>, dh: Option<f64>) {
         unreachable!()
@@ -44229,6 +44490,7 @@ impl CanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D/createImageData)
     #[cfg_attr(rust_js, rust_js::link_name = "createImageData")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn create_image_data(&self, sw: impl Into<f64>, sh: impl Into<f64>, settings: Option<ImageDataSettings<'_>>) -> &'static ImageData {
         unreachable!()
     }
@@ -44242,12 +44504,14 @@ impl CanvasRenderingContext2D {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D/getImageData)
     /// `Err`: a `SecurityError` where an image of another origin, not shared by CORS, was drawn on it.
     #[cfg_attr(rust_js, rust_js::link_name = "getImageData")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn get_image_data(&self, sx: impl Into<f64>, sy: impl Into<f64>, sw: impl Into<f64>, sh: impl Into<f64>, settings: Option<ImageDataSettings<'_>>) -> Result<&'static ImageData, &'static JsError> {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D/putImageData)
     #[cfg_attr(rust_js, rust_js::link_name = "putImageData")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn put_image_data(&self, image_data: &ImageData, dx: impl Into<f64>, dy: impl Into<f64>, dirty_x: Option<f64>, dirty_y: Option<f64>, dirty_width: Option<f64>, dirty_height: Option<f64>) {
         unreachable!()
@@ -44509,6 +44773,7 @@ impl CanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D/roundRect)
     #[cfg_attr(rust_js, rust_js::link_name = "roundRect")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn round_rect(&self, x: impl Into<f64>, y: impl Into<f64>, w: impl Into<f64>, h: impl Into<f64>, radii: Option<&dyn IntoNumberOrDOMPointInitOrList>) {
         unreachable!()
@@ -44516,6 +44781,7 @@ impl CanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D/arc)
     #[cfg_attr(rust_js, rust_js::link_name = "arc")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn arc(&self, x: impl Into<f64>, y: impl Into<f64>, radius: impl Into<f64>, start_angle: impl Into<f64>, end_angle: impl Into<f64>, counterclockwise: Option<bool>) {
         unreachable!()
@@ -44523,6 +44789,7 @@ impl CanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D/ellipse)
     #[cfg_attr(rust_js, rust_js::link_name = "ellipse")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn ellipse(&self, x: impl Into<f64>, y: impl Into<f64>, radius_x: impl Into<f64>, radius_y: impl Into<f64>, rotation: impl Into<f64>, start_angle: impl Into<f64>, end_angle: impl Into<f64>, counterclockwise: Option<bool>) {
         unreachable!()
@@ -44595,6 +44862,7 @@ pub mod channel_merger_node {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ChannelMergerNode/ChannelMergerNode)
     #[cfg_attr(rust_js, rust_js::link_name = "new ChannelMergerNode")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(context: &BaseAudioContext, options: Option<ChannelMergerOptions<'_>>) -> &'static ChannelMergerNode {
         unreachable!()
     }
@@ -44634,6 +44902,7 @@ pub mod channel_splitter_node {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ChannelSplitterNode/ChannelSplitterNode)
     #[cfg_attr(rust_js, rust_js::link_name = "new ChannelSplitterNode")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(context: &BaseAudioContext, options: Option<ChannelSplitterOptions<'_>>) -> &'static ChannelSplitterNode {
         unreachable!()
     }
@@ -44673,6 +44942,7 @@ pub mod close_event {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CloseEvent/CloseEvent)
     #[cfg_attr(rust_js, rust_js::link_name = "new CloseEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(r#type: &str, event_init_dict: Option<CloseEventInit<'_>>) -> &'static CloseEvent {
         unreachable!()
     }
@@ -44734,6 +45004,7 @@ pub mod close_watcher {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CloseWatcher/CloseWatcher)
     #[cfg_attr(rust_js, rust_js::link_name = "new CloseWatcher")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(options: Option<CloseWatcherOptions<'_>>) -> &'static CloseWatcher {
         unreachable!()
     }
@@ -44827,6 +45098,7 @@ pub mod command_event {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CommandEvent/CommandEvent)
     #[cfg_attr(rust_js, rust_js::link_name = "new CommandEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(r#type: &str, event_init_dict: Option<CommandEventInit<'_>>) -> &'static CommandEvent {
         unreachable!()
     }
@@ -44921,6 +45193,7 @@ pub mod constant_source_node {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ConstantSourceNode/ConstantSourceNode)
     #[cfg_attr(rust_js, rust_js::link_name = "new ConstantSourceNode")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(context: &BaseAudioContext, options: Option<ConstantSourceOptions>) -> &'static ConstantSourceNode {
         unreachable!()
     }
@@ -44969,6 +45242,7 @@ pub mod content_visibility_auto_state_change_event {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ContentVisibilityAutoStateChangeEvent/ContentVisibilityAutoStateChangeEvent)
     #[cfg_attr(rust_js, rust_js::link_name = "new ContentVisibilityAutoStateChangeEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(r#type: &str, event_init_dict: Option<ContentVisibilityAutoStateChangeEventInit>) -> &'static ContentVisibilityAutoStateChangeEvent {
         unreachable!()
     }
@@ -45017,6 +45291,7 @@ pub mod convolver_node {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ConvolverNode/ConvolverNode)
     #[cfg_attr(rust_js, rust_js::link_name = "new ConvolverNode")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(context: &BaseAudioContext, options: Option<ConvolverOptions<'_>>) -> &'static ConvolverNode {
         unreachable!()
     }
@@ -45085,6 +45360,7 @@ pub mod cookie_change_event {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CookieChangeEvent/CookieChangeEvent)
     #[cfg_attr(rust_js, rust_js::link_name = "new CookieChangeEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(r#type: &str, event_init_dict: Option<CookieChangeEventInit<'_>>) -> &'static CookieChangeEvent {
         unreachable!()
     }
@@ -45147,12 +45423,14 @@ pub mod cookie_store {
 impl CookieStore {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CookieStore/get)
     #[cfg_attr(rust_js, rust_js::link_name = "get")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn get(&self, options: Option<CookieStoreGetOptions>) -> Promise<Option<CookieListItem>> {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CookieStore/getAll)
     #[cfg_attr(rust_js, rust_js::link_name = "getAll")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn get_all(&self, options: Option<CookieStoreGetOptions>) -> Promise<Vec<CookieListItem>> {
         unreachable!()
     }
@@ -45328,6 +45606,7 @@ impl Eq for CredentialsContainer {}
 impl CredentialsContainer {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CredentialsContainer/get)
     #[cfg_attr(rust_js, rust_js::link_name = "get")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn get(&self, options: Option<CredentialRequestOptions<'_>>) -> Promise<Option<&'static Credential>> {
         unreachable!()
     }
@@ -45340,6 +45619,7 @@ impl CredentialsContainer {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CredentialsContainer/create)
     #[cfg_attr(rust_js, rust_js::link_name = "create")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn create(&self, options: Option<CredentialCreationOptions<'_>>) -> Promise<Option<&'static Credential>> {
         unreachable!()
     }
@@ -45455,6 +45735,7 @@ pub mod custom_element_registry {
 impl CustomElementRegistry {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CustomElementRegistry/define)
     #[cfg_attr(rust_js, rust_js::link_name = "define")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn define(&self, name: &str, constructor: Box<dyn FnMut() -> &'static HTMLElement>, options: Option<ElementDefinitionOptions<'_>>) {
         unreachable!()
@@ -45524,6 +45805,7 @@ pub mod custom_event {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CustomEvent/CustomEvent)
     #[cfg_attr(rust_js, rust_js::link_name = "new CustomEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(r#type: &str, event_init_dict: Option<CustomEventInit<'_>>) -> &'static CustomEvent {
         unreachable!()
     }
@@ -45544,6 +45826,7 @@ impl CustomEvent {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CustomEvent/initCustomEvent)
     #[cfg_attr(rust_js, rust_js::link_name = "initCustomEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn init_custom_event(&self, r#type: &str, bubbles: Option<bool>, cancelable: Option<bool>, detail: Option<&dyn IntoUnknown>) {
         unreachable!()
@@ -45744,6 +46027,7 @@ pub mod dom_exception {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMException/DOMException)
     #[cfg_attr(rust_js, rust_js::link_name = "new DOMException")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(message: Option<&str>, name: Option<&str>) -> &'static DOMException {
         unreachable!()
     }
@@ -45795,12 +46079,14 @@ impl DOMImplementation {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMImplementation/createDocument)
     #[cfg_attr(rust_js, rust_js::link_name = "createDocument")]
     #[cfg_attr(rust_js, rust_js::nullable(namespace))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn create_document(&self, namespace: Option<&str>, qualified_name: &str, doctype: Option<&DocumentType>) -> &'static XMLDocument {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMImplementation/createHTMLDocument)
     #[cfg_attr(rust_js, rust_js::link_name = "createHTMLDocument")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn create_html_document(&self, title: Option<&str>) -> &'static Document {
         unreachable!()
     }
@@ -45841,12 +46127,14 @@ pub mod dom_matrix {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMMatrix/DOMMatrix)
     #[cfg_attr(rust_js, rust_js::link_name = "new DOMMatrix")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(init: Option<&dyn IntoStrOrList>) -> &'static DOMMatrix {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMMatrix/fromMatrix)
     #[cfg_attr(rust_js, rust_js::link_name = "DOMMatrix.fromMatrix")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn from_matrix(other: Option<DOMMatrixInit>) -> &'static DOMMatrix {
         unreachable!()
     }
@@ -46137,60 +46425,70 @@ impl DOMMatrix {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMMatrix/multiplySelf)
     #[cfg_attr(rust_js, rust_js::link_name = "multiplySelf")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn multiply_self(&self, other: Option<DOMMatrixInit>) -> &'static DOMMatrix {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMMatrix/preMultiplySelf)
     #[cfg_attr(rust_js, rust_js::link_name = "preMultiplySelf")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn pre_multiply_self(&self, other: Option<DOMMatrixInit>) -> &'static DOMMatrix {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMMatrix/translateSelf)
     #[cfg_attr(rust_js, rust_js::link_name = "translateSelf")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn translate_self(&self, tx: Option<f64>, ty: Option<f64>, tz: Option<f64>) -> &'static DOMMatrix {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMMatrix/scaleSelf)
     #[cfg_attr(rust_js, rust_js::link_name = "scaleSelf")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn scale_self(&self, scale_x: Option<f64>, scale_y: Option<f64>, scale_z: Option<f64>, origin_x: Option<f64>, origin_y: Option<f64>, origin_z: Option<f64>) -> &'static DOMMatrix {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMMatrix/scale3dSelf)
     #[cfg_attr(rust_js, rust_js::link_name = "scale3dSelf")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn scale3d_self(&self, scale: Option<f64>, origin_x: Option<f64>, origin_y: Option<f64>, origin_z: Option<f64>) -> &'static DOMMatrix {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMMatrix/rotateSelf)
     #[cfg_attr(rust_js, rust_js::link_name = "rotateSelf")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn rotate_self(&self, rot_x: Option<f64>, rot_y: Option<f64>, rot_z: Option<f64>) -> &'static DOMMatrix {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMMatrix/rotateFromVectorSelf)
     #[cfg_attr(rust_js, rust_js::link_name = "rotateFromVectorSelf")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn rotate_from_vector_self(&self, x: Option<f64>, y: Option<f64>) -> &'static DOMMatrix {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMMatrix/rotateAxisAngleSelf)
     #[cfg_attr(rust_js, rust_js::link_name = "rotateAxisAngleSelf")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn rotate_axis_angle_self(&self, x: Option<f64>, y: Option<f64>, z: Option<f64>, angle: Option<f64>) -> &'static DOMMatrix {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMMatrix/skewXSelf)
     #[cfg_attr(rust_js, rust_js::link_name = "skewXSelf")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn skew_x_self(&self, sx: Option<f64>) -> &'static DOMMatrix {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMMatrix/skewYSelf)
     #[cfg_attr(rust_js, rust_js::link_name = "skewYSelf")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn skew_y_self(&self, sy: Option<f64>) -> &'static DOMMatrix {
         unreachable!()
     }
@@ -46228,12 +46526,14 @@ pub mod dom_matrix_read_only {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMMatrixReadOnly/DOMMatrixReadOnly)
     #[cfg_attr(rust_js, rust_js::link_name = "new DOMMatrixReadOnly")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(init: Option<&dyn IntoStrOrList>) -> &'static DOMMatrixReadOnly {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMMatrixReadOnly/fromMatrix)
     #[cfg_attr(rust_js, rust_js::link_name = "DOMMatrixReadOnly.fromMatrix")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn from_matrix(other: Option<DOMMatrixInit>) -> &'static DOMMatrixReadOnly {
         unreachable!()
     }
@@ -46398,60 +46698,70 @@ impl DOMMatrixReadOnly {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMMatrixReadOnly/translate)
     #[cfg_attr(rust_js, rust_js::link_name = "translate")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn translate(&self, tx: Option<f64>, ty: Option<f64>, tz: Option<f64>) -> &'static DOMMatrix {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMMatrixReadOnly/scale)
     #[cfg_attr(rust_js, rust_js::link_name = "scale")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn scale(&self, scale_x: Option<f64>, scale_y: Option<f64>, scale_z: Option<f64>, origin_x: Option<f64>, origin_y: Option<f64>, origin_z: Option<f64>) -> &'static DOMMatrix {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMMatrixReadOnly/scaleNonUniform)
     #[cfg_attr(rust_js, rust_js::link_name = "scaleNonUniform")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn scale_non_uniform(&self, scale_x: Option<f64>, scale_y: Option<f64>) -> &'static DOMMatrix {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMMatrixReadOnly/scale3d)
     #[cfg_attr(rust_js, rust_js::link_name = "scale3d")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn scale3d(&self, scale: Option<f64>, origin_x: Option<f64>, origin_y: Option<f64>, origin_z: Option<f64>) -> &'static DOMMatrix {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMMatrixReadOnly/rotate)
     #[cfg_attr(rust_js, rust_js::link_name = "rotate")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn rotate(&self, rot_x: Option<f64>, rot_y: Option<f64>, rot_z: Option<f64>) -> &'static DOMMatrix {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMMatrixReadOnly/rotateFromVector)
     #[cfg_attr(rust_js, rust_js::link_name = "rotateFromVector")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn rotate_from_vector(&self, x: Option<f64>, y: Option<f64>) -> &'static DOMMatrix {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMMatrixReadOnly/rotateAxisAngle)
     #[cfg_attr(rust_js, rust_js::link_name = "rotateAxisAngle")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn rotate_axis_angle(&self, x: Option<f64>, y: Option<f64>, z: Option<f64>, angle: Option<f64>) -> &'static DOMMatrix {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMMatrixReadOnly/skewX)
     #[cfg_attr(rust_js, rust_js::link_name = "skewX")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn skew_x(&self, sx: Option<f64>) -> &'static DOMMatrix {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMMatrixReadOnly/skewY)
     #[cfg_attr(rust_js, rust_js::link_name = "skewY")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn skew_y(&self, sy: Option<f64>) -> &'static DOMMatrix {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMMatrixReadOnly/multiply)
     #[cfg_attr(rust_js, rust_js::link_name = "multiply")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn multiply(&self, other: Option<DOMMatrixInit>) -> &'static DOMMatrix {
         unreachable!()
     }
@@ -46476,6 +46786,7 @@ impl DOMMatrixReadOnly {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMMatrixReadOnly/transformPoint)
     #[cfg_attr(rust_js, rust_js::link_name = "transformPoint")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn transform_point(&self, point: Option<DOMPointInit>) -> &'static DOMPoint {
         unreachable!()
     }
@@ -46567,12 +46878,14 @@ pub mod dom_point {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMPoint/DOMPoint)
     #[cfg_attr(rust_js, rust_js::link_name = "new DOMPoint")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(x: Option<f64>, y: Option<f64>, z: Option<f64>, w: Option<f64>) -> &'static DOMPoint {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMPoint/fromPoint)
     #[cfg_attr(rust_js, rust_js::link_name = "DOMPoint.fromPoint")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn from_point(other: Option<DOMPointInit>) -> &'static DOMPoint {
         unreachable!()
     }
@@ -46654,12 +46967,14 @@ pub mod dom_point_read_only {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMPointReadOnly/DOMPointReadOnly)
     #[cfg_attr(rust_js, rust_js::link_name = "new DOMPointReadOnly")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(x: Option<f64>, y: Option<f64>, z: Option<f64>, w: Option<f64>) -> &'static DOMPointReadOnly {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMPointReadOnly/fromPoint)
     #[cfg_attr(rust_js, rust_js::link_name = "DOMPointReadOnly.fromPoint")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn from_point(other: Option<DOMPointInit>) -> &'static DOMPointReadOnly {
         unreachable!()
     }
@@ -46692,6 +47007,7 @@ impl DOMPointReadOnly {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMPointReadOnly/matrixTransform)
     #[cfg_attr(rust_js, rust_js::link_name = "matrixTransform")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn matrix_transform(&self, matrix: Option<DOMMatrixInit>) -> &'static DOMPoint {
         unreachable!()
     }
@@ -46723,18 +47039,21 @@ pub mod dom_quad {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMQuad/DOMQuad)
     #[cfg_attr(rust_js, rust_js::link_name = "new DOMQuad")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(p1: Option<DOMPointInit>, p2: Option<DOMPointInit>, p3: Option<DOMPointInit>, p4: Option<DOMPointInit>) -> &'static DOMQuad {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMQuad/fromRect)
     #[cfg_attr(rust_js, rust_js::link_name = "DOMQuad.fromRect")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn from_rect(other: Option<DOMRectInit>) -> &'static DOMQuad {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMQuad/fromQuad)
     #[cfg_attr(rust_js, rust_js::link_name = "DOMQuad.fromQuad")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn from_quad(other: Option<DOMQuadInit>) -> &'static DOMQuad {
         unreachable!()
     }
@@ -46952,6 +47271,7 @@ impl DataTransferItem {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DataTransferItem/getAsString)
     #[cfg_attr(rust_js, rust_js::link_name = "getAsString")]
     #[cfg_attr(rust_js, rust_js::nullable(callback))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn get_as_string(&self, callback: Option<Box<dyn FnOnce(&'static str)>>) {
         unreachable!()
@@ -47106,6 +47426,7 @@ pub mod delay_node {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DelayNode/DelayNode)
     #[cfg_attr(rust_js, rust_js::link_name = "new DelayNode")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(context: &BaseAudioContext, options: Option<DelayOptions<'_>>) -> &'static DelayNode {
         unreachable!()
     }
@@ -47154,6 +47475,7 @@ pub mod device_motion_event {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DeviceMotionEvent/DeviceMotionEvent)
     #[cfg_attr(rust_js, rust_js::link_name = "new DeviceMotionEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(r#type: &str, event_init_dict: Option<DeviceMotionEventInit>) -> &'static DeviceMotionEvent {
         unreachable!()
     }
@@ -47208,12 +47530,14 @@ pub mod device_orientation_event {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DeviceOrientationEvent/DeviceOrientationEvent)
     #[cfg_attr(rust_js, rust_js::link_name = "new DeviceOrientationEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(r#type: &str, event_init_dict: Option<DeviceOrientationEventInit>) -> &'static DeviceOrientationEvent {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DeviceOrientationEvent/requestPermission)
     #[cfg_attr(rust_js, rust_js::link_name = "DeviceOrientationEvent.requestPermission")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn request_permission(absolute: Option<bool>) -> Promise<String> {
         unreachable!()
     }
@@ -47345,6 +47669,7 @@ pub mod document_picture_in_picture {
 impl DocumentPictureInPicture {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentPictureInPicture/requestWindow)
     #[cfg_attr(rust_js, rust_js::link_name = "requestWindow")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn request_window(&self, options: Option<DocumentPictureInPictureOptions>) -> Promise<&'static Window> {
         unreachable!()
     }
@@ -47448,6 +47773,7 @@ pub mod document_timeline {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentTimeline/DocumentTimeline)
     #[cfg_attr(rust_js, rust_js::link_name = "new DocumentTimeline")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(options: Option<DocumentTimelineOptions>) -> &'static DocumentTimeline {
         unreachable!()
     }
@@ -47579,6 +47905,7 @@ pub mod dynamics_compressor_node {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DynamicsCompressorNode/DynamicsCompressorNode)
     #[cfg_attr(rust_js, rust_js::link_name = "new DynamicsCompressorNode")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(context: &BaseAudioContext, options: Option<DynamicsCompressorOptions<'_>>) -> &'static DynamicsCompressorNode {
         unreachable!()
     }
@@ -47653,6 +47980,7 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/setFormValue)
     #[cfg_attr(rust_js, rust_js::link_name = "setFormValue")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn set_form_value(&self, value: impl IntoFileOrStrOrFormData, state: Option<&dyn IntoFileOrStrOrFormData>) {
         unreachable!()
@@ -47667,6 +47995,7 @@ impl ElementInternals {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ElementInternals/setValidity)
     #[cfg_attr(rust_js, rust_js::link_name = "setValidity")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn set_validity(&self, flags: Option<ValidityStateFlags>, message: Option<&str>, anchor: Option<&HTMLElement>) {
         unreachable!()
@@ -48589,6 +48918,7 @@ pub mod error_event {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ErrorEvent/ErrorEvent)
     #[cfg_attr(rust_js, rust_js::link_name = "new ErrorEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(r#type: &str, event_init_dict: Option<ErrorEventInit<'_>>) -> &'static ErrorEvent {
         unreachable!()
     }
@@ -48735,6 +49065,7 @@ pub mod event_source {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/EventSource/EventSource)
     #[cfg_attr(rust_js, rust_js::link_name = "new EventSource")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(url: &str, event_source_init_dict: Option<EventSourceInit>) -> &'static EventSource {
         unreachable!()
     }
@@ -48971,6 +49302,7 @@ impl FileReader {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FileReader/readAsText)
     #[cfg_attr(rust_js, rust_js::link_name = "readAsText")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn read_as_text(&self, blob: &Blob, encoding: Option<&str>) {
         unreachable!()
@@ -49174,6 +49506,7 @@ impl FileSystemDirectoryEntry {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FileSystemDirectoryEntry/getFile)
     #[cfg_attr(rust_js, rust_js::link_name = "getFile")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn get_file(&self, path: Option<&str>, options: Option<FileSystemFlags>, success_callback: Option<Box<dyn FnOnce(&'static FileSystemEntry)>>, error_callback: Option<Box<dyn FnOnce(&'static DOMException)>>) {
         unreachable!()
@@ -49181,6 +49514,7 @@ impl FileSystemDirectoryEntry {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FileSystemDirectoryEntry/getDirectory)
     #[cfg_attr(rust_js, rust_js::link_name = "getDirectory")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn get_directory(&self, path: Option<&str>, options: Option<FileSystemFlags>, success_callback: Option<Box<dyn FnOnce(&'static FileSystemEntry)>>, error_callback: Option<Box<dyn FnOnce(&'static DOMException)>>) {
         unreachable!()
@@ -49224,18 +49558,21 @@ pub mod file_system_directory_handle {
 impl FileSystemDirectoryHandle {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FileSystemDirectoryHandle/getFileHandle)
     #[cfg_attr(rust_js, rust_js::link_name = "getFileHandle")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn get_file_handle(&self, name: &str, options: Option<FileSystemGetFileOptions>) -> Promise<&'static FileSystemFileHandle> {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FileSystemDirectoryHandle/getDirectoryHandle)
     #[cfg_attr(rust_js, rust_js::link_name = "getDirectoryHandle")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn get_directory_handle(&self, name: &str, options: Option<FileSystemGetDirectoryOptions>) -> Promise<&'static FileSystemDirectoryHandle> {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FileSystemDirectoryHandle/removeEntry)
     #[cfg_attr(rust_js, rust_js::link_name = "removeEntry")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn remove_entry(&self, name: &str, options: Option<FileSystemRemoveOptions>) -> Promise<()> {
         unreachable!()
     }
@@ -49265,6 +49602,7 @@ impl Eq for FileSystemDirectoryReader {}
 impl FileSystemDirectoryReader {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FileSystemDirectoryReader/readEntries)
     #[cfg_attr(rust_js, rust_js::link_name = "readEntries")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn read_entries(&self, success_callback: Box<dyn FnOnce(&'static [&'static FileSystemEntry])>, error_callback: Option<Box<dyn FnOnce(&'static DOMException)>>) {
         unreachable!()
@@ -49319,6 +49657,7 @@ impl FileSystemEntry {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FileSystemEntry/getParent)
     #[cfg_attr(rust_js, rust_js::link_name = "getParent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn get_parent(&self, success_callback: Option<Box<dyn FnOnce(&'static FileSystemEntry)>>, error_callback: Option<Box<dyn FnOnce(&'static DOMException)>>) {
         unreachable!()
@@ -49362,6 +49701,7 @@ pub mod file_system_file_entry {
 impl FileSystemFileEntry {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FileSystemFileEntry/file)
     #[cfg_attr(rust_js, rust_js::link_name = "file")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn file(&self, success_callback: Box<dyn FnOnce(&'static File)>, error_callback: Option<Box<dyn FnOnce(&'static DOMException)>>) {
         unreachable!()
@@ -49411,6 +49751,7 @@ impl FileSystemFileHandle {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FileSystemFileHandle/createWritable)
     #[cfg_attr(rust_js, rust_js::link_name = "createWritable")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn create_writable(&self, options: Option<FileSystemCreateWritableOptions>) -> Promise<&'static FileSystemWritableFileStream> {
         unreachable!()
     }
@@ -49525,6 +49866,7 @@ pub mod font_face {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FontFace/FontFace)
     #[cfg_attr(rust_js, rust_js::link_name = "new FontFace")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(family: &str, source: impl IntoStrOrBufferSource, descriptors: Option<FontFaceDescriptors<'_>>) -> &'static FontFace {
         unreachable!()
     }
@@ -49809,12 +50151,14 @@ impl FontFaceSet {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FontFaceSet/load)
     #[cfg_attr(rust_js, rust_js::link_name = "load")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn load(&self, font: &str, text: Option<&str>) -> Promise<Vec<&'static FontFace>> {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FontFaceSet/check)
     #[cfg_attr(rust_js, rust_js::link_name = "check")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn check(&self, font: &str, text: Option<&str>) -> bool {
         unreachable!()
     }
@@ -49861,6 +50205,7 @@ pub mod font_face_set_load_event {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FontFaceSetLoadEvent/FontFaceSetLoadEvent)
     #[cfg_attr(rust_js, rust_js::link_name = "new FontFaceSetLoadEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(r#type: &str, event_init_dict: Option<FontFaceSetLoadEventInit<'_>>) -> &'static FontFaceSetLoadEvent {
         unreachable!()
     }
@@ -49960,6 +50305,7 @@ impl Eq for GPU {}
 impl GPU {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPU/requestAdapter)
     #[cfg_attr(rust_js, rust_js::link_name = "requestAdapter")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn request_adapter(&self, options: Option<GPURequestAdapterOptions<'_>>) -> Promise<Option<&'static GPUAdapter>> {
         unreachable!()
     }
@@ -50013,6 +50359,7 @@ impl GPUAdapter {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUAdapter/requestDevice)
     #[cfg_attr(rust_js, rust_js::link_name = "requestDevice")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn request_device(&self, descriptor: Option<GPUDeviceDescriptor<'_>>) -> Promise<&'static GPUDevice> {
         unreachable!()
     }
@@ -50175,12 +50522,14 @@ impl GPUBuffer {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUBuffer/mapAsync)
     #[cfg_attr(rust_js, rust_js::link_name = "mapAsync")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn map_async(&self, mode: impl Into<f64>, offset: Option<f64>, size: Option<f64>) -> Promise<()> {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUBuffer/getMappedRange)
     #[cfg_attr(rust_js, rust_js::link_name = "getMappedRange")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn get_mapped_range(&self, offset: Option<f64>, size: Option<f64>) -> &'static ArrayBuffer {
         unreachable!()
     }
@@ -50315,12 +50664,14 @@ impl GPUCommandEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUCommandEncoder/beginComputePass)
     #[cfg_attr(rust_js, rust_js::link_name = "beginComputePass")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn begin_compute_pass(&self, descriptor: Option<GPUComputePassDescriptor<'_>>) -> &'static GPUComputePassEncoder {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUCommandEncoder/copyBufferToBuffer)
     #[cfg_attr(rust_js, rust_js::link_name = "copyBufferToBuffer")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn copy_buffer_to_buffer(&self, source: &GPUBuffer, destination: &GPUBuffer, size: Option<f64>) {
         unreachable!()
@@ -50328,6 +50679,7 @@ impl GPUCommandEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUCommandEncoder/copyBufferToBuffer)
     #[cfg_attr(rust_js, rust_js::link_name = "copyBufferToBuffer")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn copy_buffer_to_buffer_with_f64_and_destination_and_destination_offset(&self, source: &GPUBuffer, source_offset: impl Into<f64>, destination: &GPUBuffer, destination_offset: impl Into<f64>, size: Option<f64>) {
         unreachable!()
@@ -50356,6 +50708,7 @@ impl GPUCommandEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUCommandEncoder/clearBuffer)
     #[cfg_attr(rust_js, rust_js::link_name = "clearBuffer")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn clear_buffer(&self, buffer: &GPUBuffer, offset: Option<f64>, size: Option<f64>) {
         unreachable!()
@@ -50370,6 +50723,7 @@ impl GPUCommandEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUCommandEncoder/finish)
     #[cfg_attr(rust_js, rust_js::link_name = "finish")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn finish(&self, descriptor: Option<GPUCommandBufferDescriptor<'_>>) -> &'static GPUCommandBuffer {
         unreachable!()
     }
@@ -50513,6 +50867,7 @@ impl GPUComputePassEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUComputePassEncoder/dispatchWorkgroups)
     #[cfg_attr(rust_js, rust_js::link_name = "dispatchWorkgroups")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn dispatch_workgroups(&self, workgroup_count_x: impl Into<f64>, workgroup_count_y: Option<f64>, workgroup_count_z: Option<f64>) {
         unreachable!()
@@ -50568,6 +50923,7 @@ impl GPUComputePassEncoder {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUComputePassEncoder/setBindGroup)
     #[cfg_attr(rust_js, rust_js::link_name = "setBindGroup")]
     #[cfg_attr(rust_js, rust_js::nullable(bind_group))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn set_bind_group(&self, index: impl Into<f64>, bind_group: Option<&GPUBindGroup>, dynamic_offsets: Option<&[f64]>) {
         unreachable!()
@@ -50576,6 +50932,7 @@ impl GPUComputePassEncoder {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUComputePassEncoder/setBindGroup)
     #[cfg_attr(rust_js, rust_js::link_name = "setBindGroup")]
     #[cfg_attr(rust_js, rust_js::nullable(bind_group))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn set_bind_group_with_dynamic_offsets_data_and_dynamic_offsets_data_start_and_dynamic_offsets_data_length(&self, index: impl Into<f64>, bind_group: Option<&GPUBindGroup>, dynamic_offsets_data: &Uint32Array, dynamic_offsets_data_start: impl Into<f64>, dynamic_offsets_data_length: impl Into<f64>) {
         unreachable!()
@@ -50697,6 +51054,7 @@ impl GPUDevice {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUDevice/createSampler)
     #[cfg_attr(rust_js, rust_js::link_name = "createSampler")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn create_sampler(&self, descriptor: Option<GPUSamplerDescriptor<'_>>) -> &'static GPUSampler {
         unreachable!()
     }
@@ -50757,6 +51115,7 @@ impl GPUDevice {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUDevice/createCommandEncoder)
     #[cfg_attr(rust_js, rust_js::link_name = "createCommandEncoder")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn create_command_encoder(&self, descriptor: Option<GPUCommandEncoderDescriptor<'_>>) -> &'static GPUCommandEncoder {
         unreachable!()
     }
@@ -51008,6 +51367,7 @@ pub mod gpu_pipeline_error {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUPipelineError/GPUPipelineError)
     #[cfg_attr(rust_js, rust_js::link_name = "new GPUPipelineError")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(message: Option<&str>) -> &'static GPUPipelineError {
         unreachable!()
     }
@@ -51136,6 +51496,7 @@ impl GPUQueue {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUQueue/writeBuffer)
     #[cfg_attr(rust_js, rust_js::link_name = "writeBuffer")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn write_buffer(&self, buffer: &GPUBuffer, buffer_offset: impl Into<f64>, data: impl IntoAllowSharedBufferSource, data_offset: Option<f64>, size: Option<f64>) {
         unreachable!()
@@ -51215,6 +51576,7 @@ impl Eq for GPURenderBundleEncoder {}
 impl GPURenderBundleEncoder {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderBundleEncoder/finish)
     #[cfg_attr(rust_js, rust_js::link_name = "finish")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn finish(&self, descriptor: Option<GPURenderBundleDescriptor<'_>>) -> &'static GPURenderBundle {
         unreachable!()
     }
@@ -51255,6 +51617,7 @@ impl GPURenderBundleEncoder {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderBundleEncoder/setBindGroup)
     #[cfg_attr(rust_js, rust_js::link_name = "setBindGroup")]
     #[cfg_attr(rust_js, rust_js::nullable(bind_group))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn set_bind_group(&self, index: impl Into<f64>, bind_group: Option<&GPUBindGroup>, dynamic_offsets: Option<&[f64]>) {
         unreachable!()
@@ -51263,6 +51626,7 @@ impl GPURenderBundleEncoder {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderBundleEncoder/setBindGroup)
     #[cfg_attr(rust_js, rust_js::link_name = "setBindGroup")]
     #[cfg_attr(rust_js, rust_js::nullable(bind_group))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn set_bind_group_with_dynamic_offsets_data_and_dynamic_offsets_data_start_and_dynamic_offsets_data_length(&self, index: impl Into<f64>, bind_group: Option<&GPUBindGroup>, dynamic_offsets_data: &Uint32Array, dynamic_offsets_data_start: impl Into<f64>, dynamic_offsets_data_length: impl Into<f64>) {
         unreachable!()
@@ -51277,6 +51641,7 @@ impl GPURenderBundleEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderBundleEncoder/setIndexBuffer)
     #[cfg_attr(rust_js, rust_js::link_name = "setIndexBuffer")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn set_index_buffer(&self, buffer: &GPUBuffer, index_format: &str, offset: Option<f64>, size: Option<f64>) {
         unreachable!()
@@ -51285,6 +51650,7 @@ impl GPURenderBundleEncoder {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderBundleEncoder/setVertexBuffer)
     #[cfg_attr(rust_js, rust_js::link_name = "setVertexBuffer")]
     #[cfg_attr(rust_js, rust_js::nullable(buffer))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn set_vertex_buffer(&self, slot: impl Into<f64>, buffer: Option<&GPUBuffer>, offset: Option<f64>, size: Option<f64>) {
         unreachable!()
@@ -51292,6 +51658,7 @@ impl GPURenderBundleEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderBundleEncoder/draw)
     #[cfg_attr(rust_js, rust_js::link_name = "draw")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn draw(&self, vertex_count: impl Into<f64>, instance_count: Option<f64>, first_vertex: Option<f64>, first_instance: Option<f64>) {
         unreachable!()
@@ -51299,6 +51666,7 @@ impl GPURenderBundleEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderBundleEncoder/drawIndexed)
     #[cfg_attr(rust_js, rust_js::link_name = "drawIndexed")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn draw_indexed(&self, index_count: impl Into<f64>, instance_count: Option<f64>, first_index: Option<f64>, base_vertex: Option<f64>, first_instance: Option<f64>) {
         unreachable!()
@@ -51427,6 +51795,7 @@ impl GPURenderPassEncoder {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderPassEncoder/setBindGroup)
     #[cfg_attr(rust_js, rust_js::link_name = "setBindGroup")]
     #[cfg_attr(rust_js, rust_js::nullable(bind_group))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn set_bind_group(&self, index: impl Into<f64>, bind_group: Option<&GPUBindGroup>, dynamic_offsets: Option<&[f64]>) {
         unreachable!()
@@ -51435,6 +51804,7 @@ impl GPURenderPassEncoder {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderPassEncoder/setBindGroup)
     #[cfg_attr(rust_js, rust_js::link_name = "setBindGroup")]
     #[cfg_attr(rust_js, rust_js::nullable(bind_group))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn set_bind_group_with_dynamic_offsets_data_and_dynamic_offsets_data_start_and_dynamic_offsets_data_length(&self, index: impl Into<f64>, bind_group: Option<&GPUBindGroup>, dynamic_offsets_data: &Uint32Array, dynamic_offsets_data_start: impl Into<f64>, dynamic_offsets_data_length: impl Into<f64>) {
         unreachable!()
@@ -51449,6 +51819,7 @@ impl GPURenderPassEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderPassEncoder/setIndexBuffer)
     #[cfg_attr(rust_js, rust_js::link_name = "setIndexBuffer")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn set_index_buffer(&self, buffer: &GPUBuffer, index_format: &str, offset: Option<f64>, size: Option<f64>) {
         unreachable!()
@@ -51457,6 +51828,7 @@ impl GPURenderPassEncoder {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderPassEncoder/setVertexBuffer)
     #[cfg_attr(rust_js, rust_js::link_name = "setVertexBuffer")]
     #[cfg_attr(rust_js, rust_js::nullable(buffer))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn set_vertex_buffer(&self, slot: impl Into<f64>, buffer: Option<&GPUBuffer>, offset: Option<f64>, size: Option<f64>) {
         unreachable!()
@@ -51464,6 +51836,7 @@ impl GPURenderPassEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderPassEncoder/draw)
     #[cfg_attr(rust_js, rust_js::link_name = "draw")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn draw(&self, vertex_count: impl Into<f64>, instance_count: Option<f64>, first_vertex: Option<f64>, first_instance: Option<f64>) {
         unreachable!()
@@ -51471,6 +51844,7 @@ impl GPURenderPassEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPURenderPassEncoder/drawIndexed)
     #[cfg_attr(rust_js, rust_js::link_name = "drawIndexed")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn draw_indexed(&self, index_count: impl Into<f64>, instance_count: Option<f64>, first_index: Option<f64>, base_vertex: Option<f64>, first_instance: Option<f64>) {
         unreachable!()
@@ -51924,6 +52298,7 @@ impl Eq for GPUTexture {}
 impl GPUTexture {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUTexture/createView)
     #[cfg_attr(rust_js, rust_js::link_name = "createView")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn create_view(&self, descriptor: Option<GPUTextureViewDescriptor<'_>>) -> &'static GPUTextureView {
         unreachable!()
     }
@@ -52147,6 +52522,7 @@ pub mod gain_node {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GainNode/GainNode)
     #[cfg_attr(rust_js, rust_js::link_name = "new GainNode")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(context: &BaseAudioContext, options: Option<GainOptions<'_>>) -> &'static GainNode {
         unreachable!()
     }
@@ -52296,6 +52672,7 @@ pub mod gamepad_event {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GamepadEvent/GamepadEvent)
     #[cfg_attr(rust_js, rust_js::link_name = "new GamepadEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(r#type: &str, event_init_dict: Option<GamepadEventInit<'_>>) -> &'static GamepadEvent {
         unreachable!()
     }
@@ -52333,6 +52710,7 @@ impl Eq for GamepadHapticActuator {}
 impl GamepadHapticActuator {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GamepadHapticActuator/playEffect)
     #[cfg_attr(rust_js, rust_js::link_name = "playEffect")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn play_effect(&self, r#type: &str, params: Option<GamepadEffectParameters>) -> Promise<String> {
         unreachable!()
     }
@@ -52362,6 +52740,7 @@ impl Eq for Geolocation {}
 impl Geolocation {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Geolocation/getCurrentPosition)
     #[cfg_attr(rust_js, rust_js::link_name = "getCurrentPosition")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn get_current_position(&self, success_callback: Box<dyn FnOnce(&'static GeolocationPosition)>, error_callback: Option<Box<dyn FnOnce(&'static GeolocationPositionError)>>, options: Option<PositionOptions>) {
         unreachable!()
@@ -52370,6 +52749,7 @@ impl Geolocation {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Geolocation/watchPosition)
     #[cfg_attr(rust_js, rust_js::link_name = "watchPosition")]
     #[cfg_attr(rust_js, rust_js::whole = "-2147483648..=2147483647")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn watch_position(&self, success_callback: Box<dyn FnMut(&'static GeolocationPosition)>, error_callback: Option<Box<dyn FnMut(&'static GeolocationPositionError)>>, options: Option<PositionOptions>) -> f64 {
         unreachable!()
     }
@@ -52586,6 +52966,7 @@ impl HTMLAllCollection {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLAllCollection/item)
     #[cfg_attr(rust_js, rust_js::link_name = "item")]
     #[cfg_attr(rust_js, rust_js::nullable)]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn item(&self, name_or_index: Option<&str>) -> Option<HTMLCollectionOrElement<'static>> {
         unreachable!()
     }
@@ -53536,6 +53917,7 @@ impl HTMLOptionsCollection {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLOptionsCollection/add)
     #[cfg_attr(rust_js, rust_js::link_name = "add")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn add(&self, element: impl IntoHTMLOptionElementOrHTMLOptGroupElement, before: Option<&dyn IntoHTMLElementOrNumber>) {
         unreachable!()
@@ -53710,6 +54092,7 @@ pub mod hash_change_event {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HashChangeEvent/HashChangeEvent)
     #[cfg_attr(rust_js, rust_js::link_name = "new HashChangeEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(r#type: &str, event_init_dict: Option<HashChangeEventInit<'_>>) -> &'static HashChangeEvent {
         unreachable!()
     }
@@ -53926,6 +54309,7 @@ impl HighlightRegistry {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HighlightRegistry/highlightsFromPoint)
     #[cfg_attr(rust_js, rust_js::link_name = "highlightsFromPoint")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn highlights_from_point(&self, x: impl Into<f64>, y: impl Into<f64>, options: Option<HighlightsFromPointOptions<'_>>) -> Vec<HighlightHitResult> {
         unreachable!()
     }
@@ -53986,6 +54370,7 @@ impl IDBCursor {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBCursor/continue)
     #[cfg_attr(rust_js, rust_js::link_name = "continue")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn r#continue(&self, key: Option<&dyn IntoUnknown>) {
         unreachable!()
@@ -54109,6 +54494,7 @@ impl IDBDatabase {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBDatabase/transaction)
     #[cfg_attr(rust_js, rust_js::link_name = "transaction")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn transaction(&self, store_names: impl IntoStrOrList, mode: Option<&str>, options: Option<IDBTransactionOptions<'_>>) -> &'static IDBTransaction {
         unreachable!()
     }
@@ -54122,6 +54508,7 @@ impl IDBDatabase {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBDatabase/createObjectStore)
     #[cfg_attr(rust_js, rust_js::link_name = "createObjectStore")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn create_object_store(&self, name: &str, options: Option<IDBObjectStoreParameters<'_>>) -> &'static IDBObjectStore {
         unreachable!()
     }
@@ -54213,6 +54600,7 @@ impl IDBFactory {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBFactory/open)
     /// `Err`: a `SecurityError` where the page may not keep data: storage turned off, a sandboxed frame, a `file:` or `data:` page.
     #[cfg_attr(rust_js, rust_js::link_name = "open")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn open(&self, name: &str, version: Option<f64>) -> Result<&'static IDBOpenDBRequest, &'static JsError> {
         unreachable!()
     }
@@ -54304,36 +54692,42 @@ impl IDBIndex {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBIndex/getAll)
     #[cfg_attr(rust_js, rust_js::link_name = "getAll")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn get_all(&self, query_or_options: Option<&dyn IntoUnknown>, count: Option<f64>) -> &'static IDBRequest {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBIndex/getAllKeys)
     #[cfg_attr(rust_js, rust_js::link_name = "getAllKeys")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn get_all_keys(&self, query_or_options: Option<&dyn IntoUnknown>, count: Option<f64>) -> &'static IDBRequest {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBIndex/getAllRecords)
     #[cfg_attr(rust_js, rust_js::link_name = "getAllRecords")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn get_all_records(&self, options: Option<IDBGetAllOptions<'_>>) -> &'static IDBRequest {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBIndex/count)
     #[cfg_attr(rust_js, rust_js::link_name = "count")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn count(&self, query: Option<&dyn IntoUnknown>) -> &'static IDBRequest {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBIndex/openCursor)
     #[cfg_attr(rust_js, rust_js::link_name = "openCursor")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn open_cursor(&self, query: Option<&dyn IntoUnknown>, direction: Option<&str>) -> &'static IDBRequest {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBIndex/openKeyCursor)
     #[cfg_attr(rust_js, rust_js::link_name = "openKeyCursor")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn open_key_cursor(&self, query: Option<&dyn IntoUnknown>, direction: Option<&str>) -> &'static IDBRequest {
         unreachable!()
     }
@@ -54365,18 +54759,21 @@ pub mod idb_key_range {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBKeyRange/lowerBound)
     #[cfg_attr(rust_js, rust_js::link_name = "IDBKeyRange.lowerBound")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn lower_bound<L>(lower: L, open: Option<bool>) -> &'static IDBKeyRange {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBKeyRange/upperBound)
     #[cfg_attr(rust_js, rust_js::link_name = "IDBKeyRange.upperBound")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn upper_bound<U>(upper: U, open: Option<bool>) -> &'static IDBKeyRange {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBKeyRange/bound)
     #[cfg_attr(rust_js, rust_js::link_name = "IDBKeyRange.bound")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn bound<L, U>(lower: L, upper: U, lower_open: Option<bool>, upper_open: Option<bool>) -> &'static IDBKeyRange {
         unreachable!()
     }
@@ -54468,12 +54865,14 @@ impl IDBObjectStore {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBObjectStore/put)
     #[cfg_attr(rust_js, rust_js::link_name = "put")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn put<V>(&self, value: V, key: Option<&dyn IntoUnknown>) -> &'static IDBRequest {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBObjectStore/add)
     #[cfg_attr(rust_js, rust_js::link_name = "add")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn add<V>(&self, value: V, key: Option<&dyn IntoUnknown>) -> &'static IDBRequest {
         unreachable!()
     }
@@ -54504,36 +54903,42 @@ impl IDBObjectStore {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBObjectStore/getAll)
     #[cfg_attr(rust_js, rust_js::link_name = "getAll")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn get_all(&self, query_or_options: Option<&dyn IntoUnknown>, count: Option<f64>) -> &'static IDBRequest {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBObjectStore/getAllKeys)
     #[cfg_attr(rust_js, rust_js::link_name = "getAllKeys")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn get_all_keys(&self, query_or_options: Option<&dyn IntoUnknown>, count: Option<f64>) -> &'static IDBRequest {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBObjectStore/getAllRecords)
     #[cfg_attr(rust_js, rust_js::link_name = "getAllRecords")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn get_all_records(&self, options: Option<IDBGetAllOptions<'_>>) -> &'static IDBRequest {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBObjectStore/count)
     #[cfg_attr(rust_js, rust_js::link_name = "count")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn count(&self, query: Option<&dyn IntoUnknown>) -> &'static IDBRequest {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBObjectStore/openCursor)
     #[cfg_attr(rust_js, rust_js::link_name = "openCursor")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn open_cursor(&self, query: Option<&dyn IntoUnknown>, direction: Option<&str>) -> &'static IDBRequest {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBObjectStore/openKeyCursor)
     #[cfg_attr(rust_js, rust_js::link_name = "openKeyCursor")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn open_key_cursor(&self, query: Option<&dyn IntoUnknown>, direction: Option<&str>) -> &'static IDBRequest {
         unreachable!()
     }
@@ -54546,6 +54951,7 @@ impl IDBObjectStore {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBObjectStore/createIndex)
     #[cfg_attr(rust_js, rust_js::link_name = "createIndex")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn create_index(&self, name: &str, key_path: impl IntoStrOrList, options: Option<IDBIndexParameters>) -> &'static IDBIndex {
         unreachable!()
     }
@@ -54920,6 +55326,7 @@ pub mod idb_version_change_event {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBVersionChangeEvent/IDBVersionChangeEvent)
     #[cfg_attr(rust_js, rust_js::link_name = "new IDBVersionChangeEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(r#type: &str, event_init_dict: Option<IDBVersionChangeEventInit>) -> &'static IDBVersionChangeEvent {
         unreachable!()
     }
@@ -55089,6 +55496,7 @@ impl ImageBitmapRenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ImageBitmapRenderingContext/transferFromImageBitmap)
     #[cfg_attr(rust_js, rust_js::link_name = "transferFromImageBitmap")]
     #[cfg_attr(rust_js, rust_js::nullable(bitmap))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn transfer_from_image_bitmap(&self, bitmap: Option<&ImageBitmap>) {
         unreachable!()
@@ -55123,6 +55531,7 @@ pub mod image_capture {
 impl ImageCapture {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ImageCapture/takePhoto)
     #[cfg_attr(rust_js, rust_js::link_name = "takePhoto")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn take_photo(&self, photo_settings: Option<PhotoSettings>) -> Promise<&'static Blob> {
         unreachable!()
     }
@@ -55172,6 +55581,7 @@ pub mod image_data {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ImageData/ImageData)
     #[cfg_attr(rust_js, rust_js::link_name = "new ImageData")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(sw: impl Into<f64>, sh: impl Into<f64>, settings: Option<ImageDataSettings<'_>>) -> &'static ImageData {
         unreachable!()
     }
@@ -55263,6 +55673,7 @@ impl ImageDecoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ImageDecoder/decode)
     #[cfg_attr(rust_js, rust_js::link_name = "decode")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn decode(&self, options: Option<ImageDecodeOptions>) -> Promise<ImageDecodeResult> {
         unreachable!()
     }
@@ -55456,6 +55867,7 @@ pub mod keyframe_effect {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyframeEffect/KeyframeEffect)
     #[cfg_attr(rust_js, rust_js::link_name = "new KeyframeEffect")]
     #[cfg_attr(rust_js, rust_js::nullable(target, keyframes))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(target: Option<&Element>, keyframes: Option<&dyn core::any::Any>, options: Option<&dyn IntoNumberOrKeyframeEffectOptions>) -> &'static KeyframeEffect {
         unreachable!()
     }
@@ -55517,6 +55929,7 @@ impl KeyframeEffect {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyframeEffect/setKeyframes)
     #[cfg_attr(rust_js, rust_js::link_name = "setKeyframes")]
     #[cfg_attr(rust_js, rust_js::nullable(keyframes))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn set_keyframes(&self, keyframes: Option<&dyn core::any::Any>) {
         unreachable!()
@@ -55784,6 +56197,7 @@ pub mod midi_connection_event {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MIDIConnectionEvent/MIDIConnectionEvent)
     #[cfg_attr(rust_js, rust_js::link_name = "new MIDIConnectionEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(r#type: &str, event_init_dict: Option<MIDIConnectionEventInit<'_>>) -> &'static MIDIConnectionEvent {
         unreachable!()
     }
@@ -55944,6 +56358,7 @@ pub mod midi_message_event {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MIDIMessageEvent/MIDIMessageEvent)
     #[cfg_attr(rust_js, rust_js::link_name = "new MIDIMessageEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(r#type: &str, event_init_dict: Option<MIDIMessageEventInit<'_>>) -> &'static MIDIMessageEvent {
         unreachable!()
     }
@@ -56001,6 +56416,7 @@ pub mod midi_output {
 impl MIDIOutput {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MIDIOutput/send)
     #[cfg_attr(rust_js, rust_js::link_name = "send")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn send(&self, data: &[f64], timestamp: Option<f64>) {
         unreachable!()
@@ -57783,6 +58199,7 @@ impl MathMLElement {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/focus)
     #[cfg_attr(rust_js, rust_js::link_name = "focus")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn focus(&self, options: Option<FocusOptions>) {
         unreachable!()
@@ -57936,12 +58353,14 @@ impl MediaDevices {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaDevices/getUserMedia)
     #[cfg_attr(rust_js, rust_js::link_name = "getUserMedia")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn get_user_media(&self, constraints: Option<MediaStreamConstraints<'_>>) -> Promise<&'static MediaStream> {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaDevices/getDisplayMedia)
     #[cfg_attr(rust_js, rust_js::link_name = "getDisplayMedia")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn get_display_media(&self, options: Option<DisplayMediaStreamOptions<'_>>) -> Promise<&'static MediaStream> {
         unreachable!()
     }
@@ -58024,6 +58443,7 @@ pub mod media_encrypted_event {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaEncryptedEvent/MediaEncryptedEvent)
     #[cfg_attr(rust_js, rust_js::link_name = "new MediaEncryptedEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(r#type: &str, event_init_dict: Option<MediaEncryptedEventInit<'_>>) -> &'static MediaEncryptedEvent {
         unreachable!()
     }
@@ -58370,12 +58790,14 @@ impl Eq for MediaKeys {}
 impl MediaKeys {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaKeys/createSession)
     #[cfg_attr(rust_js, rust_js::link_name = "createSession")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn create_session(&self, session_type: Option<&str>) -> &'static MediaKeySession {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaKeys/getStatusForPolicy)
     #[cfg_attr(rust_js, rust_js::link_name = "getStatusForPolicy")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn get_status_for_policy(&self, policy: Option<MediaKeysPolicy<'_>>) -> Promise<String> {
         unreachable!()
     }
@@ -58481,6 +58903,7 @@ pub mod media_metadata {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaMetadata/MediaMetadata)
     #[cfg_attr(rust_js, rust_js::link_name = "new MediaMetadata")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(init: Option<MediaMetadataInit<'_>>) -> &'static MediaMetadata {
         unreachable!()
     }
@@ -58565,6 +58988,7 @@ pub mod media_recorder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaRecorder/MediaRecorder)
     #[cfg_attr(rust_js, rust_js::link_name = "new MediaRecorder")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(stream: &MediaStream, options: Option<MediaRecorderOptions<'_>>) -> &'static MediaRecorder {
         unreachable!()
     }
@@ -58707,6 +59131,7 @@ impl MediaRecorder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaRecorder/start)
     #[cfg_attr(rust_js, rust_js::link_name = "start")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn start(&self, timeslice: Option<f64>) {
         unreachable!()
@@ -58786,6 +59211,7 @@ impl MediaSession {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaSession/setActionHandler)
     #[cfg_attr(rust_js, rust_js::link_name = "setActionHandler")]
     #[cfg_attr(rust_js, rust_js::nullable(handler))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn set_action_handler(&self, action: &str, handler: Option<Box<dyn FnMut(MediaSessionActionDetails<'static>)>>) {
         unreachable!()
@@ -58793,6 +59219,7 @@ impl MediaSession {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaSession/setPositionState)
     #[cfg_attr(rust_js, rust_js::link_name = "setPositionState")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn set_position_state(&self, state: Option<MediaPositionState>) {
         unreachable!()
@@ -58954,6 +59381,7 @@ impl MediaSource {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaSource/endOfStream)
     #[cfg_attr(rust_js, rust_js::link_name = "endOfStream")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn end_of_stream(&self, error: Option<&str>) {
         unreachable!()
@@ -59146,6 +59574,7 @@ pub mod media_stream_audio_destination_node {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaStreamAudioDestinationNode/MediaStreamAudioDestinationNode)
     #[cfg_attr(rust_js, rust_js::link_name = "new MediaStreamAudioDestinationNode")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(context: &AudioContext, options: Option<AudioNodeOptions<'_>>) -> &'static MediaStreamAudioDestinationNode {
         unreachable!()
     }
@@ -59368,6 +59797,7 @@ impl MediaStreamTrack {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaStreamTrack/applyConstraints)
     #[cfg_attr(rust_js, rust_js::link_name = "applyConstraints")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn apply_constraints(&self, constraints: Option<MediaTrackConstraints>) -> Promise<()> {
         unreachable!()
     }
@@ -59509,6 +59939,7 @@ pub mod message_port {
 impl MessagePort {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MessagePort/postMessage)
     #[cfg_attr(rust_js, rust_js::link_name = "postMessage")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn post_message<M: StructuredClone>(&self, message: M, options: Option<StructuredSerializeOptions<'_>>) {
         unreachable!()
@@ -59687,6 +60118,7 @@ pub mod mutation_observer {
 impl MutationObserver {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MutationObserver/observe)
     #[cfg_attr(rust_js, rust_js::link_name = "observe")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn observe(&self, target: &Node, options: Option<MutationObserverInit<'_>>) {
         unreachable!()
@@ -59844,6 +60276,7 @@ impl NamedNodeMap {
     #[cfg_attr(rust_js, rust_js::link_name = "getNamedItemNS")]
     #[cfg_attr(rust_js, rust_js::nullable(namespace))]
     #[cfg_attr(rust_js, rust_js::nullable)]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn get_named_item_ns(&self, namespace: Option<&str>, local_name: &str) -> Option<&'static Attr> {
         unreachable!()
     }
@@ -59871,6 +60304,7 @@ impl NamedNodeMap {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/NamedNodeMap/removeNamedItemNS)
     #[cfg_attr(rust_js, rust_js::link_name = "removeNamedItemNS")]
     #[cfg_attr(rust_js, rust_js::nullable(namespace))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn remove_named_item_ns(&self, namespace: Option<&str>, local_name: &str) -> &'static Attr {
         unreachable!()
     }
@@ -59988,6 +60422,7 @@ impl NavigateEvent {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/NavigateEvent/intercept)
     #[cfg_attr(rust_js, rust_js::link_name = "intercept")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn intercept(&self, options: Option<NavigationInterceptOptions<'_>>) {
         unreachable!()
@@ -60084,30 +60519,35 @@ impl Navigation {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigation/navigate)
     #[cfg_attr(rust_js, rust_js::link_name = "navigate")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn navigate(&self, url: &str, options: Option<NavigationNavigateOptions<'_>>) -> NavigationResult {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigation/reload)
     #[cfg_attr(rust_js, rust_js::link_name = "reload")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn reload(&self, options: Option<NavigationReloadOptions<'_>>) -> NavigationResult {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigation/traverseTo)
     #[cfg_attr(rust_js, rust_js::link_name = "traverseTo")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn traverse_to(&self, key: &str, options: Option<NavigationOptions<'_>>) -> NavigationResult {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigation/back)
     #[cfg_attr(rust_js, rust_js::link_name = "back")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn back(&self, options: Option<NavigationOptions<'_>>) -> NavigationResult {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigation/forward)
     #[cfg_attr(rust_js, rust_js::link_name = "forward")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn forward(&self, options: Option<NavigationOptions<'_>>) -> NavigationResult {
         unreachable!()
     }
@@ -60425,6 +60865,7 @@ impl Eq for NavigationPrecommitController {}
 impl NavigationPrecommitController {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/NavigationPrecommitController/redirect)
     #[cfg_attr(rust_js, rust_js::link_name = "redirect")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn redirect(&self, url: &str, options: Option<NavigationNavigateOptions<'_>>) {
         unreachable!()
@@ -60648,6 +61089,7 @@ pub mod notification {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Notification/Notification)
     #[cfg_attr(rust_js, rust_js::link_name = "new Notification")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(title: &str, options: Option<NotificationOptions<'_>>) -> &'static Notification {
         unreachable!()
     }
@@ -60660,6 +61102,7 @@ pub mod notification {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Notification/requestPermission)
     #[cfg_attr(rust_js, rust_js::link_name = "Notification.requestPermission")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn request_permission(deprecated_callback: Option<Box<dyn FnOnce(&'static str)>>) -> Promise<String> {
         unreachable!()
     }
@@ -60905,6 +61348,7 @@ pub mod offline_audio_context {
 impl OfflineAudioContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OfflineAudioContext/startRendering)
     #[cfg_attr(rust_js, rust_js::link_name = "startRendering")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn start_rendering(&self, chunk_size: Option<f64>) -> Promise<&'static AudioBuffer> {
         unreachable!()
     }
@@ -61015,6 +61459,7 @@ impl OffscreenCanvas {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvas/getContext)
     #[cfg_attr(rust_js, rust_js::link_name = "getContext")]
     #[cfg_attr(rust_js, rust_js::nullable)]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn get_context_named(&self, context_id: &str, options: Option<&dyn IntoUnknown>) -> Option<OffscreenRenderingContext<'static>> {
         unreachable!()
     }
@@ -61027,6 +61472,7 @@ impl OffscreenCanvas {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvas/convertToBlob)
     #[cfg_attr(rust_js, rust_js::link_name = "convertToBlob")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn convert_to_blob(&self, options: Option<ImageEncodeOptions<'_>>) -> Promise<&'static Blob> {
         unreachable!()
     }
@@ -61163,6 +61609,7 @@ impl OffscreenCanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvasRenderingContext2D/setTransform)
     #[cfg_attr(rust_js, rust_js::link_name = "setTransform")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn set_transform(&self, transform: Option<DOMMatrix2DInit>) {
         unreachable!()
@@ -61362,6 +61809,7 @@ impl OffscreenCanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvasRenderingContext2D/fill)
     #[cfg_attr(rust_js, rust_js::link_name = "fill")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn fill(&self, fill_rule: Option<&str>) {
         unreachable!()
@@ -61369,6 +61817,7 @@ impl OffscreenCanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvasRenderingContext2D/fill)
     #[cfg_attr(rust_js, rust_js::link_name = "fill")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn fill_with_path(&self, path: &Path2D, fill_rule: Option<&str>) {
         unreachable!()
@@ -61376,6 +61825,7 @@ impl OffscreenCanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvasRenderingContext2D/stroke)
     #[cfg_attr(rust_js, rust_js::link_name = "stroke")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn stroke(&self, path: Option<&Path2D>) {
         unreachable!()
@@ -61383,6 +61833,7 @@ impl OffscreenCanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvasRenderingContext2D/clip)
     #[cfg_attr(rust_js, rust_js::link_name = "clip")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn clip(&self, fill_rule: Option<&str>) {
         unreachable!()
@@ -61390,6 +61841,7 @@ impl OffscreenCanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvasRenderingContext2D/clip)
     #[cfg_attr(rust_js, rust_js::link_name = "clip")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn clip_with_path(&self, path: &Path2D, fill_rule: Option<&str>) {
         unreachable!()
@@ -61397,12 +61849,14 @@ impl OffscreenCanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvasRenderingContext2D/isPointInPath)
     #[cfg_attr(rust_js, rust_js::link_name = "isPointInPath")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn is_point_in_path(&self, x: impl Into<f64>, y: impl Into<f64>, fill_rule: Option<&str>) -> bool {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvasRenderingContext2D/isPointInPath)
     #[cfg_attr(rust_js, rust_js::link_name = "isPointInPath")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn is_point_in_path_with_path2_d_and_y(&self, path: &Path2D, x: impl Into<f64>, y: impl Into<f64>, fill_rule: Option<&str>) -> bool {
         unreachable!()
     }
@@ -61421,6 +61875,7 @@ impl OffscreenCanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvasRenderingContext2D/fillText)
     #[cfg_attr(rust_js, rust_js::link_name = "fillText")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn fill_text(&self, text: &str, x: impl Into<f64>, y: impl Into<f64>, max_width: Option<f64>) {
         unreachable!()
@@ -61428,6 +61883,7 @@ impl OffscreenCanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvasRenderingContext2D/strokeText)
     #[cfg_attr(rust_js, rust_js::link_name = "strokeText")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn stroke_text(&self, text: &str, x: impl Into<f64>, y: impl Into<f64>, max_width: Option<f64>) {
         unreachable!()
@@ -61441,6 +61897,7 @@ impl OffscreenCanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvasRenderingContext2D/drawImage)
     #[cfg_attr(rust_js, rust_js::link_name = "drawImage")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn draw_image(&self, image: impl IntoCanvasImageSource, dx: impl Into<f64>, dy: impl Into<f64>, dw: Option<f64>, dh: Option<f64>) {
         unreachable!()
@@ -61455,6 +61912,7 @@ impl OffscreenCanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvasRenderingContext2D/createImageData)
     #[cfg_attr(rust_js, rust_js::link_name = "createImageData")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn create_image_data(&self, sw: impl Into<f64>, sh: impl Into<f64>, settings: Option<ImageDataSettings<'_>>) -> &'static ImageData {
         unreachable!()
     }
@@ -61468,12 +61926,14 @@ impl OffscreenCanvasRenderingContext2D {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvasRenderingContext2D/getImageData)
     /// `Err`: a `SecurityError` where an image of another origin, not shared by CORS, was drawn on it.
     #[cfg_attr(rust_js, rust_js::link_name = "getImageData")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn get_image_data(&self, sx: impl Into<f64>, sy: impl Into<f64>, sw: impl Into<f64>, sh: impl Into<f64>, settings: Option<ImageDataSettings<'_>>) -> Result<&'static ImageData, &'static JsError> {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvasRenderingContext2D/putImageData)
     #[cfg_attr(rust_js, rust_js::link_name = "putImageData")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn put_image_data(&self, image_data: &ImageData, dx: impl Into<f64>, dy: impl Into<f64>, dirty_x: Option<f64>, dirty_y: Option<f64>, dirty_width: Option<f64>, dirty_height: Option<f64>) {
         unreachable!()
@@ -61735,6 +62195,7 @@ impl OffscreenCanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvasRenderingContext2D/roundRect)
     #[cfg_attr(rust_js, rust_js::link_name = "roundRect")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn round_rect(&self, x: impl Into<f64>, y: impl Into<f64>, w: impl Into<f64>, h: impl Into<f64>, radii: Option<&dyn IntoNumberOrDOMPointInitOrList>) {
         unreachable!()
@@ -61742,6 +62203,7 @@ impl OffscreenCanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvasRenderingContext2D/arc)
     #[cfg_attr(rust_js, rust_js::link_name = "arc")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn arc(&self, x: impl Into<f64>, y: impl Into<f64>, radius: impl Into<f64>, start_angle: impl Into<f64>, end_angle: impl Into<f64>, counterclockwise: Option<bool>) {
         unreachable!()
@@ -61749,6 +62211,7 @@ impl OffscreenCanvasRenderingContext2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OffscreenCanvasRenderingContext2D/ellipse)
     #[cfg_attr(rust_js, rust_js::link_name = "ellipse")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn ellipse(&self, x: impl Into<f64>, y: impl Into<f64>, radius_x: impl Into<f64>, radius_y: impl Into<f64>, rotation: impl Into<f64>, start_angle: impl Into<f64>, end_angle: impl Into<f64>, counterclockwise: Option<bool>) {
         unreachable!()
@@ -61835,6 +62298,7 @@ pub mod oscillator_node {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OscillatorNode/OscillatorNode)
     #[cfg_attr(rust_js, rust_js::link_name = "new OscillatorNode")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(context: &BaseAudioContext, options: Option<OscillatorOptions<'_>>) -> &'static OscillatorNode {
         unreachable!()
     }
@@ -61908,6 +62372,7 @@ pub mod overconstrained_error {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OverconstrainedError/OverconstrainedError)
     #[cfg_attr(rust_js, rust_js::link_name = "new OverconstrainedError")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(constraint: &str, message: Option<&str>) -> &'static OverconstrainedError {
         unreachable!()
     }
@@ -61956,6 +62421,7 @@ pub mod page_reveal_event {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PageRevealEvent/PageRevealEvent)
     #[cfg_attr(rust_js, rust_js::link_name = "new PageRevealEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(r#type: &str, event_init_dict: Option<PageRevealEventInit<'_>>) -> &'static PageRevealEvent {
         unreachable!()
     }
@@ -62005,6 +62471,7 @@ pub mod page_swap_event {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PageSwapEvent/PageSwapEvent)
     #[cfg_attr(rust_js, rust_js::link_name = "new PageSwapEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(r#type: &str, event_init_dict: Option<PageSwapEventInit<'_>>) -> &'static PageSwapEvent {
         unreachable!()
     }
@@ -62061,6 +62528,7 @@ pub mod page_transition_event {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PageTransitionEvent/PageTransitionEvent)
     #[cfg_attr(rust_js, rust_js::link_name = "new PageTransitionEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(r#type: &str, event_init_dict: Option<PageTransitionEventInit>) -> &'static PageTransitionEvent {
         unreachable!()
     }
@@ -62109,6 +62577,7 @@ pub mod panner_node {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PannerNode/PannerNode)
     #[cfg_attr(rust_js, rust_js::link_name = "new PannerNode")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(context: &BaseAudioContext, options: Option<PannerOptions<'_>>) -> &'static PannerNode {
         unreachable!()
     }
@@ -62288,6 +62757,7 @@ pub mod path2_d {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Path2D/Path2D)
     #[cfg_attr(rust_js, rust_js::link_name = "new Path2D")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(path: Option<&dyn IntoPath2DOrStr>) -> &'static Path2D {
         unreachable!()
     }
@@ -62296,6 +62766,7 @@ pub mod path2_d {
 impl Path2D {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Path2D/addPath)
     #[cfg_attr(rust_js, rust_js::link_name = "addPath")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn add_path(&self, path: &Path2D, transform: Option<DOMMatrix2DInit>) {
         unreachable!()
@@ -62352,6 +62823,7 @@ impl Path2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Path2D/roundRect)
     #[cfg_attr(rust_js, rust_js::link_name = "roundRect")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn round_rect(&self, x: impl Into<f64>, y: impl Into<f64>, w: impl Into<f64>, h: impl Into<f64>, radii: Option<&dyn IntoNumberOrDOMPointInitOrList>) {
         unreachable!()
@@ -62359,6 +62831,7 @@ impl Path2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Path2D/arc)
     #[cfg_attr(rust_js, rust_js::link_name = "arc")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn arc(&self, x: impl Into<f64>, y: impl Into<f64>, radius: impl Into<f64>, start_angle: impl Into<f64>, end_angle: impl Into<f64>, counterclockwise: Option<bool>) {
         unreachable!()
@@ -62366,6 +62839,7 @@ impl Path2D {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Path2D/ellipse)
     #[cfg_attr(rust_js, rust_js::link_name = "ellipse")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn ellipse(&self, x: impl Into<f64>, y: impl Into<f64>, radius_x: impl Into<f64>, radius_y: impl Into<f64>, rotation: impl Into<f64>, start_angle: impl Into<f64>, end_angle: impl Into<f64>, counterclockwise: Option<bool>) {
         unreachable!()
@@ -62401,6 +62875,7 @@ pub mod payment_method_change_event {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PaymentMethodChangeEvent/PaymentMethodChangeEvent)
     #[cfg_attr(rust_js, rust_js::link_name = "new PaymentMethodChangeEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(r#type: &str, event_init_dict: Option<PaymentMethodChangeEventInit<'_>>) -> &'static PaymentMethodChangeEvent {
         unreachable!()
     }
@@ -62456,6 +62931,7 @@ pub mod payment_request {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PaymentRequest/PaymentRequest)
     #[cfg_attr(rust_js, rust_js::link_name = "new PaymentRequest")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(method_data: &[PaymentMethodData<'_>], details: PaymentDetailsInit<'_>, options: Option<PaymentOptions<'_>>) -> &'static PaymentRequest {
         unreachable!()
     }
@@ -62470,6 +62946,7 @@ pub mod payment_request {
 impl PaymentRequest {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PaymentRequest/show)
     #[cfg_attr(rust_js, rust_js::link_name = "show")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn show(&self, details_promise: Option<Promise<PaymentDetailsUpdate>>) -> Promise<&'static PaymentResponse> {
         unreachable!()
     }
@@ -62581,6 +63058,7 @@ pub mod payment_request_update_event {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PaymentRequestUpdateEvent/PaymentRequestUpdateEvent)
     #[cfg_attr(rust_js, rust_js::link_name = "new PaymentRequestUpdateEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(r#type: &str, event_init_dict: Option<PaymentRequestUpdateEventInit>) -> &'static PaymentRequestUpdateEvent {
         unreachable!()
     }
@@ -62690,12 +63168,14 @@ impl PaymentResponse {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PaymentResponse/complete)
     #[cfg_attr(rust_js, rust_js::link_name = "complete")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn complete(&self, result: Option<&str>) -> Promise<()> {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PaymentResponse/retry)
     #[cfg_attr(rust_js, rust_js::link_name = "retry")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn retry(&self, error_fields: Option<PaymentValidationErrors<'_>>) -> Promise<()> {
         unreachable!()
     }
@@ -62860,6 +63340,7 @@ pub mod performance_mark {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceMark/PerformanceMark)
     #[cfg_attr(rust_js, rust_js::link_name = "new PerformanceMark")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(mark_name: &str, mark_options: Option<PerformanceMarkOptions<'_>>) -> &'static PerformanceMark {
         unreachable!()
     }
@@ -63108,6 +63589,7 @@ pub mod performance_observer {
 impl PerformanceObserver {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceObserver/observe)
     #[cfg_attr(rust_js, rust_js::link_name = "observe")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn observe(&self, options: Option<PerformanceObserverInit<'_>>) {
         unreachable!()
@@ -63157,6 +63639,7 @@ impl PerformanceObserverEntryList {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceObserverEntryList/getEntriesByName)
     #[cfg_attr(rust_js, rust_js::link_name = "getEntriesByName")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn get_entries_by_name(&self, name: &str, r#type: Option<&str>) -> Vec<&'static PerformanceEntry> {
         unreachable!()
     }
@@ -63632,6 +64115,7 @@ pub mod periodic_wave {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PeriodicWave/PeriodicWave)
     #[cfg_attr(rust_js, rust_js::link_name = "new PeriodicWave")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(context: &BaseAudioContext, options: Option<PeriodicWaveOptions<'_>>) -> &'static PeriodicWave {
         unreachable!()
     }
@@ -64007,6 +64491,7 @@ pub mod pop_state_event {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PopStateEvent/PopStateEvent)
     #[cfg_attr(rust_js, rust_js::link_name = "new PopStateEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(r#type: &str, event_init_dict: Option<PopStateEventInit<'_>>) -> &'static PopStateEvent {
         unreachable!()
     }
@@ -64062,6 +64547,7 @@ pub mod processing_instruction {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ProcessingInstruction/ProcessingInstruction)
     #[cfg_attr(rust_js, rust_js::link_name = "new ProcessingInstruction")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(target: &str, data: Option<&str>) -> &'static ProcessingInstruction {
         unreachable!()
     }
@@ -64115,6 +64601,7 @@ impl ProcessingInstruction {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ProcessingInstruction/toggleAttribute)
     #[cfg_attr(rust_js, rust_js::link_name = "toggleAttribute")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn toggle_attribute(&self, name: &str, force: Option<bool>) -> bool {
         unreachable!()
     }
@@ -64162,6 +64649,7 @@ pub mod progress_event {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ProgressEvent/ProgressEvent)
     #[cfg_attr(rust_js, rust_js::link_name = "new ProgressEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(r#type: &str, event_init_dict: Option<ProgressEventInit>) -> &'static ProgressEvent {
         unreachable!()
     }
@@ -64383,6 +64871,7 @@ pub mod push_manager {
 impl PushManager {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PushManager/subscribe)
     #[cfg_attr(rust_js, rust_js::link_name = "subscribe")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn subscribe(&self, options: Option<PushSubscriptionOptionsInit<'_>>) -> Promise<&'static PushSubscription> {
         unreachable!()
     }
@@ -64395,6 +64884,7 @@ impl PushManager {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PushManager/permissionState)
     #[cfg_attr(rust_js, rust_js::link_name = "permissionState")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn permission_state(&self, options: Option<PushSubscriptionOptionsInit<'_>>) -> Promise<String> {
         unreachable!()
     }
@@ -64553,6 +65043,7 @@ pub mod rtcdtmf_sender {
 impl RTCDTMFSender {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCDTMFSender/insertDTMF)
     #[cfg_attr(rust_js, rust_js::link_name = "insertDTMF")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn insert_dtmf(&self, tones: &str, duration: Option<f64>, inter_tone_gap: Option<f64>) {
         unreachable!()
@@ -64615,6 +65106,7 @@ pub mod rtcdtmf_tone_change_event {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCDTMFToneChangeEvent/RTCDTMFToneChangeEvent)
     #[cfg_attr(rust_js, rust_js::link_name = "new RTCDTMFToneChangeEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(r#type: &str, event_init_dict: Option<RTCDTMFToneChangeEventInit<'_>>) -> &'static RTCDTMFToneChangeEvent {
         unreachable!()
     }
@@ -65033,6 +65525,7 @@ pub mod rtc_encoded_audio_frame {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCEncodedAudioFrame/RTCEncodedAudioFrame)
     #[cfg_attr(rust_js, rust_js::link_name = "new RTCEncodedAudioFrame")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(original_frame: &RTCEncodedAudioFrame, options: Option<RTCEncodedAudioFrameOptions>) -> &'static RTCEncodedAudioFrame {
         unreachable!()
     }
@@ -65078,6 +65571,7 @@ pub mod rtc_encoded_video_frame {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCEncodedVideoFrame/RTCEncodedVideoFrame)
     #[cfg_attr(rust_js, rust_js::link_name = "new RTCEncodedVideoFrame")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(original_frame: &RTCEncodedVideoFrame, options: Option<RTCEncodedVideoFrameOptions>) -> &'static RTCEncodedVideoFrame {
         unreachable!()
     }
@@ -65138,6 +65632,7 @@ pub mod rtc_error {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCError/RTCError)
     #[cfg_attr(rust_js, rust_js::link_name = "new RTCError")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(init: RTCErrorInit<'_>, message: Option<&str>) -> &'static RTCError {
         unreachable!()
     }
@@ -65257,6 +65752,7 @@ pub mod rtc_ice_candidate {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCIceCandidate/RTCIceCandidate)
     #[cfg_attr(rust_js, rust_js::link_name = "new RTCIceCandidate")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(candidate_init_dict: Option<RTCLocalIceCandidateInit<'_>>) -> &'static RTCIceCandidate {
         unreachable!()
     }
@@ -65505,6 +66001,7 @@ pub mod rtc_peer_connection {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/RTCPeerConnection)
     #[cfg_attr(rust_js, rust_js::link_name = "new RTCPeerConnection")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(configuration: Option<RTCConfiguration>) -> &'static RTCPeerConnection {
         unreachable!()
     }
@@ -65525,6 +66022,7 @@ pub mod rtc_peer_connection {
 impl RTCPeerConnection {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/createOffer)
     #[cfg_attr(rust_js, rust_js::link_name = "createOffer")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn create_offer(&self, options: Option<RTCOfferOptions>) -> Promise<RTCSessionDescriptionInit> {
         unreachable!()
     }
@@ -65537,6 +66035,7 @@ impl RTCPeerConnection {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/setLocalDescription)
     #[cfg_attr(rust_js, rust_js::link_name = "setLocalDescription")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn set_local_description(&self, description: Option<RTCLocalSessionDescriptionInit<'_>>, success_callback: Option<Box<dyn FnOnce()>>, failure_callback: Option<Box<dyn FnOnce(&'static DOMException)>>) -> Promise<()> {
         unreachable!()
     }
@@ -65564,6 +66063,7 @@ impl RTCPeerConnection {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/setRemoteDescription)
     #[cfg_attr(rust_js, rust_js::link_name = "setRemoteDescription")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn set_remote_description(&self, description: RTCSessionDescriptionInit, success_callback: Option<Box<dyn FnOnce()>>, failure_callback: Option<Box<dyn FnOnce(&'static DOMException)>>) -> Promise<()> {
         unreachable!()
     }
@@ -65591,6 +66091,7 @@ impl RTCPeerConnection {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/addIceCandidate)
     #[cfg_attr(rust_js, rust_js::link_name = "addIceCandidate")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn add_ice_candidate(&self, candidate: Option<RTCIceCandidateInit>, success_callback: Option<Box<dyn FnOnce()>>, failure_callback: Option<Box<dyn FnOnce(&'static DOMException)>>) -> Promise<()> {
         unreachable!()
     }
@@ -65641,6 +66142,7 @@ impl RTCPeerConnection {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/setConfiguration)
     #[cfg_attr(rust_js, rust_js::link_name = "setConfiguration")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn set_configuration(&self, configuration: Option<RTCConfiguration>) {
         unreachable!()
@@ -65760,6 +66262,7 @@ impl RTCPeerConnection {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/createOffer)
     #[cfg_attr(rust_js, rust_js::link_name = "createOffer")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn create_offer_with_success_callback_and_failure_callback(&self, success_callback: Box<dyn FnOnce(RTCSessionDescriptionInit)>, failure_callback: Box<dyn FnOnce(&'static DOMException)>, options: Option<RTCOfferOptions>) -> Promise<()> {
         unreachable!()
     }
@@ -65804,6 +66307,7 @@ impl RTCPeerConnection {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/addTransceiver)
     #[cfg_attr(rust_js, rust_js::link_name = "addTransceiver")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn add_transceiver(&self, track_or_kind: impl IntoMediaStreamTrackOrStr, init: Option<RTCRtpTransceiverInit<'_>>) -> &'static RTCRtpTransceiver {
         unreachable!()
     }
@@ -65832,6 +66336,7 @@ impl RTCPeerConnection {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/createDataChannel)
     #[cfg_attr(rust_js, rust_js::link_name = "createDataChannel")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn create_data_channel(&self, label: &str, data_channel_dict: Option<RTCDataChannelInit<'_>>) -> &'static RTCDataChannel {
         unreachable!()
     }
@@ -65853,6 +66358,7 @@ impl RTCPeerConnection {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/getStats)
     #[cfg_attr(rust_js, rust_js::link_name = "getStats")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn get_stats(&self, selector: Option<&MediaStreamTrack>) -> Promise<&'static RTCStatsReport> {
         unreachable!()
     }
@@ -65963,6 +66469,7 @@ pub mod rtc_peer_connection_ice_event {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnectionIceEvent/RTCPeerConnectionIceEvent)
     #[cfg_attr(rust_js, rust_js::link_name = "new RTCPeerConnectionIceEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(r#type: &str, event_init_dict: Option<RTCPeerConnectionIceEventInit<'_>>) -> &'static RTCPeerConnectionIceEvent {
         unreachable!()
     }
@@ -66088,6 +66595,7 @@ pub mod rtc_rtp_script_transform {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCRtpScriptTransform/RTCRtpScriptTransform)
     #[cfg_attr(rust_js, rust_js::link_name = "new RTCRtpScriptTransform")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(worker_or_worker_and_parameters: impl IntoWorkerOrWorkerAndParameters, options: Option<&dyn IntoUnknown>, transfer: Option<&[&dyn core::any::Any]>) -> &'static RTCRtpScriptTransform {
         unreachable!()
     }
@@ -66148,6 +66656,7 @@ impl RTCRtpSender {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCRtpSender/replaceTrack)
     #[cfg_attr(rust_js, rust_js::link_name = "replaceTrack")]
     #[cfg_attr(rust_js, rust_js::nullable(with_track))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn replace_track(&self, with_track: Option<&MediaStreamTrack>) -> Promise<()> {
         unreachable!()
     }
@@ -66682,6 +67191,7 @@ impl Range {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Range/collapse)
     #[cfg_attr(rust_js, rust_js::link_name = "collapse")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn collapse(&self, to_start: Option<bool>) {
         unreachable!()
@@ -66832,6 +67342,7 @@ impl ReadableByteStreamController {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ReadableByteStreamController/error)
     #[cfg_attr(rust_js, rust_js::link_name = "error")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn error(&self, e: Option<&dyn IntoUnknown>) {
         unreachable!()
@@ -66866,6 +67377,7 @@ pub mod readable_stream_byob_reader {
 impl ReadableStreamBYOBReader {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ReadableStreamBYOBReader/read)
     #[cfg_attr(rust_js, rust_js::link_name = "read")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn read(&self, view: impl IntoArrayBufferView, options: Option<ReadableStreamBYOBReaderReadOptions>) -> Promise<ReadableStreamReadResult> {
         unreachable!()
     }
@@ -66885,6 +67397,7 @@ impl ReadableStreamBYOBReader {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ReadableStreamBYOBReader/cancel)
     #[cfg_attr(rust_js, rust_js::link_name = "cancel")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn cancel(&self, reason: Option<&dyn IntoUnknown>) -> Promise<()> {
         unreachable!()
     }
@@ -66960,6 +67473,7 @@ impl ReadableStreamDefaultController {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ReadableStreamDefaultController/enqueue)
     #[cfg_attr(rust_js, rust_js::link_name = "enqueue")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn enqueue(&self, chunk: Option<&dyn IntoUnknown>) {
         unreachable!()
@@ -66967,6 +67481,7 @@ impl ReadableStreamDefaultController {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ReadableStreamDefaultController/error)
     #[cfg_attr(rust_js, rust_js::link_name = "error")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn error(&self, e: Option<&dyn IntoUnknown>) {
         unreachable!()
@@ -67020,6 +67535,7 @@ impl ReadableStreamDefaultReader {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ReadableStreamDefaultReader/cancel)
     #[cfg_attr(rust_js, rust_js::link_name = "cancel")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn cancel(&self, reason: Option<&dyn IntoUnknown>) -> Promise<()> {
         unreachable!()
     }
@@ -67068,6 +67584,7 @@ impl RemotePlayback {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RemotePlayback/cancelWatchAvailability)
     #[cfg_attr(rust_js, rust_js::link_name = "cancelWatchAvailability")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn cancel_watch_availability(&self, id: Option<f64>) -> Promise<()> {
         unreachable!()
     }
@@ -67150,6 +67667,7 @@ pub mod reporting_observer {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ReportingObserver/ReportingObserver)
     #[cfg_attr(rust_js, rust_js::link_name = "new ReportingObserver")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(callback: Box<dyn FnMut(&'static [Report], &'static ReportingObserver)>, options: Option<ReportingObserverOptions<'_>>) -> &'static ReportingObserver {
         unreachable!()
     }
@@ -67205,6 +67723,7 @@ pub mod resize_observer {
 impl ResizeObserver {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ResizeObserver/observe)
     #[cfg_attr(rust_js, rust_js::link_name = "observe")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn observe(&self, target: &Element, options: Option<ResizeObserverOptions<'_>>) {
         unreachable!()
@@ -68460,6 +68979,7 @@ impl SVGTransform {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGTransform/setMatrix)
     #[cfg_attr(rust_js, rust_js::link_name = "setMatrix")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn set_matrix(&self, matrix: Option<DOMMatrix2DInit>) {
         unreachable!()
@@ -68597,6 +69117,7 @@ impl SVGTransformList {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGTransformList/createSVGTransformFromMatrix)
     #[cfg_attr(rust_js, rust_js::link_name = "createSVGTransformFromMatrix")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn create_svg_transform_from_matrix(&self, matrix: Option<DOMMatrix2DInit>) -> &'static SVGTransform {
         unreachable!()
     }
@@ -68658,6 +69179,7 @@ pub mod sanitizer {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Sanitizer/Sanitizer)
     #[cfg_attr(rust_js, rust_js::link_name = "new Sanitizer")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(configuration: Option<&dyn IntoSanitizerConfigOrStr>) -> &'static Sanitizer {
         unreachable!()
     }
@@ -68755,6 +69277,7 @@ impl Eq for Scheduler {}
 impl Scheduler {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Scheduler/postTask)
     #[cfg_attr(rust_js, rust_js::link_name = "postTask")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn post_task(&self, callback: Box<dyn FnOnce() -> Option<&'static Unknown>>, options: Option<SchedulerPostTaskOptions<'_>>) -> Promise<Option<&'static Unknown>> {
         unreachable!()
     }
@@ -68998,6 +69521,7 @@ pub mod scroll_timeline {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ScrollTimeline/ScrollTimeline)
     #[cfg_attr(rust_js, rust_js::link_name = "new ScrollTimeline")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(options: Option<ScrollTimelineOptions<'_>>) -> &'static ScrollTimeline {
         unreachable!()
     }
@@ -69053,6 +69577,7 @@ pub mod security_policy_violation_event {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SecurityPolicyViolationEvent/SecurityPolicyViolationEvent)
     #[cfg_attr(rust_js, rust_js::link_name = "new SecurityPolicyViolationEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(r#type: &str, event_init_dict: Option<SecurityPolicyViolationEventInit<'_>>) -> &'static SecurityPolicyViolationEvent {
         unreachable!()
     }
@@ -69246,6 +69771,7 @@ impl Selection {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Selection/getComposedRanges)
     #[cfg_attr(rust_js, rust_js::link_name = "getComposedRanges")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn get_composed_ranges(&self, options: Option<GetComposedRangesOptions<'_>>) -> Vec<&'static StaticRange> {
         unreachable!()
     }
@@ -69253,6 +69779,7 @@ impl Selection {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Selection/collapse)
     #[cfg_attr(rust_js, rust_js::link_name = "collapse")]
     #[cfg_attr(rust_js, rust_js::nullable(node))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn collapse(&self, node: Option<&Node>, offset: Option<f64>) {
         unreachable!()
@@ -69261,6 +69788,7 @@ impl Selection {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Selection/setPosition)
     #[cfg_attr(rust_js, rust_js::link_name = "setPosition")]
     #[cfg_attr(rust_js, rust_js::nullable(node))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn set_position(&self, node: Option<&Node>, offset: Option<f64>) {
         unreachable!()
@@ -69282,6 +69810,7 @@ impl Selection {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Selection/extend)
     #[cfg_attr(rust_js, rust_js::link_name = "extend")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn extend(&self, node: &Node, offset: Option<f64>) {
         unreachable!()
@@ -69303,6 +69832,7 @@ impl Selection {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Selection/modify)
     #[cfg_attr(rust_js, rust_js::link_name = "modify")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn modify(&self, alter: Option<&str>, direction: Option<&str>, granularity: Option<&str>) {
         unreachable!()
@@ -69317,6 +69847,7 @@ impl Selection {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Selection/containsNode)
     #[cfg_attr(rust_js, rust_js::link_name = "containsNode")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn contains_node(&self, node: &Node, allow_partial_containment: Option<bool>) -> bool {
         unreachable!()
     }
@@ -69371,6 +69902,7 @@ impl Serial {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Serial/requestPort)
     #[cfg_attr(rust_js, rust_js::link_name = "requestPort")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn request_port(&self, options: Option<SerialPortRequestOptions<'_>>) -> Promise<&'static SerialPort> {
         unreachable!()
     }
@@ -69475,6 +70007,7 @@ impl SerialPort {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SerialPort/setSignals)
     #[cfg_attr(rust_js, rust_js::link_name = "setSignals")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn set_signals(&self, signals: Option<SerialOutputSignals>) -> Promise<()> {
         unreachable!()
     }
@@ -69547,6 +70080,7 @@ impl ServiceWorker {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ServiceWorker/postMessage)
     #[cfg_attr(rust_js, rust_js::link_name = "postMessage")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn post_message<M: StructuredClone>(&self, message: M, options: Option<StructuredSerializeOptions<'_>>) {
         unreachable!()
@@ -69633,12 +70167,14 @@ impl ServiceWorkerContainer {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ServiceWorkerContainer/register)
     #[cfg_attr(rust_js, rust_js::link_name = "register")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn register(&self, script_url: &str, options: Option<RegistrationOptions<'_>>) -> Promise<&'static ServiceWorkerRegistration> {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ServiceWorkerContainer/getRegistration)
     #[cfg_attr(rust_js, rust_js::link_name = "getRegistration")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn get_registration(&self, client_url: Option<&str>) -> Promise<Option<&'static ServiceWorkerRegistration>> {
         unreachable!()
     }
@@ -69745,12 +70281,14 @@ impl ServiceWorkerRegistration {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ServiceWorkerRegistration/showNotification)
     #[cfg_attr(rust_js, rust_js::link_name = "showNotification")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn show_notification(&self, title: &str, options: Option<NotificationOptions<'_>>) -> Promise<()> {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ServiceWorkerRegistration/getNotifications)
     #[cfg_attr(rust_js, rust_js::link_name = "getNotifications")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn get_notifications(&self, filter: Option<GetNotificationOptions<'_>>) -> Promise<Vec<&'static Notification>> {
         unreachable!()
     }
@@ -69917,6 +70455,7 @@ impl ShadowRoot {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ShadowRoot/setHTML)
     #[cfg_attr(rust_js, rust_js::link_name = "setHTML")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn set_html(&self, html: &str, options: Option<SetHTMLOptions<'_>>) {
         unreachable!()
@@ -69924,6 +70463,7 @@ impl ShadowRoot {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ShadowRoot/appendHTML)
     #[cfg_attr(rust_js, rust_js::link_name = "appendHTML")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn append_html(&self, html: &str, options: Option<SetHTMLOptions<'_>>) {
         unreachable!()
@@ -69931,6 +70471,7 @@ impl ShadowRoot {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ShadowRoot/prependHTML)
     #[cfg_attr(rust_js, rust_js::link_name = "prependHTML")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn prepend_html(&self, html: &str, options: Option<SetHTMLOptions<'_>>) {
         unreachable!()
@@ -69938,24 +70479,28 @@ impl ShadowRoot {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ShadowRoot/streamHTML)
     #[cfg_attr(rust_js, rust_js::link_name = "streamHTML")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn stream_html(&self, options: Option<SetHTMLOptions<'_>>) -> &'static WritableStream {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ShadowRoot/streamAppendHTML)
     #[cfg_attr(rust_js, rust_js::link_name = "streamAppendHTML")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn stream_append_html(&self, options: Option<SetHTMLOptions<'_>>) -> &'static WritableStream {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ShadowRoot/streamPrependHTML)
     #[cfg_attr(rust_js, rust_js::link_name = "streamPrependHTML")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn stream_prepend_html(&self, options: Option<SetHTMLOptions<'_>>) -> &'static WritableStream {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ShadowRoot/setHTMLUnsafe)
     #[cfg_attr(rust_js, rust_js::link_name = "setHTMLUnsafe")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn set_html_unsafe(&self, html: &str, options: Option<SetHTMLUnsafeOptions<'_>>) {
         unreachable!()
@@ -69963,6 +70508,7 @@ impl ShadowRoot {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ShadowRoot/appendHTMLUnsafe)
     #[cfg_attr(rust_js, rust_js::link_name = "appendHTMLUnsafe")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn append_html_unsafe(&self, html: &str, options: Option<SetHTMLUnsafeOptions<'_>>) {
         unreachable!()
@@ -69970,6 +70516,7 @@ impl ShadowRoot {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ShadowRoot/prependHTMLUnsafe)
     #[cfg_attr(rust_js, rust_js::link_name = "prependHTMLUnsafe")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn prepend_html_unsafe(&self, html: &str, options: Option<SetHTMLUnsafeOptions<'_>>) {
         unreachable!()
@@ -69977,24 +70524,28 @@ impl ShadowRoot {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ShadowRoot/streamHTMLUnsafe)
     #[cfg_attr(rust_js, rust_js::link_name = "streamHTMLUnsafe")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn stream_html_unsafe(&self, options: Option<SetHTMLUnsafeOptions<'_>>) -> &'static WritableStream {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ShadowRoot/streamAppendHTMLUnsafe)
     #[cfg_attr(rust_js, rust_js::link_name = "streamAppendHTMLUnsafe")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn stream_append_html_unsafe(&self, options: Option<SetHTMLUnsafeOptions<'_>>) -> &'static WritableStream {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ShadowRoot/streamPrependHTMLUnsafe)
     #[cfg_attr(rust_js, rust_js::link_name = "streamPrependHTMLUnsafe")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn stream_prepend_html_unsafe(&self, options: Option<SetHTMLUnsafeOptions<'_>>) -> &'static WritableStream {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ShadowRoot/getHTML)
     #[cfg_attr(rust_js, rust_js::link_name = "getHTML")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn get_html(&self, options: Option<GetHTMLOptions<'_>>) -> String {
         unreachable!()
     }
@@ -70100,6 +70651,7 @@ pub mod shared_worker {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SharedWorker/SharedWorker)
     #[cfg_attr(rust_js, rust_js::link_name = "new SharedWorker")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(script_url: &str, options: Option<&dyn IntoStrOrSharedWorkerOptions>) -> &'static SharedWorker {
         unreachable!()
     }
@@ -70518,6 +71070,7 @@ impl SpeechGrammarList {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechGrammarList/addFromString)
     #[cfg_attr(rust_js, rust_js::link_name = "addFromString")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn add_from_string(&self, string: &str, weight: Option<f64>) {
         unreachable!()
@@ -70677,6 +71230,7 @@ impl SpeechRecognition {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechRecognition/start)
     #[cfg_attr(rust_js, rust_js::link_name = "start")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn start(&self, audio_track: Option<&MediaStreamTrack>) {
         unreachable!()
@@ -71021,6 +71575,7 @@ pub mod speech_recognition_phrase {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechRecognitionPhrase/SpeechRecognitionPhrase)
     #[cfg_attr(rust_js, rust_js::link_name = "new SpeechRecognitionPhrase")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(phrase: &str, boost: Option<f64>) -> &'static SpeechRecognitionPhrase {
         unreachable!()
     }
@@ -71404,6 +71959,7 @@ pub mod speech_synthesis_utterance {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisUtterance/SpeechSynthesisUtterance)
     #[cfg_attr(rust_js, rust_js::link_name = "new SpeechSynthesisUtterance")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(text: Option<&str>) -> &'static SpeechSynthesisUtterance {
         unreachable!()
     }
@@ -71711,6 +72267,7 @@ pub mod stereo_panner_node {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/StereoPannerNode/StereoPannerNode)
     #[cfg_attr(rust_js, rust_js::link_name = "new StereoPannerNode")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(context: &BaseAudioContext, options: Option<StereoPannerOptions<'_>>) -> &'static StereoPannerNode {
         unreachable!()
     }
@@ -71759,6 +72316,7 @@ pub mod storage_event {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/StorageEvent/StorageEvent)
     #[cfg_attr(rust_js, rust_js::link_name = "new StorageEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(r#type: &str, event_init_dict: Option<StorageEventInit<'_>>) -> &'static StorageEvent {
         unreachable!()
     }
@@ -71807,6 +72365,7 @@ impl StorageEvent {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/StorageEvent/initStorageEvent)
     #[cfg_attr(rust_js, rust_js::link_name = "initStorageEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn init_storage_event(&self, r#type: &str, bubbles: Option<bool>, cancelable: Option<bool>, key: Option<&str>, old_value: Option<&str>, new_value: Option<&str>, url: Option<&str>, storage_area: Option<&Storage>) {
         unreachable!()
@@ -72173,6 +72732,7 @@ impl SubtleCrypto {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SubtleCrypto/deriveBits)
     #[cfg_attr(rust_js, rust_js::link_name = "deriveBits")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn derive_bits(&self, algorithm: &dyn core::any::Any, base_key: &CryptoKey, length: Option<f64>) -> Promise<&'static ArrayBuffer> {
         unreachable!()
     }
@@ -72225,6 +72785,7 @@ pub mod task_controller {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/TaskController/TaskController)
     #[cfg_attr(rust_js, rust_js::link_name = "new TaskController")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(init: Option<TaskControllerInit<'_>>) -> &'static TaskController {
         unreachable!()
     }
@@ -72322,6 +72883,7 @@ pub mod task_signal {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/TaskSignal/any)
     #[cfg_attr(rust_js, rust_js::link_name = "TaskSignal.any")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn any(signals: &[&AbortSignal], init: Option<TaskSignalAnyInit<'_>>) -> &'static TaskSignal {
         unreachable!()
     }
@@ -72376,6 +72938,7 @@ pub mod text_decoder_stream {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/TextDecoderStream/TextDecoderStream)
     #[cfg_attr(rust_js, rust_js::link_name = "new TextDecoderStream")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(label: Option<&str>, options: Option<TextDecoderOptions>) -> &'static TextDecoderStream {
         unreachable!()
     }
@@ -72501,6 +73064,7 @@ impl TextEvent {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/TextEvent/initTextEvent)
     #[cfg_attr(rust_js, rust_js::link_name = "initTextEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn init_text_event(&self, r#type: &str, bubbles: Option<bool>, cancelable: Option<bool>, view: Option<&Window>, data: Option<&str>) {
         unreachable!()
@@ -73067,6 +73631,7 @@ pub mod track_event {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/TrackEvent/TrackEvent)
     #[cfg_attr(rust_js, rust_js::link_name = "new TrackEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(r#type: &str, event_init_dict: Option<TrackEventInit<'_>>) -> &'static TrackEvent {
         unreachable!()
     }
@@ -73097,6 +73662,7 @@ pub mod transform_stream {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/TransformStream/TransformStream)
     #[cfg_attr(rust_js, rust_js::link_name = "new TransformStream")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(transformer: Option<&dyn core::any::Any>, writable_strategy: Option<QueuingStrategy>, readable_strategy: Option<QueuingStrategy>) -> &'static TransformStream {
         unreachable!()
     }
@@ -73141,6 +73707,7 @@ impl TransformStreamDefaultController {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/TransformStreamDefaultController/enqueue)
     #[cfg_attr(rust_js, rust_js::link_name = "enqueue")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn enqueue(&self, chunk: Option<&dyn IntoUnknown>) {
         unreachable!()
@@ -73148,6 +73715,7 @@ impl TransformStreamDefaultController {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/TransformStreamDefaultController/error)
     #[cfg_attr(rust_js, rust_js::link_name = "error")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn error(&self, reason: Option<&dyn IntoUnknown>) {
         unreachable!()
@@ -73279,6 +73847,7 @@ pub mod url_pattern {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/URLPattern/URLPattern)
     #[cfg_attr(rust_js, rust_js::link_name = "new URLPattern")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(input: impl IntoURLPatternInput, base_url: &str, options: Option<URLPatternOptions>) -> &'static URLPattern {
         unreachable!()
     }
@@ -73287,6 +73856,7 @@ pub mod url_pattern {
 impl URLPattern {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/URLPattern/test)
     #[cfg_attr(rust_js, rust_js::link_name = "test")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn test(&self, input: Option<&dyn IntoURLPatternInput>, base_url: Option<&str>) -> bool {
         unreachable!()
     }
@@ -73294,6 +73864,7 @@ impl URLPattern {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/URLPattern/exec)
     #[cfg_attr(rust_js, rust_js::link_name = "exec")]
     #[cfg_attr(rust_js, rust_js::nullable)]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn exec(&self, input: Option<&dyn IntoURLPatternInput>, base_url: Option<&str>) -> Option<URLPatternResult> {
         unreachable!()
     }
@@ -73373,6 +73944,7 @@ pub mod url_search_params {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/URLSearchParams/URLSearchParams)
     #[cfg_attr(rust_js, rust_js::link_name = "new URLSearchParams")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(init: Option<&dyn IntoListOrRecordOrStr>) -> &'static URLSearchParams {
         unreachable!()
     }
@@ -73401,6 +73973,7 @@ impl URLSearchParams {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/URLSearchParams/delete)
     #[cfg_attr(rust_js, rust_js::link_name = "delete")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn delete(&self, name: &str, value: Option<&str>) {
         unreachable!()
@@ -73421,6 +73994,7 @@ impl URLSearchParams {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/URLSearchParams/has)
     #[cfg_attr(rust_js, rust_js::link_name = "has")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn has(&self, name: &str, value: Option<&str>) -> bool {
         unreachable!()
     }
@@ -73897,6 +74471,7 @@ pub mod video_color_space {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoColorSpace/VideoColorSpace)
     #[cfg_attr(rust_js, rust_js::link_name = "new VideoColorSpace")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(init: Option<VideoColorSpaceInit>) -> &'static VideoColorSpace {
         unreachable!()
     }
@@ -74132,6 +74707,7 @@ impl VideoEncoder {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoEncoder/encode)
     #[cfg_attr(rust_js, rust_js::link_name = "encode")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn encode(&self, frame: &VideoFrame, options: Option<VideoEncoderEncodeOptions>) {
         unreachable!()
@@ -74178,6 +74754,7 @@ pub mod video_frame {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoFrame/VideoFrame)
     #[cfg_attr(rust_js, rust_js::link_name = "new VideoFrame")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(image: impl IntoCanvasImageSource, init: Option<VideoFrameInit<'_>>) -> &'static VideoFrame {
         unreachable!()
     }
@@ -74257,12 +74834,14 @@ impl VideoFrame {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoFrame/allocationSize)
     #[cfg_attr(rust_js, rust_js::link_name = "allocationSize")]
     #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn allocation_size(&self, options: Option<VideoFrameCopyToOptions<'_>>) -> f64 {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoFrame/copyTo)
     #[cfg_attr(rust_js, rust_js::link_name = "copyTo")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn copy_to(&self, destination: impl IntoAllowSharedBufferSource, options: Option<VideoFrameCopyToOptions<'_>>) -> Promise<Vec<PlaneLayout>> {
         unreachable!()
     }
@@ -74702,6 +75281,7 @@ impl Eq for WakeLock {}
 impl WakeLock {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WakeLock/request)
     #[cfg_attr(rust_js, rust_js::link_name = "request")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn request(&self, r#type: Option<&str>) -> Promise<&'static WakeLockSentinel> {
         unreachable!()
     }
@@ -74805,6 +75385,7 @@ pub mod wave_shaper_node {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WaveShaperNode/WaveShaperNode)
     #[cfg_attr(rust_js, rust_js::link_name = "new WaveShaperNode")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(context: &BaseAudioContext, options: Option<WaveShaperOptions<'_>>) -> &'static WaveShaperNode {
         unreachable!()
     }
@@ -77200,6 +77781,7 @@ impl WebGL2RenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/bindBuffer)
     #[cfg_attr(rust_js, rust_js::link_name = "bindBuffer")]
     #[cfg_attr(rust_js, rust_js::nullable(buffer))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn bind_buffer(&self, target: impl Into<f64>, buffer: Option<&WebGLBuffer>) {
         unreachable!()
@@ -77208,6 +77790,7 @@ impl WebGL2RenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/bindFramebuffer)
     #[cfg_attr(rust_js, rust_js::link_name = "bindFramebuffer")]
     #[cfg_attr(rust_js, rust_js::nullable(framebuffer))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn bind_framebuffer(&self, target: impl Into<f64>, framebuffer: Option<&WebGLFramebuffer>) {
         unreachable!()
@@ -77216,6 +77799,7 @@ impl WebGL2RenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/bindRenderbuffer)
     #[cfg_attr(rust_js, rust_js::link_name = "bindRenderbuffer")]
     #[cfg_attr(rust_js, rust_js::nullable(renderbuffer))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn bind_renderbuffer(&self, target: impl Into<f64>, renderbuffer: Option<&WebGLRenderbuffer>) {
         unreachable!()
@@ -77224,6 +77808,7 @@ impl WebGL2RenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/bindTexture)
     #[cfg_attr(rust_js, rust_js::link_name = "bindTexture")]
     #[cfg_attr(rust_js, rust_js::nullable(texture))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn bind_texture(&self, target: impl Into<f64>, texture: Option<&WebGLTexture>) {
         unreachable!()
@@ -77374,6 +77959,7 @@ impl WebGL2RenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/deleteBuffer)
     #[cfg_attr(rust_js, rust_js::link_name = "deleteBuffer")]
     #[cfg_attr(rust_js, rust_js::nullable(buffer))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn delete_buffer(&self, buffer: Option<&WebGLBuffer>) {
         unreachable!()
@@ -77382,6 +77968,7 @@ impl WebGL2RenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/deleteFramebuffer)
     #[cfg_attr(rust_js, rust_js::link_name = "deleteFramebuffer")]
     #[cfg_attr(rust_js, rust_js::nullable(framebuffer))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn delete_framebuffer(&self, framebuffer: Option<&WebGLFramebuffer>) {
         unreachable!()
@@ -77390,6 +77977,7 @@ impl WebGL2RenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/deleteProgram)
     #[cfg_attr(rust_js, rust_js::link_name = "deleteProgram")]
     #[cfg_attr(rust_js, rust_js::nullable(program))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn delete_program(&self, program: Option<&WebGLProgram>) {
         unreachable!()
@@ -77398,6 +77986,7 @@ impl WebGL2RenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/deleteRenderbuffer)
     #[cfg_attr(rust_js, rust_js::link_name = "deleteRenderbuffer")]
     #[cfg_attr(rust_js, rust_js::nullable(renderbuffer))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn delete_renderbuffer(&self, renderbuffer: Option<&WebGLRenderbuffer>) {
         unreachable!()
@@ -77406,6 +77995,7 @@ impl WebGL2RenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/deleteShader)
     #[cfg_attr(rust_js, rust_js::link_name = "deleteShader")]
     #[cfg_attr(rust_js, rust_js::nullable(shader))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn delete_shader(&self, shader: Option<&WebGLShader>) {
         unreachable!()
@@ -77414,6 +78004,7 @@ impl WebGL2RenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/deleteTexture)
     #[cfg_attr(rust_js, rust_js::link_name = "deleteTexture")]
     #[cfg_attr(rust_js, rust_js::nullable(texture))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn delete_texture(&self, texture: Option<&WebGLTexture>) {
         unreachable!()
@@ -77506,6 +78097,7 @@ impl WebGL2RenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/framebufferRenderbuffer)
     #[cfg_attr(rust_js, rust_js::link_name = "framebufferRenderbuffer")]
     #[cfg_attr(rust_js, rust_js::nullable(renderbuffer))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn framebuffer_renderbuffer(&self, target: impl Into<f64>, attachment: impl Into<f64>, renderbuffertarget: impl Into<f64>, renderbuffer: Option<&WebGLRenderbuffer>) {
         unreachable!()
@@ -77514,6 +78106,7 @@ impl WebGL2RenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/framebufferTexture2D)
     #[cfg_attr(rust_js, rust_js::link_name = "framebufferTexture2D")]
     #[cfg_attr(rust_js, rust_js::nullable(texture))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn framebuffer_texture2_d(&self, target: impl Into<f64>, attachment: impl Into<f64>, textarget: impl Into<f64>, texture: Option<&WebGLTexture>, level: impl Into<f64>) {
         unreachable!()
@@ -77674,6 +78267,7 @@ impl WebGL2RenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/isBuffer)
     #[cfg_attr(rust_js, rust_js::link_name = "isBuffer")]
     #[cfg_attr(rust_js, rust_js::nullable(buffer))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn is_buffer(&self, buffer: Option<&WebGLBuffer>) -> bool {
         unreachable!()
     }
@@ -77687,6 +78281,7 @@ impl WebGL2RenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/isFramebuffer)
     #[cfg_attr(rust_js, rust_js::link_name = "isFramebuffer")]
     #[cfg_attr(rust_js, rust_js::nullable(framebuffer))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn is_framebuffer(&self, framebuffer: Option<&WebGLFramebuffer>) -> bool {
         unreachable!()
     }
@@ -77694,6 +78289,7 @@ impl WebGL2RenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/isProgram)
     #[cfg_attr(rust_js, rust_js::link_name = "isProgram")]
     #[cfg_attr(rust_js, rust_js::nullable(program))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn is_program(&self, program: Option<&WebGLProgram>) -> bool {
         unreachable!()
     }
@@ -77701,6 +78297,7 @@ impl WebGL2RenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/isRenderbuffer)
     #[cfg_attr(rust_js, rust_js::link_name = "isRenderbuffer")]
     #[cfg_attr(rust_js, rust_js::nullable(renderbuffer))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn is_renderbuffer(&self, renderbuffer: Option<&WebGLRenderbuffer>) -> bool {
         unreachable!()
     }
@@ -77708,6 +78305,7 @@ impl WebGL2RenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/isShader)
     #[cfg_attr(rust_js, rust_js::link_name = "isShader")]
     #[cfg_attr(rust_js, rust_js::nullable(shader))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn is_shader(&self, shader: Option<&WebGLShader>) -> bool {
         unreachable!()
     }
@@ -77715,6 +78313,7 @@ impl WebGL2RenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/isTexture)
     #[cfg_attr(rust_js, rust_js::link_name = "isTexture")]
     #[cfg_attr(rust_js, rust_js::nullable(texture))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn is_texture(&self, texture: Option<&WebGLTexture>) -> bool {
         unreachable!()
     }
@@ -77834,6 +78433,7 @@ impl WebGL2RenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform1f)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform1f")]
     #[cfg_attr(rust_js, rust_js::nullable(location))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn uniform1f(&self, location: Option<&WebGLUniformLocation>, x: impl Into<f64>) {
         unreachable!()
@@ -77842,6 +78442,7 @@ impl WebGL2RenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform2f)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform2f")]
     #[cfg_attr(rust_js, rust_js::nullable(location))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn uniform2f(&self, location: Option<&WebGLUniformLocation>, x: impl Into<f64>, y: impl Into<f64>) {
         unreachable!()
@@ -77850,6 +78451,7 @@ impl WebGL2RenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform3f)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform3f")]
     #[cfg_attr(rust_js, rust_js::nullable(location))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn uniform3f(&self, location: Option<&WebGLUniformLocation>, x: impl Into<f64>, y: impl Into<f64>, z: impl Into<f64>) {
         unreachable!()
@@ -77858,6 +78460,7 @@ impl WebGL2RenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform4f)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform4f")]
     #[cfg_attr(rust_js, rust_js::nullable(location))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn uniform4f(&self, location: Option<&WebGLUniformLocation>, x: impl Into<f64>, y: impl Into<f64>, z: impl Into<f64>, w: impl Into<f64>) {
         unreachable!()
@@ -77866,6 +78469,7 @@ impl WebGL2RenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform1i)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform1i")]
     #[cfg_attr(rust_js, rust_js::nullable(location))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn uniform1i(&self, location: Option<&WebGLUniformLocation>, x: impl Into<f64>) {
         unreachable!()
@@ -77874,6 +78478,7 @@ impl WebGL2RenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform2i)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform2i")]
     #[cfg_attr(rust_js, rust_js::nullable(location))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn uniform2i(&self, location: Option<&WebGLUniformLocation>, x: impl Into<f64>, y: impl Into<f64>) {
         unreachable!()
@@ -77882,6 +78487,7 @@ impl WebGL2RenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform3i)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform3i")]
     #[cfg_attr(rust_js, rust_js::nullable(location))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn uniform3i(&self, location: Option<&WebGLUniformLocation>, x: impl Into<f64>, y: impl Into<f64>, z: impl Into<f64>) {
         unreachable!()
@@ -77890,6 +78496,7 @@ impl WebGL2RenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform4i)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform4i")]
     #[cfg_attr(rust_js, rust_js::nullable(location))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn uniform4i(&self, location: Option<&WebGLUniformLocation>, x: impl Into<f64>, y: impl Into<f64>, z: impl Into<f64>, w: impl Into<f64>) {
         unreachable!()
@@ -77898,6 +78505,7 @@ impl WebGL2RenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/useProgram)
     #[cfg_attr(rust_js, rust_js::link_name = "useProgram")]
     #[cfg_attr(rust_js, rust_js::nullable(program))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn use_program(&self, program: Option<&WebGLProgram>) {
         unreachable!()
@@ -77989,6 +78597,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/getBufferSubData)
     #[cfg_attr(rust_js, rust_js::link_name = "getBufferSubData")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn get_buffer_sub_data(&self, target: impl Into<f64>, src_byte_offset: impl Into<f64>, dst_buffer: impl IntoArrayBufferView, dst_offset: Option<f64>, length: Option<f64>) {
         unreachable!()
@@ -78004,6 +78613,7 @@ impl WebGL2RenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/framebufferTextureLayer)
     #[cfg_attr(rust_js, rust_js::link_name = "framebufferTextureLayer")]
     #[cfg_attr(rust_js, rust_js::nullable(texture))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn framebuffer_texture_layer(&self, target: impl Into<f64>, attachment: impl Into<f64>, texture: Option<&WebGLTexture>, level: impl Into<f64>, layer: impl Into<f64>) {
         unreachable!()
@@ -78073,6 +78683,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/texImage3D)
     #[cfg_attr(rust_js, rust_js::link_name = "texImage3D")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn tex_image3_d_with_array_buffer_view(&self, target: impl Into<f64>, level: impl Into<f64>, internalformat: impl Into<f64>, width: impl Into<f64>, height: impl Into<f64>, depth: impl Into<f64>, border: impl Into<f64>, format: impl Into<f64>, r#type: impl Into<f64>, src_data: impl IntoArrayBufferView, src_offset: Option<f64>) {
         unreachable!()
@@ -78094,6 +78705,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/texSubImage3D)
     #[cfg_attr(rust_js, rust_js::link_name = "texSubImage3D")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn tex_sub_image3_d_with_array_buffer_view(&self, target: impl Into<f64>, level: impl Into<f64>, xoffset: impl Into<f64>, yoffset: impl Into<f64>, zoffset: impl Into<f64>, width: impl Into<f64>, height: impl Into<f64>, depth: impl Into<f64>, format: impl Into<f64>, r#type: impl Into<f64>, src_data: impl IntoArrayBufferView, src_offset: Option<f64>) {
         unreachable!()
@@ -78115,6 +78727,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/compressedTexImage3D)
     #[cfg_attr(rust_js, rust_js::link_name = "compressedTexImage3D")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn compressed_tex_image3_d_with_array_buffer_view(&self, target: impl Into<f64>, level: impl Into<f64>, internalformat: impl Into<f64>, width: impl Into<f64>, height: impl Into<f64>, depth: impl Into<f64>, border: impl Into<f64>, src_data: impl IntoArrayBufferView, src_offset: Option<f64>, src_length_override: Option<f64>) {
         unreachable!()
@@ -78129,6 +78742,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/compressedTexSubImage3D)
     #[cfg_attr(rust_js, rust_js::link_name = "compressedTexSubImage3D")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn compressed_tex_sub_image3_d_with_array_buffer_view(&self, target: impl Into<f64>, level: impl Into<f64>, xoffset: impl Into<f64>, yoffset: impl Into<f64>, zoffset: impl Into<f64>, width: impl Into<f64>, height: impl Into<f64>, depth: impl Into<f64>, format: impl Into<f64>, src_data: impl IntoArrayBufferView, src_offset: Option<f64>, src_length_override: Option<f64>) {
         unreachable!()
@@ -78144,6 +78758,7 @@ impl WebGL2RenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform1ui)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform1ui")]
     #[cfg_attr(rust_js, rust_js::nullable(location))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn uniform1ui(&self, location: Option<&WebGLUniformLocation>, v0: impl Into<f64>) {
         unreachable!()
@@ -78152,6 +78767,7 @@ impl WebGL2RenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform2ui)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform2ui")]
     #[cfg_attr(rust_js, rust_js::nullable(location))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn uniform2ui(&self, location: Option<&WebGLUniformLocation>, v0: impl Into<f64>, v1: impl Into<f64>) {
         unreachable!()
@@ -78160,6 +78776,7 @@ impl WebGL2RenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform3ui)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform3ui")]
     #[cfg_attr(rust_js, rust_js::nullable(location))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn uniform3ui(&self, location: Option<&WebGLUniformLocation>, v0: impl Into<f64>, v1: impl Into<f64>, v2: impl Into<f64>) {
         unreachable!()
@@ -78168,6 +78785,7 @@ impl WebGL2RenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform4ui)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform4ui")]
     #[cfg_attr(rust_js, rust_js::nullable(location))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn uniform4ui(&self, location: Option<&WebGLUniformLocation>, v0: impl Into<f64>, v1: impl Into<f64>, v2: impl Into<f64>, v3: impl Into<f64>) {
         unreachable!()
@@ -78176,6 +78794,7 @@ impl WebGL2RenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform1uiv)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform1uiv")]
     #[cfg_attr(rust_js, rust_js::nullable(location))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn uniform1uiv(&self, location: Option<&WebGLUniformLocation>, data: impl IntoUint32List, src_offset: Option<f64>, src_length: Option<f64>) {
         unreachable!()
@@ -78184,6 +78803,7 @@ impl WebGL2RenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform2uiv)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform2uiv")]
     #[cfg_attr(rust_js, rust_js::nullable(location))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn uniform2uiv(&self, location: Option<&WebGLUniformLocation>, data: impl IntoUint32List, src_offset: Option<f64>, src_length: Option<f64>) {
         unreachable!()
@@ -78192,6 +78812,7 @@ impl WebGL2RenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform3uiv)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform3uiv")]
     #[cfg_attr(rust_js, rust_js::nullable(location))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn uniform3uiv(&self, location: Option<&WebGLUniformLocation>, data: impl IntoUint32List, src_offset: Option<f64>, src_length: Option<f64>) {
         unreachable!()
@@ -78200,6 +78821,7 @@ impl WebGL2RenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform4uiv)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform4uiv")]
     #[cfg_attr(rust_js, rust_js::nullable(location))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn uniform4uiv(&self, location: Option<&WebGLUniformLocation>, data: impl IntoUint32List, src_offset: Option<f64>, src_length: Option<f64>) {
         unreachable!()
@@ -78208,6 +78830,7 @@ impl WebGL2RenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniformMatrix3x2fv)
     #[cfg_attr(rust_js, rust_js::link_name = "uniformMatrix3x2fv")]
     #[cfg_attr(rust_js, rust_js::nullable(location))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn uniform_matrix3x2fv(&self, location: Option<&WebGLUniformLocation>, transpose: bool, data: impl IntoFloat32List, src_offset: Option<f64>, src_length: Option<f64>) {
         unreachable!()
@@ -78216,6 +78839,7 @@ impl WebGL2RenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniformMatrix4x2fv)
     #[cfg_attr(rust_js, rust_js::link_name = "uniformMatrix4x2fv")]
     #[cfg_attr(rust_js, rust_js::nullable(location))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn uniform_matrix4x2fv(&self, location: Option<&WebGLUniformLocation>, transpose: bool, data: impl IntoFloat32List, src_offset: Option<f64>, src_length: Option<f64>) {
         unreachable!()
@@ -78224,6 +78848,7 @@ impl WebGL2RenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniformMatrix2x3fv)
     #[cfg_attr(rust_js, rust_js::link_name = "uniformMatrix2x3fv")]
     #[cfg_attr(rust_js, rust_js::nullable(location))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn uniform_matrix2x3fv(&self, location: Option<&WebGLUniformLocation>, transpose: bool, data: impl IntoFloat32List, src_offset: Option<f64>, src_length: Option<f64>) {
         unreachable!()
@@ -78232,6 +78857,7 @@ impl WebGL2RenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniformMatrix4x3fv)
     #[cfg_attr(rust_js, rust_js::link_name = "uniformMatrix4x3fv")]
     #[cfg_attr(rust_js, rust_js::nullable(location))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn uniform_matrix4x3fv(&self, location: Option<&WebGLUniformLocation>, transpose: bool, data: impl IntoFloat32List, src_offset: Option<f64>, src_length: Option<f64>) {
         unreachable!()
@@ -78240,6 +78866,7 @@ impl WebGL2RenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniformMatrix2x4fv)
     #[cfg_attr(rust_js, rust_js::link_name = "uniformMatrix2x4fv")]
     #[cfg_attr(rust_js, rust_js::nullable(location))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn uniform_matrix2x4fv(&self, location: Option<&WebGLUniformLocation>, transpose: bool, data: impl IntoFloat32List, src_offset: Option<f64>, src_length: Option<f64>) {
         unreachable!()
@@ -78248,6 +78875,7 @@ impl WebGL2RenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniformMatrix3x4fv)
     #[cfg_attr(rust_js, rust_js::link_name = "uniformMatrix3x4fv")]
     #[cfg_attr(rust_js, rust_js::nullable(location))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn uniform_matrix3x4fv(&self, location: Option<&WebGLUniformLocation>, transpose: bool, data: impl IntoFloat32List, src_offset: Option<f64>, src_length: Option<f64>) {
         unreachable!()
@@ -78325,6 +78953,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/clearBufferfv)
     #[cfg_attr(rust_js, rust_js::link_name = "clearBufferfv")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn clear_bufferfv(&self, buffer: impl Into<f64>, drawbuffer: impl Into<f64>, values: impl IntoFloat32List, src_offset: Option<f64>) {
         unreachable!()
@@ -78332,6 +78961,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/clearBufferiv)
     #[cfg_attr(rust_js, rust_js::link_name = "clearBufferiv")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn clear_bufferiv(&self, buffer: impl Into<f64>, drawbuffer: impl Into<f64>, values: impl IntoInt32List, src_offset: Option<f64>) {
         unreachable!()
@@ -78339,6 +78969,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/clearBufferuiv)
     #[cfg_attr(rust_js, rust_js::link_name = "clearBufferuiv")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn clear_bufferuiv(&self, buffer: impl Into<f64>, drawbuffer: impl Into<f64>, values: impl IntoUint32List, src_offset: Option<f64>) {
         unreachable!()
@@ -78360,6 +78991,7 @@ impl WebGL2RenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/deleteQuery)
     #[cfg_attr(rust_js, rust_js::link_name = "deleteQuery")]
     #[cfg_attr(rust_js, rust_js::nullable(query))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn delete_query(&self, query: Option<&WebGLQuery>) {
         unreachable!()
@@ -78368,6 +79000,7 @@ impl WebGL2RenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/isQuery)
     #[cfg_attr(rust_js, rust_js::link_name = "isQuery")]
     #[cfg_attr(rust_js, rust_js::nullable(query))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn is_query(&self, query: Option<&WebGLQuery>) -> bool {
         unreachable!()
     }
@@ -78408,6 +79041,7 @@ impl WebGL2RenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/deleteSampler)
     #[cfg_attr(rust_js, rust_js::link_name = "deleteSampler")]
     #[cfg_attr(rust_js, rust_js::nullable(sampler))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn delete_sampler(&self, sampler: Option<&WebGLSampler>) {
         unreachable!()
@@ -78416,6 +79050,7 @@ impl WebGL2RenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/isSampler)
     #[cfg_attr(rust_js, rust_js::link_name = "isSampler")]
     #[cfg_attr(rust_js, rust_js::nullable(sampler))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn is_sampler(&self, sampler: Option<&WebGLSampler>) -> bool {
         unreachable!()
     }
@@ -78423,6 +79058,7 @@ impl WebGL2RenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/bindSampler)
     #[cfg_attr(rust_js, rust_js::link_name = "bindSampler")]
     #[cfg_attr(rust_js, rust_js::nullable(sampler))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn bind_sampler(&self, unit: impl Into<f64>, sampler: Option<&WebGLSampler>) {
         unreachable!()
@@ -78458,6 +79094,7 @@ impl WebGL2RenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/isSync)
     #[cfg_attr(rust_js, rust_js::link_name = "isSync")]
     #[cfg_attr(rust_js, rust_js::nullable(sync))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn is_sync(&self, sync: Option<&WebGLSync>) -> bool {
         unreachable!()
     }
@@ -78465,6 +79102,7 @@ impl WebGL2RenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/deleteSync)
     #[cfg_attr(rust_js, rust_js::link_name = "deleteSync")]
     #[cfg_attr(rust_js, rust_js::nullable(sync))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn delete_sync(&self, sync: Option<&WebGLSync>) {
         unreachable!()
@@ -78499,6 +79137,7 @@ impl WebGL2RenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/deleteTransformFeedback)
     #[cfg_attr(rust_js, rust_js::link_name = "deleteTransformFeedback")]
     #[cfg_attr(rust_js, rust_js::nullable(tf))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn delete_transform_feedback(&self, tf: Option<&WebGLTransformFeedback>) {
         unreachable!()
@@ -78507,6 +79146,7 @@ impl WebGL2RenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/isTransformFeedback)
     #[cfg_attr(rust_js, rust_js::link_name = "isTransformFeedback")]
     #[cfg_attr(rust_js, rust_js::nullable(tf))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn is_transform_feedback(&self, tf: Option<&WebGLTransformFeedback>) -> bool {
         unreachable!()
     }
@@ -78514,6 +79154,7 @@ impl WebGL2RenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/bindTransformFeedback)
     #[cfg_attr(rust_js, rust_js::link_name = "bindTransformFeedback")]
     #[cfg_attr(rust_js, rust_js::nullable(tf))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn bind_transform_feedback(&self, target: impl Into<f64>, tf: Option<&WebGLTransformFeedback>) {
         unreachable!()
@@ -78564,6 +79205,7 @@ impl WebGL2RenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/bindBufferBase)
     #[cfg_attr(rust_js, rust_js::link_name = "bindBufferBase")]
     #[cfg_attr(rust_js, rust_js::nullable(buffer))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn bind_buffer_base(&self, target: impl Into<f64>, index: impl Into<f64>, buffer: Option<&WebGLBuffer>) {
         unreachable!()
@@ -78572,6 +79214,7 @@ impl WebGL2RenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/bindBufferRange)
     #[cfg_attr(rust_js, rust_js::link_name = "bindBufferRange")]
     #[cfg_attr(rust_js, rust_js::nullable(buffer))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn bind_buffer_range(&self, target: impl Into<f64>, index: impl Into<f64>, buffer: Option<&WebGLBuffer>, offset: impl Into<f64>, size: impl Into<f64>) {
         unreachable!()
@@ -78632,6 +79275,7 @@ impl WebGL2RenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/deleteVertexArray)
     #[cfg_attr(rust_js, rust_js::link_name = "deleteVertexArray")]
     #[cfg_attr(rust_js, rust_js::nullable(vertex_array))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn delete_vertex_array(&self, vertex_array: Option<&WebGLVertexArrayObject>) {
         unreachable!()
@@ -78640,6 +79284,7 @@ impl WebGL2RenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/isVertexArray)
     #[cfg_attr(rust_js, rust_js::link_name = "isVertexArray")]
     #[cfg_attr(rust_js, rust_js::nullable(vertex_array))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn is_vertex_array(&self, vertex_array: Option<&WebGLVertexArrayObject>) -> bool {
         unreachable!()
     }
@@ -78647,6 +79292,7 @@ impl WebGL2RenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/bindVertexArray)
     #[cfg_attr(rust_js, rust_js::link_name = "bindVertexArray")]
     #[cfg_attr(rust_js, rust_js::nullable(array))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn bind_vertex_array(&self, array: Option<&WebGLVertexArrayObject>) {
         unreachable!()
@@ -78675,6 +79321,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/bufferData)
     #[cfg_attr(rust_js, rust_js::link_name = "bufferData")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn buffer_data_with_array_buffer_view_and_src_offset(&self, target: impl Into<f64>, src_data: impl IntoArrayBufferView, usage: impl Into<f64>, src_offset: impl Into<f64>, length: Option<f64>) {
         unreachable!()
@@ -78682,6 +79329,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/bufferSubData)
     #[cfg_attr(rust_js, rust_js::link_name = "bufferSubData")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn buffer_sub_data_with_array_buffer_view_and_src_offset(&self, target: impl Into<f64>, dst_byte_offset: impl Into<f64>, src_data: impl IntoArrayBufferView, src_offset: impl Into<f64>, length: Option<f64>) {
         unreachable!()
@@ -78766,6 +79414,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/compressedTexImage2D)
     #[cfg_attr(rust_js, rust_js::link_name = "compressedTexImage2D")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn compressed_tex_image2_d_with_array_buffer_view(&self, target: impl Into<f64>, level: impl Into<f64>, internalformat: impl Into<f64>, width: impl Into<f64>, height: impl Into<f64>, border: impl Into<f64>, src_data: impl IntoArrayBufferView, src_offset: Option<f64>, src_length_override: Option<f64>) {
         unreachable!()
@@ -78780,6 +79429,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/compressedTexSubImage2D)
     #[cfg_attr(rust_js, rust_js::link_name = "compressedTexSubImage2D")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn compressed_tex_sub_image2_d_with_array_buffer_view(&self, target: impl Into<f64>, level: impl Into<f64>, xoffset: impl Into<f64>, yoffset: impl Into<f64>, width: impl Into<f64>, height: impl Into<f64>, format: impl Into<f64>, src_data: impl IntoArrayBufferView, src_offset: Option<f64>, src_length_override: Option<f64>) {
         unreachable!()
@@ -78788,6 +79438,7 @@ impl WebGL2RenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform1fv)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform1fv")]
     #[cfg_attr(rust_js, rust_js::nullable(location))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn uniform1fv(&self, location: Option<&WebGLUniformLocation>, data: impl IntoFloat32List, src_offset: Option<f64>, src_length: Option<f64>) {
         unreachable!()
@@ -78796,6 +79447,7 @@ impl WebGL2RenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform2fv)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform2fv")]
     #[cfg_attr(rust_js, rust_js::nullable(location))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn uniform2fv(&self, location: Option<&WebGLUniformLocation>, data: impl IntoFloat32List, src_offset: Option<f64>, src_length: Option<f64>) {
         unreachable!()
@@ -78804,6 +79456,7 @@ impl WebGL2RenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform3fv)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform3fv")]
     #[cfg_attr(rust_js, rust_js::nullable(location))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn uniform3fv(&self, location: Option<&WebGLUniformLocation>, data: impl IntoFloat32List, src_offset: Option<f64>, src_length: Option<f64>) {
         unreachable!()
@@ -78812,6 +79465,7 @@ impl WebGL2RenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform4fv)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform4fv")]
     #[cfg_attr(rust_js, rust_js::nullable(location))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn uniform4fv(&self, location: Option<&WebGLUniformLocation>, data: impl IntoFloat32List, src_offset: Option<f64>, src_length: Option<f64>) {
         unreachable!()
@@ -78820,6 +79474,7 @@ impl WebGL2RenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform1iv)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform1iv")]
     #[cfg_attr(rust_js, rust_js::nullable(location))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn uniform1iv(&self, location: Option<&WebGLUniformLocation>, data: impl IntoInt32List, src_offset: Option<f64>, src_length: Option<f64>) {
         unreachable!()
@@ -78828,6 +79483,7 @@ impl WebGL2RenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform2iv)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform2iv")]
     #[cfg_attr(rust_js, rust_js::nullable(location))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn uniform2iv(&self, location: Option<&WebGLUniformLocation>, data: impl IntoInt32List, src_offset: Option<f64>, src_length: Option<f64>) {
         unreachable!()
@@ -78836,6 +79492,7 @@ impl WebGL2RenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform3iv)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform3iv")]
     #[cfg_attr(rust_js, rust_js::nullable(location))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn uniform3iv(&self, location: Option<&WebGLUniformLocation>, data: impl IntoInt32List, src_offset: Option<f64>, src_length: Option<f64>) {
         unreachable!()
@@ -78844,6 +79501,7 @@ impl WebGL2RenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniform4iv)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform4iv")]
     #[cfg_attr(rust_js, rust_js::nullable(location))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn uniform4iv(&self, location: Option<&WebGLUniformLocation>, data: impl IntoInt32List, src_offset: Option<f64>, src_length: Option<f64>) {
         unreachable!()
@@ -78852,6 +79510,7 @@ impl WebGL2RenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniformMatrix2fv)
     #[cfg_attr(rust_js, rust_js::link_name = "uniformMatrix2fv")]
     #[cfg_attr(rust_js, rust_js::nullable(location))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn uniform_matrix2fv(&self, location: Option<&WebGLUniformLocation>, transpose: bool, data: impl IntoFloat32List, src_offset: Option<f64>, src_length: Option<f64>) {
         unreachable!()
@@ -78860,6 +79519,7 @@ impl WebGL2RenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniformMatrix3fv)
     #[cfg_attr(rust_js, rust_js::link_name = "uniformMatrix3fv")]
     #[cfg_attr(rust_js, rust_js::nullable(location))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn uniform_matrix3fv(&self, location: Option<&WebGLUniformLocation>, transpose: bool, data: impl IntoFloat32List, src_offset: Option<f64>, src_length: Option<f64>) {
         unreachable!()
@@ -78868,6 +79528,7 @@ impl WebGL2RenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/uniformMatrix4fv)
     #[cfg_attr(rust_js, rust_js::link_name = "uniformMatrix4fv")]
     #[cfg_attr(rust_js, rust_js::nullable(location))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn uniform_matrix4fv(&self, location: Option<&WebGLUniformLocation>, transpose: bool, data: impl IntoFloat32List, src_offset: Option<f64>, src_length: Option<f64>) {
         unreachable!()
@@ -78875,6 +79536,7 @@ impl WebGL2RenderingContext {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGL2RenderingContext/readPixels)
     #[cfg_attr(rust_js, rust_js::link_name = "readPixels")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn read_pixels(&self, x: impl Into<f64>, y: impl Into<f64>, width: impl Into<f64>, height: impl Into<f64>, format: impl Into<f64>, r#type: impl Into<f64>, dst_data: impl IntoArrayBufferView, dst_offset: Option<f64>) {
         unreachable!()
@@ -78968,6 +79630,7 @@ pub mod web_gl_context_event {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLContextEvent/WebGLContextEvent)
     #[cfg_attr(rust_js, rust_js::link_name = "new WebGLContextEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(r#type: &str, event_init: Option<WebGLContextEventInit<'_>>) -> &'static WebGLContextEvent {
         unreachable!()
     }
@@ -80345,6 +81008,7 @@ impl WebGLRenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/bindBuffer)
     #[cfg_attr(rust_js, rust_js::link_name = "bindBuffer")]
     #[cfg_attr(rust_js, rust_js::nullable(buffer))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn bind_buffer(&self, target: impl Into<f64>, buffer: Option<&WebGLBuffer>) {
         unreachable!()
@@ -80353,6 +81017,7 @@ impl WebGLRenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/bindFramebuffer)
     #[cfg_attr(rust_js, rust_js::link_name = "bindFramebuffer")]
     #[cfg_attr(rust_js, rust_js::nullable(framebuffer))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn bind_framebuffer(&self, target: impl Into<f64>, framebuffer: Option<&WebGLFramebuffer>) {
         unreachable!()
@@ -80361,6 +81026,7 @@ impl WebGLRenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/bindRenderbuffer)
     #[cfg_attr(rust_js, rust_js::link_name = "bindRenderbuffer")]
     #[cfg_attr(rust_js, rust_js::nullable(renderbuffer))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn bind_renderbuffer(&self, target: impl Into<f64>, renderbuffer: Option<&WebGLRenderbuffer>) {
         unreachable!()
@@ -80369,6 +81035,7 @@ impl WebGLRenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/bindTexture)
     #[cfg_attr(rust_js, rust_js::link_name = "bindTexture")]
     #[cfg_attr(rust_js, rust_js::nullable(texture))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn bind_texture(&self, target: impl Into<f64>, texture: Option<&WebGLTexture>) {
         unreachable!()
@@ -80519,6 +81186,7 @@ impl WebGLRenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/deleteBuffer)
     #[cfg_attr(rust_js, rust_js::link_name = "deleteBuffer")]
     #[cfg_attr(rust_js, rust_js::nullable(buffer))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn delete_buffer(&self, buffer: Option<&WebGLBuffer>) {
         unreachable!()
@@ -80527,6 +81195,7 @@ impl WebGLRenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/deleteFramebuffer)
     #[cfg_attr(rust_js, rust_js::link_name = "deleteFramebuffer")]
     #[cfg_attr(rust_js, rust_js::nullable(framebuffer))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn delete_framebuffer(&self, framebuffer: Option<&WebGLFramebuffer>) {
         unreachable!()
@@ -80535,6 +81204,7 @@ impl WebGLRenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/deleteProgram)
     #[cfg_attr(rust_js, rust_js::link_name = "deleteProgram")]
     #[cfg_attr(rust_js, rust_js::nullable(program))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn delete_program(&self, program: Option<&WebGLProgram>) {
         unreachable!()
@@ -80543,6 +81213,7 @@ impl WebGLRenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/deleteRenderbuffer)
     #[cfg_attr(rust_js, rust_js::link_name = "deleteRenderbuffer")]
     #[cfg_attr(rust_js, rust_js::nullable(renderbuffer))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn delete_renderbuffer(&self, renderbuffer: Option<&WebGLRenderbuffer>) {
         unreachable!()
@@ -80551,6 +81222,7 @@ impl WebGLRenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/deleteShader)
     #[cfg_attr(rust_js, rust_js::link_name = "deleteShader")]
     #[cfg_attr(rust_js, rust_js::nullable(shader))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn delete_shader(&self, shader: Option<&WebGLShader>) {
         unreachable!()
@@ -80559,6 +81231,7 @@ impl WebGLRenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/deleteTexture)
     #[cfg_attr(rust_js, rust_js::link_name = "deleteTexture")]
     #[cfg_attr(rust_js, rust_js::nullable(texture))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn delete_texture(&self, texture: Option<&WebGLTexture>) {
         unreachable!()
@@ -80651,6 +81324,7 @@ impl WebGLRenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/framebufferRenderbuffer)
     #[cfg_attr(rust_js, rust_js::link_name = "framebufferRenderbuffer")]
     #[cfg_attr(rust_js, rust_js::nullable(renderbuffer))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn framebuffer_renderbuffer(&self, target: impl Into<f64>, attachment: impl Into<f64>, renderbuffertarget: impl Into<f64>, renderbuffer: Option<&WebGLRenderbuffer>) {
         unreachable!()
@@ -80659,6 +81333,7 @@ impl WebGLRenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/framebufferTexture2D)
     #[cfg_attr(rust_js, rust_js::link_name = "framebufferTexture2D")]
     #[cfg_attr(rust_js, rust_js::nullable(texture))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn framebuffer_texture2_d(&self, target: impl Into<f64>, attachment: impl Into<f64>, textarget: impl Into<f64>, texture: Option<&WebGLTexture>, level: impl Into<f64>) {
         unreachable!()
@@ -80819,6 +81494,7 @@ impl WebGLRenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/isBuffer)
     #[cfg_attr(rust_js, rust_js::link_name = "isBuffer")]
     #[cfg_attr(rust_js, rust_js::nullable(buffer))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn is_buffer(&self, buffer: Option<&WebGLBuffer>) -> bool {
         unreachable!()
     }
@@ -80832,6 +81508,7 @@ impl WebGLRenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/isFramebuffer)
     #[cfg_attr(rust_js, rust_js::link_name = "isFramebuffer")]
     #[cfg_attr(rust_js, rust_js::nullable(framebuffer))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn is_framebuffer(&self, framebuffer: Option<&WebGLFramebuffer>) -> bool {
         unreachable!()
     }
@@ -80839,6 +81516,7 @@ impl WebGLRenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/isProgram)
     #[cfg_attr(rust_js, rust_js::link_name = "isProgram")]
     #[cfg_attr(rust_js, rust_js::nullable(program))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn is_program(&self, program: Option<&WebGLProgram>) -> bool {
         unreachable!()
     }
@@ -80846,6 +81524,7 @@ impl WebGLRenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/isRenderbuffer)
     #[cfg_attr(rust_js, rust_js::link_name = "isRenderbuffer")]
     #[cfg_attr(rust_js, rust_js::nullable(renderbuffer))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn is_renderbuffer(&self, renderbuffer: Option<&WebGLRenderbuffer>) -> bool {
         unreachable!()
     }
@@ -80853,6 +81532,7 @@ impl WebGLRenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/isShader)
     #[cfg_attr(rust_js, rust_js::link_name = "isShader")]
     #[cfg_attr(rust_js, rust_js::nullable(shader))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn is_shader(&self, shader: Option<&WebGLShader>) -> bool {
         unreachable!()
     }
@@ -80860,6 +81540,7 @@ impl WebGLRenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/isTexture)
     #[cfg_attr(rust_js, rust_js::link_name = "isTexture")]
     #[cfg_attr(rust_js, rust_js::nullable(texture))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn is_texture(&self, texture: Option<&WebGLTexture>) -> bool {
         unreachable!()
     }
@@ -80979,6 +81660,7 @@ impl WebGLRenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/uniform1f)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform1f")]
     #[cfg_attr(rust_js, rust_js::nullable(location))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn uniform1f(&self, location: Option<&WebGLUniformLocation>, x: impl Into<f64>) {
         unreachable!()
@@ -80987,6 +81669,7 @@ impl WebGLRenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/uniform2f)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform2f")]
     #[cfg_attr(rust_js, rust_js::nullable(location))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn uniform2f(&self, location: Option<&WebGLUniformLocation>, x: impl Into<f64>, y: impl Into<f64>) {
         unreachable!()
@@ -80995,6 +81678,7 @@ impl WebGLRenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/uniform3f)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform3f")]
     #[cfg_attr(rust_js, rust_js::nullable(location))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn uniform3f(&self, location: Option<&WebGLUniformLocation>, x: impl Into<f64>, y: impl Into<f64>, z: impl Into<f64>) {
         unreachable!()
@@ -81003,6 +81687,7 @@ impl WebGLRenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/uniform4f)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform4f")]
     #[cfg_attr(rust_js, rust_js::nullable(location))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn uniform4f(&self, location: Option<&WebGLUniformLocation>, x: impl Into<f64>, y: impl Into<f64>, z: impl Into<f64>, w: impl Into<f64>) {
         unreachable!()
@@ -81011,6 +81696,7 @@ impl WebGLRenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/uniform1i)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform1i")]
     #[cfg_attr(rust_js, rust_js::nullable(location))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn uniform1i(&self, location: Option<&WebGLUniformLocation>, x: impl Into<f64>) {
         unreachable!()
@@ -81019,6 +81705,7 @@ impl WebGLRenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/uniform2i)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform2i")]
     #[cfg_attr(rust_js, rust_js::nullable(location))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn uniform2i(&self, location: Option<&WebGLUniformLocation>, x: impl Into<f64>, y: impl Into<f64>) {
         unreachable!()
@@ -81027,6 +81714,7 @@ impl WebGLRenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/uniform3i)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform3i")]
     #[cfg_attr(rust_js, rust_js::nullable(location))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn uniform3i(&self, location: Option<&WebGLUniformLocation>, x: impl Into<f64>, y: impl Into<f64>, z: impl Into<f64>) {
         unreachable!()
@@ -81035,6 +81723,7 @@ impl WebGLRenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/uniform4i)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform4i")]
     #[cfg_attr(rust_js, rust_js::nullable(location))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn uniform4i(&self, location: Option<&WebGLUniformLocation>, x: impl Into<f64>, y: impl Into<f64>, z: impl Into<f64>, w: impl Into<f64>) {
         unreachable!()
@@ -81043,6 +81732,7 @@ impl WebGLRenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/useProgram)
     #[cfg_attr(rust_js, rust_js::link_name = "useProgram")]
     #[cfg_attr(rust_js, rust_js::nullable(program))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn use_program(&self, program: Option<&WebGLProgram>) {
         unreachable!()
@@ -81198,6 +81888,7 @@ impl WebGLRenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/uniform1fv)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform1fv")]
     #[cfg_attr(rust_js, rust_js::nullable(location))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn uniform1fv(&self, location: Option<&WebGLUniformLocation>, v: impl IntoFloat32List) {
         unreachable!()
@@ -81206,6 +81897,7 @@ impl WebGLRenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/uniform2fv)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform2fv")]
     #[cfg_attr(rust_js, rust_js::nullable(location))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn uniform2fv(&self, location: Option<&WebGLUniformLocation>, v: impl IntoFloat32List) {
         unreachable!()
@@ -81214,6 +81906,7 @@ impl WebGLRenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/uniform3fv)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform3fv")]
     #[cfg_attr(rust_js, rust_js::nullable(location))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn uniform3fv(&self, location: Option<&WebGLUniformLocation>, v: impl IntoFloat32List) {
         unreachable!()
@@ -81222,6 +81915,7 @@ impl WebGLRenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/uniform4fv)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform4fv")]
     #[cfg_attr(rust_js, rust_js::nullable(location))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn uniform4fv(&self, location: Option<&WebGLUniformLocation>, v: impl IntoFloat32List) {
         unreachable!()
@@ -81230,6 +81924,7 @@ impl WebGLRenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/uniform1iv)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform1iv")]
     #[cfg_attr(rust_js, rust_js::nullable(location))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn uniform1iv(&self, location: Option<&WebGLUniformLocation>, v: impl IntoInt32List) {
         unreachable!()
@@ -81238,6 +81933,7 @@ impl WebGLRenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/uniform2iv)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform2iv")]
     #[cfg_attr(rust_js, rust_js::nullable(location))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn uniform2iv(&self, location: Option<&WebGLUniformLocation>, v: impl IntoInt32List) {
         unreachable!()
@@ -81246,6 +81942,7 @@ impl WebGLRenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/uniform3iv)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform3iv")]
     #[cfg_attr(rust_js, rust_js::nullable(location))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn uniform3iv(&self, location: Option<&WebGLUniformLocation>, v: impl IntoInt32List) {
         unreachable!()
@@ -81254,6 +81951,7 @@ impl WebGLRenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/uniform4iv)
     #[cfg_attr(rust_js, rust_js::link_name = "uniform4iv")]
     #[cfg_attr(rust_js, rust_js::nullable(location))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn uniform4iv(&self, location: Option<&WebGLUniformLocation>, v: impl IntoInt32List) {
         unreachable!()
@@ -81262,6 +81960,7 @@ impl WebGLRenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/uniformMatrix2fv)
     #[cfg_attr(rust_js, rust_js::link_name = "uniformMatrix2fv")]
     #[cfg_attr(rust_js, rust_js::nullable(location))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn uniform_matrix2fv(&self, location: Option<&WebGLUniformLocation>, transpose: bool, value: impl IntoFloat32List) {
         unreachable!()
@@ -81270,6 +81969,7 @@ impl WebGLRenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/uniformMatrix3fv)
     #[cfg_attr(rust_js, rust_js::link_name = "uniformMatrix3fv")]
     #[cfg_attr(rust_js, rust_js::nullable(location))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn uniform_matrix3fv(&self, location: Option<&WebGLUniformLocation>, transpose: bool, value: impl IntoFloat32List) {
         unreachable!()
@@ -81278,6 +81978,7 @@ impl WebGLRenderingContext {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLRenderingContext/uniformMatrix4fv)
     #[cfg_attr(rust_js, rust_js::link_name = "uniformMatrix4fv")]
     #[cfg_attr(rust_js, rust_js::nullable(location))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn uniform_matrix4fv(&self, location: Option<&WebGLUniformLocation>, transpose: bool, value: impl IntoFloat32List) {
         unreachable!()
@@ -81465,6 +82166,7 @@ pub mod web_socket {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebSocket/WebSocket)
     #[cfg_attr(rust_js, rust_js::link_name = "new WebSocket")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(url: &str, protocols: Option<&dyn IntoStrOrList>) -> &'static WebSocket {
         unreachable!()
     }
@@ -81556,6 +82258,7 @@ impl WebSocket {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebSocket/close)
     #[cfg_attr(rust_js, rust_js::link_name = "close")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn close(&self, code: Option<f64>, reason: Option<&str>) {
         unreachable!()
@@ -81616,6 +82319,7 @@ pub mod web_transport {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebTransport/WebTransport)
     #[cfg_attr(rust_js, rust_js::link_name = "new WebTransport")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(url: &str, options: Option<WebTransportOptions<'_>>) -> &'static WebTransport {
         unreachable!()
     }
@@ -81709,6 +82413,7 @@ impl WebTransport {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebTransport/close)
     #[cfg_attr(rust_js, rust_js::link_name = "close")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn close(&self, close_info: Option<WebTransportCloseInfo>) {
         unreachable!()
@@ -81722,6 +82427,7 @@ impl WebTransport {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebTransport/createBidirectionalStream)
     #[cfg_attr(rust_js, rust_js::link_name = "createBidirectionalStream")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn create_bidirectional_stream(&self, options: Option<WebTransportSendStreamOptions<'_>>) -> Promise<&'static WebTransportBidirectionalStream> {
         unreachable!()
     }
@@ -81734,6 +82440,7 @@ impl WebTransport {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebTransport/createUnidirectionalStream)
     #[cfg_attr(rust_js, rust_js::link_name = "createUnidirectionalStream")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn create_unidirectional_stream(&self, options: Option<WebTransportSendStreamOptions<'_>>) -> Promise<&'static WebTransportSendStream> {
         unreachable!()
     }
@@ -81798,6 +82505,7 @@ impl Eq for WebTransportDatagramDuplexStream {}
 impl WebTransportDatagramDuplexStream {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebTransportDatagramDuplexStream/createWritable)
     #[cfg_attr(rust_js, rust_js::link_name = "createWritable")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn create_writable(&self, options: Option<WebTransportSendOptions<'_>>) -> &'static WebTransportDatagramsWritable {
         unreachable!()
     }
@@ -81961,6 +82669,7 @@ pub mod web_transport_error {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebTransportError/WebTransportError)
     #[cfg_attr(rust_js, rust_js::link_name = "new WebTransportError")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(message: Option<&str>, options: Option<WebTransportErrorOptions<'_>>) -> &'static WebTransportError {
         unreachable!()
     }
@@ -82152,6 +82861,7 @@ pub mod worker {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Worker/Worker)
     #[cfg_attr(rust_js, rust_js::link_name = "new Worker")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(script_url: &str, options: Option<WorkerOptions<'_>>) -> &'static Worker {
         unreachable!()
     }
@@ -82173,6 +82883,7 @@ impl Worker {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Worker/postMessage)
     #[cfg_attr(rust_js, rust_js::link_name = "postMessage")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn post_message<M: StructuredClone>(&self, message: M, options: Option<StructuredSerializeOptions<'_>>) {
         unreachable!()
@@ -82242,6 +82953,7 @@ impl Eq for Worklet {}
 impl Worklet {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Worklet/addModule)
     #[cfg_attr(rust_js, rust_js::link_name = "addModule")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn add_module(&self, module_url: &str, options: Option<WorkletOptions<'_>>) -> Promise<()> {
         unreachable!()
     }
@@ -82267,6 +82979,7 @@ pub mod writable_stream {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WritableStream/WritableStream)
     #[cfg_attr(rust_js, rust_js::link_name = "new WritableStream")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(underlying_sink: Option<&dyn core::any::Any>, strategy: Option<QueuingStrategy>) -> &'static WritableStream {
         unreachable!()
     }
@@ -82281,6 +82994,7 @@ impl WritableStream {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WritableStream/abort)
     #[cfg_attr(rust_js, rust_js::link_name = "abort")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn abort(&self, reason: Option<&dyn IntoUnknown>) -> Promise<()> {
         unreachable!()
     }
@@ -82322,6 +83036,7 @@ impl WritableStreamDefaultController {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WritableStreamDefaultController/error)
     #[cfg_attr(rust_js, rust_js::link_name = "error")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn error(&self, e: Option<&dyn IntoUnknown>) {
         unreachable!()
@@ -82375,6 +83090,7 @@ impl WritableStreamDefaultWriter {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WritableStreamDefaultWriter/abort)
     #[cfg_attr(rust_js, rust_js::link_name = "abort")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn abort(&self, reason: Option<&dyn IntoUnknown>) -> Promise<()> {
         unreachable!()
     }
@@ -82394,6 +83110,7 @@ impl WritableStreamDefaultWriter {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WritableStreamDefaultWriter/write)
     #[cfg_attr(rust_js, rust_js::link_name = "write")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn write(&self, chunk: Option<&dyn IntoUnknown>) -> Promise<()> {
         unreachable!()
     }
@@ -82518,6 +83235,7 @@ impl XMLHttpRequest {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/XMLHttpRequest/open)
     #[cfg_attr(rust_js, rust_js::link_name = "open")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn open(&self, method: &str, url: &str, r#async: Option<bool>, username: Option<&str>, password: Option<&str>) {
         unreachable!()
@@ -82563,6 +83281,7 @@ impl XMLHttpRequest {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/XMLHttpRequest/send)
     #[cfg_attr(rust_js, rust_js::link_name = "send")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn send(&self, body: Option<&dyn IntoDocumentOrXMLHttpRequestBodyInit>) {
         unreachable!()
@@ -82916,6 +83635,7 @@ impl Eq for XPathExpression {}
 impl XPathExpression {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/XPathExpression/evaluate)
     #[cfg_attr(rust_js, rust_js::link_name = "evaluate")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn evaluate(&self, context_node: &Node, r#type: Option<f64>, result: Option<&XPathResult>) -> &'static XPathResult {
         unreachable!()
     }
@@ -83184,6 +83904,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Event/Event)
     /// `new window.Event(..)`: this window's class, which is [`event::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new Event")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_event(&self, r#type: &str, event_init_dict: Option<EventInit>) -> &'static Event {
         unreachable!()
     }
@@ -83191,6 +83912,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Text/Text)
     /// `new window.Text(..)`: this window's class, which is [`text::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new Text")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_text(&self, data: Option<&str>) -> &'static Text {
         unreachable!()
     }
@@ -83198,6 +83920,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Comment/Comment)
     /// `new window.Comment(..)`: this window's class, which is [`comment::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new Comment")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_comment(&self, data: Option<&str>) -> &'static Comment {
         unreachable!()
     }
@@ -83233,6 +83956,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DragEvent/DragEvent)
     /// `new window.DragEvent(..)`: this window's class, which is [`drag_event::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new DragEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_drag_event(&self, r#type: &str, event_init_dict: Option<DragEventInit<'_>>) -> &'static DragEvent {
         unreachable!()
     }
@@ -83240,6 +83964,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ToggleEvent/ToggleEvent)
     /// `new window.ToggleEvent(..)`: this window's class, which is [`toggle_event::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new ToggleEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_toggle_event(&self, r#type: &str, event_init_dict: Option<ToggleEventInit<'_>>) -> &'static ToggleEvent {
         unreachable!()
     }
@@ -83247,6 +83972,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MessageEvent/MessageEvent)
     /// `new window.MessageEvent(..)`: this window's class, which is [`message_event::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new MessageEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_message_event(&self, r#type: &str, event_init_dict: Option<MessageEventInit<'_>>) -> &'static MessageEvent {
         unreachable!()
     }
@@ -83254,6 +83980,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SubmitEvent/SubmitEvent)
     /// `new window.SubmitEvent(..)`: this window's class, which is [`submit_event::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new SubmitEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_submit_event(&self, r#type: &str, event_init_dict: Option<SubmitEventInit<'_>>) -> &'static SubmitEvent {
         unreachable!()
     }
@@ -83261,6 +83988,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/UIEvent/UIEvent)
     /// `new window.UIEvent(..)`: this window's class, which is [`ui_event::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new UIEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_ui_event(&self, r#type: &str, event_init_dict: Option<UIEventInit<'_>>) -> &'static UIEvent {
         unreachable!()
     }
@@ -83268,6 +83996,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FocusEvent/FocusEvent)
     /// `new window.FocusEvent(..)`: this window's class, which is [`focus_event::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new FocusEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_focus_event(&self, r#type: &str, event_init_dict: Option<FocusEventInit<'_>>) -> &'static FocusEvent {
         unreachable!()
     }
@@ -83275,6 +84004,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/MouseEvent)
     /// `new window.MouseEvent(..)`: this window's class, which is [`mouse_event::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new MouseEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_mouse_event(&self, r#type: &str, event_init_dict: Option<MouseEventInit<'_>>) -> &'static MouseEvent {
         unreachable!()
     }
@@ -83282,6 +84012,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyboardEvent/KeyboardEvent)
     /// `new window.KeyboardEvent(..)`: this window's class, which is [`keyboard_event::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new KeyboardEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_keyboard_event(&self, r#type: &str, event_init_dict: Option<KeyboardEventInit<'_>>) -> &'static KeyboardEvent {
         unreachable!()
     }
@@ -83289,6 +84020,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/InputEvent/InputEvent)
     /// `new window.InputEvent(..)`: this window's class, which is [`input_event::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new InputEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_input_event(&self, r#type: &str, event_init_dict: Option<InputEventInit<'_>>) -> &'static InputEvent {
         unreachable!()
     }
@@ -83296,6 +84028,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WheelEvent/WheelEvent)
     /// `new window.WheelEvent(..)`: this window's class, which is [`wheel_event::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new WheelEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_wheel_event(&self, r#type: &str, event_init_dict: Option<WheelEventInit<'_>>) -> &'static WheelEvent {
         unreachable!()
     }
@@ -83303,6 +84036,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CompositionEvent/CompositionEvent)
     /// `new window.CompositionEvent(..)`: this window's class, which is [`composition_event::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new CompositionEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_composition_event(&self, r#type: &str, event_init_dict: Option<CompositionEventInit<'_>>) -> &'static CompositionEvent {
         unreachable!()
     }
@@ -83310,6 +84044,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/TouchEvent/TouchEvent)
     /// `new window.TouchEvent(..)`: this window's class, which is [`touch_event::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new TouchEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_touch_event(&self, r#type: &str, event_init_dict: Option<TouchEventInit<'_>>) -> &'static TouchEvent {
         unreachable!()
     }
@@ -83317,6 +84052,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AnimationEvent/AnimationEvent)
     /// `new window.AnimationEvent(..)`: this window's class, which is [`animation_event::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new AnimationEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_animation_event(&self, r#type: &str, animation_event_init_dict: Option<AnimationEventInit<'_>>) -> &'static AnimationEvent {
         unreachable!()
     }
@@ -83324,6 +84060,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/TransitionEvent/TransitionEvent)
     /// `new window.TransitionEvent(..)`: this window's class, which is [`transition_event::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new TransitionEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_transition_event(&self, r#type: &str, transition_event_init_dict: Option<TransitionEventInit<'_>>) -> &'static TransitionEvent {
         unreachable!()
     }
@@ -83331,6 +84068,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ClipboardEvent/ClipboardEvent)
     /// `new window.ClipboardEvent(..)`: this window's class, which is [`clipboard_event::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new ClipboardEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_clipboard_event(&self, r#type: &str, event_init_dict: Option<ClipboardEventInit<'_>>) -> &'static ClipboardEvent {
         unreachable!()
     }
@@ -83338,6 +84076,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PointerEvent/PointerEvent)
     /// `new window.PointerEvent(..)`: this window's class, which is [`pointer_event::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new PointerEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_pointer_event(&self, r#type: &str, event_init_dict: Option<PointerEventInit<'_>>) -> &'static PointerEvent {
         unreachable!()
     }
@@ -83345,6 +84084,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMRectReadOnly/DOMRectReadOnly)
     /// `new window.DOMRectReadOnly(..)`: this window's class, which is [`dom_rect_read_only::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new DOMRectReadOnly")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_dom_rect_read_only(&self, x: Option<f64>, y: Option<f64>, width: Option<f64>, height: Option<f64>) -> &'static DOMRectReadOnly {
         unreachable!()
     }
@@ -83352,6 +84092,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMRect/DOMRect)
     /// `new window.DOMRect(..)`: this window's class, which is [`dom_rect::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new DOMRect")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_dom_rect(&self, x: Option<f64>, y: Option<f64>, width: Option<f64>, height: Option<f64>) -> &'static DOMRect {
         unreachable!()
     }
@@ -83359,6 +84100,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaQueryListEvent/MediaQueryListEvent)
     /// `new window.MediaQueryListEvent(..)`: this window's class, which is [`media_query_list_event::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new MediaQueryListEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_media_query_list_event(&self, r#type: &str, event_init_dict: Option<MediaQueryListEventInit<'_>>) -> &'static MediaQueryListEvent {
         unreachable!()
     }
@@ -83366,6 +84108,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IntersectionObserver/IntersectionObserver)
     /// `new window.IntersectionObserver(..)`: this window's class, which is [`intersection_observer::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new IntersectionObserver")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_intersection_observer(&self, callback: Box<dyn FnMut(&'static [&'static IntersectionObserverEntry], &'static IntersectionObserver)>, options: Option<IntersectionObserverInit<'_>>) -> &'static IntersectionObserver {
         unreachable!()
     }
@@ -83380,6 +84123,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Headers/Headers)
     /// `new window.Headers(..)`: this window's class, which is [`headers::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new Headers")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_headers(&self, init: Option<&dyn IntoHeadersInit>) -> &'static Headers {
         unreachable!()
     }
@@ -83387,6 +84131,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Request/Request)
     /// `new window.Request(..)`: this window's class, which is [`request::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new Request")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_request(&self, input: impl IntoRequestInfo, init: Option<RequestInit<'_>>) -> &'static Request {
         unreachable!()
     }
@@ -83394,6 +84139,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Response/Response)
     /// `new window.Response(..)`: this window's class, which is [`response::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new Response")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_response(&self, body: Option<&dyn IntoBodyInit>, init: Option<ResponseInit<'_>>) -> &'static Response {
         unreachable!()
     }
@@ -83401,6 +84147,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FormData/FormData)
     /// `new window.FormData(..)`: this window's class, which is [`form_data::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new FormData")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_form_data(&self, form: Option<&HTMLFormElement>, submitter: Option<&HTMLElement>) -> &'static FormData {
         unreachable!()
     }
@@ -83408,6 +84155,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ReadableStream/ReadableStream)
     /// `new window.ReadableStream(..)`: this window's class, which is [`readable_stream::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new ReadableStream")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_readable_stream(&self, underlying_source: Option<&dyn IntoUnderlyingSource>, strategy: Option<QueuingStrategy>) -> &'static ReadableStream {
         unreachable!()
     }
@@ -83429,6 +84177,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/TextDecoder/TextDecoder)
     /// `new window.TextDecoder(..)`: this window's class, which is [`text_decoder::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new TextDecoder")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_text_decoder(&self, label: Option<&str>, options: Option<TextDecoderOptions>) -> &'static TextDecoder {
         unreachable!()
     }
@@ -83436,6 +84185,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/Module/Module)
     /// `new window.WebAssembly.Module(..)`: this window's class, which is [`web_assembly_module::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new WebAssembly.Module")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_web_assembly_module(&self, bytes: impl IntoAllowSharedBufferSource, options: Option<WebAssemblyCompileOptions<'_>>) -> &'static WebAssemblyModule {
         unreachable!()
     }
@@ -83443,6 +84193,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/Instance/Instance)
     /// `new window.WebAssembly.Instance(..)`: this window's class, which is [`web_assembly_instance::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new WebAssembly.Instance")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_web_assembly_instance(&self, module: &WebAssemblyModule, import_object: Option<&dyn core::any::Any>) -> &'static WebAssemblyInstance {
         unreachable!()
     }
@@ -83457,6 +84208,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Blob/Blob)
     /// `new window.Blob(..)`: this window's class, which is [`blob::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new Blob")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_blob(&self, blob_parts: Option<&[BlobPart<'_>]>, options: Option<BlobPropertyBag<'_>>) -> &'static Blob {
         unreachable!()
     }
@@ -83464,6 +84216,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/File/File)
     /// `new window.File(..)`: this window's class, which is [`file::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new File")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_file(&self, file_bits: &[BlobPart<'_>], file_name: &str, options: Option<FilePropertyBag<'_>>) -> &'static File {
         unreachable!()
     }
@@ -83471,6 +84224,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/URL/URL)
     /// `new window.URL(..)`: this window's class, which is [`url::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new URL")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_url(&self, url: &str, base: Option<&str>) -> &'static URL {
         unreachable!()
     }
@@ -83478,6 +84232,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ClipboardItem/ClipboardItem)
     /// `new window.ClipboardItem(..)`: this window's class, which is [`clipboard_item::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new ClipboardItem")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_clipboard_item(&self, items: &dyn Record<Value = Promise<StrOrBlob<'static>>>, options: Option<ClipboardItemOptions<'_>>) -> &'static ClipboardItem {
         unreachable!()
     }
@@ -83485,6 +84240,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AnalyserNode/AnalyserNode)
     /// `new window.AnalyserNode(..)`: this window's class, which is [`analyser_node::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new AnalyserNode")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_analyser_node(&self, context: &BaseAudioContext, options: Option<AnalyserOptions<'_>>) -> &'static AnalyserNode {
         unreachable!()
     }
@@ -83492,6 +84248,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Animation/Animation)
     /// `new window.Animation(..)`: this window's class, which is [`animation::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new Animation")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_animation(&self, effect: Option<&AnimationEffect>, timeline: Option<&AnimationTimeline>) -> &'static Animation {
         unreachable!()
     }
@@ -83499,6 +84256,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AnimationPlaybackEvent/AnimationPlaybackEvent)
     /// `new window.AnimationPlaybackEvent(..)`: this window's class, which is [`animation_playback_event::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new AnimationPlaybackEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_animation_playback_event(&self, r#type: &str, event_init_dict: Option<AnimationPlaybackEventInit<'_>>) -> &'static AnimationPlaybackEvent {
         unreachable!()
     }
@@ -83513,6 +84271,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioBufferSourceNode/AudioBufferSourceNode)
     /// `new window.AudioBufferSourceNode(..)`: this window's class, which is [`audio_buffer_source_node::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new AudioBufferSourceNode")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_audio_buffer_source_node(&self, context: &BaseAudioContext, options: Option<AudioBufferSourceOptions<'_>>) -> &'static AudioBufferSourceNode {
         unreachable!()
     }
@@ -83520,6 +84279,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioContext/AudioContext)
     /// `new window.AudioContext(..)`: this window's class, which is [`audio_context::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new AudioContext")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_audio_context(&self, context_options: Option<AudioContextOptions<'_>>) -> &'static AudioContext {
         unreachable!()
     }
@@ -83555,6 +84315,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/AudioWorkletNode/AudioWorkletNode)
     /// `new window.AudioWorkletNode(..)`: this window's class, which is [`audio_worklet_node::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new AudioWorkletNode")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_audio_worklet_node(&self, context: &BaseAudioContext, name: &str, options: Option<AudioWorkletNodeOptions<'_>>) -> &'static AudioWorkletNode {
         unreachable!()
     }
@@ -83562,6 +84323,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/BiquadFilterNode/BiquadFilterNode)
     /// `new window.BiquadFilterNode(..)`: this window's class, which is [`biquad_filter_node::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new BiquadFilterNode")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_biquad_filter_node(&self, context: &BaseAudioContext, options: Option<BiquadFilterOptions<'_>>) -> &'static BiquadFilterNode {
         unreachable!()
     }
@@ -83650,6 +84412,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSMatrixComponent/CSSMatrixComponent)
     /// `new window.CSSMatrixComponent(..)`: this window's class, which is [`css_matrix_component::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new CSSMatrixComponent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_css_matrix_component(&self, matrix: &DOMMatrixReadOnly, options: Option<CSSMatrixComponentOptions>) -> &'static CSSMatrixComponent {
         unreachable!()
     }
@@ -83671,6 +84434,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSScale/CSSScale)
     /// `new window.CSSScale(..)`: this window's class, which is [`css_scale::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new CSSScale")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_css_scale(&self, x: impl IntoCSSNumberish, y: impl IntoCSSNumberish, z: Option<&dyn IntoCSSNumberish>) -> &'static CSSScale {
         unreachable!()
     }
@@ -83699,6 +84463,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSStyleSheet/CSSStyleSheet)
     /// `new window.CSSStyleSheet(..)`: this window's class, which is [`css_style_sheet::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new CSSStyleSheet")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_css_style_sheet(&self, options: Option<CSSStyleSheetInit<'_>>) -> &'static CSSStyleSheet {
         unreachable!()
     }
@@ -83713,6 +84478,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSTranslate/CSSTranslate)
     /// `new window.CSSTranslate(..)`: this window's class, which is [`css_translate::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new CSSTranslate")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_css_translate(&self, x: &CSSNumericValue, y: &CSSNumericValue, z: Option<&CSSNumericValue>) -> &'static CSSTranslate {
         unreachable!()
     }
@@ -83734,6 +84500,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSVariableReferenceValue/CSSVariableReferenceValue)
     /// `new window.CSSVariableReferenceValue(..)`: this window's class, which is [`css_variable_reference_value::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new CSSVariableReferenceValue")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_css_variable_reference_value(&self, variable: &str, fallback: Option<&CSSUnparsedValue>) -> &'static CSSVariableReferenceValue {
         unreachable!()
     }
@@ -83741,6 +84508,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ChannelMergerNode/ChannelMergerNode)
     /// `new window.ChannelMergerNode(..)`: this window's class, which is [`channel_merger_node::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new ChannelMergerNode")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_channel_merger_node(&self, context: &BaseAudioContext, options: Option<ChannelMergerOptions<'_>>) -> &'static ChannelMergerNode {
         unreachable!()
     }
@@ -83748,6 +84516,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ChannelSplitterNode/ChannelSplitterNode)
     /// `new window.ChannelSplitterNode(..)`: this window's class, which is [`channel_splitter_node::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new ChannelSplitterNode")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_channel_splitter_node(&self, context: &BaseAudioContext, options: Option<ChannelSplitterOptions<'_>>) -> &'static ChannelSplitterNode {
         unreachable!()
     }
@@ -83755,6 +84524,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CloseEvent/CloseEvent)
     /// `new window.CloseEvent(..)`: this window's class, which is [`close_event::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new CloseEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_close_event(&self, r#type: &str, event_init_dict: Option<CloseEventInit<'_>>) -> &'static CloseEvent {
         unreachable!()
     }
@@ -83762,6 +84532,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CloseWatcher/CloseWatcher)
     /// `new window.CloseWatcher(..)`: this window's class, which is [`close_watcher::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new CloseWatcher")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_close_watcher(&self, options: Option<CloseWatcherOptions<'_>>) -> &'static CloseWatcher {
         unreachable!()
     }
@@ -83769,6 +84540,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CommandEvent/CommandEvent)
     /// `new window.CommandEvent(..)`: this window's class, which is [`command_event::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new CommandEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_command_event(&self, r#type: &str, event_init_dict: Option<CommandEventInit<'_>>) -> &'static CommandEvent {
         unreachable!()
     }
@@ -83783,6 +84555,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ConstantSourceNode/ConstantSourceNode)
     /// `new window.ConstantSourceNode(..)`: this window's class, which is [`constant_source_node::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new ConstantSourceNode")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_constant_source_node(&self, context: &BaseAudioContext, options: Option<ConstantSourceOptions>) -> &'static ConstantSourceNode {
         unreachable!()
     }
@@ -83790,6 +84563,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ContentVisibilityAutoStateChangeEvent/ContentVisibilityAutoStateChangeEvent)
     /// `new window.ContentVisibilityAutoStateChangeEvent(..)`: this window's class, which is [`content_visibility_auto_state_change_event::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new ContentVisibilityAutoStateChangeEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_content_visibility_auto_state_change_event(&self, r#type: &str, event_init_dict: Option<ContentVisibilityAutoStateChangeEventInit>) -> &'static ContentVisibilityAutoStateChangeEvent {
         unreachable!()
     }
@@ -83797,6 +84571,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ConvolverNode/ConvolverNode)
     /// `new window.ConvolverNode(..)`: this window's class, which is [`convolver_node::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new ConvolverNode")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_convolver_node(&self, context: &BaseAudioContext, options: Option<ConvolverOptions<'_>>) -> &'static ConvolverNode {
         unreachable!()
     }
@@ -83804,6 +84579,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CookieChangeEvent/CookieChangeEvent)
     /// `new window.CookieChangeEvent(..)`: this window's class, which is [`cookie_change_event::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new CookieChangeEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_cookie_change_event(&self, r#type: &str, event_init_dict: Option<CookieChangeEventInit<'_>>) -> &'static CookieChangeEvent {
         unreachable!()
     }
@@ -83825,6 +84601,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CustomEvent/CustomEvent)
     /// `new window.CustomEvent(..)`: this window's class, which is [`custom_event::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new CustomEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_custom_event(&self, r#type: &str, event_init_dict: Option<CustomEventInit<'_>>) -> &'static CustomEvent {
         unreachable!()
     }
@@ -83832,6 +84609,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMException/DOMException)
     /// `new window.DOMException(..)`: this window's class, which is [`dom_exception::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new DOMException")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_dom_exception(&self, message: Option<&str>, name: Option<&str>) -> &'static DOMException {
         unreachable!()
     }
@@ -83839,6 +84617,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMMatrix/DOMMatrix)
     /// `new window.DOMMatrix(..)`: this window's class, which is [`dom_matrix::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new DOMMatrix")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_dom_matrix(&self, init: Option<&dyn IntoStrOrList>) -> &'static DOMMatrix {
         unreachable!()
     }
@@ -83846,6 +84625,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMMatrixReadOnly/DOMMatrixReadOnly)
     /// `new window.DOMMatrixReadOnly(..)`: this window's class, which is [`dom_matrix_read_only::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new DOMMatrixReadOnly")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_dom_matrix_read_only(&self, init: Option<&dyn IntoStrOrList>) -> &'static DOMMatrixReadOnly {
         unreachable!()
     }
@@ -83860,6 +84640,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMPoint/DOMPoint)
     /// `new window.DOMPoint(..)`: this window's class, which is [`dom_point::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new DOMPoint")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_dom_point(&self, x: Option<f64>, y: Option<f64>, z: Option<f64>, w: Option<f64>) -> &'static DOMPoint {
         unreachable!()
     }
@@ -83867,6 +84648,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMPointReadOnly/DOMPointReadOnly)
     /// `new window.DOMPointReadOnly(..)`: this window's class, which is [`dom_point_read_only::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new DOMPointReadOnly")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_dom_point_read_only(&self, x: Option<f64>, y: Option<f64>, z: Option<f64>, w: Option<f64>) -> &'static DOMPointReadOnly {
         unreachable!()
     }
@@ -83874,6 +84656,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMQuad/DOMQuad)
     /// `new window.DOMQuad(..)`: this window's class, which is [`dom_quad::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new DOMQuad")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_dom_quad(&self, p1: Option<DOMPointInit>, p2: Option<DOMPointInit>, p3: Option<DOMPointInit>, p4: Option<DOMPointInit>) -> &'static DOMQuad {
         unreachable!()
     }
@@ -83888,6 +84671,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DelayNode/DelayNode)
     /// `new window.DelayNode(..)`: this window's class, which is [`delay_node::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new DelayNode")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_delay_node(&self, context: &BaseAudioContext, options: Option<DelayOptions<'_>>) -> &'static DelayNode {
         unreachable!()
     }
@@ -83895,6 +84679,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DeviceMotionEvent/DeviceMotionEvent)
     /// `new window.DeviceMotionEvent(..)`: this window's class, which is [`device_motion_event::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new DeviceMotionEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_device_motion_event(&self, r#type: &str, event_init_dict: Option<DeviceMotionEventInit>) -> &'static DeviceMotionEvent {
         unreachable!()
     }
@@ -83902,6 +84687,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DeviceOrientationEvent/DeviceOrientationEvent)
     /// `new window.DeviceOrientationEvent(..)`: this window's class, which is [`device_orientation_event::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new DeviceOrientationEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_device_orientation_event(&self, r#type: &str, event_init_dict: Option<DeviceOrientationEventInit>) -> &'static DeviceOrientationEvent {
         unreachable!()
     }
@@ -83916,6 +84702,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DocumentTimeline/DocumentTimeline)
     /// `new window.DocumentTimeline(..)`: this window's class, which is [`document_timeline::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new DocumentTimeline")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_document_timeline(&self, options: Option<DocumentTimelineOptions>) -> &'static DocumentTimeline {
         unreachable!()
     }
@@ -83923,6 +84710,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DynamicsCompressorNode/DynamicsCompressorNode)
     /// `new window.DynamicsCompressorNode(..)`: this window's class, which is [`dynamics_compressor_node::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new DynamicsCompressorNode")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_dynamics_compressor_node(&self, context: &BaseAudioContext, options: Option<DynamicsCompressorOptions<'_>>) -> &'static DynamicsCompressorNode {
         unreachable!()
     }
@@ -83944,6 +84732,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ErrorEvent/ErrorEvent)
     /// `new window.ErrorEvent(..)`: this window's class, which is [`error_event::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new ErrorEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_error_event(&self, r#type: &str, event_init_dict: Option<ErrorEventInit<'_>>) -> &'static ErrorEvent {
         unreachable!()
     }
@@ -83951,6 +84740,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/EventSource/EventSource)
     /// `new window.EventSource(..)`: this window's class, which is [`event_source::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new EventSource")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_event_source(&self, url: &str, event_source_init_dict: Option<EventSourceInit>) -> &'static EventSource {
         unreachable!()
     }
@@ -83965,6 +84755,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FontFace/FontFace)
     /// `new window.FontFace(..)`: this window's class, which is [`font_face::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new FontFace")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_font_face(&self, family: &str, source: impl IntoStrOrBufferSource, descriptors: Option<FontFaceDescriptors<'_>>) -> &'static FontFace {
         unreachable!()
     }
@@ -83972,6 +84763,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/FontFaceSetLoadEvent/FontFaceSetLoadEvent)
     /// `new window.FontFaceSetLoadEvent(..)`: this window's class, which is [`font_face_set_load_event::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new FontFaceSetLoadEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_font_face_set_load_event(&self, r#type: &str, event_init_dict: Option<FontFaceSetLoadEventInit<'_>>) -> &'static FontFaceSetLoadEvent {
         unreachable!()
     }
@@ -84000,6 +84792,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GPUPipelineError/GPUPipelineError)
     /// `new window.GPUPipelineError(..)`: this window's class, which is [`gpu_pipeline_error::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new GPUPipelineError")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_gpu_pipeline_error(&self, message: Option<&str>) -> &'static GPUPipelineError {
         unreachable!()
     }
@@ -84021,6 +84814,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GainNode/GainNode)
     /// `new window.GainNode(..)`: this window's class, which is [`gain_node::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new GainNode")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_gain_node(&self, context: &BaseAudioContext, options: Option<GainOptions<'_>>) -> &'static GainNode {
         unreachable!()
     }
@@ -84028,6 +84822,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/GamepadEvent/GamepadEvent)
     /// `new window.GamepadEvent(..)`: this window's class, which is [`gamepad_event::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new GamepadEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_gamepad_event(&self, r#type: &str, event_init_dict: Option<GamepadEventInit<'_>>) -> &'static GamepadEvent {
         unreachable!()
     }
@@ -84035,6 +84830,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HashChangeEvent/HashChangeEvent)
     /// `new window.HashChangeEvent(..)`: this window's class, which is [`hash_change_event::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new HashChangeEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_hash_change_event(&self, r#type: &str, event_init_dict: Option<HashChangeEventInit<'_>>) -> &'static HashChangeEvent {
         unreachable!()
     }
@@ -84050,6 +84846,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/IDBVersionChangeEvent/IDBVersionChangeEvent)
     /// `new window.IDBVersionChangeEvent(..)`: this window's class, which is [`idb_version_change_event::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new IDBVersionChangeEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_idb_version_change_event(&self, r#type: &str, event_init_dict: Option<IDBVersionChangeEventInit>) -> &'static IDBVersionChangeEvent {
         unreachable!()
     }
@@ -84071,6 +84868,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ImageData/ImageData)
     /// `new window.ImageData(..)`: this window's class, which is [`image_data::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new ImageData")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_image_data(&self, sw: impl Into<f64>, sh: impl Into<f64>, settings: Option<ImageDataSettings<'_>>) -> &'static ImageData {
         unreachable!()
     }
@@ -84086,6 +84884,7 @@ impl Window {
     /// `new window.KeyframeEffect(..)`: this window's class, which is [`keyframe_effect::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new KeyframeEffect")]
     #[cfg_attr(rust_js, rust_js::nullable(target, keyframes))]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_keyframe_effect(&self, target: Option<&Element>, keyframes: Option<&dyn core::any::Any>, options: Option<&dyn IntoNumberOrKeyframeEffectOptions>) -> &'static KeyframeEffect {
         unreachable!()
     }
@@ -84093,6 +84892,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MIDIConnectionEvent/MIDIConnectionEvent)
     /// `new window.MIDIConnectionEvent(..)`: this window's class, which is [`midi_connection_event::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new MIDIConnectionEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_midi_connection_event(&self, r#type: &str, event_init_dict: Option<MIDIConnectionEventInit<'_>>) -> &'static MIDIConnectionEvent {
         unreachable!()
     }
@@ -84100,6 +84900,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MIDIMessageEvent/MIDIMessageEvent)
     /// `new window.MIDIMessageEvent(..)`: this window's class, which is [`midi_message_event::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new MIDIMessageEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_midi_message_event(&self, r#type: &str, event_init_dict: Option<MIDIMessageEventInit<'_>>) -> &'static MIDIMessageEvent {
         unreachable!()
     }
@@ -84114,6 +84915,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaEncryptedEvent/MediaEncryptedEvent)
     /// `new window.MediaEncryptedEvent(..)`: this window's class, which is [`media_encrypted_event::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new MediaEncryptedEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_media_encrypted_event(&self, r#type: &str, event_init_dict: Option<MediaEncryptedEventInit<'_>>) -> &'static MediaEncryptedEvent {
         unreachable!()
     }
@@ -84128,6 +84930,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaMetadata/MediaMetadata)
     /// `new window.MediaMetadata(..)`: this window's class, which is [`media_metadata::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new MediaMetadata")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_media_metadata(&self, init: Option<MediaMetadataInit<'_>>) -> &'static MediaMetadata {
         unreachable!()
     }
@@ -84135,6 +84938,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaRecorder/MediaRecorder)
     /// `new window.MediaRecorder(..)`: this window's class, which is [`media_recorder::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new MediaRecorder")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_media_recorder(&self, stream: &MediaStream, options: Option<MediaRecorderOptions<'_>>) -> &'static MediaRecorder {
         unreachable!()
     }
@@ -84156,6 +84960,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaStreamAudioDestinationNode/MediaStreamAudioDestinationNode)
     /// `new window.MediaStreamAudioDestinationNode(..)`: this window's class, which is [`media_stream_audio_destination_node::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new MediaStreamAudioDestinationNode")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_media_stream_audio_destination_node(&self, context: &AudioContext, options: Option<AudioNodeOptions<'_>>) -> &'static MediaStreamAudioDestinationNode {
         unreachable!()
     }
@@ -84205,6 +85010,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Notification/Notification)
     /// `new window.Notification(..)`: this window's class, which is [`notification::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new Notification")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_notification(&self, title: &str, options: Option<NotificationOptions<'_>>) -> &'static Notification {
         unreachable!()
     }
@@ -84240,6 +85046,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OscillatorNode/OscillatorNode)
     /// `new window.OscillatorNode(..)`: this window's class, which is [`oscillator_node::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new OscillatorNode")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_oscillator_node(&self, context: &BaseAudioContext, options: Option<OscillatorOptions<'_>>) -> &'static OscillatorNode {
         unreachable!()
     }
@@ -84247,6 +85054,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/OverconstrainedError/OverconstrainedError)
     /// `new window.OverconstrainedError(..)`: this window's class, which is [`overconstrained_error::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new OverconstrainedError")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_overconstrained_error(&self, constraint: &str, message: Option<&str>) -> &'static OverconstrainedError {
         unreachable!()
     }
@@ -84254,6 +85062,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PageRevealEvent/PageRevealEvent)
     /// `new window.PageRevealEvent(..)`: this window's class, which is [`page_reveal_event::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new PageRevealEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_page_reveal_event(&self, r#type: &str, event_init_dict: Option<PageRevealEventInit<'_>>) -> &'static PageRevealEvent {
         unreachable!()
     }
@@ -84261,6 +85070,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PageSwapEvent/PageSwapEvent)
     /// `new window.PageSwapEvent(..)`: this window's class, which is [`page_swap_event::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new PageSwapEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_page_swap_event(&self, r#type: &str, event_init_dict: Option<PageSwapEventInit<'_>>) -> &'static PageSwapEvent {
         unreachable!()
     }
@@ -84268,6 +85078,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PageTransitionEvent/PageTransitionEvent)
     /// `new window.PageTransitionEvent(..)`: this window's class, which is [`page_transition_event::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new PageTransitionEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_page_transition_event(&self, r#type: &str, event_init_dict: Option<PageTransitionEventInit>) -> &'static PageTransitionEvent {
         unreachable!()
     }
@@ -84275,6 +85086,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PannerNode/PannerNode)
     /// `new window.PannerNode(..)`: this window's class, which is [`panner_node::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new PannerNode")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_panner_node(&self, context: &BaseAudioContext, options: Option<PannerOptions<'_>>) -> &'static PannerNode {
         unreachable!()
     }
@@ -84282,6 +85094,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Path2D/Path2D)
     /// `new window.Path2D(..)`: this window's class, which is [`path2_d::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new Path2D")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_path2_d(&self, path: Option<&dyn IntoPath2DOrStr>) -> &'static Path2D {
         unreachable!()
     }
@@ -84289,6 +85102,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PaymentMethodChangeEvent/PaymentMethodChangeEvent)
     /// `new window.PaymentMethodChangeEvent(..)`: this window's class, which is [`payment_method_change_event::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new PaymentMethodChangeEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_payment_method_change_event(&self, r#type: &str, event_init_dict: Option<PaymentMethodChangeEventInit<'_>>) -> &'static PaymentMethodChangeEvent {
         unreachable!()
     }
@@ -84296,6 +85110,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PaymentRequest/PaymentRequest)
     /// `new window.PaymentRequest(..)`: this window's class, which is [`payment_request::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new PaymentRequest")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_payment_request(&self, method_data: &[PaymentMethodData<'_>], details: PaymentDetailsInit<'_>, options: Option<PaymentOptions<'_>>) -> &'static PaymentRequest {
         unreachable!()
     }
@@ -84303,6 +85118,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PaymentRequestUpdateEvent/PaymentRequestUpdateEvent)
     /// `new window.PaymentRequestUpdateEvent(..)`: this window's class, which is [`payment_request_update_event::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new PaymentRequestUpdateEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_payment_request_update_event(&self, r#type: &str, event_init_dict: Option<PaymentRequestUpdateEventInit>) -> &'static PaymentRequestUpdateEvent {
         unreachable!()
     }
@@ -84310,6 +85126,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceMark/PerformanceMark)
     /// `new window.PerformanceMark(..)`: this window's class, which is [`performance_mark::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new PerformanceMark")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_performance_mark(&self, mark_name: &str, mark_options: Option<PerformanceMarkOptions<'_>>) -> &'static PerformanceMark {
         unreachable!()
     }
@@ -84324,6 +85141,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PeriodicWave/PeriodicWave)
     /// `new window.PeriodicWave(..)`: this window's class, which is [`periodic_wave::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new PeriodicWave")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_periodic_wave(&self, context: &BaseAudioContext, options: Option<PeriodicWaveOptions<'_>>) -> &'static PeriodicWave {
         unreachable!()
     }
@@ -84338,6 +85156,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PopStateEvent/PopStateEvent)
     /// `new window.PopStateEvent(..)`: this window's class, which is [`pop_state_event::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new PopStateEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_pop_state_event(&self, r#type: &str, event_init_dict: Option<PopStateEventInit<'_>>) -> &'static PopStateEvent {
         unreachable!()
     }
@@ -84345,6 +85164,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ProcessingInstruction/ProcessingInstruction)
     /// `new window.ProcessingInstruction(..)`: this window's class, which is [`processing_instruction::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new ProcessingInstruction")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_processing_instruction(&self, target: &str, data: Option<&str>) -> &'static ProcessingInstruction {
         unreachable!()
     }
@@ -84352,6 +85172,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ProgressEvent/ProgressEvent)
     /// `new window.ProgressEvent(..)`: this window's class, which is [`progress_event::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new ProgressEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_progress_event(&self, r#type: &str, event_init_dict: Option<ProgressEventInit>) -> &'static ProgressEvent {
         unreachable!()
     }
@@ -84366,6 +85187,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCDTMFToneChangeEvent/RTCDTMFToneChangeEvent)
     /// `new window.RTCDTMFToneChangeEvent(..)`: this window's class, which is [`rtcdtmf_tone_change_event::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new RTCDTMFToneChangeEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_rtcdtmf_tone_change_event(&self, r#type: &str, event_init_dict: Option<RTCDTMFToneChangeEventInit<'_>>) -> &'static RTCDTMFToneChangeEvent {
         unreachable!()
     }
@@ -84380,6 +85202,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCEncodedAudioFrame/RTCEncodedAudioFrame)
     /// `new window.RTCEncodedAudioFrame(..)`: this window's class, which is [`rtc_encoded_audio_frame::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new RTCEncodedAudioFrame")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_rtc_encoded_audio_frame(&self, original_frame: &RTCEncodedAudioFrame, options: Option<RTCEncodedAudioFrameOptions>) -> &'static RTCEncodedAudioFrame {
         unreachable!()
     }
@@ -84387,6 +85210,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCEncodedVideoFrame/RTCEncodedVideoFrame)
     /// `new window.RTCEncodedVideoFrame(..)`: this window's class, which is [`rtc_encoded_video_frame::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new RTCEncodedVideoFrame")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_rtc_encoded_video_frame(&self, original_frame: &RTCEncodedVideoFrame, options: Option<RTCEncodedVideoFrameOptions>) -> &'static RTCEncodedVideoFrame {
         unreachable!()
     }
@@ -84394,6 +85218,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCError/RTCError)
     /// `new window.RTCError(..)`: this window's class, which is [`rtc_error::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new RTCError")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_rtc_error(&self, init: RTCErrorInit<'_>, message: Option<&str>) -> &'static RTCError {
         unreachable!()
     }
@@ -84408,6 +85233,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCIceCandidate/RTCIceCandidate)
     /// `new window.RTCIceCandidate(..)`: this window's class, which is [`rtc_ice_candidate::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new RTCIceCandidate")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_rtc_ice_candidate(&self, candidate_init_dict: Option<RTCLocalIceCandidateInit<'_>>) -> &'static RTCIceCandidate {
         unreachable!()
     }
@@ -84422,6 +85248,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnection/RTCPeerConnection)
     /// `new window.RTCPeerConnection(..)`: this window's class, which is [`rtc_peer_connection::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new RTCPeerConnection")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_rtc_peer_connection(&self, configuration: Option<RTCConfiguration>) -> &'static RTCPeerConnection {
         unreachable!()
     }
@@ -84436,6 +85263,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCPeerConnectionIceEvent/RTCPeerConnectionIceEvent)
     /// `new window.RTCPeerConnectionIceEvent(..)`: this window's class, which is [`rtc_peer_connection_ice_event::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new RTCPeerConnectionIceEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_rtc_peer_connection_ice_event(&self, r#type: &str, event_init_dict: Option<RTCPeerConnectionIceEventInit<'_>>) -> &'static RTCPeerConnectionIceEvent {
         unreachable!()
     }
@@ -84443,6 +85271,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/RTCRtpScriptTransform/RTCRtpScriptTransform)
     /// `new window.RTCRtpScriptTransform(..)`: this window's class, which is [`rtc_rtp_script_transform::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new RTCRtpScriptTransform")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_rtc_rtp_script_transform(&self, worker_or_worker_and_parameters: impl IntoWorkerOrWorkerAndParameters, options: Option<&dyn IntoUnknown>, transfer: Option<&[&dyn core::any::Any]>) -> &'static RTCRtpScriptTransform {
         unreachable!()
     }
@@ -84485,6 +85314,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ReportingObserver/ReportingObserver)
     /// `new window.ReportingObserver(..)`: this window's class, which is [`reporting_observer::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new ReportingObserver")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_reporting_observer(&self, callback: Box<dyn FnMut(&'static [Report], &'static ReportingObserver)>, options: Option<ReportingObserverOptions<'_>>) -> &'static ReportingObserver {
         unreachable!()
     }
@@ -84499,6 +85329,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Sanitizer/Sanitizer)
     /// `new window.Sanitizer(..)`: this window's class, which is [`sanitizer::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new Sanitizer")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_sanitizer(&self, configuration: Option<&dyn IntoSanitizerConfigOrStr>) -> &'static Sanitizer {
         unreachable!()
     }
@@ -84506,6 +85337,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ScrollTimeline/ScrollTimeline)
     /// `new window.ScrollTimeline(..)`: this window's class, which is [`scroll_timeline::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new ScrollTimeline")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_scroll_timeline(&self, options: Option<ScrollTimelineOptions<'_>>) -> &'static ScrollTimeline {
         unreachable!()
     }
@@ -84513,6 +85345,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SecurityPolicyViolationEvent/SecurityPolicyViolationEvent)
     /// `new window.SecurityPolicyViolationEvent(..)`: this window's class, which is [`security_policy_violation_event::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new SecurityPolicyViolationEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_security_policy_violation_event(&self, r#type: &str, event_init_dict: Option<SecurityPolicyViolationEventInit<'_>>) -> &'static SecurityPolicyViolationEvent {
         unreachable!()
     }
@@ -84520,6 +85353,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SharedWorker/SharedWorker)
     /// `new window.SharedWorker(..)`: this window's class, which is [`shared_worker::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new SharedWorker")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_shared_worker(&self, script_url: &str, options: Option<&dyn IntoStrOrSharedWorkerOptions>) -> &'static SharedWorker {
         unreachable!()
     }
@@ -84555,6 +85389,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechRecognitionPhrase/SpeechRecognitionPhrase)
     /// `new window.SpeechRecognitionPhrase(..)`: this window's class, which is [`speech_recognition_phrase::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new SpeechRecognitionPhrase")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_speech_recognition_phrase(&self, phrase: &str, boost: Option<f64>) -> &'static SpeechRecognitionPhrase {
         unreachable!()
     }
@@ -84576,6 +85411,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisUtterance/SpeechSynthesisUtterance)
     /// `new window.SpeechSynthesisUtterance(..)`: this window's class, which is [`speech_synthesis_utterance::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new SpeechSynthesisUtterance")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_speech_synthesis_utterance(&self, text: Option<&str>) -> &'static SpeechSynthesisUtterance {
         unreachable!()
     }
@@ -84590,6 +85426,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/StereoPannerNode/StereoPannerNode)
     /// `new window.StereoPannerNode(..)`: this window's class, which is [`stereo_panner_node::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new StereoPannerNode")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_stereo_panner_node(&self, context: &BaseAudioContext, options: Option<StereoPannerOptions<'_>>) -> &'static StereoPannerNode {
         unreachable!()
     }
@@ -84597,6 +85434,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/StorageEvent/StorageEvent)
     /// `new window.StorageEvent(..)`: this window's class, which is [`storage_event::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new StorageEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_storage_event(&self, r#type: &str, event_init_dict: Option<StorageEventInit<'_>>) -> &'static StorageEvent {
         unreachable!()
     }
@@ -84604,6 +85442,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/TaskController/TaskController)
     /// `new window.TaskController(..)`: this window's class, which is [`task_controller::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new TaskController")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_task_controller(&self, init: Option<TaskControllerInit<'_>>) -> &'static TaskController {
         unreachable!()
     }
@@ -84618,6 +85457,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/TextDecoderStream/TextDecoderStream)
     /// `new window.TextDecoderStream(..)`: this window's class, which is [`text_decoder_stream::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new TextDecoderStream")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_text_decoder_stream(&self, label: Option<&str>, options: Option<TextDecoderOptions>) -> &'static TextDecoderStream {
         unreachable!()
     }
@@ -84632,6 +85472,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/TrackEvent/TrackEvent)
     /// `new window.TrackEvent(..)`: this window's class, which is [`track_event::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new TrackEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_track_event(&self, r#type: &str, event_init_dict: Option<TrackEventInit<'_>>) -> &'static TrackEvent {
         unreachable!()
     }
@@ -84639,6 +85480,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/TransformStream/TransformStream)
     /// `new window.TransformStream(..)`: this window's class, which is [`transform_stream::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new TransformStream")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_transform_stream(&self, transformer: Option<&dyn core::any::Any>, writable_strategy: Option<QueuingStrategy>, readable_strategy: Option<QueuingStrategy>) -> &'static TransformStream {
         unreachable!()
     }
@@ -84646,6 +85488,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/URLPattern/URLPattern)
     /// `new window.URLPattern(..)`: this window's class, which is [`url_pattern::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new URLPattern")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_url_pattern(&self, input: impl IntoURLPatternInput, base_url: &str, options: Option<URLPatternOptions>) -> &'static URLPattern {
         unreachable!()
     }
@@ -84653,6 +85496,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/URLSearchParams/URLSearchParams)
     /// `new window.URLSearchParams(..)`: this window's class, which is [`url_search_params::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new URLSearchParams")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_url_search_params(&self, init: Option<&dyn IntoListOrRecordOrStr>) -> &'static URLSearchParams {
         unreachable!()
     }
@@ -84674,6 +85518,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoColorSpace/VideoColorSpace)
     /// `new window.VideoColorSpace(..)`: this window's class, which is [`video_color_space::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new VideoColorSpace")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_video_color_space(&self, init: Option<VideoColorSpaceInit>) -> &'static VideoColorSpace {
         unreachable!()
     }
@@ -84695,6 +85540,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/VideoFrame/VideoFrame)
     /// `new window.VideoFrame(..)`: this window's class, which is [`video_frame::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new VideoFrame")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_video_frame(&self, image: impl IntoCanvasImageSource, init: Option<VideoFrameInit<'_>>) -> &'static VideoFrame {
         unreachable!()
     }
@@ -84709,6 +85555,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WaveShaperNode/WaveShaperNode)
     /// `new window.WaveShaperNode(..)`: this window's class, which is [`wave_shaper_node::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new WaveShaperNode")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_wave_shaper_node(&self, context: &BaseAudioContext, options: Option<WaveShaperOptions<'_>>) -> &'static WaveShaperNode {
         unreachable!()
     }
@@ -84716,6 +85563,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebGLContextEvent/WebGLContextEvent)
     /// `new window.WebGLContextEvent(..)`: this window's class, which is [`web_gl_context_event::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new WebGLContextEvent")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_web_gl_context_event(&self, r#type: &str, event_init: Option<WebGLContextEventInit<'_>>) -> &'static WebGLContextEvent {
         unreachable!()
     }
@@ -84723,6 +85571,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebSocket/WebSocket)
     /// `new window.WebSocket(..)`: this window's class, which is [`web_socket::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new WebSocket")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_web_socket(&self, url: &str, protocols: Option<&dyn IntoStrOrList>) -> &'static WebSocket {
         unreachable!()
     }
@@ -84730,6 +85579,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebTransport/WebTransport)
     /// `new window.WebTransport(..)`: this window's class, which is [`web_transport::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new WebTransport")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_web_transport(&self, url: &str, options: Option<WebTransportOptions<'_>>) -> &'static WebTransport {
         unreachable!()
     }
@@ -84737,6 +85587,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WebTransportError/WebTransportError)
     /// `new window.WebTransportError(..)`: this window's class, which is [`web_transport_error::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new WebTransportError")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_web_transport_error(&self, message: Option<&str>, options: Option<WebTransportErrorOptions<'_>>) -> &'static WebTransportError {
         unreachable!()
     }
@@ -84744,6 +85595,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Worker/Worker)
     /// `new window.Worker(..)`: this window's class, which is [`worker::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new Worker")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_worker(&self, script_url: &str, options: Option<WorkerOptions<'_>>) -> &'static Worker {
         unreachable!()
     }
@@ -84751,6 +85603,7 @@ impl Window {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WritableStream/WritableStream)
     /// `new window.WritableStream(..)`: this window's class, which is [`writable_stream::new`]'s only where the window is the global object.
     #[cfg_attr(rust_js, rust_js::link_name = "new WritableStream")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new_writable_stream(&self, underlying_sink: Option<&dyn core::any::Any>, strategy: Option<QueuingStrategy>) -> &'static WritableStream {
         unreachable!()
     }
@@ -84826,6 +85679,7 @@ pub mod console {
     #[cfg_attr(rust_js, rust_js::link_name = "console.assert")]
     #[cfg_attr(rust_js, rust_js::variadic)]
     #[cfg_attr(rust_js, rust_js::runs_only_given)]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn assert(condition: Option<bool>, data: impl Rest<dyn IntoUnknown>) {
         unreachable!()
@@ -84876,6 +85730,7 @@ pub mod console {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/table)
     #[cfg_attr(rust_js, rust_js::link_name = "console.table")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn table(tabular_data: Option<&dyn IntoUnknown>, properties: Option<&[String]>) {
         unreachable!()
@@ -84900,6 +85755,7 @@ pub mod console {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/dir)
     #[cfg_attr(rust_js, rust_js::link_name = "console.dir")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn dir(item: Option<&dyn IntoUnknown>, options: Option<&dyn core::any::Any>) {
         unreachable!()
@@ -84915,6 +85771,7 @@ pub mod console {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/count)
     #[cfg_attr(rust_js, rust_js::link_name = "console.count")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn count(label: Option<&str>) {
         unreachable!()
@@ -84922,6 +85779,7 @@ pub mod console {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/countReset)
     #[cfg_attr(rust_js, rust_js::link_name = "console.countReset")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn count_reset(label: Option<&str>) {
         unreachable!()
@@ -84955,6 +85813,7 @@ pub mod console {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/time)
     #[cfg_attr(rust_js, rust_js::link_name = "console.time")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn time(label: Option<&str>) {
         unreachable!()
@@ -84963,6 +85822,7 @@ pub mod console {
     /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/timeLog)
     #[cfg_attr(rust_js, rust_js::link_name = "console.timeLog")]
     #[cfg_attr(rust_js, rust_js::variadic)]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn time_log(label: Option<&str>, data: impl Rest<dyn IntoUnknown>) {
         unreachable!()
@@ -84970,6 +85830,7 @@ pub mod console {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/console/timeEnd)
     #[cfg_attr(rust_js, rust_js::link_name = "console.timeEnd")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn time_end(label: Option<&str>) {
         unreachable!()
@@ -84993,6 +85854,7 @@ pub mod console {
     /// names, `"primary"`, `"secondary"`, `"tertiary"` and the rest. No WebIDL declares it;
     /// where the host hasn't it, `js::is_function(console::time_stamp)` is `false` (ADR 0963).
     #[cfg_attr(rust_js, rust_js::link_name = "console.timeStamp")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn time_stamp(label: &str, start: Option<&dyn IntoStrOrNumber>, end: Option<&dyn IntoStrOrNumber>, track_name: Option<&str>, track_group: Option<&str>, color: Option<&str>) {
         unreachable!()
@@ -85405,36 +86267,42 @@ pub mod web_assembly {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/validate)
     #[cfg_attr(rust_js, rust_js::link_name = "WebAssembly.validate")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn validate(bytes: impl IntoAllowSharedBufferSource, options: Option<WebAssemblyCompileOptions<'_>>) -> bool {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/compile)
     #[cfg_attr(rust_js, rust_js::link_name = "WebAssembly.compile")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn compile(bytes: impl IntoAllowSharedBufferSource, options: Option<WebAssemblyCompileOptions<'_>>) -> Promise<&'static WebAssemblyModule> {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/instantiate)
     #[cfg_attr(rust_js, rust_js::link_name = "WebAssembly.instantiate")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn instantiate(bytes: impl IntoAllowSharedBufferSource, import_object: Option<&dyn core::any::Any>, options: Option<WebAssemblyCompileOptions<'_>>) -> Promise<WebAssemblyInstantiatedSource> {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/instantiate)
     #[cfg_attr(rust_js, rust_js::link_name = "WebAssembly.instantiate")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn instantiate_with_web_assembly_module(module_object: &WebAssemblyModule, import_object: Option<&dyn core::any::Any>) -> Promise<&'static WebAssemblyInstance> {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/compileStreaming)
     #[cfg_attr(rust_js, rust_js::link_name = "WebAssembly.compileStreaming")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn compile_streaming(source: Promise<&'static Response>, options: Option<WebAssemblyCompileOptions<'_>>) -> Promise<&'static WebAssemblyModule> {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/instantiateStreaming)
     #[cfg_attr(rust_js, rust_js::link_name = "WebAssembly.instantiateStreaming")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn instantiate_streaming(source: Promise<&'static Response>, import_object: Option<&dyn core::any::Any>, options: Option<WebAssemblyCompileOptions<'_>>) -> Promise<WebAssemblyInstantiatedSource> {
         unreachable!()
     }
@@ -85582,6 +86450,7 @@ pub mod global {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WindowOrWorkerGlobalScope/fetch)
     #[cfg_attr(rust_js, rust_js::link_name = "fetch")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn fetch(input: impl IntoRequestInfo, init: Option<RequestInit<'_>>) -> Promise<&'static Response> {
         unreachable!()
     }
@@ -85639,18 +86508,21 @@ pub mod global {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WindowOrWorkerGlobalScope/createImageBitmap)
     #[cfg_attr(rust_js, rust_js::link_name = "createImageBitmap")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn create_image_bitmap(image: impl IntoImageBitmapSource, options: Option<ImageBitmapOptions<'_>>) -> Promise<&'static ImageBitmap> {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WindowOrWorkerGlobalScope/createImageBitmap)
     #[cfg_attr(rust_js, rust_js::link_name = "createImageBitmap")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn create_image_bitmap_with_sx_and_sy_and_sw_and_sh(image: impl IntoImageBitmapSource, sx: impl Into<f64>, sy: impl Into<f64>, sw: impl Into<f64>, sh: impl Into<f64>, options: Option<ImageBitmapOptions<'_>>) -> Promise<&'static ImageBitmap> {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/WindowOrWorkerGlobalScope/structuredClone)
     #[cfg_attr(rust_js, rust_js::link_name = "structuredClone")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn structured_clone<V: StructuredClone>(value: V, options: Option<StructuredSerializeOptions<'_>>) -> Option<&'static Unknown> {
         unreachable!()
     }
@@ -85694,6 +86566,7 @@ pub mod window_global {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/getComputedStyle)
     #[cfg_attr(rust_js, rust_js::link_name = "getComputedStyle")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn get_computed_style(elt: &Element, pseudo_elt: Option<&str>) -> &'static CSSStyleProperties {
         unreachable!()
     }
@@ -85785,6 +86658,7 @@ pub mod window_global {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scroll)
     #[cfg_attr(rust_js, rust_js::link_name = "scroll")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn scroll(options: Option<ScrollToOptions<'_>>) -> Promise<ScrollResult> {
         unreachable!()
     }
@@ -85797,6 +86671,7 @@ pub mod window_global {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scrollTo)
     #[cfg_attr(rust_js, rust_js::link_name = "scrollTo")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn scroll_to(options: Option<ScrollToOptions<'_>>) -> Promise<ScrollResult> {
         unreachable!()
     }
@@ -85809,6 +86684,7 @@ pub mod window_global {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scrollBy)
     #[cfg_attr(rust_js, rust_js::link_name = "scrollBy")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn scroll_by(options: Option<ScrollToOptions<'_>>) -> Promise<ScrollResult> {
         unreachable!()
     }
@@ -86050,6 +86926,7 @@ pub mod window_global {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/open)
     #[cfg_attr(rust_js, rust_js::link_name = "open")]
     #[cfg_attr(rust_js, rust_js::nullable)]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn open(url: Option<&str>, target: Option<&str>, features: Option<&str>) -> Option<&'static Window> {
         unreachable!()
     }
@@ -86075,6 +86952,7 @@ pub mod window_global {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/alert)
     #[cfg_attr(rust_js, rust_js::link_name = "alert")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn alert(message: Option<&str>) {
         unreachable!()
@@ -86082,6 +86960,7 @@ pub mod window_global {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/confirm)
     #[cfg_attr(rust_js, rust_js::link_name = "confirm")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn confirm(message: Option<&str>) -> bool {
         unreachable!()
     }
@@ -86089,6 +86968,7 @@ pub mod window_global {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/prompt)
     #[cfg_attr(rust_js, rust_js::link_name = "prompt")]
     #[cfg_attr(rust_js, rust_js::nullable)]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn prompt(message: Option<&str>, default: Option<&str>) -> Option<String> {
         unreachable!()
     }
@@ -86102,6 +86982,7 @@ pub mod window_global {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/postMessage)
     #[cfg_attr(rust_js, rust_js::link_name = "postMessage")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::returns_undefined)]
     pub fn post_message<M: StructuredClone>(message: M, options: Option<WindowPostMessageOptions<'_>>) {
         unreachable!()
@@ -86130,6 +87011,7 @@ pub mod window_global {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/requestIdleCallback)
     #[cfg_attr(rust_js, rust_js::link_name = "requestIdleCallback")]
     #[cfg_attr(rust_js, rust_js::whole = "0..=4294967295")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn request_idle_callback(callback: Box<dyn FnOnce(&'static IdleDeadline)>, options: Option<IdleRequestOptions>) -> f64 {
         unreachable!()
     }
@@ -86190,12 +87072,14 @@ pub mod window_global {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/EventTarget/addEventListener): the global scope's, the event type a window's.
     #[cfg_attr(rust_js, rust_js::link_name = "addEventListener")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn add_event_listener<E>(event: E, listener: impl IntoEventListener<<Window as Listen<E>>::Event>, options: Option<&dyn IntoAddEventListenerOptionsOrBool>) where Window: Listen<E> {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/EventTarget/removeEventListener): the global scope's, the event type a window's.
     #[cfg_attr(rust_js, rust_js::link_name = "removeEventListener")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn remove_event_listener<E>(event: E, listener: impl IntoAddedEventListener<<Window as Listen<E>>::Event>, options: Option<&dyn IntoEventListenerOptionsOrBool>) where Window: Listen<E> {
         unreachable!()
     }
@@ -86205,24 +87089,28 @@ pub mod window_global {
 pub trait EventTargetExt: IsA<EventTarget> {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/EventTarget/addEventListener). The event type comes from this receiver.
     #[cfg_attr(rust_js, rust_js::link_name = "addEventListener")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     fn add_event_listener<E>(&self, event: E, listener: impl IntoEventListener<<Self as Listen<E>>::Event>, options: Option<&dyn IntoAddEventListenerOptionsOrBool>) where Self: Listen<E> {
         unreachable!()
     }
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/EventTarget/removeEventListener). The event type comes from this receiver.
     #[cfg_attr(rust_js, rust_js::link_name = "removeEventListener")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     fn remove_event_listener<E>(&self, event: E, listener: impl IntoAddedEventListener<<Self as Listen<E>>::Event>, options: Option<&dyn IntoEventListenerOptionsOrBool>) where Self: Listen<E> {
         unreachable!()
     }
 
     /// A custom name, with the base Event.
     #[cfg_attr(rust_js, rust_js::link_name = "addEventListener")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     fn add_event_listener_named(&self, name: &str, listener: impl IntoEventListener<Event>, options: Option<&dyn IntoAddEventListenerOptionsOrBool>) {
         unreachable!()
     }
 
     /// A custom name, with the base Event.
     #[cfg_attr(rust_js, rust_js::link_name = "removeEventListener")]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     fn remove_event_listener_named(&self, name: &str, listener: impl IntoAddedEventListener<Event>, options: Option<&dyn IntoEventListenerOptionsOrBool>) {
         unreachable!()
     }

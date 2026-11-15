@@ -2,8 +2,8 @@
 // leaves for JS as `undefined` alone, a native optional argument's, a
 // `None` held as `null` is given `?? undefined`. A nullable parameter, field,
 // result and thread-local each hold `None` as `null` (ADR 0861); given on to
-// `String(value)`, a binding's optional argument, Rust's `None` is
-// "undefined" and JS's `null` "null". Through a function of the crate's, a
+// `String(value)`, a binding's optional argument, Rust's `None` is no
+// argument, `String()`'s "" (#1842), and JS's `null` "null". Through a function of the crate's, a
 // trait object, a closure std calls, a fn pointer, a `dyn Fn` the binding
 // is or a closure is, and a closure a generic function calls, each answers
 // as native Rust does.
@@ -12,7 +12,7 @@ use std::cell::Cell;
 #[cfg_attr(rust_js, rust_js::link_name = "String")]
 fn text(value: Option<f64>) -> String {
     match value {
-        None => "undefined".to_string(),
+        None => String::new(),
         Some(v) => format!("{v}"),
     }
 }
@@ -21,7 +21,7 @@ fn text(value: Option<f64>) -> String {
 #[cfg_attr(rust_js, rust_js::link_name = "String")]
 fn text_of(value: Option<f64>) -> String {
     match value {
-        None => "undefined".to_string(),
+        None => String::new(),
         Some(v) => format!("{v}"),
     }
 }

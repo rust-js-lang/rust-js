@@ -883,7 +883,7 @@ test("a let a call writes, read by a nullable parameter and alike, is null for N
   expect(lib.update({}, true)).toEqual([0, false, 0]);
   expect(lib.update({ clones: [1, 2] }, true)).toEqual([30, true, 2]);
   expect([lib.updateMatched({}, true), lib.updateMatched({}, false), lib.updateMatched({ clones: [1] }, true)]).toEqual([[0, 0], [0, 0], [10, 1]]);
-  expect(lib.updateShown({}, true)).toEqual([0, "undefined"]);
+  expect(lib.updateShown({}, true)).toEqual([0, ""]);
   expect(lib.updateReturned({}, true)[1]).toBe(undefined);
   expect(lib.updateStored({}, true)[1].previous).toBe(undefined);
   expect([lib.updateCaptured({}, true), lib.updateLent({}, true, false), lib.updateLent({ clones: [1] }, true, true)]).toEqual([0, 0, 0]);

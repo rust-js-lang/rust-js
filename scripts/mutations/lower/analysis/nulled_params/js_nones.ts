@@ -108,8 +108,8 @@ export const mutations: Mutation[] = [
     name: "js-nones-of-any-dyn",
     breaks: "an `Option` of a `dyn` of what any value is, `dyn IntoUnknown`, whose `Some` may be JS's `null`, is given `?? undefined`, so `f.call(null)` calls `f` of `undefined` (rd275)",
     file,
-    find: "    !crate::lower::representation::may_look_like_none(tcx, payload) && !any_shape(payload) && !of_any\n",
-    replace: "    !crate::lower::representation::may_look_like_none(tcx, payload) && !any_shape(payload)\n",
+    find: "    of_any.then_some(AnyValue::Dyn)\n",
+    replace: "    None\n",
     tests: given,
   },
   {

@@ -423,6 +423,19 @@ pub(super) fn const_link_name(tcx: TyCtxt<'_>, def_id: DefId) -> Option<Symbol> 
         .value_str()
 }
 
+/// `#[rust_js::undefined_is_absent]`: a binding that takes a trailing
+/// `undefined` of an optional argument as no argument, so a call gives a
+/// trailing `None` as `undefined`, no call of each count (ADR 0443,
+/// amended, #1842): a WebIDL operation or constructor, as WebIDL's
+/// overload resolution says, of which the webapi generator places it; and
+/// a binding shown to take it alike, `console.timeStamp`, `new Error(..)`,
+/// each of test/undefined-is-absent.test.ts's rows, which holds each mark
+/// to one or the other.
+pub(in crate::lower) fn undefined_is_absent(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    let path = [Symbol::intern("rust_js"), Symbol::intern("undefined_is_absent")];
+    tcx.get_attrs_by_path(def_id, &path).next().is_some()
+}
+
 /// Is this function or static JS's: in an `extern` block, or a
 /// `#[rust_js::link_name]` function?
 pub(super) fn is_binding(tcx: TyCtxt<'_>, def_id: DefId) -> bool {

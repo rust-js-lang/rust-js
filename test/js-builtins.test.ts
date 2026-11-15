@@ -1328,8 +1328,8 @@ pub fn stepped(distance: f64, step: f64) -> f64 {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("return x.toFixed(digits ?? undefined);");
-  expect(js).toContain("return x.toPrecision(precision ?? undefined);");
+  expect(js).toContain("return digits != null ? x.toFixed(digits) : x.toFixed();");
+  expect(js).toContain("return precision != null ? x.toPrecision(precision) : x.toPrecision();");
   const lib = await import(join(dir, "lib.js"));
   const said = (f: () => string) => {
     try {

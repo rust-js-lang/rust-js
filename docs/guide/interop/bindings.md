@@ -1289,13 +1289,25 @@ A setter's value is never left out: a `set x` binding's `None` is `x =
 undefined`, `Error.prepareStackTrace = undefined`
 ([ADR 0648](../../decisions/0648-v8s-stack-trace-api-is-the-node-crates.md)).
 
-An optional parameter takes Rust's one `None`, `undefined`, which a
-native tells from `null`: `(1.25).toPrecision(null)` throws where
-`toPrecision()` doesn't. So what may hold a `None` JS gave, `null`, a
-parameter of a function JS calls, a nullable place's, what a binding gives
-that declares neither form, is given `value ?? undefined`; what holds
-Rust's own is given as it is
-([ADR 0030](../../decisions/0030-option.md), amended, #1840):
+A trailing `None` known only where the call runs is no argument either:
+the call is one of each count, tested from the last, `value != null ?
+(1.25).toPrecision(value) : (1.25).toPrecision()`, as a native that counts
+its arguments tells `toPrecision(undefined)` from `toPrecision()`, and
+`setFullYear(2026, undefined)` is NaN where `setFullYear(2026)` isn't.
+It's tested `!= null`, as JS's `null` may be the `None` it is, of what JS
+gave (`(1.25).toPrecision(null)` throws where `toPrecision()` doesn't).
+Each argument is made once, in Rust's order, and a `None` before one
+that's there stays `undefined`
+([ADR 0443](../../decisions/0443-a-value-a-caller-may-leave-out-is-an-option.md),
+amended, #1842). One marked `#[rust_js::undefined_is_absent]`, a WebIDL
+operation's or constructor's, as WebIDL's overload resolution says, or
+`new Error(..)`'s, takes a trailing `undefined` as no argument, so it's
+given as it is, `new URL(url, base)`, and what may hold JS's `null`,
+`base ?? undefined`
+([ADR 0030](../../decisions/0030-option.md), amended, #1840). An
+`Option<&Unknown>`'s `None` is JS's `undefined` itself, a value, given as
+it is, a literal one too: `js::string(None)` is `String(undefined)`,
+"undefined" (#1868):
 
 ```rust
 pub fn digits(value: Option<f64>) -> String {
@@ -1309,7 +1321,7 @@ pub fn digits_none() -> String {
 
 ```js
 export function digits(value) {
-  return (1.25).toPrecision(value ?? undefined);
+  return value != null ? (1.25).toPrecision(value) : (1.25).toPrecision();
 }
 
 export function digitsNone() {
@@ -1317,11 +1329,12 @@ export function digitsNone() {
 }
 ```
 
-The same holds where else a `None` leaves for JS as `undefined` alone:
-what a function JS calls returns, a `pub` struct's plain `Option` field,
-and an argument a callback JS may have given is called with. A nullable
-parameter keeps its `null` (ADR 0861), and an `Option<&Unknown>` JS's
-own `undefined` or `null`.
+Where else a `None` leaves for JS as `undefined` alone, what a function
+JS calls returns, a `pub` struct's plain `Option` field and an argument a
+callback JS may have given is called with, what may hold a `None` JS gave,
+`null`, is given `value ?? undefined`, and what holds Rust's own as it is.
+A nullable parameter keeps its `null` (ADR 0861), and an
+`Option<&Unknown>` JS's own `undefined` or `null`.
 
 There's one Rust function for each JS function. Don't write a second one
 for fewer arguments, `update_with_mode`: give the parameter an `Option`.
@@ -1582,6 +1595,7 @@ See [Components and props](../react/components.md).
 | `#[rust_js::skips_falsy]` | it skips what's falsy, as `classnames` does: `test && value` |
 | `#[rust_js::css_module]` | of a binding's struct: it's a CSS Module's classes, each getter's checked against the file its `static` imports as each compile reads it ([Read a CSS Module's classes](../project/modules.md#read-a-css-modules-classes), [ADR 1133](../../decisions/1133-a-css-modules-binding-is-checked-against-its-file.md)) |
 | `#[rust_js::whole = "0..=65535"]` | the `f64` it gives is always a whole number from the first to the second, as a WebIDL integer is, `response.status()`'s `unsigned short`, or `indexOf`'s position or `-1`, `"-1..=4294967294"`: a cast into an integer that holds each one is the number as it is, `options.length() as usize` is `options.length`, and `{}` of it JS's text, `${response.status}`, of a variable given it too; of an `Option<f64>`, a nullable WebIDL integer's, its `Some`'s number, `selection_start()`'s ([ADR 0994](../../decisions/0994-a-number-a-binding-takes-is-typescripts-number.md)) |
+| `#[rust_js::undefined_is_absent]` | it takes a trailing `undefined` of an optional argument as no argument: a trailing `None` known only where the call runs is given as `undefined`, no call of each count. The webapi generator places it of each WebIDL operation and constructor it writes given an `Option`, as WebIDL's overload resolution says; a hand only by evidence, a row of test/undefined-is-absent.test.ts showing each count's call alike with trailing `undefined`s in Bun and in Chromium, `console.timeStamp`'s, `new Error(..)`'s and `new AggregateError(..)`'s ([ADR 0443](../../decisions/0443-a-value-a-caller-may-leave-out-is-an-option.md), amended, #1842) |
 | `#[rust_js::returns_undefined]` | it gives `undefined`, whatever its TypeScript type says; the webapi crate's say it of each operation WebIDL says gives `undefined` ([ADR 0883](../../decisions/0883-a-closure-of-its-calls-value-is-an-arrow-of-it.md)) |
 | `#[rust_js::test = "react#isValidElement"]` | of a type: the function that tells one, where no class does; `test(nodeType = 9)`, of a JS object type: the member that tells it in an untagged enum and each number it may be, `node.nodeType === 9`, in any realm, as webapi's node classes say theirs ([ADR 1062](../../decisions/1062-a-unions-one-class-is-what-its-other-kinds-leave.md), amended); bare, of a struct's field: the member that tells the struct apart in an untagged enum, by its kind, `Array.isArray(child.children)` ([ADR 1036](../../decisions/1036-an-untagged-enums-struct-is-told-by-a-member-it-declares.md)) |
 | `#[rust_js::given_before]` | of a trait: a parameter it bounds takes a value JS finds by its identity among those it was given before, as `removeEventListener` finds the listener `addEventListener` was: a closure written in place there, a new function, is refused, by value or borrowed, `&\|e: &Event\| ..`, which removes nothing; the webapi crate's `IntoAddedEventListener` says it ([ADR 1021](../../decisions/1021-a-listener-is-a-closure-or-one-js-gave.md), amended, the user's decision) |

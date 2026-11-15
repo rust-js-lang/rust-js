@@ -1,6 +1,6 @@
 # 0443. A value a caller may leave out is an `Option`, in each direction
 
-Status: Accepted; amended (2026-11-01) by [0313](0313-console-forms.md)'s amendment: prepare leaves out what lowering marks absent, the one rule, and `calls::left_out` is gone; amended by [0775](0775-a-unit-given-to-js-is-undefined.md),
+Status: Accepted; amended (2026-11-15): a trailing `None` known only where the call runs is a call of each count, but of one that takes `undefined` as no argument, `#[rust_js::undefined_is_absent]`, a WebIDL operation's or one shown so, and of a value of any shape (#1842, #1868); amended (2026-11-01) by [0313](0313-console-forms.md)'s amendment: prepare leaves out what lowering marks absent, the one rule, and `calls::left_out` is gone; amended by [0775](0775-a-unit-given-to-js-is-undefined.md),
 whose `()` as a `dyn` is `undefined` but of a list, a hook's dependencies',
 `[]` (point 6); and by [0593](0593-a-lazy-argument-is-its-value.md),
 whose `use_state` is one function, and [0594](0594-an-overload-an-options-dictionary-holds-is-it.md),
@@ -282,3 +282,81 @@ that may be left out `Known::Absent`, and what JS is given otherwise
 `calls::absent`), and prepare's one rule leaves out each trailing
 `Undefined` after another argument and each absent one alone (ADR 0313,
 amended). What prints is as before.
+
+## Amendment (2026-11-15): a trailing `None` known only where it runs is a call of each count (#1842, #1868)
+
+A wrong answer (#1842, P0): a binding's trailing `None` was left out only
+where it was written, `date.set_full_year(2026, None, None)`'s
+`setFullYear(2026)`. One known only where the call runs was given,
+`setFullYear(2026, month)` of a `month` that's `None`,
+`setFullYear(2026, undefined)`, NaN, where Rust's call leaves it out, as
+point 3 says, and `setFullYear(2026)` keeps the month. `new Date(value)`
+of a `None` was `new Date(undefined)`, Invalid Date, where `new Date()`
+is now.
+
+**A call of a binding whose trailing optional arguments may be `None`
+where it runs is a call of each count, tested from the last**: `month !=
+null ? date.setFullYear(2026, month) : date.setFullYear(2026)`
+(`binding_calls::optional_ladder`). Each argument, and the receiver, is
+made once, where the call is, in Rust's order, held in a `const` where
+reading it again might differ. Each test is `!= null`, as JS's `null` may
+be the `None` such an `Option` is, of what JS gave (ADR 0030, amended,
+#1840), and the last argument given in each branch needs no `?? undefined`.
+A `None` before one that's there stays `undefined`, as Rust's call gives
+it. What's surely there ends the run: a `Some`'s value JS reads as never
+`undefined` (`Expr::may_be_undefined`), `Some(i - 1)`'s `i - 1`, a
+literal, an object; and an `Option` each write of which is a `Some(..)`
+where it's given, `Some(view.byte_length())` held first
+(`mir::nulled::made_some`, `Known::Present`). Not of:
+
+- **A binding that takes a trailing `undefined` as no argument**, marked
+  `#[rust_js::undefined_is_absent]` (`bindings::undefined_is_absent`, its
+  one owner), named for what it says, the lead's decision: a WebIDL
+  operation or constructor, or a binding shown to. WebIDL's overload resolution algorithm (WebIDL
+  §3.6, "Overload resolution algorithm") converts each argument of the
+  selected overload in turn, and of an optional one: "If optionality is
+  “optional” and V is undefined, then: if the argument is declared with a
+  default value, then append to values that default value; otherwise,
+  append to values the special value “missing”", which is what an argument
+  left out is. So `new URL(url, undefined)` is `new URL(url)`, not a base
+  "undefined", and the call is given as it is, `new URL(url, base)`.
+  Case: none, ADR 0262's first: no program tells them. The webapi
+  generator places the attribute, of each binding it writes of a WebIDL
+  operation or constructor given an `Option`, its `typed` forms'
+  `addEventListener` too, and of one hand-specified binding no WebIDL
+  declares, `console.timeStamp`: DevTools records the same `TimeStamp`
+  event of `timeStamp(label, ..given)` as of the same call with trailing
+  `undefined`s to six arguments, of each count, in Chromium. Any other of
+  its `EXTRA` keeps the ladder, `scheduler.yield(options)` among them.
+  A hand marks one by evidence alone: the js crate's `new Error(message,
+  options)` and `new AggregateError(errors, message, options)`, as ES2025
+  §20.5.1.1 and §20.5.7.1 read `message` "if message is not undefined" and
+  InstallErrorCause reads `options` only where it's an Object, no count of
+  arguments read. So `Error.bind(null, message, options)` stays the class
+  itself, rd404's, where its arrow of a call of each count would have been
+  a frame of its stack. test/undefined-is-absent.test.ts holds each mark:
+  of webapi's generated ones, an operation or constructor @webref/idl
+  declares; of any other, a binding of its rows, which compare, in Bun and
+  in Chromium, each count's call with and without trailing `undefined`s:
+  an `Error`'s own properties, message, cause and its stack's first frame,
+  and `timeStamp`'s DevTools trace event. test/none-given.test.ts's rows
+  hold `new URL`'s call given as it is.
+- **A value of any shape**, `Option<&Unknown>`, whose `None` is JS's
+  `undefined` itself, a value of its own (rd275), given as it is,
+  `String(value)`, where JS's `null` is another value. A literal `None`
+  of one is that value too, given, not left out (#1868, P0): `js::string(None)`
+  was `String()`, "", where `js::string`'s Rust, and JS's
+  `String(undefined)`, is "undefined". `binding_calls`' `any_shape` asks
+  `nulled_params::any_value`, the one answer of what a value of any shape
+  is.
+- **A variadic binding**, whose rest is a tuple (ADR 0640), and a bound
+  one, `function::bind`'s, whose items are given at the bind (ADR 0030,
+  amended).
+
+Case: third, ADR 0262's, results change: Rust's, however it reads. ES
+built-ins, node's and a library's own bindings keep the ladder, as a JS
+function may count its arguments: `new Error(reason)`, `setTimeout`,
+`subarray`. Held by the corpus's `trailing_none_arguments_left_out` and
+`unknown_none_given_as_undefined` (each against native Rust, and as a
+library), test/none-given.test.ts's rows in Bun and in Chromium, and
+mutations in `binding_calls.ts` and `bindings.ts`.

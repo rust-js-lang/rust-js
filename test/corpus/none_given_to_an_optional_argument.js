@@ -6,11 +6,11 @@ export function entry() {
 
 // The same, given only as a `dyn Fn`.
 function shown(value) {
-  return String(value ?? undefined);
+  return value != null ? String(value) : String();
 }
 
 function givenOn(value) {
-  return String(value ?? undefined);
+  return value != null ? String(value) : String();
 }
 
 function passedOn(value) {
@@ -25,7 +25,7 @@ const current = null;
 
 const plainShows = { show: plainShows_show };
 function plainShows_show(plain, value) {
-  return String(value ?? undefined);
+  return value != null ? String(value) : String();
 }
 
 function throughDyn(shows, value) {
@@ -52,20 +52,21 @@ function main() {
   console.log(`${shown(null)}`);
   console.log(`${shown(2)}`);
   console.log(`${passedOn(null)}`);
-  console.log(`${String(noneHeld() ?? undefined)}`);
+  const value = noneHeld();
+  console.log(`${value != null ? String(value) : String()}`);
   let slot = null;
-  console.log(`${String(slot ?? undefined)}`);
-  console.log(`${String(current ?? undefined)}`);
+  console.log(`${slot != null ? String(slot) : String()}`);
+  console.log(`${current != null ? String(current) : String()}`);
   const values = [1.5, undefined];
   values.push(noneHeld());
-  const texts = values.map((value) => String(value ?? undefined));
+  const texts = values.map((value) => (value != null ? String(value) : String()));
   console.log(`${texts.join(",")}`);
   console.log(`${throughDyn({ impl: plainShows }, null)}`);
-  console.log(`${throughPointer(String, null)}`);
-  console.log(`${throughCallback(String, null)}`);
-  console.log(`${throughCallback((value) => String(value ?? undefined), null)}`);
-  console.log(`${throughBinding(String, null)}`);
-  console.log(`${apply((value) => String(value ?? undefined), noneHeld())}`);
+  console.log(`${throughPointer((value) => (value != null ? String(value) : String()), null)}`);
+  console.log(`${throughCallback((value) => (value != null ? String(value) : String()), null)}`);
+  console.log(`${throughCallback((value) => (value != null ? String(value) : String()), null)}`);
+  console.log(`${throughBinding((value) => (value != null ? String(value) : String()), null)}`);
+  console.log(`${apply((value) => (value != null ? String(value) : String()), noneHeld())}`);
   console.log(`${String(3)}`);
 }
 //# sourceMappingURL=case.js.map

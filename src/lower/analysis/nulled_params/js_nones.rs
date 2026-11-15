@@ -123,10 +123,19 @@ pub(in crate::lower) fn one_none<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool 
         return false;
     }
     let payload = args.type_at(0);
+    !crate::lower::representation::may_look_like_none(tcx, payload) && any_value(tcx, payload).is_none()
+}
+
+/// What a value of `payload`, an `Option`'s, of any shape is: `Unknown`'s,
+/// a type of any shape (`declarations::any_shape`), whose `None` is JS's
+/// `undefined` itself; or a `dyn` of what any value is, `dyn IntoUnknown`,
+/// `impl<T> IntoUnknown for T`, or of what a value of any shape is. JS's
+/// `null` may be the `Some` of either.
+pub(in crate::lower) fn any_value<'tcx>(tcx: TyCtxt<'tcx>, payload: Ty<'tcx>) -> Option<AnyValue> {
     let any_shape = |ty: Ty<'tcx>| matches!(ty.peel_refs().kind(), ty::Adt(of, _) if crate::lower::declarations::any_shape(tcx, of.did()));
-    // A `dyn` of what any value is, `dyn IntoUnknown`, `impl<T> IntoUnknown
-    // for T`, or of what a value of any shape is: JS's `null` may be its
-    // `Some`, as `Option<&Unknown>`'s.
+    if any_shape(payload) {
+        return Some(AnyValue::Shape);
+    }
     let of_any = match payload.peel_refs().kind() {
         ty::Dynamic(traits, ..) => traits.principal_def_id().is_some_and(|t| {
             tcx.all_impls(t).any(|imp| {
@@ -136,7 +145,16 @@ pub(in crate::lower) fn one_none<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool 
         }),
         _ => false,
     };
-    !crate::lower::representation::may_look_like_none(tcx, payload) && !any_shape(payload) && !of_any
+    of_any.then_some(AnyValue::Dyn)
+}
+
+/// The kind of a value of any shape (`any_value`).
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub(in crate::lower) enum AnyValue {
+    /// `Unknown`'s, a type of any shape's.
+    Shape,
+    /// A `dyn` of what any value is, `dyn IntoUnknown`.
+    Dyn,
 }
 
 /// Whether `binding`'s parameter `i` is an optional argument, declared an

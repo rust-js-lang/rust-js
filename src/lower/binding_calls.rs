@@ -149,13 +149,49 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // binding too, before a rest of none, `console.timeLog()` (ADR
         // 0640). A rest's argument is no optional parameter's, nor a spread,
         // so a `None` before one stays.
+        // But of a value of any shape's, `Option<&Unknown>`'s, whose `None`
+        // is JS's `undefined` itself, given, `String(undefined)` (#1868).
         let offset = usize::from(this.is_some());
+        let inputs = (self.tcx.fn_sig(def_id).instantiate(self.tcx, generic_args))
+            .skip_normalization()
+            .skip_binder()
+            .inputs()
+            .to_vec();
+        let any_shape = |i: usize| {
+            (inputs.get(i + offset)).is_some_and(|&ty| {
+                self.option_of(ty).is_some_and(|payload| {
+                    super::analysis::nulled_params::any_value(self.tcx, payload)
+                        == Some(super::analysis::nulled_params::AnyValue::Shape)
+                })
+            })
+        };
         let optional = |i: usize, arg: &Expr| {
             matches!(arg.kind, js::ExprKind::Undefined)
+                && !(bound.is_none() && any_shape(i))
                 && (is_optional_param(self.tcx, def_id, i + offset)
                     || bound.is_some_and(|(f, first)| i > 0 && is_optional_param(self.tcx, f, first + i - 1)))
         };
         given_to_js_but(&mut args, optional);
+        // Each argument an optional parameter of its takes, by its place: of
+        // the trailing ones that may be `None` where the call's made, the
+        // ladder of calls each count makes (`optional_ladder`, #1842).
+        // And of each, whether its `None` is one, `undefined` or JS's `null`
+        // alike (`nulled_params::one_none`), tested `!= null`: a value of any
+        // shape's is JS's `undefined` itself, given as it is.
+        let optionals: Vec<(bool, bool)> = (0..args.len())
+            .map(|i| {
+                let optional = is_optional_param(self.tcx, def_id, i + offset)
+                    || bound.is_some_and(|(f, first)| i > 0 && is_optional_param(self.tcx, f, first + i - 1));
+                let one =
+                    (inputs.get(i + offset)).is_some_and(|&ty| super::analysis::nulled_params::one_none(self.tcx, ty));
+                (optional, one)
+            })
+            .collect();
+        // Not of one that takes a trailing `undefined` as no argument, a
+        // WebIDL operation's (ADR 0262's case "none").
+        let laddered = !is_variadic(self.tcx, def_id)
+            && bound.is_none()
+            && !super::bindings::undefined_is_absent(self.tcx, def_id);
         // A keyed read of a value that may look like `None`, an `Option`
         // itself: `Some(None)` of a key whose value is `undefined` or
         // `null`, apart from `None` of a key it lacks, as JS's read alone
@@ -511,7 +547,128 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             _ => value,
         };
+        let value = match laddered {
+            true => self.optional_ladder(value, (def_id, offset), &optionals, out),
+            false => value,
+        };
         Ok(self.catching(def_id, generic_args, value))
+    }
+
+    /// A call, `value`, whose trailing arguments, each an optional
+    /// parameter's (`optionals`), may each be `None`: Rust leaves out each
+    /// trailing `None`, as a literal one is (ADR 0443), so its JS is the
+    /// call of as many as are there, a native that counts its arguments
+    /// told none: `setFullYear(2026, month)` is `month === undefined ?
+    /// d.setFullYear(2026) : d.setFullYear(2026, month)`, one test of each,
+    /// a ladder of the counts (#1842). Each argument, and what it's called
+    /// on, is made once, where the call is, in Rust's order, before the
+    /// first test, held where it does something. A `None` given before one
+    /// that's there stays, `undefined`. An `Option` of one `None` is tested
+    /// `!= null`, JS's `null` the `None` it is (#1840), and given as it is
+    /// where it's the last there, `month != null ? d.setFullYear(2026,
+    /// month) : ..`. One that's surely there, a `Some`'s value JS reads as
+    /// never `undefined` (`Expr::may_be_undefined`), `Some(i - 1)`'s `i -
+    /// 1`, nor a read whose `None` is `null`, nor what may give either,
+    /// `a ?? b`, ends the run. Of a call of none such, as it is. What's
+    /// held is named as the binding names its parameter, `const position =
+    /// at - 1`, of `def_id`'s, whose first `offset` are what it's called on.
+    fn optional_ladder(
+        &mut self,
+        mut value: Expr,
+        (def_id, offset): (DefId, usize),
+        optionals: &[(bool, bool)],
+        out: &mut Vec<js::Stmt>,
+    ) -> Expr {
+        let (callee, mut args, new) = match std::mem::replace(&mut value.kind, js::ExprKind::Undefined) {
+            js::ExprKind::Call(callee, args) => (*callee, args, false),
+            js::ExprKind::New(callee, args) => (*callee, args, true),
+            kind => return Expr { kind, ..value },
+        };
+        let remade = |callee: Expr, args: Vec<Expr>| match new {
+            true => js::ExprKind::New(Box::new(callee), args),
+            false => js::ExprKind::Call(Box::new(callee), args),
+        };
+        // What JS is given, past each trailing `None` written, left out.
+        let given = args
+            .iter()
+            .rposition(|arg| !arg.facts.has(js::Known::Absent))
+            .map_or(0, |i| i + 1);
+        let surely_there = |arg: &Expr| {
+            use js::ExprKind as K;
+            matches!(arg.kind, K::Null)
+                || (!arg.may_be_undefined()
+                    && !arg.facts.has(js::Known::NoneNull)
+                    && !matches!(arg.kind, K::Binary(Op::Coalesce | Op::Or | Op::And, ..) | K::Cond(..)))
+        };
+        let run = (0..given)
+            .rev()
+            .take_while(|&i| {
+                optionals.get(i).is_some_and(|&(optional, one)| optional && one) && !surely_there(&args[i])
+            })
+            .count();
+        if run == 0 || args[given - 1].facts.has(js::Known::Absent) {
+            return Expr {
+                kind: remade(callee, args),
+                ..value
+            };
+        }
+        // Each but a variable's read or a literal made once, in order: what
+        // it's called on, then each argument.
+        let callee = match callee.kind {
+            js::ExprKind::Member(object, name) if !object.reads_same() => Expr {
+                kind: js::ExprKind::Member(Box::new(self.spill(Role::Value, *object, out)), name),
+                ..callee
+            },
+            kind => Expr { kind, ..callee },
+        };
+        args.truncate(given);
+        // Of each, what it's of, an `Option` given `?? undefined` of one
+        // that may be JS's `null` (`mir::nulled`), which `!= null` tests.
+        let mut inner: Vec<Expr> = Vec::with_capacity(given);
+        for (i, arg) in args.iter_mut().enumerate() {
+            let one = optionals.get(i).is_some_and(|&(_, one)| one);
+            let wrapped = |arg: &Expr| matches!(&arg.kind, js::ExprKind::Binary(Op::Coalesce, _, given) if super::calls::is_undefined(given));
+            let mut of = match &arg.kind {
+                js::ExprKind::Binary(Op::Coalesce, of, _) if one && wrapped(arg) => (**of).clone(),
+                _ => arg.clone(),
+            };
+            if !of.reads_same() && !super::calls::is_undefined(&of) {
+                let named = (self.tcx.fn_arg_idents(def_id).get(i + offset).copied().flatten())
+                    .map(|ident| ident.name.to_string())
+                    .filter(|name| name != "this" && !name.starts_with('_'))
+                    .map(|name| super::camel_case(&name));
+                of = match named {
+                    Some(name) => self.spill(Base::Named(&name), of, out),
+                    None => self.spill(Role::Arg, of, out),
+                };
+                *arg = match wrapped(arg) && one {
+                    true => Expr::bin(Op::Coalesce, of.clone(), Expr::js_undefined()),
+                    false => of.clone(),
+                };
+            }
+            inner.push(of);
+        }
+        // From the call of each down: each count's, where its last is there.
+        let mut ladder = Expr {
+            kind: remade(callee.clone(), args[..given - run].to_vec()),
+            ..value.clone()
+        };
+        for count in (given - run + 1)..=given {
+            let last = count - 1;
+            if super::calls::is_undefined(&args[last]) {
+                continue;
+            }
+            // Each of the run of one `None`, `undefined` or JS's `null` alike.
+            let mut given_args = args[..count].to_vec();
+            given_args[last] = inner[last].clone();
+            let test = Expr::bin(Op::LooseNe, inner[last].clone(), Expr::null());
+            let call = Expr {
+                kind: remade(callee.clone(), given_args),
+                ..value.clone()
+            };
+            ladder = Expr::cond(test, call, ladder);
+        }
+        ladder
     }
 
     /// Whether binding `def_id`, of `generic_args`, is given an indexed

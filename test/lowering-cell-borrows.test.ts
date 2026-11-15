@@ -813,7 +813,7 @@ pub fn render() {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withBindings]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("export function render() {\n  globalThis.setH(nested);\n}");
+  expect(js).toContain("export function render() {\n  nested != null ? globalThis.setH(nested) : globalThis.setH();\n}");
   const lib = await import(join(dir, "lib.js"));
   const seen: unknown[] = [];
   (globalThis as any).setH = (d: unknown) => seen.push(d);

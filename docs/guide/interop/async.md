@@ -390,7 +390,10 @@ pub fn ping_later(code: &str) {
 ```
 
 ```js
-export const scheduleTimeout = typeof setTimeout === "function" ? setTimeout : undefined;
+export const scheduleTimeout =
+  typeof setTimeout === "function"
+    ? (handler, ms) => (ms != null ? setTimeout(handler, ms) : setTimeout(handler))
+    : undefined;
 
 export function pingLater(code) {
   setTimeout(code, 10);

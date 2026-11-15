@@ -177,6 +177,12 @@ const EXTRA: Record<string, Fn[]> = {
         "color: Option<&str>",
       ],
       result: "()",
+      // No WebIDL's, but it takes a trailing `undefined` as no argument, as
+      // one does: DevTools records the same `TimeStamp` event of
+      // `timeStamp(label, start)` as of `timeStamp(label, start, undefined,
+      // undefined, undefined, undefined)`, of each count, as
+      // test/undefined-is-absent.test.ts's Chromium row shows (#1842).
+      undefinedIsAbsent: true,
       doc: [
         "[Chrome](https://developer.chrome.com/docs/devtools/performance/extension#inject_your_data_with_consoletimestamp):",
         "`console.timeStamp(label, start, end, trackName, trackGroup, color)`, an entry DevTools'",
@@ -1352,6 +1358,12 @@ type Fn = {
    * parameter's type (`givesBack` of TypeScript's DOM): a union's a type
    * parameter, `array: A` of `A: IntoArrayBufferView`, its result `A`. */
   givesBack?: string;
+  /** It takes a trailing `undefined` of an optional argument as no
+   * argument, `#[rust_js::undefined_is_absent]` (#1842): a WebIDL operation's or
+   * constructor's, as WebIDL's overload resolution says, or one shown to,
+   * test/undefined-is-absent.test.ts's row its evidence. A call of it gives
+   * a trailing `None` as `undefined`, no call of each count. */
+  undefinedIsAbsent?: boolean;
 };
 
 /** The interfaces a rest parameter's arguments are, `...streams:
@@ -1863,7 +1875,7 @@ function functionsOf(declared: Interface): Fn[] {
       // `new`, its optional arguments `Option`s (ADR 0443).
       const v = form("new", sig, m.arguments ?? []);
       v.params = typedParams(i, "constructor", v.params);
-      fns.push({ name: v.name, jsName: `new ${jsName(i)}`, params: v.params, result: `&'static ${typeName(i.name)}`, doc: [`[MDN](${mdn(i.name, i.name)})`], variadic: v.variadic, ...nulled(sig.nulls) });
+      fns.push({ name: v.name, jsName: `new ${jsName(i)}`, params: v.params, result: `&'static ${typeName(i.name)}`, doc: [`[MDN](${mdn(i.name, i.name)})`], variadic: v.variadic, ...nulled(sig.nulls), undefinedIsAbsent: true });
     } else if (m.type === "attribute") {
       // A static attribute is a function of the class's module, read at
       // each call: `notification::permission()`, `Notification.permission`.
@@ -2019,7 +2031,7 @@ function functionsOf(declared: Interface): Fn[] {
       const given = orNull(result, m.idlType!);
       const quiet = QUIET.has(`${i.name}.${m.name}`) ? { runsNothing: true } : {};
       const givesBack = backAt >= 0 ? { givesBack: sig.names[backAt] } : {};
-      fns.push({ name: v.name, jsName, params: isStatic ? params : [...self, ...params], result: given, doc, variadic: v.variadic, none: noneOf(m.idlType!, given), whole: wholeOf(m.idlType!, given), ...nulled(sig.nulls), ...quiet, ...givesBack });
+      fns.push({ name: v.name, jsName, params: isStatic ? params : [...self, ...params], result: given, doc, variadic: v.variadic, none: noneOf(m.idlType!, given), whole: wholeOf(m.idlType!, given), ...nulled(sig.nulls), ...quiet, ...givesBack, undefinedIsAbsent: true });
     }
   }
 
@@ -2175,9 +2187,17 @@ for (const names of [eventNames, tagNames, svgTagNames]) {
 }
 
 // The typed forms of the `_named` operations: generic, so Rust functions
-// whose JS is the operation's, not extern ones.
+// whose JS is the operation's, not extern ones; of one given an `Option`,
+// a WebIDL operation's, `#[rust_js::undefined_is_absent]` (#1842).
 const typed = (doc: string[], js: string, signature: string, visibility = "pub ") =>
-  [...doc.map((d) => `    /// ${d}`), `    #[cfg_attr(rust_js, rust_js::link_name = ${JSON.stringify(js)})]`, `    ${visibility}fn ${signature} {`, `        unreachable!()`, `    }`].join("\n");
+  [
+    ...doc.map((d) => `    /// ${d}`),
+    `    #[cfg_attr(rust_js, rust_js::link_name = ${JSON.stringify(js)})]`,
+    ...(signature.includes("Option<") ? ["    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]"] : []),
+    `    ${visibility}fn ${signature} {`,
+    `        unreachable!()`,
+    `    }`,
+  ].join("\n");
 // A listener is TypeScript's `EventListenerOrEventListenerObject`, each
 // member as it is (ADRs 0229, 1021): a closure, or a listener JS gave, a
 // function or an object JS calls `handleEvent` of, kept by identity.
@@ -2395,6 +2415,8 @@ function generic(f: Fn): string {
     ...(f.whole ? [`    #[cfg_attr(rust_js, rust_js::whole = ${JSON.stringify(f.whole)})]`] : []),
     ...(RUNS_ONLY_GIVEN.has(f.jsName) ? ["    #[cfg_attr(rust_js, rust_js::runs_only_given)]"] : []),
     ...(f.runsNothing ? ["    #[cfg_attr(rust_js, rust_js::runs_nothing)]"] : []),
+    // Of one given an `Option`, which alone a call leaves out.
+    ...(f.undefinedIsAbsent && f.params.some((p) => p.includes("Option<")) ? ["    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]"] : []),
     // An operation WebIDL says gives `undefined` gives it, which a closure
     // of its call's value may give back (ADR 0883); not a setter, whose
     // assignment's value is what it's given.

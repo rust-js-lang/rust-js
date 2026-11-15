@@ -523,8 +523,8 @@ export const mutations: Mutation[] = [
     name: "none-trusted-of-any-write",
     breaks: "a variable a call writes is taken to hold Rust's `None` as one only `Some(..)` or `None` writes does, so what the crate's function returns of JS's `null` is given on as it is (#1840)",
     file: "src/lower/mir/nulled.rs",
-    find: "                    self.made_some_or_none(state, *read, depth + 1)\n                }\n                // Not a nullable",
-    replace: "                    true\n                }\n                // Not a nullable",
+    find: "                self.made_some_or_none(state, *read, (depth + 1, some))\n            }\n            // Not a nullable",
+    replace: "                true\n            }\n            // Not a nullable",
     tests: given1840,
   },
   {
@@ -630,5 +630,21 @@ export const mutations: Mutation[] = [
     find: "        if depth > 8 || param || !place",
     replace: "        if depth > 8 || !place",
     tests: ["test/webapi-bindings.test.ts", "-t", "an and_then of a nullable binding is an optional chain"],
+  },
+  {
+    name: "made-some-unseen",
+    breaks: "a binding's trailing argument made `Some(..)` where it's given is tested, `byteOffset != null ? new Uint8Array(buffer, byteOffset) : ..`, as one that may be `None` is (#1842)",
+    file: "src/lower/mir/nulled.rs",
+    find: "                && self.made_some(state, operand)\n",
+    replace: "                && false\n",
+    tests: ["test/js-builtins.test.ts", "-t", "an ArrayBufferView is any typed array"],
+  },
+  {
+    name: "made-some-of-a-none",
+    breaks: "an `Option` a `None` writes too is taken for a `Some` where it's given, so a trailing `None` of it is given `undefined`, `setFullYear(2026, undefined)`, NaN (#1842)",
+    file: "src/lower/mir/nulled.rs",
+    find: "                        && (!some || variant.as_u32() == 1))\n",
+    replace: "                        && (!some || variant.as_u32() <= 1))\n",
+    tests: ["test/none-given.test.ts", "-t", "a binding's trailing None is no argument"],
   },
 ];

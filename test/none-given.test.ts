@@ -238,6 +238,7 @@ const rust = [
   ["1.25", "1.25", "1.25"],
   ["abc", "abc", "a"],
   ["2.5", "2.502.5"],
+  // `String(undefined)`, as `js::string(None)` is (#1868).
   ["null", "undefined"],
   ["1.25", "1.25"],
   [true, true, true],
@@ -259,7 +260,7 @@ test("a None leaving for JS as undefined alone is Rust's, in Bun and in Chromium
   const out = readFileSync(join(dir, "lib.js"), "utf8");
   // Each exit of what JS may have given: a binding's optional argument,
   // what a function JS calls returns, a field written, a callback's.
-  expect(out).toContain("export function digits(value) {\n  return (1.25).toPrecision(value ?? undefined);\n}");
+  expect(out).toContain("export function digits(value) {\n  return value != null ? (1.25).toPrecision(value) : (1.25).toPrecision();\n}");
   expect(out).toContain("export function passed(value) {\n  return value ?? undefined;\n}");
   expect(out).toContain("    digits: digits ?? undefined,\n");
   expect(out).toContain("  shown.digits = digits ?? undefined;\n");
@@ -270,7 +271,7 @@ test("a None leaving for JS as undefined alone is Rust's, in Bun and in Chromium
   expect(out).toContain("const digits = { impl: plainDigits };\n  return digits.impl.digits(digits.value, value);");
   // Each item `function::bind` binds, the `.bind(..)` kept.
   expect(out).toMatch(/\.bind\(\n    undefined,\n    1\.25,\n    value \?\? undefined,\n  \)/);
-  expect(out).toContain("((arg0, precision) => arg0.toPrecision(precision)).bind(");
+  expect(out).toContain("((arg0, precision) =>\n    precision != null ? arg0.toPrecision(precision) : arg0.toPrecision()).bind(");
   // A binding's argument of a type parameter, `js::set`'s `T`, JS takes as
   // it's given; a closure only Rust calls holds what it's given as it is;
   // and `js::null()` is JS's `null` on purpose (ADR 0935).
@@ -278,7 +279,7 @@ test("a None leaving for JS as undefined alone is Rust's, in Bun and in Chromium
   expect(out).toMatch(/return shown\(value\);/);
   expect(out).toContain('return "abc".slice(0, null);');
   // A nullable parameter's `null`, given on (#1843).
-  expect(out).toContain("export function forwarded(value) {\n  return (1.25).toPrecision(value ?? undefined);\n}");
+  expect(out).toContain("export function forwarded(value) {\n  return value != null ? (1.25).toPrecision(value) : (1.25).toPrecision();\n}");
   // What holds Rust's own `None`, as it is.
   expect(out).toContain("export function digitsNone() {\n  return (1.25).toPrecision();\n}");
   expect(out).toContain("return helper(3) + helper();");
@@ -327,7 +328,165 @@ test("a library's function a consumer gives JS's None gives a binding Rust's", a
   writeFileSync(join(dir, "app", "lib.rs"), "pub fn shown(value: Option<f64>) -> String {\n    dep::digits(value)\n}\n");
   run([compiler, join(dir, "app", "lib.rs"), "-o", join(dir, "app", "lib.js"), "--dependency", join(dir, "dep", "lib.manifest.json"),
     "--", "--crate-name", "app", "--edition=2024", "--extern", `dep=${join(dir, "libdep.rmeta")}`, "-L", dir, ...js]);
-  expect(readFileSync(join(dir, "dep", "lib.js"), "utf8")).toContain("(1.25).toPrecision(value ?? undefined)");
+  expect(readFileSync(join(dir, "dep", "lib.js"), "utf8")).toContain("value != null ? (1.25).toPrecision(value) : (1.25).toPrecision()");
   const app = await import(join(dir, "app", "lib.js"));
   expect([app.shown(null), app.shown(undefined)]).toEqual(["1.25", "1.25"]);
 }, underLoad(120_000));
+
+// A binding's trailing `None` is no argument, a dynamic one as a literal
+// one is (#1842, ADR 0443, amended): `setFullYear(2026, month)` of a `None`
+// is `setFullYear(2026)`, `new Date(value)` of one `new Date()`, now, where
+// `setFullYear(2026, undefined)` is NaN and `new Date(undefined)` Invalid
+// Date. Each count's call, tested from the last, `!= null`, as JS's `null`
+// is Rust's `None` too (#1840); in Bun and in Chromium.
+const trailing = `fn month_of(month: Option<i32>) -> f64 {
+    let date = js::date::new_with_year_and_month(2020, 5, Some(15), None, None, None, None);
+    date.set_full_year(2026, month, None)
+}
+
+pub fn dynamic(month: Option<i32>) -> f64 {
+    month_of(month)
+}
+
+pub fn literal() -> f64 {
+    let date = js::date::new_with_year_and_month(2020, 5, Some(15), None, None, None, None);
+    date.set_full_year(2026, None, None)
+}
+
+pub fn now_given(value: Option<&dyn js::date::IntoNumberOrStrOrDate>) -> bool {
+    js::date::new(value).get_time().is_nan()
+}
+
+pub fn utc(day: Option<i32>, hours: Option<i32>, minutes: Option<i32>, seconds: Option<i32>) -> f64 {
+    js::date::utc(2020, Some(5), day, hours, minutes, seconds, None)
+}
+
+pub fn counted(month: &dyn Fn() -> Option<i32>) -> f64 {
+    let date = js::date::new_with_year_and_month(2020, 5, Some(15), None, None, None, None);
+    date.set_full_year(2026, month(), None)
+}
+
+pub fn either(given: bool) -> f64 {
+    let month = if given { Some(1) } else { None };
+    let date = js::date::new_with_year_and_month(2020, 5, Some(15), None, None, None, None);
+    date.set_full_year(2026, month, None)
+}
+
+type SetYear = fn(&js::Date, i32, Option<i32>, Option<i32>) -> f64;
+
+pub fn through_pointer(month: Option<i32>) -> f64 {
+    let set: SetYear = js::Date::set_full_year;
+    let date = js::date::new_with_year_and_month(2020, 5, Some(15), None, None, None, None);
+    set(date, 2026, month, None)
+}
+
+pub fn last_slash(text: &str, at: f64) -> f64 {
+    js::string::last_index_of(text, "/", Some(at - 1.0))
+}
+`;
+
+const trailingAnswers = (m: Record<string, (...args: unknown[]) => unknown>) => [
+  m.dynamic(undefined) === m.literal(),
+  m.dynamic(null) === m.literal(),
+  m.dynamic(1) !== m.literal(),
+  m.nowGiven(undefined),
+  m.nowGiven(null),
+  m.nowGiven(0),
+  m.utc(undefined, undefined, undefined, undefined) === Date.UTC(2020, 5),
+  m.utc(2, undefined, undefined, undefined) === Date.UTC(2020, 5, 2),
+  Number.isNaN(m.utc(2, 3, undefined, 4)),
+  m.utc(2, 3, 4, 5) === Date.UTC(2020, 5, 2, 3, 4, 5),
+  m.lastSlash("a/b/c", 3) === 1,
+  // An `Option` made `Some` or `None` is tested.
+  m.either(false) === m.literal(),
+  m.either(true) === m.dynamic(1),
+  // A method's pointer, an arrow anyway, its call of each count.
+  m.throughPointer(undefined) === m.literal(),
+  // Each argument made once, where it's given.
+  (() => {
+    let made = 0;
+    return [m.counted(() => (made++, 1)), made].join() === [m.dynamic(1), 1].join();
+  })(),
+];
+
+test("a binding's trailing None is no argument, dynamic or literal, in Bun and in Chromium", async () => {
+  const dir = fixture("none-trailing");
+  writeFileSync(join(dir, "lib.rs"), trailing);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--crate-type=lib", "--edition=2024", ...js]);
+  const out = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(out).toContain("  return month != null ? date.setFullYear(2026, month) : date.setFullYear(2026);\n");
+  expect(out).toContain("(value != null ? new Date(value) : new Date()).getTime()");
+  // A `Some`'s value never `undefined`, `Some(at - 1.0)`'s, is there.
+  expect(out).toContain('  return text.lastIndexOf("/", at - 1);\n');
+  expect(out).toContain("  return seconds != null\n    ? Date.UTC(2020, 5, day ?? undefined, hours ?? undefined, minutes ?? undefined, seconds)\n");
+  // Rust's: a `None` before one that's there stays, `undefined`, NaN.
+  const rust = [true, true, true, false, false, false, true, true, true, true, true, true, true, true, true];
+  expect(trailingAnswers(await import(join(dir, "lib.js")))).toEqual(rust);
+  const names = [...out.matchAll(/^export function (\w+)/gm)].map((m) => m[1]);
+  const browser = await chromium.launch();
+  try {
+    const page = await browser.newPage();
+    const inPage = await page.evaluate(
+      ([code, answer, exported]) => {
+        const m = new Function(`${code.replaceAll(/^export /gm, "")}; return { ${exported} };`)();
+        return new Function("m", `return (${answer})(m);`)(m);
+      },
+      [out.replace(/\/\/# sourceMappingURL.*$/m, ""), trailingAnswers.toString(), names.join(", ")],
+    );
+    expect(inPage).toEqual(rust);
+  } finally {
+    await browser.close();
+  }
+}, underLoad(300_000));
+
+// A WebIDL operation's trailing `undefined` of an optional argument is no
+// argument, as its overload resolution says, so a call of a binding marked
+// `#[rust_js::undefined_is_absent]` gives a trailing `None` as
+// `undefined`, no call of each count (#1842, ADR 0443, amended): `new
+// URL(url, undefined)` is `new URL(url)`, not of a base "undefined", which
+// throws; `console.timeStamp`'s too, shown so by
+// test/undefined-is-absent.test.ts. But webapi's `scheduler.yield(options)`,
+// Chrome's first form, which isn't shown to, is a call of each count.
+const webidl = `pub fn resolved(url: &str, base: Option<&str>) -> String {
+    webapi::url::new(url, base).href()
+}
+
+pub fn stamp(label: &str, track: Option<&str>, group: Option<&str>) {
+    webapi::console::time_stamp(label, None, None, track, group, None)
+}
+
+pub fn yielded(scheduler: &webapi::Scheduler, delay: Option<f64>) -> js::Promise<()> {
+    scheduler.r#yield(delay.map(|delay| webapi::SchedulerPostTaskOptions { delay: Some(delay), ..Default::default() }))
+}
+`;
+
+test("a WebIDL operation's trailing None is undefined, no ladder, in Bun and in Chromium", async () => {
+  const dir = fixture("none-webidl");
+  writeFileSync(join(dir, "lib.rs"), webidl);
+  const web = ["--extern", `webapi=${join(target, "libwebapi.rmeta")}`];
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--crate-type=lib", "--edition=2024", ...web, ...js]);
+  const out = readFileSync(join(dir, "lib.js"), "utf8");
+  const [marked, unmarked] = out.split("export function yielded");
+  expect(marked).not.toContain("!= null");
+  expect(unmarked).toContain("!= null ? scheduler.yield(");
+  expect(out).toContain("new URL(url, base");
+  expect(out).toContain("console.timeStamp(label, undefined, undefined, track");
+  const m = await import(join(dir, "lib.js"));
+  const answers = (m: Record<string, (...args: (string | undefined)[]) => string>) => [m.resolved("https://a.test/b", undefined), m.resolved("c", "https://a.test/b")];
+  const rust = ["https://a.test/b", "https://a.test/c"];
+  expect(answers(m)).toEqual(rust);
+  const browser = await chromium.launch();
+  try {
+    const page = await browser.newPage();
+    const inPage = await page.evaluate(
+      ([code, answer]) => {
+        const m = new Function(`${code.replaceAll(/^export /gm, "")}; return { resolved };`)();
+        return new Function("m", `return (${answer})(m);`)(m);
+      },
+      [out.replace(/\/\/# sourceMappingURL.*$/m, ""), answers.toString()],
+    );
+    expect(inPage).toEqual(rust);
+  } finally {
+    await browser.close();
+  }
+}, underLoad(300_000));

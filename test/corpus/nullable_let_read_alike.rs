@@ -6,8 +6,9 @@
 // where it's written, so the parameter is tested `!== null`. Read any
 // other way, by a binding's parameter that isn't nullable, returned,
 // stored in a field, captured or lent as a `&mut`, it's as it was, and the
-// parameter is tested `!= null`. `String(undefined)` is "undefined", which
-// the binding's native body says too.
+// parameter is tested `!= null`. A `None` given to `String(value)`, a
+// binding's optional argument, is no argument, `String()`, "", which the
+// binding's native body says too (#1842).
 pub struct State {
     pub clones: Option<Vec<u32>>,
 }
@@ -23,7 +24,7 @@ pub struct Kept {
 #[cfg_attr(rust_js, rust_js::link_name = "String")]
 fn shown(value: Option<&[u32]>) -> String {
     match value {
-        None => "undefined".to_string(),
+        None => String::new(),
         Some(value) => value.iter().map(u32::to_string).collect::<Vec<_>>().join(","),
     }
 }

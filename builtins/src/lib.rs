@@ -2966,8 +2966,13 @@ pub mod error {
     /// As a value it's `Error` itself, which JS makes the same `Error`
     /// called without `new`: `function::bind(js::error::new, Some(&Kind::Null),
     /// (message, options))` is `Error.bind(null, message, options)` (rd404).
+    /// A trailing `undefined` is no argument (#1842): ES2025 §20.5.1.1 reads
+    /// `message` "if message is not undefined", and InstallErrorCause reads
+    /// `options` only where it's an Object, no count of its arguments read,
+    /// as test/undefined-is-absent.test.ts's rows show.
     #[cfg_attr(rust_js, rust_js::link_name = "new Error")]
     #[cfg_attr(rust_js, rust_js::called_constructs)]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     pub fn new(message: Option<&str>, options: Option<&ErrorOptions<'_>>) -> &'static Error {
         unreachable!()
     }
@@ -3061,8 +3066,13 @@ pub mod aggregate_error {
     /// As a value it's `AggregateError` itself, which JS makes the same
     /// called without `new`, `AggregateError.bind(null, errors, message,
     /// options)` (rd404).
+    /// A trailing `undefined` is no argument (#1842): ES2025 §20.5.7.1 reads
+    /// `message` "if message is not undefined", and InstallErrorCause reads
+    /// `options` only where it's an Object, no count of its arguments read,
+    /// as test/undefined-is-absent.test.ts's rows show.
     #[cfg_attr(rust_js, rust_js::link_name = "new AggregateError")]
     #[cfg_attr(rust_js, rust_js::called_constructs)]
+    #[cfg_attr(rust_js, rust_js::undefined_is_absent)]
     #[cfg_attr(rust_js, rust_js::runs_nothing)]
     pub fn new(errors: &[Option<&Unknown>], message: Option<&str>, options: Option<&ErrorOptions<'_>>) -> &'static AggregateError {
         unreachable!()
