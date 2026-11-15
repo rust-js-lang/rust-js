@@ -24,8 +24,12 @@ type Holder = {
   cut?: string;
   len: string;
   at: (k: string) => string;
-  /** A call's index of it, `swap`, where it's mutable. */
+  /** Its items are bytes, an item made a `u32` to be the probe's. */
+  bytes?: boolean;
+  /** A call's index of it, `swap`, and a drain to one past an index,
+   * where it's mutable. */
   swap?: (k: string) => string;
+  drain?: (k: string) => string;
   /** Inside the probe: a closure body that shortens it through what the
    * probe holds shared. */
   inner?: string;
@@ -33,6 +37,15 @@ type Holder = {
   reassign?: string;
   lend?: string;
   whole?: string;
+  /** A call of a function of the crate's that shortens it through the
+   * shared path, `shorten_cell(v)`: a call the walk can name, not a
+   * callback. */
+  helper?: string;
+  /** An item's write through the same reference, `v[0] ^= 1`, which
+   * keeps the length; and the whole swapped through it, `mem::swap(&mut
+   * *v, ..)`, which doesn't. */
+  item?: string;
+  swapped?: string;
   /** A write through a raw pointer to it, `p` of its setup. */
   pointer?: string;
   /** The tests, or a test's form, `<test>/<form>`, whose programs are
@@ -65,6 +78,18 @@ fn check(what: &str, f: impl FnOnce() -> u32) {
 
 fn shorten(v: &mut Vec<u32>) {
     v.truncate(1);
+}
+
+fn shorten_cell(v: &RefCell<Vec<u32>>) {
+    v.borrow_mut().truncate(1);
+}
+
+fn shorten_local() {
+    ITEMS.with_borrow_mut(|v| v.truncate(1));
+}
+
+fn shorten_text(s: &mut String) {
+    s.truncate(1);
 }
 
 fn shorten_slice<'a>(v: &mut &'a [u32]) {
@@ -127,6 +152,7 @@ const holders: Record<string, Holder> = {
     len: "v.len()",
     at: (k) => `v[${k}]`,
     swap: (k) => `{ v.swap(${k}, 0); v[0] }`,
+    drain: (k) => `v.drain(..${k} + 1).count() as u32`,
     direct: "v.truncate(1);",
     reassign: "v = vec![9];",
     lend: "shorten(&mut v);",
@@ -140,19 +166,52 @@ const holders: Record<string, Holder> = {
     reassign: "v = &[9];",
     lend: "shorten_slice(&mut v);",
   },
+  text: {
+    params: "mut s: String",
+    make: "",
+    args: `String::from("abcd")`,
+    len: "s.len()",
+    at: (k) => `s.as_bytes()[${k}]`,
+    bytes: true,
+    direct: "s.truncate(1);",
+    reassign: `s = String::from("x");`,
+    lend: "shorten_text(&mut s);",
+  },
+  text_ref: {
+    params: "mut s: &str",
+    make: "",
+    args: `"abcd"`,
+    len: "s.len()",
+    at: (k) => `s.as_bytes()[${k}]`,
+    bytes: true,
+    reassign: `s = "x";`,
+  },
   vec_mut: {
     params: "v: &mut Vec<u32>",
+    item: "v[0] ^= 1;",
+    swapped: "std::mem::swap(&mut *v, &mut vec![9]);",
     make: `let mut items = ${four};`,
     args: "&mut items",
     len: "v.len()",
     at: (k) => `v[${k}]`,
     swap: (k) => `{ v.swap(${k}, 0); v[0] }`,
+    drain: (k) => `v.drain(..${k} + 1).count() as u32`,
     direct: "v.truncate(1);",
     reassign: "*v = vec![9];",
     lend: "shorten(v);",
   },
+  slice_items: {
+    params: "v: &mut [u32]",
+    make: `let mut items = ${four};`,
+    args: "&mut items",
+    len: "v.len()",
+    at: (k) => `v[${k}]`,
+    swap: (k) => `{ v.swap(${k}, 0); v[0] }`,
+    item: "v[0] ^= 1;",
+  },
   slice_mut: {
     params: "v: &mut &[u32]",
+    swapped: "std::mem::swap(v, &mut &[9][..]);",
     make: `let items = ${four}; let mut s = &items[..];`,
     args: "&mut s",
     len: "v.len()",
@@ -180,23 +239,28 @@ const holders: Record<string, Holder> = {
   },
   vec_mut_mut: {
     params: "v: &mut &mut Vec<u32>",
+    item: "v[0] ^= 1;",
+    swapped: "std::mem::swap(&mut **v, &mut vec![9]);",
     make: `let mut items = ${four}; let mut r = &mut items;`,
     args: "&mut r",
     len: "v.len()",
     at: (k) => `v[${k}]`,
     swap: (k) => `{ v.swap(${k}, 0); v[0] }`,
+    drain: (k) => `v.drain(..${k} + 1).count() as u32`,
     direct: "v.truncate(1);",
     reassign: "**v = vec![9];",
     lend: "shorten(v);",
   },
   pointer: {
     params: "v: &mut Vec<u32>",
+    item: "unsafe { (&mut *p)[0] ^= 1 };",
     setup: "let p: *mut Vec<u32> = &raw mut *v;",
     make: `let mut items = ${four};`,
     args: "&mut items",
     len: "v.len()",
     at: (k) => `v[${k}]`,
     swap: (k) => `{ v.swap(${k}, 0); v[0] }`,
+    drain: (k) => `v.drain(..${k} + 1).count() as u32`,
     reassign: "unsafe { *p = vec![9] };",
     pointer: "unsafe { std::ptr::write(p, vec![9]) };",
     // Undefined behaviour, Miri's Stacked Borrows (nightly, 2026-11-15):
@@ -206,21 +270,27 @@ const holders: Record<string, Holder> = {
     //   exist in the borrow stack"; "<34780> was created by a
     //   SharedReadOnly retag" at the closure, "later invalidated ... by a
     //   Unique retag" at `*p = vec![9]`.
-    // - `loop_for/swap`: `v.swap`'s `&mut` reborrow invalidates `p`,
-    //   which the next step writes through: "trying to retag from <91523>
-    //   for Unique permission ..., but that tag does not exist"; "<91523>
-    //   was created by a SharedReadWrite retag" at `&raw mut *v`, "later
-    //   invalidated ... by a Unique retag" at `v.swap(j, 0)`.
-    undefined: ["in_closure", "loop_for/swap"],
+    // - a loop's `swap` or `drain`: its `&mut` reborrow of `v` invalidates
+    //   `p`, which the next step writes through, `loop_for/swap`'s "trying
+    //   to retag from <91523> for Unique permission ..., but that tag does
+    //   not exist"; "<91523> was created by a SharedReadWrite retag" at
+    //   `&raw mut *v`, "later invalidated ... by a Unique retag" at
+    //   `v.swap(j, 0)`; `loop_step/swap`'s the same. Each loop's is left
+    //   out, `loop_rev`'s and `loop_while`'s too, which Miri passes only
+    //   as their first step panics before a second.
+    undefined: ["in_closure", ...["loop_for", "loop_rev", "loop_step", "loop_while"].flatMap((loop) => [`${loop}/swap`, `${loop}/drain`])],
   },
   local_field: {
     params: "items: Vec<u32>",
+    item: "x.items[0] ^= 1;",
+    swapped: "std::mem::swap(&mut x.items, &mut vec![9]);",
     setup: "let mut x = Holder { items };",
     make: "",
     args: four,
     len: "x.items.len()",
     at: (k) => `x.items[${k}]`,
     swap: (k) => `{ x.items.swap(${k}, 0); x.items[0] }`,
+    drain: (k) => `x.items.drain(..${k} + 1).count() as u32`,
     direct: "x.items.truncate(1);",
     reassign: "x = Holder { items: vec![9] };",
     lend: "shorten(&mut x.items);",
@@ -234,8 +304,10 @@ const holders: Record<string, Holder> = {
     len: "v.borrow().len()",
     at: (k) => `v.borrow()[${k}]`,
     swap: (k) => `{ v.borrow_mut().swap(${k}, 0); v.borrow()[0] }`,
+    drain: (k) => `v.borrow_mut().drain(..${k} + 1).count() as u32`,
     inner: "v.borrow_mut().truncate(1)",
     direct: "v.borrow_mut().truncate(1);",
+    helper: "shorten_cell(v);",
     lend: "shorten(&mut v.borrow_mut());",
   },
   rc: {
@@ -246,8 +318,10 @@ const holders: Record<string, Holder> = {
     len: "v.borrow().len()",
     at: (k) => `v.borrow()[${k}]`,
     swap: (k) => `{ v.borrow_mut().swap(${k}, 0); v.borrow()[0] }`,
+    drain: (k) => `v.borrow_mut().drain(..${k} + 1).count() as u32`,
     inner: "v.borrow_mut().truncate(1)",
     direct: "v.borrow_mut().truncate(1);",
+    helper: "shorten_cell(&v);",
     reassign: "v = Rc::new(RefCell::new(vec![9]));",
     lend: "replace_rc(&mut v);",
   },
@@ -260,6 +334,7 @@ const holders: Record<string, Holder> = {
     at: (k) => `v.borrow()[${k}]`,
     inner: "v.borrow_mut().truncate(1)",
     direct: "v.borrow_mut().truncate(1);",
+    helper: "shorten_cell(v);",
   },
   boxed: {
     params: "v: Box<RefCell<Vec<u32>>>",
@@ -269,6 +344,7 @@ const holders: Record<string, Holder> = {
     at: (k) => `v.borrow()[${k}]`,
     inner: "v.borrow_mut().truncate(1)",
     direct: "v.borrow_mut().truncate(1);",
+    helper: "shorten_cell(&v);",
   },
   guard: {
     params: "v: &RefCell<Vec<u32>>",
@@ -279,6 +355,7 @@ const holders: Record<string, Holder> = {
     len: "g.len()",
     at: (k) => `g[${k}]`,
     swap: (k) => `{ g.swap(${k}, 0); g[0] }`,
+    drain: (k) => `g.drain(..${k} + 1).count() as u32`,
     direct: "g.truncate(1);",
     reassign: "*g = vec![9];",
     lend: "shorten(&mut g);",
@@ -293,11 +370,14 @@ const holders: Record<string, Holder> = {
   },
   field_mut: {
     params: "h: &mut Holder",
+    item: "h.items[0] ^= 1;",
+    swapped: "std::mem::swap(&mut h.items, &mut vec![9]);",
     make: `let mut held = Holder { items: ${four} };`,
     args: "&mut held",
     len: "h.items.len()",
     at: (k) => `h.items[${k}]`,
     swap: (k) => `{ h.items.swap(${k}, 0); h.items[0] }`,
+    drain: (k) => `h.items.drain(..${k} + 1).count() as u32`,
     direct: "h.items.truncate(1);",
     reassign: "*h = Holder { items: vec![9] };",
     lend: "shorten(&mut h.items);",
@@ -312,6 +392,7 @@ const holders: Record<string, Holder> = {
     at: (k) => `h.items.borrow()[${k}]`,
     inner: "h.items.borrow_mut().truncate(1)",
     direct: "h.items.borrow_mut().truncate(1);",
+    helper: "shorten_cell(&h.items);",
   },
   table: {
     params: "v: &Vec<u32>",
@@ -321,10 +402,26 @@ const holders: Record<string, Holder> = {
     len: "t[0].len()",
     at: (k) => `t[1][${k}]`,
     swap: (k) => `{ t[1].swap(${k}, 0); t[1][0] }`,
+    drain: (k) => `t[1].drain(..${k} + 1).count() as u32`,
     direct: "t[1].truncate(1);",
     reassign: "t[1] = vec![9];",
     lend: "shorten(&mut t[1]);",
     whole: "shorten_rows(&mut t);",
+  },
+  table_slice: {
+    params: "v: &Vec<u32>",
+    item: "s[1][0] ^= 1;",
+    swapped: "std::mem::swap(&mut s[1], &mut vec![9]);",
+    setup: "let mut t = vec![v.clone(); 3];\n    let s: &mut [Vec<u32>] = &mut t;",
+    make: `let items = ${four};`,
+    args: "&items",
+    len: "s[0].len()",
+    at: (k) => `s[1][${k}]`,
+    swap: (k) => `{ s[1].swap(${k}, 0); s[1][0] }`,
+    drain: (k) => `s[1].drain(..${k} + 1).count() as u32`,
+    direct: "s[1].truncate(1);",
+    reassign: "s[1] = vec![9];",
+    lend: "shorten(&mut s[1]);",
   },
   thread_local: {
     params: "",
@@ -335,6 +432,7 @@ const holders: Record<string, Holder> = {
     at: (k) => `ITEMS.with_borrow(|v| v[${k}])`,
     inner: "ITEMS.with_borrow_mut(|v| v.truncate(1))",
     direct: "ITEMS.with_borrow_mut(|v| v.truncate(1));",
+    helper: "shorten_local();",
   },
 };
 
@@ -346,6 +444,9 @@ const betweens: Record<string, (h: Holder) => string | undefined> = {
   dropped: (h) => (h.cut ? "drop(OnDrop(cut));" : undefined),
   closure: (h) => (h.inner ? `let shorten_it = || ${h.inner}; shorten_it();` : undefined),
   direct: (h) => h.direct,
+  helper: (h) => h.helper,
+  item: (h) => h.item,
+  swapped: (h) => h.swapped,
   reassign: (h) => h.reassign,
   lend: (h) => h.lend,
   whole: (h) => h.whole,
@@ -354,12 +455,13 @@ const betweens: Record<string, (h: Holder) => string | undefined> = {
 
 /** The index's form: an item, a range's end, a call's (`swap`). */
 const forms: Record<string, (h: Holder, k: string) => string | undefined> = {
-  item: (h, k) => h.at(k),
+  item: (h, k) => (h.bytes ? `u32::from(${h.at(k)})` : h.at(k)),
   range: (h, k) => {
     const at = h.at(`..${k} + 1`);
     return at.includes("with_borrow") ? at.replace(/\)$/, ".len() as u32)") : `${at}.len() as u32`;
   },
   swap: (h, k) => h.swap?.(k),
+  drain: (h, k) => h.drain?.(k),
 };
 
 /** The test, around what's between and the index, `idx(k)`. */
@@ -371,9 +473,17 @@ const tests: Record<string, (h: Holder, between: string, idx: (k: string) => str
   // A length less what it's known above, which wraps once something
   // between shortens it to one.
   wrap: (h, b) => `if ${h.len} > 1 {\n        ${b}\n        (${h.len} - 2) as u32\n    } else {\n        0\n    }`,
+  // `k != len` beside `k <= len`, which together are `k < len`.
+  unequal: (h, b, idx) => `if k <= ${h.len} && k != ${h.len} {\n        ${b}\n        ${idx("k")}\n    } else {\n        0\n    }`,
+  // The least of it and the last index.
+  least: (h, b, idx) => `if ${h.len} > 0 {\n        let j = k.min(${h.len} - 1);\n        ${b}\n        ${idx("j")}\n    } else {\n        0\n    }`,
+  // A remainder of the length, below it.
+  remainder: (h, b, idx) => `let n = ${h.len};\n    if n > 0 {\n        ${b}\n        ${idx("k % n")}\n    } else {\n        0\n    }`,
   loop_while: (h, b, idx) =>
     `let mut total = 0;\n    let mut j = k;\n    while j < ${h.len} {\n        ${b}\n        total += ${idx("j")};\n        j += 1;\n    }\n    total`,
   loop_for: (h, b, idx) => `let mut total = 0;\n    let end = ${h.len};\n    for j in k..end {\n        ${b}\n        total += ${idx("j")};\n    }\n    total`,
+  loop_rev: (h, b, idx) => `let mut total = 0;\n    let end = ${h.len};\n    for j in (k..end).rev() {\n        ${b}\n        total += ${idx("j")};\n    }\n    total`,
+  loop_step: (h, b, idx) => `let mut total = 0;\n    let end = ${h.len};\n    for j in (k..end).step_by(2) {\n        ${b}\n        total += ${idx("j")};\n    }\n    total`,
   in_closure: (h, b, idx) =>
     `let mut f = |k: usize| -> u32 {\n        if k < ${h.len} {\n            ${b}\n            ${idx("k")}\n        } else {\n            0\n        }\n    };\n    f(k)`,
   // The index in a function of its own (`calleeBody`).
@@ -397,7 +507,7 @@ export function programs(): Record<string, string> {
           const name = `${betweenName}_${formName}`;
           const idx = (k: string) => form(h, k)!;
           const params = [h.params, "k: usize", "cut: &dyn Fn()"].filter(Boolean).join(", ");
-          const callee = testName === "in_callee" ? `fn ${name}_at(s: &[u32], k: usize) -> u32 {\n    s[k]\n}\n\n` : "";
+          const callee = testName === "in_callee" ? `fn ${name}_at<T: Copy + Into<u32>>(s: &[T], k: usize) -> u32 {\n    s[k].into()\n}\n\n` : "";
           const body = testName === "in_callee" ? calleeBody(h, b, name) : test(h, b, idx, name);
           fns.push(`${callee}fn ${name}(${params}) -> u32 {\n    ${h.setup ?? ""}\n    ${body}\n}\n`);
           for (const k of [0, 2, 5]) {

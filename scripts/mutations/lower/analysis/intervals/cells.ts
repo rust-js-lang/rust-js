@@ -16,11 +16,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "cells-calls-write-nothing",
-    breaks: "a call given a `RefCell` is taken as writing nothing of it, so past one that clears it `len() - 1` is JS's own and gives `-1`",
+    breaks: "a call of the crate's given a `RefCell`, `shorten_cell(v)`, is taken as writing nothing of it, so `v.borrow()[k]` under `k < v.borrow().len()` past it is unchecked and reads `undefined` where Rust panics; a callback or a `fn` pointer's call is no named callee, and forgets regardless",
     file,
     find: "        !reads\n",
     replace: "        let _ = reads;\n        false\n",
-    tests,
+    tests: ["test/bounds-matrix.test.ts", "-t", "refcell, tested wrap"],
   },
   {
     name: "cells-raw-write-quiet",

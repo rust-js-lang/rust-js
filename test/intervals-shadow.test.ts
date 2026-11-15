@@ -582,6 +582,28 @@ test("an `Rc`'s `Deref` gives its cell, the same each time: React's `listeners.b
   expect(shadowOf(readFileSync(join(root, "test/corpus/rc_refcell_bounds.rs"), "utf8"))).toEqual([]);
 });
 
+// #1877: an item's write through a reference keeps the slice's length,
+// and a table's row it writes is no row the table's rows hold, as those
+// are reached by `Vec`'s `IndexMut` alone: `s[1]
+// = vec![9]` of a `&mut [Vec<u32>]` its table lends. MIR proves `s[0]`
+// and `s[1]` of the table's three rows, but no `s[1][k]` under `k <
+// s[0].len()` past it.
+test("an item's write through a reference keeps the length, not its table's rows", () => {
+  expect(shadowOf(`pub fn written_row(v: &Vec<u32>, k: usize) -> u32 {
+    let mut t = vec![v.clone(); 3];
+    let s: &mut [Vec<u32>] = &mut t;
+    if k < s[0].len() {
+        s[1] = vec![9];
+        return s[1][k];
+    }
+    0
+}
+pub fn main() {
+    println!("{}", written_row(&vec![1, 2, 3], 2));
+}
+`)).toEqual(["mir-only-bounds written_row", "mir-only-bounds written_row", "mir-only-bounds written_row"]);
+});
+
 // #1672 M3, step 5: a map's `m[&k]` where `m.contains_key(&k)` holds, or
 // past a first `m[&k]`, is proved, of a map a local holds or a `RefCell`
 // does (rd558). Not past a `clear()`, a write of the key, a call that may

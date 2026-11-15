@@ -6,9 +6,9 @@
 // leave out where something between can change the length is a wrong
 // answer here. A program that is undefined behaviour under Miri is no
 // answer's to judge, and is left out, what Miri says beside it
-// (`Holder.undefined`). Every program, some 170, runs a night and in `check:fast`
+// (`Holder.undefined`). Every program, 321, runs a night and in `check:fast`
 // of a change to the MIR intervals, THIR's ranges or what a loop's range
-// is: about 140 s on the Mac, one program after another. One that runs
+// is: about 270 s on the Mac, one program after another. One that runs
 // and differs is filed P0 and listed in `wrong`, so the list only
 // shrinks (#1877, #1878).
 //
