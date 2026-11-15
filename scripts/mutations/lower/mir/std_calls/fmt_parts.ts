@@ -46,8 +46,17 @@ export const mutations: Mutation[] = [
     breaks:
       "a `Debug` of the crate's isn't taken to run code, so an argument after it is made after it runs",
     file: "src/lower/mir/std_calls/fmt_parts.rs",
-    find: "            formatted |= part.runs_program_code();\n",
+    find: "            formatted |= written_apart || part.runs_program_code();\n",
     replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^format_arguments_first.rs$"],
+  },
+  {
+    name: "pieces-written-apart-unordered",
+    breaks:
+      "a piece of a line written apart, `$out(\"lead \")` through stdout's line or `<` into a text that may fail, isn't taken as written, so an argument made by a call that prints is made after it, where Rust makes each first (#1883)",
+    file: "src/lower/mir/std_calls/fmt_parts.rs",
+    find: "            formatted |= written_apart || part.runs_program_code();\n",
+    replace: "            formatted |= part.runs_program_code();\n",
     tests: ["test/corpus.test.ts", "-t", "^format_arguments_first.rs$"],
   },
   {

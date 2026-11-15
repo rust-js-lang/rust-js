@@ -449,9 +449,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a format string's argument that does something is evaluated where the template formats it, after a `Debug` of an earlier one that prints",
     file: "src/lower/mir/std_calls.rs",
-    find: "                if this.formats_out_of_order(&items, &template, span)? {\n",
+    find: "                    if this.formats_out_of_order(&items, &template, fails || prints, span)? {\n",
     replace:
-      "                if false && this.formats_out_of_order(&items, &template, span)? {\n",
+      "                    if false && this.formats_out_of_order(&items, &template, fails || prints, span)? {\n",
     tests: ["test/corpus.test.ts", "-t", "^format_arguments_first.rs$"],
   },
   {

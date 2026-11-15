@@ -123,21 +123,17 @@ function main() {
   });
   $print(` caught ${r.TAG === "Err"}\n`);
   r = $catchUnwind(() => {
+    const value = new $BTreeMap([
+      [1, [1]],
+      [2, [6]],
+    ]);
     $printing(() => {
       $out("x ");
       $out(
         $composed((f) => {
           const map = $debugMap(f);
           map.entries(
-            Array.from(
-              $sortedEntries(
-                new $BTreeMap([
-                  [1, [1]],
-                  [2, [6]],
-                ]),
-                $cmp,
-              ),
-            ),
+            Array.from($sortedEntries(value, $cmp)),
             (entry) => String(entry[0]),
             (entry) => loudDebug_fmt(entry[1]),
           );

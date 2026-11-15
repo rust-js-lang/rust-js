@@ -242,22 +242,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // Where each placeholder's argument is written (ADR 0641, amended).
                     let arguments = crate::lower::format_args::placeholder_arguments(tcx, span, &template);
                     let arguments = arguments.as_deref().unwrap_or_default();
-                    let mut parts = this.written_parts(&items, &written, arguments, span)?;
-                    // Rust evaluates each argument before it formats any, where
-                    // the template formats each where it's written: where that
-                    // would run one after formatting that runs code, each
-                    // argument that does something is held first (ADR 0377).
-                    if this.formats_out_of_order(&items, &template, span)? {
-                        this.flush(state, out)?;
-                        for item in items.iter_mut() {
-                            if let Value::Fmt(_, _, value) = item
-                                && value.has_effects()
-                            {
-                                *value = this.spill(Base::Temporary, std::mem::replace(value, Expr::taken()), out);
-                            }
-                        }
-                        parts = this.written_parts(&items, &written, arguments, span)?;
-                    }
                     // Of what may fail, its `Arguments` say so to `format!`'s or
                     // `print!`'s: `fmt_may_fail` of each, by its trait (ADR 0187).
                     let fails = items.iter().any(|item| match *item {
@@ -274,6 +258,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         Value::Fmt(Std::FmtDisplay | Std::FmtDebug, ty, _) => this.shown_may_print(ty),
                         _ => false,
                     });
+                    let mut parts = this.written_parts(&items, &written, arguments, span)?;
+                    // Rust evaluates each argument before it formats any, where
+                    // the template formats each where it's written: where that
+                    // would run one after formatting that runs code, or after a
+                    // piece written apart, each argument that does something
+                    // is held first (ADR 0377).
+                    if this.formats_out_of_order(&items, &template, fails || prints, span)? {
+                        this.flush(state, out)?;
+                        for item in items.iter_mut() {
+                            if let Value::Fmt(_, _, value) = item
+                                && value.has_effects()
+                            {
+                                *value = this.spill(Base::Temporary, std::mem::replace(value, Expr::taken()), out);
+                            }
+                        }
+                        parts = this.written_parts(&items, &written, arguments, span)?;
+                    }
                     // What may fail is written piece by piece, so that what
                     // came before is written: its pieces kept apart (ADR 0187).
                     let joined = crate::lower::display::join_written(parts, fails || prints);

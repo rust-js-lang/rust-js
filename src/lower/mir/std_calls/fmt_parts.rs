@@ -10,8 +10,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `Debug` of the crate's, where Rust evaluates it first. Of its parts
     /// formatted with a stand-in for each argument, what each formatting
     /// runs alone. MIR's folding keeps the arguments in the order given, and
-    /// one read twice held.
-    pub(super) fn formats_out_of_order(&mut self, items: &[Value<'tcx>], template: &[Piece], span: Span) -> R<bool> {
+    /// one read twice held. Where its pieces are `written_apart`, each
+    /// written as it's made, through stdout's line or into a text that may
+    /// fail (#1490, ADR 0187), writing a piece is something done too, so an
+    /// argument that does something after one is evaluated out of order.
+    pub(super) fn formats_out_of_order(
+        &mut self,
+        items: &[Value<'tcx>],
+        template: &[Piece],
+        written_apart: bool,
+        span: Span,
+    ) -> R<bool> {
         let effectful: Vec<bool> = (items.iter())
             .map(|item| matches!(item, Value::Fmt(_, _, value) if value.has_effects()))
             .collect();
@@ -32,7 +41,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if reads && formatted {
                 return Ok(true);
             }
-            formatted |= part.runs_program_code();
+            formatted |= written_apart || part.runs_program_code();
         }
         Ok(false)
     }

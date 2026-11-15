@@ -88,3 +88,20 @@ case format_arguments_beside_an_address (a `Vec`'s, a tuple list's and a
 that print, beside a pointer's address) against native Rust in both
 builds; mutation format-argument-flushed-as-a-value, caught. All 6 of
 #1294's neighbour pairs run as native Rust.
+
+## Amendment (2026-11-15, #1883): a piece written apart is written
+
+Where a line is written a piece at a time, through stdout's line as a
+`Debug` that prints makes it (#1490, ADR 1130) or into a text whose
+formatting may fail (ADR 0187), each piece is written as it's made. An
+argument after a piece was still taken to run in order where no formatting
+before it ran code: `println!("generic derive {:?}", cloned(&w))` wrote
+`generic derive ` and then made the argument, whose `clone` printed, so
+`clone 7` landed inside the line, where Rust prints it first (the
+neighbour shuffle's `copied_of_a_copy_with_its_own_clone` beside a crate
+that prints as it formats, a P0). `formats_out_of_order` now takes each
+piece written apart as something done, so each argument that does
+something is held first: `const value = shout(8); $printing(() => {
+$out("lead "); $out(value); .. })`. Corpus case format_arguments_first (a line through
+stdout's and a failing `write!`) against native Rust; mutation
+pieces-written-apart-unordered, caught.

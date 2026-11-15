@@ -212,31 +212,31 @@ function main() {
     });
   });
   shown("e", () => {
+    const value = once(3);
     $printing(() => {
       $out("e ");
       $out(
-        ((value) =>
-          $composed((f) => {
-            const tuple = $debugTuple(f, "OnceCell");
-            tuple.field(() => (value.value == null ? "<uninit>" : gridDebug_fmt(value.value)));
-            tuple.finish();
-          }))(once(3)),
+        $composed((f) => {
+          const tuple = $debugTuple(f, "OnceCell");
+          tuple.field(() => (value.value == null ? "<uninit>" : gridDebug_fmt(value.value)));
+          tuple.finish();
+        }),
       );
       $out(" f\n");
     });
   });
   shown("g", () => {
+    const value = locked([3]);
     $printing(() => {
       $out("g ");
       $out(
-        ((value) =>
-          $composed((f) => {
-            const tuple = $debugTuple(f, "OnceLock", true);
-            tuple.field(() =>
-              value.value == null ? "<uninit>" : gridDebug_fmt(value.value, { alternate: true }),
-            );
-            tuple.finish();
-          }))(locked([3])),
+        $composed((f) => {
+          const tuple = $debugTuple(f, "OnceLock", true);
+          tuple.field(() =>
+            value.value == null ? "<uninit>" : gridDebug_fmt(value.value, { alternate: true }),
+          );
+          tuple.finish();
+        }),
       );
       $out(" h\n");
     });
@@ -768,46 +768,43 @@ function main() {
 
   // The iterators that show what they have left, `as_slice()`.
   shown("2", () => {
-    const value = [[3], [1]];
+    const value = $iter([[3], [1]]);
     $printing(() => {
       $out("2 ");
       $out(
-        ((value) =>
-          $composed((f) => {
-            const tuple = $debugTuple(f, "IntoIter");
-            tuple.field(() =>
-              $composed((f) => {
-                const list = $debugList(f);
-                list.entries(value.items.slice(value.at, value.end), (entry) =>
-                  gridDebug_fmt(entry),
-                );
-                list.finish();
-              }),
-            );
-            tuple.finish();
-          }))($iter(value)),
+        $composed((f) => {
+          const tuple = $debugTuple(f, "IntoIter");
+          tuple.field(() =>
+            $composed((f) => {
+              const list = $debugList(f);
+              list.entries(value.items.slice(value.at, value.end), (entry) => gridDebug_fmt(entry));
+              list.finish();
+            }),
+          );
+          tuple.finish();
+        }),
       );
       $out(" 3\n");
     });
   });
   shown("4", () => {
+    const value = $iter([[1], [3], [2]]);
     $printing(() => {
       $out("4 ");
       $out(
-        ((value) =>
-          $composed((f) => {
-            const tuple = $debugTuple(f, "IntoIter", true);
-            tuple.field(() =>
-              $composed((f) => {
-                const list = $debugList(f, true);
-                list.entries(value.items.slice(value.at, value.end), (entry) =>
-                  gridDebug_fmt(entry, { alternate: true }),
-                );
-                list.finish();
-              }),
-            );
-            tuple.finish();
-          }))($iter([[1], [3], [2]])),
+        $composed((f) => {
+          const tuple = $debugTuple(f, "IntoIter", true);
+          tuple.field(() =>
+            $composed((f) => {
+              const list = $debugList(f, true);
+              list.entries(value.items.slice(value.at, value.end), (entry) =>
+                gridDebug_fmt(entry, { alternate: true }),
+              );
+              list.finish();
+            }),
+          );
+          tuple.finish();
+        }),
       );
       $out(" 5\n");
     });
@@ -859,31 +856,31 @@ function main() {
     });
   });
   shown("q", () => {
+    const value = $iter([[1]]);
     $printing(() => {
       $out("q ");
       $out(
-        ((value) =>
-          value == null
-            ? "None"
-            : $composed((f) => {
-                const tuple = $debugTuple(f, "Some");
-                tuple.field(() =>
-                  $composed((f) => {
-                    const tuple = $debugTuple(f, "Iter");
-                    tuple.field(() =>
-                      $composed((f) => {
-                        const list = $debugList(f);
-                        list.entries(value.items.slice(value.at, value.end), (entry) =>
-                          gridDebug_fmt(entry),
-                        );
-                        list.finish();
-                      }),
-                    );
-                    tuple.finish();
-                  }),
-                );
-                tuple.finish();
-              }))($iter([[1]])),
+        value == null
+          ? "None"
+          : $composed((f) => {
+              const tuple = $debugTuple(f, "Some");
+              tuple.field(() =>
+                $composed((f) => {
+                  const tuple = $debugTuple(f, "Iter");
+                  tuple.field(() =>
+                    $composed((f) => {
+                      const list = $debugList(f);
+                      list.entries(value.items.slice(value.at, value.end), (entry) =>
+                        gridDebug_fmt(entry),
+                      );
+                      list.finish();
+                    }),
+                  );
+                  tuple.finish();
+                }),
+              );
+              tuple.finish();
+            }),
       );
       $out(" r\n");
     });
@@ -970,17 +967,17 @@ function main() {
   });
   failed(text, written);
   let text$1 = "";
+  const value = locked([3]);
   written = $writeTry(() => {
     try {
       text$1 += "b ";
-      text$1 += ((value) =>
-        $composed((f) => {
-          const tuple = $debugTuple(f, "OnceLock", true);
-          tuple.field(() =>
-            value.value == null ? "<uninit>" : failingDebug_fmt(value.value, { alternate: true }),
-          );
-          tuple.finish();
-        }))(locked([3]));
+      text$1 += $composed((f) => {
+        const tuple = $debugTuple(f, "OnceLock", true);
+        tuple.field(() =>
+          value.value == null ? "<uninit>" : failingDebug_fmt(value.value, { alternate: true }),
+        );
+        tuple.finish();
+      });
     } catch (error) {
       text$1 += $fmtPartial(error);
       throw error;
@@ -1054,7 +1051,7 @@ function main() {
   });
   failed(text$4, written);
   let text$5 = "";
-  const value = [
+  const value$1 = [
     { TAG: "Ready", _0: { start: [1], end: [2] } },
     { TAG: "Ready", _0: { start: [3], end: [1] } },
   ];
@@ -1063,7 +1060,7 @@ function main() {
       text$5 += "f ";
       text$5 += $composed((f) => {
         const list = $debugList(f);
-        list.entries(value, (entry) =>
+        list.entries(value$1, (entry) =>
           ((value) =>
             value.TAG === "Ready"
               ? $composed((f) => {
@@ -1132,24 +1129,23 @@ function main() {
   });
   failed(text$7, written);
   let text$8 = "";
-  const value$1 = [[1], [3]];
+  const value$2 = $iter([[1], [3]]);
   written = $writeTry(() => {
     try {
       text$8 += "i ";
-      text$8 += ((value) =>
-        $composed((f) => {
-          const tuple = $debugTuple(f, "IntoIter");
-          tuple.field(() =>
-            $composed((f) => {
-              const list = $debugList(f);
-              list.entries(value.items.slice(value.at, value.end), (entry) =>
-                failingDebug_fmt(entry),
-              );
-              list.finish();
-            }),
-          );
-          tuple.finish();
-        }))($iter(value$1));
+      text$8 += $composed((f) => {
+        const tuple = $debugTuple(f, "IntoIter");
+        tuple.field(() =>
+          $composed((f) => {
+            const list = $debugList(f);
+            list.entries(value$2.items.slice(value$2.at, value$2.end), (entry) =>
+              failingDebug_fmt(entry),
+            );
+            list.finish();
+          }),
+        );
+        tuple.finish();
+      });
     } catch (error) {
       text$8 += $fmtPartial(error);
       throw error;
@@ -1157,23 +1153,23 @@ function main() {
   });
   failed(text$8, written);
   let text$9 = "";
+  const value$3 = $iter([[3]]);
   written = $writeTry(() => {
     try {
       text$9 += "j ";
-      text$9 += ((value) =>
-        $composed((f) => {
-          const tuple = $debugTuple(f, "Iter", true);
-          tuple.field(() =>
-            $composed((f) => {
-              const list = $debugList(f, true);
-              list.entries(value.items.slice(value.at, value.end), (entry) =>
-                failingDebug_fmt(entry, { alternate: true }),
-              );
-              list.finish();
-            }),
-          );
-          tuple.finish();
-        }))($iter([[3]]));
+      text$9 += $composed((f) => {
+        const tuple = $debugTuple(f, "Iter", true);
+        tuple.field(() =>
+          $composed((f) => {
+            const list = $debugList(f, true);
+            list.entries(value$3.items.slice(value$3.at, value$3.end), (entry) =>
+              failingDebug_fmt(entry, { alternate: true }),
+            );
+            list.finish();
+          }),
+        );
+        tuple.finish();
+      });
     } catch (error) {
       text$9 += $fmtPartial(error);
       throw error;
