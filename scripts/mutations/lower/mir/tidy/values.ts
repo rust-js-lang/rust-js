@@ -248,7 +248,7 @@ export const mutations: Mutation[] = [
     find: "                && shown_present(test, made)\n",
     replace:
       "                && shown_present(test, made)\n                && false\n",
-    tests: ["test/lowering-nullable-reads.test.ts", "-t", "test shows present"],
+    tests: ["test/lowering-nullable-tests.test.ts", "-t", "a variable a part of an && shows there"],
   },
   {
     name: "present-place-of-an-or",
@@ -258,7 +258,7 @@ export const mutations: Mutation[] = [
     find: "        ExprKind::Binary(Op::And, a, b) => shown_present(a, place) || shown_present(b, place),\n",
     replace:
       "        ExprKind::Binary(Op::And | Op::Or, a, b) => shown_present(a, place) || shown_present(b, place),\n",
-    tests: ["test/lowering-nullable-reads.test.ts", "-t", "test shows present"],
+    tests: ["test/lowering-nullable-tests.test.ts", "-t", "a variable a part of an && shows there"],
   },
   {
     name: "lets-never-undefined-unread",
@@ -331,5 +331,13 @@ export const mutations: Mutation[] = [
     replace: "    if let Some(it) = crate::lower::iterators::lent_string_iterator(e).filter(|_| false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^long_text_read_char_by_char.rs$"],
     snapshots: true,
+  },
+  {
+    name: "field-path-shown-present",
+    breaks: "a field a test of an `&&` shows isn't `null`, `fiber.stateNode != null`, read again is stored as it is, where a getter of a struct JS gives may answer `undefined` the second time, stored where Rust stores `null` (#1950)",
+    file: "src/lower/mir/tidy/values.rs",
+    find: "                && !made.reads_a_field()\n",
+    replace: "",
+    tests: ["test/lowering-nullable-reads.test.ts", "-t", "test shows present"],
   },
 ];

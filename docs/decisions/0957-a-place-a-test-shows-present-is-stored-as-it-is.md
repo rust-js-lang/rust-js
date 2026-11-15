@@ -47,3 +47,27 @@ one set by a compound or a pattern. Held by
 `test/lowering-nullable-reads.test.ts`, "a let set only to values is
 returned as it is", and mutations `lets-never-undefined-unread` and
 `lets-never-undefined-of-closures`.
+
+## Amendment: a field so shown is not tidy's to say (2026-11-15, #1950)
+
+A field a test shows isn't `null`, `if (fiber.tag === HostComponent &&
+fiber.stateNode != null) { nextHydratableInstance = fiber.stateNode; }`,
+is read twice in JS, and a struct JS gives, a getter of which may answer
+each read anew (rd204, ADR 1022, #1908), may give `undefined` the second
+time: stored as it is, `undefined` where Rust stores `null`. That's a wrong
+answer, #1950 (P0). Tidy can't tell that struct from the program's own
+data in the printed JS, so its rule now takes **a variable alone**, a
+module's too, `chunk.value = deferred` after `deferred != null &&
+chunk.blocked`, never a read through a property (`Expr::reads_a_field`).
+A field so shown is the nulled owner's to prove, of the program's own data
+alone (`nulled::field_reads`, ADR 0620, amended, #1933).
+
+Case of [0262](0262-when-rust-and-js-disagree.md): results change, Rust's
+kept. React's port, the lead's decision on Tu's behalf: `nextHydratableInstance
+= fiber.stateNode ?? null` and `transitionCallbacks =
+options.unstable_transitionCallbacks ?? null` (twice), each of a struct JS
+gives. Held by test/lowering-nullable-reads.test.ts's "test shows present"
+(a getter answering a value, then `undefined`, stores `null`) and
+test/lowering-nullable-tests.test.ts's "a variable a part of an && shows
+there"; mutations `field-path-shown-present` new, `present-place-stored-coalesced`
+and `present-place-of-an-or` retargeted.

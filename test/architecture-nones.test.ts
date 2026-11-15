@@ -73,7 +73,8 @@ test("a read a test proved there is MIR's to say, and tidy's to forget as it beg
   const sources = files("src").filter((file) => file.endsWith(".rs"));
   const lines = (pattern: RegExp) => sources.flatMap((file) =>
     read(file).split("\n").filter((line) => !/^\s*\/\//.test(line) && pattern.test(line)).map(() => file));
-  expect(lines(/\.proved\(\)/)).toEqual(["src/lower/mir/operands.rs"]);
+  // A local's own tests (`proved_present`) and a field's (`field_read_proved`, #1933).
+  expect(lines(/\.proved\(\)/)).toEqual(["src/lower/mir/operands.rs", "src/lower/mir/operands.rs"]);
   expect(lines(/Expr::forget_proved\b|\.forget_proved\(\)/)).toEqual(["src/lower/mir/tidy/stages.rs"]);
   expect(lines(/\.with\((?:js::)?Known::Proved\)/)).toEqual(["src/js/known.rs"]);
   expect(read("src/lower/mir/tidy/contracts.rs")).toContain("&[JUMPS_LAND, DECLARED_ONCE, NOTHING_PROVED]");

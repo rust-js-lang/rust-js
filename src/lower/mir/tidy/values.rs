@@ -454,9 +454,12 @@ pub(super) fn nulled_as_they_are(body: &mut Vec<Stmt>) {
                     }
                 });
             }
-            // A place a test of an `&&` shows isn't `null`, `p.stateNode !=
-            // null`, read right after it, the first statement's value: as
-            // it is, nothing between (ADR 0957).
+            // A variable a test of an `&&` shows isn't `null`, a module's
+            // too, read right after it, the first statement's value: as it
+            // is, nothing between (ADR 0957). Not a field, `p.stateNode !=
+            // null`, which a getter of a struct JS gives may answer anew,
+            // `undefined` the second time (#1950): MIR's to prove of the
+            // program's own data (`nulled::field_reads`, #1933).
             if let StmtKind::If(test, then, _) = &mut stmt.kind
                 && then
                     .first()
@@ -467,6 +470,7 @@ pub(super) fn nulled_as_they_are(body: &mut Vec<Stmt>) {
                 && let ExprKind::Binary(Op::Coalesce, made, null) = &value.kind
                 && matches!(null.kind, ExprKind::Null)
                 && made.reads_same()
+                && !made.reads_a_field()
                 && shown_present(test, made)
             {
                 crate::decisions::record("tidy-nulled-as-they-are", "and-shown");

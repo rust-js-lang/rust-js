@@ -391,3 +391,209 @@ pub fn given(value: Option<&'static js::Unknown>, to: &Task) {
   lib.push(key);
   expect(lib.current()).toBe(key);
 });
+
+// A struct's `RefCell` field tested, then read again and unwrapped where
+// nothing runs between but that field's own reads, `while
+// node.sibling.borrow().is_none() { .. }` then
+// `node.sibling.borrow().clone().unwrap()`, is the field as it is: MIR's
+// answer (`field_read_proved`, #1933's step 1(b)), none of tidy's. Not
+// where a call runs between, nor of a struct JS gives, whose getter may
+// answer each read anew: its `$unwrap` stays, which tidy's reading of the
+// printed JS dropped (#1950).
+test("a RefCell field tested and read again with nothing between is unwrapped as it is", async () => {
+  const own = compile(
+    "nullable-tests-field-paths",
+    `use std::cell::RefCell;
+use std::rc::Rc;
+
+struct Fiber {
+    id: u32,
+    sibling: RefCell<Option<Rc<Fiber>>>,
+    parent: RefCell<Option<Rc<Fiber>>>,
+}
+
+fn fiber(id: u32) -> Rc<Fiber> {
+    Rc::new(Fiber { id, sibling: RefCell::new(None), parent: RefCell::new(None) })
+}
+
+fn next_sibling(fiber: &Rc<Fiber>) -> u32 {
+    let mut node = Rc::clone(fiber);
+    while node.sibling.borrow().is_none() {
+        let parent = node.parent.borrow().clone();
+        match parent {
+            Some(parent) => node = parent,
+            None => return 0,
+        }
+    }
+    let sibling = node.sibling.borrow().clone().unwrap();
+    sibling.id
+}
+
+fn tested(node: &Fiber) -> u32 {
+    if node.sibling.borrow().is_some() {
+        let sibling = node.sibling.borrow().clone().unwrap();
+        return sibling.id;
+    }
+    0
+}
+
+fn called(node: &Fiber, between: &dyn Fn()) -> u32 {
+    if node.sibling.borrow().is_some() {
+        between();
+        let sibling = node.sibling.borrow().clone().unwrap();
+        return sibling.id;
+    }
+    0
+}
+
+fn rebound(a: &Fiber, b: &Fiber) -> u32 {
+    let mut node = a;
+    if node.sibling.borrow().is_some() {
+        node = b;
+        let sibling = node.sibling.borrow().clone().unwrap();
+        return sibling.id;
+    }
+    0
+}
+
+#[derive(Clone)]
+struct Holder(u32);
+
+struct Holding {
+    held: RefCell<Option<Holder>>,
+}
+
+fn held(holding: &Holding) -> u32 {
+    if holding.held.borrow().is_some() {
+        return holding.held.borrow().clone().unwrap().0;
+    }
+    0
+}
+
+pub fn run() -> Vec<u32> {
+    let (root, a, b) = (fiber(1), fiber(2), fiber(3));
+    a.parent.replace(Some(Rc::clone(&root)));
+    root.sibling.replace(Some(Rc::clone(&b)));
+    let holding = Holding { held: RefCell::new(Some(Holder(5))) };
+    vec![next_sibling(&a), next_sibling(&b), tested(&root), tested(&a), called(&root, &|| {}), rebound(&root, &root), held(&holding)]
+}
+`,
+  );
+  expect(own.tidied).toEqual([]);
+  const js = readFileSync(join(own.dir, "lib.js"), "utf8");
+  const body = (name: string) => js.slice(js.indexOf(`function ${name}(`), js.indexOf("\n}\n", js.indexOf(`function ${name}(`)));
+  expect(body("called")).toContain("$unwrap(node.sibling)");
+  expect(body("rebound")).toContain("$unwrap(node.sibling)");
+  // A clone that may run the crate's code: not one this proves.
+  expect(body("held")).toContain("$unwrap(");
+  expect(body("nextSibling")).not.toContain("$unwrap");
+  expect(body("tested")).not.toContain("$unwrap");
+  const ownLib = await import(join(own.dir, "lib.js"));
+  expect(ownLib.run()).toEqual([3, 0, 3, 0, 3, 3, 5]);
+  // A struct JS gives an exported function: not MIR's to prove.
+  const given = compile(
+    "nullable-tests-field-paths-given",
+    `use std::cell::RefCell;
+use std::rc::Rc;
+
+pub struct Fiber {
+    pub id: u32,
+    pub sibling: RefCell<Option<Rc<Fiber>>>,
+}
+
+pub fn tested(node: &Fiber) -> u32 {
+    if node.sibling.borrow().is_some() {
+        let sibling = node.sibling.borrow().clone().unwrap();
+        return sibling.id;
+    }
+    0
+}
+`,
+  );
+  expect(given.tidied).toEqual([]);
+  expect(given.fn("tested")).toContain("$unwrap(node.sibling)");
+  // Its getter answers `Some`, then `None`: Rust's `unwrap()` panics, as
+  // `$unwrap` throws, where a read as it is threw a `TypeError` (#1950).
+  const givenLib = await import(join(given.dir, "lib.js"));
+  let reads = 0;
+  const node = {
+    id: 1,
+    get sibling() {
+      reads += 1;
+      return reads === 1 ? { id: 3, sibling: undefined } : undefined;
+    },
+  };
+  expect(() => givenLib.tested(node)).toThrow("called `Option::unwrap()` on a `None` value");
+  expect(givenLib.tested({ id: 1, sibling: { id: 4, sibling: undefined } })).toBe(4);
+});
+
+// A variable a part of an `&&` shows there, read right after it, as React's
+// Flight client's `deferred`, lent as a `&mut` so MIR proves nothing of it:
+// stored as it is, tidy's reading of the JS (ADR 0957); of an `||`'s part,
+// `?? null`. A field so shown is MIR's alone (#1950, above).
+test("a variable a part of an && shows there is stored as it is", async () => {
+  const { dir, fn, tidied } = compile(
+    "nullable-tests-and-shown",
+    `use std::cell::RefCell;
+
+pub struct Chunk {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub value: RefCell<Option<Vec<u32>>>,
+    pub blocked: bool,
+}
+
+pub fn defer(items: Vec<u32>, chunk: &Chunk) {
+    let mut deferred: Option<Vec<u32>> = None;
+    for item in items {
+        deferred.get_or_insert_with(Vec::new).push(item);
+    }
+    if deferred.is_some() && chunk.blocked {
+        *chunk.value.borrow_mut() = deferred;
+    }
+}
+
+// A field so shown, of a struct JS gives: \`?? null\` (#1950).
+pub struct Given {
+    pub pending: Option<u32>,
+    pub blocked: bool,
+}
+
+pub struct Target {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub pending: Option<u32>,
+}
+
+pub fn restore(given: &Given, to: &mut Target) {
+    if given.blocked && given.pending.is_some() {
+        to.pending = given.pending;
+    }
+}
+
+pub fn defer_or(items: Vec<u32>, chunk: &Chunk) {
+    let mut deferred: Option<Vec<u32>> = None;
+    for item in items {
+        deferred.get_or_insert_with(Vec::new).push(item);
+    }
+    if chunk.blocked || deferred.is_some() {
+        *chunk.value.borrow_mut() = deferred;
+    }
+}
+`,
+  );
+  expect(tidied).toEqual(["tidy-nulled-as-they-are and-shown"]);
+  expect(fn("defer")).toContain("    chunk.value = deferred;\n");
+  expect(fn("deferOr")).toContain("    chunk.value = deferred ?? null;\n");
+  const lib = await import(join(dir, "lib.js"));
+  const chunk: { value: unknown; blocked: boolean } = { value: null, blocked: true };
+  lib.defer([4, 5], chunk);
+  expect(chunk.value).toEqual([4, 5]);
+  lib.deferOr([], chunk);
+  expect(chunk.value).toBe(null);
+  // Its getter answers a value, then `undefined`: Rust's second read is a
+  // `None`, stored `null` (#1950).
+  expect(fn("restore")).toContain("?? null");
+  let reads = 0;
+  const to: { pending: unknown } = { pending: 1 };
+  lib.restore({ blocked: true, get pending() { reads += 1; return reads === 1 ? 7 : undefined; } }, to);
+  expect(to.pending).toBe(null);
+});

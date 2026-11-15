@@ -391,3 +391,59 @@ library too, its metamorphic rewrites); mutations `cell-field-held-unknown`,
 `cleanup-write-counted` and `cell-field-getter-read-defined` new,
 `optional-cell-get-unknown`, `constructed-get-unknown` and
 `nullable-field-read-may-be-undefined` retargeted.
+
+## Amendment: a `RefCell` field's read where a test of the same field proved it, MIR's to say (2026-11-15, #1933 step 1(b))
+
+A test of a struct's `RefCell` field and a later read of it are two
+borrows, two MIR temporaries, so `proved_present`, of a local's own tests,
+never said `while node.sibling.borrow().is_none() { .. }` then
+`node.sibling.borrow().clone().unwrap()` is there; tidy's `present_in`
+read it from the printed JS, `while (node.sibling == null)` then
+`$unwrap(node.sibling)`. The nulled owner now proves it,
+`nulled::field_reads::field_read_proved`, the lead's approved design:
+
+- **The read**: a local one clone writes of what the field's std guard
+  derefs to, `borrow()`'s `Ref`.
+- **The test**: `is_some()`'s true edge or `is_none()`'s false one of the
+  same field, the same path from the same variable (a field, a shared
+  reference's deref, an `Rc`'s or an `Arc`'s `Deref` on the way), whose
+  edge every path to the read takes, entered from its switch alone.
+- **Nothing between**: on each way from the test's call to the read, not
+  back through the test, which reads the field anew, only that field's
+  own reads run: its `borrow()`, the std guard's deref and drop, an `Rc`'s
+  or an `Arc`'s deref, a test of an `Option`, a clone of an `Option` of a
+  reference, a number, a string, an `Rc` or an `Arc` (std's, no code of
+  the crate's), and assignments of locals; never the variable the path
+  begins at, nor a write through a place.
+- **Of the program's own data**: not a struct JS gives or makes, whose
+  getter may answer each read anew (`fields_read_once`, rd204, #1908).
+
+The read is `Known::Proved`, which tidy forgets as it begins, as a local's
+is; read where it's made, `$unwrap(node.sibling)`'s temporary, too.
+Corpus: tidy's presence answers 0 (the field-path case `while_exit_continues`
+the MIR's now).
+
+**Tidy's own reading of a field path goes** (#1950, P0): its `present_in`
+took `$unwrap(node.sibling)` after `node.sibling != null` as the field, of
+any struct, where one JS gives, whose getter answers `Some` and then
+`None`, threw a `TypeError` in place of Rust's panic. `present_in`'s
+unwrap now takes a variable alone, a module's too, never a read through a
+property (`Expr::reads_a_field`); ADR 0957's rule likewise. React's 8
+`$unwrap(node.sibling)` sites are of `Fiber`, a struct its exported
+functions take, which the owner says JS may give, so MIR doesn't prove
+them: `$unwrap` there, the lead's decision on Tu's behalf, correctness
+first. Whether a struct the crate builds and JS never builds may be read
+anew is Tu's open question, an ADR 0262 "rare and harmless" exception of
+the kind of #1908's props.
+
+Case of [0262](0262-when-rust-and-js-disagree.md): results change of a
+struct JS gives, Rust's kept (#1950); of the program's own data, none.
+Held by test/lowering-nullable-tests.test.ts's "a RefCell field tested and
+read again" (the loop's exit, an `if`'s, no tidy answer counted; a call
+between, the variable set to another and a clone that may run the crate's
+code keeping `$unwrap`; a struct JS gives keeping it, its getter answering
+`Some`, then `None`, panicking as Rust does; run) and the corpus
+case `field_read_tested_then_unwrapped` (native, both builds: a user's
+`Clone` and a call between that empty the field, each panicking as Rust
+does); mutations in lower/mir/nulled/field_reads.ts, and
+`field-path-unwrap-tidied` (lower/mir/tidy/decided.ts) new.

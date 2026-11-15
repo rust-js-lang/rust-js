@@ -503,6 +503,22 @@ impl Expr {
         }
     }
 
+    /// Whether this reads a property, `node.sibling` or `items[i]`, which a
+    /// getter of an object JS gives may answer anew at each read, where a
+    /// variable's read, a module's too, is the value it holds (#1950).
+    pub fn reads_a_field(&self) -> bool {
+        match &self.kind {
+            // A module item's cell's `value`, a thread-local's, the
+            // module's own.
+            ExprKind::Member(cell, _) if cell.facts.has(Known::LocalRead) || cell.facts.has(Known::Item) => false,
+            ExprKind::Member(..) | ExprKind::OptionalMember(..) | ExprKind::Index(..) | ExprKind::OptionalIndex(..) => {
+                true
+            }
+            ExprKind::Handle(held, _) => held.reads_a_field(),
+            _ => false,
+        }
+    }
+
     /// Whether this reads nothing but variables, and does nothing: no
     /// call, and no property, which something done meanwhile could change
     /// through a `&mut`. Elements, conditions and literals of variables.

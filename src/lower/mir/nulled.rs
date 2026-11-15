@@ -8,6 +8,7 @@ use crate::collections::{IndexMap, IndexSet};
 use crate::lower::aggregates::Given;
 use crate::lower::representation::NoneForm;
 
+mod field_reads;
 mod one_none;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {

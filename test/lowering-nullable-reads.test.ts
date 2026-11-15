@@ -118,7 +118,7 @@ pub fn next() -> Option<&'static Unknown> {
   );
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("  if (fiber.tag === 5 && fiber.stateNode != null) {\n    NEXT = fiber.stateNode;\n  }\n");
+  expect(js).toContain("  if (fiber.tag === 5 && fiber.stateNode != null) {\n    NEXT = fiber.stateNode ?? null;\n  }\n");
   const lib = await import(join(dir, "lib.js"));
   const node = {};
   lib.restore({ tag: 5, stateNode: undefined });

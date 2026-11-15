@@ -1783,7 +1783,17 @@ missing key, `unreachable!`, `todo!` ([0012](../decisions/0012-panics-and-runtim
   create(self.surface.get().unwrap())`, is `this.surface = make();
   create(this.surface);`, as nothing could take the `Some` out between; a
   call that runs first, or a statement between, keeps the check, `$unwrap`
-  ([0294](../decisions/0294-unwrap-unchecked.md), amended).
+  ([0294](../decisions/0294-unwrap-unchecked.md), amended). So is a
+  `RefCell` field's `borrow().clone().unwrap()` after a test of the same
+  field holds, `while node.sibling.borrow().is_none() { .. }` then
+  `node.sibling.borrow().clone().unwrap()`, `const sibling =
+  node.sibling;`, where nothing runs between but that field's own reads;
+  a call between, a clone that may run the crate's code, the variable set
+  to another, or a struct JS gives, whose getter may answer each read
+  anew, keeps it, and so does a nullable field's store after such a test,
+  `?? null` ([0620](../decisions/0620-an-option-a-test-says-is-there.md),
+  [0957](../decisions/0957-a-place-a-test-shows-present-is-stored-as-it-is.md),
+  amended, #1950).
 - **A getter's function unwrapped where it's called is the read:**
   `console::create_task().unwrap()(name)` is `console.createTask(name)`,
   and of a host without it the call's `TypeError` is what's thrown, where

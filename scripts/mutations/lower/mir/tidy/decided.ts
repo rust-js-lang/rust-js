@@ -96,20 +96,16 @@ export const mutations: Mutation[] = [
     tests: [
       "test/lowering-nullable.test.ts",
       "-t",
-      "an unwrap of a field a test says is there",
+      "an unwrap of a field of a struct JS gives",
     ],
   },
   {
     name: "unwrap-of-tested-kept",
     breaks: "an `$unwrap(p)` where the test says `p` is there stays",
     file: "src/lower/mir/tidy/decided.rs",
-    find: "            Some((_, option, _)) if option.reads_same() && there(option) => {\n",
+    find: "            Some((_, option, _)) if option.reads_same() && !option.reads_a_field() && there(option) => {\n",
     replace: "            Some((_, option, _)) if false && there(option) => {\n",
-    tests: [
-      "test/lowering-nullable.test.ts",
-      "-t",
-      "an unwrap of a field a test says is there",
-    ],
+    tests: ["test/lowering-early-exits.test.ts", "-t", "a module variable returned after its test"],
   },
   {
     name: "unwrap-past-a-call",
@@ -122,7 +118,7 @@ export const mutations: Mutation[] = [
     tests: [
       "test/lowering-nullable.test.ts",
       "-t",
-      "an unwrap of a field a test says is there",
+      "an unwrap of a field of a struct JS gives",
     ],
   },
   {
@@ -133,5 +129,13 @@ export const mutations: Mutation[] = [
     find: "        if !settled(stmts, i) {\n            i += 1;\n        }\n",
     replace: "        i += 1;\n",
     tests: ["test/corpus.test.ts", "-t", "^or_pattern_(unreachable_alternative|guard_fails_some).rs$"],
+  },
+  {
+    name: "field-path-unwrap-tidied",
+    breaks: "a field read again after a test of it, `$unwrap(node.sibling)`, is taken as there, where a getter of a struct JS gives may answer `None` the second time, a `TypeError` where Rust panics (#1950)",
+    file: "src/lower/mir/tidy/decided.rs",
+    find: "            Some((_, option, _)) if option.reads_same() && !option.reads_a_field() && there(option) => {\n",
+    replace: "            Some((_, option, _)) if option.reads_same() && there(option) => {\n",
+    tests: ["test/lowering-nullable-tests.test.ts", "-t", "a RefCell field tested and read again"],
   },
 ];

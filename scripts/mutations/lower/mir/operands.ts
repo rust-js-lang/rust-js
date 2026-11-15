@@ -411,4 +411,12 @@ export const mutations: Mutation[] = [
     replace: "                    && self.proved_present(state, place.local)\n                    && false =>\n",
     tests: ["test/lowering-nullable-truthy.test.ts"],
   },
+  {
+    name: "field-read-never-proved",
+    breaks: "a `RefCell` field read where a test of it proved it is `$unwrap(node.sibling)`, where `node.sibling` (#1933)",
+    file: "src/lower/mir/operands.rs",
+    find: "                    && self.field_read_proved(state, place.local) =>\n",
+    replace: "                    && false =>\n",
+    tests: ["test/lowering-nullable-tests.test.ts", "-t", "a RefCell field tested and read again"],
+  },
 ];

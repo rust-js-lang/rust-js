@@ -339,7 +339,8 @@ test("React's describeNativeComponentFrame's loops are upstream's", () => {
 // ports it. Its inner `while` walks up while a fiber has no sibling, the
 // `return None` of its `match` a `return`, and what follows the loop, a
 // `continue` of the outer one, after it: upstream's nested loops, with no
-// label round either.
+// label round either. Its `Fiber` one JS may give, whose getter may answer
+// each read anew, its sibling's read after the loop keeps its check (#1950).
 test("React's findFirstSuspended's loops are upstream's, with no label", async () => {
   const node = buildNode();
   const dir = fixture("find-first-suspended");
@@ -469,7 +470,7 @@ pub fn find_first_list(row: &Rc<Fiber>) -> Option<Rc<Fiber>> {
       "      }\n" +
       "      node = returnFiber;\n" +
       "    }\n" +
-      "    const sibling = node.sibling;\n",
+      "    const sibling = $unwrap(node.sibling);\n",
   );
   const lib = await import(join(dir, "lib.js"));
   const fiber = (tag: number): Record<string, unknown> => ({ tag, flags: 0, return: null, child: null, sibling: null, memoizedProps: null, memoizedState: null });

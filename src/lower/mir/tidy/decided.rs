@@ -108,8 +108,8 @@ fn decided_in(stmts: &mut Vec<Stmt>, from: usize, (test, written): (&Expr, &[js:
                 j += 1;
             }
             _ => match disturbs_any(std::slice::from_ref(&stmts[j]), test) {
-                // What it reads first, before what it does, `const sibling =
-                // $unwrap(node.sibling)`, read where the test is known.
+                // What it reads first, before what it does, `return
+                // $unwrap(current)`, read where the test is known.
                 true => {
                     present_in(&mut stmts[j], test, holds, true);
                     return;
@@ -165,12 +165,14 @@ fn settled(stmts: &mut Vec<Stmt>, j: usize) -> bool {
 /// Of `stmt`, where `test` is known to hold, or to fail, each `x ?? d` of
 /// a variable it says is there, `typeof x === "function"` holding or `x ==
 /// null` failing: `x`, which `d` never replaces (ADR 0620); and each
-/// `$unwrap(p)` of a `p` it says is there that reads the same, a field read
-/// again, `while (node.sibling != null) { .. $unwrap(node.sibling) }`: `p`
-/// (ADR 0620, amended). Of one that `disturbs`, `first`, only the value it
-/// reads before what it does, `const sibling = $unwrap(node.sibling)`, and
-/// what it returns, a module variable's `return $unwrap(current)` after its
-/// `if (current == null) { throw .. }` (rd443).
+/// `$unwrap(x)` of a variable it says is there, a module's too: `x` (ADR
+/// 0620, amended).
+/// Not a field read again, `$unwrap(node.sibling)`, which a getter of a
+/// struct JS gives may answer anew, `None` the second time (#1950): MIR's
+/// to prove of the program's own data (`nulled::field_reads`, #1933). Of
+/// one that `disturbs`, `first`, only the value it reads before what it
+/// does, and what it returns, a module variable's `return $unwrap(current)`
+/// after its `if (current == null) { throw .. }` (rd443).
 fn present_in(stmt: &mut Stmt, test: &Expr, holds: bool, first: bool) {
     let known = match holds {
         true => test.clone(),
@@ -183,7 +185,7 @@ fn present_in(stmt: &mut Stmt, test: &Expr, holds: bool, first: bool) {
             *e = (**x).clone().or_at(e.span);
         }
         _ => match crate::lower::std_types::option::unwrap_tested(e) {
-            Some((_, option, _)) if option.reads_same() && there(option) => {
+            Some((_, option, _)) if option.reads_same() && !option.reads_a_field() && there(option) => {
                 crate::decisions::record("tidy-present-in", "unwrap");
                 *e = option.clone().or_at(e.span)
             }

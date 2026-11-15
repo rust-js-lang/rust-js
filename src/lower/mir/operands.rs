@@ -102,7 +102,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 Value::Expr(e.proved())
             }
-            read => read,
+            read => self.field_read_marked(state, operand, read),
         };
         match none_read(state, operand, read) {
             Value::Expr(e) if copied => {
@@ -118,6 +118,31 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }))
             }
             value => Ok(value),
+        }
+    }
+
+    /// `read`, of `operand`, an `Option` a temporary or a variable holds
+    /// of a struct's `RefCell` field, `node.sibling.borrow().clone()`,
+    /// read where a test of the same field proved it (`field_read_proved`,
+    /// #1933 step 1(b)): `Known::Proved`, which tidy forgets, as
+    /// `proved_present`'s is; read as a variable, or where it's made,
+    /// `node.sibling`, a temporary's read (`take_operands`).
+    pub(super) fn field_read_marked(
+        &self,
+        state: &State<'_, 'tcx>,
+        operand: &Operand<'tcx>,
+        read: Value<'tcx>,
+    ) -> Value<'tcx> {
+        match read {
+            Value::Expr(e)
+                if let Some(place) = operand.place()
+                    && place.projection.is_empty()
+                    && self.option_of(operand.ty(&state.body.local_decls, self.tcx)).is_some()
+                    && self.field_read_proved(state, place.local) =>
+            {
+                Value::Expr(e.proved())
+            }
+            read => read,
         }
     }
 

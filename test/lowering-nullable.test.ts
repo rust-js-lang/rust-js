@@ -1343,7 +1343,7 @@ pub fn take_banner(props: &Props) -> Option<String> {
 // again, nothing between, so it's the field, no \`$unwrap\`; where a call
 // comes between, which may change it, the \`$unwrap\` stays (ADR 0620,
 // amended).
-test("an unwrap of a field a test says is there is the field", async () => {
+test("an unwrap of a field of a struct JS gives keeps its check where a test says it is there", async () => {
   const dir = fixture("unwrap-tested-field");
   writeFileSync(
     join(dir, "lib.rs"),
@@ -1383,7 +1383,7 @@ pub fn changed(node: &Fiber, clear: &dyn Fn(&Fiber)) -> String {
   );
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("const sibling = node.sibling;\n");
+  expect(js).not.toContain("const sibling = node.sibling;\n");
   expect(js).toContain("const sibling = $unwrap(node.sibling);\n");
   const lib = await import(join(dir, "lib.js"));
   const uncle = lib.fiber("uncle", null, null);
