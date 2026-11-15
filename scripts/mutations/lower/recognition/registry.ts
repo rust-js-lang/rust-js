@@ -19,4 +19,12 @@ export const mutations: Mutation[] = [
     replace: "        let module = at.1;\n",
     tests: ["test/crates.test.ts", "-t", "no_std"],
   },
+  {
+    name: "by-path-last-a-module",
+    breaks: "a path's last part is the first child of that name, a module where it has the item's name too: `std::future::ready` is `core::future`'s module `ready`, not the function it re-exports, so `future::ready(v)` is no promise's",
+    file: "src/lower/recognition/registry.rs",
+    find: "                (named.iter().find(|(kind, _)| *kind != DefKind::Mod).or(named.first())).copied()?\n",
+    replace: "                named.first().copied()?\n",
+    tests: ["test/corpus.test.ts", "-t", "^future_held_where_nothing_shows.rs$"],
+  },
 ];

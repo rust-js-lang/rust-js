@@ -186,14 +186,23 @@ pub(super) fn by_path(tcx: TyCtxt<'_>, krate: StdCrate, path: &[&str]) -> Option
 pub(super) fn by_path_kind(tcx: TyCtxt<'_>, krate: StdCrate, path: &[&str]) -> Option<(DefKind, DefId)> {
     let root = super::std_crate_num(tcx, krate)?;
     let mut at = (DefKind::Mod, root.as_def_id());
-    for part in path {
+    for (i, part) in path.iter().enumerate() {
         let (DefKind::Mod, module) = at else {
             return None;
         };
-        at = (tcx.module_children(module).iter()).find_map(|child| match child.res {
+        let mut named = (tcx.module_children(module).iter()).filter_map(|child| match child.res {
             Res::Def(kind, id) if child.ident.as_str() == *part => Some((kind, id)),
             _ => None,
-        })?;
+        });
+        // The last part an item where a module has its name too, `future::ready`,
+        // the function `core::future` re-exports of its module `ready`.
+        at = match i + 1 == path.len() {
+            true => {
+                let named: Vec<_> = named.collect();
+                (named.iter().find(|(kind, _)| *kind != DefKind::Mod).or(named.first())).copied()?
+            }
+            false => named.find(|(kind, _)| *kind == DefKind::Mod).or_else(|| named.next())?,
+        };
     }
     Some(at)
 }

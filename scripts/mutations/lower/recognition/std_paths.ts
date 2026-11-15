@@ -20,4 +20,12 @@ export const mutations: Mutation[] = [
     replace: "    std_paths(tcx).by_id.get(&id).copied().filter(|_| false)\n",
     tests: ["test/corpus.test.ts", "-t", "^env_vars.rs$"],
   },
+  {
+    name: "std-paths-primitive-method-last",
+    breaks: "a row of a primitive's method is resolved as its path without `<impl str>` first, the free function `std::str::from_utf8`, so two rows are one item, an internal error every compile",
+    file: "src/lower/recognition/std_paths.rs",
+    find: "        let found = primitive_method(tcx, item.path()).or(found);\n",
+    replace: "        let found = found.or_else(|| primitive_method(tcx, item.path()));\n",
+    tests: ["test/std-paths.test.ts"],
+  },
 ];

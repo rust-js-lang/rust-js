@@ -3,7 +3,7 @@
 
 use crate::js::Expr;
 use crate::lower::FnCx;
-use crate::lower::recognition::{Std, StdItem};
+use crate::lower::recognition::{Std, StdItem, StdPath};
 use rustc_middle::ty::{self, Ty};
 
 /// What's asked of `std::future`.
@@ -13,10 +13,10 @@ pub(in crate::lower) enum FutureOp {
     Ready,
 }
 
-/// Which of `std::future`'s functions `path` is, as std names it.
-pub(in crate::lower) fn future_op(path: &str) -> Option<FutureOp> {
-    match path {
-        "std::future::ready" => Some(FutureOp::Ready),
+/// Which of `std::future`'s functions `item` is.
+pub(in crate::lower) fn future_op(item: Option<StdPath>) -> Option<FutureOp> {
+    match item {
+        Some(StdPath::FutureReadyFn) => Some(FutureOp::Ready),
         _ => None,
     }
 }

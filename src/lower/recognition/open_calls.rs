@@ -4,7 +4,7 @@
 //! `refusal::words`). Known here, as only recognition spells std's names;
 //! the issues are the refusal's.
 
-use super::{StdItem, is_std_def, std_path};
+use super::{StdItem, StdPath, is_std_def, is_std_path};
 use rustc_hir::def_id::DefId;
 use rustc_middle::ty::{self, TyCtxt};
 
@@ -55,7 +55,7 @@ pub(crate) fn open_call(tcx: TyCtxt<'_>, id: DefId) -> Option<OpenCall> {
     }
     if tcx
         .trait_of_assoc(id)
-        .is_some_and(|trait_id| std_path(tcx, trait_id) == "std::hash::BuildHasher")
+        .is_some_and(|trait_id| is_std_path(tcx, trait_id, StdPath::HashBuildHasher))
     {
         return Some(OpenCall::BuildHasher);
     }

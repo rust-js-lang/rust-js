@@ -111,7 +111,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let peekable = self.is_peekable(owner);
         let chars = self.is_str_chars(owner) || self.is_string_drain(owner);
         let slice_iter = adt(StdItem::SliceIter)
-            || matches!(owner.kind(), ty::Adt(it, _) if std_path(tcx, it.did()) == "std::vec::IntoIter");
+            || matches!(owner.kind(), ty::Adt(it, _) if is_std_path(tcx, it.did(), StdPath::VecIntoIter));
         let own = match name.as_str() {
             name if let Some(op) = self.channel_end(owner).and_then(|end| channel_op(end, name)) => {
                 Some(Std::Channel(op))

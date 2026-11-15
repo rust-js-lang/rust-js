@@ -16,7 +16,7 @@
 
 use crate::js::Expr;
 use crate::lower::calls::Call;
-use crate::lower::recognition::{Std, StdItem};
+use crate::lower::recognition::{Std, StdItem, StdPath};
 use crate::lower::{FnCx, R};
 use rustc_middle::ty;
 
@@ -151,33 +151,33 @@ enum Called {
 /// `OpenOptions`'s `new` and each flag's setter, of its method's name; a
 /// `File`'s that ask the OS of it; and what a `Metadata`, a `FileType` or a
 /// `DirEntry` answers (#1397). The one list of them.
-pub(in crate::lower) fn fs_method_op(path: &str) -> Option<FsOp> {
-    Some(match path {
-        "std::fs::OpenOptions::new" | "std::fs::File::options" => FsOp::OptionsNew,
-        "std::fs::OpenOptions::read" => FsOp::OptionsSet("read"),
-        "std::fs::OpenOptions::write" => FsOp::OptionsSet("write"),
-        "std::fs::OpenOptions::append" => FsOp::OptionsSet("append"),
-        "std::fs::OpenOptions::truncate" => FsOp::OptionsSet("truncate"),
-        "std::fs::OpenOptions::create" => FsOp::OptionsSet("create"),
-        "std::fs::OpenOptions::create_new" => FsOp::OptionsSet("createNew"),
-        "std::fs::File::metadata" => FsOp::FileMetadata,
-        "std::fs::File::sync_all" => FsOp::SyncAll,
-        "std::fs::File::sync_data" => FsOp::SyncData,
-        "std::fs::File::set_len" => FsOp::SetLen,
-        "std::fs::Metadata::len" => FsOp::Field("size"),
-        "std::fs::Metadata::is_file" => FsOp::StatsMethod("isFile"),
-        "std::fs::Metadata::is_dir" => FsOp::StatsMethod("isDirectory"),
-        "std::fs::Metadata::is_symlink" => FsOp::StatsMethod("isSymbolicLink"),
-        "std::fs::Metadata::file_type" => FsOp::FileTypeOf,
-        "std::fs::Metadata::modified" => FsOp::Time("$modified"),
-        "std::fs::Metadata::accessed" => FsOp::Time("$accessed"),
-        "std::fs::FileType::is_file" => FsOp::FileTypeIs("file"),
-        "std::fs::FileType::is_dir" => FsOp::FileTypeIs("dir"),
-        "std::fs::FileType::is_symlink" => FsOp::FileTypeIs("symlink"),
-        "std::fs::DirEntry::path" => FsOp::Field("path"),
-        "std::fs::DirEntry::file_name" => FsOp::Field("name"),
-        "std::fs::DirEntry::file_type" => FsOp::EntryType,
-        "std::fs::DirEntry::metadata" => FsOp::EntryMetadata,
+pub(in crate::lower) fn fs_method_op(item: Option<StdPath>) -> Option<FsOp> {
+    Some(match item {
+        Some(StdPath::OpenOptionsNew | StdPath::FileOptions) => FsOp::OptionsNew,
+        Some(StdPath::OpenOptionsRead) => FsOp::OptionsSet("read"),
+        Some(StdPath::OpenOptionsWrite) => FsOp::OptionsSet("write"),
+        Some(StdPath::OpenOptionsAppend) => FsOp::OptionsSet("append"),
+        Some(StdPath::OpenOptionsTruncate) => FsOp::OptionsSet("truncate"),
+        Some(StdPath::OpenOptionsCreate) => FsOp::OptionsSet("create"),
+        Some(StdPath::OpenOptionsCreateNew) => FsOp::OptionsSet("createNew"),
+        Some(StdPath::FileMetadata) => FsOp::FileMetadata,
+        Some(StdPath::FileSyncAll) => FsOp::SyncAll,
+        Some(StdPath::FileSyncData) => FsOp::SyncData,
+        Some(StdPath::FileSetLen) => FsOp::SetLen,
+        Some(StdPath::MetadataLen) => FsOp::Field("size"),
+        Some(StdPath::MetadataIsFile) => FsOp::StatsMethod("isFile"),
+        Some(StdPath::MetadataIsDir) => FsOp::StatsMethod("isDirectory"),
+        Some(StdPath::MetadataIsSymlink) => FsOp::StatsMethod("isSymbolicLink"),
+        Some(StdPath::MetadataFileType) => FsOp::FileTypeOf,
+        Some(StdPath::MetadataModified) => FsOp::Time("$modified"),
+        Some(StdPath::MetadataAccessed) => FsOp::Time("$accessed"),
+        Some(StdPath::FileTypeIsFile) => FsOp::FileTypeIs("file"),
+        Some(StdPath::FileTypeIsDir) => FsOp::FileTypeIs("dir"),
+        Some(StdPath::FileTypeIsSymlink) => FsOp::FileTypeIs("symlink"),
+        Some(StdPath::DirEntryPath) => FsOp::Field("path"),
+        Some(StdPath::DirEntryFileName) => FsOp::Field("name"),
+        Some(StdPath::DirEntryFileType) => FsOp::EntryType,
+        Some(StdPath::DirEntryMetadata) => FsOp::EntryMetadata,
         _ => return None,
     })
 }

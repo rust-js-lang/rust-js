@@ -8,7 +8,7 @@
 
 use crate::js::{Expr, Prop, Stmt, StmtKind};
 use crate::lower::calls::Call;
-use crate::lower::recognition::{Std, TypeFact};
+use crate::lower::recognition::{Std, StdPath, TypeFact};
 use crate::lower::{FnCx, R};
 
 /// What's asked of the allocator, or of a `Layout`.
@@ -39,20 +39,20 @@ pub(in crate::lower) enum AllocOp {
     SetLen,
 }
 
-/// Which of the allocator's functions `path` is.
-pub(in crate::lower) fn alloc_op(path: &str) -> Option<AllocOp> {
-    Some(match path {
-        "std::alloc::alloc" => AllocOp::Alloc,
-        "std::alloc::realloc" => AllocOp::Realloc,
-        "std::alloc::dealloc" => AllocOp::Dealloc,
-        "std::alloc::handle_alloc_error" => AllocOp::Error,
-        "std::alloc::Layout::from_size_align" => AllocOp::Layout,
-        "std::alloc::Layout::new" => AllocOp::New,
-        "std::alloc::Layout::from_size_align_unchecked" => AllocOp::Unchecked,
-        "std::alloc::Layout::size" => AllocOp::Size,
-        "std::alloc::Layout::align" => AllocOp::Align,
-        "std::vec::Vec::<T>::from_raw_parts" => AllocOp::VecFromRaw,
-        "std::vec::Vec::<T, A>::set_len" => AllocOp::SetLen,
+/// Which of the allocator's functions `item` is.
+pub(in crate::lower) fn alloc_op(item: Option<StdPath>) -> Option<AllocOp> {
+    Some(match item {
+        Some(StdPath::AllocFn) => AllocOp::Alloc,
+        Some(StdPath::AllocReallocFn) => AllocOp::Realloc,
+        Some(StdPath::AllocDeallocFn) => AllocOp::Dealloc,
+        Some(StdPath::AllocHandleAllocErrorFn) => AllocOp::Error,
+        Some(StdPath::LayoutFromSizeAlign) => AllocOp::Layout,
+        Some(StdPath::LayoutNew) => AllocOp::New,
+        Some(StdPath::LayoutFromSizeAlignUnchecked) => AllocOp::Unchecked,
+        Some(StdPath::LayoutSize) => AllocOp::Size,
+        Some(StdPath::LayoutAlign) => AllocOp::Align,
+        Some(StdPath::VecFromRawParts) => AllocOp::VecFromRaw,
+        Some(StdPath::VecSetLen) => AllocOp::SetLen,
         _ => return None,
     })
 }

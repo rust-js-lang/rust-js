@@ -30,11 +30,10 @@ const ARRAY_COLLECTIONS: [&str; 3] = [
 /// or a `BinaryHeap`'s, one of `ARRAY_COLLECTIONS`.
 pub(crate) fn capacity_op(tcx: TyCtxt<'_>, def_id: DefId) -> Option<CapacityOp> {
     let path = std_path(tcx, def_id);
+    let item = std_path_item(tcx, def_id);
     if matches!(
-        path,
-        "std::vec::Vec::<T>::with_capacity"
-            | "std::collections::VecDeque::<T>::with_capacity"
-            | "std::collections::BinaryHeap::<T>::with_capacity"
+        item,
+        Some(StdPath::VecWithCapacity | StdPath::VecDequeWithCapacity | StdPath::BinaryHeapWithCapacity)
     ) {
         return Some(CapacityOp::WithCapacity);
     }
@@ -113,6 +112,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         // Its std path and its diagnostic name, each asked once: each test
         // below is of them, some forty a call a crate classifies (#882).
         let path = std_path(tcx, def_id);
+        let item = std_path_item(tcx, def_id);
         let diagnostic_name = tcx.get_diagnostic_name(def_id);
         let diagnostic = |name: &str| diagnostic_name.is_some_and(|found| found.as_str() == name);
         let self_ty = args.types().next();
@@ -138,7 +138,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }
         // An enum's variant's discriminant (ADR 0393).
         // And as a derived `Hash` hashes it (ADR 0463).
-        if matches!(path, "std::mem::discriminant" | "std::intrinsics::discriminant_value") {
+        if matches!(
+            item,
+            Some(StdPath::MemDiscriminantFn | StdPath::IntrinsicsDiscriminantValueFn)
+        ) {
             return Some(Some(Std::Discriminant));
         }
         if diagnostic("mem_drop") {
@@ -149,18 +152,18 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }
         // The one thread there is yields to none (ADR 0142).
         // And a spin loop's hint, which no other thread waits on (#1285).
-        if path == "std::thread::yield_now" || path == "std::hint::spin_loop" {
+        if item == Some(StdPath::ThreadYieldNowFn) || item == Some(StdPath::HintSpinLoopFn) {
             return Some(Some(Std::Nothing));
         }
         // Whether this thread unwinds, a drop in a panic's cleanup asks
         // (#1285).
-        if path == "std::thread::panicking" {
+        if item == Some(StdPath::ThreadPanickingFn) {
             return Some(Some(Std::Panicking));
         }
         // `hint::assert_unchecked(c)`, a promise that `c` holds, which a
         // program that's right keeps: nothing, its `c` made as it's given
         // (ADR 0399).
-        if path == "std::hint::assert_unchecked" {
+        if item == Some(StdPath::HintAssertUncheckedFn) {
             return Some(Some(Std::Nothing));
         }
         // A hint to the optimizer rustc's MIR inlines into std's bodies,
@@ -198,14 +201,14 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             return Some(Some(Std::Number(op)));
         }
         // Plain data's bytes as another type's, and all zero (ADR 0408).
-        match path {
-            "std::intrinsics::transmute" | "std::intrinsics::transmute_unchecked" => {
+        match item {
+            Some(StdPath::IntrinsicsTransmuteFn | StdPath::IntrinsicsTransmuteUncheckedFn) => {
                 return Some(Some(Std::Transmute));
             }
-            "std::mem::zeroed" => return Some(Some(Std::Uninit(UninitOp::Zeroed))),
-            "std::array::from_fn" => return Some(Some(Std::Slice(SliceOp::FromFn))),
-            "std::slice::from_ref" | "std::array::from_ref" => return Some(Some(Std::Slice(SliceOp::FromRef))),
-            "std::slice::from_mut" | "std::array::from_mut" => return Some(Some(Std::Slice(SliceOp::FromMut))),
+            Some(StdPath::MemZeroedFn) => return Some(Some(Std::Uninit(UninitOp::Zeroed))),
+            Some(StdPath::ArrayFromFnFn) => return Some(Some(Std::Slice(SliceOp::FromFn))),
+            Some(StdPath::SliceFromRefFn | StdPath::ArrayFromRefFn) => return Some(Some(Std::Slice(SliceOp::FromRef))),
+            Some(StdPath::SliceFromMutFn | StdPath::ArrayFromMutFn) => return Some(Some(Std::Slice(SliceOp::FromMut))),
             _ => {}
         }
         // A `NonNull` of a reference, `NonNull::from(&mut x)`: a pointer to
@@ -226,7 +229,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             return Some(Some(Std::Capacity(op)));
         }
         // The allocator's, an array of slots (ADR 0417).
-        if let Some(op) = crate::lower::std_types::alloc::alloc_op(path) {
+        if let Some(op) = crate::lower::std_types::alloc::alloc_op(item) {
             return Some(Some(Std::Alloc(op)));
         }
         // memchr's searches, of the crate rustc builds (ADR 0529).
@@ -242,12 +245,12 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         // An `OpenOptions`'s, its flags, which open nothing till `open`
         // (#1156); and a `File`'s, a `Metadata`'s, a `FileType`'s and a
         // `DirEntry`'s (#1397).
-        if let Some(op) = crate::lower::std_types::fs::fs_method_op(path) {
+        if let Some(op) = crate::lower::std_types::fs::fs_method_op(item) {
             return Some(Some(Std::Fs(op)));
         }
         // A C-variadic function's next argument, the first of what's left of
         // its array (ADR 0428).
-        if path == "std::ffi::VaList::<'f>::next_arg" {
+        if item == Some(StdPath::VaListNextArg) {
             return Some(Some(Std::Method("shift")));
         }
         // Where a call is, `Location::caller()`, and its parts (ADR 0427).
@@ -263,7 +266,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             return Some(Some(known));
         }
         // A future already done, a promise (ADR 0029).
-        if let Some(op) = crate::lower::std_types::future::future_op(path) {
+        if let Some(op) = crate::lower::std_types::future::future_op(item) {
             return Some(Some(Std::Future(op)));
         }
         // `pin!`'s `Pin::new_unchecked(&mut { value })`, the pointer, as
@@ -281,87 +284,85 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             return Some(Some(Std::Hash(op)));
         }
         // Bytes to text, as Rust validates UTF-8 (ADR 0172).
-        let utf8 = match path {
-            "std::str::from_utf8" | "std::str::<impl str>::from_utf8" => Some(TextOp::FromUtf8 { owned: false }),
-            "std::string::String::from_utf8" => Some(TextOp::FromUtf8 { owned: true }),
-            "std::str::from_utf8_unchecked"
-            | "std::str::<impl str>::from_utf8_unchecked"
-            | "std::string::String::from_utf8_unchecked" => Some(TextOp::Utf8Unchecked),
-            "std::string::String::from_utf8_lossy" => Some(TextOp::Utf8Lossy),
-            "std::str::from_utf8_mut" | "std::str::<impl str>::from_utf8_mut" => {
-                Some(TextOp::FromUtf8Mut { unchecked: false })
-            }
-            "std::str::from_utf8_unchecked_mut" | "std::str::<impl str>::from_utf8_unchecked_mut" => {
+        let utf8 = match item {
+            Some(StdPath::StrFromUtf8Fn | StdPath::StrFromUtf8) => Some(TextOp::FromUtf8 { owned: false }),
+            Some(StdPath::StringFromUtf8) => Some(TextOp::FromUtf8 { owned: true }),
+            Some(
+                StdPath::StrFromUtf8UncheckedFn | StdPath::StrFromUtf8Unchecked | StdPath::StringFromUtf8Unchecked,
+            ) => Some(TextOp::Utf8Unchecked),
+            Some(StdPath::StringFromUtf8Lossy) => Some(TextOp::Utf8Lossy),
+            Some(StdPath::StrFromUtf8MutFn | StdPath::StrFromUtf8Mut) => Some(TextOp::FromUtf8Mut { unchecked: false }),
+            Some(StdPath::StrFromUtf8UncheckedMutFn | StdPath::StrFromUtf8UncheckedMut) => {
                 Some(TextOp::FromUtf8Mut { unchecked: true })
             }
-            "std::str::Utf8Error::valid_up_to" => Some(TextOp::Utf8Part("validUpTo")),
+            Some(StdPath::Utf8ErrorValidUpTo) => Some(TextOp::Utf8Part("validUpTo")),
             // A `Utf8Chunk`'s parts, `{ valid, invalid }` (ADR 0341).
-            "std::str::Utf8Chunk::<'a>::valid" => Some(TextOp::Utf8Part("valid")),
-            "std::str::Utf8Chunk::<'a>::invalid" => Some(TextOp::Utf8Part("invalid")),
-            "std::num::ParseIntError::kind" => Some(TextOp::ParseErrorKind),
+            Some(StdPath::Utf8ChunkValid) => Some(TextOp::Utf8Part("valid")),
+            Some(StdPath::Utf8ChunkInvalid) => Some(TextOp::Utf8Part("invalid")),
+            Some(StdPath::ParseIntErrorKind) => Some(TextOp::ParseErrorKind),
             // A byte's escape, its bytes (ADR 0558).
-            "std::ascii::escape_default" | "std::num::<impl u8>::escape_ascii" => Some(TextOp::EscapeByte),
+            Some(StdPath::AsciiEscapeDefaultFn | StdPath::U8EscapeAscii) => Some(TextOp::EscapeByte),
             _ => None,
         };
         if let Some(op) = utf8 {
             return Some(Some(Std::Text(op)));
         }
         // A path is its text (ADR 0173): what reads it as text is itself.
-        match path {
-            "std::path::Path::display"
-            | "std::path::Path::to_str"
-            | "std::path::Path::as_os_str"
-            | "std::ffi::OsStr::to_str"
-            | "std::path::PathBuf::as_path" => return Some(Some(Std::Same)),
-            "std::path::PathBuf::new" => return Some(Some(Std::StringNew)),
-            "std::path::Path::new" | "std::ffi::OsStr::new" => return Some(Some(Std::Path(PathOp::New))),
-            "std::ffi::OsString::into_string" => return Some(Some(Std::Path(PathOp::IntoString))),
+        match item {
+            Some(
+                StdPath::PathDisplayMethod
+                | StdPath::PathToStr
+                | StdPath::PathAsOsStr
+                | StdPath::OsStrToStr
+                | StdPath::PathBufAsPath,
+            ) => return Some(Some(Std::Same)),
+            Some(StdPath::PathBufNew) => return Some(Some(Std::StringNew)),
+            Some(StdPath::PathNew | StdPath::OsStrNew) => return Some(Some(Std::Path(PathOp::New))),
+            Some(StdPath::OsStringIntoString) => return Some(Some(Std::Path(PathOp::IntoString))),
             // Its methods, over its components (ADR 0405).
-            "std::path::Path::join" => return Some(Some(Std::Path(PathOp::Join))),
-            "std::path::Path::parent" => return Some(Some(Std::Path(PathOp::Parent))),
-            "std::path::Path::file_name" => return Some(Some(Std::Path(PathOp::FileName))),
-            "std::path::Path::file_stem" => return Some(Some(Std::Path(PathOp::FileStem))),
-            "std::path::Path::extension" => return Some(Some(Std::Path(PathOp::Extension))),
-            "std::path::Path::with_extension" => return Some(Some(Std::Path(PathOp::WithExtension))),
-            "std::path::Path::with_file_name" => return Some(Some(Std::Path(PathOp::WithFileName))),
-            "std::path::Path::starts_with" => return Some(Some(Std::Path(PathOp::StartsWith))),
-            "std::path::Path::ends_with" => return Some(Some(Std::Path(PathOp::EndsWith))),
-            "std::path::Path::strip_prefix" => return Some(Some(Std::Path(PathOp::StripPrefix))),
-            "std::path::Path::is_absolute" | "std::path::Path::has_root" => {
+            Some(StdPath::PathJoin) => return Some(Some(Std::Path(PathOp::Join))),
+            Some(StdPath::PathParent) => return Some(Some(Std::Path(PathOp::Parent))),
+            Some(StdPath::PathFileName) => return Some(Some(Std::Path(PathOp::FileName))),
+            Some(StdPath::PathFileStem) => return Some(Some(Std::Path(PathOp::FileStem))),
+            Some(StdPath::PathExtension) => return Some(Some(Std::Path(PathOp::Extension))),
+            Some(StdPath::PathWithExtension) => return Some(Some(Std::Path(PathOp::WithExtension))),
+            Some(StdPath::PathWithFileName) => return Some(Some(Std::Path(PathOp::WithFileName))),
+            Some(StdPath::PathStartsWith) => return Some(Some(Std::Path(PathOp::StartsWith))),
+            Some(StdPath::PathEndsWith) => return Some(Some(Std::Path(PathOp::EndsWith))),
+            Some(StdPath::PathStripPrefix) => return Some(Some(Std::Path(PathOp::StripPrefix))),
+            Some(StdPath::PathIsAbsolute | StdPath::PathHasRoot) => {
                 return Some(Some(Std::Path(PathOp::IsAbsolute)));
             }
-            "std::path::Path::is_relative" => return Some(Some(Std::Path(PathOp::IsRelative))),
-            "std::path::Path::iter" => return Some(Some(Std::Path(PathOp::Iter))),
-            "std::path::Path::ancestors" => return Some(Some(Std::Path(PathOp::Ancestors))),
-            "std::path::Path::components" => return Some(Some(Std::Path(PathOp::Components))),
-            "std::path::Component::<'a>::as_os_str" => return Some(Some(Std::Path(PathOp::ComponentText))),
-            "std::path::Path::to_path_buf" => return Some(Some(Std::Same)),
-            "std::path::PathBuf::push" => return Some(Some(Std::StringEdit(StringEdit::PathPush))),
-            "std::path::PathBuf::pop" => return Some(Some(Std::StringEdit(StringEdit::PathPop))),
-            "std::path::PathBuf::set_extension" => return Some(Some(Std::StringEdit(StringEdit::SetExtension))),
-            "std::path::PathBuf::set_file_name" => return Some(Some(Std::StringEdit(StringEdit::SetFileName))),
+            Some(StdPath::PathIsRelative) => return Some(Some(Std::Path(PathOp::IsRelative))),
+            Some(StdPath::PathIterMethod) => return Some(Some(Std::Path(PathOp::Iter))),
+            Some(StdPath::PathAncestorsMethod) => return Some(Some(Std::Path(PathOp::Ancestors))),
+            Some(StdPath::PathComponentsMethod) => return Some(Some(Std::Path(PathOp::Components))),
+            Some(StdPath::ComponentAsOsStr) => return Some(Some(Std::Path(PathOp::ComponentText))),
+            Some(StdPath::PathToPathBuf) => return Some(Some(Std::Same)),
+            Some(StdPath::PathBufPush) => return Some(Some(Std::StringEdit(StringEdit::PathPush))),
+            Some(StdPath::PathBufPop) => return Some(Some(Std::StringEdit(StringEdit::PathPop))),
+            Some(StdPath::PathBufSetExtension) => return Some(Some(Std::StringEdit(StringEdit::SetExtension))),
+            Some(StdPath::PathBufSetFileName) => return Some(Some(Std::StringEdit(StringEdit::SetFileName))),
             // A `ManuallyDrop` is what it holds (ADR 0406), never dropped.
-            "std::mem::ManuallyDrop::<T>::new" | "std::mem::ManuallyDrop::<T>::into_inner" => {
+            Some(StdPath::ManuallyDropNew | StdPath::ManuallyDropIntoInner) => {
                 return Some(Some(Std::Same));
             }
-            "std::mem::ManuallyDrop::<T>::drop" => return Some(Some(Std::DropPointee)),
+            Some(StdPath::ManuallyDropDrop) => return Some(Some(Std::DropPointee)),
             // A `NonZero` is its number (ADR 0177).
-            "std::num::NonZero::<T>::get" | "std::num::NonZero::<T>::new_unchecked" => return Some(Some(Std::Same)),
-            "std::num::NonZero::<T>::new" => return Some(Some(Std::NonZeroNew)),
+            Some(StdPath::NonZeroGet | StdPath::NonZeroNewUnchecked) => return Some(Some(Std::Same)),
+            Some(StdPath::NonZeroNew) => return Some(Some(Std::NonZeroNew)),
             _ => {}
         }
-        let utf8 = match path {
-            "std::str::Utf8Error::error_len" => Some(TextOp::Utf8Part("errorLen")),
-            "std::string::FromUtf8Error::utf8_error" => Some(TextOp::Utf8Part("error")),
-            "std::string::FromUtf8Error::into_bytes" | "std::string::FromUtf8Error::as_bytes" => {
-                Some(TextOp::Utf8Part("bytes"))
-            }
+        let utf8 = match item {
+            Some(StdPath::Utf8ErrorErrorLen) => Some(TextOp::Utf8Part("errorLen")),
+            Some(StdPath::FromUtf8ErrorUtf8Error) => Some(TextOp::Utf8Part("error")),
+            Some(StdPath::FromUtf8ErrorIntoBytes | StdPath::FromUtf8ErrorAsBytes) => Some(TextOp::Utf8Part("bytes")),
             _ => None,
         };
         if let Some(op) = utf8 {
             return Some(Some(Std::Text(op)));
         }
-        if path == "std::sync::mpsc::channel" {
+        if item == Some(StdPath::MpscChannelFn) {
             return Some(Some(Std::Channel(ChannelOp::New)));
         }
         if diagnostic("mem_swap") {
@@ -370,12 +371,12 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         // `ptr::fn_addr_eq(f, g)`, what rustc's lint of `f == g` of two
         // function pointers asks for: the same function, `===`, as `==` of
         // them is (ADR 0395, #987).
-        if diagnostic("ptr_eq") || path == "std::ptr::fn_addr_eq" {
+        if diagnostic("ptr_eq") || item == Some(StdPath::PtrFnAddrEqFn) {
             return Some(Some(Std::PtrEq));
         }
         // `ptr::hash(p, state)`, its pointer's address, as `*const T`'s
         // `hash` writes it (ADRs 0562, 0864).
-        if path == "std::ptr::hash" {
+        if item == Some(StdPath::PtrHashFn) {
             return Some(Some(Std::Hash(HashOp::Address)));
         }
         if diagnostic("mem_replace") {
@@ -390,7 +391,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         {
             return Some(Some(Std::CloneFrom));
         }
-        if of_std_crate(tcx, def_id, StdCrate::Core) && path == "std::mem::take" {
+        if of_std_crate(tcx, def_id, StdCrate::Core) && item == Some(StdPath::MemTakeFn) {
             return Some(Some(Std::MemTake));
         }
         // `cmp::max(a, b)` of numbers is `a.max(b)`'s (ADR 0136); of anything
@@ -403,32 +404,29 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if tcx.is_lang_item(def_id, LangItem::RangeInclusiveNew) {
             return Some(Some(Std::Range(RangeOp::New)));
         }
-        if of_std_crate(tcx, def_id, StdCrate::Std) {
-            match path {
-                "std::io::stdout" | "std::io::stderr" => return Some(Some(Std::Stream(StreamOp::Open))),
-                _ => {}
-            }
+        if of_std_crate(tcx, def_id, StdCrate::Std) && matches!(item, Some(StdPath::IoStdoutFn | StdPath::IoStderrFn)) {
+            return Some(Some(Std::Stream(StreamOp::Open)));
         }
         if of_std_crate(tcx, def_id, StdCrate::Core) {
-            match path {
-                "std::any::type_name" => return Some(Some(Std::TypeName { of_val: false })),
-                "std::any::type_name_of_val" => return Some(Some(Std::TypeName { of_val: true })),
+            match item {
+                Some(StdPath::AnyTypeNameFn) => return Some(Some(Std::TypeName { of_val: false })),
+                Some(StdPath::AnyTypeNameOfValFn) => return Some(Some(Std::TypeName { of_val: true })),
                 _ => {}
             }
         }
         // std's iterator sources (ADR 0128), by path: most have no
         // diagnostic item.
         if of_std_crate(tcx, def_id, StdCrate::Core) && tcx.def_kind(def_id) == DefKind::Fn {
-            let source = match path {
-                "std::iter::once" => Some(IterSource::Once),
-                "std::iter::empty" => Some(IterSource::Empty),
-                "std::iter::repeat" => Some(IterSource::Repeat),
-                "std::iter::repeat_n" => Some(IterSource::RepeatN),
-                "std::iter::repeat_with" => Some(IterSource::RepeatWith),
-                "std::iter::once_with" => Some(IterSource::OnceWith),
-                "std::iter::successors" => Some(IterSource::Successors),
-                "std::iter::from_fn" => Some(IterSource::FromFn),
-                "std::iter::zip" => Some(IterSource::Zip),
+            let source = match item {
+                Some(StdPath::IterOnceFn) => Some(IterSource::Once),
+                Some(StdPath::IterEmptyFn) => Some(IterSource::Empty),
+                Some(StdPath::IterRepeatFn) => Some(IterSource::Repeat),
+                Some(StdPath::IterRepeatNFn) => Some(IterSource::RepeatN),
+                Some(StdPath::IterRepeatWithFn) => Some(IterSource::RepeatWith),
+                Some(StdPath::IterOnceWithFn) => Some(IterSource::OnceWith),
+                Some(StdPath::IterSuccessorsFn) => Some(IterSource::Successors),
+                Some(StdPath::IterFromFnFn) => Some(IterSource::FromFn),
+                Some(StdPath::IterZipFn) => Some(IterSource::Zip),
                 _ => None,
             };
             if let Some(source) = source {
@@ -517,7 +515,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if let Some(error) = print_of(tcx, def_id) {
             return Some(Some(Std::Print { error }));
         }
-        if krate == Some(StdCrate::Std) && path == "std::rt::begin_panic" {
+        if krate == Some(StdCrate::Std) && item == Some(StdPath::RtBeginPanicFn) {
             return Some(Some(Std::BeginPanic));
         }
         if let Some(op) = unwind_op(tcx, def_id) {
@@ -941,7 +939,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// or to a `Vec<u8>`, its bytes added, as `extend_from_slice` adds
     /// them (ADR 0392), where the writer's type is known.
     fn classify_io_write(&self, def_id: DefId, trait_: DefId, ty: Ty<'tcx>) -> Option<Std> {
-        if std_path(self.tcx, trait_) != "std::io::Write" {
+        if !is_std_path(self.tcx, trait_, StdPath::IoWrite) {
             return None;
         }
         // A writer of bytes of the crate's own that keeps std's `write_all`

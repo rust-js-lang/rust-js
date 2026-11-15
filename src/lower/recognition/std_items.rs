@@ -241,29 +241,29 @@ pub(crate) enum NodeOnly {
 /// std's functions of the process a program runs in and of its files,
 /// which Node has and a browser hasn't (ADR 0391), each by its path: the one
 /// list of what works in Node only.
-const NODE_ONLY: &[(&str, NodeOnly)] = &[
-    ("std::env::args", NodeOnly::Process(ProcessOp::Args)),
-    ("std::env::var", NodeOnly::Process(ProcessOp::Var)),
-    ("std::env::var_os", NodeOnly::Process(ProcessOp::VarOs)),
-    ("std::env::vars", NodeOnly::Process(ProcessOp::Vars)),
-    ("std::env::vars_os", NodeOnly::Process(ProcessOp::VarsOs)),
-    ("std::process::exit", NodeOnly::Process(ProcessOp::Exit)),
-    ("std::env::current_dir", NodeOnly::Process(ProcessOp::CurrentDir)),
-    ("std::fs::File::open", NodeOnly::Fs(FsOp::Open)),
-    ("std::fs::File::create", NodeOnly::Fs(FsOp::Create)),
-    ("std::fs::OpenOptions::open", NodeOnly::Fs(FsOp::OptionsOpen)),
-    ("std::fs::read", NodeOnly::Fs(FsOp::Read)),
-    ("std::fs::read_to_string", NodeOnly::Fs(FsOp::ReadToString)),
-    ("std::fs::write", NodeOnly::Fs(FsOp::Write)),
-    ("std::fs::remove_file", NodeOnly::Fs(FsOp::RemoveFile)),
-    ("std::fs::metadata", NodeOnly::Fs(FsOp::Metadata)),
-    ("std::fs::symlink_metadata", NodeOnly::Fs(FsOp::SymlinkMetadata)),
-    ("std::fs::create_dir", NodeOnly::Fs(FsOp::CreateDir)),
-    ("std::fs::create_dir_all", NodeOnly::Fs(FsOp::CreateDirAll)),
-    ("std::fs::remove_dir", NodeOnly::Fs(FsOp::RemoveDir)),
-    ("std::fs::read_dir", NodeOnly::Fs(FsOp::ReadDir)),
-    ("std::fs::canonicalize", NodeOnly::Fs(FsOp::Canonicalize)),
-    ("std::path::Path::canonicalize", NodeOnly::Fs(FsOp::PathCanonicalize)),
+const NODE_ONLY: &[(StdPath, NodeOnly)] = &[
+    (StdPath::EnvArgsFn, NodeOnly::Process(ProcessOp::Args)),
+    (StdPath::EnvVarFn, NodeOnly::Process(ProcessOp::Var)),
+    (StdPath::EnvVarOsFn, NodeOnly::Process(ProcessOp::VarOs)),
+    (StdPath::EnvVarsFn, NodeOnly::Process(ProcessOp::Vars)),
+    (StdPath::EnvVarsOsFn, NodeOnly::Process(ProcessOp::VarsOs)),
+    (StdPath::ProcessExitFn, NodeOnly::Process(ProcessOp::Exit)),
+    (StdPath::EnvCurrentDirFn, NodeOnly::Process(ProcessOp::CurrentDir)),
+    (StdPath::FileOpen, NodeOnly::Fs(FsOp::Open)),
+    (StdPath::FileCreate, NodeOnly::Fs(FsOp::Create)),
+    (StdPath::OpenOptionsOpen, NodeOnly::Fs(FsOp::OptionsOpen)),
+    (StdPath::FsReadFn, NodeOnly::Fs(FsOp::Read)),
+    (StdPath::FsReadToStringFn, NodeOnly::Fs(FsOp::ReadToString)),
+    (StdPath::FsWriteFn, NodeOnly::Fs(FsOp::Write)),
+    (StdPath::FsRemoveFileFn, NodeOnly::Fs(FsOp::RemoveFile)),
+    (StdPath::FsMetadataFn, NodeOnly::Fs(FsOp::Metadata)),
+    (StdPath::FsSymlinkMetadataFn, NodeOnly::Fs(FsOp::SymlinkMetadata)),
+    (StdPath::FsCreateDirFn, NodeOnly::Fs(FsOp::CreateDir)),
+    (StdPath::FsCreateDirAllFn, NodeOnly::Fs(FsOp::CreateDirAll)),
+    (StdPath::FsRemoveDirFn, NodeOnly::Fs(FsOp::RemoveDir)),
+    (StdPath::FsReadDirFn, NodeOnly::Fs(FsOp::ReadDir)),
+    (StdPath::FsCanonicalizeFn, NodeOnly::Fs(FsOp::Canonicalize)),
+    (StdPath::PathCanonicalize, NodeOnly::Fs(FsOp::PathCanonicalize)),
 ];
 
 /// Whether `def_id`, a function, is given its caller's location: its own
@@ -295,8 +295,8 @@ pub(crate) fn is_noinline(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
 
 /// Which of std's functions that work in Node only `id` is, if it's one.
 pub(crate) fn node_only(tcx: TyCtxt<'_>, id: DefId) -> Option<NodeOnly> {
-    let path = std_path(tcx, id);
-    NODE_ONLY.iter().find(|(of, _)| *of == path).map(|&(_, op)| op)
+    let item = std_path_item(tcx, id);
+    NODE_ONLY.iter().find(|&&(of, _)| Some(of) == item).map(|&(_, op)| op)
 }
 
 /// std's functions of addressable memory, which JavaScript has none of

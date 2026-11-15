@@ -16,9 +16,12 @@ const read = (path: string) => readFileSync(join(root, path), "utf8");
 // The one list, the helper each is, and the runtime's helpers, held equal:
 // a function of Node's is added to all three, or the test says which lacks it.
 test("each of std's functions that work in Node only is a helper of process.js or fs.js, gated by $process", () => {
-  const catalog = [...read("src/lower/recognition/std_items.rs").matchAll(/\("([\w:]+)", NodeOnly::(Process|Fs)\((?:ProcessOp|FsOp)::(\w+)\)\)/g)].map(
-    ([, path, of, op]) => ({ path, of, op }),
+  // Each by its `StdPath`, whose path is the table's (`std_paths.rs`).
+  const paths = new Map([...read("src/lower/recognition/std_paths.rs").matchAll(/^    (\w+) => "(std::[^"]+)",$/gm)].map(([, item, path]) => [item, path]));
+  const catalog = [...read("src/lower/recognition/std_items.rs").matchAll(/\(StdPath::(\w+), NodeOnly::(Process|Fs)\((?:ProcessOp|FsOp)::(\w+)\)\)/g)].map(
+    ([, item, of, op]) => ({ path: paths.get(item)!, of, op }),
   );
+  expect(catalog.every(({ path }) => path !== undefined)).toBe(true);
   const helpers = new Map<string, string>([
     ...[...read("src/lower/std_types/process.rs").matchAll(/ProcessOp::(\w+) => "(\$\w+)"/g)].map(([, op, helper]): [string, string] => [`Process ${op}`, helper]),
     ...[...read("src/lower/std_types/fs.rs").matchAll(/FsOp::(\w+) => "(\$\w+)"/g)].map(([, op, helper]): [string, string] => [`Fs ${op}`, helper]),
