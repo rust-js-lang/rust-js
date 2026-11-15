@@ -7,6 +7,7 @@ import { expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { runSync } from "./child";
+import { helpersModule } from "./packages-of";
 import { compiler, fixture, run } from "./support";
 
 // A `Vec`'s capacity std's growth of it wasn't kept of, in a crate that
@@ -289,6 +290,29 @@ pub fn another() -> usize {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "structs.js"), "--std-iterators"]);
   const structs = await import(join(dir, "structs.js"));
   expect(structs.another()).toBe(5);
+});
+
+// The runtime's `$flattenEnds`, which a flatten made knowing its back is,
+// a `rev()`'s source, hints as std's `FlattenCompat::size_hint`: what's
+// left of the inner iterators it's in, front and back, its lower bound;
+// an upper bound only once its source is done, then theirs (`$flatHint`,
+// #1892). Of `["ab", "", "cde", "fghij"]`'s bytes native Rust hints `(0,
+// None)`, then `(1, None)` past one from the front, `(5, None)` past one
+// from the back too, and `(6, Some(6))` with the source done, as a `Vec`
+// grown by it grows by its lower bound.
+test("$flattenEnds hints as std's FlattenCompat", async () => {
+  const std = await import(helpersModule);
+  const words = ["ab", "", "cde", "fghij"].map((w) => [...w].map((c) => c.charCodeAt(0)));
+  const flat = std.$flattenEnds(std.$iter(words), (w: number[]) => w);
+  const hints = [std.$sizeHint(flat)];
+  flat.next();
+  hints.push(std.$sizeHint(flat));
+  flat.back();
+  hints.push(std.$sizeHint(flat));
+  flat.next();
+  flat.next();
+  hints.push(std.$sizeHint(flat));
+  expect(hints).toEqual([[0, undefined], [1, undefined], [5, undefined], [6, 6]]);
 });
 
 // One collected where a call's `Vec` is the source, `grown().into_iter()`,

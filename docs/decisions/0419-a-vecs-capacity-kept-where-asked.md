@@ -1010,3 +1010,38 @@ walk of std's structs finds. Generic code's collect of such a chain,
 whose read isn't in its body, throws where it runs, the metamorphic net's
 `plain generic-instances` rewrite, listed under #1180.
 
+## Amendment (2026-11-15, #1892): a `rev()` of a flatten hints as std's
+
+A `Vec` grown by a `rev()` of a `flatten()` or a `flat_map()` of inner
+iterators that aren't arrays, in a crate that reads a capacity, was
+refused beside a neighbour that made the crate keep capacities,
+`flatten_from_its_back.rs` beside
+`trait_default_flat_map_of_arrays_collects_trusted.rs`:
+`Copied<Rev<Flatten<Map<slice::Iter<&str>, ..>>>>`, whose lower bound JS's
+hint wasn't said to keep. `hint_kept_by_form` says it now
+(`recognition/lengths.rs`): such a flatten is made knowing its back, as
+std's compiled struct or the runtime's `$flattenEnds`, and either hints as
+std's `FlattenCompat::size_hint` does, where its inner iterators' hints are
+std's. An array's inner iterator isn't, as std's `ConstSizeIntoIterator`
+bound, its source's count times the length, stays with the compiled
+struct. `$flattenEnds` was a `$Steps` that knew no hint; it hints by
+`$flatHint` now, std's: what's left of the inner iterators it's in, front
+and back, its lower bound, and an upper bound once its source is done.
+
+Held by `test/corpus/flatten_grows_a_vec_as_stds.rs` (a `rev()` of a
+flatten collected, and one stepped from each end first, beside a trait
+default's generic `flat_map`, against native Rust),
+`flatten_size_hint_is_stds.rs` (`size_hint()` and capacity of `flatten`,
+`flat_map`, `rev()` of each, partly consumed from each end), and
+vec-capacity.test's "$flattenEnds hints as std's FlattenCompat", the
+runtime's hints against native Rust's, `(0, None)`, `(1, None)`, `(5,
+None)`, `(6, Some(6))`: no compiled program grows a `Vec` by a
+`$flattenEnds`, as one that reads a capacity makes std's struct, so the
+runtime row is the helper's own. The neighbour pair is off
+test/neighbours-known.txt. Mutation `flatten-rev-hint-not-kept`
+(`lower/recognition/lengths.ts`).
+
+A boxed range taken through its box's `&mut`, `(&mut boxed).take(2)`,
+stays refused: its box's form, not its type, says whether its hint is
+std's (`boxed_range_taken_through_its_borrow.rs`, `//@ compile-fail:`).
+

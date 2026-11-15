@@ -485,6 +485,10 @@ function $flattenEnds(it, each, knowing) {
   const flat = new $Steps(step("next", "next", "back"), close);
   flat.back = step("back", "back", "next");
   flat.from = [it];
+  // Std's `FlattenCompat::size_hint`: what's left of the inner iterators
+  // it's in, front and back, then its source's, fused, done once it's
+  // ended (`$flatHint`, #1892).
+  flat.sizeHint = () => $flatHint(inner.next, ended ? undefined : it, inner.back);
   // Std's `FlattenCompat::fold`: the front inner's rest, then its source's
   // `fold` of each item's inner, then the back inner's rest; its `rfold`
   // the same from the back. Each is its source's and each inner's own step,

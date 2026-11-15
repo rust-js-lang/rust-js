@@ -735,4 +735,5 @@ export const mutations: Mutation[] = [
     replace: "    const staged = unwind === undefined ? (x) => each(x) : (x, a) => $staged(each, x, undefined, a, unwind);\n",
     tests: ["test/corpus.test.ts", "-t", "^flat_map_of_given_adapters_from_its_back.rs$"],
   },
+
 ];

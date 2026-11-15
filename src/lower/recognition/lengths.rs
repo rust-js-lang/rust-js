@@ -470,13 +470,29 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// and a `rev()`, a `take(n)`, a `copied()` or a `map()` of one, each a
     /// `$Steps` that passes its source's on as std's adapter does (#1572),
     /// and an `enumerate()` of one, `$enumerate`'s or std's compiled
-    /// struct's, which each pass it on, `s.chars().enumerate()` (#1892). Not an array's iterator, JS's own, nor a map of one,
+    /// struct's, which each pass it on, `s.chars().enumerate()` (#1892); and a
+    /// `rev()` of a flatten of what isn't arrays, `$flattenEnds`'s, std's
+    /// `FlattenCompat`'s (#1892). Not an array's iterator, JS's own, nor a map of one,
     /// whose JS `map` knows none, however exactly std counts it; nor a
     /// `skip(n)`, whose JS `drop(n)` keeps none (#1316).
     pub(in crate::lower) fn hint_kept_by_form(&self, ty: Ty<'tcx>, chars_kept: bool) -> bool {
         let ty = self.reveal(ty.peel_refs());
         if chars_kept && (self.is_str_chars(ty) || self.is_char_indices(ty)) || super::source_hint_kept(self.tcx, ty) {
             return true;
+        }
+        // A `rev()` of a flatten, made `$flattenEnds` as it's made knowing
+        // its back, which hints as std's `FlattenCompat`, its inner ones'
+        // left and its source's once done (`$flatHint`, #1892): where its
+        // inner iterators hint as std's. Not of arrays, whose
+        // `ConstSizeIntoIterator` bound std's struct keeps, its source's
+        // count times their length.
+        if let Some(flattened) = super::reversed_source(self.tcx, ty)
+            && let Some(inner) = self.flattened_inner(flattened.peel_refs())
+            && let Some((source, made)) = super::flattened_source(self.tcx, flattened.peel_refs())
+            && let Some(item) = made.or_else(|| self.iterator_item(source))
+        {
+            let item = item.peel_refs();
+            return !item.is_array() && self.lower_bound_is_stds_where(inner, chars_kept);
         }
         super::copied_source(self.tcx, ty)
             .or_else(|| super::mapped_source(self.tcx, ty))

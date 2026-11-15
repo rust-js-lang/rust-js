@@ -335,4 +335,13 @@ export const mutations: Mutation[] = [
     replace: "        if false && is_slice_split(self.tcx, ty) {\n",
     tests: ["test/corpus.test.ts", "-t", "^capacity_of_an_enumerated_chars_and_a_slice_split.rs$"],
   },
+  {
+    name: "flatten-rev-hint-not-kept",
+    breaks:
+      "a `Vec` grown by a `rev()` of a `flatten()` of slices, in a crate that reads a capacity, is refused, where `$flattenEnds` hints as std's (#1892)",
+    file: "src/lower/recognition/lengths.rs",
+    find: "            return !item.is_array() && self.lower_bound_is_stds_where(inner, chars_kept);\n",
+    replace: "            return false;\n",
+    tests: ["test/corpus.test.ts", "-t", "^flatten_grows_a_vec_as_stds.rs$"],
+  },
 ];
