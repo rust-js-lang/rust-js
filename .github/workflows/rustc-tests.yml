@@ -353,6 +353,24 @@ jobs:
           restore-keys: mutants-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}-
       # The corpus ships each case through Vite too.
       - run: bun install --frozen-lockfile
+      # And the browser, where a test a mutation runs drives one
+      # (`drivesBrowser`), none-given's Chromium row: without it the tests
+      # fail as the compiler is, and the shard with them. Its download kept.
+      - name: Ask whether a browser is needed
+        id: browser
+        env:
+          ARGS: ${{ inputs.mutation_args }}
+        run: |
+          set -f
+          echo "needed=$(bun scripts/mutations.ts $ARGS --shard=${{ matrix.shard }}/${{ inputs.mutation_shards }} --browser)" >> "$GITHUB_OUTPUT"
+      - if: steps.browser.outputs.needed == 'browser'
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+      - if: steps.browser.outputs.needed == 'browser'
+        name: Install the browser
+        run: bunx --bun playwright install --with-deps chromium
       - name: Put back each known bug
         env:
           ARGS: ${{ inputs.mutation_args }}

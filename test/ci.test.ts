@@ -28,6 +28,7 @@ import {
 } from "../scripts/mutations";
 import { installNeeded, jobs, leftToCi, manifestsHash, readabilityPaths, type Scope, touchesReadability } from "../scripts/checkFast";
 import { changedCases, runs, touchesCrates, touchesPort } from "../scripts/iteratorSlice";
+import { browsers, drivesBrowser } from "../scripts/shard";
 import { loadScale, underLoad } from "../scripts/timing";
 import { caseOf, partsOf, runParts, verdict } from "../scripts/parts";
 import { jobs as localNightly } from "../scripts/nightly";
@@ -1046,3 +1047,19 @@ test("check:fast installs where a workspace the root depends on isn't linked, it
   expect(installNeeded(read, undefined, () => true)).toBe("the manifests changed since the last install");
 });
 
+// A mutation's test that drives a browser, none-given's Chromium row, ran
+// in CI's mutations, which had none: each failed as the compiler is, and
+// its shard went red. Each shard asks whether what it runs drives one
+// (`mutations.ts --browser`, `drivesBrowser`) and installs it then: of each
+// file that imports Playwright, and only of those.
+test("CI's mutations install the browser a mutation's test drives", () => {
+  const workflow = readFileSync(join(root, ".github/workflows/rustc-tests.yml"), "utf8");
+  const job = workflow.slice(workflow.indexOf("\n  mutations:\n"));
+  expect(job).toContain('--browser)" >> "$GITHUB_OUTPUT"');
+  expect(job).toContain("if: steps.browser.outputs.needed == 'browser'\n        name: Install the browser\n        run: bunx --bun playwright install --with-deps chromium");
+  expect(job.indexOf("Install the browser")).toBeLessThan(job.indexOf("Put back each known bug"));
+  for (const file of browsers) expect([file, drivesBrowser(root, file)]).toEqual([file, true]);
+  expect(drivesBrowser(root, "test/none-given.test.ts")).toBe(true);
+  expect(drivesBrowser(root, "test/corpus.test.ts")).toBe(false);
+  expect(drivesBrowser(root, "test/lowering.test.ts")).toBe(false);
+});

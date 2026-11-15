@@ -23,7 +23,7 @@ import { basename, dirname, join, resolve } from "node:path";
 import { run, runSync, stopped, type Exit } from "../test/child";
 import { corpusHarness, corpusMutantCases, corpusMutants, mutantOf } from "../test/corpus-mutants";
 import { installPackages } from "../test/packages-of";
-import { caseParts, compilerBuilds, machine, memoryBudget, shard, shardArg } from "./shard";
+import { caseParts, compilerBuilds, drivesBrowser, machine, memoryBudget, shard, shardArg } from "./shard";
 import { casesReaching } from "./testMap";
 import { elapsed, shown, timed } from "./timing";
 import { passed, summary } from "./test-summary";
@@ -917,7 +917,7 @@ async function corpusMutantsRun(compiler: string, beside: <T>(work: () => Promis
 }
 
 /** The flags `main` takes, each alone or with `=` and its value. */
-const flags = ["--changed", "--list", "--shard", "--jobs", "--batch", "--tests"];
+const flags = ["--changed", "--list", "--shard", "--jobs", "--batch", "--tests", "--browser"];
 
 async function main() {
   const args = process.argv.slice(2);
@@ -941,6 +941,13 @@ async function main() {
   // The corpus harness's mutants (#918): of a change to the harness, and
   // of a run of every mutation; on the first of its machines.
   const harness = (sharded === undefined || sharded.index === 1) && (changed ? await harnessChangedSince(changed) : named.length === 0);
+  // Whether what would run drives a browser, `browser` or `none`, and none
+  // run: CI's mutations install one where it does (`drivesBrowser`).
+  if (args.includes("--browser")) {
+    const files = new Set(chosen.flatMap((mutation) => (mutation.tests ? [mutation.tests[0]] : [])));
+    console.log([...files].some((file) => drivesBrowser(root, file)) ? "browser" : "none");
+    return;
+  }
   // Which would run, each its name and file, and none run.
   if (args.includes("--list")) {
     for (const m of chosen) console.log(`${m.name}\t${m.file}`);

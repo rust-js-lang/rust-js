@@ -4,6 +4,8 @@
 // of a machine's cores and memory the work run at once on it may hold.
 
 import { spawnSync } from "node:child_process";
+import { existsSync, readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { availableParallelism, freemem, platform, totalmem } from "node:os";
 
 /** Shard `index`, from 1, of `count`: the items, sorted, dealt out in turn,
@@ -151,6 +153,24 @@ export const shardTimings = "target/shard-timings";
 export const browsers = ["browser", "deep-chain-next", "jsx-text-browser", "next", "playground", "pilot", "vite", "webapi-crypto", "webapi-events"].map(
   (name) => `test/${name}.test.ts`,
 );
+
+/** Whether test file `file`, of the repository at `root`, drives a
+ * browser: one of `browsers`, or one that, or a module of the tests' own it
+ * imports, `./browser-waits`, imports Playwright, as each file whose row
+ * runs in Chromium too does, none-given's. Read of the file, so no list of
+ * its own. What needs one installed asks it, CI's mutations (ADR 0093). */
+export function drivesBrowser(root: string, file: string): boolean {
+  if (browsers.includes(file)) return true;
+  const path = join(root, file);
+  if (!existsSync(path)) return false;
+  const source = readFileSync(path, "utf8");
+  const playwright = (text: string) => /from "playwright"|from "@playwright\//.test(text);
+  if (playwright(source)) return true;
+  return [...source.matchAll(/from "(\.\/[^"]+)"/g)].some(([, local]) => {
+    const imported = [`${local}.ts`, local].map((name) => join(dirname(path), name)).find((name) => existsSync(name) && name.endsWith(".ts"));
+    return imported !== undefined && playwright(readFileSync(imported, "utf8"));
+  });
+}
 
 /** What only the nightly's suite runs, `bun run test --nightly`, not each
  * push's (ADR 1030): what the nightly runs in full anyway, tidy's stages,
