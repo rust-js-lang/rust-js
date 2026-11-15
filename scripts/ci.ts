@@ -5,6 +5,7 @@
 //   bun run ci:status                       # each branch's latest run, and what failed, and the nightly's
 //   bun run ci:bless [branch]               # apply its latest run's bless patches
 //   bun scripts/ci.ts timings               # in CI: the last run's shards' timings, for this run's to balance by
+//   bun scripts/ci.ts nets                  # in CI: which of the `nets` job's nets ran, and which failed, from its `STEPS`
 //
 // A run whose snapshots or rustc's lists differ uploads what blessing them
 // writes, as `bless-*` artifacts: applied here, to be read as a local bless
@@ -13,7 +14,7 @@
 import { mkdirSync, readFileSync, readdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 
-import { changedCases, touchesAsync, touchesConsumers, touchesCrates, touchesDeclarations, touchesFormatting, touchesIterators, touchesMemory, touchesNumbers, touchesPort, touchesStdNet, touchesTwins } from "./iteratorSlice";
+import { changedCases, touchesAsync, touchesConsumers, touchesCrates, touchesDeclarations, touchesFormatting, touchesIterators, touchesMemory, touchesNumbers, touchesPort, touchesRustc, touchesStdNet, touchesTwins, touchesWasm } from "./iteratorSlice";
 import { changedSince } from "./mutations";
 import { shardTimings } from "./shard";
 import { timed, timings } from "./timing";
@@ -80,12 +81,18 @@ export function resultsBase(newestFirst: RunResults[]): { since: string; retry: 
 }
 
 /** `main`'s last checks, the newest first, each with its mutation shards'
- * results (`resultsBase`): of at most `limit` completed runs. */
-function runResults(limit = 6): RunResults[] {
+ * results (`resultsBase`): of at most `limit` completed runs that ran
+ * mutations, of at most `looked` in all. One whose change touched none ran
+ * no shard (`plan`'s `mutations`), and isn't counted. */
+function runResults(limit = 6, looked = 30): RunResults[] {
   const out: RunResults[] = [];
-  for (const run of runs().filter((r) => r.headBranch === "main" && r.status === "completed").slice(0, limit)) {
+  let ran = 0;
+  for (const run of runs().filter((r) => r.headBranch === "main" && r.status === "completed").slice(0, looked)) {
+    if (ran === limit) break;
     const jobs: { name: string; conclusion: string }[] = JSON.parse(gh(["run", "view", String(run.databaseId), "--json=jobs"])).jobs;
     const shardJobs = jobs.filter((job) => /^mutations \/ mutations \(\d+\/\d+\)$/.test(job.name));
+    if (shardJobs.length === 0) continue;
+    ran++;
     const completed = shardJobs.filter((job) => job.conclusion === "success" || job.conclusion === "failure").length;
     const dir = join(root, "target", "mutation-results", String(run.databaseId));
     rmSync(dir, { recursive: true, force: true });
@@ -239,6 +246,11 @@ async function plan(given?: string) {
     since = "HEAD~1";
     count = (await changedSince(since)).length;
   }
+  // The mutations run only where the change touches one, its site, its
+  // list or its tests: what the last check didn't catch, of code as it
+  // was, isn't caught now either. A run of none is passed over by the
+  // next one's `resultsBase`, which keeps the base and what to retry.
+  const mutating = count > 0;
   count += retry.length;
   const changed = Bun.spawnSync(["git", "diff", "--name-only", since, "HEAD"], { cwd: root }).stdout.toString().split("\n").filter(Boolean);
   console.log(`since=${since}`);
@@ -256,6 +268,32 @@ async function plan(given?: string) {
   console.log(`crates=${touchesCrates(changed)}`);
   console.log(`port=${touchesPort(changed)}`);
   console.log(`memory=${touchesMemory(changed)}`);
+  console.log(`mutations=${mutating}`);
+  console.log(`wasm=${touchesWasm(changed)}`);
+  console.log(`rustc=${touchesRustc(changed)}`);
+}
+
+/** Each net of check.yml's `nets` job, by its step's id, and its name:
+ * the steps that run in the background, as the workflow lists them. */
+export function nets(workflow = readFileSync(join(root, ".github/workflows/check.yml"), "utf8")): { id: string; name: string }[] {
+  type Step = { id?: string; name?: string; background?: boolean };
+  const steps: Step[] = (Bun.YAML.parse(workflow) as { jobs: { nets?: { steps: Step[] } } }).jobs.nets?.steps ?? [];
+  return steps.filter((step) => step.background).map((step) => ({ id: step.id!, name: step.name! }));
+}
+
+/** The `nets` job's summary, of its steps' outcomes (GitHub's `steps`
+ * context): each net that failed by name first, then each that passed;
+ * one skipped, as its change didn't touch it, isn't said. */
+export function netsSummary(outcomes: Record<string, { outcome?: string }>, all = nets()): string {
+  const of = (outcome: string) => all.filter((net) => outcomes[net.id]?.outcome === outcome).map((net) => net.name);
+  const failed = of("failure"), passed = of("success");
+  return [
+    failed.length > 0 ? `### ${failed.length} net${failed.length === 1 ? "" : "s"} failed: ${failed.join(", ")}` : "### Every net that ran passed",
+    "",
+    ...failed.map((name) => `- **${name}**: failed; its step's log says why`),
+    ...passed.map((name) => `- ${name}: passed`),
+    "",
+  ].join("\n");
 }
 
 /** An artifact a run uploaded, as GitHub lists them, the newest first. */
@@ -327,8 +365,9 @@ if (import.meta.main) {
     else if (command === "bless") bless(branch);
     else if (command === "plan") await plan(since);
     else if (command === "timings") fetchTimings();
+    else if (command === "nets") console.log(netsSummary(JSON.parse(process.env.STEPS ?? "{}")));
     else {
-      console.error("usage: bun scripts/ci.ts check [branch] [--shards=1|2|4] [--since=<rev>] | status | bless [branch] | plan | timings");
+      console.error("usage: bun scripts/ci.ts check [branch] [--shards=1|2|4] [--since=<rev>] | status | bless [branch] | plan | timings | nets");
       process.exit(2);
     }
   } catch (error) {

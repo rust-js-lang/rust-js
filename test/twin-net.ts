@@ -6,7 +6,7 @@
 // which is the oracle: `ITERATOR_ORACLE=std` of
 // test/iterator-matrix.test.ts. No native run: each push of the iterators'
 // code or the runtime's runs each table's slice (`bun
-// scripts/iteratorSlice.ts run twins`, check.yml's `twin-net`), the night
+// scripts/iteratorSlice.ts run twins`, check.yml's `nets` job's `twins` step), the night
 // all of it (`run twinsAll`, nightly.yml's `twins`).
 //
 // A helper is pitted where a case's plain build imports it and its std

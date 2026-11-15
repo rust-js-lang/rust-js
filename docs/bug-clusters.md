@@ -225,11 +225,12 @@ didn't stop their clusters.
 ## The decisions amended most
 
 As of 2026-11-12: 2,617 amendments of 591 of the 1,039 decisions; 12 are
-amended 25 times or more (13 since 0419's #1792, 2026-11-14), 57 more 10 to 24 times. What each of the 12's
+amended 25 times or more (13 since 0419's #1792, 2026-11-14, 14 since 0093's dev-loop change 3, 2026-11-15), 57 more 10 to 24 times. What each of the 12's
 amendments are, and what would end them:
 
 | ADR | Amendments | What each amendment is | The refactor, or why none |
 |---|---:|---|---|
+| 0093 | 25 | One rule of the mutation runner: which mutations a check runs and since when, how a mutant's tests are built and judged, and where a THIR or bridge rule a mutation held was retired as MIR decided it (#1672, #1701) | None in the compiler: the runner's planning is scripts/ci.ts's `plan` and `resultsBase` and scripts/mutations.ts's `changedSince`, one owner each, and its amendments are their changelog; the retirement notes are records of the decisions that moved (#1672, #1701), which belong in theirs as those amend again |
 | 0465 | 75 | One adapter, one step and one panic point of the hand-written iterator runtime: who closes what, which step is asked, what's dropped as it unwinds | ADR 1092's contract and tables find them; #871 and #860 remove two of their deciders; #1458 ends the kind: std's compiled bodies the default, a hand-written model on only where the tables prove it |
 | 0545 | 58 | One adapter made knowing its back or its length | #851, a value's fact in place of a type's set (closed 11-10); still amended since, for a crate that reads a capacity (#1317, #1394): #1458 |
 | 0914 | 40 | One way a library's JS doesn't fit what its consumer gives it, compiled by the consumer from its MIR | #1462: one canonical form at a library's boundary, so its JS fits every consumer |

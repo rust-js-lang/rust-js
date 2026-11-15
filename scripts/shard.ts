@@ -183,7 +183,7 @@ export function drivesBrowser(root: string, file: string): boolean {
  * leave untrue unseen, as the guide's limitations and the bindings'
  * coverage ratchets, which plain `check:fast` and each push run (ADR 1030,
  * amended). And the iterator matrix, whose slice a check whose change is
- * the iterators' code runs on its own (check.yml's `iterators`,
+ * the iterators' code runs (check.yml's `nets` job's `iterators` step,
  * scripts/iteratorSlice.ts, ADR 1090). */
 export const nightly = [
   "tidy-stages",

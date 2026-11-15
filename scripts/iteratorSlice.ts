@@ -1,5 +1,6 @@
 // What a change to the iterators runs, in each push's check (check.yml's
-// `iterators`, `iterator-conformance` and `iterator-forms`, at once) and in
+// `nets` job's `iterators` and `conformance` steps and its `iterator-forms`
+// job, at once) and in
 // `check:fast` (#731, #766): the slices of the iterator matrix (ADR 1090)
 // and of the conformance table (ADR 1092), and every corpus case built
 // with std's iterator structs alone (ADR 0908), the user's choice of
@@ -24,20 +25,24 @@
 //
 // And a change to the formatting code, `formatPaths`, runs the formatting
 // grid's slice (test/format-grid.ts, #941), each push's check's
-// `format-grid` and `check:fast`'s; and to the numbers' code,
+// `nets` job's `format` step and `check:fast`'s; and to the numbers' code,
 // `numberPaths`, the numbers grid's (test/number-grid.ts, #940),
-// `number-grid`; and to what a `None` is where JS gives or takes it,
+// `numbers`; and to what a `None` is where JS gives or takes it,
 // `declarationPaths`, every TypeScript caller of the declarations
 // (test/declarations-conformance.test.ts, #822), `declarations`; and to
 // how a future awaits and what it drops as it unwinds, `asyncPaths`, the
-// async table, all of it (test/async-points.ts, #942), `async-points`; and
+// async table, all of it (test/async-points.ts, #942), `async`; and
 // to the iterators' code or what drops as a panic unwinds,
 // `consumerPaths`, the consumer net, all of it (test/consumer-net.ts),
-// `consumer-net`; and to what std's collections, slices, strings and cells
+// `consumers`; and to what std's collections, slices, strings and cells
 // lower to, `stdNetPaths`, the std net, all of it (test/std-net.ts,
-// #1171), `std-net`; and to the iterators' code, the runtime's among it,
-// the twin net (test/twin-net.ts, #1205), `twin-net`.
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+// #1171), `std`; and to the iterators' code, the runtime's among it,
+// the twin net (test/twin-net.ts, #1205), `twins`: each a step of the
+// `nets` job, named for its net, where `plan` says its change runs it
+// (dev-loop change 3). And a change to what the WASM build decides on,
+// `wasmPaths`, runs the `wasm` job, and to what rustc's tests run,
+// `rustcPaths`, those.
+import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { noteRate, pick, type Picked } from "./iteratorRows";
 import { lines } from "./parts";
@@ -250,7 +255,8 @@ export function touchesConsumers(files: string[]): boolean {
 /** What the crates of crates.io's corpus are compiled by, as globs of the
  * repository's paths: the compiler, its runtime and std's own crate, and
  * the corpus's list, probes and locks. A change to any of them runs the
- * crate corpus in each push's check (check.yml's `crates`) and in plain
+ * crate corpus in each push's check (check.yml's `nets` job's `crates`
+ * step) and in plain
  * `check:fast`: 9353847cd refused itertools, which only the nightly saw
  * (#1188). */
 export const cratePaths = ["src/**", "std/**", "vendor/**", "Cargo.lock", "docs/crate-corpus.md", "scripts/crate-corpus.ts", "scripts/crate-corpus/**"];
@@ -265,7 +271,7 @@ export function touchesCrates(files: string[]): boolean {
 /** What compiles React's port, as globs of the repository's paths: the
  * compiler, its runtime, std's crate, the tooling that builds an app and
  * the bindings its crates use. A change to any of them regenerates the
- * port at its pin in each push's check (check.yml's `react-in-rust-port`),
+ * port at its pin in each push's check (check.yml's `nets` job's `port` step),
  * failing on any file that differs: ba69090b3's port diff went unseen
  * until the nightly (#1188, #1189). */
 export const portPaths = ["src/**", "std/**", "vendor/**", "tooling/**", "builtins/**", "react/**", "webapi/**", "Cargo.lock", "ports/react-in-rust.pin", "scripts/react-in-rust.ts"];
@@ -275,6 +281,96 @@ const portGlobs = portPaths.map((path) => new Bun.Glob(path));
 /** Whether a change of `files` touches what compiles React's port. */
 export function touchesPort(files: string[]): boolean {
   return files.some((file) => portGlobs.some((glob) => glob.match(file)));
+}
+
+/** The paths, file or directory, wasm/prebuilt.sh's `INPUTS` says decide
+ * rust-js.wasm, the one list of them, as globs of the repository's paths. */
+export function wasmInputs(script = readFileSync(join(root, "wasm/prebuilt.sh"), "utf8")): string[] {
+  const listed = /^INPUTS=\(([^)]*)\)$/m.exec(script);
+  if (!listed) throw new Error("wasm/prebuilt.sh has no `INPUTS=(...)`, which says what decides rust-js.wasm");
+  return listed[1]!.trim().split(/\s+/).map((path) => {
+    const full = join(root, path);
+    return existsSync(full) && statSync(full).isDirectory() ? `${path}/**` : path;
+  });
+}
+
+/** The files of the checkout `files` import, they among them, and what
+ * those import, transitively: a job's own code, whose change is the job's. */
+export function importsOf(files: string[]): string[] {
+  const seen = new Set<string>();
+  const walk = (file: string) => {
+    if (seen.has(file) || !existsSync(join(root, file))) return;
+    seen.add(file);
+    for (const [, from, bare] of readFileSync(join(root, file), "utf8").matchAll(/^(?:import|export)[^"';]*?from\s*["'](\.{1,2}\/[^"']+)["']|^import\s*["'](\.{1,2}\/[^"']+)["']/gm)) {
+      const base = join(dirname(file), (from ?? bare)!);
+      walk([base, `${base}.ts`, `${base}.js`].find((path) => existsSync(join(root, path)) && statSync(join(root, path)).isFile()) ?? base);
+    }
+  };
+  files.forEach(walk);
+  return [...seen].sort();
+}
+
+/** What the check's `wasm` job builds and runs (check.yml): rust-js.wasm,
+ * of wasm/prebuilt.sh's inputs; and the snapshots and the playground it
+ * compiles, of std, the bindings and the examples, with its tests and
+ * what they import; and the workflow. A change to none of them, a doc's or
+ * a corpus case's, leaves the job's answer as it was. */
+export const wasmPaths = [
+  ...wasmInputs(),
+  ...importsOf(["test/snapshots.test.ts", "test/playground.test.ts"]),
+  "wasm/**",
+  "std/**",
+  "vendor/**",
+  "builtins/**",
+  "react/**",
+  "webapi/**",
+  "serde/**",
+  "typescript/**",
+  "examples/**",
+  "Cargo.lock",
+  "package.json",
+  "bun.lock",
+  "test/snapshots/**",
+  "test/*.rs",
+  "test/imports/**",
+  ".github/workflows/check.yml",
+];
+
+const wasmGlobs = wasmPaths.map((path) => new Bun.Glob(path));
+
+/** Whether a change of `files` touches what the `wasm` job builds or runs. */
+export function touchesWasm(files: string[]): boolean {
+  return files.some((file) => wasmGlobs.some((glob) => glob.match(file)));
+}
+
+/** What rustc's tests run (rustc-tests.yml, ADR 0089): the compiler, its
+ * runtime and std's crate, the toolchain, the suite's script and what it
+ * imports, the known lists and the workflows. A change to none of them
+ * leaves their answer as it was. */
+export const rustcPaths = [
+  ...importsOf(["scripts/rustc-suite.ts"]),
+  "src/**",
+  "std/**",
+  "vendor/**",
+  "builtins/**",
+  "typescript/**",
+  "build.rs",
+  "Cargo.toml",
+  "Cargo.lock",
+  "rust-toolchain.toml",
+  "package.json",
+  "bun.lock",
+  "test/rustc-*.txt",
+  ".github/workflows/check.yml",
+  ".github/workflows/rustc-tests.yml",
+  ".github/actions/**",
+];
+
+const rustcGlobs = rustcPaths.map((path) => new Bun.Glob(path));
+
+/** Whether a change of `files` touches what rustc's tests run. */
+export function touchesRustc(files: string[]): boolean {
+  return files.some((file) => rustcGlobs.some((glob) => glob.match(file)));
 }
 
 /** The corpus cases among a change's `files`, `test/corpus/<case>.rs`, by

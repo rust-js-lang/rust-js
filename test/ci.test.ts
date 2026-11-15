@@ -5,7 +5,7 @@ import { expect, test } from "bun:test";
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { checkedSince, latestRuns, MUTATION_SHARDS, mutationJobsPassed, mutationShards, resultsBase, timingsRun } from "../scripts/ci";
+import { checkedSince, latestRuns, MUTATION_SHARDS, mutationJobsPassed, mutationShards, nets, netsSummary, resultsBase, timingsRun } from "../scripts/ci";
 import { readersOf } from "./part-settings";
 import { corpusRows, crashes, dependency, lockedVersion, lockOf, sampledHeader, sampledIn, sampledOneIn, written } from "../scripts/crate-corpus";
 import {
@@ -27,7 +27,7 @@ import {
   unitTestsModule,
 } from "../scripts/mutations";
 import { installNeeded, jobs, leftToCi, manifestsHash, readabilityPaths, type Scope, touchesReadability } from "../scripts/checkFast";
-import { changedCases, runs, touchesCrates, touchesPort } from "../scripts/iteratorSlice";
+import { changedCases, runs, touchesCrates, importsOf, touchesPort, touchesRustc, touchesWasm, wasmInputs } from "../scripts/iteratorSlice";
 import { browsers, drivesBrowser } from "../scripts/shard";
 import { loadScale, underLoad } from "../scripts/timing";
 import { caseOf, partsOf, runParts, verdict } from "../scripts/parts";
@@ -379,14 +379,13 @@ test("a workflow sets a part's setting only where a test file it runs reads it",
 // `bun run nightly` runs what the nightly does, here: each of nightly.yml's
 // jobs and of the check it calls, check.yml's, by name, but `plan`, which
 // picks the mutations a branch's check runs, `seeds`, the day's number, and
-// `issue`, which files a red night as an issue; and `iterators`,
-// `iterator-conformance`, `iterator-forms`, `format-grid`, `number-grid`
-// `declarations`, `async-points`, `consumer-net` and `std-net`, the tables'
-// slices, the corpus with std's iterator structs and the declarations'
-// callers, which the nightly skips, as its `matrix`, `conformance`, `forms`,
-// `format`, `numbers`, `async`, `consumers` and `std` run all of each, and
-// its suite the callers; `twin-net`, whose two builds those tables hold to
-// native Rust; `crater-report`, the Crater's shards said as
+// `issue`, which files a red night as an issue; and `iterator-forms`, the
+// corpus with std's iterator structs, and `nets`, whose steps are the
+// tables' slices, the declarations' callers, the twin net, the crate
+// corpus's sample and React's port, which the nightly skips, as its
+// `matrix`, `conformance`, `forms`, `format`, `numbers`, `async`,
+// `consumers`, `std` and `twins` run all of each, and its suite the
+// callers; `crater-report`, the Crater's shards said as
 // one, which here's `crater` runs whole; and `decision-coverage`, the
 // night's decision counts merged, which `bun run decision-coverage` is.
 test("the nightly, here, has each job the nightly has", () => {
@@ -394,7 +393,7 @@ test("the nightly, here, has each job the nightly has", () => {
     const text = readFileSync(join(root, ".github/workflows", file), "utf8");
     return [...text.slice(text.indexOf("\njobs:")).matchAll(/^  ([a-z-]+):$/gm)].map((m) => m[1]);
   };
-  const ran = [...ids("check.yml"), ...ids("nightly.yml")].filter((id) => !["plan", "seeds", "check", "issue", "iterators", "iterator-conformance", "iterator-forms", "format-grid", "number-grid", "memory-net", "declarations", "async-points", "consumer-net", "std-net", "twin-net", "metamorphic-cases", "crate-corpus", "react-in-rust-port", "crater-report", "decision-coverage"].includes(id));
+  const ran = [...ids("check.yml"), ...ids("nightly.yml")].filter((id) => !["plan", "seeds", "check", "issue", "iterator-forms", "nets", "crater-report", "decision-coverage"].includes(id));
   expect(ran.filter((id) => !(id in localNightly))).toEqual([]);
 });
 
@@ -895,7 +894,7 @@ test("a crate of the corpus's graph rust-js crashed on is said to have crashed, 
 
 // A change that adds or edits a corpus case runs each metamorphic rewrite of
 // it, in check:fast, plain or `--all`, as each push's check does
-// (check.yml's `metamorphic-cases`): #1115's case ran as Rust does, but not
+// (check.yml's `nets` job's `metamorphic` step): #1115's case ran as Rust does, but not
 // moved into a library, which nothing ran till the nightly (#1164, #1165).
 test("a change adding or editing a corpus case runs each of its rewrites", () => {
   expect(changedCases(["test/corpus/new_case.rs", "src/lower/mir.rs", "test/corpus/new_case.js", "test/corpus/edited.rs", "test/corpus/new_case.rs"])).toEqual([
@@ -1111,4 +1110,55 @@ test("each push's corpus builds every case as a library, as the nightly's does",
   const files = [...new Bun.Glob("{scripts,test}/**/*.ts").scanSync(root)].filter((file) => file !== "test/ci.test.ts" && !file.startsWith("test/corpus/") && !file.startsWith("scripts/mutations/"));
   expect(files.filter((file) => readFileSync(join(root, file), "utf8").includes("RUST_JS_LIBRARIES"))).toEqual([]);
   expect(readFileSync(join(root, ".github/workflows/check.yml"), "utf8")).not.toContain("RUST_JS_LIBRARIES");
+});
+
+// The `wasm` job and rustc's tests run of a change to what they build and
+// run, as `plan` says, and the mutations of a change that touches one: a
+// doc's change or a corpus case's ran all three to the answers they had,
+// 13 min of WASM and rustc's eight jobs, waiting for machines behind the
+// rest (dev-loop change 3). Each path list is the closure of what its job
+// runs: the WASM's inputs are wasm/prebuilt.sh's, and each file the job's
+// tests or script import is in it.
+test("the WASM build, rustc's tests and the mutations run where what they run changed", () => {
+  const check = readFileSync(join(root, ".github/workflows/check.yml"), "utf8");
+  expect(check).toContain("if: ${{ inputs.nightly || needs.plan.outputs.wasm == 'true' }}");
+  expect(check).toContain("if: ${{ inputs.nightly || needs.plan.outputs.rustc == 'true' }}");
+  expect(check).toContain("if: ${{ inputs.nightly || needs.plan.outputs.mutations == 'true' }}");
+  expect(wasmInputs("INPUTS=(src Cargo.toml wasm/patches)\n")).toEqual(["src/**", "Cargo.toml", "wasm/patches/**"]);
+  for (const file of ["src/lower/copies.rs", "wasm/patches/a.patch", "rust-toolchain.toml", "std/lib.rs", "test/snapshots/x.js", "examples/fib.rs"]) {
+    expect([file, touchesWasm([file])]).toEqual([file, true]);
+  }
+  for (const file of ["src/lower/copies.rs", "std/lib.rs", "test/rustc-known-failures.txt", "scripts/rustc-suite.ts", ".github/workflows/rustc-tests.yml"]) {
+    expect([file, touchesRustc([file])]).toEqual([file, true]);
+  }
+  for (const file of ["docs/guide/README.md", "test/corpus/a.rs", "test/ci.test.ts", "TESTS.md"]) {
+    expect([file, touchesWasm([file]), touchesRustc([file])]).toEqual([file, false, false]);
+  }
+  // A job's own code is what its tests or script import, transitively.
+  expect(importsOf(["test/playground.test.ts"])).toEqual(expect.arrayContaining(["test/playground.test.ts", "test/support.ts", "test/sourcemap.ts", "test/packages-of.ts", "tooling/bounded.js"]));
+  for (const file of importsOf(["test/snapshots.test.ts", "test/playground.test.ts"])) expect([file, touchesWasm([file])]).toEqual([file, true]);
+  for (const file of importsOf(["scripts/rustc-suite.ts"])) expect([file, touchesRustc([file])]).toEqual([file, true]);
+});
+
+// The nets of a few minutes are steps of one job, `nets`, each in the
+// background where `plan` says its change runs it: each a job of its own
+// spent most of its minutes setting up. A red `nets` says which net failed
+// by its step's name, and its summary names each (dev-loop change 3).
+test("the short nets are the nets job's steps, each where its change runs it, each failure named", () => {
+  const listed = nets();
+  expect(listed.map((net) => net.id)).toEqual(["iterators", "conformance", "format", "numbers", "memory", "declarations", "async", "consumers", "std", "twins", "metamorphic", "crates", "port"]);
+  type Step = { id?: string; if?: string; background?: boolean; "wait-all"?: null };
+  const workflow = Bun.YAML.parse(readFileSync(join(root, ".github/workflows/check.yml"), "utf8")) as { jobs: Record<string, { if?: string; steps: Step[] }> };
+  const job = workflow.jobs.nets!;
+  for (const step of job.steps.filter((s) => s.background)) {
+    const output = /^needs\.plan\.outputs\.(\w+) == 'true'$/.exec(step.if ?? "")?.[1];
+    expect([step.id, output !== undefined && job.if!.includes(`needs.plan.outputs.${output} == 'true'`)]).toEqual([step.id, true]);
+  }
+  const waits = job.steps.findIndex((s) => "wait-all" in s);
+  expect(waits).toBe(job.steps.findLastIndex((s) => s.background) + 1);
+  const summary = netsSummary({ iterators: { outcome: "failure" }, std: { outcome: "success" }, port: { outcome: "skipped" } }, listed);
+  expect(summary).toContain("### 1 net failed: iterator matrix slice");
+  expect(summary).toContain("- std net: passed");
+  expect(summary).not.toContain("react-in-rust port");
+  expect(netsSummary({ std: { outcome: "success" } }, listed)).toContain("### Every net that ran passed");
 });

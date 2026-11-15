@@ -80,6 +80,9 @@ jobs:
       cases: ${{ steps.plan.outputs.cases }}
       crates: ${{ steps.plan.outputs.crates }}
       port: ${{ steps.plan.outputs.port }}
+      mutations: ${{ steps.plan.outputs.mutations }}
+      wasm: ${{ steps.plan.outputs.wasm }}
+      rustc: ${{ steps.plan.outputs.rustc }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -104,77 +107,12 @@ jobs:
       - run: rustup show
       - uses: ./.github/actions/build-rust-js
 
-  # The iterator matrix's slice (ADR 1090, #731), of a check whose change
-  # is the iterators' code, as `plan` says (scripts/iteratorSlice.ts's
-  # `iteratorPaths`, its one list): its fixed batches, of every source,
-  # adapter, consumer and panic site, of closures that capture what drops,
-  # and of a type stepped from its back beside its forward consumers, each
-  # in both builds against native Rust, a part on each core. The nightly's
-  # `matrix` runs every batch.
-  iterators:
-    name: iterator matrix slice
-    needs: [plan, build]
-    if: ${{ !inputs.nightly && needs.plan.outputs.iterators == 'true' }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v7
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version-file: package.json
-      - uses: actions/setup-node@v7
-        with:
-          node-version: '24'
-      - run: bun install --frozen-lockfile
-      - run: rustup show
-      - uses: ./.github/actions/build-rust-js
-      - name: Run the slice
-        env:
-          RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
-        run: bun scripts/iteratorSlice.ts run matrix
-      - if: failure()
-        uses: actions/upload-artifact@v7
-        with:
-          name: iterator-matrix-slice
-          path: target/iterator-matrix
-          if-no-files-found: ignore
-          retention-days: 14
-
-  # Of the same change, the conformance table's slice (ADR 1092), 43 of
-  # its 360 batches, on a machine of its own beside the matrix's.
-  iterator-conformance:
-    name: iterator conformance slice
-    needs: [plan, build]
-    if: ${{ !inputs.nightly && needs.plan.outputs.iterators == 'true' }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v7
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version-file: package.json
-      - uses: actions/setup-node@v7
-        with:
-          node-version: '24'
-      - run: bun install --frozen-lockfile
-      - run: rustup show
-      - uses: ./.github/actions/build-rust-js
-      - name: Run the slice
-        env:
-          RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
-        run: bun scripts/iteratorSlice.ts run conformance
-      - if: failure()
-        uses: actions/upload-artifact@v7
-        with:
-          name: iterator-conformance-slice
-          path: target/iterator-matrix
-          if-no-files-found: ignore
-          retention-days: 14
-
-  # Of the same change, every corpus case built with std's iterator structs
-  # alone (ADR 0908, `ITERATOR_FORMS=corpus`), against native Rust, on a
-  # machine of its own beside the slice's: a regression only that build
-  # shows, #766's, reached `main` where only the nightly's `forms` ran it.
+  # Of a change to the iterators' code (scripts/iteratorSlice.ts's
+  # `iteratorPaths`, its one list), as `plan` says: every corpus case built
+  # with std's iterator structs alone (ADR 0908, `ITERATOR_FORMS=corpus`),
+  # against native Rust, on a machine of its own beside the `nets` job's
+  # slices, as it runs some 8 min: a regression only that build shows,
+  # #766's, reached `main` where only the nightly's `forms` ran it.
   iterator-forms:
     name: iterator forms of the corpus
     needs: [plan, build]
@@ -197,348 +135,29 @@ jobs:
           RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
         run: bun scripts/iteratorSlice.ts run forms
 
-  # The formatting grid's slice (test/format-grid.ts, #941), of a check
-  # whose change is the formatting code, as `plan` says
-  # (scripts/iteratorSlice.ts's `formatPaths`): its fixed batches, of every
-  # spec, type and sink, in both builds against native Rust. The nightly's
-  # `format` runs every batch.
-  format-grid:
-    name: formatting grid slice
+  # The nets of a check's change whose own run is a few minutes or less,
+  # each a step of one machine, run at once (background steps, ten at a
+  # time, the rest waiting for one to end): each a job of its own spent
+  # most of its minutes setting up, the checkout, packages and toolchain
+  # and the compiler, and the check's jobs waited for machines past the
+  # plan's 20 at once (docs/dev-loop.md). Each runs where `plan` says its
+  # change does, as before; one that fails is a step of its name, red, and
+  # the job's summary names it. The nightly runs each of its own.
+  nets:
     needs: [plan, build]
-    if: ${{ !inputs.nightly && needs.plan.outputs.formatting == 'true' }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v7
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version-file: package.json
-      - uses: actions/setup-node@v7
-        with:
-          node-version: '24'
-      - run: bun install --frozen-lockfile
-      - run: rustup show
-      - uses: ./.github/actions/build-rust-js
-      - name: Run the slice
-        env:
-          RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
-        run: bun scripts/iteratorSlice.ts run format
-      - if: failure()
-        uses: actions/upload-artifact@v7
-        with:
-          name: format-grid-slice
-          path: target/iterator-matrix
-          if-no-files-found: ignore
-          retention-days: 14
-
-  # The numbers grid's slice (test/number-grid.ts, #940), of a check whose
-  # change is the numbers' code, as `plan` says (scripts/iteratorSlice.ts's
-  # `numberPaths`): its fixed batches, of every operation and every type,
-  # in both builds against native Rust. The nightly's `numbers` runs every
-  # batch.
-  number-grid:
-    name: numbers grid slice
-    needs: [plan, build]
-    if: ${{ !inputs.nightly && needs.plan.outputs.numbers == 'true' }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v7
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version-file: package.json
-      - uses: actions/setup-node@v7
-        with:
-          node-version: '24'
-      - run: bun install --frozen-lockfile
-      - run: rustup show
-      - uses: ./.github/actions/build-rust-js
-      - name: Run the slice
-        env:
-          RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
-        run: bun scripts/iteratorSlice.ts run numbers
-      - if: failure()
-        uses: actions/upload-artifact@v7
-        with:
-          name: number-grid-slice
-          path: target/iterator-matrix
-          if-no-files-found: ignore
-          retention-days: 14
-
-  # The memory net's slice (test/memory-net.ts, #1172), of a check whose
-  # change is the pointers' code, as `plan` says (scripts/iteratorSlice.ts's
-  # `memoryPaths`): its 24 seeds, each a program of unsafe Rust over plain
-  # data, in both builds against native wasm32. The nightly's `memory` runs
-  # 400 seeds from the day's, each under Miri.
-  memory-net:
-    name: memory net slice
-    needs: [plan, build]
-    if: ${{ !inputs.nightly && needs.plan.outputs.memory == 'true' }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v7
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version-file: package.json
-      - uses: actions/setup-node@v7
-        with:
-          node-version: '24'
-      - run: bun install --frozen-lockfile
-      - run: rustup show
-      - uses: ./.github/actions/build-rust-js
-      - name: Run the slice
-        env:
-          RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
-        run: bun scripts/iteratorSlice.ts run memory
-      - if: failure()
-        uses: actions/upload-artifact@v7
-        with:
-          name: memory-net-slice
-          path: target/memory-net
-          if-no-files-found: ignore
-          retention-days: 14
-
-  # Every TypeScript caller of the declarations (#822), of a check whose
-  # change is what a `None` is at the JS boundary, or a corpus case, as `plan` says
-  # (scripts/iteratorSlice.ts's `declarationPaths`): each exported function
-  # given `null`, `undefined` and an absent key where its `.d.ts` admits
-  # them, against native Rust. The nightly's suite runs it too.
-  declarations:
-    name: declarations' TypeScript callers
-    needs: [plan, build]
-    if: ${{ !inputs.nightly && needs.plan.outputs.declarations == 'true' }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v7
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version-file: package.json
-      - uses: actions/setup-node@v7
-        with:
-          node-version: '24'
-      - run: bun install --frozen-lockfile
-      - run: rustup show
-      - uses: ./.github/actions/build-rust-js
-      - name: Run the callers
-        env:
-          RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
-        run: bun scripts/iteratorSlice.ts run declarations 1
-
-  # The async table (test/async-points.ts, #942), of a check whose change is
-  # how a future awaits and drops, as `plan` says (scripts/iteratorSlice.ts's
-  # `asyncPaths`): each family of async bodies of each shape at each panic
-  # point, in both builds against native Rust; all of it, its slice. The
-  # nightly's `async` runs it too.
-  async-points:
-    name: async table
-    needs: [plan, build]
-    if: ${{ !inputs.nightly && needs.plan.outputs.async == 'true' }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v7
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version-file: package.json
-      - uses: actions/setup-node@v7
-        with:
-          node-version: '24'
-      - run: bun install --frozen-lockfile
-      - run: rustup show
-      - uses: ./.github/actions/build-rust-js
-      - name: Run the table
-        env:
-          RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
-        run: bun scripts/iteratorSlice.ts run async
-      - if: failure()
-        uses: actions/upload-artifact@v7
-        with:
-          name: async-table
-          path: target/iterator-matrix
-          if-no-files-found: ignore
-          retention-days: 14
-
-  # Each metamorphic rewrite (test/metamorphic.test.ts) of each corpus case
-  # the check's change adds or edits since `plan`'s `since`, as `plan` says
-  # (scripts/iteratorSlice.ts's `changedCases`), in both builds against
-  # native Rust: a case that runs as Rust does may not rewritten, as #1115's
-  # didn't moved into a library (#1164, #1165). The nightly's `metamorphic`
-  # runs every case's.
-  metamorphic-cases:
-    name: metamorphic rewrites of the change's cases
-    needs: [plan, build]
-    if: ${{ !inputs.nightly && needs.plan.outputs.cases == 'true' }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version-file: package.json
-      - uses: actions/setup-node@v7
-        with:
-          node-version: '24'
-      - run: bun install --frozen-lockfile
-      - run: rustup show
-      - uses: ./.github/actions/build-rust-js
-      - name: Run each rewrite of the change's cases
-        env:
-          RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
-          # Each failure says how to reduce it, which the nightly's run
-          # does: a reduction here, 5 min a failure, outran the job.
-          NET_REDUCE: '0'
-        run: bun scripts/iteratorSlice.ts run metamorphic 4 ${{ needs.plan.outputs.since }}
-
-  # The consumer net (test/consumer-net.ts), of a check whose change is the
-  # iterators' code or the drops', as `plan` says (scripts/iteratorSlice.ts's
-  # `consumerPaths`): each std method that takes an iterator by value, of
-  # each source, as it is and with a closure's or a step's panic, in both
-  # builds against native Rust; all of it, its slice. The nightly's
-  # `consumers` runs it too.
-  consumer-net:
-    name: consumer net
-    needs: [plan, build]
-    if: ${{ !inputs.nightly && needs.plan.outputs.consumers == 'true' }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v7
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version-file: package.json
-      - uses: actions/setup-node@v7
-        with:
-          node-version: '24'
-      - run: bun install --frozen-lockfile
-      - run: rustup show
-      - uses: ./.github/actions/build-rust-js
-      - name: Run the net
-        env:
-          RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
-        run: bun scripts/iteratorSlice.ts run consumers
-      - if: failure()
-        uses: actions/upload-artifact@v7
-        with:
-          name: consumer-net
-          path: target/iterator-matrix
-          if-no-files-found: ignore
-          retention-days: 14
-
-  # The std net (test/std-net.ts, #1171), of a check whose change is std's
-  # collections', slices', strings' or cells' code, as `plan` says
-  # (scripts/iteratorSlice.ts's `stdNetPaths`): each std method that changes
-  # a collection in place or calls what it's given, as it is and with what it
-  # calls panicking, in both builds against native Rust; all of it, its
-  # slice. The nightly's `std` runs it too.
-  std-net:
-    name: std net
-    needs: [plan, build]
-    if: ${{ !inputs.nightly && needs.plan.outputs.std == 'true' }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v7
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version-file: package.json
-      - uses: actions/setup-node@v7
-        with:
-          node-version: '24'
-      - run: bun install --frozen-lockfile
-      - run: rustup show
-      - uses: ./.github/actions/build-rust-js
-      - name: Run the net
-        env:
-          RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
-        run: bun scripts/iteratorSlice.ts run std
-      - if: failure()
-        uses: actions/upload-artifact@v7
-        with:
-          name: std-net
-          path: target/iterator-matrix
-          if-no-files-found: ignore
-          retention-days: 14
-
-  # The twin net (test/twin-net.ts, #1205), of a check whose change is the
-  # iterators' code, the runtime's among it, as `plan` says
-  # (scripts/iteratorSlice.ts's `twinPaths`): each table's slice in the
-  # plain build, the runtime's hand-written helpers, against the build of
-  # std's own bodies, no native run; and each helper both builds import is
-  # one test/twin-net.ts's `shared` says why of. All of it, 9 min on CI's
-  # machine, is the nightly's `twins`.
-  twin-net:
-    name: twin net
-    needs: [plan, build]
-    if: ${{ !inputs.nightly && needs.plan.outputs.twins == 'true' }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v7
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version-file: package.json
-      - uses: actions/setup-node@v7
-        with:
-          node-version: '24'
-      - run: bun install --frozen-lockfile
-      - run: rustup show
-      - uses: ./.github/actions/build-rust-js
-      - name: Run the net
-        env:
-          RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
-        run: bun scripts/iteratorSlice.ts run twins
-      - if: failure()
-        uses: actions/upload-artifact@v7
-        with:
-          name: twin-net
-          path: target/iterator-matrix
-          if-no-files-found: ignore
-          retention-days: 14
-
-  # The crates of crates.io's corpus against docs/crate-corpus.md (ADR
-  # 1067), of a check whose change is what compiles them, as `plan` says
-  # (scripts/iteratorSlice.ts's `cratePaths`): the compiler, its runtime,
-  # std's crate or the corpus's own files. 9353847cd refused itertools and
-  # only the nightly's `crates` saw it (#1188). The nightly runs its own,
-  # every row; a push, one in 8 of the top crates by downloads (#1174).
-  crate-corpus:
-    name: crate corpus
-    needs: [plan, build]
-    if: ${{ !inputs.nightly && needs.plan.outputs.crates == 'true' }}
+    if: >-
+      ${{ !inputs.nightly && (needs.plan.outputs.iterators == 'true' || needs.plan.outputs.formatting == 'true' ||
+      needs.plan.outputs.numbers == 'true' || needs.plan.outputs.memory == 'true' || needs.plan.outputs.declarations == 'true' ||
+      needs.plan.outputs.async == 'true' || needs.plan.outputs.consumers == 'true' || needs.plan.outputs.std == 'true' ||
+      needs.plan.outputs.twins == 'true' || needs.plan.outputs.cases == 'true' || needs.plan.outputs.crates == 'true' ||
+      needs.plan.outputs.port == 'true') }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    env:
+      RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
     steps:
-      - uses: actions/checkout@v7
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version-file: package.json
-      - uses: actions/setup-node@v7
-        with:
-          node-version: '24'
-      - run: bun install --frozen-lockfile
-      - run: rustup show
-      - uses: ./.github/actions/build-rust-js
-      - name: Compile and run each crate's probe
-        env:
-          RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
-        run: bun scripts/crate-corpus.ts --check --sample
-
-  # React's port at its pin (scripts/react-in-rust.ts), of a check whose
-  # change is what compiles it, as `plan` says (`portPaths`): its crates
-  # compiled to JS by this compiler, a file that differs from what the pin
-  # committed failing it, as the nightly's `port` does; ba69090b3's diff
-  # went unseen until the nightly (#1188). The nightly runs its own.
-  react-in-rust-port:
-    name: react-in-rust port
-    needs: [plan, build]
-    if: ${{ !inputs.nightly && needs.plan.outputs.port == 'true' }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
+      # The metamorphic rewrites read what changed since `plan`'s `since`,
+      # and React's port its pin's history.
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
@@ -551,17 +170,124 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: rustup show
       - uses: ./.github/actions/build-rust-js
-      - name: Compile the port's crates and compare their JS
+      # The iterator matrix's slice (ADR 1090, #731), of a change to the
+      # iterators' code (scripts/iteratorSlice.ts's `iteratorPaths`): its
+      # fixed batches, of every source, adapter, consumer and panic site, in
+      # both builds against native Rust. The nightly's `matrix` runs every batch.
+      - name: iterator matrix slice
+        id: iterators
+        if: needs.plan.outputs.iterators == 'true'
+        background: true
+        run: bun scripts/iteratorSlice.ts run matrix 2
+      # Of the same change, the conformance table's slice (ADR 1092).
+      - name: iterator conformance slice
+        id: conformance
+        if: needs.plan.outputs.iterators == 'true'
+        background: true
+        run: bun scripts/iteratorSlice.ts run conformance 1
+      # The formatting grid's slice (test/format-grid.ts, #941), of a change
+      # to the formatting code (`formatPaths`).
+      - name: formatting grid slice
+        id: format
+        if: needs.plan.outputs.formatting == 'true'
+        background: true
+        run: bun scripts/iteratorSlice.ts run format 1
+      # The numbers grid's slice (test/number-grid.ts, #940), of a change to
+      # the numbers' code (`numberPaths`).
+      - name: numbers grid slice
+        id: numbers
+        if: needs.plan.outputs.numbers == 'true'
+        background: true
+        run: bun scripts/iteratorSlice.ts run numbers 1
+      # The memory net's slice (test/memory-net.ts, #1172), of a change to
+      # the pointers' code (`memoryPaths`): its 24 seeds, in both builds
+      # against native wasm32. The nightly's `memory` runs 400 under Miri.
+      - name: memory net slice
+        id: memory
+        if: needs.plan.outputs.memory == 'true'
+        background: true
+        run: bun scripts/iteratorSlice.ts run memory 1
+      # Every TypeScript caller of the declarations (#822), of a change to
+      # what a `None` is at the JS boundary (`declarationPaths`).
+      - name: declarations' TypeScript callers
+        id: declarations
+        if: needs.plan.outputs.declarations == 'true'
+        background: true
+        run: bun scripts/iteratorSlice.ts run declarations 1
+      # The async table (test/async-points.ts, #942), of a change to how a
+      # future awaits and drops (`asyncPaths`).
+      - name: async table
+        id: async
+        if: needs.plan.outputs.async == 'true'
+        background: true
+        run: bun scripts/iteratorSlice.ts run async 1
+      # The consumer net (test/consumer-net.ts), of a change to the
+      # iterators' code or the drops' (`consumerPaths`).
+      - name: consumer net
+        id: consumers
+        if: needs.plan.outputs.consumers == 'true'
+        background: true
+        run: bun scripts/iteratorSlice.ts run consumers 2
+      # The std net (test/std-net.ts, #1171), of a change to std's
+      # collections', slices', strings' or cells' code (`stdNetPaths`).
+      - name: std net
+        id: std
+        if: needs.plan.outputs.std == 'true'
+        background: true
+        run: bun scripts/iteratorSlice.ts run std 1
+      # The twin net (test/twin-net.ts, #1205), of a change to the
+      # iterators' code (`twinPaths`): each table's slice in the plain build
+      # against the build of std's own bodies. All of it is the nightly's `twins`.
+      - name: twin net
+        id: twins
+        if: needs.plan.outputs.twins == 'true'
+        background: true
+        run: bun scripts/iteratorSlice.ts run twins 2
+      # Each metamorphic rewrite of each corpus case the change adds or
+      # edits since `plan`'s `since` (`changedCases`, #1164, #1165). Each
+      # failure says how to reduce it, which the nightly's run does: a
+      # reduction here, 5 min a failure, outran the job.
+      - name: metamorphic rewrites of the change's cases
+        id: metamorphic
+        if: needs.plan.outputs.cases == 'true'
+        background: true
         env:
-          RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
+          NET_REDUCE: '0'
+        run: bun scripts/iteratorSlice.ts run metamorphic 4 ${{ needs.plan.outputs.since }}
+      # The crates of crates.io's corpus against docs/crate-corpus.md (ADR
+      # 1067), of a change to what compiles them (`cratePaths`): one in 8 of
+      # the top crates by downloads (#1174). The nightly runs every row.
+      - name: crate corpus
+        id: crates
+        if: needs.plan.outputs.crates == 'true'
+        background: true
+        run: bun scripts/crate-corpus.ts --check --sample
+      # React's port at its pin (scripts/react-in-rust.ts), of a change to
+      # what compiles it (`portPaths`): a file that differs from what the
+      # pin committed fails it (#1188).
+      - name: react-in-rust port
+        id: port
+        if: needs.plan.outputs.port == 'true'
+        background: true
         run: bun scripts/react-in-rust.ts regen
+      - wait-all:
+      # Which nets failed, by name, in the job's summary.
+      - name: Say which nets failed
+        if: always()
+        env:
+          STEPS: ${{ toJSON(steps) }}
+        run: bun scripts/ci.ts nets >> "$GITHUB_STEP_SUMMARY"
       - if: failure()
         uses: actions/upload-artifact@v7
         with:
-          name: react-in-rust-diff
-          path: target/react-in-rust.diff
+          name: nets
+          path: |
+            target/iterator-matrix
+            target/memory-net
+            target/react-in-rust.diff
           if-no-files-found: ignore
           retention-days: 14
+
 
   lint:
     runs-on: ubuntu-latest
@@ -689,7 +415,14 @@ jobs:
       - run: cargo build --locked
       - run: bun run --cwd examples/vite-react build
 
+  # The playground's compiler, rust-js built to WASM with rustc's front
+  # end, and the snapshots and the playground it compiles, of a change to
+  # what decides them (scripts/iteratorSlice.ts's `wasmPaths`, of
+  # wasm/prebuilt.sh's inputs), as `plan` says: a doc's or a corpus case's
+  # change ran it, 13 min, to the answer it had. The nightly runs it.
   wasm:
+    needs: plan
+    if: ${{ inputs.nightly || needs.plan.outputs.wasm == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -731,15 +464,22 @@ jobs:
           RUST_JS_REQUIRE_WASM: '1'
         run: bun test test/snapshots.test.ts test/playground.test.ts
 
-  # rustc's tests, all of them, against the known failures (ADR 0089).
+  # rustc's tests, all of them, against the known failures (ADR 0089), of
+  # a change to what they run (`rustcPaths`), as `plan` says: its eight
+  # jobs waited for machines behind the rest. The nightly runs them.
   rustc:
+    needs: plan
+    if: ${{ inputs.nightly || needs.plan.outputs.rustc == 'true' }}
     uses: ./.github/workflows/rustc-tests.yml
 
   # The mutations the change touches (ADR 0093): those in the functions and
   # tests it changes, and those it adds or edits, on as many machines as
-  # ci:check counts they need. Nightly runs all of them, on 16 machines.
+  # ci:check counts they need, and what the last check didn't catch beside
+  # them; of a change that touches none, as `plan` says, none. Nightly runs
+  # all of them, on 16 machines.
   mutations:
     needs: plan
+    if: ${{ inputs.nightly || needs.plan.outputs.mutations == 'true' }}
     uses: ./.github/workflows/rustc-tests.yml
     with:
       mutations: true

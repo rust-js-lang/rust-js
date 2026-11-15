@@ -584,3 +584,17 @@ and with none the last green check is the base, as before. A mutation is
 caught only where a run caught it, what changed since is the change's as
 ever, and the nightly runs every mutation.
 
+## Amendment: a check of a change that touches no mutation runs none (dev-loop change 3)
+
+`plan` says `mutations=false` where `changedSince` finds no mutation the
+change touches, its site, its list or its unit tests: a doc's change, a
+corpus case's blessing, a port's pin. The check's `mutations` job is then
+skipped, not one machine running what the last check didn't catch, of code
+as it was, which no change since could catch. Such a run has no shard, so
+the next run's `resultsBase` passes over it, as it does a cancelled one,
+and follows the last check that ran them, its retry list and all;
+`runResults` counts its six runs among those that ran mutations, of at
+most thirty. The nightly runs every mutation, whatever `plan` says. Case
+([0262](0262-when-rust-and-js-disagree.md)): none; this decides what each
+check runs, not what the JS does.
+
