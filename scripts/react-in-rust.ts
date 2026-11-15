@@ -9,7 +9,9 @@
 //                                        its workspace, or the crates named,
 //                                        compiled to JS by this compiler in
 //                                        one `rust-js build`, against the JS
-//                                        the pin committed (the nightly's `port`)
+//                                        the pin committed (the nightly's `port`);
+//                                        the debug compiler built first, unless
+//                                        `RUST_JS_COMPILER` names one
 //
 // The port is fetched at the pin into a directory of its own, beside a
 // `rust-js` that is this checkout, as its Cargo.toml and package.json name
@@ -218,6 +220,10 @@ if (!import.meta.main) {
   }
   report(`react-in-rust at ${pin.slice(0, 9)}: its workspace compiles against this checkout's bindings.`);
 } else if (command === "regen") {
+  // The compiler of this checkout's source, built first where none is
+  // given: one built before a change of it regenerates another compiler's
+  // JS, and its diff misleads. Cargo finds one up to date at once.
+  if (process.env.RUST_JS_COMPILER === undefined) must(["cargo", "build", "--quiet"], root);
   if (!existsSync(compiler)) throw new Error(`no compiler at ${compiler}: \`bun run build\`, or set RUST_JS_COMPILER`);
   fetch();
   layout();
