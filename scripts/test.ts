@@ -13,10 +13,20 @@ import { join } from "node:path";
 import { stopGroup } from "../test/child";
 import { currentBuild, prune } from "../test/compiles";
 import { pruneKeptStores } from "../test/kept";
-import { browsers, caseParts, caseShardParts, nightly, shardArg, shardTimings } from "./shard";
+import { browsers, caseFiles, casePoolJobs, casePoolWidth, nightly, shardArg, shardTimings } from "./shard";
 import { machine } from "./shard";
 
 const root = join(import.meta.dir, "..");
+
+// The compiler the suite runs: one given, `RUST_JS_COMPILER`, as it is, as
+// CI's test shards give the one its cache keeps of the compiler's sources
+// (.github/actions/build-rust-js), else this checkout's, built first, as
+// test/support.ts's `buildCompiler` decides of a test.
+if (!process.env.RUST_JS_COMPILER) {
+  const build = Bun.spawnSync(["cargo", "build", "--quiet"], { cwd: root, stdout: "inherit", stderr: "inherit" });
+  if (build.exitCode !== 0) process.exit(build.exitCode ?? 1);
+  process.env.RUST_JS_COMPILER = join(root, "target", "debug", "rust-js");
+}
 
 // What no test used for a week, and past each store's cap, before any runs
 // (test/kept.ts): native programs' builds, and the corpus's verified runs;
@@ -39,14 +49,20 @@ done`], { stdout: "inherit", stderr: "inherit" });
 
 const atNight = process.argv.includes("--nightly");
 const shard = process.argv.slice(2).filter((arg) => arg.startsWith("--shard="));
-// The corpus, in parts, each a process of its own, as `check:fast` runs it
-// (scripts/shard.ts), beside the rest: a file of 1,300 cases one after
-// another, it was most of its shard's time on CI, 13 to 24 minutes, the
-// rest done in 4 with 3 of 4 cores idle, and past the deadline below.
-// A shard of `m` runs its `1/m` of the parts.
-const corpus = "test/corpus.test.ts";
+// The files of cases, the corpus and the metamorphic sample, in small
+// parts, each a process of its own, through one pool beside the rest
+// (scripts/shard.ts's `casePoolWidth`): a file of 1,300 cases one after
+// another, the corpus was most of its shard's time on CI, 13 to 24
+// minutes, the rest done in 4 with 3 of 4 cores idle. Its two parts a
+// shard of all at once were each shard's longest leg after, 712-724 s,
+// shard 1's alone on two of its four cores for 5.5 minutes after the rest
+// ended, and shard 2's rest as long as its metamorphic sample, one file of
+// one test at a time, 9.5 minutes (check 43700659375). A shard of `m`
+// runs its `1/m` of the parts, the metamorphic sample's first, as each
+// part of it is longer.
 const { index, count } = shardArg(shard) ?? { index: 1, count: 1 };
-const corpusParts = caseShardParts(index, count, caseParts(machine().cores));
+const { cores } = machine();
+const caseJobs = casePoolJobs(index, count, cores);
 // How long each file took, this checkout's, and the last CI run's shards'
 // where `bun scripts/ci.ts timings` put them: `bun test` balances the
 // shards by them all, and writes this run's to the first.
@@ -86,17 +102,46 @@ const run = async (args: string[], env: Record<string, string> = {}) => {
   running.delete(suite.pid);
   return code;
 };
-const ignored = [corpus, ...browsers, ...(atNight ? [] : nightly)].map((file) => `--path-ignore-patterns=${file}`);
+const ignored = [...Object.values(caseFiles), ...browsers, ...(atNight ? [] : nightly)].map((file) => `--path-ignore-patterns=${file}`);
 // The nightly's keeps how long each file and test of each run took, as
 // bun's JUnit reporter measures them, one report a run in target/junit/,
 // which nightly.yml's `test-times` merges (scripts/testTimes.ts).
 const junit = (name: string) => (atNight ? ["--reporter=junit", `--reporter-outfile=target/junit/${name.replace(/\W+/g, "-")}.xml`] : []);
 const of = `${index}-of-${count}`;
-const [rest, ...cases] = await Promise.all([
-  run(["--parallel", ...shard, ...timings, "--update-timings", ...ignored, ...junit(`suite-${of}`)]),
-  // Each case built as a library too, a push's and the nightly's (ADR 0360, #1920).
-  ...corpusParts.map((part) => run([corpus, ...junit(`corpus-${part}`)], { RUST_JS_CASES: part })),
-]);
+let restRunning = true;
+const rested = run(["--parallel", ...shard, ...timings, "--update-timings", ...ignored, ...junit(`suite-${of}`)]);
+// The pool: a part starts as one ends, as many at once as `casePoolWidth`
+// says while the rest runs, and more as soon as it's ended. One not
+// started by the deadline fails. Each case built as a library too, a
+// push's and the nightly's (ADR 0360, #1920).
+const cases = await new Promise<number[]>((done) => {
+  const codes: number[] = [];
+  let next = 0;
+  let active = 0;
+  const fill = () => {
+    while (next < caseJobs.length && active < casePoolWidth(cores, restRunning)) {
+      const { file, part } = caseJobs[next++]!;
+      if (Date.now() >= deadline) {
+        codes.push(1);
+        continue;
+      }
+      active++;
+      const name = `${file === caseFiles.corpus ? "corpus" : "metamorphic"}-${part}`;
+      void run([file, ...junit(name)], { RUST_JS_CASES: part }).then((code) => {
+        codes.push(code);
+        active--;
+        fill();
+      });
+    }
+    if (active === 0 && next >= caseJobs.length) done(codes);
+  };
+  void rested.then(() => {
+    restRunning = false;
+    fill();
+  });
+  fill();
+});
+const rest = await rested;
 const pages = Date.now() < deadline ? await run(["--parallel", ...shard, ...timings, ...browsers, ...junit(`browsers-${of}`)]) : 1;
 watchdog.kill();
 process.exit(rest || cases.find((code) => code !== 0) || pages);

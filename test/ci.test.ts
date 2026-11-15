@@ -32,7 +32,7 @@ import { browsers, drivesBrowser } from "../scripts/shard";
 import { loadScale, underLoad } from "../scripts/timing";
 import { caseOf, partsOf, runParts, verdict } from "../scripts/parts";
 import { jobs as localNightly } from "../scripts/nightly";
-import { atOnce, caseParts, caseShardParts, compilerBuilds, harness, memoryBudget, nightly, parts, peakGB, plainSuiteFiles, pooledParts, shard } from "../scripts/shard";
+import { atOnce, caseFiles, caseParts, casePoolJobs, casePoolParts, casePoolWidth, caseShardParts, compilerBuilds, harness, memoryBudget, nightly, parts, peakGB, plainSuiteFiles, pooledParts, shard } from "../scripts/shard";
 import { fixture, root } from "./support";
 
 const files = ["a", "b", "c", "d", "e", "f", "g"].map((name) => `test/${name}.test.ts`);
@@ -137,6 +137,44 @@ test("each shard runs its share of a file of cases' parts, each part once", () =
     ["2/4", "4/4"],
   ]);
   expect(shards.flat().sort()).toEqual(caseShardParts(1, 1, 4));
+});
+
+// A compiler CI keeps is of what it's made of, build.rs's inputs, the one
+// list: a key short of one, std/manifest.json, which src/library.rs
+// includes, restored a binary of other sources. The suite's shards restore
+// the debug one so, as the release one is (check 43700659375: 136 s of
+// each shard's longest leg built it again of unchanged sources).
+test("a compiler CI keeps is keyed by build.rs's inputs, and the suite's shards run the one kept", () => {
+  const script = readFileSync(join(root, "build.rs"), "utf8");
+  const inputs = [...script.slice(script.indexOf("let inputs = ["), script.indexOf("];", script.indexOf("let inputs = ["))).matchAll(/join\("([^"]+)"\)/g)].map((m) => (m[1] === "src" ? "src/**" : m[1]!));
+  expect(inputs).toEqual(["src/**", "std/manifest.json", "rust-toolchain.toml", "build.rs", "Cargo.toml", "Cargo.lock"]);
+  const action = readFileSync(join(root, ".github/actions/build-rust-js/action.yml"), "utf8");
+  expect(action).toContain(`key: rust-js-\${{ inputs.profile }}-\${{ runner.os }}-\${{ hashFiles(${inputs.map((input) => `'${input}'`).join(", ")}) }}`);
+  const check = Bun.YAML.parse(readFileSync(join(root, ".github/workflows/check.yml"), "utf8")) as { jobs: Record<string, { steps: { uses?: string; with?: Record<string, string>; id?: string; env?: Record<string, string> }[] }> };
+  const steps = check.jobs.test!.steps;
+  expect(steps.filter((step) => step.uses === "./.github/actions/build-rust-js").map((step) => step.with)).toEqual([{ profile: "debug" }]);
+  expect(steps.find((step) => step.id === "test")!.env!.RUST_JS_COMPILER).toBe(["${{ github.workspace }}", "target", "debug", "rust-js"].join("/"));
+  expect(readFileSync(join(root, "scripts/test.ts"), "utf8")).toContain("if (!process.env.RUST_JS_COMPILER) {");
+});
+
+// `bun run test`'s files of cases go through one pool beside the rest of
+// the suite: half the cores while the rest runs, every core once it's
+// ended, in parts small enough that none is left alone at the end, the
+// metamorphic sample's too, never one file of it (check 43700659375).
+test("the suite's files of cases are small parts of one pool, wider once the rest has ended", () => {
+  expect([casePoolWidth(4, true), casePoolWidth(4, false)]).toEqual([2, 4]);
+  expect([casePoolWidth(12, true), casePoolWidth(12, false)]).toEqual([6, 12]);
+  expect([casePoolParts("corpus", 4), casePoolParts("metamorphic", 4)]).toEqual([8, 4]);
+  // Of both shards on CI's four cores, each part once, the sample's first.
+  const shards = [1, 2].map((i) => casePoolJobs(i, 2, 4));
+  expect(shards[0]!.slice(0, 5)).toEqual([...["1/8", "3/8", "5/8", "7/8"].map((part) => ({ file: caseFiles.metamorphic, part })), { file: caseFiles.corpus, part: "1/16" }]);
+  for (const file of Object.values(caseFiles)) {
+    const parts = shards.flat().filter((job) => job.file === file).map((job) => job.part);
+    expect([file, new Set(parts).size, parts.length]).toEqual([file, parts.length, Number(parts[0]!.split("/")[1])]);
+  }
+  const script = readFileSync(join(root, "scripts/test.ts"), "utf8");
+  expect(script).toContain("const ignored = [...Object.values(caseFiles), ");
+  expect(script).toContain("casePoolWidth(cores, restRunning)");
 });
 
 // What only the nightly's suite runs (ADR 1030): each a test file there is,

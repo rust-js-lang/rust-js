@@ -1,16 +1,22 @@
 name: Build rust-js
-description: A release build of rust-js at target/release/rust-js, from the cache when the compiler's sources haven't changed.
+description: rust-js at target/<profile>/rust-js, the release build or the debug one the tests run, from the cache when the compiler's sources haven't changed.
+inputs:
+  profile:
+    description: "`release`, or `debug`, Cargo's dev profile, which the suite runs"
+    default: release
 runs:
   using: composite
   steps:
     # The binary itself, for the compiler's sources as they are, which are
-    # all it's made from: a run that changes only tests or scripts builds
-    # nothing.
+    # all it's made of, build.rs's inputs: a run that changes only tests or
+    # scripts builds nothing. About half of main's pushes change none
+    # (80 of 2026-11-15, 38): each test shard's build of the debug one was
+    # 136 s of its longest leg (check 43700659375).
     - id: binary
       uses: actions/cache@v6
       with:
-        path: target/release/rust-js
-        key: rust-js-release-${{ runner.os }}-${{ hashFiles('src/**', 'build.rs', 'Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml') }}
+        path: target/${{ inputs.profile }}/rust-js
+        key: rust-js-${{ inputs.profile }}-${{ runner.os }}-${{ hashFiles('src/**', 'std/manifest.json', 'rust-toolchain.toml', 'build.rs', 'Cargo.toml', 'Cargo.lock') }}
     - if: steps.binary.outputs.cache-hit != 'true'
       name: Install the pinned Rust toolchain
       shell: bash
@@ -23,10 +29,10 @@ runs:
         path: |
           ~/.cargo/registry
           ~/.cargo/git
-          target/release
-        key: rustc-tests-release-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}-${{ github.sha }}
-        restore-keys: rustc-tests-release-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}-
+          target/${{ inputs.profile }}
+        key: rustc-tests-${{ inputs.profile }}-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}-${{ github.sha }}
+        restore-keys: rustc-tests-${{ inputs.profile }}-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}-
     - if: steps.binary.outputs.cache-hit != 'true'
       name: Build rust-js
       shell: bash
-      run: cargo build --release --locked
+      run: cargo build --locked ${{ inputs.profile == 'release' && '--release' || '' }}

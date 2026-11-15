@@ -189,3 +189,31 @@ not its time: the net builds its `.rlib` anew on each run, so each of
 `test/support.test.ts`' "a native program is kept by what it was built
 from, said from the checkout's root". The wrappers stay the checkout's,
 64 MB. Below the disk's floor nothing is kept, a build there made in a fixture of the test's and used from it, a verified run not recorded (`mayKeep`); and the checkout's stores from before, `target/native-cache` and `target/corpus-cache`, are removed as the stores are pruned (`retiredStores`).
+
+## Amendment: the files of cases through one pool, and the shard's compiler kept (2026-11-15)
+
+Each test shard of a push's check ran its two corpus parts at once from
+its start, one for each two of its four cores (`caseParts`), beside the
+rest of the suite. In check 43700659375 they were each shard's longest
+leg, 712–724 s: shard 1's rest ended at 396 s, and its two parts ran on
+alone with two cores idle for 5.5 minutes; shard 2's rest ended at 592 s,
+as long as its metamorphic sample, one file of one test at a time. The
+browsers' files wait for both.
+
+**A shard's files of cases, the corpus and the metamorphic sample, are
+small parts through one pool** (`scripts/test.ts`): the corpus two parts
+a core, the sample one, the sample's first, as each part of it is longer
+(`casePoolParts`); as many at once as one for each two cores while the
+rest runs, and every core once it has ended (`casePoolWidth`). The parts
+are each shard's `1/m` of them, as before (`caseShardParts`). The
+browsers' files still run after, on their own.
+
+**The suite's debug compiler is the cache's where its sources haven't
+changed**, as the release one is: `.github/actions/build-rust-js`,
+`profile: debug`, keyed by build.rs's inputs, the one list of what the
+compiler is made of (std/manifest.json among them, which the release key
+lacked). Each shard built it again, 136 s of its longest leg, of a
+checkout's new mtimes, where 38 of main's last 80 commits changed none of
+its sources. `scripts/test.ts` builds the compiler only where
+`RUST_JS_COMPILER` isn't given, as `buildCompiler` decides of a test.
+Held by `test/ci.test.ts`.

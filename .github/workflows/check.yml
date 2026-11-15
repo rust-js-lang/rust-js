@@ -340,22 +340,19 @@ jobs:
         with:
           node-version: '24'
       # Each of what the suite needs at once (parallel steps): the
-      # toolchain, the last build, and the packages with their browser.
+      # toolchain, and the packages with their browser.
       - parallel:
           - name: Install pinned Rust toolchain
             run: rustup show
-          - uses: actions/cache@v6
-            with:
-              path: |
-                ~/.cargo/registry
-                ~/.cargo/git
-                target/debug
-              key: test-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}-${{ github.sha }}
-              restore-keys: test-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}-
           - name: Install packages and the browser
             run: |
               bun install --frozen-lockfile
               bunx --bun playwright install --with-deps chromium
+      # The debug compiler the suite runs, of the compiler's sources: built
+      # only where they changed, else the cache's.
+      - uses: ./.github/actions/build-rust-js
+        with:
+          profile: debug
       - name: Read the last run's timings
         env:
           GH_TOKEN: ${{ github.token }}
@@ -364,6 +361,7 @@ jobs:
         env:
           # The nightly's counts each compile's decisions (ADR 1124).
           RUST_JS_DECISIONS: ${{ inputs.nightly && '/tmp/decisions.tsv' || '' }}
+          RUST_JS_COMPILER: ${{ github.workspace }}/target/debug/rust-js
         run: bun run test --shard=${{ matrix.shard }}/${{ inputs.test_shards || '2' }}${{ inputs.nightly && ' --nightly' || '' }}
       - if: always()
         uses: actions/upload-artifact@v7

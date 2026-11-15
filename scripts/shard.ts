@@ -37,6 +37,37 @@ export function pooledParts(cores: number): number {
   return Math.max(2, cores);
 }
 
+/** How many of the suite's parts of a file of cases, the corpus's and the
+ * metamorphic sample's, `bun run test` runs at once on `cores` (its
+ * pool, scripts/test.ts): one for each two cores while the rest of the
+ * suite runs beside them, which keeps the others, and every core once it
+ * has ended. Each part a share of `casePoolParts` small enough that none
+ * is left alone at the end: with two parts a shard of all at once, CI's
+ * shard 1 ran its two corpus parts alone on two of its four cores for 5.5
+ * minutes after the rest ended (check 43700659375). */
+export function casePoolWidth(cores: number, restRunning: boolean): number {
+  return restRunning ? caseParts(cores) : pooledParts(cores);
+}
+
+/** How many parts of each file of cases a shard's pool runs on `cores`:
+ * the corpus's two for each core, the metamorphic sample's, of some 20
+ * cases each of 40 rewrites, one. */
+export function casePoolParts(file: keyof typeof caseFiles, cores: number): number {
+  return file === "corpus" ? 2 * pooledParts(cores) : pooledParts(cores);
+}
+
+/** The files of cases `bun run test` runs through its pool, apart from the
+ * rest of the suite's `bun test --parallel`. */
+export const caseFiles = { corpus: "test/corpus.test.ts", metamorphic: "test/metamorphic.test.ts" } as const;
+
+/** Each part of the files of cases shard `index` of `count` runs on
+ * `cores`, the metamorphic sample's first, as each part of it is longer. */
+export function casePoolJobs(index: number, count: number, cores: number): { file: string; part: string }[] {
+  return (["metamorphic", "corpus"] as const).flatMap((file) =>
+    caseShardParts(index, count, casePoolParts(file, cores)).map((part) => ({ file: caseFiles[file], part })),
+  );
+}
+
 /** The most memory, in GB, one job of each kind held at once, its process
  * and every one it started, sampled every 200 ms on a quiet Mac mini of 8
  * cores and 16 GB (2026-11-09, #1084), rounded up. A build of the
