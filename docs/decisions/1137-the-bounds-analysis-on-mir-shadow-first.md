@@ -868,3 +868,42 @@ now, as an `Rc` of an `Rc`'s is. A `Deref` of the crate's isn't an `Rc`'s,
 and may give another cell each time. Each row panics as native does
 (`rc_refcell_bounds`). Of the corpus, the call-bounds lines go from 26 to
 23, and no line is added.
+
+### Amendment: a write the walk doesn't see (2026-11-15, #1877, #1878)
+
+The audit before the switch found two writes the walk didn't see, each a
+live wrong answer, since MIR decides bounds asserts and wraps:
+- **A write through a reference**, `*v = Vec::new()`. A statement whose
+  place isn't a local returned before anything was forgotten, so
+  `v.len() - 1` under `!v.is_empty()` stayed known not to wrap (#1877).
+  Now a write to any place through a deref forgets what's known of the
+  length its root reaches. That covers a deref of a deref, `**v = ...`, a
+  write through a raw pointer, `ptr::write`'s too, and a field's place
+  through a reference. An item's write, `v[i] = x` of a `&mut [T]`,
+  can't change the length, and keeps it. A table's rows are reached by
+  `Vec`'s `IndexMut` alone, never a place's index. A call's result reaches such a place through a
+  temporary, moved in by an assignment, so no call's destination is a deref
+  place in the MIR the walk reads. A `&mut` given to a call was already
+  forgotten (`called_on`).
+- **A parameter written**, `h = other` of a `&Pair` (#1878).
+  `fields_as_locals` took a shared reference's fields as locals where it's
+  used whole too, as nothing changes them while it's borrowed. But the
+  reference itself can be made another's, and its fields are then that
+  one's. A parameter the body writes, by an assignment or a `&mut` of
+  it, has no field locals now.
+
+`test/bounds-matrix.ts` is the net these came from. It takes each holder
+of a collection: an owned `Vec`, a slice, a `&mut` of each, a `&mut &mut`,
+a `RefCell` and its guard, an `Rc`, a `&Rc`, a `Box`, a thread-local, a
+struct's field of each kind, a local struct's, a table's row and a raw
+pointer's pointee. Each meets each test: below, held in a `bool`, the
+next, the last, a wrap, a `while` and a `for` loop, in a closure, and in a
+callee. Each test then meets each thing between that may shorten it: a
+callback through another path, a drop, a closure, a direct call, a
+reassignment, a `&mut` lent, the whole written, a raw pointer's write.
+Each meets each index form, an item, a range's end and `swap`, and runs
+as native Rust does. What Miri finds undefined behaviour is left out,
+with Miri's words beside it in the matrix: a raw pointer's write that
+invalidates a closure's capture, and a `swap`'s `&mut` reborrow that
+invalidates the pointer a `for` loop writes through next. Under the switch's build, 12 of its first 104 programs
+differed, and with the fixes none does.

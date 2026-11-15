@@ -169,6 +169,11 @@ export function jobs({ all, changed, branch, added, extra, cores, picked, forms,
   // A change to what a `&mut` is, or to an operation on one, runs the `&mut`
   // matrix's sample against native Rust (ADR 1086).
   const mutRefs = all || touched.some((file) => /^src\/lower\/(representation\/mut_ref|mut_refs|mir\/(assign|entries|places|rvalues|closures)|std_types\/cell)\.rs$/.test(file));
+  // A change to what the bounds analyses prove, MIR's intervals, THIR's
+  // ranges or a loop's range, runs the bounds matrix: a length tested,
+  // something between that may change it, then an index (#1877, #1878).
+  const bounds =
+    all || touched.some((file) => /^src\/lower\/(analysis\/intervals|body_queries\/ranges|recognition\/loop_ranges)|^test\/bounds-matrix/.test(file));
   // A change to how a place holds a `None`, or to what reads or writes
   // one, runs the `None` matrix's sample against native Rust (#855).
   const nones = all || touched.some((file) => /^src\/lower\/(representation\/(nones|options)|bindings\/nullable|std_types\/option|analysis\/nulled_params)/.test(file));
@@ -319,6 +324,7 @@ export function jobs({ all, changed, branch, added, extra, cores, picked, forms,
       ...(all ? everyFile : suites),
       ...(tidy ? [job("readability passes", ["bun", "test", "test/tidy-stages.test.ts", "test/getter-reads.test.ts"], { weight: 2 })] : []),
       ...(mutRefs ? [job("the `&mut` matrix's sample", ["bun", "test", "test/mut-ref-matrix.test.ts"])] : []),
+      ...(bounds ? [job("the bounds matrix", ["bun", "test", "test/bounds-matrix.test.ts"])] : []),
       ...(nones ? [job("the `None` matrix's sample", ["bun", "test", "test/none-matrix.test.ts"])] : []),
       ...(objectModel ? [job("the object model's sample", ["bun", "test", "test/object-model.test.ts"])] : []),
       // The slices: 64 and 43 batches in 4 parts, 119-145 s and 63-119 s

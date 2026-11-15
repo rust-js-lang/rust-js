@@ -191,6 +191,7 @@ export const nightly = [
   "iterator-forms",
   "determinism",
   "mut-ref-matrix",
+  "bounds-matrix",
   "memory-net",
   "none-matrix",
   "object-model",

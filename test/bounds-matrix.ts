@@ -1,0 +1,426 @@
+// The bounds matrix (ADR 1137, the audit before step 5's switch): a
+// collection's length tested, then something run that may change it,
+// then an index of it, each holder of the collection meeting each test,
+// each thing between and each form of index, that rust-js must run as
+// native Rust does. What the MIR intervals prove of a length is sound
+// only while nothing between can change it: another path to the same
+// collection (another `Rc`, a shared `&RefCell`, a field), a callback, a
+// closure, a reassignment, a `&mut` lent, a drop. Each program is one
+// holder and one test, a function for each thing between and each form.
+
+/** Where a collection lives, as the probe sees it, and every way to reach
+ * it again. `len` and `at` read it; the rest, each where the holder
+ * admits it, shorten it to one item. */
+type Holder = {
+  /** The probe's parameters but `k` and `cut`. */
+  params: string;
+  /** Statements before the test, inside the probe. */
+  setup?: string;
+  /** In `main`: statements making a fresh collection of 1, 2, 3, 4, and
+   * the probe's arguments but `k` and `cut`. */
+  make: string;
+  args: string;
+  /** In `main`: a closure body that shortens it through another path. */
+  cut?: string;
+  len: string;
+  at: (k: string) => string;
+  /** A call's index of it, `swap`, where it's mutable. */
+  swap?: (k: string) => string;
+  /** Inside the probe: a closure body that shortens it through what the
+   * probe holds shared. */
+  inner?: string;
+  direct?: string;
+  reassign?: string;
+  lend?: string;
+  whole?: string;
+  /** A write through a raw pointer to it, `p` of its setup. */
+  pointer?: string;
+  /** The tests, or a test's form, `<test>/<form>`, whose programs are
+   * undefined behaviour under Miri, so no answer of theirs is wrong:
+   * each left out, with what Miri says beside it, so none is added again. */
+  undefined?: string[];
+};
+
+const decls = `use std::any::Any;
+use std::cell::RefCell;
+use std::panic::{self, AssertUnwindSafe};
+use std::rc::Rc;
+
+fn message(payload: Box<dyn Any + Send>) -> String {
+    if let Some(s) = payload.downcast_ref::<&str>() {
+        s.to_string()
+    } else if let Some(s) = payload.downcast_ref::<String>() {
+        s.clone()
+    } else {
+        "another payload".to_string()
+    }
+}
+
+fn check(what: &str, f: impl FnOnce() -> u32) {
+    match panic::catch_unwind(AssertUnwindSafe(f)) {
+        Ok(value) => println!("{what}: {value}"),
+        Err(payload) => println!("{what}: {}", message(payload)),
+    }
+}
+
+fn shorten(v: &mut Vec<u32>) {
+    v.truncate(1);
+}
+
+fn shorten_slice<'a>(v: &mut &'a [u32]) {
+    let s: &'a [u32] = v;
+    *v = &s[..1];
+}
+
+fn replace_rc(v: &mut Rc<RefCell<Vec<u32>>>) {
+    *v = Rc::new(RefCell::new(vec![9]));
+}
+
+struct Holder {
+    items: Vec<u32>,
+}
+
+fn reset(h: &mut Holder) {
+    h.items.truncate(1);
+}
+
+/// A struct whose field is a slice, whose index is a bounds assert.
+struct Pair {
+    items: &'static [u32],
+}
+
+fn repoint(h: &mut &Pair) {
+    *h = Box::leak(Box::new(Pair { items: &[9] }));
+}
+
+struct Shared {
+    items: RefCell<Vec<u32>>,
+}
+
+fn shorten_rows(t: &mut Vec<Vec<u32>>) {
+    for row in t.iter_mut() {
+        row.truncate(1);
+    }
+}
+
+/// A value whose drop runs what it's given.
+struct OnDrop<'a>(&'a dyn Fn());
+
+impl Drop for OnDrop<'_> {
+    fn drop(&mut self) {
+        (self.0)();
+    }
+}
+
+thread_local! {
+    static ITEMS: RefCell<Vec<u32>> = const { RefCell::new(Vec::new()) };
+}
+`;
+
+const four = "vec![1u32, 2, 3, 4]";
+
+const holders: Record<string, Holder> = {
+  vec_owned: {
+    params: "mut v: Vec<u32>",
+    make: "",
+    args: four,
+    len: "v.len()",
+    at: (k) => `v[${k}]`,
+    swap: (k) => `{ v.swap(${k}, 0); v[0] }`,
+    direct: "v.truncate(1);",
+    reassign: "v = vec![9];",
+    lend: "shorten(&mut v);",
+  },
+  slice: {
+    params: "mut v: &[u32]",
+    make: `let items = ${four};`,
+    args: "&items",
+    len: "v.len()",
+    at: (k) => `v[${k}]`,
+    reassign: "v = &[9];",
+    lend: "shorten_slice(&mut v);",
+  },
+  vec_mut: {
+    params: "v: &mut Vec<u32>",
+    make: `let mut items = ${four};`,
+    args: "&mut items",
+    len: "v.len()",
+    at: (k) => `v[${k}]`,
+    swap: (k) => `{ v.swap(${k}, 0); v[0] }`,
+    direct: "v.truncate(1);",
+    reassign: "*v = vec![9];",
+    lend: "shorten(v);",
+  },
+  slice_mut: {
+    params: "v: &mut &[u32]",
+    make: `let items = ${four}; let mut s = &items[..];`,
+    args: "&mut s",
+    len: "v.len()",
+    at: (k) => `v[${k}]`,
+    reassign: "*v = &[9];",
+    lend: "shorten_slice(v);",
+  },
+  slice_field: {
+    params: "mut h: &Pair",
+    make: `let held = Pair { items: Vec::leak(${four}) };`,
+    args: "&held",
+    len: "h.items.len()",
+    at: (k) => `h.items[${k}]`,
+    reassign: "h = Box::leak(Box::new(Pair { items: &[9] }));",
+    lend: "repoint(&mut h);",
+  },
+  slice_field_mut: {
+    params: "h: &mut Pair",
+    make: `let mut held = Pair { items: Vec::leak(${four}) };`,
+    args: "&mut held",
+    len: "h.items.len()",
+    at: (k) => `h.items[${k}]`,
+    reassign: "*h = Pair { items: &[9] };",
+    whole: "h.items = &[9];",
+  },
+  vec_mut_mut: {
+    params: "v: &mut &mut Vec<u32>",
+    make: `let mut items = ${four}; let mut r = &mut items;`,
+    args: "&mut r",
+    len: "v.len()",
+    at: (k) => `v[${k}]`,
+    swap: (k) => `{ v.swap(${k}, 0); v[0] }`,
+    direct: "v.truncate(1);",
+    reassign: "**v = vec![9];",
+    lend: "shorten(v);",
+  },
+  pointer: {
+    params: "v: &mut Vec<u32>",
+    setup: "let p: *mut Vec<u32> = &raw mut *v;",
+    make: `let mut items = ${four};`,
+    args: "&mut items",
+    len: "v.len()",
+    at: (k) => `v[${k}]`,
+    swap: (k) => `{ v.swap(${k}, 0); v[0] }`,
+    reassign: "unsafe { *p = vec![9] };",
+    pointer: "unsafe { std::ptr::write(p, vec![9]) };",
+    // Undefined behaviour, Miri's Stacked Borrows (nightly, 2026-11-15):
+    // - `in_closure`: the write through `p` invalidates the closure's
+    //   capture of `v`, which `v[k]` then reads: "trying to retag from
+    //   <34780> for SharedReadOnly permission ..., but that tag does not
+    //   exist in the borrow stack"; "<34780> was created by a
+    //   SharedReadOnly retag" at the closure, "later invalidated ... by a
+    //   Unique retag" at `*p = vec![9]`.
+    // - `loop_for/swap`: `v.swap`'s `&mut` reborrow invalidates `p`,
+    //   which the next step writes through: "trying to retag from <91523>
+    //   for Unique permission ..., but that tag does not exist"; "<91523>
+    //   was created by a SharedReadWrite retag" at `&raw mut *v`, "later
+    //   invalidated ... by a Unique retag" at `v.swap(j, 0)`.
+    undefined: ["in_closure", "loop_for/swap"],
+  },
+  local_field: {
+    params: "items: Vec<u32>",
+    setup: "let mut x = Holder { items };",
+    make: "",
+    args: four,
+    len: "x.items.len()",
+    at: (k) => `x.items[${k}]`,
+    swap: (k) => `{ x.items.swap(${k}, 0); x.items[0] }`,
+    direct: "x.items.truncate(1);",
+    reassign: "x = Holder { items: vec![9] };",
+    lend: "shorten(&mut x.items);",
+    whole: "x.items = vec![9];",
+  },
+  refcell: {
+    params: "v: &RefCell<Vec<u32>>",
+    make: `let cell = RefCell::new(${four});`,
+    args: "&cell",
+    cut: "cell.borrow_mut().truncate(1)",
+    len: "v.borrow().len()",
+    at: (k) => `v.borrow()[${k}]`,
+    swap: (k) => `{ v.borrow_mut().swap(${k}, 0); v.borrow()[0] }`,
+    inner: "v.borrow_mut().truncate(1)",
+    direct: "v.borrow_mut().truncate(1);",
+    lend: "shorten(&mut v.borrow_mut());",
+  },
+  rc: {
+    params: "mut v: Rc<RefCell<Vec<u32>>>",
+    make: `let cell = Rc::new(RefCell::new(${four})); let other = cell.clone();`,
+    args: "cell",
+    cut: "other.borrow_mut().truncate(1)",
+    len: "v.borrow().len()",
+    at: (k) => `v.borrow()[${k}]`,
+    swap: (k) => `{ v.borrow_mut().swap(${k}, 0); v.borrow()[0] }`,
+    inner: "v.borrow_mut().truncate(1)",
+    direct: "v.borrow_mut().truncate(1);",
+    reassign: "v = Rc::new(RefCell::new(vec![9]));",
+    lend: "replace_rc(&mut v);",
+  },
+  rc_ref: {
+    params: "v: &Rc<RefCell<Vec<u32>>>",
+    make: `let cell = Rc::new(RefCell::new(${four}));`,
+    args: "&cell",
+    cut: "cell.borrow_mut().truncate(1)",
+    len: "v.borrow().len()",
+    at: (k) => `v.borrow()[${k}]`,
+    inner: "v.borrow_mut().truncate(1)",
+    direct: "v.borrow_mut().truncate(1);",
+  },
+  boxed: {
+    params: "v: Box<RefCell<Vec<u32>>>",
+    make: "",
+    args: `Box::new(RefCell::new(${four}))`,
+    len: "v.borrow().len()",
+    at: (k) => `v.borrow()[${k}]`,
+    inner: "v.borrow_mut().truncate(1)",
+    direct: "v.borrow_mut().truncate(1);",
+  },
+  guard: {
+    params: "v: &RefCell<Vec<u32>>",
+    setup: "let mut g = v.borrow_mut();",
+    make: `let cell = RefCell::new(${four});`,
+    args: "&cell",
+    cut: "cell.borrow_mut().truncate(1)",
+    len: "g.len()",
+    at: (k) => `g[${k}]`,
+    swap: (k) => `{ g.swap(${k}, 0); g[0] }`,
+    direct: "g.truncate(1);",
+    reassign: "*g = vec![9];",
+    lend: "shorten(&mut g);",
+  },
+  field: {
+    params: "mut h: &Holder",
+    make: `let held = Holder { items: ${four} };`,
+    args: "&held",
+    len: "h.items.len()",
+    at: (k) => `h.items[${k}]`,
+    reassign: "h = Box::leak(Box::new(Holder { items: vec![9] }));",
+  },
+  field_mut: {
+    params: "h: &mut Holder",
+    make: `let mut held = Holder { items: ${four} };`,
+    args: "&mut held",
+    len: "h.items.len()",
+    at: (k) => `h.items[${k}]`,
+    swap: (k) => `{ h.items.swap(${k}, 0); h.items[0] }`,
+    direct: "h.items.truncate(1);",
+    reassign: "*h = Holder { items: vec![9] };",
+    lend: "shorten(&mut h.items);",
+    whole: "reset(h);",
+  },
+  field_cell: {
+    params: "h: &Shared",
+    make: `let shared = Shared { items: RefCell::new(${four}) };`,
+    args: "&shared",
+    cut: "shared.items.borrow_mut().truncate(1)",
+    len: "h.items.borrow().len()",
+    at: (k) => `h.items.borrow()[${k}]`,
+    inner: "h.items.borrow_mut().truncate(1)",
+    direct: "h.items.borrow_mut().truncate(1);",
+  },
+  table: {
+    params: "v: &Vec<u32>",
+    setup: "let mut t = vec![v.clone(); 3];",
+    make: `let items = ${four};`,
+    args: "&items",
+    len: "t[0].len()",
+    at: (k) => `t[1][${k}]`,
+    swap: (k) => `{ t[1].swap(${k}, 0); t[1][0] }`,
+    direct: "t[1].truncate(1);",
+    reassign: "t[1] = vec![9];",
+    lend: "shorten(&mut t[1]);",
+    whole: "shorten_rows(&mut t);",
+  },
+  thread_local: {
+    params: "",
+    make: `ITEMS.set(${four});`,
+    args: "",
+    cut: "ITEMS.with_borrow_mut(|v| v.truncate(1))",
+    len: "ITEMS.with_borrow(|v| v.len())",
+    at: (k) => `ITEMS.with_borrow(|v| v[${k}])`,
+    inner: "ITEMS.with_borrow_mut(|v| v.truncate(1))",
+    direct: "ITEMS.with_borrow_mut(|v| v.truncate(1));",
+  },
+};
+
+/** What runs between the test and the index, each of a holder's ways to
+ * shorten it, and nothing, the control. */
+const betweens: Record<string, (h: Holder) => string | undefined> = {
+  nothing: () => "",
+  callback: (h) => (h.cut ? "cut();" : undefined),
+  dropped: (h) => (h.cut ? "drop(OnDrop(cut));" : undefined),
+  closure: (h) => (h.inner ? `let shorten_it = || ${h.inner}; shorten_it();` : undefined),
+  direct: (h) => h.direct,
+  reassign: (h) => h.reassign,
+  lend: (h) => h.lend,
+  whole: (h) => h.whole,
+  pointer: (h) => h.pointer,
+};
+
+/** The index's form: an item, a range's end, a call's (`swap`). */
+const forms: Record<string, (h: Holder, k: string) => string | undefined> = {
+  item: (h, k) => h.at(k),
+  range: (h, k) => {
+    const at = h.at(`..${k} + 1`);
+    return at.includes("with_borrow") ? at.replace(/\)$/, ".len() as u32)") : `${at}.len() as u32`;
+  },
+  swap: (h, k) => h.swap?.(k),
+};
+
+/** The test, around what's between and the index, `idx(k)`. */
+const tests: Record<string, (h: Holder, between: string, idx: (k: string) => string, name: string) => string> = {
+  below: (h, b, idx) => `if k < ${h.len} {\n        ${b}\n        ${idx("k")}\n    } else {\n        0\n    }`,
+  held: (h, b, idx) => `let ok = k < ${h.len};\n    if ok {\n        ${b}\n        ${idx("k")}\n    } else {\n        0\n    }`,
+  next: (h, b, idx) => `if k + 1 < ${h.len} {\n        ${b}\n        ${idx("k + 1")}\n    } else {\n        0\n    }`,
+  last: (h, b, idx) => `let n = ${h.len};\n    if n > k {\n        ${b}\n        ${idx("n - 1")}\n    } else {\n        0\n    }`,
+  // A length less what it's known above, which wraps once something
+  // between shortens it to one.
+  wrap: (h, b) => `if ${h.len} > 1 {\n        ${b}\n        (${h.len} - 2) as u32\n    } else {\n        0\n    }`,
+  loop_while: (h, b, idx) =>
+    `let mut total = 0;\n    let mut j = k;\n    while j < ${h.len} {\n        ${b}\n        total += ${idx("j")};\n        j += 1;\n    }\n    total`,
+  loop_for: (h, b, idx) => `let mut total = 0;\n    let end = ${h.len};\n    for j in k..end {\n        ${b}\n        total += ${idx("j")};\n    }\n    total`,
+  in_closure: (h, b, idx) =>
+    `let mut f = |k: usize| -> u32 {\n        if k < ${h.len} {\n            ${b}\n            ${idx("k")}\n        } else {\n            0\n        }\n    };\n    f(k)`,
+  // The index in a function of its own (`calleeBody`).
+  in_callee: () => "",
+};
+
+/** Each program by name, `<holder>__<test>`. */
+export function programs(): Record<string, string> {
+  const all: Record<string, string> = {};
+  for (const [holderName, h] of Object.entries(holders)) {
+    for (const [testName, test] of Object.entries(tests)) {
+      if (h.undefined?.includes(testName)) continue;
+      const fns: string[] = [];
+      const calls: string[] = [];
+      for (const [betweenName, between] of Object.entries(betweens)) {
+        const b = between(h);
+        if (b === undefined) continue;
+        for (const [formName, form] of Object.entries(forms)) {
+          if (form(h, "k") === undefined || h.undefined?.includes(`${testName}/${formName}`)) continue;
+          if ((testName === "in_callee" || testName === "wrap") && formName !== "item") continue;
+          const name = `${betweenName}_${formName}`;
+          const idx = (k: string) => form(h, k)!;
+          const params = [h.params, "k: usize", "cut: &dyn Fn()"].filter(Boolean).join(", ");
+          const callee = testName === "in_callee" ? `fn ${name}_at(s: &[u32], k: usize) -> u32 {\n    s[k]\n}\n\n` : "";
+          const body = testName === "in_callee" ? calleeBody(h, b, name) : test(h, b, idx, name);
+          fns.push(`${callee}fn ${name}(${params}) -> u32 {\n    ${h.setup ?? ""}\n    ${body}\n}\n`);
+          for (const k of [0, 2, 5]) {
+            const args = [h.args, `${k}`, b.includes("cut") ? `&|| { ${h.cut}; }` : "&|| {}"].filter(Boolean).join(", ");
+            calls.push(`    check("${name} ${k}", || {\n        ${h.make}\n        ${name}(${args})\n    });`);
+          }
+        }
+      }
+      all[`${holderName}__${testName}`] = `${decls}\n${fns.join("\n")}\nfn main() {\n${calls.join("\n")}\n}\n`;
+    }
+  }
+  return all;
+}
+
+/** The callee's test: the index in a function of its own, given the
+ * collection's items as a slice, so its parameter's bound is its
+ * callers' (caller-given parameters). */
+function calleeBody(h: Holder, b: string, name: string): string {
+  const slice = h.at("..");
+  const of = slice.includes("with_borrow") ? undefined : `&${slice}`;
+  if (of === undefined) {
+    return `if k < ${h.len} {\n        ${b}\n        ITEMS.with_borrow(|v| ${name}_at(v, k))\n    } else {\n        0\n    }`;
+  }
+  return `if k < ${h.len} {\n        ${b}\n        ${name}_at(${of}, k)\n    } else {\n        0\n    }`;
+}
+

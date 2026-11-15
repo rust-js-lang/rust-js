@@ -269,4 +269,20 @@ export const mutations: Mutation[] = [
     replace: "                Some(Interval { lo: 0, hi: 0 }).filter(fits)\n",
     tests: ["test/corpus.test.ts", "-t", "^bool_indexed_arrays\\.rs$"],
   },
+  {
+    name: "intervals-write-through-a-reference-unseen",
+    breaks: "a write through a `&mut`, `*v = vec![9]`, forgets nothing of the length it reaches, so `(v.len() - 2) as u32` under `v.len() > 1` is JS's own subtraction and gives -1 where Rust wraps (#1877)",
+    file: "src/lower/analysis/intervals.rs",
+    find: "        if let Some(deref) = place.projection.iter().position(|elem| elem == mir::PlaceElem::Deref)\n",
+    replace: "        if let Some(deref) = place.projection.iter().position(|elem| elem == mir::PlaceElem::Deref && false)\n",
+    tests: ["test/bounds-matrix.test.ts", "-t", "vec_mut, tested wrap"],
+  },
+  {
+    name: "intervals-whole-write-taken-for-an-item",
+    breaks: "a write of the whole through a reference, `*v = vec![9]`, is taken as an item's and an item's as the whole, keeping the length, so `(v.len() - 2) as u32` under `v.len() > 1` gives -1 where Rust wraps (#1877)",
+    file: "src/lower/analysis/intervals.rs",
+    find: "            && !place.projection[deref..].iter().any(|elem| {\n",
+    replace: "            && place.projection[deref..].iter().any(|elem| {\n",
+    tests: ["test/bounds-matrix.test.ts", "-t", "vec_mut, tested wrap"],
+  },
 ];

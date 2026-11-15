@@ -572,6 +572,20 @@ impl<'tcx> Walk<'_, 'tcx> {
             return;
         };
         let (place, rvalue) = &**assign;
+        // A write through a reference, `*v = Vec::new()`: what's known of
+        // the length it reaches forgotten (#1877). Not an item's, `v[i] = x`
+        // of a `&mut [T]`, which keeps the length; a table's rows are
+        // reached by `Vec`'s `IndexMut` alone, never a place's index.
+        if let Some(deref) = place.projection.iter().position(|elem| elem == mir::PlaceElem::Deref)
+            && !place.projection[deref..].iter().any(|elem| {
+                matches!(
+                    elem,
+                    mir::PlaceElem::Index(_) | mir::PlaceElem::ConstantIndex { .. } | mir::PlaceElem::Subslice { .. }
+                )
+            })
+        {
+            state.forget_lengths(state.root(place.local));
+        }
         let Some(local) = place.as_local() else {
             return;
         };
