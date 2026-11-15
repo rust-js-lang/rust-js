@@ -222,3 +222,39 @@ as Rust's `unwrap()` is checked there. Case
 ([0262](0262-when-rust-and-js-disagree.md)): N. Held by
 `test/lowering-early-exits.test.ts` ("a module variable returned after its
 test panicked is the variable") and the mutation `present-return-unseen`.
+
+## Amendment: what a test of `js::truthy` proved there (#1902)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): A, as above. Where
+`if (x)` held, `x` is neither `null` nor `undefined`, so `x ?? null` and
+`x ?? undefined` are `x`.
+
+A faithful SDK port's `composedClosest` tests an optional call's result
+JS's way, `if js::truthy(found) { return unsafe { js::cast(found.map(js::unknown)) }; }`,
+upstream's `if (found) { return found; }`, and its nullable result was
+`return found ?? null;` there. The decided tests above read the JS's
+`!= null` and `typeof`, and the test MIR makes of a truthy test is a
+call's `bool`.
+
+**The nulled owner proves it from MIR (`proved_present`, mir/nulled.rs):
+an `Option` local is there where every path to the block takes the true
+edge of a `switchInt` of `js::truthy(local)`'s result, the binding known
+by its `DefId` (`is_js_truthy`), through the copies MIR makes of it for
+the call; of a parameter nothing writes, or of a local with one whole
+write, never lent as a `&mut`.** A read of it there is `Known::Present`
+(`mir_operand`), the fact `Storage::written` and an exit's `??
+undefined` already read, so `js::cast` and `map(js::unknown)` of it keep
+it. A value written again, read where the test failed or where another
+value's test held, or under `!js::truthy(x)`, keeps its `??`.
+
+Held by `test/lowering-nullable-truthy.test.ts` (the SDK's
+`composedClosest` with a parameter's like it, run with the method there,
+gone, and giving `undefined` and `null`; a value written again, an
+`else`, another's test and a negated test, each keeping `?? null`; and
+a plain `Option`'s exit of a binding's `T | null`, given as it is where
+proved, `?? undefined` where not), and mutations
+`proved-present-of-any-test`, `proved-present-written-again`,
+`proved-present-copies-unfollowed` (`lower/mir/nulled.ts`),
+`proved-present-unread` (`lower/mir/operands.ts`) and
+`js-truthy-unrecognized` (`lower/recognition/js_items.ts`). The guide's
+nullable example shows it (semantics.md).

@@ -375,6 +375,67 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// Whether `local`, an `Option`, is proved there where the block
+    /// lowered now runs: every path to it takes the true edge of a test of
+    /// `js::truthy(local)`, JS's `if (local)`, which `None` never passes,
+    /// and `local` is a parameter nothing writes or has one whole write,
+    /// which comes before the test, and is never lent as a `&mut` (#1902). A read of it there is
+    /// `Known::Present`, so a nullable result or place stores it as it is,
+    /// no `?? null`, and an exit gives it as it is, no `?? undefined`.
+    pub(super) fn proved_present(&self, state: &State<'_, 'tcx>, local: Local) -> bool {
+        let parameter = (1..=state.body.arg_count).contains(&local.as_usize());
+        if self
+            .whole_writes(state, local)
+            .is_none_or(|writes| writes.len() != usize::from(!parameter))
+        {
+            return false;
+        }
+        let blocks = &state.body.basic_blocks;
+        let dominators = blocks.dominators();
+        blocks.iter_enumerated().any(|(_, data)| {
+            let TerminatorKind::SwitchInt { discr, targets } = &data.terminator().kind else {
+                return false;
+            };
+            // `0` the test's false edge, its only value, `otherwise` its true one.
+            let (Some(flag), [(0, _)]) = (
+                discr.place().filter(|p| p.projection.is_empty()),
+                targets.iter().collect::<Vec<_>>().as_slice(),
+            ) else {
+                return false;
+            };
+            let yes = targets.otherwise();
+            blocks.predecessors()[yes].len() == 1
+                && dominators.dominates(yes, state.at)
+                && self.truthy_test_of(state, flag.local) == Some(local)
+        })
+    }
+
+    /// The `Option` local `flag` is the test of, where its one write is
+    /// `js::truthy(local)` (#1902).
+    fn truthy_test_of(&self, state: &State<'_, 'tcx>, flag: Local) -> Option<Local> {
+        let writes = self.whole_writes(state, flag)?;
+        let [Write::Call(_, func, [given])] = writes.as_slice() else {
+            return None;
+        };
+        let (callee, _) = func.const_fn_def()?;
+        if !crate::lower::recognition::is_js_truthy(self.tcx, callee) {
+            return None;
+        }
+        let mut tested = given.node.place().filter(|p| p.projection.is_empty())?.local;
+        // Through the copies MIR makes of it for the call, `_11 = copy _3`.
+        for _ in 0..4 {
+            match self.whole_writes(state, tested).as_deref() {
+                Some([Write::Assign(Rvalue::Use(Operand::Copy(of) | Operand::Move(of), _))])
+                    if of.projection.is_empty() =>
+                {
+                    tested = of.local;
+                }
+                _ => break,
+            }
+        }
+        Some(tested)
+    }
+
     /// Each write of `local`, if each is whole, an assignment or a call's
     /// result, and nothing lends it as a `&mut` or sets its variant.
     fn whole_writes<'b>(&self, state: &'b State<'_, 'tcx>, local: Local) -> Option<Vec<Write<'b, 'tcx>>> {

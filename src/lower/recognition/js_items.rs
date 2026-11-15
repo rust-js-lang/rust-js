@@ -69,6 +69,12 @@ pub(in crate::lower) fn js_root_fn(tcx: TyCtxt<'_>, did: DefId) -> Option<rustc_
     .then(|| tcx.item_name(did))
 }
 
+/// Whether `did` is `js::truthy`, JS's `if (value)`, which `None` never
+/// passes (#1902): the builtins crate's.
+pub(in crate::lower) fn is_js_truthy(tcx: TyCtxt<'_>, did: DefId) -> bool {
+    js_root_fn(tcx, did).is_some_and(|name| name.as_str() == "truthy")
+}
+
 /// Whether `id` is `js::function::with_this`, a JS `function` of a
 /// closure, whose `arguments` is its own (rd509).
 pub(in crate::lower) fn is_with_this(tcx: TyCtxt<'_>, id: DefId) -> bool {

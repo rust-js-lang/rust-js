@@ -1968,6 +1968,14 @@ pub fn callable(value: Option<&'static js::Unknown>) -> Option<&'static js::Unkn
     }
     None
 }
+
+#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn truthy(value: Option<&'static js::Unknown>) -> Option<&'static js::Unknown> {
+    if js::truthy(value) {
+        return value;
+    }
+    None
+}
 ```
 
 ```js
@@ -1977,6 +1985,13 @@ export function first(v) {
 
 export function callable(value) {
   if (typeof value === "function") {
+    return value;
+  }
+  return null;
+}
+
+export function truthy(value) {
+  if (value) {
     return value;
   }
   return null;

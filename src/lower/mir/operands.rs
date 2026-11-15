@@ -87,6 +87,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let held = self.value_expr(read, span)?;
             return Ok(Value::Expr(self.projection(held, ty)));
         }
+        // An `Option` a test of `js::truthy` proved there where it's read
+        // (`proved_present`, #1902).
+        let read = match read {
+            Value::Expr(e)
+                if let Some(place) = operand.place()
+                    && place.projection.is_empty()
+                    && self.option_of(operand.ty(&state.body.local_decls, self.tcx)).is_some()
+                    && self.proved_present(state, place.local) =>
+            {
+                Value::Expr(e.present())
+            }
+            read => read,
+        };
         match none_read(state, operand, read) {
             Value::Expr(e) if copied => {
                 let ty = operand.ty(&state.body.local_decls, self.tcx);

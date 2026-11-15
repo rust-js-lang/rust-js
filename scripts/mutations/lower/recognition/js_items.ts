@@ -15,4 +15,12 @@ export const mutations: Mutation[] = [
       "a constructor held as a value of any shape is refused",
     ],
   },
+  {
+    name: "js-truthy-unrecognized",
+    breaks: "`js::truthy` isn't known for JS's `if (x)`, so it proves nothing of `x` (#1902)",
+    file: "src/lower/recognition/js_items.rs",
+    find: '    js_root_fn(tcx, did).is_some_and(|name| name.as_str() == "truthy")\n',
+    replace: '    js_root_fn(tcx, did).is_some_and(|name| name.as_str() == "truthy_")\n',
+    tests: ["test/lowering-nullable-truthy.test.ts"],
+  },
 ];

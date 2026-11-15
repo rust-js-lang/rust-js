@@ -518,4 +518,28 @@ export const mutations: Mutation[] = [
     replace: "        none_form(self.tcx, NonePlace::Field(field, None)).trust(writers)\n",
     tests: ["test/corpus.test.ts", "-t", "^nullable_field_tested_strictly.rs$"],
   },
+  {
+    name: "proved-present-of-any-test",
+    breaks: "an Option read where any test's true branch is is taken for one `js::truthy` proved there, `if (!js::truthy(x)) { return x; }` too, its `?? null` gone (#1902)",
+    file: "src/lower/mir/nulled.rs",
+    find: "                && self.truthy_test_of(state, flag.local) == Some(local)\n",
+    replace: "                && self.truthy_test_of(state, flag.local).is_some()\n",
+    tests: ["test/lowering-nullable-truthy.test.ts"],
+  },
+  {
+    name: "proved-present-written-again",
+    breaks: "an Option written again after its truthy test is taken for the value it tested, `found = second; return found` given `undefined` where Rust's `None` is `null` (#1902)",
+    file: "src/lower/mir/nulled.rs",
+    find: "            .is_none_or(|writes| writes.len() != usize::from(!parameter))\n",
+    replace: "            .is_none_or(|_| false)\n",
+    tests: ["test/lowering-nullable-truthy.test.ts"],
+  },
+  {
+    name: "proved-present-copies-unfollowed",
+    breaks: "the test MIR makes of a copy, `_11 = copy _3; js::truthy(move _11)`, proves nothing of the variable it copies (#1902)",
+    file: "src/lower/mir/nulled.rs",
+    find: "                    tested = of.local;\n",
+    replace: "                    let _ = of;\n                    break;\n",
+    tests: ["test/lowering-nullable-truthy.test.ts"],
+  },
 ];

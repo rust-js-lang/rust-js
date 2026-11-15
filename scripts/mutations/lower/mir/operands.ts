@@ -402,4 +402,13 @@ export const mutations: Mutation[] = [
     find: "            && self.kept_copies(state.body).at_moves.contains(&place.local)\n",
     replace: "            && false\n",
     tests: ["test/react-kept.test.ts", "-t", "copied where it's changed"],
-  },];
+  },
+  {
+    name: "proved-present-unread",
+    breaks: "an Option a truthy test proved there is read as one that may be `undefined`, `return found ?? null` inside `if (found)` (#1902)",
+    file: "src/lower/mir/operands.rs",
+    find: "                    && self.proved_present(state, place.local) =>\n",
+    replace: "                    && self.proved_present(state, place.local)\n                    && false =>\n",
+    tests: ["test/lowering-nullable-truthy.test.ts"],
+  },
+];
