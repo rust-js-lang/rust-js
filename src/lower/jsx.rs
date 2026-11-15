@@ -162,7 +162,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // given (ADR 0195).
             js::ExprKind::Member(object, _) => {
                 matches!(&object.kind, js::ExprKind::Var(name)
-                    if self.plain_value(name.word()) || self.locals.rests.contains_key(name.word()))
+                    if self.plain_local(name.word()) || self.locals.rests.contains_key(name.word()))
                     && self.reads_alike(object, out)
             }
             js::ExprKind::Var(name) => {
@@ -187,24 +187,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    /// Whether `name` is a variable nothing writes again of plain Rust data,
-    /// whose fields can't change while it doesn't: no `&mut`, raw pointer or
-    /// interior mutability anywhere in its type, nor a JS object, whose
-    /// properties are getters.
-    pub(super) fn plain_value(&self, name: &str) -> bool {
-        self.plain_local(name)
-            || self.locals.vars.iter().any(|(id, var)| {
-                !var.mutable
-                    && matches!(&var.place.kind, js::ExprKind::Var(n) if n.is(name))
-                    && (self.tcx.typeck(id.0.owner.def_id).node_type(id.0).walk()).all(|arg| match arg.kind() {
-                        ty::GenericArgKind::Type(t) => !self.refers_mutably(t) && !self.is_js_object(t),
-                        _ => true,
-                    })
-            })
-    }
-
     /// Whether `value` is a field, of a field or more, of a variable of
-    /// plain Rust data (`plain_value`), `p.title`, `options.debugChannel
+    /// plain Rust data (`plain_local`), `p.title`, `options.debugChannel
     /// .writable`: what reads the same each time, as nothing changes the
     /// variable or what's in it (rd614). Not a field of what JS may give or
     /// make, whose field a getter may answer anew, `p.style.margin` where
@@ -219,7 +203,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let js::ExprKind::Var(name) = &of.kind else {
             return false;
         };
-        if objects.is_empty() || !self.plain_value(name.word()) {
+        if objects.is_empty() || !self.plain_local(name.word()) {
             return false;
         }
         let given = self.given_of(name.word());

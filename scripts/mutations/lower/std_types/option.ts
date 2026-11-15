@@ -348,15 +348,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-options.test.ts", "-t", "React's typeName"],
   },
   {
-    name: "and-then-chain-held",
-    breaks:
-      "`o.and_then(|l| l.item(0))` of a getter's read holds it, `const option = input.labels; option?.item(0)`, not `input.labels?.item(0)`",
-    file: "src/lower/std_types/option.rs",
-    find: "    match chained {\n        Some(chain) => {",
-    replace: "    match None::<Expr> {\n        Some(chain) => {",
-    tests: ["test/snapshots.test.ts", "-t", "^web_forms"],
-  },
-  {
     name: "map-some-undefined",
     breaks:
       "a `map`'s `Some` isn't known never `undefined`, so a nullable field given it is `(c ? c(..) : undefined) ?? null`",

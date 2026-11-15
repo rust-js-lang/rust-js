@@ -179,20 +179,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "getter-in-place",
-    breaks:
-      "a JS object's getter, `n.textContent`, is read after what writes it",
-    file: "src/lower/jsx.rs",
-    find: "                        ty::GenericArgKind::Type(t) => !self.refers_mutably(t) && !self.is_js_object(t),\n",
-    replace:
-      "                        ty::GenericArgKind::Type(t) => !self.refers_mutably(t),\n",
-    tests: [
-      "test/jsx-props.test.ts",
-      "-t",
-      "spreads a struct through a reference as the struct",
-    ],
-  },
-  {
     name: "rest-base-each-field",
     breaks:
       "an update of a props pattern's rest, `..props`, gives each of its fields, the props' own `href` among them, where it's `{...props}`",
@@ -495,8 +481,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`debug_channel.writable.map(callback_of)`, `options.debugChannel.writable`, a field of a field of plain Rust data, goes in a `const option` first, and the `if` that gives the value is no conditional, as upstream's createResponseFromOptions writes it (rd614)",
     file: "src/lower/jsx.rs",
-    find: "        if objects.is_empty() || !self.plain_value(name.word()) {\n",
-    replace: "        if objects.len() != 1 || !self.plain_value(name.word()) {\n",
+    find: "        if objects.is_empty() || !self.plain_local(name.word()) {\n",
+    replace: "        if objects.len() != 1 || !self.plain_local(name.word()) {\n",
     tests: ["test/corpus.test.ts", "-t", "^map_of_a_field_of_a_field.rs$"],
     snapshots: true,
   },

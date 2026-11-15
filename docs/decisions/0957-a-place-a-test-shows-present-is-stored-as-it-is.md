@@ -71,3 +71,15 @@ gives. Held by test/lowering-nullable-reads.test.ts's "test shows present"
 test/lowering-nullable-tests.test.ts's "a variable a part of an && shows
 there"; mutations `field-path-shown-present` new, `present-place-stored-coalesced`
 and `present-place-of-an-or` retargeted.
+
+## Amendment: a `let` set only to values is MIR's to say (2026-11-16, #1953, #1933)
+
+`lets_never_undefined`, tidy's answer of a `let` made and set only to what's
+never `undefined`, is gone: each `let` it answered is MIR's now, a variable
+each of whose writes is `null` or a value (`stored_in`, ADR 0620's
+amendments of #1933 step 4 (A) and (B)), so its mutations,
+`lets-never-undefined-unread` and `lets-never-undefined-of-closures`,
+survived on main. Without it, every corpus case, snapshot and React's port
+is the same (`check:fast --all`, the port's regeneration), React's
+`return parentFragmentInstances;` among them. "a let set only to values is
+returned as it is" holds it, of MIR's answer.

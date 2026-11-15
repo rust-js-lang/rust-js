@@ -753,3 +753,30 @@ fn check() -> bool {
   expect(may.indexOf("let confirmed = false;")).toBeLessThan(may.indexOf("const client ="));
   expect((await import(join(dir, "may.js"))).read()).toBe(8);
 });
+
+// A closure's body is lowered with its own THIR's facts, not its parent's:
+// a `match` of constants in it names them, `case LOW:`, what its patterns
+// say where they're written in it (ADR 0590, amended); its parent's facts
+// are of another body's places (#1953, mutation `mir-closure-parent-facts`).
+test("a match of constants in a closure names them in its switch", async () => {
+  const dir = fixture("const-patterns-in-closure");
+  writeFileSync(join(dir, "lib.rs"), `const LOW: u32 = 1;
+const HIGH: u32 = 2;
+
+pub fn names(xs: &[u32]) -> Vec<&'static str> {
+    xs.iter()
+        .map(|&x| match x {
+            LOW => "low",
+            HIGH => "high",
+            _ => "other",
+        })
+        .collect()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("      case LOW:\n");
+  expect(js).toContain("      case HIGH:\n");
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.names([1, 2, 3])).toEqual(["low", "high", "other"]);
+});

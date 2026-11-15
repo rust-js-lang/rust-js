@@ -800,33 +800,6 @@ fn optional_part(part: &Expr, m: &str, option: &Expr) -> Option<Expr> {
     }
 }
 
-/// `o.and_then(f)`, `some ? then : none`, `none` `undefined`, or `null`
-/// of a nullable `f` (`calls::and_then_given`); of a chain of what it
-/// holds, `labels.item(0)`, held at `spilled` in `out` only to be read
-/// twice, `e?.item(0)`, which reads `e` once, as `map`'s `o?.id` does, the
-/// `const` gone.
-pub(in crate::lower) fn and_then_of(
-    out: &mut Vec<Stmt>,
-    spilled: Option<usize>,
-    some: Expr,
-    then: Expr,
-    none: Expr,
-) -> Expr {
-    // An optional chain's `None` is `undefined`, not a `null` asked for.
-    let chainable = matches!(none.kind, js::ExprKind::Undefined);
-    let chained = (spilled.filter(|&at| chainable && out.len() == at + 1)).and_then(|at| match &out[at].kind {
-        StmtKind::Const(name, held) => optional_chain(held, &then, name.word()),
-        _ => None,
-    });
-    match chained {
-        Some(chain) => {
-            out.pop();
-            chain
-        }
-        None => Expr::cond(some, then, none),
-    }
-}
-
 /// `body`, a chain of properties, keys and method calls of `param`,
 /// `param.a.b`, `param[key]` or `param.item(0)`, as one of `option` that
 /// ends where it's `None`, reading it once: `option?.a.b`, `option?.[key]`,

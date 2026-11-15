@@ -197,46 +197,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-nullable-tests.test.ts", "-t", "a variable MIR proves nothing of"],
   },
   {
-    name: "tested-defined-still-nulled",
-    breaks:
-      "`x !== undefined ? x ?? null : null` keeps its `?? null`, of a value the test shows defined (ADR 0620, amended)",
-    file: "src/lower/mir/tidy/values.rs",
-    find: "        Op::Ne => matches!(other.kind, ExprKind::Undefined | ExprKind::GivenUndefined),\n",
-    replace: "        Op::Ne => false,\n",
-    tests: [
-      "test/lowering-written-branches.test.ts",
-      "-t",
-      "an if of returns the program wrote stays an if",
-    ],
-  },
-  {
-    name: "tested-defined-where-it-isnt",
-    breaks:
-      "`x === undefined` is taken to show `x` defined, its `?? null` dropped where it's `undefined`",
-    file: "src/lower/mir/tidy/values.rs",
-    find: "    defined.then(|| var.to_string())\n",
-    replace:
-      "    Some(var.to_string()).filter(|_| defined || matches!(op, Op::Eq))\n",
-    tests: [
-      "test/lowering-nullable.test.ts",
-      "-t",
-      "a nullable result tested equal to a None given is null",
-    ],
-  },
-  {
-    name: "tested-defined-if-still-nulled",
-    breaks:
-      "`if (x !== undefined) { return x ?? null; }` keeps its `?? null`, of a value its test shows defined (ADR 0620, amended)",
-    file: "src/lower/mir/tidy/values.rs",
-    find: "                    if unnulled(e, &x) {\n                        crate::decisions::record(\"tidy-nulled-as-they-are\", \"if-shown\");\n",
-    replace: "                    if false && unnulled(e, &x) {\n                        crate::decisions::record(\"tidy-nulled-as-they-are\", \"if-shown\");\n",
-    tests: [
-      "test/lowering-written-branches.test.ts",
-      "-t",
-      "an if of returns the program wrote stays an if",
-    ],
-  },
-  {
     name: "present-place-stored-coalesced",
     breaks:
       "React's `nextHydratableInstance = fiber.stateNode` after `fiber.stateNode != null` is `?? null` again (ADR 0957)",
@@ -255,24 +215,6 @@ export const mutations: Mutation[] = [
     replace:
       "        ExprKind::Binary(Op::And | Op::Or, a, b) => shown_present(a, place) || shown_present(b, place),\n",
     tests: ["test/lowering-nullable-tests.test.ts", "-t", "a variable a part of an && shows there"],
-  },
-  {
-    name: "lets-never-undefined-unread",
-    breaks:
-      "React's `return parentFragmentInstances` of a `let` made `null` is `?? null` (ADR 0957, amended)",
-    file: "src/lower/mir/tidy/values.rs",
-    find: "    defined.extend(lets_never_undefined(body, &declared));\n",
-    replace: "",
-    tests: ["test/lowering-nullable-reads.test.ts", "-t", "set only to values"],
-  },
-  {
-    name: "lets-never-undefined-of-closures",
-    breaks:
-      "a `let` a closure sets, maybe to `undefined`, is returned with no `?? null` (ADR 0957, amended)",
-    file: "src/lower/mir/tidy/values.rs",
-    find: "        ExprKind::Arrow(_, inner) | ExprKind::AsyncArrow(_, inner) => closed(inner),\n",
-    replace: "",
-    tests: ["test/lowering-nullable-reads.test.ts", "-t", "set only to values"],
   },
   {
     name: "unread-resets-off",
@@ -335,13 +277,5 @@ export const mutations: Mutation[] = [
     find: "                && !made.reads_a_field()\n",
     replace: "",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "test shows present"],
-  },
-  {
-    name: "shown-defined-of-a-let",
-    breaks: "a `let` a test shows isn't `null` is taken as the `const` it reads, though the branch writes it again, `undefined`, before it's read, so a nullable function returns `undefined` where Rust's `None` is `null` (#1952)",
-    file: "src/lower/mir/tidy/values.rs",
-    find: "    let once = |x: &str| declared.get(x) == Some(&1) && consts.contains(x);\n",
-    replace: "    let once = |x: &str| declared.get(x) == Some(&1) || consts.contains(x);\n",
-    tests: ["test/lowering-nullable-tests.test.ts", "-t", "a let written again after its test"],
   },
 ];

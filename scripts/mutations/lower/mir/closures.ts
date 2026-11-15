@@ -58,7 +58,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/closures.rs",
     find: "        let outer_facts = std::mem::replace(&mut self.frame.facts, &body.facts);\n",
     replace: "        let outer_facts = self.frame.facts;\n",
-    tests: ["test/lowering-iterators.test.ts", "-t", "string's parts from MIR"],
+    tests: ["test/lowering-constants.test.ts", "-t", "a match of constants in a closure"],
   },
   {
     name: "mir-capture-copied-always",

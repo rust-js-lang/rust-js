@@ -168,7 +168,7 @@ pub(super) struct Found {
     /// Of a body lowered from its MIR (ADR 0364): the names of its locals
     /// that read the same wherever they're read, assigned once and never
     /// borrowed, and of those of plain Rust data, whose fields don't change
-    /// either, which `reads_alike` and `plain_value` ask of.
+    /// either, which `reads_alike` and `plain_field` ask of.
     /// And of the others' arrays, their items, `...items`.
     pub(super) alike: IndexSet<String>,
     pub(super) plain: IndexSet<String>,

@@ -567,3 +567,18 @@ lower/mir/nulled/defined.ts, `constant-flag-*` (lower/mir/nulled.ts),
 `proved-defined-read-may-be-undefined` (js/make.ts),
 `proved-defined-unforgotten` (js/known.ts) and
 `proved-defined-read-unmarked` (lower/mir/operands.ts).
+
+## Amendment: tidy's if-shown and cond-shown are gone (2026-11-16, #1933, #1953)
+
+Since (D), no program reaches tidy's if-shown or cond-shown, `if (x !==
+undefined) { return x ?? null; }` and `x != null ? x ?? null : ..` made of
+the printed test: every corpus case, as a program and a library, counts
+none, nor does React's port, each test they answered MIR's (`proved_present`,
+`proved_defined`). Their mutation `tested-defined-if-still-nulled` survived,
+so they go with `shown_defined`, `unnulled` and their mutations
+(`tested-defined-still-nulled`, `tested-defined-where-it-isnt`,
+`shown-defined-of-a-let`); the rows each held stay, now MIR's: "an if of
+returns the program wrote stays an if", "a nullable result tested equal to
+a None given is null" and "a let written again after its test". Tidy's other
+presence answers, and-shown, never-undefined, coalesce and unwrap, stay until
+(F).

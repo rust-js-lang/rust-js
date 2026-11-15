@@ -147,8 +147,11 @@ what it holds where it's read, put the read inside the call.
   const behind", and the
   mutations `getter-read-has-no-effects`, `getter-read-reads-same`,
   `getter-pending-past-lookup`, `typed-receiver-method-a-getters`,
-  `and-then-chain-held`, `getter-read-in-place` and
-  `target-root-acting-held`.
+  `getter-read-in-place` and `target-root-acting-held`
+  (`and-then-chain-held` retired with its code, #1953: `o.and_then(f)`'s
+  chain of a held `const` is `map`'s `optional_chain` alone now, as no
+  program reached the other, web_forms' `input.labels?.item(0)?.htmlFor`
+  as it was).
 
 ## Amendment: a value that's the same anywhere is read past what a target does (#393)
 

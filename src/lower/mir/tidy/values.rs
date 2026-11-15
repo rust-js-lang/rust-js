@@ -428,42 +428,8 @@ pub(super) fn nulled_as_they_are(body: &mut Vec<Stmt>) {
             }
         }
     });
-    defined.extend(lets_never_undefined(body, &declared));
-    // Where a test shows a `const` defined, `x !== undefined ? x ?? null :
-    // ..`'s branch, `if (x != null) { return x ?? null; }`'s: `x` there too.
-    // A `const` alone, declared once: a `let` the branch, or a closure it
-    // calls, may set again, `undefined` (#1952).
-    let mut consts: IndexSet<String> = IndexSet::default();
-    js::each_list(body, &mut |stmts| {
-        for stmt in stmts {
-            if let StmtKind::Const(name, _) = &stmt.kind {
-                consts.insert(name.to_string());
-            }
-        }
-    });
-    let once = |x: &str| declared.get(x) == Some(&1) && consts.contains(x);
-    js::each_expr_mut(body, &mut |e| {
-        if let ExprKind::Cond(test, yes, _) = &mut e.kind
-            && let Some(x) = shown_defined(test).filter(|x| once(x))
-        {
-            yes.each_mut(&mut |e| {
-                if unnulled(e, &x) {
-                    crate::decisions::record("tidy-nulled-as-they-are", "cond-shown");
-                }
-            });
-        }
-    });
     js::statement_lists(body, &mut |stmts| {
         for stmt in stmts.iter_mut() {
-            if let StmtKind::If(test, then, _) = &mut stmt.kind
-                && let Some(x) = shown_defined(test).filter(|x| once(x))
-            {
-                js::each_expr_mut(then, &mut |e| {
-                    if unnulled(e, &x) {
-                        crate::decisions::record("tidy-nulled-as-they-are", "if-shown");
-                    }
-                });
-            }
             // A variable a test of an `&&` shows isn't `null`, a module's
             // too, read right after it, the first statement's value: as it
             // is, nothing between (ADR 0957). Not a field, `p.stateNode !=
@@ -504,61 +470,6 @@ pub(super) fn nulled_as_they_are(body: &mut Vec<Stmt>) {
     });
 }
 
-/// Each `let` the body declares once, made and set only to what's never
-/// `undefined`, `let found = null; .. found = [item];`, React's
-/// getParentFragmentInstances' (ADR 0957, amended): not one a closure
-/// reads, which may set it, nor one set otherwise, `found ??= ..`.
-fn lets_never_undefined(body: &[Stmt], declared: &IndexMap<String, usize>) -> IndexSet<String> {
-    let mut lets: IndexSet<String> = IndexSet::default();
-    let mut not: IndexSet<String> = IndexSet::default();
-    js::each_list(body, &mut |stmts| {
-        for stmt in stmts {
-            match &stmt.kind {
-                StmtKind::Let(name, Some(value))
-                    if declared.get(name.word()) == Some(&1) && !value.may_be_undefined() =>
-                {
-                    lets.insert(name.to_string());
-                }
-                StmtKind::Assign(target, value) => {
-                    if let ExprKind::Var(name) = &target.kind
-                        && value.may_be_undefined()
-                    {
-                        not.insert(name.to_string());
-                    }
-                }
-                StmtKind::Compound(_, target, _) => {
-                    if let ExprKind::Var(name) = &target.kind {
-                        not.insert(name.to_string());
-                    }
-                }
-                StmtKind::Destructure { pattern, .. } => not.extend(pattern.names().into_iter().map(str::to_string)),
-                _ => {}
-            }
-        }
-    });
-    let mut closed = |inner: &[Stmt]| {
-        for name in &lets {
-            if js::mentions_in(inner, name) > 0 {
-                not.insert(name.clone());
-            }
-        }
-    };
-    js::each_expr(body, &mut |e| match &e.kind {
-        ExprKind::Arrow(_, inner) | ExprKind::AsyncArrow(_, inner) => closed(inner),
-        ExprKind::Function(f) => closed(&f.body),
-        _ => {}
-    });
-    js::each_list(body, &mut |stmts| {
-        for stmt in stmts {
-            if let StmtKind::Function(f) = &stmt.kind {
-                closed(&f.body);
-            }
-        }
-    });
-    lets.retain(|name| !not.contains(name));
-    lets
-}
-
 /// Whether `stmt` makes its value first: a declaration's, or an
 /// assignment's of a place that reads the same, which runs nothing first.
 fn reads_nothing_before_its_value(stmt: &StmtKind) -> bool {
@@ -576,42 +487,6 @@ fn shown_present(test: &Expr, place: &Expr) -> bool {
         ExprKind::Binary(Op::LooseNe, a, b) => matches!(b.kind, ExprKind::Null) && js::same_path(a, place),
         _ => false,
     }
-}
-
-/// The variable `test` shows isn't `undefined` where it holds: `x !==
-/// undefined`, or `x != null`.
-fn shown_defined(test: &Expr) -> Option<String> {
-    let ExprKind::Binary(op, a, b) = &test.kind else {
-        return None;
-    };
-    let (var, other) = match (&a.kind, &b.kind) {
-        (ExprKind::Var(x), _) => (x, b),
-        (_, ExprKind::Var(x)) => (x, a),
-        _ => return None,
-    };
-    let defined = match op {
-        Op::Ne => matches!(other.kind, ExprKind::Undefined | ExprKind::GivenUndefined),
-        Op::LooseNe => matches!(
-            other.kind,
-            ExprKind::Undefined | ExprKind::GivenUndefined | ExprKind::Null
-        ),
-        _ => false,
-    };
-    defined.then(|| var.to_string())
-}
-
-/// `e`, `x ?? null`: `x`, which isn't `undefined` there
-/// (`nulled_as_they_are`); whether it was one.
-fn unnulled(e: &mut Expr, x: &str) -> bool {
-    if let ExprKind::Binary(Op::Coalesce, made, null) = &e.kind
-        && matches!(null.kind, ExprKind::Null)
-        && matches!(&made.kind, ExprKind::Var(v) if v.is(x))
-    {
-        let span = e.span;
-        *e = (**made).clone().or_at(span);
-        return true;
-    }
-    false
 }
 
 /// `const x = { value: undefined };`, a cell a pointer is taken to, declared
