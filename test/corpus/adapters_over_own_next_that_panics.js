@@ -13,7 +13,6 @@ import {
   $iter,
   $iterator,
   $knowing,
-  $lazyZip,
   $live,
   $next,
   $nextBack,
@@ -32,6 +31,7 @@ import {
   iterator_fuse,
   iterator_map,
   iterator_peekable,
+  iterator_zip,
   mapDoubleEndedIterator_rfold,
   mapExactSizeIterator_len,
 } from "@rust-js/std";
@@ -715,73 +715,87 @@ function main() {
       }, error);
       throw error;
     }
-    const fold = $foldDropping(
-      $lazyZip(
-        $closing(
-          $iterator(
-            value,
-            ownIterator_next,
-            false,
-            undefined,
-            undefined,
-            ownIterator_sizeHint,
-            ownIterator_fold,
-            undefined,
-            undefined,
-            ownDoubleEndedIterator_rfold,
-          ),
-          (it) => {
-            console.log("drop own");
-            for (const item of it.of.items) {
-              dDrop_drop(item);
-            }
-          },
-        ),
-        $closing(
-          $iterator(
-            tmp,
-            ownIterator_next,
-            false,
-            undefined,
-            undefined,
-            ownIterator_sizeHint,
-            ownIterator_fold,
-            undefined,
-            undefined,
-            ownDoubleEndedIterator_rfold,
-          ),
-          (it) => {
-            console.log("drop own");
-            for (const item of it.of.items) {
-              dDrop_drop(item);
-            }
-          },
-        ),
-        dDrop_drop,
-      ),
-      [],
-      (acc, [a, b]) => {
-        let b$live = true;
-        let tmp;
-        try {
-          tmp = push(acc, a);
-          b$live = false;
-        } catch (error) {
-          $cleanup(() => {
-            if (b$live) {
-              dDrop_drop(b);
-            }
-          }, error);
-          throw error;
-        }
-        return push(tmp, b);
+    const iter = iterator_zip(
+      value,
+      tmp,
+      { next: ownIterator_next, sizeHint: ownIterator_sizeHint, fold: ownIterator_fold },
+      {
+        intoIter(items) {
+          return items;
+        },
+        IntoIterIterator() {
+          return { next: ownIterator_next, sizeHint: ownIterator_sizeHint, fold: ownIterator_fold };
+        },
+        $dropItem: dDrop_drop,
+        $dropIntoIter(own) {
+          console.log("drop own");
+          for (const item of own.items) {
+            dDrop_drop(item);
+          }
+        },
       },
-      $dropEach(dDrop_drop),
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      (own) => {
+        console.log("drop own");
+        for (const item of own.items) {
+          dDrop_drop(item);
+        }
+      },
+      (own) => {
+        console.log("drop own");
+        for (const item of own.items) {
+          dDrop_drop(item);
+        }
+      },
+      dDrop_drop,
+      dDrop_drop,
+      (own) => {
+        console.log("drop own");
+        for (const item of own.items) {
+          dDrop_drop(item);
+        }
+      },
     );
-    for (const item of fold) {
+    const value$1 = [];
+    let result;
+    try {
+      result = $foldDropping(
+        iter,
+        value$1,
+        (acc, [a, b]) => {
+          let b$live = true;
+          let tmp;
+          try {
+            tmp = push(acc, a);
+            b$live = false;
+          } catch (error) {
+            $cleanup(() => {
+              if (b$live) {
+                dDrop_drop(b);
+              }
+            }, error);
+            throw error;
+          }
+          return push(tmp, b);
+        },
+        $dropEach(dDrop_drop),
+      );
+    } catch (error) {
+      throw $unwindsOn(error);
+    } finally {
+      if ($live()) {
+        iter.return();
+      }
+    }
+    for (const item of result) {
       dDrop_drop(item);
     }
-    return fold.length;
+    return result.length;
   });
   run("peekable fold", () => {
     const fold = $foldDropping(

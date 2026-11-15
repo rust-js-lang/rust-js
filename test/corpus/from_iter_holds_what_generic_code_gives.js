@@ -5,19 +5,14 @@ import {
   $closing,
   $held,
   $intoIter,
-  $iterator,
-  $lazyZip,
   $next,
   $rangeFromStep,
   iterator_map,
+  iterator_zip,
 } from "@rust-js/std";
 
 export function entry() {
   main();
-}
-
-function loudDrop_drop(loud) {
-  console.log(`drop ${loud[0]}`);
 }
 
 function countIterator_next(count) {
@@ -74,11 +69,23 @@ function collected(it, BFromIteratorIItem, ITrustedLen, IInPlace, dropI) {
 
 function main() {
   const [sum] = collected(
-    $lazyZip(
-      $closing($iterator({ n: 0, _loud: ["zip"] }, countIterator_next), (it) => {
-        loudDrop_drop(it.of._loud);
-      }),
-      $iterator({ start: 50 }, $rangeFromStep(0, 4294967295)),
+    iterator_zip(
+      { n: 0, _loud: ["zip"] },
+      { start: 50 },
+      { next: countIterator_next },
+      {
+        intoIter: (items) => items,
+        IntoIterIterator: () => ({ next: $rangeFromStep(0, 4294967295) }),
+      },
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      (count) => {
+        console.log(`drop ${count._loud[0]}`);
+      },
     ),
     sumFromIterator_u32__u32_,
     false,
@@ -94,7 +101,7 @@ function main() {
       (n) => [n, n],
       { next: countIterator_next },
       (count) => {
-        loudDrop_drop(count._loud);
+        console.log(`drop ${count._loud[0]}`);
       },
     ),
     sumFromIterator_u32__u32_,

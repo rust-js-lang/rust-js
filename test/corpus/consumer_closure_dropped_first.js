@@ -9,12 +9,11 @@ import {
   $flatMap,
   $iter,
   $iterator,
-  $lazyRange,
   $lazySkipWhile,
-  $lazyZip,
   $lent,
   $live,
   $print,
+  $rangeNext,
   $rev,
   $stepBy,
   $unwindsOn,
@@ -23,6 +22,7 @@ import {
   iterator_fuse,
   iterator_map,
   iterator_peekable,
+  iterator_zip,
 } from "@rust-js/std";
 
 export function entry() {
@@ -428,13 +428,22 @@ function main() {
   });
   case$("zip", (g) => {
     let g$14$live = true;
-    let zip;
+    let iter;
     try {
-      zip = $lazyZip(
-        $closing($iterator(It.new(3, "it"), itIterator_next), (it) => {
-          dDrop_drop(it.of._held);
-        }),
-        $lazyRange(0, 2),
+      iter = iterator_zip(
+        It.new(3, "it"),
+        { start: 0, end: 2 },
+        { next: itIterator_next },
+        { intoIter: (items) => items, IntoIterIterator: () => ({ next: $rangeNext }) },
+        false,
+        false,
+        false,
+        true,
+        true,
+        true,
+        (it) => {
+          dDrop_drop(it._held);
+        },
       );
       g$14$live = false;
     } catch (error) {
@@ -446,9 +455,17 @@ function main() {
       throw error;
     }
     const f = (a, [x, y]) => (((((a + x) >>> 0) + y) >>> 0) + zero(g)) >>> 0;
-    return $consume(zip, "fold", 0, f, undefined, () => {
-      dDrop_drop(g);
-    });
+    try {
+      return $consume(iter, "fold", 0, f, undefined, () => {
+        dDrop_drop(g);
+      });
+    } catch (error) {
+      throw $unwindsOn(error);
+    } finally {
+      if ($live()) {
+        iter.return();
+      }
+    }
   });
   case$("rev", (g) => {
     let g$15$live = true;

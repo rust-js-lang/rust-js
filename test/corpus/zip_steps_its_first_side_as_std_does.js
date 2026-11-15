@@ -98,7 +98,7 @@ function main() {
     ),
   );
   console.log(`[${c.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
-  const n = $lazyZip(
+  const n = iterator_zip(
     iterator_map(
       { start: 1, end: 4 },
       (x) => {
@@ -108,6 +108,14 @@ function main() {
       { next: $rangeInclusiveNext },
     ),
     [1, 2],
+    { next: $next, fold: $foldOf },
+    intoIterator,
+    false,
+    false,
+    true,
+    false,
+    true,
+    true,
   );
   const next = $next(n);
   const value = $next(n);

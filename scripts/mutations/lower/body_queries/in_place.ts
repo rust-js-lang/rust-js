@@ -345,8 +345,8 @@ export const mutations: Mutation[] = [
     name: "held-flip-past-a-link-not-flipped",
     breaks: "the held flip takes out each `map()` of a chain on a variable, past a link that isn't flipped: `src.chain(v).map(f)`'s compiled `Map` is given a `$lazyChain` made in place and steps it as std's `Chain` struct, folding nothing (#1780)",
     file: "src/lower/body_queries/in_place.rs",
-    find: "        .flat_map(|chain| chain.links.into_iter().rev().map_while(flipped_link))",
-    replace: "        .flat_map(|chain| chain.links.into_iter().filter_map(flipped_link))",
+    find: "                    _ => break,\n",
+    replace: "                    _ => continue,\n",
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^held_chain_mapped_past_a_link_not_compiled.rs$"],
   },
@@ -384,9 +384,46 @@ export const mutations: Mutation[] = [
     breaks:
       "a `chain()` of a chain the transparent-chain predicate doesn't admit is the recognizers' hand-written `$lazyChain` again, where std's compiled `Chain` is the meaning (#1681's change 2, the chain family)",
     file: "src/lower/body_queries/in_place.rs",
-    find: "pub(in crate::lower) const HELD_FLIPPED: [&str; 3] = [\"chain\", \"enumerate\", \"map\"];\n",
-    replace: "pub(in crate::lower) const HELD_FLIPPED: [&str; 3] = [\"enumerate\", \"enumerate\", \"map\"];\n",
+    find: "pub(in crate::lower) const HELD_FLIPPED: [&str; 4] = [\"chain\", \"enumerate\", \"map\", \"zip\"];\n",
+    replace: "pub(in crate::lower) const HELD_FLIPPED: [&str; 4] = [\"enumerate\", \"enumerate\", \"map\", \"zip\"];\n",
     tests: ["test/corpus.test.ts", "-t", "^chain_side_panics_drops_the_other.rs$"],
     snapshots: true,
+  },
+  {
+    name: "zip-not-flipped",
+    breaks:
+      "a `zip()` of a chain the transparent-chain predicate doesn't admit is the recognizers' hand-written `$trustedZip` or `$lazyZip` again, where std's compiled `Zip` is the meaning (#1681's change 2, the zip family)",
+    file: "src/lower/body_queries/in_place.rs",
+    find: "pub(in crate::lower) const HELD_FLIPPED: [&str; 4] = [\"chain\", \"enumerate\", \"map\", \"zip\"];\n",
+    replace: "pub(in crate::lower) const HELD_FLIPPED: [&str; 4] = [\"chain\", \"enumerate\", \"map\", \"map\"];\n",
+    tests: ["test/corpus.test.ts", "-t", "^held_adapters_stepped_to_their_end.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "flipped-given-a-let-made-in-place",
+    breaks:
+      "a held chain's `zip()` is flipped, std's compiled `Zip`, though the variable it's given, `let a = v.iter().map(f)`, holds a JS iterator the ground made in place, which the compiled `Zip` reads by index: the fold sums 0",
+    file: "src/lower/body_queries/in_place.rs",
+    find: "            ExprKind::VarRef { id } => made.get(&id).is_some_and(|init| ground.contains(init)),\n",
+    replace: "            ExprKind::VarRef { id } => made.get(&id).is_some_and(|init| ground.contains(init) && false),\n",
+    tests: ["test/corpus.test.ts", "-t", "^let_held_maps_given_a_compiled_chain_and_zip.rs$"],
+  },
+  {
+    name: "flipped-given-a-call-made-in-place",
+    breaks:
+      "a held chain's `zip()` is flipped, std's compiled `Zip`, though it's given a `map()` the ground made in place where it's given, a JS iterator, not std's struct (ADR 0871)",
+    file: "src/lower/body_queries/in_place.rs",
+    find: "            ExprKind::Call { .. } => ground.contains(&given) && !flipped.contains(&given),\n",
+    replace: "            ExprKind::Call { .. } => false,\n",
+    tests: ["test/corpus.test.ts", "-t", "^let_held_maps_given_a_compiled_chain_and_zip.rs$"],
+  },
+  {
+    name: "zip-of-callers-sides-flipped",
+    breaks:
+      "a zip of a type parameter's sides is std's compiled `Zip`, which asks whether each is `TrustedRandomAccess` of callers a trait's default over `Self` has none of: refused, where the recognizers' lazy zip asks nothing (ADR 1136, amended)",
+    file: "src/lower/body_queries/in_place.rs",
+    find: "                    Some(link) if !given && !callers => _ = held.insert(link),\n",
+    replace: "                    Some(link) if !given && (!callers || callers) => _ = held.insert(link),\n",
+    tests: ["test/corpus.test.ts", "-t", "^zip_of_sides_only_callers_know.rs$"],
   },
 ];

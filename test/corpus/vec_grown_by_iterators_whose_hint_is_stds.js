@@ -12,7 +12,6 @@ import {
   $grownBy,
   $grownVec,
   $iter,
-  $iterator,
   $knowing,
   $lazyZip,
   $mapEnds,
@@ -28,6 +27,7 @@ import {
   flatMapDoubleEndedIterator_tryRfold,
   iterator_flatMap,
   iterator_map,
+  iterator_zip,
   mapClone_clone,
   mapDoubleEndedIterator_nextBack,
   mapDoubleEndedIterator_rfold,
@@ -225,7 +225,22 @@ function main() {
   const arg$6 = $capacity(indices, 8);
   console.log(`indices ${indices.length} ${arg$6}`);
   const zipped = $grownVec(
-    $roomForHint($lazyZip($iterator([0], counterIterator_next), $chars("ab")), 8, false),
+    $roomForHint(
+      iterator_zip(
+        [0],
+        $chars("ab"),
+        { next: counterIterator_next },
+        { intoIter: (items) => items, IntoIterIterator: () => ({ next: $next }) },
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+      ),
+      8,
+      false,
+    ),
     (grown) => Array.from(grown),
   );
   const arg$7 = $capacity(zipped, 8);

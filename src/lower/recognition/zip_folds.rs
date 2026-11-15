@@ -90,6 +90,17 @@ fn clone_runs_crates_code<'tcx>(
     }
 }
 
+/// Whether std's `Zip` of type `ty` specializes on what only its callers
+/// know: a side of a type parameter, or built of one, whose
+/// `TrustedRandomAccess` and `TrustedLen` rustc can't say where the zip is
+/// made (ADR 0975). Its compiled body asks each of them as a fact its
+/// callers give, three parameters more on a generic function's JS, and a
+/// trait's default compiled over `Self` is given none; the recognizers'
+/// form asks none, so a zip of such sides stays theirs (ADR 1136, amended).
+pub(crate) fn zip_asks_its_callers<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
+    zipped_sources(tcx, ty).is_some_and(|(a, b)| ty::TypeVisitableExt::has_non_region_param(&(a, b)))
+}
+
 /// Of a zip of type `ty`, rustc knowing it whole, where std's fold of it
 /// takes the shorter side's count of pairs, where `next()` steps `a` once
 /// more, and a step of `a` runs code, a closure's or a `fn`'s, a clone that

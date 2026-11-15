@@ -4,7 +4,6 @@ import {
   $cleanup,
   $closing,
   $cmp,
-  $foldOf,
   $held,
   $iterCmp,
   $iterEq,
@@ -21,11 +20,9 @@ import {
   $next,
   $nth,
   $position,
-  $rangeNext,
   $tryFoldOk,
   $tryFoldSome,
   $unwindsOn,
-  iterator_chain,
   iterator_map,
 } from "@rust-js/std";
 
@@ -341,26 +338,7 @@ function main() {
     `chain ${$lent($lazyChain($iterator(c(), countIterator_next, false, undefined, undefined, undefined, undefined, countIterator_nth).drop(2), $iterator(c(), countIterator_next, false, undefined, undefined, undefined, undefined, countIterator_nth).drop(3))).some((x) => x > 21)}`,
   );
   console.log(
-    `chain ${$lent(
-      iterator_chain(
-        { start: 0, end: 2 },
-        $iterator(
-          c(),
-          countIterator_next,
-          false,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          countIterator_nth,
-        ).drop(3),
-        { next: $rangeNext },
-        {
-          intoIter: (items) => items,
-          IntoIterIterator: () => ({ next: $next, fold: $foldOf, nth: $nth }),
-        },
-      ),
-    ).some((x) => x > 5)}`,
+    `chain ${$lent($lazyChain($lazyRange(0, 2), $iterator(c(), countIterator_next, false, undefined, undefined, undefined, undefined, countIterator_nth).drop(3))).some((x) => x > 5)}`,
   );
   console.log(
     `take_while ${$lent($lazyTakeWhile($iterator(c(), countIterator_next, false, undefined, undefined, undefined, undefined, countIterator_nth).drop(2), (x) => x < 9)).some((x) => x > 5)}`,

@@ -98,12 +98,12 @@ pub(in crate::lower) fn decide<'tcx>(
 }
 
 /// The adapters the held flip makes std's compiled struct, `HELD_COMPILED`'s
-/// `enumerate()` and `map()` (#1681's step iii), and `chain()`, the first of
+/// `enumerate()` and `map()` (#1681's step iii), and `chain()` and `zip()`,
 /// the families after them (#1681's change 2). Not `rev()`: `back_stepped`,
 /// which decides the flip, reads whether a `rev()` is made in place (its
 /// held-`rev()` rule marks what a held one is given made knowing its back),
 /// so flipping one would change what decides it (ADR 1136, amended).
-pub(in crate::lower) const HELD_FLIPPED: [&str; 3] = ["chain", "enumerate", "map"];
+pub(in crate::lower) const HELD_FLIPPED: [&str; 4] = ["chain", "enumerate", "map", "zip"];
 
 /// The second stage of which adapters each body makes in place
 /// (`InPlace`), once the analysis knows what's stepped from its back: what
@@ -168,7 +168,26 @@ fn held_links<'tcx>(
         _ => None,
     };
     let made_knowing = |source: ExprId| back_stepped.made_knowing(*recognition, (body.def_id, mir), thir[source].ty);
+    // What the ground made in place, a JS iterator: a call, or a variable
+    // a `let` binds one to, `let a = v.iter().map(f)`, made in place as
+    // what it's given to, `a.zip(b)`, was (`let_made`). A link given one,
+    // its receiver or another iterator, `zip`'s `b`, isn't flipped, nor
+    // what's past it: std's `Zip` would read a JS iterator by index.
+    let ground = body.facts.in_place_adapters.ground();
+    let made = let_made(recognition.tcx, thir);
+    let in_place = |given: ExprId, flipped: &IndexSet<ExprId>| {
+        let given = match thir[strip(thir, given)].kind {
+            ExprKind::Borrow { arg, .. } => strip(thir, arg),
+            _ => strip(thir, given),
+        };
+        match thir[given].kind {
+            ExprKind::VarRef { id } => made.get(&id).is_some_and(|init| ground.contains(init)),
+            ExprKind::Call { .. } => ground.contains(&given) && !flipped.contains(&given),
+            _ => false,
+        }
+    };
     let chains = crate::lower::iterators::chains(recognition, (thir, body.def_id), keeps_capacity);
+    let mut held = IndexSet::default();
     (chains.into_iter())
         .filter(|chain| match chain.answer {
             crate::lower::iterators::Transparency::Admitted => false,
@@ -182,7 +201,54 @@ fn held_links<'tcx>(
         })
         // Its links are from what's called last to what's called on the
         // source.
-        .flat_map(|chain| chain.links.into_iter().rev().map_while(flipped_link))
+        .for_each(|chain| {
+            for link in chain.links.into_iter().rev() {
+                let given = match thir[link].kind {
+                    ExprKind::Call { ref args, .. } => args.iter().any(|&arg| in_place(arg, &held)),
+                    _ => true,
+                };
+                // Nor a zip of sides only its callers know, a type
+                // parameter's (`zip_asks_its_callers`).
+                let callers = crate::lower::recognition::zip_asks_its_callers(recognition.tcx, thir[link].ty);
+                match flipped_link(link) {
+                    Some(link) if !given && !callers => _ = held.insert(link),
+                    _ => break,
+                }
+            }
+        });
+    held
+}
+
+/// Each variable a `let` binds to an adapter call, `HELD_COMPILED`'s
+/// (`makes_held_compiled`), `let mut it = s.chars().enumerate()`, and that
+/// call: the ground makes it in place where every read steps it as a JS
+/// iterator (`in_place_adapters`), and the held flip gives a compiled
+/// adapter none it made so (`held_links`).
+fn let_made<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> IndexMap<LocalVarId, ExprId> {
+    (thir.stmts.iter())
+        .filter_map(|stmt| match stmt.kind {
+            thir::StmtKind::Let {
+                ref pattern,
+                initializer: Some(init),
+                else_block: None,
+                ..
+            } => match (&pattern.kind, &thir[strip(thir, init)].kind, thir[strip(thir, init)].ty) {
+                (
+                    &PatKind::Binding {
+                        var,
+                        mode: BindingMode(ByRef::No, _),
+                        subpattern: None,
+                        ..
+                    },
+                    &ExprKind::Call { fun, .. },
+                    made,
+                ) if matches!(*thir[fun].ty.kind(), ty::FnDef(id, _) if crate::lower::recognition::makes_held_compiled(tcx, id, made)) => {
+                    Some((var, strip(thir, init)))
+                }
+                _ => None,
+            },
+            _ => None,
+        })
         .collect()
 }
 
@@ -279,31 +345,7 @@ pub(super) fn in_place_adapters<'tcx>(
     // a `for` loop's `into_iter`, a `by_ref()` whose `&mut` they step, or
     // `drop`, never given anywhere else: nothing tells what it is, so it's
     // what the recognizers make of it too, `s.entries()`.
-    let made: IndexMap<LocalVarId, ExprId> = (thir.stmts.iter())
-        .filter_map(|stmt| match stmt.kind {
-            thir::StmtKind::Let {
-                ref pattern,
-                initializer: Some(init),
-                else_block: None,
-                ..
-            } => match (&pattern.kind, &thir[strip(thir, init)].kind, thir[strip(thir, init)].ty) {
-                (
-                    &PatKind::Binding {
-                        var,
-                        mode: BindingMode(ByRef::No, _),
-                        subpattern: None,
-                        ..
-                    },
-                    &ExprKind::Call { fun, .. },
-                    made,
-                ) if matches!(*thir[fun].ty.kind(), ty::FnDef(id, _) if crate::lower::recognition::makes_held_compiled(tcx, id, made)) => {
-                    Some((var, strip(thir, init)))
-                }
-                _ => None,
-            },
-            _ => None,
-        })
-        .collect();
+    let made = let_made(tcx, thir);
     // A variable that holds a flatten, or an adapter of one, `rev()`'s,
     // given where its hint is asked, `let mut it = v.iter().flat_map(f);
     // it.next(); it.collect()` of a crate that keeps capacities

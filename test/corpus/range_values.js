@@ -9,7 +9,7 @@ import {
   $extendMap,
   $iterator,
   $lazyRange,
-  $lazyZip,
+  $next,
   $partialEq,
   $print,
   $range,
@@ -19,7 +19,9 @@ import {
   $rangeLen,
   $rangeNext,
   $rangeNextBack,
+  $roomForHint,
   $slice,
+  iterator_zip,
 } from "@rust-js/std";
 
 export function entry() {
@@ -102,7 +104,22 @@ function main() {
   );
   let ids = Array.from($iterator({ start: 1 }, $rangeFromStep(0, 4294967295)).take(3));
   const numbered = Array.from(
-    $lazyZip($iterator({ start: 1 }, $rangeFromStep(0, 4294967295)), "abc"[Symbol.iterator]()),
+    $roomForHint(
+      iterator_zip(
+        { start: 1 },
+        "abc"[Symbol.iterator](),
+        { next: $rangeFromStep(0, 4294967295) },
+        { intoIter: (items) => items, IntoIterIterator: () => ({ next: $next }) },
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+      ),
+      8,
+      false,
+    ),
   );
   $print(
     `[${ids.join(", ")}] [${numbered.map((item) => `(${item[0]}, ${$debugStr(item[1], "'")})`).join(", ")}] ${firstSquareOver(50)}\n`,

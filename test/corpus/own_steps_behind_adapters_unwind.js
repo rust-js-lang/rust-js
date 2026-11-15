@@ -11,7 +11,6 @@ import {
   $iter,
   $iterator,
   $jsIterator,
-  $lazyZip,
   $mapEnds,
   $next,
   $nextBack,
@@ -23,6 +22,7 @@ import {
   iterator_chain,
   iterator_fuse,
   iterator_peekable,
+  iterator_zip,
 } from "@rust-js/std";
 
 export function entry() {
@@ -379,9 +379,17 @@ function main() {
   });
   run("plain zip fold", () => {
     const fold = $foldDropping(
-      $lazyZip(
-        $iterator({ n: 0, at: 3 }, plainIterator_next),
-        $iterator({ n: 0, at: 9 }, plainIterator_next),
+      iterator_zip(
+        { n: 0, at: 3 },
+        { n: 0, at: 9 },
+        { next: plainIterator_next },
+        { intoIter: (items) => items, IntoIterIterator: () => ({ next: plainIterator_next }) },
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
       ),
       [],
       (acc, [a, b]) => push(push(acc, a), b),

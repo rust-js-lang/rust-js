@@ -696,7 +696,8 @@ test("the held flip never takes out a rev(), which back_stepped reads", () => {
 test("the held flip flips from the source outward, while each link is flipped", () => {
   const source = read("src/lower/body_queries/in_place.rs");
   const held = source.slice(source.indexOf("fn held_links"), source.indexOf("pub(super) fn in_place_adapters"));
-  expect(held).toContain(".flat_map(|chain| chain.links.into_iter().rev().map_while(flipped_link))");
+  expect(held).toContain("for link in chain.links.into_iter().rev() {");
+  expect(held).toMatch(/Some\(link\) if !given && !callers => _ = held\.insert\(link\),\n\s+_ => break,/);
   expect(held.match(/flipped_link/g)?.length).toBe(2);
   expect(read("src/lower/iterators/transparent.rs")).toMatch(/each link's call, its outermost first/);
 });

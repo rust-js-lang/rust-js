@@ -2,14 +2,16 @@
 
 import {
   $catchable,
+  $count,
   $foldOf,
   $foldToArray,
   $iter,
   $iterator,
+  $last,
   $lazyChain,
-  $lazyZip,
   $lent,
   $next,
+  $nth,
   $panicMessage,
   $peek,
   $rangeFromNext,
@@ -78,9 +80,23 @@ function main() {
   check(
     "zip",
     () =>
-      Array.from(
+      $foldToArray(
         $roomForHint(
-          $lazyZip($iterator({ start: 0 }, $rangeFromStep(0, 4294967295)), $repeating(1)),
+          iterator_zip(
+            { start: 0 },
+            $repeating(1),
+            { next: $rangeFromStep(0, 4294967295) },
+            {
+              intoIter: (items) => items,
+              IntoIterIterator: () => ({ next: $next, nth: $nth, last: $last, count: $count }),
+            },
+            false,
+            false,
+            true,
+            false,
+            false,
+            true,
+          ),
           8,
           true,
         ),

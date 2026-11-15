@@ -12,11 +12,9 @@ import {
   $iter,
   $iterator,
   $lazyMapWhile,
-  $lazyRange,
   $lazyScan,
   $lazySkipWhile,
   $lazyTakeWhile,
-  $lazyZip,
   $lent,
   $next,
   $range,
@@ -57,6 +55,10 @@ function twice(it, IVecCollect) {
   return [a, b, c];
 }
 function main() {
+  const rangeIntoIterator = {
+    intoIter: (items) => items,
+    IntoIterIterator: () => ({ next: $rangeNext }),
+  };
   const value = twice(
     iterator_map(f(), (x) => (x * 10) >>> 0, { next: flakyIterator_next }),
     "next",
@@ -122,8 +124,21 @@ function main() {
     `take_while ([${value$9[0].join(", ")}], [${value$9[1].join(", ")}], [${value$9[2].join(", ")}])`,
   );
   const value$10 = twice(
-    $lazyZip($iterator(f(), flakyIterator_next), $lazyRange(100, 200)).map(
+    iterator_map(
+      iterator_zip(
+        f(),
+        { start: 100, end: 200 },
+        { next: flakyIterator_next },
+        rangeIntoIterator,
+        false,
+        false,
+        false,
+        true,
+        true,
+        true,
+      ),
       ([a, b]) => (a + b) >>> 0,
+      { next: $next, fold: $foldOf },
     ),
     "next",
   );
@@ -185,7 +200,7 @@ function main() {
       f(),
       (x) => ({ start: 0, end: x % 3 }),
       { next: flakyIterator_next },
-      { intoIter: (items) => items, IntoIterIterator: () => ({ next: $rangeNext }) },
+      rangeIntoIterator,
       false,
       undefined,
       false,

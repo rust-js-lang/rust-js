@@ -22,6 +22,7 @@ import {
   $toUppercase,
   $unzip,
   iterator_map,
+  iterator_zip,
 } from "@rust-js/std";
 
 export function entry() {
@@ -104,7 +105,22 @@ function main() {
   // The crate's own iterators, chained and zipped on, and stepped through.
   const chained = [10, 20, ...$iterator([0], counterIterator_next)];
   const zipped = Array.from(
-    $lazyZip($iterator([0], counterIterator_next), "ab"[Symbol.iterator]()),
+    $roomForHint(
+      iterator_zip(
+        [0],
+        "ab"[Symbol.iterator](),
+        { next: counterIterator_next },
+        { intoIter: (items) => items, IntoIterIterator: () => ({ next: $next }) },
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+      ),
+      8,
+      false,
+    ),
   );
   const labelled = Array.from($lazyZip("xyz"[Symbol.iterator](), $repeating(7)));
   console.log(

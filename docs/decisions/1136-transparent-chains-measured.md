@@ -457,3 +457,51 @@ reads a little better in each share: `$iter` 84.1 to 83.9,
 fallbacks 256.8 to 256.7 in 10,000 lines. Mutation `chain-not-flipped`
 (`lower/body_queries/in_place.ts`).
 
+
+## Amendment: the zip family flipped, and nothing flipped is given a JS iterator (2026-11-16, #1681's change 2)
+
+A `zip()` of a chain the predicate doesn't admit is std's compiled `Zip`,
+`HELD_FLIPPED`'s, no longer the recognizers' `$trustedZip` or `$lazyZip`
+there. Flipping it found a wrong answer the walk from the source had
+left open since `map` and `enumerate` flipped. A variable a `let` binds
+to an adapter, `let a = v.iter().map(f)`, is made in place by the ground
+where every read steps it as a JS iterator, and the zip it's given to was
+such a step; the flip then took the zip out of the ground but not the
+variable's map. Std's `Zip` read that JS iterator by index, through the
+compiled `Map`'s `__iterator_get_unchecked`, and `a.zip(0..10).fold(..)`
+summed 0 where Rust sums 29 (and the minified build of
+`zip_by_index_of_holding_maps` folded nothing). Results changed, so this
+follows ADR 0262's third case. The flipped `chain` and `map` had the same
+hole, hidden because their fold steps any JS iterator.
+
+So a link is flipped only where nothing it's given, its receiver or
+another iterator, `zip`'s `b` or `chain`'s, is a JS iterator the ground
+made: a call made in place there and not flipped, or a variable `let_made`
+binds to one (`held_links`). What's past it isn't flipped either, as
+before.
+
+Nor is a zip of sides only its callers know, a type parameter's or one
+built of one (`zip_asks_its_callers`). std's `Zip` specializes on whether
+each side is `TrustedRandomAccess` or `TrustedLen`, which rustc can't say
+there, so its compiled body asks each as a fact the callers give: three
+parameters more on a generic function, `dot(it, other, IRandomAccess,
+IRandomAccessNoCoerce, ITrustedLen)` where `dot(it, other)` was, and none
+given to a trait's default compiled over `Self`, itertools' blanket
+`impl<T: Iterator> Tools for T`'s `dot`, which was refused (the crates
+pair `library_instance_impl_asks_its_defaults_facts`). The recognizers'
+`$lazyZip` asks neither and is proved by the tables, so such a zip stays
+theirs (corpus `zip_of_sides_only_callers_know`). `let_made` is the one answer of which variables a `let` binds to
+an adapter, read by both stages. Six snapshots that had given a compiled
+`Map` or `Chain` such a JS iterator go back to the hand-written form.
+
+Measured: 23 corpus snapshots move, each as native prints, 8,797 lines to
+8,991 (×1.022), with two new cases,
+`let_held_maps_given_a_compiled_chain_and_zip` and
+`zip_of_sides_only_callers_know`. The React port's JS
+regenerates byte for byte. `@rust-js/std` is the same size, 1,307,950
+bytes. In 10,000 lines, `$iter` goes from 83.9 to 84.0 and renamed `x$1`
+from 468.7 to 470.5 (std's `Zip` binds more of its own locals), while
+role fallbacks go from 256.7 to 256.6. Mutations `zip-not-flipped`,
+`flipped-given-a-let-made-in-place`, `flipped-given-a-call-made-in-place`
+and `zip-of-callers-sides-flipped` (`lower/body_queries/in_place.ts`) are
+caught.

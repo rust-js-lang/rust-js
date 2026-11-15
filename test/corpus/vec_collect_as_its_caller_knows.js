@@ -16,7 +16,6 @@ import {
   $jsIterator,
   $last,
   $lazyRange,
-  $lazyZip,
   $live,
   $mapEnds,
   $next,
@@ -30,6 +29,7 @@ import {
   iterator_chain,
   iterator_map,
   iterator_zip,
+  zipIterator___iteratorGetUnchecked,
 } from "@rust-js/std";
 
 export function entry() {
@@ -248,14 +248,41 @@ function main() {
   r = $catchUnwind(() => {
     let count = 0;
     const value = all(
-      $lazyZip($lazyRange(0, 4), $lazyRange(10, 14)).map(([a, b]) => {
-        count = (count + 1) | 0;
-        console.log(`made ${count}`);
-        if (count >= 3) {
-          throw new Error(`at ${count}`);
-        }
-        return [(a + b) >>> 0];
-      }),
+      iterator_map(
+        iterator_zip(
+          { start: 0, end: 4 },
+          { start: 10, end: 14 },
+          { next: $rangeNext },
+          rangeIntoIterator,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+        ),
+        ([a, b]) => {
+          count = (count + 1) | 0;
+          console.log(`made ${count}`);
+          if (count >= 3) {
+            throw new Error(`at ${count}`);
+          }
+          return [(a + b) >>> 0];
+        },
+        {
+          next: $next,
+          fold: $foldOf,
+          getUnchecked: (iterator, i) =>
+            zipIterator___iteratorGetUnchecked(
+              iterator,
+              i,
+              { next: $rangeNext },
+              { next: $rangeNext },
+            ),
+        },
+        undefined,
+        loudDrop_drop,
+      ),
       "fold",
       4,
       undefined,

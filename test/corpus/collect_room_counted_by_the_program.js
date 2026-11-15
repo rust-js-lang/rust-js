@@ -2,15 +2,18 @@
 
 import {
   $catchable,
+  $foldOf,
   $foldToArray,
-  $iterator,
   $lazyChain,
   $lazyRange,
   $lazyZip,
+  $next,
   $rangeNext,
   $roomFor,
   $roomForHint,
   iterator_map,
+  iterator_zip,
+  zipIterator___iteratorGetUnchecked,
 } from "@rust-js/std";
 
 export function entry() {
@@ -33,6 +36,10 @@ function bound(name, n) {
 }
 
 function main() {
+  const rangeIntoIterator = {
+    intoIter: (items) => items,
+    IntoIterIterator: () => ({ next: $rangeNext }),
+  };
   const past = (4294967295 / 2) >>> 0;
   const w = [0n, 0n, 0n, 0n];
   check("zip", () => {
@@ -60,33 +67,63 @@ function main() {
   );
   const both = [...$lazyRange(0, 2), ...$lazyRange(5, 7)];
   console.log(`[${both.join(", ")}]`);
-  const pairs = Array.from(
+  const pairs = $foldToArray(
     $roomForHint(
-      $lazyZip(
-        $lazyRange(0, bound("a", 2)),
-        $iterator({ start: bound("b", 1), end: bound("c", 4) }, $rangeNext),
+      iterator_zip(
+        { start: 0, end: bound("a", 2) },
+        { start: bound("b", 1), end: bound("c", 4) },
+        { next: $rangeNext },
+        rangeIntoIterator,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
       ),
       8,
       true,
     ),
   );
   console.log(`[${pairs.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
-  check("ordered", () => {
-    const end = bound("d", past);
-    const value = bound("e", 0);
-    return Array.from(
-      $roomForHint(
-        $lazyZip(
-          $lazyRange(0, end),
-          $iterator({ start: value, end: bound("f", past) }, $rangeNext),
-        ).map(() => {
-          console.log("item");
-          return w;
-        }),
-        32,
-        true,
-      ),
-    ).length;
-  });
+  check(
+    "ordered",
+    () =>
+      $foldToArray(
+        $roomForHint(
+          iterator_map(
+            iterator_zip(
+              { start: 0, end: bound("d", past) },
+              { start: bound("e", 0), end: bound("f", past) },
+              { next: $rangeNext },
+              rangeIntoIterator,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+            ),
+            () => {
+              console.log("item");
+              return w;
+            },
+            {
+              next: $next,
+              fold: $foldOf,
+              getUnchecked: (iterator, i) =>
+                zipIterator___iteratorGetUnchecked(
+                  iterator,
+                  i,
+                  { next: $rangeNext },
+                  { next: $rangeNext },
+                ),
+            },
+          ),
+          32,
+          true,
+        ),
+      ).length,
+  );
 }
 //# sourceMappingURL=case.js.map

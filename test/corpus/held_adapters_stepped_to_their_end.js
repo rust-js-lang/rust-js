@@ -8,10 +8,10 @@ import {
   $iter,
   $iterator,
   $lazyChain,
-  $lazyZip,
   $live,
   $next,
   $rangeFromStep,
+  $roomForHint,
   $unwindsOn,
   iterator_map,
   iterator_zip,
@@ -116,13 +116,30 @@ function summed(name) {
 }
 
 function main() {
+  const rangeFromIntoIterator$1 = {
+    intoIter: (items) => items,
+    IntoIterIterator: () => ({ next: $rangeFromStep(0, 4294967295) }),
+  };
+  const rangeFromIntoIterator = {
+    intoIter: (items) => items,
+    IntoIterIterator: () => ({ next: $rangeFromStep(-2147483648, 2147483647) }),
+  };
   console.log(`${summed("sum")}`);
   const zipped = $held(
-    $lazyZip(
-      $closing($iterator(count("zip"), countIterator_next), (it) => {
-        loudDrop_drop(it.of._loud);
-      }),
-      $iterator({ start: 10 }, $rangeFromStep(-2147483648, 2147483647)),
+    iterator_zip(
+      count("zip"),
+      { start: 10 },
+      { next: countIterator_next },
+      rangeFromIntoIterator,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      (count) => {
+        loudDrop_drop(count._loud);
+      },
     ),
   );
   let zipped$live = true;
@@ -207,11 +224,20 @@ function main() {
     console.log("take done");
 
     consume(
-      $lazyZip(
-        $closing($iterator(count("param"), countIterator_next), (it) => {
-          loudDrop_drop(it.of._loud);
-        }),
-        $iterator({ start: 20 }, $rangeFromStep(0, 4294967295)),
+      iterator_zip(
+        count("param"),
+        { start: 20 },
+        { next: countIterator_next },
+        rangeFromIntoIterator$1,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        (count) => {
+          loudDrop_drop(count._loud);
+        },
       ),
       (zip) => {
         zip.return();
@@ -222,10 +248,7 @@ function main() {
         count("moved"),
         { start: 30 },
         { next: countIterator_next },
-        {
-          intoIter: (items) => items,
-          IntoIterIterator: () => ({ next: $rangeFromStep(0, 4294967295) }),
-        },
+        rangeFromIntoIterator$1,
         false,
         false,
         false,
@@ -250,11 +273,20 @@ function main() {
       zip.return();
     });
     const collected = $held(
-      $lazyZip(
-        $closing($iterator(count("collected"), countIterator_next), (it) => {
-          loudDrop_drop(it.of._loud);
-        }),
-        $iterator({ start: 40 }, $rangeFromStep(-2147483648, 2147483647)),
+      iterator_zip(
+        count("collected"),
+        { start: 40 },
+        { next: countIterator_next },
+        rangeFromIntoIterator,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        (count) => {
+          loudDrop_drop(count._loud);
+        },
       ),
     );
     try {
@@ -266,17 +298,25 @@ function main() {
       }, error);
       throw error;
     }
-    console.log(
-      `[${Array.from(collected)
-        .map((item) => `(${item[0]}, ${item[1]})`)
-        .join(", ")}]`,
-    );
+    const iter = collected;
+    const result = Array.from($roomForHint(iter, 8, false));
+    iter.return();
+    console.log(`[${result.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
     const [sum] = sumFromIterator_u32__u32__fromIter(
-      $lazyZip(
-        $closing($iterator(count("from_iter"), countIterator_next), (it) => {
-          loudDrop_drop(it.of._loud);
-        }),
-        $iterator({ start: 50 }, $rangeFromStep(0, 4294967295)),
+      iterator_zip(
+        count("from_iter"),
+        { start: 50 },
+        { next: countIterator_next },
+        rangeFromIntoIterator$1,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        (count) => {
+          loudDrop_drop(count._loud);
+        },
       ),
       (zip) => {
         zip.return();

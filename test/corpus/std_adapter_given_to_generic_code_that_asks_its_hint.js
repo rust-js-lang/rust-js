@@ -9,7 +9,6 @@ import {
   $lazyChain,
   $lazyRange,
   $lazyTakeWhile,
-  $lazyZip,
   $mapEnds,
   $next,
   $rangeFromStep,
@@ -22,6 +21,7 @@ import {
   $stepBy,
   $stepByEnds,
   $taking,
+  iterator_zip,
 } from "@rust-js/std";
 
 export function entry() {
@@ -51,7 +51,18 @@ function main() {
   );
   const value$4 = hint($stepBy($iter(v), 2));
   const value$5 = hint(
-    $lazyZip($iterator({ start: 0 }, $rangeFromStep(-2147483648, 2147483647)), $iter(w)),
+    iterator_zip(
+      { start: 0 },
+      $iter(w),
+      { next: $rangeFromStep(-2147483648, 2147483647) },
+      { intoIter: (items) => items, IntoIterIterator: () => ({ next: $next }) },
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+    ),
   );
   console.log(
     `(${value$4[0]}, ${value$4[1] == null ? "None" : `Some(${value$4[1]})`}) (${value$5[0]}, ${value$5[1] == null ? "None" : `Some(${value$5[1]})`})`,

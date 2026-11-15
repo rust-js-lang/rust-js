@@ -7,6 +7,7 @@ import {
   $rangeNext,
   $roomForHint,
   iterator_chain,
+  iterator_zip,
 } from "@rust-js/std";
 
 export function entry() {
@@ -22,6 +23,10 @@ function ownIterator_next(own) {
 }
 
 function main() {
+  const ownIntoIterator = {
+    intoIter: (items) => items,
+    IntoIterIterator: () => ({ next: ownIterator_next }),
+  };
   const a = [2];
   const b = [3];
   const n = [a, b]
@@ -30,17 +35,29 @@ function main() {
     .reduce((n) => n + 1, 0);
   console.log(`${n} ${a[0]} ${b[0]}`);
   const c = [2];
-  const zipped = Array.from($lazyZip($lazyRange(0, 5), $iterator(c, ownIterator_next)));
+  const zipped = Array.from(
+    $roomForHint(
+      iterator_zip(
+        { start: 0, end: 5 },
+        c,
+        { next: $rangeNext },
+        ownIntoIterator,
+        true,
+        true,
+        true,
+        false,
+        false,
+        false,
+      ),
+      8,
+      false,
+    ),
+  );
   console.log(`[${zipped.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}] ${c[0]}`);
   const d = [2];
   const chained = Array.from(
     $roomForHint(
-      iterator_chain(
-        { start: 10, end: 12 },
-        d,
-        { next: $rangeNext },
-        { intoIter: (items) => items, IntoIterIterator: () => ({ next: ownIterator_next }) },
-      ),
+      iterator_chain({ start: 10, end: 12 }, d, { next: $rangeNext }, ownIntoIterator),
       4,
       false,
     ),

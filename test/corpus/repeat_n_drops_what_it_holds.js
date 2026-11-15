@@ -4,21 +4,25 @@ import {
   $cleanup,
   $count,
   $foldBack,
+  $foldToArray,
   $held,
+  $last,
   $lastDropping,
-  $lazyRange,
-  $lazyZip,
   $lent,
   $live,
   $next,
   $nextBack,
+  $nth,
   $nthBack,
   $nthDropping,
+  $rangeNext,
   $repeatingN,
   $rev,
+  $roomForHint,
   $sizeHint,
   $tryFoldSome,
   $unwindsOn,
+  iterator_zip,
 } from "@rust-js/std";
 
 export function entry() {
@@ -225,12 +229,41 @@ function main() {
       }
     }
     console.log(`${found == null ? "None" : `Some(${found})`}`);
-    const paired = Array.from(
-      $lazyZip(
-        $lazyRange(1, 3),
-        $repeatingN([9], 4, (value) => lClone_clone(value), lDrop_drop),
-      ),
+    const iter = iterator_zip(
+      { start: 1, end: 3 },
+      $repeatingN([9], 4, (value) => lClone_clone(value), lDrop_drop),
+      { next: $rangeNext },
+      {
+        intoIter(items) {
+          return items;
+        },
+        IntoIterIterator() {
+          return { next: $next, nth: $nth, last: $last, count: $count };
+        },
+        $dropItem: lDrop_drop,
+        $dropIntoIter(repeatN) {
+          repeatN.return();
+        },
+      },
+      true,
+      true,
+      true,
+      false,
+      false,
+      true,
+      undefined,
+      (repeatN) => {
+        repeatN.return();
+      },
+      undefined,
+      lDrop_drop,
+      (repeatN) => {
+        repeatN.return();
+      },
     );
+    const result = $foldToArray($roomForHint(iter, 8, true));
+    iter.return();
+    const paired = result;
     try {
       console.log(`[${paired.map((item) => `(${item[0]}, ${lDebug_fmt(item[1])})`).join(", ")}]`);
       console.log(`[${Array.from($repeatingN(3, 4)).join(", ")}]`);

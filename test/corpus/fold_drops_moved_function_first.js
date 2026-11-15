@@ -21,6 +21,7 @@ import {
   $last,
   $lazyChain,
   $lazyMapWhile,
+  $lazyRange,
   $lazySkipWhile,
   $lazyTakeWhile,
   $lent,
@@ -35,7 +36,6 @@ import {
   $reduce,
   $skipping,
   $stepBy,
-  iterator_chain,
   iterator_fuse,
   iterator_map,
   iterator_peekable,
@@ -724,8 +724,8 @@ function main() {
       dDrop_drop(d);
       return result;
     }
-    const iter = iterator_chain(
-      { start: 0, end: 1 },
+    const n = $lazyChain(
+      $lazyRange(0, 1),
       $holding(
         take.map(f),
         () => {
@@ -733,38 +733,7 @@ function main() {
         },
         "after",
       ),
-      { next: $rangeNext },
-      {
-        intoIter(items) {
-          return items;
-        },
-        IntoIterIterator() {
-          return { next: $next, fold: $foldOf };
-        },
-        $dropIntoIter(map) {
-          map.return();
-        },
-      },
-      undefined,
-      (map) => {
-        map.return();
-      },
-      undefined,
-      (map) => {
-        map.return();
-      },
-    );
-    let result;
-    try {
-      result = iter.reduce((a, b) => (a + b) >>> 0, 0);
-    } catch (error) {
-      $cleanup(() => {
-        iter.return();
-      }, error);
-      throw error;
-    }
-    iter.return();
-    const n = result;
+    ).reduce((a, b) => (a + b) >>> 0, 0);
     $print(`| ${n} | `);
   });
   case$("skipped", (g) => {
