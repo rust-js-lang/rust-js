@@ -161,12 +161,12 @@ export const mutations: Mutation[] = [
   {
     name: "static-pointer-unhandled",
     breaks:
-      "a pointer to an immutable static is the static, which `*p` reads `value` of",
+      "a pointer to an immutable static is the static, which `*p` reads `value` of: `Some(&console)`'s `console` given to `function::bind` as `{ value }`, where it's the console (#1862 left `console` and `globalThis` the statics)",
     file: "src/lower/mir/operands.rs",
     find: "                    Some((pointee, _)) if self.is_handle_pointer(ty) => {\n",
     replace:
       "                    Some((pointee, _)) if false && self.is_handle_pointer(ty) => {\n",
-    tests: ["test/snapshots.test.ts", "-t", "counter"],
+    tests: ["test/js-globals.test.ts", "-t", "a getter's function unwrapped where it's called is the read"],
   },
   {
     name: "mir-literal-unwritten",
