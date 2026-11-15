@@ -177,3 +177,45 @@ error: missing prop `href` of `ButtonLinkProps`
   attributes fail as #1794's did. Resolving it needs rustc's names, after
   expansion, which this pass runs before; Codex's prototype resolves it
   there, and whether to take it is a decision of its own.
+- **rustc's names are the truth, `Scope` their prediction** (2026-11-15,
+  the lead's decision; Codex's prototype, rust-js-lang/vgpu-in-rust@143d724,
+  `docs/proposals/hir-jsx-props-resolution.patch`, whose resolution step and
+  marker this takes): a library's props type a glob or a kit's prelude
+  imports, `use ui::prelude::*;`, is built by its companion. Each companion
+  rust-js writes is marked `#[rust_js::jsx_props]`; the syntax pass predicts
+  each component's props of its `Scope`, as before, and records each
+  function component it predicts a literal, by where its name is written
+  (`jsx_syntax/resolved.rs`). After expansion, rustc's names verify each:
+  its signature's props type, an alias's target, by reference or not, has
+  a companion where its module has a macro of its name that carries the
+  marker (Codex's `owns_companion`), of this crate or another's. A
+  prediction they prove wrong stops the compile there, before a literal is
+  checked, and the crate is compiled once more with that component's
+  answer (`run_resolving_props`, `main.rs`), rust-js's, `--rustc`'s and
+  Clippy's alike, and the WASI build's, of the same entry point. A replay
+  whose names differ again is an error, its sources having changed.
+  - **A replay is rare**: a `use` that names the props, a rename, a path,
+    a re-export and an alias are predicted right, the crate compiled once;
+    only a glob's or a prelude's library props replay, once.
+  - **What a stopped compile says is dropped**: each compile's diagnostics
+    are held from its start, by an emitter rust-js builds as rustc's
+    session does (`resolved::held`), until the verification says whether
+    it goes on: then they're said, in order, or dropped with the compile,
+    so an early lint's warning, which both compiles meet, is said once.
+    One whose errors come before it could ask says them as it ends.
+  - **Not verified**: a constant's or a `thread_local!`'s component, whose
+    props `Scope` alone predicts, as before.
+  - Case ([0262](0262-when-rust-and-js-disagree.md)): none; it compiled
+    what it refused.
+  - Held by `test/jsx-props-resolved.test.ts`: a glob's and a prelude's
+    props built by their companion by one replay (`--props-replayed`, its
+    hook), a named `use`'s and the module's own compiled once, and a
+    replayed compile's early lint said once. Mutations of
+    `jsx_syntax/resolved.rs`, companion-unmarked, glob-props-unpredicted
+    and props-never-replayed; component-props-literal and
+    imported-props-a-literal now held by a crate of its own props, and of
+    a named `use`'s, compiled once, as the replay would otherwise build
+    them right at a second compile's cost. No mutation of the early
+    return where nothing was predicted, which saves the walk alone, nor
+    of the error a replay's changed names give, which needs sources that
+    change between its compiles.

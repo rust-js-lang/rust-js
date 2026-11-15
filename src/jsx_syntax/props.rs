@@ -75,7 +75,7 @@ pub(super) fn props_companion(
                 "rust-js: `jsx!` builds `{name}` as a component's props only where each of its fields is as visible as it: make them so (#1794)"
             );
             let source = format!(
-                "#[doc(hidden)] #[allow(unused_macros)] macro {name} {{ ($($tokens:tt)*) => {{ ::core::compile_error!({message:?}) }} }}"
+                "#[doc(hidden)] #[allow(unused_macros)] #[rust_js::jsx_props] macro {name} {{ ($($tokens:tt)*) => {{ ::core::compile_error!({message:?}) }} }}"
             );
             return companion_item(sess, template(sess, source, item.span), "JSX props", item);
         }
@@ -229,7 +229,7 @@ pub(super) fn props_companion(
         arms
     };
     let source = format!(
-        "#[doc(hidden)] #[allow(unused_macros)] macro {name} {{ {} }}",
+        "#[doc(hidden)] #[allow(unused_macros)] #[rust_js::jsx_props] macro {name} {{ {} }}",
         arms.join(", ")
     )
     .replace("NAME", &name);
@@ -306,7 +306,7 @@ pub(super) fn alias_companion(sess: &Session, item: &ast::Item, macros: &IndexSe
         return None;
     }
     let source = format!(
-        "#[doc(hidden)] #[allow(unused_macros)] macro {} {{ ($($tokens:tt)*) => {{ {target}!($($tokens)*) }} }}",
+        "#[doc(hidden)] #[allow(unused_macros)] #[rust_js::jsx_props] macro {} {{ ($($tokens:tt)*) => {{ {target}!($($tokens)*) }} }}",
         alias.ident
     );
     companion_item(sess, template(sess, source, item.span), "JSX props", item)

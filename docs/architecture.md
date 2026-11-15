@@ -43,7 +43,7 @@ compiled for WASI; it is a separate build package, not a second compiler.
 | --- | --- |
 | Compiler entry, command parsing, Cargo wrapper, panic reporting, the `core` and `alloc` std's bodies are lowered of, built to unwind | `src/main.rs`, `src/command.rs`, `src/cargo.rs`, `src/std_sysroot.rs` |
 | `rust-js clippy`'s lints, clippy's crates registered as rustc's (ADR 0888) | `src/clippy.rs` |
-| JSX syntax expansion and provenance | `src/jsx_syntax.rs`, `src/jsx_syntax/` |
+| JSX syntax expansion and provenance; which components' props a glob or a prelude names are built by their companion, rustc's names verifying the syntax pass's prediction, and a replayed compile's held diagnostics (ADR 0213, amended) | `src/jsx_syntax.rs`, `src/jsx_syntax/`, `jsx_syntax/resolved.rs` |
 | Rust analysis and lowering | `src/lower.rs`, `src/lower/` (detailed below) |
 | Owned JS tree, source arena and comments | `src/js.rs`, `src/js/`, `src/program.rs`, `src/comments.rs` |
 | Reachability, linking and names | `src/reachability.rs`, `src/link.rs`, `src/names.rs` |

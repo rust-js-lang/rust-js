@@ -6,6 +6,7 @@ pub mod formatting;
 mod literals;
 mod parser;
 mod props;
+pub mod resolved;
 
 use crate::collections::{IndexMap, IndexSet};
 pub(crate) use parser::snake;

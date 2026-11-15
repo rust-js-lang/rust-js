@@ -46,9 +46,9 @@ export const mutations: Mutation[] = [
     name: "component-props-literal",
     breaks: "a component's props are a struct literal, where a flattened struct's names aren't its fields",
     file: "src/jsx_syntax/parser.rs",
-    find: "    let companion = props.rsplit(\"::\").next().is_some_and(|name| built.contains(name)) || imported;\n",
-    replace: "    let companion = props.rsplit(\"::\").next().is_some_and(|_| false) || imported;\n",
-    tests: ["test/jsx-props.test.ts", "-t", "flattened props where they"],
+    find: "    let mut companion = props.rsplit(\"::\").next().is_some_and(|name| built.contains(name)) || imported;\n",
+    replace: "    let mut companion = props.rsplit(\"::\").next().is_some_and(|_| false) || imported;\n",
+    tests: ["test/jsx-props-resolved.test.ts", "-t", "own props are predicted"],
   },
   {
     name: "tag-spread-moved-last",
@@ -316,7 +316,9 @@ export const mutations: Mutation[] = [
     file: "src/jsx_syntax/parser.rs",
     find: " || imported;\n",
     replace: " || false && imported;\n",
-    tests: ["test/jsx-imported-props.test.ts"],
+    // A replay builds them right, rustc's names telling (ADR 0213,
+    // amended): what the prediction buys is a compile, not a second.
+    tests: ["test/jsx-props-resolved.test.ts", "-t", "a use that names them"],
   },
   {
     name: "component-without-react",
@@ -325,5 +327,13 @@ export const mutations: Mutation[] = [
     find: "    sess.opts.crate_name.as_deref() == Some(\"react\") || sess.opts.externs.iter().any(|(name, _)| name == \"react\")\n",
     replace: "    let _ = sess;\n    true\n",
     tests: ["test/modules.test.ts", "-t", "a namespace import is named as the module of its bindings"],
+  },
+  {
+    name: "glob-props-unpredicted",
+    breaks: "a function component's props the syntax pass predicts a literal aren't recorded for rustc's names to verify, so a glob's library props type stays a literal, its flattened attributes rustc's E0560 (ADR 0213, amended)",
+    file: "src/jsx_syntax/parser.rs",
+    find: "    if !companion && !props.is_empty() && !parameter(&props) && matches!(item.kind, ItemKind::Fn(_)) {\n",
+    replace: "    if false && !companion && !props.is_empty() && !parameter(&props) && matches!(item.kind, ItemKind::Fn(_)) {\n",
+    tests: ["test/jsx-props-resolved.test.ts", "-t", "a glob imports"],
   },
 ];

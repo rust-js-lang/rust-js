@@ -154,4 +154,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/jsx-imported-props.test.ts", "-t", "another crate's props"],
   },
+  {
+    name: "companion-unmarked",
+    breaks: "a struct's companion carries no `#[rust_js::jsx_props]`, so rustc's names never find it, and a glob's library props type stays a literal (ADR 0213, amended)",
+    file: "src/jsx_syntax/props.rs",
+    find: "        \"#[doc(hidden)] #[allow(unused_macros)] #[rust_js::jsx_props] macro {name} {{ {} }}\",\n",
+    replace: "        \"#[doc(hidden)] #[allow(unused_macros)] macro {name} {{ {} }}\",\n",
+    tests: ["test/jsx-props-resolved.test.ts", "-t", "a glob imports"],
+  },
 ];

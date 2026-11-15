@@ -27,6 +27,7 @@ extern crate rustc_ast;
 extern crate rustc_const_eval;
 extern crate rustc_data_structures;
 extern crate rustc_driver;
+extern crate rustc_errors;
 extern crate rustc_expand;
 extern crate rustc_feature;
 extern crate rustc_hir;
@@ -34,6 +35,7 @@ extern crate rustc_hir_analysis;
 extern crate rustc_index;
 extern crate rustc_interface;
 extern crate rustc_lexer;
+extern crate rustc_lint_defs;
 extern crate rustc_middle;
 extern crate rustc_mir_dataflow;
 extern crate rustc_mir_transform;
@@ -188,6 +190,7 @@ struct Syntax;
 impl Callbacks for Syntax {
     fn config(&mut self, config: &mut rustc_interface::interface::Config) {
         register_tool(config);
+        jsx_syntax::resolved::held::install(config);
     }
 
     fn after_crate_root_parsing(&mut self, compiler: &Compiler, krate: &mut rustc_ast::Crate) -> Compilation {
@@ -195,9 +198,15 @@ impl Callbacks for Syntax {
         Compilation::Continue
     }
 
+    /// Each component's props rustc's names say the syntax pass predicted
+    /// wrong: the compile stops there, before a literal is checked, for the
+    /// replay that builds them by their companion (ADR 0213, amended).
     fn after_expansion<'tcx>(&mut self, _compiler: &Compiler, tcx: TyCtxt<'tcx>) -> Compilation {
         jsx_syntax::check_crate_id(tcx.stable_crate_id(LOCAL_CRATE));
-        Compilation::Continue
+        match jsx_syntax::resolved::verify(tcx) {
+            true => Compilation::Stop,
+            false => Compilation::Continue,
+        }
     }
 
     /// A binding crate's names are held as a program's are (ADR 0573), its
@@ -227,7 +236,9 @@ struct Clippy {
 impl Callbacks for Clippy {
     fn config(&mut self, config: &mut rustc_interface::interface::Config) {
         register_tool(config);
-        clippy::configure(config, self.value.take());
+        jsx_syntax::resolved::held::install(config);
+        // Again where the crate is compiled again (`run_resolving_props`).
+        clippy::configure(config, self.value.clone());
     }
 
     fn after_crate_root_parsing(&mut self, compiler: &Compiler, krate: &mut rustc_ast::Crate) -> Compilation {
@@ -242,7 +253,7 @@ impl Callbacks for Clippy {
 /// rustc, run with `args` by `Clippy`.
 #[cfg(not(target_os = "wasi"))]
 fn linted(args: Vec<String>, value: String) -> ExitCode {
-    rustc_driver::catch_with_exit_code(|| rustc_driver::run_compiler(&args, &mut Clippy { value: Some(value) }))
+    run_resolving_props(&args, &mut Clippy { value: Some(value) })
 }
 
 /// The playground lints nothing: clippy's crates are the native compiler's.
@@ -255,6 +266,7 @@ fn linted(_: Vec<String>, _: String) -> ExitCode {
 impl Callbacks for RustJs {
     fn config(&mut self, config: &mut rustc_interface::interface::Config) {
         register_tool(config);
+        jsx_syntax::resolved::held::install(config);
         // A file's record of its build names each crate it loaded, what it
         // read of them as much as of its sources (ADR 1099).
         if self.dep_info {
@@ -313,10 +325,14 @@ impl Callbacks for RustJs {
         Syntax.after_crate_root_parsing(compiler, krate)
     }
 
-    fn after_expansion<'tcx>(&mut self, _compiler: &Compiler, tcx: TyCtxt<'tcx>) -> Compilation {
-        jsx_syntax::check_crate_id(tcx.stable_crate_id(LOCAL_CRATE));
-        // 0. `#[serde(..)]`, which only the expanded crate still has (ADR 0077).
+    fn after_expansion<'tcx>(&mut self, compiler: &Compiler, tcx: TyCtxt<'tcx>) -> Compilation {
+        // 0. `#[serde(..)]`, which only the expanded crate still has, read
+        // before props' resolution asks for its HIR, which takes the
+        // resolver's AST (ADR 0077).
         let serde_attrs = lower::serde_attributes(tcx);
+        if Syntax.after_expansion(compiler, tcx) == Compilation::Stop {
+            return Compilation::Stop;
+        }
         // The lowering session, its caches its own, dropped as it ends (ADR
         // 1111); and its flags: std's structs as their meaning, all of them,
         // in std's own bodies' build and the differential one (ADR 0932);
@@ -588,7 +604,7 @@ fn run() -> ExitCode {
         Ok(command::Command::Rustc(args)) => {
             let ours = std::iter::once("rust-js").chain(command::RUST_JS_CFG).map(String::from);
             let rustc_args: Vec<String> = ours.chain(args).collect();
-            return rustc_driver::catch_with_exit_code(|| rustc_driver::run_compiler(&rustc_args, &mut Syntax));
+            return run_resolving_props(&rustc_args, &mut Syntax);
         }
         // A crate's checks of its JS as a host has it, once Cargo is done (ADR 0117).
         Ok(command::Command::Checks(checks)) => {
@@ -718,6 +734,7 @@ fn compile(build: command::Build) -> Result<ExitCode, String> {
         knowns_found,
         without_recognizers: build_without_recognizers,
         recognizers_found: build_recognizers_found,
+        props_replayed,
         without_mutated,
         intervals_shadow,
         std_iterators,
@@ -757,6 +774,7 @@ fn compile(build: command::Build) -> Result<ExitCode, String> {
         &prepare_fired,
         &knowns_found,
         &build_recognizers_found,
+        &props_replayed,
         &tidy_fired,
         &intervals_shadow,
     ]
@@ -787,7 +805,14 @@ fn compile(build: command::Build) -> Result<ExitCode, String> {
         local_js: output::LocalJs::new(&plan),
         dep_info: !cargo && dep_info.is_some(),
     };
-    let exit = rustc_driver::catch_with_exit_code(|| rustc_driver::run_compiler(&rustc_args, &mut callbacks));
+    let exit = run_resolving_props(&rustc_args, &mut callbacks);
+    if let Some(file) = &props_replayed {
+        let replayed: String = jsx_syntax::resolved::replayed()
+            .iter()
+            .map(|name| format!("{name}\n"))
+            .collect();
+        std::fs::write(file, replayed).map_err(|error| format!("{}: {error}", file.display()))?;
+    }
     // Once rustc has written the metadata: if it couldn't, nothing is published.
     if let Some((linked, sources)) = callbacks.lowered.take()
         && exit == ExitCode::SUCCESS
@@ -860,4 +885,18 @@ fn compile(build: command::Build) -> Result<ExitCode, String> {
         hooks::check(&plan.settings, &plan.written)?;
     }
     Ok(exit)
+}
+
+/// rustc run with `callbacks`, and once more where the first compile stopped
+/// for a replay: the syntax pass's prediction of a component's props, of a
+/// glob or a prelude, proved wrong by rustc's names (ADR 0213, amended). A
+/// crate whose predictions hold is compiled once. rust-js's, `--rustc`'s and
+/// Clippy's, one way.
+fn run_resolving_props(args: &[String], callbacks: &mut (impl Callbacks + Send)) -> ExitCode {
+    jsx_syntax::resolved::begin();
+    let exit = rustc_driver::catch_with_exit_code(|| rustc_driver::run_compiler(args, callbacks));
+    match exit == ExitCode::SUCCESS && jsx_syntax::resolved::replay() {
+        true => rustc_driver::catch_with_exit_code(|| rustc_driver::run_compiler(args, callbacks)),
+        false => exit,
+    }
 }

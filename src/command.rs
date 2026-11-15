@@ -117,6 +117,10 @@ pub(crate) struct Build {
     /// `--recognizers-found <file>`: where to write which std functions a
     /// recogniser took, a line each (ADR 1128).
     pub recognizers_found: Option<PathBuf>,
+    /// `--props-replayed <file>`: where to write the components whose props
+    /// a replay built by their companion, rustc's names having proved the
+    /// syntax pass's prediction wrong, a line each (ADR 0213, amended).
+    pub props_replayed: Option<PathBuf>,
     /// `--std-iterators`: every iterator adapter std compiles is its struct,
     /// none rewritten to the JS chain the recognizers make in place. A test
     /// hook, not a way to build: the differential job compares it with the
@@ -230,6 +234,7 @@ pub(crate) fn parse(args: Vec<String>) -> Result<Command, String> {
         without_recognizers.push(path);
     }
     let recognizers_found = valued(&mut ours, "--recognizers-found", "a path")?.map(PathBuf::from);
+    let props_replayed = valued(&mut ours, "--props-replayed", "a path")?.map(PathBuf::from);
     let intervals_shadow = valued(&mut ours, "--intervals-shadow", "a path")?.map(PathBuf::from);
     let mut without_mutated = Vec::new();
     while let Some(ty) = valued(&mut ours, "--without-mutated", "a type, as rustc prints it")? {
@@ -273,6 +278,7 @@ pub(crate) fn parse(args: Vec<String>) -> Result<Command, String> {
         without_mutated,
         intervals_shadow,
         recognizers_found,
+        props_replayed,
         std_iterators,
         js_made_all,
         no_thir_hints,

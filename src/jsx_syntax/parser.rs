@@ -878,7 +878,13 @@ pub(super) fn component(
     // A constant's props, or a `thread_local!`'s memo's, another component's
     // wherever it is, are built as any component's are: by the companion
     // beside them, imported with them.
-    let companion = props.rsplit("::").next().is_some_and(|name| built.contains(name)) || imported;
+    let mut companion = props.rsplit("::").next().is_some_and(|name| built.contains(name)) || imported;
+    // A function's predicted a literal, a glob's or a prelude's props type,
+    // rustc's names verify after expansion, and a replay builds by its
+    // companion where it has one (`resolved`).
+    if !companion && !props.is_empty() && !parameter(&props) && matches!(item.kind, ItemKind::Fn(_)) {
+        companion = super::resolved::predicted_literal(sess, ident);
+    }
     let pattern = if props.is_empty() {
         ""
     } else {

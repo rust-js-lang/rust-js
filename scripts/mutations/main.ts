@@ -64,7 +64,7 @@ export const mutations: Mutation[] = [
     breaks: "`rust-js --rustc` is rustc without rust-js's tool, and the binding crates don't compile",
     file: "src/main.rs",
     find: "impl Callbacks for Syntax {\n    fn config(&mut self, config: &mut rustc_interface::interface::Config) {\n        register_tool(config);\n",
-    replace: "impl Callbacks for Syntax {\n    fn config(&mut self, _config: &mut rustc_interface::interface::Config) {\n",
+    replace: "impl Callbacks for Syntax {\n    fn config(&mut self, config: &mut rustc_interface::interface::Config) {\n",
     tests: ["test/cargo-react.test.ts"],
   },
   {
@@ -119,8 +119,8 @@ export const mutations: Mutation[] = [
     name: "clippy-without-liveness",
     breaks: "`rust-js clippy` has no rust-js tool nor its liveness (ADR 0888): a struct JS reads is said never read, and `#[rust_js::..]` is an unknown tool",
     file: "src/main.rs",
-    find: "        register_tool(config);\n        clippy::configure(config, self.value.take());\n",
-    replace: "        clippy::configure(config, self.value.take());\n",
+    find: "        register_tool(config);\n        jsx_syntax::resolved::held::install(config);\n        // Again where the crate is compiled again (`run_resolving_props`).\n",
+    replace: "        jsx_syntax::resolved::held::install(config);\n        // Again where the crate is compiled again (`run_resolving_props`).\n",
     tests: ["test/clippy.test.ts", "-t", "rust-js clippy says what clippy finds"],
   },
   {
@@ -227,5 +227,13 @@ export const mutations: Mutation[] = [
     find: "        config.opts.unstable_opts.metadata_crate_hash = false;\n",
     replace: "",
     tests: ["test/manifest.test.ts", "-t", "crate's hash"],
+  },
+  {
+    name: "props-never-replayed",
+    breaks: "a compile stopped for a replay is never compiled again, so a crate of a glob's library props writes no JS (ADR 0213, amended)",
+    file: "src/main.rs",
+    find: "    match exit == ExitCode::SUCCESS && jsx_syntax::resolved::replay() {\n",
+    replace: "    match exit == ExitCode::SUCCESS && false && jsx_syntax::resolved::replay() {\n",
+    tests: ["test/jsx-props-resolved.test.ts", "-t", "a glob imports"],
   },
 ];

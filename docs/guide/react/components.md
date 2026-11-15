@@ -115,10 +115,13 @@ A missing prop, a prop the struct doesn't have, and a value of the wrong
 type are compile errors too: ``missing prop `subtitle` of `CardProps` ``.
 
 The props struct may be another module's or another crate's, imported,
-renamed, re-exported or aliased: a wrapper of a library's component takes
-the library's own props and is given them as its component is, a
-flattened field's attributes flat and an `Option` left out
-([ADR 0213](../../decisions/0213-props-as-written.md#since), #1794):
+renamed, re-exported, aliased, or brought by a glob or a kit's prelude,
+`use ui::prelude::*;`: a wrapper of a library's component takes the
+library's own props and is given them as its component is, a flattened
+field's attributes flat and an `Option` left out
+([ADR 0213](../../decisions/0213-props-as-written.md#since), #1794). A
+glob's or a prelude's props type is told by rustc's own names, so such a
+crate is compiled twice, once to find it; every other is compiled once:
 
 ```rust
 use next::image::{Image, ImageProps, IntoImageSrc};
