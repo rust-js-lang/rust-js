@@ -3,12 +3,8 @@
 import {
   $advanceSlice,
   $cleanup,
-  $closing,
   $collectDropping,
   $dropEach,
-  $flatMap,
-  $given,
-  $givenDrop,
   $held,
   $iter,
   $lent,
@@ -88,18 +84,22 @@ function tExt(TIterator, TItemItemSize, dropT, dropTItem, dropTItemItem, dropTIt
           true,
         );
       },
-      firstOfEach(self, SelfItemIntoIterator) {
+      firstOfEach(self, SelfItemIntoIterator, SelfItemConstSize, SelfItemIntoIterOneShot) {
         const flatMap = $held(
-          $flatMap($closing($given(self, TIterator, true), $givenDrop(dropT), false), (x) =>
-            $closing(
-              $given(
-                SelfItemIntoIterator.intoIter(x),
-                SelfItemIntoIterator.IntoIterIterator(),
-                true,
-              ),
-              dropTItem,
-              false,
-            ),
+          iterator_flatMap(
+            self,
+            (x) => x,
+            TIterator,
+            SelfItemIntoIterator,
+            false,
+            SelfItemConstSize,
+            SelfItemIntoIterOneShot,
+            dropT,
+            dropTItem,
+            undefined,
+            dropTItem,
+            dropTItemItem,
+            dropTItemIntoIter,
           ),
         );
         let result;
@@ -238,7 +238,7 @@ function main() {
     }, error);
     throw error;
   }
-  const second = IntoIterExt.firstOfEach($iter(tmp$6), intoIterator);
+  const second = IntoIterExt.firstOfEach($iter(tmp$6), intoIterator, undefined, false);
   try {
     const value = second?.[0];
     console.log(`second ${value == null ? "None" : `Some(${value})`}`);

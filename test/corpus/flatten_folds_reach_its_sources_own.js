@@ -18,9 +18,11 @@ import {
   $nextBack,
   $tryOf,
   $unwindsOn,
+  flatMapDoubleEndedIterator_rfold,
   flattenDoubleEndedIterator_nextBack,
   flattenDoubleEndedIterator_rfold,
   flattenDoubleEndedIterator_tryRfold,
+  iterator_flatMap,
   iterator_flatten,
   iterator_map,
   iterator_rev,
@@ -373,29 +375,37 @@ function main() {
     )}`,
   );
   console.log(
-    `flat_map rfold ${$foldBack(
-      $flattenEnds(
-        $closing(
-          $iterator(
-            [0, 3],
-            foldsIterator_next,
-            false,
-            foldsDoubleEndedIterator_nextBack,
-            undefined,
-            undefined,
-            foldsIterator_fold,
-            undefined,
-            undefined,
-            foldsDoubleEndedIterator_rfold,
-          ),
-          (it) => {
-            foldsDrop_drop(it.of);
-          },
-        ),
-        (item) => $closing($iter(pair(item)), $dropEach(dDrop_drop)),
+    `flat_map rfold ${flatMapDoubleEndedIterator_rfold(
+      iterator_flatMap(
+        [0, 3],
+        pair,
+        { next: foldsIterator_next, fold: foldsIterator_fold },
+        intoIterator$1,
+        false,
+        undefined,
+        false,
+        foldsDrop_drop,
+        $dropEach(dDrop_drop),
+        undefined,
+        dDrop_drop,
+        dDrop_drop,
+        $dropEach(dDrop_drop),
       ),
       0,
       sum,
+      { next: foldsIterator_next, fold: foldsIterator_fold },
+      { next_back: foldsDoubleEndedIterator_nextBack, rfold: foldsDoubleEndedIterator_rfold },
+      intoIterator$1,
+      { next_back: $nextBack },
+      false,
+      foldsDrop_drop,
+      $dropEach(dDrop_drop),
+      undefined,
+      undefined,
+      undefined,
+      dDrop_drop,
+      dDrop_drop,
+      $dropEach(dDrop_drop),
     )}`,
   );
   console.log(

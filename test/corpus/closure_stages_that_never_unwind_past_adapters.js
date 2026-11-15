@@ -9,18 +9,17 @@ import {
   $dropEach,
   $dropItems,
   $filterDropping,
-  $flatMap,
   $foldOf,
   $foldToArray,
   $iter,
-  $iterator,
   $lazyChain,
-  $lazyRange,
   $lazyTakeWhile,
   $next,
   $range,
+  $rangeNext,
   $roomForHint,
   iterator_chain,
+  iterator_flatMap,
   iterator_fuse,
   iterator_map,
 } from "@rust-js/std";
@@ -153,11 +152,39 @@ function main() {
   });
   run("flat_map", 107, () => {
     const collect = $collectDropping(
-      $flatMap($lazyRange(7, 9), (value) =>
-        $closing($iterator([value], tickIterator_next), (it) => {
-          tickDrop_drop(it.of);
-        }),
-      ).map((n) => [(n + 50) >>> 0]),
+      $roomForHint(
+        iterator_map(
+          iterator_flatMap(
+            { start: 7, end: 9 },
+            (value) => [value],
+            { next: $rangeNext },
+            {
+              intoIter: (items) => items,
+              IntoIterIterator: () => ({ next: tickIterator_next }),
+              $dropIntoIter: tickDrop_drop,
+            },
+            true,
+            undefined,
+            false,
+            undefined,
+            tickDrop_drop,
+            undefined,
+            undefined,
+            undefined,
+            tickDrop_drop,
+          ),
+          (n) => [(n + 50) >>> 0],
+          { next: $next, fold: $foldOf },
+          (flatMap) => {
+            flatMap.return();
+          },
+          dDrop_drop,
+        ),
+        4,
+        false,
+        false,
+        dDrop_drop,
+      ),
       dDrop_drop,
       true,
     );

@@ -24,6 +24,7 @@ import {
   $live,
   $mapEnds,
   $maxByKey,
+  $next,
   $rangeNext,
   $rangeNextBack,
   $reduce,
@@ -32,6 +33,7 @@ import {
   $skipping,
   $stepBy,
   $unwindsOn,
+  iterator_flatMap,
 } from "@rust-js/std";
 
 export function entry() {
@@ -716,12 +718,20 @@ function main() {
   });
   run("flat_map of numbers", () => {
     const x = $foldDropping(
-      $lazyRange(40, 43).flatMap((n) => {
-        if (n === 41) {
-          throw new Error("41");
-        }
-        return [n];
-      }),
+      iterator_flatMap(
+        { start: 40, end: 43 },
+        (n) => {
+          if (n === 41) {
+            throw new Error("41");
+          }
+          return [n];
+        },
+        { next: $rangeNext },
+        { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
+        true,
+        undefined,
+        false,
+      ),
       [],
       (acc, n) => {
         try {

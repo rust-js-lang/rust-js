@@ -11,9 +11,9 @@ import {
   $foldOf,
   $iter,
   $iterator,
-  $lazyRange,
   $next,
   $nextBack,
+  $rangeNext,
   $tryOf,
   flatMapDoubleEndedIterator_nextBack,
   flatMapDoubleEndedIterator_rfold,
@@ -126,7 +126,17 @@ function main() {
     `${$count($flatMap($iter([[2], [3]]), (item) => $iterator(item, ownIterator_next, false, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, ownIterator_count)))}`,
   );
   console.log(
-    `${$count($flatMap($lazyRange(1, 4), (value) => $iterator([value], ownIterator_next, false, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, ownIterator_count)))}`,
+    `${$count(
+      iterator_flatMap(
+        { start: 1, end: 4 },
+        (value) => [value],
+        { next: $rangeNext },
+        intoIterator,
+        true,
+        undefined,
+        false,
+      ),
+    )}`,
   );
   console.log(
     `${$count($flatMap($iter([2, 3]), (n) => $iterator([n], ownIterator_next, false, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, ownIterator_count)))}`,

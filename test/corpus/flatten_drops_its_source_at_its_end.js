@@ -15,8 +15,10 @@ import {
   $next,
   $tryFoldSome,
   $unwindsOn,
+  iterator_flatMap,
   iterator_flatten,
   iterator_map,
+  mapIterator___iteratorGetUnchecked,
 } from "@rust-js/std";
 
 export function entry() {
@@ -76,9 +78,23 @@ function flaky() {
     console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
     console.log("end h");
     const g = $held(
-      $closing($iterator([0], flakyIterator_next), (it) => {
-        flakyDrop_drop(it.of);
-      }).flatMap((v) => v.values().map((x) => (x * 10) >>> 0)),
+      iterator_flatMap(
+        [0],
+        (v) => v.values().map((x) => (x * 10) >>> 0),
+        { next: flakyIterator_next },
+        {
+          intoIter: (items) => items,
+          IntoIterIterator: () => ({
+            next: $next,
+            fold: $foldOf,
+            getUnchecked: mapIterator___iteratorGetUnchecked,
+          }),
+        },
+        false,
+        undefined,
+        false,
+        flakyDrop_drop,
+      ),
     );
     try {
       const value = $next(g);
@@ -180,11 +196,19 @@ function counted() {
       console.log("after while");
       const k = Array.from(
         $lazyTakeWhile(
-          $closing($iterator(c("tf"), countIterator_next), (it) => {
-            countDrop_drop(it.of);
-          })
-            .map((x) => x)
-            .filter((item) => item != null),
+          iterator_flatMap(
+            c("tf"),
+            (x) => x,
+            { next: countIterator_next },
+            {
+              intoIter: (items) => $iter(items == null ? [] : [items]),
+              IntoIterIterator: () => ({ next: $next }),
+            },
+            false,
+            undefined,
+            true,
+            countDrop_drop,
+          ),
           (x) => x < 9,
         ),
       );
@@ -207,19 +231,37 @@ function counted() {
 
 /** A `try_fold` that runs the source out, its source dropped inside it. */
 function folded() {
+  const vecIntoIterator = {
+    intoIter: (items) => $iter(items),
+    IntoIterIterator: () => ({ next: $next }),
+  };
   const f = $held(
-    $closing($iterator(c("tf2"), countIterator_next), (it) => {
-      countDrop_drop(it.of);
-    }).flatMap((x) => [x]),
+    iterator_flatMap(
+      c("tf2"),
+      (x) => [x],
+      { next: countIterator_next },
+      vecIntoIterator,
+      false,
+      undefined,
+      false,
+      countDrop_drop,
+    ),
   );
   let g;
   try {
     const n = $tryFoldSome(f, 0, (a, x) => $checked(a + x, 0, 4294967295));
     console.log(`${n == null ? "None" : `Some(${n})`}`);
     g = $held(
-      $closing($iterator(c("any"), countIterator_next), (it) => {
-        countDrop_drop(it.of);
-      }).flatMap((x) => [x, x]),
+      iterator_flatMap(
+        c("any"),
+        (x) => [x, x],
+        { next: countIterator_next },
+        vecIntoIterator,
+        false,
+        undefined,
+        false,
+        countDrop_drop,
+      ),
     );
     try {
       console.log(`${$lent(g).some((x) => x > 100)}`);

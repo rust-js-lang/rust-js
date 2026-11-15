@@ -581,3 +581,17 @@ byte for byte. `@rust-js/std` is the same size, 1,307,863 bytes. In
 10,000 lines, `$iter` goes from 83.9 to 83.8, renamed `x$1` from 470.3 to
 469.0 and role fallbacks from 256.4 to 255.6. Mutation `rev-not-flipped`
 is caught.
+
+## Amendment: the flat_map family flipped (2026-11-16, #1681's change 2)
+
+A `flat_map()` of a chain the predicate doesn't admit is std's compiled
+`FlatMap`, `HELD_FLIPPED`'s, no longer the recognizers' `$flatMap` there.
+With it the heavier six families are all flipped: `chain`, `zip`,
+`flatten`, `peekable`, `rev` and `flat_map`.
+
+Measured: 10 corpus snapshots move, each as native prints, 4,769 lines to
+4,923 (×1.032). The React port's JS regenerates byte for byte, and
+`@rust-js/std` is the same size, 1,307,863 bytes. In 10,000 lines,
+renamed `x$1` goes from 469.2 to 469.1 and role fallbacks from 255.6 to
+255.5. Mutation `flat_map-not-flipped` (`lower/body_queries/in_place.ts`)
+is caught.

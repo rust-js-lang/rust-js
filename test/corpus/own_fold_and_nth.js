@@ -4,6 +4,7 @@ import {
   $BTreeMap,
   $BTreeSet,
   $cmp,
+  $count,
   $extend,
   $extendMap,
   $extendText,
@@ -12,7 +13,6 @@ import {
   $heapExtend,
   $iterator,
   $last,
-  $lazyRange,
   $lent,
   $max,
   $minByKey,
@@ -21,6 +21,7 @@ import {
   $partiallyOrdered,
   $partition,
   $rangeInclusiveNext,
+  $rangeNext,
   $roomForHint,
   $sortedEntries,
   $sortedKeys,
@@ -29,6 +30,7 @@ import {
   $unzip,
   iterator_chain,
   iterator_enumerate,
+  iterator_flatMap,
   iterator_map,
 } from "@rust-js/std";
 
@@ -232,18 +234,17 @@ function main() {
   );
   console.log(`chain last ${value$2 == null ? "None" : `Some(${value$2})`}`);
   console.log(
-    `flat_map ${$iterator(
-      up(),
-      upIterator_next,
-      false,
-      undefined,
-      undefined,
-      undefined,
-      upIterator_fold,
-      upIterator_nth,
-    )
-      .flatMap((x) => $lazyRange(0, x))
-      .reduce((n) => n + 1, 0)}`,
+    `flat_map ${$count(
+      iterator_flatMap(
+        up(),
+        (x) => ({ start: 0, end: x }),
+        { next: upIterator_next, fold: upIterator_fold, nth: upIterator_nth },
+        { intoIter: (items) => items, IntoIterIterator: () => ({ next: $rangeNext }) },
+        false,
+        undefined,
+        false,
+      ),
+    )}`,
   );
   console.log(
     `by_ref ${$lent($iterator(up(), upIterator_next, false, undefined, undefined, undefined, upIterator_fold, upIterator_nth)).reduce((a, b) => (a + b) >>> 0, 0)}`,

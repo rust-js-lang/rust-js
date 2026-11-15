@@ -15,7 +15,9 @@ import {
   $lent,
   $live,
   $next,
+  $rangeNext,
   $unwindsOn,
+  iterator_flatMap,
   iterator_flatten,
 } from "@rust-js/std";
 
@@ -118,11 +120,23 @@ function main() {
     dDrop_drop(last$2);
   }
   const last$3 = $lastDropping(
-    $flatMap($lazyRange(0, 2), (i) =>
-      $iterator(
-        { at: (i * 10) >>> 0, end: (((i * 10) >>> 0) + 2) >>> 0, boom: 0 },
-        uptoIterator_next,
-      ),
+    iterator_flatMap(
+      { start: 0, end: 2 },
+      (i) => ({ at: (i * 10) >>> 0, end: (((i * 10) >>> 0) + 2) >>> 0, boom: 0 }),
+      { next: $rangeNext },
+      {
+        intoIter: (items) => items,
+        IntoIterIterator: () => ({ next: uptoIterator_next }),
+        $dropItem: dDrop_drop,
+      },
+      true,
+      undefined,
+      false,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      dDrop_drop,
     ),
     dDrop_drop,
   );

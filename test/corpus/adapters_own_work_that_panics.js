@@ -14,7 +14,6 @@ import {
   $foldToArray,
   $iter,
   $iterator,
-  $lazyRange,
   $lazyZip,
   $next,
   $range,
@@ -28,6 +27,7 @@ import {
   $trustedZip,
   $zipEnds,
   iterator_chain,
+  iterator_flatMap,
   iterator_flatten,
   iterator_map,
   iterator_zip,
@@ -533,11 +533,39 @@ function main() {
   });
   run("flat_map", [107, 0], () => {
     const collect = $collectDropping(
-      $flatMap($lazyRange(7, 9), (value) =>
-        $closing($iterator([value], tickIterator_next), (it) => {
-          tickDrop_drop(it.of);
-        }),
-      ).map((value) => [value]),
+      $roomForHint(
+        iterator_map(
+          iterator_flatMap(
+            { start: 7, end: 9 },
+            (value) => [value],
+            { next: $rangeNext },
+            {
+              intoIter: (items) => items,
+              IntoIterIterator: () => ({ next: tickIterator_next }),
+              $dropIntoIter: tickDrop_drop,
+            },
+            true,
+            undefined,
+            false,
+            undefined,
+            tickDrop_drop,
+            undefined,
+            undefined,
+            undefined,
+            tickDrop_drop,
+          ),
+          (value) => [value],
+          { next: $next, fold: $foldOf },
+          (flatMap) => {
+            flatMap.return();
+          },
+          dDrop_drop,
+        ),
+        4,
+        false,
+        false,
+        dDrop_drop,
+      ),
       dDrop_drop,
       true,
     );

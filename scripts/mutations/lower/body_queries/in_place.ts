@@ -384,8 +384,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `chain()` of a chain the transparent-chain predicate doesn't admit is the recognizers' hand-written `$lazyChain` again, where std's compiled `Chain` is the meaning (#1681's change 2, the chain family)",
     file: "src/lower/body_queries/in_place.rs",
-    find: "pub(in crate::lower) const HELD_FLIPPED: [&str; 7] = [\"chain\", \"enumerate\", \"flatten\", \"map\", \"peekable\", \"rev\", \"zip\"];\n",
-    replace: "pub(in crate::lower) const HELD_FLIPPED: [&str; 7] = [\"enumerate\", \"enumerate\", \"flatten\", \"map\", \"peekable\", \"rev\", \"zip\"];\n",
+    find: "    \"chain\",\n",
+    replace: "    \"enumerate\",\n",
     tests: ["test/corpus.test.ts", "-t", "^chain_side_panics_drops_the_other.rs$"],
     snapshots: true,
   },
@@ -394,8 +394,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `zip()` of a chain the transparent-chain predicate doesn't admit is the recognizers' hand-written `$trustedZip` or `$lazyZip` again, where std's compiled `Zip` is the meaning (#1681's change 2, the zip family)",
     file: "src/lower/body_queries/in_place.rs",
-    find: "pub(in crate::lower) const HELD_FLIPPED: [&str; 7] = [\"chain\", \"enumerate\", \"flatten\", \"map\", \"peekable\", \"rev\", \"zip\"];\n",
-    replace: "pub(in crate::lower) const HELD_FLIPPED: [&str; 7] = [\"chain\", \"enumerate\", \"flatten\", \"map\", \"peekable\", \"rev\", \"map\"];\n",
+    find: "    \"zip\",\n",
+    replace: "    \"map\",\n",
     tests: ["test/corpus.test.ts", "-t", "^held_adapters_stepped_to_their_end.rs$"],
     snapshots: true,
   },
@@ -436,8 +436,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `flatten()` of a chain the transparent-chain predicate doesn't admit is the recognizers' hand-written `flatMap` again, where std's compiled `Flatten` is the meaning (#1681's change 2, the flatten family)",
     file: "src/lower/body_queries/in_place.rs",
-    find: "pub(in crate::lower) const HELD_FLIPPED: [&str; 7] = [\"chain\", \"enumerate\", \"flatten\", \"map\", \"peekable\", \"rev\", \"zip\"];\n",
-    replace: "pub(in crate::lower) const HELD_FLIPPED: [&str; 7] = [\"chain\", \"enumerate\", \"map\", \"map\", \"peekable\", \"rev\", \"zip\"];\n",
+    find: "    \"flatten\",\n",
+    replace: "    \"map\",\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_drops_its_source_at_its_end.rs$"],
     snapshots: true,
   },
@@ -446,8 +446,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `peekable()` of a chain the transparent-chain predicate doesn't admit isn't flipped, so what's past it, an `enumerate()`, is the recognizers' `$enumerate` of std's compiled `Peekable` again (#1681's change 2, the peekable family)",
     file: "src/lower/body_queries/in_place.rs",
-    find: "pub(in crate::lower) const HELD_FLIPPED: [&str; 7] = [\"chain\", \"enumerate\", \"flatten\", \"map\", \"peekable\", \"rev\", \"zip\"];\n",
-    replace: "pub(in crate::lower) const HELD_FLIPPED: [&str; 7] = [\"chain\", \"enumerate\", \"flatten\", \"map\", \"map\", \"rev\", \"zip\"];\n",
+    find: "    \"peekable\",\n",
+    replace: "    \"map\",\n",
     tests: ["test/corpus.test.ts", "-t", "^enumerate_count_is_its_sources.rs$"],
     snapshots: true,
   },
@@ -456,8 +456,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `rev()` of a chain the transparent-chain predicate doesn't admit is the recognizers' `$rev` again, of a source made knowing its back, `$knowing`, where std's compiled `Rev` is the meaning (#1681's change 2, the rev family)",
     file: "src/lower/body_queries/in_place.rs",
-    find: "pub(in crate::lower) const HELD_FLIPPED: [&str; 7] = [\"chain\", \"enumerate\", \"flatten\", \"map\", \"peekable\", \"rev\", \"zip\"];\n",
-    replace: "pub(in crate::lower) const HELD_FLIPPED: [&str; 7] = [\"chain\", \"enumerate\", \"flatten\", \"map\", \"peekable\", \"map\", \"zip\"];\n",
+    find: "    \"rev\",\n",
+    replace: "    \"map\",\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_made_knowing_its_back.rs$"],
     snapshots: true,
   },
@@ -469,6 +469,16 @@ export const mutations: Mutation[] = [
     find: "                    ExprKind::Call { ref args, .. } => args.iter().any(|&arg| in_place(arg, &held)),\n",
     replace: "                    ExprKind::Call { ref args, .. } => args.iter().any(|&arg| in_place(arg, &held)) && false,\n",
     tests: ["test/corpus.test.ts", "-t", "^let_of_an_in_place_rev_given_to_held_chains.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "flat_map-not-flipped",
+    breaks:
+      "a `flat_map()` of a chain the transparent-chain predicate doesn't admit is the recognizers' `$flatMap` again, where std's compiled `FlatMap` is the meaning (#1681's change 2, the flat_map family)",
+    file: "src/lower/body_queries/in_place.rs",
+    find: "    \"flat_map\",\n",
+    replace: "    \"map\",\n",
+    tests: ["test/corpus.test.ts", "-t", "^flat_map_inner_iterables.rs$"],
     snapshots: true,
   },
 ];
