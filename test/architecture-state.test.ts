@@ -174,6 +174,7 @@ const mirState: Record<string, string[]> = {
   "src/lower/mir/calls/method_paths.rs": ["body"],
   "src/lower/mir/nested_options.rs": ["body"],
   "src/lower/mir/nulled.rs": ["at", "body", "locals", "writer"],
+  "src/lower/mir/nulled/one_none.rs": ["at", "body", "locals", "writer"],
   "src/lower/mir/operands.rs": ["at", "body", "locals", "pending", "statement", "taken"],
   "src/lower/mir/patterns.rs": ["in_place", "locals"],
   "src/lower/mir/patterns/let_names.rs": ["locals"],
