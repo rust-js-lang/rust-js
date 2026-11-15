@@ -391,6 +391,25 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
         slice_length(self.tcx, def_id, generic_args).map(|asked| (asked, args[0]))
     }
 
+    /// Whether a call of `fun`, asking `asked` of a slice, only reads or
+    /// views what a `RefCell` holds; any other may change it, by another
+    /// reference to it (ADR 0881).
+    fn only_views(&self, fun: ExprId, asked: Option<(SliceLength, ExprId)>) -> bool {
+        self.vec_view(fun).is_some()
+            || self.cell_view(fun).is_some()
+            || matches!(
+                asked,
+                Some((
+                    SliceLength::Len
+                        | SliceLength::IsEmpty
+                        | SliceLength::Index
+                        | SliceLength::Range
+                        | SliceLength::Swap,
+                    _
+                ))
+            )
+    }
+
     /// What `fun` makes of a `Vec`, as long as it is.
     fn vec_view(&self, fun: ExprId) -> Option<VecView> {
         let (def_id, generic_args) = fn_def(self.thir[strip(self.thir, fun)].ty)?;
@@ -813,20 +832,9 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
         }
         // Any call but one that only reads or views what a `RefCell` holds
         // may change it, by another reference to it (ADR 0881).
-        let views = self.vec_view(fun).is_some()
-            || self.cell_view(fun).is_some()
-            || matches!(
-                asked,
-                Some((
-                    SliceLength::Len
-                        | SliceLength::IsEmpty
-                        | SliceLength::Index
-                        | SliceLength::Range
-                        | SliceLength::Swap,
-                    _
-                ))
-            );
-        if !views && let Some(k) = known.as_mut() {
+        if !self.only_views(fun, asked)
+            && let Some(k) = known.as_mut()
+        {
             k.cells_changed(None);
         }
         // A slice's `position`, of what it finds (rd316).

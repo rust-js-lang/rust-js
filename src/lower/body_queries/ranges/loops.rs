@@ -3,7 +3,7 @@
 //! that holds; and a `for`'s variable, in its range, `0..xs.len()`, or an
 //! `enumerate()`'s index, below its slice's length (#363).
 
-use super::known::{Below, Bounds, Known, Range, by_value, either};
+use super::known::{Below, Bounds, CELL, Known, Range, by_value, either};
 use super::{Slice, Target, Walk};
 use crate::lower::body_queries::{ForLoop, strip};
 use crate::lower::fn_def;
@@ -209,9 +209,17 @@ impl<'a, 'tcx> Walk<'a, 'tcx> {
     }
 
     /// `slice`, where nothing in `body`, a loop's, changes it: what a bound
-    /// by its length holds of each time round.
+    /// by its length holds of each time round. Of a `RefCell`'s, no call in
+    /// it may change the cell but one that only reads or views it: its
+    /// `borrow_mut().drain(..j + 1)` shortens it for the next time round,
+    /// though no variable is written (#1885).
     fn unchanged_in(&self, body: rustc_span::Span, slice: Slice) -> Option<Slice> {
         let changed = (self.changes.get(&slice.1)).is_some_and(|at| at.iter().any(|at| body.contains(*at)));
-        (!changed).then_some(slice)
+        let thir = self.thir;
+        let cell_changed = slice.0.contains(&CELL)
+            && (thir.exprs.iter_enumerated()).any(|(e, expr)| {
+                matches!(expr.kind, ExprKind::Call { fun, .. } if body.contains(expr.span) && !self.only_views(fun, self.asks(e)))
+            });
+        (!changed && !cell_changed).then_some(slice)
     }
 }

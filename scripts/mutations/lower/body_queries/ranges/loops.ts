@@ -44,8 +44,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a range loop's end holds of a slice its body pops, so `items[i]` past its length reads `undefined`",
     file: "src/lower/body_queries/ranges/loops.rs",
-    find: "        (!changed).then_some(slice)",
-    replace: "        Some(slice)",
+    find: "        (!changed && !cell_changed).then_some(slice)",
+    replace: "        (!cell_changed).then_some(slice)",
     tests: ["test/lowering-integer-ranges.test.ts", "-t", "integer ranges show"],
   },
   {
@@ -105,5 +105,13 @@ export const mutations: Mutation[] = [
     replace: "                [range, n] if false && is_iterator_step_by(self.tcx, def_id) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^stepped_range_loops.rs$"],
     snapshots: true,
+  },
+  {
+    name: "loop-cells-unchanged-by-calls",
+    breaks: "a loop's bound by a `RefCell`'s length is kept each time round past a call that may change the cell, so `v.borrow_mut().drain(..j + 1)` of `j` in `k..end` drains past the end unchecked after the first time shortens it (#1885)",
+    file: "src/lower/body_queries/ranges/loops.rs",
+    find: "        let cell_changed = slice.0.contains(&CELL)\n",
+    replace: "        let cell_changed = false && slice.0.contains(&CELL)\n",
+    tests: ["test/corpus.test.ts", "-t", "^refcell_drained_in_a_loop\\.rs$"],
   },
 ];

@@ -223,3 +223,17 @@ which panics where a `filter` of another test is empty; and the mutations
 `any-filter-not-empty`, `filtered-borrow-unread` (`ranges/present.ts`),
 `if-value-unread` (`ranges/reads.ts`) and `option-filter-unrecognized`
 (`recognition/types.ts`).
+
+## Amendment: a loop's bound by a cell's length (2026-11-15, #1885)
+
+A `for` loop over `k..end`, where `end` is a `RefCell`'s length read before
+it, bounded each index below that length each time round, while no
+variable the loop writes held the cell. But the cell changes with no
+variable written: `v.borrow_mut().drain(..j + 1)` shortens it the first
+time round, and the next time drained past its end unchecked. Now a cell's
+length bounds a loop's index only where no call in the loop's body may
+change the cell, by the rule a call's site already follows: none but one
+that only reads or views it (`only_views`), a `borrow()`, a guard's `deref`,
+a length, an index. `test/corpus/refcell_drained_in_a_loop.rs` panics as
+native does, of an `Rc`'s cell and a reversed loop. A loop that only reads
+the cell keeps its bound. The bounds matrix found it, its `drain` form.

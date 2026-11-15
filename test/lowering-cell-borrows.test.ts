@@ -669,7 +669,9 @@ pub fn take_hooks() -> usize {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("      listeners.push(listener);\n");
   expect(js).not.toContain("listeners.borrows");
-  expect(js).toContain("      const listener = listeners[index];\n");
+  // A listener may change the cell, so `count`, read before the loop, bounds
+  // no index past the first call: each is checked (#1885).
+  expect(js).toContain("      const listener = $index(listeners, index);\n");
   expect(js).toContain("$withBorrow(\n    hooks,");
   const lib = await import(join(dir, "lib.js"));
   const controller = lib.controller();

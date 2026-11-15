@@ -64,8 +64,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a call between a loop's test and `queue.borrow()[i]`, which may empty the queue, leaves its length known, and the index read unchecked",
     file: "src/lower/body_queries/ranges.rs",
-    find: "        if !views && let Some(k) = known.as_mut() {\n",
-    replace: "        if false && !views && let Some(k) = known.as_mut() {\n",
+    find: "        if !self.only_views(fun, asked)\n",
+    replace: "        if false && !self.only_views(fun, asked)\n",
     tests: ["test/corpus.test.ts", "-t", "refcell_vec_bounds"],
   },
   {
