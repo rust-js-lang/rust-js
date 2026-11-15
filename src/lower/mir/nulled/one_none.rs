@@ -32,6 +32,43 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .is_some_and(|place| self.made_some_or_none(state, place, (0, true)))
     }
 
+    /// Each of `exprs`, `operands`', that's a `Some` where it's given
+    /// (`made_some`), known there, `Known::Present`: a call of each count of
+    /// a function value's trailing `Option`s needs no test of it (#1876).
+    pub(in crate::lower::mir) fn somes_given(
+        &self,
+        state: &State<'_, 'tcx>,
+        operands: &[&Operand<'tcx>],
+        exprs: &mut [Expr],
+    ) {
+        for (e, operand) in exprs.iter_mut().zip(operands) {
+            if self.option_of(operand.ty(state.body, self.tcx)).is_some() && self.made_some(state, operand) {
+                e.facts = e.facts.with(js::Known::Present);
+            }
+        }
+    }
+
+    /// Each of `exprs`, the items of the tuple the call that ends
+    /// `state.at` gives a closure, that's a `Some` where it's given, its
+    /// field made one (`somes_given`).
+    pub(in crate::lower::mir) fn somes_given_in_a_tuple(&self, state: &State<'_, 'tcx>, exprs: &mut [Expr]) {
+        let mir::TerminatorKind::Call { args, .. } = &state.body[state.at].terminator().kind else {
+            return;
+        };
+        let Some(tuple) = args.get(1).and_then(|tuple| tuple.node.place()) else {
+            return;
+        };
+        let ty::Tuple(tys) = tuple.ty(state.body, self.tcx).ty.kind() else {
+            return;
+        };
+        for (i, (e, ty)) in exprs.iter_mut().zip(tys.iter()).enumerate() {
+            let field = tuple.project_deeper(&[PlaceElem::Field(rustc_abi::FieldIdx::from_usize(i), ty)], self.tcx);
+            if self.option_of(ty).is_some() && self.made_some_or_none(state, field, (0, true)) {
+                e.facts = e.facts.with(js::Known::Present);
+            }
+        }
+    }
+
     /// Whether `place` holds what's made `Some(..)` or `None`, or a
     /// constant: a variable each write of which makes one, or moves or
     /// copies what does; and a field of a struct or a tuple a variable is
@@ -263,6 +300,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// Whether the closure the call `state.at` ends with calls, `callee`,
+    /// called with `args` and giving `output`, may be a JS function: one a
+    /// pointer may be (`may_be_js`), a `dyn Fn`'s, a generic one's, whose
+    /// value JS may have given, or a binding's (`JsNones`); not a value the
+    /// crate's code made of its own, its closure or function, Rust's. The
+    /// one answer of it, `ones_given_to_a_callback`'s and `mir_closure_call`'s
+    /// call of each count (#1876).
+    pub(in crate::lower::mir) fn callback_may_be_js(
+        &self,
+        state: &State<'_, 'tcx>,
+        (callee, args, output): (Ty<'tcx>, Ty<'tcx>, Ty<'tcx>),
+    ) -> bool {
+        if !(self.krate.cell_borrows.pointers()).may_be_js(self.tcx, callee, args, output) {
+            return false;
+        }
+        let mir::TerminatorKind::Call { args: given, .. } = &state.body[state.at].terminator().kind else {
+            return false;
+        };
+        (given.first().and_then(|called| called.node.place()))
+            .is_none_or(|called| (self.krate.nulled_params.js_nones()).may_hold_null(self.tcx, state.body, called))
+    }
+
     /// Of the call `state.at` ends with, of a closure that may be JS's,
     /// `callee`, called with `args` and giving `output` (`may_be_js`), a
     /// `dyn Fn`'s, a generic one's or a pointer's: each of `exprs`, of
@@ -275,20 +334,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         tys: &[Ty<'tcx>],
         exprs: &mut [Expr],
     ) {
-        if !(self.krate.cell_borrows.pointers()).may_be_js(self.tcx, callee, args, output) {
+        if !self.callback_may_be_js(state, (callee, args, output)) {
             return;
         }
         let mir::TerminatorKind::Call { args: given, .. } = &state.body[state.at].terminator().kind else {
             return;
         };
-        // What's called, a value the crate's code made of its own, its
-        // closure or function, is Rust's, which holds what it's given as it
-        // may be; one JS may have given, or a binding's, JS's (`JsNones`).
-        let js = (given.first().and_then(|called| called.node.place()))
-            .is_none_or(|called| (self.krate.nulled_params.js_nones()).may_hold_null(self.tcx, state.body, called));
-        if !js {
-            return;
-        }
         if given.get(1).is_none_or(|tuple| self.none_trusted(state, &tuple.node)) {
             return;
         }

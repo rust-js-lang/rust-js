@@ -1107,4 +1107,21 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^unknown_none_given_as_undefined.rs$"],
   },
+  {
+    name: "each-count-unbound-callee-held",
+    breaks: "an unbound callee that reads the same, `(0, s.f)`, is held in a variable of its own, `const value = (0, s.f); value(..)`, where it's read in each branch (#1876)",
+    file: "src/lower/binding_calls.rs",
+    find: "            js::ExprKind::Unbound(ref of) if of.reads_same() => callee,\n",
+    replace: "",
+    tests: ["test/lowering-held-receivers.test.ts", "-t", "with_this function may be is still held"],
+  },
+  {
+    name: "each-count-call-unplaced",
+    breaks: "a call of each count is of no place in the source, so a comment before an argument, `/* preinitModuleScript */ href`, is before the statement (rd710, #1876)",
+    file: "src/lower/binding_calls.rs",
+    find: "        if value.span.is_none() {\n            value.span = at;\n        }\n",
+    replace: "        let _ = at;\n",
+    tests: ["test/corpus.test.ts", "-t", "^call_argument_comments_across_lines.rs$"],
+    snapshots: true,
+  },
 ];

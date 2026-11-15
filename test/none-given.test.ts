@@ -264,7 +264,9 @@ test("a None leaving for JS as undefined alone is Rust's, in Bun and in Chromium
   expect(out).toContain("export function passed(value) {\n  return value ?? undefined;\n}");
   expect(out).toContain("    digits: digits ?? undefined,\n");
   expect(out).toContain("  shown.digits = digits ?? undefined;\n");
-  expect(out).toContain("  return f(value ?? undefined);\n");
+  expect(out).toContain("  return value != null ? f(value) : f();\n");
+  // A closure of the crate's own, only Rust's, called as it is.
+  expect(out).toContain("  const shown = (value) => value == null;\n  return shown(value);\n");
   // A trait object JS may have made, its impl JS's; one the crate made,
   // whose impl is Rust's, given what it holds as it is.
   expect(out).toContain("return digits.impl.digits(digits.value, value ?? undefined);");
@@ -472,6 +474,11 @@ pub fn commented() -> String {
     make(DATA.get()).data()
 }
 
+pub fn commented_by_pointer() -> String {
+    let make: fn(Option<&str>) -> &'static webapi::Comment = webapi::comment::new;
+    make(DATA.get()).data()
+}
+
 pub fn each_commented() -> Vec<String> {
     vec![DATA.get()].into_iter().map(webapi::comment::new).map(|c| c.data()).collect()
 }
@@ -488,7 +495,8 @@ test("a WebIDL operation's trailing None is undefined, no ladder, in Bun and in 
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--crate-type=lib", "--edition=2024", ...web, ...js]);
   const out = readFileSync(join(dir, "lib.js"), "utf8");
   const [marked, unmarked] = out.split("export function yielded");
-  expect(marked).not.toContain("!= null");
+  // But a dyn Fn's call, which may be JS's, of each count (#1876).
+  expect(marked.split("export function commented")[0]).not.toContain("!= null");
   expect(unmarked).toContain("!= null ? scheduler.yield(");
   expect(out).toContain("new URL(url, base");
   // A literal one left out, as its ladder isn't there to.
@@ -503,12 +511,12 @@ test("a WebIDL operation's trailing None is undefined, no ladder, in Bun and in 
     const page = await browser.newPage();
     const inPage = await page.evaluate(
       ([code, answer]) => {
-        const m = new Function(`${code.replaceAll(/^export /gm, "")}; return { resolved, commented, eachCommented };`)();
-        return [new Function("m", `return (${answer})(m);`)(m), m.commented(), m.eachCommented()];
+        const m = new Function(`${code.replaceAll(/^export /gm, "")}; return { resolved, commented, commentedByPointer, eachCommented };`)();
+        return [new Function("m", `return (${answer})(m);`)(m), m.commented(), m.commentedByPointer(), m.eachCommented()];
       },
       [out.replace(/\/\/# sourceMappingURL.*$/m, ""), answers.toString()],
     );
-    expect(inPage).toEqual([rust, "", [""]]);
+    expect(inPage).toEqual([rust, "", "", [""]]);
   } finally {
     await browser.close();
   }
@@ -614,3 +622,102 @@ test("each source of JS's null leaves a function JS calls as undefined", async (
   };
   expect(Object.entries(each).filter(([, value]) => value !== undefined)).toEqual([]);
 }, underLoad(120_000));
+
+// A function value JS may have made, a `dyn Fn` or a pointer JS gave,
+// called of a trailing `None` known only where it runs, is called of each
+// count, as a binding is, for a JS function may count what it's given
+// (#1876, ADR 0443, amended): `f(a, None)` is `f(a)`, `b != null ? f(a, b)
+// : f(a)`. A binding taken as a value is the arrow of its call of each
+// count, so a `bind` of some of its items, called of the rest, is right
+// either way: `Math.max.bind`'s `(1, None)` called of `(Some(5))` is
+// `Math.max(1, undefined, 5)`, NaN, as Rust's middle `None` is given; of
+// `(None)`, `Math.max(1)`. And one that takes `undefined` as none is the
+// function itself, `scheduleTimeout = setTimeout`.
+const values = `#[cfg_attr(rust_js, rust_js::link_name = "Math.max")]
+fn max3(_a: f64, _b: Option<f64>, _c: Option<f64>) -> f64 {
+    unreachable!()
+}
+
+pub fn all(b: Option<f64>, c: Option<f64>) -> f64 {
+    let bound = js::function::bind(max3, None, (1.0, b, c));
+    bound()
+}
+
+pub fn some(b: Option<f64>, c: Option<f64>) -> f64 {
+    let bound = js::function::bind(max3, None, (1.0, b));
+    bound(c)
+}
+
+pub fn called(f: &dyn Fn(f64, Option<f64>) -> f64, a: f64, b: Option<f64>) -> f64 {
+    f(a, b)
+}
+
+pub fn pointed(f: fn(f64, Option<f64>) -> f64, a: f64, b: Option<f64>) -> f64 {
+    f(a, b)
+}
+
+pub fn some_called(f: &dyn Fn(f64, Option<f64>) -> f64, a: f64, b: f64) -> f64 {
+    f(a, Some(b))
+}
+
+pub fn some_pointed(f: fn(f64, Option<f64>) -> f64, a: f64, b: f64) -> f64 {
+    f(a, Some(b))
+}
+
+pub fn unit_pointed(f: fn(f64, ()) -> f64, a: f64) -> f64 {
+    f(a, ())
+}
+
+type SetTimeout = fn(Box<dyn FnOnce()>, Option<f64>) -> &'static js::TimeoutId;
+
+thread_local! {
+    pub static SCHEDULE: Option<SetTimeout> = if js::is_function(js::set_timeout::<fn()>) { Some(js::set_timeout) } else { None };
+}
+`;
+
+const valueAnswers = (m: Record<string, (...args: unknown[]) => unknown>) => {
+  const count = (...args: unknown[]) => args.length;
+  return [
+    m.all(undefined, undefined),
+    m.all(2, undefined),
+    Number.isNaN(m.all(undefined, 3)),
+    m.some(undefined, undefined),
+    Number.isNaN(m.some(undefined, 5)),
+    m.some(2, 5),
+    m.called(count, 1, undefined),
+    m.called(count, 1, null),
+    m.called(count, 1, 2),
+    m.pointed(count, 1, undefined),
+    m.pointed(count, 1, 2),
+  ];
+};
+
+test("a function value's trailing None is no argument, a bound one's too, in Bun and in Chromium", async () => {
+  const dir = fixture("none-values");
+  writeFileSync(join(dir, "lib.rs"), values);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--crate-type=lib", "--edition=2024", ...js]);
+  const out = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(out).toContain("  return b != null ? f(a, b) : f(a);\n");
+  // A Some where it's given is there.
+  expect(out).toContain("export function someCalled(f, a, b) {\n  return f(a, b);\n}");
+  expect(out).toContain("export function somePointed(f, a, b) {\n  return f(a, b);\n}");
+  // A trailing () is no argument either, as it was (ADR 0441).
+  expect(out).toContain("export function unitPointed(f, a) {\n  return f(a);\n}");
+  expect(out).toContain('typeof setTimeout === "function" ? setTimeout : undefined');
+  const rust = [1, 2, true, 1, true, 5, 1, 1, 2, 1, 2];
+  expect(valueAnswers(await import(join(dir, "lib.js")))).toEqual(rust);
+  const browser = await chromium.launch();
+  try {
+    const page = await browser.newPage();
+    const inPage = await page.evaluate(
+      ([code, answer]) => {
+        const m = new Function(`${code.replaceAll(/^export /gm, "")}; return { all, some, called, pointed };`)();
+        return new Function("m", `return (${answer})(m);`)(m);
+      },
+      [out.replace(/\/\/# sourceMappingURL.*$/m, ""), valueAnswers.toString()],
+    );
+    expect(inPage).toEqual(rust);
+  } finally {
+    await browser.close();
+  }
+}, underLoad(300_000));

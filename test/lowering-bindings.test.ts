@@ -717,8 +717,8 @@ pub fn stopped(id: Option<&js::IntervalId>) {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("  id != null ? clearTimeout(id) : clearTimeout();");
-  expect(js).toContain("  id != null ? clearInterval(id) : clearInterval();");
+  expect(js).toContain("  clearTimeout(id ?? undefined);");
+  expect(js).toContain("  clearInterval(id ?? undefined);");
   const lib = await import(join(dir, "lib.js"));
   let ran = false;
   const timer = setTimeout(() => { ran = true; }, 0);

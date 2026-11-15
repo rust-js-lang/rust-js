@@ -37,11 +37,11 @@ function throughPointer(f, value) {
 }
 
 function throughCallback(f, value) {
-  return f(value ?? undefined);
+  return value != null ? f(value) : f();
 }
 
 function throughBinding(f, value) {
-  return f(value ?? undefined);
+  return value != null ? f(value) : f();
 }
 
 function apply(f, value) {

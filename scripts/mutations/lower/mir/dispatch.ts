@@ -71,7 +71,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/dispatch.rs",
     find: "            false => crate::lower::calls::given_to_js_but(&mut exprs, absent),\n",
     replace: "            false => crate::lower::calls::given_to_js(&mut exprs),\n",
-    tests: ["test/js-functions.test.ts", "-t", "a trailing None given a function value is no argument"],
+    tests: ["test/none-given.test.ts", "-t", "a function value's trailing None"],
   },
   {
     name: "defined-unread",
@@ -113,9 +113,9 @@ export const mutations: Mutation[] = [
     name: "mir-fn-pointer-call-refused",
     breaks: "a call through a function pointer from MIR is refused",
     file: "src/lower/mir/dispatch.rs",
-    find: "        let call = Value::Expr(Expr::call(callee, exprs));\n        self.called_unbound(state, (call, Called::Pointer(fn_ptr)))\n",
+    find: "        let call = Value::Expr(Expr::call(callee, exprs));\n        let call = self.called_unbound(state, (call, Called::Pointer(fn_ptr)))?;\n",
     replace:
-      '        let _ = (callee, exprs);\n        Err(self.unsupported(span, "a call"))\n',
+      '        let _ = (callee, exprs);\n        let call: Value<\'tcx> = return Err(self.unsupported(span, "a call"));\n',
     tests: ["test/corpus.test.ts", "-t", "static_fns"],
   },
   {
@@ -879,6 +879,22 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/dispatch.rs",
     find: "            self.ones_given_to_a_pointer(state, fn_ptr, &operands[1..], &mut exprs[1..]);\n",
     replace: "",
-    tests: given1840,
+    tests: ["test/none-given.test.ts", "-t", "a WebIDL operation's trailing None"],
+  },
+  {
+    name: "pointer-call-of-each-count-unmade",
+    breaks: "a pointer JS gave, called of a trailing `None` known where it runs, is given `undefined`, `f(a, undefined)`, which a JS function counting what it's given tells from `f(a)` (#1876)",
+    file: "src/lower/mir/dispatch.rs",
+    find: "        let laddered = pointers.may_be(self.tcx, fn_ptr).is_none() && !counts;\n",
+    replace: "        let laddered = false && pointers.may_be(self.tcx, fn_ptr).is_none() && !counts;\n",
+    tests: ["test/none-given.test.ts", "-t", "a function value's trailing None"],
+  },
+  {
+    name: "pointer-somes-unseen",
+    breaks: "a pointer JS gave, given `Some(b)`, tests what's there, `b != null ? f(a, b) : f(a)` (#1876)",
+    file: "src/lower/mir/dispatch.rs",
+    find: "            self.somes_given(state, &operands[1..], &mut exprs[1..]);\n",
+    replace: "",
+    tests: ["test/none-given.test.ts", "-t", "a function value's trailing None"],
   },
 ];

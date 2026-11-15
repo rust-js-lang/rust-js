@@ -13,11 +13,12 @@ export const Internals = {
 };
 
 export function preinitModuleForSsr(internals, href, nonce) {
-  Internals.d(internals) /* ReactDOMCurrentDispatcher */
-    .preinitModuleScript(
-      /* preinitModuleScript */ href,
-      (nonce != null ? (nonce + 1000000000) >>> 0 : undefined) ?? undefined,
-    );
+  const d = Internals.d(internals);
+  const arg = nonce != null ? (nonce + 1000000000) >>> 0 : undefined;
+  arg != null
+    ? d /* ReactDOMCurrentDispatcher */
+        .preinitModuleScript(/* preinitModuleScript */ href, arg)
+    : d.preinitModuleScript(href);
 }
 
 export function requestFormReset(internals, form) {
@@ -30,7 +31,9 @@ export function dispatchHint(dispatcher, href, options) {
     if ($byteLen(href) > 4) {
       if ($byteLen(href) > 5) {
         if ($byteLen(href) > 6) {
-          dispatcher.preinitModuleScript(/* preinitModuleScript */ href, options ?? undefined);
+          options != null
+            ? dispatcher.preinitModuleScript(/* preinitModuleScript */ href, options)
+            : dispatcher.preinitModuleScript(href);
         }
       }
     }

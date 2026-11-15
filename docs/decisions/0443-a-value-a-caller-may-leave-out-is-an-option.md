@@ -1,6 +1,6 @@
 # 0443. A value a caller may leave out is an `Option`, in each direction
 
-Status: Accepted; amended (2026-11-15): a trailing `None` known only where the call runs is a call of each count, but of one that takes `undefined` as no argument, `#[rust_js::undefined_is_absent]`, a WebIDL operation's or one shown so, and of a value of any shape (#1842, #1868); amended (2026-11-01) by [0313](0313-console-forms.md)'s amendment: prepare leaves out what lowering marks absent, the one rule, and `calls::left_out` is gone; amended by [0775](0775-a-unit-given-to-js-is-undefined.md),
+Status: Accepted; amended (2026-11-15): a function value's call that may be JS's is of each count too, and the js crate's timers take `undefined` as none by evidence (#1876); amended (2026-11-15): a trailing `None` known only where the call runs is a call of each count, but of one that takes `undefined` as no argument, `#[rust_js::undefined_is_absent]`, a WebIDL operation's or one shown so, and of a value of any shape (#1842, #1868); amended (2026-11-01) by [0313](0313-console-forms.md)'s amendment: prepare leaves out what lowering marks absent, the one rule, and `calls::left_out` is gone; amended by [0775](0775-a-unit-given-to-js-is-undefined.md),
 whose `()` as a `dyn` is `undefined` but of a list, a hook's dependencies',
 `[]` (point 6); and by [0593](0593-a-lazy-argument-is-its-value.md),
 whose `use_state` is one function, and [0594](0594-an-overload-an-options-dictionary-holds-is-it.md),
@@ -360,3 +360,65 @@ function may count its arguments: `new Error(reason)`, `setTimeout`,
 `unknown_none_given_as_undefined` (each against native Rust, and as a
 library), test/none-given.test.ts's rows in Bun and in Chromium, and
 mutations in `binding_calls.ts` and `bindings.ts`.
+
+## Amendment (2026-11-15): a function value's call is of each count too (#1876)
+
+#1842's call of each count was a binding's alone. A function value JS may
+have made, a `dyn Fn` JS gave or a pointer whose functions the crate's
+code doesn't alone make, called of a trailing `None` known only where it
+runs, gave it as `undefined`: `f(a, None)` of a JS function that counts
+its arguments was `f(a, undefined)`, where point 3 and rd271's amendment
+say a trailing `None` given a function value is no argument. And React's
+`scheduleTimeout = typeof setTimeout === 'function' ? setTimeout :
+undefined` printed the arrow of `setTimeout`'s call of each count, a
+binding as a value being its call's arrow.
+
+**A call of a function value that may be JS's, of a trailing run of
+`Option`s known only where it runs, is a call of each count**, `b != null
+? f(a, b) : f(a)`, by the one owner of it, `binding_calls::optional_ladder`,
+as a binding's is: of a pointer `FnPointers::may_be` can't name the
+functions of, and of a closure `callback_may_be_js` says JS may have made
+(`mir::nulled::one_none`, the one answer, `ones_given_to_a_callback`'s
+too). An `Option` made `Some(..)` where it's given is there
+(`somes_given`, of a pointer's operands and of a closure's tuple's
+fields), `getParent(Some(temp))`'s `getParent(tempA)`. Not of a pointer
+the crate's code alone makes, nor of bindings' functions alone, each of
+whose values is the arrow of its call of each count already, or the
+function itself where it takes `undefined` as no argument; making each the
+function itself, the callers' call of each count its test, was a wrong
+answer, `String` given a `None` "undefined" where Rust's is "" (the corpus
+caught it), so a binding as a value keeps its arrow. A field's function
+held to be called, `const L = internals.d.L`, called in each branch, has
+its object held, `const d = Internals.d(internals); arg != null ?
+d.preinitModuleScript(href, arg) : d.preinitModuleScript(href)`, its
+`this` kept, as upstream's call gives it (`tidy::moves::held_receivers`,
+rd285): of a Lasting field, as one called once is, and of any other where
+nothing between does anything, what's given made of what it reads alone,
+so each branch's read of the field is what Rust read first (the lead's
+decision). Each count's call is where the call is written, so a comment
+before an argument is before it, `(/* preinitModuleScript */ href, arg)`
+(rd710).
+
+The js crate's timers, `setTimeout`, `clearTimeout`, `setInterval` and
+`clearInterval`, take a trailing `undefined` as no argument, by evidence:
+HTML's `optional long timeout = 0` takes it as WebIDL does, and Node's as
+the delay it takes where none is given; test/undefined-is-absent.test.ts's
+rows compare their firing order with and without trailing `undefined`s,
+in Bun and in Chromium. So a timer as a value is the function itself
+again, `scheduleTimeout = setTimeout`, and `clearTimeout(id ?? undefined)`
+a call.
+
+A `function::bind` of a binding's function is of its value, the arrow of
+its call of each count, given its bound items and its caller's alike: a
+bound `None` before the caller's is in place, `Math.max.bind(null, 1,
+undefined)` called of `5` is `Math.max(1, undefined, 5)`, NaN, as Rust's
+middle `None` is given; of none, `Math.max(1)`. No `bind` leaves out a
+bound item, whose leaving out would move those its caller gives (the
+lead's condition).
+
+Case: third, ADR 0262's, results change: Rust's. Held by
+test/none-given.test.ts's function values' row, a `dyn Fn` and a pointer
+JS gave that count their arguments, given a `None` and a `Some`, `bind`'s
+of all and of some called of the rest, in Bun and in Chromium; the
+corpus's `none_given_to_an_optional_argument`, against native Rust; and
+mutations in `mir/dispatch.ts`, `mir/calls.ts` and `mir/nulled/one_none.ts`.

@@ -478,7 +478,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a field's function called with what needs statements is called from a variable, `const L = internals.d.L; ..; L(href, s)`, with no `this` (rd285)",
     file: "src/lower/mir/tidy/moves.rs",
-    find: "        if !is_temporary(name) || !value.facts.has(js::Known::Lasting) || js::mentions_in(&stmts[i + 1..], name) != 1 {\n",
+    find: "        if !is_temporary(name) || mentions == 0 {\n",
     replace: "        if true {\n",
     tests: ["test/lowering-held-receivers.test.ts"],
   },
@@ -487,9 +487,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a field Rust changes between is read after what's given, so `(inner.f)({ inner.f = triple; n })` calls `triple` (rd285)",
     file: "src/lower/mir/tidy/moves.rs",
-    find: "        if !is_temporary(name) || !value.facts.has(js::Known::Lasting) || js::mentions_in(&stmts[i + 1..], name) != 1 {\n",
-    replace:
-      "        if !is_temporary(name) || js::mentions_in(&stmts[i + 1..], name) != 1 {\n",
+    find: "        if !value.facts.has(js::Known::Lasting) && !quiet_between {\n",
+    replace: "        if false && !quiet_between {\n",
     tests: [
       "test/corpus.test.ts",
       "-t",
@@ -630,5 +629,13 @@ export const mutations: Mutation[] = [
     find: "    if !matches!(value.kind, ExprKind::Var(_))\n        && super::bindings::handles_read(std::slice::from_ref(&rest[at])).contains(name.as_str())\n",
     replace: "    if false && !matches!(value.kind, ExprKind::Var(_))\n        && super::bindings::handles_read(std::slice::from_ref(&rest[at])).contains(name.as_str())\n",
     tests: ["test/corpus.test.ts", "-t", "^temporary_made_a_mut_dyn_stepped.rs$"],
+  },
+  {
+    name: "held-receivers-of-each-count-unheld",
+    breaks: "a field's function called in each branch of a call of each count is called from a variable, `preinit(href, arg)`, with no `this`, where its object's held, `d.preinit(href, arg)` (rd285, #1876)",
+    file: "src/lower/mir/tidy/moves.rs",
+    find: "        let quiet_between = mentions > 1\n",
+    replace: "        let quiet_between = false && mentions > 1\n",
+    tests: ["test/lowering-held-receivers.test.ts", "-t", "called of each count keeps its object"],
   },
 ];

@@ -40,7 +40,7 @@ function read(node) {
     return node.current;
   }
   if ("getter" in node) {
-    node.value = node.getter(node.value);
+    node.value = node.value != null ? node.getter(node.value) : node.getter();
     return node.value;
   }
   if ("run" in node) {

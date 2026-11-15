@@ -22,7 +22,7 @@ const mark = "rust_js::undefined_is_absent)";
 /** Each binding a hand marks, by its `link_name`, and its evidence: what a
  * page answers of its calls, each count's with and without trailing
  * `undefined`s, which must be alike. */
-type Shown = { name: string; evidence: () => [string, string][] };
+type Shown = { name: string; evidence: () => [string, string][] | Promise<[string, string][]> };
 
 // An `Error`'s and an `AggregateError`'s own properties, message, cause and
 // the stack's first frame, made at one site of the arguments given, each
@@ -53,9 +53,38 @@ const errors = (): [string, string][] => {
   return pairs;
 };
 
+// The timers' firing order, each call given its trailing `undefined`s or
+// none, alike: a timeout's and an interval's delay, HTML's `optional long
+// timeout = 0`, Node's 1 ms where it's none; a clear of none clears nothing.
+const timers = async (): Promise<[string, string][]> => {
+  const order = (padded: boolean) =>
+    new Promise<string>((resolve) => {
+      const seen: string[] = [];
+      const more = padded ? [undefined] : [];
+      const call = (f: (...args: unknown[]) => unknown, ...args: unknown[]) => f(...args, ...more);
+      setTimeout(() => seen.push("zero"), 0);
+      call(setTimeout as (...args: unknown[]) => unknown, () => seen.push("timeout"));
+      setTimeout(() => seen.push("one"), 1);
+      setTimeout(() => seen.push("kept"), 5);
+      call(clearTimeout as (...args: unknown[]) => unknown);
+      // An interval's ticks apart, which the load moves among timeouts.
+      let ticks = 0;
+      const interval = call(setInterval as (...args: unknown[]) => unknown, () => {
+        if (++ticks === 2) clearInterval(interval as ReturnType<typeof setInterval>);
+      });
+      call(clearInterval as (...args: unknown[]) => unknown);
+      setTimeout(() => resolve(`${seen.join(",")} ticks ${ticks}`), 60);
+    });
+  return [[await order(false), await order(true)]];
+};
+
 const shown: Shown[] = [
   { name: "new Error", evidence: errors },
   { name: "new AggregateError", evidence: errors },
+  { name: "setTimeout", evidence: timers },
+  { name: "clearTimeout", evidence: timers },
+  { name: "setInterval", evidence: timers },
+  { name: "clearInterval", evidence: timers },
 ];
 
 // Each mark, of a Rust source the repository tracks, by its `link_name`.
@@ -84,13 +113,13 @@ test("each binding marked undefined_is_absent is a WebIDL operation or construct
 
 for (const { name, evidence } of shown) {
   test(`${name} takes a trailing undefined as no argument, in Bun and in Chromium`, async () => {
-    const inBun = evidence();
+    const inBun = await evidence();
     expect(inBun.length).toBeGreaterThan(0);
     for (const [given, padded] of inBun) expect(padded).toBe(given);
     const browser = await chromium.launch();
     try {
       const page = await browser.newPage();
-      const inPage = await page.evaluate((code) => new Function(`return (${code})();`)() as [string, string][], evidence.toString());
+      const inPage = await page.evaluate((code) => new Function(`return (${code})();`)() as Promise<[string, string][]>, evidence.toString());
       for (const [given, padded] of inPage) expect(padded).toBe(given);
     } finally {
       await browser.close();

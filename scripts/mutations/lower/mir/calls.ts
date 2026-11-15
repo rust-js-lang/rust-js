@@ -467,7 +467,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `dyn Fn`'s or a generic `F`'s call through a field is `p[0]()`, giving it `p` as its `this` (#402)",
     file: "src/lower/mir/calls.rs",
-    find: "            Some((state, output)) if !own => {\n                self.called_unbound(state, (call, Called::Function(arg_tys[0], arg_tys[1], output)))?\n            }\n",
+    find: "                let call = self.called_unbound(state, (call, Called::Function(arg_tys[0], arg_tys[1], output)))?;\n",
     replace: "",
     tests: [
       "test/js-functions.test.ts",
@@ -480,8 +480,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a closure of the crate's a tuple holds is held first to be called, `const f = p[0]; f()`, though it never reads its `this` (#402)",
     file: "src/lower/mir/calls.rs",
-    find: "            Some((state, output)) if !own => {\n",
-    replace: "            Some((state, output)) => {\n",
+    find: "            Some((state, output, out)) if !own => {\n",
+    replace: "            Some((state, output, out)) => {\n",
     tests: [
       "test/js-functions.test.ts",
       "-t",
@@ -814,5 +814,21 @@ export const mutations: Mutation[] = [
     find: "            self.ones_given_to_a_callback(state, (arg_tys[0], arg_tys[1], *output), &tys, &mut exprs);\n",
     replace: "",
     tests: given1840,
+  },
+  {
+    name: "callback-call-of-each-count-unmade",
+    breaks: "a `dyn Fn` JS gave, called of a trailing `None` known where it runs, is given `undefined`, `f(a, undefined)`, which a JS function counting what it's given tells from `f(a)` (#1876)",
+    file: "src/lower/mir/calls.rs",
+    find: "        let laddered = !own\n",
+    replace: "        let laddered = false\n",
+    tests: ["test/none-given.test.ts", "-t", "a function value's trailing None"],
+  },
+  {
+    name: "callback-somes-unseen",
+    breaks: "a `dyn Fn` JS gave, given `Some(b)`, tests what's there, `b != null ? f(a, b) : f(a)` (#1876)",
+    file: "src/lower/mir/calls.rs",
+    find: "            self.somes_given_in_a_tuple(state, &mut exprs);\n",
+    replace: "",
+    tests: ["test/none-given.test.ts", "-t", "a function value's trailing None"],
   },
 ];

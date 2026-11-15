@@ -599,7 +599,7 @@ pub fn lent(f: &dyn Fn()) -> usize {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("let onMountInDev = null;\n");
   expect(js).toContain("if (__DEV__) {\n  onMountInDev = { useA: (n) => (n + 1) >>> 0 };\n}\n");
-  expect(js).toContain("export function render(setH) {\n  setH(onMountInDev ?? undefined);\n}");
+  expect(js).toContain("export function render(setH) {\n  onMountInDev != null ? setH(onMountInDev) : setH();\n}");
   expect(js).toContain("$withBorrowMut(\n    SEEN,");
   expect(js).toContain("$withBorrow(\n    SHARED,");
   expect(js).toContain("$withBorrow(\n    LENT,");

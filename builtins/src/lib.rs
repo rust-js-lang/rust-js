@@ -2158,7 +2158,12 @@ pub struct IntervalId(PhantomData<JsObject>);
 /// to run ([`IntoTimerHandler`]). A generic binding, held as a value by the
 /// instance its type says, `Some(js::set_timeout)`, and asked of by any,
 /// `js::is_function(js::set_timeout::<fn()>)`.
+/// A trailing `undefined` is no argument (#1876): HTML's
+/// `optional long timeout = 0` takes it as WebIDL does, and Node's as the
+/// delay it takes where none is given, as test/undefined-is-absent.test.ts's
+/// rows show.
 #[cfg_attr(rust_js, rust_js::link_name = "setTimeout")]
+#[cfg_attr(rust_js, rust_js::undefined_is_absent)]
 pub fn set_timeout<H: IntoTimerHandler>(handler: H, ms: Option<f64>) -> &'static TimeoutId {
     unreachable!()
 }
@@ -2166,7 +2171,12 @@ pub fn set_timeout<H: IntoTimerHandler>(handler: H, ms: Option<f64>) -> &'static
 /// [`clearTimeout(id)`](https://developer.mozilla.org/docs/Web/API/Window/clearTimeout):
 /// the timeout's `callback` won't run, if it hasn't; of none, nothing,
 /// as TypeScript types it, `number | undefined`.
+/// A trailing `undefined` is no argument (#1876): HTML's
+/// `optional long timeout = 0` takes it as WebIDL does, and Node's as the
+/// delay it takes where none is given, as test/undefined-is-absent.test.ts's
+/// rows show.
 #[cfg_attr(rust_js, rust_js::link_name = "clearTimeout")]
+#[cfg_attr(rust_js, rust_js::undefined_is_absent)]
 pub fn clear_timeout(id: Option<&TimeoutId>) {
     unreachable!()
 }
@@ -2174,7 +2184,12 @@ pub fn clear_timeout(id: Option<&TimeoutId>) {
 /// [`setInterval(callback, ms)`](https://developer.mozilla.org/docs/Web/API/Window/setInterval):
 /// `callback` every `ms` milliseconds, until it's cleared; of `None`, left
 /// out, as often as it can be, as JS's `setInterval(callback)`.
+/// A trailing `undefined` is no argument (#1876): HTML's
+/// `optional long timeout = 0` takes it as WebIDL does, and Node's as the
+/// delay it takes where none is given, as test/undefined-is-absent.test.ts's
+/// rows show.
 #[cfg_attr(rust_js, rust_js::link_name = "setInterval")]
+#[cfg_attr(rust_js, rust_js::undefined_is_absent)]
 pub fn set_interval(callback: Box<dyn FnMut()>, ms: Option<f64>) -> &'static IntervalId {
     unreachable!()
 }
@@ -2182,7 +2197,12 @@ pub fn set_interval(callback: Box<dyn FnMut()>, ms: Option<f64>) -> &'static Int
 /// [`clearInterval(id)`](https://developer.mozilla.org/docs/Web/API/Window/clearInterval):
 /// the interval's `callback` doesn't run again; of none, nothing, as
 /// TypeScript types it, `number | undefined`.
+/// A trailing `undefined` is no argument (#1876): HTML's
+/// `optional long timeout = 0` takes it as WebIDL does, and Node's as the
+/// delay it takes where none is given, as test/undefined-is-absent.test.ts's
+/// rows show.
 #[cfg_attr(rust_js, rust_js::link_name = "clearInterval")]
+#[cfg_attr(rust_js, rust_js::undefined_is_absent)]
 pub fn clear_interval(id: Option<&IntervalId>) {
     unreachable!()
 }

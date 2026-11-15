@@ -48,10 +48,10 @@ export const mutations: Mutation[] = [
   },
   {
     name: "none-given-to-a-callback-of-rust",
-    breaks: "a closure only Rust calls through a `dyn Fn` is given `?? undefined`, though it holds what it's given as it may be (#1840)",
+    breaks: "a closure only Rust calls through a `dyn Fn` is taken for one JS may have made, given `?? undefined` and called of each count, `value != null ? shown(value) : shown()`, though it holds what it's given as it may be (#1840, #1876)",
     file: "src/lower/mir/nulled/one_none.rs",
-    find: "        if !js {\n            return;\n        }\n",
-    replace: "",
+    find: "            .is_none_or(|called| (self.krate.nulled_params.js_nones()).may_hold_null(self.tcx, state.body, called))\n    }\n",
+    replace: "            .is_none_or(|_| true)\n    }\n",
     tests: given1840,
   },
   {

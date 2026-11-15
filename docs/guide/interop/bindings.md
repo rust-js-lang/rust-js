@@ -1307,7 +1307,8 @@ given as it is, `new URL(url, base)`, and what may hold JS's `null`,
 ([ADR 0030](../../decisions/0030-option.md), amended, #1840). An
 `Option<&Unknown>`'s `None` is JS's `undefined` itself, a value, given as
 it is, a literal one too: `js::string(None)` is `String(undefined)`,
-"undefined" (#1868):
+"undefined" (#1868). A function value JS may have made, a `dyn Fn` or a
+pointer it gave, is called alike, `b != null ? f(a, b) : f(a)` (#1876):
 
 ```rust
 pub fn digits(value: Option<f64>) -> String {

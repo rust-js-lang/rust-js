@@ -148,7 +148,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         arg_tys: &[Ty<'tcx>],
         writes: Option<usize>,
         span: Span,
-        unbound: Option<(&mut State<'_, 'tcx>, Ty<'tcx>)>,
+        unbound: Option<(&mut State<'_, 'tcx>, Ty<'tcx>, &mut Vec<Stmt>)>,
     ) -> R<Value<'tcx>> {
         let mut values = values.into_iter();
         let callee = match values.next().expect("the closure") {
@@ -237,8 +237,30 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             true => crate::lower::calls::own_absent(&mut exprs, absent),
             false => crate::lower::calls::given_to_js_but(&mut exprs, absent),
         }
-        // Of one that may be JS's, each `Option` Rust's `None` (#1840).
-        if !own && let Some((state, output)) = &unbound {
+        // Of one that may be JS's, each trailing `Option` known only where
+        // it runs a call of each count, as a pointer's is (`optional_ladder`,
+        // #1876); each a `Some` where it's given known there.
+        let laddered = !own
+            && unbound
+                .as_ref()
+                .is_some_and(|(state, output, _)| self.callback_may_be_js(state, (arg_tys[0], arg_tys[1], *output)));
+        let optionals: Vec<(bool, bool)> = match laddered {
+            true => (tys.iter())
+                .map(|&ty| {
+                    (
+                        self.option_of(ty).is_some(),
+                        crate::lower::analysis::nulled_params::one_none(self.tcx, ty),
+                    )
+                })
+                .collect(),
+            false => Vec::new(),
+        };
+        if laddered && let Some((state, _, _)) = &unbound {
+            self.somes_given_in_a_tuple(state, &mut exprs);
+        }
+        // Of one that may be JS's, each `Option` Rust's `None` (#1840): not a
+        // `Some` where it's given, there (`never_null`).
+        if !own && let Some((state, output, _)) = &unbound {
             self.ones_given_to_a_callback(state, (arg_tys[0], arg_tys[1], *output), &tys, &mut exprs);
         }
         // And its options, where the crate's writers take them (ADR 0137).
@@ -246,10 +268,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             exprs.extend(self.given_to_writer(None));
         }
         let call = Value::Expr(Expr::call(callee, exprs));
-        let output = unbound.as_ref().map(|&(_, output)| output);
+        let output = unbound.as_ref().map(|(_, output, _)| *output);
         let call = match unbound {
-            Some((state, output)) if !own => {
-                self.called_unbound(state, (call, Called::Function(arg_tys[0], arg_tys[1], output)))?
+            Some((state, output, out)) if !own => {
+                let call = self.called_unbound(state, (call, Called::Function(arg_tys[0], arg_tys[1], output)))?;
+                match (laddered, call) {
+                    (true, Value::Expr(call)) => {
+                        Value::Expr(self.optional_ladder(call, None, &optionals, (self.js_span(span), out)))
+                    }
+                    (_, call) => call,
+                }
             }
             _ => call,
         };

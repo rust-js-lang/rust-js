@@ -793,7 +793,10 @@ pub(super) fn set_where_read(stmts: &mut Vec<Stmt>, at: usize) -> bool {
 /// object is held instead, `const d = internals.d; .. d.L(href, s);`, or
 /// read in place where it's a variable, `d.L(href, s)`: the method call
 /// it is where nothing comes between, `internals.d.L(href)`, its object
-/// JS's `this` either way, as upstream's (rd285). Only a field
+/// JS's `this` either way, as upstream's (rd285). Each call of it in the
+/// statement that calls it, a call of each count's, `s != null ?
+/// d.L(href, s) : d.L(href)` (#1876), so long as it's only called there.
+/// Only a field
 /// Rust can't change while the body runs (`js::Known::Lasting`): one of a
 /// struct JS made, which a getter may answer, is read after what's given
 /// where Rust reads it first, ADR 0262's exception, the user's
@@ -807,31 +810,57 @@ pub(super) fn held_receivers(stmts: &mut Vec<Stmt>) {
         let ExprKind::Member(object, property) = &value.kind else {
             continue;
         };
-        if !is_temporary(name) || !value.facts.has(js::Known::Lasting) || js::mentions_in(&stmts[i + 1..], name) != 1 {
+        let mentions = js::mentions_in(&stmts[i + 1..], name);
+        if !is_temporary(name) || mentions == 0 {
             continue;
         }
         let (name, object, property) = (name.clone(), (**object).clone(), property.clone());
-        let Some(at) = (i + 1..stmts.len()).find(|&j| js::mentions_in(&stmts[j..=j], &name) == 1) else {
+        let Some(at) = (i + 1..stmts.len()).find(|&j| js::mentions_in(&stmts[j..=j], &name) == mentions) else {
             continue;
         };
+        // Of one Rust may change, called in each branch of a call of each
+        // count (#1876): its object held where nothing between does anything
+        // that could, each what's given made of what it reads alone, so its
+        // field's read at each call is what Rust read first.
+        let quiet_between = mentions > 1
+            && stmts[i + 1..at]
+                .iter()
+                .all(|stmt| matches!(&stmt.kind, StmtKind::Const(_, made) if !made.has_effects()));
+        if !value.facts.has(js::Known::Lasting) && !quiet_between {
+            continue;
+        }
         // A variable is read in place: it's a lasting reference's, which
         // nothing assigns again.
         let in_place = matches!(object.kind, ExprKind::Var(_));
-        let callee = match &mut stmts[at].kind {
-            StmtKind::Expr(e) | StmtKind::Const(_, e) | StmtKind::Return(Some(e)) => match &mut e.kind {
-                ExprKind::Call(f, _) if matches!(&f.kind, ExprKind::Var(v) if *v == name) => f,
-                _ => continue,
-            },
-            _ => continue,
-        };
         let held = match in_place {
             true => object.clone(),
             false => Expr::var(&name),
         };
-        **callee = Expr {
-            span: callee.span,
-            ..Expr::member(held, property)
-        };
+        // Each mention a call of it, the statement's own or one a branch of
+        // its value makes.
+        if !matches!(
+            &stmts[at].kind,
+            StmtKind::Expr(_) | StmtKind::Const(..) | StmtKind::Return(Some(_))
+        ) {
+            continue;
+        }
+        let mut called = stmts[at].clone();
+        let mut calls = 0;
+        js::each_expr_mut(std::slice::from_mut(&mut called), &mut |e| {
+            if let ExprKind::Call(f, _) = &mut e.kind
+                && matches!(&f.kind, ExprKind::Var(v) if *v == name)
+            {
+                **f = Expr {
+                    span: f.span,
+                    ..Expr::member(held.clone(), property.clone())
+                };
+                calls += 1;
+            }
+        });
+        if calls != mentions {
+            continue;
+        }
+        stmts[at] = called;
         match in_place {
             true => _ = stmts.remove(i),
             false => stmts[i].kind = StmtKind::Const(name, object),

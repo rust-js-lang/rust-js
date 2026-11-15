@@ -1096,7 +1096,9 @@ if (__DEV__) {
 }
 
 export function render(setDispatcher) {
-  setDispatcher(HooksDispatcherOnMountInDEV ?? undefined);
+  HooksDispatcherOnMountInDEV != null
+    ? setDispatcher(HooksDispatcherOnMountInDEV)
+    : setDispatcher();
 }
 ```
 
@@ -1337,7 +1339,15 @@ export function createReactiveSystem(base) {
   };
 }
 
-const { link, unlink } = createReactiveSystem(0);
+const system = createReactiveSystem(0);
+
+function link(dep, sub) {
+  system.link(dep, sub);
+}
+
+function unlink(link, sub) {
+  return sub != null ? system.unlink(link, sub) : system.unlink(link);
+}
 
 export function run(dep) {
   link(dep, 1);

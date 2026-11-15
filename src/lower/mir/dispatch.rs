@@ -44,6 +44,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let fn_ptr = func.ty(&state.body.local_decls, self.tcx);
         let pointers = self.krate.cell_borrows.pointers();
         // Of one that may be JS's, each `Option` Rust's `None` (#1840).
+        if pointers.may_be(self.tcx, fn_ptr).is_none() {
+            self.somes_given(state, &operands[1..], &mut exprs[1..]);
+        }
         if !pointers.rust_only(self.tcx, fn_ptr) {
             self.ones_given_to_a_pointer(state, fn_ptr, &operands[1..], &mut exprs[1..]);
         }
@@ -70,10 +73,36 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             true => crate::lower::calls::own_absent(&mut exprs, absent),
             false => crate::lower::calls::given_to_js_but(&mut exprs, absent),
         }
+        // Of one that may be JS's, each trailing `Option` known only where
+        // it runs a call of each count, a JS function counting what it's
+        // given, as a binding's call is (`optional_ladder`, #1876). Not of
+        // one the crate's code alone makes, of its functions, which never
+        // count, and of bindings' functions, each of whose values is the
+        // call of each count already, or the function itself where it takes
+        // `undefined` as no argument (`binding_value`).
+        let laddered = pointers.may_be(self.tcx, fn_ptr).is_none() && !counts;
+        let optionals: Vec<(bool, bool)> = match laddered {
+            true => (inputs.iter().enumerate())
+                .map(|(i, &ty)| {
+                    (
+                        self.option_of(ty).is_some()
+                            && bindings.iter().all(|&f| bindings::is_optional_param(self.tcx, f, i)),
+                        crate::lower::analysis::nulled_params::one_none(self.tcx, ty),
+                    )
+                })
+                .collect(),
+            false => Vec::new(),
+        };
         // One that may be a binding's JS function, called through what holds
         // it, is called with no `this`, which a host's own may refuse (#427).
         let call = Value::Expr(Expr::call(callee, exprs));
-        self.called_unbound(state, (call, Called::Pointer(fn_ptr)))
+        let call = self.called_unbound(state, (call, Called::Pointer(fn_ptr)))?;
+        Ok(match (laddered, call) {
+            (true, Value::Expr(call)) => {
+                Value::Expr(self.optional_ladder(call, None, &optionals, (self.js_span(span), out)))
+            }
+            (_, call) => call,
+        })
     }
 
     pub(super) fn mir_call(
@@ -1109,7 +1138,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && (tcx.fn_trait_kind_from_def_id(fn_trait).is_some()
                 || tcx.async_fn_trait_kind_from_def_id(fn_trait).is_some())
         {
-            return self.mir_closure_call(values, &arg_tys, None, span, Some((state, output)));
+            return self.mir_closure_call(values, &arg_tys, None, span, Some((state, output, out)));
         }
         // `a += b` of a number or a string, through its `&mut`: the place
         // assigned, as the operator's is.

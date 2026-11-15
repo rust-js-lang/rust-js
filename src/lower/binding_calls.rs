@@ -188,7 +188,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             })
             .collect();
         // Not of one that takes a trailing `undefined` as no argument, a
-        // WebIDL operation's (ADR 0262's case "none").
+        // WebIDL operation's (ADR 0262's case "none"). Nor of a `bind`, a
+        // variadic binding, whose function, a binding's, is the arrow of its
+        // call of each count, given its bound items and its caller's alike,
+        // or the function itself where it takes `undefined` as none (#1876).
         let laddered = !is_variadic(self.tcx, def_id)
             && bound.is_none()
             && !super::bindings::undefined_is_absent(self.tcx, def_id);
@@ -548,7 +551,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ => value,
         };
         let value = match laddered {
-            true => self.optional_ladder(value, (def_id, offset), &optionals, out),
+            true => self.optional_ladder(value, Some((def_id, offset)), &optionals, (self.js_span(span), out)),
             false => value,
         };
         Ok(self.catching(def_id, generic_args, value))
@@ -571,14 +574,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// 1`, nor a read whose `None` is `null`, nor what may give either,
     /// `a ?? b`, ends the run. Of a call of none such, as it is. What's
     /// held is named as the binding names its parameter, `const position =
-    /// at - 1`, of `def_id`'s, whose first `offset` are what it's called on.
-    fn optional_ladder(
+    /// at - 1`, of `named`'s `def_id`, whose first `offset` are what it's
+    /// called on; of a function value's, `arg`. The one owner of a call
+    /// that may reach JS of trailing `Option`s known where it runs: a
+    /// binding's, and a function value's that may be JS's (#1876,
+    /// `mir::dispatch`, `mir::calls`).
+    pub(in crate::lower) fn optional_ladder(
         &mut self,
         mut value: Expr,
-        (def_id, offset): (DefId, usize),
+        named: Option<(DefId, usize)>,
         optionals: &[(bool, bool)],
-        out: &mut Vec<js::Stmt>,
+        (at, out): (js::Span, &mut Vec<js::Stmt>),
     ) -> Expr {
+        // Each count's call where the call is written, so a comment before
+        // an argument is before it in each (`to_oxc::arguments`, rd710).
+        if value.span.is_none() {
+            value.span = at;
+        }
         let (callee, mut args, new) = match std::mem::replace(&mut value.kind, js::ExprKind::Undefined) {
             js::ExprKind::Call(callee, args) => (*callee, args, false),
             js::ExprKind::New(callee, args) => (*callee, args, true),
@@ -614,11 +626,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // Each but a variable's read or a literal made once, in order: what
         // it's called on, then each argument.
+        // A function value read unbound, `(0, s.f)`, or made, held as it is,
+        // called with no `this` (`called_unbound`); a method's object.
         let callee = match callee.kind {
-            js::ExprKind::Member(object, name) if !object.reads_same() => Expr {
-                kind: js::ExprKind::Member(Box::new(self.spill(Role::Value, *object, out)), name),
+            js::ExprKind::Member(object, name) => Expr {
+                kind: js::ExprKind::Member(
+                    Box::new(match object.reads_same() {
+                        true => *object,
+                        false => self.spill(Role::Value, *object, out),
+                    }),
+                    name,
+                ),
                 ..callee
             },
+            js::ExprKind::Unbound(ref of) if of.reads_same() => callee,
+            _ if !callee.reads_same() => self.spill(Role::Value, callee, out),
             kind => Expr { kind, ..callee },
         };
         args.truncate(given);
@@ -633,10 +655,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => arg.clone(),
             };
             if !of.reads_same() && !super::calls::is_undefined(&of) {
-                let named = (self.tcx.fn_arg_idents(def_id).get(i + offset).copied().flatten())
-                    .map(|ident| ident.name.to_string())
-                    .filter(|name| name != "this" && !name.starts_with('_'))
-                    .map(|name| super::camel_case(&name));
+                let named = (named
+                    .and_then(|(def_id, offset)| self.tcx.fn_arg_idents(def_id).get(i + offset).copied().flatten()))
+                .map(|ident| ident.name.to_string())
+                .filter(|name| name != "this" && !name.starts_with('_'))
+                .map(|name| super::camel_case(&name));
                 of = match named {
                     Some(name) => self.spill(Base::Named(&name), of, out),
                     None => self.spill(Role::Arg, of, out),

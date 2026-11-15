@@ -120,7 +120,9 @@ pub fn swapped(n: u32) -> u32 {
   expect(js).not.toMatch(/const \w+ = internals\.d\.L;/);
   expect(js).toContain("internals.d.L(href);");
   // Of a variable, read in place: nothing between assigns it.
-  expect(js).toContain("export function given(d, href, options) {\n  const integrity = options.integrity;\n  d.L(href, ");
+  // Its call of each count, of a trailing `None` known where it runs, a
+  // call of the object's method in each branch (#1876).
+  expect(js).toContain("export function given(d, href, options) {\n  const integrity = options.integrity;\n  const value = typeof integrity === \"string\" ? integrity : undefined;\n  value != null ? d.L(href, value) : d.L(href);\n}");
   // What Rust can change between, read where Rust reads it: of a `&mut`,
   // and a cell's.
   expect(js).toContain("const f = inner.f;\n  inner.f = triple;\n  return f(n);");
@@ -170,6 +172,51 @@ fn called(s: &S, options: &Unknown) -> bool {
 }
 `,
   );
-  expect(js).toContain("  return (0, s.f)(typeof integrity");
+  expect(js).toContain("  return value != null ? (0, s.f)(value) : (0, s.f)();\n");
   expect([(lib.field as (o: unknown) => boolean)({ integrity: "x" })]).toEqual([false]);
+});
+
+// Called in each branch of a call of each count, of a trailing `None`
+// known where it runs (#1876), a field's function keeps its object as its
+// `this`, held, `const d = Internals.d(internals); arg != null ?
+// d.preinit(href, arg) : d.preinit(href)`, where nothing between does
+// anything: a JS function that reads its `this` and counts what it's given
+// sees each as upstream's call gives it.
+test("a field's function called of each count keeps its object", async () => {
+  const { js, lib } = await compiled(
+    "held-receivers-each-count",
+    `pub struct Dispatcher {
+    pub preinit: fn(&str, Option<u32>),
+}
+
+pub struct Internals {
+    pub dispatcher: Dispatcher,
+}
+
+impl Internals {
+    pub fn d(&self) -> &Dispatcher {
+        &self.dispatcher
+    }
+}
+
+pub fn preinit(internals: &Internals, href: &str, nonce: Option<u32>) {
+    (internals.d().preinit)(href, nonce.map(|n| n + 1));
+}
+`,
+  );
+  expect(js).toContain("  const d = Internals.d(internals);\n");
+  expect(js).toMatch(/\? d\.preinit\(href, \w+\)\s*: d\.preinit\(href\)/);
+  const seen: unknown[] = [];
+  const dispatcher = {
+    preinit(this: unknown, ...given: unknown[]) {
+      seen.push([this === dispatcher, ...given]);
+    },
+  };
+  const run = lib.preinit as (internals: unknown, href: string, nonce?: number) => void;
+  run({ dispatcher }, "a.js", 1);
+  run({ dispatcher }, "b.js", undefined);
+  expect(seen).toEqual([
+    [true, "a.js", 2],
+    [true, "b.js"],
+  ]);
 });
