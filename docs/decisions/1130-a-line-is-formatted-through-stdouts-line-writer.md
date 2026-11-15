@@ -668,3 +668,18 @@ in both builds: `{:?}` and `{:#?}`, a part that panics or gives `Err`,
 first, middle and last, generic code's, and a range given by reference
 or changed after it's made. test/diagnostics.test.ts now holds a `Rev`'s
 refusal.
+
+## Amendment (2026-11-15, #1894): a `Debug` that's the crate's own, of std's type too, composes nothing
+
+`{:?}` of a std value a part of which may stop part-way where a
+`catch_unwind` may catch it is refused (#1633), where std's `Debug` of it
+composes its parts. A type whose `Debug` is the crate's own composes
+none, whatever type it's of: `impl Debug for Pin<Box<Pinned>>`, beside a
+caught panic, was refused as std's `Pin` of `Pinned`
+(`debug_impl_of_a_reference_box_or_pin.rs` beside
+`catch_unwind_flag_return.rs`). `Recognition::own_debug` asks the impl, and
+`debug_shown` doesn't refuse one. Held by
+`test/corpus/own_debug_of_a_pinned_box_beside_a_caught_panic.rs`, against
+native Rust; the pair is off test/neighbours-known.txt. Mutation
+`own-debug-of-std-type-composed` (`lower/display/debug.ts`).
+

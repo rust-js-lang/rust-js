@@ -45,6 +45,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // always is.
         if let Some(part) = self.krate.prints.stops_composed(ty)
             && !self.recognition().debug_forwards(ty)
+            && !self.recognition().own_debug(ty)
         {
             return Err(self.unsupported(
                 span,

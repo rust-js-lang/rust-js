@@ -234,6 +234,17 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             Ok(Some(instance)) if self.tcx.trait_impl_of_assoc(instance.def_id()).is_some_and(|imp| self.foreign.compiled_by_rust_js(imp)))
     }
 
+    /// Whether `ty`'s `Debug` is the crate's own impl, whatever type it's
+    /// of: `impl Debug for Pin<Box<Pinned>>`, which writes its text as it
+    /// does, no std value's parts (#1894). Not std's own, a `Rev`'s, which
+    /// rust-js compiles too.
+    pub(in crate::lower) fn own_debug(&self, ty: Ty<'tcx>) -> bool {
+        let fmt = trait_method(self.tcx, std_item(self.tcx, StdItem::Debug), "fmt");
+        let args = self.tcx.mk_args(&[ty.into()]);
+        matches!(crate::lower::items::resolve_instance_in(self.tcx, self.typing_env, fmt, args),
+            Ok(Some(instance)) if self.tcx.trait_impl_of_assoc(instance.def_id()).is_some_and(|imp| imp.is_local()))
+    }
+
     /// A type whose `IntoFuture` is the crate's own (ADR 0571), awaited as
     /// what its `into_future` makes, not as the promise it isn't.
     pub(in crate::lower) fn own_into_future(&self, ty: Ty<'tcx>) -> bool {

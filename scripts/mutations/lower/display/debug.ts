@@ -624,4 +624,13 @@ export const mutations: Mutation[] = [
     replace: "            && true\n",
     tests: ["test/corpus.test.ts", "-t", "^printing_std_wrappers_stopped_part_way.rs$"],
   },
+  {
+    name: "own-debug-of-std-type-composed",
+    breaks:
+      "`{:?}` of std's `Pin<Box<Pinned>>` whose `Debug` is the crate's own, in a crate that catches a panic, is taken for std's value of a part that may stop and refused, where it's the crate's call (#1894)",
+    file: "src/lower/display/debug.rs",
+    find: "            && !self.recognition().own_debug(ty)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^own_debug_of_a_pinned_box_beside_a_caught_panic.rs$"],
+  },
 ];

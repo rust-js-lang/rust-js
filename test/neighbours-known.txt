@@ -55,9 +55,6 @@ plain boxed_iterator_stepped_as_what_it_boxes.rs beside vec_set_len.rs
 plain std fmt_write_function.rs beside pointer_offset_from.rs
 plain std mut_ref_of_a_boxed_function_as_dyn.rs beside address_of_a_field_through_a_reference.rs
 
-#1894 P2 (neighbours): {:?} of a Pin<Box<T>> whose Debug may stop part-way is refused beside a case that catches a panic
-plain std debug_impl_of_a_reference_box_or_pin.rs beside catch_unwind_flag_return.rs
-
 #1896 P2 (neighbours): a dyn Fn made of an Rc<fn item> that may be shared before is refused beside a case of trait evidence paths
 plain std dyn_fn_address_by_rc_as_ptr.rs beside evidence_paths.rs
 
