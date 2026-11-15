@@ -312,8 +312,13 @@ frontend/src/lib.js   function first(points) { return { ...$index(points, 0) }; 
 And what a library stores, a constant, a static's or a cell's value, it
 hands out as a copy of its own, wherever the value goes and whoever
 changes it, `return { ...ORIGIN };`; but not to a WebIDL operation's
-dictionary parameter, which reads it and keeps nothing
-([ADR 0914, amended](../../decisions/0914-a-librarys-generic-function-is-its-programs.md), #1907).
+dictionary parameter, which reads it and keeps nothing; nor what nothing
+else holds, a literal written where it's read, `*b"ab"`'s `[97, 98]`, or
+what `Box::new` made; nor a constant a `for` loop only steps through, of
+items no part of which is an object, `for (const shape of SHAPES)`; and a
+copy a temporary holds is named as what it copies, `const at = marks.at
+== null ? marks.at : { ...marks.at };`
+([ADR 0914, amended](../../decisions/0914-a-librarys-generic-function-is-its-programs.md), #1907, #1923).
 
 A library none of whose own writes fail takes each write through a type
 parameter to succeed, as its program does. A crate that gives one of its

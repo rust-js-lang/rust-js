@@ -576,4 +576,12 @@ export const mutations: Mutation[] = [
     replace: "        self.given_evidence(|tr| tr.self_ty() == ty && tr.def_id == copy)\n",
     tests: ["test/corpus.test.ts", "-t", "^copy_through_a_supertrait.rs$"],
   },
+  {
+    name: "copied-source-of-an-option-unread",
+    breaks: "an `Option`'s copy, `x == null ? x : { ...x }`, says nothing of what it copies, so its temporary is `value$1`, not `at` (#1923)",
+    file: "src/lower/copies.rs",
+    find: "                    && copied_source(copied).is_some_and(|inner| inner.kind == source.kind) =>\n",
+    replace: "                    && false =>\n",
+    tests: ["test/library-kept-copies.test.ts", "-t", "literal, new box and constant"],
+  },
 ];

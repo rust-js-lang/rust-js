@@ -37,6 +37,34 @@ pub(in crate::lower) struct VariantGroup<'v, 'tcx> {
 /// What `variant_groups` asks of a variant and its fields.
 type OfVariant<'a, 'tcx> = &'a dyn Fn(&ty::VariantDef, &[(String, Ty<'tcx>)]) -> bool;
 
+/// What `copy`, a copy `copy_parts` makes, copies: `x` of `{ ...x }`, of
+/// `x.slice()`, or of `x == null ? x : <either>`; else nothing. What a
+/// temporary holding it is named by, as it would be holding `x` (ADR 0569,
+/// #1923): `at` of `marks.at`'s copy, not `value`.
+pub(in crate::lower) fn copied_source(copy: &Expr) -> Option<&Expr> {
+    match &copy.kind {
+        js::ExprKind::Object(props, _) => match &props[..] {
+            [Prop::Spread(source)] => Some(source),
+            _ => None,
+        },
+        js::ExprKind::Call(callee, args) if args.is_empty() => match &callee.kind {
+            js::ExprKind::Member(source, name) if name == "slice" => Some(source),
+            _ => None,
+        },
+        js::ExprKind::Cond(test, source, copied) => match &test.kind {
+            js::ExprKind::Binary(Op::LooseEq, tested, null)
+                if matches!(null.kind, js::ExprKind::Null)
+                    && tested.kind == source.kind
+                    && copied_source(copied).is_some_and(|inner| inner.kind == source.kind) =>
+            {
+                Some(source)
+            }
+            _ => None,
+        },
+        _ => None,
+    }
+}
+
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The dictionary of `ty: Copy` this function was given: of a `T:
     /// Copy`, `TCopy`; of a trait that extends it, `trait Copied: Copy`,

@@ -1,4 +1,3 @@
-//@ library-differs
 // A `Copy` value a `Box` holds, written whole, `*b += v` or `*b = v`: the
 // box's value is the object itself, so the write changes it in place, where
 // a variable's write is the variable given another. A copy read out of it

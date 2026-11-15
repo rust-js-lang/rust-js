@@ -1906,3 +1906,48 @@ Rust's behavior. What holds it: crate pair
 `library_clone_through_a_supertrait` against native, metamorphic's library
 rewrite of corpus case `copy_through_a_supertrait.rs`; mutations
 `supertrait-impls-uncopied` and `used-defaults-uncopied`.
+
+## Amendment: what nothing else holds isn't copied, and a copy is named as what it copies (2026-11-15, #1923)
+
+With every corpus case built as a library on each push (#1920), four
+cases' library JS differed from their program's by a copy no one needed,
+or by a name a copy cost (`//@ library-differs`):
+
+- **A literal**, `let bytes = *b"abc%20";`: MIR reads it through a
+  constant pointer, which `points_at_stored` took for what the library
+  stores, so its JS was `[97, 98, 99, 37, 50, 48].slice()`. A literal's
+  constant is written where it's read (`mir_const`), a value nothing else
+  holds: a constant points at what's stored only where it's a static's,
+  a named constant's, or a promoted reference's to one or to what holds
+  one (`constant_stored`).
+- **A new box**, `let before = *p;` of `p = Box::new(Point { .. })`:
+  any function's result was taken to point at what's stored; a box
+  `Box::new` made holds only what it's given, now its owner's alone.
+- **A constant a `for` loop only steps**, `for shape in SHAPES`, of
+  `&str`s: given to `into_iter` was escaping, so its JS was `for (const
+  shape of SHAPES.slice())`. An array's `into_iter` whose iterator only
+  `Iterator::next` is given, through `&mut` and its reborrows, moved on
+  to locals that are, of items no part of which is an object, gives out
+  only its items, none an object a copy keeps apart (`array_only_stepped`).
+  Of items that are objects, `POINTS`, each is still copied; and one lent
+  to any other call, which may keep it, is.
+- **A copy a temporary holds** was named by its role, `const value$1 =
+  marks.at == null ? marks.at : { ...marks.at };`, where the read alone
+  is `const at = marks.at;`. Tidy names a temporary of a copy as of what
+  it copies, which copies.rs says of its own forms (`copied_source`):
+  `at`.
+
+What a read leaves to the program's rule, `copy_if_needed`, still copies
+as its program does: a `static mut`'s array a loop's body changes,
+`COUNTS.slice()`, and a cell's. Case of
+[0262](0262-when-rust-and-js-disagree.md): none, the same values as
+before, nothing else holding what's no longer copied. What holds it:
+corpus cases `slice_to_owned`, `str_mut`, `sort_stable_seen` and
+`boxed_copy_written_whole`, no longer `library-differs`, and the new
+`stored_arrays_stepped.rs` against native; `test/library-kept-copies.test.ts`'s
+"a library's literal, new box and constant a loop only steps", its
+items given out and changed by JS, and its copy's name; mutations
+`stored-literal-stored`, `stored-new-box-stored`,
+`stored-stepped-array-escapes`, `stored-stepped-objects-shared`,
+`stored-stepped-by-anything`, `copy-named-value` and
+`copied-source-of-an-option-unread`.

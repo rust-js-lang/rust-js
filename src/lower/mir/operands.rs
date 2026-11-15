@@ -106,7 +106,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // Of what a library stores, where it leaves the read, a copy
                 // of its own, its objects' too (#1907).
                 let stored = matches!(operand, Operand::Copy(place) if self.stored_copied(ty)
-                    && self.reads_stored(state.body, *place)
+                    && self.reads_stored(state.body, state.facts.promoted(), *place)
                     && self.stored_read_escapes(state.body, state.location(), &|op| op.place() == operand.place()));
                 Ok(Value::Expr(match stored {
                     true => self.copy_stored(e, ty),
@@ -710,7 +710,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// The static a constant points to the start of: `&LOG`, a promoted
     /// `&STATIC`, `&raw mut COUNT`.
-    pub(super) fn const_static(&self, c: &ConstOperand<'tcx>) -> Option<rustc_span::def_id::DefId> {
+    pub(in crate::lower) fn const_static(&self, c: &ConstOperand<'tcx>) -> Option<rustc_span::def_id::DefId> {
         let value = match c.const_ {
             Const::Val(value, _) => value,
             Const::Unevaluated(uv, _) if uv.promoted.is_some() => {

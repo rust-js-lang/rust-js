@@ -154,6 +154,14 @@ pub(in crate::lower::mir::tidy) fn readable_temporaries(
                         {
                             vec![field.clone()]
                         }
+                        // A copy of one, as it's named (#1923).
+                        (None, _)
+                            if let Some(ExprKind::Member(_, field) | ExprKind::OptionalMember(_, field)) =
+                                crate::lower::copies::copied_source(value).map(|source| &source.kind)
+                                && !is_temporary(field) =>
+                        {
+                            vec![field.clone()]
+                        }
                         (None, _) => suggested.get(name.as_str()).cloned().unwrap_or_default(),
                     };
                     // Else what made its value suggests, its call's name

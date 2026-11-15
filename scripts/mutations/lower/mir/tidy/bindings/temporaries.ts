@@ -125,4 +125,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^(boxed_option_unwraps|option_iterator_of_generic_items|blanket_iterator_trait|interpreter).rs$"],
     snapshots: true,
   },
+  {
+    name: "copy-named-value",
+    breaks: "a copy a temporary holds is named by its role, `const value$1 = marks.at == null ? ..`, not as what it copies, `at` (#1923)",
+    file: "src/lower/mir/tidy/bindings/temporaries.rs",
+    find: "                                crate::lower::copies::copied_source(value).map(|source| &source.kind)\n",
+    replace: "                                None::<&Expr>.map(|source| &source.kind)\n",
+    tests: ["test/library-kept-copies.test.ts", "-t", "literal, new box and constant"],
+  },
 ];

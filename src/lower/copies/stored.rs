@@ -22,6 +22,9 @@ use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::mir::{self, Operand, Rvalue, StatementKind, TerminatorKind};
 use rustc_middle::ty::{self, Ty};
 
+/// A body's promoted constants, whose bodies a promoted reference reads.
+type Promoted<'tcx> = rustc_index::IndexVec<mir::Promoted, mir::Body<'tcx>>;
+
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Does a library hand out a copy of a stored `Copy` value of `ty`, a
     /// plain object or array, or one holding one: a struct's, an enum's
@@ -72,12 +75,53 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `RefCell`'s guard's, an `Rc`'s, or a function's result, which may
     /// be any; not a parameter's, a closure's capture's, nor a local's,
     /// whose owner decides.
-    pub(in crate::lower) fn reads_stored(&self, body: &mir::Body<'tcx>, place: mir::Place<'tcx>) -> bool {
+    pub(in crate::lower) fn reads_stored(
+        &self,
+        body: &mir::Body<'tcx>,
+        promoted: &Promoted<'tcx>,
+        place: mir::Place<'tcx>,
+    ) -> bool {
         matches!(place.projection.first(), Some(mir::ProjectionElem::Deref))
-            && self.points_at_stored(body, place.local, 0)
+            && self.points_at_stored((body, promoted), place.local, 0)
     }
 
-    fn points_at_stored(&self, body: &mir::Body<'tcx>, pointer: mir::Local, depth: usize) -> bool {
+    /// Is what constant `c` points at what the library stores: a static's,
+    /// a named constant's, a promoted reference's to one or to what holds
+    /// one, `&LOG` or `&Some(ORIGIN)`; not a literal's, `b"abc%20"`'s or a
+    /// promoted `&[1, 2]`'s, which `mir_const` writes in place where it's
+    /// read, each read a value nothing else holds (#1923).
+    fn constant_stored(&self, promoted: &Promoted<'tcx>, c: &mir::ConstOperand<'tcx>, depth: usize) -> bool {
+        if depth > 8 || self.const_static(c).is_some() {
+            return true;
+        }
+        match c.const_ {
+            mir::Const::Val(..) => false,
+            mir::Const::Unevaluated(uv, _) => match uv.promoted {
+                // Of what the promoted body reads, each constant.
+                Some(index) => promoted[index].basic_blocks.iter().any(|data| {
+                    data.statements.iter().any(|statement| match &statement.kind {
+                        StatementKind::Assign(assign) => match &assign.1 {
+                            Rvalue::Use(Operand::Constant(c), _) => self.constant_stored(promoted, c, depth + 1),
+                            Rvalue::Aggregate(_, ops) => ops.iter().any(
+                                |op| matches!(op, Operand::Constant(c) if self.constant_stored(promoted, c, depth + 1)),
+                            ),
+                            _ => false,
+                        },
+                        _ => false,
+                    })
+                }),
+                None => true,
+            },
+            mir::Const::Ty(..) => true,
+        }
+    }
+
+    fn points_at_stored(
+        &self,
+        (body, promoted): (&mir::Body<'tcx>, &Promoted<'tcx>),
+        pointer: mir::Local,
+        depth: usize,
+    ) -> bool {
         if depth > 16 {
             return true;
         }
@@ -95,13 +139,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     continue;
                 }
                 stored |= match rvalue {
-                    Rvalue::ThreadLocalRef(_) | Rvalue::Use(Operand::Constant(_), _) => true,
+                    Rvalue::ThreadLocalRef(_) => true,
+                    Rvalue::Use(Operand::Constant(c), _) => self.constant_stored(promoted, c, 0),
                     Rvalue::Use(Operand::Copy(p) | Operand::Move(p), _) | Rvalue::CopyForDeref(p) => {
-                        p.projection.is_empty() && self.points_at_stored(body, p.local, depth + 1)
+                        p.projection.is_empty() && self.points_at_stored((body, promoted), p.local, depth + 1)
                     }
-                    Rvalue::Ref(_, _, p) | Rvalue::RawPtr(_, p) => self.reads_stored_at(body, *p, depth),
+                    Rvalue::Ref(_, _, p) | Rvalue::RawPtr(_, p) => self.reads_stored_at((body, promoted), *p, depth),
                     Rvalue::Cast(_, Operand::Copy(p) | Operand::Move(p), _) => {
-                        p.projection.is_empty() && self.points_at_stored(body, p.local, depth + 1)
+                        p.projection.is_empty() && self.points_at_stored((body, promoted), p.local, depth + 1)
                     }
                     _ => false,
                 };
@@ -115,25 +160,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 && destination.local == pointer
                 && destination.projection.is_empty()
             {
-                stored |= self.call_points_at_stored(body, func, args, depth);
+                stored |= self.call_points_at_stored((body, promoted), func, args, depth);
             }
         }
         stored
     }
 
     /// Of a borrow of `place`: a part of what a stored pointer points at.
-    fn reads_stored_at(&self, body: &mir::Body<'tcx>, place: mir::Place<'tcx>, depth: usize) -> bool {
+    fn reads_stored_at(&self, at: (&mir::Body<'tcx>, &Promoted<'tcx>), place: mir::Place<'tcx>, depth: usize) -> bool {
         matches!(place.projection.first(), Some(mir::ProjectionElem::Deref))
-            && self.points_at_stored(body, place.local, depth + 1)
+            && self.points_at_stored(at, place.local, depth + 1)
     }
 
     /// Whether what a call gives points at what the library stores: a
     /// `RefCell`'s guard's, an `Rc`'s or an `Arc`'s deref, a cell's
     /// pointer; a `Vec`'s, a `String`'s or a `Box`'s deref or index, as
-    /// what it's given is; and any other function's, which may give any.
+    /// what it's given is; never a new box's, `Box::new`'s; and any other
+    /// function's, which may give any.
     fn call_points_at_stored(
         &self,
-        body: &mir::Body<'tcx>,
+        (body, promoted): (&mir::Body<'tcx>, &Promoted<'tcx>),
         func: &Operand<'tcx>,
         args: &[rustc_span::Spanned<Operand<'tcx>>],
         depth: usize,
@@ -142,6 +188,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let Some((callee, _)) = func.const_fn_def() else {
             return true;
         };
+        // A box `Box::new` makes holds what it's given, which only its owner
+        // holds now, never what the library stores (#1923).
+        if crate::lower::recognition::is_std_def(tcx, callee, StdItem::BoxNew) {
+            return false;
+        }
         let derefs = tcx.trait_of_assoc(callee).is_some_and(|tr| {
             [LangItem::Deref, LangItem::DerefMut, LangItem::Index, LangItem::IndexMut]
                 .into_iter()
@@ -163,7 +214,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Of what it's given, a pointer to the `Vec`, as it is.
         match args.first().map(|arg| &arg.node) {
             Some(Operand::Copy(p) | Operand::Move(p)) if p.projection.is_empty() => {
-                self.points_at_stored(body, p.local, depth + 1)
+                self.points_at_stored((body, promoted), p.local, depth + 1)
             }
             _ => true,
         }
@@ -225,12 +276,114 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
         }
         match &data.terminator().kind {
-            TerminatorKind::Call { func, args, .. } => {
+            TerminatorKind::Call {
+                func,
+                args,
+                destination,
+                ..
+            } => {
                 let index = args.iter().position(|arg| read(&arg.node));
-                !index.is_some_and(|index| self.dictionary_param(body, func, index))
+                !index.is_some_and(|index| {
+                    self.dictionary_param(body, func, index)
+                        || (index == 0 && self.array_only_stepped(body, func, *destination))
+                })
             }
             _ => true,
         }
+    }
+
+    /// Is a call of `func` an array's `into_iter`, of items no part of
+    /// which is an object, whose iterator, `destination`, only `next`
+    /// steps, as a `for` loop's does: what leaves the array is its items,
+    /// none of them an object a copy would keep apart (#1923).
+    fn array_only_stepped(&self, body: &mir::Body<'tcx>, func: &Operand<'tcx>, destination: mir::Place<'tcx>) -> bool {
+        let tcx = self.tcx;
+        let Some((callee, generic_args)) = func.const_fn_def() else {
+            return false;
+        };
+        if !tcx.is_lang_item(callee, LangItem::IntoIterIntoIter) {
+            return false;
+        }
+        let ty::Array(item, _) = *generic_args.type_at(0).kind() else {
+            return false;
+        };
+        !self.holds_plain_object(item, 0)
+            && destination.projection.is_empty()
+            && self.only_stepped(body, destination.local, 0)
+    }
+
+    /// Does what `local` holds leave `body` only by `Iterator::next`: moved
+    /// on to a local that does, lent `&mut` to one only `next` is given,
+    /// dropped?
+    fn only_stepped(&self, body: &mir::Body<'tcx>, local: mir::Local, depth: usize) -> bool {
+        if depth > 4 {
+            return false;
+        }
+        uses(body, local)
+            .into_iter()
+            .all(|location| match body.stmt_at(location) {
+                rustc_data_structures::either::Either::Left(statement) => match &statement.kind {
+                    StatementKind::PlaceMention(_) | StatementKind::FakeRead(_) => true,
+                    StatementKind::Assign(assign) => match &**assign {
+                        (dest, _) if dest.local == local && dest.projection.is_empty() => true,
+                        (dest, Rvalue::Use(Operand::Move(p) | Operand::Copy(p), _))
+                            if p.as_local() == Some(local) && dest.projection.is_empty() =>
+                        {
+                            self.only_stepped(body, dest.local, depth + 1)
+                        }
+                        (dest, Rvalue::Ref(_, mir::BorrowKind::Mut { .. }, p))
+                            if p.as_local() == Some(local) && dest.projection.is_empty() =>
+                        {
+                            self.only_given_next(body, dest.local, 0)
+                        }
+                        _ => false,
+                    },
+                    _ => false,
+                },
+                rustc_data_structures::either::Either::Right(terminator) => match &terminator.kind {
+                    TerminatorKind::Drop { place, .. } => place.as_local() == Some(local),
+                    TerminatorKind::Call { destination, .. } => *destination == mir::Place::from(local),
+                    _ => false,
+                },
+            })
+    }
+
+    /// Is `reference`, a `&mut` of an iterator, only given to
+    /// `Iterator::next`?
+    fn only_given_next(&self, body: &mir::Body<'tcx>, reference: mir::Local, depth: usize) -> bool {
+        if depth > 4 {
+            return false;
+        }
+        uses(body, reference).into_iter().all(|location| match body.stmt_at(location) {
+            rustc_data_structures::either::Either::Left(statement) => match &statement.kind {
+                StatementKind::PlaceMention(_) | StatementKind::FakeRead(_) => true,
+                StatementKind::Assign(assign) => match &**assign {
+                    (dest, _) if dest.local == reference && dest.projection.is_empty() => true,
+                    // A reborrow of it, `&mut (*r)`, as a `for` loop's is.
+                    (dest, Rvalue::Ref(_, mir::BorrowKind::Mut { .. }, p))
+                        if p.local == reference && p.projection[..] == [mir::ProjectionElem::Deref] && dest.projection.is_empty() =>
+                    {
+                        self.only_given_next(body, dest.local, depth + 1)
+                    }
+                    _ => false,
+                },
+                _ => false,
+            },
+            rustc_data_structures::either::Either::Right(terminator) => match &terminator.kind {
+                TerminatorKind::Call {
+                    func,
+                    args,
+                    destination,
+                    ..
+                } => {
+                    destination.local != reference
+                        && func.const_fn_def().is_some_and(|(callee, _)| self.tcx.is_lang_item(callee, LangItem::IteratorNext))
+                        && args.len() == 1
+                        && matches!(&args[0].node, Operand::Copy(p) | Operand::Move(p) if p.as_local() == Some(reference))
+                }
+                _ => false,
+            },
+        })
     }
 
     /// Is `kind` an `Option`'s `Some`, which is its value (ADR 0030)?
@@ -307,12 +460,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             }
             match &data.terminator().kind {
-                TerminatorKind::Call { func, args, .. } => {
+                TerminatorKind::Call {
+                    func,
+                    args,
+                    destination,
+                    ..
+                } => {
                     for (index, arg) in args.iter().enumerate() {
                         if let Operand::Copy(p) | Operand::Move(p) = &arg.node
                             && p.local == local
                             && !part_read(p)
-                            && !(p.projection.is_empty() && self.dictionary_param(body, func, index))
+                            && !(p.projection.is_empty()
+                                && (self.dictionary_param(body, func, index)
+                                    || (index == 0 && self.array_only_stepped(body, func, *destination))))
                         {
                             return true;
                         }
@@ -355,6 +515,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         matches!(param.kind(), ty::Adt(adt, _) if bindings::is_dictionary(tcx, adt.did()))
     }
+}
+
+/// Each place of `body` that uses `local`, its storage's markers and its
+/// debug name aside.
+fn uses(body: &mir::Body<'_>, local: mir::Local) -> Vec<mir::Location> {
+    struct Uses(mir::Local, Vec<mir::Location>);
+    impl<'tcx> mir::visit::Visitor<'tcx> for Uses {
+        fn visit_local(&mut self, local: mir::Local, context: mir::visit::PlaceContext, location: mir::Location) {
+            if local == self.0 && !matches!(context, mir::visit::PlaceContext::NonUse(_)) {
+                self.1.push(location);
+            }
+        }
+    }
+    let mut found = Uses(local, Vec::new());
+    mir::visit::Visitor::visit_body(&mut found, body);
+    found.1
 }
 
 fn ty_args<'tcx>(ty: Ty<'tcx>) -> ty::GenericArgsRef<'tcx> {

@@ -1,4 +1,3 @@
-//@ library-differs
 // A `&mut str` written through, as `make_ascii_uppercase` writes one: of a
 // `String`, a `Box<str>`, an item, a range of one, and a part `get_mut`
 // and `split_at_mut` give, each the same bytes changed in place.

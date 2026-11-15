@@ -33,25 +33,25 @@ export const Ipv4Addr = {
     return ipv4Addr.octets.slice()[0] === 127;
   },
   isPrivate(ipv4Addr) {
-    const value = ipv4Addr.octets.slice();
-    if (value[0] === 10) {
+    const octets = ipv4Addr.octets.slice();
+    if (octets[0] === 10) {
       return true;
     }
-    if (value[0] === 172) {
-      const b = value[1];
+    if (octets[0] === 172) {
+      const b = octets[1];
       if (b >= 16) {
         if (b <= 31) {
           return true;
         }
       }
-    } else if (value[0] === 192) {
-      return value[1] === 168;
+    } else if (octets[0] === 192) {
+      return octets[1] === 168;
     }
     return false;
   },
   isLinkLocal(ipv4Addr) {
-    const value = ipv4Addr.octets.slice();
-    return value[0] === 169 && value[1] === 254;
+    const octets = ipv4Addr.octets.slice();
+    return octets[0] === 169 && octets[1] === 254;
   },
   isMulticast(ipv4Addr) {
     const value = ipv4Addr.octets.slice()[0];
@@ -64,18 +64,18 @@ export const Ipv4Addr = {
     );
   },
   isDocumentation(ipv4Addr) {
-    const value = ipv4Addr.octets.slice();
-    if (value[0] === 192) {
-      if (value[1] === 0) {
-        return value[2] === 2;
+    const octets = ipv4Addr.octets.slice();
+    if (octets[0] === 192) {
+      if (octets[1] === 0) {
+        return octets[2] === 2;
       }
-    } else if (value[0] === 198) {
-      if (value[1] === 51) {
-        return value[2] === 100;
+    } else if (octets[0] === 198) {
+      if (octets[1] === 51) {
+        return octets[2] === 100;
       }
-    } else if (value[0] === 203) {
-      if (value[1] === 0) {
-        return value[2] === 113;
+    } else if (octets[0] === 203) {
+      if (octets[1] === 0) {
+        return octets[2] === 113;
       }
     }
     return false;
@@ -216,23 +216,23 @@ export const Ipv6Addr = {
     }
   },
   toIpv4Mapped(ipv6Addr) {
-    const value = ipv6Addr.octets.slice();
-    if (value[0] === value[1]) {
-      if (value[0] === 0) {
-        if (value[2] === value[3]) {
-          if (value[2] === 0) {
-            if (value[4] === value[5]) {
-              if (value[4] === 0) {
-                if (value[6] === value[7]) {
-                  if (value[6] === 0) {
-                    if (value[8] === value[9]) {
-                      if (value[8] === 0) {
-                        if (value[10] === value[11]) {
-                          if (value[10] === 255) {
-                            const a = value[12];
-                            const b = value[13];
-                            const c = value[14];
-                            const d = value[15];
+    const octets = ipv6Addr.octets.slice();
+    if (octets[0] === octets[1]) {
+      if (octets[0] === 0) {
+        if (octets[2] === octets[3]) {
+          if (octets[2] === 0) {
+            if (octets[4] === octets[5]) {
+              if (octets[4] === 0) {
+                if (octets[6] === octets[7]) {
+                  if (octets[6] === 0) {
+                    if (octets[8] === octets[9]) {
+                      if (octets[8] === 0) {
+                        if (octets[10] === octets[11]) {
+                          if (octets[10] === 255) {
+                            const a = octets[12];
+                            const b = octets[13];
+                            const c = octets[14];
+                            const d = octets[15];
                             return { octets: [a, b, c, d] };
                           }
                         }

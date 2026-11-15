@@ -1,5 +1,4 @@
 //@ native: wasm32
-//@ library-differs
 // A stable sort whose comparison can be seen, one that counts or prints,
 // is std's driftsort step for step (#925): each comparison std asks, in its
 // order, and the order it leaves (`sort_stable_unwinds` panics in it).

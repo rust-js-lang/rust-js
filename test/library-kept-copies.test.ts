@@ -69,3 +69,84 @@ pub fn posted() {
   expect(js).toContain("decoder.decode(undefined, STREAMING)");
   expect(js).toContain("postMessage({ ...SAVED })");
 }, underLoad(300_000));
+
+// What a library reads that nothing else holds or can reach, a literal's
+// array, `*b"ab"`, a box `Box::new` made, and a constant a `for` loop only
+// steps through, of items no part of which is an object, isn't copied: no
+// one else holds what's read (#1923). A constant whose items are objects,
+// given out item by item, still is. A copy a temporary holds is named as
+// what it copies.
+test("a library's literal, new box and constant a loop only steps are read as they are, and its objects given out copies", async () => {
+  const dir = fixture("library-kept-unshared");
+  writeFileSync(join(dir, "lib.rs"), `#[derive(Clone, Copy, Debug)]
+pub struct Point {
+    pub x: i32,
+}
+
+pub const SHAPES: [&str; 3] = ["a", "b", "c"];
+pub const POINTS: [Point; 2] = [Point { x: 1 }, Point { x: 2 }];
+
+pub fn joined() -> String {
+    let mut out = String::new();
+    for shape in SHAPES {
+        out.push_str(shape);
+    }
+    out
+}
+
+pub fn points() -> Vec<Point> {
+    let mut all = Vec::new();
+    for point in POINTS {
+        all.push(point);
+    }
+    all
+}
+
+pub fn bytes() -> [u8; 2] {
+    let mut bytes = *b"ab";
+    bytes[1] = b'c';
+    bytes
+}
+
+pub fn boxed() -> Point {
+    let point = Box::new(Point { x: 5 });
+    let before = *point;
+    Point { x: before.x * 10 + point.x }
+}
+
+pub struct Marks {
+    pub at: std::cell::Cell<Option<Point>>,
+}
+
+pub fn shown(marks: &Marks) -> String {
+    format!("{:?}", marks.at.get())
+}
+
+pub fn skipped(shapes: &mut std::array::IntoIter<&'static str, 3>) {
+    shapes.next();
+}
+
+pub fn lent() -> String {
+    let mut shapes = SHAPES.into_iter();
+    skipped(&mut shapes);
+    let rest = [shapes.next(), shapes.next()];
+    format!("{rest:?}")
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "out", "lib.js"), "--library", "--manifest", join(dir, "out", "lib.manifest.json"),
+    "--", "--crate-name", "unshared", "--crate-type=lib", "--edition=2024"]);
+  const js = readFileSync(join(dir, "out", "lib.js"), "utf8");
+  const body = (name: string) => js.slice(js.indexOf(`export function ${name}(`)).split("\n}")[0]!;
+  expect([body("joined"), body("bytes"), body("boxed")].filter((text) => /\.slice\(\)|\.\.\./.test(text))).toEqual([]);
+  const lib = await import(join(dir, "out", "lib.js"));
+  expect(lib.joined()).toBe("abc");
+  const given = lib.points();
+  given[0].x = 9;
+  const made = lib.bytes();
+  made[0] = 0;
+  expect([lib.points(), lib.bytes(), lib.boxed()]).toEqual([[{ x: 1 }, { x: 2 }], [97, 99], { x: 55 }]);
+  // An iterator lent to a call but `next`, which may keep it: of a copy.
+  expect([body("lent").includes("SHAPES.slice()"), lib.lent()]).toEqual([true, '[Some("b"), Some("c")]']);
+  // A copy held to be read again is named as what it copies, the field.
+  expect(body("shown")).toContain("const at = marks.at == null ? marks.at : { ...marks.at };");
+}, underLoad(300_000));
