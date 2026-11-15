@@ -10,6 +10,7 @@ use crate::lower::representation::NoneForm;
 
 mod defined;
 mod field_reads;
+mod items;
 mod lends;
 mod one_none;
 
@@ -652,7 +653,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// The edge of a switch on `flag` that `local` is `Some` on: of a test
     /// `js::truthy(local)` or `local.is_some()`, its true edge; of
-    /// `local.is_none()`, its false one; of `discriminant(local)`, `Some`'s.
+    /// `local.is_none()`, its false one; of `discriminant(local)`, `Some`'s;
+    /// of `discriminant(js::classify(local))`, a variant's neither
+    /// `undefined` nor `null` (`classified_present_edge`).
     fn present_edge(
         &self,
         state: &State<'_, 'tcx>,
@@ -696,6 +699,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     },
                 };
                 (self.tested_local(state, &given.node)? == local).then_some(present)
+            }
+            // A variant's of `k = js::classify(local)` that isn't `undefined`
+            // or `null`, `if let Kind::Function(_) = js::classify(exports)`.
+            [Write::Assign(Rvalue::Discriminant(of))] if of.projection.is_empty() && of.local != local => {
+                self.classified_present_edge(state, of.local, targets, local)
             }
             // `Some`'s discriminant, 1, `None`'s 0 (`Option`'s variants).
             [Write::Assign(Rvalue::Discriminant(of))] if of.projection.is_empty() && of.local == local => {

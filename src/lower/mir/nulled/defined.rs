@@ -46,19 +46,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // `Kind::Undefined`'s is one of them, of `Kind::Undefined |
             // Kind::Null` too, and none of them goes there.
             [Write::Assign(Rvalue::Discriminant(of))] if of.projection.is_empty() => {
-                let made = self.whole_writes(state, of.local)?;
-                let [Write::Call(_, func, [given])] = made.as_slice() else {
-                    return None;
-                };
-                let (callee, _) = func.const_fn_def()?;
-                if !crate::lower::recognition::is_js_classify(self.tcx, callee)
-                    || self.tested_local(state, &given.node)? != local
-                {
-                    return None;
-                }
-                let ty::Adt(kind, _) = state.body.local_decls[of.local].ty.kind() else {
-                    return None;
-                };
+                let kind = self.classified(state, of.local, local)?;
                 let undefined = (kind.variants().iter_enumerated())
                     .find(|(_, v)| crate::lower::untagged::is_undefined(self.tcx, v))?
                     .0;
@@ -69,6 +57,61 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             _ => None,
         }
+    }
+
+    /// The `js::Kind` enum `k` is, where `k = js::classify(local)`, its one
+    /// write: a switch on `discriminant(k)` tests what `local` is, each
+    /// edge of the variants that reach it (ADR 0668).
+    pub(super) fn classified(&self, state: &State<'_, 'tcx>, k: Local, local: Local) -> Option<ty::AdtDef<'tcx>> {
+        let made = self.whole_writes(state, k)?;
+        let [Write::Call(_, func, [given])] = made.as_slice() else {
+            return None;
+        };
+        let (callee, _) = func.const_fn_def()?;
+        if !crate::lower::recognition::is_js_classify(self.tcx, callee)
+            || self.tested_local(state, &given.node)? != local
+        {
+            return None;
+        }
+        let ty::Adt(kind, _) = state.body.local_decls[k].ty.kind() else {
+            return None;
+        };
+        Some(*kind)
+    }
+
+    /// The edge of a switch on `discriminant(k)`, `k = js::classify(local)`,
+    /// that only values neither `undefined` nor `null` take: a variant's
+    /// that isn't `Kind::Undefined` or `Kind::Null` (`untagged::is_nullish`),
+    /// `if let Kind::Function(_) = js::classify(exports)`'s, no other value
+    /// going there; or `otherwise`, where both of those are named and go
+    /// elsewhere. Of several, the one that leads to the block lowered now.
+    pub(super) fn classified_present_edge(
+        &self,
+        state: &State<'_, 'tcx>,
+        k: Local,
+        targets: &mir::SwitchTargets,
+        local: Local,
+    ) -> Option<BasicBlock> {
+        let kind = self.classified(state, k, local)?;
+        let values: Vec<(u128, BasicBlock)> = targets.iter().collect();
+        let nullish: Vec<u128> = (kind.variants().iter_enumerated())
+            .filter(|(_, v)| crate::lower::untagged::is_nullish(self.tcx, v))
+            .map(|(at, _)| kind.discriminant_for_variant(self.tcx, at).val)
+            .collect();
+        let otherwise = targets.otherwise();
+        // Each block a value goes to, but a nullish one's or `otherwise`'s.
+        let mut edges: Vec<BasicBlock> = (values.iter())
+            .map(|&(_, to)| to)
+            .filter(|&to| to != otherwise && values.iter().all(|&(v, at)| at != to || !nullish.contains(&v)))
+            .collect();
+        let named = |v: u128| values.iter().any(|&(at, _)| at == v);
+        if nullish.len() == 2 && nullish.iter().all(|&v| named(v)) && values.iter().all(|&(_, to)| to != otherwise) {
+            edges.push(otherwise);
+        }
+        let dominators = state.body.basic_blocks.dominators();
+        (edges.iter().copied())
+            .find(|&edge| dominators.dominates(edge, state.at))
+            .or_else(|| edges.first().copied())
     }
 
     /// Whether `side`, a test's operand, is a `None` made for it: a local

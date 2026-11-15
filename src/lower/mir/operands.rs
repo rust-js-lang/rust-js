@@ -96,9 +96,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Value::Expr(e)
                 if matches!(e.kind, js::ExprKind::Var(_))
                     && let Some(place) = operand.place()
-                    && place.projection.is_empty()
                     && self.option_of(operand.ty(&state.body.local_decls, self.tcx)).is_some()
-                    && self.proved_present(state, place.local) =>
+                    && (place.projection.is_empty() && self.proved_present(state, place.local)
+                        // Or what a closure's `with` lends it of a thread-local
+                        // that's `Some` wherever it runs (`present_item_read`,
+                        // #1933 step 4 (G)).
+                        || self.present_item_read(state, place)) =>
             {
                 Value::Expr(e.proved())
             }

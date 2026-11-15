@@ -27,6 +27,7 @@
 //! write stores as it's given: `?? null` only where a read can tell.
 
 mod js_nones;
+mod present_items;
 mod read_alike;
 
 pub(in crate::lower) use js_nones::{AnyValue, JsNones, any_value, one_none, optional_argument, returns_one_none};
@@ -58,6 +59,9 @@ pub(in crate::lower) struct NulledParams {
     alike: IndexSet<DefId>,
     /// The places that may hold a `None` JS gave, `null` (#1840).
     js_nones: JsNones,
+    /// The closures a `with` gives a thread-local `Some` wherever they run
+    /// (`present_items`, #1933 step 4 (G)).
+    given_present: IndexSet<DefId>,
 }
 
 /// What the bodies lowered so far found of them, `Settled`'s, which the
@@ -180,6 +184,7 @@ impl NulledParams {
             forwarded: forwarded.clone(),
             alike: read_alike::found(recognition, everywhere),
             js_nones: js_nones::found(recognition, everywhere, cell_borrows.pointers()),
+            given_present: present_items::found(recognition, everywhere),
         }
     }
 
@@ -188,6 +193,14 @@ impl NulledParams {
     /// write of it stores what it's given as it is, its `None` `null`.
     pub(in crate::lower) fn reads_alike(&self, key: DefId) -> bool {
         self.alike.contains(&key)
+    }
+
+    /// Whether `closure` is given, as its one parameter, by a `with` of a
+    /// thread-local that never changes, one a test proved `Some` where the
+    /// closure is made (`present_items`, #1933 step 4 (G)): what it reads
+    /// of it is `Some` wherever it runs.
+    pub(in crate::lower) fn given_present(&self, closure: DefId) -> bool {
+        self.given_present.contains(&closure)
     }
 
     /// The places that may hold a `None` JS gave, `null` (`js_nones`,

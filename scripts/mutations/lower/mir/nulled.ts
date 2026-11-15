@@ -720,4 +720,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-nullable-tests.test.ts", "-t", "a &mut lend that never takes a Some away"],
   },
+  {
+    name: "classified-present-edge-off",
+    breaks: "an arm of a switch on `js::classify(x)` that only a value neither `undefined` nor `null` takes proves nothing, so React's Flight register's `if let Kind::Function(_) = js::classify(exports) { register(exports.unwrap()) }` is `$unwrap(exports)` (#1933)",
+    file: "src/lower/mir/nulled.rs",
+    find: "                self.classified_present_edge(state, of.local, targets, local)\n",
+    replace: "                None\n",
+    tests: ["test/lowering-nullable-classified.test.ts", "-t", "classify arm neither undefined nor null"],
+  },
 ];

@@ -407,8 +407,8 @@ export const mutations: Mutation[] = [
     name: "proved-present-unread",
     breaks: "an Option a truthy test proved there is read as one that may be `undefined`, `return found ?? null` inside `if (found)` (#1902)",
     file: "src/lower/mir/operands.rs",
-    find: "                    && self.proved_present(state, place.local) =>\n",
-    replace: "                    && self.proved_present(state, place.local)\n                    && false =>\n",
+    find: "                    && (place.projection.is_empty() && self.proved_present(state, place.local)\n",
+    replace: "                    && (place.projection.is_empty() && self.proved_present(state, place.local) && false\n",
     tests: ["test/lowering-nullable-truthy.test.ts"],
   },
   {

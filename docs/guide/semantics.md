@@ -1970,7 +1970,11 @@ What JS sees of a crate:
   and an `Option` a test it's under says is there is written as it is,
   as is one a test says isn't `undefined`, `!matches!(js::classify(value),
   Kind::Undefined)` or `!js::strict_equals(value, None)`, its `null` a
-  `None`; a `matches!`'s test too, or a variable of one
+  `None`; a `matches!`'s test too, or a variable of one; an arm of
+  `js::classify(value)` that `undefined` and `null` never take,
+  `Kind::Function(_)`; and a thread-local of no interior mutability tested
+  `KEY.with(Option::is_some)` where a closure is made, read in it through
+  `with`'s parameter, `KEY.with(|k| k.unwrap())`
   ([0620](../decisions/0620-an-option-a-test-says-is-there.md), amended):
 
 ```rust

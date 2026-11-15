@@ -676,3 +676,61 @@ now none; `FormActionEventPlugin`'s pending status `action,`, as upstream,
 where it was `action ?? null`). It goes, with mutation nulled-kept-coalesced
 and the decision's answer; tidy's presence answers left are and-shown, of
 a test row, and the five unwraps of React's (#1933's removal).
+
+## Amendment: a classify arm, and a thread-local tested where a closure is made (2026-11-16, #1933 step 4 (G))
+
+An all-off regeneration of React's port, tidy's coalesce, unwrap and
+and-shown each off, left five hunks, each unwrap's, which MIR proved
+nothing of:
+
+- **An arm of `js::classify(x)` that only a value neither `undefined` nor
+  `null` takes proves `x` there** (`present_edge`'s
+  `classified_present_edge`, beside (D)'s `defined_edge`): a variant
+  that isn't `Kind::Undefined` or `Kind::Null` (`untagged::is_nullish`),
+  React's Flight register's `if let Kind::Function(_) =
+  js::classify(exports) { register_server_reference(exports.unwrap(), ..) }`,
+  no other value going to its block; or `otherwise`, where both are named
+  and go elsewhere. Four of the five; and ReactFlightServer's
+  resolveModel, whose `Kind::Array(items) => { let rendered =
+  rendered.unwrap(); .. }` was `const rendered$1 = $unwrap(rendered)`,
+  now passes `rendered`, as upstream does.
+- **A thread-local a test proved `Some` where a closure is made is `Some`
+  in the closure** (`nulled_params/present_items.rs`'s `given_present`,
+  asked by `mir/nulled/items.rs`' `present_item_read`): React DOM's
+  `localRequestAnimationFrame`, `Some(|cb| SCHEDULE_TIMEOUT.with(|s|
+  s.unwrap())(..))` made only where `SCHEDULE_TIMEOUT.with(Option::is_some)`
+  held, `scheduleTimeout(..)`. Sound only within the lead's limits (for
+  the user, 2026-11-16): the thread-local's type has no interior
+  mutability, rustc's `is_freeze`, so its initializer's value is every
+  read's, nothing setting it; the test is `KEY.with(Option::is_some)`'s
+  true edge or `is_none`'s false one, entered from the switch alone, on
+  every way to where the closure is made, or to where the closure it's
+  made in is; and the closure reads it only through `with`'s `&`
+  parameter, `*param` or a copy of it. A program has one thread
+  (`thread::spawn` is refused), so the value tested is the one read. A
+  `Cell` or `RefCell` thread-local, whose `set` or borrow changes it, and a
+  `static mut`, which any code writes, are unproved, each tested before
+  its closure is made and set to `None` after, the closure's `unwrap()`
+  panicking as Rust's does. The read being a copy, of an `Option` that's
+  `Copy` and so has no interior mutability, `is_freeze` decides no program
+  today: an `as_ref()` of one that isn't, `name.as_ref().unwrap()`, isn't
+  read so yet, and its mutation would survive, so it has none.
+
+Case of [0262](0262-when-rust-and-js-disagree.md): none, each value the
+same. Held by test/lowering-nullable-classified.test.ts (each arm, an arm
+`Kind::Null` shares, `otherwise` of `Kind::Null` alone, a test of another
+value; each run), test/lowering-nullable-present-items.test.ts (the
+closure made in such a closure, `is_none`'s false edge; unproved: one
+made on the `None` edge, one no test precedes, one `||` also reaches, a
+`Cell` inside), corpus case thread_local_tested_present_in_a_closure
+(native, both builds; the `Cell`, `RefCell` and `static mut` rows), and
+mutations `classified-present-edge-off`, `classified-present-otherwise-of-
+any-arms` (lower/mir/nulled*.ts), `present-items-undominated`,
+`present-items-is-none-edge-swapped`, `present-items-maker-unasked`
+(lower/analysis/nulled_params/present_items.ts) and
+`present-item-read-of-any-closure` (lower/mir/nulled/items.ts). With
+them, the all-off regeneration of React's port differs only by
+resolveModel's improvement: tidy's presence rewrites are left to three
+test rows MIR doesn't prove yet, a `Cell` thread-local's two `get()`s,
+a local lent `&mut` before its test, and a shared capture tested in its
+closure, each to be MIR's before the rewrites go.
