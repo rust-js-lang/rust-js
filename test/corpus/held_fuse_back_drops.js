@@ -3,7 +3,6 @@
 import {
   $exactLen,
   $iter,
-  $iterator,
   $live,
   $next,
   $nextBack,
@@ -12,10 +11,12 @@ import {
   $rangeNext,
   $rangeNextBack,
   $rangeNthBack,
+  $roomForHint,
   $unwindsOn,
   fuseDoubleEndedIterator_nextBack,
   fuseExactSizeIterator_len,
   iterator_fuse,
+  iterator_rev,
 } from "@rust-js/std";
 
 export function entry() {
@@ -80,16 +81,22 @@ function main() {
     len: (iterator) => $exactLen(countdownIterator_sizeHint(iterator)),
   };
   const back = Array.from(
-    $iterator(
-      pad($iter([1, 2, 3]), 2, { next: $next }, true),
-      (iterator) =>
-        padDoubleEndedIterator_nextBack(
-          iterator,
-          { next_back: $nextBack },
-          { len: (iterator) => iterator.len() },
-          true,
-        ),
-      true,
+    $roomForHint(
+      iterator_rev(
+        pad($iter([1, 2, 3]), 2, { next: $next }, true),
+        { next: padIterator_next },
+        {
+          next_back: (iterator) =>
+            padDoubleEndedIterator_nextBack(
+              iterator,
+              { next_back: $nextBack },
+              { len: (iterator) => iterator.len() },
+              true,
+            ),
+        },
+      ),
+      4,
+      false,
     ),
   );
   console.log(`[${back.join(", ")}]`);
@@ -127,16 +134,22 @@ function main() {
     }
   }
   const ranged = Array.from(
-    $iterator(
-      pad({ start: 0, end: 4 }, 0, { next: $rangeNext }, true),
-      (iterator) =>
-        padDoubleEndedIterator_nextBack(
-          iterator,
-          { next_back: $rangeNextBack, nthBack: $rangeNthBack },
-          { len: $rangeLen },
-          true,
-        ),
-      true,
+    $roomForHint(
+      iterator_rev(
+        pad({ start: 0, end: 4 }, 0, { next: $rangeNext }, true),
+        { next: padIterator_next },
+        {
+          next_back: (iterator) =>
+            padDoubleEndedIterator_nextBack(
+              iterator,
+              { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+              { len: $rangeLen },
+              true,
+            ),
+        },
+      ),
+      1,
+      false,
     ),
   );
   console.log(`[${ranged.join(", ")}]`);

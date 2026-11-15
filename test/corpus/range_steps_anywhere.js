@@ -8,10 +8,12 @@ import {
   $next,
   $rangeNext,
   $rangeNextBack,
+  $rangeNthBack,
   $roomFor,
   $roomForHint,
   $step,
   $stepBy,
+  iterator_rev,
 } from "@rust-js/std";
 
 export function entry() {
@@ -34,7 +36,11 @@ function main() {
   const start = 0;
   const value = $next($iterator({ start, end: 4294967295 }, $rangeNext).drop(4000000000));
   console.log(`${value == null ? "None" : `Some(${value})`}`);
-  const back = $iterator({ start: 0, end: 4294967295 }, $rangeNextBack);
+  const back = iterator_rev(
+    { start: 0, end: 4294967295 },
+    { next: $rangeNext },
+    { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+  );
   const step$1 = $step((1 << 30) >>> 0);
   const w = Array.from($roomForHint($stepBy(back, step$1), 4, false));
   console.log(`[${w.join(", ")}]`);

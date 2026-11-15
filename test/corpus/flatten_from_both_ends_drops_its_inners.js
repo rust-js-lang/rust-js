@@ -8,19 +8,19 @@ import {
   $collectDropping,
   $dropEach,
   $flattenEnds,
+  $foldOf,
   $held,
   $iter,
-  $knowing,
   $mapEnds,
   $next,
   $nextBack,
   $range,
-  $rev,
   $tryOf,
   flattenDoubleEndedIterator_nextBack,
   flattenDoubleEndedIterator_rfold,
   flattenDoubleEndedIterator_tryRfold,
   iterator_flatten,
+  iterator_rev,
 } from "@rust-js/std";
 
 export function entry() {
@@ -194,21 +194,22 @@ function main() {
 
   // Reversed, part-way.
   const firsts = $collectDropping(
-    $rev(
-      $knowing(
-        iterator_flatten(
-          [0, 3],
-          { next: sourceIterator_next },
-          intoIterator$1,
-          false,
-          undefined,
-          false,
-          sourceDrop_drop,
-          $dropEach(dDrop_drop),
-          dDrop_drop,
-          $dropEach(dDrop_drop),
-        ),
-        (iterator) =>
+    iterator_rev(
+      iterator_flatten(
+        [0, 3],
+        { next: sourceIterator_next },
+        intoIterator$1,
+        false,
+        undefined,
+        false,
+        sourceDrop_drop,
+        $dropEach(dDrop_drop),
+        dDrop_drop,
+        $dropEach(dDrop_drop),
+      ),
+      { next: $next, fold: $foldOf },
+      {
+        next_back: (iterator) =>
           flattenDoubleEndedIterator_nextBack(
             iterator,
             { next_back: sourceDoubleEndedIterator_nextBack },
@@ -222,8 +223,7 @@ function main() {
             $dropEach(dDrop_drop),
             dDrop_drop,
           ),
-        undefined,
-        (iterator, init, f, unwind, ends) =>
+        rfold: (iterator, init, f, unwind, ends) =>
           flattenDoubleEndedIterator_rfold(
             iterator,
             init,
@@ -241,8 +241,7 @@ function main() {
             $dropEach(dDrop_drop),
             dDrop_drop,
           ),
-        undefined,
-        (iterator, init, f, broke, unwind, ends) =>
+        tryRfold: (iterator, init, f, broke, unwind, ends) =>
           flattenDoubleEndedIterator_tryRfold(
             iterator,
             init,
@@ -263,7 +262,11 @@ function main() {
             $dropEach(dDrop_drop),
             dDrop_drop,
           ),
-      ),
+      },
+      (flatten) => {
+        flatten.return();
+      },
+      dDrop_drop,
     )
       .take(3)
       .map((d) => {
@@ -279,21 +282,22 @@ function main() {
     const intoIterator = intoIterator$1;
     boom = 30;
     const firsts = $collectDropping(
-      $rev(
-        $knowing(
-          iterator_flatten(
-            [0, 3],
-            { next: sourceIterator_next },
-            intoIterator,
-            false,
-            undefined,
-            false,
-            sourceDrop_drop,
-            $dropEach(dDrop_drop),
-            dDrop_drop,
-            $dropEach(dDrop_drop),
-          ),
-          (iterator) =>
+      iterator_rev(
+        iterator_flatten(
+          [0, 3],
+          { next: sourceIterator_next },
+          intoIterator,
+          false,
+          undefined,
+          false,
+          sourceDrop_drop,
+          $dropEach(dDrop_drop),
+          dDrop_drop,
+          $dropEach(dDrop_drop),
+        ),
+        { next: $next, fold: $foldOf },
+        {
+          next_back: (iterator) =>
             flattenDoubleEndedIterator_nextBack(
               iterator,
               { next_back: sourceDoubleEndedIterator_nextBack },
@@ -307,8 +311,7 @@ function main() {
               $dropEach(dDrop_drop),
               dDrop_drop,
             ),
-          undefined,
-          (iterator, init, f, unwind, ends) =>
+          rfold: (iterator, init, f, unwind, ends) =>
             flattenDoubleEndedIterator_rfold(
               iterator,
               init,
@@ -326,8 +329,7 @@ function main() {
               $dropEach(dDrop_drop),
               dDrop_drop,
             ),
-          undefined,
-          (iterator, init, f, broke, unwind, ends) =>
+          tryRfold: (iterator, init, f, broke, unwind, ends) =>
             flattenDoubleEndedIterator_tryRfold(
               iterator,
               init,
@@ -348,7 +350,11 @@ function main() {
               $dropEach(dDrop_drop),
               dDrop_drop,
             ),
-        ),
+        },
+        (flatten) => {
+          flatten.return();
+        },
+        dDrop_drop,
       )
         .take(1)
         .map((d) => {

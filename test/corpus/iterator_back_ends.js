@@ -2,7 +2,6 @@
 
 import {
   $iter,
-  $iterator,
   $next,
   $nextBack,
   $nextIf,
@@ -10,7 +9,9 @@ import {
   $range,
   $rangeNext,
   $rangeNextBack,
+  $roomForHint,
   iterator_peekable,
+  iterator_rev,
 } from "@rust-js/std";
 
 export function entry() {
@@ -34,7 +35,17 @@ function spanDoubleEndedIterator_nextBack(span) {
 function main() {
   const down = $range(1, 4).toReversed();
   const top = $range(250, 256).toReversed();
-  const own = Array.from($iterator([0, 3], spanDoubleEndedIterator_nextBack));
+  const own = Array.from(
+    $roomForHint(
+      iterator_rev(
+        [0, 3],
+        { next: spanIterator_next },
+        { next_back: spanDoubleEndedIterator_nextBack },
+      ),
+      4,
+      false,
+    ),
+  );
   console.log(`[${down.join(", ")}] [${top.join(", ")}] [${own.join(", ")}]`);
 
   const v = [10, 20, 30, 40];

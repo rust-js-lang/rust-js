@@ -13,14 +13,12 @@ import {
   $iter,
   $iterator,
   $jsIterator,
-  $knowing,
   $lazyChain,
   $next,
   $nextBack,
   $nthBack,
   $rangeInclusiveNext,
   $rangeInclusiveNextBack,
-  $rangeLen,
   $rangeNext,
   $rangeNextBack,
   $rangeNthBack,
@@ -34,9 +32,9 @@ import {
   mapDoubleEndedIterator_nextBack,
   mapDoubleEndedIterator_rfold,
   mapDoubleEndedIterator_tryRfold,
-  mapExactSizeIterator_len,
   mapIterator___iteratorGetUnchecked,
   revDoubleEndedIterator_nextBack,
+  revDoubleEndedIterator_rfold,
 } from "@rust-js/std";
 
 export function entry() {
@@ -207,6 +205,12 @@ function main() {
       getUnchecked: mapIterator___iteratorGetUnchecked,
     }),
   };
+  const mapIterator = {
+    next: $next,
+    fold: $foldOf,
+    getUnchecked: (iterator, i) =>
+      mapIterator___iteratorGetUnchecked(iterator, i, { next: $rangeNext }),
+  };
   const mapDoubleEndedIterator = {
     next_back: mapDoubleEndedIterator_nextBack,
     rfold: (iterator, init, f, unwind, ends) =>
@@ -295,19 +299,30 @@ function main() {
   );
   console.log(`${r.TAG === "Err"}`);
 
-  let s = $foldBack(
-    $rev(
-      $knowing(
-        iterator_map({ start: 0, end: 5 }, (n) => (n * 2) >>> 0, { next: $rangeNext }),
-        (iterator) =>
+  let s = revDoubleEndedIterator_rfold(
+    iterator_rev(
+      iterator_map({ start: 0, end: 5 }, (n) => (n * 2) >>> 0, { next: $rangeNext }),
+      mapIterator,
+      {
+        next_back: (iterator) =>
           mapDoubleEndedIterator_nextBack(iterator, {
             next_back: $rangeNextBack,
             nthBack: $rangeNthBack,
           }),
-        (iterator) => mapExactSizeIterator_len(iterator, { len: $rangeLen }),
-        undefined,
-        undefined,
-        (iterator, init, f, broke, unwind, ends) =>
+        rfold: (iterator, init, f, unwind, ends) =>
+          mapDoubleEndedIterator_rfold(
+            iterator,
+            init,
+            f,
+            { next: $rangeNext },
+            { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+            undefined,
+            undefined,
+            undefined,
+            unwind,
+            ends,
+          ),
+        tryRfold: (iterator, init, f, broke, unwind, ends) =>
           mapDoubleEndedIterator_tryRfold(
             iterator,
             init,
@@ -321,10 +336,11 @@ function main() {
             unwind,
             ends,
           ),
-      ),
+      },
     ),
     mk(),
     (s, n) => s + String(n),
+    mapIterator,
   );
   console.log(`${s}`);
   s = $foldBack(

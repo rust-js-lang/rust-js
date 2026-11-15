@@ -2,15 +2,15 @@
 
 import {
   $cleanup,
-  $closing,
   $exactLen,
   $filterEnds,
   $foldBack,
+  $foldOf,
   $held,
-  $iterator,
+  $knowing,
   $lent,
   $live,
-  $mapEnds,
+  $next,
   $nextBack,
   $nth,
   $rev,
@@ -18,7 +18,18 @@ import {
   $skipping,
   $stepByEnds,
   $taking,
+  $tryOf,
   $unwindsOn,
+  iterator_map,
+  iterator_rev,
+  mapDoubleEndedIterator_nextBack,
+  mapDoubleEndedIterator_rfold,
+  mapDoubleEndedIterator_tryRfold,
+  revDoubleEndedIterator_nextBack,
+  revDoubleEndedIterator_nthBack,
+  revDoubleEndedIterator_rfold,
+  revDoubleEndedIterator_tryRfold,
+  revExactSizeIterator_len,
 } from "@rust-js/std";
 
 export function entry() {
@@ -73,10 +84,14 @@ function countDoubleEndedIterator_rfold(count, init, f, dropB, dropF) {
     throw $unwindsOn(error);
   } finally {
     if ($live()) {
-      console.log(`drop ${count.at} ${count.end}`);
+      countDrop_drop(count);
     }
   }
   return result;
+}
+
+function countDrop_drop(count) {
+  console.log(`drop ${count.at} ${count.end}`);
 }
 
 function plainIterator_next(plain) {
@@ -104,26 +119,106 @@ function c() {
 }
 
 function main() {
+  const plainExactSizeIterator = { len: (iterator) => $exactLen(plainIterator_sizeHint(iterator)) };
+  const countExactSizeIterator = { len: (iterator) => $exactLen(countIterator_sizeHint(iterator)) };
+  const revDoubleEndedIterator = {
+    next_back: (iterator) =>
+      revDoubleEndedIterator_nextBack(iterator, {
+        next: plainIterator_next,
+        sizeHint: plainIterator_sizeHint,
+      }),
+    rfold: (iterator, init, f, unwind, ends) =>
+      revDoubleEndedIterator_rfold(
+        iterator,
+        init,
+        f,
+        { next: plainIterator_next, sizeHint: plainIterator_sizeHint },
+        undefined,
+        unwind,
+        ends,
+      ),
+    nthBack: (iterator, k) =>
+      revDoubleEndedIterator_nthBack(iterator, k, {
+        next: plainIterator_next,
+        sizeHint: plainIterator_sizeHint,
+      }),
+    tryRfold: (iterator, init, f, broke, unwind, ends) =>
+      revDoubleEndedIterator_tryRfold(
+        iterator,
+        init,
+        f,
+        { next: plainIterator_next, sizeHint: plainIterator_sizeHint },
+        $tryOf(broke),
+        undefined,
+        unwind,
+        ends,
+      ),
+  };
   console.log(
     `${$rev(
       $skipping(
-        $closing(
-          $iterator(
+        $knowing(
+          iterator_rev(
             c(),
-            countDoubleEndedIterator_nextBack,
-            false,
-            countIterator_next,
-            (it) => $exactLen(countIterator_sizeHint(it)),
-            countIterator_sizeHint,
-            countDoubleEndedIterator_rfold,
-            countDoubleEndedIterator_nthBack,
-            undefined,
-            undefined,
-            countIterator_nth,
+            { next: countIterator_next, sizeHint: countIterator_sizeHint, nth: countIterator_nth },
+            {
+              next_back: countDoubleEndedIterator_nextBack,
+              rfold: countDoubleEndedIterator_rfold,
+              nthBack: countDoubleEndedIterator_nthBack,
+            },
+            countDrop_drop,
           ),
-          (it) => {
-            console.log(`drop ${it.of.at} ${it.of.end}`);
-          },
+          (iterator) =>
+            revDoubleEndedIterator_nextBack(
+              iterator,
+              {
+                next: countIterator_next,
+                sizeHint: countIterator_sizeHint,
+                nth: countIterator_nth,
+              },
+              countDrop_drop,
+            ),
+          (iterator) => revExactSizeIterator_len(iterator, countExactSizeIterator, countDrop_drop),
+          (iterator, init, f, unwind, ends) =>
+            revDoubleEndedIterator_rfold(
+              iterator,
+              init,
+              f,
+              {
+                next: countIterator_next,
+                sizeHint: countIterator_sizeHint,
+                nth: countIterator_nth,
+              },
+              countDrop_drop,
+              unwind,
+              ends,
+            ),
+          (iterator, k) =>
+            revDoubleEndedIterator_nthBack(
+              iterator,
+              k,
+              {
+                next: countIterator_next,
+                sizeHint: countIterator_sizeHint,
+                nth: countIterator_nth,
+              },
+              countDrop_drop,
+            ),
+          (iterator, init, f, broke, unwind, ends) =>
+            revDoubleEndedIterator_tryRfold(
+              iterator,
+              init,
+              f,
+              {
+                next: countIterator_next,
+                sizeHint: countIterator_sizeHint,
+                nth: countIterator_nth,
+              },
+              $tryOf(broke),
+              countDrop_drop,
+              unwind,
+              ends,
+            ),
         ),
         2,
       ),
@@ -132,23 +227,68 @@ function main() {
   const rev = $held(
     $rev(
       $taking(
-        $closing(
-          $iterator(
+        $knowing(
+          iterator_rev(
             c(),
-            countDoubleEndedIterator_nextBack,
-            false,
-            countIterator_next,
-            (it) => $exactLen(countIterator_sizeHint(it)),
-            countIterator_sizeHint,
-            countDoubleEndedIterator_rfold,
-            countDoubleEndedIterator_nthBack,
-            undefined,
-            undefined,
-            countIterator_nth,
+            { next: countIterator_next, sizeHint: countIterator_sizeHint, nth: countIterator_nth },
+            {
+              next_back: countDoubleEndedIterator_nextBack,
+              rfold: countDoubleEndedIterator_rfold,
+              nthBack: countDoubleEndedIterator_nthBack,
+            },
+            countDrop_drop,
           ),
-          (it) => {
-            console.log(`drop ${it.of.at} ${it.of.end}`);
-          },
+          (iterator) =>
+            revDoubleEndedIterator_nextBack(
+              iterator,
+              {
+                next: countIterator_next,
+                sizeHint: countIterator_sizeHint,
+                nth: countIterator_nth,
+              },
+              countDrop_drop,
+            ),
+          (iterator) => revExactSizeIterator_len(iterator, countExactSizeIterator, countDrop_drop),
+          (iterator, init, f, unwind, ends) =>
+            revDoubleEndedIterator_rfold(
+              iterator,
+              init,
+              f,
+              {
+                next: countIterator_next,
+                sizeHint: countIterator_sizeHint,
+                nth: countIterator_nth,
+              },
+              countDrop_drop,
+              unwind,
+              ends,
+            ),
+          (iterator, k) =>
+            revDoubleEndedIterator_nthBack(
+              iterator,
+              k,
+              {
+                next: countIterator_next,
+                sizeHint: countIterator_sizeHint,
+                nth: countIterator_nth,
+              },
+              countDrop_drop,
+            ),
+          (iterator, init, f, broke, unwind, ends) =>
+            revDoubleEndedIterator_tryRfold(
+              iterator,
+              init,
+              f,
+              {
+                next: countIterator_next,
+                sizeHint: countIterator_sizeHint,
+                nth: countIterator_nth,
+              },
+              $tryOf(broke),
+              countDrop_drop,
+              unwind,
+              ends,
+            ),
         ),
         5,
       ),
@@ -167,23 +307,68 @@ function main() {
   console.log(
     `${$foldBack(
       $stepByEnds(
-        $closing(
-          $iterator(
+        $knowing(
+          iterator_rev(
             c(),
-            countDoubleEndedIterator_nextBack,
-            false,
-            countIterator_next,
-            (it) => $exactLen(countIterator_sizeHint(it)),
-            countIterator_sizeHint,
-            countDoubleEndedIterator_rfold,
-            countDoubleEndedIterator_nthBack,
-            undefined,
-            undefined,
-            countIterator_nth,
+            { next: countIterator_next, sizeHint: countIterator_sizeHint, nth: countIterator_nth },
+            {
+              next_back: countDoubleEndedIterator_nextBack,
+              rfold: countDoubleEndedIterator_rfold,
+              nthBack: countDoubleEndedIterator_nthBack,
+            },
+            countDrop_drop,
           ),
-          (it) => {
-            console.log(`drop ${it.of.at} ${it.of.end}`);
-          },
+          (iterator) =>
+            revDoubleEndedIterator_nextBack(
+              iterator,
+              {
+                next: countIterator_next,
+                sizeHint: countIterator_sizeHint,
+                nth: countIterator_nth,
+              },
+              countDrop_drop,
+            ),
+          (iterator) => revExactSizeIterator_len(iterator, countExactSizeIterator, countDrop_drop),
+          (iterator, init, f, unwind, ends) =>
+            revDoubleEndedIterator_rfold(
+              iterator,
+              init,
+              f,
+              {
+                next: countIterator_next,
+                sizeHint: countIterator_sizeHint,
+                nth: countIterator_nth,
+              },
+              countDrop_drop,
+              unwind,
+              ends,
+            ),
+          (iterator, k) =>
+            revDoubleEndedIterator_nthBack(
+              iterator,
+              k,
+              {
+                next: countIterator_next,
+                sizeHint: countIterator_sizeHint,
+                nth: countIterator_nth,
+              },
+              countDrop_drop,
+            ),
+          (iterator, init, f, broke, unwind, ends) =>
+            revDoubleEndedIterator_tryRfold(
+              iterator,
+              init,
+              f,
+              {
+                next: countIterator_next,
+                sizeHint: countIterator_sizeHint,
+                nth: countIterator_nth,
+              },
+              $tryOf(broke),
+              countDrop_drop,
+              unwind,
+              ends,
+            ),
         ),
         2,
       ),
@@ -194,23 +379,68 @@ function main() {
   const value = $held(
     $rev(
       $skipping(
-        $closing(
-          $iterator(
+        $knowing(
+          iterator_rev(
             c(),
-            countDoubleEndedIterator_nextBack,
-            false,
-            countIterator_next,
-            (it) => $exactLen(countIterator_sizeHint(it)),
-            countIterator_sizeHint,
-            countDoubleEndedIterator_rfold,
-            countDoubleEndedIterator_nthBack,
-            undefined,
-            undefined,
-            countIterator_nth,
+            { next: countIterator_next, sizeHint: countIterator_sizeHint, nth: countIterator_nth },
+            {
+              next_back: countDoubleEndedIterator_nextBack,
+              rfold: countDoubleEndedIterator_rfold,
+              nthBack: countDoubleEndedIterator_nthBack,
+            },
+            countDrop_drop,
           ),
-          (it) => {
-            console.log(`drop ${it.of.at} ${it.of.end}`);
-          },
+          (iterator) =>
+            revDoubleEndedIterator_nextBack(
+              iterator,
+              {
+                next: countIterator_next,
+                sizeHint: countIterator_sizeHint,
+                nth: countIterator_nth,
+              },
+              countDrop_drop,
+            ),
+          (iterator) => revExactSizeIterator_len(iterator, countExactSizeIterator, countDrop_drop),
+          (iterator, init, f, unwind, ends) =>
+            revDoubleEndedIterator_rfold(
+              iterator,
+              init,
+              f,
+              {
+                next: countIterator_next,
+                sizeHint: countIterator_sizeHint,
+                nth: countIterator_nth,
+              },
+              countDrop_drop,
+              unwind,
+              ends,
+            ),
+          (iterator, k) =>
+            revDoubleEndedIterator_nthBack(
+              iterator,
+              k,
+              {
+                next: countIterator_next,
+                sizeHint: countIterator_sizeHint,
+                nth: countIterator_nth,
+              },
+              countDrop_drop,
+            ),
+          (iterator, init, f, broke, unwind, ends) =>
+            revDoubleEndedIterator_tryRfold(
+              iterator,
+              init,
+              f,
+              {
+                next: countIterator_next,
+                sizeHint: countIterator_sizeHint,
+                nth: countIterator_nth,
+              },
+              $tryOf(broke),
+              countDrop_drop,
+              unwind,
+              ends,
+            ),
         ),
         1,
       ),
@@ -229,13 +459,35 @@ function main() {
   console.log(
     `${$foldBack(
       $stepByEnds(
-        $iterator(
-          [0, 9],
-          plainDoubleEndedIterator_nextBack,
-          false,
-          plainIterator_next,
-          (it) => $exactLen(plainIterator_sizeHint(it)),
-          plainIterator_sizeHint,
+        $knowing(
+          iterator_rev(
+            [0, 9],
+            { next: plainIterator_next, sizeHint: plainIterator_sizeHint },
+            { next_back: plainDoubleEndedIterator_nextBack },
+          ),
+          (iterator) =>
+            revDoubleEndedIterator_nextBack(iterator, {
+              next: plainIterator_next,
+              sizeHint: plainIterator_sizeHint,
+            }),
+          (iterator) => revExactSizeIterator_len(iterator, plainExactSizeIterator),
+          undefined,
+          (iterator, k) =>
+            revDoubleEndedIterator_nthBack(iterator, k, {
+              next: plainIterator_next,
+              sizeHint: plainIterator_sizeHint,
+            }),
+          (iterator, init, f, broke, unwind, ends) =>
+            revDoubleEndedIterator_tryRfold(
+              iterator,
+              init,
+              f,
+              { next: plainIterator_next, sizeHint: plainIterator_sizeHint },
+              $tryOf(broke),
+              undefined,
+              unwind,
+              ends,
+            ),
         ),
         2,
       ),
@@ -248,13 +500,35 @@ function main() {
       $roomForHint(
         $rev(
           $skipping(
-            $iterator(
-              [0, 6],
-              plainDoubleEndedIterator_nextBack,
-              false,
-              plainIterator_next,
-              (it) => $exactLen(plainIterator_sizeHint(it)),
-              plainIterator_sizeHint,
+            $knowing(
+              iterator_rev(
+                [0, 6],
+                { next: plainIterator_next, sizeHint: plainIterator_sizeHint },
+                { next_back: plainDoubleEndedIterator_nextBack },
+              ),
+              (iterator) =>
+                revDoubleEndedIterator_nextBack(iterator, {
+                  next: plainIterator_next,
+                  sizeHint: plainIterator_sizeHint,
+                }),
+              (iterator) => revExactSizeIterator_len(iterator, plainExactSizeIterator),
+              undefined,
+              (iterator, k) =>
+                revDoubleEndedIterator_nthBack(iterator, k, {
+                  next: plainIterator_next,
+                  sizeHint: plainIterator_sizeHint,
+                }),
+              (iterator, init, f, broke, unwind, ends) =>
+                revDoubleEndedIterator_tryRfold(
+                  iterator,
+                  init,
+                  f,
+                  { next: plainIterator_next, sizeHint: plainIterator_sizeHint },
+                  $tryOf(broke),
+                  undefined,
+                  unwind,
+                  ends,
+                ),
             ),
             2,
           ),
@@ -265,27 +539,104 @@ function main() {
     ).join(", ")}]`,
   );
   console.log(
-    `[${Array.from($roomForHint($rev($mapEnds($iterator([0, 4], plainDoubleEndedIterator_nextBack, false, plainIterator_next, undefined, plainIterator_sizeHint), (x) => (x * 3) | 0)), 4, false)).join(", ")}]`,
+    `[${Array.from(
+      $roomForHint(
+        iterator_rev(
+          iterator_map(
+            iterator_rev(
+              [0, 4],
+              { next: plainIterator_next, sizeHint: plainIterator_sizeHint },
+              { next_back: plainDoubleEndedIterator_nextBack },
+            ),
+            (x) => (x * 3) | 0,
+            { next: $next, fold: $foldOf },
+          ),
+          { next: $next, fold: $foldOf },
+          {
+            next_back: (iterator) =>
+              mapDoubleEndedIterator_nextBack(iterator, revDoubleEndedIterator),
+            rfold: (iterator, init, f, unwind, ends) =>
+              mapDoubleEndedIterator_rfold(
+                iterator,
+                init,
+                f,
+                { next: $next, fold: $foldOf },
+                revDoubleEndedIterator,
+                undefined,
+                undefined,
+                undefined,
+                unwind,
+                ends,
+              ),
+            tryRfold: (iterator, init, f, broke, unwind, ends) =>
+              mapDoubleEndedIterator_tryRfold(
+                iterator,
+                init,
+                f,
+                { next: $next, fold: $foldOf },
+                revDoubleEndedIterator,
+                $tryOf(broke),
+                undefined,
+                undefined,
+                undefined,
+                unwind,
+                ends,
+              ),
+          },
+        ),
+        4,
+        false,
+      ),
+    ).join(", ")}]`,
   );
   const filter = $held(
     $filterEnds(
-      $closing(
-        $iterator(
+      $knowing(
+        iterator_rev(
           c(),
-          countDoubleEndedIterator_nextBack,
-          false,
-          countIterator_next,
-          undefined,
-          countIterator_sizeHint,
-          countDoubleEndedIterator_rfold,
-          countDoubleEndedIterator_nthBack,
-          undefined,
-          undefined,
-          countIterator_nth,
+          { next: countIterator_next, sizeHint: countIterator_sizeHint, nth: countIterator_nth },
+          {
+            next_back: countDoubleEndedIterator_nextBack,
+            rfold: countDoubleEndedIterator_rfold,
+            nthBack: countDoubleEndedIterator_nthBack,
+          },
+          countDrop_drop,
         ),
-        (it) => {
-          console.log(`drop ${it.of.at} ${it.of.end}`);
-        },
+        (iterator) =>
+          revDoubleEndedIterator_nextBack(
+            iterator,
+            { next: countIterator_next, sizeHint: countIterator_sizeHint, nth: countIterator_nth },
+            countDrop_drop,
+          ),
+        (iterator) => revExactSizeIterator_len(iterator, countExactSizeIterator, countDrop_drop),
+        (iterator, init, f, unwind, ends) =>
+          revDoubleEndedIterator_rfold(
+            iterator,
+            init,
+            f,
+            { next: countIterator_next, sizeHint: countIterator_sizeHint, nth: countIterator_nth },
+            countDrop_drop,
+            unwind,
+            ends,
+          ),
+        (iterator, k) =>
+          revDoubleEndedIterator_nthBack(
+            iterator,
+            k,
+            { next: countIterator_next, sizeHint: countIterator_sizeHint, nth: countIterator_nth },
+            countDrop_drop,
+          ),
+        (iterator, init, f, broke, unwind, ends) =>
+          revDoubleEndedIterator_tryRfold(
+            iterator,
+            init,
+            f,
+            { next: countIterator_next, sizeHint: countIterator_sizeHint, nth: countIterator_nth },
+            $tryOf(broke),
+            countDrop_drop,
+            unwind,
+            ends,
+          ),
       ),
       (x) => x % 2 === 0,
     ),

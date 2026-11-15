@@ -11,7 +11,6 @@ import {
   $foldOf,
   $iter,
   $jsIterator,
-  $knowing,
   $lazyChain,
   $mapEnds,
   $next,
@@ -28,6 +27,7 @@ import {
   flattenDoubleEndedIterator_tryRfold,
   iterator_flatten,
   iterator_map,
+  iterator_rev,
   mapDoubleEndedIterator_nextBack,
   mapDoubleEndedIterator_rfold,
   mapDoubleEndedIterator_tryRfold,
@@ -110,40 +110,41 @@ function stepped(src, dropI) {
 function flattened(src, IFused, dropI) {
   return $collectDropping(
     $roomForHint(
-      $rev(
-        $knowing(
-          iterator_map(
-            iterator_flatten(
-              src,
-              $jsIterator,
-              {
-                intoIter: (items) => $iter(items),
-                IntoIterIterator: () => ({ next: $next, advanceBy: $advanceSlice }),
-                $dropItem: dDrop_drop,
-                $dropIntoIter: $dropEach(dDrop_drop),
-              },
-              IFused,
-              undefined,
-              false,
-              dropI,
-              $dropEach(dDrop_drop),
-              dDrop_drop,
-              $dropEach(dDrop_drop),
-            ),
-            (d) => {
-              const result = (d[0] * 3) >>> 0;
-              dDrop_drop(d);
-              return result;
+      iterator_rev(
+        iterator_map(
+          iterator_flatten(
+            src,
+            $jsIterator,
+            {
+              intoIter: (items) => $iter(items),
+              IntoIterIterator: () => ({ next: $next, advanceBy: $advanceSlice }),
+              $dropItem: dDrop_drop,
+              $dropIntoIter: $dropEach(dDrop_drop),
             },
-            { next: $next, fold: $foldOf },
-            (flatten) => {
-              flatten.return();
-            },
+            IFused,
             undefined,
-            undefined,
+            false,
+            dropI,
+            $dropEach(dDrop_drop),
             dDrop_drop,
+            $dropEach(dDrop_drop),
           ),
-          (iterator) =>
+          (d) => {
+            const result = (d[0] * 3) >>> 0;
+            dDrop_drop(d);
+            return result;
+          },
+          { next: $next, fold: $foldOf },
+          (flatten) => {
+            flatten.return();
+          },
+          undefined,
+          undefined,
+          dDrop_drop,
+        ),
+        { next: $next, fold: $foldOf },
+        {
+          next_back: (iterator) =>
             mapDoubleEndedIterator_nextBack(
               iterator,
               {
@@ -223,8 +224,7 @@ function flattened(src, IFused, dropI) {
               undefined,
               dDrop_drop,
             ),
-          undefined,
-          (iterator, init, f, unwind, ends) =>
+          rfold: (iterator, init, f, unwind, ends) =>
             mapDoubleEndedIterator_rfold(
               iterator,
               init,
@@ -309,8 +309,7 @@ function flattened(src, IFused, dropI) {
               ends,
               dDrop_drop,
             ),
-          undefined,
-          (iterator, init, f, broke, unwind, ends) =>
+          tryRfold: (iterator, init, f, broke, unwind, ends) =>
             mapDoubleEndedIterator_tryRfold(
               iterator,
               init,
@@ -397,7 +396,10 @@ function flattened(src, IFused, dropI) {
               undefined,
               dDrop_drop,
             ),
-        ),
+        },
+        (map) => {
+          map.return();
+        },
       ),
       4,
       false,

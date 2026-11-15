@@ -396,8 +396,10 @@ pub(super) fn across_bodies<'tcx>(tcx: TyCtxt<'tcx>, bodies: &mut [super::Body<'
 /// knows what's stepped from its back, what it takes out of the ground,
 /// the `enumerate()`s and `map()`s of chains held apart on std's struct
 /// (`decide_held`, #1681's step iii). The one reader between the stages,
-/// `back_stepped`, asks the ground of `rev()`s alone, which the second
-/// stage never takes out (`ground_made_at`); every other reader asks
+/// `back_stepped`, asks the ground of `rev()`s alone (`ground_made_at`),
+/// which the second stage may take out after it: a flipped link is given
+/// nothing the ground made, so what `back_stepped` marked of an in-place
+/// `rev()` blocks that `rev()`'s flip (`held_links`); every other reader asks
 /// `made_at`, which refuses one read before both are decided. Each stage
 /// holds THIR calls, and a reader asks of MIR's call at a span, of each
 /// THIR call there (`each_call_at`): two a macro's repetition writes share
@@ -418,7 +420,7 @@ impl InPlace {
     }
 
     /// The second stage: the calls the ground made in place that are held
-    /// after all, never a `rev()`'s (`decide_held`).
+    /// after all (`decide_held`).
     fn decide_held(&self, held: IndexSet<ExprId>) {
         assert!(
             self.held.set(held).is_ok(),
@@ -444,8 +446,8 @@ impl InPlace {
 
     /// Whether the `rev()` MIR's call at `span` makes is made in place, of
     /// the ground alone: `back_stepped`'s, the analysis's that
-    /// `decide_held` reads, asked before it, of a `rev()`, which it never
-    /// takes out.
+    /// `decide_held` reads, asked before it, of a `rev()`, which it may take
+    /// out after (`held_links`).
     pub(in crate::lower) fn ground_made_at(&self, thir: &Thir<'_>, span: Span) -> bool {
         each_call_at(thir, span, |at| self.ground().contains(&at))
     }

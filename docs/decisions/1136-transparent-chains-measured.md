@@ -544,3 +544,40 @@ Measured: 2 corpus snapshots move, each as native prints, 492 lines to
 renamed `x$1` goes from 470.1 to 470.3 and role fallbacks from 256.5 to
 256.4. Mutation `peekable-not-flipped` (`lower/body_queries/in_place.ts`)
 is caught.
+
+## Amendment: the rev family flipped, and why the cycle is gone (2026-11-16, #1681's change 2)
+
+A `rev()` of a chain the predicate doesn't admit is std's compiled `Rev`,
+`HELD_FLIPPED`'s, no longer the recognizers' `$rev` of a source made
+knowing its back (`$knowing`, `$mapEnds`). The amendment that flipped
+`chain` left `rev` out. `back_stepped`, which the flip reads, asks whether
+a `rev()` is made in place, and flipping one would change what decided it.
+The architecture rule "`HELD_FLIPPED` never contains `rev`" held that.
+
+The zip amendment's rule ends the cycle. `back_stepped` reads the ground
+alone (`ground_made_at`), and before the flip, which may then take a
+`rev()` out. But nothing the flip makes is given what the ground made: a
+call made in place, or a `let` of one (`held_links`). What `back_stepped`
+marked of an in-place `rev()` is a JS iterator, made knowing its back,
+and that blocks the flip of whatever it's given to. What the flip takes
+out is a `rev()` whose source is std's struct, which `back_stepped`'s
+marks never reached. So the flip never changes what decided it. The
+architecture rule is now the order (`back_stepped` before `decide_held`),
+`back_stepped`'s read of the ground alone, and `held_links`' check of
+what each link is given.
+
+Its row: a `let` of a `rev()` read once, by a zip, a map and a chain the
+predicate doesn't admit (corpus `let_of_an_in_place_rev_given_to_held_chains`).
+The `rev()` is made in place, and each chain on it stays the hand form.
+Mutation `flipped-given-anything-in-place` drops the check of what a link
+is given; it gives std's compiled `Zip`, `Map` and `Chain` that JS
+iterator, and the row catches it. The row runs against native in both
+builds, the plain one and the build of std's structs.
+
+Measured: 29 corpus snapshots move, each as native prints, 9,177 lines to
+10,114 (×1.102). The matrix's 38,217 rows and the conformance table's
+2,762 that the change names all pass. The React port's JS regenerates
+byte for byte. `@rust-js/std` is the same size, 1,307,863 bytes. In
+10,000 lines, `$iter` goes from 83.9 to 83.8, renamed `x$1` from 470.3 to
+469.0 and role fallbacks from 256.4 to 255.6. Mutation `rev-not-flipped`
+is caught.

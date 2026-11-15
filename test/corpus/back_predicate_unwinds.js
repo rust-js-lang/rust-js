@@ -29,9 +29,11 @@ import {
   $unwindsOn,
   enumerateDoubleEndedIterator_nextBack,
   enumerateDoubleEndedIterator_nthBack,
+  enumerateDoubleEndedIterator_rfold,
   enumerateDoubleEndedIterator_tryRfold,
   enumerateExactSizeIterator_len,
   iterator_enumerate,
+  iterator_rev,
   iterator_skip,
   iterator_take,
   skipDoubleEndedIterator_nextBack,
@@ -393,13 +395,12 @@ function main() {
   second("own rev find", (p) => {
     const find = $findDropping(
       $lent(
-        $iterator(
+        iterator_rev(
           [0, 3],
-          ownDoubleEndedIterator_nextBack,
-          false,
+          { next: ownIterator_next, sizeHint: ownIterator_sizeHint },
+          { next_back: ownDoubleEndedIterator_nextBack },
           undefined,
-          undefined,
-          ownIterator_sizeHint,
+          dDrop_drop,
         ),
       ),
       (d) => p(d),
@@ -701,15 +702,16 @@ function main() {
   const value$2 = last != null ? map$2(last) : undefined;
   console.log(`${value$2 == null ? "None" : `Some((${value$2[0]}, ${value$2[1]}))`}`);
   const first = $next(
-    $rev(
-      $knowing(
-        iterator_enumerate(
-          [3],
-          { next: hintsIterator_next, sizeHint: hintsIterator_sizeHint },
-          undefined,
-          dDrop_drop,
-        ),
-        (iterator) =>
+    iterator_rev(
+      iterator_enumerate(
+        [3],
+        { next: hintsIterator_next, sizeHint: hintsIterator_sizeHint },
+        undefined,
+        dDrop_drop,
+      ),
+      { next: $next, fold: $foldOf },
+      {
+        next_back: (iterator) =>
           enumerateDoubleEndedIterator_nextBack(
             iterator,
             hintsExactSizeIterator$1,
@@ -717,10 +719,20 @@ function main() {
             undefined,
             dDrop_drop,
           ),
-        (iterator) =>
-          enumerateExactSizeIterator_len(iterator, hintsExactSizeIterator$1, undefined, dDrop_drop),
-        undefined,
-        (iterator, k) =>
+        rfold: (iterator, init, f, unwind, ends) =>
+          enumerateDoubleEndedIterator_rfold(
+            iterator,
+            init,
+            f,
+            { next: hintsIterator_next, sizeHint: hintsIterator_sizeHint },
+            hintsExactSizeIterator$1,
+            { next_back: hintsDoubleEndedIterator_nextBack },
+            undefined,
+            unwind,
+            ends,
+            dDrop_drop,
+          ),
+        nthBack: (iterator, k) =>
           enumerateDoubleEndedIterator_nthBack(
             iterator,
             k,
@@ -730,7 +742,7 @@ function main() {
             undefined,
             dDrop_drop,
           ),
-        (iterator, init, f, broke, unwind, ends) =>
+        tryRfold: (iterator, init, f, broke, unwind, ends) =>
           enumerateDoubleEndedIterator_tryRfold(
             iterator,
             init,
@@ -745,7 +757,11 @@ function main() {
             undefined,
             dDrop_drop,
           ),
-      ),
+      },
+      undefined,
+      (value) => {
+        dDrop_drop(value[1]);
+      },
     ),
   );
   function map$3([i, d]) {

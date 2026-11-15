@@ -99,11 +99,14 @@ pub(in crate::lower) fn decide<'tcx>(
 
 /// The adapters the held flip makes std's compiled struct, `HELD_COMPILED`'s
 /// `enumerate()` and `map()` (#1681's step iii), and `chain()`, `zip()`,
-/// `flatten()` and `peekable()`, the families after them (#1681's change 2). Not `rev()`: `back_stepped`,
-/// which decides the flip, reads whether a `rev()` is made in place (its
-/// held-`rev()` rule marks what a held one is given made knowing its back),
-/// so flipping one would change what decides it (ADR 1136, amended).
-pub(in crate::lower) const HELD_FLIPPED: [&str; 6] = ["chain", "enumerate", "flatten", "map", "peekable", "zip"];
+/// `flatten()`, `peekable()` and `rev()`, the families after them (#1681's
+/// change 2). `back_stepped`, which the flip reads, asks whether a `rev()`
+/// is made in place of the ground alone, before the flip: what it marks of
+/// an in-place one, what it's given made knowing its back, a JS iterator,
+/// blocks the `rev()`'s flip, as nothing flipped is given what the ground
+/// made (`held_links`), so the flip never changes what decided it (ADR
+/// 1136, amended).
+pub(in crate::lower) const HELD_FLIPPED: [&str; 7] = ["chain", "enumerate", "flatten", "map", "peekable", "rev", "zip"];
 
 /// The second stage of which adapters each body makes in place
 /// (`InPlace`), once the analysis knows what's stepped from its back: what

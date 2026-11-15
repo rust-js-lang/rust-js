@@ -123,7 +123,8 @@ Then, in `analyze_crate`, once `back_stepped` knows what's stepped from its
 back and before `type_fact_params` reads it, what's held after all
 (`decide_held`, #1681). Between the stages only `back_stepped` reads, the
 ground alone (`ground_made_at`), of a `rev()`, which the second stage
-never takes out; every other reader asks `made_at`, which refuses a body
+may take out after it, as nothing it flips is given what the ground made
+(`held_links`); every other reader asks `made_at`, which refuses a body
 whose stages aren't both decided (`test/architecture-iterators.test.ts`).
 Each stage holds THIR calls; a reader asks of MIR's call at a span, of
 each THIR call there (`each_call_at`), the one join, so of two a macro's

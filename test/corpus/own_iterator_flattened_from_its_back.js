@@ -19,6 +19,7 @@ import {
   $nthBack,
   $rangeNext,
   $rangeNextBack,
+  $rangeNthBack,
   $rev,
   $tryOf,
   $unwindsOn,
@@ -350,9 +351,14 @@ function main() {
     return value == null ? "None" : `Some(${value})`;
   });
   run("range rev nth_back", () => {
-    const value = $nthBack(
-      $rev($iterator({ start: 0, end: 5 }, $rangeNext, false, $rangeNextBack)),
+    const value = revDoubleEndedIterator_nthBack(
+      iterator_rev(
+        { start: 0, end: 5 },
+        { next: $rangeNext },
+        { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+      ),
       mk(),
+      { next: $rangeNext },
     );
     return value == null ? "None" : `Some(${value})`;
   });

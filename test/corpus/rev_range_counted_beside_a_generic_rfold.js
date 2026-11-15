@@ -20,6 +20,7 @@ import {
   revDoubleEndedIterator_nextBack,
   revDoubleEndedIterator_nthBack,
   revDoubleEndedIterator_tryRfold,
+  revExactSizeIterator_len,
 } from "@rust-js/std";
 
 export function entry() {
@@ -36,7 +37,30 @@ function countdown(it) {
 
 function main() {
   console.log(
-    `${digitsBack($rev($iterator({ start: 1, end: 6 }, $rangeNext, false, $rangeNextBack)))}`,
+    `${digitsBack(
+      $knowing(
+        iterator_rev(
+          { start: 1, end: 6 },
+          { next: $rangeNext },
+          { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+        ),
+        (iterator) => revDoubleEndedIterator_nextBack(iterator, { next: $rangeNext }),
+        (iterator) => revExactSizeIterator_len(iterator, { len: $rangeLen }),
+        undefined,
+        (iterator, k) => revDoubleEndedIterator_nthBack(iterator, k, { next: $rangeNext }),
+        (iterator, init, f, broke, unwind, ends) =>
+          revDoubleEndedIterator_tryRfold(
+            iterator,
+            init,
+            f,
+            { next: $rangeNext },
+            $tryOf(broke),
+            undefined,
+            unwind,
+            ends,
+          ),
+      ),
+    )}`,
   );
   console.log(
     `${digitsBack(

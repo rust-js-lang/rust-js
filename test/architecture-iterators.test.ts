@@ -676,17 +676,20 @@ test("whether a consumer keeps each item is one catalog", () => {
 // of each THIR call there (`each_call_at`), InPlace's own join, so no
 // reader takes one of two a macro's repetition writes there of the other
 // (#1791, ADR 1151).
-// The held flip's adapters, `HELD_FLIPPED`, never `rev()`: `back_stepped`,
-// which decides the flip, reads whether a `rev()` is made in place (its
-// held-`rev()` rule, analysis/back_stepped.rs), so flipping one would change
-// what decides it, a cycle (#1681, ADR 1136, amended).
-test("the held flip never takes out a rev(), which back_stepped reads", () => {
-  const source = read("src/lower/body_queries/in_place.rs");
-  // Whatever families it takes, `rev` is none of them.
-  const flipped = source.match(/pub\(in crate::lower\) const HELD_FLIPPED: \[&str; \d+\] = \[([^\]]*)\];/)?.[1];
-  expect(flipped).toBeDefined();
-  expect(flipped).not.toContain('"rev"');
+// `back_stepped` reads whether a `rev()` is made in place of the ground
+// alone (its held-`rev()` rule), before the held flip, which may take a
+// `rev()` out after (#1681, ADR 1136, amended). The flip can't change what
+// decided it: it flips no link given what the ground made, a call made in
+// place or a `let` of one, so what `back_stepped` marked of an in-place
+// `rev()`, a JS iterator, blocks that `rev()`'s flip. Both hold: the ground's
+// read alone, the order (above), and the check in `held_links`.
+test("back_stepped reads the ground's rev()s, and the flip is given nothing the ground made", () => {
   expect(read("src/lower/analysis/back_stepped.rs")).toMatch(/callee == rev\n\s+&& !body\.facts\.in_place_adapters\.ground_made_at\(&body\.thir, \*fn_span\)/);
+  const source = read("src/lower/body_queries/in_place.rs");
+  const held = source.slice(source.indexOf("fn held_links"), source.indexOf("fn let_made"));
+  expect(held).toContain("let ground = body.facts.in_place_adapters.ground();");
+  expect(held).toContain("ExprKind::Call { ref args, .. } => args.iter().any(|&arg| in_place(arg, &held)),");
+  expect(held).toMatch(/ExprKind::VarRef \{ id \} => made\.get\(&id\)\.is_some_and\(\|init\| ground\.contains\(init\)\)/);
 });
 
 // What a compiled adapter is given is std's struct (ADR 0871): the flip

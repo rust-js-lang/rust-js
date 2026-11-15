@@ -23,11 +23,13 @@ import {
   $range,
   $rangeNext,
   $rangeNextBack,
+  $rangeNthBack,
   $repeating,
   $unwindsOn,
   $vecCollectWay,
   iterator_chain,
   iterator_map,
+  iterator_rev,
   iterator_zip,
   zipIterator___iteratorGetUnchecked,
 } from "@rust-js/std";
@@ -161,7 +163,15 @@ function main() {
     4,
   );
   shown("by fold", v);
-  v = relayed($iterator({ start: 0, end: 6 }, $rangeNextBack), "fold", 4);
+  v = relayed(
+    iterator_rev(
+      { start: 0, end: 6 },
+      { next: $rangeNext },
+      { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+    ),
+    "fold",
+    4,
+  );
   shown("by fold, relayed", v);
   v = fromItems(
     iterator_chain(

@@ -31,6 +31,7 @@ import {
   iterator_fuse,
   iterator_map,
   iterator_peekable,
+  iterator_rev,
   iterator_zip,
   mapDoubleEndedIterator_rfold,
   mapExactSizeIterator_len,
@@ -821,22 +822,17 @@ function main() {
   });
   run("rev fold", () => {
     const fold = $foldDropping(
-      $closing(
-        $iterator(
-          own({ start: 120, end: 124 }, 121),
-          ownDoubleEndedIterator_nextBack,
-          false,
-          undefined,
-          undefined,
-          ownIterator_sizeHint,
-          ownDoubleEndedIterator_rfold,
-        ),
-        (it) => {
+      iterator_rev(
+        own({ start: 120, end: 124 }, 121),
+        { next: ownIterator_next, sizeHint: ownIterator_sizeHint, fold: ownIterator_fold },
+        { next_back: ownDoubleEndedIterator_nextBack, rfold: ownDoubleEndedIterator_rfold },
+        (own) => {
           console.log("drop own");
-          for (const item of it.of.items) {
+          for (const item of own.items) {
             dDrop_drop(item);
           }
         },
+        dDrop_drop,
       ),
       [],
       push,
@@ -1117,22 +1113,17 @@ function main() {
   run("rev collect", () => {
     const collect = $collectDropping(
       $roomForHint(
-        $closing(
-          $iterator(
-            own({ start: 200, end: 204 }, 201),
-            ownDoubleEndedIterator_nextBack,
-            false,
-            undefined,
-            undefined,
-            ownIterator_sizeHint,
-            ownDoubleEndedIterator_rfold,
-          ),
-          (it) => {
+        iterator_rev(
+          own({ start: 200, end: 204 }, 201),
+          { next: ownIterator_next, sizeHint: ownIterator_sizeHint, fold: ownIterator_fold },
+          { next_back: ownDoubleEndedIterator_nextBack, rfold: ownDoubleEndedIterator_rfold },
+          (own) => {
             console.log("drop own");
-            for (const item of it.of.items) {
+            for (const item of own.items) {
               dDrop_drop(item);
             }
           },
+          dDrop_drop,
         ),
         4,
         false,

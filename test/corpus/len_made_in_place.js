@@ -4,13 +4,17 @@ import {
   $iter,
   $iterator,
   $jsIterator,
+  $knowing,
   $mapEnds,
   $rangeLen,
   $rangeNext,
   $rangeNextBack,
+  $rangeNthBack,
   $rev,
   iterator_map,
+  iterator_rev,
   mapExactSizeIterator_len,
+  revExactSizeIterator_len,
 } from "@rust-js/std";
 
 export function entry() {
@@ -58,7 +62,15 @@ function main() {
   console.log(`${Math.max(v.length - (k + 7), 0)}`);
   console.log(
     `${count(
-      $rev($iterator({ start: 1, end: 4 }, $rangeNext, false, $rangeNextBack, $rangeLen)),
+      $knowing(
+        iterator_rev(
+          { start: 1, end: 4 },
+          { next: $rangeNext },
+          { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+        ),
+        undefined,
+        (iterator) => revExactSizeIterator_len(iterator, { len: $rangeLen }),
+      ),
     )} ${count($iter(v.map((x, i) => [i, x]).toReversed()))}`,
   );
   console.log(`${reversedLen($iter(v))} ${mappedLen($iter(v))} ${takenLen($iter(v))}`);

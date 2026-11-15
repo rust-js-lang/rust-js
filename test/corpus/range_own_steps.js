@@ -19,6 +19,7 @@ import {
   $rangeNextBack,
   $rangeNth,
   $rangeNthBack,
+  iterator_rev,
 } from "@rust-js/std";
 
 export function entry() {
@@ -71,10 +72,21 @@ function main() {
   console.log(`${value$12 == null ? "None" : `Some(${value$12})`}`);
   const value$13 = $next($iterator({ start: 0, end: 294967295 }, $rangeNextBack));
   console.log(`${value$13 == null ? "None" : `Some(${value$13})`}`);
-  const value$14 = $rangeNthBack({ start: 0n, end: 18446744073709551615n }, (1 << 31) >>> 0);
+  const value$14 = $rangeNthBack(
+    iterator_rev(
+      { start: 0n, end: 18446744073709551615n },
+      { next: $rangeNext },
+      { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+    ).iter,
+    (1 << 31) >>> 0,
+  );
   console.log(`${value$14 == null ? "None" : `Some(${value$14})`}`);
   const value$15 = $rangeInclusiveNthBack(
-    { start: 0n, end: 18446744073709551615n },
+    iterator_rev(
+      { start: 0n, end: 18446744073709551615n },
+      { next: $rangeInclusiveNext },
+      { next_back: $rangeInclusiveNextBack, nthBack: $rangeInclusiveNthBack },
+    ).iter,
     (1 << 31) >>> 0,
   );
   console.log(`${value$15 == null ? "None" : `Some(${value$15})`}`);
@@ -100,10 +112,14 @@ function main() {
   );
 
   // One held, stepped on after.
-  const back = $iterator({ start: 10, end: 20 }, $rangeNextBack);
-  const value$22 = $rangeNthBack(back.of, 2);
+  const back = iterator_rev(
+    { start: 10, end: 20 },
+    { next: $rangeNext },
+    { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+  );
+  const value$22 = $rangeNthBack(back.iter, 2);
   const value$23 = $next(back);
-  const value$24 = $rangeNthBack(back.of, 100);
+  const value$24 = $rangeNthBack(back.iter, 100);
   console.log(
     `${value$22 == null ? "None" : `Some(${value$22})`} ${value$23 == null ? "None" : `Some(${value$23})`} ${value$24 == null ? "None" : `Some(${value$24})`}`,
   );

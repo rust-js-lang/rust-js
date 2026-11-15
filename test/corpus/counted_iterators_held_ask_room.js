@@ -5,9 +5,13 @@ import {
   $catchable,
   $cleanup,
   $lazyRange,
-  $lazyRangeBack,
   $lazyZip,
   $panicMessage,
+  $rangeInclusiveNext,
+  $rangeInclusiveNextBack,
+  $rangeNext,
+  $rangeNextBack,
+  $rangeNthBack,
   $repeating,
   $repeatingN,
   $roomForHint,
@@ -15,6 +19,7 @@ import {
   $stepBy,
   $unborrow,
   $unwound,
+  iterator_rev,
 } from "@rust-js/std";
 
 export function entry() {
@@ -92,7 +97,14 @@ function main() {
     check(
       "reversed range step_by",
       () => {
-        const it = $lazyRangeBack(0, n, 2);
+        const it = $stepBy(
+          iterator_rev(
+            { start: 0, end: n },
+            { next: $rangeNext },
+            { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+          ),
+          2,
+        );
         return Array.from($roomForHint(it, 4, false));
       },
       vecDebug,
@@ -100,7 +112,14 @@ function main() {
     check(
       "reversed range step_by take",
       () => {
-        const it = $lazyRangeBack(0, n, 1).take(n);
+        const it = $stepBy(
+          iterator_rev(
+            { start: 0, end: n },
+            { next: $rangeNext },
+            { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+          ),
+          1,
+        ).take(n);
         return Array.from($roomForHint(it, 4, false));
       },
       vecDebug,
@@ -178,13 +197,49 @@ function main() {
       usizeDebug,
     );
   }
-  const value = hinted($lazyRangeBack(0, 10, 3));
+  const value = hinted(
+    $stepBy(
+      iterator_rev(
+        { start: 0, end: 10 },
+        { next: $rangeNext },
+        { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+      ),
+      3,
+    ),
+  );
   console.log(`(${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`})`);
-  const value$1 = hinted($lazyRangeBack("a", "e", 2, true));
+  const value$1 = hinted(
+    $stepBy(
+      iterator_rev(
+        { start: "a", end: "e" },
+        { next: $rangeInclusiveNext },
+        { next_back: $rangeInclusiveNextBack },
+      ),
+      2,
+    ),
+  );
   console.log(`(${value$1[0]}, ${value$1[1] == null ? "None" : `Some(${value$1[1]})`})`);
-  const value$2 = hinted($lazyRangeBack(0n, 10n, 4));
+  const value$2 = hinted(
+    $stepBy(
+      iterator_rev(
+        { start: 0n, end: 10n },
+        { next: $rangeNext },
+        { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+      ),
+      4,
+    ),
+  );
   console.log(`(${value$2[0]}, ${value$2[1] == null ? "None" : `Some(${value$2[1]})`})`);
-  const value$3 = hinted($lazyRangeBack(0, 0, 4));
+  const value$3 = hinted(
+    $stepBy(
+      iterator_rev(
+        { start: 0, end: 0 },
+        { next: $rangeNext },
+        { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+      ),
+      4,
+    ),
+  );
   console.log(`(${value$3[0]}, ${value$3[1] == null ? "None" : `Some(${value$3[1]})`})`);
 }
 //# sourceMappingURL=case.js.map

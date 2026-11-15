@@ -6,10 +6,19 @@ import {
   $lent,
   $next,
   $print,
+  $rangeInclusiveNext,
+  $rangeInclusiveNextBack,
+  $rangeInclusiveNthBack,
   $rangeLast,
   $rangeLen,
+  $rangeNext,
+  $rangeNextBack,
+  $rangeNthBack,
   $roomFor,
+  $roomForHint,
   $step,
+  $stepBy,
+  iterator_rev,
 } from "@rust-js/std";
 
 export function entry() {
@@ -55,15 +64,52 @@ function main() {
     `${nth == null ? "None" : `Some(${nth})`} ${$lazyRange(1, 11, 3).reduce((n) => n + 1, 0)}\n`,
   );
   const step$3 = $step((1 << 30) >>> 0);
-  const it$1 = $lazyRangeBack(0, 4294967295, step$3);
-  $roomFor(Math.ceil(4294967295 / step$3), 4);
-  $print(`[${Array.from(it$1).join(", ")}]\n`);
+  $print(
+    `[${Array.from(
+      $roomForHint(
+        $stepBy(
+          iterator_rev(
+            { start: 0, end: 4294967295 },
+            { next: $rangeNext },
+            { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+          ),
+          step$3,
+        ),
+        4,
+        false,
+      ),
+    ).join(", ")}]\n`,
+  );
   const step$4 = $step((1 << 30) >>> 0);
-  const it$2 = $lazyRangeBack(0, 4294967295, step$4, true);
-  $roomFor(Math.ceil(4294967296 / step$4), 4);
-  $print(`[${Array.from(it$2).join(", ")}]\n`);
+  $print(
+    `[${Array.from(
+      $roomForHint(
+        $stepBy(
+          iterator_rev(
+            { start: 0, end: 4294967295 },
+            { next: $rangeInclusiveNext },
+            { next_back: $rangeInclusiveNextBack, nthBack: $rangeInclusiveNthBack },
+          ),
+          step$4,
+        ),
+        4,
+        false,
+      ),
+    ).join(", ")}]\n`,
+  );
   const step$5 = $step((1 << 31) >>> 0);
-  $print(`[${Array.from($lazyRangeBack(0n, 18446744073709551615n, step$5).take(3)).join(", ")}]\n`);
+  $print(
+    `[${Array.from(
+      $stepBy(
+        iterator_rev(
+          { start: 0n, end: 18446744073709551615n },
+          { next: $rangeNext },
+          { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+        ),
+        step$5,
+      ).take(3),
+    ).join(", ")}]\n`,
+  );
   $print(
     `[${Array.from($lazyRangeBack(1, 10, 3, true)).join(", ")}] [${Array.from($lazyRangeBack(1, 10, 3)).join(", ")}]\n`,
   );

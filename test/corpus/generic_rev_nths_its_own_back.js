@@ -13,6 +13,7 @@ import {
   $skipping,
   $slicing,
   $stepBy,
+  iterator_rev,
 } from "@rust-js/std";
 
 export function entry() {
@@ -21,6 +22,10 @@ export function entry() {
 
 function dDrop_drop(d) {
   console.log(`drop ${d[0]}`);
+}
+
+function backsDrop_drop(backs) {
+  console.log("drop backs");
 }
 
 function backsIterator_next(backs) {
@@ -133,7 +138,7 @@ function main() {
         backsDoubleEndedIterator_nthBack,
       ),
       (it) => {
-        console.log("drop backs");
+        backsDrop_drop(it.of);
       },
     ).join(", ")}]`,
   );
@@ -152,7 +157,7 @@ function main() {
       backsDoubleEndedIterator_nthBack,
     ),
     (it) => {
-      console.log("drop backs");
+      backsDrop_drop(it.of);
     },
   );
   console.log(`skipped last ${value == null ? "None" : `Some(${value})`}`);
@@ -172,7 +177,7 @@ function main() {
         backsDoubleEndedIterator_nthBack,
       ),
       (it) => {
-        console.log("drop backs");
+        backsDrop_drop(it.of);
       },
     ).join(", ")}]`,
   );
@@ -192,7 +197,7 @@ function main() {
         backsDoubleEndedIterator_nthBack,
       ),
       (it) => {
-        console.log("drop backs");
+        backsDrop_drop(it.of);
       },
     )}`,
   );
@@ -209,20 +214,12 @@ function main() {
   // Not generic: the crate's own, as before.
   const direct = $collectDropping(
     $skipping(
-      $closing(
-        $iterator(
-          [0, 5],
-          backsDoubleEndedIterator_nextBack,
-          false,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          backsDoubleEndedIterator_nthBack,
-        ),
-        (it) => {
-          console.log("drop backs");
-        },
+      iterator_rev(
+        [0, 5],
+        { next: backsIterator_next },
+        { next_back: backsDoubleEndedIterator_nextBack, nthBack: backsDoubleEndedIterator_nthBack },
+        backsDrop_drop,
+        dDrop_drop,
       ),
       2,
       dDrop_drop,

@@ -13,7 +13,9 @@ import {
   $nthSome,
   $rangeNext,
   $rangeNextBack,
+  $roomForHint,
   $some,
+  iterator_rev,
 } from "@rust-js/std";
 
 export function entry() {
@@ -108,6 +110,35 @@ function evensOrOdds(evens) {
 }
 
 function main() {
+  const twoIterator = {
+    next: (iterator) => twoIterator_next(iterator, { next: $next }, { next: $next }),
+    fold: (iterator, init, f, unwind, ends) =>
+      twoIterator_fold(iterator, init, f, { next: $next }, { next: $next }),
+    nth: (iterator, n) => twoIterator_nth(iterator, n, { next: $next }, { next: $next }),
+  };
+  const twoDoubleEndedIterator = {
+    next_back: (iterator) =>
+      twoDoubleEndedIterator_nextBack(iterator, { next_back: $nextBack }, { next_back: $nextBack }),
+    rfold: (iterator, init, f, unwind, ends) =>
+      twoDoubleEndedIterator_rfold(
+        iterator,
+        init,
+        f,
+        { next: $next },
+        { next_back: $nextBack },
+        { next: $next },
+        { next_back: $nextBack },
+      ),
+    nthBack: (iterator, n) =>
+      twoDoubleEndedIterator_nthBack(
+        iterator,
+        n,
+        { next: $next },
+        { next_back: $nextBack },
+        { next: $next },
+        { next_back: $nextBack },
+      ),
+  };
   console.log(
     `[${Array.from(
       $iterator(
@@ -144,76 +175,10 @@ function main() {
     ).join(", ")}]`,
   );
   console.log(
-    `[${Array.from(
-      $iterator(
-        evensOrOdds(false),
-        (iterator) =>
-          twoDoubleEndedIterator_nextBack(
-            iterator,
-            { next_back: $nextBack },
-            { next_back: $nextBack },
-          ),
-        true,
-        undefined,
-        undefined,
-        undefined,
-        (iterator, init, f, unwind, ends) =>
-          twoDoubleEndedIterator_rfold(
-            iterator,
-            init,
-            f,
-            { next: $next },
-            { next_back: $nextBack },
-            { next: $next },
-            { next_back: $nextBack },
-          ),
-        (iterator, n) =>
-          twoDoubleEndedIterator_nthBack(
-            iterator,
-            n,
-            { next: $next },
-            { next_back: $nextBack },
-            { next: $next },
-            { next_back: $nextBack },
-          ),
-      ),
-    ).join(", ")}]`,
+    `[${Array.from($roomForHint(iterator_rev(evensOrOdds(false), twoIterator, twoDoubleEndedIterator), 4, false)).join(", ")}]`,
   );
   const value = $nth(
-    $lent(
-      $iterator(
-        evensOrOdds(false),
-        (iterator) =>
-          twoDoubleEndedIterator_nextBack(
-            iterator,
-            { next_back: $nextBack },
-            { next_back: $nextBack },
-          ),
-        true,
-        undefined,
-        undefined,
-        undefined,
-        (iterator, init, f, unwind, ends) =>
-          twoDoubleEndedIterator_rfold(
-            iterator,
-            init,
-            f,
-            { next: $next },
-            { next_back: $nextBack },
-            { next: $next },
-            { next_back: $nextBack },
-          ),
-        (iterator, n) =>
-          twoDoubleEndedIterator_nthBack(
-            iterator,
-            n,
-            { next: $next },
-            { next_back: $nextBack },
-            { next: $next },
-            { next_back: $nextBack },
-          ),
-      ),
-    ),
+    $lent(iterator_rev(evensOrOdds(false), twoIterator, twoDoubleEndedIterator)),
     1,
   );
   console.log(`${value == null ? "None" : `Some(${value})`}`);
@@ -230,38 +195,7 @@ function main() {
     `${nth == null ? "None" : `Some(${nth})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
   );
   console.log(
-    `${$iterator(
-      evensOrOdds(false),
-      (iterator) =>
-        twoDoubleEndedIterator_nextBack(
-          iterator,
-          { next_back: $nextBack },
-          { next_back: $nextBack },
-        ),
-      true,
-      undefined,
-      undefined,
-      undefined,
-      (iterator, init, f, unwind, ends) =>
-        twoDoubleEndedIterator_rfold(
-          iterator,
-          init,
-          f,
-          { next: $next },
-          { next_back: $nextBack },
-          { next: $next },
-          { next_back: $nextBack },
-        ),
-      (iterator, n) =>
-        twoDoubleEndedIterator_nthBack(
-          iterator,
-          n,
-          { next: $next },
-          { next_back: $nextBack },
-          { next: $next },
-          { next_back: $nextBack },
-        ),
-    ).reduce((sum, n) => (((sum * 10) >>> 0) + n) >>> 0, 0)}`,
+    `${iterator_rev(evensOrOdds(false), twoIterator, twoDoubleEndedIterator).reduce((sum, n) => (((sum * 10) >>> 0) + n) >>> 0, 0)}`,
   );
 }
 //# sourceMappingURL=case.js.map

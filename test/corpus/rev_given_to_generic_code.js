@@ -2,18 +2,29 @@
 
 import {
   $filterEnds,
+  $foldOf,
   $iter,
   $iterator,
+  $knowing,
   $mapEnds,
   $next,
   $nextBack,
   $rangeInclusiveNext,
   $rangeInclusiveNextBack,
+  $rangeInclusiveNthBack,
   $rangeLen,
   $rangeNext,
   $rangeNextBack,
+  $rangeNthBack,
   $rev,
   $skipping,
+  $tryOf,
+  iterator_rev,
+  revDoubleEndedIterator_nextBack,
+  revDoubleEndedIterator_nthBack,
+  revDoubleEndedIterator_rfold,
+  revDoubleEndedIterator_tryRfold,
+  revExactSizeIterator_len,
 } from "@rust-js/std";
 
 export function entry() {
@@ -32,14 +43,113 @@ function first(it) {
 
 function main() {
   const v = [1, 2, 3, 4];
-  const value = ends($rev($iterator({ start: 1, end: 4 }, $rangeNext, false, $rangeNextBack)));
+  const value = ends(
+    $knowing(
+      iterator_rev(
+        { start: 1, end: 4 },
+        { next: $rangeNext },
+        { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+      ),
+      (iterator) => revDoubleEndedIterator_nextBack(iterator, { next: $rangeNext }),
+      (iterator) => revExactSizeIterator_len(iterator, { len: $rangeLen }),
+      undefined,
+      (iterator, k) => revDoubleEndedIterator_nthBack(iterator, k, { next: $rangeNext }),
+      (iterator, init, f, broke, unwind, ends) =>
+        revDoubleEndedIterator_tryRfold(
+          iterator,
+          init,
+          f,
+          { next: $rangeNext },
+          $tryOf(broke),
+          undefined,
+          unwind,
+          ends,
+        ),
+    ),
+  );
   const value$1 = ends(
-    $rev($iterator({ start: 1, end: 4 }, $rangeInclusiveNext, false, $rangeInclusiveNextBack)),
+    $knowing(
+      iterator_rev(
+        { start: 1, end: 4 },
+        { next: $rangeInclusiveNext },
+        { next_back: $rangeInclusiveNextBack, nthBack: $rangeInclusiveNthBack },
+      ),
+      (iterator) => revDoubleEndedIterator_nextBack(iterator, { next: $rangeInclusiveNext }),
+      undefined,
+      undefined,
+      (iterator, k) => revDoubleEndedIterator_nthBack(iterator, k, { next: $rangeInclusiveNext }),
+      (iterator, init, f, broke, unwind, ends) =>
+        revDoubleEndedIterator_tryRfold(
+          iterator,
+          init,
+          f,
+          { next: $rangeInclusiveNext },
+          $tryOf(broke),
+          undefined,
+          unwind,
+          ends,
+        ),
+    ),
   );
   console.log(
     `(${value[0] == null ? "None" : `Some(${value[0]})`}, ${value[1] == null ? "None" : `Some(${value[1]})`}, ${value[2] == null ? "None" : `Some(${value[2]})`}) (${value$1[0] == null ? "None" : `Some(${value$1[0]})`}, ${value$1[1] == null ? "None" : `Some(${value$1[1]})`}, ${value$1[2] == null ? "None" : `Some(${value$1[2]})`})`,
   );
-  const value$2 = ends($iterator({ start: 0, end: 3 }, $rangeNext, false, $rangeNextBack));
+  const value$2 = ends(
+    $knowing(
+      iterator_rev(
+        iterator_rev(
+          { start: 0, end: 3 },
+          { next: $rangeNext },
+          { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+        ),
+        { next: $next, fold: $foldOf },
+        {
+          next_back: (iterator) => revDoubleEndedIterator_nextBack(iterator, { next: $rangeNext }),
+          rfold: (iterator, init, f, unwind, ends) =>
+            revDoubleEndedIterator_rfold(
+              iterator,
+              init,
+              f,
+              { next: $rangeNext },
+              undefined,
+              unwind,
+              ends,
+            ),
+          nthBack: (iterator, k) =>
+            revDoubleEndedIterator_nthBack(iterator, k, { next: $rangeNext }),
+          tryRfold: (iterator, init, f, broke, unwind, ends) =>
+            revDoubleEndedIterator_tryRfold(
+              iterator,
+              init,
+              f,
+              { next: $rangeNext },
+              $tryOf(broke),
+              undefined,
+              unwind,
+              ends,
+            ),
+        },
+      ),
+      (iterator) => revDoubleEndedIterator_nextBack(iterator, { next: $next, fold: $foldOf }),
+      (iterator) =>
+        revExactSizeIterator_len(iterator, {
+          len: (iterator) => revExactSizeIterator_len(iterator, { len: $rangeLen }),
+        }),
+      undefined,
+      (iterator, k) => revDoubleEndedIterator_nthBack(iterator, k, { next: $next, fold: $foldOf }),
+      (iterator, init, f, broke, unwind, ends) =>
+        revDoubleEndedIterator_tryRfold(
+          iterator,
+          init,
+          f,
+          { next: $next, fold: $foldOf },
+          $tryOf(broke),
+          undefined,
+          unwind,
+          ends,
+        ),
+    ),
+  );
   console.log(
     `(${value$2[0] == null ? "None" : `Some(${value$2[0]})`}, ${value$2[1] == null ? "None" : `Some(${value$2[1]})`}, ${value$2[2] == null ? "None" : `Some(${value$2[2]})`})`,
   );
@@ -61,7 +171,15 @@ function main() {
     `(${value$6[0] == null ? "None" : `Some(${value$6[0]})`}, ${value$6[1] == null ? "None" : `Some(${value$6[1]})`}, ${value$6[2] == null ? "None" : `Some(${value$6[2]})`})`,
   );
   const value$7 = first(
-    $rev($iterator({ start: 1, end: 4 }, $rangeNext, false, $rangeNextBack, $rangeLen)),
+    $knowing(
+      iterator_rev(
+        { start: 1, end: 4 },
+        { next: $rangeNext },
+        { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+      ),
+      undefined,
+      (iterator) => revExactSizeIterator_len(iterator, { len: $rangeLen }),
+    ),
   );
   const value$8 = first($mapEnds($iter(v.toReversed()), (x) => (x * 10) >>> 0));
   console.log(

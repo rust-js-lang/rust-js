@@ -179,6 +179,13 @@ a borrow may change on every path that takes the borrow (12). Each was
 caught before M3's switch reached main, by recording both directions of
 the shadow, or by writing the case at the edge.
 
+14. **Run a hand probe natively as the corpus does, edition 2024.** Plain
+    `rustc` is edition 2015, whose `move` closures take whole variables:
+    `move |x| x + d.0` moves a `Drop` value `d` there, and takes only the
+    copied `d.0` in 2024, so the drop order differs. A probe compared with
+    2015's native output reported a wrong answer that wasn't (#1958); use
+    `rustc --edition 2024`, as the corpus harness does.
+
 ## Nets still to build
 
 | Net | Issue | What it would find |

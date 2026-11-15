@@ -2,6 +2,7 @@
 
 import {
   $iterator,
+  $knowing,
   $lent,
   $next,
   $nextBack,
@@ -9,7 +10,13 @@ import {
   $nthBack,
   $rangeNext,
   $rangeNextBack,
+  $rangeNthBack,
   $rev,
+  $tryOf,
+  iterator_rev,
+  revDoubleEndedIterator_nextBack,
+  revDoubleEndedIterator_nthBack,
+  revDoubleEndedIterator_tryRfold,
 } from "@rust-js/std";
 
 export function entry() {
@@ -40,13 +47,55 @@ function main() {
   const value$3 = farFromItsFront({ start: 0n, end: 18446744073709551615n });
   console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
   const value$4 = backThenFar(
-    $rev($iterator({ start: 0n, end: 18446744073709551615n }, $rangeNext, false, $rangeNextBack)),
+    $knowing(
+      iterator_rev(
+        { start: 0n, end: 18446744073709551615n },
+        { next: $rangeNext },
+        { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+      ),
+      (iterator) => revDoubleEndedIterator_nextBack(iterator, { next: $rangeNext }),
+      undefined,
+      undefined,
+      (iterator, k) => revDoubleEndedIterator_nthBack(iterator, k, { next: $rangeNext }),
+      (iterator, init, f, broke, unwind, ends) =>
+        revDoubleEndedIterator_tryRfold(
+          iterator,
+          init,
+          f,
+          { next: $rangeNext },
+          $tryOf(broke),
+          undefined,
+          unwind,
+          ends,
+        ),
+    ),
   );
   console.log(
     `(${value$4[0] == null ? "None" : `Some(${value$4[0]})`}, ${value$4[1] == null ? "None" : `Some(${value$4[1]})`})`,
   );
   const value$5 = backThenSkipped(
-    $rev($iterator({ start: 0n, end: 18446744073709551615n }, $rangeNext, false, $rangeNextBack)),
+    $knowing(
+      iterator_rev(
+        { start: 0n, end: 18446744073709551615n },
+        { next: $rangeNext },
+        { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+      ),
+      (iterator) => revDoubleEndedIterator_nextBack(iterator, { next: $rangeNext }),
+      undefined,
+      undefined,
+      (iterator, k) => revDoubleEndedIterator_nthBack(iterator, k, { next: $rangeNext }),
+      (iterator, init, f, broke, unwind, ends) =>
+        revDoubleEndedIterator_tryRfold(
+          iterator,
+          init,
+          f,
+          { next: $rangeNext },
+          $tryOf(broke),
+          undefined,
+          unwind,
+          ends,
+        ),
+    ),
   );
   console.log(
     `(${value$5[0] == null ? "None" : `Some(${value$5[0]})`}, ${value$5[1] == null ? "None" : `Some(${value$5[1]})`})`,
