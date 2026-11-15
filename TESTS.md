@@ -64,6 +64,16 @@ Added on 2026-11-15: `test/intl-arguments.test.ts` checks native Intl calls
 in Bun and Chromium, derives accepted Rust callers from pinned TypeScript
 unions across 26 sites, checks declarations and rejects nonmembers (#1830, #1834).
 
+Added #1833 coverage on 2026-11-15: six focused LocalKey restoration cases
+cover eager/generic callback proof, lazy/throwing and unrelated-callee controls,
+result/exception identity and double-panic termination. All six pass with 52
+assertions; eight new owner mutants are caught. A new native corpus program
+agrees with Rust, and its dyn-fn metamorphic rewrite exposes a separate
+pre-existing wrong answer, reported with a seven-line baseline reproduction.
+That regression remains failing; no waiver or known-failure entry is added.
+The first full gate also requires the new facts total (67) and the full new
+module path in the architecture. Exact results are retained by the port.
+
 As of 2026-10-30, `main` at `120772e2`; times are CI's, check run 41022723550.
 
 | Suite | Size | What it proves | Time |

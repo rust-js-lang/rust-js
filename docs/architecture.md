@@ -614,6 +614,12 @@ reaches that pass, so drop glue, `dropped_after_unwinding`, guards its
 drops where it's made (ADR 0660's #938 amendment). Tidy's contract "what unwinds is guarded",
 `test/architecture-iterators.test.ts` and
 `test/architecture-cleanups.test.ts` hold it.
+`analysis/lazy_locals.rs` supplies all eager keys, including const initializers;
+its initializer-effects map is a separate question. The unwinding owner
+consumes that set through `analysis/unwinding/local_keys.rs`, resolving only actual
+LocalKey with/try_with callbacks with shared MIR queries. Its generic-instance
+walk reads the existing function and closure body maps and retains cycle/memo
+checks. No downstream phase rebuilds the eager-key policy.
 `test/architecture-iterators.test.ts` rejects a runtime `try`, `catch` or
 `finally` outside them, but of helpers it names that aren't an iterator's.
 

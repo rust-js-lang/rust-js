@@ -297,3 +297,32 @@ stop part-way where a panic may be caught. `never_unwinding` itself, which
 drops' `finally`s and `Known::NeverThrows` read, is unchanged: a
 `Formatter`'s destination may be a crate's `fmt::Write` that panics.
 Mutation `formatting-unwinding-unseen`.
+
+
+## Amendment: an eager LocalKey access runs its callback's effects (#1833)
+
+Case N, no accepted semantic difference. The lazy_locals owner supplies the
+complete eager-key set, including constant initializers with no callable body.
+Its at_load map describes initializer effects and is not that set. Unwinding
+consumes the eager set; it does not reconstruct initialization policy.
+
+LocalKey::with and try_with are nonthrowing only when the actual key is eager
+and the actual callback is proved nonthrowing. The shared MIR referred-key and
+assigned-once queries resolve the receiver. The callback is resolved through
+the existing function-type owner; unknown function pointers and receivers stay
+unproved. The fixed point and generic-instance walk consume the same summary.
+The generic walk reads both canonical function and closure body maps, with its
+existing cycle and memo rules. Async bodies are not silently treated as calls.
+
+This lets an infallible restore use a scope's finally rather than duplicated
+catch/cleanup. The existing stack-overflow abort guards remain necessary for
+observable restores (#1193): Rust aborts where a bare JavaScript finally could
+restore and continue. The lead confirmed that required output difference; no
+ADR0262 exception is introduced. Lazy initializers, throwing callbacks, and
+unrelated callees with key/callback arguments retain abort-safe cleanup.
+
+The focused fixture covers nested restores, arbitrary result and thrown-value
+identity, generic callbacks, normal cleanup throws, and a child process that
+must terminate on a double panic. The native corpus also covers try_with, lazy
+initialization and fallible restoration. Mutations guard callback proof, eager
+selection including constants, lazy exclusion, generic proof and callee identity.

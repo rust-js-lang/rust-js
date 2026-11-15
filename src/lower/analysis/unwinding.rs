@@ -12,9 +12,10 @@ use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::DefKind;
 use rustc_middle::mir::{self, TerminatorKind};
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt};
-use rustc_span::def_id::DefId;
+use rustc_span::def_id::{DefId, LocalDefId};
 
 mod eager_futures;
+mod local_keys;
 
 /// What `found` finds of a crate's functions and closures.
 pub(super) struct Found {
@@ -34,13 +35,21 @@ pub(super) fn found<'tcx>(
     recognition: &Recognition<'_, 'tcx>,
     bodies: &[&Body<'tcx>],
     runs: &dyn Fn(Ty<'tcx>, DefId) -> bool,
+    eager: &IndexSet<LocalDefId>,
 ) -> Found {
     let quiet = quiet(tcx, recognition, bodies, runs);
     eager_futures::refuse_where_eagerness_shows(tcx, recognition, bodies, &quiet, runs);
     Found {
-        never_unwinding: never_unwinding(tcx, recognition, bodies, runs, Unwinding::AtAll),
+        never_unwinding: never_unwinding(tcx, recognition, bodies, runs, eager, Unwinding::AtAll),
         quiet,
-        never_but_through_whats_shown: never_unwinding(tcx, recognition, bodies, runs, Unwinding::ButThroughWhatsShown),
+        never_but_through_whats_shown: never_unwinding(
+            tcx,
+            recognition,
+            bodies,
+            runs,
+            eager,
+            Unwinding::ButThroughWhatsShown,
+        ),
     }
 }
 
@@ -70,11 +79,12 @@ fn never_unwinding<'tcx>(
     recognition: &Recognition<'_, 'tcx>,
     bodies: &[&Body<'tcx>],
     runs: &dyn Fn(Ty<'tcx>, DefId) -> bool,
+    eager: &IndexSet<LocalDefId>,
     unwinding: Unwinding,
 ) -> IndexSet<DefId> {
     // Each one's `Drop`s that drop nothing, of what JS drops nothing of or
     // of what's moved out by then (`mir::dead_drops`, #717).
-    let candidates: Vec<(DefId, &mir::Body<'tcx>, IndexSet<mir::BasicBlock>)> = (bodies.iter())
+    let candidates: Vec<_> = (bodies.iter())
         .filter(|body| candidate(tcx, body.def_id))
         .filter_map(|body| {
             let mir = &body.mir.as_ref()?.body;
@@ -85,20 +95,26 @@ fn never_unwinding<'tcx>(
                 !matches!(&mir.basic_blocks[block].terminator().kind,
                     TerminatorKind::Drop { place, .. } if place.ty(mir, tcx).ty.has_param())
             });
-            Some((body.def_id, mir, dead))
+            Some((body.def_id, mir, dead, local_keys::Calls::new(body.mir.as_ref()?)))
         })
         .collect();
     let mut never: IndexSet<DefId> = candidates.iter().map(|&(id, ..)| id).collect();
     loop {
         let unwinding: Vec<DefId> = (candidates.iter())
-            .filter(|(id, mir, dead)| {
+            .filter(|(id, mir, dead, local)| {
                 // Of formatting's, an exhaustive `match`'s impossible branch,
                 // a derived `Debug`'s of an enum, never runs.
                 let unreachable = unwinding == Unwinding::ButThroughWhatsShown;
                 never.contains(id)
-                    && !steps_on((mir, dead, unreachable), &mut |callee, args, _| {
+                    && !steps_on((mir, dead, unreachable), &mut |callee, args, operands| {
                         never.contains(&callee)
                             || std_never_unwinds((tcx, recognition), (callee, args), &|ty| runs(ty, *id))
+                            || local
+                                .callback(recognition, (callee, args), operands, eager)
+                                .is_some_and(|(callback, args)| {
+                                    never.contains(&callback)
+                                        || std_never_unwinds((tcx, recognition), (callback, args), &|ty| runs(ty, *id))
+                                })
                             || (unwinding == Unwinding::ButThroughWhatsShown && formats(tcx, callee))
                     })
             })
@@ -572,17 +588,25 @@ pub(in crate::lower) fn std_quiet<'tcx>(
 /// coroutine; one that reaches itself again may unwind, as nothing is
 /// known of it yet.
 pub(in crate::lower) fn never_unwinds_given<'tcx>(
-    (recognition, never, bodies): (&Recognition<'_, 'tcx>, &IndexSet<DefId>, &IndexMap<DefId, &Body<'tcx>>),
+    (recognition, never, bodies, closures): (
+        &Recognition<'_, 'tcx>,
+        &IndexSet<DefId>,
+        &IndexMap<DefId, &Body<'tcx>>,
+        &IndexMap<DefId, &Body<'tcx>>,
+    ),
     (id, args, typing_env): (DefId, ty::GenericArgsRef<'tcx>, ty::TypingEnv<'tcx>),
     (drops, may_panic): (&dyn Fn(Ty<'tcx>) -> bool, &dyn Fn(Ty<'tcx>) -> bool),
+    eager: &IndexSet<LocalDefId>,
 ) -> bool {
     let judged = Judged {
         recognition,
         never,
         bodies,
+        closures,
         typing_env,
         drops,
         may_panic,
+        eager,
     };
     judged.never_unwinds(id, args, &mut Walk::default())
 }
@@ -612,9 +636,11 @@ struct Judged<'a, 'b, 'tcx> {
     recognition: &'a Recognition<'b, 'tcx>,
     never: &'a IndexSet<DefId>,
     bodies: &'a IndexMap<DefId, &'a Body<'tcx>>,
+    closures: &'a IndexMap<DefId, &'a Body<'tcx>>,
     typing_env: ty::TypingEnv<'tcx>,
     drops: &'a dyn Fn(Ty<'tcx>) -> bool,
     may_panic: &'a dyn Fn(Ty<'tcx>) -> bool,
+    eager: &'a IndexSet<LocalDefId>,
 }
 
 impl<'tcx> Judged<'_, '_, 'tcx> {
@@ -623,7 +649,7 @@ impl<'tcx> Judged<'_, '_, 'tcx> {
         if self.never.contains(&id) {
             return true;
         }
-        if !id.is_local() || is_binding(tcx, id) || !matches!(tcx.def_kind(id), DefKind::Fn | DefKind::AssocFn) {
+        if !callable(tcx, id) {
             return false;
         }
         // Each instance judged once a walk, not once for each way to it,
@@ -637,15 +663,22 @@ impl<'tcx> Judged<'_, '_, 'tcx> {
             walk.met = walk.met.min(at);
             return false;
         }
-        let Some(mir) = self.bodies.get(&id).and_then(|body| body.mir.as_ref()) else {
+        let Some(mir) = self
+            .bodies
+            .get(&id)
+            .or_else(|| self.closures.get(&id))
+            .and_then(|body| body.mir.as_ref())
+        else {
             return false;
         };
-        let mir = mir.instantiated(tcx, args).body;
-        let mut dead = crate::lower::mir::dead_drops(tcx, &mir, &self.drops);
+        let prepared = mir.instantiated(tcx, args);
+        let local = local_keys::Calls::new(&prepared);
+        let mir = &prepared.body;
+        let mut dead = crate::lower::mir::dead_drops(tcx, mir, &self.drops);
         dead.extend(
             (mir.basic_blocks.iter_enumerated()).filter_map(|(at, block)| match &block.terminator().kind {
                 TerminatorKind::Drop { place, .. } => {
-                    let ty = place.ty(&mir, tcx).ty;
+                    let ty = place.ty(mir, tcx).ty;
                     let ty =
                         (tcx.try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(ty))).ok()?;
                     (!(self.may_panic)(ty)).then_some(at)
@@ -656,7 +689,13 @@ impl<'tcx> Judged<'_, '_, 'tcx> {
         let depth = walk.path.len();
         let outer = std::mem::replace(&mut walk.met, usize::MAX);
         walk.path.push((id, args));
-        let steps = steps_on((&mir, &dead, false), &mut |callee, callee_args, _| {
+        let steps = steps_on((mir, &dead, false), &mut |callee, callee_args, operands| {
+            if let Some((callback, args)) =
+                local.callback(self.recognition, (callee, callee_args), operands, self.eager)
+            {
+                return self.never_unwinds(callback, args, walk)
+                    || std_never_unwinds((tcx, self.recognition), (callback, args), self.drops);
+            }
             if self.never.contains(&callee)
                 || std_never_unwinds((tcx, self.recognition), (callee, callee_args), self.drops)
             {
@@ -690,9 +729,14 @@ impl<'tcx> Judged<'_, '_, 'tcx> {
 /// `Defer(|| DEPTH.set(previous))` in a function given `impl FnOnce`. Not a
 /// coroutine, an `async` block's, which no stage is.
 fn candidate(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    callable(tcx, id) && (tcx.def_kind(id) == DefKind::Closure || !tcx.generics_of(id).requires_monomorphization(tcx))
+}
+
+/// A source function or synchronous closure whose MIR can prove its effects.
+fn callable(tcx: TyCtxt<'_>, id: DefId) -> bool {
     id.is_local()
         && match tcx.def_kind(id) {
-            DefKind::Fn | DefKind::AssocFn => !tcx.generics_of(id).requires_monomorphization(tcx),
+            DefKind::Fn | DefKind::AssocFn => true,
             DefKind::Closure => !tcx.is_coroutine(id),
             _ => false,
         }

@@ -36,6 +36,8 @@ use crate::lower::recognition::{is_local_with, local_key_access, local_key_sets,
 /// made as its module loads, by its key.
 pub(in crate::lower) struct LazyLocals {
     pub(in crate::lower) lazy: IndexSet<LocalDefId>,
+    /// Every eager key, including const initializers with no callable body.
+    pub(in crate::lower) eager: IndexSet<LocalDefId>,
     /// Each made as its module loads, as JS's `const x = f();` is, and what
     /// its initializer may run and read there, all `may_run` finds, the
     /// one rule; `None` where it may run what rust-js can't follow. The pipeline asks, of the
@@ -59,6 +61,7 @@ pub(super) fn lazy_locals<'tcx>(
 ) -> LazyLocals {
     let mut found = LazyLocals {
         lazy: made_where_used.clone(),
+        eager: IndexSet::default(),
         at_load: IndexMap::default(),
     };
     // What each initializer may run and read as its module loads, all
@@ -125,6 +128,11 @@ pub(super) fn lazy_locals<'tcx>(
             }
         }
     }
+    found.eager = inits
+        .values()
+        .copied()
+        .filter(|key| !found.lazy.contains(key))
+        .collect();
     found
 }
 

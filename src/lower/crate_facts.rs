@@ -156,6 +156,8 @@ pub(in crate::lower) struct CrateFacts<'a, 'tcx> {
     /// The thread-locals made where they're first used, read by calling
     /// them (ADR 0037, amended).
     pub(in crate::lower) lazy_locals: &'a IndexSet<rustc_span::def_id::LocalDefId>,
+    /// All eager keys from lazy_locals, including constant initializers.
+    pub(in crate::lower) eager_locals: &'a IndexSet<rustc_span::def_id::LocalDefId>,
     /// The functions a block makes and gives, each a named function
     /// expression there (ADR 0296).
     pub(in crate::lower) named_expressions: &'a IndexSet<DefId>,
@@ -329,6 +331,7 @@ carried! {
     quiet_locals => CrateOnly,
     quiet_library_keys => CrateOnly,
     lazy_locals => By(&[F::ItemFactLazy]),
+    eager_locals => CrateOnly,
     named_expressions => CrateOnly,
     local_functions => CrateOnly,
     forwarded => CrateOnly,
@@ -359,6 +362,6 @@ mod tests {
                 }
             }
         }
-        assert_eq!(CARRIED.len(), 66);
+        assert_eq!(CARRIED.len(), 67);
     }
 }

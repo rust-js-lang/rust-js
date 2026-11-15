@@ -1415,6 +1415,14 @@ What's refused of collections and iterators is in
 value moved away, on reassignment, at the end of a temporary, on an early
 `return`, and while a panic unwinds, each through a `try`/`finally`. Code
 with no `Drop` impl has no extra JS ([0098](../decisions/0098-destructors.md)).
+A thread-local's `with` or `try_with` is nonthrowing where its key is already
+initialized at module load and its callback cannot panic. A constant initializer
+counts too. A lazy initializer or a throwing callback still needs guarded
+cleanup. Generic scope guards use the instantiated callback
+([ADR 0902](../decisions/0902-what-never-unwinds-is-read-from-mir.md), #1833).
+The existing stack-overflow abort guards around observable restoration remain
+part of preserving Rust's behavior.
+
 What can't panic needs no `finally`: a `println!` of numbers and text,
 whose stream never fails, is followed by what's dropped after it,
 `console.log(..); $unborrow(b);`

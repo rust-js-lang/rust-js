@@ -345,9 +345,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // one that may.
         self.drop_state.never_unwinding.borrow_mut().insert((drop, args), false);
         let never = super::analysis::never_unwinds_given(
-            (&self.recognition(), self.krate.never_unwinding, self.krate.bodies),
+            (
+                &self.recognition(),
+                self.krate.never_unwinding,
+                self.krate.bodies,
+                self.krate.closures,
+            ),
             (drop, args, self.typing_env),
             (&|ty| self.drops(ty) != Drops::Nothing, &|ty| self.drop_may_panic(ty)),
+            self.krate.eager_locals,
         );
         self.drop_state.never_unwinding.borrow_mut().insert((drop, args), never);
         never

@@ -7,6 +7,22 @@ const throughCopy = ["test/corpus.test.ts", "-t", "^thread_local_written_through
 
 export const mutations: Mutation[] = [
   {
+    name: "eager-key-includes-lazy-initializers",
+    breaks: "lazy initializers are incorrectly supplied as already initialized to effect analysis",
+    file: "src/lower/analysis/lazy_locals.rs",
+    find: "        .filter(|key| !found.lazy.contains(key))\n",
+    replace: "        .filter(|_| true)\n",
+    tests: ["test/lowering-local-key-unwinding.test.ts", "-t", "lazy LocalKey"],
+  },
+  {
+    name: "eager-key-excludes-constant-initializers",
+    breaks: "eager constant initializers disappear because the effects-only map has no callable body for them",
+    file: "src/lower/analysis/lazy_locals.rs",
+    find: "        .filter(|key| !found.lazy.contains(key))\n",
+    replace: "        .filter(|key| !found.lazy.contains(key) && found.at_load.contains_key(key))\n",
+    tests: ["test/lowering-local-key-unwinding.test.ts", "-t", "proved nonthrowing"],
+  },
+  {
     name: "at-load-prints-unseen",
     breaks:
       "a thread-local whose initializer prints is made as its module loads, so `printed` comes before `main`'s `start`, where Rust prints it at its first use (#554)",

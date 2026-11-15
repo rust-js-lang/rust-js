@@ -291,6 +291,8 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     /// their module's load can't make them first (ADR 0037, amended): each
     /// `$local(() => init)`, read by calling it.
     pub lazy_locals: IndexSet<LocalDefId>,
+    /// All eager keys, from lazy_locals, including constant initializers.
+    pub eager_locals: IndexSet<LocalDefId>,
     /// The others, each made as its module loads, and what its initializer
     /// may run and read of the crate's there; `None`, what rust-js can't
     /// follow (ADR 1006, amended).
@@ -900,6 +902,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     );
     let lazy_locals::LazyLocals {
         lazy: lazy_locals,
+        eager: eager_locals,
         at_load: locals_at_load,
     } = lazy_locals::lazy_locals(
         tcx,
@@ -1139,7 +1142,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         never_unwinding,
         quiet: quiet_fns,
         never_but_through_whats_shown,
-    } = unwinding::found(tcx, &recognition, all_bodies, &runs);
+    } = unwinding::found(tcx, &recognition, all_bodies, &runs, &eager_locals);
     // Which writers may print as they format, through stdout's line (#1490),
     // and which of their types' may stop part-way where a panic may be
     // caught (#1521).
@@ -1255,6 +1258,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         quiet_locals,
         quiet_library_keys,
         lazy_locals,
+        eager_locals,
         locals_at_load,
         named_expressions,
         local_functions,

@@ -3,6 +3,30 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "local-with-callback-assumed-nonthrowing",
+    breaks: "a LocalKey with callback that panics is treated as an infallible destructor",
+    file: "src/lower/analysis/unwinding.rs",
+    find: "                                    never.contains(&callback)\n",
+    replace: "                                    true || never.contains(&callback)\n",
+    tests: ["test/lowering-local-key-unwinding.test.ts", "-t", "callback that can panic"],
+  },
+  {
+    name: "local-with-callback-proof-discarded",
+    breaks: "a proved eager-key restore keeps duplicated cleanup instead of a finally",
+    file: "src/lower/analysis/unwinding.rs",
+    find: "                                    never.contains(&callback)\n",
+    replace: "                                    false && never.contains(&callback)\n",
+    tests: ["test/lowering-local-key-unwinding.test.ts", "-t", "proved nonthrowing"],
+  },
+  {
+    name: "local-with-generic-callback-unproved",
+    breaks: "a generic destructor does not prove its instantiated LocalKey callback",
+    file: "src/lower/analysis/unwinding.rs",
+    find: "                return self.never_unwinds(callback, args, walk)\n",
+    replace: "                return false && self.never_unwinds(callback, args, walk)\n",
+    tests: ["test/lowering-local-key-unwinding.test.ts", "-t", "generic LocalKey"],
+  },
+  {
     name: "assert-steps-on",
     breaks:
       "a function whose bound or divisor check may panic is taken for one that never unwinds, so a panic in it skips the drops of what its caller holds",

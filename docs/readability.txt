@@ -1,14 +1,14 @@
 # shape	count	per 10,000 lines
-files	2587
-lines	341840
+files	2589
+lines	342042
 temporaries	0	0
 labeled blocks	0	0
-while (true)	224	6.6
-$iter	2874	84.1
+while (true)	224	6.5
+$iter	2874	84
 Iterator.from	276	8.1
 return;	332	9.7
-renamed x$1	16123	471.7
-role fallbacks	8841	258.6
+renamed x$1	16129	471.6
+role fallbacks	8847	258.7
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1	role fallbacks
 test/corpus/adapter_drop_past_a_panic.js	52	0	0	0	1	0	0	0	1
 test/corpus/adapter_drops.js	1844	0	0	1	19	2	1	98	61
@@ -873,6 +873,7 @@ test/corpus/fn_boxed_once_drops.js	123	0	0	0	0	0	0	12	1
 test/corpus/fn_compared_by_its_pointer.js	46	0	0	0	0	0	0	0	1
 test/corpus/fn_dyn_holding_an_any_dyn_drops_it.js	156	0	0	1	1	0	0	0	2
 test/corpus/fn_dyn_holding_an_error_or_iterator_dyn_drops_it.js	91	0	0	0	1	0	0	0	1
+test/corpus/fn_given_through_a_mut_box.js	70	0	0	0	0	0	0	0	0
 test/corpus/fn_item_converting_argument.js	25	0	0	0	0	0	0	0	0
 test/corpus/fn_item_referenced.js	19	0	0	0	0	0	0	0	0
 test/corpus/fn_items_as_values.js	23	0	0	0	0	0	0	0	0
@@ -1316,6 +1317,7 @@ test/corpus/literal_of_a_struct_beside_a_cell.js	57	0	0	0	0	0	0	0	0
 test/corpus/load_cycle_values.js	28	0	0	0	0	0	0	0	1
 test/corpus/local_borrow_nested_option.js	37	0	0	0	0	0	1	0	1
 test/corpus/local_consts.js	137	0	0	0	0	0	0	4	0
+test/corpus/local_with_scope_guards.js	132	0	0	0	0	0	0	6	6
 test/corpus/lock_debug.js	41	0	0	0	0	0	0	0	0
 test/corpus/lock_destructors.js	126	0	0	0	0	0	0	3	5
 test/corpus/lock_poisoning.js	501	0	0	0	1	0	0	60	34
