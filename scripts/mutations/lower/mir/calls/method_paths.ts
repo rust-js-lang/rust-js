@@ -4,6 +4,22 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "optional-call-safe-receiver-unchecked",
+    breaks: "a safe optional call accepts an unrelated native receiver without an unsafe promise",
+    file: "src/lower/mir/calls/method_paths.rs",
+    find: "if unchecked {",
+    replace: "if true {",
+    tests: ["test/js-optional-call.test.ts", "-t", "a safe optional native call"],
+  },
+  {
+    name: "optional-call-native-receiver-checked",
+    breaks: "the documented optional Node member is rejected as though it must be declared on Node",
+    file: "src/lower/mir/calls/method_paths.rs",
+    find: "PathEnd::UncheckedMethod",
+    replace: "PathEnd::Checked",
+    tests: ["test/js-optional-call.test.ts", "-t", "documented Node receiver"],
+  },
+  {
     name: "method-path-step-unread",
     breaks:
       "`js::method((element, HTMLElement::focus))` is `element`, its method's step never read (rd181)",

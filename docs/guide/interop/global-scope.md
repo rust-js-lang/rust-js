@@ -414,6 +414,17 @@ an argument mustn't run without the method, test it first with
 asking first and then calling makes. A getter isn't called, and a method
 that may give `undefined`, which `?.` gives of one that isn't there too,
 is refused, saying to read it once with `js::method`.
+For an unchecked final receiver, use `unsafe { js::optional_call_unchecked(path, args) }`.
+The caller must guarantee the selected native signature when a member call
+returns normally. Its final method may belong to another interface, as a
+Node's optional Element::closest does; no class/realm check is inserted.
+The safe `optional_call`, ordinary method extraction, and all preceding native
+path steps remain checked.
+
+`unsafe { js::cast::<T>(value) }` asserts a target interface without an
+`instanceof` check. This existing unchecked cast emits the value itself,
+including for a generic target or an object from another realm. The caller
+owns this promise; no second unchecked cast API is provided.
 
 `js::method` of such a path is the method read as a value, the JS
 function itself, called with `function::call`, which gives its `this`:

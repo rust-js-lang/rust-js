@@ -156,7 +156,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a path whose step is no method of what the one before gives, `(Doc::make, Page::doc)`, is asked as if it were",
     file: "src/lower/mir/calls/defined.rs",
-    find: "                    if !bindings::is_method(tcx, f) || (of != Some(before.peel_refs()) && !any && !extends) {\n",
+    find: "                    if !bindings::is_method(tcx, f) || (!unchecked && incompatible) {\n",
     replace: "                    if !bindings::is_method(tcx, f) {\n",
     tests: [
       "test/lowering-bindings.test.ts",
@@ -412,8 +412,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`js::method((js::class::<HTMLElement>().prototype(), HTMLElement::focus))`, a path from any value, is refused as a step of no method of it (rd181)",
     file: "src/lower/mir/calls/defined.rs",
-    find: "(of != Some(before.peel_refs()) && !any && !extends)",
-    replace: "(of != Some(before.peel_refs()) && !extends)",
+    find: "of != Some(before.peel_refs()) && !any && !extends",
+    replace: "of != Some(before.peel_refs()) && !extends",
     tests: ["test/lowering-is-function.test.ts", "-t", "js::method"],
   },
   {
@@ -421,8 +421,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`js::is_function((style, CSSStyleDeclaration::set_property as fn(..)))` of an element's `CSSStyleProperties`, which extends it, is refused (rd232)",
     file: "src/lower/mir/calls/defined.rs",
-    find: "&& !any && !extends)",
-    replace: "&& !any)",
+    find: "&& !any && !extends;",
+    replace: "&& !any;",
     tests: ["test/lowering-is-function.test.ts", "-t", "path from a value"],
   },
   {

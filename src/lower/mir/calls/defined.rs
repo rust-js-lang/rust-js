@@ -7,6 +7,14 @@ use super::*;
 use crate::lower::bindings::Asked;
 use crate::lower::mir::locals::user_variable;
 
+/// Whether the final member's native receiver is proved by the path, or
+/// asserted by the caller of the unsafe optional-call binding.
+#[derive(Clone, Copy)]
+pub(super) enum PathEnd {
+    Checked,
+    UncheckedMethod,
+}
+
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `js::is_defined(binding)`: `typeof MessageChannel !== "undefined"`,
     /// of the global its argument names (ADR 0597), and `js::is_function`'s
@@ -58,12 +66,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             let steps = &self.steps_named(body, &arg.node, steps)[..];
             if let Some(value_ty) = value_first(steps) {
-                let (path, read) = self.defined_path(&steps[1..], Some(value_ty), asked.function(), span)?;
+                let (path, read) =
+                    self.defined_path(&steps[1..], Some(value_ty), PathEnd::Checked, asked.function(), span)?;
                 self.asked_of_number(asked, read, span)?;
                 let value = self.path_value(state, &arg.node, asked.function(), (span, out))?;
                 return self.mir_defined_parts(Some(path), Some(value), asked, span);
             }
-            let (path, read) = self.defined_path(steps, None, asked.function(), span)?;
+            let (path, read) = self.defined_path(steps, None, PathEnd::Checked, asked.function(), span)?;
             self.asked_of_number(asked, read, span)?;
             return self.mir_defined_parts(Some(path), None, asked, span);
         }
@@ -433,6 +442,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         &self,
         steps: &[ty::Ty<'tcx>],
         from: Option<ty::Ty<'tcx>>,
+        end: PathEnd,
         function: &str,
         span: Span,
     ) -> R<(String, ty::Ty<'tcx>)> {
@@ -480,7 +490,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         }
                         _ => false,
                     };
-                    if !bindings::is_method(tcx, f) || (of != Some(before.peel_refs()) && !any && !extends) {
+                    // Only the final optional member may belong to another
+                    // native interface; optional_call_unchecked owns that promise.
+                    // All preceding steps and ordinary method reads stay checked.
+                    let unchecked = matches!(end, PathEnd::UncheckedMethod) && k + 1 == steps.len();
+                    let incompatible = of != Some(before.peel_refs()) && !any && !extends;
+                    if !bindings::is_method(tcx, f) || (!unchecked && incompatible) {
                         return Err(refused());
                     }
                     match path.is_empty() {

@@ -91,3 +91,89 @@ test("an optional call of a getter or of what may give undefined is refused, say
     expect([body, refused.exitCode === 0, refused.stderr.toString().includes(refusal)]).toEqual([body, false, true]);
   }
 });
+
+
+// #1899: the helper's documented hop is a Node, so closest can be absent.
+// The native signature is selected by the method token, not by a cast that
+// turns a text node or shadow root into an Element.
+test("an optional call accepts its documented Node receiver", async () => {
+  const dir = fixture("js-optional-call-node");
+  writeFileSync(join(dir, "lib.rs"), `use webapi::{Element, Node};
+
+/// # Safety
+/// Any present closest must satisfy the selected native method signature.
+pub unsafe fn closest_of(hop: &Node, selector: &str) -> Option<&'static Element> {
+    unsafe { js::optional_call_unchecked((hop, Element::closest), (selector,)) }.flatten()
+}
+
+/// # Safety
+/// Any present closest must satisfy the selected native method signature.
+pub unsafe fn found(hop: &Node, selector: &str) -> u32 {
+    match unsafe { js::optional_call_unchecked((hop, Element::closest), (selector,)) } {
+        None => 0,
+        Some(None) => 1,
+        Some(Some(_)) => 2,
+    }
+}
+`);
+  const built = Bun.spawnSync([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...flags], {cwd:root, stderr:"pipe", timeout:60_000});
+  expect([built.exitCode, built.stderr.toString()]).toEqual([0, ""]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("return hop.closest?.(selector) ?? undefined;");
+  expect(js).not.toContain("instanceof");
+  expect(readFileSync(join(dir, "lib.d.ts"), "utf8")).toContain("closestOf(hop: Node, selector: string): Element | null | undefined;");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.found({}, "a"), lib.found({closest:()=>null}, "a"), lib.found({closest:()=>({})}, "a")]).toEqual([0, 1, 2]);
+  expect(() => lib.closestOf({closest:0}, "a")).toThrow(TypeError);
+  const calls:unknown[] = [];
+  const receiver = {};
+  const result = {};
+  function closest(this:unknown, selector:string) {calls.push(["call", this === receiver, selector]); return result;}
+  Object.defineProperty(closest, "call", {get() {throw Error("own call was read");}});
+  Object.defineProperty(receiver, "closest", {get() {calls.push("get"); return closest;}});
+  expect(lib.closestOf(receiver, "button")).toBe(result);
+  expect(calls).toEqual(["get", ["call", true, "button"]]);
+  const marker = {};
+  const throwing = Object.defineProperty({}, "closest", {get() {throw marker;}});
+  let thrown:unknown;
+  try {lib.closestOf(throwing, "a");} catch (error) {thrown = error;}
+  expect(thrown).toBe(marker);
+});
+
+
+test("an unchecked optional native call requires an unsafe Rust boundary", () => {
+  const dir = fixture("js-optional-call-unsafe");
+  writeFileSync(join(dir, "lib.rs"), `use webapi::{Element, Node};
+pub fn call(hop: &Node, selector: &str) {
+    let _ = js::optional_call_unchecked((hop, Element::closest), (selector,));
+}
+`);
+  const built = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...flags], {cwd:root, stderr:"pipe", timeout:60_000});
+  expect(built.exitCode).not.toBe(0);
+  expect(built.stderr.toString()).toContain("requires unsafe");
+});
+
+test("ordinary native method extraction still checks its receiver interface", () => {
+  const dir = fixture("js-method-node-checked");
+  writeFileSync(join(dir, "lib.rs"), `use webapi::{Element, Node};
+pub fn read(hop: &Node) {
+    let _ = js::method((hop, Element::closest));
+}
+`);
+  const built = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...flags], {cwd:root, stderr:"pipe", timeout:60_000});
+  expect(built.exitCode).not.toBe(0);
+  expect(built.stderr.toString()).toContain("a step isn't a method of what the one before gives");
+});
+
+
+test("a safe optional native call still checks its receiver interface", () => {
+  const dir = fixture("js-optional-call-node-checked");
+  writeFileSync(join(dir, "lib.rs"), `use webapi::{Element, Node};
+pub fn call(hop: &Node, selector: &str) {
+    let _ = js::optional_call((hop, Element::closest), (selector,));
+}
+`);
+  const built = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...flags], {cwd:root, stderr:"pipe", timeout:60_000});
+  expect(built.exitCode).not.toBe(0);
+  expect(built.stderr.toString()).toContain("a step isn't a method of what the one before gives");
+});

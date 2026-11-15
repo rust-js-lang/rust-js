@@ -96,7 +96,7 @@ pub(in crate::lower) enum JsForm {
     /// `?.()`: a path's method read once and called with its value as its
     /// `this` where it's there, `value.method?.(args)`, `js::optional_call`'s
     /// (#1859).
-    OptionalCall,
+    OptionalCall { unchecked: bool },
     /// `is when`: whether a value is its type argument's, as JS tells one,
     /// and a test holds of it, `typeof value === "string" && test(value)`,
     /// `js::Is::when`'s (#1828).
@@ -191,7 +191,8 @@ pub(in crate::lower) fn js_form(tcx: TyCtxt<'_>, def_id: DefId) -> JsForm {
         "class" => return JsForm::Class,
         "downcast" => return JsForm::Downcast,
         "is when" => return JsForm::IsWhen,
-        "?.()" => return JsForm::OptionalCall,
+        "?.()" => return JsForm::OptionalCall { unchecked: false },
+        "?.() unchecked" => return JsForm::OptionalCall { unchecked: true },
         "null" => return JsForm::Null,
         "typeof object" => return JsForm::TypeofObject,
         "function" => return JsForm::WithThis,

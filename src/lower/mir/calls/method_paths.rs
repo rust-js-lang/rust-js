@@ -3,6 +3,7 @@
 //! any shape, `listener.handleEvent`, read only as its value's method
 //! (rd334, ADR 1025 amended).
 
+use super::defined::PathEnd;
 use super::*;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -45,7 +46,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             return self.mir_keyed_method(state, &arg.node, span, out).map(Some);
         }
-        let (path, _) = self.defined_path(&steps[1..], Some(value_ty), "js::method", span)?;
+        let (path, _) = self.defined_path(&steps[1..], Some(value_ty), PathEnd::Checked, "js::method", span)?;
         let value = self.path_value(state, &arg.node, "js::method", (span, out))?;
         let getters = (steps[1..].iter()).any(|&step| {
             crate::lower::fn_def(step)
@@ -113,11 +114,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<Option<Expr>> {
         let tcx = self.tcx;
         let body = state.body;
-        if !bindings::is_binding(tcx, def_id)
-            || !matches!(bindings::js_form(tcx, def_id), bindings::JsForm::OptionalCall)
-        {
+        if !bindings::is_binding(tcx, def_id) {
             return Ok(None);
         }
+        let bindings::JsForm::OptionalCall { unchecked } = bindings::js_form(tcx, def_id) else {
+            return Ok(None);
+        };
+        let end = if unchecked {
+            PathEnd::UncheckedMethod
+        } else {
+            PathEnd::Checked
+        };
         let refused = |cx: &Self, what: &str| Err(cx.unsupported(span, what));
         let [path, given] = args else {
             return refused(self, "`js::optional_call` of what isn't a path and its arguments");
@@ -149,7 +156,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             );
             return Err(crate::lower::refusal::error(tcx, span, what));
         }
-        let (named, _) = self.defined_path(&steps[1..], Some(value_ty), "js::optional_call", span)?;
+        let (named, _) = self.defined_path(&steps[1..], Some(value_ty), end, "js::optional_call", span)?;
         // What it gives: refused where `?.`'s `undefined` couldn't tell it.
         let output = tcx
             .fn_sig(method)

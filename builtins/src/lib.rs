@@ -901,7 +901,8 @@ pub const fn null<T>() -> Option<T> {
 /// that may be `undefined` is cast to an `Option`, never to what's in one:
 /// `Some(cast::<fn()>(v))` of an `undefined` is `undefined`, which is the
 /// `Option`'s `None`, as JS has `Some` of a function as the function
-/// itself; `cast::<Option<fn()>>(v)` says so.
+/// itself; `cast::<Option<fn()>>(v)` says so. A target native interface must
+/// be satisfied by the value, including for a generic target or another realm.
 #[cfg_attr(rust_js, rust_js::link_name = "this")]
 pub unsafe fn cast<T>(this: Option<&Unknown>) -> T {
     unreachable!()
@@ -1255,14 +1256,27 @@ pub trait MethodCall<M>: sealed::Path {
 /// [`value.method?.(args)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Operators/Optional_chaining):
 /// the method a path names, read once, called with its value as its
 /// `this` where it's there, `Some` of what it gives, and `None` where it's
-/// `undefined` or `null`, as a hop that may be a `Text` node calls
-/// `closest`: `js::optional_call((hop, Element::closest), (selector,))` is
+/// `undefined` or `null`: `js::optional_call((hop, Element::closest), (selector,))` is
 /// `hop.closest?.(selector)`. A member that's there and no function is
 /// called, JS's `TypeError` a panic. Rust evaluates the value and then
 /// the arguments before the call, so they run whether it's there or not
-/// (#1859, ADR 1156).
+/// (#1859, ADR 1156). The receiver must satisfy the selected native interface;
+/// use [`optional_call_unchecked`] to assert an unrelated receiver's contract.
 #[cfg_attr(rust_js, rust_js::link_name = "?.()")]
 pub fn optional_call<P: MethodCall<M>, M>(path: P, args: P::Arguments) -> Option<P::Output> {
+    let _ = (path, args);
+    unreachable!()
+}
+
+/// Like [`optional_call`], allowing the final method to belong to a different
+/// native interface. No runtime receiver check is added.
+///
+/// # Safety
+/// When the method returns normally, it must satisfy its selected binding's
+/// argument and result contract for this receiver. Missing and null members
+/// retain optional-call behavior; non-callable members throw as JavaScript does.
+#[cfg_attr(rust_js, rust_js::link_name = "?.() unchecked")]
+pub unsafe fn optional_call_unchecked<P: MethodCall<M>, M>(path: P, args: P::Arguments) -> Option<P::Output> {
     let _ = (path, args);
     unreachable!()
 }

@@ -52,7 +52,13 @@ Added focused #1861 coverage on 2026-11-15: a seventh source-workspace case chec
 
 Added #1867 coverage on 2026-11-15: a dedicated real-WebAPI aggregate-argument test covers objects and arrays, getter evaluation order and every thrown-value boundary, plus generated-source shape. Native owner counterexamples reject getters, computed keys, spreads and closure-written values. Two mutations remove the fix or its safety predicate. The initial object regression fails on main after ten runtime rows pass. The expanded focused case passes 34 assertions and the native safety unit passes; all 18 moved/new owner mutations are caught. The first complete ec7990f gate finishes in 429 seconds with only a newly adopted snapshot mismatch and an improved readability baseline; both are regenerated and reviewed before the final suite check.
 
-Historical suite totals below are not a recount.
+Added #1899 coverage on 2026-11-15: four optional-call cases prove the
+unchecked Node receiver, rustc's unsafe requirement, the safe helper's strict
+receiver and ordinary extraction's strict receiver. With the existing checked
+downcast cases, the focused run passes eight tests and 35 assertions. All five
+added or retargeted path-owner mutants are caught. The complete local
+check:fast --all passes in 403 seconds on bc26493 plus this patch. This is a
+local gate measurement; historical suite totals below are not a recount.
 
 Added on 2026-11-15: `test/intl-arguments.test.ts` checks native Intl calls
 in Bun and Chromium, derives accepted Rust callers from pinned TypeScript

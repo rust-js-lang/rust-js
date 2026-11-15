@@ -71,3 +71,32 @@ hop.closest?.(selector)
 - Mutations optional-call-arguments-in-place, optional-call-nested-unboxed,
   optional-call-of-undefined-results, optional-call-of-a-getter and
   optional-call-flattened-boxed.
+
+
+## Amendment: the documented Node lookup is an unsafe signature choice (#1899)
+
+The initial example was tested only with an Element receiver. Its documented
+Node receiver passed rustc's MethodCall bound but was refused by the shared
+strict binding-path check, even though absence is the point of this call.
+
+The safe optional_call binding retains its checked native receiver. The separate
+unsafe optional_call_unchecked explicitly asserts the final receiver's method
+signature: a normal return must obey its selected native argument/result
+contract. This is the standard checked/unchecked API distinction, as in get and
+get_unchecked, rather than two APIs for the same guarantee. The user approved
+preserving the SDK's unchecked JavaScript boundaries on 2026-11-15. Neither API
+adds a runtime class/realm check.
+
+defined_path remains the single owner of native path validation. Its explicit
+PathEnd policy permits only the final optional method's receiver to be
+asserted by this unsafe call. Ordinary method reads, mandatory path steps,
+native method form, argument binding and result/nullability rules retain
+their checks. Getters and undefined-valued method results remain refused.
+Rust still evaluates receiver and arguments in its order (ADR 0262 case R);
+the new receiver support accepts no additional semantic difference.
+
+The focused Node case checks generated source/declarations, absent/null/found
+results, a non-callable property, single getter read, exact receiver, an own
+call getter that must not run, and thrown-value identity. Rust rejects a call
+without an unsafe boundary; ordinary extraction still rejects an unrelated
+receiver. Full validation is pending the coordinated machine window.
