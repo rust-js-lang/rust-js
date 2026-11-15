@@ -96,7 +96,7 @@ export const mutations: Mutation[] = [
     name: "exact-chunks-mut-no-remainder",
     breaks: "a `ChunksExactMut`'s `into_remainder()` is an error",
     file: "src/lower/recognition/types.rs",
-    find: '                | "std::slice::ChunksExactMut"\n',
+    find: " | StdPath::SliceChunksExactMut",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "slice_views"],
   },
@@ -105,9 +105,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a byte slice's `escape_ascii()` isn't the array of its escape's bytes: `{}` of it is refused (ADR 0971)",
     file: "src/lower/recognition/types.rs",
-    find: '        if matches!(std_path(tcx, adt.did()), "std::ascii::EscapeDefault" | "std::slice::EscapeAscii"))',
-    replace:
-      '        if matches!(std_path(tcx, adt.did()), "std::ascii::EscapeDefault"))',
+    find: "Some(StdPath::AsciiEscapeDefault | StdPath::SliceEscapeAscii)",
+    replace: "Some(StdPath::AsciiEscapeDefault)",
     tests: ["test/corpus.test.ts", "-t", "slice_bytes_text"],
   },
   {
@@ -132,8 +131,8 @@ export const mutations: Mutation[] = [
     name: "var-error-unknown",
     breaks: "a `VarError` isn't shown as std shows it",
     file: "src/lower/recognition/types.rs",
-    find: 'std_path(self.tcx, adt.did()) == "std::env::VarError"',
-    replace: 'std_path(self.tcx, adt.did()) == "std::env::NoSuchError"',
+    find: "is_std_path(self.tcx, adt.did(), StdPath::EnvVarError)",
+    replace: "is_std_path(self.tcx, adt.did(), StdPath::EnvVarError) && false",
     tests: ["test/corpus.test.ts", "-t", "^env_vars.rs$"],
   },
   {
@@ -231,8 +230,8 @@ export const mutations: Mutation[] = [
     name: "string-drain-unrecognised",
     breaks: "a string Drain steps as chars() do",
     file: "src/lower/recognition/types.rs",
-    find: '== "std::string::Drain")',
-    replace: '== "std::string::Drained")',
+    find: "StdPath::StringDrain))",
+    replace: "StdPath::StringDrain) && false)",
     tests: ["test/corpus.test.ts", "-t", "str_odds"],
   },
   {
@@ -250,8 +249,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`next_back()` of a path's `components()` is refused, not an array's",
     file: "src/lower/recognition/types.rs",
-    find: '"std::path::Iter" | "std::path::Components" | "std::path::Ancestors"',
-    replace: '"std::path::Iter" | "std::path::Ancestors"',
+    find: "StdPath::PathIter | StdPath::PathComponents | StdPath::PathAncestors",
+    replace: "StdPath::PathIter | StdPath::PathAncestors",
     tests: ["test/corpus.test.ts", "-t", "^path_components.rs$"],
   },
   {
@@ -324,8 +323,8 @@ export const mutations: Mutation[] = [
     name: "cycle-hint-unasked",
     breaks: "a `cycle()` of an array's items isn't seen to ask its source's hint, so its `size_hint()` is refused (#1179)",
     file: "src/lower/recognition/types.rs",
-    find: "            \"std::iter::Cycle\" | \"std::iter::SkipWhile\"",
-    replace: "            \"std::iter::SkipWhile\"",
+    find: "Some(StdPath::IterCycle | StdPath::IterSkipWhile",
+    replace: "Some(StdPath::IterSkipWhile",
     tests: ["test/corpus.test.ts", "-t", "^cycle_size_hint.rs$"],
   },
   {
@@ -384,8 +383,8 @@ export const mutations: Mutation[] = [
     name: "lazy-adapters-hintless",
     breaks: "`size_hint()` of a held `skip_while`, `take_while`, `map_while` or `scan`, the runtime's `$Steps`, is refused (#1169)",
     file: "src/lower/recognition/types.rs",
-    find: "            \"std::iter::Cycle\" | \"std::iter::SkipWhile\" | \"std::iter::TakeWhile\" | \"std::iter::MapWhile\" | \"std::iter::Scan\"\n",
-    replace: "            \"std::iter::Cycle\"\n",
+    find: "Some(StdPath::IterCycle | StdPath::IterSkipWhile | StdPath::IterTakeWhile | StdPath::IterMapWhile | StdPath::IterScan)",
+    replace: "Some(StdPath::IterCycle)",
     tests: ["test/corpus.test.ts", "-t", "^held_lazy_adapters_hint.rs$"],
   },
   {

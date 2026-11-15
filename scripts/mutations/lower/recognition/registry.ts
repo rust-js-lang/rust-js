@@ -11,4 +11,12 @@ export const mutations: Mutation[] = [
     replace: '    "VecDeque",\n',
     tests: ["test/std-coverage.test.ts"],
   },
+  {
+    name: "by-path-through-any-child",
+    breaks: "a path's part is any child of that name, a module or not, so a `#![no_std]` crate's walk asks rustc for a type's children, and rustc panics",
+    file: "src/lower/recognition/registry.rs",
+    find: "            .find(|&id| last || tcx.def_kind(id) == rustc_hir::def::DefKind::Mod)?;\n",
+    replace: "            .find(|_| true)?;\n",
+    tests: ["test/crates.test.ts", "-t", "no_std"],
+  },
 ];

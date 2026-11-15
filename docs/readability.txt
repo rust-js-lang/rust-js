@@ -1,14 +1,14 @@
 # shape	count	per 10,000 lines
-files	2607
-lines	345013
+files	2609
+lines	345148
 temporaries	0	0
 labeled blocks	0	0
 while (true)	224	6.5
-$iter	2893	83.9
+$iter	2893	83.8
 Iterator.from	281	8.1
-return;	336	9.7
-renamed x$1	16171	468.7
-role fallbacks	8857	256.7
+return;	337	9.8
+renamed x$1	16171	468.5
+role fallbacks	8859	256.7
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1	role fallbacks
 test/corpus/adapter_drop_past_a_panic.js	50	0	0	0	1	0	0	0	1
 test/corpus/adapter_drops.js	1849	0	0	1	18	2	1	98	61
@@ -2318,6 +2318,7 @@ test/corpus/thread_local_set_in_const_closure.js	64	0	0	0	0	0	0	4	0
 test/corpus/thread_local_set_of_a_field_borrow.js	31	0	0	0	0	0	0	0	2
 test/corpus/thread_local_syntax.js	32	0	0	0	0	0	0	0	0
 test/corpus/thread_local_vec_taken.js	48	0	0	0	0	0	0	0	0
+test/corpus/thread_local_with_gives_what_it_returns.js	45	0	0	0	0	0	0	0	0
 test/corpus/thread_local_with_in_place.js	87	0	0	0	0	0	1	7	0
 test/corpus/thread_local_with_nested.js	36	0	0	0	0	0	0	0	0
 test/corpus/thread_local_written_through_copy.js	58	0	0	0	0	0	0	2	0
@@ -2438,6 +2439,7 @@ test/corpus/value_key_trees.js	172	0	0	0	0	0	0	0	0
 test/corpus/value_keys.js	147	0	0	0	0	0	0	20	15
 test/corpus/value_made_before_a_loop_argument.js	71	0	0	3	0	0	0	6	4
 test/corpus/value_read_in_a_guards_try.js	132	0	0	0	0	0	0	6	10
+test/corpus/variable_written_twice_then_tested.js	94	0	0	0	0	0	1	0	2
 test/corpus/vec_capacity.js	41	0	0	0	0	0	0	0	0
 test/corpus/vec_capacity_grown.js	278	0	0	0	1	0	0	10	0
 test/corpus/vec_clone_from_in_place.js	347	0	0	0	0	0	0	0	0
@@ -2472,7 +2474,7 @@ test/corpus/while_let_binding_is_its_scrutinee.js	157	0	0	0	0	0	0	7	3
 test/corpus/while_let_break_after_work.js	111	0	0	1	0	0	0	0	0
 test/corpus/while_let_steps.js	213	0	0	0	0	0	0	0	0
 test/corpus/while_let_written_break.js	88	0	0	0	0	0	0	0	0
-test/corpus/while_test_continues_of_chain.js	103	0	0	0	0	0	0	0	0
+test/corpus/while_test_continues_of_chain.js	99	0	0	0	0	0	0	0	0
 test/corpus/while_test_ends_in_throw.js	65	0	0	0	0	0	0	4	2
 test/corpus/whole_captures.js	105	0	0	0	0	0	0	18	0
 test/corpus/whole_counters.js	166	0	0	0	0	0	0	0	0

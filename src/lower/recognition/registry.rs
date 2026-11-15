@@ -172,14 +172,18 @@ fn data_structures(tcx: TyCtxt<'_>) -> Vec<(&'static str, Vec<DefId>)> {
     types
 }
 
-/// The item at `path` in `krate`, one of std's, through its modules' children.
+/// The item at `path` in `krate`, one of std's, through its modules'
+/// children: each part but the last a module, as only a module has children
+/// to ask, `core`'s `char` the module, not the type (#1681's DefId step).
 pub(super) fn by_path(tcx: TyCtxt<'_>, krate: StdCrate, path: &[&str]) -> Option<DefId> {
     let root = super::std_crate_num(tcx, krate)?;
     let mut at = root.as_def_id();
-    for part in path {
+    for (i, part) in path.iter().enumerate() {
+        let last = i + 1 == path.len();
         at = (tcx.module_children(at).iter())
-            .find(|child| child.ident.as_str() == *part)
-            .and_then(|child| child.res.opt_def_id())?;
+            .filter(|child| child.ident.as_str() == *part)
+            .filter_map(|child| child.res.opt_def_id())
+            .find(|&id| last || tcx.def_kind(id) == rustc_hir::def::DefKind::Mod)?;
     }
     Some(at)
 }

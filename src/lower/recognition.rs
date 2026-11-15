@@ -39,6 +39,7 @@ mod specialization;
 mod stable_keys;
 mod std_crates;
 mod std_items;
+mod std_paths;
 mod traits;
 mod type_facts;
 mod types;
@@ -48,8 +49,8 @@ mod zip_folds;
 
 pub(super) use self::{
     adapter_types::*, c_strs::*, calls::*, compiled_std::*, fmt::*, iterators::*, js_items::*, json::*, loop_ranges::*,
-    open_calls::*, serde::*, sorts::*, specialization::*, stable_keys::*, std_crates::*, std_items::*, traits::*,
-    type_facts::*, types::*, wrappers::*, zip_folds::*,
+    open_calls::*, serde::*, sorts::*, specialization::*, stable_keys::*, std_crates::*, std_items::*, std_paths::*,
+    traits::*, type_facts::*, types::*, wrappers::*, zip_folds::*,
 };
 
 use super::combinators::{Comb, IterComb, IterSource, StepOp};

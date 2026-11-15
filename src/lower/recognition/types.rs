@@ -12,21 +12,21 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// `LayoutError`, which says nothing, `Some(false)`.
     pub(in crate::lower) fn layout(&self, ty: Ty<'tcx>) -> Option<bool> {
         let ty::Adt(adt, _) = ty.kind() else { return None };
-        match std_path(self.tcx, adt.did()) {
-            "std::alloc::Layout" => Some(true),
-            "std::alloc::LayoutError" => Some(false),
+        match std_path_item(self.tcx, adt.did()) {
+            Some(StdPath::AllocLayout) => Some(true),
+            Some(StdPath::AllocLayoutError) => Some(false),
             _ => None,
         }
     }
 
     /// `panic::Location`: `{ file, line, column }` (ADR 0427).
     pub(in crate::lower) fn is_location(&self, ty: Ty<'tcx>) -> bool {
-        matches!(ty.kind(), ty::Adt(location, _) if std_path(self.tcx, location.did()) == "std::panic::Location")
+        matches!(ty.kind(), ty::Adt(location, _) if is_std_path(self.tcx, location.did(), StdPath::PanicLocation))
     }
 
     /// `io::Error`, a `$IoError` (ADR 0462).
     pub(in crate::lower) fn is_io_error(&self, ty: Ty<'tcx>) -> bool {
-        matches!(ty.kind(), ty::Adt(error, _) if std_path(self.tcx, error.did()) == "std::io::Error")
+        matches!(ty.kind(), ty::Adt(error, _) if is_std_path(self.tcx, error.did(), StdPath::IoError))
     }
 
     /// What an `io::Error` may hold and drops as it's dropped, as its
@@ -55,7 +55,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 
     /// `io::ErrorKind`, its variant's name (ADR 0462).
     pub(in crate::lower) fn is_io_error_kind(&self, ty: Ty<'tcx>) -> bool {
-        matches!(ty.kind(), ty::Adt(kind, _) if std_path(self.tcx, kind.did()) == "std::io::ErrorKind")
+        matches!(ty.kind(), ty::Adt(kind, _) if is_std_path(self.tcx, kind.did(), StdPath::IoErrorKind))
     }
 
     /// std's `Hasher`, found among the traits, as it has no diagnostic item.
@@ -68,9 +68,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// Which of std's hashers `ty` is, a `$SipHasher` (ADR 0463).
     pub(in crate::lower) fn std_hasher(&self, ty: Ty<'tcx>) -> Option<StdHasher> {
         let ty::Adt(adt, _) = ty.kind() else { return None };
-        match std_path(self.tcx, adt.did()) {
-            "std::hash::DefaultHasher" => Some(StdHasher::Default),
-            "std::hash::SipHasher" => Some(StdHasher::Sip),
+        match std_path_item(self.tcx, adt.did()) {
+            Some(StdPath::HashDefaultHasher) => Some(StdHasher::Default),
+            Some(StdPath::HashSipHasher) => Some(StdHasher::Sip),
             _ => None,
         }
     }
@@ -242,12 +242,12 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// A string's `drain(range)`, the `char`s it took out, which steps as
     /// `chars()`' do, an array of them (#118).
     pub(in crate::lower) fn is_string_drain(&self, ty: Ty<'tcx>) -> bool {
-        matches!(ty.kind(), ty::Adt(adt, _) if std_path(self.tcx, adt.did()) == "std::string::Drain")
+        matches!(ty.kind(), ty::Adt(adt, _) if is_std_path(self.tcx, adt.did(), StdPath::StringDrain))
     }
 
     /// A string's `char_indices()`, an array of `[byte, char]` (#118).
     pub(in crate::lower) fn is_char_indices(&self, ty: Ty<'tcx>) -> bool {
-        matches!(ty.kind(), ty::Adt(adt, _) if std_path(self.tcx, adt.did()) == "std::str::CharIndices")
+        matches!(ty.kind(), ty::Adt(adt, _) if is_std_path(self.tcx, adt.did(), StdPath::StrCharIndices))
     }
 
     /// A string's `bytes()`, an array of its UTF-8 bytes (ADR 0034).
@@ -355,9 +355,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let ty::Adt(adt, _) = ty.kind() else {
             return None;
         };
-        match std_path(self.tcx, adt.did()) {
-            "std::sync::mpsc::Sender" => Some(ChannelEnd::Sender),
-            "std::sync::mpsc::Receiver" => Some(ChannelEnd::Receiver),
+        match std_path_item(self.tcx, adt.did()) {
+            Some(StdPath::MpscSender) => Some(ChannelEnd::Sender),
+            Some(StdPath::MpscReceiver) => Some(ChannelEnd::Receiver),
             _ => None,
         }
     }
@@ -387,7 +387,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 
     /// A lock's `TryLockError`: `WouldBlock`, or `Poisoned` of a `PoisonError`.
     pub(in crate::lower) fn is_try_lock_error(&self, ty: Ty<'tcx>) -> bool {
-        matches!(ty.kind(), ty::Adt(adt, _) if std_path(self.tcx, adt.did()) == "std::sync::TryLockError")
+        matches!(ty.kind(), ty::Adt(adt, _) if is_std_path(self.tcx, adt.did(), StdPath::SyncTryLockError))
     }
 
     /// A `Utf8Error`, `false`, or a `FromUtf8Error`, `true`: the objects the
@@ -396,9 +396,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let ty::Adt(adt, _) = ty.kind() else {
             return None;
         };
-        match std_path(self.tcx, adt.did()) {
-            "std::str::Utf8Error" => Some(false),
-            "std::string::FromUtf8Error" => Some(true),
+        match std_path_item(self.tcx, adt.did()) {
+            Some(StdPath::StrUtf8Error) => Some(false),
+            Some(StdPath::StringFromUtf8Error) => Some(true),
             _ => None,
         }
     }
@@ -416,41 +416,32 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 
     pub(in crate::lower) fn is_path(&self, ty: Ty<'tcx>) -> bool {
         matches!(ty.peel_refs().kind(), ty::Adt(adt, _)
-            if matches!(std_path(self.tcx, adt.did()), "std::path::Path" | "std::path::PathBuf"))
+            if matches!(std_path_item(self.tcx, adt.did()), Some(StdPath::Path | StdPath::PathBuf)))
     }
 
     /// A `Path`, a `PathBuf`, what `display()` shows of one, or an `OsStr` or
     /// `OsString`: its text, a JS string (ADR 0173). Not a string otherwise: a
     /// path's `==` compares its components, `a/b` and `a//b` equal.
     pub(in crate::lower) fn is_path_like(&self, ty: Ty<'tcx>) -> bool {
-        matches!(ty.peel_refs().kind(), ty::Adt(adt, _) if matches!(
-            std_path(self.tcx, adt.did()),
-            "std::path::Path" | "std::path::PathBuf" | "std::path::Display" | "std::ffi::OsStr" | "std::ffi::OsString"
-        ))
+        matches!(ty.peel_refs().kind(), ty::Adt(adt, _) if matches!(std_path_item(self.tcx, adt.did()), Some(StdPath::Path | StdPath::PathBuf | StdPath::PathDisplay | StdPath::FfiOsStr | StdPath::FfiOsString)))
     }
 
     /// A path's `Component`, std's enum as any enum is (ADR 0033).
     pub(in crate::lower) fn is_path_component(&self, ty: Ty<'tcx>) -> bool {
-        matches!(ty.peel_refs().kind(), ty::Adt(adt, _) if std_path(self.tcx, adt.did()) == "std::path::Component")
+        matches!(ty.peel_refs().kind(), ty::Adt(adt, _) if is_std_path(self.tcx, adt.did(), StdPath::PathComponent))
     }
 
     /// An `OsStr` or an `OsString`, the text of a path's component: a JS
     /// string, equal and ordered by its bytes, as text is by code point.
     pub(in crate::lower) fn is_os_text(&self, ty: Ty<'tcx>) -> bool {
         matches!(ty.peel_refs().kind(), ty::Adt(adt, _)
-            if matches!(std_path(self.tcx, adt.did()), "std::ffi::OsStr" | "std::ffi::OsString"))
+            if matches!(std_path_item(self.tcx, adt.did()), Some(StdPath::FfiOsStr | StdPath::FfiOsString)))
     }
 
     /// A slice's `chunks_exact(n)` or `rchunks_exact(n)`, whose `remainder()`
     /// is what's left (ADR 0324).
     pub(in crate::lower) fn is_exact_chunks(&self, ty: Ty<'tcx>) -> bool {
-        matches!(ty.kind(), ty::Adt(adt, _) if matches!(
-            std_path(self.tcx, adt.did()),
-            "std::slice::ChunksExact"
-                | "std::slice::RChunksExact"
-                | "std::slice::ChunksExactMut"
-                | "std::slice::RChunksExactMut"
-        ))
+        matches!(ty.kind(), ty::Adt(adt, _) if matches!(std_path_item(self.tcx, adt.did()), Some(StdPath::SliceChunksExact | StdPath::SliceRChunksExact | StdPath::SliceChunksExactMut | StdPath::SliceRChunksExactMut)))
     }
 
     /// A `Cow`, `{ TAG, _0 }` (ADR 0033): what it borrowed, or owns.
@@ -488,29 +479,26 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// `env::args()`'s, an array of the process's arguments, which knows
     /// its length (ADR 0391).
     pub(in crate::lower) fn is_process_items(&self, ty: Ty<'tcx>) -> bool {
-        matches!(ty.kind(), ty::Adt(adt, _) if std_path(self.tcx, adt.did()) == "std::env::Args")
+        matches!(ty.kind(), ty::Adt(adt, _) if is_std_path(self.tcx, adt.did(), StdPath::EnvArgs))
     }
 
     /// A path's iterators, `Path::iter()`'s, `components()`'s and
     /// `ancestors()`'s: an array of what they give (ADR 0405).
     pub(in crate::lower) fn is_path_items(&self, ty: Ty<'tcx>) -> bool {
-        matches!(ty.kind(), ty::Adt(adt, _) if matches!(
-            std_path(self.tcx, adt.did()),
-            "std::path::Iter" | "std::path::Components" | "std::path::Ancestors"
-        ))
+        matches!(ty.kind(), ty::Adt(adt, _) if matches!(std_path_item(self.tcx, adt.did()), Some(StdPath::PathIter | StdPath::PathComponents | StdPath::PathAncestors)))
     }
 
     /// `env::VarError`, what `env::var` gives of a variable it hasn't:
     /// `"NotPresent"`, as an enum's unit variant is (ADR 0391).
     pub(in crate::lower) fn is_var_error(&self, ty: Ty<'tcx>) -> bool {
-        matches!(ty.kind(), ty::Adt(adt, _) if std_path(self.tcx, adt.did()) == "std::env::VarError")
+        matches!(ty.kind(), ty::Adt(adt, _) if is_std_path(self.tcx, adt.did(), StdPath::EnvVarError))
     }
 
     /// `path::StripPrefixError`, what `strip_prefix` gives of a path that
     /// doesn't start with what's asked: `undefined`, as it holds nothing
     /// (ADR 0405).
     pub(in crate::lower) fn is_strip_prefix_error(&self, ty: Ty<'tcx>) -> bool {
-        matches!(ty.kind(), ty::Adt(adt, _) if std_path(self.tcx, adt.did()) == "std::path::StripPrefixError")
+        matches!(ty.kind(), ty::Adt(adt, _) if is_std_path(self.tcx, adt.did(), StdPath::PathStripPrefixError))
     }
 
     /// A field's type, of an ADT given `args`: a projection in it, `K::Value`,
@@ -585,9 +573,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// A `PeekMut<T>`'s `T`, a guard of a heap's top (ADR 0333).
     pub(in crate::lower) fn peek_mut_of(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
         match ty.kind() {
-            ty::Adt(adt, args) if std_path(self.tcx, adt.did()) == "std::collections::binary_heap::PeekMut" => {
-                args.types().next()
-            }
+            ty::Adt(adt, args) if is_std_path(self.tcx, adt.did(), StdPath::BinaryHeapPeekMut) => args.types().next(),
             _ => None,
         }
     }
@@ -649,7 +635,7 @@ pub(crate) fn deref_target(tcx: TyCtxt<'_>, imp: DefId) -> Option<DefId> {
 /// A C-variadic function's `VaList`, the arguments it hasn't read yet: an
 /// array of them (ADR 0428).
 pub(crate) fn is_va_list(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
-    matches!(ty.kind(), ty::Adt(list, _) if std_path(tcx, list.did()) == "std::ffi::VaList")
+    matches!(ty.kind(), ty::Adt(list, _) if is_std_path(tcx, list.did(), StdPath::FfiVaList))
 }
 
 /// Which of `panic::Location`'s functions `id` is, if it's one (ADR 0427).
@@ -659,7 +645,7 @@ pub(crate) fn location_of(tcx: TyCtxt<'_>, id: DefId) -> Option<crate::lower::st
 
 /// `mem::Discriminant<T>`, its variant's discriminant, a number (ADR 0393).
 pub(crate) fn is_discriminant_type<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
-    matches!(ty.kind(), ty::Adt(adt, _) if std_path(tcx, adt.did()) == "std::mem::Discriminant")
+    matches!(ty.kind(), ty::Adt(adt, _) if is_std_path(tcx, adt.did(), StdPath::MemDiscriminant))
 }
 
 /// A type of addressable memory, or with one in it (ADR 0390): a raw
@@ -712,7 +698,7 @@ pub(crate) fn is_poison_error(ty: Ty<'_>) -> bool {
     ty::tls::with_opt(|tcx| {
         tcx.is_some_and(|tcx| {
             matches!(ty.kind(), ty::Adt(adt, _)
-                if of_std_crate(tcx, adt.did(), StdCrate::Std) && std_path(tcx, adt.did()) == "std::sync::PoisonError")
+                if of_std_crate(tcx, adt.did(), StdCrate::Std) && is_std_path(tcx, adt.did(), StdPath::SyncPoisonError))
         })
     })
 }
@@ -735,9 +721,9 @@ pub(crate) fn clock_type(id: DefId) -> Option<ClockType> {
         if !of_std_crate(tcx, id, StdCrate::Std) {
             return None;
         }
-        match std_path(tcx, id) {
-            "std::time::SystemTime" => Some(ClockType::System),
-            "std::time::SystemTimeError" => Some(ClockType::Error),
+        match std_path_item(tcx, id) {
+            Some(StdPath::TimeSystemTime) => Some(ClockType::System),
+            Some(StdPath::TimeSystemTimeError) => Some(ClockType::Error),
             _ => None,
         }
     })
@@ -758,7 +744,7 @@ pub(crate) fn clock_type_of(ty: Ty<'_>) -> Option<ClockType> {
 pub(in crate::lower) fn never_made(tcx: TyCtxt<'_>, variant: &ty::VariantDef) -> bool {
     variant.fields.iter().any(|field| {
         matches!(tcx.type_of(field.did).skip_binder().kind(),
-            ty::Adt(adt, _) if std_path(tcx, adt.did()) == "std::path::PrefixComponent")
+            ty::Adt(adt, _) if is_std_path(tcx, adt.did(), StdPath::PathPrefixComponent))
     })
 }
 
@@ -778,7 +764,7 @@ pub(crate) fn is_from_utf16_error(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
 /// Whether `ty` is `char::decode_utf16`'s iterator, `DecodeUtf16<I>`:
 /// `$decodeUtf16`'s `$Steps`, whose hint is std's of its source's (#1151).
 pub(crate) fn is_decode_utf16(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
-    matches!(ty.peel_refs().kind(), ty::Adt(adt, _) if std_path(tcx, adt.did()) == "std::char::DecodeUtf16")
+    matches!(ty.peel_refs().kind(), ty::Adt(adt, _) if is_std_path(tcx, adt.did(), StdPath::CharDecodeUtf16))
 }
 
 /// Whether `ty` is one of std's iterators whose JS is always a `$Steps`
@@ -790,10 +776,7 @@ pub(crate) fn is_decode_utf16(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
 /// stopped (#1169).
 pub(crate) fn asks_its_sources_hint(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
     is_decode_utf16(tcx, ty)
-        || matches!(ty.peel_refs().kind(), ty::Adt(adt, _) if matches!(
-            std_path(tcx, adt.did()),
-            "std::iter::Cycle" | "std::iter::SkipWhile" | "std::iter::TakeWhile" | "std::iter::MapWhile" | "std::iter::Scan"
-        ))
+        || matches!(ty.peel_refs().kind(), ty::Adt(adt, _) if matches!(std_path_item(tcx, adt.did()), Some(StdPath::IterCycle | StdPath::IterSkipWhile | StdPath::IterTakeWhile | StdPath::IterMapWhile | StdPath::IterScan)))
 }
 
 /// `char::decode_utf16`'s error, its unpaired surrogate's code (ADR 0327).
@@ -815,12 +798,12 @@ pub(crate) fn is_text_escape(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
 /// `escape_ascii()`: the array of its escape's bytes (ADRs 0558, 0971).
 pub(crate) fn is_byte_escape(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
     matches!(ty.kind(), ty::Adt(adt, _)
-        if matches!(std_path(tcx, adt.did()), "std::ascii::EscapeDefault" | "std::slice::EscapeAscii"))
+        if matches!(std_path_item(tcx, adt.did()), Some(StdPath::AsciiEscapeDefault | StdPath::SliceEscapeAscii)))
 }
 
 pub(crate) fn is_case_mapping(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
     matches!(ty.kind(), ty::Adt(adt, _) if of_std_crate(tcx, adt.did(), StdCrate::Core)
-        && matches!(std_path(tcx, adt.did()), "std::char::ToUppercase" | "std::char::ToLowercase"))
+        && matches!(std_path_item(tcx, adt.did()), Some(StdPath::CharToUppercase | StdPath::CharToLowercase)))
 }
 
 /// A `NonZero<T>` type (ADR 0177).
@@ -1201,10 +1184,10 @@ pub(in crate::lower) fn is_str_repeat(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
 
 /// `Recognition::is_backtrace`, of `tcx` alone.
 pub(in crate::lower) fn is_backtrace_type<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
-    matches!(ty.kind(), ty::Adt(b, _) if std_path(tcx, b.did()) == "std::backtrace::Backtrace")
+    matches!(ty.kind(), ty::Adt(b, _) if is_std_path(tcx, b.did(), StdPath::Backtrace))
 }
 
 /// `Recognition::is_cow`, of `tcx` alone: a declaration's type (#1748).
 pub(in crate::lower) fn is_cow_type<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
-    matches!(ty.kind(), ty::Adt(adt, _) if std_path(tcx, adt.did()) == "std::borrow::Cow")
+    matches!(ty.kind(), ty::Adt(adt, _) if is_std_path(tcx, adt.did(), StdPath::BorrowCow))
 }
