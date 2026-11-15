@@ -101,6 +101,20 @@ fn defaults_used(tcx: TyCtxt<'_>, imp: DefId) -> impl Iterator<Item = DefId> + '
         .filter(move |method| !written.contains_key(method))
 }
 
+/// The impls of `imp`'s trait's supertraits for its type, whose
+/// dictionaries its own holds, `Clone()` of `trait Dup: Clone` (#1927).
+fn supertrait_impls(tcx: TyCtxt<'_>, imp: DefId) -> Vec<DefId> {
+    let tr = tcx.impl_trait_ref(imp).instantiate_identity().skip_normalization();
+    let typing_env = ty::TypingEnv::post_analysis(tcx, imp);
+    let supers = rustc_middle::ty::elaborate::supertraits(tcx, ty::Binder::dummy(tr)).skip(1);
+    supers
+        .filter_map(|of| {
+            let of = tcx.instantiate_bound_regions_with_erased(of);
+            super::traits::evidence_impl(tcx, typing_env, of).map(|(id, _)| id)
+        })
+        .collect()
+}
+
 /// Which of a library's functions and impls may copy, or clone, a value
 /// of what the crate changes in place, which its library's JS, copying
 /// what its own crate changes, may then share: the crate compiles its own
@@ -167,11 +181,16 @@ impl<'a, 'tcx> Copying<'a, 'tcx> {
         self.asking.borrow_mut().insert(id);
         let (copies, read) = match tcx.def_kind(id) {
             // Its methods, and its trait's defaults it doesn't write, which
-            // its dictionary holds too (#1023).
+            // its dictionary holds too (#1023); and its supertraits' impls
+            // of its type, whose dictionaries it holds, `pointDup.Clone()`
+            // of `trait Dup: Clone` (#1927).
             DefKind::Impl { of_trait: true } => (tcx.associated_item_def_ids(id).iter().copied())
                 .chain(defaults_used(tcx, id))
+                .chain(supertrait_impls(tcx, id))
                 .map(|method| self.copies_below(method))
-                .fold((false, usize::MAX), |(a, at), (b, bt)| (a || b, at.min(bt))),
+                .fold((self.default_copies(id), usize::MAX), |(a, at), (b, bt)| {
+                    (a || b, at.min(bt))
+                }),
             DefKind::Fn | DefKind::AssocFn | DefKind::Closure if tcx.is_mir_available(id) => {
                 self.body_copies(tcx.optimized_mir(id))
             }
@@ -187,6 +206,45 @@ impl<'a, 'tcx> Copying<'a, 'tcx> {
         (copies, read)
     }
 
+    /// What the crate changes that `library` doesn't, what it changes in
+    /// place and its `Vec`s: what the library changes too, its JS copies as
+    /// Rust does (rd606).
+    fn unshared(&self, library: rustc_span::def_id::CrateNum) -> (IndexSet<Ty<'tcx>>, IndexSet<Ty<'tcx>>) {
+        let unshared = |changed: &IndexSet<Ty<'tcx>>| -> IndexSet<Ty<'tcx>> {
+            (changed.iter())
+                .filter(|&&ty| !self.recognition.foreign.changes(library, ty))
+                .copied()
+                .collect()
+        };
+        (unshared(self.changed.mutated), unshared(self.changed.vecs))
+    }
+
+    /// Whether a default of its trait `imp` uses may copy what the crate
+    /// changes: its MIR is generic over `Self`, whose `self.clone()` it
+    /// can't resolve to `imp`'s type's, so one of a type that may hold what
+    /// the crate changes is taken to copy it (#1927).
+    fn default_copies(&self, imp: DefId) -> bool {
+        let tcx = self.recognition.tcx;
+        if defaults_used(tcx, imp).next().is_none() {
+            return false;
+        }
+        let (mutated, vecs) = self.unshared(imp.krate);
+        let changed = super::copies::Changed {
+            mutated: &mutated,
+            vecs: &vecs,
+        };
+        let recognition = super::recognition::Recognition {
+            typing_env: ty::TypingEnv::post_analysis(tcx, imp),
+            ..self.recognition
+        };
+        let own = tcx
+            .impl_trait_ref(imp)
+            .instantiate_identity()
+            .skip_normalization()
+            .self_ty();
+        super::copies::may_hold_changed(&recognition, changed, tcx.erase_and_anonymize_regions(own))
+    }
+
     /// `copies` of `body`, a library's MIR, generic over its own
     /// parameters: asked where it is, whose bounds and const parameters'
     /// types are its own, `N` of `fn sum_n<const N: usize>(a: [i32; N])`
@@ -197,16 +255,8 @@ impl<'a, 'tcx> Copying<'a, 'tcx> {
             typing_env: ty::TypingEnv::post_analysis(tcx, body.source.def_id()),
             ..self.recognition
         };
-        // What the crate changes that the body's library doesn't: what the
-        // library changes too, its JS copies as Rust does (rd606).
-        let library = body.source.def_id().krate;
-        let unshared = |changed: &IndexSet<Ty<'tcx>>| -> IndexSet<Ty<'tcx>> {
-            (changed.iter())
-                .filter(|&&ty| !self.recognition.foreign.changes(library, ty))
-                .copied()
-                .collect()
-        };
-        let (mutated, vecs) = (unshared(self.changed.mutated), unshared(self.changed.vecs));
+        // What the crate changes that the body's library doesn't.
+        let (mutated, vecs) = self.unshared(body.source.def_id().krate);
         let changed = super::copies::Changed {
             mutated: &mutated,
             vecs: &vecs,

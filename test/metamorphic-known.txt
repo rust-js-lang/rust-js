@@ -110,6 +110,3 @@ plain std loud-call dyn_fn_handed_only.rs
 
 #1926 P1: an in-place collect's `capacity()` through a function returning `impl Iterator` throws at run time instead of refusing at compile time
 plain opaque vec_collected_in_place_capacity.rs
-
-#1927 P0: a library's dictionary whose supertrait gives `Clone`, `pointDup.Clone()`, clones as its library would, not as the consumer that changes the type needs
-plain std library copy_through_a_supertrait.rs

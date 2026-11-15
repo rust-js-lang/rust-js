@@ -5,6 +5,7 @@ Status: Accepted. Amends [0098](0098-destructors.md),
 [0360](0360-the-app-is-a-program.md): a library's public generic function
 takes the copies and drops its own crate's calls give it, no more.
 Amended (below): a library's trait impls and copies are its program's too,
+an impl's supertraits' dictionaries and used defaults among them (#1927),
 and amends [0100](0100-separate-crates.md) and
 [0185](0185-library-trait-defaults.md); and a consumer gives an export the
 copy functions its contract says it takes; and a `Clone` bound, and a
@@ -1876,3 +1877,32 @@ thread-local's and a constant's nested objects, each against native;
 a stored dictionary given to `TextDecoder.decode`, as it is, and a
 stored value given to `postMessage`, a copy. Mutations in
 `scripts/mutations/lower/copies/stored.ts` and `copies.ts`' `stored-objects-shallow`.
+
+## Amendment: an impl copies through its supertraits' dictionaries and the defaults it uses (2026-11-15, #1927)
+
+A library's trait impl that may copy what its consumer changes is
+compiled by the consumer (`instances::Copying`, above), of its methods
+and the defaults it uses. Two of what its dictionary holds weren't asked:
+
+- **Its supertraits' impls of its type**, whose dictionaries its own
+  holds: `pointDup = { Clone: () => ({ clone: (value) => value }) }` of
+  `trait Dup: Clone`, its library's clone of a `Point`, which its own
+  crate never changes. A consumer that changes one, `duped(&Point { x: 1
+  }, |p| p.x += 1)` of `fn duped<T: Dup + Debug>`, changed the value with
+  its clone, `Point { x: 2 } Point { x: 2 }`, where Rust prints `Point {
+  x: 1 } Point { x: 2 }` (a wrong answer, P0). Each is asked now,
+  `supertrait_impls`, as rustc selects it.
+- **A default it uses that clones `Self`**, `fn again(&self) -> Self where
+  Self: Clone { self.clone() }`: its MIR is generic over `Self`, whose
+  clone it can't resolve to the impl's type's, so it read as copying
+  nothing. One of an impl whose type may hold what the consumer changes is
+  taken to copy it now (`default_copies`): the consumer compiles its own,
+  which copies as its own changes need. A default that copies nothing is
+  compiled again too, the cost of not reading its body as of the impl's
+  type: more JS, never a wrong answer.
+
+Case of [0262](0262-when-rust-and-js-disagree.md): results change, so
+Rust's behavior. What holds it: crate pair
+`library_clone_through_a_supertrait` against native, metamorphic's library
+rewrite of corpus case `copy_through_a_supertrait.rs`; mutations
+`supertrait-impls-uncopied` and `used-defaults-uncopied`.

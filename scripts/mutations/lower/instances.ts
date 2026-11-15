@@ -332,4 +332,20 @@ export const mutations: Mutation[] = [
       "^trait_method_given_by_its_callers.rs$"
     ]
   },
+  {
+    name: "supertrait-impls-uncopied",
+    breaks: "a library's impl whose dictionary holds its supertrait's `Clone` is its library's, `pointDup.Clone()` cloning none, so the consumer's change of the clone `duped` makes changes the value too (#1927)",
+    file: "src/lower/instances.rs",
+    find: "                .chain(supertrait_impls(tcx, id))\n",
+    replace: "",
+    tests: ["test/crates.test.ts", "-t", "cloning through a supertrait"],
+  },
+  {
+    name: "used-defaults-uncopied",
+    breaks: "a library's impl whose used default clones `Self` is its library's, `pointTwice.again` cloning none, so the consumer's change of `a.again()` changes `a` too (#1927)",
+    file: "src/lower/instances.rs",
+    find: "        if defaults_used(tcx, imp).next().is_none() {\n            return false;\n",
+    replace: "        if true || defaults_used(tcx, imp).next().is_none() {\n            return false;\n",
+    tests: ["test/crates.test.ts", "-t", "cloning through a supertrait"],
+  },
 ];

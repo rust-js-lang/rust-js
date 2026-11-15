@@ -151,6 +151,18 @@ test("a program's derived Debug no library is given a dyn of writes as it is", (
   expect(app).not.toContain("$writingInto(");
 }, 300_000);
 
+// A library's impl whose dictionary holds a supertrait's `Clone`, and one
+// whose default clones `Self`, of a type its consumer changes: the consumer
+// compiles its own of each, its clone a copy, as its library's clones none
+// (#1927).
+test("a library's impl cloning through a supertrait is its consumer's own where the consumer changes the type", () => {
+  const out = chain(pairs, "library_clone_through_a_supertrait", ["dep", "app"]);
+  const app = readFileSync(join(out, "app", "lib.js"), "utf8");
+  expect(app).not.toMatch(/import \{[^}]*point(Dup|Twice)/);
+  expect(app).toContain("const pointDup = {");
+  expect(app).toContain("const pointTwice = {");
+}, 300_000);
+
 // A library's export of a bound it never reads takes no dictionary, as its
 // contract lists, and its consumer gives it none; one it reads, its own
 // (#1915).
