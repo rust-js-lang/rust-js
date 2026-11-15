@@ -7,7 +7,7 @@
 use crate::collections::{IndexMap, IndexSet};
 use crate::lower::Body;
 use crate::lower::bindings::is_binding;
-use crate::lower::recognition::{Recognition, StdItem, is_std_crate};
+use crate::lower::recognition::{MethodOf, Recognition, StdItem, StdPath, is_std_crate, std_inherent_method};
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::DefKind;
 use rustc_middle::mir::{self, TerminatorKind};
@@ -817,13 +817,15 @@ fn std_never_unwinds<'tcx>(
     if !is_std_crate(tcx, callee) {
         return false;
     }
-    let path = tcx.def_path_str(callee);
+    let method_of = std_inherent_method(tcx, callee).map(|(of, _)| of);
+    let arguments = method_of == Some(MethodOf::Type(StdPath::FmtArguments));
+    let argument = method_of == Some(MethodOf::Type(StdPath::RtArgument));
     let name = tcx.item_name(callee);
     let name = name.as_str();
     match () {
         _ if crate::lower::recognition::print_of(tcx, callee).is_some() => true,
-        _ if path.contains("fmt::Arguments") => matches!(name, "new" | "new_const" | "new_v1" | "from_str"),
-        _ if path.contains("fmt::rt::Argument") => {
+        _ if arguments => matches!(name, "new" | "new_const" | "new_v1" | "from_str"),
+        _ if argument => {
             matches!(name, "new_display" | "new_debug") && args.types().all(|ty| shown_whole(recognition, ty))
         }
         // A thread-local's or a `Cell`'s set of a value whose old one JS

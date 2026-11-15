@@ -413,7 +413,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A thread-local's `AccessError`, which no `try_with` here gives, as
         // the key's destructor never runs (#1285): as std shows it.
         if let ty::Adt(adt, _) = ty.kind()
-            && self.tcx.def_path_str(adt.did()) == "std::thread::AccessError"
+            && crate::lower::recognition::is_std_path(
+                self.tcx,
+                adt.did(),
+                crate::lower::recognition::StdPath::ThreadAccessError,
+            )
         {
             return Ok(Expr::str("AccessError"));
         }

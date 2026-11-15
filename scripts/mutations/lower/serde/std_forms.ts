@@ -135,4 +135,12 @@ export const mutations: Mutation[] = [
     replace: "                let made = read;\n",
     tests: ["test/serde-std.test.ts", "-t", "a path, a Cow and a boxed str or slice"],
   },
+  {
+    name: "saturating-no-std-form",
+    breaks: "a `Saturating<int>` is no std form of serde's, as its integer, but a struct of its field",
+    file: "src/lower/serde/std_forms.rs",
+    find: "                crate::lower::recognition::StdPath::NumSaturating,\n",
+    replace: "                crate::lower::recognition::StdPath::ThreadAccessError,\n",
+    tests: ["test/serde-std.test.ts"],
+  },
 ];

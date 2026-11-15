@@ -633,4 +633,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^own_debug_of_a_pinned_box_beside_a_caught_panic.rs$"],
   },
+  {
+    name: "access-error-shown-as-a-struct",
+    breaks: "a thread-local's `AccessError` is shown as a struct of its fields, not as std shows it, `AccessError`",
+    file: "src/lower/display/debug.rs",
+    find: "                crate::lower::recognition::StdPath::ThreadAccessError,\n",
+    replace: "                crate::lower::recognition::StdPath::NumSaturating,\n",
+    tests: ["test/corpus.test.ts","-t","^(local_with_scope_guards|one_thread_sync).rs$"],
+  },
 ];

@@ -18,4 +18,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/diagnostics.test.ts", "-t", "a dyn of a std trait new in 1.100"],
   },
+  {
+    name: "thread-spawn-not-open",
+    breaks: "`thread::spawn` and `thread::scope` are no open call of a thread's, so a closure they're given is taken for one called here",
+    file: "src/lower/recognition/open_calls.rs",
+    find: "    (spawns && super::std_path_under(tcx, id, StdPath::ThreadMod)).then_some(OpenCall::Thread)\n",
+    replace: "    (spawns && false).then_some(OpenCall::Thread)\n",
+    tests: ["test/diagnostics.test.ts"],
+  },
 ];

@@ -1020,7 +1020,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             TerminatorKind::Call { func, destination, .. } if destination.local == from.local && destination.projection.is_empty() => {
                 fn_def(func.ty(&body.local_decls, self.tcx)).is_some_and(|(id, args)| {
                     is_std_def(self.tcx, self.tcx.trait_of_assoc(id).unwrap_or(id), StdItem::Iterator)
-                        && matches!(args.type_at(0).kind(), ty::Adt(adt, _) if self.tcx.def_path_str(adt.did()) == "std::slice::IterMut")
+                        && matches!(args.type_at(0).kind(), ty::Adt(adt, _) if crate::lower::recognition::is_std_path(self.tcx, adt.did(), crate::lower::recognition::StdPath::SliceIterMut))
                 })
             }
             _ => false,

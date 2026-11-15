@@ -62,12 +62,11 @@ pub(crate) fn open_call(tcx: TyCtxt<'_>, id: DefId) -> Option<OpenCall> {
     if let Some(open) = open_item(tcx, id) {
         return Some(open);
     }
-    let path = tcx.def_path_str(id);
     let spawns = matches!(
         tcx.item_name(id).as_str(),
         "spawn" | "spawn_scoped" | "scope" | "spawn_unchecked"
     );
-    (spawns && path.starts_with("std::thread::")).then_some(OpenCall::Thread)
+    (spawns && super::std_path_under(tcx, id, StdPath::ThreadMod)).then_some(OpenCall::Thread)
 }
 
 /// The open issue's family values of `ty`, a refused type, are of, if one

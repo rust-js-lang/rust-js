@@ -156,7 +156,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Some(StdForm::Cell(ty, args.type_at(0), kind));
         }
         if let ty::Adt(adt, _) = ty.kind()
-            && self.tcx.def_path_str(adt.did()) == "std::num::Saturating"
+            && crate::lower::recognition::is_std_path(
+                self.tcx,
+                adt.did(),
+                crate::lower::recognition::StdPath::NumSaturating,
+            )
             && let Some(num) = Num::of(args.type_at(0)).filter(|n| !n.float() && n.bits() <= 64)
         {
             return Some(StdForm::Saturating(args.type_at(0), num));

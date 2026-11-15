@@ -264,4 +264,12 @@ export const mutations: Mutation[] = [
     replace: "                .is_some_and(|own| shared_pointer(tcx, recognition, own) && false) =>\n",
     tests: ["test/lowering-guard-restores.test.ts"],
   },
+  {
+    name: "arguments-new-may-unwind",
+    breaks: "`fmt::Arguments::new` is taken to may unwind, as any std call, so a `format_args!` of what can't unwind is guarded",
+    file: "src/lower/analysis/unwinding.rs",
+    find: "    let arguments = method_of == Some(MethodOf::Type(StdPath::FmtArguments));\n",
+    replace: "    let arguments = false;\n",
+    tests: ["test/lowering-unwinds.test.ts"],
+  },
 ];

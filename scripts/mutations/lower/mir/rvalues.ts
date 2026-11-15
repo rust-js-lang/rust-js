@@ -864,4 +864,12 @@ export const mutations: Mutation[] = [
     replace: "        false && crate::lower::analysis::cast_proved(self.tcx, state.body, location)\n",
     tests: ["test/lowering-integer-ranges.test.ts", "-t", "an integer cast MIR's intervals show"],
   },
+  {
+    name: "iterator-of-a-slice-iter-mut-unknown",
+    breaks: "an `Iterator` call of a slice's `IterMut` is taken for one of its `Iter`'s",
+    file: "src/lower/mir/rvalues.rs",
+    find: "crate::lower::recognition::StdPath::SliceIterMut))\n",
+    replace: "crate::lower::recognition::StdPath::SliceIter))\n",
+    tests: ["test/corpus.test.ts"],
+  },
 ];

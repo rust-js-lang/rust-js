@@ -61,7 +61,7 @@ fn core_adapter(tcx: TyCtxt<'_>, id: DefId, name: &str) -> bool {
 fn slice_iter<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
     matches!(ty.kind(), ty::Adt(adt, _)
         if (core_adapter(tcx, adt.did(), "Iter") || core_adapter(tcx, adt.did(), "IterMut"))
-            && tcx.def_path_str(adt.did()).contains("slice"))
+            && matches!(super::std_path_item(tcx, adt.did()), Some(StdPath::SliceIter | StdPath::SliceIterMut)))
 }
 
 /// Whether `ty` is what a `skip(n)` of keeps its values below its end: a

@@ -1,0 +1,26 @@
+# Each file's asks of a std path's text, `std_path(`, a `"std::` literal, and
+# `def_path_str(` tested against text (#1681's change 2, the DefId step): a
+# ratchet the passes onto the `StdPath` table lower
+# (test/architecture-std-paths.test.ts). What's left, and why.
+#
+# The iterators' recognizers, the DefId step's next pass, m1-lisa's.
+src/lower/recognition/adapter_types.rs	62
+src/lower/recognition/iterators.rs	149
+src/lower/recognition/lengths.rs	126
+src/lower/recognition/own_steps.rs	9
+src/lower/recognition/zip_folds.rs	5
+# `std_path` itself, std's path's text, which the table's rows are: `core::`
+# and `alloc::` written `std::`.
+src/lower/recognition/std_crates.rs	1
+# `std_home`, the module's name of an item's path, `iter` of
+# `core::iter::Peekable`: text, a name; and `bound_map_item`, a third-party
+# crate's items by its own path, a program's crates.io hashbrown's, not
+# std's (ADRs 0423, 0424).
+src/lower/recognition/std_items.rs	2
+# `--without-recognizers` names a recognizer by std's path, text a user
+# types.
+src/lower/recognition/unrecognized.rs	1
+# The path cache's own unit test, of a made-up path.
+src/lower/session.rs	2
+# A refusal's text, `std::rc::Rc<T>`, which says what it refuses.
+src/lower/std_types/number/generic.rs	1
