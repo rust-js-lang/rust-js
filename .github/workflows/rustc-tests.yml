@@ -6,7 +6,9 @@ name: rustc tests
 # checked as one run against test/rustc-known-failures.txt; or, with
 # `fuzz_seeds`, a batch of generated programs (ADR 0092), split the same way;
 # or, with `mutations`, known bugs put back into the compiler, which the
-# tests must catch (ADR 0093).
+# tests must catch (ADR 0093); or, with `ablation`, each intervals rule's
+# mutation, the sites and bounds-matrix rows it proves (ADR 1137's audit,
+# scripts/ablate.ts).
 on:
   workflow_dispatch:
     inputs:
@@ -47,6 +49,15 @@ on:
         required: false
         type: string
         default: '1'
+      ablation:
+        description: 'Instead: ablate each MIR intervals rule (scripts/ablate.ts), the corpus shadow and the bounds matrix of each, and merge them into the rule table.'
+        type: boolean
+        default: false
+      ablation_shards:
+        description: 'With ablation: machines its mutations are split across, one of 1, 2, 4, 8, 16.'
+        required: false
+        type: string
+        default: '16'
   workflow_call:
     inputs:
       tests:
@@ -121,7 +132,7 @@ jobs:
   # rust-js, built once for the shards: a release build, as it's run some
   # 2,700 times, and the binary finds the toolchain where every runner has it.
   build:
-    if: inputs.tests == '' && !inputs.mutations
+    if: inputs.tests == '' && !inputs.mutations && !inputs.ablation
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -136,7 +147,7 @@ jobs:
   # All of them: every sixth test on each of six machines.
   shard:
     needs: build
-    if: inputs.fuzz_seeds == '' && !inputs.mutations
+    if: inputs.fuzz_seeds == '' && !inputs.mutations && !inputs.ablation
     runs-on: ubuntu-latest
     timeout-minutes: 60
     strategy:
@@ -398,3 +409,71 @@ jobs:
           name: mutation-logs-${{ matrix.shard }}
           path: target/mutants/logs
           if-no-files-found: ignore
+
+  # Each MIR intervals rule's mutation, applied in turn: the compiler built,
+  # the corpus shadow and the bounds matrix compiled again, and the sites and
+  # rows it takes a line from written down (ADR 1137's audit, #1672). Here,
+  # not on a machine an agent shares: 134 builds, each two compiles of some
+  # 750 programs, about 80 min on the 14-core Mac one after another.
+  ablation:
+    if: inputs.ablation
+    name: ablation (${{ matrix.shard }}/${{ inputs.ablation_shards }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ${{ fromJSON(inputs.ablation_shards == '16' && '[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]' || inputs.ablation_shards == '8' && '[1, 2, 3, 4, 5, 6, 7, 8]' || inputs.ablation_shards == '4' && '[1, 2, 3, 4]' || inputs.ablation_shards == '2' && '[1, 2]' || '[1]') }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/rustc-tests-setup
+        with:
+          build: 'false'
+      # Else what the last run left: dependencies aren't compiled again,
+      # only rust-js, for each mutation.
+      - uses: actions/cache@v6
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target/debug
+          key: ablation-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}-${{ github.sha }}
+          restore-keys: ablation-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}-
+      - run: bun install --frozen-lockfile
+      - name: Ablate shard ${{ matrix.shard }}
+        run: bun scripts/ablate.ts --shard=${{ matrix.shard }}/${{ inputs.ablation_shards }} --out=ablation-${{ matrix.shard }}.json
+      - if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ablation-${{ matrix.shard }}
+          path: ablation-${{ matrix.shard }}.json
+          if-no-files-found: ignore
+
+  # The shards as one table: each rule's corpus sites and matrix rows, the
+  # rules with sites and no row, and the sites no rule's mutation takes.
+  ablation-merge:
+    if: always() && inputs.ablation
+    needs: ablation
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - run: bun install --frozen-lockfile
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: ablation-*
+          path: shards
+          merge-multiple: true
+      - name: Merge the shards
+        run: |
+          bun scripts/ablate.ts --merge shards/*.json --out=ablation.md
+          cat ablation.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ablation-table
+          path: |
+            ablation.md
+            ablation.json

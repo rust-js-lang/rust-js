@@ -755,6 +755,27 @@ test("the workflows' mutation shards are ci.ts's", () => {
   for (const [n, list] of matrix) expect(list).toBe(Array.from({ length: Number(n) }, (_, i) => i + 1).join(", "));
 });
 
+// The MIR intervals' rule ablation runs on CI, not the shared Mac:
+// rustc-tests.yml's `ablation`, its shards each of ci.ts's counts, each
+// running scripts/ablate.ts's share, and one job merging them.
+test("rustc-tests.yml ablates the intervals' rules in shards and merges them", () => {
+  const tests = readFileSync(join(root, ".github/workflows/rustc-tests.yml"), "utf8");
+  const matrix = [...tests.matchAll(/inputs\.ablation_shards == '(\d+)' && '\[([\d, ]+)\]'/g)].map((m) => [Number(m[1]), m[2]] as const);
+  expect(matrix.map(([n]) => n).sort((a, b) => a - b)).toEqual(MUTATION_SHARDS.filter((n) => n > 1));
+  for (const [n, list] of matrix) expect(list).toBe(Array.from({ length: n }, (_, i) => i + 1).join(", "));
+  expect(tests).toContain("bun scripts/ablate.ts --shard=${{ matrix.shard }}/${{ inputs.ablation_shards }} --out=ablation-${{ matrix.shard }}.json");
+  expect(tests).toContain("bun scripts/ablate.ts --merge shards/*.json --out=ablation.md");
+  type Jobs = { jobs: Record<string, { if?: string; needs?: string }> };
+  const jobs = (Bun.YAML.parse(tests) as Jobs).jobs;
+  expect(jobs.ablation.if).toBe("inputs.ablation");
+  expect(jobs["ablation-merge"].needs).toBe("ablation");
+  // The full suite's jobs stand aside for it, as for mutations.
+  for (const name of ["build", "shard"]) expect(jobs[name].if).toContain("!inputs.ablation");
+  // Each shard has mutations to ablate.
+  const listed = Bun.spawnSync(["bun", "scripts/ablate.ts", "--list", "--shard=16/16"], { cwd: root });
+  expect(listed.stdout.toString()).toMatch(/\b[1-9]\d* of \d+ mutations/);
+});
+
 // A check runs to its end: one started after it, by a push or by hand,
 // waits, and no other workflow shares its group to cancel it. When a run
 // started by hand cancelled the one running, three agents pushing to
