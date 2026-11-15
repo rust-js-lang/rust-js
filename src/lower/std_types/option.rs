@@ -432,24 +432,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 } else {
                     option
                 };
+                // Each variable its parameter binds, the part of the option's
+                // value it is, however deep (`calls::pattern_parts`): `[[k],
+                // x]`'s `k`, `o[0][0]` (#1900). None where no part is, the
+                // closure called.
                 let value = param.zip(body).and_then(|(param, body)| {
-                    let with = |name: &str| match &param {
-                        None => None,
-                        Some(js::Pattern::Name(p)) => (p == name).then(|| option.clone()),
-                        // A closure's parameter is never a function's rest.
-                        Some(js::Pattern::Rest(_) | js::Pattern::Defaulted(..)) => None,
-                        Some(js::Pattern::Array(items)) => items
-                            .iter()
-                            .position(|item| item.as_ref().and_then(js::Pattern::name) == Some(name))
-                            .map(|i| Expr::index(option.clone(), Expr::int(i as i128))),
-                        // The rest, `...rest`, is no field's.
-                        Some(js::Pattern::Object(_, Some(rest))) if rest == name => None,
-                        Some(js::Pattern::Object(fields, _)) => fields
-                            .iter()
-                            .find(|(_, var, _)| var.name() == Some(name))
-                            .map(|(field, _, _)| Expr::member(option.clone(), field.clone())),
+                    let parts = match &param {
+                        None => Vec::new(),
+                        Some(param) => crate::lower::calls::pattern_parts(param, &option)?,
                     };
-                    body.substitute(&with)
+                    body.substitute(&|name: &str| parts.iter().find(|(n, _)| *n == name).map(|(_, part)| part.clone()))
                 });
                 let value = match value {
                     Some(value) => value,

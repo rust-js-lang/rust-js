@@ -1,14 +1,14 @@
 # shape	count	per 10,000 lines
-files	2584
-lines	341397
+files	2585
+lines	341458
 temporaries	0	0
 labeled blocks	0	0
 while (true)	224	6.6
 $iter	2874	84.2
 Iterator.from	266	7.8
 return;	332	9.7
-renamed x$1	16094	471.4
-role fallbacks	8819	258.3
+renamed x$1	16107	471.7
+role fallbacks	8830	258.6
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1	role fallbacks
 test/corpus/adapter_drop_past_a_panic.js	52	0	0	0	1	0	0	0	1
 test/corpus/adapter_drops.js	1844	0	0	1	19	2	1	98	61
@@ -1559,6 +1559,7 @@ test/corpus/option_insert_unwinds_written.js	162	0	0	0	0	0	0	0	4
 test/corpus/option_iter_count_in_a_tuple.js	40	0	0	0	0	0	0	2	2
 test/corpus/option_iterator_of_generic_items.js	40	0	0	0	5	0	0	0	2
 test/corpus/option_map_drops.js	215	0	0	0	0	0	0	16	14
+test/corpus/option_map_of_a_nested_pattern.js	61	0	0	0	0	0	0	13	11
 test/corpus/option_match_leaves_loop.js	51	0	0	0	0	0	0	0	0
 test/corpus/option_none_kinds.js	75	0	0	0	0	0	0	5	2
 test/corpus/option_of_a_mut_ref_read_by_value.js	253	0	0	0	1	0	0	36	21

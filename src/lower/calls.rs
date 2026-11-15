@@ -375,33 +375,44 @@ pub(super) fn apply(f: Expr, args: Vec<Expr>) -> Expr {
     Expr::call(f, args)
 }
 
+/// Each variable `pattern`, a parameter's, binds, and the part of `arg`
+/// it is, however deep: `item` of `item`, `[, age]`'s `age` of `item`,
+/// `item[1]`, `[[k], x]`'s `k`, `item[0][0]`, and `{ a: { b } }`'s `b`,
+/// `item.a.b`. `None` of a pattern no part reads as it binds, a default's
+/// or a rest's. The one reading of a pattern as its argument's parts, a
+/// closure inlined where it's called and an `Option`'s `map` (#1900).
+pub(super) fn pattern_parts<'p>(pattern: &'p js::Pattern, arg: &Expr) -> Option<Vec<(&'p str, Expr)>> {
+    match pattern {
+        js::Pattern::Name(name) => Some(vec![(name.as_str(), arg.clone())]),
+        js::Pattern::Array(items) => {
+            let mut parts = Vec::new();
+            for (i, item) in items.iter().enumerate() {
+                if let Some(item) = item {
+                    parts.extend(pattern_parts(item, &Expr::index(arg.clone(), Expr::int(i as i128)))?);
+                }
+            }
+            Some(parts)
+        }
+        js::Pattern::Object(fields, None) if fields.iter().all(|(_, _, default)| default.is_none()) => {
+            let mut parts = Vec::new();
+            for (key, field, _) in fields {
+                let part = super::binding_calls::keyed(arg.clone(), Expr::str(key.clone()));
+                parts.extend(pattern_parts(field, &part)?);
+            }
+            Some(parts)
+        }
+        _ => None,
+    }
+}
+
 /// `value`, of a closure of `params`, with each the part of `args` it
 /// binds, if each reads the same however often it's read.
 fn inlined(params: &[js::Pattern], args: &[Expr], value: &Expr) -> Option<Expr> {
     if params.len() <= args.len() && args.iter().all(Expr::reads_same) {
         // Each variable a parameter binds, and the part of its argument it
-        // is: a destructured one's, `[, age]`'s `age` of `item`, `item[1]`.
-        let parts: Option<Vec<(&str, Expr)>> = params
-            .iter()
-            .zip(args)
-            .map(|(p, arg)| match p {
-                js::Pattern::Name(name) => Some(vec![(name.as_str(), arg.clone())]),
-                // Of variables alone: a part taken apart in turn isn't one.
-                js::Pattern::Array(items) => (items.iter().enumerate())
-                    .filter_map(|(i, item)| Some((i, item.as_ref()?)))
-                    .map(|(i, item)| Some((item.name()?, Expr::index(arg.clone(), Expr::int(i as i128)))))
-                    .collect(),
-                js::Pattern::Object(fields, None) if fields.iter().all(|(_, _, default)| default.is_none()) => (fields
-                    .iter())
-                .map(|(key, field, _)| {
-                    Some((
-                        field.name()?,
-                        super::binding_calls::keyed(arg.clone(), Expr::str(key.clone())),
-                    ))
-                })
-                .collect(),
-                _ => None,
-            })
+        // is (`pattern_parts`).
+        let parts: Option<Vec<(&str, Expr)>> = (params.iter().zip(args))
+            .map(|(p, arg)| pattern_parts(p, arg))
             .collect::<Option<Vec<_>>>()
             .map(|parts| parts.into_iter().flatten().collect());
         return parts.and_then(|parts| {

@@ -56,9 +56,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a closure taking a pair apart, `|&(_, age)| age`, is called where it's inlined, `(([, age]) => age)(item)`, not `item[1]`",
     file: "src/lower/calls.rs",
-    find: "                js::Pattern::Array(items) => (items.iter().enumerate())",
-    replace:
-      "                js::Pattern::Array(items) if false => (items.iter().enumerate())",
+    find: "        js::Pattern::Array(items) => {\n",
+    replace: "        js::Pattern::Array(items) if false => {\n",
     tests: [
       "test/lowering-matches.test.ts",
       "-t",
@@ -325,5 +324,13 @@ export const mutations: Mutation[] = [
     find: "            Some(Member::Constructor | Member::Method | Member::Getter | Member::Own | Member::Namespace)\n",
     replace: "            Some(Member::Constructor | Member::Method | Member::Own | Member::Namespace)\n",
     tests: ["test/classes.test.ts", "-t", "getter is its prototype"],
+  },
+  {
+    name: "pattern-parts-top-level-only",
+    breaks: "a parameter's pattern is read as its argument's parts at its top alone, so an `Option`'s `map(|((k,), x)| (k, x))` reads `k`, which nothing declares, and the JS is refused, itertools 0.10.5's `cons_tuples` (#1900)",
+    file: "src/lower/calls.rs",
+    find: "                    parts.extend(pattern_parts(item, &Expr::index(arg.clone(), Expr::int(i as i128)))?);\n",
+    replace: "                    parts.extend(item.name().map(|n| (n, Expr::index(arg.clone(), Expr::int(i as i128)))));\n",
+    tests: ["test/corpus.test.ts", "-t", "^option_map_of_a_nested_pattern.rs$"],
   },
 ];
