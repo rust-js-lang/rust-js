@@ -403,6 +403,15 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if self.is_str_chars(ty) || self.is_char_indices(ty) {
             return false;
         }
+        // A slice's split, whose lower bound std's says is at most 1, `(1,
+        // Some(len + 1))` till it's done: JS's, the lazy form's the same and
+        // the array of its pieces' 0 (`Iterator.from`), grows a `Vec` as std's
+        // does, as std's first capacity is RawVec's least, 4 of a slice's
+        // pieces, above `lower + 1` either way, and each growth doubles past
+        // `len + lower + 1` (#1892).
+        if is_slice_split(self.tcx, ty) {
+            return true;
+        }
         !self.is_array_iter(ty)
             || self
                 .exact_size_iterator()
@@ -459,7 +468,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// they're `$chars`, `chars_kept` (#1186), and a std source whose form
     /// gives std's, `$repeating` and the like (`source_hint_kept`, #1357);
     /// and a `rev()`, a `take(n)`, a `copied()` or a `map()` of one, each a
-    /// `$Steps` that passes its source's on as std's adapter does (#1572). Not an array's iterator, JS's own, nor a map of one,
+    /// `$Steps` that passes its source's on as std's adapter does (#1572),
+    /// and an `enumerate()` of one, `$enumerate`'s or std's compiled
+    /// struct's, which each pass it on, `s.chars().enumerate()` (#1892). Not an array's iterator, JS's own, nor a map of one,
     /// whose JS `map` knows none, however exactly std counts it; nor a
     /// `skip(n)`, whose JS `drop(n)` keeps none (#1316).
     pub(in crate::lower) fn hint_kept_by_form(&self, ty: Ty<'tcx>, chars_kept: bool) -> bool {
@@ -470,6 +481,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         super::copied_source(self.tcx, ty)
             .or_else(|| super::mapped_source(self.tcx, ty))
             .or_else(|| super::reversed_source(self.tcx, ty))
+            .or_else(|| super::enumerated_source(self.tcx, ty))
             .or_else(|| {
                 (super::counted_source(self.tcx, ty))
                     .filter(|(_, skip)| !skip)
@@ -617,4 +629,24 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         };
         Some([side(this)?, side(other)?])
     }
+}
+
+/// Whether `ty` is a slice's split by a predicate, `split`'s, `splitn`'s,
+/// `rsplit`'s, `rsplitn`'s or `split_inclusive`'s, of shared items or
+/// mutable ones, each of whose pieces is a slice, a pointer and a length.
+fn is_slice_split<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
+    let ty::Adt(adt, _) = ty.kind() else { return false };
+    matches!(
+        std_path(tcx, adt.did()),
+        "std::slice::Split"
+            | "std::slice::SplitMut"
+            | "std::slice::SplitN"
+            | "std::slice::SplitNMut"
+            | "std::slice::RSplit"
+            | "std::slice::RSplitMut"
+            | "std::slice::RSplitN"
+            | "std::slice::RSplitNMut"
+            | "std::slice::SplitInclusive"
+            | "std::slice::SplitInclusiveMut"
+    )
 }

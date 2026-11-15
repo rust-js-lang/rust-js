@@ -319,4 +319,20 @@ export const mutations: Mutation[] = [
     replace: "        if chars_kept && (self.is_str_chars(ty) || self.is_char_indices(ty)) || super::source_hint_kept(self.tcx, ty) || self.is_array_iter(ty) || self.lower_bound_is_stds(ty) {\n",
     tests: ["test/diagnostics.test.ts", "-t", "a Vec grown by a take of a cycle of a zip"],
   },
+  {
+    name: "enumerate-hint-not-passed-on",
+    breaks: "an `enumerate()` of a string's `chars()` the crate makes `$chars` isn't known to pass its hint on, so a `Vec` grown by it in a crate that reads a capacity is refused (#1892)",
+    file: "src/lower/recognition/lengths.rs",
+    find: "            .or_else(|| super::enumerated_source(self.tcx, ty))\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^capacity_of_an_enumerated_chars_and_a_slice_split.rs$"],
+  },
+  {
+    name: "slice-split-hint-unknown",
+    breaks: "a slice's split, std's iterator as it's stepped where a crate reads a capacity, is taken for the array of its pieces, so a `Vec` grown by it is refused (#1892)",
+    file: "src/lower/recognition/lengths.rs",
+    find: "        if is_slice_split(self.tcx, ty) {\n",
+    replace: "        if false && is_slice_split(self.tcx, ty) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^capacity_of_an_enumerated_chars_and_a_slice_split.rs$"],
+  },
 ];

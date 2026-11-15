@@ -139,7 +139,10 @@ for (const [name, source, message, crate] of [
   // hint's lower bound is 1 where JS counts (a string's is std's, #1180's
   // (3)); one by a predicate that runs code is std's `Split`, its hint std's
   // (#1501).
-  ["a Vec collected of a slice's split where a capacity is read", "pub fn f(v: &[u8]) -> usize {\n    let w: Vec<&[u8]> = v.split(u8::is_ascii_whitespace).collect();\n    w.capacity()\n}", "whose lower bound JS's doesn't have"],
+  // A slice's split is std's now, its lower bound at most 1 (#1892); a
+  // string's `chars()` stepped by `step_by(n)` isn't, which JS's own adapter
+  // knows no hint of.
+  ["a Vec collected of a string's chars stepped by step_by where a capacity is read", "pub fn f(s: &str) -> usize {\n    let w: Vec<char> = s.chars().step_by(2).collect();\n    w.capacity()\n}", "whose lower bound JS's doesn't have"],
   // A chain's part that's neither exact-sized nor std's lower bound in JS, a
   // string's `chars()` skipped, which JS's own adapters know no hint of
   // (#1200, #1216).

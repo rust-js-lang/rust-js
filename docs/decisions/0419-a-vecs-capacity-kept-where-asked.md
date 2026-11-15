@@ -888,3 +888,33 @@ keep it, a range's map doesn't. React's port regenerates byte for byte.
 `test/architecture-iterators.test.ts` holds that no other lowering file
 matches these forms by name but the range's own module; a lowering test
 of each of the three; mutation `extend-folds-as-it-steps-flagged`, caught.
+
+## Amendment: an enumerated `chars()` and a slice's split (2026-11-15, #1892)
+
+Two iterators a `Vec` grows by were refused in a crate that reads a
+capacity. The neighbour net found each beside a case that reads one.
+
+- **`s.chars().enumerate()`**: `enumerate()` passes its source's hint on in
+  each of its forms, the runtime's `$enumerate` and std's compiled
+  `Enumerate`. So where a crate makes `chars()` `$chars`, whose hint is
+  std's, `((len + 3) / 4, Some(len))`, an enumeration of it keeps it, as a
+  `rev()`, a `take(n)`, a `copied()` and a `map()` of it do
+  (`hint_kept_by_form`).
+- **A slice's split by a predicate**, `split`, `splitn`, `rsplit`,
+  `rsplitn`, `split_inclusive` and their `_mut`s: std's lower bound is at
+  most 1, `(1, Some(len + 1))` till it's done. JS's is the same of the
+  lazy form, and 0 of the array of its pieces. Either grows a `Vec` as
+  std's does. Std's first capacity is RawVec's least, 4 for an item of a
+  slice's pieces, above `lower + 1` either way, and each growth doubles
+  past `len + lower + 1`. So no capacity tells them apart.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none observable; each
+was refused. Corpus case capacity_of_an_enumerated_chars_and_a_slice_split
+holds each capacity against native Rust in both builds: an enumerated
+`chars()` of multibyte text, fresh and stepped twice, and each kind of
+split, fresh, part stepped and empty. No other snapshot moves. Left of
+#1892: a `Box<Range>` counted as an `ExactSizeIterator`, which reads the
+box's iterator, not the range it holds, and a flatten's and a flat map's
+hint, which `$flattenEnds` doesn't give. Mutations
+`enumerate-hint-not-passed-on` and `slice-split-hint-unknown`
+(`lower/recognition/lengths.ts`).
