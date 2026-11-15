@@ -142,6 +142,9 @@ for (const [name, source, message, crate] of [
   // A slice's split is std's now, its lower bound at most 1 (#1892); a
   // string's `chars()` stepped by `step_by(n)` isn't, which JS's own adapter
   // knows no hint of.
+  // A slice's `chunk_by(..)` of a function that runs no code, the array of
+  // its chunks, which JS counts, isn't taken for std's lower bound.
+  ["a Vec collected of a slice's chunk_by where a capacity is read", "pub fn f(v: &[u8]) -> usize {\n    let w: Vec<&[u8]> = v.chunk_by(u8::eq).collect();\n    w.capacity()\n}", "whose lower bound JS's doesn't have"],
   ["a Vec collected of a string's chars stepped by step_by where a capacity is read", "pub fn f(s: &str) -> usize {\n    let w: Vec<char> = s.chars().step_by(2).collect();\n    w.capacity()\n}", "whose lower bound JS's doesn't have"],
   // A chain's part that's neither exact-sized nor std's lower bound in JS, a
   // string's `chars()` skipped, which JS's own adapters know no hint of

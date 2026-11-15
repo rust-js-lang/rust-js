@@ -3,6 +3,8 @@
 import {
   $capacity,
   $chars,
+  $extend,
+  $grownBy,
   $grownVec,
   $index,
   $next,
@@ -137,5 +139,84 @@ function main() {
   );
   const arg$7 = $capacity(empty, 8);
   console.log(`${empty.length} ${arg$7}`);
+  for (const text of [
+    [97, 32, 98, 32, 99, 32, 100, 32, 101],
+    [97, 32, 98, 32, 99, 32, 100, 32, 101, 32, 102],
+    [97, 32, 98, 32, 99, 32, 100, 32, 101, 32, 102, 32, 103, 32, 104, 32, 105],
+  ]) {
+    const lens = $grownVec(
+      $roomForHint(
+        Iterator.from(
+          $sliceSplitBy(
+            text,
+            (n) => (n >= 9 && n <= 10) || (n >= 12 && n <= 13) || n === 32,
+            undefined,
+            false,
+            false,
+          ),
+        ).map((s) => s.length),
+        4,
+        false,
+      ),
+      (grown) => Array.from(grown),
+    );
+    const skipped = $grownVec(
+      $roomForHint(
+        Iterator.from(
+          $sliceSplitBy(
+            text,
+            (n) => (n >= 9 && n <= 10) || (n >= 12 && n <= 13) || n === 32,
+            undefined,
+            false,
+            false,
+          ),
+        ).drop(1),
+        8,
+        false,
+      ),
+      (grown) => Array.from(grown),
+    );
+    const taken = $grownVec(
+      $roomForHint(
+        Iterator.from(
+          $sliceSplitBy(
+            text,
+            (n) => (n >= 9 && n <= 10) || (n >= 12 && n <= 13) || n === 32,
+            undefined,
+            false,
+            false,
+          ),
+        ).take(4),
+        8,
+        false,
+      ),
+      (grown) => Array.from(grown),
+    );
+    const grown = [];
+    $extend(
+      grown,
+      $grownBy(
+        grown,
+        Iterator.from(
+          $sliceSplitBy(
+            text,
+            (n) => (n >= 9 && n <= 10) || (n >= 12 && n <= 13) || n === 32,
+            undefined,
+            false,
+            false,
+          ),
+        ),
+        8,
+      ),
+    );
+    const value = $capacity(lens, 4);
+    const value$1 = $capacity(skipped, 8);
+    const value$2 = $capacity(taken, 8);
+    const length = grown.length;
+    const arg = $capacity(grown, 8);
+    console.log(
+      `${lens.length} ${value} ${skipped.length} ${value$1} ${taken.length} ${value$2} ${length} ${arg}`,
+    );
+  }
 }
 //# sourceMappingURL=case.js.map

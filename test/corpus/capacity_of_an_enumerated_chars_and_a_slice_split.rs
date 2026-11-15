@@ -30,4 +30,22 @@ fn main() {
     println!("{} {} {:?}", kept.len(), kept.capacity(), kept[0]);
     let empty: Vec<&[u8]> = b"".split(u8::is_ascii_whitespace).collect();
     println!("{} {}", empty.len(), empty.capacity());
+    for text in [&b"a b c d e"[..], b"a b c d e f", b"a b c d e f g h i"] {
+        let lens: Vec<usize> = text.split(u8::is_ascii_whitespace).map(|s| s.len()).collect();
+        let skipped: Vec<&[u8]> = text.split(u8::is_ascii_whitespace).skip(1).collect();
+        let taken: Vec<&[u8]> = text.split(u8::is_ascii_whitespace).take(4).collect();
+        let mut grown = Vec::new();
+        grown.extend(text.split(u8::is_ascii_whitespace));
+        println!(
+            "{} {} {} {} {} {} {} {}",
+            lens.len(),
+            lens.capacity(),
+            skipped.len(),
+            skipped.capacity(),
+            taken.len(),
+            taken.capacity(),
+            grown.len(),
+            grown.capacity()
+        );
+    }
 }

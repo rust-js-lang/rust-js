@@ -134,11 +134,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "lower-bound-of-counted-arrays-stds",
-    breaks: "a slice's `split(..)`, which JS counts, is taken to have std's lower bound, so a `Vec` collected of it in a crate that reads a capacity compiles, its capacity another (#1180)",
+    breaks: "a slice's `chunk_by(..)` of a function that runs no code, which JS counts, is taken to have std's lower bound, so a `Vec` collected of it in a crate that reads a capacity compiles, its capacity another (#1180)",
     file: "src/lower/recognition/lengths.rs",
     find: "        !self.is_array_iter(ty)\n            || self\n",
     replace: "        true || !self.is_array_iter(ty)\n            || self\n",
-    tests: ["test/diagnostics.test.ts", "-t", "a Vec collected of a slice's split"],
+    tests: ["test/diagnostics.test.ts", "-t", "a Vec collected of a slice's chunk_by"],
   },
   {
     name: "lower-bound-of-lazy-chars-stds",
