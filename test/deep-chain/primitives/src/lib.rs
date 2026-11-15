@@ -9,7 +9,8 @@ pub use geometry::{Placement, Point, Rect};
 use geometry::{Flip, Middleware, Offset, Shift, compute_position};
 use react::attributes::HTMLAttributes;
 use react::event::MouseEvent;
-use react::webapi::{HTMLButtonElement, HTMLElement, HTMLLIElement};
+use react::webapi::window_global::{add_event_listener, remove_event_listener};
+use react::webapi::{Event, HTMLButtonElement, HTMLElement, HTMLLIElement, events};
 use react::{Context, JSX, ReactNode, RefObject, create_context, jsx, use_context, use_layout_effect, use_ref, use_state};
 
 /// What a menu lists, each item shown by its `Display`.
@@ -55,7 +56,8 @@ fn rect_of(element: &HTMLElement) -> Rect {
 }
 
 /// Where `floating` goes beside `reference`, measured after each render
-/// that's laid out; `placement` and the origin before.
+/// that's laid out, and again as the window resizes, as Floating UI's
+/// `autoUpdate` does; `placement` and the origin before.
 pub fn use_floating(
     reference: RefObject<Option<&'static HTMLElement>>,
     floating: RefObject<Option<&'static HTMLElement>>,
@@ -66,19 +68,30 @@ pub fn use_floating(
         placement,
         point: Point::default(),
     });
+    let current = *position;
     use_layout_effect(
         move || {
-            if let (Some(reference), Some(floating)) = (reference.current(), floating.current()) {
-                let state = compute_position(rect_of(reference), rect_of(floating), boundary, placement, &middleware(4.0));
-                set_position.set(Floating {
-                    placement: state.placement,
-                    point: state.point,
-                });
-            }
+            let measure = move || {
+                if let (Some(reference), Some(floating)) = (reference.current(), floating.current()) {
+                    let state = compute_position(rect_of(reference), rect_of(floating), boundary, placement, &middleware(4.0));
+                    let measured = Floating {
+                        placement: state.placement,
+                        point: state.point,
+                    };
+                    if measured != current {
+                        set_position.set(measured);
+                    }
+                }
+            };
+            measure();
+            let on_resize = move |_: &'static Event| measure();
+            add_event_listener(events::Resize, on_resize, None);
+            // Stops listening, as `autoUpdate`'s cleanup does.
+            move || remove_event_listener(events::Resize, on_resize, None)
         },
         None,
     );
-    *position
+    current
 }
 
 pub struct PopoverProps<'a> {

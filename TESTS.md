@@ -24,6 +24,14 @@ push's `declarations` job, and `check:fast`, where the change adds or edits
 a corpus case, not only the nightly's: a new case's `pub struct Sized` broke
 the harness unseen. The harness names std's items by their paths.
 
+Added on 2026-11-15: `test/deep-chain-next.test.ts`, the deep-chain
+harness's second step, in the browser shard, some 5 s warm: a Next.js app
+over the chain's crates, each a path dependency of its crate, built by
+`rust-js build` and `next build`, prerendered, and in Chromium its dropdown
+opened where geometry places it of the page's layout, flipped above a
+trigger near the viewport's bottom, closed as an item is chosen, and its
+window listener removed as it unmounts.
+
 Added on 2026-11-15: `test/deep-chain.test.ts`, the deep-chain harness's
 first step, one test of about 10 s on a seeded target. An app four crates
 deep over the react crate (app, kit and forms, primitives, geometry; kit

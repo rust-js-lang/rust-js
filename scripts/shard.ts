@@ -148,7 +148,7 @@ export const shardTimings = "target/shard-timings";
  * Fast Refresh waits past its test's timeout. `check:fast --all` runs them
  * beside its other jobs, as its pool keeps the load near the cores (ADR
  * 1093, amended). */
-export const browsers = ["browser", "jsx-text-browser", "next", "playground", "pilot", "vite", "webapi-crypto", "webapi-events"].map(
+export const browsers = ["browser", "deep-chain-next", "jsx-text-browser", "next", "playground", "pilot", "vite", "webapi-crypto", "webapi-events"].map(
   (name) => `test/${name}.test.ts`,
 );
 
