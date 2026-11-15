@@ -16,6 +16,7 @@ plain std dyn_tail_in_a_ref_cell.rs beside rc_dyn_sinks.rs
 #1038 P2 (neighbours): identity_inside_keys.rs refused beside owner_handle_field_cloned.rs and rc_eq_generic_by_address_first.rs
 plain std identity_inside_keys.rs beside drop_impl_indirect.rs dyn_fn_of_a_params_function_drops.rs
 plain std identity_inside_keys.rs beside impl_fn_that_panics_keeps_its_cleanup.rs
+plain std identity_inside_keys.rs beside rc_of_an_impls_param_dropped_last.rs
 
 #1060 P2 (neighbours): untagged_in_untagged.rs refused beside guard_deref_dictionary.rs + rc_from_box.rs: an Rc variant can't be told apart
 plain std untagged_in_untagged.rs beside guard_deref_dictionary.rs rc_from_box.rs
@@ -30,9 +31,45 @@ plain std mut_ref_fields_of_a_type_parameter.rs beside thread_local_lazy_where_o
 
 #1513 P2 (pointers): a lent object std keeps in a $some box (OnceCell<Option<T>>, Peekable of Options) or lends in generic code is refused in a crate that asks its address
 plain std buf_reader_of_a_borrowed_reader.rs beside address_of_a_field_through_a_reference.rs reference_given_as_its_pointer.rs
+plain std io_buf_reader.rs beside addresses_of_short_lived_allocations.rs
+std std_lends_beside_an_address.rs beside vec_set_len.rs
 
 #1576 P2 (neighbours): size_of of a where-clause's item type is refused beside a case that asks a hint as it fills
 plain std default_where_clause_item_drops.rs beside extend_asks_hint_as_it_fills.rs
 
 #1577 P2 (neighbours): {} of a &mut u32 is refused beside a case that counts an Rc of an impl's parameter as Any
 plain std boxed_mut_ref_shown.rs beside rc_of_an_impls_parameter_counted_as_any.rs
+plain std boxed_mut_ref_shown.rs beside rc_of_impl_fn_returned.rs
+
+#1343 P2 (neighbours): `ptr::addr_eq` of two `dyn Fn` `Arc`s is refused ("`size_of` of a value without one size") beside a case that counts an `Rc` of a `dyn Fn`
+plain std dyn_fn_addresses_of_rcs.rs beside rc_fn_ptr_eq_of_param.rs
+
+#1744 P2: in the plain build, a Vec grown by a held chain of an inspect() and an array is refused where its capacity is read
+plain field_rewrite_singles.rs beside vec_grown_by_a_chain_of_an_inspect_where_capacity_is_read.rs
+plain inspect_by_a_function_before_a_chain_argument.rs beside repeat_n_hint_held.rs
+
+#1892 P2 (neighbours): a Vec grown by an iterator rust-js can't count is refused in a crate that reads a Vec's capacity
+plain boxed_iterator_stepped_as_what_it_boxes.rs beside vec_set_len.rs
+plain std cloned_counted_adapters.rs beside capacity_exact_size_adapters.rs
+plain flatten_from_its_back.rs beside trait_default_flat_map_of_arrays_collects_trusted.rs
+plain std slice_searches_ask_a_predicate_as_they_step.rs beside capacity_kept_by_clear_alone.rs
+std generic_map_made_by_entry.rs beside vec_grown_by_a_chain_of_an_inspect_where_capacity_is_read.rs
+
+#1893 P2 (neighbours): 'addressable memory: a raw pointer to this place' refused beside a case that asks an address
+plain std fmt_write_function.rs beside pointer_offset_from.rs
+plain std mut_ref_of_a_boxed_function_as_dyn.rs beside address_of_a_field_through_a_reference.rs
+
+#1894 P2 (neighbours): {:?} of a Pin<Box<T>> whose Debug may stop part-way is refused beside a case that catches a panic
+plain std debug_impl_of_a_reference_box_or_pin.rs beside catch_unwind_flag_return.rs
+
+#1895 P2 (neighbours): cloning a Map<vec::IntoIter<U>, closure> in generic code is refused beside another bound's
+plain default_own_param_numbered_as_the_impls.rs beside generic_map_cloned_beside_another_bound.rs
+
+#1896 P2 (neighbours): a dyn Fn made of an Rc<fn item> that may be shared before is refused beside a case of trait evidence paths
+plain std dyn_fn_address_by_rc_as_ptr.rs beside evidence_paths.rs
+
+#1897 P2 (neighbours): a Range written into a writer through generic code is refused beside a generic writer's arguments
+plain std range_values.rs beside arguments_given_to_a_generic_writer.rs
+
+#1898 P2 (neighbours): LocalKey<RefCell<T>>::with_borrow_mut of a value with a destructor is refused beside a Drop impl
+plain std rc_dyn_fn_counted_by_its_signature.rs beside drop_impl_indirect.rs
