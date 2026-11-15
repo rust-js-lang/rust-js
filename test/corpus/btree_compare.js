@@ -38,11 +38,10 @@ function revPartialOrd_partialCmp(rev, o) {
 function main() {
   const a = new $BTreeSet([1, 2]);
   const b = new $BTreeSet([1, 3]);
-  const value = $cmpItems($sortedKeys(a, $cmp), $sortedKeys(b, $cmp), $cmp) < 0;
-  const cmp = $cmpItems($sortedKeys(a, $cmp), $sortedKeys(b, $cmp), $cmp);
   console.log(
-    `${value} ${["Less", "Equal", "Greater"][cmp + 1]} ${((value) =>
-      value == null ? "None" : `Some(${["Less", "Equal", "Greater"][value + 1]})`)(
+    `${$cmpItems($sortedKeys(a, $cmp), $sortedKeys(b, $cmp), $cmp) < 0} ${
+      ["Less", "Equal", "Greater"][$cmpItems($sortedKeys(a, $cmp), $sortedKeys(b, $cmp), $cmp) + 1]
+    } ${((value) => (value == null ? "None" : `Some(${["Less", "Equal", "Greater"][value + 1]})`))(
       $cmpItems($sortedKeys(b, $cmp), $sortedKeys(a, $cmp), $cmp),
     )}`,
   );
@@ -51,14 +50,15 @@ function main() {
     [1, "y"],
     [0, "z"],
   ]);
-  const value$1 = $cmpItems(
-    $sortedEntries(m, $cmp),
-    $sortedEntries(n, $cmp),
-    (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]),
-  );
   console.log(
     `${
-      ["Less", "Equal", "Greater"][value$1 + 1]
+      ["Less", "Equal", "Greater"][
+        $cmpItems(
+          $sortedEntries(m, $cmp),
+          $sortedEntries(n, $cmp),
+          (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]),
+        ) + 1
+      ]
     } ${$cmpItems($sortedEntries(m, $cmp), $sortedEntries(n, $cmp), (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1])) > 0}`,
   );
   const v = [new $BTreeSet([2]), new $BTreeSet([1, 5]), new $BTreeSet()];
@@ -76,10 +76,11 @@ function main() {
 function others() {
   const a = $treeFrom(new ($ordSet(revOrd_cmp))(), [[1], [5]], true, revOrd_cmp);
   const b = $treeFrom(new ($ordSet(revOrd_cmp))(), [[1], [4]], true, revOrd_cmp);
-  const cmp = $cmpItems($sortedKeys(a, revOrd_cmp), $sortedKeys(b, revOrd_cmp), revOrd_cmp);
   console.log(
     `${
-      ["Less", "Equal", "Greater"][cmp + 1]
+      ["Less", "Equal", "Greater"][
+        $cmpItems($sortedKeys(a, revOrd_cmp), $sortedKeys(b, revOrd_cmp), revOrd_cmp) + 1
+      ]
     } ${$cmpItems($sortedKeys(a, revOrd_cmp), $sortedKeys(b, revOrd_cmp), revOrd_cmp) < 0}`,
   );
   const x = new $BTreeMap([[1, NaN]]);

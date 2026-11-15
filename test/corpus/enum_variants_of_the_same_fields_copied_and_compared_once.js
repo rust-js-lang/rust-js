@@ -186,26 +186,22 @@ function main() {
     }
   }
   console.log(`${nestDebug_fmt(nests)} ${nestDebug_fmt(nest)}`);
-  const value$1 = [1];
-  const value$2 = [2];
-  const value$3 = [1, 1];
-  const value$4 = cloneNest(nest);
   const all = [
-    { TAG: "Third", _0: value$1 },
-    { TAG: "First", _0: value$2 },
+    { TAG: "Third", _0: [1] },
+    { TAG: "First", _0: [2] },
     "Leaf",
-    { TAG: "First", _0: value$3 },
-    value$4,
+    { TAG: "First", _0: [1, 1] },
+    cloneNest(nest),
     { TAG: "Second", _0: [] },
     cloneNest(nests),
   ];
   all.sort(cmpNest);
   console.log(`[${all.map((item) => nestDebug_fmt(item)).join(", ")}]`);
   const cmp = cmpNest({ TAG: "First", _0: [3] }, { TAG: "Second", _0: [1] });
-  const value$5 = cmpNest({ TAG: "Third", _0: [2] }, { TAG: "Third", _0: [1, 9] });
+  const value$1 = cmpNest({ TAG: "Third", _0: [2] }, { TAG: "Third", _0: [1, 9] });
   console.log(
     `${["Less", "Equal", "Greater"][cmp + 1]} ${
-      ["Less", "Equal", "Greater"][value$5 + 1]
+      ["Less", "Equal", "Greater"][value$1 + 1]
     } ${cmpNest(nest, nests) === 1}`,
   );
   const outers = [
@@ -220,9 +216,9 @@ function main() {
   $sortStable(outers, (a, b) => $unwrap(partialCmpOuter(a, b)) < 0, "general", 32);
   console.log(`[${outers.map((item) => outerDebug_fmt(item)).join(", ")}]`);
   const nan = { TAG: "Shaped", _0: { TAG: "Circle", _0: NaN, _1: [] } };
-  const value$6 = partialCmpOuter(nan, nan);
+  const value$2 = partialCmpOuter(nan, nan);
   console.log(
-    `${value$6 == null ? "None" : `Some(${["Less", "Equal", "Greater"][value$6 + 1]})`} ${((
+    `${value$2 == null ? "None" : `Some(${["Less", "Equal", "Greater"][value$2 + 1]})`} ${((
       value,
     ) => (value == null ? "None" : `Some(${["Less", "Equal", "Greater"][value + 1]})`))(
       partialCmpOuter("Plain", nan),

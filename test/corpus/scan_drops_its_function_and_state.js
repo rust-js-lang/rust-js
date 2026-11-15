@@ -117,9 +117,8 @@ function main() {
     ["st0"],
     (s, x) => {
       if (x === 1) {
-        const d = ["st1"];
         dDrop_drop(s);
-        $assign(s, d);
+        $assign(s, ["st1"]);
       }
       return x;
     },

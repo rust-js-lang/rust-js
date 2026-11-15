@@ -50,9 +50,10 @@ function main() {
   };
   const left$3 = [a, 2];
   const right$3 = [c, 2];
-  const cmp = $pathCmp(x.path, y.path) || $cmp(x.rank, y.rank);
   console.log(
-    `${$pathEq(x.path, y.path) && x.rank === y.rank} ${["Less", "Equal", "Greater"][cmp + 1]} ${
+    `${$pathEq(x.path, y.path) && x.rank === y.rank} ${
+      ["Less", "Equal", "Greater"][($pathCmp(x.path, y.path) || $cmp(x.rank, y.rank)) + 1]
+    } ${
       ["Less", "Equal", "Greater"][
         ($pathCmp(left$3[0], right$3[0]) || $cmp(left$3[1], right$3[1])) + 1
       ]

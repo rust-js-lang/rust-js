@@ -99,12 +99,9 @@ function main() {
   const dates = { start: { year: 2024, day: [3] }, end: { year: 2025, day: [1] } };
   const item$2 = { year: 2024, day: [9] };
   const item$3 = { year: 2025, day: [1] };
-  const value =
-    $thenCmp($cmp(dates.start.year, item$2.year), $cmp(dates.start.day[0], item$2.day[0])) <= 0 &&
-    $thenCmp($cmp(item$2.year, dates.end.year), $cmp(item$2.day[0], dates.end.day[0])) < 0;
   const item$4 = { year: 2023, day: [9] };
   console.log(
-    `${value} ${$thenCmp($cmp(dates.start.year, item$3.year), $cmp(dates.start.day[0], item$3.day[0])) <= 0 && $thenCmp($cmp(item$3.year, dates.end.year), $cmp(item$3.day[0], dates.end.day[0])) < 0} ${$thenCmp($cmp(dates.start.year, item$4.year), $cmp(dates.start.day[0], item$4.day[0])) <= 0 && $thenCmp($cmp(item$4.year, dates.end.year), $cmp(item$4.day[0], dates.end.day[0])) < 0}`,
+    `${$thenCmp($cmp(dates.start.year, item$2.year), $cmp(dates.start.day[0], item$2.day[0])) <= 0 && $thenCmp($cmp(item$2.year, dates.end.year), $cmp(item$2.day[0], dates.end.day[0])) < 0} ${$thenCmp($cmp(dates.start.year, item$3.year), $cmp(dates.start.day[0], item$3.day[0])) <= 0 && $thenCmp($cmp(item$3.year, dates.end.year), $cmp(item$3.day[0], dates.end.day[0])) < 0} ${$thenCmp($cmp(dates.start.year, item$4.year), $cmp(dates.start.day[0], item$4.day[0])) <= 0 && $thenCmp($cmp(item$4.year, dates.end.year), $cmp(item$4.day[0], dates.end.day[0])) < 0}`,
   );
   console.log("loud, below:");
   const item$5 = [0.5];

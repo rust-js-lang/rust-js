@@ -24,12 +24,10 @@ function main() {
   const crab = "🦀";
   const bang = "！";
   const words = ["b", bang, crab, "�", "a", "\ue000x", "🦀🦀"];
-  const value = $cmp(crab, bang) < 0;
-  const value$1 = $cmp(crab, bang) > 0;
-  const cmp = $cmp(crab, bang);
   console.log(
-    `${value} ${value$1} ${["Less", "Equal", "Greater"][cmp + 1]} ${((value) =>
-      value == null ? "None" : `Some(${["Less", "Equal", "Greater"][value + 1]})`)(
+    `${$cmp(crab, bang) < 0} ${$cmp(crab, bang) > 0} ${
+      ["Less", "Equal", "Greater"][$cmp(crab, bang) + 1]
+    } ${((value) => (value == null ? "None" : `Some(${["Less", "Equal", "Greater"][value + 1]})`))(
       $cmp(crab, bang),
     )}`,
   );
@@ -43,14 +41,14 @@ function main() {
   byKey.sort((a, b) => $cmp(key(a), key(b)));
   console.log(`[${byKey.map((item) => $debugStr(item)).join(", ")}]`);
   const max = $maxBy(words, $cmp);
-  const value$2 = $minBy(words, $cmp);
+  const value = $minBy(words, $cmp);
   console.log(
-    `${max == null ? "None" : `Some(${$debugStr(max)})`} ${value$2 == null ? "None" : `Some(${$debugStr(value$2)})`}`,
+    `${max == null ? "None" : `Some(${$debugStr(max)})`} ${value == null ? "None" : `Some(${$debugStr(value)})`}`,
   );
   const binarySearch = $binarySearchBy(sorted, (each) => $cmp(each, crab));
-  const value$3 = $binarySearchBy(sorted, (each) => $cmp(each, "�"));
+  const value$1 = $binarySearchBy(sorted, (each) => $cmp(each, "�"));
   console.log(
-    `${binarySearch.TAG === "Ok" ? `Ok(${binarySearch._0})` : `Err(${binarySearch._0})`} ${value$3.TAG === "Ok" ? `Ok(${value$3._0})` : `Err(${value$3._0})`}`,
+    `${binarySearch.TAG === "Ok" ? `Ok(${binarySearch._0})` : `Err(${binarySearch._0})`} ${value$1.TAG === "Ok" ? `Ok(${value$1._0})` : `Err(${value$1._0})`}`,
   );
 
   const set = new $BTreeSet(words);
@@ -80,11 +78,9 @@ function main() {
 
   // Chars, and their ranges and patterns.
   const c = "🦀";
-  const value$4 = $cmp(c, "！") > 0;
-  const value$5 = $cmp(c, "�");
   console.log(
-    `${value$4} ${
-      ["Less", "Equal", "Greater"][value$5 + 1]
+    `${$cmp(c, "！") > 0} ${
+      ["Less", "Equal", "Greater"][$cmp(c, "�") + 1]
     } ${$cmp("\ue000", c) <= 0 && $cmp(c, "\uffff") <= 0}`,
   );
   console.log(`${"a" <= c && $cmp(c, "\uffff") <= 0} ${"a" <= "！" && $cmp("！", "�") < 0}`);

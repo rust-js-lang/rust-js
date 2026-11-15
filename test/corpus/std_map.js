@@ -74,7 +74,6 @@ function main() {
   };
   const iterClone = { clone: (value) => $iter(value.items.slice(value.at, value.end)) };
   const calls = 0;
-  const countdown = [4];
   let calls$1 = calls;
   const make = (calls) =>
     $cloning(
@@ -84,7 +83,7 @@ function main() {
       },
       () => make(calls),
     );
-  const m = iterator_map(countdown, make(calls$1), {
+  const m = iterator_map([4], make(calls$1), {
     next: countdownIterator_next,
     sizeHint: countdownIterator_sizeHint,
   });

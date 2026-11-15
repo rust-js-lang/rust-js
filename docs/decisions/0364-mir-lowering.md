@@ -1686,3 +1686,47 @@ read-across-call and recursive literal-stability predicates move unchanged to
 mir/tidy/stability.rs, with their existing mutations. No rule or output changes
 in this preparatory split; callers consume the same answers through the parent
 module. The extension and its new proofs follow separately.
+
+
+## Amendment: stable fresh literals before native argument reads (#1867)
+
+A borrowed record or array constructed directly in a call keeps its fields
+at that call. A native getter in a later argument must still run after the
+earlier fields, but making a fresh literal of already-held values runs
+nothing and exposes no identity until the call receives it. Tidy already
+answers this question for JSX through `inert_element`; ordinary object and
+array literals now consume that same answer in `read_past_calls`.
+
+This extends the existing movement rule, not the Rust source or the set of
+observable differences. The literal's inputs must be constants, immutable
+locals, imports, closures, or recursively stable literals. Getter reads,
+computed keys, object spreads, iterator spreads, and locals a closure may
+change still prevent this movement. Nothing is copied, duplicated, skipped,
+or evaluated in a different order; each fresh literal is still made once.
+Case N of ADR 0262: no observable difference is accepted.
+
+The reduced real WebAPI case exercises object and array arguments and
+retains the exact native getter order and the identity thrown at each read.
+Its source assertion permits only the two bindings the Rust names, rect and
+style; the earlier compiler retained four additional temporaries in the
+object case. A smaller plain-field/logic probe already passed and was not
+used as a purported failing regression. Direct owner counterexamples keep
+getters, spreads, computed keys and closure-written values out; mutations
+remove the extension or bypass that safety predicate.
+
+The focused real-WebAPI regression passes 34 assertions, the native safety
+unit passes, and all 18 moved/new owner mutations are caught. The first full
+gate on ec7990f finishes in 429 seconds with two expected-output failures:
+one newly adopted corpus snapshot and the improved readability baseline.
+Both are regenerated through their test owners and reviewed before the final
+clean-tree suite check. That final result is recorded with the review evidence.
+
+Forty-one existing corpus snapshots and the std_traits example change: stable
+fresh literals remain at their uses, and bindings held only because of those
+literals disappear. Later generated suffixes shift accordingly. Comparison
+calls can remain inside their format arguments past constant ordering-label
+arrays; drops and native reads retain their relative order. Each affected
+corpus case still agrees with native Rust. The new corpus case prints the
+record/array argument read order. The regenerated readability report reduces
+renamed bindings from 16,184 to 16,090 and role fallbacks from 8,876 to 8,806;
+no readability shape regresses.

@@ -48,27 +48,25 @@ function main() {
   );
   const a = { TAG: "Ok", _0: 5 };
   const b = { TAG: "Err", _0: 0 };
-  const value = ($cmp(a.TAG === "Ok" ? 0 : 1, b.TAG === "Ok" ? 0 : 1) || $cmp(a._0, b._0)) < 0;
-  const value$1 = $eq(a, { TAG: "Ok", _0: 5 });
-  const cmp = $cmp(a.TAG === "Ok" ? 0 : 1, b.TAG === "Ok" ? 0 : 1) || $cmp(a._0, b._0);
   console.log(
-    `${value} ${value$1} ${
-      ["Less", "Equal", "Greater"][cmp + 1]
+    `${($cmp(a.TAG === "Ok" ? 0 : 1, b.TAG === "Ok" ? 0 : 1) || $cmp(a._0, b._0)) < 0} ${$eq(a, {
+      TAG: "Ok",
+      _0: 5,
+    })} ${
+      ["Less", "Equal", "Greater"][
+        ($cmp(a.TAG === "Ok" ? 0 : 1, b.TAG === "Ok" ? 0 : 1) || $cmp(a._0, b._0)) + 1
+      ]
     } ${((result) => (result.TAG === "Ok" ? `Ok(${result._0})` : `Err(${result._0})`))(($cmp(a.TAG === "Ok" ? 0 : 1, b.TAG === "Ok" ? 0 : 1) || $cmp(a._0, b._0)) < 0 ? b : a)}`,
   );
   const f = [
     { TAG: "Ok", _0: NaN },
     { TAG: "Ok", _0: 1 },
   ];
-  const value$2 = $index(f, 0);
+  const value = $index(f, 0);
   const right = $index(f, 1);
   const partialCmp =
-    $cmp(value$2.TAG === "Ok" ? 0 : 1, right.TAG === "Ok" ? 0 : 1) ||
-    (value$2.TAG === "Ok"
-      ? $thenCmp($partialCmp(value$2._0, right._0))
-      : value$2.TAG === "Err"
-        ? 0
-        : 0);
+    $cmp(value.TAG === "Ok" ? 0 : 1, right.TAG === "Ok" ? 0 : 1) ||
+    (value.TAG === "Ok" ? $thenCmp($partialCmp(value._0, right._0)) : value.TAG === "Err" ? 0 : 0);
   const left = $index(f, 1);
   const right$1 = { TAG: "Err" };
   console.log(
@@ -84,7 +82,7 @@ function main() {
     )}`,
   );
   const nested = [{ TAG: "Ok", _0: 2 }, { TAG: "Ok" }, { TAG: "Err", _0: [1, "z"] }];
-  const value$3 = $maxBy(
+  const value$1 = $maxBy(
     nested,
     (a, b) =>
       $cmp(a.TAG === "Ok" ? 0 : 1, b.TAG === "Ok" ? 0 : 1) ||
@@ -101,7 +99,7 @@ function main() {
           : 0),
   );
   console.log(
-    `${value$3 == null ? "None" : `Some(${value$3.TAG === "Ok" ? `Ok(${value$3._0 == null ? "None" : `Some(${value$3._0})`})` : `Err((${value$3._0[0]}, ${$debugStr(value$3._0[1])}))`})`}`,
+    `${value$1 == null ? "None" : `Some(${value$1.TAG === "Ok" ? `Ok(${value$1._0 == null ? "None" : `Some(${value$1._0})`})` : `Err((${value$1._0[0]}, ${$debugStr(value$1._0[1])}))`})`}`,
   );
 }
 //# sourceMappingURL=case.js.map

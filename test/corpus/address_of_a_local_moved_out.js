@@ -45,12 +45,11 @@ function maybeMadeLoud(made) {
   let at = 0;
   let d;
   if (made) {
-    const loud = [1];
     d$live = true;
-    d = loud;
+    d = [1];
     at = $addr($ptrTo(d), 1);
   }
-  const value = [2];
+  const loud = [2];
   try {
     if (d$live) {
       console.log(`drop ${d[0]}`);
@@ -58,16 +57,16 @@ function maybeMadeLoud(made) {
   } catch (error) {
     $cleanup(() => {
       d$live = true;
-      d = value;
+      d = loud;
       console.log(`drop ${d[0]}`);
     }, error);
     throw error;
   }
   d$live = true;
   if (d === undefined) {
-    d = value;
+    d = loud;
   } else {
-    $assign(d, value);
+    $assign(d, loud);
   }
   const result = !made || at === $addr($ptrTo(d), 1);
   console.log(`drop ${d[0]}`);

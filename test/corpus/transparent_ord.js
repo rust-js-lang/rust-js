@@ -13,12 +13,9 @@ function idDebug_fmt(id) {
 function main() {
   const a = [1, 2];
   const b = [1, 3];
-  const value = $cmpItems(a, b, $cmp) < 0;
-  const value$1 = $eq(a, b);
-  const cmp = $cmpItems(a, b, $cmp);
   console.log(
-    `${value} ${value$1} ${
-      ["Less", "Equal", "Greater"][cmp + 1]
+    `${$cmpItems(a, b, $cmp) < 0} ${$eq(a, b)} ${
+      ["Less", "Equal", "Greater"][$cmpItems(a, b, $cmp) + 1]
     } ${($cmpItems(b, a, $cmp) < 0 ? a : b)[1]}`,
   );
   const ids = [b, a];

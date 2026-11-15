@@ -62,9 +62,8 @@ function main() {
   console.log("held");
   console.log(`drop ${_held[0]}`);
   let cell = [2];
-  const d = [3];
   console.log(`drop ${cell[0]}`);
-  cell = d;
+  cell = [3];
   console.log("written over");
   console.log(`drop ${cell[0]}`);
   const slots = { n: { value: 0 }, names: { value: [] } };

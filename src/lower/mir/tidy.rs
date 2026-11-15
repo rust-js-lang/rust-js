@@ -21,6 +21,8 @@ mod destructuring;
 pub(super) mod fired;
 mod flags;
 mod jumps;
+#[cfg(test)]
+mod literal_movement_tests;
 mod logicals;
 mod loop_labels;
 mod loops;
@@ -39,12 +41,12 @@ mod values;
 pub(super) use self::again::Again;
 pub(super) use self::bindings::{is_temporary, temporary, unsuffixed_params, user_name};
 pub(super) use self::destructuring::{copied_params, destructured_params};
+use self::stability::{plain_field, read_past_calls};
 pub(super) use self::values::{call_path, field_path, writer_body};
 use self::{
     bindings::*, branches::*, comparisons::*, copied::*, decided::*, destructuring::*, jumps::*, logicals::*, loops::*,
     moves::*, options::*, switches::switched, value_chains::*, values::*,
 };
-use self::stability::{plain_field, read_past_calls};
 use super::hints::{LabeledBlock, Switch};
 
 /// What a body's last passes ask of its locals, by name: those the program

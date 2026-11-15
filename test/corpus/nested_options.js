@@ -128,10 +128,10 @@ function main() {
   );
   units = [undefined, undefined];
   const items = units.map(() => {});
-  const last = $someAt(items, items.length - 1);
   const items$1 = [];
-  const value$12 = $someAt(items$1, items$1.length - 1);
-  console.log(`${last == null ? "None" : "Some(())"} ${value$12 == null ? "None" : "Some(())"}`);
+  console.log(
+    `${$someAt(items, items.length - 1) == null ? "None" : "Some(())"} ${((value) => (value == null ? "None" : "Some(())"))($someAt(items$1, items$1.length - 1))}`,
+  );
   const stack = [$some(undefined), undefined];
   let pop;
   while ((pop = $pop(stack)) != null) {
@@ -140,9 +140,9 @@ function main() {
   }
   // A found `None` is `Some(None)`, and none found is `None`.
   const find = $nextSome($lent($iter(table)).filter((x) => x == null));
-  const value$13 = $nextSome($lent($iter(table)).filter((x) => x === 2));
+  const value$12 = $nextSome($lent($iter(table)).filter((x) => x === 2));
   console.log(
-    `${find == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(find))})`} ${value$13 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$13))})`}`,
+    `${find == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(find))})`} ${value$12 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$12))})`}`,
   );
   // `flatten` is one `Option` of two: `Some(None)` is `None`, at any depth.
   const nested = [1, $some(undefined), undefined];
@@ -153,14 +153,14 @@ function main() {
       .join(", ")}]`,
   );
   const flatten = $some(undefined);
-  const value$14 = $some($some(undefined));
+  const value$13 = $some($some(undefined));
   console.log(
-    `${flatten == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(flatten))})`} ${value$14 == null ? "None" : `Some(${((value) => (value == null ? "None" : "Some(())"))($someValue(value$14))})`}`,
+    `${flatten == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(flatten))})`} ${value$13 == null ? "None" : `Some(${((value) => (value == null ? "None" : "Some(())"))($someValue(value$13))})`}`,
   );
   const unit = flat($some($some(undefined)));
-  const value$15 = flat($some(undefined));
+  const value$14 = flat($some(undefined));
   console.log(
-    `${unit == null ? "None" : `Some(${unitDebug_fmt($someValue(unit))})`} ${value$15 == null ? "None" : `Some(${unitDebug_fmt($someValue(value$15))})`}`,
+    `${unit == null ? "None" : `Some(${unitDebug_fmt($someValue(unit))})`} ${value$14 == null ? "None" : `Some(${unitDebug_fmt($someValue(value$14))})`}`,
   );
 }
 

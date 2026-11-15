@@ -120,10 +120,9 @@ function main() {
       const value$10 = $overflowing(((a * b) << 24) >> 24, a * b, -128, 127);
       const value$11 = $checkedEuclid(a, b, -128, false);
       const value$12 = $checkedEuclid(a, b, -128, true);
-      const value$13 = $cmp(a, b);
       console.log(
         `i8 ${a} ${b}: wrap ${((a + b) << 24) >> 24} ${((a - b) << 24) >> 24} ${((a * b) << 24) >> 24} chk ${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`} sat ${value$5} ${value$6} ${value$7} over (${value$8[0]}, ${value$8[1]}) (${value$9[0]}, ${value$9[1]}) (${value$10[0]}, ${value$10[1]}) div ${quotient} euclid ${value$11 == null ? "None" : `Some(${value$11})`} ${value$12 == null ? "None" : `Some(${value$12})`} cmp ${a < b} ${a === b} ${
-          ["Less", "Equal", "Greater"][value$13 + 1]
+          ["Less", "Equal", "Greater"][$cmp(a, b) + 1]
         } ${Math.min(a, b)} ${Math.max(a, b)} ${Math.abs(a - b)}`,
       );
     }
@@ -195,10 +194,9 @@ function main() {
       const value$10 = $overflowing(((a * b) << 16) >> 16, a * b, -32768, 32767);
       const value$11 = $checkedEuclid(a, b, -32768, false);
       const value$12 = $checkedEuclid(a, b, -32768, true);
-      const value$13 = $cmp(a, b);
       console.log(
         `i16 ${a} ${b}: wrap ${((a + b) << 16) >> 16} ${((a - b) << 16) >> 16} ${((a * b) << 16) >> 16} chk ${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`} sat ${value$5} ${value$6} ${value$7} over (${value$8[0]}, ${value$8[1]}) (${value$9[0]}, ${value$9[1]}) (${value$10[0]}, ${value$10[1]}) div ${quotient} euclid ${value$11 == null ? "None" : `Some(${value$11})`} ${value$12 == null ? "None" : `Some(${value$12})`} cmp ${a < b} ${a === b} ${
-          ["Less", "Equal", "Greater"][value$13 + 1]
+          ["Less", "Equal", "Greater"][$cmp(a, b) + 1]
         } ${Math.min(a, b)} ${Math.max(a, b)} ${Math.abs(a - b)}`,
       );
     }
@@ -269,10 +267,9 @@ function main() {
       const value$11 = $overflowing(Math.imul(a, b), a * b, -2147483648, 2147483647);
       const value$12 = $checkedEuclid(a, b, -2147483648, false);
       const value$13 = $checkedEuclid(a, b, -2147483648, true);
-      const value$14 = $cmp(a, b);
       console.log(
         `i32 ${a} ${b}: wrap ${(a + b) | 0} ${(a - b) | 0} ${value} chk ${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`} ${value$5 == null ? "None" : `Some(${value$5})`} sat ${value$6} ${value$7} ${value$8} over (${value$9[0]}, ${value$9[1]}) (${value$10[0]}, ${value$10[1]}) (${value$11[0]}, ${value$11[1]}) div ${quotient} euclid ${value$12 == null ? "None" : `Some(${value$12})`} ${value$13 == null ? "None" : `Some(${value$13})`} cmp ${a < b} ${a === b} ${
-          ["Less", "Equal", "Greater"][value$14 + 1]
+          ["Less", "Equal", "Greater"][$cmp(a, b) + 1]
         } ${Math.min(a, b)} ${Math.max(a, b)} ${Math.abs(a - b)}`,
       );
     }
@@ -624,10 +621,9 @@ function main() {
       const value$10 = $overflowing((a * b) & 255, a * b, 0, 255);
       const value$11 = $checkedEuclid(a, b, undefined, false);
       const value$12 = $checkedEuclid(a, b, undefined, true);
-      const value$13 = $cmp(a, b);
       console.log(
         `u8 ${a} ${b}: wrap ${(a + b) & 255} ${(a - b) & 255} ${(a * b) & 255} chk ${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`} sat ${value$5} ${value$6} ${value$7} over (${value$8[0]}, ${value$8[1]}) (${value$9[0]}, ${value$9[1]}) (${value$10[0]}, ${value$10[1]}) div ${quotient} euclid ${value$11 == null ? "None" : `Some(${value$11})`} ${value$12 == null ? "None" : `Some(${value$12})`} cmp ${a < b} ${a === b} ${
-          ["Less", "Equal", "Greater"][value$13 + 1]
+          ["Less", "Equal", "Greater"][$cmp(a, b) + 1]
         } ${Math.min(a, b)} ${Math.max(a, b)} ${Math.abs(a - b)}`,
       );
     }
@@ -692,10 +688,9 @@ function main() {
       const value$10 = $overflowing((a * b) & 65535, a * b, 0, 65535);
       const value$11 = $checkedEuclid(a, b, undefined, false);
       const value$12 = $checkedEuclid(a, b, undefined, true);
-      const value$13 = $cmp(a, b);
       console.log(
         `u16 ${a} ${b}: wrap ${(a + b) & 65535} ${(a - b) & 65535} ${(a * b) & 65535} chk ${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`} sat ${value$5} ${value$6} ${value$7} over (${value$8[0]}, ${value$8[1]}) (${value$9[0]}, ${value$9[1]}) (${value$10[0]}, ${value$10[1]}) div ${quotient} euclid ${value$11 == null ? "None" : `Some(${value$11})`} ${value$12 == null ? "None" : `Some(${value$12})`} cmp ${a < b} ${a === b} ${
-          ["Less", "Equal", "Greater"][value$13 + 1]
+          ["Less", "Equal", "Greater"][$cmp(a, b) + 1]
         } ${Math.min(a, b)} ${Math.max(a, b)} ${Math.abs(a - b)}`,
       );
     }
@@ -759,10 +754,9 @@ function main() {
       const value$11 = $overflowing(Math.imul(a, b) >>> 0, a * b, 0, 4294967295);
       const value$12 = $checkedEuclid(a, b, undefined, false);
       const value$13 = $checkedEuclid(a, b, undefined, true);
-      const value$14 = $cmp(a, b);
       console.log(
         `u32 ${a} ${b}: wrap ${(a + b) >>> 0} ${(a - b) >>> 0} ${value} chk ${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`} ${value$5 == null ? "None" : `Some(${value$5})`} sat ${value$6} ${value$7} ${value$8} over (${value$9[0]}, ${value$9[1]}) (${value$10[0]}, ${value$10[1]}) (${value$11[0]}, ${value$11[1]}) div ${quotient} euclid ${value$12 == null ? "None" : `Some(${value$12})`} ${value$13 == null ? "None" : `Some(${value$13})`} cmp ${a < b} ${a === b} ${
-          ["Less", "Equal", "Greater"][value$14 + 1]
+          ["Less", "Equal", "Greater"][$cmp(a, b) + 1]
         } ${Math.min(a, b)} ${Math.max(a, b)} ${Math.abs(a - b)}`,
       );
     }

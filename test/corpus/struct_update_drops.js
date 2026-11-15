@@ -75,9 +75,8 @@ function main() {
   console.log(`drop ${partial.y[0]}`);
   console.log(`from temp ${fromTemp.x[0]} ${fromTemp.y[0]} ${fromTemp.n}`);
 
-  const noisy = [22];
   const value = partialDefault_default();
-  const defaults = { x: noisy, y: value.y, n: value.n };
+  const defaults = { x: [22], y: value.y, n: value.n };
   console.log(`drop ${value.x[0]}`);
   console.log(`defaults ${defaults.x[0]} ${defaults.y[0]}`);
 

@@ -129,9 +129,8 @@ function main() {
   }
   const kept = made("kept");
   let slot = ["old"];
-  const noisy = ["new"];
   noisyDrop_drop(slot);
-  slot = noisy;
+  slot = ["new"];
   console.log(`slot is ${slot[0]}`);
   let kept$live = false;
   noisyDrop_drop(kept);

@@ -60,7 +60,6 @@ function main() {
   };
   const iterClone = { clone: (value) => $iter(value.items.slice(value.at, value.end)) };
   const seen = 0;
-  const countdown = [4];
   let seen$1 = seen;
   const make = (seen) =>
     $cloning(
@@ -70,7 +69,7 @@ function main() {
       },
       () => make(seen),
     );
-  const w = iterator_inspect(countdown, make(seen$1), {
+  const w = iterator_inspect([4], make(seen$1), {
     next: countdownIterator_next,
     sizeHint: countdownIterator_sizeHint,
   });

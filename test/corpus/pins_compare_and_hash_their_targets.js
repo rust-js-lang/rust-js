@@ -165,13 +165,9 @@ function main() {
   const r2 = k2;
   const c1 = [3];
   const c2 = [4];
-  const value$3 = $eq(x, y);
-  const value$4 = $eq(r1, r2);
-  const value$5 = $eq(c1, c2);
-  const value$6 = $cmp(c1[0], c2[0]);
   console.log(
-    `${value$3} ${value$4} ${value$5} ${
-      ["Less", "Equal", "Greater"][value$6 + 1]
+    `${$eq(x, y)} ${$eq(r1, r2)} ${$eq(c1, c2)} ${
+      ["Less", "Equal", "Greater"][$cmp(c1[0], c2[0]) + 1]
     } ${$cmp(r1[0], r2[0]) <= 0}`,
   );
   const boxes = new ($hashedSet(
@@ -202,8 +198,8 @@ function main() {
     (a, b) => a === b,
   ))(["a", "a"]);
   const lists = [[[1]], [[1]]];
-  const value$7 = $eq(lists[0], lists[1]);
+  const value$3 = $eq(lists[0], lists[1]);
   const arg$1 = $cmpItems(lists[0], lists[1], (a, b) => $cmp(a[0], b[0])) < 0;
-  console.log(`${texts.size} ${value$7} ${arg$1}`);
+  console.log(`${texts.size} ${value$3} ${arg$1}`);
 }
 //# sourceMappingURL=case.js.map

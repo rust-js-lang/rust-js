@@ -50,10 +50,11 @@ function main() {
 
   const nums = { TAG: "Borrowed", _0: [1, 2, 3] };
   const more = { TAG: "Owned", _0: [1, 2, 3] };
-  const value$1 = $eq(nums._0, more._0);
   const right$3 = { TAG: "Owned", _0: [1, 2, 4] };
   console.log(
-    `${value$1} ${["Less", "Equal", "Greater"][$cmpItems(nums._0, right$3._0, $cmp) + 1]}`,
+    `${$eq(nums._0, more._0)} ${
+      ["Less", "Equal", "Greater"][$cmpItems(nums._0, right$3._0, $cmp) + 1]
+    }`,
   );
 }
 //# sourceMappingURL=case.js.map

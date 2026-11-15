@@ -19,10 +19,10 @@ function main() {
     console.log(`t${x}`);
     return x;
   }
-  const cmp = $iterCmp($iter([1, 2]), $iter([1, 3]), $cmp);
   console.log(
-    `${["Less", "Equal", "Greater"][cmp + 1]} ${((value) =>
-      value == null ? "None" : `Some(${["Less", "Equal", "Greater"][value + 1]})`)(
+    `${["Less", "Equal", "Greater"][$iterCmp($iter([1, 2]), $iter([1, 3]), $cmp) + 1]} ${((
+      value,
+    ) => (value == null ? "None" : `Some(${["Less", "Equal", "Greater"][value + 1]})`))(
       $iterCmp($lazyRange(1, 3), $lazyRange(1, 2), $cmp),
     )}`,
   );
@@ -55,8 +55,9 @@ function main() {
       ]
     }`,
   );
-  const value = $iter(["a", "b"]);
-  console.log(`${["Less", "Equal", "Greater"][$iterCmp(value, $iter(["a"]), $cmp) + 1]}`);
+  console.log(
+    `${["Less", "Equal", "Greater"][$iterCmp($iter(["a", "b"]), $iter(["a"]), $cmp) + 1]}`,
+  );
   console.log(`${["Less", "Equal", "Greater"][$iterCmp($iter([]), $iter([]), $cmp) + 1]}`);
   console.log(
     `${$iterCmp($iter([1, 2]), $iter([1, 2]), $cmp) < 0} ${$iterCmp($lazyRange(0, 2), $lazyRange(0, 2), $cmp) > 0}`,

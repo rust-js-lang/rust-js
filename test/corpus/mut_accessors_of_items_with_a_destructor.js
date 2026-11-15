@@ -748,9 +748,8 @@ function main() {
       }
       if (firstChunkMut != null) {
         const c = firstChunkMut;
-        const value = [10];
         dDrop_drop(c[0]);
-        c[0] = value;
+        c[0] = [10];
       }
       try {
         iter = $iter($rchunksMut(items, 2, true));

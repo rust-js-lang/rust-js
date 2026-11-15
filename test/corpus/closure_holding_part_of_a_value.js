@@ -41,10 +41,8 @@ function once(f) {
 }
 
 function branch(take) {
-  const guard = [10];
-  const value = [11];
   let held$0$live = true;
-  const held = [guard, value];
+  const held = [[10], [11]];
   try {
     if (take) {
       held$0$live = false;

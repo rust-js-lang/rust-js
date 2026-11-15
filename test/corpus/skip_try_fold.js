@@ -520,23 +520,25 @@ function main() {
   console.log(
     `${$iterEq($iterator(c(), countIterator_next, false, undefined, undefined, undefined, undefined, countIterator_nth).drop(17), $lazyRange(18, 21))} ${$iterEq($lazyRange(18, 21), $iterator(c(), countIterator_next, false, undefined, undefined, undefined, undefined, countIterator_nth).drop(17))}`,
   );
-  const cmp = $iterCmp(
-    $iterator(
-      c(),
-      countIterator_next,
-      false,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      countIterator_nth,
-    ).drop(17),
-    $lazyRange(18, 21),
-    $cmp,
-  );
   console.log(
-    `${["Less", "Equal", "Greater"][cmp + 1]} ${((value) =>
-      value == null ? "None" : `Some(${["Less", "Equal", "Greater"][value + 1]})`)(
+    `${
+      ["Less", "Equal", "Greater"][
+        $iterCmp(
+          $iterator(
+            c(),
+            countIterator_next,
+            false,
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+            countIterator_nth,
+          ).drop(17),
+          $lazyRange(18, 21),
+          $cmp,
+        ) + 1
+      ]
+    } ${((value) => (value == null ? "None" : `Some(${["Less", "Equal", "Greater"][value + 1]})`))(
       $iterCmp(
         $iterator(
           c(),

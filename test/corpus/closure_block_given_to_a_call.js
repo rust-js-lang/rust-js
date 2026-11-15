@@ -48,11 +48,10 @@ function main() {
   let n = value;
   console.log(`${n} after ${seen}`);
 
-  const value$2 = $iter([1, 2]);
   const h = [80];
   const f$2 = (x) => (x + 10) >>> 0;
   const iter = $holding(
-    value$2.map(f$2),
+    [1, 2].values().map(f$2),
     () => {
       console.log(`drop ${h[0]}`);
     },
@@ -119,13 +118,13 @@ function main() {
   console.log(`drop ${a[0]}`);
   console.log(`f ${f()}`);
   console.log(`drop ${g$3[0]}`);
-  const value$3 = $iter([1, 2]);
+  const value$2 = $iter([1, 2]);
   a = [6];
   const g$4 = [7];
   console.log(`inner ${a[0]}`);
   console.log(`drop ${a[0]}`);
   const iter$1 = $holding(
-    value$3.map((x) => (x + g$4[0]) >>> 0),
+    value$2.map((x) => (x + g$4[0]) >>> 0),
     () => {
       console.log(`drop ${g$4[0]}`);
     },
@@ -150,15 +149,15 @@ function main() {
   function f$3() {
     throw new Error(`in ${g$5[0]}`);
   }
-  let value$4;
+  let value$3;
   try {
-    value$4 = $catchUnwind(f$3);
+    value$3 = $catchUnwind(f$3);
   } finally {
     if ($live()) {
       console.log(`drop ${g$5[0]}`);
     }
   }
-  r = value$4;
+  r = value$3;
   console.log(`caught ${r.TAG === "Err"}`);
   console.log("end");
 }

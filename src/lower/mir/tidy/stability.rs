@@ -47,7 +47,9 @@ pub(super) fn read_past_calls(e: &Expr, set: &IndexSet<String>, plain: &IndexSet
                 || matches!(&of.kind, ExprKind::Var(v) if !set.contains(v.as_str()))
                     && (of.facts.has(js::Known::BuiltIn) || of.facts.has(js::Known::Lasting))
         }
-        ExprKind::Jsx(_) => inert_element(e, set),
+        // Fresh literals whose inputs stay unchanged run no reads of their own.
+        // Like JSX, they can precede a later native getter inside a call.
+        ExprKind::Jsx(_) | ExprKind::Object(..) | ExprKind::Array(_) => inert_element(e, set),
         // The items of an array nothing changes, `...first`; not a plain
         // value's, an iterator's, a function's `inspect(see)`, which
         // spreading steps, running what it calls (#1015).

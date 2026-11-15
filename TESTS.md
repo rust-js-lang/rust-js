@@ -50,6 +50,8 @@ workspace/load/control/cleanup tests and five self-mutants through the
 existing runner. Feature-owner registrations are reviewed separately.
 Added focused #1861 coverage on 2026-11-15: a seventh source-workspace case checks a partial worker-copy failure; three child cases retain in-budget exits under a blocked loop, observed-overrun warnings and external-signal provenance; a timing case checks that a passing check job still shows the warning with its name. Local whole-gate comparison on ef8807570: 6,915 existing test-name/status multisets unchanged, five new passing names, none removed; nine of nine harness mutants caught. Recorded lines: 6,469 pass/616 skip before, 6,474 pass/616 skip after (repeated names included). Local --all samples, not a nightly/CI recount.
 
+Added #1867 coverage on 2026-11-15: a dedicated real-WebAPI aggregate-argument test covers objects and arrays, getter evaluation order and every thrown-value boundary, plus generated-source shape. Native owner counterexamples reject getters, computed keys, spreads and closure-written values. Two mutations remove the fix or its safety predicate. The initial object regression fails on main after ten runtime rows pass. The expanded focused case passes 34 assertions and the native safety unit passes; all 18 moved/new owner mutations are caught. The first complete ec7990f gate finishes in 429 seconds with only a newly adopted snapshot mismatch and an improved readability baseline; both are regenerated and reviewed before the final suite check.
+
 Historical suite totals below are not a recount.
 
 Added on 2026-11-15: `test/intl-arguments.test.ts` checks native Intl calls

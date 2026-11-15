@@ -51,7 +51,6 @@ function main() {
   console.log(
     `[${tagged.map((item) => taggedDebug_fmt(item)).join(", ")}] ${arg == null ? "None" : `Some(${taggedDebug_fmt(arg)})`}`,
   );
-  const value = $index(tagged, 0);
-  console.log(`${["Less", "Equal", "Greater"][order(value, $index(tagged, 1)) + 1]}`);
+  console.log(`${["Less", "Equal", "Greater"][order($index(tagged, 0), $index(tagged, 1)) + 1]}`);
 }
 //# sourceMappingURL=case.js.map

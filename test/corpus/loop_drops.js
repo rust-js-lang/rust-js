@@ -178,9 +178,8 @@ function main() {
     while ((value = $next(iter)) != null) {
       let n = value;
       if (n[0] === "m1") {
-        const value = ["m1b"];
         noisyDrop_drop(n);
-        n = value;
+        n = ["m1b"];
         console.log(`kept ${n[0]}`);
         noisyDrop_drop(n);
       } else {

@@ -136,10 +136,11 @@ function main() {
   // Compared, ordered, hashed, cloned and converted.
   const owned = [104, 105, 0];
   const from = [104, 105, 0].slice();
-  const value$12 = $eq(owned, from);
   const left = [97, 0];
   const right = [97, 98, 0];
-  console.log(`${value$12} ${$eq(owned, [104, 105, 0])} ${$cmpItems(left, right, $cmp) < 0}`);
+  console.log(
+    `${$eq(owned, from)} ${$eq(owned, [104, 105, 0])} ${$cmpItems(left, right, $cmp) < 0}`,
+  );
   const sorted = [[98, 0], [97, 98, 0], [97, 0], [0]];
   sorted.sort((a, b) => $cmpItems(a, b, $cmp));
   console.log(`[${sorted.map((item) => $debugCStr(item)).join(", ")}]`);

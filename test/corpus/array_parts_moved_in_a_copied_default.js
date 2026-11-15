@@ -302,11 +302,10 @@ function main() {
   try {
     const value = first != null ? map$2(first) : undefined;
     console.log(`${value == null ? "None" : `Some(${value})`} ${label[0]}`);
-    const value$1 = [[21], [22]];
     let labels$live = true;
     const labels = {
       tag: "tagged",
-      rest: value$1,
+      rest: [[21], [22]],
     };
     let tmp;
     try {

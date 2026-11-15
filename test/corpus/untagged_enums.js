@@ -168,11 +168,9 @@ function main() {
     console.log(`quiet ${pair.held}`);
   }
   // Its payload's part moved out: the rest is dropped as the variant's.
-  const first$1 = ["f"];
-  const second = ["s"];
   let both$0$live = true;
   let both$0$first$live = true;
-  const both = { first: first$1, second };
+  const both = { first: ["f"], second: ["s"] };
   if (typeof both === "object" && !Array.isArray(both)) {
     both$0$first$live = false;
     console.log(`took ${both.first[0]}`);

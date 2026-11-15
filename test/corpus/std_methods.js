@@ -170,8 +170,9 @@ function main() {
   );
   const table = new $BTreeMap();
   table.set("k", 7);
-  const value$5 = ["a", "b"];
-  const value$6 = [new $BTreeMap()];
-  $print(`${lettersDebug_fmt([value$5])} ${tableDebug_fmt([table])} ${tableDebug_fmt(value$6)}\n`);
+  const value$5 = [new $BTreeMap()];
+  $print(
+    `${lettersDebug_fmt([["a", "b"]])} ${tableDebug_fmt([table])} ${tableDebug_fmt(value$5)}\n`,
+  );
 }
 //# sourceMappingURL=case.js.map

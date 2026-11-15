@@ -74,10 +74,8 @@ function main() {
     }
   }
   opt$0$live = false;
-  const noisy = ["sa"];
-  const value = ["sb"];
   let shape$a$live = true;
-  const shape = { TAG: "Two", a: noisy, b: value };
+  const shape = { TAG: "Two", a: ["sa"], b: ["sb"] };
   if (shape.TAG === "Two") {
     shape$a$live = false;
     console.log(`two ${shape.a[0]}`);

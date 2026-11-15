@@ -47,19 +47,16 @@ function cmpList(a, b) {
 }
 
 function main() {
-  const value = leaf(2);
-  const value$1 = leaf(1);
-  const tree = leaf(1);
   const trees = [
-    { TAG: "Node", _0: value, _1: value$1 },
+    { TAG: "Node", _0: leaf(2), _1: leaf(1) },
     { TAG: "Leaf", _0: 5 },
-    { TAG: "Node", _0: tree, _1: { TAG: "Node", _0: leaf(0), _1: leaf(0) } },
+    { TAG: "Node", _0: leaf(1), _1: { TAG: "Node", _0: leaf(0), _1: leaf(0) } },
     { TAG: "Node", _0: leaf(1), _1: leaf(9) },
   ];
   trees.sort(cmpTree);
   console.log(`[${trees.map((item) => treeDebug_fmt(item)).join(", ")}]`);
-  const value$2 = $maxBy(trees, cmpTree);
-  console.log(`${value$2 == null ? "None" : `Some(${treeDebug_fmt(value$2)})`}`);
+  const value = $maxBy(trees, cmpTree);
+  console.log(`${value == null ? "None" : `Some(${treeDebug_fmt(value)})`}`);
 
   const nan = { TAG: "Neg", _0: { TAG: "Float", _0: NaN } };
   const one = { TAG: "Neg", _0: { TAG: "Float", _0: 1 } };

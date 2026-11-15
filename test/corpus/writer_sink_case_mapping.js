@@ -82,9 +82,8 @@ function main() {
     },
   });
   console.log(`[${log[0].map((item) => $debugStr(item)).join(", ")}]`);
-  const kebab = ["A B"];
   const value$1 = $iter(Array.from("x".toUpperCase()));
   const value$2 = $iter(Array.from("İ".toLowerCase()));
-  console.log(`${kebabDisplay_fmt(kebab)} ${$restStr(value$1)} ${$restStr(value$2)}`);
+  console.log(`${kebabDisplay_fmt(["A B"])} ${$restStr(value$1)} ${$restStr(value$2)}`);
 }
 //# sourceMappingURL=case.js.map

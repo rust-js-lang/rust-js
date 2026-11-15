@@ -133,8 +133,9 @@ function main() {
   $writeExpect(result$3, "called `Result::unwrap()` on an `Err` value");
   console.log(`[${two.join(", ")}] ${byRef.inner}`);
   const array = { inner: [5, 5, 5], pos: 0n };
-  const value = new Array(8).fill(0);
-  console.log(`${$unwrapOk(read.read({ value: array }, value), undefined, $ioErrorDebug)}`);
+  console.log(
+    `${$unwrapOk(read.read({ value: array }, new Array(8).fill(0)), undefined, $ioErrorDebug)}`,
+  );
   const boxed = { inner: [1], pos: 0n };
   const result$4 = $writeTry(() => read.readExact({ value: boxed }, two));
   console.log(`${result$4 !== undefined}`);

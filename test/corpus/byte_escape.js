@@ -41,10 +41,9 @@ function debugByteDebug_fmt(debugByte) {
 function main() {
   for (const b of [97, 32, 10, 39, 0x7f, 0xfe, 92]) {
     const escaped = $escapeAscii([b]).slice();
-    const debugByte = [b];
     const escapeAscii = $iter($escapeAscii([b]));
     console.log(
-      `${debugByteDebug_fmt(debugByte)} ${$restBytes(escapeAscii)} ${$escapeAscii([b]).length} [${escaped.join(", ")}]`,
+      `${debugByteDebug_fmt([b])} ${$restBytes(escapeAscii)} ${$escapeAscii([b]).length} [${escaped.join(", ")}]`,
     );
   }
   const rest = $iter($escapeAscii([9]));

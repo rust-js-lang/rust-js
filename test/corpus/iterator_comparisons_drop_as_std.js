@@ -197,12 +197,11 @@ function main() {
     );
   });
   // `cmp` and the comparisons drop what they're given.
-  const value$2 = $iter([1, 2]);
   console.log(
     `${
       ["Less", "Equal", "Greater"][
         $iterCmp(
-          value$2,
+          $iter([1, 2]),
           $closing(
             $iterator(
               it($iter([1, 3]), "b", 0),
@@ -219,12 +218,12 @@ function main() {
     }`,
   );
   const iter = it($iter([1]), "a", 0);
-  const value$3 = [1, 2];
+  const value$2 = [1, 2];
   let result;
   try {
     result = $iterCmp(
       $iterator(iter, (iterator) => itIterator_next(iterator, { next: $next }), true),
-      value$3,
+      value$2,
       $cmp,
     );
   } catch (error) {

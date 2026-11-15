@@ -931,6 +931,14 @@ export function nodeRequire(module, key) {
 }
 ```
 
+Records and arrays borrowed directly in call arguments keep their stable
+fields at the call site, including before a later native getter or logical
+fallback. Write the natural Rust literals; extra locals are needed only
+when preserving evaluation order or a value used again. Getter reads,
+spreads, computed keys and values changed by callbacks still keep their
+necessary evaluation points ([ADR 0364](../../decisions/0364-mir-lowering.md),
+#1867).
+
 `js::shown(value)` displays any value as JS's template shows it,
 `` `${value}` ``: an object by its `toString`, a number as JS writes it,
 `1e+21`. Its text is a string wherever it goes, alone too, padded, and by

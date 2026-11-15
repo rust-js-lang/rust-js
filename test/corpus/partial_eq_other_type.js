@@ -39,11 +39,10 @@ function main() {
     `${items.length === other.length && items.every((x, i) => centimetersPartialEqMillimeters_eq(x, other[i]))}`,
   );
   const u = { TAG: "Cm", _0: 2 };
-  const value$2 = unitPartialEqI32_eq(u, 20);
   const items$1 = [{ TAG: "Cm", _0: 2 }];
   const other$1 = [20];
   console.log(
-    `${value$2} ${unitPartialEqI32_eq(u, 20)} ${items$1.length === other$1.length && items$1.every((x, i) => unitPartialEqI32_eq(x, other$1[i]))}`,
+    `${unitPartialEqI32_eq(u, 20)} ${unitPartialEqI32_eq(u, 20)} ${items$1.length === other$1.length && items$1.every((x, i) => unitPartialEqI32_eq(x, other$1[i]))}`,
   );
 }
 //# sourceMappingURL=case.js.map

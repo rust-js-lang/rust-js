@@ -1373,23 +1373,20 @@ function main() {
   $writingInto(f$24, holderDebug_fmt, composites, { alternate: true });
   f$24.write("|");
   $writingInto(f$24, holderDebug_fmt, composites, { width: 4 });
-  const value$23 = [7, 8];
   const f$25 = $writerSink(l, logWrite_writeStr, logWrite_writeStr);
-  $writingInto(f$25, manualDebug_fmt, [value$23]);
+  $writingInto(f$25, manualDebug_fmt, [[7, 8]]);
   f$25.write("|");
   $writingInto(f$25, manualDebug_fmt, [[]], { alternate: true });
   console.log(`[${l[0].map((item) => $debugStr(item)).join(", ")}]`);
   l = [[]];
-  const wrapped = [1, "c"];
-  const value$24 = [1, 2];
   const f$26 = $writerSink(l, charsWrite_writeStr, charsWrite_writeChar);
-  $writingInto(f$26, wrappedDebug_fmt, wrapped);
+  $writingInto(f$26, wrappedDebug_fmt, [1, "c"]);
   f$26.write("|");
   $writingInto(f$26, shapeDebug_fmt, "Dot");
   f$26.write("|");
   $writingInto(f$26, shapeDebug_fmt, { TAG: "Line", _0: -3 });
   f$26.write("|");
-  $writingInto(f$26, shapeDebug_fmt, { TAG: "Box", sides: value$24 }, { alternate: true });
+  $writingInto(f$26, shapeDebug_fmt, { TAG: "Box", sides: [1, 2] }, { alternate: true });
   f$26.write("|");
   $writeDebugList(
     f$26,

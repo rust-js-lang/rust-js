@@ -80,9 +80,8 @@ function main() {
   const d = [[1], 0];
   at = $ptrTo(d);
   console.log("before");
-  const value$3 = [2];
   dDrop_drop(d[0]);
-  $assign(d, [value$3, 1]);
+  $assign(d, [[2], 1]);
   console.log(`after ${$ptrEq(at, $ptrTo(d), 8)} ${at.value[0][0]}`);
   // A moved-from local assigned again: the value moved keeps its own.
   const m = { a: 1, b: 1 };
@@ -90,9 +89,9 @@ function main() {
   const kept = { ...m };
   $assign(m, { a: 2, b: 2 });
   // The whole, a pointer into a field of it taken.
-  const value$4 = $ptrEq(at, $ptrTo(m), 8);
+  const value$3 = $ptrEq(at, $ptrTo(m), 8);
   try {
-    console.log(`moved ${value$4} ${pDebug_fmt(kept)} ${pDebug_fmt(m)}`);
+    console.log(`moved ${value$3} ${pDebug_fmt(kept)} ${pDebug_fmt(m)}`);
   } catch (error) {
     $cleanup(() => {
       dDrop_drop(d[0]);
@@ -108,9 +107,9 @@ function main() {
   value.f = s.f;
   $assign(s, value);
   // A call's result.
-  const value$5 = $ptrEq(at, $ptr(s.f, "b", 0, s, 0), 4);
+  const value$4 = $ptrEq(at, $ptr(s.f, "b", 0, s, 0), 4);
   try {
-    console.log(`whole ${value$5} ${at.value} ${sDebug_fmt(s)}`);
+    console.log(`whole ${value$4} ${at.value} ${sDebug_fmt(s)}`);
   } catch (error) {
     $cleanup(() => {
       dDrop_drop(d[0]);
@@ -128,9 +127,9 @@ function main() {
     }, error);
     throw error;
   }
-  const value$6 = $ptrEq(at, $ptrTo(p), 8);
+  const value$5 = $ptrEq(at, $ptrTo(p), 8);
   try {
-    console.log(`call ${value$6} ${pDebug_fmt({ ...at.value })}`);
+    console.log(`call ${value$5} ${pDebug_fmt({ ...at.value })}`);
   } catch (error) {
     $cleanup(() => {
       dDrop_drop(d[0]);
@@ -168,10 +167,10 @@ function main() {
   value$1.r = t2.r;
   $assign(t2, value$1);
   // An item of an array, a field of it a pointer is into.
-  const value$7 = at.value;
-  const value$8 = $ptrEq(at, $ptr(t2.r, 1, 0, t2, 0), 2);
+  const value$6 = at.value;
+  const value$7 = $ptrEq(at, $ptr(t2.r, 1, 0, t2, 0), 2);
   try {
-    console.log(`copied ${rDebug_fmt(seen)} ${value$7} ${value$8}`);
+    console.log(`copied ${rDebug_fmt(seen)} ${value$6} ${value$7}`);
   } catch (error) {
     $cleanup(() => {
       dDrop_drop(d[0]);
@@ -193,9 +192,9 @@ function main() {
   value$2.f = items[0].f;
   $assign(items[0], value$2);
   // Dropped at each assignment, in a loop.
-  const value$9 = $ptrEq(at, $ptr(items[0].f, "b", 0, items, 0), 4);
+  const value$8 = $ptrEq(at, $ptr(items[0].f, "b", 0, items, 0), 4);
   try {
-    console.log(`item ${value$9} ${at.value} ${sDebug_fmt(items[0])}`);
+    console.log(`item ${value$8} ${at.value} ${sDebug_fmt(items[0])}`);
   } catch (error) {
     $cleanup(() => {
       dDrop_drop(d[0]);
@@ -205,21 +204,20 @@ function main() {
   const e = [1];
   at = $ptrTo(e);
   for (let i = 2; i < 4; i++) {
-    const value = [i];
     dDrop_drop(e);
-    $assign(e, value);
+    $assign(e, [i]);
     console.log(`now ${$ptrEq(at, $ptrTo(e), 4)} ${at.value[0]}`);
   }
   let v = [[10]];
   at = $ptrTo(v);
-  const value$10 = [[11], [12]];
+  const value$9 = [[11], [12]];
   try {
     for (const item of v) {
       dDrop_drop(item);
     }
   } catch (error) {
     $cleanup(() => {
-      v = value$10;
+      v = value$9;
       for (const item of v) {
         dDrop_drop(item);
       }
@@ -228,7 +226,7 @@ function main() {
     }, error);
     throw error;
   }
-  $assign(v, value$10);
+  $assign(v, value$9);
   console.log(`vec ${$ptrEq(at, $ptrTo(v), 12)} ${at.value.length}`);
   try {
     try {

@@ -87,20 +87,9 @@ function main() {
     );
     for (let j = 0; j < values.length; j++) {
       const b = values[j];
-      const value = f64Bits(a);
-      const value$1 = f64Bits(b);
-      const value$2 = f64Bits(a + b);
-      const value$3 = f64Bits(a - b);
-      const value$4 = f64Bits(a * b);
-      const value$5 = f64Bits(a / b);
-      const value$6 = f64Bits(a % b);
-      const value$7 = a === b && a === 0 ? "±0" : f64Bits($f64Min(a, b));
-      const value$8 = a === b && a === 0 ? "±0" : f64Bits($f64Max(a, b));
-      const value$9 = b - Math.trunc(b) !== 0 && Number.isFinite(b) ? "-" : f64Bits($powf(a, b));
-      const value$10 = $totalCmp(a, b);
       console.log(
-        `f64 ${value} ${value$1}: ${value$2} ${value$3} ${value$4} ${value$5} ${value$6} min ${value$7} max ${value$8} pow ${value$9} cmp ${
-          ["Less", "Equal", "Greater"][value$10 + 1]
+        `f64 ${f64Bits(a)} ${f64Bits(b)}: ${f64Bits(a + b)} ${f64Bits(a - b)} ${f64Bits(a * b)} ${f64Bits(a / b)} ${f64Bits(a % b)} min ${a === b && a === 0 ? "±0" : f64Bits($f64Min(a, b))} max ${a === b && a === 0 ? "±0" : f64Bits($f64Max(a, b))} pow ${b - Math.trunc(b) !== 0 && Number.isFinite(b) ? "-" : f64Bits($powf(a, b))} cmp ${
+          ["Less", "Equal", "Greater"][$totalCmp(a, b) + 1]
         } ${((value) =>
           value == null ? "None" : `Some(${["Less", "Equal", "Greater"][value + 1]})`)(
           $partialCmp(a, b),
@@ -147,21 +136,9 @@ function main() {
     );
     for (let j = 0; j < values.length; j++) {
       const b = values[j];
-      const value = f32Bits(a);
-      const value$1 = f32Bits(b);
-      const value$2 = f32Bits(Math.fround(a + b));
-      const value$3 = f32Bits(Math.fround(a - b));
-      const value$4 = f32Bits(Math.fround(a * b));
-      const value$5 = f32Bits(Math.fround(a / b));
-      const value$6 = f32Bits(a % b);
-      const value$7 = a === b && a === 0 ? "±0" : f32Bits($f64Min(a, b));
-      const value$8 = a === b && a === 0 ? "±0" : f32Bits($f64Max(a, b));
-      const value$9 =
-        b - Math.trunc(b) !== 0 && Number.isFinite(b) ? "-" : f32Bits(Math.fround($powf(a, b)));
-      const value$10 = $totalCmp(a, b);
       console.log(
-        `f32 ${value} ${value$1}: ${value$2} ${value$3} ${value$4} ${value$5} ${value$6} min ${value$7} max ${value$8} pow ${value$9} cmp ${
-          ["Less", "Equal", "Greater"][value$10 + 1]
+        `f32 ${f32Bits(a)} ${f32Bits(b)}: ${f32Bits(Math.fround(a + b))} ${f32Bits(Math.fround(a - b))} ${f32Bits(Math.fround(a * b))} ${f32Bits(Math.fround(a / b))} ${f32Bits(a % b)} min ${a === b && a === 0 ? "±0" : f32Bits($f64Min(a, b))} max ${a === b && a === 0 ? "±0" : f32Bits($f64Max(a, b))} pow ${b - Math.trunc(b) !== 0 && Number.isFinite(b) ? "-" : f32Bits(Math.fround($powf(a, b)))} cmp ${
+          ["Less", "Equal", "Greater"][$totalCmp(a, b) + 1]
         } ${((value) =>
           value == null ? "None" : `Some(${["Less", "Equal", "Greater"][value + 1]})`)(
           $partialCmp(a, b),

@@ -214,16 +214,15 @@ function main() {
   );
 
   let f = 1.5;
-  const value$8 = [1, "a"];
   let tmp$3 = "g";
   const s$4 = { value: tmp$3 };
   const n$2 = { value: f };
-  const value$9 = generic(value$8, s$4, n$2, {
+  const value$8 = generic([1, "a"], s$4, n$2, {
     fmt: (value) => `(${value[0]}, ${$debugStr(value[1], "'")})`,
   });
   tmp$3 = s$4.value;
   f = n$2.value;
-  console.log(`${value$9}`);
+  console.log(`${value$8}`);
 
   // Each written out, and given as a function where a closure would be.
   const words = ["a", "bc"];
