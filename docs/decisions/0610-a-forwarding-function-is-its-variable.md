@@ -355,3 +355,41 @@ fields'). Mutations `forwarding-function-comments-untaken`,
 `forwarding-fields-comments-untaken` (`prepare/forwarding.ts`),
 `taken-function-unstarted` (`to_oxc/starts.ts`) and `taken-*`
 (`to_oxc.ts`).
+
+## Amendment: a call of each count is the call of all, to the crate's own functions (2026-11-15, #1890)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none.
+
+Since #1876, a call of a function value JS may have made, of trailing
+`Option`s known only where it runs, is a call of each count, `sub !=
+null ? system.unlink(link, sub) : system.unlink(link)`, so a JS function
+that counts what it's given sees Rust's absence. A wrapper whose whole
+body is one no longer passed its parameters on (`js::passes_on`), so the
+guide's alien-signals system stayed `const system = ..` and a function
+of each field, where upstream writes `const { link, unlink } =
+createReactiveSystem(0);`.
+
+**Of a forwarding function of a field the crate fills with its own
+functions alone (`Known::ThisUnread`), its call of each count is its
+call of all**: the one owner of a call of each count,
+`binding_calls::optional_ladder`, says so of what it makes,
+`Known::EachCount`, and this pass reads the call of all of one
+(`js::full_count_call`, `forwarding::full_counts`); its value, read in
+each count, is read by none but the functions taken apart. The crate's
+own functions read no `arguments.length`, so given `undefined` they do
+as given none: no program tells the two apart. Every other reader of a
+call, `passes_on` of a closure given as a value among them, takes no
+call of each count for its call of all, as a JS function there may
+count. One of a field a JS function fills, `Date.UTC`, stays a function
+of each count.
+
+The facts an expression carries, `js::Facts`, are 128 bits, `EachCount`
+the 65th.
+
+Held by `test/forwarding-each-count.test.ts`, in Bun and in Chromium: the
+system taken apart, and a clock of `Date.UTC` kept, each `None` and
+`Some` as Rust's; the guide's interop/global-scope.md example; mutations
+`each-count-unsaid` (`binding_calls.ts`), `each-count-read-twice` and
+`each-count-full-unread` (`prepare/forwarding.ts`). The alien-signals
+port's `createReactiveSystem` destructuring is as upstream's.
+

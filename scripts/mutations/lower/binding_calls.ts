@@ -1124,4 +1124,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^call_argument_comments_across_lines.rs$"],
     snapshots: true,
   },
+  {
+    name: "each-count-unsaid",
+    breaks: "a call of each count says nothing of itself, so ADR 0610's forwarding function of a field the crate fills with its own functions stays a function, `function unlink(link, sub) { return sub != null ? .. }`, not upstream's `const { link, unlink } = createReactiveSystem(0)` (#1890)",
+    file: "src/lower/binding_calls.rs",
+    find: "            ladder.facts = ladder.facts.with(js::Known::EachCount);\n",
+    replace: "",
+    tests: ["test/forwarding-each-count.test.ts", "-t", "crate's own functions is that field"],
+  },
 ];

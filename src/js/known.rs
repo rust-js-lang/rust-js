@@ -5,6 +5,9 @@
 
 use std::sync::atomic::{AtomicU64, Ordering};
 
+/// A set of facts' bits, one each, more than 64 of them (#1890).
+pub(super) type Bits = u128;
+
 /// `Known`, its variants each with what it says, and `Known::ALL`, every
 /// one in the order they're declared: one list, so none is left out.
 macro_rules! knowns {
@@ -346,6 +349,13 @@ knowns! {
     /// none, `Array.from(set.values())`, where one of a `dyn` Rust made
     /// asks it (`iterators::binding_made`, the user's decision, #1359).
     BindingIterator,
+    /// A call of each count of one call, `sub != null ? system.unlink(link,
+    /// sub) : system.unlink(link)`, of trailing `Option`s known where it
+    /// runs (`binding_calls::optional_ladder`, #1876): its first branch the
+    /// call of all its arguments, which a function of the crate's own,
+    /// that never reads `arguments.length`, does as it does each
+    /// (`stmt_walk::full_count_call`, ADR 0610, amended, #1890).
+    EachCount,
     /// A read of a global, JS's `Array` or a binding's `document`, that the
     /// module declares nowhere: `Expr::global`'s, the one way one is made,
     /// which `js::validate` takes for resolved where nothing in scope
@@ -414,7 +424,8 @@ impl Known {
             | Known::Part
             | Known::Literal
             | Known::RunsInItsCall
-            | Known::BindingIterator => Role::Permits,
+            | Known::BindingIterator
+            | Known::EachCount => Role::Permits,
             Known::Else | Known::Guard | Known::Written | Known::Valued | Known::Indexed => Role::AsWritten,
             Known::Getter | Known::Setter | Known::LocalRead | Known::Live | Known::Evidence => Role::Warns,
             // `Iterator` among them: what isn't known to be one is taken
@@ -453,23 +464,50 @@ impl Known {
         Known::ALL.iter().copied().find(|known| known.name() == name)
     }
 
-    pub(super) const fn bit(self) -> u64 {
-        1 << self as u64
+    pub(super) const fn bit(self) -> Bits {
+        1 << self as u32
+    }
+}
+
+/// A set of facts' bits shared by the compile's threads, its halves each
+/// an atomic: a target of no 128-bit atomics, wasm's, has 64-bit ones.
+struct SharedBits([AtomicU64; 2]);
+
+impl SharedBits {
+    const fn new() -> Self {
+        SharedBits([AtomicU64::new(0), AtomicU64::new(0)])
+    }
+
+    fn load(&self) -> Bits {
+        (Bits::from(self.0[1].load(Ordering::Relaxed)) << 64) | Bits::from(self.0[0].load(Ordering::Relaxed))
+    }
+
+    fn store(&self, bits: Bits) {
+        self.0[0].store(bits as u64, Ordering::Relaxed);
+        self.0[1].store((bits >> 64) as u64, Ordering::Relaxed);
+    }
+
+    fn swap(&self, bits: Bits) -> Bits {
+        let was = self.load();
+        self.store(bits);
+        was
+    }
+
+    fn fetch_or(&self, bits: Bits) {
+        self.0[0].fetch_or(bits as u64, Ordering::Relaxed);
+        self.0[1].fetch_or((bits >> 64) as u64, Ordering::Relaxed);
     }
 }
 
 /// The facts this compile forgets, `--without-known`'s: none, of a build.
-static FORGOTTEN: AtomicU64 = AtomicU64::new(0);
+static FORGOTTEN: SharedBits = SharedBits::new();
 /// The facts a reader found so far, of those not forgotten.
-static FOUND: AtomicU64 = AtomicU64::new(0);
+static FOUND: SharedBits = SharedBits::new();
 
 /// Forgets `knowns` for the rest of the compile: no reader finds one,
 /// wherever it was said. Set once, before anything is lowered.
 pub fn forget(knowns: &[Known]) {
-    FORGOTTEN.store(
-        knowns.iter().fold(0, |bits, known| bits | known.bit()),
-        Ordering::Relaxed,
-    );
+    FORGOTTEN.store(knowns.iter().fold(0, |bits, known| bits | known.bit()));
 }
 
 /// `check` run with nothing forgotten: a contract's check of what a pass
@@ -477,21 +515,21 @@ pub fn forget(knowns: &[Known]) {
 /// read it, not what checks them, which would take the JS a fact vouches
 /// for, a `finally` of what never throws, for broken.
 pub fn remembering<T>(check: impl FnOnce() -> T) -> T {
-    let forgotten = FORGOTTEN.swap(0, Ordering::Relaxed);
+    let forgotten = FORGOTTEN.swap(0);
     let checked = check();
-    FORGOTTEN.store(forgotten, Ordering::Relaxed);
+    FORGOTTEN.store(forgotten);
     checked
 }
 
 /// What a reader sees of `facts`' bits: those not forgotten.
-pub(super) fn seen(facts: u64) -> u64 {
-    facts & !FORGOTTEN.load(Ordering::Relaxed)
+pub(super) fn seen(facts: Bits) -> Bits {
+    facts & !FORGOTTEN.load()
 }
 
 /// Notes that a reader found `facts`' bits, each a fact it acts on.
-pub(super) fn found(facts: u64) {
+pub(super) fn found(facts: Bits) {
     if facts != 0 {
-        FOUND.fetch_or(facts, Ordering::Relaxed);
+        FOUND.fetch_or(facts);
     }
 }
 
@@ -499,7 +537,7 @@ pub(super) fn found(facts: u64) {
 /// what `--knowns-found` writes, the facts whose forgetting can change a
 /// compile's JS.
 pub fn found_names() -> Vec<String> {
-    let found = FOUND.load(Ordering::Relaxed);
+    let found = FOUND.load();
     (Known::ALL.iter())
         .filter(|known| found & known.bit() != 0)
         .map(|known| known.name())
@@ -508,7 +546,7 @@ pub fn found_names() -> Vec<String> {
 
 #[cfg(test)]
 mod tests {
-    use super::{Known, Role};
+    use super::{Bits, Known, Role};
 
     #[test]
     fn every_fact_is_listed_once_in_its_order_and_named() {
@@ -516,7 +554,7 @@ mod tests {
             assert_eq!(*known as usize, at);
             assert_eq!(Known::named(&known.name()), Some(*known));
         }
-        assert!(Known::ALL.len() <= 64, "a `Facts` is 64 bits");
+        assert!(Known::ALL.len() <= Bits::BITS as usize, "a `Facts` is 128 bits");
         assert_eq!(Known::named("Nothing"), None);
     }
 

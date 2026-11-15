@@ -33,8 +33,12 @@ pub(super) fn functions(module: &mut js::Module) {
                 ..
             }]
         );
-        // The module variable it calls with its parameters.
-        let variable = match js::passes_on(&function.params, &function.body, true).map(|callee| &callee.kind) {
+        // The module variable it calls with its parameters, by the call of all
+        // of a call of each count, as each value it's given is an arrow of
+        // Rust's, checked below (#1890).
+        let body = full_counts(&function.body);
+        let body = body.as_deref().unwrap_or(&function.body);
+        let variable = match js::passes_on(&function.params, body, true).map(|callee| &callee.kind) {
             Some(ExprKind::Var(v)) if *v != function.name => Some(v.clone()),
             _ => None,
         };
@@ -195,7 +199,12 @@ pub(super) fn fields(module: &mut js::Module) {
         let js::Item::Function(function) = item else {
             continue;
         };
-        let call = match function.body.as_slice() {
+        // By the call of all of a call of each count, as the field holds the
+        // crate's own functions alone, `ThisUnread`'s, which read no
+        // `arguments.length` (#1890).
+        let full = full_counts(&function.body);
+        let body = full.as_deref().unwrap_or(&function.body);
+        let call = match body {
             [
                 Stmt {
                     kind: StmtKind::Return(Some(call)) | StmtKind::Expr(call),
@@ -204,8 +213,7 @@ pub(super) fn fields(module: &mut js::Module) {
             ] => call,
             _ => continue,
         };
-        let Some(ExprKind::Member(of, field)) = js::passes_on(&function.params, &function.body, true).map(|c| &c.kind)
-        else {
+        let Some(ExprKind::Member(of, field)) = js::passes_on(&function.params, body, true).map(|c| &c.kind) else {
             continue;
         };
         let ExprKind::Var(value) = &of.kind else {
@@ -230,11 +238,15 @@ pub(super) fn fields(module: &mut js::Module) {
             .items
             .iter()
             .position(|item| matches!(item, js::Item::Const(c) if c.name == value && !c.export && c.fields.is_empty()));
+        // Read by none but those functions, each once by its call, of all of
+        // a call of each count too, whose every count reads it (#1890).
         let mut reads = 0;
-        for item in &module.items {
-            item.visit_vars(&mut |v| reads += usize::from(v == value));
+        for (i, item) in module.items.iter().enumerate() {
+            if !fields.iter().any(|&(taken, ..)| taken == i) {
+                item.visit_vars(&mut |v| reads += usize::from(v == value));
+            }
         }
-        let Some(at) = at.filter(|_| reads == fields.len()) else {
+        let Some(at) = at.filter(|_| reads == 0) else {
             continue;
         };
         let js::Item::Const(constant) = &module.items[at] else {
@@ -408,4 +420,23 @@ fn only_called(items: &[js::Item], at: usize, name: &str, arity: usize) -> bool 
         }
     }
     reads == calls
+}
+
+/// `body`, a function's one call, of a call of each count of its trailing
+/// `Option`s (`Known::EachCount`), as the call of all of them
+/// (`js::full_count_call`): what this pass makes a function of the
+/// crate's own, which reads no `arguments.length`, so given `undefined` it
+/// does as given none (ADR 0262, case none; ADR 0610, amended, #1890).
+/// `None` of any other.
+fn full_counts(body: &[Stmt]) -> Option<Vec<Stmt>> {
+    let [stmt] = body else { return None };
+    let (StmtKind::Return(Some(call)) | StmtKind::Expr(call)) = &stmt.kind else {
+        return None;
+    };
+    let all = js::full_count_call(call)?.clone();
+    let kind = match &stmt.kind {
+        StmtKind::Return(_) => StmtKind::Return(Some(all)),
+        _ => StmtKind::Expr(all),
+    };
+    Some(vec![Stmt { kind, ..stmt.clone() }])
 }

@@ -691,6 +691,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
             ladder = Expr::cond(test, call, ladder);
         }
+        // Said of itself, so ADR 0610's forwarding function, which knows its
+        // callee reads no `arguments.length`, may read the call of all
+        // (`js::full_count_call`, #1890).
+        if matches!(ladder.kind, js::ExprKind::Cond(..)) {
+            ladder.facts = ladder.facts.with(js::Known::EachCount);
+        }
         ladder
     }
 

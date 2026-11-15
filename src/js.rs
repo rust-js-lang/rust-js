@@ -706,7 +706,7 @@ impl PartialEq for HeldAs {
 /// it is of what the compile hasn't forgotten (`known::seen`, ADR 1127):
 /// `has`, the parts below and `==`, so a fact forgotten is one never said.
 #[derive(Clone, Copy, Default)]
-pub struct Facts(u64);
+pub struct Facts(known::Bits);
 
 impl PartialEq for Facts {
     fn eq(&self, other: &Facts) -> bool {

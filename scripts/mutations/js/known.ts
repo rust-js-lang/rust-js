@@ -6,8 +6,8 @@ export const mutations: Mutation[] = [
     name: "nothing-forgotten",
     breaks: "`--without-known` forgets nothing: each of the net's variants is the JS a build makes (ADR 1127)",
     file: "src/js/known.rs",
-    find: "        knowns.iter().fold(0, |bits, known| bits | known.bit()),\n",
-    replace: "        knowns.iter().fold(0, |bits, _| bits),\n",
+    find: "    FORGOTTEN.store(knowns.iter().fold(0, |bits, known| bits | known.bit()));\n",
+    replace: "    FORGOTTEN.store(knowns.iter().fold(0, |bits, _| bits));\n",
     tests: ["test/tidy-stages.test.ts", "-t", "a case's JS without a fact a reader found"],
   },
   {

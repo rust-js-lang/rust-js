@@ -1350,15 +1350,7 @@ export function createReactiveSystem(base) {
   };
 }
 
-const system = createReactiveSystem(0);
-
-function link(dep, sub) {
-  system.link(dep, sub);
-}
-
-function unlink(link, sub) {
-  return sub != null ? system.unlink(link, sub) : system.unlink(link);
-}
+const { link, unlink } = createReactiveSystem(0);
 
 export function run(dep) {
   link(dep, 1);

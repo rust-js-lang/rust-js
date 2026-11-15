@@ -135,6 +135,18 @@ pub fn passes_on<'e>(params: &[Pattern], body: &'e [Stmt], statement: bool) -> O
     passes_on_after(params, body, statement).and_then(|(callee, leading)| leading.is_empty().then_some(callee))
 }
 
+/// Of a call of each count (`Known::EachCount`), the call of all its
+/// arguments, its first branch: what a caller that knows the callee reads
+/// no `arguments.length` may take it for, ADR 0610's forwarding function
+/// of a field the crate fills with its own functions alone (#1890). Never
+/// another's: a JS function may count what it's given.
+pub fn full_count_call(e: &Expr) -> Option<&Expr> {
+    match &e.kind {
+        ExprKind::Cond(_, all, _) if e.facts.has(Known::EachCount) => Some(all),
+        _ => None,
+    }
+}
+
 /// `passes_on`, of a call that may be given values before what the
 /// function's given, `(x, ...rest) => g(a, b, x, ...rest)`: its callee and
 /// those values, `a, b`, which `lower/passed_on.rs` binds where they're
