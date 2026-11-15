@@ -217,8 +217,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an untagged enum's struct variant takes an array, or a class's instance, as `typeof` says object of each",
     file: "src/lower/untagged.rs",
-    find: "                (Kind::Object, Kind::Array | Kind::Tuple(_) | Kind::Class(..) | Kind::Test(_) | Kind::Member(..)) => {\n",
-    replace: "                (Kind::Object, Kind::Member(..)) => {\n",
+    find: "                    Kind::Array | Kind::Tuple(_) | Kind::Class(..) | Kind::Test(_) | Kind::Member(..) | Kind::Key(_),\n",
+    replace: "                    Kind::Member(..) | Kind::Key(_),\n",
     tests: [
       "test/compiler.test.ts",
       "test/lowering-options.test.ts",
@@ -552,9 +552,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a plain object's test leaves in what a member tells, so a text instance's test holds of an instance too (rd291)",
     file: "src/lower/untagged.rs",
-    find: "                (Kind::Object, Kind::Array | Kind::Tuple(_) | Kind::Class(..) | Kind::Test(_) | Kind::Member(..)) => {\n",
-    replace:
-      "                (Kind::Object, Kind::Array | Kind::Tuple(_) | Kind::Class(..) | Kind::Test(_)) => {\n",
+    find: "                    Kind::Array | Kind::Tuple(_) | Kind::Class(..) | Kind::Test(_) | Kind::Member(..) | Kind::Key(_),\n",
+    replace: "                    Kind::Array | Kind::Tuple(_) | Kind::Class(..) | Kind::Test(_) | Kind::Key(_),\n",
     tests: ["test/untagged-members.test.ts"],
   },
   {
@@ -609,8 +608,8 @@ export const mutations: Mutation[] = [
     breaks:
       "another untagged enum's object told by a member is tested beside its plain object, `Array.isArray(child.children) || (typeof child === \"object\" ..)`, which is that object already (rd305)",
     file: "src/lower/untagged.rs",
-    find: "            Kind::Member(..) | Kind::Class(..) | Kind::Test(_) => objects(own) && variants.len() == 1,\n",
-    replace: "            Kind::Member(..) | Kind::Class(..) | Kind::Test(_) => false,\n",
+    find: "            Kind::Member(..) | Kind::Key(_) | Kind::Class(..) | Kind::Test(_) => objects(own) && variants.len() == 1,\n",
+    replace: "            Kind::Member(..) | Kind::Key(_) | Kind::Class(..) | Kind::Test(_) => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^untagged_in_untagged.rs$"],
     snapshots: true,
   },
@@ -740,5 +739,21 @@ export const mutations: Mutation[] = [
     find: "        if let Some(lone) = self.lone_class_variant(adt, args).map(|lone| adt.variant(lone))\n",
     replace: "        if let Some(lone) = self.lone_class_variant(adt, args).filter(|_| false).map(|lone| adt.variant(lone))\n",
     tests: ["test/webapi-objects.test.ts", "-t", "derived =="],
+  },
+  {
+    name: "key-test-of-a-field-unseen",
+    breaks: "a field's `#[rust_js::test(key)]` says nothing, its struct an object no member tells, so `Move`'s `Bound` is told by nothing (ADR 1162, #1846)",
+    file: "src/lower/untagged.rs",
+    find: "                        .find(|f| bindings::is_key_test_field(self.tcx, f.did)) =>\n",
+    replace: "                        .find(|f| false && bindings::is_key_test_field(self.tcx, f.did)) =>\n",
+    tests: ["test/untagged-keys.test.ts", "-t", "told by its key is JS"],
+  },
+  {
+    name: "key-test-reads-the-value",
+    breaks: "a variant told by its key reads its value, `move.bound != null`, a Proxy's `get` and a getter run, where `in` reads none (ADR 1162, #1846)",
+    file: "src/lower/untagged.rs",
+    find: "            Kind::Key(key) => Expr::bin(Op::In, Expr::str(key), value.clone()),\n",
+    replace: "            Kind::Key(key) => Expr::bin(Op::LooseNe, Expr::member(value.clone(), key.clone()), Expr::null()),\n",
+    tests: ["test/untagged-keys.test.ts", "-t", "told by its key is JS"],
   },
 ];

@@ -168,6 +168,13 @@ pub(in crate::lower) fn validate(tcx: TyCtxt<'_>) -> bool {
                     tcx.dcx().span_err(tcx.def_span(field.did), message);
                     valid = false;
                 }
+                // A field's test is bare, by its value's kind, or `test(key)`,
+                // by its key alone (ADR 1162).
+                if is_test_list(tcx, field.did) && !is_key_test_field(tcx, field.did) {
+                    let message = "rust-js: a field's `#[rust_js::test]` is bare, telling its struct apart by its value's kind, `Array.isArray(child.children)`, or `#[rust_js::test(key)]`, by its key alone, `\"bound\" in move`";
+                    tcx.dcx().span_err(tcx.def_span(field.did), message);
+                    valid = false;
+                }
                 if let Some(message) = nested_refused(tcx, field) {
                     tcx.dcx().span_err(tcx.def_span(field.did), message);
                     valid = false;

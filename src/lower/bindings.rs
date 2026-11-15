@@ -483,7 +483,25 @@ pub(super) fn is_test_field(tcx: TyCtxt<'_>, field: DefId) -> bool {
     let path = [Symbol::intern("rust_js"), Symbol::intern("test")];
     tcx.get_attrs_by_path(field, &path)
         .next()
-        .is_some_and(|attr| attr.value_str().is_none())
+        .is_some_and(|attr| attr.value_str().is_none() && attr.meta_item_list().is_none())
+}
+
+/// Whether `field`'s `#[rust_js::test]` is a list, `test(key)` or another.
+pub(super) fn is_test_list(tcx: TyCtxt<'_>, field: DefId) -> bool {
+    let path = [Symbol::intern("rust_js"), Symbol::intern("test")];
+    tcx.get_attrs_by_path(field, &path)
+        .next()
+        .is_some_and(|attr| attr.meta_item_list().is_some())
+}
+
+/// Whether `field` tells its struct apart by its key alone,
+/// `#[rust_js::test(key)]`: an object that has it, JS's `in`, its value
+/// unread (ADR 1162, #1846).
+pub(super) fn is_key_test_field(tcx: TyCtxt<'_>, field: DefId) -> bool {
+    let path = [Symbol::intern("rust_js"), Symbol::intern("test")];
+    tcx.get_attrs_by_path(field, &path).next().and_then(|attr| attr.meta_item_list()).is_some_and(|items| {
+        matches!(items.as_slice(), [item] if item.is_word() && item.ident().is_some_and(|ident| ident.as_str() == "key"))
+    })
 }
 
 /// A JS object type's class, as `instanceof` names it: its

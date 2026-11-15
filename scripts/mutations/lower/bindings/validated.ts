@@ -296,4 +296,12 @@ export const mutations: Mutation[] = [
     replace: "                if false && (!option || nulled.contains(&name)) {\n",
     tests: ["test/present-slots.test.ts", "-t", "refused of"],
   },
+  {
+    name: "field-test-of-another-word",
+    breaks: "a field's `#[rust_js::test(value)]` compiles, saying nothing, where a field's test is bare or `test(key)` (ADR 1162)",
+    file: "src/lower/bindings/validated.rs",
+    find: "                if is_test_list(tcx, field.did) && !is_key_test_field(tcx, field.did) {\n",
+    replace: "                if false && is_test_list(tcx, field.did) && !is_key_test_field(tcx, field.did) {\n",
+    tests: ["test/untagged-keys.test.ts", "-t", "another word is refused"],
+  },
 ];

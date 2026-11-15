@@ -51,6 +51,11 @@ pub(super) enum Kind {
     /// kind, `Array.isArray(child.children)`, as TypeScript narrows a union
     /// of object types (rd291). An object no other kind is.
     Member(String, Box<Kind>),
+    /// A struct one of whose fields tells it apart by its key alone,
+    /// `#[rust_js::test(key)]`: an object that has it, JS's `"bound" in
+    /// move`, inherited too, its value unread, as TypeScript's `in` narrows
+    /// a union (ADR 1162, #1846). An object no other kind is.
+    Key(String),
     /// A variant without fields, its name's string, `"blocking"`.
     Literal(String),
     /// A number of one of these values, what a JS object type's member is
@@ -114,6 +119,7 @@ impl Kind {
             | Kind::Class(..)
             | Kind::Test(_)
             | Kind::Member(..)
+            | Kind::Key(_)
             | Kind::Null
             | Kind::Union(_) => None,
         }
@@ -135,6 +141,7 @@ impl Kind {
             Kind::Class(name, _) => format!("a `{name}`"),
             Kind::Test(test) => format!("what `{test}` says is one"),
             Kind::Member(key, kind) => format!("an object whose `{key}` is {}", kind.describe()),
+            Kind::Key(key) => format!("an object that has a `{key}`"),
             Kind::Object => "an object".into(),
             Kind::Literal(name) => format!("the string {name:?}"),
             Kind::Constants(values) => {
@@ -513,6 +520,12 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 match adt.non_enum_variant().ctor_kind() {
                     // One a field of which tells it apart, an object whose
                     // member is of that field's kind (rd291).
+                    // Or by its key alone, `test(key)` (ADR 1162).
+                    None if let Some(field) = (adt.non_enum_variant().fields.iter())
+                        .find(|f| bindings::is_key_test_field(self.tcx, f.did)) =>
+                    {
+                        Some(Kind::Key(bindings::field_key(self.tcx, field).text().to_owned()))
+                    }
                     None => Some(
                         match (adt.non_enum_variant().fields.iter()).find(|f| bindings::is_test_field(self.tcx, f.did))
                         {
@@ -785,7 +798,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let objects = (adt.variants().iter()).all(|v| {
             matches!(
                 self.untagged_variant_kind(v, args),
-                Some(Kind::Object | Kind::Member(..))
+                Some(Kind::Object | Kind::Member(..) | Kind::Key(_))
             )
         });
         (self.union_parts(adt, args, variants, present).iter())
@@ -848,7 +861,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             Kind::Array => objects(own),
             Kind::Tuple(_) => objects(&Kind::Array),
             Kind::Null => objects(own),
-            Kind::Member(..) | Kind::Class(..) | Kind::Test(_) => objects(own) && variants.len() == 1,
+            Kind::Member(..) | Kind::Key(_) | Kind::Class(..) | Kind::Test(_) => objects(own) && variants.len() == 1,
             _ => false,
         };
         (parts.iter()).filter(|(_, own, _)| !taken_in(own)).cloned().collect()
@@ -949,9 +962,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let narrower: Vec<&Kind> = kinds
             .iter()
             .filter(|kind| match (&own, kind) {
-                (Kind::Object, Kind::Array | Kind::Tuple(_) | Kind::Class(..) | Kind::Test(_) | Kind::Member(..)) => {
-                    true
-                }
+                (
+                    Kind::Object,
+                    Kind::Array | Kind::Tuple(_) | Kind::Class(..) | Kind::Test(_) | Kind::Member(..) | Kind::Key(_),
+                ) => true,
                 (Kind::Object, Kind::Null) => !present,
                 // No class leaves out a subclass, `!(v instanceof File)` of
                 // a `Blob`'s: a test of two binding classes is refused, as
@@ -1021,6 +1035,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             Kind::Class(name, _) => Expr::bin(Op::InstanceOf, value.clone(), class(name)),
             Kind::Test(test) => Expr::call(class(test), vec![value.clone()]),
             Kind::Member(key, kind) => self.kind_test(kind, &Expr::member(value.clone(), key.clone()), class),
+            // An object's key, JS's `in`, its value unread: after its object
+            // test, where the union has what isn't an object (ADR 1162).
+            Kind::Key(key) => Expr::bin(Op::In, Expr::str(key), value.clone()),
             // Another untagged enum's, a member's, any of its kinds (rd305):
             // a wrapped event's `nativeEvent`, an `Event` or a record (#1832).
             // An object's `typeof` takes in each kind that's an object, an
@@ -1031,7 +1048,12 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                     !parts.contains(&Kind::Object)
                         || !matches!(
                             part,
-                            Kind::Array | Kind::Tuple(_) | Kind::Class(..) | Kind::Test(_) | Kind::Member(..)
+                            Kind::Array
+                                | Kind::Tuple(_)
+                                | Kind::Class(..)
+                                | Kind::Test(_)
+                                | Kind::Member(..)
+                                | Kind::Key(_)
                         )
                 })
                 .map(|part| self.kind_test(part, value, class))

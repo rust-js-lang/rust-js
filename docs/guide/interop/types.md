@@ -856,6 +856,15 @@ export function size(input) {
   react-test-renderer's `tag: 'INSTANCE'` and `tag: 'TEXT'`, are told by
   it, `inst.tag === "INSTANCE"`, TypeScript's discriminated union
   ([ADR 1036](../../decisions/1036-an-untagged-enums-struct-is-told-by-a-member-it-declares.md), amended).
+  One told by its key alone is `#[rust_js::test(key)]` on its field: an
+  object that has it, `"bound" in move`, inherited too, its value unread,
+  a Proxy's `has` trap and no getter, as TypeScript's `in` narrows a union;
+  after its object test where the union holds what isn't an object, and in
+  the order its variants are written. The two may tell one object apart
+  otherwise, `{ bound: 5 }` a `Bound` to `in` and not to a kind test of a
+  `String`, so each field says which it is; two variants of one key are
+  refused
+  ([ADR 1162](../../decisions/1162-an-untagged-variant-told-by-its-key.md), #1846).
   A variant may hold another untagged enum, one of its variants' payloads:
   React's childToJSX's `Instance | TextInstance | Array<Instance |
   TextInstance>` is `enum JsxChild { Child(Child), Children(Vec<Child>) }`,
