@@ -451,8 +451,29 @@ const webidl = `pub fn resolved(url: &str, base: Option<&str>) -> String {
     webapi::url::new(url, base).href()
 }
 
+pub fn plain(url: &str) -> String {
+    webapi::url::new(url, None).href()
+}
+
 pub fn stamp(label: &str, track: Option<&str>, group: Option<&str>) {
     webapi::console::time_stamp(label, None, None, track, group, None)
+}
+
+// A binding that takes undefined as none, as a value, a dyn Fn or std's
+// map's function, is given a nullable place's null as Rust's None: new
+// Comment(null) is of "null", new Comment(undefined) of "".
+thread_local! {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    static DATA: std::cell::Cell<Option<&'static str>> = const { std::cell::Cell::new(None) };
+}
+
+pub fn commented() -> String {
+    let make: &dyn Fn(Option<&str>) -> &'static webapi::Comment = &webapi::comment::new;
+    make(DATA.get()).data()
+}
+
+pub fn each_commented() -> Vec<String> {
+    vec![DATA.get()].into_iter().map(webapi::comment::new).map(|c| c.data()).collect()
 }
 
 pub fn yielded(scheduler: &webapi::Scheduler, delay: Option<f64>) -> js::Promise<()> {
@@ -470,6 +491,8 @@ test("a WebIDL operation's trailing None is undefined, no ladder, in Bun and in 
   expect(marked).not.toContain("!= null");
   expect(unmarked).toContain("!= null ? scheduler.yield(");
   expect(out).toContain("new URL(url, base");
+  // A literal one left out, as its ladder isn't there to.
+  expect(out).toContain("return new URL(url).href;");
   expect(out).toContain("console.timeStamp(label, undefined, undefined, track");
   const m = await import(join(dir, "lib.js"));
   const answers = (m: Record<string, (...args: (string | undefined)[]) => string>) => [m.resolved("https://a.test/b", undefined), m.resolved("c", "https://a.test/b")];
@@ -480,13 +503,114 @@ test("a WebIDL operation's trailing None is undefined, no ladder, in Bun and in 
     const page = await browser.newPage();
     const inPage = await page.evaluate(
       ([code, answer]) => {
-        const m = new Function(`${code.replaceAll(/^export /gm, "")}; return { resolved };`)();
-        return new Function("m", `return (${answer})(m);`)(m);
+        const m = new Function(`${code.replaceAll(/^export /gm, "")}; return { resolved, commented, eachCommented };`)();
+        return [new Function("m", `return (${answer})(m);`)(m), m.commented(), m.eachCommented()];
       },
       [out.replace(/\/\/# sourceMappingURL.*$/m, ""), answers.toString()],
     );
-    expect(inPage).toEqual(rust);
+    expect(inPage).toEqual([rust, "", [""]]);
   } finally {
     await browser.close();
   }
 }, underLoad(300_000));
+
+// Each source of JS's `null` among the crate's `Option`s reaches an exit no
+// call of each count tests, what a function JS calls returns, as Rust's
+// `None`, `undefined` (#1840, ADR 0030, amended): a nullable parameter's,
+// field's and thread-local's, a binding's result, what a `dyn Fn` JS gave
+// gives, what std gives back of JS's, an `Option` of another's payload, a
+// place a `&mut` the crate's function writes, a closure JS calls. Since a
+// binding's optional argument is a call of each count, `!= null` (#1842),
+// only such an exit tells each source's answer.
+const sources = `use std::cell::Cell;
+
+#[cfg_attr(rust_js, rust_js::nullable(value))]
+fn nullable_param(value: Option<f64>) -> Option<f64> {
+    value
+}
+
+pub fn of_a_nullable_param() -> Option<f64> {
+    nullable_param(None)
+}
+
+pub struct Slot {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub value: Option<f64>,
+}
+
+pub fn of_a_nullable_field(slot: &Slot) -> Option<f64> {
+    slot.value
+}
+
+pub fn of_a_none_field() -> Option<f64> {
+    let slot = Slot { value: None };
+    slot.value
+}
+
+thread_local! {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    static CURRENT: Cell<Option<f64>> = const { Cell::new(None) };
+}
+
+pub fn of_a_nullable_local() -> Option<f64> {
+    CURRENT.get()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.givenNumber")]
+fn given_number() -> Option<f64> {
+    unreachable!()
+}
+
+pub fn of_a_binding() -> Option<f64> {
+    given_number()
+}
+
+pub fn of_a_callback(f: &dyn Fn() -> Option<f64>) -> Option<f64> {
+    f()
+}
+
+pub fn of_std(values: Vec<Option<f64>>) -> Option<f64> {
+    values[0]
+}
+
+pub fn of_a_payload(value: &Option<f64>) -> Option<f64> {
+    value.as_ref().copied()
+}
+
+fn fill(slot: &mut Option<f64>, value: Option<f64>) {
+    *slot = value;
+}
+
+pub fn of_a_filled_place(value: Option<f64>) -> Option<f64> {
+    let mut slot = Some(1.0);
+    fill(&mut slot, value);
+    slot
+}
+
+pub fn of_an_escaped_closure(f: &dyn Fn(&dyn Fn(Option<f64>))) -> Option<f64> {
+    let got = Cell::new(Some(1.0));
+    f(&|value| got.set(value));
+    got.get()
+}
+`;
+
+test("each source of JS's null leaves a function JS calls as undefined", async () => {
+  const dir = fixture("none-sources");
+  writeFileSync(join(dir, "lib.rs"), sources);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--crate-type=lib", "--edition=2024", ...js]);
+  const m = await import(join(dir, "lib.js"));
+  (globalThis as Record<string, unknown>).givenNumber = () => null;
+  const each = {
+    ofANullableParam: m.ofANullableParam(),
+    ofANullableField: m.ofANullableField({ value: null }),
+    ofANoneField: m.ofANoneField(),
+    ofANullableLocal: m.ofANullableLocal(),
+    ofABinding: m.ofABinding(),
+    ofACallback: m.ofACallback(() => null),
+    ofStd: m.ofStd([null]),
+    ofAPayload: m.ofAPayload(null),
+    ofAFilledPlace: m.ofAFilledPlace(null),
+    ofAnEscapedClosure: m.ofAnEscapedClosure((f: (v: unknown) => void) => f(null)),
+  };
+  expect(Object.entries(each).filter(([, value]) => value !== undefined)).toEqual([]);
+}, underLoad(120_000));

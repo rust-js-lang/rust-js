@@ -621,7 +621,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/nulled.rs",
     find: "        none_form(self.tcx, NonePlace::Field(field, None)) == NoneForm::Undefined\n    }\n",
     replace: "        none_form(self.tcx, NonePlace::Field(field, None)) != NoneForm::Nested\n    }\n",
-    tests: ["test/corpus.test.ts", "-t", "^none_given_to_an_optional_argument.rs$"],
+    tests: ["test/none-given.test.ts", "-t", "each source of JS's null"],
   },
   {
     name: "made-of-a-parameter",

@@ -3,7 +3,7 @@
 // and running them is scripts/mutations.ts's.
 
 import { expect, test } from "bun:test";
-import { chmodSync, existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
@@ -188,25 +188,38 @@ test("every source file of more than 80 lines has mutations, or says why it need
 // from lowering-drop-guards.test.ts). Of a file whose tests are each named
 // by a literal, read without running it.
 test("each mutation's test pattern names a test of its file", () => {
-  const named = new Map<string, string[] | undefined>();
+  // Each file's tests named by a literal, and whether others are named
+  // where they run, of a template or a value, which aren't read here.
+  const named = new Map<string, { names: string[]; dynamic: boolean }>();
   const namesOf = (file: string) => {
     if (!named.has(file)) {
       const source = existsSync(join(root, file)) ? readFileSync(join(root, file), "utf8") : "";
       const literal = /^\s*(?:test|it)(?:\.\w+)?\(\s*"((?:[^"\\]|\\.)*)"/gm;
-      // A name made where it runs, of a template or a value, isn't read here.
       const dynamic = /^\s*(?:test|it)(?:\.\w+)?\(\s*[^"\s]/m.test(source) || !file.endsWith(".test.ts");
-      named.set(file, dynamic ? undefined : [...source.matchAll(literal)].map((m) => JSON.parse(`"${m[1]}"`)));
+      // The corpus's tests are its cases, each by its file's name.
+      const cases = file === "test/corpus.test.ts" ? readdirSync(join(root, "test/corpus")).filter((name) => name.endsWith(".rs")) : [];
+      named.set(file, { names: [...cases, ...[...source.matchAll(literal)].map((m) => JSON.parse(`"${m[1]}"`))], dynamic });
     }
-    return named.get(file);
+    return named.get(file)!;
   };
+  const unread: string[] = [];
   const unmatched = mutations.flatMap((m) => {
     const [file, ...args] = m.tests ?? [];
     const at = args.indexOf("-t");
     if (file === undefined || at < 0) return [];
-    const names = namesOf(file);
+    const { names, dynamic } = namesOf(file);
     const pattern = new RegExp(args[at + 1]);
-    return names === undefined || names.some((name) => pattern.test(name)) ? [] : [`${m.name}: ${file} -t ${args[at + 1]}`];
+    if (names.some((name) => pattern.test(name))) return [];
+    if (dynamic) {
+      unread.push(`${m.name} (${file})`);
+      return [];
+    }
+    return [`${m.name}: ${file} -t ${args[at + 1]}`];
   });
+  // Its blind spot, said: each mutation whose pattern names none of its
+  // file's literal names, of a file naming others where they run, which a
+  // CI mutations run alone checks.
+  if (unread.length > 0) console.warn(`${unread.length} mutations' patterns unread, of tests their files name where they run: ${unread.join(", ")}`);
   expect(unmatched).toEqual([]);
 });
 

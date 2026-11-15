@@ -6,6 +6,9 @@ import type { Mutation } from "../../../../mutations";
 const file = "src/lower/analysis/nulled_params/js_nones.rs";
 const given = ["test/none-given.test.ts", "-t", "in Bun and in Chromium"];
 const corpus = ["test/corpus.test.ts", "-t", "^none_given_to_an_optional_argument.rs$"];
+// Since a binding's argument is a call of each count (#1842), a
+// function JS calls's return, of each source.
+const sources = ["test/none-given.test.ts", "-t", "each source of JS's null"];
 
 export const mutations: Mutation[] = [
   {
@@ -22,7 +25,7 @@ export const mutations: Mutation[] = [
     file,
     find: "                    () if nullable.contains(&(i - 1)) => Some(Source::Nullable),\n",
     replace: "",
-    tests: corpus,
+    tests: sources,
   },
   {
     name: "js-nones-escaped-trusted",
@@ -30,7 +33,7 @@ export const mutations: Mutation[] = [
     file,
     find: "                    () if escaped => Some(Source::Unseen),\n",
     replace: "",
-    tests: corpus,
+    tests: sources,
   },
   {
     name: "js-nones-binding-results-trusted",
@@ -38,7 +41,7 @@ export const mutations: Mutation[] = [
     file,
     find: "            if !trusted {\n                let source = match none_form(tcx, NonePlace::CallResult(callee)) {\n",
     replace: "            if false {\n                let source = match none_form(tcx, NonePlace::CallResult(callee)) {\n",
-    tests: given,
+    tests: sources,
   },
   {
     name: "js-nones-nullable-fields-trusted",
@@ -46,7 +49,7 @@ export const mutations: Mutation[] = [
     file,
     find: "                    match none_form(tcx, NonePlace::Field(def, None)) != NoneForm::Undefined {\n",
     replace: "                    match false {\n",
-    tests: corpus,
+    tests: sources,
   },
   {
     name: "js-nones-nullable-locals-trusted",
@@ -54,7 +57,7 @@ export const mutations: Mutation[] = [
     file,
     find: "                if none_form(tcx, NonePlace::Local(item)).stores_null() {\n",
     replace: "                if false {\n",
-    tests: corpus,
+    tests: sources,
   },
   {
     name: "js-nones-unseen-results-trusted",
@@ -62,7 +65,7 @@ export const mutations: Mutation[] = [
     file,
     find: "            self.escape(ty);\n        }\n        self.sources.extend(dest.iter().map(|&node| (node, Source::Called)));\n    }\n",
     replace: "            self.escape(ty);\n        }\n    }\n",
-    tests: given,
+    tests: sources,
   },
   {
     name: "js-nones-crate-returns-dropped",
@@ -86,7 +89,7 @@ export const mutations: Mutation[] = [
     file,
     find: "            if self.carries(ty, output) {\n",
     replace: "            if false {\n",
-    tests: given,
+    tests: sources,
   },
   {
     name: "js-nones-option-payloads-apart",
@@ -94,7 +97,7 @@ export const mutations: Mutation[] = [
     file,
     find: "                    found.types.insert(self.pointee(args.type_at(0)));\n",
     replace: "                    found.types.insert(ty);\n",
-    tests: given,
+    tests: sources,
   },
   {
     name: "js-nones-shares-nothing",
@@ -102,7 +105,7 @@ export const mutations: Mutation[] = [
     file,
     find: "        let shares = self.shares_in(ty, &mut IndexSet::default());\n",
     replace: "        let shares = false;\n",
-    tests: given,
+    tests: sources,
   },
   {
     name: "js-nones-of-any-dyn",
@@ -118,7 +121,7 @@ export const mutations: Mutation[] = [
     file,
     find: "                if new {\n                    self.next.push(Vec::new());\n                    self.sources.push((i as u32, Source::Binding));\n                }\n",
     replace: "                if new {\n                    self.next.push(Vec::new());\n                }\n",
-    tests: corpus,
+    tests: ["test/none-given.test.ts", "-t", "a WebIDL operation's trailing None"],
   },
   {
     name: "js-nones-props-given-undefined",

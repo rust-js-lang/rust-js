@@ -419,7 +419,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/binding_calls.rs",
     find: "                && (is_optional_param(self.tcx, def_id, i + offset)\n",
     replace: "                && (false\n",
-    tests: ["test/bindings.test.ts", "-t", "trailing None is no argument"],
+    tests: ["test/none-given.test.ts", "-t", "a WebIDL operation's trailing None"],
   },
   {
     name: "rest-of-a-vec-refused",

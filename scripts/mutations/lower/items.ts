@@ -506,6 +506,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/items.rs",
     find: "                let given = match normalized\n",
     replace: "                let given = match false\n",
-    tests: ["test/corpus.test.ts", "-t", "^none_given_to_an_optional_argument.rs$"],
+    tests: ["test/none-given.test.ts", "-t", "a WebIDL operation's trailing None"],
   },
 ];
