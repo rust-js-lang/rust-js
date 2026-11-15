@@ -3,9 +3,9 @@
 // next from `start`, a handle on a number or text (`handle`), and takes out
 // and gives each it holds of. What it doesn't reach stays. Checked as
 // `slice::range` checks, as it's made.
-function $extractIf(v, start, end, f, handle = false) {
+function $extractIf(v, start, end, f, handle = false, inclusive) {
   end ??= v.length;
-  $checkRange(start, end, v.length);
+  $checkRange(start, end, v.length, inclusive);
   let at = start;
   return Iterator.from({
     next() {

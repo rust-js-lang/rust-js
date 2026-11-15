@@ -190,7 +190,9 @@ function main() {
   const numbers = [1, 2, 3, 4, 5];
   const cut = { start: 1, end: 3 };
   const gone = $drain(numbers, cut.start, cut.end);
-  $print(`[${gone.join(", ")}] [${numbers.join(", ")}] [${$slice(numbers, 0, 2).join(", ")}]\n`);
+  $print(
+    `[${gone.join(", ")}] [${numbers.join(", ")}] [${$slice(numbers, 0, 2, true).join(", ")}]\n`,
+  );
 
   // `char`s step past the surrogates, which no `char` is.
   letters = Array.from($iterator({ start: "a", end: "e" }, $rangeNext)).join("");

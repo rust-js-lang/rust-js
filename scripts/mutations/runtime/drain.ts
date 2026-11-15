@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "drain-unchecked",
     breaks: "`drain(a..)` with `a` past the end takes nothing, not a panic",
     file: "src/runtime/drain.js",
-    find: "  $checkRange(start, end, items.length);\n",
+    find: "  $checkRange(start, end, items.length, inclusive);\n",
     replace: "",
     tests: ["test/corpus.test.ts","-t","drain_from_past_len"],
   },

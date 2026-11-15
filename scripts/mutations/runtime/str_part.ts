@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "str-part-unchecked",
     breaks: "`&mut s[a..b]` is checked only when it's used, not made",
     file: "src/runtime/str_part.js",
-    find: "  $strSlice(cell.value, start, end);\n  return {",
+    find: "  $strSlice(cell.value, start, end, inclusive);\n  return {",
     replace: "  return {",
     tests: ["test/corpus.test.ts","-t","str_part_boundary"],
   },

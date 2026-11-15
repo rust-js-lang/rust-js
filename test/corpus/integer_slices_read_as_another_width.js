@@ -61,7 +61,7 @@ function setHalves(wide) {
 function readU64(results, index) {
   const ptr = $ptrRetyped(
     $ptrBytes(
-      $ptr($slice(results, index, index + 1 + 1), 0),
+      $ptr($slice(results, index, index + 1 + 1, true), 0),
       4,
       (value) => $toBytes(value, 4, true),
       (bytes) => $fromBytes(bytes, 4, true, false),

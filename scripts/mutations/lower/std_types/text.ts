@@ -100,9 +100,9 @@ export const mutations: Mutation[] = [
     name: "slice-to-inclusive-end-dropped",
     breaks: "`&v[..=1]` stops before index 1",
     file: "src/lower/std_types/text.rs",
-    find: "            (RangeKind::ToInclusive, [end]) => (Expr::int(0), Some(past(end.clone()))),",
+    find: "            (RangeKind::ToInclusive, [end]) => (Expr::int(0), Some(past(end.clone())), inclusive()),",
     replace:
-      "            (RangeKind::ToInclusive, [end]) => (Expr::int(0), Some(end.clone())),",
+      "            (RangeKind::ToInclusive, [end]) => (Expr::int(0), Some(end.clone()), inclusive()),",
     tests: ["test/corpus.test.ts", "-t", "range_values"],
   },
   {
@@ -257,8 +257,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a slice by a range kept as a value starts at 0, not at the range's start",
     file: "src/lower/std_types/text.rs",
-    find: "            (RangeKind::From, [start]) => (start.clone(), None),\n",
-    replace: "            (RangeKind::From, [_]) => (Expr::int(0), None),\n",
+    find: "            (RangeKind::From, [start]) => (start.clone(), None, None),\n",
+    replace: "            (RangeKind::From, [_]) => (Expr::int(0), None, None),\n",
     tests: ["test/corpus.test.ts", "-t", "slice_|string_slice"],
   },
   {
@@ -536,5 +536,21 @@ export const mutations: Mutation[] = [
     find: "            && (self.is_unknown(target) || self.has_user_impl(from_str, target))\n",
     replace: "            && (matches!(target.kind(), ty::Param(_)) || self.has_user_impl(from_str, target))\n",
     tests: ["test/corpus.test.ts", "-t", "^parse_to_an_associated_type.rs$"],
+  },
+  {
+    name: "range-inclusive-end-unsaid",
+    breaks: "`v[..=3]` of three items panics as `v[..4]` does, \"range end index 4\", where core says its own end, 3 (#1935)",
+    file: "src/lower/std_types/text.rs",
+    find: "        let inclusive = || Some(Expr::bool(true));\n",
+    replace: "        let inclusive = || None;\n",
+    tests: ["test/corpus.test.ts", "-t", "^slice_inclusive_range_panics.rs$"],
+  },
+  {
+    name: "range-edit-inclusive-dropped",
+    breaks: "`v.splice(..=3, r)` of three items says \"range end index 4\", its `true` dropped as the splice's arguments are put together (#1935)",
+    file: "src/lower/std_types/text.rs",
+    find: "        if let Some(inclusive) = inclusive {\n            if lazy && list.len() == 4 {",
+    replace: "        if let Some(inclusive) = inclusive.filter(|_| false) {\n            if lazy && list.len() == 4 {",
+    tests: ["test/corpus.test.ts", "-t", "^slice_inclusive_range_panics.rs$"],
   },
 ];

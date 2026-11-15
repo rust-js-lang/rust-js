@@ -546,7 +546,7 @@ export function defaultReadUntil(r, delim, buf, RBufRead, dropR) {
       let used;
       let tmp;
       if (i != null) {
-        available = $slice(available, 0, i + 1);
+        available = $slice(available, 0, i + 1, true);
         const length = buf.length;
         for (let i = 0; i < available.length; i++) {
           buf.push(available[i]);

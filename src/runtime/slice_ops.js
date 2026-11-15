@@ -128,9 +128,9 @@ function $swapWithSlice(v, other) {
   for (let i = 0; i < v.length; i++) [v[i], other[i]] = [other[i], v[i]];
 }
 
-function $copyWithin(v, start, end, dest) {
+function $copyWithin(v, start, end, dest, inclusive) {
   end ??= v.length;
-  $checkRange(start, end, v.length);
+  $checkRange(start, end, v.length, inclusive);
   if (dest > v.length - (end - start)) throw new Error("dest is out of bounds");
   v.copyWithin(dest, start, end);
 }

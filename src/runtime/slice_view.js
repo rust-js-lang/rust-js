@@ -2,8 +2,8 @@
 // own methods, whose every read and write is one of `items`. Checked as
 // `&v[start..end]` is, as it's made. Nothing a `&mut [T]` does makes it
 // longer or shorter, so it stays over the same items.
-function $view(items, start, end = items.length) {
-  if (start > end || end > items.length) $sliceIndexFail(start, end, items.length);
+function $view(items, start, end = items.length, inclusive) {
+  if (start > end || end > items.length) $sliceIndexFail(start, end, items.length, inclusive);
   const target = $partPlaced([], items, start);
   return $proxy(
     end - start,
@@ -17,8 +17,8 @@ function $view(items, start, end = items.length) {
 
 // `v[start..end].reverse()`: those items of `items` reversed where they
 // are, checked as `&mut v[start..end]` is, no view made (ADR 1073).
-function $reverseRange(items, start, end = items.length) {
-  if (start > end || end > items.length) $sliceIndexFail(start, end, items.length);
+function $reverseRange(items, start, end = items.length, inclusive) {
+  if (start > end || end > items.length) $sliceIndexFail(start, end, items.length, inclusive);
   for (let left = start, right = end - 1; left < right; left++, right--) {
     const item = items[left];
     items[left] = items[right];

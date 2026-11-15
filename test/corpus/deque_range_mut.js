@@ -24,13 +24,13 @@ function main() {
   for (const p of $view(points, 0, 1)) {
     p[0] = 9;
   }
-  const it = Iterator.from($mutItems($view(d, 0, 2)));
+  const it = Iterator.from($mutItems($view(d, 0, 2, true)));
   const first = $next(it);
   if (first != null) {
     first.value = (first.value - 1) | 0;
   }
   const count = it.reduce((n) => n + 1, 0);
-  const arg = Iterator.from($mutItems($view(d, 3, 4))).reduce((n) => n + 1, 0);
+  const arg = Iterator.from($mutItems($view(d, 3, 4, true))).reduce((n) => n + 1, 0);
   console.log(
     `[${words.map((item) => $debugStr(item)).join(", ")}] [${points.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}] ${count} ${arg}`,
   );

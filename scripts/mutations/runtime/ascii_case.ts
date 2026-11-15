@@ -22,8 +22,8 @@ export const mutations: Mutation[] = [
     name: "ascii-case-range-checked-late",
     breaks: "`s[a..].make_ascii_uppercase()` inside a `char` says its end, not its start, is",
     file: "src/runtime/ascii_case.js",
-    find: "    const part = $strSlice(text, start, end);\n    return $strSlice(text, 0, start) + $asciiCase(part, upper) + $strSlice(text, end);",
-    replace: "    const before = $strSlice(text, 0, start);\n    return before + $asciiCase($strSlice(text, start, end), upper) + $strSlice(text, end);",
+    find: "    const part = $strSlice(text, start, end, inclusive);\n    return $strSlice(text, 0, start) + $asciiCase(part, upper) + $strSlice(text, end);",
+    replace: "    const before = $strSlice(text, 0, start);\n    return before + $asciiCase($strSlice(text, start, end, inclusive), upper) + $strSlice(text, end);",
     tests: ["test/corpus.test.ts","-t","str_mut_boundary"],
   },
 ];

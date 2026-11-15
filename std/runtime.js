@@ -7203,10 +7203,10 @@ export function $rangeFromStep(lo, hi) {
 
 // `make_ascii_uppercase()` of a `char` or a string, or of the bytes
 // `start..end` of one, as `s[start..end]`'s, checked as that is (ADR 0334).
-export function $asciiCase(text, upper = false, start, end) {
+export function $asciiCase(text, upper = false, start, end, inclusive) {
   if (start !== undefined) {
     end ??= $byteLen(text);
-    const part = $strSlice(text, start, end);
+    const part = $strSlice(text, start, end, inclusive);
     return $strSlice(text, 0, start) + $asciiCase(part, upper) + $strSlice(text, end);
   }
   return upper
@@ -9395,10 +9395,10 @@ export function $joinWith(lists, sep, spread, clone) {
 // units of the bytes `start..end` of `s`, checked as std checks them,
 // `slice::range`'s, then each a `char`'s boundary: `replace_range`'s message,
 // or the other edits' assertion.
-export function $strRange(s, start, end, replacing) {
+export function $strRange(s, start, end, replacing, inclusive) {
   const length = $byteLen(s);
   end ??= length;
-  $checkRange(start, end, length);
+  $checkRange(start, end, length, inclusive);
   const from = $charBoundary(s, start);
   if (from === undefined) {
     throw new Error(replacing ? "start of range should be a character boundary" : "assertion failed: self.is_char_boundary(start)");
@@ -9417,19 +9417,19 @@ export function $strSplitOff(s, at) {
   return [s.slice(0, unit), s.slice(unit)];
 }
 
-export function $replaceRange(s, start, end, replacement) {
-  const [from, to] = $strRange(s, start, end, true);
+export function $replaceRange(s, start, end, replacement, inclusive) {
+  const [from, to] = $strRange(s, start, end, true, inclusive);
   return s.slice(0, from) + replacement + s.slice(to);
 }
 
 // `s.drain(range)`: what's kept, and the `char`s taken out.
-export function $strDrain(s, start, end) {
-  const [from, to] = $strRange(s, start, end, false);
+export function $strDrain(s, start, end, inclusive) {
+  const [from, to] = $strRange(s, start, end, false, inclusive);
   return [s.slice(0, from) + s.slice(to), Array.from(s.slice(from, to))];
 }
 
-export function $strExtendWithin(s, start, end) {
-  const [from, to] = $strRange(s, start, end, false);
+export function $strExtendWithin(s, start, end, inclusive) {
+  const [from, to] = $strRange(s, start, end, false, inclusive);
   return s + s.slice(from, to);
 }
 
@@ -9676,9 +9676,9 @@ export function $swapWithSlice(v, other) {
   for (let i = 0; i < v.length; i++) [v[i], other[i]] = [other[i], v[i]];
 }
 
-export function $copyWithin(v, start, end, dest) {
+export function $copyWithin(v, start, end, dest, inclusive) {
   end ??= v.length;
-  $checkRange(start, end, v.length);
+  $checkRange(start, end, v.length, inclusive);
   if (dest > v.length - (end - start)) throw new Error("dest is out of bounds");
   v.copyWithin(dest, start, end);
 }
@@ -12071,9 +12071,9 @@ export function $strGet(s, start, end) {
 // `&s[start..end]` is, then that part of it, read and written in place.
 // Nothing a `&mut str` does changes its length in bytes, so the part stays
 // where it was.
-export function $strPart(cell, start, end) {
+export function $strPart(cell, start, end, inclusive) {
   end ??= $byteLen(cell.value);
-  $strSlice(cell.value, start, end);
+  $strSlice(cell.value, start, end, inclusive);
   return {
     get value() {
       return $strSlice(cell.value, start, end);
@@ -12102,9 +12102,9 @@ export function $strSplitAtMut(cell, at, checked) {
 // next from `start`, a handle on a number or text (`handle`), and takes out
 // and gives each it holds of. What it doesn't reach stays. Checked as
 // `slice::range` checks, as it's made.
-export function $extractIf(v, start, end, f, handle = false) {
+export function $extractIf(v, start, end, f, handle = false, inclusive) {
   end ??= v.length;
-  $checkRange(start, end, v.length);
+  $checkRange(start, end, v.length, inclusive);
   let at = start;
   return Iterator.from({
     next() {
@@ -12849,8 +12849,8 @@ export function $mergeRuns(v, start, end, mid, isLess, scratch) {
 // own methods, whose every read and write is one of `items`. Checked as
 // `&v[start..end]` is, as it's made. Nothing a `&mut [T]` does makes it
 // longer or shorter, so it stays over the same items.
-export function $view(items, start, end = items.length) {
-  if (start > end || end > items.length) $sliceIndexFail(start, end, items.length);
+export function $view(items, start, end = items.length, inclusive) {
+  if (start > end || end > items.length) $sliceIndexFail(start, end, items.length, inclusive);
   const target = $partPlaced([], items, start);
   return $proxy(
     end - start,
@@ -12864,8 +12864,8 @@ export function $view(items, start, end = items.length) {
 
 // `v[start..end].reverse()`: those items of `items` reversed where they
 // are, checked as `&mut v[start..end]` is, no view made (ADR 1073).
-export function $reverseRange(items, start, end = items.length) {
-  if (start > end || end > items.length) $sliceIndexFail(start, end, items.length);
+export function $reverseRange(items, start, end = items.length, inclusive) {
+  if (start > end || end > items.length) $sliceIndexFail(start, end, items.length, inclusive);
   for (let left = start, right = end - 1; left < right; left++, right--) {
     const item = items[left];
     items[left] = items[right];
@@ -13059,8 +13059,11 @@ export function $getDisjointMut(v, indices, handle = false, inclusive = false) {
 }
 
 // std's `slice_index_fail`: why `start..end` isn't a range of a slice of
-// `length` items, as Rust says it, its start first.
-export function $sliceIndexFail(start, end, length) {
+// `length` items, as Rust says it, its start first. Of `a..=b`, `end` is
+// `b + 1`, `inclusive`: past the slice's end, core says `b` itself, as it
+// checks `b` against the length, not `b + 1` (#1935).
+export function $sliceIndexFail(start, end, length, inclusive) {
+  if (inclusive && end > length) end -= 1;
   if (start > length) throw new Error(`range start index ${start} out of range for slice of length ${length}`);
   if (end > length) throw new Error(`range end index ${end} out of range for slice of length ${length}`);
   if (start > end) throw new Error(`slice index starts at ${start} but ends at ${end}`);
@@ -13068,9 +13071,10 @@ export function $sliceIndexFail(start, end, length) {
 }
 
 // std's `slice::range`, which `drain`, `splice`, `copy_within` and
-// `extend_from_within` check theirs by: its end, then its start.
-export function $checkRange(start, end, length) {
-  if (end > length) $sliceIndexFail(0, end, length);
+// `extend_from_within` check theirs by: its end, then its start; of `a..=b`,
+// `inclusive`, as `$sliceIndexFail`'s.
+export function $checkRange(start, end, length, inclusive) {
+  if (end > length) $sliceIndexFail(0, end, length, inclusive);
   if (start > end) $sliceIndexFail(start, end, length);
 }
 
@@ -18048,8 +18052,8 @@ export function $totalCmp(a, b) {
   return x < y ? -1 : x > y ? 1 : 0;
 }
 
-export function $drain(items, start, end = items.length) {
-  $checkRange(start, end, items.length);
+export function $drain(items, start, end = items.length, inclusive) {
+  $checkRange(start, end, items.length, inclusive);
   return items.splice(start, end - start);
 }
 
@@ -18566,23 +18570,23 @@ export function $parseChar(s) {
 
 // `&v[a..b]`: those items, a part of `v` that says where it is in it
 // (#1185), with Rust's panic out of bounds.
-export function $slice(items, start, end = items.length) {
-  if (start > end || end > items.length) $sliceIndexFail(start, end, items.length);
+export function $slice(items, start, end = items.length, inclusive) {
+  if (start > end || end > items.length) $sliceIndexFail(start, end, items.length, inclusive);
   return $part(items, start, end);
 }
 
 // `v[a..b].to_vec()`, `into()`, a `collect()` of its items copied: a copy
 // of those items, owned, an allocation of its own, which no record places
 // in `v`, with `&v[a..b]`'s panic out of bounds (#1185).
-export function $copyOf(items, start, end = items.length) {
-  if (start > end || end > items.length) $sliceIndexFail(start, end, items.length);
+export function $copyOf(items, start, end = items.length, inclusive) {
+  if (start > end || end > items.length) $sliceIndexFail(start, end, items.length, inclusive);
   return items.slice(start, end);
 }
 
 // `v.extend_from_within(start..end)`'s copy of those items, checked as
 // `slice::range` checks them.
-export function $copyRange(items, start, end = items.length) {
-  $checkRange(start, end, items.length);
+export function $copyRange(items, start, end = items.length, inclusive) {
+  $checkRange(start, end, items.length, inclusive);
   return items.slice(start, end);
 }
 
@@ -20160,13 +20164,18 @@ export function $textStops(s, facts) {
   return (facts.stops = stops);
 }
 
-export function $strSlice(s, start, end) {
+export function $strSlice(s, start, end, inclusive) {
   const length = $byteLen(s);
   end ??= length;
+  // Of `a..=b`, `end` is `b + 1`: past the string's end, core checks `b`
+  // itself, then `a`'s boundary, and says `b` (#1935).
+  const past = inclusive && end > length;
+  if (past) end -= 1;
   if (start > length) throw new Error(`start byte index ${start} is out of bounds for string of length ${length}`);
   if (end > length) throw new Error(`end byte index ${end} is out of bounds for string of length ${length}`);
   if (start > end) throw new Error(`byte range starts at ${start} but ends at ${end}`);
   const from = $unitAt(s, start, "start");
+  if (past) throw new Error(`end byte index ${end} is out of bounds for string of length ${length}`);
   const part = s.slice(from, $unitAt(s, end, "end"));
   // A long part's facts are of where it is in `s` (#1184).
   if (part.length >= $textLong) $textPart(part, s, start, from, end - start);
@@ -20542,8 +20551,8 @@ export function $dedupByCells(v, same, drop) {
 // destructor, whose `Splice` runs nothing as it's dropped: `replacement`, an
 // array or an array's iterator, put in place where it's made, as nothing
 // sees `items` till it's dropped; an iterator over what it took out (#1189).
-export function $splice(items, start, end, replacement) {
-  $checkRange(start, end, items.length);
+export function $splice(items, start, end, replacement, inclusive) {
+  $checkRange(start, end, items.length, inclusive);
   const tail = items.splice(end);
   const removed = items.splice(start);
   $extend(items, replacement);
@@ -20562,8 +20571,8 @@ export function $splice(items, start, end, replacement) {
 // it ends or unwinds, the tail put back, `Drain::drop`'s, and what's left
 // of `replacement` closed, the `Splice`'s fields in their order (#1147,
 // #1149).
-export function $splicing(items, start, end, replacement, dropItem) {
-  $checkRange(start, end, items.length);
+export function $splicing(items, start, end, replacement, dropItem, inclusive) {
+  $checkRange(start, end, items.length, inclusive);
   const tail = items.splice(end);
   const removed = items.splice(start);
   const gap = removed.length;

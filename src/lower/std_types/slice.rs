@@ -760,14 +760,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(in crate::lower) fn extract_if_values(
         &mut self,
         items: Expr,
-        (start, end): (Expr, Option<Expr>),
+        (start, end, inclusive): (Expr, Option<Expr>, Option<Expr>),
         f: Expr,
         item: ty::Ty<'tcx>,
     ) -> Expr {
         let mut list = vec![items, start, end.unwrap_or_else(Expr::js_undefined), f];
-        if self.handles_mut(item) {
-            list.push(Expr::bool(true));
+        let handle = self.handles_mut(item);
+        if handle || inclusive.is_some() {
+            list.push(Expr::bool(handle));
         }
+        list.extend(inclusive);
         Expr::call(Expr::helper("$extractIf"), list)
     }
 
@@ -842,13 +844,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(in crate::lower) fn copy_within_values(
         &mut self,
         items: Expr,
-        (start, end): (Expr, Option<Expr>),
+        (start, end, inclusive): (Expr, Option<Expr>, Option<Expr>),
         dest: Expr,
     ) -> Expr {
-        Expr::call(
-            Expr::helper("$copyWithin"),
-            vec![items, start, end.unwrap_or_else(Expr::js_undefined), dest],
-        )
+        let list = vec![items, start, end.unwrap_or_else(Expr::js_undefined), dest];
+        Expr::call(Expr::helper("$copyWithin"), list.into_iter().chain(inclusive).collect())
     }
 
     /// One of `SliceOp`'s that its operands, as JS, say all of, `values`;

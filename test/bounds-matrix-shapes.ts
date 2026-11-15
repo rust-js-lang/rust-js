@@ -498,8 +498,7 @@ fn through_its_end(v: &[u32], n: usize) -> usize {
       `check("pushed then lent", || pushed_then_lent(vec![]))`,
       `check("key written", || key_written(&HashMap::from([(1, 10)]), 1))`,
       `check("past its bound", past_its_bound::<0>)`,
-      // Whether it panics, not its message, which is #1935's.
-      `check("through its end", || panic::catch_unwind(|| through_its_end(&[1, 2, 3], 3)).is_err() as u32)`,
+      `check("through its end", || through_its_end(&[1, 2, 3], 3) as u32)`,
     ],
   },
   // The corpus's own shapes of five rules: a counter a `break` at a

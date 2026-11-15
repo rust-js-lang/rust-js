@@ -34,4 +34,20 @@ export const mutations: Mutation[] = [
     replace: "$textPart(part, s, start, from, end);",
     tests: ["test/corpus.test.ts", "-t", "^long_text_read_byte_by_byte.rs$"],
   },
+  {
+    name: "str-slice-inclusive-end-past",
+    breaks: "`s[..=3]` of \"abc\" says \"end byte index 4\", not core's 3 (#1935)",
+    file: "src/runtime/str_slice.js",
+    find: "  if (past) end -= 1;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^slice_inclusive_range_panics.rs$"],
+  },
+  {
+    name: "str-slice-inclusive-end-at-length-sliced",
+    breaks: "`s[..=3]` of \"abc\" is all of it, not a panic, its end `b` checked as an exclusive end (#1935)",
+    file: "src/runtime/str_slice.js",
+    find: "  if (past) throw new Error(`end byte index ${end} is out of bounds for string of length ${length}`);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^slice_inclusive_range_panics.rs$"],
+  },
 ];

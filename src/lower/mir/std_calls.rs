@@ -529,8 +529,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         let mut given = values.map(|v| this.value_expr(v, span)).collect::<R<Vec<_>>>()?;
                         if matches!(op, TextOp::StrPart { bounds: false } | TextOp::StrGetMut) {
                             let range = given.remove(0);
-                            let (start, end) = this.range_value_bounds(range, arg_tys[1], span, out)?;
-                            given = std::iter::once(start).chain(end).collect();
+                            let (start, end, inclusive) = this.range_value_bounds(range, arg_tys[1], span, out)?;
+                            // A `get_mut`'s `None` says nothing of the range.
+                            let inclusive = inclusive.filter(|_| op != TextOp::StrGetMut);
+                            given = std::iter::once(start).chain(end).chain(inclusive).collect();
                         }
                         this.str_part_values(op, cell, given)
                     }))
@@ -670,8 +672,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         StringEdit::Drain | StringEdit::ReplaceRange | StringEdit::ExtendFromWithin
                     ) {
                         let range = given.remove(0);
-                        let (start, end) = this.range_value_bounds(range, arg_tys[1], span, out)?;
+                        let (start, end, inclusive) = this.range_value_bounds(range, arg_tys[1], span, out)?;
                         given.splice(0..0, [start, end.unwrap_or_else(Expr::js_undefined)]);
+                        given.extend(inclusive);
                     }
                     this.flush(state, out)?;
                     // Whether a closure it's given may unwind, which `retain`
@@ -766,9 +769,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::Slice(SliceOp::DequeRangeMut) => lower(move |this, _, values, out| Ok(Value::Expr({
                 let items = this.value_expr(values.next().expect("the items"), span)?;
                 let range = this.value_expr(values.next().expect("the range"), span)?;
-                let (start, end) = this.range_value_bounds(range, arg_tys[1], span, out)?;
+                let (start, end, inclusive) = this.range_value_bounds(range, arg_tys[1], span, out)?;
                 let mut list = vec![items, start];
                 list.extend(end);
+                list.extend(inclusive);
                 let view = this.view_call("$view", list);
                 match this.mut_ref_form(generic_args.type_at(0)).is_cell() {
                     true => Expr::call_helper("$mutItems", vec![view]),
@@ -846,7 +850,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let items = exprs.remove(0);
                 let bounds = match range {
                     true => this.range_value_bounds(exprs.remove(0), arg_tys[1], span, out)?,
-                    false => (Expr::int(0), None),
+                    false => (Expr::int(0), None, None),
                 };
                 this.extract_if_values(items, bounds, f, generic_args.type_at(0))
             }))),
@@ -877,7 +881,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let bounds = match end {
                     None => {
                         let range = this.value_expr(values.next().expect("the range"), span)?;
-                        Some(this.range_value_bounds(range, arg_tys[1], span, out)?)
+                        // A split's `None` says nothing of the range.
+                        let (start, end, _) = this.range_value_bounds(range, arg_tys[1], span, out)?;
+                        Some((start, end))
                     }
                     Some(_) => None,
                 };
@@ -893,12 +899,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::Slice(SliceOp::View { checked }) => lower(move |this, _, values, out| {
                 let items = this.value_expr(values.next().expect("the items"), span)?;
                 let range = this.value_expr(values.next().expect("the range"), span)?;
-                let (start, end) = this.range_value_bounds(range, arg_tys[1], span, out)?;
+                let (start, end, inclusive) = this.range_value_bounds(range, arg_tys[1], span, out)?;
                 // `&mut v[..]`: all of it, which is `v`.
                 if !checked && start.as_int() == Some(0) && end.is_none() {
                     return Ok(Value::Expr(items));
                 }
-                let list = [vec![items, start], end.into_iter().collect()].concat();
+                // A `get_mut`'s `None` says nothing of the range.
+                let inclusive = inclusive.filter(|_| !checked);
+                let list = [vec![items, start], end.into_iter().chain(inclusive).collect()].concat();
                 Ok(if checked { Value::Expr(this.view_call("$viewGet", list)) } else { Value::View(list, js::Span::NONE) })
             }),
             // `vec![item; n]`: each a clone, of what it can't remake.

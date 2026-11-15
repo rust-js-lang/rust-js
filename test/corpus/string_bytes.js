@@ -41,7 +41,7 @@ function main() {
     console.log(`${i} ${c}`);
   }
   const crab = "🦀🦀";
-  console.log(`${$strSlice(crab, 4)} ${$strSlice(crab, 0, 4)} ${$strSlice(crab, 8)}`);
+  console.log(`${$strSlice(crab, 4)} ${$strSlice(crab, 0, 4, true)} ${$strSlice(crab, 8)}`);
   let text = "";
   while ($byteLen(text) < 9) {
     text += "é";

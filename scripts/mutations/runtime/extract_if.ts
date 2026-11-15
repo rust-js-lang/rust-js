@@ -14,7 +14,7 @@ export const mutations: Mutation[] = [
     name: "extract-if-unchecked",
     breaks: "`extract_if` past the end is made, and never panics",
     file: "src/runtime/extract_if.js",
-    find: "  $checkRange(start, end, v.length);\n",
+    find: "  $checkRange(start, end, v.length, inclusive);\n",
     replace: "",
     tests: ["test/corpus.test.ts","-t","extract_if_past_len"],
   },

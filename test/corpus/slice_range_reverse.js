@@ -57,7 +57,7 @@ function main() {
   $reverseRange(v, 4, 5);
   v.reverse();
   console.log(`[${v.join(", ")}]`);
-  $reverseRange(v, 1, 4);
+  $reverseRange(v, 1, 4, true);
   console.log(`[${v.join(", ")}]`);
   $reverseRange($view(v, 1, 5), 1, 3);
   console.log(`[${v.join(", ")}]`);

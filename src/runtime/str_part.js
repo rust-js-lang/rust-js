@@ -2,9 +2,9 @@
 // `&s[start..end]` is, then that part of it, read and written in place.
 // Nothing a `&mut str` does changes its length in bytes, so the part stays
 // where it was.
-function $strPart(cell, start, end) {
+function $strPart(cell, start, end, inclusive) {
   end ??= $byteLen(cell.value);
-  $strSlice(cell.value, start, end);
+  $strSlice(cell.value, start, end, inclusive);
   return {
     get value() {
       return $strSlice(cell.value, start, end);

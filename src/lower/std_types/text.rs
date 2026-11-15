@@ -782,10 +782,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
             return Expr::call_helper("$extend", vec![items, copied]);
         }
+        // Of `a..=b`, `$drain(v, a, b + 1, true)`'s: its `true` the
+        // helper's last argument, past what drops each item, if any (#1935).
+        let inclusive = (list.len() == 4).then(|| list.pop()).flatten();
         if list.len() == 2 {
             list.push(Expr::member(items, "length"));
         }
         list.extend(rest);
+        if let Some(inclusive) = inclusive {
+            if lazy && list.len() == 4 {
+                list.push(Expr::js_undefined());
+            }
+            list.push(inclusive);
+        }
         Expr::call(Expr::helper(if lazy { "$splicing" } else { "$splice" }), list)
     }
 
@@ -799,7 +808,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
-        let (start, end) = self.range_value_bounds(range, range_ty, span, out)?;
+        let (start, end, _) = self.range_value_bounds(range, range_ty, span, out)?;
         if start.as_int() == Some(0) && end.is_none() {
             return Ok(s);
         }
@@ -820,14 +829,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
-        let (start, end) = self.range_value_bounds(range, range_ty, span, out)?;
-        Ok(self.sliced((op, in_bounds), items, start, end))
+        let (start, end, inclusive) = self.range_value_bounds(range, range_ty, span, out)?;
+        Ok(self.sliced((op, in_bounds), items, start, (end, inclusive)))
     }
 
     /// `items` from `start` to `end`, or to their end, as `op` takes them.
     /// A slice's range the body's ranges show in bounds, which can't panic,
     /// is JS's own, `items.slice(start, end)` (ADR 0806).
-    fn sliced(&mut self, (op, in_bounds): (TextOp, bool), items: Expr, start: Expr, end: Option<Expr>) -> Expr {
+    fn sliced(
+        &mut self,
+        (op, in_bounds): (TextOp, bool),
+        items: Expr,
+        start: Expr,
+        (end, inclusive): (Option<Expr>, Option<Expr>),
+    ) -> Expr {
         let name = match op {
             TextOp::Drain => "$drain",
             TextOp::StrSlice => "$strSlice",
@@ -863,6 +878,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let mut list = vec![items, start];
         list.extend(end);
+        // A `get`'s `None` says nothing of the range.
+        if !matches!(op, TextOp::StrGet | TextOp::SliceGet) {
+            list.extend(inclusive);
+        }
         Expr::call_helper(name, list)
     }
 
@@ -891,7 +910,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         range_ty: Ty<'tcx>,
         span: Span,
         out: &mut Vec<Stmt>,
-    ) -> R<(Expr, Option<Expr>)> {
+    ) -> R<(Expr, Option<Expr>, Option<Expr>)> {
         let Some(kind) = self.range_kind(range_ty) else {
             return Err(self.unsupported(span, "slicing by this range"));
         };
@@ -907,13 +926,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some(bound) => vec![bound],
             None => self.range_parts(value, kind, out),
         };
+        // Of `a..=b`, the helper's last argument, `true`: past the end, core
+        // says `b` itself, not `b + 1` (#1935).
+        let inclusive = || Some(Expr::bool(true));
         Ok(match (kind, parts.as_slice()) {
-            (RangeKind::Exclusive, [start, end]) => (start.clone(), Some(end.clone())),
-            (RangeKind::Inclusive, [start, end]) => (start.clone(), Some(past(end.clone()))),
-            (RangeKind::From, [start]) => (start.clone(), None),
-            (RangeKind::To, [end]) => (Expr::int(0), Some(end.clone())),
-            (RangeKind::ToInclusive, [end]) => (Expr::int(0), Some(past(end.clone()))),
-            _ => (Expr::int(0), None),
+            (RangeKind::Exclusive, [start, end]) => (start.clone(), Some(end.clone()), None),
+            (RangeKind::Inclusive, [start, end]) => (start.clone(), Some(past(end.clone())), inclusive()),
+            (RangeKind::From, [start]) => (start.clone(), None, None),
+            (RangeKind::To, [end]) => (Expr::int(0), Some(end.clone()), None),
+            (RangeKind::ToInclusive, [end]) => (Expr::int(0), Some(past(end.clone())), inclusive()),
+            _ => (Expr::int(0), None, None),
         })
     }
 }

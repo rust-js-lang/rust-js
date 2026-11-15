@@ -1,10 +1,15 @@
-function $strSlice(s, start, end) {
+function $strSlice(s, start, end, inclusive) {
   const length = $byteLen(s);
   end ??= length;
+  // Of `a..=b`, `end` is `b + 1`: past the string's end, core checks `b`
+  // itself, then `a`'s boundary, and says `b` (#1935).
+  const past = inclusive && end > length;
+  if (past) end -= 1;
   if (start > length) throw new Error(`start byte index ${start} is out of bounds for string of length ${length}`);
   if (end > length) throw new Error(`end byte index ${end} is out of bounds for string of length ${length}`);
   if (start > end) throw new Error(`byte range starts at ${start} but ends at ${end}`);
   const from = $unitAt(s, start, "start");
+  if (past) throw new Error(`end byte index ${end} is out of bounds for string of length ${length}`);
   const part = s.slice(from, $unitAt(s, end, "end"));
   // A long part's facts are of where it is in `s` (#1184).
   if (part.length >= $textLong) $textPart(part, s, start, from, end - start);

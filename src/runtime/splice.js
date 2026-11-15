@@ -2,8 +2,8 @@
 // destructor, whose `Splice` runs nothing as it's dropped: `replacement`, an
 // array or an array's iterator, put in place where it's made, as nothing
 // sees `items` till it's dropped; an iterator over what it took out (#1189).
-function $splice(items, start, end, replacement) {
-  $checkRange(start, end, items.length);
+function $splice(items, start, end, replacement, inclusive) {
+  $checkRange(start, end, items.length, inclusive);
   const tail = items.splice(end);
   const removed = items.splice(start);
   $extend(items, replacement);
@@ -22,8 +22,8 @@ function $splice(items, start, end, replacement) {
 // it ends or unwinds, the tail put back, `Drain::drop`'s, and what's left
 // of `replacement` closed, the `Splice`'s fields in their order (#1147,
 // #1149).
-function $splicing(items, start, end, replacement, dropItem) {
-  $checkRange(start, end, items.length);
+function $splicing(items, start, end, replacement, dropItem, inclusive) {
+  $checkRange(start, end, items.length, inclusive);
   const tail = items.splice(end);
   const removed = items.splice(start);
   const gap = removed.length;

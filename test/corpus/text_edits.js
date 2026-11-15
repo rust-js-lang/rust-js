@@ -36,7 +36,7 @@ function main() {
   long = drained[0];
   const taken = drained[1].slice().join("");
   console.log(`[${taken}] [${long}]`);
-  const drained$1 = $strDrain(long, 2, 4);
+  const drained$1 = $strDrain(long, 2, 4, true);
   long = drained$1[0];
   const removed = drained$1[1].slice();
   console.log(`[${removed.map((item) => $debugStr(item, "'")).join(", ")}] [${long}]`);
