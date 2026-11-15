@@ -95,6 +95,11 @@ test("a list's entries alone decide the rows of those its diff changes, and what
   const doc = ["/// `flatten()`, `peekable()` and `rev()`, the families after them."];
   const documented = { ...entry, added: [...doc, ...entry.added], removed: ["/// `flatten()` and `peekable()`.", ...entry.removed] };
   expect(entriesOf(documented)).toMatchObject({ added: ['"zip"'], removed: [] });
+  // Laid out again by rustfmt, one line to one an entry: its entries still,
+  // as the flat_map flip's eighth was.
+  const laidOut = [`pub(in crate::lower) const HELD_FLIPPED: [&str; 5] = [`, ...["chain", "enumerate", "map", "rev", "zip"].map((name) => `    "${name}",`), "];"];
+  const fifth = { ...entry, added: laidOut, removed: [flipped('[&str; 4] = ["chain", "enumerate", "map", "zip"]')] };
+  expect(entriesOf(fifth)).toMatchObject({ added: ['"rev"'], removed: [] });
   // Its type, its name or its visibility changed, or code beside it: the
   // whole hunk's.
   expect(entriesOf(hunk([flipped('[&str; 4] = ["chain", "enumerate", "map", "zip"]').replace("pub(in crate::lower) ", "")], entry.removed, "", file))).toBeUndefined();

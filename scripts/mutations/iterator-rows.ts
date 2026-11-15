@@ -27,4 +27,12 @@ export const mutations: Mutation[] = [
     replace: '  const code = (lines: string[]) => lines.filter((line) => line.trim() !== "");\n',
     tests: ["test/iterator-rows.test.ts", "-t", "a list's entries alone decide"],
   },
+  {
+    name: "list-entries-line-by-line",
+    breaks: "a list rustfmt lays out again, one line to one an entry, is read line by line and isn't its entries: each family on it is named, the flat_map flip's 143,575 rows where its entry's are some 15,000",
+    file: "scripts/iteratorRows.ts",
+    find: '  if (skeleton(added.join(" ")) === skeleton(removed.join(" "))) {\n',
+    replace: '  if (added.length === removed.length && added.every((line, i) => skeleton(line) === skeleton(removed[i]))) {\n',
+    tests: ["test/iterator-rows.test.ts", "-t", "a list's entries alone decide"],
+  },
 ];

@@ -290,8 +290,9 @@ export function naming(hunk: Hunk, adapters: Set<string>, consumers: Set<string>
  * its diff adds and removes, a hunk of them: `HELD_FLIPPED`'s line given
  * `"zip"` decides `zip`'s rows, not every adapter the line says, whose
  * rows were each run already (dev-loop, ioCF). Its entries alone: the
- * line the same but its strings and its numbers, `[&str; 3]` to
- * `[&str; 4]`, its added strings and its removed; or lines each an entry,
+ * code the same but its strings and its numbers, `[&str; 3]` to
+ * `[&str; 4]`, however rustfmt lays it out, its added strings and its
+ * removed; or lines each an entry,
  * strings, `true`s and `false`s in brackets, each whose line changed. One
  * that changes anything else, the list's type, its name or what decides,
  * is the whole hunk's (`undefined`). */
@@ -318,7 +319,10 @@ export function entriesOf(hunk: Hunk): Hunk | undefined {
     });
   };
   const quoted = (names: string[]) => names.map((name) => `"${name}"`);
-  if (added.length === removed.length && added.every((line, i) => skeleton(line) === skeleton(removed[i]))) {
+  // The code the same but its strings and numbers, read whole: a list
+  // rustfmt lays out again, one line to one an entry, as `HELD_FLIPPED`'s
+  // eighth entry did, is its entries still.
+  if (skeleton(added.join(" ")) === skeleton(removed.join(" "))) {
     const [put, taken] = [added.flatMap(strings), removed.flatMap(strings)];
     return { ...hunk, added: quoted(beyond(put, taken)), removed: quoted(beyond(taken, put)), head: "", arm: undefined };
   }
