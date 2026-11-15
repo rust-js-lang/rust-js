@@ -1,5 +1,6 @@
 //! Collect crate facts before emission; no function lowering or linking.
 
+mod accessors;
 pub(super) mod arguments;
 mod back_stepped;
 
@@ -733,6 +734,8 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         closure_facts.iterator_dyns_drop = iterator_dyns_drop;
         counted = counted_with(&closure_facts).0;
     };
+    // What reads a `js::Accessor` but its `get` of a struct's field (ADR 1164).
+    accessors::refuse_accessor_reads(tcx, all_bodies);
     let drops = closure_facts.fn_dyns_drop.any();
     // A library whose `dyn Fn`s drop nothing that holds one the crate's
     // may be: it would drop nothing of one it's given (ADR 0626, amended).

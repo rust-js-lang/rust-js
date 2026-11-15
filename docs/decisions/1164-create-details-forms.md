@@ -117,6 +117,30 @@ argument the JS ABI lacks. Native Rust runs `js::boolean` too, by the
 sealed trait. No js crate conversion did this before: `js::truthy` asks
 JS's truthiness of any value, another question.
 
+## B. A live accessor
+
+**`js::Accessor<T>`, a field of a struct a literal makes, is an own,
+enumerable, configurable getter without a setter**, `get canceled() {
+return canceled; }`, of the function it's made of, `js::Accessor::new(move
+|| canceled.get())`, so each read is what it gives then, upstream's `get
+canceled()`. **`details.canceled.get()` is `details.canceled`**, the
+property's read; a spread of the details, `{ ...details }`, has the value
+it gives then, as JS's has. It's declared `readonly canceled: boolean`.
+Native Rust holds the function and calls it.
+
+- `js::Accessor::new` and `get` are identity bindings, the value itself:
+  the getter's function, and the property's read where `get` is given its
+  field.
+- `adt_value` makes the field a `Prop::Getter`, which every later pass
+  knows is no data property (`accessors_got`).
+- Refused, saying what to write (`analysis/accessors.rs`): the field moved
+  or copied out of its struct, `let Details { canceled } = details`, which
+  JS would read the value of there, not where Rust's `get` calls it; and
+  `get` of an accessor that isn't a struct's field, a local's, whose JS is
+  its function, not what it gives.
+- What's left: the getter's doc comment isn't printed yet, where a
+  method's is.
+
 ## Consequences
 
 - test/declarations-type-maps.test.ts: the declarations, a strict
@@ -146,4 +170,9 @@ JS's truthiness of any value, another question.
   written-conditional-unread (`written.rs`), const-type-parameter-unprinted
   (`typescript/index.js`); unit-struct-field-always-there and
   named-unit-const-undefined retargeted.
+- B: test/js-accessor.test.ts (the descriptor, the live read, a detached
+  `cancel`, a spread's snapshot, the declaration, the two refusals);
+  mutations accessor-field-a-function (`aggregates.rs`),
+  accessor-field-writable (`structures.rs`), accessor-get-of-a-local-allowed,
+  accessor-field-moved-out-allowed (`analysis/accessors.rs`).
 - Guide: interop/export-to-javascript.md, TypeScript declarations.

@@ -211,3 +211,22 @@ pub(in crate::lower) fn is_js_defaults_to(tcx: TyCtxt<'_>, did: DefId) -> bool {
 pub(in crate::lower) fn is_js_literal_type(tcx: TyCtxt<'_>, did: DefId) -> bool {
     tcx.crate_name(did.krate).as_str() == "js"
 }
+
+/// Whether `did` is `js::Accessor`, a struct's live getter, `get canceled()
+/// { .. }`, read by its `get` (ADR 1164).
+pub(in crate::lower) fn is_js_accessor(tcx: TyCtxt<'_>, did: DefId) -> bool {
+    tcx.crate_name(did.krate).as_str() == "js"
+        && tcx.item_name(did).as_str() == "Accessor"
+        && tcx.opt_parent(did).is_some_and(|parent| parent.is_crate_root())
+}
+
+/// Whether `did` is `js::Accessor::get`, the property's read where it's
+/// given a struct's field (ADR 1164).
+pub(in crate::lower) fn is_js_accessor_get(tcx: TyCtxt<'_>, did: DefId) -> bool {
+    tcx.item_name(did).as_str() == "get"
+        && tcx.opt_parent(did).is_some_and(|imp| {
+            tcx.def_kind(imp) == DefKind::Impl { of_trait: false }
+                && matches!(tcx.type_of(imp).instantiate_identity().skip_normalization().kind(),
+                    ty::Adt(adt, _) if is_js_accessor(tcx, adt.did()))
+        })
+}

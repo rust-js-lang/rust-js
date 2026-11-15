@@ -499,6 +499,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 ));
             }
         }
+        // A `js::Accessor<T>` field is a live getter, `get canceled() {
+        // return canceled; }`, of the function it's made of (ADR 1164).
+        if let js::ExprKind::Object(props, _) = &mut made.kind {
+            self.accessors_got(props, variant);
+        }
         if let js::ExprKind::Object(_, layout) = &mut made.kind {
             if !self.written_literal(&adt_def, variant_index, span) {
                 docs.clear();
@@ -511,6 +516,35 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
         }
         Ok(made)
+    }
+
+    /// Each of `props`, of `variant`'s fields, that's a `js::Accessor<T>`'s,
+    /// a getter of the function it holds: an arrow's own body, `get
+    /// canceled() { return canceled; }`, or a call of another, `get
+    /// canceled() { return f(); }` (ADR 1164).
+    pub(super) fn accessors_got(&self, props: &mut [Prop], variant: &ty::VariantDef) {
+        for field in &variant.fields {
+            let ty = self.tcx.type_of(field.did).instantiate_identity().skip_normalization();
+            let ty::Adt(adt, _) = ty.kind() else { continue };
+            if !super::recognition::is_js_accessor(self.tcx, adt.did()) {
+                continue;
+            }
+            let key = bindings::field_key(self.tcx, field);
+            for prop in props.iter_mut() {
+                let Prop::Field(name, value) = prop else { continue };
+                if Some(name.as_str()) != key.name() {
+                    continue;
+                }
+                let getter = match &value.kind {
+                    js::ExprKind::Arrow(params, _) if params.is_empty() => value.clone(),
+                    _ => Expr::arrow(
+                        Vec::new(),
+                        vec![js::StmtKind::Return(Some(Expr::call(value.clone(), Vec::new()))).at(value.span)],
+                    ),
+                };
+                *prop = Prop::Getter(name.clone(), getter);
+            }
+        }
     }
 
     /// The fields of `ty`, a struct whose `Default` is derived, when `base`

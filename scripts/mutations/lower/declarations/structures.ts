@@ -7,6 +7,14 @@ const tests = ["test/declarations.test.ts"];
 
 export const mutations: Mutation[] = [
   {
+    name: "accessor-field-writable",
+    breaks: "a `js::Accessor` field is declared writable, where its getter has no setter (ADR 1164)",
+    file: "src/lower/declarations/structures.rs",
+    find: "                    \"readonly\": true,\n                    \"type\": self.ts(args.type_at(0)),\n",
+    replace: "                    \"readonly\": false,\n                    \"type\": self.ts(args.type_at(0)),\n",
+    tests: ["test/js-accessor.test.ts", "-t", "a live own getter"],
+  },
+  {
     name: "distributive-declared-as-interface",
     breaks: "a `#[rust_js::distributive]` struct is one interface of its reason, so checking `reason` doesn't narrow `event`, where upstream's `ChangeDetails` is one member per reason (ADR 1164)",
     file: "src/lower/declarations/structures.rs",

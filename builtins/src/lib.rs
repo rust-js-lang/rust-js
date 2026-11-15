@@ -879,6 +879,30 @@ pub fn boolean<B: Boolean>(this: B) -> bool {
     sealed::Boolean::value(this)
 }
 
+/// A live accessor of a struct a literal makes, `get canceled() { return
+/// canceled; }`: an own enumerable, configurable getter, without a setter,
+/// whose value is what its function gives each time it's read, as
+/// upstream's createDetails writes `canceled` (ADR 1164). Made with
+/// [`Accessor::new`] where the struct is made and read with
+/// [`Accessor::get`] of the struct's field, `details.canceled.get()`,
+/// which is `details.canceled` in JS; declared `readonly canceled: T`. A
+/// spread of the struct, `{ ...details }`, has the value it gives then.
+pub struct Accessor<T>(Box<dyn Fn() -> T>);
+
+impl<T> Accessor<T> {
+    /// The accessor whose reads are what `get` gives: in JS, its getter.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    pub fn new(this: impl Fn() -> T + 'static) -> Self {
+        Accessor(Box::new(this))
+    }
+
+    /// What it gives now: in JS, its property's read, `details.canceled`.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    pub fn get(&self) -> T {
+        (self.0)()
+    }
+}
+
 /// A type parameter's default, as TypeScript declares it: `C:
 /// js::DefaultsTo<js::True>` is `C extends .. = true`, where Rust has no
 /// default for a function's. Every type meets it, so it constrains nothing;

@@ -106,6 +106,21 @@ impl<'tcx> Declarations<'_, 'tcx> {
             if is_flatten(self.tcx, field) {
                 continue;
             }
+            // A `js::Accessor<T>`'s, its getter's value, which nothing sets,
+            // `readonly canceled: boolean` (ADR 1164).
+            if let ty::Adt(adt, args) = ty.kind()
+                && crate::lower::recognition::is_js_accessor(self.tcx, adt.did())
+            {
+                let property = json!({
+                    "kind": "property",
+                    "name": self.member_name(field),
+                    "optional": false,
+                    "readonly": true,
+                    "type": self.ts(args.type_at(0)),
+                });
+                members.push(documented(property, self.tcx, field.did));
+                continue;
+            }
             // A field with a default, JS's where it's missing, is one a caller
             // may leave out (ADR 0212); one of an `Option` too, and one marked
             // `#[rust_js::nullable]` may be `null`, which rust-js reads as

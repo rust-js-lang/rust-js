@@ -2681,6 +2681,65 @@ export function pick<C extends boolean = true>(cancelable: C): C;
 export function kind(cancelable: boolean): string;
 ```
 
+A field of `js::Accessor<T>` is a live getter of the struct's object, its
+value what its function gives each time it's read, read in Rust by `get`
+of the field, which is the property's read in JS. Moving the field out,
+or `get` of an accessor that isn't a struct's field, is refused, as JS
+would read it otherwise
+([ADR 1164](../../decisions/1164-create-details-forms.md)):
+
+```rust
+use std::cell::Cell;
+use std::rc::Rc;
+
+pub struct Details {
+    pub cancel: Box<dyn Fn()>,
+    pub canceled: js::Accessor<bool>,
+}
+
+pub fn details() -> Details {
+    let canceled = Rc::new(Cell::new(false));
+    let set = Rc::clone(&canceled);
+    Details {
+        cancel: Box::new(move || set.set(true)),
+        canceled: js::Accessor::new(move || canceled.get()),
+    }
+}
+
+pub fn read(details: &Details) -> bool {
+    details.canceled.get()
+}
+```
+
+```js
+export function details() {
+  let canceled = false;
+  return {
+    cancel() {
+      canceled = true;
+    },
+    get canceled() {
+      return canceled;
+    },
+  };
+}
+
+export function read(details) {
+  return details.canceled;
+}
+```
+
+```ts
+export interface Details {
+    cancel: () => void;
+    readonly canceled: boolean;
+}
+
+export function details(): Details;
+
+export function read(details: Details): boolean;
+```
+
 ## Calling Rust from a JS file in your app
 
 `rust-js build` writes each module's JS beside its Rust: `src/App.rs` is

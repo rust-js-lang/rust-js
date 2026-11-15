@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "accessor-field-a-function",
+    breaks: "a `js::Accessor` field is its function, a method, not a getter, so `details.canceled` is the function and `{ ...details }` copies it (ADR 1164)",
+    file: "src/lower/aggregates.rs",
+    find: "            if !super::recognition::is_js_accessor(self.tcx, adt.did()) {\n",
+    replace: "            if true {\n",
+    tests: ["test/js-accessor.test.ts", "-t", "a live own getter"],
+  },
+  {
     name: "fmt-error-value-thrown",
     breaks: "`let err: fmt::Result = Err(fmt::Error)` throws where it's made, where it's a value, its `is_ok()` `false` (#1011)",
     file: "src/lower/aggregates.rs",
