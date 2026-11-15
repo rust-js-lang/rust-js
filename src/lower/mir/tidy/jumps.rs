@@ -7,8 +7,9 @@ mod kept;
 mod labels;
 mod tails;
 mod tried;
+mod written;
 
-pub(super) use self::{branch_ends::*, continues::*, kept::*, labels::*, tails::*, tried::*};
+pub(super) use self::{branch_ends::*, continues::*, kept::*, labels::*, tails::*, tried::*, written::*};
 
 use super::*;
 use crate::js::Name;
