@@ -138,6 +138,12 @@ pub(crate) struct Build {
     /// hook, not a way to build: `test/tidy-stages.test.ts`' variant of
     /// each case (ADR 1144, amended).
     pub no_thir_hints: bool,
+    /// `--std-paths-first`: std's paths are resolved before any body is
+    /// lowered, not where a body first asks, so rustc reads std's spans
+    /// first; the JS is the same. A test hook, not a way to build:
+    /// `test/std-package.test.ts`' compile of std's bodies both ways (ADR
+    /// 0879, amended).
+    pub std_paths_first: bool,
     /// What's after `--`, rustc's as-is, e.g. `-- --sysroot /sysroot`.
     pub rustc: Vec<String>,
 }
@@ -219,6 +225,7 @@ pub(crate) fn parse(args: Vec<String>) -> Result<Command, String> {
     let std_iterators = flag(&mut ours, "--std-iterators");
     let js_made_all = flag(&mut ours, "--js-made-all");
     let no_thir_hints = flag(&mut ours, "--no-thir-hints");
+    let std_paths_first = flag(&mut ours, "--std-paths-first");
     let mut dependencies = Vec::new();
     while let Some(path) = valued(&mut ours, "--dependency", "a manifest path")? {
         dependencies.push(PathBuf::from(path));
@@ -310,6 +317,7 @@ pub(crate) fn parse(args: Vec<String>) -> Result<Command, String> {
         std_iterators,
         js_made_all,
         no_thir_hints,
+        std_paths_first,
         rustc: rustc.to_vec(),
     })))
 }

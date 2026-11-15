@@ -415,4 +415,13 @@ export const mutations: Mutation[] = [
     replace: "        if written.is_some() && !place.is_indirect() {\n",
     tests: ["test/corpus.test.ts", "-t", "^box_held_in_a_field_written.rs$"],
   },
+  {
+    name: "written-at-an-inlined-callees",
+    breaks:
+      "where a foreign body's block is written is its inlined callee's own span, of another file, so which of two arms is first is the order rustc read their files in: std's `Skip::next` tests `!(skip.n > 0)` first, `Ipv4Addr == IpAddr` its `V6` arm (ADR 0879, amended)",
+    file: "src/lower/mir/queries.rs",
+    find: "    let first = own_span(body, first.map_or(data.terminator().source_info, |s| s.source_info)).source_callsite();\n",
+    replace: "    let first = first.map_or(data.terminator().source_info.span, |s| s.source_info.span).source_callsite();\n",
+    tests: ["test/std-package.test.ts", "-t", "std's paths asked first"],
+  },
 ];

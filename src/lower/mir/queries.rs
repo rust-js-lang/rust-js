@@ -413,10 +413,28 @@ fn written_within(body: &mir::Body<'_>, block: BasicBlock, depth: usize) -> Opti
             .filter_map(|&b| written_within(body, b, depth - 1))
             .min();
     }
-    let first = first
-        .map_or(data.terminator().source_info.span, |s| s.source_info.span)
-        .source_callsite();
+    let first = own_span(body, first.map_or(data.terminator().source_info, |s| s.source_info)).source_callsite();
     (!first.is_dummy()).then(|| first.lo())
+}
+
+/// Where what `info` is of is written in `body`'s own function: of what
+/// MIR's inliner put in it, a foreign body's, a callee's of another file,
+/// the outermost call's (rustc's `inlined`). Two files' places are in the
+/// order rustc read them, which reading another crate's spans changes, so
+/// only one file's say which of two is written first.
+fn own_span(body: &mir::Body<'_>, info: mir::SourceInfo) -> rustc_span::Span {
+    let (mut span, mut scope) = (info.span, info.scope);
+    loop {
+        let data = &body.source_scopes[scope];
+        let Some(root) = data.inlined.map(|_| scope).or(data.inlined_parent_scope) else {
+            return span;
+        };
+        let root = &body.source_scopes[root];
+        let (Some((_, call)), Some(parent)) = (root.inlined, root.parent_scope) else {
+            return span;
+        };
+        (span, scope) = (call, parent);
+    }
 }
 
 /// Whether `block` does nothing but go to unreachable code, MIR's or

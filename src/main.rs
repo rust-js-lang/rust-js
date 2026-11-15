@@ -728,6 +728,7 @@ fn compile(build: command::Build) -> Result<ExitCode, String> {
         std_iterators,
         js_made_all,
         no_thir_hints,
+        std_paths_first,
         ..
     } = build;
     // Before anything is lowered: a fact forgotten is one never said, and
@@ -741,6 +742,9 @@ fn compile(build: command::Build) -> Result<ExitCode, String> {
     }
     if no_thir_hints {
         lower::session::forget_thir_hints();
+    }
+    if std_paths_first {
+        lower::session::ask_std_paths_first();
     }
     let command::Staged { metadata, dep_info, .. } = staged;
     let recorded = cargo.then(|| (manifest.clone(), metadata.clone()));

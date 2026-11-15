@@ -6,7 +6,7 @@ Status: Accepted. Amends [0237](0237-no-else-after-leaving.md)'s scope (an
 is a conditional), [0607](0607-a-field-is-given-a-call-in-place.md) (a
 variable a closure captured is given a call's value in place) and extends
 [0846](0846-a-parameters-clone-is-read-by-its-name.md) (a clone of what a
-`move` closure captured is read by its name). Amended: a guard's arms in the order written, and a float's constant pattern tested value first; and an `if` that ends a guard's function keeps the `return` written between its branches (below); and a capture its maker reads first is named for its variable (rd656, below); and a pattern's binding closures take is one `const` where it's bound (rd640, below).
+`move` closure captured is read by its name). Amended: a guard's arms in the order written, and a float's constant pattern tested value first; and an `if` that ends a guard's function keeps the `return` written between its branches (below); and a capture its maker reads first is named for its variable (rd656, below); and a pattern's binding closures take is one `const` where it's bound (rd640, below); and where a foreign body's block is written is in its own function's file, an inlined callee's at its call (below).
 
 Case ([0262](0262-when-rust-and-js-disagree.md)): N for each, which runs
 the same; each is a form the program wrote, which MIR's structure lost.
@@ -1181,3 +1181,30 @@ branch's tidying takes away: `a_rest_made_a_branch_is_tidied_as_one` and
 its rewrite doesn't walk again; the mutation runner judges by `bun test`
 alone, and no program MIR makes was found that reaches them, so they have
 no mutation of the runner's.
+
+## Amended: where a foreign body's block is written is in its own file
+
+Which of two arms is written first, `written_at`'s answer that this
+decision's tests and `match` arms are put in order by, compared where
+rustc places each block's first statement. A foreign body's MIR is
+`optimized_mir`'s, which rustc's inliner has put callees in, each of its
+own spans, of another file: of std's `Skip::next`, `if self.n > 0 { ..
+self.iter.nth(n) } else { self.iter.next() }`, the `then`'s first
+statement is `mem::take`'s, of `core/src/mem/mod.rs`, and the `else`'s
+the call's, of `skip.rs`. Two files' places are in the order rustc read
+them into its source map, which isn't the program's: reading another
+crate's spans reads its files, so a question asked earlier changed which
+arm was first. Resolving std's paths once a session
+(#1681's DefId step),
+which reads std's modules' spans, turned five of `@rust-js/std`'s
+`iter.js` functions as built, `Skip::next` `if (skip.n > 0)` where it was `if (!(skip.n >
+0))`, by when the table was first asked.
+
+Now a statement's place is in its own function's file: of one an inliner
+put in, the outermost call's (`own_span`, by MIR's source scopes'
+`inlined`), so the two compared are one file's, in the order written,
+however rustc read the files. A program's own bodies are `mir_promoted`'s,
+which no inliner has run on, and are as they were; `@rust-js/std`'s are
+in the order core wrote them: `Ipv4Addr == IpAddr` tests its `V4` arm
+first, `Skip::next` `skip.n > 0`. Held by mutation
+`written-at-an-inlined-callees` (`test/std-package.test.ts`).

@@ -14,6 +14,7 @@ use super::*;
 /// makes in place is decided once the crate's `Recognition` exists
 /// (`decide_in_place`).
 pub fn collect_bodies(tcx: TyCtxt<'_>) -> Vec<Body<'_>> {
+    crate::lower::recognition::std_paths_if_first(tcx);
     let mut bodies = lowered_bodies(tcx);
     // What `{:?}` shows of std's adapters compiled as their meaning alone,
     // before anything asks the catalogue (#1401).

@@ -110,6 +110,12 @@ pub(crate) fn forget_thir_hints() {
     super::mir::forget_thir_hints();
 }
 
+/// Resolves std's paths before any body is lowered, for the rest of the
+/// compile: `--std-paths-first`'s (ADR 0879, amended).
+pub(crate) fn ask_std_paths_first() {
+    super::recognition::ask_std_paths_first();
+}
+
 /// Records which compiler-made labels each body keeps after tidy, by the
 /// MIR shape that left it: `--label-census`'s (#1461).
 pub(crate) fn record_label_census() {

@@ -201,15 +201,13 @@ export const Ipv6Addr = {
     const cd = $swapBytes(value$1, 16, false);
     if (value$2 === 0) {
       if (value$10 === value$11 && value$10 === 0) {
-        if (value$12 === value$13) {
-          if (value$12 === 0) {
-            if (value$14 === 0 || value$14 === 65535) {
-              const value$1 = $swapBytes(ab, 16, false);
-              const [a, b] = $toBytes(value$1, 2, true);
-              const value$2 = $swapBytes(cd, 16, false);
-              const [c, d] = $toBytes(value$2, 2, true);
-              return { octets: [a, b, c, d] };
-            }
+        if (value$12 === value$13 && value$12 === 0) {
+          if (value$14 === 0 || value$14 === 65535) {
+            const value$1 = $swapBytes(ab, 16, false);
+            const [a, b] = $toBytes(value$1, 2, true);
+            const value$2 = $swapBytes(cd, 16, false);
+            const [c, d] = $toBytes(value$2, 2, true);
+            return { octets: [a, b, c, d] };
           }
         }
       }
@@ -477,12 +475,12 @@ export function ipv4AddrPartialEq_eq(ipv4Addr, other) {
 }
 
 export function ipv4AddrPartialEqIpAddr_eq(ipv4Addr, other) {
-  if (other.TAG === "V6") {
-    return false;
+  if (other.TAG === "V4") {
+    const value = ipv4Addr.octets.slice();
+    const value$1 = other._0.octets.slice();
+    return $fromBytes(value, 4, true, false) === $fromBytes(value$1, 4, true, false);
   }
-  const value = ipv4Addr.octets.slice();
-  const value$1 = other._0.octets.slice();
-  return $fromBytes(value, 4, true, false) === $fromBytes(value$1, 4, true, false);
+  return false;
 }
 
 export function ipv4AddrHash_hash(ipv4Addr, state, HHasher, dropH) {
@@ -534,12 +532,12 @@ export function ipAddrPartialEq_eq(ipAddr, other) {
 }
 
 export function ipAddrPartialEqIpv4Addr_eq(ipAddr, other) {
-  if (ipAddr.TAG === "V6") {
-    return false;
+  if (ipAddr.TAG === "V4") {
+    const value = ipAddr._0.octets.slice();
+    const value$1 = other.octets.slice();
+    return $fromBytes(value, 4, true, false) === $fromBytes(value$1, 4, true, false);
   }
-  const value = ipAddr._0.octets.slice();
-  const value$1 = other.octets.slice();
-  return $fromBytes(value, 4, true, false) === $fromBytes(value$1, 4, true, false);
+  return false;
 }
 
 export function ipAddrPartialEqIpv6Addr_eq(ipAddr, other) {
@@ -568,12 +566,12 @@ export function socketAddrV4Clone_clone(socketAddrV4) {
 }
 
 export function socketAddrV4PartialEq_eq(socketAddrV4, other) {
-  if (socketAddrV4.port !== other.port) {
-    return false;
+  if (socketAddrV4.port === other.port) {
+    const value = socketAddrV4.ip.octets.slice();
+    const value$1 = other.ip.octets.slice();
+    return $fromBytes(value, 4, true, false) === $fromBytes(value$1, 4, true, false);
   }
-  const value = socketAddrV4.ip.octets.slice();
-  const value$1 = other.ip.octets.slice();
-  return $fromBytes(value, 4, true, false) === $fromBytes(value$1, 4, true, false);
+  return false;
 }
 
 export function socketAddrV4Hash_hash(socketAddrV4, state, HHasher, dropH) {
@@ -615,12 +613,12 @@ export function socketAddrPartialEq_eq(socketAddr, other) {
   const value = socketAddr.TAG === "V4" ? 0 : 1;
   if (value === (other.TAG === "V4" ? 0 : 1)) {
     if (value === 0) {
-      if (socketAddr._0.port !== other._0.port) {
-        return false;
+      if (socketAddr._0.port === other._0.port) {
+        const value = socketAddr._0.ip.octets.slice();
+        const value$1 = other._0.ip.octets.slice();
+        return $fromBytes(value, 4, true, false) === $fromBytes(value$1, 4, true, false);
       }
-      const value = socketAddr._0.ip.octets.slice();
-      const value$1 = other._0.ip.octets.slice();
-      return $fromBytes(value, 4, true, false) === $fromBytes(value$1, 4, true, false);
+      return false;
     }
     if (socketAddr._0.port === other._0.port) {
       if (socketAddr._0.flowinfo === other._0.flowinfo) {

@@ -66,13 +66,22 @@ test("the committed @rust-js/std is std's bodies as the compiler compiles them",
 // `core` built from where the toolchain is, so each checkout and machine
 // committed another. One build of std's bodies, not two: each is some 6
 // CPU-seconds of every `check:fast --all` (#882).
-test("std's crate hash is the same built anywhere, with or without RUSTC_BOOTSTRAP", () => {
+//
+// The same build asks std's paths before any body is lowered,
+// `--std-paths-first`, where the test before's asks them where a body first
+// does: rustc reads std's spans earlier, and the JS is the same bytes, the
+// committed. A foreign body's arms were put in the order rustc read its
+// callees' files in, so which body asked first turned `Skip::next`'s (ADR
+// 0879, amended).
+test("std's crate hash and JS are the same built anywhere, with or without RUSTC_BOOTSTRAP, std's paths asked first", () => {
   const committed = JSON.parse(readFileSync(join(stdDir, "manifest.json"), "utf8")).library.crate_hash;
   const given = process.env.RUSTC_BOOTSTRAP;
   const dir = join(fixture("std-hash-elsewhere"), "deeper");
   mkdirSync(join(dir, "std"), { recursive: true });
   cpSync(join(stdDir, "lib.rs"), join(dir, "std", "lib.rs"));
-  const build = stdBuild(compiler, dir);
+  const built = stdBuild(compiler, dir);
+  const at = built.cmd.indexOf("--");
+  const build = { ...built, cmd: [...built.cmd.slice(0, at), "--std-paths-first", ...built.cmd.slice(at)] };
   process.env.RUSTC_BOOTSTRAP = "1";
   try {
     const made = runSync(build.cmd, build.cwd, underLoad(600_000));
@@ -81,7 +90,12 @@ test("std's crate hash is the same built anywhere, with or without RUSTC_BOOTSTR
     if (given === undefined) delete process.env.RUSTC_BOOTSTRAP;
     else process.env.RUSTC_BOOTSTRAP = given;
   }
-  expect(JSON.parse(readFileSync(join(dir, "std", "manifest.json"), "utf8")).library.crate_hash).toBe(committed);
+  const manifest = JSON.parse(readFileSync(join(dir, "std", "manifest.json"), "utf8"));
+  expect(manifest.library.crate_hash).toBe(committed);
+  const body = (file: string) => readFileSync(file, "utf8").split("\n").slice(1).join("\n");
+  for (const { file } of manifest.modules) {
+    expect(body(join(dir, "std", file)), file).toBe(body(join(stdDir, file)));
+  }
 }, underLoad(120_000));
 
 // What the compiler writes imports the package by its name alone, its one
@@ -112,8 +126,9 @@ test("a std body's JS has no test its early return decided, no once-read bool, n
   const nextBack = std.slice(std.indexOf("export function peekableDoubleEndedIterator_nextBack("), std.indexOf("export function peekableDoubleEndedIterator_rfold("));
   // Its `or_else`, which a `core` built to unwind keeps a call of, its
   // closure's unwinding too costly to inline (#424): `??` of it, the
-  // `Some` tested once.
-  expect(nextBack.match(/!= null/g)).toHaveLength(1);
+  // `Some` tested once; and `peeked`, whichever arm is first, once too.
+  expect(nextBack.match(/v\.value [!=]= null/g)).toHaveLength(1);
+  expect(nextBack.match(/peekable\.peeked [!=]= null/g)).toHaveLength(1);
   expect(nextBack).toContain("return IDoubleEndedIterator.next_back(peekable.iter) ?? fallback();\n");
   expect(std).not.toMatch(/tmp\$?\d* = !tmp/);
   // No statement line written twice in a row at the two ends of an `if`/`else`.

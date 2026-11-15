@@ -12,6 +12,7 @@ use super::{StdCrate, registry};
 use crate::collections::IndexMap;
 use rustc_middle::ty::TyCtxt;
 use rustc_span::def_id::DefId;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 macro_rules! std_paths {
     ($($item:ident => $path:literal,)*) => {
@@ -118,6 +119,25 @@ fn resolve(tcx: TyCtxt<'_>) -> StdPaths {
         }
     }
     StdPaths { by_id }
+}
+
+/// Whether this compile resolves the table before any body is lowered,
+/// `--std-paths-first`'s.
+static FIRST: AtomicBool = AtomicBool::new(false);
+
+/// Resolves the table before any body is lowered, for the rest of the
+/// compile (`FIRST`).
+pub(crate) fn ask_std_paths_first() {
+    FIRST.store(true, Ordering::Relaxed);
+}
+
+/// The table resolved now, where this compile asks it first (`FIRST`):
+/// before any body is lowered, so rustc reads std's spans before any
+/// body's question does, which changes no JS (ADR 0879, amended).
+pub(crate) fn std_paths_if_first(tcx: TyCtxt<'_>) {
+    if FIRST.load(Ordering::Relaxed) {
+        std_paths(tcx);
+    }
 }
 
 /// Which of the table's items `id` is, if any.
