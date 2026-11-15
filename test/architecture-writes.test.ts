@@ -65,7 +65,7 @@ test("whether a tree sets a variable is js::Writes' alone", () => {
     // The consecutive `name = value;`s hoisted before a `try` with it.
     "src/prepare/catches.rs: .take_while(|s| {",
     // The first statement of a `catch` that sets the variable afresh.
-    "src/js/applied.rs: let first_set = caught.iter().position(|s| {",
+    "src/js/applied/tried.rs: let first_set = caught.iter().position(|s| {",
     // Each mention of a temporary in a `switch` a case's assignment of it.
     "src/lower/mir/tidy/switches.rs: .filter(",
     // The first mention of a variable in a `try`, its assignment.
