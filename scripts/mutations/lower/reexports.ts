@@ -332,7 +332,7 @@ export const mutations: Mutation[] = [
     name: "type-reexports-left-out",
     breaks: "a `pub use` of a type re-exports nothing in the declarations, so a consumer can't name react-client's `TemporaryReferenceSet` through the Flight client (rd642)",
     file: "src/lower/reexports.rs",
-    find: "        found.push((statement_of(&leaf), from, (export, local)));\n",
+    find: "        found.push((\n            statement_of(&leaf),\n            from,\n            (export, local),\n            leaf.item.owner_id.to_def_id(),\n        ));\n",
     replace: "        let _ = (from, export, local);\n",
     tests: ["test/declarations-libraries.test.ts", "-t", "type-only re-export"],
   },
@@ -524,5 +524,12 @@ export const mutations: Mutation[] = [
     replace: "                let name = tcx.item_name(named).to_string();\n",
     tests: ["test/declarations-named.test.ts", "-t", "re-exported by it"],
   },
+  {
+    name: "type-reexport-value-of-a-constructor",
+    breaks: "a `pub use` of a tuple or a unit struct, whose constructor is no JS it re-exports, is taken for a value's, so its doc comment is the next function's JSDoc (#1869)",
+    file: "src/lower/reexports.rs",
+    find: "    let value = !matches!(leaf.path.res.value_ns, None | Some(Res::Def(DefKind::Ctor(..), _)));\n",
+    replace: "    let value = !matches!(leaf.path.res.value_ns, None);\n",
+    tests: ["test/reexport-docs.test.ts", "-t", "structs with constructors"],
+  },
 ];
-

@@ -263,7 +263,7 @@ pub(super) fn module<'tcx>(
         return None;
     }
     let imported = (&out.imports, &out.library_imports, &out.module_imports);
-    let mut declarations = imports::imports(imported, (reexports, &types));
+    let mut declarations = imports::imports(tcx, imported, (reexports, &types));
     declarations.splice(0..0, imports::namespaces(&out.namespaces));
     declarations.extend(items);
     // `export { greetAll as unstable_greet };`, its `pub use` of its own

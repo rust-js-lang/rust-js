@@ -700,3 +700,38 @@ and a module of types alone, imported and called), and the mutations
 `library-module-namespace-left-out` (`lower/reexports.ts`),
 `library-modules-unlisted` (`lower/library/exports.ts`) and
 `library-types-only-module-namespaced` (`library.ts`).
+
+## Amendment: a `pub use` of types alone keeps its doc comment (#1869, 2026-11-15)
+
+A doc comment on a `pub use` of types alone, `/// A dropdown is a
+popover. pub use primitives::PopoverProps as DropdownProps;`, has no JS
+statement to be before, so the printer gave it to the next one, a
+function's JSDoc, `cn`'s, and the declarations' `export type { ..
+}` had none of it (the deep-chain harness's kit). **A `use` statement
+every name of which is a type alone**, a struct, an enum, a union or an
+alias, not a class, a tuple's or a unit's constructor no value it
+re-exports (`reexports::of_types_alone`), **is an item of no JS where it's
+written**, `Module::unprinted`, as a struct is: what's written before it
+is its, nowhere in the JS. **Its declarations' `export type` is
+documented by it** (`declarations::comments::documented`). A statement
+of a type and a value, `pub use parts::{Size as Measure, width};`, is
+its value's, `export { width } from`, its doc comment that statement's in
+the JS, and the type's `export type` has none. Its `//` comments are its
+too, before its `export type`, as a struct's are before its interface,
+read from its statement's `pub` (`comments::documented_at`), a `use`'s
+own span being its path's. Where the JS has no statement to put them
+before, among a module's imports and re-exports, they're nowhere in the
+JS: the React port's `// GAP rd587: ..` above its `pub use` of
+`ClientReference` was the next re-export's, `export {
+isClientReference, .. }`, which it doesn't describe, and is its own
+`export type`'s now. Case
+([0262](0262-when-rust-and-js-disagree.md)): none, comments alone.
+
+Not yet: a value re-export's doc comment in the declarations, which the
+JS has, `program::Reexport` holding no `use` item to read it of.
+
+Held by `test/reexport-docs.test.ts`; mutations type-reexport-printed-where-written
+(`pipeline.rs`), type-reexport-value-of-a-constructor (`reexports.rs`),
+type-reexport-undocumented, mixed-reexport-doc-on-its-type
+(`declarations/imports.rs`).
+

@@ -16,9 +16,10 @@ use rustc_span::Symbol;
 use rustc_span::def_id::{CRATE_MOD_ID, DefId, LocalModId};
 
 /// One type a module's declarations alone re-export (`type_reexports`):
-/// its statement, where it's from, none where it's the module's own, and
-/// `(export, alias)`.
-pub(super) type TypeReexport = (rustc_span::Span, Option<js::ImportFrom>, (String, String));
+/// its statement, where it's from, none where it's the module's own,
+/// `(export, alias)`, and its `use` item, whose doc comment is the
+/// statement's (#1869).
+pub(super) type TypeReexport = (rustc_span::Span, Option<js::ImportFrom>, (String, String), DefId);
 
 /// One name a module re-exports, where it's written: the statement, which
 /// its names of one module share; where it's from; and `(export, alias)`,
@@ -295,15 +296,10 @@ pub(super) fn type_reexports(
 ) -> Vec<TypeReexport> {
     let mut found = Vec::new();
     for leaf in super::uses::module_leaves(tcx, module) {
-        let (super::uses::Leaf::Single(ident), path) = (leaf.kind, &leaf.path) else {
+        let (super::uses::Leaf::Single(ident), Some(named)) = (leaf.kind, type_alone(tcx, &leaf)) else {
             continue;
         };
-        let Some(Res::Def(DefKind::Struct | DefKind::Enum | DefKind::Union | DefKind::TyAlias, named)) =
-            path.res.type_ns
-        else {
-            continue;
-        };
-        if !tcx.visibility(leaf.def_id).is_public() || super::classes::is_class(tcx, named) {
+        if !tcx.visibility(leaf.def_id).is_public() {
             continue;
         }
         // Each by the name its declarations give it, `ISODate` of
@@ -333,9 +329,65 @@ pub(super) fn type_reexports(
             true => own,
             false => ident.to_string(),
         };
-        found.push((statement_of(&leaf), from, (export, local)));
+        found.push((
+            statement_of(&leaf),
+            from,
+            (export, local),
+            leaf.item.owner_id.to_def_id(),
+        ));
     }
     found
+}
+
+/// The type `leaf` names, where it names one alone, of no JS: a struct, an
+/// enum, a union or an alias, not a class, which is its constructor, nor
+/// what's a value too. A macro of its name, a derive's, has no JS either.
+fn type_alone(tcx: TyCtxt<'_>, leaf: &super::uses::UseLeaf<'_>) -> Option<DefId> {
+    let Some(Res::Def(DefKind::Struct | DefKind::Enum | DefKind::Union | DefKind::TyAlias, named)) =
+        leaf.path.res.type_ns
+    else {
+        return None;
+    };
+    let value = !matches!(leaf.path.res.value_ns, None | Some(Res::Def(DefKind::Ctor(..), _)));
+    (!value && !super::classes::is_class(tcx, named)).then_some(named)
+}
+
+/// Each of `module`'s `use` statements every name of which is a type
+/// alone, `pub use Size as Measure;`, which writes no JS where it's
+/// written, as a struct doesn't: what's written before it, its doc
+/// comment, is its, the declarations' `export type { .. }` (#1869), not
+/// the next statement's of the JS.
+pub(super) fn of_types_alone(tcx: TyCtxt<'_>, module: LocalModId) -> Vec<rustc_span::Span> {
+    statements_of_types(tcx, module)
+        .into_values()
+        .filter(|&(_, all)| all)
+        .map(|(at, _)| at)
+        .collect()
+}
+
+/// Whether the `use` statement `item` is of types alone, `of_types_alone`'s:
+/// its doc comment is its declarations' `export type { .. }`'s; of one that
+/// re-exports a value too, its value's statement's, as its JS has it.
+pub(super) fn is_of_types_alone(tcx: TyCtxt<'_>, item: DefId) -> bool {
+    let Some(local) = item.as_local() else {
+        return false;
+    };
+    let module = tcx.parent_module_from_def_id(local);
+    (statements_of_types(tcx, module).into_iter()).any(|(id, (_, all))| all && id.owner_id.to_def_id() == item)
+}
+
+/// Each of `module`'s `use` statements, where it's written and whether
+/// each of its names is a type alone (`type_alone`).
+fn statements_of_types(tcx: TyCtxt<'_>, module: LocalModId) -> IndexMap<rustc_hir::ItemId, (rustc_span::Span, bool)> {
+    let mut statements: IndexMap<rustc_hir::ItemId, (rustc_span::Span, bool)> = IndexMap::default();
+    for leaf in super::uses::module_leaves(tcx, module) {
+        let alone = matches!(leaf.kind, super::uses::Leaf::Single(_)) && type_alone(tcx, &leaf).is_some();
+        let (_, all) = statements
+            .entry(leaf.item.item_id())
+            .or_insert((statement_of(&leaf), true));
+        *all &= alone;
+    }
+    statements
 }
 
 /// Where a `pub use` of `module` re-exports its namespace from, `export *

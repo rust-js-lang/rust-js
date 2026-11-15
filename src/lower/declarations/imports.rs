@@ -11,6 +11,7 @@ type TypeExport<'a> = (
     rustc_span::Span,
     &'a Option<crate::js::ImportFrom>,
     Vec<&'a (String, String)>,
+    rustc_span::def_id::DefId,
 );
 
 /// The types of JS modules, of the crate's other modules or of a library's
@@ -30,6 +31,7 @@ type ModuleImports<K> = BTreeSet<(K, String, bool)>;
 /// TemporaryReferenceSet } from ".."`, a statement's of one module one
 /// (rd642).
 pub(super) fn imports(
+    tcx: rustc_middle::ty::TyCtxt<'_>,
     (packages, libraries, modules): (
         &ModuleImports<String>,
         &ModuleImports<String>,
@@ -60,13 +62,13 @@ pub(super) fn imports(
         declarations.push(declaration);
     }
     let mut grouped: Vec<TypeExport<'_>> = Vec::new();
-    for (at, from, named) in types {
+    for (at, from, named, item) in types {
         match grouped.last_mut() {
-            Some((was, was_from, names)) if was.lo() == at.lo() && *was_from == from => names.push(named),
-            _ => grouped.push((*at, from, vec![named])),
+            Some((was, was_from, names, _)) if was.lo() == at.lo() && *was_from == from => names.push(named),
+            _ => grouped.push((*at, from, vec![named], *item)),
         }
     }
-    for (_, from, names) in grouped {
+    for (at, from, names, item) in grouped {
         let from = match from {
             Some(crate::js::ImportFrom::Module(path)) => json!({ "module": path }),
             Some(crate::js::ImportFrom::Specifier(specifier)) => json!({ "specifier": specifier }),
@@ -74,7 +76,12 @@ pub(super) fn imports(
         };
         let mut declaration = json!({ "kind": "export", "names": names, "typeOnly": true });
         (declaration.as_object_mut().expect("an object")).extend(from.as_object().expect("an object").clone());
-        declarations.push(declaration);
+        // Its `use`'s doc comment, which documents it, of types alone; of a
+        // value too, its value's, as the JS has it (#1869).
+        declarations.push(match crate::lower::reexports::is_of_types_alone(tcx, item) {
+            true => super::comments::documented_at(declaration, tcx, item, Some(at)),
+            false => declaration,
+        });
     }
     declarations
 }

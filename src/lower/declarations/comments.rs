@@ -11,9 +11,21 @@ use serde_json::Value;
 /// `declaration` with what's written before its item: its `//` comments,
 /// then its doc comment as JSDoc, which a TypeScript caller's editor shows:
 /// a function's, a type's, a field's.
-pub(in crate::lower) fn documented(mut declaration: Value, tcx: TyCtxt<'_>, def_id: DefId) -> Value {
+pub(in crate::lower) fn documented(declaration: Value, tcx: TyCtxt<'_>, def_id: DefId) -> Value {
+    let at = def_id.as_local().map(|local| tcx.def_span(local));
+    documented_at(declaration, tcx, def_id, at)
+}
+
+/// `documented`'s, of an item written from `at`: a `use`'s statement, from
+/// its `pub`, whose own span is its path's (#1869).
+pub(in crate::lower) fn documented_at(
+    mut declaration: Value,
+    tcx: TyCtxt<'_>,
+    def_id: DefId,
+    at: Option<rustc_span::Span>,
+) -> Value {
     let jsdoc = jsdoc_of(tcx, def_id);
-    let written = leading_comments(tcx, def_id);
+    let written = at.and_then(|at| leading_comments(tcx, at));
     let all: Vec<String> = written.into_iter().chain(jsdoc).collect();
     if !all.is_empty() {
         declaration["docs"] = all.join("\n").into();
@@ -55,9 +67,8 @@ pub(in crate::lower) fn jsdoc_of(tcx: TyCtxt<'_>, def_id: DefId) -> Option<Strin
 /// one is written between them or before the item; none of an item
 /// nothing but comments is before, whose comments are its file's, a
 /// license's (`comments::leading_comments`), nor of one a macro made.
-fn leading_comments(tcx: TyCtxt<'_>, def_id: DefId) -> Option<String> {
+fn leading_comments(tcx: TyCtxt<'_>, span: rustc_span::Span) -> Option<String> {
     use rustc_lexer::TokenKind;
-    let span = tcx.def_span(def_id.as_local()?);
     if span.from_expansion() || span.is_dummy() {
         return None;
     }

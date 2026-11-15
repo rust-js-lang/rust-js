@@ -2307,6 +2307,9 @@ module that defines it. Its declarations re-export the type,
 `export type { Kind } from "./shapes.js";`. A class's is its
 constructor's, and a module's its namespace, `export * as ns from`
 ([ADR 0874](../../decisions/0874-a-modules-pub-uses-are-re-exported-as-written.md)).
+Its doc comment, of types alone, is that `export type`'s JSDoc, and
+nowhere in the JS, as a struct's is; of a `pub use` of a type and a value,
+its value's statement's, `export { width } from`, as the JS has it (#1869).
 
 A function that only passes its parameters on, each as it is, in order,
 to a function at one instantiation is that function, re-exported by its

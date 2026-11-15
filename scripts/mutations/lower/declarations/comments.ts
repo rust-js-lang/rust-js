@@ -17,8 +17,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a type's and a field's `//` comments aren't in its `.d.ts`, only its doc comment (ADR 0196, amended)",
     file: "src/lower/declarations/comments.rs",
-    find: "    let written = leading_comments(tcx, def_id);\n",
-    replace: "    let written: Option<String> = None;\n",
+    find: "    let written = at.and_then(|at| leading_comments(tcx, at));\n",
+    replace: "    let written: Option<String> = at.and(None);\n",
     tests: [
       "test/declarations-comments.test.ts",
       "-t",

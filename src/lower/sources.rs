@@ -484,7 +484,9 @@ pub(super) struct Commented {
 
 /// Where each of `module`'s type declarations is, the whole item: a struct,
 /// an enum, a union, a trait or a type alias, which writes no JS where it's
-/// written but where a statement of its own starts in it, a class's (#643).
+/// written but where a statement of its own starts in it, a class's (#643);
+/// and each `use` statement of types alone, `pub use Size as Measure;`,
+/// whose comments are its declarations' `export type`'s (#1869).
 pub(super) fn declarations(tcx: TyCtxt<'_>, module: rustc_span::def_id::LocalModId) -> impl Iterator<Item = Span> + '_ {
     use rustc_hir::def::DefKind;
     (tcx.hir_module_free_items(module))
@@ -496,4 +498,5 @@ pub(super) fn declarations(tcx: TyCtxt<'_>, module: rustc_span::def_id::LocalMod
             )
         })
         .map(move |id| tcx.source_span(id))
+        .chain(super::reexports::of_types_alone(tcx, module))
 }

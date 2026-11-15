@@ -61,4 +61,20 @@ export const mutations: Mutation[] = [
     replace: "        declarations.extend(type_imports(json!({ \"from\": from }), [names, default.into_iter().collect()].concat(), None));\n",
     tests: ["test/binding-subclasses.test.ts", "-t", "its module's default is imported as its default"],
   },
+  {
+    name: "type-reexport-undocumented",
+    breaks: "a `pub use` of types alone is declared `export type { Size as Measure }` without its doc comment, which documents it (#1869)",
+    file: "src/lower/declarations/imports.rs",
+    find: "            true => super::comments::documented_at(declaration, tcx, item, Some(at)),\n",
+    replace: "            true => declaration,\n",
+    tests: ["test/reexport-docs.test.ts", "-t", "nowhere in the JS"],
+  },
+  {
+    name: "mixed-reexport-doc-on-its-type",
+    breaks: "a `pub use` of a type and a value gives its doc comment to the type's `export type` too, where the JS has it on the value's statement (#1869)",
+    file: "src/lower/declarations/imports.rs",
+    find: "            false => declaration,\n",
+    replace: "            false => super::comments::documented(declaration, tcx, item),\n",
+    tests: ["test/reexport-docs.test.ts", "-t", "a type and a value"],
+  },
 ];

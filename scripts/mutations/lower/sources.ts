@@ -224,4 +224,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^comment_before_a_bare_continue_arm.rs$"],
     snapshots: true,
   },
+  {
+    name: "type-reexport-printed-where-written",
+    breaks: "a `pub use` of types alone is no item of no JS where it's written, so its doc comment is the next statement's, `cn`'s JSDoc a `DropdownProps`' (#1869)",
+    file: "src/lower/sources.rs",
+    find: "        .chain(super::reexports::of_types_alone(tcx, module))\n",
+    replace: "",
+    tests: ["test/reexport-docs.test.ts", "-t", "nowhere in the JS"],
+  },
 ];

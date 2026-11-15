@@ -24,7 +24,7 @@ import { isIdentifierText } from "typescript/ast/scanner";
  *   | { kind: "function", name: string, exported: boolean, default?: boolean, declare: boolean, typeParameters: TypeParameter[], params: Param[], returns: Type, docs?: string }
  *   | { kind: "const", name: string, exported: boolean, declare: boolean, type: Type, mutable?: boolean, docs?: string }
  *   | { kind: "export-default", name: string }
- *   | { kind: "export", from?: string, names: [string, string][], typeOnly?: boolean }
+ *   | { kind: "export", from?: string, names: [string, string][], typeOnly?: boolean, docs?: string }
  *   | { kind: "namespace", name: string, exported: boolean, declare: boolean, declarations: Declaration[] }
  *   | { kind: "global", declarations: Declaration[] }
  *   | { kind: "class", name: string, exported: boolean, declare: boolean, extends?: Type, members: ClassMember[], docs?: string }
