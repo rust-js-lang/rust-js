@@ -138,3 +138,23 @@ change's matrix and conformance rows beside them too. With no change, the
 check took 2 min 56 s, three runs in a row, the cores 93–94% busy, where
 it took 3 min 55 s at 63%. Their timeouts are the
 pool's, scaled by its load (`RUST_JS_LOAD_SCALE`).
+
+## Amendment: observe concurrent startup work without blocking (2026-11-15, #1917)
+
+The compiler build and pruning run concurrently. Both exit results must be
+known and successful before jobs start. Each duration runs from that child's
+own start to observing its exit; the build is awaited asynchronously so
+its parent can observe pruning while the compiler is still working.
+
+A synchronous build blocked the event loop that timestamped pruning: a
+child that had exited after 17 ms was observed after 323 ms beside a
+300 ms blocking step. Cold builds made pruning appear to take 30–43 s.
+Those historical numbers cannot establish a disk bottleneck. This fixes
+the measurement; it does not claim to speed up the child processes.
+
+The startup boundary takes the two commands and directory explicitly.
+A real-process regression uses a build that waits for the prune and then
+continues working: startup must remain asynchronous, report the prune's
+shorter duration, retain either child's failure, and await both children.
+Owner mutations restore blocking, substitute the build duration, skip the
+build wait or suppress pruning failure. No test inspects source text.

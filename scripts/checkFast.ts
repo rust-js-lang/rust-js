@@ -36,6 +36,20 @@ import { elapsed, loadScale, median, timed } from "./timing";
 
 const root = join(import.meta.dir, "..");
 
+/** Build and prune before jobs can use either result. Commands are explicit
+ * so the startup barrier and each child's observed duration can be tested
+ * with real processes without building the compiler or pruning real stores. */
+export async function startup(cwd: string, commands: { build: string[]; prune: string[] }) {
+  const pruning = Date.now();
+  const pruned = Bun.spawn(commands.prune, { cwd, stdout: "inherit", stderr: "inherit" }).exited
+    .then(code => ({ code, seconds: (Date.now() - pruning) / 1000 }));
+  const building = Date.now();
+  const build = Bun.spawn(commands.build, { cwd, stdout: "inherit", stderr: "inherit" });
+  const code = await build.exited;
+  const built = { code, seconds: (Date.now() - building) / 1000 };
+  return { build: built, prune: await pruned };
+}
+
 /** A job of the check, a process of its own: its command, what's added to
  * its environment, the seconds it's given, past which it's stopped and
  * fails, how many of the machine's cores it's said to keep busy, its
@@ -766,19 +780,17 @@ if (import.meta.main) {
   // `node_modules` without it, and a tsc test failed on its import.
   installed();
 
-  const pruning = Date.now();
   // Every store inside the checkouts, the crate corpus's projects and the
   // temp root too, and a warning where they're near their budget (#1213).
-  const prunedKept = Bun.spawn(["bun", "scripts/disk.ts", "--prune", "--inside", "--quiet"], { cwd: root, stdout: "inherit", stderr: "inherit" }).exited.then((code) => ({ code, at: Date.now() }));
-
   // Each step's time is kept, and said against its usual (scripts/timing.ts).
-  const building = Date.now();
-  const build = Bun.spawnSync(["cargo", "build", "--quiet"], { cwd: root, stdout: "inherit", stderr: "inherit" });
-  if (build.exitCode !== 0) process.exit(1);
-  console.log(timed("cargo build", (Date.now() - building) / 1000));
-  const keptPruned = await prunedKept;
-  if (keptPruned.code !== 0) process.exit(1);
-  console.log(timed("pruning what tests keep", (keptPruned.at - pruning) / 1000));
+  const prepared = await startup(root, {
+    build: ["cargo", "build", "--quiet"],
+    prune: ["bun", "scripts/disk.ts", "--prune", "--inside", "--quiet"],
+  });
+  if (prepared.build.code !== 0) process.exit(1);
+  console.log(timed("cargo build", prepared.build.seconds));
+  if (prepared.prune.code !== 0) process.exit(1);
+  console.log(timed("pruning what tests keep", prepared.prune.seconds));
 
   // The jobs' compiler is the run's own hard link of the one just built.
   // A `cargo build` in the checkout while the run runs, of the agent's next

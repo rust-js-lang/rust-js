@@ -1,6 +1,10 @@
 // Passing jobs must not hide the child owner's observed-overrun diagnostic.
 import type {Mutation} from "../mutations";
 export const mutations: Mutation[] = [
+  {"name":"check-startup-build-blocks-parent","breaks":"a synchronous build delays observing the independent fast prune","file":"scripts/checkFast.ts","find":"const build = Bun.spawn(commands.build, { cwd, stdout: \"inherit\", stderr: \"inherit\" });\n  const code = await build.exited;","replace":"const build = Bun.spawnSync(commands.build, { cwd, stdout: \"inherit\", stderr: \"inherit\" });\n  const code = build.exitCode;","tests":["test/check-startup.test.ts"]},
+  {"name":"check-startup-prune-timed-as-build","breaks":"the pruning duration is taken from the compiler rather than its own exit","file":"scripts/checkFast.ts","find":"return { build: built, prune: await pruned };","replace":"return { build: built, prune: { ...await pruned, seconds: built.seconds } };","tests":["test/check-startup.test.ts"]},
+  {"name":"check-startup-build-not-awaited","breaks":"jobs can start before a failed or unfinished compiler build","file":"scripts/checkFast.ts","find":"const code = await build.exited;","replace":"const code = 0;","tests":["test/check-startup.test.ts"]},
+  {"name":"check-startup-prune-failure-hidden","breaks":"a pruning failure is treated as success","file":"scripts/checkFast.ts","find":".then(code => ({ code, seconds: (Date.now() - pruning) / 1000 }));","replace":".then(code => ({ code: 0, seconds: (Date.now() - pruning) / 1000 }));","tests":["test/check-startup.test.ts"]},
   {
     name: "check-passing-child-warning-hidden",
     breaks: "a successful job hides an observed child overrun and its job name",

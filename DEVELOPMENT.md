@@ -344,6 +344,12 @@ ok   check:fast corpus 1/3 52 s (usual 30 s)  ⚠ slower than usual: why?
 slowest; `bun run timings <step>` its runs, by commit. A warning is the
 next thing to look at: what made it slower, before the loop is built on it.
 
+The compiler build and startup pruning run concurrently. The build is
+awaited asynchronously so the parent can observe and time the prune's exit
+while the build continues. Both must succeed before test jobs start. Older
+pruning timings taken beside a synchronous build included time spent waiting
+for that blocked parent; they cannot establish a pruning bottleneck (#1917).
+
 What keeps them there:
 
 - **`check:fast` runs its checks at once**, each a process of its own, and
