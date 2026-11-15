@@ -1967,8 +1967,11 @@ What JS sees of a crate:
   ([0275](../decisions/0275-nullable-writes-null.md),
   [0574](../decisions/0574-what-reacts-scheduler-heap-asks.md),
   [0578](../decisions/0578-a-nullable-result-where-its-written.md)),
-  and an `Option` a test it's under says is there is written as it is
-  ([0620](../decisions/0620-an-option-a-test-says-is-there.md)):
+  and an `Option` a test it's under says is there is written as it is,
+  as is one a test says isn't `undefined`, `!matches!(js::classify(value),
+  Kind::Undefined)` or `!js::strict_equals(value, None)`, its `null` a
+  `None`; a `matches!`'s test too, or a variable of one
+  ([0620](../decisions/0620-an-option-a-test-says-is-there.md), amended):
 
 ```rust
 #[cfg_attr(rust_js, rust_js::nullable)]
@@ -1991,6 +1994,14 @@ pub fn truthy(value: Option<&'static js::Unknown>) -> Option<&'static js::Unknow
     }
     None
 }
+
+#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn defined(value: Option<&'static js::Unknown>) -> Option<&'static js::Unknown> {
+    if !matches!(js::classify(value), js::Kind::Undefined) {
+        return value;
+    }
+    None
+}
 ```
 
 ```js
@@ -2007,6 +2018,13 @@ export function callable(value) {
 
 export function truthy(value) {
   if (value) {
+    return value;
+  }
+  return null;
+}
+
+export function defined(value) {
+  if (value !== undefined) {
     return value;
   }
   return null;

@@ -102,6 +102,13 @@ knowns! {
     /// of where it's read: tidy, which moves code past the test, `x == null
     /// ? null : x` made `x ?? null`, forgets it as it begins (#1942).
     Proved,
+    /// Defined where lowering read it, never `undefined` though maybe
+    /// `null`: an `Option` a test proved so there, `js::classify(x)` not
+    /// `Kind::Undefined` or `js::strict_equals(x, None)` false, on every
+    /// path to the read (`proved_defined`, #1933 step 4 (D)). A nullable
+    /// place stores it as it is; not `Proved`, as its `null` is a `None`.
+    /// Tidy forgets it as it begins, with `Proved`.
+    ProvedDefined,
     /// The `None` a `take()` writes over a place rust-js made, a variable
     /// or a crate struct's field, a plain data property, read into a
     /// `const` just before (ADR 0996): nothing but that `const` sees the
@@ -403,6 +410,7 @@ impl Known {
             | Known::Defined
             | Known::Present
             | Known::Proved
+            | Known::ProvedDefined
             | Known::Taken
             | Known::ArrayItems
             | Known::Item
@@ -559,10 +567,20 @@ impl super::Expr {
         }
     }
 
+    /// This, which a test proved defined there where lowering reads it
+    /// (`Known::ProvedDefined`): never `undefined` to a nullable place's
+    /// storage, there. Tidy forgets it as it begins (`forget_proved`).
+    pub fn proved_defined(self) -> super::Expr {
+        super::Expr {
+            facts: self.facts.with(Known::ProvedDefined),
+            ..self
+        }
+    }
+
     /// This, what a test proved of it forgotten, where it's read now past
-    /// where the test held (#1933, #1942).
+    /// where the test held (#1933, #1942): `Proved` and `ProvedDefined`.
     pub fn forget_proved(&mut self) {
-        self.facts = self.facts.without(Known::Proved);
+        self.facts = self.facts.without(Known::Proved).without(Known::ProvedDefined);
     }
 }
 

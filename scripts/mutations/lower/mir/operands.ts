@@ -419,4 +419,12 @@ export const mutations: Mutation[] = [
     replace: "                    && false =>\n",
     tests: ["test/lowering-nullable-tests.test.ts", "-t", "a RefCell field tested and read again"],
   },
+  {
+    name: "proved-defined-read-unmarked",
+    breaks: "a read a test proved defined there isn't said so, so `return entry ?? null` where `!matches!(js::classify(entry), Kind::Undefined)` holds, left for tidy to guess (#1933 step 4 (D))",
+    file: "src/lower/mir/operands.rs",
+    find: "                    && self.proved_defined(state, place.local) =>\n",
+    replace: "                    && false =>\n",
+    tests: ["test/lowering-nullable-tests.test.ts", "-t", "proved defined"],
+  },
 ];

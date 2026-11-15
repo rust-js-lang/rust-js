@@ -8,6 +8,7 @@ use crate::collections::{IndexMap, IndexSet};
 use crate::lower::aggregates::Given;
 use crate::lower::representation::NoneForm;
 
+mod defined;
 mod field_reads;
 mod lends;
 mod one_none;
@@ -402,6 +403,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// as it is, no `?? null`, and an exit gives it as it is, no `??
     /// undefined`.
     pub(super) fn proved_present(&self, state: &State<'_, 'tcx>, local: Local) -> bool {
+        self.proved_by(state, local, Self::present_edge)
+    }
+
+    /// Whether `local` is proved there by a test whose edge `edge` says,
+    /// of the switch on its flag: `proved_present`'s, of a test that `None`
+    /// never passes, and `proved_defined`'s, of one `undefined` never does.
+    fn proved_by(
+        &self,
+        state: &State<'_, 'tcx>,
+        local: Local,
+        edge: impl Fn(&Self, &State<'_, 'tcx>, Local, &mir::SwitchTargets, Local) -> Option<BasicBlock>,
+    ) -> bool {
         let parameter = (1..=state.body.arg_count).contains(&local.as_usize());
         // Each write whole, never lent as a `&mut` nor a raw pointer, which
         // a closure that captures it by `&mut` is too (`whole_writes`): one,
@@ -433,10 +446,90 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .count()
                     == 1
             };
-            self.present_edge(state, flag.local, targets, local).is_some_and(|edge| {
-                entered(edge) && dominators.dominates(edge, state.at) && (once || self.unwritten_since(state, flag.local, local))
+            // An edge of a test of `local` that every way to `to` takes, and
+            // past which nothing writes `local` up to the read.
+            let proves = |flag: Local, targets: &mir::SwitchTargets, to: BasicBlock| {
+                edge(self, state, flag, targets, local).is_some_and(|edge| {
+                    entered(edge) && dominators.dominates(edge, to) && (once || self.unwritten_since(state, flag, local))
+                })
+            };
+            if proves(flag.local, targets, state.at) {
+                return true;
+            }
+            // A `bool` set to constants alone, `matches!`'s in each arm of
+            // its `match` of a test of `local`: of the edge a value takes,
+            // each write of that value is past an edge of a test that
+            // proves `local` there, as MIR says which arm wrote it, so the
+            // edge proves it too; one no write gives is never taken (#1933
+            // step 4 (D)).
+            let Some(written) = self.constant_writes(state, flag.local) else {
+                return false;
+            };
+            let tests: Vec<(Local, &mir::SwitchTargets)> = (blocks.iter())
+                .filter_map(|data| match &data.terminator().kind {
+                    TerminatorKind::SwitchInt { discr, targets } => {
+                        Some((discr.place().filter(|p| p.projection.is_empty())?.local, targets))
+                    }
+                    _ => None,
+                })
+                .filter(|&(tested, _)| tested != flag.local)
+                .collect();
+            let [(0, no)] = targets.iter().collect::<Vec<_>>()[..] else {
+                return false;
+            };
+            [(false, no), (true, targets.otherwise())].into_iter().any(|(value, taken)| {
+                entered(taken)
+                    && dominators.dominates(taken, state.at)
+                    && (written.iter().filter(|&&(_, v)| v == value))
+                        .all(|&(at, _)| tests.iter().any(|&(tested, targets)| proves(tested, targets, at)))
             })
         })
+    }
+
+    /// Where each write of `flag` is and the value it writes, where `flag`
+    /// is a `bool` set to constants alone, as a `matches!` sets its result
+    /// in each arm of its `match`, or one written once of such a `bool` or
+    /// its negation, `let defined = !matches!(..)`'s, where that `bool` is
+    /// written: `None` where another write of it, or a lend, is too, or of
+    /// a parameter, which its caller wrote.
+    fn constant_writes(&self, state: &State<'_, 'tcx>, flag: Local) -> Option<Vec<(BasicBlock, bool)>> {
+        if !state.body.local_decls[flag].ty.is_bool() {
+            return None;
+        }
+        let mut flag = flag;
+        let mut negated = false;
+        for _ in 0..4 {
+            match self.whole_writes(state, flag)?.as_slice() {
+                [Write::Assign(Rvalue::Use(Operand::Copy(of) | Operand::Move(of), _))] if of.projection.is_empty() => {
+                    flag = of.local;
+                }
+                [Write::Assign(Rvalue::UnaryOp(mir::UnOp::Not, Operand::Copy(of) | Operand::Move(of)))]
+                    if of.projection.is_empty() =>
+                {
+                    flag = of.local;
+                    negated = !negated;
+                }
+                _ => break,
+            }
+        }
+        if (1..=state.body.arg_count).contains(&flag.as_usize()) {
+            return None;
+        }
+        let mut written = Vec::new();
+        for (block, data) in state.body.basic_blocks.iter_enumerated() {
+            for statement in &data.statements {
+                if let mir::StatementKind::Assign(assign) = &statement.kind
+                    && assign.0.local == flag
+                    && !data.is_cleanup
+                {
+                    let Rvalue::Use(Operand::Constant(constant), _) = &assign.1 else {
+                        return None;
+                    };
+                    written.push((block, constant.const_.try_to_bool()? != negated));
+                }
+            }
+        }
+        (!written.is_empty() && self.whole_writes(state, flag)?.len() == written.len()).then_some(written)
     }
 
     /// Whether nothing writes `local` on any way from where `flag`, a test

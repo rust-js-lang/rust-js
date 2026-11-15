@@ -520,3 +520,50 @@ reborrow); corpus case option_lent_keeping_its_some (native, both builds,
 as a library, metamorphic); mutations in lower/mir/nulled/lends.ts,
 kept-lend-never, unwrap-or-of-a-proved-option-coalesced.
 
+## Amendment: a test that `undefined` never passes proves a read defined, and a `matches!`'s `bool` proves what its arm's test does (2026-11-16, #1933 step 4 (D))
+
+Tidy's if-shown answered `!matches!(js::classify(x), Kind::Undefined)` and
+`!js::strict_equals(x, None)`, React's getTaskName's `cachedEntry` and its
+ref's `refProp`, from the printed `x !== undefined`. MIR answers them now
+(`nulled::defined::proved_defined`): `js::strict_equals(x, None)`'s false
+edge, of a `None` made for it either side, and of a switch on
+`js::classify(x)`'s variant, its `otherwise` where the values it names
+hold `Kind::Undefined` (`untagged::is_undefined`, `#[rust_js::undefined]`'s
+variant), `Kind::Undefined | Kind::Null` too, and none goes there. Each as
+`proved_present`'s tests are (`proved_by`): every way to the read takes the
+edge, entered from the test alone, nothing writing the local since.
+
+**A read so proved is `Known::ProvedDefined`**, never `undefined` to a
+nullable place's storage (`may_be_undefined`), so `return entry;`; not
+`Proved`, as its `null` is a `None`, which an `unwrap()` mustn't take for a
+value. Tidy forgets it as it begins, with `Proved` (`forget_proved`), and
+`NOTHING_PROVED` holds that none is left: `if !js::strict_equals(x, None) {
+x } else { x }`, two arms alike made one, gives `null`.
+
+**A `bool` set to constants alone proves on an edge what its arms' tests
+prove** (`proved_by`, `constant_writes`): a `matches!` sets its result in
+each arm of its `match`, so MIR puts a `bool` between the test and the
+`if`, whose edges the test's don't dominate. An edge of the `bool`'s
+switch proves the local where it leads to the read and each write of the
+value it takes is past an edge of a test of the local that proves it
+there; a value nothing writes is never taken. The `bool` is followed
+through a copy and a negation, `let defined = !matches!(..)`, and is
+none of a parameter, which its caller wrote, nor one a call writes too.
+The same holds `proved_present`'s, `matches!(x, Some(1..=9))`.
+
+React: getTaskName's `cachedEntry` and the ref's `refProp`, MIR's now, the
+output unchanged; tidy's answers there, if-shown 1 and cond-shown 1, none.
+
+Case of [0262](0262-when-rust-and-js-disagree.md): none, each value the
+same. Held by test/lowering-nullable-tests.test.ts's "an Option a test
+proved defined there" (no tidy answer; written between, `Kind::Undefined`'s
+own edge, `Kind::Null`'s, past the test, a `bool` a call or a caller writes
+too, a test of another value, each keeping `?? null`; run) and "what a test
+proved of a read isn't moved past the test" (`alike_strict`,
+`alike_classify`, of a program and a library) and
+test/architecture-nones.test.ts; corpus case option_matched_flag_proved
+(native, both builds, as a library, metamorphic); mutations in
+lower/mir/nulled/defined.ts, `constant-flag-*` (lower/mir/nulled.ts),
+`proved-defined-read-may-be-undefined` (js/make.ts),
+`proved-defined-unforgotten` (js/known.ts) and
+`proved-defined-read-unmarked` (lower/mir/operands.ts).

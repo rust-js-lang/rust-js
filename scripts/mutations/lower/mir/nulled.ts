@@ -7,7 +7,65 @@ const corpus632 = ["test/corpus.test.ts", "-t", "^nulled_returns_given_on.rs$"];
 const bound632 = ["test/lowering-nullable-reads.test.ts", "-t", "a bind of each parameter"];
 const or689 = ["test/lowering-nullable-combinators.test.ts", "-t", "an or of null, and a take"];
 
+const defined = ["test/lowering-nullable-tests.test.ts", "-t", "proved defined"];
+
 export const mutations: Mutation[] = [
+  {
+    name: "constant-flag-unfollowed",
+    breaks: "a `bool` set to constants in a test's arms, `matches!`'s, proves nothing on its edges, so `if !matches!(js::classify(entry), Kind::Undefined) { return entry; }` keeps `?? null`, left for tidy to guess (#1933 step 4 (D))",
+    file: "src/lower/mir/nulled.rs",
+    find: "            let Some(written) = self.constant_writes(state, flag.local) else {\n",
+    replace: "            let Some(written) = self.constant_writes(state, flag.local).filter(|_| false) else {\n",
+    tests: defined,
+  },
+  {
+    name: "constant-flag-edge-undominated",
+    breaks: "a `bool`'s edge proves a read it doesn't lead to, `flag && !matches!(..)`'s past the `if`, so `entry` there is given as `undefined` where Rust's `None` is `null` (#1933 step 4 (D))",
+    file: "src/lower/mir/nulled.rs",
+    find: "                entered(taken)\n                    && dominators.dominates(taken, state.at)\n",
+    replace: "                entered(taken)\n",
+    tests: defined,
+  },
+  {
+    name: "constant-flag-values-swapped",
+    breaks: "a `bool`'s edge is taken to be the other value's, so the arm that wrote `true` is asked of the edge `false` takes (#1933 step 4 (D))",
+    file: "src/lower/mir/nulled.rs",
+    find: "                    && (written.iter().filter(|&&(_, v)| v == value))\n",
+    replace: "                    && (written.iter().filter(|&&(_, v)| v != value))\n",
+    tests: defined,
+  },
+  {
+    name: "constant-flag-write-unproved",
+    breaks: "a write of a `bool`'s value is taken to prove where it is, past an edge of a test or not, so the arm of `Kind::Undefined` proves `entry` defined (#1933 step 4 (D))",
+    file: "src/lower/mir/nulled.rs",
+    find: "                        .all(|&(at, _)| tests.iter().any(|&(tested, targets)| proves(tested, targets, at)))\n",
+    replace: "                        .all(|_| true)\n",
+    tests: defined,
+  },
+  {
+    name: "constant-flag-call-written",
+    breaks: "a `bool` written by a call as well as by constants, `let mut defined = js::truthy(other)`, is taken for one set to constants alone, so a `true` the call gave proves `entry` defined (#1933 step 4 (D))",
+    file: "src/lower/mir/nulled.rs",
+    find: "(!written.is_empty() && self.whole_writes(state, flag)?.len() == written.len()).then_some(written)",
+    replace: "(!written.is_empty()).then_some(written)",
+    tests: defined,
+  },
+  {
+    name: "constant-flag-parameter",
+    breaks: "a `bool` parameter, which its caller wrote, is taken for one set to constants alone, none of them, so each of its edges proves anything: `value.is_none() && flag`'s `return value` (#1933 step 4 (D))",
+    file: "src/lower/mir/nulled.rs",
+    find: "        if (1..=state.body.arg_count).contains(&flag.as_usize()) {\n            return None;\n        }\n        let mut written = Vec::new();\n",
+    replace: "        let mut written = Vec::new();\n",
+    tests: ["test/lowering-nullable-tests.test.ts"],
+  },
+  {
+    name: "constant-flag-negation-kept",
+    breaks: "a `bool` written of another's negation, `let defined = !matches!(..)`, is taken for its value, so `Kind::Undefined`'s arm proves it (#1933 step 4 (D))",
+    file: "src/lower/mir/nulled.rs",
+    find: "                    flag = of.local;\n                    negated = !negated;\n",
+    replace: "                    flag = of.local;\n",
+    tests: defined,
+  },
   {
     name: "given-on-param-unsaid",
     breaks: "which own nullable parameter is given on isn't said, so it's `null` or a value at that call whatever its own calls give (rd624)",
@@ -530,7 +588,7 @@ export const mutations: Mutation[] = [
     name: "proved-present-written-again",
     breaks: "an Option written again after its truthy test is taken for the value it tested, `found = second; return found` given `undefined` where Rust's `None` is `null` (#1902)",
     file: "src/lower/mir/nulled.rs",
-    find: "(once || self.unwritten_since(state, flag.local, local))",
+    find: "(once || self.unwritten_since(state, flag, local))",
     replace: "true",
     tests: ["test/lowering-nullable-truthy.test.ts", "test/lowering-nullable-tests.test.ts"],
   },
@@ -634,7 +692,7 @@ export const mutations: Mutation[] = [
     name: "proved-many-writes-never",
     breaks: "a variable written more than once, a `match`'s in each arm, is never proved by its test, so `return found ?? null` where nothing writes it after its test (#1933)",
     file: "src/lower/mir/nulled.rs",
-    find: "(once || self.unwritten_since(state, flag.local, local))",
+    find: "(once || self.unwritten_since(state, flag, local))",
     replace: "once",
     tests: ["test/lowering-nullable-tests.test.ts", "-t", "written more than once"],
   },

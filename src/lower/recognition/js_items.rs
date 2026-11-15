@@ -76,6 +76,18 @@ pub(in crate::lower) fn is_js_presence_test(tcx: TyCtxt<'_>, did: DefId) -> bool
     js_root_fn(tcx, did).is_some_and(|name| matches!(name.as_str(), "truthy" | "is_function"))
 }
 
+/// Whether `did` is `js::classify`, a value's `Kind`, `Kind::Undefined` of
+/// `undefined` alone (#1933 step 4 (D)).
+pub(in crate::lower) fn is_js_classify(tcx: TyCtxt<'_>, did: DefId) -> bool {
+    js_root_fn(tcx, did).is_some_and(|name| name.as_str() == "classify")
+}
+
+/// Whether `did` is `js::strict_equals`, JS's `===`, of which `x === None`
+/// is `x === undefined` (#1933 step 4 (D)).
+pub(in crate::lower) fn is_js_strict_equals(tcx: TyCtxt<'_>, did: DefId) -> bool {
+    js_root_fn(tcx, did).is_some_and(|name| name.as_str() == "strict_equals")
+}
+
 /// Whether `did` is `js::type_of`, JS's `typeof value`, `"undefined"` of
 /// `None` (#1933).
 pub(in crate::lower) fn is_js_type_of(tcx: TyCtxt<'_>, did: DefId) -> bool {

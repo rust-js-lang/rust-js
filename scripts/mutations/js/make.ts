@@ -570,11 +570,19 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^adapter_functions_dropped.rs$"],
   },
   {
+    name: "proved-defined-read-may-be-undefined",
+    breaks: "a read a test proved defined there may still be `undefined` to a nullable place's storage, `return entry ?? null` where `!matches!(js::classify(entry), Kind::Undefined)` holds, left for tidy to guess (#1933 step 4 (D))",
+    file: "src/js/make.rs",
+    find: "            _ if self.facts.has(Known::Proved) || self.facts.has(Known::ProvedDefined) => false,\n",
+    replace: "            _ if self.facts.has(Known::Proved) => false,\n",
+    tests: ["test/lowering-nullable-tests.test.ts", "-t", "proved defined"],
+  },
+  {
     name: "proved-read-may-be-undefined",
     breaks: "a read a test proved there may still be `undefined` to a nullable place's storage, `return value ?? null` where `value.is_some() && flag` holds (#1933)",
     file: "src/js/make.rs",
-    find: "            _ if self.facts.has(Known::Proved) => false,\n",
-    replace: "",
+    find: "            _ if self.facts.has(Known::Proved) || self.facts.has(Known::ProvedDefined) => false,\n",
+    replace: "            _ if self.facts.has(Known::ProvedDefined) => false,\n",
     tests: ["test/lowering-nullable-tests.test.ts", "test/lowering-nullable-truthy.test.ts"],
   },
 ];

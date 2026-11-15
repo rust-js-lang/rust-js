@@ -149,7 +149,8 @@ pub fn rewritten(first: Option<&'static Unknown>, second: Option<&'static Unknow
 // A read a test proved there is so only there: one tidy moves past the
 // test, `x == null ? null : x` made `x ?? null` or two arms alike made one,
 // is what it is where it's read now, its `None` `null` at a nullable exit
-// (#1942: `if js::truthy(x) { x } else { x }` returned `undefined`). Of the
+// (#1942: `if js::truthy(x) { x } else { x }` returned `undefined`), as
+// is one a test proved defined, `null` there (#1933 step 4 (D)). Of the
 // program's build and the library's.
 test("what a test proved of a read isn't moved past the test", async () => {
   const source = `use js::Unknown;
@@ -178,6 +179,18 @@ pub fn alike_some(x: Option<&'static Unknown>) -> Option<&'static Unknown> {
     let kept = if x.is_some() { x } else { x };
     kept
 }
+
+#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn alike_strict(x: Option<&'static Unknown>) -> Option<&'static Unknown> {
+    let kept = if !js::strict_equals(x, None::<&Unknown>) { x } else { x };
+    kept
+}
+
+#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn alike_classify(x: Option<&'static Unknown>) -> Option<&'static Unknown> {
+    let kept = if !matches!(js::classify(x), js::Kind::Undefined) { x } else { x };
+    kept
+}
 `;
   for (const library of [false, true]) {
     const dir = fixture(library ? "nullable-tests-moved-library" : "nullable-tests-moved");
@@ -186,7 +199,7 @@ pub fn alike_some(x: Option<&'static Unknown>) -> Option<&'static Unknown> {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...mode, "--", "--crate-name", "moved", "--crate-type=lib", "--edition=2024", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
     const lib = await import(join(dir, "lib.js"));
     const one = { id: 1 };
-    for (const name of ["matched", "some", "alike", "alikeSome"]) {
+    for (const name of ["matched", "some", "alike", "alikeSome", "alikeStrict", "alikeClassify"]) {
       expect([library, name, lib[name](undefined), lib[name](null), lib[name](one)]).toEqual([library, name, null, null, one]);
     }
   }
@@ -988,4 +1001,174 @@ pub fn pushed_or(mut list: Option<Vec<u32>>, fallback: Vec<u32>) -> usize {
   expect([lib.taken([4], false), lib.taken([4], true)]).toEqual([[4], null]);
   expect(lib.emptied({})).toBe(null);
   expect([lib.pushedOr([4], [5, 6, 7]), lib.pushedOr(undefined, [5, 6, 7])]).toEqual([2, 1]);
+});
+
+// What a test proves defined there, never `undefined` though maybe `null`:
+// `!matches!(js::classify(x), Kind::Undefined)`'s true edge, React's
+// getTaskName's `cachedEntry` and its ref's `refProp`, and
+// `js::strict_equals(x, None)`'s false one, given as they are by a
+// nullable function, `return entry;`, MIR's answer (`proved_defined`,
+// `Known::ProvedDefined`, #1933 step 4 (D)), not tidy's. Through the
+// `bool` `matches!` sets in each arm, a variable of it or its negation
+// too, and so of `matches!(x, Some(_))`'s; not where it's written
+// between, nor on `Kind::Undefined`'s own edge, nor past the test, nor of
+// a `bool` a call or a caller writes as well, nor of a test of another
+// value.
+test("an Option a test proved defined there is given as it is, its null as null", async () => {
+  const { dir, fn, tidied } = compile(
+    "nullable-tests-defined",
+    `use js::Kind;
+
+#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn cached(info: &'static js::Unknown) -> Option<&'static js::Unknown> {
+    let entry = js::get(Some(info), "debugTask");
+    if !matches!(js::classify(entry), Kind::Undefined) {
+        return entry;
+    }
+    None
+}
+
+#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn strict(info: &'static js::Unknown) -> Option<&'static js::Unknown> {
+    let entry = js::get(Some(info), "debugTask");
+    if !js::strict_equals(entry, None::<&js::Unknown>) {
+        return entry;
+    }
+    None
+}
+
+#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn rewritten(info: &'static js::Unknown, again: bool) -> Option<&'static js::Unknown> {
+    let mut entry = js::get(Some(info), "debugTask");
+    if !matches!(js::classify(entry), Kind::Undefined) {
+        if again {
+            entry = js::get(Some(info), "other");
+        }
+        return entry;
+    }
+    None
+}
+
+#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn undefined_edge(info: &'static js::Unknown) -> Option<&'static js::Unknown> {
+    let entry = js::get(Some(info), "debugTask");
+    if matches!(js::classify(entry), Kind::Undefined) {
+        return entry;
+    }
+    None
+}
+
+#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn named(info: &'static js::Unknown) -> Option<&'static js::Unknown> {
+    let entry = js::get(Some(info), "debugTask");
+    let defined = !matches!(js::classify(entry), Kind::Undefined);
+    if defined {
+        return entry;
+    }
+    None
+}
+
+#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn past(info: &'static js::Unknown, flag: bool) -> Option<&'static js::Unknown> {
+    let entry = js::get(Some(info), "debugTask");
+    if flag && !matches!(js::classify(entry), Kind::Undefined) {
+        return js::get(Some(info), "other");
+    }
+    entry
+}
+
+#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn also_called(info: &'static js::Unknown, other: &'static js::Unknown) -> Option<&'static js::Unknown> {
+    let entry = js::get(Some(info), "debugTask");
+    let mut defined = js::truthy(Some(other));
+    match js::classify(entry) {
+        Kind::Undefined => {}
+        _ => defined = true,
+    }
+    if defined {
+        return entry;
+    }
+    None
+}
+
+#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn nullish(info: &'static js::Unknown) -> Option<&'static js::Unknown> {
+    let entry = js::get(Some(info), "debugTask");
+    if !matches!(js::classify(entry), Kind::Undefined | Kind::Null) {
+        return entry;
+    }
+    None
+}
+
+#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn null_only(info: &'static js::Unknown) -> Option<&'static js::Unknown> {
+    let entry = js::get(Some(info), "debugTask");
+    if !matches!(js::classify(entry), Kind::Null) {
+        return entry;
+    }
+    None
+}
+
+#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn given_flag(info: &'static js::Unknown, mut defined: bool) -> Option<&'static js::Unknown> {
+    let entry = js::get(Some(info), "debugTask");
+    match js::classify(entry) {
+        Kind::Undefined => {}
+        _ => defined = true,
+    }
+    if defined {
+        return entry;
+    }
+    None
+}
+
+#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn strict_other(info: &'static js::Unknown, other: Option<&'static js::Unknown>) -> Option<&'static js::Unknown> {
+    let entry = js::get(Some(info), "debugTask");
+    if !js::strict_equals(entry, other) {
+        return entry;
+    }
+    None
+}
+
+#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn classify_other(info: &'static js::Unknown, other: Option<&'static js::Unknown>) -> Option<&'static js::Unknown> {
+    let entry = js::get(Some(info), "debugTask");
+    if !matches!(js::classify(other), Kind::Undefined) {
+        return entry;
+    }
+    None
+}
+
+#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn some_matched(x: Option<&'static js::Unknown>) -> Option<&'static js::Unknown> {
+    if matches!(x, Some(_)) {
+        return x;
+    }
+    None
+}
+`,
+  );
+  expect(tidied).toEqual([]);
+  expect(fn("cached")).toContain("return entry;");
+  expect(fn("strict")).toContain("return entry;");
+  expect(fn("named")).toContain("return entry;");
+  expect(fn("nullish")).toContain("return entry;");
+  expect(fn("someMatched")).toContain("return x;");
+  expect(fn("rewritten")).toContain("return entry ?? null;");
+  expect(fn("undefinedEdge")).toContain("return entry ?? null;");
+  expect(fn("past")).toContain("return entry ?? null;");
+  expect(fn("alsoCalled")).toContain("return entry ?? null;");
+  for (const name of ["nullOnly", "givenFlag", "strictOther", "classifyOther"]) expect([name, fn(name).includes("return entry ?? null;")]).toEqual([name, true]);
+  const lib = await import(join(dir, "lib.js"));
+  const f = () => 1;
+  for (const given of [lib.cached, lib.strict, lib.named, lib.nullish]) {
+    expect([given({ debugTask: f }), given({ debugTask: null }), given({})]).toEqual([f, null, null]);
+  }
+  expect([lib.past({}, false), lib.past({ debugTask: f }, false), lib.past({ debugTask: f, other: f }, true)]).toEqual([null, f, f]);
+  expect([lib.alsoCalled({}, 1), lib.alsoCalled({}, 0), lib.alsoCalled({ debugTask: f }, 0)]).toEqual([null, null, f]);
+  expect([lib.someMatched(undefined), lib.someMatched(null), lib.someMatched(f)]).toEqual([null, null, f]);
+  expect([lib.givenFlag({}, true), lib.givenFlag({ debugTask: f }, false), lib.strictOther({}, f), lib.classifyOther({}, f), lib.nullOnly({})]).toEqual([null, f, null, null, null]);
+  expect([lib.rewritten({ debugTask: f }, true), lib.rewritten({ debugTask: f }, false), lib.rewritten({}, false)]).toEqual([null, f, null]);
+  expect([lib.undefinedEdge({}), lib.undefinedEdge({ debugTask: f })]).toEqual([null, null]);
 });

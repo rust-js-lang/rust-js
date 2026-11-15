@@ -1188,7 +1188,7 @@ impl Expr {
     pub fn may_be_undefined(&self) -> bool {
         match &self.kind {
             // What a test proved where it's read (#1933).
-            _ if self.facts.has(Known::Proved) => false,
+            _ if self.facts.has(Known::Proved) || self.facts.has(Known::ProvedDefined) => false,
             _ if [Known::Defined, Known::Present, Known::Item, Known::NoneNull]
                 .into_iter()
                 .any(|known| self.facts.has(known)) =>

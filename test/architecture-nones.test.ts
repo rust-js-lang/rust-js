@@ -77,5 +77,11 @@ test("a read a test proved there is MIR's to say, and tidy's to forget as it beg
   expect(lines(/\.proved\(\)/)).toEqual(["src/lower/mir/operands.rs", "src/lower/mir/operands.rs"]);
   expect(lines(/Expr::forget_proved\b|\.forget_proved\(\)/)).toEqual(["src/lower/mir/tidy/stages.rs"]);
   expect(lines(/\.with\((?:js::)?Known::Proved\)/)).toEqual(["src/js/known.rs"]);
+  // And what a test proved defined there (`proved_defined`, #1933 step 4
+  // (D)): made only of an operand's read, forgotten with `Proved`.
+  expect(lines(/\.proved_defined\(\)/)).toEqual(["src/lower/mir/operands.rs"]);
+  expect(lines(/\.with\((?:js::)?Known::ProvedDefined\)/)).toEqual(["src/js/known.rs"]);
+  expect(read("src/js/known.rs")).toContain(".without(Known::Proved).without(Known::ProvedDefined)");
+  expect(read("src/lower/mir/tidy/contracts.rs")).toContain("e.facts.has(crate::js::Known::ProvedDefined)");
   expect(read("src/lower/mir/tidy/contracts.rs")).toContain("&[JUMPS_LAND, DECLARED_ONCE, NOTHING_PROVED]");
 });

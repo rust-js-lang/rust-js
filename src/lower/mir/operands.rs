@@ -102,6 +102,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 Value::Expr(e.proved())
             }
+            // And one a test proved defined there, not `undefined` though
+            // maybe `null` (`proved_defined`, #1933 step 4 (D)).
+            Value::Expr(e)
+                if matches!(e.kind, js::ExprKind::Var(_))
+                    && let Some(place) = operand.place()
+                    && place.projection.is_empty()
+                    && self.option_of(operand.ty(&state.body.local_decls, self.tcx)).is_some()
+                    && self.proved_defined(state, place.local) =>
+            {
+                Value::Expr(e.proved_defined())
+            }
             read => self.field_read_marked(state, operand, read),
         };
         match none_read(state, operand, read) {

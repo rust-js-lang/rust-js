@@ -286,6 +286,12 @@ pub(super) fn is_nullish(tcx: TyCtxt<'_>, variant: &VariantDef) -> bool {
     matches!(unit_kind(tcx, variant), Some(Kind::Null | Kind::Undefined))
 }
 
+/// Whether `variant` of an untagged enum is `undefined`,
+/// `#[rust_js::undefined]`'s, `js::Kind::Undefined` (ADR 0676).
+pub(super) fn is_undefined(tcx: TyCtxt<'_>, variant: &VariantDef) -> bool {
+    unit_kind(tcx, variant) == Some(Kind::Undefined)
+}
+
 /// Whether the untagged enum `adt` has a variant that's `undefined` and
 /// one that's `null`: then no other variant is either.
 pub(super) fn holds_undefined_and_null(tcx: TyCtxt<'_>, adt: AdtDef<'_>) -> bool {
