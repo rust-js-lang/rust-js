@@ -261,4 +261,12 @@ export const mutations: Mutation[] = [
     replace: "            if false && self.leave_out(method, &name) {\n",
     tests: ["test/declarations-ungiven.test.ts"],
   },
+  {
+    name: "present-declared-optional",
+    breaks: "a `#[rust_js::present]` field is declared optional, `point?: number`, where its key is there, `point: number | undefined` (ADR 1161)",
+    file: "src/lower/declarations/structures.rs",
+    find: "                        false if crate::lower::bindings::is_present(self.tcx, field) => (false, or_undefined(inner)),\n",
+    replace: "",
+    tests: ["test/present-slots.test.ts", "-t", "a present field"],
+  },
 ];

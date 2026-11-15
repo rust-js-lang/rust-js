@@ -114,6 +114,27 @@ pub(in crate::lower) fn is_optional(tcx: TyCtxt<'_>, field: &FieldDef) -> bool {
     tcx.get_attrs_by_path(field.did, &path).next().is_some()
 }
 
+/// Whether a plain `Option` field is a present slot, `#[rust_js::present]`:
+/// its key written where it's made `None`, `point: undefined`, and declared
+/// `point: T | undefined`, where a plain one's is left out, `point?: T`
+/// (ADR 1161, #1845). The other way of `#[rust_js::optional]`, one axis.
+pub(in crate::lower) fn is_present(tcx: TyCtxt<'_>, field: &FieldDef) -> bool {
+    let path = [Symbol::intern("rust_js"), Symbol::intern("present")];
+    tcx.get_attrs_by_path(field.did, &path).next().is_some()
+}
+
+/// The parameters `#[rust_js::present(..)]` names of a function, each an
+/// `Option` a caller gives, `value: T | undefined`, where a trailing plain
+/// one may be left out, `value?: T` (ADR 1161, #1845).
+pub(in crate::lower) fn present_params(tcx: TyCtxt<'_>, def_id: DefId) -> Vec<Symbol> {
+    let path = [Symbol::intern("rust_js"), Symbol::intern("present")];
+    tcx.get_attrs_by_path(def_id, &path)
+        .filter_map(|attr| attr.meta_item_list())
+        .flatten()
+        .filter_map(|item| item.ident().map(|ident| ident.name))
+        .collect()
+}
+
 /// The `Option` a `#[rust_js::nullable]` field of type `ty` holds: itself,
 /// or a `Cell`'s, whose `None` is `null` in JS (ADRs 0196, 0772), or a
 /// `RefCell`'s, a field's the value it holds (ADRs 0362, 0863). `None` of
@@ -315,13 +336,24 @@ pub(in crate::lower) fn nullable_result(tcx: TyCtxt<'_>, def_id: DefId) -> bool 
 }
 
 /// Whether a binding says its result's `None` is `undefined`, never
-/// `null`, `#[rust_js::optional]` alone on it, TypeScript's `T |
-/// undefined`: `window.event` (ADR 0298, amended). Of the crate's own
-/// functions it says nothing: their `None` is `undefined` where they make
-/// it, but what they return may be a value JS gave.
-pub(in crate::lower) fn optional_result(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
-    let path = [Symbol::intern("rust_js"), Symbol::intern("optional")];
+/// `null`, `#[rust_js::none_undefined]` on it, TypeScript's `T |
+/// undefined`, beside `#[rust_js::nullable]`'s `T | null`: `window.event`
+/// (ADR 0298, amended; ADR 1161 named it apart from a field's key). Of
+/// the crate's own functions it says nothing: their `None` is `undefined`
+/// where they make it, but what they return may be a value JS gave.
+pub(in crate::lower) fn none_undefined_result(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    let path = [Symbol::intern("rust_js"), Symbol::intern("none_undefined")];
     super::is_binding(tcx, def_id) && tcx.get_attrs_by_path(def_id, &path).any(|attr| attr.is_word())
+}
+
+/// Why a function's `#[rust_js::optional]` is refused: it's of a field's
+/// key, absent until it's set; a binding's result whose `None` is
+/// `undefined` alone is `#[rust_js::none_undefined]` (ADR 1161).
+pub(super) fn refused_optional_function(tcx: TyCtxt<'_>, def_id: DefId) -> Option<&'static str> {
+    let path = [Symbol::intern("rust_js"), Symbol::intern("optional")];
+    tcx.get_attrs_by_path(def_id, &path).next().is_some().then_some(
+        "rust-js: `#[rust_js::optional]` is of a field's key, absent until it's set; a binding's result whose `None` is `undefined` alone, never `null`, is `#[rust_js::none_undefined]`",
+    )
 }
 
 /// Why a function's `#[rust_js::nullable]` is refused, where its result

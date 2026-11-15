@@ -1251,7 +1251,7 @@ export async function open(other) {
   and any other value as it is, `createCursor(0)`
   ([ADR 0586](../../decisions/0586-a-nullable-field-is-an-option.md), amended).
   Of a binding, it says JS gives `null` for its result's `None`,
-  TypeScript's `T | null`, so its test is `=== null`; `#[rust_js::optional]`
+  TypeScript's `T | null`, so its test is `=== null`; `#[rust_js::none_undefined]`
   says `undefined`, `T | undefined`, tested `=== undefined`, as
   `window.event()`'s is, `if (currentEvent === undefined)`. One that says
   neither may give either, tested `== null`; the webapi crate says each
@@ -1585,7 +1585,8 @@ See [Components and props](../react/components.md).
 | Attribute | Says |
 |---|---|
 | `#[rust_js::nullable]`, `#[rust_js::nullable(param)]` | its result's, or that parameter's, `None` is `null`; of a collection's type, `#[rust_js::nullable(V)]`, its value's, which each binding given a `V` writes `null` and its `get` reads by JS's read alone, TypeScript's `Map<K, V \| null>` ([ADR 0884](../../decisions/0884-a-maps-value-is-any-value.md), amended) |
-| `#[rust_js::optional]` | its result's `None` is `undefined`, TypeScript's `T \| undefined`, never `null` |
+| `#[rust_js::none_undefined]` | its result's `None` is `undefined`, TypeScript's `T \| undefined`, never `null`, beside `#[rust_js::nullable]`'s `null`; the webapi generator writes it of each WebIDL result that's never `null`. `#[rust_js::optional]` on a function is refused naming it: `optional` is of a field's key ([ADR 1161](../../decisions/1161-a-present-slot-and-a-results-undefined.md)) |
+| `#[rust_js::present]` | of a plain `Option` field: its key written where it's made `None`, `{ value: 3, point: undefined }`, declared `point: T \| undefined`, where a plain one's is left out, `point?: T`; of a function, `present(value)`, a parameter a caller gives, `value: T \| null \| undefined`, where a trailing plain one may be left out. The other way of `#[rust_js::optional]`, a cell's or a nullable field's key left out; each is refused where it's its field's own default ([ADR 1161](../../decisions/1161-a-present-slot-and-a-results-undefined.md)) |
 | `#[rust_js::variadic]` | its last parameter, `impl js::Rest<T>` or a tuple, is the rest arguments |
 | `#[rust_js::require]` | it's read through `require(module)`, not imported; on a `use` of a library's function, so is each read of it in that module |
 | `#[rust_js::cannot_throw]` | it can't throw, as reading a data property can't |

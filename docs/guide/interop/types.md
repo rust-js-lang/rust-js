@@ -29,7 +29,8 @@ from your crate and what a binding must be given.
 | enum variant with fields | `{ TAG: "Circle", radius }`, `{ TAG: "Square", _0 }` | [Enums](#enums) |
 | `#[rust_js::tag = "status"]` enum | `{ status: "done", value }` | [Enums](#enums) |
 | `#[rust_js::untagged]` enum | its payload itself | [Enums](#enums) |
-| `Option<T>` | the value, or `undefined` | [Option and Result](#option-and-result) |
+| `Option<T>` | the value, or `undefined`; a field's `None` left out where its struct is made, `point?: T` | [Option and Result](#option-and-result) |
+| `#[rust_js::present]` `Option<T>` field | the value, or `undefined`, its key written, `point: T \| undefined` | [Option and Result](#option-and-result) |
 | `#[rust_js::nullable]` `Option<T>` | the value, or `null` | [Option and Result](#option-and-result) |
 | `#[rust_js::nullable]` `#[rust_js::optional]` field | absent until it's set, then the value or `null` | [Option and Result](#option-and-result) |
 | `#[rust_js::nullable]` `Option<Option<T>>` field | absent for `None`, `null` for `Some(None)`, else the value | [Option and Result](#option-and-result) |

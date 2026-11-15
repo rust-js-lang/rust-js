@@ -84,10 +84,10 @@ export const mutations: Mutation[] = [
   },
   {
     name: "optional-binding-result-either",
-    breaks: "a binding's `#[rust_js::optional]` result, `window.event`, is taken to give either `None`, tested `!= null`, not `=== undefined` as its `T | undefined` says (ADR 0298, amended, #819)",
+    breaks: "a binding's `#[rust_js::none_undefined]` result, `window.event`, is taken to give either `None`, tested `!= null`, not `=== undefined` as its `T | undefined` says (ADR 0298, amended, #819)",
     file: "src/lower/representation/nones.rs",
-    find: "        NonePlace::CallResult(def_id) if bindings::optional_result(tcx, def_id) => NoneForm::Undefined,\n",
-    replace: "        NonePlace::CallResult(def_id) if bindings::optional_result(tcx, def_id) => NoneForm::Either,\n",
+    find: "        NonePlace::CallResult(def_id) if bindings::none_undefined_result(tcx, def_id) => NoneForm::Undefined,\n",
+    replace: "        NonePlace::CallResult(def_id) if bindings::none_undefined_result(tcx, def_id) => NoneForm::Either,\n",
     tests: ["test/lowering-option-truth.test.ts", "-t", "None it can be"],
   },
   {

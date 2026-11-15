@@ -509,4 +509,12 @@ export const mutations: Mutation[] = [
     replace: "            Some((form @ (NoneForm::Null | NoneForm::Optional), field)) if false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^nullable_field_tested_strictly.rs$"],
   },
+  {
+    name: "present-key-left-out",
+    breaks: "a `#[rust_js::present]` field's `None` is left out where its struct is made, `{ value: 3 }`, where its key is to be written, `point: undefined` (ADR 1161, #1845)",
+    file: "src/lower/aggregates.rs",
+    find: "                kept.extend(present);\n",
+    replace: "                let _ = present;\n",
+    tests: ["test/present-slots.test.ts", "-t", "a present field"],
+  },
 ];

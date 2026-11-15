@@ -272,4 +272,28 @@ export const mutations: Mutation[] = [
     replace: "                } else if is_optional(tcx, field) && holds_nested(tcx, field) && false {\n",
     tests: ["test/corpus.test.ts", "-t", "^optional_of_a_nested_nullable_field_refused.rs$"],
   },
+  {
+    name: "present-of-any-field",
+    breaks: "`#[rust_js::present]` of a cell's, a nullable one's or a field that isn't an `Option` compiles, saying nothing, where it's refused naming the field's default (ADR 1161)",
+    file: "src/lower/bindings/validated.rs",
+    find: "                } else if is_present(tcx, field)\n",
+    replace: "                } else if false && is_present(tcx, field)\n",
+    tests: ["test/present-slots.test.ts", "-t", "refused of"],
+  },
+  {
+    name: "optional-of-a-function-unrefused",
+    breaks: "`#[rust_js::optional]` on a function compiles, saying nothing now a binding's result whose `None` is `undefined` is `#[rust_js::none_undefined]` (ADR 1161)",
+    file: "src/lower/bindings/validated.rs",
+    find: "            if let Some(message) = nullable::refused_optional_function(tcx, def.to_def_id()) {\n",
+    replace: "            if let Some(message) = nullable::refused_optional_function(tcx, def.to_def_id()).filter(|_| false) {\n",
+    tests: ["test/present-slots.test.ts", "-t", "refused of"],
+  },
+  {
+    name: "present-params-unchecked",
+    breaks: "`#[rust_js::present(n)]` of a parameter that isn't an `Option` compiles (ADR 1161)",
+    file: "src/lower/bindings/validated.rs",
+    find: "                if !option || nulled.contains(&name) {\n",
+    replace: "                if false && (!option || nulled.contains(&name)) {\n",
+    tests: ["test/present-slots.test.ts", "-t", "refused of"],
+  },
 ];

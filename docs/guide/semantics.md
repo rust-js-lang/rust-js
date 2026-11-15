@@ -2043,7 +2043,7 @@ export function hasSetImmediate() {
   propagate, as a panic. Declare `Option` where JS may give `null`. A
   value JS gives is trusted to be of its type too: a binding's
   `#[rust_js::nullable]` result, TypeScript's `T | null`, is tested `===
-  null`, and its `#[rust_js::optional]` one, `T | undefined`, `===
+  null`, and its `#[rust_js::none_undefined]` one, `T | undefined`, `===
   undefined`; a collection's index signature, `options[i]`, is an item
   past the end too, JS's `undefined`, whose method throws a `TypeError`
   where Rust's `Index` panics

@@ -1591,7 +1591,7 @@ pub fn instance_of(this: impl IntoUnknown, constructor: impl IntoUnknown) -> boo
 /// an iframe's element, as JS's own `instanceof` is. Of a type parameter,
 /// whose class JS doesn't know, a compile error.
 #[cfg_attr(rust_js, rust_js::link_name = "downcast")]
-#[cfg_attr(rust_js, rust_js::optional)]
+#[cfg_attr(rust_js, rust_js::none_undefined)]
 pub fn downcast<'a, T: Classed + 'a>(value: &'a (impl IntoUnknown + ?Sized)) -> Option<&'a T> {
     unreachable!()
 }

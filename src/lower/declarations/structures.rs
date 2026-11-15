@@ -145,6 +145,8 @@ impl<'tcx> Declarations<'_, 'tcx> {
                     );
                     match nullable || nested || value || self.null_fields.contains(&field.did) {
                         true => (!present, json!({ "kind": "union", "types": [inner, keyword("null")] })),
+                        // A present slot's key is there, `T | undefined` (ADR 1161).
+                        false if crate::lower::bindings::is_present(self.tcx, field) => (false, or_undefined(inner)),
                         false => (true, inner),
                     }
                 }

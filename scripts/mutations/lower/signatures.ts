@@ -158,4 +158,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/declarations-ungiven.test.ts", "-t", "is a note, not declared"],
   },
+  {
+    name: "present-param-optional",
+    breaks: "a `#[rust_js::present(value)]` parameter is declared optional, `value?: string`, where a caller gives it, `value: string | null | undefined` (ADR 1161)",
+    file: "src/lower/signatures.rs",
+    find: "        let required = |i: usize| (null_params.contains(&i) || present_at(i)) && is_option(tcx, inputs[i]);\n",
+    replace: "        let required = |i: usize| null_params.contains(&i) && is_option(tcx, inputs[i]) && !present_at(i);\n",
+    tests: ["test/present-slots.test.ts", "-t", "a present field"],
+  },
 ];

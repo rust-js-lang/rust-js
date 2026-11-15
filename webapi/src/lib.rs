@@ -16814,7 +16814,7 @@ impl Window {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/event)
     #[cfg_attr(rust_js, rust_js::link_name = "get event")]
-    #[cfg_attr(rust_js, rust_js::optional)]
+    #[cfg_attr(rust_js, rust_js::none_undefined)]
     pub fn event(&self) -> Option<&'static Event> {
         unreachable!()
     }
@@ -45743,7 +45743,7 @@ impl CustomElementRegistry {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CustomElementRegistry/get)
     #[cfg_attr(rust_js, rust_js::link_name = "get")]
-    #[cfg_attr(rust_js, rust_js::optional)]
+    #[cfg_attr(rust_js, rust_js::none_undefined)]
     pub fn get(&self, name: &str) -> Option<&'static JsObject> {
         unreachable!()
     }
@@ -47215,7 +47215,7 @@ impl Eq for DOMStringMap {}
 impl DOMStringMap {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/DOMStringMap): its named property, `getter (DOMString name)`.
     #[cfg_attr(rust_js, rust_js::link_name = "get []")]
-    #[cfg_attr(rust_js, rust_js::optional)]
+    #[cfg_attr(rust_js, rust_js::none_undefined)]
     pub fn get(&self, name: &str) -> Option<String> {
         unreachable!()
     }
@@ -58731,7 +58731,7 @@ impl MediaKeyStatusMap {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaKeyStatusMap/get)
     #[cfg_attr(rust_js, rust_js::link_name = "get")]
-    #[cfg_attr(rust_js, rust_js::optional)]
+    #[cfg_attr(rust_js, rust_js::none_undefined)]
     pub fn get(&self, key_id: impl IntoBufferSource) -> Option<String> {
         unreachable!()
     }
@@ -72532,7 +72532,7 @@ impl StylePropertyMapReadOnly {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/StylePropertyMapReadOnly/get)
     #[cfg_attr(rust_js, rust_js::link_name = "get")]
-    #[cfg_attr(rust_js, rust_js::optional)]
+    #[cfg_attr(rust_js, rust_js::none_undefined)]
     pub fn get(&self, property: &str) -> Option<&'static CSSStyleValue> {
         unreachable!()
     }
@@ -85842,7 +85842,7 @@ pub mod console {
     /// haven't. No TypeScript lib declares it: it's typed as React's Flow declares it,
     /// `createTask(label: string): ConsoleTask` (ADR 0811).
     #[cfg_attr(rust_js, rust_js::link_name = "get console.createTask")]
-    #[cfg_attr(rust_js, rust_js::optional)]
+    #[cfg_attr(rust_js, rust_js::none_undefined)]
     pub fn create_task() -> Option<&'static dyn Fn(&str) -> &'static ConsoleTask> {
         unreachable!()
     }
@@ -86751,7 +86751,7 @@ pub mod window_global {
 
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/event)
     #[cfg_attr(rust_js, rust_js::link_name = "get event")]
-    #[cfg_attr(rust_js, rust_js::optional)]
+    #[cfg_attr(rust_js, rust_js::none_undefined)]
     pub fn event() -> Option<&'static Event> {
         unreachable!()
     }

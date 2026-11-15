@@ -458,6 +458,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .filter(|(_, field)| !bindings::is_optional(self.tcx, field))
                     .filter_map(|((name, _), _)| name.name().map(str::to_owned));
                 kept.extend(cells);
+                // And a present slot's, its key written (ADR 1161, #1845).
+                let present = (names.iter().zip(&variant.fields))
+                    .filter(|(_, field)| bindings::is_present(self.tcx, field))
+                    .filter_map(|((name, _), _)| name.name().map(str::to_owned));
+                kept.extend(present);
                 // One that holds a `Some` of what may be `undefined` as it
                 // is keeps its key, as that `undefined` isn't a `None`, but
                 // `undefined` (rd645).

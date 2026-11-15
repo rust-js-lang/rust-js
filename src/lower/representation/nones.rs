@@ -200,7 +200,7 @@ pub(in crate::lower) fn none_form<'tcx>(tcx: TyCtxt<'tcx>, place: NonePlace<'_, 
             NoneForm::Either
         }
         NonePlace::CallResult(def_id) if bindings::nullable_result(tcx, def_id) => NoneForm::Null,
-        NonePlace::CallResult(def_id) if bindings::optional_result(tcx, def_id) => NoneForm::Undefined,
+        NonePlace::CallResult(def_id) if bindings::none_undefined_result(tcx, def_id) => NoneForm::Undefined,
         NonePlace::CallResult(_) => NoneForm::Either,
         NonePlace::BindingArg(def_id, i, payload) => NoneForm::null_if(
             bindings::takes_nullable(tcx, def_id, i)

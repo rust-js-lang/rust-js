@@ -2410,7 +2410,7 @@ function generic(f: Fn): string {
     ...(f.nullable ? [`    #[cfg_attr(rust_js, rust_js::nullable(${f.nullable.join(", ")}))]`] : []),
     // Its result's `None`, where JS gives only one (`noneOf`).
     ...(f.none === "null" ? ["    #[cfg_attr(rust_js, rust_js::nullable)]"] : []),
-    ...(f.none === "undefined" ? ["    #[cfg_attr(rust_js, rust_js::optional)]"] : []),
+    ...(f.none === "undefined" ? ["    #[cfg_attr(rust_js, rust_js::none_undefined)]"] : []),
     // The whole numbers it gives, a WebIDL integer's (`wholeOf`).
     ...(f.whole ? [`    #[cfg_attr(rust_js, rust_js::whole = ${JSON.stringify(f.whole)})]`] : []),
     ...(RUNS_ONLY_GIVEN.has(f.jsName) ? ["    #[cfg_attr(rust_js, rust_js::runs_only_given)]"] : []),

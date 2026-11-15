@@ -80,6 +80,30 @@ pub(in crate::lower) fn validate(tcx: TyCtxt<'_>) -> bool {
                 tcx.dcx().span_err(tcx.def_span(def), message);
                 valid = false;
             }
+            if let Some(message) = nullable::refused_optional_function(tcx, def.to_def_id()) {
+                tcx.dcx().span_err(tcx.def_span(def), message);
+                valid = false;
+            }
+            // What `#[rust_js::present(..)]` names is a parameter of its own,
+            // an `Option`, not a nullable one, whose key is there already.
+            let present_inputs = tcx.fn_sig(def).skip_binder().skip_binder().inputs();
+            let present_idents = tcx.fn_arg_idents(def.to_def_id());
+            let nulled = nullable::nullable_params(tcx, def.to_def_id());
+            for name in nullable::present_params(tcx, def.to_def_id()) {
+                let at = present_idents
+                    .iter()
+                    .position(|ident| ident.is_some_and(|ident| ident.name == name));
+                let option = at.and_then(|at| present_inputs.get(at)).is_some_and(
+                    |ty| matches!(ty.kind(), ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::Option)),
+                );
+                if !option || nulled.contains(&name) {
+                    let message = format!(
+                        "rust-js: `#[rust_js::present({name})]` is of a parameter of its own, an `Option` that isn't `#[rust_js::nullable]`, given `{name}: T | undefined` where a trailing one may be left out; `{name}` isn't"
+                    );
+                    tcx.dcx().span_err(tcx.def_span(def), message);
+                    valid = false;
+                }
+            }
             let idents = tcx.fn_arg_idents(def.to_def_id());
             let inputs = tcx.fn_sig(def).skip_binder().skip_binder().inputs();
             for name in lazy_params(tcx, def.to_def_id()) {
@@ -179,6 +203,15 @@ pub(in crate::lower) fn validate(tcx: TyCtxt<'_>) -> bool {
                     // message below, asking for a nullable field, misnamed:
                     // this one is (#959).
                     let message = "rust-js: a `#[rust_js::nullable]` field of an `Option` of an `Option` is left out already for `None` and `null` for `Some(None)`, so `#[rust_js::optional]` says nothing more of it; remove it";
+                    tcx.dcx().span_err(tcx.def_span(field.did), message);
+                    valid = false;
+                } else if is_present(tcx, field)
+                    && (is_nullable(tcx, field) || once || cell_of_option || nullable_option(tcx, ty) != Some(ty))
+                {
+                    // A present slot's key is written where it's made `None`: a
+                    // plain `Option` field's, which is left out otherwise; a
+                    // nullable or a cell's key is written already (ADR 1161).
+                    let message = "rust-js: `#[rust_js::present]` is of a plain `Option` field, whose `None` is left out otherwise, `point?: T`: its key written, `point: T | undefined`; a cell's or a `#[rust_js::nullable]` field's key is written already, and this field isn't an `Option`";
                     tcx.dcx().span_err(tcx.def_span(field.did), message);
                     valid = false;
                 } else if is_optional(tcx, field) && !is_nullable(tcx, field) && !once && !cell_of_option {

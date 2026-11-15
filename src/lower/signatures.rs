@@ -218,7 +218,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let idents = tcx.fn_arg_idents(function);
         let rest = super::bindings::takes_rest(tcx, function).then(|| inputs.len() - 1);
         let null_params = super::representation::null_params(tcx, function);
+        // A present one's a caller gives, `T | undefined`, no more left out
+        // than a nullable one (ADR 1161, #1845).
+        let present = super::bindings::present_params(tcx, function);
+        let present_at = |i: usize| {
+            idents
+                .get(i)
+                .copied()
+                .flatten()
+                .is_some_and(|ident| present.contains(&ident.name))
+        };
         let nullable = |i: usize| null_params.contains(&i) && is_option(tcx, inputs[i]);
+        let required = |i: usize| (null_params.contains(&i) || present_at(i)) && is_option(tcx, inputs[i]);
         // What its JS takes after them, of a function a JS caller calls,
         // not a trait's method's, which its dictionary's type declares, nor a
         // binding's; after which none may be left out.
@@ -231,7 +242,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let given_after = slots.iter().any(|slot| !matches!(slot, Slot::Drop(_)));
         let optional_from = match given_after {
             true => inputs.len(),
-            false => optional_from(tcx, inputs, rest, nullable),
+            false => optional_from(tcx, inputs, rest, required),
         };
         let skipped = usize::from(super::classes::receiver(tcx, function) != Receiver::First && !inputs.is_empty());
         let mut params: Vec<JsParam<'tcx>> = (inputs.iter().enumerate().skip(skipped))
