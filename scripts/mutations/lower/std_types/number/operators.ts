@@ -123,7 +123,7 @@ export const mutations: Mutation[] = [
     breaks:
       "an operator the body's ranges show in range keeps its wrap, `(index + 1) * 2 - 1` as `(Math.imul((index + 1) >>> 0, 2) - 1) >>> 0`",
     file: "src/lower/std_types/number/operators.rs",
-    find: "        let exact = arithmetic && (proved || bridged);\n",
+    find: "        let exact = arithmetic && proved;\n",
     replace: "        let exact = arithmetic && false;\n",
     tests: ["test/lowering-integer-ranges.test.ts", "-t", "integer ranges show"],
   },
@@ -269,13 +269,5 @@ export const mutations: Mutation[] = [
     find: "                    (true, false) if v.as_bigint().is_some() => target.wrap(v),\n",
     replace: "                    (true, false) if let Some(n) = v.as_bigint() => target.wrap(Expr::int(n)),\n",
     tests: ["test/corpus.test.ts", "-t", "^wide_literals_cast_narrower.rs$"],
-  },
-  {
-    name: "bridge-trusts-every-body",
-    breaks: "the bridge takes THIR's ranges' verdict in a body that makes a raw pointer, so `n - 1` past `n != 0` is JS's own where the pointer set `n` to 0, and gives `-1` (#1782)",
-    file: "src/lower/std_types/number/operators.rs",
-    find: "        let bridged = thir_exact && !proved && crate::lower::analysis::thir_trusted(self.tcx);\n",
-    replace: "        let bridged = thir_exact && !proved;\n",
-    tests: ["test/corpus.test.ts", "-t", "^raw_pointer_written_after_its_owner_reads.rs$"],
   },
 ];

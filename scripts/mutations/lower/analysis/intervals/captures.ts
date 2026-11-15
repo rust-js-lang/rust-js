@@ -36,7 +36,7 @@ export const mutations: Mutation[] = [
     file,
     find: "    if !tcx.is_closure_like(body.source.def_id()) || body.arg_count == 0 {\n",
     replace: "    if true || !tcx.is_closure_like(body.source.def_id()) || body.arg_count == 0 {\n",
-    tests: ["test/intervals-bridged.test.ts"],
+    tests: ["test/lowering-unwind-arms.test.ts"],
   },
   {
     name: "closure-results-never-given",

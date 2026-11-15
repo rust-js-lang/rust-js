@@ -97,10 +97,6 @@ pub(in crate::lower) struct Proofs {
     /// against its receiver's length, each known in bounds there: a
     /// `Vec`'s `v[i]`, `swap`, `remove` (`call_indexes`, #1672 M3, step 5).
     pub(in crate::lower) call_bounds: IndexSet<BasicBlock>,
-    /// Whether the body makes a raw pointer, or lends an integer local
-    /// `&mut`: where THIR's ranges, which see neither's write after, aren't
-    /// to be taken for a wrap MIR doesn't prove (the bridge, #1782).
-    pub(in crate::lower) thir_untrusted: bool,
 }
 
 struct Walk<'a, 'tcx> {

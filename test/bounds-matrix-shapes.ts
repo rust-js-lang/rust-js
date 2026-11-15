@@ -144,7 +144,7 @@ fn cleared_in_its_arm(list: &mut Vec<u32>) -> u32 {
   },
   // A counter a `continue` brings back as it was is widened to the
   // constants the body compares it with, not its type's: its `+ 1` never
-  // wraps. Not past a write through a \`&mut\` of it.
+  // wraps. Not past a write through a `&mut` of it.
   widened: {
     fns: `fn counted() -> u32 {
     let mut count = 0u32;
@@ -271,8 +271,8 @@ fn cleared_between(q: &RefCell<Vec<u32>>, i: usize, cut: &dyn Fn()) -> usize {
 `,
     calls: [`check("halves", || halves(u32::MAX))`],
   },
-  // A generic constant bounds its loop: `i += 1` below \`N\` never wraps.
-  // Not past a write through a \`&mut\` of the counter.
+  // A generic constant bounds its loop: `i += 1` below `N` never wraps.
+  // Not past a write through a `&mut` of the counter.
   generic_bound: {
     fns: `fn up_to<const N: usize>() -> usize {
     let mut i = 0;
@@ -298,7 +298,7 @@ fn written_up_to<const N: usize>() -> usize {
 `,
     calls: [`check("up to", up_to::<4>)`, `check("written up to", written_up_to::<4>)`],
   },
-  // A counter down from a length: \`a[s - 1]\` under \`s > 0\`, its relation
+  // A counter down from a length: `a[s - 1]` under `s > 0`, its relation
   // kept through the loop's join. Not of the slice made shorter in it.
   counted_down: {
     fns: `fn down(a: &[u32]) -> u32 {
@@ -325,8 +325,8 @@ fn down_of_shorter(a: &[u32]) -> u32 {
 `,
     calls: [`check("down", || down(&[1, 2, 3]))`, `check("down of shorter", || down_of_shorter(&[1, 2, 3]))`],
   },
-  // What a value is below bounds its interval: \`v[i >> 1]\` under
-  // \`i < v.len()\`. Not of the slice made another between.
+  // What a value is below bounds its interval: `v[i >> 1]` under
+  // `i < v.len()`. Not of the slice made another between.
   shifted: {
     fns: `fn half(v: &[u32], i: usize) -> u32 {
     if i < v.len() { v[i >> 1] } else { 0 }
@@ -344,7 +344,7 @@ fn half_of_another(v: &[u32], i: usize) -> u32 {
 `,
     calls: [`check("half", || half(&[1, 2, 3, 4], 3))`, `check("half of another", || half_of_another(&[1, 2, 3, 4], 3))`],
   },
-  // \`vec![x; v.len()]\` is as long as \`v\`. Not past a pop of it.
+  // `vec![x; v.len()]` is as long as `v`. Not past a pop of it.
   as_long: {
     fns: `fn left(terraces: &[u32], k: usize) -> u32 {
     let left = vec![0u32; terraces.len()];
@@ -378,7 +378,6 @@ fn picked(v: &[u32; 4], k: usize) -> [u32; 2] {
 `,
     calls: [`check("picked", || picked(&[1, 2, 3, 4], 1))`, `check("picked past", || picked(&[1, 2, 3, 4], 9))`],
   },
-  // A slice's \`get(i)\`'s \`Some\` puts \`i\` below its length: \`i += 1\` never
   // The unsound direction's shapes, each the fact its rule forgets kept:
   // a recursive function's parameter given larger by a caller outside, a
   // parameter its own calls keep raising, a `&mut` of a `Vec` moved to
@@ -386,8 +385,11 @@ fn picked(v: &[u32; 4], k: usize) -> [u32; 2] {
   // closure's body writes, a cell's `Vec` replaced through a raw pointer,
   // a `Vec` pushed then cleared through a pointer or a function, a map's
   // key written past its test, a generic constant's loop past its bound,
-  // and `..=n` of `n <= len`. Each runs as native does only where its rule
-  // forgets.
+  // and `..=n` of `n <= len`; a recursive function's parameter its own
+  // calls give one value and its caller outside another, `down(5, d - 1)`
+  // of `down(0, 0)`, and a cell's `Vec` emptied under `!is_empty()`
+  // through a pointer it's given, with no call, whose root isn't the cell
+  // (#1943). Each runs as native does only where its rule forgets.
   unsound_directions: {
     fns: `fn walk(k: u32, d: u32) -> u32 {
     if d == 0 {
@@ -432,7 +434,10 @@ fn counted_down() -> u32 {
 }
 
 fn replaced(cell: &RefCell<Vec<u32>>, i: usize) -> u32 {
-    let p: *mut Vec<u32> = &mut *cell.borrow_mut();
+    let p: *mut Vec<u32> = {
+        let mut guard = cell.borrow_mut();
+        &mut *guard
+    };
     if i < cell.borrow().len() {
         unsafe { *p = Vec::new() };
         return cell.borrow()[i];
@@ -441,7 +446,10 @@ fn replaced(cell: &RefCell<Vec<u32>>, i: usize) -> u32 {
 }
 
 fn replaced_wrap(cell: &RefCell<Vec<u32>>) -> u32 {
-    let p: *mut Vec<u32> = &mut *cell.borrow_mut();
+    let p: *mut Vec<u32> = {
+        let mut guard = cell.borrow_mut();
+        &mut *guard
+    };
     if cell.borrow().len() > 1 {
         unsafe { *p = vec![9] };
         return (cell.borrow().len() - 2) as u32;
@@ -452,7 +460,7 @@ fn pushed_then_cleared(mut v: Vec<u32>) -> u32 {
     v.push(1);
     let p: *mut Vec<u32> = &raw mut v;
     unsafe { (&mut *p).clear() };
-    (v.len() as u32).wrapping_add(0) - 1
+    (v.len() - 1) as u32
 }
 
 fn clear_it(v: &mut Vec<u32>) {
@@ -462,7 +470,7 @@ fn clear_it(v: &mut Vec<u32>) {
 fn pushed_then_lent(mut v: Vec<u32>) -> u32 {
     v.push(1);
     clear_it(&mut v);
-    (v.len() as u32).wrapping_add(0) - 1
+    (v.len() - 1) as u32
 }
 
 fn key_written(m: &HashMap<u32, u32>, mut k: u32) -> u32 {
@@ -473,6 +481,23 @@ fn key_written(m: &HashMap<u32, u32>, mut k: u32) -> u32 {
     0
 }
 
+fn down(n: u32, d: u32) -> u32 {
+    if d == 0 {
+        return n - 1;
+    }
+    down(5, d - 1)
+}
+fn emptied_through_a_pointer(cell: &RefCell<Vec<u32>>, p: *mut Vec<u32>, empty: Vec<u32>) -> u32 {
+    if !cell.borrow().is_empty() {
+        unsafe { *p = empty };
+        return (cell.borrow().len() - 1) as u32;
+    }
+    9
+}
+fn pointer_to(cell: &RefCell<Vec<u32>>) -> *mut Vec<u32> {
+    let mut guard = cell.borrow_mut();
+    &mut *guard
+}
 fn past_its_bound<const N: usize>() -> u32 {
     let mut i = 0u32;
     while (i as usize) < N {
@@ -497,6 +522,12 @@ fn through_its_end(v: &[u32], n: usize) -> usize {
       `check("pushed then cleared", || pushed_then_cleared(vec![]))`,
       `check("pushed then lent", || pushed_then_lent(vec![]))`,
       `check("key written", || key_written(&HashMap::from([(1, 10)]), 1))`,
+      `check("down", || down(0, 0))`,
+      `check("down twice", || down(0, 2))`,
+      `check("emptied through a pointer", || {
+        let cell = RefCell::new(vec![1, 2]);
+        emptied_through_a_pointer(&cell, pointer_to(&cell), Vec::new())
+    })`,
       `check("past its bound", past_its_bound::<0>)`,
       `check("through its end", || through_its_end(&[1, 2, 3], 3) as u32)`,
     ],
@@ -643,6 +674,7 @@ fn pair(v: &[i32], k: usize) -> [i32; 2] {
       `check("pair past", || pair(&[1, 2, 3], 2))`,
     ],
   },
+  // A slice's `get(i)`'s `Some` puts `i` below its length: `i += 1` never
   // wraps.
   got: {
     fns: `fn walked(items: &[u32]) -> u32 {

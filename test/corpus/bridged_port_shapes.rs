@@ -1,6 +1,6 @@
-// React's port's shapes whose wraps THIR's ranges leave out and MIR's
-// intervals don't prove yet, which the bridge leaves out (ADR 1137,
-// test/intervals-bridged.txt): a `Vec` behind a `RefCell` tested not
+// React's port's shapes whose wraps THIR's ranges left out, which the
+// bridge took before MIR's intervals proved them (ADR 1137; the bridge
+// gone, #1943): a `Vec` behind a `RefCell` tested not
 // empty, then indexed at `len() - 1` through borrows of its own, as
 // ReactNoopServer does (#1741); a counter a `&mut` capture holds, below
 // a queue's length, in `catch_unwind`'s closure, as ReactAct flushes its

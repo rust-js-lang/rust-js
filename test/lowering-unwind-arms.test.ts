@@ -529,8 +529,8 @@ pub fn named(n: u32) -> String {
 `);
   expect(js).not.toContain("$catchUnwind");
   // `d - 1` in `catch_unwind`'s closure is JS's own: `d != 0` of its
-  // parent isn't carried into it yet (#1701), so the bridge takes THIR's
-  // verdict there (ADR 1137).
+  // parent, carried into the closure's captures (#1701), MIR's intervals
+  // prove.
   expect(js).toContain(`  let thrown;
   if (segment == null) {
     try {

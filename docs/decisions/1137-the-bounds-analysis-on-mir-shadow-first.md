@@ -925,3 +925,23 @@ struct field's.
 ### Amendment: a held guard's `deref_mut` forgets again (2026-11-15, #1928)
 
 The amendment above, a held guard's `deref_mut` a copy, is undone. Its `&mut` bound to a local and shortened through it, `let all = &mut *items; all.truncate(1)`, reaches the call as a reborrow of the local, `&mut (*all)`. No root leads that back to the cell, and the guarded cell is skipped by the calls-may-write-cells rule, so only the `deref_mut`'s own rule forgets its length. Without it, `(items.len() - 2) as u32` under `len > 1` gave -1 on main. The bounds matrix's `guard` holder has the shape now (`bound`). The general rule should see through that reborrow, so that a call through it forgets the cell: #1929. Until then, the branch stays.
+
+## Amendment: the bridge is gone (2026-11-15, #1943, M4's first part)
+
+The bridge took THIR's ranges for a wrap MIR's intervals don't prove,
+except in a body that makes a raw pointer or lends an integer local
+`&mut` (`thir_untrusted`, #1782). A raw pointer the body is *given* was
+unseen: under `!cell.borrow().is_empty()`, `*p = empty` through a
+`*mut Vec<u32>` parameter then `(cell.borrow().len() - 1) as u32` was
+JS's own `-`, `-1`, where Rust gives `4294967295`. MIR's cells rule
+forgets the cell's length at the write and keeps the check; THIR's
+ranges, which see no write through a pointer, proved it, and the bridge
+took that. Its list, test/intervals-bridged.txt, was already empty: no
+corpus case needs it. So the bridge goes, with `thir_trusted`,
+`thir_untrusted`, the shadow's `bridged` line, the list and its test: a
+wrap is JS's own where MIR proves it, and nowhere else. THIR's ranges stay
+for what they still decide, a call's indexes, until step 5's switch; the
+same hole there is #1944, which the switch closes. Held by the bounds
+matrix's `emptied through a pointer` row, which differed from native
+before, and catches cells-raw-write-quiet now that no other rule decides
+its site.

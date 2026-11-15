@@ -1,7 +1,0 @@
-# Each wrap the bridge leaves out (ADR 1137, #1672): a `+`, `-` or `*` of a
-# corpus case that THIR's ranges know never wraps and MIR's intervals don't
-# prove yet, where it is (`case.rs:line:col`), its function, and the issue
-# of the MIR precision that would prove it. test/intervals-bridged.test.ts
-# fails where a site the bridge decides isn't listed, or one listed no
-# longer is: a new one is a gap to recover first, and one MIR now proves
-# goes. M4 deletes THIR's ranges and the bridge once it's empty.

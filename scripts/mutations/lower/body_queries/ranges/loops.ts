@@ -79,15 +79,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-collections.test.ts", "-t", "enumerate's index"],
   },
   {
-    name: "enumerate-of-any-slice-fn",
-    breaks:
-      "an `enumerate()` of any function of a slice, one yielding more than its items, bounds its index by the slice, `xs[i]` read as `undefined` (#363)",
-    file: "src/lower/body_queries/ranges/loops.rs",
-    find: "                    && is_slice_items(self.tcx, items_def)\n",
-    replace: "",
-    tests: ["test/intervals-bridged.test.ts"],
-  },
-  {
     name: "enumerate-index-field-missed",
     breaks:
       "the index of an `enumerate()`'s `(i, x)` isn't bound, its item is looked for (#363)",

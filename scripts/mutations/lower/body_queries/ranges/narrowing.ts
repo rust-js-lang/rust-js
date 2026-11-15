@@ -36,7 +36,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/body_queries/ranges/narrowing.rs",
     find: "                let (yes, no) = self.branches(arg, known);\n                (no, yes)\n",
     replace: "                let (yes, no) = self.branches(arg, known);\n                (yes, no)\n",
-    tests: ["test/intervals-bridged.test.ts"],
+    tests: ["test/intervals-shadow.test.ts"],
   },
   {
     name: "held-length-shows-nothing",

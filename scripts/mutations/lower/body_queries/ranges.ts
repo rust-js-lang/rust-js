@@ -223,7 +223,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/body_queries/ranges.rs",
     find: "                *known = either(yes, no);\n                value.or_else(top)",
     replace: "                *known = no;\n                value.or_else(top)",
-    tests: ["test/intervals-bridged.test.ts"],
+    tests: ["test/intervals-shadow.test.ts"],
   },
   {
     name: "ranges-resize-kept",
@@ -251,16 +251,6 @@ export const mutations: Mutation[] = [
       "-t",
       "an index a condition shows",
     ],
-  },
-  {
-    name: "ranges-break-dropped",
-    breaks:
-      "what's known at a `break` isn't known past its loop, so `n + 100` after a loop left by one wraps",
-    file: "src/lower/body_queries/ranges.rs",
-    find: "                *known = either(known.take(), Some(broken));",
-    replace:
-      "                *known = {\n                    let _ = broken;\n                    known.take()\n                };",
-    tests: ["test/intervals-bridged.test.ts"],
   },
   {
     name: "ranges-wrap-unbounded",

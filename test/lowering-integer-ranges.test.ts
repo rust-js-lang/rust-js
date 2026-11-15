@@ -1089,8 +1089,8 @@ pub fn ran() -> (u32, usize, usize, usize, usize) {
 }
 `);
   // THIR's ranges see no write through a raw pointer, and leave out
-  // `raw_between`'s wrap, which MIR keeps; the bridge doesn't take THIR's
-  // verdict in a body that makes one (#1782).
+  // `raw_between`'s wrap, which MIR keeps, and alone decides (#1782,
+  // #1943).
   expect(wrapsDisagreed(dir)).toEqual([]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("stack[stack.length - 1]");

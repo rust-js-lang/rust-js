@@ -116,20 +116,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
         // What MIR's intervals prove stays in range, `proved`, the caller's
         // of the statement it lowers, is JS's own (ADRs 0576, 1137); the
-        // shadow compares what THIR's ranges knew (#1672 M3). And the bridge,
-        // until MIR's precision covers it: what THIR's ranges know never
-        // wraps, where MIR doesn't prove it, is JS's own too, each such site
-        // a `bridged` line of the shadow, test/intervals-bridged.txt's list,
-        // which M4 empties and deletes with THIR's ranges (ADR 1137).
+        // shadow compares what THIR's ranges knew (#1672 M3). MIR alone
+        // decides: the bridge, which took THIR's ranges where MIR didn't
+        // prove a wrap, is gone, as THIR's ranges don't see a write through a
+        // raw pointer a body is given (#1943, M4).
         let arithmetic = matches!(op, BinOp::Add | BinOp::Sub | BinOp::Mul);
         let thir_exact = arithmetic && self.exact_at(span);
-        // Not of a body whose raw pointers or integer `&mut`s THIR's ranges
-        // can't see write (#1782).
-        let bridged = thir_exact && !proved && crate::lower::analysis::thir_trusted(self.tcx);
-        let exact = arithmetic && (proved || bridged);
-        if bridged {
-            crate::lower::analysis::shadow_bridged(self.tcx, self.frame.owner, span);
-        }
+        let exact = arithmetic && proved;
         if arithmetic {
             crate::lower::analysis::shadow_check(self.tcx, self.frame.owner, span, thir_exact, || {
                 Some(crate::lower::analysis::LeftOut::Wrap)
