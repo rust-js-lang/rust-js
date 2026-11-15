@@ -9,10 +9,8 @@
 //! What its `deref_mut` lends, a `&mut` of what the cell holds, keeps the
 //! length only past a call that keeps it, `index_mut` or a `deref_mut` to
 //! a slice (`keeps_vec_length`): given to `push`, `truncate` or code of the
-//! crate's, the length is forgotten; a write through it forgets it where
-//! it writes (#1877), and a reborrow of it is its copy, each of its calls
-//! and writes the same. The guard lent `&mut` where it's borrowed is no
-//! longer guarded.
+//! crate's, the length is forgotten; used any other way, a reborrow or a
+//! write through it, it's forgotten at the `deref_mut` itself.
 
 use super::*;
 use crate::lower::recognition::{StdItem, deref_call, deref_mut_call, is_std_def, keeps_vec_length};
@@ -222,9 +220,8 @@ impl<'tcx> Walk<'_, 'tcx> {
 
     /// What a held guard's own call gives, `local`: of its `borrow_mut()`,
     /// a copy of the cell, which it guards; of a `deref` or a `deref_mut`,
-    /// a copy of it. What changes the length through a `deref_mut`'s `&mut`
-    /// forgets it where it does: a write through it (#1877), a call given it
-    /// (`guard_lent`, `called_on`), the guard lent `&mut` where it's borrowed.
+    /// a copy of it; but a `deref_mut` whose `&mut` isn't only given whole
+    /// to calls forgets the cell's length.
     pub(super) fn guarded(
         &self,
         args: &[rustc_span::Spanned<Operand<'tcx>>],
@@ -241,7 +238,16 @@ impl<'tcx> Walk<'_, 'tcx> {
             after.guarded.insert(local, cell);
         }
         if let Some(guard) = self.derefed_guard(func, args) {
-            after.copies.insert(local, state.root(guard));
+            let cell = state.root(guard);
+            let mutable = func
+                .const_fn_def()
+                .is_some_and(|(callee, _)| deref_mut_call(self.tcx, callee));
+            match !mutable || self.guards.lends.contains(&local) {
+                true => {
+                    after.copies.insert(local, cell);
+                }
+                false => after.forget_lengths(cell),
+            }
         }
     }
 

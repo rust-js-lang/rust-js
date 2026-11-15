@@ -24,6 +24,14 @@ export const mutations: Mutation[] = [
     tests,
   },
   {
+    name: "guard-deref-mut-always-a-copy",
+    breaks: "a held guard's `deref_mut` is a copy always, so of its `&mut` bound to a local, `let all = &mut *g; all.truncate(1)`, the cell's length is kept, and `(g.len() - 2) as u32` under `g.len() > 1` gives -1 where Rust wraps (#1928)",
+    file,
+    find: "            match !mutable || self.guards.lends.contains(&local) {\n",
+    replace: "            match true {\n",
+    tests: ["test/bounds-matrix.test.ts", "-t", "guard, tested wrap"],
+  },
+  {
     name: "guards-none",
     breaks: "no guard is held, so `items.remove(i)` past a call `f(items[i])` keeps its check, a call-bounds line",
     file,

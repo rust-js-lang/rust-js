@@ -921,3 +921,7 @@ keeps the shapes it covered as rows: the `&mut` kept in a struct's field
 and the `Vec` shortened through it, and a raw pointer made of it, shortened
 by a call and replaced by `ptr::write`. The guard shadow test keeps the
 struct field's.
+
+### Amendment: a held guard's `deref_mut` forgets again (2026-11-15, #1928)
+
+The amendment above, a held guard's `deref_mut` a copy, is undone. Its `&mut` bound to a local and shortened through it, `let all = &mut *items; all.truncate(1)`, reaches the call as a reborrow of the local, `&mut (*all)`. No root leads that back to the cell, and the guarded cell is skipped by the calls-may-write-cells rule, so only the `deref_mut`'s own rule forgets its length. Without it, `(items.len() - 2) as u32` under `len > 1` gave -1 on main. The bounds matrix's `guard` holder has the shape now (`bound`). The general rule should see through that reborrow, so that a call through it forgets the cell: #1929. Until then, the branch stays.

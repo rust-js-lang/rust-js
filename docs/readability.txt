@@ -1,14 +1,14 @@
 # shape	count	per 10,000 lines
-files	2590
-lines	342136
+files	2591
+lines	342288
 temporaries	0	0
 labeled blocks	0	0
 while (true)	224	6.5
 $iter	2874	84
 Iterator.from	276	8.1
 return;	332	9.7
-renamed x$1	16129	471.4
-role fallbacks	8847	258.6
+renamed x$1	16129	471.2
+role fallbacks	8847	258.5
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1	role fallbacks
 test/corpus/adapter_drop_past_a_panic.js	52	0	0	0	1	0	0	0	1
 test/corpus/adapter_drops.js	1844	0	0	1	19	2	1	98	61
@@ -493,6 +493,7 @@ test/corpus/copy_mutation.js	112	0	0	0	0	0	0	2	1
 test/corpus/copy_param_no_drop.js	34	0	0	0	0	0	0	0	0
 test/corpus/copy_read_past_an_exit.js	205	0	0	0	0	0	0	29	0
 test/corpus/copy_swapped_and_replaced_by_generic_code_is_its_own.js	35	0	0	0	0	0	0	0	0
+test/corpus/copy_through_a_supertrait.js	147	0	0	0	0	0	0	0	0
 test/corpus/copy_written_by_clone_from_is_its_own.js	24	0	0	0	0	0	0	0	0
 test/corpus/copy_written_whole_by_generic_code_is_its_own.js	24	0	0	0	0	0	0	0	0
 test/corpus/copy_written_whole_through_a_dyn_is_its_own.js	42	0	0	0	0	0	0	0	1
@@ -1178,7 +1179,7 @@ test/corpus/integer_slices_read_as_another_width.js	193	0	0	0	0	0	0	0	2
 test/corpus/integer_truth.js	89	0	0	0	0	0	0	0	0
 test/corpus/integers_128.js	171	0	0	0	0	0	0	9	8
 test/corpus/interpreter.js	627	0	0	6	1	0	1	51	29
-test/corpus/into_a_bound_target.js	62	0	0	0	0	0	0	0	1
+test/corpus/into_a_bound_target.js	66	0	0	0	0	0	0	0	1
 test/corpus/into_iter_arguments.js	46	0	0	0	1	0	0	0	0
 test/corpus/into_iter_bound_stepped_from_its_back.js	389	0	0	0	1	0	0	10	10
 test/corpus/into_iter_held_as_it_is.js	124	0	0	0	4	0	0	10	0
@@ -2219,7 +2220,7 @@ test/corpus/subject_of_a_struct_js_made_read_once.js	54	0	0	0	0	0	1	0	1
 test/corpus/subscriptions.js	378	0	0	0	0	0	0	3	0
 test/corpus/successors_drops.js	46	0	0	0	0	0	0	0	2
 test/corpus/sum_fallible.js	65	0	0	0	2	0	0	0	0
-test/corpus/supertrait_dictionary_asks_its_makers.js	87	0	0	0	0	0	0	0	0
+test/corpus/supertrait_dictionary_asks_its_makers.js	88	0	0	0	0	0	0	0	0
 test/corpus/supertraits_by_reference.js	48	0	0	0	0	0	0	3	0
 test/corpus/swap_replace.js	90	0	0	0	0	0	0	11	2
 test/corpus/swap_with_slice_drops.js	68	0	0	0	0	0	0	0	1

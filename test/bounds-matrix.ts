@@ -54,6 +54,11 @@ type Holder = {
    * given whole to a call (ADR 1137, the guard's own rule retired). */
   stored?: string;
   pointer_write?: string;
+  /** The guard's `&mut` bound to a local and the `Vec` shortened through it,
+   * `let all = &mut *g; all.truncate(1)`: its call given a reborrow of the
+   * local, no root of the cell's, so only the `deref_mut`'s own rule
+   * forgets the length (#1928). */
+  bound?: string;
   /** The tests, or a test's form, `<test>/<form>`, whose programs are
    * undefined behaviour under Miri, so no answer of theirs is wrong:
    * each left out, with what Miri says beside it, so none is added again. */
@@ -371,6 +376,7 @@ const holders: Record<string, Holder> = {
     reassign: "*g = vec![9];",
     lend: "shorten(&mut g);",
     stored: "{ let lent = Lent { v: &mut g }; lent.v.truncate(1); }",
+    bound: "{ let all = &mut *g; all.truncate(1); }",
     pointer: "{ let r: &mut Vec<u32> = &mut g; let p: *mut Vec<u32> = r; unsafe { (&mut *p).truncate(1) }; }",
     pointer_write: "{ let r: &mut Vec<u32> = &mut g; let p: *mut Vec<u32> = r; unsafe { std::ptr::write(p, vec![9]) }; }",
   },
@@ -466,6 +472,7 @@ const betweens: Record<string, (h: Holder) => string | undefined> = {
   whole: (h) => h.whole,
   pointer: (h) => h.pointer,
   stored: (h) => h.stored,
+  bound: (h) => h.bound,
   pointer_write: (h) => h.pointer_write,
 };
 
