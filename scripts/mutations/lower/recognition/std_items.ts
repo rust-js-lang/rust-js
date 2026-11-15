@@ -274,7 +274,7 @@ export const mutations: Mutation[] = [
     name: "std-memchr-unanswered",
     breaks: "core's own `memchr`, which `read_until` calls, is no recognizer's, and std's body is refused",
     file: "src/lower/recognition/std_items.rs",
-    find: "                \"std::slice::memchr::memchr\" => Some(MemchrOp::Find { back: false }),\n",
+    find: "                Some(StdPath::MemchrFn) => Some(MemchrOp::Find { back: false }),\n",
     replace: "",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std"],
   },

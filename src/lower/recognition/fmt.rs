@@ -15,7 +15,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// `io::Write`'s of `io::stdout()`, `io::stderr()` or a lock (#1490).
     pub(in crate::lower) fn writes_stream(&self, def_id: DefId, args: ty::GenericArgsRef<'tcx>, error: bool) -> bool {
         super::print_of(self.tcx, def_id) == Some(error)
-            || (self.tcx.trait_of_assoc(def_id)).is_some_and(|trait_| std_path(self.tcx, trait_) == "std::io::Write")
+            || (self.tcx.trait_of_assoc(def_id)).is_some_and(|trait_| is_std_path(self.tcx, trait_, StdPath::IoWrite))
                 && args
                     .types()
                     .next()
@@ -505,9 +505,9 @@ pub(crate) fn is_write_result_type<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> boo
 /// of standard error (ADR 0132). Its JS value is `undefined`.
 pub(in crate::lower) fn stream_of<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<bool> {
     let ty::Adt(adt, _) = ty.kind() else { return None };
-    match std_path(tcx, adt.did()) {
-        "std::io::Stdout" | "std::io::StdoutLock" => Some(false),
-        "std::io::Stderr" | "std::io::StderrLock" => Some(true),
+    match std_path_item(tcx, adt.did()) {
+        Some(StdPath::IoStdout | StdPath::IoStdoutLock) => Some(false),
+        Some(StdPath::IoStderr | StdPath::IoStderrLock) => Some(true),
         _ => None,
     }
 }
@@ -524,7 +524,7 @@ pub(in crate::lower) fn may_be_undefined_std<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tc
 pub(crate) fn is_io_unit_result_type<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
     matches!(ty.kind(), ty::Adt(result, args) if is_std_def(tcx, result.did(), StdItem::Result)
         && args.type_at(0).is_unit()
-        && matches!(args.type_at(1).kind(), ty::Adt(error, _) if std_path(tcx, error.did()) == "std::io::Error"))
+        && matches!(args.type_at(1).kind(), ty::Adt(error, _) if is_std_path(tcx, error.did(), StdPath::IoError)))
 }
 
 pub(crate) fn is_fmt_result_type<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {

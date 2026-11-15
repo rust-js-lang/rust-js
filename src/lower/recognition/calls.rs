@@ -792,7 +792,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             });
         }
         // An iterator's `len()` is its `count()`, without taking its items.
-        if std_path(tcx, trait_) == "std::iter::ExactSizeIterator"
+        if is_std_path(tcx, trait_, StdPath::IterExactSizeIterator)
             && tcx.item_name(def_id).as_str() == "len"
             && self.is_user_iterator(ty)
         {
@@ -881,7 +881,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let stepped = matches!(kind, RangeKind::Exclusive | RangeKind::Inclusive);
         Some(Std::Range(match tcx.item_name(def_id).as_str() {
             "into_iter" if tcx.is_diagnostic_item(sym::IntoIterator, trait_) => return Some(Std::Same),
-            "len" if stepped && std_path(tcx, trait_) == "std::iter::ExactSizeIterator" => RangeOp::Len,
+            "len" if stepped && is_std_path(tcx, trait_, StdPath::IterExactSizeIterator) => RangeOp::Len,
             "next_back"
                 if kind == RangeKind::Exclusive
                     && tcx.get_diagnostic_item(Symbol::intern("DoubleEndedIterator")) == Some(trait_) =>
@@ -1013,18 +1013,18 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// `Hash`.
     fn hash_op(&self, def_id: DefId, args: ty::GenericArgsRef<'tcx>) -> Option<HashOp> {
         let tcx = self.tcx;
-        match std_path(tcx, def_id) {
-            "std::hash::DefaultHasher::new" => return Some(HashOp::New(StdHasher::Default)),
-            "std::hash::SipHasher::new" => return Some(HashOp::New(StdHasher::Sip)),
-            "std::hash::SipHasher::new_with_keys" => return Some(HashOp::NewWithKeys),
-            "std::hash::RandomState::new" => return Some(HashOp::RandomState),
+        match std_path_item(tcx, def_id) {
+            Some(StdPath::DefaultHasherNew) => return Some(HashOp::New(StdHasher::Default)),
+            Some(StdPath::SipHasherNew) => return Some(HashOp::New(StdHasher::Sip)),
+            Some(StdPath::SipHasherNewWithKeys) => return Some(HashOp::NewWithKeys),
+            Some(StdPath::RandomStateNew) => return Some(HashOp::RandomState),
             _ => {}
         }
         let tr = tcx.trait_of_assoc(def_id)?;
         let self_ty = args.types().next()?;
         // `BuildHasherDefault<H>`'s, of std's `BuildHasher` (#1155), and
         // `RandomState`'s (#1420).
-        if std_path(tcx, tr) == "std::hash::BuildHasher"
+        if is_std_path(tcx, tr, StdPath::HashBuildHasher)
             && matches!(self_ty.kind(), ty::Adt(adt, _) if is_std_def(tcx, adt.did(), StdItem::BuildHasherDefault)
                 || is_std_def(tcx, adt.did(), StdItem::RandomState))
         {
@@ -1233,9 +1233,9 @@ pub(in crate::lower) fn print_of(tcx: TyCtxt<'_>, def_id: DefId) -> Option<bool>
     if !of_std_crate(tcx, def_id, StdCrate::Std) {
         return None;
     }
-    match std_path(tcx, def_id) {
-        "std::io::_print" => Some(false),
-        "std::io::_eprint" => Some(true),
+    match std_path_item(tcx, def_id) {
+        Some(StdPath::IoPrintFn) => Some(false),
+        Some(StdPath::IoEprintFn) => Some(true),
         _ => None,
     }
 }
@@ -1250,9 +1250,9 @@ pub(in crate::lower) fn unwind_op(tcx: TyCtxt<'_>, def_id: DefId) -> Option<Unwi
     if !of_std_crate(tcx, def_id, StdCrate::Std) {
         return None;
     }
-    match std_path(tcx, def_id) {
-        "std::panic::catch_unwind" => Some(UnwindOp::Catch),
-        "std::panic::resume_unwind" => Some(UnwindOp::Resume),
+    match std_path_item(tcx, def_id) {
+        Some(StdPath::PanicCatchUnwindFn) => Some(UnwindOp::Catch),
+        Some(StdPath::PanicResumeUnwindFn) => Some(UnwindOp::Resume),
         _ => None,
     }
 }
@@ -1261,7 +1261,7 @@ pub(in crate::lower) fn unwind_op(tcx: TyCtxt<'_>, def_id: DefId) -> Option<Unwi
 /// right never reaches: what MIR's unreachable code is (ADR 0399, amended),
 /// which `Mir::new` makes each call of it, so no lowering sees the call.
 pub(in crate::lower) fn is_unreachable_hint(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
-    of_std_crate(tcx, def_id, StdCrate::Core) && std_path(tcx, def_id) == "std::hint::unreachable_unchecked"
+    of_std_crate(tcx, def_id, StdCrate::Core) && is_std_path(tcx, def_id, StdPath::HintUnreachableUncheckedFn)
 }
 
 /// Is `def_id` `vec!`'s of an item and a count, `vec![0.0; n]`, a `Vec` of

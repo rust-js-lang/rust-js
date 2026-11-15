@@ -291,8 +291,8 @@ export const mutations: Mutation[] = [
     name: "cmp-max-unknown",
     breaks: "`cmp::max(a, b)` of what isn't a number is refused",
     file: "src/lower/recognition/traits.rs",
-    find: '        "std::cmp::max" => Some(true),\n',
-    replace: '        "std::cmp::max" => None,\n',
+    find: "        Some(StdPath::CmpMaxFn) => Some(true),\n",
+    replace: "        Some(StdPath::CmpMaxFn) => None,\n",
     tests: ["test/corpus.test.ts", "-t", "std_methods"],
   },
   {

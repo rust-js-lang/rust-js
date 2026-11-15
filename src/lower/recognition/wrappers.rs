@@ -871,7 +871,7 @@ pub(in crate::lower) fn cell_of_key<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Ty
 
 /// `std::panic::AssertUnwindSafe`, the value it holds (ADR 0660).
 pub(in crate::lower) fn is_assert_unwind_safe(tcx: TyCtxt<'_>, id: DefId) -> bool {
-    std_path(tcx, id) == "std::panic::AssertUnwindSafe"
+    is_std_path(tcx, id, StdPath::PanicAssertUnwindSafe)
 }
 
 /// Of a `#[repr(transparent)]` struct of the crate's or a dependency's, the

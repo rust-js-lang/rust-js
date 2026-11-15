@@ -108,9 +108,9 @@ pub(crate) fn answered_io_fn(tcx: TyCtxt<'_>, id: DefId) -> bool {
 /// Which recognizer answers `id`, a std function of io's whose body
 /// reaches memory.
 fn answered_io_op(tcx: TyCtxt<'_>, id: DefId) -> Option<IoOp> {
-    match std_path(tcx, id) {
-        "std::io::read::append_to_string" => Some(IoOp::AppendToString),
-        "std::io::util::inlined_slow_read_byte" => Some(IoOp::ReadByte),
+    match std_path_item(tcx, id) {
+        Some(StdPath::ReadAppendToStringFn) => Some(IoOp::AppendToString),
+        Some(StdPath::UtilInlinedSlowReadByteFn) => Some(IoOp::ReadByte),
         _ => None,
     }
 }
@@ -150,7 +150,7 @@ fn buf_reader_seek_relative(tcx: TyCtxt<'_>, id: DefId) -> bool {
 /// defaults, `$readerDefaults`.
 pub(crate) fn is_std_reader<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
     matches!(ty.kind(), ty::Adt(adt, _)
-        if matches!(std_path(tcx, adt.did()), "std::io::Chain" | "std::io::Take")
+        if matches!(std_path_item(tcx, adt.did()), Some(StdPath::IoChain | StdPath::IoTake))
             && is_compiled_std_type(tcx, ty))
 }
 
@@ -159,9 +159,9 @@ pub(crate) fn is_std_reader<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
 /// `read_buf`, which std's provided `read_to_end` reads into, reads (#1340).
 pub(crate) fn std_reader_sources<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<(bool, Vec<Ty<'tcx>>)> {
     let ty::Adt(adt, args) = ty.kind() else { return None };
-    match std_path(tcx, adt.did()) {
-        "std::io::Take" => Some((false, args.types().take(1).collect())),
-        "std::io::Chain" => Some((true, args.types().take(2).collect())),
+    match std_path_item(tcx, adt.did()) {
+        Some(StdPath::IoTake) => Some((false, args.types().take(1).collect())),
+        Some(StdPath::IoChain) => Some((true, args.types().take(2).collect())),
         _ => None,
     }
 }
@@ -184,7 +184,7 @@ const FILE_WRITES: &[&str] = &["write", "write_all", "write_fmt", "flush"];
 
 /// Whether `ty` is std's `fs::File` (#1156).
 pub(crate) fn is_file<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
-    matches!(ty.kind(), ty::Adt(adt, _) if std_path(tcx, adt.did()) == "std::fs::File")
+    matches!(ty.kind(), ty::Adt(adt, _) if is_std_path(tcx, adt.did(), StdPath::FsFile))
 }
 
 /// Whether `ty` is a `File`, or a `&File`, whose `Read`, `Write` and `Seek`
@@ -218,20 +218,20 @@ pub(crate) fn of_files<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, args: ty::GenericArgs
 
 /// Whether `id` is std's `io::Cursor`.
 fn is_cursor(tcx: TyCtxt<'_>, id: DefId) -> bool {
-    std_path(tcx, id) == "std::io::Cursor"
+    is_std_path(tcx, id, StdPath::IoCursor)
 }
 
 /// Whether `id` is std's `io::BufReader`.
 pub(crate) fn is_buf_reader(tcx: TyCtxt<'_>, id: DefId) -> bool {
-    std_path(tcx, id) == "std::io::BufReader"
+    is_std_path(tcx, id, StdPath::IoBufReader)
 }
 
 /// Which of std's io functions that make a byte source `id` is,
 /// `io::empty` or `io::repeat`.
 fn source_made(tcx: TyCtxt<'_>, id: DefId) -> Option<IoOp> {
-    match std_path(tcx, id) {
-        "std::io::empty" => Some(IoOp::Empty),
-        "std::io::repeat" => Some(IoOp::Repeat),
+    match std_path_item(tcx, id) {
+        Some(StdPath::IoEmptyFn) => Some(IoOp::Empty),
+        Some(StdPath::IoRepeatFn) => Some(IoOp::Repeat),
         _ => None,
     }
 }
@@ -251,9 +251,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             ty::Adt(_, args) if self.is_std_type(ty, StdItem::VecDeque) && args.type_at(0) == self.tcx.types.u8 => {
                 Some(ByteSource::Deque)
             }
-            ty::Adt(adt, _) => match std_path(self.tcx, adt.did()) {
-                "std::io::Empty" => Some(ByteSource::Empty),
-                "std::io::Repeat" => Some(ByteSource::Repeat),
+            ty::Adt(adt, _) => match std_path_item(self.tcx, adt.did()) {
+                Some(StdPath::IoEmpty) => Some(ByteSource::Empty),
+                Some(StdPath::IoRepeat) => Some(ByteSource::Repeat),
                 _ => None,
             },
             _ => None,
@@ -330,7 +330,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 /// Whether `callee` of `args` makes an empty `String` of no capacity:
 /// `String::new()`, or `Default::default()` of a `String` (#1297).
 pub(crate) fn makes_empty_string<'tcx>(tcx: TyCtxt<'tcx>, callee: DefId, args: ty::GenericArgsRef<'tcx>) -> bool {
-    std_path(tcx, callee) == "std::string::String::new"
+    is_std_path(tcx, callee, StdPath::StringNew)
         || (tcx
             .trait_of_assoc(callee)
             .is_some_and(|tr| is_std_def(tcx, tr, StdItem::Default))

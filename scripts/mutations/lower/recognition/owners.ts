@@ -15,8 +15,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a map's `drain()` is taken to own its keys alone, and drops none of its values",
     file: "src/lower/recognition/owners.rs",
-    find: '            "std::collections::hash_map::Drain"\n                | "std::collections::hash_map::IntoIter"\n',
-    replace: '            "std::collections::hash_map::IntoIter"\n',
+    find: "            Some(StdPath::HashMapDrain | StdPath::HashMapIntoIter | StdPath::BtreeMapIntoIter)\n",
+    replace: "            Some(StdPath::HashMapIntoIter | StdPath::BtreeMapIntoIter)\n",
     tests: ["test/corpus.test.ts", "-t", "^map_value_destructors.rs$"],
   },
   {
@@ -24,8 +24,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a map's `into_iter()` owns its keys alone, so what a loop leaves of its values isn't dropped",
     file: "src/lower/recognition/owners.rs",
-    find: '                | "std::collections::hash_map::IntoIter"\n                | "std::collections::btree_map::IntoIter"\n        ) {',
-    replace: "        ) {",
+    find: "            Some(StdPath::HashMapDrain | StdPath::HashMapIntoIter | StdPath::BtreeMapIntoIter)\n",
+    replace: "            Some(StdPath::HashMapDrain)\n",
     tests: ["test/corpus.test.ts", "-t", "^map_into_iter_drops.rs$"],
   },
   {
@@ -45,7 +45,7 @@ export const mutations: Mutation[] = [
     name: "splice-of-a-vec-lazy",
     breaks: "a `Vec` given whole as a `splice`'s replacement isn't an array's items, so its `Splice` is the lazy one where nothing runs (#1189)",
     file: "src/lower/recognition/owners.rs",
-    find: "                || matches!(it.kind(), ty::Adt(adt, _) if std_path(self.tcx, adt.did()) == \"std::vec::IntoIter\")\n",
+    find: "                || matches!(it.kind(), ty::Adt(adt, _) if is_std_path(self.tcx, adt.did(), StdPath::VecIntoIter))\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^splice_of_array_items.rs$"],
     snapshots: true,

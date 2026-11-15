@@ -3,6 +3,7 @@
 //! whose provided methods are bodies, and the adapters that implement them.
 
 use rustc_hir::attrs::lang_items::LangItem;
+use rustc_hir::def::{DefKind, Res};
 use rustc_middle::ty::fast_reject::SimplifiedType;
 use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::Symbol;
@@ -176,14 +177,23 @@ fn data_structures(tcx: TyCtxt<'_>) -> Vec<(&'static str, Vec<DefId>)> {
 /// children: each part but the last a module, as only a module has children
 /// to ask, `core`'s `char` the module, not the type (#1681's DefId step).
 pub(super) fn by_path(tcx: TyCtxt<'_>, krate: StdCrate, path: &[&str]) -> Option<DefId> {
+    by_path_kind(tcx, krate, path).map(|(_, id)| id)
+}
+
+/// `by_path`'s item and its kind, as its module says of its child, never
+/// asked of rustc by its `DefId`: `def_kind` asked of std's items as a std
+/// body is compiled changes what's compiled after it.
+pub(super) fn by_path_kind(tcx: TyCtxt<'_>, krate: StdCrate, path: &[&str]) -> Option<(DefKind, DefId)> {
     let root = super::std_crate_num(tcx, krate)?;
-    let mut at = root.as_def_id();
-    for (i, part) in path.iter().enumerate() {
-        let last = i + 1 == path.len();
-        at = (tcx.module_children(at).iter())
-            .filter(|child| child.ident.as_str() == *part)
-            .filter_map(|child| child.res.opt_def_id())
-            .find(|&id| last || tcx.def_kind(id) == rustc_hir::def::DefKind::Mod)?;
+    let mut at = (DefKind::Mod, root.as_def_id());
+    for part in path {
+        let (DefKind::Mod, module) = at else {
+            return None;
+        };
+        at = (tcx.module_children(module).iter()).find_map(|child| match child.res {
+            Res::Def(kind, id) if child.ident.as_str() == *part => Some((kind, id)),
+            _ => None,
+        })?;
     }
     Some(at)
 }

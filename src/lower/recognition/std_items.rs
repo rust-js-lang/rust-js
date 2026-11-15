@@ -459,20 +459,22 @@ pub(crate) fn std_home(tcx: TyCtxt<'_>, id: DefId) -> String {
 pub(crate) fn memory_intrinsic(tcx: TyCtxt<'_>, id: DefId) -> bool {
     tcx.intrinsic(id).is_some()
         && !matches!(
-            std_path(tcx, id),
-            "std::intrinsics::cold_path"
-                | "std::intrinsics::assume"
-                | "std::intrinsics::likely"
-                | "std::intrinsics::unlikely"
-                | "std::intrinsics::black_box"
-                | "std::intrinsics::ub_checks"
+            std_path_item(tcx, id),
+            Some(
+                StdPath::IntrinsicsColdPathFn
+                    | StdPath::IntrinsicsAssumeFn
+                    | StdPath::IntrinsicsLikelyFn
+                    | StdPath::IntrinsicsUnlikelyFn
+                    | StdPath::IntrinsicsBlackBoxFn
+                    | StdPath::IntrinsicsUbChecksFn
+            )
         )
 }
 
 /// Whether `id` is std's `ub_checks::check_language_ub`, which reads
 /// `UbChecks`, off as rust-js reads it (ADRs 0364, 0917).
 pub(crate) fn is_check_language_ub(tcx: TyCtxt<'_>, id: DefId) -> bool {
-    is_std_crate(tcx, id) && std_path(tcx, id) == "std::ub_checks::check_language_ub"
+    is_std_crate(tcx, id) && is_std_path(tcx, id, StdPath::UbChecksCheckLanguageUbFn)
 }
 
 /// The name `id` has in `std::f64::consts`, `LN_2`, if it's one of its
@@ -503,7 +505,7 @@ pub(crate) fn from_concat(tcx: TyCtxt<'_>, span: rustc_span::Span) -> bool {
 
 /// `pin!`'s `Pin::new_unchecked` of the variable it pins.
 pub(crate) fn is_pin_macro_fn(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
-    std_path(tcx, def_id) == "std::pin::pin_new_unchecked_in_helper"
+    is_std_path(tcx, def_id, StdPath::PinNewUncheckedInHelperFn)
 }
 
 impl<'a, 'tcx> Recognition<'a, 'tcx> {
@@ -551,9 +553,9 @@ impl<'tcx> Recognition<'_, 'tcx> {
         // core's own, `slice::memchr::memchr`, which std's bodies call,
         // `read_until`'s (#1156): of one needle, as memchr's.
         if of_std_crate(self.tcx, id, StdCrate::Core) {
-            return match std_path(self.tcx, id) {
-                "std::slice::memchr::memchr" => Some(MemchrOp::Find { back: false }),
-                "std::slice::memchr::memrchr" => Some(MemchrOp::Find { back: true }),
+            return match std_path_item(self.tcx, id) {
+                Some(StdPath::MemchrFn) => Some(MemchrOp::Find { back: false }),
+                Some(StdPath::MemchrMemrchrFn) => Some(MemchrOp::Find { back: true }),
                 _ => None,
             };
         }

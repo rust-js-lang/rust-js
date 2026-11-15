@@ -472,7 +472,7 @@ pub(crate) fn is_hashing(tcx: TyCtxt<'_>, id: DefId) -> bool {
 
 /// `std::hash::Hasher`, which has no diagnostic item (ADR 0463).
 pub(crate) fn is_hasher(tcx: TyCtxt<'_>, id: DefId) -> bool {
-    std_path(tcx, id) == "std::hash::Hasher"
+    is_std_path(tcx, id, StdPath::Hasher)
 }
 
 /// An operator that makes a value, `a + b` or `-a`: what a number's is, as
@@ -951,9 +951,9 @@ pub(crate) fn cmp_extreme(tcx: TyCtxt<'_>, def_id: DefId) -> Option<bool> {
     if !of_std_crate(tcx, def_id, StdCrate::Core) {
         return None;
     }
-    match std_path(tcx, def_id) {
-        "std::cmp::max" => Some(true),
-        "std::cmp::min" => Some(false),
+    match std_path_item(tcx, def_id) {
+        Some(StdPath::CmpMaxFn) => Some(true),
+        Some(StdPath::CmpMinFn) => Some(false),
         _ => None,
     }
 }

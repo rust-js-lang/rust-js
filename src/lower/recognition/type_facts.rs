@@ -391,7 +391,7 @@ pub(super) fn layout_query(tcx: TyCtxt<'_>, def_id: DefId) -> Option<(TypeFact, 
         _ if diagnostic("mem_size_of_val") => (TypeFact::Size, true),
         _ if diagnostic("mem_align_of") => (TypeFact::Align, false),
         // It has no diagnostic name.
-        _ if std_path(tcx, def_id) == "std::mem::align_of_val" => (TypeFact::Align, true),
+        _ if is_std_path(tcx, def_id, StdPath::MemAlignOfValFn) => (TypeFact::Align, true),
         // Of a type alone too, std's `ConstSizeIntoIterator::size()`, private
         // to `flatten`'s module, which std specializes on arrays (ADR 0899).
         _ if tcx
@@ -416,19 +416,21 @@ pub(crate) fn type_facts(tcx: TyCtxt<'_>, def_id: DefId) -> &'static [TypeFact] 
             _ => &[TypeFact::Size],
         };
     }
-    match std_path(tcx, def_id) {
-        "std::any::type_name" | "std::any::type_name_of_val" => return &[TypeFact::Name],
-        "std::any::TypeId::of" => return &[TypeFact::Id],
-        "std::mem::needs_drop" => return &[TypeFact::NeedsDrop],
+    match std_path_item(tcx, def_id) {
+        Some(StdPath::AnyTypeNameFn | StdPath::AnyTypeNameOfValFn) => return &[TypeFact::Name],
+        Some(StdPath::TypeIdOf) => return &[TypeFact::Id],
+        Some(StdPath::MemNeedsDropFn) => return &[TypeFact::NeedsDrop],
         // Its size and its alignment (ADR 0417).
-        "std::alloc::Layout::new" => return &[TypeFact::Size, TypeFact::Align],
+        Some(StdPath::LayoutNew) => return &[TypeFact::Size, TypeFact::Align],
         // An address asks the pointee's size, an item's stride; a dangling
         // pointer its alignment (ADR 0562).
-        "std::ptr::with_exposed_provenance"
-        | "std::ptr::with_exposed_provenance_mut"
-        | "std::ptr::without_provenance"
-        | "std::ptr::without_provenance_mut" => return &[TypeFact::Size],
-        "std::ptr::dangling" | "std::ptr::dangling_mut" | "std::ptr::NonNull::<T>::dangling" => {
+        Some(
+            StdPath::PtrWithExposedProvenanceFn
+            | StdPath::PtrWithExposedProvenanceMutFn
+            | StdPath::PtrWithoutProvenanceFn
+            | StdPath::PtrWithoutProvenanceMutFn,
+        ) => return &[TypeFact::Size],
+        Some(StdPath::PtrDanglingFn | StdPath::PtrDanglingMutFn | StdPath::NonNullDangling) => {
             return &[TypeFact::Size, TypeFact::Align];
         }
         _ => {}

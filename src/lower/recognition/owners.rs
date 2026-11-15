@@ -20,9 +20,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let array = |it: Ty<'tcx>| {
             self.is_std_type(it, StdItem::SliceIter)
                 || self.is_std_type(it, StdItem::ArrayIntoIter)
-                || matches!(it.kind(), ty::Adt(adt, _) if std_path(self.tcx, adt.did()) == "std::vec::IntoIter")
+                || matches!(it.kind(), ty::Adt(adt, _) if is_std_path(self.tcx, adt.did(), StdPath::VecIntoIter))
         };
-        let copied = matches!(replacement.kind(), ty::Adt(adt, held) if std_path(self.tcx, adt.did()) == "std::iter::Copied"
+        let copied = matches!(replacement.kind(), ty::Adt(adt, held) if is_std_path(self.tcx, adt.did(), StdPath::IterCopied)
             && held.types().next().is_some_and(|it| self.is_std_type(it, StdItem::SliceIter)));
         (array(replacement) || copied)
             .then(|| self.iterator_item(replacement))
@@ -41,18 +41,16 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }
         // A map's `drain()`'s and `into_iter()`'s, its entries, `(K, V)`.
         if matches!(
-            std_path(self.tcx, adt.did()),
-            "std::collections::hash_map::Drain"
-                | "std::collections::hash_map::IntoIter"
-                | "std::collections::btree_map::IntoIter"
+            std_path_item(self.tcx, adt.did()),
+            Some(StdPath::HashMapDrain | StdPath::HashMapIntoIter | StdPath::BtreeMapIntoIter)
         ) {
             let mut types = args.types();
             return Some(Ty::new_tup(self.tcx, &[types.next()?, types.next()?]));
         }
         // A map's `into_values()`'s, its values, `V` of `<K, V>` (#432).
         if matches!(
-            std_path(self.tcx, adt.did()),
-            "std::collections::hash_map::IntoValues" | "std::collections::btree_map::IntoValues"
+            std_path_item(self.tcx, adt.did()),
+            Some(StdPath::HashMapIntoValues | StdPath::BtreeMapIntoValues)
         ) {
             return args.types().nth(1);
         }
@@ -80,7 +78,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     pub(in crate::lower) fn owns_one_item(&self, ty: Ty<'tcx>) -> bool {
         let ty = self.reveal(ty);
         matches!(ty.kind(), ty::Adt(adt, _)
-            if matches!(std_path(self.tcx, adt.did()), "std::option::IntoIter" | "std::iter::Once"))
+            if matches!(std_path_item(self.tcx, adt.did()), Some(StdPath::OptionIntoIter | StdPath::IterOnce)))
     }
 
     /// Whether `ty` gives what nothing else holds: an owning iterator's
@@ -91,14 +89,16 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let ty = self.reveal(ty.peel_refs());
         let ty::Adt(adt, args) = ty.kind() else { return false };
         self.owned_items(ty).is_some()
-            || match std_path(self.tcx, adt.did()) {
-                "std::iter::Copied" | "std::iter::Cloned" => true,
-                "std::iter::Enumerate"
-                | "std::iter::Rev"
-                | "std::iter::Skip"
-                | "std::iter::Take"
-                | "std::iter::StepBy"
-                | "std::iter::Fuse" => self.gives_owned_items(args.type_at(0)),
+            || match std_path_item(self.tcx, adt.did()) {
+                Some(StdPath::IterCopied | StdPath::IterCloned) => true,
+                Some(
+                    StdPath::IterEnumerate
+                    | StdPath::IterRev
+                    | StdPath::IterSkip
+                    | StdPath::IterTake
+                    | StdPath::IterStepBy
+                    | StdPath::IterFuse,
+                ) => self.gives_owned_items(args.type_at(0)),
                 _ => false,
             }
     }
