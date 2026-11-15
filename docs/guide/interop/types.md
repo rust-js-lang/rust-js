@@ -2663,7 +2663,10 @@ export function forget(props) {
 }
 ```
 - `js::object::spread(value)` is `{ ...value }`, a new object of its own
-  enumerable properties, and of `None` written, `{}`, a new object of
+  enumerable properties (a struct whose object begins with the same copy,
+  `{ ...given, source }`, flattens a `js::Spread<&G>` field, as
+  [Exporting to JavaScript](export-to-javascript.md#typescript-declarations)
+  shows, [ADR 1164](../../decisions/1164-create-details-forms.md)), and of `None` written, `{}`, a new object of
   none, as animation keyframes' `[{}, {}]` are; a `__proto__` key one of them, where
   `Object.assign({}, value)` would set the prototype; `js::array::splice(
   value, start, n, items)` is `value.splice(start, n, ...items)` of any

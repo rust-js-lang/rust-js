@@ -7,6 +7,22 @@ const tests = ["test/declarations.test.ts"];
 
 export const mutations: Mutation[] = [
   {
+    name: "spread-declared-any-keys",
+    breaks: "a flattened `js::Spread` is declared an index of `unknown`, so its copy's keys aren't the given's (ADR 1164)",
+    file: "src/lower/declarations/structures.rs",
+    find: "                    crate::lower::recognition::is_js_spread(self.tcx, adt.did()) || self.flattened.enum_of_keys(*ty)\n",
+    replace: "                    self.flattened.enum_of_keys(*ty)\n",
+    tests: ["test/js-spread.test.ts", "-t", "JS's own spread"],
+  },
+  {
+    name: "spread-omits-nothing",
+    breaks: "a `js::Spread`'s copy omits none of the struct's own keys, so the given's `source` is its type, where the struct's own wins (ADR 1164)",
+    file: "src/lower/declarations/structures.rs",
+    find: "                        1 => own_keys[0].clone(),\n",
+    replace: "                        1 => keyword(\"never\"),\n",
+    tests: ["test/js-spread.test.ts", "-t", "JS's own spread"],
+  },
+  {
     name: "accessor-field-writable",
     breaks: "a `js::Accessor` field is declared writable, where its getter has no setter (ADR 1164)",
     file: "src/lower/declarations/structures.rs",
@@ -26,8 +42,8 @@ export const mutations: Mutation[] = [
     name: "untagged-records-declared-extended",
     breaks: "a struct that flattens an untagged enum of records extends it, which an interface can't, not `{ key: string } & CompositionInput` (#1818)",
     file: "src/lower/declarations/structures.rs",
-    find: "                ty::Adt(..) => self.flattened.enum_of_keys(*ty),\n",
-    replace: "                ty::Adt(adt, _) => self.flattened.keyed.contains(&adt.did()),\n",
+    find: "                    crate::lower::recognition::is_js_spread(self.tcx, adt.did()) || self.flattened.enum_of_keys(*ty)\n",
+    replace: "                    crate::lower::recognition::is_js_spread(self.tcx, adt.did()) || self.flattened.keyed.contains(&adt.did())\n",
     tests: ["test/flattened-untagged.test.ts", "-t", "declared an intersection"],
   },  {
     name: "cell-option-field-required",
@@ -248,8 +264,8 @@ export const mutations: Mutation[] = [
     name: "flattened-param-extended",
     breaks: "a struct of a flattened type parameter is declared an interface extending it, which TypeScript refuses (#504)",
     file: "src/lower/declarations/structures.rs",
-    find: "                ty::Param(_) => true,\n                ty::Adt(..) => self.flattened.enum_of_keys(*ty),\n",
-    replace: "                ty::Param(_) => false,\n                ty::Adt(..) => self.flattened.enum_of_keys(*ty),\n",
+    find: "                ty::Param(_) => true,\n                ty::Adt(adt, _) => {\n",
+    replace: "                ty::Param(_) => false,\n                ty::Adt(adt, _) => {\n",
     tests: ["test/flattened-keyed.test.ts", "-t", "intersection"],
   },
   {

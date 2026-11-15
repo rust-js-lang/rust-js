@@ -903,6 +903,25 @@ impl<T> Accessor<T> {
     }
 }
 
+/// A copy of a value's own enumerable keys, which a struct a literal makes
+/// begins with: a flattened field of one, `#[rust_js::flatten] given:
+/// js::Spread<&'static G>`, is `{ ...given, source, .. }`, as upstream's
+/// createDetails writes its details (ADR 1164). The copy is taken where the
+/// struct is made, symbols too, each getter and Proxy trap run as JS's
+/// spread runs them; Rust reads it only as the struct's declaration says,
+/// `Omit<G, ..>`, so nothing reads the value it was taken of through it. A
+/// value's copy alone is [`object::spread`], the same copy.
+pub struct Spread<T>(T);
+
+impl<T> Spread<T> {
+    /// The copy of `value`'s own enumerable keys, taken where the struct is
+    /// made: in JS, `...value`.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    pub fn new(this: T) -> Self {
+        Spread(this)
+    }
+}
+
 /// A type parameter's default, as TypeScript declares it: `C:
 /// js::DefaultsTo<js::True>` is `C extends .. = true`, where Rust has no
 /// default for a function's. Every type meets it, so it constrains nothing;

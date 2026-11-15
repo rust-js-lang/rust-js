@@ -141,6 +141,32 @@ Native Rust holds the function and calls it.
 - What's left: the getter's doc comment isn't printed yet, where a
   method's is.
 
+## G. A struct that begins with a copy of a value's keys
+
+**A flattened field of `js::Spread<&'static G>`, `js::Spread::new(given)`,
+is JS's own spread of the value where the struct is made**, `{ ...given,
+source }`, upstream's: its own enumerable keys, symbols too, each getter
+and Proxy trap run as the literal runs them, an own `undefined` kept, what
+isn't own or enumerable left out, the struct's own keys after it winning,
+and the value never written. It's declared `{ source: string } & Omit<G,
+"source">`. Rust reads the copy only as that declares: `js::Spread` has no
+deref to `T`, so nothing reads a later write through the source as the
+copy's. That keeps #1822's refusal of a flattened reference, whose
+parent's copy would miss a write Rust's held reference sees (the lead's
+decision, against a flattened `&'static G`).
+
+- **One copy, two placements**: `js::object::spread(value)` is the copy as
+  a value alone, and of a tuple `{ ...a, ...b }`; the flattened field is
+  the same copy at the start of a literal with keys after it. Each writes
+  JS's spread, one node of the JS tree, `Prop::Spread`. A struct whose
+  only field is a `js::Spread` is refused, naming `js::object::spread`, so
+  each case has one form; and a `js::Spread` field without `flatten` is
+  refused, saying to flatten it.
+- A spread of a struct holding the accessor wouldn't do: `{ ...{ get
+  canceled() {..} } }` copies the value, not the getter, so the literal
+  is the struct's own.
+- An intersection alias's object prints its members' doc comments.
+
 ## Consequences
 
 - test/declarations-type-maps.test.ts: the declarations, a strict
@@ -175,4 +201,14 @@ Native Rust holds the function and calls it.
   mutations accessor-field-a-function (`aggregates.rs`),
   accessor-field-writable (`structures.rs`), accessor-get-of-a-local-allowed,
   accessor-field-moved-out-allowed (`analysis/accessors.rs`).
-- Guide: interop/export-to-javascript.md, TypeScript declarations.
+- G: test/js-spread.test.ts (the JS, the declaration, the trace of the
+  same Proxy and getter against upstream's literal, symbols, an own
+  `undefined`, a non-enumerable key, the struct's key winning, a strict
+  caller, the refusals); mutations spread-field-refused,
+  spread-unflattened-allowed, spread-alone-allowed (`validation.rs`),
+  spread-declared-any-keys, spread-omits-nothing (`structures.rs`),
+  intersection-members-undocumented (`typescript/index.js`);
+  untagged-records-declared-extended, flattened-param-extended and
+  distributive-members-undocumented retargeted.
+- Guide: interop/export-to-javascript.md, TypeScript declarations;
+  interop/types.md, `js::object::spread`.

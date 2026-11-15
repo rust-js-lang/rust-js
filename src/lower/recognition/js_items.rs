@@ -230,3 +230,11 @@ pub(in crate::lower) fn is_js_accessor_get(tcx: TyCtxt<'_>, did: DefId) -> bool 
                     ty::Adt(adt, _) if is_js_accessor(tcx, adt.did()))
         })
 }
+
+/// Whether `did` is `js::Spread`, a flattened field's copy of a value's own
+/// enumerable keys, `{ ...given, .. }` (ADR 1164).
+pub(in crate::lower) fn is_js_spread(tcx: TyCtxt<'_>, did: DefId) -> bool {
+    tcx.crate_name(did.krate).as_str() == "js"
+        && tcx.item_name(did).as_str() == "Spread"
+        && tcx.opt_parent(did).is_some_and(|parent| parent.is_crate_root())
+}

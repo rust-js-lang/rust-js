@@ -2740,6 +2740,45 @@ export function details(): Details;
 export function read(details: Details): boolean;
 ```
 
+A struct whose object begins with a copy of a value's own keys, as
+upstream's `{ ...given, source }` does, flattens a `js::Spread<&G>` field,
+made with `js::Spread::new(given)`: JS's own spread where the struct is
+made, declared `Omit<G, ..>` of the keys the struct writes after it, which
+win. Rust reads the copy only as that says
+([ADR 1164](../../decisions/1164-create-details-forms.md)):
+
+```rust
+pub struct Committed<G: 'static> {
+    #[cfg_attr(rust_js, rust_js::flatten)]
+    pub given: js::Spread<&'static G>,
+    pub source: &'static str,
+}
+
+pub fn committed<G>(given: &'static G, source: &'static str) -> Committed<G> {
+    Committed {
+        given: js::Spread::new(given),
+        source,
+    }
+}
+```
+
+```js
+export function committed(given, source) {
+  return {
+    ...given,
+    source,
+  };
+}
+```
+
+```ts
+export type Committed<G> = {
+    source: string;
+} & Omit<G, "source">;
+
+export function committed<G>(given: G, source: string): Committed<G>;
+```
+
 ## Calling Rust from a JS file in your app
 
 `rust-js build` writes each module's JS beside its Rust: `src/App.rs` is

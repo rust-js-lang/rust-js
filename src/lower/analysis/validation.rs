@@ -278,6 +278,27 @@ pub(super) fn reject_flatten_misuse<'tcx>(
         {
             mixed.insert(id.to_def_id());
         }
+        // A `js::Spread` is a struct's flattened field, the copy its literal
+        // begins with; a struct of it alone is `js::object::spread`'s copy
+        // (ADR 1164).
+        let spread = |field: &&ty::FieldDef| {
+            matches!(tcx.type_of(field.did).instantiate_identity().skip_normalization().kind(),
+                ty::Adt(adt, _) if crate::lower::recognition::is_js_spread(tcx, adt.did()))
+        };
+        for field in parent.fields.iter().filter(spread) {
+            if !bindings::is_flatten(tcx, field) {
+                refuse(
+                    tcx.def_span(field.did),
+                    "a `js::Spread` field is flattened, `#[cfg_attr(rust_js, rust_js::flatten)]`: the copy of a value's own keys a struct's object begins with, `{ ...given, .. }` (ADR 1164)".into(),
+                );
+            } else if parent.fields.len() == 1 {
+                refuse(
+                    tcx.def_span(field.did),
+                    "a struct of a `js::Spread` alone is the copy itself, `js::object::spread(value)` (ADR 1164)"
+                        .into(),
+                );
+            }
+        }
         for field in parent.fields.iter().filter(|f| bindings::is_flatten(tcx, f)) {
             let ty = tcx.type_of(field.did).instantiate_identity().skip_normalization();
             // A struct or a JS object (`plain`), or a reference to one. Or a
@@ -288,6 +309,9 @@ pub(super) fn reject_flatten_misuse<'tcx>(
             // parent's (#504), or a type parameter, given one.
             let object = match ty.peel_refs().kind() {
                 _ if bindings::flattened_state(tcx, ty).is_some() => true,
+                // A `js::Spread`, a copy of a value's own keys, `{ ...given,
+                // .. }` (ADR 1164).
+                ty::Adt(adt, _) if crate::lower::recognition::is_js_spread(tcx, adt.did()) => true,
                 // Or an untagged enum of records, its record's keys the
                 // parent's (#1818): by value, as `flattened` finds it.
                 ty::Adt(adt, _) if adt.is_enum() => {

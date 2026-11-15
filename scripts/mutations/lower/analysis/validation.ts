@@ -3,6 +3,30 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "spread-field-refused",
+    breaks: "a flattened `js::Spread` is refused as no struct of named fields, so `{ ...given, source }` can't be written (ADR 1164)",
+    file: "src/lower/analysis/validation.rs",
+    find: "                ty::Adt(adt, _) if crate::lower::recognition::is_js_spread(tcx, adt.did()) => true,\n",
+    replace: "",
+    tests: ["test/js-spread.test.ts", "-t", "JS's own spread"],
+  },
+  {
+    name: "spread-unflattened-allowed",
+    breaks: "a `js::Spread` field without `flatten` compiles, the copy a key of its own (ADR 1164)",
+    file: "src/lower/analysis/validation.rs",
+    find: "            if !bindings::is_flatten(tcx, field) {\n",
+    replace: "            if false {\n",
+    tests: ["test/js-spread.test.ts", "-t", "unflattened, or alone"],
+  },
+  {
+    name: "spread-alone-allowed",
+    breaks: "a struct of a `js::Spread` alone compiles, a second form of `js::object::spread` (ADR 1164)",
+    file: "src/lower/analysis/validation.rs",
+    find: "            } else if parent.fields.len() == 1 {\n",
+    replace: "            } else if false {\n",
+    tests: ["test/js-spread.test.ts", "-t", "unflattened, or alone"],
+  },
+  {
     name: "projected-lent-refused",
     breaks: "a flattened struct of a derived `Clone` or `PartialEq` lent whole is refused, though its clone and `==` read its fields alone (#1820)",
     file: "src/lower/analysis/validation.rs",

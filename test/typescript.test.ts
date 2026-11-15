@@ -228,6 +228,20 @@ test("print writes a conditional type, and an object alias's members' docs", asy
             whenFalse: { kind: "keyword", keyword: "never" },
           },
         },
+        {
+          kind: "type",
+          name: "Committed",
+          exported: true,
+          declare: false,
+          typeParameters: [{ name: "G" }],
+          type: {
+            kind: "intersection",
+            types: [
+              { kind: "object", members: [{ kind: "property", name: "source", optional: false, readonly: false, type: { kind: "keyword", keyword: "string" }, docs: "/** How. */" }] },
+              { kind: "reference", name: "Omit", args: [reference("G"), { kind: "literal", value: "source" }] },
+            ],
+          },
+        },
       ],
     });
     expect(printed).toBe(`export type Vocabulary = {
@@ -241,6 +255,11 @@ export type Details<const R> = R extends unknown ? {
     /** Why. */
     reason: R;
 } : never;
+
+export type Committed<G> = {
+    /** How. */
+    source: string;
+} & Omit<G, "source">;
 `);
   } finally {
     await ts.close();

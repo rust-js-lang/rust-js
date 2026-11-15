@@ -205,7 +205,9 @@ async function documented(declaration, text, printNode) {
   // `type ReasonVocabulary = { .. }`'s keys, or of one a distributive
   // conditional's, `R extends unknown ? { .. } : never` (ADR 1164).
   const aliased = declaration.kind === "type" ? declaration.type : undefined;
-  const object = aliased?.kind === "conditional" ? aliased.whenTrue : aliased;
+  // Or an intersection's, a spread's own members, `{ source } & Omit<G, ..>`.
+  const of = (t) => (t?.kind === "intersection" ? t.types.find((part) => part.kind === "object") : t);
+  const object = of(aliased?.kind === "conditional" ? aliased.whenTrue : aliased);
   const objectAlias = object?.kind === "object";
   if (declaration.kind === "interface" || declaration.kind === "class" || objectAlias) {
     const printed = declaration.kind === "class" ? classMember : member;

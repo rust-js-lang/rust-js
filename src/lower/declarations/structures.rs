@@ -59,14 +59,38 @@ impl<'tcx> Declarations<'_, 'tcx> {
         // parameter's, which an interface can't extend: what it's of
         // besides, `{ flags: number } & K` (#504, #1818).
         let flattened = variant.fields.iter().find(|f| is_flatten(self.tcx, f));
+        // A `js::Spread<&G>`'s, a copy of `G`'s keys but those the struct
+        // writes after it, `Omit<G, "source">`, which Rust reads only as
+        // that says (ADR 1164).
+        let own_keys: Vec<Value> = (variant.fields.iter())
+            .filter(|field| !is_flatten(self.tcx, field))
+            .filter_map(|field| {
+                field_key(self.tcx, field)
+                    .name()
+                    .map(|key| json!({ "kind": "literal", "value": key }))
+            })
+            .collect();
         let intersected = flattened
             .map(|field| self.tcx.type_of(field.did).instantiate_identity().skip_normalization())
             .filter(|ty| match ty.kind() {
                 ty::Param(_) => true,
-                ty::Adt(..) => self.flattened.enum_of_keys(*ty),
+                ty::Adt(adt, _) => {
+                    crate::lower::recognition::is_js_spread(self.tcx, adt.did()) || self.flattened.enum_of_keys(*ty)
+                }
                 _ => false,
             })
-            .map(|ty| self.ts(ty));
+            .map(|ty| match ty.kind() {
+                ty::Adt(adt, args) if crate::lower::recognition::is_js_spread(self.tcx, adt.did()) => {
+                    let copied = self.ts(args.type_at(0).peel_refs());
+                    let omitted = match own_keys.len() {
+                        0 => keyword("never"),
+                        1 => own_keys[0].clone(),
+                        _ => json!({ "kind": "union", "types": own_keys }),
+                    };
+                    json!({ "kind": "reference", "name": "Omit", "args": [copied, omitted] })
+                }
+                _ => self.ts(ty),
+            });
         let extends: Vec<Value> = match flattened.filter(|_| intersected.is_none()) {
             Some(field) => {
                 let ty = self.tcx.type_of(field.did).instantiate_identity().skip_normalization();

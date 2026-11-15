@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 const tests = ["test/typescript.test.ts", "-t", "construct signatures retain"];
 export const mutations: Mutation[] = [
   {
+    name: "intersection-members-undocumented",
+    breaks: "an intersection alias's object prints no member's doc comment, a spread struct's own keys losing theirs (ADR 1164)",
+    file: "typescript/index.js",
+    find: '  const of = (t) => (t?.kind === "intersection" ? t.types.find((part) => part.kind === "object") : t);',
+    replace: "  const of = (t) => t;",
+    tests: ["test/typescript.test.ts", "-t", "a conditional type, and an object alias"],
+  },
+  {
     name: "const-type-parameter-unprinted",
     breaks: "a `const` type parameter is printed without its modifier, so a caller's literals widen (ADR 1164)",
     file: "typescript/index.js",
@@ -22,8 +30,8 @@ export const mutations: Mutation[] = [
     name: "distributive-members-undocumented",
     breaks: "a distributive alias's members print no doc comment, where upstream's `ChangeDetails` carries each for a caller's editor (ADR 1164)",
     file: "typescript/index.js",
-    find: 'const object = aliased?.kind === "conditional" ? aliased.whenTrue : aliased;',
-    replace: "const object = aliased;",
+    find: 'const object = of(aliased?.kind === "conditional" ? aliased.whenTrue : aliased);',
+    replace: "const object = of(aliased);",
     tests: ["test/typescript.test.ts", "-t", "a conditional type, and an object alias"],
   },
   {
