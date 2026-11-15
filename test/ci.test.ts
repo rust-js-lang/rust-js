@@ -5,7 +5,7 @@ import { expect, test } from "bun:test";
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { checkedSince, latestRuns, MUTATION_SHARDS, mutationJobsPassed, mutationShards, timingsRun } from "../scripts/ci";
+import { checkedSince, latestRuns, MUTATION_SHARDS, mutationJobsPassed, mutationShards, resultsBase, timingsRun } from "../scripts/ci";
 import { readersOf } from "./part-settings";
 import { corpusRows, crashes, dependency, lockedVersion, lockOf, sampledHeader, sampledIn, sampledOneIn, written } from "../scripts/crate-corpus";
 import {
@@ -1083,4 +1083,22 @@ test("CI's mutations install the browser a mutation's test drives", () => {
   expect(drivesBrowser(root, "test/none-given.test.ts")).toBe(true);
   expect(drivesBrowser(root, "test/corpus.test.ts")).toBe(false);
   expect(drivesBrowser(root, "test/lowering.test.ts")).toBe(false);
+});
+
+// A check of `main` follows the last whose every mutation shard completed
+// and kept what it found, of its own commit: what changed since, and what it
+// ran and didn't catch, again. One whose results are missing, of another
+// commit, or of a shard that didn't complete, is passed over: a mutation is
+// caught only where it was, so one survivor no longer reruns every
+// mutation since the last green check.
+test("main's mutations follow the last check whose shards kept their results, and retry what it didn't catch", () => {
+  const found = (commit: string, results: Record<string, string>) => ({ commit, results });
+  const red = { run: run("main", 4, "completed", "failure"), shards: 2, completed: 2, results: [found("sha4", { a: "caught", b: "SURVIVED: its 1 tests passed with it" }), found("sha4", { c: "caught", d: "not run" })] };
+  expect(resultsBase([red])).toEqual({ since: "sha4", retry: ["b", "d"] });
+  const green = { run: run("main", 3, "completed", "success"), shards: 1, completed: 1, results: [found("sha3", { a: "caught" })] };
+  // Passed over: a shard cancelled, a shard's results missing, another commit's.
+  expect(resultsBase([{ ...red, completed: 1 }, green])).toEqual({ since: "sha3", retry: [] });
+  expect(resultsBase([{ ...red, results: red.results.slice(1) }, green])).toEqual({ since: "sha3", retry: [] });
+  expect(resultsBase([{ ...red, results: [found("sha9", {}), red.results[1]] }, green])).toEqual({ since: "sha3", retry: [] });
+  expect(resultsBase([{ ...red, shards: 0, completed: 0, results: [] }])).toBeUndefined();
 });

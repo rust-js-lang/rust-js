@@ -565,3 +565,22 @@ longer guarded. A `deref_mut` of a held guard is a copy now, as its `deref`
 is. Those shapes are rows of the bounds matrix's `guard` holder (`stored`,
 `pointer`, `pointer_write`) and of the guard shadow test, so a weakening of
 any of the three rules is caught.
+
+## Amendment: a check follows the last check's results (2026-11-15, Tu's ask)
+
+A check of `main` ran the mutations of what changed since its last check
+whose mutations all passed. One survivor kept that base where it was, so
+each push ran every mutation since: 72 of 90 checks in two days took all
+16 shards, 67% of CI's runner-minutes.
+
+**Each shard keeps what it found of each mutation, of its commit
+(`mutation-results-<k>`), and a check follows the newest completed one
+whose every shard kept its results, each of that run's commit: the
+mutations of what changed since it, and those it ran and didn't catch**
+(`scripts/ci.ts`'s `resultsBase`, `mutations.ts --also`). A result is a
+run's own, of the commit it checked, never edited: a run with a shard
+cancelled or its results missing, or another commit's, is passed over,
+and with none the last green check is the base, as before. A mutation is
+caught only where a run caught it, what changed since is the change's as
+ever, and the nightly runs every mutation.
+

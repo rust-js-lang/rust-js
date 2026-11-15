@@ -10,7 +10,7 @@
 // writes, as `bless-*` artifacts: applied here, to be read as a local bless
 // is, before they're committed.
 
-import { mkdirSync, readdirSync, rmSync } from "node:fs";
+import { mkdirSync, readFileSync, readdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 
 import { changedCases, touchesAsync, touchesConsumers, touchesCrates, touchesDeclarations, touchesFormatting, touchesIterators, touchesMemory, touchesNumbers, touchesPort, touchesStdNet, touchesTwins } from "./iteratorSlice";
@@ -53,6 +53,58 @@ export function checkedSince(runs: Run[], branch: string, mutationsPassed: (run:
         run.status === "completed" &&
         (run.conclusion === "success" || (run.conclusion === "failure" && mutationsPassed(run))),
     )?.headSha;
+}
+
+/** What a run's mutation shards found, each `mutation-results-<k>`'s, of
+ * the commit it ran at (`mutations.ts`'s `Results`), and how many shards
+ * ran, each completed, passed or not. */
+export type RunResults = { run: Run; shards: number; completed: number; results: { commit: string; results: Record<string, string> }[] };
+
+/** The last check of `main` this one's mutations follow: the newest whose
+ * every mutation shard completed and kept what it found, each of that run's
+ * own commit; and of it, what it ran and didn't catch, which runs again
+ * beside what changed since. A run of a shard cancelled, or missing, or of
+ * another commit's results, is passed over, so a mutation counts as caught
+ * only where it was, at the commit its run checked; what changed since is
+ * the change's, as ever (ADR 0093). `undefined` where none is, and the
+ * last check whose mutations passed is the base, as before. The nightly
+ * runs every mutation, whatever this says. */
+export function resultsBase(newestFirst: RunResults[]): { since: string; retry: string[] } | undefined {
+  for (const { run, shards, completed, results } of newestFirst) {
+    if (run.status !== "completed" || !run.headSha || shards === 0 || completed !== shards || results.length !== shards) continue;
+    if (!results.every((r) => r.commit === run.headSha)) continue;
+    const retry = results.flatMap((r) => Object.entries(r.results).filter(([, result]) => result !== "caught").map(([name]) => name));
+    return { since: run.headSha, retry: [...new Set(retry)].sort() };
+  }
+  return undefined;
+}
+
+/** `main`'s last checks, the newest first, each with its mutation shards'
+ * results (`resultsBase`): of at most `limit` completed runs. */
+function runResults(limit = 6): RunResults[] {
+  const out: RunResults[] = [];
+  for (const run of runs().filter((r) => r.headBranch === "main" && r.status === "completed").slice(0, limit)) {
+    const jobs: { name: string; conclusion: string }[] = JSON.parse(gh(["run", "view", String(run.databaseId), "--json=jobs"])).jobs;
+    const shardJobs = jobs.filter((job) => /^mutations \/ mutations \(\d+\/\d+\)$/.test(job.name));
+    const completed = shardJobs.filter((job) => job.conclusion === "success" || job.conclusion === "failure").length;
+    const dir = join(root, "target", "mutation-results", String(run.databaseId));
+    rmSync(dir, { recursive: true, force: true });
+    mkdirSync(dir, { recursive: true });
+    const results: RunResults["results"] = [];
+    // Its artifacts first, as a download of none asks again, three times.
+    const kept = () =>
+      (JSON.parse(gh(["api", `repos/{owner}/{repo}/actions/runs/${run.databaseId}/artifacts?per_page=100`, "--jq", "[.artifacts[].name]"])) as string[])
+        .some((name) => name.startsWith("mutation-results-"));
+    if (shardJobs.length > 0 && completed === shardJobs.length && kept()) {
+      try {
+        gh(["run", "download", String(run.databaseId), "--pattern=mutation-results-*", `--dir=${dir}`]);
+        for (const shard of readdirSync(dir)) results.push(JSON.parse(readFileSync(join(dir, shard, "results.json"), "utf8")));
+      } catch {}
+    }
+    out.push({ run, shards: shardJobs.length, completed, results });
+    if (resultsBase(out)) break;
+  }
+  return out;
 }
 
 /** Whether each of `run`'s mutation jobs ran and passed, as GitHub lists
@@ -171,9 +223,13 @@ async function check(branch: string, shards: string | undefined, since?: string)
  * (scripts/iteratorSlice.ts): as GitHub's step outputs. */
 async function plan(given?: string) {
   let since = given ?? "HEAD~1";
+  let retry: string[] = [];
   if (given === undefined) {
     try {
-      since = checkedSince(runs(), "main", runMutationsPassed) ?? since;
+      // What the last check's mutations left, else the last that passed.
+      const base = resultsBase(runResults());
+      since = base?.since ?? checkedSince(runs(), "main", runMutationsPassed) ?? since;
+      retry = base?.retry ?? [];
     } catch {}
   }
   let count = 0;
@@ -183,8 +239,10 @@ async function plan(given?: string) {
     since = "HEAD~1";
     count = (await changedSince(since)).length;
   }
+  count += retry.length;
   const changed = Bun.spawnSync(["git", "diff", "--name-only", since, "HEAD"], { cwd: root }).stdout.toString().split("\n").filter(Boolean);
   console.log(`since=${since}`);
+  console.log(`retry=${retry.join(",")}`);
   console.log(`shards=${mutationShards(count)}`);
   console.log(`iterators=${touchesIterators(changed)}`);
   console.log(`formatting=${touchesFormatting(changed)}`);

@@ -66,6 +66,7 @@ jobs:
       actions: read
     outputs:
       since: ${{ steps.plan.outputs.since }}
+      retry: ${{ steps.plan.outputs.retry }}
       shards: ${{ steps.plan.outputs.shards }}
       iterators: ${{ steps.plan.outputs.iterators }}
       formatting: ${{ steps.plan.outputs.formatting }}
@@ -730,5 +731,5 @@ jobs:
     uses: ./.github/workflows/rustc-tests.yml
     with:
       mutations: true
-      mutation_args: ${{ !inputs.nightly && format('--changed={0}', needs.plan.outputs.since) || '' }}
+      mutation_args: ${{ !inputs.nightly && format('--changed={0} --also={1}', needs.plan.outputs.since, needs.plan.outputs.retry) || '' }}
       mutation_shards: ${{ inputs.nightly && '16' || inputs.mutation_shards || needs.plan.outputs.shards }}

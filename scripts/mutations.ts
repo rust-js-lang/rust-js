@@ -916,8 +916,21 @@ async function corpusMutantsRun(compiler: string, beside: <T>(work: () => Promis
   );
 }
 
+/** What a run found of each mutation it ran, `target/mutants/results.json`,
+ * of the commit it ran at: CI keeps each shard's, and the next check of
+ * `main` runs what changed since and what wasn't caught (`ci.ts`'s
+ * `resultsBase`), its commit checked against its run's. */
+export type Results = { commit: string; results: Record<string, string> };
+
+function writeResults(results: Map<string, string>) {
+  const commit = Bun.spawnSync(["git", "rev-parse", "HEAD"], { cwd: root }).stdout.toString().trim();
+  mkdirSync(work, { recursive: true });
+  const found: Results = { commit, results: Object.fromEntries(results) };
+  writeFileSync(join(work, "results.json"), JSON.stringify(found, null, 2) + "\n");
+}
+
 /** The flags `main` takes, each alone or with `=` and its value. */
-const flags = ["--changed", "--list", "--shard", "--jobs", "--batch", "--tests", "--browser"];
+const flags = ["--changed", "--also", "--list", "--shard", "--jobs", "--batch", "--tests", "--browser"];
 
 async function main() {
   const args = process.argv.slice(2);
@@ -933,6 +946,11 @@ async function main() {
   if (changed) {
     chosen = await changedSince(changed, chosen);
   }
+  // And those named again, `--also=a,b`, which a run since was given and
+  // didn't catch: CI's check of what the last run left (`ci.ts`'s
+  // `resultsBase`). One no longer listed is gone, not run.
+  const also = (args.find((arg) => arg.startsWith("--also="))?.slice("--also=".length) ?? "").split(",").filter(Boolean);
+  chosen = [...chosen, ...mutations.filter((m) => also.includes(m.name) && !chosen.includes(m))];
   const sharded = shardArg(args);
   if (sharded) {
     const names = shard(chosen.map((m) => m.name), sharded.index, sharded.count);
@@ -955,6 +973,7 @@ async function main() {
     return;
   }
   if (chosen.length === 0 && !harness) {
+    writeResults(new Map());
     console.log("no mutations to run");
     return;
   }
@@ -1304,6 +1323,7 @@ async function main() {
   const slowest = [...took].sort(([, a], [, b]) => b.build + b.tests - (a.build + a.tests)).slice(0, 10);
   for (const [mutation, time] of slowest) console.log(`slow\t${mutation.name}\tbuild ${shown(time.build)}, tests ${shown(time.tests)}`);
   writeFileSync(join(work, "timings.json"), JSON.stringify(Object.fromEntries([...took].map(([mutation, time]) => [mutation.name, time])), null, 2) + "\n");
+  writeResults(new Map(rows.map(([mutation, result]) => [mutation.name, result])));
   const harnessRows = await harnessResults;
   for (const [name, result] of harnessRows) console.log(`corpus-mutant ${name}\t${result}`);
   const harnessMissed = harnessRows.filter(([, result]) => !result.startsWith("caught") && !result.startsWith("passed, as it must"));
