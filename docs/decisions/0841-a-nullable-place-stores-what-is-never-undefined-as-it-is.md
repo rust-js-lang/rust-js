@@ -359,3 +359,29 @@ is. So each is stored as it is: `initializingHandler = prevHandler;`.
   drop of a `take()` of an `Option` one that may throw, so no guard of
   it is taken apart, `guard-copy-defined-lost` (`lower/drops/inlined.ts`),
   taken out until #861 makes it quiet again (ADR 0660, amended).
+
+## Amendment: an item's read may be `undefined` (2026-11-16, #1957)
+
+`may_be_undefined` took a read marked `Known::Item` for never `undefined`, as
+a function's is. But every item's read is so marked, a `const`'s and a
+plain thread-local's too (`item_read`), and the `None` of one is
+`undefined`: `thread_local! { static SIGIL: Option<&Unknown> = None }`'s
+`const sigil = undefined;` was stored in a nullable field as `context.current
+= sigil`, which the crate's `=== null` reads as a `Some` (#1957, P0, a
+wrong answer). **An item's read is never `undefined` where its value never
+is (`items.rs::item_value`, `Known::Defined`)**: a function's; a `const`'s,
+a `static`'s or a thread-local's of a type never nullish
+(`can_be_nullish`), React's `REACT_CONTEXT_TYPE`, a `SymbolFor`; or of an
+`Option` that stores `null` for `None`, a `#[rust_js::nullable]` one's,
+React's `GLOBAL_DOCUMENT` and `CONSTRUCTOR_MARKER`. A plain `Option`'s may
+be, stored `sigil ?? null` as any variable's; `Known::Item` alone says only
+that the read is the same wherever it's read.
+
+Case of [0262](0262-when-rust-and-js-disagree.md): results change, Rust's
+kept. React's port: ReactFiberNewContext's `context._currentRenderer =
+rendererSigil ?? null` and `_currentRenderer2`'s, in ReactFiberNewContext
+and ReactFizzNewContext, six in all, upstream's `rendererSigil` `undefined`
+outside DEV; nothing else. Held by corpus case item_none_stored_in_a_nullable_field
+(native, both builds, as a library, metamorphic) and mutations
+`item-read-never-undefined` (js/make.ts) and `item-option-defined`
+(lower/items.ts).

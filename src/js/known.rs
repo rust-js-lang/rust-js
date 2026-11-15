@@ -136,10 +136,11 @@ knowns! {
     /// binding's `Iterator.from(list)` of an indexed list, a `NodeList`'s,
     /// whose iteration is an array's (`#[rust_js::indexed]`).
     ArrayItems,
-    /// One of the program's functions, its own or a library's, by its
-    /// name, `noop` (`items.rs::fn_ref`): a binding nothing assigns, the
-    /// same function wherever and whenever it's read (`Expr::is_fixed`,
-    /// ADR 0693, amended).
+    /// One of the program's items, its own or a library's, by its name, a
+    /// function's `noop` or a `const`'s (`items.rs::fn_ref`): a binding
+    /// nothing assigns, the same value wherever and whenever it's read
+    /// (`Expr::is_fixed`, ADR 0693, amended); not one never `undefined`, as
+    /// a `const`'s `None` is (#1957).
     Item,
     /// A read of another module's variable, an imported `export let x`
     /// that its module sets (ADRs 0270, 0096, amended): what it is where it's

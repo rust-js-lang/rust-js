@@ -943,7 +943,7 @@ fn another_named(tcx: TyCtxt<'_>, def_id: DefId, name: &str) -> bool {
 }
 
 /// What a `thread_local!`, the `const` of a `LocalKey<T>`, holds: `T`.
-fn thread_local_value<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) -> Option<Ty<'tcx>> {
+pub(super) fn thread_local_value<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId) -> Option<Ty<'tcx>> {
     let ty = tcx.type_of(def_id).instantiate_identity().skip_normalization();
     match ty.kind() {
         ty::Adt(key, args) if super::recognition::is_std_def(tcx, key.did(), super::recognition::StdItem::LocalKey) => {

@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "item-read-never-undefined",
+    breaks: "an item's read is taken to be never `undefined`, so a plain thread-local's or `const`'s `None` is stored in a nullable field as `undefined`, which the crate's `=== null` reads as a `Some` (#1957, P0)",
+    file: "src/js/make.rs",
+    find: "            _ if [Known::Defined, Known::Present, Known::NoneNull]\n",
+    replace: "            _ if [Known::Defined, Known::Present, Known::Item, Known::NoneNull]\n",
+    tests: ["test/corpus.test.ts", "-t", "^item_none_stored_in_a_nullable_field.rs$"],
+  },
+  {
     name: "typeof-boolean-and-kept",
     breaks: "React's isRecoverableError is `!!(typeof kind === \"boolean\" && kind)`, not `error[REACT_RECOVERABLE_TYPE] === true` (rd444)",
     file: "src/js/make.rs",
@@ -304,16 +312,16 @@ export const mutations: Mutation[] = [
     name: "defined-may-be-undefined",
     breaks: "what lowering knows is never `undefined` is asked of its form alone, `createTask(..)` a call that may be",
     file: "src/js/make.rs",
-    find: "            _ if [Known::Defined, Known::Present, Known::Item, Known::NoneNull]\n",
-    replace: "            _ if [Known::Present, Known::Item]\n",
+    find: "            _ if [Known::Defined, Known::Present, Known::NoneNull]\n",
+    replace: "            _ if [Known::Present]\n",
     tests: ["test/lowering-nullable.test.ts", "-t", "what's never undefined as it is"],
   },
   {
     name: "present-may-be-undefined",
     breaks: "a `Some`'s value that's there may be `undefined`, so a nullable field given a `map`'s is `(c ? c(..) : undefined) ?? null`",
     file: "src/js/make.rs",
-    find: "            _ if [Known::Defined, Known::Present, Known::Item, Known::NoneNull]\n",
-    replace: "            _ if [Known::Defined, Known::Item, Known::NoneNull]\n",
+    find: "            _ if [Known::Defined, Known::Present, Known::NoneNull]\n",
+    replace: "            _ if [Known::Defined, Known::NoneNull]\n",
     tests: ["test/lowering-nullable.test.ts", "-t", "what's never undefined as it is"],
   },
   {
@@ -333,14 +341,6 @@ export const mutations: Mutation[] = [
     replace: "        self.is_constant()\n",
     tests: ["test/corpus.test.ts", "-t", "^catch_unwind_guard_returned.rs$"],
     snapshots: true,
-  },
-  {
-    name: "item-may-be-undefined",
-    breaks: "one of the program's functions may be `undefined`, so a nullable place stores it as `noop ?? null`",
-    file: "src/js/make.rs",
-    find: "            _ if [Known::Defined, Known::Present, Known::Item, Known::NoneNull]\n",
-    replace: "            _ if [Known::Defined, Known::Present, Known::NoneNull]\n",
-    tests: ["test/lowering-nullable.test.ts", "-t", "a function a nullable place is given"],
   },
   {
     name: "field-cell-value-unread",

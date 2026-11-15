@@ -3,6 +3,22 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "item-may-be-undefined",
+    breaks: "one of the program's functions may be `undefined`, so a nullable place stores it as `noop ?? null`",
+    file: "src/lower/items.rs",
+    find: "            _ => return reference.defined_item(),\n",
+    replace: "            _ => return reference,\n",
+    tests: ["test/lowering-nullable.test.ts", "-t", "a function a nullable place is given"],
+  },
+  {
+    name: "item-option-defined",
+    breaks: "a plain `Option` item's read is taken to be never `undefined`, so a thread-local's or `const`'s `None` is stored in a nullable field as `undefined`, which the crate's `=== null` reads as a `Some` (#1957, P0)",
+    file: "src/lower/items.rs",
+    find: "                .stores_null(),\n",
+    replace: "                .stores_null()\n                || true,\n",
+    tests: ["test/corpus.test.ts", "-t", "^item_none_stored_in_a_nullable_field.rs$"],
+  },
+  {
     name: "ordering-function-value-wrong-zero",
     breaks: "Ordering predicates used as function values ignore their actual comparison",
     file: "src/lower/items.rs",
@@ -270,7 +286,7 @@ export const mutations: Mutation[] = [
     breaks:
       "one of the crate's functions, `noop`, isn't known as one, so a guard's scope returns it inside its `try`, not after the `finally`",
     file: "src/lower/items.rs",
-    find: "        } else {\n            reference.item()\n",
+    find: "        } else {\n            self.item_value(def_id, reference.item())\n",
     replace: "        } else {\n            reference\n",
     tests: ["test/corpus.test.ts", "-t", "^catch_unwind_guard_returned.rs$"],
     snapshots: true,
@@ -280,7 +296,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a library's function, `noop`, isn't known as one, so a guard's scope returns it inside its `try`, not after the `finally`",
     file: "src/lower/items.rs",
-    find: "                None => reference.item(),\n",
+    find: "                None => self.item_value(def_id, reference.item()),\n",
     replace: "                None => reference,\n",
     tests: [
       "test/crates.test.ts",

@@ -93,7 +93,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Expr::member(Expr::member(reference, "prototype"), constant.clone())
                 }
                 Some(method) => Expr::member(reference, method.clone()),
-                None => reference.item(),
+                None => self.item_value(def_id, reference.item()),
             };
         }
         self.dependencies.borrow_mut().uses.push((self.item, def_id));
@@ -302,12 +302,39 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         } else if target.owner.is_some() {
             Expr::member(reference, name)
         } else {
-            reference.item()
+            self.item_value(def_id, reference.item())
         };
         // One that never unwinds, whose call throws only where what it's
         // given does (ADR 0902).
         match self.krate.never_unwinding.contains(&def_id) {
             true => reference.never_throws(),
+            false => reference,
+        }
+    }
+
+    /// `reference`, an item's read by its name, `Known::Item`, known never
+    /// `undefined` too (`Known::Defined`) where its value never is: a
+    /// function's; a `const`'s, a `static`'s or a thread-local's of what's
+    /// never nullish, `Symbol.for("react.context")`'s, or of an `Option`
+    /// that stores `null` for `None`, a `#[rust_js::nullable]` one's. Not a
+    /// plain `Option`'s, whose `None` is `undefined`, `const sigil =
+    /// undefined;` (#1957).
+    fn item_value(&self, def_id: DefId, reference: Expr) -> Expr {
+        use rustc_hir::def::DefKind;
+        let value = match self.tcx.def_kind(def_id) {
+            DefKind::Const | DefKind::AssocConst | DefKind::Static { .. } => {
+                super::bindings::thread_local_value(self.tcx, def_id)
+                    .unwrap_or_else(|| self.tcx.type_of(def_id).instantiate_identity().skip_normalization())
+            }
+            _ => return reference.defined_item(),
+        };
+        let defined = match self.option_of(value) {
+            Some(_) => super::representation::none_form(self.tcx, super::representation::NonePlace::Local(def_id))
+                .stores_null(),
+            None => !self.can_be_nullish(value),
+        };
+        match defined {
+            true => reference.defined_item(),
             false => reference,
         }
     }
