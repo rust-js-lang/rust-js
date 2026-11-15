@@ -15,12 +15,24 @@ use rustc_span::{BytePos, ErrorGuaranteed, Span, Symbol};
 
 use super::{parser, tags_of};
 
+/// The JSX pass of one file, `rust-js fmt`'s (`source_format.rs`): its
+/// `input`, a name and the text rustfmt gave, and its `output`.
 #[derive(Default)]
 pub struct Formatter {
+    pub input: Option<(String, String)>,
     pub output: Option<String>,
 }
 
 impl Callbacks for Formatter {
+    fn config(&mut self, config: &mut rustc_interface::interface::Config) {
+        if let Some((name, input)) = self.input.take() {
+            config.input = rustc_session::config::Input::Str {
+                name: rustc_span::FileName::Custom(name),
+                input,
+            };
+        }
+    }
+
     fn after_crate_root_parsing(&mut self, compiler: &Compiler, krate: &mut ast::Crate) -> Compilation {
         let sess = &compiler.sess;
         let file = sess.source_map().lookup_source_file(krate.spans.inner_span.lo());

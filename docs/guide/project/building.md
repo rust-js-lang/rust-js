@@ -16,6 +16,8 @@ Two other commands lint it, `rust-js clippy` ([below](#linting-with-clippy)),
 and run its `#[test]`s as JS, by the test runner it names, `rust-js test` ([Testing](testing.md#rust-tests-compiled-to-javascript)).
 `rust-js bindings ./site.module.css` prints a CSS Module's binding once,
 for the app to keep ([Read a CSS Module's classes](modules.md#read-a-css-modules-classes)).
+`rust-js fmt` formats its Rust, rustfmt's and its `jsx!` bodies'
+([Formatting](../react/jsx.md#formatting)).
 
 ## What you need
 

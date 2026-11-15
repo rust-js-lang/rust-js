@@ -438,6 +438,28 @@ export async function printBindings({ app, specifier }) {
   });
 }
 
+/**
+ * `rust-js fmt` (#1901): the app's Rust formatted, rustfmt's and its
+ * `jsx!` bodies', by the compiler, in the directory it runs in: with no
+ * paths, each target's module tree of its Cargo workspace; `--check`
+ * writes nothing, prints each file's diff and exits 1 where one would
+ * change; `--stdin` formats stdin to stdout, as an editor asks. Its exit
+ * code.
+ * @param {{ app: string, args: string[] }} options
+ * @returns {Promise<number>}
+ */
+export async function formatApp({ app, args }) {
+  const compiler = await findCompiler(app);
+  if (!existsSync(compiler)) throw new Error(`rust-js: ${withoutCompiler(compiler)}`);
+  const builder = createNativeBuilder({ root: app, rustJs: compiler });
+  const { command, args: given } = builder.compilerCall(["fmt", ...args]);
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, given, { cwd: app, stdio: "inherit" });
+    child.on("error", reject);
+    child.on("close", (code) => resolve(code ?? 1));
+  });
+}
+
 /** A Next.js app's Pages Router directories, where a file is a route, of
  * an app that depends on Next.js; none of another's. */
 function nextRoutes(app) {

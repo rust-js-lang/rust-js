@@ -74,6 +74,8 @@ mod publish;
 mod reachability;
 mod runtime;
 mod settings;
+#[cfg(not(target_os = "wasi"))]
+mod source_format;
 mod std_sysroot;
 mod to_oxc;
 mod typescript;
@@ -618,20 +620,8 @@ fn run() -> ExitCode {
                 }
             };
         }
-        Ok(command::Command::FormatJsx(input)) => {
-            let mut formatter = jsx_syntax::formatting::Formatter::default();
-            let args = vec![
-                "rust-js".into(),
-                input,
-                "--crate-type=lib".into(),
-                "--edition=2024".into(),
-            ];
-            let result = rustc_driver::catch_with_exit_code(|| rustc_driver::run_compiler(&args, &mut formatter));
-            if let Some(output) = formatter.output {
-                print!("{output}");
-            }
-            return result;
-        }
+        #[cfg(not(target_os = "wasi"))]
+        Ok(command::Command::Fmt(fmt)) => return source_format::run(fmt),
         Err(error) => {
             eprintln!("{error}");
             return ExitCode::FAILURE;

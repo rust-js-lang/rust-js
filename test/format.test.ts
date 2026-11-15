@@ -1,5 +1,5 @@
 import { beforeAll, expect, test } from "bun:test";
-import { chmodSync, existsSync, readFileSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildReact, compiler, fixture, root, run, target } from "./support";
 import { decodeMappings, lookup } from "./sourcemap";
@@ -7,8 +7,9 @@ import { underLoad } from "../scripts/timing";
 
 beforeAll(buildReact, 600_000);
 
+/** `rust-js fmt --stdin` of `source`, rustfmt's and the JSX pass's (#1901). */
 function format(source: string) {
-  return Bun.spawnSync([compiler, "--format-jsx"], { stdin: Buffer.from(source), stderr: "pipe" });
+  return Bun.spawnSync([compiler, "fmt", "--stdin"], { stdin: Buffer.from(source), stderr: "pipe", cwd: root });
 }
 
 test("JSX formatter aligns nested props and callbacks and is idempotent", () => {
@@ -124,7 +125,8 @@ ${skipped}`;
   expect(format("").exitCode).toBe(0);
   const statement = `fn view() {\n    ${skippedCall}\n}\n`;
   expect(format(statement).stdout.toString()).toBe(statement);
-  const method = `impl View {\n${skipped}}\n`;
+  // As rustfmt indents it, a skipped item's first line, its own.
+  const method = `impl View {\n${skipped.replace(/^(#|fn)/gm, "    $1")}}\n`;
   expect(format(method).stdout.toString()).toBe(method);
 });
 
@@ -199,3 +201,36 @@ test("the formatter uses the compiler it's given", () => {
   expect(p.exitCode, p.stderr.toString()).toBe(0);
   expect(existsSync(mark)).toBe(true);
 });
+
+// `rust-js fmt`, the one way (#1901): `--format-jsx` is refused naming it;
+// `--check` writes nothing, prints a diff and exits 1; a `jsx!` body rustfmt
+// moved, a multi-line string's second line with it, is as written, its
+// literal byte for byte; and with no paths, each target's module tree, as
+// `cargo fmt` finds it, a file no target declares left as it is.
+test("rust-js fmt is the one formatter: its check, its literals and its workspace", () => {
+  const refused = Bun.spawnSync([compiler, "--format-jsx"], { stdin: Buffer.from(""), stderr: "pipe" });
+  expect([refused.exitCode === 0, refused.stderr.toString()]).toEqual([false, expect.stringContaining("is `rust-js fmt` now")]);
+  const moved = 'fn view() {\njsx! { <div>\n{"first\n second"}\n</div> }\n}\n';
+  const out = format(moved).stdout.toString();
+  expect(out).toBe('fn view() {\n    jsx! { <div>\n        {"first\n second"}\n    </div> }\n}\n');
+  const checked = Bun.spawnSync([compiler, "fmt", "--stdin", "--check"], { stdin: Buffer.from(moved), stdout: "pipe", cwd: root });
+  expect([checked.exitCode, checked.stdout.toString()]).toEqual([1, expect.stringContaining("--- <stdin>\n+++ <stdin>\n@@ -1,")]);
+  const clean = Bun.spawnSync([compiler, "fmt", "--stdin", "--check"], { stdin: Buffer.from(out), stdout: "pipe", cwd: root });
+  expect([clean.exitCode, clean.stdout.toString()]).toEqual([0, ""]);
+  const files = fixture("fmt-files");
+  writeFileSync(join(files, "moved.rs"), moved);
+  expect(Bun.spawnSync([compiler, "fmt", join(files, "moved.rs")], { stderr: "pipe" }).exitCode).toBe(0);
+  expect(readFileSync(join(files, "moved.rs"), "utf8")).toBe(out);
+  const dir = fixture("fmt-workspace");
+  mkdirSync(join(dir, "src", "a"), { recursive: true });
+  writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "fmt_workspace"\nversion = "0.1.0"\nedition = "2024"\n\n[workspace]\n');
+  writeFileSync(join(dir, "src", "lib.rs"), "mod a;\n// mod loose;\nconst S: &str = \"mod loose;\";\nfn  lib() {}\n");
+  writeFileSync(join(dir, "src", "a.rs"), "mod b;\nfn  a() {}\n");
+  writeFileSync(join(dir, "src", "a", "b.rs"), "fn  b() {}\n");
+  writeFileSync(join(dir, "src", "loose.rs"), "fn  loose() {}\n");
+  const listed = Bun.spawnSync([compiler, "fmt", "--check"], { cwd: dir, stdout: "pipe", stderr: "pipe" });
+  const diffs = [...listed.stdout.toString().matchAll(/^--- (.+)$/gm)].map(([, path]) => path!.slice(dir.length + 1)).sort();
+  expect([listed.exitCode, diffs]).toEqual([1, ["src/a.rs", "src/a/b.rs", "src/lib.rs"]]);
+  expect(Bun.spawnSync([compiler, "fmt"], { cwd: dir, stderr: "pipe" }).exitCode).toBe(0);
+  expect([readFileSync(join(dir, "src", "a", "b.rs"), "utf8"), readFileSync(join(dir, "src", "loose.rs"), "utf8")]).toEqual(["fn b() {}\n", "fn  loose() {}\n"]);
+}, underLoad(60_000));

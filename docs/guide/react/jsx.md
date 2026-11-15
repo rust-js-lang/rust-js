@@ -586,13 +586,28 @@ out as a second label.
 
 ## Formatting
 
-rustfmt leaves a `jsx!` body as it is. The compiler's formatter indents
-it: tags, props, nested JSX and expression blocks aligned at four spaces,
-after rustfmt has formatted the Rust around them. It changes only leading
-whitespace: line breaks, literals, comments and other macros' bodies stay
-as written, and `#[rustfmt::skip]` on an item or a `jsx!` leaves it alone.
-In this repository, `bun run fmt` runs both, on the workspace and the
-playground or on the files it's given, and `bun run fmt:check` checks.
+`rust-js fmt` formats an app's Rust, the one command for it: the
+toolchain's rustfmt, then the `jsx!` bodies rustfmt leaves as they're
+written, their tags, props, nested JSX and expression blocks aligned at
+four spaces.
+
+```bash
+rust-js fmt                  # each target's module tree of the Cargo workspace here
+rust-js fmt src/view.rs      # those files alone
+rust-js fmt --check          # writes nothing; prints each file's diff, exits 1 where one would change
+rust-js fmt --stdin          # stdin to stdout, as an editor asks
+```
+
+rustfmt runs where each file is, with the project's toolchain, its
+`rustfmt.toml` and its package's edition. For rust-analyzer, set
+`"rust-analyzer.rustfmt.overrideCommand": ["rust-js", "fmt", "--stdin"]`.
+A `jsx!` body is as it's written after rustfmt, which moves each of its
+lines with the call, a multi-line string's too, so the JSX pass changes
+only leading whitespace: line breaks, literals, comments and other macros'
+bodies stay as written, and `#[rustfmt::skip]` on an item or a `jsx!`
+leaves it alone. In this repository, `bun run fmt` runs it on the
+workspace and the playground, or on the files it's given, and
+`bun run fmt:check` checks.
 
 ## What holds it
 

@@ -16,8 +16,10 @@ pub(crate) enum Command {
     /// `--rustc <rustc flags>`: rustc itself, with rust-js's tool and cfg
     /// (ADR 0113).
     Rustc(Vec<String>),
-    /// `--format-jsx [input.rs]`: the crate's `rsx!`, formatted, on stdout.
-    FormatJsx(String),
+    /// `fmt [--check] [--stdin] [paths..]`: the crate's Rust formatted,
+    /// rustfmt's and its `jsx!`'s (#1901): natively, where rustfmt is.
+    #[cfg(not(target_os = "wasi"))]
+    Fmt(crate::source_format::Fmt),
     /// `--checks <input.rs> <file.js>..`: the crate's
     /// checks of its JS as a host has it, which Cargo's build runs none of
     /// (ADR 0117).
@@ -169,12 +171,38 @@ pub(crate) fn parse(args: Vec<String>) -> Result<Command, String> {
                 files: files.iter().map(PathBuf::from).collect(),
             }));
         }
+        // The one way to format, `rust-js fmt` (#1901).
         Some("--format-jsx") => {
-            return match args.as_slice() {
-                [_] => Ok(Command::FormatJsx("-".into())),
-                [_, input] => Ok(Command::FormatJsx(input.clone())),
-                _ => Err("usage: rust-js --format-jsx [input.rs] (defaults to stdin; writes stdout)".into()),
+            return Err("rust-js: `--format-jsx` is `rust-js fmt` now, rustfmt's and the `jsx!`'s: `rust-js fmt --stdin` formats stdin to stdout".into());
+        }
+        #[cfg(not(target_os = "wasi"))]
+        Some("fmt") => {
+            use crate::source_format::{Fmt, Mode, Sources};
+            let usage = "usage: rust-js fmt [--check] [--stdin] [paths..]";
+            let mut mode = Mode::Write;
+            let mut paths = Vec::new();
+            let mut stdin = None;
+            for arg in &args[1..] {
+                match arg.as_str() {
+                    "--check" => mode = Mode::Check,
+                    "--stdin" => stdin = Some(Sources::Stdin),
+                    flag if flag.starts_with('-') => {
+                        return Err(format!("rust-js fmt: unknown flag `{flag}`\n{usage}"));
+                    }
+                    path => paths.push(PathBuf::from(path)),
+                }
+            }
+            let sources = match (stdin, paths.is_empty()) {
+                (Some(_), false) => {
+                    return Err(format!(
+                        "rust-js fmt: `--stdin` formats stdin alone; give it no paths\n{usage}"
+                    ));
+                }
+                (Some(stdin), true) => stdin,
+                (None, true) => Sources::Workspace,
+                (None, false) => Sources::Paths(paths),
             };
+            return Ok(Command::Fmt(Fmt { mode, sources }));
         }
         _ => {}
     }

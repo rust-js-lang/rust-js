@@ -14,16 +14,25 @@
 // given it as they are. `rust-js bindings ./site.module.css` prints the
 // binding of a CSS Module's classes, run where the crate root's JS is, the
 // form the compiler checks against the file, once for the app to keep
-// (ADR 1133).
+// (ADR 1133). `rust-js fmt` formats its Rust, rustfmt's and its `jsx!`
+// bodies', `--check` to say whether it is, `--stdin` for an editor (#1901).
 // The compiler is this command's, not the app's to run.
-import { buildApp, clippyApp, printBindings, testApp } from "./build.js";
+import { buildApp, clippyApp, formatApp, printBindings, testApp } from "./build.js";
 
 const usage = (said) => {
-  process.stderr.write(`rust-js: ${said}\nusage: rust-js build [--package <name>]... [--check]\n       rust-js clippy [--package <name>]... [-- <lint flags>]\n       rust-js test [--package <name>]... [--features <features>] [--no-default-features] [-- <test runner flags>]\n       rust-js bindings <./x.module.css>\n`);
+  process.stderr.write(`rust-js: ${said}\nusage: rust-js build [--package <name>]... [--check]\n       rust-js clippy [--package <name>]... [-- <lint flags>]\n       rust-js test [--package <name>]... [--features <features>] [--no-default-features] [-- <test runner flags>]\n       rust-js bindings <./x.module.css>\n       rust-js fmt [--check] [--stdin] [paths..]\n`);
   process.exit(2);
 };
 const [command, ...rest] = process.argv.slice(2);
-if (command !== "build" && command !== "clippy" && command !== "test" && command !== "bindings") usage(command === undefined ? "no command" : `unknown command ${command}`);
+if (command !== "build" && command !== "clippy" && command !== "test" && command !== "bindings" && command !== "fmt") usage(command === undefined ? "no command" : `unknown command ${command}`);
+if (command === "fmt") {
+  try {
+    process.exit(await formatApp({ app: process.cwd(), args: rest }));
+  } catch (error) {
+    process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
+    process.exit(1);
+  }
+}
 if (command === "bindings") {
   if (rest.length !== 1 || rest[0].startsWith("-")) usage("bindings needs the CSS Module, `./site.module.css`");
   try {
