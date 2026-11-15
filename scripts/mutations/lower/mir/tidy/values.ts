@@ -325,7 +325,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/values.rs",
     find: "    if let Some(it) = crate::lower::iterators::lent_string_iterator(e) {\n",
     replace: "    if let Some(it) = crate::lower::iterators::lent_string_iterator(e).filter(|_| false) {\n",
-    tests: ["test/corpus.test.ts", "-t", "^long_text_read_char_by_char.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^string_iterator_lent_by_a_macro_where_it_is_made.rs$"],
     snapshots: true,
   },
   {
