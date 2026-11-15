@@ -252,4 +252,12 @@ export const mutations: Mutation[] = [
     replace: "                    json!({ \"kind\": \"union\", \"types\": [inner, keyword(\"null\")] }),\n",
     tests: ["test/present-slots.test.ts", "-t", "a none_undefined parameter is declared"],
   },
+  {
+    name: "projection-param-unnamed",
+    breaks: "a callback's parameter of a projection, `&<Target as Listen<Name>>::Event`, is named `value`, where its associated type names it `event`, upstream's (#1906)",
+    file: "src/lower/declarations/functions.rs",
+    find: "                        ) => Some(super::param_word(self.tcx.item_name(*def_id).as_str())),\n",
+    replace: "                        ) => { let _ = def_id; None }\n",
+    tests: ["test/webapi-event-map.test.ts"],
+  },
 ];

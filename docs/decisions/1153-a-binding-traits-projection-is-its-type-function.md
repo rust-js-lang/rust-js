@@ -112,10 +112,16 @@ declarations `import type` it; nothing is copied into a `.d.ts`.
 - **`focus` and `blur`** stay `Event` of an element (#1823): their maps
   are generated, not TypeScript's.
 
-**Known difference:** the listener's parameter is `value`, upstream's
-`event`: a `dyn Fn` names none, and a declaration names a parameter of
-its type's ([ADR 0546](0546-a-declaration-names-a-function-as-its-js-does.md));
-logged for the user's decision.
+**Known difference, resolved (#1906):** the listener's parameter was
+`value`, upstream's `event`: a `dyn Fn` names none, and a declaration
+names a parameter of its type's ([ADR 0546](0546-a-declaration-names-a-function-as-its-js-does.md)),
+whose TypeScript here, `EventMapOf<Target>[Name]`, names none. A
+projection's is its associated type's now, as Rust writes it: of `&<Target
+as Listen<Name>>::Event`, `event` (`declarations::param_word`, the one
+rule of a parameter named by its type), so `listener: (event:
+EventMapOf<Target>[Name]) => void`, upstream's (Tu's decision, a name a
+binding gives with no free text). React's port's declarations name none
+so. Held by webapi-event-map; mutation projection-param-unnamed.
 
 ## Why
 

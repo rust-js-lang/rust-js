@@ -346,9 +346,15 @@ pub(super) fn named_unit(tcx: TyCtxt<'_>, did: DefId) -> Option<super::bindings:
 /// of an `HTMLButtonElement`, its last word's, named apart where JS keeps
 /// it, `function$` of a `ResolveFunction`; `value` of any other.
 pub(super) fn param_name(ty: &Value) -> String {
-    let Some(name) = ty["name"].as_str().filter(|_| ty["kind"] == "reference") else {
-        return "value".to_string();
-    };
+    match ty["name"].as_str().filter(|_| ty["kind"] == "reference") {
+        Some(name) => param_word(name),
+        None => "value".to_string(),
+    }
+}
+
+/// A parameter's name of a type's name, `name`: its last word, lowered,
+/// `event` of `MouseEvent`, named apart where JS keeps it, `function$`.
+pub(super) fn param_word(name: &str) -> String {
     let start = (name.char_indices())
         .filter(|&(i, c)| c.is_uppercase() && name[i + c.len_utf8()..].starts_with(|n: char| n.is_lowercase()))
         .map(|(i, _)| i)

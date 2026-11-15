@@ -172,7 +172,21 @@ impl<'tcx> Declarations<'_, 'tcx> {
                 }
                 let ty = self.ts(input);
                 let name = given.unwrap_or_else(|| {
-                    let base = super::param_name(&ty);
+                    // Of a projection, its associated type's name, as it
+                    // reads in Rust: `event` of `&<Target as Listen<Name>>::Event`,
+                    // where its TypeScript, `EventMapOf<Target>[Name]`, names
+                    // none (#1906).
+                    let projected = match crate::lower::representation::payload_through(self.tcx, input).kind() {
+                        ty::Alias(
+                            _,
+                            ty::AliasTy {
+                                kind: ty::Projection { def_id },
+                                ..
+                            },
+                        ) => Some(super::param_word(self.tcx.item_name(*def_id).as_str())),
+                        _ => None,
+                    };
+                    let base = projected.unwrap_or_else(|| super::param_name(&ty));
                     let taken = names
                         .iter()
                         .filter(|n| n.trim_end_matches(char::is_numeric) == base)

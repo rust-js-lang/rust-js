@@ -85,7 +85,7 @@ test("a binding trait's projection is its type function's, and a bound constrain
   const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
   expect(declarations).toContain('import type { EventMapOf } from "@rust-js/webapi";');
   expect(declarations).toContain(
-    "export function on<Target, Name extends keyof EventMapOf<Target>>(target: Target, name: Name, listener: (value: EventMapOf<Target>[Name]) => void, options?: AddEventListenerOptions | null | undefined): () => void;",
+    "export function on<Target, Name extends keyof EventMapOf<Target>>(target: Target, name: Name, listener: (event: EventMapOf<Target>[Name]) => void, options?: AddEventListenerOptions | null | undefined): () => void;",
   );
   expect(declarations).toContain("export function listened<Target, Name extends keyof EventMapOf<Target>>(target: Target, name: Name, listener: (event: Event) => void): void;");
   // Codex's consumer, as written but its import: a click's `clientX`, a
