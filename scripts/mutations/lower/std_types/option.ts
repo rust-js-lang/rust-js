@@ -156,7 +156,7 @@ export const mutations: Mutation[] = [
     replace:
       "                            && let Some(chain) = optional_chain(&option, b, p).filter(|_| false)\n",
     tests: [
-      "test/lowering-options.test.ts",
+      "test/lowering-optional-chains.test.ts",
       "-t",
       "mapped to a property is an optional chain",
     ],

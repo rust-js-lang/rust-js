@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc/expressions.rs",
     find: "ExprKind::Member(object, _) | ExprKind::Index(object, _) | ExprKind::Call(object, _) => in_chain(object),",
     replace: "ExprKind::Member(object, _) | ExprKind::Index(object, _) | ExprKind::Call(object, _) => false,",
-    tests: ["test/lowering-options.test.ts", "-t", "an option's property chain ends"],
+    tests: ["test/lowering-optional-chains.test.ts", "-t", "an option's property chain ends"],
   },
   {
     name: "template-lines-escaped",

@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
     file: "src/js/make.rs",
     find: "            && matches!(els.kind, ExprKind::Undefined)\n            && let ExprKind::Call(callee, args) = &then.kind\n",
     replace: "            && let ExprKind::Call(callee, args) = &then.kind\n",
-    tests: ["test/lowering-options.test.ts", "-t", "an option's method call ends"],
+    tests: ["test/lowering-optional-chains.test.ts", "-t", "an option's method call ends"],
   },
   {
     name: "optional-call-ternary",
@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
     file: "src/js/make.rs",
     find: "            && let ExprKind::Member(object, property) = &callee.kind\n            && same_path(tested, object)\n",
     replace: "            && let ExprKind::Member(object, property) = &callee.kind\n",
-    tests: ["test/lowering-options.test.ts", "-t", "an option's method call ends"],
+    tests: ["test/lowering-optional-chains.test.ts", "-t", "an option's method call ends"],
   },
   {
     name: "index-of-one-item-array-kept",
@@ -65,7 +65,7 @@ export const mutations: Mutation[] = [
     file: "src/js/make.rs",
     find: "            && let ExprKind::Member(object, property) = &then.kind\n            && same_path(tested, object)\n",
     replace: "            && let ExprKind::Member(object, property) = &then.kind\n            && same_path(tested, object)\n            && false\n",
-    tests: ["test/compiler.test.ts", "test/lowering-branches.test.ts", "test/lowering-options.test.ts", "-t", "optional chain"],
+    tests: ["test/compiler.test.ts", "test/lowering-branches.test.ts", "test/lowering-optional-chains.test.ts", "-t", "optional chain"],
   },
   {
     name: "optional-chain-of-another",

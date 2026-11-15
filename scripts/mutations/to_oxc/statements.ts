@@ -64,7 +64,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc/statements.rs",
     find: "        if !in_chain(object) {",
     replace: "        if true {",
-    tests: ["test/lowering-options.test.ts", "-t", "an option's property chain ends"],
+    tests: ["test/lowering-optional-chains.test.ts", "-t", "an option's property chain ends"],
   },
   {
     name: "keyed-field-assigned-dotted",

@@ -132,7 +132,7 @@ export const mutations: Mutation[] = [
     file: "src/js/stmt_walk.rs",
     find: "        (ExprKind::Index(x, i), ExprKind::Index(y, j)) => same_path(x, y) && same_key(i, j),\n",
     replace: "        (ExprKind::Index(x, i), ExprKind::Index(y, j)) if false => same_path(x, y) && same_key(i, j),\n",
-    tests: ["test/lowering-options.test.ts", "-t", "property read of what may be None"],
+    tests: ["test/lowering-optional-chains.test.ts", "-t", "property read of what may be None"],
   },
   {
     name: "same-path-index-variable",
@@ -140,7 +140,7 @@ export const mutations: Mutation[] = [
     file: "src/js/stmt_walk.rs",
     find: "        same_path(i, j)\n            || matches!((&i.kind, &j.kind), (ExprKind::Str(i)",
     replace: "        false\n            || matches!((&i.kind, &j.kind), (ExprKind::Str(i)",
-    tests: ["test/lowering-options.test.ts", "-t", "property read of what may be None"],
+    tests: ["test/lowering-optional-chains.test.ts", "-t", "property read of what may be None"],
   },
   {
     name: "same-path-item-number-unseen",
