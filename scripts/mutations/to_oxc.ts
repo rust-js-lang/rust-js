@@ -424,7 +424,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc.rs",
     find: "            if let Some(&hi) = else_ifs.starts.get(&at)\n",
     replace: "            if let Some(&hi) = else_ifs.starts.get(&at).filter(|_| false)\n",
-    tests: ["test/lowering-loops.test.ts", "-t", "else-if at a loop's end"],
+    tests: ["test/lowering-loops-else-ifs.test.ts", "-t", "else-if at a loop's end"],
   },
   {
     name: "own-line-value-comment-unplaced",
