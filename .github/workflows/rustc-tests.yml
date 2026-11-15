@@ -432,14 +432,16 @@ jobs:
           cp test/vec-collect-ways.txt target/mutants/diag/test/
           cp docs/library-contract.md target/mutants/diag/docs/
           cd target/mutants/diag
-          env | grep -i -E 'cargo|rust' || true
-          time cargo build --locked --quiet --target-dir ../target
-          ls -la ../target/debug/incremental || true
+          env | grep -i -E 'cargo|rust|incr' || true
+          ls -la ~/.cargo ~/.cargo/bin | head -40 || true
+          cat ~/.cargo/config.toml ~/.cargo/config /etc/cargo/config.toml 2>/dev/null || true
+          __CARGO_TEST_CHANNEL_OVERRIDE_DO_NOT_USE_THIS=nightly cargo -Zunstable-options config get --show-origin 2>&1 | head -40 || true
+          time CARGO_LOG="$LOG" cargo build --locked -v --target-dir ../target 2>&1 | grep -E 'incremental|Dirty|Finished' | cut -c1-300
           echo '// a change' >> src/lower/mir/tidy/stages.rs
-          time CARGO_LOG="$LOG" cargo build --locked -v --target-dir ../target 2>&1 | grep -v '^\s*$' | tail -120
+          time CARGO_INCREMENTAL=1 cargo build --locked -v --target-dir ../target 2>&1 | grep -E 'Dirty|Finished|-C incremental' | cut -c1-200
           ls -la ../target/debug/incremental || true
           echo '// another' >> src/lower/mir/tidy/stages.rs
-          time cargo build --locked --quiet --target-dir ../target
+          time CARGO_INCREMENTAL=1 cargo build --locked --quiet --target-dir ../target
       - name: Put back each known bug
         env:
           ARGS: ${{ inputs.mutation_args }}
