@@ -8,11 +8,13 @@
 // answer's to judge, and is left out, what Miri says beside it
 // (`Holder.undefined`). Every program, 321, runs a night and in `check:fast`
 // of a change to the MIR intervals, THIR's ranges or what a loop's range
-// is: about 270 s on the Mac, one program after another. One that runs
+// is: a part a core, `RUST_JS_CASES=i/n`, 16 s on the 14-core Mac, or
+// about 270 s one program after another (DEVELOPMENT.md). One that runs
 // and differs is filed P0 and listed in `wrong`, so the list only
 // shrinks (#1877, #1878).
 //
-//   bun test test/bounds-matrix.test.ts
+//   bun test test/bounds-matrix.test.ts                          # every program
+//   RUST_JS_CASES=1/6 bun test test/bounds-matrix.test.ts        # a sixth of them
 
 import { beforeAll, expect, test } from "bun:test";
 import { writeFileSync } from "node:fs";
@@ -21,12 +23,14 @@ import { join } from "node:path";
 import { programs } from "./bounds-matrix";
 import { agree, compileJs, runJs, runNative, runtimes, show } from "./programs";
 import { buildCompiler, fixture } from "./support";
+import { shard } from "../scripts/shard";
 
 beforeAll(() => {
   buildCompiler();
 });
 
 const all = programs();
+const [part, parts] = (process.env.RUST_JS_CASES ?? "1/1").split("/").map(Number);
 
 /** The programs that run and differ from native Rust, each a wrong answer
  * filed P0, by its issue. One that agrees is taken off with its fix. */
@@ -36,7 +40,7 @@ test("the wrong answers are the matrix's programs", () => {
   for (const name of Object.keys(wrong)) expect(Object.keys(all)).toContain(name);
 });
 
-for (const name of Object.keys(all)) {
+for (const name of shard(Object.keys(all), part, parts)) {
   test(`a length of ${name.replace("__", ", tested ")}`, () => {
     const dir = fixture(`bounds-${name}`);
     const file = join(dir, "main.rs");

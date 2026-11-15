@@ -324,7 +324,15 @@ export function jobs({ all, changed, branch, added, extra, cores, picked, forms,
       ...(all ? everyFile : suites),
       ...(tidy ? [job("readability passes", ["bun", "test", "test/tidy-stages.test.ts", "test/getter-reads.test.ts"], { weight: 2 })] : []),
       ...(mutRefs ? [job("the `&mut` matrix's sample", ["bun", "test", "test/mut-ref-matrix.test.ts"])] : []),
-      ...(bounds ? [job("the bounds matrix", ["bun", "test", "test/bounds-matrix.test.ts"])] : []),
+      // In a part a core, `RUST_JS_CASES=i/n`: one `bun test` of its 321
+      // programs, one after another, took 270 s.
+      ...(bounds
+        ? Array.from({ length: pooledParts(cores) }, (_, i) =>
+            job(`the bounds matrix ${i + 1}/${pooledParts(cores)}`, ["bun", "test", "test/bounds-matrix.test.ts"], {
+              env: { RUST_JS_CASES: `${i + 1}/${pooledParts(cores)}` },
+            }),
+          )
+        : []),
       ...(nones ? [job("the `None` matrix's sample", ["bun", "test", "test/none-matrix.test.ts"])] : []),
       ...(objectModel ? [job("the object model's sample", ["bun", "test", "test/object-model.test.ts"])] : []),
       // The slices: 64 and 43 batches in 4 parts, 119-145 s and 63-119 s
