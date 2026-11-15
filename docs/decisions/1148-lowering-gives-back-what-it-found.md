@@ -309,3 +309,20 @@ as its refusal, as 12 places did, `Err(self.tcx.dcx().span_err(..))`:
 each is `refusal::error`'s now. An analysis's diagnostic that's no body's
 refusal, a name that collides, is emitted where it's found, as before.
 test/architecture-observations.test.ts holds both.
+
+## Amendment: the functions only calls reach are a query of the names (2026-11-15)
+
+With THIR's ranges gone (#1672's M4), whose calls `only_called` listed by
+their HIR, it is the query of the names M3 said it would be: each body's
+names (`call_graph::Names`, the crate graph's), a function named as a
+call's callee at each call, and as a value never, not exported, not a
+module's default, and not a trait's. It's found once, beside the graph,
+and given each analysis that asks: the MIR intervals' caller-given
+parameters, the thread-locals made as the modules load, the throwing
+functions, and, kept in the session as the intervals' given parameters
+are, the own callbacks, found as the crate is lowered, whose calls' arguments are the HIR call whose callee is at the name's span
+in its body, the one there or none (`only_called::call_at`). Its walk of
+every body owner's HIR, and of their type-checking, goes: the names are of
+the bodies the crate emits, none a constant only rustc evaluates, so a
+call in a body never lowered, which never runs, isn't counted. The corpus
+and the bounds matrix are unchanged.

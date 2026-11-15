@@ -4,7 +4,7 @@
 //! whether a call is a throwing call, of a binding or of such a function,
 //! the one answer every path asks.
 
-use crate::collections::IndexSet;
+use crate::collections::{IndexMap, IndexSet};
 use crate::lower::bindings::is_binding;
 use crate::lower::call_graph::Crate;
 use crate::lower::fn_def;
@@ -47,8 +47,8 @@ pub(super) fn throwing_fns<'tcx>(
     tcx: TyCtxt<'tcx>,
     recognition: &Recognition<'_, 'tcx>,
     calls: &Crate<'_, 'tcx>,
+    only_called: &IndexMap<DefId, Vec<super::only_called::Call>>,
 ) -> IndexSet<DefId> {
-    let only_called = super::only_called::only_called(tcx);
     let candidate = |id: &DefId| only_called.contains_key(id) && candidate(tcx, recognition, *id);
     let mut throwing = IndexSet::default();
     for component in &calls.graph.sccs {

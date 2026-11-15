@@ -76,6 +76,11 @@ impl<'tcx> Names<'tcx> {
     pub(in crate::lower) fn names_of(&self, id: DefId) -> &[Named<'tcx>] {
         &self.0[&id]
     }
+
+    /// Each body and what it names (`only_called`'s question, ADR 1148).
+    pub(in crate::lower) fn iter(&self) -> impl Iterator<Item = (DefId, &[Named<'tcx>])> + '_ {
+        self.0.iter().map(|(&id, named)| (id, named.as_slice()))
+    }
 }
 
 /// A function a body names, called or as a value: it, its generic

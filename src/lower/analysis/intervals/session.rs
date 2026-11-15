@@ -35,11 +35,14 @@ pub(crate) struct Shadow {
 /// calls are a function's callers too: a `const fn` only constants and
 /// patterns call, `add(1, 2)` of `const SUM`, is given what they pass
 /// (#1742; `call_graph::crate_graph`).
-pub(in crate::lower) fn given_parameters<'tcx>(tcx: TyCtxt<'tcx>, calls: &crate::lower::call_graph::Crate<'_, 'tcx>) {
+pub(in crate::lower) fn given_parameters<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    calls: &crate::lower::call_graph::Crate<'_, 'tcx>,
+    only_called: &IndexMap<rustc_span::def_id::DefId, Vec<crate::lower::analysis::only_called::Call>>,
+) {
     let results = closure_results(tcx, &calls.bodies);
     crate::lower::session::caches(tcx).intervals.borrow_mut().results = results;
-    let only_called = crate::lower::analysis::only_called::only_called(tcx);
-    let mut given = parameter_intervals(tcx, &calls.graph, &calls.bodies, &only_called);
+    let mut given = parameter_intervals(tcx, &calls.graph, &calls.bodies, only_called);
     capture_intervals(tcx, &calls.bodies, &mut given);
     crate::lower::session::caches(tcx).intervals.borrow_mut().given = given;
 }

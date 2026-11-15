@@ -23,7 +23,7 @@ pub(super) fn parameter_intervals<'tcx>(
     tcx: TyCtxt<'tcx>,
     graph: &CallGraph,
     bodies: &IndexMap<DefId, &Body<'tcx>>,
-    only_called: &IndexMap<DefId, Vec<rustc_hir::HirId>>,
+    only_called: &IndexMap<DefId, Vec<crate::lower::analysis::only_called::Call>>,
 ) -> IndexMap<DefId, Given> {
     let mut given: IndexMap<DefId, Given> = IndexMap::default();
     let mut calls_seen: IndexMap<DefId, usize> = IndexMap::default();
@@ -149,7 +149,7 @@ fn passes<'tcx>(
     tcx: TyCtxt<'tcx>,
     graph: &CallGraph,
     bodies: &IndexMap<DefId, &Body<'tcx>>,
-    only_called: &IndexMap<DefId, Vec<rustc_hir::HirId>>,
+    only_called: &IndexMap<DefId, Vec<crate::lower::analysis::only_called::Call>>,
     function: DefId,
     own: Given,
 ) -> Vec<(DefId, Given)> {
@@ -246,7 +246,7 @@ fn joined(a: &Given, b: &Given) -> Given {
 /// this MIR doesn't have.
 fn given_of(
     function: DefId,
-    only_called: &IndexMap<DefId, Vec<rustc_hir::HirId>>,
+    only_called: &IndexMap<DefId, Vec<crate::lower::analysis::only_called::Call>>,
     given: &IndexMap<DefId, Given>,
     calls_seen: &IndexMap<DefId, usize>,
 ) -> Given {

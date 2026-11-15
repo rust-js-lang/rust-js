@@ -34,6 +34,9 @@ pub(crate) struct Caches {
     pub compiled_types: OnceCell<IndexSet<DefId>>,
     /// std's bodies compiled into `@rust-js/std`, each found in std.
     pub compiled: OnceCell<Rc<Vec<DefId>>>,
+    /// The functions only calls reach, by their calls, found of the crate
+    /// graph's names (ADRs 0577, 1148): the own callbacks' to ask.
+    pub only_called: OnceCell<Rc<crate::collections::IndexMap<DefId, Vec<crate::lower::analysis::only_called::Call>>>>,
     /// std's catalog of compiled bodies, each row resolved (#1681).
     pub rows: OnceCell<Rc<crate::lower::recognition::Rows>>,
     /// That this session builds std's structs as their meaning (ADR 0932).
@@ -170,6 +173,7 @@ fn start_keyed(gcx: usize, flags: Flags) -> Session {
             impl_short_names: OnceMap::default(),
             compiled_types: OnceCell::new(),
             compiled: OnceCell::new(),
+            only_called: OnceCell::new(),
             rows: OnceCell::new(),
             meaning: Cell::new(flags.meaning),
             every_outside_struct: Cell::new(flags.every_outside_struct),

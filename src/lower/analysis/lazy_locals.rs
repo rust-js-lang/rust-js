@@ -21,7 +21,6 @@
 
 use crate::collections::{IndexMap, IndexSet};
 use rustc_abi::FieldIdx;
-use rustc_hir as hir;
 use rustc_middle::mir::TerminatorKind;
 use rustc_middle::thir::{ExprId, ExprKind, PatKind, Thir};
 use rustc_middle::ty::{self, Ty, TyCtxt};
@@ -58,6 +57,7 @@ pub(super) fn lazy_locals<'tcx>(
     (inits, made_where_used): (&IndexMap<LocalDefId, LocalDefId>, &IndexSet<LocalDefId>),
     (runs, bodies): (&Runs<'_, 'tcx>, &[&Body<'tcx>]),
     counted: &super::Counted<'tcx>,
+    only_called: &IndexMap<DefId, Vec<super::only_called::Call>>,
 ) -> LazyLocals {
     let mut found = LazyLocals {
         lazy: made_where_used.clone(),
@@ -101,10 +101,8 @@ pub(super) fn lazy_locals<'tcx>(
         )
         .collect();
     touches.join_copies(&made_by);
-    // Each function only calls reach, by its calls (ADR 0577).
-    let only_called = super::only_called::only_called(tcx);
     loop {
-        let loading = loading(tcx, &keyed, &found.lazy, (bodies, &only_called));
+        let loading = loading(tcx, &keyed, &found.lazy, (bodies, only_called));
         let outside = Outside::of(&touches, &loading);
         // A namespace thread-local (ADR 1061) is its module's exports, which
         // only JS reads, so its first use is its module's load: made then,
@@ -898,7 +896,7 @@ fn loading<'tcx>(
     tcx: TyCtxt<'tcx>,
     keyed: &[(LocalDefId, LocalDefId)],
     lazy: &IndexSet<LocalDefId>,
-    (bodies, only_called): (&[&Body<'tcx>], &IndexMap<DefId, Vec<hir::HirId>>),
+    (bodies, only_called): (&[&Body<'tcx>], &IndexMap<DefId, Vec<super::only_called::Call>>),
 ) -> IndexSet<DefId> {
     let mut loading: IndexSet<DefId> = (keyed.iter())
         .filter(|(_, key)| !lazy.contains(key))
@@ -919,9 +917,7 @@ fn loading<'tcx>(
     loop {
         let before = loading.len();
         for (&f, calls) in only_called {
-            if !loading.contains(&f)
-                && (calls.iter()).all(|&call| loading.contains(&tcx.hir_enclosing_body_owner(call).to_def_id()))
-            {
+            if !loading.contains(&f) && (calls.iter()).all(|(body, _)| loading.contains(body)) {
                 loading.insert(f);
             }
         }

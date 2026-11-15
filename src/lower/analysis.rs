@@ -426,6 +426,12 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // body's names (#1671 change 4 M3): each analysis that walks its calls,
     // or asks what a body names, asks it.
     let calls = crate::lower::call_graph::crate_graph(tcx, all_bodies, names.and(initializers.iter()));
+    // The functions only calls reach, by their calls, of the graph's names
+    // (ADRs 0577, 1148): asked by the MIR intervals, the thread-locals'
+    // loading, the throwing functions and the own callbacks.
+    let only_called = std::rc::Rc::new(only_called::only_called(tcx, calls.names()));
+    // And kept for the own callbacks, found as the crate is lowered.
+    let _ = crate::lower::session::caches(tcx).only_called.set(only_called.clone());
     let closures: IndexMap<DefId, &Body<'tcx>> = closures.into_iter().map(|b| (b.def_id, b)).collect();
 
     // What each module holds of a binding, and where a path reads one
@@ -915,6 +921,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         (&thread_local_inits, made_where_used),
         (&runs, all_bodies),
         &counted,
+        &only_called,
     );
     // What a function whose return alone owns a callback runs before it
     // returns that may call it (ADR 0317, amended, rd621).
@@ -1046,7 +1053,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
 
     // What each function only calls reach is given at its calls, for the
     // MIR intervals (ADR 1137, M2b-2).
-    given_parameters(tcx, &calls);
+    given_parameters(tcx, &calls, &only_called);
     let mutated = mutated_types(tcx, all_bodies);
     // Less what the session forgets of it, to see that a write in place
     // refuses where its copies are left out (#1665).
@@ -1146,7 +1153,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     );
     let (failing, writes_may_fail, dictionaries_fail) =
         fmt_failures::failing_fns(tcx, (all_bodies, &calls), &foreign, library);
-    let throwing = throwing::throwing_fns(tcx, &recognition, &calls);
+    let throwing = throwing::throwing_fns(tcx, &recognition, &calls, &only_called);
     let unwinding::Found {
         never_unwinding,
         quiet: quiet_fns,

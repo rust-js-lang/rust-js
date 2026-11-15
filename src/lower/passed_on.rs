@@ -1016,7 +1016,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             matches!(pointee.unwrap_or(ty).kind(), ty::Dynamic(..))
         };
         let mut given: IndexMap<hir::HirId, Vec<&'tcx hir::Expr<'tcx>>> = IndexMap::default();
-        for (function, calls) in super::analysis::only_called::only_called(tcx) {
+        let only_called = (crate::lower::session::caches(tcx).only_called.get().cloned()).unwrap_or_default();
+        for (&function, calls) in only_called.iter() {
             let Some(body) = function.as_local().and_then(|local| tcx.hir_maybe_body_owned_by(local)) else {
                 continue;
             };
@@ -1034,21 +1035,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     continue;
                 }
                 // What each call gives it: a method's receiver is its first.
-                let at = |call: hir::HirId| match tcx.hir_node(call) {
-                    hir::Node::Expr(hir::Expr {
-                        kind: hir::ExprKind::Call(_, args),
-                        ..
-                    }) => args.get(i),
-                    hir::Node::Expr(hir::Expr {
-                        kind: hir::ExprKind::MethodCall(_, receiver, args, _),
-                        ..
-                    }) => match i {
-                        0 => Some(*receiver),
-                        _ => args.get(i - 1),
-                    },
-                    _ => None,
+                let at = |&(body, callee): &crate::lower::analysis::only_called::Call| {
+                    match super::analysis::only_called::call_at(tcx, body, callee)?.kind {
+                        hir::ExprKind::Call(_, args) => args.get(i),
+                        hir::ExprKind::MethodCall(_, receiver, args, _) => match i {
+                            0 => Some(receiver),
+                            _ => args.get(i - 1),
+                        },
+                        _ => None,
+                    }
                 };
-                if let Some(values) = calls.iter().map(|&call| at(call)).collect::<Option<Vec<_>>>() {
+                if let Some(values) = calls.iter().map(at).collect::<Option<Vec<_>>>() {
                     given.insert(var, values);
                 }
             }

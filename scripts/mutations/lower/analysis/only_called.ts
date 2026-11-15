@@ -7,8 +7,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a function named as a value, `map(double)`, is taken as only its calls give it values, so `n * 2` doesn't wrap",
     file: "src/lower/analysis/only_called.rs",
-    find: "                hir::ExprKind::Path(ref qpath) => self.values.extend(self.named(qpath, e.hir_id)),",
-    replace: "                hir::ExprKind::Path(_) => {}",
+    find: "                Naming::Value => {\n                    values.insert(callee);\n                }\n",
+    replace: "                Naming::Value => {}\n",
     tests: ["test/lowering-functions.test.ts", "-t", "only calls reach"],
   },
   {
@@ -20,15 +20,6 @@ export const mutations: Mutation[] = [
     replace:
       "        def_id.as_local().is_some_and(|_| visibilities.is_exported(def_id.expect_local()) || true)",
     tests: ["test/lowering-functions.test.ts", "-t", "only calls reach"],
-  },
-  {
-    name: "only-called-walks-type-system-consts",
-    breaks:
-      "the analysis of what calls reach a function typechecks a const argument in a signature, which rustc can't before it lowers it, and crashes",
-    file: "src/lower/analysis/only_called.rs",
-    find: "        .filter(|&owner| !super::is_type_system_const(tcx, owner))\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^const_argument_in_a_signature.rs$"],
   },
   {
     name: "default-only-called",
