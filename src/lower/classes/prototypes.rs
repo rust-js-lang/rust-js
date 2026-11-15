@@ -137,7 +137,7 @@ fn set_prototypes(
             |item| matches!(item, js::Item::Statements(stmts) if stmts.first().is_some_and(|s| s.span == place)),
         );
         let class = (items.iter())
-            .position(|item| matches!(item, js::Item::Namespace(n) if n.name == owner && n.class.is_some()));
+            .position(|item| matches!(item, js::Item::Namespace(n) if n.name.is(owner) && n.class.is_some()));
         let (Some(set), Some(class)) = (set, class) else {
             refuse(
                 "in another module than its class's: replace it in a `js::on_load!` of the class's module".to_owned(),
@@ -148,7 +148,7 @@ fn set_prototypes(
         // constructor: a function too, which may read it.
         let made: IndexSet<&str> = (items.iter())
             .filter_map(|item| match item {
-                js::Item::Function(function) => Some(function.name.as_str()),
+                js::Item::Function(function) => Some(function.name.word()),
                 item => item.declared(),
             })
             .filter(|&name| name != owner)

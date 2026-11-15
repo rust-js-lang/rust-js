@@ -227,7 +227,7 @@ impl Item {
     /// read: a `const`'s, a type's.
     pub fn declared(&self) -> Option<&str> {
         match self {
-            Item::Namespace(Namespace { name, .. }) | Item::Const(Const { name, .. }) => Some(name),
+            Item::Namespace(Namespace { name, .. }) | Item::Const(Const { name, .. }) => Some(name.word()),
             Item::Statements(_) | Item::Function(_) => None,
         }
     }
@@ -252,7 +252,7 @@ impl Namespace {
     /// The namespace `name` of a module's `namespaces`, made of nothing
     /// where there's none yet.
     pub fn of<'n>(namespaces: &'n mut Vec<Namespace>, name: &str) -> &'n mut Namespace {
-        match namespaces.iter().position(|n| n.name == name) {
+        match namespaces.iter().position(|n| n.name.is(name)) {
             Some(at) => &mut namespaces[at],
             None => {
                 namespaces.push(Namespace {
@@ -323,7 +323,7 @@ impl Class {
     /// and it stays a function (rd715). Never an ES class's, whose
     /// methods are written in its body (`passed_on::forwarded_function`).
     pub fn forwarded(&self, method: &Function) -> Option<Expr> {
-        if !self.forwarding.iter().any(|f| f == &method.name) {
+        if !self.forwarding.iter().any(|f| method.name.is(f)) {
             return None;
         }
         let callee = passes_on(&method.params, &method.body, true).filter(|callee| callee.is_named())?;
@@ -445,12 +445,12 @@ impl Pattern {
     /// The variables it binds.
     pub fn names(&self) -> Vec<&str> {
         match self {
-            Pattern::Name(name) | Pattern::Rest(name) | Pattern::Defaulted(name, _) => vec![name.as_str()],
+            Pattern::Name(name) | Pattern::Rest(name) | Pattern::Defaulted(name, _) => vec![name.word()],
             Pattern::Array(items) => items.iter().flatten().flat_map(Pattern::names).collect(),
             Pattern::Object(fields, rest) => fields
                 .iter()
                 .flat_map(|(_, p, _)| p.names())
-                .chain(rest.as_deref())
+                .chain(rest.as_ref().map(|n| n.word()))
                 .collect(),
         }
     }
@@ -497,7 +497,7 @@ impl Pattern {
     /// The variable it is, if it's one.
     pub fn name(&self) -> Option<&str> {
         match self {
-            Pattern::Name(name) => Some(name),
+            Pattern::Name(name) => Some(name.word()),
             _ => None,
         }
     }

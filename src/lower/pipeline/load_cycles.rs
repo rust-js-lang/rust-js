@@ -236,7 +236,7 @@ pub(super) fn refuse_dictionaries_in_load_cycles(
     let runs_code = |module: &LocalModId| {
         pass.statements.get(module).is_some_and(|stmts| !stmts.is_empty())
             || const_items.get(module).is_some_and(|consts| {
-                (consts.iter()).any(|c| !pass.dictionary_names.contains(c.name.as_str()) && runs(&c.value))
+                (consts.iter()).any(|c| !pass.dictionary_names.contains(c.name.word()) && runs(&c.value))
             })
     };
     let reaches = |from, to| imports.reaches(from, to);

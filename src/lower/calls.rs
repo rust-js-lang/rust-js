@@ -390,7 +390,7 @@ pub(super) fn apply(f: Expr, args: Vec<Expr>) -> Expr {
 /// closure inlined where it's called and an `Option`'s `map` (#1900).
 pub(super) fn pattern_parts<'p>(pattern: &'p js::Pattern, arg: &Expr) -> Option<Vec<(&'p str, Expr)>> {
     match pattern {
-        js::Pattern::Name(name) => Some(vec![(name.as_str(), arg.clone())]),
+        js::Pattern::Name(name) => Some(vec![(name.word(), arg.clone())]),
         js::Pattern::Array(items) => {
             let mut parts = Vec::new();
             for (i, item) in items.iter().enumerate() {

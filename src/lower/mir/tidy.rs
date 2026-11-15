@@ -250,7 +250,7 @@ fn unread_result(body: &mut Vec<Stmt>, result: &str) {
         read.insert(name.to_string());
     });
     if !read.contains(result) {
-        body.retain(|s| !matches!(&s.kind, StmtKind::Let(name, None) if name == result));
+        body.retain(|s| !matches!(&s.kind, StmtKind::Let(name, None) if name.is(result)));
     }
 }
 
@@ -268,14 +268,14 @@ fn falsy_values(body: &mut Vec<Stmt>, falsy: &IndexSet<String>, tested: &IndexSe
     js::statement_lists(body, &mut |stmts| {
         for stmt in stmts.iter_mut() {
             if let StmtKind::Const(name, value) = &mut stmt.kind
-                && falsy.contains(name.as_str())
+                && falsy.contains(name.word())
                 && let ExprKind::Cond(test, then, none) = &value.kind
                 && matches!(none.kind, ExprKind::Undefined)
             {
                 *value = Expr::bin(Op::And, test.tested(), (**then).clone());
             }
             if let StmtKind::Const(name, value) = &mut stmt.kind
-                && tested.contains(name.as_str())
+                && tested.contains(name.word())
             {
                 *value = value.tested();
             }
@@ -566,7 +566,7 @@ mod tests {
         let returned = |mut body: Vec<Stmt>| {
             unread_resets(&mut body);
             matches!(body.last().map(|stmt| &stmt.kind),
-                Some(StmtKind::Return(Some(e))) if matches!(&e.kind, ExprKind::Var(v) if v == "result"))
+                Some(StmtKind::Return(Some(e))) if matches!(&e.kind, ExprKind::Var(v) if v.is("result")))
         };
         // Accepted: a closure that only appends, or only writes.
         assert!(returned(
@@ -1182,7 +1182,7 @@ mod tests {
         let ExprKind::Jsx(jsx) = &card.kind else {
             unreachable!("an element")
         };
-        assert!(matches!(jsx.props.as_slice(), [Prop::Spread(Expr { kind: ExprKind::Var(v), .. })] if v == "post"));
+        assert!(matches!(jsx.props.as_slice(), [Prop::Spread(Expr { kind: ExprKind::Var(v), .. })] if v.is("post")));
     }
 
     /// What an `if` always runs is put in its place (`jumps::never_taken`):

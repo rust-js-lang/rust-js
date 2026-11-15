@@ -83,7 +83,7 @@ impl Storage {
                 root = of;
             }
             let apart = |value: &Expr| match &root.kind {
-                ExprKind::Var(object) => !value.has_effects() && !value.mentions_var(object),
+                ExprKind::Var(object) => !value.has_effects() && !value.mentions_var(object.word()),
                 _ => value.is_constant() || value.reads_only_vars(),
             };
             let mut out = Vec::new();

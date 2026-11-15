@@ -130,7 +130,7 @@ fn walk(
                 // program's, or `loop`, apart from the labels around it and
                 // in it.
                 let written = written_loop(loops, span).and_then(|(.., l)| l.clone());
-                let (readable, written) = match label.as_deref() {
+                let (readable, written) = match label.as_ref().map(|n| n.word()) {
                     Some(l) if !crate::lower::mir::is_block_label(l) => (l.to_string(), true),
                     _ => {
                         let mut taken: IndexSet<String> = labels.iter().cloned().collect();
@@ -164,13 +164,15 @@ fn walk(
                     ..
                 }) = body.last_mut()
                 {
-                    let of_it = |l: &Option<Name>| l.is_none() || l.as_deref() == label.as_deref();
+                    let of_it = |l: &Option<Name>| {
+                        l.is_none() || l.as_ref().map(|n| n.word()) == label.as_ref().map(|n| n.word())
+                    };
                     for case in js::case_lists_mut(cases, default) {
                         made_continues_broken(case, &of_it, program);
                     }
                 }
                 if inner.named {
-                    if let Some(from) = label.as_deref()
+                    if let Some(from) = label.as_ref().map(|n| n.word())
                         && from != readable
                     {
                         relabeled(body, from, &readable);
@@ -253,10 +255,10 @@ fn discriminant_in_place(list: &mut Vec<Stmt>, i: usize) -> bool {
         .count();
     if let Some(at) = i.checked_sub(declared + 1)
         && let StmtKind::Const(name, value) = &list[at].kind
-        && is_temporary(name)
+        && is_temporary(name.word())
         && let StmtKind::Switch { discriminant, .. } = &list[i].kind
         && matches!(&discriminant.kind, ExprKind::Var(v) if v == name)
-        && js::mentions_in(&list[at + 1..], name) == 1
+        && js::mentions_in(&list[at + 1..], name.word()) == 1
     {
         let value = value.clone();
         if let StmtKind::Switch { discriminant, .. } = &mut list[i].kind {
@@ -297,8 +299,11 @@ fn named_value(list: &mut Vec<Stmt>, i: usize) {
             )
             .count();
     });
-    let in_switch = js::mentions_in(&list[i..=i], temporary);
-    if !is_temporary(temporary) || assigned != in_switch || js::mentions_in(list, temporary) != in_switch + 1 {
+    let in_switch = js::mentions_in(&list[i..=i], temporary.word());
+    if !is_temporary(temporary.word())
+        || assigned != in_switch
+        || js::mentions_in(list, temporary.word()) != in_switch + 1
+    {
         return;
     }
     let (temporary, name) = (temporary.clone(), name.clone());

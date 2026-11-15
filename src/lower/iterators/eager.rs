@@ -46,7 +46,7 @@ pub(super) fn indexed_callback(items: &Expr, name: &str, f: Expr) -> Result<(Exp
     // index is read, or `__` where the accumulator is `_` already, JS
     // binding a name once in a parameter list.
     let unread = || {
-        let named = |n: &str| leading.iter().any(|p| matches!(p, js::Pattern::Name(l) if l == n));
+        let named = |n: &str| leading.iter().any(|p| matches!(p, js::Pattern::Name(l) if l.is(n)));
         (1..)
             .map(|k| "_".repeat(k))
             .find(|n| !named(n) && js::mentions_in(body, n) == 0)
@@ -66,7 +66,7 @@ pub(super) fn indexed_callback(items: &Expr, name: &str, f: Expr) -> Result<(Exp
 
 /// `(x, i) => [i, x]`, which `enumerate()` maps each item with.
 fn is_enumerate_pairing(e: &Expr) -> bool {
-    let var = |e: &Expr, name: &str| matches!(&e.kind, js::ExprKind::Var(v) if v == name);
+    let var = |e: &Expr, name: &str| matches!(&e.kind, js::ExprKind::Var(v) if v.is(name));
     let js::ExprKind::Arrow(params, body) = &e.kind else {
         return false;
     };
@@ -80,8 +80,7 @@ fn is_enumerate_pairing(e: &Expr) -> bool {
     let js::ExprKind::Array(parts) = &pair.kind else {
         return false;
     };
-    (x.as_str(), i.as_str()) == ("x", "i")
-        && matches!(&parts[..], [first, second] if var(first, "i") && var(second, "x"))
+    (x.word(), i.word()) == ("x", "i") && matches!(&parts[..], [first, second] if var(first, "i") && var(second, "x"))
 }
 
 /// Whether `items` is an array made here, which nothing else holds: an
@@ -129,7 +128,7 @@ pub(super) fn fresh(items: &Expr) -> bool {
                 "$pathAncestors",
                 "$pathComponents",
             ]
-            .contains(&name.as_str()),
+            .contains(&name.word()),
             _ => false,
         },
         _ => false,
@@ -352,7 +351,7 @@ pub(in crate::lower) fn eager_spreads(stmts: &mut [Stmt]) {
             StmtKind::Const(_, e) | StmtKind::Let(_, Some(e)) | StmtKind::Return(Some(e)) => spread(e),
             _ => false,
         };
-        if !next || js::mentions_in(rest, name) != 1 {
+        if !next || js::mentions_in(rest, name.word()) != 1 {
             continue;
         }
         if let Some((items, stages)) = eager_items(value, false, None)
@@ -509,7 +508,7 @@ pub(in crate::lower) fn collected(chain: &Expr) -> Option<Expr> {
                 let list = iterated(e.clone());
                 // Not one a runtime helper makes: `$closing(..)`'s, listed,
                 // would be stepped to its end and never closed (ADR 0510).
-                if matches!(&list.kind, js::ExprKind::Call(f, _) if matches!(&f.kind, js::ExprKind::Var(f) if f.starts_with('$')))
+                if matches!(&list.kind, js::ExprKind::Call(f, _) if matches!(&f.kind, js::ExprKind::Var(f) if f.word().starts_with('$')))
                 {
                     return None;
                 }
@@ -547,7 +546,7 @@ fn chained(e: &Expr) -> Option<Vec<Expr>> {
 fn is_iterator_from(e: &Expr) -> bool {
     matches!(&e.kind, js::ExprKind::Call(callee, args) if args.len() == 1
         && matches!(&callee.kind, js::ExprKind::Member(object, from)
-            if from == "from" && matches!(&object.kind, js::ExprKind::Var(v) if v == "Iterator")))
+            if from == "from" && matches!(&object.kind, js::ExprKind::Var(v) if v.is("Iterator"))))
 }
 
 /// `items.into_iter()` of a generic `IntoIterator`, an array or a JS
@@ -596,7 +595,7 @@ pub(in crate::lower) fn consumed_into_iters(body: &mut Vec<Stmt>, fuse: Option<&
         // `collect()`'s, `Array.from(it)`, steps it till its first `done`.
         if let js::ExprKind::Member(array, from) = &callee.kind
             && from == "from"
-            && matches!(&array.kind, js::ExprKind::Var(v) if v == "Array")
+            && matches!(&array.kind, js::ExprKind::Var(v) if v.is("Array"))
             && let [it] = &mut args[..]
         {
             stepped_through(it, false, fuse);

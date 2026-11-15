@@ -55,7 +55,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a variable that only holds a with_this function's `this` stays, `const state = this; state.count--;`, where upstream reads `this.count--` (rd196)",
     file: "src/lower/binding_calls.rs",
-    find: "            body.retain(|stmt| !matches!(&stmt.kind, StmtKind::Const(name, _) if *name == alias));\n            js::read_as_this(&mut body, &alias);\n",
+    find: "            body.retain(|stmt| !matches!(&stmt.kind, StmtKind::Const(name, _) if name.is(&alias)));\n            js::read_as_this(&mut body, &alias);\n",
     replace: "",
     tests: [
       "test/js-functions.test.ts",
@@ -395,7 +395,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a temporary a function that skips what's falsy is given, from MIR, stays `test ? value : undefined`",
     file: "src/lower/binding_calls.rs",
-    find: "                    self.note_falsy(name);\n",
+    find: "                    self.note_falsy(name.word());\n",
     replace: "",
     tests: ["test/bindings.test.ts", "-t", "skips what's falsy"],
   },
@@ -706,7 +706,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `with_this` closure's `this` stays the variable it's named, which no one declares, not JS's `this`, a `ReferenceError` (ADR 0972)",
     file: "src/lower/binding_calls.rs",
-    find: "                } else if js::read_as_this(&mut body, &this) {\n",
+    find: "                } else if js::read_as_this(&mut body, this.word()) {\n",
     replace: "                } else if false {\n",
     tests: ["test/js-functions.test.ts", "-t", "is what it's called on"],
   },
@@ -715,7 +715,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `with_this` closure that sets its `this` assigns JS's, `this = undefined`, a `SyntaxError`, not a `let` of its own (ADR 0972)",
     file: "src/lower/binding_calls.rs",
-    find: "                if js::Writes::of(&body).may_replace(&this) {\n",
+    find: "                if js::Writes::of(&body).may_replace(this.word()) {\n",
     replace: "                if false {\n",
     tests: ["test/js-functions.test.ts", "-t", "sets its `this`"],
   },

@@ -602,11 +602,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let js::ExprKind::Var(name) = &root.kind else {
             return false;
         };
-        let Some(root) = (state.locals.names.iter_enumerated()).find_map(|(l, n)| (n == name).then_some(l)) else {
+        let Some(root) = (state.locals.names.iter_enumerated()).find_map(|(l, n)| name.is(n).then_some(l)) else {
             return false;
         };
         root != local
-            && self.locals.mir.settled.contains(name.as_str())
+            && self.locals.mir.settled.contains(name.word())
             && !written_before_read(state.body, state.location(), root, local)
     }
 
@@ -846,7 +846,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A payload's of a temporary keeps its name, which the temporary
         // takes (tidy's `named_temporaries`).
         let of_temporary = matches!(&value, Value::Place(target) if matches!(&target.kind, js::ExprKind::Var(name)
-            if (state.locals.names.iter_enumerated()).any(|(l, n)| n == name && !state.locals.user[l])));
+            if (state.locals.names.iter_enumerated()).any(|(l, n)| name.is(n) && !state.locals.user[l])));
         let one = place.projection.is_empty()
             && (!state.locals.user[local] || (state.facts.payloads().contains(&local) && !of_temporary))
             && state.locals.writes[local] == 1
@@ -917,7 +917,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A payload's of a temporary keeps its name, which the temporary
         // takes (tidy's `aliases`).
         let of_temporary = matches!(&expr.kind, js::ExprKind::Var(name)
-            if (state.locals.names.iter_enumerated()).any(|(l, n)| n == name && !state.locals.user[l]));
+            if (state.locals.names.iter_enumerated()).any(|(l, n)| name.is(n) && !state.locals.user[l]));
         if place.projection.is_empty()
             && !state.facts.pointed().locals.contains(&local)
             && (!state.locals.user[local] || (state.facts.payloads().contains(&local) && !of_temporary))
@@ -1070,7 +1070,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // refused (not an alias `r` names a place by, `*outer = ..`).
         if let Some((base, PlaceElem::Deref)) = place.as_ref().last_projection()
             && base.projection.is_empty()
-            && matches!(target.kind, js::ExprKind::Var(ref name) if *name == state.locals.names[base.local])
+            && matches!(target.kind, js::ExprKind::Var(ref name) if name.is(&state.locals.names[base.local]))
         {
             return Err(self.unsupported(span, "assigning a whole value through a `&mut`"));
         }
@@ -1157,7 +1157,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let js::ExprKind::Member(boxed, field) = &place.kind
             && field == js::HELD
             && let js::ExprKind::Var(name) = &boxed.kind
-            && state.naming.boxes().contains(name.as_str())
+            && state.naming.boxes().contains(name.word())
         {
             return Some((**boxed).clone());
         }
@@ -1253,7 +1253,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let stays = match &object.kind {
             js::ExprKind::Var(name) => (state.locals.names.iter_enumerated())
-                .find(|(_, n)| *n == name)
+                .find(|(_, n)| name.is(n))
                 .is_none_or(|(l, _)| state.locals.writes[l] <= 1 || !state.body.local_decls[l].ty.is_ref()),
             _ => object.is_constant(),
         };

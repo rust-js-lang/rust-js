@@ -124,7 +124,7 @@ fn shadow_of(
         StmtKind::Let(shadow, value) => (shadow.clone(), value.as_ref(), true),
         _ => return None,
     };
-    let (base, _) = crate::names::apart(&shadow)?;
+    let (base, _) = crate::names::apart(shadow.word())?;
     // The nearest binding before it of its name, or of one given apart
     // from it, `stack$1` of `stack$2`.
     let kin = |name: &str| name == base || crate::names::apart(name).is_some_and(|(b, _)| b == base);
@@ -139,7 +139,7 @@ fn shadow_of(
         Some(at) => (Some(at), declaring(&stmts[at]).into_iter().rev().find(|n| kin(n))?),
         None => (None, heads.iter().rev().find(|n| kin(n))?.clone()),
     };
-    if !user.contains(shadow.as_str()) || !user.contains(&binding) || captured.contains(&binding) {
+    if !user.contains(shadow.word()) || !user.contains(&binding) || captured.contains(&binding) {
         return None;
     }
     // `let x$1;`, `undefined` till it's set, where `x` isn't: set where a
@@ -158,7 +158,7 @@ fn shadow_of(
         let own = |s: &Stmt| {
             matches!(&s.kind, StmtKind::Assign(target, value)
                 if matches!(&target.kind, ExprKind::Var(v) if *v == shadow)
-                    && matches!(&value.kind, ExprKind::Var(v) if *v == binding))
+                    && matches!(&value.kind, ExprKind::Var(v) if v.is(&binding)))
         };
         let (mut owns, mut kept) = (0, 0);
         js::each_list(&stmts[i + 1..], &mut |list| {
@@ -177,7 +177,7 @@ fn shadow_of(
                 if let StmtKind::If(test, then, Some(otherwise)) = &s.kind {
                     let alone = |b: &[Stmt]| matches!(b, [one] if own(one));
                     let of_binding = |set| {
-                        js::null_test(test, set).is_some_and(|x| matches!(&x.kind, ExprKind::Var(v) if *v == binding))
+                        js::null_test(test, set).is_some_and(|x| matches!(&x.kind, ExprKind::Var(v) if v.is(&binding)))
                     };
                     kept += usize::from(of_binding(true) && alone(then) && !otherwise.is_empty() && !alone(otherwise));
                     kept += usize::from(of_binding(false) && alone(otherwise) && !then.is_empty() && !alone(then));
@@ -195,7 +195,7 @@ fn shadow_of(
         if owns != kept {
             return None;
         }
-        set_after_last_read(&stmts[i + 1..], &shadow, &binding, false)?;
+        set_after_last_read(&stmts[i + 1..], shadow.word(), &binding, false)?;
         let mut rest = stmts.split_off(i + 1);
         js::statement_lists(&mut rest, &mut |list| list.retain(|s| !own(s)));
         // An `if` a branch of which is left empty: its other way alone.
@@ -211,9 +211,9 @@ fn shadow_of(
                 }
             }
         });
-        js::renamed(&mut rest, &shadow, &binding);
+        js::renamed(&mut rest, shadow.word(), &binding);
         stmts.append(&mut rest);
-        if captured.contains(shadow.as_str()) {
+        if captured.contains(shadow.word()) {
             captured.insert(binding);
         }
         return Some(Shadowed {
@@ -227,7 +227,7 @@ fn shadow_of(
     }
     // Set now: assigned the shadow's value, but its own; or by what set the
     // shadow, a `let` the program sets.
-    let assigned = !matches!(&value.kind, ExprKind::Var(v) if *v == binding);
+    let assigned = !matches!(&value.kind, ExprKind::Var(v) if v.is(&binding));
     let set = assigned || is_let;
     if assigned {
         stmts[i] = StmtKind::Assign(Expr::var(&binding), value.clone()).at(stmts[i].span);
@@ -237,7 +237,7 @@ fn shadow_of(
             *e = Expr::var(&binding).or_at(e.span);
         }
     });
-    if captured.contains(shadow.as_str()) {
+    if captured.contains(shadow.word()) {
         captured.insert(binding);
     }
     Some(Shadowed { at, set, assigned })
@@ -268,7 +268,7 @@ fn set_after_last_read(stmts: &[Stmt], shadow: &str, old: &str, mut set: bool) -
         let on = |stmts: &[Stmt], (on, _): (bool, bool)| on && !stmts.last().is_some_and(js::ends);
         set = match &stmt.kind {
             // Its value read first, then the shadow set.
-            StmtKind::Assign(target, _) if matches!(&target.kind, ExprKind::Var(v) if v == shadow) => true,
+            StmtKind::Assign(target, _) if matches!(&target.kind, ExprKind::Var(v) if v.is(shadow)) => true,
             StmtKind::If(test, then, otherwise) => {
                 // A test that sets it, `if ((d$1 = bump(flags)), ..)`, sets
                 // it before either branch runs, and reads `old` there in

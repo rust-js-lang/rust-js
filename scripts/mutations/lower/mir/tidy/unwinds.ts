@@ -99,7 +99,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `let x;` only a scope reads stays before its `try`, `let tmp; try { tmp = .. }`",
     file: "src/lower/mir/tidy/unwinds.rs",
-    find: "        if elsewhere == 0 && js::mentions_in(rest, name) == 0 && js::mentions_in(std::slice::from_ref(drop), name) == 0\n",
+    find: "        if elsewhere == 0\n            && js::mentions_in(rest, name.word()) == 0\n            && js::mentions_in(std::slice::from_ref(drop), name.word()) == 0\n",
     replace: "        if false\n",
     tests: panics,
     snapshots: true,
@@ -245,9 +245,9 @@ export const mutations: Mutation[] = [
     breaks:
       "an early `return callback();` from a guard's scope, of the function's return place, ends the scope: a `try` of each way out and a `let result`, where React's `runWithFiberInDEV` returns in its one `try` (ADR 0693, amended)",
     file: "src/lower/mir/tidy/unwinds.rs",
-    find: "                    name == self.result\n                        || self.declared.contains(name.as_str()) && !self.set_by_closures.contains(name.as_str())\n",
+    find: "                    name.is(self.result)\n                        || self.declared.contains(name.word()) && !self.set_by_closures.contains(name.word())\n",
     replace:
-      "                    self.declared.contains(name.as_str()) && !self.set_by_closures.contains(name.as_str())\n",
+      "                    self.declared.contains(name.word()) && !self.set_by_closures.contains(name.word())\n",
     tests: [
       "test/lowering-drop-guards.test.ts",
       "-t",
@@ -279,9 +279,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a loop over a borrow that leaves the block it's in, `break 'get_instance`, keeps a `catch` of the drop around each step, React Float's hydrateHoistable's `bb93:` (rd200)",
     file: "src/lower/mir/tidy/unwinds.rs",
-    find: "            StmtKind::Break(Some(label)) => !inside.labels.iter().any(|l| l == label),\n",
+    find: "            StmtKind::Break(Some(label)) => !inside.labels.iter().any(|l| label.is(l)),\n",
     replace:
-      "            StmtKind::Break(Some(label)) if inside.labels.iter().any(|l| l == label) => false,\n            StmtKind::Break(Some(_)) => return false,\n",
+      "            StmtKind::Break(Some(label)) if inside.labels.iter().any(|l| label.is(l)) => false,\n            StmtKind::Break(Some(_)) => return false,\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_borrow_loops.rs$"],
     snapshots: true,
   },
@@ -290,7 +290,7 @@ export const mutations: Mutation[] = [
     breaks:
       "every labeled `continue` is a way out of the loop that drops, an inner loop's `continue bb10` and its own `continue bb5` alike: the drop of a value given again in an inner loop is the outer loop's `finally`, run once at its end (generated program 12454574), or a loop over a borrow with a `continue 'outer` keeps a `catch` of the drop around each step (#440)",
     file: "src/lower/mir/tidy/unwinds.rs",
-    find: "            StmtKind::Continue(Some(label)) => {\n                !inside.labels.iter().any(|l| l == label) && inside.own != Some(label.as_str())\n            }\n",
+    find: "            StmtKind::Continue(Some(label)) => {\n                !inside.labels.iter().any(|l| label.is(l)) && inside.own != Some(label.word())\n            }\n",
     replace: "            StmtKind::Continue(Some(_)) => true,\n",
     tests: [
       "test/corpus.test.ts",
@@ -314,9 +314,9 @@ export const mutations: Mutation[] = [
     breaks:
       "the loop's own `continue bb2`, kept in a loop in it, is a way out of it, so a loop over a borrow with one stays a `catch` of the drop around each step (#440)",
     file: "src/lower/mir/tidy/unwinds.rs",
-    find: "            StmtKind::Continue(Some(label)) => {\n                !inside.labels.iter().any(|l| l == label) && inside.own != Some(label.as_str())\n            }\n",
+    find: "            StmtKind::Continue(Some(label)) => {\n                !inside.labels.iter().any(|l| label.is(l)) && inside.own != Some(label.word())\n            }\n",
     replace:
-      "            StmtKind::Continue(Some(label)) => !inside.labels.iter().any(|l| l == label),\n",
+      "            StmtKind::Continue(Some(label)) => !inside.labels.iter().any(|l| label.is(l)),\n",
     tests: ["test/corpus.test.ts", "-t", "^looped_drops_jumps.rs$"],
     snapshots: true,
   },
@@ -363,7 +363,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a block's `break` of itself is taken for a way out of it, so an early run stops at it (#442)",
     file: "src/lower/mir/tidy/unwinds.rs",
-    find: "            StmtKind::Break(Some(l)) | StmtKind::Continue(Some(l)) => !inner.iter().any(|i| i == l),\n",
+    find: "            StmtKind::Break(Some(l)) | StmtKind::Continue(Some(l)) => !inner.iter().any(|i| l.is(i)),\n",
     replace:
       "            StmtKind::Break(Some(_)) | StmtKind::Continue(Some(_)) => true,\n",
     tests: ["test/corpus.test.ts", "-t", "^refused_drops_and_displays.rs$"],
@@ -429,7 +429,7 @@ export const mutations: Mutation[] = [
     name: "cleanups-left-unguarded",
     breaks: "a `catch` that throws on runs its drops unguarded, so a drop's panic there replaces the panic where Rust aborts (#847)",
     file: "src/lower/mir/tidy/unwinds.rs",
-    find: "        *handler = crate::lower::drops::cleanup(drops, Some(error.as_str()), span);\n",
+    find: "        *handler = crate::lower::drops::cleanup(drops, Some(error.word()), span);\n",
     replace: "        *handler = drops;\n",
     tests: ["test/corpus.test.ts", "-t", "^unwinding_drop_aborts_locals.rs$"],
   },
@@ -445,8 +445,8 @@ export const mutations: Mutation[] = [
     name: "dropped-at-breaks-off",
     breaks: "an early return out of a guard's scope whose drop may throw is a `break` of MIR's label to the drop after it, a label the program never wrote (#861)",
     file: "src/lower/mir/tidy/unwinds.rs",
-    find: "        if breaks_dropped(&mut taken, &label, &tail, true) {\n",
-    replace: "        if false && breaks_dropped(&mut taken, &label, &tail, true) {\n",
+    find: "        if breaks_dropped(&mut taken, label.word(), &tail, true) {\n",
+    replace: "        if false && breaks_dropped(&mut taken, label.word(), &tail, true) {\n",
     tests: ["test/lowering-drop-guards.test.ts", "-t", "drops where it leaves"],
   },
 ];

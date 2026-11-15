@@ -408,7 +408,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     _ => None,
                 };
                 let base = match &param {
-                    Some(Some(js::Pattern::Name(name))) => Base::Named(name),
+                    Some(Some(js::Pattern::Name(name))) => Base::Named(name.word()),
                     _ => Base::Role(Role::Option),
                 };
                 // What a `filter` kept is its variable, where its test holds.
@@ -426,7 +426,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         if let (Some(Some(js::Pattern::Name(p))), Some(b)) = (&param, &body)
                             && !self.boxed_payload(generic_args.type_at(0))
                             && !self.boxed_payload(mapped)
-                            && let Some(chain) = optional_chain(&option, b, p)
+                            && let Some(chain) = optional_chain(&option, b, p.word())
                         {
                             return Ok(Some(chain));
                         }
@@ -546,7 +546,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let debug = match &shown.kind {
             js::ExprKind::Call(callee, args)
                 if matches!(callee.kind, js::ExprKind::Var(_))
-                    && matches!(args.as_slice(), [arg] if matches!(&arg.kind, js::ExprKind::Var(name) if *name == e)) =>
+                    && matches!(args.as_slice(), [arg] if matches!(&arg.kind, js::ExprKind::Var(name) if name.is(&e))) =>
             {
                 (**callee).clone()
             }
@@ -769,11 +769,11 @@ pub(in crate::lower) fn nullish_or(
         js::ExprKind::Binary(Op::LooseNe, tested, null) if matches!(null.kind, js::ExprKind::Null) => tested,
         _ => return None,
     };
-    if !matches!(&tested.kind, js::ExprKind::Var(v) if v == m) || no.mentions_var(m) {
+    if !matches!(&tested.kind, js::ExprKind::Var(v) if v.is(m)) || no.mentions_var(m) {
         return None;
     }
     let value = match &yes.kind {
-        js::ExprKind::Var(v) if v == m => option.clone(),
+        js::ExprKind::Var(v) if v.is(m) => option.clone(),
         _ if part_never_nullish => optional_part(yes, m, option)?,
         _ => return None,
     };
@@ -786,7 +786,7 @@ pub(in crate::lower) fn nullish_or(
 /// `part`, a member or index chain of `m`, `m.a[1]`, as one of `option` that
 /// ends where it's `None`: `option?.a[1]`.
 fn optional_part(part: &Expr, m: &str, option: &Expr) -> Option<Expr> {
-    let is_m = |of: &Expr| matches!(&of.kind, js::ExprKind::Var(v) if v == m);
+    let is_m = |of: &Expr| matches!(&of.kind, js::ExprKind::Var(v) if v.is(m));
     match &part.kind {
         js::ExprKind::Member(of, field) if is_m(of) => Some(Expr::optional_member(option.clone(), field.clone())),
         js::ExprKind::Index(of, index) if is_m(of) && !index.mentions_var(m) => {
@@ -815,7 +815,7 @@ pub(in crate::lower) fn and_then_of(
     // An optional chain's `None` is `undefined`, not a `null` asked for.
     let chainable = matches!(none.kind, js::ExprKind::Undefined);
     let chained = (spilled.filter(|&at| chainable && out.len() == at + 1)).and_then(|at| match &out[at].kind {
-        StmtKind::Const(name, held) => optional_chain(held, &then, name),
+        StmtKind::Const(name, held) => optional_chain(held, &then, name.word()),
         _ => None,
     });
     match chained {
@@ -840,13 +840,13 @@ pub(in crate::lower) fn optional_chain(option: &Expr, body: &Expr, param: &str) 
     }
     match &body.kind {
         js::ExprKind::Member(of, field) => match &of.kind {
-            js::ExprKind::Var(name) if name == param => Some(Expr::optional_member(option.clone(), field.clone())),
+            js::ExprKind::Var(name) if name.is(param) => Some(Expr::optional_member(option.clone(), field.clone())),
             _ => Some(Expr::member(optional_chain(option, of, param)?, field.clone())),
         },
         // `param[key]`, `option?.[key]`: its key read only where it's there,
         // as the closure did, `$peek(it)?.[0]` (#1908).
         js::ExprKind::Index(of, key) if !key.mentions_var(param) => match &of.kind {
-            js::ExprKind::Var(name) if name == param => Some(Expr::optional_index(option.clone(), (**key).clone())),
+            js::ExprKind::Var(name) if name.is(param) => Some(Expr::optional_index(option.clone(), (**key).clone())),
             _ => Some(Expr::index(optional_chain(option, of, param)?, (**key).clone())),
         },
         js::ExprKind::Call(callee, args) if !args.iter().any(|arg| arg.mentions_var(param)) => {

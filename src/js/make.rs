@@ -234,7 +234,9 @@ impl Expr {
     /// The runtime's helper this is, by the name it exports (ADR 0103).
     pub fn helper_name(&self) -> Option<&str> {
         match &self.kind {
-            ExprKind::Var(name) if name.starts_with('$') && crate::runtime::exports(name) => Some(name),
+            ExprKind::Var(name) if name.word().starts_with('$') && crate::runtime::exports(name.word()) => {
+                Some(name.word())
+            }
             _ => None,
         }
     }
@@ -283,7 +285,7 @@ impl Expr {
     /// Of `new Error(..)`, a panic: what it's made of.
     pub fn panic_message(&self) -> Option<&[Expr]> {
         match &self.kind {
-            ExprKind::New(class, args) if matches!(&class.kind, ExprKind::Var(name) if name == "Error") => Some(args),
+            ExprKind::New(class, args) if matches!(&class.kind, ExprKind::Var(name) if name.is("Error")) => Some(args),
             _ => None,
         }
     }
@@ -382,7 +384,7 @@ impl Expr {
         match &self.kind {
             ExprKind::Call(callee, args) => match (&callee.kind, args.as_slice()) {
                 (ExprKind::Member(array, from), [it])
-                    if from == "from" && matches!(&array.kind, ExprKind::Var(name) if name == "Array") =>
+                    if from == "from" && matches!(&array.kind, ExprKind::Var(name) if name.is("Array")) =>
                 {
                     Some(it)
                 }
@@ -809,7 +811,7 @@ impl Expr {
             && let Some(tested) = null_test(&lhs, true)
             && let ExprKind::Call(callee, args) = &rhs.kind
             && let (ExprKind::Member(array, is_array), [of]) = (&callee.kind, args.as_slice())
-            && matches!(&array.kind, ExprKind::Var(name) if name == "Array")
+            && matches!(&array.kind, ExprKind::Var(name) if name.is("Array"))
             && is_array == "isArray"
             && same_path(tested, of)
         {
@@ -952,7 +954,7 @@ impl Expr {
                 &f.kind,
                 ExprKind::Member(..) | ExprKind::OptionalMember(..) | ExprKind::Index(..)
             )
-            && !matches!(&f.kind, ExprKind::Var(name) if name == "eval")
+            && !matches!(&f.kind, ExprKind::Var(name) if name.is("eval"))
         {
             *e = (**f).clone();
         }
@@ -1080,7 +1082,7 @@ impl Expr {
             return None;
         };
         match (&of.kind, args.first().map(|this| &this.kind)) {
-            (ExprKind::Var(value), Some(ExprKind::Var(this))) if name == "call" && value == this => Some(value),
+            (ExprKind::Var(value), Some(ExprKind::Var(this))) if name == "call" && value == this => Some(value.word()),
             _ => None,
         }
     }

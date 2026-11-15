@@ -244,7 +244,7 @@ pub(super) fn logical_blocks(
                     ..
                 },
                 ..,
-            ] if l == label => Some(after.clone()),
+            ] if l.is(label) => Some(after.clone()),
             [
                 Stmt {
                     kind: StmtKind::If(test, then, None),
@@ -259,7 +259,7 @@ pub(super) fn logical_blocks(
             _ => None,
         }
     }
-    let Some(made) = value(body, after, (label, after), returns, booleans) else {
+    let Some(made) = value(body, after, (label.word(), after), returns, booleans) else {
         return;
     };
     // What's returned after it, once, as the program wrote it.
@@ -313,11 +313,11 @@ pub(super) fn bound_into(test: &Expr, bound: &[Stmt], again: &dyn Fn(usize, &str
     let getter = reads_a_getter;
     (bound.iter().enumerate().rev()).try_fold(test.clone(), |test, (at, stmt)| match &stmt.kind {
         StmtKind::Const(name, value) if value.reads_same() => {
-            let tested = js::mentions_in(&[StmtKind::Expr(test.clone()).at(js::Span::NONE)], name);
-            if getter(value) && tested > 0 && tested + again(at, name) > 1 {
+            let tested = js::mentions_in(&[StmtKind::Expr(test.clone()).at(js::Span::NONE)], name.word());
+            if getter(value) && tested > 0 && tested + again(at, name.word()) > 1 {
                 return None;
             }
-            test.substitute(&|v| (v == name).then(|| value.clone()))
+            test.substitute(&|v| name.is(v).then(|| value.clone()))
         }
         _ => None,
     })
@@ -328,7 +328,7 @@ pub(super) fn bound_into(test: &Expr, bound: &[Stmt], again: &dyn Fn(usize, &str
 pub(super) fn unread_bound(stmts: &mut Vec<Stmt>, bound: usize) {
     for at in (0..bound).rev() {
         if let StmtKind::Const(name, _) = &stmts[at].kind
-            && js::mentions_in(&stmts[at + 1..], name) == 0
+            && js::mentions_in(&stmts[at + 1..], name.word()) == 0
         {
             stmts.remove(at);
         }
@@ -497,7 +497,7 @@ pub(super) fn and_tests(
         // rd706).
         let kept = bound - (made - then.len());
         for at in (0..kept).rev() {
-            if matches!(&then[at].kind, StmtKind::Const(name, _) if is_temporary(name) || own_field.contains(name.as_str()))
+            if matches!(&then[at].kind, StmtKind::Const(name, _) if is_temporary(name.word()) || own_field.contains(name.word()))
             {
                 read_again(then, at);
             }
@@ -533,8 +533,8 @@ fn read_twice_apart(a: &Expr, bound: &[Stmt], b: &Expr, again: &dyn Fn(usize, &s
         };
         let mut apart = true;
         value.visit_vars(&mut |v| apart &= !tested.contains(v));
-        let tested = js::mentions_in(&test, name);
-        apart && tested > 0 && tested + again(at, name) > 1
+        let tested = js::mentions_in(&test, name.word());
+        apart && tested > 0 && tested + again(at, name.word()) > 1
     })
 }
 
@@ -546,7 +546,7 @@ fn read_twice_apart(a: &Expr, bound: &[Stmt], b: &Expr, again: &dyn Fn(usize, &s
 fn read_past_code(bound: &[Stmt], b: &Expr, again: &dyn Fn(usize, &str) -> usize) -> bool {
     b.has_effects()
         && (bound.iter().enumerate())
-            .any(|(at, stmt)| matches!(&stmt.kind, StmtKind::Const(name, _) if again(at, name) > 0))
+            .any(|(at, stmt)| matches!(&stmt.kind, StmtKind::Const(name, _) if again(at, name.word()) > 0))
 }
 
 /// Of `if (a) { const x = e; if (b) { s; break l; } }`, a chain whose `e`
@@ -567,7 +567,7 @@ fn read_once_first(stmt: &mut Stmt) -> Option<Stmt> {
         return None;
     };
     let mut others = false;
-    second.visit_vars(&mut |v| others |= v != name);
+    second.visit_vars(&mut |v| others |= !name.is(v));
     let breaks = matches!(body.last().map(|s| &s.kind), Some(StmtKind::Break(Some(_))));
     if !reads_a_getter(value) || others || !breaks {
         return None;
@@ -590,10 +590,10 @@ fn read_first(test: &Expr, read: &Stmt, inner: &Stmt) -> Option<(Stmt, StmtKind)
     let (StmtKind::Const(name, value), StmtKind::If(second, _, None)) = (&read.kind, &inner.kind) else {
         return None;
     };
-    let defined = Expr::bin(Op::LooseNe, Expr::var(name), Expr::null());
+    let defined = Expr::bin(Op::LooseNe, Expr::var(name.word()), Expr::null());
     let mut tests = Vec::new();
     and_parts(second, &mut tests);
-    if second.has_effects() || !tests.iter().any(|t| implies(t, &defined)) || test.mentions_var(name) {
+    if second.has_effects() || !tests.iter().any(|t| implies(t, &defined)) || test.mentions_var(name.word()) {
         return None;
     }
     let first = StmtKind::Const(
@@ -621,7 +621,7 @@ pub(super) fn chain_values(stmts: &mut Vec<Stmt>, returns: &[js::Span]) {
         let StmtKind::Labeled(label, body) = &mut stmt.kind else {
             continue;
         };
-        let label = Some(label.as_str());
+        let label = Some(label.word());
         let made = match body.as_slice() {
             [chain, rest @ ..] => valued_chain(chain, rest, label, returns, &body[1..]),
             [] => None,
@@ -686,7 +686,7 @@ fn valued_chain(
     if !one {
         return None;
     }
-    if js::mentions_in(others, name) > 0 || declared(others).any(|n| n == name) {
+    if js::mentions_in(others, name.word()) > 0 || declared(others).any(|n| name.is(n)) {
         return None;
     }
     let test = (tests.into_iter())
@@ -708,7 +708,7 @@ enum Valued<'s> {
 fn one_value<'s>(stmts: &'s [Stmt], label: Option<&str>, returns: &[js::Span], last: bool) -> Option<Valued<'s>> {
     let assigned = |s: &'s Stmt| match &s.kind {
         StmtKind::Assign(target, value) => match &target.kind {
-            ExprKind::Var(x) => Some(Valued::Assigned(x, value)),
+            ExprKind::Var(x) => Some(Valued::Assigned(x.word(), value)),
             _ => None,
         },
         _ => None,
@@ -727,7 +727,7 @@ fn one_value<'s>(stmts: &'s [Stmt], label: Option<&str>, returns: &[js::Span], l
                 kind: StmtKind::Break(Some(l)),
                 ..
             },
-        ] if Some(l.as_str()) == label => assigned(assign),
+        ] if Some(l.word()) == label => assigned(assign),
         _ => None,
     }
 }
@@ -952,7 +952,7 @@ pub(super) fn broken_chain(stmts: &[Stmt], label: &str) -> Option<(Vec<Expr>, Ve
                 kind: StmtKind::Break(Some(l)),
                 ..
             },
-        ] if l == label => Some((Vec::new(), rest.to_vec())),
+        ] if l.is(label) => Some((Vec::new(), rest.to_vec())),
         _ => None,
     }
 }
@@ -1171,7 +1171,7 @@ pub(super) fn bit_tests(body: &mut Vec<Stmt>, numbers: &IndexSet<String>, patter
 /// one (ADR 0896, amended).
 fn integer_value(e: &Expr, integer: &dyn Fn(&str) -> bool) -> bool {
     match &e.kind {
-        ExprKind::Var(name) => integer(name),
+        ExprKind::Var(name) => integer(name.word()),
         ExprKind::Binary(Op::BitOr | Op::UShr, wrapped, zero) if zero.as_int() == Some(0) => matches!(
             wrapped.kind,
             ExprKind::Binary(Op::Add | Op::Sub | Op::Mul, ..) | ExprKind::Unary(UnaryOp::Neg, _)

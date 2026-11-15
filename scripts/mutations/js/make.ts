@@ -488,7 +488,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`(0, eval)(code)` is printed `eval(code)`, a direct eval, which reads the caller's variables (rd579's variable rule)",
     file: "src/js/make.rs",
-    find: "            && !matches!(&f.kind, ExprKind::Var(name) if name == \"eval\")\n",
+    find: "            && !matches!(&f.kind, ExprKind::Var(name) if name.is(\"eval\"))\n",
     replace: "",
     tests: ["test/js-any-values.test.ts", "-t", "eval is the global eval, called indirectly"],
   },
@@ -506,8 +506,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a method held in a variable before an argument's statements, `handleEvent.call(listener, sum)`, is called alone, `handleEvent(sum)`, its `this` none (rd334)",
     file: "src/js/make.rs",
-    find: "        let (ExprKind::Member(of, _) | ExprKind::Index(of, _)) = &method.kind else {\n            return None;\n        };\n        match (&of.kind, args.first().map(|this| &this.kind)) {\n            (ExprKind::Var(value), Some(ExprKind::Var(this))) if name == \"call\" && value == this => Some(value),\n",
-    replace: "        match (&method.kind, args.first().map(|this| &this.kind)) {\n            (_, Some(ExprKind::Var(this))) if name == \"call\" => Some(this),\n",
+    find: "        let (ExprKind::Member(of, _) | ExprKind::Index(of, _)) = &method.kind else {\n            return None;\n        };\n        match (&of.kind, args.first().map(|this| &this.kind)) {\n            (ExprKind::Var(value), Some(ExprKind::Var(this))) if name == \"call\" && value == this => Some(value.word()),\n",
+    replace: "        match (&method.kind, args.first().map(|this| &this.kind)) {\n            (_, Some(ExprKind::Var(this))) if name == \"call\" => Some(this.word()),\n",
     tests: ["test/lowering-is-function.test.ts", "-t", "function::call of js::method whose this is its value"],
   },
   {
@@ -515,8 +515,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a method read of a variable before it's set again, `element$.focus.call(element)`, is called of the one read, its `this` the old value (rd334)",
     file: "src/js/make.rs",
-    find: "            (ExprKind::Var(value), Some(ExprKind::Var(this))) if name == \"call\" && value == this => Some(value),\n",
-    replace: "            (ExprKind::Var(value), Some(ExprKind::Var(_))) if name == \"call\" => Some(value),\n",
+    find: "            (ExprKind::Var(value), Some(ExprKind::Var(this))) if name == \"call\" && value == this => Some(value.word()),\n",
+    replace: "            (ExprKind::Var(value), Some(ExprKind::Var(_))) if name == \"call\" => Some(value.word()),\n",
     tests: ["test/lowering-is-function.test.ts", "-t", "function::call of js::method whose this is its value"],
   },
   {

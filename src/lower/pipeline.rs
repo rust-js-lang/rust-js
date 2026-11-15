@@ -866,7 +866,7 @@ pub fn lower_crate<'tcx>(
                                 ..super::classes::js_class(tcx, def_id, &import_names[&module])
                             });
                             let forwarding = forwarding_prototypes.contains(&def_id);
-                            super::classes::place((member, forwarding), class, &lowered.function.name);
+                            super::classes::place((member, forwarding), class, lowered.function.name.word());
                         }
                         namespace.methods.push(lowered.function);
                         namespace.methods.extend(copies);
@@ -892,7 +892,7 @@ pub fn lower_crate<'tcx>(
                         js::visit_stmts(&function.body, &mut |name| {
                             read.insert(name.to_owned());
                         });
-                        function.name = super::fresh_in(&mut read, &function.name).into();
+                        function.name = super::fresh_in(&mut read, function.name.word()).into();
                         function.export = false;
                         pass.holes.functions.insert(def_id.index.as_u32(), function);
                     }
@@ -965,14 +965,14 @@ pub fn lower_crate<'tcx>(
             if let Some(ns) = pass
                 .namespaces
                 .get_mut(&info.module)
-                .and_then(|ns| ns.iter_mut().find(|ns| ns.name == *owner))
+                .and_then(|ns| ns.iter_mut().find(|ns| ns.name.is(owner)))
             {
                 ns.export = true;
             }
         } else if let Some(f) = pass
             .functions
             .get_mut(&info.module)
-            .and_then(|fs| fs.iter_mut().find(|f| f.name == info.name))
+            .and_then(|fs| fs.iter_mut().find(|f| f.name.is(&info.name)))
         {
             f.export = true;
         }
@@ -1100,15 +1100,15 @@ pub fn lower_crate<'tcx>(
                     .entry(module)
                     .or_default()
                     .iter_mut()
-                    .filter(|c| c.name == name)
+                    .filter(|c| c.name.is(&name))
                 {
                     constant.export = false;
                 }
-                for function in (pass.functions.entry(module).or_default().iter_mut()).filter(|f| f.name == name) {
+                for function in (pass.functions.entry(module).or_default().iter_mut()).filter(|f| f.name.is(&name)) {
                     function.export = false;
                 }
                 // A class, its constructor and prototype (ADR 0761).
-                for class in (pass.namespaces.entry(module).or_default().iter_mut()).filter(|n| n.name == name) {
+                for class in (pass.namespaces.entry(module).or_default().iter_mut()).filter(|n| n.name.is(&name)) {
                     class.export = false;
                 }
             }
@@ -1190,8 +1190,8 @@ pub fn lower_crate<'tcx>(
             let aliased = |name: &str| lowered.aliases.iter().any(|(local, _)| local == name);
             for item in &mut lowered.items {
                 match item {
-                    js::Item::Function(function) if aliased(&function.name) => function.export = false,
-                    js::Item::Const(constant) if aliased(&constant.name) => constant.export = false,
+                    js::Item::Function(function) if aliased(function.name.word()) => function.export = false,
+                    js::Item::Const(constant) if aliased(constant.name.word()) => constant.export = false,
                     _ => {}
                 }
             }

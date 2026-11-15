@@ -79,8 +79,8 @@ impl<'s> Walk<'s, '_> {
         if let StmtKind::Let(name, None) = &stmt.kind
             && !rest.is_empty()
             && leaving
-            && js::mentions_in(body, name) == js::mentions_in(current, name)
-            && js::mentions_in(after, name) == 0
+            && js::mentions_in(body, name.word()) == js::mentions_in(current, name.word())
+            && js::mentions_in(after, name.word()) == 0
         {
             self.declared.push(stmt);
             *frame = rest;
@@ -129,7 +129,7 @@ impl<'s> Walk<'s, '_> {
         }
         let label = self.label;
         match &stmt.kind {
-            StmtKind::Break(Some(l)) if l == label => {
+            StmtKind::Break(Some(l)) if l.is(label) => {
                 self.leaves.push(Leaf {
                     tests,
                     body: Vec::new(),
@@ -162,7 +162,7 @@ impl<'s> Walk<'s, '_> {
             body.truncate(end + 1);
         }
         let out = match body.last().map(|s| &s.kind) {
-            Some(StmtKind::Break(Some(l))) if l == label => {
+            Some(StmtKind::Break(Some(l))) if l.is(label) => {
                 body.pop();
                 true
             }

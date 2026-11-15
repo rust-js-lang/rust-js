@@ -78,7 +78,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a method's `self` stays the variable of its parameter, which no one declares, not `this`",
     file: "src/lower/classes/member_functions.rs",
-    find: "    if js::read_as_this(body, &receiver) {\n",
+    find: "    if js::read_as_this(body, receiver.word()) {\n",
     replace: "    if false {\n",
     tests: ["test/corpus.test.ts", "-t", "class_methods"],
   },
@@ -105,8 +105,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a constructor whose instance is set again, `c = C { .. }`, is `this = ..`, no JS",
     file: "src/lower/classes/member_functions.rs",
-    find: "    if js::Writes::sets(body, &instance) {\n",
-    replace: "    if false && js::Writes::sets(body, &instance) {\n",
+    find: "    if js::Writes::sets(body, instance.word()) {\n",
+    replace: "    if false && js::Writes::sets(body, instance.word()) {\n",
     tests: refusals,
   },
   {

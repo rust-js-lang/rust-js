@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
     name: "shadow-of-itself-assigned",
     breaks: "`let mut stack = stack.as_str();` is `stack = stack;`",
     file: "src/lower/mir/tidy/shadows.rs",
-    find: "    let assigned = !matches!(&value.kind, ExprKind::Var(v) if *v == binding);\n",
+    find: "    let assigned = !matches!(&value.kind, ExprKind::Var(v) if v.is(&binding));\n",
     replace: "    let assigned = true;\n",
     tests: ["test/lowering-shadows.test.ts", "-t", "React's formatOwnerStack"],
   },
@@ -73,8 +73,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a binding a closure made before reads is assigned, so the closure sees the new value",
     file: "src/lower/mir/tidy/shadows.rs",
-    find: "    if !user.contains(shadow.as_str()) || !user.contains(&binding) || captured.contains(&binding) {\n",
-    replace: "    if !user.contains(shadow.as_str()) || !user.contains(&binding) {\n",
+    find: "    if !user.contains(shadow.word()) || !user.contains(&binding) || captured.contains(&binding) {\n",
+    replace: "    if !user.contains(shadow.word()) || !user.contains(&binding) {\n",
     tests: ["test/lowering-shadows.test.ts", "-t", "something still sees"],
   },
   {
@@ -92,7 +92,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a temporary rust-js holds, `tmp`, is reused for unrelated values, `tmp = tmp(next)`",
     file: "src/lower/mir/tidy/shadows.rs",
-    find: "    if !user.contains(shadow.as_str()) || !user.contains(&binding) || captured.contains(&binding) {\n",
+    find: "    if !user.contains(shadow.word()) || !user.contains(&binding) || captured.contains(&binding) {\n",
     replace: "    if captured.contains(&binding) {\n",
     tests: ["test/corpus.test.ts", "-t", "^iter_next_back.rs$"],
     snapshots: true,
@@ -102,9 +102,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a `let x$1;` its `switch`'s cases set, shadowing a binding read no more, stays apart, `let priorityLevel$1; switch (priorityLevel) { .. priorityLevel$1 = priorityLevel; ..`, not upstream's `switch (priorityLevel) { .. default: priorityLevel = NormalPriority; }`",
     file: "src/lower/mir/tidy/shadows.rs",
-    find: "        set_after_last_read(&stmts[i + 1..], &shadow, &binding, false)?;\n",
+    find: "        set_after_last_read(&stmts[i + 1..], shadow.word(), &binding, false)?;\n",
     replace:
-      "        set_after_last_read(&stmts[i + 1..], &shadow, &binding, false).filter(|_| false)?;\n",
+      "        set_after_last_read(&stmts[i + 1..], shadow.word(), &binding, false).filter(|_| false)?;\n",
     tests: ["test/port-scheduler.test.ts"],
   },
   {

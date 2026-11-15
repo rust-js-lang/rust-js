@@ -7,8 +7,8 @@ export const mutations: Mutation[] = [
     name: "entries-kept",
     breaks: "`Object.fromEntries([[\"/index.html\", code]])` stays a call where it's the object literal `{ \"/index.html\": code }`",
     file: "src/prepare/objects.rs",
-    find: "    if object != \"Object\" || name != \"fromEntries\" {",
-    replace: "    if true || object != \"Object\" || name != \"fromEntries\" {",
+    find: "    if !object.is(\"Object\") || name != \"fromEntries\" {",
+    replace: "    if true || !object.is(\"Object\") || name != \"fromEntries\" {",
     tests: ["test/lowering-strings.test.ts", "-t", "a dictionary of entries written out"],
   },
   {

@@ -76,7 +76,7 @@ fn walk(stmts: &[Stmt], around: &mut Vec<(Around, Option<String>)>, left: &mut B
         let label = |label: &Option<Name>| {
             label
                 .clone()
-                .map(String::from)
+                .map(Name::into_word)
                 .filter(|name| super::queries::is_block_label(name))
         };
         let (inside, kind, label, bodies): (Around, &'static str, Option<String>, Vec<&[Stmt]>) = match &stmt.kind {
@@ -105,8 +105,8 @@ fn walk(stmts: &[Stmt], around: &mut Vec<(Around, Option<String>)>, left: &mut B
             StmtKind::Break(Some(to)) | StmtKind::Continue(Some(to)) => {
                 if let Some(at) = around
                     .iter()
-                    .rposition(|(_, label)| label.as_deref() == Some(to.as_str()))
-                    && let Some(found) = left.get_mut(to.as_str())
+                    .rposition(|(_, label)| label.as_deref() == Some(to.word()))
+                    && let Some(found) = left.get_mut(to.word())
                 {
                     let crossed = &around[at + 1..];
                     found.jumps += 1;

@@ -184,7 +184,7 @@ fn tested_assignments(stmts: &mut Vec<Stmt>) {
                 && matches!(&first_read(test).kind, ExprKind::Var(v) if v == name)
                 && {
                     let mut reads = 0;
-                    test.visit_vars(&mut |v| reads += usize::from(v == name));
+                    test.visit_vars(&mut |v| reads += usize::from(name.is(v)));
                     reads == 1
                 } =>
             {
@@ -192,13 +192,13 @@ fn tested_assignments(stmts: &mut Vec<Stmt>) {
                     matches!(
                         e.kind,
                         ExprKind::Arrow(..) | ExprKind::AsyncArrow(..) | ExprKind::Function(_)
-                    ) && e.mentions_var(name)
+                    ) && e.mentions_var(name.word())
                 };
                 let mut captured = false;
                 js::each_expr(rest, &mut |e| captured |= caught(e));
-                let assigned = Expr::assigned(Expr::var(name), made.clone());
+                let assigned = Expr::assigned(Expr::var(name.word()), made.clone());
                 (!captured)
-                    .then(|| test.substitute(&|n: &str| (n == name).then(|| assigned.clone())))
+                    .then(|| test.substitute(&|n: &str| name.is(n).then(|| assigned.clone())))
                     .flatten()
                     .map(|test| (name.clone(), test))
             }
@@ -254,13 +254,13 @@ fn read_together(module: &mut js::Module) {
         let ExprKind::Var(value) = &object.kind else {
             return None;
         };
-        if !values.contains(value.as_str()) {
+        if !values.contains(value.word()) {
             return None;
         }
         let readable = crate::names::is_identifier(property)
             && !constant.mutable
             && constant.fields.is_empty()
-            && (!constant.export || constant.name == *property);
+            && (!constant.export || constant.name.is(property));
         readable.then(|| ((**object).clone(), property.clone(), constant.export))
     };
     let same_var = |a: &Expr, b: &Expr| matches!((&a.kind, &b.kind), (ExprKind::Var(a), ExprKind::Var(b)) if a == b);
@@ -527,7 +527,7 @@ fn left_out_params(params: &mut [js::Pattern], body: &[Stmt]) {
 fn lone_left_out(fields: &[(String, js::Pattern, Option<Expr>)], read: impl Fn(&str) -> bool) -> Option<usize> {
     let unread: Vec<usize> = (fields.iter().enumerate())
         .filter(
-            |(_, (_, bound, _))| matches!(bound, js::Pattern::Name(n) if n.starts_with('_') && n != "_" && !read(n)),
+            |(_, (_, bound, _))| matches!(bound, js::Pattern::Name(n) if n.word().starts_with('_') && !n.is("_") && !read(n.word())),
         )
         .map(|(k, _)| k)
         .collect();
@@ -540,7 +540,7 @@ fn lone_left_out(fields: &[(String, js::Pattern, Option<Expr>)], read: impl Fn(&
 /// Whether `body` declares a `_` of its own, where another would clash.
 fn declares_underscore(body: &[Stmt]) -> bool {
     body.iter().any(|stmt| match &stmt.kind {
-        StmtKind::Const(name, _) | StmtKind::Let(name, _) => name == "_",
+        StmtKind::Const(name, _) | StmtKind::Let(name, _) => name.is("_"),
         StmtKind::Destructure { pattern, .. } => pattern.names().contains(&"_"),
         _ => false,
     })
@@ -681,15 +681,15 @@ fn fallen_declared(body: &mut Vec<Stmt>) {
     let mut i = 0;
     while i + 1 < body.len() {
         if let StmtKind::Let(name, Some(value)) = &body[i].kind
-            && let Some((op, fallback)) = fallback_of(&body[i + 1], name)
-            && !fallback.mentions_var(name)
+            && let Some((op, fallback)) = fallback_of(&body[i + 1], name.word())
+            && !fallback.mentions_var(name.word())
         {
             let name = name.clone();
             let value = Expr {
                 span: value.span,
                 ..Expr::bin(op, value.clone(), fallback)
             };
-            body[i].kind = match js::Writes::of(&body[i + 2..]).may_replace(&name) {
+            body[i].kind = match js::Writes::of(&body[i + 2..]).may_replace(name.word()) {
                 true => StmtKind::Let(name, Some(value)),
                 false => StmtKind::Const(name, value),
             };
@@ -703,7 +703,7 @@ fn fallen_declared(body: &mut Vec<Stmt>) {
 /// c; }`, and of text's `if (x === "")` (`Expr::text_truth`, rd732), by
 /// `||`, or of `x = x ?? c`, by `??`.
 fn fallback_of(stmt: &Stmt, name: &str) -> Option<(Op, Expr)> {
-    let is = |e: &Expr| matches!(&e.kind, ExprKind::Var(v) if v == name);
+    let is = |e: &Expr| matches!(&e.kind, ExprKind::Var(v) if v.is(name));
     let falsy = |test: &Expr| match &test.kind {
         ExprKind::Unary(UnaryOp::Not, x) => is(x),
         _ => test.clone().negated_test().text_truth().is_some_and(is),
@@ -738,7 +738,7 @@ fn fallen_held(body: &mut [Stmt]) {
         let StmtKind::Const(name, chain) = &mut before[at - 1].kind else {
             continue;
         };
-        if js::mentions_in(&after[1..], name) != 0 || js::mentions_in(&after[..1], name) != 1 {
+        if js::mentions_in(&after[1..], name.word()) != 0 || js::mentions_in(&after[..1], name.word()) != 1 {
             continue;
         }
         let (StmtKind::Return(Some(read)) | StmtKind::Const(_, read) | StmtKind::Expr(read)) = &mut after[0].kind
@@ -883,7 +883,7 @@ fn unread(body: &mut Vec<Stmt>) {
     js::each_block_mut(body, &mut |stmts| {
         stmts.retain(|s| {
             !matches!(&s.kind, StmtKind::Const(name, value)
-                if !read.contains(name.as_str()) && value.reads_only_vars())
+                if !read.contains(name.word()) && value.reads_only_vars())
         });
     });
 }

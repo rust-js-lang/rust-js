@@ -103,9 +103,9 @@ fn index_loop(stmt: &Stmt, mentions: &mut IndexMap<String, usize>) -> Option<Vec
         _ => None,
     });
     if values == 0
-        || js::mentions_in(body, &handle) != values
-        || js::Writes::sets(body, array_name)
-        || other_name.as_ref().is_some_and(|b| js::Writes::sets(body, b))
+        || js::mentions_in(body, handle.word()) != values
+        || js::Writes::sets(body, array_name.word())
+        || other_name.as_ref().is_some_and(|b| js::Writes::sets(body, b.word()))
     {
         return None;
     }
@@ -113,7 +113,7 @@ fn index_loop(stmt: &Stmt, mentions: &mut IndexMap<String, usize>) -> Option<Vec
     let mut body = body.clone();
     js::each_expr_mut(&mut body, &mut |e| {
         if held(e) {
-            e.kind = ExprKind::Index(Box::new(array.clone()), Box::new(Expr::var(&index)));
+            e.kind = ExprKind::Index(Box::new(array.clone()), Box::new(Expr::var(index.word())));
         }
     });
     let length = |a: &Expr| Expr::member(a.clone(), "length");
@@ -127,10 +127,12 @@ fn index_loop(stmt: &Stmt, mentions: &mut IndexMap<String, usize>) -> Option<Vec
             let shorter = Expr::call(min, vec![length(&array), length(b)]);
             made.push(StmtKind::Const(bound.clone().into(), shorter).at(js::Span::NONE));
             let bound_item = match item {
-                js::Pattern::Name(name) => StmtKind::Const(name.clone(), Expr::index(b.clone(), Expr::var(&index))),
+                js::Pattern::Name(name) => {
+                    StmtKind::Const(name.clone(), Expr::index(b.clone(), Expr::var(index.word())))
+                }
                 pattern => StmtKind::Destructure {
                     pattern: pattern.clone(),
-                    value: Expr::index(b.clone(), Expr::var(&index)),
+                    value: Expr::index(b.clone(), Expr::var(index.word())),
                     mutable: false,
                 },
             };
@@ -143,7 +145,7 @@ fn index_loop(stmt: &Stmt, mentions: &mut IndexMap<String, usize>) -> Option<Vec
             label: label.clone(),
             name: index.clone(),
             start: Expr::int(0),
-            test: Expr::bin(Op::Lt, Expr::var(&index), test),
+            test: Expr::bin(Op::Lt, Expr::var(index.word()), test),
             step: js::Step::Up,
             body,
         }

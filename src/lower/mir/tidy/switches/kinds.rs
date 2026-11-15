@@ -12,7 +12,7 @@ use super::{Values, alike, alternatives, compared};
 pub(super) fn of_subject(test: &Expr, subject: &Expr) -> Expr {
     let mut test = test.clone();
     test.each_mut(&mut |e| {
-        if matches!(&e.kind, ExprKind::Var(v) if v == SUBJECT) {
+        if matches!(&e.kind, ExprKind::Var(v) if v.is(SUBJECT)) {
             *e = subject.clone();
         }
     });

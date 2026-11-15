@@ -40,8 +40,8 @@ export const mutations: Mutation[] = [
     name: "strings-read-as-vars",
     breaks: "a string that spells a helper's name imports it, as scanning the printed text did",
     file: "src/js/expr_walk.rs",
-    find: "            ExprKind::Var(name) => read(name),\n",
-    replace: "            ExprKind::Var(name) => read(name),\n            ExprKind::Str(name) => read(name),\n",
+    find: "            ExprKind::Var(name) => read(name.word()),\n",
+    replace: "            ExprKind::Var(name) => read(name.word()),\n            ExprKind::Str(name) => read(name),\n",
     tests: ["test/link.test.ts", "-t", "spells a helper"],
   },
   {

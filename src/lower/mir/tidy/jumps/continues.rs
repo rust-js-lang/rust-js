@@ -45,7 +45,7 @@ fn looped(stmt: &mut Stmt) -> Option<(Option<String>, &mut Vec<Stmt>)> {
     match &mut stmt.kind {
         StmtKind::While { label, body, .. }
         | StmtKind::ForOf { label, body, .. }
-        | StmtKind::For { label, body, .. } => Some((label.clone().map(String::from), body)),
+        | StmtKind::For { label, body, .. } => Some((label.clone().map(Name::into_word), body)),
         _ => None,
     }
 }
@@ -72,7 +72,7 @@ fn continued_loop(
                 // give back, its test as written (`kept_in_turn`, rd72c).
                 let last = body.last().expect("matched");
                 if let StmtKind::Labeled(label, _) = &last.kind
-                    && let Some(test) = logicals::skipped_test(label, last, false, logicals)
+                    && let Some(test) = logicals::skipped_test(label.word(), last, false, logicals)
                 {
                     body.pop();
                     body.extend(test);
@@ -86,11 +86,11 @@ fn continued_loop(
                     unreachable!("matched")
                 };
                 let clashes = declared(&inner).any(|name| declared(body).any(|n| n == name));
-                if clashes || continues(&mut inner, &block, looped.as_deref(), false).is_none() {
+                if clashes || continues(&mut inner, block.word(), looped.as_deref(), false).is_none() {
                     body.push(StmtKind::Labeled(block, inner).at(span));
                     break;
                 }
-                continues(&mut inner, &block, looped.as_deref(), true);
+                continues(&mut inner, block.word(), looped.as_deref(), true);
                 body.extend(inner);
             }
             // One the program ended with a `continue`, `if (t) { a;
@@ -201,7 +201,7 @@ pub(in crate::lower::mir::tidy) fn continues_written(
     }
     // `stmts`' `break`s of the block, where `tested`.
     fn replaced(stmts: &mut [Stmt], of: &Of, tested: Tested, found: &mut Found) {
-        let breaks = |s: &Stmt| matches!(&s.kind, StmtKind::Break(Some(l)) if l == of.block);
+        let breaks = |s: &Stmt| matches!(&s.kind, StmtKind::Break(Some(l)) if l.is(of.block));
         // What an arm of a `continue` does last, its `break`: where that
         // arm is, of what's before it, or of the `if` of its pattern.
         let n = stmts.len();
@@ -275,9 +275,9 @@ pub(in crate::lower::mir::tidy) fn continues_written(
     for at in 1..stmts.len() {
         let (before, after) = stmts.split_at_mut(at);
         if let (StmtKind::Labeled(block, body), StmtKind::Continue(_)) = (&mut before[at - 1].kind, &after[0].kind) {
-            let past = latest(body).max(rests.get(block.as_str()).copied().unwrap_or(0));
+            let past = latest(body).max(rests.get(block.word()).copied().unwrap_or(0));
             let of = Of {
-                block,
+                block: block.word(),
                 jump: &after[0],
                 guards,
                 arms: (arms.iter())
@@ -493,7 +493,7 @@ pub(in crate::lower::mir::tidy) fn jumps_past_blocks(stmts: &mut [Stmt]) {
             ..
         } = &mut stmt.kind
         {
-            named_continues(body, looped);
+            named_continues(body, looped.word());
         }
     }
     for i in 0..stmts.len().saturating_sub(1) {
@@ -508,7 +508,7 @@ pub(in crate::lower::mir::tidy) fn jumps_past_blocks(stmts: &mut [Stmt]) {
         // (ADR 0742): where it's written is its span.
         let written = !stmts[i].span.is_none();
         if let StmtKind::Labeled(label, body) = &mut stmts[i].kind
-            && crate::lower::mir::is_block_label(label)
+            && crate::lower::mir::is_block_label(label.word())
             && !written
         {
             let label = label.clone();
@@ -517,7 +517,7 @@ pub(in crate::lower::mir::tidy) fn jumps_past_blocks(stmts: &mut [Stmt]) {
             if matches!(jump, StmtKind::Return(_)) {
                 drop_tail(body, &StmtKind::Break(Some(label.clone())));
             }
-            rejump(body, &label, &jump);
+            rejump(body, label.word(), &jump);
         }
     }
 }
@@ -533,7 +533,7 @@ fn rejump(stmts: &mut [Stmt], label: &str, jump: &StmtKind) {
     );
     for stmt in stmts {
         match &mut stmt.kind {
-            StmtKind::Break(Some(l)) if l == label => stmt.kind = jump.clone(),
+            StmtKind::Break(Some(l)) if l.is(label) => stmt.kind = jump.clone(),
             StmtKind::If(_, a, b) => {
                 rejump(a, label, jump);
                 if let Some(b) = b {
@@ -586,14 +586,14 @@ fn named_continues(stmts: &mut [Stmt], looped: &str) {
     for i in 0..stmts.len() {
         let goes_on = matches!(
             stmts.get(i + 1).map(|s| &s.kind),
-            Some(StmtKind::Continue(l)) if l.as_deref().is_none_or(|l| l == looped)
+            Some(StmtKind::Continue(l)) if l.as_ref().map(|n| n.word()).is_none_or(|l| l == looped)
         );
         let written = !stmts[i].span.is_none();
         match &mut stmts[i].kind {
             StmtKind::Labeled(label, body) => {
-                if goes_on && !written && crate::lower::mir::is_block_label(label) {
+                if goes_on && !written && crate::lower::mir::is_block_label(label.word()) {
                     let label = label.clone();
-                    in_loops(body, &label, looped);
+                    in_loops(body, label.word(), looped);
                 }
                 named_continues(body, looped);
             }
@@ -826,28 +826,28 @@ pub(in crate::lower::mir::tidy) fn blocks_breaking_loops(
         let (StmtKind::Labeled(label, inner), StmtKind::Break(None)) = (&block.kind, &after.kind) else {
             continue;
         };
-        if !block.span.is_none() || !crate::lower::mir::is_block_label(label) {
+        if !block.span.is_none() || !crate::lower::mir::is_block_label(label.word()) {
             continue;
         }
         let (block, mut broken) = (label.clone(), inner.clone());
-        loop_breaks(&mut broken, &block);
+        loop_breaks(&mut broken, block.word());
         let at = body.len() - 2;
         // One in a loop of its own, of a loop the program labeled, `break
         // 'rows` in an inner `while let`: of its label, as written (uz3).
         // Else a loop the program labeled is `loops_left_by_cases`', whose
         // cases it ends with leave by its label once `switches` has made
         // them.
-        if !js::names_break(&broken, &block) && named.is_some() {
+        if !js::names_break(&broken, block.word()) && named.is_some() {
             continue;
         }
-        if js::names_break(&broken, &block) {
+        if js::names_break(&broken, block.word()) {
             let Some(named) = named
                 .as_ref()
-                .filter(|named| looped.as_ref().is_none_or(|l| l == *named))
+                .filter(|named| looped.as_ref().is_none_or(|l| l.is(named)))
             else {
                 continue;
             };
-            super::tails::relabeled(&mut broken, &block, named);
+            super::tails::relabeled(&mut broken, block.word(), named);
             *looped = Some(named.into());
         }
         body.splice(at..=at, broken);
@@ -862,7 +862,7 @@ pub(in crate::lower::mir::tidy) fn blocks_breaking_loops(
 fn loop_breaks(stmts: &mut [Stmt], label: &str) {
     for stmt in stmts {
         match &mut stmt.kind {
-            StmtKind::Break(broken) if broken.as_deref() == Some(label) => *broken = None,
+            StmtKind::Break(broken) if broken.as_ref().map(|n| n.word()) == Some(label) => *broken = None,
             StmtKind::If(_, a, b) => {
                 loop_breaks(a, label);
                 if let Some(b) = b {
@@ -901,7 +901,7 @@ pub(in crate::lower::mir::tidy) fn blocks_loops_end(stmts: &mut [Stmt], every: b
     fn own_breaks(stmts: &mut [Stmt], label: &str) {
         for stmt in stmts {
             match &mut stmt.kind {
-                StmtKind::Break(broken) if broken.as_deref() == Some(label) => *broken = None,
+                StmtKind::Break(broken) if broken.as_ref().map(|n| n.word()) == Some(label) => *broken = None,
                 StmtKind::If(_, a, b) => {
                     own_breaks(a, label);
                     if let Some(b) = b {
@@ -939,7 +939,7 @@ pub(in crate::lower::mir::tidy) fn blocks_loops_end(stmts: &mut [Stmt], every: b
                         kind: StmtKind::Break(broken),
                         ..
                     }) = body.last_mut()
-                        && broken.as_deref() == Some(label)
+                        && broken.as_ref().map(|n| n.word()) == Some(label)
                     {
                         *broken = None;
                     }
@@ -949,7 +949,7 @@ pub(in crate::lower::mir::tidy) fn blocks_loops_end(stmts: &mut [Stmt], every: b
                 if let Some(looped) = looped
                     && js::names_break(body, label)
                 {
-                    super::tails::relabeled(body, label, looped);
+                    super::tails::relabeled(body, label, looped.word());
                 }
             }
             StmtKind::If(_, a, b) => {
@@ -964,9 +964,9 @@ pub(in crate::lower::mir::tidy) fn blocks_loops_end(stmts: &mut [Stmt], every: b
     }
     for stmt in stmts.iter_mut() {
         if let StmtKind::Labeled(label, body) = &mut stmt.kind
-            && crate::lower::mir::is_block_label(label)
+            && crate::lower::mir::is_block_label(label.word())
         {
-            ending(body, label, every);
+            ending(body, label.word(), every);
         }
     }
 }
@@ -997,7 +997,7 @@ pub(in crate::lower::mir::tidy) fn outer_continues(stmts: &mut [Stmt], loops: &[
         } = &mut stmt.kind
             && !named
         {
-            ending(body, label);
+            ending(body, label.word());
         }
     }
 }
@@ -1025,7 +1025,7 @@ fn ending(stmts: &mut [Stmt], looped: &str) {
 fn outer_broken(stmts: &mut [Stmt], looped: &str) {
     for stmt in stmts {
         match &mut stmt.kind {
-            StmtKind::Continue(Some(l)) if l == looped => stmt.kind = StmtKind::Break(None),
+            StmtKind::Continue(Some(l)) if l.is(looped) => stmt.kind = StmtKind::Break(None),
             StmtKind::If(_, a, b) => {
                 outer_broken(a, looped);
                 if let Some(b) = b {
@@ -1048,7 +1048,11 @@ pub(in crate::lower::mir::tidy) fn innermost_jumps(stmts: &mut [Stmt]) {
     fn unlabel(stmts: &mut [Stmt], looped: &str) {
         for stmt in stmts {
             match &mut stmt.kind {
-                StmtKind::Continue(label) | StmtKind::Break(label) if label.as_deref() == Some(looped) => *label = None,
+                StmtKind::Continue(label) | StmtKind::Break(label)
+                    if label.as_ref().map(|n| n.word()) == Some(looped) =>
+                {
+                    *label = None
+                }
                 StmtKind::If(_, a, b) => {
                     unlabel(a, looped);
                     if let Some(b) = b {
@@ -1081,7 +1085,7 @@ pub(in crate::lower::mir::tidy) fn innermost_jumps(stmts: &mut [Stmt]) {
             ..
         } = &mut stmt.kind
         {
-            unlabel(body, label);
+            unlabel(body, label.word());
         }
     }
 }
@@ -1098,7 +1102,7 @@ pub(in crate::lower::mir::tidy) fn continues(
     fn each(stmts: &mut [Stmt], block: &str, looped: Option<&str>, inner: bool, write: bool) -> Option<()> {
         for stmt in stmts {
             match &mut stmt.kind {
-                StmtKind::Break(Some(l)) if l == block => {
+                StmtKind::Break(Some(l)) if l.is(block) => {
                     let label = match inner {
                         true => Some(looped?.to_string()),
                         false => None,
@@ -1136,7 +1140,7 @@ pub(in crate::lower::mir::tidy) fn continues(
 /// Whether `test` says `item`, what `$next` gave, is none: `item == null`,
 /// or `!item` of an array's.
 pub(in crate::lower::mir::tidy) fn absent(test: &Expr, item: &str) -> bool {
-    let is_item = |e: &Expr| matches!(&e.kind, ExprKind::Var(v) if v == item);
+    let is_item = |e: &Expr| matches!(&e.kind, ExprKind::Var(v) if v.is(item));
     match &test.kind {
         ExprKind::Unary(UnaryOp::Not, a) => is_item(a),
         _ => js::null_test(test, false).is_some_and(is_item),
@@ -1146,7 +1150,7 @@ pub(in crate::lower::mir::tidy) fn absent(test: &Expr, item: &str) -> bool {
 /// Whether `test` says `item` is there: `item != null`, or `item`.
 pub(in crate::lower::mir::tidy) fn present(test: &Expr, item: &str) -> bool {
     match &test.kind {
-        ExprKind::Var(v) => v == item,
-        _ => js::null_test(test, true).is_some_and(|e| matches!(&e.kind, ExprKind::Var(v) if v == item)),
+        ExprKind::Var(v) => v.is(item),
+        _ => js::null_test(test, true).is_some_and(|e| matches!(&e.kind, ExprKind::Var(v) if v.is(item))),
     }
 }

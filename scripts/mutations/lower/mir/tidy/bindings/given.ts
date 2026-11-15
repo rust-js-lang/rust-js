@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a closure reading `node`, run before `node` is given what's made, reads what's made, not what `node` was",
     file: "src/lower/mir/tidy/bindings/given.rs",
-    find: "    if early(x) || early(y) {\n",
+    find: "    if early(x.word()) || early(y.word()) {\n",
     replace: "    if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^cache_node_walk.rs$"],
   },
@@ -25,8 +25,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a closure's `x = { let x = k * 10; check(k); x }` of a variable it captures sets it before `check` unwinds, which `catch_unwind`'s caller then reads",
     file: "src/lower/mir/tidy/bindings/given.rs",
-    find: "    if !kin(x, y) || !declared.contains(x.as_str()) {\n",
-    replace: "    if !kin(x, y) {\n",
+    find: "    if !kin(x.word(), y.word()) || !declared.contains(x.word()) {\n",
+    replace: "    if !kin(x.word(), y.word()) {\n",
     tests: ["test/corpus.test.ts", "-t", "^given_last_unwinds.rs$"],
   },
   {

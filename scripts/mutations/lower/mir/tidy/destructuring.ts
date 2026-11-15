@@ -197,7 +197,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a tuple MIR sets an item of, `t[0] = x`, is read as its items, which crashes printing what's assigned",
     file: "src/lower/mir/tidy/destructuring.rs",
-    find: "        if writes.replaced.contains(t.as_str())\n            || writes.changed.contains(t.as_str())\n            || indexed == 0\n",
+    find: "        if writes.replaced.contains(t.word())\n            || writes.changed.contains(t.word())\n            || indexed == 0\n",
     replace: "        if indexed == 0\n",
     tests: ["test/corpus.test.ts", "-t", "mut_ref_temporary"],
   },
@@ -228,7 +228,7 @@ export const mutations: Mutation[] = [
     breaks:
       "MIR's `async fn` copies its parameter where its body starts, `let n$1 = n`",
     file: "src/lower/mir/tidy/destructuring.rs",
-    find: "        && js::mentions_in(body, param) == 1\n",
+    find: "        && js::mentions_in(body, param.word()) == 1\n",
     replace: "        && false\n",
     tests: [
       "test/compiler.test.ts",
@@ -268,8 +268,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a variable a guard sets after the tuple is made is read as the guard left it",
     file: "src/lower/mir/tidy/destructuring.rs",
-    find: "if !js::Writes::sets(after, v) && !set_elsewhere.contains(v.as_str()))",
-    replace: "if !set_elsewhere.contains(v.as_str()))",
+    find: "if !js::Writes::sets(after, v.word()) && !set_elsewhere.contains(v.word()))",
+    replace: "if !set_elsewhere.contains(v.word()))",
     tests: ["test/corpus.test.ts", "-t", "tuple_scrutinee_calls"],
   },
   {
@@ -287,7 +287,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a parameter's parts with drop flags between, `([a, b, c, d], i)`, are `_1`, read part by part",
     file: "src/lower/mir/tidy/destructuring.rs",
-    find: "        constants_first(body, 0, 0, &name);\n",
+    find: "        constants_first(body, 0, 0, name.word());\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^array_partial_moves.rs$"],
     snapshots: true,
@@ -347,7 +347,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a part held once and given twice, `(n, n)`, is moved to the first's assignment, so the second reads a `const` that's gone (a wrong answer, rd524)",
     file: "src/lower/mir/tidy/destructuring.rs",
-    find: "                    && reads_in_items(held) == 1\n",
+    find: "                    && reads_in_items(held.word()) == 1\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^tuple_of_taken_parts.rs$"],
   },

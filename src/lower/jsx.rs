@@ -75,7 +75,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     match &mut statement.kind {
                         StmtKind::Const(name, value) | StmtKind::Let(name, Some(value)) => {
                             out.push(StmtKind::Let(name.clone(), None).at(statement.span));
-                            statement.kind = StmtKind::Assign(Expr::var(name), value.clone());
+                            statement.kind = StmtKind::Assign(Expr::var(name.word()), value.clone());
                         }
                         StmtKind::Let(name, None) => {
                             out.push(StmtKind::Let(name.clone(), None).at(statement.span));
@@ -162,11 +162,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // given (ADR 0195).
             js::ExprKind::Member(object, _) => {
                 matches!(&object.kind, js::ExprKind::Var(name)
-                    if self.plain_value(name) || self.locals.rests.contains_key(name.as_str()))
+                    if self.plain_value(name.word()) || self.locals.rests.contains_key(name.word()))
                     && self.reads_alike(object, out)
             }
             js::ExprKind::Var(name) => {
-                self.alike_local(name)
+                self.alike_local(name.word())
                     || self
                         .locals
                         .vars
@@ -177,11 +177,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         .any(|s| matches!(&s.kind, StmtKind::Const(n, _) if n == name))
                     || self.krate.fns.iter().any(|(id, f)| {
                         f.module == self.module
-                            && &f.name == name
+                            && name.is(&f.name)
                             && matches!(self.tcx.def_kind(*id), DefKind::Fn | DefKind::AssocFn)
                     })
                     // An import's binding, which JS never lets the module change.
-                    || self.krate.imports[&self.module].values().any(|alias| alias == name)
+                    || self.krate.imports[&self.module].values().any(|alias| name.is(alias))
             }
             _ => value.is_constant(),
         }
@@ -195,7 +195,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.plain_local(name)
             || self.locals.vars.iter().any(|(id, var)| {
                 !var.mutable
-                    && matches!(&var.place.kind, js::ExprKind::Var(n) if n == name)
+                    && matches!(&var.place.kind, js::ExprKind::Var(n) if n.is(name))
                     && (self.tcx.typeck(id.0.owner.def_id).node_type(id.0).walk()).all(|arg| match arg.kind() {
                         ty::GenericArgKind::Type(t) => !self.refers_mutably(t) && !self.is_js_object(t),
                         _ => true,
@@ -219,10 +219,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let js::ExprKind::Var(name) = &of.kind else {
             return false;
         };
-        if objects.is_empty() || !self.plain_value(name) {
+        if objects.is_empty() || !self.plain_value(name.word()) {
             return false;
         }
-        let given = self.given_of(name);
+        let given = self.given_of(name.word());
         // Each object a field's read of, its path: `p`, `p.style`.
         !objects
             .iter()
@@ -275,7 +275,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // JSX reads a lowercase name as a DOM element's, and Fast
                 // Refresh only keeps the state of a capitalized component.
                 if let Some(name) = match &tag.kind {
-                    js::ExprKind::Var(name) => Some(name.as_str()),
+                    js::ExprKind::Var(name) => Some(name.word()),
                     js::ExprKind::Symbol(symbol) => Some(symbol.export.as_str()),
                     _ => None,
                 } && !name.starts_with(|c: char| c.is_ascii_uppercase())
@@ -664,7 +664,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Prop::Field(name, value) if let Some(i) = flattened(&name) => {
                     for attr in self.flattened_attrs(types[i].1, value, &shadowing, span)? {
                         match attr {
-                            Prop::Spread(value) if matches!(&value.kind, js::ExprKind::Var(v) if self.locals.rests.contains_key(v.as_str())) => {
+                            Prop::Spread(value) if matches!(&value.kind, js::ExprKind::Var(v) if self.locals.rests.contains_key(v.word())) => {
                                 rest = Some(value)
                             }
                             attr => attrs.push(attr),
@@ -673,7 +673,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 Prop::Field(name, value)
                     if matches!(&value.kind, js::ExprKind::Member(object, key)
-                        if key == &name && matches!(&object.kind, js::ExprKind::Var(v) if self.locals.rests.contains_key(v.as_str()))) =>
+                        if key == &name && matches!(&object.kind, js::ExprKind::Var(v) if self.locals.rests.contains_key(v.word()))) =>
                 {
                     let js::ExprKind::Member(object, _) = value.kind else {
                         unreachable!("matched above")

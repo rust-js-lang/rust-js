@@ -102,7 +102,7 @@ pub(in crate::lower::mir::tidy) fn readable_temporaries(
             && let ExprKind::Member(object, key) = &of.kind
             && key == js::DICTIONARY
             && let ExprKind::Var(v) = &object.kind
-            && is_temporary(v)
+            && is_temporary(v.word())
         {
             given
                 .entry(v.to_string())
@@ -112,7 +112,7 @@ pub(in crate::lower::mir::tidy) fn readable_temporaries(
             for prop in &jsx.props {
                 if let js::Prop::Field(key, value) = prop
                     && let ExprKind::Var(v) = &value.kind
-                    && (is_temporary(v) || is_held_arg(v))
+                    && (is_temporary(v.word()) || is_held_arg(v.word()))
                     && key.chars().all(|c| c.is_ascii_alphanumeric())
                 {
                     given.entry(v.to_string()).or_insert_with(|| key.clone());
@@ -120,7 +120,7 @@ pub(in crate::lower::mir::tidy) fn readable_temporaries(
             }
             for child in &jsx.children {
                 if let ExprKind::Var(v) = &child.kind
-                    && (is_temporary(v) || is_held_arg(v))
+                    && (is_temporary(v.word()) || is_held_arg(v.word()))
                 {
                     given
                         .entry(v.to_string())
@@ -134,20 +134,20 @@ pub(in crate::lower::mir::tidy) fn readable_temporaries(
         for stmt in list.iter() {
             match &stmt.kind {
                 StmtKind::Const(name, value)
-                    if !is_temporary(name)
-                        && let Some((_, role)) = spilled.iter().find(|(n, _)| *n == name)
+                    if !is_temporary(name.word())
+                        && let Some((_, role)) = spilled.iter().find(|(n, _)| name.is(n))
                         && role.says_nothing() =>
                 {
                     renames.push((name.clone(), held_names(value), **role));
                 }
-                StmtKind::Const(name, value) if is_temporary(name) || is_held_arg(name) => {
-                    let any = match is_held_arg(name) {
+                StmtKind::Const(name, value) if is_temporary(name.word()) || is_held_arg(name.word()) => {
+                    let any = match is_held_arg(name.word()) {
                         true => Role::Arg,
                         false => Role::Value,
                     };
-                    let names = match (given.get(name.as_str()), &value.kind) {
+                    let names = match (given.get(name.word()), &value.kind) {
                         (Some(prop), _) => vec![prop.clone()],
-                        (None, _) if is_held_arg(name) => Vec::new(),
+                        (None, _) if is_held_arg(name.word()) => Vec::new(),
                         // Not a positional field's, `_0`, a temporary's name.
                         (None, ExprKind::Member(_, field) | ExprKind::OptionalMember(_, field))
                             if !is_temporary(field) =>
@@ -162,12 +162,12 @@ pub(in crate::lower::mir::tidy) fn readable_temporaries(
                         {
                             vec![field.clone()]
                         }
-                        (None, _) => suggested.get(name.as_str()).cloned().unwrap_or_default(),
+                        (None, _) => suggested.get(name.word()).cloned().unwrap_or_default(),
                     };
                     // Else what made its value suggests, its call's name
                     // (#890, #837); not an argument held, which MIR's rule
                     // names `arg`.
-                    let names = match names.is_empty() && !is_held_arg(name) {
+                    let names = match names.is_empty() && !is_held_arg(name.word()) {
                         true => held_names(value),
                         false => names,
                     };
@@ -175,11 +175,13 @@ pub(in crate::lower::mir::tidy) fn readable_temporaries(
                 }
                 // Held in a `try` that assigns it, `let _arg; try { _arg = .. }`,
                 // as what it's given as is: `arg`.
-                StmtKind::Let(name, _) if is_held_arg(name) => renames.push((name.clone(), Vec::new(), Role::Arg)),
-                StmtKind::Let(name, _) if is_temporary(name) => {
+                StmtKind::Let(name, _) if is_held_arg(name.word()) => {
+                    renames.push((name.clone(), Vec::new(), Role::Arg))
+                }
+                StmtKind::Let(name, _) if is_temporary(name.word()) => {
                     renames.push((
                         name.clone(),
-                        suggested.get(name.as_str()).cloned().unwrap_or_default(),
+                        suggested.get(name.word()).cloned().unwrap_or_default(),
                         Role::BranchSet,
                     ));
                 }
@@ -196,18 +198,18 @@ pub(in crate::lower::mir::tidy) fn readable_temporaries(
         first.entry(name.to_string()).or_insert(at);
         at += 1;
     });
-    renames.sort_by_key(|(from, ..)| first.get(from.as_str()).copied().unwrap_or(usize::MAX));
+    renames.sort_by_key(|(from, ..)| first.get(from.word()).copied().unwrap_or(usize::MAX));
     for (from, names, role) in renames {
         // A spilled value's name changes only to what made it suggests, its
         // call's, where that's free: else it keeps the one it has, which
         // tidy may have given again in a block apart, `result` of each arm
         // (ADR 0352), not its role's word given apart anew (#890).
-        if spilled.iter().any(|(name, _)| **name == from) && names.iter().all(|name| taken.contains(name)) {
+        if spilled.iter().any(|(name, _)| from.is(name)) && names.iter().all(|name| taken.contains(name)) {
             continue;
         }
         let to = temporary_names::pick(names, role, &mut taken);
         // Not a closure's own of its name, `(_2) => _2[0]` (ADR 0902).
-        js::outside_shadows(body, &from, |body| {
+        js::outside_shadows(body, from.word(), |body| {
             js::statement_lists(body, &mut |list| {
                 for stmt in list.iter_mut() {
                     if let StmtKind::Const(name, _) | StmtKind::Let(name, _) = &mut stmt.kind

@@ -81,10 +81,10 @@ pub(super) fn place(
     if !foreign_variables.is_empty() || !namespaced.is_empty() {
         super::super::std_types::cell::imported_variables_through(
             items,
-            &|e| matches!(&e.kind, js::ExprKind::Var(name) if foreign_variables.contains(name.as_str())),
+            &|e| matches!(&e.kind, js::ExprKind::Var(name) if foreign_variables.contains(name.word())),
             &|namespace, export| {
                 matches!(&namespace.kind,
-                js::ExprKind::Var(namespace) if namespaced.contains(&(namespace.as_str(), export)))
+                js::ExprKind::Var(namespace) if namespaced.contains(&(namespace.word(), export)))
             },
         );
     }

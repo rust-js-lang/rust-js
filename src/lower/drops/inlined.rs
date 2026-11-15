@@ -25,7 +25,7 @@ pub(in crate::lower) fn inlined_drops(items: &mut Vec<Item>, drops: &IndexSet<St
     // never a set's, which would change the JS from one build to the next.
     let mut left: Vec<String> = (items.iter())
         .filter_map(|item| match item {
-            Item::Function(f) if drops.contains(f.name.as_str()) => Some(f.name.to_string()),
+            Item::Function(f) if drops.contains(f.name.word()) => Some(f.name.to_string()),
             _ => None,
         })
         .collect();
@@ -34,7 +34,7 @@ pub(in crate::lower) fn inlined_drops(items: &mut Vec<Item>, drops: &IndexSet<St
             (left.iter()).any(|other| {
                 other != name
                     && (items.iter()).any(
-                        |item| matches!(item, Item::Function(f) if f.name == *other && js::mentions_in(&f.body, name) > 0),
+                        |item| matches!(item, Item::Function(f) if f.name.is(other) && js::mentions_in(&f.body, name) > 0),
                     )
             })
         };
@@ -47,7 +47,7 @@ pub(in crate::lower) fn inlined_drops(items: &mut Vec<Item>, drops: &IndexSet<St
 /// `inlined_drops`' of the drop `name`.
 fn inline_drop(items: &mut Vec<Item>, name: &str) {
     let Some(at) = items.iter().position(
-        |item| matches!(item, Item::Function(f) if f.name == name && matches!(f.params.as_slice(), [Pattern::Name(_), ..])),
+        |item| matches!(item, Item::Function(f) if f.name.is(name) && matches!(f.params.as_slice(), [Pattern::Name(_), ..])),
     ) else {
         return;
     };
@@ -178,7 +178,7 @@ fn called_closure(body: &mut Vec<Stmt>, params: &[Pattern], name: &str) {
     js::each_block_mut(&mut body.clone(), &mut |stmts| {
         for s in stmts.iter() {
             if let StmtKind::Const(n, value) = &s.kind
-                && n == name
+                && n.is(name)
                 && let ExprKind::Arrow(ps, b) = &value.kind
             {
                 closure.get_or_insert((ps.clone(), b.clone()));
@@ -197,13 +197,13 @@ fn called_closure(body: &mut Vec<Stmt>, params: &[Pattern], name: &str) {
     // it goes, so what the closure declares is no other name there.
     let mut whole = body.clone();
     js::each_block_mut(&mut whole, &mut |stmts| {
-        stmts.retain(|s| !matches!(&s.kind, StmtKind::Const(n, _) if n == name));
+        stmts.retain(|s| !matches!(&s.kind, StmtKind::Const(n, _) if n.is(name)));
     });
     let mut done = false;
     js::each_block_mut(body, &mut |stmts| {
         let called = |s: &Stmt| {
             matches!(&s.kind, StmtKind::Expr(e) if matches!(&e.kind, ExprKind::Call(callee, _)
-                if matches!(&callee.kind, ExprKind::Var(v) if v == name)))
+                if matches!(&callee.kind, ExprKind::Var(v) if v.is(name))))
         };
         if done || !stmts.iter().any(called) {
             return;
@@ -216,7 +216,7 @@ fn called_closure(body: &mut Vec<Stmt>, params: &[Pattern], name: &str) {
     });
     if js::mentions_in(body, name) == 0 {
         js::each_block_mut(body, &mut |stmts| {
-            stmts.retain(|s| !matches!(&s.kind, StmtKind::Const(n, _) if n == name));
+            stmts.retain(|s| !matches!(&s.kind, StmtKind::Const(n, _) if n.is(name)));
         });
     }
 }
@@ -258,9 +258,9 @@ fn reads_where_made(body: &[Stmt], params: &[Pattern], name: &str, closure: &[St
                 js::each_block_mut(&mut copy, &mut |stmts| {
                     seen |= makes(stmts)
                         && stmts.iter().any(|s| match &s.kind {
-                            StmtKind::Const(n, _) | StmtKind::Let(n, _) => *n == v,
+                            StmtKind::Const(n, _) | StmtKind::Let(n, _) => n.is(&v),
                             StmtKind::Destructure { pattern, .. } => pattern.names().contains(&v.as_str()),
-                            StmtKind::Function(function) => function.name == v,
+                            StmtKind::Function(function) => function.name.is(&v),
                             _ => false,
                         });
                 });
@@ -289,7 +289,7 @@ fn alone(params: &[Pattern], body: &[Stmt], name: &str, whole: bool) -> bool {
             || given
             || body
                 .iter()
-                .any(|s| matches!(&s.kind, StmtKind::Const(n, _) if n == name)))
+                .any(|s| matches!(&s.kind, StmtKind::Const(n, _) if n.is(name))))
 }
 
 /// What of a guard what runs after reads: the whole of it, given or read
@@ -335,8 +335,8 @@ impl GuardReads {
 /// `guard[0]`.
 fn field_key(e: &Expr, guard: &str) -> Option<String> {
     match &e.kind {
-        ExprKind::Member(of, key) if matches!(&of.kind, ExprKind::Var(v) if v == guard) => Some(key.clone()),
-        ExprKind::Index(of, at) if matches!(&of.kind, ExprKind::Var(v) if v == guard) => match at.kind {
+        ExprKind::Member(of, key) if matches!(&of.kind, ExprKind::Var(v) if v.is(guard)) => Some(key.clone()),
+        ExprKind::Index(of, at) if matches!(&of.kind, ExprKind::Var(v) if v.is(guard)) => match at.kind {
             ExprKind::Num(n) => Some(n.to_string()),
             _ => None,
         },
@@ -353,7 +353,7 @@ fn fields_alone(body: &[Stmt], guard: &str) -> bool {
     let mut stmts = body.to_vec();
     js::each_expr_mut(&mut stmts, &mut |e| {
         if let ExprKind::Member(of, _) | ExprKind::Index(of, _) = &e.kind
-            && matches!(&of.kind, ExprKind::Var(v) if v == guard)
+            && matches!(&of.kind, ExprKind::Var(v) if v.is(guard))
         {
             fields += 1;
         }
@@ -384,7 +384,7 @@ fn unread_writes(stmts: &mut Vec<Stmt>, guard: &str, mut read_after: GuardReads)
         }
         let made_in = |body: &[Stmt]| {
             body.iter()
-                .any(|s| matches!(&s.kind, StmtKind::Const(n, _) | StmtKind::Let(n, _) if n == guard))
+                .any(|s| matches!(&s.kind, StmtKind::Const(n, _) | StmtKind::Let(n, _) if n.is(guard)))
         };
         match &mut stmts[i].kind {
             StmtKind::Try(block, finally) => {
@@ -427,7 +427,7 @@ fn copies_read_as(body: &mut Vec<Stmt>, field: &dyn Fn(&Expr) -> bool, v: &str, 
     js::each_block_mut(body, &mut |stmts| {
         for s in stmts.iter() {
             if let StmtKind::Const(n, value) = &s.kind
-                && n != v
+                && !n.is(v)
                 && field(value)
             {
                 copies.push(n.clone());
@@ -439,7 +439,7 @@ fn copies_read_as(body: &mut Vec<Stmt>, field: &dyn Fn(&Expr) -> bool, v: &str, 
     for n in copies {
         // Each of its declarations a copy, in each place the drop is.
         let mut declared = 0;
-        js::each_declared(body, &mut |name| declared += usize::from(name == n));
+        js::each_declared(body, &mut |name| declared += usize::from(n.is(name)));
         let mut copied = 0;
         js::each_block_mut(body, &mut |stmts| {
             copied += (stmts.iter())
@@ -534,7 +534,7 @@ fn each_function(item: &mut Item, f: &mut EachFunction<'_>) {
 fn calls(stmt: &Stmt, name: &str) -> bool {
     matches!(&stmt.kind, StmtKind::Expr(e)
         if matches!(&e.kind, ExprKind::Call(callee, args)
-            if !args.is_empty() && matches!(&callee.kind, ExprKind::Var(v) if v == name)))
+            if !args.is_empty() && matches!(&callee.kind, ExprKind::Var(v) if v.is(name))))
 }
 
 /// The variable `f(guard);` gives.
@@ -559,7 +559,7 @@ fn fields_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &str) -> Vec<Strin
         if made.is_none()
             && let Some(k) = stmts
                 .iter()
-                .position(|s| matches!(&s.kind, StmtKind::Const(n, _) if n == guard))
+                .position(|s| matches!(&s.kind, StmtKind::Const(n, _) if n.is(guard)))
             && let StmtKind::Const(_, value) = &stmts[k].kind
             && let ExprKind::Object(props, ..) = &value.kind
         {
@@ -579,7 +579,7 @@ fn fields_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &str) -> Vec<Strin
     let mut stmts = body.clone();
     js::each_expr_mut(&mut stmts, &mut |e| {
         if let ExprKind::Member(of, key) = &e.kind
-            && matches!(&of.kind, ExprKind::Var(v) if v == guard)
+            && matches!(&of.kind, ExprKind::Var(v) if v.is(guard))
             && fields.iter().any(|(k, _)| k == key)
         {
             reads += 1;
@@ -590,7 +590,7 @@ fn fields_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &str) -> Vec<Strin
     // p.left] = ..`, `x++` and `(x = ..)` too (ADR 1088, amended, #1593).
     let written: IndexSet<String> = (js::Writes::places(body).into_iter())
         .filter_map(|place| match place.kind {
-            ExprKind::Member(of, key) if matches!(&of.kind, ExprKind::Var(v) if v == guard) => Some(key),
+            ExprKind::Member(of, key) if matches!(&of.kind, ExprKind::Var(v) if v.is(guard)) => Some(key),
             _ => None,
         })
         .collect();
@@ -605,7 +605,7 @@ fn fields_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &str) -> Vec<Strin
     // `const` of its own, its key, where that names nothing else.
     let kept = kept_variables(body, params, guard, &fields);
     let read_as = |(key, value): &(String, Expr)| match &value.kind {
-        ExprKind::Var(v) if !written.contains(key) && kept.contains(v.as_str()) => Some(v.to_string()),
+        ExprKind::Var(v) if !written.contains(key) && kept.contains(v.word()) => Some(v.to_string()),
         _ => None,
     };
     if fields
@@ -620,7 +620,7 @@ fn fields_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &str) -> Vec<Strin
         let (key, v) = (&field.0, read_as(field).unwrap_or_else(|| field.0.clone()));
         let read = |e: &Expr| {
             matches!(&e.kind, ExprKind::Member(of, k)
-                if k == key && matches!(&of.kind, ExprKind::Var(g) if g == guard))
+                if k == key && matches!(&of.kind, ExprKind::Var(g) if g.is(guard)))
         };
         copies_read_as(body, &read, &v, field.1.facts.has(js::Known::Defined));
     }
@@ -629,7 +629,7 @@ fn fields_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &str) -> Vec<Strin
     // nullable place it's given stores as it is (ADR 0841, amended).
     js::each_expr_mut(body, &mut |e| {
         if let ExprKind::Member(of, key) = &e.kind
-            && matches!(&of.kind, ExprKind::Var(v) if v == guard)
+            && matches!(&of.kind, ExprKind::Var(v) if v.is(guard))
             && let Some(field) = fields.iter().find(|(k, _)| k == key)
         {
             let read = Expr::var(&read_as(field).unwrap_or_else(|| key.clone())).or_at(e.span);
@@ -648,7 +648,7 @@ fn fields_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &str) -> Vec<Strin
         );
         if let Some(k) = stmts
             .iter()
-            .position(|s| matches!(&s.kind, StmtKind::Const(n, _) if n == guard))
+            .position(|s| matches!(&s.kind, StmtKind::Const(n, _) if n.is(guard)))
         {
             let span = stmts[k].span;
             let consts = (fields.iter())
@@ -680,11 +680,11 @@ fn kept_variables(body: &[Stmt], params: &[Pattern], guard: &str, fields: &[(Str
         for s in list.iter() {
             if let StmtKind::Const(name, value) = &s.kind
                 && let ExprKind::Member(of, key) = &value.kind
-                && matches!(&of.kind, ExprKind::Var(g) if g == guard)
+                && matches!(&of.kind, ExprKind::Var(g) if g.is(guard))
                 && fields
                     .iter()
                     .any(|(k, v)| k == key && matches!(&v.kind, ExprKind::Var(v) if v == name))
-                && let Some(count) = declared.get_mut(name.as_str())
+                && let Some(count) = declared.get_mut(name.word())
             {
                 *count -= 1;
             }
@@ -700,7 +700,7 @@ fn kept_variables(body: &[Stmt], params: &[Pattern], guard: &str, fields: &[(Str
         if later.is_none()
             && let Some(k) = list
                 .iter()
-                .position(|s| matches!(&s.kind, StmtKind::Const(n, _) if n == guard))
+                .position(|s| matches!(&s.kind, StmtKind::Const(n, _) if n.is(guard)))
         {
             later = Some(js::Writes::of(&list[k + 1..]));
         }
@@ -730,7 +730,7 @@ fn one_field_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &str) -> Option
     js::each_block_mut(body, &mut |stmts| {
         for s in stmts.iter() {
             if let StmtKind::Const(n, value) = &s.kind
-                && n == guard
+                && n.is(guard)
                 && let ExprKind::Array(items) = &value.kind
                 && let [item] = items.as_slice()
             {
@@ -742,7 +742,7 @@ fn one_field_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &str) -> Option
     let known = item.facts;
     let field = |e: &Expr| {
         matches!(&e.kind, ExprKind::Index(of, at)
-            if matches!(&of.kind, ExprKind::Var(v) if v == guard) && at.as_int() == Some(0))
+            if matches!(&of.kind, ExprKind::Var(v) if v.is(guard)) && at.as_int() == Some(0))
     };
     let mut reads = 0;
     let mut stmts = body.clone();
@@ -756,7 +756,7 @@ fn one_field_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &str) -> Option
     // The variable it was made of; or read now, so not by Rust's name for
     // what's only dropped, `_restore`, where `restore` is free.
     let variable = match &item.kind {
-        ExprKind::Var(v) if kept_variables(body, params, guard, &[]).contains(v.as_str()) => Some(v.to_string()),
+        ExprKind::Var(v) if kept_variables(body, params, guard, &[]).contains(v.word()) => Some(v.to_string()),
         _ => None,
     };
     let mut names = IndexSet::default();
@@ -792,7 +792,7 @@ fn one_field_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &str) -> Option
     js::each_block_mut(body, &mut |stmts| {
         let made = |s: &Stmt| {
             matches!(&s.kind, StmtKind::Const(n, value)
-                if n == guard && matches!(&value.kind, ExprKind::Array(items) if items.len() == 1))
+                if n.is(guard) && matches!(&value.kind, ExprKind::Array(items) if items.len() == 1))
         };
         if variable.is_some() {
             stmts.retain(|s| !made(s));

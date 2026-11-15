@@ -44,7 +44,7 @@ fn said_at(stmts: &[Stmt], i: usize, switches: &[Switch]) -> Option<Vec<Stmt>> {
     let after = &stmts[i + 1..];
     if !matches!(none.kind, ExprKind::Null | ExprKind::Undefined)
         || !after.last().is_some_and(ends)
-        || names_break(after, label)
+        || names_break(after, label.word())
     {
         return None;
     }
@@ -54,13 +54,13 @@ fn said_at(stmts: &[Stmt], i: usize, switches: &[Switch]) -> Option<Vec<Stmt>> {
         .take_while(|s| matches!(s.kind, StmtKind::Let(_, None)))
         .count();
     let (lets, then) = then.split_at(declared);
-    if (lets.iter()).any(|s| matches!(&s.kind, StmtKind::Let(name, _) if js::declares(&stmts[..i], name))) {
+    if (lets.iter()).any(|s| matches!(&s.kind, StmtKind::Let(name, _) if js::declares(&stmts[..i], name.word()))) {
         return None;
     }
     // What the chain's arms go on to leaves, as what follows the block
     // does: neither runs after the other.
     let (chain, rest) = then.split_first()?;
-    if names_break(rest, label) || !rest.last().is_some_and(ends) {
+    if names_break(rest, label.word()) || !rest.last().is_some_and(ends) {
         return None;
     }
     let valued = |e: &Expr| valued(e, switches);
@@ -82,7 +82,7 @@ fn said_at(stmts: &[Stmt], i: usize, switches: &[Switch]) -> Option<Vec<Stmt>> {
             *test = std::mem::replace(test, Expr::taken()).negated_test();
             std::mem::swap(then, otherwise);
         }
-        if names_break(then, label) {
+        if names_break(then, label.word()) {
             return None;
         }
         if !says(subject, test, &valued) {

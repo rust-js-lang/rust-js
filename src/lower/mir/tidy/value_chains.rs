@@ -127,8 +127,8 @@ pub(super) fn assigned_through(stmts: &[Stmt]) -> Option<(&str, &Expr)> {
         return None;
     };
     match (&made.kind, &target.kind, &read.kind) {
-        (ExprKind::Var(m), ExprKind::Var(x), ExprKind::Var(r)) if is_temporary(t) && m == t && r == t => {
-            Some((x.as_str(), value))
+        (ExprKind::Var(m), ExprKind::Var(x), ExprKind::Var(r)) if is_temporary(t.word()) && m == t && r == t => {
+            Some((x.word(), value))
         }
         _ => None,
     }
@@ -212,7 +212,7 @@ pub(super) fn returned_else_ifs(stmts: &mut Vec<Stmt>, links: &[js::Span], retur
     // wrote.
     let bound = head > 0
         && matches!(&stmts[head - 1].kind, StmtKind::Const(name, _) | StmtKind::Let(name, Some(_))
-            if tested[0].1.mentions_var(name));
+            if tested[0].1.mentions_var(name.word()));
     if link(tested[0].0) && !bound || !tested[1..].iter().all(|(s, ..)| link(s)) {
         return;
     }

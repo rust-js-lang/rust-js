@@ -18,9 +18,10 @@ impl Name {
         &self.0
     }
 
-    /// Its word, `as_str`'s name for it.
-    pub fn as_str(&self) -> &str {
-        &self.0
+    /// Whether its word is `word`: a name compared with a given one,
+    /// `"undefined"`, the one way a name is compared with text.
+    pub fn is(&self, word: &str) -> bool {
+        self.0 == word
     }
 
     /// Spelled `word` from now on: a rename, preparation's spelling and
@@ -32,17 +33,6 @@ impl Name {
     /// It, as a `String` of its word, for what keeps names as text.
     pub fn into_word(self) -> String {
         self.0
-    }
-}
-
-/// Its word, while every pass still reads one (S1a): taken away a part at a
-/// time (S1b), each site then asking the API above. Nothing writes through
-/// it: a rename is `respell`'s.
-impl std::ops::Deref for Name {
-    type Target = str;
-
-    fn deref(&self) -> &str {
-        &self.0
     }
 }
 
@@ -67,48 +57,6 @@ impl From<String> for Name {
 impl From<&String> for Name {
     fn from(word: &String) -> Name {
         Name(word.clone())
-    }
-}
-
-impl From<Name> for String {
-    fn from(name: Name) -> String {
-        name.0
-    }
-}
-
-impl PartialEq<str> for Name {
-    fn eq(&self, other: &str) -> bool {
-        self.0 == other
-    }
-}
-
-impl PartialEq<&str> for Name {
-    fn eq(&self, other: &&str) -> bool {
-        self.0 == *other
-    }
-}
-
-impl PartialEq<String> for Name {
-    fn eq(&self, other: &String) -> bool {
-        &self.0 == other
-    }
-}
-
-impl PartialEq<Name> for str {
-    fn eq(&self, other: &Name) -> bool {
-        self == other.0
-    }
-}
-
-impl PartialEq<Name> for &str {
-    fn eq(&self, other: &Name) -> bool {
-        *self == other.0
-    }
-}
-
-impl PartialEq<Name> for String {
-    fn eq(&self, other: &Name) -> bool {
-        *self == other.0
     }
 }
 

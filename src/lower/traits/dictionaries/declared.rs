@@ -152,10 +152,10 @@ pub(super) fn reads_only_at_top(e: &Expr, given: &IndexSet<String>) -> bool {
             // A JS global, `Array` of `Array.from`, which no local's name
             // is (ADR 0352), as a helper is: read the same at the top (#1239).
             only &= part.helper_name().is_some()
-                || crate::names::is_js_global(name)
+                || crate::names::is_js_global(name.word())
                 || part.facts.has(js::Known::Item)
-                || bound.iter().any(|b| b == name)
-                || given.contains(name.as_str());
+                || bound.iter().any(|b| name.is(b))
+                || given.contains(name.word());
         }
     });
     only
@@ -190,7 +190,7 @@ fn entries_to_declare(
 /// before it, `S` of `S.A().B()`.
 fn root_name(e: &Expr) -> Option<&str> {
     match &e.kind {
-        js::ExprKind::Var(name) => Some(name),
+        js::ExprKind::Var(name) => Some(name.word()),
         js::ExprKind::Call(callee, _) => root_name(callee),
         js::ExprKind::Member(object, _) => root_name(object),
         _ => None,

@@ -108,11 +108,11 @@ pub(super) fn guarded_loops(stmts: &mut Vec<Stmt>) {
             else {
                 continue;
             };
-            let Some(name) = label.clone().filter(|l| tidy_made(l)) else {
+            let Some(name) = label.clone().filter(|l| tidy_made(l.word())) else {
                 continue;
             };
-            chained_in(body, &name, &locals);
-            if !js::names_jump(body, &name) {
+            chained_in(body, name.word(), &locals);
+            if !js::names_jump(body, name.word()) {
                 *label = None;
             }
         }
@@ -221,20 +221,22 @@ fn copy_read_in_place(stmts: &mut Vec<Stmt>, k: usize, locals: &IndexSet<String>
     let js::ExprKind::Var(of) = &value.kind else {
         return false;
     };
-    if !super::is_temporary(copy) || !locals.contains(of.as_str()) || value.facts.has(js::Known::LocalRead) {
+    if !super::is_temporary(copy.word()) || !locals.contains(of.word()) || value.facts.has(js::Known::LocalRead) {
         return false;
     }
-    let (copy, of) = (copy.clone(), Expr::var(of).or_at(value.span));
+    let (copy, of) = (copy.clone(), Expr::var(of.word()).or_at(value.span));
     let mut chain = stmts[k].clone();
     let mut read = true;
     tests(&mut chain, &mut |test| {
-        let with = |name: &str| (name == copy).then(|| of.clone());
+        let with = |name: &str| copy.is(name).then(|| of.clone());
         match test.substitute(&with) {
             Some(read_in_place) => *test = read_in_place,
             None => read = false,
         }
     });
-    if !read || js::mentions_in(std::slice::from_ref(&chain), &copy) > 0 || js::mentions_in(&stmts[k + 1..], &copy) > 0
+    if !read
+        || js::mentions_in(std::slice::from_ref(&chain), copy.word()) > 0
+        || js::mentions_in(&stmts[k + 1..], copy.word()) > 0
     {
         return false;
     }
@@ -367,7 +369,7 @@ fn own_jumps(stmts: &mut [Stmt], label: &str) -> Option<()> {
     for stmt in stmts.iter_mut() {
         match &mut stmt.kind {
             StmtKind::Break(None) => return None,
-            StmtKind::Break(l) | StmtKind::Continue(l) if l.as_deref() == Some(label) => *l = None,
+            StmtKind::Break(l) | StmtKind::Continue(l) if l.as_ref().map(|n| n.word()) == Some(label) => *l = None,
             StmtKind::If(_, a, b) => {
                 own_jumps(a, label)?;
                 own_jumps(b.as_deref_mut().unwrap_or_default(), label)?;

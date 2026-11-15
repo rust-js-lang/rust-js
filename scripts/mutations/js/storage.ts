@@ -80,7 +80,7 @@ export const mutations: Mutation[] = [
     name: "in-place-fields-of-other-places-held",
     breaks: "a flattened state's whole write holds a field that reads another place, `handler.value`, before its tag is set, where upstream sets it in place (#784)",
     file: "src/js/storage.rs",
-    find: "                ExprKind::Var(object) => !value.has_effects() && !value.mentions_var(object),\n",
+    find: "                ExprKind::Var(object) => !value.has_effects() && !value.mentions_var(object.word()),\n",
     replace: "                ExprKind::Var(_) => value.is_constant() || value.reads_only_vars(),\n",
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^flattened_state_written_whole_of_other_places.rs$"],

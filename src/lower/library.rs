@@ -368,9 +368,9 @@ pub(super) fn exported_names(modules: &[crate::program::UnlinkedModule]) -> Expo
         let mut export = |name: &str| exported.insert((module.path.clone(), name.to_string()));
         for item in &module.items {
             match item {
-                crate::js::Item::Function(function) if function.export => export(&function.name),
-                crate::js::Item::Const(constant) if constant.export => export(&constant.name),
-                crate::js::Item::Namespace(namespace) if namespace.export => export(&namespace.name),
+                crate::js::Item::Function(function) if function.export => export(function.name.word()),
+                crate::js::Item::Const(constant) if constant.export => export(constant.name.word()),
+                crate::js::Item::Namespace(namespace) if namespace.export => export(namespace.name.word()),
                 _ => false,
             };
         }

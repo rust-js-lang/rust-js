@@ -26,7 +26,7 @@ pub(in crate::lower::mir::tidy) fn skipped_tests(stmts: &mut Vec<Stmt>, logicals
         // `bb10: { bb7: { .. } seen += 10; }`'s `if (..) { break bb10; }`.
         skipped_tests(body, logicals, lets);
         let label = label.clone();
-        let Some(test) = skipped_test(&label, &stmts[i], lets, logicals) else {
+        let Some(test) = skipped_test(label.word(), &stmts[i], lets, logicals) else {
             i += 1;
             continue;
         };
@@ -116,7 +116,7 @@ fn skipped(
             // `bb12: { let d; if (.. (d = bump(flags)) ..) { break bb12; }
             // n += d; }`: declared before this one's.
             StmtKind::Let(name, None) if tree.is_empty() && bound.is_empty() && hoisting.on => {
-                hoisting.declared(name);
+                hoisting.declared(name.word());
             }
             _ => break,
         }
@@ -225,11 +225,11 @@ fn falls(stmts: &[Stmt], label: &str, hoisting: &mut Hoisting) -> Option<Truth> 
                 unreachable!("matched")
             };
             let name = name.clone();
-            hoisting.declared(&name)?;
+            hoisting.declared(name.word())?;
             let StmtKind::Const(_, value) = &read[k].kind else {
                 unreachable!("matched")
             };
-            let set = Expr::assigned(Expr::var(&name), value.clone());
+            let set = Expr::assigned(Expr::var(name.word()), value.clone());
             read[k] = StmtKind::Expr(set).at(read[k].span);
         }
         return falls(&read, label, hoisting);
@@ -265,7 +265,7 @@ fn falls(stmts: &[Stmt], label: &str, hoisting: &mut Hoisting) -> Option<Truth> 
                 done.push(Expr::assigned(target.clone(), value.clone()));
                 continue;
             }
-            StmtKind::Break(Some(l)) if l == label => after(&mut done, Truth::Never),
+            StmtKind::Break(Some(l)) if l.is(label) => after(&mut done, Truth::Never),
             StmtKind::If(test, then, otherwise) => {
                 let yes = falls(then, label, hoisting)?;
                 let no = falls(otherwise.as_deref().unwrap_or_default(), label, hoisting)?;

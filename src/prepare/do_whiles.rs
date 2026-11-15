@@ -51,18 +51,18 @@ fn do_while(before: &[Stmt], looped: &Stmt, after: &[Stmt]) -> Option<StmtKind> 
         return Some(looped);
     }
     let mut body = body.clone();
-    ended_by_advance(&mut body, label.as_deref());
+    ended_by_advance(&mut body, label.as_ref().map(|n| n.word()));
     let (last, turn) = body.split_last()?;
     if !matches!(&last.kind, StmtKind::Break(l) if ours(l)) {
         return None;
     }
     let mut turn = turn.to_vec();
     let mut advances = Vec::new();
-    advanced(&mut turn, label.as_deref(), &mut advances)?;
+    advanced(&mut turn, label.as_ref().map(|n| n.word()), &mut advances)?;
     // An advance before a way's end, `if (T(e)) { x = e; continue; }
     // break;`: `x = e; continue;`, whose `continue` goes on to the `do`'s
     // test, the advance's (ADR 0978, amended).
-    turned(&mut turn, label.as_deref(), &mut advances)?;
+    turned(&mut turn, label.as_ref().map(|n| n.word()), &mut advances)?;
     let (first, others) = advances.split_first()?;
     let variable = &first.variable;
     let same = |a: &Expr, b: &Expr| {
@@ -73,12 +73,12 @@ fn do_while(before: &[Stmt], looped: &Stmt, after: &[Stmt]) -> Option<StmtKind> 
     };
     let declared = before
         .iter()
-        .any(|s| matches!(&s.kind, StmtKind::Let(n, _) if n == variable));
+        .any(|s| matches!(&s.kind, StmtKind::Let(n, _) if n.is(variable)));
     if !declared
         || others
             .iter()
             .any(|a| a.variable != *variable || !same(&a.test, &first.test))
-        || js::continues(&turn, label.as_deref())
+        || js::continues(&turn, label.as_ref().map(|n| n.word()))
         || js::mentions_in(after, variable) > 0
         || in_function(&turn, variable)
     {
@@ -113,7 +113,7 @@ fn tested_last(label: &Option<Name>, body: &[Stmt], looped: js::Span) -> Option<
         return None;
     };
     if !matches!(&then[..], [Stmt { kind: StmtKind::Break(l), .. }] if ours(l))
-        || js::continues(turn, label.as_deref())
+        || js::continues(turn, label.as_ref().map(|n| n.word()))
         || js::declared_names(turn).iter().any(|name| done.mentions_var(name))
     {
         return None;
@@ -150,7 +150,7 @@ fn ended_by_advance(body: &mut Vec<Stmt>, label: Option<&str>) {
     let StmtKind::If(test, then, None) = &left.kind else {
         return;
     };
-    let ours = |l: &Option<Name>| l.is_none() || l.as_deref() == label;
+    let ours = |l: &Option<Name>| l.is_none() || l.as_ref().map(|n| n.word()) == label;
     if !matches!(&then[..], [Stmt { kind: StmtKind::Break(l), .. }] if ours(l))
         || !matches!(&given.kind, StmtKind::Assign(target, _) if matches!(target.kind, ExprKind::Var(_)))
     {
@@ -169,7 +169,7 @@ fn ended_by_advance(body: &mut Vec<Stmt>, label: Option<&str>) {
 /// their own, whose `break` is theirs: `x = e;` and the `continue` it goes
 /// on to the test by, `ADVANCED` until the others are checked.
 fn turned(stmts: &mut Vec<Stmt>, label: Option<&str>, advances: &mut Vec<Advance>) -> Option<()> {
-    let ours = |l: &Option<Name>| l.is_none() || l.as_deref() == label;
+    let ours = |l: &Option<Name>| l.is_none() || l.as_ref().map(|n| n.word()) == label;
     let mut i = 0;
     while i < stmts.len() {
         if let StmtKind::If(_, then, otherwise) = &mut stmts[i].kind {
@@ -219,7 +219,7 @@ fn advanced(stmts: &mut Vec<Stmt>, label: Option<&str>, advances: &mut Vec<Advan
             let ExprKind::Var(variable) = &target.kind else {
                 return None;
             };
-            if !(l.is_none() || l.as_deref() == label) {
+            if !(l.is_none() || l.as_ref().map(|n| n.word()) == label) {
                 return None;
             }
             let (variable, value, test) = (variable.to_string(), value.clone(), test.clone());
@@ -265,7 +265,7 @@ fn given(test: &Expr, value: &Expr, variable: &str) -> Option<Expr> {
         return None;
     }
     holed.each_mut(&mut |e| {
-        if matches!(&e.kind, ExprKind::Var(v) if v == HOLE) {
+        if matches!(&e.kind, ExprKind::Var(v) if v.is(HOLE)) {
             *e = Expr::var(variable).or_at(e.span);
         }
     });

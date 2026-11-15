@@ -40,17 +40,17 @@ pub(super) fn copied_bindings(stmts: &mut Vec<Stmt>, user: &IndexSet<String>) {
                 continue;
             };
             let tested = match there {
-                true => tests_present(test, a),
-                false => absent(test, a),
+                true => tests_present(test, a.word()),
+                false => absent(test, a.word()),
             };
             let (a, b) = (a.clone(), b.clone());
-            if !tested || is_temporary(&a) || is_temporary(&b) || a == b {
+            if !tested || is_temporary(a.word()) || is_temporary(b.word()) || a == b {
                 continue;
             }
             // The variable set again only past each read of the binding,
             // `last.next = clone; newLast = clone;`.
             let rest = &block[1..];
-            if set_before_read(rest, &a, &b) || rebinds(rest, &b) || in_closure(rest, &b) {
+            if set_before_read(rest, a.word(), b.word()) || rebinds(rest, b.word()) || in_closure(rest, b.word()) {
                 continue;
             }
             block.remove(0);
@@ -69,9 +69,9 @@ pub(super) fn copied_bindings(stmts: &mut Vec<Stmt>, user: &IndexSet<String>) {
             && then.last().is_some_and(ends)
             && let StmtKind::Const(b, value) = &stmts[i + 1].kind
             && let ExprKind::Var(a) = &value.kind
-            && absent(test, a)
-            && !is_temporary(a)
-            && !is_temporary(b)
+            && absent(test, a.word())
+            && !is_temporary(a.word())
+            && !is_temporary(b.word())
             && a != b
         {
             let (a, b) = (a.to_string(), b.to_string());
@@ -82,7 +82,7 @@ pub(super) fn copied_bindings(stmts: &mut Vec<Stmt>, user: &IndexSet<String>) {
                 // binding's name for both, as an `if let`'s is
                 // (`named_for_bindings`, ADR 0598, amended).
                 let own = (stmts[..i].iter())
-                    .any(|s| matches!(&s.kind, StmtKind::Const(n, _) | StmtKind::Let(n, _) if *n == a));
+                    .any(|s| matches!(&s.kind, StmtKind::Const(n, _) | StmtKind::Let(n, _) if n.is(&a)));
                 let named = !user.contains(a.as_str()) && user.contains(b.as_str()) && own;
                 let renamed = named && js::mentions_in(stmts, &b) == js::mentions_in(&stmts[i + 1..], &b);
                 stmts.remove(i + 1);
@@ -94,14 +94,14 @@ pub(super) fn copied_bindings(stmts: &mut Vec<Stmt>, user: &IndexSet<String>) {
                 };
                 for stmt in stmts[at..].iter_mut() {
                     if let StmtKind::Const(n, _) | StmtKind::Let(n, _) = &mut stmt.kind
-                        && *n == from
+                        && n.is(&from)
                     {
                         *n = to.clone().into();
                     }
                 }
                 js::each_expr_mut(&mut stmts[at..], &mut |e| {
                     if let ExprKind::Var(v) = &mut e.kind
-                        && *v == from
+                        && v.is(&from)
                     {
                         *v = to.clone().into();
                     }
@@ -142,15 +142,15 @@ fn named_for_bindings(stmts: &mut [Stmt], user: &IndexSet<String>) {
             n
         };
         let own = (stmts[..i].iter()).any(|s| matches!(&s.kind, StmtKind::Const(n, _) | StmtKind::Let(n, _) if n == a));
-        if user.contains(a.as_str())
-            || !user.contains(b.as_str())
-            || is_temporary(a)
-            || is_temporary(b)
+        if user.contains(a.word())
+            || !user.contains(b.word())
+            || is_temporary(a.word())
+            || is_temporary(b.word())
             || !own
-            || !tests_present(test, a)
-            || declared(b, stmts) != 1
-            || js::mentions_in(stmts, b) != js::mentions_in(then, b)
-            || in_closure(&then[1..], b)
+            || !tests_present(test, a.word())
+            || declared(b.word(), stmts) != 1
+            || js::mentions_in(stmts, b.word()) != js::mentions_in(then, b.word())
+            || in_closure(&then[1..], b.word())
         {
             continue;
         }
@@ -187,7 +187,7 @@ fn tests_present(test: &Expr, a: &str) -> bool {
         first = x;
     }
     match &first.kind {
-        ExprKind::Var(v) => v == a,
-        _ => js::null_test(first, true).is_some_and(|v| matches!(&v.kind, ExprKind::Var(v) if v == a)),
+        ExprKind::Var(v) => v.is(a),
+        _ => js::null_test(first, true).is_some_and(|v| matches!(&v.kind, ExprKind::Var(v) if v.is(a))),
     }
 }

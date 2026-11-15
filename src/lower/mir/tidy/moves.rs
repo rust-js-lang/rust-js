@@ -57,9 +57,11 @@ fn entered(stmt: &Stmt, rest: &mut [Stmt], facts: &MoveFacts) -> bool {
         return false;
     };
     match &mut first.kind {
-        StmtKind::Labeled(_, body) if js::mentions_in(after, name) == 0 => entered(stmt, body, facts),
+        StmtKind::Labeled(_, body) if js::mentions_in(after, name.word()) == 0 => entered(stmt, body, facts),
         StmtKind::Try(body, caught) | StmtKind::TryCatch(body, _, caught)
-            if !value.may_throw() && js::mentions_in(after, name) == 0 && js::mentions_in(caught, name) == 0 =>
+            if !value.may_throw()
+                && js::mentions_in(after, name.word()) == 0
+                && js::mentions_in(caught, name.word()) == 0 =>
         {
             entered(stmt, body, facts)
         }
@@ -153,7 +155,7 @@ fn moved(stmt: &Stmt, rest: &[Stmt], facts: &MoveFacts) -> Option<(Moved, Why)> 
         // the statement after it (`paired_temporaries`).
         StmtKind::Assign(target, value)
             if let ExprKind::Var(name) = &target.kind
-                && facts.paired.contains(name.as_str()) =>
+                && facts.paired.contains(name.word()) =>
         {
             (name, value, true)
         }
@@ -161,8 +163,8 @@ fn moved(stmt: &Stmt, rest: &[Stmt], facts: &MoveFacts) -> Option<(Moved, Why)> 
     };
     // A temporary MIR made, or an element made ahead of a branch: what the
     // program didn't name.
-    let element = facts.captured.contains(name.as_str());
-    if !is_temporary(name) && !element && !facts.fixed.contains(name.as_str()) {
+    let element = facts.captured.contains(name.word());
+    if !is_temporary(name.word()) && !element && !facts.fixed.contains(name.word()) {
         return None;
     }
     // What may run before it's read: what does nothing, where it does
@@ -187,12 +189,12 @@ fn moved(stmt: &Stmt, rest: &[Stmt], facts: &MoveFacts) -> Option<(Moved, Why)> 
     // past, `const list$1 = list;` a callback's borrow; and what does
     // nothing and reads what no call changes, past any statement that
     // assigns nothing it reads, a loop's too.
-    let at = (rest.iter()).position(|s| js::mentions_in(std::slice::from_ref(s), name) > 0)?;
+    let at = (rest.iter()).position(|s| js::mentions_in(std::slice::from_ref(s), name.word()) > 0)?;
     // Not into a `&mut`'s handle's or a `dyn`'s pair's place, which reads
     // it whenever its `value` is read or written: a value made there, `{
     // n: 3 }`, would be another each time (#985). A variable is a place.
     if !matches!(value.kind, ExprKind::Var(_))
-        && super::bindings::handles_read(std::slice::from_ref(&rest[at])).contains(name.as_str())
+        && super::bindings::handles_read(std::slice::from_ref(&rest[at])).contains(name.word())
     {
         return None;
     }
@@ -210,19 +212,19 @@ fn moved(stmt: &Stmt, rest: &[Stmt], facts: &MoveFacts) -> Option<(Moved, Why)> 
     // Read once in what follows, and once there; of a paired temporary,
     // assigned again after, once by the statement after it.
     let once = match assigned {
-        true => js::mentions_in(&rest[..=at], name) == 1,
-        false => js::mentions_in(rest, name) == 1,
+        true => js::mentions_in(&rest[..=at], name.word()) == 1,
+        false => js::mentions_in(rest, name.word()) == 1,
     };
     // What does nothing, of variables nothing changes, gives the same
     // wherever it's read.
     let mut stable = !value.has_effects();
     value.visit_vars(&mut |v| stable &= !facts.changing.contains(v));
-    let read = read_of(&rest[at], name, stable)?;
+    let read = read_of(&rest[at], name.word(), stable)?;
     let expr = read.of(&rest[at]);
-    let single = once && js::mentions_in(&rest[at..=at], name) == 1;
+    let single = once && js::mentions_in(&rest[at..=at], name.word()) == 1;
     // Or tested more than once there and nowhere else, an or-pattern's
     // tests of a field (ADR 0780).
-    if !single && (assigned || !tested_in_place(value, expr, name, js::mentions_in(rest, name))) {
+    if !single && (assigned || !tested_in_place(value, expr, name.word(), js::mentions_in(rest, name.word()))) {
         return None;
     }
     // Not an arrow into a call of it it'd be left called where it's made
@@ -249,10 +251,10 @@ fn moved(stmt: &Stmt, rest: &[Stmt], facts: &MoveFacts) -> Option<(Moved, Why)> 
     };
     let why = match stable {
         true => Why::Stable,
-        false if leads(expr, name, guard, &passes) == Some(true) => Why::ReadFirst,
+        false if leads(expr, name.word(), guard, &passes) == Some(true) => Why::ReadFirst,
         false => return None,
     };
-    let mut replaced = expr.substitute(&|v| (v == name).then(|| value.clone()))?;
+    let mut replaced = expr.substitute(&|v| name.is(v).then(|| value.clone()))?;
     // A cell made in its place and read, `{ value: x }.value`, a struct's
     // field made of one: what it holds, as `Expr::member` reads one where
     // it's made, and its key then left out where that's `undefined` (ADR
@@ -286,7 +288,7 @@ fn tested_in_place(value: &Expr, expr: &Expr, name: &str, reads: usize) -> bool 
         }
         place = of;
     }
-    let of_a_variable = matches!(&place.kind, ExprKind::Var(v) if v != name) || matches!(place.kind, ExprKind::This);
+    let of_a_variable = matches!(&place.kind, ExprKind::Var(v) if !v.is(name)) || matches!(place.kind, ExprKind::This);
     if !matches!(value.kind, ExprKind::Member(..)) || !of_a_variable || expr.has_effects() {
         return false;
     }
@@ -295,7 +297,7 @@ fn tested_in_place(value: &Expr, expr: &Expr, name: &str, reads: usize) -> bool 
         if let ExprKind::Binary(Op::Eq | Op::Ne, a, b) = &e.kind {
             compared += [a, b]
                 .into_iter()
-                .filter(|side| matches!(&side.kind, ExprKind::Var(v) if v == name))
+                .filter(|side| matches!(&side.kind, ExprKind::Var(v) if v.is(name)))
                 .count();
         }
     });
@@ -327,7 +329,7 @@ fn read_of(stmt: &Stmt, name: &str, stable: bool) -> Option<Read> {
             while let ExprKind::Index(of, _) | ExprKind::Member(of, _) = &root.kind {
                 root = of;
             }
-            let set_of = matches!(&root.kind, ExprKind::Var(v) if v == name);
+            let set_of = matches!(&root.kind, ExprKind::Var(v) if v.is(name));
             match (in_target, set_of) {
                 (false, _) => Some(Read::Value),
                 (true, true) => Some(Read::Target),
@@ -370,7 +372,7 @@ pub(super) fn leads(e: &Expr, name: &str, guard: Option<&Expr>, passes: &dyn Fn(
         Some(false)
     };
     match &e.kind {
-        ExprKind::Var(v) => Some(v == name),
+        ExprKind::Var(v) => Some(v.is(name)),
         ExprKind::Member(a, _)
         | ExprKind::OptionalMember(a, _)
         | ExprKind::Unary(_, a)
@@ -510,8 +512,8 @@ fn tested_binding(test: &Expr, then: &[Stmt], named: &IndexSet<String>) -> bool 
     let Some(StmtKind::Const(name, value)) = then.first().map(|s| &s.kind) else {
         return false;
     };
-    let own_name = matches!(&value.kind, ExprKind::Member(_, property) if property == name);
-    if !own_name || named.contains(name.as_str()) || !place_read(value, name) || test.has_effects() {
+    let own_name = matches!(&value.kind, ExprKind::Member(_, property) if name.is(property));
+    if !own_name || named.contains(name.word()) || !place_read(value, name.word()) || test.has_effects() {
         return false;
     }
     let mut read = false;
@@ -536,25 +538,25 @@ fn tested_read(stmt: &Stmt, rest: &[Stmt], named: &IndexSet<String>) -> Option<(
     };
     // The property's own name, `const autoName = instance.autoName`, of a
     // pattern's binding, not a `let` the program wrote.
-    let own_name = matches!(&value.kind, ExprKind::Member(_, property) if property == name);
-    if !own_name || named.contains(name.as_str()) {
+    let own_name = matches!(&value.kind, ExprKind::Member(_, property) if name.is(property));
+    if !own_name || named.contains(name.word()) {
         return None;
     }
-    let place = place_read(value, name);
+    let place = place_read(value, name.word());
     let mut tested = 0;
-    test.visit_vars(&mut |v| tested += usize::from(v == name));
+    test.visit_vars(&mut |v| tested += usize::from(name.is(v)));
     if !place || tested == 0 || test.has_effects() {
         return None;
     }
-    let substituted = |e: &Expr| e.substitute(&|v| (v == name).then(|| value.clone()));
+    let substituted = |e: &Expr| e.substitute(&|v| name.is(v).then(|| value.clone()));
     // Read once more by the `then`'s first statement, nothing it
     // evaluates first doing anything.
-    if js::mentions_in(rest, name) - tested != 1 {
+    if js::mentions_in(rest, name.word()) - tested != 1 {
         return None;
     }
     let first = then.first()?;
-    let read = read_of(first, name, false)?;
-    if js::mentions_in(std::slice::from_ref(first), name) != 1
+    let read = read_of(first, name.word(), false)?;
+    if js::mentions_in(std::slice::from_ref(first), name.word()) != 1
         || !matches!(&read.of(first).kind, ExprKind::Var(v) if v == name)
     {
         return None;
@@ -581,10 +583,10 @@ pub(super) fn ended_borrows(stmts: &mut Vec<Stmt>, ends_borrow: &IndexSet<String
     let mut i = 0;
     while i + 1 < stmts.len() {
         if let StmtKind::Const(name, value) = &stmts[i].kind
-            && ends_borrow.contains(name.as_str())
+            && ends_borrow.contains(name.word())
             && matches!(&value.kind, ExprKind::Member(..))
-            && place_read(value, name)
-            && stored_whole(&stmts[i + 1], name)
+            && place_read(value, name.word())
+            && stored_whole(&stmts[i + 1], name.word())
             && read_again(stmts, i)
         {
             continue;
@@ -619,11 +621,11 @@ fn fallback_read(stmts: &mut Vec<Stmt>, at: usize, named: &IndexSet<String>) -> 
     let (StmtKind::Const(name, value), Some(next)) = (&stmts[at].kind, stmts.get(at + 1)) else {
         return false;
     };
-    let own_name = matches!(&value.kind, ExprKind::Member(_, property) if property == name);
-    if !named.contains(name.as_str()) || !own_name || js::mentions_in(&stmts[at + 1..], name) != 1 {
+    let own_name = matches!(&value.kind, ExprKind::Member(_, property) if name.is(property));
+    if !named.contains(name.word()) || !own_name || js::mentions_in(&stmts[at + 1..], name.word()) != 1 {
         return false;
     }
-    let Some(read) = read_of(next, name, false) else {
+    let Some(read) = read_of(next, name.word(), false) else {
         return false;
     };
     let expr = read.of(next);
@@ -634,10 +636,10 @@ fn fallback_read(stmts: &mut Vec<Stmt>, at: usize, named: &IndexSet<String>) -> 
         }
     });
     // The first thing the statement evaluates: nothing before it at all.
-    if !fallback || leads(expr, name, None, &|_| false) != Some(true) {
+    if !fallback || leads(expr, name.word(), None, &|_| false) != Some(true) {
         return false;
     }
-    let Some(replaced) = expr.substitute(&|v| (v == name).then(|| value.clone())) else {
+    let Some(replaced) = expr.substitute(&|v| name.is(v).then(|| value.clone())) else {
         return false;
     };
     *read.of_mut(&mut stmts[at + 1]) = replaced;
@@ -676,14 +678,17 @@ fn receiver_read(stmts: &mut Vec<Stmt>, at: usize, lets: &LetNames) -> bool {
     let StmtKind::Const(name, value) = &made[at].kind else {
         return false;
     };
-    if !lets.named.contains(name.as_str()) || lets.mutable.contains(name.as_str()) || js::mentions_in(rest, name) != 2 {
+    if !lets.named.contains(name.word())
+        || lets.mutable.contains(name.word())
+        || js::mentions_in(rest, name.word()) != 2
+    {
         return false;
     }
     // The statement right after it, that call alone.
     let Some(StmtKind::Expr(call)) = rest.first_mut().map(|s| &mut s.kind) else {
         return false;
     };
-    if call.own_keyed_method_receiver() != Some(name) || !call.own_method_called(Some(value.clone())) {
+    if call.own_keyed_method_receiver() != Some(name.word()) || !call.own_method_called(Some(value.clone())) {
         return false;
     }
     stmts.remove(at);
@@ -703,7 +708,7 @@ fn stored_whole(stmt: &Stmt, name: &str) -> bool {
         ExprKind::Binary(Op::Coalesce, value, null) if matches!(null.kind, ExprKind::Null) => value,
         _ => value,
     };
-    matches!(&value.kind, ExprKind::Var(v) if v == name)
+    matches!(&value.kind, ExprKind::Var(v) if v.is(name))
 }
 
 /// Whether `value`, `const name = value`, is a variable's property, or a
@@ -714,7 +719,7 @@ fn place_read(value: &Expr, name: &str) -> bool {
         root = of;
     }
     matches!(value.kind, ExprKind::Member(..))
-        && matches!(&root.kind, ExprKind::Var(v) if v != name)
+        && matches!(&root.kind, ExprKind::Var(v) if !v.is(name))
         && !value.has_effects()
 }
 
@@ -733,16 +738,16 @@ pub(super) fn read_again(stmts: &mut Vec<Stmt>, at: usize) -> bool {
     let (StmtKind::Const(name, value), Some(next)) = (&stmts[at].kind, stmts.get(at + 1)) else {
         return false;
     };
-    if js::mentions_in(&stmts[at + 1..], name) != 1 {
+    if js::mentions_in(&stmts[at + 1..], name.word()) != 1 {
         return false;
     }
-    let Some(read) = read_of(next, name, false) else {
+    let Some(read) = read_of(next, name.word(), false) else {
         return false;
     };
-    if leads(read.of(next), name, None, &|e| !e.has_effects()) != Some(true) {
+    if leads(read.of(next), name.word(), None, &|e| !e.has_effects()) != Some(true) {
         return false;
     }
-    let Some(replaced) = read.of(next).substitute(&|v| (v == name).then(|| value.clone())) else {
+    let Some(replaced) = read.of(next).substitute(&|v| name.is(v).then(|| value.clone())) else {
         return false;
     };
     *read.of_mut(&mut stmts[at + 1]) = replaced;
@@ -774,10 +779,10 @@ pub(super) fn set_where_read(stmts: &mut Vec<Stmt>, at: usize) -> bool {
         return false;
     };
     let mut reads = 0;
-    test.visit_vars(&mut |v| reads += usize::from(v == name));
-    let set = Expr::assigned(Expr::var(name), value.clone());
-    let in_place = (reads == 1 && leads(test, name, None, &|e| !e.has_effects()) == Some(true))
-        .then(|| test.substitute(&|v| (v == name).then(|| set.clone())))
+    test.visit_vars(&mut |v| reads += usize::from(name.is(v)));
+    let set = Expr::assigned(Expr::var(name.word()), value.clone());
+    let in_place = (reads == 1 && leads(test, name.word(), None, &|e| !e.has_effects()) == Some(true))
+        .then(|| test.substitute(&|v| name.is(v).then(|| set.clone())))
         .flatten();
     let tested = in_place.unwrap_or_else(|| Expr::sequence(vec![set.clone(), test.clone()]));
     if let StmtKind::If(test, ..) = &mut stmts[at + 1].kind {
@@ -810,12 +815,12 @@ pub(super) fn held_receivers(stmts: &mut Vec<Stmt>) {
         let ExprKind::Member(object, property) = &value.kind else {
             continue;
         };
-        let mentions = js::mentions_in(&stmts[i + 1..], name);
-        if !is_temporary(name) || mentions == 0 {
+        let mentions = js::mentions_in(&stmts[i + 1..], name.word());
+        if !is_temporary(name.word()) || mentions == 0 {
             continue;
         }
         let (name, object, property) = (name.clone(), (**object).clone(), property.clone());
-        let Some(at) = (i + 1..stmts.len()).find(|&j| js::mentions_in(&stmts[j..=j], &name) == mentions) else {
+        let Some(at) = (i + 1..stmts.len()).find(|&j| js::mentions_in(&stmts[j..=j], name.word()) == mentions) else {
             continue;
         };
         // Of one Rust may change, called in each branch of a call of each
@@ -834,7 +839,7 @@ pub(super) fn held_receivers(stmts: &mut Vec<Stmt>) {
         let in_place = matches!(object.kind, ExprKind::Var(_));
         let held = match in_place {
             true => object.clone(),
-            false => Expr::var(&name),
+            false => Expr::var(name.word()),
         };
         // Each mention a call of it, the statement's own or one a branch of
         // its value makes.

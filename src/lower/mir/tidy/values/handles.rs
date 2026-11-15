@@ -143,7 +143,7 @@ pub(in crate::lower::mir::tidy) fn read_handles(
                         && (place.reads_same()
                             || matches!(&place.kind, ExprKind::Index(of, at) if of.reads_same() && at.reads_same())))
             {
-                let at_once = frozen.contains(name.as_str()) || read_at_once(stmts, k, name);
+                let at_once = frozen.contains(name.word()) || read_at_once(stmts, k, name.word());
                 handles.push((name.to_string(), (**place).clone(), at_once, *storage));
             }
         }
@@ -157,7 +157,7 @@ pub(in crate::lower::mir::tidy) fn read_handles(
             && let ExprKind::Member(of, key) = &place.kind
             && key == js::HELD
             && let ExprKind::Var(v) = &of.kind
-            && let Some((_, on, _, storage)) = handles.iter().find(|(name, ..)| name == v)
+            && let Some((_, on, _, storage)) = handles.iter().find(|(name, ..)| v.is(name))
             && *storage != js::Storage::AsGiven
         {
             *e = Expr {
@@ -178,7 +178,7 @@ pub(in crate::lower::mir::tidy) fn read_handles(
         if let ExprKind::Handle(place, js::Storage::AsGiven) = &e.kind
             && let ExprKind::Member(of, key) = &place.kind
             && key == js::HELD
-            && matches!(&of.kind, ExprKind::Var(v) if states.contains(v.as_str()))
+            && matches!(&of.kind, ExprKind::Var(v) if states.contains(v.word()))
         {
             *e = Expr {
                 span: e.span,
@@ -216,11 +216,11 @@ pub(in crate::lower::mir::tidy) fn read_handles(
     if !whole.is_empty() {
         let of = |name: &str| whole.iter().find(|(n, _)| n == name).map(|(_, handle)| handle);
         js::statement_lists(body, &mut |stmts| {
-            stmts.retain(|stmt| !matches!(&stmt.kind, StmtKind::Const(name, _) if of(name).is_some()));
+            stmts.retain(|stmt| !matches!(&stmt.kind, StmtKind::Const(name, _) if of(name.word()).is_some()));
         });
         let substitute = &mut |e: &mut Expr| {
             if let ExprKind::Var(v) = &e.kind
-                && let Some(handle) = of(v)
+                && let Some(handle) = of(v.word())
             {
                 *e = Expr {
                     span: e.span,
@@ -244,7 +244,7 @@ pub(in crate::lower::mir::tidy) fn read_handles(
         js::each_expr_mut(&mut rest, &mut |e| {
             if let ExprKind::Member(of, key) = &e.kind
                 && key == js::HELD
-                && matches!(&of.kind, ExprKind::Var(v) if v == name)
+                && matches!(&of.kind, ExprKind::Var(v) if v.is(name))
             {
                 *e = Expr::js_undefined();
             }
@@ -277,16 +277,16 @@ pub(in crate::lower::mir::tidy) fn read_handles(
     // What's written through one, as its storage stores it: a nullable
     // field's `None`, `null` (ADR 0791).
     written_as_stored(body, &|of| match &of.kind {
-        ExprKind::Var(v) => read(v).map(|(.., storage)| *storage),
+        ExprKind::Var(v) => read(v.word()).map(|(.., storage)| *storage),
         _ => None,
     });
     js::statement_lists(body, &mut |stmts| {
         stmts.retain(
-            |stmt| !matches!(&stmt.kind, StmtKind::Const(name, _) if read(name).is_some_and(|(_, _, at_once, _)| !at_once)),
+            |stmt| !matches!(&stmt.kind, StmtKind::Const(name, _) if read(name.word()).is_some_and(|(_, _, at_once, _)| !at_once)),
         );
         for stmt in stmts.iter_mut() {
             if let StmtKind::Const(name, value) = &mut stmt.kind
-                && read(name).is_some()
+                && read(name.word()).is_some()
                 && let ExprKind::Handle(place, _) = &value.kind
             {
                 *value = (**place).clone();
@@ -297,10 +297,10 @@ pub(in crate::lower::mir::tidy) fn read_handles(
         if let ExprKind::Member(of, key) = &e.kind
             && key == js::HELD
             && let ExprKind::Var(v) = &of.kind
-            && let Some((_, place, at_once, _)) = read(v)
+            && let Some((_, place, at_once, _)) = read(v.word())
         {
             let read = match at_once {
-                true => Expr::var(v),
+                true => Expr::var(v.word()),
                 false => place.clone(),
             };
             *e = Expr { span: e.span, ..read };

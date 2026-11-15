@@ -14,8 +14,8 @@ export const mutations: Mutation[] = [
     name: "label-census-written-labels-counted",
     breaks: "the label census counts a label the program wrote, `outer`, among the compiler's, which no fix takes away (#1461)",
     file: "src/lower/mir/census.rs",
-    find: "                .map(String::from)\n                .filter(|name| super::queries::is_block_label(name))\n",
-    replace: "                .map(String::from)\n",
+    find: "                .map(Name::into_word)\n                .filter(|name| super::queries::is_block_label(name))\n",
+    replace: "                .map(Name::into_word)\n",
     unitTests: "lower::mir::census::tests::each_compiler_label_kept_and_how_far_its_jumps_reach",
   },
 ];

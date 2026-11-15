@@ -95,7 +95,7 @@ fn defaulted(module: &Module) -> Option<&str> {
 /// class declaration can be (rd682); a constructor function is exported
 /// after its prototype's members, `export default Component;`.
 fn default_class(module: &Module, n: &js::Namespace) -> bool {
-    n.class.as_ref().is_some_and(|class| class.es) && module.default_export.as_deref() == Some(n.name.as_str())
+    n.class.as_ref().is_some_and(|class| class.es) && module.default_export.as_deref() == Some(n.name.word())
 }
 
 /// The class of `module` declared as its default (`default_class`).
@@ -177,10 +177,10 @@ pub fn emit(
                 None => body.push(cx.namespace(n)),
             },
             // A constant declared as the default is its value (ADR 0625).
-            js::Item::Const(c) if defaulted(module) == Some(c.name.as_str()) => body.push(cx.default_value(c)),
+            js::Item::Const(c) if defaulted(module) == Some(c.name.word()) => body.push(cx.default_value(c)),
             js::Item::Const(c) => body.push(cx.constant(c)),
             js::Item::Statements(stmts) => body.extend(cx.stmts(stmts)),
-            js::Item::Function(f) => body.push(cx.function(f, defaulted(module) == Some(f.name.as_str()))),
+            js::Item::Function(f) => body.push(cx.function(f, defaulted(module) == Some(f.name.word()))),
         }
         items = rest;
     }

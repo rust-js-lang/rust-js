@@ -135,8 +135,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an `async` closure's `|_|` from MIR is `async (_) => ..`, not `async () => ..`",
     file: "src/lower/mir/closures.rs",
-    find: '            && (name == "_" || name.starts_with("_$"))\n',
-    replace: '            && name == "never"\n',
+    find: "            && (name.is(\"_\") || name.word().starts_with(\"_$\"))\n",
+    replace: "            && name.is(\"never\")\n",
     tests: [
       "test/lowering-async.test.ts",
       "-t",
@@ -330,7 +330,7 @@ export const mutations: Mutation[] = [
     name: "writer-sink-captured-as-a-copy",
     breaks: "a closure that writes its writer's sink, made in a closure that writes it too, takes the sink in a `const` of its own, `const f$1 = f` (#1637)",
     file: "src/lower/mir/closures.rs",
-    find: "                            || self.is_writers_sink(state, name)) =>\n",
+    find: "                            || self.is_writers_sink(state, name.word())) =>\n",
     replace: ") =>\n",
     tests: ["test/corpus.test.ts","-t","^closure_writes_captured_formatter.rs$"],
     snapshots: true,

@@ -548,7 +548,7 @@ pub(super) fn unheld(held: Expr, result: Expr, made: &mut Vec<Stmt>) -> Expr {
     };
     fn first(e: &Expr, name: &str) -> bool {
         match &e.kind {
-            js::ExprKind::Var(var) => var == name,
+            js::ExprKind::Var(var) => var.is(name),
             js::ExprKind::Call(callee, args) => {
                 !callee.has_effects() && args.first().is_some_and(|arg| first(arg, name))
             }
@@ -556,12 +556,12 @@ pub(super) fn unheld(held: Expr, result: Expr, made: &mut Vec<Stmt>) -> Expr {
         }
     }
     let mut reads = 0;
-    result.visit_vars(&mut |var| reads += usize::from(var == name.as_str()));
-    if spilled != name || reads != 1 || !first(&result, name) {
+    result.visit_vars(&mut |var| reads += usize::from(var == name.word()));
+    if spilled != name || reads != 1 || !first(&result, name.word()) {
         return result;
     }
     let value = value.clone();
-    let Some(put) = result.substitute(&|var| (var == name.as_str()).then(|| value.clone())) else {
+    let Some(put) = result.substitute(&|var| (var == name.word()).then(|| value.clone())) else {
         return result;
     };
     made.pop();

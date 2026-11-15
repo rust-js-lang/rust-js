@@ -171,7 +171,7 @@ fn visit(module: &mut LoweredModule, visitor: &mut Visitor<'_>) {
         match item {
             Item::Function(function) => function_names(function, visitor),
             Item::Namespace(namespace) => {
-                visitor.name(&namespace.name);
+                visitor.name(namespace.name.word());
                 for constant in &mut namespace.constants {
                     expr(&mut constant.value, visitor);
                 }
@@ -180,7 +180,7 @@ fn visit(module: &mut LoweredModule, visitor: &mut Visitor<'_>) {
                 }
             }
             Item::Const(constant) => {
-                visitor.name(&constant.name);
+                visitor.name(constant.name.word());
                 constant.fields.names.iter().for_each(|(field, _)| visitor.name(field));
                 expr(&mut constant.value, visitor);
             }
@@ -190,7 +190,7 @@ fn visit(module: &mut LoweredModule, visitor: &mut Visitor<'_>) {
 }
 
 fn function_names(function: &mut Function, visitor: &mut Visitor<'_>) {
-    visitor.name(&function.name);
+    visitor.name(function.name.word());
     for param in &mut function.params {
         pattern(param, visitor);
     }
@@ -199,18 +199,18 @@ fn function_names(function: &mut Function, visitor: &mut Visitor<'_>) {
 
 fn pattern(p: &mut Pattern, visitor: &mut Visitor<'_>) {
     // A default, `{ size = "md" }`, is a literal: it names nothing.
-    p.names_mut().into_iter().for_each(|n| visitor.name(n));
+    p.names_mut().into_iter().for_each(|n| visitor.name(n.word()));
 }
 
 fn block(body: &mut [Stmt], visitor: &mut Visitor<'_>) {
     for statement in body {
         match &mut statement.kind {
             StmtKind::Const(n, e) => {
-                visitor.name(n);
+                visitor.name(n.word());
                 expr(e, visitor);
             }
             StmtKind::Let(n, e) => {
-                visitor.name(n);
+                visitor.name(n.word());
                 if let Some(e) = e {
                     expr(e, visitor);
                 }
@@ -253,7 +253,7 @@ fn block(body: &mut [Stmt], visitor: &mut Visitor<'_>) {
                 body,
                 ..
             } => {
-                visitor.name(n);
+                visitor.name(n.word());
                 expr(start, visitor);
                 expr(test, visitor);
                 if let Some(value) = step.value_mut() {
@@ -284,7 +284,7 @@ fn block(body: &mut [Stmt], visitor: &mut Visitor<'_>) {
             StmtKind::TryCatch(body, error, handler) => {
                 block(body, visitor);
                 if let Some(error) = error {
-                    visitor.name(error);
+                    visitor.name(error.word());
                 }
                 block(handler, visitor);
             }
@@ -312,7 +312,7 @@ fn expr(e: &mut Expr, visitor: &mut Visitor<'_>) {
         ExprKind::Symbol(symbol) => {
             visitor.read.insert(symbol.clone());
         }
-        ExprKind::Var(n) => visitor.name(n),
+        ExprKind::Var(n) => visitor.name(n.word()),
         ExprKind::Assigned(target, a) => {
             expr(target, visitor);
             expr(a, visitor);

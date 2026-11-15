@@ -23,7 +23,7 @@ pub(in crate::lower::mir::tidy) fn breaks_past_switches(stmts: &mut Vec<Stmt>, s
         if let StmtKind::Labeled(label, body) = &mut stmt.kind {
             let label = label.clone();
             some_switch_defaults(body, switches);
-            ending_switches(body, &mut |case| case_breaks(case, &label));
+            ending_switches(body, &mut |case| case_breaks(case, label.word()));
             // `None`, which no case takes, goes past the `switch` to the
             // block's end, as the `break` does.
             if let [.., guard, switch] = &body[..]
@@ -131,7 +131,7 @@ pub(in crate::lower::mir::tidy) fn blocks_ending_cases(stmts: &mut [Stmt], elses
             }
             Some(StmtKind::Labeled(label, body)) => {
                 let label = label.clone();
-                case_breaks(body, &label);
+                case_breaks(body, label.word());
                 ending(body, elses);
             }
             _ => {}
@@ -201,7 +201,7 @@ fn ending_switches(stmts: &mut [Stmt], f: &mut dyn FnMut(&mut Vec<Stmt>)) {
 pub(in crate::lower::mir::tidy) fn case_breaks(stmts: &mut [Stmt], label: &str) {
     for stmt in stmts.iter_mut() {
         match &mut stmt.kind {
-            StmtKind::Break(Some(l)) if l == label => stmt.kind = StmtKind::Break(None),
+            StmtKind::Break(Some(l)) if l.is(label) => stmt.kind = StmtKind::Break(None),
             StmtKind::If(_, a, b) => {
                 case_breaks(a, label);
                 if let Some(b) = b {

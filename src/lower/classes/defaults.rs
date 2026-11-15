@@ -40,7 +40,7 @@ pub(in crate::lower) fn prototype_defaults(
             continue;
         };
         if let Some(Pattern::Name(receiver)) = (!params.is_empty()).then(|| params.remove(0))
-            && js::read_as_this(&mut body, &receiver)
+            && js::read_as_this(&mut body, receiver.word())
         {
             body.insert(0, StmtKind::Const(receiver, Expr::this()).at(js::Span::NONE));
         }
@@ -69,7 +69,7 @@ pub(in crate::lower) fn take_default(
     owner: &str,
     function: js::Function,
 ) -> Result<(), String> {
-    let Some(at) = namespaces.iter().position(|n| n.name == owner) else {
+    let Some(at) = namespaces.iter().position(|n| n.name.is(owner)) else {
         return Ok(());
     };
     if namespaces[at].methods.iter().any(|f| f.name == function.name) {
@@ -79,10 +79,10 @@ pub(in crate::lower) fn take_default(
         ));
     }
     let alike = namespaces.iter_mut().find(|n| {
-        n.name != owner
+        !n.name.is(owner)
             && n.class
                 .as_ref()
-                .is_some_and(|class| class.prototype.iter().any(|p| p == &function.name))
+                .is_some_and(|class| class.prototype.iter().any(|p| function.name.is(p)))
             && n.methods
                 .iter()
                 .any(|f| f.name == function.name && f.params == function.params && f.body == function.body)
@@ -90,7 +90,7 @@ pub(in crate::lower) fn take_default(
     if let Some(first) = alike
         && let Some(class) = &mut first.class
     {
-        match class.shared.iter_mut().find(|(method, _)| *method == function.name) {
+        match class.shared.iter_mut().find(|(method, _)| function.name.is(method)) {
             Some((_, others)) => others.push(owner.to_owned()),
             None => class.shared.push((function.name.to_string(), vec![owner.to_owned()])),
         }

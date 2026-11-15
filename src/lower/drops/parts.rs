@@ -221,7 +221,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                                 ..
                             },
                         ] if matches!(callee.kind, js::ExprKind::Var(_))
-                            && matches!(given.as_slice(), [Expr { kind: js::ExprKind::Var(n), .. }] if *n == name) =>
+                            && matches!(given.as_slice(), [Expr { kind: js::ExprKind::Var(n), .. }] if n.is(&name)) =>
                         {
                             (**callee).clone()
                         }

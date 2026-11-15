@@ -180,7 +180,11 @@ impl Cx {
         };
         if !lands {
             let what = if is_continue { "continue" } else { "break" };
-            let to = label.as_deref().map(|l| format!(" {l}")).unwrap_or_default();
+            let to = label
+                .as_ref()
+                .map(|n| n.word())
+                .map(|l| format!(" {l}"))
+                .unwrap_or_default();
             self.problems.push(Problem::Unlanded(format!("{what}{to}")));
         }
     }

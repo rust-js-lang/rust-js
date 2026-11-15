@@ -788,7 +788,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let names: Vec<String> = (0..given.len()).map(|i| format!("arg{i}")).collect();
         let mut values: Vec<Expr> = names.iter().map(|name| Expr::var(name)).collect();
         self.given_iterators(def_id, &mut values, &given, span, &mut Vec::new())?;
-        Ok((values.iter().zip(&names)).any(|(value, name)| !matches!(&value.kind, js::ExprKind::Var(v) if v == name)))
+        Ok((values.iter().zip(&names)).any(|(value, name)| !matches!(&value.kind, js::ExprKind::Var(v) if v.is(name))))
     }
 
     /// A function as a value: a constructor's, `.map(Some)`, an arrow making

@@ -28,7 +28,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ => None,
         });
         match &param {
-            Some(name) => self.spill_subject(Base::Named(name), subject, (true, false), out),
+            Some(name) => self.spill_subject(Base::Named(name.word()), subject, (true, false), out),
             None if option => self.spill_subject(Role::Option, subject, (true, false), out),
             None => self.spill_subject(Role::Result, subject, (false, false), out),
         }
@@ -73,7 +73,7 @@ pub(super) fn read_in_place(value: Expr, spilled_at: Option<usize>, out: &mut Ve
             _ => break,
         };
     }
-    if reads != 1 || !matches!(&root.kind, js::ExprKind::Var(var) if *var == name) {
+    if reads != 1 || !matches!(&root.kind, js::ExprKind::Var(var) if var.is(&name)) {
         return value;
     }
     let held = held.clone();

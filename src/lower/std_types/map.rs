@@ -1179,7 +1179,7 @@ pub(in crate::lower) fn discarded_calls(items: &mut [js::Item]) {
             if let StmtKind::Expr(e) = &mut stmt.kind
                 && let js::ExprKind::Call(callee, args) = &mut e.kind
                 && let js::ExprKind::Var(helper) = &callee.kind
-                && let Some(method) = match (helper.as_str(), args.len()) {
+                && let Some(method) = match (helper.word(), args.len()) {
                     ("$add", 2) => Some("add"),
                     ("$insert", 3) => Some("set"),
                     ("$remove", 2) => Some("delete"),
@@ -1296,7 +1296,7 @@ pub(in crate::lower) fn inserted_entries(stmts: &mut Vec<Stmt>) {
 /// m.set(k, f(current));`: tidy's step of a map's (`mir::tidy`).
 pub(in crate::lower) fn counted_entries(stmts: &mut Vec<Stmt>) {
     let call_of = |e: &Expr, helper: &str| match &e.kind {
-        js::ExprKind::Call(callee, args) if matches!(&callee.kind, js::ExprKind::Var(f) if f == helper) => {
+        js::ExprKind::Call(callee, args) if matches!(&callee.kind, js::ExprKind::Var(f) if f.is(helper)) => {
             Some(args.clone())
         }
         _ => None,
@@ -1315,7 +1315,7 @@ pub(in crate::lower) fn counted_entries(stmts: &mut Vec<Stmt>) {
             && let StmtKind::Assign(target, value) = &stmts[i + 2].kind
             && matches!(&target.kind, js::ExprKind::Member(of, v)
                 if v == js::HELD && matches!(&of.kind, js::ExprKind::Var(h) if h == handle))
-            && js::mentions_in(&stmts[i + 3..], handle) == 0
+            && js::mentions_in(&stmts[i + 3..], handle.word()) == 0
         {
             let name = (std::iter::once("current".to_string()))
                 .chain((1..).map(|n| format!("current${n}")))
@@ -1330,7 +1330,7 @@ pub(in crate::lower) fn counted_entries(stmts: &mut Vec<Stmt>) {
                     *e = Expr::var(&name);
                 }
             });
-            if js::mentions_in(&value, handle) > 0 {
+            if js::mentions_in(&value, handle.word()) > 0 {
                 i += 1;
                 continue;
             }

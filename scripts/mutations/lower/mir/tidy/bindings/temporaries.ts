@@ -50,7 +50,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a temporary is never named as rust-analyzer suggests, after the call that made it or the type it holds, but `value`",
     file: "src/lower/mir/tidy/bindings/temporaries.rs",
-    find: "                        (None, _) => suggested.get(name.as_str()).cloned().unwrap_or_default(),\n",
+    find: "                        (None, _) => suggested.get(name.word()).cloned().unwrap_or_default(),\n",
     replace: "                        (None, _) => Vec::new(),\n",
     tests: ["test/corpus.test.ts", "-t", "^temporary_names.rs$"],
     snapshots: true,
@@ -70,7 +70,7 @@ export const mutations: Mutation[] = [
     breaks:
       "temporaries are named outer lists first, so a `let` set late takes `next` from one read first",
     file: "src/lower/mir/tidy/bindings/temporaries.rs",
-    find: "    renames.sort_by_key(|(from, ..)| first.get(from.as_str()).copied().unwrap_or(usize::MAX));\n",
+    find: "    renames.sort_by_key(|(from, ..)| first.get(from.word()).copied().unwrap_or(usize::MAX));\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^loop_drops.rs$"],
     snapshots: true,
@@ -80,7 +80,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a held argument a `try` assigns, `let _arg; try { _arg = .. }`, keeps MIR's lowering's name, not `arg`",
     file: "src/lower/mir/tidy/bindings/temporaries.rs",
-    find: "                StmtKind::Let(name, _) if is_held_arg(name) => renames.push((name.clone(), Vec::new(), Role::Arg)),\n",
+    find: "                StmtKind::Let(name, _) if is_held_arg(name.word()) => {\n                    renames.push((name.clone(), Vec::new(), Role::Arg))\n                }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^generic_drops_nothing.rs$"],
     snapshots: true,
@@ -120,8 +120,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a spilled value with no free suggestion is given its role's word apart anew, `result$3`, undoing the `result` tidy gave each arm apart (ADR 0352, #890)",
     file: "src/lower/mir/tidy/bindings/temporaries.rs",
-    find: "        if spilled.iter().any(|(name, _)| **name == from) && names.iter().all(|name| taken.contains(name)) {\n",
-    replace: "        if spilled.iter().any(|(name, _)| **name == from) && false {\n",
+    find: "        if spilled.iter().any(|(name, _)| from.is(name)) && names.iter().all(|name| taken.contains(name)) {\n",
+    replace: "        if spilled.iter().any(|(name, _)| from.is(name)) && false {\n",
     tests: ["test/corpus.test.ts", "-t", "^(boxed_option_unwraps|option_iterator_of_generic_items|blanket_iterator_trait|interpreter).rs$"],
     snapshots: true,
   },

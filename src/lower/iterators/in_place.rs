@@ -75,7 +75,7 @@ pub(super) fn stepped_in_place(e: &mut Expr, by_for: bool, fuse: Option<&str>) {
         fewest_iterator_args(given);
         return;
     }
-    let fused = matches!(&callee.kind, js::ExprKind::Var(name) if Some(name.as_str()) == fuse);
+    let fused = matches!(&callee.kind, js::ExprKind::Var(name) if Some(name.word()) == fuse);
     let replacement = match callee.helper_name() {
         Some("$intoIter") if by_for => given[0].clone(),
         Some("$intoIter") => Expr::call(Expr::member(Expr::global("Iterator"), "from"), given.clone()),
@@ -183,7 +183,7 @@ pub(in crate::lower) fn does(f: &Expr) -> bool {
             }
             StmtKind::Return(None) => false,
             StmtKind::Assign(target, e) => {
-                !matches!(&target.kind, js::ExprKind::Var(name) if declared.iter().any(|d| d == name)) || acts(e)
+                !matches!(&target.kind, js::ExprKind::Var(name) if declared.iter().any(|d| name.is(d))) || acts(e)
             }
             StmtKind::If(test, then, otherwise) => {
                 acts(test)

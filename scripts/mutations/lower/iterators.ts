@@ -46,7 +46,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`Object.keys(o)`, an array, is taken as a JS iterator and stepped as one",
     file: "src/lower/iterators.rs",
-    find: '            js::ExprKind::Var(v) if v == "Object" => false,\n',
+    find: "            js::ExprKind::Var(v) if v.is(\"Object\") => false,\n",
     replace: "",
     tests: ["test/lowering-loops.test.ts", "-t", "a for over Object.keys"],
   },
@@ -277,7 +277,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a slice's iterator asked its length too, `it.len()`, is made the array's own `values()`, which has none, a TypeError (rd270)",
     file: "src/lower/iterators.rs",
-    find: "        if declared != 1 || steps == 0 || js::mentions_in(body, &name) != steps {\n",
+    find: "        if declared != 1 || steps == 0 || js::mentions_in(body, name.word()) != steps {\n",
     replace: "        if declared != 1 || steps == 0 {\n",
     tests: ["test/lowering-iterators.test.ts", "-t", "only stepped"],
   },

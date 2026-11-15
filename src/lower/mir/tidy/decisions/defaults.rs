@@ -19,18 +19,18 @@ pub(in crate::lower::mir::tidy) fn default_values(stmts: &mut Vec<Stmt>) {
     let mut i = 0;
     while i < stmts.len() {
         if let StmtKind::Labeled(label, body) = &stmts[i].kind
-            && crate::lower::mir::is_block_label(label)
+            && crate::lower::mir::is_block_label(label.word())
             && let Some((last, rest)) = body.split_last()
             && let StmtKind::Assign(target, value) = &last.kind
             && let ExprKind::Var(x) = &target.kind
             && given_first(value)
             && let Some(given) = (Given {
-                x,
-                label,
-                local: declared_unread(&stmts[..i], x),
+                x: x.word(),
+                label: label.word(),
+                local: declared_unread(&stmts[..i], x.word()),
             })
             .before_breaks(rest, &Inside::default())
-            && js::mentions_in(rest, x) == given
+            && js::mentions_in(rest, x.word()) == given
         {
             let StmtKind::Labeled(_, body) = &mut stmts[i].kind else {
                 unreachable!("matched")
@@ -73,7 +73,7 @@ fn copied_into_branches(stmts: &mut Vec<Stmt>, i: usize) -> bool {
     fn tailed(stmts: &mut Vec<Stmt>, tail: &Stmt, label: &str) -> bool {
         let ended = stmts.last().is_some_and(js::ends);
         match stmts.last_mut().map(|s| &mut s.kind) {
-            Some(StmtKind::Break(Some(l))) if l == label => {
+            Some(StmtKind::Break(Some(l))) if l.is(label) => {
                 stmts.pop();
                 true
             }
@@ -99,7 +99,7 @@ fn copied_into_branches(stmts: &mut Vec<Stmt>, i: usize) -> bool {
     if !matches!(rest.last().map(|s| &s.kind), Some(StmtKind::If(..))) {
         return false;
     }
-    if !tailed(&mut rest, last, label) || js::names_jump(&rest, label) {
+    if !tailed(&mut rest, last, label.word()) || js::names_jump(&rest, label.word()) {
         return false;
     }
     stmts.splice(i..=i, rest);
@@ -135,7 +135,7 @@ fn copied(value: &Expr) -> bool {
 /// way out of it never reaches.
 fn declared_unread(before: &[Stmt], x: &str) -> bool {
     (before.iter())
-        .rposition(|s| matches!(&s.kind, StmtKind::Let(name, _) if name == x))
+        .rposition(|s| matches!(&s.kind, StmtKind::Let(name, _) if name.is(x)))
         .is_some_and(|at| js::mentions_in(&before[at + 1..], x) == 0)
 }
 
@@ -188,13 +188,13 @@ impl Given<'_> {
     /// see it given: code of the program's that it calls, or what throws.
     fn before_breaks<'s>(&self, stmts: &'s [Stmt], inside: &Inside<'s>) -> Option<usize> {
         let quiet = |e: &Expr| self.local || !e.may_throw();
-        let gives = |stmt: &Stmt| matches!(&stmt.kind, StmtKind::Assign(target, _) if matches!(&target.kind, ExprKind::Var(v) if v == self.x));
+        let gives = |stmt: &Stmt| matches!(&stmt.kind, StmtKind::Assign(target, _) if matches!(&target.kind, ExprKind::Var(v) if v.is(self.x)));
         let mut given = 0;
         for (k, stmt) in stmts.iter().enumerate() {
             given += match &stmt.kind {
                 StmtKind::Assign(_, value) if gives(stmt) => {
                     let breaks =
-                        matches!(stmts.get(k + 1).map(|s| &s.kind), Some(StmtKind::Break(Some(l))) if l == self.label);
+                        matches!(stmts.get(k + 1).map(|s| &s.kind), Some(StmtKind::Break(Some(l))) if l.is(self.label));
                     if !breaks || js::mentions_in(&[StmtKind::Expr(value.clone()).at(stmt.span)], self.x) > 0 {
                         return None;
                     }
@@ -204,7 +204,7 @@ impl Given<'_> {
                     1
                 }
                 // A way out of the block that gives no value of its own.
-                StmtKind::Break(Some(l)) if l == self.label => {
+                StmtKind::Break(Some(l)) if l.is(self.label) => {
                     if !k.checked_sub(1).is_some_and(|p| gives(&stmts[p])) {
                         return None;
                     }
@@ -212,7 +212,7 @@ impl Given<'_> {
                 }
                 StmtKind::Break(label) | StmtKind::Continue(label) => {
                     let is_continue = matches!(stmt.kind, StmtKind::Continue(_));
-                    if !self.local && !inside.holds(label.as_deref(), is_continue) {
+                    if !self.local && !inside.holds(label.as_ref().map(|n| n.word()), is_continue) {
                         return None;
                     }
                     0
@@ -225,13 +225,13 @@ impl Given<'_> {
                     self.before_breaks(a, inside)? + b.as_deref().map_or(Some(0), |b| self.before_breaks(b, inside))?
                 }
                 StmtKind::Labeled(label, body) => {
-                    self.before_breaks(body, &inside.labeled(Some(label), false, false))?
+                    self.before_breaks(body, &inside.labeled(Some(label.word()), false, false))?
                 }
                 StmtKind::While { label, cond, body } => {
                     if !quiet(cond) {
                         return None;
                     }
-                    self.before_breaks(body, &inside.labeled(label.as_deref(), true, false))?
+                    self.before_breaks(body, &inside.labeled(label.as_ref().map(|n| n.word()), true, false))?
                 }
                 StmtKind::For {
                     label,
@@ -244,11 +244,11 @@ impl Given<'_> {
                     if !quiet(start) || !quiet(test) || step.value().is_some_and(|v| !quiet(v)) {
                         return None;
                     }
-                    self.before_breaks(body, &inside.labeled(label.as_deref(), true, false))?
+                    self.before_breaks(body, &inside.labeled(label.as_ref().map(|n| n.word()), true, false))?
                 }
                 // Its iterator's `next` may be the program's.
                 StmtKind::ForOf { label, body, .. } if self.local => {
-                    self.before_breaks(body, &inside.labeled(label.as_deref(), true, false))?
+                    self.before_breaks(body, &inside.labeled(label.as_ref().map(|n| n.word()), true, false))?
                 }
                 StmtKind::Switch {
                     discriminant,

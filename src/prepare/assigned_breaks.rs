@@ -25,10 +25,10 @@ pub(super) fn assigned_breaks(stmts: &mut [Stmt]) {
         }
         // The loop without its way out, where it was.
         let mut others = body.clone();
-        let Some((variable, test, span)) = taken(&mut others, label.as_deref()) else {
+        let Some((variable, test, span)) = taken(&mut others, label.as_ref().map(|n| n.word())) else {
             continue;
         };
-        let declared = (before.iter()).any(|s| matches!(&s.kind, StmtKind::Let(n, None) if *n == variable));
+        let declared = (before.iter()).any(|s| matches!(&s.kind, StmtKind::Let(n, None) if n.is(&variable)));
         if !declared || js::mentions_in(&others, &variable) > 0 {
             continue;
         }
@@ -105,15 +105,15 @@ fn assigned_at(body: &[Stmt], k: usize, label: Option<&str>) -> Option<(String, 
         return None;
     };
     let tested_first = matches!(&test.kind, ExprKind::Binary(_, a, b)
-        if matches!(&a.kind, ExprKind::Var(t) if t == made) && !b.mentions_var(made));
+        if matches!(&a.kind, ExprKind::Var(t) if t == made) && !b.mentions_var(made.word()));
     if read != made
-        || !(l.is_none() || l.as_deref() == label)
+        || !(l.is_none() || l.as_ref().map(|n| n.word()) == label)
         || !tested_first
-        || js::mentions_in(&body[k + 2..], made) > 0
+        || js::mentions_in(&body[k + 2..], made.word()) > 0
     {
         return None;
     }
-    let assigned = Expr::assigned(Expr::var(variable), value.clone());
-    let test = test.substitute(&|n: &str| (n == made).then(|| assigned.clone()))?;
+    let assigned = Expr::assigned(Expr::var(variable.word()), value.clone());
+    let test = test.substitute(&|n: &str| made.is(n).then(|| assigned.clone()))?;
     Some((variable.to_string(), test))
 }

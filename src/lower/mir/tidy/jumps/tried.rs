@@ -13,16 +13,16 @@ pub(in crate::lower::mir::tidy) type Binding = (js::Pattern, bool, usize, Vec<(S
 pub(in crate::lower::mir::tidy) fn binding(body: &[Stmt], item: &str) -> Option<Binding> {
     let reads = |value: &Expr| -> Option<Result<Option<usize>, String>> {
         match &value.kind {
-            ExprKind::Var(v) if v == item => Some(Ok(None)),
+            ExprKind::Var(v) if v.is(item) => Some(Ok(None)),
             ExprKind::Index(of, index)
-                if matches!(&of.kind, ExprKind::Var(v) if v == item)
+                if matches!(&of.kind, ExprKind::Var(v) if v.is(item))
                     && let ExprKind::Num(k) = index.kind
                     && k >= 0.0
                     && k.fract() == 0.0 =>
             {
                 Some(Ok(Some(k as usize)))
             }
-            ExprKind::Member(of, key) if matches!(&of.kind, ExprKind::Var(v) if v == item) => Some(Err(key.clone())),
+            ExprKind::Member(of, key) if matches!(&of.kind, ExprKind::Var(v) if v.is(item)) => Some(Err(key.clone())),
             _ => None,
         }
     };
@@ -39,7 +39,7 @@ pub(in crate::lower::mir::tidy) fn binding(body: &[Stmt], item: &str) -> Option<
                 if let ExprKind::Var(bound) = &target.kind
                     && parts.is_empty() =>
             {
-                (bound, value, js::Writes::sets(&body[1..], bound))
+                (bound, value, js::Writes::sets(&body[1..], bound.word()))
             }
             _ => break,
         };
@@ -315,8 +315,8 @@ pub(in crate::lower::mir::tidy) fn made_ok_tried(stmts: &mut Vec<Stmt>) {
             at += 1;
         }
         let folded = match stmts.get_mut(at).map(|s| &mut s.kind) {
-            Some(StmtKind::Labeled(_, body)) => taken_in_place(body, 0, &name),
-            Some(_) => taken_in_place(stmts, at, &name),
+            Some(StmtKind::Labeled(_, body)) => taken_in_place(body, 0, name.word()),
+            Some(_) => taken_in_place(stmts, at, name.word()),
             None => false,
         };
         if !folded {
@@ -326,13 +326,13 @@ pub(in crate::lower::mir::tidy) fn made_ok_tried(stmts: &mut Vec<Stmt>) {
         // What it holds, read in its place, where reading it there is the same.
         if let Some(value) = payload.filter(|value| value.is_constant() || matches!(value.kind, ExprKind::Var(_))) {
             js::each_expr_mut(&mut stmts[i + 1..], &mut |e| {
-                if result::reads_held(e, &name) {
+                if result::reads_held(e, name.word()) {
                     *e = value.clone();
                 }
             });
         }
         let mut read = false;
-        js::visit_stmts(&stmts[i + 1..], &mut |n| read |= n == name);
+        js::visit_stmts(&stmts[i + 1..], &mut |n| read |= name.is(n));
         let StmtKind::Const(_, made) = &stmts[i].kind else {
             unreachable!("matched")
         };
@@ -352,7 +352,7 @@ fn taken_in_place(stmts: &mut Vec<Stmt>, at: usize, name: &str) -> bool {
     let Some((of, ok, equal)) = result::tested(test) else {
         return false;
     };
-    if !matches!(&of.kind, ExprKind::Var(r) if r == name) {
+    if !matches!(&of.kind, ExprKind::Var(r) if r.is(name)) {
         return false;
     }
     let StmtKind::If(_, then, otherwise) = std::mem::replace(&mut stmts[at].kind, StmtKind::Break(None)) else {
@@ -456,11 +456,11 @@ pub(in crate::lower::mir::tidy) fn while_heads(stmts: &mut Vec<Stmt>, written: &
     while i < stmts.len() {
         if let StmtKind::While { label, cond, body } = &stmts[i].kind
             && matches!(cond.kind, ExprKind::Bool(true))
-            && let Some((test, then, rest)) = tested_at_head(body, label.as_deref(), {
+            && let Some((test, then, rest)) = tested_at_head(body, label.as_ref().map(|n| n.word()), {
                 written_loop(written, stmts[i].span).is_some_and(|&(_, w, _)| w)
             })
             && rest.last().is_some_and(ends)
-            && let Some(rest) = fallen(rest, label.as_deref())
+            && let Some(rest) = fallen(rest, label.as_ref().map(|n| n.word()))
         {
             let span = stmts[i].span;
             let looped = StmtKind::While {
@@ -480,7 +480,7 @@ pub(in crate::lower::mir::tidy) fn while_heads(stmts: &mut Vec<Stmt>, written: &
 /// `rest` is after the loop (ADR 0702, amended). None where it jumps to
 /// the loop otherwise.
 fn fallen(rest: &[Stmt], label: Option<&str>) -> Option<Vec<Stmt>> {
-    let own_break = |s: &Stmt| matches!(&s.kind, StmtKind::Break(l) if l.as_deref().is_none_or(|l| Some(l) == label));
+    let own_break = |s: &Stmt| matches!(&s.kind, StmtKind::Break(l) if l.as_ref().map(|n| n.word()).is_none_or(|l| Some(l) == label));
     let Some(at) = rest.iter().position(|s| own_jumps(std::slice::from_ref(s), label)) else {
         return Some(rest.to_vec());
     };
@@ -494,8 +494,7 @@ fn tested_at_head<'s>(
     label: Option<&str>,
     written: bool,
 ) -> Option<(&'s Expr, &'s [Stmt], &'s [Stmt])> {
-    let own_continue =
-        |s: &Stmt| matches!(&s.kind, StmtKind::Continue(l) if l.as_deref().is_none_or(|l| Some(l) == label));
+    let own_continue = |s: &Stmt| matches!(&s.kind, StmtKind::Continue(l) if l.as_ref().map(|n| n.word()).is_none_or(|l| Some(l) == label));
     let [
         Stmt {
             kind: StmtKind::If(test, then, None),

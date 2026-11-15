@@ -310,7 +310,7 @@ fn tested_of(stmts: &[Stmt], at: usize, whole: &[Stmt]) -> Option<Vec<Stmt>> {
         }
         _ => false,
     };
-    if !leaves(&yes) || !leaves(&no) || mentions_in(whole, name) != 1 {
+    if !leaves(&yes) || !leaves(&no) || mentions_in(whole, name.word()) != 1 {
         return None;
     }
     let beside = StmtKind::Const(name.clone(), Expr::js_undefined()).at(stmts[at].span);
@@ -368,10 +368,10 @@ fn set_of(stmt: &Stmt, whole: &[Stmt]) -> Option<Vec<Stmt>> {
     // Not where the body names `x`, a block's own, which its sets would
     // be of: lowering names such a block's `x` apart, `x$1`, as JS's `const
     // x` isn't made until the call's done.
-    if declares(&inlined, name) || mentions_in(&inlined, name) > 0 {
+    if declares(&inlined, name.word()) || mentions_in(&inlined, name.word()) > 0 {
         return None;
     }
-    let to = Expr::var(name);
+    let to = Expr::var(name.word());
     let set = |value: &Expr, at: Span| Some(vec![StmtKind::Assign(to.clone(), value.clone()).at(at)]);
     let set = returns_replaced(&inlined, &set)?;
     Some(std::iter::once(declared).chain(set).collect())
@@ -428,7 +428,7 @@ fn first_of<'s>(stmt: &'s mut Stmt, is: &dyn Fn(&Expr) -> bool) -> Option<&'s mu
 /// as React writes it. The same program: nothing is evaluated between
 /// (ADR 0706, amended).
 pub fn read_where_made(stmts: &mut Vec<Stmt>, name: &str) {
-    let Some(at) = (stmts.iter()).position(|s| matches!(&s.kind, StmtKind::Const(n, _) if n == name)) else {
+    let Some(at) = (stmts.iter()).position(|s| matches!(&s.kind, StmtKind::Const(n, _) if n.is(name))) else {
         return;
     };
     let rest = &stmts[at + 1..];
@@ -439,7 +439,7 @@ pub fn read_where_made(stmts: &mut Vec<Stmt>, name: &str) {
         unreachable!("found above")
     };
     let value = value.clone();
-    let is_read = |e: &Expr| matches!(&e.kind, ExprKind::Var(v) if v == name);
+    let is_read = |e: &Expr| matches!(&e.kind, ExprKind::Var(v) if v.is(name));
     let Some(read) = first_of(&mut stmts[at + 1], &is_read) else {
         return;
     };
@@ -482,7 +482,7 @@ fn in_place(
         ([], []) => None,
         ([Pattern::Name(param), unread @ ..], [arg, extra @ ..])
             if extra.len() <= unread.len()
-                && (unread.iter()).all(|p| matches!(p, Pattern::Name(n) if mentions_in(&body, n) == 0))
+                && (unread.iter()).all(|p| matches!(p, Pattern::Name(n) if mentions_in(&body, n.word()) == 0))
                 && !extra.iter().any(Expr::has_effects) =>
         {
             Some((param, arg))
@@ -522,7 +522,7 @@ fn in_place(
             // What a body that never reads its parameter is given, of no
             // effects: nothing, `finishDrop({ value: _finish })` of a unit
             // struct's `Drop`, which reads no `self` (ADR 0608, amended).
-            _ if !arg.has_effects() && mentions_in(&body, param) == 0 => (None, false),
+            _ if !arg.has_effects() && mentions_in(&body, param.word()) == 0 => (None, false),
             _ => return None,
         },
     };
@@ -536,7 +536,7 @@ fn in_place(
     let names = || {
         let mut others = whole.to_vec();
         statement_lists(&mut others, &mut |stmts| stmts.retain(|s| s != stmt));
-        let mut names: IndexSet<String> = given.into_iter().cloned().map(String::from).collect();
+        let mut names: IndexSet<String> = given.into_iter().cloned().map(Name::into_word).collect();
         names_in(&others, &mut names);
         names_in(beside, &mut names);
         if held && let Some((_, arg)) = parameter {
@@ -552,16 +552,20 @@ fn in_place(
     // a first set the body's own statement, which no closure made before
     // it could see, else the call stays.
     if let Some((param, _)) = parameter
-        && Writes::sets(&body, param)
+        && Writes::sets(&body, param.word())
     {
-        let first = body.iter().position(|s| Writes::sets(std::slice::from_ref(s), param))?;
+        let first = body
+            .iter()
+            .position(|s| Writes::sets(std::slice::from_ref(s), param.word()))?;
         let StmtKind::Assign(target, value) = &body[first].kind else {
             return None;
         };
         let mut seen_before = false;
         each_expr(&body[..first], &mut |e| match &e.kind {
-            ExprKind::Arrow(_, inner) | ExprKind::AsyncArrow(_, inner) => seen_before |= mentions_in(inner, param) > 0,
-            ExprKind::Function(function) => seen_before |= mentions_in(&function.body, param) > 0,
+            ExprKind::Arrow(_, inner) | ExprKind::AsyncArrow(_, inner) => {
+                seen_before |= mentions_in(inner, param.word()) > 0
+            }
+            ExprKind::Function(function) => seen_before |= mentions_in(&function.body, param.word()) > 0,
             _ => {}
         });
         if !matches!(&target.kind, ExprKind::Var(v) if v == param) || seen_before {
@@ -572,13 +576,13 @@ fn in_place(
         names_in(&body, &mut mentioned);
         // Apart from what the parameter was given apart from, `held` of
         // `held$1`, as lowering names each (ADR 0352).
-        let root = crate::names::apart(param).map_or(param.as_str(), |(root, _)| root);
+        let root = crate::names::apart(param.word()).map_or(param.word(), |(root, _)| root);
         let to = (1..)
             .map(|k| crate::names::given_apart(root, k))
             .find(|to| !mentioned.contains(to))
             .expect("a name nothing mentions");
         let mut after = body.split_off(first + 1);
-        renamed(&mut after, param, &to);
+        renamed(&mut after, param.word(), &to);
         let again = Writes::sets(&after, &to);
         body[first].kind = match again {
             true => StmtKind::Let(to.into(), Some(value)),
@@ -605,12 +609,12 @@ fn in_place(
         let names = names();
         let mut mentioned = names.clone();
         names_in(&body, &mut mentioned);
-        for from in declared.into_iter().filter(|name| names.contains(name.as_str())) {
+        for from in declared.into_iter().filter(|name| names.contains(name.word())) {
             let to = (1..)
-                .map(|k| crate::names::given_apart(&from, k))
+                .map(|k| crate::names::given_apart(from.word(), k))
                 .find(|to| !mentioned.contains(to))
                 .expect("a name nothing mentions");
-            renamed(&mut body, &from, &to);
+            renamed(&mut body, from.word(), &to);
             mentioned.insert(to);
         }
     }
@@ -623,13 +627,13 @@ fn in_place(
         return Some(body);
     };
     if let ExprKind::Handle(..) = arg.kind {
-        set_values_held(&mut body, param);
+        set_values_held(&mut body, param.word());
     }
     let mut read = arg.clone();
     read.each_mut(&mut |e| e.span = Span::NONE);
     if !held
         && !matches!(&arg.kind, ExprKind::Var(v) if v == param)
-        && !substituted(&mut body, &|v| (v == param).then(|| read.clone()))
+        && !substituted(&mut body, &|v| param.is(v).then(|| read.clone()))
     {
         return None;
     }
@@ -654,7 +658,7 @@ fn in_place(
 fn set_values_held(body: &mut Vec<Stmt>, handle: &str) {
     let is_held = |e: &Expr| {
         matches!(&e.kind, ExprKind::Member(of, key)
-            if key == crate::js::HELD && matches!(&of.kind, ExprKind::Var(v) if v == handle))
+            if key == crate::js::HELD && matches!(&of.kind, ExprKind::Var(v) if v.is(handle)))
     };
     statement_lists(body, &mut |stmts| {
         for stmt in stmts.iter_mut() {
@@ -674,11 +678,11 @@ fn set_values_held(body: &mut Vec<Stmt>, handle: &str) {
             else {
                 continue;
             };
-            if !is_held(value) || mentions_in(rest, handle) > 0 || declares(rest, set) {
+            if !is_held(value) || mentions_in(rest, handle) > 0 || declares(rest, set.word()) {
                 continue;
             }
             let mut read = rest.to_vec();
-            if !substituted(&mut read, &|v| (v == set).then(|| value.clone())) {
+            if !substituted(&mut read, &|v| set.is(v).then(|| value.clone())) {
                 continue;
             }
             // What's said where it was, said there still.
@@ -1092,16 +1096,16 @@ mod tests {
         };
         // `let x; if (c) { const y = d; x = y; } else { x = 2; } return x;`.
         let set = applied("y");
-        assert!(matches!(&set[0].kind, StmtKind::Let(name, None) if name == "x"));
+        assert!(matches!(&set[0].kind, StmtKind::Let(name, None) if name.is("x")));
         let StmtKind::If(_, then, Some(otherwise)) = &set[1].kind else {
             panic!("an `if` and its `else`");
         };
         let sets_x =
-            |s: &Stmt| matches!(&s.kind, StmtKind::Assign(to, _) if matches!(&to.kind, ExprKind::Var(v) if v == "x"));
+            |s: &Stmt| matches!(&s.kind, StmtKind::Assign(to, _) if matches!(&to.kind, ExprKind::Var(v) if v.is("x")));
         assert!(then.last().is_some_and(sets_x) && otherwise.last().is_some_and(sets_x));
         // A block's own `x`, which its set would be of: the call stays.
         let kept = applied("x");
-        assert!(matches!(&kept[0].kind, StmtKind::Const(name, value) if name == "x" && closure_called(value)));
+        assert!(matches!(&kept[0].kind, StmtKind::Const(name, value) if name.is("x") && closure_called(value)));
     }
 
     #[test]

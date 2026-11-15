@@ -42,8 +42,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a loop inside another, whose iterator is a `let` assigned each time, stays `while (true)` stepping it",
     file: "src/lower/mir/tidy/loops.rs",
-    find: "                && mentions.get(iter.as_str()) == Some(&2) =>\n",
-    replace: "                && mentions.get(iter.as_str()) == Some(&99) =>\n",
+    find: "                && mentions.get(iter.word()) == Some(&2) =>\n",
+    replace: "                && mentions.get(iter.word()) == Some(&99) =>\n",
     tests: [
       "test/lowering-loops.test.ts",
       "-t",
@@ -55,9 +55,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a range's loop to `v.length` of a `v` the body only reads stays `while (true)`",
     file: "src/lower/mir/tidy/loops.rs",
-    find: '            if length == "length" && matches!(&of.kind, ExprKind::Var(v) if only_read(&body, v)));\n',
+    find: "            if length == \"length\" && matches!(&of.kind, ExprKind::Var(v) if only_read(&body, v.word())));\n",
     replace:
-      '            if false && length == "length" && matches!(&of.kind, ExprKind::Var(v) if only_read(&body, v)));\n',
+      "            if false && length == \"length\" && matches!(&of.kind, ExprKind::Var(v) if only_read(&body, v.word())));\n",
     tests: [
       "test/lowering-loops.test.ts",
       "-t",
@@ -175,7 +175,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a range from a number variable, `k..n`, stays a `$rangeNext` loop, not a counted `for`",
     file: "src/lower/mir/tidy/loops.rs",
-    find: "        || matches!(&start.kind, ExprKind::Var(v) if numbers.contains(v.as_str()))\n",
+    find: "        || matches!(&start.kind, ExprKind::Var(v) if numbers.contains(v.word()))\n",
     replace: "",
     tests: [
       "test/lowering-iterators.test.ts",
@@ -294,7 +294,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a closure that reads an enumerate's count is given the one counter, which it reads changed, not its turn's",
     file: "src/lower/mir/tidy/loops.rs",
-    find: "            closed_over |= js::mentions_in(inner, counter) > 0;\n",
+    find: "            closed_over |= js::mentions_in(inner, counter.word()) > 0;\n",
     replace: "            closed_over |= false;\n",
     tests: ["test/js-object.test.ts", "-t", "a for loop of keys_in"],
   },
@@ -396,7 +396,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `while (true) { if (t) { exit } rest }` whose exit goes on with the loop is `while (!t) { rest } exit`, its `continue` the outer loop's",
     file: "src/lower/mir/tidy/loops.rs",
-    find: "            && !js::continues(exit, label.as_deref())\n",
+    find: "            && !js::continues(exit, label.as_ref().map(|n| n.word()))\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^while_exit_continues.rs$"],
   },
@@ -578,7 +578,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a range's start a closure may set is read after its end's call, `for (let k = s; k < end; k++)` once `end = id(n)` has run, where Rust read it before",
     file: "src/lower/mir/tidy/loops.rs",
-    find: "    let same = start.is_constant() || matches!(&start.kind, ExprKind::Var(v) if !captured.contains(v.as_str()));\n",
+    find: "    let same = start.is_constant() || matches!(&start.kind, ExprKind::Var(v) if !captured.contains(v.word()));\n",
     replace: "    let same = start.is_constant() || matches!(&start.kind, ExprKind::Var(_));\n",
     tests: ["test/corpus.test.ts", "-t", "^drop_reassigned_in_inner_loop.rs$"],
     snapshots: true,
@@ -588,7 +588,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a range's end that may throw, its start a variable, stays MIR's `try { iter = { start: s, end: id(n) }; } catch ..` and `while ((k = $rangeNext(iter)) != null)`",
     file: "src/lower/mir/tidy/loops.rs",
-    find: "    let same = start.is_constant() || matches!(&start.kind, ExprKind::Var(v) if !captured.contains(v.as_str()));\n",
+    find: "    let same = start.is_constant() || matches!(&start.kind, ExprKind::Var(v) if !captured.contains(v.word()));\n",
     replace: "    let same = start.is_constant();\n",
     tests: ["test/corpus.test.ts", "-t", "^drop_reassigned_in_inner_loop.rs$"],
     snapshots: true,
@@ -637,15 +637,15 @@ export const mutations: Mutation[] = [
     name: "counted-loop-of-any-iterator",
     breaks: "a `for` over a string's `chars()` or a map's items is an index loop, `s[i]` a UTF-16 unit, not a char, and a map no array (ADR 1042)",
     file: "src/lower/mir/tidy/loops.rs",
-    find: "    if !source.facts.has(js::Known::ArrayItems) || js::Writes::sets(body, array) {\n",
-    replace: "    if js::Writes::sets(body, array) {\n",
+    find: "    if !source.facts.has(js::Known::ArrayItems) || js::Writes::sets(body, array.word()) {\n",
+    replace: "    if js::Writes::sets(body, array.word()) {\n",
     tests: ["test/corpus.test.ts", "-t", "^array_counted_loops.rs$"],
   },
   {
     name: "counted-loop-of-a-reassigned-array",
     breaks: "an index loop over an array the body assigns reads another array at the next step, where `for…of` stepped the first",
     file: "src/lower/mir/tidy/loops.rs",
-    find: "    if !source.facts.has(js::Known::ArrayItems) || js::Writes::sets(body, array) {\n",
+    find: "    if !source.facts.has(js::Known::ArrayItems) || js::Writes::sets(body, array.word()) {\n",
     replace: "    if !source.facts.has(js::Known::ArrayItems) {\n",
     tests: ["test/corpus.test.ts", "-t", "^array_counted_loops.rs$"],
   },
@@ -662,7 +662,7 @@ export const mutations: Mutation[] = [
     name: "counted-loop-counter-taken",
     breaks: "a loop over an array after another counts with `j`, as if the other's `i`, scoped to its loop, were the function's (ADR 1042)",
     file: "src/lower/mir/tidy/loops.rs",
-    find: "                    && !counts(std::slice::from_ref(stmt), name)\n",
+    find: "                    && !counts(std::slice::from_ref(stmt), name.word())\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^array_counted_loops.rs$"],
     snapshots: true,
@@ -687,8 +687,8 @@ export const mutations: Mutation[] = [
     name: "indexed-range-siblings-apart",
     breaks: "sibling loops over ranges of a slice count with `k`, `j` and `i`, not each `i` (rd376)",
     file: "src/lower/mir/tidy/loops.rs",
-    find: "            } if n == name && !start.mentions_var(name) => {\n",
-    replace: "            } if n == name && start.as_int() == Some(0) => {\n",
+    find: "            } if n.is(name) && !start.mentions_var(name) => {\n",
+    replace: "            } if n.is(name) && start.as_int() == Some(0) => {\n",
     tests: ["test/lowering-index-loops.test.ts", "-t", "a loop over a range of a slice in bounds"],
   },
   {
@@ -706,7 +706,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a range stepped from its end whose start reads a variable the body assigns is a `for` that reads it again at each step, `j >= start * 2`, where Rust read it once, and stops early (rd529)",
     file: "src/lower/mir/tidy/loops.rs",
-    find: "            ExprKind::Var(v) => !js::Writes::sets(body, v),\n",
+    find: "            ExprKind::Var(v) => !js::Writes::sets(body, v.word()),\n",
     replace: "            ExprKind::Var(_) => true,\n",
     tests: ["test/corpus.test.ts", "-t", "^range_rev_from_computed.rs$"],
   },
@@ -762,7 +762,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a loop's way out that leaves by the loop's own `break` where a test holds, `if (!eq) { break; } return ..;`, is moved past the `for` as it is: its `break` in no loop, the JS a syntax error, rand 0.7's `update_weights` (#1422)",
     file: "src/lower/mir/tidy/loops.rs",
-    find: "    if breaks(&exit, label.as_deref()) || js::continues(&exit, label.as_deref()) {\n",
+    find: "    if breaks(&exit, label.as_ref().map(|n| n.word())) || js::continues(&exit, label.as_ref().map(|n| n.word())) {\n",
     replace: "    if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^loop_exit_tested_after_the_loop.rs$"],
   },

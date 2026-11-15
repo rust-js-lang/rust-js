@@ -13,7 +13,7 @@ use super::*;
 pub(in crate::lower::mir::tidy) fn branch_ends(stmts: &mut [Stmt]) {
     for stmt in stmts {
         if let StmtKind::Labeled(label, body) = &mut stmt.kind {
-            ending(body, label);
+            ending(body, label.word());
         }
     }
 }
@@ -45,7 +45,7 @@ pub(in crate::lower::mir::tidy) fn ending(stmts: &mut Vec<Stmt>, label: &str) {
             ..
         },
     ] = stmts.as_slice()
-        && l == label
+        && l.is(label)
         && commented(rest)
     {
         stmts.pop();

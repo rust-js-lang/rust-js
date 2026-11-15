@@ -19,7 +19,7 @@ pub(super) fn unread_made(stmts: &mut Vec<Stmt>, mentions: &IndexMap<String, usi
     let mut i = 0;
     while i < stmts.len() {
         if let StmtKind::Const(name, value) = &stmts[i].kind
-            && !mentions.contains_key(name.as_str())
+            && !mentions.contains_key(name.word())
             && !value.has_effects()
             && let read = match &value.kind {
                 ExprKind::Call(callee, args) if callee.helper_name() == Some("$apart") && args.len() == 1 => &args[0],
@@ -32,7 +32,7 @@ pub(super) fn unread_made(stmts: &mut Vec<Stmt>, mentions: &IndexMap<String, usi
             continue;
         }
         if let StmtKind::Const(name, value) = &stmts[i].kind
-            && !mentions.contains_key(name.as_str())
+            && !mentions.contains_key(name.word())
             && let ExprKind::Array(parts) = &value.kind
             // A spread's effect is the stepping it does, which only an
             // array or a call's arguments write: the array whole (#256).
@@ -49,7 +49,7 @@ pub(super) fn unread_made(stmts: &mut Vec<Stmt>, mentions: &IndexMap<String, usi
             continue;
         }
         if let StmtKind::Const(name, value) = &stmts[i].kind
-            && !mentions.contains_key(name.as_str())
+            && !mentions.contains_key(name.word())
             && matches!(value.kind, ExprKind::Call(..))
         {
             stmts[i].kind = StmtKind::Expr(value.clone());
@@ -78,9 +78,9 @@ pub(super) fn only_read(stmts: &[Stmt], name: &str) -> bool {
     let mut stmts = stmts.to_vec();
     let (mut all, mut read) = (0, 0);
     js::each_expr_mut(&mut stmts, &mut |e| match &e.kind {
-        ExprKind::Var(v) if v == name => all += 1,
+        ExprKind::Var(v) if v.is(name) => all += 1,
         ExprKind::Index(of, _) | ExprKind::Member(of, _)
-            if matches!(&of.kind, ExprKind::Var(v) if v == name)
+            if matches!(&of.kind, ExprKind::Var(v) if v.is(name))
                 && !matches!(&e.kind, ExprKind::Member(_, m) if m != "length") =>
         {
             read += 1
@@ -114,7 +114,7 @@ pub(in crate::lower::mir) fn unsuffixed_params(body: &mut [Stmt], module: &Index
                 }
                 js::each_expr_mut(inner, &mut |e| {
                     if let ExprKind::Var(v) = &mut e.kind
-                        && *v == name
+                        && v.is(&name)
                     {
                         *v = base.into();
                     }
@@ -167,28 +167,29 @@ pub(super) fn alias_variables(body: &mut Vec<Stmt>, fixed: &IndexSet<String>) {
         let mut i = 0;
         while i < stmts.len() {
             if let StmtKind::Const(alias, value) = &stmts[i].kind
-                && (is_temporary(alias) || fixed.contains(alias.as_str()))
+                && (is_temporary(alias.word()) || fixed.contains(alias.word()))
                 && let ExprKind::Var(of) = &value.kind
             {
                 let last = (i + 1..stmts.len())
                     .rev()
-                    .find(|&j| js::mentions_in(&stmts[j..=j], alias) > 0);
+                    .find(|&j| js::mentions_in(&stmts[j..=j], alias.word()) > 0);
                 // What it's of set nowhere from it to its last read, or
                 // set only past each read on every way, `const _15 =
                 // newLast; if (_15 == null) { .. } else { _15.next = clone;
                 // newLast = clone; }`.
-                let deferred = set.contains(of.as_str()) && handles_read(&stmts[i + 1..]).contains(alias.as_str());
+                let deferred = set.contains(of.word()) && handles_read(&stmts[i + 1..]).contains(alias.word());
                 let kept = deferred
                     || last.is_some_and(|last| {
                         let reads = &stmts[i + 1..=last];
-                        js::Writes::of(reads).may_replace(of)
-                            && (declares(reads, of) || !read_before_set(reads, alias, of, &mut false))
+                        js::Writes::of(reads).may_replace(of.word())
+                            && (declares(reads, of.word())
+                                || !read_before_set(reads, alias.word(), of.word(), &mut false))
                     });
                 if !kept {
                     // Each read where it's written, else where the
                     // temporary was, which says which `if` the program
                     // wrote a test is of (`jumps::written_at`).
-                    let (alias, of, at) = (alias.clone(), Expr::var(of), value.span);
+                    let (alias, of, at) = (alias.clone(), Expr::var(of.word()), value.span);
                     stmts.remove(i);
                     if let Some(last) = last {
                         js::each_expr_mut(&mut stmts[i..last], &mut |e| {
@@ -238,7 +239,7 @@ pub(super) fn read_before_set(stmts: &[Stmt], alias: &str, of: &str, set: &mut b
                 let goes_on = |stmts: &[Stmt]| !stmts.last().is_some_and(js::ends);
                 *set = (goes_on(then) && *set) || (goes_on(otherwise) && other);
             }
-            StmtKind::Assign(target, value) if matches!(&target.kind, ExprKind::Var(v) if v == of) => {
+            StmtKind::Assign(target, value) if matches!(&target.kind, ExprKind::Var(v) if v.is(of)) => {
                 let value = [StmtKind::Expr(value.clone()).at(stmt.span)];
                 if *set && reads(&value) || reads(&value) && sets(&value) {
                     return false;
@@ -260,13 +261,13 @@ pub(super) fn forwarded_values(stmts: &mut Vec<Stmt>) {
     let mut i = 0;
     while i + 2 < stmts.len() {
         if let StmtKind::Let(t, None) = &stmts[i].kind
-            && is_temporary(t)
+            && is_temporary(t.word())
             && let StmtKind::Assign(target, value) = &stmts[i + 2].kind
             && let ExprKind::Var(x) = &target.kind
             && matches!(&value.kind, ExprKind::Var(v) if v == t)
-            && js::mentions_in(&stmts[i + 1..=i + 1], x) == 0
-            && js::mentions_in(&stmts[i + 3..], t) == 0
-            && last_assigns(&stmts[i + 1..=i + 1], t)
+            && js::mentions_in(&stmts[i + 1..=i + 1], x.word()) == 0
+            && js::mentions_in(&stmts[i + 3..], t.word()) == 0
+            && last_assigns(&stmts[i + 1..=i + 1], t.word())
         {
             let (t, x) = (t.clone(), x.clone());
             let mut given = vec![stmts.remove(i + 1)];
@@ -275,7 +276,7 @@ pub(super) fn forwarded_values(stmts: &mut Vec<Stmt>) {
                     if let StmtKind::Assign(target, _) = &mut stmt.kind
                         && matches!(&target.kind, ExprKind::Var(v) if *v == t)
                     {
-                        *target = Expr::var(&x);
+                        *target = Expr::var(x.word());
                     }
                 }
             });
@@ -301,7 +302,9 @@ pub(super) fn last_assigns(stmts: &[Stmt], t: &str) -> bool {
         return ends(last);
     }
     match &last.kind {
-        StmtKind::Assign(target, value) => matches!(&target.kind, ExprKind::Var(v) if v == t) && !value.mentions_var(t),
+        StmtKind::Assign(target, value) => {
+            matches!(&target.kind, ExprKind::Var(v) if v.is(t)) && !value.mentions_var(t)
+        }
         StmtKind::If(test, then, otherwise) => {
             !test.mentions_var(t) && last_assigns(then, t) && otherwise.as_deref().is_some_and(|o| last_assigns(o, t))
         }
@@ -318,7 +321,7 @@ pub(super) fn plain_reads(stmts: &mut Vec<Stmt>, plain: &IndexSet<String>, captu
     let mut i = 0;
     while i < stmts.len() {
         let read = match &stmts[i].kind {
-            StmtKind::Const(name, value) if is_temporary(name) || captured.contains(name.as_str()) => {
+            StmtKind::Const(name, value) if is_temporary(name.word()) || captured.contains(name.word()) => {
                 (value.reads_same() && super::plain_field(value, plain)).then(|| (name.clone(), value.clone()))
             }
             _ => None,
@@ -349,7 +352,7 @@ pub(super) fn named_temporaries(body: &mut Vec<Stmt>) {
     js::each_list(body, &mut |stmts| {
         for stmt in stmts.iter() {
             let names = match &stmt.kind {
-                StmtKind::Const(name, _) | StmtKind::Let(name, _) => vec![name.as_str()],
+                StmtKind::Const(name, _) | StmtKind::Let(name, _) => vec![name.word()],
                 StmtKind::Destructure { pattern, .. } => pattern.names(),
                 _ => Vec::new(),
             };
@@ -371,7 +374,7 @@ pub(super) fn named_temporaries(body: &mut Vec<Stmt>) {
             // and never again: as a `const` from there on (#444).
             let a = match &stmts[i].kind {
                 StmtKind::Const(a, _) => a.to_string(),
-                StmtKind::Let(a, None) if set_once_in_try(&stmts[i + 1..], a) => a.to_string(),
+                StmtKind::Let(a, None) if set_once_in_try(&stmts[i + 1..], a.word()) => a.to_string(),
                 // Or the one name a `const` takes apart, a cell's value read
                 // while its guard is, `const { value: _4 } = $borrow(cell)`,
                 // `let Some(chunk) = cell.borrow().clone() else ..`'s (#452).
@@ -428,7 +431,7 @@ pub(super) fn named_temporaries(body: &mut Vec<Stmt>) {
                 js::outside_shadows(stmts, name, |stmts| {
                     js::each_expr_mut(&mut stmts[i + 1..], &mut |e| {
                         if let ExprKind::Var(v) = &mut e.kind
-                            && v == name
+                            && v.is(name)
                         {
                             *v = b.clone().into();
                         }
@@ -450,7 +453,7 @@ pub(super) fn set_once_in_try(stmts: &[Stmt], a: &str) -> bool {
     };
     let set = match &stmts[j].kind {
         StmtKind::Try(body, _) | StmtKind::TryCatch(body, _, _) => body.iter().find(|s| mentions(s) > 0).is_some_and(
-            |s| matches!(&s.kind, StmtKind::Assign(target, _) if matches!(&target.kind, ExprKind::Var(v) if v == a)),
+            |s| matches!(&s.kind, StmtKind::Assign(target, _) if matches!(&target.kind, ExprKind::Var(v) if v.is(a))),
         ),
         _ => false,
     };
@@ -462,8 +465,10 @@ pub(super) fn set_once_in_try(stmts: &[Stmt], a: &str) -> bool {
 pub(super) fn taking(stmts: &[Stmt], a: &str, found: &mut Vec<(String, usize)>) {
     for (j, stmt) in stmts.iter().enumerate() {
         match &stmt.kind {
-            StmtKind::Const(b, value) if !is_temporary(b) && matches!(&value.kind, ExprKind::Var(v) if v == a) => {
-                found.push((b.to_string(), js::mentions_in(&stmts[j + 1..], b)));
+            StmtKind::Const(b, value)
+                if !is_temporary(b.word()) && matches!(&value.kind, ExprKind::Var(v) if v.is(a)) =>
+            {
+                found.push((b.to_string(), js::mentions_in(&stmts[j + 1..], b.word())));
             }
             StmtKind::If(_, then, otherwise) => {
                 taking(then, a, found);
@@ -491,7 +496,7 @@ pub(super) fn taking(stmts: &[Stmt], a: &str, found: &mut Vec<(String, usize)>) 
 pub(super) fn dropping(stmts: &mut Vec<Stmt>, a: &str, b: &str) {
     stmts.retain(|s| {
         !matches!(&s.kind, StmtKind::Const(n, value)
-            if n == b && matches!(&value.kind, ExprKind::Var(v) if v == a))
+            if n.is(b) && matches!(&value.kind, ExprKind::Var(v) if v.is(a)))
     });
     for stmt in stmts.iter_mut() {
         let lists: Vec<&mut Vec<Stmt>> = match &mut stmt.kind {
@@ -525,8 +530,8 @@ pub(super) fn guarded_lets(stmts: &mut Vec<Stmt>, captured: &IndexSet<String>) {
                     },
                 ] = then.as_slice()
                     && matches!(&target.kind, ExprKind::Var(v) if v == x)
-                    && (is_temporary(x) || captured.contains(x.as_str()))
-                    && js::mentions_in(&stmts[i + 2..], x) == 1 =>
+                    && (is_temporary(x.word()) || captured.contains(x.word()))
+                    && js::mentions_in(&stmts[i + 2..], x.word()) == 1 =>
             {
                 Some((x.clone(), Expr::cond(test.clone(), value.clone(), Expr::js_undefined())))
             }
@@ -565,12 +570,12 @@ fn bindings(stmts: &[Stmt], name: &str, assigned: bool) -> usize {
         js::each_list(stmts, &mut |list| {
             for stmt in list.iter() {
                 found += usize::from(match &stmt.kind {
-                    StmtKind::Const(n, _) | StmtKind::Let(n, _) => n == name,
+                    StmtKind::Const(n, _) | StmtKind::Let(n, _) => n.is(name),
                     StmtKind::Destructure { pattern, .. } | StmtKind::ForOf { pattern, .. } => {
                         pattern.names().contains(&name)
                     }
-                    StmtKind::For { name: n, .. } => n == name,
-                    StmtKind::Assign(target, _) => assigned && matches!(&target.kind, ExprKind::Var(v) if v == name),
+                    StmtKind::For { name: n, .. } => n.is(name),
+                    StmtKind::Assign(target, _) => assigned && matches!(&target.kind, ExprKind::Var(v) if v.is(name)),
                     _ => false,
                 });
             }
@@ -620,11 +625,11 @@ pub(super) fn aliases(
         while i < stmts.len() {
             let alias = match &stmts[i].kind {
                 StmtKind::Const(a, _) => (i + 1..stmts.len())
-                    .find(|&j| js::mentions_in(&stmts[j..=j], a) > 0)
+                    .find(|&j| js::mentions_in(&stmts[j..=j], a.word()) > 0)
                     .filter(|&j| {
                         matches!(&stmts[j].kind, StmtKind::Const(_, value)
                             if matches!(&value.kind, ExprKind::Var(read) if read == a))
-                            && js::mentions_in(&stmts[j..], a) == 1
+                            && js::mentions_in(&stmts[j..], a.word()) == 1
                     }),
                 _ => None,
             };
@@ -638,8 +643,8 @@ pub(super) fn aliases(
                 // A variable the program names, of one MIR's lowering made
                 // for a prop, `const code = activeCode`, or a temporary,
                 // `const _5 = props`: the variable, read where that was.
-                let named = given.contains(a.as_str()) && !given.contains(b.as_str());
-                if !is_temporary(a) && (captured.contains(b.as_str()) || is_temporary(&b) || named) {
+                let named = given.contains(a.word()) && !given.contains(b.word());
+                if !is_temporary(a.word()) && (captured.contains(b.word()) || is_temporary(b.word()) || named) {
                     let a = a.clone();
                     js::each_expr_mut(&mut stmts[j..], &mut |e| {
                         if let ExprKind::Var(v) = &mut e.kind
@@ -701,9 +706,9 @@ fn clones_read_as(body: &mut Vec<Stmt>, fixed: &IndexSet<String>, clones: &Index
         while i < stmts.len() {
             if let StmtKind::Const(b, value) = &stmts[i].kind
                 && let ExprKind::Var(a) = &value.kind
-                && fixed.contains(a.as_str())
-                && clones.contains(b.as_str())
-                && !rebinds(&stmts[i + 1..], b)
+                && fixed.contains(a.word())
+                && clones.contains(b.word())
+                && !rebinds(&stmts[i + 1..], b.word())
             {
                 let (a, b) = (a.clone(), b.clone());
                 stmts.remove(i);
@@ -729,7 +734,7 @@ fn cloned_from(body: &mut Vec<Stmt>, clones: &IndexSet<String>) -> Vec<(String, 
         for stmt in stmts.iter() {
             if let StmtKind::Const(b, value) = &stmt.kind
                 && let ExprKind::Var(a) = &value.kind
-                && clones.contains(b.as_str())
+                && clones.contains(b.word())
             {
                 found.push((b.to_string(), a.to_string()));
             }
@@ -750,7 +755,7 @@ fn reads_past_shadows(stmt: &Stmt, name: &str) -> bool {
     // program's later `let mut i = 0` is its own (rd356).
     let counted = |list: &mut Vec<Stmt>| {
         list.retain(
-            |s| !matches!(&s.kind, StmtKind::For { name: n, start, .. } if n == name && !start.mentions_var(name)),
+            |s| !matches!(&s.kind, StmtKind::For { name: n, start, .. } if n.is(name) && !start.mentions_var(name)),
         )
     };
     let mut unshadowed = vec![stmt.clone()];
@@ -776,8 +781,9 @@ pub(super) fn sunk_lets(stmts: &mut Vec<Stmt>) {
             continue;
         };
         let name = name.clone();
-        let names = |stmt: &Stmt| js::mentions_in(std::slice::from_ref(stmt), &name) > 0;
-        let Some(first) = (i + 1..stmts.len()).find(|&j| names(&stmts[j]) && reads_past_shadows(&stmts[j], &name))
+        let names = |stmt: &Stmt| js::mentions_in(std::slice::from_ref(stmt), name.word()) > 0;
+        let Some(first) =
+            (i + 1..stmts.len()).find(|&j| names(&stmts[j]) && reads_past_shadows(&stmts[j], name.word()))
         else {
             i += 1;
             continue;
@@ -787,10 +793,10 @@ pub(super) fn sunk_lets(stmts: &mut Vec<Stmt>) {
         let first = first - 1;
         if alone
             && let StmtKind::If(test, then, otherwise) = &mut stmts[first].kind
-            && !test.mentions_var(&name)
+            && !test.mentions_var(name.word())
         {
-            let branch = match (js::mentions_in(then, &name) > 0, otherwise) {
-                (true, Some(otherwise)) if js::mentions_in(otherwise, &name) > 0 => None,
+            let branch = match (js::mentions_in(then, name.word()) > 0, otherwise) {
+                (true, Some(otherwise)) if js::mentions_in(otherwise, name.word()) > 0 => None,
                 (true, _) => Some(then),
                 (false, Some(otherwise)) => Some(otherwise),
                 (false, None) => None,
@@ -810,8 +816,8 @@ pub(super) fn sunk_lets(stmts: &mut Vec<Stmt>) {
         if alone
             && let StmtKind::ForOf { body, .. } | StmtKind::For { body, .. } | StmtKind::While { body, .. } =
                 &mut stmts[first].kind
-            && assigned_first(body, &name, &[])
-            && !looped_reads(&stmts[first], &name)
+            && assigned_first(body, name.word(), &[])
+            && !looped_reads(&stmts[first], name.word())
         {
             let (StmtKind::ForOf { body, .. } | StmtKind::For { body, .. } | StmtKind::While { body, .. }) =
                 &mut stmts[first].kind
@@ -892,7 +898,7 @@ pub(super) fn assigned_first(stmts: &[Stmt], name: &str, past: &[(String, bool)]
     let assigned = |stmts: &[Stmt]| !stmts.iter().any(names) || assigned_first(stmts, name, past);
     match &stmts[at].kind {
         StmtKind::Assign(target, value) => {
-            matches!(&target.kind, ExprKind::Var(v) if v == name) && !value.mentions_var(name)
+            matches!(&target.kind, ExprKind::Var(v) if v.is(name)) && !value.mentions_var(name)
         }
         StmtKind::If(test, then, otherwise) => {
             !test.mentions_var(name)
@@ -935,7 +941,7 @@ pub(super) fn assigned_on(stmts: &[Stmt], name: &str, after: bool, past: &[(Stri
             let on = || assigned_on(&stmts[k + 1..], name, after, past);
             return match &stmt.kind {
                 StmtKind::Assign(target, value) => {
-                    matches!(&target.kind, ExprKind::Var(v) if v == name) && !value.mentions_var(name)
+                    matches!(&target.kind, ExprKind::Var(v) if v.is(name)) && !value.mentions_var(name)
                 }
                 StmtKind::If(test, then, otherwise) => {
                     let on = on();
@@ -945,7 +951,7 @@ pub(super) fn assigned_on(stmts: &[Stmt], name: &str, after: bool, past: &[(Stri
                 }
                 StmtKind::Labeled(label, body) => {
                     let on = on();
-                    assigned_on(body, name, on, &within(past, label, on))
+                    assigned_on(body, name, on, &within(past, label.word(), on))
                 }
                 // A loop it leaves only by its `break`s, each of which goes on
                 // set, or to what sets it: its end goes round again.
@@ -953,7 +959,7 @@ pub(super) fn assigned_on(stmts: &[Stmt], name: &str, after: bool, past: &[(Stri
                     let on = on();
                     let inner = within(past, "", on);
                     let inner = match label {
-                        Some(label) => within(&inner, label, on),
+                        Some(label) => within(&inner, label.word(), on),
                         None => inner,
                     };
                     assigned_on(body, name, true, &inner)
@@ -963,7 +969,7 @@ pub(super) fn assigned_on(stmts: &[Stmt], name: &str, after: bool, past: &[(Stri
         }
         match &stmt.kind {
             StmtKind::Continue(_) | StmtKind::Return(_) | StmtKind::Throw(_) => return true,
-            StmtKind::Break(label) => return broken_ok(label.as_deref().unwrap_or_default()),
+            StmtKind::Break(label) => return broken_ok(label.as_ref().map(|n| n.word()).unwrap_or_default()),
             _ => {}
         }
         // What it names nothing in may `break` a block or a loop it's in,
@@ -993,11 +999,11 @@ pub(super) fn declarations(body: &mut Vec<Stmt>) {
             let first = match &stmts[i].kind {
                 // What it's declared with does nothing, and is never read.
                 StmtKind::Let(name, init) if init.as_ref().is_none_or(|e| !e.has_effects()) => (i + 1..stmts.len())
-                    .find(|&j| js::mentions_in(&stmts[j..=j], name) > 0)
+                    .find(|&j| js::mentions_in(&stmts[j..=j], name.word()) > 0)
                     .filter(|&j| {
                         matches!(&stmts[j].kind, StmtKind::Assign(target, _)
                             if matches!(&target.kind, ExprKind::Var(assigned) if assigned == name))
-                            && js::mentions_in(&stmts[j..=j], name) == 1
+                            && js::mentions_in(&stmts[j..=j], name.word()) == 1
                     }),
                 _ => None,
             };
@@ -1022,7 +1028,7 @@ pub(super) fn declarations(body: &mut Vec<Stmt>) {
 /// them.
 pub(super) fn declared(stmts: &[Stmt]) -> impl Iterator<Item = &str> {
     stmts.iter().flat_map(|s| match &s.kind {
-        StmtKind::Const(name, _) | StmtKind::Let(name, _) => vec![name.as_str()],
+        StmtKind::Const(name, _) | StmtKind::Let(name, _) => vec![name.word()],
         StmtKind::Destructure { pattern, .. } => pattern.names(),
         _ => Vec::new(),
     })
@@ -1042,16 +1048,16 @@ pub(super) fn paired_temporaries(body: &[Stmt]) -> IndexSet<String> {
     js::each_list(body, &mut |list| {
         for (k, stmt) in list.iter().enumerate() {
             match &stmt.kind {
-                StmtKind::Let(name, None) if is_temporary(name) => {
+                StmtKind::Let(name, None) if is_temporary(name.word()) => {
                     lets.insert(name.to_string());
                 }
                 StmtKind::Assign(target, value)
                     if let ExprKind::Var(name) = &target.kind
-                        && is_temporary(name) =>
+                        && is_temporary(name.word()) =>
                 {
                     let read_next =
-                        (list.get(k + 1)).is_some_and(|s| js::mentions_in(std::slice::from_ref(s), name) == 1);
-                    match !value.mentions_var(name) && read_next {
+                        (list.get(k + 1)).is_some_and(|s| js::mentions_in(std::slice::from_ref(s), name.word()) == 1);
+                    match !value.mentions_var(name.word()) && read_next {
                         true => *pairs.entry(name.to_string()).or_default() += 1,
                         false => {
                             unpaired.insert(name.to_string());
@@ -1157,7 +1163,10 @@ fn lazily_filled(stmts: &[Stmt], i: usize) -> Option<(String, String)> {
     let StmtKind::If(test, then, Some(otherwise)) = &stmts[i + 2].kind else {
         return None;
     };
-    let other = match (gives_read(then, var, read), gives_read(otherwise, var, read)) {
+    let other = match (
+        gives_read(then, var.word(), read.word()),
+        gives_read(otherwise, var.word(), read.word()),
+    ) {
         (false, true) => then.as_slice(),
         (true, false) => otherwise.as_slice(),
         _ => return None,
@@ -1166,11 +1175,13 @@ fn lazily_filled(stmts: &[Stmt], i: usize) -> Option<(String, String)> {
     // the program's own name, `fnNode`, which stays.
     // Nor where a closure in the test reads it, which `substitute` can't
     // rename, so the test would read a `const` no longer declared (#1525).
-    let renamed = test.substitute(&|v| (v == read).then(|| Expr::var(var))).is_some();
-    let kept = !kin(var, read)
-        || test.mentions_var(var)
-        || js::mentions_in(other, read) > 0
-        || js::mentions_in(&stmts[i + 3..], read) > 0
+    let renamed = test
+        .substitute(&|v| read.is(v).then(|| Expr::var(var.word())))
+        .is_some();
+    let kept = !kin(var.word(), read.word())
+        || test.mentions_var(var.word())
+        || js::mentions_in(other, read.word()) > 0
+        || js::mentions_in(&stmts[i + 3..], read.word()) > 0
         || !renamed;
     (!kept).then(|| (read.to_string(), var.to_string()))
 }
@@ -1178,7 +1189,7 @@ fn lazily_filled(stmts: &[Stmt], i: usize) -> Option<(String, String)> {
 /// Whether `branch` is `var = read;` alone.
 fn gives_read(branch: &[Stmt], var: &str, read: &str) -> bool {
     matches!(branch, [s] if matches!(&s.kind, StmtKind::Assign(t, v)
-        if matches!(&t.kind, ExprKind::Var(n) if n == var) && matches!(&v.kind, ExprKind::Var(n) if n == read)))
+        if matches!(&t.kind, ExprKind::Var(n) if n.is(var)) && matches!(&v.kind, ExprKind::Var(n) if n.is(read))))
 }
 
 /// Of `moved`, statements made a branch of an `if` that `after` follows:
@@ -1205,7 +1216,7 @@ pub(super) fn kept_declarations(moved: &[Stmt], after: &[Stmt]) -> Option<Vec<St
 /// `kept`'s late `let`s, `kept_declarations`', taken out of `moved` and
 /// declared in `stmts` before its `at`th: how many.
 pub(super) fn declared_before(stmts: &mut Vec<Stmt>, at: usize, moved: &mut Vec<Stmt>, kept: &[String]) -> usize {
-    moved.retain(|s| !matches!(&s.kind, StmtKind::Let(name, None) if kept.iter().any(|k| k == name)));
+    moved.retain(|s| !matches!(&s.kind, StmtKind::Let(name, None) if kept.iter().any(|k| name.is(k))));
     let declared = kept
         .iter()
         .map(|name| StmtKind::Let(name.into(), None).at(js::Span::NONE));

@@ -36,7 +36,7 @@ pub(super) fn loops(
             // loop over one, scoped to its loop (ADR 1042).
             for stmt in held.iter().chain(&made) {
                 if let StmtKind::Let(name, _) | StmtKind::Const(name, _) | StmtKind::For { name, .. } = &stmt.kind
-                    && !counts(std::slice::from_ref(stmt), name)
+                    && !counts(std::slice::from_ref(stmt), name.word())
                 {
                     *mentions.entry(name.to_string()).or_default() += 1;
                 }
@@ -76,7 +76,7 @@ fn held_end(stmt: &Stmt, mentions: &IndexMap<String, usize>, captured: &IndexSet
     let [js::Prop::Field(start_key, start), js::Prop::Field(end_key, end)] = props.as_mut_slice() else {
         return None;
     };
-    let same = start.is_constant() || matches!(&start.kind, ExprKind::Var(v) if !captured.contains(v.as_str()));
+    let same = start.is_constant() || matches!(&start.kind, ExprKind::Var(v) if !captured.contains(v.word()));
     if start_key != "start" || end_key != "end" || !same || !end.has_effects() {
         return None;
     }
@@ -121,7 +121,7 @@ pub(super) fn loop_bound_lets(body: &mut Vec<Stmt>) {
     });
     body.retain(|s| {
         !matches!(&s.kind, StmtKind::Let(name, None)
-            if bound.contains(name) && js::mentions_in(&without, name) == 0)
+            if bound.contains(name) && js::mentions_in(&without, name.word()) == 0)
     });
 }
 
@@ -159,7 +159,7 @@ pub(super) fn for_of(
         StmtKind::Const(iter, source) => (iter, source),
         StmtKind::Assign(target, source)
             if let ExprKind::Var(iter) = &target.kind
-                && mentions.get(iter.as_str()) == Some(&2) =>
+                && mentions.get(iter.word()) == Some(&2) =>
         {
             (iter, source)
         }
@@ -196,7 +196,7 @@ pub(super) fn for_of(
         ) if it == iter => (f, bounds),
         _ => return None,
     };
-    if js::mentions_in(std::slice::from_ref(looped), iter) != 1 || js::mentions_in(after, iter) != 0 {
+    if js::mentions_in(std::slice::from_ref(looped), iter.word()) != 1 || js::mentions_in(after, iter.word()) != 0 {
         return None;
     }
     // The other shape inside a block, `l: { if (t != null) { body } } exit`,
@@ -209,21 +209,23 @@ pub(super) fn for_of(
     // When it's done, the exit; else, the body, which in the other shape goes
     // on to the exit, out of the loop.
     let (mut exit, mut inner, falls_out) = match &second.kind {
-        StmtKind::If(test, then, None) if absent(test, item) && block.is_none() => (then.clone(), rest.to_vec(), false),
-        StmtKind::If(test, then, Some(other)) if absent(test, item) && rest.is_empty() && block.is_none() => {
+        StmtKind::If(test, then, None) if absent(test, item.word()) && block.is_none() => {
+            (then.clone(), rest.to_vec(), false)
+        }
+        StmtKind::If(test, then, Some(other)) if absent(test, item.word()) && rest.is_empty() && block.is_none() => {
             (then.clone(), other.clone(), false)
         }
-        StmtKind::If(test, then, None) if present(test, item) => (rest.to_vec(), then.clone(), true),
+        StmtKind::If(test, then, None) if present(test, item.word()) => (rest.to_vec(), then.clone(), true),
         _ => return None,
     };
-    if !exit.last().is_some_and(ends) || breaks(&inner, label.as_deref()) {
+    if !exit.last().is_some_and(ends) || breaks(&inner, label.as_ref().map(|n| n.word())) {
         return None;
     }
     // An exit that leaves by the loop's own `break`, `$unborrow(borrow);
     // break;` once its drop is a `finally`'s: after the `for`, where it goes
     // on anyway, no jump (#442).
     if matches!(exit.last().map(|s| &s.kind), Some(StmtKind::Break(l)) if l.is_none() || l == label)
-        && !breaks(&exit[..exit.len() - 1], label.as_deref())
+        && !breaks(&exit[..exit.len() - 1], label.as_ref().map(|n| n.word()))
     {
         exit.pop();
     }
@@ -240,8 +242,8 @@ pub(super) fn for_of(
     };
     if let Some(at) = exit.iter().position(|s| own_break(s).is_some())
         && let Some(test) = own_break(&exit[at])
-        && !breaks(&exit[..at], label.as_deref())
-        && !js::continues(&exit[..at], label.as_deref())
+        && !breaks(&exit[..at], label.as_ref().map(|n| n.word()))
+        && !js::continues(&exit[..at], label.as_ref().map(|n| n.word()))
         && exit.last().is_some_and(ends)
         && at + 1 < exit.len()
     {
@@ -251,7 +253,7 @@ pub(super) fn for_of(
     }
     // Another that leaves or goes on with the loop from inside: after the
     // `for`, its jump would be in no loop. Left as it is.
-    if breaks(&exit, label.as_deref()) || js::continues(&exit, label.as_deref()) {
+    if breaks(&exit, label.as_ref().map(|n| n.word())) || js::continues(&exit, label.as_ref().map(|n| n.word())) {
         return None;
     }
     // Going on to the exit where it ends: a `break`, which `unreachable`
@@ -261,7 +263,7 @@ pub(super) fn for_of(
     }
     let label = match (label, block) {
         (Some(own), Some(block)) => {
-            relabeled(&mut inner, &block, own);
+            relabeled(&mut inner, block.word(), own.word());
             Some(own.clone())
         }
         (label, block) => label.clone().or(block),
@@ -279,24 +281,24 @@ pub(super) fn for_of(
         let first = inner.first_mut()?;
         match &mut first.kind {
             StmtKind::Const(_, value) | StmtKind::Let(_, Some(value)) if unboxed(value) => {
-                *value = Expr::var(item);
+                *value = Expr::var(item.word());
                 boxed = true;
             }
             _ if step == DICTIONARY => {}
             _ => return None,
         }
     }
-    let (pattern, mutable, taken, aliases) = binding(&inner, item)?;
+    let (pattern, mutable, taken, aliases) = binding(&inner, item.word())?;
     let mut body = inner[taken..].to_vec();
     for (alias, of) in &aliases {
         js::each_expr_mut(&mut body, &mut |e| {
-            if matches!(&e.kind, ExprKind::Var(v) if v == alias) {
+            if matches!(&e.kind, ExprKind::Var(v) if v.is(alias)) {
                 e.kind = ExprKind::Var(of.clone().into());
             }
         });
     }
     let own = matches!(&pattern, js::Pattern::Name(name) if name == item);
-    if (!own && js::mentions_in(&body, item) > 0) || js::mentions_in(&exit, item) > 0 {
+    if (!own && js::mentions_in(&body, item.word()) > 0) || js::mentions_in(&exit, item.word()) > 0 {
         return None;
     }
     let looped = match step {
@@ -326,7 +328,7 @@ pub(super) fn for_of(
                 // Of their `enumerate()`, `[n, key]`: `let n = 0;` before the
                 // `for…in`, each turn of which ends `n++`, as a person counts.
                 let mut body = body;
-                counted(&mut body, &counter, label.as_deref());
+                counted(&mut body, counter.word(), label.as_ref().map(|n| n.word()));
                 let mut out = vec![StmtKind::Let(counter, Some(Expr::int(0))).at(js::Span::NONE)];
                 out.push(
                     StmtKind::ForOf {
@@ -457,14 +459,14 @@ fn counted_range(
     let js::Pattern::Name(name) = pattern else { return None };
     // Or `v.length` of what the body only reads, by index or its length.
     let same = end.is_constant()
-        || matches!(&end.kind, ExprKind::Var(v) if !js::Writes::sets(&body, v))
+        || matches!(&end.kind, ExprKind::Var(v) if !js::Writes::sets(&body, v.word()))
         || matches!(&end.kind, ExprKind::Member(of, length)
-            if length == "length" && matches!(&of.kind, ExprKind::Var(v) if only_read(&body, v)));
+            if length == "length" && matches!(&of.kind, ExprKind::Var(v) if only_read(&body, v.word())));
     // JS's `++` steps a number: a `char`'s range, text, steps by
     // its code point, past the surrogates, as `$rangeNext` does.
     // Of arithmetic, `i + 1`, an integer's: a `char` has none.
     let counted = start.as_int().is_some()
-        || matches!(&start.kind, ExprKind::Var(v) if numbers.contains(v.as_str()))
+        || matches!(&start.kind, ExprKind::Var(v) if numbers.contains(v.word()))
         || matches!(&start.kind, ExprKind::Unary(UnaryOp::Neg, n) if n.as_int().is_some())
         || matches!(&start.kind, ExprKind::Binary(op, ..) if matches!(op, Op::Add | Op::Sub | Op::Mul
             | Op::Div | Op::Rem | Op::BitOr | Op::BitAnd | Op::BitXor | Op::Shl | Op::Shr | Op::UShr));
@@ -472,7 +474,7 @@ fn counted_range(
         return None;
     }
     // A count the body doesn't read, Rust's `_`: `i`.
-    let name = match name.as_str() {
+    let name = match name.word() {
         "_" => std::iter::once("i".to_string())
             .chain((1..).map(|k| format!("i${k}")))
             .find(|n| !mentions.contains_key(n))
@@ -553,10 +555,10 @@ fn indexed(
     let ExprKind::Var(array) = &iterable.kind else {
         return None;
     };
-    if !source.facts.has(js::Known::ArrayItems) || js::Writes::sets(body, array) {
+    if !source.facts.has(js::Known::ArrayItems) || js::Writes::sets(body, array.word()) {
         return None;
     }
-    let same = |e: &Expr| e.is_constant() || matches!(&e.kind, ExprKind::Var(v) if !js::Writes::sets(body, v));
+    let same = |e: &Expr| e.is_constant() || matches!(&e.kind, ExprKind::Var(v) if !js::Writes::sets(body, v.word()));
     if end.as_ref().is_some_and(|end| !same(end)) {
         return None;
     }
@@ -625,8 +627,8 @@ fn counts(stmts: &[Stmt], name: &str) -> bool {
                 step: js::Step::Up,
                 body,
                 ..
-            } if n == name && !start.mentions_var(name) => {
-                let read = |e: &Expr| matches!(&e.kind, ExprKind::Index(_, at) if matches!(&at.kind, ExprKind::Var(v) if v == name));
+            } if n.is(name) && !start.mentions_var(name) => {
+                let read = |e: &Expr| matches!(&e.kind, ExprKind::Index(_, at) if matches!(&at.kind, ExprKind::Var(v) if v.is(name)));
                 let bound = match body.first().map(|s| &s.kind) {
                     Some(StmtKind::Const(_, e) | StmtKind::Let(_, Some(e)) | StmtKind::Destructure { value: e, .. }) => {
                         read(e)
@@ -634,7 +636,7 @@ fn counts(stmts: &[Stmt], name: &str) -> bool {
                     _ => false,
                 };
                 matches!(&test.kind, ExprKind::Binary(Op::Lt, counter, end)
-                    if matches!(&counter.kind, ExprKind::Var(v) if v == name) && !end.mentions_var(name))
+                    if matches!(&counter.kind, ExprKind::Var(v) if v.is(name)) && !end.mentions_var(name))
                     && bound
                     && js::mentions_in(&body[1..], name) == 0
             }
@@ -671,7 +673,7 @@ fn from_the_end(
         let ExprKind::Var(array) = &items.kind else {
             return None;
         };
-        if js::Writes::sets(body, array) {
+        if js::Writes::sets(body, array.word()) {
             return None;
         }
         let index = fresh("i");
@@ -698,14 +700,14 @@ fn from_the_end(
     // JS's `--` steps a number: of a `char`'s range, text, none.
     fn number(e: &Expr, numbers: &IndexSet<String>) -> bool {
         e.as_int().is_some()
-            || matches!(&e.kind, ExprKind::Var(v) if numbers.contains(v.as_str()))
+            || matches!(&e.kind, ExprKind::Var(v) if numbers.contains(v.word()))
             || matches!(&e.kind, ExprKind::Unary(UnaryOp::Neg, n) if n.as_int().is_some())
             || matches!(&e.kind, ExprKind::Member(_, length) if length == "length")
             || matches!(&e.kind, ExprKind::Binary(op, ..) if matches!(op, Op::Sub | Op::Mul | Op::Div | Op::Rem
                 | Op::BitOr | Op::BitAnd | Op::BitXor | Op::Shl | Op::Shr | Op::UShr))
             // `Math.max(to, 0)`, which JS makes a number of anything.
             || matches!(&e.kind, ExprKind::Call(callee, _) if matches!(&callee.kind,
-                ExprKind::Member(math, name) if matches!(&math.kind, ExprKind::Var(m) if m == "Math")
+                ExprKind::Member(math, name) if matches!(&math.kind, ExprKind::Var(m) if m.is("Math"))
                     && matches!(name.as_str(), "max" | "min")))
             // A sum of numbers, `i + 1`, a number too (rd529).
             || matches!(&e.kind, ExprKind::Binary(Op::Add, a, b) if number(a, numbers) && number(b, numbers))
@@ -716,7 +718,7 @@ fn from_the_end(
     fn reads_same(e: &Expr, body: &[Stmt]) -> bool {
         match &e.kind {
             _ if e.is_constant() => true,
-            ExprKind::Var(v) => !js::Writes::sets(body, v),
+            ExprKind::Var(v) => !js::Writes::sets(body, v.word()),
             ExprKind::Binary(_, a, b) => reads_same(a, body) && reads_same(b, body),
             ExprKind::Unary(UnaryOp::Neg, a) => reads_same(a, body),
             _ => false,
@@ -726,7 +728,7 @@ fn from_the_end(
     if mutable || !number(range.start, numbers) || !number(range.end, numbers) || !same {
         return None;
     }
-    let name = match name.as_str() {
+    let name = match name.word() {
         "_" => fresh("i"),
         _ => name.to_string(),
     };
@@ -810,7 +812,7 @@ fn counted_to_length(
                 && let StmtKind::Const(_, value) = &unboxed.kind
                 && crate::lower::std_types::option::some_value_of(value)
                     .is_some_and(|of| matches!(&of.kind, ExprKind::Var(v) if v == item))
-                && js::mentions_in(rest, item) == 0 =>
+                && js::mentions_in(rest, item.word()) == 0 =>
         {
             (items, index, rest)
         }
@@ -836,7 +838,7 @@ fn counted_to_length(
     {
         return None;
     }
-    let test = Expr::bin(Op::Lt, Expr::var(name), Expr::member(items.clone(), "length"));
+    let test = Expr::bin(Op::Lt, Expr::var(name.word()), Expr::member(items.clone(), "length"));
     let step = match n {
         1 => js::Step::Up,
         n => js::Step::By(Op::Add, Expr::int(n)),
@@ -879,10 +881,10 @@ fn counted_keys(iterable: &Expr, pattern: &js::Pattern, body: &[Stmt]) -> Option
     let mut closed_over = false;
     js::each_expr(body, &mut |e| {
         if let ExprKind::Arrow(_, inner) | ExprKind::AsyncArrow(_, inner) = &e.kind {
-            closed_over |= js::mentions_in(inner, counter) > 0;
+            closed_over |= js::mentions_in(inner, counter.word()) > 0;
         }
         if let ExprKind::Function(function) = &e.kind {
-            closed_over |= js::mentions_in(&function.body, counter) > 0;
+            closed_over |= js::mentions_in(&function.body, counter.word()) > 0;
         }
     });
     let declared = |stmts: &[Stmt]| {
@@ -890,7 +892,7 @@ fn counted_keys(iterable: &Expr, pattern: &js::Pattern, body: &[Stmt]) -> Option
         js::each_list(stmts, &mut |list| {
             found |= list
                 .iter()
-                .any(|s| matches!(&s.kind, StmtKind::Function(f) if js::mentions_in(&f.body, counter) > 0));
+                .any(|s| matches!(&s.kind, StmtKind::Function(f) if js::mentions_in(&f.body, counter.word()) > 0));
         });
         found
     };
@@ -907,7 +909,7 @@ fn counted(body: &mut Vec<Stmt>, counter: &str, label: Option<&str>) {
         while i < stmts.len() {
             let ours = match &stmts[i].kind {
                 StmtKind::Continue(None) => !nested,
-                StmtKind::Continue(Some(l)) => Some(l.as_str()) == label,
+                StmtKind::Continue(Some(l)) => Some(l.word()) == label,
                 _ => false,
             };
             if ours {
@@ -999,7 +1001,7 @@ pub(super) fn unarrayed(e: Expr) -> Expr {
         ExprKind::Call(callee, mut args)
             if args.len() == 1
                 && matches!(&callee.kind, ExprKind::Member(object, from)
-                    if from == "from" && matches!(&object.kind, ExprKind::Var(v) if v == "Array"))
+                    if from == "from" && matches!(&object.kind, ExprKind::Var(v) if v.is("Array")))
                 && matches!(args[0].kind, ExprKind::Var(_)) =>
         {
             args.pop().expect("one")
@@ -1125,12 +1127,12 @@ pub(super) fn while_tests(stmts: &mut Vec<Stmt>, loops: &[(js::Span, bool, Optio
             && let Some(last) = exit.last()
             && let broken = matches!(&last.kind, StmtKind::Break(l) if l.is_none() || *l == *label)
             && (broken || matches!(last.kind, StmtKind::Return(_) | StmtKind::Throw(_)))
-            && !breaks(&exit[..exit.len() - usize::from(broken)], label.as_deref())
+            && !breaks(&exit[..exit.len() - usize::from(broken)], label.as_ref().map(|n| n.word()))
             // A `continue` in the exit, after the loop, would go on with
             // another, the one around it (ADR 0683, amended).
-            && !js::continues(exit, label.as_deref())
+            && !js::continues(exit, label.as_ref().map(|n| n.word()))
             // A `break` in it would run the exit, which it skips.
-            && (exit.len() == usize::from(broken) || !breaks(rest, label.as_deref()))
+            && (exit.len() == usize::from(broken) || !breaks(rest, label.as_ref().map(|n| n.word())))
         {
             let span = stmts[i].span;
             let StmtKind::While { label, body, .. } = std::mem::replace(&mut stmts[i].kind, StmtKind::Break(None))
@@ -1209,12 +1211,12 @@ fn copy_tested_first(stmt: &mut Stmt) -> Option<Vec<Stmt>> {
         || !value.reads_same()
         || !matches!(cond.kind, ExprKind::Bool(true))
         || !test.reads_only_vars()
-        || !test.mentions_var(copy)
-        || js::mentions_in(exit, copy) > 0
+        || !test.mentions_var(copy.word())
+        || js::mentions_in(exit, copy.word()) > 0
     {
         return None;
     }
-    let tested = test.substitute(&|name| (name == copy).then(|| value.clone()))?;
+    let tested = test.substitute(&|name| copy.is(name).then(|| value.clone()))?;
     let original = body.clone();
     if let StmtKind::If(test, ..) = &mut body[1].kind {
         *test = tested;

@@ -23,11 +23,11 @@ pub(super) fn guards_once(list: &mut [Stmt], switches: &[Switch]) {
         let StmtKind::Labeled(label, body) = &mut stmt.kind else {
             continue;
         };
-        if !crate::lower::mir::is_block_label(label) {
+        if !crate::lower::mir::is_block_label(label.word()) {
             continue;
         }
         let [chain, tail @ ..] = &body[..] else { continue };
-        if !tail.last().is_some_and(js::ends) || js::names_break(tail, label) {
+        if !tail.last().is_some_and(js::ends) || js::names_break(tail, label.word()) {
             continue;
         }
         let broken = |stmts: &[Stmt]| matches!(stmts, [Stmt { kind: StmtKind::Break(Some(l)), .. }] if l == label);

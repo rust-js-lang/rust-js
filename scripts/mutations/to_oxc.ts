@@ -234,7 +234,7 @@ export const mutations: Mutation[] = [
     name: "default-constant-declared",
     breaks: "a constant declared as the default is `const V = ..;` and no `export default`",
     file: "src/to_oxc.rs",
-    find: "            js::Item::Const(c) if defaulted(module) == Some(c.name.as_str()) => body.push(cx.default_value(c)),\n",
+    find: "            js::Item::Const(c) if defaulted(module) == Some(c.name.word()) => body.push(cx.default_value(c)),\n",
     replace: "",
     tests: ["test/modules.test.ts", "-t", "the constant's value where the macro holds it"],
   },

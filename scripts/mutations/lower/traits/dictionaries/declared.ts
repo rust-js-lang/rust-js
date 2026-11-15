@@ -20,7 +20,7 @@ export const mutations: Mutation[] = [
     name: "dictionary-reading-a-global-unkept",
     breaks: "a dictionary whose entry reads a JS global, `Array.from`, made twice in a body, is written out twice, not declared once at its top as one that reads only helpers is (#1239)",
     file: "src/lower/traits/dictionaries/declared.rs",
-    find: "                || crate::names::is_js_global(name)\n",
+    find: "                || crate::names::is_js_global(name.word())\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^dictionary_of_a_global_class_declared_once\\.rs$"],
     snapshots: true,

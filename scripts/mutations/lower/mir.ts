@@ -448,7 +448,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a drop function whose drop tidy took out is declared at its function's top anyway, `list`'s `dropList` (#306)",
     file: "src/lower/mir.rs",
-    find: "        .filter(|def| name(def).is_none_or(|n| read.contains(n.as_str())))\n",
+    find: "        .filter(|def| name(def).is_none_or(|n| read.contains(n.word())))\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^drop_functions.rs$"],
     snapshots: true,

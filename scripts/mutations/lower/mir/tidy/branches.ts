@@ -104,8 +104,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`let tmp; if (now) { tmp = () => 1; } else { .. } return tmp;`, where each branch returns",
     file: "src/lower/mir/tidy/branches.rs",
-    find: "    if returned != result && !is_temporary(returned) {\n",
-    replace: "    if returned != result {\n",
+    find: "    if !returned.is(result) && !is_temporary(returned.word()) {\n",
+    replace: "    if !returned.is(result) {\n",
     tests: [
       "test/lowering-branches.test.ts",
       "-t",
@@ -126,9 +126,9 @@ export const mutations: Mutation[] = [
     breaks:
       "`l: { if (!a) { if (!b) { s; break l; } } t }` stays, not `if (a || b) { t } else { s }`",
     file: "src/lower/mir/tidy/branches.rs",
-    find: "            StmtKind::Labeled(label, body) if let Some((tests, otherwise, then)) = or_chain(&body, &label) => {\n",
+    find: "            StmtKind::Labeled(label, body) if let Some((tests, otherwise, then)) = or_chain(&body, label.word()) => {\n",
     replace:
-      "            StmtKind::Labeled(label, body) if let Some((tests, otherwise, then)) = or_chain(&body, &label).filter(|_| false) => {\n",
+      "            StmtKind::Labeled(label, body) if let Some((tests, otherwise, then)) = or_chain(&body, label.word()).filter(|_| false) => {\n",
     tests: [
       "test/lowering-matches.test.ts",
       "test/lowering-written-branches.test.ts",
@@ -158,7 +158,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a variable of `booleans` isn't a `bool` to `conditional`, `!!expanded`",
     file: "src/lower/mir/tidy/branches.rs",
-    find: "        ExprKind::Var(name) => booleans.contains(name.as_str()),\n",
+    find: "        ExprKind::Var(name) => booleans.contains(name.word()),\n",
     replace: "",
     tests: [
       "test/lowering-branches.test.ts",
@@ -212,7 +212,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a let-else of what `filter` keeps tests `const h = x ? x : undefined` for `null`, not `!x`",
     file: "src/lower/mir/tidy/branches.rs",
-    find: "            Op::LooseEq => otherwise.is_none() && then.last().is_some_and(ends) && js::mentions_in(then, h) == 0,\n",
+    find: "            Op::LooseEq => otherwise.is_none() && then.last().is_some_and(ends) && js::mentions_in(then, h.word()) == 0,\n",
     replace: "            Op::LooseEq => false,\n",
     tests: ["test/lowering-matches.test.ts", "-t", "what .filter. keeps"],
   },
@@ -234,7 +234,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`if (h != null) { s }` of what `filter` keeps stays, `h` and its binding `const href = h`",
     file: "src/lower/mir/tidy/branches.rs",
-    find: "                otherwise.as_deref().is_none_or(|o| js::mentions_in(o, h) == 0)\n                    && js::mentions_in(&stmts[i + 1..], h) == 0\n",
+    find: "                otherwise.as_deref().is_none_or(|o| js::mentions_in(o, h.word()) == 0)\n                    && js::mentions_in(&stmts[i + 1..], h.word()) == 0\n",
     replace: "                false\n",
     tests: [
       "test/jsx-children.test.ts",
@@ -402,7 +402,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a value MIR holds of three branches, its first doing more, is `else { tmp = b ? q : r; }`",
     file: "src/lower/mir/tidy/branches.rs",
-    find: " || is_temporary(x) && then.len() > 1)",
+    find: "\n                        || is_temporary(x.word()) && then.len() > 1)",
     replace: ")",
     tests: [
       "test/lowering-written-branches.test.ts",
@@ -632,7 +632,7 @@ export const mutations: Mutation[] = [
     breaks:
       'a let-else\'s exit that reads the `Option` it kept, `None`, is given what was filtered, `""`, `Some("")` where Rust says `None`',
     file: "src/lower/mir/tidy/branches.rs",
-    find: "            Op::LooseEq => otherwise.is_none() && then.last().is_some_and(ends) && js::mentions_in(then, h) == 0,\n",
+    find: "            Op::LooseEq => otherwise.is_none() && then.last().is_some_and(ends) && js::mentions_in(then, h.word()) == 0,\n",
     replace:
       "            Op::LooseEq => otherwise.is_none() && then.last().is_some_and(ends),\n",
     tests: ["test/corpus.test.ts", "-t", "^let_else_read_truth.rs$"],
@@ -846,9 +846,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a list's `filter`s by truth after its first stay `stack = stack || undefined; if (stack != null)`, not `if (stack)` (React DOM's clientRenderBoundary)",
     file: "src/lower/mir/tidy/branches.rs",
-    find: "                    ..Expr::var(&x)\n                };\n            }\n        });\n    }\n}",
+    find: "                    ..Expr::var(x.word())\n                };\n            }\n        });\n    }\n}",
     replace:
-      "                    ..Expr::var(&x)\n                };\n            }\n        });\n        break;\n    }\n}",
+      "                    ..Expr::var(x.word())\n                };\n            }\n        });\n        break;\n    }\n}",
     tests: [
       "test/lowering-option-truth.test.ts",
       "-t",
@@ -860,7 +860,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a variable's value of a chain whose first arm does more than give it, `const t = tests; entries = [t];`, is half a conditional, `else { entries = !test && main ? [9] : compute(3); }`, not the chain (#583, ADR 0969)",
     file: "src/lower/mir/tidy/branches.rs",
-    find: "(then.len() == 1 || x != result)",
+    find: "(then.len() == 1 || !x.is(result))",
     replace: "then.len() == 1",
     tests: ["test/corpus.test.ts", "-t", "^let_match_computed_default.rs$"],
     snapshots: true,
@@ -870,7 +870,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a function's value of an arm doing more and an `Option`'s `and_then`, `return scope.parent != null ? Env.get(..) : undefined;`, is an `else if` chain, no arm of the program's (#583)",
     file: "src/lower/mir/tidy/branches.rs",
-    find: "(then.len() == 1 || x != result)",
+    find: "(then.len() == 1 || !x.is(result))",
     replace: "(then.len() == 1 || true)",
     tests: ["test/corpus.test.ts", "-t", "^interpreter.rs$"],
     snapshots: true,

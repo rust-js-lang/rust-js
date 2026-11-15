@@ -347,7 +347,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether `range` is a variable no step can leave exhausted, a `let`
     /// not `mut` of `a..=b` (`fresh_ranges`, #418).
     pub(in crate::lower) fn never_exhausted(&self, range: &Expr) -> bool {
-        matches!(&range.kind, js::ExprKind::Var(name) if self.locals.mir.fresh_ranges.contains(name.as_str()))
+        matches!(&range.kind, js::ExprKind::Var(name) if self.locals.mir.fresh_ranges.contains(name.word()))
     }
 }
 
@@ -1328,7 +1328,7 @@ fn drops_read(hoisted: Vec<Stmt>, body: &[Stmt]) -> Vec<Stmt> {
     loop {
         let before = read.len();
         let called: Vec<&Stmt> = (hoisted.iter())
-            .filter(|def| name(def).is_some_and(|n| read.contains(n.as_str())))
+            .filter(|def| name(def).is_some_and(|n| read.contains(n.word())))
             .collect();
         for def in called {
             js::visit_stmts(std::slice::from_ref(def), &mut |v| _ = read.insert(v.to_string()));
@@ -1338,6 +1338,6 @@ fn drops_read(hoisted: Vec<Stmt>, body: &[Stmt]) -> Vec<Stmt> {
         }
     }
     (hoisted.into_iter())
-        .filter(|def| name(def).is_none_or(|n| read.contains(n.as_str())))
+        .filter(|def| name(def).is_none_or(|n| read.contains(n.word())))
         .collect()
 }

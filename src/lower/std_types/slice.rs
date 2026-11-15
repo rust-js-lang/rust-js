@@ -727,7 +727,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && let js::ExprKind::Call(callee, given) = &same.kind
             && matches!(callee.kind, js::ExprKind::Var(_))
             && let [a, b] = given.as_slice()
-            && matches!((&a.kind, &b.kind), (js::ExprKind::Var(a), js::ExprKind::Var(b)) if *a == made_a && *b == made_b)
+            && matches!((&a.kind, &b.kind), (js::ExprKind::Var(a), js::ExprKind::Var(b)) if a.is(&made_a) && b.is(&made_b))
         {
             return Ok(Some(*callee.clone()));
         }

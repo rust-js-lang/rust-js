@@ -105,13 +105,13 @@ pub fn applied_tried(mut tried: Vec<Stmt>) -> Vec<Stmt> {
             // each `return` ends what runs of it (rd60).
             Some(body) => {
                 let (declared, to) = match &tried[0].kind {
-                    StmtKind::Const(name, _) => (Some(name.clone()), Expr::var(name)),
+                    StmtKind::Const(name, _) => (Some(name.clone()), Expr::var(name.word())),
                     StmtKind::Assign(to, _) => (None, to.clone()),
                     _ => unreachable!("matched above"),
                 };
                 // Not where the body declares the variable's name, which
                 // its blocks would set in its place.
-                let shadowed = matches!(&to.kind, ExprKind::Var(name) if declares(&body, name));
+                let shadowed = matches!(&to.kind, ExprKind::Var(name) if declares(&body, name.word()));
                 let set = |value: &Expr, at: Span| Some(vec![StmtKind::Assign(to.clone(), value.clone()).at(at)]);
                 let Some(set) = returns_replaced(&body, &set).filter(|_| !shadowed) else {
                     return tried;
@@ -156,9 +156,11 @@ pub fn tried_set_where_made(body: &mut [Stmt]) {
         // A value its arm binds is a copy too, `const found = found$1;
         // done = found;`, set where it's made in turn.
         while let StmtKind::TryCatch(tried, binding, caught) = &body[i].kind {
-            let Some((made, set, variable)) = set_where_made(tried, binding.as_deref(), caught, |name| {
-                declared.iter().any(|n| n == name)
-            }) else {
+            let Some((made, set, variable)) =
+                set_where_made(tried, binding.as_ref().map(|n| n.word()), caught, |name| {
+                    declared.iter().any(|n| n == name)
+                })
+            else {
                 break;
             };
             if body
@@ -192,7 +194,7 @@ fn set_at(try_catch: &mut Stmt, made: usize, set: usize, variable: &str) {
     };
     let value_name = value_name.clone();
     tried[made].kind = StmtKind::Assign(to, value.clone());
-    renamed(&mut tried[made + 1..set], &value_name, variable);
+    renamed(&mut tried[made + 1..set], value_name.word(), variable);
 }
 
 /// Of a `try`'s `tried` and its `catch`, the `const` of the value made, the
@@ -218,19 +220,19 @@ fn set_where_made(
         // The `catch` leaves the variable's block, naming it nowhere, or
         // sets it before it names it.
         let unseen = |caught: &[Stmt]| {
-            let leaves = caught.last().is_some_and(ends) && mentions_in(caught, variable) == 0;
+            let leaves = caught.last().is_some_and(ends) && mentions_in(caught, variable.word()) == 0;
             let first_set = caught.iter().position(|s| {
                 matches!(&s.kind, StmtKind::Assign(t, v)
-                    if matches!(&t.kind, ExprKind::Var(n) if n == variable) && !v.mentions_var(variable))
+                    if matches!(&t.kind, ExprKind::Var(n) if n == variable) && !v.mentions_var(variable.word()))
             });
-            leaves || first_set.is_some_and(|first| mentions_in(&caught[..first], variable) == 0)
+            leaves || first_set.is_some_and(|first| mentions_in(&caught[..first], variable.word()) == 0)
         };
-        let same = declared(variable)
-            && mentions_in(&tried[..set], variable) == 0
-            && !declares(between, variable)
-            && mentions_in(&tried[set + 1..], value) == 0
-            && !read_in_a_closure(between, value)
-            && (between.iter().all(Stmt::cannot_throw) || binding != Some(variable.as_str()) && unseen(caught));
+        let same = declared(variable.word())
+            && mentions_in(&tried[..set], variable.word()) == 0
+            && !declares(between, variable.word())
+            && mentions_in(&tried[set + 1..], value.word()) == 0
+            && !read_in_a_closure(between, value.word())
+            && (between.iter().all(Stmt::cannot_throw) || binding != Some(variable.word()) && unseen(caught));
         same.then(|| (made, set, variable.to_string()))
     })
 }

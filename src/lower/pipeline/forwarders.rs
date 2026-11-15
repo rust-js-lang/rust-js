@@ -108,7 +108,7 @@ fn in_place<'tcx>(
         {
             continue;
         }
-        let Some(at) = functions.iter().position(|f| f.name == fns[&function].name) else {
+        let Some(at) = functions.iter().position(|f| f.name.is(&fns[&function].name)) else {
             continue;
         };
         let output = tcx.fn_sig(function).skip_binder().output().skip_binder();

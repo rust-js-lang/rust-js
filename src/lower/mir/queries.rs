@@ -791,11 +791,11 @@ pub(super) fn settled_place(state: &State<'_, '_>, place: &Expr) -> bool {
         named().next().is_some() && named().all(|(local, _)| given_once(state, local))
     };
     match &place.kind {
-        js::ExprKind::Var(name) => settled(name),
+        js::ExprKind::Var(name) => settled(name.word()),
         js::ExprKind::Member(object, _) => settled_place(state, object),
         js::ExprKind::Index(object, index) => {
             settled_place(state, object)
-                && (index.is_fixed() || matches!(&index.kind, js::ExprKind::Var(name) if settled(name)))
+                && (index.is_fixed() || matches!(&index.kind, js::ExprKind::Var(name) if settled(name.word())))
         }
         _ => false,
     }
@@ -836,7 +836,7 @@ pub(super) fn same_place(state: &State<'_, '_>, place: &Expr) -> bool {
                 && (index.is_fixed()
                     || from_end(object, index)
                     || matches!(&index.kind, js::ExprKind::Var(name)
-                        if state.locals.names.iter_enumerated().any(|(l, n)| n == name && given_once(state, l))))
+                        if state.locals.names.iter_enumerated().any(|(l, n)| name.is(n) && given_once(state, l))))
         }
         _ => false,
     }
@@ -869,7 +869,7 @@ pub(super) fn own_borrow_of_a_variable(state: &State<'_, '_>, local: Local) -> O
 /// The variable a place is of, `route` of `route.title[0]`.
 pub(super) fn root_var(place: &Expr) -> Option<&str> {
     match &place.kind {
-        js::ExprKind::Var(name) => Some(name),
+        js::ExprKind::Var(name) => Some(name.word()),
         js::ExprKind::Member(object, _) | js::ExprKind::Index(object, _) => root_var(object),
         _ => None,
     }
@@ -968,7 +968,7 @@ pub(super) fn str_part_of(place: &Expr) -> Option<(Expr, Vec<Expr>)> {
     let (js::ExprKind::Var(name), "value") = (&f.kind, field.as_str()) else {
         return None;
     };
-    let (js::ExprKind::Handle(whole, _), "$strPart") = (&args.first()?.kind, name.as_str()) else {
+    let (js::ExprKind::Handle(whole, _), "$strPart") = (&args.first()?.kind, name.word()) else {
         return None;
     };
     let bounds = args[1..].to_vec();

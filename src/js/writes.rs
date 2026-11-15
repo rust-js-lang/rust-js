@@ -107,7 +107,7 @@ impl Writes {
                     && storage.rebinds()
                 {
                     self.handled.insert(name.to_string());
-                    self.set(name);
+                    self.set(name.word());
                 }
             }
             // `(x.f = ..)` in an expression, a sequence's (#523), and `x++`
@@ -170,7 +170,7 @@ impl Writes {
         let ExprKind::Var(name) = &root.kind else { return };
         let replaced = std::ptr::eq(root, target);
         if replaced && counted {
-            self.set(name);
+            self.set(name.word());
         }
         let (all, closures) = match replaced {
             true => (&mut self.replaced, &mut self.replaced_in_closures),

@@ -104,5 +104,5 @@ pub fn tested(test: &Expr) -> Option<(&Expr, bool, bool)> {
 /// Whether `e` reads what `result`, a variable, holds: `result._0`.
 pub fn reads_held(e: &Expr, result: &str) -> bool {
     matches!(&e.kind, ExprKind::Member(of, field)
-        if *field == payload() && matches!(&of.kind, ExprKind::Var(v) if v == result))
+        if *field == payload() && matches!(&of.kind, ExprKind::Var(v) if v.is(result)))
 }

@@ -225,7 +225,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if body.is_empty()
             && let js::ExprKind::Call(callee, args) = &compared.kind
             && matches!(callee.kind, js::ExprKind::Var(_))
-            && matches!(args.as_slice(), [x, y] if matches!((&x.kind, &y.kind), (js::ExprKind::Var(x), js::ExprKind::Var(y)) if x == a && y == b))
+            && matches!(args.as_slice(), [x, y] if matches!((&x.kind, &y.kind), (js::ExprKind::Var(x), js::ExprKind::Var(y)) if x.is(a) && y.is(b)))
         {
             return (**callee).clone();
         }

@@ -1254,7 +1254,7 @@ pub(super) fn symbol_of_key(read: &Expr) -> Option<&Expr> {
     match &read.kind {
         js::ExprKind::Call(callee, args)
             if matches!(&callee.kind, js::ExprKind::Member(object, name)
-                if name == "keyFor" && matches!(&object.kind, js::ExprKind::Var(v) if v == "Symbol")) =>
+                if name == "keyFor" && matches!(&object.kind, js::ExprKind::Var(v) if v.is("Symbol"))) =>
         {
             match &args[..] {
                 [symbol] => Some(symbol),

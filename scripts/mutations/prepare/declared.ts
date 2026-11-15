@@ -6,8 +6,8 @@ export const mutations: Mutation[] = [
     name: "module-function-mutable-declared",
     breaks: "a thread-local its module sets, a `let`, is declared a function, which the module's assignment would replace as it does a `let`, but which is hoisted",
     file: "src/prepare/declared.rs",
-    find: "            && !constant.mutable\n            && matches!(&constant.value.kind, ExprKind::Function(function) if function.name.is_empty())\n",
-    replace: "            && matches!(&constant.value.kind, ExprKind::Function(function) if function.name.is_empty())\n",
+    find: "            && !constant.mutable\n            && matches!(&constant.value.kind, ExprKind::Function(function) if function.name.word().is_empty())\n",
+    replace: "            && matches!(&constant.value.kind, ExprKind::Function(function) if function.name.word().is_empty())\n",
     tests: ["test/js-functions.test.ts", "-t", "a with_this thread-local is a function declaration"],
   },
   {
@@ -78,8 +78,8 @@ export const mutations: Mutation[] = [
     name: "function-of-a-let-not-declared",
     breaks: "a `let` of a `with_this` function stays `const inner = function () { .. }`, not `function inner() { .. }` (ADR 0972)",
     file: "src/prepare/declared.rs",
-    find: "            && matches!(&value.kind, ExprKind::Function(function) if function.name.is_empty())\n",
-    replace: "            && matches!(&value.kind, ExprKind::Function(function) if function.name.is_empty() && false)\n",
+    find: "            && matches!(&value.kind, ExprKind::Function(function) if function.name.word().is_empty())\n",
+    replace: "            && matches!(&value.kind, ExprKind::Function(function) if function.name.word().is_empty() && false)\n",
     tests: ["test/js-functions.test.ts", "-t", "a function nested in a with_this function"]
   },
   {

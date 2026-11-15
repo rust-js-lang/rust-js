@@ -7,7 +7,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`const x = t ? v : undefined; if (x)` is `if (t)` of a `v` that may be `None` itself, so `maybe(None, true)` reads `undefined.name` (ADR 0910)",
     file: "src/lower/mir/tidy/options.rs",
-    find: "    let present = value.facts.has(js::Known::Present) || tests_present_first(test, v);\n",
+    find: "    let present = value.facts.has(js::Known::Present) || tests_present_first(test, v.word());\n",
     replace: "    let present = true;\n",
     tests: ["test/corpus.test.ts", "-t", "tested_options"],
   },
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     breaks:
       "an `Option` of a variable that changes where it's read is read as the variable, so `changed(true)` says `after then after` (ADR 0910)",
     file: "src/lower/mir/tidy/options.rs",
-    find: "    if !matches!(none.kind, ExprKind::Undefined) || !present || changing.contains(v.as_str()) {\n",
+    find: "    if !matches!(none.kind, ExprKind::Undefined) || !present || changing.contains(v.word()) {\n",
     replace: "    if !matches!(none.kind, ExprKind::Undefined) || !present {\n",
     tests: ["test/corpus.test.ts", "-t", "tested_options"],
   },
@@ -25,8 +25,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an `Option` read past its test is folded away, so what reads it after reads a variable no longer declared (ADR 0910)",
     file: "src/lower/mir/tidy/options.rs",
-    find: "    if read_elsewhere || js::declares(reads, x) || js::read_where_other(reads, x, v) {\n",
-    replace: "    if js::declares(reads, x) || js::read_where_other(reads, x, v) {\n",
+    find: "    if read_elsewhere || js::declares(reads, x.word()) || js::read_where_other(reads, x.word(), v.word()) {\n",
+    replace: "    if js::declares(reads, x.word()) || js::read_where_other(reads, x.word(), v.word()) {\n",
     tests: ["test/corpus.test.ts", "-t", "tested_options"],
   },
   {
@@ -58,15 +58,15 @@ export const mutations: Mutation[] = [
     breaks:
       "a take tested whose binding is read past the test is taken in its branch, so `return cancel` reads what the branch declared (ADR 0996)",
     file: "src/lower/mir/tidy/options.rs",
-    find: "    if js::mentions_in(none_branch, c) > 0 || js::mentions_in(rest, c) > 0 {\n",
-    replace: "    if js::mentions_in(none_branch, c) > 0 {\n",
+    find: "    if js::mentions_in(none_branch, c.word()) > 0 || js::mentions_in(rest, c.word()) > 0 {\n",
+    replace: "    if js::mentions_in(none_branch, c.word()) > 0 {\n",
     tests: ["test/lowering-takes.test.ts", "-t", "an Option taken then tested"],
   },
   {
     name: "tested-option-read-where-another",
     breaks: "an `Option` made where it's tested is read as its value inside a closure of its own `value`, `log(value._0 + typeof value.x)`, the closure's `Result` (rd514)",
     file: "src/lower/mir/tidy/options.rs",
-    find: "|| js::read_where_other(reads, x, v) {\n",
+    find: "|| js::read_where_other(reads, x.word(), v.word()) {\n",
     replace: "{\n",
     tests: ["test/js-object.test.ts", "-t", "beside a closure's own of its name"],
   },

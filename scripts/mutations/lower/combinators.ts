@@ -96,7 +96,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `filter` of any predicate is `o || undefined`: `filter(|v| !js::truthy(Some(*v)))` keeps what's truthy",
     file: "src/lower/combinators.rs",
-    find: "    matches!(&tested.kind, js::ExprKind::Var(v) if v == HELD_SOME)\n",
+    find: "    matches!(&tested.kind, js::ExprKind::Var(v) if v.is(HELD_SOME))\n",
     replace: "    applied.mentions_var(HELD_SOME)\n",
     tests: [
       "test/lowering-options.test.ts",
@@ -109,9 +109,9 @@ export const mutations: Mutation[] = [
     breaks:
       "`filter(|v| js::truthy(Some(v.name)))`, a part's truth, is `o || undefined`, the `Option`'s own",
     file: "src/lower/combinators.rs",
-    find: "    matches!(&tested.kind, js::ExprKind::Var(v) if v == HELD_SOME)\n",
+    find: "    matches!(&tested.kind, js::ExprKind::Var(v) if v.is(HELD_SOME))\n",
     replace:
-      "    matches!(&tested.kind, js::ExprKind::Var(v) if v == HELD_SOME) || matches!(&tested.kind, js::ExprKind::Member(..))\n",
+      "    matches!(&tested.kind, js::ExprKind::Var(v) if v.is(HELD_SOME)) || matches!(&tested.kind, js::ExprKind::Member(..))\n",
     tests: [
       "test/lowering-options.test.ts",
       "-t",

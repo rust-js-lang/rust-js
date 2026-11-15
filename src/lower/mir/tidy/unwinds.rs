@@ -110,7 +110,7 @@ fn scoped_runs(stmts: &mut Vec<Stmt>, result: &str, guards: &[(u32, u32)], taken
 pub(super) fn unthrown_catches(stmts: &mut Vec<Stmt>) -> bool {
     let unthrown = |stmt: &Stmt| {
         matches!(&stmt.kind, StmtKind::TryCatch(body, Some(error), handler)
-            if body.iter().all(Stmt::cannot_throw) && handler.last().is_some_and(|last| rethrows(std::slice::from_ref(last), error)))
+            if body.iter().all(Stmt::cannot_throw) && handler.last().is_some_and(|last| rethrows(std::slice::from_ref(last), error.word())))
     };
     if !stmts.iter().any(unthrown) {
         return false;
@@ -152,8 +152,8 @@ pub(super) fn tested_unwraps(stmts: &mut Vec<Stmt>) -> bool {
         let (last, drops) = handler.split_last()?;
         let given = option.reads_same()
             && rest.iter().all(Stmt::cannot_throw)
-            && rethrows(std::slice::from_ref(last), error)
-            && js::mentions_in(drops, error) == 0;
+            && rethrows(std::slice::from_ref(last), error.word())
+            && js::mentions_in(drops, error.word()) == 0;
         given.then(|| (test, option.clone(), panic))
     };
     if !stmts.iter().any(|stmt| tested(stmt).is_some()) {
@@ -222,13 +222,13 @@ pub(super) fn returned_through_finally(stmts: &mut Vec<Stmt>) {
             (StmtKind::Let(name, None), StmtKind::Try(body, finally), StmtKind::Return(Some(value))) => {
                 let (body, handler) = scope_body(body);
                 matches!(&value.kind, ExprKind::Var(v) if v == name)
-                    && js::mentions_in(finally, name) == 0
-                    && js::mentions_in(handler, name) == 0
+                    && js::mentions_in(finally, name.word()) == 0
+                    && js::mentions_in(handler, name.word()) == 0
                     && body.last().is_some_and(|last| {
                         let mut returned = last.clone();
-                        given_returned(&mut returned, name)
-                            && js::mentions_in(std::slice::from_ref(&returned), name) == 0
-                            && js::mentions_in(&body[..body.len() - 1], name) == 0
+                        given_returned(&mut returned, name.word())
+                            && js::mentions_in(std::slice::from_ref(&returned), name.word()) == 0
+                            && js::mentions_in(&body[..body.len() - 1], name.word()) == 0
                     })
             }
             _ => false,
@@ -284,7 +284,9 @@ fn scope_body(body: &[Stmt]) -> (&[Stmt], &[Stmt]) {
 /// has found them.
 fn given_returned(stmt: &mut Stmt, name: &str) -> bool {
     match &mut stmt.kind {
-        StmtKind::Assign(target, value) if name.is_empty() || matches!(&target.kind, ExprKind::Var(v) if v == name) => {
+        StmtKind::Assign(target, value)
+            if name.is_empty() || matches!(&target.kind, ExprKind::Var(v) if v.is(name)) =>
+        {
             stmt.kind = StmtKind::Return(Some(std::mem::replace(value, Expr::taken())));
             true
         }
@@ -397,7 +399,7 @@ impl<'a> Run<'a> {
                 }
                 // A jump that stays in the run.
                 StmtKind::Break(None) | StmtKind::Continue(None) => loops > 0,
-                StmtKind::Break(Some(label)) | StmtKind::Continue(Some(label)) => labels.iter().any(|l| l == label),
+                StmtKind::Break(Some(label)) | StmtKind::Continue(Some(label)) => labels.iter().any(|l| label.is(l)),
                 // One made of values, which can't throw, or the run ends.
                 _ => stmt.only_makes_values(),
             };
@@ -417,13 +419,13 @@ impl<'a> Run<'a> {
             StmtKind::Return(None) => true,
             StmtKind::Return(Some(value)) => match &value.kind {
                 ExprKind::Var(name) => {
-                    name == self.result
-                        || self.declared.contains(name.as_str()) && !self.set_by_closures.contains(name.as_str())
+                    name.is(self.result)
+                        || self.declared.contains(name.word()) && !self.set_by_closures.contains(name.word())
                 }
                 _ => value.is_constant(),
             },
             StmtKind::Break(None) | StmtKind::Continue(None) => loops == 0,
-            StmtKind::Break(Some(label)) | StmtKind::Continue(Some(label)) => !labels.iter().any(|l| l == label),
+            StmtKind::Break(Some(label)) | StmtKind::Continue(Some(label)) => !labels.iter().any(|l| label.is(l)),
             _ => false,
         }
     }
@@ -448,9 +450,9 @@ fn unwound(stmts: Vec<Stmt>, drop: &Stmt) -> Vec<Stmt> {
                 ..
             })) = &leaving.kind
                 && let Some(made) = out.last().and_then(made_here)
-                && made == name
-                && js::mentions_in(&all, name) == 2 + usize::from(declared_unset(&all, name))
-                && js::mentions_in(std::slice::from_ref(drop), name) == 0
+                && name.is(made)
+                && js::mentions_in(&all, name.word()) == 2 + usize::from(declared_unset(&all, name.word()))
+                && js::mentions_in(std::slice::from_ref(drop), name.word()) == 0
                 && let Some(Stmt {
                     kind: StmtKind::Const(_, value) | StmtKind::Assign(_, value),
                     ..
@@ -467,7 +469,7 @@ fn unwound(stmts: Vec<Stmt>, drop: &Stmt) -> Vec<Stmt> {
             StmtKind::TryCatch(inner, Some(error), mut handler) => {
                 // The drop before its `throw`, the scope's own.
                 handler.remove(handler.len() - 2);
-                if rethrows(&handler, &error) {
+                if rethrows(&handler, error.word()) {
                     out.extend(inner);
                     continue;
                 }
@@ -491,20 +493,20 @@ fn unwound(stmts: Vec<Stmt>, drop: &Stmt) -> Vec<Stmt> {
 fn declared_unset(stmts: &[Stmt], name: &str) -> bool {
     stmts
         .iter()
-        .any(|s| matches!(&s.kind, StmtKind::Let(v, None) if v == name))
+        .any(|s| matches!(&s.kind, StmtKind::Let(v, None) if v.is(name)))
 }
 
 /// The variable `stmt` makes, `const v = e;` or `v = e;`.
 fn made_here(stmt: &Stmt) -> Option<&str> {
     match &stmt.kind {
-        StmtKind::Const(name, _) => Some(name),
+        StmtKind::Const(name, _) => Some(name.word()),
         StmtKind::Assign(
             Expr {
                 kind: ExprKind::Var(name),
                 ..
             },
             _,
-        ) => Some(name),
+        ) => Some(name.word()),
         _ => None,
     }
 }
@@ -528,7 +530,7 @@ fn dropped_last(stmt: &Stmt) -> Option<&Stmt> {
     // not in each `catch` that calls it (ADR 0901, amended).
     // One that leaves another way already dropped what it leaves; lowering
     // wraps no `return` in a `try`, but a `finally` would drop it again.
-    (rethrown && !leaves(inner, 0) && js::mentions_in(std::slice::from_ref(drop), error) == 0).then_some(drop)
+    (rethrown && !leaves(inner, 0) && js::mentions_in(std::slice::from_ref(drop), error.word()) == 0).then_some(drop)
 }
 
 /// A `catch` that only throws on what it caught.
@@ -555,19 +557,19 @@ pub(super) fn guarded_cleanups(stmts: &mut [Stmt]) {
         };
         let rethrown = handler
             .last()
-            .is_some_and(|last| rethrows(std::slice::from_ref(last), error));
+            .is_some_and(|last| rethrows(std::slice::from_ref(last), error.word()));
         if !rethrown || handler.len() == 1 || crate::lower::drops::is_cleanup(&handler[..handler.len() - 1]) {
             continue;
         }
         let last = handler.pop().expect("rethrown");
         let drops = std::mem::take(handler);
-        *handler = crate::lower::drops::cleanup(drops, Some(error.as_str()), span);
+        *handler = crate::lower::drops::cleanup(drops, Some(error.word()), span);
         handler.push(last);
     }
 }
 
 fn rethrows(handler: &[Stmt], error: &str) -> bool {
-    matches!(handler, [Stmt { kind: StmtKind::Throw(Expr { kind: ExprKind::Var(v), .. }), .. }] if v == error)
+    matches!(handler, [Stmt { kind: StmtKind::Throw(Expr { kind: ExprKind::Var(v), .. }), .. }] if v.is(error))
 }
 
 /// Whether running `stmts` may leave them other than at their end or by a
@@ -597,10 +599,12 @@ fn hoist_read_after(body: &mut Vec<Stmt>, after: &[Stmt]) -> Vec<Stmt> {
     for stmt in std::mem::take(body) {
         let read_after = |name: &str| js::mentions_in(after, name) > 0;
         match stmt.kind {
-            StmtKind::Let(name, None) if read_after(&name) => hoisted.push(StmtKind::Let(name, None).at(stmt.span)),
-            StmtKind::Const(name, value) | StmtKind::Let(name, Some(value)) if read_after(&name) => {
+            StmtKind::Let(name, None) if read_after(name.word()) => {
+                hoisted.push(StmtKind::Let(name, None).at(stmt.span))
+            }
+            StmtKind::Const(name, value) | StmtKind::Let(name, Some(value)) if read_after(name.word()) => {
                 hoisted.push(StmtKind::Let(name.clone(), None).at(stmt.span));
-                body.push(StmtKind::Assign(Expr::var(&name), value).at(stmt.span));
+                body.push(StmtKind::Assign(Expr::var(name.word()), value).at(stmt.span));
             }
             kind => body.push(Stmt { kind, ..stmt }),
         }
@@ -670,8 +674,8 @@ pub(super) fn looped_drops(stmts: &mut Vec<Stmt>, for_made: bool, tidied: &mut d
         let only_it_reads = |stmt: &Stmt| match &stmt.kind {
             StmtKind::Assign(target, _) => matches!(&target.kind, ExprKind::Var(name)
                 if stmt.cannot_throw()
-                    && js::mentions_in(&after, name) == 0
-                    && js::mentions_in(std::slice::from_ref(&drop), name) == 0),
+                    && js::mentions_in(&after, name.word()) == 0
+                    && js::mentions_in(std::slice::from_ref(&drop), name.word()) == 0),
             _ => false,
         };
         // Early, back to the first of them, past what has no way out of
@@ -695,11 +699,11 @@ pub(super) fn looped_drops(stmts: &mut Vec<Stmt>, for_made: bool, tidied: &mut d
             // it steps, before it, `let sum = 0;` (#442).
             while start < k
                 && match &stmts[start].kind {
-                    StmtKind::Let(name, None) => js::mentions_in(&after, name) > 0,
+                    StmtKind::Let(name, None) => js::mentions_in(&after, name.word()) > 0,
                     StmtKind::Assign(target, _) => {
                         for_made
                             && stmts[start].cannot_throw()
-                            && !matches!(&target.kind, ExprKind::Var(name) if stepped.as_deref() == Some(name))
+                            && !matches!(&target.kind, ExprKind::Var(name) if stepped.as_deref() == Some(name.word()))
                     }
                     _ => false,
                 }
@@ -739,7 +743,7 @@ pub(super) fn looped_drops(stmts: &mut Vec<Stmt>, for_made: bool, tidied: &mut d
         js::statement_lists(body, &mut |list| {
             let left = list.iter().position(|stmt| {
                 matches!(&stmt.kind, StmtKind::Labeled(label, inner)
-                    if inner.last().is_some_and(js::ends) && !js::breaks(inner, Some(label)))
+                    if inner.last().is_some_and(js::ends) && !js::breaks(inner, Some(label.word())))
             });
             if let Some(at) = left {
                 list.truncate(at + 1);
@@ -747,7 +751,7 @@ pub(super) fn looped_drops(stmts: &mut Vec<Stmt>, for_made: bool, tidied: &mut d
         });
         let inside = Inside {
             labels: &labels,
-            own: own.as_deref(),
+            own: own.as_ref().map(|n| n.word()),
         };
         if !dropped_at_each_exit(body, &drop, (0, false, inside)) {
             k += 1;
@@ -790,7 +794,7 @@ fn escapes(stmts: &[Stmt]) -> bool {
         stmts.iter().any(|stmt| match &stmt.kind {
             StmtKind::Return(_) | StmtKind::Throw(_) | StmtKind::Switch { .. } => true,
             StmtKind::Break(None) | StmtKind::Continue(None) => loops == 0,
-            StmtKind::Break(Some(l)) | StmtKind::Continue(Some(l)) => !inner.iter().any(|i| i == l),
+            StmtKind::Break(Some(l)) | StmtKind::Continue(Some(l)) => !inner.iter().any(|i| l.is(i)),
             StmtKind::If(_, a, b) => out(a, inner, loops) || b.as_deref().is_some_and(|b| out(b, inner, loops)),
             StmtKind::Labeled(l, body) => {
                 inner.push(l.to_string());
@@ -824,12 +828,12 @@ fn stepped(looped: &Stmt) -> Option<(&str, &str)> {
     let first = body.iter().find(|stmt| !matches!(stmt.kind, StmtKind::Let(_, None)))?;
     fn assigned(target: &Expr) -> Option<&str> {
         match &target.kind {
-            ExprKind::Var(item) => Some(item),
+            ExprKind::Var(item) => Some(item.word()),
             _ => None,
         }
     }
     let (item, value) = match &first.kind {
-        StmtKind::Const(item, value) | StmtKind::Let(item, Some(value)) => (item.as_str(), value),
+        StmtKind::Const(item, value) | StmtKind::Let(item, Some(value)) => (item.word(), value),
         StmtKind::Assign(target, value) => (assigned(target)?, value),
         StmtKind::TryCatch(inner, ..) => match inner.as_slice() {
             [
@@ -849,7 +853,7 @@ fn stepped(looped: &Stmt) -> Option<(&str, &str)> {
                     kind: ExprKind::Var(iter),
                     ..
                 },
-            ] => Some((item, iter)),
+            ] => Some((item, iter.word())),
             _ => None,
         },
         _ => None,
@@ -938,8 +942,10 @@ fn gathered_lets(before: &mut Vec<Stmt>, body: &mut Vec<Stmt>, rest: &[Stmt], dr
         let StmtKind::Let(name, None) = &before[i].kind else {
             continue;
         };
-        let elsewhere = js::mentions_in(&before[..i], name) + js::mentions_in(&before[i + 1..], name);
-        if elsewhere == 0 && js::mentions_in(rest, name) == 0 && js::mentions_in(std::slice::from_ref(drop), name) == 0
+        let elsewhere = js::mentions_in(&before[..i], name.word()) + js::mentions_in(&before[i + 1..], name.word());
+        if elsewhere == 0
+            && js::mentions_in(rest, name.word()) == 0
+            && js::mentions_in(std::slice::from_ref(drop), name.word()) == 0
         {
             taken.push(before.remove(i));
         }
@@ -953,7 +959,7 @@ fn dropping_catch<'s>(stmt: &'s Stmt, drop: &Stmt) -> Option<&'s Vec<Stmt>> {
     match &stmt.kind {
         StmtKind::TryCatch(inner, Some(error), handler)
             if matches!(handler.as_slice(), [dropped, thrown]
-                if alike(dropped, drop) && rethrows(std::slice::from_ref(thrown), error)) =>
+                if alike(dropped, drop) && rethrows(std::slice::from_ref(thrown), error.word())) =>
         {
             Some(inner)
         }
@@ -1032,11 +1038,11 @@ fn dropped_at_each_exit(stmts: &mut Vec<Stmt>, drop: &Stmt, (depth, caught, insi
             // it, as a loop's in it does, `continue bb10;`; another label's
             // leaves it, as a `return` does, the program's `break
             // 'get_instance` out of the block the loop's in (rd200).
-            StmtKind::Break(Some(label)) => !inside.labels.iter().any(|l| l == label),
+            StmtKind::Break(Some(label)) => !inside.labels.iter().any(|l| label.is(l)),
             // The loop's own `continue bb5`, in a loop in it too, is a turn
             // (#440).
             StmtKind::Continue(Some(label)) => {
-                !inside.labels.iter().any(|l| l == label) && inside.own != Some(label.as_str())
+                !inside.labels.iter().any(|l| label.is(l)) && inside.own != Some(label.word())
             }
             _ => false,
         };
@@ -1071,7 +1077,7 @@ fn dropped_at_each_exit(stmts: &mut Vec<Stmt>, drop: &Stmt, (depth, caught, insi
             }
             // What goes on in it, a block's own `break`, a turn's `continue`.
             StmtKind::Break(_) | StmtKind::Continue(_) => true,
-            StmtKind::Labeled(label, body) if inside.labels.iter().any(|l| l == label) => {
+            StmtKind::Labeled(label, body) if inside.labels.iter().any(|l| label.is(l)) => {
                 dropped_at_each_exit(body, drop, (depth, caught, inside))
             }
             StmtKind::Labeled(..)
@@ -1131,7 +1137,7 @@ pub(super) fn dropped_at_breaks(stmts: &mut [Stmt]) -> bool {
                 StmtKind::Return(_) | StmtKind::Throw(_) => !drops.is_empty(),
                 _ => guarded_throw && drops.is_empty(),
             };
-        if !dropped || js::mentions_in(tail, label) > 0 {
+        if !dropped || js::mentions_in(tail, label.word()) > 0 {
             continue;
         }
         let (label, tail) = (label.clone(), tail.to_vec());
@@ -1139,7 +1145,7 @@ pub(super) fn dropped_at_breaks(stmts: &mut [Stmt]) -> bool {
             unreachable!("matched")
         };
         let mut taken = body.clone();
-        if breaks_dropped(&mut taken, &label, &tail, true) {
+        if breaks_dropped(&mut taken, label.word(), &tail, true) {
             *body = taken;
             took = true;
         }
@@ -1180,7 +1186,7 @@ fn caught_drops(stmts: &[Stmt]) -> Vec<&Stmt> {
 fn breaks_dropped(stmts: &mut Vec<Stmt>, label: &str, tail: &[Stmt], free: bool) -> bool {
     let mut i = 0;
     while i < stmts.len() {
-        if matches!(&stmts[i].kind, StmtKind::Break(Some(l)) if l == label) {
+        if matches!(&stmts[i].kind, StmtKind::Break(Some(l)) if l.is(label)) {
             if !free {
                 return false;
             }

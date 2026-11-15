@@ -97,7 +97,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // which nothing assigns (ADR 0894, amended).
             let at_once = written_through_at_once(state.body, state.at);
             let index_kept = index.is_fixed()
-                || matches!(&index.kind, js::ExprKind::Var(v) if at_once || self.locals.mir.alike.contains(v.as_str()));
+                || matches!(&index.kind, js::ExprKind::Var(v) if at_once || self.locals.mir.alike.contains(v.word()));
             if checked || !index_kept || !items.reads_same() {
                 self.flush(state, out)?;
             }

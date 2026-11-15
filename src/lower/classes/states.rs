@@ -55,7 +55,7 @@ pub(super) fn spread_state(tcx: TyCtxt<'_>, ctor: DefId, function: &mut js::Func
             taken.insert(name.to_string());
         }
     }
-    taken.swap_remove(state.as_str());
+    taken.swap_remove(state.word());
     let names: Vec<String> = (keys.iter())
         .map(|key| crate::lower::fresh_in(&mut taken, key))
         .collect();
@@ -79,7 +79,7 @@ pub(super) fn spread_state(tcx: TyCtxt<'_>, ctor: DefId, function: &mut js::Func
             *props = flat;
         }
     });
-    if spread != 1 || js::mentions_in(&function.body, &state) > 0 {
+    if spread != 1 || js::mentions_in(&function.body, state.word()) > 0 {
         return Err(
             "a constructor that reads its flattened state but to make its instance's: it's given as its keys, `function ReactPromise(status, value, reason)`",
         );

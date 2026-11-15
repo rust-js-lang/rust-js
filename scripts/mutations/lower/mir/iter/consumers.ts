@@ -346,7 +346,7 @@ export const mutations: Mutation[] = [
     name: "held-iterator-put-anywhere",
     breaks: "a held iterator is put back where it's read though something is evaluated before it there, which ran before it was made (#1154)",
     file: "src/lower/mir/iter/consumers.rs",
-    find: "    if spilled != name || reads != 1 || !first(&result, name) {\n",
+    find: "    if spilled != name || reads != 1 || !first(&result, name.word()) {\n",
     replace: "    if spilled != name || reads != 1 {\n",
     unitTests: "lower::mir::iter::consumers",
   },

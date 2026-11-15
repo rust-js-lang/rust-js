@@ -45,7 +45,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // unbound, and of what JS gives no `this` of, a call's value,
         // preparation leaves it as it is.
         if let js::ExprKind::Var(name) = &callee.kind
-            && !super::tidy::is_temporary(name)
+            && !super::tidy::is_temporary(name.word())
         {
             return Ok(Value::Expr(Expr::call(*callee, args)));
         }

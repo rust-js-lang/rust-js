@@ -32,7 +32,7 @@ pub(super) fn spelled(module: &mut js::Module) {
     for item in &mut module.items {
         let mut unspelled = Vec::new();
         names_mut(item, true, &mut |name| {
-            if crate::names::unspelled_base(name).is_some() && !unspelled.contains(name) {
+            if crate::names::unspelled_base(name.word()).is_some() && !unspelled.contains(name) {
                 unspelled.push(name.clone());
             }
         });
@@ -42,14 +42,14 @@ pub(super) fn spelled(module: &mut js::Module) {
         let mut tree = scopes::Tree::of(item);
         let mut spelled: IndexMap<String, String> = IndexMap::default();
         for name in unspelled {
-            let base = crate::names::unspelled_base(&name).expect("unspelled");
+            let base = crate::names::unspelled_base(name.word()).expect("unspelled");
             let in_scope = tree.as_mut().and_then(|tree| {
                 let to = std::iter::once(base.to_string())
                     .chain((1..).map(|k| crate::names::given_apart(base, k)))
                     .filter(|to| !crate::names::kept_word(to))
                     .take(64)
-                    .find(|to| tree.renames(&name, to))?;
-                tree.rename(&name, &to);
+                    .find(|to| tree.renames(name.word(), to))?;
+                tree.rename(name.word(), &to);
                 Some(to)
             });
             let to = in_scope.unwrap_or_else(|| crate::names::fresh_apart(&mut taken, base));
@@ -57,7 +57,7 @@ pub(super) fn spelled(module: &mut js::Module) {
             spelled.insert(name.into_word(), to);
         }
         names_mut(item, true, &mut |name| {
-            if let Some(to) = spelled.get(name.as_str()) {
+            if let Some(to) = spelled.get(name.word()) {
                 *name = to.into();
             }
         });
@@ -80,7 +80,7 @@ fn aliased_imports(module: &mut js::Module) {
         // How often the module reads it.
         let mut reads = 0;
         js::each_item_expr_mut(&mut module.items, &mut |e| {
-            reads += usize::from(matches!(&e.kind, ExprKind::Var(v) if *v == local));
+            reads += usize::from(matches!(&e.kind, ExprKind::Var(v) if v.is(&local)));
         });
         if reads != 1 {
             continue;
@@ -91,7 +91,7 @@ fn aliased_imports(module: &mut js::Module) {
             for function in item.functions_mut() {
                 if let Some(k) = function.body.iter().position(|s| {
                     matches!(&s.kind, StmtKind::Const(_, value)
-                        if !value.facts.has(js::Known::Live) && matches!(&value.kind, ExprKind::Var(v) if *v == local))
+                        if !value.facts.has(js::Known::Live) && matches!(&value.kind, ExprKind::Var(v) if v.is(&local)))
                 }) && let StmtKind::Const(name, _) = &function.body[k].kind
                 {
                     alias = Some(name.clone());
@@ -103,7 +103,7 @@ fn aliased_imports(module: &mut js::Module) {
         let mut declared = 0;
         for item in &mut module.items {
             names_mut(item, false, &mut |name| declared += usize::from(*name == alias));
-            if item.declared() == Some(alias.as_str()) {
+            if item.declared() == Some(alias.word()) {
                 declared += 1;
             }
         }
@@ -115,7 +115,7 @@ fn aliased_imports(module: &mut js::Module) {
                     .chain(&p.namespace)
             })
             .chain(module.imports.iter().flat_map(js::Import::locals))
-            .any(|l| *l == alias);
+            .any(|l| alias.is(l));
         if declared != 1 || imported {
             continue;
         }
@@ -123,7 +123,7 @@ fn aliased_imports(module: &mut js::Module) {
             for function in item.functions_mut() {
                 function.body.retain(|s| {
                     !matches!(&s.kind, StmtKind::Const(name, value)
-                        if *name == alias && matches!(&value.kind, ExprKind::Var(v) if *v == local))
+                        if *name == alias && matches!(&value.kind, ExprKind::Var(v) if v.is(&local)))
                 });
             }
         }
@@ -174,7 +174,7 @@ fn imports(module: &mut js::Module) {
             }
         };
         let mut respell = |name: &mut Name| {
-            if let Some(to) = to(name) {
+            if let Some(to) = to(name.word()) {
                 name.respell(to);
             }
         };
@@ -220,7 +220,7 @@ fn own_items(module: &mut js::Module) {
             }
         };
         let mut respell = |name: &mut Name| {
-            if let Some(to) = to(name) {
+            if let Some(to) = to(name.word()) {
                 name.respell(to);
             }
         };
@@ -249,7 +249,7 @@ fn own_items(module: &mut js::Module) {
             js::Item::Const(constant) => (&constant.name, &mut constant.export),
             _ => continue,
         };
-        if module.aliases.iter().any(|alias| own_name(alias) && alias.0 == *name) {
+        if module.aliases.iter().any(|alias| own_name(alias) && name.is(&alias.0)) {
             *export = true;
             folded.insert(name.clone());
         }
@@ -277,21 +277,21 @@ fn locals(item: &mut js::Item) {
     // Each name renamed, as it's written in the item, to what it is now.
     let mut renamed: IndexMap<String, String> = IndexMap::default();
     for local in declared {
-        let Some(base) = reclaimable(&local, &IndexSet::default()) else {
+        let Some(base) = reclaimable(local.word(), &IndexSet::default()) else {
             continue;
         };
-        let suffix: usize = local[base.len() + 1..].parse().unwrap_or(0);
+        let suffix: usize = local.word()[base.len() + 1..].parse().unwrap_or(0);
         let Some(to) = std::iter::once(base.to_string())
             .chain((1..suffix).map(|i| crate::names::given_apart(base, i)))
-            .find(|to| tree.renames(&local, to))
+            .find(|to| tree.renames(local.word(), to))
         else {
             continue;
         };
-        tree.rename(&local, &to);
+        tree.rename(local.word(), &to);
         // What was renamed to `local` before is `to` now, as writing the
         // item each time would have made it.
         for now in renamed.values_mut() {
-            if *now == local {
+            if local.is(now) {
                 now.clone_from(&to);
             }
         }
@@ -299,7 +299,7 @@ fn locals(item: &mut js::Item) {
     }
     if !renamed.is_empty() {
         names_mut(item, true, &mut |name| {
-            if let Some(to) = renamed.get(name.as_str()) {
+            if let Some(to) = renamed.get(name.word()) {
                 *name = to.into();
             }
         });

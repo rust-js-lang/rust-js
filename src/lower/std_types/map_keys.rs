@@ -343,7 +343,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(match &parts.kind {
             js::ExprKind::Call(callee, args)
                 if callee.helper_name() == Some("$id")
-                    && matches!(args.as_slice(), [arg] if matches!(&arg.kind, js::ExprKind::Var(v) if v == name)) =>
+                    && matches!(args.as_slice(), [arg] if matches!(&arg.kind, js::ExprKind::Var(v) if v.is(name))) =>
             {
                 (**callee).clone()
             }

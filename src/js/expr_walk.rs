@@ -38,7 +38,7 @@ impl Expr {
             }
         };
         match &self.kind {
-            ExprKind::Var(name) => read(name),
+            ExprKind::Var(name) => read(name.word()),
             // The name it sets, which JS resolves as it does a read.
             ExprKind::Assigned(target, value) => {
                 target.visit_vars(read);
@@ -117,7 +117,7 @@ impl Expr {
     /// (ADR 0306, amended).
     pub fn visit_held_vars<'a>(&'a self, read: &mut dyn FnMut(&'a str, bool)) {
         match &self.kind {
-            ExprKind::Var(name) => read(name, true),
+            ExprKind::Var(name) => read(name.word(), true),
             ExprKind::Cond(test, a, b) => {
                 test.visit_vars(&mut |v| read(v, false));
                 a.visit_held_vars(read);
@@ -199,7 +199,7 @@ impl Expr {
                 .collect::<Option<Vec<_>>>()
         };
         let kind = match &self.kind {
-            ExprKind::Var(name) => match with(name) {
+            ExprKind::Var(name) => match with(name.word()) {
                 Some(e) => return Some(e.or_at(self.span)),
                 None => ExprKind::Var(name.clone()),
             },
@@ -245,7 +245,8 @@ impl Expr {
             ExprKind::DropArgument(item, index, drop) => ExprKind::DropArgument(*item, *index, one(drop)?),
             ExprKind::Pair(place, dictionary, storage) => ExprKind::Pair(one(place)?, one(dictionary)?, *storage),
             // What it sets isn't replaced: one that names it is no assignment.
-            ExprKind::Assigned(target, _) if matches!(&target.kind, ExprKind::Var(name) if with(name).is_some()) => {
+            ExprKind::Assigned(target, _) if matches!(&target.kind, ExprKind::Var(name) if with(name.word()).is_some()) =>
+            {
                 return None;
             }
             ExprKind::Assigned(target, value) => ExprKind::Assigned(one(target)?, one(value)?),
@@ -316,7 +317,7 @@ impl Expr {
     /// constant is known not to.
     fn mentions(&self, names: &[&str]) -> bool {
         match &self.kind {
-            ExprKind::Var(n) => names.contains(&n.as_str()),
+            ExprKind::Var(n) => names.contains(&n.word()),
             ExprKind::Symbol(_) => false,
             ExprKind::Member(object, _) | ExprKind::OptionalMember(object, _) => object.mentions(names),
             _ => !self.is_constant(),
@@ -773,7 +774,7 @@ impl Expr {
             ExprKind::Call(callee, args)
                 if let ExprKind::Member(of, name) = &callee.kind
                     && let ExprKind::Var(global) = &of.kind
-                    && match global.as_str() {
+                    && match global.word() {
                         "BigInt" => matches!(name.as_str(), "asIntN" | "asUintN"),
                         "Math" => name != "random",
                         // A registered symbol of its key, and the key of one,
@@ -844,13 +845,13 @@ pub fn each_declared(stmts: &[Stmt], f: &mut dyn FnMut(&str)) {
     each_block_mut(&mut stmts, &mut |list| {
         for stmt in list.iter() {
             match &stmt.kind {
-                StmtKind::Const(name, _) | StmtKind::Let(name, _) | StmtKind::For { name, .. } => f(name),
+                StmtKind::Const(name, _) | StmtKind::Let(name, _) | StmtKind::For { name, .. } => f(name.word()),
                 StmtKind::Destructure { pattern, .. } | StmtKind::ForOf { pattern, .. } => {
                     pattern.names().into_iter().for_each(&mut *f)
                 }
-                StmtKind::TryCatch(_, Some(name), _) => f(name),
+                StmtKind::TryCatch(_, Some(name), _) => f(name.word()),
                 StmtKind::Function(function) => {
-                    f(&function.name);
+                    f(function.name.word());
                     params(&function.params, f);
                 }
                 _ => {}

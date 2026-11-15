@@ -215,7 +215,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let mut given: Vec<Expr> = values.by_ref().collect();
             for value in given.iter_mut().skip(1) {
                 if value.has_effects() {
-                    *value = self.spill(Base::Suffixed(&key, Role::Value), value.clone(), out);
+                    *value = self.spill(Base::Suffixed(key.word(), Role::Value), value.clone(), out);
                 }
             }
             *values = given.into_iter();
@@ -317,7 +317,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Some(getter) => {
                         if !value.reads_same() {
                             let base = match &getter.kind {
-                                js::ExprKind::Var(key) => Base::Suffixed(key, Role::Value),
+                                js::ExprKind::Var(key) => Base::Suffixed(key.word(), Role::Value),
                                 _ => Base::Role(Role::Value),
                             };
                             value = self.spill(base, value, out);

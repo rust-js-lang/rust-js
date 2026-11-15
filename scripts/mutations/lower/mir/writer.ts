@@ -68,8 +68,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a failing writer's string tidy made a `const` is declared in the `try`, out of its `catch`'s and its `return`'s scope",
     file: "src/lower/mir/writer.rs",
-    find: "matches!(&s.kind, StmtKind::Let(n, _) | StmtKind::Const(n, _) if n == name)",
-    replace: "matches!(&s.kind, StmtKind::Let(n, _) if n == name)",
+    find: "matches!(&s.kind, StmtKind::Let(n, _) | StmtKind::Const(n, _) if n.is(name))",
+    replace: "matches!(&s.kind, StmtKind::Let(n, _) if n.is(name))",
     tests: ["test/corpus.test.ts", "-t", "fmt_error_unwritten_branches"],
   },
   {

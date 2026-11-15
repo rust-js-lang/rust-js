@@ -188,8 +188,8 @@ export const mutations: Mutation[] = [
     name: "forwarding-method-comments-untaken",
     breaks: "a namespace's method that's its module's function loses its comments, `// Passed on.` of its body (rd758)",
     file: "src/lower/pipeline/reached.rs",
-    find: "                    crate::js::Item::Function(f) if f.name == theirs.name => Some(f.span),\n",
-    replace: "                    crate::js::Item::Function(f) if f.name == theirs.name && false => Some(f.span),\n",
+    find: "                    crate::js::Item::Function(f) if f.name.is(&theirs.name) => Some(f.span),\n",
+    replace: "                    crate::js::Item::Function(f) if f.name.is(&theirs.name) && false => Some(f.span),\n",
     tests: ["test/method-forwarding.test.ts", "-t", "keeps its comments before the function it is"],
   },
   {

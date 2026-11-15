@@ -18,8 +18,8 @@ export const mutations: Mutation[] = [
     breaks:
       "what holds a place MIR's lowering fixed stays `const item = $unwrap(resource.state); return (item.loading & 4) === 0;`, an `&&` split around it, not read where it's read once (rd202)",
     file: "src/lower/mir/tidy/moves.rs",
-    find: "    if !is_temporary(name) && !element && !facts.fixed.contains(name.as_str()) {\n",
-    replace: "    if !is_temporary(name) && !element {\n",
+    find: "    if !is_temporary(name.word()) && !element && !facts.fixed.contains(name.word()) {\n",
+    replace: "    if !is_temporary(name.word()) && !element {\n",
     tests: ["test/corpus.test.ts", "-t", "^(cell_reached_through_a_call|unwrapped_cell_in_a_chain).rs$"],
     snapshots: true,
   },
@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a value that can't throw made before a guard's `try` stays held there, `const focus = element.focus; try { (focus || ..).call(..) }`, not read in the `try` where its call is (rd233)",
     file: "src/lower/mir/tidy/moves.rs",
-    find: "            if !value.may_throw() && js::mentions_in(after, name) == 0 && js::mentions_in(caught, name) == 0 =>\n",
+    find: "            if !value.may_throw()\n                && js::mentions_in(after, name.word()) == 0\n                && js::mentions_in(caught, name.word()) == 0 =>\n",
     replace: "            if false =>\n",
     tests: [
       "test/lowering-is-function.test.ts",
@@ -50,9 +50,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a value that may throw, made before a guard exists, is read in the guard's `try`, so its panic drops the guard it ran before (rd233)",
     file: "src/lower/mir/tidy/moves.rs",
-    find: "            if !value.may_throw() && js::mentions_in(after, name) == 0 && js::mentions_in(caught, name) == 0 =>\n",
+    find: "            if !value.may_throw()\n                && js::mentions_in(after, name.word()) == 0\n                && js::mentions_in(caught, name.word()) == 0 =>\n",
     replace:
-      "            if js::mentions_in(after, name) == 0 && js::mentions_in(caught, name) == 0 =>\n",
+      "            if js::mentions_in(after, name.word()) == 0\n                && js::mentions_in(caught, name.word()) == 0 =>\n",
     tests: ["test/corpus.test.ts", "-t", "^value_read_in_a_guards_try.rs$"],
   },
   {
@@ -60,9 +60,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a value its `try`'s `catch` reads too is read only in the `try`, so the `catch` reads a variable nothing declares (rd233)",
     file: "src/lower/mir/tidy/moves.rs",
-    find: "            if !value.may_throw() && js::mentions_in(after, name) == 0 && js::mentions_in(caught, name) == 0 =>\n",
+    find: "            if !value.may_throw()\n                && js::mentions_in(after, name.word()) == 0\n                && js::mentions_in(caught, name.word()) == 0 =>\n",
     replace:
-      "            if !value.may_throw() && js::mentions_in(after, name) == 0 =>\n",
+      "            if !value.may_throw() && js::mentions_in(after, name.word()) == 0 =>\n",
     tests: ["test/corpus.test.ts", "-t", "^value_read_in_a_guards_try.rs$"],
   },
   {
@@ -80,9 +80,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a `let` that ends a borrow is read in place only where its JS name is the property's, so `const return$ = node.return;` and `const debugHookTypes = current._debugHookTypes;` stay, though each is named as its field in Rust (ADR 0866, amended)",
     file: "src/lower/mir/tidy/moves.rs",
-    find: "            && matches!(&value.kind, ExprKind::Member(..))\n            && place_read(value, name)\n",
+    find: "            && matches!(&value.kind, ExprKind::Member(..))\n            && place_read(value, name.word())\n",
     replace:
-      "            && matches!(&value.kind, ExprKind::Member(_, property) if property == name)\n            && place_read(value, name)\n",
+      "            && matches!(&value.kind, ExprKind::Member(_, property) if name.is(property))\n            && place_read(value, name.word())\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_let_named_as_its_field.rs$"],
     snapshots: true,
   },
@@ -91,7 +91,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a field an or-pattern tests is held first, `const status = payload.status; status === 0 || status === -1`, not read in each test (ADR 0780)",
     file: "src/lower/mir/tidy/moves.rs",
-    find: "    if !single && (assigned || !tested_in_place(value, expr, name, js::mentions_in(rest, name))) {\n",
+    find: "    if !single && (assigned || !tested_in_place(value, expr, name.word(), js::mentions_in(rest, name.word()))) {\n",
     replace: "    if !single {\n",
     tests: [
       "test/lowering-or-patterns.test.ts",
@@ -117,8 +117,8 @@ export const mutations: Mutation[] = [
     breaks:
       "what an element made before a branch reads stays a `const className = cn(…)`, not read where it's written",
     file: "src/lower/mir/tidy/moves.rs",
-    find: "    if !is_temporary(name) && !element && !facts.fixed.contains(name.as_str()) {\n",
-    replace: "    if !is_temporary(name) && !facts.fixed.contains(name.as_str()) {\n",
+    find: "    if !is_temporary(name.word()) && !element && !facts.fixed.contains(name.word()) {\n",
+    replace: "    if !is_temporary(name.word()) && !facts.fixed.contains(name.word()) {\n",
     tests: [
       "test/jsx-children.test.ts",
       "test/jsx-evaluation-order.test.ts",
@@ -312,9 +312,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a test MIR holds before the blocks its arms leave stays a `const value = ..`, not read where it's tested",
     file: "src/lower/mir/tidy/moves.rs",
-    find: "        StmtKind::Labeled(_, body) if js::mentions_in(after, name) == 0 => entered(stmt, body, facts),\n",
+    find: "        StmtKind::Labeled(_, body) if js::mentions_in(after, name.word()) == 0 => entered(stmt, body, facts),\n",
     replace:
-      "        StmtKind::Labeled(_, body) if false && js::mentions_in(after, name) == 0 => entered(stmt, body, facts),\n",
+      "        StmtKind::Labeled(_, body) if false && js::mentions_in(after, name.word()) == 0 => entered(stmt, body, facts),\n",
     tests: ["test/lowering-moves.test.ts", "-t", "block after it"],
   },
   {
@@ -335,9 +335,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a temporary that does something, an assignment target's object, is held, `const document = window.document; document.title = t`",
     file: "src/lower/mir/tidy/moves.rs",
-    find: "            let set_of = matches!(&root.kind, ExprKind::Var(v) if v == name);\n",
+    find: "            let set_of = matches!(&root.kind, ExprKind::Var(v) if v.is(name));\n",
     replace:
-      "            let set_of = matches!(&root.kind, ExprKind::Var(v) if v == name) && false;\n",
+      "            let set_of = matches!(&root.kind, ExprKind::Var(v) if v.is(name)) && false;\n",
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^returned_references.rs$"],
   },
@@ -369,8 +369,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `let` that ends a borrow, read once by the store right after it, stays a `const`, `const child = current.child; workInProgress.child = child;`",
     file: "src/lower/mir/tidy/moves.rs",
-    find: "            && ends_borrow.contains(name.as_str())\n",
-    replace: "            && ends_borrow.contains(name.as_str()) && false\n",
+    find: "            && ends_borrow.contains(name.word())\n",
+    replace: "            && ends_borrow.contains(name.word()) && false\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_let_read_in_place.rs$"],
     snapshots: true,
   },
@@ -390,7 +390,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `let` the program wrote, `let types = t.types.borrow().clone(); if let Some(types) = types`, loses its name to its place's read, `if (t.types != null) { return t.types.length; }` (rd226, the user's decision)",
     file: "src/lower/mir/tidy/moves.rs",
-    find: "    if !own_name || named.contains(name.as_str()) {\n",
+    find: "    if !own_name || named.contains(name.word()) {\n",
     replace: "    if !own_name {\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_let_taken_apart.rs$"],
     snapshots: true,
@@ -410,8 +410,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a let chain's binding read twice in the body is the field read twice, the second after the first's call, which may change it (ADR 0866, amended)",
     file: "src/lower/mir/tidy/moves.rs",
-    find: "    if js::mentions_in(&stmts[at + 1..], name) != 1 {\n",
-    replace: "    if js::mentions_in(&stmts[at + 1..], name) == 0 {\n",
+    find: "    if js::mentions_in(&stmts[at + 1..], name.word()) != 1 {\n",
+    replace: "    if js::mentions_in(&stmts[at + 1..], name.word()) == 0 {\n",
     tests: [
       "test/lowering-written-branches.test.ts",
       "-t",
@@ -423,9 +423,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a let chain's binding read after code its statement runs first, `probe(f) + task.run(..)`, is the field read there, after `probe` changed it (ADR 0866, amended)",
     file: "src/lower/mir/tidy/moves.rs",
-    find: "    if leads(read.of(next), name, None, &|e| !e.has_effects()) != Some(true) {\n",
+    find: "    if leads(read.of(next), name.word(), None, &|e| !e.has_effects()) != Some(true) {\n",
     replace:
-      "    if leads(read.of(next), name, None, &|_| true) != Some(true) {\n",
+      "    if leads(read.of(next), name.word(), None, &|_| true) != Some(true) {\n",
     tests: [
       "test/lowering-written-branches.test.ts",
       "-t",
@@ -437,9 +437,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a let chain's binding read in a later statement, past one that changes the field, is the field read there (ADR 0866, amended)",
     file: "src/lower/mir/tidy/moves.rs",
-    find: "    if leads(read.of(next), name, None, &|e| !e.has_effects()) != Some(true) {\n",
+    find: "    if leads(read.of(next), name.word(), None, &|e| !e.has_effects()) != Some(true) {\n",
     replace:
-      "    if leads(read.of(next), name, None, &|e| !e.has_effects()) == Some(false) {\n",
+      "    if leads(read.of(next), name.word(), None, &|e| !e.has_effects()) == Some(false) {\n",
     tests: [
       "test/lowering-written-branches.test.ts",
       "-t",
@@ -451,8 +451,8 @@ export const mutations: Mutation[] = [
     breaks:
       "React's getViewTransitionName keeps `const autoName = instance.autoName;`, the field read where upstream reads it in place",
     file: "src/lower/mir/tidy/moves.rs",
-    find: "    if !own_name || named.contains(name.as_str()) {\n",
-    replace: "    if true || named.contains(name.as_str()) {\n",
+    find: "    if !own_name || named.contains(name.word()) {\n",
+    replace: "    if true || named.contains(name.word()) {\n",
     tests: [
       "test/lowering-written-branches.test.ts",
       "-t",
@@ -478,7 +478,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a field's function called with what needs statements is called from a variable, `const L = internals.d.L; ..; L(href, s)`, with no `this` (rd285)",
     file: "src/lower/mir/tidy/moves.rs",
-    find: "        if !is_temporary(name) || mentions == 0 {\n",
+    find: "        if !is_temporary(name.word()) || mentions == 0 {\n",
     replace: "        if true {\n",
     tests: ["test/lowering-held-receivers.test.ts"],
   },
@@ -519,32 +519,32 @@ export const mutations: Mutation[] = [
     name: "fallback-read-twice",
     breaks: "a `let` read by the next statement's `||` and again after is read in place there and its `const` dropped, what reads it after reading nothing (rd664)",
     file: "src/lower/mir/tidy/moves.rs",
-    find: "    if !named.contains(name.as_str()) || !own_name || js::mentions_in(&stmts[at + 1..], name) != 1 {\n",
-    replace: "    if !named.contains(name.as_str()) || !own_name || js::mentions_in(&stmts[at + 1..at + 2], name) == 0 {\n",
+    find: "    if !named.contains(name.word()) || !own_name || js::mentions_in(&stmts[at + 1..], name.word()) != 1 {\n",
+    replace: "    if !named.contains(name.word()) || !own_name || js::mentions_in(&stmts[at + 1..at + 2], name.word()) == 0 {\n",
     tests: ["test/lowering-moves.test.ts", "-t", "fallback"],
   },
   {
     name: "fallback-read-of-another-name",
     breaks: "a `let` the program named otherwise than the property it reads, `const t = blob.type;`, is read in place, its name lost (rd664)",
     file: "src/lower/mir/tidy/moves.rs",
-    find: "    if !named.contains(name.as_str()) || !own_name || js::mentions_in(&stmts[at + 1..], name) != 1 {\n",
-    replace: "    if !named.contains(name.as_str()) || js::mentions_in(&stmts[at + 1..], name) != 1 {\n",
+    find: "    if !named.contains(name.word()) || !own_name || js::mentions_in(&stmts[at + 1..], name.word()) != 1 {\n",
+    replace: "    if !named.contains(name.word()) || js::mentions_in(&stmts[at + 1..], name.word()) != 1 {\n",
     tests: ["test/lowering-moves.test.ts", "-t", "fallback"],
   },
   {
     name: "fallback-read-after-a-call",
     breaks: "a `let` read by a `||` after a call is read in place, past the call, `note(..) + (blob.type || ..)`, its getter read after the call where Rust reads it before (rd664)",
     file: "src/lower/mir/tidy/moves.rs",
-    find: "    if !fallback || leads(expr, name, None, &|_| false) != Some(true) {\n",
-    replace: "    if !fallback || leads(expr, name, None, &|_| true) != Some(true) {\n",
+    find: "    if !fallback || leads(expr, name.word(), None, &|_| false) != Some(true) {\n",
+    replace: "    if !fallback || leads(expr, name.word(), None, &|_| true) != Some(true) {\n",
     tests: ["test/lowering-moves.test.ts", "-t", "fallback"],
   },
   {
     name: "fallback-read-of-any-read",
     breaks: "a `let` the program wrote read first by what's no `||` nor `??`, `name != null`, is read in place, against rd226 (rd664)",
     file: "src/lower/mir/tidy/moves.rs",
-    find: "    if !fallback || leads(expr, name, None, &|_| false) != Some(true) {\n",
-    replace: "    if leads(expr, name, None, &|_| false) != Some(true) {\n",
+    find: "    if !fallback || leads(expr, name.word(), None, &|_| false) != Some(true) {\n",
+    replace: "    if leads(expr, name.word(), None, &|_| false) != Some(true) {\n",
     tests: ["test/lowering-moves.test.ts", "-t", "fallback"],
   },
   {
@@ -560,32 +560,32 @@ export const mutations: Mutation[] = [
     name: "receiver-read-again",
     breaks: "a `let` read by the next keyed method call and again after it is read in place there, its `const` gone, what reads it after reading nothing (rd226b)",
     file: "src/lower/mir/tidy/moves.rs",
-    find: "    if !lets.named.contains(name.as_str()) || lets.mutable.contains(name.as_str()) || js::mentions_in(rest, name) != 2 {\n",
-    replace: "    if !lets.named.contains(name.as_str()) || lets.mutable.contains(name.as_str()) || js::mentions_in(&rest[..1], name) != 2 {\n",
+    find: "    if !lets.named.contains(name.word())\n        || lets.mutable.contains(name.word())\n        || js::mentions_in(rest, name.word()) != 2\n    {\n",
+    replace: "    if !lets.named.contains(name.word())\n        || lets.mutable.contains(name.word())\n        || js::mentions_in(&rest[..1], name.word()) != 2\n    {\n",
     tests: ["test/lowering-is-function.test.ts", "-t", "keyed method call is read there"],
   },
   {
     name: "receiver-read-by-an-argument",
     breaks: "a `let` the next keyed method call is also given, `fill.applyFill(fill)`, is read in place as its receiver, the argument reading nothing (rd226b)",
     file: "src/lower/mir/tidy/moves.rs",
-    find: "    if !lets.named.contains(name.as_str()) || lets.mutable.contains(name.as_str()) || js::mentions_in(rest, name) != 2 {\n",
-    replace: "    if !lets.named.contains(name.as_str()) || lets.mutable.contains(name.as_str()) || js::mentions_in(rest, name) < 2 {\n",
+    find: "    if !lets.named.contains(name.word())\n        || lets.mutable.contains(name.word())\n        || js::mentions_in(rest, name.word()) != 2\n    {\n",
+    replace: "    if !lets.named.contains(name.word())\n        || lets.mutable.contains(name.word())\n        || js::mentions_in(rest, name.word()) < 2\n    {\n",
     tests: ["test/lowering-is-function.test.ts", "-t", "keyed method call is read there"],
   },
   {
     name: "receiver-read-mutable",
     breaks: "a `let mut` read only by the next keyed method call is read in place, though the program said it changes it (rd226b)",
     file: "src/lower/mir/tidy/moves.rs",
-    find: "    if !lets.named.contains(name.as_str()) || lets.mutable.contains(name.as_str()) || js::mentions_in(rest, name) != 2 {\n",
-    replace: "    if !lets.named.contains(name.as_str()) || js::mentions_in(rest, name) != 2 {\n",
+    find: "    if !lets.named.contains(name.word())\n        || lets.mutable.contains(name.word())\n        || js::mentions_in(rest, name.word()) != 2\n",
+    replace: "    if !lets.named.contains(name.word())\n        || js::mentions_in(rest, name.word()) != 2\n",
     tests: ["test/lowering-is-function.test.ts", "-t", "keyed method call is read there"],
   },
   {
     name: "receiver-read-of-any-let",
     breaks: "a `match` arm's binding read only by its keyed method call is read in place too, beyond the decision's `let` the program wrote (rd226b)",
     file: "src/lower/mir/tidy/moves.rs",
-    find: "    if !lets.named.contains(name.as_str()) || lets.mutable.contains(name.as_str()) || js::mentions_in(rest, name) != 2 {\n",
-    replace: "    if lets.mutable.contains(name.as_str()) || js::mentions_in(rest, name) != 2 {\n",
+    find: "    if !lets.named.contains(name.word())\n        || lets.mutable.contains(name.word())\n        || js::mentions_in(rest, name.word()) != 2\n",
+    replace: "    if lets.mutable.contains(name.word())\n        || js::mentions_in(rest, name.word()) != 2\n",
     tests: ["test/lowering-is-function.test.ts", "-t", "keyed method call is read there"],
   },
   {
@@ -593,7 +593,7 @@ export const mutations: Mutation[] = [
     breaks: "a `let` read by a keyed method call past another statement is read there, `noted(\"between\"); props.fill.applyFill(instance)`, its getter run after the statement between where Rust runs it before (rd226b)",
     file: "src/lower/mir/tidy/moves.rs",
     find: "    let Some(StmtKind::Expr(call)) = rest.first_mut().map(|s| &mut s.kind) else {\n",
-    replace: "    let Some(StmtKind::Expr(call)) = rest.iter_mut().find(|s| js::mentions_in(std::slice::from_ref(s), name) > 0).map(|s| &mut s.kind) else {\n",
+    replace: "    let Some(StmtKind::Expr(call)) = rest.iter_mut().find(|s| js::mentions_in(std::slice::from_ref(s), name.word()) > 0).map(|s| &mut s.kind) else {\n",
     tests: ["test/lowering-is-function.test.ts", "-t", "keyed method call is read there"],
   },
   {
@@ -608,8 +608,8 @@ export const mutations: Mutation[] = [
     name: "set-where-read-of-each-read",
     breaks: "a let chain's binding its test reads twice, `r != null && r.lanes > 3`, is set at each read, `(r = inProgressRoot) != null && (r = inProgressRoot).lanes > 3`, not once first (B1, #523)",
     file: "src/lower/mir/tidy/moves.rs",
-    find: "    let in_place = (reads == 1 && leads(test, name, None, &|e| !e.has_effects()) == Some(true))\n",
-    replace: "    let in_place = (reads >= 1 && leads(test, name, None, &|e| !e.has_effects()) == Some(true))\n",
+    find: "    let in_place = (reads == 1 && leads(test, name.word(), None, &|e| !e.has_effects()) == Some(true))\n",
+    replace: "    let in_place = (reads >= 1 && leads(test, name.word(), None, &|e| !e.has_effects()) == Some(true))\n",
     tests: ["test/corpus.test.ts", "-t", "^let_chain_else_inside_if.rs$"],
     snapshots: true,
   },
@@ -617,8 +617,8 @@ export const mutations: Mutation[] = [
     name: "set-where-read-first",
     breaks: "a let chain's binding read once where its test is is set before the whole test, `((r = inProgressRoot), r != null && swapRoot())`, not where it's read, `(r = inProgressRoot) != null` (B1, the user's decision, #523)",
     file: "src/lower/mir/tidy/moves.rs",
-    find: "    let in_place = (reads == 1 && leads(test, name, None, &|e| !e.has_effects()) == Some(true))\n",
-    replace: "    let in_place = (reads == 0 && leads(test, name, None, &|e| !e.has_effects()) == Some(true))\n",
+    find: "    let in_place = (reads == 1 && leads(test, name.word(), None, &|e| !e.has_effects()) == Some(true))\n",
+    replace: "    let in_place = (reads == 0 && leads(test, name.word(), None, &|e| !e.has_effects()) == Some(true))\n",
     tests: ["test/corpus.test.ts", "-t", "^let_chain_else_inside_if.rs$"],
     snapshots: true,
   },
@@ -626,8 +626,8 @@ export const mutations: Mutation[] = [
     name: "temporary-moved-into-a-pair",
     breaks: "a temporary a `dyn`'s pair's place reads, `const count = { n: 3 }`, is moved into it, so each read of the pair's `value` makes another (#985)",
     file: "src/lower/mir/tidy/moves.rs",
-    find: "    if !matches!(value.kind, ExprKind::Var(_))\n        && super::bindings::handles_read(std::slice::from_ref(&rest[at])).contains(name.as_str())\n",
-    replace: "    if false && !matches!(value.kind, ExprKind::Var(_))\n        && super::bindings::handles_read(std::slice::from_ref(&rest[at])).contains(name.as_str())\n",
+    find: "    if !matches!(value.kind, ExprKind::Var(_))\n        && super::bindings::handles_read(std::slice::from_ref(&rest[at])).contains(name.word())\n",
+    replace: "    if false && !matches!(value.kind, ExprKind::Var(_))\n        && super::bindings::handles_read(std::slice::from_ref(&rest[at])).contains(name.word())\n",
     tests: ["test/corpus.test.ts", "-t", "^temporary_made_a_mut_dyn_stepped.rs$"],
   },
   {

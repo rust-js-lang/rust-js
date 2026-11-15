@@ -68,7 +68,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a loop body's last labeled block, its `break` the loop's `continue`, stays, a `bb` label left in `numbers`' while loop",
     file: "src/lower/mir/tidy/jumps/continues.rs",
-    find: "                if clashes || continues(&mut inner, &block, looped.as_deref(), false).is_none() {\n",
+    find: "                if clashes || continues(&mut inner, block.word(), looped.as_deref(), false).is_none() {\n",
     replace: "                if true {\n",
     tests: [
       "test/lowering-loops.test.ts",
@@ -105,7 +105,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a labeled block's `break` to a `continue` of the loop after it stays, `bb3: { .. break bb3; } continue bb1;`",
     file: "src/lower/mir/tidy/jumps/continues.rs",
-    find: "            StmtKind::Break(Some(l)) if l == label => stmt.kind = jump.clone(),\n",
+    find: "            StmtKind::Break(Some(l)) if l.is(label) => stmt.kind = jump.clone(),\n",
     replace: "",
     tests: [
       "test/corpus.test.ts",
@@ -119,7 +119,7 @@ export const mutations: Mutation[] = [
     breaks:
       "an inner loop's way out, which ends the outer loop's turn, is `continue bb4`, not its `break`",
     file: "src/lower/mir/tidy/jumps/continues.rs",
-    find: "            StmtKind::Continue(Some(l)) if l == looped => stmt.kind = StmtKind::Break(None),\n",
+    find: "            StmtKind::Continue(Some(l)) if l.is(looped) => stmt.kind = StmtKind::Break(None),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^nested_loop_jumps.rs$"],
     snapshots: true,
@@ -314,7 +314,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a loop the program labeled, left through a block MIR made, has its arms' `break`s of no label, not its own, so its `match` is no `switch` of `break findParent;` cases (#389c)",
     file: "src/lower/mir/tidy/jumps/continues.rs",
-    find: "        if !js::names_break(&broken, &block) && named.is_some() {\n",
+    find: "        if !js::names_break(&broken, block.word()) && named.is_some() {\n",
     replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^while_let_at_end.rs$"],
     snapshots: true,
@@ -324,7 +324,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `break 'rows` of an inner loop, which MIR makes a `break` of a block the outer turn ends, stays `bb22:` in a `while (true)`, not the outer loop's `break rows;` and its test (uz3)",
     file: "src/lower/mir/tidy/jumps/continues.rs",
-    find: "            super::tails::relabeled(&mut broken, &block, named);\n            *looped = Some(named.into());\n",
+    find: "            super::tails::relabeled(&mut broken, block.word(), named);\n            *looped = Some(named.into());\n",
     replace: "            continue;\n",
     tests: ["test/corpus.test.ts", "-t", "^labeled_loop_left_from_inner.rs$"],
     snapshots: true,
@@ -334,7 +334,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a block whose `break` is in a loop of its own, an arm's inner `loop` MIR leaves by the outer's way out (`counted`), is spliced in, its `break bb19` left with no block, which tidy's \"each jump lands\" refuses; a `break;` there would leave only the inner loop",
     file: "src/lower/mir/tidy/jumps/continues.rs",
-    find: "        if js::names_break(&broken, &block) {\n",
+    find: "        if js::names_break(&broken, block.word()) {\n",
     replace: "        if false {\n",
     tests: [
       "test/corpus.test.ts",
@@ -363,7 +363,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `continue 'outer` in an inner loop after a test that skips the turn stays MIR's `break bb25` of a block, `bb25: { .. }`, the label and the turn's trailing `continue` kept (#442)",
     file: "src/lower/mir/tidy/jumps/continues.rs",
-    find: "        {\n            named_continues(body, looped);\n        }\n",
+    find: "        {\n            named_continues(body, looped.word());\n        }\n",
     replace: "        {}\n",
     tests: [
       "test/corpus.test.ts",
@@ -417,7 +417,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a guarded arm that continues before the `match`'s other arms, whose block MIR nests in the one the rest of the turn follows, keeps MIR's `bb9: { switch (..) { .. break bb9; } continue; }`, labels the program didn't write (#530)",
     file: "src/lower/mir/tidy/jumps/continues.rs",
-    find: "            let past = latest(body).max(rests.get(block.as_str()).copied().unwrap_or(0));\n",
+    find: "            let past = latest(body).max(rests.get(block.word()).copied().unwrap_or(0));\n",
     replace: "            let past = latest(body);\n",
     tests: ["test/corpus.test.ts", "-t", "^switch_guarded_arm_continues_first.rs$"],
     snapshots: true,

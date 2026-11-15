@@ -35,7 +35,7 @@ pub(in crate::lower) fn plain_statics(
     applied_in_place(items);
     let cells: Vec<String> = (items.iter())
         .filter_map(|item| match item {
-            js::Item::Const(c) if (!c.export || quiet.contains(c.name.as_str())) && is_box(&c.value) => {
+            js::Item::Const(c) if (!c.export || quiet.contains(c.name.word())) && is_box(&c.value) => {
                 Some(c.name.to_string())
             }
             _ => None,
@@ -46,9 +46,9 @@ pub(in crate::lower) fn plain_statics(
         outside_own_bindings(items, &name.clone(), |items| {
             let (mut reads, mut values, mut sets) = (0, 0, 0);
             js::each_item_expr_mut(items, &mut |e| match &e.kind {
-                js::ExprKind::Var(v) if *v == name => reads += 1,
+                js::ExprKind::Var(v) if v.is(&name) => reads += 1,
                 js::ExprKind::Member(of, key)
-                    if key == js::HELD && matches!(&of.kind, js::ExprKind::Var(v) if *v == name) =>
+                    if key == js::HELD && matches!(&of.kind, js::ExprKind::Var(v) if v.is(&name)) =>
                 {
                     values += 1;
                 }
@@ -65,7 +65,7 @@ pub(in crate::lower) fn plain_statics(
                 for stmt in stmts.iter() {
                     if let StmtKind::Assign(target, _) = &stmt.kind
                         && matches!(&target.kind, js::ExprKind::Member(of, key)
-                            if key == js::HELD && matches!(&of.kind, js::ExprKind::Var(v) if *v == name))
+                            if key == js::HELD && matches!(&of.kind, js::ExprKind::Var(v) if v.is(&name)))
                     {
                         sets += 1;
                     }
@@ -75,7 +75,7 @@ pub(in crate::lower) fn plain_statics(
             js::each_item_expr_mut(items, &mut |e| {
                 if let js::ExprKind::Handle(place, _) = &e.kind
                     && matches!(&place.kind, js::ExprKind::Member(of, key)
-                        if key == js::HELD && matches!(&of.kind, js::ExprKind::Var(v) if *v == name))
+                        if key == js::HELD && matches!(&of.kind, js::ExprKind::Var(v) if v.is(&name)))
                 {
                     sets += 1;
                 }
@@ -83,7 +83,7 @@ pub(in crate::lower) fn plain_statics(
             js::each_item_expr_mut(items, &mut |e| {
                 if let js::ExprKind::Member(of, key) = &e.kind
                     && key == js::HELD
-                    && matches!(&of.kind, js::ExprKind::Var(v) if *v == name)
+                    && matches!(&of.kind, js::ExprKind::Var(v) if v.is(&name))
                 {
                     *e = Expr {
                         span: e.span,
@@ -93,7 +93,7 @@ pub(in crate::lower) fn plain_statics(
             });
             for item in items.iter_mut() {
                 if let js::Item::Const(c) = item
-                    && c.name == name
+                    && c.name.is(&name)
                     && let js::ExprKind::Object(props, ..) = &mut c.value.kind
                     && let Some(js::Prop::Field(_, init)) = props.pop()
                 {
@@ -114,7 +114,7 @@ pub(in crate::lower) fn plain_statics(
     // module writes the one it reads in place, as before.
     let objects: Vec<String> = (items.iter())
         .filter_map(|item| match item {
-            js::Item::Const(c) if quiet.contains(c.name.as_str()) && !is_box(&c.value) => Some(c.name.to_string()),
+            js::Item::Const(c) if quiet.contains(c.name.word()) && !is_box(&c.value) => Some(c.name.to_string()),
             _ => None,
         })
         .collect();
@@ -130,7 +130,7 @@ pub(in crate::lower) fn plain_statics(
                         && let js::ExprKind::Call(callee, args) = &mut e.kind
                         && callee.helper_name() == Some("$assign")
                         && let [target, _] = args.as_slice()
-                        && matches!(&target.kind, js::ExprKind::Var(v) if *v == name)
+                        && matches!(&target.kind, js::ExprKind::Var(v) if v.is(&name))
                     {
                         let value = args.pop().expect("what it's given");
                         let target = args.pop().expect("the variable");
@@ -145,7 +145,7 @@ pub(in crate::lower) fn plain_statics(
             }
             for item in items.iter_mut() {
                 if let js::Item::Const(c) = item
-                    && c.name == name
+                    && c.name.is(&name)
                 {
                     c.mutable = true;
                     if c.export {
@@ -160,7 +160,7 @@ pub(in crate::lower) fn plain_statics(
     // not what it holds, so the caller refuses it (ADR 0270, amended).
     let boxed = (items.iter())
         .filter_map(|item| match item {
-            js::Item::Const(c) if c.export && held_values.contains(c.name.as_str()) && is_box(&c.value) => {
+            js::Item::Const(c) if c.export && held_values.contains(c.name.word()) && is_box(&c.value) => {
                 Some(c.name.to_string())
             }
             _ => None,
@@ -168,7 +168,7 @@ pub(in crate::lower) fn plain_statics(
         .collect();
     for item in items.iter_mut() {
         if let js::Item::Const(c) = item
-            && nullable.contains(c.name.as_str())
+            && nullable.contains(c.name.word())
         {
             nullable_cell(&mut c.value);
         }
@@ -212,7 +212,7 @@ fn nullable_cell(made: &mut Expr) {
 /// emptied into a copy; nothing else holds it, as `$assign`'s `set` above
 /// takes. A `const` of it is that `const`. How many there were.
 fn taken_whole(stmts: &mut Vec<Stmt>, name: &str) -> usize {
-    let taken = |e: &Expr| matches!(taken_parts(e), Some((target, _)) if matches!(&target.kind, js::ExprKind::Var(v) if v == name));
+    let taken = |e: &Expr| matches!(taken_parts(e), Some((target, _)) if matches!(&target.kind, js::ExprKind::Var(v) if v.is(name)));
     let mut count = 0;
     let mut i = 0;
     while i < stmts.len() {
@@ -283,7 +283,7 @@ fn outside_own_bindings<T>(items: &mut [js::Item], name: &str, change: impl FnOn
     let own = |function: &js::Function| {
         function.params.iter().any(|p| p.names().contains(&name))
             || function.body.iter().any(|stmt| match &stmt.kind {
-                StmtKind::Const(n, _) | StmtKind::Let(n, _) => n == name,
+                StmtKind::Const(n, _) | StmtKind::Let(n, _) => n.is(name),
                 StmtKind::Destructure { pattern, .. } => pattern.names().contains(&name),
                 _ => false,
             })
@@ -292,7 +292,7 @@ fn outside_own_bindings<T>(items: &mut [js::Item], name: &str, change: impl FnOn
         for function in items.iter_mut().flat_map(js::Item::functions_mut).filter(|f| own(f)) {
             for param in function.params.iter_mut() {
                 param.each_name_mut(&mut |n| {
-                    if n == from {
+                    if n.is(from) {
                         *n = to.into();
                     }
                 });
@@ -306,7 +306,7 @@ fn outside_own_bindings<T>(items: &mut [js::Item], name: &str, change: impl FnOn
     for function in items.iter_mut().flat_map(js::Item::functions_mut) {
         for param in function.params.iter_mut() {
             param.each_name_mut(&mut |n| {
-                if n == APART {
+                if n.is(APART) {
                     *n = name.into();
                 }
             });
@@ -324,7 +324,7 @@ fn binds_name(items: &mut [js::Item], name: &str) -> bool {
         js::each_block_mut(body, &mut |stmts| {
             for stmt in stmts.iter() {
                 *bound |= match &stmt.kind {
-                    StmtKind::Const(n, _) | StmtKind::Let(n, _) => *n == name,
+                    StmtKind::Const(n, _) | StmtKind::Let(n, _) => n.is(name),
                     StmtKind::Destructure { pattern, .. } => pattern.names().contains(&name),
                     _ => false,
                 };

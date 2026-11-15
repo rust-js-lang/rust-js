@@ -416,7 +416,7 @@ test("tidy runs its passes from one list", () => {
 // `Iterator.from`, and a range's `$iterator`, written and taken apart, were
 // in mir/iter.rs and tidy.rs too (the third architecture audit).
 const idioms: [string, RegExp, string[]][] = [
-  ["Iterator.from", /Expr::var\("Iterator"\),\s*"from"|==\s*"Iterator"/, ["src/lower/iterators.rs", "src/lower/iterators/eager.rs", "src/lower/iterators/in_place.rs", "src/lower/iterators/stepping.rs"]],
+  ["Iterator.from", /Expr::var\("Iterator"\),\s*"from"|\.is\("Iterator"\)/, ["src/lower/iterators.rs", "src/lower/iterators/eager.rs", "src/lower/iterators/in_place.rs", "src/lower/iterators/stepping.rs"]],
   ["$iterator", /"\$iterator"|Helper::Iterator\b/, ["src/lower/iterators.rs", "src/lower/iterators/in_place.rs", "src/lower/iterators/value.rs"]],
   ["$iter", /"\$iter"|Helper::Iter\b/, ["src/lower/iterators.rs", "src/lower/iterators/in_place.rs"]],
   ["$lent", /"\$lent"|Helper::Lent\b/, ["src/lower/iterators/in_place.rs", "src/lower/iterators/value.rs"]],
@@ -1135,7 +1135,7 @@ test("what a module exports an item as is exported_as's alone", () => {
 test("an arrow that passes on what it's given is passed_on's alone", () => {
   const sources = files("src").filter((file) => file.endsWith(".rs"));
   // A call's arguments matched to parameters by name, one by one.
-  const byName = /\.zip\([^;]{0,200}?\.(?:all|map)\(\|\(\w+, \w+\)\|[^;]{0,120}?(?:ExprKind::Var\(\w+\)\)? if \w+ == \w+|is_var\(|passed\()/;
+  const byName = /\.zip\([^;]{0,200}?\.(?:all|map)\(\|\(\w+, \w+\)\|[^;]{0,120}?(?:ExprKind::Var\(\w+\)\)? if \w+(?: == \w+|\.is\(\w+\))|is_var\(|passed\()/;
   expect(sources.filter((file) => byName.test(read(file)))).toEqual(["src/js/stmt_walk.rs"]);
   // A handler tested to be there, then called: of a function that takes an
   // arrow apart, from its `fn` to the next.

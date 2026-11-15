@@ -955,7 +955,7 @@ fn compared_with(p: &Expr) -> Option<Expr> {
     let js::ExprKind::Binary(Op::Eq, a, b) = &applied.kind else {
         return None;
     };
-    let held = |e: &Expr| matches!(&e.kind, js::ExprKind::Var(v) if v == HELD_SOME);
+    let held = |e: &Expr| matches!(&e.kind, js::ExprKind::Var(v) if v.is(HELD_SOME));
     let mentions = js::mentions_in(&[StmtKind::Expr(applied.clone()).at(applied.span)], HELD_SOME);
     ((held(a) || held(b)) && mentions == 1).then_some(applied)
 }
@@ -967,7 +967,7 @@ fn compared_with(p: &Expr) -> Option<Expr> {
 fn tests_its_truth(p: &Expr) -> bool {
     let applied = crate::lower::calls::apply(p.clone(), vec![Expr::var(HELD_SOME)]);
     let tested = applied.text_truth().cloned().unwrap_or_else(|| applied.tested());
-    matches!(&tested.kind, js::ExprKind::Var(v) if v == HELD_SOME)
+    matches!(&tested.kind, js::ExprKind::Var(v) if v.is(HELD_SOME))
 }
 
 /// The argument `compared_with` and `tests_its_truth` give a predicate: a

@@ -54,9 +54,9 @@ pub(super) fn blocks_one_case_reaches(stmts: &mut [Stmt]) {
         let left = match tail {
             [] => js::ends(switch),
             [_] if broken => true,
-            _ => tail.last().is_some_and(js::ends) && !js::names_jump(tail, &inner),
+            _ => tail.last().is_some_and(js::ends) && !js::names_jump(tail, inner.word()),
         };
-        if !left || js::names_jump(head, &inner) {
+        if !left || js::names_jump(head, inner.word()) {
             continue;
         }
         let broken = broken && tail.len() == 1;
@@ -64,7 +64,7 @@ pub(super) fn blocks_one_case_reaches(stmts: &mut [Stmt]) {
             continue;
         };
         let reaching: Vec<usize> = (js::case_lists(cases, default).enumerate())
-            .filter(|(_, case)| js::names_jump(case, &inner))
+            .filter(|(_, case)| js::names_jump(case, inner.word()))
             .map(|(k, _)| k)
             .collect();
         let [only] = reaching[..] else {
@@ -80,7 +80,7 @@ pub(super) fn blocks_one_case_reaches(stmts: &mut [Stmt]) {
                 .count();
         });
         let mut rest = Some(rest);
-        if named != 1 || !placed(case, &inner, &outer, &mut rest) {
+        if named != 1 || !placed(case, inner.word(), outer.word(), &mut rest) {
             continue;
         }
         // The block, then its `break outer`, which its end does.
@@ -100,7 +100,7 @@ pub(super) fn blocks_one_case_reaches(stmts: &mut [Stmt]) {
 /// would be the loop's; then the `break outer` that ends the block it
 /// leaves where `rest` goes on. Whether it was.
 fn placed(case: &mut Vec<Stmt>, inner: &str, outer: &str, rest: &mut Option<Vec<Stmt>>) -> bool {
-    if matches!(case.last().map(|s| &s.kind), Some(StmtKind::Break(Some(l))) if l == inner)
+    if matches!(case.last().map(|s| &s.kind), Some(StmtKind::Break(Some(l))) if l.is(inner))
         && let Some(rest) = rest.take()
     {
         case.pop();
@@ -157,7 +157,7 @@ pub(super) fn rest_one_case_reaches(stmts: &mut Vec<Stmt>, at_end: bool) {
                 if let StmtKind::Switch { cases, default, .. } = &mut stmt.kind {
                     for case in js::case_lists_mut(cases, default) {
                         if matches!(case.last().map(|s| &s.kind), Some(StmtKind::Break(Some(l))) if *l == label)
-                            && !js::names_jump(&case[..case.len() - 1], &label)
+                            && !js::names_jump(&case[..case.len() - 1], label.word())
                         {
                             found = Some(found.map_or(1, |n: usize| n + 1));
                         }
@@ -323,7 +323,7 @@ pub(super) fn loops_left_by_cases(stmts: &mut [Stmt], loops: &[(js::Span, bool, 
         // `break b` the loop's `break` of the program's label.
         if let [.., block, last] = &body[..]
             && let StmtKind::Labeled(b, inner) = &block.kind
-            && crate::lower::mir::is_block_label(b)
+            && crate::lower::mir::is_block_label(b.word())
             && matches!(&last.kind, StmtKind::Break(l) if own(l))
             && matches!(inner.last().map(|s| &s.kind), Some(StmtKind::Continue(l)) if own(l))
             && !super::declared(inner).any(|name| super::declared(&body[..body.len() - 2]).any(|n| n == name))
@@ -334,7 +334,7 @@ pub(super) fn loops_left_by_cases(stmts: &mut [Stmt], loops: &[(js::Span, bool, 
                 unreachable!("matched")
             };
             inner.pop();
-            relabel(&mut inner, &b, &written);
+            relabel(&mut inner, b.word(), &written);
             body.extend(inner);
             *label = Some(written.into());
             continue;
@@ -355,7 +355,7 @@ pub(super) fn loops_left_by_cases(stmts: &mut [Stmt], loops: &[(js::Span, bool, 
         if !matches!(&last.kind, StmtKind::Break(l) if own(l))
             || !continued
             || cases.is_empty()
-            || js::continues(rest, label.as_deref())
+            || js::continues(rest, label.as_ref().map(|n| n.word()))
             || super::declared(rest).any(|name| super::declared(&body[..body.len() - 2]).any(|n| n == name))
         {
             continue;
@@ -405,7 +405,7 @@ fn leaving(stmts: &mut [Stmt], written: &str) {
 fn relabel(stmts: &mut Vec<Stmt>, from: &str, to: &str) {
     js::statement_lists(stmts, &mut |list| {
         for stmt in list.iter_mut() {
-            if matches!(&stmt.kind, StmtKind::Break(Some(l)) if l == from) {
+            if matches!(&stmt.kind, StmtKind::Break(Some(l)) if l.is(from)) {
                 stmt.kind = StmtKind::Break(Some(to.into()));
             }
         }

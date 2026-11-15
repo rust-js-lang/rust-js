@@ -200,9 +200,9 @@ fn given_names<'p>(params: &'p [Pattern], given: &[Expr]) -> Option<Vec<&'p str>
     (params.iter())
         .zip(given)
         .map(|(param, arg)| match (param, &arg.kind) {
-            (Pattern::Name(name), ExprKind::Var(v)) if v == name => Some(name.as_str()),
+            (Pattern::Name(name), ExprKind::Var(v)) if v == name => Some(name.word()),
             (Pattern::Rest(name), ExprKind::Spread(spread)) if matches!(&spread.kind, ExprKind::Var(v) if v == name) => {
-                Some(name.as_str())
+                Some(name.word())
             }
             _ => None,
         })
@@ -307,7 +307,7 @@ pub(crate) fn constants(body: &mut Vec<Stmt>) {
     each_block_mut(body, &mut |stmts| {
         for stmt in stmts.iter_mut() {
             if let StmtKind::Let(name, Some(value)) = &stmt.kind
-                && !writes.may_replace(name)
+                && !writes.may_replace(name.word())
             {
                 stmt.kind = StmtKind::Const(name.clone(), value.clone());
             }
@@ -420,7 +420,7 @@ pub fn ends(stmt: &Stmt) -> bool {
                 && !(cases.iter().map(|case| &case.body).chain([default])).any(|body| breaks(body, None))
         }
         StmtKind::While { label, cond, body } => {
-            matches!(cond.kind, ExprKind::Bool(true)) && !breaks(body, label.as_deref())
+            matches!(cond.kind, ExprKind::Bool(true)) && !breaks(body, label.as_ref().map(|n| n.word()))
         }
         // A `try` each of whose arms leaves, `try { return f(); } catch {
         // return ""; }` (ADR 0629, amended).
@@ -504,7 +504,7 @@ fn canonical(stmts: &[Stmt], facts: bool) -> Vec<Stmt> {
         .map(|(i, name)| (name, format!("${i}")))
         .collect();
     let rename = |name: &mut Name| {
-        if let Some(to) = names.get(name.as_str()) {
+        if let Some(to) = names.get(name.word()) {
             name.respell(to.clone());
         }
     };
@@ -537,17 +537,17 @@ fn canonical(stmts: &[Stmt], facts: bool) -> Vec<Stmt> {
 pub fn declares(stmts: &[Stmt], name: &str) -> bool {
     let mut copy = stmts.to_vec();
     let mut found = false;
-    rename_binders(&mut copy, &mut |n| found |= n == name);
+    rename_binders(&mut copy, &mut |n| found |= n.is(name));
     each_expr_mut(&mut copy, &mut |e| match &mut e.kind {
         ExprKind::Arrow(params, body) | ExprKind::AsyncArrow(params, body) => {
             params
                 .iter_mut()
-                .for_each(|p| p.each_name_mut(&mut |n| found |= n == name));
-            rename_binders(body, &mut |n| found |= n == name);
+                .for_each(|p| p.each_name_mut(&mut |n| found |= n.is(name)));
+            rename_binders(body, &mut |n| found |= n.is(name));
         }
         ExprKind::Function(function) => {
-            (function.params.iter_mut()).for_each(|p| p.each_name_mut(&mut |n| found |= n == name));
-            rename_binders(&mut function.body, &mut |n| found |= n == name);
+            (function.params.iter_mut()).for_each(|p| p.each_name_mut(&mut |n| found |= n.is(name)));
+            rename_binders(&mut function.body, &mut |n| found |= n.is(name));
         }
         _ => {}
     });
@@ -559,7 +559,7 @@ pub fn declares(stmts: &[Stmt], name: &str) -> bool {
 /// where `from` is one `stmts` declare at their top.
 pub fn renamed(stmts: &mut [Stmt], from: &str, to: &str) {
     let rename = |name: &mut Name| {
-        if *name == from {
+        if name.is(from) {
             name.respell(to);
         }
     };
@@ -596,7 +596,7 @@ pub fn outside_shadows(stmts: &mut Vec<Stmt>, name: &str, change: impl FnOnce(&m
         if params.iter().any(|p| p.names().contains(&name)) || declares_own(body, name) {
             for param in params.iter_mut() {
                 param.each_name_mut(&mut |n| {
-                    if n == name {
+                    if n.is(name) {
                         *n = APART.into();
                     }
                 });
@@ -650,12 +650,12 @@ fn declares_own(body: &[Stmt], name: &str) -> bool {
     each_list(body, &mut |list| {
         for stmt in list {
             found |= match &stmt.kind {
-                StmtKind::Const(n, _) | StmtKind::Let(n, _) | StmtKind::For { name: n, .. } => n == name,
+                StmtKind::Const(n, _) | StmtKind::Let(n, _) | StmtKind::For { name: n, .. } => n.is(name),
                 StmtKind::Destructure { pattern, .. } | StmtKind::ForOf { pattern, .. } => {
                     pattern.names().contains(&name)
                 }
-                StmtKind::TryCatch(_, Some(n), _) => n == name,
-                StmtKind::Function(function) => function.name == name,
+                StmtKind::TryCatch(_, Some(n), _) => n.is(name),
+                StmtKind::Function(function) => function.name.is(name),
                 _ => false,
             };
         }
@@ -683,7 +683,7 @@ pub fn read_as_this(stmts: &mut [Stmt], name: &str) -> bool {
         }
     });
     each_expr_mut(stmts, &mut |e| {
-        if matches!(&e.kind, ExprKind::Var(v) if v == name) {
+        if matches!(&e.kind, ExprKind::Var(v) if v.is(name)) {
             e.kind = ExprKind::This;
         }
     });
@@ -733,7 +733,10 @@ pub fn this_outside_accessors(body: &mut Vec<Stmt>, name: &str) -> bool {
                 },
             ] = function.body.as_slice()
             && let ExprKind::Var(marked) = &marked.kind
-            && let Some(k) = marked.strip_prefix("\u{0}nested").and_then(|k| k.parse::<usize>().ok())
+            && let Some(k) = marked
+                .word()
+                .strip_prefix("\u{0}nested")
+                .and_then(|k| k.parse::<usize>().ok())
         {
             function.body = nested[k].take().expect("each nested function's body, put back once");
         }
@@ -883,7 +886,7 @@ fn unspan(stmts: &mut [Stmt]) {
 pub fn breaks(stmts: &[Stmt], label: Option<&str>) -> bool {
     stmts.iter().any(|stmt| match &stmt.kind {
         StmtKind::Break(None) => true,
-        StmtKind::Break(Some(l)) => Some(l.as_str()) == label,
+        StmtKind::Break(Some(l)) => Some(l.word()) == label,
         StmtKind::If(_, a, b) => breaks(a, label) || b.as_deref().is_some_and(|b| breaks(b, label)),
         StmtKind::Labeled(_, body) => breaks(body, label),
         // In a loop of its own, one that names it; in a `switch`, which a
@@ -906,7 +909,7 @@ pub fn breaks(stmts: &[Stmt], label: Option<&str>) -> bool {
 pub fn continues(stmts: &[Stmt], label: Option<&str>) -> bool {
     stmts.iter().any(|stmt| match &stmt.kind {
         StmtKind::Continue(None) => true,
-        StmtKind::Continue(Some(l)) => Some(l.as_str()) == label,
+        StmtKind::Continue(Some(l)) => Some(l.word()) == label,
         StmtKind::If(_, a, b) => continues(a, label) || b.as_deref().is_some_and(|b| continues(b, label)),
         StmtKind::Labeled(_, body) => continues(body, label),
         StmtKind::Switch { cases, default, .. } => case_lists(cases, default).any(|body| continues(body, label)),
@@ -922,7 +925,7 @@ pub fn continues(stmts: &[Stmt], label: Option<&str>) -> bool {
 /// Whether a `break` in `stmts`, however deep, names `label`.
 pub fn names_break(stmts: &[Stmt], label: &str) -> bool {
     stmts.iter().any(|stmt| match &stmt.kind {
-        StmtKind::Break(Some(l)) => l == label,
+        StmtKind::Break(Some(l)) => l.is(label),
         StmtKind::If(_, a, b) => names_break(a, label) || b.as_deref().is_some_and(|b| names_break(b, label)),
         StmtKind::While { body, .. }
         | StmtKind::DoWhile { body, .. }
@@ -938,7 +941,7 @@ pub fn names_break(stmts: &[Stmt], label: &str) -> bool {
 /// Whether a `break` or a `continue` in `stmts`, however deep, names `label`.
 pub fn names_jump(stmts: &[Stmt], label: &str) -> bool {
     stmts.iter().any(|stmt| match &stmt.kind {
-        StmtKind::Break(Some(l)) | StmtKind::Continue(Some(l)) => l == label,
+        StmtKind::Break(Some(l)) | StmtKind::Continue(Some(l)) => l.is(label),
         StmtKind::If(_, a, b) => names_jump(a, label) || b.as_deref().is_some_and(|b| names_jump(b, label)),
         StmtKind::While { body, .. }
         | StmtKind::DoWhile { body, .. }
@@ -989,8 +992,8 @@ pub fn in_load_order(items: Vec<Item>) -> Vec<Item> {
             .collect();
         let called: IndexMap<&str, &Item> = (items.iter())
             .filter_map(|item| match item {
-                Item::Function(function) => Some((function.name.as_str(), *item)),
-                Item::Namespace(namespace) => Some((namespace.name.as_str(), *item)),
+                Item::Function(function) => Some((function.name.word(), *item)),
+                Item::Namespace(namespace) => Some((namespace.name.word(), *item)),
                 Item::Const(_) | Item::Statements(_) => None,
             })
             .collect();
@@ -1005,7 +1008,7 @@ pub fn in_load_order(items: Vec<Item>) -> Vec<Item> {
                             held.push(v);
                         }
                     });
-                    Some((constant.name.as_str(), held))
+                    Some((constant.name.word(), held))
                 }
                 _ => None,
             })

@@ -88,7 +88,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         stmts.splice(0..0, hoisted);
         // Its `self`, the variable it closes over.
         match params.first() {
-            Some(js::Pattern::Name(name)) if name == value => {
+            Some(js::Pattern::Name(name)) if name.is(value) => {
                 params.remove(0);
             }
             _ => return Err(self.unsupported(span, "a scope struct's method whose `self` isn't its value")),
@@ -129,8 +129,8 @@ pub(super) fn scope_fields(value: &str, params: &[js::Pattern], out: &mut Vec<St
     loop {
         let more: Vec<String> = (statements())
             .filter_map(|stmt| match &stmt.kind {
-                StmtKind::Const(alias, e) if !holders.iter().any(|h| h == alias) => match &e.kind {
-                    js::ExprKind::Var(of) if holders.iter().any(|h| h == of) => Some(alias.to_string()),
+                StmtKind::Const(alias, e) if !holders.iter().any(|h| alias.is(h)) => match &e.kind {
+                    js::ExprKind::Var(of) if holders.iter().any(|h| of.is(h)) => Some(alias.to_string()),
                     _ => None,
                 },
                 _ => None,
@@ -141,10 +141,10 @@ pub(super) fn scope_fields(value: &str, params: &[js::Pattern], out: &mut Vec<St
         }
         holders.extend(more);
     }
-    let held = |e: &Expr| matches!(&e.kind, js::ExprKind::Var(name) if holders.iter().any(|h| h == name));
+    let held = |e: &Expr| matches!(&e.kind, js::ExprKind::Var(name) if holders.iter().any(|h| name.is(h)));
     // Its literal, the one statement that makes it.
     let literal = statements().find_map(|stmt| match &stmt.kind {
-        StmtKind::Const(name, e) | StmtKind::Let(name, Some(e)) if name == value => match &e.kind {
+        StmtKind::Const(name, e) | StmtKind::Let(name, Some(e)) if name.is(value) => match &e.kind {
             js::ExprKind::Object(props, _) => Some(props.clone()),
             _ => None,
         },
@@ -162,7 +162,7 @@ pub(super) fn scope_fields(value: &str, params: &[js::Pattern], out: &mut Vec<St
     let (mut reads, mut fields_read, mut written) = (0, 0, IndexSet::<String>::default());
     let mut whole = false;
     js::each_expr(out, &mut |e| match &e.kind {
-        js::ExprKind::Var(name) if holders.iter().any(|h| h == name) => reads += 1,
+        js::ExprKind::Var(name) if holders.iter().any(|h| name.is(h)) => reads += 1,
         // A field's read, its literal's own: a `None` is written there,
         // `undefined`, until preparation leaves its key out.
         js::ExprKind::Member(of, key) if held(of) => {
@@ -179,12 +179,12 @@ pub(super) fn scope_fields(value: &str, params: &[js::Pattern], out: &mut Vec<St
     for place in js::Writes::places(out) {
         match place.kind {
             js::ExprKind::Member(of, key) if held(&of) => _ = written.insert(key),
-            js::ExprKind::Var(name) if holders.iter().any(|h| h == &name) => whole = true,
+            js::ExprKind::Var(name) if holders.iter().any(|h| name.is(h)) => whole = true,
             _ => {}
         }
     }
     let aliases = (statements())
-        .filter(|stmt| matches!(&stmt.kind, StmtKind::Const(alias, e) if alias != value && holders.iter().any(|h| h == alias) && held(e)))
+        .filter(|stmt| matches!(&stmt.kind, StmtKind::Const(alias, e) if !alias.is(value) && holders.iter().any(|h| alias.is(h)) && held(e)))
         .count();
     // Each holder declared once, never named again.
     let mut declared = 0;
@@ -227,7 +227,9 @@ pub(super) fn scope_fields(value: &str, params: &[js::Pattern], out: &mut Vec<St
     let mut lets = Vec::new();
     for (key, e) in fields {
         let given = e.as_ref().and_then(|e| match &e.kind {
-            js::ExprKind::Var(p) if param_names.contains(&p.as_str()) && !assigned(p) && !written.contains(&key) => {
+            js::ExprKind::Var(p)
+                if param_names.contains(&p.word()) && !assigned(p.word()) && !written.contains(&key) =>
+            {
                 Some(p.to_string())
             }
             _ => None,
@@ -266,7 +268,7 @@ pub(super) fn scope_fields(value: &str, params: &[js::Pattern], out: &mut Vec<St
         let mut i = 0;
         while i < list.len() {
             match &list[i].kind {
-                StmtKind::Const(name, _) | StmtKind::Let(name, Some(_)) if name == value => {
+                StmtKind::Const(name, _) | StmtKind::Let(name, Some(_)) if name.is(value) => {
                     let span = list[i].span;
                     let mut made = lets.take().unwrap_or_default();
                     for (k, stmt) in made.iter_mut().enumerate() {
@@ -278,7 +280,7 @@ pub(super) fn scope_fields(value: &str, params: &[js::Pattern], out: &mut Vec<St
                     list.splice(i..=i, made);
                     i += n;
                 }
-                StmtKind::Const(name, _) if holders.iter().any(|h| h == name) => {
+                StmtKind::Const(name, _) if holders.iter().any(|h| name.is(h)) => {
                     list.remove(i);
                 }
                 _ => i += 1,
@@ -301,11 +303,11 @@ fn copies_read_through(list: &mut Vec<Stmt>, held: &dyn Fn(&Expr) -> bool) {
     while i < list.len() {
         let next = list.get(i + 1).map(|s| &s.kind);
         let found = match (&list[i].kind, next) {
-            (StmtKind::Const(a, e), _) if matches!(&e.kind, js::ExprKind::Member(of, key) if held(of) && key == a) => {
+            (StmtKind::Const(a, e), _) if matches!(&e.kind, js::ExprKind::Member(of, key) if held(of) && a.is(key)) => {
                 Some((a.clone(), e.clone(), None))
             }
             (StmtKind::Const(a, e), Some(StmtKind::Assign(target, value)))
-                if matches!(&target.kind, js::ExprKind::Member(of, key) if held(of) && key == a)
+                if matches!(&target.kind, js::ExprKind::Member(of, key) if held(of) && a.is(key))
                     && matches!(&value.kind, js::ExprKind::Var(v) if v == a) =>
             {
                 Some((a.clone(), target.clone(), Some(e.clone())))
@@ -318,8 +320,8 @@ fn copies_read_through(list: &mut Vec<Stmt>, held: &dyn Fn(&Expr) -> bool) {
         };
         let rest = i + 1 + usize::from(made.is_some());
         let mut declared = false;
-        js::each_declared(&list[rest..], &mut |n| declared |= n == name);
-        if declared || !copied_until_effects(&list[rest..], &name) {
+        js::each_declared(&list[rest..], &mut |n| declared |= name.is(n));
+        if declared || !copied_until_effects(&list[rest..], name.word()) {
             i += 1;
             continue;
         }
@@ -404,7 +406,7 @@ impl Order<'_> {
             return;
         }
         match &e.kind {
-            js::ExprKind::Var(v) => self.seen += usize::from(v == self.name),
+            js::ExprKind::Var(v) => self.seen += usize::from(v.is(self.name)),
             js::ExprKind::Member(of, _) | js::ExprKind::OptionalMember(of, _) => {
                 self.expr(of);
                 self.stopped |= e.facts.has(js::Known::Getter);

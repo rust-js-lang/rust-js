@@ -38,7 +38,7 @@ pub(super) fn tested_options(stmts: &mut Vec<Stmt>, changing: &IndexSet<String>,
             // The filter's temporary named as the program's binding.
             if let Some((x, v)) = filtered
                 && i > 0
-                && matches!(&stmts[i - 1].kind, StmtKind::Const(name, _) if *name == v)
+                && matches!(&stmts[i - 1].kind, StmtKind::Const(name, _) if name.is(&v))
                 && !user.contains(&v)
                 && js::mentions_in(&stmts[i - 1..], &x) == 0
             {
@@ -57,7 +57,7 @@ fn tests_present_first(test: &Expr, v: &str) -> bool {
         first = left;
     }
     !std::ptr::eq(first, test)
-        && js::null_test(first, true).is_some_and(|tested| matches!(&tested.kind, ExprKind::Var(n) if n == v))
+        && js::null_test(first, true).is_some_and(|tested| matches!(&tested.kind, ExprKind::Var(n) if n.is(v)))
 }
 
 /// Of `const x = v != null && .. ? v : undefined`, a filter's `Option`,
@@ -70,7 +70,7 @@ fn filtered_names(made: &Stmt) -> Option<(String, String)> {
         return None;
     };
     let ExprKind::Var(v) = &value.kind else { return None };
-    tests_present_first(test, v).then(|| (x.to_string(), v.to_string()))
+    tests_present_first(test, v.word()).then(|| (x.to_string(), v.to_string()))
 }
 
 /// `tested_options`'s rewrite of `made`, the `Option`'s `const`, and
@@ -89,8 +89,8 @@ fn tested_option(
         return None;
     };
     let ExprKind::Var(v) = &value.kind else { return None };
-    let present = value.facts.has(js::Known::Present) || tests_present_first(test, v);
-    if !matches!(none.kind, ExprKind::Undefined) || !present || changing.contains(v.as_str()) {
+    let present = value.facts.has(js::Known::Present) || tests_present_first(test, v.word());
+    if !matches!(none.kind, ExprKind::Undefined) || !present || changing.contains(v.word()) {
         return None;
     }
     let StmtKind::If(presence, then, otherwise) = &tested.kind else {
@@ -110,8 +110,8 @@ fn tested_option(
         (false, None) if then.last().is_some_and(ends) => (rest, [then, &[]]),
         (false, _) => return None,
     };
-    let read_elsewhere = unread.iter().any(|stmts| js::mentions_in(stmts, x) > 0) || test.mentions_var(x);
-    if read_elsewhere || js::declares(reads, x) || js::read_where_other(reads, x, v) {
+    let read_elsewhere = unread.iter().any(|stmts| js::mentions_in(stmts, x.word()) > 0) || test.mentions_var(x.word());
+    if read_elsewhere || js::declares(reads, x.word()) || js::read_where_other(reads, x.word(), v.word()) {
         return None;
     }
     let mut reads = reads.to_vec();
@@ -266,7 +266,7 @@ fn taken_option(made: &Stmt, written: &Stmt, tested: &Stmt, rest: &[Stmt]) -> Op
         true => (then.as_slice(), otherwise.as_deref().unwrap_or_default()),
         false => (otherwise.as_deref()?, then.as_slice()),
     };
-    if js::mentions_in(none_branch, c) > 0 || js::mentions_in(rest, c) > 0 {
+    if js::mentions_in(none_branch, c.word()) > 0 || js::mentions_in(rest, c.word()) > 0 {
         return None;
     }
     let mut taken = vec![made.clone(), written.clone()];

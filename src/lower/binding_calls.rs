@@ -136,11 +136,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     && matches!(none.kind, js::ExprKind::Undefined)
                 {
                     if let js::ExprKind::Var(name) = &test.kind {
-                        self.note_tested(name);
+                        self.note_tested(name.word());
                     }
                     *arg = Expr::bin(Op::And, test.tested(), (**value).clone());
                 } else if let js::ExprKind::Var(name) = &arg.kind {
-                    self.note_falsy(name);
+                    self.note_falsy(name.word());
                 }
             }
         }
@@ -1026,7 +1026,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             }
             Some(js::Pattern::Name(tuple)) => {
-                let items: Vec<String> = (0..arity).map(|_| self.fresh(Base::Named(&tuple))).collect();
+                let items: Vec<String> = (0..arity).map(|_| self.fresh(Base::Named(tuple.word()))).collect();
                 let whole = match arity {
                     0 => Expr::js_undefined(),
                     _ => Expr::array(items.iter().map(|item| Expr::var(item)).collect()),
@@ -1044,9 +1044,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         match this {
             Some(js::Pattern::Name(this)) => {
                 // Set, or a place lent: a variable of its own, `this` given first.
-                if js::Writes::of(&body).may_replace(&this) {
+                if js::Writes::of(&body).may_replace(this.word()) {
                     body.insert(0, StmtKind::Let(this, Some(Expr::this())).at(js::Span::NONE));
-                } else if js::read_as_this(&mut body, &this) {
+                } else if js::read_as_this(&mut body, this.word()) {
                     body.insert(0, StmtKind::Const(this, Expr::this()).at(js::Span::NONE));
                 }
             }
@@ -1068,7 +1068,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if js::read_as_this(&mut body.clone(), &alias) {
                 continue;
             }
-            body.retain(|stmt| !matches!(&stmt.kind, StmtKind::Const(name, _) if *name == alias));
+            body.retain(|stmt| !matches!(&stmt.kind, StmtKind::Const(name, _) if name.is(&alias)));
             js::read_as_this(&mut body, &alias);
         }
         let function = js::Function {

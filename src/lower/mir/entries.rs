@@ -507,7 +507,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let fields = (0..borrowed).all(|i| self.borrows_field(def_id, span, i));
         let own = |e: &Expr| {
             matches!(&e.kind, js::ExprKind::Var(name) if (state.locals.names.iter_enumerated())
-                .any(|(local, n)| n == name && !state.body.local_decls[local].ty.is_ref()))
+                .any(|(local, n)| name.is(n) && !state.body.local_decls[local].ty.is_ref()))
                 || (state.facts.captures().iter()).any(|(capture, place)| {
                     *place && matches!((&capture.kind, &e.kind), (js::ExprKind::Var(a), js::ExprKind::Var(b)) if a == b)
                 })
@@ -532,7 +532,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 root = of;
             }
             matches!(&root.kind, js::ExprKind::Var(name) if (state.locals.names.iter_enumerated())
-                .any(|(local, n)| n == name && addressed.contains(&local)))
+                .any(|(local, n)| name.is(n) && addressed.contains(&local)))
         });
         let (variables, fields) = (variables && rebound, fields && rebound);
         for (i, value) in values.into_iter().enumerate() {

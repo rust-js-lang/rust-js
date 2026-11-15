@@ -569,7 +569,7 @@ pub(in crate::lower) fn sought(test: &Expr) -> Option<Expr> {
         (false, true) => a,
         _ => return None,
     };
-    (value.reads_same() && !value.mentions_var(param)).then(|| (**value).clone())
+    (value.reads_same() && !value.mentions_var(param.word())).then(|| (**value).clone())
 }
 
 /// Whether `test`, one `sought` reads, compares what's never a NaN, as
@@ -618,7 +618,7 @@ pub(super) fn made_array(e: &Expr) -> bool {
         js::ExprKind::Call(callee, _) => match &callee.kind {
             js::ExprKind::Member(object, name) => match name.as_str() {
                 "split" => true,
-                "from" => matches!(&object.kind, js::ExprKind::Var(v) if v == "Array"),
+                "from" => matches!(&object.kind, js::ExprKind::Var(v) if v.is("Array")),
                 "map" | "filter" | "slice" | "toReversed" | "toSorted" | "concat" | "flat" | "flatMap" => {
                     made_array(object)
                 }
@@ -674,7 +674,7 @@ pub(in crate::lower) fn mapped_var(e: &Expr) -> Option<&str> {
                 && method == "map"
                 && f.reads_only_vars() =>
         {
-            Some(name)
+            Some(name.word())
         }
         _ => None,
     }
@@ -914,8 +914,8 @@ pub(super) fn is_js_iterator(e: &Expr) -> bool {
     match &callee.kind {
         // Not `Object.keys(o)`'s, an array.
         js::ExprKind::Member(object, name) => match &object.kind {
-            js::ExprKind::Var(v) if v == "Object" => false,
-            js::ExprKind::Var(v) if v == "Iterator" => name == "from",
+            js::ExprKind::Var(v) if v.is("Object") => false,
+            js::ExprKind::Var(v) if v.is("Iterator") => name == "from",
             _ if matches!(name.as_str(), "map" | "filter" | "flatMap" | "take" | "drop") => is_js_iterator(object),
             _ => matches!(name.as_str(), "values" | "keys" | "entries"),
         },
@@ -942,7 +942,7 @@ pub(in crate::lower) fn string_iterated(e: &Expr) -> Option<&Expr> {
                 && let js::ExprKind::Index(s, key) = &callee.kind
                 && let js::ExprKind::Member(symbol, name) = &key.kind
                 && name == "iterator"
-                && matches!(&symbol.kind, js::ExprKind::Var(v) if v == "Symbol") =>
+                && matches!(&symbol.kind, js::ExprKind::Var(v) if v.is("Symbol")) =>
         {
             Some(s)
         }
@@ -956,7 +956,7 @@ pub(in crate::lower) fn iterator_from(e: &Expr) -> Option<&Expr> {
         js::ExprKind::Call(callee, args)
             if let [x] = args.as_slice()
                 && matches!(&callee.kind, js::ExprKind::Member(object, name)
-                    if name == "from" && matches!(&object.kind, js::ExprKind::Var(v) if v == "Iterator")) =>
+                    if name == "from" && matches!(&object.kind, js::ExprKind::Var(v) if v.is("Iterator"))) =>
         {
             Some(x)
         }
@@ -1137,7 +1137,7 @@ pub(in crate::lower) fn stepped_slices(body: &mut Vec<Stmt>) {
                 .filter(|s| matches!(&s.kind, StmtKind::Const(n, _) | StmtKind::Let(n, _) if *n == name))
                 .count();
         });
-        if declared != 1 || steps == 0 || js::mentions_in(body, &name) != steps {
+        if declared != 1 || steps == 0 || js::mentions_in(body, name.word()) != steps {
             continue;
         }
         js::statement_lists(body, &mut |stmts| {
@@ -1157,7 +1157,7 @@ pub(in crate::lower) fn stepped_slices(body: &mut Vec<Stmt>) {
             if stepped(e) {
                 *e = Expr {
                     span: e.span,
-                    ..js::next_value(Expr::var(&name))
+                    ..js::next_value(Expr::var(name.word()))
                 };
             }
         });

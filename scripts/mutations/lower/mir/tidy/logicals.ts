@@ -196,7 +196,7 @@ export const mutations: Mutation[] = [
     breaks:
       "an integer variable's `if n != 0` is `if (n !== 0)`, not `if (n)` (ADR 0896, amended)",
     file: "src/lower/mir/tidy/logicals.rs",
-    find: "        ExprKind::Var(name) => integer(name),\n",
+    find: "        ExprKind::Var(name) => integer(name.word()),\n",
     replace: "        ExprKind::Var(_) => false,\n",
     tests: [
       "test/lowering-bits.test.ts",
@@ -246,7 +246,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a float's `if x != 0.0` is `if (x)`, which `NaN` fails where Rust's test passes (ADR 0896, amended)",
     file: "src/lower/mir/tidy/logicals.rs",
-    find: "        ExprKind::Var(name) => integer(name),\n",
+    find: "        ExprKind::Var(name) => integer(name.word()),\n",
     replace: "        ExprKind::Var(_) => true,\n",
     tests: [
       "test/lowering-bits.test.ts",
@@ -284,7 +284,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a test merged into `a && b` leaves its bound read, `const captured = child.type`, read again and unread",
     file: "src/lower/mir/tidy/logicals.rs",
-    find: "            && js::mentions_in(&stmts[at + 1..], name) == 0\n",
+    find: "            && js::mentions_in(&stmts[at + 1..], name.word()) == 0\n",
     replace: "            && false\n",
     tests: ["test/corpus.test.ts", "-t", "^(signed_index|signed_counter).rs$"],
     snapshots: true,
@@ -294,7 +294,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`(x == y && (x != 0.0 || ..)) || ..` is a labelled block of its tests",
     file: "src/lower/mir/tidy/logicals.rs",
-    find: "    let Some(made) = value(body, after, (label, after), returns, booleans) else {\n",
+    find: "    let Some(made) = value(body, after, (label.word(), after), returns, booleans) else {\n",
     replace: "    let Some(made) = None::<Expr> else {\n",
     tests: ["test/lowering-branches.test.ts", "-t", "a value of && and"],
   },
@@ -397,8 +397,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a chain whose tests read its binding twice joins them, `if (debug && counts.count != null && counts.count > 3)`, the place read twice (ADR 0842)",
     file: "src/lower/mir/tidy/logicals.rs",
-    find: "        apart && tested > 0 && tested + again(at, name) > 1\n",
-    replace: "        apart && tested > 0 && again(at, name) > 0\n",
+    find: "        apart && tested > 0 && tested + again(at, name.word()) > 1\n",
+    replace: "        apart && tested > 0 && again(at, name.word()) > 0\n",
     tests: [
       "test/lowering-written-branches.test.ts",
       "-t",
@@ -425,8 +425,8 @@ export const mutations: Mutation[] = [
     breaks:
       'a chain whose test `undefined` can\'t be asked, `parse.TAG === "Ok"`, reads its binding first, `const parse = on ? .. : undefined`, and throws where `on` fails (ADR 0870)',
     file: "src/lower/mir/tidy/logicals.rs",
-    find: "    if second.has_effects() || !tests.iter().any(|t| implies(t, &defined)) || test.mentions_var(name) {\n",
-    replace: "    if second.has_effects() || test.mentions_var(name) {\n",
+    find: "    if second.has_effects() || !tests.iter().any(|t| implies(t, &defined)) || test.mentions_var(name.word()) {\n",
+    replace: "    if second.has_effects() || test.mentions_var(name.word()) {\n",
     tests: ["test/corpus.test.ts", "-t", "^let_chain_values.rs$"],
     snapshots: true,
   },
@@ -489,7 +489,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a let chain's binding the program named otherwise than the field it reads, `prev_state` of `current.memoized_state`, is read again in its place, `current.memoizedState.hydrationErrors = ..`, where upstream keeps `const prevState` (rd226, rd706)",
     file: "src/lower/mir/tidy/logicals.rs",
-    find: "            if matches!(&then[at].kind, StmtKind::Const(name, _) if is_temporary(name) || own_field.contains(name.as_str()))\n",
+    find: "            if matches!(&then[at].kind, StmtKind::Const(name, _) if is_temporary(name.word()) || own_field.contains(name.word()))\n",
     replace: "            if matches!(&then[at].kind, StmtKind::Const(..))\n",
     tests: ["test/lowering-moves.test.ts", "-t", "binding named otherwise than its field keeps its const"],
   },
@@ -498,8 +498,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a let chain's temporary the compiler made, of what a struct pattern takes apart, is held in a `const _5` where the body reads it once, not the field read again (rd706)",
     file: "src/lower/mir/tidy/logicals.rs",
-    find: "            if matches!(&then[at].kind, StmtKind::Const(name, _) if is_temporary(name) || own_field.contains(name.as_str()))\n",
-    replace: "            if matches!(&then[at].kind, StmtKind::Const(name, _) if own_field.contains(name.as_str()))\n",
+    find: "            if matches!(&then[at].kind, StmtKind::Const(name, _) if is_temporary(name.word()) || own_field.contains(name.word()))\n",
+    replace: "            if matches!(&then[at].kind, StmtKind::Const(name, _) if own_field.contains(name.word()))\n",
     tests: ["test/lowering-moves.test.ts", "-t", "binding named otherwise than its field keeps its const"],
   },
 

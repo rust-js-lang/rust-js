@@ -83,9 +83,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a library's thread-local read through its namespace, `dep::NAME.with_borrow(..)`, is read as its cell, `Dep.name.value`, where it's the library's variable (rd114a, ADR 1018)",
     file: "src/lower/pipeline/variables.rs",
-    find: "                js::ExprKind::Var(namespace) if namespaced.contains(&(namespace.as_str(), export)))\n",
+    find: "                js::ExprKind::Var(namespace) if namespaced.contains(&(namespace.word(), export)))\n",
     replace:
-      "                js::ExprKind::Var(namespace) if false && namespaced.contains(&(namespace.as_str(), export)))\n",
+      "                js::ExprKind::Var(namespace) if false && namespaced.contains(&(namespace.word(), export)))\n",
     tests: [
       "test/lowering-module-variables.test.ts",
       "-t",

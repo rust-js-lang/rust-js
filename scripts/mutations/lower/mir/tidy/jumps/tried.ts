@@ -79,7 +79,7 @@ export const mutations: Mutation[] = [
     breaks:
       "MIR's loop's rest, moved out, keeps a jump of the loop, which then goes to another",
     file: "src/lower/mir/tidy/jumps/tried.rs",
-    find: "            && let Some(rest) = fallen(rest, label.as_deref())\n",
+    find: "            && let Some(rest) = fallen(rest, label.as_ref().map(|n| n.word()))\n",
     replace: "            && let Some(rest) = Some(rest.to_vec())\n",
     tests: ["test/lowering-loops.test.ts", "-t", "returns in a loop are where"],
   },
@@ -118,7 +118,7 @@ export const mutations: Mutation[] = [
     breaks:
       '`?` of an `Ok` made where it\'s tried keeps its test, `const r = { TAG: "Ok", _0: 3 }; if (r.TAG === "Err") ..`',
     file: "src/lower/mir/tidy/jumps/tried.rs",
-    find: "            Some(_) => taken_in_place(stmts, at, &name),\n",
+    find: "            Some(_) => taken_in_place(stmts, at, name.word()),\n",
     replace: "            Some(_) => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^ok_made_tried.rs$"],
     snapshots: true,

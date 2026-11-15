@@ -83,9 +83,9 @@ impl Tree {
         }
         for item in &module.items {
             match item {
-                js::Item::Function(function) => walk.declare(&function.name),
-                js::Item::Namespace(namespace) => walk.declare(&namespace.name),
-                js::Item::Const(constant) => walk.declare(&constant.name),
+                js::Item::Function(function) => walk.declare(function.name.word()),
+                js::Item::Namespace(namespace) => walk.declare(namespace.name.word()),
+                js::Item::Const(constant) => walk.declare(constant.name.word()),
                 js::Item::Statements(stmts) => walk.hoist(stmts),
             }
         }
@@ -291,7 +291,7 @@ impl Walk {
     fn function(&mut self, function: &Function, named: bool) {
         if named {
             self.enter();
-            self.declare(&function.name);
+            self.declare(function.name.word());
         }
         self.enter();
         for param in &function.params {
@@ -315,11 +315,11 @@ impl Walk {
 
     fn pattern(&mut self, pattern: &Pattern) {
         match pattern {
-            Pattern::Name(name) | Pattern::Rest(name) => self.declare(name),
+            Pattern::Name(name) | Pattern::Rest(name) => self.declare(name.word()),
             // Its default is read where it's given none, before it's made.
             Pattern::Defaulted(name, default) => {
                 self.expr(default);
-                self.declare(name);
+                self.declare(name.word());
             }
             Pattern::Array(items) => items.iter().flatten().for_each(|item| self.pattern(item)),
             Pattern::Object(fields, rest) => {
@@ -331,7 +331,7 @@ impl Walk {
                     }
                     self.pattern(field);
                 }
-                rest.iter().for_each(|name| self.declare(name));
+                rest.iter().for_each(|name| self.declare(name.word()));
             }
         }
     }
@@ -353,9 +353,9 @@ impl Walk {
     fn hoist(&mut self, stmts: &[Stmt]) {
         for stmt in stmts {
             match &stmt.kind {
-                StmtKind::Const(name, _) | StmtKind::Let(name, _) => self.declare(name),
+                StmtKind::Const(name, _) | StmtKind::Let(name, _) => self.declare(name.word()),
                 StmtKind::Destructure { pattern, .. } => self.pattern_names(pattern),
-                StmtKind::Function(function) => self.declare(&function.name),
+                StmtKind::Function(function) => self.declare(function.name.word()),
                 _ => {}
             }
         }
@@ -419,7 +419,7 @@ impl Walk {
                 ..
             } => {
                 self.enter();
-                self.declare(name);
+                self.declare(name.word());
                 self.expr(start);
                 self.expr(test);
                 if let Some(value) = step.value() {
@@ -453,7 +453,7 @@ impl Walk {
                 self.block(body);
                 self.enter();
                 if let Some(error) = error {
-                    self.declare(error);
+                    self.declare(error.word());
                 }
                 self.block_in_scope(handler);
                 self.leave();
@@ -481,7 +481,7 @@ impl Walk {
 
     fn expr(&mut self, e: &Expr) {
         match &e.kind {
-            ExprKind::Var(name) => self.read(name, e.facts.has(Known::Global)),
+            ExprKind::Var(name) => self.read(name.word(), e.facts.has(Known::Global)),
             // What it sets is resolved as a read is.
             ExprKind::Assigned(target, a) => {
                 self.expr(target);

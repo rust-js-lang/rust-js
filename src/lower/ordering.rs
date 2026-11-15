@@ -1033,7 +1033,7 @@ fn any_shape(tcx: rustc_middle::ty::TyCtxt<'_>, ty: Ty<'_>) -> bool {
 }
 
 fn is_var(e: &Expr, name: &str) -> bool {
-    matches!(&e.kind, js::ExprKind::Var(n) if n == name)
+    matches!(&e.kind, js::ExprKind::Var(n) if n.is(name))
 }
 
 /// The types `order_total` is asking of, outermost first.

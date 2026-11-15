@@ -17,7 +17,7 @@ pub(super) fn declared_module_functions(items: &mut [js::Item]) {
     for item in items.iter_mut() {
         if let js::Item::Const(constant) = item
             && !constant.mutable
-            && matches!(&constant.value.kind, ExprKind::Function(function) if function.name.is_empty())
+            && matches!(&constant.value.kind, ExprKind::Function(function) if function.name.word().is_empty())
             && let js::Item::Const(constant) = std::mem::replace(item, js::Item::Statements(Vec::new()))
             && let ExprKind::Function(mut function) = constant.value.kind
         {
@@ -51,7 +51,7 @@ pub(super) fn declared_functions(stmts: &mut [Stmt]) {
             continue;
         }
         if let StmtKind::Const(_, value) = &stmt.kind
-            && matches!(&value.kind, ExprKind::Function(function) if function.name.is_empty())
+            && matches!(&value.kind, ExprKind::Function(function) if function.name.word().is_empty())
             && let StmtKind::Const(name, value) = std::mem::replace(&mut stmt.kind, StmtKind::Comments)
             && let ExprKind::Function(mut function) = value.kind
         {
@@ -73,7 +73,7 @@ pub(super) fn declared_functions(stmts: &mut [Stmt]) {
         }
         let mut own = js::reads_this(body);
         js::each_expr(body, &mut |e| {
-            own |= matches!(&e.kind, ExprKind::Var(v) if v == "arguments")
+            own |= matches!(&e.kind, ExprKind::Var(v) if v.is("arguments"))
         });
         let value_alone = matches!(
             body.as_slice(),
@@ -85,8 +85,8 @@ pub(super) fn declared_functions(stmts: &mut [Stmt]) {
         // Nor one that declares its own name in it, `const key = event.key`
         // of a listener `key`: a reader sees one name meaning two things,
         // and React Compiler refuses the function that declares it (#1702).
-        let mut shadows = params.iter().any(|p| p.names().contains(&name.as_str()));
-        js::each_declared(body, &mut |declared| shadows |= declared == name);
+        let mut shadows = params.iter().any(|p| p.names().contains(&name.word()));
+        js::each_declared(body, &mut |declared| shadows |= name.is(declared));
         if own || value_alone || shadows {
             continue;
         }
@@ -113,7 +113,7 @@ fn named_as(value: &mut Expr, property: &str) {
     let ExprKind::Function(function) = &mut value.kind else {
         return;
     };
-    if function.name.is_empty()
+    if function.name.word().is_empty()
         && crate::names::is_identifier(property)
         && !crate::names::kept_word(property)
         && js::mentions_in(&function.body, property) == 0

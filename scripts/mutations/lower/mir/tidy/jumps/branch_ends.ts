@@ -7,7 +7,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `match`'s arms stay labeled blocks, `bb1: { if (c) { s; break bb1; } t }`",
     file: "src/lower/mir/tidy/jumps/branch_ends.rs",
-    find: "            ending(body, label);\n",
+    find: "            ending(body, label.word());\n",
     replace: "            let _ = (label, body);\n",
     tests: ["test/corpus.test.ts", "-t", "^option_constants_switch.rs$"],
     snapshots: true,

@@ -437,7 +437,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .cloned()
             .collect();
         for (id, var) in &self.locals.vars {
-            if matches!(&var.place.kind, js::ExprKind::Var(n) if n == name) {
+            if matches!(&var.place.kind, js::ExprKind::Var(n) if n.is(name)) {
                 let ty = self.tcx.typeck(id.0.owner.def_id).node_type(id.0);
                 self.given_paths(name, ty, &mut Default::default(), &mut found);
             }

@@ -94,7 +94,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // Its declaration, a `let`, or a `const` where tidy found it
                 // never set again: the `try` and its `catch` are in its scope.
                 let made = (out.iter())
-                    .position(|s| matches!(&s.kind, StmtKind::Let(n, _) | StmtKind::Const(n, _) if n == name));
+                    .position(|s| matches!(&s.kind, StmtKind::Let(n, _) | StmtKind::Const(n, _) if n.is(name)));
                 let mut body = out.split_off(made.map_or(0, |at| at + 1));
                 // Its last `return f`, the one after the `try`.
                 if matches!(body.last().map(|s| &s.kind), Some(StmtKind::Return(Some(r))) if *r == written_so_far()) {

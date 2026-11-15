@@ -28,7 +28,7 @@ impl<'a> Cx<'a> {
             _ => (None, patterns),
         };
         let rest = rest.map(|name| {
-            let binding = BindingPattern::new_binding_identifier(SPAN, self.name(name), b);
+            let binding = BindingPattern::new_binding_identifier(SPAN, self.name(name.word()), b);
             ArenaBox::new_in(
                 FormalParameterRest::new(
                     SPAN,
@@ -45,10 +45,13 @@ impl<'a> Cx<'a> {
             // `location = { .. }`, where it's given none (ADR 0427).
             let (pattern, default) = match pattern {
                 js::Pattern::Defaulted(name, default) => (
-                    BindingPattern::new_binding_identifier(at, self.name(name), b),
+                    BindingPattern::new_binding_identifier(at, self.name(name.word()), b),
                     Some(ArenaBox::new_in(self.expr(default), b)),
                 ),
-                js::Pattern::Name(name) => (BindingPattern::new_binding_identifier(at, self.name(name), b), None),
+                js::Pattern::Name(name) => (
+                    BindingPattern::new_binding_identifier(at, self.name(name.word()), b),
+                    None,
+                ),
                 pattern => (self.pattern(pattern), None),
             };
             FormalParameter::new(
@@ -100,7 +103,7 @@ impl<'a> Cx<'a> {
         let decl = Declaration::new_function_declaration(
             span(f.span),
             FunctionType::FunctionDeclaration,
-            Some(BindingIdentifier::new(span(f.name_span), self.name(&f.name), b)),
+            Some(BindingIdentifier::new(span(f.name_span), self.name(f.name.word()), b)),
             false, // generator
             f.is_async,
             false, // declare
@@ -143,14 +146,14 @@ impl<'a> Cx<'a> {
             return self.es_class(n, class, default);
         }
         let mut out = Vec::new();
-        if let Some(constructor) = n.methods.iter().find(|f| f.name == class.constructor) {
+        if let Some(constructor) = n.methods.iter().find(|f| f.name.is(&class.constructor)) {
             let mut constructor = constructor.clone();
             constructor.name = n.name.clone();
             constructor.export = n.export;
             out.push(self.function(&constructor, false));
         }
         out.extend(self.stmts(prototype_set));
-        let prototype = || js::Expr::member(js::Expr::var(&n.name), "prototype");
+        let prototype = || js::Expr::member(js::Expr::var(n.name.word()), "prototype");
         // Of a prototype its load replaced, each own member defined on it,
         // `Object.defineProperty(ReactPromise.prototype, "then", { writable:
         // true, enumerable: true, configurable: true, value: .. })`, as an
@@ -175,14 +178,14 @@ impl<'a> Cx<'a> {
         let mut assigned = Vec::new();
         for c in &n.constants {
             if class.prototype_set {
-                assigned.push(defined(&c.name, c.value.clone(), c.span));
+                assigned.push(defined(c.name.word(), c.value.clone(), c.span));
                 continue;
             }
-            let to = js::Expr::member(prototype(), c.name.clone());
+            let to = js::Expr::member(prototype(), c.name.word());
             assigned.push(js::StmtKind::Assign(to, c.value.clone()).at(c.span));
         }
-        for f in n.methods.iter().filter(|f| f.name != class.constructor) {
-            if class.getters.iter().any(|g| g == &f.name) {
+        for f in n.methods.iter().filter(|f| !f.name.is(&class.constructor)) {
+            if class.getters.iter().any(|g| f.name.is(g)) {
                 let at = |kind| js::Expr {
                     kind,
                     span: f.span,
@@ -199,9 +202,9 @@ impl<'a> Cx<'a> {
                 assigned.push(js::StmtKind::Expr(call).at(f.span));
                 continue;
             }
-            let of = match class.prototype.iter().any(|p| p == &f.name) {
+            let of = match class.prototype.iter().any(|p| f.name.is(p)) {
                 true => prototype(),
-                false => js::Expr::var(&n.name),
+                false => js::Expr::var(n.name.word()),
             };
             let mut function = f.clone();
             function.name = Name::default();
@@ -221,24 +224,24 @@ impl<'a> Cx<'a> {
             // the later first, as upstream chains them,
             // `ReactDOMHydrationRoot.prototype.render =
             // ReactDOMRoot.prototype.render = function (..) { .. }` (rd283).
-            let shared = class.shared.iter().find(|(method, _)| *method == f.name);
-            if class.prototype_set && class.prototype.iter().any(|p| p == &f.name) {
-                assigned.push(defined(&f.name, value, f.span));
+            let shared = class.shared.iter().find(|(method, _)| f.name.is(method));
+            if class.prototype_set && class.prototype.iter().any(|p| f.name.is(p)) {
+                assigned.push(defined(f.name.word(), value, f.span));
                 // Each other class that shares it, its own prototype's.
                 for other in shared.into_iter().flat_map(|(_, others)| others) {
-                    let to = js::Expr::member(js::Expr::member(js::Expr::var(other), "prototype"), f.name.clone());
-                    let own = js::Expr::member(prototype(), f.name.clone());
+                    let to = js::Expr::member(js::Expr::member(js::Expr::var(other), "prototype"), f.name.word());
+                    let own = js::Expr::member(prototype(), f.name.word());
                     assigned.push(js::StmtKind::Assign(to, own).at(f.span));
                 }
                 continue;
             }
-            let mut target = js::Expr::member(of, f.name.clone());
+            let mut target = js::Expr::member(of, f.name.word());
             for other in shared.into_iter().flat_map(|(_, others)| others) {
                 value = js::Expr {
                     span: f.span,
                     ..js::Expr::assigned(target, value)
                 };
-                target = js::Expr::member(js::Expr::member(js::Expr::var(other), "prototype"), f.name.clone());
+                target = js::Expr::member(js::Expr::member(js::Expr::var(other), "prototype"), f.name.word());
             }
             assigned.push(js::StmtKind::Assign(target, value).at(f.span));
         }
@@ -280,15 +283,15 @@ impl<'a> Cx<'a> {
             )
         });
         let elements = n.methods.iter().map(|f| {
-            let (kind, key, is_static) = match f.name == class.constructor {
+            let (kind, key, is_static) = match f.name.is(&class.constructor) {
                 true => (MethodDefinitionKind::Constructor, "constructor", false),
-                false if class.getters.iter().any(|g| g == &f.name) => {
-                    (MethodDefinitionKind::Get, f.name.as_str(), false)
+                false if class.getters.iter().any(|g| f.name.is(g)) => {
+                    (MethodDefinitionKind::Get, f.name.word(), false)
                 }
                 false => (
                     MethodDefinitionKind::Method,
-                    f.name.as_str(),
-                    !class.prototype.iter().any(|p| p == &f.name),
+                    f.name.word(),
+                    !class.prototype.iter().any(|p| f.name.is(p)),
                 ),
             };
             let params = self.params_at(FormalParameterKind::UniqueFormalParameters, &f.params, &f.param_spans);
@@ -329,7 +332,7 @@ impl<'a> Cx<'a> {
             span(class.declared),
             ClassType::ClassDeclaration,
             ArenaVec::new_in(b),
-            Some(BindingIdentifier::new(SPAN, self.name(&n.name), b)),
+            Some(BindingIdentifier::new(SPAN, self.name(n.name.word()), b)),
             None, // type parameters
             heritage,
             ArenaVec::new_in(b),
@@ -347,9 +350,9 @@ impl<'a> Cx<'a> {
             (_, decl) if n.export => Statement::new_export_declaration(span(class.declared), decl, b),
             (_, decl) => decl.into(),
         }];
-        let prototype = || js::Expr::member(js::Expr::var(&n.name), "prototype");
+        let prototype = || js::Expr::member(js::Expr::var(n.name.word()), "prototype");
         let assigned: Vec<js::Stmt> = (n.constants.iter())
-            .map(|c| js::StmtKind::Assign(js::Expr::member(prototype(), c.name.clone()), c.value.clone()).at(c.span))
+            .map(|c| js::StmtKind::Assign(js::Expr::member(prototype(), c.name.word()), c.value.clone()).at(c.span))
             .collect();
         out.extend(self.stmts(&assigned));
         out
@@ -360,7 +363,7 @@ impl<'a> Cx<'a> {
     pub(super) fn namespace(&self, n: &js::Namespace) -> Statement<'a> {
         let b = &self.b;
         let constants = n.constants.iter().map(|c| {
-            let key = PropertyKey::new_static_identifier(span(c.span), self.name(&c.name), b);
+            let key = PropertyKey::new_static_identifier(span(c.span), self.name(c.name.word()), b);
             ObjectPropertyKind::new_object_property(
                 span(c.span),
                 PropertyKind::Init,
@@ -391,7 +394,7 @@ impl<'a> Cx<'a> {
                         Some(ArenaBox::new_in(body, b)),
                         b,
                     );
-                    let key = PropertyKey::new_static_identifier(span(f.name_span), self.name(&f.name), b);
+                    let key = PropertyKey::new_static_identifier(span(f.name_span), self.name(f.name.word()), b);
                     ObjectPropertyKind::new_object_property(
                         span(f.span),
                         PropertyKind::Init,
@@ -406,7 +409,7 @@ impl<'a> Cx<'a> {
                 b,
             )
         };
-        let id = BindingPattern::new_binding_identifier(SPAN, self.name(&n.name), b);
+        let id = BindingPattern::new_binding_identifier(SPAN, self.name(n.name.word()), b);
         let object = Expression::new_object_expression(SPAN, methods, b);
         let declarator = VariableDeclarator::new(SPAN, id, None, Some(object), false, b);
         let decl = Declaration::new_variable_declaration(
@@ -429,7 +432,7 @@ impl<'a> Cx<'a> {
         let b = &self.b;
         let sp = span(c.span);
         let id = match c.fields.is_empty() {
-            true => BindingPattern::new_binding_identifier(SPAN, self.name(&c.name), b),
+            true => BindingPattern::new_binding_identifier(SPAN, self.name(c.name.word()), b),
             // Each at its field's declaration, as the map places it (rd610).
             false => {
                 let fields = (c.fields.names.iter()).map(|(field, at)| {
@@ -568,11 +571,11 @@ impl<'a> Cx<'a> {
         let b = &self.b;
         let sp = span(s.span);
         match &s.kind {
-            StmtKind::Const(name, init) => self.declare(sp, VariableDeclarationKind::Const, name, Some(init)),
+            StmtKind::Const(name, init) => self.declare(sp, VariableDeclarationKind::Const, name.word(), Some(init)),
             StmtKind::Function(function) => self.function(function, false),
             StmtKind::Directive(_) => unreachable!("a directive is its function's body's, taken first"),
             StmtKind::Comments => unreachable!("comments are printed before what follows them, `push_stmts`"),
-            StmtKind::Let(name, init) => self.declare(sp, VariableDeclarationKind::Let, name, init.as_ref()),
+            StmtKind::Let(name, init) => self.declare(sp, VariableDeclarationKind::Let, name.word(), init.as_ref()),
             StmtKind::Destructure {
                 pattern,
                 value,
@@ -657,7 +660,7 @@ impl<'a> Cx<'a> {
                     ] => self.stmt(only),
                     _ => Statement::new_block_statement(sp, self.stmts(body), b),
                 };
-                self.labeled(sp, Some(label), labeled)
+                self.labeled(sp, Some(label.word()), labeled)
             }
             // Each case's values stacked, `case 1: case 2:`, the last its
             // statements (ADR 0629).
@@ -733,22 +736,25 @@ impl<'a> Cx<'a> {
                             kind: StmtKind::TryCatch(inner, error, handler),
                             ..
                         },
-                    ] => (inner, Some(self.catch_clause(error.as_deref(), handler))),
+                    ] => (
+                        inner,
+                        Some(self.catch_clause(error.as_ref().map(|n| n.word()), handler)),
+                    ),
                     _ => (body, None),
                 };
                 Statement::new_try_statement(sp, self.clause_block(body), clause, Some(self.clause_block(finally)), b)
             }
             StmtKind::TryCatch(body, error, handler) => {
-                let clause = self.catch_clause(error.as_deref(), handler);
+                let clause = self.catch_clause(error.as_ref().map(|n| n.word()), handler);
                 Statement::new_try_statement(sp, self.clause_block(body), Some(clause), None, b)
             }
             StmtKind::While { label, cond, body } => {
                 let w = Statement::new_while_statement(sp, self.expr(cond), self.block(body), b);
-                self.labeled(sp, label.as_deref(), w)
+                self.labeled(sp, label.as_ref().map(|n| n.word()), w)
             }
             StmtKind::DoWhile { label, body, cond } => {
                 let w = Statement::new_do_while_statement(sp, self.block(body), self.expr(cond), b);
-                self.labeled(sp, label.as_deref(), w)
+                self.labeled(sp, label.as_ref().map(|n| n.word()), w)
             }
             StmtKind::ForOf {
                 label,
@@ -777,7 +783,7 @@ impl<'a> Cx<'a> {
                 } else {
                     Statement::new_for_of_statement(sp, false, left, self.expr(iterable), self.block(body), b)
                 };
-                self.labeled(sp, label.as_deref(), l)
+                self.labeled(sp, label.as_ref().map(|n| n.word()), l)
             }
             StmtKind::For {
                 label,
@@ -787,7 +793,7 @@ impl<'a> Cx<'a> {
                 step,
                 body,
             } => {
-                let id = BindingPattern::new_binding_identifier(SPAN, self.name(name), b);
+                let id = BindingPattern::new_binding_identifier(SPAN, self.name(name.word()), b);
                 let declarator = VariableDeclarator::new(SPAN, id, None, Some(self.expr(start)), false, b);
                 let init = ForStatementInit::new_variable_declaration(
                     SPAN,
@@ -796,7 +802,7 @@ impl<'a> Cx<'a> {
                     false,
                     b,
                 );
-                let counter = SimpleAssignmentTarget::new_assignment_target_identifier(SPAN, self.name(name), b);
+                let counter = SimpleAssignmentTarget::new_assignment_target_identifier(SPAN, self.name(name.word()), b);
                 let update = match step {
                     js::Step::Up => {
                         Expression::new_update_expression(SPAN, UpdateOperator::Increment, false, counter, b)
@@ -817,11 +823,13 @@ impl<'a> Cx<'a> {
                     self.block(body),
                     b,
                 );
-                self.labeled(sp, label.as_deref(), l)
+                self.labeled(sp, label.as_ref().map(|n| n.word()), l)
             }
-            StmtKind::Break(label) => Statement::new_break_statement(sp, label.as_deref().map(|l| self.label(l)), b),
+            StmtKind::Break(label) => {
+                Statement::new_break_statement(sp, label.as_ref().map(|n| n.word()).map(|l| self.label(l)), b)
+            }
             StmtKind::Continue(label) => {
-                Statement::new_continue_statement(sp, label.as_deref().map(|l| self.label(l)), b)
+                Statement::new_continue_statement(sp, label.as_ref().map(|n| n.word()).map(|l| self.label(l)), b)
             }
             StmtKind::Throw(value) => Statement::new_throw_statement(sp, self.expr(value), b),
             StmtKind::Return(value) => Statement::new_return_statement(sp, value.as_ref().map(|v| self.expr(v)), b),
@@ -832,7 +840,7 @@ impl<'a> Cx<'a> {
         let b = &self.b;
         let name = |name: &str| BindingPattern::new_binding_identifier(SPAN, self.name(name), b);
         match pattern {
-            js::Pattern::Name(n) => name(n),
+            js::Pattern::Name(n) => name(n.word()),
             js::Pattern::Rest(_) | js::Pattern::Defaulted(..) => {
                 unreachable!("a rest or a default is a function's parameter, `params`'")
             }
@@ -859,7 +867,8 @@ impl<'a> Cx<'a> {
                     BindingProperty::new(SPAN, key, value, var.name() == Some(field.as_str()), false, b)
                 });
                 let rest = rest
-                    .as_deref()
+                    .as_ref()
+                    .map(|n| n.word())
                     .map(|rest| ArenaBox::new_in(BindingRestElement::new(SPAN, name(rest), b), b));
                 BindingPattern::new_object_pattern(SPAN, ArenaVec::from_iter_in(fields, b), rest, b)
             }
@@ -870,7 +879,7 @@ impl<'a> Cx<'a> {
         let b = &self.b;
         let sp = span(e.span);
         match &e.kind {
-            ExprKind::Var(name) => AssignmentTarget::new_assignment_target_identifier(sp, self.name(name), b),
+            ExprKind::Var(name) => AssignmentTarget::new_assignment_target_identifier(sp, self.name(name.word()), b),
             // A property that isn't a JS name, `files["2d"]`, by its key.
             ExprKind::Member(object, property) if !member_name(property) => {
                 let key = Expression::new_string_literal(SPAN, self.name(property), None, b);

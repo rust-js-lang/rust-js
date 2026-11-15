@@ -188,7 +188,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let value = match self.value_expr(tuple.remove(0), span)?.kind {
             js::ExprKind::Array(mut items) => items.swap_remove(0),
             // Held, as MIR made it, before the arguments: its value.
-            js::ExprKind::Var(held) => Expr::index(Expr::var(&held), Expr::int(0)),
+            js::ExprKind::Var(held) => Expr::index(Expr::var(held.word()), Expr::int(0)),
             _ => return refused(self, "`js::optional_call` of a path whose value isn't written in it"),
         };
         let ty::Tuple(arg_tys) = *given.node.ty(&body.local_decls, tcx).kind() else {

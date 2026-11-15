@@ -95,7 +95,7 @@ pub(super) fn functions(module: &mut js::Module) {
             i += 1;
             continue;
         }
-        if called_where_loaded(module, &name) {
+        if called_where_loaded(module, name.word()) {
             i += 1;
             continue;
         }
@@ -172,8 +172,8 @@ fn called_only_privately(module: &js::Module, at: usize) -> bool {
         return false;
     };
     !function.export
-        && !module.aliases.iter().any(|(local, _)| *local == function.name)
-        && only_called(&module.items, at, &function.name, function.params.len())
+        && !module.aliases.iter().any(|(local, _)| function.name.is(local))
+        && only_called(&module.items, at, function.name.word(), function.params.len())
 }
 
 /// `function link(dep, sub, version) { system.link(dep, sub, version);
@@ -227,17 +227,16 @@ pub(super) fn fields(module: &mut js::Module) {
             continue;
         }
         let taken = (i, field.clone(), function.name.clone());
-        match by_value.iter_mut().find(|(v, _)| v == value) {
+        match by_value.iter_mut().find(|(v, _)| value.is(v)) {
             Some((_, fields)) => fields.push(taken),
             None => by_value.push((value.to_string(), vec![taken])),
         }
     }
     let mut gone = IndexSet::default();
     for (value, fields) in by_value {
-        let at = module
-            .items
-            .iter()
-            .position(|item| matches!(item, js::Item::Const(c) if c.name == value && !c.export && c.fields.is_empty()));
+        let at = module.items.iter().position(
+            |item| matches!(item, js::Item::Const(c) if c.name.is(&value) && !c.export && c.fields.is_empty()),
+        );
         // Read by none but those functions, each once by its call, of all of
         // a call of each count too, whose every count reads it (#1890).
         let mut reads = 0;
@@ -331,20 +330,20 @@ pub(super) fn members(module: &mut js::Module) {
         let value = constant.name.clone();
         if constant.export
             || !constant.fields.is_empty()
-            || module.aliases.iter().any(|(local, _)| *local == value)
-            || module.default_export.as_deref() == Some(value.as_str())
+            || module.aliases.iter().any(|(local, _)| value.is(local))
+            || module.default_export.as_deref() == Some(value.word())
         {
             continue;
         }
         let mut reads = 0;
         for item in &module.items {
-            item.visit_vars(&mut |v| reads += usize::from(v == value));
+            item.visit_vars(&mut |v| reads += usize::from(value.is(v)));
         }
         // Each member it's called through, in the order they're first called.
         let mut members: Vec<String> = Vec::new();
         let mut calls = 0;
         js::each_item_expr_mut(&mut module.items, &mut |e| {
-            if let Some(member) = member_called(e, &value) {
+            if let Some(member) = member_called(e, value.word()) {
                 calls += 1;
                 if !members.iter().any(|m| m == member) {
                     members.push(member.to_string());
@@ -360,7 +359,7 @@ pub(super) fn members(module: &mut js::Module) {
             continue;
         }
         js::each_item_expr_mut(&mut module.items, &mut |e| {
-            if let Some(member) = member_called(e, &value).map(str::to_string)
+            if let Some(member) = member_called(e, value.word()).map(str::to_string)
                 && let ExprKind::Call(callee, _) = &mut e.kind
             {
                 **callee = Expr::var(&member);
@@ -391,7 +390,7 @@ fn member_called<'e>(e: &'e Expr, value: &str) -> Option<&'e str> {
     let ExprKind::Member(of, member) = &callee.kind else {
         return None;
     };
-    (e.facts.has(js::Known::NamespaceMethod) && matches!(&of.kind, ExprKind::Var(v) if v == value)).then_some(member)
+    (e.facts.has(js::Known::NamespaceMethod) && matches!(&of.kind, ExprKind::Var(v) if v.is(value))).then_some(member)
 }
 
 /// Whether each read of `name` in `items` but the function at `at` is a
@@ -402,7 +401,7 @@ fn only_called(items: &[js::Item], at: usize, name: &str, arity: usize) -> bool 
     let (mut reads, mut calls) = (0, 0);
     let mut each = |e: &Expr| {
         calls += usize::from(matches!(&e.kind, ExprKind::Call(callee, args)
-            if args.len() <= arity && matches!(&callee.kind, ExprKind::Var(v) if v == name)));
+            if args.len() <= arity && matches!(&callee.kind, ExprKind::Var(v) if v.is(name))));
     };
     for (j, item) in items.iter().enumerate() {
         if j == at {

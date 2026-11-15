@@ -1268,8 +1268,8 @@ fn folded_count(count: &Expr) -> Option<i128> {
             };
             let (a, b) = (folded_count(a)?, folded_count(b)?);
             match (&math.kind, name.as_str()) {
-                (ExprKind::Var(math), "min") if math == "Math" => Some(a.min(b)),
-                (ExprKind::Var(math), "max") if math == "Math" => Some(a.max(b)),
+                (ExprKind::Var(math), "min") if math.is("Math") => Some(a.min(b)),
+                (ExprKind::Var(math), "max") if math.is("Math") => Some(a.max(b)),
                 _ => None,
             }
         }

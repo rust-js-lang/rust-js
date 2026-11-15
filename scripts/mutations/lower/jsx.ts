@@ -296,7 +296,7 @@ export const mutations: Mutation[] = [
     breaks:
       "an import jsx! captures for a key that might do something is spilled, `const match = Fragment`, where it reads the same in place",
     file: "src/lower/jsx.rs",
-    find: "                    || self.krate.imports[&self.module].values().any(|alias| alias == name)\n",
+    find: "                    || self.krate.imports[&self.module].values().any(|alias| name.is(alias))\n",
     replace: "",
     tests: [
       "test/jsx-react-dev.test.ts",
@@ -429,7 +429,7 @@ export const mutations: Mutation[] = [
     breaks:
       "what MIR says reads alike doesn't, so JSX reads each attribute into a `const` first",
     file: "src/lower/jsx.rs",
-    find: "                self.alike_local(name)\n",
+    find: "                self.alike_local(name.word())\n",
     replace: "                false\n",
     tests: [
       "test/jsx-children.test.ts",
@@ -495,8 +495,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`debug_channel.writable.map(callback_of)`, `options.debugChannel.writable`, a field of a field of plain Rust data, goes in a `const option` first, and the `if` that gives the value is no conditional, as upstream's createResponseFromOptions writes it (rd614)",
     file: "src/lower/jsx.rs",
-    find: "        if objects.is_empty() || !self.plain_value(name) {\n",
-    replace: "        if objects.len() != 1 || !self.plain_value(name) {\n",
+    find: "        if objects.is_empty() || !self.plain_value(name.word()) {\n",
+    replace: "        if objects.len() != 1 || !self.plain_value(name.word()) {\n",
     tests: ["test/corpus.test.ts", "-t", "^map_of_a_field_of_a_field.rs$"],
     snapshots: true,
   },

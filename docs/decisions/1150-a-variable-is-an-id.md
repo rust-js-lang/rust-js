@@ -77,3 +77,26 @@ item's own, `js-substitute-shadowed` and `mir-tidy-plain-cell-shadowed`,
 are each held by a unit test of a tree that binds a name twice, as a tree
 used again still does till S7. `held-builder-finished-first-lost` is
 #1776's, its branch unreachable since #1760.
+
+## S1b's second part (2026-11-15)
+
+`Name` no longer derefs to its word. A pass asks `word()` for it, and
+compares a name with a given word by `is("Boolean")`, the one way to: the
+lead's choice for Tu, so `PartialEq<str>`, `PartialEq<String>` and their
+mirrors are gone, as are `as_str`, `word`'s synonym, and `From<Name> for
+String`, `into_word`'s. A name compared with a name is still `==`, as
+both are one type. The 1,328 sites rustc then refused, in 139 files, were
+rewritten from its errors, each comparison `x == y` of a name the name's
+`is`, with no logic changed. The corpus, the snapshots and the port are
+as they were.
+
+The 290 mutations whose text changed with them are retargeted: each one's
+find moved to the rewritten text, and its replace carried across by the
+same rewrite, every one of them built to prove it. `name-unlike-its-word`
+and `name-as-no-word` now break `is` and `word`.
+Five whose replace was written of the old forms, `name.as_str()` or
+`v == "x"`, were rewritten too, and are caught. Two architecture rules
+that found a search by name, `ExprKind::Var(v) if v == name`, find its
+`v.is(name)` as well, so neither misses one written the new way. Three
+files the rewrite would have grown past the cap's 1,350 lines were each
+split by concept first, in commits of their own.

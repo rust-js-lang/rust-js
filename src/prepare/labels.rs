@@ -13,7 +13,10 @@ pub(super) fn loops(stmts: &mut [Stmt]) {
         | StmtKind::DoWhile { label, body, .. }
         | StmtKind::ForOf { label, body, .. }
         | StmtKind::For { label, body, .. } = &mut stmt.kind
-            && label.as_deref().is_some_and(|l| !js::names_jump(body, l))
+            && label
+                .as_ref()
+                .map(|n| n.word())
+                .is_some_and(|l| !js::names_jump(body, l))
         {
             *label = None;
         }
@@ -54,14 +57,14 @@ fn tried_jumps(stmts: &mut [Stmt]) {
             {
                 let mut next = tried.clone();
                 next.push(StmtKind::Continue(None).at(*span));
-                if let Some(mut inlined) = jumped(&next, label.as_deref()) {
+                if let Some(mut inlined) = jumped(&next, label.as_ref().map(|n| n.word())) {
                     if matches!(inlined.last().map(|s| &s.kind), Some(StmtKind::Continue(None))) {
                         inlined.pop();
                     }
                     *tried = inlined;
                 }
             }
-            in_loop(body, label.as_deref());
+            in_loop(body, label.as_ref().map(|n| n.word()));
         }
     }
 }
@@ -177,11 +180,11 @@ fn rejumped(stmts: &mut [Stmt], jump: &StmtKind, label: Option<&str>, around: (b
 /// another of that label.
 fn labels(stmts: &[Stmt], name: &str) -> bool {
     stmts.iter().any(|stmt| match &stmt.kind {
-        StmtKind::Labeled(l, body) => l == name || labels(body, name),
+        StmtKind::Labeled(l, body) => l.is(name) || labels(body, name),
         StmtKind::While { label, body, .. }
         | StmtKind::DoWhile { label, body, .. }
         | StmtKind::ForOf { label, body, .. }
-        | StmtKind::For { label, body, .. } => label.as_deref() == Some(name) || labels(body, name),
+        | StmtKind::For { label, body, .. } => label.as_ref().map(|n| n.word()) == Some(name) || labels(body, name),
         StmtKind::If(_, a, b) => labels(a, name) || b.as_deref().is_some_and(|b| labels(b, name)),
         StmtKind::Switch { cases, default, .. } => {
             cases.iter().any(|case| labels(&case.body, name)) || default.as_deref().is_some_and(|d| labels(d, name))

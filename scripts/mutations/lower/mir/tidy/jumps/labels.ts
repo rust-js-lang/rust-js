@@ -194,9 +194,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a loop's way out that ends in the program's next loop, which nothing `break`s, is taken to go on, and that loop stays inside the first",
     file: "src/lower/mir/tidy/jumps/labels.rs",
-    find: "            matches!(cond.kind, ExprKind::Bool(true)) && !breaks(body, label.as_deref()) && stays(s)\n",
+    find: "            matches!(cond.kind, ExprKind::Bool(true)) && !breaks(body, label.as_ref().map(|n| n.word())) && stays(s)\n",
     replace:
-      "            false && !breaks(body, label.as_deref()) && stays(s)\n",
+      "            false && !breaks(body, label.as_ref().map(|n| n.word())) && stays(s)\n",
     tests: ["test/corpus.test.ts", "-t", "^(loop_drops|range_values).rs$"],
     snapshots: true,
   },
@@ -205,8 +205,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a loop that breaks to a block inside the loop it's in is taken as leaving it, moved out, and its `break bb22` names no label",
     file: "src/lower/mir/tidy/jumps/labels.rs",
-    find: " && !breaks(body, label.as_deref()) && stays(s)\n",
-    replace: " && !breaks(body, label.as_deref())\n",
+    find: " && !breaks(body, label.as_ref().map(|n| n.word())) && stays(s)\n",
+    replace: " && !breaks(body, label.as_ref().map(|n| n.word()))\n",
     tests: ["test/corpus.test.ts", "-t", "^loop_value_after_loop\\.rs$"],
   },
   {
@@ -270,9 +270,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a block the program labeled followed by a `break` of a block the `switch` ends, getTag's in an `else`, labels nothing (ADR 0944)",
     file: "src/lower/mir/tidy/jumps/labels.rs",
-    find: "        (Some(StmtKind::Break(Some(to))), _) => leaving.iter().any(|l| l == to),\n",
+    find: "        (Some(StmtKind::Break(Some(to))), _) => leaving.iter().any(|l| to.is(l)),\n",
     replace:
-      "        (Some(StmtKind::Break(Some(to))), _) => leaving.is_empty() && to.is_empty(),\n",
+      "        (Some(StmtKind::Break(Some(to))), _) => leaving.is_empty() && to.word().is_empty(),\n",
     tests: ["test/lowering-labels.test.ts", "-t", "inner switch leaves"],
   },
   {
@@ -360,8 +360,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a loop's `let has_more_work;` given in a `try` of a drop guard's keeps what's after the loop in the `break`'s branch (rd352)",
     file: "src/lower/mir/tidy/jumps/labels.rs",
-    find: "StmtKind::Const(n, _) | StmtKind::Let(n, None) if n == name);\n",
-    replace: "StmtKind::Const(n, _) if n == name);\n",
+    find: "StmtKind::Const(n, _) | StmtKind::Let(n, None) if n.is(name));\n",
+    replace: "StmtKind::Const(n, _) if n.is(name));\n",
     tests: ["test/lowering-early-exits.test.ts", "-t", "whose turn gives its variable"],
   },
   {
@@ -377,7 +377,7 @@ export const mutations: Mutation[] = [
     name: "written-loop-label-unnamed",
     breaks: "a `for` MIR labels in a `'outer: loop` that runs once keeps MIR's label, `bb5: for (..)`, not the program's `outer:` (D1, #523)",
     file: "src/lower/mir/tidy/jumps/labels.rs",
-    find: "            let from = label.replace(to.into()).expect(\"labeled\");\n            relabeled(inner, &from, to);\n",
+    find: "            let from = label.replace(to.into()).expect(\"labeled\");\n            relabeled(inner, from.word(), to);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^loop_exit_moves.rs$"],
     snapshots: true,

@@ -737,7 +737,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 },
             ] = body.as_slice()
             && value.reads_same()
-            && let Some(inlined) = result.substitute_in_callbacks(&|n: &str| (n == name).then(|| value.clone()))
+            && let Some(inlined) = result.substitute_in_callbacks(&|n: &str| name.is(n).then(|| value.clone()))
         {
             return inlined;
         }
@@ -936,7 +936,7 @@ fn joined_pieces(e: Expr) -> Vec<Expr> {
 }
 
 fn is_var(e: &Expr, name: &str) -> bool {
-    matches!(&e.kind, js::ExprKind::Var(n) if n == name)
+    matches!(&e.kind, js::ExprKind::Var(n) if n.is(name))
 }
 
 /// `String(n)`, or the text itself for a constant: `"4096"`.

@@ -1158,7 +1158,7 @@ fn outlives<'tcx>(state: &State<'_, 'tcx>, place: &Expr, is_guard: impl Fn(Ty<'t
         root = object;
     }
     !matches!(&root.kind, js::ExprKind::Var(name)
-        if state.locals.names.iter_enumerated().any(|(local, n)| n == name
+        if state.locals.names.iter_enumerated().any(|(local, n)| name.is(n)
             && local != mir::RETURN_PLACE
             && !state.body.local_decls[local].ty.is_ref()
             && !state.body.local_decls[local].ty.is_raw_ptr()

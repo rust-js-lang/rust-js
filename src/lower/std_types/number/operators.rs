@@ -470,7 +470,7 @@ pub(in crate::lower) fn big_shift(r: Expr, num: Num) -> Expr {
 pub(in crate::lower) fn unwrapped(e: Expr) -> Expr {
     if let js::ExprKind::Call(callee, args) = &e.kind
         && let js::ExprKind::Member(object, name) = &callee.kind
-        && matches!(&object.kind, js::ExprKind::Var(v) if v == "BigInt")
+        && matches!(&object.kind, js::ExprKind::Var(v) if v.is("BigInt"))
         && (name == "asUintN" || name == "asIntN")
         && let [bits, inner] = args.as_slice()
         && bits.as_int() == Some(64)

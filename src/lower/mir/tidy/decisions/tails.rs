@@ -51,7 +51,7 @@ fn tails_in(label: &str, list: &[Stmt], told: &Told, whole: bool) -> Option<Vec<
             list.extend(chain);
             // A `let` the chain read as its value, read nowhere else: gone.
             for (name, _) in &given {
-                let own = |s: &Stmt| matches!(&s.kind, StmtKind::Let(n, Some(_)) if n == name);
+                let own = |s: &Stmt| matches!(&s.kind, StmtKind::Let(n, Some(_)) if n.is(name));
                 if let Some(at) = list[..k].iter().rposition(own) {
                     let others = [&list[..at], &list[at + 1..]].concat();
                     if js::mentions_in(&others, name) == 0 {
@@ -77,7 +77,7 @@ fn tails_in(label: &str, list: &[Stmt], told: &Told, whole: bool) -> Option<Vec<
 pub(super) fn nested(label: &str, list: &[Stmt]) -> Option<Vec<Stmt>> {
     fn nest(list: &mut Vec<Stmt>, label: &str) {
         // Where the list ends, its `break` goes nowhere else.
-        if matches!(list.last().map(|s| &s.kind), Some(StmtKind::Break(Some(l))) if l == label) {
+        if matches!(list.last().map(|s| &s.kind), Some(StmtKind::Break(Some(l))) if l.is(label)) {
             list.pop();
         }
         if let Some(StmtKind::If(_, then, otherwise)) = list.last_mut().map(|s| &mut s.kind) {
@@ -90,7 +90,7 @@ pub(super) fn nested(label: &str, list: &[Stmt]) -> Option<Vec<Stmt>> {
             let StmtKind::If(_, then, _) = &list[k].kind else {
                 continue;
             };
-            if !matches!(then.last().map(|s| &s.kind), Some(StmtKind::Break(Some(l))) if l == label) {
+            if !matches!(then.last().map(|s| &s.kind), Some(StmtKind::Break(Some(l))) if l.is(label)) {
                 continue;
             }
             // What follows declares in a scope of its own then: none of it
@@ -149,7 +149,7 @@ pub(super) fn calls_in(body: &[Stmt], told: &Told) -> bool {
 pub(super) fn breaks_ended(label: &str, body: &[Stmt]) -> Option<Vec<Stmt>> {
     fn ended(list: &mut Vec<Stmt>, label: &str) -> bool {
         match list.last_mut().map(|s| &mut s.kind) {
-            Some(StmtKind::Break(Some(l))) if l == label => {
+            Some(StmtKind::Break(Some(l))) if l.is(label) => {
                 list.pop();
                 true
             }

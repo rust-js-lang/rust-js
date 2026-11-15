@@ -76,7 +76,7 @@ pub(super) const LABELS_NAMED: Contract = Contract {
                 if found.is_none()
                     && !matches!(&stmt.kind, StmtKind::While { label: Some(l), .. }
                         | StmtKind::ForOf { label: Some(l), .. }
-                        | StmtKind::For { label: Some(l), .. } if written(l))
+                        | StmtKind::For { label: Some(l), .. } if written(l.word()))
                     && let StmtKind::Labeled(label, inner)
                     | StmtKind::While {
                         label: Some(label),
@@ -93,7 +93,7 @@ pub(super) const LABELS_NAMED: Contract = Contract {
                         body: inner,
                         ..
                     } = &stmt.kind
-                    && !crate::js::names_jump(inner, label)
+                    && !crate::js::names_jump(inner, label.word())
                 {
                     found = Some(format!("`{label}` named by no jump"));
                 }

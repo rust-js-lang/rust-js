@@ -75,9 +75,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a one-field tuple guard of a variable nothing sets once it's made is a copy of its own, `const restore = previousFiber;`, read in the `finally` (ADR 0705, amended)",
     file: "src/lower/drops/inlined.rs",
-    find: "        ExprKind::Var(v) if kept_variables(body, params, guard, &[]).contains(v.as_str()) => Some(v.to_string()),\n",
+    find: "        ExprKind::Var(v) if kept_variables(body, params, guard, &[]).contains(v.word()) => Some(v.to_string()),\n",
     replace:
-      "        ExprKind::Var(v) if kept_variables(body, params, guard, &[]).contains(v.as_str()) && false => Some(v.to_string()),\n",
+      "        ExprKind::Var(v) if kept_variables(body, params, guard, &[]).contains(v.word()) && false => Some(v.to_string()),\n",
     tests: [
       "test/lowering-drop-guards.test.ts",
       "-t",
@@ -89,7 +89,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a one-field tuple guard of a variable set once it's made reads as that variable, what it's set to later, not what the guard was made of (ADR 0705, amended)",
     file: "src/lower/drops/inlined.rs",
-    find: "        ExprKind::Var(v) if kept_variables(body, params, guard, &[]).contains(v.as_str()) => Some(v.to_string()),\n",
+    find: "        ExprKind::Var(v) if kept_variables(body, params, guard, &[]).contains(v.word()) => Some(v.to_string()),\n",
     replace: "        ExprKind::Var(v) => Some(v.to_string()),\n",
     tests: [
       "test/lowering-drop-guards.test.ts",
@@ -236,9 +236,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a guard's field of a variable stays `const _restoreProps = { prototype, prevProps }`, read `_restoreProps.prototype`",
     file: "src/lower/drops/inlined.rs",
-    find: "        ExprKind::Var(v) if !written.contains(key) && kept.contains(v.as_str()) => Some(v.to_string()),\n",
+    find: "        ExprKind::Var(v) if !written.contains(key) && kept.contains(v.word()) => Some(v.to_string()),\n",
     replace:
-      "        ExprKind::Var(v) if !written.contains(key) && kept.contains(v.as_str()) && false => Some(v.to_string()),\n",
+      "        ExprKind::Var(v) if !written.contains(key) && kept.contains(v.word()) && false => Some(v.to_string()),\n",
     tests: [
       "test/lowering-drop-guards.test.ts",
       "-t",
@@ -422,8 +422,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a generic `Drop`'s call given its type parameter's drop too, `wrapperDrop_drop(value, (value) => { .. })`, isn't found as its drop, so a `Drop` dropped so is never its body there (#501)",
     file: "src/lower/drops/inlined.rs",
-    find: "            if !args.is_empty() && matches!(&callee.kind, ExprKind::Var(v) if v == name)))\n",
-    replace: "            if args.len() == 1 && matches!(&callee.kind, ExprKind::Var(v) if v == name)))\n",
+    find: "            if !args.is_empty() && matches!(&callee.kind, ExprKind::Var(v) if v.is(name))))\n",
+    replace: "            if args.len() == 1 && matches!(&callee.kind, ExprKind::Var(v) if v.is(name))))\n",
     tests: ["test/corpus.test.ts", "-t", "^unsized_struct_dyn.rs$"],
     snapshots: true,
   },
@@ -479,8 +479,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a named-field guard's field a swap writes, `[count, pair.right] = ..`, is a `const` the swap assigns, a `TypeError` (#1593)",
     file: "src/lower/drops/inlined.rs",
-    find: "            ExprKind::Member(of, key) if matches!(&of.kind, ExprKind::Var(v) if v == guard) => Some(key),\n",
-    replace: "            ExprKind::Member(of, key) if false && matches!(&of.kind, ExprKind::Var(v) if v == guard) => Some(key),\n",
+    find: "            ExprKind::Member(of, key) if matches!(&of.kind, ExprKind::Var(v) if v.is(guard)) => Some(key),\n",
+    replace: "            ExprKind::Member(of, key) if false && matches!(&of.kind, ExprKind::Var(v) if v.is(guard)) => Some(key),\n",
     tests: ["test/corpus.test.ts", "-t", "^guard_field_written_by_a_swap_or_in_an_expression.rs$"],
   },
   {
@@ -488,7 +488,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a guard's closure's body, in its call's place, names what it declares apart from its own `const`'s, `hold$1$1`, alien-signals' `link$1$1` (#501)",
     file: "src/lower/drops/inlined.rs",
-    find: "        stmts.retain(|s| !matches!(&s.kind, StmtKind::Const(n, _) if n == name));\n    });\n    let mut done = false;\n",
+    find: "        stmts.retain(|s| !matches!(&s.kind, StmtKind::Const(n, _) if n.is(name)));\n    });\n    let mut done = false;\n",
     replace: "    });\n    let mut done = false;\n",
     tests: ["test/corpus.test.ts", "-t", "^drop_guard_of_a_closure.rs$"],
     snapshots: true,

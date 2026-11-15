@@ -110,7 +110,7 @@ export const mutations: Mutation[] = [
     name: "regex-literal-unwritten",
     breaks: "`reg_exp::new(\"%s\", \"g\")` is `new RegExp(\"%s\", \"g\")`, not the literal JS writes, `/%s/g`",
     file: "src/to_oxc/expressions.rs",
-    find: "    if !matches!(&callee.kind, ExprKind::Var(name) if name == \"RegExp\") {",
+    find: "    if !matches!(&callee.kind, ExprKind::Var(name) if name.is(\"RegExp\")) {",
     replace: "    if true {",
     tests: ["test/lowering-strings.test.ts", "-t", "RegExp of a pattern"],
   },

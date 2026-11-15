@@ -15,7 +15,7 @@ export const mutations: Mutation[] = [
     name: "default-value-read-before",
     breaks: "a value read in the block before its end is given first",
     file: "src/lower/mir/tidy/decisions/defaults.rs",
-    find: "            && js::mentions_in(rest, x) == given\n",
+    find: "            && js::mentions_in(rest, x.word()) == given\n",
     replace: "",
     tests: ["test/lowering-matches.test.ts", "-t", "no arm sets it"],
   },
@@ -46,7 +46,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a flag a loop's `break` or `continue` leaves the block with is given first, and read after it given",
     file: "src/lower/mir/tidy/decisions/defaults.rs",
-    find: "                    if !self.local && !inside.holds(label.as_deref(), is_continue) {\n",
+    find: "                    if !self.local && !inside.holds(label.as_ref().map(|n| n.word()), is_continue) {\n",
     replace: "                    if false {\n",
     tests: [
       "test/lowering-switch-symbols.test.ts",
@@ -111,7 +111,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `let`'s value, which nothing sees before the block, isn't given first: `let v = if let .. { q } else { 0 }` keeps its block",
     file: "src/lower/mir/tidy/decisions/defaults.rs",
-    find: "                local: declared_unread(&stmts[..i], x),\n",
+    find: "                local: declared_unread(&stmts[..i], x.word()),\n",
     replace: "                local: false,\n",
     tests: ["test/lowering-matches.test.ts", "-t", "no arm sets it"],
   },

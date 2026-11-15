@@ -39,7 +39,7 @@ pub(in crate::lower) fn as_member(
             } else if class_of(tcx, def_id).is_some_and(|adt| superclass(tcx, adt).is_some()) {
                 let given = (function.params.iter())
                     .map(|param| match param {
-                        Pattern::Name(name) => Ok(Expr::var(name)),
+                        Pattern::Name(name) => Ok(Expr::var(name.word())),
                         _ => Err("constructor of a class that extends one names its parameter, `props`, which `super(props)` is given"),
                     })
                     .collect::<Result<Vec<_>, _>>()?;
@@ -115,7 +115,7 @@ pub(in crate::lower) fn receiver_as_this(
             return Err("a method whose `self` is no parameter");
         };
         let mut read = false;
-        js::visit_stmts(body, &mut |name| read |= name == receiver);
+        js::visit_stmts(body, &mut |name| read |= receiver.is(name));
         if read {
             return Err(
                 "`#[rust_js::namespace]` method that reads `self` only to call its functions, `self.update_container(..)`: its module has no value of its own (ADR 1037)",
@@ -134,7 +134,7 @@ pub(in crate::lower) fn receiver_as_this(
     params.remove(0);
     // A function nested in it, `js::function::with_this`'s, has a `this`
     // of its own: it reads `self` as the method's, a `const` of it.
-    if js::read_as_this(body, &receiver) {
+    if js::read_as_this(body, receiver.word()) {
         body.insert(0, StmtKind::Const(receiver.clone(), Expr::this()).at(js::Span::NONE));
     }
     let through = format!("{receiver}.");
@@ -225,7 +225,7 @@ fn instance_as_this(body: &mut Vec<Stmt>) -> Result<(), &'static str> {
     }) else {
         return Ok(());
     };
-    if js::Writes::sets(body, &instance) {
+    if js::Writes::sets(body, instance.word()) {
         return Err("a constructor whose instance is set again, not changed in place");
     }
     let made = body.remove(at);
@@ -242,7 +242,7 @@ fn instance_as_this(body: &mut Vec<Stmt>) -> Result<(), &'static str> {
             }
         }
     });
-    if js::read_as_this(body, &instance) {
+    if js::read_as_this(body, instance.word()) {
         return Err("a constructor whose instance a function made in it reads, whose `this` is its own");
     }
     Ok(())

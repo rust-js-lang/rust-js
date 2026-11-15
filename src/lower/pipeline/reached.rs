@@ -210,7 +210,7 @@ pub(super) fn taken_into(
             let (mine, theirs) = (&fns[&method], fns.get(target)?);
             let printed = match theirs.module == module {
                 true => lowered.items.iter().find_map(|item| match item {
-                    crate::js::Item::Function(f) if f.name == theirs.name => Some(f.span),
+                    crate::js::Item::Function(f) if f.name.is(&theirs.name) => Some(f.span),
                     _ => None,
                 })?,
                 false => {

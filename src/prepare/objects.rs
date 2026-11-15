@@ -20,7 +20,7 @@ pub(super) fn entries_written_out(e: &Expr) -> Option<Expr> {
     let (ExprKind::Var(object), ExprKind::Array(entries)) = (&object.kind, &entries.kind) else {
         return None;
     };
-    if object != "Object" || name != "fromEntries" {
+    if !object.is("Object") || name != "fromEntries" {
         return None;
     }
     let mut fields = Vec::new();

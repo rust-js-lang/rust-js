@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `HashSet<Point>` read from JSON is a plain `Set`, which keeps equal points twice",
     file: "src/lower/serde/de.rs",
-    find: '                if !matches!(&class.kind, js::ExprKind::Var(name) if name == "Set") {',
+    find: "                if !matches!(&class.kind, js::ExprKind::Var(name) if name.is(\"Set\")) {",
     replace: "                if false {",
     tests: ["test/serde.test.ts", "-t", "set of structs"],
   },

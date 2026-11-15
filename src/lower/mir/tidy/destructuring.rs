@@ -21,7 +21,7 @@ pub(super) fn destructured(
         // statement makes, the statements after it; or a variable this one
         // reads a part of, here.
         let (name, first) = match &stmts[i].kind {
-            StmtKind::Const(name, _) if is_temporary(name) => (name.to_string(), i + 1),
+            StmtKind::Const(name, _) if is_temporary(name.word()) => (name.to_string(), i + 1),
             StmtKind::Const(_, value) | StmtKind::Let(_, Some(value))
                 if let Some(v) = part_of(value)
                     && !is_temporary(v) =>
@@ -136,7 +136,7 @@ fn constants_first(stmts: &mut Vec<Stmt>, at: usize, first: usize, name: &str) -
     let mut constants = Vec::new();
     while let Some(stmt) = stmts.get(end) {
         match &stmt.kind {
-            StmtKind::Let(bound, Some(value)) if value.is_constant() && bound != name => constants.push(end),
+            StmtKind::Let(bound, Some(value)) if value.is_constant() && !bound.is(name) => constants.push(end),
             StmtKind::Const(_, value) | StmtKind::Let(_, Some(value)) if part_read(value, name).is_some() => {}
             _ => break,
         }
@@ -171,7 +171,7 @@ pub(super) fn assigned_parts(stmts: &mut Vec<Stmt>) {
         };
         let parts: Option<Vec<String>> = (items.iter())
             .map(|item| match item {
-                Some(js::Pattern::Name(name)) if is_temporary(name) => Some(name.to_string()),
+                Some(js::Pattern::Name(name)) if is_temporary(name.word()) => Some(name.to_string()),
                 _ => None,
             })
             .collect();
@@ -188,7 +188,7 @@ pub(super) fn assigned_parts(stmts: &mut Vec<Stmt>) {
                             kind: ExprKind::Var(read),
                             ..
                         },
-                    )) if read == part => Some(target.to_string()),
+                    )) if read.is(part) => Some(target.to_string()),
                     _ => None,
                 })
                 .collect()
@@ -285,7 +285,7 @@ pub(super) fn parts(stmts: &[Stmt], name: &str) -> Vec<Part> {
             StmtKind::Let(bound, Some(value)) => (bound, value, true),
             _ => break,
         };
-        if bound == name {
+        if bound.is(name) {
             break;
         }
         // One step in, `name[0]` or `name.b`, as `part_read` reads one.
@@ -310,7 +310,7 @@ pub(super) fn parts(stmts: &[Stmt], name: &str) -> Vec<Part> {
 /// `o.k`, or `o.k === undefined ? d : o.k`.
 pub(super) fn part_of(value: &Expr) -> Option<&str> {
     match &part_of_read(value)?.kind {
-        ExprKind::Var(v) => Some(v.as_str()),
+        ExprKind::Var(v) => Some(v.word()),
         _ => None,
     }
 }
@@ -328,7 +328,7 @@ fn part_of_read(value: &Expr) -> Option<&Expr> {
     let ExprKind::Var(v) = &of.kind else {
         return None;
     };
-    part_read(value, v)
+    part_read(value, v.word())
         .is_some_and(|(steps, _)| steps.len() == 1)
         .then_some(&**of)
 }
@@ -365,7 +365,7 @@ pub(in crate::lower::mir) fn destructured_params(params: &mut [js::Pattern], bod
     };
     for param in params.iter_mut() {
         let js::Pattern::Name(name) = param else { continue };
-        if !unnamed(name) {
+        if !unnamed(name.word()) {
             continue;
         }
         let mut name = name.clone();
@@ -375,13 +375,13 @@ pub(in crate::lower::mir) fn destructured_params(params: &mut [js::Pattern], bod
             ..
         }) = body.first()
             && matches!(&value.kind, ExprKind::Var(v) if *v == name)
-            && js::mentions_in(&body[1..], &name) == 0
+            && js::mentions_in(&body[1..], name.word()) == 0
         {
             name = bound.clone();
             *param = js::Pattern::Name(name.clone());
             body.remove(0);
         }
-        if !unnamed(&name) {
+        if !unnamed(name.word()) {
             continue;
         }
         // Taken apart already, `const { params } = __arg0;`: that pattern.
@@ -395,22 +395,22 @@ pub(in crate::lower::mir) fn destructured_params(params: &mut [js::Pattern], bod
             ..
         }) = body.first()
             && matches!(&value.kind, ExprKind::Var(v) if *v == name)
-            && js::mentions_in(&body[1..], &name) == 0
+            && js::mentions_in(&body[1..], name.word()) == 0
         {
             *param = pattern.clone();
             body.remove(0);
             continue;
         }
         // Read after the constants the body declares first, its drop flags.
-        constants_first(body, 0, 0, &name);
+        constants_first(body, 0, 0, name.word());
         let start = (body.iter())
             .take_while(
                 |stmt| matches!(&stmt.kind, StmtKind::Let(bound, Some(value)) if value.is_constant() && *bound != name),
             )
             .count();
-        let read = nested_parts(&body[start..], &name);
+        let read = nested_parts(&body[start..], name.word());
         let count = read.len();
-        if js::mentions_in(&body[start + count..], &name) > 0 {
+        if js::mentions_in(&body[start + count..], name.word()) > 0 {
             continue;
         }
         let read: Vec<_> = (read.iter())
@@ -434,7 +434,7 @@ pub(super) enum Step {
 /// `_2[1].name`.
 pub(super) fn path(e: &Expr, name: &str) -> Option<Vec<Step>> {
     let (of, step) = match &e.kind {
-        ExprKind::Var(v) if v == name => return Some(Vec::new()),
+        ExprKind::Var(v) if v.is(name) => return Some(Vec::new()),
         // An item Rust's index reads, `v[0]`, is no part (ADR 0598,
         // amended).
         ExprKind::Index(of, index)
@@ -482,7 +482,7 @@ pub(super) fn nested_parts(stmts: &[Stmt], name: &str) -> Vec<(Vec<Step>, String
         let (StmtKind::Const(bound, value) | StmtKind::Let(bound, Some(value))) = &stmt.kind else {
             break;
         };
-        if bound == name {
+        if bound.is(name) {
             break;
         }
         let Some((steps, default)) = part_read(value, name) else {
@@ -560,7 +560,7 @@ pub(super) fn tuple_reads(
         let found = match &stmts[i].kind {
             StmtKind::Const(t, value)
                 if let ExprKind::Array(items) = &value.kind
-                    && (is_temporary(t) || (captured.contains(t.as_str()) && items.iter().all(inert))) =>
+                    && (is_temporary(t.word()) || (captured.contains(t.word()) && items.iter().all(inert))) =>
             {
                 Some((t.clone(), items.clone()))
             }
@@ -581,10 +581,10 @@ pub(super) fn tuple_reads(
         js::each_expr_mut(&mut stmts[i + 1..], &mut |e| indexed += usize::from(item(e).is_some()));
         // Read only, not set through, `children[0] = ..`.
         let writes = js::Writes::of(&stmts[i + 1..]);
-        if writes.replaced.contains(t.as_str())
-            || writes.changed.contains(t.as_str())
+        if writes.replaced.contains(t.word())
+            || writes.changed.contains(t.word())
             || indexed == 0
-            || indexed != js::mentions_in(&stmts[i + 1..], &t)
+            || indexed != js::mentions_in(&stmts[i + 1..], t.word())
         {
             i += 1;
             continue;
@@ -634,7 +634,7 @@ pub(super) fn tuple_reads(
         });
         while let Some((_, of)) = aliased
             .iter()
-            .find(|(alias, of)| parts_set.contains(alias.as_str()) && !parts_set.contains(of))
+            .find(|(alias, of)| parts_set.contains(alias.word()) && !parts_set.contains(of))
         {
             parts_set.insert(of.clone());
         }
@@ -648,11 +648,11 @@ pub(super) fn tuple_reads(
         };
         let acts = |item: &Expr| {
             (!inert(item) || reads_parts_set(item))
-                && !matches!(&item.kind, ExprKind::Var(v) if !js::Writes::sets(after, v) && !set_elsewhere.contains(v.as_str()))
+                && !matches!(&item.kind, ExprKind::Var(v) if !js::Writes::sets(after, v.word()) && !set_elsewhere.contains(v.word()))
         };
         let last = items.iter().rposition(acts);
         let fixed = |item: &Expr| {
-            let math = |e: &Expr| matches!(&e.kind, ExprKind::Var(m) if m == "Math");
+            let math = |e: &Expr| matches!(&e.kind, ExprKind::Var(m) if m.is("Math"));
             let mut fixed = inert(item);
             item.clone().each_mut(&mut |e| {
                 fixed &= match &e.kind {
@@ -680,7 +680,7 @@ pub(super) fn tuple_reads(
         let mut held = Vec::new();
         for (k, item) in items.iter_mut().enumerate() {
             if last.is_some_and(|last| k < last && !fixed(item) || k == last) {
-                let name = crate::names::given_apart(&t, k);
+                let name = crate::names::given_apart(t.word(), k);
                 held.push(StmtKind::Const(name.clone().into(), std::mem::replace(item, Expr::var(&name))).at(span));
             }
         }
@@ -758,7 +758,10 @@ pub(super) fn unwrapped_values(stmts: &mut [Stmt]) {
         let StmtKind::Const(t, value) = &stmts[i].kind else {
             continue;
         };
-        if !is_temporary(t) || !matches!(value.kind, ExprKind::Array(_)) || js::mentions_in(&stmts[i + 1..], t) != 1 {
+        if !is_temporary(t.word())
+            || !matches!(value.kind, ExprKind::Array(_))
+            || js::mentions_in(&stmts[i + 1..], t.word()) != 1
+        {
             continue;
         }
         let t = t.clone();
@@ -786,7 +789,7 @@ pub(super) fn unwrapped_values(stmts: &mut [Stmt]) {
                 && let ExprKind::Member(of, _) = &callee.kind
                 && matches!(&of.kind, ExprKind::Var(v) if *v == t)
             {
-                *e = Expr::var(&t);
+                *e = Expr::var(t.word());
             }
         });
     }
@@ -801,10 +804,10 @@ pub(in crate::lower::mir) fn copied_params(params: &[js::Pattern], body: &mut Ve
     while let Some(first) = body.first()
         && let StmtKind::Const(copy, value) | StmtKind::Let(copy, Some(value)) = &first.kind
         && let ExprKind::Var(param) = &value.kind
-        && names.contains(&param.as_str())
-        && !names.contains(&copy.as_str())
-        && copy.split('$').next() == param.split('$').next()
-        && js::mentions_in(body, param) == 1
+        && names.contains(&param.word())
+        && !names.contains(&copy.word())
+        && copy.word().split('$').next() == param.word().split('$').next()
+        && js::mentions_in(body, param.word()) == 1
     {
         let (copy, param) = (copy.clone(), param.clone());
         body.remove(0);
@@ -875,7 +878,7 @@ fn assigned_tuple(stmts: &mut Vec<Stmt>, i: usize) -> Option<usize> {
     let StmtKind::Let(t, None) = &stmts[i].kind else {
         return None;
     };
-    if !is_temporary(t) || !matches!(stmts.get(i + 1)?.kind, StmtKind::If(_, _, Some(_))) {
+    if !is_temporary(t.word()) || !matches!(stmts.get(i + 1)?.kind, StmtKind::If(_, _, Some(_))) {
         return None;
     }
     let t = t.clone();
@@ -899,9 +902,9 @@ fn assigned_tuple(stmts: &mut Vec<Stmt>, i: usize) -> Option<usize> {
     let StmtKind::If(_, then, Some(otherwise)) = &mut branches.kind else {
         return None;
     };
-    let assigned = parts_at_ends(then, &t, &names)? + parts_at_ends(otherwise, &t, &names)?;
+    let assigned = parts_at_ends(then, t.word(), &names)? + parts_at_ends(otherwise, t.word(), &names)?;
     // Nothing else reads or sets it: its branches' arrays and its parts.
-    if js::mentions_in(&stmts[i + 1..], &t) != assigned + names.len() {
+    if js::mentions_in(&stmts[i + 1..], t.word()) != assigned + names.len() {
         return None;
     }
     let span = stmts[i].span;
@@ -922,7 +925,7 @@ fn assigned_tuple(stmts: &mut Vec<Stmt>, i: usize) -> Option<usize> {
 fn parts_at_ends(stmts: &mut Vec<Stmt>, t: &str, names: &[String]) -> Option<usize> {
     match &mut stmts.last_mut()?.kind {
         StmtKind::Assign(target, value)
-            if matches!(&target.kind, ExprKind::Var(v) if v == t)
+            if matches!(&target.kind, ExprKind::Var(v) if v.is(t))
                 && let ExprKind::Array(items) = &value.kind
                 && items.len() == names.len() =>
         {
@@ -941,8 +944,8 @@ fn parts_at_ends(stmts: &mut Vec<Stmt>, t: &str, names: &[String]) -> Option<usi
                 // `a = x.value;`, as nothing reads the part before.
                 if let ExprKind::Var(held) = &item.kind
                     && let Some(k) = (stmts.iter()).rposition(|s| matches!(&s.kind, StmtKind::Const(v, _) if v == held))
-                    && js::mentions_in(&stmts[k + 1..], held) == 0
-                    && reads_in_items(held) == 1
+                    && js::mentions_in(&stmts[k + 1..], held.word()) == 0
+                    && reads_in_items(held.word()) == 1
                     && let StmtKind::Const(_, value) = &stmts[k].kind
                 {
                     let span = stmts[k].span;

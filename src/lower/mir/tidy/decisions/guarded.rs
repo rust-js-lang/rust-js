@@ -31,9 +31,9 @@ pub(in crate::lower::mir::tidy) fn bound(body: &[Stmt], guards: &[Guard]) -> Ind
             let block_at = (i + 1..list.len()).find(|&j| !matches!(list[j].kind, StmtKind::Let(_, None)));
             if let StmtKind::Let(name, Some(value)) = &stmt.kind
                 && let Some(StmtKind::Labeled(label, block)) = block_at.and_then(|j| list.get(j)).map(|s| &s.kind)
-                && crate::lower::mir::is_block_label(label)
+                && crate::lower::mir::is_block_label(label.word())
                 && pure(value)
-                && let Some(reads) = tested_reads(block, name).filter(|&n| n > 0)
+                && let Some(reads) = tested_reads(block, name.word()).filter(|&n| n > 0)
             {
                 *given.entry(name.to_string()).or_default() += reads;
             }
@@ -55,15 +55,15 @@ pub(in crate::lower::mir::tidy) fn bound(body: &[Stmt], guards: &[Guard]) -> Ind
                 continue;
             };
             let otherwise = otherwise.as_deref();
-            let unread = !test.mentions_var(name)
+            let unread = !test.mentions_var(name.word())
                 && pure(value)
-                && !value.mentions_var(name)
-                && only_tested(then, name)
-                && otherwise.is_none_or(|o| only_tested(o, name));
-            if unread || binds(name, value, test, then, otherwise, guards) {
-                let reads = js::mentions_in(&[StmtKind::Expr(test.clone()).at(list[at].span)], name)
-                    + tested_reads(then, name).unwrap_or(0)
-                    + otherwise.and_then(|o| tested_reads(o, name)).unwrap_or(0);
+                && !value.mentions_var(name.word())
+                && only_tested(then, name.word())
+                && otherwise.is_none_or(|o| only_tested(o, name.word()));
+            if unread || binds(name.word(), value, test, then, otherwise, guards) {
+                let reads = js::mentions_in(&[StmtKind::Expr(test.clone()).at(list[at].span)], name.word())
+                    + tested_reads(then, name.word()).unwrap_or(0)
+                    + otherwise.and_then(|o| tested_reads(o, name.word())).unwrap_or(0);
                 *given.entry(name.to_string()).or_default() += set + reads;
             }
         }
@@ -117,14 +117,14 @@ pub(super) fn given_before(before: &[Stmt], body: &[Stmt], after: &[Stmt]) -> Ve
         let (StmtKind::Let(name, Some(value)) | StmtKind::Const(name, value)) = &stmt.kind else {
             break;
         };
-        if !pure(value) || value.mentions_var(name) {
+        if !pure(value) || value.mentions_var(name.word()) {
             break;
         }
         // Given again in the tree, another alternative's binding: a `const
         // x = v[i];` the tree only tests, `switch (x)`'s, reads as named.
-        if js::Writes::sets(body, name)
-            && tested_reads(body, name).is_some_and(|n| n > 0)
-            && js::mentions_in(after, name) == 0
+        if js::Writes::sets(body, name.word())
+            && tested_reads(body, name.word()).is_some_and(|n| n > 0)
+            && js::mentions_in(after, name.word()) == 0
         {
             given.push((name.to_string(), value.clone()));
         }
@@ -141,7 +141,7 @@ pub(super) fn given_unread(stmts: &mut Vec<Stmt>, given: &[(String, Expr)]) {
     for (name, _) in given {
         let at = stmts
             .iter()
-            .position(|s| matches!(&s.kind, StmtKind::Let(n, Some(_)) if n == name));
+            .position(|s| matches!(&s.kind, StmtKind::Let(n, Some(_)) if n.is(name)));
         if let Some(at) = at
             && js::mentions_in(&stmts[..at], name) + js::mentions_in(&stmts[at + 1..], name) == 0
         {
@@ -171,13 +171,13 @@ fn tested_reads(stmts: &[Stmt], name: &str) -> Option<usize> {
                     + tested_reads(then, name)?
                     + otherwise.as_deref().map_or(Some(0), |o| tested_reads(o, name))?;
             }
-            StmtKind::Const(declared, value) | StmtKind::Let(declared, Some(value)) if declared == name => {
+            StmtKind::Const(declared, value) | StmtKind::Let(declared, Some(value)) if declared.is(name) => {
                 return (!value.mentions_var(name)).then_some(reads);
             }
-            StmtKind::Let(declared, None) if declared == name => return Some(reads),
+            StmtKind::Let(declared, None) if declared.is(name) => return Some(reads),
             // Given again, another alternative's binding, `x$1 = s[0];`.
             StmtKind::Assign(target, value)
-                if matches!(&target.kind, ExprKind::Var(v) if v == name) && !value.mentions_var(name) =>
+                if matches!(&target.kind, ExprKind::Var(v) if v.is(name)) && !value.mentions_var(name) =>
             {
                 return Some(reads);
             }
@@ -234,7 +234,7 @@ impl<'s> Walk<'s, '_> {
         let binding = |s: &'s Stmt| match &s.kind {
             StmtKind::Const(name, value) | StmtKind::Let(name, Some(value)) => Some((name, value, true)),
             StmtKind::Assign(target, value) => match &target.kind {
-                ExprKind::Var(name) if self.told.bound.contains(name.as_str()) => Some((name, value, false)),
+                ExprKind::Var(name) if self.told.bound.contains(name.word()) => Some((name, value, false)),
                 _ => None,
             },
             _ => None,
@@ -253,21 +253,22 @@ impl<'s> Walk<'s, '_> {
         // doesn't read, `const x = s[0];` of `&[x, .., y] if y * 2 > 1`; one
         // at least by the test.
         let read = |(name, value, local): &(&Name, &Expr, bool)| {
-            let unread = !test.mentions_var(name)
+            let unread = !test.mentions_var(name.word())
                 && pure(value)
-                && !value.mentions_var(name)
-                && only_tested(then, name)
-                && otherwise.is_none_or(|o| only_tested(o, name));
-            (binds(name, value, test, then, otherwise, self.told.guards) || unread)
-                && !(run.iter()).any(|(other, value, _)| other != name && value.mentions_var(name))
-                && !(*local && js::mentions_in(rest, name) > 0)
+                && !value.mentions_var(name.word())
+                && only_tested(then, name.word())
+                && otherwise.is_none_or(|o| only_tested(o, name.word()));
+            (binds(name.word(), value, test, then, otherwise, self.told.guards) || unread)
+                && !(run.iter()).any(|(other, value, _)| other != name && value.mentions_var(name.word()))
+                && !(*local && js::mentions_in(rest, name.word()) > 0)
         };
         // Or none read at all, a binding the arm doesn't read either, `(2,
         // x) | (x, 0) if g(c, a * 2, 1) => break` (#771).
         let dead = |(name, ..): &(&Name, &Expr, bool)| {
-            tested_reads(then, name) == Some(0) && otherwise.is_none_or(|o| tested_reads(o, name) == Some(0))
+            tested_reads(then, name.word()) == Some(0)
+                && otherwise.is_none_or(|o| tested_reads(o, name.word()) == Some(0))
         };
-        let tested = run.iter().any(|(name, ..)| test.mentions_var(name)) || run.iter().all(dead);
+        let tested = run.iter().any(|(name, ..)| test.mentions_var(name.word())) || run.iter().all(dead);
         if !run.iter().all(read) || !tested || !guard(test) {
             return None;
         }

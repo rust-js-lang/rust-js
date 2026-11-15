@@ -139,9 +139,9 @@ export const mutations: Mutation[] = [
     breaks:
       "`first_element_child(p).map(|c| id(c))` is `const child = ..; child?.id`, not `p.firstElementChild?.id`",
     file: "src/lower/std_types/option.rs",
-    find: "                            && let Some(chain) = optional_chain(&option, b, p)\n",
+    find: "                            && let Some(chain) = optional_chain(&option, b, p.word())\n",
     replace:
-      "                            && let Some(chain) = optional_chain(&option, b, p).filter(|_| false)\n",
+      "                            && let Some(chain) = optional_chain(&option, b, p.word()).filter(|_| false)\n",
     tests: [
       "test/lowering-optional-chains.test.ts",
       "-t",

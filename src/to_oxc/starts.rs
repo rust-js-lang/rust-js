@@ -216,7 +216,7 @@ pub(super) fn declared_class(n: &js::Namespace) -> Option<(js::Span, js::Span)> 
     if class.es {
         return Some((class.declared, class.declared));
     }
-    let constructor = n.methods.iter().find(|f| f.name == class.constructor)?;
+    let constructor = n.methods.iter().find(|f| f.name.is(&class.constructor))?;
     Some((class.declared, constructor.span))
 }
 

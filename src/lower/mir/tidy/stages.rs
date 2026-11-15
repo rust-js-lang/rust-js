@@ -729,9 +729,9 @@ pub(super) const STAGES: &[Stage] = &[
                     let unread: Vec<String> = (s.iter())
                         .filter_map(|stmt| match &stmt.kind {
                             StmtKind::Let(name, None)
-                                if !mentions.contains_key(name.as_str())
-                                    || declared.get(name.as_str()).is_some_and(|&n| n > 1)
-                                        && redeclared_only(s, name) =>
+                                if !mentions.contains_key(name.word())
+                                    || declared.get(name.word()).is_some_and(|&n| n > 1)
+                                        && redeclared_only(s, name.word()) =>
                             {
                                 Some(name.to_string())
                             }
@@ -739,7 +739,7 @@ pub(super) const STAGES: &[Stage] = &[
                         })
                         .collect();
                     s.retain(
-                        |stmt| !matches!(&stmt.kind, StmtKind::Let(name, None) if unread.iter().any(|u| u == name)),
+                        |stmt| !matches!(&stmt.kind, StmtKind::Let(name, None) if unread.iter().any(|u| name.is(u))),
                     );
                     // A function made that nothing reads, which making does
                     // nothing: a binding's value MIR held in a variable of
@@ -748,7 +748,7 @@ pub(super) const STAGES: &[Stage] = &[
                     // or read, the program's, an instance's `noopU32` (#974).
                     s.retain(|stmt| {
                         !matches!(&stmt.kind, StmtKind::Const(name, value)
-                            if !mentions.contains_key(name.as_str())
+                            if !mentions.contains_key(name.word())
                                 && (matches!(value.kind, js::ExprKind::Arrow(..) | js::ExprKind::AsyncArrow(..))
                                     || matches!(value.kind, js::ExprKind::Var(_)) && value.facts.has(js::Known::Item)))
                     })
@@ -1298,13 +1298,13 @@ fn statement_starts(body: &[Stmt]) -> Vec<u32> {
 /// = v[i];`, so none is of the `let`'s.
 fn redeclared_only(stmts: &[Stmt], name: &str) -> bool {
     let mut rest: Vec<Stmt> = (stmts.iter())
-        .filter(|s| !matches!(&s.kind, StmtKind::Let(n, None) if n == name))
+        .filter(|s| !matches!(&s.kind, StmtKind::Let(n, None) if n.is(name)))
         .cloned()
         .collect();
     js::statement_lists(&mut rest, &mut |list| {
         if list
             .iter()
-            .any(|s| matches!(&s.kind, StmtKind::Let(n, _) | StmtKind::Const(n, _) if n == name))
+            .any(|s| matches!(&s.kind, StmtKind::Let(n, _) | StmtKind::Const(n, _) if n.is(name)))
         {
             list.clear();
         }

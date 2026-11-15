@@ -1250,7 +1250,7 @@ fn append_of<'s>(stmt: &'s Stmt, text: &IndexSet<String>) -> Option<(&'s str, &'
     let (ExprKind::Var(s), ExprKind::Binary(Op::Add, to, appended)) = (&target.kind, &value.kind) else {
         return None;
     };
-    (text.contains(s.as_str()) && matches!(&to.kind, ExprKind::Var(t) if t == s)).then_some((s.as_str(), &**appended))
+    (text.contains(s.word()) && matches!(&to.kind, ExprKind::Var(t) if t == s)).then_some((s.word(), &**appended))
 }
 
 /// The `char`s of `text`, an array made here, `Array.from(text)`: a case

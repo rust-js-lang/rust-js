@@ -28,7 +28,7 @@ fn unread_gone(body: &mut Vec<Stmt>, flags: &IndexSet<String>) {
         if !read(body, flag) {
             js::statement_lists(body, &mut |list| {
                 list.retain(|stmt| match &stmt.kind {
-                    StmtKind::Let(name, _) => name != flag,
+                    StmtKind::Let(name, _) => !name.is(flag),
                     StmtKind::Assign(target, _) => flag_of(target, flags) != Some(flag.as_str()),
                     _ => true,
                 })
@@ -51,20 +51,20 @@ pub(super) fn named_flags(body: &mut Vec<Stmt>, flags: &IndexSet<String>) {
     js::statement_lists(body, &mut |list| {
         for stmt in list.iter() {
             if let StmtKind::Let(name, _) = &stmt.kind
-                && flags.contains(name.as_str())
+                && flags.contains(name.word())
             {
                 declared.push(name.clone());
             }
         }
     });
     for flag in &declared {
-        let Some((base, rest)) = flag.split_once('$') else {
+        let Some((base, rest)) = flag.word().split_once('$') else {
             continue;
         };
         if !super::is_temporary(base) {
             continue;
         }
-        let Some(dropped) = guarded(body, flag) else {
+        let Some(dropped) = guarded(body, flag.word()) else {
             continue;
         };
         let named = dropped.split('$').next().unwrap_or(&dropped);
@@ -115,7 +115,7 @@ fn guarded(body: &mut [Stmt], flag: &str) -> Option<String> {
 /// a pattern's test joined with it (ADR 0614).
 fn tests_flag(test: &Expr, flag: &str) -> bool {
     match &test.kind {
-        ExprKind::Var(v) => v == flag,
+        ExprKind::Var(v) => v.is(flag),
         ExprKind::Binary(js::Op::And, a, b) => tests_flag(a, flag) || tests_flag(b, flag),
         _ => false,
     }
@@ -123,7 +123,7 @@ fn tests_flag(test: &Expr, flag: &str) -> bool {
 
 fn flag_of<'e>(e: &'e Expr, flags: &IndexSet<String>) -> Option<&'e str> {
     match &e.kind {
-        ExprKind::Var(v) if flags.contains(v.as_str()) => Some(v),
+        ExprKind::Var(v) if flags.contains(v.word()) => Some(v.word()),
         _ => None,
     }
 }
@@ -136,7 +136,7 @@ fn read(body: &[Stmt], flag: &str) -> bool {
     js::each_list(body, &mut |list| {
         for stmt in list.iter() {
             if let StmtKind::Assign(target, _) = &stmt.kind
-                && matches!(&target.kind, ExprKind::Var(v) if v == flag)
+                && matches!(&target.kind, ExprKind::Var(v) if v.is(flag))
             {
                 written += 1;
             }
@@ -208,7 +208,7 @@ fn settle(stmts: &mut Vec<Stmt>, known: &mut Known, flags: &IndexSet<String>) {
     while i < stmts.len() {
         // What a flag is set to: one set again to what it is goes.
         let set = match &stmts[i].kind {
-            StmtKind::Let(name, value) if flags.contains(name.as_str()) => {
+            StmtKind::Let(name, value) if flags.contains(name.word()) => {
                 Some((name.to_string(), value.as_ref().and_then(bool_of), false))
             }
             StmtKind::Assign(target, value) if let Some(flag) = flag_of(target, flags) => {
@@ -260,9 +260,9 @@ fn settle(stmts: &mut Vec<Stmt>, known: &mut Known, flags: &IndexSet<String>) {
                     .collect();
                 settle(handler, &mut caught, flags);
                 let rethrows = matches!(
-                    (error.as_deref(), handler.as_slice()),
+                    (error.as_ref().map(|n| n.word()), handler.as_slice()),
                     (Some(error), [Stmt { kind: StmtKind::Throw(Expr { kind: ExprKind::Var(thrown), .. }), .. }])
-                        if thrown == error
+                        if thrown.is(error)
                 );
                 if rethrows {
                     let inner = std::mem::take(inner);
@@ -280,9 +280,9 @@ fn settle(stmts: &mut Vec<Stmt>, known: &mut Known, flags: &IndexSet<String>) {
                         span,
                     },
                 ] = inner.as_slice()
-                    && let Some(error) = error.as_deref()
+                    && let Some(error) = error.as_ref().map(|n| n.word())
                     && let Some((last, dropping)) = handler.split_last()
-                    && matches!(&last.kind, StmtKind::Throw(Expr { kind: ExprKind::Var(thrown), .. }) if thrown == error)
+                    && matches!(&last.kind, StmtKind::Throw(Expr { kind: ExprKind::Var(thrown), .. }) if thrown.is(error))
                     && js::mentions_in(dropping, error) == 0
                     && made_of_values(panic)
                 {

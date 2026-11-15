@@ -112,7 +112,7 @@ fn given_first(stmts: &mut Vec<Stmt>, (made, declared): (&IndexSet<String>, &Ind
         stmts[at].kind = StmtKind::Assign(Expr::var(&x), made);
         stmts.remove(given);
         js::each_expr_mut(&mut stmts[at + 1..given], &mut |e| {
-            if matches!(&e.kind, ExprKind::Var(v) if *v == y) {
+            if matches!(&e.kind, ExprKind::Var(v) if v.is(&y)) {
                 *e = Expr::var(&x).or_at(e.span);
             }
         });
@@ -132,12 +132,12 @@ fn given_from(
     let (ExprKind::Var(x), ExprKind::Var(y)) = (&target.kind, &value.kind) else {
         return None;
     };
-    if !kin(x, y) || !declared.contains(x.as_str()) {
+    if !kin(x.word(), y.word()) || !declared.contains(x.word()) {
         return None;
     }
     let captured = captured(&stmts[..given]);
     let early = |name: &str| made.contains(name) || captured.contains(name);
-    if early(x) || early(y) {
+    if early(x.word()) || early(y.word()) {
         return None;
     }
     let at = (stmts[..given].iter()).position(|s| matches!(&s.kind, StmtKind::Const(n, _) if n == y))?;
@@ -145,10 +145,10 @@ fn given_from(
         return None;
     };
     let between = &stmts[at + 1..given];
-    let kept = made.mentions_var(x)
-        || js::mentions_in(between, x) > 0
+    let kept = made.mentions_var(x.word())
+        || js::mentions_in(between, x.word()) > 0
         || jumps(between)
-        || js::mentions_in(&stmts[given + 1..], y) > 0;
+        || js::mentions_in(&stmts[given + 1..], y.word()) > 0;
     (!kept).then(|| (at, x.to_string(), y.to_string()))
 }
 

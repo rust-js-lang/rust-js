@@ -27,7 +27,7 @@ pub(in crate::lower::mir::tidy) fn chains_in_blocks(stmts: &mut Vec<Stmt>, lets:
             i += 1;
             continue;
         };
-        if !crate::lower::mir::is_block_label(label) {
+        if !crate::lower::mir::is_block_label(label.word()) {
             i += 1;
             continue;
         }
@@ -37,14 +37,14 @@ pub(in crate::lower::mir::tidy) fn chains_in_blocks(stmts: &mut Vec<Stmt>, lets:
         };
         // Of a binding sunk alone: a chain of none is `branch_values`', or
         // a flag's (`flag values`).
-        let made = match chained(body, label, &mut hoisting) {
-            Some((0, chain)) if chain != *body => Some(chain_if(&chain, label, stmts[i].span, lets)),
+        let made = match chained(body, label.word(), &mut hoisting) {
+            Some((0, chain)) if chain != *body => Some(chain_if(&chain, label.word(), stmts[i].span, lets)),
             _ => {
                 hoisting.names.clear();
-                match chain_within(body, label, &mut hoisting) {
+                match chain_within(body, label.word(), &mut hoisting) {
                     true => {
                         let (label, mut body) = (label.clone(), body.clone());
-                        fold_within(&mut body, &label, &mut hoisting, lets);
+                        fold_within(&mut body, label.word(), &mut hoisting, lets);
                         Some(body.pop().expect("chain_within's `if`"))
                     }
                     false => None,
@@ -184,7 +184,7 @@ fn set_in_tests(stmt: &mut Stmt, hoisting: &mut Hoisting) {
             unreachable!("counted")
         };
         let name = name.clone();
-        if hoisting.declared(&name).is_none() {
+        if hoisting.declared(name.word()).is_none() {
             return;
         }
         set_where_read(then, at);
@@ -219,7 +219,7 @@ fn sunk(stmt: &mut Stmt, mut carried: Vec<Stmt>) {
     if let StmtKind::If(test, ..) = &mut then[0].kind {
         let read = |n: &str| {
             (carried.iter()).rev().find_map(|c| match &c.kind {
-                StmtKind::Const(name, value) if name == n => Some(value.clone()),
+                StmtKind::Const(name, value) if name.is(n) => Some(value.clone()),
                 _ => None,
             })
         };

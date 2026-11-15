@@ -257,7 +257,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<()> {
         if let crate::js::ExprKind::Var(name) = &json.kind {
             let name = name.clone();
-            return self.write_json(value, &name, ty.peel_refs(), span, out);
+            return self.write_json(value, name.word(), ty.peel_refs(), span, out);
         }
         let writer = self.json_writer(ty, span)?;
         out.push(StmtKind::Expr(Expr::call(writer, vec![value, json.clone()])).at(crate::js::Span::NONE));

@@ -80,7 +80,7 @@ pub(super) fn fixed_params(params: &[js::Pattern], body: &[Stmt]) -> Vec<String>
     for param in params {
         let mut param = param.clone();
         param.each_name_mut(&mut |name| {
-            if !writes.may_replace(name) && !js::declares(body, name) {
+            if !writes.may_replace(name.word()) && !js::declares(body, name.word()) {
                 fixed.push(name.to_string());
             }
         });
@@ -116,16 +116,16 @@ pub(super) fn decisions(stmts: &mut Vec<Stmt>, told: &Told) {
         let StmtKind::Labeled(label, body) = &stmts[i].kind else {
             continue;
         };
-        if !crate::lower::mir::is_block_label(label) {
+        if !crate::lower::mir::is_block_label(label.word()) {
             continue;
         }
         // A block each `break` of which ends a branch it ends with, an
         // inner tree's chain whose arms go on past the block: what it holds.
-        if let Some(ended) = breaks_ended(label, body).filter(|_| calls_in(body, told)) {
+        if let Some(ended) = breaks_ended(label.word(), body).filter(|_| calls_in(body, told)) {
             stmts.splice(i..i + 1, ended);
             continue;
         }
-        let at = (label.as_str(), stmts[i].span);
+        let at = (label.word(), stmts[i].span);
         let after = &stmts[i + 1..];
         // What a guard's binding the `let`s before the block give, its tree
         // the binding's only reader (`given_before`, #771).
@@ -137,10 +137,10 @@ pub(super) fn decisions(stmts: &mut Vec<Stmt>, told: &Told) {
             // the block: its chain there, and the block's again; a block no
             // `break` leaves then, what it holds.
             if told.kept
-                && let Some(tails) = tails(label, body, told)
+                && let Some(tails) = tails(label.word(), body, told)
             {
                 let made = chain(at, &tails, after, told, (true, &given));
-                let left = names_break(&tails, label);
+                let left = names_break(&tails, label.word());
                 match made {
                     Some((chain, true)) => {
                         stmts.truncate(i);
@@ -148,7 +148,7 @@ pub(super) fn decisions(stmts: &mut Vec<Stmt>, told: &Told) {
                     }
                     Some((chain, false)) => drop(stmts.splice(i..i + 1, chain)),
                     None if !left => drop(stmts.splice(i..i + 1, tails)),
-                    None => match nested(label, &tails) {
+                    None => match nested(label.word(), &tails) {
                         Some(nested) => drop(stmts.splice(i..i + 1, nested)),
                         None => {
                             if let StmtKind::Labeled(_, body) = &mut stmts[i].kind {
@@ -158,7 +158,7 @@ pub(super) fn decisions(stmts: &mut Vec<Stmt>, told: &Told) {
                     },
                 }
             } else if told.kept
-                && let Some(nested) = nested(label, body)
+                && let Some(nested) = nested(label.word(), body)
             {
                 stmts.splice(i..i + 1, nested);
             }
@@ -259,7 +259,7 @@ fn chain(
     // would be left without its declaration (#771).
     let named = |leaf: &Leaf, name: &str| {
         let own = (leaf.body.iter())
-            .position(|s| matches!(&s.kind, StmtKind::Const(n, _) | StmtKind::Let(n, _) if n == name))
+            .position(|s| matches!(&s.kind, StmtKind::Const(n, _) | StmtKind::Let(n, _) if n.is(name)))
             .unwrap_or(leaf.body.len());
         (leaf.body[..own].iter()).any(|s| js::mentions_in(std::slice::from_ref(*s), name) > 0)
     };
@@ -310,7 +310,7 @@ fn chain(
     for s in arms_and_after.chain(after) {
         js::each_list(std::slice::from_ref(s), &mut |list| {
             breaking |= (list.iter()).any(|s| match &s.kind {
-                StmtKind::Break(l) => l.as_ref().is_none_or(|l| told.loops.contains(l.as_str())),
+                StmtKind::Break(l) => l.as_ref().is_none_or(|l| told.loops.contains(l.word())),
                 _ => false,
             });
         });
@@ -654,8 +654,8 @@ fn chain(
     {
         stmts.retain(|s| match &s.kind {
             StmtKind::Let(name, None) => {
-                !((takes_rest || js::mentions_in(after, name) == 0)
-                    && super::bindings::declared_in_branches(name, only))
+                !((takes_rest || js::mentions_in(after, name.word()) == 0)
+                    && super::bindings::declared_in_branches(name.word(), only))
             }
             _ => true,
         });
@@ -832,7 +832,7 @@ fn loop_breaks(stmts: &[Stmt], label: &str) -> bool {
 fn unlabel_breaks(stmts: &mut [Stmt], label: &str) {
     for stmt in stmts {
         match &mut stmt.kind {
-            StmtKind::Break(l) if l.as_deref() == Some(label) => *l = None,
+            StmtKind::Break(l) if l.as_ref().map(|n| n.word()) == Some(label) => *l = None,
             StmtKind::If(_, a, b) => {
                 unlabel_breaks(a, label);
                 if let Some(b) = b {

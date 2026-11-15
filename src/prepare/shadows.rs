@@ -56,8 +56,8 @@ fn shadows(body: &mut Vec<Stmt>, own: &IndexSet<String>) {
         js::each_block_mut(body, &mut |stmts| {
             for s in stmts.iter() {
                 if let StmtKind::Const(name, value) = &s.kind
-                    && *name == alias
-                    && matches!(&value.kind, ExprKind::Var(v) if *v == of)
+                    && name.is(&alias)
+                    && matches!(&value.kind, ExprKind::Var(v) if v.is(&of))
                 {
                     global |= value.facts.has(js::Known::Global);
                 }
@@ -67,7 +67,7 @@ fn shadows(body: &mut Vec<Stmt>, own: &IndexSet<String>) {
         // named `value$1` apart from the `value` it captures (#457).
         js::outside_shadows(body, &alias, |body| {
             js::each_expr_mut(body, &mut |e| {
-                if matches!(&e.kind, ExprKind::Var(name) if *name == alias) {
+                if matches!(&e.kind, ExprKind::Var(name) if name.is(&alias)) {
                     e.kind = ExprKind::Var(of.clone().into());
                     if global {
                         e.facts = e.facts.with(js::Known::Global);
@@ -77,7 +77,7 @@ fn shadows(body: &mut Vec<Stmt>, own: &IndexSet<String>) {
             js::each_block_mut(body, &mut |stmts| {
                 stmts.retain(|s| {
                     !matches!(&s.kind, StmtKind::Const(name, value)
-                    if *name == alias && matches!(&value.kind, ExprKind::Var(v) if *v == of))
+                    if name.is(&alias) && matches!(&value.kind, ExprKind::Var(v) if v.is(&of)))
                 });
             });
         });
@@ -183,7 +183,7 @@ fn read_before_set(stmts: &[Stmt], alias: &str, of: &str, set: &mut bool, top: b
             }
             StmtKind::Labeled(_, body) => read_before_set(body, alias, of, set, false),
             StmtKind::Assign(target, value)
-                if matches!(&target.kind, ExprKind::Var(v) if v == of)
+                if matches!(&target.kind, ExprKind::Var(v) if v.is(of))
                     && !sets(&[StmtKind::Expr(value.clone()).at(js::Span::NONE)]) =>
             {
                 let ok = !*set || !value.mentions_var(alias);
@@ -241,7 +241,7 @@ fn leaves(stmt: &Stmt) -> bool {
 /// The statements after `const alias = ..` in the list that has it.
 fn after<'s>(stmts: &'s [Stmt], alias: &str) -> Option<&'s [Stmt]> {
     for (i, stmt) in stmts.iter().enumerate() {
-        if matches!(&stmt.kind, StmtKind::Const(name, _) if name == alias) {
+        if matches!(&stmt.kind, StmtKind::Const(name, _) if name.is(alias)) {
             return Some(&stmts[i + 1..]);
         }
         let found = match &stmt.kind {
@@ -392,7 +392,7 @@ impl Walk {
             match &stmt.kind {
                 StmtKind::Const(alias, value) => {
                     if let ExprKind::Var(of) = &value.kind
-                        && crate::names::apart(alias).is_some_and(|(base, _)| base == of)
+                        && crate::names::apart(alias.word()).is_some_and(|(base, _)| of.is(base))
                     {
                         self.shadows.push((self.at, looped, alias.to_string(), of.to_string()));
                     }
@@ -456,17 +456,17 @@ fn written_back(body: &mut Vec<Stmt>, own: &IndexSet<String>) {
         js::each_block_mut(body, &mut |stmts| {
             stmts.retain(|s| match &s.kind {
                 StmtKind::Let(name, Some(value)) => {
-                    !(*name == alias && matches!(&value.kind, ExprKind::Var(v) if *v == of))
+                    !(name.is(&alias) && matches!(&value.kind, ExprKind::Var(v) if v.is(&of)))
                 }
                 StmtKind::Assign(target, value) => {
-                    !(matches!(&target.kind, ExprKind::Var(t) if *t == of)
-                        && matches!(&value.kind, ExprKind::Var(v) if *v == alias))
+                    !(matches!(&target.kind, ExprKind::Var(t) if t.is(&of))
+                        && matches!(&value.kind, ExprKind::Var(v) if v.is(&alias)))
                 }
                 _ => true,
             });
         });
         js::each_expr_mut(body, &mut |e| {
-            if matches!(&e.kind, ExprKind::Var(name) if *name == alias) {
+            if matches!(&e.kind, ExprKind::Var(name) if name.is(&alias)) {
                 e.kind = ExprKind::Var(of.clone().into());
             }
         });
@@ -480,7 +480,7 @@ fn write_back(body: &[Stmt], own: &IndexSet<String>) -> Option<(String, String)>
         for stmt in list {
             if let StmtKind::Let(alias, Some(value)) = &stmt.kind
                 && let ExprKind::Var(of) = &value.kind
-                && crate::names::apart(alias).is_some_and(|(base, _)| base == of)
+                && crate::names::apart(alias.word()).is_some_and(|(base, _)| of.is(base))
             {
                 lets.push((alias.to_string(), of.to_string()));
             }
@@ -488,7 +488,7 @@ fn write_back(body: &[Stmt], own: &IndexSet<String>) -> Option<(String, String)>
     });
     let in_closures = js::Writes::of(body).replaced_in_closures;
     lets.into_iter().find(|(alias, of)| {
-        let is = |e: &Expr, name: &str| matches!(&e.kind, ExprKind::Var(v) if v == name);
+        let is = |e: &Expr, name: &str| matches!(&e.kind, ExprKind::Var(v) if v.is(name));
         // Each write of either: of `n$1` right before `n = n$1;`, of `n`
         // only that.
         let mut paired = true;
@@ -504,7 +504,7 @@ fn write_back(body: &[Stmt], own: &IndexSet<String>) -> Option<(String, String)>
                     }
                     StmtKind::Assign(target, value) if is(target, of) => paired &= is(value, alias),
                     StmtKind::Compound(_, target, _) if is(target, alias) || is(target, of) => paired = false,
-                    StmtKind::For { name, .. } if name == alias || name == of => paired = false,
+                    StmtKind::For { name, .. } if name.is(alias) || name.is(of) => paired = false,
                     _ => {}
                 }
             }
@@ -525,14 +525,14 @@ fn synced_reads(stmts: &[Stmt], alias: &str, of: &str, ran: &mut bool) -> bool {
     for stmt in stmts {
         let ok = match &stmt.kind {
             StmtKind::Assign(target, value)
-                if matches!(&target.kind, ExprKind::Var(t) if t == of)
-                    && matches!(&value.kind, ExprKind::Var(v) if v == alias) =>
+                if matches!(&target.kind, ExprKind::Var(t) if t.is(of))
+                    && matches!(&value.kind, ExprKind::Var(v) if v.is(alias)) =>
             {
                 *ran = false;
                 true
             }
-            StmtKind::Let(name, Some(_)) if name == alias => true,
-            StmtKind::Assign(target, value) if matches!(&target.kind, ExprKind::Var(t) if t == alias) => {
+            StmtKind::Let(name, Some(_)) if name.is(alias) => true,
+            StmtKind::Assign(target, value) if matches!(&target.kind, ExprKind::Var(t) if t.is(alias)) => {
                 read_first(value, alias, ran)
             }
             StmtKind::If(test, a, b) => {

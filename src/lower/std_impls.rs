@@ -374,7 +374,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let param = self.fresh(Role::Each);
         let same = self.eq_value(Expr::var(&param), x.clone(), item, span, &mut body)?;
         let strict = matches!(&same.kind, js::ExprKind::Binary(Op::Eq, each, of)
-            if matches!(&each.kind, js::ExprKind::Var(v) if *v == param) && **of == x);
+            if matches!(&each.kind, js::ExprKind::Var(v) if v.is(&param)) && **of == x);
         // Of what's never `NaN`, an object equal only to itself (ADR
         // 1016), `includes`, which finds what `indexOf` does.
         if body.is_empty() && strict {
@@ -570,7 +570,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let (x, y) = (self.fresh(Role::X), self.fresh(Role::Y));
             let mut made = Vec::new();
             let same = self.eq_value(Expr::var(&x), Expr::var(&y), args.type_at(1), span, &mut made)?;
-            let is = |e: &Expr, name: &str| matches!(&e.kind, js::ExprKind::Var(v) if v == name);
+            let is = |e: &Expr, name: &str| matches!(&e.kind, js::ExprKind::Var(v) if v.is(name));
             let mut list = vec![a, b];
             match &same.kind {
                 // `===`, which it compares by where it's given none.

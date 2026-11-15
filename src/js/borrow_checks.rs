@@ -102,8 +102,8 @@ pub fn borrow_checks_first(stmts: &mut Vec<Stmt>) {
         if let Some((name, cell)) = alias {
             let rest = &stmts[i + 1..];
             let mut declared = false;
-            each_declared(rest, &mut |d| declared |= d == cell || d == name);
-            if !declared && !Writes::sets(rest, &cell) && !Writes::sets(rest, &name) {
+            each_declared(rest, &mut |d| declared |= cell.is(d) || name.is(d));
+            if !declared && !Writes::sets(rest, cell.word()) && !Writes::sets(rest, name.word()) {
                 each_expr_mut(&mut stmts[i + 1..], &mut |e| {
                     if matches!(&e.kind, ExprKind::Var(v) if *v == name) {
                         e.kind = ExprKind::Var(cell.clone());

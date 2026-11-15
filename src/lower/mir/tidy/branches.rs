@@ -300,9 +300,10 @@ pub(super) fn branch_values(
                     ..
                 }) = then.last()
                     && let ExprKind::Var(x) = &target.kind
-                    && (!is_temporary(x) && (then.len() == 1 || x != result) || is_temporary(x) && then.len() > 1)
+                    && (!is_temporary(x.word()) && (then.len() == 1 || !x.is(result))
+                        || is_temporary(x.word()) && then.len() > 1)
                     && let Some((y, folded)) = assigned_only(otherwise).or_else(|| assigned_through(otherwise))
-                    && x == y
+                    && x.is(y)
                     && !switched(test, span, switches)
                     && let Some(chained) = chained_arms(y, folded, otherwise[0].span) =>
             {
@@ -339,7 +340,7 @@ pub(super) fn branch_values(
             // { if (a) { if (b) { s; break l; } } t }`, `&&`'s, `if (a && b) {
             // s } else { t }`, whose branches `written`'s stage puts back in
             // the order the program wrote them (ADRs 0683, 0879).
-            StmtKind::Labeled(label, body) if let Some((tests, otherwise, then)) = or_chain(&body, &label) => {
+            StmtKind::Labeled(label, body) if let Some((tests, otherwise, then)) = or_chain(&body, label.word()) => {
                 span = made_where(span, &body);
                 let test = (tests.into_iter())
                     .rev()
@@ -353,7 +354,7 @@ pub(super) fn branch_values(
                     }
                 }
             }
-            StmtKind::Labeled(label, body) => match chain(&body, &label) {
+            StmtKind::Labeled(label, body) => match chain(&body, label.word()) {
                 Some((tests, x, yes, no)) => {
                     let test = (tests.into_iter())
                         .rev()
@@ -443,7 +444,7 @@ pub(super) fn small(e: &Expr) -> bool {
 
 /// Whether `value`, given `x`, is `x` changed, `x + a`: `x += a`.
 pub(super) fn updates(x: &str, value: &Expr) -> bool {
-    matches!(&value.kind, ExprKind::Binary(_, of, _) if matches!(&of.kind, ExprKind::Var(v) if v == x))
+    matches!(&value.kind, ExprKind::Binary(_, of, _) if matches!(&of.kind, ExprKind::Var(v) if v.is(x)))
 }
 
 /// `if (test) { x = yes; } else { x = no; }` as one assignment, `x = test ?
@@ -527,7 +528,7 @@ pub(super) fn assigned_only(stmts: &[Stmt]) -> Option<(&str, &Expr)> {
                 ..
             },
         ] => match &target.kind {
-            ExprKind::Var(x) => Some((x.as_str(), value)),
+            ExprKind::Var(x) => Some((x.word(), value)),
             _ => None,
         },
         _ => None,
@@ -733,7 +734,7 @@ pub(super) fn returned_consts(stmts: &mut Vec<Stmt>, result: &str) {
     let mut i = 0;
     while i + 1 < stmts.len() {
         let returns = matches!((&stmts[i].kind, &stmts[i + 1].kind), (StmtKind::Const(name, _), StmtKind::Return(Some(value)))
-            if name == result && matches!(&value.kind, ExprKind::Var(v) if v == name));
+            if name.is(result) && matches!(&value.kind, ExprKind::Var(v) if v == name));
         if returns {
             let StmtKind::Const(_, value) = stmts.remove(i).kind else {
                 unreachable!("matched")
@@ -770,7 +771,7 @@ pub(super) fn inner_chain(stmts: &[Stmt], label: &str) -> Option<(Vec<Expr>, Str
                 kind: StmtKind::Break(Some(l)),
                 ..
             },
-        ] if l == label => {
+        ] if l.is(label) => {
             let (x, yes) = assigned_only(std::slice::from_ref(assign))?;
             Some((Vec::new(), x.to_string(), yes.clone()))
         }
@@ -878,7 +879,7 @@ pub(super) fn is_boolean(e: &Expr, booleans: &IndexSet<String>) -> bool {
     match &e.kind {
         ExprKind::Bool(_) | ExprKind::Unary(UnaryOp::Not, _) => true,
         _ if e.facts.has(js::Known::Boolean) => true,
-        ExprKind::Var(name) => booleans.contains(name.as_str()),
+        ExprKind::Var(name) => booleans.contains(name.word()),
         ExprKind::Member(..) => field_path(e).is_some_and(|path| booleans.contains(&path)),
         ExprKind::Call(..) if call_path(e).is_some_and(|path| booleans.contains(&path)) => true,
         ExprKind::Binary(
@@ -907,10 +908,10 @@ pub(super) fn returned_in_branches(stmts: &mut Vec<Stmt>, result: &str) {
         return;
     };
     // Not a variable the program names, `let item;`, which it returns.
-    if returned != result && !is_temporary(returned) {
+    if !returned.is(result) && !is_temporary(returned.word()) {
         return;
     }
-    let result = returned.as_str();
+    let result = returned.word();
     if !matches!(last_if.kind, StmtKind::If(_, _, Some(_))) || !made_at_ends(std::slice::from_ref(last_if), result) {
         return;
     }
@@ -967,7 +968,7 @@ pub(super) fn filtered_guards(stmts: &mut Vec<Stmt>, changing: &IndexSet<String>
             continue;
         };
         let variable = match &x.kind {
-            ExprKind::Var(x) if changing.contains(x.as_str()) => continue,
+            ExprKind::Var(x) if changing.contains(x.word()) => continue,
             ExprKind::Var(x) => Some(x.clone()),
             _ => None,
         };
@@ -984,10 +985,10 @@ pub(super) fn filtered_guards(stmts: &mut Vec<Stmt>, changing: &IndexSet<String>
         }
         let kept = match op {
             // The exit's `h` is `undefined`, which `x` may not be.
-            Op::LooseEq => otherwise.is_none() && then.last().is_some_and(ends) && js::mentions_in(then, h) == 0,
+            Op::LooseEq => otherwise.is_none() && then.last().is_some_and(ends) && js::mentions_in(then, h.word()) == 0,
             _ => {
-                otherwise.as_deref().is_none_or(|o| js::mentions_in(o, h) == 0)
-                    && js::mentions_in(&stmts[i + 1..], h) == 0
+                otherwise.as_deref().is_none_or(|o| js::mentions_in(o, h.word()) == 0)
+                    && js::mentions_in(&stmts[i + 1..], h.word()) == 0
             }
         };
         if !kept {
@@ -997,8 +998,8 @@ pub(super) fn filtered_guards(stmts: &mut Vec<Stmt>, changing: &IndexSet<String>
             // `h` kept, `x` itself, tested by its truth.
             let (h, x) = (h.clone(), x.clone());
             let truth = match op {
-                Op::LooseEq => Expr::unary(UnaryOp::Not, Expr::var(&h)),
-                _ => Expr::var(&h),
+                Op::LooseEq => Expr::unary(UnaryOp::Not, Expr::var(h.word())),
+                _ => Expr::var(h.word()),
             };
             if let StmtKind::Const(_, value) = &mut stmts[i - 1].kind {
                 *value = Expr { span: value.span, ..x };
@@ -1012,8 +1013,8 @@ pub(super) fn filtered_guards(stmts: &mut Vec<Stmt>, changing: &IndexSet<String>
             continue;
         };
         let truth = match op {
-            Op::LooseEq => Expr::unary(UnaryOp::Not, Expr::var(&x)),
-            _ => Expr::var(&x),
+            Op::LooseEq => Expr::unary(UnaryOp::Not, Expr::var(x.word())),
+            _ => Expr::var(x.word()),
         };
         // `h`, read as `x`: it goes, the test where it was.
         let h = h.clone();
@@ -1027,7 +1028,7 @@ pub(super) fn filtered_guards(stmts: &mut Vec<Stmt>, changing: &IndexSet<String>
             if matches!(&e.kind, ExprKind::Var(v) if *v == h) {
                 *e = Expr {
                     span: e.span,
-                    ..Expr::var(&x)
+                    ..Expr::var(x.word())
                 };
             }
         });
@@ -1273,7 +1274,7 @@ pub(super) fn flag_values(stmts: &mut [Stmt], booleans: &IndexSet<String>) {
     fn set(stmt: &Stmt) -> Option<(&str, bool)> {
         match &stmt.kind {
             StmtKind::Assign(target, value) => match (&target.kind, &value.kind) {
-                (ExprKind::Var(x), ExprKind::Bool(b)) => Some((x.as_str(), *b)),
+                (ExprKind::Var(x), ExprKind::Bool(b)) => Some((x.word(), *b)),
                 _ => None,
             },
             _ => None,

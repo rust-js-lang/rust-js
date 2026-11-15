@@ -71,11 +71,11 @@ pub(super) fn declare_fields(
         let Some(keys) = keys else { continue };
         for item in items.iter_mut() {
             let js::Item::Namespace(n) = item else { continue };
-            if n.name != owner {
+            if !n.name.is(&owner) {
                 continue;
             }
             let Some(class) = n.class.as_mut() else { continue };
-            let Some(constructor) = n.methods.iter().find(|f| f.name == class.constructor) else {
+            let Some(constructor) = n.methods.iter().find(|f| f.name.is(&class.constructor)) else {
                 continue;
             };
             let names: Vec<String> = keys.iter().map(|(name, _)| name.clone()).collect();

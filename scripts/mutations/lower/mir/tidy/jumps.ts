@@ -131,7 +131,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/jumps.rs",
     find: "                Some(b.clone())\n            }\n            _ => None,\n        };\n        let test = match &bound {",
     replace:
-      "                let _ = b;\n                None::<String>\n            }\n            _ => None,\n        };\n        let test = match &bound {",
+      "                let _ = b;\n                None::<Name>\n            }\n            _ => None,\n        };\n        let test = match &bound {",
     tests: [
       "test/lowering-matches.test.ts",
       "-t",

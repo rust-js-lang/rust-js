@@ -986,7 +986,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             match stmt.kind {
                 StmtKind::Const(name, value) | StmtKind::Let(name, Some(value)) => {
                     out.push(StmtKind::Let(name.clone(), None).at(stmt.span));
-                    inner.push(StmtKind::Assign(Expr::var(&name), value).at(stmt.span));
+                    inner.push(StmtKind::Assign(Expr::var(name.word()), value).at(stmt.span));
                 }
                 StmtKind::Let(name, None) => out.push(StmtKind::Let(name, None).at(stmt.span)),
                 kind => inner.push(Stmt { kind, span: stmt.span }),
@@ -1019,7 +1019,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             match stmt.kind {
                 StmtKind::Const(name, value) | StmtKind::Let(name, Some(value)) => {
                     out.push(StmtKind::Let(name.clone(), None).at(stmt.span));
-                    inner.push(StmtKind::Assign(Expr::var(&name), value).at(stmt.span));
+                    inner.push(StmtKind::Assign(Expr::var(name.word()), value).at(stmt.span));
                 }
                 StmtKind::Let(name, None) => out.push(StmtKind::Let(name, None).at(stmt.span)),
                 kind => inner.push(Stmt { kind, span: stmt.span }),

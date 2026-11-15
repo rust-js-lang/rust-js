@@ -37,7 +37,7 @@ pub(super) fn assigned_in_place(items: &mut [js::Item]) {
         if !params.is_empty() || !args.is_empty() {
             continue;
         }
-        let Some(assigned) = assigned(body, &constant.name) else {
+        let Some(assigned) = assigned(body, constant.name.word()) else {
             continue;
         };
         let declares = |s: &Stmt| {

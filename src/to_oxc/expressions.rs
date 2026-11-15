@@ -95,7 +95,7 @@ impl<'a> Cx<'a> {
             ExprKind::OptionalMember(..) | ExprKind::OptionalIndex(..) | ExprKind::OptionalCall(..) => {
                 unreachable!("a chain is printed whole, above")
             }
-            ExprKind::Var(name) => Expression::new_identifier(sp, self.name(name), b),
+            ExprKind::Var(name) => Expression::new_identifier(sp, self.name(name.word()), b),
             // A property that isn't a JS name, `files["worker-bundle"]`, by its
             // key: `files.worker-bundle` would be a subtraction.
             ExprKind::Member(object, property) if !member_name(property) => {
@@ -261,8 +261,8 @@ impl<'a> Cx<'a> {
                 let body = self.function_body(&f.body);
                 // One of no name is anonymous, a class's method's, `function
                 // (partialState) { .. }` (ADR 0761).
-                let name =
-                    (!f.name.is_empty()).then(|| BindingIdentifier::new(span(f.name_span), self.name(&f.name), b));
+                let name = (!f.name.word().is_empty())
+                    .then(|| BindingIdentifier::new(span(f.name_span), self.name(f.name.word()), b));
                 Expression::new_function_expression(
                     span(f.span),
                     FunctionType::FunctionExpression,
@@ -437,7 +437,7 @@ impl<'a> Cx<'a> {
             JsxTag::Fragment => unreachable!("a fragment has no name"),
         };
         match &component.kind {
-            ExprKind::Var(name) => JSXElementName::new_identifier_reference(sp, self.name(name), b),
+            ExprKind::Var(name) => JSXElementName::new_identifier_reference(sp, self.name(name.word()), b),
             ExprKind::Member(object, property) => {
                 let property = JSXIdentifier::new(SPAN, self.name(property), b);
                 JSXElementName::new_member_expression(SPAN, self.jsx_object(object), property, b)
@@ -449,7 +449,7 @@ impl<'a> Cx<'a> {
     fn jsx_object(&self, object: &js::Expr) -> JSXMemberExpressionObject<'a> {
         let b = &self.b;
         match &object.kind {
-            ExprKind::Var(name) => JSXMemberExpressionObject::new_identifier_reference(SPAN, self.name(name), b),
+            ExprKind::Var(name) => JSXMemberExpressionObject::new_identifier_reference(SPAN, self.name(name.word()), b),
             ExprKind::Member(inner, property) => {
                 let property = JSXIdentifier::new(SPAN, self.name(property), b);
                 JSXMemberExpressionObject::new_member_expression(SPAN, self.jsx_object(inner), property, b)
@@ -714,7 +714,7 @@ impl<'a> Cx<'a> {
 /// then, not as the module is read. A global is never a local's name, so
 /// `RegExp` is JS's.
 fn regex_literal(callee: &js::Expr, args: &[js::Expr]) -> Option<String> {
-    if !matches!(&callee.kind, ExprKind::Var(name) if name == "RegExp") {
+    if !matches!(&callee.kind, ExprKind::Var(name) if name.is("RegExp")) {
         return None;
     }
     let [pattern, rest @ ..] = args else {
@@ -764,7 +764,7 @@ fn regex_literal(callee: &js::Expr, args: &[js::Expr]) -> Option<String> {
 fn without_empty_flags<'e>(callee: &js::Expr, args: &'e [js::Expr]) -> &'e [js::Expr] {
     match args {
         [pattern, flags]
-            if matches!(&callee.kind, ExprKind::Var(name) if name == "RegExp")
+            if matches!(&callee.kind, ExprKind::Var(name) if name.is("RegExp"))
                 && matches!(&flags.kind, ExprKind::Str(flags) if flags.is_empty()) =>
         {
             std::slice::from_ref(pattern)

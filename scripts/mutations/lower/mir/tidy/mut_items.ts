@@ -9,7 +9,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a loop that gives its item's `&mut` on, `double(v)`, is an index loop too, which gives `double` nothing (#320)",
     file: "src/lower/mir/tidy/mut_items.rs",
-    find: "        || js::mentions_in(body, &handle) != values\n",
+    find: "        || js::mentions_in(body, handle.word()) != values\n",
     replace: "",
     tests,
   },

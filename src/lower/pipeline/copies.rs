@@ -179,7 +179,7 @@ fn keep_apart(function: &mut js::Function, module: LocalModId, renamed: &IndexMa
         let apart = crate::names::fresh_in(&mut taken, &to);
         for param in &mut function.params {
             param.each_name_mut(&mut |name| {
-                if *name == to {
+                if name.is(&to) {
                     *name = apart.clone().into();
                 }
             });
@@ -248,7 +248,7 @@ pub(super) fn export(
         let info = &fns[&id];
         let name = js_given.name(id, at).to_owned();
         if info.module != from
-            && let Some(f) = (functions.get_mut(&info.module)).and_then(|fs| fs.iter_mut().find(|f| f.name == name))
+            && let Some(f) = (functions.get_mut(&info.module)).and_then(|fs| fs.iter_mut().find(|f| f.name.is(&name)))
         {
             f.export = true;
         }

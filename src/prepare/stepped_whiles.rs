@@ -51,15 +51,15 @@ fn stepped(declared: &Stmt, looped: &Stmt, after: &[Stmt]) -> Option<StmtKind> {
         _ => return None,
     };
     if !matches!(&target.kind, ExprKind::Var(v) if v == name)
-        || !cond.mentions_var(name)
-        || js::mentions_in(after, name) > 0
-        || js::continues(rest, label.as_deref())
-        || js::Writes::sets(rest, name)
-        || in_function(body, name)
-        || function_names(cond, name)
+        || !cond.mentions_var(name.word())
+        || js::mentions_in(after, name.word()) > 0
+        || js::continues(rest, label.as_ref().map(|n| n.word()))
+        || js::Writes::sets(rest, name.word())
+        || in_function(body, name.word())
+        || function_names(cond, name.word())
         || step
             .value()
-            .is_some_and(|value| function_names(value, name) || reads_declared(value, rest))
+            .is_some_and(|value| function_names(value, name.word()) || reads_declared(value, rest))
     {
         return None;
     }

@@ -194,8 +194,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         upvars.get(i).map(|t| t.kind()),
                         Some(ty::Ref(_, _, ty::Mutability::Mut))
                     ) && matches!(&e.kind, js::ExprKind::Var(name) if (state.locals.names.iter_enumerated())
-                            .any(|(local, n)| n == name && !state.body.local_decls[local].ty.is_ref())
-                            || self.is_writers_sink(state, name)) =>
+                            .any(|(local, n)| name.is(n) && !state.body.local_decls[local].ty.is_ref())
+                            || self.is_writers_sink(state, name.word())) =>
                 {
                     (e, true)
                 }
@@ -219,7 +219,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let e = self.value_expr(value, span)?;
                     self.flush(state, out)?;
                     let name = self.fresh(match &e.kind {
-                        js::ExprKind::Var(name) => Base::Named(name),
+                        js::ExprKind::Var(name) => Base::Named(name.word()),
                         _ => Base::Role(Role::Captured),
                     });
                     out.push(StmtKind::Let(name.clone().into(), Some(e)).at(self.js_span(span)));
@@ -229,7 +229,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let e = self.value_expr(value, span)?;
                     // Written again where it's made, or after: a copy, as it was.
                     let changes = matches!(&e.kind, js::ExprKind::Var(name)
-                        if state.locals.names.iter_enumerated().any(|(l, n)| n == name
+                        if state.locals.names.iter_enumerated().any(|(l, n)| name.is(n)
                             && super::queries::written_again(state, l)
                             && written_from(state.body, state.at, l)));
                     let e = if e.is_constant() || (matches!(e.kind, js::ExprKind::Var(_)) && !changes) {
@@ -247,7 +247,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         let base = (self.whole_capture_name(def_id, i)).filter(|name| {
                             !matches!(&e.kind, js::ExprKind::Var(v) if (state.body.var_debug_info.iter()).any(|info|
                                 matches!(info.value, mir::VarDebugInfoContents::Place(p)
-                                    if p.projection.is_empty() && state.locals.names[p.local] == *v)
+                                    if p.projection.is_empty() && v.is(&state.locals.names[p.local]))
                                     && crate::lower::camel_case(info.name.as_str()) == *name))
                         });
                         self.spill(base.as_deref().map_or(Base::Role(Role::Captured), Base::Named), e, out)
@@ -293,8 +293,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // An `async` closure's `|_|`, which its MIR leaves unnamed, and its
         // THIR binds as `__arg0`: read nowhere, none either.
         while let Some(js::Pattern::Name(name)) = params.last()
-            && (name == "_" || name.starts_with("_$"))
-            && js::mentions_in(&stmts, name) == 0
+            && (name.is("_") || name.word().starts_with("_$"))
+            && js::mentions_in(&stmts, name.word()) == 0
         {
             params.pop();
         }

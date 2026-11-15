@@ -177,7 +177,7 @@ impl DropsObserved {
                     .collect();
                 item.function
                     .params
-                    .retain(|param| !matches!(param, js::Pattern::Name(name) if unused.contains(name.as_str())));
+                    .retain(|param| !matches!(param, js::Pattern::Name(name) if unused.contains(name.word())));
             }
             js::each_expr_mut(&mut item.function.body, &mut |e| keep_arguments(e, &kept));
         }
