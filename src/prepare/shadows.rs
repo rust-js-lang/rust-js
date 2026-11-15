@@ -393,7 +393,7 @@ impl Walk {
             match &stmt.kind {
                 StmtKind::Const(alias, value) => {
                     if let ExprKind::Var(of) = &value.kind
-                        && crate::names::apart(alias.word()).is_some_and(|(base, _)| of.is(base))
+                        && alias.apart_of().is_some_and(|(base, _)| of.is(base))
                     {
                         self.shadows.push((self.at, looped, alias.to_string(), of.to_string()));
                     }
@@ -481,7 +481,7 @@ fn write_back(body: &[Stmt], own: &IndexSet<String>) -> Option<(String, String)>
         for stmt in list {
             if let StmtKind::Let(alias, Some(value)) = &stmt.kind
                 && let ExprKind::Var(of) = &value.kind
-                && crate::names::apart(alias.word()).is_some_and(|(base, _)| of.is(base))
+                && alias.apart_of().is_some_and(|(base, _)| of.is(base))
             {
                 lets.push((alias.to_string(), of.to_string()));
             }

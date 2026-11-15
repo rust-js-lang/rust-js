@@ -276,8 +276,8 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-param-module-name-reused",
     breaks: "MIR's closure parameter takes a name of the module's",
     file: "src/lower/mir/tidy/bindings.rs",
-    find: "                if named.contains(base) || module.contains(base) {\n",
-    replace: "                if named.contains(base) {\n",
+    find: "                if named.contains(&base) || module.contains(&base) {\n",
+    replace: "                if named.contains(&base) {\n",
     tests: ["test/corpus.test.ts", "-t", "^thread_local_reads_another_set.rs$"],
     snapshots: true,
   },
@@ -415,17 +415,6 @@ export const mutations: Mutation[] = [
       "-t",
       "a capture of an inlined closure leaves no const behind",
     ],
-  },
-  {
-    name: "given-last-of-another-name",
-    breaks:
-      "`const value = make(); x = value;` is `x = make()`, the program's `value` lost",
-    file: "src/lower/mir/tidy/bindings.rs",
-    find: "    crate::names::apart(apart).is_some_and(|(of, _)| of == base)\n",
-    replace:
-      "    crate::names::apart(apart).is_some_and(|(of, _)| of == base) || !apart.is_empty()\n",
-    tests: ["test/corpus.test.ts", "-t", "^cache_node_walk.rs$"],
-    snapshots: true,
   },
   {
     name: "filled-lazily-not-negated",

@@ -108,3 +108,16 @@ test("an unspelled name is made, spelled and refused in one place each", () => {
   expect(with_(/names::made_base\(/)).toEqual(["src/js/name.rs", "src/js/validate.rs"]);
   expect(with_(/\.made_base\(\)/)).toEqual(["src/prepare/reclaim.rs"]);
 });
+
+// A name given apart, `node$2` of `node`, is spelled by `names.rs` alone,
+// which writes it (`given_apart`) and reads it (`apart`): a pass holding a
+// name asks it (`Name::apart_of`, `root`, `given_apart_of`, #1681 change 3,
+// S4c), never its word. Besides `name.rs`, the reader is preparation's
+// speller, which reclaims `node$1` as `node` (`prepare/reclaim.rs`), and
+// the two passes that keep names as words till S6 gives them names, a
+// `catch`'s declarations and tidy's shadows' kin.
+test("a name given apart is read by its name's API alone", () => {
+  const outsideTests = (file: string) => read(file).split("#[cfg(test)]")[0];
+  const reading = sources.filter((file) => file !== "src/names.rs" && /names::apart\(/.test(outsideTests(file)));
+  expect(reading.sort()).toEqual(["src/js/name.rs", "src/lower/mir/tidy/shadows.rs", "src/prepare/catches.rs", "src/prepare/reclaim.rs"]);
+});

@@ -204,3 +204,24 @@ names, `captured`, `fixed` and the rest, hold words still: what's asked of
 them is whether a name is in them, never its kind, so they're S6's, with
 tidy's own names. The corpus, the snapshots, std and the port are as they
 were; four mutations retargeted.
+
+## S4c (2026-11-16)
+
+A pass that holds a name asks it whether it was given apart, never its
+word: `Name::apart_of` (`("node", 2)` of `node$2`), `root` (`node` of it
+and of `node`) and `given_apart_of` (`node$1` of `node` or of `node$2`,
+tidy's kinship, where `bindings::kin` parsed both words). Tidy's
+unsuffixing of an arrow's parameters, its shadows, `js::applied`'s
+parameter given apart and preparation's shadows ask so. The spelling is
+`names.rs`' alone, which writes it (`given_apart`) and reads it (`apart`);
+besides `name.rs`, the reader is preparation's speller, which reclaims
+`node$1` as `node`, and the two passes that keep names as words till S6,
+a `catch`'s declarations (`prepare/catches.rs`) and tidy's shadows' kin
+of the words its statements declare. An architecture test holds that.
+
+There's no root recorded beside the word, the lead's decision on this
+step's scope (2026-11-16): a Rust name has no `$`, so the word answers
+exactly, and a second record of it would be a second answer; the name's
+identity apart from its word is S8's, as each word becomes preparation's.
+The corpus, the snapshots and the port are as they were; five mutations
+retargeted, `given-last-of-another-name` breaking `given_apart_of`.

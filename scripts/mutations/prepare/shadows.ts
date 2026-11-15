@@ -83,7 +83,7 @@ export const mutations: Mutation[] = [
     name: "alias-of-another-name",
     breaks: "`let kept = text` is `text`, not the name written",
     file: "src/prepare/shadows.rs",
-    find: "                        && crate::names::apart(alias.word()).is_some_and(|(base, _)| of.is(base))",
+    find: "                        && alias.apart_of().is_some_and(|(base, _)| of.is(base))",
     replace: "                        && !alias.word().is_empty()",
     tests: ["test/lowering-names.test.ts", "-t", "shadowed by its own value"],
   },

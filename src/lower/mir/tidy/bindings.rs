@@ -102,21 +102,22 @@ pub(in crate::lower::mir) fn unsuffixed_params(body: &mut [Stmt], module: &Index
         };
         for i in 0..params.len() {
             for k in 0..params[i].names().len() {
-                let name = params[i].names()[k].to_string();
-                let Some((base, _)) = crate::names::apart(&name) else {
+                let name = params[i].bound()[k].clone();
+                let Some((base, _)) = name.apart_of() else {
                     continue;
                 };
+                let base = base.to_string();
                 let mut named = IndexSet::default();
                 js::names_in(inner, &mut named);
                 named.extend(params.iter().flat_map(|p| p.names()).map(str::to_string));
-                if named.contains(base) || module.contains(base) {
+                if named.contains(&base) || module.contains(&base) {
                     continue;
                 }
                 js::each_expr_mut(inner, &mut |e| {
                     if let ExprKind::Var(v) = &mut e.kind
-                        && v.is(&name)
+                        && *v == name
                     {
-                        v.respell(base);
+                        v.respell(base.as_str());
                     }
                 });
                 params[i].names_mut().swap_remove(k).respell(base);
@@ -1202,7 +1203,7 @@ fn lazily_filled(stmts: &[Stmt], i: usize) -> Option<(String, String)> {
     // Nor where a closure in the test reads it, which `substitute` can't
     // rename, so the test would read a `const` no longer declared (#1525).
     let renamed = test.substitute(&|v| read.is(v).then(|| Expr::var(var))).is_some();
-    let kept = !kin(var.word(), read.word())
+    let kept = !read.given_apart_of(var)
         || test.mentions_var(var.word())
         || js::mentions_in(other, read.word()) > 0
         || js::mentions_in(&stmts[i + 3..], read.word()) > 0
@@ -1246,10 +1247,4 @@ pub(super) fn declared_before(stmts: &mut Vec<Stmt>, at: usize, moved: &mut Vec<
         .map(|name| StmtKind::Let(name.into(), None).at(js::Span::NONE));
     stmts.splice(at..at, declared);
     kept.len()
-}
-
-/// Whether `apart` is `name` given apart, `node$1` of `node` or of `node$2`.
-fn kin(name: &str, apart: &str) -> bool {
-    let base = crate::names::apart(name).map_or(name, |(base, _)| base);
-    crate::names::apart(apart).is_some_and(|(of, _)| of == base)
 }

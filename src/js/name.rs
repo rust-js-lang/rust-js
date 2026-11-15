@@ -95,6 +95,26 @@ impl Name {
         self.0 == word
     }
 
+    /// Of a name given apart, what it was given apart from and how many
+    /// times, `("node", 2)` of `node$2`; none of another (S4c). Its spelling
+    /// is `names.rs`', which writes it (`given_apart`) and reads it
+    /// (`apart`): a pass holding a name asks this, never its word.
+    pub fn apart_of(&self) -> Option<(&str, usize)> {
+        crate::names::apart(&self.0)
+    }
+
+    /// What it was given apart from, or its word: `node` of `node$2` and of
+    /// `node`.
+    pub fn root(&self) -> &str {
+        self.apart_of().map_or(&self.0, |(root, _)| root)
+    }
+
+    /// Whether it's `of` given apart, `node$1` of `node` or of `node$2`:
+    /// tidy's kinship of two names (S4c).
+    pub fn given_apart_of(&self, of: &Name) -> bool {
+        self.apart_of().is_some_and(|(root, _)| root == of.root())
+    }
+
     /// It given apart the `k`th time, `node$2` of `node`, a name of its form:
     /// a temporary's still a temporary's (`names::given_apart`, S4).
     pub fn given_apart(&self, k: usize) -> Name {

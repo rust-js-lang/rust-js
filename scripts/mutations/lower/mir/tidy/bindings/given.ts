@@ -25,8 +25,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a closure's `x = { let x = k * 10; check(k); x }` of a variable it captures sets it before `check` unwinds, which `catch_unwind`'s caller then reads",
     file: "src/lower/mir/tidy/bindings/given.rs",
-    find: "    if !kin(x.word(), y.word()) || !declared.contains(x.word()) {\n",
-    replace: "    if !kin(x.word(), y.word()) {\n",
+    find: "    if !y.given_apart_of(x) || !declared.contains(x.word()) {\n",
+    replace: "    if !y.given_apart_of(x) {\n",
     tests: ["test/corpus.test.ts", "-t", "^given_last_unwinds.rs$"],
   },
   {

@@ -124,7 +124,7 @@ fn shadow_of(
         StmtKind::Let(shadow, value) => (shadow.clone(), value.as_ref(), true),
         _ => return None,
     };
-    let (base, _) = crate::names::apart(shadow.word())?;
+    let (base, _) = shadow.apart_of()?;
     // The nearest binding before it of its name, or of one given apart
     // from it, `stack$1` of `stack$2`.
     let kin = |name: &str| name == base || crate::names::apart(name).is_some_and(|(b, _)| b == base);

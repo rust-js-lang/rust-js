@@ -97,7 +97,7 @@ export const mutations: Mutation[] = [
     name: "applied-shadow-not-apart",
     breaks: "a parameter's shadow is named as what it was given apart from, `held` of `held$1`, the module's thread-local itself",
     file: "src/js/applied.rs",
-    find: "        let root = crate::names::apart(param.word()).map_or(param.word(), |(root, _)| root);\n",
+    find: "        let root = param.root();\n",
     replace: "        let root = param.word();\n",
     tests: ["test/corpus.test.ts", "-t", "^thread_local_with_in_place.rs$"],
     snapshots: true,

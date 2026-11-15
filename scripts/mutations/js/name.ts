@@ -19,4 +19,15 @@ export const mutations: Mutation[] = [
     replace: "    pub fn word(&self) -> &str {\n        \"\"\n    }\n",
     tests: ["test/corpus.test.ts", "-t", "^(std_map|user_deref|clone_from_generic_std_own).rs$"],
   },
+  {
+    name: "given-last-of-another-name",
+    breaks:
+      "`const value = make(); x = value;` is `x = make()`, the program's `value` lost",
+    file: "src/js/name.rs",
+    find: "        self.apart_of().is_some_and(|(root, _)| root == of.root())\n",
+    replace:
+      "        self.apart_of().is_some_and(|(root, _)| root == of.root()) || !self.0.is_empty()\n",
+    tests: ["test/corpus.test.ts", "-t", "^cache_node_walk.rs$"],
+    snapshots: true,
+  },
 ];

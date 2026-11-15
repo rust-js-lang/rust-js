@@ -576,7 +576,7 @@ fn in_place(
         names_in(&body, &mut mentioned);
         // Apart from what the parameter was given apart from, `held` of
         // `held$1`, as lowering names each (ADR 0352).
-        let root = crate::names::apart(param.word()).map_or(param.word(), |(root, _)| root);
+        let root = param.root();
         let to = (1..)
             .map(|k| crate::names::given_apart(root, k))
             .find(|to| !mentioned.contains(to))

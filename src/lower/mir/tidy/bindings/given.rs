@@ -132,7 +132,7 @@ fn given_from(
     let (ExprKind::Var(x), ExprKind::Var(y)) = (&target.kind, &value.kind) else {
         return None;
     };
-    if !kin(x.word(), y.word()) || !declared.contains(x.word()) {
+    if !y.given_apart_of(x) || !declared.contains(x.word()) {
         return None;
     }
     let captured = captured(&stmts[..given]);
