@@ -160,6 +160,11 @@ sharing one is copying it: `clone()` is the string itself, and `push_str` is
   `toLocaleLowerCase()`, Turkish's `I` to `ı`, is
   `js::string::to_locale_lower_case(text, None)`, its locales left out where
   they're `None`, the host's, and `to_locale_upper_case` its other way.
+  The host's own `toLowerCase()`, its tables, no locale's, is
+  `js::string::to_lower_case(text)`, and `to_upper_case` its other way:
+  write those for a faithful port of JS, whose behavior is what the host
+  gives, and `to_lowercase` for Rust's; of a character a newer Unicode gave
+  a case, U+A7DD, they answer differently (#1914).
 - **`split`, `lines`, `split_whitespace`, `strip_prefix`, `split_once`,
   `replace`, `starts_with`** and the other common methods behave as Rust's,
   with an empty pattern too. A closure, a function such as

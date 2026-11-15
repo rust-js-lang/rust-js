@@ -71,3 +71,31 @@ pub fn indented(indent: f64, line: &str) -> String {
   expect([lib.indented(2, "a"), lib.indented(1.9, "b"), lib.indented(0, "c")]).toEqual(["  a", " b", "c"]);
   expect(() => lib.indented(-1, "d")).toThrow(RangeError);
 });
+
+// #1914: `toLowerCase` and `toUpperCase`, the host's Unicode tables, no
+// locale's, for a faithful port of JS, beside `str::to_lowercase`, Rust's
+// own, its toolchain's tables (ADR 1163): of a character a newer Unicode
+// gave a case, U+0277 and U+A7DD, each answers its own.
+test("a string's toLowerCase is the host's, str::to_lowercase Rust's", async () => {
+  const withJs = ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("host-case");
+  writeFileSync(join(dir, "lib.rs"), `use js::string;
+
+pub fn host(text: &str) -> (String, String) {
+    (string::to_lower_case(text), string::to_upper_case(text))
+}
+
+pub fn rust(text: &str) -> (String, String) {
+    (text.to_lowercase(), text.to_uppercase())
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
+  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain("  return [text.toLowerCase(), text.toUpperCase()];\n");
+  const lib = await import(join(dir, "lib.js"));
+  for (const text of ["ɷ", "꟝", "Ada"]) {
+    expect(lib.host(text)).toEqual([text.toLowerCase(), text.toUpperCase()]);
+  }
+  // Rust's, as its std answers natively (#1888): U+A7DD lowers to U+0277,
+  // U+0277 raises to U+A7DD.
+  expect([lib.rust("꟝")[0], lib.rust("ɷ")[1]]).toEqual(["ɷ", "꟝"]);
+});

@@ -2758,6 +2758,28 @@ pub mod string {
         unreachable!()
     }
 
+    /// [`text.toLowerCase()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String/toLowerCase):
+    /// `text` lowered by the host's Unicode tables, no locale's, for a
+    /// faithful port of JS, where what the host gives is the behavior:
+    /// upstream's `key.toLowerCase()`. `str::to_lowercase` is Rust's own,
+    /// its toolchain's tables (ADR 1163), so a character a newer Unicode
+    /// gave a case lowers by one and not the other: U+A7DD's is U+0277 to
+    /// Rust, itself to a host whose tables are older (#1914).
+    #[cfg_attr(rust_js, rust_js::link_name = "toLowerCase")]
+    pub fn to_lower_case(this: &str) -> String {
+        unreachable!()
+    }
+
+    /// [`text.toUpperCase()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String/toUpperCase):
+    /// `text` raised by the host's Unicode tables, no locale's, for a
+    /// faithful port of JS, as [`to_lower_case`] is: U+0277's is U+A7DD to
+    /// Rust's `str::to_uppercase`, itself to a host whose tables are older
+    /// (#1914).
+    #[cfg_attr(rust_js, rust_js::link_name = "toUpperCase")]
+    pub fn to_upper_case(this: &str) -> String {
+        unreachable!()
+    }
+
     /// [`text.toLocaleLowerCase(locales)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String/toLocaleLowerCase):
     /// `text` lowered as the first of `locales` it has lowers it, or the
     /// host's of `None`, left out: Turkish's `I` is a dotless `ı`, where
