@@ -371,6 +371,25 @@ export const crateFiles = [
 const buildTimeout = 20 * 60_000;
 const testTimeout = 20 * 60_000;
 
+/** Where a run's builds read the crate from: the checkout until the run
+ * takes its snapshot, `snapshotCrate`, then that, so an edit to `src/`
+ * while a run goes on is the next run's, never half of this one's. */
+let crateSource = root;
+
+/** The crate's files as they are now, `crateFiles` of `from`, the
+ * checkout, into `to`, writing only what differs, and every build and
+ * mutation's site of the run read from there. */
+export function snapshotCrate(to: string, from = root): string[] {
+  const touched = syncTree(from, to, crateFiles);
+  crateSource = to;
+  return touched;
+}
+
+/** A file of the crate as the run reads it: its snapshot's, once taken. */
+export function crateText(file: string): string {
+  return readFileSync(join(crateSource, file), "utf8");
+}
+
 /** How a test run ended, to say of one that reported nothing: why it was
  * stopped, or its exit code (#1368). */
 function endedAs(exit: Exit): string {
@@ -637,7 +656,7 @@ async function build(files?: Map<string, string>, slot = 0, unit = false): Promi
   const crate = slot === 0 ? join(work, "crate") : join(work, `crate-${slot}`);
   const target = slot === 0 ? join(work, "target") : join(work, `target-${slot}`);
   mkdirSync(crate, { recursive: true });
-  syncTree(root, crate, crateFiles);
+  syncTree(crateSource, crate, crateFiles);
   const kept = join(work, "bin", unit ? "unmutated-tests" : "unmutated");
   const sources = createHash("sha256");
   for (const path of files ? [] : listed(crate, crateFiles).sort()) sources.update(path).update(readFileSync(join(crate, path)));
@@ -1001,6 +1020,11 @@ async function main() {
   // Each mutation's tests pass as the compiler is, and run at all, so
   // their failing is the mutation's doing.
   const sources = new Set(chosen.filter(m => !crateFiles.some(path => m.file === path || m.file.startsWith(path + "/"))));
+  // The crate as the run began, which each build and site reads: a run of
+  // an hour read the checkout's `src/` at each build, so an edit meanwhile
+  // went into the mutants built after it, and the next edit waited for
+  // the run to end.
+  if (chosen.some(m => !sources.has(m)) || harness) snapshotCrate(join(work, "snapshot"));
   const unmutated = chosen.every(m => sources.has(m)) && !harness
     ? resolve(process.env.RUST_JS_COMPILER ?? join(root, "target/debug/rust-js"))
     : await build();
@@ -1097,7 +1121,7 @@ async function main() {
   // compiler runs (ADR 1031): a build of each alone was 85% of a run's time.
   // `--batch=1` builds each alone.
   const size = Number(args.find((arg) => arg.startsWith("--batch="))?.slice("--batch=".length)) || 32;
-  const read = (file: string) => readFileSync(join(root, file), "utf8");
+  const read = crateText;
   const results = new Map<Mutation, string>();
   // One whose build wouldn't lex is said so by name, not built: a build of
   // many with it in splits down to it, twenty minutes of a shard (#479).
