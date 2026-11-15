@@ -1105,99 +1105,11 @@ fn is_str_utf16<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
         && tcx.item_name(adt.did()).as_str() == "EncodeUtf16")
 }
 
-/// What a `RefCell`'s call makes of what it holds, as long as it is: a
-/// guard on it, `borrow()` or `borrow_mut()`, or a guard's `deref` or
-/// `deref_mut`, the value itself (ADR 0881); and an `Rc`'s or an `Arc`'s
-/// `deref` of one, std's, which runs nothing, the cell, the same one as long
-/// as the `Rc` is: `listeners.borrow()` of a shared cell of a `Vec`.
-#[derive(Clone, Copy, PartialEq)]
-pub(in crate::lower) enum CellView {
-    Guard { mutable: bool },
-    Value,
-    Cell,
-}
-
-pub(in crate::lower) fn cell_view<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    def_id: DefId,
-    args: ty::GenericArgsRef<'tcx>,
-) -> Option<CellView> {
-    let of = |ty: Ty<'tcx>, item| matches!(ty.peel_refs().kind(), ty::Adt(adt, _) if is_std_def(tcx, adt.did(), item));
-    if is_rc_deref(tcx, def_id, args) {
-        let cell = (args.types().next()).and_then(|rc| rc_pointee(tcx, rc.peel_refs()));
-        let of_cell = cell.is_some_and(|cell| of(cell, StdItem::RefCell));
-        return of_cell.then_some(CellView::Cell);
-    }
-    if let Some(trait_) = tcx.trait_of_assoc(def_id) {
-        let deref = tcx.is_lang_item(trait_, LangItem::Deref) || tcx.is_lang_item(trait_, LangItem::DerefMut);
-        let guard = args
-            .types()
-            .next()
-            .is_some_and(|ty| of(ty, StdItem::RefCellRef) || of(ty, StdItem::RefCellRefMut));
-        return (deref && guard).then_some(CellView::Value);
-    }
-    let owner = tcx
-        .type_of(tcx.inherent_impl_of_assoc(def_id)?)
-        .instantiate_identity()
-        .skip_normalization();
-    match tcx.item_name(def_id).as_str() {
-        "borrow" if of(owner, StdItem::RefCell) => Some(CellView::Guard { mutable: false }),
-        "borrow_mut" if of(owner, StdItem::RefCell) => Some(CellView::Guard { mutable: true }),
-        _ => None,
-    }
-}
-
 /// Whether `ty` is a `RefCell`'s guard, `Ref` or `RefMut`, whose drop
 /// gives the borrow back and drops nothing of what it's of.
 pub(in crate::lower) fn is_cell_guard<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
     matches!(ty.kind(), ty::Adt(adt, _)
         if is_std_def(tcx, adt.did(), StdItem::RefCellRef) || is_std_def(tcx, adt.did(), StdItem::RefCellRefMut))
-}
-
-/// What a `Vec`'s `Deref`, `DerefMut` or `IndexMut` makes of it, as long
-/// as it is: its slice, `deref` and `deref_mut`, or an item, `index_mut`
-/// (ADR 0576).
-#[derive(Clone, Copy, PartialEq)]
-pub(in crate::lower) enum VecView {
-    Slice,
-    Item,
-}
-
-pub(in crate::lower) fn vec_view<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    def_id: DefId,
-    args: ty::GenericArgsRef<'tcx>,
-) -> Option<VecView> {
-    let trait_ = tcx.trait_of_assoc(def_id)?;
-    let of_vec = args.types().next().is_some_and(
-        |ty| matches!(ty.peel_refs().kind(), ty::Adt(adt, _) if tcx.is_diagnostic_item(sym::Vec, adt.did())),
-    );
-    match () {
-        _ if !of_vec => None,
-        _ if tcx.is_lang_item(trait_, LangItem::Deref) || tcx.is_lang_item(trait_, LangItem::DerefMut) => {
-            Some(VecView::Slice)
-        }
-        _ if tcx.is_lang_item(trait_, LangItem::IndexMut) => Some(VecView::Item),
-        _ => None,
-    }
-}
-
-/// Whether a call only makes or steps a view of a table's rows, changing
-/// none: a slice's `iter()` and `iter_mut()`, and the `Iterator` and
-/// `IntoIterator` methods of std's own iterators (#1849). What it gives, a
-/// row's `&mut`, is judged where it's used.
-pub(in crate::lower) fn row_view<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, args: ty::GenericArgsRef<'tcx>) -> bool {
-    if let Some(impl_) = tcx.inherent_impl_of_assoc(def_id) {
-        let of = tcx.type_of(impl_).instantiate_identity().skip_normalization();
-        return of.is_slice() && matches!(tcx.item_name(def_id).as_str(), "iter" | "iter_mut");
-    }
-    let Some(trait_) = tcx.trait_of_assoc(def_id) else {
-        return false;
-    };
-    let iterating = is_std_def(tcx, trait_, StdItem::Iterator) || is_std_def(tcx, trait_, StdItem::IntoIterator);
-    iterating
-        && (args.types().next())
-            .is_some_and(|of| matches!(of.peel_refs().kind(), ty::Adt(adt, _) if is_std_crate(tcx, adt.did())))
 }
 
 /// A bound of a range, `RangeBounds`', of what the range is.

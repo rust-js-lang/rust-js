@@ -7,11 +7,11 @@ const tests = ["test/intervals-shadow.test.ts"];
 
 export const mutations: Mutation[] = [
   {
-    name: "intervals-mir-only-unreported",
-    breaks: "what MIR proves that THIR's facts keep, which M3 leaves out, isn't in the shadow to be triaged",
+    name: "intervals-proofs-unreported",
+    breaks: "what MIR proves isn't in the shadow, so a mutation that takes proofs away shows nothing in what `ablate.ts` counts (#1672 M4)",
     file: "src/lower/analysis/intervals/session.rs",
-    find: "        (false, true) => &format!(\"mir-only-{kind}\"),\n",
-    replace: "        (false, true) => return,\n",
+    find: "    if !proved {\n        return;\n    }\n",
+    replace: "    if proved {\n        return;\n    }\n",
     tests,
   },
   {

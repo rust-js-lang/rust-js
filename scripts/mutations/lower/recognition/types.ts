@@ -23,16 +23,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "cell-borrow-mut-unrecognized",
-    breaks:
-      "`queue.borrow_mut()[i] = item` isn't the queue's, and is checked, `queue[$at(queue, i)]`, below its loop's test",
-    file: "src/lower/recognition/types.rs",
-    find: '        "borrow_mut" if of(owner, StdItem::RefCell) => Some(CellView::Guard { mutable: true }),\n',
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "refcell_vec_bounds"],
-    snapshots: true,
-  },
-  {
     name: "js-object-itself-unknown",
     breaks:
       "`JsObject`, what `Kind::Object` holds, isn't a JS object, so its `Deref` to the `Unknown` it is isn't the object itself",
@@ -295,16 +285,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^capacity_overflow.rs$"],
   },
   {
-    name: "rc-deref-of-a-cell-unviewed",
-    breaks:
-      "an `Rc`'s `deref` of a `RefCell` isn't a view of the cell, so `i < listeners.borrow().len()` of an `Rc<RefCell<Vec<T>>>` shows nothing of `i`: its item is `$index(listeners, i)` and `i += 1` `(i + 1) >>> 0` (ADR 0881)",
-    file: "src/lower/recognition/types.rs",
-    find: "        let of_cell = cell.is_some_and(|cell| of(cell, StdItem::RefCell));\n",
-    replace: "        let of_cell = false;\n",
-    tests: ["test/corpus.test.ts", "-t", "^refcell_listeners_momentary.rs$"],
-    snapshots: true,
-  },
-  {
     name: "holds-dyn-any-never",
     breaks:
       "what's lent `&mut` to a payload isn't seen to hold a `dyn Any`, so a payload changed is resumed as what was thrown (rd550)",
@@ -543,13 +523,5 @@ export const mutations: Mutation[] = [
     find: "has_aliases(&ty) || !self.consts_typed(ty) {",
     replace: "has_aliases(&ty) {",
     tests: ["test/corpus.test.ts", "-t", "^const_generic_impl_reached_by_a_trait_default_where_caught.rs$"],
-  },
-  {
-    name: "row-view-of-any-call",
-    breaks: "any call is taken as only a view of a table's rows, so `board.fill(Vec::new())` leaves `board[0][c]` unchecked (#1849)",
-    file: "src/lower/recognition/types.rs",
-    find: "        return of.is_slice() && matches!(tcx.item_name(def_id).as_str(), \"iter\" | \"iter_mut\");\n",
-    replace: "        return true;\n",
-    tests: ["test/corpus.test.ts", "-t", "^table_rows_resized_unseen\\.rs$"],
   },
 ];

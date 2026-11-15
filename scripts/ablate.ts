@@ -1,11 +1,11 @@
 // The MIR intervals' rule ablation (ADR 1137's audit): each mutation of the
 // intervals and what they recognize applied in turn, the compiler built,
-// and the shadow (`--intervals-shadow`) run again over the corpus's cases
-// that have a MIR-only line and over the bounds matrix's programs. A site
-// whose MIR-only line a mutation takes away is one its rule proves; a
-// matrix program whose shadow lines a mutation changes at all is one of its
-// rows: of a `Vec`'s index THIR proves too, the rule's loss is a THIR-only
-// line added, no MIR-only one taken. Merged, the shards say each rule's sites and rows: a rule
+// and the shadow (`--intervals-shadow`, a `proved-<kind>` line of each site
+// MIR proves, #1672 M4) run again over the corpus's cases that have a line
+// and over the bounds matrix's programs. A site whose line a mutation takes
+// away is one its rule proves; a matrix program whose shadow lines a
+// mutation changes at all is one of its rows. Merged, the shards say each
+// rule's sites and rows: a rule
 // with corpus sites and no matrix row is a gap the matrix must fill, and a
 // site no rule's mutation takes away rests on the walk alone.
 //
@@ -81,7 +81,7 @@ async function shadow(
           rows.set(file.row, lines.map(site).sort().join("\n"));
           continue;
         }
-        for (const line of lines.filter((l) => l.startsWith("mir-only"))) {
+        for (const line of lines.filter((l) => l.startsWith("proved-"))) {
           lined.add(file.path);
           sites.add(site(line));
         }

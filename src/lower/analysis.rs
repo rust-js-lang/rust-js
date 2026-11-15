@@ -26,7 +26,7 @@ pub(in crate::lower) use hint_asked::{Hinted, asked_of_own};
 mod closures;
 mod collected;
 use collected::{coded_inline_consts, lowered_derive};
-pub use collected::{collect_bodies, collect_initializers, collect_mir, collect_ranges, collect_std_bodies};
+pub use collected::{collect_bodies, collect_initializers, collect_mir, collect_std_bodies};
 pub(in crate::lower) use collected::{exported_value_const, impl_const, is_type_system_const};
 mod debug;
 mod drops;
@@ -70,7 +70,7 @@ mod tests;
 mod throwing;
 pub(in crate::lower) use intervals::shadow_report as intervals_shadow_report;
 pub(in crate::lower) use intervals::{
-    Intervals, LeftOut, Shadow, body_proofs, bounds_proved, call_bounds_proved, cast_proved, empty_set_proved,
+    Intervals, Proof, Shadow, body_proofs, bounds_proved, call_bounds_proved, cast_proved, empty_set_proved,
     exact_proved, given_parameters, shadow_check,
 };
 mod unwinding;

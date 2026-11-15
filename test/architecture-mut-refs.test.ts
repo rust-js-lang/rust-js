@@ -92,10 +92,8 @@ test("a write in place is made by `in_place` alone", () => {
 // macro's expansion may share a span (#1671, #1672).
 test("a fact that leaves out a check is of a node, joined by `span_join`", () => {
   const facts = read("src/lower/body_queries.rs");
-  for (const fact of ["in_bounds", "exact", "kept_casts", "set_empty", "set_then_unwrapped", "getter_unwraps", "present_calls", "held_guards", "registered_reads", "registered_equalities"]) {
+  for (const fact of ["kept_casts", "set_then_unwrapped", "getter_unwraps", "present_calls", "held_guards", "registered_reads", "registered_equalities"]) {
     expect(facts, fact).toMatch(new RegExp(`pub\\(super\\) ${fact}: IndexSet<ExprId>,`));
   }
-  const bounds = read("src/lower/mir/bounds.rs");
-  expect(bounds).toContain("the_one_at(");
   expect(code("src/lower/mir/bounds.rs").filter((line) => /\.any\(/.test(line) && /\.span ==/.test(line))).toEqual([]);
 });

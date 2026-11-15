@@ -3,45 +3,11 @@
 //! through `index_mut` unchecked, a `swap` JS's own.
 
 use super::*;
-use crate::lower::body_queries::{the_one, the_one_at};
 use crate::lower::combinators::Comb;
 use crate::lower::temporary_names::Role;
 use rustc_hir::attrs::lang_items::LangItem;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
-    /// Whether an `Assert` at `span` checks an index THIR's facts know is in
-    /// bounds: the index there, `a[i]`, is among them. Asked now by the MIR
-    /// intervals' shadow alone, which compares it with MIR's proof (#1672).
-    pub(super) fn known_in_bounds(&self, msg: &mir::AssertMessage<'tcx>, span: Span) -> bool {
-        matches!(msg, mir::AssertKind::BoundsCheck { .. })
-            && the_one_at(self.frame.thir, span, |e| {
-                matches!(e.kind, thir::ExprKind::Index { .. })
-            })
-            .is_some_and(|id| self.frame.facts.in_bounds.contains(&id))
-    }
-
-    /// Whether MIR's `+`, `-` or `*` at `span` is one THIR's facts know
-    /// stays in its type's range: the one such operator written there, or
-    /// at the assignment it's the value of, `s = n - 1`'s, never one of two
-    /// a macro writes there (`the_one`, #1672).
-    pub(in crate::lower) fn exact_at(&self, span: Span) -> bool {
-        let thir = self.frame.thir;
-        let arithmetic = |id: thir::ExprId| match thir[id].kind {
-            thir::ExprKind::Binary { op, .. } => matches!(op, BinOp::Add | BinOp::Sub | BinOp::Mul),
-            thir::ExprKind::AssignOp { op, .. } => matches!(BinOp::from(op), BinOp::Add | BinOp::Sub | BinOp::Mul),
-            _ => false,
-        };
-        let at = (thir.exprs.iter_enumerated()).filter_map(|(id, e)| match e.kind {
-            _ if e.span == span && arithmetic(id) => Some(id),
-            thir::ExprKind::Assign { rhs, .. } if e.span == span => {
-                let value = crate::lower::body_queries::strip(thir, rhs);
-                (arithmetic(value) && thir[value].span != span).then_some(value)
-            }
-            _ => None,
-        });
-        the_one(at).is_some_and(|id| self.frame.facts.exact.contains(&id))
-    }
-
     /// Whether an index's call is `index_call`'s: in bounds as
     /// `call_in_bounds` knows it, or through `index_mut`, `index_mut_place`.
     pub(super) fn index_call_taken(
@@ -52,7 +18,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         values: &[Value<'tcx>],
         span: Span,
     ) -> bool {
-        self.call_in_bounds(state, known, def_id, values, span) || self.index_mut_place(state, known, def_id, output)
+        self.call_in_bounds(state, known, values, span) || self.index_mut_place(state, known, def_id, output)
     }
 
     /// Whether THIR's call of `def_id` at `span` is one whose indexes the
@@ -62,7 +28,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         &self,
         state: &State<'_, 'tcx>,
         known: Std,
-        def_id: rustc_span::def_id::DefId,
         values: &[Value<'tcx>],
         span: Span,
     ) -> bool {
@@ -71,8 +36,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::Comb(Comb::Swap | Comb::SwapRemove | Comb::Remove | Comb::Insert) => true,
             _ => false,
         };
-        // The shadow: MIR's proof of a call's indexes, against THIR's
-        // (#1672 M3, step 5).
+        // The shadow: MIR's proof of a call's indexes (#1672 M3, step 5).
         if matches!(
             known,
             Std::Index
@@ -80,22 +44,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 | Std::Map(MapOp::Index { .. })
         ) {
             let block = state.location().block;
-            crate::lower::analysis::shadow_check(
-                self.tcx,
-                self.frame.owner,
-                span,
-                self.indexes_in_bounds(def_id, span),
-                || Some(crate::lower::analysis::LeftOut::CallBounds(block)),
-            );
+            crate::lower::analysis::shadow_check(self.tcx, self.frame.owner, span, || {
+                Some(crate::lower::analysis::Proof::CallBounds(block))
+            });
         }
         indexed && crate::lower::analysis::call_bounds_proved(self.tcx, state.body, state.location().block)
-    }
-
-    /// Whether THIR's call of `def_id` at `span` has its indexes in bounds,
-    /// as the body's ranges show: of `&v[a..b]`, its range (ADR 0806); of a
-    /// map's `m[k]`, a key it holds (rd558).
-    pub(in crate::lower) fn indexes_in_bounds(&self, def_id: rustc_span::def_id::DefId, span: Span) -> bool {
-        (self.thir_call(def_id, span)).is_some_and(|(fun, _)| self.frame.facts.in_bounds.contains(&fun))
     }
 
     /// Whether a call is `v[i]` through `index_mut`, of a value JS can't

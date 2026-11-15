@@ -479,17 +479,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         match state.facts.offsets().call_in_units(state.at) {
                             true => this.sliced_in_units(items, (range, arg_tys[1]), span, out)?,
                             false => {
-                                // MIR's proof of a range's bounds; the shadow compares
-                                // THIR's with it (#1672 M3, step 5).
+                                // MIR's proof of a range's bounds, which the shadow
+                                // lists (#1672 M3, step 5).
                                 let block = state.location().block;
                                 let in_bounds = crate::lower::analysis::call_bounds_proved(this.tcx, state.body, block);
-                                crate::lower::analysis::shadow_check(
-                                    this.tcx,
-                                    this.frame.owner,
-                                    span,
-                                    this.indexes_in_bounds(def_id, span),
-                                    || Some(crate::lower::analysis::LeftOut::CallBounds(block)),
-                                );
+                                crate::lower::analysis::shadow_check(this.tcx, this.frame.owner, span, || {
+                                    Some(crate::lower::analysis::Proof::CallBounds(block))
+                                });
                                 this.slice_range_values((op, in_bounds), items, (range, arg_tys[1]), span, out)?
                             }
                         }
@@ -1140,13 +1136,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }),
             // A `OnceCell`'s `set`: of a cell MIR shows still empty there
             // (`empty_sets`, #1672 M3), and of a `Result` read or not (ADR
-            // 0847); the shadow compares what THIR's ranges knew.
+            // 0847).
             Std::Once(OnceOp::Set) => {
-                let thir_empty =
-                    (self.thir_call(def_id, span)).is_some_and(|(fun, _)| self.frame.facts.set_empty.contains(&fun));
                 let block = state.location().block;
-                crate::lower::analysis::shadow_check(self.tcx, self.frame.owner, span, thir_empty, || {
-                    Some(crate::lower::analysis::LeftOut::EmptySet(block))
+                crate::lower::analysis::shadow_check(self.tcx, self.frame.owner, span, || {
+                    Some(crate::lower::analysis::Proof::EmptySet(block))
                 });
                 let empty = crate::lower::analysis::empty_set_proved(self.tcx, state.body, block);
                 let read = !self.result_unread(state);

@@ -1017,3 +1017,21 @@ Mutations `position-index-not-below`, `slice-iterator-not-lent`
 (`lower/analysis/intervals.ts`) and `position-not-through-try`
 (`lower/analysis/intervals/calls.ts`).
 
+## M4: THIR's ranges are gone (2026-11-15)
+
+Since step 5's switch (733270bab), THIR's ranges decided nothing: their
+four facts, `in_bounds`, `exact`, `set_empty` and `range_casts`, were
+read only by the shadow's comparison, and `exact` by one path more, a
+`+`, `-` or `*` MIR's intervals don't walk (a trait's `+=`, an atomic's),
+which now proves nothing: a wrap kept. So `body_queries/ranges` (3,559
+lines), `collect_ranges`, the four facts, `known_in_bounds`, `exact_at`,
+`indexes_in_bounds` and what only they read (`the_one_at`,
+`constant_integer`, `vec_view`, `cell_view`, `row_view`, `ord_max_or_min`,
+`is_iterator_enumerate`, `_rev` and `_step_by`) go. `present_item_of_sized`,
+which MIR's hints ask of a `let`-`else`, moved to
+`body_queries/present_item.rs`. The shadow, `--intervals-shadow`, lists
+each check MIR proves, a `proved-<kind>` line, which `scripts/ablate.ts`
+counts as before; test/intervals-shadow.test.ts's expectations are those
+lists, and `wrapsDisagreed` is `wrapsProved`, the wraps MIR proves. The
+corpus's snapshots and React's port are unchanged. Change 1 of #1681,
+#1672's campaign, is done.

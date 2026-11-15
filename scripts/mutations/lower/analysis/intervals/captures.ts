@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "captures-not-locals",
-    breaks: "a closure's captures are no locals of the body the walk reads, so `from_fn(|| ..)`'s `n -= 1` past `n == 0` of a `&mut n` capture is left to the bridge again, test/intervals-bridged.txt's 5 sites of #1701 B",
+    breaks: "a closure's captures are no locals of the body the walk reads, so `from_fn(|| ..)`'s `n -= 1` past `n == 0` of a `&mut n` capture keeps its check, which MIR proved through the capture (#1701 B)",
     file,
     find: "    if !tcx.is_closure_like(body.source.def_id()) || body.arg_count == 0 {\n",
     replace: "    if true || !tcx.is_closure_like(body.source.def_id()) || body.arg_count == 0 {\n",

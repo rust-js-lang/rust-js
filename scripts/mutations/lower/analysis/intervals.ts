@@ -98,7 +98,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/intervals.rs",
     find: "        if let Some(of) = copy_of.or(again).filter(|&of| of != local) {\n",
     replace: "        if let Some(of) = copy_of.filter(|&of| of != local) {\n",
-    tests: ["test/lowering-integer-ranges.test.ts","-t","a counter below a JS string's length doesn't wrap"],
+    tests: ["test/lowering-string-lengths.test.ts","-t","a counter below a JS string's length doesn't wrap"],
   },
   {
     name: "intervals-casts-uncopied",
@@ -155,7 +155,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/intervals.rs",
     find: "        let interval = again.and_then(|t| state.intervals[t]).or(interval);\n",
     replace: "        let interval = interval;\n",
-    tests: ["test/lowering-integer-ranges.test.ts","-t","a counter below a JS string's length doesn't wrap"],
+    tests: ["test/lowering-string-lengths.test.ts","-t","a counter below a JS string's length doesn't wrap"],
   },
   {
     name: "intervals-below-sum-of-one-unknown",
@@ -232,7 +232,7 @@ export const mutations: Mutation[] = [
 
   {
     name: "guard-drop-keeps-guard",
-    breaks: "a held guard's drop leaves its cell guarded, so a call past it, which may clear the cell through another `Rc`, forgets nothing, and `queue.borrow()[i]` is taken in bounds, a mir-only-call-bounds line (#1815)",
+    breaks: "a held guard's drop leaves its cell guarded, so a call past it, which may clear the cell through another `Rc`, forgets nothing, and `queue.borrow()[i]` is taken in bounds, a proved-call-bounds line (#1815)",
     file: "src/lower/analysis/intervals.rs",
     find: "                after.guarded.shift_remove(&place.local);\n",
     replace: "",

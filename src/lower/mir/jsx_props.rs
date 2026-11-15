@@ -268,9 +268,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// Whether THIR's cast at `span`, MIR's there, is one whose value is
     /// what it casts as it is (`kept_casts`): of a float it knows whole and
-    /// in the target's range, or the signed count of text's `repeat`; and,
-    /// of `range_casts` there, the shadow's, an integer its ranges show in
-    /// its target's.
+    /// in the target's range, or the signed count of text's `repeat`.
     pub(super) fn kept_cast_at(&self, span: Span, of: &IndexSet<thir::ExprId>) -> bool {
         let casts = (self.frame.thir.exprs.iter_enumerated())
             .filter(|(_, e)| matches!(e.kind, thir::ExprKind::Cast { .. }) && e.span.source_equal(span));

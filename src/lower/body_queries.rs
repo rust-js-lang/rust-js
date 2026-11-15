@@ -3,7 +3,6 @@
 
 use super::bindings::named_callback;
 use super::fn_def;
-use super::recognition::{SliceLength, slice_length};
 use crate::collections::{IndexMap, IndexSet};
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::{BindingMode, ByRef, Mutability};
@@ -21,10 +20,10 @@ mod constants;
 mod getter_unwraps;
 mod in_place;
 mod method_calls;
-mod ranges;
+mod present_item;
 mod set_reads;
 mod span_join;
-pub(in crate::lower) use span_join::{each_call_at, the_call_at, the_one, the_one_at};
+pub(in crate::lower) use span_join::{each_call_at, the_call_at, the_one};
 mod total_orders;
 mod values;
 mod whole_casts;
@@ -34,7 +33,7 @@ pub(super) use constants::{
     ConstantPatterns, PatternStep, PatternValue, pattern_places, pattern_value, transparent_subpattern,
 };
 pub(in crate::lower) use in_place::{decide as decide_in_place, decide_held};
-pub(super) use ranges::{present_item_of_sized, ranges};
+pub(super) use present_item::present_item_of_sized;
 pub(in crate::lower) use set_reads::is_option_unwrap;
 pub(super) use total_orders::orders_totally;
 pub(in crate::lower) use values::{assigned_once, indirect, through_box, value_local};
@@ -44,9 +43,6 @@ use whole_casts::whole_casts;
 pub(super) struct ForLoop<'a, 'tcx> {
     pub(super) head: ExprId,
     pub(super) pat: &'a Pat<'tcx>,
-    pub(super) body: ExprId,
-    /// The loop's scope, which its `break`s and `continue`s name.
-    pub(super) scope: rustc_middle::middle::region::Scope,
 }
 
 pub(super) struct BodyQuery<'a, 'tcx> {
@@ -81,12 +77,7 @@ impl<'a, 'tcx> BodyQuery<'a, 'tcx> {
         };
         let head = is_call_to(scrutinee, LangItem::IntoIterIntoIter)?;
         let [arm] = &arms[..] else { return None };
-        let ExprKind::Scope {
-            region_scope: scope,
-            value,
-            ..
-        } = thir[thir[*arm].body].kind
-        else {
+        let ExprKind::Scope { value, .. } = thir[thir[*arm].body].kind else {
             return None;
         };
         let ExprKind::Loop { body } = thir[value].kind else {
@@ -111,17 +102,10 @@ impl<'a, 'tcx> BodyQuery<'a, 'tcx> {
         };
         is_call_to(next, LangItem::IteratorNext)?;
         let some = arms.iter().find_map(|&a| match &thir[a].pattern.kind {
-            PatKind::Variant { subpatterns, .. } if subpatterns.len() == 1 => {
-                Some((&subpatterns[0].pattern, thir[a].body))
-            }
+            PatKind::Variant { subpatterns, .. } if subpatterns.len() == 1 => Some(&subpatterns[0].pattern),
             _ => None,
         })?;
-        Some(ForLoop {
-            head,
-            pat: some.0,
-            body: some.1,
-            scope,
-        })
+        Some(ForLoop { head, pat: some })
     }
 }
 
@@ -129,31 +113,13 @@ impl<'a, 'tcx> BodyQuery<'a, 'tcx> {
 /// Type/representation facts depend on the current instantiation and stay elsewhere.
 #[derive(Default)]
 pub(super) struct BodyFacts<'tcx> {
-    /// The items of a `Vec` or a slice whose index the body's ranges show
-    /// in bounds (`ranges`): each `a[i]`, and the function of each
-    /// `Index::index(&v, i)`; and of each map's `m[k]` whose key its tests
-    /// show the map holds (rd558).
-    pub(super) in_bounds: IndexSet<ExprId>,
-    /// Each `+`, `-` and `*` of a small integer, `a + b` or `a += b`,
-    /// that the body's ranges show never leaves its type's range
-    /// (`ranges`), which MIR's operator is joined to by its span alone,
-    /// `the_one` there (#1672).
-    pub(super) exact: IndexSet<ExprId>,
     /// The closures a `let` names that a hook's function is, each written
     /// there, named (`named_callbacks`).
     pub(super) named_callbacks: IndexSet<LocalVarId>,
     /// The casts whose value is what they cast as it is: of an `f64` known
-    /// to be a whole number in the integer's range (`whole_casts`), of an
-    /// integer the body's ranges show in its target's (`ranges`), and of a
+    /// to be a whole number in the integer's range (`whole_casts`), and of a
     /// signed one that's the count of text's `repeat` (`repeat_counts`).
     pub(super) kept_casts: IndexSet<ExprId>,
-    /// The integer casts the body's ranges show in their target's range
-    /// (`ranges`): the shadow's alone, MIR's intervals deciding them
-    /// (`cast_proved`, #1672 M3).
-    pub(super) range_casts: IndexSet<ExprId>,
-    /// The function of each `OnceCell::set` whose cell the body's ranges
-    /// show still empty there, every time it's reached (`ranges`, ADR 0847).
-    pub(super) set_empty: IndexSet<ExprId>,
     /// Where each read of a registered symbol is that's only tested against
     /// the registry's, `registered_reads`'s (ADR 0634).
     pub(super) registered_reads: IndexSet<ExprId>,
@@ -230,7 +196,6 @@ impl<'tcx> BodyFacts<'tcx> {
             constant_patterns: constant_patterns(tcx, thir),
             jsx_given,
             jsx_bases,
-            ..Self::default()
         }
     }
 }
@@ -874,20 +839,6 @@ pub(super) fn given_present<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, mut e: E
     };
     let untagged = super::untagged::untagged_adt(tcx, thir[e].ty).is_some();
     (identity && untagged && matches!(&args[..], [arg] if some(*arg))).then_some(e)
-}
-
-/// The value of an integer `const` of no generic arguments, rustc's own,
-/// which a body's ranges read as its literal's (ADR 0720).
-pub(super) fn constant_integer<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, args: ty::GenericArgsRef<'tcx>) -> Option<i128> {
-    if !args.is_empty() {
-        return None;
-    }
-    let scalar = tcx.const_eval_poly(def_id).ok()?.try_to_scalar_int()?;
-    let ty = tcx.type_of(def_id).instantiate_identity().skip_normalization();
-    match ty.is_signed() {
-        true => Some(scalar.to_int(scalar.size())),
-        false => i128::try_from(scalar.to_uint(scalar.size())).ok(),
-    }
 }
 
 /// Each call `given_present` says is of what's there.

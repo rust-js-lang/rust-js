@@ -1292,20 +1292,6 @@ pub(in crate::lower) fn is_vec_from_elem(tcx: TyCtxt<'_>, def_id: DefId) -> bool
     tcx.is_diagnostic_item(Symbol::intern("vec_from_elem"), def_id)
 }
 
-/// Whether `def_id` is `Ord::max`, `Some(true)`, or `Ord::min`,
-/// `Some(false)`: of integers, the larger or the smaller (#367).
-pub(in crate::lower) fn ord_max_or_min(tcx: TyCtxt<'_>, def_id: DefId) -> Option<bool> {
-    let ord = tcx.trait_of_assoc(def_id)?;
-    if !tcx.is_diagnostic_item(rustc_span::sym::Ord, ord) {
-        return None;
-    }
-    match tcx.item_name(def_id).as_str() {
-        "max" => Some(true),
-        "min" => Some(false),
-        _ => None,
-    }
-}
-
 /// The number's method an arithmetic intrinsic is, of the type it's of:
 /// its generic argument's, or of `fmaf32` and `fmaf64`, their name's.
 /// Of a count, `ctpop`, `ctlz` and `cttz`, the method's `u32`, as the

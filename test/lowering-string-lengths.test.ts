@@ -6,7 +6,7 @@
 import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { buildReact, fixture, target, wrapsDisagreed } from "./support";
+import { buildReact, fixture, target, wrapsProved } from "./support";
 
 beforeAll(buildReact, 600_000);
 
@@ -88,6 +88,16 @@ pub fn skips(items: &[f64]) -> u32 {
     n
 }
 
+// An array's get length is at most 2^32 - 1, not a string's 2^31 - 1:
+// i += 2 under i < units(items) may wrap, so it's no proved wrap.
+pub fn strides(items: &[f64]) -> u32 {
+    let mut i = 0;
+    while i < units(items) {
+        i += 2;
+    }
+    i
+}
+
 pub fn hops(mut i: u32, n: u32) -> (u32, u32) {
     let mut k = 0;
     while i + 1 < n {
@@ -105,7 +115,7 @@ pub fn upto(n: u8) -> u8 {
     i
 }
 `);
-  expect(wrapsDisagreed(dir, ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target])).toEqual(["mir-only-wrap skips", "mir-only-wrap skips", "mir-only-wrap skips", "mir-only-wrap tail", "mir-only-wrap tail"]);
+  expect(wrapsProved(dir, ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target])).toEqual(["proved-wrap count", "proved-wrap count", "proved-wrap count", "proved-wrap count", "proved-wrap pairs", "proved-wrap pairs", "proved-wrap pairs", "proved-wrap placeholders", "proved-wrap placeholders", "proved-wrap placeholders", "proved-wrap skips", "proved-wrap skips", "proved-wrap skips", "proved-wrap tail", "proved-wrap tail", "proved-wrap tail", "proved-wrap upto", "proved-wrap upto"]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   // \`i + 1 < n\` puts \`i\` below \`n - 1\`, at most 253 of a \`u8\`: its \`+= 1\`
   // can't wrap, and it settles round the loop at most 254.
@@ -160,7 +170,7 @@ pub fn last(s: &str) -> u32 {
     length(s) - 1
 }
 `);
-  expect(wrapsDisagreed(dir, ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target])).toEqual([]);
+  expect(wrapsProved(dir, ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target])).toEqual(["proved-wrap short", "proved-wrap three", "proved-wrap total"]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("  return substr.length < 10 && str.length + substr.length < 40;\n");
   expect(js).toContain("  return a.length + b.length;\n");

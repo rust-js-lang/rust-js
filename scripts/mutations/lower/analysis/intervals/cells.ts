@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "keys-kept-when-cells-change",
-    breaks: "a key a `RefCell`'s map holds is kept past a call that may write the cell, so `cache.borrow()[&k]` past `clear()` is taken in bounds, a mir-only-call-bounds line",
+    breaks: "a key a `RefCell`'s map holds is kept past a call that may write the cell, so `cache.borrow()[&k]` past `clear()` is taken in bounds, a proved-call-bounds line",
     file: "src/lower/analysis/intervals/cells.rs",
     find: "        self.keys.retain(|&(map, _)| map != cell);\n",
     replace: "",
@@ -56,7 +56,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "equal-lengths-kept-when-resized",
-    breaks: "two slices as long are kept so when one's length may change, so `left[i]` under `i < terraces.len()` past `left.pop()` is taken in bounds, a mir-only-call-bounds line",
+    breaks: "two slices as long are kept so when one's length may change, so `left[i]` under `i < terraces.len()` past `left.pop()` is taken in bounds, a proved-call-bounds line",
     file: "src/lower/analysis/intervals/cells.rs",
     find: "        self.equal_lens.retain(|&(a, b)| a != cell && b != cell);\n",
     replace: "",
@@ -80,7 +80,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "cells-behind-pointers-unseen",
-    breaks: "a `Box`'s `RefCell` isn't a cell, so past a closure that clears it `items.borrow()[i]` under `i < items.borrow().len()` is taken in bounds, a mir-only-call-bounds line (#1839)",
+    breaks: "a `Box`'s `RefCell` isn't a cell, so past a closure that clears it `items.borrow()[i]` under `i < items.borrow().len()` is taken in bounds, a proved-call-bounds line (#1839)",
     file,
     find: "        _ => (rc_pointee(tcx, ty).or_else(|| ty.boxed_ty())).is_some_and(|of| holds_cell(tcx, of)),\n",
     replace: "        _ => false,\n",
@@ -88,7 +88,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "cells-behind-one-pointer",
-    breaks: "an `Rc` of an `Rc`'s `RefCell` isn't a cell, so past a closure that clears it `items.borrow()[i]` is taken in bounds, a mir-only-call-bounds line (#1839)",
+    breaks: "an `Rc` of an `Rc`'s `RefCell` isn't a cell, so past a closure that clears it `items.borrow()[i]` is taken in bounds, a proved-call-bounds line (#1839)",
     file,
     find: "        _ => (rc_pointee(tcx, ty).or_else(|| ty.boxed_ty())).is_some_and(|of| holds_cell(tcx, of)),\n",
     replace: "        _ => (rc_pointee(tcx, ty).or_else(|| ty.boxed_ty()))\n            .is_some_and(|of| matches!(of.kind(), ty::Adt(adt, _) if is_std_def(tcx, adt.did(), StdItem::RefCell))),\n",

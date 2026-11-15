@@ -6,7 +6,7 @@
 import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { buildReact, fixture, performanceTrack, target, wrapsDisagreed } from "./support";
+import { buildReact, fixture, performanceTrack, target, wrapsProved } from "./support";
 import { underLoad } from "../scripts/timing";
 
 beforeAll(buildReact, 600_000);
@@ -129,7 +129,7 @@ pub fn later(items: &mut Vec<u32>) -> u32 {
     items[0]
 }
 `);
-  expect(wrapsDisagreed(dir)).toEqual([]);
+  expect(wrapsProved(dir)).toEqual(["proved-wrap counted", "proved-wrap last", "proved-wrap sift_down", "proved-wrap sift_down", "proved-wrap sift_down", "proved-wrap sift_down", "proved-wrap skipped", "proved-wrap small", "proved-wrap small", "proved-wrap small", "proved-wrap small"]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   // `heap[leftIndex]` under `leftIndex < length` of the length its
   // callers give: MIR doesn't carry the relation since it decides call
@@ -256,7 +256,7 @@ pub fn sum_below(xs: &[u32], n: usize) -> u32 {
     sum
 }
 `);
-  expect(wrapsDisagreed(dir)).toEqual([]);
+  expect(wrapsProved(dir)).toEqual(["proved-wrap coefficients", "proved-wrap coefficients", "proved-wrap reversed", "proved-wrap reversed", "proved-wrap shrunk", "proved-wrap shrunk", "proved-wrap shrunk", "proved-wrap sum_below", "proved-wrap tested", "proved-wrap tested", "proved-wrap tested", "proved-wrap through", "proved-wrap through"]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("    found.push(n - k - 1);\n");
   expect(js).toContain("    found.push(line - k + 1);\n");
@@ -326,7 +326,7 @@ pub fn past(items: &[i32]) -> i32 {
     if i != items.len() { items[i] } else { 0 }
 }
 `);
-  expect(wrapsDisagreed(dir)).toEqual([]);
+  expect(wrapsProved(dir)).toEqual(["proved-wrap common", "proved-wrap common", "proved-wrap common", "proved-wrap common", "proved-wrap common", "proved-wrap past"]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("  let c = control.length - 1;\n");
   expect(js).toContain("  if (s === sample.length) {\n    s = sample.length - 1;\n  }\n");
@@ -384,7 +384,7 @@ pub fn past(lines: &[&str]) -> usize {
     lines[s as usize].len()
 }
 `);
-  expect(wrapsDisagreed(dir)).toEqual([]);
+  expect(wrapsProved(dir)).toEqual(["proved-wrap past", "proved-wrap root", "proved-wrap root", "proved-wrap root", "proved-wrap root"]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain('  while (s < lines.length && !lines[s].includes("Root")) {\n    s++;\n  }\n');
   expect(js).toContain("    if (lines[s] !== control[c]) {\n      return s;\n    }\n");
@@ -461,7 +461,7 @@ pub fn deep(indent: usize) -> usize {
     indent
 }
 `);
-  expect(wrapsDisagreed(dir)).toEqual(["mir-only-wrap top"]);
+  expect(wrapsProved(dir)).toEqual(["proved-wrap counted", "proved-wrap describe", "proved-wrap lower", "proved-wrap top"]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("describe(out, indent + 1, name);");
   expect(js).toContain("    seen++;\n");
@@ -515,7 +515,7 @@ pub fn first_of_some(keys: &[String]) -> String {
     if length >= 2 { keys[1].clone() } else { keys[0].clone() }
 }
 `);
-  expect(wrapsDisagreed(dir)).toEqual([]);
+  expect(wrapsProved(dir)).toEqual(["proved-wrap diff"]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   // `prevLength - 1` is JS's own: the `push` before made the vector at
   // least one long (#1700).
@@ -617,7 +617,7 @@ pub fn through_raw(mut v: Vec<u32>) -> usize {
     v.len() - 1
 }
 `);
-  expect(wrapsDisagreed(dir)).toEqual([]);
+  expect(wrapsProved(dir)).toEqual(["proved-wrap average", "proved-wrap average", "proved-wrap average", "proved-wrap last", "proved-wrap shown"]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("    count++;\n");
   expect(js).toContain("      added++;\n");
@@ -670,7 +670,7 @@ pub fn negative(n: i32) -> u32 {
     n as u32
 }
 `);
-  expect(wrapsDisagreed(dir)).toEqual([]);
+  expect(wrapsProved(dir)).toEqual([]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("  return s.length;\n");
   expect(js).toContain("  return n < 200 ? n : 0;\n");
@@ -703,7 +703,7 @@ test("an outer loop's index stays below its slice's length across an inner loop"
     total
 }
 `);
-  expect(wrapsDisagreed(dir)).toEqual([]);
+  expect(wrapsProved(dir)).toEqual(["proved-wrap summed", "proved-wrap summed"]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("      i++;\n");
   expect(js).toContain("    r++;\n");
@@ -739,7 +739,7 @@ pub fn past_none(i: usize) -> usize {
     past::<0>(i)
 }
 `);
-  expect(wrapsDisagreed(dir)).toEqual([]);
+  expect(wrapsProved(dir)).toEqual(["proved-wrap made"]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("i < N; i++)");
   expect(js).toContain("(i - 1) >>> 0");
@@ -805,7 +805,7 @@ pub fn bumps() -> u8 {
     bumped(255, false).wrapping_add(bumped(0, true))
 }
 `);
-  expect(wrapsDisagreed(dir)).toEqual([]);
+  expect(wrapsProved(dir)).toEqual(["proved-wrap even", "proved-wrap even", "proved-wrap grow", "proved-wrap grow", "proved-wrap odd", "proved-wrap odd", "proved-wrap up", "proved-wrap walk"]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("return k + 1;");
   expect(js).toContain("(n + 1) & 255");
@@ -853,7 +853,7 @@ pub fn big(n: u32) -> u32 {
     BIG.wrapping_sub(joined(n % 4, 3))
 }
 `);
-  expect(wrapsDisagreed(dir)).toEqual([]);
+  expect(wrapsProved(dir)).toEqual(["proved-wrap add", "proved-wrap square"]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("return a + b;");
   expect(js).toContain("return n * n;");
@@ -936,7 +936,7 @@ pub fn ran() -> (u32, usize, usize, usize, usize) {
   // THIR's ranges see no write through a raw pointer, and leave out
   // `raw_between`'s wrap, which MIR keeps, and alone decides (#1782,
   // #1943).
-  expect(wrapsDisagreed(dir)).toEqual([]);
+  expect(wrapsProved(dir)).toEqual(["proved-wrap last"]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("stack[stack.length - 1]");
   expect(js.match(/\(stack\.length - 1\) >>> 0/g)).toHaveLength(4);
@@ -999,7 +999,7 @@ pub fn skipped(items: &[u32], i: usize) -> usize {
     if let Some(&item) = items.get(i) { item as usize } else { i + 1 }
 }
 `);
-  expect(wrapsDisagreed(dir, ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target])).toEqual([]);
+  expect(wrapsProved(dir, ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target])).toEqual(["proved-wrap flushed", "proved-wrap summed"]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   // `summed`'s, and `flushed`'s, whose `get(i)` is in `with_borrow`'s
   // closure, whose `Some` tells `flushed` its `i` is below a length (#1701).
@@ -1027,7 +1027,7 @@ pub fn read(v: &RefCell<Vec<u32>>, i: usize) -> u32 {
     0
 }
 `);
-  expect(wrapsDisagreed(dir)).toEqual([]);
+  expect(wrapsProved(dir)).toEqual([]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("    return $index(v, i);\n");
   const lib = await import(join(dir, "lib.js"));
@@ -1075,7 +1075,7 @@ pub fn lent() -> u32 {
     down()
 }
 `);
-  expect(wrapsDisagreed(dir)).toEqual([]);
+  expect(wrapsProved(dir)).toEqual(["proved-wrap doubled::{closure#0}", "proved-wrap shared::{closure#0}"]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("at * 2;");
   expect(js).toContain("n - step");
@@ -1118,7 +1118,7 @@ pub fn lent(mut n: u32) -> u32 {
     down()
 }
 `);
-  expect(wrapsDisagreed(dir)).toEqual([]);
+  expect(wrapsProved(dir)).toEqual(["proved-wrap countdown::{closure#0}", "proved-wrap countdown::{closure#0}"]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("        n--;\n        return n + 1;\n");
   expect(js).toContain("    n = (n - 1) >>> 0;\n");
@@ -1169,7 +1169,7 @@ pub fn copied() -> usize {
     i
 }
 `);
-  expect(wrapsDisagreed(dir)).toEqual([]);
+  expect(wrapsProved(dir)).toEqual(["proved-wrap copied", "proved-wrap counted"]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   const of = (name: string) => js.slice(js.indexOf(`export function ${name}(`), js.indexOf("\n}\n", js.indexOf(`export function ${name}(`)));
   expect(of("counted")).toContain("i++;");

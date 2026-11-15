@@ -1,9 +1,7 @@
-// The MIR intervals' shadow over the corpus (#1672 change 1 M2): each
-// case compiled with `--intervals-shadow`, which logs each check THIR's
-// ranges leave out that MIR's intervals don't prove, and each they keep
-// that MIR proves (`mir-only`, what M3 leaves out), the lines gathered
-// and counted by kind. Each line is a wrong-answer candidate, or a gap of
-// the MIR analysis's precision, triaged on #1672.
+// The MIR intervals' shadow over the corpus (#1672): each case compiled
+// with `--intervals-shadow`, which logs each check MIR's intervals prove,
+// `proved-<kind>` (THIR's ranges, which it once compared them with, gone in
+// M4), the lines gathered and counted by kind.
 //
 //   bun scripts/intervals-shadow.ts [--out <file>]
 import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync, existsSync } from "node:fs";
@@ -51,7 +49,7 @@ rmSync(work, { recursive: true, force: true });
 lines.sort();
 const counts = new Map<string, number>();
 for (const line of lines) counts.set(line.split("\t")[0], (counts.get(line.split("\t")[0]) ?? 0) + 1);
-console.log(`${cases.length} cases, ${lines.length} lines (a kind: THIR leaves out what MIR doesn't prove; mir-only: MIR proves what THIR keeps): ${[...counts].map(([k, n]) => `${k} ${n}`).join(", ")}`);
+console.log(`${cases.length} cases, ${lines.length} sites MIR proves: ${[...counts].map(([k, n]) => `${k} ${n}`).join(", ")}`);
 if (out) writeFileSync(out, lines.join("\n") + "\n");
 if (failed.length > 0) {
   console.error(`${failed.length} cases failed to compile: ${failed.join(", ")}`);

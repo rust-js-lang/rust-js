@@ -604,3 +604,15 @@ check runs, not what the JS does.
 The retirement of `guard-deref-mut-always-a-copy` above was wrong, and it's undone: the branch and its mutation are back. A held guard's `&mut` bound to a local, `let all = &mut *items; all.truncate(1)`, reaches the call as a reborrow of the local, `&mut (*all)`. The general calls-may-write-cells rule skips the guarded cell, and the reborrow lends `all`, so no root leads the call back to the cell. Only the branch forgot its length. Without it, `(items.len() - 2) as u32` under `items.len() > 1` gave -1 on main where Rust wraps. The shapes listed for the retirement never bound the `&mut` to a local, and a list of shapes is no proof that a branch is never needed. The bounds matrix's `guard` holder now has the shape (`bound`), and the mutation names that row.
 
 From here, a branch that keeps an analysis sound is retired only when the native pass shows it equivalent: `bun scripts/ablate.ts --native` of its mutation finds no program of the bounds matrix or the corpus, its snapshots ignored, that runs otherwise than native Rust does without it. It runs on the build that decides with the analysis; for a call's index, step 5's switch build. Listing shapes is not enough. Dead code of THIR's that no decision reads is not such a branch, and is retired as before.
+
+## Amendment (2026-11-15, #1672 M4): THIR's ranges' mutations gone
+
+With THIR's ranges deleted (ADR 1137, M4), their mutations,
+scripts/mutations/lower/body_queries/ranges*, go with their code, and the
+seven of other files whose code went too: named-constant-signed-as-unsigned,
+mir-known-bounds-checked, bounds-join-any, assigned-operator-span-off,
+cell-borrow-mut-unrecognized, rc-deref-of-a-cell-unviewed and
+row-view-of-any-call. intervals-mir-only-unreported is
+intervals-proofs-unreported, of the shadow's `proved-<kind>` lines. A test of
+a range rule's wraps says which MIR proves (`wrapsProved`, test/support.ts),
+so a rule lost, or one claiming too much, fails it.

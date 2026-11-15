@@ -25,25 +25,6 @@ pub fn collect_bodies(tcx: TyCtxt<'_>) -> Vec<Body<'_>> {
     bodies
 }
 
-/// What the integers of the crate's bodies and initializers can be, of
-/// each together: a function only calls reach is what its calls give it
-/// (ADRs 0576, 0577). Before MIR building steals THIR, as `collect_bodies`.
-pub fn collect_ranges<'tcx>(tcx: TyCtxt<'tcx>, bodies: &mut [Body<'tcx>], initializers: &mut [Body<'tcx>]) {
-    let only_called = only_called::only_called(tcx);
-    let all: Vec<&mut Body<'tcx>> = (bodies.iter_mut().chain(initializers.iter_mut()))
-        .filter(|body| body.root().is_some())
-        .collect();
-    let walked: Vec<_> = (all.iter()).map(|body| (body.def_id, &body.thir, body.expr)).collect();
-    let found = crate::lower::body_queries::ranges(tcx, &walked, &only_called);
-    drop(walked);
-    for (body, ranges) in all.into_iter().zip(found) {
-        body.facts.in_bounds = ranges.in_bounds;
-        body.facts.exact = ranges.exact;
-        body.facts.set_empty = ranges.set_empty;
-        body.facts.range_casts = ranges.kept_casts;
-    }
-}
-
 /// std's bodies compiled into `@rust-js/std` (ADR 0561):
 /// each from the optimized MIR of a `core` built to unwind (#424,
 /// `std_sysroot`), with no THIR beside it,

@@ -36,7 +36,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "range-index-unrecognized",
-    breaks: "no `v[a..b]` is a range index, so `v[..]` and `v[a..n]` under `a <= n <= v.len()` aren't proved, no mir-only-call-bounds line",
+    breaks: "no `v[a..b]` is a range index, so `v[..]` and `v[a..n]` under `a <= n <= v.len()` aren't proved, no proved-call-bounds line",
     file: "src/lower/recognition/loop_ranges.rs",
     find: "    (held && ranged(index)).then_some(1)\n",
     replace: "    (held && ranged(index) && false).then_some(1)\n",
@@ -60,7 +60,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "rc-deref-of-any-type",
-    breaks: "any `Deref` is taken as an `Rc`'s, the same cell each time, so through the crate's that alternates cells `cells.borrow()[i]` under `i < cells.borrow().len()` is taken in bounds, a mir-only-call-bounds line (#1839)",
+    breaks: "any `Deref` is taken as an `Rc`'s, the same cell each time, so through the crate's that alternates cells `cells.borrow()[i]` under `i < cells.borrow().len()` is taken in bounds, a proved-call-bounds line (#1839)",
     file: "src/lower/recognition/loop_ranges.rs",
     find: "        && args.types().next().is_some_and(|of| rc_pointee(tcx, of).is_some())\n",
     replace: "        && args.types().next().is_some()\n",

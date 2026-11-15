@@ -854,7 +854,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/rvalues.rs",
     find: "                let proved = crate::lower::analysis::exact_proved(tcx, state.body, state.location());\n",
     replace: "                let proved = false && crate::lower::analysis::exact_proved(tcx, state.body, state.location());\n",
-    tests: ["test/lowering-integer-ranges.test.ts","-t","a counter below a JS string's length doesn't wrap"],
+    tests: ["test/lowering-string-lengths.test.ts","-t","a counter below a JS string's length doesn't wrap"],
   },
   {
     name: "integer-cast-proof-unread",

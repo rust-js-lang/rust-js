@@ -1001,14 +1001,6 @@ pub(crate) fn is_double_ended(tcx: TyCtxt<'_>, id: DefId) -> bool {
     is_iterator_extension(tcx, id) && tcx.item_name(id).as_str() == "DoubleEndedIterator"
 }
 
-/// Is `method` `Iterator::enumerate`, whose items are its iterator's, each
-/// with its index, from 0 (#363)?
-pub(in crate::lower) fn is_iterator_enumerate(tcx: TyCtxt<'_>, method: DefId) -> bool {
-    tcx.trait_of_assoc(method)
-        .is_some_and(|t| is_std_def(tcx, t, StdItem::Iterator))
-        && tcx.item_name(method).as_str() == "enumerate"
-}
-
 /// Is `method` `Iterator::position`, where the first item a test finds
 /// is (rd316)?
 pub(in crate::lower) fn is_iterator_position(tcx: TyCtxt<'_>, method: DefId) -> bool {
@@ -1027,22 +1019,6 @@ pub(in crate::lower) fn is_slice_items(tcx: TyCtxt<'_>, method: DefId) -> bool {
                 ty::Slice(_)
             )
         })
-}
-
-/// Is `method` `Iterator::rev`, whose items are its iterator's own, from
-/// its end (#356)?
-pub(in crate::lower) fn is_iterator_rev(tcx: TyCtxt<'_>, method: DefId) -> bool {
-    tcx.trait_of_assoc(method)
-        .is_some_and(|t| is_std_def(tcx, t, StdItem::Iterator))
-        && tcx.item_name(method).as_str() == "rev"
-}
-
-/// Is `method` `Iterator::step_by`, whose items are some of its
-/// iterator's, every `n`th?
-pub(in crate::lower) fn is_iterator_step_by(tcx: TyCtxt<'_>, method: DefId) -> bool {
-    tcx.trait_of_assoc(method)
-        .is_some_and(|t| is_std_def(tcx, t, StdItem::Iterator))
-        && tcx.item_name(method).as_str() == "step_by"
 }
 
 /// Is `id` core's `ExactSizeIterator`, whose `len()` a JS iterator given for

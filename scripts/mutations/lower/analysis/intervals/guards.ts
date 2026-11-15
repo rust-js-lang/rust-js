@@ -9,7 +9,7 @@ const tests = ["test/intervals-shadow.test.ts", "-t", "guard keeps"];
 export const mutations: Mutation[] = [
   {
     name: "guard-lent-keeps-length",
-    breaks: "a call given a guard's `&mut Vec`, `truncate` or a function of the crate's, keeps its cell's length, so `items[i]` past `items.truncate(0)` is taken in bounds, a mir-only-call-bounds line, and would write past it",
+    breaks: "a call given a guard's `&mut Vec`, `truncate` or a function of the crate's, keeps its cell's length, so `items[i]` past `items.truncate(0)` is taken in bounds, a proved-call-bounds line, and would write past it",
     file,
     find: "                after.forget_lengths(state.root(lent));\n",
     replace: "",
@@ -17,7 +17,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "guard-reborrow-unlent",
-    breaks: "a reborrow of a guard's `&mut Vec`, `&mut (*m)`, given to `truncate` keeps the cell's length, a mir-only-call-bounds line",
+    breaks: "a reborrow of a guard's `&mut Vec`, `&mut (*m)`, given to `truncate` keeps the cell's length, a proved-call-bounds line",
     file,
     find: "                guards.lends.extend(through);\n",
     replace: "",

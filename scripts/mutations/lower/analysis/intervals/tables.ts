@@ -8,7 +8,7 @@ const tests = ["test/intervals-shadow.test.ts", "-t", "a table is as long"];
 export const mutations: Mutation[] = [
   {
     name: "rows-kept-of-any-row-lent",
-    breaks: "a row's `&mut` used any way keeps the rows, so `board[0][c]` past `board[0].truncate(0)` or `mem::take(&mut board[0])` is taken in bounds, a mir-only-call-bounds line, and would read past an emptied row",
+    breaks: "a row's `&mut` used any way keeps the rows, so `board[0][c]` past `board[0].truncate(0)` or `mem::take(&mut board[0])` is taken in bounds, a proved-call-bounds line, and would read past an emptied row",
     file,
     find: "                ty::Ref(_, of, ty::Mutability::Mut) if of == row => row_lent_only_kept(tcx, body, local),\n",
     replace: "                ty::Ref(_, of, ty::Mutability::Mut) if of == row => true,\n",
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "rows-kept-past-a-slice-call",
-    breaks: "a call given the table's slice `&mut`, `board.fill(Vec::new())`, keeps its rows, so `board[0][c]` past it is taken in bounds, a mir-only-call-bounds line",
+    breaks: "a call given the table's slice `&mut`, `board.fill(Vec::new())`, keeps its rows, so `board[0][c]` past it is taken in bounds, a proved-call-bounds line",
     file,
     find: "                    after.rows.shift_remove(&table);\n",
     replace: "",

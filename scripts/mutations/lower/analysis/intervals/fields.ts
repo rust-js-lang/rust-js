@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "fields-whole-uses-ignored",
-    breaks: "a parameter given on whole, `self.reset()`, keeps its fields locals, so `self.items[self.at]` past it is taken in bounds though `reset()` cleared them, a mir-only-call-bounds line",
+    breaks: "a parameter given on whole, `self.reset()`, keeps its fields locals, so `self.items[self.at]` past it is taken in bounds though `reset()` cleared them, a proved-call-bounds line",
     file,
     find: "        !uses.written.contains(&pointer) && (!uses.whole.contains(&pointer) || frozen(pointer))\n",
     replace: "        !uses.written.contains(&pointer)\n",
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "fields-kept-beside-a-mut-reference-used-whole",
-    breaks: "a `&mut` parameter used whole keeps its fields as locals, so `node.children[0]` past `reset(node)` is taken in bounds, a mir-only-call-bounds line, and would read past an emptied field",
+    breaks: "a `&mut` parameter used whole keeps its fields as locals, so `node.children[0]` past `reset(node)` is taken in bounds, a proved-call-bounds line, and would read past an emptied field",
     file: "src/lower/analysis/intervals/fields.rs",
     find: "    let frozen = |pointer: Local| matches!(*body.local_decls[pointer].ty.kind(), ty::Ref(_, to, ty::Mutability::Not) if to.is_freeze(tcx, typing_env));\n",
     replace: "    let frozen = |pointer: Local| matches!(*body.local_decls[pointer].ty.kind(), ty::Ref(..));\n",

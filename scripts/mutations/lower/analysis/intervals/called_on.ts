@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "called-on-forgets-nothing",
-    breaks: "a call that may change a `Vec`'s length forgets nothing of it, so `v[i]` past `v.clear()` is taken in bounds, a mir-only-call-bounds line, and would read past it",
+    breaks: "a call that may change a `Vec`'s length forgets nothing of it, so `v[i]` past `v.clear()` is taken in bounds, a proved-call-bounds line, and would read past it",
     file,
     find: "                after.forget_lengths(state.root(of));\n",
     replace: "                let _ = (state, of);\n",
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "called-on-every-call-keeps",
-    breaks: "every call keeps a `Vec`'s length, `clear()` too, so `v[i]` past it is taken in bounds, a mir-only-call-bounds line",
+    breaks: "every call keeps a `Vec`'s length, `clear()` too, so `v[i]` past it is taken in bounds, a proved-call-bounds line",
     file,
     find: "            .is_some_and(|(callee, _)| keeps_vec_length(self.tcx, callee))\n",
     replace: "            .is_some_and(|(callee, _)| true || keeps_vec_length(self.tcx, callee))\n",

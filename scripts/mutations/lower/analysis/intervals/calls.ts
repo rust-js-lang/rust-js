@@ -66,7 +66,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/intervals/calls.rs",
     find: "                    after.lens.insert(local, of);\n                }\n            } else if text_length(self.tcx, callee) {\n",
     replace: "                    let _ = of;\n                }\n            } else if text_length(self.tcx, callee) {\n",
-    tests: ["test/lowering-integer-ranges.test.ts", "-t", "a counter below a JS string"],
+    tests: ["test/lowering-string-lengths.test.ts", "-t", "a counter below a JS string"],
   },
   {
     name: "pushed-push-unknown",

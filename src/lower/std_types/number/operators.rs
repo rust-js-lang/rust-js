@@ -24,10 +24,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
     ) -> R<Expr> {
         // Of an operation MIR's intervals don't walk, a call's, `+=` of a
-        // trait's or an atomic's, what THIR's ranges know, until MIR walks it
-        // (#1672 M3).
-        let thir_exact = matches!(op, BinOp::Add | BinOp::Sub | BinOp::Mul) && self.exact_at(span);
-        self.binary_proved(op, l, r, known, ty, span, thir_exact)
+        // trait's or an atomic's: none proved, as THIR's ranges are gone
+        // (#1672 M4).
+        self.binary_proved(op, l, r, known, ty, span, false)
     }
 
     /// `binary`, of a `+`, `-` or `*` MIR's intervals prove stays in its
@@ -115,17 +114,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
 
         // What MIR's intervals prove stays in range, `proved`, the caller's
-        // of the statement it lowers, is JS's own (ADRs 0576, 1137); the
-        // shadow compares what THIR's ranges knew (#1672 M3). MIR alone
-        // decides: the bridge, which took THIR's ranges where MIR didn't
-        // prove a wrap, is gone, as THIR's ranges don't see a write through a
-        // raw pointer a body is given (#1943, M4).
+        // of the statement it lowers, is JS's own, and nothing else (ADRs
+        // 0576, 1137; THIR's ranges gone, #1672 M4).
         let arithmetic = matches!(op, BinOp::Add | BinOp::Sub | BinOp::Mul);
-        let thir_exact = arithmetic && self.exact_at(span);
         let exact = arithmetic && proved;
         if arithmetic {
-            crate::lower::analysis::shadow_check(self.tcx, self.frame.owner, span, thir_exact, || {
-                Some(crate::lower::analysis::LeftOut::Wrap)
+            crate::lower::analysis::shadow_check(self.tcx, self.frame.owner, span, || {
+                Some(crate::lower::analysis::Proof::Wrap)
             });
         }
         if exact {

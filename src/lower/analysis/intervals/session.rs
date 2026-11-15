@@ -114,9 +114,9 @@ impl Drop for ProofsScope<'_> {
     }
 }
 
-/// What THIR's facts leave out: a bounds check, by the block its `assert`
-/// ends, or a wrap.
-pub(in crate::lower) enum LeftOut {
+/// A check MIR's intervals may prove: a bounds check, by the block its
+/// `assert` ends, or a wrap.
+pub(in crate::lower) enum Proof {
     Bounds(BasicBlock),
     Wrap,
     /// An integer cast, by its statement's location.
@@ -127,17 +127,16 @@ pub(in crate::lower) enum LeftOut {
     CallBounds(BasicBlock),
 }
 
-/// A check THIR's facts leave out or keep, `left_out`, against MIR's
-/// proof of it: a line where THIR leaves out what MIR doesn't prove, a
-/// wrong answer's candidate or a gap of MIR's precision, and a `mir-only`
-/// line where MIR proves what THIR keeps, which M3 leaves out, so what it
-/// proves there must be right.
+/// A check, `check`'s, that MIR's intervals prove: a line each,
+/// `proved-<kind>`, of what `--intervals-shadow` writes, so a mutation of
+/// the intervals that takes proofs away, or gives them, shows in what it
+/// counts (`scripts/ablate.ts`). THIR's ranges, which the shadow compared
+/// MIR's proofs with until #1672's step 5, are gone (M4).
 pub(in crate::lower) fn shadow_check(
     tcx: TyCtxt<'_>,
     owner: rustc_span::def_id::DefId,
     span: Span,
-    left_out: bool,
-    check: impl FnOnce() -> Option<LeftOut>,
+    check: impl FnOnce() -> Option<Proof>,
 ) {
     let caches = crate::lower::session::caches(tcx);
     let Some(shadow) = &caches.intervals_shadow else {
@@ -151,24 +150,22 @@ pub(in crate::lower) fn shadow_check(
         return;
     };
     let (kind, proved) = match check {
-        LeftOut::Bounds(block) => ("bounds", proofs.bounds.contains(&block)),
-        LeftOut::Wrap => ("wrap", exact.get(&span).copied().unwrap_or(false)),
-        LeftOut::Cast(location) => ("cast", proofs.casts.contains(&location)),
-        LeftOut::EmptySet(block) => ("empty-set", proofs.empty_sets.contains(&block)),
-        LeftOut::CallBounds(block) => ("call-bounds", proofs.call_bounds.contains(&block)),
+        Proof::Bounds(block) => ("bounds", proofs.bounds.contains(&block)),
+        Proof::Wrap => ("wrap", exact.get(&span).copied().unwrap_or(false)),
+        Proof::Cast(location) => ("cast", proofs.casts.contains(&location)),
+        Proof::EmptySet(block) => ("empty-set", proofs.empty_sets.contains(&block)),
+        Proof::CallBounds(block) => ("call-bounds", proofs.call_bounds.contains(&block)),
     };
-    let kind = match (left_out, proved) {
-        (true, false) => kind,
-        (false, true) => &format!("mir-only-{kind}"),
-        _ => return,
-    };
+    if !proved {
+        return;
+    }
     let at = tcx.sess.source_map().span_to_diagnostic_string(span);
-    let line = format!("{kind}\t{}\t{at}\n", tcx.def_path_str(owner));
+    let line = format!("proved-{kind}\t{}\t{at}\n", tcx.def_path_str(owner));
     shadow.borrow_mut().lines.insert(line);
 }
 
-/// Each check THIR's facts leave out that MIR doesn't prove, a line each,
-/// `kind<TAB>function<TAB>where`: what `--intervals-shadow` writes.
+/// Each check MIR's intervals prove, a line each,
+/// `proved-<kind><TAB>function<TAB>where`: what `--intervals-shadow` writes.
 pub(crate) fn shadow_report(tcx: TyCtxt<'_>) -> String {
     let caches = crate::lower::session::caches(tcx);
     caches

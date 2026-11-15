@@ -790,21 +790,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return None;
         };
         // A bounds check MIR's intervals prove never fails isn't made, its
-        // block the one whose terminator this is; the shadow compares what
-        // THIR's facts knew (ADR 1137, #1672 M3).
+        // block the one whose terminator this is (ADR 1137, #1672 M3).
         let block = (matches!(**msg, mir::AssertKind::BoundsCheck { .. }))
             .then(|| body.basic_blocks.iter_enumerated())
             .and_then(|mut blocks| blocks.find(|(_, data)| std::ptr::eq(data.terminator(), terminator)))
             .map(|(block, _)| block);
         if let Some(block) = block {
-            let thir_in_bounds = self.known_in_bounds(msg, terminator.source_info.span);
-            crate::lower::analysis::shadow_check(
-                self.tcx,
-                self.frame.owner,
-                terminator.source_info.span,
-                thir_in_bounds,
-                || Some(crate::lower::analysis::LeftOut::Bounds(block)),
-            );
+            crate::lower::analysis::shadow_check(self.tcx, self.frame.owner, terminator.source_info.span, || {
+                Some(crate::lower::analysis::Proof::Bounds(block))
+            });
             if crate::lower::analysis::bounds_proved(self.tcx, body, block) {
                 return Some(Check::Unchecked);
             }

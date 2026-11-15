@@ -173,7 +173,6 @@ const unmutated: Record<string, string> = {
   "src/program.rs": "the types the phases hand each other, with no behavior of their own",
   "src/lower/shortcuts.rs": "one-line forwards to recognition, whose mutations hold the answers",
   "src/jsx_syntax/literals.rs": "generated from @types/react; react-versions.test.ts holds it equal to its generator",
-  "src/lower/body_queries/ranges/empty.rs": "THIR's still-empty cells, the shadow's alone since MIR decides each `set` (analysis/once_empty.rs, whose mutations hold each rule, #1672 M3); M4 deletes it with THIR's ranges",
   "src/lower/mir/tidy/contracts.rs": "a debug build's checks of what tidy leaves, which change no output; its unit tests, `cargo test`, break each",
 };
 

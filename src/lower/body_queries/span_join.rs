@@ -8,20 +8,6 @@
 use rustc_middle::thir::{ExprId, Thir};
 use rustc_span::Span;
 
-/// The one expression of `thir` written at `span` that `of_kind` takes,
-/// or none: none there, or more than one.
-pub(in crate::lower) fn the_one_at<'tcx>(
-    thir: &Thir<'tcx>,
-    span: Span,
-    of_kind: impl Fn(&rustc_middle::thir::Expr<'tcx>) -> bool,
-) -> Option<ExprId> {
-    the_one(
-        (thir.exprs.iter_enumerated())
-            .filter(|(_, e)| e.span == span && of_kind(e))
-            .map(|(id, _)| id),
-    )
-}
-
 /// The one call of `thir` whose `fn_span` is `span`, MIR's call there,
 /// or none: none there, or more than one, of a macro's expansion.
 pub(in crate::lower) fn the_call_at(thir: &Thir<'_>, span: Span) -> Option<ExprId> {

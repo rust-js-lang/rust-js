@@ -115,20 +115,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "mir-known-bounds-checked",
-    breaks:
-      "THIR's facts know no index in bounds, so the shadow logs each MIR proves of `for i in 1..len` as one THIR keeps (#1672: THIR's bounds facts are the shadow's alone)",
-    file: "src/lower/mir/bounds.rs",
-    find: "        matches!(msg, mir::AssertKind::BoundsCheck { .. })\n",
-    replace:
-      "        false && matches!(msg, mir::AssertKind::BoundsCheck { .. })\n",
-    tests: [
-      "test/intervals-shadow.test.ts",
-      "-t",
-      "for loop.s value over a range",
-    ],
-  },
-  {
     name: "swap-remove-shifted",
     breaks:
       "`swap_remove`'s item is taken from the front, so a heap's `pop` gives its second item",
@@ -195,22 +181,5 @@ export const mutations: Mutation[] = [
       "-t",
       "an item.s bitwise assignment is its compound",
     ],
-  },
-  {
-    name: "bounds-join-any",
-    breaks: "MIR's bounds check is joined to any THIR index at its span, so a macro's repetition, `[$($v[$i]),*]`, of one index in bounds leaves out the other's check (#1672)",
-    file: "src/lower/mir/bounds.rs",
-    find: "            && the_one_at(self.frame.thir, span, |e| {\n                matches!(e.kind, thir::ExprKind::Index { .. })\n            })\n            .is_some_and(|id| self.frame.facts.in_bounds.contains(&id))\n",
-    replace: "            && (self.frame.thir.exprs.iter_enumerated()).any(|(id, e)| matches!(e.kind, thir::ExprKind::Index { .. }) && e.span == span && self.frame.facts.in_bounds.contains(&id))\n",
-    tests: ["test/intervals-shadow.test.ts", "-t", "macro"],
-  },
-  {
-    name: "assigned-operator-span-off",
-    breaks:
-      "an exact operator an assignment is of, `s = n - 1`, is joined only by its own span, which MIR doesn't write it at, so it keeps its wrap",
-    file: "src/lower/mir/bounds.rs",
-    find: "            thir::ExprKind::Assign { rhs, .. } if e.span == span => {\n",
-    replace: "            thir::ExprKind::Assign { rhs, .. } if false && e.span == span => {\n",
-    tests: ["test/lowering-integer-ranges.test.ts", "-t", "a signed index tested not negative"],
   },
 ];

@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "range-start-unchecked",
-    breaks: "a range's start isn't checked at most its end, so `v[a..n]` of an `a` not known at most `n` is taken in bounds, a mir-only-call-bounds line, and would slice past its end",
+    breaks: "a range's start isn't checked at most its end, so `v[a..n]` of an `a` not known at most `n` is taken in bounds, a proved-call-bounds line, and would slice past its end",
     file,
     find: "                .is_some_and(|(start, end)| self.at_most(state, start, end)),\n",
     replace: "                .is_some_and(|(start, end)| true || self.at_most(state, start, end)),\n",
@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "range-inclusive-end-at-most",
-    breaks: "`..=n`'s end is taken at most the length, not below it, so `v[..=n]` of `n <= v.len()` is taken in bounds, a mir-only-call-bounds line, and would slice one past",
+    breaks: "`..=n`'s end is taken at most the length, not below it, so `v[..=n]` of `n <= v.len()` is taken in bounds, a proved-call-bounds line, and would slice one past",
     file,
     find: "            Some((at, inclusive)) => field(at).is_some_and(|end| self.index_below(state, slice, end, inclusive)),\n",
     replace: "            Some((at, inclusive)) => field(at).is_some_and(|end| self.index_below(state, slice, end, inclusive && false)),\n",
@@ -56,7 +56,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "range-full-unproved",
-    breaks: "`v[..]` isn't proved in bounds, so it's no mir-only-call-bounds line",
+    breaks: "`v[..]` isn't proved in bounds, so it's no proved-call-bounds line",
     file,
     find: "        if start.is_none() && end.is_none() {\n            return true;\n",
     replace: "        if start.is_none() && end.is_none() {\n            return false;\n",
@@ -64,7 +64,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "below-past-unguarded",
-    breaks: "a guarded relation is taken without its guard, so `candidates[best]` of a `best` 1 before a loop is taken in bounds, though a slice of one item doesn't hold it, a mir-only-bounds line",
+    breaks: "a guarded relation is taken without its guard, so `candidates[best]` of a `best` 1 before a loop is taken in bounds, though a slice of one item doesn't hold it, a proved-bounds line",
     file,
     find: "                    || (state.below_past.iter()).any(|&(x, sl, c)| (x, sl) == (i, s) && state.least_of(s) > c)\n",
     replace: "                    || (state.below_past.iter()).any(|&(x, sl, c)| (x, sl) == (i, s) && (true || state.least_of(s) > c))\n",

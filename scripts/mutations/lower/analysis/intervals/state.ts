@@ -46,7 +46,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "keys-kept-when-written",
-    breaks: "a key held is kept when its local is written, so `m[&k]` past `k += 1` is taken in bounds, a mir-only-call-bounds line",
+    breaks: "a key held is kept when its local is written, so `m[&k]` past `k += 1` is taken in bounds, a proved-call-bounds line",
     file: "src/lower/analysis/intervals/state.rs",
     find: "        self.keys.retain(|&(map, key)| map != local && key != local);\n",
     replace: "",
@@ -54,7 +54,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "comparison-kept-when-its-operand-is-written",
-    breaks: "a held test's comparison is kept when what it compares is written, so `items[..n]` under `fits = n <= items.len()` past `n += 10` is taken in bounds, a mir-only-call-bounds line, and would read past the slice where Rust panics",
+    breaks: "a held test's comparison is kept when what it compares is written, so `items[..n]` under `fits = n <= items.len()` past `n += 10` is taken in bounds, a proved-call-bounds line, and would read past the slice where Rust panics",
     file: "src/lower/analysis/intervals/state.rs",
     find: "        self.comparisons\n            .retain(|_, c| c.a != Value::Local(local) && c.b != Value::Local(local));\n",
     replace: "",

@@ -1067,15 +1067,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `_4 = &((*d).field)`.
     /// Whether MIR's intervals prove the integer cast `state` is at, of
     /// `kind`, is of a value in its target's range, the same number (#1672
-    /// M3); the shadow compares what THIR's ranges knew (`range_casts`).
+    /// M3), which the shadow lists.
     fn integer_cast_proved(&self, state: &State<'_, 'tcx>, kind: mir::CastKind, span: Span) -> bool {
         if kind != mir::CastKind::IntToInt {
             return false;
         }
         let location = state.location();
-        let thir_kept = self.kept_cast_at(span, &self.frame.facts.range_casts);
-        crate::lower::analysis::shadow_check(self.tcx, self.frame.owner, span, thir_kept, || {
-            Some(crate::lower::analysis::LeftOut::Cast(location))
+        crate::lower::analysis::shadow_check(self.tcx, self.frame.owner, span, || {
+            Some(crate::lower::analysis::Proof::Cast(location))
         });
         crate::lower::analysis::cast_proved(self.tcx, state.body, location)
     }

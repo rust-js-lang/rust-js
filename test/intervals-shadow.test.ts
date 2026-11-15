@@ -1,6 +1,7 @@
-// The MIR intervals' shadow (ADR 1137, #1672): a check THIR's ranges leave
-// out is logged where MIR's intervals don't prove it, so what the MIR
-// analysis proves, and doesn't yet, is held here.
+// The MIR intervals' shadow (ADR 1137, #1672): each check MIR's intervals
+// prove, a `proved-<kind>` line, so what the MIR analysis proves, and what
+// it doesn't, is held here. THIR's ranges, which the shadow compared it
+// with, are gone (M4).
 import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -21,7 +22,7 @@ function shadowOf(source: string): string[] {
   return readFileSync(log, "utf8").split("\n").filter(Boolean).map((line) => line.split("\t").slice(0, 2).join(" "));
 }
 
-test("an array's index in a loop to its length is proved by MIR's intervals alone, a check THIR's facts keep: a mir-only line", () => {
+test("an array's index in a loop to its length is proved by MIR's intervals", () => {
   expect(shadowOf(`pub fn sum(a: [u32; 4]) -> u32 {
     let mut total = 0u32;
     let mut i = 0usize;
@@ -34,7 +35,7 @@ test("an array's index in a loop to its length is proved by MIR's intervals alon
 pub fn main() {
     println!("{}", sum([1, 2, 3, 4]));
 }
-`)).toEqual(["mir-only-bounds sum"]);
+`)).toEqual(["proved-bounds sum", "proved-wrap sum"]);
 });
 
 test("a slice's index tested against its length, or its first under `!is_empty()`, is proved by MIR's relations", () => {
@@ -47,7 +48,7 @@ pub fn first(s: &[u32]) -> u32 {
 pub fn main() {
     println!("{} {}", get(&[1, 2, 3], 1), first(&[4]));
 }
-`)).toEqual([]);
+`)).toEqual(["proved-bounds get", "proved-bounds first"]);
 });
 
 test("a slice's least length from a constant, a switch of its length, and an index less one are proved", () => {
@@ -67,7 +68,7 @@ pub fn before(path: &[u32], i: usize) -> u32 {
 pub fn main() {
     println!("{} {} {}", colon(b"abcd:"), first_of(&[1]), before(&[1, 2], 1));
 }
-`)).toEqual([]);
+`)).toEqual(["proved-bounds colon", "proved-bounds first_of", "proved-bounds first_of", "proved-bounds before", "proved-wrap before"]);
 });
 
 test("a parameter only its callers bound, and two slices' lengths summed, are proved", () => {
@@ -83,17 +84,17 @@ fn total(a: &[u8], b: &[u8]) -> usize {
 pub fn main() {
     println!("{} {} {}", plus(5), twice(7), total(b"ab", b"c"));
 }
-`)).toEqual([]);
+`)).toEqual(["proved-wrap plus", "proved-wrap twice", "proved-wrap total"]);
 });
 
-test("a function that calls itself is given nothing of its outer calls: MIR proves nothing of its parameters THIR doesn't", () => {
+test("a function that calls itself is given nothing of its outer calls: MIR proves nothing of its parameters", () => {
   expect(shadowOf(`fn grow(n: u32, k: u32) -> u32 {
     if k == 0 { n } else { grow(n + 1, k - 1) }
 }
 pub fn main() {
     println!("{}", grow(1, 3));
 }
-`)).toEqual([]);
+`)).toEqual(["proved-wrap grow"]);
 });
 
 test("a product that may be JS's -0, `-2 * 0`, isn't proved exact, though in range", () => {
@@ -120,7 +121,7 @@ pub fn main() {
     let n = std::hint::black_box(7);
     println!("{} {} {}", quarter(n), slot(&[1, 2, 3], n as usize), plain(n));
 }
-`)).toEqual(["mir-only-bounds slot"]);
+`)).toEqual(["proved-wrap quarter", "proved-bounds slot", "proved-wrap plain", "proved-cast main"]);
 });
 
 test("a comparison of what a local copies narrows the copy: `i > 100` of `let mut i = start`", () => {
@@ -137,7 +138,7 @@ pub fn main() {
     let r = std::panic::catch_unwind(|| never_ends(std::hint::black_box(3)));
     println!("{}", r.is_err());
 }
-`)).toEqual([]);
+`)).toEqual(["proved-wrap never_ends"]);
 });
 
 test("a for loop's value over a range is at least its start and below its end, `path[i - 1]` of `for i in 1..len`; not of a range whose end is written in the loop", () => {
@@ -161,7 +162,7 @@ fn changed(v: &[u32]) -> u32 {
 pub fn main() {
     println!("{} {}", walk(&[1, 2, 3]), changed(&[7]));
 }
-`)).toEqual(["bounds changed"]);
+`)).toEqual(["proved-bounds walk", "proved-bounds walk", "proved-wrap walk", "proved-cast changed", "proved-wrap changed"]);
 });
 
 test("`i - 1` under `i < len` alone isn't below `len`: of `i = 0` it wraps; nor is a value of a range written a field at a time below the end it was made with", () => {
@@ -275,14 +276,14 @@ pub fn every_other(v: &[u32]) -> u32 {
   expect(js).toContain("const after = (k - 2) >>> 0;");
 });
 
-test("text's `len()` is at most what an allocation holds: two summed never wrap, a wrap THIR's ranges keep", () => {
+test("text's `len()` is at most what an allocation holds: two summed never wrap", () => {
   expect(shadowOf(`fn both(a: &str, b: &str) -> usize {
     a.len() + b.len()
 }
 pub fn main() {
     println!("{}", both("ab", "c"));
 }
-`)).toEqual(["mir-only-wrap both"]);
+`)).toEqual(["proved-wrap both"]);
 });
 
 // Serde's derived bodies, thousands of blocks each: the callers' walk kept
@@ -296,7 +297,7 @@ test("the MIR intervals of serde's derived bodies take what a compile does, not 
   expect(p.resourceUsage.maxRSS).toBeLessThan(2 * 2 ** 30);
 }, underLoad(120_000));
 
-test("a macro's repeated index is joined to THIR's one index there or none: of `[$($v[$i]),*]`, MIR proves `v[k]` alone", () => {
+test("a macro's repeated index: of `[$($v[$i]),*]`, MIR proves `v[k]` alone", () => {
   expect(shadowOf(`macro_rules! pick {
     ($v:expr; $($i:expr),*) => {
         [$($v[$i]),*]
@@ -308,7 +309,7 @@ fn pair(v: &[i32], k: usize) -> [i32; 2] {
 pub fn main() {
     println!("{:?}", pair(&[1, 2, 3], 1));
 }
-`)).toEqual(["mir-only-bounds pair"]);
+`)).toEqual(["proved-bounds pair", "proved-wrap pair"]);
 });
 
 test("a comparison narrows each copy of what it compares: `a[j]` of `let j = i` under `i < 10`", () => {
@@ -371,7 +372,7 @@ pub fn moved(i: usize) -> u32 {
 pub fn main() {
     println!("{} {} {} {} {} {}", pushed(1), written(1), removed(&mut vec![1, 2, 3]), swapped(0, 1), cleared(5), moved(5));
 }
-`)).toEqual([]);
+`)).toEqual(["proved-call-bounds pushed", "proved-call-bounds written", "proved-call-bounds removed", "proved-call-bounds swapped"]);
 });
 
 // #1672 M3, step 5: a range's bounds, `&v[..n]`, `&v[n..]`, `&v[a..b]`,
@@ -401,7 +402,7 @@ pub fn main() {
     let v = [1, 2, 3];
     println!("{} {} {} {} {} {}", full(&v), to_n(&v, 2), from_n(&v, 2), between(&v, 1, 2), start_unknown(&v, 1, 2), through_n(&v, 2));
 }
-`)).toEqual(["mir-only-call-bounds full", "mir-only-call-bounds between"]);
+`)).toEqual(["proved-call-bounds full", "proved-call-bounds to_n", "proved-call-bounds from_n", "proved-call-bounds between"]);
 });
 
 // #1672 M3, step 5: a struct's fields a reference parameter is read
@@ -432,7 +433,7 @@ pub fn main() {
     let mut it = It { items: vec![1, 2], at: 0 };
     println!("{:?} {:?} {}", q.next(), it.step(), it.whole());
 }
-`)).toEqual(["mir-only-call-bounds It::step", "mir-only-wrap It::step"]);
+`)).toEqual(["proved-call-bounds Queue::next", "proved-call-bounds It::step", "proved-wrap It::step"]);
 });
 
 // #1814: an index a loop's `enumerate()` gives, `skip(1)` of it too, is below
@@ -469,7 +470,7 @@ pub fn summed(candidates: &[f64]) -> f64 {
 pub fn main() {
     println!("{} {} {}", nearest(&[1.0, 5.0, 3.0], 3.2), from_one(&[1.0, 5.0], 3.2), summed(&[1.0, 2.0]));
 }
-`)).toEqual(["mir-only-bounds nearest", "mir-only-bounds summed"]);
+`)).toEqual(["proved-bounds nearest", "proved-bounds summed"]);
 });
 
 // #1815: a `RefCell`'s `borrow_mut()` guard, held while nothing else
@@ -582,7 +583,7 @@ pub fn main() {
     println!("{}", after_its_guard(&queue, &|| other.borrow_mut().clear(), 5));
     println!("{}", stored(&RefCell::new(vec![1]), 0));
 }
-`)).toEqual(["mir-only-call-bounds take_first"]);
+`)).toEqual(["proved-call-bounds take_first", "proved-call-bounds take_first", "proved-call-bounds settle", "proved-call-bounds settle", "proved-call-bounds settle_after"]);
 });
 
 // #1839: an `Rc`'s `Deref` of a local neither reassigned nor lent `&mut`
@@ -592,7 +593,7 @@ pub fn main() {
 // cell or an `Rc` of an `Rc`'s a closure clears, which MIR proved
 // before, nor through a `Deref` of the crate's: no line of the case's.
 test("an `Rc`'s `Deref` gives its cell, the same each time: React's `listeners.borrow()[i]` is proved", () => {
-  expect(shadowOf(readFileSync(join(root, "test/corpus/rc_refcell_bounds.rs"), "utf8"))).toEqual([]);
+  expect(shadowOf(readFileSync(join(root, "test/corpus/rc_refcell_bounds.rs"), "utf8"))).toEqual(["proved-call-bounds notified", "proved-wrap notified", "proved-call-bounds deleted", "proved-wrap deleted", "proved-wrap cleared_between"]);
 });
 
 // #1877: an item's write through a reference keeps the slice's length,
@@ -614,7 +615,7 @@ test("an item's write through a reference keeps the length, not its table's rows
 pub fn main() {
     println!("{}", written_row(&vec![1, 2, 3], 2));
 }
-`)).toEqual(["mir-only-bounds written_row", "mir-only-bounds written_row", "mir-only-bounds written_row"]);
+`)).toEqual(["proved-bounds written_row", "proved-bounds written_row", "proved-bounds written_row"]);
 });
 
 // #1672 M3, step 5: a map's `m[&k]` where `m.contains_key(&k)` holds, or
@@ -685,7 +686,7 @@ pub fn main() {
     let key = Counted(Cell::new(0));
     println!("{}", celled(&HashMap::new(), &key, &|| key.0.set(1)));
 }
-`)).toEqual(["mir-only-call-bounds twice"]);
+`)).toEqual(["proved-call-bounds stashed", "proved-call-bounds cached", "proved-call-bounds twice"]);
 });
 
 // #1672 M3, step 5: a table's lengths (ADR 0576). `vec![x; n]` is as long
@@ -868,7 +869,7 @@ pub fn main() {
     let f: fn(usize, usize) -> u32 = first;
     println!("{}", f(2, 2));
 }
-`)).toEqual(["mir-only-cast sums"]);
+`)).toEqual(["proved-bounds rain", "proved-wrap rain", "proved-call-bounds rain", "proved-call-bounds rain", "proved-call-bounds sums", "proved-cast sums", "proved-wrap paths", "proved-call-bounds paths", "proved-call-bounds paths", "proved-call-bounds paths", "proved-wrap paths", "proved-call-bounds paths", "proved-call-bounds paths", "proved-call-bounds paths", "proved-call-bounds prefix::{closure#0}", "proved-call-bounds truncated", "proved-cast taken", "proved-call-bounds first_of", "proved-call-bounds first_of", "proved-call-bounds late"]);
 });
 
 // #1672 M3, step 5: a test held in a `bool`, `let truncated = len >
@@ -900,7 +901,7 @@ pub fn main() {
     println!("{:?} {:?}", head(&items), negated(&items));
     println!("{:?} {:?}", cleared(vec![1]), rewritten(&items, 9));
 }
-`)).toEqual([]);
+`)).toEqual(["proved-call-bounds head", "proved-call-bounds negated"]);
 });
 
 // #1672 M3, step 5: a shared reference parameter to a struct that holds
@@ -932,5 +933,5 @@ pub fn main() {
     let mut node = Node { children: vec![Node { children: Vec::new() }] };
     println!("{} {}", find(&node).children.len(), reset_first(&mut node));
 }
-`)).toEqual([]);
+`)).toEqual(["proved-call-bounds find"]);
 });
