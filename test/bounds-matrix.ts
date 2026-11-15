@@ -61,6 +61,8 @@ type Holder = {
    * local, no root of the cell's, so only the `deref_mut`'s own rule
    * forgets the length (#1928). */
   bound?: string;
+  /** A closure given it `&mut`, that shortens it. */
+  given?: string;
   /** The tests, or a test's form, `<test>/<form>`, whose programs are
    * undefined behaviour under Miri, so no answer of theirs is wrong:
    * each left out, with what Miri says beside it, so none is added again. */
@@ -134,6 +136,11 @@ fn repoint(h: &mut &Pair) {
 /// A struct that keeps a &mut of a Vec.
 struct Lent<'a> {
     v: &'a mut Vec<u32>,
+}
+
+/// A struct that holds a table.
+struct Tables {
+    t: Vec<Vec<u32>>,
 }
 
 struct Shared {
@@ -429,6 +436,25 @@ const holders: Record<string, Holder> = {
     reassign: "t[1] = vec![9];",
     lend: "shorten(&mut t[1]);",
     whole: "shorten_rows(&mut t);",
+    // A row written through a reborrowed local, `r[1] = vec![9]`, and a
+    // closure given the table, each a shape of the retired rows branches.
+    bound: "{ let r = &mut t; r[1] = vec![9]; }",
+    given: "{ let shorten_it = |t: &mut Vec<Vec<u32>>| t[1].truncate(1); shorten_it(&mut t); }",
+  },
+  // A table a struct's field holds, its rows written through the field:
+  // the rows' rule of a table nested in a struct (the item-write rows
+  // branch's shape, retired as no place reaches it).
+  table_field: {
+    params: "v: &Vec<u32>",
+    setup: "let mut h = Tables { t: vec![v.clone(); 3] };",
+    make: `let items = ${four};`,
+    args: "&items",
+    len: "h.t[0].len()",
+    at: (k) => `h.t[1][${k}]`,
+    direct: "h.t[1].truncate(1);",
+    reassign: "h.t[1] = vec![9];",
+    lend: "shorten(&mut h.t[1]);",
+    whole: "shorten_rows(&mut h.t);",
   },
   table_slice: {
     params: "v: &Vec<u32>",
@@ -475,6 +501,7 @@ const betweens: Record<string, (h: Holder) => string | undefined> = {
   pointer: (h) => h.pointer,
   stored: (h) => h.stored,
   bound: (h) => h.bound,
+  given: (h) => h.given,
   pointer_write: (h) => h.pointer_write,
 };
 
