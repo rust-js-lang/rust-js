@@ -68,6 +68,7 @@ pub(crate) enum ContractField {
     TypeParamFacts,
     TypeParamStepped,
     TypeParamBuilt,
+    TypeParamUnread,
     ParamFactDrop,
     ParamFactCopy,
     ParamFactClone,
@@ -220,6 +221,11 @@ impl ContractField {
                 "TypeParam.built",
                 Summary,
                 "of a slot past its type parameters', the type built of them whose layout it asks, or where in it std lends from, `Result<T, E>`'s `Ok` (#1478)",
+            ),
+            TypeParamUnread => (
+                "TypeParam.unread",
+                Summary,
+                "the traits of its bounds it's given no dictionary of, as nothing it runs reads them (#1915, ADR 1165)",
             ),
             ParamFactDrop => ("ParamFact::Drop", Summary, "it's given what drops a value of it"),
             ParamFactCopy => ("ParamFact::Copy", Summary, "it's given what copies a value of it"),
@@ -657,6 +663,7 @@ fields! {
     facts => TypeParamFacts,
     stepped => TypeParamStepped,
     built => TypeParamBuilt,
+    unread => TypeParamUnread,
 }
 
 fields! {

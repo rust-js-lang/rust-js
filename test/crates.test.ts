@@ -151,6 +151,16 @@ test("a program's derived Debug no library is given a dyn of writes as it is", (
   expect(app).not.toContain("$writingInto(");
 }, 300_000);
 
+// A library's export of a bound it never reads takes no dictionary, as its
+// contract lists, and its consumer gives it none; one it reads, its own
+// (#1915).
+test("a library's unread bound is given no dictionary by its consumer", () => {
+  const out = chain(pairs, "library_bound_given_where_read", ["dep", "app"]);
+  const app = readFileSync(join(out, "app", "lib.js"), "utf8");
+  expect(app).toMatch(/labeled\(\[1, 2\], "origin"\)/);
+  expect(app).toMatch(/shown\(point, \w+\)/);
+}, 300_000);
+
 // A library's untagged From that's the variant of its argument is in its
 // contract's list of what gives its argument, so its consumer's call of it
 // is the value; its others are called (#1775, ADR 0214, amended).

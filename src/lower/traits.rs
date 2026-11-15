@@ -173,6 +173,8 @@ pub(super) struct Given<'a> {
     pub copied: &'a IndexSet<(DefId, u32)>,
     pub clones: &'a IndexSet<(DefId, u32)>,
     pub stepped: &'a IndexSet<(DefId, u32, DefId)>,
+    /// The bounds whose dictionary nothing reads, given none (#1915).
+    pub unread: &'a IndexSet<(DefId, u32, DefId)>,
     /// The type parameters a `Some` of which is the value (ADR 0051, amended).
     pub unboxed: &'a IndexSet<(DefId, u32)>,
     /// What each function's JS takes its type parameters as, and the copies
@@ -358,6 +360,11 @@ fn bound_of<'tcx>(
         && super::iterators::into_iter_held_as_it_is(tcx, id, tr.self_ty())
     {
         return Some(tr);
+    }
+    // One whose dictionary nothing it runs reads: none, the crate's as its
+    // analysis says, a library's as its contract does (#1915).
+    if super::analysis::read_bounds::given_none(tcx, foreign, given.unread, id, tr) {
+        return None;
     }
     (has_dictionary_of(tcx, foreign, tr.def_id, tr.self_ty()) && !is_marker(tcx, foreign, tr.def_id)).then_some(tr)
 }

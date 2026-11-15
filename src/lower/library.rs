@@ -254,6 +254,10 @@ fn type_params<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, contracts: &Contracts<'_, 'tc
     for &(_, index) in contracts.given.clones.iter().filter(|&&(of, _)| of == id) {
         param(&mut params, index).marks.insert(ParamFact::Clone);
     }
+    // The bounds it's given no dictionary of, by their traits' keys (#1915).
+    for &(_, index, by) in contracts.given.unread.iter().filter(|&&(of, _, _)| of == id) {
+        param(&mut params, index).unread.push(key(tcx, by));
+    }
     // As its JS takes them, a function JS calls each as JS gives it (ADR
     // 0051, amended).
     for index in contracts.given.js_given.main(tcx, id).unboxed {
@@ -819,6 +823,14 @@ impl<'a, 'tcx> Foreign<'a, 'tcx> {
         self.item(id)
             .and_then(|item| item.calling.param(index))
             .is_some_and(|param| param.stepped.contains(&by))
+    }
+
+    /// Does a library's `id` take a dictionary of its type parameter
+    /// `index`'s bound `by`, as its contract lists those it takes none of
+    /// (#1915)? A library of an earlier ABI lists none: every one's given.
+    pub(super) fn reads(&self, id: DefId, index: u32, by: DefId) -> bool {
+        let by = key(self.tcx, by);
+        !(self.item(id).and_then(|item| item.calling.param(index))).is_some_and(|param| param.unread.contains(&by))
     }
 
     /// Does a library's `id` take its caller's location (ADR 0427)?

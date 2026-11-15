@@ -424,6 +424,15 @@ amended). A TypeScript caller may give a dictionary of its own, `const
 squareShape: Shape<Square> = { area: (s) => s.side ** 2, describe: (s) =>
 "a square" }`, which generic code calls as it calls an impl's.
 
+A bound the function never reads takes no dictionary: `fn labeled<T:
+Debug>(value: T, label: &str) -> (T, String)`, which only moves `value`,
+is `labeled(value, label)`. One is read where the function, or a closure
+it makes, calls a method of the trait or one it extends, names an
+associated function or constant of it, gives the value to a function
+that reads it, or makes a `dyn` of it; a library's contract lists those
+its exports don't read, so its callers give none of them either
+([ADR 1165](../../decisions/1165-a-bound-nothing-reads-is-given-no-dictionary.md)).
+
 A trait is declared so where its dictionaries hold its methods alone, each
 taking what its signature says. A `&mut self` method's `self` is the box
 its entry takes, as generic code gives it, `bump(self: { value: Self }):

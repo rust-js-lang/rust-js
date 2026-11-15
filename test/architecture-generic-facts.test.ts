@@ -96,3 +96,17 @@ test("a generic function takes no size fact it doesn't read", () => {
   expect(unread.filter((each) => !known.includes(each))).toEqual([]);
   expect(known.filter((each) => !unread.includes(each)), "fixed: take it off the list (#1443)").toEqual([]);
 });
+
+// Whether a bound is given its dictionary has one analysis,
+// `analysis/read_bounds.rs` (#1915), but for the old owners still to
+// migrate into it, each a case `answered_elsewhere` names: Copy's (ADR
+// 0289), Clone's (ADR 0914), the iterators' (ADR 0411) and IntoIterator's,
+// and Eq and Index, which `bound_of` takes as another trait. A migration
+// removes its name here and its old code in the same commit; a new name
+// fails, as a second owner would answer beside the analysis.
+test("a bound's dictionary is given by one analysis, but the old owners still to migrate", () => {
+  const source = read("src/lower/analysis/read_bounds.rs");
+  const body = source.slice(source.indexOf("pub(in crate::lower) fn answered_elsewhere"), source.indexOf("/// Whether this analysis answers for"));
+  const named = [...body.matchAll(/(?:LangItem|StdItem)::(\w+)|\b(is_iterator_extension)\(/g)].map((m) => m[1] ?? m[2]).sort();
+  expect(named).toEqual(["Clone", "Copy", "Eq", "Index", "IntoIterator", "Iterator", "is_iterator_extension"].sort());
+});

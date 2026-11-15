@@ -3,6 +3,7 @@
 mod accessors;
 pub(super) mod arguments;
 mod back_stepped;
+pub(in crate::lower) mod read_bounds;
 
 mod ground;
 pub(super) use ground::{Ground, of as ground};
@@ -234,6 +235,8 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     /// or an extension's, is given, as they're stepped by it (ADRs 0411,
     /// 0487), with the trait's id.
     pub stepped: IndexSet<(DefId, u32, DefId)>,
+    /// The bounds whose dictionary nothing reads, given none (#1915).
+    pub unread: IndexSet<(DefId, u32, DefId)>,
     /// Each generic function's type parameters it's given a size, an
     /// alignment or a name of (ADR 0145), by their indices.
     pub type_facts: IndexMap<DefId, Vec<(u32, TypeFact)>>,
@@ -1067,6 +1070,8 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     let drops_any = drops::drops_any(tcx, all_bodies, runs);
     let copied = copied_params(tcx, (all_bodies, calls.names()), &fns, &foreign);
     let stepped = iterator_steps::stepped_params(tcx, all_bodies, &fns, &foreign);
+    // The bounds whose dictionary nothing reads (#1915).
+    let unread = read_bounds::unread_bounds(tcx, all_bodies, &fns, &foreign);
     // The functions JS calls, whose JS takes their type parameters as JS
     // gives them, and the copies their crate's calls need otherwise, each
     // named apart beside its function (ADR 0051, amended).
@@ -1106,6 +1111,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         copied: &copied,
         clones: &clones,
         stepped: &stepped,
+        unread: &unread,
         unboxed: &unboxed,
         js_given: &js_given,
     };
@@ -1239,6 +1245,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         unboxed,
         js_given,
         stepped,
+        unread,
         type_facts: facts.params,
         carried_super: facts.carried_super,
         built_slots: facts.built_slots,

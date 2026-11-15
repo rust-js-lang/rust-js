@@ -240,7 +240,7 @@ const Shown = {
     shown.last = item;
   },
 
-  joined(shown, TDisplay) {
+  joined(shown) {
     return shown.lines.join(" ");
   },
 };
@@ -254,7 +254,7 @@ function showAll(items, TDisplay) {
     const item = items[i];
     Shown.show(shown, item, TDisplay);
   }
-  return Shown.joined(shown, TDisplay);
+  return Shown.joined(shown);
 }
 
 const Sizes = {

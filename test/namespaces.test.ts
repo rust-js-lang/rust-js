@@ -381,7 +381,7 @@ pub trait Named {
     fn name(&self) -> String;
 }
 
-pub trait Tagged {
+pub trait Tagged: Named {
     fn tag(&self) -> String;
 }
 
@@ -430,8 +430,9 @@ impl Reconciler {
         work_loop::bump(n)
     }
 
-    /// Of a bound more than the function's: a function of its own.
-    pub fn name_of<T: work_loop::Tagged + work_loop::Named>(&self, t: &T) -> String {
+    /// Of a bound other than the function's, whose dictionary gives the
+    /// function's: a function of its own.
+    pub fn name_of<T: work_loop::Tagged>(&self, t: &T) -> String {
         work_loop::name_of(t)
     }
 

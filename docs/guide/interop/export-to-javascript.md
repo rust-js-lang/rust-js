@@ -338,7 +338,7 @@ console.log(await fetchCount()); // 1
 - **A `Result` is a value, not a throw.** JS reads its `TAG`. A panic is
   what throws ([Errors, panics and exceptions](exceptions.md)).
 - **A generic function takes its trait dictionaries after its
-  arguments**, `totalArea(shapes, circleShape)`: see
+  arguments**, `totalArea(shapes, circleShape)`, each one it reads: see
   [Structs, enums and traits](objects.md#generic-code-takes-a-dictionary).
 - **What a generic function copies, clones or drops by, JS leaves out**:
   a `T: Copy`'s `TCopy`, a `dropT`. A JS value is its own copy and drops

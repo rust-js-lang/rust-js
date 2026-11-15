@@ -417,4 +417,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/writer-sink.test.ts", "-t", "library"],
   },
+  {
+    name: "library-unread-bounds-unlisted",
+    breaks: "a library's contract lists none of its functions' unread bounds, so its consumer gives `labeled` a dictionary it takes none of (#1915)",
+    file: "src/lower/library.rs",
+    find: "        param(&mut params, index).unread.push(key(tcx, by));\n",
+    replace: "",
+    tests: ["test/crates.test.ts", "-t", "a library's unread bound is given no dictionary by its consumer"],
+  },
 ];

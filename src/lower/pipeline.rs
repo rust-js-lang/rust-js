@@ -132,6 +132,7 @@ pub fn lower_crate<'tcx>(
         unboxed,
         js_given,
         stepped,
+        unread,
         type_facts,
         carried_super,
         built_slots,
@@ -206,6 +207,7 @@ pub fn lower_crate<'tcx>(
         copied: &copied,
         clones: &clones,
         stepped: &stepped,
+        unread: &unread,
         unboxed: &unboxed,
         js_given: &js_given,
     };

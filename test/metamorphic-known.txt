@@ -108,4 +108,5 @@ plain std loud-drop thread_local_with_nested.rs
 #difference 12 a value with a destructor that JS holds is never dropped, a function handed to a binding too, even where JS gives it back to Rust (ADR 0873)
 plain std loud-call dyn_fn_handed_only.rs
 
-
+#1926 P1: an in-place collect's `capacity()` through a function returning `impl Iterator` throws at run time instead of refusing at compile time
+plain opaque vec_collected_in_place_capacity.rs

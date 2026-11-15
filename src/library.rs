@@ -118,7 +118,9 @@ pub use dependencies::Dependencies;
 /// crate over (#1799): an older library, recording none, would be read as
 /// binding nothing.
 /// 41: `makes_fmt_dyns`, a dictionary the lowering left without it (#1797).
-pub const VERSION: u32 = 41;
+/// 42: a type parameter's `unread`, the bounds it's given no dictionary of
+/// (#1915).
+pub const VERSION: u32 = 42;
 
 /// A function, method or impl method another crate can reach.
 #[derive(Clone, Serialize, Deserialize)]
@@ -259,6 +261,10 @@ pub struct TypeParam {
     /// the trait's key: `Iterator`'s or an extension's (ADRs 0411, 0548).
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub stepped: Vec<String>,
+    /// The traits of its bounds it's given no dictionary of, by the trait's
+    /// key, as nothing its body runs reads one (#1915; library ABI 42).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub unread: Vec<String>,
     /// Of a slot past its type parameters' and their associated types', the
     /// type built of them it is, `Held<<H::Item as IntoIterator>::IntoIter>`,
     /// whose layout it asks (ADR 0145, amended, #737).

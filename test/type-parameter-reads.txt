@@ -19,6 +19,7 @@ src/lower/analysis/may_run.rs	1
 src/lower/analysis/mutation.rs	1
 src/lower/analysis/prints.rs	2
 src/lower/analysis/rc_counts.rs	2
+src/lower/analysis/read_bounds.rs	8
 src/lower/analysis/stored_places.rs	1
 src/lower/analysis/type_facts.rs	12
 src/lower/analysis/type_facts/carried.rs	1

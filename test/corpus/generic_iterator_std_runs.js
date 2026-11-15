@@ -15,16 +15,15 @@ function chunksIterator_next(chunks, N, TDebug) {
   return Array.from({ length: N }, (_, i) => $index(first, i));
 }
 
-function chunks(items, N, TDebug) {
+function chunks(items, N) {
   return { rest: items };
 }
 
 function main() {
-  const i32Debug = { fmt: (value) => String(value) };
   const items = [1, 2, 3, 4, 5, 6, 7];
-  const iter = chunks(items, 3, i32Debug);
+  const iter = chunks(items, 3);
   while (true) {
-    const chunk = chunksIterator_next(iter, 3, i32Debug);
+    const chunk = chunksIterator_next(iter, 3, { fmt: (value) => String(value) });
     if (chunk == null) {
       return;
     }

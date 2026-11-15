@@ -156,7 +156,7 @@ pub fn made() -> f64 {
 `);
   expect(js).toContain("export function now() /* Milliseconds. */ {\n");
   expect(js).toContain("export function reset() /* Nothing kept. */ {}\n");
-  expect(js).toContain("export function generic(TDefault, TIntoF64) /* Made. */ {\n");
+  expect(js).toContain("export function generic(TDefault) /* Made. */ {\n");
   expect(js).toContain("export function called() /* Not called. */ {\n");
   expect(js).toContain("  tick() /* A tick. */ {\n");
   expect(js).not.toContain("now /*");

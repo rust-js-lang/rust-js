@@ -34,8 +34,6 @@ function wrapShape_area(wrap) {
 // One of a type changed in place is a new value at each use, as a type's
 // own constant is: the dictionary's is a getter, `get ZERO() { .. }`.
 
-export const counterDebug = { fmt: counterDebug_fmt };
-
 function counterDebug_fmt(counter) {
   return `Counter { n: ${counter.n} }`;
 }
@@ -58,7 +56,7 @@ function u32Bump_bump(self) {
   self.value = (self.value + 1) >>> 0;
 }
 
-function fresh(TZero, TBump, TDebug) {
+function fresh(TZero, TBump) {
   let a = TZero.ZERO;
   const self = { value: a };
   TBump.bump(self);
@@ -70,8 +68,8 @@ function main() {
   console.log("4 shape square 90");
   console.log(`${describe([2], squareShape)} | ${describe([3], triangleShape)}`);
   console.log(`${total([[1], [2]], squareShape)} ${describe([1], wrapShape)}`);
-  const value = fresh(counterZero, counterBump, counterDebug);
-  const value$1 = fresh(u32Zero, u32Bump, { fmt: (value) => String(value) });
+  const value = fresh(counterZero, counterBump);
+  const value$1 = fresh(u32Zero, u32Bump);
   console.log(
     `(${counterDebug_fmt(value[0])}, ${counterDebug_fmt(value[1])}) (${value$1[0]}, ${value$1[1]})`,
   );

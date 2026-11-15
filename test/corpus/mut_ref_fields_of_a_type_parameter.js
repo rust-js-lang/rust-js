@@ -64,7 +64,7 @@ function guardDrop_drop(guard, TDebug, dropT) {
   );
 }
 
-function guard(target, TDebug) {
+function guard(target) {
   return { target, log: [] };
 }
 
@@ -75,7 +75,7 @@ function parserDebug_fmt(parser) {
 }
 
 const ParserI = {
-  new(parser, pattern, PBorrowMutParser) {
+  new(parser, pattern) {
     return { parser, pattern };
   },
 
@@ -124,10 +124,6 @@ function main() {
   // A slot of a field, written by its generic methods and where `T` is
   // known, read whole and through a shared borrow.
   const pointCopy = { copy: (value) => ({ ...value }) };
-  const parserBorrowMut = {
-    borrowMut: (value) => value,
-    Borrow: () => ({ borrow: (value) => value }),
-  };
   const vecDebug = { fmt: (value) => `[${value.join(", ")}]` };
   const mutParserBorrowMut = {
     borrowMut: (value) => value.value,
@@ -186,7 +182,7 @@ function main() {
 
   // A guard over a vector, written through while held.
   const items = [1, 2];
-  const g = guard($cellOf(items), vecDebug);
+  const g = guard($cellOf(items));
   try {
     g.target.value.push(3);
   } catch (error) {
@@ -209,18 +205,12 @@ function main() {
 
   // regex-syntax's holder of a `&mut Parser`, and of a `Parser` it owns.
   const parser = { depth: 0, seen: [] };
-  const n$1 = ParserI.parse(
-    ParserI.new($cellOf(parser), "(a(b))", mutParserBorrowMut),
-    mutParserBorrowMut,
-  );
-  const m = ParserI.parse(
-    ParserI.new($cellOf(parser), "c(", mutParserBorrowMut),
-    mutParserBorrowMut,
-  );
-  const owned = ParserI.parse(
-    ParserI.new({ depth: 0, seen: [] }, "((", parserBorrowMut),
-    parserBorrowMut,
-  );
+  const n$1 = ParserI.parse(ParserI.new($cellOf(parser), "(a(b))"), mutParserBorrowMut);
+  const m = ParserI.parse(ParserI.new($cellOf(parser), "c("), mutParserBorrowMut);
+  const owned = ParserI.parse(ParserI.new({ depth: 0, seen: [] }, "(("), {
+    borrowMut: (value) => value,
+    Borrow: () => ({ borrow: (value) => value }),
+  });
   console.log(`${n$1} ${m} ${owned} ${parserDebug_fmt(parser)}`);
 
   // An enum's variant made where `T` is known.

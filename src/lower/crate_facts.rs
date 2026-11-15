@@ -292,7 +292,7 @@ carried! {
     changed_vecs => By(&[F::LibraryChanged]),
     stored_places => CrateOnly,
     drop_params => By(&[F::ParamFactDrop]),
-    given => By(&[F::ParamFactCopy, F::ParamFactClone, F::ParamFactUnboxed, F::TypeParamStepped]),
+    given => By(&[F::ParamFactCopy, F::ParamFactClone, F::ParamFactUnboxed, F::TypeParamStepped, F::TypeParamUnread]),
     type_facts => By(&[F::TypeParamFacts]),
     carried_super => By(&[F::LibraryAssociated]),
     built_slots => By(&[F::TypeParamBuilt]),
