@@ -320,4 +320,23 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/borrow-forms.test.ts", "-t", "checked where they're called"],
   },
+  {
+    name: "reads-alike-twice-of-any-field",
+    breaks:
+      "`r.snap.map_or(0.0, |s| s.threshold)` of a struct an exported function is given reads `r.snap` twice, `r.snap != null ? r.snap.threshold : 0`, a getter answering the second read anew (#1908)",
+    file: "src/js/expr_walk.rs",
+    find: "            (ExprKind::Member(..) | ExprKind::OptionalMember(..), ExprKind::Var(_)) => root.facts.has(Known::Item),\n",
+    replace: "            (ExprKind::Member(..) | ExprKind::OptionalMember(..), ExprKind::Var(_)) => true,\n",
+    tests: ["test/getter-reads.test.ts", "-t", "js_given_options"],
+  },
+  {
+    name: "reads-alike-twice-not-of-items",
+    breaks:
+      "a thread-local's `Option`, its module variable's cell, `current.value`, is held in a `const option` first, where no getter can answer it (#1908)",
+    file: "src/js/expr_walk.rs",
+    find: "            (ExprKind::Member(..) | ExprKind::OptionalMember(..), ExprKind::Var(_)) => root.facts.has(Known::Item),\n",
+    replace: "            (ExprKind::Member(..) | ExprKind::OptionalMember(..), ExprKind::Var(_)) => false,\n",
+    tests: ["test/corpus.test.ts", "-t", "^thread_local_written_through_copy.rs$"],
+    snapshots: true,
+  },
 ];

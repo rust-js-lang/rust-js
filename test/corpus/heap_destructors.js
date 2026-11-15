@@ -70,8 +70,7 @@ function main() {
             oPartialOrd,
             oDrop_drop,
           );
-          const o = r[0];
-          const value = o?.[0];
+          const value = r[0]?.[0];
           console.log(`retained ${value == null ? "None" : `Some(${value})`}`);
         } catch (error) {
           throw $unwindsOn(error);

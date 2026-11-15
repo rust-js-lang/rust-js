@@ -98,8 +98,7 @@ function main() {
     `[${settled$1.map((item) => (item == null ? "None" : `Some(${item})`)).join(", ")}] ${arg$3}`,
   );
   const last = lastSeen([5, undefined]);
-  const result = [last];
-  const arg$4 = result.some((each) => each == undefined);
+  const arg$4 = [last].some((each) => each == undefined);
   console.log(`${last == null ? "None" : `Some(${last})`} ${arg$4}`);
   const value$1 = chosen(1);
   const value$2 = chosen();

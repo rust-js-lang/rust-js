@@ -7120,8 +7120,8 @@ export function skipIterator_advanceBy(skip, n, IIterator = { next: $next }, dro
       }
     }
   }
-  const option = n === 0 ? undefined : n;
-  return option != null ? { TAG: "Err", _0: option } : { TAG: "Ok" };
+  const value = n === 0 ? undefined : n;
+  return value != null ? { TAG: "Err", _0: value } : { TAG: "Ok" };
 }
 
 export function skipDoubleEndedIterator_nextBack(
@@ -7449,8 +7449,8 @@ export function takeIterator_advanceBy(take, n, IIterator = { next: $next }, dro
   }
   const advanced = (min - rem) >>> 0;
   take.n = (take.n - advanced) >>> 0;
-  const option = (n - advanced) >>> 0 === 0 ? undefined : (n - advanced) >>> 0;
-  return option != null ? { TAG: "Err", _0: option } : { TAG: "Ok" };
+  const value = (n - advanced) >>> 0 === 0 ? undefined : (n - advanced) >>> 0;
+  return value != null ? { TAG: "Err", _0: value } : { TAG: "Ok" };
 }
 
 export function takeIterator_count(take, IIterator = { next: $next }, dropI, dropIItem) {
@@ -8431,8 +8431,8 @@ export function chainIterator_advanceBy(
     const b = $someValue(chain.b);
     return $advanceBy($lent($given(b, BIterator, true)), n, dropAItem);
   }
-  const option = n === 0 ? undefined : n;
-  return option != null ? { TAG: "Err", _0: option } : { TAG: "Ok" };
+  const value = n === 0 ? undefined : n;
+  return value != null ? { TAG: "Err", _0: value } : { TAG: "Ok" };
 }
 
 export function chainIterator_nth(
@@ -9632,8 +9632,8 @@ export function cycleIterator_advanceBy(
     }
     n = rem;
   }
-  const option = n === 0 ? undefined : n;
-  return option != null ? { TAG: "Err", _0: option } : { TAG: "Ok" };
+  const value = n === 0 ? undefined : n;
+  return value != null ? { TAG: "Err", _0: value } : { TAG: "Ok" };
 }
 
 export function cycleClone_clone(cycle, IClone, dropI) {

@@ -5,6 +5,7 @@
 
 mod adapters;
 mod callbacks;
+mod held;
 mod values;
 
 // `v.insert(i, x)`'s one form, which `mir::bounds` writes too.
@@ -330,16 +331,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(value);
         }
         // The subject is read more than once.
-        let spilled_at = (!subject.reads_same()).then_some(out.len());
-        let subject = if subject.reads_same() {
-            subject
-        } else {
-            let base = if self.option_of(subject_ty).is_some() {
-                Role::Option
-            } else {
-                Role::Result
-            };
-            self.spill_subject(base, subject, (self.option_of(subject_ty).is_some(), false), out)
+        let spilled_at = (!self.subject_read_twice(&subject)).then_some(out.len());
+        let subject = match self.subject_read_twice(&subject) {
+            true => subject,
+            false => self.held_subject(subject, subject_ty, &values, out),
         };
         let mut rest = values.into_iter();
         let mut next = || rest.next().expect("rustc checked the arguments");
@@ -368,7 +363,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             false => this.spill(name, value, out),
         };
         let helper = |name: &'static str, list: Vec<Expr>| Expr::call(Expr::helper(name), list);
-        Ok(match comb {
+        let value = match comb {
             Comb::Then | Comb::ThenSome | Comb::OrElse => unreachable!("handled above"),
             // `??` would give a box for the value in it.
             Comb::UnwrapOrElse => {
@@ -815,7 +810,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Comb::Windows => helper("$windows", vec![subject, next()]),
             Comb::Chunks => helper("$chunks", vec![subject, next()]),
             Comb::Concat => self.concatenated(subject, subject_ty, span)?,
-        })
+        };
+        Ok(held::read_in_place(value, spilled_at, out))
     }
 }
 

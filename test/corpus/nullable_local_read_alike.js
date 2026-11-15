@@ -35,8 +35,7 @@ function cloned() {
   const previous = CLONED;
   const length = previous != null ? $byteLen(previous) : 0;
   CLONED = previous;
-  const n = CLONED;
-  return (length + ((n != null ? $byteLen(n) : undefined) ?? 9)) >>> 0;
+  return (length + ((CLONED != null ? $byteLen(CLONED) : undefined) ?? 9)) >>> 0;
 }
 
 function setCombined(name) {
@@ -82,8 +81,7 @@ function combined() {
     inspected(COMBINED);
   }
   shown.push(String(COMBINED != null));
-  const s = COMBINED;
-  shown.push(String((s != null ? $byteLen(s) : undefined) ?? 0));
+  shown.push(String((COMBINED != null ? $byteLen(COMBINED) : undefined) ?? 0));
   let name = COMBINED;
   if (name != null && $byteLen(name) > 1) {
     shown.push(`long ${name}`);

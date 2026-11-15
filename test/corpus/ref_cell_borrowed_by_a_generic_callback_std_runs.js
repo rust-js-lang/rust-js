@@ -8,9 +8,8 @@ export function entry() {
 
 function add(log, f) {
   const borrowMut = $borrowMut(log, true);
-  const option = 1;
   try {
-    borrowMut.push((option != null ? f(option) : undefined) ?? 0);
+    borrowMut.push((1 != null ? f(1) : undefined) ?? 0);
   } finally {
     $unborrow(borrowMut);
   }

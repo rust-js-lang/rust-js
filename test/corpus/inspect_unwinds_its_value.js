@@ -28,21 +28,21 @@ function run(name, f) {
 
 function main() {
   run("Some", () => {
-    const option = [1];
-    if (option != null) {
+    const d = [1];
+    if (d != null) {
       try {
         function inspected(d) {
           throw new Error(`saw ${d[0]}`);
         }
-        inspected(option);
+        inspected(d);
       } catch (error) {
         $cleanup(() => {
-          dDrop_drop(option);
+          dDrop_drop(d);
         }, error);
         throw error;
       }
     }
-    const o = option;
+    const o = d;
     try {
       console.log(`${o == null ? "None" : `Some(${dDebug_fmt(o)})`}`);
     } catch (error) {
@@ -129,14 +129,14 @@ function main() {
     dDrop_drop(d);
   });
   run("quiet", () => {
-    const option = [5];
-    if (option != null) {
+    const d = [5];
+    if (d != null) {
       function inspected(d) {
         console.log(`saw ${d[0]}`);
       }
-      inspected(option);
+      inspected(d);
     }
-    const o = option;
+    const o = d;
     try {
       console.log(`${o == null ? "None" : `Some(${dDebug_fmt(o)})`}`);
     } catch (error) {

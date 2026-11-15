@@ -46,6 +46,7 @@ const owners: Record<string, string[]> = {
     "src/lower/mir/assign.rs",
     "src/lower/mir/bounds.rs",
     "src/lower/mir/closures.rs",
+    "src/lower/mir/local_facts.rs",
     "src/lower/mir/places.rs",
     "src/lower/mir/rvalues.rs",
     "src/lower/mir/structure.rs",

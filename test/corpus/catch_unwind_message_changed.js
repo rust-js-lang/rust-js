@@ -37,7 +37,7 @@ function main() {
       throw $unwinding(payload);
     }
   });
-  const option = again.TAG === "Err" ? again._0 : undefined;
+  const payload = again.TAG === "Err" ? again._0 : undefined;
   function then(payload) {
     const result =
       payload.impl.typeId() === "alloc::string::String" || payload.impl === $panicMessage
@@ -45,7 +45,7 @@ function main() {
         : { TAG: "Err", _0: payload };
     return result.TAG === "Ok" ? result._0 : undefined;
   }
-  let message = option != null ? then(option) : undefined;
+  let message = payload != null ? then(payload) : undefined;
   console.log(`${message == null ? "None" : `Some(${$debugStr(message)})`}`);
   const kept = $catchUnwind(() => {
     try {
@@ -55,7 +55,7 @@ function main() {
       throw payload;
     }
   });
-  const option$1 = kept.TAG === "Err" ? kept._0 : undefined;
+  const payload$1 = kept.TAG === "Err" ? kept._0 : undefined;
   function then$1(payload) {
     const result =
       payload.impl.typeId() === "alloc::string::String" || payload.impl === $panicMessage
@@ -63,7 +63,7 @@ function main() {
         : { TAG: "Err", _0: payload };
     return result.TAG === "Ok" ? result._0 : undefined;
   }
-  message = option$1 != null ? then$1(option$1) : undefined;
+  message = payload$1 != null ? then$1(payload$1) : undefined;
   const result = $catchUnwind(() => fails(1));
   console.log(
     `${message == null ? "None" : `Some(${$debugStr(message)})`} ${(result.TAG === "Ok" ? result._0 : undefined) == null ? "None" : `Some(${result.TAG === "Ok" ? result._0 : undefined})`}`,

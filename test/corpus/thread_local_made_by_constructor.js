@@ -31,12 +31,11 @@ function noisy() {
  * prints, runs the crate's code too.
  */
 function mapped() {
-  const n = 2;
   function map(n) {
     console.log(`mapped ${n}`);
     return (n * 2) >>> 0;
   }
-  return Stack.createCursor(n != null ? map(n) : undefined);
+  return Stack.createCursor(2 != null ? map(2) : undefined);
 }
 
 const cursor = Stack.createCursor(0);

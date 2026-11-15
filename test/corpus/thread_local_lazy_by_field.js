@@ -58,7 +58,7 @@ const ASSIGNED_REGISTRY = $local(() => assigned.registry);
 const NESTED_REGISTRY = $local(() => nested.registry);
 const HELD_REGISTRY = $local(() => held.registry);
 const FIRST = $local(() => SHARED.first.value);
-const LINKED = $local(() => (LINKS.first != null ? LINKS.first.value : 0n));
+const LINKED = $local(() => LINKS.first?.value ?? 0n);
 
 function main() {
   INTERNALS.dispatcher = 5;

@@ -509,6 +509,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         matches!(ty.kind(), ty::Adt(adt, _) if self.krate.cell_borrows.pointers().js_may_make(adt.did()))
     }
 
+    /// Whether a field of a `ty` value, a struct, may be a getter's as JS
+    /// gives it, of a struct JS may make or give (`js_may_give`), so a read
+    /// Rust makes once is made once, where the lowering would read it more
+    /// than once: an `Option` combinator's subject, `r.snap.map_or(..)`'s,
+    /// isn't plain data (`given_paths`; #1908, the user's decision
+    /// narrowing rd204's, ADR 1022, amended). Each read of it isn't a
+    /// getter's (`fields_answered_by_getters`): one Rust makes twice is
+    /// made twice, as before.
+    pub(super) fn fields_read_once(&self, ty: Ty<'tcx>) -> bool {
+        self.fields_answered_by_getters(ty)
+            || matches!(ty.kind(), ty::Adt(adt, _) if self.krate.cell_borrows.pointers().js_may_give(adt.did()))
+    }
+
     /// Field `i` of a `ty` value: `base.x`, or `base[0]` for tuples.
     pub(super) fn project(&self, base: Expr, ty: Ty<'tcx>, i: usize) -> Expr {
         // What's the value it holds: that field is it, a marker beside it

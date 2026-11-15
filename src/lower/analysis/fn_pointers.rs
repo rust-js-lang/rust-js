@@ -75,6 +75,11 @@ pub(in crate::lower) struct FnPointers<'tcx> {
     /// what a binding calls a function it's given with (#519). It may
     /// leave a field out, whatever the crate builds of it.
     js_given: IndexSet<DefId>,
+    /// Of those, each a getter of which may answer a field anew: all but a
+    /// component's own props, which React builds, a fresh object of its
+    /// props' values, though the structs they hold are the caller's (#1908;
+    /// ADR 0262, the user's decision).
+    read_anew: IndexSet<DefId>,
     /// Each field of a `dyn Fn` of the crate's structs, and whether each
     /// write of it the crate makes, a literal's or an assignment's, is of
     /// a closure or a function of its own, `Box::new(move || ..)`, never
@@ -132,8 +137,19 @@ impl<'tcx> FnPointers<'tcx> {
                 for ty in sig.inputs_and_output {
                     found.given_from(recognition, ty, !private);
                 }
+                let component = crate::lower::bindings::is_component(tcx, owner.to_def_id());
                 for &ty in sig.inputs() {
                     structs_held(tcx, ty, &mut found.js_given);
+                    match (component, ty.peel_refs().kind()) {
+                        // A component's props, React's own object: what its
+                        // fields hold, not it.
+                        (true, ty::Adt(adt, args)) if adt.is_struct() => {
+                            for field in adt.all_fields() {
+                                structs_held(tcx, field.ty(tcx, args).skip_normalization(), &mut found.read_anew);
+                            }
+                        }
+                        _ => structs_held(tcx, ty, &mut found.read_anew),
+                    }
                 }
             }
             // A binding's body, and its closures', is native Rust's stand-in
@@ -378,6 +394,14 @@ impl<'tcx> FnPointers<'tcx> {
     /// or a binding's result.
     pub(in crate::lower) fn js_may_make(&self, adt: DefId) -> bool {
         self.js_made.structs.contains(&adt) || (self.js_made.any && !self.built.contains(&adt))
+    }
+
+    /// Whether JS may give a value of the struct `adt`, to an exported
+    /// function or a function a binding calls (`js_given`, #519), a getter
+    /// of which may answer each read of a field anew: not a component's own
+    /// props, which React builds of its props' values (`read_anew`, #1908).
+    pub(in crate::lower) fn js_may_give(&self, adt: DefId) -> bool {
+        self.read_anew.contains(&adt)
     }
 
     /// Whether every value of the struct `adt` is one the crate's code
@@ -833,6 +857,7 @@ impl<'tcx> Made<'_, '_, 'tcx> {
         for &ty in inputs {
             for called_with in callback_inputs(tcx, ty) {
                 structs_held(tcx, called_with, &mut self.found.js_given);
+                structs_held(tcx, called_with, &mut self.found.read_anew);
             }
         }
         // What a binding gives back is the program's (`#[rust_js::gives_back]`),

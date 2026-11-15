@@ -612,4 +612,13 @@ export const mutations: Mutation[] = [
     replace: "        let libraries = true;\n",
     tests: ["test/object-model.test.ts", "-t", "js-made-all"],
   },
+  {
+    name: "component-props-read-anew",
+    breaks:
+      "a component's own props, which React builds, count as what a getter may answer: `p.title.map(..)` in JSX goes in a `const t` and the attributes before it are hoisted, `const width = ..` (#1908; ADR 0262, the user's decision)",
+    file: "src/lower/analysis/fn_pointers.rs",
+    find: "                        (true, ty::Adt(adt, args)) if adt.is_struct() => {\n",
+    replace: "                        (true, ty::Adt(adt, args)) if false && adt.is_struct() => {\n",
+    tests: ["test/jsx-props-read.test.ts", "-t", "own props are plain data"],
+  },
 ];

@@ -109,12 +109,12 @@ function main() {
           loudDrop_drop(d._0);
         }
         console.log(`d ${value == null ? "None" : `Some(${value})`}`);
-        const option$1 = [8];
+        const l = [8];
         const fallback = [9];
         let mapped;
-        if (option$1 != null) {
+        if (l != null) {
           try {
-            mapped = option$1;
+            mapped = l;
           } catch (error) {
             throw $unwindsOn(error);
           } finally {
@@ -127,11 +127,11 @@ function main() {
         }
         const e = mapped;
         console.log(`e ${e[0]}`);
-        const option$2 = [10];
+        const option$1 = [10];
         const f$1 = [11];
-        const value$1 = option$2 ?? f$1;
+        const value$1 = option$1 ?? f$1;
         try {
-          if (option$2 != null) {
+          if (option$1 != null) {
             if (f$1 != null) {
               loudDrop_drop(f$1);
             }

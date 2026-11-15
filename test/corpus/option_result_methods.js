@@ -221,9 +221,10 @@ function main() {
   const owned = $unwrapOk(pointRef.TAG === "Ok" ? { TAG: "Ok", _0: { ...pointRef._0 } } : pointRef);
   owned.x = 9;
   const text = { TAG: "Ok", _0: "hey" };
-  const result$2 = { TAG: "Ok", _0: 4 };
   console.log(
-    `${pointDebug_fmt(owned)} ${text.TAG === "Ok" ? `Ok(${$debugStr(text._0)})` : `Err(${text._0})`} ${result$2.TAG === "Ok" ? `Ok(${result$2._0})` : "Err(())"}`,
+    `${pointDebug_fmt(owned)} ${text.TAG === "Ok" ? `Ok(${$debugStr(text._0)})` : `Err(${text._0})`} ${((
+      result,
+    ) => (result.TAG === "Ok" ? `Ok(${result._0})` : "Err(())"))({ TAG: "Ok", _0: 4 })}`,
   );
   console.log(`${$unwrapOk(good)}`);
   console.log(`${$unwrapErr(bad)}`);

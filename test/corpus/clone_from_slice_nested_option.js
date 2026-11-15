@@ -30,6 +30,6 @@ function main() {
       items[i] = from == null ? from : countedClone_clone(from);
     }
   });
-  console.log(`${target[0] != null ? target[0][0] : 0}`);
+  console.log(`${target[0]?.[0] ?? 0}`);
 }
 //# sourceMappingURL=case.js.map

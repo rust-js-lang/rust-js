@@ -71,7 +71,7 @@ function main() {
         }
       }
     });
-    console.log(`${r.TAG === "Ok"} ${h.slot != null ? h.slot[0] : 0}`);
+    console.log(`${r.TAG === "Ok"} ${h.slot?.[0] ?? 0}`);
     if (h.slot != null) {
       console.log(`drop ${h.slot[0]}`);
       if (h.slot[0] === 1) {

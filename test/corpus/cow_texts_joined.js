@@ -34,8 +34,11 @@ function main() {
     .map((cow) => cow._0)
     .join("");
   console.log(`${t}`);
-  const result = cows();
-  console.log(`${result.map((cow) => cow._0).join("")}`);
+  console.log(
+    `${cows()
+      .map((cow) => cow._0)
+      .join("")}`,
+  );
   console.log(
     `${cows()
       .map((cow) => cow._0)

@@ -2,7 +2,8 @@
 // made, a counting `Proxy` of each object it's given: every read of a
 // property, a getter's as a field's, every write, test of a key, listing
 // of keys and call, logged in the order it's made, and what each call gave
-// or threw. Under Node, as the generated JS runs.
+// or threw. A `{ "$reads": [..] }` property is a getter whose answer
+// changes. Under Node, as the generated JS runs.
 //
 //   node test/getter-reads-run.ts case.js calls.json log.json
 
@@ -43,6 +44,20 @@ const note = (line: string) => {
   if (quiet === 0) log.push(line);
 };
 
+// How often each `{ "$reads": [..] }` has been read.
+const answers = new WeakMap<object, number>();
+
+/** What a getter answers when read: of a `{ "$reads": [a, b, ..] }`, `a` the
+ * first time, `b` the second and the last ever after, a getter whose answer
+ * changes, which a second read would see (#1908); else `value` itself. */
+function answered(value: unknown): unknown {
+  if (typeof value !== "object" || value === null || !Array.isArray((value as { $reads?: unknown }).$reads)) return value;
+  const reads = (value as { $reads: unknown[] }).$reads;
+  const n = answers.get(value) ?? 0;
+  answers.set(value, n + 1);
+  return reads[Math.min(n, reads.length - 1)];
+}
+
 /** What `value`, read at `path`, is to the program: an object or a
  * function a counting proxy of it, the same one each time it's read. A
  * `{ "$fn": v }` is a function that gives `v`. */
@@ -73,7 +88,7 @@ function counted(value: unknown, path: string): unknown {
   const proxy = new Proxy(target as object, {
     get(t, k, receiver) {
       note(`get ${path}${key(k)}`);
-      return counted(Reflect.get(t, k, receiver), `${path}${key(k)}`);
+      return counted(answered(Reflect.get(t, k, receiver)), `${path}${key(k)}`);
     },
     set(t, k, v, receiver) {
       note(`set ${path}${key(k)} = ${show(v)}`);

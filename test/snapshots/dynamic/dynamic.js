@@ -878,8 +878,8 @@ export function report() {
     3,
     "i64",
   )}\n`;
-  const option = $jsonGet(v, "d");
-  name = (option != null ? $jsonValueAs(option, "String") : undefined) ?? "none";
+  const x = $jsonGet(v, "d");
+  name = (x != null ? $jsonValueAs(x, "String") : undefined) ?? "none";
   out += `${name}\n`;
   for (const text of [
     '{"kind":"Data","payload":{"z":[1,2]}}',

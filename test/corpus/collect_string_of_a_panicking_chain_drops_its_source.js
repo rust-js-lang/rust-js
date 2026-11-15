@@ -24,10 +24,11 @@ function dDrop_drop(d) {
   }
 }
 function ownIterator_next(own) {
-  if (0 >= own[0].length) {
-    $removeOutOfBounds(own[0], 0);
+  const result = own[0];
+  if (0 >= result.length) {
+    $removeOutOfBounds(result, 0);
   }
-  return own[0].splice(0, 1)[0];
+  return result.splice(0, 1)[0];
 }
 function main() {
   const skipped = $catchUnwind(() => {

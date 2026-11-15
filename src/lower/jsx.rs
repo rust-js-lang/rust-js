@@ -206,15 +206,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether `value` is a field, of a field or more, of a variable of
     /// plain Rust data (`plain_value`), `p.title`, `options.debugChannel
     /// .writable`: what reads the same each time, as nothing changes the
-    /// variable or what's in it (rd614).
+    /// variable or what's in it (rd614). Not a field of what JS may give or
+    /// make, whose field a getter may answer anew, `p.style.margin` where
+    /// `p.style` is (`given_paths`, #1908).
     pub(super) fn plain_field(&self, value: &Expr) -> bool {
-        match &value.kind {
-            js::ExprKind::Member(object, _) => match &object.kind {
-                js::ExprKind::Var(name) => self.plain_value(name),
-                _ => self.plain_field(object),
-            },
-            _ => false,
+        let mut objects = Vec::new();
+        let mut of = value;
+        while let js::ExprKind::Member(object, _) = &of.kind {
+            objects.push(&**object);
+            of = object;
         }
+        let js::ExprKind::Var(name) = &of.kind else {
+            return false;
+        };
+        if objects.is_empty() || !self.plain_value(name) {
+            return false;
+        }
+        let given = self.given_of(name);
+        // Each object a field's read of, its path: `p`, `p.style`.
+        !objects
+            .iter()
+            .any(|object| path_of(object).is_none_or(|path| given.contains(&path)))
     }
 
     /// Whether `value` reads only variables that never change, so it's the
@@ -914,5 +926,15 @@ fn jsx_tree(value: &Expr) -> bool {
         js::ExprKind::Cond(_, yes, no) => jsx_tree(yes) || jsx_tree(no),
         js::ExprKind::Array(items) => items.iter().any(jsx_tree),
         _ => false,
+    }
+}
+
+/// `a.b.c` of a chain of a variable's members, its path; `None` of another
+/// read.
+fn path_of(e: &Expr) -> Option<String> {
+    match &e.kind {
+        js::ExprKind::Var(name) => Some(name.to_string()),
+        js::ExprKind::Member(object, field) => Some(format!("{}.{field}", path_of(object)?)),
+        _ => None,
     }
 }

@@ -162,7 +162,8 @@ function unhide(next, start, out) {
   let node = start;
   let depth = 0;
   do {
-    const nextNode = next[node] != null && next[node] !== 0 ? next[node] : undefined;
+    const n = next[node];
+    const nextNode = n != null && n !== 0 ? n : undefined;
     out.push(node);
     if (node > 4) {
       if (depth === 0) {

@@ -77,8 +77,8 @@ function report(e, EError) {
 }
 
 function shown(e) {
-  const option = e.impl.cause(e.value);
-  const cause = option != null ? option.impl.Display().fmt(option.value) : "none";
+  const c = e.impl.cause(e.value);
+  const cause = c != null ? c.impl.Display().fmt(c.value) : "none";
   const arg = e.impl.description(e.value);
   return `${e.impl.Display().fmt(e.value)}: ${arg} / ${cause}`;
 }

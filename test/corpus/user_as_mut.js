@@ -41,8 +41,7 @@ function main() {
   for (const [i, cell] of $mutItems(gridAsMutU8Slice_asMut(grid)).entries()) {
     cell.value = ((i & 255) * 2) & 255;
   }
-  const result = gridAsMutU8Slice_asMut(grid);
-  $swap(result, 0, 3);
+  $swap(gridAsMutU8Slice_asMut(grid), 0, 3);
   console.log(`[${grid[0].join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

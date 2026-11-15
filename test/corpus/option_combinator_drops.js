@@ -207,18 +207,18 @@ function main() {
       if (kept != null) {
         dDrop_drop(kept);
       }
-      const option$1 = make(5);
+      const d = make(5);
       let kept$1;
       try {
-        if (option$1 != null && option$1[0] > 4) {
-          kept$1 = option$1;
+        if (d != null && d[0] > 4) {
+          kept$1 = d;
         }
       } catch (error) {
         throw $unwindsOn(error);
       } finally {
         if ($live()) {
-          if (option$1 != null && kept$1 === undefined) {
-            dDrop_drop(option$1);
+          if (d != null && kept$1 === undefined) {
+            dDrop_drop(d);
           }
         }
       }
@@ -230,7 +230,7 @@ function main() {
         if (d != null) {
           dDrop_drop(d);
         }
-        const value = keep(
+        const value$1 = keep(
           $some(make(7)),
           (d) => d != null,
           (option) => {
@@ -239,19 +239,19 @@ function main() {
             }
           },
         );
-        console.log(`generic ${value != null}`);
-        if (value != null) {
-          if ($someValue(value) != null) {
-            dDrop_drop($someValue(value));
+        console.log(`generic ${value$1 != null}`);
+        if (value$1 != null) {
+          if ($someValue(value$1) != null) {
+            dDrop_drop($someValue(value$1));
           }
         }
 
-        const option = make(8);
+        const value = make(8);
         const fallback = "Nothing";
         let mapped;
-        if (option != null) {
+        if (value != null) {
           try {
-            mapped = { TAG: "One", _0: option };
+            mapped = { TAG: "One", _0: value };
           } catch (error) {
             throw $unwindsOn(error);
           } finally {
@@ -268,13 +268,13 @@ function main() {
         if (one.TAG === "One") {
           console.log(`one ${one._0[0]}`);
         }
-        const value$1 = make(0);
+        const value$2 = make(0);
         const fallback$1 = { TAG: "One", _0: [9] };
         try {
           let mapped;
-          if (value$1 != null) {
+          if (value$2 != null) {
             try {
-              mapped = { TAG: "One", _0: value$1 };
+              mapped = { TAG: "One", _0: value$2 };
             } catch (error) {
               throw $unwindsOn(error);
             } finally {
@@ -289,18 +289,18 @@ function main() {
           }
           const nothing = mapped;
           console.log(`nothing ${nothing.TAG === "One"}`);
-          const option = make(10);
+          const d = make(10);
           const fallback = [11];
           try {
             let mapped;
-            if (option != null) {
+            if (d != null) {
               try {
                 function map(d) {
                   const result = [(d[0] + 100) >>> 0];
                   dDrop_drop(d);
                   return result;
                 }
-                mapped = map(option);
+                mapped = map(d);
               } catch (error) {
                 throw $unwindsOn(error);
               } finally {

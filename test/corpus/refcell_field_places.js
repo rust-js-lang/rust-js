@@ -26,7 +26,7 @@ export function currentTag() {
 }
 
 export function parentTag(fiber) {
-  return fiber.return != null ? fiber.return.tag : 0;
+  return fiber.return?.tag ?? 0;
 }
 
 function bump(cell) {

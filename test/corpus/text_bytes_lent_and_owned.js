@@ -73,8 +73,7 @@ function uses(s) {
   const p = $ptr($utf8Bytes(s), 0);
   const second = $ptrAdd(p, 1).value;
   const third = $ptrAdd($ptr($utf8Bytes(s), 0), 2).value;
-  const result = $utf8Bytes(s);
-  const chunks = $chunks(result, 4).slice(0, 2);
+  const chunks = $chunks($utf8Bytes(s), 4).slice(0, 2);
   const [left, right] = $sliceSplitAt($utf8Bytes(s), 3);
   console.log(
     `[${a.join(", ")}]\n[${b.join(", ")}]\n[${c.join(", ")}]\n[${d.join(", ")}]\n[${e.join(", ")}]\n[${f.join(", ")}]\n[${g.join(", ")}]\n[${i.join(", ")}]\n[${j.join(", ")}]\n[${k.join(", ")}]\n[${l.join(", ")}]\n[${m.join(", ")}]\n[${n.join(", ")}]\n[${o.join(", ")}]\n[${q.join(", ")}]\n[${r.join(", ")}]\n[${t.join(", ")}]`,

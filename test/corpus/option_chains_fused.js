@@ -27,8 +27,8 @@ function mapped(n, component) {
 
 // An `f` that isn't the value as it is is called, as Rust calls it.
 function shouted(n, component) {
-  const option = nameOf(n) || undefined;
-  return option != null ? $toUppercase(option) : component;
+  const name = nameOf(n) || undefined;
+  return name != null ? $toUppercase(name) : component;
 }
 
 // A number's `!= 0.0` isn't JS's truth of it, which `NaN` fails too: no

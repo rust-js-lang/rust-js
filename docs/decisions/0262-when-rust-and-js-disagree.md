@@ -452,6 +452,18 @@ react.dev's TopNav passes the same closure instead.
   panic and the program prints on, the writer writes through stdout's
   line, as one that prints does, and the line is Rust's. Listed in the
   guide's differences (`semantics.md`, 57).
+- **A component's own props are plain data, read where Rust reads them
+  and again where the JS does**, the second case's, which the user
+  decided (2026-11-15, difference 59, #1908, ADR 1022, amended). React
+  builds a component's props, `jsx()` copying each prop's value into a
+  fresh plain object, so no getter answers one of its fields:
+  `p.title.map(|t| ..)` in JSX is `{p.title != null &&
+  <title>{p.title}</title>}`, as upstream writes it, not a `const` that
+  hoists the attributes before it. What the props hold, `p.style`, is
+  the caller's object, read once where Rust reads it once. Only JS
+  calling the component itself, not through React, with a getter for
+  one of its props sees that prop read twice. Listed in the guide's
+  differences (`semantics.md`, 59).
 
 ## Amendment: the stack's depth
 

@@ -172,6 +172,9 @@ pub(super) struct Found {
     /// And of the others' arrays, their items, `...items`.
     pub(super) alike: IndexSet<String>,
     pub(super) plain: IndexSet<String>,
+    /// Of those of plain data, each path to what they hold whose fields a
+    /// getter may answer, each read anew, `p.style` (`given_paths`, #1908).
+    pub(super) given: IndexSet<String>,
     /// And those of plain Rust data written again, a `mut` parameter
     /// assigned after what it's read for: each the same until it's written
     /// (`written_before_read`, #121).
@@ -1154,7 +1157,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => Vec::new(),
             };
             if plain {
-                self.locals.mir.plain.insert(name.clone());
+                self.note_plain(name, mir_body.local_decls[local].ty);
             }
             self.locals.mir.plain.extend(fields);
             // Of an array, of what may be JS's, its items, which only a

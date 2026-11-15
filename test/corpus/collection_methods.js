@@ -74,8 +74,7 @@ function main() {
   ];
   const found = $binarySearchBy(people, ([, age]) => $cmp(age, 42));
   const byKey = $binarySearchBy(people, (item) => $cmp(item[1], 57));
-  const result = [9, 7, 5];
-  const reversed = $binarySearchBy(result, (p) => {
+  const reversed = $binarySearchBy([9, 7, 5], (p) => {
     switch ($cmp(p, 7)) {
       case -1:
         return 1;

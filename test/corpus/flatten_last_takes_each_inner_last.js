@@ -325,14 +325,14 @@ function main() {
     throw error;
   }
   it$1$live = false;
-  let option;
+  let d;
   function map$1(d) {
     const result = d[0];
     dDrop_drop(d);
     return result;
   }
   try {
-    option = $lastDropping(it$1, dDrop_drop);
+    d = $lastDropping(it$1, dDrop_drop);
   } catch (error) {
     $cleanup(() => {
       if (last$5$live) {
@@ -372,7 +372,7 @@ function main() {
     throw error;
   }
   try {
-    console.log(`last ${option != null ? map$1(option) : 0}`);
+    console.log(`last ${d != null ? map$1(d) : 0}`);
   } catch (error) {
     $cleanup(() => {
       if (last$5$live) {

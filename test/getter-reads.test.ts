@@ -13,7 +13,12 @@
 // A case, `test/getter-reads/<name>.rs`, is a library of the js crate's
 // bindings; each `//@ call: <export> <JSON array of arguments>` is a call
 // of what it exports, in order, an object argument a counting proxy, a
-// `{ "$fn": value }` in one a function that gives `value`.
+// `{ "$fn": value }` in one a function that gives `value`, and a
+// `{ "$reads": [a, b] }` a getter that gives `a` then `b`. A call's
+// `//@ gives: <shown value>` and `//@ logs: <JSON array>` after it are
+// Rust's, what native Rust gives and reads, which the least JS must give
+// and log (#1908): where the lowering itself reads twice, every variant
+// does.
 
 import { beforeAll, expect, test } from "bun:test";
 import { readdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -30,9 +35,31 @@ const readCases = readdirSync(dir)
   .filter((file) => file.endsWith(".rs"))
   .sort();
 
-/** A case's calls, from its `//@ call:` lines. */
-function calls(source: string): { fn: string; args: unknown[] }[] {
-  return [...source.matchAll(/^\/\/@ call: (\w+) (.*)$/gm)].map(([, fn, args]) => ({ fn, args: JSON.parse(args) }));
+type Call = { fn: string; args: unknown[]; gives?: string; logs?: string[] };
+
+/** A case's calls, from its `//@ call:` lines, each with Rust's `gives`
+ * and `logs` where they follow it. */
+function calls(source: string): Call[] {
+  const found: Call[] = [];
+  for (const [, directive, rest] of source.matchAll(/^\/\/@ (call|gives|logs): (.*)$/gm)) {
+    if (directive === "call") {
+      const [, fn, args] = rest.match(/^(\w+) (.*)$/) ?? [];
+      found.push({ fn, args: JSON.parse(args) });
+    } else if (found.length === 0) throw new Error(`a \`//@ ${directive}:\` before any call`);
+    else if (directive === "gives") found[found.length - 1].gives = rest;
+    else found[found.length - 1].logs = JSON.parse(rest);
+  }
+  return found;
+}
+
+/** Each call's lines of a log, by the `fn(..)` each call's begins with. */
+function eachCalls(log: string[]): string[][] {
+  const each: string[][] = [];
+  for (const line of log) {
+    if (/^\w+\(\.\.\)$/.test(line)) each.push([]);
+    else each[each.length - 1].push(line);
+  }
+  return each;
 }
 
 /** The last pass of each of tidy's stages, `--tidy-until`'s. */
@@ -66,7 +93,8 @@ for (const name of readCases) {
     const file = join(dir, name);
     const out = fixture(`getter-reads-${basename(name, ".rs")}`);
     const callsFile = join(out, "calls.json");
-    writeFileSync(callsFile, JSON.stringify(calls(readFileSync(file, "utf8"))));
+    const made = calls(readFileSync(file, "utf8"));
+    writeFileSync(callsFile, JSON.stringify(made.map(({ fn, args }) => ({ fn, args }))));
     const firedFile = join(out, "fired.txt");
     const full = compiled(file, out, ["--prepare-fired", firedFile]);
     if (typeof full !== "string") throw new Error(full.error);
@@ -80,8 +108,17 @@ for (const name of readCases) {
     const want = logged(least, out, callsFile);
     // Each call does what Rust does, gives or panics: an error is JS's, a
     // call of what the case doesn't export, or the JS gone wrong.
-    const { results } = JSON.parse(want) as { results: object[] };
+    const { results, log } = JSON.parse(want) as { results: object[]; log: string[] };
     expect(results.filter((result) => "error" in result)).toEqual([]);
+    // What Rust gives and reads, where the case says.
+    const logs = eachCalls(log);
+    const rust = made.map(({ fn, gives, logs }) => ({ fn, gives, logs }));
+    const js = made.map((call, i) => ({
+      fn: call.fn,
+      gives: call.gives === undefined ? undefined : (results[i] as { value?: string }).value,
+      logs: call.logs === undefined ? undefined : logs[i],
+    }));
+    expect(js).toEqual(rust);
     const variants: [string, string[]][] = [
       ["as built", []],
       ...ends.slice(1).map((end): [string, string[]] => [`after ${end}`, ["--tidy-until", end]]),

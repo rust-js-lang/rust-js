@@ -83,7 +83,8 @@ function copyFirst() {
   const p = { x: 0 };
   const v = [{ ...p }];
   v.push({ ...p });
-  const result = v[0] != null ? { TAG: "Ok", _0: v[0] } : { TAG: "Err", _0: "empty" };
+  const option = v[0];
+  const result = option != null ? { TAG: "Ok", _0: option } : { TAG: "Err", _0: "empty" };
   if (result.TAG === "Err") {
     return result;
   }

@@ -58,8 +58,7 @@ function main() {
   const value = tail(v);
   value[$at(value, 0)] = -1;
   console.log(`[${v.join(", ")}]`);
-  const result = $view($view(v, 1, 5), 1, 3);
-  $rotateLeft(result, 1, "mid");
+  $rotateLeft($view($view(v, 1, 5), 1, 3), 1, "mid");
   console.log(`[${v.join(", ")}]`);
   const all = v;
   all[$at(all, 5)] = 6;
@@ -202,8 +201,7 @@ function main() {
   }
   head$1[0].x = value$2;
   tail$1[0] = { x: 0 };
-  const result$1 = $view(points, 1);
-  $swap(result$1, 0, 1);
+  $swap($view(points, 1), 0, 1);
   console.log(`[${points.map((item) => pointDebug_fmt(item)).join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

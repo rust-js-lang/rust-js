@@ -19,20 +19,20 @@ function half(n) {
 }
 
 function main() {
-  const option = some(1);
+  const n = some(1);
   function holds(n) {
     const result = n[0] === 1;
     console.log(`drop ${n[0]}`);
     return result;
   }
-  console.log(`${option != null && holds(option)}`);
-  const option$1 = some(2);
+  console.log(`${n != null && holds(n)}`);
+  const n$1 = some(2);
   function holds$1(n) {
     const result$1 = n[0] > 5;
     console.log(`drop ${n[0]}`);
     return result$1;
   }
-  console.log(`${option$1 == null || holds$1(option$1)}`);
+  console.log(`${n$1 == null || holds$1(n$1)}`);
   const result = ok(4);
   let holds$2;
   if (result.TAG === "Ok") {
@@ -61,35 +61,35 @@ function main() {
     console.log(`drop ${result$1._0[0]}`);
   }
   console.log(`${holds$3}`);
-  const option$2 = some(6);
+  const n$2 = some(6);
   function then(n) {
-    let n$4$live = true;
+    let n$6$live = true;
     let result$6;
     if (n[0] > 0) {
-      n$4$live = false;
+      n$6$live = false;
       result$6 = n;
     } else {
       result$6 = undefined;
     }
-    if (n$4$live) {
+    if (n$6$live) {
       console.log(`drop ${n[0]}`);
     }
     return result$6;
   }
-  const kept = option$2 != null ? then(option$2) : undefined;
+  const kept = n$2 != null ? then(n$2) : undefined;
   function map(n) {
     const result$7 = n[0];
     console.log(`drop ${n[0]}`);
     return result$7;
   }
   console.log(`${kept != null ? map(kept) : 0}`);
-  const option$3 = some(7);
+  const n$3 = some(7);
   function map$1(n) {
     const result$9 = (n[0] + 1) & 255;
     console.log(`drop ${n[0]}`);
     return result$9;
   }
-  console.log(`${option$3 != null ? map$1(option$3) : 0}`);
+  console.log(`${n$3 != null ? map$1(n$3) : 0}`);
   const result$2 = ok(8);
   function map$2(n) {
     const result$11 = (n[0] * 2) & 255;

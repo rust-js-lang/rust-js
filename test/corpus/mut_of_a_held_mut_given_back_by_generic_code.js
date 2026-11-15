@@ -21,7 +21,7 @@ function tallyDebug_fmt(tally) {
 function main() {
   const v = [];
   let by = v;
-  const result = $heldObjectOf(
+  $heldObjectOf(
     keep(
       $heldCellOf({
         get value() {
@@ -32,9 +32,8 @@ function main() {
         },
       }),
     ),
-  ).value;
-  result.push(107);
-  const result$1 = $heldObjectOf(
+  ).value.push(107);
+  $heldObjectOf(
     keep(
       $heldCellOf(
         $heldObjectOf(
@@ -51,8 +50,7 @@ function main() {
         ),
       ),
     ),
-  ).value;
-  result$1.push(106);
+  ).value.push(106);
   const other = [];
   $heldObjectOf(
     keep(
@@ -132,7 +130,7 @@ function main() {
 
   const bytes = [];
   let into = bytes;
-  const result$2 = $heldObjectOf(
+  $heldObjectOf(
     keep(
       $heldCellOf({
         get value() {
@@ -143,11 +141,9 @@ function main() {
         },
       }),
     ),
-  ).value;
-  result$2.push(102);
+  ).value.push(102);
   function g(w) {
-    const result$3 = $heldObjectOf(keep($heldCellOf(w))).value;
-    result$3.push(103);
+    $heldObjectOf(keep($heldCellOf(w))).value.push(103);
   }
   g({
     get value() {
@@ -158,15 +154,14 @@ function main() {
     },
   });
   const h = (w) => $heldObjectOf(keep($heldCellOf(w)));
-  const result$3 = h({
+  h({
     get value() {
       return into;
     },
     set value(value) {
       into = value;
     },
-  }).value;
-  result$3.push(104);
+  }).value.push(104);
   console.log(`[${bytes.join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

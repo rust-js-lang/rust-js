@@ -240,17 +240,15 @@ function mappedFused(it, IFused, dropI) {
 
 function peekedReversed(it, dropI) {
   it = $held(iterator_peekable(it, $jsIterator, dropI, dDrop_drop));
-  let peek;
   try {
-    peek = $peek(it);
+    const value = $peek(it)?.[0];
+    console.log(`peeked ${value == null ? "None" : `Some(${value})`}`);
   } catch (error) {
     $cleanup(() => {
       it.return();
     }, error);
     throw error;
   }
-  const value = peek?.[0];
-  console.log(`peeked ${value == null ? "None" : `Some(${value})`}`);
   return $rev(
     $knowing(
       it,
@@ -461,17 +459,15 @@ function main() {
   const it = $held(
     iterator_peekable([0, 3], { next: stepsIterator_next }, stepsDrop_drop, dDrop_drop),
   );
-  let peek;
   try {
-    peek = $peek(it);
+    const value = $peek(it)?.[0];
+    console.log(`peeked ${value == null ? "None" : `Some(${value})`}`);
   } catch (error) {
     $cleanup(() => {
       it.return();
     }, error);
     throw error;
   }
-  const value = peek?.[0];
-  console.log(`peeked ${value == null ? "None" : `Some(${value})`}`);
   console.log(
     `${$rev(
       $knowing(
@@ -524,17 +520,15 @@ function main() {
     const it = $held(
       iterator_peekable([0, 4], { next: breaksIterator_next }, breaksDrop_drop, dDrop_drop),
     );
-    let peek;
     try {
-      peek = $peek(it);
+      const value = $peek(it)?.[0];
+      console.log(`peeked ${value == null ? "None" : `Some(${value})`}`);
     } catch (error) {
       $cleanup(() => {
         it.return();
       }, error);
       throw error;
     }
-    const value = peek?.[0];
-    console.log(`peeked ${value == null ? "None" : `Some(${value})`}`);
     return totalOf(
       $rev(
         $knowing(

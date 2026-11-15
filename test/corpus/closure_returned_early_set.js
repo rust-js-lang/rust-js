@@ -59,7 +59,7 @@ function found(names$1, wanted) {
         return i;
       }
     }
-    return held.value != null ? held.value.length : 0;
+    return held.value?.length ?? 0;
   })({
     get value() {
       return names;

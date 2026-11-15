@@ -495,9 +495,18 @@ export const mutations: Mutation[] = [
     breaks:
       "`debug_channel.writable.map(callback_of)`, `options.debugChannel.writable`, a field of a field of plain Rust data, goes in a `const option` first, and the `if` that gives the value is no conditional, as upstream's createResponseFromOptions writes it (rd614)",
     file: "src/lower/jsx.rs",
-    find: "                _ => self.plain_field(object),\n",
-    replace: "                _ => false,\n",
+    find: "        if objects.is_empty() || !self.plain_value(name) {\n",
+    replace: "        if objects.len() != 1 || !self.plain_value(name) {\n",
     tests: ["test/corpus.test.ts", "-t", "^map_of_a_field_of_a_field.rs$"],
     snapshots: true,
+  },
+  {
+    name: "plain-field-of-what-js-gives",
+    breaks:
+      "a field of a struct an exported function is given counts as plain Rust data, `r.snap.map(..)` read twice, `r.snap != null ? r.snap.threshold : undefined` (#1908)",
+    file: "src/lower/jsx.rs",
+    find: "            .any(|object| path_of(object).is_none_or(|path| given.contains(&path)))\n",
+    replace: "            .any(|object| path_of(object).is_none())\n",
+    tests: ["test/getter-reads.test.ts", "-t", "js_given_options"],
   },
 ];

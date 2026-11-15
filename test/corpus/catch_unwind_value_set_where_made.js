@@ -204,8 +204,9 @@ function captured(n) {
   }
   total = (total + 1) >>> 0;
   const borrow = $borrow(stored, true);
+  const f = borrow.value;
   try {
-    return (total + (borrow.value != null ? borrow.value() : 0)) >>> 0;
+    return (total + (f != null ? f() : 0)) >>> 0;
   } finally {
     $unborrow(borrow);
   }

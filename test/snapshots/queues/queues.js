@@ -99,14 +99,14 @@ export function dijkstra(edges, n, src) {
   while ((pop = $heapPop(heap, reversePartialOrd)) != null) {
     const d = pop[0][0];
     const u = pop[0][1];
-    const option = $index(dist, u);
-    if (option != null && d > option) {
+    const best = $index(dist, u);
+    if (best != null && d > best) {
       continue;
     }
     for (const [v, w] of $index(adj, u)) {
       const nd = (d + w) >>> 0;
-      const option = $index(dist, v);
-      if (option == null || nd < option) {
+      const best = $index(dist, v);
+      if (best == null || nd < best) {
         dist[v] = nd;
         $heapPush(heap, [[nd, v]], reversePartialOrd);
       }

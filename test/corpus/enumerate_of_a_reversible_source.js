@@ -73,17 +73,15 @@ function main() {
       dDrop_drop,
     ),
   );
-  let peek;
   try {
-    peek = $peek(it);
+    const value = $peek(it)?.[0];
+    console.log(`peeked ${value == null ? "None" : `Some(${value})`}`);
   } catch (error) {
     $cleanup(() => {
       it.return();
     }, error);
     throw error;
   }
-  const value = peek?.[0];
-  console.log(`peeked ${value == null ? "None" : `Some(${value})`}`);
   console.log(
     `count ${$count($enumerate(it), (value) => {
       dDrop_drop(value[1]);
@@ -97,17 +95,15 @@ function main() {
       dDrop_drop,
     ),
   );
-  let peek$1;
   try {
-    peek$1 = $peek(it);
+    const value = $peek(it)?.[0];
+    console.log(`peeked ${value == null ? "None" : `Some(${value})`}`);
   } catch (error) {
     $cleanup(() => {
       it.return();
     }, error);
     throw error;
   }
-  const value$1 = peek$1?.[0];
-  console.log(`peeked ${value$1 == null ? "None" : `Some(${value$1})`}`);
   const iter = iterator_enumerate(
     it,
     { next: $next, fold: $foldOf },
@@ -134,17 +130,15 @@ function main() {
       dDrop_drop,
     ),
   );
-  let peek$2;
   try {
-    peek$2 = $peek(it);
+    const value = $peek(it)?.[0];
+    console.log(`peeked ${value == null ? "None" : `Some(${value})`}`);
   } catch (error) {
     $cleanup(() => {
       it.return();
     }, error);
     throw error;
   }
-  const value$2 = peek$2?.[0];
-  console.log(`peeked ${value$2 == null ? "None" : `Some(${value$2})`}`);
   let back = $collectDropping(
     $rev(
       $enumerate(
@@ -226,7 +220,7 @@ function main() {
     ),
   );
   console.log(`[${back.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
-  const value$3 = $nextBack(
+  const value = $nextBack(
     $enumerate(
       $knowing(
         iterator_fuse({ start: 1, end: 5 }, { next: $rangeNext }, true),
@@ -262,7 +256,7 @@ function main() {
       ),
     ),
   );
-  console.log(`${value$3 == null ? "None" : `Some((${value$3[0]}, ${value$3[1]}))`}`);
+  console.log(`${value == null ? "None" : `Some((${value[0]}, ${value[1]}))`}`);
   const sum = $foldBack(
     $enumerate(
       $knowing(

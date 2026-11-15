@@ -1,6 +1,6 @@
 # 1022. A field of a struct JS made is read as often as Rust reads it
 
-Status: Accepted (the user's decision, rd204); amended below, the user's decision: a binding that gives back what the program gave it, `#[rust_js::gives_back]`, gives the program's own object; and amended again, rd221: a struct the program builds is its own data, whatever JS gives of its type; and amended, #411, the user's decision: a binding that gives fresh plain data, `#[rust_js::gives_plain_data]`, gives no getter's object; and amended, #430: a pattern's subject is read once where it's tested; and amended, rd631, the user's decision: a closure's shared borrow of such a field is read where the closure derefs it; and amended, rd418, the user's decision: a cell's `replace` or `take` whose old value nothing reads is the write alone. Amends
+Status: Accepted (the user's decision, rd204); amended below, the user's decision: a binding that gives back what the program gave it, `#[rust_js::gives_back]`, gives the program's own object; and amended again, rd221: a struct the program builds is its own data, whatever JS gives of its type; and amended, #411, the user's decision: a binding that gives fresh plain data, `#[rust_js::gives_plain_data]`, gives no getter's object; and amended, #430: a pattern's subject is read once where it's tested; and amended, rd631, the user's decision: a closure's shared borrow of such a field is read where the closure derefs it; and amended, rd418, the user's decision: a cell's `replace` or `take` whose old value nothing reads is the write alone. And amended, #1908, the user's decision: an `Option` combinator's subject, which Rust reads once, is read once, of a struct JS gives an exported function too; a component's own props are plain data. Amends
 [0194](0194-jsx-attributes-read-once.md),
 [0672](0672-a-property-a-test-reads-is-read-once.md) and
 [0866](0866-a-let-only-its-if-let-reads-is-read-there.md): a field of a
@@ -424,3 +424,75 @@ identities, runs a case whose program or library asks an address
 unproxied only (`asksAnAddress`, `test/object-model.test.ts`):
 `address_of_a_field_where_its_object_is_stored.rs` printed `passed
 4294963208` proxied, two allocations, where native Rust prints 16.
+
+## Amendment (2026-11-15): an `Option` combinator's subject is read once, of a struct JS gives too (#1908, the user's decision)
+
+A field of a struct JS *gives*, an exported function's parameter
+(`FnPointers::js_may_give`, #519), stayed plain data under rd204: each
+read of it isn't a getter's, as rd204 decided for what Rust reads more
+than once. But where Rust reads it once and the lowering read it twice,
+that was a second read no Rust program makes, which a getter answers
+anew. The SDK's `scrubTo`, `let threshold = range.snap.map_or(0.0,
+|snap| snap.threshold)`, printed `range.snap != null ?
+range.snap.threshold : 0`, upstream's `range.snap?.threshold ?? 0`; a
+`snap` getter that answered a stricter threshold the second time gave
+`{ value: 1, point: undefined }`, where Rust and upstream give `{ value:
+2, point: 2 }`.
+
+The user decided (#1908): **an `Option` combinator's subject is read
+once unless it's a local, a constant or a module's variable**, which no
+getter answers. `Expr::reads_alike_twice` says which, and every
+combinator asks it where it would test its subject and read it again
+(`subject_read_twice`, `combinators/held.rs`, which `Option::map`'s in
+`std_types/option.rs` asks too). Where one read does it, upstream's `?.`
+and `??` are printed, `range.snap?.threshold ?? 0`, `this._text?.[key]`,
+`$peek(it)?.[0]` (`optional_chain`, which now reads a key, `param[key]`,
+as a property); else a `const` of it, named as a binding's read names itself, `const
+count = source.count`, else as its closure names what it holds, `const s
+= r.step; return s != null && s > 0.5;` (`held_subject`). Where the JS reads the held subject once anyway, first,
+at the root of its chain, it's read in place again (`read_in_place`):
+`window.$RB.push(a, b)` of `RB.borrow_mut().push(..)`, `$swapRemove(q.items,
+0)`. A constant is read twice, `4 != null ? loud(4) :
+undefined`. So is a field of the program's plain data, rd614's
+`options.debugChannel.writable` (`plain_field`), but not one read of
+what JS may give or make on its way: `plain_field` asks of each object
+a field is read of, by its path, `p.style` of `p.style.margin`
+(`given_paths`, of `fields_read_once`).
+
+**A component's own props are plain data**, ADR 0262's second case,
+the user's decision (2026-11-15, difference 59): React builds them, a
+fresh object of the props' values, so no getter answers their fields,
+and `p.title.map(|t| ..)` in JSX stays `{p.title != null &&
+<title>{p.title}</title>}` (`FnPointers::read_anew` leaves out a
+component's props struct, not what its fields hold). Only JS calling the
+component itself with a getter for a prop sees it read twice;
+`test/jsx-props-read.test.ts` holds that shape, a props getter read
+twice and its `style`'s once.
+
+**A `match`'s or an `if let`'s subject of a struct JS gives stays under
+rd204**, read where MIR tests it and again where it binds, until #1924:
+held once where it's tested, as #430 holds one of a struct JS makes, a
+`const` at each subject broke react.dev's `else if` chains, llms.txt's
+`extractGroupedRoutes` into a `continue` and a `let title` set twice;
+#1924 is to keep the chain, its held reads ahead of it (m6-react's
+decision, 2026-11-15). What Rust itself reads twice is read twice, `if
+r.step.is_some() { r.step.unwrap() }`, as rd204 decided.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, as the
+SDK's shows; Rust's reads are kept, however the output reads. Paid for in
+output: a `const` where upstream reads a field twice, React DOM's
+`const name$1 = anyProps.name; const name = name$1 != null ? '' + name$1
+: undefined;`. The React port's JS changed in 13 files, 27 hunks, most of
+them a `const` named as its closure names it where it was `option`,
+`const debugChannel = response._debugChannel`; ReactART's
+`this._text?.[key]` is as it was. The corpus's changed in 78 snapshots,
+each a field read once where it was read twice, `const option =
+cell.value.value`, or a `?.` where there was a `const`,
+`$peek(it)?.[0]`.
+
+`test/getter-reads/js_given_options.rs` holds it: each combinator and
+`scrubTo`, reduced, of a struct an exported function is given, each
+field a getter that answers another value the second time (`$reads`),
+and each call's value and reads native Rust's (`//@ gives:` and `//@
+logs:`, which the read cases' test now checks). The compiler before this
+threw on four of them, a second read's `null`.

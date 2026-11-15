@@ -29,13 +29,13 @@ function keptOrDropped(stop) {
 }
 
 function main() {
-  const option = keptOrDropped(2);
+  const held = keptOrDropped(2);
   function map(held) {
     const result = held[0];
     console.log(`drop ${held[0]}`);
     return result;
   }
-  console.log(`${option != null ? map(option) : 0}`);
+  console.log(`${held != null ? map(held) : 0}`);
   const noisy = keptOrDropped(9);
   console.log(`${noisy == null}`);
   if (noisy != null) {

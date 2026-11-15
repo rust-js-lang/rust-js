@@ -24,7 +24,7 @@ function work(n) {
 }
 
 function debugId() {
-  return debug != null ? debug[0] : 0;
+  return debug?.[0] ?? 0;
 }
 
 function currentId() {
@@ -177,7 +177,7 @@ function swapped(cell, fiber, n) {
   const old = cell.value;
   cell.value = fiber;
   try {
-    return (work(n) + (cell.value != null ? cell.value[0] : 0)) >>> 0;
+    return (work(n) + (cell.value?.[0] ?? 0)) >>> 0;
   } catch (error) {
     throw $unwindsOn(error);
   } finally {
@@ -213,8 +213,8 @@ function main() {
   console.log(`deeper caught ${r.TAG === "Err"}`);
 
   const cell = { value: ONE };
-  console.log(`swapped ${swapped(cell, TWO, 6)} then ${cell.value != null ? cell.value[0] : 0}`);
+  console.log(`swapped ${swapped(cell, TWO, 6)} then ${cell.value?.[0] ?? 0}`);
   r = $catchUnwind(() => swapped(cell, TWO, 600));
-  console.log(`swapped caught ${r.TAG === "Err"} then ${cell.value != null ? cell.value[0] : 0}`);
+  console.log(`swapped caught ${r.TAG === "Err"} then ${cell.value?.[0] ?? 0}`);
 }
 //# sourceMappingURL=case.js.map

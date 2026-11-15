@@ -98,7 +98,8 @@ pub fn first_id(parent: &Element) -> Option<String> {
 // as react.dev's SandpackRoot reads it, and one of a variable's key,
 // `files[name]?.active`: a key that's a name. Set where it's none, it's
 // `counts[name] ??= ..`, as react.dev's CustomPreset counts lines. Another
-// key is an index of the chain, `file?.["a-b"]` (ADR 0647).
+// key is an index of the chain, `file?.["a-b"]` (ADR 0647), and so is one
+// of a field JS gives, `text.node?.[key]`, read once (#1908).
 test("a property read of what may be None is an optional chain", async () => {
   const withJs = ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
   const dir = fixture("optional-property");
@@ -124,6 +125,18 @@ pub fn visible(file: Option<&Unknown>) -> bool {
 pub fn dashed(file: Option<&Unknown>) -> bool {
     js::truthy(file.and_then(|f| js::get(f, "a-b")))
 }
+pub struct Text {
+    pub node: std::cell::Cell<Option<&'static Unknown>>,
+}
+pub fn keyed(text: &Text, key: &str) -> Option<&'static Unknown> {
+    text.node.get().and_then(|node| js::get(node, key))
+}
+thread_local! {
+    static CURRENT: std::cell::Cell<Option<&'static Unknown>> = const { std::cell::Cell::new(None) };
+}
+pub fn current_name() -> Option<&'static Unknown> {
+    CURRENT.get().and_then(|v| js::get(v, "constructor")).and_then(|c| js::get(c, "name"))
+}
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
@@ -132,6 +145,13 @@ pub fn dashed(file: Option<&Unknown>) -> bool {
   expect(js).toContain("return files[name]?.active === true;");
   expect(js).toContain('counts[name] ??= code.split("\\n").length;');
   expect(js).toContain('return !!file?.["a-b"];');
-  const { visible, dashed, styled, active, counted } = await import(join(dir, "lib.js"));
+  // Of a field JS gives, read once (#1908): in place where one read does,
+  // ReactART's `this._text?.[key]`, no `const` first.
+  expect(js).toContain("return text.node?.[key];");
+  // A module variable's, which no getter answers, read twice, one path,
+  // `current?.constructor`, so one chain.
+  expect(js).toContain("return current?.constructor?.name;");
+  const { visible, dashed, styled, active, counted, keyed } = await import(join(dir, "lib.js"));
+  expect([keyed({ node: { x: 4 } }, "x"), keyed({ node: undefined }, "x")]).toEqual([4, undefined]);
   expect([counted({}, "a", "x\ny"), counted({ a: 7 }, "a", "x"), active({ a: { active: true } }, "a"), active({}, "a"), styled({}), styled({ "/styles.css": { visible: true } }), visible(undefined), visible({}), visible({ visible: 1 }), dashed({ "a-b": 1 }), dashed(undefined)]).toEqual([2, 7, true, false, true, false, true, true, false, true, false]);
 });

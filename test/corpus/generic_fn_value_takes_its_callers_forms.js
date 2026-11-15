@@ -106,8 +106,7 @@ function main() {
       into = value;
     },
   };
-  const result = $unwrap(option != null ? stampedRefMutVecFn(option) : undefined).value;
-  result.push(109);
+  $unwrap(option != null ? stampedRefMutVecFn(option) : undefined).value.push(109);
   stampTwice(stampRefMutVecFn, {
     get value() {
       return into;

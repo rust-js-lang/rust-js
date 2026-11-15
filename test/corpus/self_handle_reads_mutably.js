@@ -47,9 +47,10 @@ function hook() {
         let result;
         try {
           const borrow = $borrow(this$$1.value, true);
+          const x = borrow.value;
           let hook;
           try {
-            hook = $unwrap(borrow.value != null ? $upgrade(borrow.value) : undefined);
+            hook = $unwrap(x != null ? $upgrade(x) : undefined);
           } finally {
             $unborrow(borrow);
           }

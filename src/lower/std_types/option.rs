@@ -414,13 +414,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         {
                             return Ok(Some(chain));
                         }
-                        // Read twice: a variable, or a field of a plain Rust value,
-                        // `p.title`, `options.debugChannel.writable` (rd614), as
-                        // it is; a getter's, in a `const` first.
-                        let option = match &option.kind {
-                            js::ExprKind::Var(_) => option,
-                            _ if self.plain_field(&option) => option,
-                            _ => self.spill_subject(base, option, (true, base != Base::Role(Role::Option)), out),
+                        // Read twice where no getter can answer it, as it is
+                        // (`subject_read_twice`, #1908); else in a `const` first,
+                        // as Rust reads it once.
+                        let option = match self.subject_read_twice(&option) {
+                            true => option,
+                            false => self.spill_subject(base, option, (true, base != Base::Role(Role::Option)), out),
                         };
                         let present = Expr::presence(option.clone(), true);
                         (option, present)
@@ -812,9 +811,10 @@ pub(in crate::lower) fn and_then_of(
     }
 }
 
-/// `body`, a chain of properties and method calls of `param`, `param.a.b`
-/// or `param.item(0)`, as one of `option` that ends where it's `None`,
-/// reading it once: `option?.a.b`, `option?.item(0)`. A call's arguments
+/// `body`, a chain of properties, keys and method calls of `param`,
+/// `param.a.b`, `param[key]` or `param.item(0)`, as one of `option` that
+/// ends where it's `None`, reading it once: `option?.a.b`, `option?.[key]`,
+/// `option?.item(0)`. A call's arguments
 /// don't read `param`, and run only where it's there, as the closure did.
 /// Not of a test or an operator's value, `(t ? a : b)?.f()`, which reads
 /// better held, `const s = t ? a : b; s?.f()`.
@@ -826,6 +826,12 @@ pub(in crate::lower) fn optional_chain(option: &Expr, body: &Expr, param: &str) 
         js::ExprKind::Member(of, field) => match &of.kind {
             js::ExprKind::Var(name) if name == param => Some(Expr::optional_member(option.clone(), field.clone())),
             _ => Some(Expr::member(optional_chain(option, of, param)?, field.clone())),
+        },
+        // `param[key]`, `option?.[key]`: its key read only where it's there,
+        // as the closure did, `$peek(it)?.[0]` (#1908).
+        js::ExprKind::Index(of, key) if !key.mentions_var(param) => match &of.kind {
+            js::ExprKind::Var(name) if name == param => Some(Expr::optional_index(option.clone(), (**key).clone())),
+            _ => Some(Expr::index(optional_chain(option, of, param)?, (**key).clone())),
         },
         js::ExprKind::Call(callee, args) if !args.iter().any(|arg| arg.mentions_var(param)) => {
             Some(Expr::call(optional_chain(option, callee, param)?, args.clone()))

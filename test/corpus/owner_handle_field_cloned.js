@@ -45,7 +45,8 @@ function render(name) {
   const onReady = {
     value: $dropping(
       () => {
-        const request = cell.value.value != null ? $upgrade(cell.value.value) : undefined;
+        const x = cell.value.value;
+        const request = x != null ? $upgrade(x) : undefined;
         let value$0$live = true;
         if (request != null) {
           value$0$live = false;

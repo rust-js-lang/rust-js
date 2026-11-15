@@ -47,18 +47,15 @@ function main() {
   ps.sort((a, b) => $cmp(a$1(a), a$1(b)));
   console.log(`[${ps.map((item) => pDebug_fmt(item)).join(", ")}]`);
   const each = [2];
-  const result = [[1], [2]];
-  console.log(`${result.some((each$1) => $eq(each$1, each))}`);
+  console.log(`${[[1], [2]].some((each$1) => $eq(each$1, each))}`);
   let each$1 = 2;
-  const result$1 = [1, 2, 3];
-  const value$1 = $binarySearch(result$1, each$1);
+  const value$1 = $binarySearch([1, 2, 3], each$1);
   console.log(`${value$1.TAG === "Ok" ? `Ok(${value$1._0})` : `Err(${value$1._0})`}`);
   each$1 = [3];
   const value$2 = $position([[1], [3]], (p) => $eq(p, each$1));
   console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
   const item$2 = (p) => p[0];
-  const result$2 = [[1], [3]];
-  const binarySearchByKey = $binarySearchBy(result$2, (item) => $cmp(item$2(item), 3));
+  const binarySearchByKey = $binarySearchBy([[1], [3]], (item) => $cmp(item$2(item), 3));
   console.log(
     `${binarySearchByKey.TAG === "Ok" ? `Ok(${binarySearchByKey._0})` : `Err(${binarySearchByKey._0})`}`,
   );

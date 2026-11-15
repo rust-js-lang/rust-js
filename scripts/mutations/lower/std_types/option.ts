@@ -126,19 +126,6 @@ export const mutations: Mutation[] = [
     tests: ["test/jsx-children.test.ts", "-t", "filtered child, in place"],
   },
   {
-    name: "map-field-spilled",
-    breaks:
-      "`p.title.map(|t| ..)` reads `p.title` into a `const t` first, where a field of a plain value is read as it is",
-    file: "src/lower/std_types/option.rs",
-    find: "                            _ if self.plain_field(&option) => option,\n",
-    replace: "",
-    tests: [
-      "test/jsx-evaluation-order.test.ts",
-      "-t",
-      "field of what never changes in place",
-    ],
-  },
-  {
     name: "own-name-map-called",
     breaks:
       "an option mapped by a function giving each variant its own name, `section.map(Section::as_str)`, is a conditional of a call, not `section`",
@@ -561,5 +548,15 @@ export const mutations: Mutation[] = [
     find: "            && callee.helper_name() == Some(\"$someDefined\")\n",
     replace: "            && callee.helper_name() == Some(\"$someDefinedNot\")\n",
     tests: ["test/js-optional-call.test.ts", "-t", "upstream's"],
+  },
+  {
+    name: "optional-chain-of-no-key",
+    breaks:
+      "`it.peek().map(|d| d.0)` of a tuple is `const option = $peek(it); option?.[0]`, not `$peek(it)?.[0]`, an `Option`'s key held in a `const` (#1908)",
+    file: "src/lower/std_types/option.rs",
+    find: "        js::ExprKind::Index(of, key) if !key.mentions_var(param) => match &of.kind {\n",
+    replace: "        js::ExprKind::Index(of, key) if false && !key.mentions_var(param) => match &of.kind {\n",
+    tests: ["test/corpus.test.ts", "-t", "^enumerate_of_a_reversible_source.rs$"],
+    snapshots: true,
   },
 ];

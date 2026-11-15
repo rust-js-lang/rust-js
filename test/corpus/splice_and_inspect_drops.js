@@ -114,14 +114,14 @@ function main() {
     }
     it.return();
     console.log(`[${v.map((l) => l[0]).join(", ")}]`);
-    const option = [7];
-    if (option != null) {
+    const l = [7];
+    if (l != null) {
       function inspected(l) {
         console.log(`saw ${l[0]}`);
       }
-      inspected(option);
+      inspected(l);
     }
-    const o = option;
+    const o = l;
     function map$1(l) {
       const result = l[0];
       loudDrop_drop(l);

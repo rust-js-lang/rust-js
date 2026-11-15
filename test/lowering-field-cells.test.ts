@@ -81,7 +81,8 @@ pub fn detach(fiber: &Fiber) {
   expect(js).toContain("export let current;\n");
   expect(js).toContain("  current = fiber;\n");
   // Its guard the field itself, no drop of its own to hold it (#700).
-  expect(js).toContain("  return fiber.return != null ? fiber.return.tag : 0;\n");
+  // Of what an exported function is given, read once (#1908).
+  expect(js).toContain("  return fiber.return?.tag ?? 0;\n");
   expect(js).toContain("  fiber.return = null;\n");
   expect(js).not.toContain("$fieldCell(fiber");
   expect(js).not.toContain("$unborrow(times");

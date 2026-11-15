@@ -64,12 +64,10 @@ function overlaps(name, W, TDebug, TFromU8) {
       `${name} ${W} ${k} copy_within back [${a.map((item) => TDebug.fmt(item)).join(", ")}]`,
     );
     a = start(TFromU8);
-    const result = $view(a, 0, W);
-    $rotateLeft(result, k, "mid");
+    $rotateLeft($view(a, 0, W), k, "mid");
     console.log(`${name} ${W} ${k} rotate_left [${a.map((item) => TDebug.fmt(item)).join(", ")}]`);
     a = start(TFromU8);
-    const result$1 = $view(a, 0, W);
-    $rotateRight(result$1, k, "k");
+    $rotateRight($view(a, 0, W), k, "k");
     console.log(`${name} ${W} ${k} rotate_right [${a.map((item) => TDebug.fmt(item)).join(", ")}]`);
     a = start(TFromU8);
     $swap(a, 0, k);

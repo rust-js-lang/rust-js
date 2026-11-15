@@ -55,7 +55,8 @@ function outer(items, CExtendU32, CDefault, IIntoIterInPlace) {
 
 const Buf = {
   fill(buf, items) {
-    $extend(buf.v, $grownBy(buf.v, items, 4, false, undefined, true));
+    const result = buf.v;
+    $extend(result, $grownBy(result, items, 4, false, undefined, true));
   },
 };
 

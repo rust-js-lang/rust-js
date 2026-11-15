@@ -42,9 +42,10 @@ function main() {
     out.push(items[i]);
   }
   const holder = { items: [] };
+  const result = holder.items;
   const items$1 = $slice(out, 1, 3);
   for (let i = 0; i < items$1.length; i++) {
-    holder.items.push(items$1[i]);
+    result.push(items$1[i]);
   }
   console.log(`[${out.join(", ")}] [${holder.items.join(", ")}]`);
 

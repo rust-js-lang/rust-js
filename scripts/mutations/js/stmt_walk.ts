@@ -38,11 +38,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "optional-member-not-a-path",
-    breaks: "`value?.constructor` isn't one path, so `and_then` of it is `value?.constructor != null ? value?.constructor.name : undefined`, not `value?.constructor?.name`",
+    breaks: "`current?.constructor` isn't one path, so `and_then` of it, a module variable's, is `current?.constructor != null ? current?.constructor.name : undefined`, not `current?.constructor?.name`",
     file: "src/js/stmt_walk.rs",
     find: "        (ExprKind::OptionalMember(x, f), ExprKind::OptionalMember(y, g)) => f == g && same_path(x, y),\n",
     replace: "",
-    tests: ["test/lowering-options.test.ts", "-t", "React's typeName"],
+    tests: ["test/lowering-optional-chains.test.ts", "-t", "a property read of what may be None is an optional chain"],
   },
   {
     name: "nullish-equal-loose",

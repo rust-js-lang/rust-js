@@ -44,9 +44,10 @@ function steps() {
           return 0;
         }
         const borrow = $borrow(this$$1.value, true);
+        const x = borrow.value;
         let steps;
         try {
-          steps = $unwrap(borrow.value != null ? $upgrade(borrow.value) : undefined);
+          steps = $unwrap(x != null ? $upgrade(x) : undefined);
         } finally {
           $unborrow(borrow);
         }

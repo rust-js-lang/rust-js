@@ -460,6 +460,29 @@ impl Expr {
         self.reads_same() || matches!(&self.kind, ExprKind::Object(props, ..) if is_read_pair(props))
     }
 
+    /// Whether this reads the same however often it's read and no getter
+    /// can answer it: a variable, a constant, or a part of the program's
+    /// own item, a module's variable's cell, `current.value`, which JS made
+    /// as the program wrote it. Not a field of what JS may have made or
+    /// given, an exported function's parameter's `range.snap`, which a
+    /// getter may answer anew each time, where Rust reads it once (#1908,
+    /// Tu's decision, narrowing rd204's for what's read more than once
+    /// where it was written once, ADR 1022, amended).
+    pub fn reads_alike_twice(&self) -> bool {
+        if !self.reads_same() {
+            return false;
+        }
+        let mut root = self;
+        while let ExprKind::Member(of, _) | ExprKind::OptionalMember(of, _) = &root.kind {
+            root = of;
+        }
+        match (&self.kind, &root.kind) {
+            (ExprKind::Var(_) | ExprKind::Symbol(_), _) => true,
+            (ExprKind::Member(..) | ExprKind::OptionalMember(..), ExprKind::Var(_)) => root.facts.has(Known::Item),
+            _ => self.is_constant(),
+        }
+    }
+
     pub fn reads_same(&self) -> bool {
         // A read a getter may answer, which may give another value each time
         // (ADR 0672).

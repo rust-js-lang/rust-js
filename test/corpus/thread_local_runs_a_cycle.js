@@ -26,18 +26,13 @@ const SHOWN = $local(() => {
   return 3;
 });
 
-const mapped = $local(() => {
-  const option = 4;
-  return option != null ? Cycle.loud(option) : undefined;
-});
-
+const mapped = $local(() => (4 != null ? Cycle.loud(4) : undefined));
 const mappedTwice = $local(() => {
-  const n = 2;
   function map(n) {
     console.log(`mapped ${n}`);
     return Cycle.loud((n * 2) >>> 0);
   }
-  return n != null ? map(n) : undefined;
+  return 2 != null ? map(2) : undefined;
 });
 
 const CALLED = $local(() => Cycle.loud(5));

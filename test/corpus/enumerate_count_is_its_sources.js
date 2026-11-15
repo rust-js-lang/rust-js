@@ -49,17 +49,15 @@ function main() {
   const it = $held(
     iterator_peekable(Items.new(0), { next: itemsIterator_next }, itemsDrop_drop, dDrop_drop),
   );
-  let peek;
   try {
-    peek = $peek(it);
+    const value = $peek(it)?.[0];
+    console.log(`peeked ${value == null ? "None" : `Some(${value})`}`);
   } catch (error) {
     $cleanup(() => {
       it.return();
     }, error);
     throw error;
   }
-  const value = peek?.[0];
-  console.log(`peeked ${value == null ? "None" : `Some(${value})`}`);
   const iter = iterator_enumerate(
     it,
     { next: $next, fold: $foldOf },
@@ -87,17 +85,15 @@ function main() {
     const it = $held(
       iterator_peekable(Items.new(3), { next: itemsIterator_next }, itemsDrop_drop, dDrop_drop),
     );
-    let peek;
     try {
-      peek = $peek(it);
+      const value = $peek(it)?.[0];
+      console.log(`peeked ${value == null ? "None" : `Some(${value})`}`);
     } catch (error) {
       $cleanup(() => {
         it.return();
       }, error);
       throw error;
     }
-    const value = peek?.[0];
-    console.log(`peeked ${value == null ? "None" : `Some(${value})`}`);
     const iter = iterator_enumerate(
       it,
       { next: $next, fold: $foldOf },

@@ -684,5 +684,13 @@ export const mutations: Mutation[] = [
     replace: "                && adt.non_enum_variant().ctor_kind() == Some(CtorKind::Fn)\n                && bindings::unit_value(",
     tests: ["test/declarations-results.test.ts", "-t", "always undefined"],
   },
+  {
+    name: "given-fields-not-read-once",
+    breaks:
+      "a struct an exported function is given counts as plain Rust data, `r.snap.map_or(0.0, |s| s.threshold)` read twice, `r.snap != null ? r.snap.threshold : 0` (#1908)",
+    file: "src/lower/representation.rs",
+    find: "            || matches!(ty.kind(), ty::Adt(adt, _) if self.krate.cell_borrows.pointers().js_may_give(adt.did()))\n",
+    replace: "",
+    tests: ["test/getter-reads.test.ts", "-t", "js_given_options"],
+  },
 ];
-

@@ -46,7 +46,6 @@ function same(x) {
 function scaledOrLast() {
   if (same(1) <= same(0) || Math.abs(same(3)) === Infinity) {
     const factor = same(false) ? same(0) : same(65534);
-    const e = undefined;
   } else {
     const end = same(4);
     for (let i = 0; i < end; i++) {}

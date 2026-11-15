@@ -64,7 +64,8 @@ function render(name) {
         if (set.TAG === "Err") {
           $weakDrop(set._0);
         }
-        const request = cell.value.value != null ? $upgrade(cell.value.value) : undefined;
+        const x = cell.value.value;
+        const request = x != null ? $upgrade(x) : undefined;
         let value$1$0$live = true;
         if (request != null) {
           value$1$0$live = false;

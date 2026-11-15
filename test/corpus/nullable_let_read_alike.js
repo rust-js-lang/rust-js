@@ -85,7 +85,8 @@ export function updateMatched(state, gesture) {
 export function updateCleared(state, fiber, gesture) {
   let previous;
   if (gesture) {
-    previous = state.clones != null ? measured(state.clones) : null;
+    const clones = state.clones;
+    previous = clones != null ? measured(clones) : null;
   } else {
     previous = fiber.memoized?.slice() ?? null;
     fiber.memoized = undefined;
@@ -100,7 +101,8 @@ function measureCleared(previous) {
 export function updateShown(state, gesture) {
   let previous;
   if (gesture) {
-    previous = state.clones != null ? measured(state.clones) : undefined;
+    const clones = state.clones;
+    previous = clones != null ? measured(clones) : undefined;
   } else {
     previous = previousOf(state, gesture);
   }
@@ -110,7 +112,8 @@ export function updateShown(state, gesture) {
 export function updateReturned(state, gesture) {
   let previous;
   if (gesture) {
-    previous = state.clones != null ? measured(state.clones) : undefined;
+    const clones = state.clones;
+    previous = clones != null ? measured(clones) : undefined;
   } else {
     previous = previousOf(state, gesture);
   }
@@ -120,7 +123,8 @@ export function updateReturned(state, gesture) {
 export function updateStored(state, gesture) {
   let previous;
   if (gesture) {
-    previous = state.clones != null ? measured(state.clones) : undefined;
+    const clones = state.clones;
+    previous = clones != null ? measured(clones) : undefined;
   } else {
     previous = previousOf(state, gesture);
   }
@@ -131,7 +135,8 @@ export function updateStored(state, gesture) {
 export function updateCaptured(state, gesture) {
   let previous;
   if (gesture) {
-    previous = state.clones != null ? measured(state.clones) : undefined;
+    const clones = state.clones;
+    previous = clones != null ? measured(clones) : undefined;
   } else {
     previous = previousOf(state, gesture);
   }
@@ -143,7 +148,8 @@ export function updateCaptured(state, gesture) {
 export function updateLent(state, gesture, clear) {
   let previous;
   if (gesture) {
-    previous = state.clones != null ? measured(state.clones) : undefined;
+    const clones = state.clones;
+    previous = clones != null ? measured(clones) : undefined;
   } else {
     previous = previousOf(state, gesture);
   }

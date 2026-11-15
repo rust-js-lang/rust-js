@@ -50,8 +50,7 @@ function main() {
           }
           const value$1 = l != null ? map(l) : undefined;
           console.log(`again ${value$1 == null ? "None" : `Some(${value$1})`}`);
-          const l$1 = o;
-          const value$2 = l$1?.[0];
+          const value$2 = o?.[0];
           console.log(`got ${value$2 == null ? "None" : `Some(${value$2})`}`);
           const lazy = {};
           try {

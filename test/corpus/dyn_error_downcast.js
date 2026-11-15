@@ -98,8 +98,7 @@ export function wrappedError(EDebug) {
 }
 
 function code(e) {
-  const downcastRef = e.impl.typeId?.() === "core::io::error::Error" ? e.value : undefined;
-  return downcastRef?.code;
+  return (e.impl.typeId?.() === "core::io::error::Error" ? e.value : undefined)?.code;
 }
 
 function describe(e) {

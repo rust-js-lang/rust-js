@@ -53,7 +53,7 @@ function before(a, b) {
 function main() {
   const kept = inRange({ t: 5n, zone: [1] });
   console.log(
-    `${kept == null ? "None" : `Some(${atDebug_fmt(kept, fixedDebug)})`} ${(kept != null ? kept.zone[0] : undefined) == null ? "None" : `Some(${kept != null ? kept.zone[0] : undefined})`}`,
+    `${kept == null ? "None" : `Some(${atDebug_fmt(kept, fixedDebug)})`} ${kept?.zone[0] == null ? "None" : `Some(${kept?.zone[0]})`}`,
   );
   const value = inRange({ t: -5n, zone: [2] });
   console.log(`${value == null ? "None" : `Some(${atDebug_fmt(value, fixedDebug)})`}`);

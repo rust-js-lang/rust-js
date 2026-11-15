@@ -250,7 +250,8 @@ pub fn chained(nodes: &[Node]) -> u32 {
 `);
   expect(js).toContain(`  for (let i = 0; i < routes.length; i++) {
     const route = routes[i];
-    if (route.path != null && route.path.startsWith("http")) {
+    const p = route.path;
+    if (p != null && p.startsWith("http")) {
       continue;
     }
     if (route.title != null && route.routes != null && route.routes.length !== 0) {

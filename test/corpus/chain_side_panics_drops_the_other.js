@@ -29,7 +29,8 @@ function ownIterator_next(own) {
 }
 function counterIterator_next(counter) {
   counter[0] = (counter[0] + 1) >>> 0;
-  return counter[0] != null && counter[0] < 3 ? counter[0] : undefined;
+  const n = counter[0];
+  return n != null && n < 3 ? n : undefined;
 }
 function plainIterator_next(plain) {
   plain[0] = (plain[0] + 1) >>> 0;

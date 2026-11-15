@@ -39,12 +39,11 @@ const PRINTED = $local(() => {
 });
 
 const mapped = $local(() => {
-  const n = 2;
   function map(n) {
     console.log(`mapped ${n}`);
     return (n * 2) >>> 0;
   }
-  return n != null ? map(n) : undefined;
+  return 2 != null ? map(2) : undefined;
 });
 
 // Reads `PRINTED`, made before it.

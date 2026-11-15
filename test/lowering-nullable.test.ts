@@ -1083,8 +1083,8 @@ pub fn info(owner: Option<&js::Unknown>) -> String {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("  name = info.source != null ? nameOf(info.source) : null;");
-  expect(js).toContain("  name = (info.source != null ? maybe(info.source) : undefined) ?? null;");
+  expect(js).toContain("  const option = info.source;\n  name = option != null ? nameOf(option) : null;");
+  expect(js).toContain("  name = (option != null ? maybe(option) : undefined) ?? null;");
   expect(js).toContain("  const ownerName = owner ? nameOfOwner(owner) : null;\n");
   expect(js).not.toContain(": undefined;\n");
   const lib = await import(join(dir, "lib.js"));

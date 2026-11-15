@@ -39,7 +39,7 @@ test("js::downcast is the value where it's the class's instance, else None", asy
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("return element instanceof HTMLButtonElement ? element : undefined;");
   // What it tests is read once, held where it runs code.
-  expect(js).toContain("  const value = pick(elements);\n  const option = value instanceof HTMLButtonElement ? value : undefined;\n");
+  expect(js).toContain("  const value = pick(elements);\n  const button = value instanceof HTMLButtonElement ? value : undefined;\n");
   // Rust's answers, of classes as a page has them.
   const host = globalThis as Record<string, unknown>;
   class Element {}

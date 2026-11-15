@@ -53,8 +53,7 @@ function main() {
   console.log(`[${m.join(", ")}]`);
   const value$2 = $nthBack($iter($chunks(v, 2)), 1);
   console.log(`${value$2 == null ? "None" : `Some([${value$2.join(", ")}])`}`);
-  const result = [];
-  const e = $chunks(result, 2);
+  const e = $chunks([], 2);
   console.log(`[${e.map((item) => `[${item.join(", ")}]`).join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

@@ -55,17 +55,15 @@ export function peeked() {
       loudDrop_drop,
     ),
   );
-  let peek;
   try {
-    peek = $peek(it);
+    const value = $peek(it)?.[0];
+    console.log(`peeked ${value == null ? "None" : `Some(${value})`}`);
   } catch (error) {
     $cleanup(() => {
       it.return();
     }, error);
     throw error;
   }
-  const value = peek?.[0];
-  console.log(`peeked ${value == null ? "None" : `Some(${value})`}`);
   return it;
 }
 

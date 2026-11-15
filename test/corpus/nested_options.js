@@ -90,10 +90,9 @@ function main() {
   const value$6 = $eq(e, f);
   console.log(`${entryDebug_fmt(e)} ${entryDebug_fmt(f)} ${value$6}`);
   function value() {}
-  const option = 1;
   function map() {}
   console.log(
-    `${(table.length > 1 ? $some(value()) : undefined) == null ? "None" : "Some(())"} ${((value) => (value == null ? "None" : "Some(())"))(option != null ? $some(map(option)) : undefined)} ${((value) => (value == null ? "None" : "Some(())"))({ $someNone: 0 })}`,
+    `${(table.length > 1 ? $some(value()) : undefined) == null ? "None" : "Some(())"} ${((value) => (value == null ? "None" : "Some(())"))(1 != null ? $some(map(1)) : undefined)} ${((value) => (value == null ? "None" : "Some(())"))({ $someNone: 0 })}`,
   );
   const grid = [1, 2];
   const kept = grid == null || grid.$someNone !== undefined ? grid : grid.slice();

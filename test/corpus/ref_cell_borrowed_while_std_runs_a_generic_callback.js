@@ -8,9 +8,8 @@ export function entry() {
 
 function add(log, f) {
   const guard = $borrowMut(log, true);
-  const option = 1;
   try {
-    const free = (option != null ? f(option) : undefined) ?? false;
+    const free = (1 != null ? f(1) : undefined) ?? false;
     guard.push(free ? 1 : 0);
   } finally {
     $unborrow(guard);

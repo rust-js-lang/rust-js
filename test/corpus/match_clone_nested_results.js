@@ -26,7 +26,8 @@ function exprDebug_fmt(expr) {
 function parsePrimary(toks) {
   let i = 0;
   function bump(i) {
-    const result = toks[i.value] != null ? { TAG: "Ok", _0: toks[i.value] } : { TAG: "Err" };
+    const option = toks[i.value];
+    const result = option != null ? { TAG: "Ok", _0: option } : { TAG: "Err" };
     if (result.TAG === "Err") {
       return result;
     }

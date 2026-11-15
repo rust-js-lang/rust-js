@@ -72,8 +72,7 @@ function main() {
     ),
   );
   try {
-    const peek = $peek(p);
-    console.log(`${peek?.[0] ?? 0}`);
+    console.log(`${$peek(p)?.[0] ?? 0}`);
     const next = $next(p);
     function map(d) {
       const result = d[0];
