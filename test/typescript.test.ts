@@ -205,13 +205,27 @@ test("print writes a conditional type, and an object alias's members' docs", asy
           name: "EventOf",
           exported: true,
           declare: false,
-          typeParameters: [{ name: "Reason", constraint: { kind: "keyword", keyword: "string" } }],
+          typeParameters: [{ name: "Reason", constraint: { kind: "keyword", keyword: "string" }, default: { kind: "keyword", keyword: "string" } }],
           type: {
             kind: "conditional",
             check: reference("Reason"),
             extends: { kind: "keyof", type: reference("Vocabulary") },
             whenTrue: { kind: "indexed", object: reference("Vocabulary"), index: reference("Reason") },
             whenFalse: reference("Event"),
+          },
+        },
+        {
+          kind: "type",
+          name: "Details",
+          exported: true,
+          declare: false,
+          typeParameters: [{ name: "R" }],
+          type: {
+            kind: "conditional",
+            check: reference("R"),
+            extends: { kind: "keyword", keyword: "unknown" },
+            whenTrue: { kind: "object", members: [{ kind: "property", name: "reason", optional: false, readonly: false, type: reference("R"), docs: "/** Why. */" }] },
+            whenFalse: { kind: "keyword", keyword: "never" },
           },
         },
       ],
@@ -221,7 +235,12 @@ test("print writes a conditional type, and an object alias's members' docs", asy
     "escape-key": KeyboardEvent;
 };
 
-export type EventOf<Reason extends string> = Reason extends keyof Vocabulary ? Vocabulary[Reason] : Event;
+export type EventOf<Reason extends string = string> = Reason extends keyof Vocabulary ? Vocabulary[Reason] : Event;
+
+export type Details<R> = R extends unknown ? {
+    /** Why. */
+    reason: R;
+} : never;
 `);
   } finally {
     await ts.close();

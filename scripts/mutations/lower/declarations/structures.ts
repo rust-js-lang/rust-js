@@ -7,6 +7,14 @@ const tests = ["test/declarations.test.ts"];
 
 export const mutations: Mutation[] = [
   {
+    name: "distributive-declared-as-interface",
+    breaks: "a `#[rust_js::distributive]` struct is one interface of its reason, so checking `reason` doesn't narrow `event`, where upstream's `ChangeDetails` is one member per reason (ADR 1164)",
+    file: "src/lower/declarations/structures.rs",
+    find: "        if is_distributive(self.tcx, def_id) {\n",
+    replace: "        if false && is_distributive(self.tcx, def_id) {\n",
+    tests: ["test/declarations-type-maps.test.ts", "-t", "its keys and its lookup"],
+  },
+  {
     name: "untagged-records-declared-extended",
     breaks: "a struct that flattens an untagged enum of records extends it, which an interface can't, not `{ key: string } & CompositionInput` (#1818)",
     file: "src/lower/declarations/structures.rs",

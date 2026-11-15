@@ -231,12 +231,47 @@ impl<'tcx> Declarations<'_, 'tcx> {
                 "type": { "kind": "intersection", "types": [{ "kind": "object", "members": members }, flattened] },
             }));
         }
+        let generics = self.generics(def_id);
+        // Of each of a union's members, `#[rust_js::distributive]`: `R extends
+        // unknown ? { .. } : never`, so checking `reason` narrows `event`, as
+        // upstream's `ChangeDetails<Reason>` is (ADR 1164).
+        if is_distributive(self.tcx, def_id) {
+            let [parameter] = &generics[..] else {
+                self.tcx.dcx().span_err(
+                    self.tcx.def_span(def_id),
+                    "rust-js: a `#[rust_js::distributive]` struct has one type parameter, the union its declaration is of each member of",
+                );
+                return None;
+            };
+            if !extends.is_empty() {
+                self.tcx.dcx().span_err(
+                    self.tcx.def_span(def_id),
+                    "rust-js: a `#[rust_js::distributive]` struct flattens no struct, which its declaration would extend",
+                );
+                return None;
+            }
+            let check = json!({ "kind": "reference", "name": parameter["name"], "args": [] });
+            return Some(json!({
+                "kind": "type",
+                "name": super::type_name(self.tcx, def_id),
+                "exported": true,
+                "declare": false,
+                "typeParameters": generics,
+                "type": {
+                    "kind": "conditional",
+                    "check": check,
+                    "extends": keyword("unknown"),
+                    "whenTrue": { "kind": "object", "members": members },
+                    "whenFalse": keyword("never"),
+                },
+            }));
+        }
         Some(json!({
             "kind": "interface",
             "name": super::type_name(self.tcx, def_id),
             "exported": true,
             "declare": false,
-            "typeParameters": self.generics(def_id),
+            "typeParameters": generics,
             "extends": extends,
             "members": members,
         }))
@@ -270,4 +305,14 @@ impl<'tcx> Declarations<'_, 'tcx> {
         );
         json!(self.tcx.def_path_str(item))
     }
+}
+
+/// Whether `def_id` is marked `#[rust_js::distributive]`, declared of each of
+/// its type parameter's union's members (ADR 1164).
+fn is_distributive(tcx: rustc_middle::ty::TyCtxt<'_>, def_id: DefId) -> bool {
+    let path = [
+        rustc_span::Symbol::intern("rust_js"),
+        rustc_span::Symbol::intern("distributive"),
+    ];
+    tcx.get_attrs_by_path(def_id, &path).next().is_some()
 }

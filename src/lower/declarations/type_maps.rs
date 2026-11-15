@@ -57,7 +57,32 @@ fn names(tcx: TyCtxt<'_>, trait_id: DefId) -> Option<Result<Names, Span>> {
     }
 }
 
+/// Whether `assoc` is the associated type of a `#[rust_js::type_map]`
+/// trait, whose projection is its lookup's, or its map's indexed by `Self`.
+pub(super) fn of_a_type_map(tcx: TyCtxt<'_>, assoc: DefId) -> bool {
+    tcx.opt_parent(assoc).is_some_and(|parent| {
+        tcx.def_kind(parent) == rustc_hir::def::DefKind::Trait && matches!(names(tcx, parent), Some(Ok(_)))
+    })
+}
+
 impl<'tcx> Declarations<'_, 'tcx> {
+    /// `<T as Reason>::Event` of a `#[rust_js::type_map]` trait: its lookup
+    /// of `T`, `EventOf<T>`, or without one its map's, `ReasonVocabulary[T]`,
+    /// so a generic struct's field of it says what a caller's reason gives.
+    pub(super) fn type_map_projection(&mut self, assoc: DefId, args: ty::GenericArgsRef<'tcx>) -> Value {
+        let names = match names(self.tcx, self.tcx.parent(assoc)) {
+            Some(Ok(names)) => names,
+            _ => unreachable!("`of_a_type_map` said it's one"),
+        };
+        let of = self.ts(args.type_at(0));
+        match names.lookup {
+            Some(lookup) => json!({ "kind": "reference", "name": lookup, "args": [of] }),
+            None => {
+                json!({ "kind": "indexed", "object": { "kind": "reference", "name": names.map, "args": [] }, "index": of })
+            }
+        }
+    }
+
     /// What `trait_id`'s `#[rust_js::type_map(..)]` declares: its map, and
     /// its keys and lookup where it names them; none of a trait without one.
     pub(super) fn type_map(&mut self, trait_id: DefId) -> Vec<Value> {

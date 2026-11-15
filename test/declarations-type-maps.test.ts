@@ -53,6 +53,7 @@ pub enum PressEvent {
     rust_js,
     rust_js::type_map(map = "ReasonVocabulary", keys = "ChangeReason", lookup = "EventOf")
 )]
+#[cfg_attr(rust_js, rust_js::types = "string")]
 pub trait Reason: Copy {
     type Event;
 }
@@ -73,6 +74,31 @@ impl Reason for &'static str {
 pub fn pressed() -> TriggerPress {
     TriggerPress
 }
+
+/// How the user caused it.
+#[derive(Clone, Copy)]
+pub enum ChangeSource {
+    #[cfg_attr(rust_js, rust_js::name = "mouse")]
+    Mouse,
+    #[cfg_attr(rust_js, rust_js::name = "keyboard")]
+    Keyboard,
+}
+
+/// What a commit's callback receives, one member per reason.
+#[cfg_attr(rust_js, rust_js::distributive)]
+pub struct CommitDetails<R: Reason = &'static str> {
+    /// Why it changed.
+    pub reason: R,
+    /// The DOM event behind it.
+    pub event: Option<R::Event>,
+    /// How the user caused it.
+    pub source: ChangeSource,
+}
+
+/// A press's commit.
+pub fn committed(reason: TriggerPress) -> CommitDetails<TriggerPress> {
+    CommitDetails { reason, event: None, source: ChangeSource::Mouse }
+}
 `;
 
 test("a type map's impls are one object type, its keys and its lookup", () => {
@@ -91,12 +117,30 @@ export type ReasonVocabulary = {
   expect(declarations).toContain("export type ChangeReason = keyof ReasonVocabulary;");
   expect(declarations).toContain("export type EventOf<Reason extends string> = Reason extends ChangeReason ? ReasonVocabulary[Reason] : Event;");
   expect(declarations).toContain("export function pressed(): TriggerPress;");
+  // Of each reason, its event its own, the default any string (ADR 1164, C).
+  expect(declarations).toContain(`/** What a commit's callback receives, one member per reason. */
+export type CommitDetails<R extends string = string> = R extends unknown ? {
+    /** Why it changed. */
+    reason: R;
+    /** The DOM event behind it. */
+    event?: EventOf<R> | undefined;
+    /** How the user caused it. */
+    source: ChangeSource;
+} : never;`);
   expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain('export function pressed() {\n  return "trigger-press";\n}');
-  writeFileSync(join(dir, "consumer.ts"), `import { pressed, type ChangeReason, type EventOf, type ReasonVocabulary } from "./lib.js";
+  writeFileSync(join(dir, "consumer.ts"), `import { committed, pressed, type ChangeReason, type CommitDetails, type EventOf, type ReasonVocabulary } from "./lib.js";
+export function narrowed(details: CommitDetails<ChangeReason>): string {
+  if (details.reason === "escape-key") return details.event?.key ?? "";
+  return details.event instanceof MouseEvent ? \`\${details.event.clientX}\` : "";
+}
+export const any: CommitDetails = { reason: "anything", event: new Event("other"), source: "mouse" };
+export const press: CommitDetails<"trigger-press"> = committed("trigger-press");
+// @ts-expect-error An escape's event is a key's, never a mouse's.
+export const wrongEvent: CommitDetails<"escape-key"> = { reason: "escape-key", event: new MouseEvent("click"), source: "mouse" };
 export const reason: "trigger-press" = pressed();
 export const reasons: ChangeReason[] = ["trigger-press", "escape-key"];
 export const key: EventOf<"escape-key"> = new KeyboardEvent("keydown");
-export const press: EventOf<"trigger-press"> = new MouseEvent("click");
+export const pressEvent: EventOf<"trigger-press"> = new MouseEvent("click");
 export const other: EventOf<"anything"> = new Event("other");
 export const vocabulary: ReasonVocabulary["escape-key"] = new KeyboardEvent("keydown");
 // @ts-expect-error No such reason.

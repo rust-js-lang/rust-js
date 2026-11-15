@@ -2541,7 +2541,13 @@ one object type, in the order they're written, each key with its struct's
 doc comment; its `keys`, `keyof` that type; and its `lookup`, a key's
 value, of any other string the value of its impl for `&'static str`. So
 a vocabulary of reasons and the event each reports has one source, its
-impls, as upstream's `ReasonVocabulary` and `EventOf` are one
+impls, as upstream's `ReasonVocabulary` and `EventOf` are one. The
+trait's associated type of a reason `R` is its lookup's, `EventOf<R>`. A
+generic struct marked `#[cfg_attr(rust_js, rust_js::distributive)]`, of one
+type parameter, is declared of each of a union's members, `R extends
+unknown ? { .. } : never`, so a TypeScript caller's check of its `reason`
+narrows its `event`; a type parameter's default, `R = &'static str`, is
+TypeScript's, `= string`
 ([ADR 1164](../../decisions/1164-create-details-forms.md)):
 
 ```rust
@@ -2562,6 +2568,7 @@ pub struct EscapeKey;
     rust_js,
     rust_js::type_map(map = "ReasonVocabulary", keys = "ChangeReason", lookup = "EventOf")
 )]
+#[cfg_attr(rust_js, rust_js::types = "string")]
 pub trait Reason: Copy {
     type Event;
 }
@@ -2580,6 +2587,15 @@ impl Reason for &'static str {
 
 pub fn escape() -> EscapeKey {
     EscapeKey
+}
+
+/// What a commit's callback receives, one member per reason.
+#[cfg_attr(rust_js, rust_js::distributive)]
+pub struct CommitDetails<R: Reason = &'static str> {
+    /// Why it changed.
+    pub reason: R,
+    /// The DOM event behind it.
+    pub event: Option<R::Event>,
 }
 ```
 
@@ -2603,6 +2619,14 @@ export type ChangeReason = keyof ReasonVocabulary;
 export type EventOf<Reason extends string> = Reason extends ChangeReason ? ReasonVocabulary[Reason] : Event;
 
 export function escape(): EscapeKey;
+
+/** What a commit's callback receives, one member per reason. */
+export type CommitDetails<R extends string = string> = R extends unknown ? {
+    /** Why it changed. */
+    reason: R;
+    /** The DOM event behind it. */
+    event?: EventOf<R> | undefined;
+} : never;
 ```
 
 ## Calling Rust from a JS file in your app

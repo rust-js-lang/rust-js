@@ -3,10 +3,26 @@ import type { Mutation } from "../../mutations";
 const tests = ["test/typescript.test.ts", "-t", "construct signatures retain"];
 export const mutations: Mutation[] = [
   {
+    name: "type-parameter-default-unprinted",
+    breaks: "a type parameter's default isn't printed, so `CommitDetails` without its reason is an error, where upstream's `Reason extends string = string` takes any (ADR 1164)",
+    file: "typescript/index.js",
+    find: "          p.default ? typeNode(p.default) : undefined,\n",
+    replace: "          undefined,\n",
+    tests: ["test/typescript.test.ts", "-t", "a conditional type, and an object alias"],
+  },
+  {
+    name: "distributive-members-undocumented",
+    breaks: "a distributive alias's members print no doc comment, where upstream's `ChangeDetails` carries each for a caller's editor (ADR 1164)",
+    file: "typescript/index.js",
+    find: 'const object = aliased?.kind === "conditional" ? aliased.whenTrue : aliased;',
+    replace: "const object = aliased;",
+    tests: ["test/typescript.test.ts", "-t", "a conditional type, and an object alias"],
+  },
+  {
     name: "object-alias-members-undocumented",
     breaks: "a type alias's of an object prints no member's doc comment, where an interface's does: a type map's keys lose theirs (ADR 1164)",
     file: "typescript/index.js",
-    find: 'const objectAlias = declaration.kind === "type" && declaration.type.kind === "object";',
+    find: 'const objectAlias = object?.kind === "object";',
     replace: "const objectAlias = false;",
     tests: ["test/typescript.test.ts", "-t", "a conditional type, and an object alias"],
   },

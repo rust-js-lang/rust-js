@@ -48,7 +48,7 @@ import { isIdentifierText } from "typescript/ast/scanner";
  *
  * @typedef {{ name: string, optional: boolean, rest: boolean, type: Type }} Param
  *
- * @typedef {{ name: string, constraint?: Type }} TypeParameter
+ * @typedef {{ name: string, constraint?: Type, default?: Type }} TypeParameter
  *
  * @typedef {{ kind: "keyword", keyword: string }
  *   | { kind: "literal", value: string | number | boolean }
@@ -192,12 +192,15 @@ export async function open(files = []) {
  */
 async function documented(declaration, text, printNode) {
   // A class's methods' too (ADR 0761), and a type alias's of an object,
-  // `type ReasonVocabulary = { .. }`'s keys (ADR 1164).
-  const objectAlias = declaration.kind === "type" && declaration.type.kind === "object";
+  // `type ReasonVocabulary = { .. }`'s keys, or of one a distributive
+  // conditional's, `R extends unknown ? { .. } : never` (ADR 1164).
+  const aliased = declaration.kind === "type" ? declaration.type : undefined;
+  const object = aliased?.kind === "conditional" ? aliased.whenTrue : aliased;
+  const objectAlias = object?.kind === "object";
   if (declaration.kind === "interface" || declaration.kind === "class" || objectAlias) {
     const printed = declaration.kind === "class" ? classMember : member;
     let at = text.indexOf("{");
-    for (const m of objectAlias ? declaration.type.members : declaration.members) {
+    for (const m of objectAlias ? object.members : declaration.members) {
       if (m.kind === "constructor" || m.kind === "index" || !m.docs) continue;
       const [first] = (await printNode(printed(m))).split("\n");
       const found = text.indexOf(first, at);
@@ -578,6 +581,9 @@ function typeParameterNodes(parameters) {
           undefined,
           id(p.name),
           p.constraint ? typeNode(p.constraint) : undefined,
+          undefined,
+          // Its default, `Reason extends string = string` (ADR 1164).
+          p.default ? typeNode(p.default) : undefined,
         ),
       )
     : undefined;

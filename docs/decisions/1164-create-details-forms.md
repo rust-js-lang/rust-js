@@ -61,6 +61,28 @@ export type EventOf<Reason extends string> = Reason extends ChangeReason ? Reaso
 - The printer gains a conditional type, and a type alias of an object
   prints its members' doc comments, as an interface's do.
 
+## C. A struct declared of each of a union's members
+
+**`#[cfg_attr(rust_js, rust_js::distributive)]` on a generic struct of one
+type parameter** declares it a distributive conditional type,
+`CommitDetails<R extends string = string> = R extends unknown ? { reason:
+R; event?: EventOf<R> | undefined; .. } : never`, so a TypeScript caller's
+check of `reason` narrows `event`, as upstream's `ChangeDetails` and
+`CommitDetails` are one member per reason. Of another number of type
+parameters, or flattening a struct its declaration would extend, it's
+refused.
+
+- **A type parameter's default is TypeScript's**: `R: Reason = &'static
+  str` is `R extends string = string`, so `CommitDetails` without its
+  reason takes any. Every struct's default is declared now, where it was
+  left out; the printer passes TypeScript's native factory its default in
+  the right place.
+- **A type map's associated type is its lookup**: `<R as Reason>::Event`
+  is `EventOf<R>`, or without a lookup `ReasonVocabulary[R]`, where it was
+  `any`, so the field's event is the reason's.
+- A distributive alias's members carry their doc comments, as an
+  interface's do.
+
 ## Consequences
 
 - test/declarations-type-maps.test.ts: the declarations, a strict
@@ -74,4 +96,12 @@ export type EventOf<Reason extends string> = Reason extends ChangeReason ? Reaso
   object-alias-members-undocumented, conditional-type-unprinted
   (`typescript/index.js`); transparent-tuple-struct-any and
   type-name-given-unread retargeted.
+- C: declarations-type-maps' `CommitDetails` (its declaration, a strict
+  caller whose `reason` narrows `event`, the default, a wrong event
+  refused); typescript.test's default and distributive alias; mutations
+  distributive-declared-as-interface (`structures.rs`),
+  struct-type-default-undeclared, type-map-projection-any
+  (`declarations.rs`), type-parameter-default-unprinted,
+  distributive-members-undocumented (`typescript/index.js`);
+  object-alias-members-undocumented retargeted.
 - Guide: interop/export-to-javascript.md, TypeScript declarations.

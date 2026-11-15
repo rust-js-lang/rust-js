@@ -518,18 +518,31 @@ impl<'tcx> Declarations<'_, 'tcx> {
             .filter(|param| matches!(param.kind, ty::GenericParamDefKind::Type { synthetic: false, .. }))
             .filter(|param| !erased.iter().any(|(index, _)| *index == param.index))
             .filter(|param| !callables.iter().any(|callable| callable.index == param.index))
-            .map(|param| match indexed.swap_remove(&param.index) {
-                // Of a key a binding trait's projection is indexed by,
-                // `Name extends keyof EventMapOf<Target>` (#1817), and of
-                // a bound that says what it is, `T extends Element`.
-                Some(mut keys) => {
-                    let constraint = match keys.len() {
-                        1 => keys.pop().expect("a key"),
-                        _ => json!({ "kind": "intersection", "types": keys }),
-                    };
-                    json!({ "name": param.name.as_str(), "constraint": constraint })
+            .map(|param| {
+                let mut declared = match indexed.swap_remove(&param.index) {
+                    // Of a key a binding trait's projection is indexed by,
+                    // `Name extends keyof EventMapOf<Target>` (#1817), and of
+                    // a bound that says what it is, `T extends Element`.
+                    Some(mut keys) => {
+                        let constraint = match keys.len() {
+                            1 => keys.pop().expect("a key"),
+                            _ => json!({ "kind": "intersection", "types": keys }),
+                        };
+                        json!({ "name": param.name.as_str(), "constraint": constraint })
+                    }
+                    None => json!({ "name": param.name.as_str() }),
+                };
+                // A struct's default, `R = &'static str`, TypeScript's
+                // `= string` (ADR 1164).
+                if let ty::GenericParamDefKind::Type { has_default: true, .. } = param.kind {
+                    let default = self
+                        .tcx
+                        .type_of(param.def_id)
+                        .instantiate_identity()
+                        .skip_normalization();
+                    declared["default"] = self.ts(default);
                 }
-                None => json!({ "name": param.name.as_str() }),
+                declared
             })
             .collect()
     }
@@ -946,6 +959,15 @@ impl<'tcx> Declarations<'_, 'tcx> {
             {
                 self.written(t, &declared, ty::List::empty())
             }
+            // A type map's associated type, of a reason `R`, its lookup's
+            // `EventOf<R>` (ADR 1164).
+            ty::Alias(
+                _,
+                alias @ ty::AliasTy {
+                    kind: ty::Projection { def_id },
+                    ..
+                },
+            ) if type_maps::of_a_type_map(tcx, *def_id) => self.type_map_projection(*def_id, alias.args),
             // A binding trait's associated type that says what it is, of
             // the projection's `Self` and arguments: `<Target as
             // Listen<Name>>::Event`, `EventMapOf<Target>[Name]` (#1817).

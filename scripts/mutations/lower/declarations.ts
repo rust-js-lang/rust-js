@@ -5,6 +5,22 @@ const tests = ["test/declarations.test.ts"];
 
 export const mutations: Mutation[] = [
   {
+    name: "struct-type-default-undeclared",
+    breaks: "a struct's type parameter's default isn't declared, so a TypeScript caller must give `CommitDetails` its reason, where Rust's `CommitDetails` is `CommitDetails<&'static str>` (ADR 1164)",
+    file: "src/lower/declarations.rs",
+    find: "                if let ty::GenericParamDefKind::Type { has_default: true, .. } = param.kind {\n",
+    replace: "                if false && let ty::GenericParamDefKind::Type { has_default: true, .. } = param.kind {\n",
+    tests: ["test/declarations-type-maps.test.ts", "-t", "its keys and its lookup"],
+  },
+  {
+    name: "type-map-projection-any",
+    breaks: "a type map's associated type of a reason, `R::Event`, is `any`, where it's the lookup's `EventOf<R>` (ADR 1164)",
+    file: "src/lower/declarations.rs",
+    find: "            ) if type_maps::of_a_type_map(tcx, *def_id) => self.type_map_projection(*def_id, alias.args),\n",
+    replace: "            ) if false && type_maps::of_a_type_map(tcx, *def_id) => self.type_map_projection(*def_id, alias.args),\n",
+    tests: ["test/declarations-type-maps.test.ts", "-t", "its keys and its lookup"],
+  },
+  {
     name: "trait-type-map-undeclared",
     breaks: "a `#[rust_js::type_map]` trait declares nothing, so `ReasonVocabulary`, `ChangeReason` and `EventOf` are no types (ADR 1164)",
     file: "src/lower/declarations.rs",
