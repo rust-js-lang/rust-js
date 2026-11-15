@@ -1,6 +1,6 @@
 # shape	count	per 10,000 lines
 files	2603
-lines	344205
+lines	344207
 temporaries	0	0
 labeled blocks	0	0
 while (true)	224	6.5
@@ -2592,7 +2592,7 @@ test/snapshots/playground/projects.js	121	0	0	0	0	0	0	0	0
 test/snapshots/playground/styles.js	13	0	0	0	0	0	0	0	0
 test/snapshots/playground/tree.js	60	0	0	0	0	0	0	2	0
 test/snapshots/ports/scheduler/SchedulerFeatureFlags.js	18	0	0	0	0	0	0	0	0
-test/snapshots/ports/scheduler/SchedulerMinHeap.js	80	0	0	0	0	0	2	0	0
+test/snapshots/ports/scheduler/SchedulerMinHeap.js	82	0	0	0	0	0	2	0	0
 test/snapshots/ports/scheduler/SchedulerPriorities.js	16	0	0	0	0	0	0	0	0
 test/snapshots/ports/scheduler/forks/Scheduler.js	492	0	0	1	0	0	3	9	1
 test/snapshots/queues/queues.js	293	0	0	0	0	2	1	5	7
