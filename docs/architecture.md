@@ -265,6 +265,10 @@ and `scripts/tidy-fired.ts`, over the corpus, which passes changed a body;
 `--label-census <file>` (`mir/census.rs`) and `scripts/label-census.ts`,
 each compiler-made label a body keeps, by the MIR shape that left it
 ([ADR 0659](decisions/0659-tidy-is-a-list-of-stages-with-contracts.md)).
+`mir/tidy/stability.rs` owns whether reading an expression across a call
+keeps its value and effects: `plain_field`, `read_past_calls`, and the
+recursive fresh-literal predicate. Movement and binding passes consume those
+answers rather than repeating the stability rule.
 `mir/tidy/moves.rs` decides where a temporary's value may be read in its
 place, and why, apart from the rewrite that moves it ([ADR 0689](decisions/0689-a-moves-decision-is-apart-from-the-move.md)).
 Its `held_receivers` calls a field's function through its object where the

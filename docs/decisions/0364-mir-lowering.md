@@ -1677,3 +1677,12 @@ leftover is written and the run dropped after. `coalesce_of_a_library_as_itertoo
 holds itertools' `next` as it writes it, its dep of the edition its crate
 is, `//@ edition: 2018`, a directive the pairs read as the corpus's cases
 do. Mutations `cleanup-reads-uncounted` and `cleanup-temporaries-one-each`.
+
+
+## Amendment: one expression-stability module before extension (#1867)
+
+The parent tidy module reached its file-size boundary. Its existing plain-field,
+read-across-call and recursive literal-stability predicates move unchanged to
+mir/tidy/stability.rs, with their existing mutations. No rule or output changes
+in this preparatory split; callers consume the same answers through the parent
+module. The extension and its new proofs follow separately.
