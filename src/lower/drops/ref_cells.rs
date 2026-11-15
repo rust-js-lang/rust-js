@@ -420,6 +420,41 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// it holds runs its own, borrow nothing that may be it. So none can
     /// find it borrowed, and none is checked. `of_key`, a thread-local's own
     /// cell, by its key, `KEY.replace(v)`'s (ADR 0960, amended).
+    /// Whether a call of `callee`, given `args`, writes a `RefCell` no
+    /// borrow of which is checked (`quiet_ref_cell`), so it can't find it
+    /// borrowed and never panics: a thread-local `RefCell`'s `set`, of a
+    /// value whose old one drops nothing, `replace` or `take`, and a
+    /// `RefCell`'s own `replace` or `take`, which give the old one back
+    /// (#1930). alien-signals' `ACTIVE_SUB.set(prev_sub.clone())` in a
+    /// guard's drop, `activeSub = prevSub`.
+    pub(in crate::lower) fn quiet_cell_write(&self, callee: DefId, args: ty::GenericArgsRef<'tcx>) -> bool {
+        let tcx = self.tcx;
+        let name = tcx.item_name(callee);
+        let Some(imp) = tcx.inherent_impl_of_assoc(callee) else {
+            return false;
+        };
+        let own = tcx.type_of(imp).instantiate(tcx, args).skip_normalization();
+        let (cell, of_key) = match own.kind() {
+            ty::Adt(_, local) if self.is_std_type(own, StdItem::LocalKey) => match local.types().next() {
+                Some(cell) => (cell, true),
+                None => return false,
+            },
+            _ => (own, false),
+        };
+        if !self.is_std_type(cell, StdItem::RefCell) || !self.quiet_ref_cell(cell, of_key) {
+            return false;
+        }
+        let ty::Adt(_, held) = cell.kind() else { return false };
+        match name.as_str() {
+            "set" if of_key => held
+                .types()
+                .next()
+                .is_some_and(|value| self.drops(value) == super::Drops::Nothing),
+            "replace" | "take" => true,
+            _ => false,
+        }
+    }
+
     pub(in crate::lower) fn quiet_ref_cell(&self, ty: Ty<'tcx>, of_key: bool) -> bool {
         let recognition = self.recognition();
         self.is_std_type(ty, StdItem::RefCell)

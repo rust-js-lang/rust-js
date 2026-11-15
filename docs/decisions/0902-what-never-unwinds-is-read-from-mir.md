@@ -326,3 +326,45 @@ identity, generic callbacks, normal cleanup throws, and a child process that
 must terminate on a double panic. The native corpus also covers try_with, lazy
 initialization and fallible restoration. Mutations guard callback proof, eager
 selection including constants, lazy exclusion, generic proof and callee identity.
+
+## Amendment: a guard's write of a `RefCell` no borrow of which is checked (#1930)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none. The JS of such a
+write checks no borrow, so it can't throw where native Rust's would find
+the cell borrowed, and no borrow of it can meet another (ADR 0863).
+
+alien-signals' scope guards restore a thread-local `RefCell`,
+`Finally(|| ACTIVE_SUB.set(prev_sub.clone()))`, upstream's `try { .. }
+finally { activeSub = prevSub; }`. Since #847 (579539d03) a guard whose
+drop may panic drops in a `catch` and a `$cleanup`, and this one was
+taken to: a `RefCell`'s `set` borrows it, and an `Rc`'s clone wasn't
+known.
+
+- **A call `quiet_cell_write` says writes a `RefCell` no borrow of which
+  is checked never panics** (`drops/ref_cells.rs`, asked by `Judged` as
+  `drop_never_unwinds` judges a generic `Drop` at each use): a
+  thread-local `RefCell`'s `set` of a value whose old one drops nothing,
+  and its `replace` or `take`, and a `RefCell`'s own `replace` or `take`,
+  of one `quiet_ref_cell` says goes unchecked. One whose borrows are
+  checked, `$borrowMut`, may find it borrowed, and keeps its `$cleanup`.
+- **An `Rc`'s or an `Arc`'s clone, or an `Option`'s of one, never
+  unwinds** (`std_never_unwinds`): the same object, its count where one's
+  kept one more, which native Rust aborts past.
+
+`test/lowering-guard-restores.test.ts` holds the form and its run;
+`test/corpus/guard_restores_a_quiet_ref_cell.rs` the same guards against
+native Rust, a checked cell's and a destructor's old value keeping their
+`$cleanup`. Mutations `quiet-cell-write-unasked`, `rc-clone-may-unwind`
+(`lower/analysis/unwinding.ts`), `quiet-cell-write-of-a-checked-cell`
+and `quiet-cell-set-of-what-drops` (`lower/drops/ref_cells.ts`).
+`owner_handle_field_cloned.js` reads better: an `Rc`'s clone needs no
+`try`. React's port is unchanged; alien-signals' two restores of
+`ACTIVE_SUB` alone are each one `finally`.
+
+Not yet: a guard of a `Cell`'s or a thread-local `Cell`'s `get`, which
+counted never unwinding leaves its early returns to MIR's labelled
+blocks, `bb18: { .. break bb18; }`, a JS label, never accepted output;
+nor `*cell.borrow_mut() = f()`'s handle (#1930). And
+`std_call_never_unwinds`, std's MIR's answer for prepared.rs, is no
+oracle here: asked by these judges, 42 corpus cases failed, one dropping
+a `drop c` native Rust prints (`test/architecture-cleanups.test.ts`).

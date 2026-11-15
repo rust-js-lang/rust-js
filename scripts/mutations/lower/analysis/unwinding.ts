@@ -248,4 +248,20 @@ export const mutations: Mutation[] = [
     replace: "        if let Some(&known) = walk.known.get(&(id, args)).filter(|_| false) {\n",
     tests: ["test/type-depth.test.ts", "-t", "each judged once"],
   },
+  {
+    name: "quiet-cell-write-unasked",
+    breaks: "a guard's restore of a `RefCell` no borrow of which is checked, `ACTIVE.set(prev.clone())`, is taken to panic, so it drops in a `catch` and a `$cleanup`, not a `finally` (#1930)",
+    file: "src/lower/analysis/unwinding.rs",
+    find: "                || (self.quiet_cell)(callee, callee_args)\n",
+    replace: "",
+    tests: ["test/lowering-guard-restores.test.ts"],
+  },
+  {
+    name: "rc-clone-may-unwind",
+    breaks: "an `Rc`'s clone, `prev.clone()` of a guard's restore, is taken to panic (#1930)",
+    file: "src/lower/analysis/unwinding.rs",
+    find: "                .is_some_and(|own| shared_pointer(tcx, recognition, own)) =>\n",
+    replace: "                .is_some_and(|own| shared_pointer(tcx, recognition, own) && false) =>\n",
+    tests: ["test/lowering-guard-restores.test.ts"],
+  },
 ];

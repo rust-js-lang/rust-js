@@ -557,4 +557,22 @@ export const mutations: Mutation[] = [
     replace: "                _ = mir;\n",
     tests: ["test/crates.test.ts", "-t", "two crates: guard_held_while_a_library_type_parameters_value_drops"],
   },
+  {
+    name: "quiet-cell-write-of-a-checked-cell",
+    breaks: "a `RefCell` a borrow of which is checked is taken to be written unchecked, so its guard's `set`, which finds it borrowed, drops in a `finally` (#1930)",
+    file: "src/lower/drops/ref_cells.rs",
+    find: "        if !self.is_std_type(cell, StdItem::RefCell) || !self.quiet_ref_cell(cell, of_key) {\n",
+    replace: "        if !self.is_std_type(cell, StdItem::RefCell) {\n",
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^guard_restores_a_quiet_ref_cell.rs$"],
+  },
+  {
+    name: "quiet-cell-set-of-what-drops",
+    breaks: "a quiet `RefCell`'s `set` of a value whose old one has a destructor, which may panic, is taken never to panic (#1930)",
+    file: "src/lower/drops/ref_cells.rs",
+    find: "                .is_some_and(|value| self.drops(value) == super::Drops::Nothing),\n",
+    replace: "                .is_some(),\n",
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^guard_restores_a_quiet_ref_cell.rs$"],
+  },
 ];

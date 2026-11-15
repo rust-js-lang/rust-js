@@ -352,7 +352,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.krate.closures,
             ),
             (drop, args, self.typing_env),
-            (&|ty| self.drops(ty) != Drops::Nothing, &|ty| self.drop_may_panic(ty)),
+            (
+                &|ty| self.drops(ty) != Drops::Nothing,
+                &|ty| self.drop_may_panic(ty),
+                &|callee, args| self.quiet_cell_write(callee, args),
+            ),
             self.krate.eager_locals,
         );
         self.drop_state.never_unwinding.borrow_mut().insert((drop, args), never);

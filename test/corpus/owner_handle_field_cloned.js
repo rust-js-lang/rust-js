@@ -124,17 +124,7 @@ function render(name) {
 
 function main() {
   const request = render("a");
-  let onReady;
-  try {
-    onReady = Request.onReady(request.value);
-  } catch (error) {
-    $cleanup(() => {
-      $rcDrop(request, (value) => {
-        $rcDrop(value.onReady, $dispose);
-      });
-    }, error);
-    throw error;
-  }
+  const onReady = Request.onReady(request.value);
   try {
     onReady.value();
   } catch (error) {

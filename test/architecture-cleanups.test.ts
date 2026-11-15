@@ -72,3 +72,16 @@ test("a catch that runs a drop guards it where it's made, or is a body's that ti
   expect(unguarded("} catch (error) {\n  if (p) {\n    drop(p);\n  }\n  throw error;\n}\n")).toHaveLength(1);
   expect(unguarded("} catch (error) {\n  $cleanup(() => {\n    drop(p);\n  });\n  throw error;\n}\n")).toEqual([]);
 });
+
+// `std_call_never_unwinds` reads std's MIR for prepared.rs; it is no oracle
+// of whether the crate's code unwinds. Asked beside `std_never_unwinds` in
+// the unwinding judges, 42 corpus cases failed, never_unwinding_calls.rs
+// dropping a `drop c` native Rust prints (#1930). Only what it was written
+// for calls it.
+test("no unwinding judge asks std_call_never_unwinds", () => {
+  const uncommented = (path: string) => read(path).replace(/^\s*\/\/.*$/gm, "");
+  const callers = files("src")
+    .filter((file) => file.endsWith(".rs"))
+    .filter((file) => /(?<!fn )\bstd_call_never_unwinds\s*\(/.test(uncommented(file)));
+  expect(callers).toEqual(["src/lower/mir/prepared.rs"]);
+});

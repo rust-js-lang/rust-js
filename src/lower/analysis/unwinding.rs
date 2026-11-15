@@ -7,7 +7,7 @@
 use crate::collections::{IndexMap, IndexSet};
 use crate::lower::Body;
 use crate::lower::bindings::is_binding;
-use crate::lower::recognition::{Recognition, is_std_crate};
+use crate::lower::recognition::{Recognition, StdItem, is_std_crate};
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::DefKind;
 use rustc_middle::mir::{self, TerminatorKind};
@@ -582,7 +582,9 @@ pub(in crate::lower) fn std_quiet<'tcx>(
 /// on as one of no type parameters must, each call of a trait's method
 /// what it resolves to, a closure's `call_mut` the closure, which then
 /// never unwinds where `never` holds it; each `Drop` one that drops
-/// nothing, or one `may_panic` says can't panic. So the guide's `impl<F:
+/// nothing, or one `may_panic` says can't panic; and each call
+/// `quiet_cell` says writes a `RefCell` no borrow of which is checked,
+/// which can't find it borrowed (#1930). So the guide's `impl<F:
 /// FnMut()> Drop for Defer<F>`, given a closure that can't panic, drops in
 /// a `finally`, where each use of it asks. Not of a binding, nor a
 /// coroutine; one that reaches itself again may unwind, as nothing is
@@ -595,7 +597,7 @@ pub(in crate::lower) fn never_unwinds_given<'tcx>(
         &IndexMap<DefId, &Body<'tcx>>,
     ),
     (id, args, typing_env): (DefId, ty::GenericArgsRef<'tcx>, ty::TypingEnv<'tcx>),
-    (drops, may_panic): (&dyn Fn(Ty<'tcx>) -> bool, &dyn Fn(Ty<'tcx>) -> bool),
+    (drops, may_panic, quiet_cell): (TyAnswer<'_, 'tcx>, TyAnswer<'_, 'tcx>, CallAnswer<'_, 'tcx>),
     eager: &IndexSet<LocalDefId>,
 ) -> bool {
     let judged = Judged {
@@ -606,10 +608,19 @@ pub(in crate::lower) fn never_unwinds_given<'tcx>(
         typing_env,
         drops,
         may_panic,
+        quiet_cell,
         eager,
     };
     judged.never_unwinds(id, args, &mut Walk::default())
 }
+
+/// What `never_unwinds_given` is told of each type, what drops or may
+/// panic, by the lowering that asks.
+type TyAnswer<'a, 'tcx> = &'a dyn Fn(Ty<'tcx>) -> bool;
+
+/// What `never_unwinds_given` is told of each call, one that writes a quiet
+/// `RefCell` (`quiet_cell_write`), by the lowering that asks.
+type CallAnswer<'a, 'tcx> = &'a dyn Fn(DefId, ty::GenericArgsRef<'tcx>) -> bool;
 
 /// A walk of `never_unwinds`: the instances on its path; each one's answer
 /// that doesn't hang on the path, found once (#1821); and how far out on
@@ -640,6 +651,7 @@ struct Judged<'a, 'b, 'tcx> {
     typing_env: ty::TypingEnv<'tcx>,
     drops: &'a dyn Fn(Ty<'tcx>) -> bool,
     may_panic: &'a dyn Fn(Ty<'tcx>) -> bool,
+    quiet_cell: &'a dyn Fn(DefId, ty::GenericArgsRef<'tcx>) -> bool,
     eager: &'a IndexSet<LocalDefId>,
 }
 
@@ -698,6 +710,7 @@ impl<'tcx> Judged<'_, '_, 'tcx> {
             }
             if self.never.contains(&callee)
                 || std_never_unwinds((tcx, self.recognition), (callee, callee_args), self.drops)
+                || (self.quiet_cell)(callee, callee_args)
             {
                 return true;
             }
@@ -825,6 +838,18 @@ fn std_never_unwinds<'tcx>(
         // returns (`drop_guard_early_returns`), #861's to make.
         _ if name == "set" && of_a_cell(tcx, callee) => args.types().all(|ty| !drops(ty)),
         _ if name == "replace" && of_a_cell(tcx, callee) => true,
+        // A clone of an `Rc` or an `Arc`, or an `Option` of one: the same
+        // object, its count, where one's kept, one more, which native Rust
+        // aborts past, never unwinds; `prev_sub.clone()` of a guard's
+        // restore (#1930).
+        _ if name == "clone"
+            && args
+                .types()
+                .next()
+                .is_some_and(|own| shared_pointer(tcx, recognition, own)) =>
+        {
+            true
+        }
         // An `Option`'s take, the value it held, `None` left (#861).
         _ if name == "take" && of_an_option(tcx, recognition, callee) => true,
         _ => false,
@@ -851,6 +876,18 @@ fn of_a_cell(tcx: TyCtxt<'_>, method: DefId) -> bool {
             && local.types().next().is_some_and(|cell| is(cell, "Cell")))
 }
 
+/// Whether `ty` is an `Rc` or an `Arc`, or an `Option` of one.
+fn shared_pointer<'tcx>(tcx: TyCtxt<'tcx>, recognition: &Recognition<'_, 'tcx>, ty: Ty<'tcx>) -> bool {
+    let ty = match ty.kind() {
+        ty::Adt(adt, args) if recognition.is_lang_adt(ty, LangItem::Option) && !adt.variants().is_empty() => {
+            args.type_at(0)
+        }
+        _ => ty,
+    };
+    matches!(ty.kind(), ty::Adt(adt, _)
+        if [StdItem::Rc, StdItem::Arc].into_iter().any(|item| crate::lower::recognition::is_std_def(tcx, adt.did(), item)))
+}
+
 /// Whether `method` is an `Option`'s own.
 fn of_an_option<'tcx>(tcx: TyCtxt<'tcx>, recognition: &Recognition<'_, 'tcx>, method: DefId) -> bool {
     tcx.inherent_impl_of_assoc(method).is_some_and(|imp| {
@@ -869,6 +906,13 @@ fn shown_whole<'tcx>(recognition: &Recognition<'_, 'tcx>, ty: Ty<'tcx>) -> bool 
 /// How deep `std_call_never_unwinds` follows std's calls of std's own.
 const STD_CALLS_FOLLOWED: usize = 4;
 
+/// Not an unwinding oracle of the crate's code: neither judge above may
+/// ask it. Taken for one, `|| std_call_never_unwinds(..)` beside
+/// `std_never_unwinds` in `never_unwinding` and `Judged`, 42 corpus cases
+/// failed, never_unwinding_calls.rs among them dropping a `drop c` native
+/// Rust prints (#1930): a call it passes may still run what panics.
+/// `test/architecture.test.ts` holds that neither does.
+///
 /// Whether a call of std's `id`, given `args`, never unwinds, as its MIR
 /// says, what it resolves to: every call in it of std's own that never
 /// unwinds in turn, each resolved as it's given, a `len()`'s none; not one
