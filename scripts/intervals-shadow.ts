@@ -6,7 +6,7 @@
 // the MIR analysis's precision, triaged on #1672.
 //
 //   bun scripts/intervals-shadow.ts [--out <file>]
-import { mkdtempSync, readFileSync, readdirSync, writeFileSync, existsSync } from "node:fs";
+import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { directives } from "../test/corpus-cases";
@@ -46,6 +46,8 @@ await Promise.all(
     while (next < cases.length) lines.push(...(await shadowOf(cases[next++])));
   }),
 );
+// Each case's JS and log, some 25 MB a run, gone: kept, 261 runs' held 7 GB.
+rmSync(work, { recursive: true, force: true });
 lines.sort();
 const counts = new Map<string, number>();
 for (const line of lines) counts.set(line.split("\t")[0], (counts.get(line.split("\t")[0]) ?? 0) + 1);

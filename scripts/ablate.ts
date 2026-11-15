@@ -17,7 +17,7 @@
 // It writes each mutation into the checkout and builds `target/debug`, so
 // run it on CI (rustc-tests.yml's `ablation`) or in a worktree of its own.
 
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { mutate, mutations, type Mutation } from "./mutations";
@@ -123,6 +123,15 @@ async function run(args: string[]) {
   }
   if (!out) throw new Error("--out=<file>: where the shard's result goes");
   const work = mkdtempSync(join(tmpdir(), "ablate-"));
+  try {
+    await ablate(names, out, work);
+  } finally {
+    // The programs' JS and logs, removed however the run ends.
+    rmSync(work, { recursive: true, force: true });
+  }
+}
+
+async function ablate(names: string[], out: string, work: string) {
   if (!build()) throw new Error("the compiler as it is doesn't build");
   // The baseline over every case, then each mutation over those with a
   // MIR-only line and every matrix program: a mutation only takes lines away.
