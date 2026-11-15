@@ -35,3 +35,13 @@ index b5f0627..1a9040e 100644
  
      pub fn new() -> Self {
          Self {
+diff --git a/mir/src/lib.rs b/mir/src/lib.rs
+index f4025f0..42ba5d4 100644
+--- a/mir/src/lib.rs
++++ b/mir/src/lib.rs
+@@ -1,5 +1,4 @@
+ #![feature(iter_intersperse)]
+-#![feature(box_patterns)]
+ 
+ pub mod serialize;
+ pub mod syntax;

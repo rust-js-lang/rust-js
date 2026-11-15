@@ -1,7 +1,9 @@
 // Rustlantis (Wang and Jung, OOPSLA 2024), the net's generator of custom
 // MIR programs (ADR 1125): its source at a pinned commit with rust-js's
 // wasm32 patch (test/rustlantis/wasm32.patch: a usize and a pointer of 4
-// bytes, as rust-js's target's), built once a machine by the pinned
+// bytes, as rust-js's target's; and `#![feature(box_patterns)]`, which
+// 1.100 removed, gone, as no pattern of its is a box's, #1883), built once
+// a machine by the pinned
 // toolchain, kept in `.cache/rustlantis/<commit>/` (#1213); and the net's
 // lists of what it knows, test/rustlantis-known.txt.
 import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync } from "node:fs";
