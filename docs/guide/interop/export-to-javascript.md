@@ -382,6 +382,14 @@ each `None`. An `Option` before a parameter that isn't one is declared
 that's `unknown` alone, as a union with `unknown` or `any` is that type to
 TypeScript: `value?: unknown` (#1850).
 
+One whose `None` is `undefined` alone, never `null`, is
+`#[cfg_attr(rust_js, rust_js::none_undefined(name))]` on the function:
+`cancelable?: boolean | undefined`, as a TypeScript signature that
+leaves `null` out declares it, upstream's `cancelable?: Cancelable`. A
+caller may still leave a trailing one out; its body reads `None` as any
+`Option`'s ([ADR 1161](../../decisions/1161-a-present-slot-and-a-results-undefined.md),
+amended).
+
 ## Rest parameters
 
 A function's last parameter, a slice marked

@@ -8,7 +8,8 @@
 // `#[rust_js::optional]` is the one axis's other way, a cell's or a nullable
 // field's key left out, each refused where it's its field's own default;
 // and a binding's result whose `None` is `undefined` alone is
-// `#[rust_js::none_undefined]`, beside `#[rust_js::nullable]`.
+// `#[rust_js::none_undefined]`, a parameter's `none_undefined(name)`, beside
+// `#[rust_js::nullable]`.
 
 import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
@@ -64,6 +65,36 @@ pub fn is_iso_date(value: Option<&str>) -> bool {
   expect([lib.isIsoDate("2026-11-15"), lib.isIsoDate(undefined)]).toEqual([true, false]);
 }, underLoad(120_000));
 
+// A parameter whose `None` is `undefined` alone, never `null`,
+// `#[rust_js::none_undefined(name)]` on its function: `cancelable?: C |
+// undefined`, upstream's createDetails' `cancelable?: Cancelable`, where a
+// trailing one may be left out, and `C | undefined` a caller gives where
+// it's before another (ADR 1161, amended, #1910).
+test("a none_undefined parameter is declared T | undefined, left out where it trails", async () => {
+  const dir = fixture("none-undefined-params");
+  writeFileSync(
+    join(dir, "lib.rs"),
+    `#[cfg_attr(rust_js, rust_js::none_undefined(cancelable))]
+pub fn cancels(reason: &str, cancelable: Option<bool>) -> String {
+    format!("{reason} {}", cancelable.unwrap_or(true))
+}
+
+#[cfg_attr(rust_js, rust_js::none_undefined(first))]
+pub fn picked(first: Option<u32>, second: u32) -> u32 {
+    first.unwrap_or(second)
+}
+`,
+  );
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...js]);
+  const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
+  expect(declarations).toContain("export function cancels(reason: string, cancelable?: boolean | undefined): string;");
+  expect(declarations).toContain("export function picked(first: number | undefined, second: number): number;");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.cancels("left"), lib.cancels("undefined", undefined), lib.cancels("true", true), lib.cancels("false", false)])
+    .toEqual(["left true", "undefined true", "true true", "false false"]);
+  expect([lib.picked(undefined, 2), lib.picked(1, 2)]).toEqual([2, 1]);
+}, underLoad(120_000));
+
 const refused: [string, string, string][] = [
   [
     "a cell's key",
@@ -89,6 +120,21 @@ const refused: [string, string, string][] = [
     "a function's optional",
     `#[cfg_attr(rust_js, rust_js::link_name = "globalThis.event")]\n#[cfg_attr(rust_js, rust_js::optional)]\nfn event() -> Option<u32> {\n    unreachable!()\n}\npub fn e() -> Option<u32> {\n    event()\n}\n`,
     "is `#[rust_js::none_undefined]`",
+  ],
+  [
+    "a parameter's optional",
+    `#[cfg_attr(rust_js, rust_js::optional(n))]\npub fn f(n: Option<u32>) -> u32 {\n    n.unwrap_or(1)\n}\n`,
+    "a parameter's, `#[rust_js::none_undefined(name)]`",
+  ],
+  [
+    "a none_undefined parameter that isn't an Option",
+    `#[cfg_attr(rust_js, rust_js::none_undefined(n))]\npub fn f(n: u32) -> u32 {\n    n\n}\n`,
+    "`#[rust_js::none_undefined(n)]` is of a parameter of its own, an `Option` that isn't `#[rust_js::nullable]`",
+  ],
+  [
+    "a none_undefined parameter that's nullable",
+    `#[cfg_attr(rust_js, rust_js::nullable(n), rust_js::none_undefined(n))]\npub fn f(n: Option<u32>) -> u32 {\n    n.unwrap_or(1)\n}\n`,
+    "`#[rust_js::none_undefined(n)]` is of a parameter of its own, an `Option` that isn't `#[rust_js::nullable]`",
   ],
 ];
 

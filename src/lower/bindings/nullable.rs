@@ -346,13 +346,28 @@ pub(in crate::lower) fn none_undefined_result(tcx: TyCtxt<'_>, def_id: DefId) ->
     super::is_binding(tcx, def_id) && tcx.get_attrs_by_path(def_id, &path).any(|attr| attr.is_word())
 }
 
+/// The parameters a function says its `None` is `undefined` alone,
+/// never `null`, `#[rust_js::none_undefined(cancelable)]` on it, each
+/// declared `cancelable?: C | undefined` where a trailing one may be left
+/// out, as upstream's `cancelable?: Cancelable` is, and `cancelable:
+/// C | undefined` where it's given; beside `#[rust_js::nullable(..)]`'s
+/// `T | null`. The word alone is its result's (ADR 1161, amended, #1910).
+pub(in crate::lower) fn undefined_params(tcx: TyCtxt<'_>, def_id: DefId) -> Vec<Symbol> {
+    let path = [Symbol::intern("rust_js"), Symbol::intern("none_undefined")];
+    tcx.get_attrs_by_path(def_id, &path)
+        .filter_map(|attr| attr.meta_item_list())
+        .flatten()
+        .filter_map(|item| item.ident().map(|ident| ident.name))
+        .collect()
+}
+
 /// Why a function's `#[rust_js::optional]` is refused: it's of a field's
 /// key, absent until it's set; a binding's result whose `None` is
 /// `undefined` alone is `#[rust_js::none_undefined]` (ADR 1161).
 pub(super) fn refused_optional_function(tcx: TyCtxt<'_>, def_id: DefId) -> Option<&'static str> {
     let path = [Symbol::intern("rust_js"), Symbol::intern("optional")];
     tcx.get_attrs_by_path(def_id, &path).next().is_some().then_some(
-        "rust-js: `#[rust_js::optional]` is of a field's key, absent until it's set; a binding's result whose `None` is `undefined` alone, never `null`, is `#[rust_js::none_undefined]`",
+        "rust-js: `#[rust_js::optional]` is of a field's key, absent until it's set; a binding's result whose `None` is `undefined` alone, never `null`, is `#[rust_js::none_undefined]`, and a parameter's, `#[rust_js::none_undefined(name)]`",
     )
 }
 

@@ -33,8 +33,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a Rust function's trailing `Option` parameter is declared required, `shown(name: string | null | undefined)`, so a TypeScript caller must give it",
     file: "src/lower/signatures.rs",
-    find: "                        optional: i >= optional_from,\n",
-    replace: "                        optional: false,\n",
+    find: "                let optional = i >= optional_from;\n",
+    replace: "                let optional = false;\n",
     tests: [
       "test/declarations.test.ts",
       "-t",
@@ -165,5 +165,13 @@ export const mutations: Mutation[] = [
     find: "        let required = |i: usize| (null_params.contains(&i) || present_at(i)) && is_option(tcx, inputs[i]);\n",
     replace: "        let required = |i: usize| null_params.contains(&i) && is_option(tcx, inputs[i]) && !present_at(i);\n",
     tests: ["test/present-slots.test.ts", "-t", "a present field"],
+  },
+  {
+    name: "undefinable-param-plain",
+    breaks: "a `#[rust_js::none_undefined(cancelable)]` parameter is a plain `Option`'s, `cancelable?: boolean | null | undefined`, so upstream's createDetails isn't assignable to it (#1910)",
+    file: "src/lower/signatures.rs",
+    find: "                    (false, false) if undefinable(i) => match ty.kind() {\n",
+    replace: "                    (false, false) if false && undefinable(i) => match ty.kind() {\n",
+    tests: ["test/present-slots.test.ts", "-t", "a none_undefined parameter is declared"],
   },
 ];

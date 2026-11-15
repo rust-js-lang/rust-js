@@ -244,4 +244,12 @@ export const mutations: Mutation[] = [
     replace: "                        let of = self.ts(of);\n",
     tests: ["test/js-predicates.test.ts", "-t", "upstream's predicate"],
   },
+  {
+    name: "undefinable-param-nullable",
+    breaks: "a `#[rust_js::none_undefined(cancelable)]` parameter is declared `boolean | null`, its `None` `null`, where it's `undefined` alone (#1910)",
+    file: "src/lower/declarations/functions.rs",
+    find: "                    json!({ \"kind\": \"union\", \"types\": [inner, keyword(\"undefined\")] }),\n",
+    replace: "                    json!({ \"kind\": \"union\", \"types\": [inner, keyword(\"null\")] }),\n",
+    tests: ["test/present-slots.test.ts", "-t", "a none_undefined parameter is declared"],
+  },
 ];

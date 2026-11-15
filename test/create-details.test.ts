@@ -62,7 +62,7 @@ test("createDetails' JS is upstream's body, of its three arguments", () => {
   };
 }`);
   const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
-  expect(declarations).toContain(`}, C extends boolean = true>(given: G, source: ChangeSource, cancelable?: C | null | undefined): (C extends true ? ChangeDetails<G["reason"]> : CommitDetails<G["reason"]>) & Omit<G, "reason" | "event" | "source">;`);
+  expect(declarations).toContain(`}, C extends boolean = true>(given: G, source: ChangeSource, cancelable?: C | undefined): (C extends true ? ChangeDetails<G["reason"]> : CommitDetails<G["reason"]>) & Omit<G, "reason" | "event" | "source">;`);
   expect(declarations).toContain("export function createDetails<const G extends {\n    reason: string;\n    event?: Event;\n}");
   expect(declarations).not.toContain("type Details");
 });
@@ -75,8 +75,8 @@ test("createDetails runs Codex's contract as upstream's does", async () => {
   expect(rows.length).toBeGreaterThan(20);
   expect(rows).toEqual(contract(theirs));
   // Upstream's default is of an omitted or `undefined` argument alone: its
-  // `null` makes a commit, where ours, whose `None` is `null` too, makes a
-  // change (#1910).
+  // `null`, which both declarations refuse, makes a commit, where ours,
+  // whose body tests `== null`, makes a change (#1910).
   const cancels = (create: Factory) => Object.hasOwn(create({ reason: "press" }, "mouse", null as never), "cancel");
   expect([cancels(ours), cancels(theirs)]).toEqual([true, false]);
   // `cancel` is a method of ours, upstream's an arrow (#1931): neither has a
@@ -96,6 +96,7 @@ type Sources = Assert<Equal<Candidate.ChangeSource, Reference.ChangeSource>>;
 type DefaultChange = Assert<Equal<Candidate.ChangeDetails, Reference.ChangeDetails>>;
 type DefaultCommit = Assert<Equal<Candidate.CommitDetails, Reference.CommitDetails>>;
 const constructor: typeof Reference.createDetails = Candidate.createDetails;
+const referenceConstructor: typeof Candidate.createDetails = Reference.createDetails;
 type Vocabulary = Assert<Equal<Candidate.ReasonVocabulary, Reference.ReasonVocabulary>>;
 type Reasons = Assert<Equal<Candidate.ChangeReason, Reference.ChangeReason>>;
 type Changes = Assert<Equal<Candidate.ChangeDetails<Reference.ChangeReason>, Reference.ChangeDetails<Reference.ChangeReason>>>;
@@ -135,12 +136,4 @@ if (details.reason === "drop") {
 }
 `);
   expect(typeChecked(dir, "consumer.ts")).toEqual([]);
-  // Upstream's constructor isn't ours yet: our \`cancelable\` takes \`null\`,
-  // upstream's doesn't (#1910).
-  writeFileSync(join(dir, "assigned.ts"), `import * as Candidate from "./lib.js";
-import * as Reference from "./reference.ts";
-const referenceConstructor: typeof Candidate.createDetails = Reference.createDetails;
-`);
-  const assigned = typeChecked(dir, "assigned.ts");
-  expect([assigned.length, assigned.some((line) => line.includes("TS2322"))]).toEqual([1, true]);
 });

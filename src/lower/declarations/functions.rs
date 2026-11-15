@@ -440,6 +440,15 @@ impl<'tcx> Declarations<'_, 'tcx> {
                 let inner = self.as_written(written.and_then(|w| self.written_option(w)), |out| out.ts(inner));
                 (json!({ "kind": "union", "types": [inner, keyword("null")] }), false)
             }
+            // `T | undefined`: its `None` is `undefined` alone (ADR 1161,
+            // amended, #1910).
+            Form::Undefinable { inner, optional } => {
+                let inner = self.as_written(written.and_then(|w| self.written_option(w)), |out| out.ts(inner));
+                (
+                    json!({ "kind": "union", "types": [inner, keyword("undefined")] }),
+                    optional,
+                )
+            }
             Form::Dictionary(bound) => (self.dictionary_type(bound), false),
             Form::Unknowable | Form::LeftOut | Form::Void => return None,
         })

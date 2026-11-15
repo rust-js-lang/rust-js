@@ -71,6 +71,11 @@ pub(in crate::lower) enum Form<'tcx> {
     /// `#[rust_js::nullable(..)]`, given `null` for `None`, never left out
     /// (ADR 0861, amended), and a nullable result (ADRs 0574, 0578).
     Nullable(Ty<'tcx>),
+    /// `T | undefined`, an `Option` of `inner` whose `None` is `undefined`
+    /// alone, never `null`: a parameter marked
+    /// `#[rust_js::none_undefined(..)]`, which a caller may leave out where
+    /// `optional`, upstream's `cancelable?: Cancelable` (ADR 1161, amended).
+    Undefinable { inner: Ty<'tcx>, optional: bool },
     /// `...args: T[]`, a slice marked `#[rust_js::rest]`, of type `ty` (ADR
     /// 0664).
     Rest(Ty<'tcx>),
@@ -229,6 +234,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .is_some_and(|ident| present.contains(&ident.name))
         };
         let nullable = |i: usize| null_params.contains(&i) && is_option(tcx, inputs[i]);
+        let undefined = super::bindings::undefined_params(tcx, function);
+        let undefinable = |i: usize| {
+            is_option(tcx, inputs[i])
+                && !nullable(i)
+                && (idents.get(i).copied().flatten()).is_some_and(|ident| undefined.contains(&ident.name))
+        };
         let required = |i: usize| (null_params.contains(&i) || present_at(i)) && is_option(tcx, inputs[i]);
         // What its JS takes after them, of a function a JS caller calls,
         // not a trait's method's, which its dictionary's type declares, nor a
@@ -252,16 +263,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // A pattern, `TagProps { variant, .. }`: its props'.
                     None => "props".to_string(),
                 };
+                let optional = i >= optional_from;
                 let form = match (rest == Some(i), nullable(i)) {
                     (true, _) => Form::Rest(ty),
                     (false, true) => match ty.kind() {
                         ty::Adt(_, args) => Form::Nullable(args.type_at(0)),
                         _ => unreachable!("a nullable parameter is an `Option`"),
                     },
-                    (false, false) => Form::Value {
-                        ty,
-                        optional: i >= optional_from,
+                    (false, false) if undefinable(i) => match ty.kind() {
+                        ty::Adt(_, args) => Form::Undefinable {
+                            inner: args.type_at(0),
+                            optional,
+                        },
+                        _ => unreachable!("an undefinable parameter is an `Option`"),
                     },
+                    (false, false) => Form::Value { ty, optional },
                 };
                 JsParam {
                     origin: Origin::Rust(i),

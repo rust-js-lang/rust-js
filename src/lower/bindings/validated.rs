@@ -84,24 +84,41 @@ pub(in crate::lower) fn validate(tcx: TyCtxt<'_>) -> bool {
                 tcx.dcx().span_err(tcx.def_span(def), message);
                 valid = false;
             }
-            // What `#[rust_js::present(..)]` names is a parameter of its own,
-            // an `Option`, not a nullable one, whose key is there already.
+            // What `#[rust_js::present(..)]` and `#[rust_js::none_undefined(..)]`
+            // name is a parameter of its own, an `Option`, not a nullable one:
+            // whose key is there already, or whose `None` is `null` (ADR 1161,
+            // amended, #1910).
             let present_inputs = tcx.fn_sig(def).skip_binder().skip_binder().inputs();
             let present_idents = tcx.fn_arg_idents(def.to_def_id());
             let nulled = nullable::nullable_params(tcx, def.to_def_id());
-            for name in nullable::present_params(tcx, def.to_def_id()) {
-                let at = present_idents
-                    .iter()
-                    .position(|ident| ident.is_some_and(|ident| ident.name == name));
-                let option = at.and_then(|at| present_inputs.get(at)).is_some_and(
-                    |ty| matches!(ty.kind(), ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::Option)),
-                );
-                if !option || nulled.contains(&name) {
-                    let message = format!(
-                        "rust-js: `#[rust_js::present({name})]` is of a parameter of its own, an `Option` that isn't `#[rust_js::nullable]`, given `{name}: T | undefined` where a trailing one may be left out; `{name}` isn't"
+            let named = [
+                (
+                    nullable::present_params(tcx, def.to_def_id()),
+                    "present",
+                    "given `{name}: T | undefined` where a trailing one may be left out",
+                ),
+                (
+                    nullable::undefined_params(tcx, def.to_def_id()),
+                    "none_undefined",
+                    "whose `None` is `undefined` alone, `{name}?: T | undefined`",
+                ),
+            ];
+            for (names, attribute, what) in named {
+                for name in names {
+                    let at = present_idents
+                        .iter()
+                        .position(|ident| ident.is_some_and(|ident| ident.name == name));
+                    let option = at.and_then(|at| present_inputs.get(at)).is_some_and(
+                        |ty| matches!(ty.kind(), ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::Option)),
                     );
-                    tcx.dcx().span_err(tcx.def_span(def), message);
-                    valid = false;
+                    if !option || nulled.contains(&name) {
+                        let what = what.replace("{name}", name.as_str());
+                        let message = format!(
+                            "rust-js: `#[rust_js::{attribute}({name})]` is of a parameter of its own, an `Option` that isn't `#[rust_js::nullable]`, {what}; `{name}` isn't"
+                        );
+                        tcx.dcx().span_err(tcx.def_span(def), message);
+                        valid = false;
+                    }
                 }
             }
             let idents = tcx.fn_arg_idents(def.to_def_id());

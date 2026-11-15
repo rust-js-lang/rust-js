@@ -290,10 +290,10 @@ export const mutations: Mutation[] = [
   },
   {
     name: "present-params-unchecked",
-    breaks: "`#[rust_js::present(n)]` of a parameter that isn't an `Option` compiles (ADR 1161)",
+    breaks: "`#[rust_js::present(n)]` or `#[rust_js::none_undefined(n)]` of a parameter that isn't an `Option`, or is nullable, compiles, naming what its declaration can't say (ADR 1161, amended, #1910)",
     file: "src/lower/bindings/validated.rs",
-    find: "                if !option || nulled.contains(&name) {\n",
-    replace: "                if false && (!option || nulled.contains(&name)) {\n",
+    find: "                    if !option || nulled.contains(&name) {\n",
+    replace: "                    if false && (!option || nulled.contains(&name)) {\n",
     tests: ["test/present-slots.test.ts", "-t", "refused of"],
   },
   {

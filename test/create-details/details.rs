@@ -159,6 +159,7 @@ unsafe impl<G> js::Defined for Changed<G> {}
 ///
 /// `given`'s event must be one its reason reports, which isn't checked, as
 /// upstream's cast trusts it.
+#[cfg_attr(rust_js, rust_js::none_undefined(cancelable))]
 pub unsafe fn create_details<#[cfg_attr(rust_js, rust_js::const_param)] G, C>(
     given: &'static G,
     source: ChangeSource,

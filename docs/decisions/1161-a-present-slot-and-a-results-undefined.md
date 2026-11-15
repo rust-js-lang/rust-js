@@ -4,6 +4,8 @@ Status: Accepted (2026-11-15), the lead's decision (#1845). Amends
 [0280](0280-undefined-fields-left-out.md) and
 [0298](0298-truthy-options.md), whose binding-result
 `#[rust_js::optional]` is renamed; extends [0810](0810-an-optional-nullable-field-is-absent-until-set.md).
+Amended (#1910): a parameter's `None` of `undefined` alone is
+`#[rust_js::none_undefined(name)]` on its function.
 
 Case: third ([0262](0262-when-rust-and-js-disagree.md)), results change:
 `Object.hasOwn` and `Reflect.ownKeys` tell a key written `undefined` from
@@ -85,3 +87,39 @@ parameters, and needed an exception for component props.
   (`bindings/validated.ts`).
 - Guide: interop/bindings.md's attribute table (`present`,
   `none_undefined`), interop/types.md's `Option` rows, semantics.md.
+
+## Amendment: a parameter whose `None` is `undefined` alone (2026-11-15, #1910)
+
+`#[cfg_attr(rust_js, rust_js::none_undefined(cancelable))]` on a function
+says its parameter `cancelable`, an `Option`, has `None` `undefined`
+alone, never `null`: declared `cancelable?: C | undefined` where it
+trails, `cancelable: C | undefined` before another, which a caller gives.
+It's the result's `none_undefined` the other way, the one axis of which
+JS value `None` is, beside `#[rust_js::nullable(name)]`'s `T | null`; on
+the function, naming the parameter, as `nullable(name)` and
+`present(name)` are, as a tool attribute can't sit on a parameter.
+Upstream's createDetails declares `cancelable?: Cancelable`, which, under
+`strictFunctionTypes`, a plain `Option`'s `C | null | undefined` isn't
+assignable from: Codex's type contract asks the constructor be
+assignable both ways (test/create-details.test.ts).
+
+- Refused, saying what to write: one naming what isn't an `Option`
+  parameter or is a nullable one, and `#[rust_js::optional(name)]` on a
+  function, whose message names `none_undefined(name)` (one form per job).
+- Not one that isn't trailing: it's a parameter a caller gives as
+  `undefined` for `None`, meaningful as it is.
+- Its body reads `None` as before, `== null`, so a `null` the declaration
+  refuses is `None` too. What's left (#1910): a body that begins `let
+  cancelable = cancelable.unwrap_or(<literal>)` printed as JS's default
+  parameter, `cancelable = true`, which needs each of the crate's calls to
+  give it `undefined` for `None` and the body to read `=== undefined`, as
+  a nullable parameter's calls give `null` (ADR 0861).
+
+Case of [0262](0262-when-rust-and-js-disagree.md): none for its JS, which
+is what it was; the declaration says what JS may give. What holds it:
+test/present-slots.test.ts (the two declarations, omitted, `undefined`,
+`true` and `false` run, the three refusals) and test/create-details.test.ts
+(upstream's constructor assignable to ours); mutations
+undefinable-param-plain (`signatures.rs`), undefinable-param-nullable
+(`declarations/functions.rs`), undefined-param-of-any-allowed
+(`bindings/validated.rs`).
