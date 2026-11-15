@@ -1,14 +1,14 @@
 # shape	count	per 10,000 lines
-files	2581
-lines	341314
+files	2582
+lines	341401
 temporaries	0	0
 labeled blocks	0	0
 while (true)	224	6.6
-$iter	2876	84.3
+$iter	2876	84.2
 Iterator.from	266	7.8
 return;	332	9.7
-renamed x$1	16184	474.2
-role fallbacks	8876	260.1
+renamed x$1	16192	474.3
+role fallbacks	8885	260.3
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1	role fallbacks
 test/corpus/adapter_drop_past_a_panic.js	52	0	0	0	1	0	0	0	1
 test/corpus/adapter_drops.js	1844	0	0	1	19	2	1	98	61
@@ -766,6 +766,7 @@ test/corpus/extreme_leaks_what_it_kept_as_its_iterators_drop_panics.js	304	0	0	0
 test/corpus/f32.js	107	0	0	0	0	0	0	0	0
 test/corpus/f32_digits.js	50	0	0	0	0	0	0	3	0
 test/corpus/f32_div_euclid_rounds_its_quotient.js	19	0	0	0	0	0	0	0	0
+test/corpus/f32_literal_rounded_twice.js	35	0	0	0	0	0	0	0	0
 test/corpus/f32_parse.js	63	0	0	0	0	0	0	0	0
 test/corpus/failing_debug_part_keeps_what_was_written.js	403	0	0	0	0	0	0	0	1
 test/corpus/failing_io_writer.js	52	0	0	0	0	0	0	2	2
@@ -895,7 +896,7 @@ test/corpus/format_args_order.js	37	0	0	0	0	0	0	4	3
 test/corpus/format_argument_unwinds.js	31	0	0	0	0	0	0	2	3
 test/corpus/format_arguments_beside_an_address.js	58	0	0	0	0	0	0	2	2
 test/corpus/format_arguments_evaluated_before_a_class_is_shown.js	56	0	0	0	0	0	0	10	6
-test/corpus/format_arguments_first.js	59	0	0	0	0	0	0	10	6
+test/corpus/format_arguments_first.js	119	0	0	0	0	0	0	14	8
 test/corpus/format_concat_pieces.js	80	0	0	0	0	0	0	4	4
 test/corpus/format_made_apart_prints_before_the_next_line.js	43	0	0	0	0	0	0	0	1
 test/corpus/format_options_reached.js	48	0	0	0	0	0	0	0	1
@@ -1721,8 +1722,8 @@ test/corpus/printed_while_a_line_is_formatted.js	138	0	0	0	0	0	0	0	0
 test/corpus/printing_builder_written_step_by_step.js	498	0	0	0	0	1	0	38	15
 test/corpus/printing_derived_debug_stopped_part_way.js	125	0	0	0	0	0	0	0	0
 test/corpus/printing_std_cells_stopped_part_way.js	329	0	0	0	0	0	0	17	3
-test/corpus/printing_std_value_stopped_part_way.js	203	0	0	0	0	0	0	0	5
-test/corpus/printing_std_wrappers_stopped_part_way.js	1202	0	0	0	7	0	0	55	11
+test/corpus/printing_std_value_stopped_part_way.js	199	0	0	0	0	0	0	0	6
+test/corpus/printing_std_wrappers_stopped_part_way.js	1198	0	0	0	7	0	0	59	17
 test/corpus/printing_writer_refused_into_a_string.js	95	0	0	0	0	0	0	0	1
 test/corpus/printing_writer_shown_by_derived_debugs_and_builders.js	198	0	0	0	0	0	0	2	2
 test/corpus/printing_writer_shown_in_std_values.js	159	0	0	0	0	0	0	8	5

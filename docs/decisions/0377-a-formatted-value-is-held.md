@@ -104,4 +104,8 @@ piece written apart as something done, so each argument that does
 something is held first: `const value = shout(8); $printing(() => {
 $out("lead "); $out(value); .. })`. Corpus case format_arguments_first (a line through
 stdout's and a failing `write!`) against native Rust; mutation
-pieces-written-apart-unordered, caught.
+pieces-written-apart-unordered, caught. Each held argument is named as
+this decision's are, `value`, so docs/readability.txt's role fallbacks and
+renames grew by 0.2 and 0.1 in 10,000 lines, blessed: the order is Rust's,
+and the IIFEs that made the same arguments where they were written,
+`((value) => ..)(once(3))`, are gone.
