@@ -1,3 +1,4 @@
+//@ library-differs
 // A value of a const parameter's type, `Buffer<SIZE>`, in a `RefCell` an
 // `Rc` holds, borrowed: what its impls may run was asked of std's impl of
 // `[u8; SIZE]` in an environment that doesn't say what `SIZE` is, a rustc

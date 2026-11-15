@@ -1,3 +1,4 @@
+//@ library-differs
 // `Entry::insert_entry(v)` and `VacantEntry::insert_entry(v)` write or put
 // `v` in and give the `OccupiedEntry` of it, of the entry's one search: a
 // key found by its own `Hash` is hashed once, by `entry`, however its

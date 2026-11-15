@@ -1,3 +1,4 @@
+//@ library-differs
 // A cell's `take` makes its `Default` first: std's is
 // `self.replace(Default::default())`, so a `Default` of the crate's that
 // prints, and borrows and writes the cell it's taken of, runs before the

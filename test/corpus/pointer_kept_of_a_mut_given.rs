@@ -1,3 +1,4 @@
+//@ library-differs
 // A raw pointer a function keeps of a `&mut` it's given writes its caller's
 // place after the call (#1781): the `&mut` is given as the place's handle,
 // not a box copied back, which the pointer's later write wouldn't reach,
