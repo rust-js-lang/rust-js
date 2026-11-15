@@ -386,3 +386,30 @@ refuses each call the declarations before allowed, `bump(1)`, `set(1, 2)`,
 })`; the caller's run gives what the same calls give natively. Mutations
 in `lower/declarations.ts`, `lower/declarations/dictionaries.ts` and
 `lower/declarations/functions.ts`.
+
+## Amendment: a `dyn` of a library's trait is its pair too (#1870, 2026-11-15)
+
+A `dyn` of a trait whose dictionaries the declarations declare is its pair,
+`{ value: unknown; impl: Middleware<unknown> }`, but only of the crate's
+own trait: of a library's, `any`, so the deep-chain harness's primitives
+declared geometry's middleware `any[]` where geometry's own `.d.ts` has
+`interface Middleware<Self>`. **A library's contract lists, among the
+types its declarations export by name (`types`, ADR 0210), each `pub`
+trait whose dictionaries they declare** (`declarations::declared_methods`,
+the one answer both ask), and a consumer's `dyn` of one is its pair, its
+dictionary type imported from the library's file, as a library's struct
+is. The lead's decision: no new field, the list's meaning unchanged, a
+type its declarations export by name.
+
+No version bump: a consumer built before reads `types` only into a map by
+key and looks up the structs and enums it declares; a trait's key is
+never asked of it, its `dyn`s refused before, and keys are one per item,
+so its duplicate check can't fire. A library built before lists no
+traits, and its traits' `dyn`s stay `any` in a consumer built after.
+
+Held by `test/declarations-libraries.test.ts`'s crate pair, a strict
+caller of the consumer's `steps()` reading `impl.name(value)` as text;
+mutations contract-dictionary-traits-unlisted (`library/exports.rs`),
+library-trait-dictionary-undeclared and library-trait-dictionary-unimported
+(`declarations/dictionaries.rs`).
+

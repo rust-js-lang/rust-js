@@ -6,22 +6,32 @@
 //! is `traits::method_dictionary`'s answer.
 
 use rustc_hir::def::DefKind;
-use rustc_middle::ty;
+use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::def_id::DefId;
 use serde_json::{Value, json};
 
 use super::{Declarations, documented, keyword, reference};
 
+/// The methods of the dictionaries of `trait_id`, a `pub` trait of the
+/// crate's, where each is all a dictionary holds that generic code reads,
+/// as its signature says (`method_dictionary`): then it's declared, and so
+/// are its dictionaries, `interface Middleware<Self>`, which a library's
+/// contract lists among the types its declarations export by name (#1870).
+pub(in crate::lower) fn declared_methods<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    foreign: &crate::lower::library::Foreign<'_, 'tcx>,
+    trait_id: DefId,
+) -> Option<Vec<DefId>> {
+    if !tcx.visibility(trait_id).is_public() {
+        return None;
+    }
+    crate::lower::traits::method_dictionary(tcx, foreign, trait_id)
+}
+
 impl<'tcx> Declarations<'_, 'tcx> {
-    /// The methods of the dictionaries of `trait_id`, a `pub` trait of the
-    /// crate's, where each is all a dictionary holds that generic code
-    /// reads, as its signature says (`method_dictionary`): then it's
-    /// declared, and so are its dictionaries.
+    /// `declared_methods` of `trait_id`, of this crate's dependencies.
     fn declared_methods(&self, trait_id: DefId) -> Option<Vec<DefId>> {
-        if !self.tcx.visibility(trait_id).is_public() {
-            return None;
-        }
-        crate::lower::traits::method_dictionary(self.tcx, self.foreign, trait_id)
+        declared_methods(self.tcx, self.foreign, trait_id)
     }
 
     /// `export interface Shape<Self> { area(self: Self): number; describe(self:
@@ -89,8 +99,10 @@ impl<'tcx> Declarations<'_, 'tcx> {
     /// with a file. Not a std trait's, whose dictionaries are the
     /// runtime's own, nor a library's.
     pub(super) fn declares_dictionary(&self, trait_id: DefId) -> bool {
+        // A library's whose declarations declare its dictionaries, as its
+        // contract says, imported from them (#1870).
         let Some(local) = trait_id.as_local() else {
-            return false;
+            return self.foreign.declared_type(trait_id).is_some();
         };
         let home = self.tcx.parent_module_from_def_id(local);
         (home == self.module || self.files.contains_key(&home)) && self.declared_methods(trait_id).is_some()
@@ -108,6 +120,10 @@ impl<'tcx> Declarations<'_, 'tcx> {
     /// (`declares_dictionary`), of a value of `of`, imported from the
     /// trait's module where that's another.
     fn dictionary_of(&mut self, trait_id: DefId, of: Value) -> Value {
+        if let Some((from, name, default)) = self.foreign.declared_type(trait_id) {
+            self.library_imports.insert((from.clone(), name.clone(), *default));
+            return reference(name, vec![of]);
+        }
         let home = self.tcx.parent_module_from_def_id(trait_id.expect_local());
         let name = self.tcx.item_name(trait_id).to_string();
         if home != self.module {

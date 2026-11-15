@@ -44,6 +44,7 @@ use bounds::{constraints, erasures};
 use classes::exported_class;
 use comments::documented;
 pub(in crate::lower) use comments::jsdoc_of;
+pub(in crate::lower) use dictionaries::declared_methods;
 use parts::{opaque_fn_signature, opaque_future_output};
 
 pub use written::validate_types;

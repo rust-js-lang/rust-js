@@ -482,3 +482,57 @@ count({ temporaryReferences: measured });
   expect(errors).toHaveLength(1);
   expect(errors[0]).toContain("caller.ts(8,");
 });
+
+// A `dyn` of a library's trait whose declarations declare its dictionaries
+// is its pair, as of the crate's own (#1870): `{ value: unknown; impl:
+// Middleware<unknown> }`, `Middleware` imported from the library's file,
+// as the deep-chain harness's primitives gives geometry's middleware.
+test("a dyn of a library's trait is its pair, its dictionary imported from the library", () => {
+  const dir = fixture("declarations-library-dyn");
+  compiled(dir, {
+    "dep.rs": "pub mod steps;\n",
+    "steps.rs": `/// A step that moves a value.
+pub trait Middleware {
+    fn name(&self) -> &'static str;
+
+    fn apply(&self, x: f64) -> f64;
+}
+
+pub struct Offset(pub f64);
+
+impl Middleware for Offset {
+    fn name(&self) -> &'static str {
+        "offset"
+    }
+
+    fn apply(&self, x: f64) -> f64 {
+        x + self.0
+    }
+}
+
+pub fn run(steps: &[Box<dyn Middleware>], x: f64) -> f64 {
+    steps.iter().fold(x, |x, step| step.apply(x))
+}
+`,
+  }, `use dep::steps::{Middleware, Offset};
+
+pub fn steps(gap: f64) -> Vec<Box<dyn Middleware>> {
+    vec![Box::new(Offset(gap))]
+}
+
+pub fn total(gap: f64) -> f64 {
+    dep::steps::run(&steps(gap), 1.0)
+}
+`);
+  const declarations = readFileSync(join(dir, "app", "lib.d.ts"), "utf8");
+  expect(declarations).toContain("export function steps(gap: number): {\n    value: unknown;\n    impl: Middleware<unknown>;\n}[];");
+  expect(declarations).toContain('import type { Middleware } from "../dep/steps.js";');
+  writeFileSync(join(dir, "caller.ts"), `import { steps } from "./app/lib.js";
+const [first] = steps(2);
+export const name: string = first!.impl.name(first!.value);
+export const moved: number = first!.impl.apply(first!.value, 1);
+// @ts-expect-error A step's name is text.
+export const wrong: number = first!.impl.name(first!.value);
+`);
+  expect(typeChecked(dir, "caller.ts")).toEqual([]);
+});

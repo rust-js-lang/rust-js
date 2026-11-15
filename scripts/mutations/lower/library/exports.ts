@@ -408,4 +408,12 @@ export const mutations: Mutation[] = [
     replace: "        bound: Vec::new(),\n",
     tests: ["test/binding-releases.test.ts", "-t", "over one npm package are refused"],
   },
+  {
+    name: "contract-dictionary-traits-unlisted",
+    breaks: "a library's contract lists no trait whose dictionaries its declarations declare, so a consumer's `Vec<Box<dyn Middleware>>` is `any[]` (#1870)",
+    file: "src/lower/library/exports.rs",
+    find: "        rustc_hir::def::DefKind::Trait => crate::lower::declarations::declared_methods(tcx, foreign, id).is_some(),\n",
+    replace: "        rustc_hir::def::DefKind::Trait => false,\n",
+    tests: ["test/declarations-libraries.test.ts", "-t", "a dyn of a library"],
+  },
 ];

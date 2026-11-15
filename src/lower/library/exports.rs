@@ -386,7 +386,7 @@ pub(in crate::lower) fn exports<'tcx>(
             closures.sort();
             closures
         },
-        types: declared_types(tcx),
+        types: declared_types(tcx, contracts.built_slots.0),
         // Its package, which artifact planning reads (ADR 1008).
         package: None,
     }
@@ -395,12 +395,21 @@ pub(in crate::lower) fn exports<'tcx>(
 /// Each type its modules' declarations export by its name, which a
 /// consumer's declarations import (ADR 0210, amended): a public struct, enum
 /// or union of a module's own that its declarations declare
-/// (`declarations::declares_type`), its default too, sorted.
-fn declared_types(tcx: TyCtxt<'_>) -> Vec<crate::library::DeclaredType> {
+/// (`declarations::declares_type`), and a trait whose dictionaries they
+/// declare, `interface Middleware<Self>`, which a `dyn` of it is the pair
+/// of (#1870); its default too, sorted.
+fn declared_types<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    foreign: &crate::lower::library::Foreign<'_, 'tcx>,
+) -> Vec<crate::library::DeclaredType> {
+    let declared = |id: DefId| match tcx.def_kind(id) {
+        rustc_hir::def::DefKind::Trait => crate::lower::declarations::declared_methods(tcx, foreign, id).is_some(),
+        _ => crate::lower::declarations::declares_type(tcx, id),
+    };
     let mut types: Vec<crate::library::DeclaredType> = (tcx.hir_crate_items(()).definitions())
         .map(|local| local.to_def_id())
         .filter(|&id| {
-            crate::lower::declarations::declares_type(tcx, id)
+            declared(id)
                 && matches!(tcx.def_kind(tcx.parent(id)), rustc_hir::def::DefKind::Mod)
                 && tcx.visibility(id).is_public()
                 && !crate::lower::bindings::is_mark(tcx, id)

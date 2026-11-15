@@ -42,4 +42,20 @@ export const mutations: Mutation[] = [
     replace: "        let dictionary = reference(self.tcx.item_name(trait_id).as_str(), vec![keyword(\"unknown\")]);\n",
     tests: ["test/declarations-ungiven.test.ts", "-t", "box is declared"],
   },
+  {
+    name: "library-trait-dictionary-undeclared",
+    breaks: "a `dyn` of a library's trait whose declarations declare its dictionaries is `any`, its contract unread (#1870)",
+    file: "src/lower/declarations/dictionaries.rs",
+    find: "            return self.foreign.declared_type(trait_id).is_some();\n",
+    replace: "            return false;\n",
+    tests: ["test/declarations-libraries.test.ts", "-t", "a dyn of a library"],
+  },
+  {
+    name: "library-trait-dictionary-unimported",
+    breaks: "a library's trait's dictionary type is named but not imported from its file, so `Middleware` is no name TypeScript has (#1870)",
+    file: "src/lower/declarations/dictionaries.rs",
+    find: "            self.library_imports.insert((from.clone(), name.clone(), *default));\n",
+    replace: "            let _ = (from, default);\n",
+    tests: ["test/declarations-libraries.test.ts", "-t", "a dyn of a library"],
+  },
 ];
