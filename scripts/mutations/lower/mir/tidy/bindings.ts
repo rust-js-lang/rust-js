@@ -624,4 +624,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^extend_reserves_by_hint.rs$"],
     snapshots: true,
   },
+  {
+    name: "alias-none-forgotten",
+    breaks: "a temporary's read MIR said is `null` or a value, made the variable it's of, forgets it, so React's Flight client's `*value = deferred` is `deferred ?? null` (#1933)",
+    file: "src/lower/mir/tidy/bindings.rs",
+    find: "                                if let Some(none) = none {\n                                    e.facts = e.facts.with(none);\n                                }\n",
+    replace: "                                let _ = none;\n",
+    tests: ["test/lowering-nullable-tests.test.ts", "-t", "a variable a part of an && shows there"],
+  },
 ];

@@ -45,21 +45,6 @@ pub(crate) const CATALOGUE: &[Decision] = &[
         ],
         typed: false,
     },
-    // Tidy's answers that a test says an `Option` is there, read off the
-    // printed JS, which MIR's `proved_present` is to own (#1933): each
-    // `??` or `$unwrap` they drop is one MIR didn't prove.
-    Decision {
-        name: "tidy-present-in",
-        owner: "src/lower/mir/tidy/decided.rs present_in",
-        answers: &["coalesce", "unwrap"],
-        typed: false,
-    },
-    Decision {
-        name: "tidy-nulled-as-they-are",
-        owner: "src/lower/mir/tidy/values.rs nulled_as_they_are",
-        answers: &["and-shown"],
-        typed: false,
-    },
     Decision {
         name: "refcell-borrow",
         owner: "src/lower/std_types/cell.rs Std::Borrow",

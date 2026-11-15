@@ -3,14 +3,6 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "present-return-unseen",
-    breaks: "React's resolveCurrentlyRenderingComponent returns `$unwrap(currentlyRenderingComponent)` after its `== null` test threw (rd443)",
-    file: "src/lower/mir/tidy/decided.rs",
-    find: "        | StmtKind::Expr(value)\n        | StmtKind::Return(Some(value)) => present(value),\n",
-    replace: "        | StmtKind::Expr(value) => present(value),\n",
-    tests: ["test/lowering-early-exits.test.ts", "-t", "module variable returned after its test"],
-  },
-  {
     name: "written-if-decided-away",
     breaks:
       "an `if` the program wrote that an earlier test decides is folded to its branch, React's `// $FlowFixMe[constant-condition]` lost with its `if (enableGestureTransition)`",
@@ -42,23 +34,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^decided_tests_past_a_call.rs$"],
   },
   {
-    name: "present-coalesce-kept",
-    breaks:
-      '`return x ?? null` stays where a test it\'s under says `x` is there, `typeof x === "function"`',
-    file: "src/lower/mir/tidy/decided.rs",
-    find: "                    present_in(&mut stmts[j], test, holds, false);\n",
-    replace: "",
-    tests: ["test/lowering-nullable-tests.test.ts", "-t", "a variable MIR proves nothing of"],
-  },
-  {
-    name: "present-coalesce-failed-test-unread",
-    breaks: "after `if (x == null) { return null; }`, `x ?? null` stays",
-    file: "src/lower/mir/tidy/decided.rs",
-    find: "        false => test.clone().negated_test(),\n",
-    replace: "        false => test.clone(),\n",
-    tests: ["test/lowering-nullable-tests.test.ts", "-t", "a variable MIR proves nothing of"],
-  },
-  {
     name: "mir-tidy-decided-part-kept",
     breaks:
       "a part of a chain an earlier test decides is tested again, `.. || Array.isArray(value)` in its `else` (ADR 0743)",
@@ -86,38 +61,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "field-test-undecided-where-its-variable-changes",
-    breaks:
-      "a test through a field of a variable the loop assigns is never decided, so `$unwrap(node.sibling)` stays where `node.sibling != null` holds",
-    file: "src/lower/mir/tidy/decided.rs",
-    find: "    if test.reads_only_vars() {\n        test.visit_vars(&mut |v| stable &= !changing.contains(v));\n",
-    replace:
-      "    if true {\n        test.visit_vars(&mut |v| stable &= !changing.contains(v));\n",
-    tests: ["test/lowering-nullable-tests.test.ts", "-t", "a variable MIR proves nothing of"],
-  },
-  {
-    name: "unwrap-of-tested-kept",
-    breaks: "an `$unwrap(p)` where the test says `p` is there stays",
-    file: "src/lower/mir/tidy/decided.rs",
-    find: "            Some((_, option, _)) if option.reads_same() && !option.reads_a_field() && there(option) => {\n",
-    replace: "            Some((_, option, _)) if false && there(option) => {\n",
-    tests: ["test/lowering-early-exits.test.ts", "-t", "a module variable returned after its test"],
-  },
-  {
-    name: "unwrap-past-a-call",
-    breaks:
-      "an `$unwrap(p)` after a call that may change `p` is `p`, though the call cleared it",
-    file: "src/lower/mir/tidy/decided.rs",
-    find: "                    present_in(&mut stmts[j], test, holds, true);\n                    return;\n",
-    replace:
-      "                    present_in(&mut stmts[j], test, holds, true);\n                    j += 1;\n",
-    tests: [
-      "test/lowering-nullable.test.ts",
-      "-t",
-      "an unwrap of a field a test says is there",
-    ],
-  },
-  {
     name: "decided-branch-left-empty",
     breaks:
       "an or-pattern's alternative no value reaches, `(_, _, 1) | (_, 1, 1)`, leaves `if (b === 1) {}` once its `c === 1` is decided, and tidy's `values` stage panics, \"no empty if\" (#694); and a guard that fails of some alternatives, `chains`' (#714)",
@@ -125,13 +68,5 @@ export const mutations: Mutation[] = [
     find: "        if !settled(stmts, i) {\n            i += 1;\n        }\n",
     replace: "        i += 1;\n",
     tests: ["test/corpus.test.ts", "-t", "^or_pattern_(unreachable_alternative|guard_fails_some).rs$"],
-  },
-  {
-    name: "field-path-unwrap-tidied",
-    breaks: "a field read again after a test of it, `$unwrap(node.sibling)`, is taken as there, where a getter of a struct JS gives may answer `None` the second time, a `TypeError` where Rust panics (#1950)",
-    file: "src/lower/mir/tidy/decided.rs",
-    find: "            Some((_, option, _)) if option.reads_same() && !option.reads_a_field() && there(option) => {\n",
-    replace: "            Some((_, option, _)) if option.reads_same() && there(option) => {\n",
-    tests: ["test/lowering-nullable-tests.test.ts", "-t", "a RefCell field tested and read again"],
   },
 ];

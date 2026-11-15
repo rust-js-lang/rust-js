@@ -100,8 +100,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     && (place.projection.is_empty() && self.proved_present(state, place.local)
                         // Or what a closure's `with` lends it of a thread-local
                         // that's `Some` wherever it runs (`present_item_read`,
-                        // #1933 step 4 (G)).
-                        || self.present_item_read(state, place)) =>
+                        // #1933 step 4 (G)), or what a capture refers to that
+                        // a test in the closure proved (`capture_read_proved`).
+                        || self.present_item_read(state, place)
+                        || self.capture_read_proved(state, place)) =>
             {
                 Value::Expr(e.proved())
             }

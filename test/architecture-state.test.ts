@@ -177,6 +177,7 @@ const mirState: Record<string, string[]> = {
   "src/lower/mir/nested_options.rs": ["body"],
   "src/lower/mir/nulled.rs": ["at", "body", "locals", "writer"],
   "src/lower/mir/nulled/field_reads.rs": ["at", "body", "locals"],
+  "src/lower/mir/nulled/captured.rs": ["at", "body"],
   "src/lower/mir/nulled/defined.rs": ["at", "body"],
   "src/lower/mir/nulled/items.rs": ["body", "locals"],
   "src/lower/mir/nulled/lends.rs": ["body", "locals"],

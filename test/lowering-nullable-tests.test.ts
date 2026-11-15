@@ -591,9 +591,11 @@ pub fn next_id(init: &Init) -> u32 {
 });
 
 // A variable a part of an `&&` shows there, read right after it, as React's
-// Flight client's `deferred`, lent as a `&mut` so MIR proves nothing of it:
-// stored as it is, tidy's reading of the JS (ADR 0957); of an `||`'s part,
-// `?? null`. A field so shown is MIR's alone (#1950, above).
+// Flight client's `deferred`, lent as a `&mut` that never takes its `Some`
+// away and moved into a temporary under the test: stored as it is, MIR's
+// answer, the temporary a copy of what's proved where it's written
+// (`proved_present`, #1933's removal); of an `||`'s part, `?? null`. A
+// field so shown is MIR's alone (#1950, above).
 test("a variable a part of an && shows there is stored as it is", async () => {
   const { dir, fn, tidied } = compile(
     "nullable-tests-and-shown",
@@ -643,7 +645,7 @@ pub fn defer_or(items: Vec<u32>, chunk: &Chunk) {
 }
 `,
   );
-  expect(tidied).toEqual(["tidy-nulled-as-they-are and-shown"]);
+  expect(tidied).toEqual([]);
   expect(fn("defer")).toContain("    chunk.value = deferred;\n");
   expect(fn("deferOr")).toContain("    chunk.value = deferred ?? null;\n");
   const lib = await import(join(dir, "lib.js"));
@@ -661,13 +663,14 @@ pub fn defer_or(items: Vec<u32>, chunk: &Chunk) {
   expect(to.pending).toBe(null);
 });
 
-// What MIR can't see of a variable, one a closure captures and reads, a
-// test of it and its read inside the closure: tidy's reading of the printed
-// JS still answers it, until MIR does (#1933's step 4), `x ?? d` under a
-// test that `x` is there its `x`. A capture its maker gives `null` or a
-// value is MIR's now, React's Fizz's `prevTask` restored in a
-// `catch_unwind`'s closure (`captures_nulled`).
-test("a variable MIR proves nothing of is tidy's to read", async () => {
+// A variable a closure captures by reference, tested and read inside it:
+// MIR's to prove (`capture_read_proved`, #1933's removal), `x ?? d` under a
+// test that `x` is there its `x`, as what a shared reference refers to
+// can't change while it's lent. A capture its maker gives `null` or a
+// value, React's Fizz's `prevTask` restored in a `catch_unwind`'s closure
+// (`captures_nulled`); and not a field of a variable written between two
+// tests of it.
+test("a variable a closure captures and tests is MIR's to prove", async () => {
   const { dir, fn, tidied } = compile(
     "nullable-tests-lent-variables",
     `use std::cell::RefCell;
@@ -713,6 +716,36 @@ pub fn after_none(value: Option<&'static js::Unknown>, fallback: &'static js::Un
     })
 }
 
+// Not a capture lent \`&mut\`, set between, nor a test of another.
+pub fn reset_or(mut value: Option<&'static js::Unknown>, fallback: &'static js::Unknown, run: &mut dyn FnMut(&mut dyn FnMut() -> bool) -> bool) -> bool {
+    run(&mut || {
+        if value.is_some() {
+            value = None;
+            return js::strict_equals(value.unwrap_or(fallback), fallback);
+        }
+        false
+    })
+}
+
+pub fn else_read(value: Option<&'static js::Unknown>, fallback: &'static js::Unknown, run: &dyn Fn(&dyn Fn() -> bool) -> bool) -> bool {
+    run(&|| if value.is_some() { false } else { js::strict_equals(value.unwrap_or(fallback), fallback) })
+}
+
+pub fn other_tested(value: Option<&'static js::Unknown>, other: Option<&'static js::Unknown>, fallback: &'static js::Unknown, run: &dyn Fn(&dyn Fn() -> bool) -> bool) -> bool {
+    run(&|| other.is_some() && js::strict_equals(value.unwrap_or(fallback), fallback))
+}
+
+// Nor a copy made before its test, of what's written between.
+#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn copied_before(mut x: Option<&'static js::Unknown>, given: &'static js::Unknown) -> Option<&'static js::Unknown> {
+    let y = x;
+    x = Some(given);
+    if x.is_some() {
+        return y;
+    }
+    x
+}
+
 // A test of a field of a variable written between two of them decides
 // nothing of the second.
 pub struct Node {
@@ -733,10 +766,12 @@ pub fn walked(mut node: &'static Node) -> u32 {
 
 `,
   );
-  expect(tidied.sort()).toEqual(["tidy-present-in coalesce"]);
+  expect(tidied).toEqual([]);
   expect(fn("restored")).not.toContain("??");
   expect(fn("firstOr")).not.toContain("??");
   expect(fn("afterNone")).not.toContain("??");
+  for (const name of ["resetOr", "otherTested", "elseRead"]) expect([name, fn(name).includes("value ?? fallback")]).toEqual([name, true]);
+  expect(fn("copiedBefore")).toContain("?? null");
   const lib = await import(join(dir, "lib.js"));
   const [task, key] = [lib.task(), { id: 1 }];
   let inside: unknown;
@@ -748,6 +783,7 @@ pub fn walked(mut node: &'static Node) -> u32 {
   const [value, fallback] = [{}, {}];
   const run = (f: () => boolean) => f();
   expect([lib.firstOr(value, fallback, run), lib.firstOr(undefined, fallback, run), lib.afterNone(value, fallback, run)]).toEqual([false, false, false]);
+  expect([lib.resetOr(value, fallback, run), lib.otherTested(undefined, value, fallback, run), lib.copiedBefore(undefined, value), lib.elseRead(undefined, fallback, run)]).toEqual([true, true, null, true]);
   const last = { next: undefined, id: 3 };
   expect([lib.walked(last), lib.walked({ next: last, id: 1 }), lib.walked({ next: { next: last, id: 2 }, id: 1 })]).toEqual([3, 103, 202]);
 });

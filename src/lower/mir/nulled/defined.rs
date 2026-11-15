@@ -15,7 +15,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// runs (`proved_by`): a read of it there is `Known::ProvedDefined`, so
     /// a nullable place stores it as it is, no `?? null`.
     pub(in crate::lower::mir) fn proved_defined(&self, state: &State<'_, 'tcx>, local: Local) -> bool {
-        self.proved_by(state, local, Self::defined_edge)
+        self.proved_by(state, local, Self::defined_edge, state.at)
     }
 
     /// The edge of a switch on `flag` that `local` is defined on.

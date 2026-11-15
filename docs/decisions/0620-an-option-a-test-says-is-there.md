@@ -733,4 +733,62 @@ them, the all-off regeneration of React's port differs only by
 resolveModel's improvement: tidy's presence rewrites are left to three
 test rows MIR doesn't prove yet, a `Cell` thread-local's two `get()`s,
 a local lent `&mut` before its test, and a shared capture tested in its
-closure, each to be MIR's before the rewrites go.
+closure, each to be MIR's before the rewrites go (the next amendment).
+
+## Amendment: tidy's presence rewrites go; MIR is the one owner (2026-11-16, #1933's removal)
+
+The three rows tidy alone answered are MIR's, each sound within its
+limits (the lead, for the user):
+
+- **A thread-local's `Cell` read again** (`field_reads.rs`' `CellRead::Local`,
+  beside a `RefCell` field's path): `if CURRENT.get().is_none() { panic!() }
+  CURRENT.get().unwrap()`, `return current;` (rd443), where nothing runs
+  between the test and the read but the same key's `get()` and the test,
+  no call, which may `set` it, and no write of its cell, which only a call
+  makes. With a call between, `run();`, `$unwrap(current)` stays; and the
+  corpus's nullable_local_read_alike's `COMBINED.get().unwrap()` right
+  after its test is `COMBINED` now, its `expect` after a `push` still
+  `$unwrap`.
+- **A local written once by a copy of one proved where it's written**
+  (`proved_present`'s, its test asked at that block, `proved_by`'s
+  `read`): React's Flight client's `deferred`, moved into a temporary
+  under `deferred.is_some() && chunk.blocked`, `chunk.value = deferred`.
+  Never lent nor written again, it holds that value wherever it's read.
+  And tidy's `alias_variables`, which makes such a temporary the variable
+  it's of, keeps what MIR said of the read's `None` there (`only_none`),
+  as the variable holds the same value there.
+- **What a closure's shared capture of an `Option` refers to, tested and
+  read in the closure** (`mir/nulled/captured.rs`' `capture_read_proved`):
+  `run(&|| if value.is_some() { value.unwrap_or(d) } ..)`, `value`. What a
+  shared reference refers to can't change while it's lent, an `Option` of
+  no interior mutability (`is_freeze`); not a capture lent `&mut`, which
+  the closure may set between, nor a test of another capture, nor a read
+  on the test's other edge.
+
+Then **tidy's presence rewrites go outright**: the decided tests' `x ?? d`
+and `$unwrap(x)` of a variable a test says is there (`present_in`), and
+`nulled_as_they_are`'s `x ?? null` of a place an `&&`'s part shows, with
+their decisions (`tidy-present-in`, `tidy-nulled-as-they-are`), stage,
+the helper only they asked (`reads_a_field`) and nine mutations of their
+code; MIR's `proved_present` and its siblings are the one owner of "a test
+says this `Option` is there". test/architecture-nones.test.ts refuses
+their return: no such function in tidy, no presence `implies` of a test,
+no decision of its own. Every corpus case, as a program and a library,
+is its snapshot but nullable_local_read_alike's improvement, and React's
+port regenerates byte for byte.
+
+Case of [0262](0262-when-rust-and-js-disagree.md): none, each value the
+same. Held by corpus case option_proved_again_where_nothing_changes_it
+(native, both builds: a call between that sets the cell `None`, which
+panics as Rust's does; the `&mut` lend; the captures), test/lowering-
+nullable-tests.test.ts's rows (a capture lent `&mut` and set, a test of
+another capture, a read on the other edge, a copy made before its test,
+each unproved and run), test/lowering-early-exits.test.ts's rd443, and
+mutations `local-cell-read-past-a-call`, `local-cell-read-unproved`
+(lower/mir/nulled/field_reads.ts), `proved-copy-never`
+(lower/mir/nulled.ts), `capture-proved-though-lent-mut`,
+`capture-proved-by-another`, `capture-proved-undominated`
+(lower/mir/nulled/captured.ts) and `alias-none-forgotten`
+(lower/mir/tidy/bindings.ts). `field-test-undecided-where-its-variable-changes`
+retires: with `present_in` gone, whether a field's test of a variable
+something assigns is decided changes no corpus case, test or React's port.

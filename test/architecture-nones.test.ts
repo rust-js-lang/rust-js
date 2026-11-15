@@ -87,3 +87,21 @@ test("a read a test proved there is MIR's to say, and tidy's to forget as it beg
   expect(read("src/lower/mir/tidy/contracts.rs")).toContain("e.facts.has(crate::js::Known::ProvedDefined)");
   expect(read("src/lower/mir/tidy/contracts.rs")).toContain("&[JUMPS_LAND, DECLARED_ONCE, NOTHING_PROVED]");
 });
+
+// That a test says an `Option` is there is MIR's alone to say (#1933):
+// tidy reads none off the printed JS, no `x ?? d` nor `$unwrap(x)` it drops
+// under a test of `x`, no `x ?? null` of a place an `&&`'s part shows, and
+// no decision of its own counts such an answer. Its decided tests, its
+// `present_in`, and its `nulled_as_they_are` went once MIR proved what
+// they answered, React's port and every corpus case the same (ADR 0620,
+// amended). What's left of tidy's is MIR's facts, kept where it moves a
+// read (`alias_variables`' `only_none`).
+test("tidy decides no Option is there from a test of it", () => {
+  const tidy = files("src/lower/mir/tidy").concat("src/lower/mir/tidy.rs").filter((file) => file.endsWith(".rs"));
+  const found = tidy.flatMap((file) =>
+    read(file).split("\n")
+      .filter((line) => !/^\s*\/\//.test(line) && /\bfn (?:present_in|nulled_as_they_are|shown_present|shown_defined|unnulled)\b|implies\(&known, &Expr::bin\(Op::LooseNe/.test(line))
+      .map((line) => `${file}: ${line.trim()}`));
+  expect(found).toEqual([]);
+  expect(read("src/decisions.rs")).not.toMatch(/name: "tidy-(?:present-in|nulled-as-they-are)"/);
+});

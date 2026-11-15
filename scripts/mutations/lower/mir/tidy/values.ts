@@ -188,26 +188,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^deque_write_out_of_bounds.rs$"],
   },
   {
-    name: "present-place-stored-coalesced",
-    breaks:
-      "React's `nextHydratableInstance = fiber.stateNode` after `fiber.stateNode != null` is `?? null` again (ADR 0957)",
-    file: "src/lower/mir/tidy/values.rs",
-    find: "                && shown_present(test, made)\n",
-    replace:
-      "                && shown_present(test, made)\n                && false\n",
-    tests: ["test/lowering-nullable-tests.test.ts", "-t", "a variable a part of an && shows there"],
-  },
-  {
-    name: "present-place-of-an-or",
-    breaks:
-      "a part of an `||` taken as shown, `a || p != null` storing `p` as it is where `p` may be `undefined` (ADR 0957)",
-    file: "src/lower/mir/tidy/values.rs",
-    find: "        ExprKind::Binary(Op::And, a, b) => shown_present(a, place) || shown_present(b, place),\n",
-    replace:
-      "        ExprKind::Binary(Op::And | Op::Or, a, b) => shown_present(a, place) || shown_present(b, place),\n",
-    tests: ["test/lowering-nullable-tests.test.ts", "-t", "a variable a part of an && shows there"],
-  },
-  {
     name: "unread-resets-off",
     breaks:
       "a take of a cell, returned, that no closure reads after it, writes its reset, `const old = result; result = \"\"; return old;`, where upstream's is `return result;` (rd598)",
@@ -260,13 +240,5 @@ export const mutations: Mutation[] = [
     replace: "    if let Some(it) = crate::lower::iterators::lent_string_iterator(e).filter(|_| false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^string_iterator_lent_by_a_macro_where_it_is_made.rs$"],
     snapshots: true,
-  },
-  {
-    name: "field-path-shown-present",
-    breaks: "a field a test of an `&&` shows isn't `null`, `fiber.stateNode != null`, read again is stored as it is, where a getter of a struct JS gives may answer `undefined` the second time, stored where Rust stores `null` (#1950)",
-    file: "src/lower/mir/tidy/values.rs",
-    find: "                && !made.reads_a_field()\n",
-    replace: "",
-    tests: ["test/lowering-nullable-reads.test.ts", "-t", "test shows present"],
   },
 ];

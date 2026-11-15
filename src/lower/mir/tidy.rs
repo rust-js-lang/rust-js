@@ -892,7 +892,6 @@ mod tests {
                 "filled lazily",
                 "appends",
                 "bound captures",
-                "nulled as they are",
                 "written jumps",
                 "written ors",
                 "written tests",

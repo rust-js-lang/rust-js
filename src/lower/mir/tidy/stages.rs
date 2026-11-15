@@ -1061,9 +1061,6 @@ pub(super) const STAGES: &[Stage] = &[
                     }
                 })
             }),
-            // A nullable field's value a variable holds, stored in another
-            // nullable place as it is, no `?? null` (ADR 0620, amended).
-            pass("nulled as they are", |b, _| values::nulled_as_they_are(b)),
             // A `continue` or a loop's `break` the program wrote, kept where
             // it wrote it, which its comment is before, once nothing moves
             // them (ADR 0684, amended).

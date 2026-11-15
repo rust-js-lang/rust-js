@@ -407,60 +407,6 @@ pub(super) fn holed_lists(body: &mut Vec<Stmt>) {
     }
 }
 
-/// A nullable place's `x ?? null` (`Storage::written`) where a test of an
-/// `&&` just before shows `x` isn't `null`: `x` (ADR 0957). A `const` never
-/// `undefined` stored so is MIR's (`nulled::stored_nulled`, the closure
-/// captures of `captures_nulled`, ADR 0620, amended), its tidy rule gone
-/// (#1933).
-pub(super) fn nulled_as_they_are(body: &mut Vec<Stmt>) {
-    js::statement_lists(body, &mut |stmts| {
-        for stmt in stmts.iter_mut() {
-            // A variable a test of an `&&` shows isn't `null`, a module's
-            // too, read right after it, the first statement's value: as it
-            // is, nothing between (ADR 0957). Not a field, `p.stateNode !=
-            // null`, which a getter of a struct JS gives may answer anew,
-            // `undefined` the second time (#1950): MIR's to prove of the
-            // program's own data (`nulled::field_reads`, #1933).
-            if let StmtKind::If(test, then, _) = &mut stmt.kind
-                && then
-                    .first()
-                    .is_some_and(|first| reads_nothing_before_its_value(&first.kind))
-                && let Some(first) = then.first_mut()
-                && let StmtKind::Const(_, value) | StmtKind::Let(_, Some(value)) | StmtKind::Assign(_, value) =
-                    &mut first.kind
-                && let ExprKind::Binary(Op::Coalesce, made, null) = &value.kind
-                && matches!(null.kind, ExprKind::Null)
-                && made.reads_same()
-                && !made.reads_a_field()
-                && shown_present(test, made)
-            {
-                crate::decisions::record("tidy-nulled-as-they-are", "and-shown");
-                let span = value.span;
-                *value = (**made).clone().or_at(span);
-            }
-        }
-    });
-}
-
-/// Whether `stmt` makes its value first: a declaration's, or an
-/// assignment's of a place that reads the same, which runs nothing first.
-fn reads_nothing_before_its_value(stmt: &StmtKind) -> bool {
-    match stmt {
-        StmtKind::Const(..) | StmtKind::Let(..) => true,
-        StmtKind::Assign(target, _) => target.reads_same() && !target.facts.has(js::Known::Setter),
-        _ => false,
-    }
-}
-
-/// Whether `test`, or a part of its `&&`, is `place != null`.
-fn shown_present(test: &Expr, place: &Expr) -> bool {
-    match &test.kind {
-        ExprKind::Binary(Op::And, a, b) => shown_present(a, place) || shown_present(b, place),
-        ExprKind::Binary(Op::LooseNe, a, b) => matches!(b.kind, ExprKind::Null) && js::same_path(a, place),
-        _ => false,
-    }
-}
-
 /// `const x = { value: undefined };`, a cell a pointer is taken to, declared
 /// before its value (ADR 0407), and its first mention in the same block its
 /// value set, `x.value = 1;`, of what doesn't read `x`: `const x = { value:

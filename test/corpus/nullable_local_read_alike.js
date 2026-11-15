@@ -49,7 +49,7 @@ function fallback() {
 function combined() {
   const shown = [];
   if (COMBINED != null) {
-    shown.push($unwrap(COMBINED));
+    shown.push(COMBINED);
     shown.push($unwrap(COMBINED, "set"));
   }
   shown.push(COMBINED ?? "");

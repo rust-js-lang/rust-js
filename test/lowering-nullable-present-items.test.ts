@@ -119,9 +119,9 @@ pub fn untested(x: i32) -> bool {
 }
 `,
   );
-  // Each MIR leaves as it is, `$unwrap`, which the printed JS's tidy may
-  // read later, the `Cell`'s `counter` above all: not MIR's to prove.
-  expect(tidied).toEqual(["tidy-present-in unwrap"]);
+  // Each MIR leaves as it is, `$unwrap`, the `Cell`'s `counter` too.
+  expect(tidied).toEqual([]);
+  expect(js).toContain("() => $unwrap(counter).value");
   expect(js).toContain("const ON_NONE = missing == null ? (x) => $unwrap(missing)(x) : undefined;");
   expect(js).toContain("const UNTESTED = (x) => $unwrap(missing)(x);");
   expect(js).toContain(": (x) => $unwrap(missing)(x);\n");

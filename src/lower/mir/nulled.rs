@@ -8,6 +8,7 @@ use crate::collections::{IndexMap, IndexSet};
 use crate::lower::aggregates::Given;
 use crate::lower::representation::NoneForm;
 
+mod captured;
 mod defined;
 mod field_reads;
 mod items;
@@ -455,8 +456,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// it there is `Known::Present`, so a nullable result or place stores it
     /// as it is, no `?? null`, and an exit gives it as it is, no `??
     /// undefined`.
+    /// And a local written once, never lent, by a move or a copy of such a
+    /// local, proved where it's written: it holds that value wherever it's
+    /// read, React's Flight client's `*value = deferred`, its `deferred`
+    /// moved into a temporary under `deferred.is_some()` (#1933's removal).
     pub(super) fn proved_present(&self, state: &State<'_, 'tcx>, local: Local) -> bool {
-        self.proved_by(state, local, Self::present_edge)
+        if self.proved_by(state, local, Self::present_edge, state.at) {
+            return true;
+        }
+        let Some([Write::Assign(Rvalue::Use(Operand::Copy(of) | Operand::Move(of), _))]) =
+            self.whole_writes(state, local).as_deref()
+        else {
+            return false;
+        };
+        let written = (state.body.basic_blocks.iter_enumerated()).find_map(|(block, data)| {
+            (data.statements.iter())
+                .any(|s| matches!(&s.kind, mir::StatementKind::Assign(assign) if assign.0.local == local))
+                .then_some(block)
+        });
+        of.projection.is_empty()
+            && state.locals.writes[local] == 1
+            && local.as_usize() > state.body.arg_count
+            && written.is_some_and(|at| self.proved_by(state, of.local, Self::present_edge, at))
     }
 
     /// Whether `local` is proved there by a test whose edge `edge` says,
@@ -467,6 +488,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         state: &State<'_, 'tcx>,
         local: Local,
         edge: impl Fn(&Self, &State<'_, 'tcx>, Local, &mir::SwitchTargets, Local) -> Option<BasicBlock>,
+        read: BasicBlock,
     ) -> bool {
         let parameter = (1..=state.body.arg_count).contains(&local.as_usize());
         // Each write whole, never lent as a `&mut` nor a raw pointer, which
@@ -503,10 +525,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // past which nothing writes `local` up to the read.
             let proves = |flag: Local, targets: &mir::SwitchTargets, to: BasicBlock| {
                 edge(self, state, flag, targets, local).is_some_and(|edge| {
-                    entered(edge) && dominators.dominates(edge, to) && (once || self.unwritten_since(state, flag, local))
+                    entered(edge) && dominators.dominates(edge, to) && (once || self.unwritten_since(state, flag, local, read))
                 })
             };
-            if proves(flag.local, targets, state.at) {
+            if proves(flag.local, targets, read) {
                 return true;
             }
             // A `bool` set to constants alone, `matches!`'s in each arm of
@@ -532,7 +554,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
             [(false, no), (true, targets.otherwise())].into_iter().any(|(value, taken)| {
                 entered(taken)
-                    && dominators.dominates(taken, state.at)
+                    && dominators.dominates(taken, read)
                     && (written.iter().filter(|&&(_, v)| v == value))
                         .all(|&(at, _)| tests.iter().any(|&(tested, targets)| proves(tested, targets, at)))
             })
@@ -588,7 +610,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether nothing writes `local` on any way from where `flag`, a test
     /// of it, is written to the block lowered now (`ways_from_test`), nor
     /// after the test in its own block: what the test read is what's read.
-    fn unwritten_since(&self, state: &State<'_, 'tcx>, flag: Local, local: Local) -> bool {
+    fn unwritten_since(&self, state: &State<'_, 'tcx>, flag: Local, local: Local, read: BasicBlock) -> bool {
         let blocks = &state.body.basic_blocks;
         let Some((test, after)) = (blocks.iter_enumerated()).find_map(|(block, data)| {
             let assigned = (data.statements.iter()).position(
@@ -609,15 +631,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 || matches!(&statement.kind, mir::StatementKind::SetDiscriminant { place, .. } if place.local == local)
         };
         let calls_into = |data: &mir::BasicBlockData<'tcx>| matches!(&data.terminator().kind, TerminatorKind::Call { destination, .. } if destination.local == local);
-        if blocks[test].statements[after..].iter().any(writes) || (test != state.at && calls_into(&blocks[test])) {
+        if blocks[test].statements[after..].iter().any(writes) || (test != read && calls_into(&blocks[test])) {
             return false;
         }
-        let Some(ways) = self.ways_from_test(state, test) else {
+        let Some(ways) = self.ways_from_test_to(state, test, read) else {
             return false;
         };
         ways.iter().all(|&block| {
             let data = &blocks[block];
-            !data.statements.iter().any(writes) && (block == state.at || !calls_into(data))
+            !data.statements.iter().any(writes) && (block == read || !calls_into(data))
         })
     }
 
@@ -628,6 +650,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The one answer of what runs between a test and a read, which
     /// `proved_present` and `field_reads` ask (#1933).
     pub(super) fn ways_from_test(&self, state: &State<'_, 'tcx>, test: BasicBlock) -> Option<IndexSet<BasicBlock>> {
+        self.ways_from_test_to(state, test, state.at)
+    }
+
+    /// `ways_from_test`'s, to `read`, a block of the body.
+    fn ways_from_test_to(
+        &self,
+        state: &State<'_, 'tcx>,
+        test: BasicBlock,
+        read: BasicBlock,
+    ) -> Option<IndexSet<BasicBlock>> {
         let blocks = &state.body.basic_blocks;
         let mut ahead: IndexSet<BasicBlock> = IndexSet::default();
         let mut work: Vec<BasicBlock> = blocks[test].terminator().successors().collect();
@@ -637,11 +669,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             work.extend(blocks[b].terminator().successors());
         }
-        if !ahead.contains(&state.at) {
+        if !ahead.contains(&read) {
             return None;
         }
         let mut behind: IndexSet<BasicBlock> = IndexSet::default();
-        let mut work = vec![state.at];
+        let mut work = vec![read];
         while let Some(b) = work.pop() {
             if b == test || !behind.insert(b) {
                 continue;

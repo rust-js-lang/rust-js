@@ -1,8 +1,12 @@
 //! An `Option` a struct's `RefCell` field holds, read where a test of the
 //! same field proved it there: `while node.sibling.borrow().is_none() {
 //! .. }` then `node.sibling.borrow().clone().unwrap()`, React's
-//! `$unwrap(node.sibling)` (#1933, step 1(b)). Split by concept from
-//! `nulled`, whose `proved_present` answers a local's own tests.
+//! `$unwrap(node.sibling)` (#1933, step 1(b)); and one a thread-local's
+//! `Cell` holds, `KEY.get()`, read where a test of another `KEY.get()`
+//! proved it, React's resolveCurrentlyRenderingComponent's `if
+//! CURRENT.get().is_none() { panic!(..) } CURRENT.get().unwrap()` (rd443,
+//! #1933's removal). Split by concept from `nulled`, whose
+//! `proved_present` answers a local's own tests.
 //!
 //! A read is proved only where nothing runs between the test and it but
 //! that same cell's reads, none of which changes it: its `borrow()`, the
@@ -11,7 +15,9 @@
 //! (an `Option` of a reference, a number, a string, an `Rc` or an `Arc`,
 //! std's). The variable the field is reached from is written nowhere
 //! between; the struct is one no getter answers the fields of, the
-//! program's own data (`fields_read_once`).
+//! program's own data (`fields_read_once`). Of a thread-local, nothing
+//! runs between but its own `get()`s and the test: no call, which may
+//! `set` it, and no write of its cell, which only a call makes.
 
 use super::*;
 
@@ -22,6 +28,24 @@ use super::*;
 struct CellPath<'tcx> {
     root: Local,
     steps: Vec<PlaceElem<'tcx>>,
+}
+
+/// What a read of a cell reads: a struct's `RefCell` field, by its path,
+/// or a thread-local's `Cell`, by its key.
+#[derive(PartialEq, Eq, Debug)]
+enum CellRead<'tcx> {
+    Field(CellPath<'tcx>),
+    Local(rustc_span::def_id::DefId),
+}
+
+impl CellRead<'_> {
+    /// The variable its path begins at, which nothing between may write.
+    fn root(&self) -> Option<Local> {
+        match self {
+            CellRead::Field(path) => Some(path.root),
+            CellRead::Local(_) => None,
+        }
+    }
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -69,26 +93,74 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let entered = blocks.predecessors()[edge].len() == 1;
             entered
                 && dominators.dominates(edge, state.at)
-                && self.option_ref_cell(state, &given.node).as_ref() == Some(&read)
+                && self.tested_cell(state, &given.node).as_ref() == Some(&read)
                 && self.quiet_between(state, *test, (&read, read_at))
         })
     }
 
     /// Of `local`, written once by a clone of what a `RefCell` field's
     /// guard derefs to, `node.sibling.borrow().clone()`, or a copy of it,
-    /// that field's path and the block its write ends.
-    fn cell_field_read(&self, state: &State<'_, 'tcx>, local: Local) -> Option<(CellPath<'tcx>, BasicBlock)> {
+    /// that field's path and the block its write ends; or by a
+    /// thread-local's `KEY.get()`, its key.
+    fn cell_field_read(&self, state: &State<'_, 'tcx>, local: Local) -> Option<(CellRead<'tcx>, BasicBlock)> {
         let writes = self.whole_writes(state, local)?;
         let [write] = writes.as_slice() else { return None };
         match write {
+            Write::Call(block, func, [key]) if let Some(key) = self.local_cell_got(state, func, &key.node) => {
+                Some((CellRead::Local(key), *block))
+            }
             Write::Call(block, func, [cloned]) => {
                 let (def_id, _) = fn_def(func.ty(state.body, self.tcx))?;
                 let clone = self.tcx.trait_of_assoc(def_id)?;
                 if !self.tcx.is_lang_item(clone, LangItem::Clone) {
                     return None;
                 }
-                Some((self.option_ref_cell(state, &cloned.node)?, *block))
+                Some((CellRead::Field(self.option_ref_cell(state, &cloned.node)?), *block))
             }
+            _ => None,
+        }
+    }
+
+    /// The thread-local a call of `func` given `key` is `KEY.get()` of, its
+    /// `Cell`'s value.
+    fn local_cell_got(
+        &self,
+        state: &State<'_, 'tcx>,
+        func: &Operand<'tcx>,
+        key: &Operand<'tcx>,
+    ) -> Option<rustc_span::def_id::DefId> {
+        let (def_id, _) = fn_def(func.ty(state.body, self.tcx))?;
+        if crate::lower::recognition::local_key_cell_method(self.tcx, def_id)
+            != Some(crate::lower::recognition::LocalKeyCellMethod::Get)
+        {
+            return None;
+        }
+        let assigned = crate::lower::body_queries::assigned_once(state.body);
+        crate::lower::mir::referred_key(
+            state.facts.promoted(),
+            |local| assigned.get(&local).copied().flatten(),
+            key,
+        )
+    }
+
+    /// The cell `given`, a test's reference to an `Option`, reads: a
+    /// `RefCell` field's (`option_ref_cell`), or of `&x`, `x` written once
+    /// by a thread-local's `KEY.get()`, its key.
+    fn tested_cell(&self, state: &State<'_, 'tcx>, given: &Operand<'tcx>) -> Option<CellRead<'tcx>> {
+        if let Some(path) = self.option_ref_cell(state, given) {
+            return Some(CellRead::Field(path));
+        }
+        let reference = given.place().filter(|p| p.projection.is_empty())?.local;
+        let Some([Write::Assign(Rvalue::Ref(_, BorrowKind::Shared, of))]) =
+            self.whole_writes(state, reference).as_deref()
+        else {
+            return None;
+        };
+        if !of.projection.is_empty() {
+            return None;
+        }
+        match self.whole_writes(state, of.local).as_deref() {
+            Some([Write::Call(_, func, [key])]) => self.local_cell_got(state, func, &key.node).map(CellRead::Local),
             _ => None,
         }
     }
@@ -223,7 +295,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         &self,
         state: &State<'_, 'tcx>,
         test: BasicBlock,
-        (read, read_at): (&CellPath<'tcx>, BasicBlock),
+        (read, read_at): (&CellRead<'tcx>, BasicBlock),
     ) -> bool {
         let blocks = &state.body.basic_blocks;
         // Each way from the test to the read, not back through the test,
@@ -237,7 +309,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         ways.iter().all(|&b| {
             let data = &blocks[b];
             let statements = data.statements.iter().all(|statement| match &statement.kind {
-                mir::StatementKind::Assign(assign) => assign.0.projection.is_empty() && assign.0.local != read.root,
+                mir::StatementKind::Assign(assign) => {
+                    assign.0.projection.is_empty() && Some(assign.0.local) != read.root()
+                }
                 mir::StatementKind::SetDiscriminant { .. } => false,
                 _ => true,
             });
@@ -251,7 +325,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         &self,
         state: &State<'_, 'tcx>,
         terminator: &TerminatorKind<'tcx>,
-        read: &CellPath<'tcx>,
+        read: &CellRead<'tcx>,
     ) -> bool {
         match terminator {
             TerminatorKind::Goto { .. }
@@ -270,8 +344,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 destination,
                 ..
             } => {
-                if !destination.projection.is_empty() || destination.local == read.root {
+                if !destination.projection.is_empty() || Some(destination.local) == read.root() {
                     return false;
+                }
+                // A thread-local's own `get()`, and the test, alone.
+                if let CellRead::Local(key) = read {
+                    return match args.as_ref() {
+                        [given] => {
+                            self.local_cell_got(state, func, &given.node) == Some(*key)
+                                || fn_def(func.ty(state.body, self.tcx)).is_some_and(|(def_id, _)| {
+                                    crate::lower::recognition::option_presence_test(self.tcx, def_id).is_some()
+                                })
+                        }
+                        _ => false,
+                    };
                 }
                 let Some((def_id, generic_args)) = fn_def(func.ty(state.body, self.tcx)) else {
                     return false;
@@ -296,6 +382,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         (args.first())
                             .and_then(|cell| self.borrowed(state, &cell.node))
                             .and_then(|cell| self.cell_path(state, cell, 0))
+                            .map(CellRead::Field)
                             .as_ref()
                             == Some(read)
                     }

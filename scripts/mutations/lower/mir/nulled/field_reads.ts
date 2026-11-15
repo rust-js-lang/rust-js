@@ -18,8 +18,8 @@ export const mutations: Mutation[] = [
     name: "field-read-root-rebound",
     breaks: "the variable the field is reached from, set to another between the test and the read, `node = b`, is taken to be the one tested (#1933)",
     file: "src/lower/mir/nulled/field_reads.rs",
-    find: " && assign.0.local != read.root,\n",
-    replace: ",\n",
+    find: "assign.0.projection.is_empty() && Some(assign.0.local) != read.root()\n",
+    replace: "assign.0.projection.is_empty()\n",
     tests: fieldPaths,
   },
   {
@@ -29,5 +29,21 @@ export const mutations: Mutation[] = [
     find: "        if base.variant_index.is_some() || self.fields_read_once(base.ty) {\n",
     replace: "        if base.variant_index.is_some() {\n",
     tests: fieldPaths,
+  },
+  {
+    name: "local-cell-read-past-a-call",
+    breaks: "a thread-local `Cell`'s `get()` after a call that may set it, `if CURRENT.get().is_none() { panic!() } run(); CURRENT.get().unwrap()`, is taken to be the one tested, `current` where `run` set it `None` and Rust panics (#1933)",
+    file: "src/lower/mir/nulled/field_reads.rs",
+    find: "                        }\n                        _ => false,\n                    };\n                }\n",
+    replace: "                        }\n                        _ => true,\n                    };\n                }\n",
+    tests: ["test/lowering-early-exits.test.ts", "-t", "a module variable returned after its test"],
+  },
+  {
+    name: "local-cell-read-unproved",
+    breaks: "a thread-local `Cell`'s `get()` right after a test of another `get()` of it is taken for one nothing proved, React's resolveCurrentlyRenderingComponent's `$unwrap(current)` (#1933)",
+    file: "src/lower/mir/nulled/field_reads.rs",
+    find: "            Write::Call(block, func, [key]) if let Some(key) = self.local_cell_got(state, func, &key.node) => {\n",
+    replace: "            Write::Call(block, func, [key]) if let Some(key) = self.local_cell_got(state, func, &key.node).filter(|_| false) => {\n",
+    tests: ["test/lowering-early-exits.test.ts", "-t", "a module variable returned after its test"],
   },
 ];
