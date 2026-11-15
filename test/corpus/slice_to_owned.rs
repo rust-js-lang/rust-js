@@ -1,3 +1,4 @@
+//@ library-differs
 // A slice's `to_owned()` is its `to_vec()`, as percent-encoding's
 // `initial_bytes[..n].to_owned()`; and `to_vec()` of an array made where
 // it's called is that array, of items that need no clone (ADR 0153).

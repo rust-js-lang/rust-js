@@ -1,3 +1,4 @@
+//@ library-differs
 // A temporary kept to be read more than once, a pattern's that takes it
 // apart, is named as a Rust developer's tooling names it, rust-analyzer's
 // suggestion (ADR 0569): after the method the source calls,
