@@ -5,7 +5,7 @@ import {
   $BTreeSet,
   $capacity,
   $cmp,
-  $copyOf,
+  $copyRange,
   $drainAll,
   $enumerate,
   $grownVec,
@@ -262,7 +262,7 @@ function exact(n) {
     8,
   );
   const hp = $grownVec($roomForHint($iter(heap), 4, false), (grown) => Array.from(grown));
-  const dr = $capacity($copyOf(dq, Math.min(dq.length, 2)), 4);
+  const dr = $capacity($copyRange(dq, Math.min(dq.length, 2)), 4);
   const he = $grownVec(
     $roomForHint(
       $mapExtractIf(hm, (k) => k % 2 === 0, hm, true, false),

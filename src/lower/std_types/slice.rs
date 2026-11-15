@@ -94,7 +94,8 @@ pub(in crate::lower) enum SliceOp {
         checked: bool,
     },
     /// A `VecDeque`'s `range_mut(a..b)`: a view of those items, checked as
-    /// `&mut v[a..b]` is, a handle on each number or text, as `iter_mut`'s.
+    /// `slice::range` checks it (#1937), a handle on each number or text, as
+    /// `iter_mut`'s.
     DequeRangeMut,
     /// `chunks_mut(n)`: views of each `n` items, the last fewer.
     ChunksMut,

@@ -6,7 +6,7 @@ import {
   $byteLen,
   $cellSwap,
   $clearPoison,
-  $copyOf,
+  $copyRange,
   $debugStr,
   $decodeUtf16,
   $dequeSwapRemove,
@@ -67,7 +67,7 @@ function main() {
   value.value = (value.value + 1) | 0;
   const value$1 = $unwrap($mutAt(deque, -1));
   value$1.value = (value$1.value * 10) | 0;
-  const arg = $copyOf(deque, 1, 3);
+  const arg = $copyRange(deque, 1, 3);
   console.log(`[${deque.join(", ")}] [${arg.join(", ")}]`);
   const swapRemoveBack = $dequeSwapRemove(deque, 1, false);
   const swapRemoveFront = $dequeSwapRemove(deque, 3, true);

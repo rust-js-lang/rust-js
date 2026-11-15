@@ -28,6 +28,7 @@ import {
   $unwound,
   $view,
   $viewGet,
+  $viewRange,
 } from "@rust-js/std";
 
 export function entry() {
@@ -223,7 +224,7 @@ function main() {
     "deque range_mut ..=3",
     () => {
       const d = [1, 2, 3];
-      return Iterator.from($mutItems($view(d, 0, n(3) + 1, true))).reduce((n) => n + 1, 0);
+      return Iterator.from($mutItems($viewRange(d, 0, n(3) + 1, true))).reduce((n) => n + 1, 0);
     },
     usizeDebug,
   );

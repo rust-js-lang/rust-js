@@ -353,6 +353,7 @@ export const shared: Record<string, keyof typeof why> = {
   "$upgrade": "glue",
   "$view": "glue",
   "$viewGet": "glue",
+  "$viewRange": "glue",
   "$withCapacity": "collections",
 };
 

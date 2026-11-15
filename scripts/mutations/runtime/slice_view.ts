@@ -194,4 +194,12 @@ export const mutations: Mutation[] = [
     replace: "    ((kept) => () => kept)(h.value),\n",
     tests: ["test/corpus.test.ts", "-t", "^slice_from_mut.rs$"],
   },
+  {
+    name: "view-range-start-first",
+    breaks: "a deque's `range_mut(5..7)` of three items says \"range start index 5\", checked as `&mut v[a..b]` is, where std's `slice::range` says \"range end index 7\" (#1937)",
+    file: "src/runtime/slice_view.js",
+    find: "  $checkRange(start, end, items.length, inclusive);\n  return $view(items, start, end);\n",
+    replace: "  return $view(items, start, end, inclusive);\n",
+    tests: ["test/corpus.test.ts", "-t", "^deque_range_checked_end_first.rs$"],
+  },
 ];

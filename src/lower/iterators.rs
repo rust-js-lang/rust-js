@@ -585,7 +585,9 @@ pub(in crate::lower) fn compares_never_nan(test: &Expr) -> bool {
 /// (`made_array`); a range of a slice, `$slice(v, a, b)` or `$part(v, a,
 /// b)`, a part that says where it is in `v`, copied once, `$copyOf(v, a,
 /// b)`, which no record places there, so a pointer into it is its own
-/// (#1185); else a copy, `items.slice()`.
+/// (#1185); a deque's range, `$sliceRange(v, a, b)`, copied once as
+/// `slice::range` checks it, `$copyRange(v, a, b)` (#1937); else a copy,
+/// `items.slice()`.
 pub(in crate::lower) fn owned_items(items: Expr) -> Expr {
     if made_array(&items) {
         return items;
@@ -593,6 +595,9 @@ pub(in crate::lower) fn owned_items(items: Expr) -> Expr {
     match &items.kind {
         js::ExprKind::Call(callee, args) if matches!(callee.helper_name(), Some("$slice" | "$part")) => {
             Expr::call(Expr::helper("$copyOf"), args.clone())
+        }
+        js::ExprKind::Call(callee, args) if callee.helper_name() == Some("$sliceRange") => {
+            Expr::call(Expr::helper("$copyRange"), args.clone())
         }
         _ => Expr::builtin(items, "slice", vec![]),
     }

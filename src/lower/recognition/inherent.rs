@@ -296,7 +296,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "retain_mut" if adt(StdItem::Vec) || deque => Std::Slice(SliceOp::RetainMut { deque }),
             "pop_front_if" if deque => Std::Slice(SliceOp::PopFrontIf),
             "partition_point" if deque => Std::Slice(SliceOp::PartitionPoint),
-            "range" if deque => Std::Text(TextOp::Slice),
+            "range" if deque => Std::Text(TextOp::DequeRange),
             "range_mut" if deque => Std::Slice(SliceOp::DequeRangeMut),
             "escape_default" | "escape_debug" | "escape_unicode" if owner.is_char() || owner.is_str() => {
                 Std::Text(TextOp::Escape {

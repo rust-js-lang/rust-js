@@ -394,8 +394,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a slice's range the ranges show in bounds is still `$slice(items, 0, 3)`, not JS's own `items.slice(0, 3)` (ADR 0806)",
     file: "src/lower/std_types/text.rs",
-    find: '        if name == "$slice" && in_bounds {\n',
-    replace: '        if name == "$slice" && in_bounds && false {\n',
+    find: "        if matches!(op, TextOp::Slice | TextOp::DequeRange) && in_bounds {\n",
+    replace: "        if matches!(op, TextOp::Slice | TextOp::DequeRange) && in_bounds && false {\n",
     tests: ["test/corpus.test.ts", "-t", "slice_ranges_known"],
     snapshots: true,
   },
@@ -404,8 +404,8 @@ export const mutations: Mutation[] = [
     breaks:
       "every slice's range is JS's own `slice`, which clamps, so `&items[5..]` of three items is empty, where Rust panics (ADR 0806)",
     file: "src/lower/std_types/text.rs",
-    find: '        if name == "$slice" && in_bounds {\n',
-    replace: '        if name == "$slice" {\n',
+    find: "        if matches!(op, TextOp::Slice | TextOp::DequeRange) && in_bounds {\n",
+    replace: "        if matches!(op, TextOp::Slice | TextOp::DequeRange) {\n",
     tests: ["test/corpus.test.ts", "-t", "slice_range_from_panic"],
   },
   {

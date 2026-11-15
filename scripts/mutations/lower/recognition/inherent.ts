@@ -481,4 +481,12 @@ export const mutations: Mutation[] = [
     replace: ",",
     tests: ["test/serde-values.test.ts", "-t", "take, as_null, pointers"],
   },
+  {
+    name: "deque-range-a-slices",
+    breaks: "a deque's `range(4..)` of three items says \"range start index 4\", lowered as `&v[4..]` is, where std's `slice::range` says it starts at 4 but ends at 3 (#1937)",
+    file: "src/lower/recognition/inherent.rs",
+    find: "            \"range\" if deque => Std::Text(TextOp::DequeRange),\n",
+    replace: "            \"range\" if deque => Std::Text(TextOp::Slice),\n",
+    tests: ["test/corpus.test.ts", "-t", "^deque_range_checked_end_first.rs$"],
+  },
 ];

@@ -15,6 +15,14 @@ function $view(items, start, end = items.length, inclusive) {
   );
 }
 
+// A deque's `range_mut(start..end)`: `$view`'s of those items, checked as
+// `slice::range` checks them, its end first, not as `&mut v[a..b]` is
+// (#1937).
+function $viewRange(items, start, end = items.length, inclusive) {
+  $checkRange(start, end, items.length, inclusive);
+  return $view(items, start, end);
+}
+
 // `v[start..end].reverse()`: those items of `items` reversed where they
 // are, checked as `&mut v[start..end]` is, no view made (ADR 1073).
 function $reverseRange(items, start, end = items.length, inclusive) {

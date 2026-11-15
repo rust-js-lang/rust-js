@@ -456,4 +456,13 @@ export const mutations: Mutation[] = [
     replace: "    match false {\n        true => marks.with(js::Known::IterHintless),\n",
     tests: ["test/diagnostics.test.ts", "-t", "a held map's inspect collected where its capacity is read"],
   },
+  {
+    name: "deque-range-copied-as-a-part",
+    breaks: "a deque's `range(a..b)` collected is `$sliceRange(v, a, b).slice()`, a part copied, not `$copyRange(v, a, b)`, one copy checked as `slice::range` checks it: right, but not the JS a person writes (#1937)",
+    file: "src/lower/iterators.rs",
+    find: '        js::ExprKind::Call(callee, args) if callee.helper_name() == Some("$sliceRange") => {\n',
+    replace: '        js::ExprKind::Call(callee, args) if callee.helper_name() == Some("$sliceRange") && false => {\n',
+    tests: ["test/corpus.test.ts", "-t", "^capacity_of_what_std_hints_less.rs$"],
+    snapshots: true,
+  },
 ];

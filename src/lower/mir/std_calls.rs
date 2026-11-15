@@ -458,11 +458,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }),
             // `&v[a..b]`, `s.get(a..)`, `v.drain(..b)`: of the items and the range's
             // value. Not `&mut v[a..b]`, a view of them, not a copy.
-            Std::Text(op @ (TextOp::Slice | TextOp::StrSlice | TextOp::StrGet | TextOp::SliceGet | TextOp::Drain))
-                if !this
-                    .tcx
-                    .trait_of_assoc(def_id)
-                    .is_some_and(|t| this.tcx.is_lang_item(t, LangItem::IndexMut)) =>
+            Std::Text(
+                op @ (TextOp::Slice
+                | TextOp::DequeRange
+                | TextOp::StrSlice
+                | TextOp::StrGet
+                | TextOp::SliceGet
+                | TextOp::Drain),
+            ) if !this
+                .tcx
+                .trait_of_assoc(def_id)
+                .is_some_and(|t| this.tcx.is_lang_item(t, LangItem::IndexMut)) =>
             {
                 lower(move |this, state, values, out| {
                     Ok(Value::Expr({
@@ -556,6 +562,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if !matches!(
                     op,
                     TextOp::Slice
+                        | TextOp::DequeRange
                         | TextOp::StrSlice
                         | TextOp::StrGet
                         | TextOp::SliceGet
@@ -765,7 +772,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // `vec![..]`: the array its box was written with.
             Std::VecMacro => lower(move |this, _, values, _| Ok(Value::Expr(this.value_expr(values.next().expect("the array"), span)?))),
             // A deque's `range_mut(a..b)`: a view of those items, each a box
-            // where it's one JS can't change in place.
+            // where it's one JS can't change in place, checked as `slice::range`
+            // checks it, its end first (#1937).
             Std::Slice(SliceOp::DequeRangeMut) => lower(move |this, _, values, out| Ok(Value::Expr({
                 let items = this.value_expr(values.next().expect("the items"), span)?;
                 let range = this.value_expr(values.next().expect("the range"), span)?;
@@ -773,7 +781,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let mut list = vec![items, start];
                 list.extend(end);
                 list.extend(inclusive);
-                let view = this.view_call("$view", list);
+                let view = this.view_call("$viewRange", list);
                 match this.mut_ref_form(generic_args.type_at(0)).is_cell() {
                     true => Expr::call_helper("$mutItems", vec![view]),
                     false => view,

@@ -23,7 +23,7 @@ import {
   $roomForHint,
   $strictlyEqual,
   $unwindsOn,
-  $view,
+  $viewRange,
   iterator_peekable,
 } from "@rust-js/std";
 
@@ -139,7 +139,7 @@ function heapPeekMut(h, v, TOrd) {
 }
 
 function dequeRangeMut(d, v) {
-  for (const x of $mutItems($view(d, 0, 1))) {
+  for (const x of $mutItems($viewRange(d, 0, 1))) {
     x.value = v;
   }
 }

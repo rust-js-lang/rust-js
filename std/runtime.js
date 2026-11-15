@@ -12862,6 +12862,14 @@ export function $view(items, start, end = items.length, inclusive) {
   );
 }
 
+// A deque's `range_mut(start..end)`: `$view`'s of those items, checked as
+// `slice::range` checks them, its end first, not as `&mut v[a..b]` is
+// (#1937).
+export function $viewRange(items, start, end = items.length, inclusive) {
+  $checkRange(start, end, items.length, inclusive);
+  return $view(items, start, end);
+}
+
 // `v[start..end].reverse()`: those items of `items` reversed where they
 // are, checked as `&mut v[start..end]` is, no view made (ADR 1073).
 export function $reverseRange(items, start, end = items.length, inclusive) {
@@ -18581,6 +18589,13 @@ export function $slice(items, start, end = items.length, inclusive) {
 export function $copyOf(items, start, end = items.length, inclusive) {
   if (start > end || end > items.length) $sliceIndexFail(start, end, items.length, inclusive);
   return items.slice(start, end);
+}
+
+// A deque's `range(start..end)`: those items, a part of `items`, checked as
+// `slice::range` checks them, its end first, not as `&v[a..b]` is (#1937).
+export function $sliceRange(items, start, end = items.length, inclusive) {
+  $checkRange(start, end, items.length, inclusive);
+  return $part(items, start, end);
 }
 
 // `v.extend_from_within(start..end)`'s copy of those items, checked as

@@ -14,6 +14,13 @@ function $copyOf(items, start, end = items.length, inclusive) {
   return items.slice(start, end);
 }
 
+// A deque's `range(start..end)`: those items, a part of `items`, checked as
+// `slice::range` checks them, its end first, not as `&v[a..b]` is (#1937).
+function $sliceRange(items, start, end = items.length, inclusive) {
+  $checkRange(start, end, items.length, inclusive);
+  return $part(items, start, end);
+}
+
 // `v.extend_from_within(start..end)`'s copy of those items, checked as
 // `slice::range` checks them.
 function $copyRange(items, start, end = items.length, inclusive) {

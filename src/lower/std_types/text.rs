@@ -181,6 +181,9 @@ pub(in crate::lower) enum TextOp {
     Parse,
     /// `&v[a..b]` of a slice, an array or a `Vec`.
     Slice,
+    /// A `VecDeque`'s `range(a..b)`: its items in the range, checked as
+    /// `slice::range` checks it, its end first (#1937).
+    DequeRange,
     /// `&s[a..b]` of a string: by its UTF-8 bytes (ADR 0138).
     StrSlice,
     /// `s.len()`: its UTF-8 bytes.
@@ -681,6 +684,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             TextOp::CharIndices => Expr::call(Expr::helper("$charIndices"), vec![arg()]),
             TextOp::Slice
+            | TextOp::DequeRange
             | TextOp::StrSlice
             | TextOp::StrGet
             | TextOp::SliceGet
@@ -848,6 +852,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             TextOp::StrSlice => "$strSlice",
             TextOp::StrGet => "$strGet",
             TextOp::SliceGet => "$sliceGet",
+            TextOp::DequeRange => "$sliceRange",
             _ => "$slice",
         };
         // `&s[..]` of a string: all of it, which is never out of bounds, nor
@@ -859,7 +864,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if name == "$slice" && start.as_int() == Some(0) && end.is_none() {
             return items;
         }
-        if name == "$slice" && in_bounds {
+        if matches!(op, TextOp::Slice | TextOp::DequeRange) && in_bounds {
             return self.slice_part(items, start, end);
         }
         // `v.drain(a..b)` the body's ranges show in bounds, which can't

@@ -1,14 +1,14 @@
 # shape	count	per 10,000 lines
-files	2594
-lines	342845
+files	2597
+lines	343383
 temporaries	0	0
 labeled blocks	0	0
 while (true)	224	6.5
-$iter	2874	83.8
-Iterator.from	278	8.1
-return;	333	9.7
-renamed x$1	16104	469.7
-role fallbacks	8817	257.2
+$iter	2874	83.7
+Iterator.from	286	8.3
+return;	335	9.8
+renamed x$1	16110	469.2
+role fallbacks	8821	256.9
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1	role fallbacks
 test/corpus/adapter_drop_past_a_panic.js	50	0	0	0	1	0	0	0	1
 test/corpus/adapter_drops.js	1844	0	0	1	19	2	1	98	61
@@ -563,6 +563,7 @@ test/corpus/deque_insert_past_len.js	16	0	0	0	0	0	0	0	0
 test/corpus/deque_into_iter_drops.js	110	0	0	0	5	0	0	0	1
 test/corpus/deque_iter_back.js	27	0	0	0	2	0	0	0	0
 test/corpus/deque_push_mut.js	35	0	0	0	0	0	0	8	5
+test/corpus/deque_range_checked_end_first.js	144	0	0	0	0	3	1	3	2
 test/corpus/deque_range_mut.js	40	0	0	0	0	3	0	0	1
 test/corpus/deque_range_mut_panic.js	16	0	0	0	0	0	0	0	0
 test/corpus/deque_retain_back.js	183	0	0	0	0	0	0	0	0
@@ -1429,6 +1430,7 @@ test/corpus/module_text_truth.js	37	0	0	0	0	0	0	0	0
 test/corpus/momentary_borrow_in_a_test.js	58	0	0	0	0	0	0	0	0
 test/corpus/move_closure_adapter_from_its_back.js	184	0	0	0	6	0	0	12	7
 test/corpus/moved_closure.js	22	0	0	0	0	0	0	3	0
+test/corpus/moved_into_a_panicking_call_dropped.js	353	0	0	0	0	5	1	3	2
 test/corpus/mul_add.js	73	0	0	0	0	0	0	0	0
 test/corpus/multiply_by_a_constant.js	32	0	0	0	0	0	0	0	0
 test/corpus/mut_accessors_of_items_with_a_destructor.js	917	0	0	3	3	0	1	7	9
@@ -2082,7 +2084,7 @@ test/corpus/slice_edit_drops.js	258	0	0	0	0	0	0	0	2
 test/corpus/slice_from_mut.js	194	0	0	0	0	0	0	7	2
 test/corpus/slice_from_past_len.js	15	0	0	0	0	0	0	0	0
 test/corpus/slice_from_ref.js	29	0	0	0	0	0	0	0	0
-test/corpus/slice_inclusive_range_panics.js	374	0	0	0	0	2	1	3	2
+test/corpus/slice_inclusive_range_panics.js	375	0	0	0	0	2	1	3	2
 test/corpus/slice_index_generic.js	38	0	0	0	0	0	0	4	4
 test/corpus/slice_iter_debug.js	41	0	0	0	4	0	0	0	1
 test/corpus/slice_methods.js	151	0	0	0	0	0	0	0	0
@@ -2194,6 +2196,7 @@ test/corpus/stepped_range_loops.js	81	0	0	0	0	0	0	0	0
 test/corpus/stock_orders.js	318	0	0	0	0	0	1	12	7
 test/corpus/stopping_writers_where_a_panic_is_caught.js	86	0	0	0	0	0	0	6	3
 test/corpus/store_get_mut.js	171	0	0	0	1	0	1	0	3
+test/corpus/stored_arrays_stepped.js	40	0	0	0	0	0	0	0	0
 test/corpus/stored_place_made_a_mut_dyn.js	90	0	0	0	0	0	0	0	0
 test/corpus/str_bytes.js	77	0	0	0	4	0	0	8	7
 test/corpus/str_circumfix.js	28	0	0	0	0	0	0	12	7
