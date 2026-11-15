@@ -287,7 +287,7 @@ jobs:
           retention-days: 14
 
   # Every TypeScript caller of the declarations (#822), of a check whose
-  # change is what a `None` is at the JS boundary, as `plan` says
+  # change is what a `None` is at the JS boundary, or a corpus case, as `plan` says
   # (scripts/iteratorSlice.ts's `declarationPaths`): each exported function
   # given `null`, `undefined` and an absent key where its `.d.ts` admits
   # them, against native Rust. The nightly's suite runs it too.

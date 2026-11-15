@@ -309,10 +309,10 @@ function value(ty: Ty, seed: number, variant: number, structsOf: Map<string, Str
     case "str":
       return { rs: `"ab${seed}"`, ts: `"ab${seed}"` };
     case "string":
-      return { rs: `String::from("ab${seed}")`, ts: `"ab${seed}"` };
+      return { rs: `::std::string::String::from("ab${seed}")`, ts: `"ab${seed}"` };
     case "box": {
       const inner = value(ty.inner, seed, variant, structsOf, ask);
-      return inner && { ...inner, rs: `Box::new(${inner.rs})` };
+      return inner && { ...inner, rs: `::std::boxed::Box::new(${inner.rs})` };
     }
     case "ref": {
       if (ty.mut) return null;
@@ -324,21 +324,21 @@ function value(ty: Ty, seed: number, variant: number, structsOf: Map<string, Str
       const items = [0, 1].map((i) => value(ty.inner, seed + i, variant, structsOf, within));
       if (items.some((i) => !i)) return null;
       const rs = items.map((i) => i!.rs).join(", ");
-      return { rs: ty.k === "vec" ? `vec![${rs}]` : `[${rs}]`, ts: `[${items.map((i) => i!.ts).join(", ")}]` };
+      return { rs: ty.k === "vec" ? `::std::vec![${rs}]` : `[${rs}]`, ts: `[${items.map((i) => i!.ts).join(", ")}]` };
     }
     case "opt": {
       // Of a nullable `Option<Option<T>>`, ADR 1017's held form, `null` is
       // its `Some(None)`; else each form is `None`.
       if (ask.form !== undefined && admits(ask.decl, ask.form)) {
-        const rs = ask.form === "null" && ty.inner.k === "opt" ? "Some(None)" : "None";
+        const rs = ask.form === "null" && ty.inner.k === "opt" ? "::std::option::Option::Some(::std::option::Option::None)" : "::std::option::Option::None";
         return { rs, ts: ask.form === "null" ? "null" : "undefined", absent: ask.form === "absent" };
       }
       const inner = value(ty.inner, seed, variant, structsOf, within);
-      if (inner) return { rs: `Some(${inner.rs})`, ts: inner.ts };
+      if (inner) return { rs: `::std::option::Option::Some(${inner.rs})`, ts: inner.ts };
       // Of no value, a struct deep in itself, its `None`, as declared.
       const none = noneForms.find((f) => admits(ask.decl, f));
       if (none === undefined || ty.inner.k === "opt") return null;
-      return { rs: "None", ts: none === "null" ? "null" : "undefined", absent: none === "absent" };
+      return { rs: "::std::option::Option::None", ts: none === "null" ? "null" : "undefined", absent: none === "absent" };
     }
     case "tuple": {
       const items = ty.items.map((t, i) => value(t, seed + i, variant, structsOf, within));
@@ -385,17 +385,17 @@ function rustType(ty: Ty): string {
     case "str":
       return "str";
     case "string":
-      return "String";
+      return "::std::string::String";
     case "ref":
       return `&${ty.mut ? "mut " : ""}${rustType(ty.inner)}`;
     case "vec":
-      return `Vec<${rustType(ty.inner)}>`;
+      return `::std::vec::Vec<${rustType(ty.inner)}>`;
     case "slice":
       return `[${rustType(ty.inner)}]`;
     case "opt":
-      return `Option<${rustType(ty.inner)}>`;
+      return `::std::option::Option<${rustType(ty.inner)}>`;
     case "box":
-      return `Box<${rustType(ty.inner)}>`;
+      return `::std::boxed::Box<${rustType(ty.inner)}>`;
     case "tuple":
       return `(${ty.items.map(rustType).join(", ")}${ty.items.length === 1 ? "," : ""})`;
     case "fn":
@@ -509,62 +509,62 @@ function formsOf(params: { ty: Ty }[], decls: Decl[], structsOf: Map<string, Str
 }
 
 const harness = `trait Show {
-    fn show(&self) -> String;
+    fn show(&self) -> ::std::string::String;
 }
 macro_rules! shown_as_display {
-    ($($t:ty),*) => { $(impl Show for $t { fn show(&self) -> String { format!("{}", self) } })* };
+    ($($t:ty),*) => { $(impl Show for $t { fn show(&self) -> ::std::string::String { ::std::format!("{}", self) } })* };
 }
 shown_as_display!(u8, u16, u32, usize, i8, i16, i32, isize, f32, f64, bool);
 impl Show for str {
-    fn show(&self) -> String {
-        format!("{:?}", self)
+    fn show(&self) -> ::std::string::String {
+        ::std::format!("{:?}", self)
     }
 }
-impl Show for String {
-    fn show(&self) -> String {
+impl Show for ::std::string::String {
+    fn show(&self) -> ::std::string::String {
         self.as_str().show()
     }
 }
-impl<T: Show + ?Sized> Show for Box<T> {
-    fn show(&self) -> String {
+impl<T: Show + ?::core::marker::Sized> Show for ::std::boxed::Box<T> {
+    fn show(&self) -> ::std::string::String {
         (**self).show()
     }
 }
-impl<T: Show + ?Sized> Show for &T {
-    fn show(&self) -> String {
+impl<T: Show + ?::core::marker::Sized> Show for &T {
+    fn show(&self) -> ::std::string::String {
         (**self).show()
     }
 }
 impl<T: Show> Show for [T] {
-    fn show(&self) -> String {
-        format!("[{}]", self.iter().map(|t| t.show()).collect::<Vec<_>>().join(","))
+    fn show(&self) -> ::std::string::String {
+        ::std::format!("[{}]", self.iter().map(|t| t.show()).collect::<::std::vec::Vec<_>>().join(","))
     }
 }
-impl<T: Show> Show for Vec<T> {
-    fn show(&self) -> String {
+impl<T: Show> Show for ::std::vec::Vec<T> {
+    fn show(&self) -> ::std::string::String {
         self.as_slice().show()
     }
 }
-impl<T: Show> Show for Option<T> {
-    fn show(&self) -> String {
+impl<T: Show> Show for ::std::option::Option<T> {
+    fn show(&self) -> ::std::string::String {
         self.as_ref().map_or("null".to_string(), |t| t.show())
     }
 }
 impl Show for () {
-    fn show(&self) -> String {
+    fn show(&self) -> ::std::string::String {
         "null".to_string()
     }
 }
 impl<A: Show, B: Show> Show for (A, B) {
-    fn show(&self) -> String {
-        format!("[{},{}]", self.0.show(), self.1.show())
+    fn show(&self) -> ::std::string::String {
+        ::std::format!("[{},{}]", self.0.show(), self.1.show())
     }
 }
 macro_rules! shown_tuple {
     ($($t:ident $i:tt),+) => {
         impl<$($t: Show),+> Show for ($($t,)+) {
-            fn show(&self) -> String {
-                format!("[{}]", [$(self.$i.show()),+].join(","))
+            fn show(&self) -> ::std::string::String {
+                ::std::format!("[{}]", [$(self.$i.show()),+].join(","))
             }
         }
     };
@@ -651,7 +651,7 @@ function conformance(name: string): number {
       const result = tsShow(outBoxed && fn.output.k === "ref" ? fn.output.inner : fn.output, outBoxed ? "out.value" : "out", structsOf);
       const label = `${fn.name}#${variant}${form ? ` ${form}` : ""}${fn.dictionaries.map((d) => ` ${d}`).join("")}`;
       if (form !== undefined) formsGiven[form]++;
-      rs.push(`    {\n        ${rsBefore.join("\n        ")}\n        let out = ${fn.name}(${rsArgs.join(", ")});\n        println!("{} {}", ${JSON.stringify(label)}, [out.show(), ${rsAfter.join(", ")}].join(" "));\n    }`);
+      rs.push(`    {\n        ${rsBefore.join("\n        ")}\n        let out = ${fn.name}(${rsArgs.join(", ")});\n        ::std::println!("{} {}", ${JSON.stringify(label)}, [out.show(), ${rsAfter.join(", ")}].join(" "));\n    }`);
       tsLines.push(`{\n  ${tsBefore.join("\n  ")}\n  const out = ${jsName}(${given.join(", ")});\n  console.log(${JSON.stringify(label)}, [${result}, ${tsAfter.join(", ")}].join(" "));\n}`);
     }
   }
@@ -659,7 +659,7 @@ function conformance(name: string): number {
   // Each struct shown by its fields, as its JS object's keys are.
   const shows = [...structsOf.values()]
     .filter((s) => shown({ k: "named", n: s.name }, structsOf))
-    .map((s) => `impl Show for ${s.name} {\n    fn show(&self) -> String {\n        format!("{{${s.fields.map((f) => `\\"${camel(f.name)}\\":{}`).join(",")}}}", ${s.fields.map((f) => `self.${f.name}.show()`).join(", ")})\n    }\n}`);
+    .map((s) => `impl Show for ${s.name} {\n    fn show(&self) -> ::std::string::String {\n        ::std::format!("{{${s.fields.map((f) => `\\"${camel(f.name)}\\":{}`).join(",")}}}", ${s.fields.map((f) => `self.${f.name}.show()`).join(", ")})\n    }\n}`);
   const native = `mod case {\n    include!(${JSON.stringify(file)});\n    ${harness}\n    ${shows.join("\n")}\n    pub fn conformance() {\n${rs.join("\n")}\n    }\n}\nfn main() {\n    case::conformance();\n}\n`;
   const built = nativeBinary(native, dir, ["--edition=2024", "-Coverflow-checks=off", "-Awarnings"]);
   if ("error" in built) throw new Error(`${name}: ${built.error}`);

@@ -140,7 +140,11 @@ const numberGlobs = numberPaths.map((path) => new Bun.Glob(path));
 /** What a `None` is at the JS boundary, as globs of the repository's
  * paths: the `.d.ts` printer, the one owner of how a place holds a `None`
  * (`NoneForm`) and of what may look like one, the bindings' nullability,
- * and the presence test JS reads it by; and the callers that test them. */
+ * and the presence test JS reads it by; and the callers that test them.
+ * And each corpus case, each of whose `pub` items' `Option`s the callers
+ * are generated of: a case added, `flattened_struct_lent_whole`'s `pub
+ * struct Sized`, left the harness's `?Sized` unbuilt, which only the
+ * nightly saw. All of it runs, some 22 s, in its own job. */
 export const declarationPaths = [
   "src/typescript.rs",
   "src/lower/representation/nones.rs",
@@ -149,6 +153,7 @@ export const declarationPaths = [
   "src/js/make.rs",
   "src/js/stmt_walk.rs",
   "test/declarations-conformance.test.ts",
+  "test/corpus/*.rs",
 ];
 
 const declarationGlobs = declarationPaths.map((path) => new Bun.Glob(path));

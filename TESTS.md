@@ -18,6 +18,12 @@ The new `table_rows_resized_unseen.rs` covers each way a table's row may
 resize with no row's `&mut` given to a call (#1849).
 The historical suite totals and CI timings below have not been remeasured.
 
+Changed on 2026-11-15: the declarations' TypeScript callers
+(`test/declarations-conformance.test.ts`, 101 cases, some 22 s) run in each
+push's `declarations` job, and `check:fast`, where the change adds or edits
+a corpus case, not only the nightly's: a new case's `pub struct Sized` broke
+the harness unseen. The harness names std's items by their paths.
+
 Added on 2026-11-15: `test/deep-chain.test.ts`, the deep-chain harness's
 first step, one test of about 10 s on a seeded target. An app four crates
 deep over the react crate (app, kit and forms, primitives, geometry; kit
