@@ -188,3 +188,19 @@ answer before names had forms, and fails where they differ: the corpus
 passes with it set, and it stays, to be set again where a name's form
 changes (the lead's decision). The corpus, the snapshots and the port are
 as they were.
+
+## S4b (2026-11-16)
+
+Tidy asks no variable's word whether it's a temporary's: the four that
+asked a name kept as text, a drop guard's `let` set once in a `try` and a
+`const` a cell's value is taken apart into (`bindings::alias_variables`),
+what a destructuring's parts are read of (`destructuring::part_of`, now
+the name it reads), an unnamed parameter taken apart where it's given, and
+a `for`'s item a drop guard binds (`jumps/tried.rs`' `binding`), ask the
+name's form. `spelled_as_temporary` is asked only of a name as it's made
+(`Base::name`), of a positional field's key, `_0`, and of a drop flag's
+base, which are no variables, and by `RUST_JS_CHECK_NAMES`. Tidy's sets of
+names, `captured`, `fixed` and the rest, hold words still: what's asked of
+them is whether a name is in them, never its kind, so they're S6's, with
+tidy's own names. The corpus, the snapshots, std and the port are as they
+were; four mutations retargeted.

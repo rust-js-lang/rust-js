@@ -10,19 +10,21 @@ use super::*;
 /// after `b`'s, MIR's of a pattern's two bindings of one element: an alias,
 /// `c` of `b`, which the body reads by the name the pattern gives it.
 pub(in crate::lower::mir::tidy) type Binding = (js::Pattern, bool, usize, Vec<(String, String)>);
-pub(in crate::lower::mir::tidy) fn binding(body: &[Stmt], item: &str) -> Option<Binding> {
+pub(in crate::lower::mir::tidy) fn binding(body: &[Stmt], item: &js::Name) -> Option<Binding> {
     let reads = |value: &Expr| -> Option<Result<Option<usize>, String>> {
         match &value.kind {
-            ExprKind::Var(v) if v.is(item) => Some(Ok(None)),
+            ExprKind::Var(v) if v.is(item.word()) => Some(Ok(None)),
             ExprKind::Index(of, index)
-                if matches!(&of.kind, ExprKind::Var(v) if v.is(item))
+                if matches!(&of.kind, ExprKind::Var(v) if v.is(item.word()))
                     && let ExprKind::Num(k) = index.kind
                     && k >= 0.0
                     && k.fract() == 0.0 =>
             {
                 Some(Ok(Some(k as usize)))
             }
-            ExprKind::Member(of, key) if matches!(&of.kind, ExprKind::Var(v) if v.is(item)) => Some(Err(key.clone())),
+            ExprKind::Member(of, key) if matches!(&of.kind, ExprKind::Var(v) if v.is(item.word())) => {
+                Some(Err(key.clone()))
+            }
             _ => None,
         }
     };
@@ -53,12 +55,17 @@ pub(in crate::lower::mir::tidy) fn binding(body: &[Stmt], item: &str) -> Option<
     }
     let mutable = parts.iter().any(|&(_, _, m)| m);
     let pattern = match parts.as_slice() {
-        [] if js::mentions_in(body, item) == 0 => js::Pattern::Name("_".into()),
+        [] if js::mentions_in(body, item.word()) == 0 => js::Pattern::Name("_".into()),
         // Read as it is, named already for the pattern that binds it, a
         // drop guard's `let item; try { item = $next(iter); } ..` (#444's
         // names): the `for`'s own, `let` where the body sets it.
-        [] if !spelled_as_temporary(item) => {
-            return Some((js::Pattern::Name(item.into()), js::Writes::sets(body, item), 0, aliases));
+        [] if !is_temporary(item) => {
+            return Some((
+                js::Pattern::Name(item.into()),
+                js::Writes::sets(body, item.word()),
+                0,
+                aliases,
+            ));
         }
         [(Ok(None), bound, _)] => js::Pattern::Name(bound.into()),
         _ if !parts.is_empty() && parts.iter().all(|(p, ..)| matches!(p, Ok(Some(_)))) => {

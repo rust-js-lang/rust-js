@@ -176,7 +176,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `for` over a `RefCell`'s borrow whose step's temporary is named for its pattern, `let item; try { item = $next(iter); } ..`, binds nothing, and stays `while ((item = $next(iter)) != null)`, not `for (let i = 0; i < borrow.length; i++) { const item = borrow[i]; .. }` (#444's names, rd191)",
     file: "src/lower/mir/tidy/jumps/tried.rs",
-    find: "        [] if !spelled_as_temporary(item) => {\n",
+    find: "        [] if !is_temporary(item) => {\n",
     replace: "        [] if false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_borrow_loops.rs$"],
     snapshots: true,

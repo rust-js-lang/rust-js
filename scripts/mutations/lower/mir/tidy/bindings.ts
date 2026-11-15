@@ -6,8 +6,8 @@ export const mutations: Mutation[] = [
     name: "destructured-temporary-unnamed",
     breaks: "a temporary a `const` takes apart, `const { value: _4 } = $borrow(cell)`, isn't named after the variable that takes it, `const chunk = _4` (rd439)",
     file: "src/lower/mir/tidy/bindings.rs",
-    find: "                } => match pattern.names()[..] {\n",
-    replace: "                } if false => match pattern.names()[..] {\n",
+    find: "                } => match pattern.bound()[..] {\n",
+    replace: "                } if false => match pattern.bound()[..] {\n",
     tests: ["test/corpus.test.ts", "-t", "counted_guard_value_named"],
     snapshots: true,
   },  {
@@ -559,7 +559,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a temporary a drop guard's `try` sets, `let _8; try { _8 = descriptorOf(name); }`, isn't named for the pattern that binds it, `const descriptorOf = ..` (#444)",
     file: "src/lower/mir/tidy/bindings.rs",
-    find: "                StmtKind::Let(a, None) if set_once_in_try(&stmts[i + 1..], a.word()) => a.to_string(),\n",
+    find: "                StmtKind::Let(a, None) if set_once_in_try(&stmts[i + 1..], a.word()) => a.clone(),\n",
     replace: "",
     tests: ["test/lowering-drop-guards.test.ts", "-t", "a field read of what JS made in a guard's scope"],
   },

@@ -24,7 +24,7 @@ pub(super) fn destructured(
             StmtKind::Const(name, _) if is_temporary(name) => (name.to_string(), i + 1),
             StmtKind::Const(_, value) | StmtKind::Let(_, Some(value))
                 if let Some(v) = part_of(value)
-                    && !spelled_as_temporary(v) =>
+                    && !is_temporary(v) =>
             {
                 (v.to_string(), i)
             }
@@ -312,9 +312,9 @@ pub(super) fn parts(stmts: &[Stmt], name: &str) -> Vec<Part> {
 
 /// The variable `value` reads a part of, as `parts` reads one: `o[0]`,
 /// `o.k`, or `o.k === undefined ? d : o.k`.
-pub(super) fn part_of(value: &Expr) -> Option<&str> {
+pub(super) fn part_of(value: &Expr) -> Option<&js::Name> {
     match &part_of_read(value)?.kind {
-        ExprKind::Var(v) => Some(v.word()),
+        ExprKind::Var(v) => Some(v),
         _ => None,
     }
 }
@@ -365,13 +365,13 @@ pub(super) fn pattern_of(parts: &[Part]) -> Option<js::Pattern> {
 pub(in crate::lower::mir) fn destructured_params(params: &mut [js::Pattern], body: &mut Vec<Stmt>) {
     // An `async fn`'s too, `__arg0`, which its body's `let` takes apart,
     // of the copy its body holds, `__arg0$1`.
-    let unnamed = |name: &str| {
-        let arg = name.split('$').next().and_then(|n| n.strip_prefix("__arg"));
-        spelled_as_temporary(name) || arg.is_some_and(|n| !n.is_empty() && n.chars().all(|c| c.is_ascii_digit()))
+    let unnamed = |name: &js::Name| {
+        let arg = name.word().split('$').next().and_then(|n| n.strip_prefix("__arg"));
+        is_temporary(name) || arg.is_some_and(|n| !n.is_empty() && n.chars().all(|c| c.is_ascii_digit()))
     };
     for param in params.iter_mut() {
         let js::Pattern::Name(name) = param else { continue };
-        if !unnamed(name.word()) {
+        if !unnamed(name) {
             continue;
         }
         let mut name = name.clone();
@@ -387,7 +387,7 @@ pub(in crate::lower::mir) fn destructured_params(params: &mut [js::Pattern], bod
             *param = js::Pattern::Name(name.clone());
             body.remove(0);
         }
-        if !unnamed(name.word()) {
+        if !unnamed(&name) {
             continue;
         }
         // Taken apart already, `const { params } = __arg0;`: that pattern.

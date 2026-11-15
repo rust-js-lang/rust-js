@@ -388,8 +388,8 @@ pub(super) fn named_temporaries(body: &mut Vec<Stmt>) {
             // guard's, `let _8; try { _8 = descriptorOf(name); } catch ..`,
             // and never again: as a `const` from there on (#444).
             let a = match &stmts[i].kind {
-                StmtKind::Const(a, _) => a.to_string(),
-                StmtKind::Let(a, None) if set_once_in_try(&stmts[i + 1..], a.word()) => a.to_string(),
+                StmtKind::Const(a, _) => a.clone(),
+                StmtKind::Let(a, None) if set_once_in_try(&stmts[i + 1..], a.word()) => a.clone(),
                 // Or the one name a `const` takes apart, a cell's value read
                 // while its guard is, `const { value: _4 } = $borrow(cell)`,
                 // `let Some(chunk) = cell.borrow().clone() else ..`'s (#452).
@@ -397,17 +397,17 @@ pub(super) fn named_temporaries(body: &mut Vec<Stmt>) {
                     pattern,
                     mutable: false,
                     ..
-                } => match pattern.names()[..] {
-                    [only] => only.to_string(),
+                } => match pattern.bound()[..] {
+                    [only] => only.clone(),
                     _ => continue,
                 },
                 _ => continue,
             };
-            if !spelled_as_temporary(&a) {
+            if !is_temporary(&a) {
                 continue;
             }
             let mut found = Vec::new();
-            taking(&stmts[i + 1..], &a, &mut found);
+            taking(&stmts[i + 1..], a.word(), &mut found);
             // One name, each arm's that binds it, `n` of `(n, Some(x))` and
             // `(n, None)`, given apart until they're named in their scopes,
             // `n` and `n$1` (ADR 0357): each declared nowhere else, and read
@@ -433,7 +433,7 @@ pub(super) fn named_temporaries(body: &mut Vec<Stmt>) {
             let b = b.clone();
             let taken: Vec<String> = found.iter().map(|(name, _)| name.clone()).collect();
             for name in &taken {
-                dropping(stmts, &a, name);
+                dropping(stmts, a.word(), name);
             }
             match &mut stmts[i].kind {
                 StmtKind::Const(name, _) | StmtKind::Let(name, _) => *name = b.clone().into(),
@@ -442,7 +442,7 @@ pub(super) fn named_temporaries(body: &mut Vec<Stmt>) {
             }
             // Not a closure's own of a name, its parameter `(_2) => _2[0]`
             // where `_2` is a temporary here too (#1105).
-            for name in std::iter::once(&a).chain(&taken) {
+            for name in std::iter::once(a.word()).chain(taken.iter().map(String::as_str)) {
                 js::outside_shadows(stmts, name, |stmts| {
                     js::each_expr_mut(&mut stmts[i + 1..], &mut |e| {
                         if let ExprKind::Var(v) = &mut e.kind

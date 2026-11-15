@@ -288,7 +288,7 @@ pub(super) fn for_of(
             _ => return None,
         }
     }
-    let (pattern, mutable, taken, aliases) = binding(&inner, item.word())?;
+    let (pattern, mutable, taken, aliases) = binding(&inner, item)?;
     let mut body = inner[taken..].to_vec();
     for (alias, of) in &aliases {
         js::each_expr_mut(&mut body, &mut |e| {

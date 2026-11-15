@@ -158,8 +158,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`__arg0`, an `async fn`'s parameter, is a name the program wrote, kept",
     file: "src/lower/mir/tidy/destructuring.rs",
-    find: "        spelled_as_temporary(name) || arg.is_some_and(",
-    replace: "        spelled_as_temporary(name) || false && arg.is_some_and(",
+    find: "        is_temporary(name) || arg.is_some_and(",
+    replace: "        is_temporary(name) || false && arg.is_some_and(",
     tests: [
       "test/lowering-matches.test.ts",
       "-t",
