@@ -19,4 +19,12 @@ export const mutations: Mutation[] = [
     replace: "      const hunk = given;\n",
     tests: ["test/iterator-rows.test.ts", "-t", "a list's entries alone decide"],
   },
+  {
+    name: "list-entries-with-their-doc",
+    breaks: "a list's doc comment rewritten in the same hunk as its entries makes the hunk more than its entries, so each family on the line is named: the rev flip's check ran 140,563 rows where its one entry's are 15,865",
+    file: "scripts/iteratorRows.ts",
+    find: '  const code = (lines: string[]) => lines.filter((line) => line.trim() !== "" && !comment(line));\n',
+    replace: '  const code = (lines: string[]) => lines.filter((line) => line.trim() !== "");\n',
+    tests: ["test/iterator-rows.test.ts", "-t", "a list's entries alone decide"],
+  },
 ];

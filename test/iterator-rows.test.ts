@@ -90,6 +90,11 @@ test("a list's entries alone decide the rows of those its diff changes, and what
   const rows = hunk(['    ("Zip", "zip", true),'], ['    ("Zip", "zip", false),'], "", file);
   expect(entriesOf(rows)).toMatchObject({ added: ['"Zip"', '"zip"'], removed: ['"Zip"', '"zip"'] });
   expect(entriesOf(hunk(['    ("Zip", "zip", false),', '    ("Chain", "chain", false),'], ['    ("Chain", "chain", false),'], "", file))).toMatchObject({ added: ['"Zip"', '"zip"'], removed: [] });
+  // Its doc beside it, rewritten in the same hunk, names nothing: the rev
+  // flip's (e91e32866) ran each row of the seven families on its line.
+  const doc = ["/// `flatten()`, `peekable()` and `rev()`, the families after them."];
+  const documented = { ...entry, added: [...doc, ...entry.added], removed: ["/// `flatten()` and `peekable()`.", ...entry.removed] };
+  expect(entriesOf(documented)).toMatchObject({ added: ['"zip"'], removed: [] });
   // Its type, its name or its visibility changed, or code beside it: the
   // whole hunk's.
   expect(entriesOf(hunk([flipped('[&str; 4] = ["chain", "enumerate", "map", "zip"]').replace("pub(in crate::lower) ", "")], entry.removed, "", file))).toBeUndefined();

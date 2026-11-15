@@ -143,8 +143,11 @@ function names(identifier: string[], name: string[], first = false): boolean {
 /** The identifiers a line of code says, but the language's own words; a
  * comment's say none: its prose and what it quotes name what the code
  * near it is about, `for` and `len` and `none`, not what it runs (#849). */
+/** Whether `line` is a comment's, which names no rows. */
+const comment = (line: string) => /^\s*(\/\/|\/\*|\*)/.test(line);
+
 function identifiers(line: string): string[] {
-  if (/^\s*(\/\/|\/\*|\*)/.test(line)) return [];
+  if (comment(line)) return [];
   return [...line.matchAll(/\$?[A-Za-z_][A-Za-z0-9_$]*/g)].map((m) => m[0]).filter((id) => !keywords.has(id));
 }
 
@@ -152,7 +155,7 @@ function identifiers(line: string): string[] {
  * `IterMethod::Count`: what names a consumer, where a variable of its name,
  * `count`, a size's, doesn't (#849). */
 function steps(line: string): string[] {
-  if (/^\s*(\/\/|\/\*|\*)/.test(line)) return [];
+  if (comment(line)) return [];
   return [...line.matchAll(/(?:\.|::)([A-Za-z_][A-Za-z0-9_]*)\s*(?:\(|\b)/g)].map((m) => m[1]);
 }
 
@@ -299,7 +302,9 @@ export function entriesOf(hunk: Hunk): Hunk | undefined {
       .replace(/"(?:[^"\\]|\\.)*"\s*,?\s*/g, "")
       .replace(/\b\d+\b/g, "N")
       .replace(/\s+/g, "");
-  const code = (lines: string[]) => lines.filter((line) => line.trim() !== "");
+  // Its comments name nothing (`comment`), the list's doc beside it that a
+  // flip rewrites too, `HELD_FLIPPED`'s.
+  const code = (lines: string[]) => lines.filter((line) => line.trim() !== "" && !comment(line));
   const [added, removed] = [code(hunk.added), code(hunk.removed)];
   if (added.length + removed.length === 0) return undefined;
   // Each string the one side has more of than the other.
