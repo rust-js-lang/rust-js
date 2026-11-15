@@ -997,14 +997,15 @@ pub(super) fn instance_of_in<'tcx>(
 /// clauses say which it can be: `Map<I, F>` of a function bound by
 /// `I: Iterator<Item = u32>` is never a `Map` of a `slice::Iter<'_, i32>`,
 /// whatever another function makes and clones (#955). A parameter given two
-/// types, or a bound of one not given, is one it may meet.
+/// types is one it may meet; a bound of what's left of parameters, one not
+/// given or `ty`'s own, holds where some type makes it (#1895).
 pub(super) fn instance_within_bounds<'tcx>(
     tcx: TyCtxt<'tcx>,
     typing_env: ty::TypingEnv<'tcx>,
     ty: Ty<'tcx>,
     general: Ty<'tcx>,
 ) -> bool {
-    use rustc_middle::ty::{TypeFoldable, TypeVisitableExt};
+    use rustc_middle::ty::TypeFoldable;
     use rustc_trait_selection::infer::TyCtxtInferExt;
     use rustc_trait_selection::traits::query::evaluate_obligation::InferCtxtExt;
     if !instance_of_in(tcx, typing_env, ty, general) {
@@ -1024,17 +1025,36 @@ pub(super) fn instance_within_bounds<'tcx>(
         lt_op: |r| r,
         ct_op: |c| c,
     };
+    // What's left of type parameters, `ty`'s own or those not given, may
+    // be any type: each an inference variable, so a bound holds where some
+    // type makes it, not wherever one's left. Another function's closure
+    // `|held: U| Held { held }`, of its own `U`, is never `FnMut(i32) ->
+    // i32`, whatever `U` is (#1895).
+    let mut any = ty::BottomUpFolder {
+        tcx,
+        ty_op: |t: Ty<'tcx>| match *t.kind() {
+            ty::Param(_) => infcx.next_ty_var(rustc_span::DUMMY_SP),
+            _ => t,
+        },
+        // A lifetime asks nothing of what holds.
+        lt_op: |r: ty::Region<'tcx>| match r.kind() {
+            ty::ReEarlyParam(_) => tcx.lifetimes.re_erased,
+            _ => r,
+        },
+        ct_op: |c: ty::Const<'tcx>| match c.kind() {
+            ty::ConstKind::Param(_) => infcx.next_const_var(rustc_span::DUMMY_SP),
+            _ => c,
+        },
+    };
     typing_env.param_env.caller_bounds().all(|bound| {
-        let bound = bound.fold_with(&mut giving);
-        bound.has_param() || {
-            let obligation = rustc_trait_selection::traits::Obligation::new(
-                tcx,
-                rustc_trait_selection::traits::ObligationCause::dummy(),
-                ty::ParamEnv::empty(),
-                bound,
-            );
-            infcx.predicate_may_hold(&obligation)
-        }
+        let bound = bound.fold_with(&mut giving).fold_with(&mut any);
+        let obligation = rustc_trait_selection::traits::Obligation::new(
+            tcx,
+            rustc_trait_selection::traits::ObligationCause::dummy(),
+            ty::ParamEnv::empty(),
+            bound,
+        );
+        infcx.predicate_may_hold(&obligation)
     })
 }
 

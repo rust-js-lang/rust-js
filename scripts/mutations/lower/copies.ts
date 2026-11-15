@@ -78,15 +78,7 @@ export const mutations: Mutation[] = [
     replace: "    if !parameters_given(ty, general, &mut given) || !given.is_empty() {\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_map_of_pub_code_beside_a_cloned_map.rs$"],
   },
-  {
-    name: "generic-instance-unknown-bound-unmet",
-    breaks:
-      "a bound none of a cloned type's parameters' values decide, `L: Display` beside a generic function's own `Map<I, F>` cloned where it's made, is asked where nothing's known of it, and unmet, so its `items.map(f).cycle()` isn't made cloned apart (#955, #1109)",
-    file: "src/lower/copies.rs",
-    find: "        bound.has_param() || {\n",
-    replace: "        {\n",
-    tests: ["test/corpus.test.ts", "-t", "^generic_map_past_a_take_cloned_beside_another_bound.rs$"],
-  },
+
   {
     name: "generic-instance-unmatched",
     breaks:
@@ -583,5 +575,14 @@ export const mutations: Mutation[] = [
     find: "                    && copied_source(copied).is_some_and(|inner| inner.kind == source.kind) =>\n",
     replace: "                    && false =>\n",
     tests: ["test/library-kept-copies.test.ts", "-t", "literal, new box and constant"],
+  },
+  {
+    name: "within-bounds-of-what-is-left",
+    breaks:
+      "a bound left with another function's type parameters is taken to hold, so a trait default's `Map` of its own closure, `|held: U| Held { held }`, is taken for a cloned `Map<I, F>` of `F: FnMut(i32) -> i32` and refused, its items dropping (#1895)",
+    file: "src/lower/copies.rs",
+    find: "        let bound = bound.fold_with(&mut giving).fold_with(&mut any);\n",
+    replace: "        let bound = bound.fold_with(&mut giving);\n",
+    tests: ["test/corpus.test.ts", "-t", "^map_of_another_closure_not_cloned_apart.rs$|^generic_map_past_a_take_cloned_beside_another_bound.rs$"],
   },
 ];

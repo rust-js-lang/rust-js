@@ -418,3 +418,29 @@ Proof: the corpus case `cloned_apart_adapter_drops_its_sources`, against
 native Rust in both builds. It covers a chain, a map and a filter
 stepped from either end, collected, counted and cloned. The metamorphic
 net's `loud` rewrite of `cloned_chain_stepped_from_its_back` found it.
+
+## Amendment (2026-11-15, #1895): a bound of what's left holds where some type makes it
+
+Whether a type is one a cloned generic adapter stands for,
+`instance_within_bounds` (copies.rs), gives each of the cloned one's type
+parameters what the type has there, then asks its body's bounds of them.
+A bound still naming a type parameter after that, the type's own or one
+not given, was taken to hold. So a trait default's own
+`Map<vec::IntoIter<U>, {closure}>`, of `|held: U| Held { held }`, was
+taken for a generic function's cloned `Map<I, F>` of `F: FnMut(i32) ->
+i32`, beside it in one crate, and its clone apart refused, as its items
+drop: `default_own_param_numbered_as_the_impls.rs` beside
+`generic_map_cloned_beside_another_bound.rs`. What's left of the
+parameters is an inference variable each now, a const's too, and an
+early lifetime is erased, so a bound holds where some type makes it: no
+`U` makes that closure an `FnMut(i32) -> i32`. An ambiguous bound still
+may hold, so what may be cloned still is. The branch that took a bound
+left with parameters to hold is gone, and with it mutation
+`generic-instance-unknown-bound-unmet`, as no bound is left with one.
+
+Held by `test/corpus/map_of_another_closure_not_cloned_apart.rs`, against
+native Rust; the pair is off test/neighbours-known.txt. Mutation
+`within-bounds-of-what-is-left` (`lower/copies.ts`), caught by that case
+and by `generic_map_past_a_take_cloned_beside_another_bound.rs`, whose
+bound left with a parameter holds.
+

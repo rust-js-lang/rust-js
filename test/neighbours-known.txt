@@ -58,9 +58,6 @@ plain std mut_ref_of_a_boxed_function_as_dyn.rs beside address_of_a_field_throug
 #1894 P2 (neighbours): {:?} of a Pin<Box<T>> whose Debug may stop part-way is refused beside a case that catches a panic
 plain std debug_impl_of_a_reference_box_or_pin.rs beside catch_unwind_flag_return.rs
 
-#1895 P2 (neighbours): cloning a Map<vec::IntoIter<U>, closure> in generic code is refused beside another bound's
-plain default_own_param_numbered_as_the_impls.rs beside generic_map_cloned_beside_another_bound.rs
-
 #1896 P2 (neighbours): a dyn Fn made of an Rc<fn item> that may be shared before is refused beside a case of trait evidence paths
 plain std dyn_fn_address_by_rc_as_ptr.rs beside evidence_paths.rs
 
