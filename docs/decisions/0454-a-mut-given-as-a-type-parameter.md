@@ -991,3 +991,32 @@ impl's method and a copied default, native-compared; mutations
 caught. `mut_ref_to_object_impl`'s entry moves from `arg0.value` to
 `$heldObjectOf(arg0)`, the same reads; that one never writes `*self` whole,
 and narrowing the form to methods that may is #1733 (P3).
+
+## Amendment (2026-11-15, #1909): a function through a `&mut` given for an `F`
+
+`invoke(&mut callback)`, of `fn invoke(run: impl FnOnce())` and a `let
+mut callback: Box<dyn Fn()>`, gave the `&mut` as its box, `{ get value(),
+set value(v) }`, as a `&mut` to a value JS can't change in place is, and
+`invoke`'s `run()` threw `TypeError: run is not a function` where Rust
+calls it through std's `impl FnOnce for &mut F` (Codex, a P0). #992's
+rule gave the function itself only to an `F` its bound reads as another
+that's called, `P: Is<F>`. Results change, so Rust's behavior is kept
+(ADR 0262). A type parameter bound by a function trait, given a function
+through references and boxes, `&mut Box<dyn Fn()>`, `&mut &dyn Fn()`, is
+given the function where it's in none of its function's other parameters
+and not in what it returns: there generic code can only call it, move it
+and drop it, so no write through the `&mut` is lost. What it's given is
+read through each `&mut` held in a box, `invoke(lent.value)` of a `lent:
+&mut Box<dyn Fn()>` a `let mut` holds (`mut_refs/given.rs`,
+`called_value`). Where `F` is given back, `fn call_then_give<F: FnMut()>(f:
+F) -> F`, or in another parameter, the `&mut` would have to be both the
+function its call calls and the place its caller writes through, and
+it's refused, naming the call. Corpus cases fn_given_through_a_mut_box
+(Codex's rows: `&mut Box<dyn Fn>`, `&Box<dyn Fn>`, `&mut &dyn Fn`,
+`Box<&mut dyn FnMut>`, a `&mut` of a closure called twice twice, `&&` of a
+closure, a boxed `&mut` read through, one held, one after the box is
+replaced) against native Rust, and fn_box_called_and_given_back_refused;
+mutations fn-only-called-given-its-box, fn-given-back-taken-as-only-called,
+fn-held-mut-not-read-through and fn-box-called-and-given-back-allowed new,
+caught; parameter-read-as-a-function-boxed and
+collection-for-an-into-iterator-unboxed moved with the rule, caught.

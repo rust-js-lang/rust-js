@@ -60,6 +60,8 @@ export const iteratorPaths = [
   "src/lower/mir/iter.rs",
   "src/lower/mir/iter/**",
   "src/lower/mir/vec_growth.rs",
+  // What a type parameter read as an iterator is given for a `&mut` to one (#992).
+  "src/lower/mut_refs/given.rs",
   "src/lower/recognition/adapter_types.rs",
   "src/lower/recognition/iterators.rs",
   "src/lower/recognition/lengths.rs",

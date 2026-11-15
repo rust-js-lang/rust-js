@@ -398,6 +398,7 @@ In this table, `lower.rs`, `names.rs` and `runtime.rs` are at the `src/` root.
 | Where a `Vec`'s value is given its slice's steps, `$slicing`, as its type is lost: generic code's, std's compiled adapters', a step's helper (#703, #704) | `mir/iter/closing.rs` | `slicing` |
 | Generic IntoIterator representation | `iterators.rs`, `recognition/iterators.rs` | `into_iter_held_as_it_is`, `into_iter_as_it_is`, `into_iter_by_dictionary` |
 | Function-value mutable arguments | `mut_refs.rs` | `unboxed_by_function` |
+| What a type parameter is given for a `&mut` to a function or an iterator, the value itself where it's only called or stepped, read through each boxed `&mut` (#992, #1909) | `mut_refs/given.rs` | `given_as_the_value`, `called_value`, `called_box_escapes` |
 | Body module placement | `lower.rs` | `body_module` |
 | A crate's `#[test]`s, which module's test file registers each, and which module of tests is its parent's test file (ADR 1076); what each runner's `test` is imported from | `analysis/tests.rs`; `settings.rs` | `collect_tests`; `Runner` |
 | Which `const`s written in a function's body are its, a `const` there, and what reads each (ADR 0031, amended) | `analysis/naming.rs` | `local_consts` |

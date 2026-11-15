@@ -465,7 +465,13 @@ What's refused of formatting is in [the limitations](limitations.md#formatting).
   pointer, `const viewVecU8Fn = (arg0) => view($cellOf(arg0))`. Generic
   code that calls it as an `F` in its own forms is given the function
   itself ([1114](../decisions/1114-a-reference-a-pointer-may-leave-with-is-its-places-pointer.md),
-  amended).
+  amended). A function given for an `F: FnOnce()`, `FnMut()` or `Fn()`
+  through references and boxes is the function too, as std's `impl
+  FnOnce for &mut F` calls what it refers to: `invoke(&mut callback)` of a
+  `Box<dyn Fn()>` is `invoke(callback)`, one a boxed `&mut` holds
+  `invoke(lent.value)`. Where `F` is also given back or in another
+  parameter, the `&mut` would have to be both the function and its place,
+  and it's refused ([0454](../decisions/0454-a-mut-given-as-a-type-parameter.md), amended).
 - **`*r = v` replaces the value whole, as Rust's does:** an object `r` is
   becomes `v` in place, `$assign(r, v)`, so every name for it sees `v`;
   `mem::replace`, `mem::swap` and `mem::take` the same. An enum with a

@@ -3,6 +3,14 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "fn-box-called-and-given-back-allowed",
+    breaks: "a `&mut` to a boxed function given for an `F` that's called and given back compiles, given as its box, whose call throws `TypeError: f is not a function` (#1909)",
+    file: "src/lower/mir/assign/boxed_args.rs",
+    find: "                && self.called_box_escapes(id, declared, instantiated)\n",
+    replace: "                && false && self.called_box_escapes(id, declared, instantiated)\n",
+    tests: ["test/corpus.test.ts", "-t", "^fn_box_called_and_given_back_refused.rs$"],
+  },
+  {
     name: "librarys-mut-kept-from-its-own-dictionary",
     breaks: "`f.write_str(..)` of a library's own `impl fmt::Write` is refused, its `&mut` taken for one std's dictionary would read as a box, where the library's dictionary takes the crate's forms (#1487)",
     file: "src/lower/mir/assign/boxed_args.rs",

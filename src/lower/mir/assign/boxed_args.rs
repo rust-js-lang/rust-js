@@ -138,21 +138,43 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     continue;
                 }
             }
+            // The parameter's type, declared and as this call's instance has it.
+            let crossing = callee.and_then(|(id, args)| {
+                let sig = self.tcx.instantiate_bound_regions_with_erased(
+                    self.tcx.fn_sig(id).instantiate_identity().skip_normalization(),
+                );
+                sig.inputs()
+                    .get(i)
+                    .map(|&input| (id, input, self.instantiated(input, args)))
+            });
+            // A `&mut` to a boxed function given for an `F` that's called and
+            // given back or kept: refused, as its box can't be called (#1909).
+            if let Some((id, declared, instantiated)) = crossing
+                && self.called_box_escapes(id, declared, instantiated)
+            {
+                return Err(self.unsupported(
+                    span,
+                    &format!(
+                        "a `{instantiated}` given for `{declared}`, which `{}` calls and gives back or takes in another parameter: what's given would have to be both the function it calls and the place a write through it changes (#1909)",
+                        self.tcx.item_name(id)
+                    ),
+                ));
+            }
+            // A `&mut` to a function or an iterator given for a type
+            // parameter read as one that's called or stepped, `P: Is<F>`, or
+            // called alone, `F: FnOnce()`: the function or the iterator
+            // itself, through what refers to it, `lent.value` (#992, #1909).
+            let as_the_value =
+                crossing.filter(|&(id, declared, instantiated)| self.given_as_the_value(id, declared, instantiated));
             let place = match value {
-                // A `&mut` to a function or an iterator given for a type
-                // parameter read as one that's called or stepped, `P: Is<F>`:
-                // the function or the iterator itself (#992).
-                Value::Ref(place)
-                    if callee.is_some_and(|(id, args)| {
-                        let sig = self.tcx.instantiate_bound_regions_with_erased(
-                            self.tcx.fn_sig(id).instantiate_identity().skip_normalization(),
-                        );
-                        sig.inputs()
-                            .get(i)
-                            .is_some_and(|&input| self.given_as_the_value(id, input, self.instantiated(input, args)))
-                    }) =>
-                {
-                    exprs.push(place);
+                Value::Ref(place) if let Some((_, _, instantiated)) = as_the_value => {
+                    let referent = instantiated.builtin_deref(true).expect("a `&mut`");
+                    exprs.push(self.called_value(place, referent));
+                    continue;
+                }
+                value if let Some((_, _, instantiated)) = as_the_value => {
+                    let given = self.value_expr(value, span)?;
+                    exprs.push(self.called_value(given, instantiated));
                     continue;
                 }
                 Value::Ref(place) => place,

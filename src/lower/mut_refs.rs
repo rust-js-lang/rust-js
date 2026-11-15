@@ -22,6 +22,8 @@ use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
 use rustc_span::def_id::DefId;
 
+mod given;
+
 /// Whether a value of `ty` may hold a `part`: `part` is in it, not only in
 /// a projection, `<I as Iterator>::Item`, which names `I` but holds an
 /// item, not an `I`.
@@ -340,53 +342,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ => {}
         }
         Ok(Some(Expr::call_helper(name, values)))
-    }
-
-    /// Whether `declared`, a type parameter of `def_id`'s, given a `&mut` to
-    /// a function or an iterator, `instantiated` its caller's type, takes it
-    /// as it is, not in generic code's box: where its value is read as
-    /// another type parameter its bound names that's called or stepped,
-    /// `P: Is<F>` of `F: FnMut()`, `I: Iterator` or `I: IntoIterator`, as
-    /// that one is given it, its form's (`mut_ref_form`), the function, the
-    /// iterator or the range itself (#992). A collection given for an
-    /// `IntoIterator` is boxed still, as its dictionary takes its cell.
-    pub(in crate::lower) fn given_as_the_value(
-        &self,
-        def_id: DefId,
-        declared: Ty<'tcx>,
-        instantiated: Ty<'tcx>,
-    ) -> bool {
-        matches!(declared.kind(), ty::Param(_))
-            && matches!(*instantiated.kind(),
-                ty::Ref(_, pointee, Mutability::Mut) if self.is_callable(pointee) || self.implements_iterator(pointee))
-            && self.read_as_stepped(self.tcx.param_env(def_id), declared)
-    }
-
-    /// Whether `param`'s value is read as another type parameter its bound
-    /// names, `P: Is<F>`, that's called or stepped, bound by a function
-    /// trait, `Iterator` or `IntoIterator`, which is given a function or an
-    /// iterator as it is (#992).
-    fn read_as_stepped(&self, param_env: ty::ParamEnv<'tcx>, param: Ty<'tcx>) -> bool {
-        (param_env.caller_bounds())
-            .filter_map(|clause| clause.as_trait_clause())
-            .filter(|bound| bound.self_ty().skip_binder() == param)
-            .flat_map(|bound| bound.skip_binder().trait_ref.args.types().skip(1))
-            .any(|named| {
-                matches!(named.kind(), ty::Param(_))
-                    && self.declared_bounds(named, param_env).into_iter().any(|id| {
-                        self.tcx.fn_trait_kind_from_def_id(id).is_some()
-                            || crate::lower::recognition::is_std_def(
-                                self.tcx,
-                                id,
-                                crate::lower::recognition::StdItem::Iterator,
-                            )
-                            || crate::lower::recognition::is_std_def(
-                                self.tcx,
-                                id,
-                                crate::lower::recognition::StdItem::IntoIterator,
-                            )
-                    })
-            })
     }
 
     /// Of a function value given for `def_id`'s parameter `i`, an `F:
