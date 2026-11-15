@@ -250,7 +250,9 @@ const valueType = (name: string): string => {
 // gives it, `<circle>` an `SVGCircleElement`, but a name HTML has too, `<a>`,
 // which is HTML's, as @types/react's `JSX.IntrinsicElements` has it.
 const webapiSource = readFileSync(join(root, "webapi", "src", "lib.rs"), "utf8");
-const tagTypes = new Map([...webapiSource.matchAll(/rust_js::name = "([^"]+)"\)\]\n    pub struct (\w+);/g)].map(([, name, type]) => [type, name]));
+// Each tag struct by its name, the attributes between them skipped,
+// `#[derive(Clone, Copy)]` (889e619b0).
+const tagTypes = new Map([...webapiSource.matchAll(/rust_js::name = "([^"]+)"\)\]\n(?:    #\[[^\n]*\]\n)*    pub struct (\w+);/g)].map(([, name, type]) => [type, name]));
 const tagElements = new Map<string, string>();
 for (const [, type, element] of webapiSource.matchAll(/impl Tag for tags::(\w+) \{ type Element = (\w+); \}/g)) {
   tagElements.set(tagTypes.get(type)!, element);
