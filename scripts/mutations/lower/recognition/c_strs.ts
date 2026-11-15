@@ -6,8 +6,8 @@ export const mutations: Mutation[] = [
     name: "c-str-until-nul-as-with-nul",
     breaks: "`CStr::from_bytes_until_nul(b\"ab\\0cd\\0\")` is refused as `from_bytes_with_nul`'s interior nul",
     file: "src/lower/recognition/c_strs.rs",
-    find: "\"std::ffi::CStr::from_bytes_until_nul\" => CStrOp::UntilNul,",
-    replace: "\"std::ffi::CStr::from_bytes_until_nul\" => CStrOp::WithNul,",
+    find: "(StdPath::FfiCStr, \"from_bytes_until_nul\") => CStrOp::UntilNul,",
+    replace: "(StdPath::FfiCStr, \"from_bytes_until_nul\") => CStrOp::WithNul,",
     tests: ["test/corpus.test.ts", "-t", "^c_strings.rs$"],
   },
   {
@@ -22,8 +22,8 @@ export const mutations: Mutation[] = [
     name: "c-string-from-c-str-unknown",
     breaks: "`CString::from(c)` of a `&CStr` is refused",
     file: "src/lower/recognition/c_strs.rs",
-    find: "        return Some(Std::CStr(CStrOp::Owned));\n",
-    replace: "        return None;\n",
+    find: "    if is_c_string(tcx, to) && is_c_str(tcx, from.peel_refs()) {\n        return Some(Std::CStr(CStrOp::Owned));\n",
+    replace: "    if is_c_string(tcx, to) && is_c_str(tcx, from.peel_refs()) {\n        return None;\n",
     tests: ["test/corpus.test.ts", "-t", "^c_strings.rs$"],
   },
   {

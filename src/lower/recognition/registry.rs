@@ -180,29 +180,30 @@ pub(super) fn by_path(tcx: TyCtxt<'_>, krate: StdCrate, path: &[&str]) -> Option
     by_path_kind(tcx, krate, path).map(|(_, id)| id)
 }
 
-/// `by_path`'s item and its kind, as its module says of its child, never
-/// asked of rustc by its `DefId`: `def_kind` asked of std's items as a std
-/// body is compiled changes what's compiled after it.
+/// `by_path`'s item and its kind, as its module says of its child.
 pub(super) fn by_path_kind(tcx: TyCtxt<'_>, krate: StdCrate, path: &[&str]) -> Option<(DefKind, DefId)> {
     let root = super::std_crate_num(tcx, krate)?;
-    let mut at = (DefKind::Mod, root.as_def_id());
-    for (i, part) in path.iter().enumerate() {
-        let (DefKind::Mod, module) = at else {
-            return None;
-        };
-        let mut named = (tcx.module_children(module).iter()).filter_map(|child| match child.res {
-            Res::Def(kind, id) if child.ident.as_str() == *part => Some((kind, id)),
-            _ => None,
-        });
-        // The last part an item where a module has its name too, `future::ready`,
-        // the function `core::future` re-exports of its module `ready`.
-        at = match i + 1 == path.len() {
-            true => {
-                let named: Vec<_> = named.collect();
-                (named.iter().find(|(kind, _)| *kind != DefKind::Mod).or(named.first())).copied()?
-            }
-            false => named.find(|(kind, _)| *kind == DefKind::Mod).or_else(|| named.next())?,
-        };
+    let named = |module: DefId, part: &str| -> Vec<(DefKind, DefId)> {
+        (tcx.module_children(module).iter())
+            .filter_map(|child| match child.res {
+                Res::Def(kind, id) if child.ident.as_str() == part => Some((kind, id)),
+                _ => None,
+            })
+            .collect()
+    };
+    let Some((last, modules)) = path.split_last() else {
+        return Some((DefKind::Mod, root.as_def_id()));
+    };
+    let mut module = root.as_def_id();
+    for part in modules {
+        // A module where an item has its name too, std's `vec`, not `vec!`.
+        module = named(module, part)
+            .into_iter()
+            .find(|(kind, _)| *kind == DefKind::Mod)?
+            .1;
     }
-    Some(at)
+    // The last part an item where a module has its name too, `future::ready`,
+    // the function `core::future` re-exports of its module `ready`.
+    let named = named(module, last);
+    (named.iter().find(|(kind, _)| *kind != DefKind::Mod).or(named.first())).copied()
 }

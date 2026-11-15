@@ -796,14 +796,14 @@ pub(crate) fn is_write_fmt(tcx: TyCtxt<'_>, id: DefId) -> bool {
 
 /// `fmt::Arguments::new` and its kin, what `format_args!` makes.
 pub(crate) fn is_arguments_new(tcx: TyCtxt<'_>, id: DefId) -> bool {
-    tcx.item_name(id).as_str() == "new" && std_path(tcx, id).starts_with("std::fmt::Arguments")
+    matches!(std_inherent_method(tcx, id), Some((MethodOf::Type(StdPath::FmtArguments), name)) if name.as_str() == "new")
 }
 
 /// `fmt::Arguments::from_str`, or `from_str_nonconst`, what `format_args!`
 /// makes of a text alone, `println!("done")`'s.
 pub(crate) fn is_arguments_from_str(tcx: TyCtxt<'_>, id: DefId) -> bool {
-    matches!(tcx.item_name(id).as_str(), "from_str" | "from_str_nonconst")
-        && std_path(tcx, id).starts_with("std::fmt::Arguments")
+    matches!(std_inherent_method(tcx, id), Some((MethodOf::Type(StdPath::FmtArguments), name))
+        if matches!(name.as_str(), "from_str" | "from_str_nonconst"))
 }
 
 /// `Argument::new_debug(&x)`, which `format_args!` makes of a `{:?}`

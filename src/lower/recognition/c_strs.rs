@@ -2,7 +2,7 @@
 //! functions and their errors (#1157); what each is in JS is
 //! `std_types/c_str.rs`'s.
 
-use super::{Std, StdCrate, of_std_crate};
+use super::{MethodOf, Std, StdCrate, StdPath, of_std_crate, std_inherent_method, std_trait_method};
 use crate::lower::std_types::c_str::CStrOp;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::ty::{self, Ty, TyCtxt};
@@ -81,42 +81,50 @@ pub(in crate::lower) fn is_c_str_error_part(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool
                 && tcx.item_name(adt.did()).as_str() == "FromBytesWithNulErrorKind")
 }
 
-/// Which of a C string's functions `path` is, as std names it: one of
+/// Which of a C string's functions `id` is: one of
 /// `CStrOp`'s, or one that's what it's given, its bytes with the nul.
-pub(super) fn c_str_op(path: &str) -> Option<Std> {
-    let op = match path {
-        "std::ffi::CStr::from_bytes_with_nul" => CStrOp::WithNul,
-        "std::ffi::CStr::from_bytes_until_nul" => CStrOp::UntilNul,
-        "std::ffi::CStr::to_bytes" | "std::ffi::CString::as_bytes" => CStrOp::Bytes,
-        "std::ffi::CStr::count_bytes" => CStrOp::Count,
-        "std::ffi::CStr::is_empty" => CStrOp::IsEmpty,
-        "std::ffi::CStr::to_str" => CStrOp::ToStr,
+pub(super) fn c_str_op(tcx: TyCtxt<'_>, id: DefId) -> Option<Std> {
+    // `alloc`'s, of `core`'s type.
+    if let Some((StdPath::BorrowToOwned, MethodOf::Type(StdPath::FfiCStr), name)) = std_trait_method(tcx, id)
+        && name.as_str() == "to_owned"
+    {
+        return Some(Std::CStr(CStrOp::Owned));
+    }
+    let (MethodOf::Type(of), name) = std_inherent_method(tcx, id)? else {
+        return None;
+    };
+    let op = match (of, name.as_str()) {
+        (StdPath::FfiCStr, "from_bytes_with_nul") => CStrOp::WithNul,
+        (StdPath::FfiCStr, "from_bytes_until_nul") => CStrOp::UntilNul,
+        (StdPath::FfiCStr, "to_bytes") | (StdPath::FfiCString, "as_bytes") => CStrOp::Bytes,
+        (StdPath::FfiCStr, "count_bytes") => CStrOp::Count,
+        (StdPath::FfiCStr, "is_empty") => CStrOp::IsEmpty,
+        (StdPath::FfiCStr, "to_str") => CStrOp::ToStr,
         // `alloc`'s, of `core`'s type.
-        "std::ffi::c_str::<impl std::ffi::CStr>::to_string_lossy" => CStrOp::Lossy,
-        "std::ffi::c_str::<impl std::borrow::ToOwned for std::ffi::CStr>::to_owned" => CStrOp::Owned,
-        "std::ffi::CString::new" => CStrOp::New,
-        "std::ffi::CString::from_vec_unchecked" => CStrOp::FromVec,
-        "std::ffi::CString::from_vec_with_nul" => CStrOp::FromVecWithNul,
-        "std::ffi::FromVecWithNulError::as_bytes" | "std::ffi::FromVecWithNulError::into_bytes" => {
+        (StdPath::FfiCStr, "to_string_lossy") => CStrOp::Lossy,
+        (StdPath::FfiCString, "new") => CStrOp::New,
+        (StdPath::FfiCString, "from_vec_unchecked") => CStrOp::FromVec,
+        (StdPath::FfiCString, "from_vec_with_nul") => CStrOp::FromVecWithNul,
+        (StdPath::FfiFromVecWithNulError, "as_bytes") | (StdPath::FfiFromVecWithNulError, "into_bytes") => {
             CStrOp::Field("bytes")
         }
-        "std::ffi::CString::into_bytes" => CStrOp::IntoBytes,
-        "std::ffi::CString::into_string" => CStrOp::IntoString,
-        "std::ffi::CStr::as_ptr" | "std::ffi::CString::into_raw" => CStrOp::Ptr,
-        "std::ffi::CStr::from_ptr" => CStrOp::FromPtr,
-        "std::ffi::CString::from_raw" => CStrOp::FromRaw,
-        "std::ffi::NulError::nul_position" => CStrOp::Item(0),
-        "std::ffi::NulError::into_vec" => CStrOp::Item(1),
-        "std::ffi::IntoStringError::into_cstring" => CStrOp::Field("inner"),
-        "std::ffi::IntoStringError::utf8_error" => CStrOp::Field("error"),
-        "std::ffi::CStr::from_bytes_with_nul_unchecked"
-        | "std::ffi::CStr::to_bytes_with_nul"
-        | "std::ffi::CString::as_bytes_with_nul"
-        | "std::ffi::CString::into_bytes_with_nul"
-        | "std::ffi::CString::from_vec_with_nul_unchecked"
-        | "std::ffi::CString::as_c_str"
-        | "std::ffi::CString::into_boxed_c_str"
-        | "std::ffi::c_str::<impl std::ffi::CStr>::into_c_string" => return Some(Std::Same),
+        (StdPath::FfiCString, "into_bytes") => CStrOp::IntoBytes,
+        (StdPath::FfiCString, "into_string") => CStrOp::IntoString,
+        (StdPath::FfiCStr, "as_ptr") | (StdPath::FfiCString, "into_raw") => CStrOp::Ptr,
+        (StdPath::FfiCStr, "from_ptr") => CStrOp::FromPtr,
+        (StdPath::FfiCString, "from_raw") => CStrOp::FromRaw,
+        (StdPath::FfiNulError, "nul_position") => CStrOp::Item(0),
+        (StdPath::FfiNulError, "into_vec") => CStrOp::Item(1),
+        (StdPath::FfiIntoStringError, "into_cstring") => CStrOp::Field("inner"),
+        (StdPath::FfiIntoStringError, "utf8_error") => CStrOp::Field("error"),
+        (StdPath::FfiCStr, "from_bytes_with_nul_unchecked")
+        | (StdPath::FfiCStr, "to_bytes_with_nul")
+        | (StdPath::FfiCString, "as_bytes_with_nul")
+        | (StdPath::FfiCString, "into_bytes_with_nul")
+        | (StdPath::FfiCString, "from_vec_with_nul_unchecked")
+        | (StdPath::FfiCString, "as_c_str")
+        | (StdPath::FfiCString, "into_boxed_c_str")
+        | (StdPath::FfiCStr, "into_c_string") => return Some(Std::Same),
         _ => return None,
     };
     Some(Std::CStr(op))

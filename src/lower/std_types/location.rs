@@ -8,8 +8,10 @@ use crate::collections::IndexSet;
 use crate::js::{Expr, ExprKind, Prop};
 use crate::lower::calls::Call;
 use crate::lower::display::join;
-use crate::lower::recognition::Std;
+use crate::lower::recognition::{MethodOf, Std, StdPath, std_inherent_method};
 use crate::lower::{FnCx, R};
+use rustc_middle::ty::TyCtxt;
+use rustc_span::def_id::DefId;
 use rustc_span::{RemapPathScopeComponents, Span};
 
 /// What's asked of a `Location`.
@@ -24,9 +26,12 @@ pub(in crate::lower) enum LocationOp {
     Column,
 }
 
-/// Which of `Location`'s functions `path` is, as std names it.
-pub(in crate::lower) fn location_op(path: &str) -> Option<LocationOp> {
-    Some(match path.strip_prefix("std::panic::Location::<'a>::")? {
+/// Which of `Location`'s functions `id` is.
+pub(in crate::lower) fn location_op(tcx: TyCtxt<'_>, id: DefId) -> Option<LocationOp> {
+    let (MethodOf::Type(StdPath::PanicLocation), name) = std_inherent_method(tcx, id)? else {
+        return None;
+    };
+    Some(match name.as_str() {
         "caller" => LocationOp::Caller,
         "file" => LocationOp::File,
         "line" => LocationOp::Line,

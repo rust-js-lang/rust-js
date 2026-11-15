@@ -9,7 +9,9 @@
 use crate::js::Expr;
 use crate::lower::FnCx;
 use crate::lower::calls::Call;
-use crate::lower::recognition::Std;
+use crate::lower::recognition::{MethodOf, Std, StdPath, std_inherent_method};
+use rustc_middle::ty::TyCtxt;
+use rustc_span::def_id::DefId;
 
 /// What's asked of a `Backtrace`.
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -24,9 +26,12 @@ pub(in crate::lower) enum BacktraceOp {
     Status,
 }
 
-/// Which of `Backtrace`'s functions `path` is, as std names it.
-pub(in crate::lower) fn backtrace_op(path: &str) -> Option<BacktraceOp> {
-    Some(match path.strip_prefix("std::backtrace::Backtrace::")? {
+/// Which of `Backtrace`'s functions `id` is.
+pub(in crate::lower) fn backtrace_op(tcx: TyCtxt<'_>, id: DefId) -> Option<BacktraceOp> {
+    let (MethodOf::Type(StdPath::Backtrace), name) = std_inherent_method(tcx, id)? else {
+        return None;
+    };
+    Some(match name.as_str() {
         "capture" => BacktraceOp::Capture,
         "force_capture" => BacktraceOp::ForceCapture,
         "disabled" => BacktraceOp::Disabled,

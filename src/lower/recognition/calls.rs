@@ -18,18 +18,9 @@ pub(crate) enum CapacityOp {
     ShrinkTo { fit: bool },
 }
 
-/// std's collections that are a JS array, whose capacity is the array's
-/// (ADRs 0068, 0419): the paths of their methods, of `T` and an allocator.
-const ARRAY_COLLECTIONS: [&str; 3] = [
-    "std::vec::Vec::<T, A>::",
-    "std::collections::VecDeque::<T, A>::",
-    "std::collections::BinaryHeap::<T, A>::",
-];
-
 /// Which of a `Vec`'s capacity's functions `def_id` is, or a `VecDeque`'s
-/// or a `BinaryHeap`'s, one of `ARRAY_COLLECTIONS`.
+/// or a `BinaryHeap`'s.
 pub(crate) fn capacity_op(tcx: TyCtxt<'_>, def_id: DefId) -> Option<CapacityOp> {
-    let path = std_path(tcx, def_id);
     let item = std_path_item(tcx, def_id);
     if matches!(
         item,
@@ -37,7 +28,7 @@ pub(crate) fn capacity_op(tcx: TyCtxt<'_>, def_id: DefId) -> Option<CapacityOp> 
     ) {
         return Some(CapacityOp::WithCapacity);
     }
-    Some(match array_collection_method(path)? {
+    Some(match array_collection_method(tcx, def_id)?.as_str() {
         "capacity" => CapacityOp::Of,
         "reserve" => CapacityOp::Reserve { exact: false },
         "reserve_exact" => CapacityOp::Reserve { exact: true },
@@ -47,11 +38,11 @@ pub(crate) fn capacity_op(tcx: TyCtxt<'_>, def_id: DefId) -> Option<CapacityOp> 
     })
 }
 
-/// Whether `def_id`, of one of `ARRAY_COLLECTIONS`, may shorten it, which
+/// Whether `def_id`, a `Vec`'s, a `VecDeque`'s or a `BinaryHeap`'s, may shorten it, which
 /// keeps its capacity (ADR 0419): the array it's given first, or its
 /// second, `append`'s.
 pub(crate) fn shortens_vec(tcx: TyCtxt<'_>, def_id: DefId) -> Option<usize> {
-    match array_collection_method(std_path(tcx, def_id))? {
+    match array_collection_method(tcx, def_id)?.as_str() {
         "append" => Some(1),
         "clear" | "truncate" | "set_len" | "pop" | "pop_if" | "pop_front" | "pop_back" | "pop_front_if"
         | "pop_back_if" | "remove" | "swap_remove" | "drain" | "retain" | "retain_mut" | "dedup" | "dedup_by"
@@ -60,20 +51,27 @@ pub(crate) fn shortens_vec(tcx: TyCtxt<'_>, def_id: DefId) -> Option<usize> {
     }
 }
 
-/// Whether `def_id`, of one of `ARRAY_COLLECTIONS`, may add to it, which
+/// Whether `def_id`, a `Vec`'s, a `VecDeque`'s or a `BinaryHeap`'s, may add to it, which
 /// std does by reserving as many as it adds, `grow_amortized` (#1180): the
 /// array it's given first.
 pub(crate) fn grows_vec(tcx: TyCtxt<'_>, def_id: DefId) -> Option<usize> {
-    match array_collection_method(std_path(tcx, def_id))? {
+    match array_collection_method(tcx, def_id)?.as_str() {
         "push" | "push_back" | "push_front" | "insert" | "append" | "extend_from_slice" | "extend_from_within"
         | "resize" | "resize_with" => Some(0),
         _ => None,
     }
 }
 
-/// The method of one of `ARRAY_COLLECTIONS` that `path` names.
-fn array_collection_method(path: &str) -> Option<&str> {
-    ARRAY_COLLECTIONS.iter().find_map(|prefix| path.strip_prefix(prefix))
+/// The method of a `Vec`, a `VecDeque` or a `BinaryHeap` that `def_id` is, by
+/// its name: std's collections that are a JS array, whose capacity is the
+/// array's (ADRs 0068, 0419).
+fn array_collection_method(tcx: TyCtxt<'_>, def_id: DefId) -> Option<Symbol> {
+    match std_inherent_method(tcx, def_id) {
+        Some((MethodOf::Type(StdPath::Vec | StdPath::CollectionsVecDeque | StdPath::CollectionsBinaryHeap), name)) => {
+            Some(name)
+        }
+        _ => None,
+    }
 }
 
 /// The algebra a set's operator `op` is: `&a - &b`'s `difference`.
@@ -221,7 +219,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             return Some(Some(Std::Pointer(crate::lower::pointers::PointerOp::FromRef)));
         }
         // A raw pointer's, a handle on its place (ADR 0407).
-        if let Some(op) = crate::lower::pointers::pointer_op(path) {
+        if let Some(op) = crate::lower::pointers::pointer_op(tcx, def_id) {
             return Some(Some(Std::Pointer(op)));
         }
         // A `Vec`'s capacity's, kept where it's asked (ADR 0419).
@@ -258,11 +256,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             return Some(Some(Std::Location(op)));
         }
         // A backtrace, disabled unless forced (ADR 0568).
-        if let Some(op) = crate::lower::std_types::backtrace::backtrace_op(path) {
+        if let Some(op) = crate::lower::std_types::backtrace::backtrace_op(tcx, def_id) {
             return Some(Some(Std::Backtrace(op)));
         }
         // A C string's, its bytes with its nul (#1157).
-        if let Some(known) = c_str_op(path) {
+        if let Some(known) = c_str_op(tcx, def_id) {
             return Some(Some(known));
         }
         // A future already done, a promise (ADR 0029).
@@ -1273,7 +1271,7 @@ pub(crate) fn checks_room_of_first(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
         Some(CapacityOp::WithCapacity | CapacityOp::Reserve { .. })
     ) || is_vec_from_elem(tcx, def_id)
         || matches!(
-            array_collection_method(std_path(tcx, def_id)),
+            array_collection_method(tcx, def_id).as_ref().map(Symbol::as_str),
             Some("resize" | "resize_with")
         )
         || is_std_crate(tcx, def_id)

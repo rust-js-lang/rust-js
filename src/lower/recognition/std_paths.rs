@@ -12,7 +12,8 @@ use super::{StdCrate, registry};
 use crate::collections::IndexMap;
 use rustc_hir::def::DefKind;
 use rustc_middle::ty::fast_reject::SimplifiedType;
-use rustc_middle::ty::{FloatTy, IntTy, TyCtxt, UintTy};
+use rustc_middle::ty::{self, FloatTy, IntTy, Mutability, TyCtxt, UintTy};
+use rustc_span::Symbol;
 use rustc_span::def_id::DefId;
 use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -60,12 +61,16 @@ std_paths! {
     AsciiEscapeDefaultFn => "std::ascii::escape_default",
     Backtrace => "std::backtrace::Backtrace",
     BorrowCow => "std::borrow::Cow",
+    BorrowToOwned => "std::borrow::ToOwned",
+    BoxedBox => "std::boxed::Box",
     CharDecodeUtf16 => "std::char::DecodeUtf16",
     CharToLowercase => "std::char::ToLowercase",
     CharToUppercase => "std::char::ToUppercase",
     CmpMaxFn => "std::cmp::max",
     CmpMinFn => "std::cmp::min",
+    CollectionsBinaryHeap => "std::collections::BinaryHeap",
     BinaryHeapWithCapacity => "std::collections::BinaryHeap::<T>::with_capacity",
+    CollectionsVecDeque => "std::collections::VecDeque",
     VecDequeWithCapacity => "std::collections::VecDeque::<T>::with_capacity",
     BinaryHeapPeekMut => "std::collections::binary_heap::PeekMut",
     BtreeMapIntoIter => "std::collections::btree_map::IntoIter",
@@ -81,6 +86,11 @@ std_paths! {
     EnvVarOsFn => "std::env::var_os",
     EnvVarsFn => "std::env::vars",
     EnvVarsOsFn => "std::env::vars_os",
+    FfiCStr => "std::ffi::CStr",
+    FfiCString => "std::ffi::CString",
+    FfiFromVecWithNulError => "std::ffi::FromVecWithNulError",
+    FfiIntoStringError => "std::ffi::IntoStringError",
+    FfiNulError => "std::ffi::NulError",
     FfiOsStr => "std::ffi::OsStr",
     OsStrNew => "std::ffi::OsStr::new",
     OsStrToStr => "std::ffi::OsStr::to_str",
@@ -88,6 +98,7 @@ std_paths! {
     OsStringIntoString => "std::ffi::OsString::into_string",
     FfiVaList => "std::ffi::VaList",
     VaListNextArg => "std::ffi::VaList::<'f>::next_arg",
+    FmtArguments => "std::fmt::Arguments",
     DirEntryFileName => "std::fs::DirEntry::file_name",
     DirEntryFileType => "std::fs::DirEntry::file_type",
     DirEntryMetadata => "std::fs::DirEntry::metadata",
@@ -141,6 +152,7 @@ std_paths! {
     HintAssertUncheckedFn => "std::hint::assert_unchecked",
     HintSpinLoopFn => "std::hint::spin_loop",
     HintUnreachableUncheckedFn => "std::hint::unreachable_unchecked",
+    IntrinsicsArithOffsetFn => "std::intrinsics::arith_offset",
     IntrinsicsAssumeFn => "std::intrinsics::assume",
     IntrinsicsBlackBoxFn => "std::intrinsics::black_box",
     IntrinsicsColdPathFn => "std::intrinsics::cold_path",
@@ -212,6 +224,7 @@ std_paths! {
     ManuallyDropDrop => "std::mem::ManuallyDrop::<T>::drop",
     ManuallyDropIntoInner => "std::mem::ManuallyDrop::<T>::into_inner",
     ManuallyDropNew => "std::mem::ManuallyDrop::<T>::new",
+    MemMaybeUninit => "std::mem::MaybeUninit",
     MemAlignOfValFn => "std::mem::align_of_val",
     MemDiscriminantFn => "std::mem::discriminant",
     MemNeedsDropFn => "std::mem::needs_drop",
@@ -273,15 +286,37 @@ std_paths! {
     PathStripPrefixError => "std::path::StripPrefixError",
     PinNewUncheckedInHelperFn => "std::pin::pin_new_unchecked_in_helper",
     ProcessExitFn => "std::process::exit",
+    PtrNonNull => "std::ptr::NonNull",
     NonNullDangling => "std::ptr::NonNull::<T>::dangling",
+    PtrAddrEqFn => "std::ptr::addr_eq",
+    PtrCopyFn => "std::ptr::copy",
+    PtrCopyNonoverlappingFn => "std::ptr::copy_nonoverlapping",
     PtrDanglingFn => "std::ptr::dangling",
     PtrDanglingMutFn => "std::ptr::dangling_mut",
+    PtrDropInPlaceFn => "std::ptr::drop_in_place",
     PtrFnAddrEqFn => "std::ptr::fn_addr_eq",
+    PtrFromMutFn => "std::ptr::from_mut",
+    PtrFromRefFn => "std::ptr::from_ref",
     PtrHashFn => "std::ptr::hash",
+    PtrNullFn => "std::ptr::null",
+    PtrNullMutFn => "std::ptr::null_mut",
+    PtrReadFn => "std::ptr::read",
+    PtrReadUnalignedFn => "std::ptr::read_unaligned",
+    PtrReadVolatileFn => "std::ptr::read_volatile",
+    PtrReplaceFn => "std::ptr::replace",
+    PtrSliceFromRawPartsFn => "std::ptr::slice_from_raw_parts",
+    PtrSliceFromRawPartsMutFn => "std::ptr::slice_from_raw_parts_mut",
+    PtrSwapFn => "std::ptr::swap",
+    PtrSwapNonoverlappingFn => "std::ptr::swap_nonoverlapping",
     PtrWithExposedProvenanceFn => "std::ptr::with_exposed_provenance",
     PtrWithExposedProvenanceMutFn => "std::ptr::with_exposed_provenance_mut",
     PtrWithoutProvenanceFn => "std::ptr::without_provenance",
     PtrWithoutProvenanceMutFn => "std::ptr::without_provenance_mut",
+    PtrWriteFn => "std::ptr::write",
+    PtrWriteBytesFn => "std::ptr::write_bytes",
+    PtrWriteUnalignedFn => "std::ptr::write_unaligned",
+    PtrWriteVolatileFn => "std::ptr::write_volatile",
+    Rc => "std::rc::Rc",
     RtBeginPanicFn => "std::rt::begin_panic",
     SliceChunksExact => "std::slice::ChunksExact",
     SliceChunksExactMut => "std::slice::ChunksExactMut",
@@ -289,6 +324,8 @@ std_paths! {
     SliceRChunksExact => "std::slice::RChunksExact",
     SliceRChunksExactMut => "std::slice::RChunksExactMut",
     SliceFromMutFn => "std::slice::from_mut",
+    SliceFromRawPartsFn => "std::slice::from_raw_parts",
+    SliceFromRawPartsMutFn => "std::slice::from_raw_parts_mut",
     SliceFromRefFn => "std::slice::from_ref",
     MemchrFn => "std::slice::memchr::memchr",
     MemchrMemrchrFn => "std::slice::memchr::memrchr",
@@ -315,6 +352,7 @@ std_paths! {
     StringFromUtf8Lossy => "std::string::String::from_utf8_lossy",
     StringFromUtf8Unchecked => "std::string::String::from_utf8_unchecked",
     StringNew => "std::string::String::new",
+    SyncArc => "std::sync::Arc",
     SyncPoisonError => "std::sync::PoisonError",
     SyncTryLockError => "std::sync::TryLockError",
     MpscReceiver => "std::sync::mpsc::Receiver",
@@ -326,6 +364,7 @@ std_paths! {
     TimeSystemTimeError => "std::time::SystemTimeError",
     UbChecksCheckLanguageUbFn => "std::ub_checks::check_language_ub",
     VecIntoIter => "std::vec::IntoIter",
+    Vec => "std::vec::Vec",
     VecSetLen => "std::vec::Vec::<T, A>::set_len",
     VecFromRawParts => "std::vec::Vec::<T>::from_raw_parts",
     VecWithCapacity => "std::vec::Vec::<T>::with_capacity",
@@ -466,4 +505,71 @@ fn primitive_method(tcx: TyCtxt<'_>, path: &str) -> Option<DefId> {
     (tcx.incoherent_impls(simplified).iter())
         .flat_map(|&imp| tcx.associated_item_def_ids(imp).iter().copied())
         .find(|&id| tcx.item_name(id).as_str() == method)
+}
+
+/// Whose a method of std's is, as its impl names it: a type of the
+/// table's, generic, `Vec::<T, A>`, or of a slice, `NonNull::<[T]>`; a
+/// slice; or a raw pointer, to a generic `T` or to a slice. Two impls of
+/// one type that overlap, `NonNull<T>`'s and `NonNull<[T]>`'s, have methods
+/// of different names, so whose and its name are one method.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub(crate) enum MethodOf {
+    Type(StdPath),
+    TypeOfSlice(StdPath),
+    Slice,
+    ConstPtr,
+    ConstSlicePtr,
+    MutPtr,
+    MutSlicePtr,
+}
+
+/// `id`'s, a method of one of std's inherent impls: whose, and its name.
+/// A type's methods are each of one name, whichever impl of it holds
+/// them, `Vec::<T>::with_capacity`'s and `Vec::<T, A>::reserve`'s.
+pub(crate) fn std_inherent_method(tcx: TyCtxt<'_>, id: DefId) -> Option<(MethodOf, Symbol)> {
+    let imp = tcx.inherent_impl_of_assoc(id)?;
+    Some((method_of(tcx, imp)?, tcx.item_name(id)))
+}
+
+/// `id`'s, a method of one of std's impls of a trait of the table's: the
+/// trait, whose, and its name, `<CStr as ToOwned>::to_owned`'s.
+pub(crate) fn std_trait_method(tcx: TyCtxt<'_>, id: DefId) -> Option<(StdPath, MethodOf, Symbol)> {
+    let imp = tcx.trait_impl_of_assoc(id)?;
+    let of_trait = std_path_item(tcx, tcx.impl_trait_id(imp))?;
+    Some((of_trait, method_of(tcx, imp)?, tcx.item_name(id)))
+}
+
+/// Whose `imp`, one of std's impls, is: its type's. `None` of one of a
+/// type of another's, `Box<dyn Any>`'s or `*const [T; N]`'s.
+fn method_of(tcx: TyCtxt<'_>, imp: DefId) -> Option<MethodOf> {
+    if !super::is_std_crate(tcx, imp) {
+        return None;
+    }
+    let slice_or_generic = |ty: ty::Ty<'_>| match ty.kind() {
+        ty::Slice(_) => Some(true),
+        _ if crate::lower::generic_facts::is_impl_parameter(ty) => Some(false),
+        _ => None,
+    };
+    let ty = tcx.type_of(imp).skip_binder();
+    // A raw pointer's, not a `NonNull`'s, which `raw_pointee` takes for one
+    // too: its impls are its type's.
+    if !matches!(ty.kind(), ty::Adt(..))
+        && let Some((pointee, mutability)) = crate::lower::pointers::raw_pointee(tcx, ty)
+    {
+        return Some(match (slice_or_generic(pointee)?, mutability) {
+            (false, Mutability::Not) => MethodOf::ConstPtr,
+            (true, Mutability::Not) => MethodOf::ConstSlicePtr,
+            (false, Mutability::Mut) => MethodOf::MutPtr,
+            (true, Mutability::Mut) => MethodOf::MutSlicePtr,
+        });
+    }
+    Some(match ty.kind() {
+        ty::Adt(adt, args) => match args.types().next().map(slice_or_generic) {
+            None | Some(Some(false)) => MethodOf::Type(std_path_item(tcx, adt.did())?),
+            Some(Some(true)) => MethodOf::TypeOfSlice(std_path_item(tcx, adt.did())?),
+            Some(None) => return None,
+        },
+        ty::Slice(_) => MethodOf::Slice,
+        _ => return None,
+    })
 }

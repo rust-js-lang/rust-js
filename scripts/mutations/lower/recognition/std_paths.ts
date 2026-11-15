@@ -28,4 +28,20 @@ export const mutations: Mutation[] = [
     replace: "        let found = found.or_else(|| primitive_method(tcx, item.path()));\n",
     tests: ["test/std-paths.test.ts"],
   },
+  {
+    name: "method-of-a-slice-a-generic",
+    breaks: "an impl of a type of a slice, `NonNull<[T]>`, or a raw pointer to one, `*const [T]`, is taken for its generic one's, so `NonNull::<[T]>::len` and `<*const [T]>::len` are asked of `NonNull<T>`'s and `*const T`'s methods and no slice's length",
+    file: "src/lower/recognition/std_paths.rs",
+    find: "        ty::Slice(_) => Some(true),\n        _ if crate::lower::generic_facts::is_impl_parameter(ty) => Some(false),\n",
+    replace: "        ty::Slice(_) => Some(false),\n        _ if crate::lower::generic_facts::is_impl_parameter(ty) => Some(false),\n",
+    tests: ["test/corpus.test.ts", "-t", "^slice_pointers.rs$"],
+  },
+  {
+    name: "method-of-a-non-null-a-raw-pointer",
+    breaks: "a `NonNull`'s impl is taken for a `*mut T`'s, as `raw_pointee` takes it for one, so its `as_ref` is a raw pointer's, which may be `None`, not a `NonNull`'s, never",
+    file: "src/lower/recognition/std_paths.rs",
+    find: "    if !matches!(ty.kind(), ty::Adt(..))\n        && let Some((pointee, mutability))",
+    replace: "    if true\n        && let Some((pointee, mutability))",
+    tests: ["test/corpus.test.ts", "-t", "^non_null.rs$"],
+  },
 ];

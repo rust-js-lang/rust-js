@@ -435,7 +435,7 @@ pub(crate) fn type_facts(tcx: TyCtxt<'_>, def_id: DefId) -> &'static [TypeFact] 
         }
         _ => {}
     }
-    if let Some(facts) = crate::lower::pointers::address_facts(std_path(tcx, def_id)) {
+    if let Some(facts) = crate::lower::pointers::address_facts(tcx, def_id) {
         return facts;
     }
     // `x.type_id()`, and a downcast's type, its last type argument (ADR 0331).

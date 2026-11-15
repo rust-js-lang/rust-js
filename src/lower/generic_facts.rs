@@ -46,6 +46,7 @@
 //! | an `Error` impl's `type_id`, which a `dyn Error`'s downcasts compare: none of a generic impl's, a downcast to its type refused (ADR 0331, amended) | Instances | `src/lower/generic_facts.rs error_impl_has_type_id` |
 //! | whether a caller gives it a value with a destructor, its function given a drop for it, `drop_params`' (ADR 0098), what steps its items from their back made closed where it's made (#1406) | Instances | `src/lower/generic_facts.rs given_a_drop_of` |
 //! | whether a trait of a type built of it can hold for any `T`, a fact no impl answers yes to, `vec::IntoIter<Held<T>>`'s `TrustedRandomAccessNoCoerce`, known here, no caller's (#1385) | Instances | `src/lower/generic_facts.rs may_hold_for_some` |
+//! | whether a std impl's type, its first argument or a raw pointer's pointee, is the impl's type parameter, `impl<T> NonNull<T>`'s, as a std path names its block apart from `NonNull::<[T]>`'s and `*const [T; N]`'s, so a method is known by whose it is and its name (#1681) | Instances | `src/lower/generic_facts.rs is_impl_parameter` |
 
 use super::copies::InPlaceWriter;
 use super::{FnCx, R};
@@ -607,6 +608,13 @@ pub(in crate::lower) fn writes_through_its_box(declared: Ty<'_>) -> bool {
         ty::Param(_) => true,
         _ => false,
     }
+}
+
+/// Whether `ty`, a std impl's type's first argument or a raw pointer's
+/// pointee, is a type parameter: `impl<T> NonNull<T>`'s `T`, which a std path
+/// writes `NonNull::<T>`, not `NonNull::<[T]>` or `*const [T; N]` (#1681).
+pub(in crate::lower) fn is_impl_parameter(ty: Ty<'_>) -> bool {
+    matches!(ty.kind(), ty::Param(_))
 }
 
 /// Whether `ty` holds the type parameter of index `index`, itself or in
