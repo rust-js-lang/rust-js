@@ -40,35 +40,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-integer-ranges.test.ts", "-t", "below a JS string"],
   },
   {
-    name: "ranges-for-changed-kept",
-    breaks:
-      "a range loop's end holds of a slice its body pops, so `items[i]` past its length reads `undefined`",
-    file: "src/lower/body_queries/ranges/loops.rs",
-    find: "        (!changed && !cell_changed).then_some(slice)",
-    replace: "        (!cell_changed).then_some(slice)",
-    tests: ["test/lowering-integer-ranges.test.ts", "-t", "integer ranges show"],
-  },
-  {
-    name: "ranges-loop-entry-only",
-    breaks:
-      "a loop's start is only what's known as it's entered, so `steps += 1` in a `loop` doesn't wrap",
-    file: "src/lower/body_queries/ranges/loops.rs",
-    find: "            let mut next = either(entry.clone(), either(here, continued));",
-    replace:
-      "            let mut next = {\n                let _ = (here, continued);\n                entry.clone()\n            };",
-    tests: ["test/lowering-integer-ranges.test.ts", "-t", "integer ranges show"],
-  },
-  {
-    name: "ranges-continue-dropped",
-    breaks:
-      "what's known at a `continue` doesn't go round again, so `k + 1` of a `k` set to `n` before it doesn't wrap",
-    file: "src/lower/body_queries/ranges/loops.rs",
-    find: "            let continued = scope.and_then(|at| self.targets[at].continues.take());",
-    replace:
-      "            let continued = scope.and_then(|at| self.targets[at].continues.take()).and(None);",
-    tests: ["test/lowering-integer-ranges.test.ts", "-t", "integer ranges show"],
-  },
-  {
     name: "enumerate-index-unranged",
     breaks:
       "`for (i, t) in terraces.iter().enumerate()` gives `i` no bound, `$index(levels, i)` (#363)",

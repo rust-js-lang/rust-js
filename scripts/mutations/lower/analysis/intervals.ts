@@ -122,7 +122,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/intervals.rs",
     find: "                    *least = (*least).max(narrowed.lo);\n",
     replace: "                    let _ = narrowed;\n",
-    tests: ["test/lowering-integer-ranges.test.ts","-t","a length held in a variable"],
+    tests: ["test/corpus.test.ts", "-t", "^byte_constants_large.rs$"],
+    snapshots: true,
   },
   {
     name: "intervals-raw-reborrow-unknown",

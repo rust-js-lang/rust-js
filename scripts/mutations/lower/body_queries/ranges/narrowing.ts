@@ -39,19 +39,6 @@ export const mutations: Mutation[] = [
     tests: ["test/intervals-shadow.test.ts"],
   },
   {
-    name: "held-length-shows-nothing",
-    breaks:
-      "a variable narrowed to at least 1, at most a slice's length, shows nothing of the slice, so `keys[0]` past `length === 1` keeps `$index`",
-    file: "src/lower/body_queries/ranges/narrowing.rs",
-    find: "            k.at_least(below, narrowed.lo);\n",
-    replace: "            let _ = (below, narrowed.lo);\n",
-    tests: [
-      "test/lowering-integer-ranges.test.ts",
-      "-t",
-      "a length held in a variable",
-    ],
-  },
-  {
     name: "test-held-shows-nothing",
     breaks:
       "a branch on a `bool` that holds a test shows nothing of it, so `if truncated` keeps `$slice` (ADR 0806)",

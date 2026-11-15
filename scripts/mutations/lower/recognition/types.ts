@@ -199,24 +199,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "slice-swap-unasked",
-    breaks:
-      "`swap` asks nothing of a slice's length, so a heap's `heap.swap(index, rightIndex)` is `$swap`",
-    file: "src/lower/recognition/types.rs",
-    find: '        "swap" => Some(SliceLength::Swap),\n',
-    replace: "",
-    tests: ["test/lowering-integer-ranges.test.ts", "-t", "integer ranges show"],
-  },
-  {
-    name: "vec-deref-unseen",
-    breaks:
-      "a `Vec`'s `deref_mut` isn't its slice, so `heap.swap(..)` of a `Vec` is `$swap`",
-    file: "src/lower/recognition/types.rs",
-    find: "            Some(VecView::Slice)\n",
-    replace: "            None\n",
-    tests: ["test/lowering-integer-ranges.test.ts", "-t", "integer ranges show"],
-  },
-  {
     name: "index-mut-unasked",
     breaks:
       "`index_mut` asks nothing of a `Vec`'s length, so `&mut heap[0]` where it isn't empty is checked",

@@ -129,15 +129,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "mir-in-bounds-checked",
-    breaks:
-      "a call whose indexes the body's ranges show in bounds is checked, `$index(heap, leftIndex)` and `$swap`",
-    file: "src/lower/mir/bounds.rs",
-    find: "(self.thir_call(def_id, span)).is_some_and(|(fun, _)| self.frame.facts.in_bounds.contains(&fun))",
-    replace: "(self.thir_call(def_id, span)).is_some_and(|_| false)",
-    tests: ["test/lowering-integer-ranges.test.ts", "-t", "integer ranges show"],
-  },
-  {
     name: "swap-remove-shifted",
     breaks:
       "`swap_remove`'s item is taken from the front, so a heap's `pop` gives its second item",

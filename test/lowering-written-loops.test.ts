@@ -597,6 +597,16 @@ pub fn swapped(m: &mut [u32]) {
     }
 }
 
+pub fn grown(m: &mut Vec<u32>) {
+    for i in 0..2 {
+        for j in i * 2..m.len() {
+            if m.len() < 8 {
+                m.push(j as u32);
+            }
+        }
+    }
+}
+
 fn bump(k: &mut usize) -> usize {
     *k += 10;
     *k
@@ -616,6 +626,9 @@ pub fn ordered(mut k: usize) -> usize {
   // MIR proves the swap's indexes in bounds, so nothing in the body changes
   // `m`'s length and the loop reads it where it's tested (#1672 M3, step 5).
   expect(js).toContain("    for (let j = i * 2; j < m.length; j++) {\n");
+  // A body that grows `m`: its end held first, before the start Rust reads
+  // first, as `i * 2` reads only variables (#368).
+  expect(js).toContain("    const end = m.length;\n    for (let j = i * 2; j < end; j++) {\n      if (m.length < 8) {\n");
   expect(js).not.toContain("$rangeNext");
   const lib = await import(join(dir, "lib.js"));
   const m = [1, 2, 3];

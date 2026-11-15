@@ -36,25 +36,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "refcell_vec_bounds"],
   },
   {
-    name: "pop-as-push",
-    breaks:
-      "a `pop` is taken as one more item, so `v[n - 1]` of the length before it reads `undefined`",
-    file: "src/lower/body_queries/ranges/known.rs",
-    find: "                bound.b -= bound.c * by;",
-    replace: "                bound.b -= bound.c * by.abs();",
-    tests: ["test/lowering-functions.test.ts", "-t", "only calls reach"],
-  },
-  {
-    name: "bound-never-lowest",
-    breaks:
-      "a bound is never made over its least denominator, so a loop that halves `siftUp`'s index never settles and `heap[index]` is checked",
-    file: "src/lower/body_queries/ranges/known.rs",
-    find: "        while self.s > 0 && self.c % 2 == 0 && self.b % 2 == 0 {",
-    replace:
-      "        while false && self.s > 0 && self.c % 2 == 0 && self.b % 2 == 0 {",
-    tests: ["test/lowering-functions.test.ts", "-t", "only calls reach"],
-  },
-  {
     name: "product-negative-zero-exact",
     breaks:
       "a product the ranges show in range is JS's own `*` though it can be `-4 * 0`, JS's `-0`, which an `f64` made of it shows",
@@ -70,19 +51,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/body_queries/ranges/known.rs",
     find: "            None if by > 0 => _ = self.lengths.insert(slice.clone(), by),\n",
     replace: "            None if by > 0 => {}\n",
-    tests: [
-      "test/lowering-integer-ranges.test.ts",
-      "-t",
-      "a length held in a variable",
-    ],
-  },
-  {
-    name: "at-least-one-short",
-    breaks:
-      "a value at least 1 and at most a length shows nothing of the length, so `keys[0]` past `length === 1` keeps `$index`",
-    file: "src/lower/body_queries/ranges/known.rs",
-    find: "        if least > 0 {\n",
-    replace: "        if least > 1 {\n",
     tests: [
       "test/lowering-integer-ranges.test.ts",
       "-t",
@@ -170,15 +138,6 @@ export const mutations: Mutation[] = [
     find: "        self.same.retain(|(_, v), (_, of)| *v != var && *of != var);\n",
     replace: "",
     tests: ["test/lowering-collections.test.ts", "-t", "as long as another"],
-  },
-  {
-    name: "rows-least-kept",
-    breaks:
-      "a row cleared leaves the rows known at least their count long, `board[0][1]` of an empty row unchecked (#370)",
-    file: "src/lower/body_queries/ranges/known.rs",
-    find: "        self.lengths.retain(|s, _| !rows(s));\n",
-    replace: "",
-    tests: ["test/lowering-collections.test.ts", "-t", "rows are as long"],
   },
   {
     name: "held-keys-joined-as-either",

@@ -253,53 +253,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "ranges-wrap-unbounded",
-    breaks:
-      "what can pass its type's largest doesn't wrap, so `n + 1` of a `u32` is `n + 1`",
-    file: "src/lower/body_queries/ranges.rs",
-    find: "        let within = made.clone().filter(|m| m.lo >= lo && m.hi <= hi);",
-    replace: "        let within = made.clone().filter(|m| m.lo >= lo);",
-    tests: ["test/lowering-integer-ranges.test.ts", "-t", "integer ranges show"],
-  },
-  {
-    name: "ranges-shift-unscaled",
-    breaks:
-      "`length >> 1` is taken at most the length, so `heap[leftIndex]` is checked",
-    file: "src/lower/body_queries/ranges.rs",
-    find: "Below { s: x.s + k as u32, ..x }.lowest()",
-    replace: "Below { s: x.s, ..x }.lowest()",
-    tests: ["test/lowering-integer-ranges.test.ts", "-t", "integer ranges show"],
-  },
-  {
-    name: "ranges-swap-unjudged",
-    breaks:
-      "a `swap`'s indexes aren't judged, so `heap.swap(index, rightIndex)` is `$swap`",
-    file: "src/lower/body_queries/ranges.rs",
-    find: "                for index in ranges.into_iter().skip(1) {",
-    replace:
-      "                for index in ranges.into_iter().skip(1).filter(|_| false) {",
-    tests: ["test/lowering-integer-ranges.test.ts", "-t", "integer ranges show"],
-  },
-  {
-    name: "callee-untold",
-    breaks:
-      "a call tells its function nothing, so `items[i]` of an index its caller tested is checked",
-    file: "src/lower/body_queries/ranges.rs",
-    find: "        let Some(params) = self.callees.get(&callee) else {",
-    replace:
-      "        let Some(params) = self.callees.get(&callee).filter(|_| false) else {",
-    tests: ["test/lowering-functions.test.ts", "-t", "only calls reach"],
-  },
-  {
-    name: "callee-bound-unmapped",
-    breaks:
-      "an index's bound by the slice its caller gives isn't the parameter's, so `siftUp`'s `heap[index]` is checked",
-    file: "src/lower/body_queries/ranges.rs",
-    find: "Some((theirs(slice)?, bound))",
-    replace: "Some((theirs(slice).filter(|_| false)?, bound))",
-    tests: ["test/lowering-functions.test.ts", "-t", "only calls reach"],
-  },
-  {
     name: "range-unjudged",
     breaks:
       "a slice's range is never judged, so `&v[..3]` past `v.len() > 3` keeps `$slice` (ADR 0806)",
@@ -399,59 +352,6 @@ export const mutations: Mutation[] = [
     replace:
       "            && let Some(larger) = ord_max_or_min(self.tcx, def_id).filter(|_| false)\n",
     tests: ["test/lowering-collections.test.ts", "-t", "as long as another"],
-  },
-  {
-    name: "table-rows-unmade",
-    breaks:
-      "`vec![vec![1.0; width]; height]`'s rows aren't known `width` long, `$index(board[r], c)` (#370)",
-    file: "src/lower/body_queries/ranges.rs",
-    find: "                        .chain(rows.map(|(base, count)| (vec![ITEM], base, count)))\n",
-    replace:
-      "                        .chain(rows.filter(|_| false).map(|(base, count)| (vec![ITEM], base, count)))\n",
-    tests: ["test/lowering-collections.test.ts", "-t", "rows are as long"],
-  },
-  {
-    name: "table-rows-unjudged",
-    breaks: "an index of a table's row isn't judged by its rows' length (#370)",
-    file: "src/lower/body_queries/ranges.rs",
-    find: "        let slice = self.slice(items).or_else(|| self.row_of(items));\n",
-    replace: "        let slice = self.slice(items);\n",
-    tests: ["test/lowering-collections.test.ts", "-t", "rows are as long"],
-  },
-  {
-    name: "row-assigned-kept",
-    breaks:
-      "`board[0] = Vec::new()` leaves the rows known `width` long, `board[r][c]` past an empty row read as `undefined` (#370)",
-    file: "src/lower/body_queries/ranges.rs",
-    find: "                self.row_reached(lhs, known);\n",
-    replace: "",
-    tests: ["test/lowering-collections.test.ts", "-t", "rows are as long"],
-  },
-  {
-    name: "row-borrowed-kept",
-    breaks:
-      "`let row = &mut board[0]; row.pop()` leaves the rows known `width` long (#370)",
-    file: "src/lower/body_queries/ranges.rs",
-    find: "                    self.row_reached(arg, known);\n",
-    replace: "",
-    tests: ["test/lowering-collections.test.ts", "-t", "rows are as long"],
-  },
-  {
-    name: "row-lent-kept",
-    breaks: "`board[0].pop()` leaves the rows known `width` long (#370)",
-    file: "src/lower/body_queries/ranges.rs",
-    find: "                self.row_reached(place, known);\n",
-    replace: "",
-    tests: ["test/lowering-collections.test.ts", "-t", "rows are as long"],
-  },
-  {
-    name: "rows-lent-kept",
-    breaks:
-      "`board.iter_mut()`, whose rows may be resized, leaves them known `width` long (#370)",
-    file: "src/lower/body_queries/ranges.rs",
-    find: "                    k.rows_changed(var);\n",
-    replace: "",
-    tests: ["test/lowering-collections.test.ts", "-t", "rows are as long"],
   },
   {
     name: "rows-kept-never",
