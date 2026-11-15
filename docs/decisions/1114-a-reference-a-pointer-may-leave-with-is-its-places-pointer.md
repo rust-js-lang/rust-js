@@ -345,3 +345,12 @@ through `scripts/crater.ts`; mutations `returned-parameter-unseen`,
 `returned-parameter-last-write` (`pointers/returned.ts`),
 `handle-pointer-reborrow-unkept` and `returned-parameter-of-any-root`
 (`mir/rvalues.ts`).
+
+## Amendment (2026-11-15, #1934): `returns_its_parameter` reads one owner's answer
+
+What a function returns of its parameters is `pointers/returned.rs`'s
+`returned_from` now, whose `Via::Reborrow` is this ADR's reborrow;
+`returns_its_parameter` asks it, then its cell's place as before. The
+answer is the same. The owner also says of an iterator its parameter's,
+adapted in place (ADR 0419, amended for #1934).
+

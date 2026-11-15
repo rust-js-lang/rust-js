@@ -763,3 +763,20 @@ test("JS's own iterator forms are known by own_form alone", () => {
   expect(reads).toEqual([]);
   expect(read("src/lower/iterators.rs")).toContain("pub(in crate::lower) fn own_form(e: &Expr) -> Option<OwnForm>");
 });
+
+// What a crate's function returns of its parameters, a reborrow or an
+// iterator adapted in place, is pointers/returned.rs's alone, and which
+// adapters keep their source in place is asked of in_place_source's owner,
+// recognition/specialization.rs, no list of them elsewhere (#1934; ADR
+// 0419, amended).
+test("a function's return provenance is returned.rs's, and the in-place adapters specialization.rs's", () => {
+  const rust = files("src").filter((file) => file.endsWith(".rs"));
+  const defining = (pattern: RegExp) => rust.filter((file) => pattern.test(read(file)));
+  expect(defining(/\bfn (returned_from|returned_iterator|returns_its_parameter)\b/)).toEqual(["src/lower/pointers/returned.rs"]);
+  expect(defining(/\bfn (adapts_in_place|impl_asks_of|in_place_traits)\b/)).toEqual(["src/lower/recognition/specialization.rs"]);
+  // A walk of a function's result asks which adapters keep their source,
+  // never names them.
+  expect(read("src/lower/pointers/returned.rs")).toContain("adapts_in_place(");
+  expect(read("src/lower/pointers/returned.rs")).not.toMatch(/"(map|filter|enumerate|zip|skip|take)"/);
+});
+

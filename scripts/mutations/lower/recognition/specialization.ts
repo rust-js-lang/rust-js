@@ -210,4 +210,5 @@ export const mutations: Mutation[] = [
     replace: "            true => Vec::new(),\n",
     tests: ["test/corpus.test.ts", "-t", "^trait_default_flat_map_of_arrays_collects_trusted.rs$"],
   },
+
 ];

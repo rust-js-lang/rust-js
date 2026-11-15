@@ -644,7 +644,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter/collect.rs",
     find: "        self.collected_into((it, walk), output, item, Some(collected), span)\n",
     replace: "        self.collected_into((it, walk.filter(|_| false)), output, item, Some(collected), span)\n",
-    tests: ["test/vec-capacity.test.ts", "-t", "an in-place collect through an impl Iterator function"],
+    tests: ["test/vec-capacity.test.ts", "-t", "walks to it in the std build"],
   },
   {
     name: "path-collected-as-text-joined",

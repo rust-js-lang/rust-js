@@ -44,7 +44,9 @@ fn place_of<'tcx>(thir: &Thir<'tcx>, mut at: ExprId) -> Option<CollectSource<'tc
 
 /// Each `collect()`, by its call's span, whose iterator is a chain of
 /// `Iterator`'s methods of `IntoIterator::into_iter(v)` of a `Vec` the body
-/// names, or a place in one, `v.into_iter().map(f).collect()`: `v`, which
+/// names, or a place in one, `v.into_iter().map(f).collect()`, through
+/// calls of the crate's functions that return their argument's iterator
+/// or a `Vec` argument's `into_iter()` (`returned_iterator`, #1934): `v`, which
 /// the chain moves, so nothing grows it before the collect reads its
 /// capacity. Whether std collects it in place is the collect lowering's
 /// (`collects_in_place`); a chain a `let` holds, or a `Vec` made where it's
@@ -88,8 +90,25 @@ pub(super) fn in_place_collect_sources<'tcx>(
                 }
                 break;
             }
+            // A call of the crate's function that returns its argument's
+            // iterator, or a `Vec` argument's `into_iter()`: on into that
+            // argument (`returned_iterator`, #1934).
             if tcx.trait_of_assoc(callee) != Some(iterator) {
-                break;
+                use crate::lower::pointers::{Returned, Via, returned_iterator};
+                let Some(Returned { param, via }) = returned_iterator(tcx, callee) else {
+                    break;
+                };
+                let Some(&arg) = args.get(param) else { break };
+                if via == Via::IntoIter {
+                    if let Some(source) = place_of(thir, strip(thir, arg))
+                        && matches!(thir[arg].ty.kind(), ty::Adt(adt, _) if is_std_def(tcx, adt.did(), StdItem::Vec))
+                    {
+                        *collects.last_mut().expect("the collect's") = Some(source);
+                    }
+                    break;
+                }
+                at = strip(thir, arg);
+                continue;
             }
             at = strip(thir, receiver);
         }

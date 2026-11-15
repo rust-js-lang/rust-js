@@ -186,7 +186,9 @@ pub(super) struct BodyFacts<'tcx> {
     /// crate's `Recognition` exists (`decide_in_place`), none reads it before.
     pub(super) in_place_adapters: InPlace,
     /// The `Vec` each `collect()` std may make in place is made of, by the
-    /// call's span, `in_place_collect_sources`'s (#1259).
+    /// call's span, `in_place_collect_sources`'s (#1259), decided with the
+    /// in-place adapters (`decide_in_place`), once each body's MIR is the
+    /// crate's (#1934).
     pub(super) in_place_collect_sources: IndexMap<Span, collect_sources::CollectSource<'tcx>>,
     /// Each `collect()` whose `Vec` the body asks its capacity, by the
     /// call's span, `capacity_read_collects`'s (#1926).
@@ -223,7 +225,7 @@ impl<'tcx> BodyFacts<'tcx> {
             method_calls,
             called_methods,
             in_place_adapters: InPlace::default(),
-            in_place_collect_sources: collect_sources::in_place_collect_sources(tcx, thir),
+            in_place_collect_sources: IndexMap::default(),
             capacity_read_collects: collect_sources::capacity_read_collects(tcx, thir),
             constant_patterns: constant_patterns(tcx, thir),
             jsx_given,

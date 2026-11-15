@@ -39,6 +39,12 @@ pub(in crate::lower) fn decide<'tcx>(
     std_iterators: bool,
 ) {
     let tcx = recognition.tcx;
+    // Each collect's source `Vec`, once each body's MIR is the crate's, so a
+    // call of its function that returns its argument's iterator is followed
+    // (`returned_iterator`, #1934).
+    for body in bodies.iter_mut() {
+        body.facts.in_place_collect_sources = super::collect_sources::in_place_collect_sources(tcx, &body.thir);
+    }
     if std_iterators {
         for body in bodies.iter_mut() {
             body.facts.in_place_adapters = super::InPlace::decided(IndexSet::default());

@@ -950,5 +950,63 @@ std's 9 and 6, and `grown().into_iter()` collected into a `let` is refused;
 `plain opaque vec_collected_in_place_capacity.rs` is off its known list.
 Mutation `capacity-read-of-a-hidden-source-unrefused`
 (`lower/mir/iter/collect.ts`). Keeping the capacity through a crate's own
-function that gives its parameter's iterator is #1934.
+function that gives its parameter's iterator is #1934, below.
+
+## Amendment (2026-11-15, #1934): a crate's function that returns its parameter's iterator keeps its source
+
+A collect in place through a crate's own function whose result is its
+parameter's iterator, `opaque(kept.into_iter()).map(f)`, `doubled(it)` of
+`it.map(..)`, `evens(v)` of `v.into_iter().filter(..)`, now has its
+source's capacity in the plain build too, as where the chain is written in
+the body: 10, 7, 9 and 6 of native Rust's, where #1926 refused it.
+
+What a function's result is made of is one owner's,
+`pointers/returned.rs`'s `returned_from`, which already said of a `&mut`
+that it's a reborrow of a parameter (#1513, ADR 1114): now
+`Returned { param, via }`, `Via::Reborrow`, `Via::Adapted` (its parameter's
+iterator, as it is or through std's adapters that keep their source in
+place) or `Via::IntoIter` (a `Vec` parameter's `into_iter()`).
+`returns_its_parameter` is its `Reborrow` reader. `gives_its_argument`
+stays apart: whether a call's JS is its argument is a question of what JS
+is made, not of where a result comes from.
+
+`returned_iterator` walks the function's MIR back from its result, each
+local written once: by a move, a call of an adapter, `into_iter()` of a
+`Vec`, or a call of another of the crate's functions that returns its
+argument so. Which calls are adapters is asked of `in_place_source`'s
+owner, `recognition/specialization.rs`'s `adapts_in_place`. That's the
+same question `in_place_source` asks, one step at a time, by
+`impl_asks_of`, split out of `held_bounds`, which takes the held one by
+where it is in the adapter's type, not by the impl's own parameter's
+index: `Filter<I, P>`'s `SourceIter` impl names its own `<P, I>`. No list
+of adapters is kept. A function the walk is in already,
+recursive or reached through another, gives `None`, as does another
+crate's function, whose body this crate doesn't see. That one is right
+anyway where its library keeps no capacities, which compiles it here, or
+where it's generic, made of std's linked structs: test/crates/pairs'
+`in_place_capacity_through_a_library_generic` and
+`_that_keeps_capacities` print native Rust's. No contract field is added.
+
+The collect's source walk (`collect_sources.rs`), meeting such a call,
+goes on into that argument, or takes it as the source `Vec` of `IntoIter`.
+It runs where the in-place adapters are decided (`decide_in_place`), once
+each body's MIR is the crate's: asked while bodies were still collected,
+a function's MIR was taken from rustc before rust-js read it.
+
+Held by `test/corpus/in_place_collect_capacity_through_a_function.rs`
+(identity, a `map`, a `filter` of a `Vec` parameter, the second
+parameter, against native Rust), `_through_a_call_refused.rs` (another
+`Vec`'s iterator, still refused), `_through_recursion_refused.rs` (direct
+and mutual recursion, refused); vec-capacity.test's `impl Iterator` row,
+9 and 6 in both builds; the two library pairs; and
+`test/architecture-iterators.test.ts`: provenance is returned.rs's alone,
+the in-place adapters specialization.rs's, no adapter named in returned.rs.
+Mutations `returned-adapters-not-followed`, `returned-into-iter-not-followed`,
+`returned-walk-unguarded` (`lower/pointers/returned.ts`) and
+`collect-source-not-through-calls` (`lower/body_queries/collect_sources.ts`);
+`in-place-opaque-chain-unwalked` retargeted to vec-capacity.test's std
+build of a function giving another `Vec`'s iterator, 5, which only the
+walk of std's structs finds. Generic code's collect of such a chain,
+whose read isn't in its body, throws where it runs, the metamorphic net's
+`plain generic-instances` rewrite, listed under #1180.
 

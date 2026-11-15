@@ -226,13 +226,13 @@ pub fn never_grown() -> usize {
 });
 
 // A `collect()` std makes in place of a chain an `impl Iterator` function
-// gives, which no variable of the body is the source of: in the std build,
-// std's structs link each adapter to its source, walked to the `Vec` it
-// collects in, so its capacity is std's, `src_cap * src_size / dst_size`;
-// in the plain build, JS's own helpers keep no link, so `capacity()` refuses
-// it, naming #1180, never another number (#1428, the user's decision:
-// won't-fix, the readability of giving them links isn't worth a capacity).
-test("an in-place collect through an impl Iterator function has std's capacity in the std build", async () => {
+// of the crate's gives: in the std build, std's structs link each adapter
+// to its source, walked to the `Vec` it collects in, so its capacity is
+// std's, `src_cap * src_size / dst_size`; in the plain build, whose JS
+// helpers keep no link, the function's MIR says which parameter its
+// result is made of, so the collect's source is the argument's `Vec`
+// (#1934, where #1428 left it refused).
+test("an in-place collect through an impl Iterator function has std's capacity in both builds", async () => {
   const dir = fixture("capacity-in-place-opaque");
   writeFileSync(join(dir, "lib.rs"), `fn evens(v: Vec<u32>) -> impl Iterator<Item = u32> {
     v.into_iter().filter(|x| x % 2 == 0)
@@ -259,11 +259,36 @@ pub fn through_an_identity() -> usize {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "structs.js"), "--std-iterators"]);
   const structs = await import(join(dir, "structs.js"));
   expect([structs.throughAFunction(), structs.throughAnIdentity()]).toEqual([9, 6]);
-  // The plain build's body reads it: refused where it's compiled (#1926).
-  const plain = runSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")], dir, 120_000);
-  expect(plain.code).not.toBe(0);
-  expect(plain.stderr).toContain("`capacity()` of a `Vec` std may collect in place from a source a call hides (#1926)");
-  expect(plain.stderr).toContain("collect from `v.into_iter()` in the body that reads the capacity, or don't read it");
+  // The plain build too, as each function's result is its parameter's
+  // iterator or a `Vec` parameter's `into_iter()`, followed to its source
+  // (`returned_iterator`, #1934).
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.throughAFunction(), lib.throughAnIdentity()]).toEqual([9, 6]);
+});
+
+// A collect in place through a function whose result is another `Vec`'s
+// iterator, no parameter's: in the std build, std's structs link each
+// adapter to its source, walked as it runs to the buffer it collects in,
+// `made`'s, 5, as native Rust's; the plain build refuses it (#1926).
+test("an in-place collect through a function giving another Vec's iterator walks to it in the std build", async () => {
+  const dir = fixture("capacity-in-place-another-vec");
+  writeFileSync(join(dir, "lib.rs"), `fn fresh<I: Iterator<Item = u32>>(_it: I) -> std::vec::IntoIter<u32> {
+    let mut made = Vec::with_capacity(5);
+    made.extend([7, 8]);
+    made.into_iter()
+}
+
+pub fn another() -> usize {
+    let mut kept = Vec::with_capacity(10);
+    kept.extend([1, 2, 3]);
+    let d: Vec<u32> = fresh(kept.into_iter()).map(|x| x * 2).collect();
+    d.capacity()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "structs.js"), "--std-iterators"]);
+  const structs = await import(join(dir, "structs.js"));
+  expect(structs.another()).toBe(5);
 });
 
 // One collected where a call's `Vec` is the source, `grown().into_iter()`,

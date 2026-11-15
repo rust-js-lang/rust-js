@@ -6,8 +6,8 @@ export const mutations: Mutation[] = [
     name: "in-place-collect-source-unfound",
     breaks: "a `collect()` std makes in place of `v.into_iter()`'s chain finds no source `Vec`, so its capacity isn't known and `capacity()` refuses it (#1259)",
     file: "src/lower/body_queries/collect_sources.rs",
-    find: "                    *collects.last_mut().expect(\"the collect's\") = Some(source);\n",
-    replace: "                    let _ = source;\n",
+    find: "                {\n                    *collects.last_mut().expect(\"the collect's\") = Some(source);\n",
+    replace: "                {\n                    let _ = source;\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_collected_in_place_capacity.rs$"],
   },
   {
@@ -34,5 +34,14 @@ export const mutations: Mutation[] = [
     find: "        if collects.iter().any(|source| *source != first) {\n",
     replace: "        if false {\n",
     tests: ["test/limitations.test.ts", "-t", "macro writes at one place"],
+  },
+  {
+    name: "collect-source-not-through-calls",
+    breaks:
+      "a collect through a crate's function that returns its argument's iterator, `opaque(kept.into_iter())`, stops at the call, refused, where native Rust prints its source's capacity (#1934)",
+    file: "src/lower/body_queries/collect_sources.rs",
+    find: "                at = strip(thir, arg);\n                continue;\n",
+    replace: "                break;\n",
+    tests: ["test/corpus.test.ts", "-t", "^in_place_collect_capacity_through_a_function.rs$"],
   },
 ];

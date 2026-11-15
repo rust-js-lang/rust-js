@@ -340,24 +340,41 @@ fn iterator_item_of<'tcx>(tcx: TyCtxt<'tcx>, typing_env: ty::TypingEnv<'tcx>, it
 /// The types whose `trait_id` is `of`'s, `held_facts`' of a trait: `of`,
 /// where rustc can say it of `of` or can't tell it by them; or, where std's
 /// one impl of the trait for its type constructor asks that trait of its
-/// parameters, what `of` holds there, each's.
+/// parameters, what `of` holds there, each's (`impl_asks_of`).
 fn held_bounds<'tcx>(
     tcx: TyCtxt<'tcx>,
     typing_env: ty::TypingEnv<'tcx>,
     of: Ty<'tcx>,
     trait_id: DefId,
 ) -> Vec<Ty<'tcx>> {
-    let held = match *of.kind() {
-        ty::Ref(_, pointee, mutability) => Some((Err(mutability), vec![pointee])),
-        ty::Adt(adt, args) => Some((Ok(adt.did()), args.types().collect())),
-        _ => None,
-    };
-    let Some((head, held)) = held else {
-        return vec![of];
-    };
-    if trait_holds_in(tcx, typing_env, of, trait_id).is_some() {
+    if !matches!(of.kind(), ty::Ref(..) | ty::Adt(..)) || trait_holds_in(tcx, typing_env, of, trait_id).is_some() {
         return vec![of];
     }
+    match impl_asks_of(tcx, typing_env, of, trait_id) {
+        Some(asked) => (asked.into_iter())
+            .flat_map(|held| held_bounds(tcx, typing_env, held, trait_id))
+            .collect(),
+        None => vec![of],
+    }
+}
+
+/// What of `of`'s parameters std's one impl of `trait_id` for its type
+/// constructor asks that trait of, one step, each what `of` holds there:
+/// `I` of a `Filter<I, P>`'s `InPlaceIterable` and `SourceIter`, whatever
+/// order the impl names its own parameters in. `None` where there's no one
+/// such impl of parameters alone, or where it asks another trait that what
+/// `of` holds there may not have.
+fn impl_asks_of<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+    of: Ty<'tcx>,
+    trait_id: DefId,
+) -> Option<Vec<Ty<'tcx>>> {
+    let (head, held) = match *of.kind() {
+        ty::Ref(_, pointee, mutability) => (Err(mutability), vec![pointee]),
+        ty::Adt(adt, args) => (Ok(adt.did()), args.types().collect::<Vec<_>>()),
+        _ => return None,
+    };
     // Its impl's self type's parameters, in order, each a parameter.
     let impls: Vec<(DefId, Vec<Ty<'tcx>>)> = (tcx.all_impls(trait_id))
         .filter_map(|imp| {
@@ -370,12 +387,12 @@ fn held_bounds<'tcx>(
         })
         .collect();
     let [(imp, params)] = &impls[..] else {
-        return vec![of];
+        return None;
     };
     if !params.iter().all(|param| matches!(param.kind(), ty::Param(_))) {
-        return vec![of];
+        return None;
     }
-    let mut bounds = Vec::new();
+    let mut asked = Vec::new();
     for (clause, _) in tcx.clauses_of(*imp).instantiate_identity(tcx) {
         let Some(bound) = clause.skip_normalization().as_trait_clause() else {
             continue;
@@ -390,16 +407,16 @@ fn held_bounds<'tcx>(
             if let Some(at) = params.iter().position(|&param| param == bound.self_ty().skip_binder())
                 && trait_holds_in(tcx, typing_env, held[at], bound.def_id()) != Some(true)
             {
-                return vec![of];
+                return None;
             }
             continue;
         }
-        let Some(at) = params.iter().position(|&param| param == bound.self_ty().skip_binder()) else {
-            return vec![of];
-        };
-        bounds.extend(held_bounds(tcx, typing_env, held[at], trait_id));
+        let at = params
+            .iter()
+            .position(|&param| param == bound.self_ty().skip_binder())?;
+        asked.push(held[at]);
     }
-    bounds
+    Some(asked)
 }
 
 /// Whether `method`'s body never returns, its every path a panic.
@@ -744,6 +761,27 @@ pub(crate) fn may_collect_in_place<'tcx>(tcx: TyCtxt<'tcx>, typing_env: ty::Typi
             .into_iter()
             .all(|held| known_by_bounds(held) || trait_holds_in(tcx, typing_env, held, trait_id) != Some(false))
     })
+}
+
+/// Whether std's adapter `adapter` keeps `of`, the iterator it's made of,
+/// as the one a collect in place reaches its source through: each of
+/// `InPlaceIterable` and `SourceIter` it has, it has of `of` alone, as
+/// `in_place_source` asks them, `Map<I, F>` of `I` (#1934). What a
+/// function's result is made of, through its adapters, is followed by it
+/// (`pointers/returned.rs`), no list of adapters of its own.
+pub(crate) fn adapts_in_place<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+    adapter: Ty<'tcx>,
+    of: Ty<'tcx>,
+) -> bool {
+    let Some(traits) = in_place_traits(tcx) else {
+        return false;
+    };
+    // One step, as `held_bounds` takes each: what its one impl of each
+    // trait asks it of is `of` alone.
+    adapter != of
+        && (traits.into_iter()).all(|trait_id| impl_asks_of(tcx, typing_env, adapter, trait_id) == Some(vec![of]))
 }
 
 /// std's `InPlaceIterable` and `SourceIter`, the traits of an iterator its

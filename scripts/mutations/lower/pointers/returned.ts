@@ -9,8 +9,8 @@ export const mutations: Mutation[] = [
     name: "returned-parameter-unseen",
     breaks: "no function is taken to return its parameter, so httparse's `deinit_slice_mut(s)` given to a function given its place's pointer is refused",
     file: "src/lower/pointers/returned.rs",
-    find: "        self.same_place(given, result).then(|| param.as_usize() - 1)\n",
-    replace: "        self.same_place(given, result).then(|| param.as_usize() - 1).filter(|_| false)\n",
+    find: "        self.same_place(given, result).then_some(param)\n",
+    replace: "        self.same_place(given, result).then_some(param).filter(|_| false)\n",
     tests: given,
   },
   {
@@ -20,5 +20,32 @@ export const mutations: Mutation[] = [
     find: "                        if !assign.0.projection.is_empty() || found.is_some() {\n",
     replace: "                        if !assign.0.projection.is_empty() {\n",
     tests: refused,
+  },
+  {
+    name: "returned-adapters-not-followed",
+    breaks:
+      "`doubled(kept.into_iter()).collect()` of a crate's function returning `it.map(f)` loses its source, refused, where native Rust prints its source's capacity, 7 (#1934)",
+    file: "src/lower/pointers/returned.rs",
+    find: "                if adapts_in_place(tcx, typing_env, made, of) {\n",
+    replace: "                if false && adapts_in_place(tcx, typing_env, made, of) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^in_place_collect_capacity_through_a_function.rs$"],
+  },
+  {
+    name: "returned-into-iter-not-followed",
+    breaks:
+      "`evens(v)` of a crate's function returning `v.into_iter().filter(..)` loses its source `Vec`, refused, where native Rust prints its capacity, 9 (#1934)",
+    file: "src/lower/pointers/returned.rs",
+    find: "                    via = Via::IntoIter;\n                    return Some(first);\n",
+    replace: "                    return None;\n",
+    tests: ["test/corpus.test.ts", "-t", "^in_place_collect_capacity_through_a_function.rs$"],
+  },
+  {
+    name: "returned-walk-unguarded",
+    breaks:
+      "a function that reaches itself again, `ping` through `pong`, is walked forever as rust-js compiles a collect through it, where it's refused (#1934)",
+    file: "src/lower/pointers/returned.rs",
+    find: "    if walking.contains(&fn_id) {\n",
+    replace: "    if false && walking.contains(&fn_id) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^in_place_collect_capacity_through_recursion_refused.rs$"],
   },
 ];
