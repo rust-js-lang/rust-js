@@ -47,6 +47,7 @@ const owners: Record<string, string[]> = {
     "src/lower/mir/bounds.rs",
     "src/lower/mir/closures.rs",
     "src/lower/mir/local_facts.rs",
+    "src/lower/mir/noted.rs",
     "src/lower/mir/places.rs",
     "src/lower/mir/rvalues.rs",
     "src/lower/mir/structure.rs",
@@ -111,7 +112,7 @@ const shared: Record<string, string> = {
   copy: "which copy of the item it lowers, one its callers need besides its own JS (ADR 0051), set entering it",
   jsx: "whether it writes JSX",
   names: "each name given, by `fresh`, kept per body by bodies.rs",
-  locals: "a body's variables; its MIR facts, `locals.mir`, are mir.rs's",
+  locals: "a body's variables; its MIR facts, `locals.mir`, are mir.rs's, what it notes of them `mir/noted.rs`'s",
   dependencies: "what it uses of other crates, noted by items.rs",
   settled: "what the bodies lowered before it settled, the pipeline's, read only (ADR 1148)",
 };
