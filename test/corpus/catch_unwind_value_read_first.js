@@ -55,11 +55,11 @@ function summed(n, limit) {
   return (twice + checked(limit)) >>> 0;
 }
 
-// Read twice: kept by its name.
+// Read twice, a test of it and then it, which MIR proves is there: read
+// once, `wordAt(text, 1) ?? "-"` (#1933).
 function wordOrDash(text) {
   try {
-    const word = wordAt(text, 1);
-    return word != null ? word : "-";
+    return wordAt(text, 1) ?? "-";
   } catch (error) {
     $catchable(error);
     return null;

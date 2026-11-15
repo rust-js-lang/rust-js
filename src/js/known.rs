@@ -95,6 +95,13 @@ knowns! {
     /// `t` holds (`Expr::presence`, ADR 0910). Never `undefined`, so a
     /// nullable place stores it as it is too.
     Present,
+    /// There where lowering read it: an `Option` a test of it proved
+    /// there, every path to the read taking the edge `None` never takes
+    /// (`proved_present`, #1933), never `undefined` to a nullable place's
+    /// storage and its value to an `unwrap()`. Not `Present`, which isn't
+    /// of where it's read: tidy, which moves code past the test, `x == null
+    /// ? null : x` made `x ?? null`, forgets it as it begins (#1942).
+    Proved,
     /// The `None` a `take()` writes over a place rust-js made, a variable
     /// or a crate struct's field, a plain data property, read into a
     /// `const` just before (ADR 0996): nothing but that `const` sees the
@@ -401,6 +408,7 @@ impl Known {
             | Known::Chars
             | Known::Defined
             | Known::Present
+            | Known::Proved
             | Known::Taken
             | Known::ArrayItems
             | Known::Item
@@ -564,5 +572,26 @@ mod tests {
         assert_eq!(Known::Else.role(), Role::AsWritten);
         assert_eq!(Known::Getter.role(), Role::Warns);
         assert_eq!(Known::IterLent.role(), Role::Form);
+    }
+}
+
+impl super::Expr {
+    /// This, which a test of it proved there where lowering reads it
+    /// (`Known::Proved`): never `undefined` to a nullable place's storage
+    /// (`may_be_undefined`) and its value to an `unwrap()`, there; not
+    /// `Present`, which the lowering builds other forms of, and which
+    /// tidy's passes take for true wherever they move it. Tidy forgets it
+    /// as it begins (`forget_proved`, #1933, #1942).
+    pub fn proved(self) -> super::Expr {
+        super::Expr {
+            facts: self.facts.with(Known::Proved),
+            ..self
+        }
+    }
+
+    /// This, what a test proved of it forgotten, where it's read now past
+    /// where the test held (#1933, #1942).
+    pub fn forget_proved(&mut self) {
+        self.facts = self.facts.without(Known::Proved);
     }
 }

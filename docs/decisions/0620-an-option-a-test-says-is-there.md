@@ -258,3 +258,64 @@ proved, `?? undefined` where not), and mutations
 `proved-present-unread` (`lower/mir/operands.ts`) and
 `js-truthy-unrecognized` (`lower/recognition/js_items.ts`). The guide's
 nullable example shows it (semantics.md).
+
+## Amendment: MIR's tests of an `Option` own it, and what they prove is of the read alone (2026-11-15, #1933, #1942)
+
+Two owners answered whether a test says an `Option` is there: the
+nulled owner from MIR (`proved_present`, #1902), of `js::truthy` alone,
+and tidy's decided tests and `nulled_as_they_are`, from the printed JS.
+Counted (decisions `tidy-present-in` and `tidy-nulled-as-they-are`,
+every corpus case as a program and a library, React's and
+alien-signals' ports), tidy's answers fired in 6 corpus cases and 35
+of React's hunks; none was of code with no MIR. Step one of moving them
+to MIR, of a local's tests:
+
+**`proved_present` reads each test MIR makes of an `Option` local:
+`js::truthy(x)` and `x.is_some()`, their true edge; `x.is_none()`, its
+false one; `js::type_of(x) == "function"`, of a kind neither `None`'s
+`"undefined"` nor `null`'s `"object"` is, its text a constant through
+the locals and the promoted reference MIR holds it in; and a `match` or
+`if let` of it, its `discriminant`'s `Some` edge.** Each where every
+path to the read takes that edge, entered from the test alone, a
+`match`'s false edges, which no run takes, aside; of a parameter
+nothing writes or a local with one whole write, never lent `&mut`, as
+before. The argument is followed through copies, the reference a test
+takes, `&x`, and its reborrows, `&(*r)`.
+
+**A read so proved is `Known::Proved`, not `Present`.** It's never
+`undefined` to a nullable place's storage (`may_be_undefined`), given
+as it is at a plain exit (`never_null`), and its own value to an
+`unwrap()` (`$unwrap(currentProps)` under `js::truthy(current_props)
+&& ..` is `currentProps`). Present is what a value is by how it was
+made, which tidy's passes take for true wherever they move it: given
+to a proved read, it went where its test doesn't hold. React's `match
+deps { None => js::null(), deps => deps }` printed `const nextDeps =
+deps;`, tidy's `conditional` making `deps == null ? null : deps` the
+`deps ?? null` that a `Present` `deps` drops, so `undefined` for
+`None`; and on main #1902's own, `let kept = if js::truthy(x) { x } else
+{ x }`, two arms alike made one, returned `undefined` (#1942, a wrong
+answer only JS sees: `js::truthy` is the js crate's, which no native
+program runs). **Tidy forgets `Proved` as it begins
+(`Expr::forget_proved`)**, and a contract checked between its stages
+holds that nothing's left (`NOTHING_PROVED`); `.proved()` is made only
+of a variable's read in `mir_operand`. Lowering moves no proved read
+past its test: the one read lowering takes elsewhere is a temporary of
+one write, inlined where it's read, which that write dominates. A proved
+read is no other knowledge of it (`known_as`): `kind.object()`'s `t ?
+v : undefined` of one is still tested by `t` (ADR 0910).
+
+Case of [0262](0262-when-rust-and-js-disagree.md): none, each value the
+same. Tidy's rules stay until each kind they answer is MIR's (#1933's
+field paths and the `None` a read already is), then go. Held by
+`test/lowering-nullable-tests.test.ts` (each test beside `&& flag`, no
+tidy answer counted; `is_none()`'s true edge, `"object"` and a value
+written after, each keeping `?? null`; a proved read moved by tidy, of a
+program and a library; an object made of one) and
+`test/architecture-nones.test.ts`; corpus case
+`catch_unwind_value_read_first.rs`, `wordAt(text, 1) ?? "-"`; mutations
+`proved-present-*` and `proved-kept-into-tidy` (`lower/mir/nulled.ts`,
+`lower/mir/tidy.ts`), `unwrap-of-a-proved-option-checked`
+(`lower/std_types/option.ts`), `proved-read-may-be-undefined` and
+`proved-read-known-as-nothing-more` (`js/make.ts`) and
+`proved-read-given-undefined` (`lower/mir/nulled/one_none.ts`).
+

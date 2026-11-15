@@ -14,7 +14,24 @@ pub(super) struct Contract {
 }
 
 /// What holds of every body, after every stage.
-pub(super) const ALWAYS: &[Contract] = &[JUMPS_LAND, DECLARED_ONCE];
+pub(super) const ALWAYS: &[Contract] = &[JUMPS_LAND, DECLARED_ONCE, NOTHING_PROVED];
+
+/// No expression says what a test proved of it where lowering read it,
+/// `Known::Proved`, nor so its `Present`: tidy forgets both as it begins,
+/// as a pass may move it past the test (#1933, #1942).
+pub(super) const NOTHING_PROVED: Contract = Contract {
+    name: "nothing proved where it was read",
+    broken: |body| {
+        let mut found = None;
+        let mut body = body.to_vec();
+        crate::js::each_expr_mut(&mut body, &mut |e| {
+            if found.is_none() && e.facts.has(crate::js::Known::Proved) {
+                found = Some("an expression still `Known::Proved`".to_string());
+            }
+        });
+        found
+    },
+};
 
 /// Each `break` is in a loop, a `switch` or the block it names, and each
 /// `continue` in a loop, the one it names: JS that parses.

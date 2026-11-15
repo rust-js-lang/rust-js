@@ -376,12 +376,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// Whether `local`, an `Option`, is proved there where the block
-    /// lowered now runs: every path to it takes the true edge of a test of
-    /// `js::truthy(local)`, JS's `if (local)`, which `None` never passes,
-    /// and `local` is a parameter nothing writes or has one whole write,
-    /// which comes before the test, and is never lent as a `&mut` (#1902). A read of it there is
-    /// `Known::Present`, so a nullable result or place stores it as it is,
-    /// no `?? null`, and an exit gives it as it is, no `?? undefined`.
+    /// lowered now runs: every path to it takes the edge of a test of it
+    /// that `None` never takes, and `local` is a parameter nothing writes or
+    /// has one whole write, which comes before the test, and is never lent
+    /// as a `&mut` (#1902, #1933). The tests: `js::truthy(local)`, JS's `if
+    /// (local)`, and `local.is_some()`, their true edge; `local.is_none()`,
+    /// its false one; a `match` or `if let` of it, `Some`'s arm. A read of
+    /// it there is `Known::Present`, so a nullable result or place stores it
+    /// as it is, no `?? null`, and an exit gives it as it is, no `??
+    /// undefined`.
     pub(super) fn proved_present(&self, state: &State<'_, 'tcx>, local: Local) -> bool {
         let parameter = (1..=state.body.arg_count).contains(&local.as_usize());
         if self
@@ -396,37 +399,104 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let TerminatorKind::SwitchInt { discr, targets } = &data.terminator().kind else {
                 return false;
             };
-            // `0` the test's false edge, its only value, `otherwise` its true one.
-            let (Some(flag), [(0, _)]) = (
-                discr.place().filter(|p| p.projection.is_empty()),
-                targets.iter().collect::<Vec<_>>().as_slice(),
-            ) else {
+            let Some(flag) = discr.place().filter(|p| p.projection.is_empty()) else {
                 return false;
             };
-            let yes = targets.otherwise();
-            blocks.predecessors()[yes].len() == 1
-                && dominators.dominates(yes, state.at)
-                && self.truthy_test_of(state, flag.local) == Some(local)
+            // Entered from the test alone: a `match`'s false edges, which
+            // MIR's borrow check reads and no run takes, aside.
+            let entered = |edge: BasicBlock| {
+                blocks.predecessors()[edge]
+                    .iter()
+                    .filter(|&&from| {
+                        !matches!(blocks[from].terminator().kind,
+                            TerminatorKind::FalseEdge { imaginary_target, real_target } if imaginary_target == edge && real_target != edge)
+                    })
+                    .count()
+                    == 1
+            };
+            self.present_edge(state, flag.local, targets, local)
+                .is_some_and(|edge| entered(edge) && dominators.dominates(edge, state.at))
         })
     }
 
-    /// The `Option` local `flag` is the test of, where its one write is
-    /// `js::truthy(local)` (#1902).
-    fn truthy_test_of(&self, state: &State<'_, 'tcx>, flag: Local) -> Option<Local> {
-        let writes = self.whole_writes(state, flag)?;
-        let [Write::Call(_, func, [given])] = writes.as_slice() else {
-            return None;
-        };
-        let (callee, _) = func.const_fn_def()?;
-        if !crate::lower::recognition::is_js_truthy(self.tcx, callee) {
-            return None;
+    /// The edge of a switch on `flag` that `local` is `Some` on: of a test
+    /// `js::truthy(local)` or `local.is_some()`, its true edge; of
+    /// `local.is_none()`, its false one; of `discriminant(local)`, `Some`'s.
+    fn present_edge(
+        &self,
+        state: &State<'_, 'tcx>,
+        flag: Local,
+        targets: &mir::SwitchTargets,
+        local: Local,
+    ) -> Option<BasicBlock> {
+        let values: Vec<(u128, BasicBlock)> = targets.iter().collect();
+        match self.whole_writes(state, flag)?.as_slice() {
+            // `js::type_of(local) == "function"`, of a kind `None`'s,
+            // `"undefined"`, nor `null`'s, `"object"`, never is: its true
+            // edge.
+            [Write::Call(_, func, [a, b])] => {
+                let [(0, _)] = values.as_slice() else {
+                    return None;
+                };
+                let (callee, _) = func.const_fn_def()?;
+                let eq = crate::lower::recognition::is_partial_eq(self.tcx, callee);
+                let kind = |side: &Operand<'tcx>| self.type_of_test(state, side);
+                let text = |side: &Operand<'tcx>| self.constant_text(state, side);
+                let tested = match (kind(&a.node), kind(&b.node)) {
+                    (Some(tested), None) => (tested, text(&b.node)?),
+                    (None, Some(tested)) => (tested, text(&a.node)?),
+                    _ => return None,
+                };
+                (eq && tested.0 == local && tested.1 != "undefined" && tested.1 != "object")
+                    .then(|| targets.otherwise())
+            }
+            [Write::Call(_, func, [given])] => {
+                // A test's: `0` its false edge, its only value, `otherwise`
+                // its true one.
+                let [(0, no)] = values.as_slice() else {
+                    return None;
+                };
+                let (callee, _) = func.const_fn_def()?;
+                let present = match crate::lower::recognition::is_js_truthy(self.tcx, callee) {
+                    true => targets.otherwise(),
+                    false => match crate::lower::recognition::option_presence_test(self.tcx, callee)? {
+                        true => targets.otherwise(),
+                        false => *no,
+                    },
+                };
+                (self.tested_local(state, &given.node)? == local).then_some(present)
+            }
+            // `Some`'s discriminant, 1, `None`'s 0 (`Option`'s variants).
+            [Write::Assign(Rvalue::Discriminant(of))] if of.projection.is_empty() && of.local == local => {
+                match values.as_slice() {
+                    [(0, _)] => Some(targets.otherwise()),
+                    _ => values.iter().find(|(value, _)| *value == 1).map(|&(_, block)| block),
+                }
+            }
+            _ => None,
         }
-        let mut tested = given.node.place().filter(|p| p.projection.is_empty())?.local;
-        // Through the copies MIR makes of it for the call, `_11 = copy _3`.
+    }
+
+    /// The local `given`, a test's argument, is of: through the copies MIR
+    /// makes of it for the call, `_11 = copy _3`, the reference it lends,
+    /// `_12 = &_3`, and that reference's reborrows.
+    fn tested_local(&self, state: &State<'_, 'tcx>, given: &Operand<'tcx>) -> Option<Local> {
+        let mut tested = given.place().filter(|p| p.projection.is_empty())?.local;
         for _ in 0..4 {
             match self.whole_writes(state, tested).as_deref() {
-                Some([Write::Assign(Rvalue::Use(Operand::Copy(of) | Operand::Move(of), _))])
-                    if of.projection.is_empty() =>
+                Some(
+                    [
+                        Write::Assign(
+                            Rvalue::Use(Operand::Copy(of) | Operand::Move(of), _)
+                            | Rvalue::Ref(_, BorrowKind::Shared, of),
+                        ),
+                    ],
+                ) if of.projection.is_empty() => {
+                    tested = of.local;
+                }
+                // A reborrow, `&(*_13)`, of what `_13` lends.
+                Some([Write::Assign(Rvalue::Ref(_, BorrowKind::Shared, of))])
+                    if of.projection[..] == [mir::ProjectionElem::Deref] =>
                 {
                     tested = of.local;
                 }
@@ -434,6 +504,48 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         }
         Some(tested)
+    }
+
+    /// The local `side`, a comparison's operand, is `js::type_of` of.
+    fn type_of_test(&self, state: &State<'_, 'tcx>, side: &Operand<'tcx>) -> Option<Local> {
+        let kind = self.tested_local(state, side)?;
+        let writes = self.whole_writes(state, kind)?;
+        let [Write::Call(_, func, [given])] = writes.as_slice() else {
+            return None;
+        };
+        let (callee, _) = func.const_fn_def()?;
+        crate::lower::recognition::is_js_type_of(self.tcx, callee).then(|| self.tested_local(state, &given.node))?
+    }
+
+    /// The text constant `side`, a comparison's operand, is, through the
+    /// locals MIR holds it in and a promoted reference to it, `&"function"`.
+    fn constant_text(&self, state: &State<'_, 'tcx>, side: &Operand<'tcx>) -> Option<String> {
+        let constant = match side {
+            Operand::Constant(c) => **c,
+            _ => {
+                let held = self.tested_local(state, side)?;
+                let writes = self.whole_writes(state, held)?;
+                let [Write::Assign(Rvalue::Use(Operand::Constant(c), _))] = writes.as_slice() else {
+                    return None;
+                };
+                **c
+            }
+        };
+        self.text_of(state, &constant, 0)
+    }
+
+    fn text_of(&self, state: &State<'_, 'tcx>, constant: &mir::ConstOperand<'tcx>, depth: usize) -> Option<String> {
+        match constant.const_ {
+            mir::Const::Val(value, ty) if ty.peel_refs().is_str() && ty.is_ref() && !ty.peel_refs().is_ref() => {
+                let bytes = value.try_get_slice_bytes_for_diagnostics(self.tcx)?;
+                String::from_utf8(bytes.to_vec()).ok()
+            }
+            mir::Const::Unevaluated(uv, _) if depth < 2 => {
+                let referred = super::queries::referred_constant(&state.facts.promoted()[uv.promoted?])?;
+                self.text_of(state, &referred, depth + 1)
+            }
+            _ => None,
+        }
     }
 
     /// Each write of `local`, if each is whole, an assignment or a call's

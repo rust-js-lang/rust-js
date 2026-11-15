@@ -306,8 +306,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let list: Vec<Expr> = (0..tys.len()).map(|_| arg()).collect();
                 // Of a cell's `get` read right after it's set to a `Some`,
                 // which nothing could take out between: its value (rd331e).
+                // And of one MIR proves is there, by a test of it every path
+                // takes first (`proved_present`, #1933).
                 let unwrap = crate::lower::body_queries::the_call_at(self.frame.thir, span);
-                if unwrap.is_some_and(|id| self.frame.facts.set_then_unwrapped.contains(&id))
+                if (unwrap.is_some_and(|id| self.frame.facts.set_then_unwrapped.contains(&id))
+                    || list[0].facts.has(js::Known::Present)
+                    || list[0].facts.has(js::Known::Proved))
                     && !list[1..].iter().any(Expr::has_effects)
                 {
                     let value = list.into_iter().next().expect("the `Option`");

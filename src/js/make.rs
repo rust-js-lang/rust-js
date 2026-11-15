@@ -1180,13 +1180,16 @@ impl Expr {
     /// `undefined`, `null` among them, and what's made here, an object, an
     /// array, a function, a `new`, a template, a regex or JSX, never is; nor
     /// what an operator gives but `&&`, `||` and `??`, which may give an
-    /// operand that may be; nor what lowering knows is `Known::Defined` or
-    /// `Known::Present`, nor one of the program's functions (`Known::Item`).
+    /// operand that may be; nor what lowering knows is `Known::Defined`,
+    /// `Known::Present` or, where it's read, `Known::Proved`, nor one of the
+    /// program's functions (`Known::Item`).
     /// Anything else, a variable or a call, may be. The one answer of
     /// whether a JS value may be `undefined`, which a nullable place's
     /// storage asks (`Storage::written`).
     pub fn may_be_undefined(&self) -> bool {
         match &self.kind {
+            // What a test proved where it's read (#1933).
+            _ if self.facts.has(Known::Proved) => false,
             _ if [Known::Defined, Known::Present, Known::Item, Known::NoneNull]
                 .into_iter()
                 .any(|known| self.facts.has(known)) =>

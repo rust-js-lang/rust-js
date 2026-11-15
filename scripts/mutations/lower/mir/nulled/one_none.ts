@@ -142,4 +142,12 @@ export const mutations: Mutation[] = [
     replace: "                        .all(|_| true)\n",
     tests: ["test/js-errors.test.ts", "-t", "leaves for JS as undefined, each way"],
   },
+  {
+    name: "proved-read-given-undefined",
+    breaks: "a plain `Option`'s exit gives a read a test proved there `?? undefined` (#1933)",
+    file: "src/lower/mir/nulled/one_none.rs",
+    find: "        || value.facts.has(js::Known::Proved)\n",
+    replace: "",
+    tests: ["test/lowering-nullable-truthy.test.ts"],
+  },
 ];

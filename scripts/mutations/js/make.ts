@@ -569,4 +569,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^adapter_functions_dropped.rs$"],
   },
+  {
+    name: "proved-read-may-be-undefined",
+    breaks: "a read a test proved there may still be `undefined` to a nullable place's storage, `return value ?? null` where `value.is_some() && flag` holds (#1933)",
+    file: "src/js/make.rs",
+    find: "            _ if self.facts.has(Known::Proved) => false,\n",
+    replace: "",
+    tests: ["test/lowering-nullable-tests.test.ts", "test/lowering-nullable-truthy.test.ts"],
+  },
 ];

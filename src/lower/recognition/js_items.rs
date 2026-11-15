@@ -75,6 +75,12 @@ pub(in crate::lower) fn is_js_truthy(tcx: TyCtxt<'_>, did: DefId) -> bool {
     js_root_fn(tcx, did).is_some_and(|name| name.as_str() == "truthy")
 }
 
+/// Whether `did` is `js::type_of`, JS's `typeof value`, `"undefined"` of
+/// `None` (#1933).
+pub(in crate::lower) fn is_js_type_of(tcx: TyCtxt<'_>, did: DefId) -> bool {
+    js_root_fn(tcx, did).is_some_and(|name| name.as_str() == "type_of")
+}
+
 /// Whether `id` is `js::function::with_this`, a JS `function` of a
 /// closure, whose `arguments` is its own (rd509).
 pub(in crate::lower) fn is_with_this(tcx: TyCtxt<'_>, id: DefId) -> bool {

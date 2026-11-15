@@ -103,9 +103,8 @@ export const mutations: Mutation[] = [
     name: "unwrap-of-tested-kept",
     breaks: "an `$unwrap(p)` where the test says `p` is there stays",
     file: "src/lower/mir/tidy/decided.rs",
-    find: "            Some((_, option, _)) if option.reads_same() && there(option) => *e = option.clone().or_at(e.span),\n",
-    replace:
-      "            Some((_, option, _)) if false && there(option) => *e = option.clone().or_at(e.span),\n",
+    find: "            Some((_, option, _)) if option.reads_same() && there(option) => {\n",
+    replace: "            Some((_, option, _)) if false && there(option) => {\n",
     tests: [
       "test/lowering-nullable.test.ts",
       "-t",

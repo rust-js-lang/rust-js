@@ -87,16 +87,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let held = self.value_expr(read, span)?;
             return Ok(Value::Expr(self.projection(held, ty)));
         }
-        // An `Option` a test of `js::truthy` proved there where it's read
-        // (`proved_present`, #1902).
+        // An `Option` a test of it proved there where it's read
+        // (`proved_present`, #1902, #1933): `Known::Proved`, which tidy
+        // forgets. Of a variable's read, not of a value read in place, a
+        // temporary's `t ? v : undefined`, whose test says it already
+        // (`Expr::presence`, ADR 0910).
         let read = match read {
             Value::Expr(e)
-                if let Some(place) = operand.place()
+                if matches!(e.kind, js::ExprKind::Var(_))
+                    && let Some(place) = operand.place()
                     && place.projection.is_empty()
                     && self.option_of(operand.ty(&state.body.local_decls, self.tcx)).is_some()
                     && self.proved_present(state, place.local) =>
             {
-                Value::Expr(e.present())
+                Value::Expr(e.proved())
             }
             read => read,
         };

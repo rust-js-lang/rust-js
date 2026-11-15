@@ -232,8 +232,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`if (x !== undefined) { return x ?? null; }` keeps its `?? null`, of a value its test shows defined (ADR 0620, amended)",
     file: "src/lower/mir/tidy/values.rs",
-    find: "                js::each_expr_mut(then, &mut |e| unnulled(e, &x));\n",
-    replace: "                let _ = (&then, &x);\n",
+    find: "                    if unnulled(e, &x) {\n                        crate::decisions::record(\"tidy-nulled-as-they-are\", \"if-shown\");\n",
+    replace: "                    if false && unnulled(e, &x) {\n                        crate::decisions::record(\"tidy-nulled-as-they-are\", \"if-shown\");\n",
     tests: [
       "test/lowering-written-branches.test.ts",
       "-t",

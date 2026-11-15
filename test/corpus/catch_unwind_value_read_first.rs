@@ -48,7 +48,8 @@ fn summed(n: u32, limit: u32) -> u32 {
     }
 }
 
-// Read twice: kept by its name.
+// Read twice, a test of it and then it, which MIR proves is there: read
+// once, `wordAt(text, 1) ?? "-"` (#1933).
 #[cfg_attr(rust_js, rust_js::nullable)]
 fn word_or_dash(text: &str) -> Option<String> {
     match panic::catch_unwind(AssertUnwindSafe(|| word_at(text, 1))) {

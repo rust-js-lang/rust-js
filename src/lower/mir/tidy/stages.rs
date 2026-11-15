@@ -47,6 +47,12 @@ pub(super) const STAGES: &[Stage] = &[
     Stage {
         name: "flags",
         passes: &[
+            // What a test proved of a read holds where lowering read it,
+            // not where a pass moves it, past the test: forgotten first
+            // (`Known::Proved`, #1933, #1942).
+            pass("proved forgotten", |b, _| {
+                js::each_expr_mut(b, &mut Expr::forget_proved)
+            }),
             // Where a drop's flag is known, no test of it, nor a `try` for it.
             pass("settled flags", |b, h| flags::settled_flags(b, h.flags)),
         ],

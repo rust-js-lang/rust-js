@@ -62,3 +62,19 @@ test("what may look like None is may_look_like_none's alone", () => {
       .map((line) => `${file}: ${line.trim()}`));
   expect(asking).toEqual([]);
 });
+
+// What a test proved of an `Option` where lowering reads it,
+// `Known::Proved`, is MIR's one answer, `proved_present` (#1933): made
+// only where an operand's read asks it, `.proved()`, and forgotten, with its
+// `Present`, only by tidy's first pass, as tidy moves code past the test
+// that proved it (#1942). Tidy's contracts hold that none is left after
+// (`NOTHING_PROVED`).
+test("a read a test proved there is MIR's to say, and tidy's to forget as it begins", () => {
+  const sources = files("src").filter((file) => file.endsWith(".rs"));
+  const lines = (pattern: RegExp) => sources.flatMap((file) =>
+    read(file).split("\n").filter((line) => !/^\s*\/\//.test(line) && pattern.test(line)).map(() => file));
+  expect(lines(/\.proved\(\)/)).toEqual(["src/lower/mir/operands.rs"]);
+  expect(lines(/Expr::forget_proved\b|\.forget_proved\(\)/)).toEqual(["src/lower/mir/tidy/stages.rs"]);
+  expect(lines(/\.with\((?:js::)?Known::Proved\)/)).toEqual(["src/js/known.rs"]);
+  expect(read("src/lower/mir/tidy/contracts.rs")).toContain("&[JUMPS_LAND, DECLARED_ONCE, NOTHING_PROVED]");
+});

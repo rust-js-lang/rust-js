@@ -403,6 +403,30 @@ pub(crate) fn is_flat_map(tcx: TyCtxt<'_>, id: DefId) -> bool {
         && tcx.item_name(id).as_str() == "flat_map"
 }
 
+/// Of `id`, `Option::is_some`, `Some(true)`, or `Option::is_none`,
+/// `Some(false)`: a test of whether an `Option` is there (#1933).
+pub(crate) fn option_presence_test(tcx: TyCtxt<'_>, id: DefId) -> Option<bool> {
+    let imp = tcx.impl_of_assoc(id)?;
+    let ty::Adt(adt, _) = tcx.type_of(imp).instantiate_identity().skip_normalization().kind() else {
+        return None;
+    };
+    if !tcx.is_lang_item(adt.did(), LangItem::Option) {
+        return None;
+    }
+    match tcx.item_name(id).as_str() {
+        "is_some" => Some(true),
+        "is_none" => Some(false),
+        _ => None,
+    }
+}
+
+/// Whether `id` is `PartialEq::eq`, `==`, of any types.
+pub(crate) fn is_partial_eq(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    tcx.trait_of_assoc(id)
+        .is_some_and(|tr| tcx.is_lang_item(tr, LangItem::PartialEq))
+        && tcx.item_name(id).as_str() == "eq"
+}
+
 /// Whether `param` is a trait's `Self`.
 pub(crate) fn is_trait_self(param: ty::ParamTy) -> bool {
     param.name == rustc_span::symbol::kw::SelfUpper

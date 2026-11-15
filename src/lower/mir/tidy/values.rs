@@ -436,7 +436,11 @@ pub(super) fn nulled_as_they_are(body: &mut Vec<Stmt>) {
         if let ExprKind::Cond(test, yes, _) = &mut e.kind
             && let Some(x) = shown_defined(test).filter(|x| once(x))
         {
-            yes.each_mut(&mut |e| unnulled(e, &x));
+            yes.each_mut(&mut |e| {
+                if unnulled(e, &x) {
+                    crate::decisions::record("tidy-nulled-as-they-are", "cond-shown");
+                }
+            });
         }
     });
     js::statement_lists(body, &mut |stmts| {
@@ -444,7 +448,11 @@ pub(super) fn nulled_as_they_are(body: &mut Vec<Stmt>) {
             if let StmtKind::If(test, then, _) = &mut stmt.kind
                 && let Some(x) = shown_defined(test).filter(|x| once(x))
             {
-                js::each_expr_mut(then, &mut |e| unnulled(e, &x));
+                js::each_expr_mut(then, &mut |e| {
+                    if unnulled(e, &x) {
+                        crate::decisions::record("tidy-nulled-as-they-are", "if-shown");
+                    }
+                });
             }
             // A place a test of an `&&` shows isn't `null`, `p.stateNode !=
             // null`, read right after it, the first statement's value: as
@@ -461,6 +469,7 @@ pub(super) fn nulled_as_they_are(body: &mut Vec<Stmt>) {
                 && made.reads_same()
                 && shown_present(test, made)
             {
+                crate::decisions::record("tidy-nulled-as-they-are", "and-shown");
                 let span = value.span;
                 *value = (**made).clone().or_at(span);
             }
@@ -474,6 +483,7 @@ pub(super) fn nulled_as_they_are(body: &mut Vec<Stmt>) {
             && matches!(null.kind, ExprKind::Null)
             && matches!(&made.kind, ExprKind::Var(x) if defined.contains(x.as_str()))
         {
+            crate::decisions::record("tidy-nulled-as-they-are", "never-undefined");
             let span = e.span;
             *e = (**made).clone().or_at(span);
         }
@@ -577,15 +587,17 @@ fn shown_defined(test: &Expr) -> Option<String> {
 }
 
 /// `e`, `x ?? null`: `x`, which isn't `undefined` there
-/// (`nulled_as_they_are`).
-fn unnulled(e: &mut Expr, x: &str) {
+/// (`nulled_as_they_are`); whether it was one.
+fn unnulled(e: &mut Expr, x: &str) -> bool {
     if let ExprKind::Binary(Op::Coalesce, made, null) = &e.kind
         && matches!(null.kind, ExprKind::Null)
         && matches!(&made.kind, ExprKind::Var(v) if v == x)
     {
         let span = e.span;
         *e = (**made).clone().or_at(span);
+        return true;
     }
+    false
 }
 
 /// `const x = { value: undefined };`, a cell a pointer is taken to, declared

@@ -179,10 +179,14 @@ fn present_in(stmt: &mut Stmt, test: &Expr, holds: bool, first: bool) {
     let there = |x: &Expr| implies(&known, &Expr::bin(Op::LooseNe, x.clone(), Expr::null()));
     let mut present = |e: &mut Expr| match &e.kind {
         ExprKind::Binary(Op::Coalesce, x, _) if !first && matches!(x.kind, ExprKind::Var(_)) && there(x) => {
+            crate::decisions::record("tidy-present-in", "coalesce");
             *e = (**x).clone().or_at(e.span);
         }
         _ => match crate::lower::std_types::option::unwrap_tested(e) {
-            Some((_, option, _)) if option.reads_same() && there(option) => *e = option.clone().or_at(e.span),
+            Some((_, option, _)) if option.reads_same() && there(option) => {
+                crate::decisions::record("tidy-present-in", "unwrap");
+                *e = option.clone().or_at(e.span)
+            }
             _ => {}
         },
     };
