@@ -480,8 +480,10 @@ made: a call made in place there and not flipped, or a variable `let_made`
 binds to one (`held_links`). What's past it isn't flipped either, as
 before.
 
-Nor is a zip of sides only its callers know, a type parameter's or one
-built of one (`zip_asks_its_callers`). std's `Zip` specializes on whether
+The rule: **a zip whose sides are type parameters stays the hand form**
+(the lead, 2026-11-16). Nor, that is, is a zip of sides only its callers
+know, a type parameter's or one built of one (`zip_asks_its_callers`),
+flipped. std's `Zip` specializes on whether
 each side is `TrustedRandomAccess` or `TrustedLen`, which rustc can't say
 there, so its compiled body asks each as a fact the callers give: three
 parameters more on a generic function, `dot(it, other, IRandomAccess,
@@ -490,7 +492,15 @@ given to a trait's default compiled over `Self`, itertools' blanket
 `impl<T: Iterator> Tools for T`'s `dot`, which was refused (the crates
 pair `library_instance_impl_asks_its_defaults_facts`). The recognizers'
 `$lazyZip` asks neither and is proved by the tables, so such a zip stays
-theirs (corpus `zip_of_sides_only_callers_know`). `let_made` is the one answer of which variables a `let` binds to
+theirs (corpus `zip_of_sides_only_callers_know`). The build of std's
+structs, which compiles that zip anyway, still refuses it in the default,
+on `iterator-forms`' `differs` list (#1956).
+
+No program on main answered wrongly: its flipped `chain` and `map`, given
+such a JS iterator, folded it through `$foldOf`, which steps any. Mutation
+`flipped-given-a-let-made-in-place` checks the snapshots of
+`iter_by_ref`'s `map` and `adapter_source_drops`' `chain` too, which stay
+the hand form, so it is caught there whatever `$foldOf` steps. `let_made` is the one answer of which variables a `let` binds to
 an adapter, read by both stages. Six snapshots that had given a compiled
 `Map` or `Chain` such a JS iterator go back to the hand-written form.
 

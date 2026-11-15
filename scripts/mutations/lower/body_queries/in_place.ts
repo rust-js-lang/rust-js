@@ -406,7 +406,12 @@ export const mutations: Mutation[] = [
     file: "src/lower/body_queries/in_place.rs",
     find: "            ExprKind::VarRef { id } => made.get(&id).is_some_and(|init| ground.contains(init)),\n",
     replace: "            ExprKind::VarRef { id } => made.get(&id).is_some_and(|init| ground.contains(init) && false),\n",
-    tests: ["test/corpus.test.ts", "-t", "^let_held_maps_given_a_compiled_chain_and_zip.rs$"],
+    tests: [
+      "test/corpus.test.ts",
+      "-t",
+      "^(let_held_maps_given_a_compiled_chain_and_zip|iter_by_ref|adapter_source_drops).rs$",
+    ],
+    snapshots: true,
   },
   {
     name: "flipped-given-a-call-made-in-place",
