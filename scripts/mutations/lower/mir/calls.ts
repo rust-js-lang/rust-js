@@ -132,15 +132,14 @@ export const mutations: Mutation[] = [
   {
     name: "nullable-param-some-coalesced",
     breaks:
-      "a `Some(..)` given to a binding's nullable parameter is `value ?? null`, `Object.create(Object.prototype ?? null)`, a function's `(e) => .. ?? null`",
+      "what's `null` or a value already given to a binding's nullable parameter, a nullable function's result or a nullable field's read, is `value ?? null`, `JSON.stringify(items, chosen(all) ?? null, 0)`",
     file: "src/lower/mir/calls.rs",
     find: "                form.storage().written(self.any_given_to_js(value, ty, true), nulled)\n",
     replace: "                form.storage().written(self.any_given_to_js(value, ty, true), false)\n",
-    tests: [
-      "test/lowering-options.test.ts",
-      "-t",
-      "a binding's nullable parameter's None is null",
-    ],
+    // A nullable function's result and a nullable field's read, `null` or a
+    // value already, given as they are; a `Some(..)`'s value is there by its
+    // own fact (#1932).
+    tests: ["test/lowering-nullable-binding-params.test.ts"],
   },
   {
     name: "mir-assign-shift-amount-bigint",
