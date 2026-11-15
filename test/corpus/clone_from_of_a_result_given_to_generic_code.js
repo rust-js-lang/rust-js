@@ -142,11 +142,7 @@ function main() {
             value,
             {
               clone(value) {
-                return value.TAG === "Ok"
-                  ? { ...value, _0: countedClone_clone(value._0) }
-                  : value.TAG === "Err"
-                    ? { ...value, _0: countedClone_clone(value._0) }
-                    : value;
+                return { ...value, _0: countedClone_clone(value._0) };
               },
               cloneFrom(to, from) {
                 if (to.value.TAG === "Ok" && from.TAG === "Ok") {
@@ -171,12 +167,7 @@ function main() {
                   countedClone_cloneFrom(payload.value, from._0);
                 } else {
                   const old = $apart(to.value);
-                  to.value =
-                    from.TAG === "Ok"
-                      ? { ...from, _0: countedClone_clone(from._0) }
-                      : from.TAG === "Err"
-                        ? { ...from, _0: countedClone_clone(from._0) }
-                        : from;
+                  to.value = { ...from, _0: countedClone_clone(from._0) };
                   if (old.TAG === "Ok") {
                     countedDrop_drop(old._0);
                   }
@@ -224,11 +215,7 @@ function main() {
             value$1,
             {
               clone(value) {
-                return value.TAG === "Ok"
-                  ? { ...value, _0: countedClone_clone(value._0) }
-                  : value.TAG === "Err"
-                    ? { ...value, _0: countedClone_clone(value._0) }
-                    : value;
+                return { ...value, _0: countedClone_clone(value._0) };
               },
               cloneFrom(to, from) {
                 if (to.value.TAG === "Ok" && from.TAG === "Ok") {
@@ -253,12 +240,7 @@ function main() {
                   countedClone_cloneFrom(payload.value, from._0);
                 } else {
                   const old = $apart(to.value);
-                  to.value =
-                    from.TAG === "Ok"
-                      ? { ...from, _0: countedClone_clone(from._0) }
-                      : from.TAG === "Err"
-                        ? { ...from, _0: countedClone_clone(from._0) }
-                        : from;
+                  to.value = { ...from, _0: countedClone_clone(from._0) };
                   if (old.TAG === "Ok") {
                     countedDrop_drop(old._0);
                   }
@@ -306,11 +288,7 @@ function main() {
             value$2,
             {
               clone(value) {
-                return value.TAG === "Ok"
-                  ? { ...value, _0: countedClone_clone(value._0) }
-                  : value.TAG === "Err"
-                    ? { ...value, _0: countedClone_clone(value._0) }
-                    : value;
+                return { ...value, _0: countedClone_clone(value._0) };
               },
               cloneFrom(to, from) {
                 if (to.value.TAG === "Ok" && from.TAG === "Ok") {
@@ -335,12 +313,7 @@ function main() {
                   countedClone_cloneFrom(payload.value, from._0);
                 } else {
                   const old = $apart(to.value);
-                  to.value =
-                    from.TAG === "Ok"
-                      ? { ...from, _0: countedClone_clone(from._0) }
-                      : from.TAG === "Err"
-                        ? { ...from, _0: countedClone_clone(from._0) }
-                        : from;
+                  to.value = { ...from, _0: countedClone_clone(from._0) };
                   if (old.TAG === "Ok") {
                     countedDrop_drop(old._0);
                   }

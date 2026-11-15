@@ -3,6 +3,7 @@
 //! one is called instead. Whether a clone could be told apart from the
 //! value, `needs_clone`, and the clone itself, `clone_value`.
 
+use crate::collections::IndexSet;
 use crate::js::{self, Expr, Op, Prop, Stmt, StmtKind};
 use crate::lower::recognition::StdItem;
 use crate::lower::recursive_fns::Kind;
@@ -323,18 +324,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// doesn't, a clone made later can't be told from one made sooner: a
     /// `cycle()`'s of an array's items (#1630).
     pub(in crate::lower) fn clone_shows(&self, ty: Ty<'tcx>) -> bool {
-        self.clone_shows_in(ty, &mut Vec::new())
+        self.clone_shows_in(ty, &mut IndexSet::default())
     }
 
-    fn clone_shows_in(&self, ty: Ty<'tcx>, seen: &mut Vec<Ty<'tcx>>) -> bool {
+    fn clone_shows_in(&self, ty: Ty<'tcx>, seen: &mut IndexSet<Ty<'tcx>>) -> bool {
         if self.is_copy(ty) {
             return self.copy_clone_runs_code(ty);
         }
-        if seen.contains(&ty) {
+        if !seen.insert(ty) {
             return false;
         }
-        seen.push(ty);
-        let shows = match ty.kind() {
+
+        match ty.kind() {
             ty::Ref(..) => false,
             _ if crate::lower::generic_facts::clone_given_by_caller(ty) => true,
             ty::Tuple(parts) => parts.iter().any(|part| self.clone_shows_in(part, seen)),
@@ -353,9 +354,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .any(|f| self.clone_shows_in(self.field_ty(f, args), seen)),
             ty::Adt(_, args) => args.types().any(|arg| self.clone_shows_in(arg, seen)),
             _ => false,
-        };
-        seen.pop();
-        shows
+        }
     }
 
     /// Is `ty`, one of the crate's own or a library's (ADR 0100), inside
@@ -611,19 +610,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 {
                     return self.clone_fields(place, (ty, None), fields[0].clone(), span, out);
                 }
-                let mut value = place.clone();
-                for variant in adt.variants().iter().rev() {
-                    let fields = self.variant_fields(variant, args);
-                    if fields.is_empty() || !(itself || cells(self, variant, &fields) || needs(self, variant, &fields))
-                    {
-                        continue;
-                    }
-                    let copy = self.clone_fields(place.clone(), (ty, Some(variant)), fields, span, out)?;
-                    let index = adt.variant_index_with_id(variant.def_id);
-                    let test = self.variant_test(place.clone(), ty, *adt, index, false);
-                    value = Expr::cond(test, copy, value);
+                // Of variants of the same fields, one clone and one test, so a
+                // nested enum's is made once, not once a variant (#1821); a
+                // variant with a cell its field's definition says is its own.
+                let copied = |v: &ty::VariantDef, f: &[(String, Ty<'tcx>)]| {
+                    !f.is_empty() && (itself || cells(self, v, f) || needs(self, v, f))
+                };
+                let groups = self.variant_groups(adt, args, &copied, &|v, f| cells(self, v, f));
+                let mut copies = Vec::new();
+                for crate::lower::copies::VariantGroup {
+                    indices,
+                    first: variant,
+                    fields,
+                } in groups.copied
+                {
+                    copies.push((
+                        indices,
+                        self.clone_fields(place.clone(), (ty, Some(variant)), fields, span, out)?,
+                    ));
                 }
-                Ok(value)
+                Ok(self.variants_tested((place.clone(), place), (ty, *adt), copies, &groups.others))
             }
             // What clones itself: a std hasher, a `$SipHasher`, one of its
             // state (ADR 0463); a string's `chars()` or `char_indices()`, the

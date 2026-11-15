@@ -584,7 +584,27 @@ pub(in crate::lower) fn never_unwinds_given<'tcx>(
         drops,
         may_panic,
     };
-    judged.never_unwinds(id, args, &mut Vec::new())
+    judged.never_unwinds(id, args, &mut Walk::default())
+}
+
+/// A walk of `never_unwinds`: the instances on its path; each one's answer
+/// that doesn't hang on the path, found once (#1821); and how far out on
+/// the path the walk below met one it's in, the least index, which an
+/// answer found under it is only as sure as.
+struct Walk<'tcx> {
+    path: Vec<(DefId, ty::GenericArgsRef<'tcx>)>,
+    known: IndexMap<(DefId, ty::GenericArgsRef<'tcx>), bool>,
+    met: usize,
+}
+
+impl Default for Walk<'_> {
+    fn default() -> Self {
+        Walk {
+            path: Vec::new(),
+            known: IndexMap::default(),
+            met: usize::MAX,
+        }
+    }
 }
 
 /// What `never_unwinds_given` asks of each function it reaches.
@@ -598,21 +618,23 @@ struct Judged<'a, 'b, 'tcx> {
 }
 
 impl<'tcx> Judged<'_, '_, 'tcx> {
-    fn never_unwinds(
-        &self,
-        id: DefId,
-        args: ty::GenericArgsRef<'tcx>,
-        seen: &mut Vec<(DefId, ty::GenericArgsRef<'tcx>)>,
-    ) -> bool {
+    fn never_unwinds(&self, id: DefId, args: ty::GenericArgsRef<'tcx>, walk: &mut Walk<'tcx>) -> bool {
         let tcx = self.recognition.tcx;
         if self.never.contains(&id) {
             return true;
         }
-        if !id.is_local()
-            || is_binding(tcx, id)
-            || !matches!(tcx.def_kind(id), DefKind::Fn | DefKind::AssocFn)
-            || seen.contains(&(id, args))
-        {
+        if !id.is_local() || is_binding(tcx, id) || !matches!(tcx.def_kind(id), DefKind::Fn | DefKind::AssocFn) {
+            return false;
+        }
+        // Each instance judged once a walk, not once for each way to it,
+        // which a call graph of many paths to one made exponential (#1821):
+        // its answer kept where it hangs on nothing on the path above it.
+        // One the path holds may unwind, as it's assumed while it's judged.
+        if let Some(&known) = walk.known.get(&(id, args)) {
+            return known;
+        }
+        if let Some(at) = walk.path.iter().position(|&on| on == (id, args)) {
+            walk.met = walk.met.min(at);
             return false;
         }
         let Some(mir) = self.bodies.get(&id).and_then(|body| body.mir.as_ref()) else {
@@ -631,7 +653,9 @@ impl<'tcx> Judged<'_, '_, 'tcx> {
                 _ => None,
             }),
         );
-        seen.push((id, args));
+        let depth = walk.path.len();
+        let outer = std::mem::replace(&mut walk.met, usize::MAX);
+        walk.path.push((id, args));
         let steps = steps_on((&mir, &dead, false), &mut |callee, callee_args, _| {
             if self.never.contains(&callee)
                 || std_never_unwinds((tcx, self.recognition), (callee, callee_args), self.drops)
@@ -643,11 +667,16 @@ impl<'tcx> Judged<'_, '_, 'tcx> {
                 return false;
             };
             match instance.def {
-                ty::InstanceKind::Item(def) => self.never_unwinds(def, instance.args, seen),
+                ty::InstanceKind::Item(def) => self.never_unwinds(def, instance.args, walk),
                 _ => false,
             }
         });
-        seen.pop();
+        walk.path.pop();
+        let met = walk.met;
+        walk.met = outer.min(met);
+        if met >= depth {
+            walk.known.insert((id, args), steps);
+        }
         steps
     }
 }

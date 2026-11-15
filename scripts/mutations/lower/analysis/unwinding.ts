@@ -96,8 +96,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a generic function judged for a use takes each call of a trait's method, a closure's `call_mut` of one that can't panic, for one that may, so `Defer(|| DEPTH.set(previous))` drops after its `try` and in a `$cleanup` (#861)",
     file: "src/lower/analysis/unwinding.rs",
-    find: "                ty::InstanceKind::Item(def) => self.never_unwinds(def, instance.args, seen),\n",
-    replace: "                ty::InstanceKind::Item(def) => def == callee && self.never_unwinds(def, instance.args, seen),\n",
+    find: "                ty::InstanceKind::Item(def) => self.never_unwinds(def, instance.args, walk),\n",
+    replace: "                ty::InstanceKind::Item(def) => def == callee && self.never_unwinds(def, instance.args, walk),\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_drops_judged_per_use.rs$"],
     snapshots: true,
   },
@@ -215,5 +215,13 @@ export const mutations: Mutation[] = [
     find: "            std_mir_never_unwinds(tcx, typing_env, (callee, callee_args), depth - 1)\n",
     replace: "            { let _ = (callee, callee_args); true }\n",
     tests: ["test/corpus.test.ts", "-t", "^range_(inclusive_)?is_empty_of_a_panicking_order_unwinds.rs$"],
+  },
+  {
+    name: "never-unwinds-asked-each-way",
+    breaks: "whether a generic function's drop never unwinds judges a function again for each way to it, so a chain of generic functions each calling the next twice is judged 2 to the power of its depth times, and forty deep never compiles (#1821's follow-up)",
+    file: "src/lower/analysis/unwinding.rs",
+    find: "        if let Some(&known) = walk.known.get(&(id, args)) {\n",
+    replace: "        if let Some(&known) = walk.known.get(&(id, args)).filter(|_| false) {\n",
+    tests: ["test/type-depth.test.ts", "-t", "each judged once"],
   },
 ];

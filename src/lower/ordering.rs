@@ -6,7 +6,7 @@
 
 use super::bindings;
 use super::recognition::{OrderingCall, StdItem, std_item, trait_method};
-use super::representation::{Num, variant_field};
+use super::representation::Num;
 use super::{FnCx, R, Shape};
 use crate::collections::IndexSet;
 use crate::js::{self, Expr, Op, Stmt, StmtKind};
@@ -599,19 +599,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 let (at_a, at_b) = (place(self, &a), place(self, &b));
                 let order = Expr::call(Expr::helper("$cmp"), vec![at_a, at_b]);
-                // Of the same variant, its fields, each in turn.
-                let mut same = Expr::int(0);
-                for &(v, _) in variants.iter().rev() {
-                    let def = adt.variant(v);
-                    if def.fields.is_empty() {
-                        continue;
-                    }
+                // Of the same variant, its fields, each in turn; of variants
+                // of the same fields, one comparison of them and one test,
+                // so a nested enum's is made once, not once a variant
+                // (#1821); of one never made, none.
+                let made = |v: &ty::VariantDef, fields: &[(String, Ty<'tcx>)]| {
+                    !fields.is_empty() && !crate::lower::recognition::never_made(self.tcx, v)
+                };
+                let groups = self.variant_groups(adt, args, &made, &|_, _| false);
+                let mut compared = Vec::new();
+                for crate::lower::copies::VariantGroup { indices, fields, .. } in groups.copied {
                     let mut orders = Vec::new();
                     let mut total = true;
-                    for (i, field) in def.fields.iter().enumerate() {
-                        let t = self.field_ty(field, args);
+                    for (name, t) in fields {
                         total &= !partial || self.is_total(t);
-                        let name = variant_field(self.tcx, def, i);
                         orders.push(self.cmp_value(
                             Expr::member(a.clone(), &name),
                             Expr::member(b.clone(), &name),
@@ -628,8 +629,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             .expect("a field"),
                         false => Expr::call(Expr::helper("$thenCmp"), orders),
                     };
-                    same = Expr::cond(self.variant_test(a.clone(), ty, *adt, v, false), fields, same);
+                    compared.push((indices, fields));
                 }
+                let made_others: Vec<_> = (groups.others.into_iter())
+                    .filter(|&v| !crate::lower::recognition::never_made(self.tcx, adt.variant(v)))
+                    .collect();
+                let same = self.variants_tested((a.clone(), Expr::int(0)), (ty, *adt), compared, &made_others);
                 Ok(Expr::bin(Op::Or, order, same))
             }
             ty::Adt(adt, _) if adt.is_enum() => Err(self.unsupported(span, &format!("comparing `{ty}`s"))),
@@ -1032,7 +1037,7 @@ pub(in crate::lower) fn order_may<'tcx>(
         std_item(tcx, StdItem::Ord),
         tcx.require_lang_item(LangItem::PartialOrd, DUMMY_SP),
     ];
-    order_may_in(recognition, ty, (&traits, may), &mut Vec::new())
+    order_may_in(recognition, ty, (&traits, may), &mut IndexSet::default())
 }
 
 /// `order_may`'s, of comparing two `ty`s by their `PartialEq`, `==`.
@@ -1042,29 +1047,29 @@ pub(in crate::lower) fn eq_may<'tcx>(
     may: &dyn Fn(DefId) -> bool,
 ) -> bool {
     let traits = [recognition.tcx.require_lang_item(LangItem::PartialEq, DUMMY_SP)];
-    order_may_in(recognition, ty, (&traits, may), &mut Vec::new())
+    order_may_in(recognition, ty, (&traits, may), &mut IndexSet::default())
 }
 
 fn order_may_in<'tcx>(
     recognition: &super::recognition::Recognition<'_, 'tcx>,
     ty: Ty<'tcx>,
     (traits, may): (&[DefId], &dyn Fn(DefId) -> bool),
-    seen: &mut Vec<Ty<'tcx>>,
+    seen: &mut IndexSet<Ty<'tcx>>,
 ) -> bool {
     let tcx = recognition.tcx;
     let ty = ty.peel_refs();
-    if seen.contains(&ty) {
+    if !seen.insert(ty) {
         return false;
     }
     if let ty::Param(_) | ty::Dynamic(..) | ty::Alias(..) = ty.kind() {
         return true;
     }
-    seen.push(ty);
     let impls: Vec<DefId> = (traits.iter().copied())
         .filter_map(|tr| recognition.user_impl(ty::TraitRef::new_from_args(tcx, tr, recognition.args_of(tr, ty))))
         .collect();
     let rust_adt = |id: DefId| recognition.foreign.compiled_by_rust_js(id);
-    let result = match ty.kind() {
+
+    match ty.kind() {
         _ if !impls.is_empty() => impls.iter().any(|&imp| may(imp)),
         // A derived order of the crate's type, as its fields' orders.
         ty::Adt(adt, args) if rust_adt(adt.did()) => {
@@ -1078,9 +1083,7 @@ fn order_may_in<'tcx>(
             .any(|part| order_may_in(recognition, part, (traits, may), seen)),
         ty::Array(item, _) | ty::Slice(item) => order_may_in(recognition, *item, (traits, may), seen),
         _ => false,
-    };
-    seen.pop();
-    result
+    }
 }
 
 /// What a `partial_cmp` of a type runs, as rustc's impls say (#937): one

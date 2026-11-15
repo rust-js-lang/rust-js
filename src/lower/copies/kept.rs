@@ -149,11 +149,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// apart from it is its own. What a reference or an `Rc` points to
     /// Rust shares too.
     pub(in crate::lower) fn kept_may_change(&self, ty: Ty<'tcx>) -> bool {
-        self.kept_may_change_in(ty, &mut Vec::new())
+        self.kept_may_change_in(ty, &mut IndexSet::default())
     }
 
-    fn kept_may_change_in(&self, ty: Ty<'tcx>, seen: &mut Vec<Ty<'tcx>>) -> bool {
-        if seen.contains(&ty)
+    fn kept_may_change_in(&self, ty: Ty<'tcx>, seen: &mut IndexSet<Ty<'tcx>>) -> bool {
+        if !seen.insert(ty)
             || ty.is_ref()
             || crate::lower::pointers::raw_pointee(self.tcx, ty).is_some()
             || self.is_rc(ty)
@@ -163,8 +163,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.contains_mutated(ty) {
             return true;
         }
-        seen.push(ty);
-        let changes = match self.shape(ty) {
+
+        match self.shape(ty) {
             Shape::Object(fields) => fields.iter().any(|&(_, t)| self.kept_may_change_in(t, seen)),
             Shape::Array(tys) => tys.iter().any(|&t| self.kept_may_change_in(t, seen)),
             Shape::Other => match *ty.kind() {
@@ -181,9 +181,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .any(|v| (self.variant_fields(v, args).iter()).any(|&(_, t)| self.kept_may_change_in(t, seen))),
                 _ => false,
             },
-        };
-        seen.pop();
-        changes
+        }
     }
 
     /// A copy of the `ty` at `place` that shares nothing JS may change in
@@ -261,12 +259,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // `{ TAG: "Line", _0: .. }`: each variant with a part that
                 // may change, its copy, every other value itself.
                 ty::Adt(adt, args) if adt.is_enum() && self.untagged(ty).is_none() && !self.is_union(ty) => {
-                    let mut value = place.clone();
-                    for variant in adt.variants().iter().rev() {
-                        let fields = self.variant_fields(variant, args);
-                        if !fields.iter().any(|&(_, t)| self.kept_may_change(t)) {
-                            continue;
-                        }
+                    let copied = |_: &ty::VariantDef, fields: &[(String, Ty<'tcx>)]| {
+                        fields.iter().any(|&(_, t)| self.kept_may_change(t))
+                    };
+                    let groups = self.variant_groups(&adt, args, &copied, &|_, _| false);
+                    let mut copies = Vec::new();
+                    for crate::lower::copies::VariantGroup { indices, fields, .. } in groups.copied {
                         let mut props = vec![Prop::Spread(place.clone())];
                         for (name, t) in fields {
                             if self.kept_may_change(t) {
@@ -274,11 +272,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                                 props.push(Prop::Field(name, part));
                             }
                         }
-                        let tag =
-                            self.variant_test(place.clone(), ty, adt, adt.variant_index_with_id(variant.def_id), false);
-                        value = Expr::cond(tag, Expr::object(props), value);
+                        copies.push((indices, Expr::object(props)));
                     }
-                    Ok(value)
+                    Ok(self.variants_tested((place.clone(), place), (ty, adt), copies, &groups.others))
                 }
                 _ => Err(refuse(
                     self.tcx,

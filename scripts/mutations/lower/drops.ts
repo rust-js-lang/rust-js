@@ -137,7 +137,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a type's drop is counted as its own `drop` alone, not its glue's parts too, so a long one is written in place, not as a function of its own (form only, #887)",
     file: "src/lower/drops.rs",
-    find: "                    Some(parts) => usize::from(own) + sum(self, &mut parts.into_iter(), stack),\n",
+    find: "                    Some(parts) => usize::from(own).saturating_add(sum(self, &mut parts.into_iter(), stack)),\n",
     replace: "                    Some(_) => usize::from(own),\n",
     tests: ["test/corpus.test.ts", "-t", "^drop_functions.rs$"],
     snapshots: true,
@@ -159,5 +159,13 @@ export const mutations: Mutation[] = [
     find: "            ty::Adt(adt, args) if self.krate.foreign.compiled_by_rust_js(adt.did()) => {\n",
     replace: "            ty::Adt(adt, args) if adt.did().is_local() => {\n",
     tests: ["test/crates.test.ts", "-t", "two crates: library_drops_its_consumer_gives"],
+  },
+  {
+    name: "drop-size-overflows",
+    breaks: "how many drops writing a type's in place takes is summed unsaturated, so a 40-deep chain of enums of four variants, 4 to the 40th, overflows and rust-js panics (#1821)",
+    file: "src/lower/drops.rs",
+    find: "            tys.map(|t| cx.drop_size(t, stack)).fold(0, usize::saturating_add)\n",
+    replace: "            tys.map(|t| cx.drop_size(t, stack)).sum::<usize>()\n",
+    tests: ["test/type-depth.test.ts", "-t", "plain$"],
   },
 ];

@@ -751,4 +751,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^paths_compare_by_components_inside.rs$"],
   },
+  {
+    name: "custom-eq-asked-each-way",
+    breaks: "whether a type's `==` runs code of its own asks a type again for each way to it, its path alone kept, so a chain of enums of four variants holding the one before is asked 4 to the power of its depth times (#1821)",
+    file: "src/lower/std_impls.rs",
+    find: "        let ty = ty.peel_refs();\n        if !seen.insert(ty) {\n            return false;\n        }\n",
+    replace: "        let ty = ty.peel_refs();\n        if seen.contains(&ty) {\n            return false;\n        }\n        let seen = &mut { let mut path = seen.clone(); path.insert(ty); path };\n",
+    tests: ["test/type-depth.test.ts", "-t", "plain$"],
+  },
 ];

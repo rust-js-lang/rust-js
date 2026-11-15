@@ -500,7 +500,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// How many drops writing a `ty`'s in place takes, found once for each
-    /// type; of one inside itself, those outside where it's inside.
+    /// type; of one inside itself, those outside where it's inside. Summed
+    /// saturating, as it's only compared, and a nested enum's grows as its
+    /// variants to the power of its depth: 4 to the 40th overflowed (#1821).
     fn drop_size(&self, ty: Ty<'tcx>, stack: &mut Vec<Ty<'tcx>>) -> usize {
         if !self.has_drops(ty) || stack.contains(&ty) {
             return 0;
@@ -510,7 +512,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         stack.push(ty);
         let sum = |cx: &Self, tys: &mut dyn Iterator<Item = Ty<'tcx>>, stack: &mut Vec<Ty<'tcx>>| {
-            tys.map(|t| cx.drop_size(t, stack)).sum::<usize>()
+            tys.map(|t| cx.drop_size(t, stack)).fold(0, usize::saturating_add)
         };
         let size = match ty.kind() {
             ty::Adt(_, args) if ty.is_box() || self.recognition().pinned(ty).is_some() => {
@@ -522,7 +524,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // count (ADR 0320); a counted `Weak` drops only a count, an
             // uncounted one nothing (ADR 0843).
             ty::Adt(_, args) if self.is_std_type(ty, StdItem::RefCell) => self.drop_size(args.type_at(0), stack),
-            ty::Adt(..) if let Some(pointee) = self.counted_rc(ty) => self.drop_size(pointee, stack) + 1,
+            ty::Adt(..) if let Some(pointee) = self.counted_rc(ty) => self.drop_size(pointee, stack).saturating_add(1),
             ty::Adt(..) if self.counted_weak(ty).is_some() => 1,
             ty::Adt(..) if self.uncounted_weak(ty).is_some() => 0,
             // Its own `drop`, and the parts rustc's drop glue drops (#887).
@@ -530,7 +532,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let own = matches!(ty.kind(), ty::Adt(adt, _)
                     if self.tcx.adt_destructor(adt.did()).is_some_and(|d| self.runs_drop(d.did)));
                 match self.drop_query().glue_parts(ty) {
-                    Some(parts) => usize::from(own) + sum(self, &mut parts.into_iter(), stack),
+                    Some(parts) => usize::from(own).saturating_add(sum(self, &mut parts.into_iter(), stack)),
                     // Of a part rust-js can't read, as long as one can be.
                     None => usize::MAX / 2,
                 }

@@ -2,6 +2,7 @@
 //! an impl's own `ne`, a type parameter's dictionary's, or std's that asks
 //! its parts' `!=`.
 
+use crate::collections::IndexSet;
 use crate::js::{self, Expr, Op, Stmt, StmtKind};
 use crate::lower::temporary_names::Role;
 use crate::lower::{FnCx, R, Shape};
@@ -18,19 +19,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// b)`, whose `==` asks its items' `!=` (`eq_items`); any other's,
     /// `Option`'s, a derive's, is std's provided `!(a == b)`.
     pub(in crate::lower) fn own_ne(&self, ty: Ty<'tcx>) -> bool {
-        self.own_ne_in(ty, &mut Vec::new())
+        self.own_ne_in(ty, &mut IndexSet::default())
     }
 
-    fn own_ne_in(&self, ty: Ty<'tcx>, seen: &mut Vec<Ty<'tcx>>) -> bool {
+    fn own_ne_in(&self, ty: Ty<'tcx>, seen: &mut IndexSet<Ty<'tcx>>) -> bool {
         let ty = ty.peel_refs();
         if self.is_unknown(ty) {
             return true;
         }
-        if seen.contains(&ty) {
+        if !seen.insert(ty) {
             return false;
         }
-        seen.push(ty);
-        let own = match ty.kind() {
+
+        match ty.kind() {
             ty::Tuple(parts) => parts.iter().any(|part| self.own_ne_in(part, seen)),
             ty::Adt(..) if let Some(imp) = self.partial_eq_impl(ty) => self.writes_ne(imp),
             ty::Adt(..) if let Some(pointee) = crate::lower::recognition::rc_pointee(self.tcx, ty) => {
@@ -43,9 +44,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 crate::lower::recognition::PinTarget::Deref(_, target) => self.own_ne_in(target, seen),
             },
             _ => false,
-        };
-        seen.pop();
-        own
+        }
     }
 
     /// The crate's or a library's impl of `PartialEq<Self>` for `ty`.

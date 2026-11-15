@@ -2,6 +2,7 @@
 //! std type's, or a bound's dictionary's (ADR 0052). A hand-written one is
 //! called instead.
 
+use crate::collections::IndexSet;
 use crate::js::{self, Expr, Prop, StmtKind};
 use crate::lower::recognition::{self, StdItem, std_item};
 use crate::lower::representation::Num;
@@ -46,20 +47,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// never, an empty collection's, a number's or an enum's `#[default]`
     /// variant (#902). The one answer what's made in turn asks.
     pub(in crate::lower) fn default_may_panic(&self, ty: Ty<'tcx>) -> bool {
-        self.default_may_panic_in(ty, &mut Vec::new())
+        self.default_may_panic_in(ty, &mut IndexSet::default())
     }
 
-    fn default_may_panic_in(&self, ty: Ty<'tcx>, seen: &mut Vec<Ty<'tcx>>) -> bool {
-        if seen.contains(&ty) {
+    fn default_may_panic_in(&self, ty: Ty<'tcx>, seen: &mut IndexSet<Ty<'tcx>>) -> bool {
+        if !seen.insert(ty) {
             return false;
         }
         if self.is_unknown(ty) || matches!(ty.kind(), ty::Param(_) | ty::Dynamic(..) | ty::Alias(..)) {
             return true;
         }
-        seen.push(ty);
         let tr = ty::TraitRef::new(self.tcx, std_item(self.tcx, StdItem::Default), [ty]);
         let std = |item: StdItem| self.is_std_type(ty, item);
-        let may = match ty.kind() {
+
+        match ty.kind() {
             _ if let Some(imp) = self.recognition().user_impl(tr) => self.impl_may_unwind(imp),
             ty::Array(item, _) => self.default_may_panic_in(*item, seen),
             ty::Tuple(parts) => parts.iter().any(|part| self.default_may_panic_in(part, seen)),
@@ -78,9 +79,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 (adt.all_fields()).any(|f| self.default_may_panic_in(self.field_ty(f, args), seen))
             }
             _ => false,
-        };
-        seen.pop();
-        may
+        }
     }
 
     /// `Default::default()` of `ty`: `0`, `""`, `[]`, a struct of its fields'

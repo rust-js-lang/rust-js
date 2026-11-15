@@ -7,7 +7,7 @@ export function entry() {
 }
 
 function shrunk(b) {
-  const value = b.TAG === "Included" ? { ...b } : b.TAG === "Excluded" ? { ...b } : b;
+  const value = b === "Unbounded" ? b : { ...b };
   let s;
   if (value.TAG === "Included") {
     s = value._0;
@@ -34,9 +34,7 @@ function main() {
   console.log(`${value$1.TAG === "Ok" ? `Ok(${value$1._0})` : `Err(${$debugStr(value$1._0)})`}`);
 
   const bounds = [{ TAG: "Included", _0: "ab" }, { TAG: "Excluded", _0: "cd" }, "Unbounded"];
-  const copies = bounds.map((item) =>
-    item.TAG === "Included" ? { ...item } : item.TAG === "Excluded" ? { ...item } : item,
-  );
+  const copies = bounds.map((item) => (item === "Unbounded" ? item : { ...item }));
   $index(copies, 0);
   if (copies[0].TAG === "Included") {
     const item = copies[0];

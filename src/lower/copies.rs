@@ -11,10 +11,30 @@ use super::{FnCx, Shape};
 use crate::collections::{IndexMap, IndexSet};
 use crate::js;
 use crate::js::{Expr, Op, Prop};
+use rustc_abi::VariantIdx;
 use rustc_ast::Mutability;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::ty;
 use rustc_middle::ty::{Ty, TyCtxt};
+
+/// A tagged enum's variants copied, by `variant_groups`: each group of
+/// them of the same fields, and the others, each value itself.
+#[derive(Default)]
+pub(in crate::lower) struct VariantGroups<'v, 'tcx> {
+    pub(in crate::lower) copied: Vec<VariantGroup<'v, 'tcx>>,
+    pub(in crate::lower) others: Vec<VariantIdx>,
+}
+
+/// Variants of the same fields: their indices, the first of them, whose
+/// fields' definitions a clone reads, and their fields.
+pub(in crate::lower) struct VariantGroup<'v, 'tcx> {
+    pub(in crate::lower) indices: Vec<VariantIdx>,
+    pub(in crate::lower) first: &'v ty::VariantDef,
+    pub(in crate::lower) fields: Vec<(String, Ty<'tcx>)>,
+}
+
+/// What `variant_groups` asks of a variant and its fields.
+type OfVariant<'a, 'tcx> = &'a dyn Fn(&ty::VariantDef, &[(String, Ty<'tcx>)]) -> bool;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A fresh `ty` value equal to the one at `place`: `{ ...p }`, `[t[0], t[1]]`.
@@ -207,30 +227,99 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     });
                 }
                 // `{ TAG: "Line", _0: .. }`: a variant with a part that changes
-                // gets a copy, and every other value is itself.
+                // gets a copy, and every other value is itself. Changed in
+                // place itself, through a `&mut`: every variant with fields.
+                let itself = self.mutated_itself(ty);
                 once(place, &|e| {
-                    let mut value = e.clone();
-                    // Changed in place itself, through a `&mut`: every variant with fields.
-                    let itself = self.mutated_itself(ty);
-                    for variant in adt.variants().iter().rev() {
-                        let fields = self.variant_fields(variant, args);
-                        if fields.is_empty() || !(itself || fields.iter().any(|&(_, t)| self.contains_mutated(t))) {
-                            continue;
-                        }
-                        let mut props = vec![Prop::Spread(e.clone())];
-                        for (name, t) in fields {
-                            if self.contains_mutated(t) {
-                                props.push(Prop::Field(name.clone(), self.copy(Expr::member(e.clone(), name), t)));
+                    let copied = |_: &ty::VariantDef, fields: &[(String, Ty<'tcx>)]| {
+                        !fields.is_empty() && (itself || fields.iter().any(|&(_, t)| self.contains_mutated(t)))
+                    };
+                    let groups = self.variant_groups(adt, args, &copied, &|_, _| false);
+                    let copies = (groups.copied.into_iter())
+                        .map(|VariantGroup { indices, fields, .. }| {
+                            let mut props = vec![Prop::Spread(e.clone())];
+                            for (name, t) in fields {
+                                if self.contains_mutated(t) {
+                                    props.push(Prop::Field(name.clone(), self.copy(Expr::member(e.clone(), name), t)));
+                                }
                             }
-                        }
-                        let tag =
-                            self.variant_test(e.clone(), ty, *adt, adt.variant_index_with_id(variant.def_id), false);
-                        value = Expr::cond(tag, Expr::object(props), value);
-                    }
-                    value
+                            (indices, Expr::object(props))
+                        })
+                        .collect();
+                    self.variants_tested((e.clone(), e.clone()), (ty, *adt), copies, &groups.others)
                 })
             }
         }
+    }
+
+    /// A tagged enum's variants that are copied, of `copied`, grouped by
+    /// their fields, each group's indices and its first variant, and the
+    /// others, each value itself. Variants of the same fields are copied
+    /// alike, by one copy and one test of them all, so a nested enum's
+    /// copy is made once, not once a variant, whose JS and work grew as its
+    /// variants to the power of its depth (#1821); not one `alone` says is
+    /// its own, a variant whose fields' own definitions matter.
+    pub(in crate::lower) fn variant_groups<'v>(
+        &self,
+        adt: &'v ty::AdtDef<'tcx>,
+        args: ty::GenericArgsRef<'tcx>,
+        copied: OfVariant<'_, 'tcx>,
+        alone: OfVariant<'_, 'tcx>,
+    ) -> VariantGroups<'v, 'tcx> {
+        let mut groups: VariantGroups<'v, 'tcx> = VariantGroups::default();
+        for (index, variant) in adt.variants().iter_enumerated() {
+            let fields = self.variant_fields(variant, args);
+            if !copied(variant, &fields) {
+                groups.others.push(index);
+                continue;
+            }
+            let own = alone(variant, &fields);
+            match (groups.copied.iter_mut()).find(|g| g.fields == fields && !own && !alone(g.first, &g.fields)) {
+                Some(group) => group.indices.push(index),
+                None => groups.copied.push(VariantGroup {
+                    indices: vec![index],
+                    first: variant,
+                    fields,
+                }),
+            }
+        }
+        groups
+    }
+
+    /// Of `e`, a tagged enum's value, `{ TAG: "Line", _0: .. }`, each group
+    /// of its variants `variant_groups` found, its value, `copies`', and of
+    /// every other variant `otherwise`, `e` itself of a copy, `0` of a
+    /// comparison: one test of each group, `e.TAG === "First" ||
+    /// e.TAG === "Second" ? { ...e, _0: .. } : e`; where one group's are
+    /// all the variants, its test is of the others where they're fewer,
+    /// `e === "Empty" ? e : { ...e, _0: .. }`, or, of none, its value.
+    pub(in crate::lower) fn variants_tested(
+        &self,
+        (e, otherwise): (Expr, Expr),
+        (ty, adt): (Ty<'tcx>, ty::AdtDef<'tcx>),
+        copies: Vec<(Vec<VariantIdx>, Expr)>,
+        others: &[VariantIdx],
+    ) -> Expr {
+        let tested = |indices: &[VariantIdx]| {
+            (indices.iter())
+                .map(|&index| self.variant_test(e.clone(), ty, adt, index, false))
+                .reduce(|a, b| Expr::bin(Op::Or, a, b))
+        };
+        if let [(indices, _)] = copies.as_slice()
+            && others.len() < indices.len()
+        {
+            let copy = copies.into_iter().next().map(|(_, copy)| copy).expect("one group");
+            return match tested(others) {
+                Some(test) => Expr::cond(test, otherwise, copy),
+                None => copy,
+            };
+        }
+        let mut value = otherwise;
+        for (indices, copy) in copies.into_iter().rev() {
+            let test = tested(&indices).expect("a group of one variant at least");
+            value = Expr::cond(test, copy, value);
+        }
+        value
     }
 
     /// Whether `ty` is an untagged enum whose array is changed in place
@@ -774,15 +863,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether reconstructing a value can replace its Clone implementation.
     /// References and Rc share their referent; owned fields must all qualify.
     pub(super) fn structural_clone(&self, ty: Ty<'tcx>) -> bool {
-        self.structural_clone_in(ty, &mut Vec::new())
+        self.structural_clone_in(ty, &mut IndexSet::default())
     }
 
-    pub(super) fn structural_clone_in(&self, ty: Ty<'tcx>, seen: &mut Vec<Ty<'tcx>>) -> bool {
-        if seen.contains(&ty) {
+    pub(super) fn structural_clone_in(&self, ty: Ty<'tcx>, seen: &mut IndexSet<Ty<'tcx>>) -> bool {
+        if !seen.insert(ty) {
             return true;
         }
-        seen.push(ty);
-        let structural = match ty.kind() {
+
+        match ty.kind() {
             ty::Ref(..) => true,
             ty::Param(_) | ty::Alias(..) | ty::Dynamic(..) => false,
             ty::Tuple(parts) => parts.iter().all(|t| self.structural_clone_in(t, seen)),
@@ -805,9 +894,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .all_fields()
                 .all(|f| self.structural_clone_in(self.field_ty(f, args), seen)),
             _ => true,
-        };
-        seen.pop();
-        structural
+        }
     }
 }
 
@@ -946,9 +1033,9 @@ pub(super) fn may_hold_changed<'tcx>(
         recognition: &super::recognition::Recognition<'_, 'tcx>,
         changed: Changed<'_, 'tcx>,
         ty: Ty<'tcx>,
-        seen: &mut Vec<Ty<'tcx>>,
+        seen: &mut IndexSet<Ty<'tcx>>,
     ) -> bool {
-        if seen.contains(&ty) {
+        if !seen.insert(ty) {
             return false;
         }
         let tcx = recognition.tcx;
@@ -957,8 +1044,8 @@ pub(super) fn may_hold_changed<'tcx>(
             super::pointers::raw_pointee(tcx, ty).is_some()
                 || matches!(ty.kind(), ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::PhantomData))
         };
-        seen.push(ty);
-        let holds = match ty.kind() {
+
+        match ty.kind() {
             ty::Tuple(_) | ty::Array(..) if changed.mutated.iter().any(is) => true,
             ty::Tuple(items) => items.iter().any(|item| walk(recognition, changed, item, seen)),
             ty::Array(item, _) | ty::Slice(item) => walk(recognition, changed, *item, seen),
@@ -995,11 +1082,9 @@ pub(super) fn may_hold_changed<'tcx>(
                             .any(|field| walk(recognition, changed, field_ty(field), seen)))
             }
             _ => false,
-        };
-        seen.pop();
-        holds
+        }
     }
-    walk(recognition, changed, ty, &mut Vec::new())
+    walk(recognition, changed, ty, &mut IndexSet::default())
 }
 
 /// Can one JS value be every use of a constant of `ty`, which Rust makes
@@ -1009,12 +1094,12 @@ pub(super) fn may_hold_changed<'tcx>(
 /// library's, can, and is copied where it's read if something changes one,
 /// as any value is.
 pub(super) fn shareable<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
-    fn walk<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>, seen: &mut Vec<Ty<'tcx>>) -> bool {
-        if seen.contains(&ty) {
+    fn walk<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>, seen: &mut IndexSet<Ty<'tcx>>) -> bool {
+        if !seen.insert(ty) {
             return true;
         }
-        seen.push(ty);
-        let frozen = match ty.kind() {
+
+        match ty.kind() {
             ty::Bool | ty::Char | ty::Int(_) | ty::Uint(_) | ty::Float(_) | ty::Str => true,
             ty::FnPtr(..) | ty::FnDef(..) | ty::Closure(..) | ty::Dynamic(..) => true,
             ty::Ref(_, inner, Mutability::Not) => walk(tcx, *inner, seen),
@@ -1047,9 +1132,7 @@ pub(super) fn shareable<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
                 .all_fields()
                 .all(|field| walk(tcx, field.ty(tcx, args).skip_normalization(), seen)),
             _ => false,
-        };
-        seen.pop();
-        frozen
+        }
     }
-    walk(tcx, ty, &mut Vec::new())
+    walk(tcx, ty, &mut IndexSet::default())
 }

@@ -2,6 +2,7 @@
 //! finds as Rust does, a primitive; one found by its value, a `$KeyMap`'s,
 //! and the parts `$key` finds it by; or one a B-tree finds by its `cmp`.
 
+use crate::collections::IndexSet;
 use crate::js::{self, Expr, StmtKind};
 use crate::lower::representation::Num;
 use crate::lower::{FnCx, R};
@@ -181,16 +182,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// amended), as its derived `Hash` and `Eq` find it, where `$key` would
     /// find it by what's in it: `std_impls`' `eq_of_objects`, its one answer.
     pub(in crate::lower) fn holds_identity(&self, ty: Ty<'tcx>) -> bool {
-        self.holds_identity_in(ty, &mut Vec::new())
+        self.holds_identity_in(ty, &mut IndexSet::default())
     }
 
-    fn holds_identity_in(&self, ty: Ty<'tcx>, seen: &mut Vec<Ty<'tcx>>) -> bool {
+    fn holds_identity_in(&self, ty: Ty<'tcx>, seen: &mut IndexSet<Ty<'tcx>>) -> bool {
         let ty = ty.peel_refs();
-        if seen.contains(&ty) {
+        if !seen.insert(ty) {
             return false;
         }
-        seen.push(ty);
-        let holds = match ty.kind() {
+
+        match ty.kind() {
             _ if self.js_eq(ty).is_some() => self.eq_of_objects(ty),
             // A flattened struct that may be its parent's object, which `$key`
             // would find by its parent's keys too: found by its own fields
@@ -204,9 +205,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Adt(adt, args) => (adt.variants().iter().flat_map(|variant| variant.fields.iter()))
                 .any(|field| self.holds_identity_in(self.field_ty(field, args), seen)),
             _ => false,
-        };
-        seen.pop();
-        holds
+        }
     }
 
     /// What `$key` finds `key`, of `ty`, by, where it holds a part found by

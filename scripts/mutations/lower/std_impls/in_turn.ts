@@ -50,4 +50,12 @@ export const mutations: Mutation[] = [
     replace: "        if false && may_panic && self.drops(ty) != Drops::Nothing {\n",
     tests: ["test/corpus.test.ts", "-t", "^clone_unwinds_what_it_made.rs$"],
   },
+  {
+    name: "clone-may-panic-asked-each-way",
+    breaks: "whether a clone may panic asks a type again for each way to it, its path alone kept, so a chain of enums of four variants holding the one before is asked 4 to the power of its depth times, and twenty deep never compiles (#1821)",
+    file: "src/lower/std_impls/in_turn.rs",
+    find: "        if self.is_copy(ty) || !seen.insert(ty) {\n            return false;\n        }\n",
+    replace: "        if self.is_copy(ty) || seen.contains(&ty) {\n            return false;\n        }\n        let seen = &mut { let mut path = seen.clone(); path.insert(ty); path };\n",
+    tests: ["test/type-depth.test.ts", "-t", "plain$"],
+  },
 ];

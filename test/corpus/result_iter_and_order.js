@@ -48,17 +48,13 @@ function main() {
   );
   const a = { TAG: "Ok", _0: 5 };
   const b = { TAG: "Err", _0: 0 };
-  const value =
-    ($cmp(a.TAG === "Ok" ? 0 : 1, b.TAG === "Ok" ? 0 : 1) ||
-      (a.TAG === "Ok" ? $cmp(a._0, b._0) : a.TAG === "Err" ? $cmp(a._0, b._0) : 0)) < 0;
+  const value = ($cmp(a.TAG === "Ok" ? 0 : 1, b.TAG === "Ok" ? 0 : 1) || $cmp(a._0, b._0)) < 0;
   const value$1 = $eq(a, { TAG: "Ok", _0: 5 });
-  const cmp =
-    $cmp(a.TAG === "Ok" ? 0 : 1, b.TAG === "Ok" ? 0 : 1) ||
-    (a.TAG === "Ok" ? $cmp(a._0, b._0) : a.TAG === "Err" ? $cmp(a._0, b._0) : 0);
+  const cmp = $cmp(a.TAG === "Ok" ? 0 : 1, b.TAG === "Ok" ? 0 : 1) || $cmp(a._0, b._0);
   console.log(
     `${value} ${value$1} ${
       ["Less", "Equal", "Greater"][cmp + 1]
-    } ${((result) => (result.TAG === "Ok" ? `Ok(${result._0})` : `Err(${result._0})`))(($cmp(a.TAG === "Ok" ? 0 : 1, b.TAG === "Ok" ? 0 : 1) || (a.TAG === "Ok" ? $cmp(a._0, b._0) : a.TAG === "Err" ? $cmp(a._0, b._0) : 0)) < 0 ? b : a)}`,
+    } ${((result) => (result.TAG === "Ok" ? `Ok(${result._0})` : `Err(${result._0})`))(($cmp(a.TAG === "Ok" ? 0 : 1, b.TAG === "Ok" ? 0 : 1) || $cmp(a._0, b._0)) < 0 ? b : a)}`,
   );
   const f = [
     { TAG: "Ok", _0: NaN },

@@ -1,14 +1,14 @@
 # shape	count	per 10,000 lines
-files	2578
-lines	341089
+files	2581
+lines	341314
 temporaries	0	0
 labeled blocks	0	0
 while (true)	224	6.6
-$iter	2875	84.3
+$iter	2876	84.3
 Iterator.from	266	7.8
 return;	332	9.7
-renamed x$1	16172	474.1
-role fallbacks	8868	260
+renamed x$1	16184	474.2
+role fallbacks	8876	260.1
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1	role fallbacks
 test/corpus/adapter_drop_past_a_panic.js	52	0	0	0	1	0	0	0	1
 test/corpus/adapter_drops.js	1844	0	0	1	19	2	1	98	61
@@ -320,7 +320,7 @@ test/corpus/clone_dictionary_of_a_nested_option.js	95	0	0	0	0	0	0	8	7
 test/corpus/clone_from.js	67	0	0	0	0	0	0	0	1
 test/corpus/clone_from_generic_option_own.js	48	0	0	0	0	0	0	0	0
 test/corpus/clone_from_generic_std_own.js	628	0	0	0	0	0	0	25	10
-test/corpus/clone_from_of_a_result_given_to_generic_code.js	531	0	0	0	0	0	0	31	9
+test/corpus/clone_from_of_a_result_given_to_generic_code.js	504	0	0	0	0	0	0	31	9
 test/corpus/clone_from_of_an_option_given_to_generic_code.js	449	0	0	0	0	0	0	34	8
 test/corpus/clone_from_option_own.js	31	0	0	0	0	0	0	0	0
 test/corpus/clone_from_slice_generic.js	72	0	0	0	0	0	0	0	0
@@ -700,6 +700,7 @@ test/corpus/enum_discriminant.js	67	0	0	0	0	0	0	8	6
 test/corpus/enum_discriminants_wide.js	24	0	0	0	0	0	0	0	0
 test/corpus/enum_order.js	39	0	0	0	0	0	0	0	2
 test/corpus/enum_own_eq.js	29	0	0	0	0	0	0	0	0
+test/corpus/enum_variants_of_the_same_fields_copied_and_compared_once.js	174	0	0	0	1	0	0	12	6
 test/corpus/enumerate_bounds.js	56	0	0	0	1	0	0	0	0
 test/corpus/enumerate_count_is_its_sources.js	139	0	0	0	0	0	1	0	4
 test/corpus/enumerate_counted_by_generic_code.js	25	0	0	0	3	1	0	4	3
@@ -1500,7 +1501,7 @@ test/corpus/next_if_drops_its_item_as_its_test_panics.js	173	0	0	0	3	0	0	0	2
 test/corpus/next_power_of_two.js	26	0	0	0	0	0	0	0	1
 test/corpus/non_null.js	47	0	0	0	0	0	0	0	0
 test/corpus/non_zero_constants_matched.js	30	0	0	0	0	0	1	0	1
-test/corpus/none_given_to_an_optional_argument.js	72	0	0	0	0	0	0	0	0
+test/corpus/none_given_to_an_optional_argument.js	73	0	0	0	0	0	0	0	1
 test/corpus/nonzero.js	78	0	0	0	0	0	0	8	8
 test/corpus/nth_passed_drops_unwind.js	264	0	0	0	12	1	0	2	11
 test/corpus/nth_passes_a_slice_or_each.js	1342	0	0	0	39	0	0	186	46
@@ -1588,7 +1589,7 @@ test/corpus/or_pattern_three_values.js	269	0	0	0	0	0	0	0	0
 test/corpus/or_pattern_unreachable_alternative.js	92	0	0	0	0	0	0	0	0
 test/corpus/ordered_searches.js	27	0	0	0	0	0	0	2	2
 test/corpus/ordering_predicates.js	47	0	0	0	0	2	0	0	0
-test/corpus/os_string_into_string_and_bound_clone.js	68	0	0	0	0	0	0	2	5
+test/corpus/os_string_into_string_and_bound_clone.js	66	0	0	0	0	0	0	2	5
 test/corpus/overflowing_euclid.js	36	0	0	0	0	0	0	10	7
 test/corpus/overflowing_literals.js	18	0	0	0	0	0	0	0	0
 test/corpus/overlapping_moves_through_pointers.js	184	0	0	0	0	0	0	2	2
@@ -1951,7 +1952,7 @@ test/corpus/resize_fill_repeat_unwind.js	116	0	0	0	0	0	0	0	0
 test/corpus/rest_function_values.js	45	0	0	0	0	0	0	0	1
 test/corpus/restarting_iterators.js	320	0	0	0	1	2	0	40	21
 test/corpus/result_given_as_items.js	93	0	0	0	4	1	0	13	8
-test/corpus/result_iter_and_order.js	112	0	0	0	0	0	0	12	4
+test/corpus/result_iter_and_order.js	108	0	0	0	0	0	0	12	4
 test/corpus/retain_map_drops_held.js	401	0	0	0	0	0	0	13	4
 test/corpus/retain_mut_drops.js	59	0	0	0	0	0	0	0	0
 test/corpus/returned_chains_in_cases.js	41	0	0	0	0	0	0	0	0
@@ -2300,6 +2301,7 @@ test/corpus/time_debug_as_unix.js	52	0	0	0	0	0	0	3	0
 test/corpus/to_owned_is_clone.js	46	0	0	0	0	0	0	0	0
 test/corpus/track_caller.js	60	0	0	0	0	0	0	0	1
 test/corpus/track_caller_traits.js	176	0	0	0	0	0	0	9	7
+test/corpus/trailing_none_arguments_left_out.js	61	0	0	0	0	0	0	0	1
 test/corpus/trailing_none_items.js	81	0	0	0	0	0	0	0	1
 test/corpus/trait_default_bounds.js	86	0	0	0	0	0	0	0	0
 test/corpus/trait_default_flat_map_of_arrays_collects_trusted.js	100	0	0	0	7	1	0	12	7
@@ -2348,6 +2350,7 @@ test/corpus/unions.js	124	0	0	0	0	0	0	6	6
 test/corpus/unit_arguments.js	42	0	0	0	0	0	0	0	0
 test/corpus/unit_given_to_js.js	31	0	0	0	0	0	0	0	0
 test/corpus/unit_struct_order.js	58	0	0	0	0	0	0	0	2
+test/corpus/unknown_none_given_as_undefined.js	16	0	0	0	0	0	0	0	0
 test/corpus/unknown_option_equality.js	63	0	0	0	0	0	0	0	0
 test/corpus/unlowered_helpers.js	21	0	0	0	0	0	0	0	0
 test/corpus/unlowered_impls.js	150	0	0	0	0	0	0	0	2
@@ -2569,7 +2572,7 @@ test/snapshots/playground/tree.js	60	0	0	0	0	0	0	2	0
 test/snapshots/ports/scheduler/SchedulerFeatureFlags.js	18	0	0	0	0	0	0	0	0
 test/snapshots/ports/scheduler/SchedulerMinHeap.js	80	0	0	0	0	0	2	0	0
 test/snapshots/ports/scheduler/SchedulerPriorities.js	16	0	0	0	0	0	0	0	0
-test/snapshots/ports/scheduler/forks/Scheduler.js	492	0	0	1	0	0	3	9	1
+test/snapshots/ports/scheduler/forks/Scheduler.js	498	0	0	1	0	0	3	9	1
 test/snapshots/queues/queues.js	293	0	0	0	0	2	1	5	9
 test/snapshots/report/report.js	171	0	0	0	1	0	0	11	10
 test/snapshots/results/results.js	108	0	0	0	0	0	2	8	5

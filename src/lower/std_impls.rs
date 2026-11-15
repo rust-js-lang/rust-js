@@ -14,6 +14,7 @@ use super::recursive_fns::Kind;
 use super::representation::Num;
 use super::{FnCx, R, Shape};
 use crate::collections::IndexMap;
+use crate::collections::IndexSet;
 use crate::js::{self, Expr, Op, Stmt, StmtKind};
 use crate::lower::temporary_names::{Base, Role};
 use rustc_hir::attrs::lang_items::LangItem;
@@ -259,12 +260,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `eq`, or a `T`'s, which might be one? If not, it compares field by
     /// field, element by element, which `$eq` does.
     pub(super) fn custom_eq(&self, ty: Ty<'tcx>) -> bool {
-        self.custom_eq_in(ty, &mut Vec::new())
+        self.custom_eq_in(ty, &mut IndexSet::default())
     }
 
-    fn custom_eq_in(&self, ty: Ty<'tcx>, seen: &mut Vec<Ty<'tcx>>) -> bool {
+    fn custom_eq_in(&self, ty: Ty<'tcx>, seen: &mut IndexSet<Ty<'tcx>>) -> bool {
         let ty = ty.peel_refs();
-        if seen.contains(&ty) {
+        if !seen.insert(ty) {
             return false;
         }
         // What `===` compares as `==` does: custom where it's an object,
@@ -273,8 +274,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.js_eq(ty).is_some() {
             return self.eq_of_objects(ty);
         }
-        seen.push(ty);
-        let custom = match ty.kind() {
+
+        match ty.kind() {
             _ if self.is_unknown(ty) => true,
             ty::Tuple(tys) => tys.iter().any(|t| self.custom_eq_in(t, seen)),
             ty::Array(item, _) | ty::Slice(item) => self.custom_eq_in(*item, seen),
@@ -302,9 +303,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .all_fields()
                 .any(|f| self.custom_eq_in(self.field_ty(f, args), seen)),
             _ => false,
-        };
-        seen.pop();
-        custom
+        }
     }
 
     /// `a == b` for values of type `ty`: `a === b` for JS primitives, a call

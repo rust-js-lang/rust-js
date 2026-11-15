@@ -3,6 +3,7 @@
 //! clones and whether that runs the crate's code (ADRs 0973, 0997).
 
 use super::*;
+use crate::collections::IndexSet;
 
 /// Whether `ty` is a zip std folds otherwise than it steps it, where that
 /// shows: of sides both `TrustedLen` but not both `TrustedRandomAccess`,
@@ -58,14 +59,14 @@ fn clone_runs_crates_code<'tcx>(
     tcx: TyCtxt<'tcx>,
     typing_env: ty::TypingEnv<'tcx>,
     ty: Ty<'tcx>,
-    seen: &mut Vec<Ty<'tcx>>,
+    seen: &mut IndexSet<Ty<'tcx>>,
 ) -> bool {
-    if tcx.type_is_copy_modulo_regions(typing_env, ty) || seen.contains(&ty) {
+    if tcx.type_is_copy_modulo_regions(typing_env, ty) || !seen.insert(ty) {
         return false;
     }
-    seen.push(ty);
     let clone = tcx.require_lang_item(LangItem::Clone, rustc_span::DUMMY_SP);
-    let runs = match *ty.kind() {
+
+    match *ty.kind() {
         ty::Param(_) | ty::Closure(..) | ty::Alias(..) | ty::Dynamic(..) => true,
         ty::Adt(adt, args) if !is_std_crate(tcx, adt.did()) => {
             let derived = (tcx.all_impls(clone)).find(|&imp| {
@@ -86,9 +87,7 @@ fn clone_runs_crates_code<'tcx>(
             .any(|part| clone_runs_crates_code(tcx, typing_env, part, seen)),
         ty::Array(item, _) | ty::Slice(item) => clone_runs_crates_code(tcx, typing_env, item, seen),
         _ => false,
-    };
-    seen.pop();
-    runs
+    }
 }
 
 /// Of a zip of type `ty`, rustc knowing it whole, where std's fold of it
@@ -124,7 +123,8 @@ pub(crate) fn zip_folds_to_the_shorter<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) ->
         .unwrap_or(item);
     // A clone that may run the crate's own code (`clone_runs_crates_code`).
     let clones_own = |t: Ty<'tcx>| {
-        stepping_clones(tcx, typing_env, t).is_some_and(|v| clone_runs_crates_code(tcx, typing_env, v, &mut Vec::new()))
+        stepping_clones(tcx, typing_env, t)
+            .is_some_and(|v| clone_runs_crates_code(tcx, typing_env, v, &mut IndexSet::default()))
     };
     let runs_code = steps_run_code(tcx, typing_env, a)
         || a.walk().any(|part| part.as_type().is_some_and(clones_own))

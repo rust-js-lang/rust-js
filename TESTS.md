@@ -3,7 +3,12 @@
 How these suites find wrong answers, and what each has found, is in
 [docs/finding-wrong-answers.md](docs/finding-wrong-answers.md).
 
-Corpus recount on 2026-11-15: 2,554 Rust programs. The new
+Corpus recount on 2026-11-15: 2,559 Rust programs. The new
+`enum_variants_of_the_same_fields_copied_and_compared_once.rs` covers a
+tagged enum's variants of the same fields cloned and compared once, one
+test of them all, and test/type-depth.test.ts an enum chain of every
+derive 10, 20 and 40 deep, each build, its JS growing with its depth, not as its variants to its power (#1821).
+The new
 `glue_dropped_items_passed_from_a_vecs_back.rs` covers items whose drop is
 their glue passed over from a `Vec`'s back, each dropped front to back
 (#1854), and `reversed_map_stepped_from_its_back.rs` a `rev()` stepped

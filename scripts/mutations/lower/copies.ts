@@ -540,4 +540,22 @@ export const mutations: Mutation[] = [
     replace: "                let fields = match self.own_object_fields(ty).filter(|_| false) {\n                    Some(own) => own.into_iter().map(|(name, t, _)| (name, t)).collect(),\n                    None => Self::named_fields(fields),\n                };\n                for (name, t) in fields {\n                    if inline(t) {",
     tests: ["test/lowering.test.ts", "-t", "a copy of a struct with a flattened field reads its own keys alone"],
   },
+  {
+    name: "variant-groups-never-merged",
+    breaks: "variants of the same fields are each copied, cloned and compared apart, each with its own test, so a nested enum's copy is written once a variant, as 4 to the power of its depth, and a `Result<T, T>`'s clone tests `Ok` and `Err` for the same `{ ...value, _0: .. }` (#1821)",
+    file: "src/lower/copies.rs",
+    find: "            match (groups.copied.iter_mut()).find(|g| g.fields == fields && !own && !alone(g.first, &g.fields)) {\n",
+    replace: "            match (groups.copied.iter_mut()).find(|_| false) {\n",
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^(enum_variants_of_the_same_fields_copied_and_compared_once|clone_from_of_a_result_given_to_generic_code).rs$"],
+  },
+  {
+    name: "variants-tested-by-the-group",
+    breaks: "where one group's are all the variants copied, its test is still of them, `e.TAG === \"First\" || e.TAG === \"Second\" || ..`, not of the fewer others, `e === \"Empty\" ? e : ..`, nor none at all, `{ ...value, _0: .. }` of a `Result<T, T>` (#1821)",
+    file: "src/lower/copies.rs",
+    find: "            && others.len() < indices.len()\n",
+    replace: "            && others.len() > usize::MAX - 1\n",
+    snapshots: true,
+    tests: ["test/corpus.test.ts", "-t", "^(enum_variants_of_the_same_fields_copied_and_compared_once|clone_from_of_a_result_given_to_generic_code).rs$"],
+  },
 ];

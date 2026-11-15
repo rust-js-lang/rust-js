@@ -38,8 +38,8 @@ export const mutations: Mutation[] = [
     name: "default-of-vec-may-panic",
     breaks: "an empty collection's default, which makes no item, is taken to panic as its item's may, a guard where none is needed (#902)",
     file: "src/lower/std_impls/defaults.rs",
-    find: "            _ => false,\n        };\n        seen.pop();\n",
-    replace: "            ty::Adt(_, args) => args.types().any(|arg| self.default_may_panic_in(arg, seen)),\n            _ => false,\n        };\n        seen.pop();\n",
+    find: "            _ => false,\n        }\n    }\n",
+    replace: "            ty::Adt(_, args) => args.types().any(|arg| self.default_may_panic_in(arg, seen)),\n            _ => false,\n        }\n    }\n",
     tests: ["test/lowering-made-in-turn.test.ts"],
   },
   {

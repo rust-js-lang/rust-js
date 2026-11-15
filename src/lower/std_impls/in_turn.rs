@@ -3,6 +3,7 @@
 //! parts made before it are dropped as it unwinds, `$madeInTurn` and
 //! `$madeEach` (ADR 1102, #897, #902).
 
+use crate::collections::IndexSet;
 use crate::js::{self, Expr, StmtKind};
 use crate::lower::drops::Drops;
 use crate::lower::temporary_names::Role;
@@ -20,19 +21,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// opaque type's, anyone's (#708, #897). The one answer, which what
     /// clones as it steps and what's made in turn ask.
     pub(in crate::lower) fn clone_may_panic(&self, ty: Ty<'tcx>) -> bool {
-        self.clone_may_panic_in(ty, &mut Vec::new())
+        self.clone_may_panic_in(ty, &mut IndexSet::default())
     }
 
-    fn clone_may_panic_in(&self, ty: Ty<'tcx>, seen: &mut Vec<Ty<'tcx>>) -> bool {
-        if self.is_copy(ty) || seen.contains(&ty) {
+    /// `seen`, each type asked already: a type's answer is whether it
+    /// reaches one whose clone may panic, so each is asked once, not once
+    /// for each way to it, as a nested enum's four variants of the same
+    /// type made it 4 to the power of its depth (#1821).
+    fn clone_may_panic_in(&self, ty: Ty<'tcx>, seen: &mut IndexSet<Ty<'tcx>>) -> bool {
+        if self.is_copy(ty) || !seen.insert(ty) {
             return false;
         }
         if let ty::Param(_) | ty::Dynamic(..) | ty::Alias(..) = ty.kind() {
             return true;
         }
-        seen.push(ty);
         let tr = ty::TraitRef::new(self.tcx, self.clone_trait(), [ty]);
-        let may = match ty.kind() {
+
+        match ty.kind() {
             _ if let Some(imp) = self.recognition().user_impl(tr) => self.impl_may_unwind(imp),
             ty::Adt(..) if self.is_rc(ty) || self.counted_rc(ty).is_some() || self.counted_weak(ty).is_some() => false,
             ty::Adt(adt, args) if self.krate.foreign.compiled_by_rust_js(adt.did()) => {
@@ -45,9 +50,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 (args.as_closure().upvar_tys().iter()).any(|upvar| self.clone_may_panic_in(upvar, seen))
             }
             _ => false,
-        };
-        seen.pop();
-        may
+        }
     }
 
     /// Which of a value's parts, made in turn, each its type and whether
