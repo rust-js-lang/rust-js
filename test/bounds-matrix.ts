@@ -535,7 +535,7 @@ export function programs(): Record<string, string> {
       all[`${holderName}__${testName}`] = `${decls}\n${fns.join("\n")}\nfn main() {\n${calls.join("\n")}\n}\n`;
     }
   }
-  return { ...all, ...valuePrograms() };
+  return { ...all, ...valuePrograms(), ...shapePrograms() };
 }
 
 /** The callee's test: the index in a function of its own, given the
@@ -768,4 +768,545 @@ function valuePrograms(): Record<string, string> {
     }
   }
   return all;
+}
+
+// The shape family: each rule the audit's ablation found proving corpus
+// sites but no matrix row, its own shape, a control its rule proves and
+// each write that would break the rule run against native (rustc-tests.yml
+// `ablation`'s gaps). Where nothing between can break the proof, a
+// quotient's or a live slice's length sum, the control alone holds the rule.
+
+const shapeDecls = `use std::any::Any;
+use std::cell::{Cell, RefCell};
+use std::panic::{self, AssertUnwindSafe};
+
+fn message(payload: Box<dyn Any + Send>) -> String {
+    if let Some(s) = payload.downcast_ref::<&str>() {
+        s.to_string()
+    } else if let Some(s) = payload.downcast_ref::<String>() {
+        s.clone()
+    } else {
+        "another payload".to_string()
+    }
+}
+
+fn check<T: std::fmt::Debug>(what: &str, f: impl FnOnce() -> T) {
+    match panic::catch_unwind(AssertUnwindSafe(f)) {
+        Ok(value) => println!("{what}: {value:?}"),
+        Err(payload) => println!("{what}: {}", message(payload)),
+    }
+}
+`;
+
+/** Each shape: its functions, and the calls `main` checks of them. */
+const shapes: Record<string, { fns: string; calls: string[] }> = {
+  // `x != 0` narrows `x` past its least, so `x - 1` never wraps: an
+  // iterator's `next`. Not past a write of 0 between.
+  unequal: {
+    fns: `struct Count {
+    n: u32,
+}
+
+fn next(c: &mut Count) -> u32 {
+    if c.n != 0 {
+        c.n -= 1;
+        c.n
+    } else {
+        99
+    }
+}
+
+fn zeroed(c: &mut Count) -> u32 {
+    if c.n != 0 {
+        c.n = 0;
+        c.n -= 1;
+        c.n
+    } else {
+        99
+    }
+}
+
+fn reset(c: &mut Count) {
+    c.n = 0;
+}
+
+fn reset_between(c: &mut Count) -> u32 {
+    if c.n != 0 {
+        reset(c);
+        c.n -= 1;
+        c.n
+    } else {
+        99
+    }
+}
+
+fn through_a_cell(n: &Cell<u32>, cut: &dyn Fn()) -> u32 {
+    if n.get() != 0 {
+        cut();
+        n.get() - 1
+    } else {
+        99
+    }
+}
+`,
+    calls: [
+      `check("next", || next(&mut Count { n: 3 }))`,
+      `check("zeroed", || zeroed(&mut Count { n: 3 }))`,
+      `check("reset between", || reset_between(&mut Count { n: 3 }))`,
+      `check("through a cell", || { let n = Cell::new(3); through_a_cell(&n, &|| n.set(0)) })`,
+    ],
+  },
+  // Two lengths summed never wrap: no allocation holds `usize::MAX`.
+  lengths: {
+    fns: `fn summed(a: &[u32], b: &[u32]) -> usize {
+    a.len() + b.len()
+}
+
+fn text_summed(a: &str, b: &str) -> usize {
+    a.len() + b.len()
+}
+
+fn grown(mut a: String, b: &str) -> usize {
+    a.push_str(b);
+    a.len() + b.len()
+}
+`,
+    calls: [`check("summed", || summed(&[1, 2], &[3]))`, `check("text summed", || text_summed("ab", "cde"))`, `check("grown", || grown(String::from("ab"), "cde"))`],
+  },
+  // An array's length is its type's: `keys[..6]` of a `[i32; 11]`.
+  array_typed: {
+    fns: `fn head(keys: &[i32; 11]) -> i32 {
+    keys[..6].iter().sum()
+}
+
+fn head_of(keys: &[i32; 11], k: usize) -> i32 {
+    keys[..k].iter().sum()
+}
+`,
+    calls: [`check("head", || head(&[1; 11]))`, `check("head of 12", || head_of(&[1; 11], 12))`],
+  },
+  // A match candidate's imaginary edge is no way into an arm: of `1 =>`,
+  // the length is one. Not past a clear in the arm.
+  match_arms: {
+    fns: `fn arm(list: &[u32]) -> u32 {
+    match list.len() {
+        0 => 0,
+        1 => list[0],
+        _ => list[1],
+    }
+}
+
+fn cleared_in_its_arm(list: &mut Vec<u32>) -> u32 {
+    match list.len() {
+        0 => 0,
+        1 => {
+            list.clear();
+            list[0]
+        }
+        _ => list[1],
+    }
+}
+`,
+    calls: [`check("arm", || arm(&[7]))`, `check("cleared in its arm", || cleared_in_its_arm(&mut vec![7]))`],
+  },
+  // A counter a `continue` brings back as it was is widened to the
+  // constants the body compares it with, not its type's: its `+ 1` never
+  // wraps. Not past a write through a \`&mut\` of it.
+  widened: {
+    fns: `fn counted() -> u32 {
+    let mut count = 0u32;
+    let mut i = 0;
+    while i < 20 {
+        i += 1;
+        if count > 10 {
+            continue;
+        }
+        count += 1;
+    }
+    count
+}
+
+fn most(n: &mut u32) {
+    *n = u32::MAX;
+}
+
+fn written_between() -> u32 {
+    let mut count = 0u32;
+    let mut i = 0;
+    while i < 20 {
+        i += 1;
+        if count > 10 {
+            continue;
+        }
+        most(&mut count);
+        count = count.wrapping_add(0);
+        count += 1;
+    }
+    count
+}
+`,
+    calls: [`check("counted", counted)`, `check("written between", written_between)`],
+  },
+  // `n == 1` of a held length raises its slice's least: `keys[0]`. Not of
+  // the slice made another between.
+  held_length: {
+    fns: `fn first(keys: &[u32]) -> u32 {
+    let n = keys.len();
+    if n == 1 { keys[0] } else { 0 }
+}
+
+fn first_of_another(keys: &[u32]) -> u32 {
+    let mut keys = keys;
+    let n = keys.len();
+    if n == 1 {
+        keys = &[];
+        keys[0]
+    } else {
+        0
+    }
+}
+`,
+    calls: [`check("first", || first(&[5]))`, `check("first of another", || first_of_another(&[5]))`],
+  },
+  // An index a slice's `enumerate()` gives, and past `skip(n)`, is below
+  // that slice's length: not another's.
+  enumerated: {
+    fns: `fn total(terraces: &[u32]) -> u32 {
+    let mut total = 0;
+    for (i, _) in terraces.iter().enumerate() {
+        total += terraces[i];
+    }
+    total
+}
+
+fn skipped(candidates: &[u32]) -> u32 {
+    let mut total = 0;
+    for (index, _) in candidates.iter().enumerate().skip(1) {
+        total += candidates[index];
+    }
+    total
+}
+
+fn of_another(a: &[u32], b: &[u32]) -> u32 {
+    let mut total = 0;
+    for (i, _) in a.iter().enumerate() {
+        total += b[i];
+    }
+    total
+}
+
+fn skipped_of_another(a: &[u32], b: &[u32]) -> u32 {
+    let mut total = 0;
+    for (index, _) in a.iter().enumerate().skip(1) {
+        total += b[index];
+    }
+    total
+}
+`,
+    calls: [
+      `check("total", || total(&[1, 2, 3]))`,
+      `check("skipped", || skipped(&[1, 2, 3]))`,
+      `check("of another", || of_another(&[1, 2, 3], &[1]))`,
+      `check("skipped of another", || skipped_of_another(&[1, 2, 3], &[1, 2]))`,
+    ],
+  },
+  // An index an item was given at is below the length after: a drain to
+  // it. Not past a callback that may clear the cell.
+  given_back: {
+    fns: `fn settled(q: &RefCell<Vec<u32>>, i: usize) -> usize {
+    q.borrow_mut()[i] = 0;
+    q.borrow_mut().drain(0..i).count()
+}
+
+fn cleared_between(q: &RefCell<Vec<u32>>, i: usize, cut: &dyn Fn()) -> usize {
+    q.borrow_mut()[i] = 0;
+    cut();
+    q.borrow_mut().drain(0..i).count()
+}
+`,
+    calls: [
+      `check("settled", || settled(&RefCell::new(vec![1, 2, 3]), 2))`,
+      `check("cleared between", || { let q = RefCell::new(vec![1, 2, 3]); cleared_between(&q, 2, &|| q.borrow_mut().clear()) })`,
+    ],
+  },
+  // A quotient by a constant is at most what it divides: `n / 2 + n / 4`
+  // never wraps.
+  quotients: {
+    fns: `fn halves(n: u32) -> u32 {
+    n / 2 + n / 4
+}
+`,
+    calls: [`check("halves", || halves(u32::MAX))`],
+  },
+  // A generic constant bounds its loop: `i += 1` below \`N\` never wraps.
+  // Not past a write through a \`&mut\` of the counter.
+  generic_bound: {
+    fns: `fn up_to<const N: usize>() -> usize {
+    let mut i = 0;
+    while i < N {
+        i += 1;
+    }
+    i
+}
+
+fn most(n: &mut usize) {
+    *n = usize::MAX;
+}
+
+fn written_up_to<const N: usize>() -> usize {
+    let mut i = 0;
+    while i < N {
+        most(&mut i);
+        i += 1;
+        return i;
+    }
+    i
+}
+`,
+    calls: [`check("up to", up_to::<4>)`, `check("written up to", written_up_to::<4>)`],
+  },
+  // A counter down from a length: \`a[s - 1]\` under \`s > 0\`, its relation
+  // kept through the loop's join. Not of the slice made shorter in it.
+  counted_down: {
+    fns: `fn down(a: &[u32]) -> u32 {
+    let mut total = 0;
+    let mut s = a.len();
+    while s > 0 {
+        total += a[s - 1];
+        s -= 1;
+    }
+    total
+}
+
+fn down_of_shorter(a: &[u32]) -> u32 {
+    let mut a = a;
+    let mut total = 0;
+    let mut s = a.len();
+    while s > 0 {
+        a = &a[..1];
+        total += a[s - 1];
+        s -= 1;
+    }
+    total
+}
+`,
+    calls: [`check("down", || down(&[1, 2, 3]))`, `check("down of shorter", || down_of_shorter(&[1, 2, 3]))`],
+  },
+  // What a value is below bounds its interval: \`v[i >> 1]\` under
+  // \`i < v.len()\`. Not of the slice made another between.
+  shifted: {
+    fns: `fn half(v: &[u32], i: usize) -> u32 {
+    if i < v.len() { v[i >> 1] } else { 0 }
+}
+
+fn half_of_another(v: &[u32], i: usize) -> u32 {
+    let mut v = v;
+    if i < v.len() {
+        v = &[];
+        v[i >> 1]
+    } else {
+        0
+    }
+}
+`,
+    calls: [`check("half", || half(&[1, 2, 3, 4], 3))`, `check("half of another", || half_of_another(&[1, 2, 3, 4], 3))`],
+  },
+  // \`vec![x; v.len()]\` is as long as \`v\`. Not past a pop of it.
+  as_long: {
+    fns: `fn left(terraces: &[u32], k: usize) -> u32 {
+    let left = vec![0u32; terraces.len()];
+    if k < terraces.len() { left[k] } else { 9 }
+}
+
+fn popped(terraces: &[u32], k: usize) -> u32 {
+    let mut left = vec![0u32; terraces.len()];
+    if k < terraces.len() {
+        left.pop();
+        left[k]
+    } else {
+        9
+    }
+}
+`,
+    calls: [`check("left", || left(&[1, 2, 3], 2))`, `check("popped", || popped(&[1, 2, 3], 2))`],
+  },
+  // A macro's repeated index, one in bounds and one not: each checked as
+  // its own (MIR's bounds check is joined to its own index).
+  repeated: {
+    fns: `macro_rules! pick {
+    ($v:ident, $($i:expr),*) => {
+        [$($v[$i]),*]
+    };
+}
+
+fn picked(v: &[u32; 4], k: usize) -> [u32; 2] {
+    pick!(v, 0, k)
+}
+`,
+    calls: [`check("picked", || picked(&[1, 2, 3, 4], 1))`, `check("picked past", || picked(&[1, 2, 3, 4], 9))`],
+  },
+  // A slice's \`get(i)\`'s \`Some\` puts \`i\` below its length: \`i += 1\` never
+  // The corpus's own shapes of five rules: a counter a `break` at a
+  // constant leaves, `k += 1` past `k == 60`; a slice's first index raising
+  // its least, `bytes[bytes.len() - 1]` past `bytes[0]`; a search's `v[i]`
+  // under `i != v.len()`, its relation kept through the loop's join;
+  // `i += 1` under `i < n` of a parameter, and past `signs[i]`, below its
+  // length; a macro's `$v[$i]` repeated of
+  // `k` and `k + 1` under `k < v.len()`. Each beside the write between that
+  // breaks it.
+  corpus_shapes: {
+    fns: `fn most(n: &mut u32) {
+    *n = u32::MAX;
+}
+
+fn to_sixty() -> u32 {
+    let mut k = 0u32;
+    loop {
+        if k == 60 {
+            break;
+        }
+        k += 1;
+    }
+    k
+}
+
+fn to_sixty_written() -> u32 {
+    let mut k = 0u32;
+    loop {
+        if k == 60 {
+            break;
+        }
+        most(&mut k);
+        k += 1;
+        return k;
+    }
+    k
+}
+
+fn ends(bytes: &[u8]) -> (u8, u8) {
+    (bytes[0], bytes[bytes.len() - 1])
+}
+
+fn ends_of_another(bytes: &[u8]) -> (u8, u8) {
+    let mut bytes = bytes;
+    let first = bytes[0];
+    bytes = &[];
+    // Through a u32, so its index is the same as JS's usize's.
+    (first, bytes[(bytes.len() as u32).wrapping_sub(1) as usize])
+}
+
+fn found(words: &[&str]) -> usize {
+    let mut i = 0;
+    loop {
+        if i == words.len() || words[i] == "stop" {
+            break;
+        }
+        i += 1;
+    }
+    i
+}
+
+fn found_of_shorter(words: &[&str]) -> usize {
+    let mut words = words;
+    let mut i = 0;
+    loop {
+        if i == words.len() || words[i] == "stop" {
+            break;
+        }
+        words = &words[..1];
+        i += 1;
+    }
+    i
+}
+
+fn counted_to(n: usize) -> usize {
+    let mut i = 0;
+    while i < n {
+        i += 1;
+    }
+    i
+}
+
+fn most_of(n: &mut usize) {
+    *n = usize::MAX;
+}
+
+fn counted_to_written(n: usize) -> usize {
+    let mut i = 0;
+    while i < n {
+        most_of(&mut i);
+        i += 1;
+        return i;
+    }
+    i
+}
+
+fn filled(items: &[i8]) -> Vec<i8> {
+    let mut signs = vec![0i8; items.len()];
+    let mut i = 0;
+    for &n in items {
+        signs[i] = -n;
+        i += 1;
+    }
+    signs
+}
+
+fn filled_written(items: &[i8]) -> usize {
+    let mut signs = vec![0i8; items.len()];
+    let mut i = 0;
+    for &n in items {
+        signs[i] = -n;
+        most_of(&mut i);
+        i += 1;
+        return i;
+    }
+    i
+}
+
+macro_rules! pick {
+    ($v:expr; $($i:expr),*) => {
+        [$($v[$i]),*]
+    };
+}
+
+fn pair(v: &[i32], k: usize) -> [i32; 2] {
+    if k < v.len() { pick!(v; k, k + 1) } else { [0, 0] }
+}
+`,
+    calls: [
+      `check("to sixty", to_sixty)`,
+      `check("to sixty written", to_sixty_written)`,
+      `check("ends", || ends(&[1, 2, 3]))`,
+      `check("ends of another", || ends_of_another(&[1, 2, 3]))`,
+      `check("found", || found(&["a", "stop"]))`,
+      `check("found of shorter", || found_of_shorter(&["a", "b", "c"]))`,
+      `check("counted to", || counted_to(5))`,
+      `check("counted to written", || counted_to_written(5))`,
+      `check("filled", || filled(&[4, -2, 7]))`,
+      `check("filled written", || filled_written(&[4, -2, 7]))`,
+      `check("pair", || pair(&[1, 2, 3], 1))`,
+      `check("pair past", || pair(&[1, 2, 3], 2))`,
+    ],
+  },
+  // wraps.
+  got: {
+    fns: `fn walked(items: &[u32]) -> u32 {
+    let mut total = 0;
+    let mut i = 0;
+    while let Some(&item) = items.get(i) {
+        total += item;
+        i += 1;
+    }
+    total
+}
+`,
+    calls: [`check("walked", || walked(&[1, 2, 3]))`],
+  },
+};
+
+/** The shape family's programs, `shape_<name>`. */
+function shapePrograms(): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(shapes).map(([name, s]) => [`shape_${name}`, `${shapeDecls}\n${s.fns}\nfn main() {\n${s.calls.map((c) => `    ${c};`).join("\n")}\n}\n`]),
+  );
 }
