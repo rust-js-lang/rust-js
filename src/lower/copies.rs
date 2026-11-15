@@ -794,30 +794,33 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.crosses_crates(ty) || (self.krate.mutated.types.iter()).any(|&mutated| self.instance_of(ty, mutated))
     }
 
-    /// Might another crate change `ty` in place (ADR 0100)? Any crate using a
-    /// library's type might, as its library's code may: this crate can't see
-    /// it, so it assumes it does, of a type whose values may be JS objects: a
-    /// fieldless enum's string can't change, an enum's variant with fields
-    /// can. A tuple or an array is any crate's, so in a crate using a
-    /// library, any may cross. A library's consumers' changes are their own,
-    /// who compile what of its copies them (ADR 0914, amended); but
-    /// `@rust-js/std`'s, compiled once for all (ADR 0561), are any crate's.
+    /// Might another crate change `ty` in place (ADR 0100)? A library's type,
+    /// or a tuple or an array, which is any crate's, where a library's
+    /// contract says its code changes one (`Foreign::changed_by_a_library`,
+    /// #1871), of a type whose values may be JS objects: a fieldless enum's
+    /// string can't change, an enum's variant with fields can. A library's
+    /// consumers' changes are their own, who compile what of its copies them
+    /// (ADR 0914, amended); but `@rust-js/std`'s, compiled once for all (ADR
+    /// 0561), are any crate's.
     pub(super) fn crosses_crates(&self, ty: Ty<'tcx>) -> bool {
+        let foreign = &self.krate.foreign;
         let shared = match ty.kind() {
             ty::Adt(adt, _) => {
-                self.krate.foreign.in_library(adt.did())
+                (foreign.in_library(adt.did()) && foreign.changed_by_a_library(ty))
                     || (self.krate.compiled_once && super::library::reachable(self.tcx, adt.did()))
             }
-            ty::Tuple(_) | ty::Array(..) => self.krate.compiled_once || self.krate.foreign.any(),
+            ty::Tuple(_) | ty::Array(..) => self.krate.compiled_once || foreign.changed_by_a_library(ty),
             _ => false,
         };
         shared && self.may_be_object(ty)
     }
 
-    /// Is `ty` a `Vec` type something may change (ADR 0052)? One another crate
-    /// can hold might be changed there, `vecs_changed_elsewhere`.
+    /// Is `ty` a `Vec` type something may change (ADR 0052)? One a library's
+    /// code changes too, as its contract says (#1871), and in
+    /// `@rust-js/std`, compiled once for all, any.
     pub(super) fn vec_changed(&self, ty: Ty<'tcx>) -> bool {
-        self.vecs_changed_elsewhere()
+        self.krate.compiled_once
+            || self.krate.foreign.changed_by_a_library(ty)
             || self
                 .krate
                 .changed_vecs
@@ -837,16 +840,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             self.is_std_type(changed, StdItem::Vec)
                 && matches!(changed.kind(), ty::Adt(_, args) if self.instance_of(item, args.type_at(0)))
         };
-        self.vecs_changed_elsewhere()
+        self.krate.compiled_once
+            || self.krate.foreign.changes_a_vec_of(item)
             || self.krate.changed_vecs.iter().any(|&changed| vec_of(changed))
             || self.contains_mutated(Ty::new_slice(self.tcx, item))
-    }
-
-    /// Might any `Vec` be changed where this crate can't see? One another
-    /// crate can hold might be changed there (ADR 0100): in a crate using a
-    /// library, or `@rust-js/std`, any may be (`crosses_crates`).
-    fn vecs_changed_elsewhere(&self) -> bool {
-        self.krate.compiled_once || self.krate.foreign.any()
     }
 
     /// Is `ty` one of the types `general` stands for? A type mutated in a

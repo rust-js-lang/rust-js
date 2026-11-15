@@ -6,7 +6,7 @@
 // server, and its declarations type-check under strict tsc.
 
 import { beforeAll, expect, test } from "bun:test";
-import { cpSync, writeFileSync } from "node:fs";
+import { cpSync, readFileSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -59,6 +59,13 @@ test("an app four crates deep over the react crate computes what native Rust doe
   const { js, crates: built } = await checkCargo({ manifestPath: manifest, toolchain: channel, compiler, offline: true, packageNames: ["app"] });
   // Each crate of the chain is rust-js's, each its own JS.
   expect(built.map((c) => c.crate).filter((name) => name in crates).sort()).toEqual(["app", "forms", "geometry", "kit", "primitives"]);
+  // What no crate changes in place is shared on its way through calls,
+  // geometry's `Rect` and `Placement` and a menu's `Vec` of names; its
+  // `Point`, which geometry's middleware moves, still copied (#1871).
+  const primitives = readFileSync(built.find((c) => c.crate === "primitives")!.js!, "utf8");
+  expect(primitives).toContain("computePosition(rect, value, boundary, placement, value$1)");
+  expect(primitives).not.toContain("items.slice()");
+  expect(primitives).toContain("point: { ...state.point }");
   const app = await import(js!);
   const native = run(cargo(manifest, "run", "-p", "check"));
   expect(app.report()).toBe(native);

@@ -72,7 +72,7 @@ new one is m6-react's to see first (#1462).
 | `Library.modules` | local | its modules, each a namespace a consumer may re-export | |
 | `Library.counted_rcs` | closed-world: agrees | what the `Rc`s it counts point at | counts each as it does (ADR 0852) |
 | `Library.with_this_arguments` | summary | the parameters of each `with_this` function it makes that reads `arguments` | |
-| `Library.changed` | closed-world: compiles its own | what its code changes in place, which its JS copies where Rust copies | compiles its own of a function where it may copy what the consumer changes and it doesn't (ADR 0914) |
+| `Library.changed` | closed-world: compiles its own | what its code changes in place, which its JS copies where Rust copies | compiles its own of a function where it may copy what the consumer changes and it doesn't (ADR 0914); and copies a library's type, a tuple, an array or a `Vec` where a library changes one, so all a crate's JS shares is changed by none (ADR 0100, amended, #1871) |
 | `Library.ref_cells` | holds | `RefCellFacts` | |
 | `Library.identities` | summary | its types equal only to themselves, by their impls | |
 | `Library.keyed` | local | its enums told apart by their keys, no tag, by their shape | |

@@ -110,35 +110,29 @@ export const mutations: Mutation[] = [
     breaks:
       "a library's type is read without a copy by a crate that never changes it itself, so the copy it kept of a `Shape` its holder has is the object the library then grows in place",
     file: "src/lower/copies.rs",
-    find: "                self.krate.foreign.in_library(adt.did())\n                    || (self.krate.compiled_once",
-    replace:
-      "                false\n                    || (self.krate.compiled_once",
+    find: "                (foreign.in_library(adt.did()) && foreign.changed_by_a_library(ty))\n",
+    replace: "                false\n",
     tests: [
       "test/crates.test.ts",
       "-t",
-      "two crates: copy_enum_library_changed",
+      "(two crates: copy_enum_library_changed|three crates: library_type_changed_by_another_library)",
     ],
   },
   {
     name: "library-vec-shared",
     breaks:
-      "a crate using a library clones a `Vec` without a copy, which the library changes through its own method",
+      "a component's `Vec` of its props, given to a library's function that pushes into it, isn't copied first, so React's second render is given the pushed one (#1871)",
     file: "src/lower/copies.rs",
-    find: "        self.krate.compiled_once || self.krate.foreign.any()\n",
-    replace: "        self.krate.compiled_once && self.krate.foreign.any()\n",
-    tests: [
-      "test/crates.test.ts",
-      "test/cargo-workspace.test.ts",
-      "-t",
-      "prints what native",
-    ],
+    find: "            || self.krate.foreign.changed_by_a_library(ty)\n            || self",
+    replace: "            || self",
+    tests: ["test/react-kept.test.ts", "-t", "a library changes in place"],
   },
   {
     name: "library-tuple-shared",
     breaks:
       "a crate's copy of a tuple, which a library changes through a `&mut`, is the tuple, so both change",
     file: "src/lower/copies.rs",
-    find: "            ty::Tuple(_) | ty::Array(..) => self.krate.compiled_once || self.krate.foreign.any(),\n",
+    find: "            ty::Tuple(_) | ty::Array(..) => self.krate.compiled_once || foreign.changed_by_a_library(ty),\n",
     replace: "            ty::Tuple(_) | ty::Array(..) => false,\n",
     tests: ["test/crates.test.ts", "-t", "two crates: tuple"],
   },
@@ -557,5 +551,13 @@ export const mutations: Mutation[] = [
     replace: "            && others.len() > usize::MAX - 1\n",
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^(enum_variants_of_the_same_fields_copied_and_compared_once|clone_from_of_a_result_given_to_generic_code).rs$"],
+  },
+  {
+    name: "library-vec-items-shared",
+    breaks: "a clone of a boxed slice whose `Vec` a library changes in place, `mid::pushed(boxed.clone().into_vec())`, is the array, so the library's push changes the crate's own (#1871)",
+    file: "src/lower/copies.rs",
+    find: "            || self.krate.foreign.changes_a_vec_of(item)\n",
+    replace: "",
+    tests: ["test/crates.test.ts", "-t", "three crates: library_type_changed_by_another_library"],
   },
 ];

@@ -273,3 +273,25 @@ pub fn Ranged(mut props: RangedProps) -> JSX::Element {
   expect(lib.Ranged(props).props.children).toBe(4);
   expect([props.step, props.depth.at]).toEqual([2, 0]);
 });
+
+// A component's `Vec` of its props, moved into a library's function that
+// pushes into it: copied first, as the library's contract says its code
+// changes one; one no crate changes is given as it is (#1871,
+// test/deep-chain.test.ts).
+test("a component's props a library changes in place are copied first", async () => {
+  const dir = fixture("react-kept-library");
+  const out = (crate: string) => join(dir, crate);
+  const crate = (name: string, source: string) => writeFileSync(join(dir, `${name}.rs`), source);
+  crate("dep", `pub fn tagged(mut names: Vec<String>) -> Vec<String> {\n    names.push("tag".to_string());\n    names\n}\n`);
+  crate("app", `#![allow(non_snake_case)]\nuse react::{JSX, jsx};\n\npub struct NamesProps {\n    pub names: Vec<String>,\n}\n\npub fn Tagged(props: NamesProps) -> JSX::Element {\n    let names = dep::tagged(props.names);\n    jsx! { <i>{names.len()}</i> }\n}\n`);
+  run([compiler, join(dir, "dep.rs"), "-o", join(out("dep"), "lib.js"), "--library", "--manifest", join(out("dep"), "lib.manifest.json"),
+    "--", "--crate-name", "dep", `--emit=metadata=${join(out("dep"), "libdep.rmeta")}`]);
+  run([compiler, join(dir, "app.rs"), "-o", join(out("app"), "lib.js"), "--dependency", join(out("dep"), "lib.manifest.json"),
+    "--", "--crate-name", "app", "--extern", `dep=${join(out("dep"), "libdep.rmeta")}`, "-L", `dependency=${out("dep")}`,
+    "--extern", `react=${join(target, "libreact.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(out("app"), "lib.jsx"), "utf8");
+  expect(js).toContain("tagged(props.names.slice())");
+  const lib = await import(join(out("app"), "lib.jsx"));
+  const props = { names: ["a"] };
+  expect([lib.Tagged(props).props.children, lib.Tagged(props).props.children, props.names]).toEqual([2, 2, ["a"]]);
+});

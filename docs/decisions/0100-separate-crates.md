@@ -443,3 +443,53 @@ bindings calling one copy, it's a compile error. Held by
 `test/binding-releases.test.ts`, and the mutations of
 `scripts/mutations/lower/library/bound.ts`.
 
+## Amendment (2026-11-15): a library's type is copied where a library changes it (#1871)
+
+A crate copied a library's `Copy` type, every tuple and array, and every
+`Vec` wherever it read one, whether or not anything changed it: "a
+consumer still assumes a library may change what it hands over". In m6-lily's
+deep chain, `use_floating`'s `boundary: Rect` and `placement: Placement`
+were copied four times on their way into geometry's `computePosition`,
+two copies a closure's captures, and `Menu`'s `items` was
+`items.slice()`, though no crate changed one.
+
+Each library's contract already says what its code changes in place,
+`Library.changed`: its mutated types and changed `Vec`s, which its own JS
+copies where Rust does (ADR 0914, amended). **A crate copies a library's
+type, a tuple, an array or a `Vec` where one of its libraries' contracts
+says it changes one, or the crate itself does**
+(`Foreign::changed_by_a_library`, `changes_a_vec_of`, read by
+`copies::crosses_crates`, `vec_changed` and `items_changed`), each of
+them as `may_be_shape` matches, a type parameter's `_` any type. What a
+library's JS shares with another's is changed only by code that changes
+it: the crate's own, a library's, which its contract lists, or a
+consumer's, which compiles its own of what may copy it (ADR 0914,
+amended). `@rust-js/std`, compiled once for every consumer, still copies
+what any may change; its contract's own changes are its calls', which the
+crate's analysis sees, as before.
+
+```js
+// primitives, before
+const props = { ...boundary };
+const props$1 = { ...placement };
+state = computePosition(rect, value, { ...props }, { ...props$1 }, value$1);
+// after: geometry's middleware moves a `Point`, still copied, and nothing a `Rect`
+state = computePosition(rect, value, boundary, placement, value$1);
+```
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none, a copy no code
+changes is told from the object it copies by nothing, so the object is
+shared, as a crate's own type nothing changes always was.
+
+Held by `test/deep-chain.test.ts` (primitives' call of `computePosition`,
+no `items.slice()`, its `Point` copied); `test/crates/triples/
+library_type_changed_by_another_library`, where `mid` changes `dep`'s
+`Spot` by value and through a `&mut` and pushes into a `Vec` of names,
+a clone's and a boxed slice's, which neither `dep` nor `app` changes,
+against native; `test/react-kept.test.ts`, a component's `Vec` of its
+props given to a library that pushes into it, copied first; and the pairs
+`copy_enum_library_changed` and `tuple`, a library changing its own. And
+the mutations `library-type-shared`, `library-vec-shared`,
+`library-tuple-shared`, `library-vec-items-shared` (`copies.ts`),
+`library-changes-unread` and `library-changes-anything` (`library.ts`).
+

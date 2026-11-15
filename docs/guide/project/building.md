@@ -295,7 +295,11 @@ copies what its own crate changes in place; a crate that changes a value
 a library's function copies, of a type the library never changes itself,
 compiles its own of that function, which copies it. One of a type the
 library changes too, whose JS copies it already, is imported
-([ADR 0914, amended](../../decisions/0914-a-librarys-generic-function-is-its-programs.md)):
+([ADR 0914, amended](../../decisions/0914-a-librarys-generic-function-is-its-programs.md)).
+And a crate copies a library's `Copy` type, a tuple or a `Vec` only where
+a library's contract says its code changes one, or the crate does: one
+no crate changes is passed on as it is
+([ADR 0100, amended](../../decisions/0100-separate-crates.md), #1871):
 
 ```
 models/src/lib.rs     pub fn first(points: &[Point]) -> Point { points[0] }

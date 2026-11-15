@@ -479,7 +479,7 @@ impl ContractField {
             LibraryChanged => (
                 "Library.changed",
                 ClosedWorld(CompileOwn(
-                    "compiles its own of a function where it may copy what the consumer changes and it doesn't (ADR 0914)",
+                    "compiles its own of a function where it may copy what the consumer changes and it doesn't (ADR 0914); and copies a library's type, a tuple, an array or a `Vec` where a library changes one, so all a crate's JS shares is changed by none (ADR 0100, amended, #1871)",
                 )),
                 "what its code changes in place, which its JS copies where Rust copies",
             ),
