@@ -141,19 +141,26 @@ test("every mutation's corpus, diagnostics and limitations tests are there", () 
   const diagnostics = [
     ...readFileSync(join(root, "test/diagnostics.test.ts"), "utf8").matchAll(/^ {2}\[\s*(["'])(.+?)\1,|test\(\s*(["'])(.+?)\3/gm),
   ].map((m) => m[2] ?? m[4]);
-  const named = (file: string): string[] | undefined =>
-    ({
-      "test/corpus.test.ts": cases,
-      "test/diagnostics.test.ts": diagnostics,
-      "test/limitations.test.ts": limitations().map((l) => l.title),
-    })[file];
+  // Each file's names read once, and each pattern tried once of a file:
+  // made again for each mutation, the guide's limitations parsed each
+  // time, it took 2 s alone, past bun's 5 s on a loaded machine.
+  const named: Record<string, string[]> = {
+    "test/corpus.test.ts": cases,
+    "test/diagnostics.test.ts": diagnostics,
+    "test/limitations.test.ts": limitations().map((l) => l.title),
+  };
+  const found = new Map<string, boolean>();
   const missing = mutations.filter((m) => {
     if (m.tests === undefined) return false;
     const at = m.tests.indexOf("-t");
-    const names = named(m.tests[0]);
+    const names = named[m.tests[0]!];
     if (at < 0 || names === undefined) return false;
-    const pattern = new RegExp(m.tests[at + 1]);
-    return !names.some((name) => pattern.test(name));
+    const key = `${m.tests[0]}\n${m.tests[at + 1]}`;
+    if (!found.has(key)) {
+      const pattern = new RegExp(m.tests[at + 1]!);
+      found.set(key, names.some((name) => pattern.test(name)));
+    }
+    return !found.get(key);
   });
   expect(missing.map((m) => `${m.name}: ${m.tests!.join(" ")}`)).toEqual([]);
 });
