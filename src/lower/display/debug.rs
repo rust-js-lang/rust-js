@@ -94,7 +94,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A `File` shows its descriptor, path and modes, std's of unix, and a
         // `FileType` what it is (#1397).
         if let Some(name) = crate::lower::recognition::fs_type(self.tcx, ty)
-            && let helper @ Some(_) = match name {
+            && let helper @ Some(_) = match name.as_str() {
                 "File" => Some("$fileDebug"),
                 "FileType" => Some("$fileTypeDebug"),
                 _ => None,

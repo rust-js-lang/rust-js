@@ -63,6 +63,7 @@ std_paths! {
     BorrowCow => "std::borrow::Cow",
     BorrowToOwned => "std::borrow::ToOwned",
     BoxedBox => "std::boxed::Box",
+    CharMod => "std::char",
     CharDecodeUtf16 => "std::char::DecodeUtf16",
     CharToLowercase => "std::char::ToLowercase",
     CharToUppercase => "std::char::ToUppercase",
@@ -86,6 +87,7 @@ std_paths! {
     EnvVarOsFn => "std::env::var_os",
     EnvVarsFn => "std::env::vars",
     EnvVarsOsFn => "std::env::vars_os",
+    F64ConstsMod => "std::f64::consts",
     FfiCStr => "std::ffi::CStr",
     FfiCString => "std::ffi::CString",
     FfiFromVecWithNulError => "std::ffi::FromVecWithNulError",
@@ -98,7 +100,12 @@ std_paths! {
     OsStringIntoString => "std::ffi::OsString::into_string",
     FfiVaList => "std::ffi::VaList",
     VaListNextArg => "std::ffi::VaList::<'f>::next_arg",
+    FmtMod => "std::fmt",
     FmtArguments => "std::fmt::Arguments",
+    FmtFormatFn => "std::fmt::format",
+    RtArgument => "std::fmt::rt::Argument",
+    FmtWriteFn => "std::fmt::write",
+    FsMod => "std::fs",
     DirEntryFileName => "std::fs::DirEntry::file_name",
     DirEntryFileType => "std::fs::DirEntry::file_type",
     DirEntryMetadata => "std::fs::DirEntry::metadata",
@@ -149,6 +156,7 @@ std_paths! {
     HashSipHasher => "std::hash::SipHasher",
     SipHasherNew => "std::hash::SipHasher::new",
     SipHasherNewWithKeys => "std::hash::SipHasher::new_with_keys",
+    HintMod => "std::hint",
     HintAssertUncheckedFn => "std::hint::assert_unchecked",
     HintSpinLoopFn => "std::hint::spin_loop",
     HintUnreachableUncheckedFn => "std::hint::unreachable_unchecked",
@@ -231,6 +239,8 @@ std_paths! {
     MemDiscriminantFn => "std::mem::discriminant",
     MemNeedsDropFn => "std::mem::needs_drop",
     MemTakeFn => "std::mem::take",
+    MemTransmuteCopyFn => "std::mem::transmute_copy",
+    MemUninitializedFn => "std::mem::uninitialized",
     MemZeroedFn => "std::mem::zeroed",
     NetIpAddr => "std::net::IpAddr",
     NetIpv4Addr => "std::net::Ipv4Addr",
@@ -243,11 +253,13 @@ std_paths! {
     NonZeroNew => "std::num::NonZero::<T>::new",
     NonZeroNewUnchecked => "std::num::NonZero::<T>::new_unchecked",
     ParseIntErrorKind => "std::num::ParseIntError::kind",
+    NumNicheTypesMod => "std::num::niche_types",
     OptionIntoIter => "std::option::IntoIter",
     PanicAssertUnwindSafe => "std::panic::AssertUnwindSafe",
     PanicLocation => "std::panic::Location",
     PanicCatchUnwindFn => "std::panic::catch_unwind",
     PanicResumeUnwindFn => "std::panic::resume_unwind",
+    PanickingMod => "std::panicking",
     PathAncestors => "std::path::Ancestors",
     PathComponent => "std::path::Component",
     ComponentAsOsStr => "std::path::Component::<'a>::as_os_str",
@@ -288,6 +300,7 @@ std_paths! {
     PathStripPrefixError => "std::path::StripPrefixError",
     PinNewUncheckedInHelperFn => "std::pin::pin_new_unchecked_in_helper",
     ProcessExitFn => "std::process::exit",
+    PtrMod => "std::ptr",
     PtrNonNull => "std::ptr::NonNull",
     NonNullDangling => "std::ptr::NonNull::<T>::dangling",
     PtrAddrEqFn => "std::ptr::addr_eq",
@@ -331,11 +344,13 @@ std_paths! {
     SliceFromRefFn => "std::slice::from_ref",
     MemchrFn => "std::slice::memchr::memchr",
     MemchrMemrchrFn => "std::slice::memchr::memrchr",
+    StrMod => "std::str",
     StrFromUtf8 => "std::str::<impl str>::from_utf8",
     StrFromUtf8Mut => "std::str::<impl str>::from_utf8_mut",
     StrFromUtf8Unchecked => "std::str::<impl str>::from_utf8_unchecked",
     StrFromUtf8UncheckedMut => "std::str::<impl str>::from_utf8_unchecked_mut",
     StrCharIndices => "std::str::CharIndices",
+    StrFromStr => "std::str::FromStr",
     Utf8ChunkInvalid => "std::str::Utf8Chunk::<'a>::invalid",
     Utf8ChunkValid => "std::str::Utf8Chunk::<'a>::valid",
     StrUtf8Error => "std::str::Utf8Error",
@@ -357,6 +372,8 @@ std_paths! {
     SyncArc => "std::sync::Arc",
     SyncPoisonError => "std::sync::PoisonError",
     SyncTryLockError => "std::sync::TryLockError",
+    SyncMpmcMod => "std::sync::mpmc",
+    SyncMpscMod => "std::sync::mpsc",
     MpscReceiver => "std::sync::mpsc::Receiver",
     MpscSender => "std::sync::mpsc::Sender",
     MpscChannelFn => "std::sync::mpsc::channel",
@@ -570,4 +587,73 @@ fn method_of(tcx: TyCtxt<'_>, imp: DefId) -> Option<MethodOf> {
         ty::Slice(_) => MethodOf::Slice,
         _ => return None,
     })
+}
+
+/// std's modules a recognizer asks what's under, rows of the table: each of
+/// `std`'s, `core`'s and `alloc`'s module of its path, as std's path of an
+/// item writes any of them `std::`, `core::fmt::Arguments` and
+/// `alloc::fmt::format` both under `std::fmt`.
+const STD_MODULES: &[StdPath] = &[
+    StdPath::FmtMod,
+    StdPath::FsMod,
+    StdPath::SyncMpscMod,
+    StdPath::SyncMpmcMod,
+    StdPath::CharMod,
+    StdPath::StrMod,
+    StdPath::NumNicheTypesMod,
+    StdPath::PtrMod,
+    StdPath::F64ConstsMod,
+    StdPath::HintMod,
+    StdPath::PanickingMod,
+];
+
+/// Each of `STD_MODULES`, resolved in each of std's crates that has it.
+pub(crate) struct StdModules {
+    of: IndexMap<StdPath, Vec<DefId>>,
+}
+
+/// `STD_MODULES` resolved, once a session.
+fn std_modules(tcx: TyCtxt<'_>) -> std::rc::Rc<StdModules> {
+    (crate::lower::session::caches(tcx).std_module_ids)
+        .get_or_init(|| {
+            let of = (STD_MODULES.iter())
+                .map(|&module| {
+                    let parts: Vec<&str> = module.path().split("::").skip(1).collect();
+                    let ids = [StdCrate::Std, StdCrate::Core, StdCrate::Alloc]
+                        .into_iter()
+                        .filter_map(|krate| match registry::by_path_kind(tcx, krate, &parts)? {
+                            (DefKind::Mod, id) => Some(id),
+                            _ => None,
+                        })
+                        .collect();
+                    (module, ids)
+                })
+                .collect();
+            std::rc::Rc::new(StdModules { of })
+        })
+        .clone()
+}
+
+/// The module std's path of `id` writes it in: its visible parent, as
+/// rustc prints its path, `std::fmt` of `core::fmt::Arguments`, or where
+/// it's none, the module it's in.
+pub(crate) fn std_path_parent(tcx: TyCtxt<'_>, id: DefId) -> Option<DefId> {
+    tcx.visible_parent_map(())
+        .get(&id)
+        .copied()
+        .or_else(|| tcx.opt_parent(id))
+}
+
+/// Whether `id` is `module`, one of `STD_MODULES`, in any of std's crates.
+pub(crate) fn is_std_module(tcx: TyCtxt<'_>, id: DefId, module: StdPath) -> bool {
+    std_modules(tcx).of.get(&module).is_some_and(|ids| ids.contains(&id))
+}
+
+/// Whether std's path of `id` is under `module`, one of `STD_MODULES`: one
+/// of the modules it's written in is that module, `std::fmt::rt::Argument`
+/// under `std::fmt`.
+pub(crate) fn std_path_under(tcx: TyCtxt<'_>, id: DefId, module: StdPath) -> bool {
+    super::is_std_crate(tcx, id)
+        && std::iter::successors(std_path_parent(tcx, id), |&at| std_path_parent(tcx, at))
+            .any(|at| is_std_module(tcx, at, module))
 }

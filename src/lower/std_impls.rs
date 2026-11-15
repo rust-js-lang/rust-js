@@ -168,7 +168,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             || self.recognition().is_discriminant(ty)
             // A file's type, the name of its kind, as std's mode bits are its
             // kind's (#1397).
-            || crate::lower::recognition::fs_type(self.tcx, ty) == Some("FileType")
+            || crate::lower::recognition::fs_type(self.tcx, ty).is_some_and(|name| name.as_str() == "FileType")
             // A function pointer, by identity, as Rust's by address (ADR 0262).
             || matches!(ty.kind(), ty::FnPtr(..))
             // One whose `==` is its address's, `ptr::eq`, and whose `Hash`

@@ -107,9 +107,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// of std's, and `None` to look further, as a method.
     fn classify_fn(&self, def_id: DefId, args: ty::GenericArgsRef<'tcx>) -> Option<Option<Std>> {
         let tcx = self.tcx;
-        // Its std path and its diagnostic name, each asked once: each test
+        // Its std item and its diagnostic name, each asked once: each test
         // below is of them, some forty a call a crate classifies (#882).
-        let path = std_path(tcx, def_id);
         let item = std_path_item(tcx, def_id);
         let diagnostic_name = tcx.get_diagnostic_name(def_id);
         let diagnostic = |name: &str| diagnostic_name.is_some_and(|found| found.as_str() == name);
@@ -435,7 +434,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         // libtest's `test::black_box` is the same.
         let krate = std_crate(tcx, def_id.krate);
         if tcx.item_name(def_id).as_str() == "black_box"
-            && ((krate == Some(StdCrate::Core) && path.contains("hint")) || is_libtest(tcx, def_id))
+            && ((krate == Some(StdCrate::Core) && std_path_under(tcx, def_id, StdPath::HintMod))
+                || is_libtest(tcx, def_id))
         {
             return Some(Some(Std::Same));
         }
@@ -448,7 +448,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }
         // `char::from_digit`, `std::char::from_digit` and `from_u32`.
         let char_fn = |name: &str| {
-            of_std_crate(tcx, def_id, StdCrate::Core) && tcx.item_name(def_id).as_str() == name && path.contains("char")
+            of_std_crate(tcx, def_id, StdCrate::Core)
+                && tcx.item_name(def_id).as_str() == name
+                && std_path_under(tcx, def_id, StdPath::CharMod)
         };
         if char_fn("from_digit") {
             return Some(Some(Std::FromDigit));
@@ -494,7 +496,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 _ => {}
             }
         }
-        if krate == Some(StdCrate::Alloc) && name.as_str() == "format" && path.ends_with("fmt::format") {
+        if krate == Some(StdCrate::Alloc) && name.as_str() == "format" && item == Some(StdPath::FmtFormatFn) {
             return Some(Some(Std::Format));
         }
         if krate == Some(StdCrate::Core) && name.as_str() == "must_use" {
@@ -507,7 +509,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if tcx.is_lang_item(def_id, LangItem::PanicDisplay) {
             return Some(Some(Std::PanicDisplay { unreachable: false }));
         }
-        if krate == Some(StdCrate::Core) && name.as_str() == "unreachable_display" && path.contains("panicking") {
+        if krate == Some(StdCrate::Core)
+            && name.as_str() == "unreachable_display"
+            && std_path_under(tcx, def_id, StdPath::PanickingMod)
+        {
             return Some(Some(Std::PanicDisplay { unreachable: true }));
         }
         if let Some(error) = print_of(tcx, def_id) {

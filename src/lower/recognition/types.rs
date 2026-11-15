@@ -367,8 +367,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let ty::Adt(adt, _) = ty.kind() else {
             return None;
         };
-        let path = std_path(self.tcx, adt.did());
-        if !path.starts_with("std::sync::mpsc::") && !path.starts_with("std::sync::mpmc::") {
+        let channel = std_path_under(self.tcx, adt.did(), StdPath::SyncMpscMod)
+            || std_path_under(self.tcx, adt.did(), StdPath::SyncMpmcMod);
+        if !channel {
             return None;
         }
         match self.tcx.item_name(adt.did()).as_str() {
@@ -791,7 +792,7 @@ pub(crate) fn is_decode_utf16_error(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
 pub(crate) fn is_text_escape(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
     matches!(ty.kind(), ty::Adt(adt, _) if of_std_crate(tcx, adt.did(), StdCrate::Core)
         && matches!(tcx.item_name(adt.did()).as_str(), "EscapeDefault" | "EscapeDebug" | "EscapeUnicode")
-        && matches!(std_path(tcx, adt.did()), p if p.starts_with("std::char::") || p.starts_with("std::str::")))
+        && (std_path_under(tcx, adt.did(), StdPath::CharMod) || std_path_under(tcx, adt.did(), StdPath::StrMod)))
 }
 
 /// A byte's `escape_ascii()`, `ascii::escape_default(b)`, and a byte slice's

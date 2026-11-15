@@ -303,8 +303,11 @@ pub(crate) fn node_only(tcx: TyCtxt<'_>, id: DefId) -> Option<NodeOnly> {
 /// (ADR 0390): `std::ptr`'s and a raw pointer's own, and what makes a value
 /// of bytes, `transmute` and `zeroed`.
 pub(crate) fn addresses_memory(tcx: TyCtxt<'_>, id: DefId) -> bool {
-    let path = std_path(tcx, id);
-    path.starts_with("std::ptr::") || matches!(path, "std::mem::transmute_copy" | "std::mem::uninitialized")
+    std_path_under(tcx, id, StdPath::PtrMod)
+        || matches!(
+            std_path_item(tcx, id),
+            Some(StdPath::MemTransmuteCopyFn | StdPath::MemUninitializedFn)
+        )
 }
 
 /// std's functions that may give a value of a type they weren't given one
@@ -483,7 +486,8 @@ pub(crate) fn f64_const(tcx: TyCtxt<'_>, id: DefId) -> Option<String> {
     if !is_std_crate(tcx, id) || !matches!(tcx.def_kind(id), DefKind::Const) {
         return None;
     }
-    std_path(tcx, id).strip_prefix("std::f64::consts::").map(str::to_owned)
+    (std_path_parent(tcx, id).is_some_and(|at| is_std_module(tcx, at, StdPath::F64ConstsMod)))
+        .then(|| tcx.item_name(id).to_string())
 }
 
 /// Whether `id` is `mem::transmute`, which reads one type's bytes as
@@ -797,7 +801,7 @@ pub(crate) fn flattens_mut(tcx: TyCtxt<'_>, id: DefId) -> bool {
 pub(crate) fn is_from_str(tcx: TyCtxt<'_>, id: DefId) -> bool {
     of_std_crate(tcx, id, StdCrate::Core)
         && tcx.def_kind(id) == DefKind::Trait
-        && std_path(tcx, id).ends_with("str::FromStr")
+        && is_std_path(tcx, id, StdPath::StrFromStr)
 }
 
 pub(crate) fn is_std_def(tcx: TyCtxt<'_>, id: DefId, item: StdItem) -> bool {
@@ -981,5 +985,5 @@ pub(crate) fn pure_std(tcx: TyCtxt<'_>, id: DefId) -> Option<PureStd> {
 /// Whether `def_id` is `core::fmt::write`, std's own `write_fmt` of a
 /// `dyn fmt::Write` (#1697).
 pub(in crate::lower) fn is_fmt_write_fn(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
-    of_std_crate(tcx, def_id, StdCrate::Core) && std_path(tcx, def_id).ends_with("fmt::write")
+    of_std_crate(tcx, def_id, StdCrate::Core) && is_std_path(tcx, def_id, StdPath::FmtWriteFn)
 }

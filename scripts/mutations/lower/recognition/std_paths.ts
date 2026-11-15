@@ -44,4 +44,20 @@ export const mutations: Mutation[] = [
     replace: "    if true\n        && let Some((pointee, mutability))",
     tests: ["test/corpus.test.ts", "-t", "^non_null.rs$"],
   },
+  {
+    name: "std-modules-of-std-alone",
+    breaks: "a module a recognizer asks what's under is `std`'s alone, not `core`'s or `alloc`'s of its path, so of a crate that loads no `std` nothing is under `std::hint`, and `core::hint::black_box(x)` is no longer `x`",
+    file: "src/lower/recognition/std_paths.rs",
+    find: "                    let ids = [StdCrate::Std, StdCrate::Core, StdCrate::Alloc]\n",
+    replace: "                    let ids = [StdCrate::Std]\n",
+    tests: ["test/std-paths.test.ts"],
+  },
+  {
+    name: "std-path-under-its-parent-alone",
+    breaks: "an item is under a module only where it's its parent, so `fmt::rt::Argument`'s are under `std::fmt::rt` and not `std::fmt`: no formatting of std's",
+    file: "src/lower/recognition/std_paths.rs",
+    find: "        && std::iter::successors(std_path_parent(tcx, id), |&at| std_path_parent(tcx, at))\n",
+    replace: "        && std::iter::successors(std_path_parent(tcx, id), |_| None)\n",
+    tests: ["test/corpus.test.ts"],
+  },
 ];

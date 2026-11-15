@@ -731,7 +731,7 @@ export const mutations: Mutation[] = [
     name: "file-type-eq-refused",
     breaks: "`==` of two `FileType`s is refused, where it's JS's of their kinds' names (#1397)",
     file: "src/lower/std_impls.rs",
-    find: "            || crate::lower::recognition::fs_type(self.tcx, ty) == Some(\"FileType\")\n",
+    find: "            || crate::lower::recognition::fs_type(self.tcx, ty).is_some_and(|name| name.as_str() == \"FileType\")\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^fs_dirs_and_metadata.rs$"],
   },

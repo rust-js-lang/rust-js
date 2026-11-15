@@ -523,4 +523,12 @@ export const mutations: Mutation[] = [
     replace: "has_aliases(&ty) {",
     tests: ["test/corpus.test.ts", "-t", "^const_generic_impl_reached_by_a_trait_default_where_caught.rs$"],
   },
+  {
+    name: "text-escape-any-of-str",
+    breaks: "a type under `std::str` is an escape whatever its name, as `a && b && c || d` groups, so a `str::Chars` is taken for one and `collect()`'s capacity of it is an escape's",
+    file: "src/lower/recognition/types.rs",
+    find: "        && (std_path_under(tcx, adt.did(), StdPath::CharMod) || std_path_under(tcx, adt.did(), StdPath::StrMod)))\n",
+    replace: "        && std_path_under(tcx, adt.did(), StdPath::CharMod) || std_path_under(tcx, adt.did(), StdPath::StrMod))\n",
+    tests: ["test/corpus.test.ts", "-t", "^capacity_of_text_patterns.rs$"],
+  },
 ];

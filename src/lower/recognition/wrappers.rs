@@ -167,7 +167,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             // A `CStr` and a `CString`, their bytes with the nul (#1157).
             || is_c_str(self.tcx, ty)
             || is_c_string(self.tcx, ty)
-            || std_path(self.tcx, adt.did()).starts_with("std::num::niche_types::");
+            || std_path_under(self.tcx, adt.did(), StdPath::NumNicheTypesMod);
         // A `MaybeUninit` is a union of it and `()`.
         let mut held = adt.all_fields().map(|field| self.field_ty(field, args));
         wraps.then(|| held.find(|t| !t.is_unit())).flatten()

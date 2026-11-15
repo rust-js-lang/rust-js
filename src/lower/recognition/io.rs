@@ -200,9 +200,11 @@ pub(crate) fn is_file_handle<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
 
 /// Which of `std::fs`'s types `ty` is, its name, `"File"` or `"Metadata"`
 /// (#1156, #1397).
-pub(crate) fn fs_type<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<&'static str> {
+pub(crate) fn fs_type<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Symbol> {
     match ty.kind() {
-        ty::Adt(adt, _) => std_path(tcx, adt.did()).strip_prefix("std::fs::"),
+        ty::Adt(adt, _) if std_path_parent(tcx, adt.did()).is_some_and(|at| is_std_module(tcx, at, StdPath::FsMod)) => {
+            Some(tcx.item_name(adt.did()))
+        }
         _ => None,
     }
 }
@@ -211,7 +213,7 @@ pub(crate) fn fs_type<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<&'static 
 /// a function of `std::fs`'s, a `File`'s own or an `OpenOptions`'s, or one
 /// of `io::Write`'s of a `File`, whose writes the OS may refuse.
 pub(crate) fn of_files<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, args: ty::GenericArgsRef<'tcx>) -> bool {
-    std_path(tcx, id).starts_with("std::fs::")
+    std_path_under(tcx, id, StdPath::FsMod)
         || (tcx.trait_of_assoc(id)).is_some_and(|tr| is_std_def(tcx, tr, StdItem::IoWrite))
             && args.types().next().is_some_and(|this| is_file(tcx, this.peel_refs()))
 }

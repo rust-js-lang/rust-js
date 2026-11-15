@@ -432,8 +432,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an edition 2018 `unreachable!(x)`, `unreachable_display(&x)`, is refused",
     file: "src/lower/recognition/calls.rs",
-    find: 'if krate == Some(StdCrate::Core) && name.as_str() == "unreachable_display"',
-    replace: 'if false && name.as_str() == "unreachable_display"',
+    find: "        if krate == Some(StdCrate::Core)\n            && name.as_str() == \"unreachable_display\"\n",
+    replace: "        if false\n            && name.as_str() == \"unreachable_display\"\n",
     tests: ["test/corpus.test.ts", "-t", "^unreachable_display.rs$"],
   },
   {

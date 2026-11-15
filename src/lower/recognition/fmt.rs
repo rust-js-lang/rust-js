@@ -418,13 +418,17 @@ pub(crate) fn formatted_adt_of(mut ty: Ty<'_>) -> Option<DefId> {
 /// method, a builder's, `Arguments`', `rt::Argument`'s, `format`, a
 /// formatting trait's method (#1496).
 pub(in crate::lower) fn is_std_formatting(tcx: TyCtxt<'_>, id: DefId) -> bool {
-    std_path(tcx, id).starts_with("std::fmt::")
+    std_path_under(tcx, id, StdPath::FmtMod)
 }
 
 /// Is `id` a `fmt::rt::Argument`'s constructor, which a `format_args!`
 /// makes of each value it shows, the value's type its own (#1496).
 pub(in crate::lower) fn is_fmt_argument(tcx: TyCtxt<'_>, id: DefId) -> bool {
-    std_path(tcx, id).starts_with("std::fmt::rt::Argument")
+    is_std_path(tcx, id, StdPath::RtArgument)
+        || matches!(
+            std_inherent_method(tcx, id),
+            Some((MethodOf::Type(StdPath::RtArgument), _))
+        )
 }
 
 /// Is `id` one of core's `OTHER_FMT_TRAITS`?
@@ -432,7 +436,7 @@ pub(crate) fn is_other_fmt_trait(tcx: TyCtxt<'_>, id: DefId) -> bool {
     of_std_crate(tcx, id, StdCrate::Core)
         && tcx.def_kind(id) == DefKind::Trait
         && OTHER_FMT_TRAITS.contains(&tcx.item_name(id).as_str())
-        && std_path(tcx, id).contains("fmt::")
+        && std_path_under(tcx, id, StdPath::FmtMod)
 }
 
 impl<'a, 'tcx> Recognition<'a, 'tcx> {
@@ -688,7 +692,7 @@ pub(crate) enum BuilderStep {
 
 /// The `Debug` builder `did`, a type, is: std's `DebugStruct` and the like.
 pub(in crate::lower) fn debug_builder(tcx: TyCtxt<'_>, did: DefId) -> Option<DebugBuilder> {
-    if !std_path(tcx, did).starts_with("std::fmt::") {
+    if !std_path_under(tcx, did, StdPath::FmtMod) {
         return None;
     }
     Some(match tcx.item_name(did).as_str() {
