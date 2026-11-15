@@ -974,3 +974,20 @@ didn't), the pin moved with them. Mutations call-bounds-proved-of-every-call
 (the matrix's `indexed through a pointer`, #1944's row) and
 call-bounds-proved-of-none (a snapshot's) hold it. M4 deletes THIR's
 ranges.
+
+## Amendment: a closure's `&mut` lends only to its calls (2026-11-15, #1946)
+
+`called_on`, a `Vec` lent `&mut` only to the calls it's given to, took a
+`Vec` alone, and counted borrowck's `FakeRead` of a `let` as a use that
+lends it: `let r = &mut v;` and `let mut take = || args.pop_front();`
+each lent the local for the whole body, so `args[i]` under
+`for i in 0..args.len()` past `take()`'s last call was `$index(args, i)`,
+a readability promise lost at step 5's switch (Console's loops). Now a
+`VecDeque` is one too; a closure that captures such a `&mut` holds it, and
+`&mut take` given its `call_mut` lends it to that call alone, which
+forgets the length; and a `FakeRead`, which neither writes nor copies,
+lends nothing. borrowck holds the rest, as it does for a `Vec` given to a
+call: nothing reads the `Vec` while the closure that borrows it is used
+again. Held by the bounds matrix's `taken by a closure` row, a length read
+before the closure pops and the index under it after, and by mutations
+of each part.

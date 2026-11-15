@@ -1,14 +1,14 @@
 # shape	count	per 10,000 lines
-files	2603
-lines	344207
+files	2605
+lines	344319
 temporaries	0	0
 labeled blocks	0	0
 while (true)	224	6.5
 $iter	2895	84.1
 Iterator.from	286	8.3
 return;	335	9.7
-renamed x$1	16141	468.9
-role fallbacks	8841	256.9
+renamed x$1	16141	468.8
+role fallbacks	8843	256.8
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1	role fallbacks
 test/corpus/adapter_drop_past_a_panic.js	50	0	0	0	1	0	0	0	1
 test/corpus/adapter_drops.js	1844	0	0	1	19	2	1	98	61
@@ -1525,6 +1525,7 @@ test/corpus/nth_passes_a_slice_or_each.js	1341	0	0	0	39	0	0	186	46
 test/corpus/nth_through_generics.js	96	0	0	0	2	0	0	2	6
 test/corpus/null_option_keys.js	87	0	0	0	0	0	0	0	0
 test/corpus/nullable_and_then.js	44	0	0	0	0	0	0	2	2
+test/corpus/nullable_cell_fields_saved_and_restored.js	79	0	0	0	0	0	0	0	1
 test/corpus/nullable_field_borrow_given_whole.js	22	0	0	0	0	0	0	0	0
 test/corpus/nullable_field_of_undefined.js	140	0	0	0	0	0	0	3	3
 test/corpus/nullable_field_tested_strictly.js	79	0	0	0	0	0	0	0	0
@@ -1616,6 +1617,7 @@ test/corpus/own_back_through_adapters.js	968	0	0	1	0	0	0	0	5
 test/corpus/own_callback_params.js	104	0	0	0	0	0	0	0	0
 test/corpus/own_count_and_last_that_panic_drop_once.js	608	0	0	0	0	0	1	14	19
 test/corpus/own_count_through_adapters.js	301	0	0	0	1	2	1	5	5
+test/corpus/own_debug_of_a_pinned_box_beside_a_caught_panic.js	33	0	0	0	0	0	0	0	1
 test/corpus/own_fold_and_count_where_adapters_call_them.js	162	0	0	0	0	0	4	0	2
 test/corpus/own_fold_and_nth.js	501	0	0	0	0	1	0	6	4
 test/corpus/own_fold_through_adapters.js	359	0	0	0	1	0	0	8	5

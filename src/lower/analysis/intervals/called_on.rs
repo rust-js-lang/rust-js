@@ -1,8 +1,11 @@
-//! A `Vec` a local holds, lent `&mut` only to the calls it's given to
-//! (#1672 M3, step 5): not lent for the whole body, its length known as a
-//! shared one's is, and forgotten past each call that may change it,
-//! `push` or `remove`. One that keeps it, `index_mut`'s `v[i] = x` or
-//! `deref_mut` to a slice, keeps it known.
+//! A `Vec` or a `VecDeque` a local holds, lent `&mut` only to the calls
+//! it's given to (#1672 M3, step 5): not lent for the whole body, its length
+//! known as a shared one's is, and forgotten past each call that may change
+//! it, `push` or `remove`. One that keeps it, `index_mut`'s `v[i] = x` or
+//! `deref_mut` to a slice, keeps it known. A closure that captures such a
+//! `&mut` holds it too, and lends it only to the calls of it it's given
+//! to, `take()`'s `call_mut`: past its last, nothing writes the `Vec`
+//! (#1946).
 
 use super::*;
 use crate::lower::recognition::{StdItem, deref_call, is_std_def, keeps_vec_length};
@@ -15,7 +18,10 @@ use crate::lower::recognition::{StdItem, deref_call, is_std_def, keeps_vec_lengt
 /// used again, as borrowck holds, and a call that may change its length
 /// forgets it (`called_on_mut`).
 pub(super) fn called_on<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> IndexMap<Local, Local> {
-    let is_vec = |ty: Ty<'tcx>| matches!(ty.kind(), ty::Adt(adt, _) if is_std_def(tcx, adt.did(), StdItem::Vec));
+    let is_vec = |ty: Ty<'tcx>| {
+        matches!(ty.kind(), ty::Adt(adt, _)
+            if is_std_def(tcx, adt.did(), StdItem::Vec) || is_std_def(tcx, adt.did(), StdItem::VecDeque))
+    };
     // A `&mut Vec` local, a parameter's `targets: &mut Vec<u32>`: of the
     // `Vec` it points to, the one way to it while it lives.
     let is_mut_of_vec = |ty: Ty<'tcx>| matches!(*ty.kind(), ty::Ref(_, to, ty::Mutability::Mut) if is_vec(to));
@@ -24,12 +30,47 @@ pub(super) fn called_on<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> IndexMap<
     // of one, `&mut (*t)`: by the local holding it.
     let mut borrows: IndexMap<Local, Local> = IndexMap::default();
     let mut lent_otherwise: IndexSet<Local> = IndexSet::default();
+    // The closures that hold one, `{closure}(move _t)` of a `&mut` held,
+    // each a holder of its own (#1946).
+    let mut closures: IndexSet<Local> = IndexSet::default();
     for data in body.basic_blocks.iter() {
         for statement in &data.statements {
             let StatementKind::Assign(assign) = &statement.kind else {
                 continue;
             };
             match &assign.1 {
+                Rvalue::Aggregate(kind, operands) if matches!(**kind, mir::AggregateKind::Closure(..)) => {
+                    for operand in operands {
+                        if let Operand::Move(moved) = operand
+                            && let Some(held) = moved.as_local()
+                            && let Some(&of) = borrows.get(&held)
+                        {
+                            match assign.0.as_local() {
+                                Some(closure) => {
+                                    borrows.insert(closure, of);
+                                    closures.insert(closure);
+                                }
+                                None => {
+                                    lent_otherwise.insert(of);
+                                }
+                            }
+                        }
+                    }
+                }
+                // `&mut take` of a closure that holds one, given its
+                // `call_mut`: a holder of the same.
+                Rvalue::Ref(_, mir::BorrowKind::Mut { .. }, of)
+                    if of.projection.is_empty() && closures.contains(&of.local) =>
+                {
+                    match assign.0.as_local() {
+                        Some(holder) => {
+                            borrows.insert(holder, borrows[&of.local]);
+                        }
+                        None => {
+                            lent_otherwise.insert(borrows[&of.local]);
+                        }
+                    }
+                }
                 Rvalue::Ref(_, mir::BorrowKind::Mut { .. }, of)
                     if matches!(of.projection.as_slice(), [mir::PlaceElem::Deref])
                         && borrows.contains_key(&of.local) =>
@@ -79,7 +120,7 @@ pub(super) fn called_on<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> IndexMap<
     for data in body.basic_blocks.iter() {
         for statement in &data.statements {
             for (holder, of) in borrows.iter() {
-                if mentions(statement, *holder) && !reborrows(statement, *holder) {
+                if mentions(statement, *holder) && !reborrows(statement, *holder, &closures, &borrows) {
                     lent_otherwise.insert(*of);
                 }
             }
@@ -121,9 +162,14 @@ pub(super) fn called_on<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> IndexMap<
     borrows
 }
 
-/// Whether `statement` reads or writes `local` at all.
+/// Whether `statement` reads or writes `local` at all. Not borrowck's
+/// `FakeRead` of a `let`, `let r = &mut v;`'s or `let mut take = || ..;`'s,
+/// which neither writes it nor copies it anywhere (#1946).
 fn mentions(statement: &mir::Statement<'_>, local: Local) -> bool {
     use rustc_middle::mir::visit::{PlaceContext, Visitor};
+    if matches!(statement.kind, StatementKind::FakeRead(..)) {
+        return false;
+    }
     struct Mention(Local, bool);
     impl<'tcx> Visitor<'tcx> for Mention {
         fn visit_local(&mut self, local: Local, context: PlaceContext, _: Location) {
@@ -138,12 +184,23 @@ fn mentions(statement: &mir::Statement<'_>, local: Local) -> bool {
 }
 
 /// Whether `statement` makes `local` or reborrows it, `&mut (*local)`, the
-/// one place it's allowed in a statement.
-fn reborrows(statement: &mir::Statement<'_>, local: Local) -> bool {
+/// one place it's allowed in a statement; or moves it into a closure that
+/// holds it, or borrows such a closure `&mut` whole (#1946).
+fn reborrows(
+    statement: &mir::Statement<'_>,
+    local: Local,
+    closures: &IndexSet<Local>,
+    borrows: &IndexMap<Local, Local>,
+) -> bool {
     matches!(&statement.kind, StatementKind::Assign(assign)
         if assign.0.as_local() == Some(local)
             || matches!(&assign.1, Rvalue::Ref(_, mir::BorrowKind::Mut { .. }, of)
-                if of.local == local && matches!(of.projection.as_slice(), [mir::PlaceElem::Deref])))
+                if of.local == local && matches!(of.projection.as_slice(), [mir::PlaceElem::Deref]))
+            || matches!(&assign.1, Rvalue::Ref(_, mir::BorrowKind::Mut { .. }, of)
+                if of.local == local && of.projection.is_empty() && closures.contains(&local)
+                    && assign.0.as_local().is_some_and(|holder| borrows.contains_key(&holder)))
+            || matches!(&assign.1, Rvalue::Aggregate(kind, _) if matches!(**kind, mir::AggregateKind::Closure(..))
+                && assign.0.as_local().is_some_and(|closure| closures.contains(&closure))))
 }
 
 /// Whether `statement` borrows what `pointer` points to, `&(*pointer)`
