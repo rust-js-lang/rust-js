@@ -384,8 +384,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `chain()` of a chain the transparent-chain predicate doesn't admit is the recognizers' hand-written `$lazyChain` again, where std's compiled `Chain` is the meaning (#1681's change 2, the chain family)",
     file: "src/lower/body_queries/in_place.rs",
-    find: "pub(in crate::lower) const HELD_FLIPPED: [&str; 4] = [\"chain\", \"enumerate\", \"map\", \"zip\"];\n",
-    replace: "pub(in crate::lower) const HELD_FLIPPED: [&str; 4] = [\"enumerate\", \"enumerate\", \"map\", \"zip\"];\n",
+    find: "pub(in crate::lower) const HELD_FLIPPED: [&str; 5] = [\"chain\", \"enumerate\", \"flatten\", \"map\", \"zip\"];\n",
+    replace: "pub(in crate::lower) const HELD_FLIPPED: [&str; 5] = [\"enumerate\", \"enumerate\", \"flatten\", \"map\", \"zip\"];\n",
     tests: ["test/corpus.test.ts", "-t", "^chain_side_panics_drops_the_other.rs$"],
     snapshots: true,
   },
@@ -394,8 +394,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `zip()` of a chain the transparent-chain predicate doesn't admit is the recognizers' hand-written `$trustedZip` or `$lazyZip` again, where std's compiled `Zip` is the meaning (#1681's change 2, the zip family)",
     file: "src/lower/body_queries/in_place.rs",
-    find: "pub(in crate::lower) const HELD_FLIPPED: [&str; 4] = [\"chain\", \"enumerate\", \"map\", \"zip\"];\n",
-    replace: "pub(in crate::lower) const HELD_FLIPPED: [&str; 4] = [\"chain\", \"enumerate\", \"map\", \"map\"];\n",
+    find: "pub(in crate::lower) const HELD_FLIPPED: [&str; 5] = [\"chain\", \"enumerate\", \"flatten\", \"map\", \"zip\"];\n",
+    replace: "pub(in crate::lower) const HELD_FLIPPED: [&str; 5] = [\"chain\", \"enumerate\", \"flatten\", \"map\", \"map\"];\n",
     tests: ["test/corpus.test.ts", "-t", "^held_adapters_stepped_to_their_end.rs$"],
     snapshots: true,
   },
@@ -430,5 +430,15 @@ export const mutations: Mutation[] = [
     find: "                    Some(link) if !given && !callers => _ = held.insert(link),\n",
     replace: "                    Some(link) if !given && (!callers || callers) => _ = held.insert(link),\n",
     tests: ["test/corpus.test.ts", "-t", "^zip_of_sides_only_callers_know.rs$"],
+  },
+  {
+    name: "flatten-not-flipped",
+    breaks:
+      "a `flatten()` of a chain the transparent-chain predicate doesn't admit is the recognizers' hand-written `flatMap` again, where std's compiled `Flatten` is the meaning (#1681's change 2, the flatten family)",
+    file: "src/lower/body_queries/in_place.rs",
+    find: "pub(in crate::lower) const HELD_FLIPPED: [&str; 5] = [\"chain\", \"enumerate\", \"flatten\", \"map\", \"zip\"];\n",
+    replace: "pub(in crate::lower) const HELD_FLIPPED: [&str; 5] = [\"chain\", \"enumerate\", \"map\", \"map\", \"zip\"];\n",
+    tests: ["test/corpus.test.ts", "-t", "^flatten_drops_its_source_at_its_end.rs$"],
+    snapshots: true,
   },
 ];

@@ -4,7 +4,9 @@ import {
   $checked,
   $cleanup,
   $closing,
+  $foldOf,
   $held,
+  $iter,
   $iterator,
   $lazySkipWhile,
   $lazyTakeWhile,
@@ -13,6 +15,7 @@ import {
   $next,
   $tryFoldSome,
   $unwindsOn,
+  iterator_flatten,
   iterator_map,
 } from "@rust-js/std";
 
@@ -31,6 +34,9 @@ function flakyIterator_next(flaky) {
       return;
   }
 }
+function flakyDrop_drop(flaky) {
+  console.log(`drop Flaky ${flaky[0]}`);
+}
 function countIterator_next(count) {
   if (count[0] < 4) {
     count[0]++;
@@ -44,10 +50,20 @@ function c(name) {
   return [0, name];
 }
 function flaky() {
+  const intoIterator = {
+    intoIter: (items) => $iter(items),
+    IntoIterIterator: () => ({ next: $next }),
+  };
   const h = $held(
-    $closing($iterator([0], flakyIterator_next), (it) => {
-      console.log(`drop Flaky ${it.of[0]}`);
-    }).flatMap((item) => item),
+    iterator_flatten(
+      [0],
+      { next: flakyIterator_next },
+      intoIterator,
+      false,
+      undefined,
+      false,
+      flakyDrop_drop,
+    ),
   );
   try {
     const next = $next(h);
@@ -61,7 +77,7 @@ function flaky() {
     console.log("end h");
     const g = $held(
       $closing($iterator([0], flakyIterator_next), (it) => {
-        console.log(`drop Flaky ${it.of[0]}`);
+        flakyDrop_drop(it.of);
       }).flatMap((v) => v.values().map((x) => (x * 10) >>> 0)),
     );
     try {
@@ -72,11 +88,26 @@ function flaky() {
         `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
       );
       console.log("end g");
-      const s = $closing($iterator([0], flakyIterator_next), (it) => {
-        console.log(`drop Flaky ${it.of[0]}`);
-      })
-        .flatMap((item) => item)
-        .reduce((a, b) => (a + b) >>> 0, 0);
+      const iter = iterator_flatten(
+        [0],
+        { next: flakyIterator_next },
+        intoIterator,
+        false,
+        undefined,
+        false,
+        flakyDrop_drop,
+      );
+      let result;
+      try {
+        result = iter.reduce((a, b) => (a + b) >>> 0, 0);
+      } catch (error) {
+        throw $unwindsOn(error);
+      } finally {
+        if ($live()) {
+          iter.return();
+        }
+      }
+      const s = result;
       console.log(`sum ${s}`);
     } catch (error) {
       throw $unwindsOn(error);
@@ -129,8 +160,16 @@ function counted() {
     console.log(`total ${total}`);
     console.log("after by_ref");
     const f = $held(
-      iterator_map(c("fused"), (x) => [x], { next: countIterator_next }, countDrop_drop).flatMap(
-        (item) => item,
+      iterator_flatten(
+        iterator_map(c("fused"), (x) => [x], { next: countIterator_next }, countDrop_drop),
+        { next: $next, fold: $foldOf },
+        { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
+        false,
+        undefined,
+        false,
+        (map) => {
+          map.return();
+        },
       ),
     );
     try {

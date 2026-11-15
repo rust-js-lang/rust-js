@@ -515,3 +515,17 @@ role fallbacks go from 256.7 to 256.6. Mutations `zip-not-flipped`,
 `flipped-given-a-let-made-in-place`, `flipped-given-a-call-made-in-place`
 and `zip-of-callers-sides-flipped` (`lower/body_queries/in_place.ts`) are
 caught.
+
+## Amendment: the flatten family flipped (2026-11-16, #1681's change 2)
+
+A `flatten()` of a chain the predicate doesn't admit is std's compiled
+`Flatten`, `HELD_FLIPPED`'s, no longer the recognizers' `flatMap` there.
+
+Measured: 8 corpus snapshots move, each as native prints, 2,868 lines to
+3,482 (×1.214): std's `Flatten` is given its source's step, its items'
+`IntoIterator` dictionary and its drops where `flatMap((item) => item)`
+was one call. The React port's JS regenerates byte for byte. `@rust-js/std`
+is the same size, 1,307,863 bytes. In 10,000 lines, `$iter` goes from
+84.0 to 83.9, `Iterator.from` from 8.2 to 8.1, renamed `x$1` from 470.3
+to 470.4 and role fallbacks from 256.7 to 256.5. Mutation
+`flatten-not-flipped` (`lower/body_queries/in_place.ts`) is caught.

@@ -10,6 +10,7 @@ import {
   $dropEach,
   $dropItems,
   $flatMap,
+  $foldOf,
   $foldToArray,
   $iter,
   $iterator,
@@ -27,8 +28,10 @@ import {
   $trustedZip,
   $zipEnds,
   iterator_chain,
+  iterator_flatten,
   iterator_map,
   iterator_zip,
+  mapIterator___iteratorGetUnchecked,
 } from "@rust-js/std";
 
 export function entry() {
@@ -476,19 +479,52 @@ function main() {
   );
   run("flatten of a map", [107, 0], () => {
     const collect = $collectDropping(
-      $flatMap(
+      $roomForHint(
         iterator_map(
-          { start: 7, end: 9 },
+          iterator_flatten(
+            iterator_map(
+              { start: 7, end: 9 },
+              (value) => [value],
+              { next: $rangeNext },
+              undefined,
+              tickDrop_drop,
+            ),
+            {
+              next: $next,
+              fold: $foldOf,
+              getUnchecked: (iterator, i) =>
+                mapIterator___iteratorGetUnchecked(
+                  iterator,
+                  i,
+                  { next: $rangeNext },
+                  tickDrop_drop,
+                ),
+            },
+            {
+              intoIter: (items) => items,
+              IntoIterIterator: () => ({ next: tickIterator_next }),
+              $dropIntoIter: tickDrop_drop,
+            },
+            true,
+            undefined,
+            false,
+            undefined,
+            tickDrop_drop,
+            undefined,
+            tickDrop_drop,
+          ),
           (value) => [value],
-          { next: $rangeNext },
-          undefined,
-          tickDrop_drop,
+          { next: $next, fold: $foldOf },
+          (flatten) => {
+            flatten.return();
+          },
+          dDrop_drop,
         ),
-        (item) =>
-          $closing($iterator(item, tickIterator_next), (it) => {
-            tickDrop_drop(it.of);
-          }),
-      ).map((value) => [value]),
+        4,
+        false,
+        false,
+        dDrop_drop,
+      ),
       dDrop_drop,
       true,
     );

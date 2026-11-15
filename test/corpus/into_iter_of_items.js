@@ -2,12 +2,12 @@
 
 import {
   $collectDropping,
-  $flatMap,
   $given,
   $iter,
   $jsIteratorSome,
   $next,
   $roomForHint,
+  iterator_flatten,
   iterator_map,
 } from "@rust-js/std";
 
@@ -71,9 +71,14 @@ function summed(items, IItemIntoIterator) {
   );
 }
 
-function flat(items, IItemIntoIterator) {
-  return $flatMap(Iterator.from(items), (item) =>
-    $given(IItemIntoIterator.intoIter(item), IItemIntoIterator.IntoIterIterator()),
+function flat(items, IItemIntoIterator, IFused, IItemConstSize, IItemIntoIterOneShot) {
+  return iterator_flatten(
+    items,
+    $jsIteratorSome,
+    IItemIntoIterator,
+    IFused,
+    IItemConstSize,
+    IItemIntoIterOneShot,
   ).reduce((a, b) => (a + b) | 0, 0);
 }
 
@@ -92,11 +97,11 @@ function main() {
   };
   const options = () => $iter([1, undefined, 3]);
   console.log(
-    `${looped(options(), intoIterator)} ${givenOn(options(), intoIterator)} [${summed(options(), intoIterator).join(", ")}] ${flat(options(), intoIterator)}`,
+    `${looped(options(), intoIterator)} ${givenOn(options(), intoIterator)} [${summed(options(), intoIterator).join(", ")}] ${flat(options(), intoIterator, true, undefined, true)}`,
   );
   const rows = () => $iter([[1, 2], [], [3]]);
   console.log(
-    `${looped(rows(), intoIterator$1)} ${givenOn(rows(), intoIterator$1)} [${summed(rows(), intoIterator$1).join(", ")}] ${flat(rows(), intoIterator$1)}`,
+    `${looped(rows(), intoIterator$1)} ${givenOn(rows(), intoIterator$1)} [${summed(rows(), intoIterator$1).join(", ")}] ${flat(rows(), intoIterator$1, true, undefined, false)}`,
   );
   const pairs = () =>
     $iter([
@@ -104,11 +109,11 @@ function main() {
       [3, 4],
     ]);
   console.log(
-    `${looped(pairs(), intoIterator$1)} ${givenOn(pairs(), intoIterator$1)} [${summed(pairs(), intoIterator$1).join(", ")}] ${flat(pairs(), intoIterator$1)}`,
+    `${looped(pairs(), intoIterator$1)} ${givenOn(pairs(), intoIterator$1)} [${summed(pairs(), intoIterator$1).join(", ")}] ${flat(pairs(), intoIterator$1, true, 2, false)}`,
   );
   const counts = () => $iter([[2], [3]]);
   console.log(
-    `${looped(counts(), intoIterator$2)} ${givenOn(counts(), intoIterator$2)} [${summed(counts(), intoIterator$2).join(", ")}] ${flat(counts(), intoIterator$2)}`,
+    `${looped(counts(), intoIterator$2)} ${givenOn(counts(), intoIterator$2)} [${summed(counts(), intoIterator$2).join(", ")}] ${flat(counts(), intoIterator$2, true, undefined, false)}`,
   );
 }
 //# sourceMappingURL=case.js.map

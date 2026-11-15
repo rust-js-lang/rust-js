@@ -8,6 +8,7 @@ import {
   $dropEach,
   $enumerate,
   $foldBack,
+  $foldOf,
   $iter,
   $jsIterator,
   $knowing,
@@ -26,6 +27,10 @@ import {
   flattenDoubleEndedIterator_rfold,
   flattenDoubleEndedIterator_tryRfold,
   iterator_flatten,
+  iterator_map,
+  mapDoubleEndedIterator_nextBack,
+  mapDoubleEndedIterator_rfold,
+  mapDoubleEndedIterator_tryRfold,
 } from "@rust-js/std";
 
 export function entry() {
@@ -106,8 +111,8 @@ function flattened(src, IFused, dropI) {
   return $collectDropping(
     $roomForHint(
       $rev(
-        $mapEnds(
-          $knowing(
+        $knowing(
+          iterator_map(
             iterator_flatten(
               src,
               $jsIterator,
@@ -125,82 +130,273 @@ function flattened(src, IFused, dropI) {
               dDrop_drop,
               $dropEach(dDrop_drop),
             ),
-            (iterator) =>
-              flattenDoubleEndedIterator_nextBack(
-                iterator,
-                { next_back: $nextBack, rfold: $foldBack },
-                {
-                  intoIter: (items) => $iter(items),
-                  IntoIterIterator: () => ({ next: $next, advanceBy: $advanceSlice }),
-                  $dropItem: dDrop_drop,
-                  $dropIntoIter: $dropEach(dDrop_drop),
-                },
-                { next: $next, advanceBy: $advanceSlice },
-                { next_back: $nextBack },
-                IFused,
-                false,
-                dropI,
-                $dropEach(dDrop_drop),
-                $dropEach(dDrop_drop),
-                dDrop_drop,
-              ),
+            (d) => {
+              const result = (d[0] * 3) >>> 0;
+              dDrop_drop(d);
+              return result;
+            },
+            { next: $next, fold: $foldOf },
+            (flatten) => {
+              flatten.return();
+            },
             undefined,
-            (iterator, init, f, unwind, ends) =>
-              flattenDoubleEndedIterator_rfold(
-                iterator,
-                init,
-                f,
-                $jsIterator,
-                { next_back: $nextBack, rfold: $foldBack },
-                {
-                  intoIter: (items) => $iter(items),
-                  IntoIterIterator: () => ({ next: $next, advanceBy: $advanceSlice }),
-                  $dropItem: dDrop_drop,
-                  $dropIntoIter: $dropEach(dDrop_drop),
-                },
-                { next: $next, advanceBy: $advanceSlice },
-                { next_back: $nextBack },
-                false,
-                dropI,
-                $dropEach(dDrop_drop),
-                unwind,
-                ends,
-                $dropEach(dDrop_drop),
-                dDrop_drop,
-              ),
             undefined,
-            (iterator, init, f, broke, unwind, ends) =>
-              flattenDoubleEndedIterator_tryRfold(
-                iterator,
-                init,
-                f,
-                $jsIterator,
-                { next_back: $nextBack, rfold: $foldBack },
-                {
-                  intoIter: (items) => $iter(items),
-                  IntoIterIterator: () => ({ next: $next, advanceBy: $advanceSlice }),
-                  $dropItem: dDrop_drop,
-                  $dropIntoIter: $dropEach(dDrop_drop),
-                },
-                { next: $next, advanceBy: $advanceSlice },
-                { next_back: $nextBack },
-                $tryOf(broke),
-                IFused,
-                false,
-                dropI,
-                $dropEach(dDrop_drop),
-                unwind,
-                ends,
-                undefined,
-                $dropEach(dDrop_drop),
-                dDrop_drop,
-              ),
+            dDrop_drop,
           ),
-          (d) => {
-            const result = (d[0] * 3) >>> 0;
-            dDrop_drop(d);
-            return result;
-          },
+          (iterator) =>
+            mapDoubleEndedIterator_nextBack(
+              iterator,
+              {
+                next_back: (iterator) =>
+                  flattenDoubleEndedIterator_nextBack(
+                    iterator,
+                    { next_back: $nextBack, rfold: $foldBack },
+                    {
+                      intoIter: (items) => $iter(items),
+                      IntoIterIterator: () => ({ next: $next, advanceBy: $advanceSlice }),
+                      $dropItem: dDrop_drop,
+                      $dropIntoIter: $dropEach(dDrop_drop),
+                    },
+                    { next: $next, advanceBy: $advanceSlice },
+                    { next_back: $nextBack },
+                    IFused,
+                    false,
+                    dropI,
+                    $dropEach(dDrop_drop),
+                    $dropEach(dDrop_drop),
+                    dDrop_drop,
+                  ),
+                rfold: (iterator, init, f, unwind, ends) =>
+                  flattenDoubleEndedIterator_rfold(
+                    iterator,
+                    init,
+                    f,
+                    $jsIterator,
+                    { next_back: $nextBack, rfold: $foldBack },
+                    {
+                      intoIter: (items) => $iter(items),
+                      IntoIterIterator: () => ({ next: $next, advanceBy: $advanceSlice }),
+                      $dropItem: dDrop_drop,
+                      $dropIntoIter: $dropEach(dDrop_drop),
+                    },
+                    { next: $next, advanceBy: $advanceSlice },
+                    { next_back: $nextBack },
+                    false,
+                    dropI,
+                    $dropEach(dDrop_drop),
+                    unwind,
+                    ends,
+                    $dropEach(dDrop_drop),
+                    dDrop_drop,
+                  ),
+                tryRfold: (iterator, init, f, broke, unwind, ends) =>
+                  flattenDoubleEndedIterator_tryRfold(
+                    iterator,
+                    init,
+                    f,
+                    $jsIterator,
+                    { next_back: $nextBack, rfold: $foldBack },
+                    {
+                      intoIter: (items) => $iter(items),
+                      IntoIterIterator: () => ({ next: $next, advanceBy: $advanceSlice }),
+                      $dropItem: dDrop_drop,
+                      $dropIntoIter: $dropEach(dDrop_drop),
+                    },
+                    { next: $next, advanceBy: $advanceSlice },
+                    { next_back: $nextBack },
+                    $tryOf(broke),
+                    IFused,
+                    false,
+                    dropI,
+                    $dropEach(dDrop_drop),
+                    unwind,
+                    ends,
+                    undefined,
+                    $dropEach(dDrop_drop),
+                    dDrop_drop,
+                  ),
+              },
+              undefined,
+              (flatten) => {
+                flatten.return();
+              },
+              undefined,
+              dDrop_drop,
+            ),
+          undefined,
+          (iterator, init, f, unwind, ends) =>
+            mapDoubleEndedIterator_rfold(
+              iterator,
+              init,
+              f,
+              { next: $next, fold: $foldOf },
+              {
+                next_back: (iterator) =>
+                  flattenDoubleEndedIterator_nextBack(
+                    iterator,
+                    { next_back: $nextBack, rfold: $foldBack },
+                    {
+                      intoIter: (items) => $iter(items),
+                      IntoIterIterator: () => ({ next: $next, advanceBy: $advanceSlice }),
+                      $dropItem: dDrop_drop,
+                      $dropIntoIter: $dropEach(dDrop_drop),
+                    },
+                    { next: $next, advanceBy: $advanceSlice },
+                    { next_back: $nextBack },
+                    IFused,
+                    false,
+                    dropI,
+                    $dropEach(dDrop_drop),
+                    $dropEach(dDrop_drop),
+                    dDrop_drop,
+                  ),
+                rfold: (iterator, init, f, unwind, ends) =>
+                  flattenDoubleEndedIterator_rfold(
+                    iterator,
+                    init,
+                    f,
+                    $jsIterator,
+                    { next_back: $nextBack, rfold: $foldBack },
+                    {
+                      intoIter: (items) => $iter(items),
+                      IntoIterIterator: () => ({ next: $next, advanceBy: $advanceSlice }),
+                      $dropItem: dDrop_drop,
+                      $dropIntoIter: $dropEach(dDrop_drop),
+                    },
+                    { next: $next, advanceBy: $advanceSlice },
+                    { next_back: $nextBack },
+                    false,
+                    dropI,
+                    $dropEach(dDrop_drop),
+                    unwind,
+                    ends,
+                    $dropEach(dDrop_drop),
+                    dDrop_drop,
+                  ),
+                tryRfold: (iterator, init, f, broke, unwind, ends) =>
+                  flattenDoubleEndedIterator_tryRfold(
+                    iterator,
+                    init,
+                    f,
+                    $jsIterator,
+                    { next_back: $nextBack, rfold: $foldBack },
+                    {
+                      intoIter: (items) => $iter(items),
+                      IntoIterIterator: () => ({ next: $next, advanceBy: $advanceSlice }),
+                      $dropItem: dDrop_drop,
+                      $dropIntoIter: $dropEach(dDrop_drop),
+                    },
+                    { next: $next, advanceBy: $advanceSlice },
+                    { next_back: $nextBack },
+                    $tryOf(broke),
+                    IFused,
+                    false,
+                    dropI,
+                    $dropEach(dDrop_drop),
+                    unwind,
+                    ends,
+                    undefined,
+                    $dropEach(dDrop_drop),
+                    dDrop_drop,
+                  ),
+              },
+              undefined,
+              (flatten) => {
+                flatten.return();
+              },
+              undefined,
+              unwind,
+              ends,
+              dDrop_drop,
+            ),
+          undefined,
+          (iterator, init, f, broke, unwind, ends) =>
+            mapDoubleEndedIterator_tryRfold(
+              iterator,
+              init,
+              f,
+              { next: $next, fold: $foldOf },
+              {
+                next_back: (iterator) =>
+                  flattenDoubleEndedIterator_nextBack(
+                    iterator,
+                    { next_back: $nextBack, rfold: $foldBack },
+                    {
+                      intoIter: (items) => $iter(items),
+                      IntoIterIterator: () => ({ next: $next, advanceBy: $advanceSlice }),
+                      $dropItem: dDrop_drop,
+                      $dropIntoIter: $dropEach(dDrop_drop),
+                    },
+                    { next: $next, advanceBy: $advanceSlice },
+                    { next_back: $nextBack },
+                    IFused,
+                    false,
+                    dropI,
+                    $dropEach(dDrop_drop),
+                    $dropEach(dDrop_drop),
+                    dDrop_drop,
+                  ),
+                rfold: (iterator, init, f, unwind, ends) =>
+                  flattenDoubleEndedIterator_rfold(
+                    iterator,
+                    init,
+                    f,
+                    $jsIterator,
+                    { next_back: $nextBack, rfold: $foldBack },
+                    {
+                      intoIter: (items) => $iter(items),
+                      IntoIterIterator: () => ({ next: $next, advanceBy: $advanceSlice }),
+                      $dropItem: dDrop_drop,
+                      $dropIntoIter: $dropEach(dDrop_drop),
+                    },
+                    { next: $next, advanceBy: $advanceSlice },
+                    { next_back: $nextBack },
+                    false,
+                    dropI,
+                    $dropEach(dDrop_drop),
+                    unwind,
+                    ends,
+                    $dropEach(dDrop_drop),
+                    dDrop_drop,
+                  ),
+                tryRfold: (iterator, init, f, broke, unwind, ends) =>
+                  flattenDoubleEndedIterator_tryRfold(
+                    iterator,
+                    init,
+                    f,
+                    $jsIterator,
+                    { next_back: $nextBack, rfold: $foldBack },
+                    {
+                      intoIter: (items) => $iter(items),
+                      IntoIterIterator: () => ({ next: $next, advanceBy: $advanceSlice }),
+                      $dropItem: dDrop_drop,
+                      $dropIntoIter: $dropEach(dDrop_drop),
+                    },
+                    { next: $next, advanceBy: $advanceSlice },
+                    { next_back: $nextBack },
+                    $tryOf(broke),
+                    IFused,
+                    false,
+                    dropI,
+                    $dropEach(dDrop_drop),
+                    unwind,
+                    ends,
+                    undefined,
+                    $dropEach(dDrop_drop),
+                    dDrop_drop,
+                  ),
+              },
+              $tryOf(broke),
+              undefined,
+              (flatten) => {
+                flatten.return();
+              },
+              undefined,
+              unwind,
+              ends,
+              undefined,
+              dDrop_drop,
+            ),
         ),
       ),
       4,
