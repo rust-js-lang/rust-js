@@ -90,6 +90,16 @@ export function checkedMembers(members) {
   return members;
 }
 
+/** A stable member key for declaration inventories. A computed symbol and
+ * a literal bracketed string must not collide. Raw string keys keep the
+ * inventory’s spelling; reserved bracket/quote prefixes are JSON-escaped.
+ * @param {MemberName} name
+ * @returns {string} */
+export function memberKey(name) {
+  if (typeof name === "object") return "[" + name.computed + "]";
+  return name.startsWith("[") || name.startsWith("\"") ? JSON.stringify(name) : name;
+}
+
 const KEYWORDS = {
   [SyntaxKind.StringKeyword]: "string",
   [SyntaxKind.NumberKeyword]: "number",
@@ -251,11 +261,11 @@ function declared(node) {
 
 /** `<C extends ReactNode>`: each name, and what it extends, where it's said. */
 function typeParameters(node, text) {
-  return (node.typeParameters ?? []).map((p) =>
-    p.constraint
-      ? { name: p.name.text, constraint: readType(p.constraint, text) }
-      : { name: p.name.text },
-  );
+  return (node.typeParameters ?? []).map((p) => ({
+    name: p.name.text,
+    ...(p.constraint && { constraint: readType(p.constraint, text) }),
+    ...(p.defaultType && { default: readType(p.defaultType, text) }),
+  }));
 }
 
 function nameOf(name, text) {
@@ -408,13 +418,23 @@ function optional(node) {
   );
 }
 
+/** A computed symbol is a key expression, not a quoted string property.
+ * @returns {MemberName} */
+function readMemberName(name, text) {
+  if (name.kind !== SyntaxKind.ComputedPropertyName) return nameOf(name, text);
+  const path = (node) => node.kind === SyntaxKind.Identifier ? node.text
+    : node.kind === SyntaxKind.PropertyAccessExpression && !node.questionDotToken ? path(node.expression) + "." + node.name.text
+    : sourceOf(node, text);
+  return { computed: path(name.expression) };
+}
+
 /** @returns {Member} */
 function readMember(node, text) {
   switch (node.kind) {
     case SyntaxKind.PropertySignature:
       return {
         kind: "property",
-        name: nameOf(node.name, text),
+        name: readMemberName(node.name, text),
         optional: optional(node),
         readonly: !!node.modifiers?.some(
           (m) => m.kind === SyntaxKind.ReadonlyKeyword,
@@ -426,7 +446,7 @@ function readMember(node, text) {
     case SyntaxKind.MethodSignature:
       return {
         kind: "method",
-        name: nameOf(node.name, text),
+        name: readMemberName(node.name, text),
         optional: optional(node),
         typeParameters: typeParameters(node, text),
         params: node.parameters.map((p) => readParam(p, text)),
@@ -762,7 +782,11 @@ function erasable(/** @type {Declaration} */ declaration) {
 function propertyName(name) {
   if (typeof name === "object")
   {
-    const [first, ...rest] = name.computed.split(".");
+    const parts = name.computed.split(".");
+    if (!parts.every((part) => isIdentifierText(part))) {
+      throw new Error("computed member name is not a symbol path: " + name.computed);
+    }
+    const [first, ...rest] = parts;
     return f.createComputedPropertyName(
       rest.reduce(
         (object, part) =>

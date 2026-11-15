@@ -852,6 +852,10 @@ the JS: `addEventListener` is `add_event_listener`, `new Event(..)` is
   design: TypeScript's own types, class components, old names).
   `grep '^Document.getElementById' webapi/coverage.txt`.
 
+Declaration tools retain computed symbol keys such as [Symbol.iterator] as
+expressions. A literal string key with the same bracketed text names a
+different property; it cannot stand in for a symbol member.
+
 ## When a binding is missing
 
 A JS API that one of these crates should bind and doesn't, a browser

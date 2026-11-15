@@ -13,3 +13,5 @@ const { declarations } = await ts.read("index.d.ts");
 console.log(await ts.print({ declarations }));
 await ts.close();
 ```
+
+Generic parameter constraints and defaults are distinct model fields. Reading and printing preserves both, including dependent and literal defaults, so native declarations remain callable without type arguments where their original defaults allow it.

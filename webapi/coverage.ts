@@ -7,7 +7,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 
 import idl from "@webref/idl";
-import { checkedMembers, open } from "@rust-js/typescript";
+import { checkedMembers, memberKey, open } from "@rust-js/typescript";
 
 /** A class's members, and of them its methods, and what each that gives a
  * `NodeListOf<X>` lists, `querySelectorAll`'s `Element`. */
@@ -95,8 +95,8 @@ export async function typescriptInterfaces(): Promise<Map<string, { members: Set
     if (d.kind !== "interface") continue;
     const known = interfaces.get(d.name) ?? { members: new Set<string>(), required: new Set<string>() };
     for (const member of checkedMembers(d.members)) {
-      if (member.kind === "method" || member.kind === "property") known.members.add(member.name);
-      if (member.kind === "property" && !member.optional) known.required.add(member.name);
+      if (member.kind === "method" || member.kind === "property") known.members.add(memberKey(member.name));
+      if (member.kind === "property" && !member.optional) known.required.add(memberKey(member.name));
     }
     interfaces.set(d.name, known);
   }
@@ -186,25 +186,25 @@ export async function typescript(): Promise<Map<string, Members>> {
     if (d.kind === "interface") {
       const m = of(d.name);
       for (const e of d.extends) if (e.kind === "reference") m.extends.push(e.name);
-      for (const member of checkedMembers(d.members)) if (member.kind === "method" || member.kind === "property") m.members.add(member.name);
-      for (const member of checkedMembers(d.members)) if (member.kind === "method") m.methods.add(member.name);
-      for (const member of checkedMembers(d.members)) if (member.kind === "property" && isFunction(member.type)) m.functions.add(member.name);
+      for (const member of checkedMembers(d.members)) if (member.kind === "method" || member.kind === "property") m.members.add(memberKey(member.name));
+      for (const member of checkedMembers(d.members)) if (member.kind === "method") m.methods.add(memberKey(member.name));
+      for (const member of checkedMembers(d.members)) if (member.kind === "property" && isFunction(member.type)) m.functions.add(memberKey(member.name));
       // What may be `null`, `T | null` or `null`, and what can't, of its own.
       const isNull = (t: any) => t?.kind === "keyword" && t.keyword === "null";
       const mayBeNull = (t: any) => isNull(t) || (t?.kind === "union" && t.types.some(isNull));
-      for (const member of checkedMembers(d.members)) if (member.kind === "property") (mayBeNull(member.type) ? m.nullable : m.narrowed).add(member.name);
+      for (const member of checkedMembers(d.members)) if (member.kind === "property") (mayBeNull(member.type) ? m.nullable : m.narrowed).add(memberKey(member.name));
       for (const member of checkedMembers(d.members)) {
         const back = member.kind === "method" ? givenBack(member) : undefined;
-        if (back) m.givesBack.set(member.name, back);
+        if (back) m.givesBack.set(memberKey(member.name), back);
         const item = listed(member);
-        if (item && !m.lists.has(member.name)) m.lists.set(member.name, item);
+        if (item && !m.lists.has(memberKey(member.name))) m.lists.set(memberKey(member.name), item);
       }
     } else if (d.kind === "const" && d.type.kind === "object" && checkedMembers(d.type.members).some((x: any) => x.name === "prototype")) {
       classes.add(d.name);
       const m = of(d.name);
       for (const x of checkedMembers(d.type.members)) {
         if (x.kind === "construct") m.ctor = true;
-        else if (x.name && x.name !== "prototype") m.statics.add(x.name);
+        else if (x.name && x.name !== "prototype") m.statics.add(memberKey(x.name));
       }
     }
   }

@@ -77,6 +77,52 @@ await ts.close();
   a change to the model needs both released together: an older
   `@rust-js/typescript` can't print a newer compiler's type parameters.
 
+## Amendment (2026-11-15): the reader preserves generic defaults (#1916)
+
+The canonical typeParameters reader forwards the engine’s defaultType through
+readType into the existing model’s default field, independently of constraint.
+The writer already supports that field. No generator reconstructs defaults or
+substitutes a constraint for one. The shared reader covers interfaces, aliases,
+functions, methods, construct signatures and generic function types.
+
+Before this fix, Box<T = string> printed as Box<T>, rejecting a strict caller
+that omitted its type argument. Exact model and read/print/read tests now cover
+primitive, reference, dependent and literal defaults, including a bounded
+parameter whose default differs from its constraint. Original and printed
+strict callers accept omitted arguments and reject invalid bounds/defaults.
+Mutants drop defaults, replace them with constraints, or drop constraints.
+
+This is ADR0262 case N at the declaration-tool boundary. Native Rust cannot
+observe this reader; the independent oracle is the actual TypeScript checker.
+There is no new representation, API alias or Rust semantic exception.
+
+## Amendment (2026-11-15): computed symbol keys remain expressions (#1912)
+
+The existing MemberName computed variant is used by the reader as well as
+the writer. Property and method signatures with symbol keys read the AST's
+ComputedPropertyName and preserve its qualified path. A literal string whose
+text looks bracketed remains a string; it is never guessed to be a symbol.
+The writer validates the existing symbol-path contract and refuses unsupported
+computed expressions explicitly instead of printing another key.
+Inventories use the model owner’s memberKey operation: computed paths retain
+their brackets, raw string labels stay compatible, and reserved bracket/quote
+prefixes are JSON-escaped so a literal name cannot collide with a symbol. The
+WebAPI coverage consumer uses that same operation; its existing baseline stays
+unchanged.
+
+The published parser previously read [Symbol.iterator] as a string, causing
+the printer to emit a quoted property with a different identity. Exact model
+and read/print/read proof covers methods, readonly properties and optional
+disposal methods. Independent strict TypeScript consumers accept both the
+original and printed Iterable and symbol-property contracts, while keeping
+the literal bracketed string method distinct. Source mutants break reading,
+printing, qualification and the explicit refusal independently.
+
+This is case N at the TypeScript tool boundary; native Rust cannot observe
+this reader. The fix does not require the separate engine-library review or
+change native runtime binding semantics. It is independently tested against
+the published parser's original beta engine and the stable-engine review.
+
 ## Amendment (2026-11-15): construct signatures are structured members
 
 A Member of kind construct holds typeParameters, params and returns, read
