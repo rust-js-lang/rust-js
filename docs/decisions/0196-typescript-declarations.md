@@ -366,3 +366,28 @@ bound-identity-written-twice-unseen, bound-identity-in-other-bounds-unseen
 bound-erased-of-no-arguments, written-own-param-taken-for-a-type
 (`declarations.rs`).
 
+
+## Amendment: what JS threw is `unknown` (#1905, 2026-11-15)
+
+Tu's decision, the one above left open: **a `js::JsError` is declared
+`unknown`**, as TypeScript's strict `catch` and React's Flow `mixed` have
+what's thrown, reversing "what's thrown is `any`": `#[cfg_attr(rust_js,
+rust_js::types = "unknown")]` on it, `js::Unknown`'s form. React's port
+changes 8 `.d.ts` files, each `any` to `unknown` (`error: unknown`,
+`debugStack?: unknown`), and no JS.
+
+Declared `unknown`, it's a value of any shape (`declarations::any_shape`,
+ADR 0612), the one answer of what a value can be, `0` or `""` too. But
+which of JS's values its `Option`'s `None` is stays nulled's to say
+(`nulled_params::any_value`, its one owner, which `holds_none_as_null`
+asks now too): a caught `null` is a `JsError`'s `None` (ADR 0030), where
+`Option<&js::Unknown>`'s is `undefined` alone and `null` its `Some`
+(rd275, #443). So an `Option<&JsError>` given a binding is still none for
+`None`, `error != null ? destroy(error) : destroy()`, and an export still
+gives `undefined`, `x ?? undefined`.
+
+Held by js-errors (the declaration; a binding's default parameter given a
+`None` caught from `throw null` and `throw undefined`, and an `Error`'s),
+declarations-results (`_0: unknown`, a strict consumer narrowing it), and
+lowering-unwinds unchanged. React's port: the 8 `.d.ts` files, its pin
+moved with #1905.

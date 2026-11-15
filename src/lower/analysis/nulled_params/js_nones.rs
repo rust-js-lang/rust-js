@@ -130,9 +130,14 @@ pub(in crate::lower) fn one_none<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool 
 /// a type of any shape (`declarations::any_shape`), whose `None` is JS's
 /// `undefined` itself; or a `dyn` of what any value is, `dyn IntoUnknown`,
 /// `impl<T> IntoUnknown for T`, or of what a value of any shape is. JS's
-/// `null` may be the `Some` of either.
+/// `null` may be the `Some` of either. Not `JsError`'s, of any shape too,
+/// whose `None` a caught `null` is (ADR 0030): the one answer of whose
+/// `None` is trusted `undefined`, which this owns (#1905).
 pub(in crate::lower) fn any_value<'tcx>(tcx: TyCtxt<'tcx>, payload: Ty<'tcx>) -> Option<AnyValue> {
-    let any_shape = |ty: Ty<'tcx>| matches!(ty.peel_refs().kind(), ty::Adt(of, _) if crate::lower::declarations::any_shape(tcx, of.did()));
+    let any_shape = |ty: Ty<'tcx>| {
+        matches!(ty.peel_refs().kind(), ty::Adt(of, _) if crate::lower::declarations::any_shape(tcx, of.did())
+            && !crate::lower::recognition::is_js_error_type(tcx, of.did()))
+    };
     if any_shape(payload) {
         return Some(AnyValue::Shape);
     }

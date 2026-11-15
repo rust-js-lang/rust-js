@@ -196,6 +196,12 @@ pub(in crate::lower) fn is_js_is_when(tcx: TyCtxt<'_>, did: DefId) -> bool {
         })
 }
 
+/// Whether `did` is `js::JsError`, whatever a JS function threw, of any
+/// shape, whose `None` may be a caught `null` (ADR 0030, #1905).
+pub(in crate::lower) fn is_js_error_type(tcx: TyCtxt<'_>, did: DefId) -> bool {
+    tcx.crate_name(did.krate).as_str() == "js" && tcx.item_name(did).as_str() == "JsError"
+}
+
 /// Whether `did` is `js::ErrorClass`, the binding's class trait of JS's
 /// `Error`, whose constructor sets a class's `message` and `cause` (#1808).
 pub(in crate::lower) fn is_js_error_class(tcx: TyCtxt<'_>, did: DefId) -> bool {

@@ -82,8 +82,10 @@ pub fn shown(text: &str) -> String {
 // React's ReactCapturedValue: `createCapturedValueFromError(value: Error,
 // ..)` takes an `Error` object, `js::Error`, which declares `Error`, as an
 // `AggregateError` declares its own; what's thrown, a `JsError`, is
-// anything, `any`. An `Error` is what may be thrown, by `Deref`.
-test("an Error object is declared Error, and what's thrown any", async () => {
+// anything, `unknown`, as TypeScript's strict `catch` and React's Flow
+// `mixed` have it (#1905, Tu's decision). An `Error` is what may be thrown,
+// by `Deref`.
+test("an Error object is declared Error, and what's thrown unknown", async () => {
   const withJs = ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
   const dir = fixture("js-error-objects");
   writeFileSync(join(dir, "lib.rs"), `use js::{AggregateError, Error, JsError, WeakKey, WeakMap, aggregate_error, error};
@@ -132,7 +134,7 @@ pub fn restacked(from: &JsError, frames: bool) -> &'static Error {
   run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
   const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
   expect(declarations).toContain("export function captured(value: Error, stack: string): string;");
-  expect(declarations).toContain("export function thrown(value: any): string;");
+  expect(declarations).toContain("export function thrown(value: unknown): string;");
   expect(declarations).toContain("export function made(message: string): Error;");
   expect(declarations).toContain("export function all(): AggregateError;");
   const js = readFileSync(join(dir, "lib.js"), "utf8");
@@ -338,4 +340,36 @@ pub fn each() -> Vec<Option<&'static Unknown>> {
     [true, "TypeError", "type"],
     [true, "URIError", "uri"],
   ]);
+});
+
+// A caught `null` is `None` (ADR 0030): a binding given a `JsError`'s `None`
+// is given no argument, as Rust says, so its default parameter is its, not
+// `null`, though `JsError` is declared `unknown`, a value of any shape, as
+// `js::Unknown` is, whose `None` is `undefined` alone (#1905).
+test("a JsError's None caught from throw null is no argument to a binding", async () => {
+  const withJs = ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("js-error-none-default");
+  writeFileSync(join(dir, "lib.rs"), `use js::JsError;
+
+#[cfg_attr(rust_js, rust_js::link_name = "globalThis.fallback")]
+fn fallback(error: Option<&JsError>) -> String {
+    unreachable!()
+}
+
+pub fn caught(source: &str) -> String {
+    fallback(js::eval(source).err())
+}
+
+pub fn thrown(source: &str) -> Option<&'static JsError> {
+    js::eval(source).err()
+}
+`);
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
+  expect(readFileSync(join(dir, "lib.d.ts"), "utf8")).toContain("export function thrown(source: string): unknown;");
+  const g = globalThis as Record<string, unknown>;
+  g.fallback = (error: unknown = "default") => String(error);
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.caught("throw null"), lib.caught("throw undefined"), lib.caught("throw new Error('x')")]).toEqual(["default", "default", "Error: x"]);
+  expect(lib.thrown("1")).toBe(undefined);
+  delete g.fallback;
 });

@@ -258,8 +258,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 
     /// `js::JsError`, what a JS function threw: the builtins crate's.
     pub(in crate::lower) fn is_js_error(&self, ty: Ty<'tcx>) -> bool {
-        matches!(ty.kind(), ty::Adt(adt, _) if self.tcx.crate_name(adt.did().krate).as_str() == "js"
-            && self.tcx.item_name(adt.did()).as_str() == "JsError")
+        matches!(ty.kind(), ty::Adt(adt, _) if super::js_items::is_js_error_type(self.tcx, adt.did()))
     }
 
     /// `js::SymbolFor`, the registry's symbol of a key (ADR 0634).

@@ -502,8 +502,9 @@ pub(in crate::lower) fn nullable_values(tcx: TyCtxt<'_>, adt: DefId) -> Vec<u32>
 /// `Option<&Unknown>`, TypeScript's `mixed`, whose `None` is `undefined`
 /// or `null`, each a value of its own that `js::classify` tells apart,
 /// which it holds as it is (rd275, #443; ADR 0884, amended).
-pub(in crate::lower) fn holds_none_as_null(tcx: TyCtxt<'_>, payload: Ty<'_>) -> bool {
-    !matches!(payload.peel_refs().kind(), ty::Adt(adt, _) if crate::lower::declarations::any_shape(tcx, adt.did()))
+pub(in crate::lower) fn holds_none_as_null<'tcx>(tcx: TyCtxt<'tcx>, payload: Ty<'tcx>) -> bool {
+    use crate::lower::analysis::nulled_params::{AnyValue, any_value};
+    any_value(tcx, payload) != Some(AnyValue::Shape)
 }
 
 /// The type parameters of binding `def_id` that are a collection's values

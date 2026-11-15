@@ -65,18 +65,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "associated_type_fields"],
   },
   {
-    name: "js-error-of-another-crate",
-    breaks: "`js::JsError` isn't told apart, its `{:?}` refused",
-    file: "src/lower/recognition/types.rs",
-    find: 'self.tcx.crate_name(adt.did().krate).as_str() == "js"',
-    replace: 'self.tcx.crate_name(adt.did().krate).as_str() == "jsx"',
-    tests: [
-      "test/js-errors.test.ts",
-      "-t",
-      "a JS error is shown as JS shows it",
-    ],
-  },
-  {
     name: "parse-error-by-name",
     breaks:
       "a crate's own `struct ParseIntError` is taken for std's by its name, and shown as std's `ParseIntError { kind: .. }`",

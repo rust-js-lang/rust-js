@@ -23,8 +23,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a map of any value, `Map<K, Option<&Unknown>>`, writes a `None` `null`, `data.set(key, value ?? null)`, so an `undefined` comes back `null` (#443)",
     file: "src/lower/bindings/nullable.rs",
-    find: "    !matches!(payload.peel_refs().kind(), ty::Adt(adt, _) if crate::lower::declarations::any_shape(tcx, adt.did()))\n",
-    replace: "    let _ = (tcx, payload);\n    true\n",
+    find: "    any_value(tcx, payload) != Some(AnyValue::Shape)\n",
+    replace: "    let _ = (tcx, payload, any_value);\n    true\n",
     tests: [
       "test/js-collections.test.ts",
       "-t",

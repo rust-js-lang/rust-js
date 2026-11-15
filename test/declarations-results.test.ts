@@ -34,7 +34,7 @@ pub fn generic<T>(value: T, ok: bool) -> Result<T, u32> {
 `);
   run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
-  expect(declarations).toContain('export function result(value: boolean): {\n    TAG: "Ok";\n    _0: string[];\n} | {\n    TAG: "Err";\n    _0: any;\n};');
+  expect(declarations).toContain('export function result(value: boolean): {\n    TAG: "Ok";\n    _0: string[];\n} | {\n    TAG: "Err";\n    _0: unknown;\n};');
   expect(declarations).toContain('export function generic<T>(value: T, ok: boolean): {\n    TAG: "Ok";\n    _0: T;\n} | {\n    TAG: "Err";\n    _0: number;\n};');
   const { result } = await import(join(dir, "lib.js"));
   expect(result(true)).toEqual({ TAG: "Ok", _0: ["ok"] });
@@ -45,8 +45,9 @@ if (made.TAG === "Ok") {
   const locales: string[] = made._0;
   console.log(locales);
 } else {
-  const thrown: Error = made._0;
-  console.log(thrown);
+  // What was thrown is \`unknown\`, narrowed before it's read (#1905).
+  const thrown: unknown = made._0;
+  if (thrown instanceof Error) console.log(thrown.message);
 }
 const kept = generic("en", true);
 export const tag: "Ok" | "Err" = kept.TAG;

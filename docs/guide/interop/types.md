@@ -1759,7 +1759,7 @@ export function hasState(fiber) {
 ```ts
 export interface Fiber {
     memoizedState?: unknown;
-    debugStack?: any;
+    debugStack?: unknown;
     name?: string | null | undefined;
 }
 

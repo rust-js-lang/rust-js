@@ -23,4 +23,16 @@ export const mutations: Mutation[] = [
     replace: '    js_root_fn(tcx, did).is_some_and(|name| name.as_str() == "truthy_")\n',
     tests: ["test/lowering-nullable-truthy.test.ts"],
   },
+  {
+    name: "js-error-of-another-crate",
+    breaks: "`js::JsError` isn't told apart, its `{:?}` refused",
+    file: "src/lower/recognition/js_items.rs",
+    find: 'tcx.crate_name(did.krate).as_str() == "js" && tcx.item_name(did).as_str() == "JsError"',
+    replace: 'tcx.crate_name(did.krate).as_str() == "jsx" && tcx.item_name(did).as_str() == "JsError"',
+    tests: [
+      "test/js-errors.test.ts",
+      "-t",
+      "a JS error is shown as JS shows it",
+    ],
+  },
 ];

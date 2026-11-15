@@ -3011,6 +3011,9 @@ pub mod json {
 /// Whatever a JS function threw, or a promise rejected with: usually an
 /// [`Error`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Error).
 /// An `extern` function that returns `Result<T, &JsError>` catches it (ADR 0035).
+/// Declared `unknown`, as TypeScript's strict `catch` and React's Flow
+/// `mixed` have what's thrown (#1905).
+#[cfg_attr(rust_js, rust_js::types = "unknown")]
 pub struct JsError(PhantomData<JsObject>);
 
 /// What JS shows of it, `String(error)`, `SyntaxError: ..`: an `unwrap`'s

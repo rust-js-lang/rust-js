@@ -131,4 +131,12 @@ export const mutations: Mutation[] = [
     replace: "        field_takes_one_none(tcx, field, ty)\n",
     tests: ["test/jsx-props.test.ts", "-t", "JSX takes a component's flattened props"],
   },
+  {
+    name: "js-error-none-trusted-undefined",
+    breaks: "a `JsError`'s `None`, a caught `null`, is taken for `undefined` alone, as `Unknown`'s is, so a binding given it is given `null` where Rust gives no argument, past its default parameter (#1905)",
+    file: "src/lower/analysis/nulled_params/js_nones.rs",
+    find: "            && !crate::lower::recognition::is_js_error_type(tcx, of.did()))\n",
+    replace: "            && true)\n",
+    tests: ["test/js-errors.test.ts", "-t", "caught from throw null"],
+  },
 ];

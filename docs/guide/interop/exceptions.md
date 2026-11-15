@@ -306,7 +306,8 @@ export function hasConfig(path) {
   `new Error()`, which has no `message` of its own, where `new Error("")`
   has an empty one. A function given one takes a `&Error`, which
   its declaration says is TypeScript's `Error`, where a `&JsError` is
-  `any`, as anything may be thrown. It's a `&JsError` by `Deref`, which
+  `unknown`, as anything may be thrown, which a TypeScript caller narrows
+  before it reads it, as a strict `catch`'s (#1905). It's a `&JsError` by `Deref`, which
   reads its `message()` and `stack()` and is given where what's thrown is
   ([ADR 0283](../../decisions/0283-js-crate-covers-typescripts-es-library.md), amended).
 - **Several errors as one is an `AggregateError`**:
