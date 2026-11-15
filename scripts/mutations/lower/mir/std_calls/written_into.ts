@@ -140,4 +140,12 @@ export const mutations: Mutation[] = [
     replace: "                        let ty = generic_args.type_at(0).peel_refs();\n",
     tests: ["test/corpus.test.ts", "-t", "^fmt_of_a_reference_impl_given_a_formatter.rs$"],
   },
+  {
+    name: "trait-default-armed-by-its-own-function",
+    breaks: "a library's writer that calls its trait's default its impl doesn't write is armed with the default's own function, `$writingInto(f, measured_shown, buf, bufMeasured)`, which nothing writes where its impls copy it, so the library's JS is refused (#1889)",
+    file: "src/lower/mir/std_calls/written_into.rs",
+    find: "                    Some(instance) if self.tcx.trait_of_assoc(instance.def_id()).is_some() => {\n",
+    replace: "                    Some(instance) if self.tcx.trait_of_assoc(instance.def_id()).is_some() && false => {\n",
+    tests: ["test/crates.test.ts", "-t", "trait_default_written_by_a_librarys_display"],
+  },
 ];

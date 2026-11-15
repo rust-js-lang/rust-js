@@ -807,3 +807,27 @@ go.
   and toml_edit would go from compiling to refused.
 - **One long branch**: rejected, since rebasing it onto a main that moves
   by a hundred commits a day costs more than landing each proven step.
+
+## Amendment: a trait's default a writer calls is its impl's copy (2026-11-15, #1889)
+
+A library frames each writer another crate can reach so that it writes
+through a sink. A `Display` that called its trait's default, one taking
+the `Formatter` that its impl doesn't write, `self.shown(f)`, was armed
+with the default's own function, `$writingInto(f, measured_shown, buf,
+bufMeasured)`. The library writes no such function: it copies the
+default into each impl's dictionary (ADR 0049). So its JS read a name
+nothing declared and was refused (the metamorphic net's library build of
+const_generic_impl_reached_by_a_trait_default_where_caught). A default
+its impl doesn't write is armed as a call of it is now, through the
+trait's call, `$writingInto(f, bufMeasured(SIZE).shown, buf)`, the
+impl's copy, which takes no evidence of its own. That holds for a
+struct's impl, a const generic one's and a type parameter's. It's the
+library's own code, so its contract needs nothing more.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none observable; the
+JS was refused. The pair case trait_default_written_by_a_librarys_display
+holds it against native Rust. The metamorphic case's program, which
+shows the library's writer in stdout's line beside a `catch_unwind`, is
+refused as #1633 refuses one now, not left as rust-js's bug. Mutation
+`trait-default-armed-by-its-own-function`
+(`lower/mir/std_calls/written_into.ts`).

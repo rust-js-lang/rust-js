@@ -456,6 +456,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     given.push(self.shown_in_place(value, span)?);
                 }
                 let armed = match framed {
+                    // A trait's default its impl doesn't write, copied into
+                    // the impl's dictionary (ADR 0049): that copy, as a call
+                    // of it is, `$writingInto(f, bufMeasured.shown, buf)`,
+                    // not the default's own function, which nothing writes
+                    // where its impls copy it (#1889).
+                    Some(instance) if self.tcx.trait_of_assoc(instance.def_id()).is_some() => {
+                        given.extend(self.given_to_writer(Some(def_id)));
+                        match self.trait_call(def_id, generic_args, given, span, out)? {
+                            Some(Expr {
+                                kind: js::ExprKind::Call(callee, args),
+                                ..
+                            }) => {
+                                let mut armed = vec![*callee];
+                                armed.extend(args);
+                                Some(SinkWrite::Helper("$writingInto", armed))
+                            }
+                            _ => None,
+                        }
+                    }
                     Some(instance) => {
                         let given = self.writer_function_given(instance.def_id(), instance.args, given, span)?;
                         self.writer_armed(instance.def_id(), given)
