@@ -921,7 +921,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/passed_on.rs",
     find: "        if let Some(fact) = self.converting(body, (span, made_at), call) {\n            self.dependencies.borrow_mut().merges_identities = true;\n",
     replace: "        if let Some(fact) = self.converting(body, (span, made_at), call) {\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: library_identities_kept_apart"],
+    tests: ["test/crates-compiled-here.test.ts", "-t", "a library.s functions that may merge what its consumer compares"],
   },
   {
     name: "scope-method-merge-unlisted",
