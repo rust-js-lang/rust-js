@@ -621,4 +621,20 @@ export const mutations: Mutation[] = [
     replace: "                        (true, ty::Adt(adt, args)) if false && adt.is_struct() => {\n",
     tests: ["test/jsx-props-read.test.ts", "-t", "own props are plain data"],
   },
+  {
+    name: "crate-constructed-read-anew",
+    breaks: "a struct only the crate constructs, which exported functions take, is read anew as one JS may give, so `node.sibling` read again after its test is `$unwrap(node.sibling)` (Tu's decision, 2026-11-15, ADR 0262's difference 60)",
+    file: "src/lower/analysis/fn_pointers.rs",
+    find: "        found.read_anew.retain(|adt| !plain.contains(adt));\n",
+    replace: "",
+    tests: ["test/lowering-nullable-tests.test.ts", "-t", "a RefCell field tested and read again"],
+  },
+  {
+    name: "dictionary-constructed-by-the-crate",
+    breaks: "a WebIDL dictionary the crate builds, which JS builds too, is taken as only the crate's, no getter answering its fields",
+    file: "src/lower/analysis/fn_pointers.rs",
+    find: " && !crate::lower::bindings::is_dictionary(tcx, adt))\n",
+    replace: ")\n",
+    tests: ["test/lowering-nullable-tests.test.ts", "-t", "a RefCell field tested and read again"],
+  },
 ];

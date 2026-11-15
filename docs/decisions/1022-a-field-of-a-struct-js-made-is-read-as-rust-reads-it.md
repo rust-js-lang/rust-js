@@ -496,3 +496,25 @@ field a getter that answers another value the second time (`$reads`),
 and each call's value and reads native Rust's (`//@ gives:` and `//@
 logs:`, which the read cases' test now checks). The compiler before this
 threw on four of them, a second read's `null`.
+
+## Amendment: a struct only the crate constructs is no getter's (2026-11-15, the user's decision, #1950)
+
+What an exported function takes, `&Fiber`, was read anew (`read_anew`),
+JS's to give, though only the crate constructs `Fiber`, so a field tested
+then read again, which MIR proves of the program's own data alone
+(`nulled::field_reads`, ADR 0620, amended), kept `$unwrap(node.sibling)`
+at React's 8 sites once tidy's reading of the JS went (#1950). The user
+decided (Tu, 2026-11-15): a struct only the crate constructs, which JS
+never builds, is plain data. The read_anew owner, `fn_pointers.rs`,
+leaves out of `read_anew` each struct the crate's code, or a library's
+as its contract says, makes (`own`), that no code that isn't theirs
+makes (`js_may_make`), and that isn't a WebIDL dictionary
+(`#[rust_js::dictionary]`), which JS builds too. ADR 0262's difference 60,
+in its Consequences and the guide. React's 8 reads are plain again.
+
+Held by test/lowering-nullable-tests.test.ts's "a RefCell field tested
+and read again" (an exported struct the crate builds read as the field; one
+it never builds, a getter's `Some` then `None`, panicking as Rust does; a
+dictionary the crate builds keeping its check); mutations
+`crate-constructed-read-anew` and `dictionary-constructed-by-the-crate`
+(lower/analysis/fn_pointers.ts).

@@ -2481,3 +2481,12 @@ React and JSX are [their own pages](README.md#react).
     component itself, not through React, giving a getter for a prop sees
     it (ADR 0262, the user's decision, 2026-11-15, #1908; [ADR 1022](../decisions/1022-a-field-of-a-struct-js-made-is-read-as-rust-reads-it.md),
     amended).
+60. A struct only the crate constructs, which JS never builds, is read as
+    plain data even where an exported function takes it, `&Fiber` or
+    `Rc<Fiber>`: `node.sibling.borrow().clone().unwrap()` after its test is
+    `const sibling = node.sibling;`, reading `node.sibling` twice where Rust
+    reads it once. JS must hand such a value back as the crate gave it, never
+    an object of its own nor one with a getter added; one JS can build, a
+    `js::cast`'s, a binding's result or a WebIDL dictionary, is read anew
+    (ADR 0262, the user's decision, 2026-11-15, #1950; [ADR 1022](../decisions/1022-a-field-of-a-struct-js-made-is-read-as-rust-reads-it.md),
+    amended).

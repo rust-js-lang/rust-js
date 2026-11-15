@@ -525,6 +525,56 @@ pub fn tested(node: &Fiber) -> u32 {
   };
   expect(() => givenLib.tested(node)).toThrow("called `Option::unwrap()` on a `None` value");
   expect(givenLib.tested({ id: 1, sibling: { id: 4, sibling: undefined } })).toBe(4);
+  // One only the crate constructs, which exported functions take, is plain
+  // data, no getter's: MIR's to prove (Tu's decision, 2026-11-15, ADR
+  // 0262's difference 60).
+  const built = compile(
+    "nullable-tests-field-paths-built",
+    `use std::cell::RefCell;
+use std::rc::Rc;
+
+pub struct Fiber {
+    pub id: u32,
+    pub sibling: RefCell<Option<Rc<Fiber>>>,
+}
+
+pub fn fiber(id: u32, sibling: Option<Rc<Fiber>>) -> Rc<Fiber> {
+    Rc::new(Fiber { id, sibling: RefCell::new(sibling) })
+}
+
+pub fn tested(node: &Fiber) -> u32 {
+    if node.sibling.borrow().is_some() {
+        let sibling = node.sibling.borrow().clone().unwrap();
+        return sibling.id;
+    }
+    0
+}
+
+// A WebIDL dictionary, which JS builds too, the crate's or not: read anew.
+#[cfg_attr(rust_js, rust_js::dictionary)]
+pub struct Init {
+    pub id: u32,
+    pub next: RefCell<Option<Rc<Init>>>,
+}
+
+pub fn init(id: u32) -> Rc<Init> {
+    Rc::new(Init { id, next: RefCell::new(None) })
+}
+
+pub fn next_id(init: &Init) -> u32 {
+    if init.next.borrow().is_some() {
+        let next = init.next.borrow().clone().unwrap();
+        return next.id;
+    }
+    0
+}
+`,
+  );
+  expect(built.fn("nextId")).toContain("$unwrap(init.next)");
+  expect(built.tidied).toEqual([]);
+  expect(built.fn("tested")).toContain("const sibling = node.sibling;");
+  const builtLib = await import(join(built.dir, "lib.js"));
+  expect([builtLib.tested(builtLib.fiber(1, builtLib.fiber(5, null))), builtLib.tested(builtLib.fiber(1, null))]).toEqual([5, 0]);
 });
 
 // A variable a part of an `&&` shows there, read right after it, as React's

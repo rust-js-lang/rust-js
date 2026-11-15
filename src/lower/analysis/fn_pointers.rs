@@ -211,8 +211,20 @@ impl<'tcx> FnPointers<'tcx> {
             recast = program;
             outside = js.into_iter().map(|(_, to)| to).collect();
         }
+        // A struct only the crate constructs, JS never building one, is plain
+        // data, whatever the crate's exported functions take it as, React's
+        // `Fiber`: no getter answers its fields. One the crate's code, or a
+        // library's as its contract says, makes (`own`), that no code that
+        // isn't theirs makes (`js_may_make`), and not a WebIDL dictionary,
+        // which JS builds (`#[rust_js::dictionary]`). JS gives one back as it
+        // was given it, a contract a JS caller keeps by giving only what the
+        // crate made (Tu's decision, 2026-11-15; ADR 0262's difference 60).
         found.js_made = made;
-        found.built = built;
+        found.built = built.clone();
+        let plain: Vec<DefId> = (found.read_anew.iter().copied())
+            .filter(|&adt| own(adt) && !found.js_may_make(adt) && !crate::lower::bindings::is_dictionary(tcx, adt))
+            .collect();
+        found.read_anew.retain(|adt| !plain.contains(adt));
         found
     }
 
@@ -399,7 +411,9 @@ impl<'tcx> FnPointers<'tcx> {
     /// Whether JS may give a value of the struct `adt`, to an exported
     /// function or a function a binding calls (`js_given`, #519), a getter
     /// of which may answer each read of a field anew: not a component's own
-    /// props, which React builds of its props' values (`read_anew`, #1908).
+    /// props, which React builds of its props' values (`read_anew`, #1908),
+    /// nor a struct only the crate constructs (Tu's decision, 2026-11-15,
+    /// ADR 0262's difference 60).
     pub(in crate::lower) fn js_may_give(&self, adt: DefId) -> bool {
         self.read_anew.contains(&adt)
     }

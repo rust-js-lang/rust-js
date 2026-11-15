@@ -432,9 +432,9 @@ property (`Expr::reads_a_field`); ADR 0957's rule likewise. React's 8
 `$unwrap(node.sibling)` sites are of `Fiber`, a struct its exported
 functions take, which the owner says JS may give, so MIR doesn't prove
 them: `$unwrap` there, the lead's decision on Tu's behalf, correctness
-first. Whether a struct the crate builds and JS never builds may be read
-anew is Tu's open question, an ADR 0262 "rare and harmless" exception of
-the kind of #1908's props.
+first; until Tu decided that a struct only the crate constructs is plain
+data (ADR 0262's difference 60, ADR 1022, amended), which gives them their
+plain reads back.
 
 Case of [0262](0262-when-rust-and-js-disagree.md): results change of a
 struct JS gives, Rust's kept (#1950); of the program's own data, none.

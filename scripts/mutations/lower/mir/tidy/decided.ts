@@ -96,7 +96,7 @@ export const mutations: Mutation[] = [
     tests: [
       "test/lowering-nullable.test.ts",
       "-t",
-      "an unwrap of a field of a struct JS gives",
+      "an unwrap of a field a test says is there",
     ],
   },
   {
@@ -118,7 +118,7 @@ export const mutations: Mutation[] = [
     tests: [
       "test/lowering-nullable.test.ts",
       "-t",
-      "an unwrap of a field of a struct JS gives",
+      "an unwrap of a field a test says is there",
     ],
   },
   {

@@ -464,6 +464,21 @@ react.dev's TopNav passes the same closure instead.
   calling the component itself, not through React, with a getter for
   one of its props sees that prop read twice. Listed in the guide's
   differences (`semantics.md`, 59).
+- **A struct only the crate constructs is plain data, wherever JS hands
+  it back**, the second case's, which the user decided (Tu, 2026-11-15,
+  the lead's decision 29, difference 60, #1950, #1933, ADR 1022, amended):
+  "a struct only the crate constructs, which JS never builds (React's
+  `Fiber`), is plain data, the same kind of exception as #1908's props".
+  One whose every value the crate's code, or a library's as its contract
+  says, makes, that no code that isn't theirs makes (a `js::cast`, a
+  binding's result), and that isn't a WebIDL dictionary, is read as plain
+  data even where the crate's exported functions take it, `&Fiber` or
+  `Rc<Fiber>`: a field tested and read again is the field,
+  `const sibling = node.sibling;`, as upstream writes it. JS gives such a
+  value back as the crate gave it; **a JS caller must not give an object
+  of its own in its place, nor add a getter to one**, which would be read
+  where Rust reads it once, `undefined` where Rust's value is `Some`.
+  Listed in the guide's differences (`semantics.md`, 60).
 
 ## Amendment: the stack's depth
 

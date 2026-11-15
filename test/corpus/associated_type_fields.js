@@ -36,8 +36,7 @@ function main() {
     `${value == null ? "None" : `Some(${value})`} ${nodeDebug_fmt(a, { fmt: (value) => String(value) }, i32Key, { fmt: (value) => (value == null ? "None" : `Some(${value})`) })} ${nodeDebug_fmt(b, { fmt: (value) => $debugStr(value) }, refStrKey, { fmt: (value) => `[${value.map((item) => $debugStr(item)).join(", ")}]` })}`,
   );
   const c = a;
-  const n = c.value;
-  console.log(`${$eq(c, a)} ${n != null ? (n + 1) >>> 0 : 0}`);
+  console.log(`${$eq(c, a)} ${c.value != null ? (c.value + 1) >>> 0 : 0}`);
   console.log(`${fill({ TAG: "Full", _0: 5 })} ${fill({ TAG: "Full" })} ${fill("Empty")}`);
 }
 //# sourceMappingURL=case.js.map
