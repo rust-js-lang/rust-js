@@ -603,20 +603,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 return self.const_as_code(Mir::new(tcx, state.facts.promoted()[promoted].clone(), IndexVec::new()));
             }
-            // A struct of no fields, a constant in optimized MIR, a library's
-            // a consumer compiles (ADR 0914), `const RangeFull` of `&mut
-            // buf[..]`, which no value tree says as JS: as making one is.
+            // A value of no size, a constant in optimized MIR, a library's a
+            // consumer compiles (ADR 0914): its type's one value.
             None if matches!(c.const_, Const::Val(mir::ConstValue::ZeroSized, _))
-                && matches!(ty.kind(), ty::Adt(adt, _) if adt.is_struct() && adt.all_fields().next().is_none()) =>
-            {
-                return self.adt_value(ty, VariantIdx::ZERO, Vec::new(), &[], None, c.span);
-            }
-            // And one whose fields are of no size themselves, `std::env::
-            // Args`' of a library's inlined `drop`: its one value, each field
-            // its own, as a constant of it is written (#1707).
-            None if matches!(c.const_, Const::Val(mir::ConstValue::ZeroSized, _))
-                && let Some(value) =
-                    crate::lower::representation::zero_sized_js(tcx, &self.krate.flattened.keyed, ty) =>
+                && let Some(value) = self.zero_sized_value(ty, c.span)? =>
             {
                 return Ok(value);
             }
@@ -632,6 +622,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             js::ExprKind::Num(_) => value.or_at(self.js_span(c.span)),
             _ => value,
         })
+    }
+
+    /// The one value of `ty`, a type of no size, as a constant of it is
+    /// written: of a struct of no fields, `const RangeFull` of `&mut
+    /// buf[..]`, which no value tree says as JS, as making one is, `{}` of
+    /// `Empty {}`, `undefined` of a unit struct; of one whose fields are of
+    /// no size themselves, `std::env::Args`', each field its own (#1707),
+    /// `[]` of `[T; 0]` (`representation::zero_sized_js`). And what a local of
+    /// it holds that nothing writes, optimized MIR having dropped a write of
+    /// no size, `_0 = Refused` (#1889). `None` of a type with a size.
+    pub(super) fn zero_sized_value(&mut self, ty: Ty<'tcx>, span: Span) -> R<Option<Expr>> {
+        if matches!(ty.kind(), ty::Adt(adt, _) if adt.is_struct() && adt.all_fields().next().is_none()) {
+            return self
+                .adt_value(ty, VariantIdx::ZERO, Vec::new(), &[], None, span)
+                .map(Some);
+        }
+        Ok(crate::lower::representation::zero_sized_js(
+            self.tcx,
+            &self.krate.flattened.keyed,
+            ty,
+        ))
     }
 
     /// Where a constant written at `span` is in the map: where it's

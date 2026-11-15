@@ -569,6 +569,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(value) = state.places.get(&local) {
             return Ok(value.clone());
         }
+        // Of no size, and written nowhere, optimized MIR having dropped its
+        // write, `_0 = Refused` of a library's a consumer compiles (#1889):
+        // its type's one value, not a name nothing declares.
+        if state.locals.writes[local] == 0
+            && state.body.local_kind(local) != mir::LocalKind::Arg
+            && let Some(value) = self.zero_sized_value(state.body.local_decls[local].ty, state.body.span)?
+        {
+            return Ok(Value::Expr(value));
+        }
         match state.locals.names[local].as_str() {
             "" => Ok(Value::Expr(Expr::js_undefined())),
             // A cell a pointer is taken to (ADR 0407): its `value`.

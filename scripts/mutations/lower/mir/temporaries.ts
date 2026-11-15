@@ -668,4 +668,12 @@ export const mutations: Mutation[] = [
     replace: "            if false && !named && let Value::Fmt(_, _, subject) = &mut value {\n",
     tests: ["test/corpus.test.ts", "-t", "^format_arguments_beside_an_address.rs$"],
   },
+  {
+    name: "unwritten-zero-sized-read-by-name",
+    breaks: "a local of no size that nothing writes, a library's generic impl's `_0 = Refused` optimized MIR dropped, is read by a name nothing declares, `return result;`, so the consumer's JS is refused (#1889)",
+    file: "src/lower/mir/temporaries.rs",
+    find: "        if state.locals.writes[local] == 0\n            && state.body.local_kind(local) != mir::LocalKind::Arg\n",
+    replace: "        if false\n            && state.body.local_kind(local) != mir::LocalKind::Arg\n",
+    tests: ["test/crates.test.ts", "-t", "zero_sized_value_a_librarys_generic_impl_gives"],
+  },
 ];

@@ -1776,3 +1776,27 @@ zero-sized on some platforms only; mutation
 `zero-sized-struct-of-fields-as-fieldless`, caught. Found by the metamorphic
 net's `library` rewrite of
 `raw_pointer_to_a_local_with_a_destructor_sees_its_writes` (#1704).
+
+## Amendment: a value of no size nothing writes is its type's one value (2026-11-15, #1889)
+
+A consumer compiles a library's generic impl's instance from the library's
+optimized MIR, where rustc drops each write of a value of no size. So
+`Refused::from_iter`'s `_0 = Refused` wasn't there, and its `return`
+read `_0` by its name, `return result;`, which nothing declared. The JS
+was refused (the metamorphic net's library build of
+own_iterator_collected_by_generic_code_into_own_from_iterator). A local of
+no size that nothing writes, and that isn't a parameter, reads as its
+type's one value now. There's one owner of that value, `zero_sized_value`
+(mir/operands.rs): `undefined` of a unit struct, `{}` of `Empty {}`, `[]`
+of `[T; 0]`, each field its own of a struct of such fields. The constant
+lowering of a value of no size asks it too, where it had two rules of its
+own.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none observable; the
+JS was refused. The pair case
+zero_sized_value_a_librarys_generic_impl_gives holds it against native
+Rust: a unit struct a generic collect gives, and one it panics before
+giving, an empty struct, and a tuple of `[u8; 0]`, `()` and an empty
+struct. No corpus snapshot moves. Mutation
+`unwritten-zero-sized-read-by-name` (`lower/mir/temporaries.ts`);
+`mir-const-unit-struct-refused` retargeted.

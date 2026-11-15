@@ -324,8 +324,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a struct of no fields a library's optimized MIR names as a constant, `const RangeFull` of base64's `&mut buf[..]`, is refused, \"this constant, from its MIR\" (#474)",
     file: "src/lower/mir/operands.rs",
-    find: "                && matches!(ty.kind(), ty::Adt(adt, _) if adt.is_struct() && adt.all_fields().next().is_none()) =>\n",
-    replace: "                && false =>\n",
+    find: "        if matches!(ty.kind(), ty::Adt(adt, _) if adt.is_struct() && adt.all_fields().next().is_none()) {\n",
+    replace: "        if false {\n",
     tests: ["test/crates.test.ts", "-t", "unit_struct_of_instance"],
   },
   {
