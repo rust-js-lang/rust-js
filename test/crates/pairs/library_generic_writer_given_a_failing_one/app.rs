@@ -36,3 +36,4 @@ pub fn main() {
     let mut bytes: Vec<u8> = Vec::new();
     println!("{} {:?} {bytes:?}", dep::emitted(&mut bytes), dep::emit_twice(&mut bytes).is_ok());
 }
+//@ nondeterministic: its run reads the file system

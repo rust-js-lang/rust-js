@@ -420,8 +420,10 @@ export const parts: Part[] = [
  * what a test sets for a child it runs, the printer of declarations its
  * compiles name (test/setup.ts), the temp root it gives every test process
  * (test/bounded.ts), Miri's sysroot, which a run asks for once
- * (test/miri.ts), a report's, and decision coverage's counts, which the
- * compile cache never keeps a compile of (ADR 1124). */
+ * (test/miri.ts), a report's, decision coverage's counts, which the
+ * compile cache never keeps a compile of (ADR 1124), and the share of kept
+ * native runs built and run again, the nightly's, which its jobs' native
+ * outcomes action sets (test/native-outcomes.ts). */
 export const harness = [
   "BLESS",
   "BUN_TEST_WORKER_ID",
@@ -449,6 +451,8 @@ export const harness = [
   "RUST_JS_DECISIONS",
   "RUST_JS_KEEP_FIXTURES",
   "RUST_JS_MUTANT",
+  "RUST_JS_NATIVE_RECHECK",
+  "RUST_JS_OUTCOME_VALUE",
   "RUST_JS_SNAPSHOTS",
   "RUST_JS_SYSTEM_TMPDIR",
   "RUST_JS_TARGET",

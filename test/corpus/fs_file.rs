@@ -126,3 +126,4 @@ fn run() -> io::Result<()> {
     println!("{} {}", File::open(&log).is_err(), File::open(&notes).is_err());
     Ok(())
 }
+//@ nondeterministic: its run reads its arguments, reads and writes the file system

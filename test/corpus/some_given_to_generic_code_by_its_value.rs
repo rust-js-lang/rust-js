@@ -137,3 +137,4 @@ fn main() {
     let v: Vec<Option<()>> = vec![()].into_iter().map(by_value).collect();
     println!("{v:?} {}", takes(by_value(None::<()>)));
 }
+//@ nondeterministic: its run reads its arguments

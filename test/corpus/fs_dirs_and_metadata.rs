@@ -114,3 +114,4 @@ fn run() -> io::Result<()> {
     println!("{}", fs::metadata(&root).is_err());
     Ok(())
 }
+//@ nondeterministic: its run reads the clock, reads its arguments, reads and writes the file system

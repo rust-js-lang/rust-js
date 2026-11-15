@@ -3,10 +3,12 @@
 
 import { expect } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { cargoBuild, cargoEnv, checkCargo } from "../tooling/cargo.js";
-import { node } from "./programs";
-import { compiler, fixture, nativeCrates, root, run, target } from "./support";
+import { nondeterministic } from "./corpus-cases";
+import { keepRun, keptRun, recheck, rechecked } from "./native-outcomes";
+import { node, type Run } from "./programs";
+import { compiler, fixture, nativeCrates, nativeCratesKey, root, run, target } from "./support";
 import { channel } from "../scripts/toolchain.ts";
 
 export const cargo = (manifest: string, ...args: string[]) => ["cargo", `+${channel}`, ...args, "--offline", "--quiet", "--manifest-path", manifest];
@@ -24,6 +26,35 @@ export const printed = (app: string) => run([node ?? "node", "--input-type=modul
 // `dep`, `mid` using it, and `app` using both (ADR 0523).
 export const pairs = join(root, "test", "crates", "pairs");
 export const triples = join(root, "test", "crates", "triples");
+
+/** What the native program of `crates` prints, `nativeCrates`', asked once:
+ * its run kept by what it was built from, as a case's is
+ * (test/native-outcomes.ts), so a chain unchanged since is neither built
+ * nor run again; and of the nightly's share, run again too. */
+export function nativeCratesOutput(crates: { name: string; file: string; uses: string[]; edition?: string }[], main: string, flags: string[]): () => string {
+  const key = nativeCratesKey(crates, main, flags);
+  // Not of a chain one of whose crates reads the world (`nondeterministic`).
+  const keeps = !crates.some(({ file }) => nondeterministic(readFileSync(file, "utf8")) !== undefined);
+  let said: string | undefined;
+  const fresh = (): Run => {
+    const built = nativeCrates(crates, main, flags);
+    if ("error" in built) throw new Error(built.error);
+    const stdout = run([built.binary]);
+    const ran: Run = { stdout, stderr: "", bytes: { stdout: Buffer.from(stdout), stderr: Buffer.from("") }, outcome: { value: null } };
+    if (keeps && built.kept) keepRun(key, dirname(built.binary), ran);
+    return ran;
+  };
+  return () => {
+    if (said !== undefined) return said;
+    const kept = keeps ? keptRun(key) : undefined;
+    if (kept !== undefined && rechecked()) {
+      const problem = recheck(kept, fresh);
+      if (problem !== undefined) throw new Error(`${crates.at(-1)!.file}: ${problem}`);
+    }
+    said = (kept ?? fresh()).stdout;
+    return said;
+  };
+}
 
 /** `crates` of `cases/name`, each a library of the ones before it but the
  * last, the app, compiled natively and by rust-js: the app's JS prints what
@@ -53,13 +84,11 @@ export function chain(cases: string, name: string, files: string[], refused?: st
   // Natively, each crate a library and a program of the last, kept by what
   // they're made of (`nativeCrates`).
   const app = crates[crates.length - 1];
-  const built = nativeCrates(
+  const native = nativeCratesOutput(
     crates.map((crate, i) => ({ name: crate, file: source(files[i]), uses: given(i), edition: editions[i] })),
     `fn main() {\n    ${app}::main();\n}\n`,
     ["--edition=2024", "-Coverflow-checks=off"],
   );
-  if ("error" in built) throw new Error(built.error);
-  const program = built.binary;
   const compile = (crate: string, i: number) => {
     const used = before(i);
     const library = i < crates.length - 1
@@ -81,7 +110,7 @@ export function chain(cases: string, name: string, files: string[], refused?: st
       said = String(error);
     }
     for (const words of refused) expect(said).toContain(words);
-    return run([program]);
+    return native();
   }
   crates.forEach(compile);
   // Where `throws` is given, the app's JS ends by an error saying it, as
@@ -89,9 +118,9 @@ export function chain(cases: string, name: string, files: string[], refused?: st
   // native program prints.
   if (throws !== undefined) {
     expect(() => printed(join(out, app, "lib.js"))).toThrow(throws);
-    return run([program]);
+    return native();
   }
-  expect(printed(join(out, app, "lib.js"))).toBe(run([program]));
+  expect(printed(join(out, app, "lib.js"))).toBe(native());
   return out;
 }
 

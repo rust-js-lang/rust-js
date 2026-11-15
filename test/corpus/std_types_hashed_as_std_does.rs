@@ -118,3 +118,4 @@ fn main() {
         hashed(&Layout::from_size_align(24, 8).unwrap())
     );
 }
+//@ nondeterministic: its run reads the clock

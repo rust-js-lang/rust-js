@@ -27,3 +27,4 @@ pub fn sum(mut at: *const Node) -> u32 {
     }
     total
 }
+//@ nondeterministic: its run reads its arguments

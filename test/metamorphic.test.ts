@@ -14,7 +14,7 @@ import { beforeAll, expect, test } from "bun:test";
 import { appendFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { corpus } from "./corpus-cases";
+import { corpus, nondeterministic } from "./corpus-cases";
 import { runSync } from "./child";
 import { mayBeUndefined, miriInstalled, undefinedBehaviour } from "./miri";
 import { agreesUpToHashOrder, buildRewriter, libraryCrate, middleEvent, overlapping, readKnown, rewritable, rewrites, rewritten, sampled, type Rewrite } from "./metamorphic";
@@ -77,6 +77,14 @@ function wrong(rewrite: Rewrite, name: string, edition: string, target: "host" |
   let native: Run | undefined;
   let again: (() => Run | string) | undefined;
   let made: ReturnType<typeof rewritten>;
+  // No loud rewrite of a case whose run reads the world (`//@
+  // nondeterministic`): its events count what each run is given, the
+  // calls `env::vars().find(..)` makes before `PATH`, of an environment the
+  // native run's shell and the JS's runtime each order their own way.
+  if (rewrite.startsWith("loud") && nondeterministic(readFileSync(file, "utf8")) !== undefined) {
+    tally(rewrite, name, "nondeterministic");
+    return undefined;
+  }
   // Of every place, then of its first alone.
   for (const limit of [undefined, 1]) {
     made = rewritten(rewrite, file, edition, limit);
@@ -94,7 +102,8 @@ function wrong(rewrite: Rewrite, name: string, edition: string, target: "host" |
       if (lib.code !== 0) continue;
       rustc.push("--extern", `${libraryCrate}=${rlib}`);
     }
-    const ran = runNative(variant, dir, edition, target, rustc);
+    // Its run kept, but of a case whose run isn't (`of`'s directives).
+    const ran = runNative(variant, dir, edition, target, rustc, { of: file });
     // On wasm32 a panic aborts, with no outcome to judge the JS's by: no
     // variant, as one rustc rejects is. Nor one native Rust doesn't end
     // within its limits, an endless iterator a rewrite gives `count()`:
@@ -103,7 +112,7 @@ function wrong(rewrite: Rewrite, name: string, edition: string, target: "host" |
     const unjudged = typeof ran !== "string" && ((target === "wasm32" && typeof ran.outcome === "string") || ran.stopped === true);
     if (typeof ran !== "string" && !unjudged && !overlapping(rewrite, ran.outcome)) {
       native = ran;
-      again = () => runNative(variant, dir, edition, target, rustc);
+      again = () => runNative(variant, dir, edition, target, rustc, { of: file, fresh: true });
       tally(rewrite, name, "variant");
       break;
     }

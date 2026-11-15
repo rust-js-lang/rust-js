@@ -108,3 +108,4 @@ fn run() -> io::Result<()> {
     fs::remove_file(&path)?;
     Ok(())
 }
+//@ nondeterministic: its run reads its arguments, reads and writes the file system

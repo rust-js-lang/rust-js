@@ -2,6 +2,7 @@
 // (ADR 0088) and generated programs (ADR 0092): what it prints to stdout and
 // stderr, and how its `main` ends, as the oracle says it (ADR 0088).
 
+import { createHash } from "node:crypto";
 import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { runInNewContext } from "node:vm";
@@ -10,7 +11,9 @@ import { machine, memoryBudget } from "../scripts/shard";
 import { compileFailure, run as runAsync, runSync, stopped, type Exit } from "./child";
 import { decode, encode, same, type Outcome } from "./oracle";
 import { helpersModule, stdDir } from "./packages-of";
-import { compiler, contentDirectory, nativeBinary, root, run } from "./support";
+import { directives } from "./corpus-cases";
+import { keepRun, keptRun, recheck, rechecked } from "./native-outcomes";
+import { compiler, contentDirectory, nativeBinary, nativeKey, root, run } from "./support";
 
 export const node = Bun.which("node");
 // The generated JS runs under Node, the runtime rust-js targets (ADR 0095);
@@ -138,7 +141,12 @@ const rustString = (s: string) => JSON.stringify(s);
 // panic as the JS runner does. The panic hook is silenced, so stderr is only
 // what the program writes. The case is included where it is, so what it
 // reads beside it, an `include_str!`, is found as the JS's compile finds it;
-// the wrapper is where its text says, so a case is one kept binary.
+// the wrapper is where its text says, so a case is one kept binary. Its
+// run is kept by what it was built from (test/native-outcomes.ts), and the
+// same program isn't built or run again: not of a case its directives say
+// is `nondeterministic`, `of`'s where the program is a rewrite of it (the
+// metamorphic net's), nor where it's run `fresh`, again for another of the
+// answers a hash table's seed gives.
 export function runNative(
   file: string,
   dir: string,
@@ -147,13 +155,47 @@ export function runNative(
   // rustc's flags besides: a library the case uses, `--extern
   // metamorph_lib=<rlib>` (the metamorphic net's `library`).
   rustc: string[] = [],
+  { of = file, fresh = false }: { of?: string; fresh?: boolean } = {},
 ): Run | string {
   if (target === "wasm32") return runWasm32(file, dir, edition, rustc);
   const source = nativeSource(file);
-  const built = nativeBinary(source, contentDirectory(source), [...nativeFlags(edition), ...rustc], compileTimeout);
-  if ("error" in built) return built.error;
-  const outcomeFile = join(dir, "native.json");
-  return ranOnce(built, execute(nativeCommand(built.binary, outcomeFile), outcomeFile, built.built ? firstRunTimeout : timeout));
+  const at = contentDirectory(source);
+  const flags = [...nativeFlags(edition), ...rustc];
+  const key = nativeRunKey(file, edition, rustc);
+  const keeps = !fresh && keepsRun(of);
+  const kept = keeps ? keptRun(key) : undefined;
+  const ran = () => {
+    const built = nativeBinary(source, at, flags, compileTimeout);
+    if ("error" in built) return built.error;
+    const outcomeFile = join(dir, "native.json");
+    const run = execute(nativeCommand(built.binary, outcomeFile), outcomeFile, built.built ? firstRunTimeout : timeout);
+    if (keeps && built.kept) keepRun(key, dirname(built.binary), run);
+    return ranOnce(built, run);
+  };
+  if (kept === undefined) return ran();
+  if (rechecked()) {
+    const problem = recheck(kept, ran);
+    if (problem !== undefined) throw new Error(`${file}: ${problem}`);
+  }
+  return kept;
+}
+
+/** The key a native run of `file` is kept by: its build's (`nativeKey`),
+ * and the memory it's given (`nativeCommand`), as a run that ends within 2
+ * GB may be stopped within 200 MB, the reducer's (#1306). */
+export function nativeRunKey(file: string, edition = "2024", rustc: string[] = []): string {
+  const source = nativeSource(file);
+  const build = nativeKey(source, contentDirectory(source), [...nativeFlags(edition), ...rustc]);
+  const limit = process.platform === "linux" ? `data ${nativeDataKiB} KiB` : process.platform === "darwin" ? `share ${nativeShare()} bytes` : "none";
+  return createHash("sha256").update(`${build}\0${limit}`).digest("hex");
+}
+
+/** Whether a native run of the case `file`, or of a program made of it, is
+ * kept: not where its directives say it's `nondeterministic`, or can't be
+ * read. */
+function keepsRun(file: string): boolean {
+  const want = existsSync(file) ? directives(readFileSync(file, "utf8")) : undefined;
+  return want === undefined || (typeof want === "object" && want.nondeterministic === undefined);
 }
 
 /** The memory a native run may write on Linux, CI's, `RLIMIT_DATA`: 4

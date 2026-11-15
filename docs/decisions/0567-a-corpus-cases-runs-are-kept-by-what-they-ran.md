@@ -91,3 +91,71 @@ And the metamorphic net's runs are kept so (ADR 1104, amended): a
 rewrite's program, its JS, native Rust's output and end, `shared()`, and
 the net's harness. After a change to the compiler, the net's whole run on
 the 12-core M6 is 299 s, not 501 s.
+
+## Amendment: native Rust's runs kept by what they were built from, and CI keeps them (ioCF, the lead for Tu, 2026-11-16)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N, as above.
+
+"CI verifies everything: a fresh machine has no cache" was what made CI
+slow. On the Mac mini, quiet, the corpus's part 1/8, 324 cases, took 236 s
+with the native and verified-run stores cold, as each CI job starts; 44.8
+s with only the natives' builds warm; 5.6 s with both. The natives were
+80% of a cold part, and each test shard's corpus parts are its longest leg
+(check 43740041639). Their binaries can't be kept on CI: the corpus's
+alone are some 1.4 GB, and the repository's caches were at 10.3 GB of
+their 10.
+
+So "Cache the native run too", an alternative above, is taken, by its
+build's key, not its output: **a native program's run is kept beside what
+its build read** (`test/native-outcomes.ts`, `native-outcomes/<key>/<the
+build's inputs>/run.json`, the machine's, held to 256 MB). The key is
+`nativeBinary`'s, which already decides when a build is given again:
+rustc's version, the flags, the wrapper's path and the source, each file
+a flag names by its digest, and each file of a directory `-L
+dependency=` names, which rustc's dep-info doesn't list (new here, so a
+kept binary isn't given against another build of its crates either). And
+what the build read is checked as a kept build's is: each file rustc's
+dep-info says it read, by its digest, and each variable an `env!` or an
+`option_env!` read (`# env-dep`). A chain of crates' program
+(test/crates.ts) is kept the same way, by `nativeCrates`' key.
+
+- **Only of a run that says the same each time.** Not a case's whose run
+  reads the clock, a random seed, the file system, its arguments, its
+  environment, its process's id or its input: each carries `//@
+  nondeterministic: <why>` (test/corpus-cases.ts's directives, one reading
+  of them), and `test/native-outcomes.test.ts` holds every corpus case
+  whose code names such an API to it; a rewrite of one, the metamorphic
+  net's, is judged by its case's (`of`). Not one stopped by its time or
+  its memory. Not a run asked for afresh: the net's runs again, for
+  another of the answers a hash table's seed gives (`fresh`).
+- **CI restores them, and only `main` saves them**: each job that runs
+  native programs restores the newest its own name kept, the test shards
+  and the nightly's nets (`.github/actions/native-outcomes`), with the
+  corpus's verified runs beside them; a branch's run restores and saves
+  nothing. A few MB a job, 3 MB of outcomes for a corpus part of 324 cases.
+- **The run's key holds the memory it's given**, `nativeCommand`'s share
+  on macOS, its `ulimit` on Linux: a run that ends within 2 GB may be
+  stopped within 200 MB. A reducer's variant is run afresh, its check held
+  to a share of memory as a whole process (#1306), and a loud rewrite of a
+  case marked `nondeterministic` isn't made: its events count what each
+  run is given, the calls `env::vars().find(..)` makes before `PATH`, of an
+  environment the native run's shell and the JS's runtime each order their
+  own way.
+- **The nightly checks them**: a random 2% of the kept runs it's given
+  (`RUST_JS_NATIVE_RECHECK=0.02`) are built and run again, up to eight
+  times, and one that never says what was kept fails its test, a key that
+  misses an input. Eight, as a program whose output std leaves to a hash
+  table's seed may say another of its answers first. And 2% of the
+  verified runs it's given are run again and compared, not taken as
+  verified.
+- **The verified runs' key is as it was**, kept on CI beside the outcomes:
+  it holds the JS the compiler wrote, so a change to the compiler that
+  changes what a case runs misses; @rust-js/std's modules, its runtime's
+  helpers among them; the harness, `test/native-outcomes.ts` added; and
+  Node's, Bun's and Vite's versions. Not the compiler's binary, which every
+  push changes (Alternatives, above).
+
+Measured on the Mac mini, quiet, as CI would run with them restored: the
+corpus's part 1/8, the native and verified-run stores cold and the
+outcomes kept, 43.1 s, not 236 s; with the verified runs kept too, 3.5 s.
+`test/crates.test.ts`, all cold 115.9 s, the outcomes kept 13.2 s.

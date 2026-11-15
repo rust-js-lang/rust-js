@@ -21,8 +21,11 @@ runs:
       name: Install the pinned Rust toolchain
       shell: bash
       run: rustup show
-    # Else what the last build left: dependencies aren't downloaded or
-    # compiled again, only rust-js is.
+    # Else what a build of these dependencies left: they aren't downloaded
+    # or compiled again, only rust-js is. One entry for each set of them,
+    # keyed by what they're built from, not by the commit: a 450 MB entry
+    # a push, of six such caches, held the repository's 10 GB of caches
+    # full and each evicted the others (docs/dev-loop.md).
     - if: steps.binary.outputs.cache-hit != 'true'
       uses: actions/cache@v6
       with:
@@ -30,8 +33,8 @@ runs:
           ~/.cargo/registry
           ~/.cargo/git
           target/${{ inputs.profile }}
-        key: rustc-tests-${{ inputs.profile }}-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}-${{ github.sha }}
-        restore-keys: rustc-tests-${{ inputs.profile }}-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}-
+        key: rustc-tests-${{ inputs.profile }}-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}
+        restore-keys: rustc-tests-${{ inputs.profile }}-${{ runner.os }}-
     - if: steps.binary.outputs.cache-hit != 'true'
       name: Build rust-js
       shell: bash

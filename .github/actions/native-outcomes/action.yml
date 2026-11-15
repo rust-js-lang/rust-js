@@ -1,0 +1,40 @@
+name: Native outcomes
+description: The native programs' runs kept by what they were built from, and the corpus's verified runs (test/native-outcomes.ts, ADR 0567 amended), restored before a job's tests and, of main's runs alone, saved after them.
+inputs:
+  step:
+    description: "`restore`, before the tests, or `save`, after them"
+    required: true
+  name:
+    description: "The job's own name for them, one store each job and shard keeps, like `test-1`"
+    required: true
+  nightly:
+    description: "Of the nightly's: `true`, and a share of the kept runs, 2%, is built and run again, and one that differs fails its test"
+    default: 'false'
+runs:
+  using: composite
+  steps:
+    # The newest a run of this job kept: what the tests keep is by what it
+    # was made of, so any earlier run's is as good, and a run's new ones
+    # are added to it. A few MB: the native programs' builds themselves,
+    # 1.4 GB of the corpus's alone, don't fit the repository's caches
+    # (docs/dev-loop.md).
+    - if: inputs.step == 'restore'
+      uses: actions/cache/restore@v6
+      with:
+        path: |
+          .cache/native-outcomes
+          .cache/verified-runs
+        key: native-outcomes-${{ runner.os }}-${{ inputs.name }}-${{ github.run_id }}-${{ github.run_attempt }}
+        restore-keys: native-outcomes-${{ runner.os }}-${{ inputs.name }}-
+    - if: inputs.step == 'restore' && inputs.nightly == 'true'
+      shell: bash
+      run: echo "RUST_JS_NATIVE_RECHECK=0.02" >> "$GITHUB_ENV"
+    # Only main's runs write them: a branch's restores them and keeps
+    # nothing another run reads.
+    - if: inputs.step == 'save' && github.ref == 'refs/heads/main'
+      uses: actions/cache/save@v6
+      with:
+        path: |
+          .cache/native-outcomes
+          .cache/verified-runs
+        key: native-outcomes-${{ runner.os }}-${{ inputs.name }}-${{ github.run_id }}-${{ github.run_attempt }}

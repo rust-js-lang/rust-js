@@ -46,3 +46,4 @@ fn main() {
     third.value = 30;
     println!("{}", sum(&first));
 }
+//@ nondeterministic: its run reads its arguments

@@ -20,6 +20,11 @@ const day = 24 * 60 * 60;
  * (`nativeBinary`, #1047). */
 export const nativeCache = join(machineStore, "native-cache");
 
+/** Where native programs' runs are kept by what they were built from
+ * (test/native-outcomes.ts): the machine's, every worktree's, as their
+ * builds are, and what CI's jobs restore and `main`'s save. */
+export const nativeOutcomes = join(machineStore, "native-outcomes");
+
 /** Where the Rustlantis net's generator is built (ADR 1125): the
  * machine's, one build of its pinned commit and patch, some 120 MB, an
  * earlier one removed as a build starts (test/rustlantis.ts). */
@@ -46,6 +51,7 @@ export const keptStores = [
   { dir: nativeCache, cap: 10 * 2 ** 30 },
   { dir: join(checkoutTarget, "native-sources"), cap: 64 * 2 ** 20 },
   { dir: verifiedRuns, cap: 512 * 2 ** 20 },
+  { dir: nativeOutcomes, cap: 256 * 2 ** 20 },
 ];
 
 /** Mark `entry`, a kept one, used now: what's used stays. */

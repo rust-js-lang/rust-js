@@ -29,3 +29,4 @@ fn main() {
     let later = format!("{:#?}", start + Duration::from_secs(1));
     println!("{}", later.starts_with("Instant {\n    tv_sec: ") && later.ends_with(",\n}"));
 }
+//@ nondeterministic: its run reads the clock

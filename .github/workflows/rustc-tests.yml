@@ -379,8 +379,8 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             target/mutants/target
-          key: mutants-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}-${{ github.sha }}
-          restore-keys: mutants-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}-
+          key: mutants-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}
+          restore-keys: mutants-${{ runner.os }}-
       # The corpus ships each case through Vite too.
       - run: bun install --frozen-lockfile
       # What each mutation took the nightly `plan` picked, each shard of
@@ -480,8 +480,8 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             target/debug
-          key: ablation-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}-${{ github.sha }}
-          restore-keys: ablation-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}-
+          key: ablation-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}
+          restore-keys: ablation-${{ runner.os }}-
       - run: bun install --frozen-lockfile
       # And, with `--native`, the corpus's and the matrix's runs against
       # native Rust: the browser and native Rust's own setup are the action's.

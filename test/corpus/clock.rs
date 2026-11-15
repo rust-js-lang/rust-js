@@ -28,3 +28,4 @@ fn main() {
     println!("{:?} {}", t3 - start, t3 < t2);
     println!("{:?}", (t2 - Duration::from_secs(1)).duration_since(start));
 }
+//@ nondeterministic: its run reads the clock

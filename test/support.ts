@@ -134,18 +134,48 @@ export function contentDirectory(...contents: string[]): string {
  * disk with what its fixtures hold till it ends (#1108).
  */
 export function nativeBinary(source: string, dir: string, flags: string[], timeout = 120_000): NativeBuild {
+  const wrapper = resolve(dir, "native.rs");
+  const key = nativeKey(source, dir, flags);
+  writeWhole(wrapper, source);
+  return keptNative(key, wrapper, timeout, (into, depInfo) => [
+    ["rustc", ...flags, wrapper, "-o", join(into, "native"), ...(depInfo ? [`--emit=link,dep-info=${depInfo("native")}`] : [])],
+  ]);
+}
+
+/** The key `nativeBinary` keeps the program of `source` in `dir`, built
+ * with `flags`, by, before what its build read: rustc's version, the
+ * flags, the wrapper's path and `source`; each file a flag names, an
+ * `--extern`'s rlib, by what it holds; and each file of a directory
+ * `-L dependency=` names, which rustc's dep-info doesn't list, as the
+ * crates an rlib was built against are found there (`native-outcomes.ts`
+ * keeps a run by it). */
+export function nativeKey(source: string, dir: string, flags: string[]): string {
   rustcVersion ??= run(["rustc", "-vV"]);
   const wrapper = resolve(dir, "native.rs");
   const hash = createHash("sha256").update(rustcVersion).update(portable(JSON.stringify(flags))).update(portable(wrapper)).update(portable(source));
   for (const flag of flags) {
     const path = flag.slice(flag.indexOf("=") + 1);
     if (path.startsWith("/") && existsSync(path) && statSync(path).isFile()) hash.update(`${portable(path)} ${sha256(path)}`);
+    else if (flag.startsWith("dependency=/") && existsSync(path) && statSync(path).isDirectory()) hash.update(`${portable(path)} ${dependencies(path)}`);
   }
-  writeWhole(wrapper, source);
-  return keptNative(hash.digest("hex"), wrapper, timeout, (into, depInfo) => [
-    ["rustc", ...flags, wrapper, "-o", join(into, "native"), ...(depInfo ? [`--emit=link,dep-info=${depInfo("native")}`] : [])],
-  ]);
+  return hash.digest("hex");
 }
+
+/** What a dependencies directory holds, each file's name and digest: read
+ * again only where a file's size or time has changed since. */
+function dependencies(dir: string): string {
+  const files = readdirSync(dir).sort().map((name) => [name, statSync(join(dir, name))] as const).filter(([, stat]) => stat.isFile());
+  const seen = `${dir}\0${files.map(([name, stat]) => `${name} ${stat.size} ${stat.mtimeMs}`).join("\0")}`;
+  let found = dependencyDigests.get(seen);
+  if (found === undefined) {
+    const hash = createHash("sha256");
+    for (const [name] of files) hash.update(`${name}\0${sha256(join(dir, name))}\0`);
+    found = hash.digest("hex");
+    dependencyDigests.set(seen, found);
+  }
+  return found;
+}
+const dependencyDigests = new Map<string, string>();
 
 /** A native build, kept or not, or why rustc refused it. */
 export type NativeBuild = { binary: string; built: boolean; kept: boolean } | { error: string };
@@ -161,13 +191,10 @@ export type NativeBuild = { binary: string; built: boolean; kept: boolean } | { 
  * its own, in place of `flags`' (#1681).
  */
 export function nativeCrates(crates: { name: string; file: string; uses: string[]; edition?: string }[], main: string, flags: string[], timeout = 120_000): NativeBuild {
-  rustcVersion ??= run(["rustc", "-vV"]);
   const wrapper = join(contentDirectory("crates", main, ...crates.map((c) => c.file)), "main.rs");
   writeWhole(wrapper, main);
-  const hash = createHash("sha256").update(rustcVersion).update(portable(JSON.stringify(flags))).update(portable(main));
-  for (const { name, file, uses } of crates) hash.update(`${name}\0${uses.join(",")}\0${portable(file)}\0${readFileSync(file, "utf8")}\0`);
   const app = crates[crates.length - 1].name;
-  return keptNative(hash.digest("hex"), wrapper, timeout, (into, depInfo) => [
+  return keptNative(nativeCratesKey(crates, main, flags), wrapper, timeout, (into, depInfo) => [
     ...crates.map(({ name, file, uses, edition }) => [
       "rustc", ...(edition ? [...flags.filter((f) => !f.startsWith("--edition")), `--edition=${edition}`] : flags), "--crate-type=rlib", "--crate-name", name, file, "-o", join(into, `lib${name}.rlib`),
       ...uses.flatMap((used) => ["--extern", `${used}=${join(into, `lib${used}.rlib`)}`]), "-L", `dependency=${into}`,
@@ -176,6 +203,16 @@ export function nativeCrates(crates: { name: string; file: string; uses: string[
     ["rustc", ...flags, wrapper, "-o", join(into, "native"), "--extern", `${app}=${join(into, `lib${app}.rlib`)}`, "-L", `dependency=${into}`,
       ...(depInfo ? [`--emit=link,dep-info=${depInfo("native")}`] : [])],
   ]);
+}
+
+/** The key `nativeCrates` keeps a program of `crates` by, before what its
+ * builds read: rustc's version, the flags, `main`, and each crate's name,
+ * what it uses, its file and its text. */
+export function nativeCratesKey(crates: { name: string; file: string; uses: string[]; edition?: string }[], main: string, flags: string[]): string {
+  rustcVersion ??= run(["rustc", "-vV"]);
+  const hash = createHash("sha256").update(rustcVersion).update(portable(JSON.stringify(flags))).update(portable(main));
+  for (const { name, file, uses } of crates) hash.update(`${name}\0${uses.join(",")}\0${portable(file)}\0${readFileSync(file, "utf8")}\0`);
+  return hash.digest("hex");
 }
 
 /** The build `steps` make, rustc's commands into a directory, kept in the
@@ -260,7 +297,7 @@ function inputs(depInfo: string, wrapper: string): Inputs {
 }
 
 /** Is what a kept build read, recorded in `record`, still what it was? */
-function unchanged(record: string): boolean {
+export function unchanged(record: string): boolean {
   if (!existsSync(record)) return false;
   const { files, env }: Inputs = JSON.parse(readFileSync(record, "utf8"));
   return (

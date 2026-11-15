@@ -14,6 +14,7 @@ import { join, relative } from "node:path";
 import { freeBytes } from "../tooling/bounded.js";
 import { markUsed, mayKeep, verifiedRuns } from "./kept";
 import { node } from "./programs";
+import { rechecked } from "./native-outcomes";
 import { root, run, stdDir } from "./support";
 
 /** A key of `parts`, in their order, each whole: `["ab", "c"]` is not
@@ -26,12 +27,15 @@ export function runKey(parts: (string | Uint8Array)[]): string {
   return hash.digest("hex").slice(0, 32);
 }
 
-/** Whether runs of `key` were verified, in `cache`: they're marked used. */
+/** Whether runs of `key` were verified, in `cache`: they're marked used.
+ * Of the nightly's share of them (`rechecked`, test/native-outcomes.ts),
+ * not: they're run again, and compared, as a run that disagrees fails its
+ * test. */
 export function verified(key: string, cache = verifiedRuns): boolean {
   const kept = join(cache, key, "passed");
   if (!existsSync(kept)) return false;
   markUsed(kept);
-  return true;
+  return !rechecked();
 }
 
 /** Runs of `key` verified now, `note` saying whose; not kept below the
@@ -71,7 +75,7 @@ export function generatedTexts(dir: string, except: string[] = []): string[] {
 let sharedKey: string | undefined;
 export function shared(): string {
   if (sharedKey === undefined) {
-    const harness = ["corpus.test.ts", "corpus-cases.ts", "corpus-run.ts", "oracle.ts", "programs.ts", "child.ts", "verified-runs.ts"].map((file) => join(root, "test", file));
+    const harness = ["corpus.test.ts", "corpus-cases.ts", "corpus-run.ts", "oracle.ts", "programs.ts", "child.ts", "native-outcomes.ts", "verified-runs.ts"].map((file) => join(root, "test", file));
     const files = [...jsFiles(stdDir), ...harness];
     const vite = JSON.parse(readFileSync(join(root, "node_modules", "vite", "package.json"), "utf8")).version;
     sharedKey = runKey([

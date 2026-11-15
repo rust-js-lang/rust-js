@@ -17,6 +17,9 @@
 //   //@ instances-keep-cost: <why> the metamorphic net's `generic-instances` gives each place an
 //                                  instance that answers it without stepping each item where the
 //                                  case's own may, its point what its iterators skip at once (#1109)
+//   //@ nondeterministic: <why>    its run reads the clock, randomness, the file system or its
+//                                  environment, so native Rust's run isn't kept by what it was
+//                                  built from, but run each time (test/native-outcomes.ts)
 
 import { readdirSync } from "node:fs";
 import { join } from "node:path";
@@ -43,7 +46,16 @@ export type Directives = Expect & {
   libraryDiffers: boolean;
   libraryRefused?: string;
   instancesKeepCost?: string;
+  nondeterministic?: string;
 };
+
+/** Why a program's run reads the world, the clock, randomness, the file
+ * system or its environment, as its `//@ nondeterministic: <why>` says, of
+ * a corpus case or a crate of a chain (test/crates.ts): its native run
+ * isn't kept (test/native-outcomes.ts). */
+export function nondeterministic(source: string): string | undefined {
+  return /^\/\/@ nondeterministic: (.+)$/m.exec(source)?.[1];
+}
 
 /** What a case's directives say, or the problems with them. */
 export function directives(source: string): Directives | string {
@@ -56,6 +68,8 @@ export function directives(source: string): Directives | string {
   let libraryDiffers = false;
   // Why the metamorphic net's instances keep each place's cost (#1109).
   let instancesKeepCost: string | undefined;
+  // Why its native run isn't kept (`nondeterministic`).
+  let why: string | undefined;
   for (const [, line] of source.matchAll(/^\/\/@(.*)$/gm)) {
     const [, name, value] = /^ ([a-z-]+)(?:: (.+))?$/.exec(line) ?? [];
     if (name === "edition" && value && ["2015", "2018", "2021", "2024"].includes(value)) edition = value;
@@ -63,6 +77,7 @@ export function directives(source: string): Directives | string {
     else if (name === "library-refused" && value) libraryRefused = value;
     else if (name === "library-differs" && value === undefined) libraryDiffers = true;
     else if (name === "instances-keep-cost" && value) instancesKeepCost = value;
+    else if (name === "nondeterministic" && value) why = value;
     else if (name === "run-pass" && value === undefined) found.push({ kind: "run-pass" });
     else if (name === "run-fail" && value) found.push({ kind: "run-fail", message: value.replaceAll("\\n", "\n") });
     else if (name === "run-abort" && value === undefined) found.push({ kind: "run-abort" });
@@ -78,5 +93,5 @@ export function directives(source: string): Directives | string {
   if (found.length > 1) return "more than one directive";
   const expect = found[0] ?? { kind: "run-pass" };
   if (native === "wasm32" && expect.kind !== "run-pass") return "`native: wasm32` aborts on a panic: only of a case that runs to its end";
-  return { ...expect, edition, native, libraryDiffers, libraryRefused, instancesKeepCost };
+  return { ...expect, edition, native, libraryDiffers, libraryRefused, instancesKeepCost, nondeterministic: why };
 }

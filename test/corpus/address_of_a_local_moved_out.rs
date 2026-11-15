@@ -170,3 +170,4 @@ fn main() {
         at == &raw const *out as usize
     );
 }
+//@ nondeterministic: its run reads its arguments

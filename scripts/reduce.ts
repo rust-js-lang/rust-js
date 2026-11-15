@@ -51,7 +51,9 @@ export type Failure =
  * it as native Rust does (`passes`). */
 export function failure(file: string, build: "plain" | "std", edition: string, dir: string): Failure | NotAFailure {
   mkdirSync(dir, { recursive: true });
-  const native = runNative(file, dir, edition);
+  // Run afresh, a variant's: each its own program, which its check holds
+  // to a share of memory a kept run wouldn't be (test/native-outcomes.ts).
+  const native = runNative(file, dir, edition, "host", [], { fresh: true });
   if (typeof native === "string" || typeof native.outcome === "string") return "rejected";
   if (mayBeUndefined(readFileSync(file, "utf8")) && undefinedBehaviour(file, edition) !== undefined) return "undefined";
   const compiled = compileJs(file, dir, edition, false, {}, build === "std" ? ["--std-iterators"] : []);

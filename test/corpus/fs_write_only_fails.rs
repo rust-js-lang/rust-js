@@ -17,3 +17,4 @@ fn main() {
         Err(e) => println!("refused: {e} {:?}", e.kind()),
     }
 }
+//@ nondeterministic: its run reads its arguments, reads and writes the file system

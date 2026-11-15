@@ -64,3 +64,4 @@ fn main() {
     let copied = empty.hasher().clone();
     println!("{} {copied:?}", empty.is_empty());
 }
+//@ nondeterministic: its run makes a random seed

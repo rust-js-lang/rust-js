@@ -27,3 +27,4 @@ fn main() {
     println!("{}", os.len() == all.len());
     println!("{}", env::var_os("PATH").is_some() == env::var("PATH").is_ok());
 }
+//@ nondeterministic: its run reads its environment

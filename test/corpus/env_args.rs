@@ -19,3 +19,4 @@ fn main() {
     let program = rest.next();
     println!("{} {} {}", program.is_some(), rest.len(), counted(env::args()));
 }
+//@ nondeterministic: its run reads its arguments

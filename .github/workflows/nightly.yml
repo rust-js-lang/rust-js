@@ -82,12 +82,25 @@ jobs:
       # Each case's native side is built with the pinned toolchain.
       - run: rustup show
       - uses: ./.github/actions/build-rust-js
+      # Native programs' runs, kept by what they were built from: those
+      # unchanged since the last night's aren't built or run again, and 2%
+      # of them are, failing where one differs (test/native-outcomes.ts).
+      - uses: ./.github/actions/native-outcomes
+        with:
+          step: restore
+          name: ${{ github.job }}-${{ strategy.job-index }}
+          nightly: 'true'
       - name: Run part ${{ matrix.part }} of 6
         env:
           TIDY_STAGES: corpus
           RUST_JS_CASES: ${{ matrix.part }}/6
           RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
         run: bun test --timeout=300000 test/tidy-stages.test.ts
+      - if: always()
+        uses: ./.github/actions/native-outcomes
+        with:
+          step: save
+          name: ${{ github.job }}-${{ strategy.job-index }}
       - if: always()
         uses: ./.github/actions/decision-counts
         with:
@@ -159,12 +172,25 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: rustup show
       - uses: ./.github/actions/build-rust-js
+      # Native programs' runs, kept by what they were built from: those
+      # unchanged since the last night's aren't built or run again, and 2%
+      # of them are, failing where one differs (test/native-outcomes.ts).
+      - uses: ./.github/actions/native-outcomes
+        with:
+          step: restore
+          name: ${{ github.job }}-${{ strategy.job-index }}
+          nightly: 'true'
       - name: Run part ${{ matrix.part }} of 2
         env:
           ITERATOR_FORMS: corpus
           RUST_JS_CASES: ${{ matrix.part }}/2
           RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
         run: bun test --timeout=300000 test/iterator-forms.test.ts
+      - if: always()
+        uses: ./.github/actions/native-outcomes
+        with:
+          step: save
+          name: ${{ github.job }}-${{ strategy.job-index }}
       - if: always()
         uses: ./.github/actions/decision-counts
         with:
@@ -262,6 +288,14 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: rustup show
       - uses: ./.github/actions/build-rust-js
+      # Native programs' runs, kept by what they were built from: those
+      # unchanged since the last night's aren't built or run again, and 2%
+      # of them are, failing where one differs (test/native-outcomes.ts).
+      - uses: ./.github/actions/native-outcomes
+        with:
+          step: restore
+          name: ${{ github.job }}-${{ strategy.job-index }}
+          nightly: 'true'
       # Miri, which the reducer asks of each step of a case with `unsafe`
       # code, so its failure comes reduced (#1104).
       - name: Install Miri
@@ -274,6 +308,11 @@ jobs:
           RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
           MACHINE: ${{ matrix.machine }}
         run: bun scripts/parts.ts $(( (MACHINE - 1) * 4 + 1 ))-$(( MACHINE * 4 ))/12 test/metamorphic.test.ts --timeout=1800000
+      - if: always()
+        uses: ./.github/actions/native-outcomes
+        with:
+          step: save
+          name: ${{ github.job }}-${{ strategy.job-index }}
       - if: always()
         uses: ./.github/actions/decision-counts
         with:
@@ -300,11 +339,24 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: rustup show
       - uses: ./.github/actions/build-rust-js
+      # Native programs' runs, kept by what they were built from: those
+      # unchanged since the last night's aren't built or run again, and 2%
+      # of them are, failing where one differs (test/native-outcomes.ts).
+      - uses: ./.github/actions/native-outcomes
+        with:
+          step: restore
+          name: ${{ github.job }}-${{ strategy.job-index }}
+          nightly: 'true'
       - name: Run its 4 parts
         env:
           OBJECT_MODEL: all
           RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
         run: bun scripts/parts.ts 4 test/object-model.test.ts --timeout=900000
+      - if: always()
+        uses: ./.github/actions/native-outcomes
+        with:
+          step: save
+          name: ${{ github.job }}-${{ strategy.job-index }}
       - if: always()
         uses: ./.github/actions/decision-counts
         with:
@@ -330,11 +382,24 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: rustup show
       - uses: ./.github/actions/build-rust-js
+      # Native programs' runs, kept by what they were built from: those
+      # unchanged since the last night's aren't built or run again, and 2%
+      # of them are, failing where one differs (test/native-outcomes.ts).
+      - uses: ./.github/actions/native-outcomes
+        with:
+          step: restore
+          name: ${{ github.job }}-${{ strategy.job-index }}
+          nightly: 'true'
       - name: Run every program
         env:
           NONE_MATRIX: all
           RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
         run: bun test --timeout=600000 test/none-matrix.test.ts
+      - if: always()
+        uses: ./.github/actions/native-outcomes
+        with:
+          step: save
+          name: ${{ github.job }}-${{ strategy.job-index }}
       - if: always()
         uses: ./.github/actions/decision-counts
         with:
@@ -360,6 +425,14 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: rustup show
       - uses: ./.github/actions/build-rust-js
+      # Native programs' runs, kept by what they were built from: those
+      # unchanged since the last night's aren't built or run again, and 2%
+      # of them are, failing where one differs (test/native-outcomes.ts).
+      - uses: ./.github/actions/native-outcomes
+        with:
+          step: restore
+          name: ${{ github.job }}-${{ strategy.job-index }}
+          nightly: 'true'
       # Miri, which the reducer asks of each step of a case with `unsafe`
       # code, so its failure comes reduced (#1104).
       - name: Install Miri
@@ -372,6 +445,11 @@ jobs:
           NEIGHBOURS_SEED: ${{ needs.seeds.outputs.start }}
           RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
         run: bun scripts/parts.ts 4 test/neighbours.test.ts --timeout=1800000
+      - if: always()
+        uses: ./.github/actions/native-outcomes
+        with:
+          step: save
+          name: ${{ github.job }}-${{ strategy.job-index }}
       - if: always()
         uses: ./.github/actions/decision-counts
         with:
@@ -471,11 +549,24 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: rustup show
       - uses: ./.github/actions/build-rust-js
+      # Native programs' runs, kept by what they were built from: those
+      # unchanged since the last night's aren't built or run again, and 2%
+      # of them are, failing where one differs (test/native-outcomes.ts).
+      - uses: ./.github/actions/native-outcomes
+        with:
+          step: restore
+          name: ${{ github.job }}-${{ strategy.job-index }}
+          nightly: 'true'
       - name: Run every program
         env:
           MUT_REF_MATRIX: all
           RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
         run: bun test --timeout=300000 test/mut-ref-matrix.test.ts
+      - if: always()
+        uses: ./.github/actions/native-outcomes
+        with:
+          step: save
+          name: ${{ github.job }}-${{ strategy.job-index }}
       - if: always()
         uses: ./.github/actions/decision-counts
         with:
@@ -504,6 +595,14 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: rustup show
       - uses: ./.github/actions/build-rust-js
+      # Native programs' runs, kept by what they were built from: those
+      # unchanged since the last night's aren't built or run again, and 2%
+      # of them are, failing where one differs (test/native-outcomes.ts).
+      - uses: ./.github/actions/native-outcomes
+        with:
+          step: restore
+          name: ${{ github.job }}-${{ strategy.job-index }}
+          nightly: 'true'
       # Four parts of the 24 on each machine, one a core.
       - name: Run parts of machine ${{ matrix.machine }} of 6
         env:
@@ -518,6 +617,11 @@ jobs:
           path: target/iterator-matrix
           if-no-files-found: ignore
           retention-days: 14
+      - if: always()
+        uses: ./.github/actions/native-outcomes
+        with:
+          step: save
+          name: ${{ github.job }}-${{ strategy.job-index }}
       - if: always()
         uses: ./.github/actions/decision-counts
         with:
@@ -545,6 +649,14 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: rustup show
       - uses: ./.github/actions/build-rust-js
+      # Native programs' runs, kept by what they were built from: those
+      # unchanged since the last night's aren't built or run again, and 2%
+      # of them are, failing where one differs (test/native-outcomes.ts).
+      - uses: ./.github/actions/native-outcomes
+        with:
+          step: restore
+          name: ${{ github.job }}-${{ strategy.job-index }}
+          nightly: 'true'
       - name: Run parts of machine ${{ matrix.machine }} of 2
         env:
           ITERATOR_TABLE: conformance
@@ -559,6 +671,11 @@ jobs:
           path: target/iterator-matrix
           if-no-files-found: ignore
           retention-days: 14
+      - if: always()
+        uses: ./.github/actions/native-outcomes
+        with:
+          step: save
+          name: ${{ github.job }}-${{ strategy.job-index }}
       - if: always()
         uses: ./.github/actions/decision-counts
         with:
@@ -583,6 +700,14 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: rustup show
       - uses: ./.github/actions/build-rust-js
+      # Native programs' runs, kept by what they were built from: those
+      # unchanged since the last night's aren't built or run again, and 2%
+      # of them are, failing where one differs (test/native-outcomes.ts).
+      - uses: ./.github/actions/native-outcomes
+        with:
+          step: restore
+          name: ${{ github.job }}-${{ strategy.job-index }}
+          nightly: 'true'
       - name: Run its 4 parts
         env:
           ITERATOR_TABLE: points
@@ -596,6 +721,11 @@ jobs:
           path: target/iterator-matrix
           if-no-files-found: ignore
           retention-days: 14
+      - if: always()
+        uses: ./.github/actions/native-outcomes
+        with:
+          step: save
+          name: ${{ github.job }}-${{ strategy.job-index }}
       - if: always()
         uses: ./.github/actions/decision-counts
         with:
@@ -621,6 +751,14 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: rustup show
       - uses: ./.github/actions/build-rust-js
+      # Native programs' runs, kept by what they were built from: those
+      # unchanged since the last night's aren't built or run again, and 2%
+      # of them are, failing where one differs (test/native-outcomes.ts).
+      - uses: ./.github/actions/native-outcomes
+        with:
+          step: restore
+          name: ${{ github.job }}-${{ strategy.job-index }}
+          nightly: 'true'
       - name: Run its 4 parts
         env:
           ITERATOR_TABLE: unwind
@@ -634,6 +772,11 @@ jobs:
           path: target/iterator-matrix
           if-no-files-found: ignore
           retention-days: 14
+      - if: always()
+        uses: ./.github/actions/native-outcomes
+        with:
+          step: save
+          name: ${{ github.job }}-${{ strategy.job-index }}
       - if: always()
         uses: ./.github/actions/decision-counts
         with:
@@ -657,6 +800,14 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: rustup show
       - uses: ./.github/actions/build-rust-js
+      # Native programs' runs, kept by what they were built from: those
+      # unchanged since the last night's aren't built or run again, and 2%
+      # of them are, failing where one differs (test/native-outcomes.ts).
+      - uses: ./.github/actions/native-outcomes
+        with:
+          step: restore
+          name: ${{ github.job }}-${{ strategy.job-index }}
+          nightly: 'true'
       - name: Run its 4 parts
         env:
           ITERATOR_TABLE: format
@@ -670,6 +821,11 @@ jobs:
           path: target/iterator-matrix
           if-no-files-found: ignore
           retention-days: 14
+      - if: always()
+        uses: ./.github/actions/native-outcomes
+        with:
+          step: save
+          name: ${{ github.job }}-${{ strategy.job-index }}
       - if: always()
         uses: ./.github/actions/decision-counts
         with:
@@ -694,6 +850,14 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: rustup show
       - uses: ./.github/actions/build-rust-js
+      # Native programs' runs, kept by what they were built from: those
+      # unchanged since the last night's aren't built or run again, and 2%
+      # of them are, failing where one differs (test/native-outcomes.ts).
+      - uses: ./.github/actions/native-outcomes
+        with:
+          step: restore
+          name: ${{ github.job }}-${{ strategy.job-index }}
+          nightly: 'true'
       - name: Run its 4 parts
         env:
           ITERATOR_TABLE: numbers
@@ -707,6 +871,11 @@ jobs:
           path: target/iterator-matrix
           if-no-files-found: ignore
           retention-days: 14
+      - if: always()
+        uses: ./.github/actions/native-outcomes
+        with:
+          step: save
+          name: ${{ github.job }}-${{ strategy.job-index }}
       - if: always()
         uses: ./.github/actions/decision-counts
         with:
@@ -730,6 +899,14 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: rustup show
       - uses: ./.github/actions/build-rust-js
+      # Native programs' runs, kept by what they were built from: those
+      # unchanged since the last night's aren't built or run again, and 2%
+      # of them are, failing where one differs (test/native-outcomes.ts).
+      - uses: ./.github/actions/native-outcomes
+        with:
+          step: restore
+          name: ${{ github.job }}-${{ strategy.job-index }}
+          nightly: 'true'
       - name: Run it
         env:
           ITERATOR_TABLE: async
@@ -743,6 +920,11 @@ jobs:
           path: target/iterator-matrix
           if-no-files-found: ignore
           retention-days: 14
+      - if: always()
+        uses: ./.github/actions/native-outcomes
+        with:
+          step: save
+          name: ${{ github.job }}-${{ strategy.job-index }}
       - if: always()
         uses: ./.github/actions/decision-counts
         with:
@@ -767,6 +949,14 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: rustup show
       - uses: ./.github/actions/build-rust-js
+      # Native programs' runs, kept by what they were built from: those
+      # unchanged since the last night's aren't built or run again, and 2%
+      # of them are, failing where one differs (test/native-outcomes.ts).
+      - uses: ./.github/actions/native-outcomes
+        with:
+          step: restore
+          name: ${{ github.job }}-${{ strategy.job-index }}
+          nightly: 'true'
       - name: Run it in 4 parts
         env:
           ITERATOR_TABLE: consumers
@@ -780,6 +970,11 @@ jobs:
           path: target/iterator-matrix
           if-no-files-found: ignore
           retention-days: 14
+      - if: always()
+        uses: ./.github/actions/native-outcomes
+        with:
+          step: save
+          name: ${{ github.job }}-${{ strategy.job-index }}
       - if: always()
         uses: ./.github/actions/decision-counts
         with:
@@ -804,6 +999,14 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: rustup show
       - uses: ./.github/actions/build-rust-js
+      # Native programs' runs, kept by what they were built from: those
+      # unchanged since the last night's aren't built or run again, and 2%
+      # of them are, failing where one differs (test/native-outcomes.ts).
+      - uses: ./.github/actions/native-outcomes
+        with:
+          step: restore
+          name: ${{ github.job }}-${{ strategy.job-index }}
+          nightly: 'true'
       - name: Run it in 4 parts
         env:
           ITERATOR_TABLE: std
@@ -817,6 +1020,11 @@ jobs:
           path: target/iterator-matrix
           if-no-files-found: ignore
           retention-days: 14
+      - if: always()
+        uses: ./.github/actions/native-outcomes
+        with:
+          step: save
+          name: ${{ github.job }}-${{ strategy.job-index }}
       - if: always()
         uses: ./.github/actions/decision-counts
         with:

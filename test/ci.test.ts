@@ -99,6 +99,29 @@ test("a check's mutation shards balance by the newest nightly that kept its muta
   expect(runs).toEqual(["${{ steps.timings.outputs.args }} ", "${{ steps.timings.outputs.args }} "]);
 });
 
+// The workflows' caches are one entry for each set of inputs, not one a
+// commit: six caches of some 450 MB an entry, each a push's, held the
+// repository's 10 GB full and evicted one another (docs/dev-loop.md).
+// And the native programs' kept runs are restored by any run and saved by
+// main's alone, which a branch's check can't write over.
+test("no cache is keyed by its commit, and only main's runs save the native outcomes", () => {
+  const yamls = [".github/workflows", ".github/actions/build-rust-js", ".github/actions/rustc-tests-setup", ".github/actions/native-outcomes"].flatMap((dir) =>
+    readdirSync(join(root, dir)).filter((file) => /\.ya?ml$/.test(file)).map((file) => join(dir, file)),
+  );
+  const keyed = yamls.flatMap((file) =>
+    [...readFileSync(join(root, file), "utf8").matchAll(/^\s*key: .*$/gm)].filter((m) => m[0].includes("github.sha")).map((m) => `${file}: ${m[0].trim()}`),
+  );
+  expect(keyed).toEqual([]);
+  const outcomes = readFileSync(join(root, ".github/actions/native-outcomes/action.yml"), "utf8");
+  expect(outcomes).toContain("- if: inputs.step == 'save' && github.ref == 'refs/heads/main'\n      uses: actions/cache/save@");
+  expect(outcomes).not.toMatch(/uses: actions\/cache@/);
+  // Each job that restores them saves them.
+  for (const file of [".github/workflows/check.yml", ".github/workflows/nightly.yml"]) {
+    const text = readFileSync(join(root, file), "utf8");
+    expect([file, text.match(/step: restore/g)?.length]).toEqual([file, text.match(/step: save/g)?.length]);
+  }
+});
+
 // The builds of the compiler a run makes at once, mutations' `--jobs`, are
 // as many as the cores and the memory hold: on 8 cores and 16 GB, four at
 // once with a test on each core set off Claude Code's low-memory guard

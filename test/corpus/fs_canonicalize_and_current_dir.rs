@@ -41,3 +41,4 @@ fn run() -> io::Result<()> {
     fs::remove_dir(&root)?;
     Ok(())
 }
+//@ nondeterministic: its run reads its arguments, reads its environment, reads and writes the file system

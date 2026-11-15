@@ -306,8 +306,8 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             target/debug
-          key: lint-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}-${{ github.sha }}
-          restore-keys: lint-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}-
+          key: lint-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}
+          restore-keys: lint-${{ runner.os }}-
       - run: bun install --frozen-lockfile
       - run: bun run typecheck
       - run: bun run fmt:check
@@ -358,12 +358,26 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: bun scripts/ci.ts timings
+      # Native programs' runs, kept by what they were built from, and the
+      # corpus's verified runs: of a cold corpus part, 236 s, the natives'
+      # builds were 191 (docs/dev-loop.md), and none is built again of a
+      # program unchanged since main's last run (test/native-outcomes.ts).
+      - uses: ./.github/actions/native-outcomes
+        with:
+          step: restore
+          name: test-${{ matrix.shard }}-of-${{ inputs.test_shards || '2' }}${{ inputs.nightly && '-nightly' || '' }}
+          nightly: ${{ inputs.nightly && 'true' || 'false' }}
       - id: test
         env:
           # The nightly's counts each compile's decisions (ADR 1124).
           RUST_JS_DECISIONS: ${{ inputs.nightly && '/tmp/decisions.tsv' || '' }}
           RUST_JS_COMPILER: ${{ github.workspace }}/target/debug/rust-js
         run: bun run test --shard=${{ matrix.shard }}/${{ inputs.test_shards || '2' }}${{ inputs.nightly && ' --nightly' || '' }}
+      - if: always()
+        uses: ./.github/actions/native-outcomes
+        with:
+          step: save
+          name: test-${{ matrix.shard }}-of-${{ inputs.test_shards || '2' }}${{ inputs.nightly && '-nightly' || '' }}
       - if: always()
         uses: actions/upload-artifact@v7
         with:
@@ -416,8 +430,8 @@ jobs:
                 ~/.cargo/registry
                 ~/.cargo/git
                 target/debug
-              key: examples-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}-${{ github.sha }}
-              restore-keys: examples-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}-
+              key: examples-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}
+              restore-keys: examples-${{ runner.os }}-
           - run: bun install --frozen-lockfile
       # The compiler the example's Vite plugin finds, this checkout's.
       - run: cargo build --locked

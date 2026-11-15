@@ -49,3 +49,4 @@ fn main() {
     let missing = name("/no/such/lib");
     println!("{}", options.open(&missing).is_err());
 }
+//@ nondeterministic: its run reads and writes the file system

@@ -132,7 +132,7 @@ function reached(file: string, edition: string): number[] | undefined {
   try {
     const program = join(dir, "probe.rs");
     writeFileSync(program, probe.stdout);
-    const ran = runNative(program, dir, edition);
+    const ran = runNative(program, dir, edition, "host", [], { of: file });
     if (typeof ran === "string" || typeof ran.outcome === "string") return undefined;
     const said = (stderr: string) => [...stderr.matchAll(/^METAMORPH-EMI-HIT (\d+)$/gm)].map((m) => Number(m[1]));
     const compiled = compileJs(program, dir, edition);
@@ -154,7 +154,7 @@ function panicPoint(file: string, edition: string, kind: string, limit: number |
   mkdirSync(dir, { recursive: true });
   const program = join(dir, "loud.rs");
   writeFileSync(program, made.stdout);
-  const ran = runNative(program, dir, edition);
+  const ran = runNative(program, dir, edition, "host", [], { of: file });
   if (typeof ran === "string") return undefined;
   return middleEvent(ran.stdout, kind);
 }
