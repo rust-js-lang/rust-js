@@ -33,10 +33,10 @@ pub(crate) fn stepping_clones<'tcx>(
 ) -> Option<Ty<'tcx>> {
     let ty::Adt(adt, args) = ty.kind() else { return None };
     let first = args.types().next();
-    match std_path(tcx, adt.did()) {
-        "std::iter::Repeat" | "std::iter::RepeatN" => first,
-        "std::iter::Cycle" => first,
-        "std::iter::Cloned" => {
+    match std_path_item(tcx, adt.did()) {
+        Some(StdPath::IterRepeat | StdPath::IterRepeatN) => first,
+        Some(StdPath::IterCycle) => first,
+        Some(StdPath::IterCloned) => {
             let item = Ty::new_projection(
                 tcx,
                 ty::IsRigid::No,
