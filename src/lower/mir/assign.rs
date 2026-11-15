@@ -289,6 +289,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let value = self.mir_rvalue(state, rvalue, span, out);
         state.binding_var = false;
         let value = match rvalue {
+            // A `Some` of what may itself be JS's `null`, a caught one, is a
+            // `None` JS gave (ADR 0030, #1939): not there for certain, and
+            // given at an exit as any `Option` is.
+            Rvalue::Aggregate(kind, operands)
+                if matches!(**kind, AggregateKind::Adt(did, variant, ..)
+                    if variant.as_u32() == 1 && self.tcx.is_lang_item(did, LangItem::Option))
+                    && (operands.iter().filter_map(Operand::place)).any(|of| {
+                        (self.krate.nulled_params.js_nones()).payload_may_be_null(self.tcx, state.body, of)
+                    }) =>
+            {
+                let value = match value? {
+                    Value::Expr(e) => Value::Expr(Expr {
+                        facts: e.facts.without(js::Known::Present),
+                        ..e
+                    }),
+                    value => value,
+                };
+                self.one_none_returned(state, *place, None, value, span)?
+            }
             Rvalue::Aggregate(..) => value?,
             // What's `null` or a value already, as it is (ADR 0949).
             Rvalue::Use(operand, _) => {

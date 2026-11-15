@@ -70,6 +70,21 @@ impl JsNones {
         self.sources_of(tcx, body, place) != 0
     }
 
+    /// Whether `place`, read in `body`, a `Some`'s payload, may itself be
+    /// JS's `null`, a `None` JS gave: what JS threw, a `JsError`, of a
+    /// caught `null` (ADR 0030, #1939). A payload of another type is no
+    /// `None`, whatever `None`s it holds.
+    pub(in crate::lower) fn payload_may_be_null<'tcx>(
+        &self,
+        tcx: TyCtxt<'tcx>,
+        body: &mir::Body<'tcx>,
+        place: Place<'tcx>,
+    ) -> bool {
+        let ty = crate::lower::representation::payload_through(tcx, place.ty(body, tcx).ty);
+        matches!(ty.kind(), ty::Adt(adt, _) if crate::lower::recognition::is_js_error_type(tcx, adt.did()))
+            && self.may_hold_null(tcx, body, place)
+    }
+
     /// The kinds of source (`Source`) whose `None` `place`, read in `body`,
     /// may hold, each a bit; every kind of a body not found.
     pub(in crate::lower) fn sources_of<'tcx>(
@@ -473,6 +488,13 @@ impl<'tcx> Graph<'_, '_, 'tcx> {
             ty::Adt(adt, args) => {
                 if tcx.is_lang_item(adt.did(), LangItem::Option) {
                     found.types.insert(self.pointee(args.type_at(0)));
+                }
+                // What JS threw holds the `None` of an `Option` of it: a
+                // caught `null` is one (ADR 0030), so an `Option` made of
+                // it, `Some(e)`, `.err()`, `Option::from(e)`, may hold
+                // JS's `null` (#1939).
+                if crate::lower::recognition::is_js_error_type(tcx, adt.did()) {
+                    found.types.insert(ty);
                 }
                 for t in args.types() {
                     self.options_in(t, seen, found);

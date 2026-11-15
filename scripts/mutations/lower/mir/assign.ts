@@ -1068,4 +1068,12 @@ export const mutations: Mutation[] = [
     replace: "                value\n",
     tests: given1840,
   },
+  {
+    name: "some-of-a-caught-null-returned-as-is",
+    breaks: "a `Some(e)` of a caught `null` returned is given as it is, `return e`, a `null` where Rust's `None` is `undefined` (#1939)",
+    file: "src/lower/mir/assign.rs",
+    find: "                        (self.krate.nulled_params.js_nones()).payload_may_be_null(self.tcx, state.body, of)\n                    }) =>\n",
+    replace: "                        false && (self.krate.nulled_params.js_nones()).payload_may_be_null(self.tcx, state.body, of)\n                    }) =>\n",
+    tests: ["test/js-errors.test.ts", "-t", "leaves for JS as undefined, each way"],
+  },
 ];

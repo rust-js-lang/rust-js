@@ -89,9 +89,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return false;
         };
         !writes.is_empty() && writes.iter().all(|write| match (field, write) {
-            (None, Write::Assign(Rvalue::Aggregate(kind, _))) => {
+            // A `Some` of what may itself be JS's `null`, a caught one, which
+            // is a `None` JS gave (ADR 0030, #1939), isn't.
+            (None, Write::Assign(Rvalue::Aggregate(kind, operands))) => {
                 matches!(**kind, AggregateKind::Adt(did, variant, ..) if self.tcx.is_lang_item(did, LangItem::Option)
                         && (!some || variant.as_u32() == 1))
+                    && (operands.iter().filter_map(Operand::place))
+                        .all(|of| !(self.krate.nulled_params.js_nones()).payload_may_be_null(self.tcx, state.body, of))
             }
             (None, Write::Assign(Rvalue::Use(Operand::Constant(c), _))) => {
                 !some && c.check_static_ptr(self.tcx).is_none()

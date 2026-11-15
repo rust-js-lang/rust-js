@@ -370,6 +370,77 @@ pub fn thrown(source: &str) -> Option<&'static JsError> {
   g.fallback = (error: unknown = "default") => String(error);
   const lib = await import(join(dir, "lib.js"));
   expect([lib.caught("throw null"), lib.caught("throw undefined"), lib.caught("throw new Error('x')")]).toEqual(["default", "default", "Error: x"]);
-  expect(lib.thrown("1")).toBe(undefined);
+  expect([lib.thrown("throw null"), lib.thrown("throw undefined"), lib.thrown("1")]).toEqual([undefined, undefined, undefined]);
   delete g.fallback;
+});
+
+// #1939: a caught `null`, or `undefined`, is a `JsError`'s `None` (ADR
+// 0030), and an export's `None` is `undefined` alone (#1840): of `.err()`,
+// `.ok()`, `Option::from`, a match arm's `Some(e)`, a field written and a
+// struct made, each `=== undefined` to a typed caller, as Rust's `None`
+// is; an `Error` thrown is itself. Of the crate as a program and as a
+// library alike.
+test("a JsError's None JS gave leaves for JS as undefined, each way it's made", async () => {
+  const withJs = ["--", "--crate-type=lib", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const source = `use js::JsError;
+
+pub fn err(source: &str) -> Option<&'static JsError> {
+    js::eval(source).err()
+}
+
+pub fn ok(source: &str) -> Option<&'static JsError> {
+    let flipped: Result<&'static JsError, u8> = match js::eval(source) {
+        Ok(_) => Err(0),
+        Err(e) => Ok(e),
+    };
+    flipped.ok()
+}
+
+pub fn from(source: &str) -> Option<&'static JsError> {
+    match js::eval(source) {
+        Ok(_) => None,
+        Err(e) => Option::from(e),
+    }
+}
+
+pub fn arm(source: &str) -> Option<&'static JsError> {
+    match js::eval(source) {
+        Ok(_) => None,
+        Err(e) => Some(e),
+    }
+}
+
+pub struct Held {
+    pub error: Option<&'static JsError>,
+}
+
+pub fn field(source: &str) -> Held {
+    let mut held = Held { error: None };
+    if let Err(e) = js::eval(source) {
+        held.error = Some(e);
+    }
+    held
+}
+
+pub fn made(source: &str) -> Held {
+    match js::eval(source) {
+        Ok(_) => Held { error: None },
+        Err(e) => Held { error: Some(e) },
+    }
+}
+`;
+  for (const library of [false, true]) {
+    const dir = fixture(library ? "js-error-none-exits-library" : "js-error-none-exits");
+    writeFileSync(join(dir, "lib.rs"), source);
+    const flags = library ? ["--library", "--manifest", join(dir, "lib.manifest.json")] : [];
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...flags, ...withJs]);
+    const lib = await import(join(dir, "lib.js"));
+    const kinds = (f: (s: string) => unknown) =>
+      ["throw null", "throw undefined", "throw new Error('x')"].map((s) => {
+        const v = f(s);
+        return v === undefined ? "undefined" : v === null ? "null" : String(v);
+      });
+    const given = [lib.err, lib.ok, lib.from, lib.arm, (s: string) => lib.field(s).error, (s: string) => lib.made(s).error];
+    expect(given.map(kinds)).toEqual(Array(6).fill(["undefined", "undefined", "Error: x"]));
+  }
 });

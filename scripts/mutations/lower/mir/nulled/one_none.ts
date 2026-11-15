@@ -134,4 +134,12 @@ export const mutations: Mutation[] = [
     replace: "                        && (!some || variant.as_u32() <= 1))\n",
     tests: ["test/none-given.test.ts", "-t", "a binding's trailing None is no argument"],
   },
+  {
+    name: "some-of-a-caught-null-trusted",
+    breaks: "a `Some(e)` of a caught `null` is taken for Rust's own `Some`, so a field written with it holds `null`, not `undefined` (#1939)",
+    file: "src/lower/mir/nulled/one_none.rs",
+    find: "                        .all(|of| !(self.krate.nulled_params.js_nones()).payload_may_be_null(self.tcx, state.body, of))\n",
+    replace: "                        .all(|_| true)\n",
+    tests: ["test/js-errors.test.ts", "-t", "leaves for JS as undefined, each way"],
+  },
 ];

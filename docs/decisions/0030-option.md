@@ -242,3 +242,37 @@ a function, a trait object, `map`, a fn pointer and a `dyn Fn`. Mutations in
 `analysis/nulled_params/js_nones.ts`, `mir/nulled.ts`, `mir/dispatch.ts`,
 `mir/calls.ts`, `mir/assign.ts`, `mir/structure.ts`,
 `mir/rvalues/aggregate.ts`, `items.ts` and `binding_calls.ts`.
+
+## Amendment: a `Some` of what JS threw may be a `None` JS gave (2026-11-15, #1939)
+
+A caught `null` or `undefined` is a `JsError`'s `None`. So an `Option`
+made of a `JsError`, `.err()` of a `Result<_, &JsError>`, `.ok()` of a
+`Result<&JsError, _>`, `Option::from(e)`, `Some(e)` in a match's arm, a
+field written `held.error = Some(e)` or a struct made `Held { error:
+Some(e) }`, may hold JS's `null`. An export gave it as it was, `null`,
+where #1840's exits give Rust's `None` as `undefined` alone: a typed
+caller's `=== undefined` was wrong (P0).
+
+- `nulled_params::JsNones`, the one owner of which `Option`s may hold a
+  `None` JS gave, counts a `JsError` as holding one of its own: a local
+  holding one is tracked, a binding's `Result` carries it, and each
+  `Option` made of it is tainted as what it's made of is.
+- A `Some` whose payload may be that `null`, a `JsError` the taint
+  reaches (`JsNones::payload_may_be_null`, its one question: a payload of
+  another type is no `None`, whatever `None`s it holds), isn't trusted as
+  Rust's own (`made_some_or_none`), and one written to a function's
+  result is given at its exit as any `Option` is, its value no longer
+  `Known::Present`: `return e ?? undefined;`, `{ error: e ?? undefined }`.
+- A binding given one leaves it out for `None`, `e != null ? fallback(e)
+  : fallback()`, so its default parameter is its. React's port: the five
+  Flight server Node entries' busboy handlers, `error != null ?
+  busboyStream.destroy(error) : busboyStream.destroy()` where they gave
+  `busboyStream.destroy(error)` a caught `null`, its pin moved with this.
+
+Case of [0262](0262-when-rust-and-js-disagree.md): results change, so
+Rust's behavior. Held by js-errors (each of the six ways, `throw null`,
+`throw undefined` and an `Error`, of the crate as a program and as a
+library; a binding's default parameter; `thrown()`'s `=== undefined`);
+mutations js-error-holds-no-none (`js_nones.rs`),
+some-of-a-caught-null-trusted (`one_none.rs`),
+some-of-a-caught-null-returned-as-is (`assign.rs`).

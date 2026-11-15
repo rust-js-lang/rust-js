@@ -139,4 +139,12 @@ export const mutations: Mutation[] = [
     replace: "            && true)\n",
     tests: ["test/js-errors.test.ts", "-t", "caught from throw null"],
   },
+  {
+    name: "js-error-holds-no-none",
+    breaks: "what JS threw holds no `Option`'s `None`, so `.err()` of a caught `null` leaves an export as `null`, not `undefined` (#1939)",
+    file,
+    find: "                if crate::lower::recognition::is_js_error_type(tcx, adt.did()) {\n                    found.types.insert(ty);\n",
+    replace: "                if false && crate::lower::recognition::is_js_error_type(tcx, adt.did()) {\n                    found.types.insert(ty);\n",
+    tests: ["test/js-errors.test.ts", "-t", "leaves for JS as undefined, each way"],
+  },
 ];
