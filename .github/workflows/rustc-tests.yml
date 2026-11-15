@@ -54,6 +54,11 @@ on:
         required: false
         type: string
         default: ''
+      cargo_log:
+        description: 'Temporary, the alone builds'' diagnosis: CARGO_LOG of two builds of the crate in the mutants'' target, the second after a one-line change.'
+        required: false
+        type: string
+        default: ''
       ablation:
         description: 'Instead: ablate each MIR intervals rule (scripts/ablate.ts), the corpus shadow and the bounds matrix of each, and merge them into the rule table.'
         type: boolean
@@ -416,6 +421,25 @@ jobs:
       - if: steps.browser.outputs.needed == 'browser'
         name: Install the browser
         run: bunx --bun playwright install --with-deps chromium
+      - if: inputs.cargo_log != ''
+        name: Diagnose the alone builds (temporary)
+        env:
+          LOG: ${{ inputs.cargo_log }}
+        run: |
+          set -x
+          mkdir -p target/mutants/diag/test target/mutants/diag/docs
+          cp -r Cargo.toml Cargo.lock build.rs rust-toolchain.toml src std vendor target/mutants/diag/
+          cp test/vec-collect-ways.txt target/mutants/diag/test/
+          cp docs/library-contract.md target/mutants/diag/docs/
+          cd target/mutants/diag
+          env | grep -i -E 'cargo|rust' || true
+          time cargo build --locked --quiet --target-dir ../target
+          ls -la ../target/debug/incremental || true
+          echo '// a change' >> src/lower/mir/tidy/stages.rs
+          time CARGO_LOG="$LOG" cargo build --locked -v --target-dir ../target 2>&1 | grep -v '^\s*$' | tail -120
+          ls -la ../target/debug/incremental || true
+          echo '// another' >> src/lower/mir/tidy/stages.rs
+          time cargo build --locked --quiet --target-dir ../target
       - name: Put back each known bug
         env:
           ARGS: ${{ inputs.mutation_args }}
