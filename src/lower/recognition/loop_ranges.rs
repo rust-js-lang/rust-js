@@ -304,6 +304,14 @@ pub(in crate::lower) fn ref_deref<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, args: 
             .is_some_and(|of| matches!(of.kind(), ty::Adt(adt, _) if is_std_def(tcx, adt.did(), StdItem::RefCellRef)))
 }
 
+/// Whether a call is an `Rc`'s or an `Arc`'s `Deref`, std's, which gives
+/// what it points to, the same each time, and runs nothing (ADR 1137,
+/// #1839).
+pub(in crate::lower) fn rc_deref<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, args: ty::GenericArgsRef<'tcx>) -> bool {
+    tcx.is_diagnostic_item(Symbol::intern("deref_method"), def_id)
+        && args.types().next().is_some_and(|of| rc_pointee(tcx, of).is_some())
+}
+
 /// Whether a call is an `Option`'s `cloned()` or `copied()`: `Some` where
 /// what it's given is (ADR 1137).
 pub(in crate::lower) fn option_copied(tcx: TyCtxt<'_>, def_id: DefId) -> bool {

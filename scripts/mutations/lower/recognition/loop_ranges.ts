@@ -58,4 +58,12 @@ export const mutations: Mutation[] = [
     replace: "        return None;\n",
     tests: ["test/intervals-shadow.test.ts", "-t", "guard keeps"],
   },
+  {
+    name: "rc-deref-of-any-type",
+    breaks: "any `Deref` is taken as an `Rc`'s, the same cell each time, so through the crate's that alternates cells `cells.borrow()[i]` under `i < cells.borrow().len()` is taken in bounds, a mir-only-call-bounds line (#1839)",
+    file: "src/lower/recognition/loop_ranges.rs",
+    find: "        && args.types().next().is_some_and(|of| rc_pointee(tcx, of).is_some())\n",
+    replace: "        && args.types().next().is_some()\n",
+    tests: ["test/intervals-shadow.test.ts", "-t", "gives its cell, the same each time"],
+  },
 ];

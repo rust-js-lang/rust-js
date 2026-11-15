@@ -846,3 +846,25 @@ sixth closes a readability report:
   own, `parsed[apple ? 1 : 0]`, through a thread-local's `with` too
   (#1863). Of an array of one, `true` is past it, checked
   (`bool_indexed_arrays`).
+
+### Step 5: an `Rc`'s cell (2026-11-15, #1839)
+
+An `Rc`'s or an `Arc`'s `Deref`, std's (`rc_deref`), gives what it points
+to, the same each time, and runs no code. So of a local the body neither
+reassigns nor lends `&mut`, it is a copy of that local, as a `borrow()` is
+(`intervals/cells.rs`), and it isn't a call that may write a cell. That
+proves React's `listeners.borrow()[i]` under `i < listeners.borrow().len()`,
+and `deletions.borrow()[i]` of a `&Rc`, as THIR proves them. A local
+reassigned forgets what's known of it, and one lent `&mut` is no copy's
+root, as before.
+
+The cells whose lengths a call forgets are now the locals that point to a
+`RefCell` through references, `Rc`s, `Arc`s and `Box`es, any depth of them
+(`holds_cell`), where they were a `RefCell` and its references alone. A
+`Box`'s cell was already a copy's root through `&(*b)`, so past a closure
+that clears it, `items.borrow()[i]` was proved by MIR, a
+mir-only-call-bounds line THIR's check kept from shipping; it's checked
+now, as an `Rc` of an `Rc`'s is. A `Deref` of the crate's isn't an `Rc`'s,
+and may give another cell each time. Each row panics as native does
+(`rc_refcell_bounds`). Of the corpus, the call-bounds lines go from 26 to
+23, and no line is added.

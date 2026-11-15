@@ -1,14 +1,14 @@
 # shape	count	per 10,000 lines
-files	2576
-lines	340902
+files	2578
+lines	341089
 temporaries	0	0
 labeled blocks	0	0
 while (true)	224	6.6
 $iter	2875	84.3
 Iterator.from	266	7.8
-return;	331	9.7
-renamed x$1	16166	474.2
-role fallbacks	8866	260.1
+return;	332	9.7
+renamed x$1	16172	474.1
+role fallbacks	8868	260
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1	role fallbacks
 test/corpus/adapter_drop_past_a_panic.js	52	0	0	0	1	0	0	0	1
 test/corpus/adapter_drops.js	1844	0	0	1	19	2	1	98	61
@@ -1825,6 +1825,7 @@ test/corpus/rc_of_functions_of_a_param.js	35	0	0	0	0	0	0	0	0
 test/corpus/rc_of_functions_uncounted_beside_a_counted_one.js	38	0	0	0	0	0	0	0	1
 test/corpus/rc_of_impl_fn_returned.js	191	0	0	0	0	0	0	0	0
 test/corpus/rc_of_param_unnamed.js	50	0	0	0	0	0	0	0	0
+test/corpus/rc_refcell_bounds.js	164	0	0	0	0	0	1	6	2
 test/corpus/rc_refcell_dyn_shared.js	343	0	0	1	0	0	0	18	10
 test/corpus/rc_shared_by_closures.js	55	0	0	0	0	0	0	0	0
 test/corpus/rchunks_remainder.js	28	0	0	0	2	0	0	0	1
@@ -2153,6 +2154,7 @@ test/corpus/std_methods.js	178	0	0	0	0	0	0	23	7
 test/corpus/std_mixed_enum_mut.js	50	0	0	0	0	0	0	14	1
 test/corpus/std_module_reexported_by_a_glob.js	21	0	0	0	0	0	0	0	1
 test/corpus/std_mut_items.js	132	0	0	0	0	0	0	0	0
+test/corpus/std_names_as_a_crates_own.js	23	0	0	0	0	0	0	0	0
 test/corpus/std_odds.js	47	0	0	0	0	0	0	0	0
 test/corpus/std_peekable.js	121	0	0	0	6	0	0	10	6
 test/corpus/std_projection_drops.js	258	0	0	1	3	0	2	0	1

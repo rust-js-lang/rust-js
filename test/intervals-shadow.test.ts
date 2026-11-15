@@ -572,6 +572,16 @@ pub fn main() {
 `)).toEqual(["mir-only-call-bounds take_first"]);
 });
 
+// #1839: an `Rc`'s `Deref` of a local neither reassigned nor lent `&mut`
+// is the same cell each time, so React's `listeners.borrow()[i]` under
+// `i < listeners.borrow().len()` is proved, as THIR proves it. Not past a
+// call that may clear the cell through another `Rc`, nor of a `Box`'s
+// cell or an `Rc` of an `Rc`'s a closure clears, which MIR proved
+// before, nor through a `Deref` of the crate's: no line of the case's.
+test("an `Rc`'s `Deref` gives its cell, the same each time: React's `listeners.borrow()[i]` is proved", () => {
+  expect(shadowOf(readFileSync(join(root, "test/corpus/rc_refcell_bounds.rs"), "utf8"))).toEqual([]);
+});
+
 // #1672 M3, step 5: a map's `m[&k]` where `m.contains_key(&k)` holds, or
 // past a first `m[&k]`, is proved, of a map a local holds or a `RefCell`
 // does (rd558). Not past a `clear()`, a write of the key, a call that may
