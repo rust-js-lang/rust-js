@@ -797,6 +797,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             return self.stored_in(state, &Operand::Copy(borrowed), seen);
         }
+        // What a `RefCell`'s guard derefs to, what the cell holds: of one
+        // `borrow()` gave, the field it borrowed, React's `let child =
+        // current.child.borrow().clone();` of a nullable `child` (#1933).
+        if self
+            .tcx
+            .trait_of_assoc(def_id)
+            .is_some_and(|t| self.tcx.is_lang_item(t, LangItem::Deref))
+            && let [guard] = args
+            && let receiver = guard.node.ty(state.body, self.tcx).peel_refs()
+            && (self.is_std_type(receiver, StdItem::RefCellRef) || self.is_std_type(receiver, StdItem::RefCellRefMut))
+            && let Some(guard) = self.borrowed(state, &guard.node).filter(|p| p.projection.is_empty())
+            && let Some([Write::Call(_, borrow, [cell])]) = self.whole_writes(state, guard.local).as_deref()
+            && let Some((borrow, borrow_args)) = fn_def(borrow.ty(state.body, self.tcx))
+            && matches!(
+                self.recognition().classify(borrow, borrow_args),
+                Some(crate::lower::Std::Borrow { lock: false, .. })
+            )
+            && let Some(cell) = self.borrowed(state, &cell.node)
+        {
+            return self.stored_in(state, &Operand::Copy(cell), seen);
+        }
         // A `Cell` made of such, `Cell::new(Some(reducer))`, a nullable
         // field's, is what it's made of (ADR 0841, amended).
         if known == Some(crate::lower::Std::CellNew)
@@ -806,9 +827,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // A clone of such, `m.rule_id.clone()`, of an item a clone gives as
         // it is, a string's, a number's or a reference's: its JS value.
-        let itself = self
-            .option_of(state.body.local_decls[local].ty)
-            .is_some_and(|item| item.is_ref() || item.is_primitive() || self.is_string_like(item));
+        let itself = self.option_of(state.body.local_decls[local].ty).is_some_and(|item| {
+            item.is_ref()
+                || item.is_primitive()
+                || self.is_string_like(item)
+                || self.is_std_type(item, StdItem::Rc)
+                || self.is_std_type(item, StdItem::Arc)
+        });
         if itself
             && (self.tcx.trait_of_assoc(def_id)).is_some_and(|t| self.tcx.is_lang_item(t, LangItem::Clone))
             && let [arg] = args

@@ -590,4 +590,20 @@ export const mutations: Mutation[] = [
     replace: "                    .filter(|&&from| true || {\n",
     tests: ["test/lowering-nullable-tests.test.ts"],
   },
+  {
+    name: "refcell-guard-deref-unknown",
+    breaks: "what a `RefCell`'s guard derefs to says nothing of the field it borrowed, so `let child = current.child.borrow().clone(); work.child.replace(child)` of a nullable `child` stores `child ?? null` (#1933)",
+    file: "src/lower/mir/nulled.rs",
+    find: "            && (self.is_std_type(receiver, StdItem::RefCellRef) || self.is_std_type(receiver, StdItem::RefCellRefMut))\n",
+    replace: "            && false\n",
+    tests: ["test/lowering-nullable-tests.test.ts", "-t", "RefCell field"],
+  },
+  {
+    name: "rc-clone-not-itself",
+    breaks: "an `Option<Rc<T>>`'s clone isn't the value it cloned, so a nullable field's clone stored in another is `?? null` (#1933)",
+    file: "src/lower/mir/nulled.rs",
+    find: "                || self.is_std_type(item, StdItem::Rc)\n",
+    replace: "",
+    tests: ["test/lowering-nullable-tests.test.ts", "-t", "RefCell field"],
+  },
 ];

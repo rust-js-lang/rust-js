@@ -319,3 +319,28 @@ program and a library; an object made of one) and
 `proved-read-known-as-nothing-more` (`js/make.ts`) and
 `proved-read-given-undefined` (`lower/mir/nulled/one_none.ts`).
 
+## Amendment: a nullable `RefCell` field's clone is `null` or a value, MIR's to say (2026-11-15, #1933 step 1(c), first part)
+
+Tidy's `nulled_as_they_are` drops `x ?? null` of a `const` it reads as
+never `undefined`: 104 of its answers in React's port, 3 in the corpus,
+each a value read from a nullable field and stored in another, React's
+`let child = current.child.borrow().clone();
+work_in_progress.child.replace(child);`. The nulled owner didn't see
+through the guard: **what a `RefCell`'s guard derefs to, of a guard
+`borrow()` gave, is what the field it borrowed holds**, `null` or a
+value of a field that stores `null` for `None`; and **an `Option<Rc<T>>`'s
+or `Option<Arc<T>>`'s clone is the value it cloned**, as a reference's,
+a number's or a string's was. Stored, it's as it is. What's left of
+tidy's answers of it, 44 in React, are other reads (a `Cell`'s
+`replace`, a `get()` of a field set before, a binding's field), its
+next parts.
+
+Case of [0262](0262-when-rust-and-js-disagree.md): none. React's port
+reads better where tidy didn't see it, `initializingHandler =
+handler.parent;`, `parent: suspendCallSiteStack.parent,` (9 hunks), and
+a test of such a value is the strict one its `None` allows, `fiber !==
+null` (ADR 0298, amended). Held by test/lowering-nullable-tests.test.ts's
+"a nullable RefCell field's clone" (no tidy answer counted; a field that
+isn't nullable keeping `?? null`; run), mutations
+`refcell-guard-deref-unknown` and `rc-clone-not-itself`.
+

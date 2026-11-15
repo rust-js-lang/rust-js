@@ -218,3 +218,53 @@ pub fn shown(value: Option<&'static Unknown>, flag: bool) -> &'static str {
   const lib = await import(join(dir, "lib.js"));
   expect([lib.shown({}, true), lib.shown(null, true), lib.shown(1, true), lib.shown({}, false)]).toEqual(["object", "other", "other", "other"]);
 });
+
+// What a nullable `RefCell` field holds, read through its guard and
+// cloned, `let child = current.child.borrow().clone();`, is `null` or a
+// value: stored in another nullable place as it is, no `?? null`, which
+// MIR's nulled owner says, not tidy's reading of the JS (#1933's step
+// 1(c)). Of a field that isn't nullable, whose `None` is `undefined`, the
+// store keeps its `?? null`.
+test("a nullable RefCell field's clone is stored in a nullable place as it is", async () => {
+  const { dir, fn, tidied } = compile(
+    "nullable-tests-cloned",
+    `use std::cell::RefCell;
+use std::rc::Rc;
+
+pub struct Fiber {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub child: RefCell<Option<Rc<Fiber>>>,
+    pub sibling: RefCell<Option<Rc<Fiber>>>,
+    pub id: u32,
+}
+
+pub fn fiber(id: u32) -> Fiber {
+    Fiber { child: RefCell::new(None), sibling: RefCell::new(None), id }
+}
+
+pub fn swap_children(base: &Fiber, pending: &Fiber) {
+    let base_first = base.child.borrow().clone();
+    let pending_first = pending.child.borrow().clone();
+    base.child.replace(pending_first);
+    pending.child.replace(base_first);
+}
+
+pub fn sibling_as_child(to: &Fiber, from: &Fiber) {
+    let sibling = from.sibling.borrow().clone();
+    to.child.replace(sibling);
+}
+`,
+  );
+  expect(tidied).toEqual([]);
+  expect(fn("swapChildren")).not.toContain("??");
+  expect(fn("siblingAsChild")).toContain("?? null");
+  const lib = await import(join(dir, "lib.js"));
+  const [a, b] = [lib.fiber(1), lib.fiber(2)];
+  lib.swapChildren(a, b);
+  expect([a.child, b.child]).toEqual([null, null]);
+  a.child = b;
+  lib.swapChildren(a, b);
+  expect([a.child, b.child === b]).toEqual([null, true]);
+  lib.siblingAsChild(a, b);
+  expect(a.child).toBe(null);
+});
