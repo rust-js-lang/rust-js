@@ -874,7 +874,9 @@ function finished(child: ReturnType<typeof spawn>): Promise<{ code: number | nul
   let output = "";
   child.stdout?.on("data", (data) => (output += data));
   child.stderr?.on("data", (data) => (output += data));
-  return new Promise((done) => child.on("exit", (code) => done({ code, output })));
+  // On `close`, once its output is all read: `exit` may come first, its
+  // last lines not yet read (#1951).
+  return new Promise((done) => child.on("close", (code) => done({ code, output })));
 }
 
 test("next build builds a Next.js app whose routes and components are Rust, rust-js build compiling them first", async () => {
@@ -1042,8 +1044,13 @@ test("next build builds a Next.js app whose routes and components are Rust, rust
     let served = "";
     custom.stdout.on("data", (data) => (served += data));
     custom.stderr.on("data", (data) => (served += data));
+    // Ready, or what it said as it ended: a server that ends before it's
+    // ready, its exit code 0 where a rejection its spawn caught was logged,
+    // fails with its own words (#1951).
     while (!served.includes("custom server ready on ")) {
-      expect(custom.exitCode).toBe(null);
+      if (custom.exitCode !== null || custom.signalCode !== null) {
+        throw new Error(`the custom server ended before it was ready, ${custom.exitCode ?? custom.signalCode}:\n${served}`);
+      }
       await Bun.sleep(100);
     }
     const at = `http://localhost:${served.match(/ready on (\d+)/)![1]}`;
@@ -1060,11 +1067,15 @@ test("next build builds a Next.js app whose routes and components are Rust, rust
   // A change not compiled is what the check says, by file, and a Rust
   // error is rust-js build's, rustc's message.
   writeFileSync(join(dir, "app/counter.rs"), counter("Counted "));
+  // Each failure with what the build said (#1951).
   const stale = await finished(rustJs(dir, ["build", "--check"]));
-  expect([stale.code, stale.output.includes("isn't what it compiles to"), stale.output.includes("app/counter.jsx")]).toEqual([1, true, true]);
+  expect(stale.code).toBe(1);
+  expect(stale.output).toContain("isn't what it compiles to");
+  expect(stale.output).toContain("app/counter.jsx");
   writeFileSync(join(dir, "app/counter.rs"), counter("Count ") + "pub fn broken(");
   const failed = await finished(rustJs(dir, ["build"]));
-  expect([failed.code, failed.output.includes("unclosed delimiter")]).toEqual([1, true]);
+  expect(failed.code).toBe(1);
+  expect(failed.output).toContain("unclosed delimiter");
 }, 300_000);
 
 // `rust-js build` writes the app's JS and runs no Next.js, for what an

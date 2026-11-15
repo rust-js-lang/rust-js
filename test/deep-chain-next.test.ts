@@ -162,7 +162,9 @@ function finished(child: ReturnType<typeof spawn>): Promise<{ code: number | nul
   let output = "";
   child.stdout?.on("data", (data) => (output += data));
   child.stderr?.on("data", (data) => (output += data));
-  return new Promise((done) => child.on("exit", (code) => done({ code, output })));
+  // On `close`, once its output is all read: `exit` may come first, its
+  // last lines not yet read (#1951).
+  return new Promise((done) => child.on("close", (code) => done({ code, output })));
 }
 
 const next = (dir: string, args: string[], env: Record<string, string> = {}) =>
