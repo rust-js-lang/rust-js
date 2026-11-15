@@ -46,13 +46,10 @@ impl Expr {
     }
 
     /// A read of the global `name`, JS's `Array` or a binding's `document`,
-    /// which the module declares nowhere (`Known::Global`): the one way a
-    /// read of a global is made, which `js::validate` takes for resolved.
-    /// One of JS's own, which no call changes, is `js_global`'s.
+    /// which the module declares nowhere (`Name::global`). One of JS's own,
+    /// which no call changes, is `js_global`'s.
     pub fn global(name: &str) -> Expr {
-        let mut read = Expr::var(name);
-        read.facts = read.facts.with(Known::Global);
-        read
+        Expr::var(Name::global(name))
     }
 
     /// This, a call of one of JS's own functions or methods

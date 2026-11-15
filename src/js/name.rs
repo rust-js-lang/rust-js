@@ -9,17 +9,44 @@
 use std::fmt;
 
 /// A name a read or a declaration has: the program's, or one lowering
-/// made, which preparation spells (S2).
-#[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Default)]
-pub struct Name(String);
+/// made, which preparation spells (S2); or a global's, which the module
+/// declares nowhere (S3). Two names are one where their words are, a
+/// global's beside a local's of its word too, as every pass compares them
+/// till S4 gives each its own: which one a read is of is JS's scopes',
+/// whose resolution `js::validate` checks.
+#[derive(Clone, Default)]
+pub struct Name(String, Of);
+
+/// Whose a name is.
+#[derive(Clone, Copy, PartialEq, Eq, Default)]
+enum Of {
+    /// The program's, or one lowering made.
+    #[default]
+    Item,
+    /// A global's, JS's `Array` or a binding's `document`.
+    Global,
+}
 
 impl Name {
+    /// The global `word`, JS's `Array` or a binding's `document`, which the
+    /// module declares nowhere: the one way a global's name is made
+    /// (`Expr::global`), which `js::validate` takes for resolved where
+    /// nothing in scope declares its word (#1681 change 3, S3).
+    pub fn global(word: &str) -> Name {
+        Name(word.to_string(), Of::Global)
+    }
+
+    /// Whether it's a global's (`global`).
+    pub fn is_global(&self) -> bool {
+        self.1 == Of::Global
+    }
+
     /// A name lowering makes, the `k`th of `base`'s, `value#1`, not spelled
     /// yet (`names::made`, #1681 change 3, M2, S2): preparation spells it
     /// once its module's names are all made (`prepare::reclaim::spelled`),
     /// and the validator refuses one that reaches printing.
     pub fn made(base: &str, k: usize) -> Name {
-        Name(crate::names::made(base, k))
+        Name(crate::names::made(base, k), Of::Item)
     }
 
     /// Of a name lowering made, what it's of, `value` of `value#1`
@@ -51,6 +78,33 @@ impl Name {
     }
 }
 
+// One name where the words are one (`Name`).
+impl PartialEq for Name {
+    fn eq(&self, other: &Name) -> bool {
+        self.0 == other.0
+    }
+}
+
+impl Eq for Name {}
+
+impl std::hash::Hash for Name {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.0.hash(state);
+    }
+}
+
+impl PartialOrd for Name {
+    fn partial_cmp(&self, other: &Name) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Name {
+    fn cmp(&self, other: &Name) -> std::cmp::Ordering {
+        self.0.cmp(&other.0)
+    }
+}
+
 impl std::borrow::Borrow<str> for Name {
     fn borrow(&self) -> &str {
         &self.0
@@ -65,19 +119,19 @@ impl From<&Name> for Name {
 
 impl From<&str> for Name {
     fn from(word: &str) -> Name {
-        Name(word.to_string())
+        Name(word.to_string(), Of::Item)
     }
 }
 
 impl From<String> for Name {
     fn from(word: String) -> Name {
-        Name(word)
+        Name(word, Of::Item)
     }
 }
 
 impl From<&String> for Name {
     fn from(word: &String) -> Name {
-        Name(word.clone())
+        Name(word.clone(), Of::Item)
     }
 }
 

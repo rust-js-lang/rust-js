@@ -316,7 +316,7 @@ pub(super) fn part_of(value: &Expr) -> Option<&str> {
 }
 
 /// The read of the variable `part_of` names, as it's made, a global's
-/// `window` (`Known::Global`, #1681).
+/// `window` (`Name::global`, #1681).
 fn part_of_read(value: &Expr) -> Option<&Expr> {
     let read = match &value.kind {
         ExprKind::Cond(_, _, read) => read,

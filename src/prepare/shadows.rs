@@ -57,9 +57,10 @@ fn shadows(body: &mut Vec<Stmt>, own: &IndexSet<String>) {
             for s in stmts.iter() {
                 if let StmtKind::Const(name, value) = &s.kind
                     && name.is(&alias)
-                    && matches!(&value.kind, ExprKind::Var(v) if v.is(&of))
+                    && let ExprKind::Var(v) = &value.kind
+                    && v.is(&of)
                 {
-                    global |= value.facts.has(js::Known::Global);
+                    global |= v.is_global();
                 }
             }
         });
@@ -68,10 +69,10 @@ fn shadows(body: &mut Vec<Stmt>, own: &IndexSet<String>) {
         js::outside_shadows(body, &alias, |body| {
             js::each_expr_mut(body, &mut |e| {
                 if matches!(&e.kind, ExprKind::Var(name) if name.is(&alias)) {
-                    e.kind = ExprKind::Var(of.clone().into());
-                    if global {
-                        e.facts = e.facts.with(js::Known::Global);
-                    }
+                    e.kind = ExprKind::Var(match global {
+                        true => js::Name::global(&of),
+                        false => of.clone().into(),
+                    });
                 }
             });
             js::each_block_mut(body, &mut |stmts| {

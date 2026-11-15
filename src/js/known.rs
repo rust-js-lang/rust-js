@@ -363,12 +363,6 @@ knowns! {
     /// that never reads `arguments.length`, does as it does each
     /// (`stmt_walk::full_count_call`, ADR 0610, amended, #1890).
     EachCount,
-    /// A read of a global, JS's `Array` or a binding's `document`, that the
-    /// module declares nowhere: `Expr::global`'s, the one way one is made,
-    /// which `js::validate` takes for resolved where nothing in scope
-    /// declares its name (#1681). Its read, not what it holds: `BuiltIn`
-    /// says no call changes it.
-    Global,
 }
 
 /// What a `Known` is to those that read it: whether the JS is right
@@ -457,8 +451,7 @@ impl Known {
             | Known::IterMappedAsItIs
             | Known::NullStored
             | Known::HandledObject
-            | Known::Momentary
-            | Known::Global => Role::Form,
+            | Known::Momentary => Role::Form,
         }
     }
 

@@ -11,6 +11,7 @@ use crate::publish::Artifact;
 use crate::{js, program, to_oxc};
 
 mod local_js;
+mod refusal;
 pub use local_js::LocalJs;
 
 pub struct OutputPlan {
@@ -457,19 +458,8 @@ impl OutputPlan {
         // refuses (`js::validate`, #1681): checked in every build.
         let lowered = js_module.clone();
         let fired = crate::prepare::module(&mut js_module, self.prepare.0);
-        if let Some(problem) = crate::js::validate::module(&js_module).into_iter().next() {
-            let broken = |module: &js::Module| crate::js::validate::module(module).contains(&problem);
-            let by = match broken(&lowered) {
-                true => "as it was lowered".to_string(),
-                false => match crate::prepare::breaking_pass(&lowered, self.prepare.0, &broken) {
-                    Some(pass) => format!("by preparation's `{pass}`"),
-                    None => "by preparation".to_string(),
-                },
-            };
-            return Err(format!(
-                "rust-js made {} wrong {by}: {problem}: a bug of rust-js's",
-                js_path.display()
-            ));
+        if let Some(refused) = refusal::refusal(&js_path, &lowered, &js_module, self.prepare.0) {
+            return Err(refused);
         }
         // What only an earlier phase resolves, left: a compiler's
         // mistake, refused, not printed.

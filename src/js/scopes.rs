@@ -7,7 +7,7 @@
 
 use crate::collections::IndexMap;
 
-use crate::js::{self, Expr, ExprKind, Function, JsxTag, Known, Pattern, Prop, Stmt, StmtKind};
+use crate::js::{self, Expr, ExprKind, Function, JsxTag, Pattern, Prop, Stmt, StmtKind};
 
 struct Scope {
     parent: Option<usize>,
@@ -16,7 +16,7 @@ struct Scope {
 
 /// A read: the scope it's in, and the scope of the declaration it's of,
 /// `None` of a name from outside; and whether it's a global's, one
-/// `Expr::global` made (`Known::Global`) or the printer writes, `String(x)`'s.
+/// `Expr::global` made (`Name::global`) or the printer writes, `String(x)`'s.
 pub(crate) struct Read {
     scope: usize,
     pub(crate) of: Option<usize>,
@@ -481,7 +481,7 @@ impl Walk {
 
     fn expr(&mut self, e: &Expr) {
         match &e.kind {
-            ExprKind::Var(name) => self.read(name.word(), e.facts.has(Known::Global)),
+            ExprKind::Var(name) => self.read(name.word(), name.is_global()),
             // What it sets is resolved as a read is.
             ExprKind::Assigned(target, a) => {
                 self.expr(target);

@@ -122,3 +122,28 @@ none; the name's identity apart from its word is S4's table. The corpus,
 the snapshots and the port are as they were; the architecture test of the
 form names `names::made`, `Name::made` and `made_base` as its one writer,
 maker and readers.
+
+## S3 (2026-11-16)
+
+A global's read, `Array` or a binding's `document`, is a name of its own
+form, `Name::global(word)`, where it was a fact of the read,
+`Known::Global`, which is gone: `Expr::global` makes one, `js::scopes`
+takes a read for a global's by its name's `is_global()`, and preparation's
+`shadows`, which reads a global's `const performance$1 = performance;`
+alias as `performance`, gives each read the global's name. As a name, it's
+the read's wherever the read goes, and no fact of its expression, which a
+pass rebuilding one may set afresh, can lose it. It's the one answer to
+whether a read is a global's, the fact it replaces gone, unlike a flag of
+S2's made names beside their word, which the word-keeping passes would
+have answered apart.
+
+Two names are still one where their words are, a global's beside a
+local's of its word too: every pass compares them so, and which one a
+read is of is JS's scopes', whose resolution `js::validate` checks, so
+each step stays byte-identical. A local of a global's word is S4's to
+tell apart. The corpus, the snapshots and the port are as they were; the
+four mutations that took the mark away take the name's form instead.
+`--without-known Global`, which forgot every mark so `test/validate.test.ts`
+could see a read refused, has no fact to forget: the refusal is
+`output::refusal`'s, a function of the module, whose unit test gives it a
+local's read of `console`, and `tree-unvalidated` is held by that test.

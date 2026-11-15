@@ -1,7 +1,7 @@
 //! `js::validate`: what a tree must be before it's printed (#1681 change 3,
 //! M1): each name it reads resolves, to a declaration in scope, an import,
 //! the runtime's helper (`runtime::exports`) or a global (`Expr::global`,
-//! `Known::Global`), and no global's read is of a name a declaration in
+//! `Name::global`), and no global's read is of a name a declaration in
 //! scope takes; a block declares a name once; each `break` and `continue`
 //! lands on a loop, a `switch` or a label around it, within its function.
 //! It keeps no list of names: what may be read undeclared is what its

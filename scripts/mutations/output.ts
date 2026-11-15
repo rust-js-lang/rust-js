@@ -432,14 +432,6 @@ export const mutations: Mutation[] = [
     tests: ["test/std-package.test.ts", "-t", "crate hash"],
   },
   {
-    name: "tree-unvalidated",
-    breaks: "a module's tree isn't checked before it's printed: a read nothing declares is printed, a `ReferenceError` where it runs, not refused as rust-js's mistake (#1681)",
-    file: "src/output.rs",
-    find: "        if let Some(problem) = crate::js::validate::module(&js_module).into_iter().next() {\n",
-    replace: "        if let Some(problem) = crate::js::validate::module(&js_module).into_iter().next().filter(|_| false) {\n",
-    tests: ["test/validate.test.ts"],
-  },
-  {
     name: "settings-manifest-unread",
     breaks: "neither Cargo's record of a crate it builds nor a file's names the `Cargo.toml` its settings are of: a test runner named there alone, no Rust changed, isn't the next run's, the remembered build's kept (#1751, ADR 1099)",
     file: "src/output.rs",

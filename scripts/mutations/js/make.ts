@@ -563,10 +563,10 @@ export const mutations: Mutation[] = [
   },
   {
     name: "global-unmarked",
-    breaks: "a global's read, `Array` of `Array.from(..)`, is made unmarked, a read nothing declares: the program refused (#1681)",
+    breaks: "a global's read, `Array` of `Array.from(..)`, is made a name that isn't the global's, a read nothing declares: the program refused (#1681)",
     file: "src/js/make.rs",
-    find: "        read.facts = read.facts.with(Known::Global);\n",
-    replace: "",
+    find: "        Expr::var(Name::global(name))\n",
+    replace: "        Expr::var(name)\n",
     tests: ["test/corpus.test.ts", "-t", "^adapter_functions_dropped.rs$"],
   },
   {

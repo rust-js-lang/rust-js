@@ -81,15 +81,16 @@ with each pass left out in turn, only of a module refused):
   found two of rust-js's own mistakes, neither yet a wrong answer: the
   `shadows` pass dropped a global's mark where it inlined an alias of it;
   and the bindings' root made an import's name a global's.
-- `--without-known Global` forgets every mark, so every global's read is
-  refused: `test/validate.test.ts` holds the check on, its refusal's words
-  and `.env.test`'s flag.
+- `output::refusal`'s unit test holds a read nothing declares refused, and
+  its refusal's words; `test/validate.test.ts`, the check on and
+  `.env.test`'s flag. (Till ADR 1150's S3, `--without-known Global` forgot
+  every global's mark for it; a global's is its name's form since.)
 - Mutations: `js/validate.ts` (a global, a helper, a shadowed global, an
   arrow's parameters, a jump across a closure, a `switch`'s `break`, a
   `switch`'s cases, a destructuring's names), `js/make.ts`'s
   `global-unmarked`, `lower.ts`'s `import-read-made-global` and
   `global-binding-read-unmarked`, `prepare/shadows.ts`'s
-  `shadow-of-a-global-unmarked`, `output.ts`'s `tree-unvalidated` and
+  `shadow-of-a-global-unmarked`, `output/refusal.ts`'s `tree-unvalidated` and
   `prepare.ts`'s `breaking-pass-of-every-pass`.
 - A user's release build checks each module's tree, the amendment below.
 - M3 makes `Global(name)` a kind of its own, where the mark is a fact a
