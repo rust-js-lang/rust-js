@@ -498,8 +498,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "strip_circumfix" if owner.is_str() && args.types().all(|p| self.is_string_like(p)) => Std::StripCircumfix,
             "split_once" if owner.is_str() => Std::SplitOnce,
             "rsplit_once" if owner.is_str() => Std::RsplitOnce,
-            "to_uppercase" if owner.is_str() => Std::Method("toUpperCase"),
-            "to_lowercase" if owner.is_str() => Std::Method("toLowerCase"),
+            "to_uppercase" if owner.is_str() => Std::Text(TextOp::StrCase(true)),
+            "to_lowercase" if owner.is_str() => Std::Text(TextOp::StrCase(false)),
             "trim_start" if owner.is_str() => Std::Trim {
                 start: true,
                 end: false,

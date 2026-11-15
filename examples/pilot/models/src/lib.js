@@ -5,7 +5,7 @@
  * rules a contact must keep, checked on both sides.
  */
 
-import { $debugStr, $json, $splitOnce, $trim } from "@rust-js/std";
+import { $debugStr, $json, $splitOnce, $toLowercase, $trim } from "@rust-js/std";
 
 /** A contact the server has stored. */
 export function contactSerialize_serialize(contact, json) {
@@ -163,11 +163,11 @@ export function isEmail(text) {
 
 /** Does `contact` match a search: its name or email, ignoring case. */
 export function matches(contact, query) {
-  query = $trim(query).toLowerCase();
+  query = $toLowercase($trim(query));
   return (
     query === "" ||
-    contact.name.toLowerCase().includes(query) ||
-    contact.email.toLowerCase().includes(query)
+    $toLowercase(contact.name).includes(query) ||
+    $toLowercase(contact.email).includes(query)
   );
 }
 //# sourceMappingURL=lib.js.map

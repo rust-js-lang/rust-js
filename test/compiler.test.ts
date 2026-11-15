@@ -464,7 +464,7 @@ test("iterators are array methods, and sorting takes comparators", async () => {
   expect(js).toContain("  const sum = v.reduce((a, b) => (a + b) | 0, 0);");
   expect(js).toContain("  const anyNegative = v.some((x) => x < 0);");
   expect(js).toContain("  return v.slice(1).slice(0, 2).toReversed();");
-  expect(js).toContain('  return words.map((w) => w.toUpperCase()).join("-");');
+  expect(js).toContain('  return words.map((w) => $toUppercase(w)).join("-");');
   // `enumerate()` then `map` is one `map`, whose callback JS gives the index too.
   expect(js).toContain("  return words.map((w, i) => `${i}:${w}`);");
   expect(js).toContain("const fits = words.some((w, i) => $byteLen(w) === i);");
@@ -1238,16 +1238,16 @@ test("a derived Debug is a function, left out unless something shows the type", 
   expect(js).not.toContain("neverShown");
 });
 
-// ADR 0063: a `char`'s questions are regular expressions of the Unicode
-// properties Rust uses, and `parse` is a `Result` whose `Err` is Rust's message.
+// ADR 0063: a `char`'s questions are Rust's Unicode tables' (ADR 1163), and
+// `parse` is a `Result` whose `Err` is Rust's message.
 test("chars, parse and slices are plain JS with Rust's answers", async () => {
   const js = await Bun.file(join(target, "text.js")).text();
-  expect(js).toContain("/^\\p{White_Space}$/u.test(c),\n    /^\\p{Alphabetic}$/u.test(c),");
+  expect(js).toContain("$isWhitespace(c),\n    $isAlphabetic(c),");
   expect(js).toContain("const code = c.codePointAt(0);");
   expect(js).toContain("String.fromCharCode(65)");
   // `map_err(|e| e.to_string())` of a fresh `Result`: the message already is one.
   expect(js).toContain("const n = $parseInt(s, 0, 4294967295);");
-  expect(js).toContain('text.split(/\\p{White_Space}+/u).filter((word) => word !== "")');
+  expect(js).toContain("$splitWhitespace(text)");
   expect(js).toContain("$copyOf(v, 1, 3)");
 });
 
@@ -1258,7 +1258,7 @@ test("the calculator's JS is what a person would write", async () => {
   expect(js).toContain("for (const [i, c] of $chars(s).map((x, i) => [i, x])) {");
   expect(js).toContain("const value = firstDup(\"abcdbe\");");
   expect(js).toContain("`Some((${value[0]}, ${$debugStr(value[1], \"'\")}))`");
-  expect(js).toContain('$lazySplitBy(text, (c) => !/^[\\p{Alphabetic}\\p{N}]$/u.test(c))');
+  expect(js).toContain('$lazySplitBy(text, (c) => !$isAlphanumeric(c))');
   // `?` from a `&str` error to a `String` one: the same string, returned as it is.
   expect(js).toContain(
     "pop != null ? { TAG: \"Ok\", _0: pop } : { TAG: \"Err\", _0: \"underflow\" };\n      if (result.TAG === \"Err\") {\n        return result;\n      }",
@@ -1327,8 +1327,8 @@ test("the store's JS: let-else, ranges, and writes through a map's value", async
 test("the report's JS: function values, case mapping, and plain array reads", async () => {
   const js = await Bun.file(join(target, "report.js")).text();
   expect(js).toContain('const parts = line.split(",").map((s) => $trim(s));');
-  expect(js).toContain(".flatMap((c) => $iter(Array.from(c.toUpperCase())))");
-  expect(js).toContain('.map((c) => /^\\p{White_Space}$/u.test(c))');
+  expect(js).toContain(".flatMap((c) => $iter(Array.from($toUppercase(c))))");
+  expect(js).toContain('.map((c) => $isWhitespace(c))');
   expect(js).toContain(".map((n) => Math.sqrt(n))");
   expect(js).toContain("HEADERS[0]");
   expect(js).toContain("const value = $unwrapErr($parseInt(\"\", 0, 255));");
@@ -1346,7 +1346,7 @@ test("the lexer's JS steps through its source with $next and $peek", async () =>
   expect(js).toContain('while ($nextIf(lexer.chars, (c) => c !== "\\n") != null) {}');
   expect(js).toContain("const it = $iter(v);");
   expect(js).toContain("const rest = Array.from(it);");
-  expect(js).toContain('return c != null ? c.toUpperCase() + $restStr(chars) : "";');
+  expect(js).toContain('return c != null ? $toUppercase(c) + $restStr(chars) : "";');
 });
 
 // ADR 0074: a `&mut` to a string or a number is a box the caller copies

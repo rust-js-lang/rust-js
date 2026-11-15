@@ -287,8 +287,8 @@ pub fn later(mut href: Option<&str>) -> String {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain('export function link(href) {\n  if (!href) {\n    return "none";\n  }\n  return href.toUpperCase();\n}');
-  expect(js).toContain('return name ? name.toUpperCase() : "anon";');
+  expect(js).toContain('export function link(href) {\n  if (!href) {\n    return "none";\n  }\n  return $toUppercase(href);\n}');
+  expect(js).toContain('return name ? $toUppercase(name) : "anon";');
   expect(js).toContain("export function listed(items) {\n  if (items == null || items.length === 0) {\n    return 0;\n  }\n  return $index(items, 0);\n}");
   const lib = await import(join(dir, "lib.js"));
   expect([lib.link("/a"), lib.link(""), lib.link(undefined)]).toEqual(["/A", "none", "none"]);

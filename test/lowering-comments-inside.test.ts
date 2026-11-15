@@ -953,7 +953,7 @@ pub fn inside(name: &str, out: &mut Vec<String>) {
     out.push(value);
 }
 `);
-  const arm = '    value = "";\n  } else if (name === "src" || name === "href") {\n    // Santized URLs\n    out.push("url");\n    value = name.toUpperCase();\n  } else';
+  const arm = '    value = "";\n  } else if (name === "src" || name === "href") {\n    // Santized URLs\n    out.push("url");\n    value = $toUppercase(name);\n  } else';
   expect(js).toContain(`${arm} if (name.startsWith("on")) {\n    return;\n  } else {\n    value = name;\n  }\n`);
   expect(js).toContain(`${arm} {\n    if (name.startsWith("on")) {\n      return;\n    }\n    value = name;\n  }\n`);
   const run = (f: string, name: string, out: string[]) => {

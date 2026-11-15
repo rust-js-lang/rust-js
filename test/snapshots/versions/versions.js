@@ -25,6 +25,7 @@ import {
   $splitOff,
   $strictlyEqual,
   $toFixed,
+  $toUppercase,
   $totalCmp,
   $traitImpl,
   $zeroPad,
@@ -35,7 +36,7 @@ const f64PartialOrd = $partialOrd({ PartialEq: () => $strictlyEqual, partialCmp:
 export const dogDescribe = {
   name: dogDescribe_name,
   describe: (dog) => `<${dogDescribe_name(dog)}>`,
-  shout: (dog) => dogDescribe.describe(dog).toUpperCase(),
+  shout: (dog) => $toUppercase(dogDescribe.describe(dog)),
 };
 function dogDescribe_name(dog) {
   return "dog";
@@ -43,7 +44,7 @@ function dogDescribe_name(dog) {
 export const catDescribe = {
   name: catDescribe_name,
   describe: catDescribe_describe,
-  shout: (cat) => catDescribe_describe(cat).toUpperCase(),
+  shout: (cat) => $toUppercase(catDescribe_describe(cat)),
 };
 function catDescribe_name(cat) {
   return `cat${cat.lives}`;

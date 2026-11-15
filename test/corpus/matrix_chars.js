@@ -7,8 +7,16 @@ import {
   $debugStr,
   $fromDigit,
   $fromU32,
+  $isAlphabetic,
+  $isAlphanumeric,
+  $isLowercase,
+  $isNumeric,
+  $isUppercase,
+  $isWhitespace,
   $pad,
   $toDigit,
+  $toLowercase,
+  $toUppercase,
 } from "@rust-js/std";
 
 export function entry() {
@@ -60,12 +68,6 @@ const CHARS = [
 function main() {
   for (let i = 0; i < CHARS.length; i++) {
     const c = CHARS[i];
-    const isAlphabetic = /^\p{Alphabetic}$/u.test(c);
-    const isNumeric = /^\p{N}$/u.test(c);
-    const isAlphanumeric = /^[\p{Alphabetic}\p{N}]$/u.test(c);
-    const isWhitespace = /^\p{White_Space}$/u.test(c);
-    const isUppercase = /^\p{Uppercase}$/u.test(c);
-    const isLowercase = /^\p{Lowercase}$/u.test(c);
     const isControl = /^\p{Cc}$/u.test(c);
     const isAscii = c.charCodeAt(0) < 128;
     const isAsciiDigit = /^[0-9]$/.test(c);
@@ -80,10 +82,10 @@ function main() {
     const isAsciiControl = /^[\0-\x1f\x7f]$/.test(c);
     const arg = $toDigit(c, 8) !== undefined;
     console.log(
-      `${$debugStr(c, "'")}: is ${isAlphabetic} ${isNumeric} ${isAlphanumeric} ${isWhitespace} ${isUppercase} ${isLowercase} ${isControl} ascii ${isAscii} ${isAsciiDigit} ${isAsciiHexdigit} ${isAsciiAlphabetic} ${isAsciiAlphanumeric} ${isAsciiUppercase} ${isAsciiLowercase} ${isAsciiPunctuation} ${isAsciiGraphic} ${isAsciiWhitespace} ${isAsciiControl} ${arg}`,
+      `${$debugStr(c, "'")}: is ${$isAlphabetic(c)} ${$isNumeric(c)} ${$isAlphanumeric(c)} ${$isWhitespace(c)} ${$isUppercase(c)} ${$isLowercase(c)} ${isControl} ascii ${isAscii} ${isAsciiDigit} ${isAsciiHexdigit} ${isAsciiAlphabetic} ${isAsciiAlphanumeric} ${isAsciiUppercase} ${isAsciiLowercase} ${isAsciiPunctuation} ${isAsciiGraphic} ${isAsciiWhitespace} ${isAsciiControl} ${arg}`,
     );
-    const collect = c.toUpperCase();
-    const value = c.toLowerCase();
+    const collect = $toUppercase(c);
+    const value = $toLowercase(c);
     const asciiUppercase = c.replace(/[a-z]/, (letter) => letter.toUpperCase());
     const asciiLowercase = c.replace(/[A-Z]/, (letter) => letter.toLowerCase());
     const digit = $toDigit(c, 10);

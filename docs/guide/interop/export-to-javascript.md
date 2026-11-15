@@ -53,7 +53,7 @@ fn shout(name: &str) -> String {
 ```
 
 ```js
-import { $find } from "@rust-js/std";
+import { $find, $toUppercase } from "@rust-js/std";
 
 export const MAX_RESULTS = 10;
 
@@ -74,7 +74,7 @@ export function parseURL(url) {
 }
 
 function shout(name) {
-  return name.toUpperCase();
+  return $toUppercase(name);
 }
 
 export { delete$ as delete };

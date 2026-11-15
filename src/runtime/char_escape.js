@@ -7,7 +7,7 @@
 // amended).
 function $escapeDebug(s) {
   let out = "";
-  for (const c of s) out += $debugChar(c, "'\"", true);
+  for (const c of s) out += $debugChar(c, "'\"");
   return out;
 }
 

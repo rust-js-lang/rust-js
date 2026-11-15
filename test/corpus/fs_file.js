@@ -21,6 +21,7 @@ import {
   $openOptions,
   $pathParent,
   $slice,
+  $splitWhitespace,
   $unwrap,
   $unwrapErr,
   $utf8Bytes,
@@ -53,7 +54,7 @@ function firstWord(from, RRead) {
   if (readToString.TAG === "Err") {
     return readToString;
   }
-  return { TAG: "Ok", _0: text.split(/\p{White_Space}+/u).filter((word) => word !== "")[0] ?? "" };
+  return { TAG: "Ok", _0: $splitWhitespace(text)[0] ?? "" };
 }
 
 function report(what, e) {

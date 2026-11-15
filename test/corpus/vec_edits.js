@@ -12,6 +12,7 @@ import {
   $roomFor,
   $splice,
   $swapRemove,
+  $toLowercase,
 } from "@rust-js/std";
 
 export function entry() {
@@ -52,7 +53,7 @@ function main() {
   $dedupByCells(tens, (a, b) => key(a) === key(b));
   console.log(`[${tens.join(", ")}]`);
   const words = ["a", "A", "b", "B", "b"].map((s) => s);
-  $dedupByCells(words, (a, b) => a.value.toLowerCase() === b.value.toLowerCase());
+  $dedupByCells(words, (a, b) => $toLowercase(a.value) === $toLowercase(b.value));
   console.log(`[${words.map((item) => $debugStr(item)).join(", ")}]`);
   const s = [1, 2, 3];
   $extend(s, $copyRange(s, 1));

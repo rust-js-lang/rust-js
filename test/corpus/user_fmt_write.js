@@ -4,6 +4,7 @@ import {
   $byteLen,
   $debugStr,
   $sink,
+  $toUppercase,
   $writeDebugStr,
   $writeInteger,
   $writePadded,
@@ -37,7 +38,7 @@ export const shoutingWrite = {
   writeFmt: $writerWriteFmt($shoutingWrite_writeStr, $shoutingWrite_writeChar),
 };
 function shoutingWrite_writeStr(shouting, s) {
-  shouting[0] += s.toUpperCase();
+  shouting[0] += $toUppercase(s);
 }
 
 function shoutingWrite_writeChar(shouting, c) {

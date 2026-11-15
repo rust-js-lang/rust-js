@@ -260,7 +260,7 @@ pub fn kinds(children: &'static Unknown) -> Vec<String> {
   expect(js).not.toContain("captured");
   // The type a pattern binds, a getter's read, read once there, not at
   // each use (ADR 0750).
-  expect(js).toContain('out.push(type === "Recap" ? "recap" : type.toUpperCase());');
+  expect(js).toContain('out.push(type === "Recap" ? "recap" : $toUppercase(type));');
   // And read once, as Rust reads it, before the test of its kind (#189).
   expect(js).toContain('if (isValidElement(child)) {\n      const type = child.type;\n      if (typeof type === "string" && types.has(type)) {');
   expect(js.match(/child\.type/g)?.length).toBe(1);
@@ -681,7 +681,7 @@ pub fn Page() -> JSX::Element {
   expect(jsx).toContain("export const Label = memo(function Label({ text }) {");
   expect(jsx).not.toContain("function Label$1");
   expect(jsx).toContain("export const Shout = memo(function Shout({ text }) {");
-  expect(jsx).toContain("function Shout({ text }) {\n  function loud(text) {\n    return text.toUpperCase();\n  }\n  return <i>{loud(text)}</i>;");
+  expect(jsx).toContain("function Shout({ text }) {\n  function loud(text) {\n    return $toUppercase(text);\n  }\n  return <i>{loud(text)}</i>;");
   expect(jsx).toContain("export const Count = memo(function Count$1({ n }) {");
   expect(jsx).toContain("\nfunction fact(n) {");
   expect(jsx).toContain("\nfunction double(x, TAdd) {");

@@ -1015,11 +1015,11 @@ pub fn common(a: &HashSet<i32>, b: &HashSet<i32>) -> Vec<i32> {
 ```
 
 ```js
-import { $add, $orInsert, $setAlgebra } from "@rust-js/std";
+import { $add, $orInsert, $setAlgebra, $splitWhitespace } from "@rust-js/std";
 
 export function wordCounts(text) {
   const counts = new Map();
-  for (const word of text.split(/\p{White_Space}+/u).filter((word) => word !== "")) {
+  for (const word of $splitWhitespace(text)) {
     const current = $orInsert(counts, word, 0);
     counts.set(word, (current + 1) >>> 0);
   }
@@ -1699,6 +1699,7 @@ import {
   $splitOnce,
   $strGet,
   $strSlice,
+  $toLowercase,
   $trim,
 } from "@rust-js/std";
 
@@ -1711,7 +1712,7 @@ export function words(line) {
 }
 
 export function tidy(s) {
-  return $trim(s).replaceAll("  ", " ").toLowerCase();
+  return $toLowercase($trim(s).replaceAll("  ", " "));
 }
 
 export function firstChar(s) {

@@ -20,6 +20,8 @@ import {
   $sortedEntries,
   $splitOnce,
   $toFixed,
+  $toLowercase,
+  $toUppercase,
   $trim,
   $unwrap,
 } from "@rust-js/std";
@@ -196,7 +198,7 @@ function parseOrder(text) {
           return result$2;
         }
         quantity = result$2._0;
-        return { TAG: "Ok", _0: [$trim(sku).toUpperCase(), quantity] };
+        return { TAG: "Ok", _0: [$toUppercase($trim(sku)), quantity] };
       }),
   );
 }
@@ -273,7 +275,7 @@ function main() {
   );
 
   const seen = new Set();
-  const names = Array.from(inventory.items.values()).map((item) => item.name.toLowerCase());
+  const names = Array.from(inventory.items.values()).map((item) => $toLowercase(item.name));
   const key = (name) => [$byteLen(name), name];
   names.sort((a, b) => {
     const left = key(a);

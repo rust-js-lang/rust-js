@@ -8,6 +8,7 @@ import {
   $sipHasher,
   $someValue,
   $toBytes,
+  $toLowercase,
   $traitImpl,
   $utf8Bytes,
 } from "@rust-js/std";
@@ -74,7 +75,7 @@ function wideHash_hash(wide, state, HHasher) {
 
 export const nameHash = { hash: nameHash_hash, hashSlice: $hashSlice(nameHash_hash) };
 function nameHash_hash(name, state, HHasher) {
-  HHasher.writeStr(state, name[0].toLowerCase());
+  HHasher.writeStr(state, $toLowercase(name[0]));
 }
 
 // A slice of them hashes as one count, as its own `hash_slice` says.

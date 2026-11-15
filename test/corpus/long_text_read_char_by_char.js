@@ -5,6 +5,7 @@ import {
   $charIndices,
   $chars,
   $debugStr,
+  $isUppercase,
   $lent,
   $next,
   $nextBack,
@@ -59,7 +60,7 @@ function fromTheEnd(text) {
   let first = " ";
   let c;
   while ((c = $nextBack($chars($strSlice(text, 0, end)))) != null) {
-    if (/^\p{Uppercase}$/u.test(c)) {
+    if ($isUppercase(c)) {
       uppercase = (uppercase + 1) >>> 0;
     }
     first = c;

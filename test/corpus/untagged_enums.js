@@ -11,6 +11,7 @@ import {
   $live,
   $next,
   $partialEq,
+  $toLowercase,
   $unwindsOn,
 } from "@rust-js/std";
 
@@ -67,7 +68,7 @@ const START = 3;
 
 export const namePartialEq = $partialEq({ eq: namePartialEq_eq });
 function namePartialEq_eq(name, other) {
-  return name[0].toLowerCase() === other[0].toLowerCase();
+  return $toLowercase(name[0]) === $toLowercase(other[0]);
 }
 
 function describe(value) {

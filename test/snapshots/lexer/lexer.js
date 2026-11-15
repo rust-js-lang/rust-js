@@ -7,12 +7,15 @@
 import {
   $chars,
   $debugStr,
+  $isAlphanumeric,
+  $isWhitespace,
   $iter,
   $next,
   $nextIf,
   $peek,
   $restStr,
   $toDigit,
+  $toUppercase,
   $unwrap,
   iterator_peekable,
 } from "@rust-js/std";
@@ -53,9 +56,7 @@ export const Lexer = {
   word(lexer, first) {
     let w = first;
     let c;
-    while (
-      (c = $nextIf(lexer.chars, (c) => /^[\p{Alphabetic}\p{N}]$/u.test(c) || c === "_")) != null
-    ) {
+    while ((c = $nextIf(lexer.chars, (c) => $isAlphanumeric(c) || c === "_")) != null) {
       w += c;
     }
     return w;
@@ -69,7 +70,7 @@ export const Lexer = {
       }
       if (c === "\n") {
         lexer.line = (lexer.line + 1) >>> 0;
-      } else if (!/^\p{White_Space}$/u.test(c)) {
+      } else if (!$isWhitespace(c)) {
         if (c >= "0" && c <= "9") {
           const n = Lexer.number(lexer, c);
           out.push({ TAG: "Num", _0: n });
@@ -118,7 +119,7 @@ export function pairs(v) {
 export function capitalize(s) {
   const chars = $chars(s);
   const c = $next(chars);
-  return c != null ? c.toUpperCase() + $restStr(chars) : "";
+  return c != null ? $toUppercase(c) + $restStr(chars) : "";
 }
 
 export function report() {

@@ -30,6 +30,7 @@ import {
   $strictlyEqual,
   $tableRoomFor,
   $toBytes,
+  $toLowercase,
   $treeFromSorted,
   $utf8Bytes,
   $vacantInsert,
@@ -306,7 +307,7 @@ function main() {
     $entryOrInsertWith($entry(lists, word), () => []).push(i);
   }
   hashed("lists here");
-  counts = Array.from(counts).map(([w, n]) => [w[0].toLowerCase(), n]);
+  counts = Array.from(counts).map(([w, n]) => [$toLowercase(w[0]), n]);
   counts.sort((a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]));
   lists = Array.from(lists.values());
   lists.sort((a, b) => $cmpItems(a, b, $cmp));

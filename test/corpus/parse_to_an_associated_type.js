@@ -9,6 +9,7 @@ import {
   $parseF32,
   $parseInt,
   $some,
+  $toUppercase,
 } from "@rust-js/std";
 
 export function entry() {
@@ -28,7 +29,7 @@ function wordDebug_fmt(word) {
 export const wordFromStr = { fromStr: wordFromStr_fromStr };
 
 function wordFromStr_fromStr(text) {
-  return text === "" ? { TAG: "Err", _0: "empty" } : { TAG: "Ok", _0: [text.toUpperCase()] };
+  return text === "" ? { TAG: "Err", _0: "empty" } : { TAG: "Ok", _0: [$toUppercase(text)] };
 }
 
 function parseItem(_, text, SSource, SItemFromStr) {

@@ -152,8 +152,11 @@ sharing one is copying it: `clone()` is the string itself, and `push_str` is
 - **`to_uppercase` and `to_lowercase` are Unicode's,** `ß` to `SS`;
   `to_ascii_uppercase` changes ASCII letters only. `char`'s questions,
   `is_alphabetic` and the rest, are Unicode properties
-  ([0063](../decisions/0063-text.md)). Their tables are the JS engine's, which
-  may be another Unicode version than Rust's. A locale's,
+  ([0063](../decisions/0063-text.md)), asked of Rust's own tables, its
+  Unicode version's, whatever the JS engine's is: `$isAlphabetic(c)`,
+  `$toUppercase(s)`, and `{:?}`'s escapes; `is_control()` alone is JS's
+  `\p{Cc}`, which no Unicode version changes
+  ([1163](../decisions/1163-unicode-is-rusts-tables.md)). A locale's,
   `toLocaleLowerCase()`, Turkish's `I` to `ı`, is
   `js::string::to_locale_lower_case(text, None)`, its locales left out where
   they're `None`, the host's, and `to_locale_upper_case` its other way.

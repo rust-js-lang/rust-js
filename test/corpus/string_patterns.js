@@ -3,6 +3,7 @@
 import {
   $byteLen,
   $debugStr,
+  $isNumeric,
   $matchIndices,
   $matches,
   $next,
@@ -83,7 +84,7 @@ function main() {
     `${$debugStr($trimMatches("xxhixx", "x"))} ${$debugStr($trimMatches("--a--", "-", true, false))}`,
   );
   console.log(
-    `${$debugStr($trimMatches("xxhixx", "xx", true, false))} ${$debugStr($trimMatches("a1b22", (c) => /^\p{N}$/u.test(c), false, true))}`,
+    `${$debugStr($trimMatches("xxhixx", "xx", true, false))} ${$debugStr($trimMatches("a1b22", (c) => $isNumeric(c), false, true))}`,
   );
   console.log(`${$debugStr($trimMatches(" a1 ", (c) => c === " " || /^[0-9]$/.test(c)))}`);
   let total = 0;

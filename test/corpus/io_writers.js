@@ -12,6 +12,7 @@ import {
   $someValue,
   $stderrWriter,
   $stdoutWriter,
+  $toUppercase,
   $unwrap,
   $unwrapOk,
   $utf8Bytes,
@@ -30,7 +31,7 @@ function render(out, n, WWrite) {
 }
 
 function shout(out, text) {
-  out.impl.writeFmt(out, `${text.toUpperCase()}!`);
+  out.impl.writeFmt(out, `${$toUppercase(text)}!`);
   out.impl.writeAll(out, [10]);
   $someValue($unwrap($some(undefined), "a write never fails"));
 }

@@ -4,6 +4,9 @@ import {
   $charIndices,
   $chars,
   $formatted,
+  $isAlphanumeric,
+  $isLowercase,
+  $isUppercase,
   $iter,
   $lazySplitBy,
   $next,
@@ -12,6 +15,8 @@ import {
   $restStr,
   $sink,
   $strSlice,
+  $toLowercase,
+  $toUppercase,
   iterator_peekable,
 } from "@rust-js/std";
 
@@ -22,7 +27,7 @@ export function entry() {
 function lowercase(s, options) {
   let f = "";
   for (const c of s) {
-    f += c.toLowerCase();
+    f += $toLowercase(c);
   }
   return f;
 }
@@ -32,7 +37,7 @@ function capitalize(s, options) {
   const chars = $chars(s);
   const first = $next(chars);
   if (first != null) {
-    f += first.toUpperCase();
+    f += $toUppercase(first);
     f += lowercase($restStr(chars), options);
   }
   return f;
@@ -43,7 +48,7 @@ function capitalize(s, options) {
 function transform(s, withWord, boundary, options) {
   const f = $sink();
   let firstWord = true;
-  for (const word of $lazySplitBy(s, (c) => !/^[\p{Alphabetic}\p{N}]$/u.test(c))) {
+  for (const word of $lazySplitBy(s, (c) => !$isAlphanumeric(c))) {
     const charIndices = iterator_peekable($charIndices(word));
     let init = 0;
     let mode = "Boundary";
@@ -55,12 +60,8 @@ function transform(s, withWord, boundary, options) {
       if (peek != null) {
         const nextI = peek[0];
         const next = peek[1];
-        const nextMode = /^\p{Lowercase}$/u.test(c)
-          ? "Lowercase"
-          : /^\p{Uppercase}$/u.test(c)
-            ? "Uppercase"
-            : mode;
-        if (nextMode === "Lowercase" && /^\p{Uppercase}$/u.test(next)) {
+        const nextMode = $isLowercase(c) ? "Lowercase" : $isUppercase(c) ? "Uppercase" : mode;
+        if (nextMode === "Lowercase" && $isUppercase(next)) {
           if (!firstWord) {
             f.write(boundary(options));
           }
@@ -68,11 +69,7 @@ function transform(s, withWord, boundary, options) {
           firstWord = false;
           init = nextI;
           mode = "Boundary";
-        } else if (
-          mode === "Uppercase" &&
-          /^\p{Uppercase}$/u.test(c) &&
-          /^\p{Lowercase}$/u.test(next)
-        ) {
+        } else if (mode === "Uppercase" && $isUppercase(c) && $isLowercase(next)) {
           if (!firstWord) {
             f.write(boundary(options));
           } else {
@@ -146,8 +143,8 @@ function main() {
     })}.\n`,
   );
   // A case mapping shows the `char`s it hasn't given.
-  const upper = $iter(Array.from("ß".toUpperCase()));
+  const upper = $iter(Array.from($toUppercase("ß")));
   $next(upper);
-  $out(`[${"ǆ".toLowerCase()}] [${$restStr(upper)}]\n`);
+  $out(`[${$toLowercase("ǆ")}] [${$restStr(upper)}]\n`);
 }
 //# sourceMappingURL=case.js.map

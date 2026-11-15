@@ -9,6 +9,7 @@ import {
   $index,
   $live,
   $rcDrop,
+  $toUppercase,
   $unborrow,
   $unwindsOn,
   $upgrade,
@@ -25,7 +26,7 @@ const loggerListener = {
   count: loggerListener_count,
 };
 function loggerListener_notify(logger, event) {
-  logger.seen.push(event.toUpperCase());
+  logger.seen.push($toUppercase(event));
 }
 
 function loggerListener_count(logger) {

@@ -13,6 +13,7 @@ import {
   $ptrBytes,
   $ptrTyped,
   $realloc,
+  $toUppercase,
   $unwrap,
   $unwrapOk,
   $vecFromRaw,
@@ -100,7 +101,7 @@ function main() {
       break;
     }
     try {
-      Buf.push(b, w.toUpperCase(), 12, 4);
+      Buf.push(b, $toUppercase(w), 12, 4);
     } catch (error) {
       $cleanup(() => {
         if (b$live) {

@@ -15,6 +15,7 @@ import {
   $max,
   $next,
   $sortedEntries,
+  $toUppercase,
 } from "@rust-js/std";
 
 export const Value = {
@@ -197,7 +198,7 @@ export function tree() {
   out += `${p}\n`;
   const get = Value.get(v, "name");
   const s = get != null ? Value.asStr(get) : undefined;
-  const name = s?.toUpperCase();
+  const name = s != null ? $toUppercase(s) : undefined;
   const value = price(v);
   const depth = Value.depth(v);
   const get$1 = Value.get(v, "missing");

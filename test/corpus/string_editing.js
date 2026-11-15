@@ -4,6 +4,7 @@ import {
   $at,
   $debugStr,
   $insertStr,
+  $isWhitespace,
   $retainText,
   $strPop,
   $strRemove,
@@ -17,7 +18,7 @@ export function entry() {
 function tidy(s) {
   s.value = $retainText(
     s.value,
-    (c) => !/^\p{White_Space}$/u.test(c),
+    (c) => !$isWhitespace(c),
     (kept) => {
       s.value = kept;
     },

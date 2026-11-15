@@ -206,9 +206,9 @@ pub fn copied(mut items: Vec<u32>) -> (Vec<u32>, Vec<u32>) {
   expect(js).toContain("  return $max(items) ?? 0;\n");
   expect(js).toContain("  return items.toReversed().slice(0, 2);\n");
   expect(js).toContain("  return groups.flatMap((g) => g.map((x) => (x * 10) >>> 0));\n");
-  expect(js).toContain(".filter((word) => word !== \"\")\n    .map((w) => w.toUpperCase())\n    .join(\" \");");
+  expect(js).toContain("  return $splitWhitespace(s)\n    .map((w) => $toUppercase(w))\n    .join(\" \");");
   expect(js).toContain("  return v.slice(2).slice(0, 3);\n");
-  expect(js).toContain("  return c.toUpperCase();\n");
+  expect(js).toContain("  return $toUppercase(c);\n");
   expect(js).toContain("  return groups.map((x) => x.length);\n");
   expect(js).toContain("words.map((s) => $byteLen(s))");
   expect(js).toContain("  return $windows(v, 2).map(");
@@ -280,7 +280,7 @@ pub fn pick(c: bool, n: u32) -> u32 {
   expect(js).toContain('  return s.split(",").toReversed().slice(0, 2);\n');
   expect(js).toContain("v[0]");
   // A \`return\` the program wrote stays one, the smaller branch first.
-  expect(js).toContain("  if (group === \"\") {\n    return;\n  }\n  return $trim(");
+  expect(js).toContain("  if (group === \"\") {\n    return;\n  }\n  return $toLowercase($trim(");
   expect(js).toContain("  if (c) {\n    return (n + 1) >>> 0;\n  } else {\n    return (n * 2) >>> 0;\n  }\n");
   expect(js).not.toContain("$index");
   const lib = await import(join(dir, "mir.js"));

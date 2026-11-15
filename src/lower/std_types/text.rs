@@ -1,7 +1,8 @@
 //! More of `char`'s and `str`'s methods, `parse`, and slicing by a range
-//! (ADR 0063). A `char` is a one-character string (ADR 0034), so its
-//! questions are regular expressions of the Unicode properties Rust uses:
-//! `c.is_whitespace()` is `/^\p{White_Space}$/u.test(c)`.
+//! (ADR 0063). A `char` is a one-character string (ADR 0034), and its
+//! Unicode questions are asked of Rust's own tables, as a JS engine's may
+//! be another Unicode version's: `c.is_whitespace()` is `$isWhitespace(c)`
+//! (#1888, ADR 1163).
 
 use crate::collections::IndexSet;
 use crate::lower::temporary_names::Role;
@@ -52,14 +53,19 @@ pub(in crate::lower) enum StringEdit {
 pub(in crate::lower) enum TextOp {
     /// A `char` question, as a regular expression it matches.
     Is(&'static str),
+    /// A `char` question Unicode's tables answer, by Rust's own tables, the
+    /// helper that asks them, `$isAlphabetic(c)` (#1888, ADR 1163).
+    Unicode(&'static str),
     IsAscii,
     ToAsciiUpper,
     ToAsciiLower,
     ToDigit,
     IsDigit,
     SplitWhitespace,
-    /// `c.to_uppercase()`: its `char`s, as JS's own mapping gives them (`ß` is `SS`).
+    /// `c.to_uppercase()`: its `char`s, as Rust's tables map it (`ß` is `SS`).
     CharCase(bool),
+    /// `s.to_uppercase()` and `s.to_lowercase()`, as Rust's tables map it.
+    StrCase(bool),
     Lines,
     /// `s.as_bytes()` and `s.bytes()`: its UTF-8 bytes, lent, `$utf8Bytes(s)`,
     /// one array of a long text's, kept, never written (ADR 0126, amended,
@@ -436,8 +442,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut arg = || values.next().expect("rustc checked the arguments");
         let method = |object: Expr, name: &str, list: Vec<Expr>| Expr::call(Expr::member(object, name), list);
         let call = |name: &'static str, list: Vec<Expr>| Expr::call(Expr::helper(name), list);
+        let case = |upper: bool| if upper { "$toUppercase" } else { "$toLowercase" };
         Ok(match op {
             TextOp::Is(regex) => method(Expr::regex(regex), "test", vec![arg()]),
+            TextOp::Unicode(helper) => call(helper, vec![arg()]),
             TextOp::IsAscii => {
                 let code = method(arg(), "charCodeAt", vec![Expr::int(0)]);
                 Expr::bin(Op::Lt, code, Expr::int(128))
@@ -463,23 +471,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     digit
                 }
             }
-            // Rust's whitespace is Unicode's `White_Space`: JS's `\s` less U+FEFF.
-            TextOp::SplitWhitespace => {
-                let words = method(arg(), "split", vec![Expr::regex("/\\p{White_Space}+/u")]);
-                let word = Expr::arrow(
-                    vec!["word".into()],
-                    vec![
-                        StmtKind::Return(Some(Expr::bin(Op::Ne, Expr::var("word"), Expr::str(""))))
-                            .at(crate::js::Span::NONE),
-                    ],
-                );
-                method(words, "filter", vec![word])
-            }
-            TextOp::CharCase(upper) => chars(method(
-                arg(),
-                if upper { "toUpperCase" } else { "toLowerCase" },
-                Vec::new(),
-            )),
+            // Rust's whitespace, by its table: JS's `\s` has U+FEFF (#1888).
+            TextOp::SplitWhitespace => call("$splitWhitespace", vec![arg()]),
+            TextOp::CharCase(upper) => chars(call(case(upper), vec![arg()])),
+            TextOp::StrCase(upper) => call(case(upper), vec![arg()]),
             TextOp::SplitBy => Expr::call(Expr::helper(lazy("$splitBy", "$lazySplitBy")), vec![arg(), arg()]),
             TextOp::RsplitBy(limited) => {
                 let s = arg();

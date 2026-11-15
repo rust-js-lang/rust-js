@@ -2,6 +2,9 @@
 
 import {
   $debugStr,
+  $isAlphabetic,
+  $isNumeric,
+  $isWhitespace,
   $lazyMatchIndicesBy,
   $lazyRsplitBy,
   $lazySplitInclusiveBy,
@@ -28,7 +31,7 @@ function main() {
       .join(", ")}]`,
   );
   console.log(
-    `[${Array.from($rsplitBy(s, (c) => /^\p{N}$/u.test(c), 2))
+    `[${Array.from($rsplitBy(s, (c) => $isNumeric(c), 2))
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );
@@ -58,7 +61,7 @@ function main() {
       .join(", ")}]`,
   );
   console.log(
-    `[${Array.from($matchIndicesBy(s, (c) => /^\p{N}$/u.test(c)))
+    `[${Array.from($matchIndicesBy(s, (c) => $isNumeric(c)))
       .map((item) => `(${item[0]}, ${$debugStr(item[1])})`)
       .join(", ")}]`,
   );
@@ -73,7 +76,7 @@ function main() {
     `${splitOnce == null ? "None" : `Some((${$debugStr(splitOnce[0])}, ${$debugStr(splitOnce[1])}))`} ${rsplitOnce == null ? "None" : `Some((${$debugStr(rsplitOnce[0])}, ${$debugStr(rsplitOnce[1])}))`}`,
   );
   const value = $splitOnceBy("ab", digit);
-  const stripPrefix = $stripBy(s, (c) => /^\p{Alphabetic}$/u.test(c));
+  const stripPrefix = $stripBy(s, (c) => $isAlphabetic(c));
   console.log(
     `${value == null ? "None" : `Some((${$debugStr(value[0])}, ${$debugStr(value[1])}))`} ${stripPrefix == null ? "None" : `Some(${$debugStr(stripPrefix)})`}`,
   );
@@ -83,7 +86,7 @@ function main() {
     `${stripSuffix == null ? "None" : `Some(${$debugStr(stripSuffix)})`} ${value$1 == null ? "None" : `Some(${$debugStr(value$1)})`}`,
   );
   console.log(`${$replaceBy(s, digit, "#")} ${$replaceBy(s, (c) => /^[0-9]$/.test(c), "", 2)}`);
-  console.log(`${$replaceBy("hello world", (c) => /^\p{White_Space}$/u.test(c), "_")}`);
+  console.log(`${$replaceBy("hello world", (c) => $isWhitespace(c), "_")}`);
   console.log(`${$lazySplitTerminatorBy("", digit).reduce((n) => n + 1, 0)}`);
   console.log(`${$lazySplitInclusiveBy("", digit).reduce((n) => n + 1, 0)}`);
   const value$2 = $stripBy("1", digit);

@@ -4,7 +4,17 @@
 // are the array's methods, and `Ordering` is -1, 0 or 1, as a comparator
 // returns it.
 
-import { $byteLen, $cmp, $lazyRange, $max, $min, $position, $range, $roomFor } from "@rust-js/std";
+import {
+  $byteLen,
+  $cmp,
+  $lazyRange,
+  $max,
+  $min,
+  $position,
+  $range,
+  $roomFor,
+  $toUppercase,
+} from "@rust-js/std";
 
 export function squares(n) {
   $roomFor(n, 4);
@@ -51,7 +61,7 @@ export function nonEmpty(words) {
 }
 
 export function shouted(words) {
-  return words.map((w) => w.toUpperCase()).join("-");
+  return words.map((w) => $toUppercase(w)).join("-");
 }
 
 export function backwards(s) {

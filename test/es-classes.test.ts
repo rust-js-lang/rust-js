@@ -120,7 +120,7 @@ export default class Plugin {
   }
 
   static shout(text) {
-    return text.toUpperCase();
+    return $toUppercase(text);
   }
 }
 

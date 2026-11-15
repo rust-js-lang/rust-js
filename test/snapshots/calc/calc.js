@@ -13,10 +13,13 @@ import {
   $debugF64,
   $debugStr,
   $filterEnds,
+  $isAlphanumeric,
+  $isWhitespace,
   $lazySplitBy,
   $mapEnds,
   $orInsert,
   $parseF64,
+  $toLowercase,
   $unwrap,
 } from "@rust-js/std";
 
@@ -26,7 +29,7 @@ export function tokenize(src) {
   let i = 0;
   while (i < chars.length) {
     const c = chars[i];
-    if (/^\p{White_Space}$/u.test(c)) {
+    if ($isWhitespace(c)) {
       i++;
       continue;
     }
@@ -153,10 +156,8 @@ function eval$(src) {
 
 export function wordFreq(text) {
   const m = new Map();
-  for (const w of $lazySplitBy(text, (c) => !/^[\p{Alphabetic}\p{N}]$/u.test(c)).filter(
-    (w) => w !== "",
-  )) {
-    const key = w.toLowerCase();
+  for (const w of $lazySplitBy(text, (c) => !$isAlphanumeric(c)).filter((w) => w !== "")) {
+    const key = $toLowercase(w);
     const current = $orInsert(m, key, 0);
     m.set(key, (current + 1) >>> 0);
   }

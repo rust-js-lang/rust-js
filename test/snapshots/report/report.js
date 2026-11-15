@@ -12,6 +12,7 @@ import {
   $debugParseError,
   $debugStr,
   $index,
+  $isWhitespace,
   $iter,
   $lines,
   $maxByKey,
@@ -23,6 +24,7 @@ import {
   $position,
   $sortedEntries,
   $toFixed,
+  $toUppercase,
   $trim,
   $unwrapErr,
   $windows,
@@ -78,7 +80,7 @@ function capitalize(s) {
   return [
     ...s[Symbol.iterator]()
       .take(1)
-      .flatMap((c) => $iter(Array.from(c.toUpperCase()))),
+      .flatMap((c) => $iter(Array.from($toUppercase(c)))),
     ...s[Symbol.iterator]().drop(1),
   ].join("");
 }
@@ -114,7 +116,7 @@ export function table(input) {
     const r = rows[j];
     const value = capitalize(r.name);
     const value$1 = grade(r.score, r.age);
-    out += `${$pad(value, 8, "<")}|${String(r.score).padStart(6)}|${$pad(value$1, 7, "^")}|${r.team.toUpperCase()}\n`;
+    out += `${$pad(value, 8, "<")}|${String(r.score).padStart(6)}|${$pad(value$1, 7, "^")}|${$toUppercase(r.team)}\n`;
   }
   const byTeam = new $BTreeMap();
   for (let j = 0; j < rows.length; j++) {
@@ -155,8 +157,8 @@ export function parseErrors() {
 }
 
 export function functionValues(words) {
-  const upper = words.map((w) => w.toUpperCase());
-  const spaces = Array.from("a b\tc"[Symbol.iterator]().map((c) => /^\p{White_Space}$/u.test(c)));
+  const upper = words.map((w) => $toUppercase(w));
+  const spaces = Array.from("a b\tc"[Symbol.iterator]().map((c) => $isWhitespace(c)));
   const roots = [4, 2.25, 9].map((n) => Math.sqrt(n));
   const owned = words.slice();
   return [upper, spaces, roots, owned];

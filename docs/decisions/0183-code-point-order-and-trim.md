@@ -68,3 +68,12 @@ Rust's, for text no one would think to test.
   `<` was the engine's; a sort of strings passes `$cmp`.
 - **`trim` is a helper,** `$trim(s)` where it was `s.trim()`, and a regular
   expression where it was the engine's method.
+
+## Amendment (2026-11-15, #1888)
+
+A `char`'s Unicode questions, `{:?}`'s escapes, `trim` and
+`split_whitespace`, and `to_uppercase` and `to_lowercase` are asked of
+Rust's own tables, made of the pinned toolchain's std, not the JS engine's
+`\p{..}` and `toUpperCase()`, whose Unicode version may be another:
+`$isAlphabetic(c)`, `$toUppercase(s)` ([1163](1163-unicode-is-rusts-tables.md)).
+`is_control()` stays `/^\p{Cc}$/u`.

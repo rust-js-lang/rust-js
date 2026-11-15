@@ -297,6 +297,8 @@ helpers! {
     WriteFloat,
     Powf,
     Trim,
+    Unicode,
+    UnicodeTables,
     FmtError,
     IoError,
     Hasher,
@@ -460,6 +462,16 @@ const PURE: &[&str] = &[
     "$jsonGet",
     "$jsonIndex",
     "$debugStr",
+    // What a `char` is, of Rust's tables, and its case (#1888).
+    "$isAlphabetic",
+    "$isNumeric",
+    "$isAlphanumeric",
+    "$isUppercase",
+    "$isLowercase",
+    "$isWhitespace",
+    "$splitWhitespace",
+    "$toUppercase",
+    "$toLowercase",
     "$debugF64",
     "$displayF64",
     // A text's escapes, and a byte slice's (ADR 0971).
@@ -1115,6 +1127,10 @@ impl Helper {
             Helper::WriteFloat => include_str!("runtime/write_float.js"),
             Helper::Powf => include_str!("runtime/powf.js"),
             Helper::Trim => include_str!("runtime/trim.js"),
+            // What a `char` is, as Rust's std answers it (#1888, ADR 1160).
+            Helper::Unicode => include_str!("runtime/unicode.js"),
+            // Rust's own tables, `bun scripts/unicode.ts`'s.
+            Helper::UnicodeTables => include_str!("runtime/unicode_tables.js"),
             Helper::FmtError => include_str!("runtime/fmt_error.js"),
             Helper::Duration => include_str!("runtime/duration.js"),
             // `s.len()`: its UTF-8 bytes, as Rust counts them, where JS counts

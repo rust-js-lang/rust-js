@@ -160,18 +160,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^slice_split.rs"],
   },
   {
-    name: "split-whitespace-js-s",
-    breaks:
-      "`split_whitespace()` splits by JS's `\\s`, at U+FEFF too, where Rust's whitespace is Unicode's `White_Space`",
+    name: "str-case-js-own",
+    breaks: "`s.to_uppercase()` is JS's `toUpperCase()`, the engine's Unicode version's, which leaves U+0277 as it is where Rust 1.100 maps it (#1888)",
     file: "src/lower/std_types/text.rs",
-    find: '                let words = method(arg(), "split", vec![Expr::regex("/\\\\p{White_Space}+/u")]);',
+    find: "            TextOp::StrCase(upper) => call(case(upper), vec![arg()]),\n",
     replace:
-      '                let words = method(arg(), "split", vec![Expr::regex("/\\\\s+/")]);',
-    tests: [
-      "test/compiler.test.ts",
-      "-t",
-      "chars, parse and slices are plain JS with Rust's answers",
-    ],
+      "            TextOp::StrCase(upper) => method(arg(), if upper { \"toUpperCase\" } else { \"toLowerCase\" }, Vec::new()),\n",
+    tests: ["test/corpus.test.ts", "-t", "^unicode_answers_are_rusts.rs$"],
   },
   {
     name: "extend-from-within-unspread",

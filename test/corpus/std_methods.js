@@ -11,6 +11,7 @@ import {
   $displayF64,
   $print,
   $sortedEntries,
+  $toUppercase,
 } from "@rust-js/std";
 
 export function entry() {
@@ -146,7 +147,7 @@ function main() {
     .map((x) => (x * 2) | 0);
   $print(`[${doubled.join(", ")}]\n`);
   const r = { TAG: "Ok", _0: "abc" };
-  const value$4 = r.TAG === "Ok" ? { TAG: "Ok", _0: r._0.toUpperCase() } : r;
+  const value$4 = r.TAG === "Ok" ? { TAG: "Ok", _0: $toUppercase(r._0) } : r;
   $print(
     `${value$4.TAG === "Ok" ? `Ok(${$debugStr(value$4._0)})` : `Err(${value$4._0})`} ${r.TAG === "Ok" ? `Ok(${$debugStr(r._0)})` : `Err(${r._0})`}\n`,
   );

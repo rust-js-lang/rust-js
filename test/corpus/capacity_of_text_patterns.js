@@ -20,6 +20,7 @@ import {
   $splitInclusive,
   $splitN,
   $splitTerminator,
+  $splitWhitespace,
 } from "@rust-js/std";
 
 export function entry() {
@@ -60,15 +61,7 @@ function main() {
   console.log(`${words($iter(s.split(","), true), false)}`);
   console.log(`${extended($chars(s))}`);
   console.log(`${extendedWords($iter(s.split(","), true))}`);
-  console.log(
-    `${words(
-      $iter(
-        s.split(/\p{White_Space}+/u).filter((word) => word !== ""),
-        true,
-      ),
-      false,
-    )}`,
-  );
+  console.log(`${words($iter($splitWhitespace(s), true), false)}`);
   console.log(`${extended($rev($chars(s)))}`);
   direct();
 }
@@ -79,16 +72,8 @@ function direct() {
   const a = $grownVec($roomForHint($iter(s.split(","), true), 8, false), (grown) =>
     Array.from(grown),
   );
-  const b = $grownVec(
-    $roomForHint(
-      $iter(
-        s.split(/\p{White_Space}+/u).filter((word) => word !== ""),
-        true,
-      ),
-      8,
-      false,
-    ),
-    (grown) => Array.from(grown),
+  const b = $grownVec($roomForHint($iter($splitWhitespace(s), true), 8, false), (grown) =>
+    Array.from(grown),
   );
   const c = $grownVec($roomForHint($iter($lines(s), true), 8, false), (grown) => Array.from(grown));
   const d = $grownVec($roomForHint(Iterator.from($matches(s, "i")), 8, false), (grown) =>

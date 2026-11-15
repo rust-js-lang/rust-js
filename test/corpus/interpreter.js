@@ -7,11 +7,15 @@ import {
   $debugStr,
   $displayF64,
   $eq,
+  $isAlphabetic,
+  $isAlphanumeric,
+  $isWhitespace,
   $iter,
   $lazyZip,
   $next,
   $parseF64,
   $peek,
+  $toUppercase,
   $unwrapOk,
   iterator_peekable,
 } from "@rust-js/std";
@@ -91,7 +95,7 @@ const Lexer = {
     const out = [];
     let c;
     while ((c = $peek(lexer.chars)) != null) {
-      if (/^\p{White_Space}$/u.test(c)) {
+      if ($isWhitespace(c)) {
         Lexer.bump(lexer);
         continue;
       }
@@ -111,11 +115,11 @@ const Lexer = {
         });
         continue;
       }
-      if (/^\p{Alphabetic}$/u.test(c) || c === "_") {
+      if ($isAlphabetic(c) || c === "_") {
         let name = "";
         while (true) {
           const d = $peek(lexer.chars);
-          if (d == null || (!/^[\p{Alphabetic}\p{N}]$/u.test(d) && d !== "_")) {
+          if (d == null || (!$isAlphanumeric(d) && d !== "_")) {
             break;
           }
           name += d;
@@ -433,7 +437,7 @@ function upper(args) {
   const other = args[0];
   if (other != null) {
     if (other.TAG === "Str") {
-      return { TAG: "Ok", _0: { TAG: "Str", _0: other._0.toUpperCase() } };
+      return { TAG: "Ok", _0: { TAG: "Str", _0: $toUppercase(other._0) } };
     }
     return { TAG: "Err", _0: `upper of ${valueDisplay_fmt(other)}` };
   }

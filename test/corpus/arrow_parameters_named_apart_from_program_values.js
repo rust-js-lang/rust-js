@@ -5,6 +5,7 @@ import {
   $binarySearchBy,
   $cmp,
   $eq,
+  $isAlphabetic,
   $iter,
   $nextIf,
   $position,
@@ -70,7 +71,7 @@ function main() {
   let kept = "a1b2";
   kept = $retainText(
     kept,
-    (ch) => /^\p{Alphabetic}$/u.test(ch),
+    (ch) => $isAlphabetic(ch),
     (kept$1) => {
       kept = kept$1;
     },

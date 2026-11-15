@@ -6,6 +6,7 @@ import {
   $debugStr,
   $parseInt,
   $splitOnce,
+  $toLowercase,
   $trim,
 } from "@rust-js/std";
 
@@ -16,7 +17,7 @@ export function entry() {
 export const roleFromStr = { fromStr: roleFromStr_fromStr };
 
 function roleFromStr_fromStr(s) {
-  const other = $trim(s).toLowerCase();
+  const other = $toLowercase($trim(s));
   switch (other) {
     case "admin":
       return { TAG: "Ok", _0: "Admin" };

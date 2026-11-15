@@ -19,6 +19,7 @@ import {
   $roomForHint,
   $some,
   $successors,
+  $toUppercase,
   $unzip,
   iterator_map,
 } from "@rust-js/std";
@@ -60,7 +61,7 @@ function countdown(from) {
 }
 
 function withHeader(header, lines) {
-  return Array.from($lazyChain($iter([header]), $iter(lines)).map((line) => line.toUpperCase()));
+  return Array.from($lazyChain($iter([header]), $iter(lines)).map((line) => $toUppercase(line)));
 }
 
 function maybeItems(item) {

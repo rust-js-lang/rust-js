@@ -22,6 +22,7 @@ import {
   $sink,
   $sipHasher,
   $stringWriter,
+  $toUppercase,
   $unwrap,
 } from "@rust-js/std";
 
@@ -162,6 +163,6 @@ function textAsRefStr_asRef(text) {
 }
 
 function shout(s, SAsRefStr) {
-  return SAsRefStr.asRef(s).toUpperCase();
+  return $toUppercase(SAsRefStr.asRef(s));
 }
 //# sourceMappingURL=case.js.map

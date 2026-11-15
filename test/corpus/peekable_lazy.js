@@ -4,6 +4,7 @@ import {
   $debugStr,
   $foldOf,
   $foldToArray,
+  $isWhitespace,
   $iter,
   $next,
   $nextIf,
@@ -24,9 +25,7 @@ export function entry() {
 
 function tokens(src) {
   const out = [];
-  const chars = iterator_peekable(
-    src[Symbol.iterator]().filter((c) => !/^\p{White_Space}$/u.test(c)),
-  );
+  const chars = iterator_peekable(src[Symbol.iterator]().filter((c) => !$isWhitespace(c)));
   let c;
   while ((c = $next(chars)) != null) {
     if (/^[0-9]$/.test(c)) {

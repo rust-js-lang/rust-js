@@ -8,6 +8,7 @@ import {
   $iter,
   $next,
   $someValue,
+  $toUppercase,
   $traitImpl,
   $unwrap,
 } from "@rust-js/std";
@@ -48,7 +49,7 @@ function celsiusDisplay_fmt(celsius) {
 }
 
 function shout(x, TToString) {
-  return TToString.toString(x).toUpperCase();
+  return $toUppercase(TToString.toString(x));
 }
 
 const $optionGetterT = new WeakMap();

@@ -5,6 +5,10 @@ import {
   $charBoundary,
   $debugStr,
   $findBy,
+  $isAlphabetic,
+  $isNumeric,
+  $isUppercase,
+  $isWhitespace,
   $range,
   $splitBy,
   $startsBy,
@@ -22,9 +26,9 @@ function main() {
 
   // A closure, a function, a set: where the first and last match, in bytes.
   const find = $findBy(line, (c) => /^[0-9]$/.test(c), false);
-  const rfind = $findBy(line, (c) => /^\p{N}$/u.test(c), true);
+  const rfind = $findBy(line, (c) => $isNumeric(c), true);
   const value = $findBy(line, (c) => [";", ","].includes(c), false);
-  const value$1 = $findBy(line, (c) => /^\p{White_Space}$/u.test(c), false);
+  const value$1 = $findBy(line, (c) => $isWhitespace(c), false);
   console.log(
     `${find == null ? "None" : `Some(${find})`} ${rfind == null ? "None" : `Some(${rfind})`} ${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
   );
@@ -36,16 +40,16 @@ function main() {
 
   // Starting and ending with one.
   console.log(
-    `${$startsBy(line, (c) => /^\p{Alphabetic}$/u.test(c), false)} ${$startsBy(line, (c) => /^[0-9]$/.test(c), true)} ${$startsBy("", () => true, false)} ${$startsBy("😀x", (c) => $byteLen(c) === 4, false)}`,
+    `${$startsBy(line, (c) => $isAlphabetic(c), false)} ${$startsBy(line, (c) => /^[0-9]$/.test(c), true)} ${$startsBy("", () => true, false)} ${$startsBy("😀x", (c) => $byteLen(c) === 4, false)}`,
   );
   console.log(`${$startsBy("x😀", (c) => $byteLen(c) === 4, true)}`);
 
   // Split, tested and trimmed by one.
   const fields = $splitBy(line, (c) => [";", ","].includes(c)).map((s) => $trim(s));
   console.log(`[${fields.map((item) => $debugStr(item)).join(", ")}]`);
-  const words = $splitBy("a1b22c", (c) => /^\p{N}$/u.test(c));
+  const words = $splitBy("a1b22c", (c) => $isNumeric(c));
   console.log(
-    `[${words.map((item) => $debugStr(item)).join(", ")}] ${Array.from(line).some((c) => /^\p{Uppercase}$/u.test(c))}`,
+    `[${words.map((item) => $debugStr(item)).join(", ")}] ${Array.from(line).some((c) => $isUppercase(c))}`,
   );
   console.log(`${$debugStr($trimMatches("--==x==--", (c) => ["-", "="].includes(c)))}`);
   console.log(

@@ -22,6 +22,7 @@ import {
   $skipping,
   $stepByEnds,
   $taking,
+  $toUppercase,
   $tryOf,
   fuseDoubleEndedIterator_nextBack,
   fuseDoubleEndedIterator_nthBack,
@@ -172,7 +173,7 @@ function main() {
   const short = $nextBack(
     $mapEnds(
       $filterEnds($iter(words), (w) => $byteLen(w) === 1),
-      (w) => w.toUpperCase(),
+      (w) => $toUppercase(w),
     ),
   );
   const lengths = $nextBack(

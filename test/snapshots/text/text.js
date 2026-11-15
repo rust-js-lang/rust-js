@@ -9,23 +9,30 @@ import {
   $copyOf,
   $debugF64,
   $debugStr,
+  $isAlphabetic,
+  $isAlphanumeric,
+  $isLowercase,
+  $isNumeric,
+  $isUppercase,
+  $isWhitespace,
   $lazySplitBy,
   $lines,
   $parseBool,
   $parseChar,
   $parseF64,
   $parseInt,
+  $splitWhitespace,
   $toDigit,
 } from "@rust-js/std";
 
 export function chars(c) {
   return [
-    /^\p{White_Space}$/u.test(c),
-    /^\p{Alphabetic}$/u.test(c),
-    /^\p{N}$/u.test(c),
-    /^[\p{Alphabetic}\p{N}]$/u.test(c),
-    /^\p{Uppercase}$/u.test(c),
-    /^\p{Lowercase}$/u.test(c),
+    $isWhitespace(c),
+    $isAlphabetic(c),
+    $isNumeric(c),
+    $isAlphanumeric(c),
+    $isUppercase(c),
+    $isLowercase(c),
     /^\p{Cc}$/u.test(c),
     c.charCodeAt(0) < 128,
   ];
@@ -69,7 +76,7 @@ export function parses(s) {
 // `?` on a `parse`: its error converts to the function's.
 function sum(text) {
   let total = 0;
-  for (const word of text.split(/\p{White_Space}+/u).filter((word) => word !== "")) {
+  for (const word of $splitWhitespace(text)) {
     const result = $parseInt(word, -2147483648, 2147483647);
     if (result.TAG === "Err") {
       return result;
@@ -79,13 +86,13 @@ function sum(text) {
   return { TAG: "Ok", _0: total };
 }
 export function words(text) {
-  const words = text.split(/\p{White_Space}+/u).filter((word) => word !== "");
+  const words = $splitWhitespace(text);
   const lines = $lines(text);
   const value = sum(text);
   const total = value.TAG === "Ok" ? `sum ${value._0}` : `error: ${value._0}`;
   // A closure as the pattern.
   const pieces = Array.from($lazySplitBy(text, (c) => /^[0-9]$/.test(c) || c === "\r"));
-  return [words, lines, total, pieces, Array.from(text).some((c) => /^\p{Uppercase}$/u.test(c))];
+  return [words, lines, total, pieces, Array.from(text).some((c) => $isUppercase(c))];
 }
 export function slices(v) {
   const a = [10, 20, 30];

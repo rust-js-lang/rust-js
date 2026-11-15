@@ -4,6 +4,7 @@ import {
   $byteLen,
   $catchUnwind,
   $debugStr,
+  $isWhitespace,
   $lazyMatchIndicesBy,
   $lazyMatchesBy,
   $lazyRsplitBy,
@@ -16,6 +17,7 @@ import {
   $rev,
   $sizeHint,
   $splitBy,
+  $toUppercase,
   iterator_map,
   mapDoubleEndedIterator_nextBack,
 } from "@rust-js/std";
@@ -81,7 +83,7 @@ function backs() {
           console.log(`m ${c}`);
           return c === ",";
         }),
-        (p) => p.toUpperCase(),
+        (p) => $toUppercase(p),
       ),
     ),
   );
@@ -205,7 +207,7 @@ function main() {
     console.log(`p ${p}`);
   }
   const hint = $sizeHint($lazySplitBy("a,b", (c) => c === ","));
-  const arg$1 = $splitBy("a,b", (c) => /^\p{White_Space}$/u.test(c));
+  const arg$1 = $splitBy("a,b", (c) => $isWhitespace(c));
   console.log(
     `(${hint[0]}, ${hint[1] == null ? "None" : `Some(${hint[1]})`}) [${arg$1.map((item) => $debugStr(item)).join(", ")}]`,
   );

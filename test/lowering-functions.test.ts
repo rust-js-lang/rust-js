@@ -907,7 +907,7 @@ pub fn files(code: String, other: String) -> &'static js::Dict<String> {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
-  expect(js).toContain('  return { "/index.js": code.toUpperCase(), "/other.js": other };\n');
+  expect(js).toContain('  return { "/index.js": $toUppercase(code), "/other.js": other };\n');
   const lib = await import(join(dir, "mir.js"));
   expect(lib.files("a", "b")).toEqual({ "/index.js": "A", "/other.js": "b" });
 });

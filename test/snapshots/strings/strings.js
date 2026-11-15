@@ -11,6 +11,8 @@ import {
   $splitOnce,
   $stripSuffix,
   $toFixed,
+  $toLowercase,
+  $toUppercase,
   $trimEnd,
   $trimStart,
   $zeroPad,
@@ -26,7 +28,7 @@ export function tests(s) {
 }
 
 export function cases(s) {
-  return [s.toUpperCase(), s.toLowerCase()];
+  return [$toUppercase(s), $toLowercase(s)];
 }
 
 export function trimmed(s) {

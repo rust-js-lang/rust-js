@@ -6,12 +6,14 @@ use rustc_middle::mir::BinOp;
 /// Which `TextOp` a method of a `char` or a `str` is.
 pub(super) fn text(name: &str, char: bool, str: bool) -> Option<TextOp> {
     Some(match name {
-        "is_whitespace" if char => TextOp::Is("/^\\p{White_Space}$/u"),
-        "is_alphabetic" if char => TextOp::Is("/^\\p{Alphabetic}$/u"),
-        "is_numeric" if char => TextOp::Is("/^\\p{N}$/u"),
-        "is_alphanumeric" if char => TextOp::Is("/^[\\p{Alphabetic}\\p{N}]$/u"),
-        "is_uppercase" if char => TextOp::Is("/^\\p{Uppercase}$/u"),
-        "is_lowercase" if char => TextOp::Is("/^\\p{Lowercase}$/u"),
+        // Unicode's questions, of Rust's tables (#1888, ADR 1163); `Cc`, which
+        // Unicode never changes, is JS's own.
+        "is_whitespace" if char => TextOp::Unicode("$isWhitespace"),
+        "is_alphabetic" if char => TextOp::Unicode("$isAlphabetic"),
+        "is_numeric" if char => TextOp::Unicode("$isNumeric"),
+        "is_alphanumeric" if char => TextOp::Unicode("$isAlphanumeric"),
+        "is_uppercase" if char => TextOp::Unicode("$isUppercase"),
+        "is_lowercase" if char => TextOp::Unicode("$isLowercase"),
         "is_control" if char => TextOp::Is("/^\\p{Cc}$/u"),
         "is_ascii_digit" if char => TextOp::Is("/^[0-9]$/"),
         "is_ascii_hexdigit" if char => TextOp::Is("/^[0-9A-Fa-f]$/"),

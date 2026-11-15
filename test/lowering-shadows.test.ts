@@ -195,7 +195,7 @@ pub fn chained(s: &str) -> String {
   expect(js).toContain("  for (let i = 0; i < lines.length; i++) {\n    let line = lines[i];\n    line = $trim(line);\n");
   // One a `for…of` binds, an iterator's, set too.
   expect(js).toMatch(/  for \(let part of [^\n]*\) \{\n    part = \$trim\(part\);\n/);
-  expect(js).toContain("  let t = $trim(s);\n  t = t.toUpperCase();\n  return t + \"!\";\n");
+  expect(js).toContain("  let t = $trim(s);\n  t = $toUppercase(t);\n  return t + \"!\";\n");
   const lib = await import(join(dir, "lib.js"));
   const logged: string[] = [];
   const log = console.log;

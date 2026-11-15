@@ -3,6 +3,9 @@
 import {
   $charIndices,
   $debugStr,
+  $isAlphanumeric,
+  $isLowercase,
+  $isUppercase,
   $lazySplitBy,
   $next,
   $peek,
@@ -20,7 +23,7 @@ function scores(words) {
     const word = words[i];
     let last = 0;
     for (const c of word) {
-      const score = /^\p{Uppercase}$/u.test(c) ? 2 : last;
+      const score = $isUppercase(c) ? 2 : last;
       last = (score + 1) >>> 0;
     }
     total = (total + last) >>> 0;
@@ -55,7 +58,7 @@ function trailing(s) {
 
 function splitWords(s) {
   const words = [];
-  for (const word of $lazySplitBy(s, (c) => !/^[\p{Alphabetic}\p{N}]$/u.test(c))) {
+  for (const word of $lazySplitBy(s, (c) => !$isAlphanumeric(c))) {
     const charIndices = iterator_peekable($charIndices(word));
     let init = 0;
     let mode = "Boundary";
@@ -68,20 +71,12 @@ function splitWords(s) {
         if (peek != null) {
           const nextI = peek[0];
           const next = peek[1];
-          const nextMode = /^\p{Lowercase}$/u.test(c)
-            ? "Lowercase"
-            : /^\p{Uppercase}$/u.test(c)
-              ? "Uppercase"
-              : mode;
-          if (nextMode === "Lowercase" && /^\p{Uppercase}$/u.test(next)) {
+          const nextMode = $isLowercase(c) ? "Lowercase" : $isUppercase(c) ? "Uppercase" : mode;
+          if (nextMode === "Lowercase" && $isUppercase(next)) {
             words.push($strSlice(word, init, nextI));
             init = nextI;
             mode = "Boundary";
-          } else if (
-            mode === "Uppercase" &&
-            /^\p{Uppercase}$/u.test(c) &&
-            /^\p{Lowercase}$/u.test(next)
-          ) {
+          } else if (mode === "Uppercase" && $isUppercase(c) && $isLowercase(next)) {
             words.push($strSlice(word, init, i));
             init = i;
             mode = "Boundary";

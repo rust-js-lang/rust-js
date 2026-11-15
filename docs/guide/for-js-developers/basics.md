@@ -182,11 +182,11 @@ pub fn counted(start: u32) -> (u32, u32) {
 ```
 
 ```js
-import { $trim } from "@rust-js/std";
+import { $toUppercase, $trim } from "@rust-js/std";
 
 export function label(input) {
   let label = $trim(input);
-  label = label.toUpperCase();
+  label = $toUppercase(label);
   label += "!";
   return label;
 }
@@ -562,6 +562,8 @@ pub fn log_user(name: &str, age: u8) {
 ```
 
 ```js
+import { $toUppercase } from "@rust-js/std";
+
 export function label(name, count) {
   return `${name} has ${count} items`;
 }
@@ -571,7 +573,7 @@ export function price(cents) {
 }
 
 export function shout(s) {
-  return s.toUpperCase() + "!";
+  return $toUppercase(s) + "!";
 }
 
 export function logUser(name, age) {

@@ -13,6 +13,7 @@ import {
   $print,
   $range,
   $sortedEntries,
+  $toUppercase,
   $treeRange,
 } from "@rust-js/std";
 
@@ -95,7 +96,7 @@ function main() {
   const next = $next(last);
   if (next != null) {
     const v = next[1];
-    v.value = v.value.toUpperCase();
+    v.value = $toUppercase(v.value);
   }
   const arg = last.reduce((n) => n + 1, 0);
   $print(

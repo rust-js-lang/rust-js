@@ -16,6 +16,7 @@ import {
   $nextSome,
   $rangeNext,
   $roomForHint,
+  $toUppercase,
   chainClone,
   chainClone_clone,
   iterator_chain,
@@ -83,7 +84,7 @@ function cycles() {
   console.log(
     `[${Array.from(
       $cycleOf(
-        makeMap$1($iter(["a", "b"]), (s) => s.toUpperCase()),
+        makeMap$1($iter(["a", "b"]), (s) => $toUppercase(s)),
         $clone,
         $next,
       ).take(3),

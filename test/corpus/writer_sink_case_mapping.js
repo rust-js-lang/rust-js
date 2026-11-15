@@ -6,6 +6,8 @@ import {
   $iter,
   $restStr,
   $sink,
+  $toLowercase,
+  $toUppercase,
   $writeBy,
   $writeChars,
   $writerSink,
@@ -44,7 +46,7 @@ function kebabDisplay_fmt(kebab) {
       f.writeChar("-");
     }
     for (const c of word) {
-      $writeChars(f, c.toLowerCase());
+      $writeChars(f, $toLowercase(c));
     }
   }
   return f.done();
@@ -62,28 +64,28 @@ function written(w, t, WWrite, TDisplay) {
 
 function main() {
   const log = [[]];
-  const lowercase = $iter(Array.from("A".toLowerCase()));
-  const uppercase = $iter(Array.from("ß".toUpperCase()));
+  const lowercase = $iter(Array.from($toLowercase("A")));
+  const uppercase = $iter(Array.from($toUppercase("ß")));
   const f = $writerSink(log, logWrite_writeStr, logWrite_writeChar);
   $writeChars(f, $restStr(lowercase));
   f.write("|");
   $writeChars(f, $restStr(uppercase));
-  const value = $iter(Array.from("İ".toLowerCase()));
+  const value = $iter(Array.from($toLowercase("İ")));
   const f$1 = $writerSink(log, logWrite_writeStr, logWrite_writeChar);
   f$1.write("|");
   $writeChars(f$1, $restStr(value));
   const f$2 = $writerSink(log, logWrite_writeStr, logWrite_writeChar);
   f$2.write("|");
   $writingInto(f$2, kebabDisplay_fmt, ["Hello Big World"]);
-  written($cellOf(log), $iter(Array.from("Q".toLowerCase())), logWrite, {
+  written($cellOf(log), $iter(Array.from($toLowercase("Q"))), logWrite, {
     fmt: $restStr,
     fmtInto(f, value, options) {
       $writeChars(f, $restStr(value));
     },
   });
   console.log(`[${log[0].map((item) => $debugStr(item)).join(", ")}]`);
-  const value$1 = $iter(Array.from("x".toUpperCase()));
-  const value$2 = $iter(Array.from("İ".toLowerCase()));
+  const value$1 = $iter(Array.from($toUppercase("x")));
+  const value$2 = $iter(Array.from($toLowercase("İ")));
   console.log(`${kebabDisplay_fmt(["A B"])} ${$restStr(value$1)} ${$restStr(value$2)}`);
 }
 //# sourceMappingURL=case.js.map

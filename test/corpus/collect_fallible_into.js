@@ -17,6 +17,7 @@ import {
   $sortedEntries,
   $sortedKeys,
   $splitOnce,
+  $toUppercase,
   $tryProcessOptions,
   $tryProcessResults,
   $unwrapOk,
@@ -115,7 +116,7 @@ function main() {
   const words = $collectResults(
     ["ab", "cd"]
       .values()
-      .map((w) => ($byteLen(w) === 2 ? { TAG: "Ok", _0: w.toUpperCase() } : { TAG: "Err", _0: w })),
+      .map((w) => ($byteLen(w) === 2 ? { TAG: "Ok", _0: $toUppercase(w) } : { TAG: "Err", _0: w })),
     (values) => values.join(""),
   );
   const set = $collectOptions(

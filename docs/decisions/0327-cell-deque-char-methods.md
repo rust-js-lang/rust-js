@@ -121,3 +121,12 @@ in both builds. Mutations `decode-utf16-unit-past-lost`,
 (`lower/iterators/knowing.ts`) and `decode-utf16-unadapted`
 (`lower/recognition/iterators.ts`) new; `decode-utf16-unpaired-pairs` and
 `adapted-hint-of-params` refitted.
+
+## Amendment (2026-11-15, #1888)
+
+A `char`'s Unicode questions, `{:?}`'s escapes, `trim` and
+`split_whitespace`, and `to_uppercase` and `to_lowercase` are asked of
+Rust's own tables, made of the pinned toolchain's std, not the JS engine's
+`\p{..}` and `toUpperCase()`, whose Unicode version may be another:
+`$isAlphabetic(c)`, `$toUppercase(s)` ([1163](1163-unicode-is-rusts-tables.md)).
+`is_control()` stays `/^\p{Cc}$/u`.

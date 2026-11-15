@@ -272,8 +272,10 @@ function greeting(name) {
 
 ```js
 // src/format.js
+import { $toUppercase } from "@rust-js/std";
+
 export function shout(text) {
-  return text.toUpperCase() + "!";
+  return $toUppercase(text) + "!";
 }
 ```
 

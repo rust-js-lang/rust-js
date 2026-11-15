@@ -677,6 +677,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::Cast { .. } => self.number_from(x, input, sig.output(), span)?,
             Std::ToString => self.display_string(x, input, span)?,
             Std::Text(TextOp::Is(regex)) => Expr::call(Expr::member(Expr::regex(regex), "test"), vec![x]),
+            Std::Text(TextOp::Unicode(helper)) => Expr::call_helper(helper, vec![x]),
             // An `f32`'s rounded to one, as its call is, but for those that are
             // `Math`'s, exact already (ADRs 0122, 0887).
             Std::Number(op @ NumOp::Math(function)) => {

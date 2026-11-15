@@ -1,14 +1,14 @@
-// `s.trim()`, `trim_start()` and `trim_end()`, by Unicode's White_Space, as
-// Rust's are: U+0085 trimmed, and U+FEFF kept, where JS's `trim()` does
-// the other (ADR 0183).
+// `s.trim()`, `trim_start()` and `trim_end()`, by `char::is_whitespace`'s
+// table, Rust's (ADR 0183, #1888): U+0085 trimmed, and U+FEFF kept, where
+// JS's `trim()` does the other.
 function $trim(s) {
-  return s.replace(/^\p{White_Space}+|\p{White_Space}+$/gu, "");
+  return $trimEnd($trimStart(s));
 }
 
 function $trimStart(s) {
-  return s.replace(/^\p{White_Space}+/u, "");
+  return s.replace($unicodeRegexp($unicodeWhitespace, "^#+"), "");
 }
 
 function $trimEnd(s) {
-  return s.replace(/\p{White_Space}+$/u, "");
+  return s.replace($unicodeRegexp($unicodeWhitespace, "#+$"), "");
 }

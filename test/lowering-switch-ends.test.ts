@@ -483,7 +483,7 @@ pub fn nested(flag: Option<&str>, v: &mut Vec<u32>) {
       arg = $trim(arg);
       break;
     case "f":
-      arg = arg.toUpperCase();
+      arg = $toUppercase(arg);
       break;
   }
   return arg;

@@ -11,6 +11,8 @@ import {
   $nextBack,
   $restBytes,
   $restStr,
+  $toLowercase,
+  $toUppercase,
 } from "@rust-js/std";
 
 export function entry() {
@@ -45,10 +47,10 @@ function main() {
   );
 
   // A case mapping, the same array of its `char`s, knows its length.
-  const upper = $iter(Array.from("ß".toUpperCase()));
+  const upper = $iter(Array.from($toUppercase("ß")));
   $next(upper);
   console.log(`${upper.end - upper.at} ${$restStr(upper)}`);
-  const lower = $iter(Array.from("İ".toLowerCase()));
+  const lower = $iter(Array.from($toLowercase("İ")));
   const value$1 = $nextBack(lower);
   console.log(
     `${value$1 == null ? "None" : `Some(${$debugStr(value$1, "'")})`} ${$restStr(lower)}`,

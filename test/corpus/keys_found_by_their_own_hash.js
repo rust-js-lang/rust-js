@@ -36,6 +36,7 @@ import {
   $setReplace,
   $setTake,
   $sortStable,
+  $splitWhitespace,
   $storedKey,
   $unwrap,
 } from "@rust-js/std";
@@ -144,7 +145,7 @@ function sorted(items, TOrd, TSize, TStableSort) {
 
 function index(text) {
   const counts = new ($hashedMap(wordHash, wordPartialEq_eq))();
-  for (const word of text.split(/\p{White_Space}+/u).filter((word) => word !== "")) {
+  for (const word of $splitWhitespace(text)) {
     const orInsert = $entryOrInsert($entry(counts, [word]), 0, true);
     orInsert.value = (orInsert.value + 1) >>> 0;
   }

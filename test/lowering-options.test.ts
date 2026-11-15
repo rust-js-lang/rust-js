@@ -1017,7 +1017,7 @@ pub fn later(code: Option<&str>) -> Props {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
-  expect(js).toContain('return { message: code != null && code !== "" ? code.toUpperCase() : null };');
+  expect(js).toContain('return { message: code != null && code !== "" ? $toUppercase(code) : null };');
   const lib = await import(join(dir, "mir.js"));
   expect([lib.props("a"), lib.props(""), lib.props(undefined)]).toEqual([{ message: "A" }, { message: null }, { message: null }]);
   expect([lib.later("xa"), lib.later("a"), lib.later(""), lib.later(undefined)]).toEqual([{ message: "a" }, { message: null }, { message: null }, { message: null }]);
@@ -1283,7 +1283,7 @@ pub fn tag_shown(value: &Unknown) -> (String, bool) {
   expect(js).toContain("export function kept(a) {\n  return a || null;\n}");
   expect(js).toContain('export function label(a) {\n  return a || "Memo";\n}');
   expect(js).toContain('export function typeName(value) {\n  const type = value.tag || value.name || "Object";\n  return type;\n}');
-  expect(js).toContain("export function shout(a) {\n  return (a ? a.toUpperCase() : undefined) ?? undefined;\n}");
+  expect(js).toContain("export function shout(a) {\n  return (a ? $toUppercase(a) : undefined) ?? undefined;\n}");
   // A predicate that isn't the truth of what it holds is its own test.
   expect(js).toContain("export function falsyOr(a, b) {\n  return a != null && !a ? a : b;\n}");
   expect(js).toContain("export function named(a) {\n  return a != null && a.name ? a : undefined;\n}");

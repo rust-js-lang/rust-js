@@ -10,6 +10,7 @@ import {
   $panicMessage,
   $parseInt,
   $strSlice,
+  $toUppercase,
   $trimMatches,
   $unwindsOn,
   $unwound,
@@ -85,7 +86,7 @@ function chain(k) {
     const text = (x.impl.typeId() === "&str" ? x.value : undefined) ?? "";
     console.log("between");
     const head = $strSlice(text, 0, k);
-    let shout = head.toUpperCase();
+    let shout = $toUppercase(head);
     console.log(`shout ${shout}`);
     const after = (k * 2) >>> 0;
     console.log(`after ${after}`);

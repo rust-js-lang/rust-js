@@ -12,6 +12,7 @@ import {
   $f64Max,
   $f64Min,
   $index,
+  $isAlphanumeric,
   $next,
   $nextIf,
   $parseF64,
@@ -95,7 +96,7 @@ function tokenize(source) {
     } else if ((c >= "a" && c <= "z") || (c >= "A" && c <= "Z") || c === "_") {
       let name = "";
       let c;
-      while ((c = $nextIf(chars, (c) => /^[\p{Alphabetic}\p{N}]$/u.test(c) || c === "_")) != null) {
+      while ((c = $nextIf(chars, (c) => $isAlphanumeric(c) || c === "_")) != null) {
         name += c;
       }
       tokens.push({ TAG: "Ident", _0: name });

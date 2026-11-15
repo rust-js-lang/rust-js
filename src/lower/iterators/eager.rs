@@ -116,6 +116,7 @@ pub(super) fn fresh(items: &Expr) -> bool {
                 "$rchunksMut",
                 "$splitBy",
                 "$lines",
+                "$splitWhitespace",
                 "$rest",
                 "$drain",
                 "$splitOff",
