@@ -13,6 +13,12 @@
 //   bun scripts/ablate.ts --list --shard=1/16                  # which, none run
 //   bun scripts/ablate.ts --out=one.json intervals-unequal-unnarrowed   # one, by name
 //   bun scripts/ablate.ts --merge ablation-*.json --out=ablation.md
+//   bun scripts/ablate.ts --native --out=native.json <names>      # caught against native?
+//
+// With `--native`, each mutation named is run against native Rust, not the
+// shadow: the bounds matrix, then, where it runs as native does, the corpus
+// with its snapshots ignored. What a snapshot alone catches, its JS changed
+// but its run native's, is caught by neither.
 //
 // It writes each mutation into the checkout and builds `target/debug`, so
 // run it on CI (rustc-tests.yml's `ablation`) or in a worktree of its own.
@@ -107,6 +113,69 @@ function inputs(work: string): { path: string; row?: string; edition: string }[]
   return [...cases, ...rows];
 }
 
+/** The tests `--native` runs, each in parts as the cores, and the test names
+ * each failed: of the compiler as it is too, so only a mutant's count. */
+async function failing(file: string, env: Record<string, string>): Promise<string[]> {
+  const parts = navigator.hardwareConcurrency;
+  const logs = await Promise.all(
+    Array.from({ length: parts }, async (_, i) => {
+      const proc = Bun.spawn(["bun", "test", file], {
+        cwd: root,
+        env: { ...process.env, ...env, RUST_JS_CASES: `${i + 1}/${parts}` },
+        stdout: "pipe",
+        stderr: "pipe",
+      });
+      const [out, err] = await Promise.all([new Response(proc.stdout).text(), new Response(proc.stderr).text()]);
+      await proc.exited;
+      return out + err;
+    }),
+  );
+  return logs.flatMap((log) => [...log.matchAll(/^\(fail\) (.*?)(?: \[[\d.]+m?s\])?$/gm)].map((m) => m[1]));
+}
+
+const matrix = "test/bounds-matrix.test.ts";
+const corpusTest = "test/corpus.test.ts";
+const nativeOnly = { RUST_JS_SNAPSHOTS: "ignore" };
+
+/** Each mutation named, run against native: caught by the matrix, by the
+ * corpus, or by neither. */
+async function native(names: string[], out: string) {
+  if (!build()) throw new Error("the compiler as it is doesn't build");
+  const known = new Set([...(await failing(matrix, {})), ...(await failing(corpusTest, nativeOnly))]);
+  console.log(`as it is: ${known.size} tests fail`);
+  const result: Record<string, { by: "matrix" | "corpus" | "neither"; tests: string[]; note?: string }> = {};
+  for (const name of names) {
+    const m = mutations.find((x) => x.name === name)!;
+    const path = join(root, m.file);
+    const source = readFileSync(path, "utf8");
+    const mutated = mutate(source, m);
+    if (typeof mutated !== "string") {
+      result[name] = { by: "neither", tests: [], note: mutated.problem };
+      continue;
+    }
+    writeFileSync(path, mutated);
+    try {
+      if (!build()) {
+        result[name] = { by: "neither", tests: [], note: "doesn't build" };
+        continue;
+      }
+      const inMatrix = (await failing(matrix, {})).filter((t) => !known.has(t));
+      const inCorpus = inMatrix.length ? [] : (await failing(corpusTest, nativeOnly)).filter((t) => !known.has(t));
+      result[name] = inMatrix.length
+        ? { by: "matrix", tests: inMatrix }
+        : inCorpus.length
+          ? { by: "corpus", tests: inCorpus }
+          : { by: "neither", tests: [] };
+      console.log(`${name}\t${result[name].by}\t${result[name].tests.slice(0, 3).join(" | ")}`);
+    } finally {
+      writeFileSync(path, source);
+    }
+    writeFileSync(out, JSON.stringify(result, null, 1));
+  }
+  build();
+  writeFileSync(out, JSON.stringify(result, null, 1));
+}
+
 async function run(args: string[]) {
   const out = args.find((a) => a.startsWith("--out="))?.slice("--out=".length);
   const sharded = shardArg(args);
@@ -122,6 +191,7 @@ async function run(args: string[]) {
     return;
   }
   if (!out) throw new Error("--out=<file>: where the shard's result goes");
+  if (args.includes("--native")) return native(names, out);
   const work = mkdtempSync(join(tmpdir(), "ablate-"));
   try {
     await ablate(names, out, work);
@@ -132,7 +202,9 @@ async function run(args: string[]) {
 }
 
 async function ablate(names: string[], out: string, work: string) {
+  const building = Date.now();
   if (!build()) throw new Error("the compiler as it is doesn't build");
+  console.log(`build: ${Math.round((Date.now() - building) / 1000)} s`);
   // The baseline over every case, then each mutation over those with a
   // MIR-only line and every matrix program: a mutation only takes lines away.
   const everything = inputs(work);
@@ -155,16 +227,20 @@ async function ablate(names: string[], out: string, work: string) {
     }
     writeFileSync(path, mutated);
     try {
+      const built = Date.now();
       if (!build()) {
         result.results[name] = { sites: [], rows: [], note: "doesn't build" };
         console.log(`${name}\tdoesn't build`);
         continue;
       }
+      const shadowed = Date.now();
       const now = await shadow(files, work);
       const sites = result.baseline.sites.filter((s) => !now.sites.has(s));
       const rows = result.baseline.rows.filter((r) => now.rows.get(r) !== first.rows.get(r));
       result.results[name] = { sites, rows };
-      console.log(`${name}\t-${sites.length} sites\t-${rows.length} rows`);
+      // Each step's time, so a slow one says which (a build, the shadow).
+      const seconds = (from: number, to: number) => Math.round((to - from) / 1000);
+      console.log(`${name}\t-${sites.length} sites\t-${rows.length} rows\tbuild ${seconds(built, shadowed)} s, shadow ${seconds(shadowed, Date.now())} s`);
     } finally {
       writeFileSync(path, source);
     }
@@ -178,7 +254,10 @@ async function ablate(names: string[], out: string, work: string) {
  * takes the fewest away, the finest; a whole kind's switch, which takes
  * every site of its kind, is no rule. */
 function merge(files: string[], out: string) {
-  const shards = files.map((f) => JSON.parse(readFileSync(f, "utf8")) as Shard);
+  const read = files.map((f) => JSON.parse(readFileSync(f, "utf8")));
+  // `--native`'s shards: each mutation by what caught it against native.
+  if (read.length && !("baseline" in read[0])) return mergeNative(read, out);
+  const shards = read as Shard[];
   const results = Object.assign({}, ...shards.map((s) => s.results)) as Shard["results"];
   const baseline = shards[0].baseline;
   const kinds = new Map<string, number>();
@@ -212,6 +291,24 @@ function merge(files: string[], out: string) {
   writeFileSync(out, lines.join("\n") + "\n");
   writeFileSync(out.replace(/\.md$/, ".json"), JSON.stringify({ baseline, results, finest: Object.fromEntries(finest), gaps, walk }, null, 1));
   console.log(`${rules.length} rules; ${gaps.length} gaps; ${walk.length} sites the walk's own: ${out}`);
+}
+
+/** `--native`'s shards as one table: the mutations each of the matrix and
+ * the corpus catches against native, and those neither does, a snapshot's
+ * alone at most. */
+function mergeNative(shards: Record<string, { by: string; tests: string[]; note?: string }>[], out: string) {
+  const results = Object.assign({}, ...shards) as Record<string, { by: string; tests: string[]; note?: string }>;
+  const by = (kind: string) => Object.entries(results).filter(([, r]) => r.by === kind && !r.note);
+  const lines = [`# The intervals' mutations against native`, "", `${Object.keys(results).length} mutations.`, ""];
+  for (const [kind, title] of [["matrix", "Caught by the bounds matrix"], ["corpus", "Caught by the corpus, its snapshots ignored"], ["neither", "Caught by neither: a snapshot's alone at most"]]) {
+    const rows = by(kind);
+    lines.push(`## ${title} (${rows.length})`, "", ...rows.map(([n, r]) => `- ${n}${r.tests.length ? `: ${r.tests.slice(0, 2).join("; ")}` : ""}`), "");
+  }
+  const noted = Object.entries(results).filter(([, r]) => r.note);
+  if (noted.length) lines.push("## Not measured", "", ...noted.map(([n, r]) => `- ${n}: ${r.note}`));
+  writeFileSync(out, lines.join("\n") + "\n");
+  writeFileSync(out.replace(/\.md$/, ".json"), JSON.stringify(results, null, 1));
+  console.log(`matrix ${by("matrix").length}, corpus ${by("corpus").length}, neither ${by("neither").length}: ${out}`);
 }
 
 if (import.meta.main) {

@@ -58,6 +58,11 @@ on:
         required: false
         type: string
         default: '16'
+      ablation_args:
+        description: 'With ablation: scripts/ablate.ts''s mode and mutations, like "--native" and names, run against native Rust. Empty: every rule, by the shadow.'
+        required: false
+        type: string
+        default: ''
   workflow_call:
     inputs:
       tests:
@@ -449,8 +454,15 @@ jobs:
           key: ablation-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}-${{ github.sha }}
           restore-keys: ablation-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}-
       - run: bun install --frozen-lockfile
+      # And, with `--native`, the corpus's and the matrix's runs against
+      # native Rust: the browser and native Rust's own setup are the action's.
       - name: Ablate shard ${{ matrix.shard }}
-        run: bun scripts/ablate.ts --shard=${{ matrix.shard }}/${{ inputs.ablation_shards }} --out=ablation-${{ matrix.shard }}.json
+        env:
+          ARGS: ${{ inputs.ablation_args }}
+        # Split on spaces, with no globbing: each word is a name or a flag.
+        run: |
+          set -f
+          bun scripts/ablate.ts $ARGS --shard=${{ matrix.shard }}/${{ inputs.ablation_shards }} --out=ablation-${{ matrix.shard }}.json
       - if: always()
         uses: actions/upload-artifact@v7
         with:

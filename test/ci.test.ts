@@ -762,7 +762,7 @@ test("rustc-tests.yml ablates the intervals' rules in shards and merges them", (
   const matrix = [...tests.matchAll(/inputs\.ablation_shards == '(\d+)' && '\[([\d, ]+)\]'/g)].map((m) => [Number(m[1]), m[2]] as const);
   expect(matrix.map(([n]) => n).sort((a, b) => a - b)).toEqual(MUTATION_SHARDS.filter((n) => n > 1));
   for (const [n, list] of matrix) expect(list).toBe(Array.from({ length: n }, (_, i) => i + 1).join(", "));
-  expect(tests).toContain("bun scripts/ablate.ts --shard=${{ matrix.shard }}/${{ inputs.ablation_shards }} --out=ablation-${{ matrix.shard }}.json");
+  expect(tests).toContain("bun scripts/ablate.ts $ARGS --shard=${{ matrix.shard }}/${{ inputs.ablation_shards }} --out=ablation-${{ matrix.shard }}.json");
   expect(tests).toContain("bun scripts/ablate.ts --merge shards/*.json --out=ablation.md");
   type Jobs = { jobs: Record<string, { if?: string; needs?: string }> };
   const jobs = (Bun.YAML.parse(tests) as Jobs).jobs;
