@@ -5,7 +5,7 @@ import { expect, test } from "bun:test";
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { checkedSince, latestRuns, MUTATION_SHARDS, mutationJobsPassed, mutationShards, nets, netsSummary, resultsBase, timingsRun } from "../scripts/ci";
+import { checkedSince, latestRuns, MUTATION_SHARDS, mutationJobsPassed, mutationShards, mutationTimingsRun, nets, netsSummary, resultsBase, timingsRun } from "../scripts/ci";
 import { readersOf } from "./part-settings";
 import { corpusRows, crashes, dependency, lockedVersion, lockOf, sampledHeader, sampledIn, sampledOneIn, written } from "../scripts/crate-corpus";
 import {
@@ -32,7 +32,7 @@ import { browsers, drivesBrowser } from "../scripts/shard";
 import { loadScale, underLoad } from "../scripts/timing";
 import { caseOf, partsOf, runParts, verdict } from "../scripts/parts";
 import { jobs as localNightly } from "../scripts/nightly";
-import { atOnce, caseFiles, caseParts, casePoolJobs, casePoolParts, casePoolWidth, caseShardParts, compilerBuilds, harness, memoryBudget, nightly, parts, peakGB, plainSuiteFiles, pooledParts, shard } from "../scripts/shard";
+import { atOnce, caseFiles, caseParts, casePoolJobs, casePoolParts, casePoolWidth, caseShardParts, compilerBuilds, harness, memoryBudget, nightly, parts, peakGB, plainSuiteFiles, pooledParts, shard, timedShard, balanced } from "../scripts/shard";
 import { fixture, root } from "./support";
 
 const files = ["a", "b", "c", "d", "e", "f", "g"].map((name) => `test/${name}.test.ts`);
@@ -43,6 +43,60 @@ test("shards split the files between them, each once, whatever the order given",
   expect(shards.map((s) => s.length).sort()).toEqual([2, 2, 3]);
   expect(shard([...files].reverse(), 2, 3)).toEqual(shards[1]);
   expect(() => shard(files, 4, 3)).toThrow("a shard is 1 to 3");
+});
+
+// The mutations' shards by what each took (`balanced`): the longest first,
+// each to the shard with the least so far, so a few long ones don't make
+// one shard's day, as dealt in turn they made the nightly's longest shard
+// 411 min of work against its shortest's 230 (docs/dev-loop.md). Each once,
+// whatever the order given; one it doesn't know takes the median.
+test("mutations shard by their times, each once, the shards near even", () => {
+  const names = ["a", "b", "c", "d", "e", "f", "g", "h"];
+  const seconds = new Map([["a", 100], ["b", 90], ["c", 10], ["d", 10], ["e", 10], ["f", 10], ["g", 10]]);
+  const shards = [1, 2].map((i) => balanced(names, i, 2, seconds));
+  expect(shards.flat().sort()).toEqual(names);
+  expect(shards).toEqual([["a", "d", "f", "h"], ["b", "c", "e", "g"]]);
+  const time = (shard: string[]) => shard.reduce((sum, name) => sum + (seconds.get(name) ?? 10), 0);
+  expect(shards.map(time)).toEqual([130, 120]);
+  expect(balanced([...names].reverse(), 2, 2, seconds)).toEqual(shards[1]);
+  // Two long ones a name apart, which turns deal to one shard.
+  const long = new Map([["a", 100], ["b", 1], ["c", 100], ["d", 1]]);
+  expect(shard(["a", "b", "c", "d"], 1, 2)).toEqual(["a", "c"]);
+  expect([1, 2].map((i) => balanced(["a", "b", "c", "d"], i, 2, long))).toEqual([["a", "b"], ["c", "d"]]);
+  // Those no run timed take the usual time, not none, so they're spread.
+  expect([1, 2].map((i) => balanced(["p", "q", "r"], i, 2, new Map([["p", 10]])))).toEqual([["p", "r"], ["q"]]);
+  expect(() => balanced(names, 3, 2, seconds)).toThrow("a shard is 1 to 2");
+});
+
+// `--timings=<dir>`: each run's shards' `timings.json` under it, as `ci.ts
+// mutation-timings` downloads them, its build's share and its tests; none
+// given, dealt in turn, as before.
+test("a mutation shard reads its times of the runs' timings.json under the directory given", () => {
+  const dir = fixture("mutation-timings");
+  mkdirSync(join(dir, "mutation-timings-1"), { recursive: true });
+  mkdirSync(join(dir, "mutation-timings-2"), { recursive: true });
+  writeFileSync(join(dir, "mutation-timings-1", "timings.json"), JSON.stringify({ a: { build: 50, tests: 50 }, b: { build: 1, tests: 1 } }));
+  writeFileSync(join(dir, "mutation-timings-2", "timings.json"), JSON.stringify({ c: { build: 60, tests: 40 } }));
+  const names = ["a", "b", "c", "d"];
+  expect([1, 2].map((i) => timedShard(names, i, 2, dir))).toEqual([["a", "d"], ["b", "c"]]);
+  expect([1, 2].map((i) => timedShard(names, i, 2))).toEqual([1, 2].map((i) => shard(names, i, 2)));
+  expect(timedShard(names, 1, 1, join(dir, "none"))).toEqual(names);
+});
+
+// Every shard of a check balances by one nightly's times, `plan`'s: the
+// newest of the last nightlies that kept them; none, and they're dealt in
+// turn. One a shard picked itself might be another's, a newer one ending
+// between their starts, and a mutation run twice or never.
+test("a check's mutation shards balance by the newest nightly that kept its mutations' times", () => {
+  const artifact = (name: string, run: number, expired = false) => ({ name, run, createdAt: "2026-11-15T00:00:00Z", expired });
+  const artifacts = [artifact("mutation-timings-1", 9), artifact("mutation-timings-1", 7, true), artifact("mutation-timings-1", 5), artifact("timings-1", 8), artifact("mutation-timings-1", 3)];
+  expect(mutationTimingsRun([8, 7, 5, 3], artifacts)).toBe(5);
+  expect(mutationTimingsRun([8, 7], artifacts)).toBeUndefined();
+  const check = readFileSync(join(root, ".github/workflows/check.yml"), "utf8");
+  expect(check).toContain("mutation_timings: ${{ needs.plan.outputs.mutation_timings }}");
+  const tests = readFileSync(join(root, ".github/workflows/rustc-tests.yml"), "utf8");
+  const runs = [...tests.matchAll(/bun scripts\/mutations\.ts \$ARGS (.*)--shard=/g)].map((m) => m[1]);
+  expect(runs).toEqual(["${{ steps.timings.outputs.args }} ", "${{ steps.timings.outputs.args }} "]);
 });
 
 // The builds of the compiler a run makes at once, mutations' `--jobs`, are

@@ -49,6 +49,11 @@ on:
         required: false
         type: string
         default: '1'
+      mutation_timings:
+        description: 'With mutations: the nightly run whose mutations'' times the shards balance by, as check.yml''s plan picks. Empty: dealt in turn.'
+        required: false
+        type: string
+        default: ''
       ablation:
         description: 'Instead: ablate each MIR intervals rule (scripts/ablate.ts), the corpus shadow and the bounds matrix of each, and merge them into the rule table.'
         type: boolean
@@ -102,6 +107,11 @@ on:
         required: false
         type: string
         default: '1'
+      mutation_timings:
+        description: 'With mutations: the nightly run whose mutations'' times the shards balance by, as check.yml''s plan picks. Empty: dealt in turn.'
+        required: false
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -344,6 +354,10 @@ jobs:
     name: mutations (${{ matrix.shard }}/${{ inputs.mutation_shards }})
     runs-on: ubuntu-latest
     timeout-minutes: 300
+    # And the nightly's mutations' times, `mutation_timings`.
+    permissions:
+      contents: read
+      actions: read
     strategy:
       fail-fast: false
       matrix:
@@ -369,6 +383,21 @@ jobs:
           restore-keys: mutants-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}-
       # The corpus ships each case through Vite too.
       - run: bun install --frozen-lockfile
+      # What each mutation took the nightly `plan` picked, each shard of
+      # this run given the same, so each deals the same (scripts/shard.ts's
+      # `balanced`): dealt in turn, one shard of the nightly's 16 took 411
+      # min of work and another 230 (docs/dev-loop.md). None given, they're
+      # dealt in turn.
+      - name: Read the nightly's mutation times
+        id: timings
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN: ${{ inputs.mutation_timings }}
+        run: |
+          if [ -n "$RUN" ]; then
+            bun scripts/ci.ts mutation-timings "$RUN"
+            echo "args=--timings=target/mutation-timings" >> "$GITHUB_OUTPUT"
+          fi
       # And the browser, where a test a mutation runs drives one
       # (`drivesBrowser`), none-given's Chromium row: without it the tests
       # fail as the compiler is, and the shard with them. Its download kept.
@@ -378,7 +407,7 @@ jobs:
           ARGS: ${{ inputs.mutation_args }}
         run: |
           set -f
-          echo "needed=$(bun scripts/mutations.ts $ARGS --shard=${{ matrix.shard }}/${{ inputs.mutation_shards }} --browser)" >> "$GITHUB_OUTPUT"
+          echo "needed=$(bun scripts/mutations.ts $ARGS ${{ steps.timings.outputs.args }} --shard=${{ matrix.shard }}/${{ inputs.mutation_shards }} --browser)" >> "$GITHUB_OUTPUT"
       - if: steps.browser.outputs.needed == 'browser'
         uses: actions/cache@v6
         with:
@@ -397,7 +426,7 @@ jobs:
         run: |
           set -f
           ( while sleep 20; do echo "memory: $(free -m | awk '/^Mem:/ { print $3 " MB used, " $7 " MB available" }'); largest: $(ps -eo rss=,comm= --sort=-rss | head -4 | awk '{ printf "%s %.1f GB, ", $2, $1 / 1048576 }')"; done ) &
-          bun scripts/mutations.ts $ARGS --shard=${{ matrix.shard }}/${{ inputs.mutation_shards }}
+          bun scripts/mutations.ts $ARGS ${{ steps.timings.outputs.args }} --shard=${{ matrix.shard }}/${{ inputs.mutation_shards }}
       # What each mutation took, its build and its tests, passed or not: for
       # the shards to be balanced by, and to see where a run's time goes.
       - if: always()

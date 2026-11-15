@@ -26,4 +26,12 @@ export const mutations: Mutation[] = [
     replace: "return steps.filter((step) => step.background !== false).map(",
     tests: ["test/ci.test.ts", "-t", "the short nets are the nets job's steps"],
   },
+  {
+    name: "mutation-timings-expired-read",
+    breaks: "a check's mutation shards are told to read a nightly's times GitHub no longer keeps, and every shard fails its download",
+    file: "scripts/ci.ts",
+    find: "/^mutation-timings-\\d+$/.test(a.name) && !a.expired",
+    replace: "/^mutation-timings-\\d+$/.test(a.name)",
+    tests: ["test/ci.test.ts", "-t", "newest nightly that kept its mutations"],
+  },
 ];

@@ -207,6 +207,22 @@ for the shards to be balanced by next. The counts a check may split
 across are one list, `MUTATION_SHARDS` in `scripts/ci.ts`, which
 `test/ci.test.ts` holds the workflows' choices and matrix to.
 
+## Amendment: the shards dealt by time
+
+The timings kept for it weren't read: each shard took every `n`th
+mutation by name, so a few long ones, a build of its own or a fallback to
+every corpus snapshot, made one shard's day. Of nightly 43650311159, dealt
+in turn, one shard took 411 minutes of work, its builds' shares and its
+tests, and another 230. Now `plan` picks one run, the newest completed
+nightly that kept its `mutation-timings-*` (`mutationTimingsRun`), and
+each shard of the check downloads those and deals the mutations by them,
+the longest first, each to the shard with the least so far, one it has no
+time of taking the median (`balanced`, `scripts/shard.ts`). One run for
+all, as each shard choosing its own might choose another and run a
+mutation twice or never; a download that fails fails its shard, never
+falls back to dealing in turn. Of today's 14,089 mutations and that
+night's 10,289 times, the longest shard's work is 279 minutes, not 309.
+
 ## Amendment: a check's mutations are since the last check whose mutations passed
 
 A push's check runs the mutations of what changed since a baseline. That

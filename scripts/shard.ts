@@ -4,7 +4,7 @@
 // of a machine's cores and memory the work run at once on it may hold.
 
 import { spawnSync } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { availableParallelism, freemem, platform, totalmem } from "node:os";
 
@@ -15,6 +15,60 @@ export function shard<T extends string>(items: T[], index: number, count: number
     throw new Error(`a shard is 1 to ${count}, not ${index}`);
   }
   return [...items].sort().filter((_, i) => i % count === index - 1);
+}
+
+/** Shard `index`, from 1, of `count`, of items that take time: each, the
+ * longest first, given to the shard with the least time so far, the first
+ * of those that tie, by `seconds` of each, those it doesn't know the median
+ * of those it does. Each is in exactly one shard, whatever order they're
+ * given in, as every shard given the same times deals the same: the
+ * mutations, whose time is mostly a few, so dealt out in turn one shard of
+ * the nightly's 16 took 411 min of work and another 230 (nightly
+ * 43650311159, docs/dev-loop.md). */
+export function balanced<T extends string>(items: T[], index: number, count: number, seconds: ReadonlyMap<string, number>): T[] {
+  if (!Number.isInteger(index) || !Number.isInteger(count) || index < 1 || index > count) {
+    throw new Error(`a shard is 1 to ${count}, not ${index}`);
+  }
+  const known = items.flatMap((item) => (seconds.has(item) ? [seconds.get(item)!] : [])).sort((a, b) => a - b);
+  const usual = known.length === 0 ? 1 : known[Math.floor(known.length / 2)]!;
+  const time = (item: T) => seconds.get(item) ?? usual;
+  const sorted = [...items].sort((a, b) => time(b) - time(a) || (a < b ? -1 : a > b ? 1 : 0));
+  const load = new Array<number>(count).fill(0);
+  const mine: T[] = [];
+  for (const item of sorted) {
+    let least = 0;
+    for (let i = 1; i < count; i++) if (load[i]! < load[least]!) least = i;
+    load[least] = load[least]! + time(item);
+    if (least === index - 1) mine.push(item);
+  }
+  return mine.sort();
+}
+
+/** Shard `index` of `count` of the mutations, `bun scripts/mutations.ts
+ * --shard=i/n --timings=<dir>`: by what each took in the runs whose
+ * `timings.json`s are under `dir`, its build's share and its tests
+ * (`balanced`), as CI's shards are given the last nightly's (`ci.ts
+ * mutation-timings`); with none given, dealt out in turn (`shard`). */
+export function timedShard<T extends string>(items: T[], index: number, count: number, dir?: string): T[] {
+  if (dir === undefined) return shard(items, index, count);
+  return balanced(items, index, count, timingsUnder(dir));
+}
+
+/** What each took of the runs' `timings.json`s under `dir`, in seconds, by
+ * its name, of the files in their sorted order, a later one's over an
+ * earlier's: none where there's none. */
+export function timingsUnder(dir: string): Map<string, number> {
+  const seconds = new Map<string, number>();
+  if (!existsSync(dir)) return seconds;
+  const files = readdirSync(dir, { recursive: true, withFileTypes: true })
+    .filter((entry) => entry.isFile() && entry.name === "timings.json")
+    .map((entry) => join(entry.parentPath, entry.name))
+    .sort();
+  for (const file of files) {
+    const timings: Record<string, { build: number; tests: number }> = JSON.parse(readFileSync(file, "utf8"));
+    for (const [name, time] of Object.entries(timings)) seconds.set(name, time.build + time.tests);
+  }
+  return seconds;
 }
 
 /** How many parts a file of cases runs in at once on `cores`, each a

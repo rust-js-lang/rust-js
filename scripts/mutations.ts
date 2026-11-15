@@ -23,7 +23,7 @@ import { basename, dirname, join, resolve } from "node:path";
 import { run, runSync, stopped, type Exit } from "../test/child";
 import { corpusHarness, corpusMutantCases, corpusMutants, mutantOf } from "../test/corpus-mutants";
 import { installPackages } from "../test/packages-of";
-import { caseParts, compilerBuilds, drivesBrowser, machine, memoryBudget, shard, shardArg } from "./shard";
+import { caseParts, compilerBuilds, drivesBrowser, machine, memoryBudget, shardArg, timedShard } from "./shard";
 import { casesReaching } from "./testMap";
 import { elapsed, shown, timed } from "./timing";
 import { passed, summary } from "./test-summary";
@@ -949,7 +949,7 @@ function writeResults(results: Map<string, string>) {
 }
 
 /** The flags `main` takes, each alone or with `=` and its value. */
-const flags = ["--changed", "--also", "--list", "--shard", "--jobs", "--batch", "--tests", "--browser"];
+const flags = ["--changed", "--also", "--list", "--shard", "--timings", "--jobs", "--batch", "--tests", "--browser"];
 
 async function main() {
   const args = process.argv.slice(2);
@@ -972,7 +972,7 @@ async function main() {
   chosen = [...chosen, ...mutations.filter((m) => also.includes(m.name) && !chosen.includes(m))];
   const sharded = shardArg(args);
   if (sharded) {
-    const names = shard(chosen.map((m) => m.name), sharded.index, sharded.count);
+    const names = timedShard(chosen.map((m) => m.name), sharded.index, sharded.count, args.find((arg) => arg.startsWith("--timings="))?.slice(10));
     chosen = chosen.filter((m) => names.includes(m.name));
   }
   // The corpus harness's mutants (#918): of a change to the harness, and

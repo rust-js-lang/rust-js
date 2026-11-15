@@ -5,6 +5,7 @@
 //   bun run ci:status                       # each branch's latest run, and what failed, and the nightly's
 //   bun run ci:bless [branch]               # apply its latest run's bless patches
 //   bun scripts/ci.ts timings               # in CI: the last run's shards' timings, for this run's to balance by
+//   bun scripts/ci.ts mutation-timings <run> # in CI: that nightly's mutations' times, for the mutation shards to balance by
 //   bun scripts/ci.ts nets                  # in CI: which of the `nets` job's nets ran, and which failed, from its `STEPS`
 //
 // A run whose snapshots or rustc's lists differ uploads what blessing them
@@ -269,6 +270,11 @@ async function plan(given?: string) {
   console.log(`port=${touchesPort(changed)}`);
   console.log(`memory=${touchesMemory(changed)}`);
   console.log(`mutations=${mutating}`);
+  let nightly: number | undefined;
+  try {
+    nightly = lastMutationTimings();
+  } catch {}
+  console.log(`mutation_timings=${nightly ?? ""}`);
   console.log(`wasm=${touchesWasm(changed)}`);
   console.log(`rustc=${touchesRustc(changed)}`);
 }
@@ -331,6 +337,41 @@ function fetchTimings() {
   console.log(`the shards balance by run ${run}'s timings, ${files.length} file${files.length === 1 ? "" : "s"} in ${shardTimings}`);
 }
 
+/** The nightly whose mutations' times the mutation shards balance by: the
+ * newest of `nightlies`, newest first, that kept them, `mutation-timings-*`,
+ * still kept; or none, and the shards deal them in turn. One run for every
+ * shard of a check, `plan`'s, as each that read the newest itself might
+ * read another, dealing some mutations twice and others to none. */
+export function mutationTimingsRun(nightlies: number[], artifacts: Artifact[]): number | undefined {
+  const kept = new Set(artifacts.filter((a) => /^mutation-timings-\d+$/.test(a.name) && !a.expired).map((a) => a.run));
+  return nightlies.find((run) => kept.has(run));
+}
+
+/** Of `plan`: the last completed nightlies, and which kept their mutations'
+ * times (`mutationTimingsRun`). */
+function lastMutationTimings(): number | undefined {
+  const nightlies: { databaseId: number }[] = JSON.parse(gh(["run", "list", "--workflow=nightly.yml", "--status=completed", "--limit=10", "--json=databaseId"]));
+  const listed: { name: string; workflow_run: { id: number }; created_at: string; expired: boolean }[] = JSON.parse(
+    gh(["api", "repos/{owner}/{repo}/actions/artifacts?per_page=100&name=mutation-timings-1", "--jq", "[.artifacts[] | {name, workflow_run, created_at, expired}]"]),
+  );
+  return mutationTimingsRun(nightlies.map((r) => r.databaseId), listed.map((a) => ({ name: a.name, run: a.workflow_run.id, createdAt: a.created_at, expired: a.expired })));
+}
+
+/** In CI, before a mutation shard runs: `run`'s mutations' times, each
+ * shard's `timings.json`, into `target/mutation-timings/`, which
+ * `bun scripts/mutations.ts --timings=` balances the shards by. A download
+ * that fails fails the shard: one dealt otherwise than the others would
+ * run some mutations twice and others not at all. */
+function fetchMutationTimings(run: string) {
+  if (!/^\d+$/.test(run)) throw new Error(`a run's id, not ${run}`);
+  const dir = join(root, "target", "mutation-timings");
+  rmSync(dir, { recursive: true, force: true });
+  mkdirSync(dir, { recursive: true });
+  gh(["run", "download", run, "--pattern=mutation-timings-*", `--dir=${dir}`]);
+  const files = readdirSync(dir, { recursive: true, withFileTypes: true }).filter((entry) => entry.isFile() && entry.name === "timings.json");
+  console.log(`the mutation shards balance by run ${run}'s times, ${files.length} shard${files.length === 1 ? "'s" : "s'"} in target/mutation-timings`);
+}
+
 function bless(branch: string) {
   const run = latestRuns(runs()).find((r) => r.headBranch === branch && r.status === "completed");
   if (!run) throw new Error(`no completed ${workflow} run of ${branch}`);
@@ -365,9 +406,10 @@ if (import.meta.main) {
     else if (command === "bless") bless(branch);
     else if (command === "plan") await plan(since);
     else if (command === "timings") fetchTimings();
+    else if (command === "mutation-timings") fetchMutationTimings(rest[0] ?? "");
     else if (command === "nets") console.log(netsSummary(JSON.parse(process.env.STEPS ?? "{}")));
     else {
-      console.error("usage: bun scripts/ci.ts check [branch] [--shards=1|2|4] [--since=<rev>] | status | bless [branch] | plan | timings | nets");
+      console.error("usage: bun scripts/ci.ts check [branch] [--shards=1|2|4] [--since=<rev>] | status | bless [branch] | plan | timings | mutation-timings <run> | nets");
       process.exit(2);
     }
   } catch (error) {

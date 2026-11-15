@@ -81,6 +81,7 @@ jobs:
       crates: ${{ steps.plan.outputs.crates }}
       port: ${{ steps.plan.outputs.port }}
       mutations: ${{ steps.plan.outputs.mutations }}
+      mutation_timings: ${{ steps.plan.outputs.mutation_timings }}
       wasm: ${{ steps.plan.outputs.wasm }}
       rustc: ${{ steps.plan.outputs.rustc }}
     steps:
@@ -478,6 +479,11 @@ jobs:
     needs: plan
     if: ${{ inputs.nightly || needs.plan.outputs.rustc == 'true' }}
     uses: ./.github/workflows/rustc-tests.yml
+    # What its mutations job may read, though this runs none: a called
+    # workflow's every job is held to what its caller grants.
+    permissions:
+      contents: read
+      actions: read
 
   # The mutations the change touches (ADR 0093): those in the functions and
   # tests it changes, and those it adds or edits, on as many machines as
@@ -488,7 +494,11 @@ jobs:
     needs: plan
     if: ${{ inputs.nightly || needs.plan.outputs.mutations == 'true' }}
     uses: ./.github/workflows/rustc-tests.yml
+    permissions:
+      contents: read
+      actions: read
     with:
       mutations: true
+      mutation_timings: ${{ needs.plan.outputs.mutation_timings }}
       mutation_args: ${{ !inputs.nightly && format('--changed={0} --also={1}', needs.plan.outputs.since, needs.plan.outputs.retry) || '' }}
       mutation_shards: ${{ inputs.nightly && '16' || inputs.mutation_shards || needs.plan.outputs.shards }}
