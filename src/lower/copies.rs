@@ -38,6 +38,15 @@ pub(in crate::lower) struct VariantGroup<'v, 'tcx> {
 type OfVariant<'a, 'tcx> = &'a dyn Fn(&ty::VariantDef, &[(String, Ty<'tcx>)]) -> bool;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// The dictionary of `ty: Copy` this function was given: of a `T:
+    /// Copy`, `TCopy`; of a trait that extends it, `trait Copied: Copy`,
+    /// or one that extends that, its supertrait's, `TCopied.Copy()`; a
+    /// where-clause's alike (#1925).
+    fn copy_evidence(&self, ty: Ty<'tcx>) -> Option<Expr> {
+        let copy = self.tcx.require_lang_item(LangItem::Copy, rustc_span::DUMMY_SP);
+        self.evidence_for(ty::TraitRef::new(self.tcx, copy, [ty]))
+    }
+
     /// A fresh `ty` value equal to the one at `place`: `{ ...p }`, `[t[0], t[1]]`.
     /// A field that also contains mutated types is copied in turn.
     pub(super) fn copy(&self, place: Expr, ty: Ty<'tcx>) -> Expr {
@@ -50,8 +59,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A copied default's `Self` is the impl's type, a number say, which
         // needs no copy (ADR 0049).
         if self.is_unknown(ty)
-            && let Some(dictionary) =
-                self.given_evidence(|tr| tr.self_ty() == ty && self.tcx.is_lang_item(tr.def_id, LangItem::Copy))
+            && let Some(dictionary) = self.copy_evidence(ty)
         {
             // A caller whose value is its own copy gives none, as JS gives
             // none, which its declarations ask for: the value (ADR 0289,
@@ -614,9 +622,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// ? TCopy.Clone().clone(x) : TCopy ? TCopy.copy(x) : x` (ADR 0623,
     /// amended, #1451). Read once, `((value) => ..)(source)`.
     pub(super) fn cloned_by_copy_bound(&self, place: Expr, ty: Ty<'tcx>) -> Expr {
-        let Some(dictionary) =
-            self.given_evidence(|tr| tr.self_ty() == ty && self.tcx.is_lang_item(tr.def_id, LangItem::Copy))
-        else {
+        let Some(dictionary) = self.copy_evidence(ty) else {
             return self.copy(place, ty);
         };
         let cloned = |place: Expr| {

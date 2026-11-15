@@ -34,8 +34,9 @@ function outputSize(TAndNot) {
 }
 
 function throughSub(t, TBitOps0) {
+  const Copy = TBitOps0.Copy();
   const AndNot = TBitOps0.AndNot();
-  AndNot.andnot(t, t);
+  AndNot.andnot(Copy ? Copy.copy(t) : t, Copy ? Copy.copy(t) : t);
   return outputSize(AndNot);
 }
 

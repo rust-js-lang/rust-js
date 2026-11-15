@@ -24,8 +24,11 @@ function one(TFromU8) {
 }
 
 function identity(n, TElement, TSize) {
+  const Copy = TElement.Copy();
   const From = TElement.From();
-  const items = $repeat(From.from(0), n * n, TSize, (item) => item);
+  const items = $repeat(From.from(0), n * n, TSize, (item) =>
+    Copy?.Clone ? Copy.Clone().clone(item) : Copy ? Copy.copy(item) : item,
+  );
   for (let i = 0; i < n; i++) {
     const value = From.from(1);
     const index = i * n + i;
@@ -35,9 +38,10 @@ function identity(n, TElement, TSize) {
 }
 
 function twice(x, TElement) {
+  const Copy = TElement.Copy();
   const From = TElement.From();
   const t = From.from(x);
-  return TElement.Add().add(t, From.from(x));
+  return TElement.Add().add(Copy ? Copy.copy(t) : t, From.from(x));
 }
 
 function converted(l, LIntoT) {

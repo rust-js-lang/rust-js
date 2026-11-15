@@ -568,4 +568,12 @@ export const mutations: Mutation[] = [
     replace: "        self.contains_mutated(ty) || (stored && false)\n",
     tests: ["test/crates.test.ts", "-t", "three crates: library_value_changed_by_another_library"],
   },
+  {
+    name: "copy-evidence-of-a-copy-bound-alone",
+    breaks: "a `T: Copied` whose `Copy` is a supertrait's isn't copied, `let copy = value`, so what changes `copy` changes `value` too (#1925)",
+    file: "src/lower/copies.rs",
+    find: "        self.evidence_for(ty::TraitRef::new(self.tcx, copy, [ty]))\n",
+    replace: "        self.given_evidence(|tr| tr.self_ty() == ty && tr.def_id == copy)\n",
+    tests: ["test/corpus.test.ts", "-t", "^copy_through_a_supertrait.rs$"],
+  },
 ];

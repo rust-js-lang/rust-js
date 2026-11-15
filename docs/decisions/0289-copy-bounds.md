@@ -6,6 +6,8 @@ is another object. Amended: a caller whose value is its own copy, JS
 among them, gives none, and the copy is the value. Amended by
 [0914](0914-a-librarys-generic-function-is-its-programs.md): a library's
 public function takes a copy only where its own crate's calls give one.
+Amended (#1925): a supertrait's `Copy`, `trait Copied: Copy`, is the
+parameter's.
 
 Case: A ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -212,3 +214,25 @@ a copy isn't the value" (`twice(mode)`, `twice(level)`,
 `library_clones_through_a_copy_bound`'s loud `Unit`; mutations
 `unit-struct-copies-apart`, `string-enum-copies-apart`,
 `numbered-enum-copies-apart` and `loud-unit-copies-itself`.
+
+## Amendment: a supertrait's `Copy` is the parameter's (#1925)
+
+A type parameter is `Copy` where rustc says it is, not only where it's
+bound by `Copy` itself: `T: Copied` of `trait Copied: Copy`, a trait that
+extends that, `T: Deeper` of `trait Deeper: Copied`, and a where-clause's
+bound alike. Its copy was the value, `let mut copy = value;`, so a change
+of `copy` changed `value` too: `bumped(Point { x: 1 }, |p| p.x += 1)`
+printed `Point { x: 2 } Point { x: 2 }` where Rust prints `Point { x: 1 }
+Point { x: 2 }` (a wrong answer, P0). The dictionary already carried
+`Copy`'s, `pointCopied = { Copy: () => ({ copy }) }`, and a primitive's
+`Copy: () => undefined`; `copies.rs`'s `copy_evidence` now asks for it
+as a method call does, through the supertrait's route
+(`evidence_for`), `const Copy = TCopied.Copy();`, then `Copy ?
+Copy.copy(value) : value` as of a `T: Copy` (case of
+[0262](0262-when-rust-and-js-disagree.md): results change, so Rust's
+behavior). A clone through a `Copy` bound asks the same.
+
+What holds it: corpus case `copy_through_a_supertrait.rs` (one level, two
+levels, a where-clause, a primitive, and a `Clone` and an `Iterator` a
+supertrait gives, each against native); mutation
+`copy-evidence-of-a-copy-bound-alone`.
