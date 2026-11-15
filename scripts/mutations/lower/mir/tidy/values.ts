@@ -121,7 +121,7 @@ export const mutations: Mutation[] = [
     name: "lazy-flatmap-stepped",
     breaks: "a lazy flatten of arrays keeps `$iter(item)`",
     file: "src/lower/mir/tidy/values.rs",
-    find: "        *each = Expr::var(param.word());\n",
+    find: "        *each = Expr::var(param);\n",
     replace: "",
     tests: [
       "test/lowering-collections.test.ts",

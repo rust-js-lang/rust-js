@@ -4,7 +4,7 @@
 use super::*;
 use crate::collections::{IndexMap, IndexSet};
 use crate::js::Name;
-use crate::lower::mir::tidy::bindings::declared;
+use crate::lower::mir::tidy::bindings::{declared, declared_names};
 
 /// Of `exits_after`, the loop at `i` of `stmts`: what it does after it, its
 /// way out made a `break`, and the `let`s it's put after, of what the loop
@@ -218,10 +218,10 @@ pub(super) fn exit_after(
     // declares where it's given, `const next = v;`, and what's moved reads:
     // declared before the loop, `let next;`, and given at the `break`.
     let made: IndexSet<&str> = declared(&moved).collect();
-    let mut own: IndexSet<String> = IndexSet::default();
-    js::statement_lists(&mut kept, &mut |list| own.extend(declared(list).map(str::to_string)));
-    let mut given: Vec<String> = (own.into_iter())
-        .filter(|name| !made.contains(name.as_str()) && js::mentions_in(&moved, name) > 0)
+    let mut own: IndexSet<js::Name> = IndexSet::default();
+    js::statement_lists(&mut kept, &mut |list| own.extend(declared_names(list).cloned()));
+    let mut given: Vec<js::Name> = (own.into_iter())
+        .filter(|name| !made.contains(name.word()) && js::mentions_in(&moved, name.word()) > 0)
         .collect();
     given.sort();
     // Its name is apart from what's beside the loop, as the Rust's is,
@@ -291,12 +291,12 @@ fn in_loop(stmts: &[Stmt], path: &[(usize, bool)]) -> bool {
 /// if !has_more_work { break; } }`, given each turn, which the way out
 /// reads as that turn gave it, where no closure reads it, which would read
 /// a later turn's (rd352).
-fn given_at_break(kept: &mut Vec<Stmt>, path: &[(usize, bool)], name: &str) -> Option<Option<(usize, usize)>> {
+fn given_at_break(kept: &mut Vec<Stmt>, path: &[(usize, bool)], name: &js::Name) -> Option<Option<(usize, usize)>> {
     // Or `let name;`, given in a `try` of what may throw, its drops in the
     // `catch`, `try { hasMoreWork = cb(); } catch (error) { .. }`: where it
     // is, which the caller takes away once the way out's `break` is in.
-    let declares = |s: &Stmt| matches!(&s.kind, StmtKind::Const(n, _) | StmtKind::Let(n, None) if n.is(name));
-    let captured = crate::lower::mir::tidy::bindings::captured(kept).contains(name);
+    let declares = |s: &Stmt| matches!(&s.kind, StmtKind::Const(n, _) | StmtKind::Let(n, None) if n == name);
+    let captured = crate::lower::mir::tidy::bindings::captured(kept).contains(name.word());
     let mut depth = path.len();
     let (list, d) = loop {
         let list = at_path(kept, &path[..depth]);

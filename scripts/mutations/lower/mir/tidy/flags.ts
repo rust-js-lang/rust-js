@@ -53,8 +53,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a temporary's drop flag is named for MIR's local, `_14$live`, not for what it says is there",
     file: "src/lower/mir/tidy/flags.rs",
-    find: "        if !super::is_temporary(base) {\n",
-    replace: "        if true || !super::is_temporary(base) {\n",
+    find: "        if !super::spelled_as_temporary(base) {\n",
+    replace: "        if true || !super::spelled_as_temporary(base) {\n",
     tests: [
       "test/corpus.test.ts",
       "-t",

@@ -168,7 +168,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(in crate::lower) fn streamed_derived(
         &mut self,
         operation: WriteCall,
-        sink: &str,
+        sink: &js::Name,
         values: &[Expr],
         js_span: js::Span,
     ) -> Option<Vec<Stmt>> {

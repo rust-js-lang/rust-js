@@ -55,7 +55,7 @@ impl<'tcx> FnCx<'_, 'tcx> {
                 let names = (suggested.into_iter().flatten())
                     .filter_map(|name| temporary_names::suggested(&name))
                     .collect();
-                (name.clone(), names)
+                (name.word().to_string(), names)
             })
             .collect()
     }
@@ -77,24 +77,29 @@ impl<'tcx> FnCx<'_, 'tcx> {
         let mut not_numbers = IndexSet::default();
         let mut floats = IndexSet::default();
         let mut not_floats = IndexSet::default();
-        for (local, name) in state.locals.names.iter_enumerated().filter(|(_, n)| !n.is_empty()) {
+        for (local, name) in state
+            .locals
+            .names
+            .iter_enumerated()
+            .filter(|(_, n)| !n.word().is_empty())
+        {
             // A shared reference to one too, `*show_hint`'s, which JS reads as it.
             let ty = mir_body.local_decls[local].ty;
             match ty.is_integral() {
-                true => numbers.insert(name.clone()),
-                false => not_numbers.insert(name.clone()),
+                true => numbers.insert(name.word().to_string()),
+                false => not_numbers.insert(name.word().to_string()),
             };
             match ty.is_floating_point() {
-                true => floats.insert(name.clone()),
-                false => not_floats.insert(name.clone()),
+                true => floats.insert(name.word().to_string()),
+                false => not_floats.insert(name.word().to_string()),
             };
             let bool = match ty.kind() {
                 ty::Ref(_, inner, ty::Mutability::Not) => inner.is_bool(),
                 _ => ty.is_bool(),
             };
             match bool {
-                true => booleans.insert(name.clone()),
-                false => others.insert(name.clone()),
+                true => booleans.insert(name.word().to_string()),
+                false => others.insert(name.word().to_string()),
             };
         }
         // And a closure's, of what it captures: its parent's.

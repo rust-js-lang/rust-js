@@ -196,7 +196,7 @@ fn tested_assignments(stmts: &mut Vec<Stmt>) {
                 };
                 let mut captured = false;
                 js::each_expr(rest, &mut |e| captured |= caught(e));
-                let assigned = Expr::assigned(Expr::var(name.word()), made.clone());
+                let assigned = Expr::assigned(Expr::var(name), made.clone());
                 (!captured)
                     .then(|| test.substitute(&|n: &str| name.is(n).then(|| assigned.clone())))
                     .flatten()

@@ -195,8 +195,8 @@ export const mutations: Mutation[] = [
     name: "spill-hyphenated-name",
     breaks: "an attribute read first is a variable of its hyphenated name, `const data-step`",
     file: "src/lower.rs",
-    find: "        let name = self.fresh(Base::Named(&unhyphenated(&base.word())));\n",
-    replace: "        let name = self.fresh(base);\n",
+    find: "        let name = base.name(self.fresh(Base::Named(&unhyphenated(&base.word()))));\n",
+    replace: "        let name = base.name(self.fresh(base));\n",
     tests: ["test/jsx-evaluation-order.test.ts", "-t", "a hyphenated attribute read first"],
   },
   {
@@ -400,7 +400,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a value lowering spills for a role is named at once and never again, `const result$2 = Parser.expr(parser)`, not by its call, `expr` (#890)",
     file: "src/lower.rs",
-    find: "            self.note_spilled(&name, role);\n",
+    find: "            self.note_spilled(name.word(), role);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^(boxed_option_unwraps|option_iterator_of_generic_items|blanket_iterator_trait|interpreter).rs$"],
     snapshots: true,

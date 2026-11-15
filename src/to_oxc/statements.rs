@@ -153,7 +153,7 @@ impl<'a> Cx<'a> {
             out.push(self.function(&constructor, false));
         }
         out.extend(self.stmts(prototype_set));
-        let prototype = || js::Expr::member(js::Expr::var(n.name.word()), "prototype");
+        let prototype = || js::Expr::member(js::Expr::var(&n.name), "prototype");
         // Of a prototype its load replaced, each own member defined on it,
         // `Object.defineProperty(ReactPromise.prototype, "then", { writable:
         // true, enumerable: true, configurable: true, value: .. })`, as an
@@ -204,7 +204,7 @@ impl<'a> Cx<'a> {
             }
             let of = match class.prototype.iter().any(|p| f.name.is(p)) {
                 true => prototype(),
-                false => js::Expr::var(n.name.word()),
+                false => js::Expr::var(&n.name),
             };
             let mut function = f.clone();
             function.name = Name::default();
@@ -350,7 +350,7 @@ impl<'a> Cx<'a> {
             (_, decl) if n.export => Statement::new_export_declaration(span(class.declared), decl, b),
             (_, decl) => decl.into(),
         }];
-        let prototype = || js::Expr::member(js::Expr::var(n.name.word()), "prototype");
+        let prototype = || js::Expr::member(js::Expr::var(&n.name), "prototype");
         let assigned: Vec<js::Stmt> = (n.constants.iter())
             .map(|c| js::StmtKind::Assign(js::Expr::member(prototype(), c.name.word()), c.value.clone()).at(c.span))
             .collect();

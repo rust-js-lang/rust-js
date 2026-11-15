@@ -22,7 +22,7 @@ pub(super) fn written_as_statement(test: &Expr, span: js::Span, program: &crate:
 /// } else { x = s; }`. Each arm a value alone, or the conditional of an `if`
 /// in it, `wasHydrated ? a : b`; `None` of what's no conditional. Its arms
 /// are in the order the program wrote them already (`written_order`).
-pub(super) fn chained_arms(x: &str, value: &Expr, at: js::Span) -> Option<Vec<Stmt>> {
+pub(super) fn chained_arms(x: &js::Name, value: &Expr, at: js::Span) -> Option<Vec<Stmt>> {
     // Each arm's value set where it's written, as MIR set it, which a
     // comment above the arm is above (rd617), where the arms are written
     // in the chain's order, `else if c { // ..\n v } else { w }`; else each
@@ -37,7 +37,7 @@ pub(super) fn chained_arms(x: &str, value: &Expr, at: js::Span) -> Option<Vec<St
 
 /// `chained_arms`' chain of `value`, each arm's value set where it's
 /// written, where `written`, else at `at`.
-fn arms_of(x: &str, value: &Expr, at: js::Span, written: bool) -> Option<Vec<Stmt>> {
+fn arms_of(x: &js::Name, value: &Expr, at: js::Span, written: bool) -> Option<Vec<Stmt>> {
     let ExprKind::Cond(t, q, r) = &value.kind else {
         return None;
     };
@@ -108,7 +108,7 @@ pub(super) fn plain(e: &Expr) -> bool {
 
 /// Of `let t; t = v; x = t;`, a temporary MIR gives a variable's value
 /// through, declared there and read once: `x` and `v`, as `x = v;` is.
-pub(super) fn assigned_through(stmts: &[Stmt]) -> Option<(&str, &Expr)> {
+pub(super) fn assigned_through(stmts: &[Stmt]) -> Option<(&js::Name, &Expr)> {
     let [
         Stmt {
             kind: StmtKind::Let(t, None),
@@ -127,8 +127,8 @@ pub(super) fn assigned_through(stmts: &[Stmt]) -> Option<(&str, &Expr)> {
         return None;
     };
     match (&made.kind, &target.kind, &read.kind) {
-        (ExprKind::Var(m), ExprKind::Var(x), ExprKind::Var(r)) if is_temporary(t.word()) && m == t && r == t => {
-            Some((x.word(), value))
+        (ExprKind::Var(m), ExprKind::Var(x), ExprKind::Var(r)) if is_temporary(t) && m == t && r == t => {
+            Some((x, value))
         }
         _ => None,
     }

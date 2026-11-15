@@ -49,7 +49,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a tuple assigned to variables, `(a, b) = e`, reads `const [_18, _19] = e; a = _18; b = _19;`, not `[a, b] = e;` (#331)",
     file: "src/lower/mir/tidy/destructuring.rs",
-    find: "        if !distinct || parts.iter().any(|part| js::mentions_in(&stmts[after..], part) > 0) {\n",
+    find: "        if !distinct\n            || parts\n                .iter()\n                .any(|part| js::mentions_in(&stmts[after..], part.word()) > 0)\n        {\n",
     replace: "        if true {\n",
     tests: ["test/corpus.test.ts", "-t", "^tuple_assigned_to_variables.rs$"],
     snapshots: true,
@@ -60,9 +60,9 @@ export const mutations: Mutation[] = [
     breaks:
       "`let payload = &lazy.payload; let init = lazy.init;` is `const { _payload: payload, _init: init } = lazy;`",
     file: "src/lower/mir/tidy/destructuring.rs",
-    find: "        if !made && let Some(k) = parts.iter().position(|(_, bound, ..)| lets.contains(bound)) {\n",
+    find: "        if !made && let Some(k) = parts.iter().position(|(_, bound, ..)| lets.contains(bound.word())) {\n",
     replace:
-      "        if false && let Some(k) = parts.iter().position(|(_, bound, ..)| lets.contains(bound)) {\n",
+      "        if false && let Some(k) = parts.iter().position(|(_, bound, ..)| lets.contains(bound.word())) {\n",
     tests: ["test/lowering-parts.test.ts", "-t", "a let of a part"],
   },
   {
@@ -70,9 +70,9 @@ export const mutations: Mutation[] = [
     breaks:
       "`Cell::new(update.lane.get())`'s read ahead of the next field's is `const { lane: value, tag: value$1 } = update;`, names the program never gave (ADR 0598, amended)",
     file: "src/lower/mir/tidy/destructuring.rs",
-    find: "        if !made && let Some(k) = parts.iter().position(|(_, bound, ..)| !user.contains(bound)) {\n",
+    find: "        if !made && let Some(k) = parts.iter().position(|(_, bound, ..)| !user.contains(bound.word())) {\n",
     replace:
-      "        if false && let Some(k) = parts.iter().position(|(_, bound, ..)| !user.contains(bound)) {\n",
+      "        if false && let Some(k) = parts.iter().position(|(_, bound, ..)| !user.contains(bound.word())) {\n",
     tests: [
       "test/lowering-field-cells.test.ts",
       "-t",
@@ -158,8 +158,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`__arg0`, an `async fn`'s parameter, is a name the program wrote, kept",
     file: "src/lower/mir/tidy/destructuring.rs",
-    find: "        is_temporary(name) || arg.is_some_and(",
-    replace: "        is_temporary(name) || false && arg.is_some_and(",
+    find: "        spelled_as_temporary(name) || arg.is_some_and(",
+    replace: "        spelled_as_temporary(name) || false && arg.is_some_and(",
     tests: [
       "test/lowering-matches.test.ts",
       "-t",

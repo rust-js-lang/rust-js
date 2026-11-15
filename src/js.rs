@@ -442,16 +442,17 @@ impl Pattern {
         Pattern::Array(names.into_iter().map(|name| name.map(Pattern::from)).collect())
     }
 
-    /// The variables it binds.
+    /// The variables it binds, their words.
     pub fn names(&self) -> Vec<&str> {
+        self.bound().into_iter().map(Name::word).collect()
+    }
+
+    /// The variables it binds.
+    pub fn bound(&self) -> Vec<&Name> {
         match self {
-            Pattern::Name(name) | Pattern::Rest(name) | Pattern::Defaulted(name, _) => vec![name.word()],
-            Pattern::Array(items) => items.iter().flatten().flat_map(Pattern::names).collect(),
-            Pattern::Object(fields, rest) => fields
-                .iter()
-                .flat_map(|(_, p, _)| p.names())
-                .chain(rest.as_ref().map(|n| n.word()))
-                .collect(),
+            Pattern::Name(name) | Pattern::Rest(name) | Pattern::Defaulted(name, _) => vec![name],
+            Pattern::Array(items) => items.iter().flatten().flat_map(Pattern::bound).collect(),
+            Pattern::Object(fields, rest) => fields.iter().flat_map(|(_, p, _)| p.bound()).chain(rest).collect(),
         }
     }
 

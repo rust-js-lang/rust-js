@@ -73,7 +73,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Of `body`, the names of its inclusive ranges no step can leave
     /// exhausted: each a `let` not `mut`, which nothing lends as a `&mut`,
     /// whose every write is `RangeInclusive::new(a, b)`, `a..=b` (#418).
-    pub(super) fn fresh_ranges(&self, body: &mir::Body<'tcx>, names: &IndexVec<Local, String>) -> Vec<String> {
+    pub(super) fn fresh_ranges(&self, body: &mir::Body<'tcx>, names: &IndexVec<Local, js::Name>) -> Vec<String> {
         use crate::lower::std_types::range::RangeKind;
         let n = body.local_decls.len();
         let (mut writes, mut made): (IndexVec<Local, usize>, IndexVec<Local, usize>) =
@@ -96,12 +96,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         (body.local_decls.iter_enumerated())
             .filter(|&(local, decl)| {
                 decl.mutability == mir::Mutability::Not
-                    && !names[local].is_empty()
+                    && !names[local].word().is_empty()
                     && writes[local] > 0
                     && writes[local] == made[local]
                     && self.range_kind(decl.ty) == Some(RangeKind::Inclusive)
             })
-            .map(|(local, _)| names[local].clone())
+            .map(|(local, _)| names[local].word().to_string())
             .collect()
     }
 
@@ -115,7 +115,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> Locals {
         let n = body.local_decls.len();
         let mut locals = Locals {
-            names: IndexVec::from_elem_n(String::new(), n),
+            names: IndexVec::from_elem_n(js::Name::default(), n),
             reads: IndexVec::from_elem_n(0, n),
             writes: IndexVec::from_elem_n(0, n),
             borrowed: IndexVec::from_elem_n(false, n),
@@ -314,13 +314,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             locals.text[local] = self.is_lang_adt(body.local_decls[local].ty, LangItem::String);
             // Bound by a parameter's pattern: the name THIR's pattern gives it.
             if let Some((_, name)) = named.iter().find(|(l, _)| *l == local) {
-                locals.names[local] = name.clone();
+                locals.names[local] = name.into();
                 continue;
             }
             locals.names[local] = match (&user[local], body.local_kind(local)) {
-                (Some(name), _) => self.fresh(Base::Named(&tidy::user_name(name))),
-                (None, LocalKind::ReturnPointer) => self.fresh(Role::Result),
-                (None, _) => self.fresh(Base::Local(local.as_usize())),
+                (Some(name), _) => {
+                    let named = tidy::user_name(name);
+                    let base = Base::Named(&named);
+                    base.name(self.fresh(base))
+                }
+                (None, LocalKind::ReturnPointer) => self.fresh(Role::Result).into(),
+                (None, _) => {
+                    let temporary = Base::Local(local.as_usize());
+                    temporary.name(self.fresh(temporary))
+                }
             };
         }
         // Its inclusive ranges no step can leave exhausted, by name (#418).
@@ -341,8 +348,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     fn in_place_source_names(
         &self,
         body: &mir::Body<'tcx>,
-        names: &IndexVec<Local, String>,
-    ) -> crate::collections::IndexMap<rustc_span::Span, String> {
+        names: &IndexVec<Local, js::Name>,
+    ) -> crate::collections::IndexMap<rustc_span::Span, js::Name> {
         let thir = self.frame.thir;
         let bound = |var: thir::LocalVarId| {
             let lets = (thir.stmts.iter()).filter_map(|stmt| match &stmt.kind {
@@ -399,7 +406,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 mir::VarDebugInfoContents::Place(place)
                     if place.projection.is_empty() && named.contains(&info.source_info.span) =>
                 {
-                    Some(state.locals.names[place.local].clone())
+                    Some(state.locals.names[place.local].word().to_string())
                 }
                 _ => None,
             })

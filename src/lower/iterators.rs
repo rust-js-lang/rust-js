@@ -1157,7 +1157,7 @@ pub(in crate::lower) fn stepped_slices(body: &mut Vec<Stmt>) {
             if stepped(e) {
                 *e = Expr {
                     span: e.span,
-                    ..js::next_value(Expr::var(name.word()))
+                    ..js::next_value(Expr::var(&name))
                 };
             }
         });

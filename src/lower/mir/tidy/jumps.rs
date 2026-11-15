@@ -682,7 +682,7 @@ fn ending_returns(stmts: &mut Vec<Stmt>, returns: &[js::Span], branch: bool) {
         let test = match &bound {
             Some(b) => {
                 stmts.push(then.next().expect("the binding"));
-                Expr::bin(Op::LooseEq, Expr::var(b.word()), Expr::null())
+                Expr::bin(Op::LooseEq, Expr::var(b), Expr::null())
             }
             None => test.negated_test(),
         };

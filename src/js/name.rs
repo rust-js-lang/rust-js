@@ -25,6 +25,12 @@ enum Of {
     Item,
     /// A global's, JS's `Array` or a binding's `document`.
     Global,
+    /// A temporary MIR's lowering made, `_5`, or one given apart from
+    /// one, `_5$1`, which tidy names for what it holds (S4).
+    Temporary,
+    /// The name MIR's lowering holds an argument by, `_arg`, which tidy
+    /// names `arg` (S4).
+    HeldArg,
 }
 
 impl Name {
@@ -39,6 +45,29 @@ impl Name {
     /// Whether it's a global's (`global`).
     pub fn is_global(&self) -> bool {
         self.1 == Of::Global
+    }
+
+    /// A temporary MIR's lowering made, spelled `word`, `_5` or `_5$1`
+    /// (`temporary_names::temporary`), not one the program names: tidy
+    /// asks `is_temporary` of it, not its word (#1681 change 3, S4).
+    pub fn temporary(word: String) -> Name {
+        Name(word, Of::Temporary)
+    }
+
+    /// Whether it's a temporary (`temporary`).
+    pub fn is_temporary(&self) -> bool {
+        self.1 == Of::Temporary
+    }
+
+    /// The name MIR's lowering holds an argument by, spelled `word`, `_arg`
+    /// or given apart, `_arg$1` (S4).
+    pub fn held_arg(word: String) -> Name {
+        Name(word, Of::HeldArg)
+    }
+
+    /// Whether it's a held argument's (`held_arg`).
+    pub fn is_held_arg(&self) -> bool {
+        self.1 == Of::HeldArg
     }
 
     /// A name lowering makes, the `k`th of `base`'s, `value#1`, not spelled
@@ -66,7 +95,13 @@ impl Name {
         self.0 == word
     }
 
-    /// Spelled `word` from now on: a rename, preparation's spelling and
+    /// It given apart the `k`th time, `node$2` of `node`, a name of its form:
+    /// a temporary's still a temporary's (`names::given_apart`, S4).
+    pub fn given_apart(&self, k: usize) -> Name {
+        Name(crate::names::given_apart(&self.0, k), self.1)
+    }
+
+    /// Spelled `word` from now on, a name of its form still: a rename, preparation's spelling and
     /// reclaiming, and tidy's of a name given apart.
     pub fn respell(&mut self, word: impl Into<String>) {
         self.0 = word.into();

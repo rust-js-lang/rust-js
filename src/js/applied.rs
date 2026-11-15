@@ -371,7 +371,7 @@ fn set_of(stmt: &Stmt, whole: &[Stmt]) -> Option<Vec<Stmt>> {
     if declares(&inlined, name.word()) || mentions_in(&inlined, name.word()) > 0 {
         return None;
     }
-    let to = Expr::var(name.word());
+    let to = Expr::var(name);
     let set = |value: &Expr, at: Span| Some(vec![StmtKind::Assign(to.clone(), value.clone()).at(at)]);
     let set = returns_replaced(&inlined, &set)?;
     Some(std::iter::once(declared).chain(set).collect())

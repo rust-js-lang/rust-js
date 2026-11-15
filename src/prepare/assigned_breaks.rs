@@ -113,7 +113,7 @@ fn assigned_at(body: &[Stmt], k: usize, label: Option<&str>) -> Option<(String, 
     {
         return None;
     }
-    let assigned = Expr::assigned(Expr::var(variable.word()), value.clone());
+    let assigned = Expr::assigned(Expr::var(variable), value.clone());
     let test = test.substitute(&|n: &str| made.is(n).then(|| assigned.clone()))?;
     Some((variable.to_string(), test))
 }

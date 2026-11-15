@@ -632,6 +632,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         fresh_in(&mut self.names.borrow_mut(), &base.into().word())
     }
 
+    /// `fresh`'s name, of the form `base` makes (`Base::name`): one named
+    /// after a temporary, `_24$1` of `_24`, a temporary's still (#1681
+    /// change 3, S4).
+    fn fresh_name<'b>(&self, base: impl Into<Base<'b>>) -> js::Name {
+        let base = base.into();
+        base.name(self.fresh(base))
+    }
+
     /// A name lowering makes for a variable of its own, `base`'s, not
     /// spelled yet (`js::Name::made`): spelled by preparation once the
     /// program's names are all made, apart from them, so a name it makes
@@ -1050,13 +1058,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// tidy picks again, a call's name first (#890).
     fn spill<'b>(&mut self, base: impl Into<Base<'b>>, value: Expr, out: &mut Vec<Stmt>) -> Expr {
         let base = base.into();
-        let name = self.fresh(Base::Named(&unhyphenated(&base.word())));
+        let name = base.name(self.fresh(Base::Named(&unhyphenated(&base.word()))));
         // Of a role's, named again by tidy once the code is placed (#890).
         if let Base::Role(role) = base {
-            self.note_spilled(&name, role);
+            self.note_spilled(name.word(), role);
         }
         let (span, marks) = (value.span, iterators::marks_kept(&value));
-        out.push(StmtKind::Const(name.clone().into(), value).at(span));
+        out.push(StmtKind::Const(name.clone(), value).at(span));
         let mut held = Expr::var(&name);
         held.facts = held.facts.and(marks);
         held

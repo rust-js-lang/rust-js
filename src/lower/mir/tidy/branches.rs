@@ -271,7 +271,7 @@ pub(super) fn branch_values(
                     && !is_temporary(x)
                     && let Some((y, no)) = assigned_through(otherwise).or_else(|| assigned_only(otherwise))
                     && x == y
-                    && !(x == result && written_returns((then, otherwise), returns, span))
+                    && !(x.is(result) && written_returns((then, otherwise), returns, span))
                     && !switched(test, span, switches)
                     && !written_as_statement(test, span, program)
                     && let Some(value) = plain_chain_of(
@@ -300,10 +300,10 @@ pub(super) fn branch_values(
                     ..
                 }) = then.last()
                     && let ExprKind::Var(x) = &target.kind
-                    && (!is_temporary(x.word()) && (then.len() == 1 || !x.is(result))
-                        || is_temporary(x.word()) && then.len() > 1)
+                    && (!is_temporary(x) && (then.len() == 1 || !x.is(result))
+                        || is_temporary(x) && then.len() > 1)
                     && let Some((y, folded)) = assigned_only(otherwise).or_else(|| assigned_through(otherwise))
-                    && x.is(y)
+                    && x == y
                     && !switched(test, span, switches)
                     && let Some(chained) = chained_arms(y, folded, otherwise[0].span) =>
             {
@@ -315,7 +315,7 @@ pub(super) fn branch_values(
                     // `return` the program wrote, `if c { return a; }
                     // return b;`, MIR's one `return`: an `if` of `return`s
                     // (ADR 0657, amended).
-                    && !(one.target == result && written_returns((then, otherwise), returns, span))
+                    && !(one.target.is(result) && written_returns((then, otherwise), returns, span))
                     // Not an `if` the program wrote as a statement, of a late
                     // `let`, `let error; if c { error = a; } else { error =
                     // b; }`, which stays as it's written (rd187).
@@ -452,7 +452,7 @@ pub(super) fn updates(x: &str, value: &Expr) -> bool {
 /// and whether the `else`'s comes first. The one place that says whether
 /// two arms are one value (`branch_values` writes what it says).
 pub(super) struct OneAssignment {
-    pub(super) target: String,
+    pub(super) target: js::Name,
     pub(super) yes: Expr,
     pub(super) no: Expr,
     pub(super) no_first: bool,
@@ -481,8 +481,8 @@ pub(super) fn one_assignment(
     let one = x == y
         && !(super::logicals::alike_branches(yes, no) && test.has_effects())
         && ((small(yes) && small(no)) || is_temporary(x))
-        && (x != result || folds_into_return(yes, no))
-        && !(updates(x, yes) || updates(x, no))
+        && (!x.is(result) || folds_into_return(yes, no))
+        && !(updates(x.word(), yes) || updates(x.word(), no))
         && !switched(test, span, switches);
     if !one {
         return None;
@@ -501,7 +501,7 @@ pub(super) fn one_assignment(
         _ => matches!((first_written(then), first_written(otherwise)), (Some(t), Some(o)) if o < t),
     };
     Some(OneAssignment {
-        target: x.to_string(),
+        target: x.clone(),
         yes: spanned(yes, then[0].span),
         no: spanned(no, otherwise[0].span),
         no_first,
@@ -520,7 +520,7 @@ fn written_returns((then, otherwise): (&[Stmt], &[Stmt]), returns: &[js::Span], 
 }
 
 /// The variable `stmts` only assign, and what to: `x = a;`.
-pub(super) fn assigned_only(stmts: &[Stmt]) -> Option<(&str, &Expr)> {
+pub(super) fn assigned_only(stmts: &[Stmt]) -> Option<(&js::Name, &Expr)> {
     match stmts {
         [
             Stmt {
@@ -528,7 +528,7 @@ pub(super) fn assigned_only(stmts: &[Stmt]) -> Option<(&str, &Expr)> {
                 ..
             },
         ] => match &target.kind {
-            ExprKind::Var(x) => Some((x.word(), value)),
+            ExprKind::Var(x) => Some((x, value)),
             _ => None,
         },
         _ => None,
@@ -550,7 +550,7 @@ pub(super) fn chain(body: &[Stmt], label: &str) -> Option<(Vec<Expr>, String, Ex
     };
     let (x, no) = assigned_only(std::slice::from_ref(last))?;
     let (mut tests, y, yes) = inner_chain(inner, label)?;
-    if x != y {
+    if !x.is(&y) {
         return None;
     }
     tests.insert(0, test.clone());
@@ -908,7 +908,7 @@ pub(super) fn returned_in_branches(stmts: &mut Vec<Stmt>, result: &str) {
         return;
     };
     // Not a variable the program names, `let item;`, which it returns.
-    if !returned.is(result) && !is_temporary(returned.word()) {
+    if !returned.is(result) && !is_temporary(returned) {
         return;
     }
     let result = returned.word();
@@ -998,8 +998,8 @@ pub(super) fn filtered_guards(stmts: &mut Vec<Stmt>, changing: &IndexSet<String>
             // `h` kept, `x` itself, tested by its truth.
             let (h, x) = (h.clone(), x.clone());
             let truth = match op {
-                Op::LooseEq => Expr::unary(UnaryOp::Not, Expr::var(h.word())),
-                _ => Expr::var(h.word()),
+                Op::LooseEq => Expr::unary(UnaryOp::Not, Expr::var(h)),
+                _ => Expr::var(h),
             };
             if let StmtKind::Const(_, value) = &mut stmts[i - 1].kind {
                 *value = Expr { span: value.span, ..x };
@@ -1013,8 +1013,8 @@ pub(super) fn filtered_guards(stmts: &mut Vec<Stmt>, changing: &IndexSet<String>
             continue;
         };
         let truth = match op {
-            Op::LooseEq => Expr::unary(UnaryOp::Not, Expr::var(x.word())),
-            _ => Expr::var(x.word()),
+            Op::LooseEq => Expr::unary(UnaryOp::Not, Expr::var(&x)),
+            _ => Expr::var(&x),
         };
         // `h`, read as `x`: it goes, the test where it was.
         let h = h.clone();
@@ -1028,7 +1028,7 @@ pub(super) fn filtered_guards(stmts: &mut Vec<Stmt>, changing: &IndexSet<String>
             if matches!(&e.kind, ExprKind::Var(v) if *v == h) {
                 *e = Expr {
                     span: e.span,
-                    ..Expr::var(x.word())
+                    ..Expr::var(&x)
                 };
             }
         });

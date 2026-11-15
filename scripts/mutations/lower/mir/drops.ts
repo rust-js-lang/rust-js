@@ -415,7 +415,7 @@ export const mutations: Mutation[] = [
     name: "kept-starts-unwritten",
     breaks: "a parameter React kept that a function changes in place itself is copied nowhere (#1723)",
     file: "src/lower/mir/drops.rs",
-    find: "        let mut out = self.kept_starts(state.body, &state.parts, &|local| state.locals.names[local].clone())?;\n",
+    find: "        let mut out = self.kept_starts(state.body, &state.parts, &|local| {\n            state.locals.names[local].clone().into_word()\n        })?;\n",
     replace: "        let mut out = Vec::new();\n",
     tests: ["test/react-kept.test.ts", "-t", "copied where it's changed"],
   },

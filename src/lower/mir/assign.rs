@@ -541,7 +541,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         state.locals.declared[local] = true;
         out.push(
             StmtKind::Destructure {
-                pattern: js::Pattern::Object(named, Some(state.locals.names[local].clone().into())),
+                pattern: js::Pattern::Object(named, Some(state.locals.names[local].clone())),
                 value,
                 mutable: false,
             }
@@ -565,22 +565,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let at = state.location();
         let read: IndexSet<Local> = (state.refs.iter())
             .chain(state.in_place.iter())
-            .filter(|(_, target)| root_var(target) == Some(name.as_str()))
+            .filter(|(_, target)| root_var(target) == Some(name.word()))
             .map(|(&l, _)| l)
             .filter(|&l| read_past(state.body, at, l))
             .collect();
-        if name.is_empty() || read.is_empty() {
+        if name.word().is_empty() || read.is_empty() {
             return Ok(());
         }
         self.flush(state, out)?;
-        let held = self.spill(Base::Named(&name), Expr::var(&name), out);
+        let held = self.spill(Base::Named(name.word()), Expr::var(&name), out);
         // A place holds no closure, so `substitute` renames it; else it's
         // refused, never left reading the variable the snapshot stands for
         // (#1525).
         let span = state.body.source_info(at).span;
         for (l, target) in (state.refs.iter_mut()).chain(state.in_place.iter_mut()) {
             if read.contains(l) {
-                *target = (target.substitute(&|v| (v == name).then(|| held.clone())))
+                *target = (target.substitute(&|v| name.is(v).then(|| held.clone())))
                     .ok_or_else(|| self.unsupported(span, "a place a closure reads, which can't be renamed"))?;
             }
         }
@@ -602,7 +602,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let js::ExprKind::Var(name) = &root.kind else {
             return false;
         };
-        let Some(root) = (state.locals.names.iter_enumerated()).find_map(|(l, n)| name.is(n).then_some(l)) else {
+        let Some(root) = (state.locals.names.iter_enumerated()).find_map(|(l, n)| name.is(n.word()).then_some(l))
+        else {
             return false;
         };
         root != local
@@ -712,7 +713,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             *self.locals.mir.paths.entry(path).or_insert(bool) &= bool;
         }
         // Of a binding only a guard reads, the arm's body reads none (ADR 0751).
-        if place.projection.is_empty() && (state.locals.names[local].is_empty() || self.unread(state, local)) {
+        if place.projection.is_empty() && (state.locals.names[local].word().is_empty() || self.unread(state, local)) {
             // Of `()`, or a temporary nothing reads: what made it runs. Of
             // a reference, `let _ = &mut p.y` through `deref_mut`: what makes
             // its place, `deref_mut(p)`, no handle on it.
@@ -753,7 +754,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     StmtKind::Const(_, made) if state.locals.declared[bound] => {
                         StmtKind::Assign(Expr::var(&name), made)
                     }
-                    StmtKind::Const(_, made) => StmtKind::Const(name.clone().into(), made),
+                    StmtKind::Const(_, made) => StmtKind::Const(name.clone(), made),
                     kind => kind,
                 };
                 tried = Expr::var(&name);
@@ -846,7 +847,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A payload's of a temporary keeps its name, which the temporary
         // takes (tidy's `named_temporaries`).
         let of_temporary = matches!(&value, Value::Place(target) if matches!(&target.kind, js::ExprKind::Var(name)
-            if (state.locals.names.iter_enumerated()).any(|(l, n)| name.is(n) && !state.locals.user[l])));
+            if (state.locals.names.iter_enumerated()).any(|(l, n)| name.is(n.word()) && !state.locals.user[l])));
         let one = place.projection.is_empty()
             && (!state.locals.user[local] || (state.facts.payloads().contains(&local) && !of_temporary))
             && state.locals.writes[local] == 1
@@ -917,7 +918,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A payload's of a temporary keeps its name, which the temporary
         // takes (tidy's `aliases`).
         let of_temporary = matches!(&expr.kind, js::ExprKind::Var(name)
-            if (state.locals.names.iter_enumerated()).any(|(l, n)| name.is(n) && !state.locals.user[l]));
+            if (state.locals.names.iter_enumerated()).any(|(l, n)| name.is(n.word()) && !state.locals.user[l]));
         if place.projection.is_empty()
             && !state.facts.pointed().locals.contains(&local)
             && (!state.locals.user[local] || (state.facts.payloads().contains(&local) && !of_temporary))
@@ -953,14 +954,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // One a pointer is taken to, a cell (ADR 0407).
             if state.facts.pointed().locals.contains(&local) {
                 let cell = Expr::object(vec![js::Prop::Field(js::HELD.into(), expr)]);
-                out.push(StmtKind::Const(name.into(), cell).at(js_span));
+                out.push(StmtKind::Const(name, cell).at(js_span));
                 return Ok(());
             }
             super::temporaries::note_marks(state, local, &expr);
             out.push(
                 match state.locals.borrowed[local] {
-                    true => StmtKind::Let(name.into(), Some(expr)),
-                    false => StmtKind::Const(name.into(), expr),
+                    true => StmtKind::Let(name, Some(expr)),
+                    false => StmtKind::Const(name, expr),
                 }
                 .at(js_span),
             );
@@ -972,7 +973,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let of_held_items = || {
             crate::lower::iterators::mapped_var(&expr).is_some_and(|name| {
                 (state.locals.names.iter_enumerated())
-                    .find(|(_, n)| *n == name)
+                    .find(|(_, n)| n.is(name))
                     .is_some_and(|(source, _)| self.steps_an_array(state.body.local_decls[source].ty))
             })
         };
@@ -1070,7 +1071,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // refused (not an alias `r` names a place by, `*outer = ..`).
         if let Some((base, PlaceElem::Deref)) = place.as_ref().last_projection()
             && base.projection.is_empty()
-            && matches!(target.kind, js::ExprKind::Var(ref name) if name.is(&state.locals.names[base.local]))
+            && matches!(target.kind, js::ExprKind::Var(ref name) if name.is(state.locals.names[base.local].word()))
         {
             return Err(self.unsupported(span, "assigning a whole value through a `&mut`"));
         }
@@ -1253,7 +1254,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let stays = match &object.kind {
             js::ExprKind::Var(name) => (state.locals.names.iter_enumerated())
-                .find(|(_, n)| name.is(n))
+                .find(|(_, n)| name.is(n.word()))
                 .is_none_or(|(l, _)| state.locals.writes[l] <= 1 || !state.body.local_decls[l].ty.is_ref()),
             _ => object.is_constant(),
         };

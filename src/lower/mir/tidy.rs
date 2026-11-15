@@ -39,7 +39,7 @@ mod value_chains;
 mod values;
 
 pub(super) use self::again::Again;
-pub(super) use self::bindings::{is_temporary, temporary, unsuffixed_params, user_name};
+pub(super) use self::bindings::{is_temporary, spelled_as_temporary, temporary, unsuffixed_params, user_name};
 pub(super) use self::destructuring::{copied_params, destructured_params};
 use self::stability::{plain_field, read_past_calls};
 pub(super) use self::values::{call_path, field_path, writer_body};
@@ -541,8 +541,13 @@ mod tests {
         StmtKind::Expr(Expr::call(Expr::var(f), Vec::new())).at(js::Span::NONE)
     }
 
+    /// A variable's name as lowering makes it, `_4` a temporary's.
+    fn lowered(word: &str) -> js::Name {
+        crate::lower::temporary_names::Base::Named(word).name(word.to_string())
+    }
+
     fn assign(x: &str, value: Expr) -> Stmt {
-        StmtKind::Assign(Expr::var(x), value).at(js::Span::NONE)
+        StmtKind::Assign(Expr::var(lowered(x)), value).at(js::Span::NONE)
     }
 
     /// A take of the body's `let`, returned, which nothing reads after the
@@ -1025,7 +1030,7 @@ mod tests {
     // where it's made, `if (!!(a != null)) { f(); }`, as a `const` read once is.
     #[test]
     fn a_temporary_assigned_then_read_once_each_time_is_read_where_its_made() {
-        let (t5, t6) = (temporary(5), temporary(6));
+        let (t5, t6) = (lowered(&temporary(5)), lowered(&temporary(6)));
         let pair = |x: &str, f: &str| {
             vec![
                 StmtKind::Assign(Expr::var(&t5), present(x)).at(js::Span::NONE),
@@ -1034,14 +1039,14 @@ mod tests {
             ]
         };
         let mut body = vec![
-            StmtKind::Let(t5.clone().into(), None).at(js::Span::NONE),
-            StmtKind::Let(t6.clone().into(), None).at(js::Span::NONE),
+            StmtKind::Let(t5.clone(), None).at(js::Span::NONE),
+            StmtKind::Let(t6.clone(), None).at(js::Span::NONE),
         ];
         body.extend(pair("a", "f"));
         body.extend(pair("b", "g"));
         let paired = paired_temporaries(&body);
-        assert_eq!(paired, [t5.clone(), t6.clone()].into());
-        let changing: IndexSet<String> = IndexSet::from_iter([t5.clone(), t6.clone()]);
+        assert_eq!(paired, [t5.to_string(), t6.to_string()].into());
+        let changing: IndexSet<String> = IndexSet::from_iter([t5.to_string(), t6.to_string()]);
         let none = IndexSet::default();
         let facts = MoveFacts {
             changing: &changing,
@@ -1068,7 +1073,7 @@ mod tests {
         };
         assert!(matches!(&test.kind, ExprKind::Unary(UnaryOp::Not, inner)
             if matches!(&inner.kind, ExprKind::Unary(UnaryOp::Not, e) if matches!(&e.kind, ExprKind::Binary(Op::LooseNe, ..)))));
-        assert_eq!(js::mentions_in(&body, &t5) + js::mentions_in(&body, &t6), 0);
+        assert_eq!(js::mentions_in(&body, t5.word()) + js::mentions_in(&body, t6.word()), 0);
     }
 
     // `if (c) { a(); x = v; } else { b(); x = v; }`, one assignment MIR
@@ -1159,12 +1164,17 @@ mod tests {
         assert!(matches!(of_float.kind, ExprKind::Unary(UnaryOp::Not, _)));
     }
 
-    // A temporary's name is one tidy knows; a program's of that shape isn't.
+    // A temporary's name is one tidy knows by its form; a program's of
+    // that shape is spelled apart, so its JS reads as no temporary's (S4).
     #[test]
     fn a_temporary_is_known_by_its_name_and_a_users_never_is() {
-        assert!(is_temporary(&temporary(5)));
-        assert!(is_temporary(&crate::names::given_apart(&temporary(5), 1)));
-        assert!(!is_temporary(&user_name("_5")));
+        assert!(is_temporary(&js::Name::temporary(temporary(5))));
+        assert!(is_temporary(&js::Name::temporary(crate::names::given_apart(
+            &temporary(5),
+            1
+        ))));
+        assert!(!is_temporary(&js::Name::from(user_name("_5"))));
+        assert!(!super::spelled_as_temporary(&user_name("_5")));
         assert_eq!(user_name("total"), "total");
     }
 

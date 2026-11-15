@@ -36,7 +36,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let value = state.locals.names[scope.local].clone();
             let mut functions = Vec::new();
             for &method in &scope.methods {
-                functions.push(self.scope_function(method, &value)?);
+                functions.push(self.scope_function(method, value.word())?);
             }
             let written = self.js_span(scope.written);
             let within = |s: &Stmt| !s.span.is_none() && s.span.lo >= written.lo && s.span.hi <= written.hi;
@@ -53,7 +53,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // Its fields, made the function's variables once tidy has read
             // its body (`scope_fields`).
-            self.scope_values.push((scope.function, value));
+            self.scope_values.push((scope.function, value.into_word()));
         }
         Ok(())
     }

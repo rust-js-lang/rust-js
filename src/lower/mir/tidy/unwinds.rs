@@ -604,7 +604,7 @@ fn hoist_read_after(body: &mut Vec<Stmt>, after: &[Stmt]) -> Vec<Stmt> {
             }
             StmtKind::Const(name, value) | StmtKind::Let(name, Some(value)) if read_after(name.word()) => {
                 hoisted.push(StmtKind::Let(name.clone(), None).at(stmt.span));
-                body.push(StmtKind::Assign(Expr::var(name.word()), value).at(stmt.span));
+                body.push(StmtKind::Assign(Expr::var(name), value).at(stmt.span));
             }
             kind => body.push(Stmt { kind, ..stmt }),
         }

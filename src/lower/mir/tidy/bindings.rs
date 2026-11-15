@@ -116,10 +116,10 @@ pub(in crate::lower::mir) fn unsuffixed_params(body: &mut [Stmt], module: &Index
                     if let ExprKind::Var(v) = &mut e.kind
                         && v.is(&name)
                     {
-                        *v = base.into();
+                        v.respell(base);
                     }
                 });
-                *params[i].names_mut().swap_remove(k) = base.into();
+                params[i].names_mut().swap_remove(k).respell(base);
             }
         }
     });
@@ -130,27 +130,42 @@ pub(in crate::lower::mir) fn unsuffixed_params(body: &mut [Stmt], module: &Index
 /// (`user_name`).
 pub(in crate::lower::mir) use crate::lower::temporary_names::temporary;
 
-use crate::lower::temporary_names::HELD_ARG;
+use crate::js::Name;
+use crate::lower::temporary_names::spelled_as_held_arg;
+pub(in crate::lower::mir) use crate::lower::temporary_names::spelled_as_temporary;
 
-/// A name the program gives a local, as JS's: one shaped as a temporary's,
-/// `let _5`, is `_5_`, so tidy never takes it for one and names it apart.
+/// A name the program gives a local, as JS's: one spelled as a temporary's,
+/// `let _5`, is `_5_`, so its JS reads as no temporary's.
 pub(in crate::lower::mir) fn user_name(name: &str) -> String {
-    match is_temporary(name) {
+    match spelled_as_temporary(name) {
         true => format!("{name}_"),
         false => name.to_string(),
     }
 }
 
-/// Whether `name` is MIR's lowering's of an argument it holds, `_arg`.
-pub(super) fn is_held_arg(name: &str) -> bool {
-    name.split('$').next() == Some(HELD_ARG)
+/// Whether `name` is MIR's lowering's of an argument it holds, `_arg`, or
+/// one given apart from it (`Name::held_arg`).
+pub(super) fn is_held_arg(name: &Name) -> bool {
+    checked(name, name.is_held_arg(), spelled_as_held_arg(name.word()))
 }
 
 /// Whether `name` is a temporary MIR made, `_5`, or one given apart from
-/// one, `_5$1`, not one the program names.
-pub(in crate::lower::mir) fn is_temporary(name: &str) -> bool {
-    name.strip_prefix('_')
-        .is_some_and(|n| !n.is_empty() && n.chars().all(|c| c.is_ascii_digit() || c == '$'))
+/// one, `_5$1`, not one the program names (`Name::temporary`).
+pub(in crate::lower::mir) fn is_temporary(name: &Name) -> bool {
+    checked(name, name.is_temporary(), spelled_as_temporary(name.word()))
+}
+
+/// `typed`, a name's form's answer, which is tidy's; where
+/// `RUST_JS_CHECK_NAMES` is set, in a debug build, checked against
+/// `spelled`, what its word says, the answer before names had forms (#1681
+/// change 3, S4): a name made of text, a `String`'s, where a name of its
+/// form should go on, is found where they differ.
+fn checked(name: &Name, typed: bool, spelled: bool) -> bool {
+    static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+    if cfg!(debug_assertions) && *ON.get_or_init(|| std::env::var_os("RUST_JS_CHECK_NAMES").is_some()) {
+        assert_eq!(typed, spelled, "`{name}`: its form and its word disagree");
+    }
+    typed
 }
 
 /// `const _5 = children;`, a temporary of a variable: `children` where it's
@@ -167,7 +182,7 @@ pub(super) fn alias_variables(body: &mut Vec<Stmt>, fixed: &IndexSet<String>) {
         let mut i = 0;
         while i < stmts.len() {
             if let StmtKind::Const(alias, value) = &stmts[i].kind
-                && (is_temporary(alias.word()) || fixed.contains(alias.word()))
+                && (is_temporary(alias) || fixed.contains(alias.word()))
                 && let ExprKind::Var(of) = &value.kind
             {
                 let last = (i + 1..stmts.len())
@@ -189,7 +204,7 @@ pub(super) fn alias_variables(body: &mut Vec<Stmt>, fixed: &IndexSet<String>) {
                     // Each read where it's written, else where the
                     // temporary was, which says which `if` the program
                     // wrote a test is of (`jumps::written_at`).
-                    let (alias, of, at) = (alias.clone(), Expr::var(of.word()), value.span);
+                    let (alias, of, at) = (alias.clone(), Expr::var(of), value.span);
                     stmts.remove(i);
                     if let Some(last) = last {
                         js::each_expr_mut(&mut stmts[i..last], &mut |e| {
@@ -261,7 +276,7 @@ pub(super) fn forwarded_values(stmts: &mut Vec<Stmt>) {
     let mut i = 0;
     while i + 2 < stmts.len() {
         if let StmtKind::Let(t, None) = &stmts[i].kind
-            && is_temporary(t.word())
+            && is_temporary(t)
             && let StmtKind::Assign(target, value) = &stmts[i + 2].kind
             && let ExprKind::Var(x) = &target.kind
             && matches!(&value.kind, ExprKind::Var(v) if v == t)
@@ -276,7 +291,7 @@ pub(super) fn forwarded_values(stmts: &mut Vec<Stmt>) {
                     if let StmtKind::Assign(target, _) = &mut stmt.kind
                         && matches!(&target.kind, ExprKind::Var(v) if *v == t)
                     {
-                        *target = Expr::var(x.word());
+                        *target = Expr::var(&x);
                     }
                 }
             });
@@ -321,7 +336,7 @@ pub(super) fn plain_reads(stmts: &mut Vec<Stmt>, plain: &IndexSet<String>, captu
     let mut i = 0;
     while i < stmts.len() {
         let read = match &stmts[i].kind {
-            StmtKind::Const(name, value) if is_temporary(name.word()) || captured.contains(name.word()) => {
+            StmtKind::Const(name, value) if is_temporary(name) || captured.contains(name.word()) => {
                 (value.reads_same() && super::plain_field(value, plain)).then(|| (name.clone(), value.clone()))
             }
             _ => None,
@@ -388,7 +403,7 @@ pub(super) fn named_temporaries(body: &mut Vec<Stmt>) {
                 },
                 _ => continue,
             };
-            if !is_temporary(&a) {
+            if !spelled_as_temporary(&a) {
                 continue;
             }
             let mut found = Vec::new();
@@ -465,9 +480,7 @@ pub(super) fn set_once_in_try(stmts: &[Stmt], a: &str) -> bool {
 pub(super) fn taking(stmts: &[Stmt], a: &str, found: &mut Vec<(String, usize)>) {
     for (j, stmt) in stmts.iter().enumerate() {
         match &stmt.kind {
-            StmtKind::Const(b, value)
-                if !is_temporary(b.word()) && matches!(&value.kind, ExprKind::Var(v) if v.is(a)) =>
-            {
+            StmtKind::Const(b, value) if !is_temporary(b) && matches!(&value.kind, ExprKind::Var(v) if v.is(a)) => {
                 found.push((b.to_string(), js::mentions_in(&stmts[j + 1..], b.word())));
             }
             StmtKind::If(_, then, otherwise) => {
@@ -530,7 +543,7 @@ pub(super) fn guarded_lets(stmts: &mut Vec<Stmt>, captured: &IndexSet<String>) {
                     },
                 ] = then.as_slice()
                     && matches!(&target.kind, ExprKind::Var(v) if v == x)
-                    && (is_temporary(x.word()) || captured.contains(x.word()))
+                    && (is_temporary(x) || captured.contains(x.word()))
                     && js::mentions_in(&stmts[i + 2..], x.word()) == 1 =>
             {
                 Some((x.clone(), Expr::cond(test.clone(), value.clone(), Expr::js_undefined())))
@@ -644,7 +657,7 @@ pub(super) fn aliases(
                 // for a prop, `const code = activeCode`, or a temporary,
                 // `const _5 = props`: the variable, read where that was.
                 let named = given.contains(a.word()) && !given.contains(b.word());
-                if !is_temporary(a.word()) && (captured.contains(b.word()) || is_temporary(b.word()) || named) {
+                if !is_temporary(a) && (captured.contains(b.word()) || is_temporary(&b) || named) {
                     let a = a.clone();
                     js::each_expr_mut(&mut stmts[j..], &mut |e| {
                         if let ExprKind::Var(v) = &mut e.kind
@@ -1025,11 +1038,17 @@ pub(super) fn declarations(body: &mut Vec<Stmt>) {
 }
 
 /// The names `stmts` declare, a destructuring's too, not in blocks inside
-/// them.
+/// them, their words (`declared_names`).
 pub(super) fn declared(stmts: &[Stmt]) -> impl Iterator<Item = &str> {
+    declared_names(stmts).map(Name::word)
+}
+
+/// The names `stmts` declare, a destructuring's too, not in blocks inside
+/// them.
+pub(super) fn declared_names(stmts: &[Stmt]) -> impl Iterator<Item = &Name> {
     stmts.iter().flat_map(|s| match &s.kind {
-        StmtKind::Const(name, _) | StmtKind::Let(name, _) => vec![name.word()],
-        StmtKind::Destructure { pattern, .. } => pattern.names(),
+        StmtKind::Const(name, _) | StmtKind::Let(name, _) => vec![name],
+        StmtKind::Destructure { pattern, .. } => pattern.bound(),
         _ => Vec::new(),
     })
 }
@@ -1048,12 +1067,12 @@ pub(super) fn paired_temporaries(body: &[Stmt]) -> IndexSet<String> {
     js::each_list(body, &mut |list| {
         for (k, stmt) in list.iter().enumerate() {
             match &stmt.kind {
-                StmtKind::Let(name, None) if is_temporary(name.word()) => {
+                StmtKind::Let(name, None) if is_temporary(name) => {
                     lets.insert(name.to_string());
                 }
                 StmtKind::Assign(target, value)
                     if let ExprKind::Var(name) = &target.kind
-                        && is_temporary(name.word()) =>
+                        && is_temporary(name) =>
                 {
                     let read_next =
                         (list.get(k + 1)).is_some_and(|s| js::mentions_in(std::slice::from_ref(s), name.word()) == 1);
@@ -1175,9 +1194,7 @@ fn lazily_filled(stmts: &[Stmt], i: usize) -> Option<(String, String)> {
     // the program's own name, `fnNode`, which stays.
     // Nor where a closure in the test reads it, which `substitute` can't
     // rename, so the test would read a `const` no longer declared (#1525).
-    let renamed = test
-        .substitute(&|v| read.is(v).then(|| Expr::var(var.word())))
-        .is_some();
+    let renamed = test.substitute(&|v| read.is(v).then(|| Expr::var(var))).is_some();
     let kept = !kin(var.word(), read.word())
         || test.mentions_var(var.word())
         || js::mentions_in(other, read.word()) > 0

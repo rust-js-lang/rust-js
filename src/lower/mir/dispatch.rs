@@ -1157,7 +1157,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // nothing else reads, there, `next_back` stepping its source from
             // its end; tidy drops the temporary nothing reads then.
             if let Some(js::ExprKind::Var(name)) = exprs.first().map(|e| &e.kind)
-                && let Some((local, _)) = state.locals.names.iter_enumerated().find(|(_, n)| name.is(n))
+                && let Some((local, _)) = state.locals.names.iter_enumerated().find(|(_, n)| name.is(n.word()))
                 && state.locals.reads[local] == 1
                 && let Some(map) = state.iter_locals.maps.get(&local)
             {

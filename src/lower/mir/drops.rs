@@ -223,12 +223,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// steps what it holds as Rust does, and has no `hold()`.
     pub(super) fn parameters_first(&self, state: &State<'_, 'tcx>) -> R<Vec<Stmt>> {
         // Each JS gives again that it changes, its copy (#1723).
-        let mut out = self.kept_starts(state.body, &state.parts, &|local| state.locals.names[local].clone())?;
+        let mut out = self.kept_starts(state.body, &state.parts, &|local| {
+            state.locals.names[local].clone().into_word()
+        })?;
         for local in state.body.args_iter() {
             let ty = state.body.local_decls[local].ty;
             if !crate::lower::recognition::is_compiled_std_iterator(self.tcx, ty)
                 && self.holds_dropped_iterator(state, local.into())
-                && !state.locals.names[local].is_empty()
+                && !state.locals.names[local].word().is_empty()
             {
                 let name = Expr::var(&state.locals.names[local]);
                 out.push(StmtKind::Expr(Expr::call_helper("$held", vec![name])).at(js::Span::NONE));
@@ -473,7 +475,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// name, a part's by its field's, `pair$a$live`. A temporary's is MIR's
     /// local's until tidy names it for what its drop is of (`tidy/flags.rs`).
     pub(super) fn flag_name(&mut self, state: &State<'_, 'tcx>, place: Place<'tcx>) -> String {
-        let mut name = match state.locals.names[place.local].as_str() {
+        let mut name = match state.locals.names[place.local].word() {
             "" => super::tidy::temporary(place.local.as_usize()),
             name => name.to_string(),
         };
@@ -986,7 +988,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             match stmt.kind {
                 StmtKind::Const(name, value) | StmtKind::Let(name, Some(value)) => {
                     out.push(StmtKind::Let(name.clone(), None).at(stmt.span));
-                    inner.push(StmtKind::Assign(Expr::var(name.word()), value).at(stmt.span));
+                    inner.push(StmtKind::Assign(Expr::var(name), value).at(stmt.span));
                 }
                 StmtKind::Let(name, None) => out.push(StmtKind::Let(name, None).at(stmt.span)),
                 kind => inner.push(Stmt { kind, span: stmt.span }),
@@ -1019,7 +1021,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             match stmt.kind {
                 StmtKind::Const(name, value) | StmtKind::Let(name, Some(value)) => {
                     out.push(StmtKind::Let(name.clone(), None).at(stmt.span));
-                    inner.push(StmtKind::Assign(Expr::var(name.word()), value).at(stmt.span));
+                    inner.push(StmtKind::Assign(Expr::var(name), value).at(stmt.span));
                 }
                 StmtKind::Let(name, None) => out.push(StmtKind::Let(name, None).at(stmt.span)),
                 kind => inner.push(Stmt { kind, span: stmt.span }),
@@ -1088,7 +1090,7 @@ pub(super) fn cleans_up<'tcx>(
 pub(super) fn flag_names(state: &State<'_, '_>, body: &mir::Body<'_>) -> IndexSet<String> {
     let given = constant_flags(body)
         .into_iter()
-        .map(|local| state.locals.names[local].clone());
+        .map(|local| state.locals.names[local].clone().into_word());
     state.naming.flag_names().into_iter().chain(given).collect()
 }
 

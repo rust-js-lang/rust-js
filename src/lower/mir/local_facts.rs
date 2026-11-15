@@ -370,7 +370,7 @@ impl<'m, 'tcx> LocalFacts<'m, 'tcx> {
     /// `local`'s variable, `name`, read: of one whose number a
     /// `#[rust_js::whole]` binding gave (`mir_wholes`), known whole, its
     /// `{}` JS's text of it (ADR 0994, amended).
-    pub(super) fn variable(&self, local: Local, name: &str) -> Expr {
+    pub(super) fn variable(&self, local: Local, name: &js::Name) -> Expr {
         self.value(local, Expr::var(name))
     }
 

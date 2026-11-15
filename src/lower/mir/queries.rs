@@ -805,7 +805,7 @@ fn given_once(state: &State<'_, '_>, local: Local) -> bool {
 /// nothing evaluated meanwhile can make another place.
 pub(super) fn settled_place(state: &State<'_, '_>, place: &Expr) -> bool {
     let settled = |name: &str| {
-        let named = || (state.locals.names.iter_enumerated()).filter(|&(_, n)| n == name);
+        let named = || (state.locals.names.iter_enumerated()).filter(|&(_, n)| n.is(name));
         named().next().is_some() && named().all(|(local, _)| given_once(state, local))
     };
     match &place.kind {
@@ -854,7 +854,7 @@ pub(super) fn same_place(state: &State<'_, '_>, place: &Expr) -> bool {
                 && (index.is_fixed()
                     || from_end(object, index)
                     || matches!(&index.kind, js::ExprKind::Var(name)
-                        if state.locals.names.iter_enumerated().any(|(l, n)| name.is(n) && given_once(state, l))))
+                        if state.locals.names.iter_enumerated().any(|(l, n)| name.is(n.word()) && given_once(state, l))))
         }
         _ => false,
     }

@@ -147,3 +147,44 @@ four mutations that took the mark away take the name's form instead.
 could see a read refused, has no fact to forget: the refusal is
 `output::refusal`'s, a function of the module, whose unit test gives it a
 local's read of `console`, and `tree-unvalidated` is held by that test.
+
+## S4a (2026-11-16)
+
+A MIR local's name is a `js::Name` of its form, `Locals.names:
+IndexVec<Local, Name>`: a temporary's, `_5`, is `Name::temporary`, and the
+name MIR's lowering holds an argument by, `_arg`, `Name::held_arg`, each
+made by `Base::name` as the name's word is picked, which decides the form
+once: of a MIR local, `Temporary` or `HeldArg`, its own; of another base,
+a temporary's where it's spelled as one, `_0` of a positional field's or
+`_$1` of an unread parameter's `_` given apart, as tidy has always taken
+them (`temporary_names::spelled_as_temporary`, that spelling's one owner).
+Tidy's `is_temporary` and `is_held_arg` ask the name's form, not its word.
+A rename that's a spelling of the same variable, reclaiming `node$1` as
+`node`, unsuffixing a parameter or giving one apart (`Name::given_apart`),
+is `respell`, which keeps the form; tidy's naming a temporary for what it
+holds, `_5` as `items`, makes the program's name of it.
+
+So the form goes on, a local's read is made of its name
+(`temporaries::read_by_name`, `LocalFacts::variable`), as is each read
+`Expr::var` makes of a name, never of its word; tidy's own temporaries,
+`applied_values`' `_$1`, are temporaries' names; a writer's text is its
+local's name from its making (`body_writer`) to its epilogue; an
+assignment's target that tidy folds, `OneAssignment::target`,
+`assigned_only`, `assigned_through` and `chained_arms`, is the name it
+assigns; a name made after another's, a closure's own copy of what it
+captured, `_24$1` of `_24`, is `FnCx::fresh_name`'s, of the form
+`Base::name` gives; and what tidy takes apart or declares again keeps its
+names, a destructuring's parts (`destructuring::Part`), a plain cell's
+reads, and the `let`s a loop's way out declares before it
+(`declared_names`, of `Pattern::bound`, whose words are `names()` and
+`declared`). The unit tests that build a temporary name it as lowering
+does (`Base::name`).
+
+What still keeps a name as text, tidy's sets of names, asks
+`spelled_as_temporary` of the word, its old answer, till S4b gives each a
+name. `RUST_JS_CHECK_NAMES`, in a debug build, checks each of
+`is_temporary`'s and `is_held_arg`'s answers against the word's, the
+answer before names had forms, and fails where they differ: the corpus
+passes with it set, and it stays, to be set again where a name's form
+changes (the lead's decision). The corpus, the snapshots and the port are
+as they were.

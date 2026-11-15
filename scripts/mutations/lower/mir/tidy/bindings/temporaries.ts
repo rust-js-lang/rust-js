@@ -80,7 +80,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a held argument a `try` assigns, `let _arg; try { _arg = .. }`, keeps MIR's lowering's name, not `arg`",
     file: "src/lower/mir/tidy/bindings/temporaries.rs",
-    find: "                StmtKind::Let(name, _) if is_held_arg(name.word()) => {\n                    renames.push((name.clone(), Vec::new(), Role::Arg))\n                }\n",
+    find: "                StmtKind::Let(name, _) if is_held_arg(name) => renames.push((name.clone(), Vec::new(), Role::Arg)),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^generic_drops_nothing.rs$"],
     snapshots: true,
@@ -90,7 +90,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a temporary that reads a positional field is named after it, `const _0 = result._0;`, a temporary's name, where its type's, `tok`, says what it holds (run 40)",
     file: "src/lower/mir/tidy/bindings/temporaries.rs",
-    find: "                            if !is_temporary(field) =>\n",
+    find: "                            if !spelled_as_temporary(field) =>\n",
     replace: "                            if true =>\n",
     tests: ["test/corpus.test.ts", "-t", "^match_clone_nested_results.rs$"],
     snapshots: true,

@@ -179,7 +179,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a named variable moved into a held prop takes the prop's name, `const code = ..`, and is read away",
     file: "src/lower/mir/tidy/bindings.rs",
-    find: "                if !is_temporary(a.word()) && (captured.contains(b.word()) || is_temporary(b.word()) || named) {",
+    find: "                if !is_temporary(a) && (captured.contains(b.word()) || is_temporary(&b) || named) {",
     replace: "                if false {",
     tests: [
       "test/jsx-children.test.ts",
@@ -209,8 +209,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a variable the program names, `const props = {..}`, aliased by a temporary, takes the temporary's place and is read away",
     file: "src/lower/mir/tidy/bindings.rs",
-    find: "if !is_temporary(a.word()) && (captured.contains(b.word()) || is_temporary(b.word()) || named) {",
-    replace: "if !is_temporary(a.word()) && (captured.contains(b.word()) || named) {",
+    find: "if !is_temporary(a) && (captured.contains(b.word()) || is_temporary(&b) || named) {",
+    replace: "if !is_temporary(a) && (captured.contains(b.word()) || named) {",
     tests: [
       "test/jsx-children.test.ts",
       "test/jsx-evaluation-order.test.ts",
@@ -588,8 +588,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `&mut` field binding of a flattened state, `Pending { value } | Blocked { value }`, holds its chunk under a name of its own, `const value = chunk; value.value ??= [];`, where upstream reads `chunk.value` (rd482)",
     file: "src/lower/mir/tidy/bindings.rs",
-    find: "                && (is_temporary(alias.word()) || fixed.contains(alias.word()))\n",
-    replace: "                && (is_temporary(alias.word()) || fixed.is_empty() && fixed.contains(alias.word()))\n",
+    find: "                && (is_temporary(alias) || fixed.contains(alias.word()))\n",
+    replace: "                && (is_temporary(alias) || fixed.is_empty() && fixed.contains(alias.word()))\n",
     // or_pattern_one_place's chunk is read in place without it now; the
     // flattened state of one variant's, `listen`'s `get_or_insert_with`,
     // isn't (the Nightly of 3c71ee8f9).

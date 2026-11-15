@@ -90,8 +90,20 @@ a span inside a macro:
    span there survives the case, as a held `rev()`'s source is marked by
    the variable's own rules too, so it has no mutation of its own.
 
-Still to move: the collect sources' lowering side (#1789), after
-m6-lily's S4.
+Still to move: the collect sources' lowering side (#1789). Its entry
+point, since ADR 1150's S4a (2026-11-16): `mir/locals.rs`'
+`in_place_source_names` maps each collect's span to its source's local's
+name, a `js::Name` of that local's form, `state.locals.names[local]`, not
+its word; `FnCx::note_in_place_sources` keeps the map in
+`locals.mir.in_place_sources`, and `mir.rs`' `in_place_source(span)`
+reads it, the source's variable and its fields projected. What's left is
+its key: each THIR collect node joined to MIR's call by
+`span_join::each_call_at`, as the analysis side's
+`body_queries/collect_sources.rs` already keys its sources by node, and
+the analysis's refusal of collects at one span whose sources differ
+(#1789) removed, with corpus case collect_in_place_in_a_macro given two
+sources apart and mutation collects-at-one-span-of-sources-apart
+retargeted.
 
 ## Consequences
 

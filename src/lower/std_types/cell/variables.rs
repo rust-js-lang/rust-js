@@ -293,7 +293,7 @@ fn outside_own_bindings<T>(items: &mut [js::Item], name: &str, change: impl FnOn
             for param in function.params.iter_mut() {
                 param.each_name_mut(&mut |n| {
                     if n.is(from) {
-                        *n = to.into();
+                        n.respell(to);
                     }
                 });
             }

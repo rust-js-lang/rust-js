@@ -281,7 +281,7 @@ pub(super) fn for_of(
         let first = inner.first_mut()?;
         match &mut first.kind {
             StmtKind::Const(_, value) | StmtKind::Let(_, Some(value)) if unboxed(value) => {
-                *value = Expr::var(item.word());
+                *value = Expr::var(item);
                 boxed = true;
             }
             _ if step == DICTIONARY => {}
@@ -838,7 +838,7 @@ fn counted_to_length(
     {
         return None;
     }
-    let test = Expr::bin(Op::Lt, Expr::var(name.word()), Expr::member(items.clone(), "length"));
+    let test = Expr::bin(Op::Lt, Expr::var(name), Expr::member(items.clone(), "length"));
     let step = match n {
         1 => js::Step::Up,
         n => js::Step::By(Op::Add, Expr::int(n)),

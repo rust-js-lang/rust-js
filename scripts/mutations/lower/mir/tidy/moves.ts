@@ -18,8 +18,8 @@ export const mutations: Mutation[] = [
     breaks:
       "what holds a place MIR's lowering fixed stays `const item = $unwrap(resource.state); return (item.loading & 4) === 0;`, an `&&` split around it, not read where it's read once (rd202)",
     file: "src/lower/mir/tidy/moves.rs",
-    find: "    if !is_temporary(name.word()) && !element && !facts.fixed.contains(name.word()) {\n",
-    replace: "    if !is_temporary(name.word()) && !element {\n",
+    find: "    if !is_temporary(name) && !element && !facts.fixed.contains(name.word()) {\n",
+    replace: "    if !is_temporary(name) && !element {\n",
     tests: ["test/corpus.test.ts", "-t", "^(cell_reached_through_a_call|unwrapped_cell_in_a_chain).rs$"],
     snapshots: true,
   },
@@ -117,8 +117,8 @@ export const mutations: Mutation[] = [
     breaks:
       "what an element made before a branch reads stays a `const className = cn(…)`, not read where it's written",
     file: "src/lower/mir/tidy/moves.rs",
-    find: "    if !is_temporary(name.word()) && !element && !facts.fixed.contains(name.word()) {\n",
-    replace: "    if !is_temporary(name.word()) && !facts.fixed.contains(name.word()) {\n",
+    find: "    if !is_temporary(name) && !element && !facts.fixed.contains(name.word()) {\n",
+    replace: "    if !is_temporary(name) && !facts.fixed.contains(name.word()) {\n",
     tests: [
       "test/jsx-children.test.ts",
       "test/jsx-evaluation-order.test.ts",
@@ -478,7 +478,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a field's function called with what needs statements is called from a variable, `const L = internals.d.L; ..; L(href, s)`, with no `this` (rd285)",
     file: "src/lower/mir/tidy/moves.rs",
-    find: "        if !is_temporary(name.word()) || mentions == 0 {\n",
+    find: "        if !is_temporary(name) || mentions == 0 {\n",
     replace: "        if true {\n",
     tests: ["test/lowering-held-receivers.test.ts"],
   },

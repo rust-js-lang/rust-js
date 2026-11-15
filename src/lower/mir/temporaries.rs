@@ -243,10 +243,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if !named && let Some(held) = self.cell_box_value(&mut expr, state.body.local_decls[local].ty) {
                 let name = state.locals.names[local].clone();
                 let value = std::mem::replace(held, Expr::var(&name));
-                made.push(StmtKind::Const(name.clone().into(), value).at(js::Span::NONE));
-                self.locals.mir.made.captured.insert(name.clone());
-                self.locals.mir.alike.insert(name.clone());
-                state.own_names.insert(name);
+                made.push(StmtKind::Const(name.clone(), value).at(js::Span::NONE));
+                self.locals.mir.made.captured.insert(name.clone().into_word());
+                self.locals.mir.alike.insert(name.clone().into_word());
+                state.own_names.insert(name.into_word());
                 state.in_place.insert(local, expr);
                 continue;
             }
@@ -275,7 +275,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let name = state.locals.names[local].clone();
             state.locals.declared[local] = true;
             note_marks(state, local, &expr);
-            made.push(StmtKind::Const(name.into(), expr).at(js::Span::NONE));
+            made.push(StmtKind::Const(name, expr).at(js::Span::NONE));
         }
         state.pending = kept;
         self.unwinding_to(state, unwind, made, out, Vec::new())
@@ -316,7 +316,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out: &mut Vec<Stmt>,
     ) {
         let guard = state.locals.names[guard].clone();
-        self.settle(state, &[block], Some(&guard), out);
+        self.settle(state, &[block], Some(guard.word()), out);
     }
 
     /// As `block`'s switch branches, its test made, each value kept to be
@@ -361,7 +361,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some(guard) => IndexSet::from_iter([guard]),
             None => (state.body.local_decls.iter_enumerated())
                 .filter(|(_, decl)| decl.ty.is_ref())
-                .map(|(local, _)| state.locals.names[local].as_str())
+                .map(|(local, _)| state.locals.names[local].word())
                 .filter(|name| self.locals.mir.plain.contains(*name))
                 .collect(),
         };
@@ -578,11 +578,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             return Ok(Value::Expr(value));
         }
-        match state.locals.names[local].as_str() {
+        let name = &state.locals.names[local];
+        match name.word() {
             "" => Ok(Value::Expr(Expr::js_undefined())),
             // A cell a pointer is taken to (ADR 0407): its `value`.
-            name if state.facts.pointed().locals.contains(&local) => Ok(Value::Expr(Expr::held(Expr::var(name)))),
-            name => Ok(Value::Expr(read_by_name(state, local, name))),
+            _ if state.facts.pointed().locals.contains(&local) => Ok(Value::Expr(Expr::held(Expr::var(name)))),
+            _ => Ok(Value::Expr(read_by_name(state, local, name))),
         }
     }
 
@@ -973,7 +974,7 @@ fn held_by_its_temporary(state: &State<'_, '_>, local: Local, mut value: Expr) -
 /// `local`'s variable, `name`, read: what its value's maker marked it
 /// (`IterLocals::marks`) on the name, as on the value written to it. The one
 /// read of a local by its name, its place's (`place_expr`) too.
-pub(super) fn read_by_name(state: &State<'_, '_>, local: Local, name: &str) -> Expr {
+pub(super) fn read_by_name(state: &State<'_, '_>, local: Local, name: &js::Name) -> Expr {
     let mut read = state.facts.variable(local, name);
     if let Some(&marks) = state.iter_locals.marks.get(&local) {
         read.facts = read.facts.and(marks);

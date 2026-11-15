@@ -360,8 +360,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a loop's `let has_more_work;` given in a `try` of a drop guard's keeps what's after the loop in the `break`'s branch (rd352)",
     file: "src/lower/mir/tidy/jumps/labels.rs",
-    find: "StmtKind::Const(n, _) | StmtKind::Let(n, None) if n.is(name));\n",
-    replace: "StmtKind::Const(n, _) if n.is(name));\n",
+    find: "StmtKind::Const(n, _) | StmtKind::Let(n, None) if n == name);\n",
+    replace: "StmtKind::Const(n, _) if n == name);\n",
     tests: ["test/lowering-early-exits.test.ts", "-t", "whose turn gives its variable"],
   },
   {

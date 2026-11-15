@@ -164,7 +164,7 @@ fn moved(stmt: &Stmt, rest: &[Stmt], facts: &MoveFacts) -> Option<(Moved, Why)> 
     // A temporary MIR made, or an element made ahead of a branch: what the
     // program didn't name.
     let element = facts.captured.contains(name.word());
-    if !is_temporary(name.word()) && !element && !facts.fixed.contains(name.word()) {
+    if !is_temporary(name) && !element && !facts.fixed.contains(name.word()) {
         return None;
     }
     // What may run before it's read: what does nothing, where it does
@@ -780,7 +780,7 @@ pub(super) fn set_where_read(stmts: &mut Vec<Stmt>, at: usize) -> bool {
     };
     let mut reads = 0;
     test.visit_vars(&mut |v| reads += usize::from(name.is(v)));
-    let set = Expr::assigned(Expr::var(name.word()), value.clone());
+    let set = Expr::assigned(Expr::var(name), value.clone());
     let in_place = (reads == 1 && leads(test, name.word(), None, &|e| !e.has_effects()) == Some(true))
         .then(|| test.substitute(&|v| name.is(v).then(|| set.clone())))
         .flatten();
@@ -816,7 +816,7 @@ pub(super) fn held_receivers(stmts: &mut Vec<Stmt>) {
             continue;
         };
         let mentions = js::mentions_in(&stmts[i + 1..], name.word());
-        if !is_temporary(name.word()) || mentions == 0 {
+        if !is_temporary(name) || mentions == 0 {
             continue;
         }
         let (name, object, property) = (name.clone(), (**object).clone(), property.clone());
@@ -839,7 +839,7 @@ pub(super) fn held_receivers(stmts: &mut Vec<Stmt>) {
         let in_place = matches!(object.kind, ExprKind::Var(_));
         let held = match in_place {
             true => object.clone(),
-            false => Expr::var(name.word()),
+            false => Expr::var(&name),
         };
         // Each mention a call of it, the statement's own or one a branch of
         // its value makes.
@@ -885,6 +885,11 @@ mod tests {
         Expr::call(Expr::var(f), args)
     }
 
+    /// The temporary `_1`, as lowering makes it.
+    fn t1() -> js::Name {
+        js::Name::temporary("_1".to_string())
+    }
+
     /// What `moved` says of `body`'s first statement, a temporary, given
     /// nothing in the body changed or set.
     fn decided(body: &[Stmt]) -> Option<Why> {
@@ -907,9 +912,9 @@ mod tests {
     fn a_read_stays_before_a_call_that_may_change_it() {
         let read = Expr::member(Expr::var("object"), "field");
         let body = [
-            stmt(StmtKind::Const("_1".into(), read)),
+            stmt(StmtKind::Const(t1(), read)),
             stmt(StmtKind::Expr(call("change", vec![Expr::var("object")]))),
-            stmt(StmtKind::Expr(call("consume", vec![Expr::var("_1")]))),
+            stmt(StmtKind::Expr(call("consume", vec![Expr::var(t1())]))),
         ];
         assert_eq!(decided(&body), None);
     }
@@ -920,8 +925,8 @@ mod tests {
     fn what_does_nothing_of_what_nothing_changes_is_stable() {
         let sum = Expr::bin(Op::Add, Expr::var("a"), Expr::int(1));
         let body = [
-            stmt(StmtKind::Const("_1".into(), sum)),
-            stmt(StmtKind::Expr(call("consume", vec![Expr::var("_1")]))),
+            stmt(StmtKind::Const(t1(), sum)),
+            stmt(StmtKind::Expr(call("consume", vec![Expr::var(t1())]))),
         ];
         assert_eq!(decided(&body), Some(Why::Stable));
     }
@@ -931,8 +936,8 @@ mod tests {
     #[test]
     fn a_call_read_first_where_its_read_moves() {
         let body = [
-            stmt(StmtKind::Const("_1".into(), call("f", Vec::new()))),
-            stmt(StmtKind::Expr(call("g", vec![Expr::var("_1")]))),
+            stmt(StmtKind::Const(t1(), call("f", Vec::new()))),
+            stmt(StmtKind::Expr(call("g", vec![Expr::var(t1())]))),
         ];
         assert_eq!(decided(&body), Some(Why::ReadFirst));
     }
@@ -942,8 +947,8 @@ mod tests {
     #[test]
     fn a_call_after_another_where_its_read_stays() {
         let body = [
-            stmt(StmtKind::Const("_1".into(), call("f", Vec::new()))),
-            stmt(StmtKind::Expr(call("g", vec![call("h", Vec::new()), Expr::var("_1")]))),
+            stmt(StmtKind::Const(t1(), call("f", Vec::new()))),
+            stmt(StmtKind::Expr(call("g", vec![call("h", Vec::new()), Expr::var(t1())]))),
         ];
         assert_eq!(decided(&body), None);
     }
@@ -953,9 +958,9 @@ mod tests {
     #[test]
     fn a_call_past_a_statement_that_acts_stays() {
         let body = [
-            stmt(StmtKind::Const("_1".into(), call("f", Vec::new()))),
+            stmt(StmtKind::Const(t1(), call("f", Vec::new()))),
             stmt(StmtKind::Expr(call("h", Vec::new()))),
-            stmt(StmtKind::Expr(call("g", vec![Expr::var("_1")]))),
+            stmt(StmtKind::Expr(call("g", vec![Expr::var(t1())]))),
         ];
         assert_eq!(decided(&body), None);
     }

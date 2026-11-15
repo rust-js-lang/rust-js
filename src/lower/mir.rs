@@ -193,7 +193,7 @@ pub(super) struct Found {
     /// Of a body lowered from its MIR, the `Vec` each `collect()` std may
     /// make in place is made of, by the call's span: its variable's name,
     /// `in_place_collect_sources`'s (#1259).
-    pub(super) in_place_sources: crate::collections::IndexMap<rustc_span::Span, String>,
+    pub(super) in_place_sources: crate::collections::IndexMap<rustc_span::Span, js::Name>,
     /// Of a body lowered from its MIR, the temporaries a function that skips
     /// what's falsy is given, whose `test ? value : undefined` is given as
     /// `test && value` (`#[rust_js::skips_falsy]`) where it's moved to.
@@ -241,7 +241,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// sink itself, a handle on its text as a `String`'s `&mut` is, which
     /// a struct holds and generic code writes through, `h.value += s`
     /// (#1637).
-    fn writer_set_up(&self, state: &mut State<'_, 'tcx>, body: &mir::Body<'tcx>, aliases: Vec<Local>, name: String) {
+    fn writer_set_up(&self, state: &mut State<'_, 'tcx>, body: &mir::Body<'tcx>, aliases: Vec<Local>, name: js::Name) {
         state.builders = self.writer_builders(body, &aliases);
         let sink = self.writer_owner_writes_through_a_sink(state);
         for &alias in &aliases {
@@ -251,17 +251,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
         }
         for &alias in aliases.iter().chain(state.builders.keys()) {
-            state.locals.names[alias] = String::new();
+            state.locals.names[alias] = String::new().into();
             state.locals.declared[alias] = true;
         }
-        state.locals.names[mir::RETURN_PLACE] = String::new();
+        state.locals.names[mir::RETURN_PLACE] = String::new().into();
         state.writer = Some((aliases, name));
     }
 }
 
 struct Locals {
-    /// Each one's JS name, empty for one of `()`, which holds nothing.
-    names: IndexVec<Local, String>,
+    /// Each one's JS name, empty for one of `()`, which holds nothing: a
+    /// temporary's of its form (`Name::temporary`, #1681 change 3, S4).
+    names: IndexVec<Local, js::Name>,
     /// How many times each is read, as an operand or a place's base.
     reads: IndexVec<Local, usize>,
     /// How many times each is assigned.
@@ -287,14 +288,23 @@ struct Locals {
 }
 
 impl Locals {
+    /// Each one's name's word, of those that hold something (S4a: till S4b
+    /// gives the sets of names their names).
+    fn words(&self) -> IndexSet<String> {
+        (self.names.iter())
+            .filter(|n| !n.word().is_empty())
+            .map(|n| n.word().to_string())
+            .collect()
+    }
+
     /// What tidy's last passes ask of them, by name: those the program
     /// names (`user`), those it gives a JS name (`given`), and its
     /// `String`s (`text`).
     fn named(&self) -> tidy::Named {
         let names = |of: &IndexVec<Local, bool>| -> IndexSet<String> {
             (self.names.iter_enumerated())
-                .filter(|&(local, name)| of[local] && !name.is_empty())
-                .map(|(_, name)| name.clone())
+                .filter(|&(local, name)| of[local] && !name.word().is_empty())
+                .map(|(_, name)| name.word().to_string())
                 .collect()
         };
         tidy::Named {
@@ -447,7 +457,7 @@ struct State<'m, 'tcx> {
     cuts: IndexMap<Local, (Expr, Expr, VariantIdx)>,
     /// A writer's `Formatter` (ADR 0054): the locals that are it, and the
     /// string it writes to, which the writer gives back.
-    writer: Option<(Vec<Local>, String)>,
+    writer: Option<(Vec<Local>, js::Name)>,
     /// Of a closure that writes to its maker's `Formatter`, which it
     /// captured: the string it writes to is its maker's, which it neither
     /// makes nor gives back (ADR 0539).
@@ -474,8 +484,7 @@ impl<'tcx> State<'_, 'tcx> {
     /// The `let` of each value settled before a drop (`settle_reads`),
     /// first in the function's body.
     fn settled_lets(&self) -> impl Iterator<Item = Stmt> + '_ {
-        (self.settled.iter())
-            .map(|&local| StmtKind::Let(self.locals.names[local].clone().into(), None).at(js::Span::NONE))
+        (self.settled.iter()).map(|&local| StmtKind::Let(self.locals.names[local].clone(), None).at(js::Span::NONE))
     }
 }
 
@@ -748,11 +757,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // One the program names nothing and reads nowhere, `_: Ref`,
         // is `_`.
         if unnamed(&state.locals, local) {
-            state.locals.names[local] = String::new();
+            state.locals.names[local] = String::new().into();
         }
-        let name = match state.locals.names[local].as_str() {
-            "" => self.fresh(Role::Unread),
-            name => name.to_string(),
+        let name = match state.locals.names[local].word() {
+            "" => Base::from(Role::Unread).name(self.fresh(Role::Unread)),
+            _ => state.locals.names[local].clone(),
         };
         state.locals.names[local].clone_from(&name);
         // A `&mut` to a value JS can't change in place: the box its
@@ -764,19 +773,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             false => self.param_is_box(mir_body.source.def_id(), local.as_usize() - 1),
         };
         if boxed {
-            boxes.insert(name.clone());
+            boxes.insert(name.word().to_string());
         }
         // One taken by value whose address is taken, `&raw mut n`:
         // a cell of its own, made of what it's given, as a local
         // one a pointer is taken to is (ADR 0407, #1381). Its
         // callers give the value.
         if !boxed && state.facts.pointed().locals.contains(&local) {
-            let cell = self.fresh(Base::Named(&name));
-            state.locals.names[local].clone_from(&cell);
-            cell_params.push((cell, name.clone()));
-            return js::Pattern::Name(name.into());
+            let cell = self.fresh(Base::Named(name.word()));
+            state.locals.names[local] = cell.as_str().into();
+            cell_params.push((cell, name.word().to_string()));
+            return js::Pattern::Name(name);
         }
-        js::Pattern::Name(name.into())
+        js::Pattern::Name(name)
     }
 
     /// A function's last parameters, as JS takes them. A C-variadic
@@ -968,7 +977,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         .flatten()
         .map(|i| Local::from_usize(i + 1 + usize::from(captures.is_some())));
         let named = formatter.map(|param| (param, state.locals.names[param].clone()));
-        let named = named.as_ref().map(|(param, name)| (*param, name.as_str()));
+        let named = named.as_ref().map(|(param, name)| (*param, name));
         if let Some((aliases, name)) = self.body_writer(&mut state, mir_body, named, captures.as_deref())? {
             self.writer_set_up(&mut state, mir_body, aliases, name);
         }
@@ -1024,27 +1033,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let borrowed_names = (state.locals.borrowed.iter_enumerated())
             .filter(|&(_, &borrowed)| borrowed)
-            .map(|(local, _)| state.locals.names[local].clone())
+            .map(|(local, _)| state.locals.names[local].word().to_string())
             .collect();
-        state.own_names = state.locals.names.iter().filter(|n| !n.is_empty()).cloned().collect();
+        state.own_names = state.locals.words();
         for (local, name) in state.locals.names.iter_enumerated() {
-            if !name.is_empty() && self.is_cell(mir_body.local_decls[local].ty) {
+            if !name.word().is_empty() && self.is_cell(mir_body.local_decls[local].ty) {
                 self.locals.mir.cells.push(Expr::var(name));
             }
         }
         // What reads the same wherever it's read.
         for (local, name) in state.locals.names.iter_enumerated() {
-            if name.is_empty() || state.locals.borrowed[local] || state.locals.changed[local] {
+            if name.word().is_empty() || state.locals.borrowed[local] || state.locals.changed[local] {
                 continue;
             }
             let plain = self.plain_type(mir_body.local_decls[local].ty);
             if written_apart(&state, local, |place| self.whole(mir_body, place)) {
                 if plain {
-                    self.locals.mir.settled.insert(name.clone());
+                    self.locals.mir.settled.insert(name.clone().into_word());
                 }
                 continue;
             }
-            self.locals.mir.alike.insert(name.clone());
+            self.locals.mir.alike.insert(name.clone().into_word());
             // What's to through a `&mut` changes by what it's given to.
             let through_mut = matches!(
                 mir_body.local_decls[local].ty.kind(),
@@ -1065,7 +1074,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => Vec::new(),
             };
             if plain {
-                self.note_plain(name, mir_body.local_decls[local].ty);
+                self.note_plain(name.word(), mir_body.local_decls[local].ty);
             }
             self.locals.mir.plain.extend(fields);
             // Of an array, of what may be JS's, its items, which only a
@@ -1104,7 +1113,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         for local in mir_body.local_decls.indices() {
             if mir_body.local_kind(local) != LocalKind::Arg
                 && !state.locals.declared[local]
-                && !state.locals.names[local].is_empty()
+                && !state.locals.names[local].word().is_empty()
                 && (queries::written_again(&state, local) || flagged[local.as_usize()])
             {
                 self.check_variable(&state, local, def_span)?;
@@ -1113,10 +1122,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 out.push(
                     match state.facts.pointed().locals.contains(&local) {
                         true => StmtKind::Const(
-                            name.into(),
+                            name,
                             Expr::object(vec![js::Prop::Field(js::HELD.into(), Expr::js_undefined())]),
                         ),
-                        false => StmtKind::Let(name.into(), None),
+                        false => StmtKind::Let(name, None),
                     }
                     .at(js::Span::NONE),
                 );
@@ -1162,7 +1171,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         tidy::tidy(
             &mut out,
             &tidy::Hints {
-                result: &state.locals.names[mir::RETURN_PLACE],
+                result: state.locals.names[mir::RETURN_PLACE].word(),
                 falsy: &falsy,
                 tested: &tested,
                 written: &written,

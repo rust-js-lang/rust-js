@@ -44,7 +44,7 @@ pub(super) fn copied_bindings(stmts: &mut Vec<Stmt>, user: &IndexSet<String>) {
                 false => absent(test, a.word()),
             };
             let (a, b) = (a.clone(), b.clone());
-            if !tested || is_temporary(a.word()) || is_temporary(b.word()) || a == b {
+            if !tested || is_temporary(&a) || is_temporary(&b) || a == b {
                 continue;
             }
             // The variable set again only past each read of the binding,
@@ -70,8 +70,8 @@ pub(super) fn copied_bindings(stmts: &mut Vec<Stmt>, user: &IndexSet<String>) {
             && let StmtKind::Const(b, value) = &stmts[i + 1].kind
             && let ExprKind::Var(a) = &value.kind
             && absent(test, a.word())
-            && !is_temporary(a.word())
-            && !is_temporary(b.word())
+            && !is_temporary(a)
+            && !is_temporary(b)
             && a != b
         {
             let (a, b) = (a.to_string(), b.to_string());
@@ -96,7 +96,7 @@ pub(super) fn copied_bindings(stmts: &mut Vec<Stmt>, user: &IndexSet<String>) {
                     if let StmtKind::Const(n, _) | StmtKind::Let(n, _) = &mut stmt.kind
                         && n.is(&from)
                     {
-                        *n = to.clone().into();
+                        n.respell(to.clone());
                     }
                 }
                 js::each_expr_mut(&mut stmts[at..], &mut |e| {
@@ -144,8 +144,8 @@ fn named_for_bindings(stmts: &mut [Stmt], user: &IndexSet<String>) {
         let own = (stmts[..i].iter()).any(|s| matches!(&s.kind, StmtKind::Const(n, _) | StmtKind::Let(n, _) if n == a));
         if user.contains(a.word())
             || !user.contains(b.word())
-            || is_temporary(a.word())
-            || is_temporary(b.word())
+            || is_temporary(a)
+            || is_temporary(b)
             || !own
             || !tests_present(test, a.word())
             || declared(b.word(), stmts) != 1

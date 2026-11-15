@@ -102,7 +102,7 @@ pub(in crate::lower::mir::tidy) fn readable_temporaries(
             && let ExprKind::Member(object, key) = &of.kind
             && key == js::DICTIONARY
             && let ExprKind::Var(v) = &object.kind
-            && is_temporary(v.word())
+            && is_temporary(v)
         {
             given
                 .entry(v.to_string())
@@ -112,7 +112,7 @@ pub(in crate::lower::mir::tidy) fn readable_temporaries(
             for prop in &jsx.props {
                 if let js::Prop::Field(key, value) = prop
                     && let ExprKind::Var(v) = &value.kind
-                    && (is_temporary(v.word()) || is_held_arg(v.word()))
+                    && (is_temporary(v) || is_held_arg(v))
                     && key.chars().all(|c| c.is_ascii_alphanumeric())
                 {
                     given.entry(v.to_string()).or_insert_with(|| key.clone());
@@ -120,7 +120,7 @@ pub(in crate::lower::mir::tidy) fn readable_temporaries(
             }
             for child in &jsx.children {
                 if let ExprKind::Var(v) = &child.kind
-                    && (is_temporary(v.word()) || is_held_arg(v.word()))
+                    && (is_temporary(v) || is_held_arg(v))
                 {
                     given
                         .entry(v.to_string())
@@ -134,23 +134,23 @@ pub(in crate::lower::mir::tidy) fn readable_temporaries(
         for stmt in list.iter() {
             match &stmt.kind {
                 StmtKind::Const(name, value)
-                    if !is_temporary(name.word())
+                    if !is_temporary(name)
                         && let Some((_, role)) = spilled.iter().find(|(n, _)| name.is(n))
                         && role.says_nothing() =>
                 {
                     renames.push((name.clone(), held_names(value), **role));
                 }
-                StmtKind::Const(name, value) if is_temporary(name.word()) || is_held_arg(name.word()) => {
-                    let any = match is_held_arg(name.word()) {
+                StmtKind::Const(name, value) if is_temporary(name) || is_held_arg(name) => {
+                    let any = match is_held_arg(name) {
                         true => Role::Arg,
                         false => Role::Value,
                     };
                     let names = match (given.get(name.word()), &value.kind) {
                         (Some(prop), _) => vec![prop.clone()],
-                        (None, _) if is_held_arg(name.word()) => Vec::new(),
+                        (None, _) if is_held_arg(name) => Vec::new(),
                         // Not a positional field's, `_0`, a temporary's name.
                         (None, ExprKind::Member(_, field) | ExprKind::OptionalMember(_, field))
-                            if !is_temporary(field) =>
+                            if !spelled_as_temporary(field) =>
                         {
                             vec![field.clone()]
                         }
@@ -158,7 +158,7 @@ pub(in crate::lower::mir::tidy) fn readable_temporaries(
                         (None, _)
                             if let Some(ExprKind::Member(_, field) | ExprKind::OptionalMember(_, field)) =
                                 crate::lower::copies::copied_source(value).map(|source| &source.kind)
-                                && !is_temporary(field) =>
+                                && !spelled_as_temporary(field) =>
                         {
                             vec![field.clone()]
                         }
@@ -167,7 +167,7 @@ pub(in crate::lower::mir::tidy) fn readable_temporaries(
                     // Else what made its value suggests, its call's name
                     // (#890, #837); not an argument held, which MIR's rule
                     // names `arg`.
-                    let names = match names.is_empty() && !is_held_arg(name.word()) {
+                    let names = match names.is_empty() && !is_held_arg(name) {
                         true => held_names(value),
                         false => names,
                     };
@@ -175,10 +175,8 @@ pub(in crate::lower::mir::tidy) fn readable_temporaries(
                 }
                 // Held in a `try` that assigns it, `let _arg; try { _arg = .. }`,
                 // as what it's given as is: `arg`.
-                StmtKind::Let(name, _) if is_held_arg(name.word()) => {
-                    renames.push((name.clone(), Vec::new(), Role::Arg))
-                }
-                StmtKind::Let(name, _) if is_temporary(name.word()) => {
+                StmtKind::Let(name, _) if is_held_arg(name) => renames.push((name.clone(), Vec::new(), Role::Arg)),
+                StmtKind::Let(name, _) if is_temporary(name) => {
                     renames.push((
                         name.clone(),
                         suggested.get(name.word()).cloned().unwrap_or_default(),

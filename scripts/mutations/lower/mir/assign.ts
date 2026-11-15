@@ -400,7 +400,7 @@ export const mutations: Mutation[] = [
     breaks:
       "MIR's `*f = g` of a closure through a `&mut` only gives the parameter another",
     file: "src/lower/mir/assign.rs",
-    find: "            && matches!(target.kind, js::ExprKind::Var(ref name) if name.is(&state.locals.names[base.local]))\n",
+    find: "            && matches!(target.kind, js::ExprKind::Var(ref name) if name.is(state.locals.names[base.local].word()))\n",
     replace: "            && false\n",
     tests: [
       "test/lowering.test.ts",
@@ -738,9 +738,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a temporary's place read in place, `s.v`, through a reference reassigned while it's borrowed, `s = o`, is the new one's",
     file: "src/lower/mir/assign.rs",
-    find: "            .chain(state.in_place.iter())\n            .filter(|(_, target)| root_var(target) == Some(name.as_str()))\n",
+    find: "            .chain(state.in_place.iter())\n            .filter(|(_, target)| root_var(target) == Some(name.word()))\n",
     replace:
-      "            .filter(|(_, target)| root_var(target) == Some(name.as_str()))\n",
+      "            .filter(|(_, target)| root_var(target) == Some(name.word()))\n",
     tests: [
       "test/corpus.test.ts",
       "-t",

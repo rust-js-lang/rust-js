@@ -509,7 +509,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         part.visit_vars(&mut |name| plain &= this.plain_local(name));
                         let kept = plain
                             || matches!(&part.kind, js::ExprKind::Var(name)
-                            if holders.iter().any(|&held| name.is(&state.locals.names[held])));
+                            if holders.iter().any(|&held| name.is(state.locals.names[held].word())));
                         parts.push(match kept {
                             true => part,
                             false => {
@@ -1078,7 +1078,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // Of a variable of this body or a field of one, `copy.pages`.
                     let local = match root_var(&place) {
                         Some(name) if fixed_place(&place) => {
-                            state.locals.names.iter_enumerated().find(|(_, n)| *n == name)
+                            state.locals.names.iter_enumerated().find(|(_, n)| n.is(name))
                         }
                         _ => None,
                     };
@@ -1220,7 +1220,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         (true, Value::Ref(place) | Value::Expr(place)) if fixed_place(&place) => {
                             let local = match &place.kind {
                                 js::ExprKind::Var(name) => (state.locals.names.iter_enumerated())
-                                    .find(|(l, n)| name.is(n) && state.body.local_decls[*l].ty.is_ref())
+                                    .find(|(l, n)| name.is(n.word()) && state.body.local_decls[*l].ty.is_ref())
                                     .map(|(l, _)| l),
                                 _ => None,
                             };

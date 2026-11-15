@@ -300,7 +300,7 @@ pub(in crate::lower::mir::tidy) fn read_handles(
             && let Some((_, place, at_once, _)) = read(v.word())
         {
             let read = match at_once {
-                true => Expr::var(v.word()),
+                true => Expr::var(v),
                 false => place.clone(),
             };
             *e = Expr { span: e.span, ..read };

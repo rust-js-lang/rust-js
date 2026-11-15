@@ -216,11 +216,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         true => {
                             let name = state.locals.names[place.local].clone();
                             self.flush(state, out)?;
-                            let held = self.spill(Base::Named(&name), Expr::var(&name), out);
+                            let held = self.spill(Base::Named(name.word()), Expr::var(&name), out);
                             // A place holds no closure, so `substitute` renames
                             // it; else it's refused (#1525).
                             target
-                                .substitute(&|v| (v == name).then(|| held.clone()))
+                                .substitute(&|v| name.is(v).then(|| held.clone()))
                                 .ok_or_else(|| {
                                     self.unsupported(span, "a place a closure reads, which can't be renamed")
                                 })?
@@ -270,7 +270,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             .is_some_and(|field| self.property_cell(Some(field), pointee).is_some()))
                 {
                     true => (
-                        self.local_reference_written(state, place) && !state.locals.names[place.local].is_empty(),
+                        self.local_reference_written(state, place)
+                            && !state.locals.names[place.local].word().is_empty(),
                         self.reached_through_written(state, place),
                     ),
                     false => (false, false),
@@ -288,11 +289,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     self.flush(state, out)?;
                     if local {
                         let name = state.locals.names[place.local].clone();
-                        let held = self.spill(Base::Named(&name), Expr::var(&name), out);
+                        let held = self.spill(Base::Named(name.word()), Expr::var(&name), out);
                         // A place holds no closure, so `substitute` renames it;
                         // else it's refused, never left reading the variable
                         // the snapshot stands for (#1525).
-                        target = (target.substitute(&|v| (v == name).then(|| held.clone())))
+                        target = (target.substitute(&|v| name.is(v).then(|| held.clone())))
                             .ok_or_else(|| self.unsupported(span, "a place a closure reads, which can't be renamed"))?;
                     }
                     if within {

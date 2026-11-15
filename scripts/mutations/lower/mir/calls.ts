@@ -683,7 +683,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a variable of the program's a call through a field gives no `this` is called `(0, ping)()`, so a closure that only calls it, `|_| ping()`, is no longer the function it calls, `addEventListener(\"load\", ping)` (rd579)",
     file: "src/lower/mir/calls.rs",
-    find: "            && !super::tidy::is_temporary(name.word())\n        {\n            return Ok(Value::Expr(Expr::call(*callee, args)));\n",
+    find: "            && !super::tidy::is_temporary(name)\n        {\n            return Ok(Value::Expr(Expr::call(*callee, args)));\n",
     replace: "            && false\n        {\n            return Ok(Value::Expr(Expr::call(*callee, args)));\n",
     tests: ["test/lowering-passed-on.test.ts", "-t", "a closure that ignores what it's given is the function it calls"],
   },

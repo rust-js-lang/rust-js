@@ -172,7 +172,7 @@ pub(in crate::lower) fn read_of_its_parameter(function: &js::Function) -> Option
             js::ExprKind::Index(of, key) if matches!(key.kind, js::ExprKind::Str(_) | js::ExprKind::Num(_)) => {
                 Some(Expr::index(path(of, param)?, (**key).clone()))
             }
-            js::ExprKind::Var(name) if name.is(param) => Some(Expr::var(name.word())),
+            js::ExprKind::Var(name) if name.is(param) => Some(Expr::var(name)),
             _ => None,
         }
     }

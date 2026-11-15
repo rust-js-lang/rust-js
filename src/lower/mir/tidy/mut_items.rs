@@ -113,7 +113,7 @@ fn index_loop(stmt: &Stmt, mentions: &mut IndexMap<String, usize>) -> Option<Vec
     let mut body = body.clone();
     js::each_expr_mut(&mut body, &mut |e| {
         if held(e) {
-            e.kind = ExprKind::Index(Box::new(array.clone()), Box::new(Expr::var(index.word())));
+            e.kind = ExprKind::Index(Box::new(array.clone()), Box::new(Expr::var(&index)));
         }
     });
     let length = |a: &Expr| Expr::member(a.clone(), "length");
@@ -127,12 +127,10 @@ fn index_loop(stmt: &Stmt, mentions: &mut IndexMap<String, usize>) -> Option<Vec
             let shorter = Expr::call(min, vec![length(&array), length(b)]);
             made.push(StmtKind::Const(bound.clone().into(), shorter).at(js::Span::NONE));
             let bound_item = match item {
-                js::Pattern::Name(name) => {
-                    StmtKind::Const(name.clone(), Expr::index(b.clone(), Expr::var(index.word())))
-                }
+                js::Pattern::Name(name) => StmtKind::Const(name.clone(), Expr::index(b.clone(), Expr::var(&index))),
                 pattern => StmtKind::Destructure {
                     pattern: pattern.clone(),
-                    value: Expr::index(b.clone(), Expr::var(index.word())),
+                    value: Expr::index(b.clone(), Expr::var(&index)),
                     mutable: false,
                 },
             };
@@ -145,7 +143,7 @@ fn index_loop(stmt: &Stmt, mentions: &mut IndexMap<String, usize>) -> Option<Vec
             label: label.clone(),
             name: index.clone(),
             start: Expr::int(0),
-            test: Expr::bin(Op::Lt, Expr::var(index.word()), test),
+            test: Expr::bin(Op::Lt, Expr::var(index), test),
             step: js::Step::Up,
             body,
         }

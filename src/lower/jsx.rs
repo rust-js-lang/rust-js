@@ -75,7 +75,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     match &mut statement.kind {
                         StmtKind::Const(name, value) | StmtKind::Let(name, Some(value)) => {
                             out.push(StmtKind::Let(name.clone(), None).at(statement.span));
-                            statement.kind = StmtKind::Assign(Expr::var(name.word()), value.clone());
+                            statement.kind = StmtKind::Assign(Expr::var(&*name), value.clone());
                         }
                         StmtKind::Let(name, None) => {
                             out.push(StmtKind::Let(name.clone(), None).at(statement.span));

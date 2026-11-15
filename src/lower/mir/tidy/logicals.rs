@@ -497,7 +497,7 @@ pub(super) fn and_tests(
         // rd706).
         let kept = bound - (made - then.len());
         for at in (0..kept).rev() {
-            if matches!(&then[at].kind, StmtKind::Const(name, _) if is_temporary(name.word()) || own_field.contains(name.word()))
+            if matches!(&then[at].kind, StmtKind::Const(name, _) if is_temporary(name) || own_field.contains(name.word()))
             {
                 read_again(then, at);
             }
@@ -590,7 +590,7 @@ fn read_first(test: &Expr, read: &Stmt, inner: &Stmt) -> Option<(Stmt, StmtKind)
     let (StmtKind::Const(name, value), StmtKind::If(second, _, None)) = (&read.kind, &inner.kind) else {
         return None;
     };
-    let defined = Expr::bin(Op::LooseNe, Expr::var(name.word()), Expr::null());
+    let defined = Expr::bin(Op::LooseNe, Expr::var(name), Expr::null());
     let mut tests = Vec::new();
     and_parts(second, &mut tests);
     if second.has_effects() || !tests.iter().any(|t| implies(t, &defined)) || test.mentions_var(name.word()) {

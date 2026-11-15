@@ -229,7 +229,7 @@ fn falls(stmts: &[Stmt], label: &str, hoisting: &mut Hoisting) -> Option<Truth> 
             let StmtKind::Const(_, value) = &read[k].kind else {
                 unreachable!("matched")
             };
-            let set = Expr::assigned(Expr::var(name.word()), value.clone());
+            let set = Expr::assigned(Expr::var(name), value.clone());
             read[k] = StmtKind::Expr(set).at(read[k].span);
         }
         return falls(&read, label, hoisting);

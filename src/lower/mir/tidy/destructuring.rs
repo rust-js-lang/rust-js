@@ -21,10 +21,10 @@ pub(super) fn destructured(
         // statement makes, the statements after it; or a variable this one
         // reads a part of, here.
         let (name, first) = match &stmts[i].kind {
-            StmtKind::Const(name, _) if is_temporary(name.word()) => (name.to_string(), i + 1),
+            StmtKind::Const(name, _) if is_temporary(name) => (name.to_string(), i + 1),
             StmtKind::Const(_, value) | StmtKind::Let(_, Some(value))
                 if let Some(v) = part_of(value)
-                    && !is_temporary(v) =>
+                    && !spelled_as_temporary(v) =>
             {
                 (v.to_string(), i)
             }
@@ -43,19 +43,19 @@ pub(super) fn destructured(
         // program wrote as one, ends them, as MIR's temporary of one did,
         // `let port = channel.port2(); channel.port1()..` (ADR 0598,
         // amended).
-        if !made && let Some(k) = parts.iter().position(|(_, bound, ..)| lets.contains(bound)) {
+        if !made && let Some(k) = parts.iter().position(|(_, bound, ..)| lets.contains(bound.word())) {
             parts.truncate(k);
         }
         // Nor a name rust-js gave, a temporary's, `_2`, or of what an object
         // made later is made of, `value` of `Cell::new(u.a.get())`'s `{ value
         // }`: no name of the program's, read where it's used, `{ lane:
         // update.lane }`, once it's moved there (ADR 0598, amended).
-        if !made && let Some(k) = parts.iter().position(|(_, bound, ..)| !user.contains(bound)) {
+        if !made && let Some(k) = parts.iter().position(|(_, bound, ..)| !user.contains(bound.word())) {
             parts.truncate(k);
         }
         let count = parts.len();
         let indexed = parts.iter().all(|(p, ..)| p.is_ok());
-        let bound = parts.iter().all(|(_, name, ..)| patterns.contains(name));
+        let bound = parts.iter().all(|(_, name, ..)| patterns.contains(name.word()));
         let enough = count >= if made || bound { 1 } else { 2 };
         let pattern = pattern_of(&parts);
         let other = items && (made || !indexed || count < 2);
@@ -169,14 +169,14 @@ pub(super) fn assigned_parts(stmts: &mut Vec<Stmt>) {
             i += 1;
             continue;
         };
-        let parts: Option<Vec<String>> = (items.iter())
+        let parts: Option<Vec<js::Name>> = (items.iter())
             .map(|item| match item {
-                Some(js::Pattern::Name(name)) if is_temporary(name.word()) => Some(name.to_string()),
+                Some(js::Pattern::Name(name)) if is_temporary(name) => Some(name.clone()),
                 _ => None,
             })
             .collect();
         // Each part assigned in the statements after it, in its order.
-        let targets: Option<Vec<String>> = parts.as_ref().and_then(|parts| {
+        let targets: Option<Vec<js::Name>> = parts.as_ref().and_then(|parts| {
             (parts.iter().enumerate())
                 .map(|(k, part)| match stmts.get(i + 1 + k).map(|s| &s.kind) {
                     Some(StmtKind::Assign(
@@ -188,7 +188,7 @@ pub(super) fn assigned_parts(stmts: &mut Vec<Stmt>) {
                             kind: ExprKind::Var(read),
                             ..
                         },
-                    )) if read.is(part) => Some(target.to_string()),
+                    )) if read == part => Some(target.clone()),
                     _ => None,
                 })
                 .collect()
@@ -199,7 +199,11 @@ pub(super) fn assigned_parts(stmts: &mut Vec<Stmt>) {
         };
         let distinct = (targets.iter()).all(|t| targets.iter().filter(|u| *u == t).count() == 1);
         let after = i + 1 + parts.len();
-        if !distinct || parts.iter().any(|part| js::mentions_in(&stmts[after..], part) > 0) {
+        if !distinct
+            || parts
+                .iter()
+                .any(|part| js::mentions_in(&stmts[after..], part.word()) > 0)
+        {
             i += 1;
             continue;
         }
@@ -273,7 +277,7 @@ pub(super) fn rest_parts(stmts: &mut Vec<Stmt>) {
 /// A part of a value read into a variable: its index or key, the variable,
 /// and whether it's a `let`.
 /// And a key's default, `{ size = "md" }`'s.
-pub(super) type Part = (Result<usize, String>, String, bool, Option<Expr>);
+pub(super) type Part = (Result<usize, String>, js::Name, bool, Option<Expr>);
 
 /// The parts of `name` the first of `stmts` read, each a `const` or a
 /// `let` of one, `const a = name[0];` or `const b = name.b;`.
@@ -301,7 +305,7 @@ pub(super) fn parts(stmts: &[Stmt], name: &str) -> Vec<Part> {
         if parts.iter().any(|(p, ..)| *p == part) {
             break;
         }
-        parts.push((part, bound.to_string(), mutable, default));
+        parts.push((part, bound.clone(), mutable, default));
     }
     parts
 }
@@ -345,7 +349,9 @@ pub(super) fn pattern_of(parts: &[Part]) -> Option<js::Pattern> {
         for (part, bound, ..) in parts {
             items[*part.as_ref().ok()?] = Some(bound.clone());
         }
-        return Some(js::Pattern::names_array(items));
+        return Some(js::Pattern::Array(
+            items.into_iter().map(|name| name.map(js::Pattern::Name)).collect(),
+        ));
     }
     let keyed: Option<Vec<_>> = (parts.iter())
         .map(|(part, bound, _, default)| Some((part.clone().err()?, js::Pattern::Name(bound.into()), default.clone())))
@@ -361,7 +367,7 @@ pub(in crate::lower::mir) fn destructured_params(params: &mut [js::Pattern], bod
     // of the copy its body holds, `__arg0$1`.
     let unnamed = |name: &str| {
         let arg = name.split('$').next().and_then(|n| n.strip_prefix("__arg"));
-        is_temporary(name) || arg.is_some_and(|n| !n.is_empty() && n.chars().all(|c| c.is_ascii_digit()))
+        spelled_as_temporary(name) || arg.is_some_and(|n| !n.is_empty() && n.chars().all(|c| c.is_ascii_digit()))
     };
     for param in params.iter_mut() {
         let js::Pattern::Name(name) = param else { continue };
@@ -560,7 +566,7 @@ pub(super) fn tuple_reads(
         let found = match &stmts[i].kind {
             StmtKind::Const(t, value)
                 if let ExprKind::Array(items) = &value.kind
-                    && (is_temporary(t.word()) || (captured.contains(t.word()) && items.iter().all(inert))) =>
+                    && (is_temporary(t) || (captured.contains(t.word()) && items.iter().all(inert))) =>
             {
                 Some((t.clone(), items.clone()))
             }
@@ -680,8 +686,8 @@ pub(super) fn tuple_reads(
         let mut held = Vec::new();
         for (k, item) in items.iter_mut().enumerate() {
             if last.is_some_and(|last| k < last && !fixed(item) || k == last) {
-                let name = crate::names::given_apart(t.word(), k);
-                held.push(StmtKind::Const(name.clone().into(), std::mem::replace(item, Expr::var(&name))).at(span));
+                let name = t.given_apart(k);
+                held.push(StmtKind::Const(name.clone(), std::mem::replace(item, Expr::var(&name))).at(span));
             }
         }
         js::each_expr_mut(&mut stmts[i + 1..], &mut |e| {
@@ -758,7 +764,7 @@ pub(super) fn unwrapped_values(stmts: &mut [Stmt]) {
         let StmtKind::Const(t, value) = &stmts[i].kind else {
             continue;
         };
-        if !is_temporary(t.word())
+        if !is_temporary(t)
             || !matches!(value.kind, ExprKind::Array(_))
             || js::mentions_in(&stmts[i + 1..], t.word()) != 1
         {
@@ -789,7 +795,7 @@ pub(super) fn unwrapped_values(stmts: &mut [Stmt]) {
                 && let ExprKind::Member(of, _) = &callee.kind
                 && matches!(&of.kind, ExprKind::Var(v) if *v == t)
             {
-                *e = Expr::var(t.word());
+                *e = Expr::var(&t);
             }
         });
     }
@@ -839,10 +845,10 @@ pub(super) fn conditional_tuples(stmts: &mut Vec<Stmt>) {
         } = &stmts[i].kind
             && let Some(names) = (items.iter())
                 .map(|item| match item {
-                    Some(js::Pattern::Name(name)) => Some(name.to_string()),
+                    Some(js::Pattern::Name(name)) => Some(name.clone()),
                     _ => None,
                 })
-                .collect::<Option<Vec<String>>>()
+                .collect::<Option<Vec<js::Name>>>()
             && matches!(value.kind, ExprKind::Cond(..))
             && let Some(assigned) = assigned_in_branches(value, &names)
         {
@@ -878,19 +884,19 @@ fn assigned_tuple(stmts: &mut Vec<Stmt>, i: usize) -> Option<usize> {
     let StmtKind::Let(t, None) = &stmts[i].kind else {
         return None;
     };
-    if !is_temporary(t.word()) || !matches!(stmts.get(i + 1)?.kind, StmtKind::If(_, _, Some(_))) {
+    if !is_temporary(t) || !matches!(stmts.get(i + 1)?.kind, StmtKind::If(_, _, Some(_))) {
         return None;
     }
     let t = t.clone();
     // The parts, read in order right after it, `const a = _6[0];`.
-    let names: Vec<String> = (stmts[i + 2..].iter().enumerate())
+    let names: Vec<js::Name> = (stmts[i + 2..].iter().enumerate())
         .map_while(|(k, stmt)| match &stmt.kind {
             StmtKind::Const(name, value) | StmtKind::Let(name, Some(value))
                 if let ExprKind::Index(of, at) = &value.kind
                     && matches!(&of.kind, ExprKind::Var(v) if *v == t)
                     && at.as_int() == i128::try_from(k).ok() =>
             {
-                Some(name.to_string())
+                Some(name.clone())
             }
             _ => None,
         })
@@ -922,7 +928,7 @@ fn assigned_tuple(stmts: &mut Vec<Stmt>, i: usize) -> Option<usize> {
 /// place: how many arrays it made, or `None` where one path goes on without
 /// making it. A branch that returns or throws is its guard's by now, `if
 /// (n !== 0) { throw .. }` before the array.
-fn parts_at_ends(stmts: &mut Vec<Stmt>, t: &str, names: &[String]) -> Option<usize> {
+fn parts_at_ends(stmts: &mut Vec<Stmt>, t: &str, names: &[js::Name]) -> Option<usize> {
     match &mut stmts.last_mut()?.kind {
         StmtKind::Assign(target, value)
             if matches!(&target.kind, ExprKind::Var(v) if v.is(t))
@@ -966,7 +972,7 @@ fn parts_at_ends(stmts: &mut Vec<Stmt>, t: &str, names: &[String]) -> Option<usi
 
 /// Of a conditional each of whose values is an array, each `names`' assignments of its items, in an `if`
 /// of its test, and an `else` of the rest.
-fn assigned_in_branches(value: &Expr, names: &[String]) -> Option<Vec<Stmt>> {
+fn assigned_in_branches(value: &Expr, names: &[js::Name]) -> Option<Vec<Stmt>> {
     match &value.kind {
         ExprKind::Cond(test, then, otherwise) => {
             let then = assigned_in_branches(then, names)?;

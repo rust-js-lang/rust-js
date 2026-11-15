@@ -54,7 +54,7 @@ pub(super) fn array_values(e: &mut Expr) {
         && crate::lower::iterators::is_stepped_items(each)
         && matches!(&iterated(each.clone()).kind, ExprKind::Var(v) if v == param)
     {
-        *each = Expr::var(param.word());
+        *each = Expr::var(param);
     }
     // The rest of a string's `chars()` not stepped, `$restStr($iter(cs))`:
     // all of them, `cs.join("")`, which may be a `char`'s case
@@ -532,6 +532,9 @@ pub(super) fn first_cell_values(stmts: &mut Vec<Stmt>) {
 /// clone a closure makes is its own body's, tidied before its function's.
 pub(super) fn plain_cells(body: &mut Vec<Stmt>) {
     let mut cells: Vec<String> = Vec::new();
+    // Each cell's name as it's declared, of its form, which a read of it
+    // keeps (S4).
+    let mut declared: IndexMap<String, js::Name> = IndexMap::default();
     let mut clones: IndexMap<String, String> = IndexMap::default();
     js::each_list(body, &mut |stmts| {
         for stmt in stmts {
@@ -541,6 +544,7 @@ pub(super) fn plain_cells(body: &mut Vec<Stmt>) {
                         if matches!(props.as_slice(), [js::Prop::Field(key, _)] if key == js::HELD)) =>
                 {
                     cells.push(name.to_string());
+                    declared.insert(name.to_string(), name.clone());
                 }
                 StmtKind::Const(name, value) if let ExprKind::Var(of) = &value.kind => {
                     clones.insert(name.to_string(), of.to_string());
@@ -644,7 +648,7 @@ pub(super) fn plain_cells(body: &mut Vec<Stmt>) {
         {
             *e = Expr {
                 span: e.span,
-                ..Expr::var(&cell)
+                ..Expr::var(&declared[&cell])
             };
         }
     });
@@ -930,21 +934,21 @@ pub(super) fn named_callbacks(stmts: &mut Vec<Stmt>, callbacks: &IndexSet<String
 /// A writer's body (ADR 0054), `let f = ""` first: each way through that
 /// writes once and gives it back, `return s`; a first write the string's
 /// start, `let f = s`; no `f` at all where nothing's left to write it.
-pub(in crate::lower::mir) fn writer_body(out: &mut Vec<Stmt>, name: &str) {
+pub(in crate::lower::mir) fn writer_body(out: &mut Vec<Stmt>, name: &js::Name) {
     let Some(at) = out.iter().position(|s| {
-        matches!(&s.kind, StmtKind::Let(n, Some(e)) if n.is(name) && matches!(&e.kind, ExprKind::Str(t) if t.is_empty()))
+        matches!(&s.kind, StmtKind::Let(n, Some(e)) if n == name && matches!(&e.kind, ExprKind::Str(t) if t.is_empty()))
     }) else {
         return;
     };
     let made = out.remove(at);
     let mut rest = out.split_off(at);
-    returned_unwritten(&mut rest, name);
-    if js::mentions_in(&rest, name) > 0 {
+    returned_unwritten(&mut rest, name.word());
+    if js::mentions_in(&rest, name.word()) > 0 {
         match rest.first().map(|s| &s.kind) {
             Some(StmtKind::Assign(target, value))
-                if matches!(&target.kind, ExprKind::Var(v) if v.is(name))
+                if matches!(&target.kind, ExprKind::Var(v) if v.is(name.word()))
                     && let ExprKind::Binary(Op::Add, lhs, first) = &value.kind
-                    && matches!(&lhs.kind, ExprKind::Var(v) if v.is(name)) =>
+                    && matches!(&lhs.kind, ExprKind::Var(v) if v.is(name.word())) =>
             {
                 let first = (**first).clone();
                 let span = rest[0].span;
@@ -974,6 +978,7 @@ pub(super) fn applied_values(
         let name = (1..)
             .map(|k| format!("_${k}"))
             .find(|n| !taken.contains(n))
+            .map(js::Name::temporary)
             .expect("a free name");
         // What's evaluated first: an assignment's target, which `out += ..`
         // reads, then the value.
@@ -1004,8 +1009,8 @@ pub(super) fn applied_values(
         // Taken out, and the statement looked at again, for the next.
         if let Some(value) = first_applied(root, &mut before, &name, set, plain) {
             let span = stmts[i].span;
-            stmts.insert(i, StmtKind::Const(name.clone().into(), value).at(span));
-            taken.insert(name);
+            stmts.insert(i, StmtKind::Const(name.clone(), value).at(span));
+            taken.insert(name.into_word());
         }
         i += 1;
     }
@@ -1017,7 +1022,7 @@ pub(super) fn applied_values(
 fn first_applied(
     e: &mut Expr,
     before: &mut Before,
-    name: &str,
+    name: &js::Name,
     set: &IndexSet<String>,
     plain: &IndexSet<String>,
 ) -> Option<Expr> {

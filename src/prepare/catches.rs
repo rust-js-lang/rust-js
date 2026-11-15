@@ -169,8 +169,8 @@ fn flagged_try(made: &Stmt, tested: &Stmt) -> Option<Stmt> {
         return None;
     }
     let flag = match when {
-        true => Expr::var(result.word()),
-        false => Expr::unary(js::UnaryOp::Not, Expr::var(result.word())),
+        true => Expr::var(result),
+        false => Expr::unary(js::UnaryOp::Not, Expr::var(result)),
     };
     let ok = [StmtKind::If(flag, then.clone(), None).at(tested.span)];
     let (tried, _) = arms_where_returned(body, result.word(), &ok)?;
@@ -638,7 +638,7 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt], ends: b
             let mut ok = ok.to_vec();
             js::each_expr_mut(&mut ok, &mut |e| {
                 if js::result::reads_held(e, result.word()) {
-                    *e = Expr::var(result.word()).or_at(e.span);
+                    *e = Expr::var(result).or_at(e.span);
                 }
             });
             let name = match whole_binding(&ok, result.word(), &call) {
@@ -648,7 +648,7 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt], ends: b
                     });
                     js::each_expr_mut(&mut ok, &mut |e| {
                         if matches!(&e.kind, ExprKind::Var(v) if v == result) {
-                            *e = Expr::var(binding.word()).or_at(e.span);
+                            *e = Expr::var(&binding).or_at(e.span);
                         }
                     });
                     binding
@@ -852,7 +852,7 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt], ends: b
     let tried = match &value_name {
         Some(name) => {
             out.push(StmtKind::Let(name.clone(), None).at(span));
-            StmtKind::Assign(Expr::var(name.word()), call.clone()).at(call_at)
+            StmtKind::Assign(Expr::var(name), call.clone()).at(call_at)
         }
         None => alone,
     };
@@ -1112,7 +1112,7 @@ fn catchable(
     });
     handler.insert(
         0,
-        StmtKind::Expr(Expr::call_helper("$catchable", vec![Expr::var(name.word())])).at(span),
+        StmtKind::Expr(Expr::call_helper("$catchable", vec![Expr::var(&name)])).at(span),
     );
     (Some(name), handler)
 }
@@ -1169,7 +1169,7 @@ fn read_as_thrown(binding: Option<Name>, handler: Vec<Stmt>) -> (Option<Name>, V
     };
     js::each_expr_mut(&mut rest, &mut |e| {
         if resumed_as_given(e) || e.thrown_error_of().is_some_and(of_payload) {
-            *e = Expr::var(thrown.word()).or_at(e.span);
+            *e = Expr::var(&thrown).or_at(e.span);
         }
     });
     let mut declared = 0;
@@ -1182,7 +1182,7 @@ fn read_as_thrown(binding: Option<Name>, handler: Vec<Stmt>) -> (Option<Name>, V
     }
     js::each_expr_mut(&mut rest, &mut |e| {
         if matches!(&e.kind, ExprKind::Var(v) if *v == thrown) {
-            *e = Expr::var(payload.word()).or_at(e.span);
+            *e = Expr::var(&payload).or_at(e.span);
         }
     });
     (Some(payload), rest)

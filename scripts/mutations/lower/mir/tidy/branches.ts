@@ -104,7 +104,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`let tmp; if (now) { tmp = () => 1; } else { .. } return tmp;`, where each branch returns",
     file: "src/lower/mir/tidy/branches.rs",
-    find: "    if !returned.is(result) && !is_temporary(returned.word()) {\n",
+    find: "    if !returned.is(result) && !is_temporary(returned) {\n",
     replace: "    if !returned.is(result) {\n",
     tests: [
       "test/lowering-branches.test.ts",
@@ -402,7 +402,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a value MIR holds of three branches, its first doing more, is `else { tmp = b ? q : r; }`",
     file: "src/lower/mir/tidy/branches.rs",
-    find: "\n                        || is_temporary(x.word()) && then.len() > 1)",
+    find: "\n                        || is_temporary(x) && then.len() > 1)",
     replace: ")",
     tests: [
       "test/lowering-written-branches.test.ts",
@@ -424,8 +424,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a formatter's arms each writing, `Some(w) => write!(f, \"{:>w$}\", s), None => f.write_str(&s)`, are `f = w != null ? f + $pad(..) : f + s`, not each its `return`",
     file: "src/lower/mir/tidy/branches.rs",
-    find: "        && !(updates(x, yes) || updates(x, no))\n",
-    replace: "        && !((updates(x, yes) || updates(x, no)) && false)\n",
+    find: "        && !(updates(x.word(), yes) || updates(x.word(), no))\n",
+    replace: "        && !((updates(x.word(), yes) || updates(x.word(), no)) && false)\n",
     tests: ["test/corpus.test.ts", "-t", "^formatter_queries.rs$"],
     snapshots: true,
   },
@@ -577,7 +577,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`if let Some(p) = parent { return f(&p); } return None;` is `return parent != null ? f(parent) : null;`, not the `if` of `return`s written (ADR 0657, amended)",
     file: "src/lower/mir/tidy/branches.rs",
-    find: "                    && !(one.target == result && written_returns((then, otherwise), returns, span))\n                    // Not an `if` the program wrote as a statement",
+    find: "                    && !(one.target.is(result) && written_returns((then, otherwise), returns, span))\n                    // Not an `if` the program wrote as a statement",
     replace:
       "                    && true\n                    // Not an `if` the program wrote as a statement",
     tests: [
@@ -846,9 +846,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a list's `filter`s by truth after its first stay `stack = stack || undefined; if (stack != null)`, not `if (stack)` (React DOM's clientRenderBoundary)",
     file: "src/lower/mir/tidy/branches.rs",
-    find: "                    ..Expr::var(x.word())\n                };\n            }\n        });\n    }\n}",
+    find: "                    ..Expr::var(&x)\n                };\n            }\n        });\n    }\n}",
     replace:
-      "                    ..Expr::var(x.word())\n                };\n            }\n        });\n        break;\n    }\n}",
+      "                    ..Expr::var(&x)\n                };\n            }\n        });\n        break;\n    }\n}",
     tests: [
       "test/lowering-option-truth.test.ts",
       "-t",

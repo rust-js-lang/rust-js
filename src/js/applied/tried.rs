@@ -105,7 +105,7 @@ pub fn applied_tried(mut tried: Vec<Stmt>) -> Vec<Stmt> {
             // each `return` ends what runs of it (rd60).
             Some(body) => {
                 let (declared, to) = match &tried[0].kind {
-                    StmtKind::Const(name, _) => (Some(name.clone()), Expr::var(name.word())),
+                    StmtKind::Const(name, _) => (Some(name.clone()), Expr::var(name)),
                     StmtKind::Assign(to, _) => (None, to.clone()),
                     _ => unreachable!("matched above"),
                 };

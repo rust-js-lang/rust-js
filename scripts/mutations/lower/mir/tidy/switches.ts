@@ -66,8 +66,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a temporary only the tests read stays, `const len = $byteLen(s); switch (len)`, not `switch ($byteLen(s))`",
     file: "src/lower/mir/tidy/switches.rs",
-    find: "        && is_temporary(name.word())\n        && let StmtKind::Switch",
-    replace: "        && !is_temporary(name.word())\n        && let StmtKind::Switch",
+    find: "        && is_temporary(name)\n        && let StmtKind::Switch",
+    replace: "        && !is_temporary(name)\n        && let StmtKind::Switch",
     tests: switches,
   },
   {

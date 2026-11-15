@@ -59,7 +59,7 @@ impl<'tcx> FnCx<'_, 'tcx> {
         });
         let locals: Vec<Local> = cloned.iter().copied().chain(taken).collect();
         let names = |locals: &mut dyn Iterator<Item = Local>| -> IndexSet<String> {
-            (locals.map(|local| state.locals.names[local].clone()))
+            (locals.map(|local| state.locals.names[local].word().to_string()))
                 .filter(|name| !name.is_empty())
                 .collect()
         };

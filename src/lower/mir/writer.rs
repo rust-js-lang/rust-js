@@ -70,7 +70,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// fail gives what it wrote before, in front of what what it called did
     /// (ADR 0187), `let f = ""; try { .. } catch (error) { .. } return f;`;
     /// another, as tidy writes it (`tidy::writer_body`).
-    pub(super) fn writer_epilogue(&mut self, name: &str, sink: bool, out: &mut Vec<Stmt>) {
+    pub(super) fn writer_epilogue(&mut self, name: &js::Name, sink: bool, out: &mut Vec<Stmt>) {
         // What it's written so far: of one that writes through the line, what's
         // left of it, `f.done()` (#1490).
         let written_so_far = || match sink {
@@ -84,7 +84,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // One that writes nothing, its string made `""` and given as it
             // is, `return "";`, whose `let` tidy took: what it wrote before
             // is `""`, and its body gives what it gives.
-            true if js::mentions_in(out, name) == 0 => {
+            true if js::mentions_in(out, name.word()) == 0 => {
                 let error = self.fresh(Role::Error);
                 let written = Expr::call(Expr::helper("$fmtWritten"), vec![Expr::var(&error), Expr::str("")]);
                 let handler = vec![StmtKind::Throw(written).at(js::Span::NONE)];
@@ -94,7 +94,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // Its declaration, a `let`, or a `const` where tidy found it
                 // never set again: the `try` and its `catch` are in its scope.
                 let made = (out.iter())
-                    .position(|s| matches!(&s.kind, StmtKind::Let(n, _) | StmtKind::Const(n, _) if n.is(name)));
+                    .position(|s| matches!(&s.kind, StmtKind::Let(n, _) | StmtKind::Const(n, _) if n == name));
                 let mut body = out.split_off(made.map_or(0, |at| at + 1));
                 // Its last `return f`, the one after the `try`.
                 if matches!(body.last().map(|s| &s.kind), Some(StmtKind::Return(Some(r))) if *r == written_so_far()) {
@@ -518,7 +518,7 @@ pub(super) fn formatter_aliases(body: &mir::Body<'_>, given: &[Local], captured:
 impl<'tcx> State<'_, 'tcx> {
     /// The string a writer makes, `let f = ""`, which it gives back: not a
     /// closure's that writes its maker's (ADR 0539).
-    pub(super) fn made_writing(&self) -> Option<&String> {
+    pub(super) fn made_writing(&self) -> Option<&js::Name> {
         self.writer
             .as_ref()
             .filter(|_| !self.writes_captured)
@@ -536,21 +536,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         &mut self,
         state: &mut State<'_, 'tcx>,
         body: &mir::Body<'tcx>,
-        formatter: Option<(Local, &str)>,
+        formatter: Option<(Local, &js::Name)>,
         captures: Option<&[(Expr, bool)]>,
-    ) -> R<Option<(Vec<Local>, String)>> {
+    ) -> R<Option<(Vec<Local>, js::Name)>> {
         let (aliases, name) = match (formatter, captures) {
             (Some((param, named)), _) => {
-                let name = match named {
-                    "" => self.fresh(Role::F),
-                    name => name.to_string(),
+                let name = match named.word() {
+                    "" => self.fresh(Role::F).into(),
+                    _ => named.clone(),
                 };
                 (formatter_aliases(body, &[param], None), name)
             }
             (None, Some(captures)) => match self.captured_formatter(body, captures)? {
                 Some((field, name)) => {
                     state.writes_captured = true;
-                    (formatter_aliases(body, &[], Some(field)), name)
+                    (formatter_aliases(body, &[], Some(field)), name.into())
                 }
                 None => return Ok(None),
             },
@@ -565,7 +565,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Is `name` the sink the writer being lowered writes its text
     /// through, which it lends as it is (#1637)?
     pub(super) fn is_writers_sink(&self, state: &State<'_, 'tcx>, name: &str) -> bool {
-        self.writes_through_a_sink(state) && state.writer.as_ref().is_some_and(|(_, sink)| sink == name)
+        self.writes_through_a_sink(state) && state.writer.as_ref().is_some_and(|(_, sink)| sink.is(name))
     }
 
     /// A writer's `Formatter`'s options, `options` its parameter of them,
@@ -857,7 +857,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     fn append_to_writer(
         &self,
         state: &State<'_, 'tcx>,
-        name: &str,
+        name: &js::Name,
         written: Expr,
         pieces: bool,
         js_span: js::Span,

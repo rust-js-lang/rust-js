@@ -58,7 +58,7 @@ pub(super) fn spelled(module: &mut js::Module) {
         }
         names_mut(item, true, &mut |name| {
             if let Some(to) = spelled.get(name.word()) {
-                *name = to.into();
+                name.respell(to);
             }
         });
     }
@@ -300,7 +300,7 @@ fn locals(item: &mut js::Item) {
     if !renamed.is_empty() {
         names_mut(item, true, &mut |name| {
             if let Some(to) = renamed.get(name.word()) {
-                *name = to.into();
+                name.respell(to);
             }
         });
     }

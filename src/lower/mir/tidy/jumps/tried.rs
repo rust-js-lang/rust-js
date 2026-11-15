@@ -57,7 +57,7 @@ pub(in crate::lower::mir::tidy) fn binding(body: &[Stmt], item: &str) -> Option<
         // Read as it is, named already for the pattern that binds it, a
         // drop guard's `let item; try { item = $next(iter); } ..` (#444's
         // names): the `for`'s own, `let` where the body sets it.
-        [] if !is_temporary(item) => {
+        [] if !spelled_as_temporary(item) => {
             return Some((js::Pattern::Name(item.into()), js::Writes::sets(body, item), 0, aliases));
         }
         [(Ok(None), bound, _)] => js::Pattern::Name(bound.into()),

@@ -194,7 +194,7 @@ fn rename(function: &mut js::Function, module: LocalModId, renamed: &IndexMap<Na
     let mut each = |e: &mut Expr| match &mut e.kind {
         ExprKind::Var(name) => {
             if let Some((to, _)) = renamed.get(&(module, None, name.to_string())) {
-                *name = to.clone().into();
+                name.respell(to.clone());
             }
         }
         ExprKind::Symbol(symbol) => {

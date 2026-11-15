@@ -108,13 +108,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             self.unwritten_closure(state, place.local)?;
         }
         let mut value = if place.projection.is_empty() {
-            match (
-                state.in_place.get(&place.local),
-                state.locals.names[place.local].as_str(),
-            ) {
+            let name = &state.locals.names[place.local];
+            match (state.in_place.get(&place.local), name.word()) {
                 (Some(value), _) => value.clone(),
                 (None, "") => Expr::js_undefined(),
-                (None, name) => {
+                (None, _) => {
                     state.named.insert(place.local);
                     match state.facts.pointed().locals.contains(&place.local) {
                         true => Expr::held(Expr::var(name)),

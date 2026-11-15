@@ -61,7 +61,7 @@ pub(super) fn named_flags(body: &mut Vec<Stmt>, flags: &IndexSet<String>) {
         let Some((base, rest)) = flag.word().split_once('$') else {
             continue;
         };
-        if !super::is_temporary(base) {
+        if !super::spelled_as_temporary(base) {
             continue;
         }
         let Some(dropped) = guarded(body, flag.word()) else {

@@ -39,7 +39,7 @@ pub(in crate::lower) fn as_member(
             } else if class_of(tcx, def_id).is_some_and(|adt| superclass(tcx, adt).is_some()) {
                 let given = (function.params.iter())
                     .map(|param| match param {
-                        Pattern::Name(name) => Ok(Expr::var(name.word())),
+                        Pattern::Name(name) => Ok(Expr::var(name)),
                         _ => Err("constructor of a class that extends one names its parameter, `props`, which `super(props)` is given"),
                     })
                     .collect::<Result<Vec<_>, _>>()?;
