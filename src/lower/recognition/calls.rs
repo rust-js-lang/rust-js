@@ -1032,16 +1032,13 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 _ => None,
             };
         }
-        // A std hasher's own, or, of a `&mut` to one or a `&mut` to that,
-        // std's `impl Hasher for &mut H`'s, which forwards to what it points
-        // at: `h.finish()` of an `h: &mut DefaultHasher`, found by auto-ref
-        // as it takes `&self`, the hasher's own too, read through each
-        // `&mut` (`HashOp::Own`, #1488).
-        let mut pointee = self_ty;
-        while let ty::Ref(_, inner, ty::Mutability::Mut) = *pointee.kind() {
-            pointee = inner;
-        }
-        if is_hasher(tcx, tr) && self.std_hasher(pointee).is_some() {
+        // A std hasher's own (`HashOp::Own`). Of a `&mut` to one, std's
+        // `impl Hasher for &mut H`, which forwards to what it points at,
+        // `h.finish()` of an `h: &mut DefaultHasher` found by auto-ref, is
+        // passed through to the hasher's own before it's asked here
+        // (`passed_through`, #1709, #1724), as #1488's was read through
+        // each `&mut` here, now the same JS without it (ADR 0463, amended).
+        if is_hasher(tcx, tr) && self.std_hasher(self_ty).is_some() {
             return Some(HashOp::Own);
         }
         // A crate's hasher's provided method that its impl doesn't write,

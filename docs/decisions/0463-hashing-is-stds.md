@@ -354,6 +354,15 @@ Of the hasher itself, and of one `&mut` to it, nothing is read, as before.
 `hasher-mut-unrecognised` and `hasher-mut-not-read-through` replace
 `hasher-mut-finish-unrecognised`.
 
+Then (2026-11-16): the recogniser's read through each `&mut` is retired. Std's
+`impl Hasher for &mut H` is passed through to the hasher's own method before the
+recogniser is asked (`passed_through`, #1709, #1724), so without the read through
+the compiler writes the same JS: mutation `hasher-mut-unrecognised` survived
+CI's shard, and with it applied the corpus against native, the snapshots and the
+crates, 2,927 tests, pass, case `hasher_finished_through_its_mut`'s JS
+byte-identical. The recogniser takes a std hasher's own method of the hasher
+alone, and the mutation is retired with its code.
+
 ## Amendment: the crate's own `impl Hasher for &mut Tally` (2026-11-14, #1730)
 
 The dictionary of a `&mut H`'s `Hasher` took it for std's `impl Hasher for

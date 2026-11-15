@@ -709,14 +709,6 @@ export const mutations: Mutation[] = [
     tests: ["test/tidy-stages.test.ts", "-t", "a std function's call without its recogniser is refused"],
   },
   {
-    name: "hasher-mut-unrecognised",
-    breaks: "a `Hasher` method of a `&mut` to std's hasher, std's `impl Hasher for &mut H`'s, goes by the trait's route, which gives its dictionary the hasher where it reads a box, and throws (#1488)",
-    file: "src/lower/recognition/calls.rs",
-    find: "        while let ty::Ref(_, inner, ty::Mutability::Mut) = *pointee.kind() {\n            pointee = inner;\n        }\n        if is_hasher(tcx, tr) && self.std_hasher(pointee).is_some() {\n",
-    replace: "        while let ty::Ref(_, inner, ty::Mutability::Mut) = *pointee.kind() {\n            break;\n        }\n        if is_hasher(tcx, tr) && self.std_hasher(pointee).is_some() {\n",
-    tests: ["test/corpus.test.ts", "-t", "^hasher_finished_through_its_mut.rs$"],
-  },
-  {
     name: "serde-json-method-taken-for-its-function",
     breaks: "`serde_json::Deserializer::from_str` is taken for `serde_json::from_str` by its name, and the compiler panics on its arguments (#1541)",
     file: "src/lower/recognition/calls.rs",
