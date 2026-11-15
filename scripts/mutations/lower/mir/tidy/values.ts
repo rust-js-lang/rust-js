@@ -336,4 +336,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering-nullable-reads.test.ts", "-t", "test shows present"],
   },
+  {
+    name: "shown-defined-of-a-let",
+    breaks: "a `let` a test shows isn't `null` is taken as the `const` it reads, though the branch writes it again, `undefined`, before it's read, so a nullable function returns `undefined` where Rust's `None` is `null` (#1952)",
+    file: "src/lower/mir/tidy/values.rs",
+    find: "    let once = |x: &str| declared.get(x) == Some(&1) && consts.contains(x);\n",
+    replace: "    let once = |x: &str| declared.get(x) == Some(&1) || consts.contains(x);\n",
+    tests: ["test/lowering-nullable-tests.test.ts", "-t", "a let written again after its test"],
+  },
 ];

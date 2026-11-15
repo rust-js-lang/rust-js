@@ -69,10 +69,11 @@ pub(in crate::lower) fn js_root_fn(tcx: TyCtxt<'_>, did: DefId) -> Option<rustc_
     .then(|| tcx.item_name(did))
 }
 
-/// Whether `did` is `js::truthy`, JS's `if (value)`, which `None` never
-/// passes (#1902): the builtins crate's.
-pub(in crate::lower) fn is_js_truthy(tcx: TyCtxt<'_>, did: DefId) -> bool {
-    js_root_fn(tcx, did).is_some_and(|name| name.as_str() == "truthy")
+/// Whether `did` is `js::truthy`, or `js::is_function`, JS's `typeof value
+/// === "function"`: a test `None`, `null` or `undefined`, never passes
+/// (#1902, #1933).
+pub(in crate::lower) fn is_js_presence_test(tcx: TyCtxt<'_>, did: DefId) -> bool {
+    js_root_fn(tcx, did).is_some_and(|name| matches!(name.as_str(), "truthy" | "is_function"))
 }
 
 /// Whether `did` is `js::type_of`, JS's `typeof value`, `"undefined"` of

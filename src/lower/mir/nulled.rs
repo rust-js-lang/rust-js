@@ -402,12 +402,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// undefined`.
     pub(super) fn proved_present(&self, state: &State<'_, 'tcx>, local: Local) -> bool {
         let parameter = (1..=state.body.arg_count).contains(&local.as_usize());
-        if self
-            .whole_writes(state, local)
-            .is_none_or(|writes| writes.len() != usize::from(!parameter))
-        {
+        // Each write whole, never lent as a `&mut` nor a raw pointer, which
+        // a closure that captures it by `&mut` is too (`whole_writes`): one,
+        // before the test, or more, none of them between the test and the
+        // read (`unwritten_since`), React's getIteratorFn's `maybeIterator`,
+        // a `match`'s in each arm (#1933 step 4 (A)).
+        let Some(writes) = self.whole_writes(state, local) else {
             return false;
-        }
+        };
+        let once = writes.len() == usize::from(!parameter);
         let blocks = &state.body.basic_blocks;
         let dominators = blocks.dominators();
         blocks.iter_enumerated().any(|(_, data)| {
@@ -429,9 +432,76 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .count()
                     == 1
             };
-            self.present_edge(state, flag.local, targets, local)
-                .is_some_and(|edge| entered(edge) && dominators.dominates(edge, state.at))
+            self.present_edge(state, flag.local, targets, local).is_some_and(|edge| {
+                entered(edge) && dominators.dominates(edge, state.at) && (once || self.unwritten_since(state, flag.local, local))
+            })
         })
+    }
+
+    /// Whether nothing writes `local` on any way from where `flag`, a test
+    /// of it, is written to the block lowered now (`ways_from_test`), nor
+    /// after the test in its own block: what the test read is what's read.
+    fn unwritten_since(&self, state: &State<'_, 'tcx>, flag: Local, local: Local) -> bool {
+        let blocks = &state.body.basic_blocks;
+        let Some((test, after)) = (blocks.iter_enumerated()).find_map(|(block, data)| {
+            let assigned = (data.statements.iter()).position(
+                |statement| matches!(&statement.kind, mir::StatementKind::Assign(assign) if assign.0.local == flag),
+            );
+            match (assigned, &data.terminator().kind) {
+                (Some(at), _) => Some((block, at + 1)),
+                (None, TerminatorKind::Call { destination, .. }) if destination.local == flag => {
+                    Some((block, data.statements.len()))
+                }
+                _ => None,
+            }
+        }) else {
+            return false;
+        };
+        let writes = |statement: &mir::Statement<'tcx>| {
+            matches!(&statement.kind, mir::StatementKind::Assign(assign) if assign.0.local == local)
+                || matches!(&statement.kind, mir::StatementKind::SetDiscriminant { place, .. } if place.local == local)
+        };
+        let calls_into = |data: &mir::BasicBlockData<'tcx>| matches!(&data.terminator().kind, TerminatorKind::Call { destination, .. } if destination.local == local);
+        if blocks[test].statements[after..].iter().any(writes) || (test != state.at && calls_into(&blocks[test])) {
+            return false;
+        }
+        let Some(ways) = self.ways_from_test(state, test) else {
+            return false;
+        };
+        ways.iter().all(|&block| {
+            let data = &blocks[block];
+            !data.statements.iter().any(writes) && (block == state.at || !calls_into(data))
+        })
+    }
+
+    /// The blocks on each way from `test`, a block that ends with a test, to
+    /// the block lowered now: forward of its successors, and back of the
+    /// block lowered now, not through `test`, as a way through it again
+    /// tests anew. `None` where the block lowered now isn't forward of it.
+    /// The one answer of what runs between a test and a read, which
+    /// `proved_present` and `field_reads` ask (#1933).
+    pub(super) fn ways_from_test(&self, state: &State<'_, 'tcx>, test: BasicBlock) -> Option<IndexSet<BasicBlock>> {
+        let blocks = &state.body.basic_blocks;
+        let mut ahead: IndexSet<BasicBlock> = IndexSet::default();
+        let mut work: Vec<BasicBlock> = blocks[test].terminator().successors().collect();
+        while let Some(b) = work.pop() {
+            if !ahead.insert(b) {
+                continue;
+            }
+            work.extend(blocks[b].terminator().successors());
+        }
+        if !ahead.contains(&state.at) {
+            return None;
+        }
+        let mut behind: IndexSet<BasicBlock> = IndexSet::default();
+        let mut work = vec![state.at];
+        while let Some(b) = work.pop() {
+            if b == test || !behind.insert(b) {
+                continue;
+            }
+            work.extend(blocks.predecessors()[b].iter().copied());
+        }
+        Some(ahead.into_iter().filter(|b| behind.contains(b)).collect())
     }
 
     /// The edge of a switch on `flag` that `local` is `Some` on: of a test
@@ -472,7 +542,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     return None;
                 };
                 let (callee, _) = func.const_fn_def()?;
-                let present = match crate::lower::recognition::is_js_truthy(self.tcx, callee) {
+                let present = match crate::lower::recognition::is_js_presence_test(self.tcx, callee) {
                     true => targets.otherwise(),
                     false => match crate::lower::recognition::option_presence_test(self.tcx, callee)? {
                         true => targets.otherwise(),

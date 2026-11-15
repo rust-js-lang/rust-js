@@ -14,7 +14,6 @@
 //! program's own data (`fields_read_once`).
 
 use super::*;
-use crate::collections::IndexSet;
 
 /// A cell field's place, from the variable it's reached through: that
 /// variable, and each step after it, a field or a deref, an `Rc`'s or an
@@ -227,36 +226,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         (read, read_at): (&CellPath<'tcx>, BasicBlock),
     ) -> bool {
         let blocks = &state.body.basic_blocks;
-        let TerminatorKind::Call {
-            target: Some(start), ..
-        } = blocks[test].terminator().kind
-        else {
+        // Each way from the test to the read, not back through the test,
+        // which reads the field anew (`ways_from_test`).
+        let Some(ways) = self.ways_from_test(state, test) else {
             return false;
         };
-        // Forward from the call's return; back from the block lowered now,
-        // not through the test's call, as a way through it again reads the
-        // field anew. What's forward of the call again is forward of its
-        // return.
-        let mut ahead: IndexSet<BasicBlock> = IndexSet::default();
-        let mut work = vec![start];
-        while let Some(b) = work.pop() {
-            if !ahead.insert(b) {
-                continue;
-            }
-            work.extend(blocks[b].terminator().successors());
-        }
-        let mut behind: IndexSet<BasicBlock> = IndexSet::default();
-        let mut work = vec![state.at];
-        while let Some(b) = work.pop() {
-            if b == test || !behind.insert(b) {
-                continue;
-            }
-            work.extend(blocks.predecessors()[b].iter().copied());
-        }
-        if !ahead.contains(&read_at) || !behind.contains(&read_at) || !ahead.contains(&state.at) {
+        if !ways.contains(&read_at) {
             return false;
         }
-        ahead.iter().filter(|b| behind.contains(*b)).all(|&b| {
+        ways.iter().all(|&b| {
             let data = &blocks[b];
             let statements = data.statements.iter().all(|statement| match &statement.kind {
                 mir::StatementKind::Assign(assign) => assign.0.projection.is_empty() && assign.0.local != read.root,

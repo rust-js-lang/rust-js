@@ -431,7 +431,17 @@ pub(super) fn nulled_as_they_are(body: &mut Vec<Stmt>) {
     defined.extend(lets_never_undefined(body, &declared));
     // Where a test shows a `const` defined, `x !== undefined ? x ?? null :
     // ..`'s branch, `if (x != null) { return x ?? null; }`'s: `x` there too.
-    let once = |x: &str| declared.get(x) == Some(&1);
+    // A `const` alone, declared once: a `let` the branch, or a closure it
+    // calls, may set again, `undefined` (#1952).
+    let mut consts: IndexSet<String> = IndexSet::default();
+    js::each_list(body, &mut |stmts| {
+        for stmt in stmts {
+            if let StmtKind::Const(name, _) = &stmt.kind {
+                consts.insert(name.to_string());
+            }
+        }
+    });
+    let once = |x: &str| declared.get(x) == Some(&1) && consts.contains(x);
     js::each_expr_mut(body, &mut |e| {
         if let ExprKind::Cond(test, yes, _) = &mut e.kind
             && let Some(x) = shown_defined(test).filter(|x| once(x))

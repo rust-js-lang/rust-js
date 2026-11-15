@@ -461,3 +461,36 @@ thread-local's with(f)" (no tidy answer counted) and the corpus case
 `thread_local_with_gives_what_it_returns` (native, both builds, as a
 library, metamorphic); mutation `local-with-unknown`.
 
+## Amendment: a variable written more than once is proved where nothing writes it after its test (2026-11-16, #1933 step 4 (A); #1952)
+
+`proved_present` took a local of one whole write alone. It now takes one
+written more than once, each write whole and never lent as a `&mut` nor a
+raw pointer (`whole_writes`, so a closure that captures it by `&mut` is
+none), where nothing writes it on any way from where its test is written
+to the read, nor after the test in its own block (`unwritten_since`):
+React's getIteratorFn's `maybeIterator`, a `match`'s in each arm,
+performUnitOfWork's `next`, getClosestInstanceFromNode's `targetInst`. The
+ways are one owner's, `ways_from_test`, which `field_reads` asks too. And
+`js::is_function`'s true edge proves what it tests, as `js::truthy`'s does
+(`is_js_presence_test`), React's scheduler's `continuationCallback`.
+
+Tidy's if-shown and cond-shown took a `let` a test showed isn't `null` as
+the `const` they're written for: one written again in the branch, `found =
+begin(0)` of `if (found != null) { .. return found ?? null; }`, was returned
+`undefined` where a nullable function gives Rust's `None` as `null`
+(#1952, P0). They take a `const` alone now.
+
+Case of [0262](0262-when-rust-and-js-disagree.md): none of (A); #1952's
+results change, Rust's kept. React's port: `workInProgress = next;`, as
+upstream writes it, where it was `next ?? null`. Corpus:
+while_test_continues_of_chain's `$index(nodes, at)` after `at != null`.
+Held by test/lowering-nullable-tests.test.ts's "a variable written more
+than once" (written again between, a closure that captures it called
+between, each keeping `?? null`; run), "a let written again after its
+test" and "a variable MIR proves nothing of"; corpus case
+variable_written_twice_then_tested (native, both builds, as a library,
+metamorphic); mutations proved-many-writes-never, js-is-function-unrecognized,
+shown-defined-of-a-let new, proved-present-written-again,
+field-read-back-through-the-test, present-coalesce-failed-test-unread and
+field-test-undecided-where-its-variable-changes retargeted.
+

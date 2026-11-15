@@ -530,8 +530,8 @@ export const mutations: Mutation[] = [
     name: "proved-present-written-again",
     breaks: "an Option written again after its truthy test is taken for the value it tested, `found = second; return found` given `undefined` where Rust's `None` is `null` (#1902)",
     file: "src/lower/mir/nulled.rs",
-    find: "            .is_none_or(|writes| writes.len() != usize::from(!parameter))\n",
-    replace: "            .is_none_or(|_| false)\n",
+    find: "(once || self.unwritten_since(state, flag.local, local))",
+    replace: "true",
     tests: ["test/lowering-nullable-truthy.test.ts", "test/lowering-nullable-tests.test.ts"],
   },
   {
@@ -629,5 +629,21 @@ export const mutations: Mutation[] = [
     find: "        if let Some(crate::lower::Std::LocalWith { tried: false }) = known\n",
     replace: "        if let Some(crate::lower::Std::LocalWith { tried: false }) = known && false\n",
     tests: ["test/lowering-nullable-tests.test.ts", "-t", "a thread-local's with"],
+  },
+  {
+    name: "proved-many-writes-never",
+    breaks: "a variable written more than once, a `match`'s in each arm, is never proved by its test, so `return found ?? null` where nothing writes it after its test (#1933)",
+    file: "src/lower/mir/nulled.rs",
+    find: "(once || self.unwritten_since(state, flag.local, local))",
+    replace: "once",
+    tests: ["test/lowering-nullable-tests.test.ts", "-t", "written more than once"],
+  },
+  {
+    name: "field-read-back-through-the-test",
+    breaks: "the ways back from the read are followed through the test again, so a loop's body, `node = parent`, is between, and a `while .. is_none()`'s exit proves nothing (#1933)",
+    file: "src/lower/mir/nulled.rs",
+    find: "            if b == test || !behind.insert(b) {\n",
+    replace: "            if !behind.insert(b) {\n",
+    tests: ["test/lowering-nullable-tests.test.ts", "-t", "a RefCell field tested and read again"],
   },
 ];

@@ -56,7 +56,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/decided.rs",
     find: "        false => test.clone().negated_test(),\n",
     replace: "        false => test.clone(),\n",
-    tests: ["test/lowering-options.test.ts", "-t", "a test says is there"],
+    tests: ["test/lowering-nullable-tests.test.ts", "-t", "a variable MIR proves nothing of"],
   },
   {
     name: "mir-tidy-decided-part-kept",
@@ -93,11 +93,7 @@ export const mutations: Mutation[] = [
     find: "    if test.reads_only_vars() {\n        test.visit_vars(&mut |v| stable &= !changing.contains(v));\n",
     replace:
       "    if true {\n        test.visit_vars(&mut |v| stable &= !changing.contains(v));\n",
-    tests: [
-      "test/lowering-nullable.test.ts",
-      "-t",
-      "an unwrap of a field a test says is there",
-    ],
+    tests: ["test/lowering-nullable-tests.test.ts", "-t", "a variable MIR proves nothing of"],
   },
   {
     name: "unwrap-of-tested-kept",

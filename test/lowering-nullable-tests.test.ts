@@ -648,25 +648,50 @@ pub fn defer_or(items: Vec<u32>, chunk: &Chunk) {
   expect(to.pending).toBe(null);
 });
 
-// What MIR can't see of a variable, one a `match` writes in each arm,
-// React's getIteratorFn's `maybeIterator`, or one lent as a `&mut`,
-// getParentFragmentInstances' `parentFragmentInstances`:
+// What MIR can't see of a variable, one lent as a `&mut`, a parameter's
+// `as_mut()`, or getParentFragmentInstances' `parentFragmentInstances`:
 // tidy's reading of the printed JS still answers it, until MIR does
 // (#1933's step 4), `x ?? d` under a test that `x` is there its `x`, and a
 // `let` set only to what's never `undefined` given as it is.
 test("a variable MIR proves nothing of is tidy's to read", async () => {
   const { dir, fn, tidied } = compile(
     "nullable-tests-lent-variables",
-    `#[cfg_attr(rust_js, rust_js::nullable)]
-pub fn iterator_fn(value: &'static js::Unknown, faux: &'static js::Unknown) -> Option<&'static js::Unknown> {
-    let found = match js::get(Some(value), "iterator") {
-        found if js::truthy(found) => found,
-        _ => js::get(Some(faux), "iterator"),
-    };
-    if js::type_of(found) == "function" {
-        return found;
+    `pub fn pushed_or(mut list: Option<Vec<u32>>, fallback: Vec<u32>) -> usize {
+    if let Some(list) = list.as_mut() {
+        list.push(1);
     }
-    None
+    if list.is_some() {
+        return list.unwrap_or(fallback).len();
+    }
+    0
+}
+
+pub fn pushed_after(mut list: Option<Vec<u32>>, fallback: Vec<u32>) -> usize {
+    if let Some(list) = list.as_mut() {
+        list.push(1);
+    }
+    if list.is_none() {
+        return 0;
+    }
+    list.unwrap_or(fallback).len()
+}
+
+// A test of a field of a variable written between two of them decides
+// nothing of the second.
+pub struct Node {
+    pub next: Option<&'static Node>,
+    pub id: u32,
+}
+
+pub fn walked(mut node: &'static Node) -> u32 {
+    if node.next.is_none() {
+        return node.id;
+    }
+    node = node.next.unwrap_or(node);
+    if node.next.is_none() {
+        return 100 + node.id;
+    }
+    200 + node.id
 }
 
 #[cfg_attr(rust_js, rust_js::nullable)]
@@ -683,11 +708,14 @@ pub fn found(items: Vec<u32>) -> Option<Vec<u32>> {
 `,
   );
   expect(tidied.sort()).toEqual(["tidy-nulled-as-they-are never-undefined", "tidy-present-in coalesce"]);
-  expect(fn("iteratorFn")).not.toContain("??");
+  expect(fn("pushedOr")).not.toContain("??");
+  expect(fn("pushedAfter")).toContain("return list.length;");
   expect(fn("found")).not.toContain("??");
   const lib = await import(join(dir, "lib.js"));
-  const f = () => 1;
-  expect([lib.iteratorFn({ iterator: f }, {}), lib.iteratorFn({}, { iterator: f }), lib.iteratorFn({}, {})]).toEqual([f, f, null]);
+  expect([lib.pushedOr([4], [5, 6, 7]), lib.pushedOr(undefined, [5, 6, 7])]).toEqual([2, 0]);
+  expect([lib.pushedAfter([4], [5, 6, 7]), lib.pushedAfter(undefined, [5, 6, 7])]).toEqual([2, 0]);
+  const last = { next: undefined, id: 3 };
+  expect([lib.walked(last), lib.walked({ next: last, id: 1 }), lib.walked({ next: { next: last, id: 2 }, id: 1 })]).toEqual([3, 103, 202]);
   expect([lib.found([4, 5]), lib.found([])]).toEqual([[4, 5], null]);
 });
 
@@ -742,4 +770,122 @@ pub fn pop(context: &Context) {
   lib.push(renderer);
   lib.pop(context);
   expect(context.currentRenderer).toBe(renderer);
+});
+
+// A variable written more than once, React's getIteratorFn's
+// `maybeIterator`, a `match`'s in each arm, proved by its test where
+// nothing writes it on any way from the test to the read: given as it is,
+// MIR's answer (`unwritten_since`, #1933 step 4 (A)); and `js::is_function`'s
+// true edge, React's scheduler's `continuationCallback`. Not where it's
+// written between, nor where a closure that captures it by `&mut` is
+// called between.
+test("a variable written more than once is proved where nothing writes it after its test", async () => {
+  const { dir, fn, tidied } = compile(
+    "nullable-tests-written-twice",
+    `#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn iterator_fn(value: &'static js::Unknown, faux: &'static js::Unknown) -> Option<&'static js::Unknown> {
+    let found = match js::get(Some(value), "iterator") {
+        found if js::truthy(found) => found,
+        _ => js::get(Some(faux), "iterator"),
+    };
+    if js::type_of(found) == "function" {
+        return found;
+    }
+    None
+}
+
+#[repr(transparent)]
+pub struct Callback(pub Box<dyn FnMut(bool) -> Option<Callback>>);
+
+pub struct Task {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub callback: std::cell::RefCell<Option<Callback>>,
+}
+
+pub fn run(task: &Task) -> bool {
+    if let Some(Callback(mut callback)) = task.callback.take() {
+        let continuation = callback(true);
+        if js::is_function(&continuation) {
+            task.callback.replace(continuation);
+            return true;
+        }
+    }
+    false
+}
+
+#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn rewritten(value: &'static js::Unknown, faux: &'static js::Unknown, again: bool) -> Option<&'static js::Unknown> {
+    let mut found = js::get(Some(value), "iterator");
+    if js::truthy(found) {
+        if again {
+            found = js::get(Some(faux), "iterator");
+        }
+        return found;
+    }
+    None
+}
+
+#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn captured(value: &'static js::Unknown, faux: &'static js::Unknown) -> Option<&'static js::Unknown> {
+    let mut found = js::get(Some(value), "iterator");
+    let mut again = || found = js::get(Some(faux), "iterator");
+    if js::truthy(js::get(Some(value), "iterator")) {
+        again();
+    }
+    if js::truthy(found) {
+        return found;
+    }
+    None
+}
+`,
+  );
+  expect(tidied).toEqual([]);
+  expect(fn("iteratorFn")).toContain("return found;");
+  expect(fn("run")).toContain("task.callback = continuation;");
+  expect(fn("rewritten")).toContain("return found ?? null;");
+  expect(fn("captured")).toContain("return found ?? null;");
+  const lib = await import(join(dir, "lib.js"));
+  const f = () => 1;
+  expect([lib.iteratorFn({ iterator: f }, {}), lib.iteratorFn({}, { iterator: f }), lib.iteratorFn({}, {})]).toEqual([f, f, null]);
+  const task = { callback: () => f };
+  expect([lib.run(task), task.callback, lib.run(task), task.callback]).toEqual([true, f, false, null]);
+  expect([lib.rewritten({ iterator: f }, {}, true), lib.rewritten({ iterator: f }, {}, false)]).toEqual([null, f]);
+  expect(lib.captured({ iterator: f }, {})).toBe(null);
+});
+
+// A `let` a test shows isn't `null`, written again in the test's branch
+// before it's read: its `None` given `null` by a nullable function, `return
+// found ?? null`, where tidy's if-shown took it as the `const` it reads and
+// gave `undefined` (#1952, P0).
+test("a let written again after its test is given as a nullable function gives it", async () => {
+  const { dir, fn } = compile(
+    "nullable-tests-let-written-again",
+    `pub struct Unit {
+    pub id: u32,
+}
+
+static A: Unit = Unit { id: 1 };
+
+fn begin(n: u32) -> Option<&'static Unit> {
+    if n == 1 { Some(&A) } else { None }
+}
+
+#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn rewritten(n: u32, again: bool) -> Option<&'static Unit> {
+    let mut found = begin(n);
+    if found.is_some() {
+        if again {
+            found = begin(0);
+        }
+        return found;
+    }
+    None
+}
+`,
+  );
+  expect(fn("rewritten")).toContain("return found ?? null;");
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.rewritten(1, true)).toBe(null);
+  expect(lib.rewritten(1, false).id).toBe(1);
+  expect(lib.rewritten(0, false)).toBe(null);
 });

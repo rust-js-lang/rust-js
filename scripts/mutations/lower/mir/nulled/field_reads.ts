@@ -30,12 +30,4 @@ export const mutations: Mutation[] = [
     replace: "        if base.variant_index.is_some() {\n",
     tests: fieldPaths,
   },
-  {
-    name: "field-read-back-through-the-test",
-    breaks: "the ways back from the read are followed through the test again, so a loop's body, `node = parent`, is between, and a `while .. is_none()`'s exit proves nothing (#1933)",
-    file: "src/lower/mir/nulled/field_reads.rs",
-    find: "            if b == test || !behind.insert(b) {\n",
-    replace: "            if !behind.insert(b) {\n",
-    tests: fieldPaths,
-  },
 ];
