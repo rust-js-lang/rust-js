@@ -332,6 +332,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // amended).
         let form = self.place_none_form(state, *place);
         let nullable = form.stores_null();
+        // What's never `undefined` where it's read, a read a test proved
+        // there (`Known::Proved`), as `may_be_undefined`, the one answer, says.
+        let never_undefined = matches!(&value, Value::Expr(e) if !e.may_be_undefined());
         let optional = (self.place_field(state, *place)).is_some_and(|field| bindings::is_optional(self.tcx, field));
         let value = match nullable {
             true => {
@@ -349,10 +352,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // nullable field, `*this.target_inst.borrow_mut() = target_inst`,
             // whose handle stores as the field does: what's `null` or a
             // value already, a nullable parameter, says so, as it's stored
-            // as it is (ADRs 0791, 0861, amended).
+            // as it is (ADRs 0791, 0861, amended); and so does what's never
+            // `undefined` there, a read a test proved, React's `*value =
+            // deferred` under `deferred.is_some()` (#1933 step 4 (B)).
             false
                 if matches!(place.projection.last(), Some(PlaceElem::Deref))
-                    && matches!(rvalue, Rvalue::Use(operand, _) if self.stored_given(state, operand) == Given::Nulled) =>
+                    && (never_undefined
+                        || matches!(rvalue, Rvalue::Use(operand, _) if self.stored_given(state, operand) == Given::Nulled)) =>
             {
                 let value = self.value_expr(value, span)?;
                 let none =

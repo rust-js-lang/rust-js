@@ -1172,3 +1172,76 @@ pub fn some_matched(x: Option<&'static js::Unknown>) -> Option<&'static js::Unkn
   expect([lib.rewritten({ debugTask: f }, true), lib.rewritten({ debugTask: f }, false), lib.rewritten({}, false)]).toEqual([null, f, null]);
   expect([lib.undefinedEdge({}), lib.undefinedEdge({ debugTask: f })]).toEqual([null, null]);
 });
+
+// An `Option` a test proved there, stored through a `RefCell`'s borrow of a
+// nullable field, `*value = deferred` under `deferred.is_some()`, is stored
+// as it is, `chunk.state.value = deferred;`, MIR's answer, not tidy's
+// (React's Flight client's `deferred`, #1933 step 4 (B)); one a write
+// between leaves unproved, `deferred = None`, `?? null`, so JS reads the
+// field `null`, the nullable field's `None`. Corpus case
+// proved_option_stored_through_a_borrow runs both against native.
+test("an Option a test proved there, stored through a borrow, is stored as it is", async () => {
+  const { dir, fn, tidied } = compile(
+    "nullable-tests-through-a-borrow",
+    `use std::cell::RefCell;
+
+#[cfg_attr(rust_js, rust_js::tag = "status")]
+pub enum State {
+    #[cfg_attr(rust_js, rust_js::name = "blocked")]
+    Blocked {
+        #[cfg_attr(rust_js, rust_js::nullable)]
+        value: Option<Vec<u32>>,
+    },
+    #[cfg_attr(rust_js, rust_js::name = "done")]
+    Done,
+}
+
+pub struct Chunk {
+    pub state: RefCell<State>,
+}
+
+pub fn requeue(chunk: &Chunk, items: &[u32], reset: bool) {
+    let mut deferred: Option<Vec<u32>> = None;
+    for &item in items {
+        if item > 1 {
+            deferred.get_or_insert_with(Vec::new).push(item);
+        }
+    }
+    if deferred.is_some()
+        && let State::Blocked { value } = &mut *chunk.state.borrow_mut()
+    {
+        if reset {
+            deferred = None;
+        }
+        *value = deferred;
+    }
+}
+
+pub fn requeue_kept(chunk: &Chunk, items: &[u32]) {
+    let mut deferred: Option<Vec<u32>> = None;
+    for &item in items {
+        if item > 1 {
+            deferred.get_or_insert_with(Vec::new).push(item);
+        }
+    }
+    if deferred.is_some()
+        && let State::Blocked { value } = &mut *chunk.state.borrow_mut()
+    {
+        *value = deferred;
+    }
+}
+`,
+  );
+  expect(tidied).toEqual([]);
+  expect(fn("requeueKept")).toContain("    chunk.state.value = deferred;\n");
+  expect(fn("requeue")).toContain("    chunk.state.value = deferred ?? null;\n");
+  const lib = await import(join(dir, "lib.js"));
+  const blocked = () => ({ state: { status: "blocked", value: [0] } });
+  const kept = blocked();
+  lib.requeueKept(kept, [1, 2, 3]);
+  const reset = blocked();
+  lib.requeue(reset, [5], true);
+  const again = blocked();
+  lib.requeue(again, [4], false);
+  expect([kept.state.value, reset.state.value, again.state.value]).toEqual<(number[] | null)[]>([[2, 3], null, [4]]);
+});

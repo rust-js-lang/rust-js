@@ -606,3 +606,25 @@ that may be `undefined` keeping `?? null`; the boxed enum's read back; a
 tagged enum's; run) and mutations `map-by-untagged-variant-unfollowed`
 (lower/std_types/option.ts) and `constructs-payload-of-any-enum`
 (lower/untagged.ts).
+
+## Amendment: a proved read stored through a borrow is stored as it is (2026-11-16, #1933 step 4 (B)'s gap)
+
+A store through a reference, a `RefCell`'s borrow of a nullable field whose
+handle stores as the field does (ADRs 0791, 0861), took as it is only what
+`stored_given` says is `null` or a value. It takes too what's never
+`undefined` where it's read (`may_be_undefined`, the one answer), a read a
+test proved there: React's Flight client's `*value = deferred` under
+`deferred.is_some()`, a `get_or_insert_with` lend's local (B), is
+`cyclicChunk.value = deferred;`, MIR's, where tidy's and-shown answered it:
+React's and-shown answers 2 to none, the port's output unchanged.
+One written again between, `deferred = None`, isn't proved, so it's stored
+`?? null`, JS reading the field `null`.
+
+Case of [0262](0262-when-rust-and-js-disagree.md): none, each value the
+same. Held by test/lowering-nullable-tests.test.ts's "an Option a test
+proved there, stored through a borrow, is stored as it is" (no tidy
+answer; the write between keeping `?? null`; run, JS reading `null`),
+corpus case proved_option_stored_through_a_borrow (native, both builds,
+as a library, metamorphic) and mutations
+`proved-store-through-a-borrow-unread` and `store-through-a-borrow-as-it-is`
+(lower/mir/assign.ts).
