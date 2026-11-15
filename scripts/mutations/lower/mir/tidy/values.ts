@@ -188,15 +188,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^deque_write_out_of_bounds.rs$"],
   },
   {
-    name: "nulled-kept-coalesced",
-    breaks:
-      "a variable that holds a nullable field's value is stored `x ?? null`",
-    file: "src/lower/mir/tidy/values.rs",
-    find: "            *e = (**made).clone().or_at(span);\n",
-    replace: "            let _ = (made, span);\n",
-    tests: ["test/lowering-nullable-tests.test.ts", "-t", "a variable MIR proves nothing of"],
-  },
-  {
     name: "present-place-stored-coalesced",
     breaks:
       "React's `nextHydratableInstance = fiber.stateNode` after `fiber.stateNode != null` is `?? null` again (ADR 0957)",

@@ -407,27 +407,12 @@ pub(super) fn holed_lists(body: &mut Vec<Stmt>) {
     }
 }
 
-/// A nullable place's `x ?? null` (`Storage::written`) of a `const x` the
-/// body declares once, of what's never `undefined`
-/// (`Expr::may_be_undefined`), a nullable field's read: `x`, as `null ??
-/// null` is `null` and a value is itself. What a variable holds of a
-/// nullable field, stored in another, as it is (ADR 0620, amended).
+/// A nullable place's `x ?? null` (`Storage::written`) where a test of an
+/// `&&` just before shows `x` isn't `null`: `x` (ADR 0957). A `const` never
+/// `undefined` stored so is MIR's (`nulled::stored_nulled`, the closure
+/// captures of `captures_nulled`, ADR 0620, amended), its tidy rule gone
+/// (#1933).
 pub(super) fn nulled_as_they_are(body: &mut Vec<Stmt>) {
-    let mut declared: IndexMap<String, usize> = IndexMap::default();
-    for name in js::declared_names(body) {
-        *declared.entry(name).or_default() += 1;
-    }
-    let mut defined: IndexSet<String> = IndexSet::default();
-    js::each_list(body, &mut |stmts| {
-        for stmt in stmts {
-            if let StmtKind::Const(name, value) = &stmt.kind
-                && !value.may_be_undefined()
-                && declared.get(name.word()) == Some(&1)
-            {
-                defined.insert(name.to_string());
-            }
-        }
-    });
     js::statement_lists(body, &mut |stmts| {
         for stmt in stmts.iter_mut() {
             // A variable a test of an `&&` shows isn't `null`, a module's
@@ -453,19 +438,6 @@ pub(super) fn nulled_as_they_are(body: &mut Vec<Stmt>) {
                 let span = value.span;
                 *value = (**made).clone().or_at(span);
             }
-        }
-    });
-    if defined.is_empty() {
-        return;
-    }
-    js::each_expr_mut(body, &mut |e| {
-        if let ExprKind::Binary(Op::Coalesce, made, null) = &e.kind
-            && matches!(null.kind, ExprKind::Null)
-            && matches!(&made.kind, ExprKind::Var(x) if defined.contains(x.word()))
-        {
-            crate::decisions::record("tidy-nulled-as-they-are", "never-undefined");
-            let span = e.span;
-            *e = (**made).clone().or_at(span);
         }
     });
 }

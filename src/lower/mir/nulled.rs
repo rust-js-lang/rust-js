@@ -315,6 +315,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // getActiveElement's `doc.activeElement ?? doc.body` (rd16). Its
         // `Err`'s, a `Box<dyn Any>`, is never an `Option` a nullable place
         // stores.
+        // A closure's capture, `(*_1).k`, or what a reference it captured
+        // refers to, `*((*_1).k)`: `null` or a value where its maker gave it
+        // so (`captures_nulled`, #1933 step 4 (F)), and the closure writes
+        // nothing it captured, which a `&mut` capture's would.
+        let closure = state.body.source.def_id();
+        let env = match place.projection.as_slice() {
+            [PlaceElem::Deref, rest @ ..] => rest,
+            rest => rest,
+        };
+        if self.tcx.is_closure_like(closure)
+            && place.local == Local::from_u32(1)
+            && let [PlaceElem::Field(capture, _), through @ ..] = env
+            && matches!(through, [] | [PlaceElem::Deref])
+            && self.nulled_seen.borrow().captured_nulled(closure, capture.as_usize())
+            && !self.writes_its_captures(state)
+        {
+            return (Given::Nulled, None);
+        }
         if let [PlaceElem::Downcast(..), PlaceElem::Field(..)] = place.projection.as_slice()
             && let Some(caught) = self.caught_function(state, place.local)
         {
@@ -390,6 +408,40 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             true => (Given::Nulled, None),
             false => (Given::Unknown, None),
         }
+    }
+
+    /// That the closure `closure`, made of `operands`, is given each capture
+    /// of them `stored_given` says is `null` or a value, so its body reads
+    /// it so (`NulledSeen::captures_nulled`, #1933 step 4 (F)).
+    pub(super) fn note_captures_nulled(
+        &self,
+        state: &State<'_, 'tcx>,
+        closure: rustc_span::def_id::DefId,
+        operands: &[&Operand<'tcx>],
+    ) {
+        let nulled: IndexSet<usize> = (operands.iter().enumerate())
+            .filter(|(_, o)| self.stored_given(state, o) == Given::Nulled)
+            .map(|(i, _)| i)
+            .collect();
+        self.nulled_seen.borrow_mut().captures_nulled(closure, nulled);
+    }
+
+    /// Whether the closure whose body this is writes what it captured, or
+    /// lends it `&mut`: an assignment, a call's result or a `&mut` or raw
+    /// pointer of a place in its environment, `_1`, so what its maker gave
+    /// isn't what it reads.
+    fn writes_its_captures(&self, state: &State<'_, 'tcx>) -> bool {
+        let env = Local::from_u32(1);
+        (state.body.basic_blocks.iter()).any(|data| {
+            data.statements.iter().any(|statement| match &statement.kind {
+                mir::StatementKind::Assign(assign) => {
+                    assign.0.local == env
+                        || matches!(&assign.1, Rvalue::Ref(_, BorrowKind::Mut { .. }, lent) | Rvalue::RawPtr(_, lent) if lent.local == env)
+                }
+                mir::StatementKind::SetDiscriminant { place, .. } => place.local == env,
+                _ => false,
+            }) || matches!(&data.terminator().kind, TerminatorKind::Call { destination, .. } if destination.local == env)
+        })
     }
 
     /// Whether `local`, an `Option`, is proved there where the block

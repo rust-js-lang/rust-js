@@ -662,10 +662,11 @@ pub fn defer_or(items: Vec<u32>, chunk: &Chunk) {
 });
 
 // What MIR can't see of a variable, one a closure captures and reads, a
-// test of it and its read inside the closure, React's Fizz's `prevTask`
-// restored in a `catch_unwind`'s closure: tidy's reading of the printed JS
-// still answers it, until MIR does (#1933's step 4), `x ?? d` under a test
-// that `x` is there its `x`, and a `const` never `undefined` stored as it is.
+// test of it and its read inside the closure: tidy's reading of the printed
+// JS still answers it, until MIR does (#1933's step 4), `x ?? d` under a
+// test that `x` is there its `x`. A capture its maker gives `null` or a
+// value is MIR's now, React's Fizz's `prevTask` restored in a
+// `catch_unwind`'s closure (`captures_nulled`).
 test("a variable MIR proves nothing of is tidy's to read", async () => {
   const { dir, fn, tidied } = compile(
     "nullable-tests-lent-variables",
@@ -732,7 +733,7 @@ pub fn walked(mut node: &'static Node) -> u32 {
 
 `,
   );
-  expect(tidied.sort()).toEqual(["tidy-nulled-as-they-are never-undefined", "tidy-present-in coalesce"]);
+  expect(tidied.sort()).toEqual(["tidy-present-in coalesce"]);
   expect(fn("restored")).not.toContain("??");
   expect(fn("firstOr")).not.toContain("??");
   expect(fn("afterNone")).not.toContain("??");
@@ -1244,4 +1245,42 @@ pub fn requeue_kept(chunk: &Chunk, items: &[u32]) {
   const again = blocked();
   lib.requeue(again, [4], false);
   expect([kept.state.value, reset.state.value, again.state.value]).toEqual<(number[] | null)[]>([[2, 3], null, [4]]);
+});
+
+// A closure's capture its maker gives `null` or a value is that in the
+// closure, stored back as it is, MIR's answer, not tidy's (React's Fizz
+// retryRenderTask's `prev_task` in its `catch_unwind`, `captures_nulled`,
+// #1933 step 4 (F)). Corpus case captured_nulled_local_stored_in_a_closure
+// runs it, and one the closure writes, against native.
+test("a closure's capture given null or a value is stored back as it is", () => {
+  const { fn, tidied } = compile(
+    "nullable-tests-captured",
+    `use std::cell::RefCell;
+use std::panic::{AssertUnwindSafe, catch_unwind};
+use std::rc::Rc;
+
+pub struct Task {
+    pub id: u32,
+}
+
+pub struct Request {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub current_task: RefCell<Option<Rc<Task>>>,
+}
+
+pub fn retry(request: &Request, task: &Rc<Task>, fail: bool) -> u32 {
+    let prev_task = request.current_task.replace(Some(Rc::clone(task)));
+    let result = catch_unwind(AssertUnwindSafe(|| {
+        if fail {
+            request.current_task.replace(prev_task.clone());
+            return 0;
+        }
+        task.id
+    }));
+    result.unwrap_or(1)
+}
+`,
+  );
+  expect(tidied).toEqual([]);
+  expect(fn("retry")).toContain("      request.currentTask = prevTask;\n");
 });

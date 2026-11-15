@@ -646,3 +646,33 @@ Case of [0262](0262-when-rust-and-js-disagree.md): none, each value the
 same. Held by corpus case nullable_items_set_to_a_some_by_index (native,
 both builds, as a library, metamorphic; a `None` given and one written
 `null`) and mutation `nulled-store-unmarked` (lower/mir/assign.ts).
+
+## Amendment: a closure's capture is what its maker gave (2026-11-16, #1933 step 4 (F), prevTask)
+
+`stored_in` read a closure's capture, `(*_1).k` or `*((*_1).k)`, as nothing
+known, so React's Fizz retryRenderTask's `request.current_task.replace(
+prev_task.clone())` in its `catch_unwind` closure was `prevTask ?? null`
+until tidy's never-undefined answered it. **A closure made where its body
+is lowered is told which captures its maker gives `null` or a value**
+(`NulledSeen::captures_nulled`, of each capture operand's `stored_given`,
+`&prev_task`'s through the reference), and a read of one of them, or of
+what a captured reference refers to, is so, where the closure writes
+nothing it captured, an assignment, a call's result or a `&mut` or raw
+pointer of its environment (`writes_its_captures`): a `move` closure that
+sets `prev_task = None` reads its own.
+
+Case of [0262](0262-when-rust-and-js-disagree.md): none, each value the
+same. Held by test/lowering-nullable-tests.test.ts's "a closure's capture
+given null or a value is stored back as it is" (no tidy answer), corpus
+case captured_nulled_local_stored_in_a_closure (native, both builds, as a
+library, metamorphic; one the closure writes keeping `?? null`) and
+mutations `captures-nulled-unsaid` (lower/mir/rvalues/aggregate.ts) and
+`captures-nulled-though-written` (lower/mir/nulled.ts).
+
+With it, tidy's never-undefined, a `const` never `undefined` stored as it
+is, reaches no program: no corpus case, as a program or a library, and none
+of React's port (whose and-shown, coalesce and never-undefined answers are
+now none; `FormActionEventPlugin`'s pending status `action,`, as upstream,
+where it was `action ?? null`). It goes, with mutation nulled-kept-coalesced
+and the decision's answer; tidy's presence answers left are and-shown, of
+a test row, and the five unwraps of React's (#1933's removal).

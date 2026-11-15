@@ -80,6 +80,10 @@ pub(in crate::lower) struct NulledFound {
 pub(in crate::lower) struct NulledSeen {
     calls: NulledCalls,
     returns: Returns,
+    /// Of each closure lowered where it's made, the captures its maker gives
+    /// `null` or a value, by index: what its body reads of each is so
+    /// (`stored_in`, #1933 step 4 (F)).
+    captured: IndexMap<DefId, IndexSet<usize>>,
 }
 
 /// What lowering saw of the calls of the crate's functions with nullable
@@ -348,7 +352,13 @@ impl NulledFound {
     /// What a body saw, `seen`, settled: its calls, each function it found
     /// returns `null` or a value, and each it asked of before.
     pub(in crate::lower) fn settle(&mut self, seen: NulledSeen) {
-        let NulledSeen { calls, returns } = seen;
+        // What a closure's maker gave its captures is of that lowering
+        // alone, which made the closure where its body was lowered.
+        let NulledSeen {
+            calls,
+            returns,
+            captured: _,
+        } = seen;
         self.seen.seen.extend(calls.seen);
         self.seen.unnulled.extend(calls.unnulled);
         self.seen.given_on.extend(calls.given_on);
@@ -385,6 +395,18 @@ impl NulledSeen {
     /// only grows.
     pub(in crate::lower) fn returned_nulled(&mut self, id: DefId) {
         self.returns.found.insert(id);
+    }
+
+    /// That the closure `closure`'s maker gives each capture of `nulled`,
+    /// by index, `null` or a value, as it's made where its body is lowered.
+    pub(in crate::lower) fn captures_nulled(&mut self, closure: DefId, nulled: IndexSet<usize>) {
+        self.captured.insert(closure, nulled);
+    }
+
+    /// Whether the closure `closure`'s capture `i` is `null` or a value, as
+    /// its maker gave it (`captures_nulled`).
+    pub(in crate::lower) fn captured_nulled(&self, closure: DefId, i: usize) -> bool {
+        self.captured.get(&closure).is_some_and(|nulled| nulled.contains(&i))
     }
 }
 

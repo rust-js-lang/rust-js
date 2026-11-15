@@ -11,6 +11,14 @@ const defined = ["test/lowering-nullable-tests.test.ts", "-t", "proved defined"]
 
 export const mutations: Mutation[] = [
   {
+    name: "captures-nulled-though-written",
+    breaks: "a closure that writes what it captured, `prev_task = None`, is taken to read what its maker gave, so it stores Rust's `None` as `undefined`, which the crate's `=== null` reads as a `Some` (#1933 step 4 (F))",
+    file: "src/lower/mir/nulled.rs",
+    find: "            && !self.writes_its_captures(state)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^captured_nulled_local_stored_in_a_closure.rs$"],
+  },
+  {
     name: "constant-flag-unfollowed",
     breaks: "a `bool` set to constants in a test's arms, `matches!`'s, proves nothing on its edges, so `if !matches!(js::classify(entry), Kind::Undefined) { return entry; }` keeps `?? null`, left for tidy to guess (#1933 step 4 (D))",
     file: "src/lower/mir/nulled.rs",

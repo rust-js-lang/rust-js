@@ -57,7 +57,7 @@ pub(crate) const CATALOGUE: &[Decision] = &[
     Decision {
         name: "tidy-nulled-as-they-are",
         owner: "src/lower/mir/tidy/values.rs nulled_as_they_are",
-        answers: &["cond-shown", "if-shown", "and-shown", "never-undefined"],
+        answers: &["and-shown"],
         typed: false,
     },
     Decision {

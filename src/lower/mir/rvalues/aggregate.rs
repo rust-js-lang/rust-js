@@ -187,6 +187,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // pointer is its own (ADR 0959).
             AggregateKind::Closure(def_id, args) => {
                 let ty = ty::Ty::new_closure(self.tcx, *def_id, args);
+                // Each capture it's given `null` or a value, so its body
+                // reads it so (`captures_nulled`, #1933 step 4 (F)):
+                // React's Fizz `prev_task`, captured by a `catch_unwind`'s.
+                self.note_captures_nulled(state, *def_id, &operands);
                 let values = self.held_captures(state, *def_id, &operands, values, out)?;
                 let arrow = self.mir_closure(state, ty, values, span, out)?;
                 let taker = crate::lower::passed_on::Taker::Closure;
