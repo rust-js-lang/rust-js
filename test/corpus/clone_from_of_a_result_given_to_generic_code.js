@@ -135,368 +135,290 @@ function main() {
   const value = { TAG: "Ok", _0: [2] };
   try {
     try {
-      try {
-        try {
-          assign(
-            $cellOf(w),
-            value,
-            {
-              clone(value) {
-                return { ...value, _0: countedClone_clone(value._0) };
-              },
-              cloneFrom(to, from) {
-                if (to.value.TAG === "Ok" && from.TAG === "Ok") {
-                  const payload = {
-                    get value() {
-                      return to.value._0;
-                    },
-                    set value(v) {
-                      to.value = { TAG: "Ok", _0: v };
-                    },
-                  };
-                  countedClone_cloneFrom(payload.value, from._0);
-                } else if (to.value.TAG === "Err" && from.TAG === "Err") {
-                  const payload = {
-                    get value() {
-                      return to.value._0;
-                    },
-                    set value(v) {
-                      to.value = { TAG: "Err", _0: v };
-                    },
-                  };
-                  countedClone_cloneFrom(payload.value, from._0);
-                } else {
-                  const old = $apart(to.value);
-                  to.value = { ...from, _0: countedClone_clone(from._0) };
-                  if (old.TAG === "Ok") {
-                    countedDrop_drop(old._0);
-                  }
-                  if (old.TAG === "Err") {
-                    countedDrop_drop(old._0);
-                  }
-                }
-              },
-            },
-            (result) => {
-              if (result.TAG === "Ok") {
-                countedDrop_drop(result._0);
-              }
-              if (result.TAG === "Err") {
-                countedDrop_drop(result._0);
-              }
-            },
-          );
-        } catch (error) {
-          throw $unwindsOn(error);
-        } finally {
-          if ($live()) {
-            if (value.TAG === "Ok") {
-              countedDrop_drop(value._0);
-            }
-          }
-        }
-      } catch (error) {
-        throw $unwindsOn(error);
-      } finally {
-        if ($live()) {
-          if (value.TAG === "Err") {
-            countedDrop_drop(value._0);
-          }
-        }
-      }
-      console.log(
-        `${w.TAG === "Ok" ? `Ok(${countedDebug_fmt(w._0)})` : `Err(${countedDebug_fmt(w._0)})`}`,
-      );
-      const value$1 = { TAG: "Err", _0: [3] };
-      try {
-        try {
-          assign(
-            $cellOf(w),
-            value$1,
-            {
-              clone(value) {
-                return { ...value, _0: countedClone_clone(value._0) };
-              },
-              cloneFrom(to, from) {
-                if (to.value.TAG === "Ok" && from.TAG === "Ok") {
-                  const payload = {
-                    get value() {
-                      return to.value._0;
-                    },
-                    set value(v) {
-                      to.value = { TAG: "Ok", _0: v };
-                    },
-                  };
-                  countedClone_cloneFrom(payload.value, from._0);
-                } else if (to.value.TAG === "Err" && from.TAG === "Err") {
-                  const payload = {
-                    get value() {
-                      return to.value._0;
-                    },
-                    set value(v) {
-                      to.value = { TAG: "Err", _0: v };
-                    },
-                  };
-                  countedClone_cloneFrom(payload.value, from._0);
-                } else {
-                  const old = $apart(to.value);
-                  to.value = { ...from, _0: countedClone_clone(from._0) };
-                  if (old.TAG === "Ok") {
-                    countedDrop_drop(old._0);
-                  }
-                  if (old.TAG === "Err") {
-                    countedDrop_drop(old._0);
-                  }
-                }
-              },
-            },
-            (result) => {
-              if (result.TAG === "Ok") {
-                countedDrop_drop(result._0);
-              }
-              if (result.TAG === "Err") {
-                countedDrop_drop(result._0);
-              }
-            },
-          );
-        } catch (error) {
-          throw $unwindsOn(error);
-        } finally {
-          if ($live()) {
-            if (value$1.TAG === "Ok") {
-              countedDrop_drop(value$1._0);
-            }
-          }
-        }
-      } catch (error) {
-        throw $unwindsOn(error);
-      } finally {
-        if ($live()) {
-          if (value$1.TAG === "Err") {
-            countedDrop_drop(value$1._0);
-          }
-        }
-      }
-      console.log(
-        `${w.TAG === "Ok" ? `Ok(${countedDebug_fmt(w._0)})` : `Err(${countedDebug_fmt(w._0)})`}`,
-      );
-      const value$2 = { TAG: "Err", _0: [4] };
-      try {
-        try {
-          assign(
-            $cellOf(w),
-            value$2,
-            {
-              clone(value) {
-                return { ...value, _0: countedClone_clone(value._0) };
-              },
-              cloneFrom(to, from) {
-                if (to.value.TAG === "Ok" && from.TAG === "Ok") {
-                  const payload = {
-                    get value() {
-                      return to.value._0;
-                    },
-                    set value(v) {
-                      to.value = { TAG: "Ok", _0: v };
-                    },
-                  };
-                  countedClone_cloneFrom(payload.value, from._0);
-                } else if (to.value.TAG === "Err" && from.TAG === "Err") {
-                  const payload = {
-                    get value() {
-                      return to.value._0;
-                    },
-                    set value(v) {
-                      to.value = { TAG: "Err", _0: v };
-                    },
-                  };
-                  countedClone_cloneFrom(payload.value, from._0);
-                } else {
-                  const old = $apart(to.value);
-                  to.value = { ...from, _0: countedClone_clone(from._0) };
-                  if (old.TAG === "Ok") {
-                    countedDrop_drop(old._0);
-                  }
-                  if (old.TAG === "Err") {
-                    countedDrop_drop(old._0);
-                  }
-                }
-              },
-            },
-            (result) => {
-              if (result.TAG === "Ok") {
-                countedDrop_drop(result._0);
-              }
-              if (result.TAG === "Err") {
-                countedDrop_drop(result._0);
-              }
-            },
-          );
-        } catch (error) {
-          throw $unwindsOn(error);
-        } finally {
-          if ($live()) {
-            if (value$2.TAG === "Ok") {
-              countedDrop_drop(value$2._0);
-            }
-          }
-        }
-      } catch (error) {
-        throw $unwindsOn(error);
-      } finally {
-        if ($live()) {
-          if (value$2.TAG === "Err") {
-            countedDrop_drop(value$2._0);
-          }
-        }
-      }
-      console.log(
-        `${w.TAG === "Ok" ? `Ok(${countedDebug_fmt(w._0)})` : `Err(${countedDebug_fmt(w._0)})`}`,
-      );
-      const value$3 = generic(
-        { TAG: "Ok", _0: [5] },
-        { TAG: "Ok", _0: [6] },
-        countedClone,
-        countedDebug,
-        clone,
-        debug,
-        countedDrop_drop,
-      );
-      try {
-        console.log(
-          `${value$3.TAG === "Ok" ? `Ok(${countedDebug_fmt(value$3._0)})` : `Err(${value$3._0})`}`,
-        );
-      } catch (error) {
-        throw $unwindsOn(error);
-      } finally {
-        if ($live()) {
-          if (value$3.TAG === "Ok") {
-            countedDrop_drop(value$3._0);
-          }
-        }
-      }
-      const value$4 = generic(
-        { TAG: "Err", _0: [7] },
-        { TAG: "Err", _0: [8] },
-        clone,
-        debug,
-        countedClone,
-        countedDebug,
-        undefined,
-        countedDrop_drop,
-      );
-      try {
-        console.log(
-          `${value$4.TAG === "Ok" ? `Ok(${value$4._0})` : `Err(${countedDebug_fmt(value$4._0)})`}`,
-        );
-      } catch (error) {
-        throw $unwindsOn(error);
-      } finally {
-        if ($live()) {
-          if (value$4.TAG === "Err") {
-            countedDrop_drop(value$4._0);
-          }
-        }
-      }
-      const value$5 = generic(
-        { TAG: "Err", _0: 9 },
-        { TAG: "Ok", _0: [10] },
-        countedClone,
-        countedDebug,
-        clone,
-        debug,
-        countedDrop_drop,
-      );
-      try {
-        console.log(
-          `${value$5.TAG === "Ok" ? `Ok(${countedDebug_fmt(value$5._0)})` : `Err(${value$5._0})`}`,
-        );
-      } catch (error) {
-        throw $unwindsOn(error);
-      } finally {
-        if ($live()) {
-          if (value$5.TAG === "Ok") {
-            countedDrop_drop(value$5._0);
-          }
-        }
-      }
-      const value$6 = generic(
-        { TAG: "Ok", _0: [11] },
-        { TAG: "Ok", _0: [12] },
+      assign(
+        $cellOf(w),
+        value,
         {
           clone(value) {
-            return value == null ? value : countedClone_clone(value);
+            return { ...value, _0: countedClone_clone(value._0) };
           },
           cloneFrom(to, from) {
-            if (to.value != null && from != null) {
-              countedClone_cloneFrom(to.value, from);
+            if (to.value.TAG === "Ok" && from.TAG === "Ok") {
+              const payload = {
+                get value() {
+                  return to.value._0;
+                },
+                set value(v) {
+                  to.value = { TAG: "Ok", _0: v };
+                },
+              };
+              countedClone_cloneFrom(payload.value, from._0);
+            } else if (to.value.TAG === "Err" && from.TAG === "Err") {
+              const payload = {
+                get value() {
+                  return to.value._0;
+                },
+                set value(v) {
+                  to.value = { TAG: "Err", _0: v };
+                },
+              };
+              countedClone_cloneFrom(payload.value, from._0);
             } else {
-              const old = to.value;
-              to.value = from == null ? from : countedClone_clone(from);
-              if (old != null) {
-                countedDrop_drop(old);
-              }
+              const old = $apart(to.value);
+              to.value = { ...from, _0: countedClone_clone(from._0) };
+              countedDrop_drop(old._0);
             }
           },
         },
-        {
-          fmt(value) {
-            return value == null ? "None" : `Some(${countedDebug_fmt(value)})`;
-          },
-          $drop(option) {
-            if (option != null) {
-              countedDrop_drop(option);
-            }
-          },
-        },
-        clone,
-        { fmt: (value) => "()" },
-        (option) => {
-          if (option != null) {
-            countedDrop_drop(option);
-          }
+        (result) => {
+          countedDrop_drop(result._0);
         },
       );
-      try {
-        console.log(
-          `${value$6.TAG === "Ok" ? `Ok(${value$6._0 == null ? "None" : `Some(${countedDebug_fmt(value$6._0)})`})` : "Err(())"}`,
-        );
-      } catch (error) {
-        throw $unwindsOn(error);
-      } finally {
-        if ($live()) {
-          if (value$6.TAG === "Ok") {
-            if (value$6._0 != null) {
-              countedDrop_drop(value$6._0);
-            }
-          }
-        }
-      }
-      const value$7 = generic(
-        { TAG: "Ok", _0: 1 },
-        { TAG: "Err", _0: 2 },
-        clone,
-        debug,
-        clone,
-        debug,
-      );
-      console.log(`${value$7.TAG === "Ok" ? `Ok(${value$7._0})` : `Err(${value$7._0})`}`);
     } catch (error) {
       throw $unwindsOn(error);
     } finally {
       if ($live()) {
-        if (w.TAG === "Ok") {
-          countedDrop_drop(w._0);
+        countedDrop_drop(value._0);
+      }
+    }
+    console.log(
+      `${w.TAG === "Ok" ? `Ok(${countedDebug_fmt(w._0)})` : `Err(${countedDebug_fmt(w._0)})`}`,
+    );
+    const value$1 = { TAG: "Err", _0: [3] };
+    try {
+      assign(
+        $cellOf(w),
+        value$1,
+        {
+          clone(value) {
+            return { ...value, _0: countedClone_clone(value._0) };
+          },
+          cloneFrom(to, from) {
+            if (to.value.TAG === "Ok" && from.TAG === "Ok") {
+              const payload = {
+                get value() {
+                  return to.value._0;
+                },
+                set value(v) {
+                  to.value = { TAG: "Ok", _0: v };
+                },
+              };
+              countedClone_cloneFrom(payload.value, from._0);
+            } else if (to.value.TAG === "Err" && from.TAG === "Err") {
+              const payload = {
+                get value() {
+                  return to.value._0;
+                },
+                set value(v) {
+                  to.value = { TAG: "Err", _0: v };
+                },
+              };
+              countedClone_cloneFrom(payload.value, from._0);
+            } else {
+              const old = $apart(to.value);
+              to.value = { ...from, _0: countedClone_clone(from._0) };
+              countedDrop_drop(old._0);
+            }
+          },
+        },
+        (result) => {
+          countedDrop_drop(result._0);
+        },
+      );
+    } catch (error) {
+      throw $unwindsOn(error);
+    } finally {
+      if ($live()) {
+        countedDrop_drop(value$1._0);
+      }
+    }
+    console.log(
+      `${w.TAG === "Ok" ? `Ok(${countedDebug_fmt(w._0)})` : `Err(${countedDebug_fmt(w._0)})`}`,
+    );
+    const value$2 = { TAG: "Err", _0: [4] };
+    try {
+      assign(
+        $cellOf(w),
+        value$2,
+        {
+          clone(value) {
+            return { ...value, _0: countedClone_clone(value._0) };
+          },
+          cloneFrom(to, from) {
+            if (to.value.TAG === "Ok" && from.TAG === "Ok") {
+              const payload = {
+                get value() {
+                  return to.value._0;
+                },
+                set value(v) {
+                  to.value = { TAG: "Ok", _0: v };
+                },
+              };
+              countedClone_cloneFrom(payload.value, from._0);
+            } else if (to.value.TAG === "Err" && from.TAG === "Err") {
+              const payload = {
+                get value() {
+                  return to.value._0;
+                },
+                set value(v) {
+                  to.value = { TAG: "Err", _0: v };
+                },
+              };
+              countedClone_cloneFrom(payload.value, from._0);
+            } else {
+              const old = $apart(to.value);
+              to.value = { ...from, _0: countedClone_clone(from._0) };
+              countedDrop_drop(old._0);
+            }
+          },
+        },
+        (result) => {
+          countedDrop_drop(result._0);
+        },
+      );
+    } catch (error) {
+      throw $unwindsOn(error);
+    } finally {
+      if ($live()) {
+        countedDrop_drop(value$2._0);
+      }
+    }
+    console.log(
+      `${w.TAG === "Ok" ? `Ok(${countedDebug_fmt(w._0)})` : `Err(${countedDebug_fmt(w._0)})`}`,
+    );
+    const value$3 = generic(
+      { TAG: "Ok", _0: [5] },
+      { TAG: "Ok", _0: [6] },
+      countedClone,
+      countedDebug,
+      clone,
+      debug,
+      countedDrop_drop,
+    );
+    try {
+      console.log(
+        `${value$3.TAG === "Ok" ? `Ok(${countedDebug_fmt(value$3._0)})` : `Err(${value$3._0})`}`,
+      );
+    } catch (error) {
+      throw $unwindsOn(error);
+    } finally {
+      if ($live()) {
+        if (value$3.TAG === "Ok") {
+          countedDrop_drop(value$3._0);
         }
       }
     }
+    const value$4 = generic(
+      { TAG: "Err", _0: [7] },
+      { TAG: "Err", _0: [8] },
+      clone,
+      debug,
+      countedClone,
+      countedDebug,
+      undefined,
+      countedDrop_drop,
+    );
+    try {
+      console.log(
+        `${value$4.TAG === "Ok" ? `Ok(${value$4._0})` : `Err(${countedDebug_fmt(value$4._0)})`}`,
+      );
+    } catch (error) {
+      throw $unwindsOn(error);
+    } finally {
+      if ($live()) {
+        if (value$4.TAG === "Err") {
+          countedDrop_drop(value$4._0);
+        }
+      }
+    }
+    const value$5 = generic(
+      { TAG: "Err", _0: 9 },
+      { TAG: "Ok", _0: [10] },
+      countedClone,
+      countedDebug,
+      clone,
+      debug,
+      countedDrop_drop,
+    );
+    try {
+      console.log(
+        `${value$5.TAG === "Ok" ? `Ok(${countedDebug_fmt(value$5._0)})` : `Err(${value$5._0})`}`,
+      );
+    } catch (error) {
+      throw $unwindsOn(error);
+    } finally {
+      if ($live()) {
+        if (value$5.TAG === "Ok") {
+          countedDrop_drop(value$5._0);
+        }
+      }
+    }
+    const value$6 = generic(
+      { TAG: "Ok", _0: [11] },
+      { TAG: "Ok", _0: [12] },
+      {
+        clone(value) {
+          return value == null ? value : countedClone_clone(value);
+        },
+        cloneFrom(to, from) {
+          if (to.value != null && from != null) {
+            countedClone_cloneFrom(to.value, from);
+          } else {
+            const old = to.value;
+            to.value = from == null ? from : countedClone_clone(from);
+            if (old != null) {
+              countedDrop_drop(old);
+            }
+          }
+        },
+      },
+      {
+        fmt(value) {
+          return value == null ? "None" : `Some(${countedDebug_fmt(value)})`;
+        },
+        $drop(option) {
+          if (option != null) {
+            countedDrop_drop(option);
+          }
+        },
+      },
+      clone,
+      { fmt: (value) => "()" },
+      (option) => {
+        if (option != null) {
+          countedDrop_drop(option);
+        }
+      },
+    );
+    try {
+      console.log(
+        `${value$6.TAG === "Ok" ? `Ok(${value$6._0 == null ? "None" : `Some(${countedDebug_fmt(value$6._0)})`})` : "Err(())"}`,
+      );
+    } catch (error) {
+      throw $unwindsOn(error);
+    } finally {
+      if ($live()) {
+        if (value$6.TAG === "Ok") {
+          if (value$6._0 != null) {
+            countedDrop_drop(value$6._0);
+          }
+        }
+      }
+    }
+    const value$7 = generic(
+      { TAG: "Ok", _0: 1 },
+      { TAG: "Err", _0: 2 },
+      clone,
+      debug,
+      clone,
+      debug,
+    );
+    console.log(`${value$7.TAG === "Ok" ? `Ok(${value$7._0})` : `Err(${value$7._0})`}`);
   } catch (error) {
     throw $unwindsOn(error);
   } finally {
     if ($live()) {
-      if (w.TAG === "Err") {
-        countedDrop_drop(w._0);
-      }
+      countedDrop_drop(w._0);
     }
   }
 }

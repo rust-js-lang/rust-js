@@ -326,8 +326,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a derived order of a type inside itself is inlined into its own fields' without end, and the compiler overflows its stack",
     file: "src/lower/ordering.rs",
-    find: "        if self.is_recursive(ty) {\n            let ty::Adt(adt, _) = ty.kind() else {\n",
-    replace: "        if false && self.is_recursive(ty) {\n            let ty::Adt(adt, _) = ty.kind() else {\n",
+    find: "        if self.is_recursive(ty) || self.order_nests_variants(ty) {\n            let ty::Adt(adt, _) = ty.kind() else {\n",
+    replace: "        if false && (self.is_recursive(ty) || self.order_nests_variants(ty)) {\n            let ty::Adt(adt, _) = ty.kind() else {\n",
     tests: ["test/corpus.test.ts", "-t", "^recursive_order.rs$"],
   },
   {
@@ -615,5 +615,13 @@ export const mutations: Mutation[] = [
     find: "        own || by_hand || self.order_seen(ty) || !self.order_total(ty)\n",
     replace: "        own || self.order_seen(ty) || !self.order_total(ty)\n",
     tests: ["test/corpus.test.ts", "-t", "^partial_ord_apart_from_ord.rs$"],
+  },
+  {
+    name: "order-nesting-inlined",
+    breaks: "an enum whose variants hold another enum's of variants orders inline, every level of it written where it's compared, so a 40-deep chain's `BTreeSet` writes its order a level a line, its paths longer each, quadratic, not `cmpC3` calling `cmpC2` (#1879)",
+    file: "src/lower/ordering.rs",
+    find: "        if self.is_recursive(ty) || self.order_nests_variants(ty) {\n",
+    replace: "        if self.is_recursive(ty) {\n",
+    tests: ["test/type-depth.test.ts", "-t", "plain$"],
   },
 ];

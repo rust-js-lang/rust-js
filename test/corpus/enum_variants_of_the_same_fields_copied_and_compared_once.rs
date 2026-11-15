@@ -3,7 +3,9 @@
 // `f64` and a `Vec<u32>`, its `Line` two `Vec<u32>`s, its `Dot` nothing;
 // `Nest`'s four variants each hold the `Shape` before them. Each cloned out
 // of a `RefCell`, changed, and compared with `cmp`, `partial_cmp` and `==`,
-// as the derives do it, variant first, then the fields in turn.
+// as the derives do it, variant first, then the fields in turn. `Outer`'s
+// variants hold `Shape`'s and `Nest`'s, so each one's order is a function
+// of its own, which `Outer`'s calls (#1879).
 use std::cell::RefCell;
 use std::cmp::Ordering;
 
@@ -13,6 +15,14 @@ enum Shape {
     Circle(f64, Vec<u32>),
     Square(f64, Vec<u32>),
     Line(Vec<u32>, Vec<u32>),
+}
+
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
+enum Outer {
+    Plain,
+    Shaped(Shape),
+    Nested(Nest, u8),
+    Again(Nest, u8),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -75,4 +85,17 @@ fn main() {
         Nest::Third(vec![2]).cmp(&Nest::Third(vec![1, 9])),
         nest.cmp(&nests.borrow()) == Ordering::Greater
     );
+    let mut outers = vec![
+        Outer::Again(Nest::Leaf, 2),
+        Outer::Shaped(Shape::Square(0.5, vec![])),
+        Outer::Nested(Nest::First(vec![1]), 1),
+        Outer::Plain,
+        Outer::Again(Nest::Leaf, 1),
+        Outer::Shaped(Shape::Dot),
+        Outer::Nested(Nest::First(vec![1]), 0),
+    ];
+    outers.sort_by(|a, b| a.partial_cmp(b).unwrap());
+    println!("{outers:?}");
+    let nan = Outer::Shaped(Shape::Circle(f64::NAN, vec![]));
+    println!("{:?} {:?}", nan.partial_cmp(&nan), Outer::Plain.partial_cmp(&nan));
 }

@@ -10,6 +10,8 @@
 //! them panics (`unwind terminate`). Each part's own glue is the drop of
 //! its type (`drop_in`).
 
+use crate::js::Op;
+use rustc_abi::VariantIdx;
 use rustc_middle::mir::{self, BasicBlock, Place, ProjectionElem, TerminatorKind, UnwindAction};
 
 use super::*;
@@ -217,6 +219,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// variant that drops any, in their order, only one of which runs, the
     /// test a match writes (`variant_test`), an `Option`'s by what its
     /// `None` can be (`Expr::presence`). Of one variant, `if (true)`.
+    /// Variants that drop alike are one `if` of them all, `if (e.TAG ===
+    /// "First" || e.TAG === "Second")`; where they're every variant that
+    /// drops anything, the others' test negated where they're fewer, `if
+    /// (e !== "Empty")`, or none at all (#1879).
     fn glue_variants(
         &mut self,
         glue: &mut Glue<'_, 'tcx>,
@@ -229,21 +235,45 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Err(self.unsupported(glue.span, &format!("dropping `{}`", glue.ty)));
         };
         let js_span = self.js_span(glue.span);
-        let mut arms = Vec::new();
+        let mut groups: Vec<(Vec<VariantIdx>, Vec<Stmt>)> = Vec::new();
+        let mut others = Vec::new();
         for (variant, discriminant) in adt.discriminants(self.tcx) {
             let block = (targets.iter())
                 .find(|&(value, _)| value == discriminant.val)
                 .map_or(targets.otherwise(), |(_, block)| block);
             let dropped = self.glue_from(glue, block, cleanup, made, out)?;
             if dropped.is_empty() {
+                others.push(variant);
                 continue;
             }
-            let value = glue.value.clone();
-            let test = if adt.variants().len() == 1 {
-                Expr::bool(true)
-            } else {
-                self.variant_test(value, glue.ty, adt, variant, false)
-            };
+            match groups.iter_mut().find(|(_, of)| *of == dropped) {
+                Some((variants, _)) => variants.push(variant),
+                None => groups.push((vec![variant], dropped)),
+            }
+        }
+        if adt.variants().len() == 1 {
+            let arms = groups
+                .into_iter()
+                .map(|(_, dropped)| StmtKind::If(Expr::bool(true), dropped, None).at(js_span));
+            return Ok(arms.collect());
+        }
+        let tested = |cx: &Self, variants: &[VariantIdx]| {
+            (variants.iter())
+                .map(|&variant| cx.variant_test(glue.value.clone(), glue.ty, adt, variant, false))
+                .reduce(|a, b| Expr::bin(Op::Or, a, b))
+        };
+        if let [(variants, _)] = groups.as_slice()
+            && others.len() < variants.len()
+        {
+            let (_, dropped) = groups.pop().expect("one group");
+            return Ok(match tested(self, &others) {
+                Some(test) => vec![StmtKind::If(test.negated_test(), dropped, None).at(js_span)],
+                None => dropped,
+            });
+        }
+        let mut arms = Vec::new();
+        for (variants, dropped) in groups {
+            let test = tested(self, &variants).expect("a group of one variant at least");
             arms.push(StmtKind::If(test, dropped, None).at(js_span));
         }
         Ok(arms)

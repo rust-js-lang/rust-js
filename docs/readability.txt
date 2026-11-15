@@ -1,14 +1,14 @@
 # shape	count	per 10,000 lines
 files	2583
-lines	341468
+lines	341427
 temporaries	0	0
 labeled blocks	0	0
 while (true)	224	6.6
 $iter	2876	84.2
 Iterator.from	266	7.8
 return;	332	9.7
-renamed x$1	16195	474.3
-role fallbacks	8888	260.3
+renamed x$1	16188	474.1
+role fallbacks	8889	260.3
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1	role fallbacks
 test/corpus/adapter_drop_past_a_panic.js	52	0	0	0	1	0	0	0	1
 test/corpus/adapter_drops.js	1844	0	0	1	19	2	1	98	61
@@ -54,7 +54,7 @@ test/corpus/alloc_bytes_written_and_read.js	75	0	0	0	0	0	0	0	0
 test/corpus/allocator.js	143	0	0	1	1	0	1	0	2
 test/corpus/an_index_is_no_pattern.js	79	0	0	0	0	0	0	0	1
 test/corpus/and_of_a_generic_option.js	35	0	0	0	0	0	0	8	5
-test/corpus/and_value_drops.js	181	0	0	0	0	0	0	26	10
+test/corpus/and_value_drops.js	159	0	0	0	0	0	0	23	10
 test/corpus/any_given_to_a_nullable_parameter.js	21	0	0	0	0	0	0	0	0
 test/corpus/any_mapped_to_a_nullable_parameter.js	43	0	0	0	0	0	0	0	0
 test/corpus/any_of_one_value_is_includes.js	38	0	0	0	0	0	0	0	0
@@ -320,7 +320,7 @@ test/corpus/clone_dictionary_of_a_nested_option.js	95	0	0	0	0	0	0	8	7
 test/corpus/clone_from.js	67	0	0	0	0	0	0	0	1
 test/corpus/clone_from_generic_option_own.js	48	0	0	0	0	0	0	0	0
 test/corpus/clone_from_generic_std_own.js	628	0	0	0	0	0	0	25	10
-test/corpus/clone_from_of_a_result_given_to_generic_code.js	504	0	0	0	0	0	0	31	9
+test/corpus/clone_from_of_a_result_given_to_generic_code.js	426	0	0	0	0	0	0	25	9
 test/corpus/clone_from_of_an_option_given_to_generic_code.js	449	0	0	0	0	0	0	34	8
 test/corpus/clone_from_option_own.js	31	0	0	0	0	0	0	0	0
 test/corpus/clone_from_slice_generic.js	72	0	0	0	0	0	0	0	0
@@ -700,7 +700,7 @@ test/corpus/enum_discriminant.js	67	0	0	0	0	0	0	8	6
 test/corpus/enum_discriminants_wide.js	24	0	0	0	0	0	0	0	0
 test/corpus/enum_order.js	39	0	0	0	0	0	0	0	2
 test/corpus/enum_own_eq.js	29	0	0	0	0	0	0	0	0
-test/corpus/enum_variants_of_the_same_fields_copied_and_compared_once.js	174	0	0	0	1	0	0	12	6
+test/corpus/enum_variants_of_the_same_fields_copied_and_compared_once.js	233	0	0	0	1	0	0	14	7
 test/corpus/enumerate_bounds.js	56	0	0	0	1	0	0	0	0
 test/corpus/enumerate_count_is_its_sources.js	139	0	0	0	0	0	1	0	4
 test/corpus/enumerate_counted_by_generic_code.js	25	0	0	0	3	1	0	4	3

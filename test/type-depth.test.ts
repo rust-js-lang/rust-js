@@ -8,8 +8,9 @@
 // the variants of the same fields. Twenty deep, the metamorphic net's
 // rc-refcell rewrite of nested_type_chain.rs never finished compiling,
 // its JS growing as 4 to the power of its depth. Its lines are counted, as
-// a run's time isn't the same twice: each doubling of the depth at most
-// eight times the lines, a quadratic's, as each level's path is longer.
+// a run's time isn't the same twice: each doubling of the depth less than
+// three times the lines, a line's, as each enum's order and drop is a
+// function of its own, calling the next's (#1879).
 
 import { beforeAll, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
@@ -101,8 +102,8 @@ for (const [build, flags] of [
 ] as const) {
   test(`an enum chain's JS and its compile grow with its depth, not as its variants to its power, ${build}`, () => {
     const [ten, twenty, forty] = [10, 20, 40].map((depth) => lines(depth, [...flags]));
-    expect(twenty / ten).toBeLessThan(8);
-    expect(forty / twenty).toBeLessThan(8);
+    expect(twenty / ten).toBeLessThan(3);
+    expect(forty / twenty).toBeLessThan(3);
   }, 300_000);
 }
 

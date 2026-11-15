@@ -103,10 +103,9 @@ JS is byte for byte the same, and so are its source maps.
   Readability's counts are blessed by the new case's alone, its one
   `$iter`, 12 renamed `x$1` and 6 role fallbacks; the three that moved
   are 33 lines shorter.
-- Left, as readability (#1879): a derived comparison of a deep type is still
-  written inline, one level a line, where a function per type, as
-  `Debug`'s `c3Debug_fmt`, would read as hand-written code. A drop glue's
-  variants of the same fields are each their own `if`. Both are linear.
+- Left, as readability, and done by the amendment below (#1879): a
+  derived comparison of a deep type was still written inline, and a drop
+  glue's variants that drop alike were each their own `if`.
 - `test/type-depth.test.ts` holds `never_unwinds` too: that chain forty
   deep, which the compiler before this never finished, must compile within
   its 60 s timeout. It compiles in 0.1 s.
@@ -116,3 +115,35 @@ JS is byte for byte the same, and so are its source maps.
   `drop-size-overflows` (`lower/drops.ts`),
   `clone-may-panic-asked-each-way` (`lower/std_impls/in_turn.ts`) and
   `custom-eq-asked-each-way` (`lower/std_impls.ts`).
+
+## Amendment: each enum's order a function, and variants that drop alike one `if` (2026-11-15, #1879)
+
+Two shapes were linear in size after #1821, but neither read as
+hand-written code:
+
+- **A derived comparison of a nested enum was written inline** at each place
+  it was compared. An empty `BTreeSet` of a 40-deep chain wrote its order
+  in `main`, a level a line, each level's paths, `a._0._0._0`, longer, so
+  the text was quadratic. A recursive type's order was already a function
+  of its module, `recursive_fns`. So is an enum's now whose variants hold
+  another of the crate's enums with fields, itself or boxed
+  (`order_nests_variants`): `cmpC5(a, b)`, `new ($btreeSet(cmpC5,
+  $KeySet))()`, each calling the next, `a === "Empty" ? 0 : cmpC4(a._0,
+  b._0)`. An enum whose fields are plain stays inline, `$cmp(..) || ..`.
+- **A drop glue's variants that drop alike were each their own `if`**,
+  `if (e2.TAG === "First") { dropE1(e2._0); }` four times. They're one `if`
+  of them all now (`glue_variants`). Where they're every variant that drops
+  anything, the test is the negation of the fewer others', `if (e2 !==
+  "Empty")`, or there's none: a `Result<Loud, Loud>`'s drop is
+  `loudDrop_drop(f._0)`.
+
+The 40-deep chain's JS is 1,861 lines, and 3,701 eighty deep: linear.
+test/type-depth.test.ts holds each doubling under three times the lines
+now, not eight. The corpus case's `Outer`, whose variants hold `Shape`'s
+and `Nest`'s, sorts and compares by `partialCmpOuter` calling `cmpNest`,
+NaN's too, as native Rust does in both builds. Two corpus snapshots read
+100 lines shorter: and_value_drops' and clone_from_of_a_result's drops of
+a `Result` of two `Loud`s. Mutations `order-nesting-inlined`
+(`lower/ordering.ts`), `glue-variants-each-their-own` and
+`glue-tested-by-the-group` (`lower/drops/glue.ts`);
+`recursive-order-inlined` and `enum-variants-all-dropped` retargeted.

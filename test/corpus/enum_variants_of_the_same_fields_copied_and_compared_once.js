@@ -8,7 +8,9 @@ import {
   $iter,
   $lazyZip,
   $partialCmp,
+  $sortStable,
   $thenCmp,
+  $unwrap,
 } from "@rust-js/std";
 
 function cloneNest(nest) {
@@ -33,6 +35,30 @@ function cmpNest(a, b) {
   );
 }
 
+function partialCmpOuter(a, b) {
+  return (
+    $cmp(
+      a === "Plain" ? 0 : a.TAG === "Shaped" ? 1 : a.TAG === "Nested" ? 2 : 3,
+      b === "Plain" ? 0 : b.TAG === "Shaped" ? 1 : b.TAG === "Nested" ? 2 : 3,
+    ) ||
+    (a.TAG === "Shaped"
+      ? $thenCmp(
+          $cmp(
+            a._0 === "Dot" ? 0 : a._0.TAG === "Circle" ? 1 : a._0.TAG === "Square" ? 2 : 3,
+            b._0 === "Dot" ? 0 : b._0.TAG === "Circle" ? 1 : b._0.TAG === "Square" ? 2 : 3,
+          ) ||
+            (a._0.TAG === "Circle" || a._0.TAG === "Square"
+              ? $thenCmp($partialCmp(a._0._0, b._0._0), $cmpItems(a._0._1, b._0._1, $cmp))
+              : a._0.TAG === "Line"
+                ? $cmpItems(a._0._0, b._0._0, $cmp) || $cmpItems(a._0._1, b._0._1, $cmp)
+                : 0),
+        )
+      : a.TAG === "Nested" || a.TAG === "Again"
+        ? cmpNest(a._0, b._0) || $cmp(a._1, b._1)
+        : 0)
+  );
+}
+
 export function entry() {
   main();
 }
@@ -48,6 +74,19 @@ function shapeDebug_fmt(shape) {
     return `Square(${$debugF64(shape._0)}, [${shape._1.join(", ")}])`;
   }
   return `Line([${shape._0.join(", ")}], [${shape._1.join(", ")}])`;
+}
+
+function outerDebug_fmt(outer) {
+  if (outer === "Plain") {
+    return "Plain";
+  }
+  if (outer.TAG === "Shaped") {
+    return `Shaped(${shapeDebug_fmt(outer._0)})`;
+  }
+  if (outer.TAG === "Nested") {
+    return `Nested(${nestDebug_fmt(outer._0)}, ${outer._1})`;
+  }
+  return `Again(${nestDebug_fmt(outer._0)}, ${outer._1})`;
 }
 
 function nestDebug_fmt(nest) {
@@ -168,6 +207,26 @@ function main() {
     `${["Less", "Equal", "Greater"][cmp + 1]} ${
       ["Less", "Equal", "Greater"][value$5 + 1]
     } ${cmpNest(nest, nests) === 1}`,
+  );
+  const outers = [
+    { TAG: "Again", _0: "Leaf", _1: 2 },
+    { TAG: "Shaped", _0: { TAG: "Square", _0: 0.5, _1: [] } },
+    { TAG: "Nested", _0: { TAG: "First", _0: [1] }, _1: 1 },
+    "Plain",
+    { TAG: "Again", _0: "Leaf", _1: 1 },
+    { TAG: "Shaped", _0: "Dot" },
+    { TAG: "Nested", _0: { TAG: "First", _0: [1] }, _1: 0 },
+  ];
+  $sortStable(outers, (a, b) => $unwrap(partialCmpOuter(a, b)) < 0, "general", 32);
+  console.log(`[${outers.map((item) => outerDebug_fmt(item)).join(", ")}]`);
+  const nan = { TAG: "Shaped", _0: { TAG: "Circle", _0: NaN, _1: [] } };
+  const value$6 = partialCmpOuter(nan, nan);
+  console.log(
+    `${value$6 == null ? "None" : `Some(${["Less", "Equal", "Greater"][value$6 + 1]})`} ${((
+      value,
+    ) => (value == null ? "None" : `Some(${["Less", "Equal", "Greater"][value + 1]})`))(
+      partialCmpOuter("Plain", nan),
+    )}`,
   );
 }
 //# sourceMappingURL=case.js.map

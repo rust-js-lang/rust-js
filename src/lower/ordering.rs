@@ -460,8 +460,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // A type inside itself, `C(Box<V>)`'s: its order is a function, which
         // calls itself for the ones inside, as its clone is.
-        // One for each type and module (`recursive_fns`, #517).
-        if self.is_recursive(ty) {
+        // One for each type and module (`recursive_fns`, #517). And an enum
+        // whose variants hold another enum's of variants: each a function,
+        // `cmpC3` calling `cmpC2`, as a hand-written order is, not every
+        // level of it written where it's compared (#1879).
+        if self.is_recursive(ty) || self.order_nests_variants(ty) {
             let ty::Adt(adt, _) = ty.kind() else {
                 unreachable!("a recursive type is an ADT");
             };
@@ -476,6 +479,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(Expr::call(Expr::var(&name), vec![a, b]));
         }
         self.cmp_derived(a, b, ty, partial, span, out)
+    }
+
+    /// Whether `ty`, an enum of the crate's, holds in a variant another of
+    /// the crate's enums with fields, itself or boxed: whose derived order,
+    /// by its variants then their fields, would be written inside its own.
+    fn order_nests_variants(&self, ty: Ty<'tcx>) -> bool {
+        let of_variants = |t: Ty<'tcx>| matches!(t.kind(), ty::Adt(adt, _) if adt.is_enum() && adt.did().is_local() && adt.all_fields().next().is_some());
+        let ty::Adt(adt, args) = ty.kind() else {
+            return false;
+        };
+        adt.is_enum()
+            && adt.did().is_local()
+            && (adt.all_fields()).any(|field| {
+                let t = self.field_ty(field, args);
+                of_variants(t) || t.boxed_ty().is_some_and(of_variants)
+            })
     }
 
     /// `cmp_value`'s of a derived order, of what it's made of in turn.
