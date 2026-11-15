@@ -5,7 +5,7 @@
 
 import { expect, test } from "bun:test";
 
-import { budgetOf, enclosingArm, named, naming, outsideFunctions, pattern, reached, rowsPerPart, type Hunk } from "../scripts/iteratorRows";
+import { budgetOf, enclosingArm, entriesOf, named, naming, outsideFunctions, pattern, pickedOf, reached, rowsPerPart, type Hunk } from "../scripts/iteratorRows";
 import { adapterCalls } from "./iterator-matrix";
 
 const adapters = new Set(["map", "filter", "skip", "take", "fuse", "enumerate", "chain", "rev", "step_by", "zip", "take_while", "copied", "cloned"]);
@@ -71,6 +71,38 @@ test("what decides each chain's form runs each row of what it names, and of each
     expect(pattern(reach, new Set(), false)!.test(id)).toBe(true);
   }
   expect(pattern(new Set(["map"]), new Set(), false)!.test("generic own Every | chain.flatten | rfold | none")).toBe(false);
+});
+
+// A family's flip adds one entry to `HELD_FLIPPED`'s line, which named
+// every adapter on it: each row of all of them, 153,741 rows and 32 min 44
+// s of the zip flip's check, alone (dev-loop, ioCF). What a list's entries
+// alone change decides the rows of those its diff adds or removes, and of
+// what reaches them; a change to anything else of it, each it names.
+test("a list's entries alone decide the rows of those its diff changes, and what reaches them", () => {
+  const flipped = (line: string) => `pub(in crate::lower) const HELD_FLIPPED: ${line};`;
+  const file = "src/lower/body_queries/in_place.rs";
+  const entry = { ...hunk([flipped('[&str; 4] = ["chain", "enumerate", "map", "zip"]')], [flipped('[&str; 3] = ["chain", "enumerate", "map"]')], "", file), outside: true };
+  expect(entriesOf(entry)).toMatchObject({ added: ['"zip"'], removed: [] });
+  expect(named(entriesOf(entry)!, adapters, consumers)).toMatchObject({ adapters: ["zip"], decides: true });
+  // One taken out is its rows too, as a removal's.
+  expect(entriesOf({ ...entry, added: entry.removed, removed: entry.added })).toMatchObject({ added: [], removed: ['"zip"'] });
+  // Lines each an entry: what each changed line says, its `bool` too.
+  const rows = hunk(['    ("Zip", "zip", true),'], ['    ("Zip", "zip", false),'], "", file);
+  expect(entriesOf(rows)).toMatchObject({ added: ['"Zip"', '"zip"'], removed: ['"Zip"', '"zip"'] });
+  expect(entriesOf(hunk(['    ("Zip", "zip", false),', '    ("Chain", "chain", false),'], ['    ("Chain", "chain", false),'], "", file))).toMatchObject({ added: ['"Zip"', '"zip"'], removed: [] });
+  // Its type, its name or its visibility changed, or code beside it: the
+  // whole hunk's.
+  expect(entriesOf(hunk([flipped('[&str; 4] = ["chain", "enumerate", "map", "zip"]').replace("pub(in crate::lower) ", "")], entry.removed, "", file))).toBeUndefined();
+  expect(entriesOf(hunk(['        ExprKind::Call { .. } => ground.contains(&given),'], ['        ExprKind::Call { .. } => false,'], "", file))).toBeUndefined();
+  // Of the tables: the entry's rows and what calls it, `flatten`'s of `map`,
+  // and not another's on the line; the whole line's of a change to more.
+  const mapped = { ...hunk([flipped('[&str; 2] = ["chain", "map"]')], [flipped('[&str; 1] = ["chain"]')], "", file), outside: true };
+  const setting = (found: Hunk) => new RegExp(pickedOf([found], 8).find((p) => p.table === "matrix")!.setting.slice(1, -1));
+  const entries = setting(mapped);
+  expect(["vec | map | fold | none", "vec | chain.flatten | rfold | none"].every((id) => entries.test(id))).toBe(true);
+  expect(entries.test("vec | chain | fold | none")).toBe(false);
+  const whole = setting({ ...mapped, added: [mapped.added[0].replace("pub(in crate::lower) ", "")] });
+  expect(whole.test("vec | chain | fold | none")).toBe(true);
 });
 
 // #850's hunk changed only the arm's body: what the arm matches, though that

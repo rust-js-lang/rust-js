@@ -283,6 +283,47 @@ export function naming(hunk: Hunk, adapters: Set<string>, consumers: Set<string>
   return named(alone, adapters, consumers).adapters.length > 0 ? alone : undefined;
 }
 
+/** Of a hunk that changes a list literal's entries alone, the entries
+ * its diff adds and removes, a hunk of them: `HELD_FLIPPED`'s line given
+ * `"zip"` decides `zip`'s rows, not every adapter the line says, whose
+ * rows were each run already (dev-loop, ioCF). Its entries alone: the
+ * line the same but its strings and its numbers, `[&str; 3]` to
+ * `[&str; 4]`, its added strings and its removed; or lines each an entry,
+ * strings, `true`s and `false`s in brackets, each whose line changed. One
+ * that changes anything else, the list's type, its name or what decides,
+ * is the whole hunk's (`undefined`). */
+export function entriesOf(hunk: Hunk): Hunk | undefined {
+  const strings = (line: string) => [...line.matchAll(/"((?:[^"\\]|\\.)*)"/g)].map((m) => m[1]);
+  const skeleton = (line: string) =>
+    line
+      .replace(/"(?:[^"\\]|\\.)*"\s*,?\s*/g, "")
+      .replace(/\b\d+\b/g, "N")
+      .replace(/\s+/g, "");
+  const code = (lines: string[]) => lines.filter((line) => line.trim() !== "");
+  const [added, removed] = [code(hunk.added), code(hunk.removed)];
+  if (added.length + removed.length === 0) return undefined;
+  // Each string the one side has more of than the other.
+  const beyond = (these: string[], those: string[]) => {
+    const left = [...those];
+    return these.filter((each) => {
+      const at = left.indexOf(each);
+      if (at < 0) return true;
+      left.splice(at, 1);
+      return false;
+    });
+  };
+  const quoted = (names: string[]) => names.map((name) => `"${name}"`);
+  if (added.length === removed.length && added.every((line, i) => skeleton(line) === skeleton(removed[i]))) {
+    const [put, taken] = [added.flatMap(strings), removed.flatMap(strings)];
+    return { ...hunk, added: quoted(beyond(put, taken)), removed: quoted(beyond(taken, put)), head: "", arm: undefined };
+  }
+  const entry = (line: string) => /^[([\]),]*(?:(?:true|false)[([\]),]*)*$/.test(skeleton(line)) && strings(line).length > 0;
+  if (![...added, ...removed].every(entry)) return undefined;
+  const trimmed = (lines: string[]) => lines.map((line) => line.trim());
+  const [put, taken] = [beyond(trimmed(added), trimmed(removed)), beyond(trimmed(removed), trimmed(added))];
+  return { ...hunk, added: quoted(put.flatMap(strings)), removed: quoted(taken.flatMap(strings)), head: "", arm: undefined };
+}
+
 /** The rows of a table's cases each name is of: of adapters, those whose
  * chain has it; of consumers, those whose consumer it begins; generic, the
  * generic sources'. */
@@ -299,7 +340,12 @@ export function pattern(adapters: Set<string>, consumers: Set<string>, generic: 
 /** What the change from `base` to `head` runs of each table, in
  * `iteratorPaths`' `files`. */
 export function pick(base: string, head: string | undefined, files: string[], parts: number): Picked[] {
-  const found = hunks(base, head, files);
+  return pickedOf(hunks(base, head, files), parts);
+}
+
+/** What `found`, a change's hunks to the iterators' code, runs of each
+ * table. */
+export function pickedOf(found: Hunk[], parts: number): Picked[] {
   if (found.length === 0) return [];
   return (["matrix", "conformance"] as const).flatMap((table) => {
     const cases: Case[] = table === "matrix" ? allCases() : conformanceCases();
@@ -310,11 +356,14 @@ export function pick(base: string, head: string | undefined, files: string[], pa
     const removing = new Set<string>();
     let everyAdapter = false;
     for (const found_ of found) {
-      const hunk = naming(found_, adapters, consumers);
-      if (hunk === undefined) {
+      const given = naming(found_, adapters, consumers);
+      if (given === undefined) {
         why.push(`${found_.file}:${found_.at}: outside any function: none`);
         continue;
       }
+      // A list's entries alone, those its diff adds and removes.
+      const entries = entriesOf(given);
+      const hunk = entries ?? given;
       const { adapters: a, consumers: c, generic, shared: sharedHunk, removes, decides } = named(hunk, adapters, consumers);
       // What's taken away more than put back, or what decides each chain's
       // form, decides for each row of what it names: every one runs (#823,
@@ -325,7 +374,7 @@ export function pick(base: string, head: string | undefined, files: string[], pa
       const none = a.length === 0 && c.length === 0 && !generic;
       if (sharedHunk || none) everyAdapter = true;
       const said = [...a, ...c, ...(generic ? ["generic"] : [])].join(", ") || "none";
-      why.push(`${hunk.file}:${hunk.at}: ${said}${a.length === 0 ? "" : decides ? " (decides: each row)" : removes ? " (removes: each row)" : ""}${sharedHunk ? " (shared: pairs)" : none ? " (names none: pairs)" : ""}`);
+      why.push(`${hunk.file}:${hunk.at}: ${said}${entries ? " (its list's entries)" : ""}${a.length === 0 ? "" : decides ? " (decides: each row)" : removes ? " (removes: each row)" : ""}${sharedHunk ? " (shared: pairs)" : none ? " (names none: pairs)" : ""}`);
     }
     // Each name reaches what calls it, `map` the rows of `flatten`.
     for (const set of [removing, picked.adapters]) {
