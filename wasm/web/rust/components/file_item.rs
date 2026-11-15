@@ -46,7 +46,9 @@ pub fn FileItem(
     jsx! {
         <li className="group flex items-center">
             <button
-                className={format!("min-w-0 flex-1 cursor-pointer truncate {ROW} text-left aria-[current=true]:bg-selected")}
+                className={format!(
+                    "min-w-0 flex-1 cursor-pointer truncate {ROW} text-left aria-[current=true]:bg-selected"
+                )}
                 style={CSSProperties::new().padding_left(8 + depth * 12)}
                 aria-current={open}
                 onClick={move |_| on_open(opened.clone())}

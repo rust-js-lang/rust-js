@@ -17,7 +17,7 @@ export const mutations: Mutation[] = [
     name: "fmt-stdin-jsx-bodies-as-rustfmt-moved",
     breaks: "`rust-js fmt --stdin` gives a `jsx!` body as rustfmt moved it, a multi-line string's line with it",
     file,
-    find: "    let rust = kept_jsx_bodies(source, &rust, name)?;\n",
+    find: "    let rust = kept_jsx_bodies(source, &rust, &job.name)?;\n",
     replace: "",
     tests: one,
   },
@@ -43,6 +43,14 @@ export const mutations: Mutation[] = [
     file,
     find: "            false => parent.join(file.file_stem().unwrap_or_default()),\n",
     replace: "            false => parent.clone(),\n",
+    tests: one,
+  },
+  {
+    name: "fmt-foreign-jsx-kept",
+    breaks: "another crate's `foreign::jsx!` is kept as written through rustfmt, as if it were the compiler's, so its opaque body moves further each run",
+    file,
+    find: "        let pathed = i >= 2 && tokens[i - 1].0 == T::Colon && tokens[i - 2].0 == T::Colon;\n",
+    replace: "        let pathed = false;\n",
     tests: one,
   },
 ];

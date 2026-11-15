@@ -19,6 +19,8 @@
 //! rustfmt runs where each file is, so it reads the project's toolchain and
 //! its `rustfmt.toml`, given the edition of the package the file is of.
 
+mod wrap;
+
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::process::{ExitCode, Stdio};
@@ -53,6 +55,71 @@ struct Source {
     edition: String,
 }
 
+/// A file being formatted: where rustfmt runs, its edition and name,
+/// rustfmt's width and indent for it, and the notes of what it couldn't
+/// lay out, which `--check` says.
+pub(super) struct Job {
+    dir: PathBuf,
+    edition: String,
+    name: PathBuf,
+    max_width: usize,
+    tab: usize,
+    notes: std::rc::Rc<std::cell::RefCell<Vec<String>>>,
+}
+
+impl Job {
+    fn new(dir: &Path, edition: &str, name: &Path) -> Result<Job, String> {
+        let (max_width, tab) = rustfmt_widths(dir)?;
+        Ok(Job {
+            dir: dir.to_path_buf(),
+            edition: edition.to_string(),
+            name: name.to_path_buf(),
+            max_width,
+            tab,
+            notes: Default::default(),
+        })
+    }
+
+    fn note(&self, note: String) {
+        self.notes.borrow_mut().push(note);
+    }
+
+    /// This job at `max_width`, a piece of Rust's in a `jsx!`, its notes
+    /// this one's.
+    fn at_width(&self, max_width: usize) -> Job {
+        Job {
+            dir: self.dir.clone(),
+            edition: self.edition.clone(),
+            name: self.name.clone(),
+            max_width,
+            tab: self.tab,
+            notes: std::rc::Rc::clone(&self.notes),
+        }
+    }
+}
+
+/// rustfmt's `max_width` and `tab_spaces` of a file in `dir`, as the
+/// `rustfmt.toml` nearest above it says, else its defaults, 100 and 4.
+fn rustfmt_widths(dir: &Path) -> Result<(usize, usize), String> {
+    let dir = std::fs::canonicalize(dir).map_err(|e| format!("{}: {e}", dir.display()))?;
+    for at in dir.ancestors() {
+        for name in ["rustfmt.toml", ".rustfmt.toml"] {
+            let path = at.join(name);
+            if let Ok(text) = std::fs::read_to_string(&path) {
+                let value: toml::Table = text.parse().map_err(|e| format!("{}: {e}", path.display()))?;
+                let get = |key: &str, default: usize| {
+                    value
+                        .get(key)
+                        .and_then(|v| v.as_integer())
+                        .map_or(default, |v| v as usize)
+                };
+                return Ok((get("max_width", 100), get("tab_spaces", 4)));
+            }
+        }
+    }
+    Ok((100, 4))
+}
+
 /// Runs `fmt`: 0 where all's formatted, 1 where `--check` found a file that
 /// isn't or something failed, each failure said on stderr.
 pub(crate) fn run(fmt: Fmt) -> ExitCode {
@@ -76,7 +143,9 @@ fn formatted(fmt: Fmt) -> Result<bool, String> {
             .map_err(|e| format!("reading stdin: {e}"))?;
         let here = std::env::current_dir().map_err(|e| e.to_string())?;
         let edition = edition_of(&here)?;
-        let out = format_source(&source, &here, &edition, Path::new("<stdin>"))?;
+        let job = Job::new(&here, &edition, Path::new("<stdin>"))?;
+        let out = formatted_rust(&job, &source, None)?;
+        notes(&job, check);
         if check {
             print!("{}", diff(Path::new("<stdin>"), &source, &out));
             return Ok(out == source);
@@ -109,7 +178,8 @@ fn formatted(fmt: Fmt) -> Result<bool, String> {
             .parent()
             .filter(|p| !p.as_os_str().is_empty())
             .unwrap_or(Path::new("."));
-        let rust = rustfmt(&text, dir, &source.edition, &source.path)?;
+        let job = Job::new(dir, &source.edition, &source.path)?;
+        let rust = rustfmt(&job, &text, None)?;
         let rust = kept_jsx_bodies(&text, &rust, &source.path)?;
         Ok((text, rust))
     });
@@ -118,10 +188,15 @@ fn formatted(fmt: Fmt) -> Result<bool, String> {
     let mut changed = Vec::new();
     for (source, result) in sources.iter().zip(rustfmt) {
         let (text, rust) = result?;
+        let dir = (source.path.parent())
+            .filter(|p| !p.as_os_str().is_empty())
+            .unwrap_or(Path::new("."));
+        let job = Job::new(dir, &source.edition, &source.path)?;
         let out = match rust.contains("jsx!") {
-            true => jsx(&rust, &source.edition, &source.path)?,
+            true => wrap::laid_out(&job, &jsx(&job, &rust)?)?,
             false => rust,
         };
+        notes(&job, check);
         if out != text {
             changed.push((&source.path, text, out));
         }
@@ -135,22 +210,41 @@ fn formatted(fmt: Fmt) -> Result<bool, String> {
     Ok(!check || changed.is_empty())
 }
 
-/// `source`, formatted: rustfmt run in `dir`, then the JSX pass.
-fn format_source(source: &str, dir: &Path, edition: &str, name: &Path) -> Result<String, String> {
-    let rust = rustfmt(source, dir, edition, name)?;
-    let rust = kept_jsx_bodies(source, &rust, name)?;
+/// `source`, formatted: rustfmt's, at `width` where it's given, else its
+/// config's, each `jsx!` body as written, then laid out. A piece of Rust in
+/// a `jsx!` is formatted so, its own `jsx!`s first (`wrap.rs`).
+fn formatted_rust(job: &Job, source: &str, width: Option<usize>) -> Result<String, String> {
+    let rust = rustfmt(job, source, width)?;
+    let rust = kept_jsx_bodies(source, &rust, &job.name)?;
+    // Its `jsx!`s at the width it's given, a piece's.
+    let narrower = width.map(|width| job.at_width(width));
+    let job = narrower.as_ref().unwrap_or(job);
     match rust.contains("jsx!") {
-        true => jsx(&rust, edition, name),
+        true => wrap::laid_out(job, &jsx(job, &rust)?),
         false => Ok(rust),
+    }
+}
+
+/// What `job` couldn't lay out, said on stderr where `--check` asks.
+fn notes(job: &Job, check: bool) {
+    if check {
+        for note in job.notes.borrow().iter() {
+            eprintln!("note: rust-js fmt: {note}");
+        }
     }
 }
 
 /// The toolchain's rustfmt of `source`, run in `dir`: rustup's proxy picks
 /// the project's toolchain there, and rustfmt its `rustfmt.toml`.
-fn rustfmt(source: &str, dir: &Path, edition: &str, name: &Path) -> Result<String, String> {
-    let mut child = std::process::Command::new("rustfmt")
-        .args(["--edition", edition, "--emit", "stdout"])
-        .current_dir(dir)
+fn rustfmt(job: &Job, source: &str, width: Option<usize>) -> Result<String, String> {
+    let (edition, name) = (&job.edition, &job.name);
+    let mut command = std::process::Command::new("rustfmt");
+    command.args(["--edition", edition, "--emit", "stdout"]);
+    if let Some(width) = width {
+        command.args(["--config", &format!("max_width={width}")]);
+    }
+    let mut child = command
+        .current_dir(&job.dir)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
@@ -220,7 +314,9 @@ fn jsx_bodies(text: &str) -> Vec<std::ops::Range<usize>> {
     while i + 2 < tokens.len() {
         let (kind, start, end) = tokens[i];
         let open = matches!(tokens[i + 2].0, T::OpenBrace | T::OpenParen | T::OpenBracket);
-        if kind == T::Ident && &text[start..end] == "jsx" && tokens[i + 1].0 == T::Bang && open {
+        // Not another crate's, `foreign::jsx!`, as the compiler reads it.
+        let pathed = i >= 2 && tokens[i - 1].0 == T::Colon && tokens[i - 2].0 == T::Colon;
+        if kind == T::Ident && &text[start..end] == "jsx" && tokens[i + 1].0 == T::Bang && open && !pathed {
             let body_start = tokens[i + 2].1;
             let mut depth = 0;
             let mut j = i + 2;
@@ -249,9 +345,35 @@ fn jsx_bodies(text: &str) -> Vec<std::ops::Range<usize>> {
 
 /// The JSX pass of `source`, a file rustfmt formatted: its `jsx!` bodies
 /// laid out (`jsx_syntax::formatting`).
-fn jsx(source: &str, edition: &str, name: &Path) -> Result<String, String> {
+fn jsx(job: &Job, source: &str) -> Result<String, String> {
+    let formatter = pass(job, source, false)?;
+    formatter.output.ok_or_else(|| {
+        format!(
+            "{}: its `jsx!` couldn't be read, as rustc said above",
+            job.name.display()
+        )
+    })
+}
+
+/// Each `jsx!` body of `source`, a file the JSX pass laid out, with its
+/// shape.
+fn shapes(job: &Job, source: &str) -> Result<Vec<crate::jsx_syntax::formatting::Body>, String> {
+    let formatter = pass(job, source, true)?;
+    match formatter.output {
+        Some(_) => Ok(formatter.bodies.unwrap_or_default()),
+        None => Err(format!(
+            "{}: its `jsx!` couldn't be read, as rustc said above",
+            job.name.display()
+        )),
+    }
+}
+
+/// The JSX pass of `source`, with its bodies' shapes where `bodies` asks.
+fn pass(job: &Job, source: &str, bodies: bool) -> Result<crate::jsx_syntax::formatting::Formatter, String> {
+    let (edition, name) = (&job.edition, &job.name);
     let mut formatter = crate::jsx_syntax::formatting::Formatter {
         input: Some((name.display().to_string(), source.to_string())),
+        bodies: bodies.then(Vec::new),
         ..Default::default()
     };
     let args = vec![
@@ -264,13 +386,7 @@ fn jsx(source: &str, edition: &str, name: &Path) -> Result<String, String> {
     ];
     // Its output is none where rustc couldn't read it, as it says.
     let _ = rustc_driver::catch_with_exit_code(|| rustc_driver::run_compiler(&args, &mut formatter));
-    match formatter.output {
-        Some(out) => Ok(out),
-        None => Err(format!(
-            "{}: its `jsx!` couldn't be read, as rustc said above",
-            name.display()
-        )),
-    }
+    Ok(formatter)
 }
 
 /// `each` of every item, on as many threads as the machine has cores, in
@@ -301,16 +417,34 @@ fn parallel<T: Sync, R: Send>(items: &[T], each: impl Fn(&T) -> R + Sync) -> Vec
 /// as Cargo gives rustfmt it; 2024 where none says.
 fn edition_of(dir: &Path) -> Result<String, String> {
     let dir = std::fs::canonicalize(dir).map_err(|e| format!("{}: {e}", dir.display()))?;
+    // A package's own, or its workspace's, `edition.workspace = true`.
+    let mut inherited = false;
     for at in dir.ancestors() {
         let manifest = at.join("Cargo.toml");
         if let Ok(text) = std::fs::read_to_string(&manifest) {
             let value: toml::Table = text.parse().map_err(|e| format!("{}: {e}", manifest.display()))?;
-            let package = value.get("package").and_then(|p| p.as_table());
-            if let Some(edition) = package.and_then(|p| p.get("edition")).and_then(|e| e.as_str()) {
+            let workspace = (value.get("workspace").and_then(|w| w.get("package")))
+                .and_then(|p| p.get("edition"))
+                .and_then(|e| e.as_str());
+            if inherited && let Some(edition) = workspace {
                 return Ok(edition.to_string());
             }
-            if package.is_some() {
-                return Ok("2015".into());
+            if inherited {
+                continue;
+            }
+            let package = value.get("package").and_then(|p| p.as_table());
+            match package.and_then(|p| p.get("edition")) {
+                Some(toml::Value::String(edition)) => return Ok(edition.clone()),
+                Some(toml::Value::Table(edition))
+                    if edition.get("workspace").and_then(|w| w.as_bool()) == Some(true) =>
+                {
+                    if let Some(edition) = workspace {
+                        return Ok(edition.to_string());
+                    }
+                    inherited = true;
+                }
+                _ if package.is_some() => return Ok("2015".into()),
+                _ => {}
             }
         }
     }

@@ -29,9 +29,16 @@ pub fn ExamplePicker(
             value={chosen}
             onChange={move |e: &ChangeEvent<_>| on_choose(e.value())}
         >
-            {examples.iter().map(|example| jsx! {
-                <option key={example.name.clone()} value={example.name.clone()}>{example.title.clone()}</option>
-            }).collect::<Vec<_>>()}
+            {examples
+                .iter()
+                .map(|example| {
+                    jsx! {
+                        <option key={example.name.clone()} value={example.name.clone()}>
+                            {example.title.clone()}
+                        </option>
+                    }
+                })
+                .collect::<Vec<_>>()}
         </select>
     }
 }

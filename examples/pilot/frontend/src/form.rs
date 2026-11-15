@@ -69,7 +69,8 @@ pub fn NewContactForm() -> JSX::Element {
                     name={key}
                     value={value}
                     aria-invalid={error.is_some()}
-                    onChange={move |e: &ChangeEvent<_>| set(e.value())} />
+                    onChange={move |e: &ChangeEvent<_>| set(e.value())}
+                />
                 {error.map(|text| jsx! { <span className="field-error">{text}</span> })}
             </label>
         }
@@ -80,7 +81,9 @@ pub fn NewContactForm() -> JSX::Element {
             {field("Name", "name", name.clone(), Box::new(move |v| set_name.set(v)))}
             {field("Email", "email", email.clone(), Box::new(move |v| set_email.set(v)))}
             {field("Age", "age", age.clone(), Box::new(move |v| set_age.set(v)))}
-            <button type="submit" disabled={*sending}>{if *sending { "Adding…" } else { "Add contact" }}</button>
+            <button type="submit" disabled={*sending}>
+                {if *sending { "Adding…" } else { "Add contact" }}
+            </button>
         </form>
     }
 }

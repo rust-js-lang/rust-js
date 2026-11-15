@@ -26,5 +26,9 @@ use react::jsx;
 /// Render the page into `#app`.
 pub fn start() {
     let root = create_root(document().get_element_by_id("app").expect("the page has an #app"), None);
-    root.render(jsx! { <StrictMode><App /></StrictMode> });
+    root.render(jsx! {
+        <StrictMode>
+            <App />
+        </StrictMode>
+    });
 }

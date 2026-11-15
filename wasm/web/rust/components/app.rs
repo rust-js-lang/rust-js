@@ -322,7 +322,9 @@ pub fn App() -> JSX::Element {
     jsx! {
         <>
             <h1 className="mb-1 text-lg font-bold">{"rust-js playground"}</h1>
-            <p className="mb-3 text-muted">{"rustc's front end and rust-js, as WebAssembly. No server compiles anything."}</p>
+            <p className="mb-3 text-muted">
+                {"rustc's front end and rust-js, as WebAssembly. No server compiles anything."}
+            </p>
             <Toolbar
                 examples={examples}
                 example={example.clone()}
@@ -358,11 +360,7 @@ pub fn App() -> JSX::Element {
                         </>
                     }}
                     editor={jsx! {
-                        <Editor
-                            state={current}
-                            view={Some(source)}
-                            onSubmit={Some(Rc::new(move || submit(false)))}
-                        />
+                        <Editor state={current} view={Some(source)} onSubmit={Some(Rc::new(move || submit(false)))} />
                     }}
                 />
                 <Pane

@@ -233,6 +233,32 @@ fn moved(
 
 /// oxfmt's defaults, Prettier's `objectWrap: "preserve"` among them: an
 /// object a line ends in after its `{` stays on lines of its own, as a
+/// `code`, one JSX expression a `jsx!` body's laid out as (#1901, ADR
+/// 1166), laid out at `width` by oxc's JSX rules, Prettier's, its props one
+/// a line where they don't fit, its children each on one, indented
+/// `indent` spaces as rustfmt indents Rust: the expression alone, with no
+/// `;` or parentheses around it. Why it couldn't be, where it can't.
+pub fn jsx_expression(code: &str, width: u16, indent: u8) -> Result<String, String> {
+    let options = JsFormatOptions {
+        line_width: oxc_formatter_core::LineWidth::try_from(width.clamp(1, 320)).map_err(|e| e.to_string())?,
+        indent_width: oxc_formatter_core::IndentWidth::try_from(indent).map_err(|e| e.to_string())?,
+        ..JsFormatOptions::default()
+    };
+    let allocator = Allocator::default();
+    let source = allocator.alloc_str(&format!("{code};\n"));
+    let text = format(&allocator, source, SourceType::jsx(), options)
+        .map_err(|e| e.to_string())?
+        .print()
+        .map_err(|e| format!("{e:?}"))?
+        .into_code();
+    let text = text
+        .strip_suffix(";\n")
+        .ok_or_else(|| format!("its layout isn't one statement: {text}"))?;
+    // A statement of several lines, Prettier's, is the expression itself:
+    // only an expression in a context gets parentheses.
+    Ok(text.to_string())
+}
+
 /// person wrote it, which `as_written` makes of the source's (ADR 0835).
 fn options() -> JsFormatOptions {
     JsFormatOptions::default()

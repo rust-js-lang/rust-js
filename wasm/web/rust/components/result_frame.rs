@@ -87,8 +87,10 @@ pub fn ResultFrame(ResultFrameProps { program, on_outcome }: ResultFrameProps) -
             <h2 className={HEADING}>
                 {"Result "}
                 <span className="font-normal">
-                    {"the root module's "}<code>{"main()"}</code>
-                    {", or with Test its "}<code>{"#[test]"}</code>
+                    {"the root module's "}
+                    <code>{"main()"}</code>
+                    {", or with Test its "}
+                    <code>{"#[test]"}</code>
                     {"s, in a frame of their own"}
                 </span>
             </h2>

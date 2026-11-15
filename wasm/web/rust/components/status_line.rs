@@ -23,5 +23,9 @@ pub fn StatusLine(StatusLineProps { status }: StatusLineProps) -> JSX::Element {
         Tone::Good => "text-good",
         Tone::Bad => "text-bad",
     };
-    jsx! { <span id="status" role="status" className={color}>{status.text.clone()}</span> }
+    jsx! {
+        <span id="status" role="status" className={color}>
+            {status.text.clone()}
+        </span>
+    }
 }

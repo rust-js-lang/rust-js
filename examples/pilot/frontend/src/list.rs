@@ -70,7 +70,8 @@ pub fn ContactList() -> JSX::Element {
                 placeholder="Search"
                 aria-label="Search"
                 value={query.clone()}
-                onChange={move |e: &ChangeEvent<_>| set_query.set(e.value())} />
+                onChange={move |e: &ChangeEvent<_>| set_query.set(e.value())}
+            />
             {results}
         </section>
     }

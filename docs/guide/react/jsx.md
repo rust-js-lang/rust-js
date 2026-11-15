@@ -587,9 +587,32 @@ out as a second label.
 ## Formatting
 
 `rust-js fmt` formats an app's Rust, the one command for it: the
-toolchain's rustfmt, then the `jsx!` bodies rustfmt leaves as they're
-written, their tags, props, nested JSX and expression blocks aligned at
-four spaces.
+toolchain's rustfmt, then each `jsx!` body, which rustfmt leaves as it's
+written, laid out as JSX is, Prettier's rules at rustfmt's width:
+
+```rust
+# use react::{JSX, jsx, use_state};
+#
+# pub fn Toggle() -> JSX::Element {
+#     let (is_open, set_open) = use_state(|| false);
+jsx! {
+    <button
+        type="button"
+        className="navigation-toggle"
+        aria-expanded={is_open}
+        onClick={move |_| set_open.set(!is_open)}
+    >
+        {"Browse guides"}
+    </button>
+}
+# }
+```
+
+Its props are one a line where they don't fit on one, and each child on
+a line of its own; an element of two props or more puts its children on
+lines of their own, as Prettier does. Each piece of Rust in it, a
+`{expr}`, a prop's value or a spread, is rustfmt's, hugged in its braces
+where it's several lines, `onClick={move |_| {` .. `}}`.
 
 ```bash
 rust-js fmt                  # each target's module tree of the Cargo workspace here
@@ -601,11 +624,11 @@ rust-js fmt --stdin          # stdin to stdout, as an editor asks
 rustfmt runs where each file is, with the project's toolchain, its
 `rustfmt.toml` and its package's edition. For rust-analyzer, set
 `"rust-analyzer.rustfmt.overrideCommand": ["rust-js", "fmt", "--stdin"]`.
-A `jsx!` body is as it's written after rustfmt, which moves each of its
-lines with the call, a multi-line string's too, so the JSX pass changes
-only leading whitespace: line breaks, literals, comments and other macros'
-bodies stay as written, and `#[rustfmt::skip]` on an item or a `jsx!`
-leaves it alone. In this repository, `bun run fmt` runs it on the
+Literals and comments stay as written, a multi-line string's lines byte
+for byte, and `#[rustfmt::skip]` on an item or a `jsx!` leaves it alone.
+A body with a `//` comment between its props or children keeps its
+lines, only its indentation laid out, as `rust-js fmt --check` notes on
+stderr; a `{/* .. */}` child is laid out like any other. In this repository, `bun run fmt` runs it on the
 workspace and the playground, or on the files it's given, and
 `bun run fmt:check` checks.
 

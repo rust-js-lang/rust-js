@@ -37,7 +37,10 @@ pub fn FileTree(
             Entry::Folder(children) => jsx! {
                 <li key={format!("{name}/")} className="flex items-center">
                     <div className="w-full">
-                        <span className={format!("block {ROW} text-muted")} style={CSSProperties::new().padding_left(8 + depth * 12)}>
+                        <span
+                            className={format!("block {ROW} text-muted")}
+                            style={CSSProperties::new().padding_left(8 + depth * 12)}
+                        >
                             {format!("{name}/")}
                         </span>
                         <ul>

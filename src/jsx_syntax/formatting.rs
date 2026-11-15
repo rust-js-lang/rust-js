@@ -15,12 +15,25 @@ use rustc_span::{BytePos, ErrorGuaranteed, Span, Symbol};
 
 use super::{parser, tags_of};
 
+pub mod shape;
+
 /// The JSX pass of one file, `rust-js fmt`'s (`source_format.rs`): its
-/// `input`, a name and the text rustfmt gave, and its `output`.
+/// `input`, a name and the text rustfmt gave, and its `output`; and where
+/// `bodies` is asked for, each `jsx!` body's shape, to lay it out.
 #[derive(Default)]
 pub struct Formatter {
     pub input: Option<(String, String)>,
     pub output: Option<String>,
+    pub bodies: Option<Vec<Body>>,
+}
+
+/// A `jsx!` call's body, of a file laid out: where its delimiters are, the
+/// indent of the call's line, and its shape, or why it can't be read.
+pub struct Body {
+    pub open: usize,
+    pub close: usize,
+    pub indent: usize,
+    pub shape: Result<shape::Element, String>,
 }
 
 impl Callbacks for Formatter {
@@ -38,6 +51,7 @@ impl Callbacks for Formatter {
         let file = sess.source_map().lookup_source_file(krate.spans.inner_span.lo());
         let source = file.src.as_ref().expect("the parsed input has source text").to_string();
         let mut visitor = Format {
+            bodies: self.bodies.take(),
             sess,
             layout: Layout {
                 lines: std::iter::once(0)
@@ -50,6 +64,7 @@ impl Callbacks for Formatter {
             },
         };
         visitor.visit_crate(krate);
+        self.bodies = visitor.bodies.take();
         if sess.dcx().has_errors().is_none() {
             self.output = Some(visitor.layout.finish());
         }
@@ -60,6 +75,7 @@ impl Callbacks for Formatter {
 struct Format<'a> {
     sess: &'a Session,
     layout: Layout,
+    bodies: Option<Vec<Body>>,
 }
 
 impl Format<'_> {
@@ -74,6 +90,15 @@ impl Format<'_> {
                 &mut self.layout,
             );
             self.layout.mark(mac.args.dspan.close, indent);
+            if let Some(bodies) = &mut self.bodies {
+                let at = |pos: BytePos| (pos - self.layout.start).0 as usize;
+                bodies.push(Body {
+                    open: at(mac.args.dspan.open.lo()),
+                    close: at(mac.args.dspan.close.lo()),
+                    indent,
+                    shape: shape::read(&mac.args.tokens, self.layout.start),
+                });
+            }
         }
     }
 }

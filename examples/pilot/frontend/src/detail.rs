@@ -41,7 +41,11 @@ pub fn ContactPage(ContactPageProps { id }: ContactPageProps) -> JSX::Element {
     );
     match loaded {
         Loaded::Loading => jsx! { <p className="status">{"Loading…"}</p> },
-        Loaded::Failed(message) => jsx! { <p className="error" role="alert">{message.clone()}</p> },
+        Loaded::Failed(message) => jsx! {
+            <p className="error" role="alert">
+                {message.clone()}
+            </p>
+        },
         Loaded::Contact(contact) => jsx! {
             <article className="contact">
                 <h1>{contact.name.clone()}</h1>
