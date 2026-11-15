@@ -1,14 +1,14 @@
 # shape	count	per 10,000 lines
-files	2614
-lines	345847
+files	2616
+lines	346131
 temporaries	0	0
 labeled blocks	0	0
 while (true)	224	6.5
-$iter	2904	84
-Iterator.from	282	8.2
+$iter	2909	84
+Iterator.from	282	8.1
 return;	337	9.7
-renamed x$1	16275	470.6
-role fallbacks	8886	256.9
+renamed x$1	16281	470.4
+role fallbacks	8891	256.9
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1	role fallbacks
 test/corpus/adapter_drop_past_a_panic.js	50	0	0	0	1	0	0	0	1
 test/corpus/adapter_drops.js	1849	0	0	1	18	2	1	98	61
@@ -1086,6 +1086,7 @@ test/corpus/heap_pop_of_a_param.js	107	0	0	0	1	0	0	9	5
 test/corpus/heap_sift_unwinds.js	295	0	0	1	1	0	0	5	2
 test/corpus/held_adapter_hints_of_adapters_made_inside.js	102	0	0	0	8	0	0	19	11
 test/corpus/held_adapters_by_ref.js	81	0	0	0	4	0	0	4	4
+test/corpus/held_adapters_of_a_flatten_collected_where_capacity_is_read.js	150	0	0	0	5	0	0	6	4
 test/corpus/held_adapters_of_by_ref.js	106	0	0	0	0	0	0	6	5
 test/corpus/held_adapters_stepped_to_their_end.js	338	0	0	3	1	0	0	4	5
 test/corpus/held_back_folds_by_try_rfold.js	227	0	0	0	0	0	0	0	0
@@ -1110,6 +1111,7 @@ test/corpus/held_hint_refused.js	29	0	0	0	1	0	0	0	0
 test/corpus/held_iterator_dropped_by_its_owner.js	248	0	0	0	10	0	0	0	11
 test/corpus/held_keys.js	100	0	0	0	0	0	0	13	8
 test/corpus/held_lazy_adapters_hint.js	292	0	0	0	9	0	0	26	22
+test/corpus/held_map_made_knowing_its_back_given_apart.js	134	0	0	0	0	0	0	0	1
 test/corpus/held_peekable.js	209	0	0	0	3	0	1	4	4
 test/corpus/held_revs_of_lazy_sources.js	104	0	0	0	1	0	0	8	6
 test/corpus/held_skip_stepped_from_its_back_knows_its_length.js	52	0	0	0	1	0	0	0	0

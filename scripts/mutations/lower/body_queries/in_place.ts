@@ -312,7 +312,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/body_queries/in_place.rs",
     find: "        (held.peel_refs().walk().filter_map(|part| part.as_type()))\n",
     replace: "        [held.peel_refs()].into_iter()\n",
-    tests: ["test/corpus.test.ts", "-t", "^flat_map_collected_where_capacity_is_read.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^held_adapters_of_a_flatten_collected_where_capacity_is_read.rs$"],
   },
   {
     name: "hint-wanted-of-receivers-alone",
@@ -339,7 +339,7 @@ export const mutations: Mutation[] = [
     find: "            && !back_stepped.made_knowing(*recognition, (body.def_id, mir), thir[source].ty)",
     replace: "            && !false",
     snapshots: true,
-    tests: ["test/corpus.test.ts", "-t", "^map_held_then_enumerated_from_its_back.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^held_map_made_knowing_its_back_given_apart.rs$"],
   },
   {
     name: "held-flip-past-a-link-not-flipped",
