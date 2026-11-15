@@ -83,6 +83,40 @@ refused.
 - A distributive alias's members carry their doc comments, as an
   interface's do.
 
+## D. A type parameter's `const` and its default
+
+**`#[cfg_attr(rust_js, rust_js::const_param)]` on a generic parameter**
+is TypeScript's `const` one, whose caller's literals are kept as
+literals, upstream's `const Given`: `kept<const G>(given: G): G`, so
+`kept({ reason: "escape-key" }).reason` is `"escape-key"`, not `string`.
+It's declaration-only: it names nothing and changes no JS.
+
+**A function's type parameter's default is its bound `js::DefaultsTo<T>`'s
+argument**: `C: js::Boolean + js::DefaultsTo<js::True>` is `C extends
+boolean = true`, where Rust has no default for a function's type
+parameter. `js::DefaultsTo<T>` is a marker every type meets, so it
+constrains nothing in Rust, and its argument is a type rustc resolved
+and checked; no path in an attribute is resolved by name (the lead's
+decision, against a path written in `rust_js::default_type`). A struct's
+own default, `R = &'static str`, is declared as C says.
+
+`#[rust_js::types]`'s reader reads a conditional type, `C extends true ?
+"change" : "commit"`, its branches types themselves.
+
+## E. Literal booleans
+
+**`js::True` and `js::False` are unit structs whose values are `true` and
+`false`**, `#[rust_js::name = true]`, a fieldless variant's form (ADR
+0284) extended to unit structs (`UnitValue`), declared `true` and `false`
+where a function gives one. **`js::Boolean`**, sealed, is `bool`, `True`
+and `False`, TypeScript's `boolean`; **`js::boolean(value)`** is the
+value itself as a `bool`, an identity binding as `js::unknown` is, so
+`!js::boolean(cancelable)` is `!cancelable` and generic code over a `C:
+js::Boolean` takes no dictionary: upstream's `if (!cancelable)`, with no
+argument the JS ABI lacks. Native Rust runs `js::boolean` too, by the
+sealed trait. No js crate conversion did this before: `js::truthy` asks
+JS's truthiness of any value, another question.
+
 ## Consequences
 
 - test/declarations-type-maps.test.ts: the declarations, a strict
@@ -104,4 +138,12 @@ refused.
   (`declarations.rs`), type-parameter-default-unprinted,
   distributive-members-undocumented (`typescript/index.js`);
   object-alias-members-undocumented retargeted.
+- D and E: declarations-type-maps' literal booleans (`kept<const G>`,
+  `pick<C extends boolean = true>`, `yes(): true`, a written conditional,
+  a strict caller, and the JS run); typescript.test's `const` parameter;
+  mutations const-param-unread, defaults-to-unread, js-literal-boolean-any
+  (`declarations.rs`), unit-struct-boolean-unread (`bindings.rs`),
+  written-conditional-unread (`written.rs`), const-type-parameter-unprinted
+  (`typescript/index.js`); unit-struct-field-always-there and
+  named-unit-const-undefined retargeted.
 - Guide: interop/export-to-javascript.md, TypeScript declarations.

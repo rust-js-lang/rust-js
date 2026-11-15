@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "unit-struct-boolean-unread",
+    breaks: "a unit struct named `#[rust_js::name = true]` is `undefined`, so `js::True`'s value isn't `true` (ADR 1164)",
+    file: "src/lower/bindings.rs",
+    find: "        .or_else(|| given_bool(tcx, def_id).map(UnitValue::Bool))\n",
+    replace: "",
+    tests: ["test/declarations-type-maps.test.ts", "-t", "a const type parameter"],
+  },
+  {
     name: "bound-methods-private-declared",
     breaks:
       "a private binding of a struct's impl is declared its interface's method, a JS caller's to call",

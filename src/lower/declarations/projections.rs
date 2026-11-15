@@ -91,6 +91,12 @@ fn indexings(written: &Written) -> Vec<(&Written, &str)> {
                 walk.push(index);
             }
             Written::Union(types) | Written::Intersection(types) => walk.extend(types),
+            Written::Conditional {
+                check,
+                extends,
+                when_true,
+                when_false,
+            } => walk.extend([&**check, &**extends, &**when_true, &**when_false]),
             Written::Array { element, .. } => walk.push(element),
             Written::Reference { args: Some(args), .. } => walk.extend(args),
             _ => {}

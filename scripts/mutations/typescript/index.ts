@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 const tests = ["test/typescript.test.ts", "-t", "construct signatures retain"];
 export const mutations: Mutation[] = [
   {
+    name: "const-type-parameter-unprinted",
+    breaks: "a `const` type parameter is printed without its modifier, so a caller's literals widen (ADR 1164)",
+    file: "typescript/index.js",
+    find: "          p.const ? [f.createToken(SyntaxKind.ConstKeyword)] : undefined,\n",
+    replace: "          undefined,\n",
+    tests: ["test/typescript.test.ts", "-t", "a conditional type, and an object alias"],
+  },
+  {
     name: "type-parameter-default-unprinted",
     breaks: "a type parameter's default isn't printed, so `CommitDetails` without its reason is an error, where upstream's `Reason extends string = string` takes any (ADR 1164)",
     file: "typescript/index.js",

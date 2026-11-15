@@ -2,7 +2,7 @@
 //! without fields as its writer says, and a keyed enum's variant its keys
 //! (#504).
 
-use super::super::bindings::{self, field_key, unit_name};
+use super::super::bindings::{self, field_key};
 use super::{Num, char_value, marks_js_object, num_literal, ordering_value, symbol_for, variant_field};
 use crate::collections::IndexSet;
 use crate::js;
@@ -377,7 +377,10 @@ pub(super) fn const_js_by<'tcx>(tcx: TyCtxt<'tcx>, value: ty::Value<'tcx>, unit:
                 _ => all(&children()?)?,
             };
             match variant.ctor_kind() {
-                Some(CtorKind::Const) => Some(unit_name(tcx, adt.did()).map_or_else(Expr::js_undefined, Expr::str)),
+                Some(CtorKind::Const) => Some(
+                    crate::lower::bindings::unit_value(tcx, adt.did())
+                        .map_or_else(Expr::js_undefined, crate::lower::bindings::UnitValue::expr),
+                ),
                 Some(CtorKind::Fn) => Some(Expr::array(values)),
                 // A `#[rust_js::nullable]` field's `None` is `null`, its
                 // `Cell`'s too, a generic one's where it's of an `Option`,

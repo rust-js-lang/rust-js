@@ -826,7 +826,7 @@ pub(in crate::lower) fn always_undefined(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
         ty::Adt(adt, _) => {
             adt.is_struct()
                 && adt.non_enum_variant().ctor_kind() == Some(CtorKind::Const)
-                && bindings::unit_name(tcx, adt.did()).is_none()
+                && bindings::unit_value(tcx, adt.did()).is_none()
                 && !super::classes::is_class(tcx, adt.did())
         }
         _ => false,

@@ -173,3 +173,69 @@ impl Other for Unnamed {
   const said = refused.stderr.toString();
   expect([refused.exitCode === 0, said.includes("a lookup only with keys"), said.includes("is of a unit struct whose `#[rust_js::name = \"..\"]` is its key")]).toEqual([false, true, true]);
 });
+
+// A function's type parameter TypeScript keeps a caller's literals of,
+// `#[rust_js::const_param]`; its default, a bound rustc resolved,
+// `js::DefaultsTo<js::True>`; and the js crate's literal booleans, `js::True`
+// and `js::False`, whose values are `true` and `false`, read as a `bool` by
+// `js::boolean`, the value itself (ADR 1164, D and E).
+test("a const type parameter, a default by its bound, and literal booleans", () => {
+  const dir = fixture("declarations-literal-booleans");
+  writeFileSync(join(dir, "lib.rs"), `/// What it's given, kept.
+pub fn kept<#[cfg_attr(rust_js, rust_js::const_param)] G>(given: G) -> G {
+    given
+}
+
+/// The same, of its own type.
+pub fn pick<C>(cancelable: C) -> C
+where
+    C: js::Boolean + js::DefaultsTo<js::True>,
+{
+    cancelable
+}
+
+pub fn yes() -> js::True {
+    js::True
+}
+
+pub fn no() -> js::False {
+    js::False
+}
+
+/// Whether it may be canceled.
+pub fn cancels<C: js::Boolean>(cancelable: C) -> &'static str {
+    if !js::boolean(cancelable) { "commit" } else { "change" }
+}
+
+/// What a kind is, by whether it cancels: a conditional type, written.
+#[cfg_attr(rust_js, rust_js::types = "C extends true ? \\"change\\" : \\"commit\\"")]
+pub type Shape<C> = (C, &'static str);
+
+pub fn shape<C: js::Boolean + Copy>(cancelable: C) -> Shape<C> {
+    (cancelable, "shape")
+}
+`);
+  run([compiler, "--declarations", join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
+  const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
+  expect(declarations).toContain("export function kept<const G>(given: G): G;");
+  expect(declarations).toContain("export function pick<C extends boolean = true>(cancelable: C): C;");
+  expect(declarations).toContain("export function yes(): true;");
+  expect(declarations).toContain("export function no(): false;");
+  expect(declarations).toContain('export type Shape<C> = C extends true ? "change" : "commit";');
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("export function yes() {\n  return true;\n}");
+  expect(js).toContain('  return !cancelable ? "commit" : "change";');
+  writeFileSync(join(dir, "consumer.ts"), `import { cancels, kept, no, pick, shape, yes } from "./lib.js";
+export const reason: "escape-key" = kept({ reason: "escape-key" }).reason;
+export const literal: true = yes();
+export const other: false = no();
+export const chosen: false = pick(false);
+export const said: string = cancels(true);
+export const changes: "change" = null as unknown as ReturnType<typeof shape<true>>;
+// @ts-expect-error A literal \`false\` isn't \`true\`.
+export const wrong: true = no();
+`);
+  expect(typeChecked(dir, "consumer.ts")).toEqual([]);
+  writeFileSync(join(dir, "run.mjs"), `import { cancels, yes } from "./lib.js";\nconsole.log(cancels(yes()), cancels(false));\n`);
+  expect(run(["node", join(dir, "run.mjs")])).toBe("change commit\n");
+});

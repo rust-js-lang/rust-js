@@ -252,7 +252,43 @@ pub(in crate::lower) fn given_name(tcx: TyCtxt<'_>, def_id: DefId) -> Option<Str
 /// variant is (ADR 0013): `webapi`'s event names (ADR 0223). Without one,
 /// it's `undefined`, holding nothing, as `()` does.
 pub(super) fn unit_name(tcx: TyCtxt<'_>, def_id: DefId) -> Option<String> {
+    match unit_value(tcx, def_id)? {
+        UnitValue::Str(name) => Some(name),
+        UnitValue::Bool(_) => None,
+    }
+}
+
+/// What a unit struct is in JS where its `#[rust_js::name]` gives it a
+/// value: a string, `#[rust_js::name = "trigger-press"]`, or a boolean,
+/// `#[rust_js::name = true]`, as a fieldless variant may be (ADRs 0013,
+/// 0284): `js::True`'s `true` (ADR 1164). Without one it's `undefined`.
+pub(super) enum UnitValue {
+    Str(String),
+    Bool(bool),
+}
+
+pub(super) fn unit_value(tcx: TyCtxt<'_>, def_id: DefId) -> Option<UnitValue> {
     given_name(tcx, def_id)
+        .map(UnitValue::Str)
+        .or_else(|| given_bool(tcx, def_id).map(UnitValue::Bool))
+}
+
+impl UnitValue {
+    /// Its JS value, `"trigger-press"` or `true`.
+    pub(super) fn expr(self) -> js::Expr {
+        match self {
+            UnitValue::Str(name) => js::Expr::str(name),
+            UnitValue::Bool(b) => js::Expr::bool(b),
+        }
+    }
+
+    /// Its TypeScript literal type's value, `"trigger-press"` or `true`.
+    pub(super) fn literal(&self) -> serde_json::Value {
+        match self {
+            UnitValue::Str(name) => serde_json::json!(name),
+            UnitValue::Bool(b) => serde_json::json!(b),
+        }
+    }
 }
 
 pub(super) fn variant_name(tcx: TyCtxt<'_>, variant: &VariantDef) -> String {

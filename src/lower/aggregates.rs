@@ -381,7 +381,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .ok_or_else(|| self.unsupported(span, "a library's `#[rust_js::namespace]` as a value"));
         }
         if variant.ctor_kind() == Some(CtorKind::Const) {
-            return Ok(bindings::unit_name(self.tcx, adt_def.did()).map_or_else(Expr::js_undefined, Expr::str));
+            return Ok(bindings::unit_value(self.tcx, adt_def.did())
+                .map_or_else(Expr::js_undefined, bindings::UnitValue::expr));
         }
         let mut fields = fields;
         // A `#[rust_js::nullable]` field's `None` is `null` (ADR 0275);

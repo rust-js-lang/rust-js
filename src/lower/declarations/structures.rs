@@ -38,14 +38,14 @@ impl<'tcx> Declarations<'_, 'tcx> {
         }
         // A unit struct named as a string, `#[rust_js::name = "trigger-press"]`,
         // is that string, as its value is (ADR 0013, ADR 1164).
-        if let Some(name) = super::named_unit(self.tcx, def_id) {
+        if let Some(value) = super::named_unit(self.tcx, def_id) {
             return Some(json!({
                 "kind": "type",
                 "name": super::type_name(self.tcx, def_id),
                 "exported": true,
                 "declare": false,
                 "typeParameters": [],
-                "type": { "kind": "literal", "value": name },
+                "type": { "kind": "literal", "value": value.literal() },
             }));
         }
         if variant.ctor.is_some() {

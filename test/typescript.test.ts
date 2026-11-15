@@ -219,7 +219,7 @@ test("print writes a conditional type, and an object alias's members' docs", asy
           name: "Details",
           exported: true,
           declare: false,
-          typeParameters: [{ name: "R" }],
+          typeParameters: [{ name: "R", const: true }],
           type: {
             kind: "conditional",
             check: reference("R"),
@@ -237,7 +237,7 @@ test("print writes a conditional type, and an object alias's members' docs", asy
 
 export type EventOf<Reason extends string = string> = Reason extends keyof Vocabulary ? Vocabulary[Reason] : Event;
 
-export type Details<R> = R extends unknown ? {
+export type Details<const R> = R extends unknown ? {
     /** Why. */
     reason: R;
 } : never;

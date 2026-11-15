@@ -498,7 +498,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                     | Written::Literal(_)
                     | Written::Union(_)
                     | Written::Intersection(_)
-                    | Written::Indexed { .. },
+                    | Written::Indexed { .. }
+                    | Written::Conditional { .. },
                 ) => None,
             };
         }

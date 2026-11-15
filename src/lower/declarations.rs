@@ -328,16 +328,17 @@ pub(in crate::lower) fn type_name(tcx: TyCtxt<'_>, did: DefId) -> String {
     }
 }
 
-/// A unit struct named as a string, `#[rust_js::name = "trigger-press"]`,
-/// whose value and type are that string (ADR 0013, ADR 1164): the string;
-/// not a class's or a namespace's, whose name says what they are.
-pub(super) fn named_unit(tcx: TyCtxt<'_>, did: DefId) -> Option<String> {
+/// A unit struct named as a string or a boolean, `#[rust_js::name =
+/// "trigger-press"]`, `#[rust_js::name = true]`, whose value and type are
+/// that literal (ADRs 0013, 1164): the literal; not a class's or a
+/// namespace's, whose name says what they are.
+pub(super) fn named_unit(tcx: TyCtxt<'_>, did: DefId) -> Option<super::bindings::UnitValue> {
     if tcx.def_kind(did) != DefKind::Struct || super::classes::is_class(tcx, did) {
         return None;
     }
     let variant = tcx.adt_def(did).non_enum_variant();
     (variant.ctor.is_some() && variant.fields.is_empty())
-        .then(|| super::bindings::unit_name(tcx, did))
+        .then(|| super::bindings::unit_value(tcx, did))
         .flatten()
 }
 
@@ -533,7 +534,8 @@ impl<'tcx> Declarations<'_, 'tcx> {
                     None => json!({ "name": param.name.as_str() }),
                 };
                 // A struct's default, `R = &'static str`, TypeScript's
-                // `= string` (ADR 1164).
+                // `= string`, or a function's, its `js::DefaultsTo<True>`
+                // bound's, `= true` (ADR 1164).
                 if let ty::GenericParamDefKind::Type { has_default: true, .. } = param.kind {
                     let default = self
                         .tcx
@@ -541,6 +543,13 @@ impl<'tcx> Declarations<'_, 'tcx> {
                         .instantiate_identity()
                         .skip_normalization();
                     declared["default"] = self.ts(default);
+                } else if let Some(default) = defaults_to(self.tcx, def_id, param.index) {
+                    declared["default"] = self.ts(default);
+                }
+                // One a caller's literals are kept as, TypeScript's `const`
+                // modifier, `#[rust_js::const_param]` (ADR 1164).
+                if is_const_param(self.tcx, param.def_id) {
+                    declared["const"] = json!(true);
                 }
                 declared
             })
@@ -708,6 +717,18 @@ impl<'tcx> Declarations<'_, 'tcx> {
                 let index = self.written_value(index, param, bound)?;
                 json!({ "kind": "indexed", "object": object, "index": index })
             }
+            Written::Conditional {
+                check,
+                extends,
+                when_true,
+                when_false,
+            } => json!({
+                "kind": "conditional",
+                "check": self.written_value(check, param, bound)?,
+                "extends": self.written_value(extends, param, bound)?,
+                "whenTrue": self.written_value(when_true, param, bound)?,
+                "whenFalse": self.written_value(when_false, param, bound)?,
+            }),
             Written::Function(signature) => {
                 let (type_parameters, params, returns) = self.written_signature(signature, param, bound)?;
                 json!({ "kind": "function", "typeParameters": type_parameters, "params": params, "returns": returns })
@@ -1032,6 +1053,13 @@ impl<'tcx> Declarations<'_, 'tcx> {
                 if tcx.is_lang_item(did, LangItem::String) {
                     return keyword("string");
                 }
+                // The js crate's literal types, `js::True`, the literal it is,
+                // `true`, which no module of it declares (ADR 1164).
+                if super::recognition::is_js_literal_type(tcx, did)
+                    && let Some(value) = named_unit(tcx, did)
+                {
+                    return json!({ "kind": "literal", "value": value.literal() });
+                }
                 // A `Location` is `{ file, line, column }` (ADR 0427, #560).
                 if tcx.is_lang_item(did, LangItem::PanicLocation) {
                     let members: Vec<Value> = (super::std_types::location::PARTS.iter())
@@ -1200,4 +1228,30 @@ impl<'tcx> Declarations<'_, 'tcx> {
             _ => keyword("any"),
         }
     }
+}
+
+/// The type `def_id`'s type parameter `index` defaults to in TypeScript: the
+/// argument of its bound `js::DefaultsTo<T>`, which rustc resolved (ADR
+/// 1164).
+fn defaults_to<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, index: u32) -> Option<ty::Ty<'tcx>> {
+    (tcx.clauses_of(def_id).instantiate_identity(tcx).into_iter())
+        .filter_map(|(clause, _)| clause.skip_normalization().as_trait_clause())
+        .map(|clause| clause.skip_binder().trait_ref)
+        .find(|tr| {
+            super::recognition::is_js_defaults_to(tcx, tr.def_id)
+                && matches!(tr.self_ty().kind(), ty::Param(param) if param.index == index)
+        })
+        .map(|tr| tr.args.type_at(1))
+}
+
+/// Whether a type parameter is marked `#[rust_js::const_param]`, TypeScript's
+/// `const` one, whose caller's literals are kept as literals (ADR 1164).
+fn is_const_param(tcx: TyCtxt<'_>, param: DefId) -> bool {
+    let path = [
+        rustc_span::Symbol::intern("rust_js"),
+        rustc_span::Symbol::intern("const_param"),
+    ];
+    // Another crate's generic parameter has no attributes in its metadata,
+    // and isn't declared here.
+    param.is_local() && tcx.get_attrs_by_path(param, &path).next().is_some()
 }

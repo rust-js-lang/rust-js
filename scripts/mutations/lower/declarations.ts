@@ -5,6 +5,30 @@ const tests = ["test/declarations.test.ts"];
 
 export const mutations: Mutation[] = [
   {
+    name: "const-param-unread",
+    breaks: "a `#[rust_js::const_param]` type parameter isn't TypeScript's `const` one, so a caller's `{ reason: \"escape-key\" }` is kept as a `string`, where upstream's `const Given` keeps the literal (ADR 1164)",
+    file: "src/lower/declarations.rs",
+    find: "                if is_const_param(self.tcx, param.def_id) {\n",
+    replace: "                if false && is_const_param(self.tcx, param.def_id) {\n",
+    tests: ["test/declarations-type-maps.test.ts", "-t", "a const type parameter"],
+  },
+  {
+    name: "defaults-to-unread",
+    breaks: "a function's `js::DefaultsTo<js::True>` bound isn't its default, so `Cancelable extends boolean` has no `= true` (ADR 1164)",
+    file: "src/lower/declarations.rs",
+    find: "                } else if let Some(default) = defaults_to(self.tcx, def_id, param.index) {\n",
+    replace: "                } else if false && let Some(default) = defaults_to(self.tcx, def_id, param.index) {\n",
+    tests: ["test/declarations-type-maps.test.ts", "-t", "a const type parameter"],
+  },
+  {
+    name: "js-literal-boolean-any",
+    breaks: "the js crate's `js::True` is `any` to TypeScript, where its value is `true` (ADR 1164)",
+    file: "src/lower/declarations.rs",
+    find: "                if super::recognition::is_js_literal_type(tcx, did)\n",
+    replace: "                if false && super::recognition::is_js_literal_type(tcx, did)\n",
+    tests: ["test/declarations-type-maps.test.ts", "-t", "a const type parameter"],
+  },
+  {
     name: "struct-type-default-undeclared",
     breaks: "a struct's type parameter's default isn't declared, so a TypeScript caller must give `CommitDetails` its reason, where Rust's `CommitDetails` is `CommitDetails<&'static str>` (ADR 1164)",
     file: "src/lower/declarations.rs",

@@ -197,3 +197,17 @@ pub(in crate::lower) fn is_js_error_class(tcx: TyCtxt<'_>, did: DefId) -> bool {
         && tcx.item_name(did).as_str() == "ErrorClass"
         && tcx.opt_parent(did).is_some_and(|parent| parent.is_crate_root())
 }
+
+/// Whether `did` is `js::DefaultsTo`, the bound whose argument is a type
+/// parameter's TypeScript default, `C extends .. = true` (ADR 1164).
+pub(in crate::lower) fn is_js_defaults_to(tcx: TyCtxt<'_>, did: DefId) -> bool {
+    tcx.crate_name(did.krate).as_str() == "js"
+        && tcx.item_name(did).as_str() == "DefaultsTo"
+        && tcx.opt_parent(did).is_some_and(|parent| parent.is_crate_root())
+}
+
+/// Whether `did` is one of the js crate's types, `js::True` say, which no
+/// module of it declares, so a declaration writes what it is (ADR 1164).
+pub(in crate::lower) fn is_js_literal_type(tcx: TyCtxt<'_>, did: DefId) -> bool {
+    tcx.crate_name(did.krate).as_str() == "js"
+}

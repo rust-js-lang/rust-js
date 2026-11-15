@@ -850,6 +850,42 @@ pub mod function {
 
 arities! { functions }
 
+/// The boolean `true` as a type, TypeScript's literal `true`: what a type
+/// parameter of a boolean may be, as upstream's `Cancelable extends boolean
+/// = true` is (ADR 1164). Its value is `true`; [`boolean`] gives it as a
+/// `bool`.
+#[cfg_attr(rust_js, rust_js::name = true)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+pub struct True;
+
+/// The boolean `false` as a type, TypeScript's literal `false`, as [`True`]
+/// is `true`. Its value is `false`.
+#[cfg_attr(rust_js, rust_js::name = false)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+pub struct False;
+
+/// A boolean, TypeScript's `boolean`: a `bool`, or one of the literal types
+/// [`True`] and [`False`], each the boolean it is in JS (ADR 1164).
+#[cfg_attr(rust_js, rust_js::types = "boolean")]
+pub trait Boolean: sealed::Boolean {}
+impl Boolean for bool {}
+impl Boolean for True {}
+impl Boolean for False {}
+
+/// `value` as a `bool`, which it is in JS: the value itself, so
+/// `!js::boolean(cancelable)` of a `C: Boolean` is `!cancelable` (ADR 1164).
+#[cfg_attr(rust_js, rust_js::link_name = "this")]
+pub fn boolean<B: Boolean>(this: B) -> bool {
+    sealed::Boolean::value(this)
+}
+
+/// A type parameter's default, as TypeScript declares it: `C:
+/// js::DefaultsTo<js::True>` is `C extends .. = true`, where Rust has no
+/// default for a function's. Every type meets it, so it constrains nothing;
+/// a declaration reads its argument, a type rustc resolved (ADR 1164).
+pub trait DefaultsTo<T: ?Sized> {}
+impl<T: ?Sized, D: ?Sized> DefaultsTo<D> for T {}
+
 /// Whether `value` is [truthy](https://developer.mozilla.org/docs/Glossary/Truthy),
 /// as JS's `if (value)` asks: `None`, `""`, `0`, `NaN` and `false` aren't,
 /// all else is.
@@ -2090,6 +2126,25 @@ impl IntoStrOrNumberOrBool for bool {}
 
 mod sealed {
     pub trait Sealed {}
+    /// What [`Boolean`](crate::Boolean) is of, and its value as a `bool`.
+    pub trait Boolean: Copy {
+        fn value(self) -> bool;
+    }
+    impl Boolean for bool {
+        fn value(self) -> bool {
+            self
+        }
+    }
+    impl Boolean for super::True {
+        fn value(self) -> bool {
+            true
+        }
+    }
+    impl Boolean for super::False {
+        fn value(self) -> bool {
+            false
+        }
+    }
     /// What [`AnyValue`](crate::AnyValue) is of: a JS value, read or given.
     pub trait AnyValue {}
     impl AnyValue for super::Unknown {}

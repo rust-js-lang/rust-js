@@ -2629,6 +2629,58 @@ export type CommitDetails<R extends string = string> = R extends unknown ? {
 } : never;
 ```
 
+A generic parameter marked `#[cfg_attr(rust_js, rust_js::const_param)]`
+is TypeScript's `const` one, which keeps a caller's literals. A function's
+type parameter takes its TypeScript default from a bound
+`js::DefaultsTo<T>`, a marker every type meets. `js::True` and `js::False`
+are the literal booleans, `true` and `false` in JS and TypeScript; any of
+them or a `bool` is a `js::Boolean`, which `js::boolean` reads as a `bool`,
+the value itself
+([ADR 1164](../../decisions/1164-create-details-forms.md)):
+
+```rust
+pub fn kept<#[cfg_attr(rust_js, rust_js::const_param)] G>(given: G) -> G {
+    given
+}
+
+pub fn pick<C>(cancelable: C) -> C
+where
+    C: js::Boolean + js::DefaultsTo<js::True>,
+{
+    cancelable
+}
+
+pub fn kind<C: js::Boolean>(cancelable: C) -> &'static str {
+    if js::boolean(cancelable) {
+        "change"
+    } else {
+        "commit"
+    }
+}
+```
+
+```js
+export function kept(given) {
+  return given;
+}
+
+export function pick(cancelable) {
+  return cancelable;
+}
+
+export function kind(cancelable) {
+  return cancelable ? "change" : "commit";
+}
+```
+
+```ts
+export function kept<const G>(given: G): G;
+
+export function pick<C extends boolean = true>(cancelable: C): C;
+
+export function kind(cancelable: boolean): string;
+```
+
 ## Calling Rust from a JS file in your app
 
 `rust-js build` writes each module's JS beside its Rust: `src/App.rs` is

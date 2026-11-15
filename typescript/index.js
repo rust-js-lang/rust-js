@@ -48,7 +48,7 @@ import { isIdentifierText } from "typescript/ast/scanner";
  *
  * @typedef {{ name: string, optional: boolean, rest: boolean, type: Type }} Param
  *
- * @typedef {{ name: string, constraint?: Type, default?: Type }} TypeParameter
+ * @typedef {{ name: string, constraint?: Type, default?: Type, const?: boolean }} TypeParameter
  *
  * @typedef {{ kind: "keyword", keyword: string }
  *   | { kind: "literal", value: string | number | boolean }
@@ -578,7 +578,8 @@ function typeParameterNodes(parameters) {
   return parameters?.length
     ? parameters.map((p) =>
         f.createTypeParameterDeclaration(
-          undefined,
+          // A `const` one, whose caller's literals are kept (ADR 1164).
+          p.const ? [f.createToken(SyntaxKind.ConstKeyword)] : undefined,
           id(p.name),
           p.constraint ? typeNode(p.constraint) : undefined,
           undefined,

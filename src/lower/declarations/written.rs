@@ -37,6 +37,14 @@ pub(in crate::lower) enum Written {
     Function(Signature),
     /// `{ expire?: number; run<T>(f: () => T): T; [key: string]: T }`.
     Object(Vec<Member>),
+    /// `C extends true ? ChangeDetails<R> : CommitDetails<R>`: a type by
+    /// what another is (ADR 1164).
+    Conditional {
+        check: Box<Written>,
+        extends: Box<Written>,
+        when_true: Box<Written>,
+        when_false: Box<Written>,
+    },
 }
 
 /// A function's or a method's type parameters, parameters and result.
@@ -273,8 +281,28 @@ impl<'a> Reader<'a> {
         Ok(rest[..len].to_string())
     }
 
-    /// `A | B`, `| A | B`.
+    /// A union, or a conditional type of one, `C extends true ? A : B`,
+    /// whose branches are types themselves, as TypeScript's are.
     fn ty(&mut self) -> Result<Written, String> {
+        let check = self.union()?;
+        if !self.eat_word("extends") {
+            return Ok(check);
+        }
+        let extends = self.union()?;
+        self.expect("?")?;
+        let when_true = self.ty()?;
+        self.expect(":")?;
+        let when_false = self.ty()?;
+        Ok(Written::Conditional {
+            check: Box::new(check),
+            extends: Box::new(extends),
+            when_true: Box::new(when_true),
+            when_false: Box::new(when_false),
+        })
+    }
+
+    /// `A | B`, `| A | B`.
+    fn union(&mut self) -> Result<Written, String> {
         self.eat("|");
         let mut types = vec![self.intersection()?];
         while self.eat("|") {

@@ -680,8 +680,8 @@ export const mutations: Mutation[] = [
     name: "unit-struct-field-always-there",
     breaks: "a unit struct's field, `undefined` in JS, is declared required, its key left out of what rust-js makes (#1851)",
     file: "src/lower/representation.rs",
-    find: "                && adt.non_enum_variant().ctor_kind() == Some(CtorKind::Const)\n                && bindings::unit_name(",
-    replace: "                && adt.non_enum_variant().ctor_kind() == Some(CtorKind::Fn)\n                && bindings::unit_name(",
+    find: "                && adt.non_enum_variant().ctor_kind() == Some(CtorKind::Const)\n                && bindings::unit_value(",
+    replace: "                && adt.non_enum_variant().ctor_kind() == Some(CtorKind::Fn)\n                && bindings::unit_value(",
     tests: ["test/declarations-results.test.ts", "-t", "always undefined"],
   },
 ];

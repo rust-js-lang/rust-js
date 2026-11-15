@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "written-conditional-unread",
+    breaks: "a written conditional type, `C extends true ? \"change\" : \"commit\"`, isn't read, and its `#[rust_js::types]` is refused (ADR 1164)",
+    file: "src/lower/declarations/written.rs",
+    find: "        if !self.eat_word(\"extends\") {\n",
+    replace: "        if true {\n",
+    tests: ["test/declarations-type-maps.test.ts", "-t", "a const type parameter"],
+  },
+  {
     name: "written-keyword-reference",
     breaks:
       "js's `Unknown`, written `unknown`, is a type named `unknown`, not the keyword, so an optional one is `unknown | undefined`",
