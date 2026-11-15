@@ -529,3 +529,18 @@ is the same size, 1,307,863 bytes. In 10,000 lines, `$iter` goes from
 84.0 to 83.9, `Iterator.from` from 8.2 to 8.1, renamed `x$1` from 470.3
 to 470.4 and role fallbacks from 256.7 to 256.5. Mutation
 `flatten-not-flipped` (`lower/body_queries/in_place.ts`) is caught.
+
+## Amendment: the peekable family flipped (2026-11-16, #1681's change 2)
+
+A `peekable()` of a chain the predicate doesn't admit is flipped,
+`HELD_FLIPPED`'s. std's `Peekable` was std's compiled struct there
+already, so what changes is what's past it, flipped from the source
+outward: an `enumerate()` of one is std's compiled `Enumerate`, not the
+recognizers' `$enumerate` of a compiled `Peekable`.
+
+Measured: 2 corpus snapshots move, each as native prints, 492 lines to
+513 (×1.043). The React port's JS regenerates byte for byte, and
+`@rust-js/std` is the same size, 1,307,863 bytes. In 10,000 lines,
+renamed `x$1` goes from 470.1 to 470.3 and role fallbacks from 256.5 to
+256.4. Mutation `peekable-not-flipped` (`lower/body_queries/in_place.ts`)
+is caught.

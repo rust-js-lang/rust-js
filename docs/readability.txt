@@ -1,14 +1,14 @@
 # shape	count	per 10,000 lines
 files	2620
-lines	346959
+lines	346980
 temporaries	0	0
 labeled blocks	0	0
 while (true)	224	6.5
 $iter	2911	83.9
 Iterator.from	281	8.1
 return;	337	9.7
-renamed x$1	16305	469.9
-role fallbacks	8894	256.3
+renamed x$1	16317	470.3
+role fallbacks	8896	256.4
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1	role fallbacks
 test/corpus/adapter_drop_past_a_panic.js	50	0	0	0	1	0	0	0	1
 test/corpus/adapter_drops.js	1849	0	0	1	18	2	1	98	61
@@ -707,7 +707,7 @@ test/corpus/enum_order.js	39	0	0	0	0	0	0	0	2
 test/corpus/enum_own_eq.js	29	0	0	0	0	0	0	0	0
 test/corpus/enum_variants_of_the_same_fields_copied_and_compared_once.js	229	0	0	0	1	0	0	6	3
 test/corpus/enumerate_bounds.js	56	0	0	0	1	0	0	0	0
-test/corpus/enumerate_count_is_its_sources.js	135	0	0	0	0	0	1	0	4
+test/corpus/enumerate_count_is_its_sources.js	145	0	0	0	0	0	1	8	5
 test/corpus/enumerate_counted_by_generic_code.js	25	0	0	0	3	1	0	4	3
 test/corpus/enumerate_fold.js	93	0	0	0	0	0	0	0	0
 test/corpus/enumerate_made_in_place_from_back.js	100	0	0	0	5	0	0	0	3
@@ -1628,7 +1628,7 @@ test/corpus/own_count_through_adapters.js	300	0	0	0	1	2	1	5	5
 test/corpus/own_debug_of_a_pinned_box_beside_a_caught_panic.js	33	0	0	0	0	0	0	0	1
 test/corpus/own_fold_and_count_where_adapters_call_them.js	162	0	0	0	0	0	4	0	2
 test/corpus/own_fold_and_nth.js	493	0	0	0	0	1	0	6	4
-test/corpus/own_fold_through_adapters.js	359	0	0	0	1	0	0	8	5
+test/corpus/own_fold_through_adapters.js	370	0	0	0	1	0	0	12	6
 test/corpus/own_fold_unwind_given_on.js	324	0	0	1	7	0	0	0	2
 test/corpus/own_folds_unwind.js	586	0	0	3	0	0	0	0	6
 test/corpus/own_hasher_finished_through_its_mut.js	39	0	0	0	0	0	0	0	0

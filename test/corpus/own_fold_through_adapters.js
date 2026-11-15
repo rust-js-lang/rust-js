@@ -211,13 +211,18 @@ function main() {
     ).join(", ")}]`,
   );
   console.log(
-    `${iterator_peekable(
-      ["m", 0],
-      { next: ownIterator_next, fold: ownIterator_fold, nth: ownIterator_nth },
-      ownDrop_drop,
-    )
-      .map((x) => (x * 2) >>> 0)
-      .reduce((a, b) => (a + b) >>> 0, 0)}`,
+    `${iterator_map(
+      iterator_peekable(
+        ["m", 0],
+        { next: ownIterator_next, fold: ownIterator_fold, nth: ownIterator_nth },
+        ownDrop_drop,
+      ),
+      (x) => (x * 2) >>> 0,
+      { next: $next, fold: $foldOf, nth: $nth },
+      (peekable) => {
+        peekable.return();
+      },
+    ).reduce((a, b) => (a + b) >>> 0, 0)}`,
   );
   console.log(
     `${iterator_fuse(
@@ -238,11 +243,17 @@ function main() {
       .filter((x) => x % 2 === 1)
       .reduce((n) => n + 1, 0)}`,
   );
-  console.log(
-    `${iterator_peekable(["p", 0], { next: plainIterator_next }, plainDrop_drop)
-      .map((x) => (x * 2) >>> 0)
-      .reduce((a, b) => (a + b) >>> 0, 0)}`,
+  const iter$1 = iterator_map(
+    iterator_peekable(["p", 0], { next: plainIterator_next }, plainDrop_drop),
+    (x) => (x * 2) >>> 0,
+    { next: $next, fold: $foldOf },
+    (peekable) => {
+      peekable.return();
+    },
   );
+  const result$1 = iter$1.reduce((a, b) => (a + b) >>> 0, 0);
+  iter$1.return();
+  console.log(`${result$1}`);
   console.log(
     `[${Array.from(iterator_peekable(["q", 0], { next: plainIterator_next }, plainDrop_drop).take(1)).join(", ")}]`,
   );
@@ -258,7 +269,7 @@ function main() {
     }, error);
     throw error;
   }
-  const iter$1 = iterator_map(
+  const iter$2 = iterator_map(
     stepped,
     (x) => (x * 2) >>> 0,
     { next: $next, fold: $foldOf },
@@ -266,9 +277,9 @@ function main() {
       peekable.return();
     },
   );
-  const result$1 = Array.from($roomForHint(iter$1, 4, false));
-  iter$1.return();
-  console.log(`[${result$1.join(", ")}]`);
+  const result$2 = Array.from($roomForHint(iter$2, 4, false));
+  iter$2.return();
+  console.log(`[${result$2.join(", ")}]`);
   // A held map's and inspect's fold, std's: their source's, the crate's
   // own, through a peekable (#264).
   console.log(
@@ -322,16 +333,16 @@ function main() {
       .map((x) => (x + 1) >>> 0)
       .reduce((a, b) => (a + b) >>> 0, 0)}`,
   );
-  const iter$2 = iterator_peekable(
+  const iter$3 = iterator_peekable(
     iterator_map(["v", 0], (x) => (x + 1) >>> 0, { next: plainIterator_next }, plainDrop_drop),
     { next: $next, fold: $foldOf },
     (map) => {
       map.return();
     },
   );
-  const result$2 = iter$2.reduce((a, b) => (a + b) >>> 0, 0);
-  iter$2.return();
-  console.log(`${result$2}`);
+  const result$3 = iter$3.reduce((a, b) => (a + b) >>> 0, 0);
+  iter$3.return();
+  console.log(`${result$3}`);
   // A held flat map's fold, std's: its source's, through its `map`, the
   // crate's own, each item's array folded in turn (#297).
   console.log(

@@ -4,7 +4,6 @@ import {
   $catchUnwind,
   $cleanup,
   $count,
-  $enumerate,
   $foldOf,
   $held,
   $live,
@@ -94,7 +93,7 @@ function main() {
       }, error);
       throw error;
     }
-    const iter = iterator_enumerate(
+    const iter$1 = iterator_enumerate(
       it,
       { next: $next, fold: $foldOf },
       (peekable) => {
@@ -104,14 +103,14 @@ function main() {
     );
     let result;
     try {
-      result = $count(iter, (value) => {
+      result = $count(iter$1, (value) => {
         dDrop_drop(value[1]);
       });
     } catch (error) {
       throw $unwindsOn(error);
     } finally {
       if ($live()) {
-        iter.return();
+        iter$1.return();
       }
     }
     const n = result;
@@ -120,15 +119,26 @@ function main() {
   console.log(`panicked ${ended.TAG === "Err"}`);
 
   // One that peeked at nothing yet is its source's count alone.
-  console.log(
-    `count ${$count(
-      $enumerate(
-        iterator_peekable(Items.new(0), { next: itemsIterator_next }, itemsDrop_drop, dDrop_drop),
-      ),
-      (value) => {
-        dDrop_drop(value[1]);
-      },
-    )}`,
+  const iter$1 = iterator_enumerate(
+    iterator_peekable(Items.new(0), { next: itemsIterator_next }, itemsDrop_drop, dDrop_drop),
+    { next: $next, fold: $foldOf },
+    (peekable) => {
+      peekable.return();
+    },
+    dDrop_drop,
   );
+  let result$1;
+  try {
+    result$1 = $count(iter$1, (value) => {
+      dDrop_drop(value[1]);
+    });
+  } catch (error) {
+    throw $unwindsOn(error);
+  } finally {
+    if ($live()) {
+      iter$1.return();
+    }
+  }
+  console.log(`count ${result$1}`);
 }
 //# sourceMappingURL=case.js.map
