@@ -4,6 +4,30 @@ import type { Mutation } from "../../mutations";
 const tests = ["test/declarations.test.ts"];
 
 export const mutations: Mutation[] = [
+  {
+    name: "trait-type-map-undeclared",
+    breaks: "a `#[rust_js::type_map]` trait declares nothing, so `ReasonVocabulary`, `ChangeReason` and `EventOf` are no types (ADR 1164)",
+    file: "src/lower/declarations.rs",
+    find: "            items.extend(out.type_map(def_id));\n",
+    replace: "",
+    tests: ["test/declarations-type-maps.test.ts", "-t", "its keys and its lookup"],
+  },
+  {
+    name: "named-unit-type-its-value",
+    breaks: "a unit struct named as a string is named by that string as a type, `export type trigger-press = ..`, which no TypeScript reads (ADR 1164)",
+    file: "src/lower/declarations.rs",
+    find: "        Some(_) => tcx.item_name(did).to_string(),\n",
+    replace: "        Some(_) => super::bindings::given_name(tcx, did).unwrap_or_default(),\n",
+    tests: ["test/declarations-type-maps.test.ts", "-t", "its keys and its lookup"],
+  },
+  {
+    name: "named-unit-not-declared",
+    breaks: "a unit struct named as a string isn't declared, so a function giving one returns `any`, where its value is the string",
+    file: "src/lower/declarations.rs",
+    find: "                || named_unit(tcx, did).is_some()\n",
+    replace: "",
+    tests: ["test/declarations-type-maps.test.ts", "-t", "its keys and its lookup"],
+  },
 
   {
     name: "item-erased-asked-of-the-module",
@@ -501,8 +525,8 @@ export const mutations: Mutation[] = [
     name: "transparent-tuple-struct-any",
     breaks: "a `#[repr(transparent)]` tuple struct a function takes is `any`",
     file: "src/lower/declarations.rs",
-    find: "            adt.non_enum_variant().ctor.is_none() || super::recognition::transparent_field(tcx, adt).is_some()\n",
-    replace: "            adt.non_enum_variant().ctor.is_none()\n",
+    find: "                || super::recognition::transparent_field(tcx, adt).is_some()\n",
+    replace: "",
     tests: [
       "test/declarations.test.ts",
       "-t",
@@ -957,8 +981,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a type's `#[rust_js::name]` is left unread, so `#[rust_js::name = \"ISODate\"] pub type IsoDate = String;` is declared `type IsoDate`, which upstream's consumer, importing `ISODate`, can't name (#1829)",
     file: "src/lower/declarations.rs",
-    find: "    super::bindings::given_name(tcx, did).unwrap_or_else(|| tcx.item_name(did).to_string())\n",
-    replace: "    tcx.item_name(did).to_string()\n",
+    find: "        None => super::bindings::given_name(tcx, did).unwrap_or_else(|| tcx.item_name(did).to_string()),\n",
+    replace: "        None => tcx.item_name(did).to_string(),\n",
     tests: ["test/declarations-named.test.ts"],
   },
   {

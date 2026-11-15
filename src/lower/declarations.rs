@@ -37,6 +37,7 @@ mod projections;
 mod representation;
 pub(super) mod std_types;
 mod structures;
+mod type_maps;
 mod written;
 
 use super::representation::{SignatureForms, held_ts as held};
@@ -214,6 +215,10 @@ pub(super) fn module<'tcx>(
         if matches!(tcx.def_kind(def_id), DefKind::Struct | DefKind::Enum | DefKind::Union) {
             items.extend(out.type_object(def_id));
         }
+        // A trait's impls of named unit structs as one type (ADR 1164).
+        if tcx.def_kind(def_id) == DefKind::Trait {
+            items.extend(out.type_map(def_id));
+        }
     }
     // A binding it holds as a value, a global function's `typeof
     // Object.assign`, as TypeScript has it (ADR 0622), a static's its type
@@ -291,8 +296,9 @@ fn by_own_name(fns: &IndexMap<DefId, super::FnInfo>, item: DefId, export: &str) 
 /// Whether the declarations of `did`'s module declare it, a struct, an
 /// enum or a union of the crate's another module's or a library's consumer
 /// names by its name (ADR 0210, amended): an enum, a union, a
-/// `#[repr(transparent)]` struct, or one of named fields; not a tuple
-/// struct, which has no declaration; and an alias, a library's plain one
+/// `#[repr(transparent)]` struct, one of named fields, or a unit struct
+/// named as a string (ADR 1164); not a tuple struct, which has no
+/// declaration; and an alias, a library's plain one
 /// too, as the crate's own is (rd642). One whose `#[rust_js::types]` names
 /// a type is declared as well, but is that type where it's written
 /// (`aliases::written_alias`).
@@ -300,7 +306,9 @@ pub(super) fn declares_type(tcx: TyCtxt<'_>, did: DefId) -> bool {
     match tcx.def_kind(did) {
         DefKind::Struct => {
             let adt = tcx.adt_def(did);
-            adt.non_enum_variant().ctor.is_none() || super::recognition::transparent_field(tcx, adt).is_some()
+            adt.non_enum_variant().ctor.is_none()
+                || super::recognition::transparent_field(tcx, adt).is_some()
+                || named_unit(tcx, did).is_some()
         }
         DefKind::Enum | DefKind::Union => true,
         DefKind::TyAlias => true,
@@ -313,7 +321,24 @@ pub(super) fn declares_type(tcx: TyCtxt<'_>, did: DefId) -> bool {
 /// `FiberNode` of `Fiber`, or an alias's, `#[rust_js::name = "ISODate"] pub
 /// type IsoDate = String;`'s `ISODate` (#1829), else its Rust name.
 pub(in crate::lower) fn type_name(tcx: TyCtxt<'_>, did: DefId) -> String {
-    super::bindings::given_name(tcx, did).unwrap_or_else(|| tcx.item_name(did).to_string())
+    // A unit struct's `#[rust_js::name]` is its value, not its type's name.
+    match named_unit(tcx, did) {
+        Some(_) => tcx.item_name(did).to_string(),
+        None => super::bindings::given_name(tcx, did).unwrap_or_else(|| tcx.item_name(did).to_string()),
+    }
+}
+
+/// A unit struct named as a string, `#[rust_js::name = "trigger-press"]`,
+/// whose value and type are that string (ADR 0013, ADR 1164): the string;
+/// not a class's or a namespace's, whose name says what they are.
+pub(super) fn named_unit(tcx: TyCtxt<'_>, did: DefId) -> Option<String> {
+    if tcx.def_kind(did) != DefKind::Struct || super::classes::is_class(tcx, did) {
+        return None;
+    }
+    let variant = tcx.adt_def(did).non_enum_variant();
+    (variant.ctor.is_some() && variant.fields.is_empty())
+        .then(|| super::bindings::unit_name(tcx, did))
+        .flatten()
 }
 
 /// A parameter's name, of its type's: `event` of a `MouseEvent`, `element`

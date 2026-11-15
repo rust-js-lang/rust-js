@@ -58,6 +58,7 @@ import { isIdentifierText } from "typescript/ast/scanner";
  *   | { kind: "array", element: Type, readonly: boolean }
  *   | { kind: "indexed", object: Type, index: Type }
  *   | { kind: "keyof", type: Type }
+ *   | { kind: "conditional", check: Type, extends: Type, whenTrue: Type, whenFalse: Type }
  *   | { kind: "predicate", parameter: string, type: Type }
  *   | { kind: "tuple", elements: Type[] }
  *   | { kind: "function", typeParameters: TypeParameter[], params: Param[], returns: Type }
@@ -190,11 +191,13 @@ export async function open(files = []) {
  * @param {(node: any) => Promise<string>} printNode
  */
 async function documented(declaration, text, printNode) {
-  // A class's methods' too (ADR 0761).
-  if (declaration.kind === "interface" || declaration.kind === "class") {
+  // A class's methods' too (ADR 0761), and a type alias's of an object,
+  // `type ReasonVocabulary = { .. }`'s keys (ADR 1164).
+  const objectAlias = declaration.kind === "type" && declaration.type.kind === "object";
+  if (declaration.kind === "interface" || declaration.kind === "class" || objectAlias) {
     const printed = declaration.kind === "class" ? classMember : member;
     let at = text.indexOf("{");
-    for (const m of declaration.members) {
+    for (const m of objectAlias ? declaration.type.members : declaration.members) {
       if (m.kind === "constructor" || m.kind === "index" || !m.docs) continue;
       const [first] = (await printNode(printed(m))).split("\n");
       const found = text.indexOf(first, at);
@@ -945,6 +948,16 @@ function typeNode(t) {
       return f.createIndexedAccessTypeNode(element(t.object), typeNode(t.index));
     case "keyof":
       return f.createTypeOperatorNode(SyntaxKind.KeyOfKeyword, element(t.type));
+    // A type by what another is, `R extends ChangeReason ?
+    // ReasonVocabulary[R] : Event`, over each of a union's members where
+    // `check` is a type parameter (createDetails, ADR 1164).
+    case "conditional":
+      return f.createConditionalTypeNode(
+        typeNode(t.check),
+        typeNode(t.extends),
+        typeNode(t.whenTrue),
+        typeNode(t.whenFalse),
+      );
     // A function's result that says what its parameter is, `value is
     // ISODate`, `js::Is<T>`'s (#1828).
     case "predicate":

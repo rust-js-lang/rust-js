@@ -179,6 +179,55 @@ test("print writes a name that's an identifier as it is, and quotes any other", 
   }
 });
 
+// A conditional type, and a type alias of an object whose members carry
+// their doc comments, as an interface's do: a type map's lookup and its
+// map (ADR 1164).
+test("print writes a conditional type, and an object alias's members' docs", async () => {
+  const ts = await open();
+  try {
+    const reference = (name: string) => ({ kind: "reference" as const, name, args: [] });
+    const printed = await ts.print({
+      header: "",
+      declarations: [
+        {
+          kind: "type",
+          name: "Vocabulary",
+          exported: true,
+          declare: false,
+          typeParameters: [],
+          type: {
+            kind: "object",
+            members: [{ kind: "property", name: "escape-key", optional: false, readonly: false, type: reference("KeyboardEvent"), docs: "/** Escape. */" }],
+          },
+        },
+        {
+          kind: "type",
+          name: "EventOf",
+          exported: true,
+          declare: false,
+          typeParameters: [{ name: "Reason", constraint: { kind: "keyword", keyword: "string" } }],
+          type: {
+            kind: "conditional",
+            check: reference("Reason"),
+            extends: { kind: "keyof", type: reference("Vocabulary") },
+            whenTrue: { kind: "indexed", object: reference("Vocabulary"), index: reference("Reason") },
+            whenFalse: reference("Event"),
+          },
+        },
+      ],
+    });
+    expect(printed).toBe(`export type Vocabulary = {
+    /** Escape. */
+    "escape-key": KeyboardEvent;
+};
+
+export type EventOf<Reason extends string> = Reason extends keyof Vocabulary ? Vocabulary[Reason] : Event;
+`);
+  } finally {
+    await ts.close();
+  }
+});
+
 // A union with `unknown` or `any` is that keyword, as TypeScript reads it:
 // an `Option<&Unknown>`'s `unknown | null | undefined` is `unknown`, an
 // array of them `unknown[]` (#1850).

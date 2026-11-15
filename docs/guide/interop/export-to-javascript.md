@@ -2533,6 +2533,78 @@ Some types aren't declared yet, and a caller of them isn't checked: a
 tuple struct, an `impl Iterator` and a counted `Rc` are `any`, and a type's methods object, `Counter`, has its
 `interface` but no declaration of its methods.
 
+A unit struct named as a string, `#[cfg_attr(rust_js, rust_js::name =
+"escape-key")]`, is that string, its value and its type. A trait marked
+`#[cfg_attr(rust_js, rust_js::type_map(map = "..", keys = "..", lookup =
+".."))]`, of one associated type, declares its impls for such structs as
+one object type, in the order they're written, each key with its struct's
+doc comment; its `keys`, `keyof` that type; and its `lookup`, a key's
+value, of any other string the value of its impl for `&'static str`. So
+a vocabulary of reasons and the event each reports has one source, its
+impls, as upstream's `ReasonVocabulary` and `EventOf` are one
+([ADR 1164](../../decisions/1164-create-details-forms.md)):
+
+```rust
+use webapi::{Event, KeyboardEvent, MouseEvent};
+
+/// A press of the trigger.
+#[cfg_attr(rust_js, rust_js::name = "trigger-press")]
+#[derive(Clone, Copy)]
+pub struct TriggerPress;
+
+/// Escape.
+#[cfg_attr(rust_js, rust_js::name = "escape-key")]
+#[derive(Clone, Copy)]
+pub struct EscapeKey;
+
+/// Every reason a change can report, and the DOM event behind it.
+#[cfg_attr(
+    rust_js,
+    rust_js::type_map(map = "ReasonVocabulary", keys = "ChangeReason", lookup = "EventOf")
+)]
+pub trait Reason: Copy {
+    type Event;
+}
+
+impl Reason for TriggerPress {
+    type Event = &'static MouseEvent;
+}
+
+impl Reason for EscapeKey {
+    type Event = &'static KeyboardEvent;
+}
+
+impl Reason for &'static str {
+    type Event = &'static Event;
+}
+
+pub fn escape() -> EscapeKey {
+    EscapeKey
+}
+```
+
+```ts
+/** A press of the trigger. */
+export type TriggerPress = "trigger-press";
+
+/** Escape. */
+export type EscapeKey = "escape-key";
+
+/** Every reason a change can report, and the DOM event behind it. */
+export type ReasonVocabulary = {
+    /** A press of the trigger. */
+    "trigger-press": MouseEvent;
+    /** Escape. */
+    "escape-key": KeyboardEvent;
+};
+
+export type ChangeReason = keyof ReasonVocabulary;
+
+export type EventOf<Reason extends string> = Reason extends ChangeReason ? ReasonVocabulary[Reason] : Event;
+
+export function escape(): EscapeKey;
+```
+
 ## Calling Rust from a JS file in your app
 
 `rust-js build` writes each module's JS beside its Rust: `src/App.rs` is
