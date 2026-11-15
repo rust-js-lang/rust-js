@@ -200,3 +200,37 @@ the mutation `value-only-called` (`bindings/value_only.ts`). The message
 is one, `webapi/generate.ts`'s `TIMERS_GONE_MESSAGE`, which writes both
 `TimerGone`'s and the attribute's.
 
+## Amendment: an effect's cleanup is called once too (#1881, 2026-11-15)
+
+A closure that holds a value with a destructor must be made where JS sees
+what it took, for a `let` or a call, or be one a binding calls once, made
+where it's given (above). An effect's cleanup is neither: the effect gives
+it back, `move || drop(listening)` of an RAII guard, as the deep-chain
+harness's primitives stops listening to the window, so it was refused,
+"a closure that holds a value with a destructor, made here".
+
+**A closure given back, as its value, by a closure a binding takes whose
+result JS calls once is called once** (`ClosureFacts::returned_once`):
+`use_effect`'s `impl Fn() -> C` of a `C: Cleanup`, whose `FnOnce` member
+says React calls it once, as `#[rust_js::types = "void | (() => void)"]`
+on `Cleanup` makes it a union of a function of that kind
+(`recognition::member_function_kind`). What it took is dropped as that
+call ends: of one rustc infers `FnOnce`, its body's, and of one it infers
+`Fn` or `FnMut`, its `call_once`'s, as above. Only its body's last
+expression, not a `return`'s, which stays refused; and not what a binding
+that doesn't call its result keeps, `use_memo`'s, refused as before.
+
+What a cleanup only reads a field of, `move || println!("{}", guard.0)`,
+it takes alone, by RFC 2229's precise captures: the guard stays the
+effect's, dropped as the effect returns, before React calls the cleanup,
+as native Rust drops it. Case ([0262](0262-when-rust-and-js-disagree.md)):
+none, each drop where Rust's is; React calling a cleanup once is its
+contract, as a timer's.
+
+Held by `test/effect-cleanup-drops.test.ts`, real React mounting and
+unmounting three cleanups, each log the native run's of the same
+closures; and the memo's refusal. Mutations returned-once-closure-refused
+(`drops/facts.rs`), returned-fn-closure-not-call-once and
+any-binding-result-called-once (`analysis/closures.rs`);
+closure-made-anywhere and returned-closure-made-refused retargeted.
+

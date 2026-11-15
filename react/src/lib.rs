@@ -994,7 +994,10 @@ pub trait DependencyList {}
 impl DependencyList for () {}
 impl<T, const N: usize> DependencyList for [T; N] {}
 
-/// What an effect returns: nothing, or a function that cleans it up.
+/// What an effect returns: nothing, or a function that cleans it up, which
+/// React calls once, as @types/react's `void | Destructor` is: what the
+/// function holds is dropped as that call ends (#1881).
+#[cfg_attr(rust_js, rust_js::types = "void | (() => void)")]
 pub trait Cleanup {}
 
 impl Cleanup for () {}

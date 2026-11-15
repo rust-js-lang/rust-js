@@ -6,7 +6,7 @@ use std::fmt::Display;
 
 pub use geometry::{Placement, Point, Rect};
 
-use geometry::{Flip, Middleware, Offset, Shift, compute_position};
+use geometry::{Cleanup, Flip, Middleware, Offset, Shift, compute_position};
 use react::attributes::HTMLAttributes;
 use react::event::MouseEvent;
 use react::webapi::window_global::{add_event_listener, remove_event_listener};
@@ -86,8 +86,10 @@ pub fn use_floating(
             measure();
             let on_resize = move |_: &'static Event| measure();
             add_event_listener(events::Resize, on_resize, None);
-            // Stops listening, as `autoUpdate`'s cleanup does.
-            move || remove_event_listener(events::Resize, on_resize, None)
+            // Stops listening where it's dropped, as `autoUpdate`'s cleanup
+            // does: the effect's cleanup drops it (#1881).
+            let listening = Cleanup::new(move || remove_event_listener(events::Resize, on_resize, None));
+            move || drop(listening)
         },
         None,
     );

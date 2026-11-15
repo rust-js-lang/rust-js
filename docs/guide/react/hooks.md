@@ -142,6 +142,12 @@ export function Logger() {
 
 - An effect that cleans up only sometimes returns an `Option` of its
   cleanup: `None` is `undefined`, no cleanup.
+- A cleanup may hold a value with a destructor, an RAII guard,
+  `move || drop(listening)`: React calls it once, so what it holds is
+  dropped as that call ends, as Rust's `call_once` drops it. What it only
+  reads a field of, `guard.0`, it doesn't hold, and the effect drops that
+  guard as it returns, as Rust does (#1881,
+  [ADR 1020](../../decisions/1020-a-timer-is-the-js-crates-global.md), amended).
 - `use_layout_effect` and `use_insertion_effect` take the same arguments.
 - `use_effect_event(f)` (React 19.2) is a function an effect calls that
   always sees the latest props and state, without being a dependency.

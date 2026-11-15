@@ -347,4 +347,20 @@ export const mutations: Mutation[] = [
     replace: "                .any(|(_, from)| false && (drops(from) || params_may_drop && from.has_non_region_param()))\n        })\n}\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_iterator_drops.rs$"],
   },
+  {
+    name: "returned-fn-closure-not-call-once",
+    breaks: "an effect's cleanup rustc infers `Fn`, which holds its guard whole, isn't its `call_once`'s, so what it took isn't dropped as React's call of it ends (#1881)",
+    file: "src/lower/analysis/closures.rs",
+    find: "        called_once.extend((returned_once.iter().copied()).filter(|&closure| !is_fn_once(tcx, closure)));\n",
+    replace: "        let _ = &mut called_once;\n",
+    tests: ["test/effect-cleanup-drops.test.ts", "-t", "drops what it holds as React calls it"],
+  },
+  {
+    name: "any-binding-result-called-once",
+    breaks: "what any binding's callback gives back is taken for what JS calls once, so a closure `use_memo` keeps, holding a guard, compiles where JS never drops what it took (#1881)",
+    file: "src/lower/analysis/closures.rs",
+    find: "                    crate::lower::recognition::function_kind(tcx, binding, output) == Some(ty::ClosureKind::FnOnce)\n",
+    replace: "                    true || crate::lower::recognition::function_kind(tcx, binding, output) == Some(ty::ClosureKind::FnOnce)\n",
+    tests: ["test/effect-cleanup-drops.test.ts", "-t", "memo gives back"],
+  },
 ];

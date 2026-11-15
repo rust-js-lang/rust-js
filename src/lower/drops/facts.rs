@@ -190,7 +190,11 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
                     // 0484, 0521).
                     let carried = matches!(expr.kind, ExprKind::Closure(ref c)
                         if self.cx.closure_facts.carries_its_drop(self.cx.recognition.tcx, c.closure_id.to_def_id()));
-                    if !placed && !carried {
+                    // One given back where JS calls it once, an effect's
+                    // cleanup, drops what it took as that call ends (#1881).
+                    let once = matches!(expr.kind, ExprKind::Closure(ref c)
+                        if self.cx.closure_facts.returned_once(c.closure_id.to_def_id()));
+                    if !placed && !carried && !once {
                         self.problem(expr.span, "a closure that holds a value with a destructor, made here");
                     }
                 }

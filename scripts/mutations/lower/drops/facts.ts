@@ -16,8 +16,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a closure that holds a value with a destructor is made where its drop can't see what it took",
     file: "src/lower/drops/facts.rs",
-    find: "                    if !placed && !carried {",
-    replace: "                    if false && !placed && !carried {",
+    find: "                    if !placed && !carried && !once {",
+    replace: "                    if false && !placed && !carried && !once {",
     tests: ["test/traits.test.ts", "-t", "closure made in a struct"],
   },
   {
@@ -95,8 +95,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a closure its maker gives back, holding a value with a destructor, is refused where it's made",
     file: "src/lower/drops/facts.rs",
-    find: "                    if !placed && !carried {\n",
-    replace: "                    if !placed {\n",
+    find: "                    if !placed && !carried && !once {\n",
+    replace: "                    if !placed && !once {\n",
     tests: ["test/corpus.test.ts", "-t", "^returned_closure_drops.rs$"],
   },
   {
@@ -397,5 +397,13 @@ export const mutations: Mutation[] = [
     find: "                || self.cx.recognition.foreign.is_instance(def_id))\n",
     replace: "                || false && self.cx.recognition.foreign.is_instance(def_id))\n",
     tests: ["test/crates.test.ts", "-t", "two crates: closure_made_by_an_inlined_function"],
+  },
+  {
+    name: "returned-once-closure-refused",
+    breaks: "an effect's cleanup that holds a value with a destructor, `move || drop(listening)`, is refused as a closure made where JS sees nothing of it, though React calls it once (#1881)",
+    file: "src/lower/drops/facts.rs",
+    find: "                    if !placed && !carried && !once {\n",
+    replace: "                    if !placed && !carried && !false {\n",
+    tests: ["test/effect-cleanup-drops.test.ts", "-t", "drops what it holds as React calls it"],
   },
 ];

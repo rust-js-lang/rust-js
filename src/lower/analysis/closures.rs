@@ -103,8 +103,15 @@ pub struct ClosureFacts<'tcx> {
     /// The closures rustc infers `Fn` or `FnMut` made where they're given
     /// to a binding that calls what it's given once, `js::set_timeout(move
     /// || { let m = &n; .. }, ms)`'s, of a union bound (ADR 1020): each
-    /// called as its `call_once` runs it, dropping what it took.
+    /// called as its `call_once` runs it, dropping what it took. And of
+    /// `returned_once`, those rustc infers `Fn` or `FnMut` (#1881).
     called_once: IndexSet<DefId>,
+    /// The closures given back, as its value, by a closure a binding takes
+    /// whose result it calls once, an effect's cleanup, `C: Cleanup`'s
+    /// `FnOnce` member (#1881, ADR 1020 amended): JS calls each once, so
+    /// what it took is dropped as that call ends, as its `call_once` drops
+    /// it.
+    returned_once: IndexSet<DefId>,
     /// Whether the crate is a library, whose callers' closures may be.
     library: bool,
 }
@@ -127,9 +134,20 @@ impl<'tcx> ClosureFacts<'tcx> {
             .flat_map(|body| fn_dyn_sources(tcx, body))
             .partition(|&(_, _, handed, _)| handed);
         let made_fn_dyns: IndexSet<DefId> = made.into_iter().filter_map(|(_, ty, _, _)| closure_of(ty)).collect();
-        let called_once = (all_bodies.iter())
+        let mut called_once: IndexSet<DefId> = (all_bodies.iter())
             .flat_map(|body| called_once_by_js(tcx, &body.thir))
             .collect();
+        // What a closure JS calls gives back where JS calls that once (#1881).
+        let giving: IndexSet<DefId> = (all_bodies.iter())
+            .flat_map(|body| giving_back_once(tcx, &body.thir))
+            .collect();
+        let returned_once: IndexSet<DefId> = (all_bodies.iter())
+            .filter(|body| giving.contains(&body.def_id))
+            .filter_map(|body| returned_closures(&body.thir, body.root()?))
+            .collect();
+        // Of them, those rustc infers `Fn` or `FnMut`, whose body is their
+        // `call_once`'s; one `FnOnce` takes what it holds already.
+        called_once.extend((returned_once.iter().copied()).filter(|&closure| !is_fn_once(tcx, closure)));
         let handed_fn_dyns = (handed.into_iter())
             .filter_map(|(_, ty, _, _)| closure_of(ty))
             .filter(|id| !made_fn_dyns.contains(id))
@@ -152,6 +170,7 @@ impl<'tcx> ClosureFacts<'tcx> {
             cloned,
             cloned_apart: IndexSet::default(),
             called_once,
+            returned_once,
             library,
         }
     }
@@ -193,6 +212,13 @@ impl<'tcx> ClosureFacts<'tcx> {
     /// (ADR 1020).
     pub(in crate::lower) fn called_once(&self, closure: DefId) -> bool {
         self.called_once.contains(&closure)
+    }
+
+    /// Whether the closure `closure` is given back by a closure a binding
+    /// takes whose result JS calls once, an effect's cleanup: JS calls it
+    /// once, so what it took is dropped as that call ends (#1881).
+    pub(in crate::lower) fn returned_once(&self, closure: DefId) -> bool {
+        self.returned_once.contains(&closure)
     }
 
     /// Whether the closure `closure` is made a `dyn Fn` only to hand it to
@@ -759,6 +785,79 @@ fn called_once_by_js(tcx: TyCtxt<'_>, thir: &Thir<'_>) -> Vec<DefId> {
         }
     }
     once
+}
+
+/// The closures in `thir` made where they're given to a binding's parameter
+/// whose function's result is what JS calls once, a type parameter its
+/// `Output` is called by `FnOnce` alone, as `use_effect`'s `impl Fn() -> C`
+/// of a `C: Cleanup` is (#1881): what each gives back JS calls once.
+fn giving_back_once(tcx: TyCtxt<'_>, thir: &Thir<'_>) -> Vec<DefId> {
+    let mut giving = Vec::new();
+    for expr in thir.exprs.iter() {
+        let ExprKind::Call { fun, ref args, .. } = expr.kind else {
+            continue;
+        };
+        let ty::FnDef(id, _) = *thir[fun].ty.kind() else {
+            continue;
+        };
+        if !bindings::is_binding(tcx, id) {
+            continue;
+        }
+        let inputs = tcx.fn_sig(id).skip_binder().skip_binder().inputs();
+        for (&arg, &parameter) in args.iter().zip(inputs) {
+            let mut e = arg;
+            while let ExprKind::Scope { value: inner, .. } | ExprKind::ValueExpr { source: inner } = thir[e].kind {
+                e = inner;
+            }
+            if let ExprKind::Closure(_) = thir[e].kind
+                && let ty::Closure(closure, _) = *thir[e].ty.kind()
+                && result_called_once(tcx, id, parameter)
+            {
+                giving.push(closure);
+            }
+        }
+    }
+    giving
+}
+
+/// Whether the binding `binding`'s parameter of type `parameter`, a type
+/// parameter of an `Fn` bound, gives a result its `Output` binds to what's
+/// called by `FnOnce` alone (`recognition::function_kind`).
+fn result_called_once<'tcx>(tcx: TyCtxt<'tcx>, binding: DefId, parameter: Ty<'tcx>) -> bool {
+    use rustc_hir::attrs::lang_items::LangItem;
+    (tcx.param_env(binding).caller_bounds())
+        .filter_map(|clause| clause.as_projection_clause())
+        .map(|clause| clause.skip_binder())
+        .any(|projection| {
+            projection.projection_term.self_ty() == parameter
+                && tcx.is_lang_item(projection.def_id(), LangItem::FnOnceOutput)
+                && (projection.term.as_type()).is_some_and(|output| {
+                    crate::lower::recognition::function_kind(tcx, binding, output) == Some(ty::ClosureKind::FnOnce)
+                })
+        })
+}
+
+/// The closure `root`, a body's, gives back as its value, its block's last
+/// expression, through scopes and blocks. Not one a `return` gives, which
+/// stays refused.
+fn returned_closures(thir: &Thir<'_>, mut root: rustc_middle::thir::ExprId) -> Option<DefId> {
+    loop {
+        match thir[root].kind {
+            ExprKind::Scope { value: inner, .. } | ExprKind::ValueExpr { source: inner } => root = inner,
+            ExprKind::Block { block } => root = thir[block].expr?,
+            _ => break,
+        }
+    }
+    match (&thir[root].kind, *thir[root].ty.kind()) {
+        (ExprKind::Closure(_), ty::Closure(closure, _)) => Some(closure),
+        _ => None,
+    }
+}
+
+/// Whether rustc infers the closure `closure` `FnOnce`.
+fn is_fn_once(tcx: TyCtxt<'_>, closure: DefId) -> bool {
+    matches!(tcx.type_of(closure).instantiate_identity().skip_normalization().kind(),
+        ty::Closure(_, args) if args.as_closure().kind() == ty::ClosureKind::FnOnce)
 }
 
 /// Whether the binding `id` may give a function back: what it returns, or
