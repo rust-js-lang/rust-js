@@ -47,6 +47,19 @@ for (const name of shard(Object.keys(all), part, parts)) {
     writeFileSync(file, all[name]);
     const native = runNative(file, dir);
     if (typeof native === "string") throw new Error(native);
+    // A row whose native run panics at a `RefCell`'s borrow never reaches
+    // the length, index or wrap it tests: both sides panic there alike, and
+    // it tests nothing. A `let p = &mut *cell.borrow_mut();` keeps its guard
+    // to the block's end in edition 2024, so the next `borrow()` did, of
+    // each `replaced` row (#1672).
+    // Not the guard holder's cut through the cell, a callback's or a drop's,
+    // which its held guard makes panic by Rust's rules: those rows hold that
+    // JS's borrow flags panic as Rust's do.
+    const early = native.stdout
+      .split("\n")
+      .filter((line) => /RefCell already (mutably )?borrowed$/.test(line))
+      .filter((line) => !(name.startsWith("guard__") && /^(callback|dropped)_/.test(line)));
+    expect(early, "a row that panics at a borrow before what it tests").toEqual([]);
     const compiled = compileJs(file, dir, "2024");
     let problem = "";
     if (!("js" in compiled)) {

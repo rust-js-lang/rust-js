@@ -1,14 +1,14 @@
 # shape	count	per 10,000 lines
-files	2601
-lines	344007
+files	2602
+lines	344055
 temporaries	0	0
 labeled blocks	0	0
 while (true)	224	6.5
-$iter	2890	84
+$iter	2892	84.1
 Iterator.from	286	8.3
 return;	335	9.7
 renamed x$1	16128	468.8
-role fallbacks	8833	256.8
+role fallbacks	8834	256.8
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1	role fallbacks
 test/corpus/adapter_drop_past_a_panic.js	50	0	0	0	1	0	0	0	1
 test/corpus/adapter_drops.js	1844	0	0	1	19	2	1	98	61
@@ -802,6 +802,7 @@ test/corpus/flat_map_collected_where_capacity_is_read.js	284	0	0	0	11	0	0	18	10
 test/corpus/flat_map_drops.js	160	0	0	0	10	0	0	0	2
 test/corpus/flat_map_inner_iterables.js	42	0	0	0	0	0	0	0	1
 test/corpus/flat_map_of_a_bound_reference.js	141	0	0	0	6	0	0	11	5
+test/corpus/flat_map_of_a_maps_iterators_grows_a_vec.js	48	0	0	0	2	0	0	0	1
 test/corpus/flat_map_of_a_where_clause_into_iterator.js	263	0	0	0	6	0	0	30	12
 test/corpus/flat_map_of_given_adapters_from_its_back.js	1365	0	0	0	4	0	0	12	6
 test/corpus/flat_map_of_maps_from_its_back.js	57	0	0	0	8	0	0	0	0
