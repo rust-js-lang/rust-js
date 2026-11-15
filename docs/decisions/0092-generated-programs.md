@@ -405,3 +405,19 @@ body that read locals before any write of them, whose tidied tuple reads
 then wrote each other's items into each other without end; #1382's
 refusal now stops such a body first: of 1,000 default seeds on `main`,
 none crashes.
+
+## Amendment: a return is a use of what it returns (2026-11-15, #1889)
+
+#1382's walk, of custom MIR's uses of a local before any path wrote it
+whole, said it covered the return place, but it never counted the
+`Return` that reads it. Rustlantis seed 12462650 wrote `RET = 5` in a
+block only a `Goto` reaches and returned `RET` unwritten on another way.
+Its JS read `result`, which nothing declared, and the check of what
+rust-js made refused that as rust-js's own bug. A `Return` is a use of the
+return place now. So that program is refused, as #1382 refuses any
+other use before a write: "a use of a local before any write of it
+whole", which test/rustlantis-known.txt holds as `custom-mir`. A way
+that writes the return place, or a return of a type of one value, `()`,
+is no such use. Case D, as before. test/rustlantis.test.ts holds the
+reduced program refused so in each build. Mutation
+`return-no-use-of-what-it-returns` (`lower/mir/partly_written.ts`).

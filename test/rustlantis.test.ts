@@ -138,3 +138,41 @@ test("the Rustlantis net's list holds what each of its issues is", () => {
   expect(of("wrong", "_2 = 1_i8;\n_5 = RET;\n_2 = 3_i8;")).toBeUndefined();
   expect(of("threw", "ReferenceError: _3 is not defined")).toBeUndefined();
 });
+
+// A return place written only in a block a `Goto` reaches, and read there,
+// where another way returns it unwritten (#1889, seed 12462650's, reduced):
+// the JS read a name nothing declared, so the check of what rust-js made
+// refused it. A return is a use of what it returns, so it's refused as
+// custom MIR's use of a local before any write of it whole (#1382), which
+// the list holds as `custom-mir`, in each build.
+test("a return place returned unwritten on one way is refused as a use before its write", () => {
+  const dir = fixture("rustlantis-return-place-on-another-way");
+  const file = join(dir, "program.rs");
+  writeFileSync(
+    file,
+    `#![feature(custom_mir, core_intrinsics)]
+extern crate core;
+use core::intrinsics::mir::*;
+
+#[custom_mir(dialect = "runtime", phase = "initial")]
+pub fn pick(mut x: i8) -> u16 {
+    mir! {
+        { match x { 1 => bb2, _ => bb1 } }
+        bb1 = { Return() }
+        bb2 = { Goto(bb3) }
+        bb3 = { RET = 5_u16; x = RET as i8; Return() }
+    }
+}
+
+pub fn entry() -> u16 {
+    pick(std::hint::black_box(1_i8))
+}
+`,
+  );
+  for (const [build, flags] of builds) {
+    const compiled = runSync([compiler, file, "-o", join(dir, `${build}.js`), ...flags, "--", "--edition=2021", "-Awarnings"], root, 120_000, bootstrap);
+    const refusal = compiled.stderr.split("\n").find((line) => line.startsWith("error: rust-js"));
+    expect(refusal).toContain("a use of a local before any write of it whole");
+    expect(knownAs(list, ["refused"], refusal ?? "")?.by).toBe("custom-mir");
+  }
+});

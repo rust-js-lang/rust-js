@@ -80,6 +80,10 @@ pub(super) fn partly_written<'tcx>(body: &mir::Body<'tcx>, one_value: impl Fn(Ty
                 }
                 TerminatorKind::SwitchInt { discr, .. } => walk.visit_operand(discr, location),
                 TerminatorKind::Assert { cond, .. } => walk.visit_operand(cond, location),
+                // What it returns, read: a way that wrote no return place,
+                // `RET = 5` only on another, returned nothing JS declared
+                // (#1889).
+                TerminatorKind::Return => walk.used(mir::RETURN_PLACE),
                 _ => {}
             }
             if walk.unwritten.is_some() {

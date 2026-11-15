@@ -46,4 +46,12 @@ export const mutations: Mutation[] = [
     replace: " && ",
     tests: runs,
   },
+  {
+    name: "return-no-use-of-what-it-returns",
+    breaks: "a custom MIR's return of a return place no path to it wrote, `RET = 5` only on another way, isn't a use of it, so its JS reads a name nothing declares and the check of what rust-js made refuses it as rust-js's bug, not as custom MIR's use before its write (#1889)",
+    file: "src/lower/mir/partly_written.rs",
+    find: "                TerminatorKind::Return => walk.used(mir::RETURN_PLACE),\n",
+    replace: "                TerminatorKind::Return => {}\n",
+    tests: ["test/rustlantis.test.ts", "-t", "returned unwritten"],
+  },
 ];
