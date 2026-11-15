@@ -23,6 +23,7 @@ mod method_calls;
 mod present_item;
 mod set_reads;
 mod span_join;
+pub(in crate::lower) use collect_sources::CollectSource;
 pub(in crate::lower) use span_join::{each_call_at, the_call_at, the_one};
 mod total_orders;
 mod values;
@@ -152,10 +153,10 @@ pub(super) struct BodyFacts<'tcx> {
     /// crate's `Recognition` exists (`decide_in_place`), none reads it before.
     pub(super) in_place_adapters: InPlace,
     /// The `Vec` each `collect()` std may make in place is made of, by the
-    /// call's span, `in_place_collect_sources`'s (#1259), decided with the
-    /// in-place adapters (`decide_in_place`), once each body's MIR is the
-    /// crate's (#1934).
-    pub(super) in_place_collect_sources: IndexMap<Span, collect_sources::CollectSource<'tcx>>,
+    /// call's THIR node, `in_place_collect_sources`'s (#1259, ADR 1151),
+    /// decided with the in-place adapters (`decide_in_place`), once each
+    /// body's MIR is the crate's (#1934).
+    pub(super) in_place_collect_sources: IndexMap<ExprId, collect_sources::CollectSource<'tcx>>,
     /// Each `collect()` whose `Vec` the body asks its capacity, by the
     /// call's span, `capacity_read_collects`'s (#1926).
     pub(super) capacity_read_collects: IndexSet<Span>,

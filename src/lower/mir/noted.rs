@@ -91,9 +91,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// collect's buffer's (`in_place_sources`, #1259).
     pub(in crate::lower) fn in_place_source(&self, span: rustc_span::Span) -> Option<Expr> {
         let name = self.locals.mir.in_place_sources.get(&span)?;
-        let source = self.frame.facts.in_place_collect_sources.get(&span)?;
+        let source = self.collect_sources_at(span).next()?;
         let place = (source.fields.iter()).fold(Expr::var(name), |base, &(ty, i)| self.project(base, ty, i));
         Some(place)
+    }
+
+    /// Whether the `collect()`s at `span`, two a macro's repetition writes
+    /// there, are of sources apart, so none is the call's
+    /// (`in_place_source_names`, ADR 1151): its capacity, where it's read,
+    /// is refused, naming #1789.
+    pub(in crate::lower) fn collect_sources_apart(&self, span: rustc_span::Span) -> bool {
+        self.collect_sources_at(span).next().is_some() && !self.locals.mir.in_place_sources.contains_key(&span)
+    }
+
+    /// The source of each THIR `collect()` at `span` that has one.
+    fn collect_sources_at(
+        &self,
+        span: rustc_span::Span,
+    ) -> impl Iterator<Item = &crate::lower::body_queries::CollectSource<'tcx>> {
+        let thir = self.frame.thir;
+        (thir.exprs.iter_enumerated())
+            .filter(move |(_, e)| matches!(e.kind, thir::ExprKind::Call { fn_span, .. } if fn_span == span))
+            .filter_map(|(id, _)| self.frame.facts.in_place_collect_sources.get(&id))
     }
 
     /// Whether `range` is a variable no step can leave exhausted, a `let`

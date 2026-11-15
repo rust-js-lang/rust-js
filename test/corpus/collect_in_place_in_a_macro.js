@@ -35,5 +35,14 @@ function main() {
     const w = value[i];
     console.log(`${w.length} [${w.join(", ")}]`);
   }
+  const c = $withCapacity(10);
+  $grew(c, 4, c.length, c.push(3));
+  const d = $withCapacity(3);
+  $grew(d, 4, d.length, d.push(4, 5));
+  const apart = [$untracked(c.map((x) => (x + 1) >>> 0)), $untracked(d.map((x) => (x + 1) >>> 0))];
+  for (let i = 0; i < apart.length; i++) {
+    const w = apart[i];
+    console.log(`${w.length} [${w.join(", ")}]`);
+  }
 }
 //# sourceMappingURL=case.js.map

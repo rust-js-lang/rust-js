@@ -344,7 +344,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The name of each `Vec` a `collect()` std may make in place is made of,
     /// by the call's span (`in_place_collect_sources`): its variable's,
     /// found by where its binding is, as its debug info has it, inside the
-    /// binding's pattern, `mut v`'s `v` (#1259).
+    /// binding's pattern, `mut v`'s `v` (#1259). Of each THIR collect at the
+    /// span, MIR's call there, the same source (`span_join::each_call_at`):
+    /// two a macro's repetition writes there of sources apart have none, as
+    /// MIR tells them by their span alone (#1788, ADR 1151).
     fn in_place_source_names(
         &self,
         body: &mir::Body<'tcx>,
@@ -371,8 +374,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             found
         };
-        (self.frame.facts.in_place_collect_sources.iter())
-            .filter_map(|(&span, source)| {
+        let sources = &self.frame.facts.in_place_collect_sources;
+        (sources.iter())
+            .filter_map(|(&node, source)| {
+                let thir::ExprKind::Call { fn_span: span, .. } = thir[node].kind else {
+                    return None;
+                };
+                if !crate::lower::body_queries::each_call_at(thir, span, |at| sources.get(&at) == Some(source)) {
+                    return None;
+                }
                 let at = bound(source.var)?;
                 let local = (body.var_debug_info.iter()).find_map(|info| match info.value {
                     mir::VarDebugInfoContents::Place(place)

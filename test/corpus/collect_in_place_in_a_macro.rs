@@ -1,8 +1,9 @@
 // `collect()`s a macro writes, which std collects in place of the `Vec`
 // each chain moves, its capacity the source's (#1259): each expansion's of
-// its own source, as Rust's are (#1788); and a repetition's of `Vec`s
-// made where they're moved, of no source alike. One repetition of sources
-// apart is refused (#1789).
+// its own source, as Rust's are (#1788); a repetition's of `Vec`s made
+// where they're moved, of no source alike; and a repetition's of two
+// variables apart, which share one place, so neither's source is the
+// other's, their capacity unread (ADR 1151; its read is refused, #1789).
 macro_rules! bumped {
     ($v:expr) => {
         $v.into_iter().map(|x: u32| x + 1).collect::<Vec<u32>>()
@@ -25,6 +26,14 @@ fn main() {
     println!("{} {} {:?}", from_a.len(), from_a.capacity(), from_a);
     println!("{} {} {:?}", from_b.len(), from_b.capacity(), from_b);
     for w in each_bumped!(vec![5u32, 6], vec![7u32]) {
+        println!("{} {:?}", w.len(), w);
+    }
+    let mut c = Vec::with_capacity(10);
+    c.push(3u32);
+    let mut d = Vec::with_capacity(3);
+    d.extend([4u32, 5]);
+    let apart = each_bumped!(c, d);
+    for w in apart {
         println!("{} {:?}", w.len(), w);
     }
 }

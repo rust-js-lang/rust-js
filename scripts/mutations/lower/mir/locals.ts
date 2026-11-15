@@ -3,6 +3,15 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "collects-at-one-span-of-sources-apart",
+    breaks:
+      "two `collect()`s a macro's repetition writes at one span, of sources `a` and `b`, each take one source's capacity, `1 3` where Rust's first is `1 10`, as MIR's call at the span takes any collect's there (#1788, ADR 1151)",
+    file: "src/lower/mir/locals.rs",
+    find: "                if !crate::lower::body_queries::each_call_at(thir, span, |at| sources.get(&at) == Some(source)) {\n",
+    replace: "                if !crate::lower::body_queries::each_call_at(thir, span, |_| true) {\n",
+    tests: ["test/limitations.test.ts", "-t", "macro writes its"],
+  },
+  {
     name: "parameter-named-as-a-variable",
     breaks:
       "a parameter is named as any variable, its `_` kept, where its declaration drops it",

@@ -42,7 +42,7 @@ fn place_of<'tcx>(thir: &Thir<'tcx>, mut at: ExprId) -> Option<CollectSource<'tc
     }
 }
 
-/// Each `collect()`, by its call's span, whose iterator is a chain of
+/// Each `collect()`, by its THIR node, whose iterator is a chain of
 /// `Iterator`'s methods of `IntoIterator::into_iter(v)` of a `Vec` the body
 /// names, or a place in one, `v.into_iter().map(f).collect()`, through
 /// calls of the crate's functions that return their argument's iterator
@@ -50,31 +50,27 @@ fn place_of<'tcx>(thir: &Thir<'tcx>, mut at: ExprId) -> Option<CollectSource<'tc
 /// the chain moves, so nothing grows it before the collect reads its
 /// capacity. Whether std collects it in place is the collect lowering's
 /// (`collects_in_place`); a chain a `let` holds, or a `Vec` made where it's
-/// moved, has none. Two collects a macro's repetition writes share a span:
-/// of sources apart, each would take another's capacity (#1788), so they're
-/// refused till each is known by its node (#1789).
+/// moved, has none. Two collects a macro's repetition writes share a span,
+/// so each is known by its node, and MIR's call at the span asks each node
+/// there (`span_join::each_call_at`, `mir/locals.rs`' `in_place_source_names`):
+/// of sources apart, neither's is taken of the other (#1788, ADR 1151).
 pub(super) fn in_place_collect_sources<'tcx>(
     tcx: TyCtxt<'tcx>,
     thir: &Thir<'tcx>,
-) -> IndexMap<Span, CollectSource<'tcx>> {
+) -> IndexMap<ExprId, CollectSource<'tcx>> {
     let iterator = std_item(tcx, StdItem::Iterator);
     let collect = trait_method(tcx, iterator, "collect");
     let into_iter = trait_method(tcx, std_item(tcx, StdItem::IntoIterator), "into_iter");
-    // Each collect's source, or none, by its call's span.
-    let mut at_span: IndexMap<Span, Vec<Option<CollectSource<'tcx>>>> = IndexMap::default();
-    for expr in thir.exprs.iter() {
-        let ExprKind::Call {
-            fun, ref args, fn_span, ..
-        } = expr.kind
-        else {
+    // Each collect's source, by its node.
+    let mut found = IndexMap::default();
+    for (node, expr) in thir.exprs.iter_enumerated() {
+        let ExprKind::Call { fun, ref args, .. } = expr.kind else {
             continue;
         };
         if fn_def(thir[fun].ty).map(|(id, _)| id) != Some(collect) {
             continue;
         }
         let Some(&first) = args.first() else { continue };
-        let collects = at_span.entry(fn_span).or_default();
-        collects.push(None);
         let mut at = strip(thir, first);
         while let ExprKind::Call { fun, ref args, .. } = thir[at].kind {
             let Some((callee, callee_args)) = fn_def(thir[fun].ty) else {
@@ -86,7 +82,7 @@ pub(super) fn in_place_collect_sources<'tcx>(
                     && let Some(vec) = callee_args.types().next()
                     && matches!(vec.kind(), ty::Adt(adt, _) if is_std_def(tcx, adt.did(), StdItem::Vec))
                 {
-                    *collects.last_mut().expect("the collect's") = Some(source);
+                    found.insert(node, source);
                 }
                 break;
             }
@@ -103,7 +99,7 @@ pub(super) fn in_place_collect_sources<'tcx>(
                     if let Some(source) = place_of(thir, strip(thir, arg))
                         && matches!(thir[arg].ty.kind(), ty::Adt(adt, _) if is_std_def(tcx, adt.did(), StdItem::Vec))
                     {
-                        *collects.last_mut().expect("the collect's") = Some(source);
+                        found.insert(node, source);
                     }
                     break;
                 }
@@ -111,21 +107,6 @@ pub(super) fn in_place_collect_sources<'tcx>(
                 continue;
             }
             at = strip(thir, receiver);
-        }
-    }
-    let mut found = IndexMap::default();
-    for (span, collects) in at_span {
-        let first = collects[0].clone();
-        if collects.iter().any(|source| *source != first) {
-            let refused = crate::lower::refusal::Refused::Because(
-                "collects a macro writes at one place of different source `Vec`s, which std may collect in place",
-                "each would take one source's capacity, as rust-js tells them by where they're written (#1789)",
-            );
-            crate::lower::refusal::refuse(tcx, span, refused);
-            continue;
-        }
-        if let Some(source) = first {
-            found.insert(span, source);
         }
     }
     found

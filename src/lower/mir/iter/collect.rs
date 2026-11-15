@@ -982,14 +982,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Its capacity, which the body reads, can't be known: refused where
         // it's compiled, not thrown where it runs (#1926; ADR 0419, amended).
         if self.frame.facts.capacity_read_collects.contains(&span) {
-            return Err(crate::lower::refusal::refuse(
-                self.tcx,
-                span,
-                crate::lower::refusal::Refused::Because(
+            let refused = match self.collect_sources_apart(span) {
+                true => crate::lower::refusal::Refused::Because(
+                    "`capacity()` of a `Vec` std may collect in place, one of collects a macro's repetition writes at one place of sources apart (#1789)",
+                    "std keeps each source's buffer, and rust-js tells MIR's collects by where they're written: collect each outside the macro, `let v = a.into_iter().map(f).collect::<Vec<_>>();`, or don't read its capacity",
+                ),
+                false => crate::lower::refusal::Refused::Because(
                     "`capacity()` of a `Vec` std may collect in place from a source a call hides (#1926)",
                     "std keeps its source's buffer, whose capacity rust-js can't tell: collect from `v.into_iter()` in the body that reads the capacity, or don't read it",
                 ),
-            ));
+            };
+            return Err(crate::lower::refusal::refuse(self.tcx, span, refused));
         }
         Ok(Expr::call_helper("$untracked", vec![collected]))
     }

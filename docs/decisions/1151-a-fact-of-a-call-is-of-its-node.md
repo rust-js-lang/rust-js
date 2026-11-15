@@ -90,20 +90,25 @@ a span inside a macro:
    span there survives the case, as a held `rev()`'s source is marked by
    the variable's own rules too, so it has no mutation of its own.
 
-Still to move: the collect sources' lowering side (#1789). Its entry
-point, since ADR 1150's S4a (2026-11-16): `mir/locals.rs`'
-`in_place_source_names` maps each collect's span to its source's local's
-name, a `js::Name` of that local's form, `state.locals.names[local]`, not
-its word; `FnCx::note_in_place_sources` keeps the map in
-`locals.mir.in_place_sources`, and `mir.rs`' `in_place_source(span)`
-reads it, the source's variable and its fields projected. What's left is
-its key: each THIR collect node joined to MIR's call by
-`span_join::each_call_at`, as the analysis side's
-`body_queries/collect_sources.rs` already keys its sources by node, and
-the analysis's refusal of collects at one span whose sources differ
-(#1789) removed, with corpus case collect_in_place_in_a_macro given two
-sources apart and mutation collects-at-one-span-of-sources-apart
-retargeted.
+The collect sources' lowering side moved too (2026-11-16, #1789's
+compile of the collects): `body_queries/collect_sources.rs` keys each
+source by its THIR collect node, and `mir/locals.rs`'
+`in_place_source_names` gives MIR's call at a span its source's name, a
+`js::Name` of that local's form (`state.locals.names[local]`, ADR 1150's
+S4a), where each THIR collect there has the same source
+(`span_join::each_call_at`); `mir/noted.rs`' `in_place_source(span)`
+projects its fields. The analysis's refusal of collects at one span whose
+sources differ is gone: they compile, corpus case
+collect_in_place_in_a_macro's `each_bumped!(c, d)` of two variables apart.
+Their capacity can't be told: **MIR tells its calls apart by their span
+alone**, and a macro's repetition writes both at one, so neither source is
+the call's. Where the body reads it, of a `let` not `mut`, it's refused
+where it's compiled, naming #1789, with what to write instead, each collect
+outside the macro (`collect_sources_apart`, `mir/iter/collect.rs`); else
+where it runs, as any capacity not known (#1180). The guide's limitation
+is that case alone. Mutation collects-at-one-span-of-sources-apart
+(lower/mir/locals.ts), any collect at the span taken, is held by it: the
+limitation's example compiles with it, taking one source's capacity.
 
 ## Consequences
 
