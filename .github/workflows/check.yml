@@ -92,6 +92,18 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: bun scripts/ci.ts plan ${{ inputs.since && format('--since={0}', inputs.since) || '' }} >> "$GITHUB_OUTPUT"
 
+  # rust-js's release build, once a run, for the jobs that use it
+  # (./.github/actions/build-rust-js): each restores the binary it caches,
+  # where each started together and built it again, 9 builds of about 3 min
+  # a run whose compiler changed (docs/dev-loop.md). Beside `plan`.
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - run: rustup show
+      - uses: ./.github/actions/build-rust-js
+
   # The iterator matrix's slice (ADR 1090, #731), of a check whose change
   # is the iterators' code, as `plan` says (scripts/iteratorSlice.ts's
   # `iteratorPaths`, its one list): its fixed batches, of every source,
@@ -101,7 +113,7 @@ jobs:
   # `matrix` runs every batch.
   iterators:
     name: iterator matrix slice
-    needs: plan
+    needs: [plan, build]
     if: ${{ !inputs.nightly && needs.plan.outputs.iterators == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -132,7 +144,7 @@ jobs:
   # its 360 batches, on a machine of its own beside the matrix's.
   iterator-conformance:
     name: iterator conformance slice
-    needs: plan
+    needs: [plan, build]
     if: ${{ !inputs.nightly && needs.plan.outputs.iterators == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -165,7 +177,7 @@ jobs:
   # shows, #766's, reached `main` where only the nightly's `forms` ran it.
   iterator-forms:
     name: iterator forms of the corpus
-    needs: plan
+    needs: [plan, build]
     if: ${{ !inputs.nightly && needs.plan.outputs.iterators == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -192,7 +204,7 @@ jobs:
   # `format` runs every batch.
   format-grid:
     name: formatting grid slice
-    needs: plan
+    needs: [plan, build]
     if: ${{ !inputs.nightly && needs.plan.outputs.formatting == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -226,7 +238,7 @@ jobs:
   # batch.
   number-grid:
     name: numbers grid slice
-    needs: plan
+    needs: [plan, build]
     if: ${{ !inputs.nightly && needs.plan.outputs.numbers == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -260,7 +272,7 @@ jobs:
   # 400 seeds from the day's, each under Miri.
   memory-net:
     name: memory net slice
-    needs: plan
+    needs: [plan, build]
     if: ${{ !inputs.nightly && needs.plan.outputs.memory == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -294,7 +306,7 @@ jobs:
   # them, against native Rust. The nightly's suite runs it too.
   declarations:
     name: declarations' TypeScript callers
-    needs: plan
+    needs: [plan, build]
     if: ${{ !inputs.nightly && needs.plan.outputs.declarations == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -321,7 +333,7 @@ jobs:
   # nightly's `async` runs it too.
   async-points:
     name: async table
-    needs: plan
+    needs: [plan, build]
     if: ${{ !inputs.nightly && needs.plan.outputs.async == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -356,7 +368,7 @@ jobs:
   # runs every case's.
   metamorphic-cases:
     name: metamorphic rewrites of the change's cases
-    needs: plan
+    needs: [plan, build]
     if: ${{ !inputs.nightly && needs.plan.outputs.cases == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -389,7 +401,7 @@ jobs:
   # `consumers` runs it too.
   consumer-net:
     name: consumer net
-    needs: plan
+    needs: [plan, build]
     if: ${{ !inputs.nightly && needs.plan.outputs.consumers == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -424,7 +436,7 @@ jobs:
   # slice. The nightly's `std` runs it too.
   std-net:
     name: std net
-    needs: plan
+    needs: [plan, build]
     if: ${{ !inputs.nightly && needs.plan.outputs.std == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -460,7 +472,7 @@ jobs:
   # machine, is the nightly's `twins`.
   twin-net:
     name: twin net
-    needs: plan
+    needs: [plan, build]
     if: ${{ !inputs.nightly && needs.plan.outputs.twins == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -495,7 +507,7 @@ jobs:
   # every row; a push, one in 8 of the top crates by downloads (#1174).
   crate-corpus:
     name: crate corpus
-    needs: plan
+    needs: [plan, build]
     if: ${{ !inputs.nightly && needs.plan.outputs.crates == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
@@ -522,7 +534,7 @@ jobs:
   # went unseen until the nightly (#1188). The nightly runs its own.
   react-in-rust-port:
     name: react-in-rust port
-    needs: plan
+    needs: [plan, build]
     if: ${{ !inputs.nightly && needs.plan.outputs.port == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
