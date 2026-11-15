@@ -519,7 +519,7 @@ export function programs(): Record<string, string> {
       all[`${holderName}__${testName}`] = `${decls}\n${fns.join("\n")}\nfn main() {\n${calls.join("\n")}\n}\n`;
     }
   }
-  return all;
+  return { ...all, ...valuePrograms() };
 }
 
 /** The callee's test: the index in a function of its own, given the
@@ -534,3 +534,197 @@ function calleeBody(h: Holder, b: string, name: string): string {
   return `if k < ${h.len} {\n        ${b}\n        ${name}_at(${of}, k)\n    } else {\n        0\n    }`;
 }
 
+
+// The value family: an integer tested, then written again through another
+// path between, then used where its test decided the use: an array's index
+// (a bounds assert), a sum that wraps past it, a cast that narrows it. Each
+// write makes it 300, past each test.
+
+/** Where an integer lives, as the probe sees it, and each way to write it
+ * again. `read` reads it. */
+type ValueHolder = {
+  params: string;
+  setup?: string;
+  /** In `main`: statements making it `K`, and the probe's arguments but
+   * `cut`. */
+  make: string;
+  args: string;
+  read: string;
+  /** In `main`: a closure body that writes it through another path. */
+  cut?: string;
+  direct?: string;
+  lend?: string;
+  whole?: string;
+  helper?: string;
+  closure?: string;
+  pointer?: string;
+  /** As `Holder.undefined`. */
+  undefined?: string[];
+};
+
+const valueDecls = `use std::any::Any;
+use std::cell::Cell;
+use std::panic::{self, AssertUnwindSafe};
+use std::rc::Rc;
+
+fn message(payload: Box<dyn Any + Send>) -> String {
+    if let Some(s) = payload.downcast_ref::<&str>() {
+        s.to_string()
+    } else if let Some(s) = payload.downcast_ref::<String>() {
+        s.clone()
+    } else {
+        "another payload".to_string()
+    }
+}
+
+fn check(what: &str, f: impl FnOnce() -> u32) {
+    match panic::catch_unwind(AssertUnwindSafe(f)) {
+        Ok(value) => println!("{what}: {value}"),
+        Err(payload) => println!("{what}: {}", message(payload)),
+    }
+}
+
+fn bump(n: &mut u32) {
+    *n = 300;
+}
+
+fn set_cell(n: &Cell<u32>) {
+    n.set(300);
+}
+
+struct Counter {
+    n: u32,
+}
+
+fn reset(c: &mut Counter) {
+    c.n = 300;
+}
+
+thread_local! {
+    static N: Cell<u32> = const { Cell::new(0) };
+}
+`;
+
+const valueHolders: Record<string, ValueHolder> = {
+  local: {
+    params: "mut n: u32",
+    make: "",
+    args: "K",
+    read: "n",
+    direct: "n += 296;",
+    lend: "bump(&mut n);",
+    closure: "let mut set = || n = 300; set();",
+  },
+  pointer: {
+    params: "mut n: u32",
+    setup: "let p: *mut u32 = &raw mut n;",
+    make: "",
+    args: "K",
+    read: "n",
+    pointer: "unsafe { *p = 300 };",
+    // Undefined behaviour, Miri's Stacked Borrows (nightly, 2026-11-15): the
+    // closure's shared capture of `n` is invalidated by the write through
+    // `p`, and `n` then read through it: "attempting a read access using
+    // <33990> ..., but that tag does not exist in the borrow stack";
+    // "<33990> was created by a SharedReadOnly retag" at the closure, "later
+    // invalidated ... by a write access" at `*p = 300`.
+    undefined: ["in_closure"],
+  },
+  mut_ref: {
+    params: "n: &mut u32",
+    make: "let mut v = K;",
+    args: "&mut v",
+    read: "*n",
+    direct: "*n = 300;",
+    lend: "bump(n);",
+  },
+  cell: {
+    params: "n: &Cell<u32>",
+    make: "let c = Cell::new(K);",
+    args: "&c",
+    read: "n.get()",
+    cut: "c.set(300)",
+    direct: "n.set(300);",
+    helper: "set_cell(n);",
+    closure: "let set = || n.set(300); set();",
+  },
+  rc_cell: {
+    params: "n: Rc<Cell<u32>>",
+    make: "let c = Rc::new(Cell::new(K)); let other = c.clone();",
+    args: "c",
+    read: "n.get()",
+    cut: "other.set(300)",
+    direct: "n.set(300);",
+    helper: "set_cell(&n);",
+  },
+  field: {
+    params: "c: &mut Counter",
+    make: "let mut v = Counter { n: K };",
+    args: "&mut v",
+    read: "c.n",
+    direct: "c.n = 300;",
+    lend: "bump(&mut c.n);",
+    whole: "reset(c);",
+  },
+  thread_local: {
+    params: "",
+    make: "N.set(K);",
+    args: "",
+    read: "N.get()",
+    cut: "N.set(300)",
+    direct: "N.set(300);",
+  },
+};
+
+const valueBetweens: Record<string, (h: ValueHolder) => string | undefined> = {
+  nothing: () => "",
+  callback: (h) => (h.cut ? "cut();" : undefined),
+  direct: (h) => h.direct,
+  lend: (h) => h.lend,
+  whole: (h) => h.whole,
+  helper: (h) => h.helper,
+  closure: (h) => h.closure,
+  pointer: (h) => h.pointer,
+};
+
+/** What the test decided: an index of an array of four, a sum that never
+ * wraps below four, a cast to `u8` that keeps what's below four. */
+const valueUses: Record<string, (x: string) => string> = {
+  index: (x) => `[1u32, 2, 3, 4][${x} as usize]`,
+  wrap: (x) => `${x} + 4294967292`,
+  cast: (x) => `u32::from(${x} as u8)`,
+};
+
+const valueTests: Record<string, (h: ValueHolder, b: string, use: string) => string> = {
+  below: (h, b, use) => `if ${h.read} < 4 {\n        ${b}\n        ${use}\n    } else {\n        0\n    }`,
+  held: (h, b, use) => `let ok = ${h.read} < 4;\n    if ok {\n        ${b}\n        ${use}\n    } else {\n        0\n    }`,
+  matched: (h, b, use) => `match ${h.read} {\n        0..=3 => {\n            ${b}\n            ${use}\n        }\n        _ => 0,\n    }`,
+  in_closure: (h, b, use) => `let mut f = || -> u32 {\n        if ${h.read} < 4 {\n            ${b}\n            ${use}\n        } else {\n            0\n        }\n    };\n    f()`,
+};
+
+/** The value family's programs, `value_<holder>__<test>`. */
+function valuePrograms(): Record<string, string> {
+  const all: Record<string, string> = {};
+  for (const [holderName, h] of Object.entries(valueHolders)) {
+    for (const [testName, test] of Object.entries(valueTests)) {
+      if (h.undefined?.includes(testName)) continue;
+      const fns: string[] = [];
+      const calls: string[] = [];
+      for (const [betweenName, between] of Object.entries(valueBetweens)) {
+        const b = between(h);
+        if (b === undefined) continue;
+        for (const [useName, use] of Object.entries(valueUses)) {
+          const name = `${betweenName}_${useName}`;
+          const params = [h.params, "cut: &dyn Fn()"].filter(Boolean).join(", ");
+          fns.push(`fn ${name}(${params}) -> u32 {\n    ${h.setup ?? ""}\n    ${test(h, b, use(h.read))}\n}\n`);
+          for (const k of [0, 2, 5]) {
+            const args = [h.args.replace("K", `${k}`), b.includes("cut") ? `&|| { ${h.cut}; }` : "&|| {}"].filter(Boolean).join(", ");
+            calls.push(`    check("${name} ${k}", || {\n        ${h.make.replace("K", `${k}`)}\n        ${name}(${args})\n    });`);
+          }
+        }
+      }
+      all[`value_${holderName}__${testName}`] = `${valueDecls}\n${fns.join("\n")}\nfn main() {\n${calls.join("\n")}\n}\n`;
+    }
+  }
+  return all;
+}
