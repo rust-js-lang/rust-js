@@ -566,6 +566,8 @@ type ValueHolder = {
   make: string;
   args: string;
   read: string;
+  /** A statement that sets it to `v`, as the probe sees it. */
+  set: (v: string) => string;
   /** In `main`: a closure body that writes it through another path. */
   cut?: string;
   direct?: string;
@@ -576,6 +578,9 @@ type ValueHolder = {
   pointer?: string;
   /** As `Holder.undefined`. */
   undefined?: string[];
+  /** The `<test>/<between>` programs rustc refuses, its constants folded
+   * past the use: each left out. */
+  refused?: string[];
 };
 
 const valueDecls = `use std::any::Any;
@@ -627,7 +632,10 @@ const valueHolders: Record<string, ValueHolder> = {
     make: "",
     args: "K",
     read: "n",
+    set: (v) => `n = ${v};`,
     direct: "n += 296;",
+    // `n = 2; n += 296;` is a constant rustc folds, and its index refused.
+    refused: ["assigned/direct"],
     lend: "bump(&mut n);",
     closure: "let mut set = || n = 300; set();",
   },
@@ -637,6 +645,7 @@ const valueHolders: Record<string, ValueHolder> = {
     make: "",
     args: "K",
     read: "n",
+    set: (v) => `n = ${v};`,
     pointer: "unsafe { *p = 300 };",
     // Undefined behaviour, Miri's Stacked Borrows (nightly, 2026-11-15): the
     // closure's shared capture of `n` is invalidated by the write through
@@ -644,13 +653,17 @@ const valueHolders: Record<string, ValueHolder> = {
     // <33990> ..., but that tag does not exist in the borrow stack";
     // "<33990> was created by a SharedReadOnly retag" at the closure, "later
     // invalidated ... by a write access" at `*p = 300`.
-    undefined: ["in_closure"],
+    // And the tests that set `n` before the write through `p`: setting it
+    // directly invalidates `p` ("attempting a write access using <34521>
+    // ..., but that tag does not exist" at `*p = 300`).
+    undefined: ["in_closure", "remainder", "assigned", "counted"],
   },
   mut_ref: {
     params: "n: &mut u32",
     make: "let mut v = K;",
     args: "&mut v",
     read: "*n",
+    set: (v) => `*n = ${v};`,
     direct: "*n = 300;",
     lend: "bump(n);",
   },
@@ -659,6 +672,7 @@ const valueHolders: Record<string, ValueHolder> = {
     make: "let c = Cell::new(K);",
     args: "&c",
     read: "n.get()",
+    set: (v) => `n.set(${v});`,
     cut: "c.set(300)",
     direct: "n.set(300);",
     helper: "set_cell(n);",
@@ -669,6 +683,7 @@ const valueHolders: Record<string, ValueHolder> = {
     make: "let c = Rc::new(Cell::new(K)); let other = c.clone();",
     args: "c",
     read: "n.get()",
+    set: (v) => `n.set(${v});`,
     cut: "other.set(300)",
     direct: "n.set(300);",
     helper: "set_cell(&n);",
@@ -678,6 +693,7 @@ const valueHolders: Record<string, ValueHolder> = {
     make: "let mut v = Counter { n: K };",
     args: "&mut v",
     read: "c.n",
+    set: (v) => `c.n = ${v};`,
     direct: "c.n = 300;",
     lend: "bump(&mut c.n);",
     whole: "reset(c);",
@@ -687,6 +703,7 @@ const valueHolders: Record<string, ValueHolder> = {
     make: "N.set(K);",
     args: "",
     read: "N.get()",
+    set: (v) => `N.set(${v});`,
     cut: "N.set(300)",
     direct: "N.set(300);",
   },
@@ -715,6 +732,14 @@ const valueTests: Record<string, (h: ValueHolder, b: string, use: string) => str
   below: (h, b, use) => `if ${h.read} < 4 {\n        ${b}\n        ${use}\n    } else {\n        0\n    }`,
   held: (h, b, use) => `let ok = ${h.read} < 4;\n    if ok {\n        ${b}\n        ${use}\n    } else {\n        0\n    }`,
   matched: (h, b, use) => `match ${h.read} {\n        0..=3 => {\n            ${b}\n            ${use}\n        }\n        _ => 0,\n    }`,
+  // Set to a remainder below four, then used.
+  remainder: (h, b, use) => `${h.set(`${h.read} % 4`)}\n    ${b}\n    ${use}`,
+  // Set to a constant, then used.
+  assigned: (h, b, use) => `${h.set("2")}\n    ${b}\n    ${use}`,
+  // One less than what's at least one and below five.
+  minus_one: (h, b, use) => `if ${h.read} >= 1 && ${h.read} < 5 {\n        ${b}\n        ${use.replace(h.read, `(${h.read} - 1)`)}\n    } else {\n        0\n    }`,
+  // A counted loop, its count used past it.
+  counted: (h, b, use) => `${h.set("0")}\n    while ${h.read} < 3 {\n        ${h.set(`${h.read} + 1`)}\n    }\n    ${b}\n    ${use}`,
   in_closure: (h, b, use) => `let mut f = || -> u32 {\n        if ${h.read} < 4 {\n            ${b}\n            ${use}\n        } else {\n            0\n        }\n    };\n    f()`,
 };
 
@@ -728,7 +753,7 @@ function valuePrograms(): Record<string, string> {
       const calls: string[] = [];
       for (const [betweenName, between] of Object.entries(valueBetweens)) {
         const b = between(h);
-        if (b === undefined) continue;
+        if (b === undefined || h.refused?.includes(`${testName}/${betweenName}`)) continue;
         for (const [useName, use] of Object.entries(valueUses)) {
           const name = `${betweenName}_${useName}`;
           const params = [h.params, "cut: &dyn Fn()"].filter(Boolean).join(", ");
