@@ -10,13 +10,13 @@ use super::{
     COMPILED_STD, COMPILED_STD_FNS, COMPILED_STD_IO, COMPILED_STD_IO_PROVIDED, COMPILED_STD_NET, COMPILED_STD_PROVIDED,
     HELD_COMPILED, PROVED_LINKS, std_iter_trait,
 };
-use super::{StdCrate, registry};
+use super::{StdCrate, StdPath, registry, std_path_id};
 use crate::collections::IndexMap;
 use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::def_id::DefId;
 
 /// A row of a type's methods: its type's name, its trait's, its method's.
-pub(crate) type MethodRow = (&'static str, Option<&'static str>, &'static str);
+pub(crate) type MethodRow = (StdPath, Option<&'static str>, &'static str);
 
 /// The catalog's rows, each resolved.
 pub(crate) struct Rows {
@@ -32,7 +32,7 @@ pub(crate) struct Rows {
     pub(crate) io_provided: Vec<DefId>,
     /// Each free function, `repeat_n`, and the type it makes, if a
     /// `MEANING_ONLY` one.
-    pub(crate) fns: Vec<(DefId, Option<&'static str>)>,
+    pub(crate) fns: Vec<(DefId, Option<StdPath>)>,
     /// `PROVED_LINKS`' methods, each an iterator trait's.
     pub(crate) proved: crate::collections::IndexSet<DefId>,
 }
@@ -58,14 +58,15 @@ fn unresolved(row: impl std::fmt::Debug) -> ! {
 
 /// Each row of the catalog, resolved.
 pub(super) fn resolve(tcx: TyCtxt<'_>) -> Rows {
-    let methods = |krate: StdCrate, module: &'static str, row: MethodRow| -> Vec<DefId> {
-        let (type_name, trait_name, method) = row;
+    let methods = |row: MethodRow| -> Vec<DefId> {
+        let (item, trait_name, method) = row;
         // Of a std crate this session doesn't load, `alloc` of a
-        // `#![no_std]` crate's, the rows are none of its, not unresolved.
-        if super::std_crate_num(tcx, krate).is_none() {
+        // `#![no_std]` crate's, the rows are none of its, not unresolved:
+        // the table's (`std_path_id`), which refuses one of none while
+        // `std` is loaded.
+        let Some(adt) = std_path_id(tcx, item) else {
             return Vec::new();
-        }
-        let adt = registry::by_path(tcx, krate, &[module, type_name]).unwrap_or_else(|| unresolved(row));
+        };
         // A trait std keeps private is beside the type, `FuseImpl` in
         // `Fuse`'s module.
         let private_trait = |name: &str| {
@@ -99,18 +100,13 @@ pub(super) fn resolve(tcx: TyCtxt<'_>) -> Rows {
             .find(|item| matches!(item.kind, ty::AssocKind::Fn { .. }) && item.name().as_str() == method)
             .map(|item| item.def_id)
     };
-    let iter = (COMPILED_STD.iter())
-        .map(|&row| (row, methods(StdCrate::Core, "iter", row)))
+    let iter = (COMPILED_STD.iter()).map(|&row| (row, methods(row))).collect();
+    // `io`'s rows are `alloc::io`'s, whose impls a crate without `alloc`
+    // doesn't load, though `core`'s module names the types too.
+    let alloc = super::std_crate_num(tcx, StdCrate::Alloc).is_some();
+    let io = (COMPILED_STD_IO.iter().filter(|_| alloc).map(|&row| (row, methods(row))))
+        .chain(COMPILED_STD_NET.iter().map(|&row| (row, methods(row))))
         .collect();
-    let io = (COMPILED_STD_IO
-        .iter()
-        .map(|&row| (row, methods(StdCrate::Alloc, "io", row))))
-    .chain(
-        COMPILED_STD_NET
-            .iter()
-            .map(|&row| (row, methods(StdCrate::Core, "net", row))),
-    )
-    .collect();
     let named =
         (COMPILED_STD_PROVIDED.iter().copied()).chain(HELD_COMPILED.iter().map(|&(_, maker, _)| ("Iterator", maker)));
     let provided = named
@@ -131,11 +127,7 @@ pub(super) fn resolve(tcx: TyCtxt<'_>) -> Rows {
         })
         .collect();
     let fns = (COMPILED_STD_FNS.iter())
-        .map(|&(module, name, makes)| {
-            let id =
-                registry::by_path(tcx, StdCrate::Core, &[module, name]).unwrap_or_else(|| unresolved((module, name)));
-            (id, makes)
-        })
+        .map(|&(item, makes)| (std_path_id(tcx, item).unwrap_or_else(|| unresolved(item)), makes))
         .collect();
     let proved = (PROVED_LINKS.iter())
         .map(|&(trait_name, method)| {

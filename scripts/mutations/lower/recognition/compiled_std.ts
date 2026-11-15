@@ -8,9 +8,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a `MEANING_ONLY` adapter, `Filter`, is std's struct in the normal build too, so `v.into_iter().filter(p).collect()` isn't the JS chain the recognizers make (ADR 0932)",
     file: "src/lower/recognition/compiled_std.rs",
-    find: "    !MEANING_ONLY.contains(&type_name) || crate::lower::session::caches(tcx).meaning.get()\n",
+    find: "    !MEANING_ONLY.contains(&item) || crate::lower::session::caches(tcx).meaning.get()\n",
     replace:
-      "    true || !MEANING_ONLY.contains(&type_name) || crate::lower::session::caches(tcx).meaning.get()\n",
+      "    true || !MEANING_ONLY.contains(&item) || crate::lower::session::caches(tcx).meaning.get()\n",
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^(collect_drops|filter_ends).rs$"],
   },
@@ -46,7 +46,7 @@ export const mutations: Mutation[] = [
     name: "flatten-count-uncompiled",
     breaks: "std's `Flatten::count` isn't compiled, so a held one, and every one in the build of std's structs, is counted by std's default, each inner iterator stepped by `next`, not by its own `count` (#736)",
     file: "src/lower/recognition/compiled_std.rs",
-    find: "    (\"FlatMap\", Some(\"Iterator\"), \"count\"),\n",
+    find: "    (StdPath::IterFlatMap, Some(\"Iterator\"), \"count\"),\n",
     replace: "",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std"],
   },
@@ -54,7 +54,7 @@ export const mutations: Mutation[] = [
     name: "io-lines-uncompiled",
     breaks: "std's `Lines` iterator isn't compiled, so `lines()` is no iterator (#1156)",
     file: "src/lower/recognition/compiled_std.rs",
-    find: "    (\"Lines\", Some(\"Iterator\"), \"next\"),\n",
+    find: "    (StdPath::IoLines, Some(\"Iterator\"), \"next\"),\n",
     replace: "",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std"],
   },
@@ -63,7 +63,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a held zip's `clone()` isn't std's compiled `Zip::clone`: the std package isn't what its catalog makes, and with std's structs alone it's refused (ADR 0975)",
     file: "src/lower/recognition/compiled_std.rs",
-    find: '    ("Zip", Some("Clone"), "clone"),\n',
+    find: '    (StdPath::IterZip, Some("Clone"), "clone"),\n',
     replace: "",
     tests: ["test/std-package.test.ts"],
   },
@@ -72,7 +72,7 @@ export const mutations: Mutation[] = [
     breaks:
       "std's `Copied`'s `next_back` isn't compiled: the build of std's structs alone refuses a `copied()` stepped from its back, `the DoubleEndedIterator of a Copied<slice::Iter>` (ADR 0938)",
     file: "src/lower/recognition/compiled_std.rs",
-    find: '    ("Copied", Some("DoubleEndedIterator"), "next_back"),\n',
+    find: '    (StdPath::IterCopied, Some("DoubleEndedIterator"), "next_back"),\n',
     replace: "",
     tests: [
       "test/iterator-forms.test.ts",
@@ -85,7 +85,7 @@ export const mutations: Mutation[] = [
     breaks:
       "std's `Cloned`'s `__iterator_get_unchecked` isn't compiled: the build of std's structs alone refuses a `cloned()` std's zip reads by index, `reading a Cloned<slice::Iter<D>> by its index` (#727, ADR 0938)",
     file: "src/lower/recognition/compiled_std.rs",
-    find: '    ("Cloned", Some("Iterator"), "__iterator_get_unchecked"),\n',
+    find: '    (StdPath::IterCloned, Some("Iterator"), "__iterator_get_unchecked"),\n',
     replace: "",
     tests: [
       "test/iterator-forms.test.ts",
@@ -98,8 +98,8 @@ export const mutations: Mutation[] = [
     breaks:
       "std's `Cloned` isn't `MEANING_ONLY`, so the normal build makes a held `cloned()` std's struct, not the JS iterator the recognizers make of it: the normal build's JS changes (#727, ADR 0938)",
     file: "src/lower/recognition/compiled_std.rs",
-    find: '    "Copied",\n    "Cloned",\n];\n',
-    replace: '    "Copied",\n];\n',
+    find: '    StdPath::IterCopied,\n    StdPath::IterCloned,\n];\n',
+    replace: '    StdPath::IterCopied,\n];\n',
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^cloned_items_from_both_ends.rs$"],
   },
@@ -117,7 +117,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `flat_map()` a variable holds is the recognizers' JS iterator, sized `(0, None)` where std's counts",
     file: "src/lower/recognition/compiled_std.rs",
-    find: '    ("FlatMap", "flat_map", false),\n',
+    find: '    (StdPath::IterFlatMap, "flat_map", false),\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^std_flat_map.rs$"],
     snapshots: true,
@@ -127,7 +127,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a held `take()` is the recognizers' JS iterator, not std's `Take`, which knows its `size_hint`",
     file: "src/lower/recognition/compiled_std.rs",
-    find: '    ("Take", "take", true),\n',
+    find: '    (StdPath::IterTake, "take", true),\n',
     replace: "",
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^held_skip_take.rs$"],
@@ -137,7 +137,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a held `step_by()` is the recognizers' JS iterator, not std's `StepBy`",
     file: "src/lower/recognition/compiled_std.rs",
-    find: '    ("StepBy", "step_by", false),\n',
+    find: '    (StdPath::IterStepBy, "step_by", false),\n',
     replace: "",
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^adapters_own_nth_fold.rs$"],
@@ -147,7 +147,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a held `chain()` is the recognizers' JS iterator, not std's `Chain`",
     file: "src/lower/recognition/compiled_std.rs",
-    find: '    ("Chain", "chain", false),\n',
+    find: '    (StdPath::IterChain, "chain", false),\n',
     replace: "",
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^adapter_drops.rs$"],
@@ -157,15 +157,15 @@ export const mutations: Mutation[] = [
     breaks:
       "a zip whose `size_hint()` is asked is made in place, `$lazyZip`, whose sides, JS's own, count nothing: `(0, Some(5))` of `v.iter().zip(v.iter().skip(2))` (#400)",
     file: "src/lower/recognition/compiled_std.rs",
-    find: '    ("Zip", "zip", false),\n',
-    replace: '    ("Zip", "zip", true),\n',
+    find: '    (StdPath::IterZip, "zip", false),\n',
+    replace: '    (StdPath::IterZip, "zip", true),\n',
     tests: ["test/corpus.test.ts", "-t", "^zip_size_hints.rs$"],
   },
   {
     name: "io-chain-fn-not-compiled",
     breaks: "`core::io::chain`, which `Read::chain` calls and std keeps public but unstable, isn't compiled, so `@rust-js/std` can't be built (#1156)",
     file: "src/lower/recognition/compiled_std.rs",
-    find: '    ("io", "chain", None),\n',
+    find: '    (StdPath::IoChainFn, None),\n',
     replace: "",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std"],
   },
@@ -189,8 +189,8 @@ export const mutations: Mutation[] = [
     name: "debug-shown-type-not-compiled",
     breaks: "a type whose `{:?}` the crate asks isn't std's struct where it's held, its adapter's name alone answering, so its `{:?}` is refused (#1401)",
     file: "src/lower/recognition/compiled_std.rs",
-    find: "                        .is_some_and(|(types, _)| types.contains(&session_key(tcx, ty)))\n",
-    replace: "                        .is_some_and(|(types, _)| types.is_empty() && types.contains(&session_key(tcx, ty)))\n",
+    find: "                    .is_some_and(|(types, _)| types.contains(&session_key(tcx, ty)))\n",
+    replace: "                    .is_some_and(|(types, _)| types.is_empty() && types.contains(&session_key(tcx, ty)))\n",
     tests: ["test/corpus.test.ts", "-t", "^debug_of_adapters_compiled_as_their_meaning.rs$"],
   },
   {
@@ -207,7 +207,7 @@ export const mutations: Mutation[] = [
     breaks:
       "std's `repeat_n` isn't compiled, so the build of std's bodies makes the runtime's `$repeatingN` and pits nothing against it (#1458)",
     file: "src/lower/recognition/compiled_std.rs",
-    find: "    (\"iter\", \"repeat_n\", Some(\"RepeatN\")),\n",
+    find: "    (StdPath::IterRepeatNFn, Some(StdPath::IterRepeatN)),\n",
     replace: "",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies as the compiler compiles them"],
   },
@@ -226,7 +226,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`RepeatN` is compiled for every build, so the plain build makes std's struct of `repeat_n(x, n)`, not the runtime's `$repeatingN(x, n)` (#1458)",
     file: "src/lower/recognition/compiled_std.rs",
-    find: "    \"RepeatN\",\n",
+    find: "    StdPath::IterRepeatN,\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^repeat_n_drops_what_it_holds.rs$"],
     snapshots: true,
@@ -245,7 +245,7 @@ export const mutations: Mutation[] = [
     breaks:
       "the plain build calls std's compiled `cycle`, not the runtime's `$cycleOf`, though `Cycle` is compiled as its meaning alone (#1458)",
     file: "src/lower/recognition/compiled_std.rs",
-    find: '    ("Cycle", "cycle", false),\n',
+    find: '    (StdPath::IterCycle, "cycle", false),\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^cycle_drops_what_it_replaces.rs$"],
     snapshots: true,
@@ -255,7 +255,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`Cycle` is compiled for every build, so the plain build makes std's struct of `it.cycle()`, not the runtime's `$cycleOf(it)` (#1458)",
     file: "src/lower/recognition/compiled_std.rs",
-    find: '    "Cycle",\n',
+    find: '    StdPath::IterCycle,\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^cycle_drops_what_it_replaces.rs$"],
     snapshots: true,

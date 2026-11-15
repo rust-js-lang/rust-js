@@ -7,7 +7,7 @@ export const mutations: Mutation[] = [
     name: "net-addresses-uncompiled",
     breaks: "`core::net`'s addresses aren't compiled into `@rust-js/std`, so `Ipv4Addr::new` is refused again (#1420)",
     file: "src/lower/recognition/compiled_std/rows.rs",
-    find: "    .chain(\n        COMPILED_STD_NET\n            .iter()\n            .map(|&row| (row, methods(StdCrate::Core, \"net\", row))),\n    )\n",
+    find: "        .chain(COMPILED_STD_NET.iter().map(|&row| (row, methods(row))))\n",
     replace: "",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies"],
   },
@@ -18,5 +18,13 @@ export const mutations: Mutation[] = [
     find: "                    .or_else(|| private_trait(trait_name))\n",
     replace: "",
     tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies"],
+  },
+  {
+    name: "io-rows-without-alloc",
+    breaks: "a `#![no_std]` crate without `alloc` resolves `io`'s rows, whose types `core::io` names but whose `Read` impls are `alloc`'s: an internal error, every such crate refused",
+    file: "src/lower/recognition/compiled_std/rows.rs",
+    find: "    let io = (COMPILED_STD_IO.iter().filter(|_| alloc).map(|&row| (row, methods(row))))\n",
+    replace: "    let io = (COMPILED_STD_IO.iter().filter(|_| alloc || true).map(|&row| (row, methods(row))))\n",
+    tests: ["test/std-paths.test.ts"],
   },
 ];

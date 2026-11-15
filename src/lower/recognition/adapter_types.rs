@@ -278,8 +278,8 @@ pub(crate) fn makes_no_iterator(tcx: TyCtxt<'_>, callee: DefId) -> bool {
 
 pub(crate) fn is_compiled_std_iterator<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
     matches!(ty.peel_refs().kind(), ty::Adt(adt, _) if is_compiled_std_type(tcx, ty)
-    && COMPILED_STD.iter().any(|&(type_name, tr, name)| {
-        tr == Some("Iterator") && name == "next" && std_path(tcx, adt.did()) == format!("std::iter::{type_name}")
+    && COMPILED_STD.iter().any(|&(of, tr, name)| {
+        tr == Some("Iterator") && name == "next" && is_std_path(tcx, adt.did(), of)
     }))
 }
 

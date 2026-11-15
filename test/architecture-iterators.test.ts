@@ -748,6 +748,21 @@ test("the compiled std catalogue is asked of a type, not a definition", () => {
   expect(byDefinition).toEqual([]);
 });
 
+// The compiled std catalogue names each type by its `StdPath` row and
+// finds it by that row's `DefId` (`std_path_id`), and asks a type which it
+// is by `std_path_item`, never the text of its path, `std::iter::Map`
+// stripped or compared (#1681 change 2, the DefId step).
+test("the compiled std catalogue names its types by StdPath, never a path's text", () => {
+  for (const file of ["src/lower/recognition/compiled_std.rs", "src/lower/recognition/compiled_std/rows.rs"]) {
+    const text = read(file);
+    expect([file, /\bstd_path\(|"std::|"core::/.test(text)]).toEqual([file, false]);
+  }
+  const catalog = read("src/lower/recognition/compiled_std.rs");
+  for (const name of ["COMPILED_STD", "COMPILED_STD_IO", "COMPILED_STD_NET", "HELD_COMPILED", "MEANING_ONLY"]) {
+    expect([name, new RegExp(`const ${name}: &\\[\\(?StdPath[,\\]]`).test(catalog)]).toEqual([name, true]);
+  }
+});
+
 // What JS's own iterator forms know, an `Iterator.prototype`'s and a range's
 // `$lazyRange`, is `iterators::own_form`'s one answer (#1792, #1803): no
 // other lowering file matches them by name, but the range's own module,

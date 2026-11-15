@@ -50,7 +50,7 @@ pub(crate) struct Caches {
     /// regions erased, and their names: std's struct where they're held
     /// (#1401). A type's address names it in this session's `TyCtxt` alone,
     /// so it lives no longer than the session, never written to disk.
-    pub debug_shown: OnceCell<(IndexSet<usize>, IndexSet<&'static str>)>,
+    pub debug_shown: OnceCell<(IndexSet<usize>, IndexSet<crate::lower::recognition::StdPath>)>,
     /// The std functions whose recognisers this session leaves out, by
     /// their std paths, `--without-recognizer`'s (ADR 1128).
     pub without_recognizers: IndexSet<String>,

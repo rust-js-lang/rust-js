@@ -180,11 +180,13 @@ std_paths! {
     IoWrite => "std::io::Write",
     IoEprintFn => "std::io::_eprint",
     IoPrintFn => "std::io::_print",
+    IoChainFn => "std::io::chain",
     IoEmptyFn => "std::io::empty",
     ReadAppendToStringFn => "std::io::read::append_to_string",
     IoRepeatFn => "std::io::repeat",
     IoStderrFn => "std::io::stderr",
     IoStdoutFn => "std::io::stdout",
+    IoTakeFn => "std::io::take",
     UtilInlinedSlowReadByteFn => "std::io::util::inlined_slow_read_byte",
     IterChain => "std::iter::Chain",
     IterCloned => "std::iter::Cloned",
@@ -463,10 +465,6 @@ pub(crate) fn std_path_item(tcx: TyCtxt<'_>, id: DefId) -> Option<StdPath> {
 
 /// `item`'s `DefId`: `None` of one of a crate this session doesn't load,
 /// `alloc`'s of a `#![no_std]` crate without it.
-#[expect(
-    dead_code,
-    reason = "compiled_rows' lookup of a row's type, its first caller (#1681)"
-)]
 pub(crate) fn std_path_id(tcx: TyCtxt<'_>, item: StdPath) -> Option<DefId> {
     std_paths(tcx).by_item.get(&item).copied()
 }

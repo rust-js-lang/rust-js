@@ -14,258 +14,258 @@ pub(crate) use rows::Rows;
 /// `core::iter` exports it, the trait of the impl, or none for the type's
 /// own, and the method. Each is one the measure says is safe
 /// (`docs/std-coverage.txt`); what reaches memory stays recognized.
-pub(super) const COMPILED_STD: &[(&str, Option<&str>, &str)] = &[
-    ("Peekable", Some("Iterator"), "next"),
-    ("Peekable", Some("Iterator"), "nth"),
-    ("Peekable", Some("Iterator"), "last"),
-    ("Peekable", Some("Iterator"), "count"),
-    ("Peekable", Some("Iterator"), "fold"),
-    ("Peekable", Some("Iterator"), "try_fold"),
-    ("Peekable", Some("DoubleEndedIterator"), "next_back"),
-    ("Peekable", Some("DoubleEndedIterator"), "rfold"),
-    ("Peekable", Some("DoubleEndedIterator"), "try_rfold"),
-    ("Peekable", Some("Clone"), "clone"),
-    ("Peekable", Some("Debug"), "fmt"),
-    ("Fuse", Some("Iterator"), "next"),
-    ("Fuse", Some("Iterator"), "__iterator_get_unchecked"),
-    ("Fuse", Some("Iterator"), "size_hint"),
-    ("Fuse", Some("Iterator"), "fold"),
-    ("Fuse", Some("Iterator"), "count"),
-    ("Fuse", Some("Iterator"), "try_fold"),
-    ("Fuse", Some("Iterator"), "advance_by"),
-    ("Fuse", Some("FuseImpl"), "try_fold"),
-    ("Fuse", Some("FuseImpl"), "advance_by"),
-    ("Fuse", Some("DoubleEndedIterator"), "next_back"),
-    ("Fuse", Some("DoubleEndedIterator"), "rfold"),
-    ("Fuse", Some("DoubleEndedIterator"), "try_rfold"),
-    ("Fuse", Some("DoubleEndedIterator"), "nth_back"),
-    ("Fuse", Some("ExactSizeIterator"), "len"),
-    ("Fuse", Some("FuseImpl"), "next"),
-    ("Fuse", Some("Iterator"), "nth"),
-    ("Fuse", Some("Iterator"), "last"),
-    ("Fuse", Some("FuseImpl"), "nth"),
-    ("Fuse", Some("FuseImpl"), "next_back"),
-    ("Fuse", Some("FuseImpl"), "nth_back"),
-    ("Fuse", Some("Clone"), "clone"),
-    ("Fuse", Some("Debug"), "fmt"),
-    ("Rev", Some("Iterator"), "next"),
-    ("Rev", Some("Iterator"), "size_hint"),
-    ("Rev", Some("Iterator"), "nth"),
-    ("Rev", Some("Iterator"), "find"),
-    ("Rev", Some("Iterator"), "fold"),
-    ("Rev", Some("Iterator"), "try_fold"),
-    ("Rev", Some("DoubleEndedIterator"), "next_back"),
-    ("Rev", Some("DoubleEndedIterator"), "nth_back"),
-    ("Rev", Some("DoubleEndedIterator"), "rfold"),
-    ("Rev", Some("DoubleEndedIterator"), "try_rfold"),
-    ("Rev", Some("DoubleEndedIterator"), "rfind"),
-    ("Rev", Some("ExactSizeIterator"), "len"),
-    ("Rev", Some("Clone"), "clone"),
-    ("Rev", Some("Debug"), "fmt"),
-    ("Enumerate", Some("Iterator"), "next"),
-    ("Enumerate", Some("Iterator"), "__iterator_get_unchecked"),
-    ("Enumerate", Some("Iterator"), "size_hint"),
-    ("Enumerate", Some("Iterator"), "nth"),
-    ("Enumerate", Some("Iterator"), "count"),
-    ("Enumerate", Some("Iterator"), "fold"),
-    ("Enumerate", Some("Iterator"), "try_fold"),
-    ("Enumerate", Some("Iterator"), "advance_by"),
-    ("Enumerate", Some("DoubleEndedIterator"), "next_back"),
-    ("Enumerate", Some("DoubleEndedIterator"), "nth_back"),
-    ("Enumerate", Some("DoubleEndedIterator"), "rfold"),
-    ("Enumerate", Some("DoubleEndedIterator"), "try_rfold"),
-    ("Enumerate", Some("ExactSizeIterator"), "len"),
-    ("Enumerate", Some("Clone"), "clone"),
-    ("Enumerate", Some("Debug"), "fmt"),
-    ("Map", Some("Iterator"), "next"),
-    ("Map", Some("Iterator"), "__iterator_get_unchecked"),
-    ("Map", Some("Iterator"), "size_hint"),
-    ("Map", Some("Iterator"), "fold"),
-    ("Map", Some("Iterator"), "try_fold"),
-    ("Map", Some("DoubleEndedIterator"), "next_back"),
-    ("Map", Some("DoubleEndedIterator"), "rfold"),
-    ("Map", Some("DoubleEndedIterator"), "try_rfold"),
-    ("Map", Some("ExactSizeIterator"), "len"),
-    ("Map", Some("Clone"), "clone"),
-    ("Map", Some("Debug"), "fmt"),
-    ("Filter", Some("Iterator"), "next"),
-    ("Filter", Some("Iterator"), "size_hint"),
-    ("Filter", Some("Iterator"), "count"),
-    ("Filter", Some("Iterator"), "fold"),
-    ("Filter", Some("Iterator"), "try_fold"),
-    ("Filter", Some("DoubleEndedIterator"), "next_back"),
-    ("Filter", Some("DoubleEndedIterator"), "rfold"),
-    ("Filter", Some("DoubleEndedIterator"), "try_rfold"),
-    ("Filter", Some("Clone"), "clone"),
-    ("Filter", Some("Debug"), "fmt"),
-    ("Copied", Some("Iterator"), "next"),
-    ("Copied", Some("Iterator"), "__iterator_get_unchecked"),
-    ("Copied", Some("Iterator"), "size_hint"),
-    ("Copied", Some("Iterator"), "fold"),
-    ("Copied", Some("Iterator"), "try_fold"),
-    ("Copied", Some("Iterator"), "nth"),
-    ("Copied", Some("Iterator"), "last"),
-    ("Copied", Some("Iterator"), "count"),
-    ("Copied", Some("Iterator"), "advance_by"),
-    ("Copied", Some("DoubleEndedIterator"), "next_back"),
-    ("Copied", Some("DoubleEndedIterator"), "rfold"),
-    ("Copied", Some("DoubleEndedIterator"), "try_rfold"),
-    ("Copied", Some("DoubleEndedIterator"), "advance_back_by"),
-    ("Copied", Some("ExactSizeIterator"), "len"),
-    ("Copied", Some("Clone"), "clone"),
-    ("Copied", Some("Debug"), "fmt"),
-    ("Cloned", Some("Iterator"), "next"),
-    ("Cloned", Some("Iterator"), "__iterator_get_unchecked"),
-    ("Cloned", Some("Iterator"), "size_hint"),
-    ("Cloned", Some("Iterator"), "fold"),
-    ("Cloned", Some("Iterator"), "try_fold"),
-    ("Cloned", Some("DoubleEndedIterator"), "next_back"),
-    ("Cloned", Some("DoubleEndedIterator"), "rfold"),
-    ("Cloned", Some("DoubleEndedIterator"), "try_rfold"),
-    ("Cloned", Some("ExactSizeIterator"), "len"),
-    ("Cloned", Some("Clone"), "clone"),
-    ("Cloned", Some("Debug"), "fmt"),
-    ("FilterMap", Some("Iterator"), "next"),
-    ("FilterMap", Some("Iterator"), "size_hint"),
-    ("FilterMap", Some("Iterator"), "fold"),
-    ("FilterMap", Some("Iterator"), "try_fold"),
-    ("FilterMap", Some("DoubleEndedIterator"), "next_back"),
-    ("FilterMap", Some("DoubleEndedIterator"), "rfold"),
-    ("FilterMap", Some("DoubleEndedIterator"), "try_rfold"),
-    ("FilterMap", Some("Clone"), "clone"),
-    ("FilterMap", Some("Debug"), "fmt"),
-    ("TakeWhile", Some("Iterator"), "next"),
-    ("TakeWhile", Some("Iterator"), "size_hint"),
-    ("TakeWhile", Some("Iterator"), "try_fold"),
-    ("TakeWhile", Some("Iterator"), "fold"),
-    ("TakeWhile", Some("Clone"), "clone"),
-    ("TakeWhile", Some("Debug"), "fmt"),
-    ("SkipWhile", Some("Iterator"), "next"),
-    ("SkipWhile", Some("Iterator"), "size_hint"),
-    ("SkipWhile", Some("Iterator"), "fold"),
-    ("SkipWhile", Some("Iterator"), "try_fold"),
-    ("SkipWhile", Some("Clone"), "clone"),
-    ("SkipWhile", Some("Debug"), "fmt"),
-    ("MapWhile", Some("Iterator"), "next"),
-    ("MapWhile", Some("Iterator"), "size_hint"),
-    ("MapWhile", Some("Iterator"), "try_fold"),
-    ("MapWhile", Some("Iterator"), "fold"),
-    ("MapWhile", Some("Clone"), "clone"),
-    ("MapWhile", Some("Debug"), "fmt"),
-    ("Scan", Some("Iterator"), "next"),
-    ("Scan", Some("Iterator"), "size_hint"),
-    ("Scan", Some("Iterator"), "try_fold"),
-    ("Scan", Some("Iterator"), "fold"),
-    ("Scan", Some("Clone"), "clone"),
-    ("Scan", Some("Debug"), "fmt"),
-    ("Inspect", Some("Iterator"), "next"),
-    ("Inspect", Some("Iterator"), "size_hint"),
-    ("Inspect", Some("Iterator"), "fold"),
-    ("Inspect", Some("Iterator"), "try_fold"),
-    ("Inspect", Some("DoubleEndedIterator"), "next_back"),
-    ("Inspect", Some("DoubleEndedIterator"), "rfold"),
-    ("Inspect", Some("DoubleEndedIterator"), "try_rfold"),
-    ("Inspect", Some("ExactSizeIterator"), "len"),
-    ("Inspect", Some("Clone"), "clone"),
-    ("Inspect", Some("Debug"), "fmt"),
-    ("Flatten", Some("Iterator"), "next"),
-    ("Flatten", Some("Iterator"), "size_hint"),
-    ("Flatten", Some("Iterator"), "fold"),
-    ("Flatten", Some("Iterator"), "try_fold"),
-    ("Flatten", Some("Iterator"), "last"),
-    ("Flatten", Some("Iterator"), "count"),
-    ("Flatten", Some("DoubleEndedIterator"), "next_back"),
-    ("Flatten", Some("DoubleEndedIterator"), "rfold"),
-    ("Flatten", Some("DoubleEndedIterator"), "try_rfold"),
-    ("FlatMap", Some("Iterator"), "next"),
-    ("FlatMap", Some("Iterator"), "size_hint"),
-    ("FlatMap", Some("Iterator"), "fold"),
-    ("FlatMap", Some("Iterator"), "try_fold"),
-    ("FlatMap", Some("Iterator"), "last"),
-    ("FlatMap", Some("Iterator"), "count"),
-    ("FlatMap", Some("DoubleEndedIterator"), "next_back"),
-    ("FlatMap", Some("DoubleEndedIterator"), "rfold"),
-    ("FlatMap", Some("DoubleEndedIterator"), "try_rfold"),
-    ("Skip", Some("Iterator"), "next"),
-    ("Skip", Some("Iterator"), "__iterator_get_unchecked"),
-    ("Skip", Some("Iterator"), "size_hint"),
-    ("Skip", Some("Iterator"), "nth"),
-    ("Skip", Some("Iterator"), "count"),
-    ("Skip", Some("Iterator"), "last"),
-    ("Skip", Some("Iterator"), "fold"),
-    ("Skip", Some("Iterator"), "try_fold"),
-    ("Skip", Some("Iterator"), "advance_by"),
-    ("Skip", Some("DoubleEndedIterator"), "next_back"),
-    ("Skip", Some("DoubleEndedIterator"), "nth_back"),
-    ("Skip", Some("DoubleEndedIterator"), "try_rfold"),
-    ("Skip", Some("DoubleEndedIterator"), "rfold"),
-    ("Skip", Some("Clone"), "clone"),
-    ("Skip", Some("Debug"), "fmt"),
-    ("Take", Some("Iterator"), "next"),
-    ("Take", Some("Iterator"), "size_hint"),
-    ("Take", Some("Iterator"), "nth"),
-    ("Take", Some("Iterator"), "advance_by"),
-    ("Take", Some("Iterator"), "count"),
-    ("Take", Some("Iterator"), "fold"),
-    ("Take", Some("Iterator"), "try_fold"),
-    ("Take", Some("DoubleEndedIterator"), "next_back"),
-    ("Take", Some("DoubleEndedIterator"), "nth_back"),
-    ("Take", Some("DoubleEndedIterator"), "try_rfold"),
-    ("Take", Some("DoubleEndedIterator"), "rfold"),
-    ("Take", Some("ExactSizeIterator"), "len"),
-    ("Take", Some("Clone"), "clone"),
-    ("Take", Some("Debug"), "fmt"),
-    ("StepBy", Some("Iterator"), "next"),
-    ("StepBy", Some("Iterator"), "size_hint"),
-    ("StepBy", Some("Iterator"), "nth"),
-    ("StepBy", Some("Iterator"), "fold"),
-    ("StepBy", Some("Iterator"), "try_fold"),
-    ("StepBy", Some("DoubleEndedIterator"), "next_back"),
-    ("StepBy", Some("DoubleEndedIterator"), "nth_back"),
-    ("StepBy", Some("DoubleEndedIterator"), "rfold"),
-    ("StepBy", Some("DoubleEndedIterator"), "try_rfold"),
-    ("StepBy", Some("Clone"), "clone"),
-    ("Chain", Some("Iterator"), "next"),
-    ("Chain", Some("Iterator"), "size_hint"),
-    ("Chain", Some("Iterator"), "count"),
-    ("Chain", Some("Iterator"), "fold"),
-    ("Chain", Some("Iterator"), "try_fold"),
-    ("Chain", Some("Iterator"), "advance_by"),
-    ("Chain", Some("Iterator"), "nth"),
-    ("Chain", Some("Iterator"), "last"),
-    ("Chain", Some("DoubleEndedIterator"), "next_back"),
-    ("Chain", Some("DoubleEndedIterator"), "nth_back"),
-    ("Chain", Some("DoubleEndedIterator"), "rfold"),
-    ("Chain", Some("DoubleEndedIterator"), "try_rfold"),
-    ("Chain", Some("Clone"), "clone"),
-    ("Chain", Some("Debug"), "fmt"),
-    ("Zip", Some("Iterator"), "next"),
-    ("Zip", Some("Iterator"), "size_hint"),
-    ("Zip", Some("Iterator"), "nth"),
-    ("Zip", Some("Iterator"), "fold"),
-    ("Zip", Some("DoubleEndedIterator"), "next_back"),
-    ("Zip", Some("Iterator"), "__iterator_get_unchecked"),
-    ("Zip", Some("Clone"), "clone"),
+pub(super) const COMPILED_STD: &[(StdPath, Option<&str>, &str)] = &[
+    (StdPath::IterPeekable, Some("Iterator"), "next"),
+    (StdPath::IterPeekable, Some("Iterator"), "nth"),
+    (StdPath::IterPeekable, Some("Iterator"), "last"),
+    (StdPath::IterPeekable, Some("Iterator"), "count"),
+    (StdPath::IterPeekable, Some("Iterator"), "fold"),
+    (StdPath::IterPeekable, Some("Iterator"), "try_fold"),
+    (StdPath::IterPeekable, Some("DoubleEndedIterator"), "next_back"),
+    (StdPath::IterPeekable, Some("DoubleEndedIterator"), "rfold"),
+    (StdPath::IterPeekable, Some("DoubleEndedIterator"), "try_rfold"),
+    (StdPath::IterPeekable, Some("Clone"), "clone"),
+    (StdPath::IterPeekable, Some("Debug"), "fmt"),
+    (StdPath::IterFuse, Some("Iterator"), "next"),
+    (StdPath::IterFuse, Some("Iterator"), "__iterator_get_unchecked"),
+    (StdPath::IterFuse, Some("Iterator"), "size_hint"),
+    (StdPath::IterFuse, Some("Iterator"), "fold"),
+    (StdPath::IterFuse, Some("Iterator"), "count"),
+    (StdPath::IterFuse, Some("Iterator"), "try_fold"),
+    (StdPath::IterFuse, Some("Iterator"), "advance_by"),
+    (StdPath::IterFuse, Some("FuseImpl"), "try_fold"),
+    (StdPath::IterFuse, Some("FuseImpl"), "advance_by"),
+    (StdPath::IterFuse, Some("DoubleEndedIterator"), "next_back"),
+    (StdPath::IterFuse, Some("DoubleEndedIterator"), "rfold"),
+    (StdPath::IterFuse, Some("DoubleEndedIterator"), "try_rfold"),
+    (StdPath::IterFuse, Some("DoubleEndedIterator"), "nth_back"),
+    (StdPath::IterFuse, Some("ExactSizeIterator"), "len"),
+    (StdPath::IterFuse, Some("FuseImpl"), "next"),
+    (StdPath::IterFuse, Some("Iterator"), "nth"),
+    (StdPath::IterFuse, Some("Iterator"), "last"),
+    (StdPath::IterFuse, Some("FuseImpl"), "nth"),
+    (StdPath::IterFuse, Some("FuseImpl"), "next_back"),
+    (StdPath::IterFuse, Some("FuseImpl"), "nth_back"),
+    (StdPath::IterFuse, Some("Clone"), "clone"),
+    (StdPath::IterFuse, Some("Debug"), "fmt"),
+    (StdPath::IterRev, Some("Iterator"), "next"),
+    (StdPath::IterRev, Some("Iterator"), "size_hint"),
+    (StdPath::IterRev, Some("Iterator"), "nth"),
+    (StdPath::IterRev, Some("Iterator"), "find"),
+    (StdPath::IterRev, Some("Iterator"), "fold"),
+    (StdPath::IterRev, Some("Iterator"), "try_fold"),
+    (StdPath::IterRev, Some("DoubleEndedIterator"), "next_back"),
+    (StdPath::IterRev, Some("DoubleEndedIterator"), "nth_back"),
+    (StdPath::IterRev, Some("DoubleEndedIterator"), "rfold"),
+    (StdPath::IterRev, Some("DoubleEndedIterator"), "try_rfold"),
+    (StdPath::IterRev, Some("DoubleEndedIterator"), "rfind"),
+    (StdPath::IterRev, Some("ExactSizeIterator"), "len"),
+    (StdPath::IterRev, Some("Clone"), "clone"),
+    (StdPath::IterRev, Some("Debug"), "fmt"),
+    (StdPath::IterEnumerate, Some("Iterator"), "next"),
+    (StdPath::IterEnumerate, Some("Iterator"), "__iterator_get_unchecked"),
+    (StdPath::IterEnumerate, Some("Iterator"), "size_hint"),
+    (StdPath::IterEnumerate, Some("Iterator"), "nth"),
+    (StdPath::IterEnumerate, Some("Iterator"), "count"),
+    (StdPath::IterEnumerate, Some("Iterator"), "fold"),
+    (StdPath::IterEnumerate, Some("Iterator"), "try_fold"),
+    (StdPath::IterEnumerate, Some("Iterator"), "advance_by"),
+    (StdPath::IterEnumerate, Some("DoubleEndedIterator"), "next_back"),
+    (StdPath::IterEnumerate, Some("DoubleEndedIterator"), "nth_back"),
+    (StdPath::IterEnumerate, Some("DoubleEndedIterator"), "rfold"),
+    (StdPath::IterEnumerate, Some("DoubleEndedIterator"), "try_rfold"),
+    (StdPath::IterEnumerate, Some("ExactSizeIterator"), "len"),
+    (StdPath::IterEnumerate, Some("Clone"), "clone"),
+    (StdPath::IterEnumerate, Some("Debug"), "fmt"),
+    (StdPath::IterMap, Some("Iterator"), "next"),
+    (StdPath::IterMap, Some("Iterator"), "__iterator_get_unchecked"),
+    (StdPath::IterMap, Some("Iterator"), "size_hint"),
+    (StdPath::IterMap, Some("Iterator"), "fold"),
+    (StdPath::IterMap, Some("Iterator"), "try_fold"),
+    (StdPath::IterMap, Some("DoubleEndedIterator"), "next_back"),
+    (StdPath::IterMap, Some("DoubleEndedIterator"), "rfold"),
+    (StdPath::IterMap, Some("DoubleEndedIterator"), "try_rfold"),
+    (StdPath::IterMap, Some("ExactSizeIterator"), "len"),
+    (StdPath::IterMap, Some("Clone"), "clone"),
+    (StdPath::IterMap, Some("Debug"), "fmt"),
+    (StdPath::IterFilter, Some("Iterator"), "next"),
+    (StdPath::IterFilter, Some("Iterator"), "size_hint"),
+    (StdPath::IterFilter, Some("Iterator"), "count"),
+    (StdPath::IterFilter, Some("Iterator"), "fold"),
+    (StdPath::IterFilter, Some("Iterator"), "try_fold"),
+    (StdPath::IterFilter, Some("DoubleEndedIterator"), "next_back"),
+    (StdPath::IterFilter, Some("DoubleEndedIterator"), "rfold"),
+    (StdPath::IterFilter, Some("DoubleEndedIterator"), "try_rfold"),
+    (StdPath::IterFilter, Some("Clone"), "clone"),
+    (StdPath::IterFilter, Some("Debug"), "fmt"),
+    (StdPath::IterCopied, Some("Iterator"), "next"),
+    (StdPath::IterCopied, Some("Iterator"), "__iterator_get_unchecked"),
+    (StdPath::IterCopied, Some("Iterator"), "size_hint"),
+    (StdPath::IterCopied, Some("Iterator"), "fold"),
+    (StdPath::IterCopied, Some("Iterator"), "try_fold"),
+    (StdPath::IterCopied, Some("Iterator"), "nth"),
+    (StdPath::IterCopied, Some("Iterator"), "last"),
+    (StdPath::IterCopied, Some("Iterator"), "count"),
+    (StdPath::IterCopied, Some("Iterator"), "advance_by"),
+    (StdPath::IterCopied, Some("DoubleEndedIterator"), "next_back"),
+    (StdPath::IterCopied, Some("DoubleEndedIterator"), "rfold"),
+    (StdPath::IterCopied, Some("DoubleEndedIterator"), "try_rfold"),
+    (StdPath::IterCopied, Some("DoubleEndedIterator"), "advance_back_by"),
+    (StdPath::IterCopied, Some("ExactSizeIterator"), "len"),
+    (StdPath::IterCopied, Some("Clone"), "clone"),
+    (StdPath::IterCopied, Some("Debug"), "fmt"),
+    (StdPath::IterCloned, Some("Iterator"), "next"),
+    (StdPath::IterCloned, Some("Iterator"), "__iterator_get_unchecked"),
+    (StdPath::IterCloned, Some("Iterator"), "size_hint"),
+    (StdPath::IterCloned, Some("Iterator"), "fold"),
+    (StdPath::IterCloned, Some("Iterator"), "try_fold"),
+    (StdPath::IterCloned, Some("DoubleEndedIterator"), "next_back"),
+    (StdPath::IterCloned, Some("DoubleEndedIterator"), "rfold"),
+    (StdPath::IterCloned, Some("DoubleEndedIterator"), "try_rfold"),
+    (StdPath::IterCloned, Some("ExactSizeIterator"), "len"),
+    (StdPath::IterCloned, Some("Clone"), "clone"),
+    (StdPath::IterCloned, Some("Debug"), "fmt"),
+    (StdPath::IterFilterMap, Some("Iterator"), "next"),
+    (StdPath::IterFilterMap, Some("Iterator"), "size_hint"),
+    (StdPath::IterFilterMap, Some("Iterator"), "fold"),
+    (StdPath::IterFilterMap, Some("Iterator"), "try_fold"),
+    (StdPath::IterFilterMap, Some("DoubleEndedIterator"), "next_back"),
+    (StdPath::IterFilterMap, Some("DoubleEndedIterator"), "rfold"),
+    (StdPath::IterFilterMap, Some("DoubleEndedIterator"), "try_rfold"),
+    (StdPath::IterFilterMap, Some("Clone"), "clone"),
+    (StdPath::IterFilterMap, Some("Debug"), "fmt"),
+    (StdPath::IterTakeWhile, Some("Iterator"), "next"),
+    (StdPath::IterTakeWhile, Some("Iterator"), "size_hint"),
+    (StdPath::IterTakeWhile, Some("Iterator"), "try_fold"),
+    (StdPath::IterTakeWhile, Some("Iterator"), "fold"),
+    (StdPath::IterTakeWhile, Some("Clone"), "clone"),
+    (StdPath::IterTakeWhile, Some("Debug"), "fmt"),
+    (StdPath::IterSkipWhile, Some("Iterator"), "next"),
+    (StdPath::IterSkipWhile, Some("Iterator"), "size_hint"),
+    (StdPath::IterSkipWhile, Some("Iterator"), "fold"),
+    (StdPath::IterSkipWhile, Some("Iterator"), "try_fold"),
+    (StdPath::IterSkipWhile, Some("Clone"), "clone"),
+    (StdPath::IterSkipWhile, Some("Debug"), "fmt"),
+    (StdPath::IterMapWhile, Some("Iterator"), "next"),
+    (StdPath::IterMapWhile, Some("Iterator"), "size_hint"),
+    (StdPath::IterMapWhile, Some("Iterator"), "try_fold"),
+    (StdPath::IterMapWhile, Some("Iterator"), "fold"),
+    (StdPath::IterMapWhile, Some("Clone"), "clone"),
+    (StdPath::IterMapWhile, Some("Debug"), "fmt"),
+    (StdPath::IterScan, Some("Iterator"), "next"),
+    (StdPath::IterScan, Some("Iterator"), "size_hint"),
+    (StdPath::IterScan, Some("Iterator"), "try_fold"),
+    (StdPath::IterScan, Some("Iterator"), "fold"),
+    (StdPath::IterScan, Some("Clone"), "clone"),
+    (StdPath::IterScan, Some("Debug"), "fmt"),
+    (StdPath::IterInspect, Some("Iterator"), "next"),
+    (StdPath::IterInspect, Some("Iterator"), "size_hint"),
+    (StdPath::IterInspect, Some("Iterator"), "fold"),
+    (StdPath::IterInspect, Some("Iterator"), "try_fold"),
+    (StdPath::IterInspect, Some("DoubleEndedIterator"), "next_back"),
+    (StdPath::IterInspect, Some("DoubleEndedIterator"), "rfold"),
+    (StdPath::IterInspect, Some("DoubleEndedIterator"), "try_rfold"),
+    (StdPath::IterInspect, Some("ExactSizeIterator"), "len"),
+    (StdPath::IterInspect, Some("Clone"), "clone"),
+    (StdPath::IterInspect, Some("Debug"), "fmt"),
+    (StdPath::IterFlatten, Some("Iterator"), "next"),
+    (StdPath::IterFlatten, Some("Iterator"), "size_hint"),
+    (StdPath::IterFlatten, Some("Iterator"), "fold"),
+    (StdPath::IterFlatten, Some("Iterator"), "try_fold"),
+    (StdPath::IterFlatten, Some("Iterator"), "last"),
+    (StdPath::IterFlatten, Some("Iterator"), "count"),
+    (StdPath::IterFlatten, Some("DoubleEndedIterator"), "next_back"),
+    (StdPath::IterFlatten, Some("DoubleEndedIterator"), "rfold"),
+    (StdPath::IterFlatten, Some("DoubleEndedIterator"), "try_rfold"),
+    (StdPath::IterFlatMap, Some("Iterator"), "next"),
+    (StdPath::IterFlatMap, Some("Iterator"), "size_hint"),
+    (StdPath::IterFlatMap, Some("Iterator"), "fold"),
+    (StdPath::IterFlatMap, Some("Iterator"), "try_fold"),
+    (StdPath::IterFlatMap, Some("Iterator"), "last"),
+    (StdPath::IterFlatMap, Some("Iterator"), "count"),
+    (StdPath::IterFlatMap, Some("DoubleEndedIterator"), "next_back"),
+    (StdPath::IterFlatMap, Some("DoubleEndedIterator"), "rfold"),
+    (StdPath::IterFlatMap, Some("DoubleEndedIterator"), "try_rfold"),
+    (StdPath::IterSkip, Some("Iterator"), "next"),
+    (StdPath::IterSkip, Some("Iterator"), "__iterator_get_unchecked"),
+    (StdPath::IterSkip, Some("Iterator"), "size_hint"),
+    (StdPath::IterSkip, Some("Iterator"), "nth"),
+    (StdPath::IterSkip, Some("Iterator"), "count"),
+    (StdPath::IterSkip, Some("Iterator"), "last"),
+    (StdPath::IterSkip, Some("Iterator"), "fold"),
+    (StdPath::IterSkip, Some("Iterator"), "try_fold"),
+    (StdPath::IterSkip, Some("Iterator"), "advance_by"),
+    (StdPath::IterSkip, Some("DoubleEndedIterator"), "next_back"),
+    (StdPath::IterSkip, Some("DoubleEndedIterator"), "nth_back"),
+    (StdPath::IterSkip, Some("DoubleEndedIterator"), "try_rfold"),
+    (StdPath::IterSkip, Some("DoubleEndedIterator"), "rfold"),
+    (StdPath::IterSkip, Some("Clone"), "clone"),
+    (StdPath::IterSkip, Some("Debug"), "fmt"),
+    (StdPath::IterTake, Some("Iterator"), "next"),
+    (StdPath::IterTake, Some("Iterator"), "size_hint"),
+    (StdPath::IterTake, Some("Iterator"), "nth"),
+    (StdPath::IterTake, Some("Iterator"), "advance_by"),
+    (StdPath::IterTake, Some("Iterator"), "count"),
+    (StdPath::IterTake, Some("Iterator"), "fold"),
+    (StdPath::IterTake, Some("Iterator"), "try_fold"),
+    (StdPath::IterTake, Some("DoubleEndedIterator"), "next_back"),
+    (StdPath::IterTake, Some("DoubleEndedIterator"), "nth_back"),
+    (StdPath::IterTake, Some("DoubleEndedIterator"), "try_rfold"),
+    (StdPath::IterTake, Some("DoubleEndedIterator"), "rfold"),
+    (StdPath::IterTake, Some("ExactSizeIterator"), "len"),
+    (StdPath::IterTake, Some("Clone"), "clone"),
+    (StdPath::IterTake, Some("Debug"), "fmt"),
+    (StdPath::IterStepBy, Some("Iterator"), "next"),
+    (StdPath::IterStepBy, Some("Iterator"), "size_hint"),
+    (StdPath::IterStepBy, Some("Iterator"), "nth"),
+    (StdPath::IterStepBy, Some("Iterator"), "fold"),
+    (StdPath::IterStepBy, Some("Iterator"), "try_fold"),
+    (StdPath::IterStepBy, Some("DoubleEndedIterator"), "next_back"),
+    (StdPath::IterStepBy, Some("DoubleEndedIterator"), "nth_back"),
+    (StdPath::IterStepBy, Some("DoubleEndedIterator"), "rfold"),
+    (StdPath::IterStepBy, Some("DoubleEndedIterator"), "try_rfold"),
+    (StdPath::IterStepBy, Some("Clone"), "clone"),
+    (StdPath::IterChain, Some("Iterator"), "next"),
+    (StdPath::IterChain, Some("Iterator"), "size_hint"),
+    (StdPath::IterChain, Some("Iterator"), "count"),
+    (StdPath::IterChain, Some("Iterator"), "fold"),
+    (StdPath::IterChain, Some("Iterator"), "try_fold"),
+    (StdPath::IterChain, Some("Iterator"), "advance_by"),
+    (StdPath::IterChain, Some("Iterator"), "nth"),
+    (StdPath::IterChain, Some("Iterator"), "last"),
+    (StdPath::IterChain, Some("DoubleEndedIterator"), "next_back"),
+    (StdPath::IterChain, Some("DoubleEndedIterator"), "nth_back"),
+    (StdPath::IterChain, Some("DoubleEndedIterator"), "rfold"),
+    (StdPath::IterChain, Some("DoubleEndedIterator"), "try_rfold"),
+    (StdPath::IterChain, Some("Clone"), "clone"),
+    (StdPath::IterChain, Some("Debug"), "fmt"),
+    (StdPath::IterZip, Some("Iterator"), "next"),
+    (StdPath::IterZip, Some("Iterator"), "size_hint"),
+    (StdPath::IterZip, Some("Iterator"), "nth"),
+    (StdPath::IterZip, Some("Iterator"), "fold"),
+    (StdPath::IterZip, Some("DoubleEndedIterator"), "next_back"),
+    (StdPath::IterZip, Some("Iterator"), "__iterator_get_unchecked"),
+    (StdPath::IterZip, Some("Clone"), "clone"),
     // A plain struct's (#1458).
-    ("RepeatN", Some("Iterator"), "next"),
-    ("RepeatN", Some("Iterator"), "size_hint"),
-    ("RepeatN", Some("Iterator"), "advance_by"),
-    ("RepeatN", Some("Iterator"), "last"),
-    ("RepeatN", Some("Iterator"), "count"),
-    ("RepeatN", Some("ExactSizeIterator"), "len"),
-    ("RepeatN", Some("DoubleEndedIterator"), "next_back"),
-    ("RepeatN", Some("DoubleEndedIterator"), "advance_back_by"),
-    ("RepeatN", Some("DoubleEndedIterator"), "nth_back"),
-    ("RepeatN", Some("DoubleEndedIterator"), "rfold"),
-    ("RepeatN", Some("DoubleEndedIterator"), "try_rfold"),
-    ("RepeatN", Some("Clone"), "clone"),
-    ("RepeatN", Some("Debug"), "fmt"),
-    ("Cycle", Some("Iterator"), "next"),
-    ("Cycle", Some("Iterator"), "size_hint"),
-    ("Cycle", Some("Iterator"), "try_fold"),
-    ("Cycle", Some("Iterator"), "advance_by"),
-    ("Cycle", Some("Clone"), "clone"),
-    ("Cycle", Some("Debug"), "fmt"),
+    (StdPath::IterRepeatN, Some("Iterator"), "next"),
+    (StdPath::IterRepeatN, Some("Iterator"), "size_hint"),
+    (StdPath::IterRepeatN, Some("Iterator"), "advance_by"),
+    (StdPath::IterRepeatN, Some("Iterator"), "last"),
+    (StdPath::IterRepeatN, Some("Iterator"), "count"),
+    (StdPath::IterRepeatN, Some("ExactSizeIterator"), "len"),
+    (StdPath::IterRepeatN, Some("DoubleEndedIterator"), "next_back"),
+    (StdPath::IterRepeatN, Some("DoubleEndedIterator"), "advance_back_by"),
+    (StdPath::IterRepeatN, Some("DoubleEndedIterator"), "nth_back"),
+    (StdPath::IterRepeatN, Some("DoubleEndedIterator"), "rfold"),
+    (StdPath::IterRepeatN, Some("DoubleEndedIterator"), "try_rfold"),
+    (StdPath::IterRepeatN, Some("Clone"), "clone"),
+    (StdPath::IterRepeatN, Some("Debug"), "fmt"),
+    (StdPath::IterCycle, Some("Iterator"), "next"),
+    (StdPath::IterCycle, Some("Iterator"), "size_hint"),
+    (StdPath::IterCycle, Some("Iterator"), "try_fold"),
+    (StdPath::IterCycle, Some("Iterator"), "advance_by"),
+    (StdPath::IterCycle, Some("Clone"), "clone"),
+    (StdPath::IterCycle, Some("Debug"), "fmt"),
 ];
 
 /// And the iterator traits' provided methods compiled, each by its trait and
@@ -300,31 +300,31 @@ const COMPILED_STD_PROVIDED: &[(&str, &str)] = &[
 /// `io`'s iterators compiled, as `COMPILED_STD`'s are, each `alloc::io`'s
 /// (#1156): what `BufRead::lines` and `split` make; and its readers made of
 /// others, `chain`'s, `take`'s and `bytes`' (ADR 0425, amended).
-const COMPILED_STD_IO: &[(&str, Option<&str>, &str)] = &[
-    ("Lines", Some("Iterator"), "next"),
-    ("Split", Some("Iterator"), "next"),
-    ("Chain", Some("Read"), "read"),
-    ("Chain", Some("Read"), "read_to_end"),
-    ("Chain", Some("BufRead"), "fill_buf"),
-    ("Chain", Some("BufRead"), "consume"),
-    ("Chain", Some("BufRead"), "read_until"),
-    ("Chain", None, "into_inner"),
-    ("Chain", None, "get_ref"),
-    ("Chain", None, "get_mut"),
-    ("Take", Some("Read"), "read"),
-    ("Take", Some("BufRead"), "fill_buf"),
-    ("Take", Some("BufRead"), "consume"),
-    ("Take", None, "limit"),
-    ("Take", None, "set_limit"),
-    ("Take", None, "into_inner"),
-    ("Take", None, "get_ref"),
-    ("Take", None, "get_mut"),
-    ("Bytes", Some("Iterator"), "next"),
-    ("Cursor", Some("Clone"), "clone"),
-    ("Cursor", Some("Clone"), "clone_from"),
-    ("Cursor", Some("Debug"), "fmt"),
-    ("Cursor", Some("PartialEq"), "eq"),
-    ("Cursor", Some("Default"), "default"),
+const COMPILED_STD_IO: &[(StdPath, Option<&str>, &str)] = &[
+    (StdPath::IoLines, Some("Iterator"), "next"),
+    (StdPath::IoSplit, Some("Iterator"), "next"),
+    (StdPath::IoChain, Some("Read"), "read"),
+    (StdPath::IoChain, Some("Read"), "read_to_end"),
+    (StdPath::IoChain, Some("BufRead"), "fill_buf"),
+    (StdPath::IoChain, Some("BufRead"), "consume"),
+    (StdPath::IoChain, Some("BufRead"), "read_until"),
+    (StdPath::IoChain, None, "into_inner"),
+    (StdPath::IoChain, None, "get_ref"),
+    (StdPath::IoChain, None, "get_mut"),
+    (StdPath::IoTake, Some("Read"), "read"),
+    (StdPath::IoTake, Some("BufRead"), "fill_buf"),
+    (StdPath::IoTake, Some("BufRead"), "consume"),
+    (StdPath::IoTake, None, "limit"),
+    (StdPath::IoTake, None, "set_limit"),
+    (StdPath::IoTake, None, "into_inner"),
+    (StdPath::IoTake, None, "get_ref"),
+    (StdPath::IoTake, None, "get_mut"),
+    (StdPath::IoBytes, Some("Iterator"), "next"),
+    (StdPath::IoCursor, Some("Clone"), "clone"),
+    (StdPath::IoCursor, Some("Clone"), "clone_from"),
+    (StdPath::IoCursor, Some("Debug"), "fmt"),
+    (StdPath::IoCursor, Some("PartialEq"), "eq"),
+    (StdPath::IoCursor, Some("Default"), "default"),
 ];
 
 /// `core::net`'s value types compiled, as `COMPILED_STD_IO`'s are (#1420,
@@ -332,77 +332,77 @@ const COMPILED_STD_IO: &[(&str, Option<&str>, &str)] = &[
 /// `SocketAddr`s, plain data, their constructors, accessors, comparisons,
 /// `Hash`, `Debug`, `Display` and `FromStr` std's own bodies. Sockets stay
 /// refused.
-const COMPILED_STD_NET: &[(&str, Option<&str>, &str)] = &[
-    ("Ipv4Addr", None, "new"),
-    ("Ipv6Addr", None, "new"),
-    ("SocketAddrV4", None, "new"),
-    ("SocketAddrV6", None, "new"),
-    ("Ipv4Addr", None, "octets"),
-    ("Ipv4Addr", None, "to_bits"),
-    ("Ipv4Addr", None, "from_bits"),
-    ("Ipv4Addr", None, "is_unspecified"),
-    ("Ipv4Addr", None, "is_loopback"),
-    ("Ipv4Addr", None, "is_private"),
-    ("Ipv4Addr", None, "is_link_local"),
-    ("Ipv4Addr", None, "is_multicast"),
-    ("Ipv4Addr", None, "is_broadcast"),
-    ("Ipv4Addr", None, "is_documentation"),
-    ("Ipv4Addr", None, "to_ipv6_compatible"),
-    ("Ipv4Addr", None, "to_ipv6_mapped"),
-    ("Ipv6Addr", None, "segments"),
-    ("Ipv6Addr", None, "octets"),
-    ("Ipv6Addr", None, "to_bits"),
-    ("Ipv6Addr", None, "from_bits"),
-    ("Ipv6Addr", None, "is_unspecified"),
-    ("Ipv6Addr", None, "is_loopback"),
-    ("Ipv6Addr", None, "is_multicast"),
-    ("Ipv6Addr", None, "to_ipv4"),
-    ("Ipv6Addr", None, "to_ipv4_mapped"),
-    ("IpAddr", None, "is_unspecified"),
-    ("IpAddr", None, "is_loopback"),
-    ("IpAddr", None, "is_multicast"),
-    ("IpAddr", None, "is_ipv4"),
-    ("IpAddr", None, "is_ipv6"),
-    ("IpAddr", None, "to_canonical"),
-    ("SocketAddrV4", None, "ip"),
-    ("SocketAddrV4", None, "port"),
-    ("SocketAddrV4", None, "set_ip"),
-    ("SocketAddrV4", None, "set_port"),
-    ("SocketAddrV6", None, "ip"),
-    ("SocketAddrV6", None, "port"),
-    ("SocketAddrV6", None, "flowinfo"),
-    ("SocketAddrV6", None, "scope_id"),
-    ("SocketAddrV6", None, "set_ip"),
-    ("SocketAddrV6", None, "set_port"),
-    ("SocketAddr", None, "new"),
-    ("SocketAddr", None, "ip"),
-    ("SocketAddr", None, "port"),
-    ("SocketAddr", None, "set_ip"),
-    ("SocketAddr", None, "set_port"),
-    ("SocketAddr", None, "is_ipv4"),
-    ("SocketAddr", None, "is_ipv6"),
-    ("Ipv4Addr", Some("Clone"), "clone"),
-    ("Ipv4Addr", Some("PartialEq"), "eq"),
-    ("Ipv4Addr", Some("Hash"), "hash"),
-    ("Ipv6Addr", Some("Clone"), "clone"),
-    ("Ipv6Addr", Some("PartialEq"), "eq"),
-    ("Ipv6Addr", Some("Hash"), "hash"),
-    ("IpAddr", Some("Clone"), "clone"),
-    ("IpAddr", Some("PartialEq"), "eq"),
-    ("IpAddr", Some("Hash"), "hash"),
-    ("SocketAddrV4", Some("Clone"), "clone"),
-    ("SocketAddrV4", Some("PartialEq"), "eq"),
-    ("SocketAddrV4", Some("Hash"), "hash"),
-    ("SocketAddrV6", Some("Clone"), "clone"),
-    ("SocketAddrV6", Some("PartialEq"), "eq"),
-    ("SocketAddrV6", Some("Hash"), "hash"),
-    ("SocketAddr", Some("Clone"), "clone"),
-    ("SocketAddr", Some("PartialEq"), "eq"),
-    ("SocketAddr", Some("Hash"), "hash"),
-    ("IpAddr", Some("From"), "from"),
-    ("Ipv4Addr", Some("From"), "from"),
-    ("Ipv6Addr", Some("From"), "from"),
-    ("SocketAddr", Some("From"), "from"),
+const COMPILED_STD_NET: &[(StdPath, Option<&str>, &str)] = &[
+    (StdPath::NetIpv4Addr, None, "new"),
+    (StdPath::NetIpv6Addr, None, "new"),
+    (StdPath::NetSocketAddrV4, None, "new"),
+    (StdPath::NetSocketAddrV6, None, "new"),
+    (StdPath::NetIpv4Addr, None, "octets"),
+    (StdPath::NetIpv4Addr, None, "to_bits"),
+    (StdPath::NetIpv4Addr, None, "from_bits"),
+    (StdPath::NetIpv4Addr, None, "is_unspecified"),
+    (StdPath::NetIpv4Addr, None, "is_loopback"),
+    (StdPath::NetIpv4Addr, None, "is_private"),
+    (StdPath::NetIpv4Addr, None, "is_link_local"),
+    (StdPath::NetIpv4Addr, None, "is_multicast"),
+    (StdPath::NetIpv4Addr, None, "is_broadcast"),
+    (StdPath::NetIpv4Addr, None, "is_documentation"),
+    (StdPath::NetIpv4Addr, None, "to_ipv6_compatible"),
+    (StdPath::NetIpv4Addr, None, "to_ipv6_mapped"),
+    (StdPath::NetIpv6Addr, None, "segments"),
+    (StdPath::NetIpv6Addr, None, "octets"),
+    (StdPath::NetIpv6Addr, None, "to_bits"),
+    (StdPath::NetIpv6Addr, None, "from_bits"),
+    (StdPath::NetIpv6Addr, None, "is_unspecified"),
+    (StdPath::NetIpv6Addr, None, "is_loopback"),
+    (StdPath::NetIpv6Addr, None, "is_multicast"),
+    (StdPath::NetIpv6Addr, None, "to_ipv4"),
+    (StdPath::NetIpv6Addr, None, "to_ipv4_mapped"),
+    (StdPath::NetIpAddr, None, "is_unspecified"),
+    (StdPath::NetIpAddr, None, "is_loopback"),
+    (StdPath::NetIpAddr, None, "is_multicast"),
+    (StdPath::NetIpAddr, None, "is_ipv4"),
+    (StdPath::NetIpAddr, None, "is_ipv6"),
+    (StdPath::NetIpAddr, None, "to_canonical"),
+    (StdPath::NetSocketAddrV4, None, "ip"),
+    (StdPath::NetSocketAddrV4, None, "port"),
+    (StdPath::NetSocketAddrV4, None, "set_ip"),
+    (StdPath::NetSocketAddrV4, None, "set_port"),
+    (StdPath::NetSocketAddrV6, None, "ip"),
+    (StdPath::NetSocketAddrV6, None, "port"),
+    (StdPath::NetSocketAddrV6, None, "flowinfo"),
+    (StdPath::NetSocketAddrV6, None, "scope_id"),
+    (StdPath::NetSocketAddrV6, None, "set_ip"),
+    (StdPath::NetSocketAddrV6, None, "set_port"),
+    (StdPath::NetSocketAddr, None, "new"),
+    (StdPath::NetSocketAddr, None, "ip"),
+    (StdPath::NetSocketAddr, None, "port"),
+    (StdPath::NetSocketAddr, None, "set_ip"),
+    (StdPath::NetSocketAddr, None, "set_port"),
+    (StdPath::NetSocketAddr, None, "is_ipv4"),
+    (StdPath::NetSocketAddr, None, "is_ipv6"),
+    (StdPath::NetIpv4Addr, Some("Clone"), "clone"),
+    (StdPath::NetIpv4Addr, Some("PartialEq"), "eq"),
+    (StdPath::NetIpv4Addr, Some("Hash"), "hash"),
+    (StdPath::NetIpv6Addr, Some("Clone"), "clone"),
+    (StdPath::NetIpv6Addr, Some("PartialEq"), "eq"),
+    (StdPath::NetIpv6Addr, Some("Hash"), "hash"),
+    (StdPath::NetIpAddr, Some("Clone"), "clone"),
+    (StdPath::NetIpAddr, Some("PartialEq"), "eq"),
+    (StdPath::NetIpAddr, Some("Hash"), "hash"),
+    (StdPath::NetSocketAddrV4, Some("Clone"), "clone"),
+    (StdPath::NetSocketAddrV4, Some("PartialEq"), "eq"),
+    (StdPath::NetSocketAddrV4, Some("Hash"), "hash"),
+    (StdPath::NetSocketAddrV6, Some("Clone"), "clone"),
+    (StdPath::NetSocketAddrV6, Some("PartialEq"), "eq"),
+    (StdPath::NetSocketAddrV6, Some("Hash"), "hash"),
+    (StdPath::NetSocketAddr, Some("Clone"), "clone"),
+    (StdPath::NetSocketAddr, Some("PartialEq"), "eq"),
+    (StdPath::NetSocketAddr, Some("Hash"), "hash"),
+    (StdPath::NetIpAddr, Some("From"), "from"),
+    (StdPath::NetIpv4Addr, Some("From"), "from"),
+    (StdPath::NetIpv6Addr, Some("From"), "from"),
+    (StdPath::NetSocketAddr, Some("From"), "from"),
 ];
 
 /// `io`'s traits' provided methods compiled, each by its trait and its
@@ -426,10 +426,10 @@ const COMPILED_STD_IO_PROVIDED: &[(&str, &str)] = &[
 /// so the walk of what a compiled body calls that std keeps private finds
 /// neither; and `iter`'s makers of a plain struct, `repeat_n` (#1458). The
 /// one table of them.
-const COMPILED_STD_FNS: &[(&str, &str, Option<&str>)] = &[
-    ("io", "chain", None),
-    ("io", "take", None),
-    ("iter", "repeat_n", Some("RepeatN")),
+const COMPILED_STD_FNS: &[(StdPath, Option<StdPath>)] = &[
+    (StdPath::IoChainFn, None),
+    (StdPath::IoTakeFn, None),
+    (StdPath::IterRepeatNFn, Some(StdPath::IterRepeatN)),
 ];
 
 /// The `Iterator` methods a compiled std struct is made a JS iterator with
@@ -454,27 +454,27 @@ pub(crate) const STRUCT_STEPS: [&str; 9] = [
 /// `v.toReversed()`, `v.map((x, i) => [i, x])` (ADR 0871); and whether
 /// that's sized as Rust's is, `size_hint()` of it what its source's says,
 /// not a flatten's, whose items' sizes no JS iterator knows (ADR 0899).
-const HELD_COMPILED: &[(&str, &str, bool)] = &[
-    ("Rev", "rev", true),
-    ("Enumerate", "enumerate", true),
-    ("Map", "map", true),
-    ("Filter", "filter", false),
-    ("Copied", "copied", true),
-    ("Cloned", "cloned", true),
-    ("FilterMap", "filter_map", false),
-    ("TakeWhile", "take_while", false),
-    ("SkipWhile", "skip_while", false),
-    ("MapWhile", "map_while", false),
-    ("Scan", "scan", false),
-    ("Inspect", "inspect", true),
-    ("Flatten", "flatten", false),
-    ("FlatMap", "flat_map", false),
-    ("Skip", "skip", true),
-    ("Take", "take", true),
-    ("StepBy", "step_by", false),
-    ("Chain", "chain", false),
-    ("Zip", "zip", false),
-    ("Cycle", "cycle", false),
+const HELD_COMPILED: &[(StdPath, &str, bool)] = &[
+    (StdPath::IterRev, "rev", true),
+    (StdPath::IterEnumerate, "enumerate", true),
+    (StdPath::IterMap, "map", true),
+    (StdPath::IterFilter, "filter", false),
+    (StdPath::IterCopied, "copied", true),
+    (StdPath::IterCloned, "cloned", true),
+    (StdPath::IterFilterMap, "filter_map", false),
+    (StdPath::IterTakeWhile, "take_while", false),
+    (StdPath::IterSkipWhile, "skip_while", false),
+    (StdPath::IterMapWhile, "map_while", false),
+    (StdPath::IterScan, "scan", false),
+    (StdPath::IterInspect, "inspect", true),
+    (StdPath::IterFlatten, "flatten", false),
+    (StdPath::IterFlatMap, "flat_map", false),
+    (StdPath::IterSkip, "skip", true),
+    (StdPath::IterTake, "take", true),
+    (StdPath::IterStepBy, "step_by", false),
+    (StdPath::IterChain, "chain", false),
+    (StdPath::IterZip, "zip", false),
+    (StdPath::IterCycle, "cycle", false),
 ];
 
 /// The iterator traits' methods whose hand-written form the iterator
@@ -540,34 +540,34 @@ pub(crate) fn is_proved_link(tcx: TyCtxt<'_>, id: DefId) -> bool {
 /// `@rust-js/std` and std's struct in the build of std's structs alone, the
 /// differential build (ADR 0908), and what the recognizers make wherever
 /// the crate makes one in any other, as before it was compiled.
-const MEANING_ONLY: &[&str] = &[
-    "RepeatN",
-    "Cycle",
-    "Filter",
-    "FilterMap",
-    "TakeWhile",
-    "SkipWhile",
-    "MapWhile",
-    "Scan",
-    "Copied",
-    "Cloned",
+const MEANING_ONLY: &[StdPath] = &[
+    StdPath::IterRepeatN,
+    StdPath::IterCycle,
+    StdPath::IterFilter,
+    StdPath::IterFilterMap,
+    StdPath::IterTakeWhile,
+    StdPath::IterSkipWhile,
+    StdPath::IterMapWhile,
+    StdPath::IterScan,
+    StdPath::IterCopied,
+    StdPath::IterCloned,
 ];
 
 /// Whether std's struct named `type_name` is compiled for this build:
 /// each but `MEANING_ONLY`'s, which only a build of the meaning compiles,
 /// std's own bodies, `--std-bodies`, or the differential build,
 /// `--std-iterators` (the session's `meaning`).
-fn compiled_for_build(tcx: TyCtxt<'_>, type_name: &str) -> bool {
-    !MEANING_ONLY.contains(&type_name) || crate::lower::session::caches(tcx).meaning.get()
+fn compiled_for_build(tcx: TyCtxt<'_>, item: StdPath) -> bool {
+    !MEANING_ONLY.contains(&item) || crate::lower::session::caches(tcx).meaning.get()
 }
 
 /// Whether `@rust-js/std`'s bodies of std's struct named `type_name` are
 /// this build's to call: compiled for it (`compiled_for_build`), or, of one
 /// compiled as its meaning alone, of a type of it whose `{:?}` the crate
 /// asks (`note_debug_shown`, #1401), held as std's struct.
-fn called_for_build(tcx: TyCtxt<'_>, type_name: &str) -> bool {
-    compiled_for_build(tcx, type_name)
-        || (crate::lower::session::caches(tcx).debug_shown.get()).is_some_and(|(_, names)| names.contains(type_name))
+fn called_for_build(tcx: TyCtxt<'_>, item: StdPath) -> bool {
+    compiled_for_build(tcx, item)
+        || (crate::lower::session::caches(tcx).debug_shown.get()).is_some_and(|(_, items)| items.contains(&item))
 }
 
 /// `ty`, regions erased, by its address interned in this session: what the
@@ -593,7 +593,7 @@ pub(crate) fn note_debug_shown<'tcx>(tcx: TyCtxt<'tcx>, bodies: &[crate::lower::
     let Some(debug) = tcx.get_diagnostic_item(Symbol::intern("Debug")) else {
         return;
     };
-    let (mut types, mut names) = (
+    let (mut types, mut items) = (
         crate::collections::IndexSet::default(),
         crate::collections::IndexSet::default(),
     );
@@ -614,17 +614,15 @@ pub(crate) fn note_debug_shown<'tcx>(tcx: TyCtxt<'tcx>, bodies: &[crate::lower::
                 }
                 for part in clause.self_ty().skip_binder().walk().filter_map(|part| part.as_type()) {
                     let ty::Adt(adt, _) = part.kind() else { continue };
-                    if let Some(&name) = (std_path(tcx, adt.did()).strip_prefix("std::iter::"))
-                        .and_then(|name| MEANING_ONLY.iter().find(|&&each| each == name))
-                    {
+                    if let Some(item) = std_path_item(tcx, adt.did()).filter(|item| MEANING_ONLY.contains(item)) {
                         types.insert(session_key(tcx, part));
-                        names.insert(name);
+                        items.insert(item);
                     }
                 }
             }
         }
     }
-    _ = caches.debug_shown.set((types, names));
+    _ = caches.debug_shown.set((types, items));
 }
 
 /// Whether a value of `ty`, std's adapter `std::iter`'s or another type, is
@@ -633,13 +631,11 @@ pub(crate) fn note_debug_shown<'tcx>(tcx: TyCtxt<'tcx>, bodies: &[crate::lower::
 /// another's than an adapter's, whose answer is its catalog's alone.
 pub(crate) fn compiled_for<'tcx>(tcx: TyCtxt<'tcx>, ty: ty::Ty<'tcx>) -> bool {
     match ty.peel_refs().kind() {
-        ty::Adt(adt, _) if !adt.did().is_local() => {
-            (std_path(tcx, adt.did()).strip_prefix("std::iter::")).is_none_or(|name| {
-                compiled_for_build(tcx, name)
-                    || (crate::lower::session::caches(tcx).debug_shown.get())
-                        .is_some_and(|(types, _)| types.contains(&session_key(tcx, ty)))
-            })
-        }
+        ty::Adt(adt, _) if !adt.did().is_local() => std_path_item(tcx, adt.did()).is_none_or(|item| {
+            compiled_for_build(tcx, item)
+                || (crate::lower::session::caches(tcx).debug_shown.get())
+                    .is_some_and(|(types, _)| types.contains(&session_key(tcx, ty)))
+        }),
         _ => true,
     }
 }
@@ -672,7 +668,7 @@ pub(crate) fn compiled_instance<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, args: ty::Ge
 /// Whether std's `Zip` is compiled for this build, which reads its sides by
 /// index, their dictionaries' `getUnchecked` (ADR 0975).
 pub(crate) fn zips_by_index_compiled(tcx: TyCtxt<'_>) -> bool {
-    compiled_for_build(tcx, "Zip")
+    compiled_for_build(tcx, StdPath::IterZip)
 }
 
 /// Whether `id`, a std body `@rust-js/std` compiles, isn't this build's: an
@@ -694,10 +690,10 @@ pub(crate) fn not_compiled_for_build(tcx: TyCtxt<'_>, id: DefId) -> bool {
         _ => None,
     });
     // Not one a type of which `{:?}` shows (`called_for_build`, #1401).
-    let not_called = |name: &str| MEANING_ONLY.contains(&name) && !called_for_build(tcx, name);
-    owner.is_some_and(|adt| (std_path(tcx, adt).strip_prefix("std::iter::")).is_some_and(not_called))
+    let not_called = |item: StdPath| MEANING_ONLY.contains(&item) && !called_for_build(tcx, item);
+    owner.is_some_and(|adt| std_path_item(tcx, adt).is_some_and(not_called))
         || (HELD_COMPILED.iter())
-            .any(|&(name, method, _)| not_called(name) && compiled_provided_method(tcx, "Iterator", method) == id)
+            .any(|&(item, method, _)| not_called(item) && compiled_provided_method(tcx, "Iterator", method) == id)
         || (compiled_rows(tcx).fns.iter()).any(|&(fn_id, makes)| makes.is_some_and(not_called) && fn_id == id)
 }
 
@@ -763,8 +759,8 @@ pub(crate) fn compiled_rows(tcx: TyCtxt<'_>) -> std::rc::Rc<Rows> {
 fn find_compiled_std(tcx: TyCtxt<'_>) -> Vec<DefId> {
     let rows = compiled_rows(tcx);
     let mut found = Vec::new();
-    for ((type_name, ..), methods) in &rows.iter {
-        if called_for_build(tcx, type_name) {
+    for &((item, ..), ref methods) in &rows.iter {
+        if called_for_build(tcx, item) {
             found.extend(methods);
         }
     }
@@ -775,7 +771,7 @@ fn find_compiled_std(tcx: TyCtxt<'_>) -> Vec<DefId> {
     let made_for_build = |method: &str| {
         (HELD_COMPILED.iter())
             .find(|&&(_, maker, _)| maker == method)
-            .is_none_or(|&(type_name, ..)| called_for_build(tcx, type_name))
+            .is_none_or(|&(item, ..)| called_for_build(tcx, item))
     };
     for &(trait_name, method) in COMPILED_STD_PROVIDED
         .iter()
@@ -787,7 +783,7 @@ fn find_compiled_std(tcx: TyCtxt<'_>) -> Vec<DefId> {
     // given its dictionary, as `Iterator`'s are.
     found.extend(&rows.io_provided);
     for &(id, makes) in &rows.fns {
-        if makes.is_none_or(|type_name| called_for_build(tcx, type_name)) {
+        if makes.is_none_or(|item| called_for_build(tcx, item)) {
             found.push(id);
         }
     }
@@ -927,19 +923,17 @@ pub(crate) fn is_compiled_std_type<'tcx>(tcx: TyCtxt<'tcx>, ty: ty::Ty<'tcx>) ->
     };
     let id = adt.did();
     !id.is_local()
-        && (std_path(tcx, id).strip_prefix("std::iter::").is_some_and(|name| {
-            (COMPILED_STD.iter()).any(|&(type_name, _, _)| type_name == name) && compiled_for(tcx, ty)
-        }) || std_path(tcx, id)
-            .strip_prefix("std::io::")
-            .is_some_and(|name| (COMPILED_STD_IO.iter()).any(|&(type_name, _, _)| type_name == name)))
+        && std_path_item(tcx, id).is_some_and(|item| {
+            (COMPILED_STD.iter()).any(|&(of, _, _)| of == item) && compiled_for(tcx, ty)
+                || (COMPILED_STD_IO.iter()).any(|&(of, _, _)| of == item)
+        })
 }
 
 /// Whether `ty` is one of `HELD_COMPILED`'s adapters, a `Rev<I>`, std's
 /// struct where it's held, of a type compiled for this build.
 pub(crate) fn is_held_compiled<'tcx>(tcx: TyCtxt<'tcx>, ty: ty::Ty<'tcx>) -> bool {
     matches!(ty.peel_refs().kind(), ty::Adt(adt, _) if is_compiled_std_type(tcx, ty)
-        && (std_path(tcx, adt.did()).strip_prefix("std::iter::"))
-            .is_some_and(|path| HELD_COMPILED.iter().any(|&(name, ..)| name == path)))
+        && std_path_item(tcx, adt.did()).is_some_and(|item| HELD_COMPILED.iter().any(|&(of, ..)| of == item)))
 }
 
 /// What an `impl` in `ty` hides that's std's compiled struct, `HELD_COMPILED`'s
