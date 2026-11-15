@@ -57,7 +57,7 @@ export const mutations: Mutation[] = [
   {
     name: "apart-acts",
     breaks:
-      "a cell's `replace(vec![9])` names its new value first, `const value$1 = [9];`, before `const old = $apart(value.value)`: `$apart`, which only copies what it's given, counted as doing something (#527)",
+      "a cell's `replace(vec![by.len() as i32])` names its new value first, `const value$1 = [by.length];`, before `const old = $apart(value.value)`: `$apart`, which only copies what it's given, counted as doing something (#527)",
     file: "src/runtime.rs",
     find: "    \"$apart\",\n",
     replace: "",

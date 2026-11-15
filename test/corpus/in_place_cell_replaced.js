@@ -33,6 +33,15 @@ function cellReplace(v) {
   return old;
 }
 
+// The new value reads what a call could change, `by.len()`: made after the
+// copy apart, `$apart` only copies what it's given.
+function cellReplaceBy(v, by) {
+  const value = $cellOf(v);
+  const old = $apart(value.value);
+  value.value = [by.length];
+  return old;
+}
+
 function main() {
   let v = [1, 2];
   const value = $cellOf(v);
@@ -70,6 +79,10 @@ function main() {
 
   v = [1, 2];
   old = cellReplace(v);
+  console.log(`[${old.join(", ")}] [${v.join(", ")}]`);
+
+  v = [1, 2];
+  old = cellReplaceBy(v, [7, 8]);
   console.log(`[${old.join(", ")}] [${v.join(", ")}]`);
 
   v = [1, 2];

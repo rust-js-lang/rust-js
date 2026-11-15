@@ -27,6 +27,12 @@ fn cell_replace(v: &mut Vec<i32>) -> Vec<i32> {
     Cell::from_mut(v).replace(vec![9])
 }
 
+// The new value reads what a call could change, `by.len()`: made after the
+// copy apart, `$apart` only copies what it's given.
+fn cell_replace_by(v: &mut Vec<i32>, by: &[i32]) -> Vec<i32> {
+    Cell::from_mut(v).replace(vec![by.len() as i32])
+}
+
 fn main() {
     let mut v = vec![1, 2];
     let old = Cell::from_mut(&mut v).replace(vec![3]);
@@ -55,6 +61,10 @@ fn main() {
 
     let mut v = vec![1, 2];
     let old = cell_replace(&mut v);
+    println!("{old:?} {v:?}");
+
+    let mut v = vec![1, 2];
+    let old = cell_replace_by(&mut v, &[7, 8]);
     println!("{old:?} {v:?}");
 
     let mut v = vec![1, 2];
