@@ -182,6 +182,34 @@ test("every source file of more than 80 lines has mutations, or says why it need
 });
 
 // So code that moves takes its mutations with it, to the list of where it went.
+// Each mutation's `-t` names a test its file has: one that names none, of a
+// test moved to another file, ran nothing as the compiler is, and CI's
+// mutations shard said so only when it ran (the closures' guard tests split
+// from lowering-drop-guards.test.ts). Of a file whose tests are each named
+// by a literal, read without running it.
+test("each mutation's test pattern names a test of its file", () => {
+  const named = new Map<string, string[] | undefined>();
+  const namesOf = (file: string) => {
+    if (!named.has(file)) {
+      const source = existsSync(join(root, file)) ? readFileSync(join(root, file), "utf8") : "";
+      const literal = /^\s*(?:test|it)(?:\.\w+)?\(\s*"((?:[^"\\]|\\.)*)"/gm;
+      // A name made where it runs, of a template or a value, isn't read here.
+      const dynamic = /^\s*(?:test|it)(?:\.\w+)?\(\s*[^"\s]/m.test(source) || !file.endsWith(".test.ts");
+      named.set(file, dynamic ? undefined : [...source.matchAll(literal)].map((m) => JSON.parse(`"${m[1]}"`)));
+    }
+    return named.get(file);
+  };
+  const unmatched = mutations.flatMap((m) => {
+    const [file, ...args] = m.tests ?? [];
+    const at = args.indexOf("-t");
+    if (file === undefined || at < 0) return [];
+    const names = namesOf(file);
+    const pattern = new RegExp(args[at + 1]);
+    return names === undefined || names.some((name) => pattern.test(name)) ? [] : [`${m.name}: ${file} -t ${args[at + 1]}`];
+  });
+  expect(unmatched).toEqual([]);
+});
+
 test("each mutation list names one existing source file", () => {
   const owners = lists.flatMap(list => list.mutations.length ? [list.mutations[0].file] : []);
   expect(new Set(owners).size).toBe(owners.length);

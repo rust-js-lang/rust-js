@@ -333,7 +333,7 @@ export const mutations: Mutation[] = [
     find: "        Item::Const(constant) => arrow(&mut constant.value, f),\n",
     replace: "        Item::Const(_) => {}\n",
     tests: [
-      "test/lowering-drop-guards.test.ts",
+      "test/lowering-drop-guards-closures.test.ts",
       "-t",
       "a guard in a closure that's a const fn",
     ],
@@ -347,7 +347,7 @@ export const mutations: Mutation[] = [
     replace:
       "                    if let Prop::Field(_, value) | Prop::Method(_, value) = prop {\n                        let _ = value;\n",
     tests: [
-      "test/lowering-drop-guards.test.ts",
+      "test/lowering-drop-guards-closures.test.ts",
       "-t",
       "a guard in a closure that's a const fn",
     ],
@@ -371,7 +371,7 @@ export const mutations: Mutation[] = [
     replace:
       "            ExprKind::Cond(_, then, otherwise) => {\n                let _ = then;\n",
     tests: [
-      "test/lowering-drop-guards.test.ts",
+      "test/lowering-drop-guards-closures.test.ts",
       "-t",
       "a guard in a closure of a conditional thread-local",
     ],
@@ -384,7 +384,7 @@ export const mutations: Mutation[] = [
     find: "        Item::Statements(stmts) => f(&[], stmts),\n",
     replace: "        Item::Statements(_) => {}\n",
     tests: [
-      "test/lowering-drop-guards.test.ts",
+      "test/lowering-drop-guards-closures.test.ts",
       "-t",
       "a guard in a closure of what a module runs as it loads",
     ],
