@@ -1032,6 +1032,39 @@ jobs:
           path: target/decision-coverage/report.md
           retention-days: 30
 
+  # How long each of the night's jobs, steps, test files and tests took
+  # (scripts/testTimes.ts): the suite's by bun's JUnit reports, `junit-*`,
+  # the jobs' and steps' as GitHub kept them; the top 25 files and tests
+  # and each job's total in the run's summary, and what's slower than the
+  # last night's, by more than 30 s or a quarter, so a slow spot is found
+  # by measurement and one growing is seen the next morning. Kept as
+  # `test-times`, which the next night compares with.
+  test-times:
+    name: test times
+    needs: [check, fuzz, stages, programs, forms, determinism, react-compiler, metamorphic, object-model, nones, neighbours, memory, rustlantis, mut-refs, matrix, conformance, points, unwind, format, numbers, async, consumers, std, twins, crates, crater, port]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: junit-*
+          path: junit
+      - env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          bun scripts/testTimes.ts merge junit target/test-times
+          cat target/test-times/summary.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: test-times
+          path: target/test-times/test-times.json
+          retention-days: 30
+
   # A red night of `main` is an issue, "Nightly red: <date>", opened or, run
   # again that day, commented on, naming each failed job with its link: the
   # issue watch gives it an owner that day, and no one polls for it.

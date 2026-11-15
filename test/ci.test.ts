@@ -393,7 +393,7 @@ test("the nightly, here, has each job the nightly has", () => {
     const text = readFileSync(join(root, ".github/workflows", file), "utf8");
     return [...text.slice(text.indexOf("\njobs:")).matchAll(/^  ([a-z-]+):$/gm)].map((m) => m[1]);
   };
-  const ran = [...ids("check.yml"), ...ids("nightly.yml")].filter((id) => !["plan", "seeds", "check", "issue", "iterator-forms", "nets", "crater-report", "decision-coverage"].includes(id));
+  const ran = [...ids("check.yml"), ...ids("nightly.yml")].filter((id) => !["plan", "seeds", "check", "issue", "iterator-forms", "nets", "crater-report", "decision-coverage", "test-times"].includes(id));
   expect(ran.filter((id) => !(id in localNightly))).toEqual([]);
 });
 
@@ -1161,4 +1161,17 @@ test("the short nets are the nets job's steps, each where its change runs it, ea
   expect(summary).toContain("- std net: passed");
   expect(summary).not.toContain("react-in-rust port");
   expect(netsSummary({ std: { outcome: "success" } }, listed)).toContain("### Every net that ran passed");
+});
+
+// The nightly keeps each job's, file's and test's time (scripts/testTimes.ts),
+// the suite's by bun's JUnit reports, after every job that runs tests: a
+// job added to the night and not to its `needs` is timed by none.
+test("the nightly's test times follow each of its jobs, the suite's reports among them", () => {
+  const nightly = Bun.YAML.parse(readFileSync(join(root, ".github/workflows/nightly.yml"), "utf8")) as { jobs: Record<string, { needs?: string[]; if?: string }> };
+  const times = nightly.jobs["test-times"]!;
+  expect(times.if).toBe("always()");
+  const others = Object.keys(nightly.jobs).filter((id) => !["test-times", "issue", "decision-coverage", "seeds", "crater-report"].includes(id));
+  expect(others.filter((id) => !times.needs!.includes(id))).toEqual([]);
+  expect(readFileSync(join(root, ".github/workflows/check.yml"), "utf8")).toContain("name: junit-${{ matrix.shard }}");
+  expect(readFileSync(join(root, "scripts/test.ts"), "utf8")).toContain('"--reporter=junit"');
 });

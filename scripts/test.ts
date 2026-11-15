@@ -87,11 +87,16 @@ const run = async (args: string[], env: Record<string, string> = {}) => {
   return code;
 };
 const ignored = [corpus, ...browsers, ...(atNight ? [] : nightly)].map((file) => `--path-ignore-patterns=${file}`);
+// The nightly's keeps how long each file and test of each run took, as
+// bun's JUnit reporter measures them, one report a run in target/junit/,
+// which nightly.yml's `test-times` merges (scripts/testTimes.ts).
+const junit = (name: string) => (atNight ? ["--reporter=junit", `--reporter-outfile=target/junit/${name.replace(/\W+/g, "-")}.xml`] : []);
+const of = `${index}-of-${count}`;
 const [rest, ...cases] = await Promise.all([
-  run(["--parallel", ...shard, ...timings, "--update-timings", ...ignored]),
+  run(["--parallel", ...shard, ...timings, "--update-timings", ...ignored, ...junit(`suite-${of}`)]),
   // Each case built as a library too, a push's and the nightly's (ADR 0360, #1920).
-  ...corpusParts.map((part) => run([corpus], { RUST_JS_CASES: part })),
+  ...corpusParts.map((part) => run([corpus, ...junit(`corpus-${part}`)], { RUST_JS_CASES: part })),
 ]);
-const pages = Date.now() < deadline ? await run(["--parallel", ...shard, ...timings, ...browsers]) : 1;
+const pages = Date.now() < deadline ? await run(["--parallel", ...shard, ...timings, ...browsers, ...junit(`browsers-${of}`)]) : 1;
 watchdog.kill();
 process.exit(rest || cases.find((code) => code !== 0) || pages);
