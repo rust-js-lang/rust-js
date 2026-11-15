@@ -18,8 +18,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `(from, to)`, is the option itself in JS: by a function each call of
     /// which is what it's given, `section.map(Section::as_str)` (ADR 0264),
     /// `lane.map(EventPriority::from)` (ADR 0584, amended), or a binding
-    /// that's its argument, `map(js::unknown)` (`JsForm::This`), or a
-    /// closure that gives it as it is, `|parent| &**parent` (rd632,
+    /// that's its argument, `map(js::unknown)` (`JsForm::This`), an
+    /// untagged enum's variant, its payload, `map(InitializedReason::ArrayRoot)`
+    /// (`constructs_payload`, #1933 step 4 (E)), or a closure that gives
+    /// it as it is, `|parent| &**parent` (rd632,
     /// `closure_gives_its_argument`); of neither boxed. The one answer, of
     /// the map's lowering and of what a nullable place stores of it as
     /// given (the port's gap rd94).
@@ -31,6 +33,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         super::super::bindings::js_form(self.tcx, function),
                         super::super::bindings::JsForm::This
                     ))
+                    || self.constructs_payload(function, args)
                     || self.gives_its_argument(self.callee(function, args).0)
             }
             None => self.closure_gives_its_argument(f),

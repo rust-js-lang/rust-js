@@ -162,3 +162,143 @@ test("a map's closure whose own closure reads its argument reads it there", asyn
   expect([lib.shifted(2, [1, 3]), lib.shifted(undefined, [1])]).toEqual([[3, 5], undefined]);
 });
 
+// `opt.map(Reason::Root)` of an untagged enum's variant, its payload, is
+// the option itself, so `null` or a value where `opt` is, stored as it is
+// in a nullable field, `reason: root`, MIR's answer, not tidy's (React's
+// Flight reply server's `array_root.map(InitializedReason::ArrayRoot)`,
+// `constructs_payload`, #1933 step 4 (E)); of an `opt` that may be
+// `undefined`, `?? null`; of an enum a value of which may look like `None`,
+// `#[rust_js::undefined]`'s, whose `Option` is boxed, the option too, as a
+// variant's payload is never `null` nor `undefined` (an untagged enum
+// refuses one that may be, ADR 0214), so its box is the payload itself.
+// Not a tagged enum's variant, which is no payload.
+test("a map by an untagged enum's variant is the option itself", async () => {
+  const dir = fixture("nullable-map-untagged-variant");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::RefCell;
+use std::rc::Rc;
+
+pub struct Context {
+    pub count: u32,
+}
+
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum Reason {
+    Root(Rc<Context>),
+    Text(String),
+}
+
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum Maybe {
+    Root(Rc<Context>),
+    #[cfg_attr(rust_js, rust_js::undefined)]
+    Missing,
+}
+
+pub struct Slot {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub maybe: Option<Maybe>,
+}
+
+#[cfg_attr(rust_js, rust_js::tag = "status")]
+pub enum State {
+    #[cfg_attr(rust_js, rust_js::name = "pending")]
+    Pending,
+    #[cfg_attr(rust_js, rust_js::name = "fulfilled")]
+    Fulfilled {
+        value: u32,
+        #[cfg_attr(rust_js, rust_js::nullable)]
+        reason: Option<Reason>,
+    },
+}
+
+pub struct Chunk {
+    pub state: RefCell<State>,
+}
+
+pub struct Handler {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub root: RefCell<Option<Rc<Context>>>,
+    pub value: u32,
+}
+
+pub fn resolved(handler: &Handler, chunk: &Chunk) {
+    let root = handler.root.borrow().clone();
+    *chunk.state.borrow_mut() = State::Fulfilled {
+        value: handler.value,
+        reason: root.map(Reason::Root),
+    };
+}
+
+pub fn given(root: Option<Rc<Context>>, chunk: &Chunk) {
+    *chunk.state.borrow_mut() = State::Fulfilled {
+        value: 2,
+        reason: root.map(Reason::Root),
+    };
+}
+
+pub fn slotted(handler: &Handler) -> Slot {
+    let root = handler.root.borrow().clone();
+    Slot {
+        maybe: root.map(Maybe::Root),
+    }
+}
+
+pub fn told(slot: &Slot) -> u32 {
+    match &slot.maybe {
+        None => 0,
+        Some(Maybe::Root(context)) => context.count,
+        Some(Maybe::Missing) => 9,
+    }
+}
+
+pub enum Shape {
+    Circle(f64),
+    Square(f64),
+}
+
+pub fn shaped(r: Option<f64>) -> u32 {
+    match r.map(Shape::Circle) {
+        Some(Shape::Circle(_)) => 1,
+        Some(Shape::Square(_)) => 2,
+        None => 0,
+    }
+}
+
+pub fn pending() -> Chunk {
+    Chunk {
+        state: RefCell::new(State::Pending),
+    }
+}
+`);
+  const counts = join(dir, "decisions.tsv");
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], 120_000, { RUST_JS_DECISIONS: counts });
+  const tidied = readFileSync(counts, "utf8")
+    .split("\n")
+    .map((line) => line.split("\t"))
+    .filter((cells) => cells[0]!.startsWith("tidy-") && Number(cells[4]) > 0);
+  expect(tidied).toEqual([]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("    reason: root,\n");
+  expect(js).toContain("    reason: root ?? null,\n");
+  const lib = await import(join(dir, "lib.js"));
+  const context = { count: 1 };
+  const reasons = [
+    (chunk: { state: { reason?: unknown } }) => lib.resolved({ root: null, value: 1 }, chunk),
+    (chunk: { state: { reason?: unknown } }) => lib.resolved({ root: context, value: 1 }, chunk),
+    (chunk: { state: { reason?: unknown } }) => lib.given(undefined, chunk),
+    (chunk: { state: { reason?: unknown } }) => lib.given(context, chunk),
+  ].map((resolve) => {
+    const chunk = lib.pending();
+    resolve(chunk);
+    return chunk.state.reason;
+  });
+  expect(reasons).toEqual([null, context, null, context]);
+  // Of an enum that may be `undefined`, `Maybe::Missing`, an `Option` of
+  // it is boxed (ADR 0051), and its box, `$some`, wraps only a value that
+  // looks like `None`, which a variant's payload never is (ADR 0214): the
+  // map is the option itself there too, read back as each variant.
+  expect(js).toContain("  return { maybe: handler.root };\n");
+  expect([lib.told(lib.slotted({ root: null, value: 1 })), lib.told(lib.slotted({ root: context, value: 1 }))]).toEqual([0, 1]);
+  // A tagged enum's variant is no payload: its map makes the variant.
+  expect([lib.shaped(2), lib.shaped(undefined)]).toEqual([1, 0]);
+});

@@ -1217,7 +1217,9 @@ export function ratio(a, b) {
   stored as it's given, `this._reactName = reactName;`, through a
   `RefCell`'s `borrow_mut()` too, and so is its map by what's its argument
   in JS, `this.target.set(native_event_target.map(js::unknown))`'s
-  `this.target = nativeEventTarget;`; a function's own
+  `this.target = nativeEventTarget;`, or by an untagged enum's variant,
+  its payload, `reason: array_root.map(InitializedReason::ArrayRoot)`'s
+  `reason: arrayRoot`; a function's own
   parameter says so on the function, an error on the parameter (ADR 0861,
   amended).
   A nullable thread-local's whole value cloned,

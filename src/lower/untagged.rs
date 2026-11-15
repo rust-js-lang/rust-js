@@ -1142,6 +1142,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Some(self.recognition().kind_test(&kind, value, &|name| self.js_ref(name)))
     }
 
+    /// Whether `ctor`, a constructor of a variant of one field, made of
+    /// `args`, makes an untagged enum's value, which is its payload (ADR
+    /// 0214): `.map(InitializedReason::ArrayRoot)` is the option itself
+    /// (#1933 step 4 (E)).
+    pub(super) fn constructs_payload(&self, ctor: DefId, args: GenericArgsRef<'tcx>) -> bool {
+        if !matches!(self.tcx.def_kind(ctor), DefKind::Ctor(_, CtorKind::Fn)) {
+            return false;
+        }
+        let sig = self
+            .tcx
+            .fn_sig(ctor)
+            .instantiate(self.tcx, args)
+            .skip_normalization()
+            .skip_binder();
+        sig.inputs().len() == 1 && self.untagged(sig.output()).is_some()
+    }
+
     /// Whether `ty` is an untagged enum, `#[rust_js::untagged]` (ADR 0214).
     pub(super) fn untagged(&self, ty: Ty<'tcx>) -> Option<(AdtDef<'tcx>, GenericArgsRef<'tcx>)> {
         untagged_adt(self.tcx, ty)

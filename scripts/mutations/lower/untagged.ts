@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "constructs-payload-of-any-enum",
+    breaks: "a variant constructor of any enum is taken to make its payload, so `opt.map(Shape::Circle)` of a tagged enum is the option itself, its tag never made (#1933 step 4 (E))",
+    file: "src/lower/untagged.rs",
+    find: "        sig.inputs().len() == 1 && self.untagged(sig.output()).is_some()\n",
+    replace: "        sig.inputs().len() == 1\n",
+    tests: ["test/lowering-nullable-combinators.test.ts", "-t", "untagged enum's variant"],
+  },
+  {
     name: "union-member-test-unmade",
     breaks: "a member that holds another untagged enum has no test of its kinds, and the compiler panics, `a typeof kind` (#1832)",
     file: "src/lower/untagged.rs",

@@ -582,3 +582,27 @@ returns the program wrote stays an if", "a nullable result tested equal to
 a None given is null" and "a let written again after its test". Tidy's other
 presence answers, and-shown, never-undefined, coalesce and unwrap, stay until
 (F).
+
+## Amendment: a map by an untagged enum's variant is the option itself (2026-11-16, #1933 step 4 (E))
+
+`maps_to_itself`, the one answer of whether `opt.map(f)` is `opt` in JS,
+of its lowering and of what a nullable place stores of it, takes an
+untagged enum's variant constructor of one field (`untagged::constructs_payload`,
+ADR 0214's: the variant is its payload), React's Flight reply server's
+`array_root.map(InitializedReason::ArrayRoot)` of a nullable cell field's
+clone, so `chunk.reason = arrayRoot`, MIR's, where tidy's never-undefined
+answered it. As before, neither side's `Option` may hold its `Some` in a
+box: of an enum one of whose values may be `undefined`, `#[rust_js::undefined]`'s,
+its `$some` boxes only a value that looks like `None`, which a variant's
+payload never is, as ADR 0214 refuses one that may be (an `Option`, a
+`&Unknown`, a unit struct, a `Weak`, `js::Kind`, a type parameter, a raw
+pointer, another enum: each refused). Not a tagged enum's variant, which
+is no payload.
+
+Case of [0262](0262-when-rust-and-js-disagree.md): none, each value the
+same. Held by test/lowering-nullable-combinators.test.ts's "a map by an
+untagged enum's variant is the option itself" (no tidy answer; a parameter
+that may be `undefined` keeping `?? null`; the boxed enum's read back; a
+tagged enum's; run) and mutations `map-by-untagged-variant-unfollowed`
+(lower/std_types/option.ts) and `constructs-payload-of-any-enum`
+(lower/untagged.ts).

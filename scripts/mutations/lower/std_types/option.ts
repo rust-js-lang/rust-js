@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "map-by-untagged-variant-unfollowed",
+    breaks: "`opt.map(Reason::Root)` of an untagged enum's variant isn't the option itself, so a nullable field stores `root ?? null`, left for tidy to guess, React's `chunk.reason = arrayRoot` (#1933 step 4 (E))",
+    file: "src/lower/std_types/option.rs",
+    find: "                    || self.constructs_payload(function, args)\n",
+    replace: "",
+    tests: ["test/lowering-nullable-combinators.test.ts", "-t", "untagged enum's variant"],
+  },
+  {
     name: "getter-unwrap-checked",
     breaks:
       "a getter's function unwrapped where it's called keeps `$unwrap`, `$unwrap(console.createTask).bind(console, ..)`, where the user chose the read (rd519, ADR 1066)",
