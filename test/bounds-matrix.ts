@@ -48,6 +48,12 @@ type Holder = {
   swapped?: string;
   /** A write through a raw pointer to it, `p` of its setup. */
   pointer?: string;
+  /** A guard's `&mut` kept in a struct's field and the `Vec` shortened
+   * through it, and through a raw pointer made of it, by a call and by
+   * `ptr::write`: what a held guard's `deref_mut` lends, used other than
+   * given whole to a call (ADR 1137, the guard's own rule retired). */
+  stored?: string;
+  pointer_write?: string;
   /** The tests, or a test's form, `<test>/<form>`, whose programs are
    * undefined behaviour under Miri, so no answer of theirs is wrong:
    * each left out, with what Miri says beside it, so none is added again. */
@@ -116,6 +122,11 @@ struct Pair {
 
 fn repoint(h: &mut &Pair) {
     *h = Box::leak(Box::new(Pair { items: &[9] }));
+}
+
+/// A struct that keeps a &mut of a Vec.
+struct Lent<'a> {
+    v: &'a mut Vec<u32>,
 }
 
 struct Shared {
@@ -359,6 +370,9 @@ const holders: Record<string, Holder> = {
     direct: "g.truncate(1);",
     reassign: "*g = vec![9];",
     lend: "shorten(&mut g);",
+    stored: "{ let lent = Lent { v: &mut g }; lent.v.truncate(1); }",
+    pointer: "{ let r: &mut Vec<u32> = &mut g; let p: *mut Vec<u32> = r; unsafe { (&mut *p).truncate(1) }; }",
+    pointer_write: "{ let r: &mut Vec<u32> = &mut g; let p: *mut Vec<u32> = r; unsafe { std::ptr::write(p, vec![9]) }; }",
   },
   field: {
     params: "mut h: &Holder",
@@ -451,6 +465,8 @@ const betweens: Record<string, (h: Holder) => string | undefined> = {
   lend: (h) => h.lend,
   whole: (h) => h.whole,
   pointer: (h) => h.pointer,
+  stored: (h) => h.stored,
+  pointer_write: (h) => h.pointer_write,
 };
 
 /** The index's form: an item, a range's end, a call's (`swap`). */

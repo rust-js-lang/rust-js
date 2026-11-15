@@ -24,14 +24,6 @@ export const mutations: Mutation[] = [
     tests,
   },
   {
-    name: "guard-deref-mut-always-a-copy",
-    breaks: "a guard's `deref_mut` whose `&mut` is written through, `*items = Vec::new()`, keeps the cell's length, so `items[i]` past it is taken in bounds, a mir-only-call-bounds line",
-    file,
-    find: "            match !mutable || self.guards.lends.contains(&local) {\n",
-    replace: "            match true {\n",
-    tests,
-  },
-  {
     name: "guards-none",
     breaks: "no guard is held, so `items.remove(i)` past a call `f(items[i])` keeps its check, a call-bounds line",
     file,

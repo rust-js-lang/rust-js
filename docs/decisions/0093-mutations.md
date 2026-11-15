@@ -547,3 +547,21 @@ existing runner to isolated ECMAScript/TypeScript module inputs, with actual
 load evidence, unchanged-source controls, per-workspace package aliases and
 the same lease, lock and target isolation. Generator chains use existing
 build workers; pure module tests use existing test slots.
+
+## Amendment: a held guard's `deref_mut` once writes through it are seen (2026-11-15, #1877)
+
+`guard-deref-mut-always-a-copy` goes, and so does the branch it mutated. A
+held `RefCell` guard's `deref_mut` forgot the cell's length unless its
+`&mut` was only given whole to calls; the mutation made it a copy always.
+Its row wrote through that `&mut`, `*items = Vec::new()`, which #1877's rule
+for a write through a reference forgets on its own, so the mutation
+survived. No row tells the branch apart. A struct field's `&mut` cleared, a
+raw pointer's clear and `ptr::write`, and every program of the bounds
+matrix's `guard` holder each run as native does, with the same shadow lines,
+with and without it. Each way the `&mut` changes the length is another
+rule's: a write through it (#1877), a call given it (`guard_lent`,
+`called_on`), and the guard lent `&mut` where it's borrowed, which is no
+longer guarded. A `deref_mut` of a held guard is a copy now, as its `deref`
+is. Those shapes are rows of the bounds matrix's `guard` holder (`stored`,
+`pointer`, `pointer_write`) and of the guard shadow test, so a weakening of
+any of the three rules is caught.

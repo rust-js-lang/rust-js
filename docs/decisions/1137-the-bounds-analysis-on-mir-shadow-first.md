@@ -907,3 +907,17 @@ with Miri's words beside it in the matrix: a raw pointer's write that
 invalidates a closure's capture, and a `swap`'s `&mut` reborrow that
 invalidates the pointer a `for` loop writes through next. Under the switch's build, 12 of its first 104 programs
 differed, and with the fixes none does.
+
+### Amendment: a held guard's `deref_mut` is a copy (2026-11-15)
+
+Since #1877 a write through a reference forgets the length it reaches, so a
+held guard's `deref_mut` no longer forgets the cell's length itself where
+its `&mut` isn't only given whole to calls. It's a copy of the cell, as the
+guard's `deref` is. What changes the length through that `&mut` forgets it
+where it does: a write through it, a call given it (`guard_lent`,
+`called_on`), the guard lent `&mut` where it's borrowed. No row told the
+old branch apart (ADR 0093, amended). The bounds matrix's `guard` holder
+keeps the shapes it covered as rows: the `&mut` kept in a struct's field
+and the `Vec` shortened through it, and a raw pointer made of it, shortened
+by a call and replaced by `ptr::write`. The guard shadow test keeps the
+struct field's.

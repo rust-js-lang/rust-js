@@ -548,6 +548,21 @@ pub fn borrowed_elsewhere(queue: &RefCell<Vec<u32>>, other: &RefCell<Vec<u32>>, 
     }
     0
 }
+pub struct Holder<'a> {
+    v: &'a mut Vec<u32>,
+}
+// A guard's &mut kept in a struct, which no call is given whole, and the
+// struct's field cleared: no write through the guard's own &mut the walk
+// sees, so only the guard's rule forgets its length.
+pub fn stored(queue: &RefCell<Vec<u32>>, i: usize) -> u32 {
+    let mut items = queue.borrow_mut();
+    if i < items.len() {
+        let h = Holder { v: &mut items };
+        h.v.clear();
+        return items[i];
+    }
+    0
+}
 pub fn after_its_guard(queue: &RefCell<Vec<u32>>, clear: &dyn Fn(), i: usize) -> u32 {
     {
         let items = queue.borrow_mut();
@@ -568,6 +583,7 @@ pub fn main() {
     println!("{}", borrowed_elsewhere(&queue, &RefCell::new(Vec::new()), 0));
     let other = Rc::clone(&queue);
     println!("{}", after_its_guard(&queue, &|| other.borrow_mut().clear(), 5));
+    println!("{}", stored(&RefCell::new(vec![1]), 0));
 }
 `)).toEqual(["mir-only-call-bounds take_first"]);
 });
