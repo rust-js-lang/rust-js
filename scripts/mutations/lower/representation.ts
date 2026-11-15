@@ -490,20 +490,16 @@ export const mutations: Mutation[] = [
     breaks:
       "what's read of a nullable field may be `undefined`, so a variable holding it is stored `returnFiber ?? null`",
     file: "src/lower/representation.rs",
-    find: "                    true if self.field_none_form(ty, i) == NoneForm::Null => {\n                        self.nullable_cell_handle(field.defined(), def, fields[i].1)\n",
-    replace: "                    true if self.field_none_form(ty, i) == NoneForm::Null => {\n                        self.nullable_cell_handle(field, def, fields[i].1)\n",
-    tests: [
-      "test/lowering-nullable.test.ts",
-      "-t",
-      "a nullable field's value a variable holds",
-    ],
+    find: "                    true if self.cell_field_read_defined(ty, i) => {\n                        self.nullable_cell_handle(field.defined(), def, fields[i].1)\n",
+    replace: "                    true if self.cell_field_read_defined(ty, i) => {\n                        self.nullable_cell_handle(field, def, fields[i].1)\n",
+    tests: ["test/lowering-nullable-tests.test.ts", "-t", "old value and get"],
   },
   {
     name: "optional-nullable-read-defined",
     breaks:
       "an optional nullable field, absent until it's set, is read as never `undefined`, so `undefined` is stored where `null` is",
     file: "src/lower/representation.rs",
-    find: "                    true if self.field_none_form(ty, i) == NoneForm::Null => {\n",
+    find: "                    true if self.cell_field_read_defined(ty, i) => {\n",
     replace: "                    true => {\n",
     tests: [
       "test/lowering-nullable.test.ts",

@@ -87,4 +87,12 @@ export const mutations: Mutation[] = [
       "a nullable RefCell field's None is null where it's written",
     ],
   },
+  {
+    name: "cell-field-getter-read-defined",
+    breaks: "a nullable cell field of a struct only JS makes, which a getter may answer `undefined`, is read as never `undefined`, so what it held is stored in another nullable place as it is, `to.row = row`, where `row ?? null` (#1933)",
+    file: "src/lower/representation/cells.rs",
+    find: " && !self.fields_answered_by_getters(ty)",
+    replace: "",
+    tests: ["test/lowering-nullable-tests.test.ts", "-t", "old value and get"],
+  },
 ];

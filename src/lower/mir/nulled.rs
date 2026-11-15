@@ -242,20 +242,34 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    /// The field a call of `func` with `args` reads whole, a `Cell` field's
-    /// `get()`, `return_fiber.debug_task.get()`, of the field the `get`
-    /// is lent (`borrowed`).
-    pub(super) fn cell_field_got(
-        &self,
-        state: &State<'_, 'tcx>,
-        (func, args): (&Operand<'tcx>, &[rustc_span::Spanned<Operand<'tcx>>]),
-    ) -> Option<&'tcx ty::FieldDef> {
-        let (def_id, generic_args) = fn_def(func.ty(state.body, self.tcx))?;
-        if self.recognition().classify(def_id, generic_args) != Some(crate::lower::Std::CellGet) {
+    /// What `cell`, a struct's `Cell` or `RefCell` field, holds, read
+    /// whole, gives a nullable place: its `get()`, `take()` or
+    /// `replace(v)`'s old value, or its guard's deref, `task.key_path
+    /// .borrow()`. `null` or a value where a read of the field is never
+    /// `undefined`, the representation's answer (`cell_field_read_defined`),
+    /// or where each constructor of a struct JS makes sets it first
+    /// (`krate.constructed`, rd628); maybe absent of an optional one (ADR
+    /// 0810); unknown of any other. `None` of what isn't a struct's field
+    /// (#1933).
+    fn cell_field_held(&self, state: &State<'_, 'tcx>, cell: Place<'tcx>) -> Option<Given> {
+        let (base, PlaceElem::Field(i, _)) = cell.as_ref().last_projection()? else {
+            return None;
+        };
+        let base = base.ty(state.body, self.tcx);
+        let field = self.place_field(state, cell)?;
+        if base.variant_index.is_some() {
             return None;
         }
-        let [arg] = args else { return None };
-        self.place_field(state, self.borrowed(state, &arg.node)?)
+        Some(match bindings::is_optional(self.tcx, field) {
+            true => Given::Optional,
+            false
+                if self.cell_field_read_defined(base.ty, i.as_usize())
+                    || self.krate.constructed.contains(&field.did) =>
+            {
+                Given::Nulled
+            }
+            false => Given::Unknown,
+        })
     }
 
     /// Of what `stored_given` says is `null` or a value, the function's own
@@ -549,7 +563,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// Each write of `local`, if each is whole, an assignment or a call's
-    /// result, and nothing lends it as a `&mut` or sets its variant.
+    /// result, and nothing lends it as a `&mut` or sets its variant. Not a
+    /// cleanup's, which writes the value a body's write of it does as the
+    /// old one's drop unwinds, `active = closest(f)`'s of a `let mut active
+    /// = js::null()` twice, and which the body's count of its writes leaves
+    /// out (`Locals::writes`, #1933).
     fn whole_writes<'b>(&self, state: &'b State<'_, 'tcx>, local: Local) -> Option<Vec<Write<'b, 'tcx>>> {
         let mut writes = Vec::new();
         for (block, data) in state.body.basic_blocks.iter_enumerated() {
@@ -560,7 +578,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             if !assign.0.projection.is_empty() {
                                 return None;
                             }
-                            writes.push(Write::Assign(&assign.1));
+                            if !data.is_cleanup {
+                                writes.push(Write::Assign(&assign.1));
+                            }
                         }
                         if let Rvalue::Ref(_, BorrowKind::Mut { .. }, lent) | Rvalue::RawPtr(mir::RawPtrKind::Mut, lent) =
                             &assign.1
@@ -785,6 +805,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             return (Given::Nulled, None);
         }
+        // A `Cell`'s or a `RefCell`'s `get()`, `take()` and `replace(v)`,
+        // what the cell held (`cell_field_held`): `return_fiber.debug_task.get()`,
+        // React Fizz's `let prev_key_path = task.key_path.replace(..)` (ADR
+        // 0810, amended; #1933).
+        if let Some(crate::lower::Std::CellGet | crate::lower::Std::CellTake | crate::lower::Std::CellReplace) = known
+            && let Some(held) = (args.first())
+                .and_then(|cell| self.borrowed(state, &cell.node))
+                .and_then(|cell| self.cell_field_held(state, cell))
+        {
+            return (held, None);
+        }
         // A shared `as_ref()` or `as_deref()` of such, the option itself in
         // JS (ADR 0023): `parent_fragment_instances.as_deref()` (rd632).
         if known == Some(crate::lower::Std::Pointee)
@@ -814,9 +845,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.recognition().classify(borrow, borrow_args),
                 Some(crate::lower::Std::Borrow { lock: false, .. })
             )
-            && let Some(cell) = self.borrowed(state, &cell.node)
+            && let Some(held) = self
+                .borrowed(state, &cell.node)
+                .and_then(|cell| self.cell_field_held(state, cell))
         {
-            return self.stored_in(state, &Operand::Copy(cell), seen);
+            return (held, None);
         }
         // A `Cell` made of such, `Cell::new(Some(reducer))`, a nullable
         // field's, is what it's made of (ADR 0841, amended).
@@ -840,18 +873,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && let Some(borrowed) = self.borrowed(state, &arg.node)
         {
             return self.stored_in(state, &Operand::Copy(borrowed), seen);
-        }
-        // A `Cell` field's `get()`, `return_fiber.debug_task.get()`: what the
-        // field holds, as a read of a plain one (ADR 0810, amended).
-        // One each constructor of its struct sets first is `null` or a value,
-        // present from where it's made on (rd628).
-        if let Some(field) = self.cell_field_got(state, (func, args)) {
-            let given = match bindings::is_optional(self.tcx, field) {
-                true => Given::Optional,
-                false if self.krate.constructed.contains(&field.did) => Given::Nulled,
-                false => Given::Unknown,
-            };
-            return (given, None);
         }
         (Given::Unknown, None)
     }

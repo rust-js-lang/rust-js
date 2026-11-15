@@ -268,3 +268,126 @@ pub fn sibling_as_child(to: &Fiber, from: &Fiber) {
   lib.siblingAsChild(a, b);
   expect(a.child).toBe(null);
 });
+
+// What a nullable cell field held, read whole, `RefCell::replace`'s and
+// `take()`'s old value and a `Cell`'s `get()`, is `null` or a value, so
+// it's restored as it is, `task.keyPath = prevKeyPath`, as React Fizz's
+// tasks are; and a `let mut` written `js::null()` and then a nullable
+// function's result is returned as it is: the nulled owner's answers,
+// none of tidy's (#1933's step 1(c)). A cell field of a struct only JS
+// makes, a getter's, and a `let mut` written `None`, `undefined`, keep their
+// `?? null`.
+// A closure's read of such a field, a stack cursor's, is the
+// representation's answer: never `undefined`, its return as it is.
+test("a nullable cell field's old value and get() are restored as they are", async () => {
+  const { dir, fn, tidied } = compile(
+    "nullable-tests-restored",
+    `use std::cell::{Cell, RefCell};
+use std::rc::Rc;
+
+pub struct Key {
+    pub id: u32,
+}
+
+pub struct Task {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub key_path: RefCell<Option<Rc<Key>>>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub row: RefCell<Option<Rc<Key>>>,
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub preamble: Cell<Option<&'static Key>>,
+}
+
+pub fn task() -> Rc<Task> {
+    Rc::new(Task { key_path: RefCell::new(None), row: RefCell::new(None), preamble: Cell::new(None) })
+}
+
+pub fn render(task: &Rc<Task>, key: &Rc<Key>, preamble: &'static Key, work: &dyn Fn()) {
+    let prev_key_path = task.key_path.replace(Some(Rc::clone(key)));
+    let prev_row = task.row.take();
+    let prev_preamble = task.preamble.get();
+    task.preamble.set(Some(preamble));
+    work();
+    task.key_path.replace(prev_key_path);
+    task.row.replace(prev_row);
+    task.preamble.set(prev_preamble);
+}
+
+#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn key_of(task: &Task) -> Option<Rc<Key>> {
+    task.key_path.borrow().clone()
+}
+
+#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn active(task: &Task, look: bool) -> Option<Rc<Key>> {
+    let mut active = js::null();
+    if look {
+        active = key_of(task);
+    }
+    active
+}
+
+#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn unset(task: &Task, look: bool) -> Option<Rc<Key>> {
+    let mut active = None;
+    if look {
+        active = key_of(task);
+    }
+    active
+}
+
+pub struct Given {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub row: RefCell<Option<Rc<Key>>>,
+}
+
+pub struct StackCursor<T> {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub current: RefCell<T>,
+}
+
+thread_local! {
+    static CURSOR: StackCursor<Option<Rc<Key>>> = const { StackCursor { current: RefCell::new(None) } };
+}
+
+pub fn push(key: &Rc<Key>) {
+    CURSOR.with(|cursor| cursor.current.replace(Some(Rc::clone(key))));
+}
+
+#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn current() -> Option<Rc<Key>> {
+    CURSOR.with(|cursor| cursor.current.borrow().clone())
+}
+
+pub fn given(value: Option<&'static js::Unknown>, to: &Task) {
+    let from: &Given = unsafe { js::cast(value) };
+    let row = from.row.replace(None);
+    to.row.replace(row);
+}
+`,
+  );
+  expect(tidied).toEqual([]);
+  expect(fn("render")).not.toContain("??");
+  expect(fn("keyOf")).toContain("return task.keyPath;");
+  expect(fn("active")).not.toContain("??");
+  expect(fn("unset")).toContain("return active ?? null;");
+  expect(fn("given")).toContain("?? null");
+  // A closure's read, which the representation says is never `undefined`.
+  expect(fn("current")).not.toContain("??");
+  const lib = await import(join(dir, "lib.js"));
+  const [task, key, preamble, other] = [lib.task(), { id: 1 }, { id: 2 }, { id: 3 }];
+  task.row = other;
+  const seen: unknown[][] = [];
+  lib.render(task, key, preamble, () => seen.push([task.keyPath, task.row, task.preamble]));
+  expect(seen).toEqual([[key, null, preamble]]);
+  expect([task.keyPath, task.row, task.preamble]).toEqual([null, other, null]);
+  expect([lib.active(task, true), lib.active(task, false), lib.unset(task, false)]).toEqual([null, null, null]);
+  task.keyPath = key;
+  expect([lib.active(task, true), lib.unset(task, true)]).toEqual([key, key]);
+  const to = lib.task();
+  lib.given({ row: undefined }, to);
+  expect(to.row).toBe(null);
+  expect(lib.current()).toBe(null);
+  lib.push(key);
+  expect(lib.current()).toBe(key);
+});

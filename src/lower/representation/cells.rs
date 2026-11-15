@@ -46,6 +46,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// Whether a read of field `i` of `ty`, a nullable cell field's, is
+    /// never `undefined`: one there where it's made, which stores `null`
+    /// for `None` (`NoneForm::Null`), of a struct no getter answers the
+    /// fields of (`fields_answered_by_getters`). The one answer of it: its
+    /// read is `defined()` so (`project`), and the nulled owner gives what
+    /// it holds, read whole, on as it is (`cell_field_held`, ADRs 0620 and
+    /// 0810, amended; #1933).
+    pub(in crate::lower) fn cell_field_read_defined(&self, ty: Ty<'tcx>, i: usize) -> bool {
+        self.field_none_form(ty, i) == super::NoneForm::Null && !self.fields_answered_by_getters(ty)
+    }
+
     /// A handle on `place`, a `nullable_cell_field`'s, `field` of type
     /// `ty`, that stores what's written to it as the field does: its
     /// `None`, `null` (ADR 0772); of a `RefCell` some borrow of which is

@@ -169,8 +169,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an optional nullable cell field's `get()` given another is `?? null`, `d._debugThenableState ?? null` (ADR 0810, amended)",
     file: "src/lower/mir/nulled.rs",
-    find: "                true => Given::Optional,\n                false if self.krate.constructed.contains(&field.did) => Given::Nulled,\n",
-    replace: "                true => Given::Unknown,\n                false if self.krate.constructed.contains(&field.did) => Given::Nulled,\n",
+    find: "            true => Given::Optional,\n            false\n                if self.cell_field_read_defined",
+    replace: "            true => Given::Unknown,\n            false\n                if self.cell_field_read_defined",
     tests: [
       "test/lowering-optional-fields.test.ts",
       "-t",
@@ -211,8 +211,8 @@ export const mutations: Mutation[] = [
     name: "constructed-get-unknown",
     breaks: "a nullable field each constructor of its struct sets first, read for another nullable cell, is given `?? null`: `twice.both = response.moduleLoading ?? null` (rd628)",
     file: "src/lower/mir/nulled.rs",
-    find: "                false if self.krate.constructed.contains(&field.did) => Given::Nulled,\n",
-    replace: "",
+    find: "                if self.cell_field_read_defined(base.ty, i.as_usize())\n                    || self.krate.constructed.contains(&field.did) =>\n",
+    replace: "                if self.cell_field_read_defined(base.ty, i.as_usize()) =>\n",
     tests: ["test/js-constructors.test.ts", "-t", "a nullable field each constructor sets first"],
   },
   {
@@ -425,8 +425,8 @@ export const mutations: Mutation[] = [
     name: "field-take-unchecked",
     breaks: "a `take()` of a plain field, which JS may leave out, is taken for `null` or a value, so `undefined` is stored as it is (#689)",
     file: "src/lower/mir/nulled.rs",
-    find: "            && self.stored_in(state, &Operand::Copy(place), seen).0 == Given::Nulled\n        {\n            return (Given::Nulled, None);\n        }\n        // A shared",
-    replace: "        {\n            return (Given::Nulled, None);\n        }\n        // A shared",
+    find: "            && self.stored_in(state, &Operand::Copy(place), seen).0 == Given::Nulled\n        {\n            return (Given::Nulled, None);\n        }\n        // A `Cell`'s or",
+    replace: "        {\n            return (Given::Nulled, None);\n        }\n        // A `Cell`'s or",
     tests: or689,
   },
   {
@@ -605,5 +605,21 @@ export const mutations: Mutation[] = [
     find: "                || self.is_std_type(item, StdItem::Rc)\n",
     replace: "",
     tests: ["test/lowering-nullable-tests.test.ts", "-t", "RefCell field"],
+  },
+  {
+    name: "cell-field-held-unknown",
+    breaks: "what a nullable cell field held, `RefCell::replace`'s and `take()`'s old value and a `Cell`'s `get()`, says nothing to the nulled owner, so `task.keyPath = prevKeyPath` is tidy's answer of `prevKeyPath ?? null` (#1933)",
+    file: "src/lower/mir/nulled.rs",
+    find: "        if let Some(crate::lower::Std::CellGet | crate::lower::Std::CellTake | crate::lower::Std::CellReplace) = known\n",
+    replace: "        if let Some(crate::lower::Std::CellGet | crate::lower::Std::CellTake | crate::lower::Std::CellReplace) = known && false\n",
+    tests: ["test/lowering-nullable-tests.test.ts", "-t", "old value and get"],
+  },
+  {
+    name: "cleanup-write-counted",
+    breaks: "a cleanup's write of a local, the value its body's write gives as the old one's drop unwinds, is counted beside it, so a `let mut` written `js::null()` and then a nullable function's result is returned `active ?? null` (#1933)",
+    file: "src/lower/mir/nulled.rs",
+    find: "                            if !data.is_cleanup {\n",
+    replace: "                            if true {\n",
+    tests: ["test/lowering-nullable-tests.test.ts", "-t", "old value and get"],
   },
 ];

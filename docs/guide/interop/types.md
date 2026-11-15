@@ -1184,8 +1184,10 @@ export function ratio(a, b) {
   every return is so, and `a.or(b)` or `a.or_else(f)` whose `b` is or
   whose `f` returns so, whatever `a` is, React DOM's getActiveElement's
   `doc.activeElement ?? doc.body`, rd16, and `component_stack.or(js::null())`,
-  #689; a nullable field's `take()` or `replace(v)`;
-  a variable each of whose writes is so, `if profiling {
+  #689; a nullable field's `take()` or `replace(v)`, of the `Option`
+  or of its `Cell` or `RefCell`, a `Cell` field's `get()` and a
+  `RefCell` field's `borrow().clone()`, React Fizz's `prevKeyPath`,
+  #1933; a variable each of whose writes is so, `if profiling {
   reason() } else { js::null() }`; a shared `as_deref()` of such; a `let`
   a call writes that only such parameters and tests that read `null` and
   `undefined` alike read, `is_some()`, `map_or`, whose `None` is then

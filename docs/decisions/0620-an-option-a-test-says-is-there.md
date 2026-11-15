@@ -344,3 +344,50 @@ null` (ADR 0298, amended). Held by test/lowering-nullable-tests.test.ts's
 isn't nullable keeping `?? null`; run), mutations
 `refcell-guard-deref-unknown` and `rc-clone-not-itself`.
 
+## Amendment: what a nullable cell field held, read whole, is the representation's answer (2026-11-15, #1933 step 1(c), second part)
+
+Of tidy's 44 answers left in React's port, most were a cell field's old
+value restored, React Fizz's `let prev_key_path =
+task.key_path.replace(Some(..)); .. task.key_path.replace(prev_key_path);`
+(`replace` and `take()` of a `RefCell` or a `Cell`), a `Cell` field's
+`get()`, `let parent_preamble = task.blocked_preamble.get();`, and a
+`let mut` written twice, `let mut active = js::null(); if .. { active =
+get_closest_instance_from_node(..); }`. The nulled owner now says each:
+
+- **What a struct's `Cell` or `RefCell` field holds, read whole**, its
+  `get()`, `take()` or `replace(v)`'s old value, or its `borrow()` guard's
+  deref, is one answer, `nulled::cell_field_held`: `null` or a value where
+  a read of the field is never `undefined`, which is the representation's
+  answer, `cell_field_read_defined` (a nullable field, `NoneForm::Null`,
+  of a struct no getter answers the fields of), or where each constructor
+  of a struct JS makes sets it first (rd628); maybe absent of an optional
+  one (ADR 0810). The same question the read's `Known::Defined` answers
+  (`project`), so the two can't disagree. The first part's guard deref,
+  which took any nullable field, takes this answer too: a field of a struct
+  only JS makes, whose getter may answer `undefined`, keeps its `?? null`.
+- **A cleanup's write of a local isn't counted beside the body's**: as an
+  old value's drop unwinds, MIR writes the new value in the cleanup too,
+  the same write, which the body's count of writes leaves out; counted, no
+  variable written twice was ever found `null` or a value.
+
+Tidy's answers of never-`undefined` left: React 18 (10 sites: a `&mut`
+of an `Option` matched, a `Some` written to a `Vec`'s item through its
+guard, thread-locals read through `with`'s closures, a captured local
+restored in a closure, an untagged enum's constructor mapped, a binding's
+getter, `ReactSharedInternals.H`, the brief's binding-result trust); the
+corpus none.
+
+Case of [0262](0262-when-rust-and-js-disagree.md): none. React's port
+reads better, 7 hunks: `debugChunk._debugChunk = previousChunk`,
+`thenableState = prevThenableState`, and `const parent =
+task.componentStack;`, `const prevThenableState = task.thenableState;`
+(×3) where a `const old` was read into each, as upstream writes them.
+Held by test/lowering-nullable-tests.test.ts's "a nullable cell field's
+old value and get()" (no tidy answer counted; a struct only JS makes and
+a `let mut` of `None` keeping `?? null`; a stack cursor's read in a
+closure, the representation's; run) and the corpus case
+`nullable_cell_fields_saved_and_restored` (native, both builds, as a
+library too, its metamorphic rewrites); mutations `cell-field-held-unknown`,
+`cleanup-write-counted` and `cell-field-getter-read-defined` new,
+`optional-cell-get-unknown`, `constructed-get-unknown` and
+`nullable-field-read-may-be-undefined` retargeted.

@@ -593,7 +593,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // `None`, so what's read of it is never `undefined`; not
                     // an optional one, absent until it's set (ADRs 0620,
                     // amended, 0810).
-                    true if self.field_none_form(ty, i) == NoneForm::Null => {
+                    true if self.cell_field_read_defined(ty, i) => {
                         self.nullable_cell_handle(field.defined(), def, fields[i].1)
                     }
                     true => self.nullable_cell_handle(field, def, fields[i].1),
