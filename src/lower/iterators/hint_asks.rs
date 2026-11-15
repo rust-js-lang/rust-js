@@ -503,7 +503,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // iterator, `form_hintless` (`form_knows_no_hint`, #1792).
         let hint_known = !form_hintless && self.adapted_hint_known(iter_ty);
         let exact = kept && self.recognition().grows_by_exact_len(iter_ty) && !hint_known;
-        if kept && !exact {
+        // Std's compiled struct's own hint is std's body's, over what it
+        // holds, so std's where each part's is (`compiled_hint_is_stds`,
+        // #1737): a `flat_map` of a map's iterators in the build of std's
+        // structs (#1892).
+        if kept && !exact && !(std_struct && self.compiled_hint_is_stds(iter_ty)) {
             self.refuse_unkept_lower_bound(iter_ty, span)?;
         }
         // Of a chain or a zip, each exact-sized part given knowing its length

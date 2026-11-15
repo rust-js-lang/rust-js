@@ -421,4 +421,13 @@ export const mutations: Mutation[] = [
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^extend_by_an_inspect_of_a_slice_where_capacity_is_read.rs$"],
   },
+  {
+    name: "compiled-flat-map-hint-refused",
+    breaks:
+      "a `Vec` grown by std's compiled `FlatMap` of a map's iterators, in the build of std's structs and a crate that reads a capacity, is refused, where its hint is std's body's (#1892)",
+    file: "src/lower/iterators/hint_asks.rs",
+    find: "        if kept && !exact && !(std_struct && self.compiled_hint_is_stds(iter_ty)) {\n",
+    replace: "        if kept && !exact {\n",
+    tests: ["test/vec-capacity.test.ts", "-t", "compiled flat_map of a map's iterators"],
+  },
 ];

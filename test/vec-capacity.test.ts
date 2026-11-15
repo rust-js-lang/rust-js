@@ -315,6 +315,19 @@ test("$flattenEnds hints as std's FlattenCompat", async () => {
   expect(hints).toEqual([[0, undefined], [1, undefined], [5, undefined], [6, 6]]);
 });
 
+// A `flat_map` of a map's iterators collected in a crate that reads a
+// capacity, in the build of std's structs: std's compiled `FlatMap`,
+// whose hint is std's body's over what it holds, grows it as std's does,
+// 4 of three, as native Rust's; it was refused (#1892).
+test("a Vec grown by std's compiled flat_map of a map's iterators has std's capacity", () => {
+  const dir = fixture("capacity-flat-map-of-maps");
+  const source = readFileSync(join(import.meta.dir, "corpus", "flat_map_of_a_maps_iterators_grows_a_vec.rs"), "utf8");
+  writeFileSync(join(dir, "main.rs"), source.replace("\nfn main()", "\npub fn main()"));
+  run([compiler, join(dir, "main.rs"), "-o", join(dir, "main.js"), "--std-iterators", "--", "--edition=2024", "-Awarnings"]);
+  const ran = runSync([process.execPath, "-e", `import(${JSON.stringify(join(dir, "main.js"))}).then((m) => m.main?.())`], dir, 60_000);
+  expect(ran.stdout).toBe("[(1, 2, 3), (1, 4, 5), (6, 7, 8)] 4\n");
+});
+
 // One collected where a call's `Vec` is the source, `grown().into_iter()`,
 // bound by a `let` not `mut`, whose capacity the body reads: refused where
 // it's compiled, never thrown where it runs (#1926). Of a `let mut`, whose

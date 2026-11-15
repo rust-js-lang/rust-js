@@ -1045,3 +1045,15 @@ A boxed range taken through its box's `&mut`, `(&mut boxed).take(2)`,
 stays refused: its box's form, not its type, says whether its hint is
 std's (`boxed_range_taken_through_its_borrow.rs`, `//@ compile-fail:`).
 
+And in the build of std's structs, a `Vec` grown by std's compiled
+`FlatMap<hash_map::Iter, Map<hash_map::Iter, ..>>`, `generic_map_made_by_entry.rs`
+beside `vec_grown_by_a_chain_of_an_inspect_where_capacity_is_read.rs`, was
+refused too: `grown_ask` asked JS's hint of it, where the form is std's
+compiled struct, whose own hint is std's body's over what it holds. Where
+`std_struct` and each part's hint is std's (`compiled_hint_is_stds`, as
+#1737's chains asked), it isn't refused now. Held by
+`test/corpus/flat_map_of_a_maps_iterators_grows_a_vec.rs` (both builds,
+against native Rust) and vec-capacity.test's std build of it, 4 of three;
+the pair is off test/neighbours-known.txt. Mutation
+`compiled-flat-map-hint-refused` (`lower/iterators/hint_asks.ts`).
+

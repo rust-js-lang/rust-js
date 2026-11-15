@@ -50,7 +50,6 @@ plain inspect_by_a_function_before_a_chain_argument.rs beside repeat_n_hint_held
 
 #1892 P2 (neighbours): a Vec grown by an iterator rust-js can't count is refused in a crate that reads a Vec's capacity
 plain boxed_iterator_stepped_as_what_it_boxes.rs beside vec_set_len.rs
-std generic_map_made_by_entry.rs beside vec_grown_by_a_chain_of_an_inspect_where_capacity_is_read.rs
 
 #1893 P2 (neighbours): 'addressable memory: a raw pointer to this place' refused beside a case that asks an address
 plain std fmt_write_function.rs beside pointer_offset_from.rs
