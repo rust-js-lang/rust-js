@@ -21,13 +21,15 @@ function $splice(items, start, end, replacement, inclusive) {
 // collected apart, dropped where a step throws, and put in place. Then, as
 // it ends or unwinds, the tail put back, `Drain::drop`'s, and what's left
 // of `replacement` closed, the `Splice`'s fields in their order (#1147,
-// #1149).
+// #1149). Its range is checked as std's `drain` checks it, before any of
+// that: where it panics, `replacement`, moved into the call, is closed,
+// which drops it, as Rust drops it unwinding out of `splice` (#1936).
 function $splicing(items, start, end, replacement, dropItem, inclusive) {
-  $checkRange(start, end, items.length, inclusive);
+  const it = typeof replacement.next === "function" ? replacement : replacement[Symbol.iterator]();
+  $unwinds(() => $checkRange(start, end, items.length, inclusive), () => it.return?.());
   const tail = items.splice(end);
   const removed = items.splice(start);
   const gap = removed.length;
-  const it = typeof replacement.next === "function" ? replacement : replacement[Symbol.iterator]();
   // At most `n` of it put in place, `Drain::fill`'s: whether it has more.
   const fill = (n) => {
     for (let i = 0; i < n; i++) {
