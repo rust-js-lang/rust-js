@@ -40,6 +40,9 @@ plain std loud-drop unwrap_dropping.rs
 plain std loud-call value_cell_read_in_its_executor.rs
 
 #difference 58 a value a thread-local of the main thread holds is never dropped as the program ends, as on wasm32, where natively it may be (ADR 0262's first row, #1453)
+plain std loud thread_local_with_gives_what_it_returns.rs
+plain std loud-call thread_local_with_gives_what_it_returns.rs
+plain std loud-drop thread_local_with_gives_what_it_returns.rs
 plain std loud as_deref_rc_in_place.rs
 plain std loud-call as_deref_rc_in_place.rs
 plain std loud-drop as_deref_rc_in_place.rs

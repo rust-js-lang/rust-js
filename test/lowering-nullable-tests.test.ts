@@ -690,3 +690,56 @@ pub fn found(items: Vec<u32>) -> Option<Vec<u32>> {
   expect([lib.iteratorFn({ iterator: f }, {}), lib.iteratorFn({}, { iterator: f }), lib.iteratorFn({}, {})]).toEqual([f, f, null]);
   expect([lib.found([4, 5]), lib.found([])]).toEqual([[4, 5], null]);
 });
+
+// What a thread-local's `with(f)` gives is what `f` returns, `null` or a
+// value where each of its returns is, React's `RENDERER_CURSOR_DEV.with(|cursor|
+// *cursor.current.borrow())` of a nullable cursor's field: stored in a
+// nullable place as it is, MIR's answer, none of tidy's (#1933, step 4).
+test("a thread-local's with(f) gives what f returns", async () => {
+  const { dir, fn, tidied } = compile(
+    "nullable-tests-local-with",
+    `use std::cell::{Cell, RefCell};
+
+use js::Unknown;
+
+pub struct StackCursor<T> {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub current: RefCell<T>,
+}
+
+thread_local! {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    static CURSOR: StackCursor<Option<&'static Unknown>> = const { StackCursor { current: RefCell::new(None) } };
+}
+
+pub struct Context {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub current_renderer: Cell<Option<&'static Unknown>>,
+}
+
+pub fn context() -> Context {
+    Context { current_renderer: Cell::new(None) }
+}
+
+pub fn push(value: Option<&'static Unknown>) {
+    CURSOR.with(|cursor| cursor.current.replace(value));
+}
+
+pub fn pop(context: &Context) {
+    let current = CURSOR.with(|cursor| *cursor.current.borrow());
+    CURSOR.with(|cursor| cursor.current.replace(None));
+    context.current_renderer.set(current);
+}
+`,
+  );
+  expect(tidied).toEqual([]);
+  expect(fn("pop")).not.toContain("??");
+  const lib = await import(join(dir, "lib.js"));
+  const context = lib.context();
+  lib.pop(context);
+  expect(context.currentRenderer).toBe(null);
+  const renderer = {};
+  lib.push(renderer);
+  lib.pop(context);
+  expect(context.currentRenderer).toBe(renderer);
+});

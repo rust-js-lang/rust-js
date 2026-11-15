@@ -447,3 +447,17 @@ case `field_read_tested_then_unwrapped` (native, both builds: a user's
 `Clone` and a call between that empty the field, each panicking as Rust
 does); mutations in lower/mir/nulled/field_reads.ts, and
 `field-path-unwrap-tidied` (lower/mir/tidy/decided.ts) new.
+
+## Amendment: a thread-local's `with(f)` gives what `f` returns (2026-11-16, #1933 step 4 (C))
+
+The nulled owner says what `KEY.with(f)` gives is `null` or a value where
+each of `f`'s returns is (`returns_null_or_value`, rd632): React's
+popProvider's `RENDERER_CURSOR_DEV.with(|cursor| *cursor.current.borrow())`
+of a nullable cursor's field, stored in a context's nullable field after
+the cursor is popped, `context._currentRenderer = currentRenderer`, which
+tidy's never-`undefined` answered. React's port unchanged; tidy's answers
+of it 14 to 12. Held by test/lowering-nullable-tests.test.ts's "a
+thread-local's with(f)" (no tidy answer counted) and the corpus case
+`thread_local_with_gives_what_it_returns` (native, both builds, as a
+library, metamorphic); mutation `local-with-unknown`.
+

@@ -622,4 +622,12 @@ export const mutations: Mutation[] = [
     replace: "                            if true {\n",
     tests: ["test/lowering-nullable-tests.test.ts", "-t", "old value and get"],
   },
+  {
+    name: "local-with-unknown",
+    breaks: "what a thread-local's `with(f)` gives says nothing of what `f` returns, so `context.currentRenderer = current` is tidy's answer of `current ?? null` (#1933)",
+    file: "src/lower/mir/nulled.rs",
+    find: "        if let Some(crate::lower::Std::LocalWith { tried: false }) = known\n",
+    replace: "        if let Some(crate::lower::Std::LocalWith { tried: false }) = known && false\n",
+    tests: ["test/lowering-nullable-tests.test.ts", "-t", "a thread-local's with"],
+  },
 ];

@@ -852,6 +852,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             return (held, None);
         }
+        // What a thread-local's `with(f)` gives, what `f` returns: `null` or
+        // a value where each of its returns is, React's
+        // `RENDERER_CURSOR_DEV.with(|cursor| *cursor.current.borrow())` of a
+        // nullable cursor's field (rd632, #1933).
+        if let Some(crate::lower::Std::LocalWith { tried: false }) = known
+            && let [_, f] = args
+            && let ty::Closure(f, _) | ty::FnDef(f, _) = f.node.ty(state.body, self.tcx).kind()
+            && self.returns_null_or_value(*f)
+        {
+            return (Given::Nulled, None);
+        }
         // A `Cell` made of such, `Cell::new(Some(reducer))`, a nullable
         // field's, is what it's made of (ADR 0841, amended).
         if known == Some(crate::lower::Std::CellNew)
