@@ -10,6 +10,7 @@
 
 const shapeDecls = `use std::any::Any;
 use std::cell::{Cell, RefCell};
+use std::collections::HashMap;
 use std::panic::{self, AssertUnwindSafe};
 
 fn message(payload: Box<dyn Any + Send>) -> String {
@@ -378,6 +379,129 @@ fn picked(v: &[u32; 4], k: usize) -> [u32; 2] {
     calls: [`check("picked", || picked(&[1, 2, 3, 4], 1))`, `check("picked past", || picked(&[1, 2, 3, 4], 9))`],
   },
   // A slice's \`get(i)\`'s \`Some\` puts \`i\` below its length: \`i += 1\` never
+  // The unsound direction's shapes, each the fact its rule forgets kept:
+  // a recursive function's parameter given larger by a caller outside, a
+  // parameter its own calls keep raising, a `&mut` of a `Vec` moved to
+  // another local and the `Vec` shortened through it, a capture its
+  // closure's body writes, a cell's `Vec` replaced through a raw pointer,
+  // a `Vec` pushed then cleared through a pointer or a function, a map's
+  // key written past its test, a generic constant's loop past its bound,
+  // and `..=n` of `n <= len`. Each runs as native does only where its rule
+  // forgets.
+  unsound_directions: {
+    fns: `fn walk(k: u32, d: u32) -> u32 {
+    if d == 0 {
+        return k + 1;
+    }
+    walk(k, d - 1)
+}
+
+fn up(n: u8, d: u32) -> u8 {
+    if d == 0 { n } else { up(n + 1, d - 1) }
+}
+
+fn moved(mut v: Vec<u32>, i: usize) -> u32 {
+    if i < v.len() {
+        let r = &mut v;
+        let s = r;
+        s.truncate(1);
+        return v[i];
+    }
+    0
+}
+
+fn moved_wrap(mut v: Vec<u32>) -> u32 {
+    if v.len() > 1 {
+        let r = &mut v;
+        let s = r;
+        s.truncate(1);
+        return (v.len() - 2) as u32;
+    }
+    9
+}
+
+fn counted_down() -> u32 {
+    let mut at = 2u32;
+    let mut f = move || {
+        at -= 1;
+        at
+    };
+    f();
+    f();
+    f()
+}
+
+fn replaced(cell: &RefCell<Vec<u32>>, i: usize) -> u32 {
+    let p: *mut Vec<u32> = &mut *cell.borrow_mut();
+    if i < cell.borrow().len() {
+        unsafe { *p = Vec::new() };
+        return cell.borrow()[i];
+    }
+    0
+}
+
+fn replaced_wrap(cell: &RefCell<Vec<u32>>) -> u32 {
+    let p: *mut Vec<u32> = &mut *cell.borrow_mut();
+    if cell.borrow().len() > 1 {
+        unsafe { *p = vec![9] };
+        return (cell.borrow().len() - 2) as u32;
+    }
+    9
+}
+fn pushed_then_cleared(mut v: Vec<u32>) -> u32 {
+    v.push(1);
+    let p: *mut Vec<u32> = &raw mut v;
+    unsafe { (&mut *p).clear() };
+    (v.len() as u32).wrapping_add(0) - 1
+}
+
+fn clear_it(v: &mut Vec<u32>) {
+    v.clear();
+}
+
+fn pushed_then_lent(mut v: Vec<u32>) -> u32 {
+    v.push(1);
+    clear_it(&mut v);
+    (v.len() as u32).wrapping_add(0) - 1
+}
+
+fn key_written(m: &HashMap<u32, u32>, mut k: u32) -> u32 {
+    if m.contains_key(&k) {
+        k += 1;
+        return m[&k];
+    }
+    0
+}
+
+fn past_its_bound<const N: usize>() -> u32 {
+    let mut i = 0u32;
+    while (i as usize) < N {
+        i += 1;
+    }
+    i - 1
+}
+
+fn through_its_end(v: &[u32], n: usize) -> usize {
+    if n <= v.len() { v[..=n].len() } else { 0 }
+}
+`,
+    calls: [
+      `check("walk", || walk(3, 2))`,
+      `check("walk from the top", || walk(u32::MAX, 2))`,
+      `check("up", || up(250, 10))`,
+      `check("moved", || moved(vec![1, 2, 3], 2))`,
+      `check("moved wrap", || moved_wrap(vec![1, 2, 3]))`,
+      `check("counted down", counted_down)`,
+      `check("replaced", || replaced(&RefCell::new(vec![1, 2, 3]), 2))`,
+      `check("replaced wrap", || replaced_wrap(&RefCell::new(vec![1, 2, 3])))`,
+      `check("pushed then cleared", || pushed_then_cleared(vec![]))`,
+      `check("pushed then lent", || pushed_then_lent(vec![]))`,
+      `check("key written", || key_written(&HashMap::from([(1, 10)]), 1))`,
+      `check("past its bound", past_its_bound::<0>)`,
+      // Whether it panics, not its message, which is #1935's.
+      `check("through its end", || panic::catch_unwind(|| through_its_end(&[1, 2, 3], 3)).is_err() as u32)`,
+    ],
+  },
   // The corpus's own shapes of five rules: a counter a `break` at a
   // constant leaves, `k += 1` past `k == 60`; a slice's first index raising
   // its least, `bytes[bytes.len() - 1]` past `bytes[0]`; a search's `v[i]`
