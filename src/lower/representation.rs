@@ -617,12 +617,34 @@ pub(super) enum Num {
 
 /// An `f32` as JS writes it: its shortest digits, `1.5`, where they're the
 /// number exactly, and else rounded to it, `Math.fround(0.1)` (ADR 0122).
+/// JS reads the digits as a double first, so `Math.fround` rounds twice:
+/// where that lands on the `f32` beside it, as `7.038531e-26`'s does, the
+/// digits are the fewest whose double rounds to the `f32` itself,
+/// `Math.fround(7.0385307e-26)`.
 pub(super) fn f32_literal(v: f32) -> Expr {
+    let exact = f64::from(v);
     let shortest: f64 = format!("{v:e}").parse().expect("Rust writes a float it reads");
-    if !v.is_finite() || shortest == f64::from(v) {
-        return Expr::num(f64::from(v));
+    if !v.is_finite() || shortest == exact {
+        return Expr::num(exact);
     }
-    Expr::builtin(Expr::js_global("Math"), "fround", vec![Expr::num(shortest)])
+    let rounded = |digits: f64| digits as f32 == v;
+    let digits = if rounded(shortest) {
+        shortest
+    } else {
+        // A double's 17 digits are the `f32` exactly, so one is found.
+        (1..=17)
+            .map(|count| {
+                format!("{exact:.*e}", count - 1)
+                    .parse()
+                    .expect("Rust writes a float it reads")
+            })
+            .find(|&digits| rounded(digits))
+            .expect("an f32's double is its own digits")
+    };
+    if digits == exact {
+        return Expr::num(exact);
+    }
+    Expr::builtin(Expr::js_global("Math"), "fround", vec![Expr::num(digits)])
 }
 
 impl Num {

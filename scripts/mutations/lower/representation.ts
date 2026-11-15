@@ -151,14 +151,23 @@ export const mutations: Mutation[] = [
     name: "f32-literal-unrounded",
     breaks: "`0.1f32` is the double 0.1, which no `f32` is",
     file: "src/lower/representation.rs",
-    find: "    if !v.is_finite() || shortest == f64::from(v) {",
+    find: "    if !v.is_finite() || shortest == exact {",
     replace:
-      "    if true {\n        return Expr::num(shortest);\n    }\n    if !v.is_finite() || shortest == f64::from(v) {",
+      "    if true {\n        return Expr::num(shortest);\n    }\n    if !v.is_finite() || shortest == exact {",
     tests: [
       "test/serde.test.ts",
       "-t",
       "an f32 is written and read as serde_json does",
     ],
+  },
+  {
+    name: "f32-literal-rounded-twice",
+    breaks:
+      "an `f32` literal is `Math.fround` of its shortest digits even where JS's double of them rounds to the `f32` beside it, `7.038531e-26`'s, ryu's regression (#1883)",
+    file: "src/lower/representation.rs",
+    find: "    let digits = if rounded(shortest) {\n",
+    replace: "    let digits = if true {\n",
+    tests: ["test/corpus.test.ts", "-t", "^f32_literal_rounded_twice.rs$"],
   },
   {
     name: "mixed-enum-object",
