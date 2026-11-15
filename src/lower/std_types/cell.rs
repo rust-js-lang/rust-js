@@ -275,6 +275,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let held = self.cell_held(tys[0], arg());
                 match self.is_value_cell(tys[0]) {
                     true => held,
+                    // What a library stores, a copy of its own (#1907).
+                    false if self.stored_copied(generic_args.type_at(0)) => {
+                        self.copy_stored(held, generic_args.type_at(0))
+                    }
                     false => self.copy_if_needed(held, generic_args.type_at(0)),
                 }
             }

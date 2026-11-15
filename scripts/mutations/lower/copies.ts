@@ -385,7 +385,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a copy of an `Option` of a value that's its own copy tests it, `value == null ? value : value` (ADR 0051, amended)",
     file: "src/lower/copies.rs",
-    find: "                    if !boxed && self.copy(probe.clone(), item).kind == probe.kind {\n",
+    find: "                    if !boxed && self.copy_parts(probe.clone(), item, stored).kind == probe.kind {\n",
     replace: "                    if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^unboxed_type_params.rs$"],
     snapshots: true,
@@ -559,5 +559,13 @@ export const mutations: Mutation[] = [
     find: "            || self.krate.foreign.changes_a_vec_of(item)\n",
     replace: "",
     tests: ["test/crates.test.ts", "-t", "three crates: library_type_changed_by_another_library"],
+  },
+  {
+    name: "stored-objects-shallow",
+    breaks: "a copy of what a library stores copies its top object alone, `{ ...PAIR }`, so `mid`'s change of `pair.first` changes `PAIR`'s (#1907)",
+    file: "src/lower/copies.rs",
+    find: "        self.contains_mutated(ty) || (stored && self.holds_plain_object(ty, 0))\n",
+    replace: "        self.contains_mutated(ty) || (stored && false)\n",
+    tests: ["test/crates.test.ts", "-t", "three crates: library_value_changed_by_another_library"],
   },
 ];

@@ -90,7 +90,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         match none_read(state, operand, read) {
             Value::Expr(e) if copied => {
                 let ty = operand.ty(&state.body.local_decls, self.tcx);
-                Ok(Value::Expr(self.copy_if_needed(e, ty)))
+                // Of what a library stores, where it leaves the read, a copy
+                // of its own, its objects' too (#1907).
+                let stored = matches!(operand, Operand::Copy(place) if self.stored_copied(ty)
+                    && self.reads_stored(state.body, *place)
+                    && self.stored_read_escapes(state.body, state.location(), &|op| op.place() == operand.place()));
+                Ok(Value::Expr(match stored {
+                    true => self.copy_stored(e, ty),
+                    false => self.copy_if_needed(e, ty),
+                }))
             }
             value => Ok(value),
         }
@@ -527,7 +535,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             match tcx.def_kind(uv.def) {
                 DefKind::Const | DefKind::AssocConst => {
-                    return self.named_const(uv.def, uv.args, ty, c.span);
+                    let stored = self.stored_copied(ty)
+                        && self.stored_read_escapes(
+                            state.body,
+                            state.location(),
+                            &|op| matches!(op, Operand::Constant(read) if **read == *c),
+                        );
+                    return self.named_const(uv.def, uv.args, ty, c.span, stored);
                 }
                 DefKind::AnonConst => {
                     return match self
@@ -535,7 +549,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         .and_then(|v| self.const_value(v))
                     {
                         Some(value) => Ok(value),
-                        None => self.named_const(uv.def, uv.args, ty, c.span),
+                        None => self.named_const(uv.def, uv.args, ty, c.span, self.stored_copied(ty)),
                     };
                 }
                 _ => {}
@@ -554,7 +568,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 ty::ConstKind::Alias(_, alias) => {
                     let def_id = crate::lower::alias_const_def_id(alias.kind);
-                    return self.named_const(def_id, alias.args, ty, c.span);
+                    return self.named_const(def_id, alias.args, ty, c.span, self.stored_copied(ty));
                 }
                 _ => {}
             }

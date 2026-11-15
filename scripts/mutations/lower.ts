@@ -171,7 +171,7 @@ export const mutations: Mutation[] = [
     name: "const-use-shared",
     breaks: "each use of a `const` of a struct something changes is the one object, so `p.x += dx` on `let mut p = ORIGIN` changes `ORIGIN` for its next use",
     file: "src/lower.rs",
-    find: "            return match copied {\n                true => self.const_copy(place, ty, span),\n                false => Ok(place),\n            };",
+    find: "            return match copied {\n                true if stored => Ok(self.copy_stored(place, ty)),\n                true => self.const_copy(place, ty, span),\n                false => Ok(place),\n            };",
     replace: "            let _ = copied;\n            return Ok(place);",
     tests: ["test/compiler.test.ts", "-t", "constants are the values rustc computed, by name"],
   },

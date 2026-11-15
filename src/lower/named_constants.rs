@@ -24,7 +24,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 (self.frame.facts.constant_patterns).named(self.tcx, &PatternValue::Key(key.clone()), span, None)
         {
             let ty = self.tcx.type_of(named).instantiate_identity().skip_normalization();
-            return self.named_const(named, ty::List::empty(), ty, span);
+            return self.named_const(named, ty::List::empty(), ty, span, self.stored_copied(ty));
         }
         Ok(super::representation::symbol_for(text.clone()))
     }
@@ -49,7 +49,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(None);
         };
         let ty = self.tcx.type_of(named).instantiate_identity().skip_normalization();
-        let constant = self.named_const(named, ty::List::empty(), ty, span)?;
+        let constant = self.named_const(named, ty::List::empty(), ty, span, self.stored_copied(ty))?;
         self.note_named_text((at, written.clone(), constant));
         Ok(Some(Expr {
             span: at,

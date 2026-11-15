@@ -4,6 +4,7 @@
 
 mod in_place;
 mod kept;
+mod stored;
 pub(in crate::lower) use in_place::InPlaceWriter;
 
 use super::recognition::StdItem;
@@ -40,6 +41,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A fresh `ty` value equal to the one at `place`: `{ ...p }`, `[t[0], t[1]]`.
     /// A field that also contains mutated types is copied in turn.
     pub(super) fn copy(&self, place: Expr, ty: Ty<'tcx>) -> Expr {
+        self.copy_parts(place, ty, false)
+    }
+
+    /// `copy`, each part copied where `copied_part` says: of what a library
+    /// stores (`stored`), each that may be an object too (#1907).
+    fn copy_parts(&self, place: Expr, ty: Ty<'tcx>, stored: bool) -> Expr {
         // A copied default's `Self` is the impl's type, a number say, which
         // needs no copy (ADR 0049).
         if self.is_unknown(ty)
@@ -68,13 +75,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A copy reads its source once per part: a value that isn't a place,
         // like `$unwrap(v[0])`, is taken once, `((value) => ..)(source)`.
         let many = match self.shape(ty) {
-            Shape::Object(fields) => fields.iter().any(|&(_, t)| self.contains_mutated(t)),
+            Shape::Object(fields) => fields.iter().any(|&(_, t)| self.copied_part(t, stored)),
             Shape::Array(tys) => tys.len() > 1,
             Shape::Other => false,
         };
         if many && !place.reads_same() {
             let param = self.unspelled("value");
-            let body = self.copy(Expr::var(&param), ty);
+            let body = self.copy_parts(Expr::var(&param), ty, stored);
             return Expr::call(
                 Expr::arrow(
                     vec![param.as_str().into()],
@@ -93,8 +100,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     None => Self::named_fields(fields),
                 };
                 for (name, t) in fields {
-                    if self.contains_mutated(t) {
-                        let field = self.copy(Expr::member(place.clone(), name.clone()), t);
+                    if self.copied_part(t, stored) {
+                        let field = self.copy_parts(Expr::member(place.clone(), name.clone()), t, stored);
                         props.push(Prop::Field(name, field));
                     }
                 }
@@ -105,8 +112,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .enumerate()
                     .map(|(i, t)| {
                         let item = Expr::index(place.clone(), Expr::int(i as i128));
-                        if self.contains_mutated(t) {
-                            self.copy(item, t)
+                        if self.copied_part(t, stored) {
+                            self.copy_parts(item, t, stored)
                         } else {
                             item
                         }
@@ -150,7 +157,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     return place;
                 }
                 if let Some(inner) = self.option_of(ty) {
-                    if !self.contains_mutated(inner) {
+                    if !self.copied_part(inner, stored) {
                         return place;
                     }
                     // A box, `Some(None)`, holds nothing to copy (ADR 0051):
@@ -164,7 +171,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // caller gives a copy function, the `Option` itself, not
                     // `value == null ? value : value` (ADR 0289, amended).
                     let probe = Expr::var("value");
-                    if !boxed && self.copy(probe.clone(), item).kind == probe.kind {
+                    if !boxed && self.copy_parts(probe.clone(), item, stored).kind == probe.kind {
                         return place;
                     }
                     return once(place, &|o| {
@@ -172,17 +179,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         if boxed {
                             none = Expr::bin(Op::Or, none, super::std_types::option::is_some_box(o.clone()));
                         }
-                        Expr::cond(none, o.clone(), self.copy(o, item))
+                        Expr::cond(none, o.clone(), self.copy_parts(o, item, stored))
                     });
                 }
                 // An array that's changed in place: `a.slice()`, or a copy of
                 // each item that is too.
                 if let ty::Array(item, _) = ty.kind() {
-                    if !self.contains_mutated(*item) {
+                    if !self.copied_part(*item, stored) {
                         return Expr::builtin(place, "slice", Vec::new());
                     }
                     let name = self.fresh(crate::lower::Base::Named("item"));
-                    let body = self.copy(Expr::var(&name), *item);
+                    let body = self.copy_parts(Expr::var(&name), *item, stored);
                     let copy = Expr::arrow(
                         vec![name.as_str().into()],
                         vec![js::StmtKind::Return(Some(body)).at(js::Span::NONE)],
@@ -207,8 +214,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // `slice()`, whatever its variant.
                     let changed = (adt.variants().iter())
                         .filter_map(|v| self.variant_fields(v, args).first().map(|&(_, t)| t))
-                        .any(|t| self.contains_mutated(t));
-                    if (itself || changed) && self.sliced_untagged(ty, &|t| self.contains_mutated(t)) {
+                        .any(|t| self.copied_part(t, stored));
+                    if (itself || changed) && self.sliced_untagged(ty, &|t| self.copied_part(t, stored)) {
                         return Expr::builtin(place, "slice", Vec::new());
                     }
                     return once(place, &|e| {
@@ -217,11 +224,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             let Some(&(_, t)) = self.variant_fields(variant, args).first() else {
                                 continue;
                             };
-                            if !(itself || self.contains_mutated(t)) {
+                            if !(itself || self.copied_part(t, stored)) {
                                 continue;
                             }
                             let test = self.untagged_variant_test(ty, &[variant], &[], &e, false);
-                            value = Expr::cond(test, self.copy(e.clone(), t), value);
+                            value = Expr::cond(test, self.copy_parts(e.clone(), t, stored), value);
                         }
                         value
                     });
@@ -232,15 +239,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let itself = self.mutated_itself(ty);
                 once(place, &|e| {
                     let copied = |_: &ty::VariantDef, fields: &[(String, Ty<'tcx>)]| {
-                        !fields.is_empty() && (itself || fields.iter().any(|&(_, t)| self.contains_mutated(t)))
+                        !fields.is_empty() && (itself || fields.iter().any(|&(_, t)| self.copied_part(t, stored)))
                     };
                     let groups = self.variant_groups(adt, args, &copied, &|_, _| false);
                     let copies = (groups.copied.into_iter())
                         .map(|VariantGroup { indices, fields, .. }| {
                             let mut props = vec![Prop::Spread(e.clone())];
                             for (name, t) in fields {
-                                if self.contains_mutated(t) {
-                                    props.push(Prop::Field(name.clone(), self.copy(Expr::member(e.clone(), name), t)));
+                                if self.copied_part(t, stored) {
+                                    props.push(Prop::Field(
+                                        name.clone(),
+                                        self.copy_parts(Expr::member(e.clone(), name), t, stored),
+                                    ));
                                 }
                             }
                             (indices, Expr::object(props))
@@ -553,6 +563,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
             props.push(Prop::Field(key, value));
         }
+    }
+
+    /// Is a part of `ty` copied by a copy of what holds it: one something
+    /// changes in place, or, of a copy of what a library stores (`stored`,
+    /// `copy_stored`), one that may be an object too (#1907).
+    fn copied_part(&self, ty: Ty<'tcx>, stored: bool) -> bool {
+        self.contains_mutated(ty) || (stored && self.holds_plain_object(ty, 0))
     }
 
     pub(super) fn copy_if_needed(&self, place: Expr, ty: Ty<'tcx>) -> Expr {

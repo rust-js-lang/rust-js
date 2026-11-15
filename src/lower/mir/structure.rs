@@ -1023,7 +1023,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // === ImmediatePriority`.
                 let value_of = crate::lower::body_queries::PatternValue::Bits(ty, value);
                 if let Some(named) = (self.frame.facts.constant_patterns).named(self.tcx, &value_of, span, tested) {
-                    let named = self.named_const(named, ty::List::empty(), ty, span)?;
+                    let named = self.named_const(named, ty::List::empty(), ty, span, self.stored_copied(ty))?;
                     return Ok(Expr::bin(Op::Eq, subject, named));
                 }
                 if ty.is_char() {

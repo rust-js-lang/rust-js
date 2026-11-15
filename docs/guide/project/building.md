@@ -294,7 +294,7 @@ JS only where its own code reaches it. A library
 copies what its own crate changes in place; a crate that changes a value
 a library's function copies, of a type the library never changes itself,
 compiles its own of that function, which copies it. One of a type the
-library changes too, whose JS copies it already, is imported
+library changes too, whose JS copies it already, is imported.
 ([ADR 0914, amended](../../decisions/0914-a-librarys-generic-function-is-its-programs.md)).
 And a crate copies a library's `Copy` type, a tuple or a `Vec` only where
 a library's contract says its code changes one, or the crate does: one
@@ -306,6 +306,12 @@ models/src/lib.rs     pub fn first(points: &[Point]) -> Point { points[0] }
 models/src/lib.js     export function first(points) { return $index(points, 0); }
 frontend/src/lib.js   function first(points) { return { ...$index(points, 0) }; }
 ```
+
+And what a library stores, a constant, a static's or a cell's value, it
+hands out as a copy of its own, wherever the value goes and whoever
+changes it, `return { ...ORIGIN };`; but not to a WebIDL operation's
+dictionary parameter, which reads it and keeps nothing
+([ADR 0914, amended](../../decisions/0914-a-librarys-generic-function-is-its-programs.md), #1907).
 
 A library none of whose own writes fail takes each write through a type
 parameter to succeed, as its program does. A crate that gives one of its

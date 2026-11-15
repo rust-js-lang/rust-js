@@ -87304,6 +87304,7 @@ pub trait IntoViewTransitionUpdateCallback: promised::IntoViewTransitionUpdateCa
 impl<R: 'static, F: Fn() -> R + Copy + 'static> IntoViewTransitionUpdateCallback for F {}
 
 /// The `CanvasRenderingContext2DSettings` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct CanvasRenderingContext2DSettings {
     pub alpha: Option<bool>,
@@ -87315,18 +87316,21 @@ pub struct CanvasRenderingContext2DSettings {
 }
 
 /// The `CanvasToneMapping` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct CanvasToneMapping {
     pub mode: Option<String>,
 }
 
 /// The `ImageBitmapRenderingContextSettings` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct ImageBitmapRenderingContextSettings {
     pub alpha: Option<bool>,
 }
 
 /// The `WebGLContextAttributes` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct WebGLContextAttributes {
     pub alpha: Option<bool>,
@@ -87342,6 +87346,7 @@ pub struct WebGLContextAttributes {
 }
 
 /// The `SanitizerConfig` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct SanitizerConfig {
     pub comments: Option<bool>,
@@ -87351,6 +87356,7 @@ pub struct SanitizerConfig {
 }
 
 /// The `SanitizerElementNamespaceWithAttributes` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 pub struct SanitizerElementNamespaceWithAttributes {
     pub name: String,
     #[cfg_attr(rust_js, rust_js::nullable)]
@@ -87358,6 +87364,7 @@ pub struct SanitizerElementNamespaceWithAttributes {
 }
 
 /// The `SanitizerAttributeNamespace` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 pub struct SanitizerAttributeNamespace {
     pub name: String,
     #[cfg_attr(rust_js, rust_js::nullable)]
@@ -87365,6 +87372,7 @@ pub struct SanitizerAttributeNamespace {
 }
 
 /// The `SanitizerElementNamespace` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 pub struct SanitizerElementNamespace {
     pub name: String,
     #[cfg_attr(rust_js, rust_js::nullable)]
@@ -87372,28 +87380,33 @@ pub struct SanitizerElementNamespace {
 }
 
 /// The `SanitizerProcessingInstruction` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 pub struct SanitizerProcessingInstruction {
     pub target: String,
 }
 
 /// The `ScrollResult` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 pub struct ScrollResult {
     pub interrupted: bool,
 }
 
 /// The `TextEncoderEncodeIntoResult` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 pub struct TextEncoderEncodeIntoResult {
     pub read: f64,
     pub written: f64,
 }
 
 /// The `ModuleExportDescriptor` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 pub struct ModuleExportDescriptor {
     pub name: String,
     pub kind: String,
 }
 
 /// The `ModuleImportDescriptor` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 pub struct ModuleImportDescriptor {
     pub module: String,
     pub name: String,
@@ -87401,6 +87414,7 @@ pub struct ModuleImportDescriptor {
 }
 
 /// The `MediaKeySystemConfiguration` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct MediaKeySystemConfiguration {
     pub label: Option<String>,
@@ -87413,6 +87427,7 @@ pub struct MediaKeySystemConfiguration {
 }
 
 /// The `MediaKeySystemMediaCapability` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct MediaKeySystemMediaCapability {
     pub content_type: Option<String>,
@@ -87422,6 +87437,7 @@ pub struct MediaKeySystemMediaCapability {
 }
 
 /// The `EffectTiming` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct EffectTiming {
     pub fill: Option<String>,
@@ -87436,6 +87452,7 @@ pub struct EffectTiming {
 }
 
 /// The `ComputedEffectTiming` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct ComputedEffectTiming {
     pub fill: Option<String>,
@@ -87459,6 +87476,7 @@ pub struct ComputedEffectTiming {
 }
 
 /// The `AudioTimestamp` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct AudioTimestamp {
     pub context_time: Option<f64>,
@@ -87466,6 +87484,7 @@ pub struct AudioTimestamp {
 }
 
 /// The `AudioDecoderConfig` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 pub struct AudioDecoderConfig {
     pub codec: String,
     pub sample_rate: f64,
@@ -87473,6 +87492,7 @@ pub struct AudioDecoderConfig {
 }
 
 /// The `AudioDecoderSupport` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct AudioDecoderSupport {
     pub supported: Option<bool>,
@@ -87480,6 +87500,7 @@ pub struct AudioDecoderSupport {
 }
 
 /// The `AudioEncoderConfig` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 pub struct AudioEncoderConfig {
     pub codec: String,
     pub sample_rate: f64,
@@ -87491,12 +87512,14 @@ pub struct AudioEncoderConfig {
 }
 
 /// The `AacEncoderConfig` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct AacEncoderConfig {
     pub format: Option<String>,
 }
 
 /// The `OpusEncoderConfig` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct OpusEncoderConfig {
     pub format: Option<String>,
@@ -87510,6 +87533,7 @@ pub struct OpusEncoderConfig {
 }
 
 /// The `AudioEncoderSupport` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct AudioEncoderSupport {
     pub supported: Option<bool>,
@@ -87517,12 +87541,14 @@ pub struct AudioEncoderSupport {
 }
 
 /// The `CSSContainerCondition` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 pub struct CSSContainerCondition {
     pub name: String,
     pub query: String,
 }
 
 /// The `CSSNumericType` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct CSSNumericType {
     pub length: Option<f64>,
@@ -87536,6 +87562,7 @@ pub struct CSSNumericType {
 }
 
 /// The `CookieListItem` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct CookieListItem {
     pub name: Option<String>,
@@ -87543,6 +87570,7 @@ pub struct CookieListItem {
 }
 
 /// The `CookieStoreGetOptions` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct CookieStoreGetOptions {
     pub name: Option<String>,
@@ -87550,6 +87578,7 @@ pub struct CookieStoreGetOptions {
 }
 
 /// The `PublicKeyCredentialRequestOptions` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct PublicKeyCredentialRequestOptions {
     pub timeout: Option<f64>,
@@ -87561,12 +87590,14 @@ pub struct PublicKeyCredentialRequestOptions {
 }
 
 /// The `PublicKeyCredentialDescriptor` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 pub struct PublicKeyCredentialDescriptor {
     pub r#type: String,
     pub transports: Option<Vec<String>>,
 }
 
 /// The `AuthenticationExtensionsClientInputs` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct AuthenticationExtensionsClientInputs {
     pub credential_protection_policy: Option<String>,
@@ -87580,17 +87611,20 @@ pub struct AuthenticationExtensionsClientInputs {
 }
 
 /// The `AuthenticationExtensionsPRFInputs` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct AuthenticationExtensionsPRFInputs {
     pub eval: Option<AuthenticationExtensionsPRFValues>,
 }
 
 /// The `AuthenticationExtensionsPRFValues` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct AuthenticationExtensionsPRFValues {
 }
 
 /// The `AuthenticationExtensionsLargeBlobInputs` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct AuthenticationExtensionsLargeBlobInputs {
     pub support: Option<String>,
@@ -87598,6 +87632,7 @@ pub struct AuthenticationExtensionsLargeBlobInputs {
 }
 
 /// The `PublicKeyCredentialCreationOptions` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 pub struct PublicKeyCredentialCreationOptions {
     pub rp: PublicKeyCredentialRpEntity,
     pub user: PublicKeyCredentialUserEntity,
@@ -87612,24 +87647,28 @@ pub struct PublicKeyCredentialCreationOptions {
 }
 
 /// The `PublicKeyCredentialRpEntity` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 pub struct PublicKeyCredentialRpEntity {
     pub name: String,
     pub id: Option<String>,
 }
 
 /// The `PublicKeyCredentialUserEntity` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 pub struct PublicKeyCredentialUserEntity {
     pub name: String,
     pub display_name: String,
 }
 
 /// The `PublicKeyCredentialParameters` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 pub struct PublicKeyCredentialParameters {
     pub r#type: String,
     pub alg: f64,
 }
 
 /// The `AuthenticatorSelectionCriteria` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct AuthenticatorSelectionCriteria {
     pub authenticator_attachment: Option<String>,
@@ -87639,6 +87678,7 @@ pub struct AuthenticatorSelectionCriteria {
 }
 
 /// The `GPUCanvasConfiguration` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 pub struct GPUCanvasConfiguration {
     pub device: &'static GPUDevice,
     pub format: String,
@@ -87650,12 +87690,14 @@ pub struct GPUCanvasConfiguration {
 }
 
 /// The `GPUCanvasToneMapping` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct GPUCanvasToneMapping {
     pub mode: Option<String>,
 }
 
 /// The `HighlightHitResult` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct HighlightHitResult {
     pub highlight: Option<&'static Highlight>,
@@ -87663,6 +87705,7 @@ pub struct HighlightHitResult {
 }
 
 /// The `IDBDatabaseInfo` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct IDBDatabaseInfo {
     pub name: Option<String>,
@@ -87670,6 +87713,7 @@ pub struct IDBDatabaseInfo {
 }
 
 /// The `PhotoSettings` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct PhotoSettings {
     pub fill_light_mode: Option<String>,
@@ -87679,6 +87723,7 @@ pub struct PhotoSettings {
 }
 
 /// The `PhotoCapabilities` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct PhotoCapabilities {
     pub red_eye_reduction: Option<String>,
@@ -87688,6 +87733,7 @@ pub struct PhotoCapabilities {
 }
 
 /// The `MediaSettingsRange` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct MediaSettingsRange {
     pub max: Option<f64>,
@@ -87696,12 +87742,14 @@ pub struct MediaSettingsRange {
 }
 
 /// The `ImageDecodeResult` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 pub struct ImageDecodeResult {
     pub image: &'static VideoFrame,
     pub complete: bool,
 }
 
 /// The `MediaTrackCapabilities` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct MediaTrackCapabilities {
     pub width: Option<ULongRange>,
@@ -87724,6 +87772,7 @@ pub struct MediaTrackCapabilities {
 }
 
 /// The `ULongRange` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct ULongRange {
     pub max: Option<f64>,
@@ -87731,6 +87780,7 @@ pub struct ULongRange {
 }
 
 /// The `DoubleRange` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct DoubleRange {
     pub max: Option<f64>,
@@ -87738,6 +87788,7 @@ pub struct DoubleRange {
 }
 
 /// The `LockManagerSnapshot` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct LockManagerSnapshot {
     pub held: Option<Vec<LockInfo>>,
@@ -87745,6 +87796,7 @@ pub struct LockManagerSnapshot {
 }
 
 /// The `LockInfo` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct LockInfo {
     pub name: Option<String>,
@@ -87753,6 +87805,7 @@ pub struct LockInfo {
 }
 
 /// The `MediaCapabilitiesDecodingInfo` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 pub struct MediaCapabilitiesDecodingInfo {
     pub supported: bool,
     pub smooth: bool,
@@ -87762,6 +87815,7 @@ pub struct MediaCapabilitiesDecodingInfo {
 }
 
 /// The `MediaDecodingConfiguration` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 pub struct MediaDecodingConfiguration {
     pub video: Option<VideoConfiguration>,
     pub audio: Option<AudioConfiguration>,
@@ -87770,6 +87824,7 @@ pub struct MediaDecodingConfiguration {
 }
 
 /// The `VideoConfiguration` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 pub struct VideoConfiguration {
     pub content_type: String,
     pub width: f64,
@@ -87785,6 +87840,7 @@ pub struct VideoConfiguration {
 }
 
 /// The `AudioConfiguration` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 pub struct AudioConfiguration {
     pub content_type: String,
     pub channels: Option<String>,
@@ -87794,6 +87850,7 @@ pub struct AudioConfiguration {
 }
 
 /// The `MediaCapabilitiesKeySystemConfiguration` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 pub struct MediaCapabilitiesKeySystemConfiguration {
     pub key_system: String,
     pub init_data_type: Option<String>,
@@ -87805,6 +87862,7 @@ pub struct MediaCapabilitiesKeySystemConfiguration {
 }
 
 /// The `KeySystemTrackConfiguration` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct KeySystemTrackConfiguration {
     pub robustness: Option<String>,
@@ -87813,6 +87871,7 @@ pub struct KeySystemTrackConfiguration {
 }
 
 /// The `MediaCapabilitiesEncodingInfo` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 pub struct MediaCapabilitiesEncodingInfo {
     pub supported: bool,
     pub smooth: bool,
@@ -87821,6 +87880,7 @@ pub struct MediaCapabilitiesEncodingInfo {
 }
 
 /// The `MediaEncodingConfiguration` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 pub struct MediaEncodingConfiguration {
     pub video: Option<VideoConfiguration>,
     pub audio: Option<AudioConfiguration>,
@@ -87828,6 +87888,7 @@ pub struct MediaEncodingConfiguration {
 }
 
 /// The `MediaTrackSupportedConstraints` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct MediaTrackSupportedConstraints {
     pub width: Option<bool>,
@@ -87850,12 +87911,14 @@ pub struct MediaTrackSupportedConstraints {
 }
 
 /// The `MediaTrackConstraints` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct MediaTrackConstraints {
     pub advanced: Option<Vec<MediaTrackConstraintSet>>,
 }
 
 /// The `ConstrainULongRange` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct ConstrainULongRange {
     pub max: Option<f64>,
@@ -87865,6 +87928,7 @@ pub struct ConstrainULongRange {
 }
 
 /// The `ConstrainDoubleRange` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct ConstrainDoubleRange {
     pub max: Option<f64>,
@@ -87874,6 +87938,7 @@ pub struct ConstrainDoubleRange {
 }
 
 /// The `ConstrainDOMStringParameters` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct ConstrainDOMStringParameters {
     pub exact: Option<StrOrList<'static>>,
@@ -87881,6 +87946,7 @@ pub struct ConstrainDOMStringParameters {
 }
 
 /// The `ConstrainBooleanOrDOMStringParameters` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct ConstrainBooleanOrDOMStringParameters {
     pub exact: Option<BoolOrStr<'static>>,
@@ -87888,6 +87954,7 @@ pub struct ConstrainBooleanOrDOMStringParameters {
 }
 
 /// The `ConstrainBooleanParameters` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct ConstrainBooleanParameters {
     pub exact: Option<bool>,
@@ -87895,11 +87962,13 @@ pub struct ConstrainBooleanParameters {
 }
 
 /// The `MediaTrackConstraintSet` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct MediaTrackConstraintSet {
 }
 
 /// The `MediaTrackSettings` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct MediaTrackSettings {
     pub width: Option<f64>,
@@ -87925,6 +87994,7 @@ pub struct MediaTrackSettings {
 }
 
 /// The `NavigationResult` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct NavigationResult {
     pub committed: Option<Promise<&'static NavigationHistoryEntry>>,
@@ -87932,6 +88002,7 @@ pub struct NavigationResult {
 }
 
 /// The `NavigationPreloadState` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct NavigationPreloadState {
     pub enabled: Option<bool>,
@@ -87939,6 +88010,7 @@ pub struct NavigationPreloadState {
 }
 
 /// The `NotificationAction` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 pub struct NotificationAction {
     pub action: String,
     pub title: String,
@@ -87947,6 +88019,7 @@ pub struct NotificationAction {
 }
 
 /// The `PaymentDetailsUpdate` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct PaymentDetailsUpdate {
     pub error: Option<String>,
@@ -87956,6 +88029,7 @@ pub struct PaymentDetailsUpdate {
 }
 
 /// The `AddressErrors` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct AddressErrors {
     pub address_line: Option<String>,
@@ -87971,6 +88045,7 @@ pub struct AddressErrors {
 }
 
 /// The `PayerErrors` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct PayerErrors {
     pub email: Option<String>,
@@ -87979,6 +88054,7 @@ pub struct PayerErrors {
 }
 
 /// The `AuthenticationExtensionsClientOutputs` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct AuthenticationExtensionsClientOutputs {
     pub hmac_create_secret: Option<bool>,
@@ -87989,12 +88065,14 @@ pub struct AuthenticationExtensionsClientOutputs {
 }
 
 /// The `CredentialPropertiesOutput` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct CredentialPropertiesOutput {
     pub rk: Option<bool>,
 }
 
 /// The `AuthenticationExtensionsPRFOutputs` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct AuthenticationExtensionsPRFOutputs {
     pub enabled: Option<bool>,
@@ -88002,6 +88080,7 @@ pub struct AuthenticationExtensionsPRFOutputs {
 }
 
 /// The `AuthenticationExtensionsLargeBlobOutputs` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct AuthenticationExtensionsLargeBlobOutputs {
     pub supported: Option<bool>,
@@ -88010,6 +88089,7 @@ pub struct AuthenticationExtensionsLargeBlobOutputs {
 }
 
 /// The `PushSubscriptionJSON` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct PushSubscriptionJSON {
     pub endpoint: Option<String>,
@@ -88019,6 +88099,7 @@ pub struct PushSubscriptionJSON {
 }
 
 /// The `PushSubscriptionKeys` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct PushSubscriptionKeys {
     pub p256dh: Option<String>,
@@ -88026,6 +88107,7 @@ pub struct PushSubscriptionKeys {
 }
 
 /// The `RTCDtlsFingerprint` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct RTCDtlsFingerprint {
     pub algorithm: Option<String>,
@@ -88033,6 +88115,7 @@ pub struct RTCDtlsFingerprint {
 }
 
 /// The `RTCEncodedAudioFrameMetadata` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct RTCEncodedAudioFrameMetadata {
     pub synchronization_source: Option<f64>,
@@ -88048,6 +88131,7 @@ pub struct RTCEncodedAudioFrameMetadata {
 }
 
 /// The `RTCEncodedVideoFrameMetadata` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct RTCEncodedVideoFrameMetadata {
     pub synchronization_source: Option<f64>,
@@ -88068,6 +88152,7 @@ pub struct RTCEncodedVideoFrameMetadata {
 }
 
 /// The `RTCIceCandidateInit` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct RTCIceCandidateInit {
     pub candidate: Option<String>,
@@ -88080,12 +88165,14 @@ pub struct RTCIceCandidateInit {
 }
 
 /// The `RTCSessionDescriptionInit` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 pub struct RTCSessionDescriptionInit {
     pub r#type: String,
     pub sdp: Option<String>,
 }
 
 /// The `RTCConfiguration` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct RTCConfiguration {
     pub ice_servers: Option<Vec<RTCIceServer>>,
@@ -88097,6 +88184,7 @@ pub struct RTCConfiguration {
 }
 
 /// The `RTCIceServer` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 pub struct RTCIceServer {
     pub urls: StrOrList<'static>,
     pub username: Option<String>,
@@ -88104,6 +88192,7 @@ pub struct RTCIceServer {
 }
 
 /// The `RTCRtpEncodingParameters` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct RTCRtpEncodingParameters {
     pub rid: Option<String>,
@@ -88117,6 +88206,7 @@ pub struct RTCRtpEncodingParameters {
 }
 
 /// The `RTCRtpCodec` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 pub struct RTCRtpCodec {
     pub mime_type: String,
     pub clock_rate: f64,
@@ -88125,17 +88215,20 @@ pub struct RTCRtpCodec {
 }
 
 /// The `RTCRtpCapabilities` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 pub struct RTCRtpCapabilities {
     pub codecs: Vec<RTCRtpCodec>,
     pub header_extensions: Vec<RTCRtpHeaderExtensionCapability>,
 }
 
 /// The `RTCRtpHeaderExtensionCapability` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 pub struct RTCRtpHeaderExtensionCapability {
     pub uri: String,
 }
 
 /// The `RTCRtpReceiveParameters` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 pub struct RTCRtpReceiveParameters {
     pub header_extensions: Vec<RTCRtpHeaderExtensionParameters>,
     pub rtcp: RTCRtcpParameters,
@@ -88143,6 +88236,7 @@ pub struct RTCRtpReceiveParameters {
 }
 
 /// The `RTCRtpHeaderExtensionParameters` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 pub struct RTCRtpHeaderExtensionParameters {
     pub uri: String,
     pub id: f64,
@@ -88150,6 +88244,7 @@ pub struct RTCRtpHeaderExtensionParameters {
 }
 
 /// The `RTCRtcpParameters` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct RTCRtcpParameters {
     pub cname: Option<String>,
@@ -88157,6 +88252,7 @@ pub struct RTCRtcpParameters {
 }
 
 /// The `RTCRtpCodecParameters` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 pub struct RTCRtpCodecParameters {
     pub mime_type: String,
     pub clock_rate: f64,
@@ -88166,6 +88262,7 @@ pub struct RTCRtpCodecParameters {
 }
 
 /// The `RTCRtpContributingSource` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 pub struct RTCRtpContributingSource {
     pub timestamp: f64,
     pub source: f64,
@@ -88174,6 +88271,7 @@ pub struct RTCRtpContributingSource {
 }
 
 /// The `RTCRtpSynchronizationSource` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 pub struct RTCRtpSynchronizationSource {
     pub timestamp: f64,
     pub source: f64,
@@ -88182,6 +88280,7 @@ pub struct RTCRtpSynchronizationSource {
 }
 
 /// The `RTCRtpSendParameters` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 pub struct RTCRtpSendParameters {
     pub header_extensions: Vec<RTCRtpHeaderExtensionParameters>,
     pub rtcp: RTCRtcpParameters,
@@ -88192,6 +88291,7 @@ pub struct RTCRtpSendParameters {
 }
 
 /// The `ReadableStreamReadResult` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct ReadableStreamReadResult {
     #[cfg_attr(rust_js, rust_js::nullable)]
@@ -88200,6 +88300,7 @@ pub struct ReadableStreamReadResult {
 }
 
 /// The `Report` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct Report {
     pub r#type: Option<String>,
@@ -88209,11 +88310,13 @@ pub struct Report {
 }
 
 /// The `ReportBody` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct ReportBody {
 }
 
 /// The `SerialPortInfo` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct SerialPortInfo {
     pub usb_vendor_id: Option<f64>,
@@ -88222,6 +88325,7 @@ pub struct SerialPortInfo {
 }
 
 /// The `SerialInputSignals` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 pub struct SerialInputSignals {
     pub data_carrier_detect: bool,
     pub clear_to_send: bool,
@@ -88230,6 +88334,7 @@ pub struct SerialInputSignals {
 }
 
 /// The `StorageEstimate` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct StorageEstimate {
     pub usage: Option<f64>,
@@ -88237,12 +88342,14 @@ pub struct StorageEstimate {
 }
 
 /// The `CryptoKeyPair` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 pub struct CryptoKeyPair {
     pub public_key: &'static CryptoKey,
     pub private_key: &'static CryptoKey,
 }
 
 /// The `JsonWebKey` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct JsonWebKey {
     pub kty: Option<String>,
@@ -88267,6 +88374,7 @@ pub struct JsonWebKey {
 }
 
 /// The `RsaOtherPrimesInfo` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct RsaOtherPrimesInfo {
     pub r: Option<String>,
@@ -88275,6 +88383,7 @@ pub struct RsaOtherPrimesInfo {
 }
 
 /// The `URLPatternInit` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct URLPatternInit {
     pub protocol: Option<String>,
@@ -88290,6 +88399,7 @@ pub struct URLPatternInit {
 }
 
 /// The `URLPatternResult` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 pub struct URLPatternResult {
     pub protocol: URLPatternComponentResult,
     pub username: URLPatternComponentResult,
@@ -88302,11 +88412,13 @@ pub struct URLPatternResult {
 }
 
 /// The `URLPatternComponentResult` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 pub struct URLPatternComponentResult {
     pub input: String,
 }
 
 /// The `VideoColorSpaceInit` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct VideoColorSpaceInit {
     #[cfg_attr(rust_js, rust_js::nullable)]
@@ -88320,6 +88432,7 @@ pub struct VideoColorSpaceInit {
 }
 
 /// The `VideoDecoderConfig` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 pub struct VideoDecoderConfig {
     pub codec: String,
     pub coded_width: Option<f64>,
@@ -88334,6 +88447,7 @@ pub struct VideoDecoderConfig {
 }
 
 /// The `VideoDecoderSupport` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct VideoDecoderSupport {
     pub supported: Option<bool>,
@@ -88341,6 +88455,7 @@ pub struct VideoDecoderSupport {
 }
 
 /// The `VideoEncoderConfig` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 pub struct VideoEncoderConfig {
     pub codec: String,
     pub width: f64,
@@ -88359,12 +88474,14 @@ pub struct VideoEncoderConfig {
 }
 
 /// The `AvcEncoderConfig` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct AvcEncoderConfig {
     pub format: Option<String>,
 }
 
 /// The `VideoEncoderSupport` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct VideoEncoderSupport {
     pub supported: Option<bool>,
@@ -88372,12 +88489,14 @@ pub struct VideoEncoderSupport {
 }
 
 /// The `PlaneLayout` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 pub struct PlaneLayout {
     pub offset: f64,
     pub stride: f64,
 }
 
 /// The `WebTransportConnectionStats` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 pub struct WebTransportConnectionStats {
     pub bytes_sent: Option<f64>,
     pub bytes_sent_overhead: Option<f64>,
@@ -88397,6 +88516,7 @@ pub struct WebTransportConnectionStats {
 }
 
 /// The `WebTransportDatagramStats` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct WebTransportDatagramStats {
     pub dropped_incoming: Option<f64>,
@@ -88406,6 +88526,7 @@ pub struct WebTransportDatagramStats {
 }
 
 /// The `WebTransportCloseInfo` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct WebTransportCloseInfo {
     pub close_code: Option<f64>,
@@ -88413,6 +88534,7 @@ pub struct WebTransportCloseInfo {
 }
 
 /// The `WebTransportReceiveStreamStats` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct WebTransportReceiveStreamStats {
     pub bytes_received: Option<f64>,
@@ -88420,6 +88542,7 @@ pub struct WebTransportReceiveStreamStats {
 }
 
 /// The `WebTransportSendStreamStats` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct WebTransportSendStreamStats {
     pub bytes_written: Option<f64>,
@@ -88428,6 +88551,7 @@ pub struct WebTransportSendStreamStats {
 }
 
 /// The `WebAssemblyInstantiatedSource` dictionary: a JS object with these fields, a `None` one not there.
+#[cfg_attr(rust_js, rust_js::dictionary)]
 pub struct WebAssemblyInstantiatedSource {
     pub module: &'static WebAssemblyModule,
     pub instance: &'static WebAssemblyInstance,
@@ -88435,6 +88559,7 @@ pub struct WebAssemblyInstantiatedSource {
 
 /// The [`AddEventListenerOptions`](https://developer.mozilla.org/docs/Web/API/AddEventListenerOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "AddEventListenerOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct AddEventListenerOptions<'a> {
     pub capture: Option<bool>,
@@ -88447,6 +88572,7 @@ unsafe impl Defined for AddEventListenerOptions<'_> {}
 
 /// The [`AllAcceptedCredentialsOptions`](https://developer.mozilla.org/docs/Web/API/AllAcceptedCredentialsOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "AllAcceptedCredentialsOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct AllAcceptedCredentialsOptions<'a> {
     pub rp_id: &'a str,
@@ -88458,6 +88584,7 @@ unsafe impl Defined for AllAcceptedCredentialsOptions<'_> {}
 
 /// The [`AnalyserOptions`](https://developer.mozilla.org/docs/Web/API/AnalyserOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "AnalyserOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct AnalyserOptions<'a> {
     pub channel_count: Option<f64>,
@@ -88473,6 +88600,7 @@ unsafe impl Defined for AnalyserOptions<'_> {}
 
 /// The [`AnimationEventInit`](https://developer.mozilla.org/docs/Web/API/AnimationEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "AnimationEventInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct AnimationEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -88489,6 +88617,7 @@ unsafe impl Defined for AnimationEventInit<'_> {}
 
 /// The [`AnimationPlaybackEventInit`](https://developer.mozilla.org/docs/Web/API/AnimationPlaybackEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "AnimationPlaybackEventInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct AnimationPlaybackEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -88505,6 +88634,7 @@ unsafe impl Defined for AnimationPlaybackEventInit<'_> {}
 /// The [`AriaNotificationOptions`](https://developer.mozilla.org/docs/Web/API/AriaNotificationOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "AriaNotificationOptions")]
 #[cfg_attr(rust_js, rust_js::declares)]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct AriaNotificationOptions<'a> {
     pub priority: Option<&'a str>,
@@ -88514,6 +88644,7 @@ unsafe impl Defined for AriaNotificationOptions<'_> {}
 
 /// The [`AssignedNodesOptions`](https://developer.mozilla.org/docs/Web/API/AssignedNodesOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "AssignedNodesOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct AssignedNodesOptions {
     pub flatten: Option<bool>,
@@ -88523,6 +88654,7 @@ unsafe impl Defined for AssignedNodesOptions {}
 
 /// The [`AudioBufferOptions`](https://developer.mozilla.org/docs/Web/API/AudioBufferOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "AudioBufferOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct AudioBufferOptions {
     pub number_of_channels: Option<f64>,
@@ -88534,6 +88666,7 @@ unsafe impl Defined for AudioBufferOptions {}
 
 /// The [`AudioBufferSourceOptions`](https://developer.mozilla.org/docs/Web/API/AudioBufferSourceOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "AudioBufferSourceOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct AudioBufferSourceOptions<'a> {
     #[cfg_attr(rust_js, rust_js::nullable)]
@@ -88549,6 +88682,7 @@ unsafe impl Defined for AudioBufferSourceOptions<'_> {}
 
 /// The [`AudioContextOptions`](https://developer.mozilla.org/docs/Web/API/AudioContextOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "AudioContextOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct AudioContextOptions<'a> {
     pub latency_hint: Option<StrOrNumber<'a>>,
@@ -88561,6 +88695,7 @@ unsafe impl Defined for AudioContextOptions<'_> {}
 
 /// The [`AudioDataCopyToOptions`](https://developer.mozilla.org/docs/Web/API/AudioDataCopyToOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "AudioDataCopyToOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct AudioDataCopyToOptions<'a> {
     pub plane_index: f64,
@@ -88573,6 +88708,7 @@ unsafe impl Defined for AudioDataCopyToOptions<'_> {}
 
 /// The [`AudioDataInit`](https://developer.mozilla.org/docs/Web/API/AudioDataInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "AudioDataInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct AudioDataInit<'a> {
     pub format: &'a str,
@@ -88588,6 +88724,7 @@ unsafe impl Defined for AudioDataInit<'_> {}
 
 /// The [`AudioDecoderInit`](https://developer.mozilla.org/docs/Web/API/AudioDecoderInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "AudioDecoderInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 pub struct AudioDecoderInit {
     pub output: Box<dyn FnMut(&'static AudioData)>,
     pub error: Box<dyn FnMut(&'static DOMException)>,
@@ -88597,6 +88734,7 @@ unsafe impl Defined for AudioDecoderInit {}
 
 /// The [`AudioEncoderInit`](https://developer.mozilla.org/docs/Web/API/AudioEncoderInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "AudioEncoderInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 pub struct AudioEncoderInit {
     pub output: Box<dyn FnMut(&'static EncodedAudioChunk, EncodedAudioChunkMetadata)>,
     pub error: Box<dyn FnMut(&'static DOMException)>,
@@ -88606,6 +88744,7 @@ unsafe impl Defined for AudioEncoderInit {}
 
 /// The [`AudioNodeOptions`](https://developer.mozilla.org/docs/Web/API/AudioNodeOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "AudioNodeOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct AudioNodeOptions<'a> {
     pub channel_count: Option<f64>,
@@ -88617,6 +88756,7 @@ unsafe impl Defined for AudioNodeOptions<'_> {}
 
 /// The [`AudioProcessingEventInit`](https://developer.mozilla.org/docs/Web/API/AudioProcessingEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "AudioProcessingEventInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct AudioProcessingEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -88632,6 +88772,7 @@ unsafe impl Defined for AudioProcessingEventInit<'_> {}
 /// The [`AudioSinkOptions`](https://developer.mozilla.org/docs/Web/API/AudioSinkOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "AudioSinkOptions")]
 #[cfg_attr(rust_js, rust_js::declares)]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct AudioSinkOptions<'a> {
     pub r#type: &'a str,
@@ -88641,6 +88782,7 @@ unsafe impl Defined for AudioSinkOptions<'_> {}
 
 /// The [`AudioWorkletNodeOptions`](https://developer.mozilla.org/docs/Web/API/AudioWorkletNodeOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "AudioWorkletNodeOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct AudioWorkletNodeOptions<'a> {
     pub channel_count: Option<f64>,
@@ -88656,6 +88798,7 @@ unsafe impl Defined for AudioWorkletNodeOptions<'_> {}
 
 /// The [`AuthenticationExtensionsClientInputsJSON`](https://developer.mozilla.org/docs/Web/API/AuthenticationExtensionsClientInputsJSON) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "AuthenticationExtensionsClientInputsJSON")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct AuthenticationExtensionsClientInputsJSON<'a> {
     pub appid: Option<&'a str>,
@@ -88668,6 +88811,7 @@ unsafe impl Defined for AuthenticationExtensionsClientInputsJSON<'_> {}
 
 /// The [`AuthenticationExtensionsLargeBlobInputsJSON`](https://developer.mozilla.org/docs/Web/API/AuthenticationExtensionsLargeBlobInputsJSON) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "AuthenticationExtensionsLargeBlobInputsJSON")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct AuthenticationExtensionsLargeBlobInputsJSON<'a> {
     pub support: Option<&'a str>,
@@ -88679,6 +88823,7 @@ unsafe impl Defined for AuthenticationExtensionsLargeBlobInputsJSON<'_> {}
 
 /// The [`AuthenticationExtensionsPRFInputsJSON`](https://developer.mozilla.org/docs/Web/API/AuthenticationExtensionsPRFInputsJSON) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "AuthenticationExtensionsPRFInputsJSON")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct AuthenticationExtensionsPRFInputsJSON<'a> {
     pub eval: Option<AuthenticationExtensionsPRFValuesJSON<'a>>,
@@ -88689,6 +88834,7 @@ unsafe impl Defined for AuthenticationExtensionsPRFInputsJSON<'_> {}
 
 /// The [`AuthenticationExtensionsPRFValuesJSON`](https://developer.mozilla.org/docs/Web/API/AuthenticationExtensionsPRFValuesJSON) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "AuthenticationExtensionsPRFValuesJSON")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct AuthenticationExtensionsPRFValuesJSON<'a> {
     pub first: &'a str,
@@ -88699,6 +88845,7 @@ unsafe impl Defined for AuthenticationExtensionsPRFValuesJSON<'_> {}
 
 /// The [`BiquadFilterOptions`](https://developer.mozilla.org/docs/Web/API/BiquadFilterOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "BiquadFilterOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct BiquadFilterOptions<'a> {
     pub channel_count: Option<f64>,
@@ -88716,6 +88863,7 @@ unsafe impl Defined for BiquadFilterOptions<'_> {}
 
 /// The [`BlobEventInit`](https://developer.mozilla.org/docs/Web/API/BlobEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "BlobEventInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct BlobEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -88729,6 +88877,7 @@ unsafe impl Defined for BlobEventInit<'_> {}
 
 /// The [`BlobPropertyBag`](https://developer.mozilla.org/docs/Web/API/BlobPropertyBag) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "BlobPropertyBag")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct BlobPropertyBag<'a> {
     pub r#type: Option<&'a str>,
@@ -88740,6 +88889,7 @@ unsafe impl Defined for BlobPropertyBag<'_> {}
 /// The [`BoxQuadOptions`](https://developer.mozilla.org/docs/Web/API/BoxQuadOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "BoxQuadOptions")]
 #[cfg_attr(rust_js, rust_js::declares)]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct BoxQuadOptions<'a> {
     pub r#box: Option<&'a str>,
@@ -88750,6 +88900,7 @@ unsafe impl Defined for BoxQuadOptions<'_> {}
 
 /// The [`CacheQueryOptions`](https://developer.mozilla.org/docs/Web/API/CacheQueryOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "CacheQueryOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct CacheQueryOptions {
     pub ignore_search: Option<bool>,
@@ -88761,6 +88912,7 @@ unsafe impl Defined for CacheQueryOptions {}
 
 /// The [`CaretPositionFromPointOptions`](https://developer.mozilla.org/docs/Web/API/CaretPositionFromPointOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "CaretPositionFromPointOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct CaretPositionFromPointOptions<'a> {
     pub shadow_roots: Option<&'a [&'a ShadowRoot]>,
@@ -88770,6 +88922,7 @@ unsafe impl Defined for CaretPositionFromPointOptions<'_> {}
 
 /// The [`ChannelMergerOptions`](https://developer.mozilla.org/docs/Web/API/ChannelMergerOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "ChannelMergerOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct ChannelMergerOptions<'a> {
     pub channel_count: Option<f64>,
@@ -88782,6 +88935,7 @@ unsafe impl Defined for ChannelMergerOptions<'_> {}
 
 /// The [`ChannelSplitterOptions`](https://developer.mozilla.org/docs/Web/API/ChannelSplitterOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "ChannelSplitterOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct ChannelSplitterOptions<'a> {
     pub channel_count: Option<f64>,
@@ -88795,6 +88949,7 @@ unsafe impl Defined for ChannelSplitterOptions<'_> {}
 /// The [`ChapterInformationInit`](https://developer.mozilla.org/docs/Web/API/ChapterInformationInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "ChapterInformationInit")]
 #[cfg_attr(rust_js, rust_js::declares)]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct ChapterInformationInit<'a> {
     pub title: Option<&'a str>,
@@ -88806,6 +88961,7 @@ unsafe impl Defined for ChapterInformationInit<'_> {}
 
 /// The [`CheckVisibilityOptions`](https://developer.mozilla.org/docs/Web/API/CheckVisibilityOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "CheckVisibilityOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct CheckVisibilityOptions {
     pub check_opacity: Option<bool>,
@@ -88820,6 +88976,7 @@ unsafe impl Defined for CheckVisibilityOptions {}
 
 /// The [`ClipboardEventInit`](https://developer.mozilla.org/docs/Web/API/ClipboardEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "ClipboardEventInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct ClipboardEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -88833,6 +88990,7 @@ unsafe impl Defined for ClipboardEventInit<'_> {}
 
 /// The [`ClipboardItemOptions`](https://developer.mozilla.org/docs/Web/API/ClipboardItemOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "ClipboardItemOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct ClipboardItemOptions<'a> {
     pub presentation_style: Option<&'a str>,
@@ -88843,6 +89001,7 @@ unsafe impl Defined for ClipboardItemOptions<'_> {}
 /// The [`ClipboardUnsanitizedFormats`](https://developer.mozilla.org/docs/Web/API/ClipboardUnsanitizedFormats) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "ClipboardUnsanitizedFormats")]
 #[cfg_attr(rust_js, rust_js::declares)]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct ClipboardUnsanitizedFormats<'a> {
     pub unsanitized: Option<&'a [String]>,
@@ -88852,6 +89011,7 @@ unsafe impl Defined for ClipboardUnsanitizedFormats<'_> {}
 
 /// The [`CloseEventInit`](https://developer.mozilla.org/docs/Web/API/CloseEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "CloseEventInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct CloseEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -88866,6 +89026,7 @@ unsafe impl Defined for CloseEventInit<'_> {}
 
 /// The [`CloseWatcherOptions`](https://developer.mozilla.org/docs/Web/API/CloseWatcherOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "CloseWatcherOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct CloseWatcherOptions<'a> {
     pub signal: Option<&'a AbortSignal>,
@@ -88875,6 +89036,7 @@ unsafe impl Defined for CloseWatcherOptions<'_> {}
 
 /// The [`CommandEventInit`](https://developer.mozilla.org/docs/Web/API/CommandEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "CommandEventInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct CommandEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -88889,6 +89051,7 @@ unsafe impl Defined for CommandEventInit<'_> {}
 
 /// The [`CompositionEventInit`](https://developer.mozilla.org/docs/Web/API/CompositionEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "CompositionEventInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct CompositionEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -88905,6 +89068,7 @@ unsafe impl Defined for CompositionEventInit<'_> {}
 
 /// The [`ConstantSourceOptions`](https://developer.mozilla.org/docs/Web/API/ConstantSourceOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "ConstantSourceOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct ConstantSourceOptions {
     pub offset: Option<f64>,
@@ -88914,6 +89078,7 @@ unsafe impl Defined for ConstantSourceOptions {}
 
 /// The [`ContentVisibilityAutoStateChangeEventInit`](https://developer.mozilla.org/docs/Web/API/ContentVisibilityAutoStateChangeEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "ContentVisibilityAutoStateChangeEventInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct ContentVisibilityAutoStateChangeEventInit {
     pub bubbles: Option<bool>,
@@ -88927,6 +89092,7 @@ unsafe impl Defined for ContentVisibilityAutoStateChangeEventInit {}
 /// The [`ConvertCoordinateOptions`](https://developer.mozilla.org/docs/Web/API/ConvertCoordinateOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "ConvertCoordinateOptions")]
 #[cfg_attr(rust_js, rust_js::declares)]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct ConvertCoordinateOptions<'a> {
     pub from_box: Option<&'a str>,
@@ -88937,6 +89103,7 @@ unsafe impl Defined for ConvertCoordinateOptions<'_> {}
 
 /// The [`ConvolverOptions`](https://developer.mozilla.org/docs/Web/API/ConvolverOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "ConvolverOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct ConvolverOptions<'a> {
     pub channel_count: Option<f64>,
@@ -88951,6 +89118,7 @@ unsafe impl Defined for ConvolverOptions<'_> {}
 
 /// The [`CookieChangeEventInit`](https://developer.mozilla.org/docs/Web/API/CookieChangeEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "CookieChangeEventInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct CookieChangeEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -88964,6 +89132,7 @@ unsafe impl Defined for CookieChangeEventInit<'_> {}
 
 /// The [`CookieInit`](https://developer.mozilla.org/docs/Web/API/CookieInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "CookieInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct CookieInit<'a> {
     pub name: &'a str,
@@ -88983,6 +89152,7 @@ unsafe impl Defined for CookieInit<'_> {}
 
 /// The [`CookieStoreDeleteOptions`](https://developer.mozilla.org/docs/Web/API/CookieStoreDeleteOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "CookieStoreDeleteOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct CookieStoreDeleteOptions<'a> {
     pub name: &'a str,
@@ -88996,6 +89166,7 @@ unsafe impl Defined for CookieStoreDeleteOptions<'_> {}
 
 /// The [`CredentialCreationOptions`](https://developer.mozilla.org/docs/Web/API/CredentialCreationOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "CredentialCreationOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct CredentialCreationOptions<'a> {
     pub mediation: Option<&'a str>,
@@ -89007,6 +89178,7 @@ unsafe impl Defined for CredentialCreationOptions<'_> {}
 
 /// The [`CredentialRequestOptions`](https://developer.mozilla.org/docs/Web/API/CredentialRequestOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "CredentialRequestOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct CredentialRequestOptions<'a> {
     pub mediation: Option<&'a str>,
@@ -89019,6 +89191,7 @@ unsafe impl Defined for CredentialRequestOptions<'_> {}
 
 /// The [`CSSMatrixComponentOptions`](https://developer.mozilla.org/docs/Web/API/CSSMatrixComponentOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "CSSMatrixComponentOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct CSSMatrixComponentOptions {
     pub is2_d: Option<bool>,
@@ -89028,6 +89201,7 @@ unsafe impl Defined for CSSMatrixComponentOptions {}
 
 /// The [`CSSStyleSheetInit`](https://developer.mozilla.org/docs/Web/API/CSSStyleSheetInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "CSSStyleSheetInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct CSSStyleSheetInit<'a> {
     #[cfg_attr(rust_js, rust_js::name = "baseURL")]
@@ -89041,6 +89215,7 @@ unsafe impl Defined for CSSStyleSheetInit<'_> {}
 
 /// The [`CurrentUserDetailsOptions`](https://developer.mozilla.org/docs/Web/API/CurrentUserDetailsOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "CurrentUserDetailsOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct CurrentUserDetailsOptions<'a> {
     pub rp_id: &'a str,
@@ -89053,6 +89228,7 @@ unsafe impl Defined for CurrentUserDetailsOptions<'_> {}
 
 /// The [`CustomEventInit`](https://developer.mozilla.org/docs/Web/API/CustomEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "CustomEventInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct CustomEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -89065,6 +89241,7 @@ unsafe impl Defined for CustomEventInit<'_> {}
 
 /// The [`DelayOptions`](https://developer.mozilla.org/docs/Web/API/DelayOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "DelayOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct DelayOptions<'a> {
     pub channel_count: Option<f64>,
@@ -89078,6 +89255,7 @@ unsafe impl Defined for DelayOptions<'_> {}
 
 /// The [`DeviceMotionEventAccelerationInit`](https://developer.mozilla.org/docs/Web/API/DeviceMotionEventAccelerationInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "DeviceMotionEventAccelerationInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct DeviceMotionEventAccelerationInit {
     #[cfg_attr(rust_js, rust_js::nullable)]
@@ -89092,6 +89270,7 @@ unsafe impl Defined for DeviceMotionEventAccelerationInit {}
 
 /// The [`DeviceMotionEventInit`](https://developer.mozilla.org/docs/Web/API/DeviceMotionEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "DeviceMotionEventInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct DeviceMotionEventInit {
     pub bubbles: Option<bool>,
@@ -89107,6 +89286,7 @@ unsafe impl Defined for DeviceMotionEventInit {}
 
 /// The [`DeviceMotionEventRotationRateInit`](https://developer.mozilla.org/docs/Web/API/DeviceMotionEventRotationRateInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "DeviceMotionEventRotationRateInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct DeviceMotionEventRotationRateInit {
     #[cfg_attr(rust_js, rust_js::nullable)]
@@ -89121,6 +89301,7 @@ unsafe impl Defined for DeviceMotionEventRotationRateInit {}
 
 /// The [`DeviceOrientationEventInit`](https://developer.mozilla.org/docs/Web/API/DeviceOrientationEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "DeviceOrientationEventInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct DeviceOrientationEventInit {
     pub bubbles: Option<bool>,
@@ -89139,6 +89320,7 @@ unsafe impl Defined for DeviceOrientationEventInit {}
 
 /// The [`DisplayMediaStreamOptions`](https://developer.mozilla.org/docs/Web/API/DisplayMediaStreamOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "DisplayMediaStreamOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct DisplayMediaStreamOptions<'a> {
     pub video: Option<BoolOrMediaTrackConstraints>,
@@ -89155,6 +89337,7 @@ unsafe impl Defined for DisplayMediaStreamOptions<'_> {}
 
 /// The [`DocumentPictureInPictureEventInit`](https://developer.mozilla.org/docs/Web/API/DocumentPictureInPictureEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "DocumentPictureInPictureEventInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct DocumentPictureInPictureEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -89167,6 +89350,7 @@ unsafe impl Defined for DocumentPictureInPictureEventInit<'_> {}
 
 /// The [`DocumentPictureInPictureOptions`](https://developer.mozilla.org/docs/Web/API/DocumentPictureInPictureOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "DocumentPictureInPictureOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct DocumentPictureInPictureOptions {
     pub width: Option<f64>,
@@ -89179,6 +89363,7 @@ unsafe impl Defined for DocumentPictureInPictureOptions {}
 
 /// The [`DocumentTimelineOptions`](https://developer.mozilla.org/docs/Web/API/DocumentTimelineOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "DocumentTimelineOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct DocumentTimelineOptions {
     pub origin_time: Option<f64>,
@@ -89188,6 +89373,7 @@ unsafe impl Defined for DocumentTimelineOptions {}
 
 /// The [`DOMMatrix2DInit`](https://developer.mozilla.org/docs/Web/API/DOMMatrix2DInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "DOMMatrix2DInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct DOMMatrix2DInit {
     pub a: Option<f64>,
@@ -89208,6 +89394,7 @@ unsafe impl Defined for DOMMatrix2DInit {}
 
 /// The [`DOMMatrixInit`](https://developer.mozilla.org/docs/Web/API/DOMMatrixInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "DOMMatrixInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct DOMMatrixInit {
     pub a: Option<f64>,
@@ -89239,6 +89426,7 @@ unsafe impl Defined for DOMMatrixInit {}
 
 /// The [`DOMPointInit`](https://developer.mozilla.org/docs/Web/API/DOMPointInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "DOMPointInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct DOMPointInit {
     pub x: Option<f64>,
@@ -89251,6 +89439,7 @@ unsafe impl Defined for DOMPointInit {}
 
 /// The [`DOMQuadInit`](https://developer.mozilla.org/docs/Web/API/DOMQuadInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "DOMQuadInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct DOMQuadInit {
     pub p1: Option<DOMPointInit>,
@@ -89263,6 +89452,7 @@ unsafe impl Defined for DOMQuadInit {}
 
 /// The [`DOMRectInit`](https://developer.mozilla.org/docs/Web/API/DOMRectInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "DOMRectInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct DOMRectInit {
     pub x: Option<f64>,
@@ -89275,6 +89465,7 @@ unsafe impl Defined for DOMRectInit {}
 
 /// The [`DragEventInit`](https://developer.mozilla.org/docs/Web/API/DragEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "DragEventInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct DragEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -89316,6 +89507,7 @@ unsafe impl Defined for DragEventInit<'_> {}
 
 /// The [`DynamicsCompressorOptions`](https://developer.mozilla.org/docs/Web/API/DynamicsCompressorOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "DynamicsCompressorOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct DynamicsCompressorOptions<'a> {
     pub channel_count: Option<f64>,
@@ -89333,6 +89525,7 @@ unsafe impl Defined for DynamicsCompressorOptions<'_> {}
 
 /// The [`ElementCreationOptions`](https://developer.mozilla.org/docs/Web/API/ElementCreationOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "ElementCreationOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct ElementCreationOptions<'a> {
     #[cfg_attr(rust_js, rust_js::nullable)]
@@ -89344,6 +89537,7 @@ unsafe impl Defined for ElementCreationOptions<'_> {}
 
 /// The [`ElementDefinitionOptions`](https://developer.mozilla.org/docs/Web/API/ElementDefinitionOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "ElementDefinitionOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct ElementDefinitionOptions<'a> {
     pub extends: Option<&'a str>,
@@ -89353,6 +89547,7 @@ unsafe impl Defined for ElementDefinitionOptions<'_> {}
 
 /// The [`EncodedAudioChunkInit`](https://developer.mozilla.org/docs/Web/API/EncodedAudioChunkInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "EncodedAudioChunkInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct EncodedAudioChunkInit<'a> {
     pub r#type: &'a str,
@@ -89366,6 +89561,7 @@ unsafe impl Defined for EncodedAudioChunkInit<'_> {}
 
 /// The [`EncodedAudioChunkMetadata`](https://developer.mozilla.org/docs/Web/API/EncodedAudioChunkMetadata) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "EncodedAudioChunkMetadata")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct EncodedAudioChunkMetadata {
     pub decoder_config: Option<AudioDecoderConfig>,
@@ -89375,6 +89571,7 @@ unsafe impl Defined for EncodedAudioChunkMetadata {}
 
 /// The [`EncodedVideoChunkInit`](https://developer.mozilla.org/docs/Web/API/EncodedVideoChunkInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "EncodedVideoChunkInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct EncodedVideoChunkInit<'a> {
     pub r#type: &'a str,
@@ -89388,6 +89585,7 @@ unsafe impl Defined for EncodedVideoChunkInit<'_> {}
 
 /// The [`EncodedVideoChunkMetadata`](https://developer.mozilla.org/docs/Web/API/EncodedVideoChunkMetadata) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "EncodedVideoChunkMetadata")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct EncodedVideoChunkMetadata<'a> {
     pub decoder_config: Option<VideoDecoderConfig>,
@@ -89399,6 +89597,7 @@ unsafe impl Defined for EncodedVideoChunkMetadata<'_> {}
 
 /// The [`ErrorEventInit`](https://developer.mozilla.org/docs/Web/API/ErrorEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "ErrorEventInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct ErrorEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -89415,6 +89614,7 @@ unsafe impl Defined for ErrorEventInit<'_> {}
 
 /// The [`EventInit`](https://developer.mozilla.org/docs/Web/API/EventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "EventInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct EventInit {
     pub bubbles: Option<bool>,
@@ -89426,6 +89626,7 @@ unsafe impl Defined for EventInit {}
 
 /// The [`EventListenerOptions`](https://developer.mozilla.org/docs/Web/API/EventListenerOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "EventListenerOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct EventListenerOptions {
     pub capture: Option<bool>,
@@ -89435,6 +89636,7 @@ unsafe impl Defined for EventListenerOptions {}
 
 /// The [`EventSourceInit`](https://developer.mozilla.org/docs/Web/API/EventSourceInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "EventSourceInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct EventSourceInit {
     pub with_credentials: Option<bool>,
@@ -89444,6 +89646,7 @@ unsafe impl Defined for EventSourceInit {}
 
 /// The [`FilePropertyBag`](https://developer.mozilla.org/docs/Web/API/FilePropertyBag) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "FilePropertyBag")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct FilePropertyBag<'a> {
     pub r#type: Option<&'a str>,
@@ -89455,6 +89658,7 @@ unsafe impl Defined for FilePropertyBag<'_> {}
 
 /// The [`FileSystemCreateWritableOptions`](https://developer.mozilla.org/docs/Web/API/FileSystemCreateWritableOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "FileSystemCreateWritableOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct FileSystemCreateWritableOptions {
     pub keep_existing_data: Option<bool>,
@@ -89464,6 +89668,7 @@ unsafe impl Defined for FileSystemCreateWritableOptions {}
 
 /// The [`FileSystemFlags`](https://developer.mozilla.org/docs/Web/API/FileSystemFlags) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "FileSystemFlags")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct FileSystemFlags {
     pub create: Option<bool>,
@@ -89474,6 +89679,7 @@ unsafe impl Defined for FileSystemFlags {}
 
 /// The [`FileSystemGetDirectoryOptions`](https://developer.mozilla.org/docs/Web/API/FileSystemGetDirectoryOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "FileSystemGetDirectoryOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct FileSystemGetDirectoryOptions {
     pub create: Option<bool>,
@@ -89483,6 +89689,7 @@ unsafe impl Defined for FileSystemGetDirectoryOptions {}
 
 /// The [`FileSystemGetFileOptions`](https://developer.mozilla.org/docs/Web/API/FileSystemGetFileOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "FileSystemGetFileOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct FileSystemGetFileOptions {
     pub create: Option<bool>,
@@ -89492,6 +89699,7 @@ unsafe impl Defined for FileSystemGetFileOptions {}
 
 /// The [`FileSystemRemoveOptions`](https://developer.mozilla.org/docs/Web/API/FileSystemRemoveOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "FileSystemRemoveOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct FileSystemRemoveOptions {
     pub recursive: Option<bool>,
@@ -89501,6 +89709,7 @@ unsafe impl Defined for FileSystemRemoveOptions {}
 
 /// The [`FocusEventInit`](https://developer.mozilla.org/docs/Web/API/FocusEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "FocusEventInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct FocusEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -89518,6 +89727,7 @@ unsafe impl Defined for FocusEventInit<'_> {}
 
 /// The [`FocusOptions`](https://developer.mozilla.org/docs/Web/API/FocusOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "FocusOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct FocusOptions {
     pub prevent_scroll: Option<bool>,
@@ -89528,6 +89738,7 @@ unsafe impl Defined for FocusOptions {}
 
 /// The [`FontFaceDescriptors`](https://developer.mozilla.org/docs/Web/API/FontFaceDescriptors) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "FontFaceDescriptors")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct FontFaceDescriptors<'a> {
     pub style: Option<&'a str>,
@@ -89547,6 +89758,7 @@ unsafe impl Defined for FontFaceDescriptors<'_> {}
 
 /// The [`FontFaceSetLoadEventInit`](https://developer.mozilla.org/docs/Web/API/FontFaceSetLoadEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "FontFaceSetLoadEventInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct FontFaceSetLoadEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -89559,6 +89771,7 @@ unsafe impl Defined for FontFaceSetLoadEventInit<'_> {}
 
 /// The [`FormDataEventInit`](https://developer.mozilla.org/docs/Web/API/FormDataEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "FormDataEventInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct FormDataEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -89571,6 +89784,7 @@ unsafe impl Defined for FormDataEventInit<'_> {}
 
 /// The [`FullscreenOptions`](https://developer.mozilla.org/docs/Web/API/FullscreenOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "FullscreenOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct FullscreenOptions<'a> {
     pub keyboard_lock: Option<&'a str>,
@@ -89582,6 +89796,7 @@ unsafe impl Defined for FullscreenOptions<'_> {}
 
 /// The [`GainOptions`](https://developer.mozilla.org/docs/Web/API/GainOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "GainOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct GainOptions<'a> {
     pub channel_count: Option<f64>,
@@ -89594,6 +89809,7 @@ unsafe impl Defined for GainOptions<'_> {}
 
 /// The [`GamepadEffectParameters`](https://developer.mozilla.org/docs/Web/API/GamepadEffectParameters) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "GamepadEffectParameters")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct GamepadEffectParameters {
     pub duration: Option<f64>,
@@ -89608,6 +89824,7 @@ unsafe impl Defined for GamepadEffectParameters {}
 
 /// The [`GamepadEventInit`](https://developer.mozilla.org/docs/Web/API/GamepadEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "GamepadEventInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct GamepadEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -89621,6 +89838,7 @@ unsafe impl Defined for GamepadEventInit<'_> {}
 
 /// The [`GetAnimationsOptions`](https://developer.mozilla.org/docs/Web/API/GetAnimationsOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "GetAnimationsOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct GetAnimationsOptions<'a> {
     pub subtree: Option<bool>,
@@ -89632,6 +89850,7 @@ unsafe impl Defined for GetAnimationsOptions<'_> {}
 
 /// The [`GetComposedRangesOptions`](https://developer.mozilla.org/docs/Web/API/GetComposedRangesOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "GetComposedRangesOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct GetComposedRangesOptions<'a> {
     pub shadow_roots: Option<&'a [&'a ShadowRoot]>,
@@ -89641,6 +89860,7 @@ unsafe impl Defined for GetComposedRangesOptions<'_> {}
 
 /// The [`GetHTMLOptions`](https://developer.mozilla.org/docs/Web/API/GetHTMLOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "GetHTMLOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct GetHTMLOptions<'a> {
     pub serializable_shadow_roots: Option<bool>,
@@ -89651,6 +89871,7 @@ unsafe impl Defined for GetHTMLOptions<'_> {}
 
 /// The [`GetNotificationOptions`](https://developer.mozilla.org/docs/Web/API/GetNotificationOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "GetNotificationOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct GetNotificationOptions<'a> {
     pub tag: Option<&'a str>,
@@ -89660,6 +89881,7 @@ unsafe impl Defined for GetNotificationOptions<'_> {}
 
 /// The [`GetRootNodeOptions`](https://developer.mozilla.org/docs/Web/API/GetRootNodeOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "GetRootNodeOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct GetRootNodeOptions {
     pub composed: Option<bool>,
@@ -89669,6 +89891,7 @@ unsafe impl Defined for GetRootNodeOptions {}
 
 /// The [`GPUBindGroupDescriptor`](https://developer.mozilla.org/docs/Web/API/GPUBindGroupDescriptor) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "GPUBindGroupDescriptor")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct GPUBindGroupDescriptor<'a> {
     pub label: Option<&'a str>,
@@ -89680,6 +89903,7 @@ unsafe impl Defined for GPUBindGroupDescriptor<'_> {}
 
 /// The [`GPUBindGroupEntry`](https://developer.mozilla.org/docs/Web/API/GPUBindGroupEntry) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "GPUBindGroupEntry")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct GPUBindGroupEntry<'a> {
     pub binding: f64,
@@ -89690,6 +89914,7 @@ unsafe impl Defined for GPUBindGroupEntry<'_> {}
 
 /// The [`GPUBindGroupLayoutDescriptor`](https://developer.mozilla.org/docs/Web/API/GPUBindGroupLayoutDescriptor) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "GPUBindGroupLayoutDescriptor")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct GPUBindGroupLayoutDescriptor<'a> {
     pub label: Option<&'a str>,
@@ -89700,6 +89925,7 @@ unsafe impl Defined for GPUBindGroupLayoutDescriptor<'_> {}
 
 /// The [`GPUBindGroupLayoutEntry`](https://developer.mozilla.org/docs/Web/API/GPUBindGroupLayoutEntry) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "GPUBindGroupLayoutEntry")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct GPUBindGroupLayoutEntry<'a> {
     pub binding: f64,
@@ -89714,6 +89940,7 @@ unsafe impl Defined for GPUBindGroupLayoutEntry<'_> {}
 
 /// The [`GPUBlendComponent`](https://developer.mozilla.org/docs/Web/API/GPUBlendComponent) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "GPUBlendComponent")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct GPUBlendComponent<'a> {
     pub operation: Option<&'a str>,
@@ -89725,6 +89952,7 @@ unsafe impl Defined for GPUBlendComponent<'_> {}
 
 /// The [`GPUBlendState`](https://developer.mozilla.org/docs/Web/API/GPUBlendState) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "GPUBlendState")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct GPUBlendState<'a> {
     pub color: GPUBlendComponent<'a>,
@@ -89735,6 +89963,7 @@ unsafe impl Defined for GPUBlendState<'_> {}
 
 /// The [`GPUBufferBinding`](https://developer.mozilla.org/docs/Web/API/GPUBufferBinding) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "GPUBufferBinding")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct GPUBufferBinding<'a> {
     pub buffer: &'a GPUBuffer,
@@ -89746,6 +89975,7 @@ unsafe impl Defined for GPUBufferBinding<'_> {}
 
 /// The [`GPUBufferBindingLayout`](https://developer.mozilla.org/docs/Web/API/GPUBufferBindingLayout) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "GPUBufferBindingLayout")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct GPUBufferBindingLayout<'a> {
     pub r#type: Option<&'a str>,
@@ -89757,6 +89987,7 @@ unsafe impl Defined for GPUBufferBindingLayout<'_> {}
 
 /// The [`GPUBufferDescriptor`](https://developer.mozilla.org/docs/Web/API/GPUBufferDescriptor) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "GPUBufferDescriptor")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct GPUBufferDescriptor<'a> {
     pub label: Option<&'a str>,
@@ -89769,6 +90000,7 @@ unsafe impl Defined for GPUBufferDescriptor<'_> {}
 
 /// The [`GPUColorDict`](https://developer.mozilla.org/docs/Web/API/GPUColorDict) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "GPUColorDict")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct GPUColorDict {
     pub r: f64,
@@ -89781,6 +90013,7 @@ unsafe impl Defined for GPUColorDict {}
 
 /// The [`GPUColorTargetState`](https://developer.mozilla.org/docs/Web/API/GPUColorTargetState) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "GPUColorTargetState")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct GPUColorTargetState<'a> {
     pub format: &'a str,
@@ -89792,6 +90025,7 @@ unsafe impl Defined for GPUColorTargetState<'_> {}
 
 /// The [`GPUCommandBufferDescriptor`](https://developer.mozilla.org/docs/Web/API/GPUCommandBufferDescriptor) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "GPUCommandBufferDescriptor")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct GPUCommandBufferDescriptor<'a> {
     pub label: Option<&'a str>,
@@ -89801,6 +90035,7 @@ unsafe impl Defined for GPUCommandBufferDescriptor<'_> {}
 
 /// The [`GPUCommandEncoderDescriptor`](https://developer.mozilla.org/docs/Web/API/GPUCommandEncoderDescriptor) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "GPUCommandEncoderDescriptor")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct GPUCommandEncoderDescriptor<'a> {
     pub label: Option<&'a str>,
@@ -89810,6 +90045,7 @@ unsafe impl Defined for GPUCommandEncoderDescriptor<'_> {}
 
 /// The [`GPUComputePassDescriptor`](https://developer.mozilla.org/docs/Web/API/GPUComputePassDescriptor) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "GPUComputePassDescriptor")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct GPUComputePassDescriptor<'a> {
     pub label: Option<&'a str>,
@@ -89820,6 +90056,7 @@ unsafe impl Defined for GPUComputePassDescriptor<'_> {}
 
 /// The [`GPUComputePassTimestampWrites`](https://developer.mozilla.org/docs/Web/API/GPUComputePassTimestampWrites) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "GPUComputePassTimestampWrites")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct GPUComputePassTimestampWrites<'a> {
     pub query_set: &'a GPUQuerySet,
@@ -89831,6 +90068,7 @@ unsafe impl Defined for GPUComputePassTimestampWrites<'_> {}
 
 /// The [`GPUComputePipelineDescriptor`](https://developer.mozilla.org/docs/Web/API/GPUComputePipelineDescriptor) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "GPUComputePipelineDescriptor")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct GPUComputePipelineDescriptor<'a> {
     pub label: Option<&'a str>,
@@ -89842,6 +90080,7 @@ unsafe impl Defined for GPUComputePipelineDescriptor<'_> {}
 
 /// The [`GPUCopyExternalImageDestInfo`](https://developer.mozilla.org/docs/Web/API/GPUCopyExternalImageDestInfo) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "GPUCopyExternalImageDestInfo")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct GPUCopyExternalImageDestInfo<'a> {
     pub texture: &'a GPUTexture,
@@ -89856,6 +90095,7 @@ unsafe impl Defined for GPUCopyExternalImageDestInfo<'_> {}
 
 /// The [`GPUCopyExternalImageSourceInfo`](https://developer.mozilla.org/docs/Web/API/GPUCopyExternalImageSourceInfo) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "GPUCopyExternalImageSourceInfo")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct GPUCopyExternalImageSourceInfo<'a> {
     pub source: GPUCopyExternalImageSource<'a>,
@@ -89867,6 +90107,7 @@ unsafe impl Defined for GPUCopyExternalImageSourceInfo<'_> {}
 
 /// The [`GPUDepthStencilState`](https://developer.mozilla.org/docs/Web/API/GPUDepthStencilState) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "GPUDepthStencilState")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct GPUDepthStencilState<'a> {
     pub format: &'a str,
@@ -89885,6 +90126,7 @@ unsafe impl Defined for GPUDepthStencilState<'_> {}
 
 /// The [`GPUDeviceDescriptor`](https://developer.mozilla.org/docs/Web/API/GPUDeviceDescriptor) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "GPUDeviceDescriptor")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct GPUDeviceDescriptor<'a> {
     pub label: Option<&'a str>,
@@ -89897,6 +90139,7 @@ unsafe impl Defined for GPUDeviceDescriptor<'_> {}
 
 /// The [`GPUExtent3DDict`](https://developer.mozilla.org/docs/Web/API/GPUExtent3DDict) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "GPUExtent3DDict")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct GPUExtent3DDict {
     pub width: f64,
@@ -89908,6 +90151,7 @@ unsafe impl Defined for GPUExtent3DDict {}
 
 /// The [`GPUExternalTextureDescriptor`](https://developer.mozilla.org/docs/Web/API/GPUExternalTextureDescriptor) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "GPUExternalTextureDescriptor")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct GPUExternalTextureDescriptor<'a> {
     pub label: Option<&'a str>,
@@ -89919,6 +90163,7 @@ unsafe impl Defined for GPUExternalTextureDescriptor<'_> {}
 
 /// The [`GPUFragmentState`](https://developer.mozilla.org/docs/Web/API/GPUFragmentState) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "GPUFragmentState")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct GPUFragmentState<'a> {
     pub module: &'a GPUShaderModule,
@@ -89931,6 +90176,7 @@ unsafe impl Defined for GPUFragmentState<'_> {}
 
 /// The [`GPUMultisampleState`](https://developer.mozilla.org/docs/Web/API/GPUMultisampleState) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "GPUMultisampleState")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct GPUMultisampleState {
     pub count: Option<f64>,
@@ -89942,6 +90188,7 @@ unsafe impl Defined for GPUMultisampleState {}
 
 /// The [`GPUOrigin2DDict`](https://developer.mozilla.org/docs/Web/API/GPUOrigin2DDict) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "GPUOrigin2DDict")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct GPUOrigin2DDict {
     pub x: Option<f64>,
@@ -89952,6 +90199,7 @@ unsafe impl Defined for GPUOrigin2DDict {}
 
 /// The [`GPUOrigin3DDict`](https://developer.mozilla.org/docs/Web/API/GPUOrigin3DDict) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "GPUOrigin3DDict")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct GPUOrigin3DDict {
     pub x: Option<f64>,
@@ -89963,6 +90211,7 @@ unsafe impl Defined for GPUOrigin3DDict {}
 
 /// The [`GPUPipelineLayoutDescriptor`](https://developer.mozilla.org/docs/Web/API/GPUPipelineLayoutDescriptor) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "GPUPipelineLayoutDescriptor")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct GPUPipelineLayoutDescriptor<'a> {
     pub label: Option<&'a str>,
@@ -89974,6 +90223,7 @@ unsafe impl Defined for GPUPipelineLayoutDescriptor<'_> {}
 
 /// The [`GPUPrimitiveState`](https://developer.mozilla.org/docs/Web/API/GPUPrimitiveState) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "GPUPrimitiveState")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct GPUPrimitiveState<'a> {
     pub topology: Option<&'a str>,
@@ -89987,6 +90237,7 @@ unsafe impl Defined for GPUPrimitiveState<'_> {}
 
 /// The [`GPUProgrammableStage`](https://developer.mozilla.org/docs/Web/API/GPUProgrammableStage) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "GPUProgrammableStage")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct GPUProgrammableStage<'a> {
     pub module: &'a GPUShaderModule,
@@ -89998,6 +90249,7 @@ unsafe impl Defined for GPUProgrammableStage<'_> {}
 
 /// The [`GPUQuerySetDescriptor`](https://developer.mozilla.org/docs/Web/API/GPUQuerySetDescriptor) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "GPUQuerySetDescriptor")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct GPUQuerySetDescriptor<'a> {
     pub label: Option<&'a str>,
@@ -90009,6 +90261,7 @@ unsafe impl Defined for GPUQuerySetDescriptor<'_> {}
 
 /// The [`GPUQueueDescriptor`](https://developer.mozilla.org/docs/Web/API/GPUQueueDescriptor) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "GPUQueueDescriptor")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct GPUQueueDescriptor<'a> {
     pub label: Option<&'a str>,
@@ -90018,6 +90271,7 @@ unsafe impl Defined for GPUQueueDescriptor<'_> {}
 
 /// The [`GPURenderBundleDescriptor`](https://developer.mozilla.org/docs/Web/API/GPURenderBundleDescriptor) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "GPURenderBundleDescriptor")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct GPURenderBundleDescriptor<'a> {
     pub label: Option<&'a str>,
@@ -90027,6 +90281,7 @@ unsafe impl Defined for GPURenderBundleDescriptor<'_> {}
 
 /// The [`GPURenderBundleEncoderDescriptor`](https://developer.mozilla.org/docs/Web/API/GPURenderBundleEncoderDescriptor) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "GPURenderBundleEncoderDescriptor")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct GPURenderBundleEncoderDescriptor<'a> {
     pub label: Option<&'a str>,
@@ -90041,6 +90296,7 @@ unsafe impl Defined for GPURenderBundleEncoderDescriptor<'_> {}
 
 /// The [`GPURenderPassColorAttachment`](https://developer.mozilla.org/docs/Web/API/GPURenderPassColorAttachment) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "GPURenderPassColorAttachment")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct GPURenderPassColorAttachment<'a> {
     pub view: GPUTextureOrGPUTextureView<'a>,
@@ -90055,6 +90311,7 @@ unsafe impl Defined for GPURenderPassColorAttachment<'_> {}
 
 /// The [`GPURenderPassDepthStencilAttachment`](https://developer.mozilla.org/docs/Web/API/GPURenderPassDepthStencilAttachment) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "GPURenderPassDepthStencilAttachment")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct GPURenderPassDepthStencilAttachment<'a> {
     pub view: GPUTextureOrGPUTextureView<'a>,
@@ -90072,6 +90329,7 @@ unsafe impl Defined for GPURenderPassDepthStencilAttachment<'_> {}
 
 /// The [`GPURenderPassDescriptor`](https://developer.mozilla.org/docs/Web/API/GPURenderPassDescriptor) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "GPURenderPassDescriptor")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct GPURenderPassDescriptor<'a> {
     pub label: Option<&'a str>,
@@ -90086,6 +90344,7 @@ unsafe impl Defined for GPURenderPassDescriptor<'_> {}
 
 /// The [`GPURenderPassTimestampWrites`](https://developer.mozilla.org/docs/Web/API/GPURenderPassTimestampWrites) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "GPURenderPassTimestampWrites")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct GPURenderPassTimestampWrites<'a> {
     pub query_set: &'a GPUQuerySet,
@@ -90097,6 +90356,7 @@ unsafe impl Defined for GPURenderPassTimestampWrites<'_> {}
 
 /// The [`GPURenderPipelineDescriptor`](https://developer.mozilla.org/docs/Web/API/GPURenderPipelineDescriptor) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "GPURenderPipelineDescriptor")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct GPURenderPipelineDescriptor<'a> {
     pub label: Option<&'a str>,
@@ -90112,6 +90372,7 @@ unsafe impl Defined for GPURenderPipelineDescriptor<'_> {}
 
 /// The [`GPURequestAdapterOptions`](https://developer.mozilla.org/docs/Web/API/GPURequestAdapterOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "GPURequestAdapterOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct GPURequestAdapterOptions<'a> {
     pub feature_level: Option<&'a str>,
@@ -90124,6 +90385,7 @@ unsafe impl Defined for GPURequestAdapterOptions<'_> {}
 
 /// The [`GPUSamplerBindingLayout`](https://developer.mozilla.org/docs/Web/API/GPUSamplerBindingLayout) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "GPUSamplerBindingLayout")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct GPUSamplerBindingLayout<'a> {
     pub r#type: Option<&'a str>,
@@ -90133,6 +90395,7 @@ unsafe impl Defined for GPUSamplerBindingLayout<'_> {}
 
 /// The [`GPUSamplerDescriptor`](https://developer.mozilla.org/docs/Web/API/GPUSamplerDescriptor) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "GPUSamplerDescriptor")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct GPUSamplerDescriptor<'a> {
     pub label: Option<&'a str>,
@@ -90153,6 +90416,7 @@ unsafe impl Defined for GPUSamplerDescriptor<'_> {}
 /// The [`GPUShaderModuleCompilationHint`](https://developer.mozilla.org/docs/Web/API/GPUShaderModuleCompilationHint) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "GPUShaderModuleCompilationHint")]
 #[cfg_attr(rust_js, rust_js::declares)]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct GPUShaderModuleCompilationHint<'a> {
     pub entry_point: &'a str,
@@ -90163,6 +90427,7 @@ unsafe impl Defined for GPUShaderModuleCompilationHint<'_> {}
 
 /// The [`GPUShaderModuleDescriptor`](https://developer.mozilla.org/docs/Web/API/GPUShaderModuleDescriptor) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "GPUShaderModuleDescriptor")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct GPUShaderModuleDescriptor<'a> {
     pub label: Option<&'a str>,
@@ -90174,6 +90439,7 @@ unsafe impl Defined for GPUShaderModuleDescriptor<'_> {}
 
 /// The [`GPUStencilFaceState`](https://developer.mozilla.org/docs/Web/API/GPUStencilFaceState) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "GPUStencilFaceState")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct GPUStencilFaceState<'a> {
     pub compare: Option<&'a str>,
@@ -90186,6 +90452,7 @@ unsafe impl Defined for GPUStencilFaceState<'_> {}
 
 /// The [`GPUStorageTextureBindingLayout`](https://developer.mozilla.org/docs/Web/API/GPUStorageTextureBindingLayout) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "GPUStorageTextureBindingLayout")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct GPUStorageTextureBindingLayout<'a> {
     pub access: Option<&'a str>,
@@ -90197,6 +90464,7 @@ unsafe impl Defined for GPUStorageTextureBindingLayout<'_> {}
 
 /// The [`GPUTexelCopyBufferInfo`](https://developer.mozilla.org/docs/Web/API/GPUTexelCopyBufferInfo) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "GPUTexelCopyBufferInfo")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct GPUTexelCopyBufferInfo<'a> {
     pub offset: Option<f64>,
@@ -90209,6 +90477,7 @@ unsafe impl Defined for GPUTexelCopyBufferInfo<'_> {}
 
 /// The [`GPUTexelCopyBufferLayout`](https://developer.mozilla.org/docs/Web/API/GPUTexelCopyBufferLayout) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "GPUTexelCopyBufferLayout")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct GPUTexelCopyBufferLayout {
     pub offset: Option<f64>,
@@ -90220,6 +90489,7 @@ unsafe impl Defined for GPUTexelCopyBufferLayout {}
 
 /// The [`GPUTexelCopyTextureInfo`](https://developer.mozilla.org/docs/Web/API/GPUTexelCopyTextureInfo) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "GPUTexelCopyTextureInfo")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct GPUTexelCopyTextureInfo<'a> {
     pub texture: &'a GPUTexture,
@@ -90232,6 +90502,7 @@ unsafe impl Defined for GPUTexelCopyTextureInfo<'_> {}
 
 /// The [`GPUTextureBindingLayout`](https://developer.mozilla.org/docs/Web/API/GPUTextureBindingLayout) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "GPUTextureBindingLayout")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct GPUTextureBindingLayout<'a> {
     pub sample_type: Option<&'a str>,
@@ -90243,6 +90514,7 @@ unsafe impl Defined for GPUTextureBindingLayout<'_> {}
 
 /// The [`GPUTextureDescriptor`](https://developer.mozilla.org/docs/Web/API/GPUTextureDescriptor) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "GPUTextureDescriptor")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct GPUTextureDescriptor<'a> {
     pub label: Option<&'a str>,
@@ -90260,6 +90532,7 @@ unsafe impl Defined for GPUTextureDescriptor<'_> {}
 
 /// The [`GPUTextureViewDescriptor`](https://developer.mozilla.org/docs/Web/API/GPUTextureViewDescriptor) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "GPUTextureViewDescriptor")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct GPUTextureViewDescriptor<'a> {
     pub label: Option<&'a str>,
@@ -90278,6 +90551,7 @@ unsafe impl Defined for GPUTextureViewDescriptor<'_> {}
 
 /// The [`GPUUncapturedErrorEventInit`](https://developer.mozilla.org/docs/Web/API/GPUUncapturedErrorEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "GPUUncapturedErrorEventInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct GPUUncapturedErrorEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -90290,6 +90564,7 @@ unsafe impl Defined for GPUUncapturedErrorEventInit<'_> {}
 
 /// The [`GPUVertexAttribute`](https://developer.mozilla.org/docs/Web/API/GPUVertexAttribute) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "GPUVertexAttribute")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct GPUVertexAttribute<'a> {
     pub format: &'a str,
@@ -90301,6 +90576,7 @@ unsafe impl Defined for GPUVertexAttribute<'_> {}
 
 /// The [`GPUVertexBufferLayout`](https://developer.mozilla.org/docs/Web/API/GPUVertexBufferLayout) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "GPUVertexBufferLayout")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct GPUVertexBufferLayout<'a> {
     pub array_stride: f64,
@@ -90312,6 +90588,7 @@ unsafe impl Defined for GPUVertexBufferLayout<'_> {}
 
 /// The [`GPUVertexState`](https://developer.mozilla.org/docs/Web/API/GPUVertexState) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "GPUVertexState")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct GPUVertexState<'a> {
     pub module: &'a GPUShaderModule,
@@ -90324,6 +90601,7 @@ unsafe impl Defined for GPUVertexState<'_> {}
 
 /// The [`HashChangeEventInit`](https://developer.mozilla.org/docs/Web/API/HashChangeEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "HashChangeEventInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct HashChangeEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -90339,6 +90617,7 @@ unsafe impl Defined for HashChangeEventInit<'_> {}
 
 /// The [`HighlightsFromPointOptions`](https://developer.mozilla.org/docs/Web/API/HighlightsFromPointOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "HighlightsFromPointOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct HighlightsFromPointOptions<'a> {
     pub shadow_roots: Option<&'a [&'a ShadowRoot]>,
@@ -90349,6 +90628,7 @@ unsafe impl Defined for HighlightsFromPointOptions<'_> {}
 /// The [`IDBGetAllOptions`](https://developer.mozilla.org/docs/Web/API/IDBGetAllOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "IDBGetAllOptions")]
 #[cfg_attr(rust_js, rust_js::declares)]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct IDBGetAllOptions<'a> {
     pub query: Option<&'a dyn IntoUnknown>,
@@ -90360,6 +90640,7 @@ unsafe impl Defined for IDBGetAllOptions<'_> {}
 
 /// The [`IDBIndexParameters`](https://developer.mozilla.org/docs/Web/API/IDBIndexParameters) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "IDBIndexParameters")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct IDBIndexParameters {
     pub unique: Option<bool>,
@@ -90370,6 +90651,7 @@ unsafe impl Defined for IDBIndexParameters {}
 
 /// The [`IDBObjectStoreParameters`](https://developer.mozilla.org/docs/Web/API/IDBObjectStoreParameters) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "IDBObjectStoreParameters")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct IDBObjectStoreParameters<'a> {
     #[cfg_attr(rust_js, rust_js::nullable)]
@@ -90381,6 +90663,7 @@ unsafe impl Defined for IDBObjectStoreParameters<'_> {}
 
 /// The [`IDBTransactionOptions`](https://developer.mozilla.org/docs/Web/API/IDBTransactionOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "IDBTransactionOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct IDBTransactionOptions<'a> {
     pub durability: Option<&'a str>,
@@ -90390,6 +90673,7 @@ unsafe impl Defined for IDBTransactionOptions<'_> {}
 
 /// The [`IDBVersionChangeEventInit`](https://developer.mozilla.org/docs/Web/API/IDBVersionChangeEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "IDBVersionChangeEventInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct IDBVersionChangeEventInit {
     pub bubbles: Option<bool>,
@@ -90404,6 +90688,7 @@ unsafe impl Defined for IDBVersionChangeEventInit {}
 
 /// The [`IdleRequestOptions`](https://developer.mozilla.org/docs/Web/API/IdleRequestOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "IdleRequestOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct IdleRequestOptions {
     pub timeout: Option<f64>,
@@ -90413,6 +90698,7 @@ unsafe impl Defined for IdleRequestOptions {}
 
 /// The [`IIRFilterOptions`](https://developer.mozilla.org/docs/Web/API/IIRFilterOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "IIRFilterOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct IIRFilterOptions<'a> {
     pub channel_count: Option<f64>,
@@ -90426,6 +90712,7 @@ unsafe impl Defined for IIRFilterOptions<'_> {}
 
 /// The [`ImageBitmapOptions`](https://developer.mozilla.org/docs/Web/API/ImageBitmapOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "ImageBitmapOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct ImageBitmapOptions<'a> {
     pub image_orientation: Option<&'a str>,
@@ -90440,6 +90727,7 @@ unsafe impl Defined for ImageBitmapOptions<'_> {}
 
 /// The [`ImageDataSettings`](https://developer.mozilla.org/docs/Web/API/ImageDataSettings) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "ImageDataSettings")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct ImageDataSettings<'a> {
     pub color_space: Option<&'a str>,
@@ -90450,6 +90738,7 @@ unsafe impl Defined for ImageDataSettings<'_> {}
 
 /// The [`ImageDecodeOptions`](https://developer.mozilla.org/docs/Web/API/ImageDecodeOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "ImageDecodeOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct ImageDecodeOptions {
     pub frame_index: Option<f64>,
@@ -90460,6 +90749,7 @@ unsafe impl Defined for ImageDecodeOptions {}
 
 /// The [`ImageDecoderInit`](https://developer.mozilla.org/docs/Web/API/ImageDecoderInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "ImageDecoderInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct ImageDecoderInit<'a> {
     pub r#type: &'a str,
@@ -90475,6 +90765,7 @@ unsafe impl Defined for ImageDecoderInit<'_> {}
 
 /// The [`ImageEncodeOptions`](https://developer.mozilla.org/docs/Web/API/ImageEncodeOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "ImageEncodeOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct ImageEncodeOptions<'a> {
     pub r#type: Option<&'a str>,
@@ -90485,6 +90776,7 @@ unsafe impl Defined for ImageEncodeOptions<'_> {}
 
 /// The [`ImportNodeOptions`](https://developer.mozilla.org/docs/Web/API/ImportNodeOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "ImportNodeOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct ImportNodeOptions<'a> {
     pub custom_element_registry: Option<&'a CustomElementRegistry>,
@@ -90495,6 +90787,7 @@ unsafe impl Defined for ImportNodeOptions<'_> {}
 
 /// The [`InputEventInit`](https://developer.mozilla.org/docs/Web/API/InputEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "InputEventInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct InputEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -90518,6 +90811,7 @@ unsafe impl Defined for InputEventInit<'_> {}
 /// The [`IntersectionObserverEntryInit`](https://developer.mozilla.org/docs/Web/API/IntersectionObserverEntryInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "IntersectionObserverEntryInit")]
 #[cfg_attr(rust_js, rust_js::declares)]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct IntersectionObserverEntryInit<'a> {
     pub time: f64,
@@ -90535,6 +90829,7 @@ unsafe impl Defined for IntersectionObserverEntryInit<'_> {}
 
 /// The [`IntersectionObserverInit`](https://developer.mozilla.org/docs/Web/API/IntersectionObserverInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "IntersectionObserverInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct IntersectionObserverInit<'a> {
     #[cfg_attr(rust_js, rust_js::nullable)]
@@ -90550,6 +90845,7 @@ unsafe impl Defined for IntersectionObserverInit<'_> {}
 
 /// The [`KeyboardEventInit`](https://developer.mozilla.org/docs/Web/API/KeyboardEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "KeyboardEventInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct KeyboardEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -90586,6 +90882,7 @@ unsafe impl Defined for KeyboardEventInit<'_> {}
 
 /// The [`KeyframeAnimationOptions`](https://developer.mozilla.org/docs/Web/API/KeyframeAnimationOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "KeyframeAnimationOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct KeyframeAnimationOptions<'a> {
     pub fill: Option<&'a str>,
@@ -90612,6 +90909,7 @@ unsafe impl Defined for KeyframeAnimationOptions<'_> {}
 
 /// The [`KeyframeEffectOptions`](https://developer.mozilla.org/docs/Web/API/KeyframeEffectOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "KeyframeEffectOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct KeyframeEffectOptions<'a> {
     pub fill: Option<&'a str>,
@@ -90633,6 +90931,7 @@ unsafe impl Defined for KeyframeEffectOptions<'_> {}
 
 /// The [`LockOptions`](https://developer.mozilla.org/docs/Web/API/LockOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "LockOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct LockOptions<'a> {
     pub mode: Option<&'a str>,
@@ -90645,6 +90944,7 @@ unsafe impl Defined for LockOptions<'_> {}
 
 /// The [`MediaElementAudioSourceOptions`](https://developer.mozilla.org/docs/Web/API/MediaElementAudioSourceOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "MediaElementAudioSourceOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct MediaElementAudioSourceOptions<'a> {
     pub media_element: &'a HTMLMediaElement,
@@ -90654,6 +90954,7 @@ unsafe impl Defined for MediaElementAudioSourceOptions<'_> {}
 
 /// The [`MediaEncryptedEventInit`](https://developer.mozilla.org/docs/Web/API/MediaEncryptedEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "MediaEncryptedEventInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct MediaEncryptedEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -90668,6 +90969,7 @@ unsafe impl Defined for MediaEncryptedEventInit<'_> {}
 
 /// The [`MediaImage`](https://developer.mozilla.org/docs/Web/API/MediaImage) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "MediaImage")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct MediaImage<'a> {
     pub src: &'a str,
@@ -90679,6 +90981,7 @@ unsafe impl Defined for MediaImage<'_> {}
 
 /// The [`MediaKeyMessageEventInit`](https://developer.mozilla.org/docs/Web/API/MediaKeyMessageEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "MediaKeyMessageEventInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct MediaKeyMessageEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -90692,6 +90995,7 @@ unsafe impl Defined for MediaKeyMessageEventInit<'_> {}
 
 /// The [`MediaKeysPolicy`](https://developer.mozilla.org/docs/Web/API/MediaKeysPolicy) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "MediaKeysPolicy")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct MediaKeysPolicy<'a> {
     pub min_hdcp_version: Option<&'a str>,
@@ -90701,6 +91005,7 @@ unsafe impl Defined for MediaKeysPolicy<'_> {}
 
 /// The [`MediaMetadataInit`](https://developer.mozilla.org/docs/Web/API/MediaMetadataInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "MediaMetadataInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct MediaMetadataInit<'a> {
     pub title: Option<&'a str>,
@@ -90714,6 +91019,7 @@ unsafe impl Defined for MediaMetadataInit<'_> {}
 
 /// The [`MediaPositionState`](https://developer.mozilla.org/docs/Web/API/MediaPositionState) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "MediaPositionState")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct MediaPositionState {
     pub duration: Option<f64>,
@@ -90725,6 +91031,7 @@ unsafe impl Defined for MediaPositionState {}
 
 /// The [`MediaQueryListEventInit`](https://developer.mozilla.org/docs/Web/API/MediaQueryListEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "MediaQueryListEventInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct MediaQueryListEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -90738,6 +91045,7 @@ unsafe impl Defined for MediaQueryListEventInit<'_> {}
 
 /// The [`MediaRecorderOptions`](https://developer.mozilla.org/docs/Web/API/MediaRecorderOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "MediaRecorderOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct MediaRecorderOptions<'a> {
     pub mime_type: Option<&'a str>,
@@ -90753,6 +91061,7 @@ unsafe impl Defined for MediaRecorderOptions<'_> {}
 
 /// The [`MediaSessionActionDetails`](https://developer.mozilla.org/docs/Web/API/MediaSessionActionDetails) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "MediaSessionActionDetails")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct MediaSessionActionDetails<'a> {
     pub action: &'a str,
@@ -90767,6 +91076,7 @@ unsafe impl Defined for MediaSessionActionDetails<'_> {}
 
 /// The [`MediaStreamAudioSourceOptions`](https://developer.mozilla.org/docs/Web/API/MediaStreamAudioSourceOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "MediaStreamAudioSourceOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct MediaStreamAudioSourceOptions<'a> {
     pub media_stream: &'a MediaStream,
@@ -90776,6 +91086,7 @@ unsafe impl Defined for MediaStreamAudioSourceOptions<'_> {}
 
 /// The [`MediaStreamConstraints`](https://developer.mozilla.org/docs/Web/API/MediaStreamConstraints) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "MediaStreamConstraints")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct MediaStreamConstraints<'a> {
     pub video: Option<BoolOrMediaTrackConstraints>,
@@ -90788,6 +91099,7 @@ unsafe impl Defined for MediaStreamConstraints<'_> {}
 
 /// The [`MediaStreamTrackEventInit`](https://developer.mozilla.org/docs/Web/API/MediaStreamTrackEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "MediaStreamTrackEventInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct MediaStreamTrackEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -90801,6 +91113,7 @@ unsafe impl Defined for MediaStreamTrackEventInit<'_> {}
 /// The [`MemoryDescriptor`](https://developer.mozilla.org/docs/Web/API/MemoryDescriptor) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "MemoryDescriptor")]
 #[cfg_attr(rust_js, rust_js::declares)]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct MemoryDescriptor<'a> {
     pub initial: &'a dyn IntoUnknown,
@@ -90812,6 +91125,7 @@ unsafe impl Defined for MemoryDescriptor<'_> {}
 
 /// The [`MessageEventInit`](https://developer.mozilla.org/docs/Web/API/MessageEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "MessageEventInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct MessageEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -90829,6 +91143,7 @@ unsafe impl Defined for MessageEventInit<'_> {}
 
 /// The [`MIDIConnectionEventInit`](https://developer.mozilla.org/docs/Web/API/MIDIConnectionEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "MIDIConnectionEventInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct MIDIConnectionEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -90841,6 +91156,7 @@ unsafe impl Defined for MIDIConnectionEventInit<'_> {}
 
 /// The [`MIDIMessageEventInit`](https://developer.mozilla.org/docs/Web/API/MIDIMessageEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "MIDIMessageEventInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct MIDIMessageEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -90853,6 +91169,7 @@ unsafe impl Defined for MIDIMessageEventInit<'_> {}
 
 /// The [`MIDIOptions`](https://developer.mozilla.org/docs/Web/API/MIDIOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "MIDIOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct MIDIOptions {
     pub sysex: Option<bool>,
@@ -90863,6 +91180,7 @@ unsafe impl Defined for MIDIOptions {}
 
 /// The [`MouseEventInit`](https://developer.mozilla.org/docs/Web/API/MouseEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "MouseEventInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct MouseEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -90902,6 +91220,7 @@ unsafe impl Defined for MouseEventInit<'_> {}
 
 /// The [`MultiCacheQueryOptions`](https://developer.mozilla.org/docs/Web/API/MultiCacheQueryOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "MultiCacheQueryOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct MultiCacheQueryOptions<'a> {
     pub ignore_search: Option<bool>,
@@ -90914,6 +91233,7 @@ unsafe impl Defined for MultiCacheQueryOptions<'_> {}
 
 /// The [`MutationObserverInit`](https://developer.mozilla.org/docs/Web/API/MutationObserverInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "MutationObserverInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct MutationObserverInit<'a> {
     pub child_list: Option<bool>,
@@ -90929,6 +91249,7 @@ unsafe impl Defined for MutationObserverInit<'_> {}
 
 /// The [`NavigateEventInit`](https://developer.mozilla.org/docs/Web/API/NavigateEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "NavigateEventInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct NavigateEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -90955,6 +91276,7 @@ unsafe impl Defined for NavigateEventInit<'_> {}
 
 /// The [`NavigationCurrentEntryChangeEventInit`](https://developer.mozilla.org/docs/Web/API/NavigationCurrentEntryChangeEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "NavigationCurrentEntryChangeEventInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct NavigationCurrentEntryChangeEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -90969,6 +91291,7 @@ unsafe impl Defined for NavigationCurrentEntryChangeEventInit<'_> {}
 
 /// The [`NavigationInterceptOptions`](https://developer.mozilla.org/docs/Web/API/NavigationInterceptOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "NavigationInterceptOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct NavigationInterceptOptions<'a> {
     pub precommit_handler: Option<Box<dyn IntoNavigationPrecommitHandler>>,
@@ -90981,6 +91304,7 @@ unsafe impl Defined for NavigationInterceptOptions<'_> {}
 
 /// The [`NavigationNavigateOptions`](https://developer.mozilla.org/docs/Web/API/NavigationNavigateOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "NavigationNavigateOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct NavigationNavigateOptions<'a> {
     pub info: Option<&'a dyn IntoUnknown>,
@@ -90992,6 +91316,7 @@ unsafe impl Defined for NavigationNavigateOptions<'_> {}
 
 /// The [`NavigationOptions`](https://developer.mozilla.org/docs/Web/API/NavigationOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "NavigationOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct NavigationOptions<'a> {
     pub info: Option<&'a dyn IntoUnknown>,
@@ -91001,6 +91326,7 @@ unsafe impl Defined for NavigationOptions<'_> {}
 
 /// The [`NavigationReloadOptions`](https://developer.mozilla.org/docs/Web/API/NavigationReloadOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "NavigationReloadOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct NavigationReloadOptions<'a> {
     pub info: Option<&'a dyn IntoUnknown>,
@@ -91011,6 +91337,7 @@ unsafe impl Defined for NavigationReloadOptions<'_> {}
 
 /// The [`NavigationUpdateCurrentEntryOptions`](https://developer.mozilla.org/docs/Web/API/NavigationUpdateCurrentEntryOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "NavigationUpdateCurrentEntryOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct NavigationUpdateCurrentEntryOptions<'a> {
     pub state: &'a dyn IntoUnknown,
@@ -91020,6 +91347,7 @@ unsafe impl Defined for NavigationUpdateCurrentEntryOptions<'_> {}
 
 /// The [`NotificationOptions`](https://developer.mozilla.org/docs/Web/API/NotificationOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "NotificationOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct NotificationOptions<'a> {
     pub dir: Option<&'a str>,
@@ -91043,6 +91371,7 @@ unsafe impl Defined for NotificationOptions<'_> {}
 
 /// The [`OfflineAudioCompletionEventInit`](https://developer.mozilla.org/docs/Web/API/OfflineAudioCompletionEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "OfflineAudioCompletionEventInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct OfflineAudioCompletionEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -91055,6 +91384,7 @@ unsafe impl Defined for OfflineAudioCompletionEventInit<'_> {}
 
 /// The [`OfflineAudioContextOptions`](https://developer.mozilla.org/docs/Web/API/OfflineAudioContextOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "OfflineAudioContextOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct OfflineAudioContextOptions<'a> {
     pub number_of_channels: Option<f64>,
@@ -91068,6 +91398,7 @@ unsafe impl Defined for OfflineAudioContextOptions<'_> {}
 
 /// The [`OptionalEffectTiming`](https://developer.mozilla.org/docs/Web/API/OptionalEffectTiming) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "OptionalEffectTiming")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct OptionalEffectTiming<'a> {
     pub delay: Option<f64>,
@@ -91085,6 +91416,7 @@ unsafe impl Defined for OptionalEffectTiming<'_> {}
 
 /// The [`OscillatorOptions`](https://developer.mozilla.org/docs/Web/API/OscillatorOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "OscillatorOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct OscillatorOptions<'a> {
     pub channel_count: Option<f64>,
@@ -91100,6 +91432,7 @@ unsafe impl Defined for OscillatorOptions<'_> {}
 
 /// The [`PageRevealEventInit`](https://developer.mozilla.org/docs/Web/API/PageRevealEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "PageRevealEventInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct PageRevealEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -91113,6 +91446,7 @@ unsafe impl Defined for PageRevealEventInit<'_> {}
 
 /// The [`PageSwapEventInit`](https://developer.mozilla.org/docs/Web/API/PageSwapEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "PageSwapEventInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct PageSwapEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -91128,6 +91462,7 @@ unsafe impl Defined for PageSwapEventInit<'_> {}
 
 /// The [`PageTransitionEventInit`](https://developer.mozilla.org/docs/Web/API/PageTransitionEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "PageTransitionEventInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct PageTransitionEventInit {
     pub bubbles: Option<bool>,
@@ -91140,6 +91475,7 @@ unsafe impl Defined for PageTransitionEventInit {}
 
 /// The [`PannerOptions`](https://developer.mozilla.org/docs/Web/API/PannerOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "PannerOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct PannerOptions<'a> {
     pub channel_count: Option<f64>,
@@ -91165,6 +91501,7 @@ unsafe impl Defined for PannerOptions<'_> {}
 
 /// The [`ParseHTMLUnsafeOptions`](https://developer.mozilla.org/docs/Web/API/ParseHTMLUnsafeOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "ParseHTMLUnsafeOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct ParseHTMLUnsafeOptions<'a> {
     pub sanitizer: Option<SanitizerOrSanitizerConfigOrStr<'a>>,
@@ -91174,6 +91511,7 @@ unsafe impl Defined for ParseHTMLUnsafeOptions<'_> {}
 
 /// The [`PaymentCurrencyAmount`](https://developer.mozilla.org/docs/Web/API/PaymentCurrencyAmount) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "PaymentCurrencyAmount")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct PaymentCurrencyAmount<'a> {
     pub currency: &'a str,
@@ -91184,6 +91522,7 @@ unsafe impl Defined for PaymentCurrencyAmount<'_> {}
 
 /// The [`PaymentDetailsInit`](https://developer.mozilla.org/docs/Web/API/PaymentDetailsInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "PaymentDetailsInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct PaymentDetailsInit<'a> {
     pub display_items: Option<&'a [PaymentItem<'a>]>,
@@ -91197,6 +91536,7 @@ unsafe impl Defined for PaymentDetailsInit<'_> {}
 
 /// The [`PaymentDetailsModifier`](https://developer.mozilla.org/docs/Web/API/PaymentDetailsModifier) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "PaymentDetailsModifier")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct PaymentDetailsModifier<'a> {
     pub supported_methods: &'a str,
@@ -91208,6 +91548,7 @@ unsafe impl Defined for PaymentDetailsModifier<'_> {}
 
 /// The [`PaymentItem`](https://developer.mozilla.org/docs/Web/API/PaymentItem) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "PaymentItem")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct PaymentItem<'a> {
     pub label: &'a str,
@@ -91219,6 +91560,7 @@ unsafe impl Defined for PaymentItem<'_> {}
 
 /// The [`PaymentMethodChangeEventInit`](https://developer.mozilla.org/docs/Web/API/PaymentMethodChangeEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "PaymentMethodChangeEventInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct PaymentMethodChangeEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -91231,6 +91573,7 @@ unsafe impl Defined for PaymentMethodChangeEventInit<'_> {}
 
 /// The [`PaymentMethodData`](https://developer.mozilla.org/docs/Web/API/PaymentMethodData) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "PaymentMethodData")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct PaymentMethodData<'a> {
     pub supported_methods: &'a str,
@@ -91240,6 +91583,7 @@ unsafe impl Defined for PaymentMethodData<'_> {}
 
 /// The [`PaymentOptions`](https://developer.mozilla.org/docs/Web/API/PaymentOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "PaymentOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct PaymentOptions<'a> {
     pub request_payer_name: Option<bool>,
@@ -91254,6 +91598,7 @@ unsafe impl Defined for PaymentOptions<'_> {}
 
 /// The [`PaymentRequestUpdateEventInit`](https://developer.mozilla.org/docs/Web/API/PaymentRequestUpdateEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "PaymentRequestUpdateEventInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct PaymentRequestUpdateEventInit {
     pub bubbles: Option<bool>,
@@ -91265,6 +91610,7 @@ unsafe impl Defined for PaymentRequestUpdateEventInit {}
 
 /// The [`PaymentShippingOption`](https://developer.mozilla.org/docs/Web/API/PaymentShippingOption) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "PaymentShippingOption")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct PaymentShippingOption<'a> {
     pub id: &'a str,
@@ -91277,6 +91623,7 @@ unsafe impl Defined for PaymentShippingOption<'_> {}
 
 /// The [`PaymentValidationErrors`](https://developer.mozilla.org/docs/Web/API/PaymentValidationErrors) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "PaymentValidationErrors")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct PaymentValidationErrors<'a> {
     pub payer: Option<PayerErrors>,
@@ -91288,6 +91635,7 @@ unsafe impl Defined for PaymentValidationErrors<'_> {}
 
 /// The [`PerformanceMarkOptions`](https://developer.mozilla.org/docs/Web/API/PerformanceMarkOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "PerformanceMarkOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct PerformanceMarkOptions<'a> {
     pub detail: Option<&'a dyn IntoUnknown>,
@@ -91298,6 +91646,7 @@ unsafe impl Defined for PerformanceMarkOptions<'_> {}
 
 /// The [`PerformanceMeasureOptions`](https://developer.mozilla.org/docs/Web/API/PerformanceMeasureOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "PerformanceMeasureOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct PerformanceMeasureOptions<'a> {
     pub detail: Option<&'a dyn IntoUnknown>,
@@ -91311,6 +91660,7 @@ unsafe impl Defined for PerformanceMeasureOptions<'_> {}
 /// The [`PerformanceObserverCallbackOptions`](https://developer.mozilla.org/docs/Web/API/PerformanceObserverCallbackOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "PerformanceObserverCallbackOptions")]
 #[cfg_attr(rust_js, rust_js::declares)]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct PerformanceObserverCallbackOptions {
     pub dropped_entries_count: Option<f64>,
@@ -91320,6 +91670,7 @@ unsafe impl Defined for PerformanceObserverCallbackOptions {}
 
 /// The [`PerformanceObserverInit`](https://developer.mozilla.org/docs/Web/API/PerformanceObserverInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "PerformanceObserverInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct PerformanceObserverInit<'a> {
     pub entry_types: Option<&'a [String]>,
@@ -91331,6 +91682,7 @@ unsafe impl Defined for PerformanceObserverInit<'_> {}
 
 /// The [`PeriodicWaveConstraints`](https://developer.mozilla.org/docs/Web/API/PeriodicWaveConstraints) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "PeriodicWaveConstraints")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct PeriodicWaveConstraints {
     pub disable_normalization: Option<bool>,
@@ -91340,6 +91692,7 @@ unsafe impl Defined for PeriodicWaveConstraints {}
 
 /// The [`PeriodicWaveOptions`](https://developer.mozilla.org/docs/Web/API/PeriodicWaveOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "PeriodicWaveOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct PeriodicWaveOptions<'a> {
     pub disable_normalization: Option<bool>,
@@ -91351,6 +91704,7 @@ unsafe impl Defined for PeriodicWaveOptions<'_> {}
 
 /// The [`PictureInPictureEventInit`](https://developer.mozilla.org/docs/Web/API/PictureInPictureEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "PictureInPictureEventInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct PictureInPictureEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -91363,6 +91717,7 @@ unsafe impl Defined for PictureInPictureEventInit<'_> {}
 
 /// The [`PointerEventInit`](https://developer.mozilla.org/docs/Web/API/PointerEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "PointerEventInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct PointerEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -91417,6 +91772,7 @@ unsafe impl Defined for PointerEventInit<'_> {}
 
 /// The [`PointerLockOptions`](https://developer.mozilla.org/docs/Web/API/PointerLockOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "PointerLockOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct PointerLockOptions {
     pub unadjusted_movement: Option<bool>,
@@ -91426,6 +91782,7 @@ unsafe impl Defined for PointerLockOptions {}
 
 /// The [`PopStateEventInit`](https://developer.mozilla.org/docs/Web/API/PopStateEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "PopStateEventInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct PopStateEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -91440,6 +91797,7 @@ unsafe impl Defined for PopStateEventInit<'_> {}
 
 /// The [`PositionOptions`](https://developer.mozilla.org/docs/Web/API/PositionOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "PositionOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct PositionOptions {
     pub enable_high_accuracy: Option<bool>,
@@ -91451,6 +91809,7 @@ unsafe impl Defined for PositionOptions {}
 
 /// The [`ProgressEventInit`](https://developer.mozilla.org/docs/Web/API/ProgressEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "ProgressEventInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct ProgressEventInit {
     pub bubbles: Option<bool>,
@@ -91465,6 +91824,7 @@ unsafe impl Defined for ProgressEventInit {}
 
 /// The [`PromiseRejectionEventInit`](https://developer.mozilla.org/docs/Web/API/PromiseRejectionEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "PromiseRejectionEventInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct PromiseRejectionEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -91478,6 +91838,7 @@ unsafe impl Defined for PromiseRejectionEventInit<'_> {}
 
 /// The [`PropertyDefinition`](https://developer.mozilla.org/docs/Web/API/PropertyDefinition) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "PropertyDefinition")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct PropertyDefinition<'a> {
     pub name: &'a str,
@@ -91490,6 +91851,7 @@ unsafe impl Defined for PropertyDefinition<'_> {}
 
 /// The [`PublicKeyCredentialCreationOptionsJSON`](https://developer.mozilla.org/docs/Web/API/PublicKeyCredentialCreationOptionsJSON) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "PublicKeyCredentialCreationOptionsJSON")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 pub struct PublicKeyCredentialCreationOptionsJSON<'a> {
     pub rp: PublicKeyCredentialRpEntity,
     pub user: PublicKeyCredentialUserEntityJSON<'a>,
@@ -91508,6 +91870,7 @@ unsafe impl Defined for PublicKeyCredentialCreationOptionsJSON<'_> {}
 
 /// The [`PublicKeyCredentialDescriptorJSON`](https://developer.mozilla.org/docs/Web/API/PublicKeyCredentialDescriptorJSON) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "PublicKeyCredentialDescriptorJSON")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct PublicKeyCredentialDescriptorJSON<'a> {
     pub r#type: &'a str,
@@ -91519,6 +91882,7 @@ unsafe impl Defined for PublicKeyCredentialDescriptorJSON<'_> {}
 
 /// The [`PublicKeyCredentialRequestOptionsJSON`](https://developer.mozilla.org/docs/Web/API/PublicKeyCredentialRequestOptionsJSON) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "PublicKeyCredentialRequestOptionsJSON")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct PublicKeyCredentialRequestOptionsJSON<'a> {
     pub challenge: &'a str,
@@ -91534,6 +91898,7 @@ unsafe impl Defined for PublicKeyCredentialRequestOptionsJSON<'_> {}
 
 /// The [`PublicKeyCredentialUserEntityJSON`](https://developer.mozilla.org/docs/Web/API/PublicKeyCredentialUserEntityJSON) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "PublicKeyCredentialUserEntityJSON")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct PublicKeyCredentialUserEntityJSON<'a> {
     pub id: &'a str,
@@ -91545,6 +91910,7 @@ unsafe impl Defined for PublicKeyCredentialUserEntityJSON<'_> {}
 
 /// The [`PushSubscriptionOptionsInit`](https://developer.mozilla.org/docs/Web/API/PushSubscriptionOptionsInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "PushSubscriptionOptionsInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct PushSubscriptionOptionsInit<'a> {
     pub user_visible_only: Option<bool>,
@@ -91556,6 +91922,7 @@ unsafe impl Defined for PushSubscriptionOptionsInit<'_> {}
 
 /// The [`QueuingStrategy`](https://developer.mozilla.org/docs/Web/API/QueuingStrategy) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "QueuingStrategy")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct QueuingStrategy {
     pub high_water_mark: Option<f64>,
@@ -91565,6 +91932,7 @@ unsafe impl Defined for QueuingStrategy {}
 
 /// The [`QueuingStrategyInit`](https://developer.mozilla.org/docs/Web/API/QueuingStrategyInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "QueuingStrategyInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct QueuingStrategyInit {
     pub high_water_mark: f64,
@@ -91574,6 +91942,7 @@ unsafe impl Defined for QueuingStrategyInit {}
 
 /// The [`ReadableStreamBYOBReaderReadOptions`](https://developer.mozilla.org/docs/Web/API/ReadableStreamBYOBReaderReadOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "ReadableStreamBYOBReaderReadOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct ReadableStreamBYOBReaderReadOptions {
     pub min: Option<f64>,
@@ -91583,6 +91952,7 @@ unsafe impl Defined for ReadableStreamBYOBReaderReadOptions {}
 
 /// The [`ReadableStreamGetReaderOptions`](https://developer.mozilla.org/docs/Web/API/ReadableStreamGetReaderOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "ReadableStreamGetReaderOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct ReadableStreamGetReaderOptions<'a> {
     pub mode: Option<&'a str>,
@@ -91592,6 +91962,7 @@ unsafe impl Defined for ReadableStreamGetReaderOptions<'_> {}
 
 /// The [`ReadableWritablePair`](https://developer.mozilla.org/docs/Web/API/ReadableWritablePair) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "ReadableWritablePair")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct ReadableWritablePair<'a> {
     pub readable: &'a ReadableStream,
@@ -91602,6 +91973,7 @@ unsafe impl Defined for ReadableWritablePair<'_> {}
 
 /// The [`RegistrationOptions`](https://developer.mozilla.org/docs/Web/API/RegistrationOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "RegistrationOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct RegistrationOptions<'a> {
     pub scope: Option<&'a str>,
@@ -91613,6 +91985,7 @@ unsafe impl Defined for RegistrationOptions<'_> {}
 
 /// The [`ReportingObserverOptions`](https://developer.mozilla.org/docs/Web/API/ReportingObserverOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "ReportingObserverOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct ReportingObserverOptions<'a> {
     pub types: Option<&'a [String]>,
@@ -91623,6 +91996,7 @@ unsafe impl Defined for ReportingObserverOptions<'_> {}
 
 /// The [`RequestInit`](https://developer.mozilla.org/docs/Web/API/RequestInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "RequestInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct RequestInit<'a> {
     pub method: Option<&'a str>,
@@ -91648,6 +92022,7 @@ unsafe impl Defined for RequestInit<'_> {}
 
 /// The [`ResizeObserverOptions`](https://developer.mozilla.org/docs/Web/API/ResizeObserverOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "ResizeObserverOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct ResizeObserverOptions<'a> {
     pub r#box: Option<&'a str>,
@@ -91657,6 +92032,7 @@ unsafe impl Defined for ResizeObserverOptions<'_> {}
 
 /// The [`ResponseInit`](https://developer.mozilla.org/docs/Web/API/ResponseInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "ResponseInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct ResponseInit<'a> {
     pub status: Option<f64>,
@@ -91668,6 +92044,7 @@ unsafe impl Defined for ResponseInit<'_> {}
 
 /// The [`RTCDataChannelEventInit`](https://developer.mozilla.org/docs/Web/API/RTCDataChannelEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "RTCDataChannelEventInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct RTCDataChannelEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -91680,6 +92057,7 @@ unsafe impl Defined for RTCDataChannelEventInit<'_> {}
 
 /// The [`RTCDataChannelInit`](https://developer.mozilla.org/docs/Web/API/RTCDataChannelInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "RTCDataChannelInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct RTCDataChannelInit<'a> {
     pub ordered: Option<bool>,
@@ -91694,6 +92072,7 @@ unsafe impl Defined for RTCDataChannelInit<'_> {}
 
 /// The [`RTCDTMFToneChangeEventInit`](https://developer.mozilla.org/docs/Web/API/RTCDTMFToneChangeEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "RTCDTMFToneChangeEventInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct RTCDTMFToneChangeEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -91707,6 +92086,7 @@ unsafe impl Defined for RTCDTMFToneChangeEventInit<'_> {}
 /// The [`RTCEncodedAudioFrameOptions`](https://developer.mozilla.org/docs/Web/API/RTCEncodedAudioFrameOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "RTCEncodedAudioFrameOptions")]
 #[cfg_attr(rust_js, rust_js::declares)]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct RTCEncodedAudioFrameOptions {
     pub metadata: Option<RTCEncodedAudioFrameMetadata>,
@@ -91717,6 +92097,7 @@ unsafe impl Defined for RTCEncodedAudioFrameOptions {}
 /// The [`RTCEncodedVideoFrameOptions`](https://developer.mozilla.org/docs/Web/API/RTCEncodedVideoFrameOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "RTCEncodedVideoFrameOptions")]
 #[cfg_attr(rust_js, rust_js::declares)]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct RTCEncodedVideoFrameOptions {
     pub metadata: Option<RTCEncodedVideoFrameMetadata>,
@@ -91726,6 +92107,7 @@ unsafe impl Defined for RTCEncodedVideoFrameOptions {}
 
 /// The [`RTCErrorEventInit`](https://developer.mozilla.org/docs/Web/API/RTCErrorEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "RTCErrorEventInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct RTCErrorEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -91738,6 +92120,7 @@ unsafe impl Defined for RTCErrorEventInit<'_> {}
 
 /// The [`RTCErrorInit`](https://developer.mozilla.org/docs/Web/API/RTCErrorInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "RTCErrorInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct RTCErrorInit<'a> {
     pub error_detail: &'a str,
@@ -91752,6 +92135,7 @@ unsafe impl Defined for RTCErrorInit<'_> {}
 
 /// The [`RTCLocalIceCandidateInit`](https://developer.mozilla.org/docs/Web/API/RTCLocalIceCandidateInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "RTCLocalIceCandidateInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct RTCLocalIceCandidateInit<'a> {
     pub candidate: Option<&'a str>,
@@ -91771,6 +92155,7 @@ unsafe impl Defined for RTCLocalIceCandidateInit<'_> {}
 
 /// The [`RTCLocalSessionDescriptionInit`](https://developer.mozilla.org/docs/Web/API/RTCLocalSessionDescriptionInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "RTCLocalSessionDescriptionInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct RTCLocalSessionDescriptionInit<'a> {
     pub r#type: Option<&'a str>,
@@ -91781,6 +92166,7 @@ unsafe impl Defined for RTCLocalSessionDescriptionInit<'_> {}
 
 /// The [`RTCOfferOptions`](https://developer.mozilla.org/docs/Web/API/RTCOfferOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "RTCOfferOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct RTCOfferOptions {
     pub ice_restart: Option<bool>,
@@ -91792,6 +92178,7 @@ unsafe impl Defined for RTCOfferOptions {}
 
 /// The [`RTCPeerConnectionIceErrorEventInit`](https://developer.mozilla.org/docs/Web/API/RTCPeerConnectionIceErrorEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "RTCPeerConnectionIceErrorEventInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct RTCPeerConnectionIceErrorEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -91810,6 +92197,7 @@ unsafe impl Defined for RTCPeerConnectionIceErrorEventInit<'_> {}
 
 /// The [`RTCPeerConnectionIceEventInit`](https://developer.mozilla.org/docs/Web/API/RTCPeerConnectionIceEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "RTCPeerConnectionIceEventInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct RTCPeerConnectionIceEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -91825,6 +92213,7 @@ unsafe impl Defined for RTCPeerConnectionIceEventInit<'_> {}
 
 /// The [`RTCRtpTransceiverInit`](https://developer.mozilla.org/docs/Web/API/RTCRtpTransceiverInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "RTCRtpTransceiverInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct RTCRtpTransceiverInit<'a> {
     pub direction: Option<&'a str>,
@@ -91836,6 +92225,7 @@ unsafe impl Defined for RTCRtpTransceiverInit<'_> {}
 
 /// The [`RTCTrackEventInit`](https://developer.mozilla.org/docs/Web/API/RTCTrackEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "RTCTrackEventInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct RTCTrackEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -91851,6 +92241,7 @@ unsafe impl Defined for RTCTrackEventInit<'_> {}
 
 /// The [`SchedulerPostTaskOptions`](https://developer.mozilla.org/docs/Web/API/SchedulerPostTaskOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "SchedulerPostTaskOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct SchedulerPostTaskOptions<'a> {
     pub signal: Option<&'a AbortSignal>,
@@ -91862,6 +92253,7 @@ unsafe impl Defined for SchedulerPostTaskOptions<'_> {}
 
 /// The [`ScrollIntoViewOptions`](https://developer.mozilla.org/docs/Web/API/ScrollIntoViewOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "ScrollIntoViewOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct ScrollIntoViewOptions<'a> {
     pub behavior: Option<&'a str>,
@@ -91874,6 +92266,7 @@ unsafe impl Defined for ScrollIntoViewOptions<'_> {}
 
 /// The [`ScrollTimelineOptions`](https://developer.mozilla.org/docs/Web/API/ScrollTimelineOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "ScrollTimelineOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct ScrollTimelineOptions<'a> {
     #[cfg_attr(rust_js, rust_js::nullable)]
@@ -91885,6 +92278,7 @@ unsafe impl Defined for ScrollTimelineOptions<'_> {}
 
 /// The [`ScrollToOptions`](https://developer.mozilla.org/docs/Web/API/ScrollToOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "ScrollToOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct ScrollToOptions<'a> {
     pub behavior: Option<&'a str>,
@@ -91896,6 +92290,7 @@ unsafe impl Defined for ScrollToOptions<'_> {}
 
 /// The [`SecurityPolicyViolationEventInit`](https://developer.mozilla.org/docs/Web/API/SecurityPolicyViolationEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "SecurityPolicyViolationEventInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct SecurityPolicyViolationEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -91921,6 +92316,7 @@ unsafe impl Defined for SecurityPolicyViolationEventInit<'_> {}
 
 /// The [`SerialOptions`](https://developer.mozilla.org/docs/Web/API/SerialOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "SerialOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct SerialOptions<'a> {
     pub baud_rate: f64,
@@ -91935,6 +92331,7 @@ unsafe impl Defined for SerialOptions<'_> {}
 
 /// The [`SerialOutputSignals`](https://developer.mozilla.org/docs/Web/API/SerialOutputSignals) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "SerialOutputSignals")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct SerialOutputSignals {
     pub data_terminal_ready: Option<bool>,
@@ -91946,6 +92343,7 @@ unsafe impl Defined for SerialOutputSignals {}
 
 /// The [`SerialPortFilter`](https://developer.mozilla.org/docs/Web/API/SerialPortFilter) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "SerialPortFilter")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct SerialPortFilter<'a> {
     pub usb_vendor_id: Option<f64>,
@@ -91957,6 +92355,7 @@ unsafe impl Defined for SerialPortFilter<'_> {}
 
 /// The [`SerialPortRequestOptions`](https://developer.mozilla.org/docs/Web/API/SerialPortRequestOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "SerialPortRequestOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct SerialPortRequestOptions<'a> {
     pub filters: Option<&'a [SerialPortFilter<'a>]>,
@@ -91967,6 +92366,7 @@ unsafe impl Defined for SerialPortRequestOptions<'_> {}
 
 /// The [`SetHTMLOptions`](https://developer.mozilla.org/docs/Web/API/SetHTMLOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "SetHTMLOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct SetHTMLOptions<'a> {
     pub sanitizer: Option<SanitizerOrSanitizerConfigOrStr<'a>>,
@@ -91976,6 +92376,7 @@ unsafe impl Defined for SetHTMLOptions<'_> {}
 
 /// The [`SetHTMLUnsafeOptions`](https://developer.mozilla.org/docs/Web/API/SetHTMLUnsafeOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "SetHTMLUnsafeOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Default)]
 pub struct SetHTMLUnsafeOptions<'a> {
     pub sanitizer: Option<SanitizerOrSanitizerConfigOrStr<'a>>,
@@ -91986,6 +92387,7 @@ unsafe impl Defined for SetHTMLUnsafeOptions<'_> {}
 
 /// The [`ShadowRootInit`](https://developer.mozilla.org/docs/Web/API/ShadowRootInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "ShadowRootInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct ShadowRootInit<'a> {
     pub mode: &'a str,
@@ -92001,6 +92403,7 @@ unsafe impl Defined for ShadowRootInit<'_> {}
 
 /// The [`ShareData`](https://developer.mozilla.org/docs/Web/API/ShareData) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "ShareData")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct ShareData<'a> {
     pub files: Option<&'a [&'a File]>,
@@ -92014,6 +92417,7 @@ unsafe impl Defined for ShareData<'_> {}
 /// The [`SharedWorkerOptions`](https://developer.mozilla.org/docs/Web/API/SharedWorkerOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "SharedWorkerOptions")]
 #[cfg_attr(rust_js, rust_js::declares)]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct SharedWorkerOptions<'a> {
     pub name: Option<&'a str>,
@@ -92026,6 +92430,7 @@ unsafe impl Defined for SharedWorkerOptions<'_> {}
 
 /// The [`ShowPopoverOptions`](https://developer.mozilla.org/docs/Web/API/ShowPopoverOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "ShowPopoverOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct ShowPopoverOptions<'a> {
     pub source: Option<&'a HTMLElement>,
@@ -92035,6 +92440,7 @@ unsafe impl Defined for ShowPopoverOptions<'_> {}
 
 /// The [`SpeechRecognitionErrorEventInit`](https://developer.mozilla.org/docs/Web/API/SpeechRecognitionErrorEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "SpeechRecognitionErrorEventInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct SpeechRecognitionErrorEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -92048,6 +92454,7 @@ unsafe impl Defined for SpeechRecognitionErrorEventInit<'_> {}
 
 /// The [`SpeechRecognitionEventInit`](https://developer.mozilla.org/docs/Web/API/SpeechRecognitionEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "SpeechRecognitionEventInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct SpeechRecognitionEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -92062,6 +92469,7 @@ unsafe impl Defined for SpeechRecognitionEventInit<'_> {}
 /// The [`SpeechRecognitionOptions`](https://developer.mozilla.org/docs/Web/API/SpeechRecognitionOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "SpeechRecognitionOptions")]
 #[cfg_attr(rust_js, rust_js::declares)]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct SpeechRecognitionOptions<'a> {
     pub langs: &'a [String],
@@ -92073,6 +92481,7 @@ unsafe impl Defined for SpeechRecognitionOptions<'_> {}
 
 /// The [`SpeechSynthesisErrorEventInit`](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisErrorEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "SpeechSynthesisErrorEventInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct SpeechSynthesisErrorEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -92090,6 +92499,7 @@ unsafe impl Defined for SpeechSynthesisErrorEventInit<'_> {}
 
 /// The [`SpeechSynthesisEventInit`](https://developer.mozilla.org/docs/Web/API/SpeechSynthesisEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "SpeechSynthesisEventInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct SpeechSynthesisEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -92106,6 +92516,7 @@ unsafe impl Defined for SpeechSynthesisEventInit<'_> {}
 
 /// The [`StartViewTransitionOptions`](https://developer.mozilla.org/docs/Web/API/StartViewTransitionOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "StartViewTransitionOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct StartViewTransitionOptions<'a> {
     #[cfg_attr(rust_js, rust_js::nullable)]
@@ -92118,6 +92529,7 @@ unsafe impl Defined for StartViewTransitionOptions<'_> {}
 
 /// The [`StaticRangeInit`](https://developer.mozilla.org/docs/Web/API/StaticRangeInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "StaticRangeInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct StaticRangeInit<'a> {
     pub start_container: &'a Node,
@@ -92130,6 +92542,7 @@ unsafe impl Defined for StaticRangeInit<'_> {}
 
 /// The [`StereoPannerOptions`](https://developer.mozilla.org/docs/Web/API/StereoPannerOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "StereoPannerOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct StereoPannerOptions<'a> {
     pub channel_count: Option<f64>,
@@ -92142,6 +92555,7 @@ unsafe impl Defined for StereoPannerOptions<'_> {}
 
 /// The [`StorageEventInit`](https://developer.mozilla.org/docs/Web/API/StorageEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "StorageEventInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct StorageEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -92162,6 +92576,7 @@ unsafe impl Defined for StorageEventInit<'_> {}
 
 /// The [`StreamPipeOptions`](https://developer.mozilla.org/docs/Web/API/StreamPipeOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "StreamPipeOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct StreamPipeOptions<'a> {
     pub prevent_close: Option<bool>,
@@ -92174,6 +92589,7 @@ unsafe impl Defined for StreamPipeOptions<'_> {}
 
 /// The [`StructuredSerializeOptions`](https://developer.mozilla.org/docs/Web/API/StructuredSerializeOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "StructuredSerializeOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct StructuredSerializeOptions<'a> {
     pub transfer: Option<&'a [&'a dyn core::any::Any]>,
@@ -92183,6 +92599,7 @@ unsafe impl Defined for StructuredSerializeOptions<'_> {}
 
 /// The [`SubmitEventInit`](https://developer.mozilla.org/docs/Web/API/SubmitEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "SubmitEventInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct SubmitEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -92196,6 +92613,7 @@ unsafe impl Defined for SubmitEventInit<'_> {}
 
 /// The [`SvcOutputMetadata`](https://developer.mozilla.org/docs/Web/API/SvcOutputMetadata) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "SvcOutputMetadata")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct SvcOutputMetadata {
     pub temporal_layer_id: Option<f64>,
@@ -92205,6 +92623,7 @@ unsafe impl Defined for SvcOutputMetadata {}
 
 /// The [`SVGBoundingBoxOptions`](https://developer.mozilla.org/docs/Web/API/SVGBoundingBoxOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "SVGBoundingBoxOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct SVGBoundingBoxOptions {
     pub fill: Option<bool>,
@@ -92217,6 +92636,7 @@ unsafe impl Defined for SVGBoundingBoxOptions {}
 
 /// The [`TaskControllerInit`](https://developer.mozilla.org/docs/Web/API/TaskControllerInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "TaskControllerInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct TaskControllerInit<'a> {
     pub priority: Option<&'a str>,
@@ -92226,6 +92646,7 @@ unsafe impl Defined for TaskControllerInit<'_> {}
 
 /// The [`TaskPriorityChangeEventInit`](https://developer.mozilla.org/docs/Web/API/TaskPriorityChangeEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "TaskPriorityChangeEventInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct TaskPriorityChangeEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -92238,6 +92659,7 @@ unsafe impl Defined for TaskPriorityChangeEventInit<'_> {}
 
 /// The [`TaskSignalAnyInit`](https://developer.mozilla.org/docs/Web/API/TaskSignalAnyInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "TaskSignalAnyInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct TaskSignalAnyInit<'a> {
     pub priority: Option<StrOrTaskSignal<'a>>,
@@ -92247,6 +92669,7 @@ unsafe impl Defined for TaskSignalAnyInit<'_> {}
 
 /// The [`TextDecodeOptions`](https://developer.mozilla.org/docs/Web/API/TextDecodeOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "TextDecodeOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct TextDecodeOptions {
     pub stream: Option<bool>,
@@ -92256,6 +92679,7 @@ unsafe impl Defined for TextDecodeOptions {}
 
 /// The [`TextDecoderOptions`](https://developer.mozilla.org/docs/Web/API/TextDecoderOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "TextDecoderOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct TextDecoderOptions {
     pub fatal: Option<bool>,
@@ -92267,6 +92691,7 @@ unsafe impl Defined for TextDecoderOptions {}
 
 /// The [`TimelineRangeOffset`](https://developer.mozilla.org/docs/Web/API/TimelineRangeOffset) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "TimelineRangeOffset")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct TimelineRangeOffset<'a> {
     #[cfg_attr(rust_js, rust_js::nullable)]
@@ -92278,6 +92703,7 @@ unsafe impl Defined for TimelineRangeOffset<'_> {}
 
 /// The [`ToggleEventInit`](https://developer.mozilla.org/docs/Web/API/ToggleEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "ToggleEventInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct ToggleEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -92293,6 +92719,7 @@ unsafe impl Defined for ToggleEventInit<'_> {}
 
 /// The [`TogglePopoverOptions`](https://developer.mozilla.org/docs/Web/API/TogglePopoverOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "TogglePopoverOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct TogglePopoverOptions<'a> {
     pub source: Option<&'a HTMLElement>,
@@ -92303,6 +92730,7 @@ unsafe impl Defined for TogglePopoverOptions<'_> {}
 
 /// The [`TouchEventInit`](https://developer.mozilla.org/docs/Web/API/TouchEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "TouchEventInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct TouchEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -92335,6 +92763,7 @@ unsafe impl Defined for TouchEventInit<'_> {}
 
 /// The [`TouchInit`](https://developer.mozilla.org/docs/Web/API/TouchInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "TouchInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct TouchInit<'a> {
     pub identifier: f64,
@@ -92358,6 +92787,7 @@ unsafe impl Defined for TouchInit<'_> {}
 
 /// The [`TrackEventInit`](https://developer.mozilla.org/docs/Web/API/TrackEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "TrackEventInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct TrackEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -92371,6 +92801,7 @@ unsafe impl Defined for TrackEventInit<'_> {}
 
 /// The [`TransitionEventInit`](https://developer.mozilla.org/docs/Web/API/TransitionEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "TransitionEventInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct TransitionEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -92387,6 +92818,7 @@ unsafe impl Defined for TransitionEventInit<'_> {}
 
 /// The [`UIEventInit`](https://developer.mozilla.org/docs/Web/API/UIEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "UIEventInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct UIEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -92402,6 +92834,7 @@ unsafe impl Defined for UIEventInit<'_> {}
 
 /// The [`UnknownCredentialOptions`](https://developer.mozilla.org/docs/Web/API/UnknownCredentialOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "UnknownCredentialOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct UnknownCredentialOptions<'a> {
     pub rp_id: &'a str,
@@ -92412,6 +92845,7 @@ unsafe impl Defined for UnknownCredentialOptions<'_> {}
 
 /// The [`URLPatternOptions`](https://developer.mozilla.org/docs/Web/API/URLPatternOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "URLPatternOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct URLPatternOptions {
     pub ignore_case: Option<bool>,
@@ -92421,6 +92855,7 @@ unsafe impl Defined for URLPatternOptions {}
 
 /// The [`ValidityStateFlags`](https://developer.mozilla.org/docs/Web/API/ValidityStateFlags) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "ValidityStateFlags")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct ValidityStateFlags {
     pub value_missing: Option<bool>,
@@ -92439,6 +92874,7 @@ unsafe impl Defined for ValidityStateFlags {}
 
 /// The [`VideoDecoderInit`](https://developer.mozilla.org/docs/Web/API/VideoDecoderInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "VideoDecoderInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 pub struct VideoDecoderInit {
     pub output: Box<dyn FnMut(&'static VideoFrame)>,
     pub error: Box<dyn FnMut(&'static DOMException)>,
@@ -92448,6 +92884,7 @@ unsafe impl Defined for VideoDecoderInit {}
 
 /// The [`VideoEncoderEncodeOptions`](https://developer.mozilla.org/docs/Web/API/VideoEncoderEncodeOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "VideoEncoderEncodeOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct VideoEncoderEncodeOptions {
     pub key_frame: Option<bool>,
@@ -92458,6 +92895,7 @@ unsafe impl Defined for VideoEncoderEncodeOptions {}
 
 /// The [`VideoEncoderEncodeOptionsForAvc`](https://developer.mozilla.org/docs/Web/API/VideoEncoderEncodeOptionsForAvc) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "VideoEncoderEncodeOptionsForAvc")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct VideoEncoderEncodeOptionsForAvc {
     #[cfg_attr(rust_js, rust_js::nullable)]
@@ -92468,6 +92906,7 @@ unsafe impl Defined for VideoEncoderEncodeOptionsForAvc {}
 
 /// The [`VideoEncoderInit`](https://developer.mozilla.org/docs/Web/API/VideoEncoderInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "VideoEncoderInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 pub struct VideoEncoderInit {
     pub output: Box<dyn FnMut(&'static EncodedVideoChunk, EncodedVideoChunkMetadata<'static>)>,
     pub error: Box<dyn FnMut(&'static DOMException)>,
@@ -92477,6 +92916,7 @@ unsafe impl Defined for VideoEncoderInit {}
 
 /// The [`VideoFrameBufferInit`](https://developer.mozilla.org/docs/Web/API/VideoFrameBufferInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "VideoFrameBufferInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 pub struct VideoFrameBufferInit<'a> {
     pub format: &'a str,
     pub coded_width: f64,
@@ -92497,6 +92937,7 @@ unsafe impl Defined for VideoFrameBufferInit<'_> {}
 
 /// The [`VideoFrameCallbackMetadata`](https://developer.mozilla.org/docs/Web/API/VideoFrameCallbackMetadata) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "VideoFrameCallbackMetadata")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct VideoFrameCallbackMetadata {
     pub presentation_time: f64,
@@ -92515,6 +92956,7 @@ unsafe impl Defined for VideoFrameCallbackMetadata {}
 
 /// The [`VideoFrameCopyToOptions`](https://developer.mozilla.org/docs/Web/API/VideoFrameCopyToOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "VideoFrameCopyToOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct VideoFrameCopyToOptions<'a> {
     pub rect: Option<DOMRectInit>,
@@ -92527,6 +92969,7 @@ unsafe impl Defined for VideoFrameCopyToOptions<'_> {}
 
 /// The [`VideoFrameInit`](https://developer.mozilla.org/docs/Web/API/VideoFrameInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "VideoFrameInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct VideoFrameInit<'a> {
     pub duration: Option<f64>,
@@ -92543,6 +92986,7 @@ unsafe impl Defined for VideoFrameInit<'_> {}
 
 /// The [`ViewTimelineOptions`](https://developer.mozilla.org/docs/Web/API/ViewTimelineOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "ViewTimelineOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct ViewTimelineOptions<'a> {
     pub subject: &'a Element,
@@ -92554,6 +92998,7 @@ unsafe impl Defined for ViewTimelineOptions<'_> {}
 
 /// The [`WaveShaperOptions`](https://developer.mozilla.org/docs/Web/API/WaveShaperOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "WaveShaperOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct WaveShaperOptions<'a> {
     pub channel_count: Option<f64>,
@@ -92568,6 +93013,7 @@ unsafe impl Defined for WaveShaperOptions<'_> {}
 /// The [`WebAssemblyCompileOptions`](https://developer.mozilla.org/docs/Web/API/WebAssemblyCompileOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "WebAssemblyCompileOptions")]
 #[cfg_attr(rust_js, rust_js::declares)]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct WebAssemblyCompileOptions<'a> {
     #[cfg_attr(rust_js, rust_js::nullable)]
@@ -92579,6 +93025,7 @@ unsafe impl Defined for WebAssemblyCompileOptions<'_> {}
 
 /// The [`WebGLContextEventInit`](https://developer.mozilla.org/docs/Web/API/WebGLContextEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "WebGLContextEventInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct WebGLContextEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -92591,6 +93038,7 @@ unsafe impl Defined for WebGLContextEventInit<'_> {}
 
 /// The [`WebTransportErrorOptions`](https://developer.mozilla.org/docs/Web/API/WebTransportErrorOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "WebTransportErrorOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct WebTransportErrorOptions<'a> {
     pub source: Option<&'a str>,
@@ -92602,6 +93050,7 @@ unsafe impl Defined for WebTransportErrorOptions<'_> {}
 
 /// The [`WebTransportHash`](https://developer.mozilla.org/docs/Web/API/WebTransportHash) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "WebTransportHash")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct WebTransportHash<'a> {
     pub algorithm: &'a str,
@@ -92612,6 +93061,7 @@ unsafe impl Defined for WebTransportHash<'_> {}
 
 /// The [`WebTransportOptions`](https://developer.mozilla.org/docs/Web/API/WebTransportOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "WebTransportOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct WebTransportOptions<'a> {
     pub allow_pooling: Option<bool>,
@@ -92631,6 +93081,7 @@ unsafe impl Defined for WebTransportOptions<'_> {}
 
 /// The [`WebTransportSendOptions`](https://developer.mozilla.org/docs/Web/API/WebTransportSendOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "WebTransportSendOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct WebTransportSendOptions<'a> {
     #[cfg_attr(rust_js, rust_js::nullable)]
@@ -92642,6 +93093,7 @@ unsafe impl Defined for WebTransportSendOptions<'_> {}
 
 /// The [`WebTransportSendStreamOptions`](https://developer.mozilla.org/docs/Web/API/WebTransportSendStreamOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "WebTransportSendStreamOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct WebTransportSendStreamOptions<'a> {
     #[cfg_attr(rust_js, rust_js::nullable)]
@@ -92654,6 +93106,7 @@ unsafe impl Defined for WebTransportSendStreamOptions<'_> {}
 
 /// The [`WheelEventInit`](https://developer.mozilla.org/docs/Web/API/WheelEventInit) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "WheelEventInit")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct WheelEventInit<'a> {
     pub bubbles: Option<bool>,
@@ -92698,6 +93151,7 @@ unsafe impl Defined for WheelEventInit<'_> {}
 
 /// The [`WindowPostMessageOptions`](https://developer.mozilla.org/docs/Web/API/WindowPostMessageOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "WindowPostMessageOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct WindowPostMessageOptions<'a> {
     pub transfer: Option<&'a [&'a dyn core::any::Any]>,
@@ -92709,6 +93163,7 @@ unsafe impl Defined for WindowPostMessageOptions<'_> {}
 /// The [`WorkerAndParameters`](https://developer.mozilla.org/docs/Web/API/WorkerAndParameters) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "WorkerAndParameters")]
 #[cfg_attr(rust_js, rust_js::declares)]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct WorkerAndParameters<'a> {
     pub worker: &'a Worker,
@@ -92719,6 +93174,7 @@ unsafe impl Defined for WorkerAndParameters<'_> {}
 
 /// The [`WorkerOptions`](https://developer.mozilla.org/docs/Web/API/WorkerOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "WorkerOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct WorkerOptions<'a> {
     pub name: Option<&'a str>,
@@ -92730,6 +93186,7 @@ unsafe impl Defined for WorkerOptions<'_> {}
 
 /// The [`WorkletOptions`](https://developer.mozilla.org/docs/Web/API/WorkletOptions) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "WorkletOptions")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy, Default)]
 pub struct WorkletOptions<'a> {
     pub credentials: Option<&'a str>,
@@ -92739,6 +93196,7 @@ unsafe impl Defined for WorkletOptions<'_> {}
 
 /// The [`WriteParams`](https://developer.mozilla.org/docs/Web/API/WriteParams) dictionary: a JS object of these fields, a `None` one not given.
 #[cfg_attr(rust_js, rust_js::types = "WriteParams")]
+#[cfg_attr(rust_js, rust_js::dictionary)]
 #[derive(Clone, Copy)]
 pub struct WriteParams<'a> {
     pub r#type: &'a str,

@@ -678,7 +678,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// its own (ADR 0770). Anyone else's, like `u32::MAX`, is its value,
     /// written in place. A
     /// trait's in generic code, `S::SIDES`, is its impl's dictionary's (ADR 0106).
-    fn named_const(&mut self, def_id: DefId, args: ty::GenericArgsRef<'tcx>, ty: Ty<'tcx>, span: Span) -> R<Expr> {
+    /// A use a library hands out what it stores by, `stored`, is a copy of
+    /// its own, its objects' too (`copies::stored`, #1907).
+    fn named_const(
+        &mut self,
+        def_id: DefId,
+        args: ty::GenericArgsRef<'tcx>,
+        ty: Ty<'tcx>,
+        span: Span,
+        stored: bool,
+    ) -> R<Expr> {
         // A trait's, of a type: its impl's (ADR 0410), of one generic code
         // names too, `Self::CAPACITY` of an `impl<T, const CAP: usize>`.
         let (def_id, args) = match self.tcx.trait_of_assoc(def_id) {
@@ -713,7 +722,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.is_rust_fn(def_id) && ty.is_freeze(self.tcx, self.typing_env) {
             // `fn_ref` also records the use, which is what imports its module.
             let place = self.item_read(def_id, span);
-            let copied = self.const_use_copied(ty)
+            let copied = (self.const_use_copied(ty) || stored)
                 // One whose value JS holds as itself, `undefined` of one with
                 // no byte written, `MaybeUninit::uninit()`'s, which nothing
                 // changes (ADR 0332).
@@ -728,6 +737,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 place.facts = place.facts.with(js::Known::Boolean);
             }
             return match copied {
+                true if stored => Ok(self.copy_stored(place, ty)),
                 true => self.const_copy(place, ty, span),
                 false => Ok(place),
             };

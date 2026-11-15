@@ -136,7 +136,7 @@ pub(in crate::lower) fn undefined_is_absent(tcx: TyCtxt<'_>, def_id: DefId) -> b
 
 /// Is this function or static JS's: in an `extern` block, or a
 /// `#[rust_js::link_name]` function?
-pub(super) fn is_binding(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+pub(in crate::lower) fn is_binding(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     tcx.is_foreign_item(def_id) || tool_link_name(tcx, def_id).is_some()
 }
 
@@ -479,6 +479,14 @@ pub(super) fn test_member(tcx: TyCtxt<'_>, def_id: DefId) -> Option<Option<(Stri
 /// Whether `field`, a struct's, tells its struct apart in an untagged
 /// enum, a bare `#[rust_js::test]`: the struct is an object whose
 /// `field` is of its kind, `Array.isArray(child.children)` (rd291).
+/// Is `id` a struct a binding's generator marks `#[rust_js::dictionary]`,
+/// a WebIDL dictionary: a parameter of it a WebIDL operation reads into an
+/// IDL value, never keeping or changing the object it's given (#1907).
+pub(in crate::lower) fn is_dictionary(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    let path = [Symbol::intern("rust_js"), Symbol::intern("dictionary")];
+    tcx.get_attrs_by_path(id, &path).next().is_some()
+}
+
 pub(super) fn is_test_field(tcx: TyCtxt<'_>, field: DefId) -> bool {
     let path = [Symbol::intern("rust_js"), Symbol::intern("test")];
     tcx.get_attrs_by_path(field, &path)

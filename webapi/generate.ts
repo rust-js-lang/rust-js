@@ -2936,6 +2936,7 @@ for (const [name, { lent, ts }] of [...promised].sort(([a], [b]) => a.localeComp
 for (const [name, fields] of usedDictionaries) {
   line();
   line(`/// The \`${name}\` dictionary: a JS object with these fields, a \`None\` one not there.`);
+  line("#[cfg_attr(rust_js, rust_js::dictionary)]");
   if (fields.every((f) => f.optional)) line(`#[derive(Default)]`);
   line(`pub struct ${typeName(name)} {`);
   for (const f of fields) {
@@ -2981,6 +2982,9 @@ for (const [name, { fields, borrows }] of [...paramDictionaries].sort(([a], [b])
   // one rust-js's declarations declare of its fields where it has none (#1817).
   line(`#[cfg_attr(rust_js, rust_js::types = ${JSON.stringify(name)})]`);
   if (!typescriptDeclares.has(name)) line("#[cfg_attr(rust_js, rust_js::declares)]");
+  // A WebIDL dictionary, which an operation reads into an IDL value, never
+  // keeping or changing the object given (#1907).
+  line("#[cfg_attr(rust_js, rust_js::dictionary)]");
   derives(typeName(name), fields.every((f) => f.optional));
   line(`pub struct ${typeName(name)}${borrows ? "<'a>" : ""} {`);
   for (const f of fields) {

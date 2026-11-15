@@ -120,7 +120,7 @@ pub(crate) const CATALOGUE: &[Decision] = &[
     Decision {
         name: "copy-if-needed",
         owner: "src/lower/copies.rs copy_if_needed",
-        answers: &["fresh", "copied", "shared"],
+        answers: &["fresh", "copied", "shared", "stored"],
         typed: true,
     },
     Decision {

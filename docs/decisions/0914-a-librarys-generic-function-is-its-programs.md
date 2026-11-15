@@ -1800,3 +1800,79 @@ giving, an empty struct, and a tuple of `[u8; 0]`, `()` and an empty
 struct. No corpus snapshot moves. Mutation
 `unwritten-zero-sized-read-by-name` (`lower/mir/temporaries.ts`);
 `mir-const-unit-struct-refused` retargeted.
+
+## Amendment: what a library stores is handed out as a copy of its own (2026-11-15, #1907)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's behavior is preserved; and of a WebIDL dictionary argument, none,
+so JS's.
+
+A library's JS copied what its own crate, and the libraries it uses,
+change in place (ADR 0100, amended), and a consumer compiled its own of
+a function that may copy what the consumer changes. A third crate's
+change, or JS's, was asked by neither: `dep::origin()` returned its
+constant `ORIGIN` itself, as `dep` changes no `Spot`; `app` changes none
+either; `mid` does, and `app` gives it one:
+
+```rust
+let mut origin = dep::origin();
+mid::shift(&mut origin); // spot.y += 10
+println!("{origin:?} {:?}", dep::origin());
+```
+
+printed `Spot { x: 0, y: 10 } Spot { x: 0, y: 10 }`, `ORIGIN` itself
+changed, where native prints `Spot { x: 0, y: 0 }` last; and so did a JS
+module importing both, `mid.shift(dep.origin())`.
+
+**A library's JS hands out none of what it stores: a `Copy` value of a
+plain object or array, a binding's dictionary too, it reads from a constant, a static or a
+thread-local's `with`, a `Cell`'s `get`, a `RefCell`'s guard or an
+`Rc`'s, or a function's result, which may be any of them, is a copy of
+its own, its objects' too, where it leaves the read** (`copies::stored`:
+`stored_copied`, `reads_stored`, `stored_read_escapes`, `copy_stored`):
+returned, given to a call, stored or captured. Of the library alone, so
+its JS is the same as a dependency of any crate, as this decision has
+it; a program's copies stay its whole program's (`copy_if_needed`). Not
+what a parameter's reference or a closure's capture reads, whose owner
+decides; nor a value whose parts that aren't objects alone are read,
+`const check = checks[i]; check.value`; nor std's value of a form of its
+own, `fmt::Arguments`' function. `dep` writes `origin() { return {
+...ORIGIN }; }`.
+
+**What a WebIDL operation's dictionary parameter is given is as it is**:
+WebIDL converts a dictionary argument to an IDL value by reading each of
+its members (WebIDL, §3.2.17 "dictionary types", the ECMAScript-to-IDL
+conversion), and the platform never keeps nor changes the object it was
+given, so no copy could be told from it (case none).
+`decoder.decode(buffer, DECODER_OPTIONS)`, as React's
+ReactFlightClientStreamConfigNode.js writes it. The fact is the type's:
+webapi's generator marks each dictionary struct
+`#[rust_js::dictionary]` (`bindings::is_dictionary`), and a binding's
+parameter of one, or of `Some` of one, is the converted case. One typed
+`any`, `object`, an interface, a callback or a promise may be kept,
+`postMessage`'s message, `structuredClone`'s value, and is copied.
+
+Weighed first, and backed out: asking, at the consumer, whether a
+library other than a function's own changes what it may copy, and
+compiling the consumer's own where one does; then counting each type
+held by what a consumer gives a library's function that changes it as
+the consumer's change. Each answers by type, and std's types are
+structural: `react-server-dom-*` gives `react_server` a request holding
+`Vec<String>`s it changes, and was made to compile `react_client`'s
+`process_reply`, which copies a `Vec<String>` and calls a relatively
+bound function, so the port was refused, as it was where a sibling
+library's contract listed `Vec<&Unknown>` or a debug-info tuple. Neither
+saw a JS caller.
+
+The React port is unchanged: its stored values it hands out are numbers,
+and `DECODER_OPTIONS` a dictionary given to WebIDL. Held by
+`test/crates/triples/library_value_changed_by_another_library`, by
+value, through a `&mut`, a `RefCell` given by `&`, a `dyn` method and a
+generic one, a callback's result, a `&mut` in a struct, a cell an
+`Rc` the consumer holds is of, what an `Rc` it holds points at, of a type
+no cell of the library holds, so only its being stored copies it, a
+thread-local's and a constant's nested objects, each against native;
+`test/library-kept-copies.test.ts`, two libraries joined only by JS, and
+a stored dictionary given to `TextDecoder.decode`, as it is, and a
+stored value given to `postMessage`, a copy. Mutations in
+`scripts/mutations/lower/copies/stored.ts` and `copies.ts`' `stored-objects-shallow`.
