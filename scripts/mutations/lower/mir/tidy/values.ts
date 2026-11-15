@@ -194,11 +194,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/values.rs",
     find: "            *e = (**made).clone().or_at(span);\n",
     replace: "            let _ = (made, span);\n",
-    tests: [
-      "test/lowering-nullable.test.ts",
-      "-t",
-      "a nullable field's value a variable holds",
-    ],
+    tests: ["test/lowering-nullable-tests.test.ts", "-t", "a variable MIR proves nothing of"],
   },
   {
     name: "tested-defined-still-nulled",

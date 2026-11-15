@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/decided.rs",
     find: "                    present_in(&mut stmts[j], test, holds, false);\n",
     replace: "",
-    tests: ["test/lowering-options.test.ts", "-t", "a test says is there"],
+    tests: ["test/lowering-nullable-tests.test.ts", "-t", "a variable MIR proves nothing of"],
   },
   {
     name: "present-coalesce-failed-test-unread",

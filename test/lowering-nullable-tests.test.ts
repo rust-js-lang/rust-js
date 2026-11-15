@@ -647,3 +647,46 @@ pub fn defer_or(items: Vec<u32>, chunk: &Chunk) {
   lib.restore({ blocked: true, get pending() { reads += 1; return reads === 1 ? 7 : undefined; } }, to);
   expect(to.pending).toBe(null);
 });
+
+// What MIR can't see of a variable, one a `match` writes in each arm,
+// React's getIteratorFn's `maybeIterator`, or one lent as a `&mut`,
+// getParentFragmentInstances' `parentFragmentInstances`:
+// tidy's reading of the printed JS still answers it, until MIR does
+// (#1933's step 4), `x ?? d` under a test that `x` is there its `x`, and a
+// `let` set only to what's never `undefined` given as it is.
+test("a variable MIR proves nothing of is tidy's to read", async () => {
+  const { dir, fn, tidied } = compile(
+    "nullable-tests-lent-variables",
+    `#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn iterator_fn(value: &'static js::Unknown, faux: &'static js::Unknown) -> Option<&'static js::Unknown> {
+    let found = match js::get(Some(value), "iterator") {
+        found if js::truthy(found) => found,
+        _ => js::get(Some(faux), "iterator"),
+    };
+    if js::type_of(found) == "function" {
+        return found;
+    }
+    None
+}
+
+#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn found(items: Vec<u32>) -> Option<Vec<u32>> {
+    let mut found = js::null();
+    for item in items {
+        match &mut found {
+            None => found = Some(vec![item]),
+            Some(found) => found.push(item),
+        }
+    }
+    found
+}
+`,
+  );
+  expect(tidied.sort()).toEqual(["tidy-nulled-as-they-are never-undefined", "tidy-present-in coalesce"]);
+  expect(fn("iteratorFn")).not.toContain("??");
+  expect(fn("found")).not.toContain("??");
+  const lib = await import(join(dir, "lib.js"));
+  const f = () => 1;
+  expect([lib.iteratorFn({ iterator: f }, {}), lib.iteratorFn({}, { iterator: f }), lib.iteratorFn({}, {})]).toEqual([f, f, null]);
+  expect([lib.found([4, 5]), lib.found([])]).toEqual([[4, 5], null]);
+});
