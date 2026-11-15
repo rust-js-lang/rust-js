@@ -146,3 +146,19 @@ pub fn begin_plain(details: &mut Details) -> CapturedValue {
     { value: 8, stack },
   ]);
 });
+
+// `by.map(|x| items.iter().map(|n| n + x).collect())`: the map's closure,
+// called with what it's given, holds a closure that reads its argument, `x`,
+// which is named where the inner one reads it, never left reading a name
+// replaced (examples/combinators.rs's `shifted`, #1953).
+test("a map's closure whose own closure reads its argument reads it there", async () => {
+  const dir = fixture("combinator-closure-reads-argument");
+  writeFileSync(join(dir, "lib.rs"), `pub fn shifted(by: Option<u32>, items: Vec<u32>) -> Option<Vec<u32>> {
+    by.map(|x| items.iter().map(|n| n + x).collect())
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.shifted(2, [1, 3]), lib.shifted(undefined, [1])]).toEqual([[3, 5], undefined]);
+});
+

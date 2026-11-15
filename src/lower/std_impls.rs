@@ -444,10 +444,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 ty::Adt(..) if let Some((x, borrowed)) = self.cow_deref(&a, ty) => {
                     (a, b, ty) = (x, self.cow_deref(&b, ty).expect("a `Cow`").0, borrowed);
                 }
-                // A wrapper of std's that's what it holds, a `ManuallyDrop`, or
-                // a transparent one that derives `==`: what it holds, which it
-                // is in JS (ADR 0584).
-                ty::Adt(..) if let Some(held) = self.recognition().std_wrapped(ty) => ty = held,
+                // A transparent wrapper that derives `==`, std's `ManuallyDrop`
+                // too: what it holds, which it is in JS (ADR 0584).
                 ty::Adt(..)
                     if let Some(held) = self.transparent(ty)
                         && self.recognition().derives(self.partial_eq_trait(), ty) =>

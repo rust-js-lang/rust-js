@@ -423,14 +423,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-symbols.test.ts", "-t", "Symbol.for its key"],
   },
   {
-    name: "manually-drop-eq-refused",
-    breaks: "`==` of two `ManuallyDrop`s is refused, where it's their values'",
-    file: "src/lower/std_impls.rs",
-    find: "                ty::Adt(..) if let Some(held) = self.recognition().std_wrapped(ty) => ty = held,\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^manually_drop_values.rs$"],
-  },
-  {
     name: "std-enum-eq-refused",
     breaks: "`==` of std's `Bound` and `Component`, derived, is refused",
     file: "src/lower/std_impls.rs",

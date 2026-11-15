@@ -58,7 +58,7 @@ export const mutations: Mutation[] = [
     file: "src/js/expr_walk.rs",
     find: "                    !replaced\n                } =>\n",
     replace: "                    replaced || !replaced\n                } =>\n",
-    tests: ["test/compiler.test.ts", "-t", "combinators.report matches"],
+    tests: ["test/lowering-nullable-combinators.test.ts", "-t", "closure reads its argument"],
   },
   {
     name: "truthy-test-kept",
