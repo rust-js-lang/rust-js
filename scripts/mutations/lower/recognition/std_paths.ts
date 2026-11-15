@@ -60,4 +60,13 @@ export const mutations: Mutation[] = [
     replace: "        && std::iter::successors(std_path_parent(tcx, id), |_| None)\n",
     tests: ["test/corpus.test.ts"],
   },
+  {
+    name: "std-item-in-its-own-module",
+    breaks: "an item is in a module of std's where it's defined in it, not where std's path writes it: `core::iter::adapters::map::Map` is in no `std::iter`, so no adapter passes a step on, `fuse().count()` of a crate's iterator no longer its own",
+    file: "src/lower/recognition/std_paths.rs",
+    find: "    (super::is_std_crate(tcx, id) && std_path_parent(tcx, id).is_some_and(|at| is_std_module(tcx, at, module)))\n",
+    replace: "    (super::is_std_crate(tcx, id) && tcx.opt_parent(id).is_some_and(|at| is_std_module(tcx, at, module)))\n",
+    tests: ["test/corpus.test.ts"],
+    snapshots: true,
+  },
 ];

@@ -7,7 +7,6 @@
 src/lower/recognition/adapter_types.rs	62
 src/lower/recognition/iterators.rs	149
 src/lower/recognition/lengths.rs	126
-src/lower/recognition/own_steps.rs	9
 src/lower/recognition/zip_folds.rs	5
 # `std_path` itself, std's path's text, which the table's rows are: `core::`
 # and `alloc::` written `std::`.

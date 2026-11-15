@@ -135,10 +135,10 @@ impl OwnStep {
 /// panic, as it never ends (repeat.rs:110, #1138); `RepeatN`'s `nth`, `last`, the
 /// value itself, and `count`, its length, none of which clones what it
 /// passes (repeat_n.rs:140, #1124).
-fn own_source_steps(path: &str) -> Option<&'static [OwnStep]> {
-    match path {
-        "std::iter::Repeat" => Some(&[OwnStep::Nth, OwnStep::Last, OwnStep::Count]),
-        "std::iter::RepeatN" => Some(&[OwnStep::Nth, OwnStep::Last, OwnStep::Count]),
+fn own_source_steps(item: Option<StdPath>) -> Option<&'static [OwnStep]> {
+    match item {
+        Some(StdPath::IterRepeat) => Some(&[OwnStep::Nth, OwnStep::Last, OwnStep::Count]),
+        Some(StdPath::IterRepeatN) => Some(&[OwnStep::Nth, OwnStep::Last, OwnStep::Count]),
         _ => None,
     }
 }
@@ -169,10 +169,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if self.source_writes(ty, step) {
             return true;
         }
-        let path = std_path(self.tcx, adt.did());
-        let Some(adapter) = path.strip_prefix("std::iter::") else {
+        let Some(named) = std_item_in(self.tcx, adt.did(), StdPath::IterMod) else {
             return false;
         };
+        let adapter = named.as_str();
         (step.asked_of(adapter).iter()).any(|&(at, asked)| {
             self.asked_source(ty, args, at)
                 .is_some_and(|source| self.reaches_its_own(source, asked, reach))
@@ -188,7 +188,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let ty::Adt(adt, _) = ty.kind() else {
             return false;
         };
-        own_source_steps(std_path(self.tcx, adt.did())).is_some_and(|own| own.contains(&step))
+        own_source_steps(std_path_item(self.tcx, adt.did())).is_some_and(|own| own.contains(&step))
             || step == OwnStep::Last
                 && self.search_runs_code(ty)
                 && matches!(self.tcx.item_name(adt.did()).as_str(), "ChunkBy" | "ChunkByMut")
@@ -212,10 +212,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let ty::Adt(adt, args) = ty.kind() else {
             return Vec::new();
         };
-        let path = std_path(self.tcx, adt.did());
-        let Some(adapter) = path.strip_prefix("std::iter::") else {
+        let Some(named) = std_item_in(self.tcx, adt.did(), StdPath::IterMod) else {
             return Vec::new();
         };
+        let adapter = named.as_str();
         (step.asked_of(adapter).iter())
             .filter_map(|&(at, asked)| Some((self.asked_source(ty, args, at)?, asked)))
             .collect()
@@ -245,10 +245,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let ty::Adt(adt, args) = ty.kind() else {
             return Vec::new();
         };
-        let path = std_path(self.tcx, adt.did());
-        let Some(adapter) = path.strip_prefix("std::iter::") else {
+        let Some(named) = std_item_in(self.tcx, adt.did(), StdPath::IterMod) else {
             return Vec::new();
         };
+        let adapter = named.as_str();
         let mut sources = Vec::new();
         if matches!(adapter, "Skip" | "StepBy") {
             sources.extend(args.types().next());

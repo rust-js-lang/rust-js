@@ -196,6 +196,7 @@ std_paths! {
     IoStdoutFn => "std::io::stdout",
     IoTakeFn => "std::io::take",
     UtilInlinedSlowReadByteFn => "std::io::util::inlined_slow_read_byte",
+    IterMod => "std::iter",
     IterChain => "std::iter::Chain",
     IterCloned => "std::iter::Cloned",
     IterCopied => "std::iter::Copied",
@@ -212,6 +213,7 @@ std_paths! {
     IterMapWhile => "std::iter::MapWhile",
     IterOnce => "std::iter::Once",
     IterPeekable => "std::iter::Peekable",
+    IterRepeat => "std::iter::Repeat",
     IterRepeatN => "std::iter::RepeatN",
     IterRev => "std::iter::Rev",
     IterScan => "std::iter::Scan",
@@ -603,6 +605,7 @@ const STD_MODULES: &[StdPath] = &[
     StdPath::FsMod,
     StdPath::SyncMpscMod,
     StdPath::ThreadMod,
+    StdPath::IterMod,
     StdPath::SyncMpmcMod,
     StdPath::CharMod,
     StdPath::StrMod,
@@ -662,4 +665,12 @@ pub(crate) fn std_path_under(tcx: TyCtxt<'_>, id: DefId, module: StdPath) -> boo
     super::is_std_crate(tcx, id)
         && std::iter::successors(std_path_parent(tcx, id), |&at| std_path_parent(tcx, at))
             .any(|at| is_std_module(tcx, at, module))
+}
+
+/// `id`'s name where std's path writes it in `module`, one of
+/// `STD_MODULES`, `Map` of `core::iter::Map` in `std::iter`: a direct
+/// item's of the module's, not one of a module in it.
+pub(crate) fn std_item_in(tcx: TyCtxt<'_>, id: DefId, module: StdPath) -> Option<Symbol> {
+    (super::is_std_crate(tcx, id) && std_path_parent(tcx, id).is_some_and(|at| is_std_module(tcx, at, module)))
+        .then(|| tcx.item_name(id))
 }
