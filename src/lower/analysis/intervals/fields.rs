@@ -10,8 +10,10 @@ use super::*;
 /// local of its own: `(*self).at`, `at`. Of a parameter only ever read
 /// through its fields, `(*self).f`, never itself, `&mut *self` given a
 /// method, which may reach any field; or of a shared one to a struct that
-/// holds no cell itself, whose fields can't change while it's borrowed. Its blocks and statements are the
-/// body's, each where it was. None where no parameter is so.
+/// holds no cell itself, whose fields can't change while it's borrowed.
+/// Never of one the body writes, `h = other`, whose fields are another's
+/// past it (#1878). Its blocks and statements are the body's, each where it
+/// was. None where no parameter is so.
 pub(super) fn fields_as_locals<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> Option<Body<'tcx>> {
     use rustc_middle::mir::visit::{MutVisitor, PlaceContext, Visitor};
     let pointers: Vec<Local> = (1..=body.arg_count)
@@ -34,12 +36,18 @@ pub(super) fn fields_as_locals<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> Op
         pointers: &'a [Local],
         field: &'a dyn Fn(&mir::Place<'tcx>) -> Option<(usize, Ty<'tcx>)>,
         whole: IndexSet<Local>,
+        written: IndexSet<Local>,
         fields: IndexMap<(Local, usize), Ty<'tcx>>,
     }
     impl<'tcx> Visitor<'tcx> for Uses<'_, 'tcx> {
         fn visit_place(&mut self, place: &mir::Place<'tcx>, context: PlaceContext, _: Location) {
             if !self.pointers.contains(&place.local) || matches!(context, PlaceContext::NonUse(_)) {
                 return;
+            }
+            // The parameter itself written, `h = other` or `&mut h`: its
+            // fields are another struct's past it (#1878).
+            if place.projection.is_empty() && context.is_mutating_use() {
+                self.written.insert(place.local);
             }
             match (self.field)(place) {
                 Some((k, ty)) => {
@@ -55,6 +63,7 @@ pub(super) fn fields_as_locals<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> Op
         pointers: &pointers,
         field: &field,
         whole: IndexSet::default(),
+        written: IndexSet::default(),
         fields: IndexMap::default(),
     };
     uses.visit_body(body);
@@ -63,8 +72,9 @@ pub(super) fn fields_as_locals<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> Op
     // returned or compared, `find(&node.children[0])` beside `node`.
     let typing_env = ty::TypingEnv::post_analysis(tcx, body.source.def_id());
     let frozen = |pointer: Local| matches!(*body.local_decls[pointer].ty.kind(), ty::Ref(_, to, ty::Mutability::Not) if to.is_freeze(tcx, typing_env));
-    uses.fields
-        .retain(|&(pointer, _), _| !uses.whole.contains(&pointer) || frozen(pointer));
+    uses.fields.retain(|&(pointer, _), _| {
+        !uses.written.contains(&pointer) && (!uses.whole.contains(&pointer) || frozen(pointer))
+    });
     if uses.fields.is_empty() {
         return None;
     }

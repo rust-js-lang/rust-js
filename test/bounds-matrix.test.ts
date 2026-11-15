@@ -30,16 +30,7 @@ const all = programs();
 
 /** The programs that run and differ from native Rust, each a wrong answer
  * filed P0, by its issue. One that agrees is taken off with its fix. */
-const wrong: Record<string, string> = {
-  slice_field__below: "#1878",
-  slice_field__held: "#1878",
-  slice_field__next: "#1878",
-  slice_field__last: "#1878",
-  slice_field__wrap: "#1878",
-  slice_field__loop_while: "#1878",
-  slice_field__loop_for: "#1878",
-  field__wrap: "#1878",
-};
+const wrong: Record<string, string> = {};
 
 test("the wrong answers are the matrix's programs", () => {
   for (const name of Object.keys(wrong)) expect(Object.keys(all)).toContain(name);
