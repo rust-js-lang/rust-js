@@ -156,7 +156,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let name = crate::lower::recognition::extension_entry(self.tcx, trait_id);
             let len = Expr::call(Expr::member(Expr::var(&made_iterator), "len"), Vec::new());
             let len = Expr::arrow(
-                vec![made_iterator.as_str().into()],
+                vec![made_iterator.clone().into()],
                 vec![StmtKind::Return(Some(len)).at(js::Span::NONE)],
             );
             (name.to_string(), len)
@@ -506,7 +506,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // A writer's options, where the crate's take them (ADRs 0058, 0137).
                 + usize::from(self.compiled_writer_takes_options(method) && self.formatter_param(method).is_some());
             let mut params: Vec<String> = (0..count).map(|i| format!("arg{i}")).collect();
-            let mut values: Vec<Expr> = params.iter().map(|name| Expr::var(name)).collect();
+            let mut values: Vec<Expr> = params.iter().map(Expr::var).collect();
             // Where it's called, after its arguments, of one whose entries take
             // it (ADR 0427): its caller's, generic code's or a `dyn`'s where
             // its declaration tracks its caller, and generic code's alone
@@ -859,7 +859,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .map(|(_, value)| value.clone())
                     .chain(self.given.evidence.iter().map(|(_, value)| value.clone()))
                     .chain(self.given.type_facts.iter().map(|(_, _, value)| value.clone()))
-                    .chain(self.given_drops().iter().map(|name| Expr::var(name)))
+                    .chain(self.given_drops().iter().map(Expr::var))
                     .collect(),
             );
             let make = Expr::arrow(

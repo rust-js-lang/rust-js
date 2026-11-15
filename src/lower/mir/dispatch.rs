@@ -437,7 +437,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if self.takes_options(def_id) {
                 params.push(self.fresh(Role::Options));
             }
-            let values = params.iter().map(|name| Expr::var(name)).chain(evidence).collect();
+            let values = params.iter().map(Expr::var).chain(evidence).collect();
             let call = Expr::call(self.fn_ref(def_id), values);
             return Ok(Expr::arrow(
                 params.into_iter().map(Into::into).collect(),

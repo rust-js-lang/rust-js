@@ -401,7 +401,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let uses = self.dependencies.replace(Dependencies::default());
         let given = self.set_given_aside();
         let mut body = Vec::new();
-        let value = make(self, params.iter().map(|p| Expr::var(p)).collect(), &mut body);
+        let value = make(self, params.iter().map(Expr::var).collect(), &mut body);
         self.restore_given(given);
         self.names.replace(names);
         let own = self.dependencies.replace(uses);
@@ -443,7 +443,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let params: Vec<String> = params.iter().map(|&p| self.fresh(p)).collect();
         self.recursive.0.push((kind, ty, name.clone()));
         let mut body = Vec::new();
-        let value = make(self, params.iter().map(|p| Expr::var(p)).collect(), &mut body);
+        let value = make(self, params.iter().map(Expr::var).collect(), &mut body);
         self.recursive.0.pop();
         body.push(StmtKind::Return(Some(value?)).at(js::Span::NONE));
         let f = Expr::arrow(params.into_iter().map(Into::into).collect(), body);

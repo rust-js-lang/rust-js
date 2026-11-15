@@ -787,7 +787,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         };
         let in_order = Expr::arrow(
-            vec![made_a.as_str().into(), made_b.as_str().into()],
+            vec![made_a.clone().into(), made_b.clone().into()],
             vec![StmtKind::Return(Some(le)).at(js::Span::NONE)],
         );
         let mut args = vec![items, in_order];
@@ -807,12 +807,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if body.is_empty()
             && let js::ExprKind::Call(callee, args) = &order.kind
             && callee.reads_same()
-            && matches!(args.as_slice(), [x, y] if is_var(x, &made_a) && is_var(y, &made_b))
+            && matches!(args.as_slice(), [x, y] if is_var(x, made_a.word()) && is_var(y, made_b.word()))
         {
             return Ok((**callee).clone());
         }
         body.push(StmtKind::Return(Some(order)).at(js::Span::NONE));
-        Ok(Expr::arrow(vec![made_a.as_str().into(), made_b.as_str().into()], body))
+        Ok(Expr::arrow(vec![made_a.clone().into(), made_b.clone().into()], body))
     }
 
     /// Whether `Iterator::max` of `ty`s, or `min`, is by their own `Ord::max`
@@ -856,12 +856,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if body.is_empty()
             && let js::ExprKind::Call(callee, args) = &order.kind
             && callee.reads_same()
-            && matches!(args.as_slice(), [x, y] if is_var(x, &made_a) && is_var(y, &made_b))
+            && matches!(args.as_slice(), [x, y] if is_var(x, made_a.word()) && is_var(y, made_b.word()))
         {
             return Ok((**callee).clone());
         }
         body.push(StmtKind::Return(Some(order)).at(js::Span::NONE));
-        Ok(Expr::arrow(vec![made_a.as_str().into(), made_b.as_str().into()], body))
+        Ok(Expr::arrow(vec![made_a.clone().into(), made_b.clone().into()], body))
     }
 
     /// `a < b` and the rest, `a.cmp(&b)`, `a.partial_cmp(&b)`, `a.max(b)`

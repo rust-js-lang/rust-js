@@ -14,7 +14,7 @@ pub(crate) fn fresh_apart(taken: &mut IndexSet<String>, base: &str) -> String {
     // Of a name not spelled yet, `value#1`, its word, `value`, or given apart
     // from it: a temporary named after what it holds is of its word, never
     // `value#1$1`, which nothing would spell (#1681 change 3, M2).
-    let base = unspelled_base(base).unwrap_or(base);
+    let base = made_base(base).unwrap_or(base);
     if taken.insert(base.to_string()) {
         return base.to_string();
     }
@@ -45,21 +45,18 @@ pub(crate) fn apart(name: &str) -> Option<(&str, usize)> {
     Some((base, k.parse().ok()?))
 }
 
-/// A name lowering makes that isn't spelled yet, the `k`th of `base`'s,
-/// `value#1` (#1681 change 3, M2): what M3's names table will hold for a
-/// name the compiler makes, a variable of its own and not the program's.
-/// No JS reads it, nor does `apart` take it for a name given apart, so tidy
-/// takes it for no kin of the program's `value`; preparation spells each
-/// once, apart from every name its module has (`prepare::reclaim::spelled`),
-/// and the validator refuses one that reaches printing.
-pub(crate) fn unspelled(base: &str, k: usize) -> String {
+/// The word of a name lowering makes, the `k`th of `base`'s, `value#1`,
+/// not spelled yet (#1681 change 3, M2): what `js::Name::made` is. No JS
+/// reads it, and no program's name can be it, nor does `apart` take it for
+/// a name given apart, so tidy takes it for no kin of the program's `value`.
+pub(crate) fn made(base: &str, k: usize) -> String {
     format!("{base}#{k}")
 }
 
-/// Of a name not spelled yet, `value#1` (`unspelled`), what it's of,
-/// `value`; none of any other.
-pub(crate) fn unspelled_base(name: &str) -> Option<&str> {
-    let (base, k) = name.rsplit_once('#')?;
+/// Of a word `made` wrote, `value#1`, what it's of, `value`; none of any
+/// other.
+pub(crate) fn made_base(word: &str) -> Option<&str> {
+    let (base, k) = word.rsplit_once('#')?;
     (!base.is_empty() && !k.is_empty() && k.bytes().all(|b| b.is_ascii_digit())).then_some(base)
 }
 

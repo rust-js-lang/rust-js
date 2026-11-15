@@ -327,9 +327,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             .map(|(name, local)| js::Prop::Field((*name).into(), Expr::var(local)))
                             .collect(),
                     ),
-                    Held::Duration { make, .. } => {
-                        Expr::call_helper(make, locals.iter().map(|local| Expr::var(local)).collect())
-                    }
+                    Held::Duration { make, .. } => Expr::call_helper(make, locals.iter().map(Expr::var).collect()),
                 };
                 let build = Expr::arrow(
                     vec![js::Pattern::names_array(locals.into_iter().map(Some))],

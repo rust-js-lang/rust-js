@@ -343,12 +343,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(match &parts.kind {
             js::ExprKind::Call(callee, args)
                 if callee.helper_name() == Some("$id")
-                    && matches!(args.as_slice(), [arg] if matches!(&arg.kind, js::ExprKind::Var(v) if v.is(name))) =>
+                    && matches!(args.as_slice(), [arg] if matches!(&arg.kind, js::ExprKind::Var(v) if v == name)) =>
             {
                 (**callee).clone()
             }
             _ => Expr::arrow(
-                vec![name.as_str().into()],
+                vec![name.clone().into()],
                 vec![StmtKind::Return(Some(parts)).at(js::Span::NONE)],
             ),
         })

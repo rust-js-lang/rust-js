@@ -95,12 +95,16 @@ test("a temporary's name a value carries is set and read in one place each", () 
 
 // A name lowering makes that isn't spelled yet, `value#1`, is one form
 // (#1681 change 3, M2, the start of M3's names table): `names.rs` writes
-// it and reads it; lowering makes one by `FnCx::unspelled` alone, unique in
-// its item; preparation spells it, `reclaim::spelled`; the validator
-// refuses one printed. Nothing else makes or reads the form.
+// its word and reads it, and `js::Name::made` alone is made of it (S2);
+// lowering makes one by `FnCx::unspelled` alone, unique in its item;
+// preparation spells it, `reclaim::spelled`, asking the name; the
+// validator, whose scopes keep words, refuses one printed. Nothing else
+// makes or reads the form.
 test("an unspelled name is made, spelled and refused in one place each", () => {
   const outsideTests = (file: string) => read(file).split("#[cfg(test)]")[0];
   const with_ = (pattern: RegExp) => sources.filter((file) => pattern.test(outsideTests(file)));
-  expect(with_(/names::unspelled\(/)).toEqual(["src/lower.rs"]);
-  expect(with_(/names::unspelled_base\(/)).toEqual(["src/js/validate.rs", "src/prepare/reclaim.rs"]);
+  expect(with_(/names::made\(/)).toEqual(["src/js/name.rs"]);
+  expect(with_(/Name::made\(/)).toEqual(["src/lower.rs"]);
+  expect(with_(/names::made_base\(/)).toEqual(["src/js/name.rs", "src/js/validate.rs"]);
+  expect(with_(/\.made_base\(\)/)).toEqual(["src/prepare/reclaim.rs"]);
 });

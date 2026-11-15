@@ -44,12 +44,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let returned = vec![StmtKind::Return(Some(inner)).at(js::Span::NONE)];
         let mut props = vec![js::Prop::Field(
             "inner".into(),
-            Expr::arrow(vec![made_iterator.as_str().into()], returned),
+            Expr::arrow(vec![made_iterator.clone().into()], returned),
         )];
         if !drop.is_empty() {
             props.push(js::Prop::Field(
                 "dropInner".into(),
-                Expr::arrow(vec![made_iterator.as_str().into()], drop),
+                Expr::arrow(vec![made_iterator.clone().into()], drop),
             ));
         }
         Ok(props)

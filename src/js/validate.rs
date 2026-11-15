@@ -27,7 +27,7 @@ pub enum Problem {
     /// reads instead.
     Shadowed(String),
     /// A name lowering made that was never spelled, `value#1`
-    /// (`names::unspelled`).
+    /// (`js::Name::made`).
     Unspelled(String),
     /// A hole no tree is printed with (`Hole`): a value taken and never
     /// put back, of any tree; a library's item asked for, of a module's,
@@ -71,7 +71,7 @@ pub fn stages_checked() -> bool {
 pub fn module(module: &Module) -> Vec<Problem> {
     let tree = scopes::Tree::of_module(module);
     let mut problems = names(&tree);
-    let unspelled = tree.names().filter(|name| crate::names::unspelled_base(name).is_some());
+    let unspelled = tree.names().filter(|name| crate::names::made_base(name).is_some());
     problems.extend(unspelled.map(|name| Problem::Unspelled(name.to_string())));
     let mut cx = Cx {
         whole: true,
@@ -436,11 +436,14 @@ mod tests {
     // printed: preparation spells each (#1681 change 3, M2).
     #[test]
     fn an_unspelled_name_is_refused() {
-        let value = crate::names::unspelled("value", 1);
-        let arrow = Expr::arrow(vec![Pattern::Name(value.clone().into())], vec![read(Expr::var(&value))]);
-        assert_eq!(of(vec![read(arrow)]), vec![Problem::Unspelled(value)]);
-        assert_eq!(crate::names::unspelled_base("value#1"), Some("value"));
-        assert_eq!(crate::names::unspelled_base("value$1"), None);
+        let value = Name::made("value", 1);
+        let arrow = Expr::arrow(vec![Pattern::Name(value.clone())], vec![read(Expr::var(&value))]);
+        assert_eq!(
+            of(vec![read(arrow)]),
+            vec![Problem::Unspelled(value.word().to_string())]
+        );
+        assert_eq!(value.made_base(), Some("value"));
+        assert_eq!(Name::from("value$1").made_base(), None);
     }
 
     // A global's read where a declaration of its name is in scope reads

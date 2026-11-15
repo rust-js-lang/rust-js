@@ -706,11 +706,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // another's: `value` of one field, and `_0`, `_1` of more, a variant's
         // own names for them.
         let param = self.unspelled("value");
-        let params: Vec<String> = match sig.inputs().len() {
-            1 => vec![param.as_str().into()],
-            count => (0..count).map(js::positional).collect(),
+        let params: Vec<js::Name> = match sig.inputs().len() {
+            1 => vec![param.clone()],
+            count => (0..count).map(|k| js::positional(k).into()).collect(),
         };
-        let items: Vec<Expr> = params.iter().map(|name| Expr::var(name)).collect();
+        let items: Vec<Expr> = params.iter().map(Expr::var).collect();
         // A `#[repr(transparent)]` struct is its field, as `adt_value` makes
         // one (ADR 0584): `.map(Wrap)` gives what it's given.
         let transparent = self

@@ -633,15 +633,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// A name lowering makes for a variable of its own, `base`'s, not
-    /// spelled yet (`names::unspelled`): spelled by preparation once the
+    /// spelled yet (`js::Name::made`): spelled by preparation once the
     /// program's names are all made, apart from them, so a name it makes
     /// early, of a closure's clone before the closure's own `key` is named,
     /// never costs the program its name (#1681 change 3, M2).
-    fn unspelled(&self, base: &str) -> String {
+    fn unspelled(&self, base: &str) -> js::Name {
         let mut names = self.names.borrow_mut();
         (1..)
-            .map(|k| crate::names::unspelled(base, k))
-            .find(|name| names.insert(name.clone()))
+            .map(|k| js::Name::made(base, k))
+            .find(|name| names.insert(name.word().to_string()))
             .unwrap()
     }
 
@@ -786,7 +786,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         .inputs()
         .to_vec();
         let names: Vec<String> = (0..given.len()).map(|i| format!("arg{i}")).collect();
-        let mut values: Vec<Expr> = names.iter().map(|name| Expr::var(name)).collect();
+        let mut values: Vec<Expr> = names.iter().map(Expr::var).collect();
         self.given_iterators(def_id, &mut values, &given, span, &mut Vec::new())?;
         Ok((values.iter().zip(&names)).any(|(value, name)| !matches!(&value.kind, js::ExprKind::Var(v) if v.is(name))))
     }
@@ -858,7 +858,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let params: Vec<String> = (0..inputs.len())
                     .map(|i| self.fresh(Base::Numbered(Role::Arg, i)))
                     .collect();
-                let mut values: Vec<Expr> = params.iter().map(|name| Expr::var(name)).collect();
+                let mut values: Vec<Expr> = params.iter().map(Expr::var).collect();
                 // A C-variadic one's, given on what it's given past the rest,
                 // `(...args) => f(...args)` (ADR 0428).
                 let variadic = variadic.then(|| self.fresh(Role::Args));
@@ -939,7 +939,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if options {
                     params.push(cx.fresh(Role::Options));
                 }
-                let values = params.iter().map(|name| Expr::var(name)).chain(evidence).collect();
+                let values = params.iter().map(Expr::var).chain(evidence).collect();
                 Ok(Expr::arrow(
                     params.into_iter().map(Into::into).collect(),
                     vec![StmtKind::Return(Some(Expr::call(callee, values))).at(js_span)],
@@ -1090,7 +1090,7 @@ fn path_read(path: &str, required: &IndexSet<Export>, import: impl FnOnce(&Expor
     match bindings::js_import(path) {
         Some((export, rest)) if required.contains(&export) => bindings::read_path(bindings::required(&export), rest),
         // The import's name, which its declaration declares.
-        Some((export, rest)) => rooted(&format!("{}{rest}", import(&export)), Expr::var),
+        Some((export, rest)) => rooted(&format!("{}{rest}", import(&export)), |word| Expr::var(word)),
         None => rooted(path, Expr::global),
     }
 }

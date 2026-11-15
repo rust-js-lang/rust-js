@@ -102,7 +102,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let param = self.unspelled("value");
             return Expr::call(
                 Expr::arrow(
-                    vec![param.as_str().into()],
+                    vec![param.clone().into()],
                     vec![js::StmtKind::Return(Some(copied(Expr::var(&param)))).at(js::Span::NONE)],
                 ),
                 vec![place],
@@ -120,7 +120,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let body = self.copy_parts(Expr::var(&param), ty, stored);
             return Expr::call(
                 Expr::arrow(
-                    vec![param.as_str().into()],
+                    vec![param.clone().into()],
                     vec![js::StmtKind::Return(Some(body)).at(js::Span::NONE)],
                 ),
                 vec![place],
@@ -166,7 +166,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         let body = copy(Expr::var(&param));
                         Expr::call(
                             Expr::arrow(
-                                vec![param.as_str().into()],
+                                vec![param.clone().into()],
                                 vec![js::StmtKind::Return(Some(body)).at(js::Span::NONE)],
                             ),
                             vec![place],
@@ -570,7 +570,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let body = self.projection(Expr::var(&param), ty);
             return Expr::call(
                 Expr::arrow(
-                    vec![param.as_str().into()],
+                    vec![param.clone().into()],
                     vec![js::StmtKind::Return(Some(body)).at(js::Span::NONE)],
                 ),
                 vec![place],
@@ -667,7 +667,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let param = self.unspelled("value");
         Expr::call(
             Expr::arrow(
-                vec![param.as_str().into()],
+                vec![param.clone().into()],
                 vec![js::StmtKind::Return(Some(cloned(Expr::var(&param)))).at(js::Span::NONE)],
             ),
             vec![place],

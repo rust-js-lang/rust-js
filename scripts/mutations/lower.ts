@@ -417,7 +417,7 @@ export const mutations: Mutation[] = [
     name: "import-read-made-global",
     breaks: "a binding's read of what its module imports, React's `useState`, is made a global's, though its import declares the name: refused, a global's read where a declaration of its name is in scope (#1681)",
     file: "src/lower.rs",
-    find: "        Some((export, rest)) => rooted(&format!(\"{}{rest}\", import(&export)), Expr::var),\n",
+    find: "        Some((export, rest)) => rooted(&format!(\"{}{rest}\", import(&export)), |word| Expr::var(word)),\n",
     replace: "        Some((export, rest)) => rooted(&format!(\"{}{rest}\", import(&export)), Expr::global),\n",
     tests: ["test/react-kept.test.ts", "-t", "what React keeps and gives again is copied where it's changed"],
   },
@@ -426,7 +426,7 @@ export const mutations: Mutation[] = [
     breaks: "a binding's read of a global, `performance`, isn't made a global's: refused, a read nothing declares (#1681)",
     file: "src/lower.rs",
     find: "        None => rooted(path, Expr::global),\n",
-    replace: "        None => rooted(path, Expr::var),\n",
+    replace: "        None => rooted(path, |word| Expr::var(word)),\n",
     tests: ["test/js-object.test.ts", "-t", "a function bound to its first arguments is a function of the parameters left"],
   },
   {

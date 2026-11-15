@@ -221,15 +221,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `(a, b) => <compared>` of its parameters `a` and `b`, the names
     /// its caller compared, `body` its statements first; of a function of
     /// both, as they're given, `$eq` or an impl's `eq`: it.
-    pub(in crate::lower) fn compare_fn(&self, (a, b): (&str, &str), compared: Expr, mut body: Vec<Stmt>) -> Expr {
+    pub(in crate::lower) fn compare_fn(
+        &self,
+        (a, b): (&js::Name, &js::Name),
+        compared: Expr,
+        mut body: Vec<Stmt>,
+    ) -> Expr {
         if body.is_empty()
             && let js::ExprKind::Call(callee, args) = &compared.kind
             && matches!(callee.kind, js::ExprKind::Var(_))
-            && matches!(args.as_slice(), [x, y] if matches!((&x.kind, &y.kind), (js::ExprKind::Var(x), js::ExprKind::Var(y)) if x.is(a) && y.is(b)))
+            && matches!(args.as_slice(), [x, y] if matches!((&x.kind, &y.kind), (js::ExprKind::Var(x), js::ExprKind::Var(y)) if x == a && y == b))
         {
             return (**callee).clone();
         }
         body.push(StmtKind::Return(Some(compared)).at(js::Span::NONE));
-        Expr::arrow(vec![a.into(), b.into()], body)
+        Expr::arrow(vec![a.clone().into(), b.clone().into()], body)
     }
 }

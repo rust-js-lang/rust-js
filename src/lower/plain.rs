@@ -94,7 +94,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let param = self.unspelled("value");
         let made = self.transmute(Expr::var(&param), (held, read), span, &mut body)?;
         body.push(StmtKind::Return(Some(made)).at(js::Span::NONE));
-        Ok(Some(Expr::arrow(vec![param.as_str().into()], body)))
+        Ok(Some(Expr::arrow(vec![param.clone().into()], body)))
     }
 
     /// `value`, a `from`, as a `to` of the same bytes: itself, of a type

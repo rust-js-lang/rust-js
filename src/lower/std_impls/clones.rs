@@ -269,22 +269,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if key.is_none() && value.is_none() {
             return Ok(None);
         }
-        let mut cloned = |this: &mut Self, name: &str, ty: Option<Ty<'tcx>>| match ty {
+        let mut cloned = |this: &mut Self, name: &js::Name, ty: Option<Ty<'tcx>>| match ty {
             Some(ty) => this.clone_value(Expr::var(name), ty, span, out),
             None => Ok(Expr::var(name)),
         };
         let may_panic = |this: &Self, ty: Option<Ty<'tcx>>| ty.is_some_and(|t| this.clone_may_panic(t));
         let (params, item, entry) = if set {
-            (vec!["item".into()], cloned(self, "item", key)?, key_ty)
+            (vec!["item".into()], cloned(self, &"item".into(), key)?, key_ty)
         } else {
             let parts = [
                 (key_ty, may_panic(self, key)),
                 (value_ty.expect("a map's"), may_panic(self, value)),
             ];
             let param = self.unspelled("value");
-            let named = [("key", key), (param.as_str(), value)];
-            let (pair, made) = self.parts_in_turn(&parts, span, |cx, i| cloned(cx, named[i].0, named[i].1))?;
-            let pattern = js::Pattern::Array(vec![Some("key".into()), Some(param.as_str().into())]);
+            let named = [("key".into(), key), (param.clone(), value)];
+            let (pair, made) = self.parts_in_turn(&parts, span, |cx, i| cloned(cx, &named[i].0, named[i].1))?;
+            let pattern = js::Pattern::Array(vec![Some("key".into()), Some(param.clone().into())]);
             let entry = Ty::new_tup(self.tcx, &[key_ty, parts[1].0]);
             (vec![pattern], Self::in_turn(Expr::array(pair), made), entry)
         };
@@ -828,7 +828,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             self.names.borrow_mut().shift_remove(base);
         }
         body.push(StmtKind::Return(Some(value?)).at(js::Span::NONE));
-        Ok(Expr::arrow(vec![name.as_str().into()], body))
+        Ok(Expr::arrow(vec![name.clone().into()], body))
     }
 }
 

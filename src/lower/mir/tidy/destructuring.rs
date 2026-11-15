@@ -206,7 +206,7 @@ pub(super) fn assigned_parts(stmts: &mut Vec<Stmt>) {
         let StmtKind::Destructure { value, .. } = std::mem::replace(&mut stmts[i].kind, StmtKind::Break(None)) else {
             unreachable!("matched")
         };
-        stmts[i].kind = StmtKind::Assign(Expr::array(targets.iter().map(|t| Expr::var(t)).collect()), value);
+        stmts[i].kind = StmtKind::Assign(Expr::array(targets.iter().map(Expr::var).collect()), value);
         stmts.drain(i + 1..after);
         i += 1;
     }

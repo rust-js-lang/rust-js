@@ -504,7 +504,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let some = self.pretty_or(pretty, plain, "Some(", Expr::array(vec![shown]), ")");
                 let none = Expr::bin(Op::LooseEq, Expr::var(&param), Expr::null());
                 let f = Expr::arrow(
-                    vec![param.as_str().into()],
+                    vec![param.clone().into()],
                     vec![StmtKind::Return(Some(Expr::cond(none, Expr::str("None"), some))).at(js::Span::NONE)],
                 );
                 Ok(self.applied(f, value))
@@ -532,7 +532,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 parts.push(Expr::str(")"));
                 let shown = self.pretty_or(pretty, join(parts), "(", Expr::array(items), ")");
                 let f = Expr::arrow(
-                    vec![made_tuple.as_str().into()],
+                    vec![made_tuple.clone().into()],
                     vec![StmtKind::Return(Some(shown)).at(js::Span::NONE)],
                 );
                 Ok(self.applied(f, value))
@@ -583,7 +583,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let plain = join(vec![Expr::str(format!("{name}(")), shown.clone(), Expr::str(")")]);
                 let shown = self.pretty_or(pretty, plain, &format!("{name}("), Expr::array(vec![shown]), ")");
                 let f = Expr::arrow(
-                    vec![param.as_str().into()],
+                    vec![param.clone().into()],
                     vec![StmtKind::Return(Some(shown)).at(js::Span::NONE)],
                 );
                 Ok(self.applied(f, Expr::held(value)))
@@ -595,7 +595,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let mutex = std(StdItem::Mutex);
                 let shown = self.debug_string_with(Expr::var(&param), args.type_at(0), span, pretty)?;
                 let show = Expr::arrow(
-                    vec![param.as_str().into()],
+                    vec![param.clone().into()],
                     vec![StmtKind::Return(Some(shown)).at(js::Span::NONE)],
                 );
                 let name = Expr::str(if mutex { "Mutex" } else { "RwLock" });
@@ -624,7 +624,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         let param = self.unspelled("value");
                         let shown = self.debug_string_with(Expr::var(&param), args.type_at(0), span, pretty)?;
                         let show = Expr::arrow(
-                            vec![param.as_str().into()],
+                            vec![param.clone().into()],
                             vec![StmtKind::Return(Some(shown)).at(js::Span::NONE)],
                         );
                         let mut given = vec![value, show];
@@ -696,10 +696,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let item = self.debug_string_with(Expr::var(&param), item, span, pretty)?;
                 let pair = join(vec![key, Expr::str(": "), item]);
                 let f = Expr::arrow(
-                    vec![js::Pattern::Array(vec![
-                        Some("key".into()),
-                        Some(param.as_str().into()),
-                    ])],
+                    vec![js::Pattern::Array(vec![Some("key".into()), Some(param.clone().into())])],
                     vec![StmtKind::Return(Some(pair)).at(js::Span::NONE)],
                 );
                 let entries = Expr::builtin(Expr::js_global("Array"), "from", vec![value]);
@@ -831,7 +828,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let shown = shown.ok_or_else(|| self.unsupported(span, "`{:?}` of an enum of no variants"))?;
         let f = Expr::arrow(
-            vec![param.as_str().into()],
+            vec![param.clone().into()],
             vec![StmtKind::Return(Some(shown)).at(js::Span::NONE)],
         );
         Ok(self.applied(f, value))
@@ -864,7 +861,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             shown = Expr::cond(Expr::bin(Op::Eq, Expr::var(&param), unit), Expr::str(name), shown);
         }
         let f = Expr::arrow(
-            vec![param.as_str().into()],
+            vec![param.clone().into()],
             vec![StmtKind::Return(Some(shown)).at(js::Span::NONE)],
         );
         self.applied(f, value)

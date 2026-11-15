@@ -135,7 +135,7 @@ pub(crate) fn new_of_state(class: Expr, mut args: Vec<Expr>, at: usize, keys: &[
             let names: Vec<String> = (0..args.len())
                 .map(|i| if i == at { "state".into() } else { format!("arg{i}") })
                 .collect();
-            let mut inner: Vec<Expr> = names.iter().map(|name| Expr::var(name)).collect();
+            let mut inner: Vec<Expr> = names.iter().map(Expr::var).collect();
             inner.splice(at..=at, keys.iter().map(|key| Expr::member(Expr::var("state"), key)));
             let made = Expr::arrow(
                 names.iter().map(|name| name.as_str().into()).collect(),

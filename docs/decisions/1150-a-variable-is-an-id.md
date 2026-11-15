@@ -100,3 +100,25 @@ that found a search by name, `ExprKind::Var(v) if v == name`, find its
 `v.is(name)` as well, so neither misses one written the new way. Three
 files the rewrite would have grown past the cap's 1,350 lines were each
 split by concept first, in commits of their own.
+
+## S2 (2026-11-16)
+
+A name lowering makes is `Name::made(base, k)`, and what it's of is
+`made_base()`, where lowering made a `String` of `names::unspelled` and
+preparation's speller parsed it. The word's form, `value#1`, is still
+`names.rs`'s, which writes it (`made`) and reads it (`made_base`), as
+`fresh_apart` there and the validator's scopes, which keep words, ask of
+a word. Lowering's `unspelled` gives a `Name`, which goes on as one into
+each arrow's parameters and reads it makes, `Pattern: From<Name>` and
+`Expr::var(impl Into<Name>)`, so no made name passes through a `String`
+there.
+
+Its word is still `value#1`, as the lead decided (2026-11-16): tidy's
+kinship and the passes' sets of names still compare words, where a made
+`value` must not be taken for the program's, so each step stays
+byte-identical. A flag beside the word, a second answer to whether a name
+is made, would differ from what the word-keeping passes read, so there is
+none; the name's identity apart from its word is S4's table. The corpus,
+the snapshots and the port are as they were; the architecture test of the
+form names `names::made`, `Name::made` and `made_base` as its one writer,
+maker and readers.

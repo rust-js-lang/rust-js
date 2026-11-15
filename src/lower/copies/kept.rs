@@ -200,7 +200,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let body = self.kept_copy(Expr::var(&param), ty, span)?;
             return Ok(Expr::call(
                 Expr::arrow(
-                    vec![param.as_str().into()],
+                    vec![param.clone().into()],
                     vec![js::StmtKind::Return(Some(body)).at(js::Span::NONE)],
                 ),
                 vec![place],

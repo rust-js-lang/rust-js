@@ -753,10 +753,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let param = self.unspelled("value");
         let (params, pretty): (Vec<js::Pattern>, _) = match self.writers_take_options() || shown_so.any() {
             true => (
-                vec![param.as_str().into(), "options".into()],
+                vec![param.clone().into(), "options".into()],
                 Pretty::When(Expr::var("options")),
             ),
-            false => (vec![param.as_str().into()], Pretty::Plain),
+            false => (vec![param.clone().into()], Pretty::Plain),
         };
         let shown = self.with_shown(shown_so, |cx| {
             cx.display_string_with(Expr::var(&param), ty, span, &pretty)
@@ -770,7 +770,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         if let Some(value) = text_of
             && params.len() == 1
-            && is_var(value, &param)
+            && is_var(value, param.word())
         {
             return Ok(Expr::js_global("String"));
         }

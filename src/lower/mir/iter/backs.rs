@@ -219,7 +219,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let named: Vec<String> = names.iter().map(|&name| self.fresh(name)).collect();
         // `makeMap`, `makeChain`, `makeCopied`.
         let make = self.fresh(Base::Prefixed(Role::Make, &crate::lower::upper_first(name)));
-        let adapter = build(self, named.iter().map(|part| Expr::var(part)).collect())?;
+        let adapter = build(self, named.iter().map(Expr::var).collect())?;
         let mut cloned = Vec::new();
         let mut clones = Vec::new();
         for (part, &ty) in named.iter().zip(&part_tys) {

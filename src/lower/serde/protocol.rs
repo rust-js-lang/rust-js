@@ -317,7 +317,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => vec![self.fresh(Role::V)],
             };
             let args = std::iter::once(visitor.clone())
-                .chain(given.iter().map(|v| Expr::var(v)))
+                .chain(given.iter().map(Expr::var))
                 .collect();
             let call = Expr::call(self.fn_ref(def_id), args);
             let params = given.into_iter().map(Into::into).collect();

@@ -82,7 +82,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let len = Expr::call(Expr::member(Expr::var(&made_iterator), "len"), Vec::new());
         Expr::arrow(
-            vec![made_iterator.as_str().into()],
+            vec![made_iterator.clone().into()],
             vec![StmtKind::Return(Some(len)).at(js::Span::NONE)],
         )
     }
@@ -112,7 +112,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let double_ended = crate::lower::recognition::is_double_ended(self.tcx, trait_id);
         let returned = |value: Expr| {
             Expr::arrow(
-                vec![made_iterator.as_str().into()],
+                vec![made_iterator.clone().into()],
                 vec![StmtKind::Return(Some(value)).at(js::Span::NONE)],
             )
         };
@@ -267,7 +267,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             false => self.clone_in_place(Expr::var(&made_iterator), ty, span, &mut body)?,
         };
         body.push(StmtKind::Return(Some(cloned)).at(js::Span::NONE));
-        let clone = Expr::arrow(vec![made_iterator.as_str().into()], body);
+        let clone = Expr::arrow(vec![made_iterator.clone().into()], body);
         let clone = passed_on(&clone, Taker::Made, &[]).unwrap_or(clone);
         let drop = self.drop_function(ty, span)?;
         let mut args = vec![it, clone, next];

@@ -475,9 +475,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 if !dropped.is_empty() {
                     let param = if state_drops.is_some() {
-                        made_state.as_str()
+                        made_state.clone()
                     } else {
-                        "_"
+                        "_".into()
                     };
                     args.push(Expr::arrow(vec![param.into()], dropped));
                 }
@@ -599,7 +599,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     _ => num.wrap(Expr::bin(Op::Mul, Expr::var(&made_a), Expr::var(&made_b))),
                 };
                 let f = Expr::arrow(
-                    vec![made_a.as_str().into(), made_b.as_str().into()],
+                    vec![made_a.clone().into(), made_b.clone().into()],
                     vec![StmtKind::Return(Some(times)).at(js::Span::NONE)],
                 );
                 method(items, "reduce", vec![f, num.literal(1)])

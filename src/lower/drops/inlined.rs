@@ -632,7 +632,7 @@ fn fields_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &str) -> Vec<Strin
             && matches!(&of.kind, ExprKind::Var(v) if v.is(guard))
             && let Some(field) = fields.iter().find(|(k, _)| k == key)
         {
-            let read = Expr::var(&read_as(field).unwrap_or_else(|| key.clone())).or_at(e.span);
+            let read = Expr::var(read_as(field).unwrap_or_else(|| key.clone())).or_at(e.span);
             *e = match field.1.facts.has(js::Known::Defined) && !written.contains(key) {
                 true => read.defined(),
                 false => read,

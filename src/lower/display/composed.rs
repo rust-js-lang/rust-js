@@ -280,9 +280,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 }
 
 /// `(name) => shown`.
-fn arrow_of(name: &str, shown: Expr) -> Expr {
+fn arrow_of(name: impl Into<js::Name>, shown: Expr) -> Expr {
     Expr::arrow(
-        vec![name.into()],
+        vec![js::Pattern::Name(name.into())],
         vec![StmtKind::Return(Some(shown)).at(js::Span::NONE)],
     )
 }

@@ -18,7 +18,7 @@ pub(super) fn module(module: &mut js::Module) {
     }
 }
 
-/// Each name lowering made not spelled yet, `value#1` (`names::unspelled`),
+/// Each name lowering made not spelled yet, `value#1` (`js::Name::made`),
 /// spelled: its word, or given apart from it, `value$1`, the first that
 /// JS's scopes let it be, which takes no other's read and lets none take
 /// its own, as `locals` reclaims a name (ADR 0357); the program's names,
@@ -32,7 +32,7 @@ pub(super) fn spelled(module: &mut js::Module) {
     for item in &mut module.items {
         let mut unspelled = Vec::new();
         names_mut(item, true, &mut |name| {
-            if crate::names::unspelled_base(name.word()).is_some() && !unspelled.contains(name) {
+            if name.made_base().is_some() && !unspelled.contains(name) {
                 unspelled.push(name.clone());
             }
         });
@@ -42,7 +42,7 @@ pub(super) fn spelled(module: &mut js::Module) {
         let mut tree = scopes::Tree::of(item);
         let mut spelled: IndexMap<String, String> = IndexMap::default();
         for name in unspelled {
-            let base = crate::names::unspelled_base(name.word()).expect("unspelled");
+            let base = name.made_base().expect("made");
             let in_scope = tree.as_mut().and_then(|tree| {
                 let to = std::iter::once(base.to_string())
                     .chain((1..).map(|k| crate::names::given_apart(base, k)))
@@ -465,8 +465,8 @@ mod tests {
     #[test]
     fn an_unspelled_name_is_spelled_apart_from_the_modules() {
         let at = |kind: StmtKind| kind.at(js::Span::NONE);
-        let param = |name: &str| vec![js::Pattern::Name(name.into())];
-        let item = crate::names::unspelled("item", 1);
+        let param = |name: &js::Name| vec![js::Pattern::Name(name.clone())];
+        let item = js::Name::made("item", 1);
         let calls = Expr::arrow(
             param(&item),
             vec![at(StmtKind::Return(Some(Expr::call(
@@ -474,7 +474,7 @@ mod tests {
                 vec![Expr::var(&item)],
             ))))],
         );
-        let value = crate::names::unspelled("value", 1);
+        let value = js::Name::made("value", 1);
         let identity = Expr::arrow(param(&value), vec![at(StmtKind::Return(Some(Expr::var(&value))))]);
         let function = |name: &str, params: Vec<js::Pattern>, body: Vec<Stmt>| {
             js::Item::Function(js::Function {
@@ -498,7 +498,11 @@ mod tests {
         };
         let lowered = js::Module {
             items: vec![
-                function("item", param("x"), vec![at(StmtKind::Return(Some(Expr::var("x"))))]),
+                function(
+                    "item",
+                    param(&"x".into()),
+                    vec![at(StmtKind::Return(Some(Expr::var("x"))))],
+                ),
                 function(
                     "main",
                     Vec::new(),
@@ -548,7 +552,7 @@ mod tests {
         assert_eq!(js::validate::module(&unreclaimed), []);
         // Of an item whose scopes declare a name twice, which has no tree to
         // ask, apart from every name its module has, `value$1`.
-        let value = crate::names::unspelled("value", 1);
+        let value = js::Name::made("value", 1);
         let identity = Expr::arrow(param(&value), vec![at(StmtKind::Return(Some(Expr::var(&value))))]);
         let twice = vec![
             at(StmtKind::Const("value".into(), Expr::num(1.0))),

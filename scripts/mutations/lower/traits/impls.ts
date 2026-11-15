@@ -60,7 +60,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a generic impl's dictionary is cached by its dictionaries only, not the drops it's given",
     file: "src/lower/traits/impls.rs",
-    find: "                    .chain(self.given_drops().iter().map(|name| Expr::var(name)))\n",
+    find: "                    .chain(self.given_drops().iter().map(Expr::var))\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "drop_impl_dictionary"],
   },

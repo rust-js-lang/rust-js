@@ -30,7 +30,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let stand_in = |i: usize| format!("_$argument{i}");
         let stood: Vec<Value<'tcx>> = (items.iter().enumerate())
             .map(|(i, item)| match item {
-                Value::Fmt(kind, ty, _) => Value::Fmt(*kind, *ty, Expr::var(&stand_in(i))),
+                Value::Fmt(kind, ty, _) => Value::Fmt(*kind, *ty, Expr::var(stand_in(i))),
                 other => other.clone(),
             })
             .collect();

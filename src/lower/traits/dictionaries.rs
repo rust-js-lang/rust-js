@@ -101,14 +101,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let unwound = Expr::arrow(Vec::new(), vec![StmtKind::Return(Some(dropped())).at(js::Span::NONE)]);
                 body.push(StmtKind::Expr(Expr::call_helper("$unwinds", vec![run, unwound])).at(js::Span::NONE));
                 body.push(StmtKind::Expr(dropped()).at(js::Span::NONE));
-                let params = ["collection", made_items.as_str(), "inPlace", "dropItems", "dropIter"];
-                let extend = Expr::arrow(params.into_iter().map(Into::into).collect(), body);
+                let params = vec![
+                    "collection".into(),
+                    made_items.into(),
+                    "inPlace".into(),
+                    "dropItems".into(),
+                    "dropIter".into(),
+                ];
+                let extend = Expr::arrow(params, body);
                 return Ok(Some(Expr::object(vec![Prop::Field("extend".into(), extend)])));
             }
             _ => return Ok(None),
         };
         body.extend(value.map(|value| StmtKind::Expr(value).at(js::Span::NONE)));
-        let extend = Expr::arrow(vec!["collection".into(), made_items.as_str().into()], body);
+        let extend = Expr::arrow(vec!["collection".into(), made_items.clone().into()], body);
         Ok(Some(Expr::object(vec![Prop::Field("extend".into(), extend)])))
     }
 
@@ -404,7 +410,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let body = vec![StmtKind::Return(Some(made)).at(js::Span::NONE)];
             return Ok(Expr::object(vec![Prop::Field(
                 name.into(),
-                Expr::arrow(vec![made_items.as_str().into()], body),
+                Expr::arrow(vec![made_items.clone().into()], body),
             )]));
         }
         // std's `Sum` or `Product` of a `Wrapping` or a `Saturating`, of
@@ -434,7 +440,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let body = vec![StmtKind::Return(Some(made)).at(js::Span::NONE)];
             return Ok(Expr::object(vec![Prop::Field(
                 name.into(),
-                Expr::arrow(vec![made_items.as_str().into()], body),
+                Expr::arrow(vec![made_items.clone().into()], body),
             )]));
         }
         // A std collection's `Extend`, `{ extend(collection, items) }` (ADR 0445).
@@ -453,7 +459,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             let item = self.index_checked(Expr::var(&made_items), Expr::var(&made_i), ty);
             let index = Expr::arrow(
-                vec![made_items.as_str().into(), made_i.as_str().into()],
+                vec![made_items.clone().into(), made_i.clone().into()],
                 vec![StmtKind::Return(Some(item)).at(js::Span::NONE)],
             );
             return Ok(Expr::object(vec![Prop::Field("index".into(), index)]));
@@ -486,10 +492,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let param = self.unspelled("value");
             let (params, pretty): (Vec<js::Pattern>, _) = match self.writers_take_options() {
                 true => (
-                    vec![param.as_str().into(), "options".into()],
+                    vec![param.clone().into(), "options".into()],
                     Pretty::When(Expr::var("options")),
                 ),
-                false => (vec![param.as_str().into()], Pretty::Plain),
+                false => (vec![param.clone().into()], Pretty::Plain),
             };
             let text = self.radix_text(Expr::var(&param), num, radix, &pretty);
             let fmt = Expr::arrow(params, vec![StmtKind::Return(Some(text)).at(js::Span::NONE)]);
@@ -527,10 +533,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let param = self.unspelled("value");
                 let (params, pretty): (Vec<js::Pattern>, _) = match self.writers_take_options() || shown_so.any() {
                     true => (
-                        vec![param.as_str().into(), "options".into()],
+                        vec![param.clone().into(), "options".into()],
                         crate::lower::display::Pretty::When(Expr::var("options")),
                     ),
-                    false => (vec![param.as_str().into()], crate::lower::display::Pretty::Plain),
+                    false => (vec![param.clone().into()], crate::lower::display::Pretty::Plain),
                 };
                 let mut body = Vec::new();
                 let shown = self.with_shown(shown_so, |cx| {
@@ -737,7 +743,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             let items = crate::lower::iterators::given_into_iter(Expr::var(&made_items));
             let itself = Expr::arrow(
-                vec![made_items.as_str().into()],
+                vec![made_items.clone().into()],
                 vec![StmtKind::Return(Some(items)).at(js::Span::NONE)],
             );
             let into_iter = crate::lower::recognition::trait_method(self.tcx, tr.def_id, "into_iter");
@@ -758,7 +764,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && !self.has_user_impl(tr.def_id, ty)
         {
             let itself = Expr::arrow(
-                vec![made_items.as_str().into()],
+                vec![made_items.clone().into()],
                 vec![StmtKind::Return(Some(Expr::var(&made_items))).at(js::Span::NONE)],
             );
             let steps = self.made_steps(tr, true, span)?;
@@ -793,7 +799,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             )?;
             let made = self.std_iterator(items, output);
             body.push(StmtKind::Return(Some(made)).at(js::Span::NONE));
-            let f = Expr::arrow(vec![made_items.as_str().into()], body);
+            let f = Expr::arrow(vec![made_items.clone().into()], body);
             let mut props = vec![Prop::Field(bindings::fn_name(self.tcx, into_iter), f)];
             props.extend(steps);
             return Ok(Expr::object(props));
@@ -839,7 +845,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let param = self.unspelled("value");
             let inside = self.through_boxes_to(Expr::var(&param), ty.peel_refs(), tr.args.type_at(1));
             let same = Expr::arrow(
-                vec![param.as_str().into()],
+                vec![param.clone().into()],
                 vec![StmtKind::Return(Some(inside)).at(js::Span::NONE)],
             );
             return Ok(Expr::object(vec![Prop::Field(
@@ -859,7 +865,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     || item == StdItem::AsRef && self.recognition().as_ref_is_itself(borrowed, tr.args.type_at(1)))
             {
                 let f = Expr::arrow(
-                    vec![param.as_str().into()],
+                    vec![param.clone().into()],
                     vec![StmtKind::Return(Some(inside)).at(js::Span::NONE)],
                 );
                 return Ok(Expr::object(vec![Prop::Field(
@@ -887,7 +893,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let param = self.unspelled("value");
             let bytes = Expr::call(Expr::helper("$utf8Bytes"), vec![Expr::var(&param)]);
             let as_ref = Expr::arrow(
-                vec![param.as_str().into()],
+                vec![param.clone().into()],
                 vec![StmtKind::Return(Some(bytes)).at(js::Span::NONE)],
             );
             return Ok(Expr::object(vec![Prop::Field(
@@ -910,7 +916,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             let param = self.unspelled("value");
             let same = Expr::arrow(
-                vec![param.as_str().into()],
+                vec![param.clone().into()],
                 vec![StmtKind::Return(Some(in_box(Expr::var(&param)))).at(js::Span::NONE)],
             );
             return Ok(Expr::object(vec![Prop::Field("borrow".into(), same)]));
@@ -926,7 +932,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             let param = self.unspelled("value");
             let same = Expr::arrow(
-                vec![param.as_str().into()],
+                vec![param.clone().into()],
                 vec![StmtKind::Return(Some(in_box(Expr::var(&param)))).at(js::Span::NONE)],
             );
             let mut props = vec![Prop::Field(
@@ -961,10 +967,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let mut body = Vec::new();
             let (params, rhs) = match op {
                 Ok(_) => (
-                    vec![made_a.as_str().into(), made_b.as_str().into()],
+                    vec![made_a.clone().into(), made_b.clone().into()],
                     Some((Expr::var(&made_b), tr.args.type_at(1))),
                 ),
-                Err(_) => (vec![made_a.as_str().into()], None),
+                Err(_) => (vec![made_a.clone().into()], None),
             };
             let value = self.newtype_result(op, a, rhs, newtype, span, &mut body)?;
             body.push(StmtKind::Return(Some(Expr::array(vec![value]))).at(js::Span::NONE));
@@ -980,8 +986,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             let param = self.unspelled("value");
             let params: Vec<js::Pattern> = match op {
-                Ok(_) => vec![made_a.as_str().into(), made_b.as_str().into()],
-                Err(_) => vec![param.as_str().into()],
+                Ok(_) => vec![made_a.clone().into(), made_b.clone().into()],
+                Err(_) => vec![param.clone().into()],
             };
             let (a, b) = match op {
                 Ok(_) => (Expr::var(&made_a), Some(Expr::var(&made_b))),
@@ -1008,7 +1014,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(Expr::object(vec![Prop::Field(
                 self.operator_entry(tr.def_id),
                 Expr::arrow(
-                    vec!["cell".into(), made_b.as_str().into()],
+                    vec!["cell".into(), made_b.clone().into()],
                     vec![StmtKind::Assign(place, value).at(js::Span::NONE)],
                 ),
             )]));
@@ -1058,7 +1064,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let mut props = vec![Prop::Field(
                 "copy".into(),
                 Expr::arrow(
-                    vec![param.as_str().into()],
+                    vec![param.clone().into()],
                     vec![StmtKind::Return(Some(copy)).at(js::Span::NONE)],
                 ),
             )];
@@ -1302,7 +1308,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let mut values = vec![this];
             for i in 1..count {
                 params.push(format!("arg{i}").into());
-                values.push(Expr::var(&format!("arg{i}")));
+                values.push(Expr::var(format!("arg{i}")));
             }
             let name = bindings::fn_name(self.tcx, item.def_id);
             let call = Expr::call(Expr::member(dictionary.clone(), name.clone()), values);

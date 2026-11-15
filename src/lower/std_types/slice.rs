@@ -270,7 +270,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let made_items = self.unspelled("items");
         let written = |called: Expr| {
             Expr::arrow(
-                vec![made_items.as_str().into(), made_i.as_str().into(), "from".into()],
+                vec![made_items.clone().into(), made_i.clone().into(), "from".into()],
                 vec![StmtKind::Expr(called).at(js::Span::NONE)],
             )
         };
@@ -307,7 +307,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok((
                 None,
                 Some(Expr::arrow(
-                    vec![made_items.as_str().into(), made_i.as_str().into(), "from".into()],
+                    vec![made_items.clone().into(), made_i.clone().into(), "from".into()],
                     over,
                 )),
             ));
@@ -727,13 +727,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && let js::ExprKind::Call(callee, given) = &same.kind
             && matches!(callee.kind, js::ExprKind::Var(_))
             && let [a, b] = given.as_slice()
-            && matches!((&a.kind, &b.kind), (js::ExprKind::Var(a), js::ExprKind::Var(b)) if a.is(&made_a) && b.is(&made_b))
+            && matches!((&a.kind, &b.kind), (js::ExprKind::Var(a), js::ExprKind::Var(b)) if *a == made_a && *b == made_b)
         {
             return Ok(Some(*callee.clone()));
         }
         body.push(StmtKind::Return(Some(same)).at(js::Span::NONE));
         Ok(Some(Expr::arrow(
-            vec![made_a.as_str().into(), made_b.as_str().into()],
+            vec![made_a.clone().into(), made_b.clone().into()],
             body,
         )))
     }
@@ -1158,7 +1158,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             SliceOp::IsAscii => {
                 let byte = Expr::arrow(
-                    vec![made_b.as_str().into()],
+                    vec![made_b.clone().into()],
                     vec![
                         crate::js::StmtKind::Return(Some(Expr::bin(Op::Lt, Expr::var(&made_b), Expr::int(128))))
                             .at(crate::js::Span::NONE),

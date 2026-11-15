@@ -42,11 +42,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let clauses = self.typing_env.param_env.caller_bounds().chain(bounds);
         let typing_env = ty::TypingEnv::new(ty::ParamEnv::new(tcx, clauses), self.typing_env.typing_mode());
         let facts = crate::lower::traits::std_method_facts(tcx, self.krate.foreign, from_iter);
-        let mut params: Vec<String> = vec![made_items.as_str().into()];
+        let mut params: Vec<js::Name> = vec![made_items.clone()];
         let given: Vec<(Ty<'tcx>, crate::lower::recognition::TypeFact, Expr)> = (facts.iter())
             .map(|&(_, fact)| {
                 let name = format!("I{}", fact.word());
-                params.push(name.clone());
+                params.push(name.clone().into());
                 (param, fact, Expr::var(&name))
             })
             .collect();

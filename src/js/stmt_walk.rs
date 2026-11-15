@@ -703,7 +703,7 @@ pub fn this_outside_accessors(body: &mut Vec<Stmt>, name: &str) -> bool {
     names_in(body, &mut taken);
     // Each nested function's body set aside, a mark of which in its place,
     // then put back where its mark is.
-    let mark = |k: usize| StmtKind::Expr(Expr::var(&format!("\u{0}nested{k}"))).at(Span::NONE);
+    let mark = |k: usize| StmtKind::Expr(Expr::var(format!("\u{0}nested{k}"))).at(Span::NONE);
     let mut nested: Vec<Vec<Stmt>> = Vec::new();
     each_expr_mut(body, &mut |e| {
         if let ExprKind::Function(function) = &mut e.kind {

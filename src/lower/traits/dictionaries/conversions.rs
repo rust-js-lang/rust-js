@@ -39,7 +39,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let param = self.unspelled("value");
             let value = if !tried && let Some(dyn_error) = self.dyn_error_from(target, source, span)? {
                 Expr::arrow(
-                    vec![param.as_str().into()],
+                    vec![param.clone().into()],
                     vec![
                         StmtKind::Return(Some(Expr::object(vec![
                             Prop::Field(js::HELD.into(), Expr::var(&param)),
@@ -69,14 +69,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     return Err(self.no_evidence(span, tr));
                 };
                 body.push(StmtKind::Return(Some(made)).at(js::Span::NONE));
-                Expr::arrow(vec![param.as_str().into()], body)
+                Expr::arrow(vec![param.clone().into()], body)
             } else if let Some(value) = self.compiled_conversion(from, from_args, span)? {
                 value
             } else if !tried && self.recognition().calls_from_giving_its_argument(from, from_args) {
                 // A binding crate's `From` into an untagged enum, the value
                 // it's given (ADR 0214, amended): `T: Into<BlobPart>`'s.
                 Expr::arrow(
-                    vec![param.as_str().into()],
+                    vec![param.clone().into()],
                     vec![StmtKind::Return(Some(Expr::var(&param))).at(js::Span::NONE)],
                 )
             } else {
@@ -114,7 +114,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Some(match values.len() {
             1 => callee,
             _ => Expr::arrow(
-                vec![param.as_str().into()],
+                vec![param.clone().into()],
                 vec![StmtKind::Return(Some(Expr::call(callee, values))).at(js::Span::NONE)],
             ),
         }))

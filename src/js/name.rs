@@ -8,11 +8,26 @@
 
 use std::fmt;
 
-/// A name a read or a declaration has.
+/// A name a read or a declaration has: the program's, or one lowering
+/// made, which preparation spells (S2).
 #[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Default)]
 pub struct Name(String);
 
 impl Name {
+    /// A name lowering makes, the `k`th of `base`'s, `value#1`, not spelled
+    /// yet (`names::made`, #1681 change 3, M2, S2): preparation spells it
+    /// once its module's names are all made (`prepare::reclaim::spelled`),
+    /// and the validator refuses one that reaches printing.
+    pub fn made(base: &str, k: usize) -> Name {
+        Name(crate::names::made(base, k))
+    }
+
+    /// Of a name lowering made, what it's of, `value` of `value#1`
+    /// (`made`); none of another.
+    pub fn made_base(&self) -> Option<&str> {
+        crate::names::made_base(&self.0)
+    }
+
     /// What it's written as, `value$1`.
     pub fn word(&self) -> &str {
         &self.0
@@ -42,6 +57,12 @@ impl std::borrow::Borrow<str> for Name {
     }
 }
 
+impl From<&Name> for Name {
+    fn from(name: &Name) -> Name {
+        name.clone()
+    }
+}
+
 impl From<&str> for Name {
     fn from(word: &str) -> Name {
         Name(word.to_string())
@@ -57,6 +78,12 @@ impl From<String> for Name {
 impl From<&String> for Name {
     fn from(word: &String) -> Name {
         Name(word.clone())
+    }
+}
+
+impl From<Name> for super::Pattern {
+    fn from(name: Name) -> super::Pattern {
+        super::Pattern::Name(name)
     }
 }
 

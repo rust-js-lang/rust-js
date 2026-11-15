@@ -640,7 +640,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if known == Std::Drop {
                     self.drop_value(Expr::var(&param), args.type_at(0), span, &mut body)?;
                 }
-                return Ok(Some(Expr::arrow(vec![param.as_str().into()], body)));
+                return Ok(Some(Expr::arrow(vec![param.clone().into()], body)));
             }
             _ => {}
         }

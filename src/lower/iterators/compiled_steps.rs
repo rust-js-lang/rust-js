@@ -267,7 +267,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if !body.is_empty() {
                 props.push(crate::js::Prop::Field(
                     "close".into(),
-                    Expr::arrow(vec![made_iterator.as_str().into()], body),
+                    Expr::arrow(vec![made_iterator.clone().into()], body),
                 ));
             }
         }
@@ -297,7 +297,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         (exact && self.hinted_by_its_struct(ty)).then(|| {
             let hint = Expr::call_helper("$sizeHint", vec![Expr::var(&made_iterator)]);
             Expr::arrow(
-                vec![made_iterator.as_str().into()],
+                vec![made_iterator.clone().into()],
                 vec![StmtKind::Return(Some(Expr::call_helper("$exactLen", vec![hint]))).at(js::Span::NONE)],
             )
         })
@@ -433,7 +433,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ["iterator", "init", "f", "unwind", "ends"].map(|name| self.fresh(crate::lower::Base::Named(name)));
         let [_, _, _, unwind, ends] = &params;
         let dropped = vec![(acc, Expr::var(unwind)), (acc + 1, Expr::var(ends))];
-        let mut values = params[..3].iter().map(|name| Expr::var(name)).collect::<Vec<_>>();
+        let mut values = params[..3].iter().map(Expr::var).collect::<Vec<_>>();
         let location = self.caller_location(span);
         values.extend(self.evidence_args_given(
             instance.def_id(),
@@ -503,7 +503,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Given `unwind`, as its `B`'s drop, and `ends`, as its `F`'s, as
         // `compiled_fold` is.
         let acc = tcx.generics_of(instance.def_id()).parent_count as u32;
-        let mut values = [iterator, init, f].map(|name| Expr::var(name)).to_vec();
+        let mut values = [iterator, init, f].map(Expr::var).to_vec();
         let location = self.caller_location(span);
         values.extend(self.evidence_args_given(
             instance.def_id(),

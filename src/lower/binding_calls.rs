@@ -1029,7 +1029,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let items: Vec<String> = (0..arity).map(|_| self.fresh(Base::Named(tuple.word()))).collect();
                 let whole = match arity {
                     0 => Expr::js_undefined(),
-                    _ => Expr::array(items.iter().map(|item| Expr::var(item)).collect()),
+                    _ => Expr::array(items.iter().map(Expr::var).collect()),
                 };
                 body.insert(0, StmtKind::Const(tuple, whole).at(js::Span::NONE));
                 own.extend(items.into_iter().map(js::Pattern::from));

@@ -217,7 +217,7 @@ impl Expr {
         Expr::new(ExprKind::Null)
     }
 
-    pub fn var(name: &str) -> Expr {
+    pub fn var(name: impl Into<Name>) -> Expr {
         Expr::new(ExprKind::Var(name.into()))
     }
 
