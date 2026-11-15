@@ -852,6 +852,11 @@ the JS: `addEventListener` is `add_event_listener`, `new Event(..)` is
   design: TypeScript's own types, class components, old names).
   `grep '^Document.getElementById' webapi/coverage.txt`.
 
+Declaration tools also preserve const generic inference and keep callable
+interface/object signatures distinct from constructors and named methods.
+Constraints and defaults remain independent, and an ordinary generic
+parameter is not changed into a const parameter.
+
 Declaration tools retain computed symbol keys such as [Symbol.iterator] as
 expressions. A literal string key with the same bracketed text names a
 different property; it cannot stand in for a symbol member.

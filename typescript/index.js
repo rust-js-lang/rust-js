@@ -37,6 +37,7 @@ import { isIdentifierText } from "typescript/ast/scanner";
  *
  * @typedef {{ kind: "property", name: MemberName, optional: boolean, readonly: boolean, type: Type, docs?: string }
  *   | { kind: "method", name: MemberName, optional: boolean, typeParameters: TypeParameter[], params: Param[], returns: Type }
+ *   | { kind: "call", typeParameters: TypeParameter[], params: Param[], returns: Type }
  *   | { kind: "construct", typeParameters: TypeParameter[], params: Param[], returns: Type }
  *   | { kind: "index", readonly?: boolean, parameter: string, key: Type, type: Type }
  *   | { kind: "other", text: string }} Member
@@ -79,6 +80,7 @@ export function checkedMembers(members) {
     switch (m.kind) {
       case "property":
       case "method":
+      case "call":
       case "construct":
       case "index":
       case "other":
@@ -267,6 +269,7 @@ function typeParameters(node, text) {
     name: p.name.text,
     ...(p.constraint && { constraint: readType(p.constraint, text) }),
     ...(p.defaultType && { default: readType(p.defaultType, text) }),
+    ...(p.modifiers?.some((m) => m.kind === SyntaxKind.ConstKeyword) && { const: true }),
   }));
 }
 
@@ -456,9 +459,10 @@ function readMember(node, text) {
           ? readType(node.type, text)
           : { kind: "keyword", keyword: "any" },
       };
+    case SyntaxKind.CallSignature:
     case SyntaxKind.ConstructSignature:
       return {
-        kind: "construct",
+        kind: node.kind === SyntaxKind.CallSignature ? "call" : "construct",
         typeParameters: typeParameters(node, text),
         params: node.parameters.map((p) => readParam(p, text)),
         returns: node.type
@@ -820,6 +824,12 @@ function member(m) {
         // type's `new(): Counter` is its construct signature (#507).
         m.name === "new" ? string(m.name) : propertyName(m.name),
         m.optional ? f.createToken(SyntaxKind.QuestionToken) : undefined,
+        typeParameterNodes(m.typeParameters),
+        m.params.map(param),
+        typeNode(m.returns),
+      );
+    case "call":
+      return f.createCallSignatureDeclaration(
         typeParameterNodes(m.typeParameters),
         m.params.map(param),
         typeNode(m.returns),

@@ -147,3 +147,42 @@ with no new Rust/JavaScript semantic exception. Tests cover both interface
 and nested object positions, a method literally named new, optional/rest
 arguments, generic constraints and exact round trips. Intl coverage uses
 the same constructor model to exercise every changed native call site.
+
+## Amendment (2026-11-15): read const parameters and callable members (#1919, #1921)
+
+The shared parameter reader preserves the engine ConstKeyword modifier in
+the existing const field, independently of its constraint and default.
+Ordinary parameters leave that optional field absent. The existing writer
+already consumes it. A function, method, construct or call signature and a
+generic function type use this same reader; no consumer reconstructs it.
+
+An interface or object type call signature is a Member of kind call with
+typeParameters, params and returns. It has no member name and is distinct
+from a construct signature and a named method. Both signature kinds share
+the parameter/result reader; the printer uses the corresponding native
+TypeScript factory. checkedMembers accepts call as part of that one
+protocol. Existing platform inventories deliberately select named members
+and constructs, so a call signature does not become a named property or a
+constructor. There is no alternate opaque signature spelling.
+
+Original and printed strict consumers check literal tuple inference in a
+separate statement, without contextual return typing hiding a lost const.
+Controls keep ordinary inference and invalid bounds invalid. Exact model
+and read/print/read tests cover overload order, callable/constructible
+interfaces, nested objects, defaults, constraints, optional/rest arguments,
+and a symbol-named sibling. Owner mutations lose or introduce const, omit
+call reading/parameters, confuse call and construct, widen the return to
+any or reject the new protocol member.
+
+This is ADR0262 case N at the TypeScript tooling boundary: native Rust
+cannot observe this declaration reader. The independent oracle is the
+actual strict TypeScript checker; no Rust semantic exception is added.
+
+The call-member consumer audit includes builtins, WebAPI and Node member
+inventories; Next member coverage and font generation; React attribute,
+literal and DOM/CSS generators; and React declaration coverage. Existing
+kind predicates explicitly select named properties/methods, indexes or
+constructs as appropriate; unnamed call signatures do not become members
+or constructors. React coverage reads declaration exports, not Member
+kinds. The made-up unknown-kind control still throws, and its source
+mutation is caught alongside the call and construct controls.
