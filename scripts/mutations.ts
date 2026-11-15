@@ -1296,7 +1296,9 @@ async function main() {
       if (verdict === "inconclusive") console.log(`--- ${mutation.name}, inconclusive: its log's end\n${output.split("\n").slice(-60).join("\n")}\n---`);
       results.set(
         mutation,
-        verdict === "caught" ? "caught" : verdict === "survived" ? `SURVIVED: its ${ran} tests passed with it` : `INCONCLUSIVE: no test failed, or the runner didn't end; see ${log}`,
+        verdict === "caught" ? "caught" : verdict === "survived"
+          ? `SURVIVED: its ${ran} tests passed with it${mutation.snapshots ? "" : ", snapshots not compared"}`
+          : `INCONCLUSIVE: no test failed, or the runner didn't end; see ${log}`,
       );
     });
     // A mutant's compiler is its tests' alone: a debug build, hundreds of

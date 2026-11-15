@@ -632,3 +632,19 @@ row-view-of-any-call. intervals-mir-only-unreported is
 intervals-proofs-unreported, of the shadow's `proved-<kind>` lines. A test of
 a range rule's wraps says which MIR proves (`wrapsProved`, test/support.ts),
 so a rule lost, or one claiming too much, fails it.
+
+## Amendment: a survivor retires code only of a run that compares the corpus' snapshots (2026-11-16)
+
+The runner judges a mutation by its tests against native output; the
+corpus' JS snapshots count only where the mutation says `snapshots: true`.
+A rule that changes only how the JS reads, a check a proof takes away, a
+readable form, then survives every corpus case whatever it does. One did:
+`loop_ranges`' slice `IterMut` arm "survived" the corpus' 2,617 cases and
+was nearly retired as dead, and `check:fast --all`, which compares
+snapshots, showed four cases' JS changed without it
+(`enumerate_mut_patterns`, `std_mut_items`, `const_block_uninit_array`,
+`writer_sink_arguments_given_on`). So, beside the native pass's rule
+above: a survivor justifies retiring code only of a run that compares the
+corpus' snapshots, the mutation with `snapshots: true`, or the change
+itself through `check:fast --all`. The runner says it of each survivor
+whose run didn't, "snapshots not compared".

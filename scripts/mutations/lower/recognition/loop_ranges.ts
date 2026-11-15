@@ -66,4 +66,13 @@ export const mutations: Mutation[] = [
     replace: "        && args.types().next().is_some()\n",
     tests: ["test/intervals-shadow.test.ts", "-t", "gives its cell, the same each time"],
   },
+  {
+    name: "slice-iter-mut-unbounded",
+    breaks: "a slice's `IterMut` is no slice iterator, so `enumerate()` of `v.iter_mut()` is no range step and the checks its indexes need none of are written",
+    file: "src/lower/recognition/loop_ranges.rs",
+    find: "            && matches!(super::std_path_item(tcx, adt.did()), Some(StdPath::SliceIter | StdPath::SliceIterMut)))\n",
+    replace: "            && matches!(super::std_path_item(tcx, adt.did()), Some(StdPath::SliceIter)))\n",
+    tests: ["test/corpus.test.ts", "-t", "^(enumerate_mut_patterns|std_mut_items).rs$"],
+    snapshots: true,
+  },
 ];
