@@ -346,7 +346,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     },
                     _ => false,
                 };
-                Value::Expr(form.storage().written(self.value_expr(value, span)?, nulled))
+                // What it stores, `null` or a value, says so, so a handle
+                // that stores as the place does, an index of a nullable
+                // field's `Vec`, `lanes[index] = transitions`, stores it as
+                // it is (#1933 step 4 (F)).
+                Value::Expr(super::nulled::stored_nulled(
+                    form.storage().written(self.value_expr(value, span)?, nulled),
+                ))
             }
             // Written through a reference, a `RefCell`'s borrow of a
             // nullable field, `*this.target_inst.borrow_mut() = target_inst`,
@@ -360,13 +366,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     && (never_undefined
                         || matches!(rvalue, Rvalue::Use(operand, _) if self.stored_given(state, operand) == Given::Nulled)) =>
             {
-                let value = self.value_expr(value, span)?;
-                let none =
-                    crate::lower::representation::NoneForm::Null.trust(crate::lower::representation::Writers::Exact);
-                Value::Expr(Expr {
-                    facts: none.map_or(value.facts, |none| value.facts.with(none)),
-                    ..value
-                })
+                Value::Expr(super::nulled::stored_nulled(self.value_expr(value, span)?))
             }
             // A plain `Option` field's, Rust's `None` (#1840).
             false => match rvalue {

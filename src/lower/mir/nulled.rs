@@ -1213,3 +1213,14 @@ enum Write<'b, 'tcx> {
     Assign(&'b Rvalue<'tcx>),
     Call(BasicBlock, &'b Operand<'tcx>, &'b [rustc_span::Spanned<Operand<'tcx>>]),
 }
+
+/// `value`, `null` or a value, stored where a `None` is `null`: so marked
+/// (`NoneForm::Null`'s trust, `Known::NoneNull`), so a handle that stores as
+/// the place does takes it as it is (ADRs 0791, 0861; #1933 step 4 (F)).
+pub(super) fn stored_nulled(value: Expr) -> Expr {
+    let none = crate::lower::representation::NoneForm::Null.trust(crate::lower::representation::Writers::Exact);
+    Expr {
+        facts: none.map_or(value.facts, |none| value.facts.with(none)),
+        ..value
+    }
+}

@@ -628,3 +628,21 @@ corpus case proved_option_stored_through_a_borrow (native, both builds,
 as a library, metamorphic) and mutations
 `proved-store-through-a-borrow-unread` and `store-through-a-borrow-as-it-is`
 (lower/mir/assign.ts).
+
+## Amendment: what a nullable place stores says it's `null` or a value (2026-11-16, #1933 step 4 (F), transitions)
+
+A store in a nullable place wrote what it stores, `null` or a value
+(`Storage::written`), unmarked, so a handle that stores as the place does,
+an index of a nullable field's `Vec<Option<T>>`, wrote it again `?? null`:
+React's addTransitionToLanesMap's `transition_lanes_map[index] =
+Some(transitions)` was `transitionLanesMap[index] = transitions ?? null`
+until tidy's never-undefined answered it. **What a nullable place stores is
+marked `null` or a value (`nulled::stored_nulled`, `NoneForm::Null`'s
+trust)**, as a store through a borrow's was, one helper for both: written
+is either as it is, of what's `null` or a value, or `?? null`, so the mark
+holds of each.
+
+Case of [0262](0262-when-rust-and-js-disagree.md): none, each value the
+same. Held by corpus case nullable_items_set_to_a_some_by_index (native,
+both builds, as a library, metamorphic; a `None` given and one written
+`null`) and mutation `nulled-store-unmarked` (lower/mir/assign.ts).

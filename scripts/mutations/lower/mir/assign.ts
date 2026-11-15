@@ -5,6 +5,15 @@ const given1840 = ["test/none-given.test.ts", "-t", "in Bun and in Chromium"];
 
 export const mutations: Mutation[] = [
   {
+    name: "nulled-store-unmarked",
+    breaks: "what's `null` or a value stored in a nullable place isn't said so, so a handle that stores as the place does, an index of a nullable field's `Vec`, writes `lanes[index] = transitions ?? null` (#1933 step 4 (F))",
+    file: "src/lower/mir/assign.rs",
+    find: "                Value::Expr(super::nulled::stored_nulled(\n                    form.storage().written(self.value_expr(value, span)?, nulled),\n                ))\n",
+    replace: "                Value::Expr(form.storage().written(self.value_expr(value, span)?, nulled))\n",
+    tests: ["test/corpus.test.ts", "-t", "^nullable_items_set_to_a_some_by_index.rs$"],
+    snapshots: true,
+  },
+  {
     name: "proved-store-through-a-borrow-unread",
     breaks: "an `Option` a test proved there, stored through a `RefCell`'s borrow of a nullable field, `*value = deferred` under `deferred.is_some()`, is `deferred ?? null`, left for tidy to guess (#1933 step 4 (B))",
     file: "src/lower/mir/assign.rs",
