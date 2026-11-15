@@ -350,6 +350,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // evaluates it either way: one with effects runs first, in order.
             Std::UnwrapOr => {
                 let (mut option, mut default) = (arg(), arg());
+                // Of one a test proved there, `proved_present`'s, its value:
+                // the default, which does nothing and whose drop does nothing,
+                // never read (#1933 step 4).
+                if option.facts.has(js::Known::Proved)
+                    && !default.has_effects()
+                    && self.drops(generic_args.type_at(0)) == crate::lower::drops::Drops::Nothing
+                {
+                    return Ok(Some(match self.boxed_payload(generic_args.type_at(0)) {
+                        true => self.some_value(option),
+                        false => option,
+                    }));
+                }
                 if default.has_effects() {
                     if option.has_effects() {
                         option = self.spill(Role::Option, option, out);

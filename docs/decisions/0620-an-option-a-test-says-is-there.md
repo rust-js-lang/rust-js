@@ -494,3 +494,29 @@ shown-defined-of-a-let new, proved-present-written-again,
 field-read-back-through-the-test, present-coalesce-failed-test-unread and
 field-test-undecided-where-its-variable-changes retargeted.
 
+## Amendment: a `&mut` lend that never takes a `Some` away leaves a local's writes to say it (2026-11-16, #1933 step 4 (B))
+
+`whole_writes` gave up on any `&mut` lend of a local. It now leaves out one
+that never takes its `Some` away (`nulled::lends::lend_keeps_some`): of a
+`Some`'s payload, or into a reference written once, every use of which
+reads the `Option` it lends, its discriminant, a shared borrow, or a
+`&mut` of the payload, `match &mut found`'s, or gives it to std's
+`get_or_insert`, `get_or_insert_with`, `get_or_insert_default`,
+`insert` or `as_mut`. A `&mut` reborrow of it, which may be given
+anywhere, `fill(&mut slot, value)`'s, a write of the whole through it,
+`*lent = None`, a call of anything else, `take()`, or a raw pointer: none
+is. The body's count of writes counts each such lend (`mut_lends`). And
+`unwrap_or(d)` of an `Option` a test proved there is its value, `d`
+doing nothing and its drop nothing.
+
+React: getParentFragmentInstances' `return parentFragmentInstances;` and
+the scheduler's `currentTask.callback = continuationCallback;` (twice), MIR's
+now, the output unchanged. Tidy's answers: never-undefined 10 to 9. Held by
+test/lowering-nullable-tests.test.ts's "a &mut lend that never takes a
+Some away" (a `take()`, a whole write through the lend keeping `?? null`;
+run) and "a variable MIR proves nothing of", now of closures' captures,
+tidy's; test/none-given.test.ts's "each source of JS's null" (the
+reborrow); corpus case option_lent_keeping_its_some (native, both builds,
+as a library, metamorphic); mutations in lower/mir/nulled/lends.ts,
+kept-lend-never, unwrap-or-of-a-proved-option-coalesced.
+

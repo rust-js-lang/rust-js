@@ -646,4 +646,12 @@ export const mutations: Mutation[] = [
     replace: "            if !behind.insert(b) {\n",
     tests: ["test/lowering-nullable-tests.test.ts", "-t", "a RefCell field tested and read again"],
   },
+  {
+    name: "kept-lend-never",
+    breaks: "any `&mut` lend of an `Option` local makes its writes say nothing, so getParentFragmentInstances' `match &mut found` returns `found ?? null`, tidy's to drop (#1933)",
+    file: "src/lower/mir/nulled.rs",
+    find: "                            && !self.lend_keeps_some(state, *lent, assign.0)\n",
+    replace: "",
+    tests: ["test/lowering-nullable-tests.test.ts", "-t", "a &mut lend that never takes a Some away"],
+  },
 ];

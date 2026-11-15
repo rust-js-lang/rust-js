@@ -9,6 +9,7 @@ use crate::lower::aggregates::Given;
 use crate::lower::representation::NoneForm;
 
 mod field_reads;
+mod lends;
 mod one_none;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -380,7 +381,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `&mut`: `null` or a value too, as `if profiling { reason() } else
         // { js::null() }`'s temporary is (rd632).
         let nulled = self.whole_writes(state, local).is_some_and(|writes| {
-            writes.len() == state.locals.writes[local]
+            writes.len() + self.mut_lends(state, local) == state.locals.writes[local]
                 && (writes.iter())
                     .all(|write| self.written_given(state, local, write, &mut seen.clone()) == (Given::Nulled, None))
         });
@@ -653,8 +654,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                                 writes.push(Write::Assign(&assign.1));
                             }
                         }
-                        if let Rvalue::Ref(_, BorrowKind::Mut { .. }, lent) | Rvalue::RawPtr(mir::RawPtrKind::Mut, lent) =
-                            &assign.1
+                        // A `&mut` that never takes a `Some` away is no write
+                        // of a `None` (`lend_keeps_some`, #1933 step 4 (B)).
+                        if let Rvalue::Ref(_, BorrowKind::Mut { .. }, lent) = &assign.1
+                            && lent.local == local
+                            && !self.lend_keeps_some(state, *lent, assign.0)
+                        {
+                            return None;
+                        }
+                        if let Rvalue::RawPtr(mir::RawPtrKind::Mut, lent) = &assign.1
                             && lent.local == local
                         {
                             return None;

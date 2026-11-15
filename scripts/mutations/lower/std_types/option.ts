@@ -567,4 +567,12 @@ export const mutations: Mutation[] = [
     replace: "                    || false)\n",
     tests: ["test/lowering-nullable-tests.test.ts"],
   },
+  {
+    name: "unwrap-or-of-a-proved-option-coalesced",
+    breaks: "`unwrap_or(d)` of an `Option` a test proved there is `x ?? d`, tidy's to drop (#1933)",
+    file: "src/lower/std_types/option.rs",
+    find: "                if option.facts.has(js::Known::Proved)\n                    && !default.has_effects()\n",
+    replace: "                if false\n                    && !default.has_effects()\n",
+    tests: ["test/lowering-nullable-tests.test.ts", "-t", "a &mut lend that never takes a Some away"],
+  },
 ];

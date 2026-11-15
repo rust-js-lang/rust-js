@@ -648,32 +648,55 @@ pub fn defer_or(items: Vec<u32>, chunk: &Chunk) {
   expect(to.pending).toBe(null);
 });
 
-// What MIR can't see of a variable, one lent as a `&mut`, a parameter's
-// `as_mut()`, or getParentFragmentInstances' `parentFragmentInstances`:
-// tidy's reading of the printed JS still answers it, until MIR does
-// (#1933's step 4), `x ?? d` under a test that `x` is there its `x`, and a
-// `let` set only to what's never `undefined` given as it is.
+// What MIR can't see of a variable, one a closure captures and reads, a
+// test of it and its read inside the closure, React's Fizz's `prevTask`
+// restored in a `catch_unwind`'s closure: tidy's reading of the printed JS
+// still answers it, until MIR does (#1933's step 4), `x ?? d` under a test
+// that `x` is there its `x`, and a `const` never `undefined` stored as it is.
 test("a variable MIR proves nothing of is tidy's to read", async () => {
   const { dir, fn, tidied } = compile(
     "nullable-tests-lent-variables",
-    `pub fn pushed_or(mut list: Option<Vec<u32>>, fallback: Vec<u32>) -> usize {
-    if let Some(list) = list.as_mut() {
-        list.push(1);
-    }
-    if list.is_some() {
-        return list.unwrap_or(fallback).len();
-    }
-    0
+    `use std::cell::RefCell;
+use std::rc::Rc;
+
+pub struct Key {
+    pub id: u32,
 }
 
-pub fn pushed_after(mut list: Option<Vec<u32>>, fallback: Vec<u32>) -> usize {
-    if let Some(list) = list.as_mut() {
-        list.push(1);
-    }
-    if list.is_none() {
-        return 0;
-    }
-    list.unwrap_or(fallback).len()
+pub struct Task {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub key: RefCell<Option<Rc<Key>>>,
+}
+
+pub fn task() -> Task {
+    Task { key: RefCell::new(None) }
+}
+
+pub fn restored(task: &Task, key: &Rc<Key>, run: &dyn Fn(&dyn Fn())) {
+    let prev = task.key.replace(Some(Rc::clone(key)));
+    run(&|| {
+        task.key.replace(prev.clone());
+    });
+    task.key.replace(prev);
+}
+
+pub fn first_or(value: Option<&'static js::Unknown>, fallback: &'static js::Unknown, run: &dyn Fn(&dyn Fn() -> bool) -> bool) -> bool {
+    run(&|| {
+        if value.is_some() {
+            return js::strict_equals(value.unwrap_or(fallback), fallback);
+        }
+        false
+    })
+}
+
+pub fn after_none(value: Option<&'static js::Unknown>, fallback: &'static js::Unknown, run: &dyn Fn(&dyn Fn() -> bool) -> bool) -> bool {
+    run(&|| {
+        if value.is_none() {
+            return false;
+        }
+        let kept = value.unwrap_or(fallback);
+        js::strict_equals(kept, fallback)
+    })
 }
 
 // A test of a field of a variable written between two of them decides
@@ -694,35 +717,27 @@ pub fn walked(mut node: &'static Node) -> u32 {
     200 + node.id
 }
 
-#[cfg_attr(rust_js, rust_js::nullable)]
-pub fn found(items: Vec<u32>) -> Option<Vec<u32>> {
-    let mut found = js::null();
-    for item in items {
-        match &mut found {
-            None => found = Some(vec![item]),
-            Some(found) => found.push(item),
-        }
-    }
-    found
-}
 `,
   );
   expect(tidied.sort()).toEqual(["tidy-nulled-as-they-are never-undefined", "tidy-present-in coalesce"]);
-  expect(fn("pushedOr")).not.toContain("??");
-  expect(fn("pushedAfter")).toContain("return list.length;");
-  expect(fn("found")).not.toContain("??");
+  expect(fn("restored")).not.toContain("??");
+  expect(fn("firstOr")).not.toContain("??");
+  expect(fn("afterNone")).not.toContain("??");
   const lib = await import(join(dir, "lib.js"));
-  expect([lib.pushedOr([4], [5, 6, 7]), lib.pushedOr(undefined, [5, 6, 7])]).toEqual([2, 0]);
-  expect([lib.pushedAfter([4], [5, 6, 7]), lib.pushedAfter(undefined, [5, 6, 7])]).toEqual([2, 0]);
+  const [task, key] = [lib.task(), { id: 1 }];
+  let inside: unknown;
+  lib.restored(task, key, (restore: () => void) => {
+    inside = task.key;
+    restore();
+  });
+  expect([inside, task.key]).toEqual([key, null]);
+  const [value, fallback] = [{}, {}];
+  const run = (f: () => boolean) => f();
+  expect([lib.firstOr(value, fallback, run), lib.firstOr(undefined, fallback, run), lib.afterNone(value, fallback, run)]).toEqual([false, false, false]);
   const last = { next: undefined, id: 3 };
   expect([lib.walked(last), lib.walked({ next: last, id: 1 }), lib.walked({ next: { next: last, id: 2 }, id: 1 })]).toEqual([3, 103, 202]);
-  expect([lib.found([4, 5]), lib.found([])]).toEqual([[4, 5], null]);
 });
 
-// What a thread-local's `with(f)` gives is what `f` returns, `null` or a
-// value where each of its returns is, React's `RENDERER_CURSOR_DEV.with(|cursor|
-// *cursor.current.borrow())` of a nullable cursor's field: stored in a
-// nullable place as it is, MIR's answer, none of tidy's (#1933, step 4).
 test("a thread-local's with(f) gives what f returns", async () => {
   const { dir, fn, tidied } = compile(
     "nullable-tests-local-with",
@@ -888,4 +903,89 @@ pub fn rewritten(n: u32, again: bool) -> Option<&'static Unit> {
   expect(lib.rewritten(1, true)).toBe(null);
   expect(lib.rewritten(1, false).id).toBe(1);
   expect(lib.rewritten(0, false)).toBe(null);
+});
+
+// An `Option` local lent as a `&mut` that never takes its `Some` away, a
+// `match &mut found`'s, getParentFragmentInstances', `get_or_insert_with`'s,
+// React's `deferred`, or `as_mut()`'s: its own writes still say what it is,
+// `null` or a value, and its test proves it there (`lend_keeps_some`, #1933
+// step 4 (B)); one that writes `None` through the lend, `*r = None`, is
+// `?? null` again.
+test("a &mut lend that never takes a Some away leaves a variable's writes to say it", async () => {
+  const { dir, fn, tidied } = compile(
+    "nullable-tests-kept-lends",
+    `#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn found(items: Vec<u32>) -> Option<Vec<u32>> {
+    let mut found = js::null();
+    for item in items {
+        match &mut found {
+            None => found = Some(vec![item]),
+            Some(found) => found.push(item),
+        }
+    }
+    found
+}
+
+#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn cleared(items: Vec<u32>, clear: bool) -> Option<Vec<u32>> {
+    let mut found = js::null();
+    for item in items {
+        match &mut found {
+            None => found = Some(vec![item]),
+            Some(found) => found.push(item),
+        }
+    }
+    if clear {
+        let lent = &mut found;
+        *lent = None;
+    }
+    found
+}
+
+#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn emptied(value: &'static js::Unknown) -> Option<&'static js::Unknown> {
+    let mut found = js::null();
+    if let None = &mut found {
+        found = Some(value);
+    }
+    if found.is_some() {
+        let lent = &mut found;
+        *lent = None;
+        return found;
+    }
+    None
+}
+
+#[cfg_attr(rust_js, rust_js::nullable)]
+pub fn taken(items: Vec<u32>, clear: bool) -> Option<Vec<u32>> {
+    let mut found = js::null();
+    for item in items {
+        found.get_or_insert_with(Vec::new).push(item);
+    }
+    if clear {
+        found.take();
+    }
+    found
+}
+
+pub fn pushed_or(mut list: Option<Vec<u32>>, fallback: Vec<u32>) -> usize {
+    list.get_or_insert_with(Vec::new).push(1);
+    if list.is_some() {
+        return list.unwrap_or(fallback).len();
+    }
+    0
+}
+`,
+  );
+  expect(tidied).toEqual([]);
+  expect(fn("found")).toContain("return found;");
+  expect(fn("cleared")).toContain("?? null");
+  expect(fn("taken")).toContain("?? null");
+  expect(fn("pushedOr")).toContain("return list.length;");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.found([4, 5]), lib.found([])]).toEqual([[4, 5], null]);
+  expect([lib.cleared([4], false), lib.cleared([4], true), lib.cleared([], false)]).toEqual([[4], null, null]);
+  expect([lib.taken([4], false), lib.taken([4], true)]).toEqual([[4], null]);
+  expect(lib.emptied({})).toBe(null);
+  expect([lib.pushedOr([4], [5, 6, 7]), lib.pushedOr(undefined, [5, 6, 7])]).toEqual([2, 1]);
 });
