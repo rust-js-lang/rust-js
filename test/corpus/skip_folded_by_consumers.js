@@ -11,7 +11,6 @@ import {
   $iter,
   $iterator,
   $lastDropping,
-  $lazyChain,
   $lazyTakeWhile,
   $live,
   $mapFrom,
@@ -19,6 +18,7 @@ import {
   $rev,
   $skipping,
   $unwindsOn,
+  iterator_chain,
 } from "@rust-js/std";
 
 export function entry() {
@@ -370,43 +370,40 @@ function main() {
   console.log(`own last ${value$1 == null ? "None" : `Some(${value$1})`}`);
   last = $lastDropping(
     $skipping(
-      $lazyChain(
-        $closing(
-          $iterator(
-            [ds()],
-            lastsIterator_next,
-            false,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            lastsIterator_last,
-          ),
-          (it) => {
-            for (const item of it.of[0]) {
+      iterator_chain(
+        [ds()],
+        [[[5], [6]]],
+        { next: lastsIterator_next, last: lastsIterator_last },
+        {
+          intoIter(items) {
+            return items;
+          },
+          IntoIterIterator() {
+            return { next: lastsIterator_next, last: lastsIterator_last };
+          },
+          $dropItem: dDrop_drop,
+          $dropIntoIter(lasts) {
+            for (const item of lasts[0]) {
               dDrop_drop(item);
             }
           },
-        ),
-        $closing(
-          $iterator(
-            [[[5], [6]]],
-            lastsIterator_next,
-            false,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            lastsIterator_last,
-          ),
-          (it) => {
-            for (const item of it.of[0]) {
-              dDrop_drop(item);
-            }
-          },
-        ),
+        },
+        (lasts) => {
+          for (const item of lasts[0]) {
+            dDrop_drop(item);
+          }
+        },
+        (lasts) => {
+          for (const item of lasts[0]) {
+            dDrop_drop(item);
+          }
+        },
+        dDrop_drop,
+        (lasts) => {
+          for (const item of lasts[0]) {
+            dDrop_drop(item);
+          }
+        },
       ),
       1,
       dDrop_drop,

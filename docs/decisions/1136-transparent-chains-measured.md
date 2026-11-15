@@ -437,3 +437,23 @@ The new rows take two helpers both builds import into the twin net's
 reversed_map_stepped_from_its_back's `try_rfold` of an `Option` is refused,
 std's `Try` of one not given to its generic code yet (#1864, in
 iterator-forms' `differs`).
+
+## Amendment: the chain family flipped (2026-11-15, #1681's change 2)
+
+The first of the families after `map` and `enumerate`: a `chain()` of a
+chain the predicate doesn't admit is std's compiled `Chain` from its
+source outward, `HELD_FLIPPED`'s, no longer the recognizers' `$lazyChain`
+there. A flipped `map` past an unflipped `chain` was what #1780 found, its
+source given as std's `Chain` struct, which it wasn't: with `chain`
+flipped too the walk from the source goes through it.
+
+Measured: 40 corpus snapshots move, each as native prints, 16,925 lines
+to 17,499 (×1.034), the corpus as a whole +574 of 328,075. The React
+port's JS regenerates byte for byte. `@rust-js/std` is the same size,
+1,307,950 bytes, as std's `Chain` was compiled into it already. The
+iterator matrix's and the conformance table's slices pass. Readability
+reads a little better in each share: `$iter` 84.1 to 83.9,
+`Iterator.from` 8.3 to 8.1, renamed `x$1` 468.8 to 468.7 and role
+fallbacks 256.8 to 256.7 in 10,000 lines. Mutation `chain-not-flipped`
+(`lower/body_queries/in_place.ts`).
+

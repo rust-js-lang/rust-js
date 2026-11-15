@@ -4,10 +4,12 @@ import {
   $iter,
   $iterator,
   $lazyChain,
-  $lazyRange,
+  $next,
   $nextSome,
+  $rangeInclusiveNext,
   $rangeNext,
   $rangeNextBack,
+  iterator_chain,
 } from "@rust-js/std";
 
 export function entry() {
@@ -19,14 +21,30 @@ function skipped(it, n) {
 }
 
 function main() {
-  const value = skipped($lazyChain($lazyRange(0, 4294967295), $iter([])), 4000000000);
+  const rangeIntoIterator = {
+    intoIter: (items) => items,
+    IntoIterIterator: () => ({ next: $rangeNext }),
+  };
+  const intoIterator = { intoIter: (items) => items, IntoIterIterator: () => ({ next: $next }) };
+  const value = skipped(
+    iterator_chain({ start: 0, end: 4294967295 }, $iter([]), { next: $rangeNext }, intoIterator),
+    4000000000,
+  );
   console.log(`${value == null ? "None" : `Some(${value})`}`);
   const value$1 = skipped(
     $lazyChain($iterator({ start: 0, end: 4294967295 }, $rangeNextBack), $iter([])),
     4000000000,
   );
   console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
-  const value$2 = skipped($lazyChain($lazyRange(0, 10), $lazyRange(20, 30)), 15);
+  const value$2 = skipped(
+    iterator_chain(
+      { start: 0, end: 10 },
+      { start: 20, end: 30 },
+      { next: $rangeNext },
+      rangeIntoIterator,
+    ),
+    15,
+  );
   console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
   const value$3 = skipped(
     $lazyChain(
@@ -36,12 +54,17 @@ function main() {
     15,
   );
   console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
-  const value$4 = skipped($lazyChain($lazyRange(0, 11), $iter([7])), 11);
+  const value$4 = skipped(
+    iterator_chain({ start: 0, end: 10 }, $iter([7]), { next: $rangeInclusiveNext }, intoIterator),
+    11,
+  );
   console.log(`${value$4 == null ? "None" : `Some(${value$4})`}`);
   const value$5 = skipped(
-    $lazyChain(
-      $iterator({ start: 0n, end: 3n }, $rangeNext),
-      $iterator({ start: 5n, end: 7n }, $rangeNext),
+    iterator_chain(
+      { start: 0n, end: 3n },
+      { start: 5n, end: 7n },
+      { next: $rangeNext },
+      rangeIntoIterator,
     ),
     9,
   );

@@ -11,6 +11,7 @@ import {
   $filterEnds,
   $flattenEnds,
   $foldBack,
+  $foldOf,
   $foldToArray,
   $folded,
   $holding,
@@ -19,13 +20,16 @@ import {
   $lazyChain,
   $live,
   $mapEnds,
+  $next,
   $rangeNext,
   $rangeNextBack,
   $rev,
   $stepBy,
   $unwindsOn,
+  iterator_chain,
   iterator_enumerate,
   iterator_fuse,
+  iterator_map,
   iterator_peekable,
 } from "@rust-js/std";
 
@@ -298,37 +302,31 @@ function reachingItsOwnFold() {
   const value$1 = own(1, "own2");
   let chain;
   try {
-    chain = $lazyChain(
-      $closing(
-        $iterator(
-          value,
-          ownIterator_next,
-          false,
-          undefined,
-          undefined,
-          undefined,
-          ownIterator_fold,
-          ownIterator_nth,
-        ),
-        (it) => {
-          dDrop_drop(it.of._held);
+    chain = iterator_chain(
+      value,
+      value$1,
+      { next: ownIterator_next, fold: ownIterator_fold, nth: ownIterator_nth },
+      {
+        intoIter(items) {
+          return items;
         },
-      ),
-      $closing(
-        $iterator(
-          value$1,
-          ownIterator_next,
-          false,
-          undefined,
-          undefined,
-          undefined,
-          ownIterator_fold,
-          ownIterator_nth,
-        ),
-        (it) => {
-          dDrop_drop(it.of._held);
+        IntoIterIterator() {
+          return { next: ownIterator_next, fold: ownIterator_fold, nth: ownIterator_nth };
         },
-      ),
+        $dropIntoIter(own) {
+          dDrop_drop(own._held);
+        },
+      },
+      (own) => {
+        dDrop_drop(own._held);
+      },
+      (own) => {
+        dDrop_drop(own._held);
+      },
+      undefined,
+      (own) => {
+        dDrop_drop(own._held);
+      },
     );
   } catch (error) {
     $cleanup(() => {
@@ -833,15 +831,33 @@ function chainedUnderAMap() {
   const g = ["map"];
   const value = plain(2, "a");
   const value$1 = plain(1, "b");
-  let chain;
+  let tmp;
   try {
-    chain = $lazyChain(
-      $closing($iterator(value, plainIterator_next), (it) => {
-        dDrop_drop(it.of._held);
-      }),
-      $closing($iterator(value$1, plainIterator_next), (it) => {
-        dDrop_drop(it.of._held);
-      }),
+    tmp = iterator_chain(
+      value,
+      value$1,
+      { next: plainIterator_next },
+      {
+        intoIter(items) {
+          return items;
+        },
+        IntoIterIterator() {
+          return { next: plainIterator_next };
+        },
+        $dropIntoIter(plain) {
+          dDrop_drop(plain._held);
+        },
+      },
+      (plain) => {
+        dDrop_drop(plain._held);
+      },
+      (plain) => {
+        dDrop_drop(plain._held);
+      },
+      undefined,
+      (plain) => {
+        dDrop_drop(plain._held);
+      },
     );
   } catch (error) {
     $cleanup(() => {
@@ -849,13 +865,17 @@ function chainedUnderAMap() {
     }, error);
     throw error;
   }
-  const f = (x) => (x + zero(g)) >>> 0;
-  const iter = $holding(
-    chain.map(f),
-    () => {
+  const iter = iterator_map(
+    tmp,
+    (x) => (x + zero(g)) >>> 0,
+    { next: $next, fold: $foldOf },
+    (chain) => {
+      chain.return();
+    },
+    undefined,
+    (value) => {
       dDrop_drop(g);
     },
-    "after",
   );
   let result;
   try {
@@ -885,9 +905,9 @@ function chainedUnderAMap() {
     throw error;
   }
   const value$2 = plain(1, "b");
-  let tmp;
+  let tmp$1;
   try {
-    tmp = $lazyChain(
+    tmp$1 = $lazyChain(
       stepBy,
       $closing($iterator(value$2, plainIterator_next), (it) => {
         dDrop_drop(it.of._held);
@@ -899,9 +919,9 @@ function chainedUnderAMap() {
     }, error);
     throw error;
   }
-  const f$1 = () => zero(g$1) === 0;
+  const f = () => zero(g$1) === 0;
   const iter$1 = $holding(
-    tmp.filter(f$1),
+    tmp$1.filter(f),
     () => {
       dDrop_drop(g$1);
     },
@@ -926,13 +946,16 @@ function chainedFromEitherEnd() {
   const g = ["map"];
   const value = backs(2, "a");
   const value$1 = [1, 2];
-  let chain;
+  let tmp;
   try {
-    chain = $lazyChain(
-      $closing($iterator(value, backsIterator_next), (it) => {
-        dDrop_drop(it.of[0]._held);
-      }),
+    tmp = iterator_chain(
+      value,
       value$1,
+      { next: backsIterator_next },
+      { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
+      (backs) => {
+        dDrop_drop(backs[0]._held);
+      },
     );
   } catch (error) {
     $cleanup(() => {
@@ -940,13 +963,17 @@ function chainedFromEitherEnd() {
     }, error);
     throw error;
   }
-  const f = (x) => String.fromCharCode((97 + (((x + zero(g)) >>> 0) & 255)) & 255);
-  const iter = $holding(
-    chain.map(f),
-    () => {
+  const iter = iterator_map(
+    tmp,
+    (x) => String.fromCharCode((97 + (((x + zero(g)) >>> 0) & 255)) & 255),
+    { next: $next, fold: $foldOf },
+    (chain) => {
+      chain.return();
+    },
+    undefined,
+    (value) => {
       dDrop_drop(g);
     },
-    "after",
   );
   let result;
   try {

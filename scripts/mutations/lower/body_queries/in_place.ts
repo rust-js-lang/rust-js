@@ -379,4 +379,14 @@ export const mutations: Mutation[] = [
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^map_held_then_enumerated_from_its_back.rs$"],
   },
+  {
+    name: "chain-not-flipped",
+    breaks:
+      "a `chain()` of a chain the transparent-chain predicate doesn't admit is the recognizers' hand-written `$lazyChain` again, where std's compiled `Chain` is the meaning (#1681's change 2, the chain family)",
+    file: "src/lower/body_queries/in_place.rs",
+    find: "pub(in crate::lower) const HELD_FLIPPED: [&str; 3] = [\"chain\", \"enumerate\", \"map\"];\n",
+    replace: "pub(in crate::lower) const HELD_FLIPPED: [&str; 3] = [\"enumerate\", \"enumerate\", \"map\"];\n",
+    tests: ["test/corpus.test.ts", "-t", "^chain_side_panics_drops_the_other.rs$"],
+    snapshots: true,
+  },
 ];

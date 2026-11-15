@@ -6,10 +6,11 @@ import {
   $foldToArray,
   $grownVec,
   $iter,
-  $lazyChain,
+  $jsIterator,
   $next,
   $roomForHint,
   $traitImpl,
+  iterator_chain,
   iterator_flatMap,
 } from "@rust-js/std";
 
@@ -45,8 +46,16 @@ export function tExt(TIterator, TTrustedLen, TItemConstSize, TItemItemSize) {
 }
 
 function chained(it, ITrustedLen) {
-  return $grownVec($roomForHint($lazyChain(Iterator.from(it), ["x"]), 8, ITrustedLen), (grown) =>
-    ITrustedLen ? $foldToArray(grown) : $collectDropping(grown),
+  return $grownVec(
+    $roomForHint(
+      iterator_chain(it, ["x"], $jsIterator, {
+        intoIter: (items) => $iter(items),
+        IntoIterIterator: () => ({ next: $next }),
+      }),
+      8,
+      ITrustedLen,
+    ),
+    (grown) => (ITrustedLen ? $foldToArray(grown) : $collectDropping(grown)),
   );
 }
 

@@ -3,17 +3,18 @@
 import {
   $advanceSlice,
   $cleanup,
-  $closing,
   $dropEach,
   $foldOf,
   $held,
+  $intoIter,
   $iter,
-  $lazyChain,
+  $jsIterator,
   $lent,
   $next,
   $nextBack,
   $nthDropping,
   $range,
+  iterator_chain,
   iterator_rev,
   iterator_skip,
 } from "@rust-js/std";
@@ -28,7 +29,21 @@ function noisyDrop_drop(noisy) {
 
 function chainedNth(a, b, dropI) {
   const chain = $held(
-    $lazyChain($closing(Iterator.from(a), dropI, false), $closing(Iterator.from(b), dropI, false)),
+    iterator_chain(
+      a,
+      b,
+      $jsIterator,
+      {
+        intoIter: (items) => $intoIter(items),
+        IntoIterIterator: () => $jsIterator,
+        $dropItem: noisyDrop_drop,
+        $dropIntoIter: dropI,
+      },
+      dropI,
+      dropI,
+      noisyDrop_drop,
+      dropI,
+    ),
   );
   let nth;
   function map(n) {

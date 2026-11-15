@@ -13,7 +13,6 @@ import {
   $foldToArray,
   $iter,
   $iterator,
-  $lazyChain,
   $lazyRange,
   $lazyZip,
   $next,
@@ -27,6 +26,7 @@ import {
   $slice,
   $trustedZip,
   $zipEnds,
+  iterator_chain,
   iterator_map,
   iterator_zip,
 } from "@rust-js/std";
@@ -418,20 +418,43 @@ function main() {
     $dropItems(collect, dDrop_drop);
     return collect.length;
   });
-  run("chain", [9, 0], () => {
-    const value = once(9);
-    const value$1 = once(8);
-    return $collectDropping(
-      $lazyChain(
-        $closing($iterator(value, onceIterator_next), (it) => {
-          dDrop_drop(it.of._held);
-        }),
-        $closing($iterator(value$1, onceIterator_next), (it) => {
-          dDrop_drop(it.of._held);
-        }),
-      ),
-    ).length;
-  });
+  run(
+    "chain",
+    [9, 0],
+    () =>
+      $collectDropping(
+        $roomForHint(
+          iterator_chain(
+            once(9),
+            once(8),
+            { next: onceIterator_next },
+            {
+              intoIter(items) {
+                return items;
+              },
+              IntoIterIterator() {
+                return { next: onceIterator_next };
+              },
+              $dropIntoIter(once) {
+                dDrop_drop(once._held);
+              },
+            },
+            (once) => {
+              dDrop_drop(once._held);
+            },
+            (once) => {
+              dDrop_drop(once._held);
+            },
+            undefined,
+            (once) => {
+              dDrop_drop(once._held);
+            },
+          ),
+          4,
+          false,
+        ),
+      ).length,
+  );
   run(
     "flatten",
     [7, 0],
@@ -501,13 +524,31 @@ function main() {
     const value = once(8);
     let chain;
     try {
-      chain = $lazyChain(
-        $closing($iterator(tmp$1, onceIterator_next), (it) => {
-          dDrop_drop(it.of._held);
-        }),
-        $closing($iterator(value, onceIterator_next), (it) => {
-          dDrop_drop(it.of._held);
-        }),
+      chain = iterator_chain(
+        tmp$1,
+        value,
+        { next: onceIterator_next },
+        {
+          intoIter(items) {
+            return items;
+          },
+          IntoIterIterator() {
+            return { next: onceIterator_next };
+          },
+          $dropIntoIter(once) {
+            dDrop_drop(once._held);
+          },
+        },
+        (once) => {
+          dDrop_drop(once._held);
+        },
+        (once) => {
+          dDrop_drop(once._held);
+        },
+        undefined,
+        (once) => {
+          dDrop_drop(once._held);
+        },
       );
     } catch (error) {
       $cleanup(() => {

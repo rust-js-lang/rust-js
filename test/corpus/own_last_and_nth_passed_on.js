@@ -3,10 +3,10 @@
 import {
   $iterator,
   $last,
-  $lazyChain,
   $lent,
   $next,
   $nth,
+  iterator_chain,
   iterator_fuse,
   iterator_peekable,
 } from "@rust-js/std";
@@ -105,29 +105,24 @@ function main() {
   );
   console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
   const value$4 = $last(
-    $lazyChain(
-      $iterator(
-        c("chainlast"),
-        cIterator_next,
-        false,
-        undefined,
-        undefined,
-        cIterator_sizeHint,
-        undefined,
-        cIterator_nth,
-        cIterator_last,
-      ),
-      $iterator(
-        c("b"),
-        cIterator_next,
-        false,
-        undefined,
-        undefined,
-        cIterator_sizeHint,
-        undefined,
-        cIterator_nth,
-        cIterator_last,
-      ),
+    iterator_chain(
+      c("chainlast"),
+      c("b"),
+      {
+        next: cIterator_next,
+        sizeHint: cIterator_sizeHint,
+        nth: cIterator_nth,
+        last: cIterator_last,
+      },
+      {
+        intoIter: (items) => items,
+        IntoIterIterator: () => ({
+          next: cIterator_next,
+          sizeHint: cIterator_sizeHint,
+          nth: cIterator_nth,
+          last: cIterator_last,
+        }),
+      },
     ),
   );
   console.log(`${value$4 == null ? "None" : `Some(${value$4})`}`);

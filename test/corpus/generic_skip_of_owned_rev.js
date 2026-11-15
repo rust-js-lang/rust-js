@@ -6,14 +6,16 @@ import {
   $collectDropping,
   $dropEach,
   $held,
+  $intoIter,
   $iter,
-  $lazyChain,
+  $jsIterator,
   $lent,
   $nthDropping,
   $range,
   $rev,
   $roomForHint,
   $skipping,
+  iterator_chain,
 } from "@rust-js/std";
 
 export function entry() {
@@ -69,7 +71,21 @@ function nthOf(it, dropI) {
 
 function chainedNth(a, b, dropI) {
   const chain = $held(
-    $lazyChain($closing(Iterator.from(a), dropI, false), $closing(Iterator.from(b), dropI, false)),
+    iterator_chain(
+      a,
+      b,
+      $jsIterator,
+      {
+        intoIter: (items) => $intoIter(items),
+        IntoIterIterator: () => $jsIterator,
+        $dropItem: noisyDrop_drop,
+        $dropIntoIter: dropI,
+      },
+      dropI,
+      dropI,
+      noisyDrop_drop,
+      dropI,
+    ),
   );
   let nth;
   function map(n) {

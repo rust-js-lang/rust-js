@@ -11,16 +11,16 @@ import {
   $iter,
   $iterator,
   $jsIterator,
-  $lazyChain,
-  $lazyRange,
   $lazyZip,
   $mapEnds,
   $next,
   $nextBack,
+  $rangeNext,
   $roomForHint,
   $sizeHint,
   $stepBy,
   $tryFoldSome,
+  iterator_chain,
   iterator_fuse,
   iterator_peekable,
 } from "@rust-js/std";
@@ -394,7 +394,12 @@ function main() {
   });
   run("plain chain fold", () => {
     const fold = $foldDropping(
-      $lazyChain($lazyRange(1, 3), $iterator({ n: 0, at: 2 }, plainIterator_next)),
+      iterator_chain(
+        { start: 1, end: 3 },
+        { n: 0, at: 2 },
+        { next: $rangeNext },
+        { intoIter: (items) => items, IntoIterIterator: () => ({ next: plainIterator_next }) },
+      ),
       [],
       push,
       $dropEach(dDrop_drop),

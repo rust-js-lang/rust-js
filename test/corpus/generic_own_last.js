@@ -3,15 +3,16 @@
 import {
   $chars,
   $debugStr,
+  $intoIter,
   $iter,
   $iterator,
   $jsIterator,
   $jsIteratorSome,
   $last,
   $lastSome,
-  $lazyChain,
   $lent,
   $nthSome,
+  iterator_chain,
   iterator_fuse,
   iterator_map,
   iterator_peekable,
@@ -56,7 +57,12 @@ function peek(it) {
 }
 
 function chain(a, b) {
-  return $lastSome($lazyChain(Iterator.from(a), b).drop(1));
+  return $lastSome(
+    iterator_chain(a, b, $jsIteratorSome, {
+      intoIter: (items) => $intoIter(items),
+      IntoIterIterator: () => $jsIteratorSome,
+    }).drop(1),
+  );
 }
 
 function mapped(it) {

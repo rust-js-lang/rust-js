@@ -7,10 +7,10 @@ import {
   $count,
   $iterator,
   $lastDropping,
-  $lazyChain,
   $live,
   $skipping,
   $unwindsOn,
+  iterator_chain,
   iterator_enumerate,
 } from "@rust-js/std";
 
@@ -87,55 +87,54 @@ function main() {
       }, error);
       throw error;
     }
-    return $count(
-      $lazyChain(
-        $closing(
-          $iterator(
-            value,
-            countsIterator_next,
-            false,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            countsIterator_last,
-            undefined,
-            undefined,
-            undefined,
-            countsIterator_count,
-          ),
-          (it) => {
-            for (const item of it.of[0]) {
-              dDrop_drop(item);
-            }
-          },
-        ),
-        $closing(
-          $iterator(
-            tmp,
-            countsIterator_next,
-            false,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            countsIterator_last,
-            undefined,
-            undefined,
-            undefined,
-            countsIterator_count,
-          ),
-          (it) => {
-            for (const item of it.of[0]) {
-              dDrop_drop(item);
-            }
-          },
-        ),
-      ),
+    const iter = iterator_chain(
+      value,
+      tmp,
+      { next: countsIterator_next, last: countsIterator_last, count: countsIterator_count },
+      {
+        intoIter(items) {
+          return items;
+        },
+        IntoIterIterator() {
+          return {
+            next: countsIterator_next,
+            last: countsIterator_last,
+            count: countsIterator_count,
+          };
+        },
+        $dropItem: dDrop_drop,
+        $dropIntoIter(counts) {
+          for (const item of counts[0]) {
+            dDrop_drop(item);
+          }
+        },
+      },
+      (counts) => {
+        for (const item of counts[0]) {
+          dDrop_drop(item);
+        }
+      },
+      (counts) => {
+        for (const item of counts[0]) {
+          dDrop_drop(item);
+        }
+      },
       dDrop_drop,
+      (counts) => {
+        for (const item of counts[0]) {
+          dDrop_drop(item);
+        }
+      },
     );
+    try {
+      return $count(iter, dDrop_drop);
+    } catch (error) {
+      throw $unwindsOn(error);
+    } finally {
+      if ($live()) {
+        iter.return();
+      }
+    }
   });
   console.log(`chain count panicked: ${counted.TAG === "Err"}`);
   counted = $catchUnwind(() => {
@@ -151,55 +150,54 @@ function main() {
       }, error);
       throw error;
     }
-    return $count(
-      $lazyChain(
-        $closing(
-          $iterator(
-            value,
-            countsIterator_next,
-            false,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            countsIterator_last,
-            undefined,
-            undefined,
-            undefined,
-            countsIterator_count,
-          ),
-          (it) => {
-            for (const item of it.of[0]) {
-              dDrop_drop(item);
-            }
-          },
-        ),
-        $closing(
-          $iterator(
-            tmp,
-            countsIterator_next,
-            false,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            countsIterator_last,
-            undefined,
-            undefined,
-            undefined,
-            countsIterator_count,
-          ),
-          (it) => {
-            for (const item of it.of[0]) {
-              dDrop_drop(item);
-            }
-          },
-        ),
-      ),
+    const iter$1 = iterator_chain(
+      value,
+      tmp,
+      { next: countsIterator_next, last: countsIterator_last, count: countsIterator_count },
+      {
+        intoIter(items) {
+          return items;
+        },
+        IntoIterIterator() {
+          return {
+            next: countsIterator_next,
+            last: countsIterator_last,
+            count: countsIterator_count,
+          };
+        },
+        $dropItem: dDrop_drop,
+        $dropIntoIter(counts) {
+          for (const item of counts[0]) {
+            dDrop_drop(item);
+          }
+        },
+      },
+      (counts) => {
+        for (const item of counts[0]) {
+          dDrop_drop(item);
+        }
+      },
+      (counts) => {
+        for (const item of counts[0]) {
+          dDrop_drop(item);
+        }
+      },
       dDrop_drop,
+      (counts) => {
+        for (const item of counts[0]) {
+          dDrop_drop(item);
+        }
+      },
     );
+    try {
+      return $count(iter$1, dDrop_drop);
+    } catch (error) {
+      throw $unwindsOn(error);
+    } finally {
+      if ($live()) {
+        iter$1.return();
+      }
+    }
   });
   console.log(`chain count panicked: ${counted.TAG === "Err"}`);
   counted = $catchUnwind(() =>
@@ -271,61 +269,61 @@ function main() {
       }, error);
       throw error;
     }
-    const d = $lastDropping(
-      $lazyChain(
-        $closing(
-          $iterator(
-            value,
-            countsIterator_next,
-            false,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            countsIterator_last,
-            undefined,
-            undefined,
-            undefined,
-            countsIterator_count,
-          ),
-          (it) => {
-            for (const item of it.of[0]) {
-              dDrop_drop(item);
-            }
-          },
-        ),
-        $closing(
-          $iterator(
-            tmp,
-            countsIterator_next,
-            false,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            countsIterator_last,
-            undefined,
-            undefined,
-            undefined,
-            countsIterator_count,
-          ),
-          (it) => {
-            for (const item of it.of[0]) {
-              dDrop_drop(item);
-            }
-          },
-        ),
-      ),
+    const iter = iterator_chain(
+      value,
+      tmp,
+      { next: countsIterator_next, last: countsIterator_last, count: countsIterator_count },
+      {
+        intoIter(items) {
+          return items;
+        },
+        IntoIterIterator() {
+          return {
+            next: countsIterator_next,
+            last: countsIterator_last,
+            count: countsIterator_count,
+          };
+        },
+        $dropItem: dDrop_drop,
+        $dropIntoIter(counts) {
+          for (const item of counts[0]) {
+            dDrop_drop(item);
+          }
+        },
+      },
+      (counts) => {
+        for (const item of counts[0]) {
+          dDrop_drop(item);
+        }
+      },
+      (counts) => {
+        for (const item of counts[0]) {
+          dDrop_drop(item);
+        }
+      },
       dDrop_drop,
+      (counts) => {
+        for (const item of counts[0]) {
+          dDrop_drop(item);
+        }
+      },
     );
+    let result;
+    try {
+      result = $lastDropping(iter, dDrop_drop);
+    } catch (error) {
+      throw $unwindsOn(error);
+    } finally {
+      if ($live()) {
+        iter.return();
+      }
+    }
     function map(d) {
       const result = d[0];
       dDrop_drop(d);
       return result;
     }
-    return d != null ? map(d) : undefined;
+    return result != null ? map(result) : undefined;
   });
   console.log(`chain last panicked: ${last.TAG === "Err"}`);
   last = $catchUnwind(() => {
@@ -341,61 +339,61 @@ function main() {
       }, error);
       throw error;
     }
-    const d = $lastDropping(
-      $lazyChain(
-        $closing(
-          $iterator(
-            value,
-            countsIterator_next,
-            false,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            countsIterator_last,
-            undefined,
-            undefined,
-            undefined,
-            countsIterator_count,
-          ),
-          (it) => {
-            for (const item of it.of[0]) {
-              dDrop_drop(item);
-            }
-          },
-        ),
-        $closing(
-          $iterator(
-            tmp,
-            countsIterator_next,
-            false,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            countsIterator_last,
-            undefined,
-            undefined,
-            undefined,
-            countsIterator_count,
-          ),
-          (it) => {
-            for (const item of it.of[0]) {
-              dDrop_drop(item);
-            }
-          },
-        ),
-      ),
+    const iter = iterator_chain(
+      value,
+      tmp,
+      { next: countsIterator_next, last: countsIterator_last, count: countsIterator_count },
+      {
+        intoIter(items) {
+          return items;
+        },
+        IntoIterIterator() {
+          return {
+            next: countsIterator_next,
+            last: countsIterator_last,
+            count: countsIterator_count,
+          };
+        },
+        $dropItem: dDrop_drop,
+        $dropIntoIter(counts) {
+          for (const item of counts[0]) {
+            dDrop_drop(item);
+          }
+        },
+      },
+      (counts) => {
+        for (const item of counts[0]) {
+          dDrop_drop(item);
+        }
+      },
+      (counts) => {
+        for (const item of counts[0]) {
+          dDrop_drop(item);
+        }
+      },
       dDrop_drop,
+      (counts) => {
+        for (const item of counts[0]) {
+          dDrop_drop(item);
+        }
+      },
     );
+    let result;
+    try {
+      result = $lastDropping(iter, dDrop_drop);
+    } catch (error) {
+      throw $unwindsOn(error);
+    } finally {
+      if ($live()) {
+        iter.return();
+      }
+    }
     function map$1(d) {
       const result = d[0];
       dDrop_drop(d);
       return result;
     }
-    return d != null ? map$1(d) : undefined;
+    return result != null ? map$1(result) : undefined;
   });
   console.log(`chain last panicked: ${last.TAG === "Err"}`);
   last = $catchUnwind(() => {
@@ -448,57 +446,56 @@ function main() {
     }, error);
     throw error;
   }
-  console.log(
-    `${$count(
-      $lazyChain(
-        $closing(
-          $iterator(
-            value,
-            countsIterator_next,
-            false,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            countsIterator_last,
-            undefined,
-            undefined,
-            undefined,
-            countsIterator_count,
-          ),
-          (it) => {
-            for (const item of it.of[0]) {
-              dDrop_drop(item);
-            }
-          },
-        ),
-        $closing(
-          $iterator(
-            tmp,
-            countsIterator_next,
-            false,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            countsIterator_last,
-            undefined,
-            undefined,
-            undefined,
-            countsIterator_count,
-          ),
-          (it) => {
-            for (const item of it.of[0]) {
-              dDrop_drop(item);
-            }
-          },
-        ),
-      ),
-      dDrop_drop,
-    )}`,
+  const iter = iterator_chain(
+    value,
+    tmp,
+    { next: countsIterator_next, last: countsIterator_last, count: countsIterator_count },
+    {
+      intoIter(items) {
+        return items;
+      },
+      IntoIterIterator() {
+        return {
+          next: countsIterator_next,
+          last: countsIterator_last,
+          count: countsIterator_count,
+        };
+      },
+      $dropItem: dDrop_drop,
+      $dropIntoIter(counts) {
+        for (const item of counts[0]) {
+          dDrop_drop(item);
+        }
+      },
+    },
+    (counts) => {
+      for (const item of counts[0]) {
+        dDrop_drop(item);
+      }
+    },
+    (counts) => {
+      for (const item of counts[0]) {
+        dDrop_drop(item);
+      }
+    },
+    dDrop_drop,
+    (counts) => {
+      for (const item of counts[0]) {
+        dDrop_drop(item);
+      }
+    },
   );
+  let result;
+  try {
+    result = $count(iter, dDrop_drop);
+  } catch (error) {
+    throw $unwindsOn(error);
+  } finally {
+    if ($live()) {
+      iter.return();
+    }
+  }
+  console.log(`${result}`);
   const value$1 = counts(45, false);
   let tmp$1;
   try {
@@ -511,63 +508,63 @@ function main() {
     }, error);
     throw error;
   }
-  const d = $lastDropping(
-    $lazyChain(
-      $closing(
-        $iterator(
-          value$1,
-          countsIterator_next,
-          false,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          countsIterator_last,
-          undefined,
-          undefined,
-          undefined,
-          countsIterator_count,
-        ),
-        (it) => {
-          for (const item of it.of[0]) {
-            dDrop_drop(item);
-          }
-        },
-      ),
-      $closing(
-        $iterator(
-          tmp$1,
-          countsIterator_next,
-          false,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          countsIterator_last,
-          undefined,
-          undefined,
-          undefined,
-          countsIterator_count,
-        ),
-        (it) => {
-          for (const item of it.of[0]) {
-            dDrop_drop(item);
-          }
-        },
-      ),
-    ),
+  const iter$1 = iterator_chain(
+    value$1,
+    tmp$1,
+    { next: countsIterator_next, last: countsIterator_last, count: countsIterator_count },
+    {
+      intoIter(items) {
+        return items;
+      },
+      IntoIterIterator() {
+        return {
+          next: countsIterator_next,
+          last: countsIterator_last,
+          count: countsIterator_count,
+        };
+      },
+      $dropItem: dDrop_drop,
+      $dropIntoIter(counts) {
+        for (const item of counts[0]) {
+          dDrop_drop(item);
+        }
+      },
+    },
+    (counts) => {
+      for (const item of counts[0]) {
+        dDrop_drop(item);
+      }
+    },
+    (counts) => {
+      for (const item of counts[0]) {
+        dDrop_drop(item);
+      }
+    },
     dDrop_drop,
+    (counts) => {
+      for (const item of counts[0]) {
+        dDrop_drop(item);
+      }
+    },
   );
+  let result$1;
+  try {
+    result$1 = $lastDropping(iter$1, dDrop_drop);
+  } catch (error) {
+    throw $unwindsOn(error);
+  } finally {
+    if ($live()) {
+      iter$1.return();
+    }
+  }
   function map(d) {
     const result = d[0];
     dDrop_drop(d);
     return result;
   }
-  const value$2 = d != null ? map(d) : undefined;
+  const value$2 = result$1 != null ? map(result$1) : undefined;
   console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
-  const d$1 = $lastDropping(
+  const d = $lastDropping(
     $skipping(
       $closing(
         $iterator(
@@ -601,7 +598,7 @@ function main() {
     dDrop_drop(d);
     return result;
   }
-  const value$3 = d$1 != null ? map$1(d$1) : undefined;
+  const value$3 = d != null ? map$1(d) : undefined;
   console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
 }
 //# sourceMappingURL=case.js.map

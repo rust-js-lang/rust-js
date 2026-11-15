@@ -11,8 +11,6 @@ import {
   $entryOrInsert,
   $extendMap,
   $insert,
-  $iterator,
-  $lazyChain,
   $lazyRange,
   $mapExtractIf,
   $ord,
@@ -31,6 +29,7 @@ import {
   $treeFromSorted,
   $treeRange,
   $treeSplitOff,
+  iterator_chain,
   iterator_map,
 } from "@rust-js/std";
 
@@ -254,9 +253,11 @@ function run(name, n, k, op) {
 function each(name, n, most, op) {
   const calls = run(name, n, 0, op);
   const last = Math.max(calls - 10, 0, most + 1);
-  for (const k of $lazyChain(
-    $lazyRange(1, Math.min(calls, most) + 1),
-    $iterator(most > 0 ? { start: last, end: calls } : { start: 1, end: 0 }, $rangeInclusiveNext),
+  for (const k of iterator_chain(
+    { start: 1, end: Math.min(calls, most) },
+    most > 0 ? { start: last, end: calls } : { start: 1, end: 0 },
+    { next: $rangeInclusiveNext },
+    { intoIter: (items) => items, IntoIterIterator: () => ({ next: $rangeInclusiveNext }) },
   )) {
     const seed$1 = seed;
     run(name, n, k, op);

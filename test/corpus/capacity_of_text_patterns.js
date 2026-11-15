@@ -10,10 +10,11 @@ import {
   $grownBy,
   $grownVec,
   $iter,
-  $lazyChain,
+  $jsIterator,
   $lines,
   $matchIndices,
   $matches,
+  $next,
   $rev,
   $roomForHint,
   $rsplit,
@@ -21,6 +22,7 @@ import {
   $splitN,
   $splitTerminator,
   $splitWhitespace,
+  iterator_chain,
 } from "@rust-js/std";
 
 export function entry() {
@@ -29,7 +31,14 @@ export function entry() {
 
 function chained(it, ITrustedLen) {
   const v = $grownVec(
-    $roomForHint($lazyChain(Iterator.from(it), $iter(["x"])), 4, ITrustedLen),
+    $roomForHint(
+      iterator_chain(it, $iter(["x"]), $jsIterator, {
+        intoIter: (items) => items,
+        IntoIterIterator: () => ({ next: $next }),
+      }),
+      4,
+      ITrustedLen,
+    ),
     (grown) => (ITrustedLen ? $foldToArray(grown) : $collectDropping(grown)),
   );
   return $capacity(v, 4);
@@ -37,7 +46,14 @@ function chained(it, ITrustedLen) {
 
 function words(it, ITrustedLen) {
   const v = $grownVec(
-    $roomForHint($lazyChain(Iterator.from(it), $iter(["x"])), 8, ITrustedLen),
+    $roomForHint(
+      iterator_chain(it, $iter(["x"]), $jsIterator, {
+        intoIter: (items) => items,
+        IntoIterIterator: () => ({ next: $next }),
+      }),
+      8,
+      ITrustedLen,
+    ),
     (grown) => (ITrustedLen ? $foldToArray(grown) : $collectDropping(grown)),
   );
   return $capacity(v, 8);

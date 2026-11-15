@@ -11,7 +11,6 @@ import {
   $held,
   $iter,
   $iterator,
-  $lazyChain,
   $lazyMapWhile,
   $lazyRange,
   $lazyScan,
@@ -24,6 +23,7 @@ import {
   $rangeNext,
   $roomForHint,
   $stepBy,
+  iterator_chain,
   iterator_enumerate,
   iterator_flatMap,
   iterator_fuse,
@@ -130,7 +130,15 @@ function main() {
   console.log(
     `zip ([${value$10[0].join(", ")}], [${value$10[1].join(", ")}], [${value$10[2].join(", ")}])`,
   );
-  const value$11 = twice($lazyChain($lazyRange(0, 1), $iterator(f(), flakyIterator_next)), "next");
+  const value$11 = twice(
+    iterator_chain(
+      { start: 0, end: 1 },
+      f(),
+      { next: $rangeNext },
+      { intoIter: (items) => items, IntoIterIterator: () => ({ next: flakyIterator_next }) },
+    ),
+    "next",
+  );
   console.log(
     `chain ([${value$11[0].join(", ")}], [${value$11[1].join(", ")}], [${value$11[2].join(", ")}])`,
   );

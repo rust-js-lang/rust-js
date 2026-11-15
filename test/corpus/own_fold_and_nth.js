@@ -11,7 +11,7 @@ import {
   $fromDigit,
   $heapExtend,
   $iterator,
-  $lazyChain,
+  $last,
   $lazyRange,
   $lent,
   $max,
@@ -27,6 +27,7 @@ import {
   $stepBy,
   $unwrap,
   $unzip,
+  iterator_chain,
   iterator_enumerate,
   iterator_map,
 } from "@rust-js/std";
@@ -74,6 +75,10 @@ function boxedTotal(items) {
 }
 
 function main() {
+  const upIntoIterator = {
+    intoIter: (items) => items,
+    IntoIterIterator: () => ({ next: upIterator_next, fold: upIterator_fold, nth: upIterator_nth }),
+  };
   console.log(
     `sum ${$iterator(up(), upIterator_next, false, undefined, undefined, undefined, upIterator_fold, upIterator_nth).reduce((a, b) => (a + b) >>> 0, 0)}`,
   );
@@ -210,34 +215,21 @@ function main() {
       .reduce((a, b) => (a + b) >>> 0, 0)}`,
   );
   console.log(
-    `chain ${$lazyChain($iterator(up(), upIterator_next, false, undefined, undefined, undefined, upIterator_fold, upIterator_nth), $iterator(up(), upIterator_next, false, undefined, undefined, undefined, upIterator_fold, upIterator_nth)).reduce((a, x) => (a + x) >>> 0, 0)}`,
+    `chain ${iterator_chain(
+      up(),
+      up(),
+      { next: upIterator_next, fold: upIterator_fold, nth: upIterator_nth },
+      upIntoIterator,
+    ).reduce((a, x) => (a + x) >>> 0, 0)}`,
   );
-  const value$2 = Array.from(
-    $folded(
-      $lazyChain(
-        $iterator(
-          up(),
-          upIterator_next,
-          false,
-          undefined,
-          undefined,
-          undefined,
-          upIterator_fold,
-          upIterator_nth,
-        ),
-        $iterator(
-          up(),
-          upIterator_next,
-          false,
-          undefined,
-          undefined,
-          undefined,
-          upIterator_fold,
-          upIterator_nth,
-        ),
-      ),
+  const value$2 = $last(
+    iterator_chain(
+      up(),
+      up(),
+      { next: upIterator_next, fold: upIterator_fold, nth: upIterator_nth },
+      upIntoIterator,
     ),
-  ).at(-1);
+  );
   console.log(`chain last ${value$2 == null ? "None" : `Some(${value$2})`}`);
   console.log(
     `flat_map ${$iterator(

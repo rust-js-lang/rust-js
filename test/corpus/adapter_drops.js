@@ -12,7 +12,6 @@ import {
   $iter,
   $iterEq,
   $iterEqGiven,
-  $iterator,
   $lazyChain,
   $lazySkipWhile,
   $lazyTakeWhile,
@@ -1157,11 +1156,17 @@ function main() {
   let own;
   try {
     own = $held(
-      $lazyChain(
-        $closing($iterator(value$3, countdownIterator_next), (it) => {
-          loudDrop_drop(it.of._tag);
-        }),
-        $closing($iter(tmp$8), $dropEach(loudDrop_drop)),
+      iterator_chain(
+        value$3,
+        tmp$8,
+        { next: countdownIterator_next },
+        vecIntoIterator,
+        (countdown) => {
+          loudDrop_drop(countdown._tag);
+        },
+        $dropEach(loudDrop_drop),
+        loudDrop_drop,
+        $dropEach(loudDrop_drop),
       ),
     );
   } catch (error) {

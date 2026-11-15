@@ -13,7 +13,6 @@ import {
   $iter,
   $iterator,
   $knowing,
-  $lazyChain,
   $lazyZip,
   $live,
   $next,
@@ -28,6 +27,7 @@ import {
   $tryFoldSome,
   $unwindsOn,
   enumerateDoubleEndedIterator_rfold,
+  iterator_chain,
   iterator_enumerate,
   iterator_fuse,
   iterator_map,
@@ -649,47 +649,48 @@ function main() {
       throw error;
     }
     const fold = $foldDropping(
-      $lazyChain(
-        $closing(
-          $iterator(
-            value,
-            ownIterator_next,
-            false,
-            undefined,
-            undefined,
-            ownIterator_sizeHint,
-            ownIterator_fold,
-            undefined,
-            undefined,
-            ownDoubleEndedIterator_rfold,
-          ),
-          (it) => {
+      iterator_chain(
+        value,
+        tmp,
+        { next: ownIterator_next, sizeHint: ownIterator_sizeHint, fold: ownIterator_fold },
+        {
+          intoIter(items) {
+            return items;
+          },
+          IntoIterIterator() {
+            return {
+              next: ownIterator_next,
+              sizeHint: ownIterator_sizeHint,
+              fold: ownIterator_fold,
+            };
+          },
+          $dropItem: dDrop_drop,
+          $dropIntoIter(own) {
             console.log("drop own");
-            for (const item of it.of.items) {
+            for (const item of own.items) {
               dDrop_drop(item);
             }
           },
-        ),
-        $closing(
-          $iterator(
-            tmp,
-            ownIterator_next,
-            false,
-            undefined,
-            undefined,
-            ownIterator_sizeHint,
-            ownIterator_fold,
-            undefined,
-            undefined,
-            ownDoubleEndedIterator_rfold,
-          ),
-          (it) => {
-            console.log("drop own");
-            for (const item of it.of.items) {
-              dDrop_drop(item);
-            }
-          },
-        ),
+        },
+        (own) => {
+          console.log("drop own");
+          for (const item of own.items) {
+            dDrop_drop(item);
+          }
+        },
+        (own) => {
+          console.log("drop own");
+          for (const item of own.items) {
+            dDrop_drop(item);
+          }
+        },
+        dDrop_drop,
+        (own) => {
+          console.log("drop own");
+          for (const item of own.items) {
+            dDrop_drop(item);
+          }
+        },
       ),
       [],
       push,
@@ -980,47 +981,48 @@ function main() {
     }
     const collect = $collectDropping(
       $roomForHint(
-        $lazyChain(
-          $closing(
-            $iterator(
-              value,
-              ownIterator_next,
-              false,
-              undefined,
-              undefined,
-              ownIterator_sizeHint,
-              ownIterator_fold,
-              undefined,
-              undefined,
-              ownDoubleEndedIterator_rfold,
-            ),
-            (it) => {
+        iterator_chain(
+          value,
+          tmp,
+          { next: ownIterator_next, sizeHint: ownIterator_sizeHint, fold: ownIterator_fold },
+          {
+            intoIter(items) {
+              return items;
+            },
+            IntoIterIterator() {
+              return {
+                next: ownIterator_next,
+                sizeHint: ownIterator_sizeHint,
+                fold: ownIterator_fold,
+              };
+            },
+            $dropItem: dDrop_drop,
+            $dropIntoIter(own) {
               console.log("drop own");
-              for (const item of it.of.items) {
+              for (const item of own.items) {
                 dDrop_drop(item);
               }
             },
-          ),
-          $closing(
-            $iterator(
-              tmp,
-              ownIterator_next,
-              false,
-              undefined,
-              undefined,
-              ownIterator_sizeHint,
-              ownIterator_fold,
-              undefined,
-              undefined,
-              ownDoubleEndedIterator_rfold,
-            ),
-            (it) => {
-              console.log("drop own");
-              for (const item of it.of.items) {
-                dDrop_drop(item);
-              }
-            },
-          ),
+          },
+          (own) => {
+            console.log("drop own");
+            for (const item of own.items) {
+              dDrop_drop(item);
+            }
+          },
+          (own) => {
+            console.log("drop own");
+            for (const item of own.items) {
+              dDrop_drop(item);
+            }
+          },
+          dDrop_drop,
+          (own) => {
+            console.log("drop own");
+            for (const item of own.items) {
+              dDrop_drop(item);
+            }
+          },
         ),
         4,
         false,

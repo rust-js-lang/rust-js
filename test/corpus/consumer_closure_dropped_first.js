@@ -9,7 +9,6 @@ import {
   $flatMap,
   $iter,
   $iterator,
-  $lazyChain,
   $lazyRange,
   $lazySkipWhile,
   $lazyZip,
@@ -19,6 +18,7 @@ import {
   $rev,
   $stepBy,
   $unwindsOn,
+  iterator_chain,
   iterator_enumerate,
   iterator_fuse,
   iterator_map,
@@ -226,15 +226,33 @@ function main() {
   case$("chain", (g) => {
     const it = It.new(2, "it");
     const value = It.new(1, "it2");
-    let chain;
+    let iter;
     try {
-      chain = $lazyChain(
-        $closing($iterator(it, itIterator_next), (it) => {
-          dDrop_drop(it.of._held);
-        }),
-        $closing($iterator(value, itIterator_next), (it) => {
-          dDrop_drop(it.of._held);
-        }),
+      iter = iterator_chain(
+        it,
+        value,
+        { next: itIterator_next },
+        {
+          intoIter(items) {
+            return items;
+          },
+          IntoIterIterator() {
+            return { next: itIterator_next };
+          },
+          $dropIntoIter(it) {
+            dDrop_drop(it._held);
+          },
+        },
+        (it) => {
+          dDrop_drop(it._held);
+        },
+        (it) => {
+          dDrop_drop(it._held);
+        },
+        undefined,
+        (it) => {
+          dDrop_drop(it._held);
+        },
       );
     } catch (error) {
       $cleanup(() => {
@@ -243,9 +261,17 @@ function main() {
       throw error;
     }
     const f = (a, x) => (((a + x) >>> 0) + zero(g)) >>> 0;
-    return $consume(chain, "fold", 0, f, undefined, () => {
-      dDrop_drop(g);
-    });
+    try {
+      return $consume(iter, "fold", 0, f, undefined, () => {
+        dDrop_drop(g);
+      });
+    } catch (error) {
+      throw $unwindsOn(error);
+    } finally {
+      if ($live()) {
+        iter.return();
+      }
+    }
   });
   case$("taken past its end", (g) => {
     let g$8$live = true;

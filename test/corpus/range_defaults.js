@@ -8,14 +8,15 @@ import {
   $debugF64,
   $debugStr,
   $eq,
+  $foldToArray,
   $iterator,
-  $lazyChain,
   $rangeLen,
   $rangeNext,
   $rangeNextBack,
   $roomForHint,
   $slice,
   $take,
+  iterator_chain,
 } from "@rust-js/std";
 
 export function entry() {
@@ -125,14 +126,13 @@ function main() {
   const selection = { rows: { start: 0, end: 0 }, columns: { start: 0n, end: 0n }, label: "" };
   console.log(`${selectionDebug_fmt(selection)}`);
   console.log(
-    `${Math.max(selection.rows.end - selection.rows.start, 0)} ${selection.columns.start} [${Array.from(
+    `${Math.max(selection.rows.end - selection.rows.start, 0)} ${selection.columns.start} [${$foldToArray(
       $roomForHint(
-        $lazyChain(
-          $iterator({ start: selection.rows.start, end: selection.rows.end }, $rangeNext),
-          $iterator(
-            { start: Number(BigInt.asUintN(32, selection.columns.start)), end: 2 },
-            $rangeNext,
-          ),
+        iterator_chain(
+          { start: selection.rows.start, end: selection.rows.end },
+          { start: Number(BigInt.asUintN(32, selection.columns.start)), end: 2 },
+          { next: $rangeNext },
+          { intoIter: (items) => items, IntoIterIterator: () => ({ next: $rangeNext }) },
         ),
         4,
         true,

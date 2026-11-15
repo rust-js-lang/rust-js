@@ -12,12 +12,13 @@ import {
   $iter,
   $iterator,
   $jsIterator,
-  $lazyChain,
   $lazyRange,
   $next,
+  $rangeNext,
   $reserveHint,
   $roomForHint,
   $some,
+  iterator_chain,
   iterator_flatMap,
   iterator_fuse,
   iterator_map,
@@ -303,21 +304,19 @@ function main() {
     () =>
       $collectDropping(
         $roomForHint(
-          $lazyChain(
-            $lazyRange(0, 3),
-            $closing(
-              $iterator(
-                own(9, none, (n) => n),
-                ownIterator_next,
-                true,
-                undefined,
-                undefined,
-                ownIterator_sizeHint,
-              ),
-              (it) => {
-                ownDrop_drop(it.of);
-              },
-            ),
+          iterator_chain(
+            { start: 0, end: 3 },
+            own(9, none, (n) => n),
+            { next: $rangeNext },
+            {
+              intoIter: (items) => items,
+              IntoIterIterator: () => ({ next: ownIterator_next, sizeHint: ownIterator_sizeHint }),
+              $dropIntoIter: ownDrop_drop,
+            },
+            undefined,
+            ownDrop_drop,
+            undefined,
+            ownDrop_drop,
           ),
           4,
           false,

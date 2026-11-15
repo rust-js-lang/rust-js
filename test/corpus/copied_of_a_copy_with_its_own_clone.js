@@ -4,6 +4,7 @@ import {
   $clone,
   $cloning,
   $copyFromSlice,
+  $foldToArray,
   $index,
   $iter,
   $mapEnds,
@@ -11,7 +12,9 @@ import {
   $partition,
   $print,
   $repeatItems,
+  $roomForHint,
   $unwrapOk,
+  iterator_chain,
 } from "@rust-js/std";
 
 export function entry() {
@@ -108,7 +111,18 @@ function copiedInGenericCode(v, TCopy) {
   const it = makeCopied($iter(v));
   $next(it);
   const again = $clone(it);
-  return [...it, ...again];
+  return $foldToArray(
+    $roomForHint(
+      iterator_chain(
+        it,
+        again,
+        { next: $next },
+        { intoIter: (items) => items, IntoIterIterator: () => ({ next: $next }) },
+      ),
+      0,
+      true,
+    ),
+  );
 }
 
 function main() {

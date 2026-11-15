@@ -14,6 +14,7 @@ import {
   $next,
   $nth,
   $stepBy,
+  iterator_chain,
   iterator_fuse,
   iterator_skip,
   iterator_stepBy,
@@ -151,7 +152,22 @@ function main() {
     ).reduce((a, b) => (a + b) | 0, 0)}`,
   );
   console.log(
-    `${$stepBy($lazyChain($iterator(counted(), countIterator_next, false, undefined, undefined, undefined, countIterator_fold, countIterator_nth), $iterator(counted(), countIterator_next, false, undefined, undefined, undefined, countIterator_fold, countIterator_nth)), 2).reduce((n) => n + 1, 0)}`,
+    `${$stepBy(
+      iterator_chain(
+        counted(),
+        counted(),
+        { next: countIterator_next, fold: countIterator_fold, nth: countIterator_nth },
+        {
+          intoIter: (items) => items,
+          IntoIterIterator: () => ({
+            next: countIterator_next,
+            fold: countIterator_fold,
+            nth: countIterator_nth,
+          }),
+        },
+      ),
+      2,
+    ).reduce((n) => n + 1, 0)}`,
   );
   console.log(
     `${$stepBy(
@@ -180,7 +196,22 @@ function main() {
     ).reduce((n) => n + 1, 0)}`,
   );
   console.log(
-    `${$nth($lent($lazyChain($iterator([0], nthsIterator_next, false, undefined, undefined, undefined, undefined, nthsIterator_nth), $iterator([3], nthsIterator_next, false, undefined, undefined, undefined, undefined, nthsIterator_nth))), 11) ?? 0}`,
+    `${
+      $nth(
+        $lent(
+          iterator_chain(
+            [0],
+            [3],
+            { next: nthsIterator_next, nth: nthsIterator_nth },
+            {
+              intoIter: (items) => items,
+              IntoIterIterator: () => ({ next: nthsIterator_next, nth: nthsIterator_nth }),
+            },
+          ),
+        ),
+        11,
+      ) ?? 0
+    }`,
   );
   const last = Array.from(
     $folded(

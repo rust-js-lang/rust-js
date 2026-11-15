@@ -10,13 +10,14 @@ import {
   $heapPush,
   $heapSorted,
   $iter,
-  $lazyChain,
   $lazyRange,
   $next,
   $partiallyOrdered,
   $range,
+  $rangeNext,
   $roomForHint,
   $withCapacity,
+  iterator_chain,
   iterator_flatMap,
 } from "@rust-js/std";
 
@@ -58,9 +59,11 @@ function main() {
   h = $heapFrom(
     $grownVec(
       $roomForHint(
-        $lazyChain(
-          $lazyRange(0, 10),
+        iterator_chain(
+          { start: 0, end: 10 },
           $lazyRange(0, 30).filter((x) => x % 4 === 0),
+          { next: $rangeNext },
+          { intoIter: (items) => items, IntoIterIterator: () => ({ next: $next }) },
         ),
         4,
         false,

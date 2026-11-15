@@ -17,6 +17,7 @@ import {
   $repeating,
   $roomForHint,
   $unwound,
+  iterator_chain,
   iterator_enumerate,
   iterator_fuse,
   iterator_map,
@@ -88,8 +89,17 @@ function main() {
   check(
     "chain",
     () =>
-      Array.from(
-        $roomForHint($lazyChain($iterator({ start: 0 }, $rangeFromStep(0, 255)), [1]), 1, true),
+      $foldToArray(
+        $roomForHint(
+          iterator_chain(
+            { start: 0 },
+            [1],
+            { next: $rangeFromStep(0, 255) },
+            { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
+          ),
+          1,
+          true,
+        ),
       ).length,
   );
   check(

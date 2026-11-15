@@ -682,7 +682,10 @@ test("whether a consumer keeps each item is one catalog", () => {
 // what decides it, a cycle (#1681, ADR 1136, amended).
 test("the held flip never takes out a rev(), which back_stepped reads", () => {
   const source = read("src/lower/body_queries/in_place.rs");
-  expect(source).toMatch(/pub\(in crate::lower\) const HELD_FLIPPED: \[&str; 2\] = \["enumerate", "map"\];/);
+  // Whatever families it takes, `rev` is none of them.
+  const flipped = source.match(/pub\(in crate::lower\) const HELD_FLIPPED: \[&str; \d+\] = \[([^\]]*)\];/)?.[1];
+  expect(flipped).toBeDefined();
+  expect(flipped).not.toContain('"rev"');
   expect(read("src/lower/analysis/back_stepped.rs")).toMatch(/callee == rev\n\s+&& !body\.facts\.in_place_adapters\.ground_made_at\(&body\.thir, \*fn_span\)/);
 });
 

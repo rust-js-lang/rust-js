@@ -15,7 +15,6 @@ import {
   $iterator,
   $jsIterator,
   $last,
-  $lazyChain,
   $lazyRange,
   $lazyZip,
   $live,
@@ -28,6 +27,7 @@ import {
   $repeating,
   $unwindsOn,
   $vecCollectWay,
+  iterator_chain,
   iterator_map,
   iterator_zip,
 } from "@rust-js/std";
@@ -141,6 +141,10 @@ function shown(name, v) {
 
 function main() {
   // In place: the source's buffer.
+  const rangeIntoIterator = {
+    intoIter: (items) => items,
+    IntoIterIterator: () => ({ next: $rangeNext }),
+  };
   let source = [1, 2, 3];
   let v = all(
     $mapEnds($iter(source), (x) => (x * 2) >>> 0),
@@ -159,7 +163,16 @@ function main() {
   shown("by fold", v);
   v = relayed($iterator({ start: 0, end: 6 }, $rangeNextBack), "fold", 4);
   shown("by fold, relayed", v);
-  v = fromItems($lazyChain($lazyRange(0, 4), $lazyRange(7, 9)), 4, "fold");
+  v = fromItems(
+    iterator_chain(
+      { start: 0, end: 4 },
+      { start: 7, end: 9 },
+      { next: $rangeNext },
+      rangeIntoIterator,
+    ),
+    4,
+    "fold",
+  );
   shown("by fold, from its items", v);
   // By `next`: its first item, then its hint.
   v = all(
@@ -175,9 +188,11 @@ function main() {
   );
   shown("by next, filtered", v);
   v = relayed(
-    $lazyChain(
-      $iterator([0], ownIterator_next, false, undefined, undefined, ownIterator_sizeHint),
-      $lazyRange(4, 6),
+    iterator_chain(
+      [0],
+      { start: 4, end: 6 },
+      { next: ownIterator_next, sizeHint: ownIterator_sizeHint },
+      rangeIntoIterator,
     ),
     "next",
     4,
@@ -262,7 +277,7 @@ function main() {
           $iter(source),
           { start: 0n, end: 4n },
           { next: $next, advanceBy: $advanceSlice },
-          { intoIter: (items) => items, IntoIterIterator: () => ({ next: $rangeNext }) },
+          rangeIntoIterator,
           false,
           false,
           true,

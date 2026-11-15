@@ -7,11 +7,11 @@ import {
   $iter,
   $iterator,
   $jsIteratorSome,
-  $lazyChain,
   $lent,
   $live,
   $skipping,
   $unwindsOn,
+  iterator_chain,
   iterator_enumerate,
   iterator_fuse,
   iterator_map,
@@ -87,7 +87,17 @@ function main() {
     `${$count(iterator_peekable([0], { next: countIterator_next, count: countIterator_count }))}`,
   );
   console.log(
-    `${$count($lazyChain($iterator([0], countIterator_next, false, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, countIterator_count), $iterator([3], countIterator_next, false, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, countIterator_count)))}`,
+    `${$count(
+      iterator_chain(
+        [0],
+        [3],
+        { next: countIterator_next, count: countIterator_count },
+        {
+          intoIter: (items) => items,
+          IntoIterIterator: () => ({ next: countIterator_next, count: countIterator_count }),
+        },
+      ),
+    )}`,
   );
   console.log(
     `${$count(iterator_enumerate([0], { next: countIterator_next, count: countIterator_count }))}`,
@@ -216,51 +226,40 @@ function main() {
   console.log(
     `${$count(
       $skipping(
-        $lazyChain(
-          $closing(
-            $iterator(
-              value,
-              countsIterator_next,
-              false,
-              undefined,
-              undefined,
-              undefined,
-              undefined,
-              undefined,
-              undefined,
-              undefined,
-              undefined,
-              undefined,
-              countsIterator_count,
-            ),
-            (it) => {
-              for (const item of it.of[0]) {
+        iterator_chain(
+          value,
+          tmp,
+          { next: countsIterator_next, count: countsIterator_count },
+          {
+            intoIter(items) {
+              return items;
+            },
+            IntoIterIterator() {
+              return { next: countsIterator_next, count: countsIterator_count };
+            },
+            $dropItem: dDrop_drop,
+            $dropIntoIter(counts) {
+              for (const item of counts[0]) {
                 dDrop_drop(item);
               }
             },
-          ),
-          $closing(
-            $iterator(
-              tmp,
-              countsIterator_next,
-              false,
-              undefined,
-              undefined,
-              undefined,
-              undefined,
-              undefined,
-              undefined,
-              undefined,
-              undefined,
-              undefined,
-              countsIterator_count,
-            ),
-            (it) => {
-              for (const item of it.of[0]) {
-                dDrop_drop(item);
-              }
-            },
-          ),
+          },
+          (counts) => {
+            for (const item of counts[0]) {
+              dDrop_drop(item);
+            }
+          },
+          (counts) => {
+            for (const item of counts[0]) {
+              dDrop_drop(item);
+            }
+          },
+          dDrop_drop,
+          (counts) => {
+            for (const item of counts[0]) {
+              dDrop_drop(item);
+            }
+          },
         ),
         1,
         dDrop_drop,

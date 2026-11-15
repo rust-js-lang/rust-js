@@ -2,6 +2,7 @@
 
 import {
   $KeySet,
+  $advanceSlice,
   $btreeSet,
   $catchUnwind,
   $cleanup,
@@ -22,13 +23,16 @@ import {
   $lent,
   $live,
   $mapEnds,
+  $next,
   $nthBack,
   $nthDropping,
   $rev,
+  $roomForHint,
   $sortedKeys,
   $treeFrom,
   $tryFoldSome,
   $unwindsOn,
+  iterator_chain,
 } from "@rust-js/std";
 
 export function entry() {
@@ -278,25 +282,23 @@ function skippedBack(v, w) {
 }
 
 function main() {
+  const vecIntoIterator = {
+    intoIter: (items) => $iter(items),
+    IntoIterIterator: () => ({ next: $next, advanceBy: $advanceSlice }),
+    $dropItem: dDrop_drop,
+    $dropIntoIter: $dropEach(dDrop_drop),
+  };
   console.log(`rfold ${back()}`);
   console.log(
-    `fold ${$lazyChain(
-      $iterator(
-        [2],
-        ownIterator_next,
-        false,
-        undefined,
-        undefined,
-        undefined,
-        ownIterator_fold,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        ownIterator_count,
-      ),
-      $closing($iter([[7]]), $dropEach(dDrop_drop)),
+    `fold ${iterator_chain(
+      [2],
+      [[7]],
+      { next: ownIterator_next, fold: ownIterator_fold, count: ownIterator_count },
+      vecIntoIterator,
+      undefined,
+      $dropEach(dDrop_drop),
+      dDrop_drop,
+      $dropEach(dDrop_drop),
     ).reduce((a, d) => {
       const result = (((a * 10) >>> 0) + d[0]) >>> 0;
       dDrop_drop(d);
@@ -304,77 +306,65 @@ function main() {
     }, 0)}`,
   );
   console.log(
-    `count ${$count($lazyChain($iterator([2], ownIterator_next, false, undefined, undefined, undefined, ownIterator_fold, undefined, undefined, undefined, undefined, undefined, ownIterator_count), $closing($iter([[7]]), $dropEach(dDrop_drop))), dDrop_drop)}`,
+    `count ${$count(
+      iterator_chain(
+        [2],
+        [[7]],
+        { next: ownIterator_next, fold: ownIterator_fold, count: ownIterator_count },
+        vecIntoIterator,
+        undefined,
+        $dropEach(dDrop_drop),
+        dDrop_drop,
+        $dropEach(dDrop_drop),
+      ),
+      dDrop_drop,
+    )}`,
   );
   let sum = 0;
-  $lazyChain(
-    $iterator(
-      [2],
-      ownIterator_next,
-      false,
-      undefined,
-      undefined,
-      undefined,
-      ownIterator_fold,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      ownIterator_count,
-    ),
-    $closing($iter([[7]]), $dropEach(dDrop_drop)),
+  iterator_chain(
+    [2],
+    [[7]],
+    { next: ownIterator_next, fold: ownIterator_fold, count: ownIterator_count },
+    vecIntoIterator,
+    undefined,
+    $dropEach(dDrop_drop),
+    dDrop_drop,
+    $dropEach(dDrop_drop),
   ).forEach((d) => {
     sum = (sum + d[0]) >>> 0;
     dDrop_drop(d);
   });
   console.log(`for_each ${sum}`);
   const last = $lastDropping(
-    $lazyChain(
-      $iterator(
-        [2],
-        ownIterator_next,
-        false,
-        undefined,
-        undefined,
-        undefined,
-        ownIterator_fold,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        ownIterator_count,
-      ),
-      $closing($iter([[7], [8]]), $dropEach(dDrop_drop)),
+    iterator_chain(
+      [2],
+      [[7], [8]],
+      { next: ownIterator_next, fold: ownIterator_fold, count: ownIterator_count },
+      vecIntoIterator,
+      undefined,
+      $dropEach(dDrop_drop),
+      dDrop_drop,
+      $dropEach(dDrop_drop),
     ),
     dDrop_drop,
   );
   function map(d) {
-    const result = d[0];
+    const result$1 = d[0];
     dDrop_drop(d);
-    return result;
+    return result$1;
   }
   const value = last != null ? map(last) : undefined;
   console.log(`last ${value == null ? "None" : `Some(${value})`}`);
   const value$1 = $held(
-    $lazyChain(
-      $iterator(
-        [3],
-        ownIterator_next,
-        false,
-        undefined,
-        undefined,
-        undefined,
-        ownIterator_fold,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        ownIterator_count,
-      ),
-      $closing($iter([[7], [8]]), $dropEach(dDrop_drop)),
+    iterator_chain(
+      [3],
+      [[7], [8]],
+      { next: ownIterator_next, fold: ownIterator_fold, count: ownIterator_count },
+      vecIntoIterator,
+      undefined,
+      $dropEach(dDrop_drop),
+      dDrop_drop,
+      $dropEach(dDrop_drop),
     ),
   );
   try {
@@ -394,23 +384,15 @@ function main() {
     }
   }
   const value$2 = $held(
-    $lazyChain(
-      $iterator(
-        [3],
-        ownIterator_next,
-        false,
-        undefined,
-        undefined,
-        undefined,
-        ownIterator_fold,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        ownIterator_count,
-      ),
-      $closing($iter([[7], [8]]), $dropEach(dDrop_drop)),
+    iterator_chain(
+      [3],
+      [[7], [8]],
+      { next: ownIterator_next, fold: ownIterator_fold, count: ownIterator_count },
+      vecIntoIterator,
+      undefined,
+      $dropEach(dDrop_drop),
+      dDrop_drop,
+      $dropEach(dDrop_drop),
     ),
   );
   try {
@@ -428,35 +410,34 @@ function main() {
       value$2.return();
     }
   }
-  const set = $treeFrom(
-    new ($btreeSet((a, b) => $cmp(a[0], b[0]), $KeySet))(),
-    $collectDropping(
-      $lazyChain(
-        $iterator(
-          [2],
-          ownIterator_next,
-          false,
-          undefined,
-          undefined,
-          undefined,
-          ownIterator_fold,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          ownIterator_count,
-        ),
-        $closing($iter([[7]]), $dropEach(dDrop_drop)),
-      ),
-      dDrop_drop,
-      true,
-    ),
-    true,
-    (a, b) => $cmp(a[0], b[0]),
+  const iter = iterator_chain(
+    [2],
+    [[7]],
+    { next: ownIterator_next, fold: ownIterator_fold, count: ownIterator_count },
+    vecIntoIterator,
     undefined,
+    $dropEach(dDrop_drop),
     dDrop_drop,
+    $dropEach(dDrop_drop),
   );
+  let result;
+  try {
+    result = $treeFrom(
+      new ($btreeSet((a, b) => $cmp(a[0], b[0]), $KeySet))(),
+      $collectDropping($roomForHint(iter, 4, false, false, dDrop_drop), dDrop_drop, true),
+      true,
+      (a, b) => $cmp(a[0], b[0]),
+      undefined,
+      dDrop_drop,
+    );
+  } catch (error) {
+    throw $unwindsOn(error);
+  } finally {
+    if ($live()) {
+      iter.return();
+    }
+  }
+  const set = result;
   console.log(`set ${set.size}`);
   for (const key of $sortedKeys(set, (a, b) => $cmp(a[0], b[0]))) {
     dDrop_drop(key);
@@ -588,24 +569,24 @@ function main() {
     dDrop_drop(x);
     return result;
   }
-  const iter = $holding(
+  const iter$1 = $holding(
     $mapEnds(tmp$2, f$2),
     () => {
       dDrop_drop(h);
     },
     "after",
   );
-  let result;
+  let result$1;
   try {
-    result = $foldBack(iter, 0, (a, x) => (((a * 10) >>> 0) + x) >>> 0);
+    result$1 = $foldBack(iter$1, 0, (a, x) => (((a * 10) >>> 0) + x) >>> 0);
   } catch (error) {
     throw $unwindsOn(error);
   } finally {
     if ($live()) {
-      iter.return();
+      iter$1.return();
     }
   }
-  n = result;
+  n = result$1;
   console.log(`map rfold ${n}`);
   // Its side's fold panicking: that side's rest dropped as its fold
   // unwinds, then the closure, then the other side.
