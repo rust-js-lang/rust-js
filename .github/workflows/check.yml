@@ -310,7 +310,7 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: bun run typecheck
       - run: bun run fmt:check
-      - run: cargo clippy --locked -- -D warnings
+      - run: cargo clippy --locked --all-targets -- -D warnings
       - run: cargo test --locked
 
   # The suite, on one machine, or split across `test_shards`, by how long

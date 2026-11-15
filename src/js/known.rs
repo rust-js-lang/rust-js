@@ -552,6 +552,27 @@ pub fn found_names() -> Vec<String> {
         .collect()
 }
 
+impl super::Expr {
+    /// This, which a test of it proved there where lowering reads it
+    /// (`Known::Proved`): never `undefined` to a nullable place's storage
+    /// (`may_be_undefined`) and its value to an `unwrap()`, there; not
+    /// `Present`, which the lowering builds other forms of, and which
+    /// tidy's passes take for true wherever they move it. Tidy forgets it
+    /// as it begins (`forget_proved`, #1933, #1942).
+    pub fn proved(self) -> super::Expr {
+        super::Expr {
+            facts: self.facts.with(Known::Proved),
+            ..self
+        }
+    }
+
+    /// This, what a test proved of it forgotten, where it's read now past
+    /// where the test held (#1933, #1942).
+    pub fn forget_proved(&mut self) {
+        self.facts = self.facts.without(Known::Proved);
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::{Bits, Known, Role};
@@ -572,26 +593,5 @@ mod tests {
         assert_eq!(Known::Else.role(), Role::AsWritten);
         assert_eq!(Known::Getter.role(), Role::Warns);
         assert_eq!(Known::IterLent.role(), Role::Form);
-    }
-}
-
-impl super::Expr {
-    /// This, which a test of it proved there where lowering reads it
-    /// (`Known::Proved`): never `undefined` to a nullable place's storage
-    /// (`may_be_undefined`) and its value to an `unwrap()`, there; not
-    /// `Present`, which the lowering builds other forms of, and which
-    /// tidy's passes take for true wherever they move it. Tidy forgets it
-    /// as it begins (`forget_proved`, #1933, #1942).
-    pub fn proved(self) -> super::Expr {
-        super::Expr {
-            facts: self.facts.with(Known::Proved),
-            ..self
-        }
-    }
-
-    /// This, what a test proved of it forgotten, where it's read now past
-    /// where the test held (#1933, #1942).
-    pub fn forget_proved(&mut self) {
-        self.facts = self.facts.without(Known::Proved);
     }
 }

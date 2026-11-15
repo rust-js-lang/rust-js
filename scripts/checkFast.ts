@@ -313,7 +313,7 @@ export function jobs({ all, changed, branch, added, extra, cores, picked, forms,
     jobs: [
       job("fmt", ["bun", "run", "fmt:check"], { ci: "bun run fmt:check" }),
       job("typecheck", ["bun", "run", "typecheck"], { ci: "bun run typecheck" }),
-      job("clippy", ["cargo", "clippy", "--locked", "--quiet", "--", "-D", "warnings"], { weight: 2, memory: peakGB.compilerCheck, ci: "cargo clippy --locked -- -D warnings" }),
+      job("clippy", ["cargo", "clippy", "--locked", "--quiet", "--all-targets", "--", "-D", "warnings"], { weight: 2, memory: peakGB.compilerCheck, ci: "cargo clippy --locked --all-targets -- -D warnings" }),
       // With `--all`, the compiler's unit tests, tidy's passes and
       // decisions, red on `main` unseen after 801d40c55 (#523, #732): its
       // build waits on clippy's lock of `target/`, then takes 13 s here,
