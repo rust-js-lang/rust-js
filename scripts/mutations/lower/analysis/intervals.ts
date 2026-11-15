@@ -286,4 +286,24 @@ export const mutations: Mutation[] = [
     replace: "            && place.projection[deref..].iter().any(|elem| {\n",
     tests: ["test/bounds-matrix.test.ts", "-t", "vec_mut, tested wrap"],
   },
+  {
+    name: "position-index-not-below",
+    breaks:
+      "`if let Some(i) = v.iter().position(..) { v.remove(i) }` guards its remove with `$removeOutOfBounds`, where `position`'s index is below the length (#1945)",
+    file: "src/lower/analysis/intervals.rs",
+    find: "            state.below.insert((local, Term::Len(slice), true));\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^position_index_removed_unchecked.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "slice-iterator-not-lent",
+    breaks:
+      "a slice iterator lent `&mut` to its `position()` is no slice's, so the remove of its index is guarded (#1945)",
+    file: "src/lower/analysis/intervals.rs",
+    find: "            state.iterates.insert(local, slice);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^position_index_removed_unchecked.rs$"],
+    snapshots: true,
+  },
 ];

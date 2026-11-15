@@ -92,4 +92,14 @@ export const mutations: Mutation[] = [
     replace: "            after.intervals[local] = Some(Interval { lo: 0, hi: 0 });\n",
     tests: ["test/corpus.test.ts", "-t", "^bool_indexed_arrays\\.rs$"],
   },
+  {
+    name: "position-not-through-try",
+    breaks:
+      "`let i = v.iter().rposition(..)?; v.remove(i)` guards its remove, its `?`'s `Continue` no index of `rposition`'s (#1945)",
+    file: "src/lower/analysis/intervals/calls.rs",
+    find: "            after.positions.insert(local, (slice, 0));\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^position_index_removed_unchecked.rs$"],
+    snapshots: true,
+  },
 ];

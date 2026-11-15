@@ -991,3 +991,29 @@ call: nothing reads the `Vec` while the closure that borrows it is used
 again. Held by the bounds matrix's `taken by a closure` row, a length read
 before the closure pops and the index under it after, and by mutations
 of each part.
+
+## Amendment (2026-11-15, #1945): `position()`'s index is below its slice's length
+
+Since MIR's intervals decide a call's indexes (#1944), `v.remove(i)` of
+`if let Some(i) = v.iter().position(..)` was guarded, `$removeOutOfBounds`,
+where THIR's ranges had proved it: MIR's didn't take `position`'s `Some`
+as below the length. They do now. A slice's iterator records the slice it
+steps (`iterates`), through a `&mut` lent of it or a move; its
+`position()` or `rposition()` records the `Option` it gives as that
+slice's (`positions`), and a `?` of it, `Try::branch`, its `ControlFlow`,
+whose `Continue` holds the index. Where the payload is read, `(o as
+Some).0` or `(c as Continue).0`, which only that variant's path reads,
+the index is below the slice's length (`below`, `Term::Len`), as the
+`get(i)` shape takes `get`'s `Some`. What writes the slice between forgets
+it, so `items.truncate(1)` between keeps the guard and the remove panics
+as Rust's does.
+
+The guide's collections page (`removeNamed`, `moveToEnd`) has its plain
+`splice` back, and React's port its noop and test hosts' and
+TestSelectors': 11 guards gone, an `$insertAt` a `splice` again. Held by
+`test/corpus/position_index_removed_unchecked.rs` (`position`, `rposition`
+with `?`, and one shortened between that panics, against native Rust).
+Mutations `position-index-not-below`, `slice-iterator-not-lent`
+(`lower/analysis/intervals.ts`) and `position-not-through-try`
+(`lower/analysis/intervals/calls.ts`).
+

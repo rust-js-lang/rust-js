@@ -67,13 +67,19 @@ pub(in crate::lower) fn result_use<'tcx>(
     uses.visit_body(body);
     let tried = (body.basic_blocks.iter()).filter(|block| {
         matches!(&block.terminator().kind, TerminatorKind::Call { func, args, .. }
-            if func.const_fn_def().is_some_and(|(id, _)| tcx.is_lang_item(id, LangItem::TryTraitBranch))
+            if func.const_fn_def().is_some_and(|(id, _)| is_try_branch(tcx, id))
                 && args.iter().any(|arg| arg.node.place().is_some_and(|p| p.local == destination.local && p.projection.is_empty())))
     });
     match uses.count == 1 && tried.count() == 1 {
         true => ResultUse::Propagated,
         false => ResultUse::Inspected,
     }
+}
+
+/// Whether `callee` is a `?`'s `Try::branch`, the one answer of what a
+/// call's `?` is (#1945's intervals ask it of an `Option`'s).
+pub(in crate::lower) fn is_try_branch(tcx: rustc_middle::ty::TyCtxt<'_>, callee: rustc_span::def_id::DefId) -> bool {
+    tcx.is_lang_item(callee, LangItem::TryTraitBranch)
 }
 
 /// Whether the write's result a body gives back, written to its return

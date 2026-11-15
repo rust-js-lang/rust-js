@@ -56,7 +56,7 @@ function find(items, wanted) {
     noisyDrop_drop(_guard);
     return result;
   }
-  result = (at + 1) >>> 0;
+  result = at + 1;
   noisyDrop_drop(_guard);
   return result;
 }

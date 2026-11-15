@@ -304,6 +304,8 @@ impl<'tcx> Walk<'_, 'tcx> {
             ranges: IndexMap::default(),
             sums: IndexMap::default(),
             gets: IndexMap::default(),
+            positions: IndexMap::default(),
+            iterates: IndexMap::default(),
             pushed: IndexSet::default(),
             lending: IndexMap::default(),
             lent_away: IndexSet::default(),
@@ -845,6 +847,25 @@ impl<'tcx> Walk<'_, 'tcx> {
             && let Some(&got) = of.as_local().and_then(|of| state.gets.get(&of))
         {
             state.gets.insert(local, got);
+        }
+        // A slice iterator lent `&mut`, or moved: the slice it steps.
+        if let Rvalue::Ref(_, mir::BorrowKind::Mut { .. }, of) | Rvalue::Use(mir::Operand::Move(of), ..) = rvalue
+            && of.projection.is_empty()
+            && let Some(&slice) = state.iterates.get(&of.local)
+        {
+            state.iterates.insert(local, slice);
+        }
+        // A slice iterator's `position()`'s `Some` payload, `(o as Some).0`,
+        // read only where it's `Some`, or its `?`'s `Continue`'s: below the
+        // length of the slice the iterator stepped, nothing writing it since
+        // (#1945).
+        if let Rvalue::Use(mir::Operand::Copy(of) | mir::Operand::Move(of), ..) = rvalue
+            && let [mir::PlaceElem::Downcast(_, variant), mir::PlaceElem::Field(field, _)] = of.projection.as_slice()
+            && field.as_u32() == 0
+            && let Some(&(slice, holds)) = state.positions.get(&of.local)
+            && variant.as_u32() == holds
+        {
+            state.below.insert((local, Term::Len(slice), true));
         }
         if let Some(key) = sum.filter(|&(of, _, _)| of != local) {
             state.sums.insert(local, key);

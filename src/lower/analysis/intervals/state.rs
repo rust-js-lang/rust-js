@@ -98,6 +98,15 @@ pub(super) struct State {
     /// the index, and the most an index below the slice's length is, which
     /// its `Some` knows it is.
     pub(super) gets: IndexMap<Local, (Local, i128)>,
+    /// A slice iterator's `position()` or `rposition()`, by the `Option` it
+    /// gave, or the `ControlFlow` a `?` of it branched to: the slice it
+    /// stepped, whose length the index is below, and the variant that holds
+    /// it, `Some`'s or `Continue`'s (#1945).
+    pub(super) positions: IndexMap<Local, (Local, u32)>,
+    /// Each slice iterator, `s.iter()`, a `&mut` lent of one or a move of
+    /// it: the slice it steps, which a `position()` of it is an index of
+    /// (#1945). What the walk steps itself is `ranges`'.
+    pub(super) iterates: IndexMap<Local, Local>,
     /// Each local holding a `Vec`, or a reference to one, a `push` made
     /// hold an item at least, nothing lending it `&mut` since (#1700).
     pub(super) pushed: IndexSet<Local>,
@@ -218,6 +227,14 @@ impl State {
                 .collect(),
             gets: (self.gets.iter())
                 .filter(|&(k, v)| other.gets.get(k) == Some(v))
+                .map(|(&k, &v)| (k, v))
+                .collect(),
+            positions: (self.positions.iter())
+                .filter(|&(k, v)| other.positions.get(k) == Some(v))
+                .map(|(&k, &v)| (k, v))
+                .collect(),
+            iterates: (self.iterates.iter())
+                .filter(|&(k, v)| other.iterates.get(k) == Some(v))
                 .map(|(&k, &v)| (k, v))
                 .collect(),
             lent_away: self.lent_away.union(&other.lent_away).copied().collect(),
@@ -341,6 +358,8 @@ impl State {
         self.sums.retain(|&sum, &mut (of, _, _)| sum != local && of != local);
         self.gets
             .retain(|&gave, &mut (index, _)| gave != local && index != local);
+        self.positions
+            .retain(|&gave, &mut (slice, _)| gave != local && slice != local);
         self.guarded.retain(|&guard, &mut cell| guard != local && cell != local);
         self.keys.retain(|&(map, key)| map != local && key != local);
         self.has_keys

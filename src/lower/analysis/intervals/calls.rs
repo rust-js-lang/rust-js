@@ -153,6 +153,17 @@ impl<'tcx> Walk<'_, 'tcx> {
         {
             after.copies.insert(local, state.root(of));
         }
+        // A slice's iterator, whatever steps it: the slice it steps, which
+        // a `position()` of it is an index of (#1945).
+        if let Some((callee, callee_args)) = func.const_fn_def()
+            && range_step(self.tcx, callee, callee_args) == Some(RangeStep::SliceIter)
+            && let Some(of) = (args.first())
+                .and_then(|arg| arg.node.place())
+                .and_then(|p| p.as_local())
+                .filter(|of| !self.lent.contains(of))
+        {
+            after.iterates.insert(local, state.root(of));
+        }
         // A slice's iterator, `s.iter()` or `s.iter_mut()`: of the
         // slice it's of, by what it's given, a reborrow of it.
         if let Some((callee, callee_args)) = func.const_fn_def()
@@ -257,6 +268,27 @@ impl<'tcx> Walk<'_, 'tcx> {
             .and_then(|arg| arg.node.place())
             .and_then(|p| p.as_local())
             .and_then(|of| state.ranges.get(&of).copied());
+        // A slice iterator's `position()` or `rposition()`, of what it's
+        // lent: its `Some`'s index below the slice's length (#1945).
+        if let Some((callee, _)) = func.const_fn_def()
+            && slice_position(self.tcx, callee)
+            && let Some(&slice) = (args.first())
+                .and_then(|arg| arg.node.place())
+                .and_then(|p| p.as_local())
+                .and_then(|it| state.iterates.get(&it))
+        {
+            after.positions.insert(local, (slice, 1));
+        }
+        // A `?` of one, `Try::branch(o)`: the index its `Continue`'s.
+        if let Some((callee, _)) = func.const_fn_def()
+            && crate::lower::mir::result_use::is_try_branch(self.tcx, callee)
+            && let Some(&(slice, 1)) = (args.first())
+                .and_then(|arg| arg.node.place())
+                .and_then(|p| p.as_local())
+                .and_then(|o| state.positions.get(&o))
+        {
+            after.positions.insert(local, (slice, 0));
+        }
         if let Some((callee, callee_args)) = func.const_fn_def()
             && let Some(given) = given
         {
@@ -292,4 +324,12 @@ impl<'tcx> Walk<'_, 'tcx> {
             }
         }
     }
+}
+
+/// Whether `callee` is `Iterator::position` or `Iterator::rposition`,
+/// whose `Some` is an index of an item the iterator gave (#1945).
+fn slice_position(tcx: rustc_middle::ty::TyCtxt<'_>, callee: rustc_span::def_id::DefId) -> bool {
+    use crate::lower::recognition::{StdItem, std_item, trait_method};
+    let iterator = std_item(tcx, StdItem::Iterator);
+    callee == trait_method(tcx, iterator, "position") || callee == trait_method(tcx, iterator, "rposition")
 }
