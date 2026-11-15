@@ -13,4 +13,12 @@ export const mutations: Mutation[] = [
     replace: "void childWarnings(result.log);",
     tests: ["test/timing.test.ts","-t","child observation warning"],
   },
+  {
+    name: "check-fast-corpus-libraries-only-marked",
+    breaks: "check:fast's corpus builds as libraries only the cases marked `library-differs` (#1920)",
+    file: "scripts/checkFast.ts",
+    find: "env: { RUST_JS_CASES: `${i + 1}/${corpusParts}${picked ? `:${picked.caseList}` : \"\"}` },",
+    replace: "env: { RUST_JS_CASES: `${i + 1}/${corpusParts}${picked ? `:${picked.caseList}` : \"\"}`, RUST_JS_LIBRARIES: \"differing\" },",
+    tests: ["test/ci.test.ts", "-t", "each push's corpus builds every case as a library"],
+  },
 ];

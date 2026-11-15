@@ -107,7 +107,6 @@ Earlier speed-ups, from the history (2026-09-26 to 2026-11-05):
 | The node crate's metadata built once for the tests | 15 of the suite's 24 s | 13 s | Built once, as the react crate's is | 423c76a33 |
 | The suite's shards balanced by the last run's timings, the corpus in parts | shards of 10 and 4 min; corpus parts each 80 s of 85 | balanced; one part for each two cores, 70 s | `bun test --shard` reads `target/test-timings` | af5dbffb9 |
 | The corpus in parts beside the rest, in `bun run test` | one file of 1,300 cases, 787–1,462 s of a CI shard | `RUST_JS_CASES=i/n` parts | One part for each two cores | c1ad2d3c6 |
-| A push's corpus builds as libraries only the cases that differ | building all was about 30% of the corpus's CPU; 47 s for 1,319 cases | 26 s | Only the 120 cases marked `//@ library-differs` | b7544e0d1, ADR 0360 |
 | Mutations built up to 32 to a compiler | builds were 85% of the nightly's mutations, 28 s each on CI | a build of many takes about as long as one | Each mutant a copy of its function's body | b57148506, a9af62777, ADR 1031 |
 | A mutation run's controls at once, each run stopping at its first failure | one mutant's tests 229 s on CI; a sample of 24 in 76 s | 5.7 s; 24 s | Controls on every core, `bun test --bail` | ce40bd418, ADR 1031 |
 | Mutation workers | 16 mutations: 70 s with one worker | 43 s with two, 31 s with four | `--jobs`, one worker for each two cores | db68b8ac7 |
@@ -166,6 +165,7 @@ Also in use, with no single before and after:
 
 | Was | Replaced by | Where |
 |---|---|---|
+| A push's corpus built as libraries only the cases marked `//@ library-differs` (b7544e0d1: building all was about 30% of the corpus's CPU, 47 s against 26 s for 1,319 cases) | Every case built as a library on each push again (#1920): d2e47ad9f's change to what a library copies passed its push, and every mutation shard of its check failed on ten cases whose library JS it changed. Measured on the 12-core Mac mini, quiet, 2,583 cases in 4 parts: 73.8 s wall, 224 CPU-s with only the 327 marked; 103.5 s wall, 379 CPU-s with every case, so about 155 CPU-s, 0.06 s a case. On CI: to measure on the first runs after it lands | `scripts/test.ts`, `scripts/checkFast.ts`, `test/corpus.test.ts`, ADR 0360 amended |
 | `check:fast` pruning what tests keep once a day, by age alone, as it took some 12 s (0e49e6436: a Mac's native cache grew 23 GB in two days) | Each run, in a process of its own while the compiler builds, each store to its cap too | #914 |
 | The browsers' test files run after every other job | Run alongside the rest, now that the pool holds the load near the cores | ebf19a641, ADR 1093 amended |
 | `check:fast` starting every job at once, timeouts scaled by the load | The pool sized to the cores, with each job's measured core use | 181f49b75, ebf19a641 |

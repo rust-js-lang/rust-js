@@ -1102,3 +1102,13 @@ test("main's mutations follow the last check whose shards kept their results, an
   expect(resultsBase([{ ...red, results: [found("sha9", {}), red.results[1]] }, green])).toEqual({ since: "sha3", retry: [] });
   expect(resultsBase([{ ...red, shards: 0, completed: 0, results: [] }])).toBeUndefined();
 });
+
+// Each push builds every corpus case as a library too (#1920): built only
+// where `library-differs` said, d2e47ad9f's change to what a library
+// copies passed its push, and every mutation shard of its check failed on
+// ten cases whose library JS it changed. Nothing selects fewer again.
+test("each push's corpus builds every case as a library, as the nightly's does", () => {
+  const files = [...new Bun.Glob("{scripts,test}/**/*.ts").scanSync(root)].filter((file) => file !== "test/ci.test.ts" && !file.startsWith("test/corpus/") && !file.startsWith("scripts/mutations/"));
+  expect(files.filter((file) => readFileSync(join(root, file), "utf8").includes("RUST_JS_LIBRARIES"))).toEqual([]);
+  expect(readFileSync(join(root, ".github/workflows/check.yml"), "utf8")).not.toContain("RUST_JS_LIBRARIES");
+});

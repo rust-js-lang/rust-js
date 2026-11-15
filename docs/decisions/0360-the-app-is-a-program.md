@@ -149,3 +149,26 @@ Nightly of 85f123290. Where no Prettier is found, the default for an app,
 the line names no directory, and only the record makes `user`, a program
 until `shell` uses it, a library: the test now builds outside the
 checkout (`outsideFixture`), where the mutation is caught.
+
+## Amendment: each push builds every case as a library again (#1920)
+
+Built as libraries only where `library-differs` said, a push couldn't see
+a change to what decides a library's JS: d2e47ad9f (#1907), which makes a
+library copy what it reads from storage, passed its push, and every
+mutation shard of its check failed on ten cases whose library JS it had
+changed, which the shards' check of the corpus, building every case, saw.
+**Every run of the corpus now builds every case as a library, each push's
+and `check:fast`'s too; `RUST_JS_LIBRARIES` is gone.** The directive
+stays, checked both ways as before, and a library build is run against
+native Rust only where its JS differs.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none; this decides what
+each push checks, not what the JS does.
+
+The cost, on the 12-core Mac mini, quiet, the 2,583 cases in 4 parts:
+103.5 s and 379 CPU-s, against 73.8 s and 224 CPU-s building only the 327
+marked, about 0.06 s a case. A gate on the paths that decide a library's
+JS was weighed and not taken: it would have made the suite's machines
+wait for `plan`, about as long as the pass itself, and left a list of
+paths to keep true. `test/ci.test.ts` holds that nothing selects fewer
+cases again.

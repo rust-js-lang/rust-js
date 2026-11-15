@@ -432,12 +432,13 @@ What keeps them there:
   What no test used for a week is pruned by `bun run test`, and by
   `check:fast` once a day (`target/kept-pruned`), as only CI runs the
   whole suite: a Mac's `target/native-cache` grew 23 GB in two days.
-- **A push's corpus builds as libraries only the cases marked `//@
-  library-differs`** (ADR 0360, amended), about a tenth of them, as
-  `check:fast`'s does (`RUST_JS_LIBRARIES=differing`); the nightly, a
-  mutation's run and a plain `bun test test/corpus.test.ts` build every
-  case, and say where a mark is missing or stale, which `bun run bless`
-  fixes. The 1,319 cases on the M3 Max: 26 s, against 47 s building all.
+- **Every run of the corpus builds each case as a library too**, a push's,
+  `check:fast`'s and the nightly's alike (ADR 0360, amended, #1920), and
+  says where a `//@ library-differs` mark is missing or stale, which `bun
+  run bless` fixes; only a case marked is run again as a library. Built
+  only where marked, a change to what a library copies passed its push
+  and failed every mutation shard after it. All 2,583 cases on the Mac
+  mini, 4 parts: 103.5 s, against 73.8 s building only the marked.
 - **The react, webapi and js crates' metadata** is built only when their
   sources, build scripts or the toolchain change: a stamp beside it,
   `target/libreact.stamp`, says what it was made from. Built every run, it

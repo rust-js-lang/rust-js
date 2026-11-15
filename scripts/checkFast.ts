@@ -252,10 +252,9 @@ export function jobs({ all, changed, branch, added, extra, cores, picked, forms,
     : pooledParts(cores);
   const inParts = (name: string, file: string) =>
     Array.from({ length: corpusParts }, (_, i) =>
-      // As a push's: of the corpus's, only the cases whose JS as a library
-      // differs are built as one (ADR 0360).
+      // As a push's: each case built as a library too (ADR 0360, #1920).
       job(`${name} ${i + 1}/${corpusParts}`, ["bun", "test", file], {
-        env: { RUST_JS_CASES: `${i + 1}/${corpusParts}${picked ? `:${picked.caseList}` : ""}`, RUST_JS_LIBRARIES: "differing" },
+        env: { RUST_JS_CASES: `${i + 1}/${corpusParts}${picked ? `:${picked.caseList}` : ""}` },
         ci: "bun run test",
       }),
     );

@@ -1008,7 +1008,10 @@ async function main() {
   if (!existsSync(unmutated)) throw new Error("build the read-only compiler with cargo build before running source mutations");
   // And they use the compiler they're given: with one that compiles
   // nothing, each fails, or a mutation passing them would say nothing.
+  // Its directory too: a run of source mutations alone builds no
+  // compiler there first, as a checkout's first run doesn't.
   const broken = join(work, "bin", "broken");
+  mkdirSync(dirname(broken), { recursive: true });
   writeFileSync(broken, "#!/bin/sh\necho 'error: rust-js compiles nothing here' >&2\nexit 101\n");
   chmodSync(broken, 0o755);
   // Each set of tests as its mutations run them, with snapshots or without,

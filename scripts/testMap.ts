@@ -642,7 +642,7 @@ async function record(keep: boolean) {
     ...Array.from({ length: parts }, (_, i) => ({
       name: `test/corpus.test.ts ${i + 1}/${parts}`,
       cmd: ["bun", "test", "test/corpus.test.ts"],
-      env: { RUST_JS_CASES: `${i + 1}/${parts}`, RUST_JS_LIBRARIES: "differing", RUST_JS_TEST_MAP_UNIT: "test/corpus.test.ts" },
+      env: { RUST_JS_CASES: `${i + 1}/${parts}`, RUST_JS_TEST_MAP_UNIT: "test/corpus.test.ts" },
     })),
     // And the corpus built with std's iterator structs, as an iterator
     // change's check runs it, each case a test of its own too.
