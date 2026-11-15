@@ -799,4 +799,13 @@ export const mutations: Mutation[] = [
     replace: "self.drops(ty) != crate::lower::drops::Drops::Nothing",
     tests: ["test/corpus.test.ts", "-t", "^generic_collect_of_a_panicking_chain_drops_its_source.rs$"],
   },
+  {
+    name: "capacity-read-of-a-hidden-source-unrefused",
+    breaks:
+      "a body's `capacity()` of an in-place collect whose source a call hides, `opaque(kept.into_iter()).map(f).collect()`, compiles and throws as it runs, where it's refused where it's compiled (#1926)",
+    file: "src/lower/mir/iter/collect.rs",
+    find: "        if self.frame.facts.capacity_read_collects.contains(&span) {\n",
+    replace: "        if false && self.frame.facts.capacity_read_collects.contains(&span) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^in_place_collect_capacity_through_a_call_refused.rs$"],
+  },
 ];

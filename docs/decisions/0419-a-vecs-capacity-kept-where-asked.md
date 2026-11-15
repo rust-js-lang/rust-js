@@ -918,3 +918,37 @@ box's iterator, not the range it holds, and a flatten's and a flat map's
 hint, which `$flattenEnds` doesn't give. Mutations
 `enumerate-hint-not-passed-on` and `slice-split-hint-unknown`
 (`lower/recognition/lengths.ts`).
+
+## Amendment (2026-11-15, #1926): a capacity the collecting body reads is refused where it's compiled
+
+#1180 made `capacity()` of a `Vec` whose growth wasn't kept an error as it
+runs. Of an in-place collect whose source a call hides, `opaque(kept
+.into_iter()).map(f).collect()` or `grown().into_iter()..`, in the plain
+build, where JS's own helpers keep no link to the source, that error was
+thrown where the body that collected it read the capacity. A read the
+compiler sees is refused where it's compiled now (ADR 0262's fourth case,
+moved from run time to compile time; m6-react's decision): `rust-js does
+not support `capacity()` of a `Vec` std may collect in place from a source
+a call hides (#1926) yet: .. collect from `v.into_iter()` in the body
+that reads the capacity, or don't read it`.
+
+`capacity_read_collects` (`body_queries/collect_sources.rs`, beside the
+in-place sources it complements) says which collects that is: one a
+`let` not `mut` binds whose variable `capacity()` reads, or one that's
+`capacity()`'s receiver itself. `untracked_where_in_place` refuses one of
+them where it would mark it `$untracked`. A `let mut`'s, whose
+`shrink_to_fit()` knows it again, and one the body returns, stores or
+passes on, whose reader the collect can't see, keep #1180's error where
+it runs: this ADR's documented limit. The std build, whose structs link
+each adapter to its source, has std's capacity, 10, and isn't refused.
+
+Held by `test/corpus/in_place_collect_capacity_through_a_call_refused.rs`
+(`//@ compile-fail:`), and by `test/vec-capacity.test.ts`. There the plain
+build of an `impl Iterator` function's chain is refused, its std build has
+std's 9 and 6, and `grown().into_iter()` collected into a `let` is refused;
+`pushed` and `caught`, of a `let mut`, still throw. The metamorphic net's
+`plain opaque vec_collected_in_place_capacity.rs` is off its known list.
+Mutation `capacity-read-of-a-hidden-source-unrefused`
+(`lower/mir/iter/collect.ts`). Keeping the capacity through a crate's own
+function that gives its parameter's iterator is #1934.
+

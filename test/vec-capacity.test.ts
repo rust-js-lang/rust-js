@@ -6,6 +6,7 @@
 import { expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { runSync } from "./child";
 import { compiler, fixture, run } from "./support";
 
 // A `Vec`'s capacity std's growth of it wasn't kept of, in a crate that
@@ -27,11 +28,6 @@ test("capacity() of a Vec whose growth wasn't kept throws, naming #1180", async 
     v
 }
 
-pub fn in_place() -> usize {
-    let w: Vec<u32> = grown().into_iter().map(|x| x + 1).collect();
-    w.capacity()
-}
-
 fn collected<I: Iterator, B: FromIterator<I::Item>>(it: I) -> B {
     it.collect()
 }
@@ -47,7 +43,8 @@ pub fn bytes() -> usize {
 
 pub fn caught() -> bool {
     std::panic::catch_unwind(|| {
-        let w: Vec<u32> = grown().into_iter().map(|x| x + 1).collect();
+        let mut w: Vec<u32> = grown().into_iter().map(|x| x + 1).collect();
+        w.push(9);
         w.capacity()
     })
     .is_err()
@@ -72,7 +69,7 @@ pub fn known() -> usize {
   );
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const lib = await import(join(dir, "lib.js"));
-  for (const f of [lib.inPlace, lib.bytes, lib.pushed, lib.caught]) {
+  for (const f of [lib.bytes, lib.pushed, lib.caught]) {
     expect(() => f()).toThrow("rust-js does not support `capacity()` of a `Vec` whose growth it didn't keep");
   }
   // Generic code's in-place collect finds its source `Vec` through the
@@ -262,11 +259,36 @@ pub fn through_an_identity() -> usize {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "structs.js"), "--std-iterators"]);
   const structs = await import(join(dir, "structs.js"));
   expect([structs.throughAFunction(), structs.throughAnIdentity()]).toEqual([9, 6]);
-  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const lib = await import(join(dir, "lib.js"));
-  for (const f of [lib.throughAFunction, lib.throughAnIdentity]) {
-    expect(() => f()).toThrow("rust-js does not support `capacity()` of a `Vec` whose growth it didn't keep");
-  }
+  // The plain build's body reads it: refused where it's compiled (#1926).
+  const plain = runSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")], dir, 120_000);
+  expect(plain.code).not.toBe(0);
+  expect(plain.stderr).toContain("`capacity()` of a `Vec` std may collect in place from a source a call hides (#1926)");
+  expect(plain.stderr).toContain("collect from `v.into_iter()` in the body that reads the capacity, or don't read it");
+});
+
+// One collected where a call's `Vec` is the source, `grown().into_iter()`,
+// bound by a `let` not `mut`, whose capacity the body reads: refused where
+// it's compiled, never thrown where it runs (#1926). Of a `let mut`, whose
+// `shrink_to_fit()` would know it again, or of one the body gives away,
+// `capacity()` throws as it runs, as above (#1180; ADR 0419, amended).
+test("capacity() of an in-place collect whose source isn't known is refused where its body reads it", () => {
+  const dir = fixture("capacity-in-place-refused");
+  writeFileSync(join(dir, "lib.rs"), `fn grown() -> Vec<u32> {
+    let mut v = Vec::new();
+    for i in 0..5 {
+        v.push(i);
+    }
+    v
+}
+
+pub fn in_place() -> usize {
+    let w: Vec<u32> = grown().into_iter().map(|x| x + 1).collect();
+    w.capacity()
+}
+`);
+  const refused = runSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")], dir, 120_000);
+  expect(refused.code).not.toBe(0);
+  expect(refused.stderr).toContain("`capacity()` of a `Vec` std may collect in place from a source a call hides (#1926)");
 });
 
 // #934's case: an impl's method growing a \`Vec\` of an associated type's

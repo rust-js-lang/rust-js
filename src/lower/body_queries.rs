@@ -188,6 +188,9 @@ pub(super) struct BodyFacts<'tcx> {
     /// The `Vec` each `collect()` std may make in place is made of, by the
     /// call's span, `in_place_collect_sources`'s (#1259).
     pub(super) in_place_collect_sources: IndexMap<Span, collect_sources::CollectSource<'tcx>>,
+    /// Each `collect()` whose `Vec` the body asks its capacity, by the
+    /// call's span, `capacity_read_collects`'s (#1926).
+    pub(super) capacity_read_collects: IndexSet<Span>,
     /// Each value the body's patterns test and the `const` they name it by,
     /// where it's tested, `constant_patterns`'s (ADRs 0590, 0634).
     pub(super) constant_patterns: ConstantPatterns<'tcx>,
@@ -221,6 +224,7 @@ impl<'tcx> BodyFacts<'tcx> {
             called_methods,
             in_place_adapters: InPlace::default(),
             in_place_collect_sources: collect_sources::in_place_collect_sources(tcx, thir),
+            capacity_read_collects: collect_sources::capacity_read_collects(tcx, thir),
             constant_patterns: constant_patterns(tcx, thir),
             jsx_given,
             jsx_bases,

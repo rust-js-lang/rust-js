@@ -945,7 +945,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// a `Vec` the body names (`in_place_source`), that buffer's capacity in
     /// its own items, `src_cap * src_size / dst_size`,
     /// `$inPlaceCapacity(collected, v, srcSize, dstSize)` (#1259); else not
-    /// known, which `capacity()` refuses (#1180).
+    /// known, which `capacity()` throws of as it runs (#1180), refused where
+    /// the body reads it (`capacity_read_collects`, #1926).
     fn untracked_where_in_place(
         &mut self,
         (collected, walk): (Expr, Option<&Expr>),
@@ -977,6 +978,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     vec![collected, walk.clone(), source_size, size],
                 ));
             }
+        }
+        // Its capacity, which the body reads, can't be known: refused where
+        // it's compiled, not thrown where it runs (#1926; ADR 0419, amended).
+        if self.frame.facts.capacity_read_collects.contains(&span) {
+            return Err(crate::lower::refusal::refuse(
+                self.tcx,
+                span,
+                crate::lower::refusal::Refused::Because(
+                    "`capacity()` of a `Vec` std may collect in place from a source a call hides (#1926)",
+                    "std keeps its source's buffer, whose capacity rust-js can't tell: collect from `v.into_iter()` in the body that reads the capacity, or don't read it",
+                ),
+            ));
         }
         Ok(Expr::call_helper("$untracked", vec![collected]))
     }

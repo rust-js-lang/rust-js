@@ -6,10 +6,10 @@
 //! is at most 1500 lines.
 
 use super::strip;
-use crate::collections::IndexMap;
+use crate::collections::{IndexMap, IndexSet};
 use crate::lower::fn_def;
 use crate::lower::recognition::{StdItem, is_std_def, std_item, trait_method};
-use rustc_middle::thir::{ExprId, ExprKind, LocalVarId, Thir};
+use rustc_middle::thir::{ExprId, ExprKind, LocalVarId, PatKind, StmtKind, Thir};
 use rustc_middle::ty::{self, Ty, TyCtxt};
 use rustc_span::Span;
 
@@ -110,4 +110,60 @@ pub(super) fn in_place_collect_sources<'tcx>(
         }
     }
     found
+}
+
+/// Each `collect()` whose `Vec` the body asks its capacity, by its call's
+/// span: one a `let` not `mut` binds, whose variable is `capacity()`'s
+/// receiver, nothing changing it between, or one that's the receiver
+/// itself, `(..).collect::<Vec<_>>().capacity()`.
+/// Where std may collect it in place and its source isn't known, the
+/// capacity can't be, so it's refused where it's compiled (#1926).
+pub(super) fn capacity_read_collects<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> IndexSet<Span> {
+    use crate::lower::recognition::{CapacityOp, capacity_op};
+    let collect = trait_method(tcx, std_item(tcx, StdItem::Iterator), "collect");
+    let collect_at = |at: ExprId| match thir[strip(thir, at)].kind {
+        ExprKind::Call { fun, fn_span, .. } if fn_def(thir[fun].ty).map(|(id, _)| id) == Some(collect) => Some(fn_span),
+        _ => None,
+    };
+    // Each variable a `let` binds to a collect, and the collect's span.
+    let mut bound: IndexMap<LocalVarId, Span> = IndexMap::default();
+    for stmt in thir.stmts.iter() {
+        if let StmtKind::Let {
+            pattern,
+            initializer: Some(init),
+            ..
+        } = &stmt.kind
+            && let Some(at) = collect_at(*init)
+        {
+            // Not `mut`, whose `shrink_to_fit()` would know it again.
+            if let PatKind::Binding {
+                var,
+                subpattern: None,
+                mode: rustc_hir::BindingMode(rustc_hir::ByRef::No, rustc_hir::Mutability::Not),
+                ..
+            } = pattern.kind
+            {
+                bound.insert(var, at);
+            }
+        }
+    }
+    let mut read = IndexSet::default();
+    for expr in thir.exprs.iter() {
+        let ExprKind::Call { fun, ref args, .. } = expr.kind else {
+            continue;
+        };
+        if !fn_def(thir[fun].ty).is_some_and(|(id, _)| capacity_op(tcx, id) == Some(CapacityOp::Of)) {
+            continue;
+        }
+        let Some(&receiver) = args.first() else { continue };
+        let mut at = strip(thir, receiver);
+        while let ExprKind::Borrow { arg, .. } | ExprKind::Deref { arg } = thir[at].kind {
+            at = strip(thir, arg);
+        }
+        match thir[at].kind {
+            ExprKind::VarRef { id } => read.extend(bound.get(&id).copied()),
+            _ => read.extend(collect_at(at)),
+        }
+    }
+    read
 }
