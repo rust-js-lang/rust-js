@@ -1149,3 +1149,51 @@ test("a dyn Iterator's drop is its own, run once, never Iterator.prototype's Sym
   });
   expect(() => $disposeIterator(panics)).toThrow("drop panicked");
 });
+
+// A `take_while()`'s hint once its predicate has failed: none, `(0,
+// Some(0))`, as std's `TakeWhile::size_hint` says (take_while.rs:59), not
+// its source's upper bound, though its source has items left. Driven
+// directly: since the take_while family's flip, each one held, boxed or
+// fused is std's compiled struct, and nothing the compiler writes asks an
+// in-place one's hint after it ends, so a route that comes to is right
+// already (#733).
+test("$lazyTakeWhile's hint is none once its predicate has failed", async () => {
+  const { $iter, $lazyTakeWhile } = await import(helpersModule);
+  const taking = $lazyTakeWhile($iter([1, 5, 2, 3]), (x: number) => x < 4);
+  expect(taking.sizeHint()).toEqual([0, 4]);
+  expect([taking.next().value, taking.next().done]).toEqual([1, true]);
+  expect(taking.sizeHint()).toEqual([0, 0]);
+});
+
+// The lazy adapters' std shapes, each its source's own `try_fold` where
+// std's adapter asks it: `SkipWhile`'s `next`, a `find`, and its
+// `try_fold` past its first step; `MapWhile`'s `fold`, its `try_fold`;
+// `Scan`'s `try_fold`. Each is equivalent in today's programs, whose
+// in-place sources are JS's own, a `$iter` or a `$Steps` stepping by
+// `next`, and the crate can't write a `try_fold` (`Try` is unstable). So
+// each is held here by a source whose own `try_fold` says it's asked, for
+// the day a compiled struct is given to one (ADR 0093, amended).
+test("the lazy adapters ask their source's own try_fold where std's do", async () => {
+  const { $Steps, $iter, $lazySkipWhile, $lazyMapWhile, $lazyScan } = await import(helpersModule);
+  const asked: string[] = [];
+  const source = (items: number[]) => {
+    const it = $iter(items);
+    const steps = new $Steps(() => it.next());
+    steps.tryFold = (init: unknown, f: Function, broke: Function, unwind: unknown, ends: unknown) => {
+      asked.push("tryFold");
+      return $Steps.prototype.tryFold.call(steps, init, f, broke, unwind, ends);
+    };
+    return steps;
+  };
+  const skipped = $lazySkipWhile(source([1, 2, 3, 4]), (x: number) => x < 2);
+  expect(skipped.next().value).toBe(2);
+  expect(asked.splice(0)).toEqual(["tryFold"]);
+  expect(skipped.tryFold(0, (a: number, x: number) => a + x, () => false)).toBe(7);
+  expect(asked.splice(0)).toEqual(["tryFold"]);
+  const mapped = $lazyMapWhile(source([1, 2, 3]), (x: number) => x * 10, (v: unknown) => v !== undefined);
+  expect(mapped.fold(0, (a: number, x: number) => a + x)).toBe(60);
+  expect(asked.splice(0)).toEqual(["tryFold"]);
+  const scanned = $lazyScan(source([1, 2, 3]), 0, (s: { value: number }, x: number) => ((s.value += x), s.value));
+  expect(scanned.tryFold(0, (a: number, x: number) => a + x, () => false)).toBe(10);
+  expect(asked.splice(0)).toEqual(["tryFold"]);
+});

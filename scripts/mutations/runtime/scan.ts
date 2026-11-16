@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/scan.js",
     find: "    if (next !== undefined) return { done: false, value: next };\n",
     replace: "    if (next !== undefined) return { done: false, value: next };\n    it.next = () => ({ done: true, value: undefined });\n",
-    tests: ["test/corpus.test.ts", "-t", "^scan_map_while_unfused.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(scan_lazy_drops|scan_object_state).rs$"],
   },
   {
     name: "scan-try-fold-by-next",
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/scan.js",
     find: "  $forward(scanning, source, { tryFold, fold });\n",
     replace: "  $forward(scanning, source, { fold });\n",
-    tests: ["test/corpus.test.ts", "-t", "skip_try_fold"],
+    tests: ["test/runtime-package.test.ts", "-t", "the lazy adapters ask their source's own try_fold where std's do"],
   },
   {
     name: "scan-fold-by-next",
@@ -32,7 +32,8 @@ export const mutations: Mutation[] = [
     file: "src/runtime/scan.js",
     find: "    const folded = $consumed(scanning, () => scanning.tryFold(init, g, () => false, unwind), ends);\n",
     replace: "    const folded = $Steps.prototype.fold.call(scanning, init, g, unwind);\n",
-    tests: ["test/corpus.test.ts", "-t", "^adapters_own_nth_fold.rs$"],
+    tests: ["test/iterator-matrix.test.ts"],
+    env: { ITERATOR_TABLE: "conformance", ITERATOR_MATRIX: "/^vec \\| scan \\| fold holding \\| (none|drop)$/" },
   },
   {
     name: "scan-fold-unguarded",
@@ -40,7 +41,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/scan.js",
     find: "        const next = unwind === undefined ? f(state, x) :",
     replace: "        const next = true ? f(state, x) :",
-    tests: ["test/corpus.test.ts", "-t", "^panic_mid_fold_drops.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^scan_dropped_once.rs$"],
   },
   {
     name: "lazy-scan-drops-before-source",
@@ -48,7 +49,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/scan.js",
     find: "      $closedAfter(\n        () => source.return?.(),\n        () => {\n          if (dropped) return;\n          dropped = true;\n          drop(handle ? state.value : state);\n        },\n      ),\n",
     replace: "      $closedAfter(\n        () => {\n          if (dropped) return;\n          dropped = true;\n          drop(handle ? state.value : state);\n        },\n        () => source.return?.(),\n      ),\n",
-    tests: ["test/corpus.test.ts", "-t", "^scan_drops_its_function_and_state.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^lazy_scan_drops_its_source_first.rs$"],
   },
   {
     name: "lazy-scan-drops-twice",
@@ -64,6 +65,6 @@ export const mutations: Mutation[] = [
     file: "src/runtime/scan.js",
     find: "  scanning.sizeHint = () => $upperOnly(source);\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^size_hint_of_adapters.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^flatten_given_where_its_hint_is_asked.rs$"],
   },
 ];

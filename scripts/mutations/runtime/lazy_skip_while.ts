@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/lazy_skip_while.js",
     find: "    return $lent(source).tryFold(folded, f, broke, unwind, ends);",
     replace: "    for (let step = source.next(); !step.done; step = source.next()) {\n      folded = f(folded, step.value);\n      if (broke(folded)) return folded;\n    }\n    return folded;",
-    tests: ["test/corpus.test.ts", "-t", "skip_try_fold"],
+    tests: ["test/runtime-package.test.ts", "-t", "the lazy adapters ask their source's own try_fold where std's do"],
   },
   {
     name: "skip-while-next-by-next",
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/lazy_skip_while.js",
     find: "      const found = $lent(source).tryFold(",
     replace: "      const found = new $Steps(() => source.next()).tryFold(",
-    tests: ["test/corpus.test.ts", "-t", "skip_try_fold"],
+    tests: ["test/runtime-package.test.ts", "-t", "the lazy adapters ask their source's own try_fold where std's do"],
   },
   {
     name: "skip-while-fold-by-next",
@@ -24,7 +24,8 @@ export const mutations: Mutation[] = [
     file: "src/runtime/lazy_skip_while.js",
     find: "      return source.fold !== undefined ? source.fold(folded, f, unwind, ends) : source.reduce(f, folded);\n",
     replace: "      return $Steps.prototype.fold.call(skipped, folded, f, unwind);\n",
-    tests: ["test/corpus.test.ts", "-t", "^adapters_own_nth_fold.rs$"],
+    tests: ["test/iterator-matrix.test.ts"],
+    env: { ITERATOR_TABLE: "conformance", ITERATOR_MATRIX: "/^(vec|boxed dyn) \\| skip_while \\| fold holding \\| drop$/" },
   },
   {
     name: "skip-while-fold-left-open",
@@ -56,7 +57,8 @@ export const mutations: Mutation[] = [
     file: "src/runtime/lazy_skip_while.js",
     find: "source.fold(folded, f, unwind, ends)",
     replace: "source.fold(folded, f, unwind)",
-    tests: ["test/corpus.test.ts", "-t", "^consumer_closure_dropped_first.rs$"],
+    tests: ["test/iterator-matrix.test.ts"],
+    env: { ITERATOR_TABLE: "conformance", ITERATOR_MATRIX: "/^vec \\| skip_while \\| fold holding \\| (consumer|drop)$/" },
   },
   {
     name: "skip-while-fold-first-without-ends",
@@ -80,7 +82,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/lazy_skip_while.js",
     find: "  skipped.sizeHint = () => $upperOnly(source);\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^size_hint_of_adapters.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^flatten_given_where_its_hint_is_asked.rs$"],
   },
   {
     name: "skip-while-skipped-undropped",

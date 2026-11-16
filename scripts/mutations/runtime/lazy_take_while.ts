@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/lazy_take_while.js",
     find: "  $forward(taking, source, { tryFold, fold });\n",
     replace: "  $forward(taking, source, { fold });\n",
-    tests: ["test/corpus.test.ts", "-t", "skip_try_fold"],
+    tests: ["test/corpus.test.ts", "-t", "^(skip_folded_by_consumers|step_by_compiled_source_nth).rs$"],
   },
   {
     name: "map-while-try-fold-by-next",
@@ -16,7 +16,8 @@ export const mutations: Mutation[] = [
     file: "src/runtime/lazy_take_while.js",
     find: "  $forward(mapping, source, { tryFold, fold });\n",
     replace: "  $forward(mapping, source, { fold });\n",
-    tests: ["test/corpus.test.ts", "-t", "skip_try_fold"],
+    tests: ["test/iterator-matrix.test.ts"],
+    env: { ITERATOR_TABLE: "conformance", ITERATOR_MATRIX: "/^rev vec \\| map_while \\| sum \\| drop$/" },
   },
   {
     name: "take-while-fold-by-next",
@@ -24,7 +25,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/lazy_take_while.js",
     find: "    const folded = $consumed(taking, () => taking.tryFold(init, f, () => false, unwind), ends);\n    $closedAfter(ends, () => taking.return());\n    return folded;\n  };\n",
     replace: "    return $Steps.prototype.fold.call(taking, init, f, unwind, ends);\n  };\n",
-    tests: ["test/corpus.test.ts", "-t", "^adapters_own_nth_fold.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(discarded_drop_leaks_the_accumulator|step_by_compiled_source_nth).rs$"],
   },
   {
     name: "map-while-fold-by-next",
@@ -32,7 +33,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/lazy_take_while.js",
     find: "    const folded = $consumed(mapping, () => mapping.tryFold(init, g, () => false, unwind), ends);\n",
     replace: "    const folded = $Steps.prototype.fold.call(mapping, init, g, unwind, ends);\n",
-    tests: ["test/corpus.test.ts", "-t", "^adapters_own_nth_fold.rs$"],
+    tests: ["test/runtime-package.test.ts", "-t", "the lazy adapters ask their source's own try_fold where std's do"],
   },
   {
     name: "take-while-fold-unguarded",
@@ -72,7 +73,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/lazy_take_while.js",
     find: "(ended ? [0, 0] : $upperOnly(source))",
     replace: "$upperOnly(source)",
-    tests: ["test/corpus.test.ts", "-t", "^size_hint_of_adapters.rs$"],
+    tests: ["test/runtime-package.test.ts", "-t", "lazyTakeWhile's hint is none once its predicate has failed"],
   },
   {
     name: "map-while-hint-dropped",
@@ -80,6 +81,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/lazy_take_while.js",
     find: "  mapping.sizeHint = () => $upperOnly(source);\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^size_hint_of_adapters.rs$"],
+    tests: ["test/iterator-matrix.test.ts"],
+    env: { ITERATOR_TABLE: "conformance", ITERATOR_MATRIX: "/^(vec|rev vec) \\| map_while \\| hint given \\| none$/" },
   },
 ];

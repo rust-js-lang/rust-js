@@ -1,14 +1,14 @@
 # shape	count	per 10,000 lines
-files	2657
-lines	357594
+files	2661
+lines	358080
 temporaries	0	0
 labeled blocks	0	0
 while (true)	224	6.3
-$iter	3014	84.3
+$iter	3016	84.2
 Iterator.from	361	10.1
-return;	341	9.5
-renamed x$1	16707	467.2
-role fallbacks	9055	253.2
+return;	344	9.6
+renamed x$1	16707	466.6
+role fallbacks	9060	253
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1	role fallbacks
 test/corpus/adapter_drop_past_a_panic.js	50	0	0	0	1	0	0	0	1
 test/corpus/adapter_drops.js	1849	0	0	1	18	2	1	98	61
@@ -268,6 +268,7 @@ test/corpus/cell_deque_char_methods.js	127	0	0	0	2	0	0	6	5
 test/corpus/cell_drops.js	130	0	0	0	0	0	0	12	8
 test/corpus/cell_from_mut.js	54	0	0	0	0	0	0	0	0
 test/corpus/cell_from_mut_generic.js	143	0	0	0	0	0	0	6	1
+test/corpus/cell_length_across_a_loops_steps.js	148	0	0	0	0	0	0	0	1
 test/corpus/cell_made_and_taken_in_one_expression.js	74	0	0	0	0	0	0	0	2
 test/corpus/cell_of_a_boxed_option.js	62	0	0	0	0	0	0	10	0
 test/corpus/cell_of_an_iterator_std_runs.js	62	0	0	1	1	0	0	0	0
@@ -1099,6 +1100,7 @@ test/corpus/hasher_finished_through_its_mut.js	96	0	0	0	0	0	0	8	3
 test/corpus/hasher_of_a_mut_given_to_generic_code.js	152	0	0	0	0	0	0	9	4
 test/corpus/heap_destructors.js	128	0	0	0	1	0	0	0	2
 test/corpus/heap_extend.js	62	0	0	0	0	0	0	0	0
+test/corpus/heap_halves_bound_their_children.js	114	0	0	0	0	0	2	0	1
 test/corpus/heap_methods.js	69	0	0	0	0	0	0	0	0
 test/corpus/heap_peek_mut.js	115	0	0	0	0	0	0	0	1
 test/corpus/heap_pop_of_a_param.js	107	0	0	0	1	0	0	9	5
@@ -1316,9 +1318,11 @@ test/corpus/lazy_chains.js	167	0	0	0	5	0	0	10	5
 test/corpus/lazy_effects.js	72	0	0	0	0	0	0	0	4
 test/corpus/lazy_iterator_clone.js	147	0	0	0	5	0	0	15	1
 test/corpus/lazy_range_nth_given_to_generic_code.js	30	0	0	0	0	1	0	8	5
+test/corpus/lazy_scan_drops_its_source_first.js	57	0	0	0	2	0	0	0	2
 test/corpus/leak.js	30	0	0	0	0	0	0	2	1
 test/corpus/leaked_string_written.js	60	0	0	0	0	0	0	0	0
 test/corpus/len_made_in_place.js	90	0	0	0	3	2	0	0	1
+test/corpus/length_shifted_past_a_push.js	169	0	0	0	0	0	1	0	1
 test/corpus/lengths_and_backs_given_on.js	216	0	0	0	2	1	0	7	5
 test/corpus/lent_field_iterator.js	25	0	0	0	1	0	0	3	3
 test/corpus/lent_given_iterator_dropped_where_it_goes.js	286	0	0	4	0	1	0	0	7
@@ -2646,7 +2650,7 @@ test/snapshots/playground/projects.js	121	0	0	0	0	0	0	0	0
 test/snapshots/playground/styles.js	13	0	0	0	0	0	0	0	0
 test/snapshots/playground/tree.js	60	0	0	0	0	0	0	2	0
 test/snapshots/ports/scheduler/SchedulerFeatureFlags.js	18	0	0	0	0	0	0	0	0
-test/snapshots/ports/scheduler/SchedulerMinHeap.js	82	0	0	0	0	0	2	0	0
+test/snapshots/ports/scheduler/SchedulerMinHeap.js	80	0	0	0	0	0	2	0	0
 test/snapshots/ports/scheduler/SchedulerPriorities.js	16	0	0	0	0	0	0	0	0
 test/snapshots/ports/scheduler/forks/Scheduler.js	492	0	0	1	0	0	3	9	1
 test/snapshots/queues/queues.js	293	0	0	0	0	2	1	5	7

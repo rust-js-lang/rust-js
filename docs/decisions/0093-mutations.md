@@ -833,3 +833,20 @@ and the copy matrix's filter rows, all native, and then main gained three
 cases that `filter-next-by-next` changes, which the push's own check
 found. So the final push's full check, every test it selects, is part of
 the evidence, never skipped as a sanity pass.
+
+## Amendment: an equivalent of today's programs that's std-faithful is held by a runtime row with a distinguishing source (2026-11-17)
+
+Since the light families' flips (ADR 1136), a lazy adapter the runtime
+writes, `$lazySkipWhile`, `$lazyTakeWhile`, `$lazyMapWhile` and `$lazyScan`,
+is made only in place, where its source is JS's own iterator, a `$iter` or
+a `$Steps` stepping by `next`. There a mutation that steps the source by
+`next` where std's adapter asks its `try_fold` survives every program: the
+corpus, the copy and conformance matrices. Such a branch isn't retired,
+nor simplified to the mutant's form: it's std's shape, which a source with
+its own `try_fold`, a compiled struct given to one some day, tells apart.
+It's held by a row of test/runtime-package.test.ts that drives the helper
+over a source made there whose own `try_fold` says it's asked. The same of
+a branch no program reaches today that's right as Rust is: a
+`take_while()`'s hint once its predicate failed, `(0, Some(0))`, driven
+directly. Code nothing tests doesn't stay, and nothing is retired that a
+route to come would need.
