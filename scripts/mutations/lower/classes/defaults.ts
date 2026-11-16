@@ -7,7 +7,7 @@ export const mutations: Mutation[] = [
     breaks:
       "each class takes its own copy of a trait's default that prints alike, not `B.prototype.render = A.prototype.render = function` (rd283)",
     file: "src/lower/classes/defaults.rs",
-    find: "                .any(|f| f.name == function.name && f.params == function.params && f.body == function.body)\n",
+    find: "                .any(|f| f.name == function.name && js::scopes::alpha_eq_functions(f, &function))\n",
     replace: "                .any(|_| false)\n",
     tests: ["test/classes-traits.test.ts"],
   },
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a trait default a class's own impl writes otherwise is shared with another's, so `unmount` is one function (rd283)",
     file: "src/lower/classes/defaults.rs",
-    find: "                .any(|f| f.name == function.name && f.params == function.params && f.body == function.body)\n",
+    find: "                .any(|f| f.name == function.name && js::scopes::alpha_eq_functions(f, &function))\n",
     replace: "                .any(|f| f.name == function.name)\n",
     tests: ["test/corpus.test.ts", "-t", "^class_trait_methods.rs$"],
     snapshots: true,

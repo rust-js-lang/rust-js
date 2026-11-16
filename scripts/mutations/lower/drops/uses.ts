@@ -22,6 +22,15 @@ export const mutations: Mutation[] = [
     tests: ["test/crates.test.ts", "-t", "drops_by_need"],
   },
   {
+    name: "drops-by-need-names-of-one-gathered",
+    breaks:
+      "of a function's copies lowered apart, the names gathered last replace the others', so a copy's `dropE` stays its parameter: base64's crate refused (ADR 1150)",
+    file: "src/lower/drops/uses.rs",
+    find: "        for (id, names) in other.names {\n            self.names.entry(id).or_default().extend(names);\n        }\n",
+    replace: "        self.names.extend(other.names);\n",
+    tests: ["test/crates.test.ts", "-t", "library_copies_unused_drops_each_lowering"],
+  },
+  {
     name: "drops-by-need-uses-unnoted",
     breaks: "a drop a body uses isn't kept, so `pick` drops nothing",
     file: "src/lower/drops/uses.rs",

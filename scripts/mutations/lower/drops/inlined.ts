@@ -276,7 +276,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`const prevProps = prevProps;` stays where a field's copy read as its variable, which throws",
     file: "src/lower/drops/inlined.rs",
-    find: "            |s| !matches!(&s.kind, StmtKind::Const(n, value) if matches!(&value.kind, ExprKind::Var(v) if v == n)),\n",
+    find: "            |s| !matches!(&s.kind, StmtKind::Const(n, value) if matches!(&value.kind, ExprKind::Var(v) if v.is(n.word()))),\n",
     replace: "            |_| true,\n",
     tests: [
       "test/lowering-drop-guards.test.ts",

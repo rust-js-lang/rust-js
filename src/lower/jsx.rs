@@ -162,7 +162,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // given (ADR 0195).
             js::ExprKind::Member(object, _) => {
                 matches!(&object.kind, js::ExprKind::Var(name)
-                    if self.plain_local(name.word()) || self.locals.rests.contains_key(name.word()))
+                    if self.plain_local(name.word()) || self.locals.rests.contains_key(name))
                     && self.reads_alike(object, out)
             }
             js::ExprKind::Var(name) => {
@@ -656,7 +656,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Prop::Field(name, value) if let Some(i) = flattened(&name) => {
                     for attr in self.flattened_attrs(types[i].1, value, &shadowing, span)? {
                         match attr {
-                            Prop::Spread(value) if matches!(&value.kind, js::ExprKind::Var(v) if self.locals.rests.contains_key(v.word())) => {
+                            Prop::Spread(value) if matches!(&value.kind, js::ExprKind::Var(v) if self.locals.rests.contains_key(v)) => {
                                 rest = Some(value)
                             }
                             attr => attrs.push(attr),
@@ -665,7 +665,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 Prop::Field(name, value)
                     if matches!(&value.kind, js::ExprKind::Member(object, key)
-                        if key == &name && matches!(&object.kind, js::ExprKind::Var(v) if self.locals.rests.contains_key(v.word()))) =>
+                        if key == &name && matches!(&object.kind, js::ExprKind::Var(v) if self.locals.rests.contains_key(v))) =>
                 {
                     let js::ExprKind::Member(object, _) = value.kind else {
                         unreachable!("matched above")

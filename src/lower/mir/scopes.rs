@@ -216,7 +216,7 @@ pub(super) fn scope_fields(value: &str, params: &[js::Pattern], out: &mut Vec<St
         if let js::ExprKind::Handle(place, _) = &e.kind {
             place.each(&mut |e| {
                 if let js::ExprKind::Var(name) = &e.kind {
-                    handled.insert(name.clone());
+                    handled.insert(name.word().to_string());
                 }
             });
         }

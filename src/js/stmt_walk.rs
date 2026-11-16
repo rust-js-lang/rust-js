@@ -504,8 +504,11 @@ fn canonical(stmts: &[Stmt], facts: bool) -> Vec<Stmt> {
     let names: IndexMap<String, String> = (declared.into_iter().enumerate())
         .map(|(i, name)| (name, format!("${i}")))
         .collect();
+    // Each binder the name of its number alone, its id let go, so two made
+    // apart compare alike (#1681 change 3).
     let rename = |name: &mut Name| {
         if let Some(to) = names.get(name.word()) {
+            *name = Name::default();
             name.respell(to.clone());
         }
     };
@@ -559,14 +562,62 @@ pub fn declares(stmts: &[Stmt], name: &str) -> bool {
 /// in them too, of `to`, which none of them mentions: the same program,
 /// where `from` is one `stmts` declare at their top.
 pub fn renamed(stmts: &mut [Stmt], from: &str, to: &str) {
-    let rename = |name: &mut Name| {
-        if name.is(from) {
-            name.respell(to);
+    each_named(stmts, from, &mut |name| name.respell(to));
+}
+
+/// `stmts` with each declaration and read of the name `from` made `into`,
+/// another variable's, where a pass makes the two one, a shadow its binding
+/// or a value its variable: each is that variable then, not one spelled as
+/// it, as names are ids (ADR 1150). `renamed` respells one variable.
+pub fn merged(stmts: &mut [Stmt], from: &str, into: &Name) {
+    each_named(stmts, from, &mut |name| *name = into.clone());
+}
+
+/// `stmts`, a tree used again, a body applied in place once more, each
+/// variable it declares a variable of its own, its reads with it: of the
+/// tree it's a clone of, none (ADR 1150, 4).
+pub fn rebound(stmts: &mut [Stmt]) {
+    let mut fresh: crate::collections::IndexMap<Name, Name> = Default::default();
+    each_name(stmts, true, &mut |name| {
+        if !fresh.contains_key(name) {
+            fresh.insert(name.clone(), name.rebound());
         }
-    };
+    });
+    each_name(stmts, false, &mut |name| {
+        if let Some(to) = fresh.get(name) {
+            *name = to.clone();
+        }
+    });
+}
+
+/// The word of each name `stmts` declare and read, in their order, closures'
+/// too: what two trees alike by `==`, which asks names' ids, may still
+/// differ in, a name respelled (`prepare::passes`' fired, ADR 1150).
+pub fn spellings(stmts: &[Stmt]) -> Vec<String> {
+    let mut words = Vec::new();
+    each_name(&mut stmts.to_vec(), false, &mut |name| {
+        words.push(name.word().to_string())
+    });
+    words
+}
+
+/// `change` of each declaration and read in `stmts` of the name `from`, a
+/// closure's in them too.
+fn each_named(stmts: &mut [Stmt], from: &str, change: &mut dyn FnMut(&mut Name)) {
+    each_name(stmts, false, &mut |name| {
+        if name.is(from) {
+            change(name);
+        }
+    });
+}
+
+/// `change` of each declaration in `stmts`, a closure's in them too, and
+/// with `!binders_only` each read.
+fn each_name(stmts: &mut [Stmt], binders_only: bool, change: &mut dyn FnMut(&mut Name)) {
+    let mut rename = |name: &mut Name| change(name);
     rename_binders(stmts, &mut |n| rename(n));
     each_expr_mut(stmts, &mut |e| match &mut e.kind {
-        ExprKind::Var(name) => rename(name),
+        ExprKind::Var(name) if !binders_only => rename(name),
         ExprKind::Arrow(params, body) | ExprKind::AsyncArrow(params, body) => {
             params.iter_mut().for_each(|p| p.each_name_mut(&mut |n| rename(n)));
             rename_binders(body, &mut |n| rename(n));

@@ -539,9 +539,18 @@ mod tests {
         StmtKind::Expr(Expr::call(Expr::var(f), Vec::new())).at(js::Span::NONE)
     }
 
-    /// A variable's name as lowering makes it, `_4` a temporary's.
+    /// A variable's name as lowering makes it, `_4` a temporary's: one
+    /// variable of each word, its declaration's and its reads', as a
+    /// body's are (ADR 1150).
     fn lowered(word: &str) -> js::Name {
-        crate::lower::temporary_names::Base::Named(word).name(word.to_string())
+        thread_local! {
+            static MADE: std::cell::RefCell<crate::collections::IndexMap<String, js::Name>> = Default::default();
+        }
+        MADE.with_borrow_mut(|made| {
+            (made.entry(word.to_string()))
+                .or_insert_with(|| crate::lower::temporary_names::Base::Named(word).name(word.to_string()))
+                .clone()
+        })
     }
 
     fn assign(x: &str, value: Expr) -> Stmt {
@@ -558,14 +567,17 @@ mod tests {
         let s = |kind: StmtKind| kind.at(js::Span::NONE);
         let take = |reset: Expr| {
             vec![
-                s(StmtKind::Const("old".into(), Expr::var("result"))),
+                s(StmtKind::Const(lowered("old"), Expr::var(lowered("result")))),
                 assign("result", reset),
-                s(StmtKind::Return(Some(Expr::var("old")))),
+                s(StmtKind::Return(Some(Expr::var(lowered("old"))))),
             ]
         };
-        let declared = s(StmtKind::Let("result".into(), Some(Expr::str(""))));
+        let declared = s(StmtKind::Let(lowered("result"), Some(Expr::str(""))));
         let closure = |body: Vec<Stmt>| s(StmtKind::Const("push".into(), Expr::arrow(Vec::new(), body)));
-        let append = assign("result", Expr::bin(Op::Add, Expr::var("result"), Expr::var("chunk")));
+        let append = assign(
+            "result",
+            Expr::bin(Op::Add, Expr::var(lowered("result")), Expr::var("chunk")),
+        );
         let returned = |mut body: Vec<Stmt>| {
             unread_resets(&mut body);
             matches!(body.last().map(|stmt| &stmt.kind),
@@ -586,7 +598,7 @@ mod tests {
             [vec![declared.clone(), closure(vec![written])], reset()].concat()
         ));
         // Refused: a closure that reads it.
-        let read = s(StmtKind::Return(Some(Expr::var("result"))));
+        let read = s(StmtKind::Return(Some(Expr::var(lowered("result")))));
         assert!(!returned(
             [vec![declared.clone(), closure(vec![read])], take(Expr::str(""))].concat()
         ));
@@ -596,7 +608,10 @@ mod tests {
             [vec![declared.clone(), closure(vec![append])], reset()].concat()
         ));
         // Refused: a `finally` that reads it after the `return`.
-        let shown = s(StmtKind::Expr(Expr::call(Expr::var("show"), vec![Expr::var("result")])));
+        let shown = s(StmtKind::Expr(Expr::call(
+            Expr::var("show"),
+            vec![Expr::var(lowered("result"))],
+        )));
         let tried = s(StmtKind::Try(take(Expr::str("")), vec![shown]));
         assert!(!matches!(
             {
@@ -611,14 +626,14 @@ mod tests {
         // Refused: a handle made on it.
         let handled = s(StmtKind::Expr(Expr::call(
             Expr::var("keep"),
-            vec![Expr::handle(Expr::var("result"))],
+            vec![Expr::handle(Expr::var(lowered("result")))],
         )));
         assert!(!returned(
             [vec![declared.clone(), handled], take(Expr::str(""))].concat()
         ));
         // Refused: a variable the body doesn't declare, or declares again.
         assert!(!returned(take(Expr::str(""))));
-        let again = s(StmtKind::Let("result".into(), None));
+        let again = s(StmtKind::Let(lowered("result"), None));
         assert!(!returned(
             [vec![declared, closure(vec![again])], take(Expr::str(""))].concat()
         ));
@@ -661,7 +676,7 @@ mod tests {
         // Accepted: one variable, each arm a value.
         assert_eq!(
             one(vec![assign("x", Expr::num(1))], vec![assign("x", Expr::num(2))], &c),
-            Some("x".into())
+            Some(lowered("x"))
         );
         // A test that does something is evaluated once either way.
         let called = Expr::call(Expr::var("ready"), Vec::new());
@@ -688,7 +703,7 @@ mod tests {
             None
         );
         // Refused: each adding to it, as written, `x = x + 1`.
-        let add = |n| Expr::bin(Op::Add, Expr::var("x"), Expr::num(n));
+        let add = |n| Expr::bin(Op::Add, Expr::var(lowered("x")), Expr::num(n));
         assert_eq!(one(vec![assign("x", add(1))], vec![assign("x", add(2))], &c), None);
         // Refused: an arm that's a conditional, of more branches, but of a temporary.
         let cond = Expr::cond(Expr::var("d"), Expr::num(1), Expr::num(2));

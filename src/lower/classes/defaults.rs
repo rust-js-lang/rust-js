@@ -85,7 +85,7 @@ pub(in crate::lower) fn take_default(
                 .is_some_and(|class| class.prototype.iter().any(|p| function.name.is(p)))
             && n.methods
                 .iter()
-                .any(|f| f.name == function.name && f.params == function.params && f.body == function.body)
+                .any(|f| f.name == function.name && js::scopes::alpha_eq_functions(f, &function))
     });
     if let Some(first) = alike
         && let Some(class) = &mut first.class

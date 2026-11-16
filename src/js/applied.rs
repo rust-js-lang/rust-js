@@ -478,6 +478,9 @@ fn in_place(
     mut body: Vec<Stmt>,
     hold: bool,
 ) -> Option<Vec<Stmt>> {
+    // A body applied where it's called is a tree used again: its
+    // declarations its own here (ADR 1150, 4).
+    rebound(&mut body);
     let parameter = match (params, args) {
         ([], []) => None,
         ([Pattern::Name(param), unread @ ..], [arg, extra @ ..])
@@ -583,7 +586,7 @@ fn in_place(
             .expect("a name nothing mentions");
         let to = Name::declared(to);
         let mut after = body.split_off(first + 1);
-        renamed(&mut after, param.word(), to.word());
+        merged(&mut after, param.word(), &to);
         let again = Writes::sets(&after, to.word());
         body[first].kind = match again {
             true => StmtKind::Let(to, Some(value)),

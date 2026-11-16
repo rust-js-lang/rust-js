@@ -7,7 +7,7 @@
 
 use crate::collections::IndexMap;
 
-use crate::js::{self, Expr, ExprKind, Function, JsxTag, Pattern, Prop, Stmt, StmtKind};
+use crate::js::{self, Expr, ExprKind, Function, JsxTag, Name, Pattern, Prop, Stmt, StmtKind};
 
 struct Scope {
     parent: Option<usize>,
@@ -188,6 +188,13 @@ pub(crate) fn alpha_eq(a: &Expr, b: &Expr) -> bool {
     a == b || (unnamed(a) == unnamed(b) && events(a) == events(b))
 }
 
+/// `alpha_eq` of two functions, made apart: a copy's and its function's,
+/// or two classes' methods (#1681 change 3).
+pub(crate) fn alpha_eq_functions(a: &js::Function, b: &js::Function) -> bool {
+    let of = |f: &js::Function| Expr::new(ExprKind::Function(Box::new(f.clone())));
+    alpha_eq(&of(a), &of(b))
+}
+
 /// What the walk of `e` meets, in its order.
 fn events(e: &Expr) -> Vec<Event> {
     let mut walk = Walk::default();
@@ -204,10 +211,10 @@ fn unnamed(e: &Expr) -> Expr {
     let mut stmts = vec![StmtKind::Expr(e.clone()).at(js::Span::NONE)];
     let pattern = |p: &mut Pattern| unnamed_pattern(p);
     js::each_expr_mut(&mut stmts, &mut |e| match &mut e.kind {
-        ExprKind::Var(name) => name.respell(""),
+        ExprKind::Var(name) => *name = Name::default(),
         ExprKind::Arrow(params, _) | ExprKind::AsyncArrow(params, _) => params.iter_mut().for_each(pattern),
         ExprKind::Function(function) => {
-            function.name.respell("");
+            function.name = Name::default();
             function.params.iter_mut().for_each(pattern);
         }
         _ => {}
@@ -215,11 +222,13 @@ fn unnamed(e: &Expr) -> Expr {
     js::each_block_mut(&mut stmts, &mut |list| {
         for stmt in list.iter_mut() {
             match &mut stmt.kind {
-                StmtKind::Const(name, _) | StmtKind::Let(name, _) | StmtKind::For { name, .. } => name.respell(""),
-                StmtKind::TryCatch(_, Some(name), _) => name.respell(""),
+                StmtKind::Const(name, _) | StmtKind::Let(name, _) | StmtKind::For { name, .. } => {
+                    *name = Name::default()
+                }
+                StmtKind::TryCatch(_, Some(name), _) => *name = Name::default(),
                 StmtKind::Destructure { pattern, .. } | StmtKind::ForOf { pattern, .. } => unnamed_pattern(pattern),
                 StmtKind::Function(function) => {
-                    function.name.respell("");
+                    function.name = Name::default();
                     function.params.iter_mut().for_each(unnamed_pattern);
                 }
                 _ => {}
@@ -235,12 +244,12 @@ fn unnamed(e: &Expr) -> Expr {
 
 fn unnamed_pattern(pattern: &mut Pattern) {
     match pattern {
-        Pattern::Name(name) | Pattern::Rest(name) | Pattern::Defaulted(name, _) => name.respell(""),
+        Pattern::Name(name) | Pattern::Rest(name) | Pattern::Defaulted(name, _) => *name = Name::default(),
         Pattern::Array(items) => items.iter_mut().flatten().for_each(unnamed_pattern),
         Pattern::Object(fields, rest) => {
             fields.iter_mut().for_each(|(_, field, _)| unnamed_pattern(field));
             if let Some(rest) = rest {
-                rest.respell("");
+                *rest = Name::default();
             }
         }
     }

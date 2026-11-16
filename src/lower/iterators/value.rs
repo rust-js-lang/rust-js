@@ -321,7 +321,7 @@ pub(in crate::lower) fn enumerated_of(e: &Expr) -> Option<Enumerated<'_>> {
             if let js::ExprKind::Member(source, method) = &callee.kind
                 && method == "map"
                 && args.len() == 1
-                && args[0] == enumerating() =>
+                && js::scopes::alpha_eq(&args[0], &enumerating()) =>
         {
             Some(Enumerated {
                 source,

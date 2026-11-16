@@ -434,8 +434,10 @@ fn copies_read_as(body: &mut Vec<Stmt>, field: &dyn Fn(&Expr) -> bool, v: &js::N
             }
         }
     });
-    copies.sort();
-    copies.dedup();
+    // By their words, as each is asked of below: one declared in each place
+    // the drop is, made apart, is one copy (#1681 change 3).
+    copies.sort_by(|a, b| a.word().cmp(b.word()));
+    copies.dedup_by(|a, b| a.is(b.word()));
     for n in copies {
         // Each of its declarations a copy, in each place the drop is.
         let mut declared = 0;
@@ -443,17 +445,17 @@ fn copies_read_as(body: &mut Vec<Stmt>, field: &dyn Fn(&Expr) -> bool, v: &js::N
         let mut copied = 0;
         js::each_block_mut(body, &mut |stmts| {
             copied += (stmts.iter())
-                .filter(|s| matches!(&s.kind, StmtKind::Const(name, value) if *name == n && field(value)))
+                .filter(|s| matches!(&s.kind, StmtKind::Const(name, value) if name.is(n.word()) && field(value)))
                 .count();
         });
         if declared != copied {
             continue;
         }
         js::each_block_mut(body, &mut |stmts| {
-            stmts.retain(|s| !matches!(&s.kind, StmtKind::Const(name, value) if *name == n && field(value)));
+            stmts.retain(|s| !matches!(&s.kind, StmtKind::Const(name, value) if name.is(n.word()) && field(value)));
         });
         js::each_expr_mut(body, &mut |e| {
-            if matches!(&e.kind, ExprKind::Var(name) if *name == n) {
+            if matches!(&e.kind, ExprKind::Var(name) if name.is(n.word())) {
                 let read = Expr::var(v.clone()).or_at(e.span);
                 *e = match defined {
                     true => read.defined(),
@@ -650,7 +652,8 @@ fn fields_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &str) -> Vec<Strin
         // A copy of a field the variable it reads as, `const prevProps =
         // prevProps;`, is that variable.
         stmts.retain(
-            |s| !matches!(&s.kind, StmtKind::Const(n, value) if matches!(&value.kind, ExprKind::Var(v) if v == n)),
+            // Of its word, a `const` of itself, which JS reads before it's made.
+            |s| !matches!(&s.kind, StmtKind::Const(n, value) if matches!(&value.kind, ExprKind::Var(v) if v.is(n.word()))),
         );
         if let Some(k) = stmts
             .iter()
@@ -689,7 +692,9 @@ fn kept_variables(body: &[Stmt], params: &[Pattern], guard: &str, fields: &[(Str
                 && matches!(&of.kind, ExprKind::Var(g) if g.is(guard))
                 && fields
                     .iter()
-                    .any(|(k, v)| k == key && matches!(&v.kind, ExprKind::Var(v) if v == name))
+                    // By its word, as `declared` counts: the drop's copy,
+                    // its body inlined anew (`js::rebound`), is of the word.
+                    .any(|(k, v)| k == key && matches!(&v.kind, ExprKind::Var(v) if v.is(name.word())))
                 && let Some(count) = declared.get_mut(name.word())
             {
                 *count -= 1;

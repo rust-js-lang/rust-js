@@ -32,7 +32,9 @@ pub(super) fn spelled(module: &mut js::Module) {
     for item in &mut module.items {
         let mut unspelled = Vec::new();
         names_mut(item, true, &mut |name| {
-            if name.made_base().is_some() && !unspelled.contains(name) {
+            // By its word, as it's spelled below: a made name's word is
+            // its own in its item, each of its clones' too.
+            if name.made_base().is_some() && !unspelled.iter().any(|u: &Name| u.is(name.word())) {
                 unspelled.push(name.clone());
             }
         });
@@ -102,7 +104,9 @@ fn aliased_imports(module: &mut js::Module) {
         // Declared nowhere else in the module, nor its name otherwise.
         let mut declared = 0;
         for item in &mut module.items {
-            names_mut(item, false, &mut |name| declared += usize::from(*name == alias));
+            // By its word: a declaration of it anywhere, another
+            // function's own variable too, takes the import's name.
+            names_mut(item, false, &mut |name| declared += usize::from(name.is(alias.word())));
             if item.declared() == Some(alias.word()) {
                 declared += 1;
             }
@@ -251,7 +255,7 @@ fn own_items(module: &mut js::Module) {
         };
         if module.aliases.iter().any(|alias| own_name(alias) && name.is(&alias.0)) {
             *export = true;
-            folded.insert(name.clone());
+            folded.insert(name.word().to_string());
         }
     }
     module
@@ -269,8 +273,10 @@ fn own_items(module: &mut js::Module) {
 fn locals(item: &mut js::Item) {
     let Some(mut tree) = scopes::Tree::of(item) else { return };
     let mut declared = Vec::new();
+    // By its word, as the scopes and the renames below are keyed: what's
+    // reclaimed is a spelling (#1681 change 3).
     names_mut(item, false, &mut |name| {
-        if !declared.contains(name) {
+        if !declared.iter().any(|d: &Name| d.is(name.word())) {
             declared.push(name.clone());
         }
     });

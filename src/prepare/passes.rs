@@ -12,6 +12,7 @@
 //! rewrite where it's about to be made (`applies`, `run`, `rewrite`), and
 //! never by a phase before or after.
 
+use crate::js::{self, Expr, Stmt, StmtKind};
 use std::cell::Cell;
 
 /// One of preparation's rewrites, as `--prepare-without` names it.
@@ -229,7 +230,75 @@ pub(super) fn applies(pass: Pass) -> bool {
 
 /// `pass`, a rewrite of `target` in place, where it's on: it fired where it
 /// changed it.
-pub(super) fn run<T: Clone + PartialEq>(pass: Pass, target: &mut T, rewrite: impl FnOnce(&mut T)) {
+/// A tree a pass rewrites, the words of its names in their order: where
+/// two are alike by `==`, which asks names' ids, a pass that respelled one
+/// changed it still (ADR 1150).
+pub(super) trait Spelled {
+    fn spellings(&self) -> Vec<String>;
+}
+
+impl Spelled for Vec<Stmt> {
+    fn spellings(&self) -> Vec<String> {
+        js::spellings(self)
+    }
+}
+
+impl Spelled for Stmt {
+    fn spellings(&self) -> Vec<String> {
+        js::spellings(std::slice::from_ref(self))
+    }
+}
+
+impl Spelled for Expr {
+    fn spellings(&self) -> Vec<String> {
+        js::spellings(&[StmtKind::Expr(self.clone()).at(js::Span::NONE)])
+    }
+}
+
+impl Spelled for Vec<Expr> {
+    fn spellings(&self) -> Vec<String> {
+        self.iter().flat_map(Spelled::spellings).collect()
+    }
+}
+
+impl Spelled for Vec<js::Prop> {
+    fn spellings(&self) -> Vec<String> {
+        Expr::object(self.clone()).spellings()
+    }
+}
+
+impl Spelled for js::Function {
+    fn spellings(&self) -> Vec<String> {
+        StmtKind::Function(Box::new(self.clone()))
+            .at(js::Span::NONE)
+            .spellings()
+    }
+}
+
+impl Spelled for js::Module {
+    fn spellings(&self) -> Vec<String> {
+        (self.items.iter())
+            .flat_map(|item| match item {
+                js::Item::Function(function) => function.spellings(),
+                js::Item::Namespace(namespace) => namespace.methods.iter().flat_map(Spelled::spellings).collect(),
+                js::Item::Const(constant) => {
+                    let mut words = vec![constant.name.word().to_string()];
+                    words.extend(constant.value.spellings());
+                    words
+                }
+                js::Item::Statements(stmts) => stmts.spellings(),
+            })
+            .collect()
+    }
+}
+
+/// Whether `pass` changed `before` into `after`: as a tree, or a name's
+/// spelling.
+fn changed<T: PartialEq + Spelled>(before: &T, after: &T) -> bool {
+    before != after || before.spellings() != after.spellings()
+}
+
+pub(super) fn run<T: Clone + PartialEq + Spelled>(pass: Pass, target: &mut T, rewrite: impl FnOnce(&mut T)) {
     if !on(pass) {
         return;
     }
@@ -238,19 +307,19 @@ pub(super) fn run<T: Clone + PartialEq>(pass: Pass, target: &mut T, rewrite: imp
     }
     let before = target.clone();
     rewrite(target);
-    if *target != before {
+    if changed(&before, target) {
         fire(pass);
     }
 }
 
 /// `pass`, a rewrite of `target` as another, where it's on: it fired where
 /// that's another.
-pub(super) fn rewrite<T: PartialEq>(pass: Pass, target: &mut T, rewritten: impl FnOnce(&T) -> T) {
+pub(super) fn rewrite<T: PartialEq + Spelled>(pass: Pass, target: &mut T, rewritten: impl FnOnce(&T) -> T) {
     if !on(pass) {
         return;
     }
     let new = rewritten(target);
-    if new != *target {
+    if changed(target, &new) {
         fire(pass);
     }
     *target = new;
@@ -267,6 +336,13 @@ mod tests {
         for (i, (pass, name)) in PASSES.iter().enumerate() {
             assert_eq!(Pass::named(name), Some(*pass));
             assert!(PASSES[i + 1..].iter().all(|(other, n)| other != pass && n != name));
+        }
+    }
+
+    // A number of no names, what the test below rewrites.
+    impl Spelled for i32 {
+        fn spellings(&self) -> Vec<String> {
+            Vec::new()
         }
     }
 

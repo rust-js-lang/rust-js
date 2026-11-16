@@ -171,8 +171,8 @@ export const mutations: Mutation[] = [
     name: "enumeration-source-unread",
     breaks: "an enumerate's form is read as written",
     file: "src/lower/iterators/value.rs",
-    find: "                && args[0] == enumerating() =>",
-    replace: "                && args[0] != enumerating() =>",
+    find: "                && js::scopes::alpha_eq(&args[0], &enumerating()) =>",
+    replace: "                && !js::scopes::alpha_eq(&args[0], &enumerating()) =>",
     tests: ["test/corpus.test.ts", "-t", "^returned_slice_iters.rs$"],
   },
   {

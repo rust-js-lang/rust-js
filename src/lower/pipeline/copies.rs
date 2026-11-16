@@ -86,7 +86,7 @@ pub(super) fn settle(
                 let mut as_if = renamed.clone();
                 let local = named(*id, settled(&same, *id, *to)).2;
                 as_if.insert(named(*id, Some(*at)), (local.clone(), local));
-                alike(other, module, &as_if) == alike(&copy.function, module, &as_if)
+                js::scopes::alpha_eq_functions(&alike(other, module, &as_if), &alike(&copy.function, module, &as_if))
             });
             if let Some((to, _)) = found {
                 same.insert((*id, *at), to);

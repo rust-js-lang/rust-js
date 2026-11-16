@@ -10,15 +10,37 @@ use std::fmt;
 
 /// A name a read or a declaration has: the program's, or one lowering
 /// made, which preparation spells (S2); or a global's, which the module
-/// declares nowhere (S3). Two names are one where their words are, a
-/// global's beside a local's of its word too, as every pass compares them
-/// till S4 gives each its own: which one a read is of is JS's scopes',
-/// whose resolution `js::validate` checks.
+/// declares nowhere (S3); the module's (`module`) or a body's item's
+/// (`item`). Two names are one variable where their forms and ids are:
+/// each declaration makes a name with an id of its own, and each read is
+/// a clone of it, so a pass tells the program's inner `x` from its outer
+/// `x` ("names are ids", ADR 1150). A name of a form with no id, a
+/// global's, the module's, an item's, or one made of a word alone, is one
+/// by its form and word, as JS resolves it.
 #[derive(Clone, Default)]
-pub struct Name(String, Of);
+pub struct Name(String, Of, Id);
+
+/// Which variable a name of the item's is, of the names its declarations
+/// made: a fresh one each time one is made, kept by its clones, and kept
+/// when it's respelled. `Id::WORD` of a name whose form and word say
+/// which it is.
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Default)]
+struct Id(u32);
+
+impl Id {
+    /// Of a name its form and word say: a global's, the module's, a body
+    /// item's, or one made of a word.
+    const WORD: Id = Id(0);
+
+    /// A variable's own, apart from every other made so far.
+    fn fresh() -> Id {
+        static NEXT: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(1);
+        Id(NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed))
+    }
+}
 
 /// Whose a name is.
-#[derive(Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Default)]
 enum Of {
     /// The program's, or one lowering made.
     #[default]
@@ -51,7 +73,7 @@ impl Name {
     /// its word again ("names are ids", ADR 1150). What's still made of a
     /// word alone, `From<&str>`, step 1 traces to one of these.
     pub fn declared(word: String) -> Name {
-        Name(word, Of::Item)
+        Name(word, Of::Item, Id::fresh())
     }
 
     /// The global `word`, JS's `Array` or a binding's `document`, which the
@@ -59,7 +81,7 @@ impl Name {
     /// (`Expr::global`), which `js::validate` takes for resolved where
     /// nothing in scope declares its word (#1681 change 3, S3).
     pub fn global(word: &str) -> Name {
-        Name(word.to_string(), Of::Global)
+        Name(word.to_string(), Of::Global, Id::WORD)
     }
 
     /// The module's `word`, a name it declares at its top, no item's: a
@@ -69,7 +91,7 @@ impl Name {
     /// it ("names are ids", ADR 1150); `js::validate` refuses a read of one
     /// that a declaration nearer takes.
     pub fn module(word: &str) -> Name {
-        Name(word.to_string(), Of::Module)
+        Name(word.to_string(), Of::Module, Id::WORD)
     }
 
     /// The name of the crate's item `item` (its `DefIndex`), or of its copy
@@ -81,7 +103,7 @@ impl Name {
     /// its own; no local of its word is it.
     pub fn item(word: &str, item: u32, copy: Option<usize>) -> Name {
         let copy = copy.map_or(0, |at| u32::try_from(at + 1).expect("a copy's index fits"));
-        Name(word.to_string(), Of::BodyItem(item, copy))
+        Name(word.to_string(), Of::BodyItem(item, copy), Id::WORD)
     }
 
     /// Whether it's the module's (`module`).
@@ -98,7 +120,7 @@ impl Name {
     /// (`temporary_names::temporary`), not one the program names: tidy
     /// asks `is_temporary` of it, not its word (#1681 change 3, S4).
     pub fn temporary(word: String) -> Name {
-        Name(word, Of::Temporary)
+        Name(word, Of::Temporary, Id::fresh())
     }
 
     /// Whether it's a temporary (`temporary`).
@@ -109,13 +131,13 @@ impl Name {
     /// The name MIR's lowering holds an argument by, spelled `word`, `_arg`
     /// or given apart, `_arg$1` (S4).
     pub fn held_arg(word: String) -> Name {
-        Name(word, Of::HeldArg)
+        Name(word, Of::HeldArg, Id::fresh())
     }
 
     /// A block's label MIR's lowering made, spelled `word`, `bb7`
     /// (`mir::queries::label`), not one the program writes (S5).
     pub fn block_label(word: String) -> Name {
-        Name(word, Of::BlockLabel)
+        Name(word, Of::BlockLabel, Id::WORD)
     }
 
     /// A label the program wrote, `'rows`, spelled `word`: JS resolves a
@@ -124,7 +146,7 @@ impl Name {
     /// One written inside a loop or a block of its word is given apart
     /// where its hint is made, `a$1` (#1969), so it's never its outer's.
     pub fn label(word: &str) -> Name {
-        Name(word.to_string(), Of::Label)
+        Name(word.to_string(), Of::Label, Id::WORD)
     }
 
     /// Whether it's a block's label (`block_label`).
@@ -142,7 +164,7 @@ impl Name {
     /// once its module's names are all made (`prepare::reclaim::spelled`),
     /// and the validator refuses one that reaches printing.
     pub fn made(base: &str, k: usize) -> Name {
-        Name(crate::names::made(base, k), Of::Item)
+        Name(crate::names::made(base, k), Of::Item, Id::fresh())
     }
 
     /// Of a name lowering made, what it's of, `value` of `value#1`
@@ -182,10 +204,20 @@ impl Name {
         self.apart_of().is_some_and(|(root, _)| root == of.root())
     }
 
+    /// It again, of its word and form, another variable, a fresh id: of a
+    /// tree used again, each of its declarations its own (`js::rebound`,
+    /// ADR 1150, 4). One its word says, `Id::WORD`'s, is as it is.
+    pub fn rebound(&self) -> Name {
+        match self.2 == Id::WORD {
+            true => self.clone(),
+            false => Name(self.0.clone(), self.1, Id::fresh()),
+        }
+    }
+
     /// It given apart the `k`th time, `node$2` of `node`, a name of its form:
     /// a temporary's still a temporary's (`names::given_apart`, S4).
     pub fn given_apart(&self, k: usize) -> Name {
-        Name(crate::names::given_apart(&self.0, k), self.1)
+        Name(crate::names::given_apart(&self.0, k), self.1, Id::fresh())
     }
 
     /// Spelled `word` from now on, a name of its form still: a rename, preparation's spelling and
@@ -201,9 +233,21 @@ impl Name {
 }
 
 // One name where the words are one (`Name`).
+impl Name {
+    /// Which variable it is: its form and its id, and its word where its id
+    /// doesn't say, `Id::WORD`'s. What two names are one by, and hashed by.
+    fn key(&self) -> (Of, Id, &str) {
+        let word = match self.2 == Id::WORD {
+            true => self.0.as_str(),
+            false => "",
+        };
+        (self.1, self.2, word)
+    }
+}
+
 impl PartialEq for Name {
     fn eq(&self, other: &Name) -> bool {
-        self.0 == other.0
+        self.key() == other.key()
     }
 }
 
@@ -211,25 +255,7 @@ impl Eq for Name {}
 
 impl std::hash::Hash for Name {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        self.0.hash(state);
-    }
-}
-
-impl PartialOrd for Name {
-    fn partial_cmp(&self, other: &Name) -> Option<std::cmp::Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl Ord for Name {
-    fn cmp(&self, other: &Name) -> std::cmp::Ordering {
-        self.0.cmp(&other.0)
-    }
-}
-
-impl std::borrow::Borrow<str> for Name {
-    fn borrow(&self) -> &str {
-        &self.0
+        self.key().hash(state);
     }
 }
 
@@ -241,19 +267,19 @@ impl From<&Name> for Name {
 
 impl From<&str> for Name {
     fn from(word: &str) -> Name {
-        Name(word.to_string(), Of::Item)
+        Name(word.to_string(), Of::Item, Id::WORD)
     }
 }
 
 impl From<String> for Name {
     fn from(word: String) -> Name {
-        Name(word, Of::Item)
+        Name(word, Of::Item, Id::WORD)
     }
 }
 
 impl From<&String> for Name {
     fn from(word: &String) -> Name {
-        Name(word.clone(), Of::Item)
+        Name(word.clone(), Of::Item, Id::WORD)
     }
 }
 
@@ -269,8 +295,15 @@ impl fmt::Display for Name {
     }
 }
 
+/// Its word, and its id where it has one, `value#3`, so two of one word
+/// are told apart where no table spells them: a `Debug` of a tree, a
+/// refusal's or a check's text. Never JS's, which preparation's spelling
+/// alone writes (ADR 1150, 4c).
 impl fmt::Debug for Name {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt::Debug::fmt(&self.0, f)
+        match self.2 == Id::WORD {
+            true => fmt::Debug::fmt(&self.0, f),
+            false => write!(f, "\"{}#{}\"", self.0, self.2.0),
+        }
     }
 }

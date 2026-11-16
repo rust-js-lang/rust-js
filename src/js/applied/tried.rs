@@ -193,8 +193,16 @@ fn set_at(try_catch: &mut Stmt, made: usize, set: usize, variable: &str) {
         unreachable!("found by set_where_made")
     };
     let value_name = value_name.clone();
+    // Its reads the variable's, the one it's set to now.
+    let into = match &to.kind {
+        ExprKind::Var(into) => Some(into.clone()),
+        _ => None,
+    };
     tried[made].kind = StmtKind::Assign(to, value.clone());
-    renamed(&mut tried[made + 1..set], value_name.word(), variable);
+    match into {
+        Some(into) => merged(&mut tried[made + 1..set], value_name.word(), &into),
+        None => renamed(&mut tried[made + 1..set], value_name.word(), variable),
+    }
 }
 
 /// Of a `try`'s `tried` and its `catch`, the `const` of the value made, the

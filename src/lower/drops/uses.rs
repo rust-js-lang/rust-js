@@ -136,7 +136,11 @@ impl DropsObserved {
         self.checks.extend(other.checks);
         self.used.extend(other.used);
         self.passed.extend(other.passed);
-        self.names.extend(other.names);
+        // Each lowering's: a function lowered again, a copy of it (ADR
+        // 0051), declares its drops anew, names of their own (ADR 1150).
+        for (id, names) in other.names {
+            self.names.entry(id).or_default().extend(names);
+        }
     }
 
     /// The drops each function keeps of `drop_params`, those it uses or

@@ -224,7 +224,7 @@ pub(super) fn exit_after(
     let mut given: Vec<js::Name> = (own.into_iter())
         .filter(|name| !made.contains(name.word()) && js::mentions_in(&moved, name.word()) > 0)
         .collect();
-    given.sort();
+    given.sort_by(|a, b| a.word().cmp(b.word()));
     // Its name is apart from what's beside the loop, as the Rust's is,
     // whose block the loop is in (`exits_after`).
     let mut before = Vec::new();

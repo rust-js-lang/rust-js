@@ -217,7 +217,7 @@ fn shadow_of(
                 }
             }
         });
-        js::renamed(&mut rest, shadow.word(), binding.word());
+        js::merged(&mut rest, shadow.word(), &binding);
         stmts.append(&mut rest);
         if captured.contains(shadow.word()) {
             captured.insert(binding.into_word());

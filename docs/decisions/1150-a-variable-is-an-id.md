@@ -586,3 +586,67 @@ its reads its `Name`; and what a pass spells itself, a left-out field's
 `Error`'s held field, a dynamic import's `m`, `peekable`, `it`, `m` and
 `drop`, is made once and cloned. Names still compare by word: the corpus,
 the snapshots, std and the port are as they were.
+
+## Names are ids, step 2: the flip (2026-11-16)
+
+`Name` has an id: each constructor that declares a variable makes a fresh
+one (`declared`, `temporary`, `held_arg`, `made`, `given_apart`), its
+clones keep it, and `respell` keeps it. Two names are one where their
+forms and ids are; a name whose form and word say which it is has
+`Id::WORD` and is one by its form and word: a global's, the module's, a
+body item's, a label the program wrote, a block's label (each block's
+word its own), and what's still made of a word. `Ord` and `Borrow<str>`,
+whose contracts a key by id breaks, are gone, their four uses keyed by
+the word as before. `Debug` shows `word#id` where a name has an id.
+
+Judged over the corpus, the snapshots, std, the guide's fences, React's
+port and alien-signals (the lead's run), and run over the corpus before
+anything else changed, 1,460 cases' JS
+differed, then 485 once block labels were by their word; among them a
+wrong answer, `flag_of_a_guarded_match`, whose cause, a name tidy made of
+a word mid-pass, step 1's measure at creation found and m3-max's tidy
+commit removed. Every other difference was readability, the old JS right,
+and each was prevented, none accepted (the lead's rule):
+
+1. Trees made apart compared as trees, not as variables:
+   `js::scopes::alpha_eq` blanks each name whole, not its spelling, so its
+   id goes too; `stmt_walk::canonical`, `stmts_alike`'s and `stmts_same`'s,
+   numbers each binder by a name of its number alone; and the comparisons
+   of trees made apart are `alpha_eq`'s, `copies::settle`'s of a copy and
+   its function (`alpha_eq_functions`), a class's default methods', and
+   `enumerating()`'s. Of `copies::settle`, a copy wasn't found alike its
+   function, `Stack.createCursorBoxed` kept beside `createCursor`.
+2. A pass that makes two variables one gives the reads the one left:
+   `js::merged(stmts, from, into)`, tidy's shadows, a parameter applied in
+   place, a value set into its variable; `js::renamed` respells one
+   variable.
+3. A tree used again gets declarations of its own: a body applied in
+   place, an inlined `Drop`'s at each drop, `js::rebound` (`Name::rebound`)
+   as this ADR's point 4 planned.
+4. Algorithms keyed by a word dedupe and match by the word, as main does:
+   `reclaim::spelled`'s and `reclaim::locals`' declarations,
+   `reclaim::aliased_imports`' count of a name declared elsewhere in the
+   module, and `drops::inlined`'s copies (`copies_read_as`), a guard's
+   fields' copies (`kept_variables`) and its `const` of itself
+   (`fields_of`), which JS reads before it's made whatever its id. They are
+   step 3's, whose structures key by `Name`, to move to ids, on record here
+   so they aren't forgotten.
+5. Preparation's record of which of its rewrites fired asked `==` alone,
+   which a respelled name, its id kept, leaves alike: a rewrite fired where
+   the tree or its names' spellings changed (`passes::Spelled`), so
+   `--prepare-without` of one that fired nowhere leaves the JS as it is.
+6. What's noted of a function's lowerings is gathered from each: a
+   function lowered as two copies declares the drops it's given twice,
+   each `dropE` a name of its own, and the names `drops::uses` leaves out
+   where they go unused (ADR 0300) are each copy's, not the last one's.
+   The crate corpus found it, not the corpus, whose generic functions are
+   a binary's: base64's `ChunkedEncoder::encode` kept `dropE`, wasn't
+   merged with its copy, and its `const`s' hole was left unfilled, the
+   crate refused (`CHUNK_SIZE` read, nothing declaring it). Pair case
+   `library_copies_unused_drops_each_lowering` holds it against native Rust.
+
+A label tidy makes where the program wrote none, `loop`, is spelled apart
+from every label around it and in it (`switches.rs`), so two nested are
+two words and two labels (#1969's rule); none reaches JS, and corpus case
+`switches_leaving_their_loops_nested` holds the nested loops' exits
+against native Rust.
