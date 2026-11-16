@@ -9,8 +9,13 @@
 //! What its `deref_mut` lends, a `&mut` of what the cell holds, keeps the
 //! length only past a call that keeps it, `index_mut` or a `deref_mut` to
 //! a slice (`keeps_vec_length`): given to `push`, `truncate` or code of the
-//! crate's, the length is forgotten; used any other way, a reborrow or a
-//! write through it, it's forgotten at the `deref_mut` itself.
+//! crate's, itself or through any number of reborrows, `let all = &mut
+//! *items; all.truncate(1)`, the length is forgotten at the call
+//! (`lent_through`, #1929); written through, as any write through a `*`
+//! forgets its root's length. The `deref_mut` itself is a copy of the cell,
+//! as a `deref` is: its own rule that forgot the length there, where the
+//! `&mut` went any other way, is retired, the native pass finding no
+//! program that differs without it (ADR 0093).
 
 use super::*;
 use crate::lower::recognition::{StdItem, deref_call, deref_mut_call, is_std_def, keeps_vec_length};
@@ -78,12 +83,25 @@ fn given_at(body: &Body<'_>, at: Location, local: Local) -> bool {
     })
 }
 
-/// Whether `local` is read only as a call's argument whole, and made
-/// only by a statement of its own.
-fn given_whole(body: &Body<'_>, local: Local) -> bool {
+/// Whether `local` is read only as a call's argument whole, or reborrowed,
+/// `&mut (*local)`, into a local read only so in turn, however many times,
+/// `let all = &mut *items; all.truncate(1)`'s `all` and the `&mut (*all)`
+/// its call is given (#1929): each such local pushed to `through`.
+fn lent_through(body: &Body<'_>, local: Local, through: &mut Vec<Local>) -> bool {
     uses(body, local).into_iter().all(|(at, _)| {
         match (body.basic_blocks[at.block].statements.get(at.statement_index)).map(|s| &s.kind) {
-            Some(StatementKind::Assign(assign)) => assign.0.as_local() == Some(local),
+            Some(StatementKind::Assign(assign)) => match (&assign.1, assign.0.as_local()) {
+                (_, Some(made)) if made == local => true,
+                (Rvalue::Ref(_, _, of), Some(holder))
+                    if of.local == local
+                        && matches!(of.projection.as_slice(), [mir::PlaceElem::Deref])
+                        && !through.contains(&holder) =>
+                {
+                    through.push(holder);
+                    lent_through(body, holder, through)
+                }
+                _ => false,
+            },
             Some(kind) => inert(kind),
             None => given_at(body, at, local),
         }
@@ -156,7 +174,8 @@ pub(super) fn guards<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> Guards {
         guards.holders.extend(holders.into_iter().map(|holder| (holder, guard)));
     }
     // What a held guard's `deref_mut` gives, read only as a call's argument
-    // whole, or reborrowed, `&mut (*m)`, into a local read only so.
+    // whole, or reborrowed, `&mut (*m)`, into a local read only so, however
+    // many times (`lent_through`).
     for data in body.basic_blocks.iter() {
         if let TerminatorKind::Call {
             func,
@@ -172,23 +191,7 @@ pub(super) fn guards<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> Guards {
             && let Some(lent) = destination.as_local()
         {
             let mut through = Vec::new();
-            let only_given = uses(body, lent).into_iter().all(|(at, _)| {
-                match (body.basic_blocks[at.block].statements.get(at.statement_index)).map(|s| &s.kind) {
-                    Some(StatementKind::Assign(assign)) => match (&assign.1, assign.0.as_local()) {
-                        (Rvalue::Ref(_, _, of), Some(holder))
-                            if of.local == lent
-                                && matches!(of.projection.as_slice(), [mir::PlaceElem::Deref])
-                                && given_whole(body, holder) =>
-                        {
-                            through.push(holder);
-                            true
-                        }
-                        _ => false,
-                    },
-                    Some(kind) => inert(kind),
-                    None => given_at(body, at, lent),
-                }
-            });
+            let only_given = lent_through(body, lent, &mut through);
             if only_given {
                 guards.lends.insert(lent);
                 guards.lends.extend(through);
@@ -220,8 +223,7 @@ impl<'tcx> Walk<'_, 'tcx> {
 
     /// What a held guard's own call gives, `local`: of its `borrow_mut()`,
     /// a copy of the cell, which it guards; of a `deref` or a `deref_mut`,
-    /// a copy of it; but a `deref_mut` whose `&mut` isn't only given whole
-    /// to calls forgets the cell's length.
+    /// a copy of it, whose length a call it's lent to forgets (`guard_lent`).
     pub(super) fn guarded(
         &self,
         args: &[rustc_span::Spanned<Operand<'tcx>>],
@@ -238,16 +240,7 @@ impl<'tcx> Walk<'_, 'tcx> {
             after.guarded.insert(local, cell);
         }
         if let Some(guard) = self.derefed_guard(func, args) {
-            let cell = state.root(guard);
-            let mutable = func
-                .const_fn_def()
-                .is_some_and(|(callee, _)| deref_mut_call(self.tcx, callee));
-            match !mutable || self.guards.lends.contains(&local) {
-                true => {
-                    after.copies.insert(local, cell);
-                }
-                false => after.forget_lengths(cell),
-            }
+            after.copies.insert(local, state.root(guard));
         }
     }
 

@@ -756,3 +756,22 @@ eight parts 4 min 24 s to 5 min 56 s each (their tests 208–300 s), and the
 merge 33 s, 5,373 tests, 73 run on every change, as the one machine's map of
 8970d448c had. A push whose ancestor's map is kept restores it as before,
 its parts and merge skipped: check 43795629437's job, 40 s.
+
+## Amendment: the held guard's `deref_mut` branch retired by the native pass (2026-11-16, #1929)
+
+The branch the amendment of #1928 put back, a held guard's `deref_mut`
+forgetting the cell's length where its `&mut` went any way but whole to a
+call, is retired by that amendment's own rule. The general rule now sees
+through a reborrow of a local, however many: `lent_through` takes `let
+all = &mut *items; all.truncate(1)`'s `all`, and the `&mut (*all)` its
+call is given, as lent, so `guard_lent` forgets the length at the call,
+where nothing did before but the branch. With it, `bun scripts/ablate.ts
+--native guard-deref-mut-always-a-copy` finds no program of the bounds
+matrix or the corpus that runs otherwise than native Rust does: "neither".
+A write through the `&mut` is one through a `*`, whose root's length any
+such write forgets. Three programs beside the matrix, a write through the
+reborrow, a call through it and the `&mut` stored and cleared, each with
+overflow checks off as the corpus builds it, print what native prints.
+The removal itself went through `check:fast --all`, the corpus' snapshots
+compared. Mutation `guard-reborrow-not-lent` holds the reborrows' walk;
+`guard-deref-mut-always-a-copy` goes with its code.

@@ -24,12 +24,12 @@ export const mutations: Mutation[] = [
     tests,
   },
   {
-    name: "guard-deref-mut-always-a-copy",
-    breaks: "a held guard's `deref_mut` is a copy always, so of its `&mut` bound to a local, `let all = &mut *g; all.truncate(1)`, the cell's length is kept, and `(g.len() - 2) as u32` under `g.len() > 1` gives -1 where Rust wraps (#1928)",
+    name: "guard-reborrow-not-lent",
+    breaks: "a held guard's `&mut` reborrowed into a local, `let all = &mut *items; all.truncate(1)`, is lent no further, so the call given `&mut (*all)` keeps the cell's length, and `(items.len() - 2) as u32` under `items.len() > 1` gives -1 where Rust wraps (#1928, #1929)",
     file,
-    find: "            match !mutable || self.guards.lends.contains(&local) {\n",
-    replace: "            match true {\n",
-    tests: ["test/bounds-matrix.test.ts", "-t", "guard, tested wrap"],
+    find: "                    through.push(holder);\n                    lent_through(body, holder, through)\n",
+    replace: "                    through.push(holder);\n                    false\n",
+    tests: ["test/bounds-matrix.test.ts", "-t", "guard"],
   },
   {
     name: "guards-none",
