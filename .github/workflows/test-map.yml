@@ -9,8 +9,11 @@ name: test map
 # Of each check of `main` that completes, red or green (a red commit's
 # failing tests are `null`, run on every change), HEAD's map, in a run of
 # its own after the check's, so it never takes a machine from a check's own
-# jobs; one run at a time, a newer commit's cancelling an older's, so when
-# pushes land together only the newest gets one. Kept in the Actions cache
+# jobs; one run at a time, the running one never cancelled, and of those
+# waiting only the newest kept (GitHub replaces a pending run of the group
+# with the next): checks of `main` end about every 10 min and a recording
+# takes longer, so cancelling the running one cancelled every one, and no
+# map was recorded for 9 commits (ADR 1101, amended). Kept in the Actions cache
 # by its commit, `test-map-<os>-<toolchain>-<sha>`, one map each, the
 # newest 8 (about 22 MB each, test-map-prune.yml); `bun run push` downloads the newest of an
 # ancestor of its HEAD (`fetchMap`). Called by rustc-tests.yml's mutations,
@@ -33,7 +36,7 @@ permissions:
 
 concurrency:
   group: ${{ github.event_name == 'workflow_run' && 'test-map' || format('test-map-{0}-{1}', github.run_id, github.workflow) }}
-  cancel-in-progress: ${{ github.event_name == 'workflow_run' }}
+  cancel-in-progress: false
 
 env:
   # The commit the map is of: the check's, or the caller's.

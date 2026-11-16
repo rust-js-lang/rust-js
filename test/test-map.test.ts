@@ -411,7 +411,11 @@ test("CI's test map is the kept one, or recorded in parts and merged where none 
   const on = (Bun.YAML.parse(map) as { on: Record<string, unknown> }).on;
   expect(on.workflow_run).toEqual({ workflows: ["Check"], types: ["completed"], branches: ["main"] });
   expect(Object.keys(on)).toContain("workflow_call");
-  expect(map).toContain("cancel-in-progress: ${{ github.event_name == 'workflow_run' }}");
+  // The running recording is never cancelled, or one a check's end
+  // cancelled every one (no map for 9 commits); of those waiting, GitHub
+  // keeps the newest.
+  const group = (Bun.YAML.parse(map) as { concurrency: { "cancel-in-progress": boolean } }).concurrency;
+  expect(group["cancel-in-progress"]).toBe(false);
   expect(map).toContain("format('test-map-of-{0}', env.SHA)");
   expect(job(map, "test-map")).toContain("bun scripts/testMap.ts kept");
   expect(job(map, "test-map")).toContain("bun scripts/testMap.ts build --shards=");

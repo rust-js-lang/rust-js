@@ -323,8 +323,11 @@ get keyed by OS.
 
 `test-map.yml` records HEAD's map after each check of `main` completes, red
 or green, in a run of its own (`workflow_run`), so it never takes a machine
-from a check's jobs; one at a time, the newest cancelling the rest, so of
-pushes that land together only the newest gets one. Each map is cached by
+from a check's jobs; one at a time, the running one never cancelled, and of
+those waiting only the newest kept, as GitHub replaces a pending run of the
+group with the next. (Cancelling the running one, as it first did, starved
+it: checks end about every 10 min and a recording takes longer, so every
+run was cancelled and none was recorded for 9 commits.) Each map is cached by
 its commit, one per entry, the newest 8 kept (`test-map-prune.yml`, about
 22 MB each), and uploaded as `test-map-of-<sha>`, which `bun run push`
 downloads where it's nearer than the machine's (`fetchMap`; of this

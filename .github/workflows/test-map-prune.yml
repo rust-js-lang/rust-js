@@ -14,6 +14,8 @@ permissions:
   actions: write
   contents: read
 
+# A run cancelled by the next leaves nothing undone: the next removes the
+# same, in seconds.
 concurrency:
   group: test-map-prune
   cancel-in-progress: true
