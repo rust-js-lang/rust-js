@@ -83,3 +83,24 @@ cost the length of what was left. A loop of it over 100,000 bytes, and a
   before; it runs in about half a second.
 - Held by the mutations of `recognition/chars.rs`,
   `analysis/chars_asked.rs` and the runtime's `char_indices.js`.
+
+## Amendment: one lent from its variable is itself too (2026-11-16, #1955)
+
+A string's iterator made where it's lent was already itself,
+`head!(name.chars(), 2)`'s `name[Symbol.iterator]().take(2)`. One held
+in a variable first stayed lent, `const cs = name[Symbol.iterator]();
+.. $lent(cs).take(2)`, and so did `cs.nth(1)`. The variable is read only
+there, where it's lent. JS's string iterator, `$chars` and `$charIndices`
+have no `return()` for a lending to keep from being called, and nothing
+else steps it. So it's itself, `cs.take(2)` (`values::lent_held_strings`,
+beside `array_values`, of the same rule's `made_string_iterator`). One
+read again after its lending, `cs.by_ref().take(2)` then `cs.collect()`,
+stays `$lent(cs)` as Rust wrote it.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. The same `char`s
+are read. Corpus case `string_iterator_lent_once_from_its_variable`
+holds `chars()`, `char_indices()`, `nth` and the lender read again,
+against native. `long_text_read_char_by_char`'s tokenizer reads
+`charIndices.find(..)` with no `$lent`. React's port is unchanged.
+Mutations `lent-held-string-kept`, `lent-held-string-read-again` and
+`lent-held-of-any-iterator` are caught.

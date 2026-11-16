@@ -187,7 +187,7 @@ impl IterValue {
 /// Whether `e` is a string's iterator made here: JS's own,
 /// `s[Symbol.iterator]()`, or the runtime's, `$chars(s)` or
 /// `$charIndices(s)`, none of which has a `return()`.
-fn made_string_iterator(e: &Expr) -> bool {
+pub(in crate::lower) fn made_string_iterator(e: &Expr) -> bool {
     super::string_iterated(e).is_some()
         || matches!(&e.kind, js::ExprKind::Call(callee, _) if matches!(callee.helper_name(), Some("$chars" | "$charIndices")))
 }
@@ -211,6 +211,20 @@ pub(in crate::lower) fn lent_string_iterator(e: &Expr) -> Option<&Expr> {
     };
     let [it] = &args[..] else { return None };
     (callee.helper_name() == Some("$lent") && made_string_iterator(it)).then_some(it)
+}
+
+/// Of a variable lent, `$lent(v)` as `e` is, `v` (#1955).
+pub(in crate::lower) fn lent_variable(e: &Expr) -> Option<&js::Name> {
+    let js::ExprKind::Call(callee, args) = &e.kind else {
+        return None;
+    };
+    match &args[..] {
+        [it] if callee.helper_name() == Some("$lent") => match &it.kind {
+            js::ExprKind::Var(v) => Some(v),
+            _ => None,
+        },
+        _ => None,
+    }
 }
 
 /// Each fact `emit` marks a value's JS with.

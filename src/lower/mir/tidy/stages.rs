@@ -694,6 +694,7 @@ pub(super) const STAGES: &[Stage] = &[
             pass("array values", |b, h| {
                 if !h.closure {
                     js::each_expr_mut(b, &mut array_values);
+                    lent_held_strings(b);
                 }
             }),
             pass("handles in place", |b, _| handles_in_place(b)),

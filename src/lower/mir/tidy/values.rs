@@ -6,6 +6,37 @@ use crate::collections::{IndexMap, IndexSet};
 mod handles;
 pub(super) use handles::{handles_in_place, read_handles};
 
+/// A string's iterator made here and held in a variable read once, where
+/// it's lent, `const cs = name[Symbol.iterator](); .. $lent(cs).take(2)`:
+/// itself, `cs.take(2)`, as one made where it's lent is (`array_values`).
+/// It has no `return()` a lending keeps from being called, and nothing
+/// else steps it (#1955).
+pub(super) fn lent_held_strings(body: &mut [Stmt]) {
+    let mut held = Vec::new();
+    js::each_list(body, &mut |stmts| {
+        for stmt in stmts.iter() {
+            if let StmtKind::Const(name, e) | StmtKind::Let(name, Some(e)) = &stmt.kind
+                && crate::lower::iterators::made_string_iterator(e)
+            {
+                held.push(name.clone());
+            }
+        }
+    });
+    for name in held {
+        if js::mentions_of(body, &name) != 1 {
+            continue;
+        }
+        js::each_expr_mut(body, &mut |e| {
+            if crate::lower::iterators::lent_variable(e) == Some(&name) {
+                *e = Expr {
+                    span: e.span,
+                    ..Expr::var(name.clone())
+                };
+            }
+        });
+    }
+}
+
 /// `$iter(xs).filter(f)`, an array's `$iter`, which knows where it is, made
 /// for an iterator helper alone, which nothing else steps: `xs.values()
 /// .filter(f)`, the array's own iterator.
