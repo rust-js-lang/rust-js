@@ -452,7 +452,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .filter_map(|e| match e.kind {
                 thir::ExprKind::Scope { value, hir_id, .. } => match self.tcx.hir_expect_expr(hir_id).kind {
                     // The loop it scopes, in scopes of its own too.
-                    rustc_hir::ExprKind::Loop(_, Some(label), ..) => Some((self.strip(value), written_label(&label))),
+                    rustc_hir::ExprKind::Loop(_, Some(label), ..) => {
+                        Some((self.strip(value), self.label_apart(e.span, written_label(&label))))
+                    }
                     _ => None,
                 },
                 _ => None,
@@ -621,6 +623,34 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// `word`, the label the program wrote of what's written at `at`, a loop
+    /// or a block, given apart where a loop or a block around it has a label
+    /// of its word, `a$1` inside `a`: Rust lets a label shadow an outer one,
+    /// whose `break`s and `continue`s are of the innermost, where JS refuses
+    /// a label inside one of its name (#1969).
+    fn label_apart(&self, at: rustc_span::Span, word: String) -> String {
+        let at = at.source_callsite();
+        let around = (self.frame.thir.exprs.iter())
+            .filter(|e| {
+                let outer = e.span.source_callsite();
+                outer != at && outer.contains(at)
+            })
+            .filter(|e| match e.kind {
+                thir::ExprKind::Scope { hir_id, .. } => match self.tcx.hir_expect_expr(hir_id).kind {
+                    rustc_hir::ExprKind::Loop(_, Some(label), ..) | rustc_hir::ExprKind::Block(_, Some(label)) => {
+                        written_label(&label) == word
+                    }
+                    _ => false,
+                },
+                _ => false,
+            })
+            .count();
+        match around {
+            0 => word,
+            k => crate::names::given_apart(&word, k),
+        }
+    }
+
     /// Each block the program labeled, `'desc: { .. }`, and where each
     /// `break` of it is (ADR 0742).
     fn labeled_blocks(&self) -> Vec<LabeledBlock> {
@@ -633,7 +663,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         block.hir_id.local_id,
                         LabeledBlock {
                             span: self.js_span(e.span.source_callsite()),
-                            label: written_label(&label),
+                            label: self.label_apart(e.span, written_label(&label)),
                             breaks: Vec::new(),
                         },
                     )),

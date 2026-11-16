@@ -180,8 +180,8 @@ export const mutations: Mutation[] = [
     breaks:
       "MIR's labeled loop in a scope of its own is named `bbN`, not its label",
     file: "src/lower/mir/hints.rs",
-    find: "Some((self.strip(value), written_label(&label))),\n",
-    replace: "Some((value, written_label(&label))),\n",
+    find: "Some((self.strip(value), self.label_apart(e.span, written_label(&label))))\n",
+    replace: "Some((value, self.label_apart(e.span, written_label(&label))))\n",
     tests: ["test/lowering-loops.test.ts", "-t", "returns in a loop are where"],
   },
   {
@@ -613,5 +613,13 @@ export const mutations: Mutation[] = [
     find: "        // None, of `--no-thir-hints` (ADR 1144).\n        if !thir_hints() {\n",
     replace: "        // None, of `--no-thir-hints` (ADR 1144).\n        if false {\n",
     tests: ["test/tidy-stages.test.ts", "-t", "without the THIR hints isn't its JS"],
+  },
+  {
+    name: "shadowing-label-one-with-its-outer",
+    breaks: "a loop's label written inside a loop or a block of its word is taken for the outer's, so a `break 'a` of the inner leaves the outer, a loop that never ends (#1969)",
+    file: "src/lower/mir/hints.rs",
+    find: "            k => crate::names::given_apart(&word, k),\n",
+    replace: "            _ => word,\n",
+    tests: ["test/corpus.test.ts", "-t", "^label_shadowing_its_enclosing_label.rs$"],
   },
 ];

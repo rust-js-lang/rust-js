@@ -477,3 +477,23 @@ where upstream returns early, `if (!maybeTargetInst || ..) { // .. return;
 }`, as they now do. Held by `let_else_returns_in_arms`' extractEvents and
 the mutation `returned-as-written-left-block-furthest`, which puts the
 rule back.
+
+## Amendment: a label inside one of its word is its own (#1969, 2026-11-16)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R. Rust lets a loop's or
+a block's label shadow the label of a loop or a block around it, with a
+lint (`label name 'a shadows a label name that is already in scope`), and
+each `break 'a` and `continue 'a` is of the innermost `'a`. JS refuses a
+label inside one of its name, and rust-js took the two for one: `'a: loop
+{ 'a: loop { .. break 'a; } ..; if i >= n { break 'a; } }` was `while
+(true) { while (true) { ..; if (..) { ..; if (i >= n) { break; } } } }`,
+the outer's exit inside the inner loop, which never ended, where native
+Rust returns (a wrong answer, P0). A label the program wrote is given
+apart where its hint is made, `a$1` inside `a`, by how many loops and
+blocks around it the program labeled with its word
+(`label_apart` in `mir/hints.rs`), so each pass that matches a jump with its loop
+tells the two apart; one tidy leaves written is spelled so. Corpus case
+`label_shadowing_its_enclosing_label` holds a loop inside a loop of one
+label, a `continue 'a` of the inner beside a `break 'a` of the outer, and
+a loop's `'a` inside a block's, against native Rust; mutation
+`shadowing-label-one-with-its-outer` takes them for one again.
