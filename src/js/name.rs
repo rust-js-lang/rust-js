@@ -244,6 +244,12 @@ impl Name {
         self.0 = word.into();
     }
 
+    /// Whether it's no name, `Name::default()`'s: a local MIR made that
+    /// nothing names.
+    pub fn is_unnamed(&self) -> bool {
+        *self == Name::default()
+    }
+
     /// It, as a `String` of its word, for what keeps names as text.
     pub fn into_word(self) -> String {
         self.0

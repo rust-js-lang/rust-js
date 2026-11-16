@@ -45,7 +45,7 @@ pub(in crate::lower::mir::tidy) fn ending(stmts: &mut Vec<Stmt>, label: &js::Nam
             ..
         },
     ] = stmts.as_slice()
-        && l.is(label.word())
+        && l == label
         && commented(rest)
     {
         stmts.pop();

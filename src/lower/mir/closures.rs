@@ -194,7 +194,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         upvars.get(i).map(|t| t.kind()),
                         Some(ty::Ref(_, _, ty::Mutability::Mut))
                     ) && matches!(&e.kind, js::ExprKind::Var(name) if (state.locals.names.iter_enumerated())
-                            .any(|(local, n)| name.is(n.word()) && !state.body.local_decls[local].ty.is_ref())
+                            .any(|(local, n)| name == n && !state.body.local_decls[local].ty.is_ref())
                             || self.is_writers_sink(state, name.word())) =>
                 {
                     (e, true)
@@ -231,7 +231,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let e = self.value_expr(value, span)?;
                     // Written again where it's made, or after: a copy, as it was.
                     let changes = matches!(&e.kind, js::ExprKind::Var(name)
-                        if state.locals.names.iter_enumerated().any(|(l, n)| name.is(n.word())
+                        if state.locals.names.iter_enumerated().any(|(l, n)| name == n
                             && super::queries::written_again(state, l)
                             && written_from(state.body, state.at, l)));
                     let e = if e.is_constant() || (matches!(e.kind, js::ExprKind::Var(_)) && !changes) {
@@ -249,7 +249,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         let base = (self.whole_capture_name(def_id, i)).filter(|name| {
                             !matches!(&e.kind, js::ExprKind::Var(v) if (state.body.var_debug_info.iter()).any(|info|
                                 matches!(info.value, mir::VarDebugInfoContents::Place(p)
-                                    if p.projection.is_empty() && v.is(state.locals.names[p.local].word()))
+                                    if p.projection.is_empty() && *v == state.locals.names[p.local])
                                     && crate::lower::camel_case(info.name.as_str()) == *name))
                         });
                         self.spill(base.as_deref().map_or(Base::Role(Role::Captured), Base::Named), e, out)

@@ -859,9 +859,9 @@ pub(in crate::lower::mir) fn writer_body(out: &mut Vec<Stmt>, name: &js::Name) {
     if js::mentions_of(&rest, name) > 0 {
         match rest.first().map(|s| &s.kind) {
             Some(StmtKind::Assign(target, value))
-                if matches!(&target.kind, ExprKind::Var(v) if v.is(name.word()))
+                if matches!(&target.kind, ExprKind::Var(v) if v == name)
                     && let ExprKind::Binary(Op::Add, lhs, first) = &value.kind
-                    && matches!(&lhs.kind, ExprKind::Var(v) if v.is(name.word())) =>
+                    && matches!(&lhs.kind, ExprKind::Var(v) if v == name) =>
             {
                 let first = (**first).clone();
                 let span = rest[0].span;

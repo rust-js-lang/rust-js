@@ -96,7 +96,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         (body.local_decls.iter_enumerated())
             .filter(|&(local, decl)| {
                 decl.mutability == mir::Mutability::Not
-                    && !names[local].word().is_empty()
+                    && !names[local].is_unnamed()
                     && writes[local] > 0
                     && writes[local] == made[local]
                     && self.range_kind(decl.ty) == Some(RangeKind::Inclusive)
@@ -337,7 +337,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let name = &locals.names[local];
                 assert!(
                     user[local].is_none()
-                        || name.word().is_empty()
+                        || name.is_unnamed()
                         || name.is_the_programs()
                         || name.is_temporary()
                         || name.is_held_arg(),

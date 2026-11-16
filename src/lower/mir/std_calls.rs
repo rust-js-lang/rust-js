@@ -509,7 +509,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         part.visit_names(&mut |name| plain &= this.plain_local(name));
                         let kept = plain
                             || matches!(&part.kind, js::ExprKind::Var(name)
-                            if holders.iter().any(|&held| name.is(state.locals.names[held].word())));
+                            if holders.iter().any(|&held| *name == state.locals.names[held]));
                         parts.push(match kept {
                             true => part,
                             false => {
@@ -1220,7 +1220,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         (true, Value::Ref(place) | Value::Expr(place)) if fixed_place(&place) => {
                             let local = match &place.kind {
                                 js::ExprKind::Var(name) => (state.locals.names.iter_enumerated())
-                                    .find(|(l, n)| name.is(n.word()) && state.body.local_decls[*l].ty.is_ref())
+                                    .find(|(l, n)| name == *n && state.body.local_decls[*l].ty.is_ref())
                                     .map(|(l, _)| l),
                                 _ => None,
                             };

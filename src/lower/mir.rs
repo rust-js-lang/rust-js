@@ -291,7 +291,7 @@ impl Locals {
     /// Each one's name's word, of those that hold something (S4a: till S4b
     /// gives the sets of names their names).
     fn named_locals(&self) -> IndexSet<js::Name> {
-        (self.names.iter()).filter(|n| !n.word().is_empty()).cloned().collect()
+        (self.names.iter()).filter(|n| !n.is_unnamed()).cloned().collect()
     }
 
     /// What tidy's last passes ask of them, by name: those the program
@@ -300,7 +300,7 @@ impl Locals {
     fn named(&self) -> tidy::Named {
         let names = |of: &IndexVec<Local, bool>| -> IndexSet<js::Name> {
             (self.names.iter_enumerated())
-                .filter(|&(local, name)| of[local] && !name.word().is_empty())
+                .filter(|&(local, name)| of[local] && !name.is_unnamed())
                 .map(|(_, name)| name.clone())
                 .collect()
         };
@@ -1058,13 +1058,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .collect();
         state.own_names = state.locals.named_locals();
         for (local, name) in state.locals.names.iter_enumerated() {
-            if !name.word().is_empty() && self.is_cell(mir_body.local_decls[local].ty) {
+            if !name.is_unnamed() && self.is_cell(mir_body.local_decls[local].ty) {
                 self.locals.mir.cells.push(Expr::var(name));
             }
         }
         // What reads the same wherever it's read.
         for (local, name) in state.locals.names.iter_enumerated() {
-            if name.word().is_empty() || state.locals.borrowed[local] || state.locals.changed[local] {
+            if name.is_unnamed() || state.locals.borrowed[local] || state.locals.changed[local] {
                 continue;
             }
             let plain = self.plain_type(mir_body.local_decls[local].ty);
@@ -1130,7 +1130,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         for local in mir_body.local_decls.indices() {
             if mir_body.local_kind(local) != LocalKind::Arg
                 && !state.locals.declared[local]
-                && !state.locals.names[local].word().is_empty()
+                && !state.locals.names[local].is_unnamed()
                 && (queries::written_again(&state, local) || flagged[local.as_usize()])
             {
                 self.check_variable(&state, local, def_span)?;

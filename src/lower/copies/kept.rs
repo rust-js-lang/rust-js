@@ -130,7 +130,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let name = name_of(local);
             let decl = &body.local_decls[local];
             let copy = self.kept_copy(Expr::var(&name), decl.ty, decl.source_info.span)?;
-            if !name.word().is_empty() && copy.kind != Expr::var(&name).kind {
+            if !name.is_unnamed() && copy.kind != Expr::var(&name).kind {
                 out.push(js::StmtKind::Assign(Expr::var(&name), copy).at(js::Span::NONE));
             }
         }

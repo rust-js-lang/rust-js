@@ -425,7 +425,7 @@ export const mutations: Mutation[] = [
     breaks:
       "MIR's `*f = g` of a closure through a `&mut` only gives the parameter another",
     file: "src/lower/mir/assign.rs",
-    find: "            && matches!(target.kind, js::ExprKind::Var(ref name) if name.is(state.locals.names[base.local].word()))\n",
+    find: "            && matches!(target.kind, js::ExprKind::Var(ref name) if *name == state.locals.names[base.local])\n",
     replace: "            && false\n",
     tests: [
       "test/lowering.test.ts",

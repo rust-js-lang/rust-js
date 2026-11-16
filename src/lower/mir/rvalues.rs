@@ -270,8 +270,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             .is_some_and(|field| self.property_cell(Some(field), pointee).is_some()))
                 {
                     true => (
-                        self.local_reference_written(state, place)
-                            && !state.locals.names[place.local].word().is_empty(),
+                        self.local_reference_written(state, place) && !state.locals.names[place.local].is_unnamed(),
                         self.reached_through_written(state, place),
                     ),
                     false => (false, false),

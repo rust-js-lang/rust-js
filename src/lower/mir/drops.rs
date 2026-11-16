@@ -228,7 +228,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let ty = state.body.local_decls[local].ty;
             if !crate::lower::recognition::is_compiled_std_iterator(self.tcx, ty)
                 && self.holds_dropped_iterator(state, local.into())
-                && !state.locals.names[local].word().is_empty()
+                && !state.locals.names[local].is_unnamed()
             {
                 let name = Expr::var(&state.locals.names[local]);
                 out.push(StmtKind::Expr(Expr::call_helper("$held", vec![name])).at(js::Span::NONE));

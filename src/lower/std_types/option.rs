@@ -549,7 +549,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let debug = match &shown.kind {
             js::ExprKind::Call(callee, args)
                 if matches!(callee.kind, js::ExprKind::Var(_))
-                    && matches!(args.as_slice(), [arg] if matches!(&arg.kind, js::ExprKind::Var(name) if name.is(e.word()))) =>
+                    && matches!(args.as_slice(), [arg] if matches!(&arg.kind, js::ExprKind::Var(name) if *name == e)) =>
             {
                 (**callee).clone()
             }

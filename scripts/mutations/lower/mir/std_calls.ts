@@ -526,7 +526,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a strip's string is read again where it's tested and cut, after its variable is given another",
     file: "src/lower/mir/std_calls.rs",
-    find: "                            if holders.iter().any(|&held| name.is(state.locals.names[held].word())));",
+    find: "                            if holders.iter().any(|&held| *name == state.locals.names[held]));",
     replace:
       "                            if holders.len() < usize::MAX || name.word().is_empty());",
     tests: ["test/lowering-string-places.test.ts", "-t", "string changes"],

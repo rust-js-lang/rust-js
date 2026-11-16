@@ -13,18 +13,16 @@ pub(in crate::lower::mir::tidy) type Binding = (js::Pattern, bool, usize, Vec<(j
 pub(in crate::lower::mir::tidy) fn binding(body: &[Stmt], item: &js::Name) -> Option<Binding> {
     let reads = |value: &Expr| -> Option<Result<Option<usize>, String>> {
         match &value.kind {
-            ExprKind::Var(v) if v.is(item.word()) => Some(Ok(None)),
+            ExprKind::Var(v) if v == item => Some(Ok(None)),
             ExprKind::Index(of, index)
-                if matches!(&of.kind, ExprKind::Var(v) if v.is(item.word()))
+                if matches!(&of.kind, ExprKind::Var(v) if v == item)
                     && let ExprKind::Num(k) = index.kind
                     && k >= 0.0
                     && k.fract() == 0.0 =>
             {
                 Some(Ok(Some(k as usize)))
             }
-            ExprKind::Member(of, key) if matches!(&of.kind, ExprKind::Var(v) if v.is(item.word())) => {
-                Some(Err(key.clone()))
-            }
+            ExprKind::Member(of, key) if matches!(&of.kind, ExprKind::Var(v) if v == item) => Some(Err(key.clone())),
             _ => None,
         }
     };

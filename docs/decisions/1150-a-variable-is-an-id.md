@@ -955,3 +955,16 @@ field made that field's variable where it's lowered; and the link's
 respelling of a local apart from a helper it reads (#1975), which moves
 into preparation, given the linked module's reads.
 
+
+So far (2026-11-17), each slice byte-identical and probed: the body's own
+sets (`own_names`, `alike`, `settled`, `borrowed_names`); tidy's asks of
+where a `let` goes, of what's read, set, rethrown, captured, copied and
+destructured; labels, each a `Name` (a label has no id of its own, `Id::WORD`,
+so its form and word are what tell two apart); `js::declares`; and
+lowering's comparisons of two names, `a.is(b.word())`, made `a == b`. Where
+the word's answer was apart from the id's, it was the cautious one, another
+variable of the word, a closure's own say. A local MIR made that nothing
+names is `Name::default()`, asked by `Name::is_unnamed`, not by its empty
+word; probed over the suite, the two never disagreed. A local that may have
+no name would read better as an `Option<Name>` than as that sentinel: a
+possible follow-up, not this step's. The ratchet stands at 290.

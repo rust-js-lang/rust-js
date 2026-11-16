@@ -684,7 +684,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let item_name = self.fresh(crate::lower::Base::Named("item"));
         let copied = self.copy_if_needed(Expr::var(&item_name), item);
         match &copied.kind {
-            js::ExprKind::Var(name) if name.is(item_name.word()) => None,
+            js::ExprKind::Var(name) if *name == item_name => None,
             _ => Some(Expr::arrow(
                 vec![item_name.clone().into()],
                 vec![js::StmtKind::Return(Some(copied)).at(js::Span::NONE)],

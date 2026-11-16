@@ -860,7 +860,7 @@ pub(super) fn same_place(state: &State<'_, '_>, place: &Expr) -> bool {
                 && (index.is_fixed()
                     || from_end(object, index)
                     || matches!(&index.kind, js::ExprKind::Var(name)
-                        if state.locals.names.iter_enumerated().any(|(l, n)| name.is(n.word()) && given_once(state, l))))
+                        if state.locals.names.iter_enumerated().any(|(l, n)| name == n && given_once(state, l))))
         }
         _ => false,
     }

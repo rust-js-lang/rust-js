@@ -79,12 +79,7 @@ impl<'tcx> FnCx<'_, 'tcx> {
         let mut not_numbers = IndexSet::default();
         let mut floats = IndexSet::default();
         let mut not_floats = IndexSet::default();
-        for (local, name) in state
-            .locals
-            .names
-            .iter_enumerated()
-            .filter(|(_, n)| !n.word().is_empty())
-        {
+        for (local, name) in state.locals.names.iter_enumerated().filter(|(_, n)| !n.is_unnamed()) {
             // A shared reference to one too, `*show_hint`'s, which JS reads as it.
             let ty = mir_body.local_decls[local].ty;
             match ty.is_integral() {

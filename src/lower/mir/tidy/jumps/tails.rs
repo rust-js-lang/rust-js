@@ -103,7 +103,7 @@ fn returned_where_made(body: &mut Vec<Stmt>, label: &js::Name, result: &str) {
 fn threaded_jumps(body: &mut Vec<Stmt>, label: &js::Name) {
     js::statement_lists(body, &mut |list| {
         for i in (0..list.len().saturating_sub(1)).rev() {
-            if !matches!(&list[i + 1].kind, StmtKind::Break(Some(l)) if l.is(label.word())) {
+            if !matches!(&list[i + 1].kind, StmtKind::Break(Some(l)) if l == label) {
                 continue;
             }
             if matches!(&list[i].kind, StmtKind::Labeled(_, block) if fits_in_place(list, i, block)) {

@@ -575,7 +575,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .map(|(&l, _)| l)
             .filter(|&l| read_past(state.body, at, l))
             .collect();
-        if name.word().is_empty() || read.is_empty() {
+        if name.is_unnamed() || read.is_empty() {
             return Ok(());
         }
         self.flush(state, out)?;
@@ -608,8 +608,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let js::ExprKind::Var(name) = &root.kind else {
             return false;
         };
-        let Some(root) = (state.locals.names.iter_enumerated()).find_map(|(l, n)| name.is(n.word()).then_some(l))
-        else {
+        let Some(root) = (state.locals.names.iter_enumerated()).find_map(|(l, n)| (name == n).then_some(l)) else {
             return false;
         };
         root != local
@@ -719,7 +718,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             *self.locals.mir.paths.entry(path).or_insert(bool) &= bool;
         }
         // Of a binding only a guard reads, the arm's body reads none (ADR 0751).
-        if place.projection.is_empty() && (state.locals.names[local].word().is_empty() || self.unread(state, local)) {
+        if place.projection.is_empty() && (state.locals.names[local].is_unnamed() || self.unread(state, local)) {
             // Of `()`, or a temporary nothing reads: what made it runs. Of
             // a reference, `let _ = &mut p.y` through `deref_mut`: what makes
             // its place, `deref_mut(p)`, no handle on it.
@@ -853,7 +852,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A payload's of a temporary keeps its name, which the temporary
         // takes (tidy's `named_temporaries`).
         let of_temporary = matches!(&value, Value::Place(target) if matches!(&target.kind, js::ExprKind::Var(name)
-            if (state.locals.names.iter_enumerated()).any(|(l, n)| name.is(n.word()) && !state.locals.user[l])));
+            if (state.locals.names.iter_enumerated()).any(|(l, n)| name == n && !state.locals.user[l])));
         let one = place.projection.is_empty()
             && (!state.locals.user[local] || (state.facts.payloads().contains(&local) && !of_temporary))
             && state.locals.writes[local] == 1
@@ -924,7 +923,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A payload's of a temporary keeps its name, which the temporary
         // takes (tidy's `aliases`).
         let of_temporary = matches!(&expr.kind, js::ExprKind::Var(name)
-            if (state.locals.names.iter_enumerated()).any(|(l, n)| name.is(n.word()) && !state.locals.user[l]));
+            if (state.locals.names.iter_enumerated()).any(|(l, n)| name == n && !state.locals.user[l]));
         if place.projection.is_empty()
             && !state.facts.pointed().locals.contains(&local)
             && (!state.locals.user[local] || (state.facts.payloads().contains(&local) && !of_temporary))
@@ -1077,7 +1076,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // refused (not an alias `r` names a place by, `*outer = ..`).
         if let Some((base, PlaceElem::Deref)) = place.as_ref().last_projection()
             && base.projection.is_empty()
-            && matches!(target.kind, js::ExprKind::Var(ref name) if name.is(state.locals.names[base.local].word()))
+            && matches!(target.kind, js::ExprKind::Var(ref name) if *name == state.locals.names[base.local])
         {
             return Err(self.unsupported(span, "assigning a whole value through a `&mut`"));
         }
@@ -1260,7 +1259,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let stays = match &object.kind {
             js::ExprKind::Var(name) => (state.locals.names.iter_enumerated())
-                .find(|(_, n)| name.is(n.word()))
+                .find(|(_, n)| name == *n)
                 .is_none_or(|(l, _)| state.locals.writes[l] <= 1 || !state.body.local_decls[l].ty.is_ref()),
             _ => object.is_constant(),
         };

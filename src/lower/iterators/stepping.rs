@@ -90,7 +90,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 Some(match made.kind {
                     // A function that only takes them, a `from_iter`: the function.
-                    js::ExprKind::Call(f, args) if matches!(args.as_slice(), [arg] if matches!(&arg.kind, js::ExprKind::Var(v) if v.is(values.word()))) => {
+                    js::ExprKind::Call(f, args) if matches!(args.as_slice(), [arg] if matches!(&arg.kind, js::ExprKind::Var(v) if *v == values)) => {
                         *f
                     }
                     kind => Expr::arrow(
@@ -178,7 +178,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let given = self.fresh(Role::Iter);
         let made = self.collected_into((Expr::var(&given), None), collection, Some(value), Some(shunt), span)?;
         let collect = match made.kind {
-            js::ExprKind::Call(f, args) if matches!(args.as_slice(), [arg] if matches!(&arg.kind, js::ExprKind::Var(v) if v.is(given.word()))) => {
+            js::ExprKind::Call(f, args) if matches!(args.as_slice(), [arg] if matches!(&arg.kind, js::ExprKind::Var(v) if *v == given)) => {
                 *f
             }
             kind => Expr::arrow(

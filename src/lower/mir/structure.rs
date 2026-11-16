@@ -375,7 +375,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // Whether what it returns is `null` or a value (rd632).
                 self.note_nulled_returns(state);
                 let ret = mir::RETURN_PLACE;
-                let value = match (&state.writer, state.locals.names[ret].word().is_empty()) {
+                let value = match (&state.writer, state.locals.names[ret].is_unnamed()) {
                     // A closure's that writes its maker's string, nothing.
                     (Some(_), _) if state.writes_captured => None,
                     // A writer's, the string it wrote; of one that writes through
@@ -1174,7 +1174,7 @@ fn outlives<'tcx>(state: &State<'_, 'tcx>, place: &Expr, is_guard: impl Fn(Ty<'t
         root = object;
     }
     !matches!(&root.kind, js::ExprKind::Var(name)
-        if state.locals.names.iter_enumerated().any(|(local, n)| name.is(n.word())
+        if state.locals.names.iter_enumerated().any(|(local, n)| name == n
             && local != mir::RETURN_PLACE
             && !state.body.local_decls[local].ty.is_ref()
             && !state.body.local_decls[local].ty.is_raw_ptr()
