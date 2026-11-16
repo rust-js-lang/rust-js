@@ -196,3 +196,48 @@ bound no longer reaches a question that holds them:
 `library_opaque_clone_of_a_borrow` and every other crate pair pass with
 it. The mutation survived main's check and is removed; the erasure stays,
 as what the function's signature says.
+
+## Amendment: what the crate clones is each naming's obligations, elaborated through their impls (2026-11-16, #1968)
+
+The types the crate clones were each type a `Clone` bound of a function
+*called* by name is given. That misses two routes:
+
+- A function named as a value gives its bounds too, though no call of its
+  name is written: `Some(&held).map(Rc::clone)`, `v.iter().map(Rc::clone)`,
+  `apply(&held, Rc::clone)` clone `held` through `Clone::clone`'s own
+  `Self: Clone`.
+- An obligation of another trait clones through the impl selected for it:
+  `held.to_owned()`'s bound is `Rc<..>: ToOwned`, and std's `impl<T: Clone>
+  ToOwned for T` clones the `Rc`; so does a slice's `to_owned()`.
+
+So an `Rc` of a function item cloned by either route, then made two
+`Rc<dyn Fn>`s whose addresses the crate reads, was two functions of their
+own, `Rc::as_ptr`s apart where Rust's are one allocation (`false` where
+native Rust prints `true`): a wrong answer, not ADR 0959's refusal.
+
+Now (`clones::Given`), each function a body names, called or as a value
+(every expression of a `FnDef` type; of a library's body of MIR alone,
+each constant of one), gives its bounds, and each obligation is
+elaborated. A bound of `Clone` or of a trait that extends it gives its
+self type, as before, as it's written, so what an `impl Clone` hides is
+still told apart where it's revealed (#1241). Any other obligation is
+selected (`traits::select`), and the selected impl's own bounds are
+elaborated in turn, with each supertrait's, once each. One the body's
+`where` proves is its callers' to give, each of theirs elaborated where
+they name it, and a built-in one, a closure's `Fn`, clones nothing. One
+whose selection can't decide is taken as cloning its self type, never as
+cloning nothing (the lead's condition). No program in the corpus reaches
+that arm, in either build, so it has no mutation. `clones_in_turn`
+elaborates a `Clone` impl's bounds the same way.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's: each route now gives ADR 0959's refusal. The corpus's 2,614
+cases' JS is unchanged.
+
+Proof: the clone routes' table, 26 corpus cases
+`rc_fn_cloned_by_*_refused.rs`, each a route probed against native Rust,
+in both builds, as a program and as a library (`true` natively;
+refused now, where `Rc::clone` and `Clone::clone` named as values and
+`to_owned()` compiled to `false` before). Mutations
+`clone-named-as-a-value-unseen` and `impl-bounds-unelaborated`;
+`clone-bound-unseen` and `library-closure-clones-unseen` retargeted.

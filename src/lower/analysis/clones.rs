@@ -1,12 +1,13 @@
 //! The types the crate clones (ADRs 0522, 0525): each a `Clone` bound of a
-//! function called is given, `Clone::clone`'s own `Self: Clone` too, and
-//! what cloning each clones in turn, its `Clone` impl's bounds, as rustc
-//! proves them: `Map<I, F>: Clone` clones its `I` and its `F`.
+//! function named, called or as a value, is given, `Clone::clone`'s own
+//! `Self: Clone` too, and each its other bounds give through the impls
+//! selected for them (#1968); and what cloning each clones in turn, its
+//! `Clone` impl's bounds, as rustc proves them: `Map<I, F>: Clone` clones
+//! its `I` and its `F`.
 
 use crate::collections::{IndexMap, IndexSet};
 use crate::lower::Body;
 use rustc_hir::def_id::DefId;
-use rustc_middle::thir::{ExprKind, Thir};
 use rustc_middle::traits::ImplSource;
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt};
 
@@ -112,7 +113,7 @@ pub(super) fn cloned_types<'tcx>(
     let mut cloned = Cloned {
         types: IndexSet::default(),
         compiled_here: (all_bodies.iter())
-            .flat_map(|body| mir_called_clones(tcx, body))
+            .flat_map(|body| mir_given_clones(tcx, body))
             .map(|ty| tcx.erase_and_anonymize_regions(ty))
             .collect(),
         callers: crate::lower::instances::callers_of(tcx, names, all_bodies),
@@ -137,7 +138,8 @@ pub(super) fn cloned_types<'tcx>(
         .flat_map(|body| {
             let typing_env = ty::TypingEnv::post_analysis(tcx, body.def_id);
             let owner = body.def_id;
-            called_clones(tcx, &body.thir)
+            given_clones(tcx, body)
+                .into_iter()
                 .map(|ty| {
                     compiled.extend(crate::lower::recognition::compiled_behind_an_impl(tcx, typing_env, ty));
                     (tcx.try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(ty))).unwrap_or(ty)
@@ -222,51 +224,143 @@ fn is_clone(tcx: TyCtxt<'_>, id: DefId) -> bool {
     Some(id) == clone || ty::elaborate::supertrait_def_ids(tcx, id).any(|s| Some(s) == clone)
 }
 
-/// The types `thir`'s calls clone: of each, each type a `Clone` bound of
-/// the function called, or of a trait that extends it, is given.
-fn called_clones<'a, 'tcx>(tcx: TyCtxt<'tcx>, thir: &'a Thir<'tcx>) -> impl Iterator<Item = Ty<'tcx>> + 'a {
-    thir.exprs.iter().flat_map(move |expr| {
-        let ExprKind::Call { fun, .. } = expr.kind else {
-            return Vec::new();
-        };
-        let ty::FnDef(id, args) = *thir[fun].ty.kind() else {
-            return Vec::new();
-        };
-        (tcx.clauses_of(id).instantiate(tcx, args.skip_binder()).into_iter())
-            .filter_map(|(clause, _)| clause.skip_normalization().as_trait_clause())
-            .filter(|p| is_clone(tcx, p.def_id()))
-            .map(|p| p.self_ty().skip_binder())
-            .collect()
-    })
+/// The types `thir` clones (#1968): each type a `Clone` bound, or a bound of
+/// a trait that extends it, is given by an obligation the body gives, as
+/// `Given` elaborates it, of each function it names, called or as a value:
+/// `Some(&held).map(Rc::clone)`'s `Rc<..>: Clone` too.
+fn given_clones<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> Vec<Ty<'tcx>> {
+    let mut given = Given::new(tcx, ty::TypingEnv::post_analysis(tcx, body.def_id));
+    for expr in body.thir.exprs.iter() {
+        if let ty::FnDef(id, args) = *expr.ty.kind() {
+            given.named(id, args.skip_binder());
+        }
+    }
+    given.cloned
 }
 
 /// The types a library's function the crate compiles itself, of MIR alone
-/// (ADR 0914), clones, as `called_clones` reads them of its calls: a
-/// closure of another crate's given twice (#1053).
-fn mir_called_clones<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> Vec<Ty<'tcx>> {
-    use rustc_middle::mir::TerminatorKind;
+/// (ADR 0914), clones, as `given_clones` reads them of THIR: of each
+/// function its MIR names, called or as a value, a closure of another
+/// crate's given twice (#1053).
+fn mir_given_clones<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> Vec<Ty<'tcx>> {
+    use rustc_middle::mir::{self, visit::Visitor};
     let Some(mir) = (body.mir.as_ref())
         .filter(|_| body.root().is_none() && !crate::lower::recognition::is_std_crate(tcx, body.def_id))
     else {
         return Vec::new();
     };
-    let mir = &mir.body;
-    (mir.basic_blocks.iter())
-        .filter_map(|block| match &block.terminator().kind {
-            TerminatorKind::Call { func, .. } => Some(func.ty(&mir.local_decls, tcx)),
-            _ => None,
-        })
-        .flat_map(|callee| {
-            let ty::FnDef(id, args) = *callee.kind() else {
-                return Vec::new();
-            };
-            (tcx.clauses_of(id).instantiate(tcx, args.skip_binder()).into_iter())
-                .filter_map(|(clause, _)| clause.skip_normalization().as_trait_clause())
-                .filter(|p| is_clone(tcx, p.def_id()))
-                .map(|p| p.self_ty().skip_binder())
-                .collect()
-        })
-        .collect()
+    struct Found<'tcx> {
+        obligations: Given<'tcx>,
+    }
+    impl<'tcx> Visitor<'tcx> for Found<'tcx> {
+        fn visit_const_operand(&mut self, constant: &mir::ConstOperand<'tcx>, location: mir::Location) {
+            if let ty::FnDef(id, args) = *constant.ty().kind() {
+                self.obligations.named(id, args.skip_binder());
+            }
+            self.super_const_operand(constant, location);
+        }
+    }
+    let mut found = Found {
+        obligations: Given::new(tcx, ty::TypingEnv::post_analysis(tcx, body.def_id)),
+    };
+    found.visit_body(&mir.body);
+    found.obligations.cloned
+}
+
+/// What a body's obligations clone (#1968): each type a `Clone` bound, or
+/// one of a trait that extends it, is given, and through the impl selected
+/// for each other obligation, its own bounds in turn: `held.to_owned()`'s
+/// `Rc<..>: ToOwned` is std's `impl<T: Clone> ToOwned for T`, which clones
+/// the `Rc`, and `outer(&held)`'s `Rc<..>: Dup` a crate's `impl<T: Clone>
+/// Dup for T`. An obligation of a body's own type parameter, which its
+/// `where` says, is its callers' to give, each theirs elaborated where
+/// they name it. One whose impl selection can't decide is taken as
+/// cloning its type, never as cloning nothing.
+struct Given<'tcx> {
+    tcx: TyCtxt<'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+    /// Each obligation elaborated, by its trait and types, regions erased.
+    seen: IndexSet<ty::TraitRef<'tcx>>,
+    /// Each function named, with its arguments.
+    named: IndexSet<(DefId, ty::GenericArgsRef<'tcx>)>,
+    cloned: Vec<Ty<'tcx>>,
+}
+
+impl<'tcx> Given<'tcx> {
+    fn new(tcx: TyCtxt<'tcx>, typing_env: ty::TypingEnv<'tcx>) -> Self {
+        Given {
+            tcx,
+            typing_env,
+            seen: IndexSet::default(),
+            named: IndexSet::default(),
+            cloned: Vec::new(),
+        }
+    }
+
+    /// A function `id` named with `args`, called or as a value: each of its
+    /// bounds, `Clone::clone`'s own `Self: Clone` too.
+    fn named(&mut self, id: DefId, args: ty::GenericArgsRef<'tcx>) {
+        if !self.named.insert((id, args)) {
+            return;
+        }
+        let clauses = self.tcx.clauses_of(id).instantiate(self.tcx, args);
+        self.clauses(clauses.into_iter().map(|(clause, _)| clause.skip_normalization()));
+    }
+
+    fn clauses(&mut self, clauses: impl IntoIterator<Item = ty::Clause<'tcx>>) {
+        for clause in clauses {
+            if let Some(p) = clause.as_trait_clause()
+                && p.polarity() == ty::ClausePolarity::Positive
+            {
+                self.obligation(
+                    self.tcx
+                        .instantiate_bound_regions_with_erased(p.map_bound(|p| p.trait_ref)),
+                );
+            }
+        }
+    }
+
+    /// `tr`'s self type, given a `Clone` bound or one extending it, is
+    /// cloned; of any other trait, the impl selected for it is elaborated,
+    /// and the evidence of each trait it extends, which a dictionary of it
+    /// holds.
+    fn obligation(&mut self, tr: ty::TraitRef<'tcx>) {
+        let tcx = self.tcx;
+        let tr = tcx.erase_and_anonymize_regions(tr);
+        if tcx.trait_is_auto(tr.def_id) || tcx.is_lang_item(tr.def_id, rustc_hir::attrs::lang_items::LangItem::Sized) {
+            return;
+        }
+        // Its type as it's written: what an `impl Clone` hides is revealed
+        // by `cloned_types`, which tells std's struct apart (#1241).
+        if is_clone(tcx, tr.def_id) {
+            self.cloned.push(tr.self_ty());
+            if Some(tr.def_id) == tcx.lang_items().clone_trait() {
+                // What a clone clones in turn is `clones_in_turn`'s.
+                return;
+            }
+        }
+        let tr = (tcx.try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(tr))).unwrap_or(tr);
+        if !self.seen.insert(tr) {
+            return;
+        }
+        let supertraits: Vec<ty::TraitRef<'tcx>> = ty::elaborate::supertraits(tcx, ty::Binder::dummy(tr))
+            .skip(1)
+            .map(|supertrait| tcx.instantiate_bound_regions_with_erased(supertrait))
+            .collect();
+        for supertrait in supertraits {
+            self.obligation(supertrait);
+        }
+        match crate::lower::traits::select(tcx, self.typing_env, tr) {
+            Ok(ImplSource::UserDefined(imp)) => {
+                let clauses = tcx.clauses_of(imp.impl_def_id).instantiate(tcx, imp.args);
+                self.clauses(clauses.into_iter().map(|(clause, _)| clause.skip_normalization()));
+            }
+            // A `where` of the body's own, its callers' to give, or what's
+            // built in, a closure's `Fn`, a `dyn`'s own.
+            Ok(ImplSource::Param(_) | ImplSource::Builtin(..)) => {}
+            Err(_) => self.cloned.push(tr.self_ty()),
+        }
+    }
 }
 
 /// What a clone of `ty` clones: its `Clone` impl's bounds' types, or of
@@ -287,11 +381,12 @@ fn clones_in_turn<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Vec<Ty<'tcx>> {
             let Ok(ImplSource::UserDefined(imp)) = crate::lower::traits::select(tcx, typing_env, tr) else {
                 return Vec::new();
             };
-            (tcx.clauses_of(imp.impl_def_id).instantiate(tcx, imp.args).into_iter())
-                .filter_map(|(clause, _)| clause.skip_normalization().as_trait_clause())
-                .filter(|p| is_clone(tcx, p.def_id()))
-                .map(|p| p.self_ty().skip_binder())
-                .collect()
+            // Its impl's bounds, elaborated as a body's obligations are: a
+            // `Clone` impl's `T: Dup` whose impl clones `T` clones it too.
+            let mut given = Given::new(tcx, typing_env);
+            let clauses = tcx.clauses_of(imp.impl_def_id).instantiate(tcx, imp.args);
+            given.clauses(clauses.into_iter().map(|(clause, _)| clause.skip_normalization()));
+            given.cloned
         }
     }
 }

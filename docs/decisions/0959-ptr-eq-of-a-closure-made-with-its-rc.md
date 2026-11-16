@@ -350,3 +350,15 @@ is made apart and counted as before, whatever's cloned.
   `rc_fn_ptr_eq_of_a_closure_cloned_in_pub_generic_code.rs`, #1249's with
   its generic functions `pub`, against native Rust; by the react-in-rust
   port's regen at its pin; and mutation `clone-of-any-type-may-be-a-closure`.
+
+## Amendment: a clone by a function named as a value, or through an impl's bound, is a clone (2026-11-16, #1968)
+
+The refusal above asks the clones' owner whether the crate clones the
+`Rc`'s type, and that owner missed `Rc::clone` named as a value,
+`Some(&held).map(Rc::clone)`, and a clone an impl's bound makes,
+`held.to_owned()`: such an `Rc`, made two `Rc<dyn Fn>`s, compiled to two
+functions, their addresses apart where Rust's are one. What the crate
+clones is now each naming's obligations, elaborated through the impls
+selected for them ([0522](0522-a-closure-cloned-apart-is-made-again.md),
+amended), so each route is refused, the user's decision as it stands.
+Held by the clone routes' table, `rc_fn_cloned_by_*_refused.rs`.

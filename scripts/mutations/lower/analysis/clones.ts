@@ -34,9 +34,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a type a call's `Clone` bound is given isn't seen to be cloned, and its clone is refused or is the value itself",
     file: "src/lower/analysis/clones.rs",
-    find: "            .filter(|p| is_clone(tcx, p.def_id()))\n            .map(|p| p.self_ty().skip_binder())\n            .collect()\n    })\n",
-    replace:
-      "            .filter(|p| false && is_clone(tcx, p.def_id()))\n            .map(|p| p.self_ty().skip_binder())\n            .collect()\n    })\n",
+    find: "        if is_clone(tcx, tr.def_id) {\n            self.cloned.push(tr.self_ty());\n",
+    replace: "        if false && is_clone(tcx, tr.def_id) {\n            self.cloned.push(tr.self_ty());\n",
     tests: ["test/corpus.test.ts", "-t", "^closure_clone_counted.rs$"],
   },
   {
@@ -105,7 +104,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a library's closure boxed cloned and as it is, compiled by a consumer that reads a `dyn Fn`'s address, of MIR alone, isn't among what the crate clones, so it's taken to be made with each box, the two one function, `addr_eq` `true` (#1053)",
     file: "src/lower/analysis/clones.rs",
-    find: "            .flat_map(|body| mir_called_clones(tcx, body))\n",
+    find: "            .flat_map(|body| mir_given_clones(tcx, body))\n",
     replace: "            .flat_map(|_| Vec::<Ty<'tcx>>::new())\n",
     tests: ["test/crates.test.ts", "-t", "two crates: library_allocations_of_one_function"],
   },
@@ -116,5 +115,24 @@ export const mutations: Mutation[] = [
     find: "            cloned.owners.entry(ty).or_default().insert(owner);\n",
     replace: "            let _ = owner;\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_map_past_a_take_beside_a_cloned_one.rs$"],
+  },
+  {
+    name: "clone-named-as-a-value-unseen",
+    breaks:
+      "a function named as a value, `Some(&held).map(Rc::clone)`, gives no bounds, only a call does, so an `Rc` of a function item cloned by it isn't seen shared before, and the two `Rc<dyn Fn>`s made of it are two functions, `Rc::as_ptr`s apart where Rust's are one (#1968)",
+    file: "src/lower/analysis/clones.rs",
+    find: "        if let ty::FnDef(id, args) = *expr.ty.kind() {\n            given.named(id, args.skip_binder());\n",
+    replace:
+      "        if let rustc_middle::thir::ExprKind::Call { fun, .. } = expr.kind\n            && let ty::FnDef(id, args) = *body.thir[fun].ty.kind()\n        {\n            given.named(id, args.skip_binder());\n",
+    tests: ["test/corpus.test.ts", "-t", "^rc_fn_cloned_by_rc_clone_named_as_a_value_refused.rs$"],
+  },
+  {
+    name: "impl-bounds-unelaborated",
+    breaks:
+      "an obligation's impl's own bounds aren't followed, so `held.to_owned()`, whose bound is `Rc<..>: ToOwned`, isn't seen to clone the `Rc` through std's `impl<T: Clone> ToOwned for T`, and the two `Rc<dyn Fn>`s made of it are two functions (#1968)",
+    file: "src/lower/analysis/clones.rs",
+    find: "                let clauses = tcx.clauses_of(imp.impl_def_id).instantiate(tcx, imp.args);\n                self.clauses(clauses.into_iter().map(|(clause, _)| clause.skip_normalization()));\n",
+    replace: "                let _ = imp;\n",
+    tests: ["test/corpus.test.ts", "-t", "^rc_fn_cloned_by_to_owned_refused.rs$"],
   },
 ];

@@ -186,6 +186,17 @@ the shadow, or by writing the case at the edge.
     2015's native output reported a wrong answer that wasn't (#1958); use
     `rustc --edition 2024`, as the corpus harness does.
 
+15. **Read a shared value's identity before the second view of it is
+    made.** An `Rc` unsized twice to an `Rc<dyn Fn>` is one JS object
+    whose function is replaced at each unsizing: both addresses read
+    after both unsizings are the second's, `true` as Rust's by accident,
+    and only the read between them shows two functions (#1968). An audit
+    of every route by which a value is shared (here 26 routes to a clone,
+    `rc_fn_cloned_by_*_refused.rs`) found five compiling to `false` once
+    the probe read the first address early; read late, they had passed.
+    Where a value is changed in place to make a view of it, read each
+    view's identity as soon as it's made.
+
 ## Nets still to build
 
 | Net | Issue | What it would find |
