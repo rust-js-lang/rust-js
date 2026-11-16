@@ -119,6 +119,7 @@ fn chain_of<'a>(stmts: &'a [Stmt], strict_tests: &[js::Span], elses: &[(js::Span
             Stmt {
                 kind: StmtKind::Return(Some(returned)),
                 span,
+                ..
             },
         ] = rest
             && let ExprKind::Cond(test, yes, no) = &returned.kind
@@ -135,6 +136,7 @@ fn chain_of<'a>(stmts: &'a [Stmt], strict_tests: &[js::Span], elses: &[(js::Span
             Stmt {
                 kind: StmtKind::If(test, then, otherwise),
                 span,
+                ..
             },
             after @ ..,
         ] = rest

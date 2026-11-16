@@ -70,6 +70,7 @@ pub(super) fn logical_returns(
                 Stmt {
                     kind: StmtKind::Return(Some(yes)),
                     span: yes_span,
+                    ..
                 },
             ],
         ) = joined(test, then, &within)
@@ -118,6 +119,7 @@ pub(super) fn returned_logicals(
                 Stmt {
                     kind: StmtKind::Return(Some(value)),
                     span,
+                    ..
                 },
             ] => Some((value.clone(), *span)),
             [inner] => chain(inner, tests),
@@ -235,6 +237,7 @@ pub(super) fn logical_blocks(
                 Stmt {
                     kind: StmtKind::Return(Some(v)),
                     span,
+                    ..
                 },
                 ..,
             ] if !written(returns, *span) => Some(v.clone()),
@@ -718,6 +721,7 @@ fn one_value<'s>(stmts: &'s [Stmt], label: Option<&str>, returns: &[js::Span], l
             Stmt {
                 kind: StmtKind::Return(Some(value)),
                 span,
+                ..
             },
         ] if label.is_none() && !written(returns, *span) => Some(Valued::Returned(value)),
         [assign] if label.is_some() && last => assigned(assign),
@@ -787,7 +791,7 @@ pub(super) fn written_tests(stmts: &mut [Stmt], ifs: &[js::Span]) {
         if let StmtKind::If(test, ..) = &mut stmt.kind
             && written_if(ifs, test.span).is_some()
         {
-            test.facts = test.facts.with(js::Known::Written);
+            stmt.facts = stmt.facts.with(js::Known::Written);
         }
     }
 }
@@ -1202,14 +1206,11 @@ fn bit_test(test: &mut Expr, integer: &dyn Fn(&str) -> bool, matched: &dyn Fn(js
                 } if zero.as_int() == Some(0) && bits(&x) => *x,
                 bits => bits,
             };
-            let (span, kept) = (test.span, test.facts.of_statement());
+            let span = test.span;
             *test = match ne {
                 true => bits,
                 false => Expr::unary(UnaryOp::Not, bits),
             };
-            // What the test says of its `if`, its written `else` (ADR 0237,
-            // amended).
-            test.facts = test.facts.and(kept);
             if !span.is_none() {
                 test.span = span;
             }

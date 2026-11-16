@@ -584,7 +584,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a branch a tail jump was all of stays, empty: React's Fizz `use(usable)` prints `if (usable == null) {} else if (typeof usable === \"object\") { .. }`",
     file: "src/lower/mir/tidy/jumps/tails.rs",
-    find: '        let last = stmts.pop().expect("matched");\n        if let Some(kind) = emptied_branch(last.kind) {\n            stmts.push(kind.at(last.span));\n        }\n    } else if let Some(StmtKind::Try(body, _))',
+    find: "        let last = stmts.pop().expect(\"matched\");\n        if let Some(kind) = emptied_branch(last.kind) {\n            stmts.push(Stmt { kind, ..last });\n        }\n    } else if let Some(StmtKind::Try(body, _))",
     replace: "    } else if let Some(StmtKind::Try(body, _))",
     tests: ["test/corpus.test.ts", "-t", "^emptied_branch_nested\\.rs$"],
     snapshots: true,

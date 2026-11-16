@@ -464,6 +464,13 @@ impl Known {
         }
     }
 
+    /// Whether it's a statement's fact, kept on the statement (`Stmt::facts`,
+    /// M4), never an expression's: an `if` whose `else` the program wrote,
+    /// a `let … else`'s guard, an `if` the program wrote.
+    pub fn of_statement(self) -> bool {
+        matches!(self, Known::Else | Known::Guard | Known::Written)
+    }
+
     /// Its name, as `--knowns` lists it and `--without-known` names it.
     pub fn name(self) -> String {
         format!("{self:?}")

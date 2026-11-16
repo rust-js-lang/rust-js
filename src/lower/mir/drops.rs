@@ -991,7 +991,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     inner.push(StmtKind::Assign(Expr::var(name), value).at(stmt.span));
                 }
                 StmtKind::Let(name, None) => out.push(StmtKind::Let(name, None).at(stmt.span)),
-                kind => inner.push(Stmt { kind, span: stmt.span }),
+                kind => inner.push(Stmt {
+                    kind,
+                    span: stmt.span,
+                    facts: stmt.facts,
+                }),
             }
         }
         out.extend(crate::lower::drops::dropped_after(
@@ -1024,7 +1028,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     inner.push(StmtKind::Assign(Expr::var(name), value).at(stmt.span));
                 }
                 StmtKind::Let(name, None) => out.push(StmtKind::Let(name, None).at(stmt.span)),
-                kind => inner.push(Stmt { kind, span: stmt.span }),
+                kind => inner.push(Stmt {
+                    kind,
+                    span: stmt.span,
+                    facts: stmt.facts,
+                }),
             }
         }
         let error = self.fresh(Role::Error);

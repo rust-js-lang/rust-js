@@ -218,6 +218,7 @@ pub fn returning_its_call(value: &mut Expr) {
             Stmt {
                 kind: StmtKind::Expr(e),
                 span,
+                ..
             },
         ] = body.as_slice()
     {

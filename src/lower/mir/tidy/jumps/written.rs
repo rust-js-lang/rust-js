@@ -254,17 +254,13 @@ fn linked_elses(
                 // which the walk has passed: its chain's next link, where the
                 // chain holds.
                 linked_elses(&mut rest, (elses, else_ifs), returns, !turned && !linking);
-                let written = |t: Expr| match linking {
-                    true => t,
-                    false => Expr {
-                        facts: t.facts.with(js::Known::Else),
-                        ..t
-                    },
-                };
                 stmts[at].kind = match turned {
-                    false => StmtKind::If(written(test), exit, Some(rest)),
-                    true => StmtKind::If(written(test.negated_test()), rest, Some(exit)),
+                    false => StmtKind::If(test, exit, Some(rest)),
+                    true => StmtKind::If(test.negated_test(), rest, Some(exit)),
                 };
+                if !linking {
+                    stmts[at].facts = stmts[at].facts.with(js::Known::Else);
+                }
             }
         }
         // An `if` with both the branches the program wrote, as MIR left it:
@@ -276,11 +272,10 @@ fn linked_elses(
         let span = stmts[at].span;
         if written_else(&stmts[at], elses)
             && let Some((_, branch, other)) = elses.iter().find(|(cond, ..)| within(cond, span))
-            && let StmtKind::If(test, then, Some(otherwise)) = &mut stmts[at].kind
+            && let StmtKind::If(_, then, Some(otherwise)) = &mut stmts[at].kind
             && !plain(then, otherwise, linked)
             && !binds_link(otherwise, other)
         {
-            test.facts = test.facts.with(js::Known::Else);
             let end = other.hi.max(branch.hi);
             let k = otherwise
                 .iter()
@@ -302,6 +297,7 @@ fn linked_elses(
                 *otherwise = kept_in;
                 at += declared;
             }
+            stmts[at].facts = stmts[at].facts.with(js::Known::Else);
         }
         at += 1;
     }

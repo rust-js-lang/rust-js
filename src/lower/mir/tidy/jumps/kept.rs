@@ -106,6 +106,7 @@ pub(super) fn turned_continue(stmts: &mut Vec<Stmt>, continues: &[(js::Span, js:
     let Some(Stmt {
         kind: StmtKind::If(_, then, None),
         span,
+        ..
     }) = stmts.last()
     else {
         return false;
@@ -119,6 +120,7 @@ pub(super) fn turned_continue(stmts: &mut Vec<Stmt>, continues: &[(js::Span, js:
     let Some(Stmt {
         kind: StmtKind::If(test, then, None),
         span,
+        ..
     }) = stmts.pop()
     else {
         unreachable!("matched")
@@ -264,15 +266,17 @@ fn ends_going_on(
     // `else`: that after it, as written, its `continue` kept.
     let going_on = |l: &Option<Name>| l.is_none() || l == looped;
     if let Some(Stmt {
-        kind: StmtKind::If(test, then, otherwise @ Some(_)),
+        kind: StmtKind::If(_, then, otherwise @ Some(_)),
         span,
+        facts,
     }) = stmts.last_mut()
         && let Some(Stmt {
             kind: StmtKind::Continue(l),
             span: at,
+            ..
         }) = then.last()
         && (tests_continue(continues, *span) || !at.is_none())
-        && !test.facts.has(js::Known::Else)
+        && !facts.has(js::Known::Else)
         && going_on(l)
     {
         let rest = otherwise.take().expect("matched");
@@ -287,7 +291,7 @@ fn ends_going_on(
         Some(StmtKind::If(_, then, otherwise)) => {
             ends_going_on(then, looped, written, commented);
             if let Some(branch) = otherwise {
-                if matches!(branch.as_slice(), [Stmt { kind: StmtKind::Continue(l), span }] if going_on(l) && !commented.contains(span))
+                if matches!(branch.as_slice(), [Stmt { kind: StmtKind::Continue(l), span, .. }] if going_on(l) && !commented.contains(span))
                 {
                     *otherwise = None;
                 } else {

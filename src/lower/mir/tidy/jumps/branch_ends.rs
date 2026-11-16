@@ -56,6 +56,7 @@ pub(in crate::lower::mir::tidy) fn ending(stmts: &mut Vec<Stmt>, label: &js::Nam
         && let Stmt {
             kind: StmtKind::Labeled(inner, body),
             span,
+            ..
         } = &mut stmts[at]
         && span.is_none()
         && marked.is_none_or(|marked| super::continues::latest(body) < marked)
@@ -114,6 +115,7 @@ pub(in crate::lower::mir::tidy) fn ending(stmts: &mut Vec<Stmt>, label: &js::Nam
     let Some(Stmt {
         kind: StmtKind::If(test, then, None),
         span,
+        ..
     }) = stmts.pop()
     else {
         unreachable!("found")

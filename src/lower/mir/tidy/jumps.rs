@@ -55,6 +55,7 @@ pub(super) fn early_breaks(
             Stmt {
                 kind: StmtKind::If(test, inner, None),
                 span,
+                ..
             },
         ] = then
         {
@@ -124,6 +125,7 @@ pub(super) fn early_breaks(
         let Some(Stmt {
             kind: StmtKind::If(test, then, None),
             span,
+            ..
         }) = body.pop()
         else {
             unreachable!("matched")
@@ -188,6 +190,7 @@ fn broken_in_then(
     let Some(Stmt {
         kind: StmtKind::If(test, mut then, Some(mut otherwise)),
         span,
+        ..
     }) = body.pop()
     else {
         unreachable!("matched")
@@ -227,6 +230,7 @@ fn broken_in_nested_then(body: &mut [Stmt], continues: &dyn Fn(&Stmt) -> bool, b
             let Some(Stmt {
                 kind: StmtKind::If(test, d, None),
                 span,
+                ..
             }) = then.pop()
             else {
                 unreachable!("matched")
@@ -251,6 +255,7 @@ fn broken_in_nested_then(body: &mut [Stmt], continues: &dyn Fn(&Stmt) -> bool, b
         let Some(Stmt {
             kind: StmtKind::If(test, mut a, Some(d)),
             span,
+            ..
         }) = then.pop()
         else {
             unreachable!("matched")
@@ -289,6 +294,7 @@ fn broken_early(test: Expr, mut then: Vec<Stmt>, span: js::Span, continues: &dyn
         Some(Stmt {
             kind: StmtKind::If(inner_test, inner, None),
             span: inner_span,
+            ..
         }) => {
             out.extend(then);
             out.extend(broken_early(inner_test, inner, inner_span, continues));
@@ -398,6 +404,7 @@ pub(super) fn early_return(stmt: &mut Stmt, elses: &[(js::Span, js::Span, js::Sp
     let Some(Stmt {
         kind: StmtKind::If(test, mut then, otherwise),
         span,
+        ..
     }) = tail.next()
     else {
         unreachable!("matched")
@@ -637,6 +644,7 @@ fn ending_returns(stmts: &mut Vec<Stmt>, returns: &[js::Span], branch: bool) {
         let Some(Stmt {
             kind: StmtKind::If(test, mut then, None),
             span,
+            ..
         }) = stmts.pop()
         else {
             unreachable!("found")
@@ -665,6 +673,7 @@ fn ending_returns(stmts: &mut Vec<Stmt>, returns: &[js::Span], branch: bool) {
         let Some(Stmt {
             kind: StmtKind::If(test, then, Some(otherwise)),
             span,
+            ..
         }) = stmts.pop()
         else {
             unreachable!("matched")
@@ -705,7 +714,7 @@ fn ending_returns(stmts: &mut Vec<Stmt>, returns: &[js::Span], branch: bool) {
             }
             let last = stmts.pop().expect("matched");
             if let Some(kind) = emptied_branch(last.kind) {
-                stmts.extend(returned_apart(kind.at(last.span), returns));
+                stmts.extend(returned_apart(Stmt { kind, ..last }, returns));
             }
         }
         Some(StmtKind::Labeled(_, body)) => ending_returns(body, returns, branch),
@@ -730,6 +739,7 @@ fn returned_apart(stmt: Stmt, returns: &[js::Span]) -> Vec<Stmt> {
     let Stmt {
         kind: StmtKind::If(test, then, Some(otherwise)),
         span,
+        facts,
     } = stmt
     else {
         return vec![stmt];
@@ -744,7 +754,13 @@ fn returned_apart(stmt: Stmt, returns: &[js::Span]) -> Vec<Stmt> {
     let (test, mut first, after, place) = match (between(&then, &otherwise), between(&otherwise, &then)) {
         (Some(place), _) => (test, then, otherwise, place),
         (None, Some(place)) => (test.negated_test(), otherwise, then, place),
-        (None, None) => return vec![StmtKind::If(test, then, Some(otherwise)).at(span)],
+        (None, None) => {
+            return vec![Stmt {
+                kind: StmtKind::If(test, then, Some(otherwise)),
+                span,
+                facts,
+            }];
+        }
     };
     // Not after what leaves already, a `return v;` of a `match`'s arm whose
     // `?` is the `return` between (#461): the rest follows it either way.

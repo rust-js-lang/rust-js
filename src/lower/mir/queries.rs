@@ -918,6 +918,7 @@ pub(super) fn early_exit(
         Some(Stmt {
             kind: StmtKind::Break(Some(_)),
             span,
+            ..
         }) => !span.is_none(),
         last => matches!(last.map(|s| &s.kind), Some(StmtKind::Return(_) | StmtKind::Throw(_))),
     };

@@ -83,9 +83,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a chain's last link unfolded after a guard `written_elses` left is an `if` of its own, `if (n < 0) { return ..; } if (n === 0) { .. } else { .. }`, not the guard's `else if` (ADR 0969, amended, rd23)",
     file: "src/lower/mir/tidy/value_chains.rs",
-    find: "                test.facts = test.facts.with(js::Known::Else);\n                *otherwise = Some(vec![unfolded]);\n                list.pop();\n",
+    find: "                *facts = facts.with(js::Known::Else);\n                *otherwise = Some(vec![unfolded]);\n                list.pop();\n",
     replace:
-      '                let _ = (test, otherwise);\n                *list.last_mut().expect("walked") = unfolded;\n',
+      "                let _ = (facts, otherwise);\n                *list.last_mut().expect(\"walked\") = unfolded;\n",
     tests: ["test/lowering-returned-chains.test.ts"],
   },
   {

@@ -20,7 +20,9 @@ mod optional_call;
 mod pattern;
 pub mod result;
 pub mod scopes;
+mod stmt_facts;
 mod stmt_walk;
+pub use stmt_facts::StmtFacts;
 mod storage;
 mod template;
 pub mod undefined_arguments;
@@ -427,6 +429,10 @@ pub enum Pattern {
 pub struct Stmt {
     pub kind: StmtKind,
     pub span: Span,
+    /// What's known of it as a statement, not of a value in it (#1681
+    /// change 3, M4): an `if` whose `else` the program wrote, a `let …
+    /// else`'s guard, an `if` the program wrote.
+    pub facts: StmtFacts,
 }
 
 /// A case of a `switch` (`StmtKind::Switch`): its values, stacked, `case
@@ -573,7 +579,11 @@ pub enum Caught {
 
 impl StmtKind {
     pub fn at(self, span: Span) -> Stmt {
-        Stmt { kind: self, span }
+        Stmt {
+            kind: self,
+            span,
+            facts: StmtFacts::default(),
+        }
     }
 }
 
@@ -694,13 +704,6 @@ impl Facts {
     /// (#462).
     pub fn of_evaluation(self) -> Facts {
         self.part(&[Known::Getter])
-    }
-
-    /// What a test says of its `if`, not of its value: a written `else`
-    /// (`Known::Else`) and a guard (`Known::Guard`), which a test made again
-    /// of the same truth keeps, `flags & 4` of `(flags & 4) !== 0`.
-    pub fn of_statement(self) -> Facts {
-        self.part(&[Known::Else, Known::Guard])
     }
 }
 

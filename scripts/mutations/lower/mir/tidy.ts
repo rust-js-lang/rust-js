@@ -214,16 +214,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-arrows.test.ts"],
   },
   {
-    name: "negation-else-dropped",
-    breaks:
-      "a written `else` whose test is a negation, `if (!x)`, loses its mark when `negations` makes the test again, so preparation's `unelsed` drops it (ADR 0237, amended)",
-    file: "src/lower/mir/tidy.rs",
-    find: "        let facts = made.facts.and(e.facts.of_statement()).and(e.facts.of_evaluation());\n",
-    replace: "        let facts = made.facts.and(e.facts.of_evaluation());\n",
-    tests: ["test/corpus.test.ts", "-t", "^match_last_arm_else.rs$"],
-    snapshots: true,
-  },
-  {
     name: "placed-read-declared-apart",
     breaks:
       "a placed read's `try` gone, its variable stays `let previous; previous = current;`, not `const previous = current;` (#408)",
@@ -250,8 +240,8 @@ export const mutations: Mutation[] = [
     name: "negations-evaluation-lost",
     breaks: "a unary remade, `+m` of `js::to_number(m)`, forgets that JS may throw of it, so unread it goes and `catch_unwind` of it is never `Err` (#462)",
     file: "src/lower/mir/tidy.rs",
-    find: "        let facts = made.facts.and(e.facts.of_statement()).and(e.facts.of_evaluation());\n",
-    replace: "        let facts = made.facts.and(e.facts.of_statement());\n",
+    find: "        let facts = made.facts.and(e.facts.of_evaluation());\n",
+    replace: "        let facts = made.facts;\n",
     tests: ["test/lowering-unwind-arms.test.ts", "-t", "a caught value nothing reads that may throw"],
   },
   {

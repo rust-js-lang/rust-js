@@ -45,6 +45,7 @@ fn tried_jumps(stmts: &mut [Stmt]) {
             if let Some(Stmt {
                 kind: StmtKind::TryCatch(tried, ..),
                 span,
+                ..
             }) = body.last_mut()
                 && let [
                     Stmt {

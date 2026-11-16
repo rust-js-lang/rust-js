@@ -78,7 +78,7 @@ pub(super) fn unfolded_first_arm(stmt: &mut Stmt) {
     let StmtKind::If(test, then, otherwise) = &mut stmt.kind else {
         return;
     };
-    let marker = |stmts: &[Stmt]| matches!(stmts, [Stmt { kind: StmtKind::Comments, span }] if !at.is_none() && span.lo == at.lo);
+    let marker = |stmts: &[Stmt]| matches!(stmts, [Stmt { kind: StmtKind::Comments, span, .. }] if !at.is_none() && span.lo == at.lo);
     // Its `then`: tidy writes a `match`'s first arm first.
     if marker(then)
         && let Some(rest) = otherwise.take_if(|rest| !rest.is_empty())
@@ -522,7 +522,7 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt], ends: b
     let StmtKind::If(test, then, otherwise) = &tested.kind else {
         return None;
     };
-    let (written, tested_at) = (test.facts.has(js::Known::Written), tested.span);
+    let (written, tested_at) = (tested.facts.has(js::Known::Written), tested.span);
     // Whether the `if` is of the `Ok`: `TAG === "Ok"`, or `!== "Err"`.
     let (tested, ok, eq) = js::result::tested(test)?;
     if !matches!(&tested.kind, ExprKind::Var(v) if v == result) {

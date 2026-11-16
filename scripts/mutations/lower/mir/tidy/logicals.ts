@@ -66,7 +66,7 @@ export const mutations: Mutation[] = [
     breaks:
       "an `if`'s test the program wrote doesn't say so (`Known::Written`), so a comment above an `if r.is_err()` a `try` folds is lost (#489)",
     file: "src/lower/mir/tidy/logicals.rs",
-    find: "            test.facts = test.facts.with(js::Known::Written);\n",
+    find: "            stmt.facts = stmt.facts.with(js::Known::Written);\n",
     replace: "",
     tests: ["test/lowering-comments-inside.test.ts", "-t", "folded is_err test"],
   },
@@ -726,19 +726,6 @@ export const mutations: Mutation[] = [
     find: "        _ if written_if => Expr::cond(test, yes, no),\n",
     replace: "",
     tests: ["test/lowering-bool-ternaries.test.ts"],
-  },
-  {
-    name: "bit-test-drops-its-else",
-    breaks:
-      "React's updateHostRoot, `if (flags & 4) { return ..; } else if (..)`, is `} if (next !== prev)`: the truth test made again loses its written `else` (ADR 0237, amended)",
-    file: "src/lower/mir/tidy/logicals.rs",
-    find: "            test.facts = test.facts.and(kept);\n",
-    replace: "",
-    tests: [
-      "test/lowering-written-elses.test.ts",
-      "-t",
-      "keeps its if's written else",
-    ],
   },
   {
     name: "logical-returns-nested-tests-apart",

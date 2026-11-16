@@ -791,7 +791,7 @@ fn replaced(stmts: &[Stmt], last: bool, replace: &dyn Fn(&Expr, Span) -> Option<
                     && let Some(no) = otherwise.as_deref().map(in_place).unwrap_or(Some(Vec::new()))
                 {
                     let no = otherwise.is_some().then_some(no);
-                    out.push(StmtKind::If(test.clone(), yes, no).at(stmt.span));
+                    out.push(stmt.rebuilt(StmtKind::If(test.clone(), yes, no)));
                     continue;
                 }
                 // Else what follows is the `else` of the branch that goes
@@ -812,7 +812,7 @@ fn replaced(stmts: &[Stmt], last: bool, replace: &dyn Fn(&Expr, Span) -> Option<
                     (_, true) => StmtKind::If(test.clone(), yes, None),
                     (false, false) => StmtKind::If(test.clone(), yes, Some(no)),
                 };
-                out.push(made.at(stmt.span));
+                out.push(stmt.rebuilt(made));
                 return Some(out);
             }
             // In a loop or a `switch`, where what each `return` is made

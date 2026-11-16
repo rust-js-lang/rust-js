@@ -743,7 +743,7 @@ pub(in crate::lower::mir::tidy) fn drop_tail(stmts: &mut Vec<Stmt>, jump: &StmtK
         // `if (usable != null && ..) { .. }`, as no later pass writes it.
         let last = stmts.pop().expect("matched");
         if let Some(kind) = emptied_branch(last.kind) {
-            stmts.push(kind.at(last.span));
+            stmts.push(Stmt { kind, ..last });
         }
     } else if let Some(StmtKind::Try(body, _)) = stmts.last_mut().map(|s| &mut s.kind) {
         // A `try`'s, its `finally` run as it goes on to the end anyway: a
@@ -820,6 +820,7 @@ pub(in crate::lower::mir::tidy) fn returned_values(
             Stmt {
                 kind: StmtKind::Return(Some(value)),
                 span,
+                ..
             },
         ] if small(value) && (!written(returns, *span) || of_if(*span)) => Some(spanned(value, *span)),
         _ => None,

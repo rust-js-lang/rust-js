@@ -92,8 +92,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an `else` made of what the program wrote in it, `if (a) { return n; } else { const n = 2; .. }`, isn't marked its, so preparation takes it away again",
     file: "src/lower/mir/tidy/jumps/written.rs",
-    find: "                    facts: t.facts.with(js::Known::Else),\n",
-    replace: "                    facts: t.facts,\n",
+    find: "                if !linking {\n                    stmts[at].facts = stmts[at].facts.with(js::Known::Else);\n                }\n",
+    replace: "                let _ = linking;\n",
     tests: [
       "test/lowering-names.test.ts",
       "-t",
@@ -105,8 +105,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an `if` MIR left with both branches the program wrote, `if (key === 2) { return 0; } else if (key === 3) { .. }`, loses its `else` to ADR 0237's (the user's decision, 2026-10-28)",
     file: "src/lower/mir/tidy/jumps/written.rs",
-    find: "            test.facts = test.facts.with(js::Known::Else);\n            let end = other.hi.max(branch.hi);\n",
-    replace: "            let end = other.hi.max(branch.hi);\n",
+    find: "            stmts[at].facts = stmts[at].facts.with(js::Known::Else);\n        }\n        at += 1;\n",
+    replace: "        }\n        at += 1;\n",
     tests: ["test/corpus.test.ts", "-t", "^returns_in_held_branches.rs$"],
     snapshots: true,
   },

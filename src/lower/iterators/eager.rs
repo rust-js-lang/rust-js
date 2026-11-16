@@ -455,6 +455,7 @@ fn eager_items_of(chain: &Expr, whole: bool, taker: Option<&Expr>, owns: bool) -
                 Stmt {
                     kind: StmtKind::Return(Some(inner)),
                     span,
+                    ..
                 },
             ] = body.as_slice()
             else {

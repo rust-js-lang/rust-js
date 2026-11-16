@@ -141,12 +141,14 @@ fn chained(body: &[Stmt]) -> Option<Expr> {
                 Stmt {
                     kind: StmtKind::If(t, then, Some(otherwise)),
                     span,
+                    ..
                 },
             ] => Some(cond(t, value(then, end)?, value(otherwise, end)?, *span)),
             [
                 Stmt {
                     kind: StmtKind::If(t, then, None),
                     span,
+                    ..
                 },
                 rest @ ..,
             ] => {

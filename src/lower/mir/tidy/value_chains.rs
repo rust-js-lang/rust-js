@@ -259,11 +259,10 @@ pub(super) fn returned_else_ifs(stmts: &mut Vec<Stmt>, links: &[js::Span], retur
     };
     let at = last.span;
     let ret = |v: &Expr| vec![StmtKind::Return(Some(v.clone())).at(at)];
-    let test = Expr {
-        facts: test.facts.with(js::Known::Else),
-        ..test.clone()
-    };
-    let unfolded = StmtKind::If(test, ret(yes), Some(ret(no))).at(at);
+    let test = test.clone();
+    let unfolded = StmtKind::If(test, ret(yes), Some(ret(no)))
+        .at(at)
+        .knowing(js::Known::Else);
     // In the link before's `else`, which the program wrote, where that's
     // a guard still, as `written_elses` leaves one of two returns alone.
     fn place(list: &mut Vec<Stmt>, unfolded: Stmt) {
@@ -277,12 +276,13 @@ pub(super) fn returned_else_ifs(stmts: &mut Vec<Stmt>, links: &[js::Span], retur
             [
                 ..,
                 Stmt {
-                    kind: StmtKind::If(test, _, otherwise @ None),
+                    kind: StmtKind::If(_, _, otherwise @ None),
+                    facts,
                     ..
                 },
                 _,
             ] => {
-                test.facts = test.facts.with(js::Known::Else);
+                *facts = facts.with(js::Known::Else);
                 *otherwise = Some(vec![unfolded]);
                 list.pop();
             }

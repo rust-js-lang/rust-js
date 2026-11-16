@@ -154,6 +154,7 @@ fn skipped(
         Stmt {
             kind: StmtKind::If(first, then, None),
             span,
+            ..
         },
     ] = body
     else {

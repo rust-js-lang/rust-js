@@ -166,13 +166,7 @@ pub(in crate::lower::mir::tidy) fn let_else_first(stmts: &mut Vec<Stmt>, let_els
     // Whether `stmt` is written in `at`, an `else`.
     let within = |at: js::Span, stmt: &Stmt| !stmt.span.is_none() && at.lo <= stmt.span.lo && stmt.span.hi <= at.hi;
     // A `let … else`'s test negated, its guard's, as written (`Known::Guard`).
-    let guard = |test: Expr| {
-        let test = test.negated_test();
-        Expr {
-            facts: test.facts.with(js::Known::Guard),
-            ..test
-        }
-    };
+    let guard = |test: Expr| test.negated_test();
     let mut i = 0;
     while i < stmts.len() {
         // `if (c) { s } e` of a lone jump `e` MIR joined the `else`s after it
@@ -195,7 +189,11 @@ pub(in crate::lower::mir::tidy) fn let_else_first(stmts: &mut Vec<Stmt>, let_els
                 unreachable!("matched")
             };
             let goes_on = !then.last().is_some_and(ends);
-            stmts.push(StmtKind::If(guard(test), vec![exit.clone()], None).at(span));
+            stmts.push(
+                StmtKind::If(guard(test), vec![exit.clone()], None)
+                    .at(span)
+                    .knowing(js::Known::Guard),
+            );
             stmts.extend(then);
             if goes_on {
                 stmts.push(exit);
@@ -249,7 +247,12 @@ pub(in crate::lower::mir::tidy) fn let_else_first(stmts: &mut Vec<Stmt>, let_els
         };
         stmts.splice(
             i..=i,
-            std::iter::once(StmtKind::If(guard(test), otherwise, None).at(span)).chain(then),
+            std::iter::once(
+                StmtKind::If(guard(test), otherwise, None)
+                    .at(span)
+                    .knowing(js::Known::Guard),
+            )
+            .chain(then),
         );
         i += 1;
     }
@@ -433,6 +436,7 @@ pub(in crate::lower::mir::tidy) fn written_order_steps(stmts: &mut [Stmt], let_e
         let Some(Stmt {
             kind: StmtKind::If(test, mut then, None),
             span,
+            ..
         }) = body.pop()
         else {
             unreachable!("found")

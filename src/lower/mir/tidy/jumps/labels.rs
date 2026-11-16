@@ -17,6 +17,7 @@ pub(super) fn exit_after(
     let Stmt {
         kind: StmtKind::While { label, cond, body },
         span,
+        ..
     } = &stmts[i]
     else {
         return None;
@@ -495,6 +496,7 @@ pub(in crate::lower::mir::tidy) fn written_blocks(body: &mut Vec<Stmt>, blocks: 
                 && let Some(Stmt {
                     kind: StmtKind::Labeled(last, last_body),
                     span,
+                    ..
                 }) = inner.last_mut()
                 && written(*span).is_some()
                 && crate::lower::mir::is_block_label(last)
@@ -583,6 +585,7 @@ fn around_loops(stmts: &mut Vec<Stmt>, blocks: &[LabeledBlock]) {
         let Some(Stmt {
             kind: StmtKind::Labeled(label, block),
             span,
+            ..
         }) = body.pop()
         else {
             unreachable!("found")

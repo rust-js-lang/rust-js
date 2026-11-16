@@ -103,7 +103,7 @@ pub(in crate::lower::mir::tidy) fn ending_breaks(stmts: &mut Vec<Stmt>) {
     }
     let last = stmts.pop().expect("matched");
     if let Some(kind) = crate::lower::mir::tidy::branches::emptied_branch(last.kind) {
-        stmts.push(kind.at(last.span));
+        stmts.push(Stmt { kind, ..last });
     }
 }
 

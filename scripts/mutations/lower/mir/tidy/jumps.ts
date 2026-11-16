@@ -102,7 +102,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`if (!c) { return; } else { s; return; }`, a macro's function's `if let`, is `if (!c) {} else { s }`, not `if (c) { s }`",
     file: "src/lower/mir/tidy/jumps.rs",
-    find: "            if let Some(kind) = emptied_branch(last.kind) {\n                stmts.extend(returned_apart(kind.at(last.span), returns));\n            }\n",
+    find: "            if let Some(kind) = emptied_branch(last.kind) {\n                stmts.extend(returned_apart(Stmt { kind, ..last }, returns));\n            }\n",
     replace: "            stmts.push(last);\n",
     tests: [
       "test/lowering-module-variables.test.ts",

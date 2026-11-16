@@ -121,10 +121,11 @@ fn unelsed(stmts: &mut Vec<Stmt>, slot: js::Slot) {
         );
     let mut i = 0;
     while i < stmts.len() {
-        if let StmtKind::If(test, then, els @ Some(_)) = &mut stmts[i].kind
+        let facts = stmts[i].facts;
+        if let StmtKind::If(_, then, els @ Some(_)) = &mut stmts[i].kind
             && !link
             && then.last().is_some_and(js::ends)
-            && !test.facts.has(js::Known::Else)
+            && !facts.has(js::Known::Else)
         {
             let els = els.take().expect("matched");
             stmts.splice(i + 1..i + 1, els);
@@ -175,11 +176,12 @@ fn tested_assignments(stmts: &mut Vec<Stmt>) {
                 },
                 Stmt {
                     kind: StmtKind::If(test, then, None),
+                    facts,
                     ..
                 },
                 rest @ ..,
             ] if matches!(cond.kind, ExprKind::Bool(true))
-                && !test.facts.has(js::Known::Guard)
+                && !facts.has(js::Known::Guard)
                 && matches!(then.as_slice(), [Stmt { kind: StmtKind::Break(l), .. }] if l.is_none() || l == label)
                 && matches!(&first_read(test).kind, ExprKind::Var(v) if v == name)
                 && {
@@ -598,11 +600,9 @@ fn block(body: &mut Vec<Stmt>, ends: bool) {
                 expr(b);
             }
             StmtKind::If(e, a, b) => {
-                // Its test as a test, `!!x` the `x` it tests, its `if`'s facts kept (rg3).
-                let of_if = e.facts.of_statement();
+                // Its test as a test, `!!x` the `x` it tests (rg3).
                 passes::rewrite(Pass::Tests, e, Expr::tested);
                 expr(e);
-                e.facts = e.facts.and(of_if);
                 block(a, false);
                 if let Some(b) = b {
                     block(b, false);

@@ -41,8 +41,9 @@ export function held(handler) {
     touch(handler);
     if (lend($fieldCell(handler, "chunk"))) {
       return guard.value != null ? guard.value.id : 0;
+    } else {
+      return 1;
     }
-    return 1;
   } finally {
     $unborrow(guard);
   }

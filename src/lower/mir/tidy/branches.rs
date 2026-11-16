@@ -931,7 +931,11 @@ pub(super) fn returned_in_branches(stmts: &mut Vec<Stmt>, result: &str) {
             stmts.push(StmtKind::If(test, then, None).at(made.span));
             stmts.extend(otherwise);
         }
-        kind => stmts.push(Stmt { kind, span: made.span }),
+        kind => stmts.push(Stmt {
+            kind,
+            span: made.span,
+            facts: made.facts,
+        }),
     }
 }
 

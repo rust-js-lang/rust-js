@@ -278,6 +278,7 @@ fn settle(stmts: &mut Vec<Stmt>, known: &mut Known, flags: &IndexSet<String>) {
                     Stmt {
                         kind: StmtKind::Throw(panic),
                         span,
+                        ..
                     },
                 ] = inner.as_slice()
                     && let Some(error) = error.as_ref().map(|n| n.word())

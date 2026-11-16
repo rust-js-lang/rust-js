@@ -597,10 +597,7 @@ impl OutputPlan {
                 helpers.push(helper);
                 js::Expr::arrow(
                     Vec::new(),
-                    vec![js::Stmt {
-                        kind: js::StmtKind::Return(Some(js::Expr::call_helper(name, args))),
-                        span: js::Span::NONE,
-                    }],
+                    vec![js::StmtKind::Return(Some(js::Expr::call_helper(name, args))).at(js::Span::NONE)],
                 )
             };
             let body = match &registered.should_panic {
@@ -618,10 +615,10 @@ impl OutputPlan {
                 true => js::Expr::member(js::Expr::var(&test), "skip"),
                 false => js::Expr::var(&test),
             };
-            registrations.push(js::Stmt {
-                kind: js::StmtKind::Expr(js::Expr::call(register, vec![js::Expr::str(&registered.label), body])),
-                span: js::Span::NONE,
-            });
+            registrations.push(
+                js::StmtKind::Expr(js::Expr::call(register, vec![js::Expr::str(&registered.label), body]))
+                    .at(js::Span::NONE),
+            );
         }
         js_module.items.push(js::Item::Statements(registrations));
         helpers.sort();

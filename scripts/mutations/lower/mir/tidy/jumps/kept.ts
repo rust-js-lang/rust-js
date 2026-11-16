@@ -137,7 +137,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a written `else` after a `then` that ends in a written `continue` is gone, `if (x > 3) { ..; continue; } out.push(0);` (the user's decision, ADR 0684, amended)",
     file: "src/lower/mir/tidy/jumps/kept.rs",
-    find: "        && (tests_continue(continues, *span) || !at.is_none())\n        && !test.facts.has(js::Known::Else)\n",
+    find: "        && (tests_continue(continues, *span) || !at.is_none())\n        && !facts.has(js::Known::Else)\n",
     replace: "        && (tests_continue(continues, *span) || !at.is_none())\n",
     tests: ["test/corpus.test.ts", "-t", "^written_jumps_kept.rs$"],
     snapshots: true,

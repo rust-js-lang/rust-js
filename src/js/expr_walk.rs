@@ -219,6 +219,7 @@ impl Expr {
                     Stmt {
                         kind: StmtKind::Return(Some(value)),
                         span,
+                        ..
                     },
                 ] = body.as_slice()
                 else {

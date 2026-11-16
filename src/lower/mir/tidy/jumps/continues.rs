@@ -81,6 +81,7 @@ fn continued_loop(
                 let Some(Stmt {
                     kind: StmtKind::Labeled(block, mut inner),
                     span,
+                    ..
                 }) = body.pop()
                 else {
                     unreachable!("matched")
@@ -103,6 +104,7 @@ fn continued_loop(
                 let Some(Stmt {
                     kind: StmtKind::If(test, mut then, Some(otherwise)),
                     span,
+                    ..
                 }) = body.pop()
                 else {
                     unreachable!("matched")
@@ -226,8 +228,8 @@ pub(in crate::lower::mir::tidy) fn continues_written(
             };
             if let Some(written) = placed {
                 stmts[n - 1] = Stmt {
-                    kind: of.jump.kind.clone(),
                     span: written,
+                    ..of.jump.clone()
                 };
             }
         }
@@ -238,8 +240,8 @@ pub(in crate::lower::mir::tidy) fn continues_written(
                     if matches!(then.as_slice(), [only] if breaks(only)) && tests_continue(of.guards, span) =>
                 {
                     then[0] = Stmt {
-                        kind: of.jump.kind.clone(),
                         span: then[0].span,
+                        ..of.jump.clone()
                     };
                     if let Some(otherwise) = otherwise {
                         replaced(otherwise, of, Tested::default(), found);
@@ -758,8 +760,8 @@ fn jumps_as_written_before(stmt: &mut Stmt, jump: &Stmt, written: &crate::lower:
             && !arm.last().is_some_and(ends)
         {
             arm.push(Stmt {
-                kind: jump.kind.clone(),
                 span: at,
+                ..jump.clone()
             });
         }
     }
