@@ -84,23 +84,25 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }
         let ty::Adt(adt, args) = ty.kind() else { return false };
         let at_most_its_source = matches!(
-            std_path(self.tcx, adt.did()),
-            "std::iter::Map"
-                | "std::iter::Filter"
-                | "std::iter::FilterMap"
-                | "std::iter::Skip"
-                | "std::iter::Take"
-                | "std::iter::Rev"
-                | "std::iter::Enumerate"
-                | "std::iter::Peekable"
-                | "std::iter::Fuse"
-                | "std::iter::Inspect"
-                | "std::iter::StepBy"
-                | "std::iter::TakeWhile"
-                | "std::iter::SkipWhile"
-                | "std::iter::MapWhile"
-                | "std::iter::Copied"
-                | "std::iter::Cloned"
+            std_path_item(self.tcx, adt.did()),
+            Some(
+                StdPath::IterMap
+                    | StdPath::IterFilter
+                    | StdPath::IterFilterMap
+                    | StdPath::IterSkip
+                    | StdPath::IterTake
+                    | StdPath::IterRev
+                    | StdPath::IterEnumerate
+                    | StdPath::IterPeekable
+                    | StdPath::IterFuse
+                    | StdPath::IterInspect
+                    | StdPath::IterStepBy
+                    | StdPath::IterTakeWhile
+                    | StdPath::IterSkipWhile
+                    | StdPath::IterMapWhile
+                    | StdPath::IterCopied
+                    | StdPath::IterCloned
+            )
         );
         at_most_its_source && args.types().next().is_some_and(|source| self.bounded_by_items(source))
     }
@@ -151,27 +153,29 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 ty::Int(ty::IntTy::I8 | ty::IntTy::I16) | ty::Uint(ty::UintTy::U8 | ty::UintTy::U16)
             ) && item.is_integral()
         };
-        match std_path(self.tcx, adt.did()) {
-            "std::iter::Repeat" | "std::iter::RepeatN" | "std::iter::RepeatWith" | "std::ops::RangeFrom" => true,
-            "std::ops::Range" | "std::ops::RangeInclusive" => sources.next().is_some_and(wide),
-            "std::iter::Cycle" => sources
+        match std_path_item(self.tcx, adt.did()) {
+            Some(StdPath::IterRepeat | StdPath::IterRepeatN | StdPath::IterRepeatWith | StdPath::OpsRangeFrom) => true,
+            Some(StdPath::OpsRange | StdPath::OpsRangeInclusive) => sources.next().is_some_and(wide),
+            Some(StdPath::IterCycle) => sources
                 .next()
                 .is_some_and(|source| self.lower_bound_kept(source) != Some(false)),
-            "std::iter::Map"
-            | "std::iter::Enumerate"
-            | "std::iter::Inspect"
-            | "std::iter::Fuse"
-            | "std::iter::Peekable"
-            | "std::iter::Copied"
-            | "std::iter::Cloned"
-            | "std::iter::Rev"
-            | "std::iter::Skip"
-            | "std::iter::Take"
-            | "std::iter::StepBy" => sources
+            Some(
+                StdPath::IterMap
+                | StdPath::IterEnumerate
+                | StdPath::IterInspect
+                | StdPath::IterFuse
+                | StdPath::IterPeekable
+                | StdPath::IterCopied
+                | StdPath::IterCloned
+                | StdPath::IterRev
+                | StdPath::IterSkip
+                | StdPath::IterTake
+                | StdPath::IterStepBy,
+            ) => sources
                 .next()
                 .is_some_and(|source| self.lower_bound_may_pass_room(source)),
-            "std::iter::Chain" => sources.take(2).any(|source| self.lower_bound_may_pass_room(source)),
-            "std::iter::Zip" => sources.take(2).all(|source| self.lower_bound_may_pass_room(source)),
+            Some(StdPath::IterChain) => sources.take(2).any(|source| self.lower_bound_may_pass_room(source)),
+            Some(StdPath::IterZip) => sources.take(2).all(|source| self.lower_bound_may_pass_room(source)),
             _ => false,
         }
     }
@@ -222,17 +226,19 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let ty = self.reveal(ty.peel_refs());
         let ty::Adt(adt, args) = ty.kind() else { return false };
         let mut sources = args.types();
-        match std_path(self.tcx, adt.did()) {
-            "std::ops::RangeFrom" | "std::iter::Repeat" => true,
-            "std::iter::Map"
-            | "std::iter::Enumerate"
-            | "std::iter::Inspect"
-            | "std::iter::Fuse"
-            | "std::iter::Peekable"
-            | "std::iter::Copied"
-            | "std::iter::Cloned" => sources.next().is_some_and(|source| self.endless_by_type(source)),
-            "std::iter::Chain" => sources.take(2).any(|source| self.endless_by_type(source)),
-            "std::iter::Zip" => sources.take(2).all(|source| self.endless_by_type(source)),
+        match std_path_item(self.tcx, adt.did()) {
+            Some(StdPath::OpsRangeFrom | StdPath::IterRepeat) => true,
+            Some(
+                StdPath::IterMap
+                | StdPath::IterEnumerate
+                | StdPath::IterInspect
+                | StdPath::IterFuse
+                | StdPath::IterPeekable
+                | StdPath::IterCopied
+                | StdPath::IterCloned,
+            ) => sources.next().is_some_and(|source| self.endless_by_type(source)),
+            Some(StdPath::IterChain) => sources.take(2).any(|source| self.endless_by_type(source)),
+            Some(StdPath::IterZip) => sources.take(2).all(|source| self.endless_by_type(source)),
             _ => false,
         }
     }
@@ -264,28 +270,30 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 .next()
                 .map_or(Some(false), |source| self.endless_once_stepped(source))
         };
-        match std_path(self.tcx, adt.did()) {
+        match std_path_item(self.tcx, adt.did()) {
             // Its hint is `usize::MAX` where what it started with has a
             // lower bound above 0, and none where it's 0.
-            "std::iter::Cycle" => sources.next().map_or(Some(false), |of| self.lower_bound_kept(of)),
-            "std::iter::Map"
-            | "std::iter::Skip"
-            | "std::iter::Enumerate"
-            | "std::iter::Inspect"
-            | "std::iter::Fuse"
-            | "std::iter::Peekable"
-            | "std::iter::Copied"
-            | "std::iter::Cloned" => source(),
-            "std::iter::StepBy" => match source() {
+            Some(StdPath::IterCycle) => sources.next().map_or(Some(false), |of| self.lower_bound_kept(of)),
+            Some(
+                StdPath::IterMap
+                | StdPath::IterSkip
+                | StdPath::IterEnumerate
+                | StdPath::IterInspect
+                | StdPath::IterFuse
+                | StdPath::IterPeekable
+                | StdPath::IterCopied
+                | StdPath::IterCloned,
+            ) => source(),
+            Some(StdPath::IterStepBy) => match source() {
                 Some(true) => None,
                 other => other,
             },
-            "std::iter::Chain" => match (source(), source()) {
+            Some(StdPath::IterChain) => match (source(), source()) {
                 (Some(a), Some(b)) if a == b => Some(a),
                 _ => None,
             },
             // An item of both, each stepped.
-            "std::iter::Zip" => match (source(), source()) {
+            Some(StdPath::IterZip) => match (source(), source()) {
                 (Some(false), _) | (_, Some(false)) => Some(false),
                 (Some(true), Some(true)) => Some(true),
                 _ => None,
@@ -309,28 +317,30 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         // and the sets' (#1215).
         self.is_str_split(ty)
             || matches!(
-                std_path(self.tcx, adt.did()),
-                "std::str::SplitN"
-                    | "std::str::RSplitN"
-                    | "std::str::RSplit"
-                    | "std::str::SplitTerminator"
-                    | "std::str::RSplitTerminator"
-                    | "std::str::SplitInclusive"
-                    | "std::str::MatchIndices"
-                    | "std::str::RMatchIndices"
-                    | "std::str::Matches"
-                    | "std::str::RMatches"
-                    | "std::str::SplitWhitespace"
-                    | "std::str::SplitAsciiWhitespace"
-                    | "std::str::Lines"
-                    | "std::collections::btree_map::Range"
-                    | "std::collections::btree_map::RangeMut"
-                    | "std::collections::btree_set::Range"
-                    | "std::collections::btree_set::Intersection"
-                    | "std::collections::btree_set::SymmetricDifference"
-                    | "std::collections::hash_set::Difference"
-                    | "std::collections::hash_set::Intersection"
-                    | "std::collections::hash_set::SymmetricDifference"
+                std_path_item(self.tcx, adt.did()),
+                Some(
+                    StdPath::StrSplitN
+                        | StdPath::StrRSplitN
+                        | StdPath::StrRSplit
+                        | StdPath::StrSplitTerminator
+                        | StdPath::StrRSplitTerminator
+                        | StdPath::StrSplitInclusive
+                        | StdPath::StrMatchIndices
+                        | StdPath::StrRMatchIndices
+                        | StdPath::StrMatches
+                        | StdPath::StrRMatches
+                        | StdPath::StrSplitWhitespace
+                        | StdPath::StrSplitAsciiWhitespace
+                        | StdPath::StrLines
+                        | StdPath::BtreeMapRange
+                        | StdPath::BtreeMapRangeMut
+                        | StdPath::BtreeSetRange
+                        | StdPath::BtreeSetIntersection
+                        | StdPath::BtreeSetSymmetricDifference
+                        | StdPath::HashSetDifference
+                        | StdPath::HashSetIntersection
+                        | StdPath::HashSetSymmetricDifference
+                )
             )
     }
 
@@ -344,10 +354,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let ty = self.reveal(ty.peel_refs());
         let ty::Adt(adt, _) = ty.kind() else { return false };
         matches!(
-            std_path(self.tcx, adt.did()),
-            "std::collections::btree_set::Difference"
-                | "std::collections::btree_set::Union"
-                | "std::collections::hash_set::Union"
+            std_path_item(self.tcx, adt.did()),
+            Some(StdPath::BtreeSetDifference | StdPath::BtreeSetUnion | StdPath::HashSetUnion)
         )
     }
 
@@ -547,33 +555,37 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let ty::Adt(adt, args) = ty.kind() else { return None };
         let mut sources = args.types();
         let mut source = || sources.next().and_then(|source| self.lower_bound_kept(source));
-        match std_path(self.tcx, adt.did()) {
-            "std::iter::Filter"
-            | "std::iter::FilterMap"
-            | "std::iter::TakeWhile"
-            | "std::iter::SkipWhile"
-            | "std::iter::MapWhile"
-            | "std::iter::Scan"
-            | "std::iter::FromFn" => Some(false),
-            "std::iter::Map"
-            | "std::iter::Enumerate"
-            | "std::iter::Inspect"
-            | "std::iter::Fuse"
-            | "std::iter::Copied"
-            | "std::iter::Cloned" => source(),
-            "std::iter::Skip" | "std::iter::Take" | "std::iter::StepBy" => match source() {
+        match std_path_item(self.tcx, adt.did()) {
+            Some(
+                StdPath::IterFilter
+                | StdPath::IterFilterMap
+                | StdPath::IterTakeWhile
+                | StdPath::IterSkipWhile
+                | StdPath::IterMapWhile
+                | StdPath::IterScan
+                | StdPath::IterFromFn,
+            ) => Some(false),
+            Some(
+                StdPath::IterMap
+                | StdPath::IterEnumerate
+                | StdPath::IterInspect
+                | StdPath::IterFuse
+                | StdPath::IterCopied
+                | StdPath::IterCloned,
+            ) => source(),
+            Some(StdPath::IterSkip | StdPath::IterTake | StdPath::IterStepBy) => match source() {
                 Some(false) => Some(false),
                 _ => None,
             },
-            "std::iter::Peekable" => match source() {
+            Some(StdPath::IterPeekable) => match source() {
                 Some(true) => Some(true),
                 _ => None,
             },
-            "std::iter::Chain" => match (source(), source()) {
+            Some(StdPath::IterChain) => match (source(), source()) {
                 (Some(a), Some(b)) if a == b => Some(a),
                 _ => None,
             },
-            "std::iter::Zip" => match (source(), source()) {
+            Some(StdPath::IterZip) => match (source(), source()) {
                 (Some(false), _) | (_, Some(false)) => Some(false),
                 (Some(true), Some(true)) => Some(true),
                 _ => None,
@@ -604,10 +616,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// array's or a `Vec`'s, `$iter`, or a range of numbers, `$lazyRange`
     /// (#1182).
     pub(in crate::lower) fn counts_where_given(&self, iter: Ty<'tcx>) -> bool {
-        matches!(iter.peel_refs().kind(), ty::Adt(adt, _) if matches!(
-            std_path(self.tcx, adt.did()),
-            "std::slice::Iter" | "std::slice::IterMut" | "std::vec::IntoIter" | "std::array::IntoIter" | "std::ops::Range"
-        ))
+        matches!(iter.peel_refs().kind(), ty::Adt(adt, _) if matches!(std_path_item(self.tcx, adt.did()), Some(StdPath::SliceIter | StdPath::SliceIterMut | StdPath::VecIntoIter | StdPath::ArrayIntoIter | StdPath::OpsRange)))
     }
 
     /// The sides of `a.eq(b)`, of an iterator of type `this` and an
@@ -653,16 +662,18 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 fn is_slice_split<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
     let ty::Adt(adt, _) = ty.kind() else { return false };
     matches!(
-        std_path(tcx, adt.did()),
-        "std::slice::Split"
-            | "std::slice::SplitMut"
-            | "std::slice::SplitN"
-            | "std::slice::SplitNMut"
-            | "std::slice::RSplit"
-            | "std::slice::RSplitMut"
-            | "std::slice::RSplitN"
-            | "std::slice::RSplitNMut"
-            | "std::slice::SplitInclusive"
-            | "std::slice::SplitInclusiveMut"
+        std_path_item(tcx, adt.did()),
+        Some(
+            StdPath::SliceSplit
+                | StdPath::SliceSplitMut
+                | StdPath::SliceSplitN
+                | StdPath::SliceSplitNMut
+                | StdPath::SliceRSplit
+                | StdPath::SliceRSplitMut
+                | StdPath::SliceRSplitN
+                | StdPath::SliceRSplitNMut
+                | StdPath::SliceSplitInclusive
+                | StdPath::SliceSplitInclusiveMut
+        )
     )
 }

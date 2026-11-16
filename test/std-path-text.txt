@@ -5,7 +5,6 @@
 #
 # The iterators' recognizers, the DefId step's next pass, m1-lisa's.
 src/lower/recognition/iterators.rs	149
-src/lower/recognition/lengths.rs	126
 # `std_path` itself, std's path's text, which the table's rows are: `core::`
 # and `alloc::` written `std::`.
 src/lower/recognition/std_crates.rs	1

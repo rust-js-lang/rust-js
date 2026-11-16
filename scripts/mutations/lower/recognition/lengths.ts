@@ -13,8 +13,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `cycle()` of an array's items isn't taken to have no end once it gives an item, so `items.iter().cycle().map(f).collect::<Vec<_>>()` maps without end where Rust panics `capacity overflow` after the first (#433, ADR 0940)",
     file: "src/lower/recognition/lengths.rs",
-    find: '            "std::iter::Cycle" => sources.next().map_or(Some(false), |of| self.lower_bound_kept(of)),\n',
-    replace: '            "std::iter::Cycle" => Some(false),\n',
+    find: "            Some(StdPath::IterCycle) => sources.next().map_or(Some(false), |of| self.lower_bound_kept(of)),\n",
+    replace: "            Some(StdPath::IterCycle) => Some(false),\n",
     tests: endlessOnce,
   },
   {
@@ -22,8 +22,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `skip(n)` of what has no end isn't taken to have none once it gives an item, so `(0..).skip(2).map(f).collect::<Vec<_>>()` maps without end where Rust panics `capacity overflow` after the first (#433, ADR 0940)",
     file: "src/lower/recognition/lengths.rs",
-    find: '            | "std::iter::Skip"\n            | "std::iter::Enumerate"\n',
-    replace: '            | "std::iter::Enumerate"\n',
+    find: "                StdPath::IterMap\n                | StdPath::IterSkip\n                | StdPath::IterEnumerate\n",
+    replace: "                StdPath::IterMap\n                | StdPath::IterEnumerate\n",
     tests: endlessOnce,
   },
   {
@@ -41,9 +41,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a zip of a `cycle()` and what has an end is taken to have none, so its `collect()` panics `capacity overflow` where its lower bound, the other side's, fits (#433, ADR 0940)",
     file: "src/lower/recognition/lengths.rs",
-    find: '            // An item of both, each stepped.\n            "std::iter::Zip" => match (source(), source()) {\n                (Some(false), _) | (_, Some(false)) => Some(false),\n                (Some(true), Some(true)) => Some(true),\n',
-    replace:
-      '            // An item of both, each stepped.\n            "std::iter::Zip" => match (source(), source()) {\n                (Some(true), _) | (_, Some(true)) => Some(true),\n                (Some(false), Some(false)) => Some(false),\n',
+    find: "            // An item of both, each stepped.\n            Some(StdPath::IterZip) => match (source(), source()) {\n                (Some(false), _) | (_, Some(false)) => Some(false),\n                (Some(true), Some(true)) => Some(true),\n",
+    replace: "            // An item of both, each stepped.\n            Some(StdPath::IterZip) => match (source(), source()) {\n                (Some(true), _) | (_, Some(true)) => Some(true),\n                (Some(false), Some(false)) => Some(false),\n",
     tests: endlessOnce,
   },
   {
@@ -74,9 +73,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `cycle()` of an array's items chained with what's filtered is taken to have a lower bound above 0 wherever it has items, so its `collect()` panics `capacity overflow` where only the filter gives any (#433, ADR 0940)",
     file: "src/lower/recognition/lengths.rs",
-    find: '                (Some(a), Some(b)) if a == b => Some(a),\n                _ => None,\n            },\n            "std::iter::Zip"',
-    replace:
-      '                (Some(a), Some(b)) => Some(a || b),\n                _ => None,\n            },\n            "std::iter::Zip"',
+    find: "                (Some(a), Some(b)) if a == b => Some(a),\n                _ => None,\n            },\n            Some(StdPath::IterZip)",
+    replace: "                (Some(a), Some(b)) => Some(a || b),\n                _ => None,\n            },\n            Some(StdPath::IterZip)",
     tests: [
       "test/corpus.test.ts",
       "-t",
@@ -128,8 +126,8 @@ export const mutations: Mutation[] = [
     name: "counted-where-given-none",
     breaks: "an array's iterator given to generic code's `eq` isn't counted, so a range given it is refused (#1182)",
     file: "src/lower/recognition/lengths.rs",
-    find: "            \"std::slice::Iter\" | \"std::slice::IterMut\" | \"std::vec::IntoIter\" | \"std::array::IntoIter\" | \"std::ops::Range\"\n",
-    replace: "            \"std::slice::IterMut\"\n",
+    find: "Some(StdPath::SliceIter | StdPath::SliceIterMut | StdPath::VecIntoIter | StdPath::ArrayIntoIter | StdPath::OpsRange)))",
+    replace: "Some(StdPath::SliceIterMut)))",
     tests: ["test/crates.test.ts", "-t", "length_first_eq"],
   },
   {
@@ -160,8 +158,8 @@ export const mutations: Mutation[] = [
     name: "range-hinted-as-counted",
     breaks: "a B-tree's `range(..)` collected in a crate that reads a capacity is grown by JS's count of what's in range, 38, where std's hint has no lower bound and its capacity is 64 (#1215)",
     file: "src/lower/recognition/lengths.rs",
-    find: "                    | \"std::collections::btree_map::Range\"\n                    | \"std::collections::btree_map::RangeMut\"\n                    | \"std::collections::btree_set::Range\"\n",
-    replace: "                    | \"std::collections::btree_map::RangeMut\"\n",
+    find: "                        | StdPath::BtreeMapRange\n                        | StdPath::BtreeMapRangeMut\n                        | StdPath::BtreeSetRange\n",
+    replace: "                        | StdPath::BtreeMapRangeMut\n",
     tests: ["test/corpus.test.ts", "-t", "^capacity_of_what_std_hints_less.rs$"],
   },
   {
@@ -227,8 +225,8 @@ export const mutations: Mutation[] = [
     name: "cycle-room-never-passed",
     breaks: "a `String` collected from a `cycle()` of what has items, whose lower bound std makes `usize::MAX`, steps it without asking its hint, where std panics `capacity overflow` first (#1358)",
     file: "src/lower/recognition/lengths.rs",
-    find: "            \"std::iter::Cycle\" => sources\n                .next()\n                .is_some_and(|source| self.lower_bound_kept(source) != Some(false)),\n",
-    replace: "            \"std::iter::Cycle\" => false,\n",
+    find: "            Some(StdPath::IterCycle) => sources\n                .next()\n                .is_some_and(|source| self.lower_bound_kept(source) != Some(false)),\n",
+    replace: "            Some(StdPath::IterCycle) => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^text_and_tables_reserve_by_hint_first.rs$"],
   },
   {

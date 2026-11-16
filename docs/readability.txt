@@ -1,14 +1,14 @@
 # shape	count	per 10,000 lines
-files	2624
-lines	348495
+files	2625
+lines	348649
 temporaries	0	0
 labeled blocks	0	0
 while (true)	224	6.4
 $iter	2917	83.7
 Iterator.from	280	8
 return;	337	9.7
-renamed x$1	16336	468.8
-role fallbacks	8899	255.4
+renamed x$1	16339	468.6
+role fallbacks	8899	255.2
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1	role fallbacks
 test/corpus/adapter_drop_past_a_panic.js	50	0	0	0	1	0	0	0	1
 test/corpus/adapter_drops.js	1849	0	0	1	18	2	1	98	61
@@ -1797,6 +1797,7 @@ test/corpus/range_size_hint.js	42	0	0	0	0	0	0	11	3
 test/corpus/range_steps_anywhere.js	57	0	0	0	0	1	0	4	1
 test/corpus/range_steps_known.js	121	0	0	0	0	0	0	13	5
 test/corpus/range_values.js	241	0	0	0	0	1	0	0	1
+test/corpus/range_written_into_a_generic_writer.js	154	0	0	0	0	0	0	3	0
 test/corpus/ranges_end_at_a_diverging_call.js	101	0	0	2	0	0	0	10	6
 test/corpus/ranges_hashed_as_std_derives.js	620	0	0	0	0	0	0	0	1
 test/corpus/ranges_kept_of_what_stops_changing.js	19	0	0	0	0	0	0	0	0
