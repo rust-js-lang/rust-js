@@ -36,7 +36,7 @@ function main() {
     `[${$foldToArray($roomForHint(chain, 4, true)).join(", ")}] [${$foldToArray($roomForHint(copy, 4, true)).join(", ")}]`,
   );
   const makeChain = (a, b) =>
-    $cloning($lazyChain(a, b), () =>
+    $cloning($lazyChain($iter(a), $iter(b)), () =>
       makeChain($iter(a.items.slice(a.at, a.end)), $iter(b.items.slice(b.at, b.end))),
     );
   const s = makeChain($iter(a), b).reduce((a, b) => (a + b) | 0, 0);

@@ -17,6 +17,7 @@ import {
   $isSortedBy,
   $iter,
   $live,
+  $mapEnds,
   $mapFrom,
   $out,
   $partiallyOrdered,
@@ -56,7 +57,7 @@ function key(d) {
 
 function collected(v, CFromIteratorU32) {
   return CFromIteratorU32.fromIter(
-    $closing($iter(v), $dropEach(dDrop_drop)).map(key),
+    $mapEnds($closing($iter(v), $dropEach(dDrop_drop)), key),
     true,
     [4, 4],
     (map) => {
@@ -93,7 +94,9 @@ export const listedDebug = { fmt: listedDebug_fmt };
 function listedDebug_fmt(listed) {
   const f = $sink();
   const list = $debugList(f);
-  list.entries($closing($iter(ds()), $dropEach(dDrop_drop)).map(key), (entry) => String(entry));
+  list.entries($mapEnds($closing($iter(ds()), $dropEach(dDrop_drop)), key), (entry) =>
+    String(entry),
+  );
   list.finish();
   return f.done();
 }
@@ -103,14 +106,14 @@ function main() {
   let r = $catchUnwind(() => {
     $heapExtend(
       heap,
-      $closing($iter([[9], [2], [3]]), $dropEach(dDrop_drop)).map(key),
+      $mapEnds($closing($iter([[9], [2], [3]]), $dropEach(dDrop_drop)), key),
       $partiallyOrdered,
     );
   });
   console.log(`heap ${r.TAG === "Err"} [${$heapSorted(heap, $partiallyOrdered).join(", ")}]`);
   const v = [0, 9];
   r = $catchUnwind(() =>
-    $splicing(v, 0, 1, $closing($iter(ds()), $dropEach(dDrop_drop)).map(key)).reduce(
+    $splicing(v, 0, 1, $mapEnds($closing($iter(ds()), $dropEach(dDrop_drop)), key)).reduce(
       (n) => n + 1,
       0,
     ),
@@ -144,7 +147,7 @@ function main() {
   r = $catchUnwind(() => $byteLen(listedDebug_fmt(undefined)));
   console.log(`debug ${r.TAG === "Err"}`);
   r = $catchUnwind(() =>
-    $isSortedBy($closing($iter(ds()), $dropEach(dDrop_drop)).map(key), (a, b) => a <= b),
+    $isSortedBy($mapEnds($closing($iter(ds()), $dropEach(dDrop_drop)), key), (a, b) => a <= b),
   );
   console.log(`sorted ${r.TAG === "Err"}`);
   console.log(

@@ -8,6 +8,7 @@ import {
   $foldToArray,
   $given,
   $iter,
+  $mapEnds,
   $next,
   $rangeNext,
   $roomForHint,
@@ -98,7 +99,7 @@ function main() {
   // A `copied()` of a map over a slice, cloned apart: its clone is what it
   // copies' (ADR 0480).
   const makeMap = (it, f) =>
-    $cloning(it.map(f), () => makeMap($iter(it.items.slice(it.at, it.end)), f));
+    $cloning($mapEnds($iter(it), f), () => makeMap($iter(it.items.slice(it.at, it.end)), f));
   const doubled = iterator_filter(
     makeMap($iter([1, 2, 3, 4]), (x) => x),
     (x) => x % 2 === 0,

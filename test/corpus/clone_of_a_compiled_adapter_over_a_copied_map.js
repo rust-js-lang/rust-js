@@ -36,7 +36,7 @@ function main() {
   const copiedClone = { clone: (value) => $clone(value) };
   const items = [1, 2, 3, 4, 5];
   const makeMap = (it, f) =>
-    $cloning(it.map(f), () => makeMap($iter(it.items.slice(it.at, it.end)), f));
+    $cloning($mapEnds($iter(it), f), () => makeMap($iter(it.items.slice(it.at, it.end)), f));
   const a = iterator_map(
     makeMap($iter(items), (x) => x),
     (x) => (x + 1) | 0,
@@ -45,7 +45,7 @@ function main() {
   $next(a2);
   console.log(`map [${$foldToArray(a2).join(", ")}] [${$foldToArray(a).join(", ")}]`);
   const makeMap$1 = (it, f) =>
-    $cloning(it.map(f), () => makeMap$1($iter(it.items.slice(it.at, it.end)), f));
+    $cloning($mapEnds($iter(it), f), () => makeMap$1($iter(it.items.slice(it.at, it.end)), f));
   const b = iterator_enumerate(makeMap$1($iter(items), (x) => x));
   const b2 = enumerateClone_clone(b, copiedClone);
   $next(b2);
@@ -57,7 +57,7 @@ function main() {
       .join(", ")}]`,
   );
   const makeMap$2 = (it, f) =>
-    $cloning(it.map(f), () => makeMap$2($iter(it.items.slice(it.at, it.end)), f));
+    $cloning($mapEnds($iter(it), f), () => makeMap$2($iter(it.items.slice(it.at, it.end)), f));
   const c = iterator_skip(
     makeMap$2($iter(items), (x) => x),
     1,
@@ -66,7 +66,7 @@ function main() {
   $next(c2);
   console.log(`skip [${$foldToArray(c2).join(", ")}] [${$foldToArray(c).join(", ")}]`);
   const makeMap$3 = (it, f) =>
-    $cloning(it.map(f), () => makeMap$3($iter(it.items.slice(it.at, it.end)), f));
+    $cloning($mapEnds($iter(it), f), () => makeMap$3($iter(it.items.slice(it.at, it.end)), f));
   const d = iterator_take(
     makeMap$3($iter(items), (x) => x),
     3,
@@ -81,7 +81,7 @@ function main() {
   $next(e2);
   console.log(`rev [${$foldToArray(e2).join(", ")}] [${$foldToArray(e).join(", ")}]`);
   const makeMap$5 = (it, f) =>
-    $cloning(it.map(f), () => makeMap$5($iter(it.items.slice(it.at, it.end)), f));
+    $cloning($mapEnds($iter(it), f), () => makeMap$5($iter(it.items.slice(it.at, it.end)), f));
   const f = iterator_stepBy(
     makeMap$5($iter(items), (x) => x),
     2,
@@ -96,7 +96,7 @@ function main() {
   $next(h2);
   console.log(`peekable [${$foldToArray(h2).join(", ")}] [${$foldToArray(h).join(", ")}]`);
   const makeMap$7 = (it, f) =>
-    $cloning(it.map(f), () => makeMap$7($iter(it.items.slice(it.at, it.end)), f));
+    $cloning($mapEnds($iter(it), f), () => makeMap$7($iter(it.items.slice(it.at, it.end)), f));
   const j = iterator_chain(
     makeMap$7($iter(items), (x) => x),
     { start: 8, end: 10 },

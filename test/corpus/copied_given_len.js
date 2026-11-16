@@ -62,10 +62,7 @@ function pointDebug_fmt(point) {
 }
 
 function moved(it, IIterator, IExactSizeIterator, IClone) {
-  const copied = $mapEnds(
-    $given(it, IIterator, false, undefined, IExactSizeIterator.len),
-    (item) => ({ ...item }),
-  );
+  const copied = $mapEnds(it, (item) => ({ ...item }));
   const first = $unwrap($next(copied));
   first.x = (first.x + 10) >>> 0;
   return [{ ...first }, copied.len(), $collectDropping($roomForHint(copied, 4, false))];

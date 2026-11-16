@@ -4,9 +4,11 @@ import {
   $cleanup,
   $closing,
   $dropEach,
+  $filterEnds,
   $held,
   $iter,
   $lastDropping,
+  $mapEnds,
   $nextSome,
 } from "@rust-js/std";
 
@@ -54,14 +56,17 @@ function firstOf(it, dropI) {
 
 function main() {
   const last = lastOf(
-    $closing(
-      $iter([[1], undefined, [2], [3]]),
-      $dropEach((option) => {
-        if (option != null) {
-          dDrop_drop(option);
-        }
-      }),
-    ).filter((item) => item != null),
+    $filterEnds(
+      $closing(
+        $iter([[1], undefined, [2], [3]]),
+        $dropEach((option) => {
+          if (option != null) {
+            dDrop_drop(option);
+          }
+        }),
+      ),
+      (item) => item != null,
+    ),
     (flatten) => {
       flatten.return();
     },
@@ -75,14 +80,17 @@ function main() {
   const value = last != null ? map(last) : undefined;
   console.log(`last ${value == null ? "None" : `Some(${value})`}`);
   const first = firstOf(
-    $closing(
-      $iter([undefined, [4], [5]]),
-      $dropEach((option) => {
-        if (option != null) {
-          dDrop_drop(option);
-        }
-      }),
-    ).filter((item) => item != null),
+    $filterEnds(
+      $closing(
+        $iter([undefined, [4], [5]]),
+        $dropEach((option) => {
+          if (option != null) {
+            dDrop_drop(option);
+          }
+        }),
+      ),
+      (item) => item != null,
+    ),
     (flatten) => {
       flatten.return();
     },
@@ -95,8 +103,8 @@ function main() {
   const value$1 = first != null ? map$1(first) : undefined;
   console.log(`first ${value$1 == null ? "None" : `Some(${value$1})`}`);
   const mapped = firstOf(
-    $closing($iter([[6], [7], [8]]), $dropEach(dDrop_drop))
-      .map((d) => {
+    $filterEnds(
+      $mapEnds($closing($iter([[6], [7], [8]]), $dropEach(dDrop_drop)), (d) => {
         let d$4$live = true;
         let result;
         if (d[0] > 6) {
@@ -109,8 +117,9 @@ function main() {
           dDrop_drop(d);
         }
         return result;
-      })
-      .filter((item) => item != null),
+      }),
+      (item) => item != null,
+    ),
     (flatMap) => {
       flatMap.return();
     },

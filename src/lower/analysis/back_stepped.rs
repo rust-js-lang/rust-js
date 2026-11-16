@@ -733,6 +733,75 @@ pub(super) fn stepped_locals<'tcx>(
                         _ => None,
                     })
                     .collect();
+                // A value that leaves for code that may give it back, a copy of
+                // it or itself, to be stepped from its back where this walk
+                // doesn't follow: `pass(a)` of `fn pass<I>(it: I) -> I`, `dup(&a)`,
+                // `a.clone()`, `Box::new(a)`. By the callee's declared signature,
+                // what its parameter is given comes back where its result names
+                // a type parameter of that parameter's type, or another parameter
+                // it may write does, `&mut Vec<I>`; a library's function may do
+                // anything with it. Not the iterator traits' own methods, whose
+                // steps the walk reads, nor generic code that only steps it,
+                // which its type's question answers (#388). One of std's
+                // adapters of a double-ended type, or one the walk can't say
+                // isn't, is made knowing its back where it's made, as `rev()`'s
+                // is: unsure is made knowing (#1981).
+                let iterator_protocol = (tcx.trait_of_assoc(callee)).is_some_and(|tr| {
+                    is_double_ended(tcx, tr)
+                        || is_exact_size(tcx, tr)
+                        || crate::lower::recognition::is_iterator_trait(tcx, tr)
+                        || crate::lower::recognition::is_std_def(
+                            tcx,
+                            tr,
+                            crate::lower::recognition::StdItem::IntoIterator,
+                        )
+                });
+                if !iterator_protocol {
+                    let library = recognition.foreign.is_library(callee.krate);
+                    let declared = tcx.instantiate_bound_regions_with_erased(
+                        tcx.fn_sig(callee).instantiate_identity().skip_normalization(),
+                    );
+                    let params_of = |ty: Ty<'tcx>| -> Vec<Ty<'tcx>> {
+                        (ty.walk().filter_map(|part| part.as_type()))
+                            .filter(|t| crate::lower::generic_facts::is_type_parameter(*t))
+                            .collect()
+                    };
+                    for (i, arg) in args.iter().enumerate() {
+                        let (mir::Operand::Move(place) | mir::Operand::Copy(place)) = &arg.node else {
+                            continue;
+                        };
+                        let Some(given) = place.as_local() else { continue };
+                        let local = lent.get(&given).copied().unwrap_or_else(|| origin(given));
+                        let ty = erased(mir.local_decls[local].ty);
+                        let adapter = matches!(ty.kind(), ty::Adt(adt, _) if is_iter_adapter_def(tcx, adt.did()));
+                        if !adapter || recognition.trait_holds(ty, double_ended) == Some(false) {
+                            continue;
+                        }
+                        let comes_back = library
+                            || declared.inputs().get(i).is_some_and(|&input| {
+                                let named = params_of(input);
+                                let names = |t: Ty<'tcx>| params_of(t).iter().any(|p| named.contains(p));
+                                // A function of no type parameter, of the adapter's own
+                                // type: its result or another `&mut` parameter of it.
+                                let same = |t: Ty<'tcx>| {
+                                    t.walk()
+                                        .filter_map(|part| part.as_type())
+                                        .any(|part| erased(part) == ty)
+                                };
+                                let written = |j: usize, t: Ty<'tcx>| {
+                                    j != i && matches!(t.kind(), ty::Ref(_, _, ty::Mutability::Mut))
+                                };
+                                names(declared.output())
+                                    || (named.is_empty() && same(declared.output()))
+                                    || (declared.inputs().iter().enumerate())
+                                        .any(|(j, &t)| written(j, t) && (names(t) || named.is_empty() && same(t)))
+                            });
+                        if comes_back {
+                            mark(&mut stepped, (owner, local), SteppedLocal::Given);
+                            typed_sources.insert(ty);
+                        }
+                    }
+                }
                 // A value given beside a `&mut` of a local stepped from its
                 // back, of its type, which the callee may write there,
                 // `replace_in(&mut it, next)`, its caller's own as one

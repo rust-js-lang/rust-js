@@ -15,7 +15,7 @@ function pDebug_fmt(p) {
 function copiedTwice(v, TCopy, TDebug) {
   const makeCopied = (it) =>
     $cloning(
-      it.map((item) => (TCopy ? TCopy.copy(item) : item)),
+      $mapEnds(it, (item) => (TCopy ? TCopy.copy(item) : item)),
       () => makeCopied($iter(it.items.slice(it.at, it.end))),
     );
   const it = makeCopied($iter(v));
@@ -26,7 +26,7 @@ function copiedTwice(v, TCopy, TDebug) {
 function copiedAfter(v, TCopy, TDebug) {
   const makeCopied = (it) =>
     $cloning(
-      it.map((item) => (TCopy ? TCopy.copy(item) : item)),
+      $mapEnds(it, (item) => (TCopy ? TCopy.copy(item) : item)),
       () => makeCopied($iter(it.items.slice(it.at, it.end))),
     );
   const it = makeCopied($iter(v));

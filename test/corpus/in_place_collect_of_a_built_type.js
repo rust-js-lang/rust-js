@@ -18,6 +18,7 @@ import {
   $mapEnds,
   $next,
   $rangeInclusiveNext,
+  $rangeInclusiveNextBack,
   $roomForHint,
   $unwindsOn,
   iterator_map,
@@ -287,12 +288,9 @@ function main() {
   });
   run("not in place", () => {
     const value = held(
-      iterator_map(
-        { start: 1n, end: 2n },
+      $mapEnds(
+        $iterator({ start: 1n, end: 2n }, $rangeInclusiveNext, false, $rangeInclusiveNextBack),
         (n) => [[n]],
-        { next: $rangeInclusiveNext },
-        undefined,
-        $dropEach(dDrop_drop),
       ),
       {
         intoIter: (items) => $iter(items),

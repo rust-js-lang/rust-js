@@ -223,4 +223,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^lent_given_iterator_dropped_where_it_goes.rs$"],
   },
+  {
+    name: "closing-given-back-of-the-closing",
+    breaks: "generic code's source with a destructor, closed to drop what it steps, is given its back as `$given($closing($given(src, IIterator), drop), IIterator, false, IDoubleEndedIterator)`, the closing stepped from its back by `src`'s dictionary, which panics where Rust steps a `filter_map` of it given on by `by_ref()` from its back (#1981)",
+    file: "src/lower/iterators/value.rs",
+    find: "    (callee.helper_name() == Some(\"$closing\") && given.helper_name() == Some(\"$given\")).then(|| given_args.first())?\n",
+    replace: "    (callee.helper_name() == Some(\"$closing\") && given.helper_name() == Some(\"$never\")).then(|| given_args.first())?\n",
+    tests: ["test/iterator-matrix.test.ts"],
+    env: { ITERATOR_TABLE: "copies", ITERATOR_MATRIX: "/rev vec generic \\| filter_map \\| by_ref \\| next_back/" },
+  },
 ];

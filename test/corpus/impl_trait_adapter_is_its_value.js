@@ -3,6 +3,7 @@
 import {
   $foldToArray,
   $iter,
+  $iterator,
   $knowing,
   $next,
   $rangeFirst,
@@ -45,7 +46,9 @@ function main() {
   console.log(
     `${revDoubleEndedIterator_rfold(down(4), 0, (a, x) => (((a * 10) >>> 0) + x) >>> 0, { next: $rangeNext })}`,
   );
-  const last = $rangeFirst({ start: 1, end: 6 });
+  const last = $rangeFirst(
+    $rev($iterator({ start: 1, end: 6 }, $rangeNext, false, $rangeNextBack)).of,
+  );
   console.log(`${last == null ? "None" : `Some(${last})`}`);
   const d = down(3);
   const collect = $foldToArray(

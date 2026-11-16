@@ -6,13 +6,14 @@ import {
   $cleanup,
   $closing,
   $dropEach,
-  $filterDropping,
+  $filterEnds,
   $foldOf,
   $given,
   $givenDrop,
   $iter,
   $iterator,
   $live,
+  $mapEnds,
   $next,
   $nextBack,
   $rangeNext,
@@ -238,7 +239,7 @@ function main() {
         v,
         1,
         2,
-        $closing($iter([[4], [5], [6]]), $dropEach(dDrop_drop)).map((d) => {
+        $mapEnds($closing($iter([[4], [5], [6]]), $dropEach(dDrop_drop)), (d) => {
           if (d[0] === 6) {
             try {
               throw new Error("at 6");
@@ -262,7 +263,7 @@ function main() {
         v,
         1,
         3,
-        $filterDropping(
+        $filterEnds(
           $closing($iter([[30], [31], [32], [33]]), $dropEach(dDrop_drop)),
           (d) => {
             if (d[0] === 33) {

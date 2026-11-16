@@ -10,6 +10,7 @@ import {
   $foldOf,
   $foldToArray,
   $iter,
+  $iterator,
   $lazyChain,
   $next,
   $nextSome,
@@ -18,9 +19,7 @@ import {
   $toUppercase,
   chainClone,
   chainClone_clone,
-  filterClone_clone,
   iterator_chain,
-  iterator_filter,
   iterator_map,
   iterator_skip,
   iterator_take,
@@ -36,8 +35,6 @@ export function entry() {
 }
 
 function cycles() {
-  const clone = { clone: (value) => value };
-  const rangeClone = { clone: (value) => ({ start: value.start, end: value.end }) };
   const a = [1, 2];
   const makeMap = (it, f) =>
     $cloning(it.map(f), () => makeMap($iter(it.items.slice(it.at, it.end)), f));
@@ -53,36 +50,48 @@ function cycles() {
       ).take(5),
     ).join(", ")}]`,
   );
+  const makeFilter = (it, f) =>
+    $cloning($iterator(it, $rangeNext).filter(f), () =>
+      makeFilter({ start: it.start, end: it.end }, f),
+    );
   console.log(
     `[${Array.from(
       $cycleOf(
-        iterator_filter({ start: 1, end: 10 }, (x) => x % 3 === 0, { next: $rangeNext }),
-        (iterator) => filterClone_clone(iterator, rangeClone, clone),
+        makeFilter({ start: 1, end: 10 }, (x) => x % 3 === 0),
+        $clone,
         $next,
       ).take(5),
     ).join(", ")}]`,
   );
+  const makeMap$1 = (it, f) =>
+    $cloning($iterator(it, $rangeNext).map(f), () =>
+      makeMap$1({ start: it.start, end: it.end }, f),
+    );
   const value = $next(
     $cycleOf(
-      iterator_map({ start: 0, end: 0 }, (x) => x, { next: $rangeNext }),
-      (iterator) => mapClone_clone(iterator, rangeClone, clone),
+      makeMap$1({ start: 0, end: 0 }, (x) => x),
+      $clone,
       $next,
     ),
   );
   console.log(`${value == null ? "None" : `Some(${value})`}`);
+  const makeMap$2 = (it, f) =>
+    $cloning($iterator(it, $rangeNext).map(f), () =>
+      makeMap$2({ start: it.start, end: it.end }, f),
+    );
   const it = $cycleOf(
-    iterator_map({ start: 1, end: 4 }, (x) => (x * 2) | 0, { next: $rangeNext }),
-    (iterator) => mapClone_clone(iterator, rangeClone, clone),
+    makeMap$2({ start: 1, end: 4 }, (x) => (x * 2) | 0),
+    $clone,
     $next,
   );
   $next(it);
   console.log(`[${Array.from($roomForHint(iterator_take(it, 4), 4, false)).join(", ")}]`);
-  const makeMap$1 = (it, f) =>
-    $cloning(it.map(f), () => makeMap$1($iter(it.items.slice(it.at, it.end)), f));
+  const makeMap$3 = (it, f) =>
+    $cloning(it.map(f), () => makeMap$3($iter(it.items.slice(it.at, it.end)), f));
   console.log(
     `[${Array.from(
       $cycleOf(
-        makeMap$1($iter(["a", "b"]), (s) => $toUppercase(s)),
+        makeMap$3($iter(["a", "b"]), (s) => $toUppercase(s)),
         $clone,
         $next,
       ).take(3),
@@ -90,12 +99,12 @@ function cycles() {
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );
-  const makeMap$2 = (it, f) =>
-    $cloning(it.map(f), () => makeMap$2($iter(it.items.slice(it.at, it.end)), f));
+  const makeMap$4 = (it, f) =>
+    $cloning(it.map(f), () => makeMap$4($iter(it.items.slice(it.at, it.end)), f));
   console.log(
     `[${Array.from(
       $cycleOf(
-        makeMap$2($iter([1, undefined]), (o) => o),
+        makeMap$4($iter([1, undefined]), (o) => o),
         $clone,
         $nextSome,
         true,
@@ -107,9 +116,7 @@ function cycles() {
 }
 
 function clones() {
-  const clone = { clone: (value) => value };
   const intoIterator = { intoIter: (items) => items, IntoIterIterator: () => ({ next: $next }) };
-  const rangeClone = { clone: (value) => ({ start: value.start, end: value.end }) };
   const iterClone = { clone: (value) => $iter(value.items.slice(value.at, value.end)) };
   const a = [1, 2];
   const b = [3];
@@ -117,7 +124,7 @@ function clones() {
   const d = chainClone_clone(c, iterClone, iterClone);
   console.log(`[${$foldToArray($roomForHint(c, 4, true)).join(", ")}] ${$count(d)}`);
   const makeChain = (a, b) =>
-    $cloning($lazyChain(a, b), () =>
+    $cloning($lazyChain($iter(a), $iter(b)), () =>
       makeChain($iter(a.items.slice(a.at, a.end)), $iter(b.items.slice(b.at, b.end))),
     );
   console.log(
@@ -164,7 +171,12 @@ function clones() {
           false,
           false,
         ),
-        (iterator) => zipClone_clone(iterator, rangeClone, { clone: (value) => value.clone() }),
+        (iterator) =>
+          zipClone_clone(
+            iterator,
+            { clone: (value) => ({ start: value.start, end: value.end }) },
+            { clone: (value) => value.clone() },
+          ),
         $next,
       ).take(5),
     )
@@ -172,13 +184,17 @@ function clones() {
       .join(", ")}]`,
   );
   const m = iterator_map($iter(a), (x) => (x * 10) | 0);
-  const m2 = mapClone_clone(m, iterClone, clone);
+  const m2 = mapClone_clone(m, iterClone, { clone: (value) => value });
   console.log(`[${$foldToArray(m).join(", ")}] ${m2.reduce((a, b) => (a + b) | 0, 0)}`);
+  const makeFilter = (it, f) =>
+    $cloning($iterator(it, $rangeNext).filter(f), () =>
+      makeFilter({ start: it.start, end: it.end }, f),
+    );
   console.log(
     `[${Array.from(
       $cycleOf(
-        iterator_filter({ start: 1, end: 10 }, (x) => x % 3 === 0, { next: $rangeNext }),
-        (iterator) => filterClone_clone(iterator, rangeClone, clone),
+        makeFilter({ start: 1, end: 10 }, (x) => x % 3 === 0),
+        $clone,
         $next,
       ).take(5),
     ).join(", ")}]`,

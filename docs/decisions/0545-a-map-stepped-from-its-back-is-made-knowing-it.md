@@ -1841,3 +1841,44 @@ survived every case's run, `counted_adapters_where_capacity_is_read` made
 exact and `held_skip_stepped_from_its_back_knows_its_length` added. So the
 mark is removed (ADR 0093), and `counted-made-knowing-unmarked` holds the
 back mark.
+
+## Amendment: a value that may come back from what it's given to (2026-11-16, #1981)
+
+Each local is asked by its MIR identity, so a value given to code that
+gives it back, `pass(a)` of `fn pass<I>(it: I) -> I`, a copy of it,
+`a.clone()`, `dup(&a)`, or a box of it, `Box::new(a)`, then stepped from
+its back as what that gives, wasn't one any step named: an adapter made in
+place, a `filter_map` of a `Vec`, threw `it.back is not a function` where
+Rust gives `Some(7)`. Now a local given, whole or lent, to anything but
+the iterator traits' own methods, whose steps the walk reads, is made
+knowing its back where the callee's declared signature can give it back:
+its result names a type parameter of that parameter's type, or of a
+function of none the adapter's own type, or another `&mut` parameter does,
+or the callee is a library's. Its type is too, as `rev()`'s is, so a
+`by_ref()` of it given on, `pass(i.by_ref())`, is made knowing its back
+by the type its maker makes. One of std's adapters double-ended, or one
+the walk can't say isn't, is: unsure is made knowing.
+
+Code that only steps it from its back itself, given it where a
+`DoubleEndedIterator` is asked, needs no rule of its own: a bound,
+`fn last<I: DoubleEndedIterator>(it: I)`, is its type's question (#388),
+and `last(a)`, `last(m.by_ref())` and a `Box<dyn DoubleEndedIterator>` of
+one run as native Rust does. A `&mut dyn DoubleEndedIterator` of an
+adapter made in place, and a generic struct's field of one stepped through
+its impl's method, are refused as before, not stepped. Where its value
+can't come back, generic code that folds it, `fold_exact(own.map(f))`, is
+asked nothing more: marking every value given to generic code refused
+`adapters_over_own_next_that_panics.rs`.
+
+Twenty-nine of the corpus's snapshots move, 5,780 lines to 5,965
+(×1.032): adapters given where they may come back, made knowing their
+back, `$mapEnds`, `$filterEnds`, `$knowing`, each as native prints.
+A source generic code closes to drop what it steps, `$closing($given(src,
+IIterator), drop)`, made knowing its back is the given iterator inside
+made so, the closing around it, which passes its back through: never a
+`$given` of the closing, stepped from its back by `src`'s dictionary,
+which panicked once the rule reached it (`rev vec generic | filter_map |
+by_ref | next_back`, refused before). All 222 of the copy matrix's cells
+under #1981 run as native Rust does and leave its known list. Corpus case
+`adapter_given_back_stepped_from_its_back.rs`; mutations
+`given-back-never-back-stepped` and `closing-given-back-of-the-closing`.

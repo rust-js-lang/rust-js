@@ -3,10 +3,15 @@
 import {
   $foldToArray,
   $iter,
+  $knowing,
   $lent,
   $next,
+  $nextBack,
+  $tryOf,
   iterator_map,
   mapDoubleEndedIterator_nextBack,
+  mapDoubleEndedIterator_tryRfold,
+  mapExactSizeIterator_len,
 } from "@rust-js/std";
 
 export function entry() {
@@ -22,7 +27,31 @@ function main() {
   const first = $next(it);
   it = iterator_map($iter([7, 8, 9]), double);
   const back = mapDoubleEndedIterator_nextBack(it);
-  const rest = $foldToArray($lent(it));
+  const rest = $foldToArray(
+    $lent(
+      $knowing(
+        it,
+        mapDoubleEndedIterator_nextBack,
+        (iterator) => mapExactSizeIterator_len(iterator, { len: (iterator) => iterator.len() }),
+        undefined,
+        undefined,
+        (iterator, init, f, broke, unwind, ends) =>
+          mapDoubleEndedIterator_tryRfold(
+            iterator,
+            init,
+            f,
+            { next: $next },
+            { next_back: $nextBack },
+            $tryOf(broke),
+            undefined,
+            undefined,
+            undefined,
+            unwind,
+            ends,
+          ),
+      ),
+    ),
+  );
   console.log(
     `${first == null ? "None" : `Some(${first})`} ${back == null ? "None" : `Some(${back})`} [${rest.join(", ")}]`,
   );

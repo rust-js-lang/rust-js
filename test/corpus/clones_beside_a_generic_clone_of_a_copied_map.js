@@ -6,9 +6,12 @@ import {
   $foldToArray,
   $given,
   $iter,
+  $knowing,
   $next,
+  $nextBack,
   $rangeNext,
   $roomForHint,
+  $tryOf,
   chainClone_clone,
   copiedClone,
   copiedIterator___iteratorGetUnchecked,
@@ -23,6 +26,9 @@ import {
   iterator_take,
   mapClone,
   mapClone_clone,
+  mapDoubleEndedIterator_nextBack,
+  mapDoubleEndedIterator_tryRfold,
+  mapExactSizeIterator_len,
   mapIterator___iteratorGetUnchecked,
   peekableClone_clone,
   skipClone_clone,
@@ -46,6 +52,7 @@ function show(it, IIterator, IClone, IItemDebug, IVecCollect, IItemSize) {
 
 function main() {
   const clone = { clone: (value) => value };
+  const iterExactSizeIterator = { len: (iterator) => iterator.len() };
   const iterClone = { clone: (value) => $iter(value.items.slice(value.at, value.end)) };
   const copiedIterator = {
     next: $next,
@@ -60,13 +67,55 @@ function main() {
   const copiedClone$1 = { clone: (value) => mapClone_clone(value, iterClone, clone) };
   const items = [1, 2, 3, 4, 5];
   const a = iterator_map(
-    iterator_map($iter(items), (x) => x),
+    $knowing(
+      iterator_map($iter(items), (x) => x),
+      mapDoubleEndedIterator_nextBack,
+      (iterator) => mapExactSizeIterator_len(iterator, iterExactSizeIterator),
+      undefined,
+      undefined,
+      (iterator, init, f, broke, unwind, ends) =>
+        mapDoubleEndedIterator_tryRfold(
+          iterator,
+          init,
+          f,
+          { next: $next },
+          { next_back: $nextBack },
+          $tryOf(broke),
+          undefined,
+          undefined,
+          undefined,
+          unwind,
+          ends,
+        ),
+    ),
     (x) => (x + 1) | 0,
   );
   const a2 = mapClone_clone(a, copiedClone$1, clone);
   $next(a2);
   console.log(`map [${$foldToArray(a2).join(", ")}] [${$foldToArray(a).join(", ")}]`);
-  const b = iterator_enumerate(iterator_map($iter(items), (x) => x));
+  const b = iterator_enumerate(
+    $knowing(
+      iterator_map($iter(items), (x) => x),
+      mapDoubleEndedIterator_nextBack,
+      (iterator) => mapExactSizeIterator_len(iterator, iterExactSizeIterator),
+      undefined,
+      undefined,
+      (iterator, init, f, broke, unwind, ends) =>
+        mapDoubleEndedIterator_tryRfold(
+          iterator,
+          init,
+          f,
+          { next: $next },
+          { next_back: $nextBack },
+          $tryOf(broke),
+          undefined,
+          undefined,
+          undefined,
+          unwind,
+          ends,
+        ),
+    ),
+  );
   const b2 = enumerateClone_clone(b, copiedClone$1);
   $next(b2);
   console.log(
@@ -77,21 +126,81 @@ function main() {
       .join(", ")}]`,
   );
   const c = iterator_skip(
-    iterator_map($iter(items), (x) => x),
+    $knowing(
+      iterator_map($iter(items), (x) => x),
+      mapDoubleEndedIterator_nextBack,
+      (iterator) => mapExactSizeIterator_len(iterator, iterExactSizeIterator),
+      undefined,
+      undefined,
+      (iterator, init, f, broke, unwind, ends) =>
+        mapDoubleEndedIterator_tryRfold(
+          iterator,
+          init,
+          f,
+          { next: $next },
+          { next_back: $nextBack },
+          $tryOf(broke),
+          undefined,
+          undefined,
+          undefined,
+          unwind,
+          ends,
+        ),
+    ),
     1,
   );
   const c2 = skipClone_clone(c, copiedClone$1);
   $next(c2);
   console.log(`skip [${$foldToArray(c2).join(", ")}] [${$foldToArray(c).join(", ")}]`);
   const d = iterator_take(
-    iterator_map($iter(items), (x) => x),
+    $knowing(
+      iterator_map($iter(items), (x) => x),
+      mapDoubleEndedIterator_nextBack,
+      (iterator) => mapExactSizeIterator_len(iterator, iterExactSizeIterator),
+      undefined,
+      undefined,
+      (iterator, init, f, broke, unwind, ends) =>
+        mapDoubleEndedIterator_tryRfold(
+          iterator,
+          init,
+          f,
+          { next: $next },
+          { next_back: $nextBack },
+          $tryOf(broke),
+          undefined,
+          undefined,
+          undefined,
+          unwind,
+          ends,
+        ),
+    ),
     3,
   );
   const d2 = takeClone_clone(d, copiedClone$1);
   $next(d2);
   console.log(`take [${$foldToArray(d2).join(", ")}] [${$foldToArray(d).join(", ")}]`);
   const f = iterator_stepBy(
-    iterator_map($iter(items), (x) => x),
+    $knowing(
+      iterator_map($iter(items), (x) => x),
+      mapDoubleEndedIterator_nextBack,
+      (iterator) => mapExactSizeIterator_len(iterator, iterExactSizeIterator),
+      undefined,
+      undefined,
+      (iterator, init, f, broke, unwind, ends) =>
+        mapDoubleEndedIterator_tryRfold(
+          iterator,
+          init,
+          f,
+          { next: $next },
+          { next_back: $nextBack },
+          $tryOf(broke),
+          undefined,
+          undefined,
+          undefined,
+          unwind,
+          ends,
+        ),
+    ),
     2,
   );
   const f2 = stepByClone_clone(f, copiedClone$1);
@@ -102,7 +211,27 @@ function main() {
   $next(h2);
   console.log(`peekable [${$foldToArray(h2).join(", ")}] [${$foldToArray(h).join(", ")}]`);
   const j = iterator_chain(
-    iterator_map($iter(items), (x) => x),
+    $knowing(
+      iterator_map($iter(items), (x) => x),
+      mapDoubleEndedIterator_nextBack,
+      (iterator) => mapExactSizeIterator_len(iterator, iterExactSizeIterator),
+      undefined,
+      undefined,
+      (iterator, init, f, broke, unwind, ends) =>
+        mapDoubleEndedIterator_tryRfold(
+          iterator,
+          init,
+          f,
+          { next: $next },
+          { next_back: $nextBack },
+          $tryOf(broke),
+          undefined,
+          undefined,
+          undefined,
+          unwind,
+          ends,
+        ),
+    ),
     { start: 8, end: 10 },
     { next: $next },
     { intoIter: (items) => items, IntoIterIterator: () => ({ next: $rangeNext }) },

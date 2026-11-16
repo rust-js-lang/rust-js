@@ -4,16 +4,19 @@ import {
   $debugStr,
   $exactLen,
   $iter,
+  $knowing,
   $lent,
   $next,
   $nextBack,
   $print,
   $roomForHint,
+  $tryOf,
   enumerateClone_clone,
   enumerateDebug_fmt,
   enumerateDoubleEndedIterator_nextBack,
   enumerateDoubleEndedIterator_nthBack,
   enumerateDoubleEndedIterator_rfold,
+  enumerateDoubleEndedIterator_tryRfold,
   enumerateExactSizeIterator_len,
   iterator_enumerate,
 } from "@rust-js/std";
@@ -134,7 +137,32 @@ function main() {
   );
   // Lent where its own impl steps it, from its back: std's struct.
   const ends = iterator_enumerate($iter(v));
-  const value$5 = enumerateDoubleEndedIterator_nextBack($lent(ends), exactSizeIterator);
+  const value$5 = enumerateDoubleEndedIterator_nextBack(
+    $lent(
+      $knowing(
+        ends,
+        (iterator) => enumerateDoubleEndedIterator_nextBack(iterator, exactSizeIterator),
+        (iterator) => enumerateExactSizeIterator_len(iterator, exactSizeIterator),
+        undefined,
+        (iterator, k) =>
+          enumerateDoubleEndedIterator_nthBack(iterator, k, { next: $next }, exactSizeIterator),
+        (iterator, init, f, broke, unwind, ends) =>
+          enumerateDoubleEndedIterator_tryRfold(
+            iterator,
+            init,
+            f,
+            { next: $next },
+            exactSizeIterator,
+            { next_back: $nextBack },
+            $tryOf(broke),
+            undefined,
+            unwind,
+            ends,
+          ),
+      ),
+    ),
+    exactSizeIterator,
+  );
   const value$6 = $next(ends);
   $print(
     `${value$5 == null ? "None" : `Some((${value$5[0]}, ${value$5[1]}))`} ${value$6 == null ? "None" : `Some((${value$6[0]}, ${value$6[1]}))`}\n`,

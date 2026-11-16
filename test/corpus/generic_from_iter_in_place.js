@@ -9,6 +9,7 @@ import {
   $dropItems,
   $intsOrdered,
   $iter,
+  $mapEnds,
   $sortStable,
 } from "@rust-js/std";
 
@@ -40,7 +41,7 @@ function sorted(iter, IItemOrd, IVecCollect, IItemSize, IItemStableSort) {
 
 function main() {
   const v = all(
-    $closing($iter([[1], [2]]), $dropEach(dDrop_drop)).map((d) => {
+    $mapEnds($closing($iter([[1], [2]]), $dropEach(dDrop_drop)), (d) => {
       const result = [(d[0] + 10) >>> 0];
       dDrop_drop(d);
       return result;
@@ -68,7 +69,7 @@ function main() {
   // and what's left dropped, as std's in-place collect drops them.
   const r = $catchUnwind(() => {
     const v = all(
-      $closing($iter([[1], [3], [5]]), $dropEach(dDrop_drop)).map((d) => {
+      $mapEnds($closing($iter([[1], [3], [5]]), $dropEach(dDrop_drop)), (d) => {
         const result = [(d[0] + 10) >>> 0];
         dDrop_drop(d);
         return result;

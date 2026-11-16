@@ -8,6 +8,7 @@ import {
   $iter,
   $knowing,
   $live,
+  $mapEnds,
   $next,
   $nextBack,
   $rev,
@@ -35,74 +36,77 @@ function hold(t) {
 function main() {
   const intoIterExactSizeIterator = { len: (iterator) => iterator.len() };
   const r = $collectDropping(
-    $rev(
-      $knowing(
-        hold(
-          iterator_map(
-            $iter([[4], [5]]),
-            (l) => l,
-            { next: $next, advanceBy: $advanceSlice },
-            $dropEach(loudDrop_drop),
-            loudDrop_drop,
-            undefined,
-            loudDrop_drop,
+    $mapEnds(
+      $rev(
+        $knowing(
+          hold(
+            iterator_map(
+              $iter([[4], [5]]),
+              (l) => l,
+              { next: $next, advanceBy: $advanceSlice },
+              $dropEach(loudDrop_drop),
+              loudDrop_drop,
+              undefined,
+              loudDrop_drop,
+            ),
           ),
+          (iterator) =>
+            mapDoubleEndedIterator_nextBack(
+              iterator,
+              { next_back: $nextBack },
+              loudDrop_drop,
+              $dropEach(loudDrop_drop),
+              undefined,
+              loudDrop_drop,
+            ),
+          (iterator) =>
+            mapExactSizeIterator_len(
+              iterator,
+              intoIterExactSizeIterator,
+              loudDrop_drop,
+              $dropEach(loudDrop_drop),
+              undefined,
+              loudDrop_drop,
+            ),
+          (iterator, init, f, unwind, ends) =>
+            mapDoubleEndedIterator_rfold(
+              iterator,
+              init,
+              f,
+              { next: $next, advanceBy: $advanceSlice },
+              { next_back: $nextBack },
+              loudDrop_drop,
+              $dropEach(loudDrop_drop),
+              undefined,
+              unwind,
+              ends,
+              loudDrop_drop,
+            ),
+          undefined,
+          (iterator, init, f, broke, unwind, ends) =>
+            mapDoubleEndedIterator_tryRfold(
+              iterator,
+              init,
+              f,
+              { next: $next, advanceBy: $advanceSlice },
+              { next_back: $nextBack },
+              $tryOf(broke),
+              loudDrop_drop,
+              $dropEach(loudDrop_drop),
+              undefined,
+              unwind,
+              ends,
+              undefined,
+              loudDrop_drop,
+            ),
         ),
-        (iterator) =>
-          mapDoubleEndedIterator_nextBack(
-            iterator,
-            { next_back: $nextBack },
-            loudDrop_drop,
-            $dropEach(loudDrop_drop),
-            undefined,
-            loudDrop_drop,
-          ),
-        (iterator) =>
-          mapExactSizeIterator_len(
-            iterator,
-            intoIterExactSizeIterator,
-            loudDrop_drop,
-            $dropEach(loudDrop_drop),
-            undefined,
-            loudDrop_drop,
-          ),
-        (iterator, init, f, unwind, ends) =>
-          mapDoubleEndedIterator_rfold(
-            iterator,
-            init,
-            f,
-            { next: $next, advanceBy: $advanceSlice },
-            { next_back: $nextBack },
-            loudDrop_drop,
-            $dropEach(loudDrop_drop),
-            undefined,
-            unwind,
-            ends,
-            loudDrop_drop,
-          ),
-        undefined,
-        (iterator, init, f, broke, unwind, ends) =>
-          mapDoubleEndedIterator_tryRfold(
-            iterator,
-            init,
-            f,
-            { next: $next, advanceBy: $advanceSlice },
-            { next_back: $nextBack },
-            $tryOf(broke),
-            loudDrop_drop,
-            $dropEach(loudDrop_drop),
-            undefined,
-            unwind,
-            ends,
-            undefined,
-            loudDrop_drop,
-          ),
       ),
-    ).map((l) => {
-      const result = l[0];
-      loudDrop_drop(l);
-      return result;
-    }),
+      (l) => {
+        const result = l[0];
+        loudDrop_drop(l);
+        return result;
+      },
+    ),
   );
   console.log(`[${r.join(", ")}]`);
   const rev = $held(

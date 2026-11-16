@@ -889,6 +889,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.knows_its_back(ty) || crate::lower::recognition::steps_back_as_front(self.tcx, ty) {
             return Ok(value);
         }
+        // One generic code closes to drop what it steps, `$closing($given(src,
+        // IIterator), drop)` of a source with a destructor: the given iterator
+        // inside made knowing its back, the closing around it as it was, which
+        // passes its back through; never a `$given` of the closing, stepped
+        // from its back by `src`'s dictionary as though it were `src` (#1981).
+        if let Some(src) = super::closed_given_source(&value)
+            && let Some(it) = self.given_js_iterator(src.clone(), ty, true, false)
+        {
+            return Ok(super::closed_around(&value, it));
+        }
         if let Some(it) = self.given_js_iterator(value.clone(), ty, true, false) {
             return Ok(it);
         }

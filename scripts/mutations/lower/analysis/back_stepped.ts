@@ -566,4 +566,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^reversed_filter_map_given_to_a_compiled_adapter.rs$"],
   },
+  {
+    name: "given-back-never-back-stepped",
+    breaks: "an adapter made in place given to code that gives it back, `pass(a)` of `fn pass<I>(it: I) -> I`, isn't made knowing its back, so `b.next_back()` of what `pass` gives throws `it.back is not a function` where Rust gives `Some(7)` (#1981)",
+    file: "src/lower/analysis/back_stepped.rs",
+    find: "                        if comes_back {\n",
+    replace: "                        if false && comes_back {\n",
+    tests: ["test/corpus.test.ts", "-t", "^adapter_given_back_stepped_from_its_back.rs$"],
+  },
 ];

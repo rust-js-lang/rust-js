@@ -23,6 +23,7 @@ import {
   $next,
   $nextSome,
   $rangeInclusiveNext,
+  $rangeInclusiveNextBack,
   $roomForHint,
   $traitImpl,
   $unwindsOn,
@@ -146,7 +147,10 @@ function relayed(options, JInPlace, HeldSize, HeldAlign, dropT, dropJ) {
  */
 function ranged(t, HeldSize, HeldAlign) {
   const value = held(
-    iterator_map({ start: 1, end: 2 }, () => t, { next: $rangeInclusiveNext }),
+    $mapEnds(
+      $iterator({ start: 1, end: 2 }, $rangeInclusiveNext, false, $rangeInclusiveNextBack),
+      () => t,
+    ),
     {
       intoIter: (items) => $iter(items == null ? [] : [items]),
       IntoIterIterator: () => ({ next: $next }),
@@ -197,7 +201,10 @@ function listed(iters, HItemIntoIterator, dropH, dropHItem, dropHItemIntoIter) {
  */
 function listedRanged(t) {
   const value = listed(
-    iterator_map({ start: 1, end: 2 }, () => t, { next: $rangeInclusiveNext }),
+    $mapEnds(
+      $iterator({ start: 1, end: 2 }, $rangeInclusiveNext, false, $rangeInclusiveNextBack),
+      () => t,
+    ),
     {
       intoIter: (items) => $iter(items == null ? [] : [items]),
       IntoIterIterator: () => ({ next: $next }),
@@ -518,16 +525,9 @@ function main() {
   });
   run("listed, not in place", () => {
     const value = listed(
-      iterator_map(
-        { start: 1n, end: 2n },
+      $mapEnds(
+        $iterator({ start: 1n, end: 2n }, $rangeInclusiveNext, false, $rangeInclusiveNextBack),
         (n) => [n],
-        { next: $rangeInclusiveNext },
-        undefined,
-        (option) => {
-          if (option != null) {
-            dDrop_drop(option);
-          }
-        },
       ),
       {
         intoIter: (items) => $iter(items == null ? [] : [items]),

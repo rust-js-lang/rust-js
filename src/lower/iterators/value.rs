@@ -825,6 +825,28 @@ pub(in crate::lower) fn stepped_from(e: &Expr) -> Option<(&Expr, i128)> {
     (s == "start").then_some((start, n))
 }
 
+/// Of `e`, `$closing($given(src, IIterator), drop)`, generic code's source
+/// closed to drop what it steps: `src` (#1981).
+pub(in crate::lower) fn closed_given_source(e: &Expr) -> Option<&Expr> {
+    let js::ExprKind::Call(callee, args) = &e.kind else {
+        return None;
+    };
+    let js::ExprKind::Call(given, given_args) = &args.first()?.kind else {
+        return None;
+    };
+    (callee.helper_name() == Some("$closing") && given.helper_name() == Some("$given")).then(|| given_args.first())?
+}
+
+/// `e`, a `$closing`, closing `inner` in place of what it closed, its
+/// facts kept (#1981).
+pub(in crate::lower) fn closed_around(e: &Expr, inner: Expr) -> Expr {
+    let mut closed = e.clone();
+    if let js::ExprKind::Call(_, args) = &mut closed.kind {
+        args[0] = inner;
+    }
+    closed
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

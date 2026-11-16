@@ -8,30 +8,32 @@ import {
   $collectsInPlace,
   $count,
   $dropEach,
+  $filterEnds,
   $foldOf,
   $intoIter,
   $iter,
   $iterator,
   $jsIterator,
   $last,
+  $lazyChain,
   $lazyRange,
   $live,
   $mapEnds,
   $next,
   $nth,
   $range,
+  $rangeLen,
   $rangeNext,
   $rangeNextBack,
-  $rangeNthBack,
   $repeating,
+  $rev,
   $unwindsOn,
   $vecCollectWay,
+  $zipEnds,
   iterator_chain,
   iterator_filter,
   iterator_map,
-  iterator_rev,
   iterator_zip,
-  zipIterator___iteratorGetUnchecked,
 } from "@rust-js/std";
 
 export function entry() {
@@ -81,14 +83,10 @@ function fromItems(items, TItemSize, TIntoIterVecCollect) {
  */
 function mapped(it, JTrustedLen, JInPlace) {
   return all(
-    iterator_map(
-      Iterator.from(it),
-      (x) => {
-        console.log(`stepped ${x}`);
-        return (x + 1) >>> 0;
-      },
-      $jsIterator,
-    ),
+    $mapEnds(it, (x) => {
+      console.log(`stepped ${x}`);
+      return (x + 1) >>> 0;
+    }),
     $vecCollectWay($collectsInPlace(JInPlace, 4, 4), JTrustedLen, JInPlace),
     4,
   );
@@ -161,27 +159,20 @@ function main() {
   shown("in place, from its items", v);
   // By its fold: room for its hint's upper bound first.
   v = all(
-    iterator_map({ start: 0, end: 5 }, (x) => (x + 1) >>> 0, { next: $rangeNext }),
-    "fold",
-    4,
-  );
-  shown("by fold", v);
-  v = relayed(
-    iterator_rev(
-      { start: 0, end: 6 },
-      { next: $rangeNext },
-      { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+    $mapEnds(
+      $iterator({ start: 0, end: 5 }, $rangeNext, false, $rangeNextBack),
+      (x) => (x + 1) >>> 0,
     ),
     "fold",
     4,
   );
+  shown("by fold", v);
+  v = relayed($rev($iterator({ start: 0, end: 6 }, $rangeNext, false, $rangeNextBack)), "fold", 4);
   shown("by fold, relayed", v);
   v = fromItems(
-    iterator_chain(
-      { start: 0, end: 4 },
-      { start: 7, end: 9 },
-      { next: $rangeNext },
-      rangeIntoIterator,
+    $lazyChain(
+      $iterator({ start: 0, end: 4 }, $rangeNext, false, $rangeNextBack),
+      $iterator({ start: 7, end: 9 }, $rangeNext, false, $rangeNextBack),
     ),
     4,
     "fold",
@@ -195,7 +186,10 @@ function main() {
   );
   shown("by next", v);
   v = all(
-    iterator_filter({ start: 0, end: 9 }, (x) => x % 2 === 0, { next: $rangeNext }),
+    $filterEnds(
+      $iterator({ start: 0, end: 9 }, $rangeNext, false, $rangeNextBack),
+      (x) => x % 2 === 0,
+    ),
     "next",
     4,
   );
@@ -213,7 +207,7 @@ function main() {
   shown("by next, relayed", v);
   // Into a `B` of the caller's, a `Vec`.
   v = built(
-    iterator_map({ start: 0, end: 3 }, (x) => (x * 3) >>> 0, { next: $rangeNext }),
+    $lazyRange(0, 3).map((x) => (x * 3) >>> 0),
     {
       fromIter: (items, ITrustedLen, IInPlace) =>
         $collectVec(
@@ -261,18 +255,10 @@ function main() {
   r = $catchUnwind(() => {
     let count = 0;
     const value = all(
-      iterator_map(
-        iterator_zip(
-          { start: 0, end: 4 },
-          { start: 10, end: 14 },
-          { next: $rangeNext },
-          rangeIntoIterator,
-          true,
-          true,
-          true,
-          true,
-          true,
-          true,
+      $mapEnds(
+        $zipEnds(
+          $iterator({ start: 0, end: 4 }, $rangeNext, false, $rangeNextBack, $rangeLen),
+          $iterator({ start: 10, end: 14 }, $rangeNext, false, $rangeNextBack, $rangeLen),
         ),
         ([a, b]) => {
           count = (count + 1) | 0;
@@ -282,19 +268,6 @@ function main() {
           }
           return [(a + b) >>> 0];
         },
-        {
-          next: $next,
-          fold: $foldOf,
-          getUnchecked: (iterator, i) =>
-            zipIterator___iteratorGetUnchecked(
-              iterator,
-              i,
-              { next: $rangeNext },
-              { next: $rangeNext },
-            ),
-        },
-        undefined,
-        loudDrop_drop,
       ),
       "fold",
       4,
@@ -429,7 +402,7 @@ function main() {
   shown(
     "mapped, by next",
     mapped(
-      iterator_filter({ start: 0, end: 5 }, (x) => x % 2 === 0, { next: $rangeNext }),
+      $lazyRange(0, 5).filter((x) => x % 2 === 0),
       false,
     ),
   );

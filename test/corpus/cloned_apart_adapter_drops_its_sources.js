@@ -151,16 +151,22 @@ function main() {
   const makeChain$3 = (a, b) =>
     $cloning(
       $lazyChain(
-        $closing($iterator(a, countdownIterator_next), (it) => {
-          countdownDrop_drop(it.of);
-        }),
-        $closing($iterator(b, countdownIterator_next), (it) => {
-          countdownDrop_drop(it.of);
-        }),
+        $closing(
+          $iterator(a, countdownIterator_next, false, countdownDoubleEndedIterator_nextBack),
+          (it) => {
+            countdownDrop_drop(it.of);
+          },
+        ),
+        $closing(
+          $iterator(b, countdownIterator_next, false, countdownDoubleEndedIterator_nextBack),
+          (it) => {
+            countdownDrop_drop(it.of);
+          },
+        ),
       ),
       () => makeChain$3([a[0]], [b[0]]),
     );
-  const value = $held(makeChain$3([3], [2]).map((n) => (n * 3) >>> 0));
+  const value = $held($mapEnds(makeChain$3([3], [2]), (n) => (n * 3) >>> 0));
   let front;
   try {
     front = $next(value);

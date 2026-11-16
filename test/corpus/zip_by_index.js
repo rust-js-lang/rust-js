@@ -91,7 +91,7 @@ function main() {
   const called = $foldToArray(
     $roomForHint(
       $trustedZip(
-        v.values().map((x) => noisy("i", x)),
+        $mapEnds($iter(v), (x) => noisy("i", x)),
         $iter(w),
       ),
       8,

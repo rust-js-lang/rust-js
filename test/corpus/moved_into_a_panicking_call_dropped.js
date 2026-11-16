@@ -7,14 +7,15 @@ import {
   $dropEach,
   $extend,
   $insertAt,
-  $lazyRange,
+  $iterator,
   $live,
+  $mapEnds,
   $panicMessage,
   $rangeNext,
+  $rangeNextBack,
   $splicing,
   $unwindsOn,
   $unwound,
-  iterator_map,
 } from "@rust-js/std";
 
 export function entry() {
@@ -197,13 +198,7 @@ function main() {
           w,
           range.start,
           range.end,
-          iterator_map(
-            { start: 0, end: 3 },
-            loudOrPanic,
-            { next: $rangeNext },
-            undefined,
-            loudDrop_drop,
-          ),
+          $mapEnds($iterator({ start: 0, end: 3 }, $rangeNext, false, $rangeNextBack), loudOrPanic),
           loudDrop_drop,
         ).reduce((n, item) => {
           loudDrop_drop(item);
@@ -231,13 +226,7 @@ function main() {
           w,
           range.start,
           range.end,
-          iterator_map(
-            { start: 0, end: 3 },
-            loudOrPanic,
-            { next: $rangeNext },
-            undefined,
-            loudDrop_drop,
-          ),
+          $mapEnds($iterator({ start: 0, end: 3 }, $rangeNext, false, $rangeNextBack), loudOrPanic),
           loudDrop_drop,
         );
         splice.return();
@@ -259,7 +248,11 @@ function main() {
     () => {
       const w = [[1]];
       try {
-        $extend(w, $lazyRange(0, 3).map(loudOrPanic));
+        $extend(
+          w,
+          $mapEnds($iterator({ start: 0, end: 3 }, $rangeNext, false, $rangeNextBack), loudOrPanic),
+          true,
+        );
         return w.length;
       } catch (error) {
         throw $unwindsOn(error);
