@@ -308,7 +308,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let piece = self.fresh(Role::Piece);
         let mut push = Vec::new();
         crate::lower::display::append_written(place, Expr::var(&piece), false, js_span, &mut push);
-        out.push(StmtKind::Expr(extend_text(pieces, piece.word(), push)).at(js_span));
+        out.push(StmtKind::Expr(extend_text(pieces, &piece, push)).at(js_span));
         Ok(())
     }
 
@@ -1266,8 +1266,8 @@ fn chars(text: Expr) -> Expr {
 /// stepped, by `push`, the one form of a `String`'s `extend` that steps its
 /// iterator (#1127); its callback run by `$extendText` alone as it steps,
 /// kept no more after (`Known::RunsInItsCall`, #1168).
-pub(in crate::lower) fn extend_text(pieces: Expr, piece: &str, push: Vec<Stmt>) -> Expr {
-    let mut push = Expr::arrow(vec![piece.into()], push);
+pub(in crate::lower) fn extend_text(pieces: Expr, piece: &js::Name, push: Vec<Stmt>) -> Expr {
+    let mut push = Expr::arrow(vec![piece.clone().into()], push);
     push.facts = push.facts.with(js::Known::RunsInItsCall);
     Expr::call_helper("$extendText", vec![pieces, push])
 }
