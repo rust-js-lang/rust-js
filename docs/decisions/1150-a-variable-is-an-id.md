@@ -935,3 +935,23 @@ destructures a guard's field made that field's variable where it's
 lowered, and two variables of one word spelled apart by their ids, after
 which the guard needs neither the word's identity nor its capture guard.
 
+## Names are ids, the spelling step (from 2026-11-16)
+
+Step 3 asked the questions that decide meaning by a variable's id. The
+spelling step moves what's left of a name's word to where names are
+spelled: preparation and printing read a name's word; every other phase
+asks of its `Name`, and makes a name made of another's, a derived one, as
+a form of that `Name`, never a word spelled anew. `Name::shown()` writes
+one in a diagnostic and never in JS. Its measure is
+`test/word-reads.txt`: each file's reads of a word, `.word()` and
+`.into_word()`, outside preparation and printing, 577 in 112 files when it
+began, a ratchet that only falls (`test/architecture-names.test.ts`); the
+step is done when only diagnostics read one. Its parts, each probed by id
+against the word over all of `check:fast --all`: the naming-only sets
+(`suggested`, `items_read`, `own_names`, `alike`, `settled`); lowering's
+asks of `visit_vars` and `mentions_in`; preparation's by-word counts, as
+`catches`' read of a `Result`; #1992, a `Drop`'s binding of a guard's
+field made that field's variable where it's lowered; and the link's
+respelling of a local apart from a helper it reads (#1975), which moves
+into preparation, given the linked module's reads.
+

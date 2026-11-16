@@ -137,3 +137,21 @@ test("a place is keyed by js::Path, never a name formatted with its fields", () 
   ];
   expect(scope.flatMap(file => shapes.filter(shape => shape.test(read(file))).map(shape => `${file}: ${shape}`))).toEqual([]);
 });
+
+// The spelling step (ADR 1150): a name's word is read where names are
+// spelled, preparation and printing, and asked of a `Name` everywhere
+// else. Each file's reads of a word outside them are at most
+// `test/word-reads.txt`'s, a ratchet that only falls, none in a file it
+// doesn't list.
+test("a name's word is read outside preparation and printing only as the ratchet allows", () => {
+  const allowed: Record<string, number> = Object.fromEntries(
+    read("test/word-reads.txt").split("\n").filter((line) => line && !line.startsWith("#"))
+      .map((line) => line.split("\t")).map(([file, n]) => [file, Number(n)]),
+  );
+  const outside = (file: string) => !file.startsWith("src/prepare/") && file !== "src/prepare.rs"
+    && !file.startsWith("src/to_oxc") && file !== "src/js/name.rs";
+  const counted = sources.filter(outside)
+    .map((file) => [file, (read(file).match(/\.(?:into_)?word\(\)/g) ?? []).length] as const)
+    .filter(([, n]) => n > 0);
+  expect(counted.filter(([file, n]) => n > (allowed[file] ?? 0)).map(([file, n]) => `${file}: ${n}, at most ${allowed[file] ?? 0}`)).toEqual([]);
+});
