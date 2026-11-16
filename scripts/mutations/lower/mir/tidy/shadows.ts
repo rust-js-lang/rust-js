@@ -102,9 +102,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a `let x$1;` its `switch`'s cases set, shadowing a binding read no more, stays apart, `let priorityLevel$1; switch (priorityLevel) { .. priorityLevel$1 = priorityLevel; ..`, not upstream's `switch (priorityLevel) { .. default: priorityLevel = NormalPriority; }`",
     file: "src/lower/mir/tidy/shadows.rs",
-    find: "        set_after_last_read(&stmts[i + 1..], shadow.word(), binding.word(), false)?;\n",
+    find: "        set_after_last_read(&stmts[i + 1..], &shadow, &binding, false)?;\n",
     replace:
-      "        set_after_last_read(&stmts[i + 1..], shadow.word(), binding.word(), false).filter(|_| false)?;\n",
+      "        set_after_last_read(&stmts[i + 1..], &shadow, &binding, false).filter(|_| false)?;\n",
     tests: ["test/port-scheduler.test.ts"],
   },
   {
@@ -132,9 +132,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a `let noisy$1;` set in a `switch`'s cases is the binding it shadows though a drop reads that after, which then drops the new value twice",
     file: "src/lower/mir/tidy/shadows.rs",
-    find: "        if set && js::mentions_in(std::slice::from_ref(stmt), old) > 0 {\n",
+    find: "        if set && js::mentions_of(std::slice::from_ref(stmt), old) > 0 {\n",
     replace:
-      "        if false && set && js::mentions_in(std::slice::from_ref(stmt), old) > 0 {\n",
+      "        if false && set && js::mentions_of(std::slice::from_ref(stmt), old) > 0 {\n",
     tests: ["test/corpus.test.ts", "-t", "^shadow_set_in_cases.rs$"],
   },
   {
@@ -162,8 +162,8 @@ export const mutations: Mutation[] = [
     breaks:
       "what follows a shadow's `switch` and names the old binding nowhere is followed still, a loop or a `try` there keeping the shadow apart",
     file: "src/lower/mir/tidy/shadows.rs",
-    find: "        if js::mentions_in(&stmts[k..], old) == 0 {\n",
-    replace: "        if false && js::mentions_in(&stmts[k..], old) == 0 {\n",
+    find: "        if js::mentions_of(&stmts[k..], old) == 0 {\n",
+    replace: "        if false && js::mentions_of(&stmts[k..], old) == 0 {\n",
     tests: ["test/corpus.test.ts", "-t", "^shadow_set_in_cases.rs$"],
     snapshots: true,
   },
@@ -191,7 +191,7 @@ export const mutations: Mutation[] = [
     name: "shadow-set-in-a-test-unseen",
     breaks: "a shadow a test sets, `if (.. (d$1 = bump(flags)) ..) { n += d; }`, is taken for one set only after the branches, so the parameter `d` it shadows becomes it and `n += d` reads what `bump` gave (#523)",
     file: "src/lower/mir/tidy/shadows.rs",
-    find: "                let set = set || js::Writes::sets_spelled(&tested, shadow);\n",
+    find: "                let set = set || js::Writes::sets(&tested, shadow);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^condition_block_sequence.rs$"],
   },

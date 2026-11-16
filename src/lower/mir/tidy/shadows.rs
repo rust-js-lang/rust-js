@@ -201,7 +201,7 @@ fn shadow_of(
         if owns != kept {
             return None;
         }
-        set_after_last_read(&stmts[i + 1..], shadow.word(), binding.word(), false)?;
+        set_after_last_read(&stmts[i + 1..], &shadow, &binding, false)?;
         let mut rest = stmts.split_off(i + 1);
         js::statement_lists(&mut rest, &mut |list| list.retain(|s| !own(s)));
         // An `if` a branch of which is left empty: its other way alone.
@@ -257,33 +257,33 @@ fn shadow_of(
 /// followed by anything that names `old`; else whether the shadow may be
 /// set where they go on past their end, and whether it may be anywhere,
 /// where a `break` goes on from.
-fn set_after_last_read(stmts: &[Stmt], shadow: &str, old: &str, mut set: bool) -> Option<(bool, bool)> {
+fn set_after_last_read(stmts: &[Stmt], shadow: &js::Name, old: &js::Name, mut set: bool) -> Option<(bool, bool)> {
     let mut any = set;
     for (k, stmt) in stmts.iter().enumerate() {
-        if js::mentions_in(&stmts[k..], old) == 0 {
-            let rest = set || js::Writes::sets_spelled(&stmts[k..], shadow);
+        if js::mentions_of(&stmts[k..], old) == 0 {
+            let rest = set || js::Writes::sets(&stmts[k..], shadow);
             return Some((rest, any || rest));
         }
-        if set && js::mentions_in(std::slice::from_ref(stmt), old) > 0 {
+        if set && js::mentions_of(std::slice::from_ref(stmt), old) > 0 {
             return None;
         }
-        if !js::Writes::sets_spelled(std::slice::from_ref(stmt), shadow) {
+        if !js::Writes::sets(std::slice::from_ref(stmt), shadow) {
             continue;
         }
         // A branch that leaves goes on nowhere after it.
         let on = |stmts: &[Stmt], (on, _): (bool, bool)| on && !stmts.last().is_some_and(js::ends);
         set = match &stmt.kind {
             // Its value read first, then the shadow set.
-            StmtKind::Assign(target, _) if matches!(&target.kind, ExprKind::Var(v) if v.is(shadow)) => true,
+            StmtKind::Assign(target, _) if matches!(&target.kind, ExprKind::Var(v) if v == shadow) => true,
             StmtKind::If(test, then, otherwise) => {
                 // A test that sets it, `if ((d$1 = bump(flags)), ..)`, sets
                 // it before either branch runs, and reads `old` there in
                 // an order this doesn't follow (#523).
                 let tested = [StmtKind::Expr(test.clone()).at(js::Span::NONE)];
-                if js::Writes::sets_spelled(&tested, shadow) && js::mentions_in(&tested, old) > 0 {
+                if js::Writes::sets(&tested, shadow) && js::mentions_of(&tested, old) > 0 {
                     return None;
                 }
-                let set = set || js::Writes::sets_spelled(&tested, shadow);
+                let set = set || js::Writes::sets(&tested, shadow);
                 let otherwise = otherwise.as_deref().unwrap_or_default();
                 let (a, b) = (
                     set_after_last_read(then, shadow, old, set)?,
