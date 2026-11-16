@@ -10,6 +10,7 @@ import { join } from "node:path";
 
 import { jobs } from "../scripts/checkFast";
 import { onlyPushedFiles, phases as pushPhases, timesLine } from "../scripts/push";
+import { whoRuns } from "../scripts/disk";
 import { failedIn, misses } from "../scripts/selector-audit";
 import { baselines, osBranches, outcome, reachOf, type Reach, select, type Selection, suiteFiles } from "../scripts/select";
 import { readsSources, type TestMap } from "../scripts/testMap";
@@ -138,6 +139,17 @@ test("a script's, a helper's or a doc's change runs what imports or reads it, an
   expect([none.all, none.files, none.cases, outcome(none)]).toEqual([false, [], [], "none"]);
 });
 
+// A workflow changes how CI runs, not what a test does here: the change's
+// own runs everything, as CI's run of it changes; another agent's since the
+// map's commit, checked by its own push and CI, only what reads it.
+test("a workflow of the change's own runs everything; another's since the map's commit, only what reads it", () => {
+  const changed = (own: boolean) => select([{ file: ".github/workflows/check.yml", hunks: [[1, 1]] }], { ...context, own: () => own });
+  expect(changed(true)).toMatchObject({ all: true, allOwn: true });
+  expect(changed(false)).toMatchObject({ all: false, files: [] });
+  const read: Reach = new Map([...reach, ["test/tool.test.ts", { modules: new Set(["test/setup.ts"]), reads: new Set([".github/workflows"]) }]]);
+  expect(select([{ file: ".github/workflows/check.yml", hunks: [[1, 1]] }], { ...context, reach: read, own: () => false }).files).toEqual(["test/tool.test.ts"]);
+});
+
 test("the workflows, the packages' manifests, the toolchain, the selector and the map run everything; so does a package's folder", () => {
   for (const file of [".github/workflows/check.yml", ".github/actions/build-rust-js/action.yml", "package.json", "webapi/package.json", "bun.lock", "Cargo.lock", "rust-toolchain.toml", "bunfig.toml", "scripts/select.ts", "scripts/testMap.ts", "webapi/src/lib.rs", "tooling/build.js", "vendor/x/lib.rs"]) {
     expect([file, of(file).all]).toEqual([file, true]);
@@ -155,6 +167,8 @@ test("a selection says itself in a line: all and why, some and how many, or none
     "all (src/a.rs's change at line 25 is outside any function's counted code (the change's own))",
   );
   expect(outcome(of("src/a.rs"))).toBe("some (3 files, 0 cases)");
+  // And the map it's by, and how far behind HEAD.
+  expect(outcome({ ...of("src/a.rs"), map: "0123456789abcdef", behind: 6 })).toBe("some (3 files, 0 cases), map 012345678 6 behind");
   expect(outcome(of("test/corpus/y.rs"))).toBe("some (1 file, 1 case)");
 });
 
@@ -194,6 +208,10 @@ test("check:fast runs what the selection selected: its files, its cases in parts
   expect(testJobs(selected).sort()).toEqual(["corpus 1/1", "test/jsx.test.ts", "test/lowering-cells.test.ts"]);
   expect(selected.find((job) => job.name === "corpus 1/1")?.env.RUST_JS_CASES).toBe("1/1:/cases.txt");
   for (const name of ["fmt", "typecheck", "clippy", "cargo test"]) expect(selected.map((job) => job.name)).toContain(name);
+  // A sanity pass's cap: its own test files and cases alone, no lint, nets
+  // or builds.
+  const capped = jobs({ ...plain, capped: true, picked: { ...given, files: new Set(["test/jsx.test.ts"]), cases: ["a.rs"], forms: [] } }).jobs.map((job) => job.name);
+  expect(capped.sort()).toEqual(["corpus 1/1", "test/jsx.test.ts"]);
   // None selected: lint alone, and of a doc's change neither the compiler's
   // unit tests nor the Vite example's build.
   const docs = jobs({ ...plain, changed: ["docs/guide/README.md"], picked: { ...given, files: new Set(), cases: [], forms: [] } }).jobs.map((job) => job.name);
@@ -214,6 +232,13 @@ test("bun run push says its selection on its line, and runs the check and the po
   const push = readFileSync(join(root, "scripts/push.ts"), "utf8");
   expect(push).not.toContain('"check:fast", "--all"');
   expect(push).toContain("touchesPort(changed)");
+  // Past a rebase, the change's own sanity pass, as often as main moves.
+  expect(push).toContain('...(name === "sanity" ? ["--sanity"] : [])');
+  expect(push).not.toMatch(/attempts|main moved \$\{/);
+  // Its line on every exit, a signal's too, and who ran it, each machine's.
+  expect(push).toContain('for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"] as const)');
+  expect(whoRuns({ RUST_JS_MACHINE: "m1-lisa", RUST_JS_AGENT: "ioX" }, "host")).toEqual({ machine: "m1-lisa", agent: "ioX", unset: [] });
+  expect(whoRuns({}, "host.local")).toEqual({ machine: "host.local", agent: "-", unset: ["RUST_JS_MACHINE", "RUST_JS_AGENT"] });
   // A map not fetched says why on the line, not only that there's none.
   expect(push).toContain('if (fetched.startsWith("no map fetched")) selection += ` [${fetched}]`;');
 });

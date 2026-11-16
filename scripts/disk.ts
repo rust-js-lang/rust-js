@@ -18,7 +18,7 @@
 
 import { spawn, spawnSync } from "node:child_process";
 import { existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
-import { homedir } from "node:os";
+import { homedir, hostname } from "node:os";
 import { join, resolve } from "node:path";
 import { bytesOf, evict, freeBytes, type Kept } from "../tooling/bounded.js";
 import { checkout, floorBytes, machineStore, mainCheckoutOf, tempRoot } from "../test/bounded";
@@ -112,6 +112,15 @@ const bunCache = process.env.BUN_INSTALL_CACHE_DIR ?? join(process.env.BUN_INSTA
 /** The machine's log of times, a line of each `bun run push` (scripts/push.ts),
  * outside the checkouts: a line a run, a few KB a week. */
 export const devTimesLog = process.env.RUST_JS_DEV_TIMES ?? join(homedir(), "rust-js-dev-times.log");
+
+/** Who a line of the log is of: the machine and the agent its sessions
+ * name, `RUST_JS_MACHINE` and `RUST_JS_AGENT`, each machine's own; else the
+ * host's name and `-`, and `unset` says which wasn't set, which the line
+ * says, as the M1's and the MacBook's lines read as the mini's. */
+export function whoRuns(env: Record<string, string | undefined> = process.env, host = hostname()): { machine: string; agent: string; unset: string[] } {
+  const unset = ["RUST_JS_MACHINE", "RUST_JS_AGENT"].filter((name) => !env[name]);
+  return { machine: env.RUST_JS_MACHINE || host, agent: env.RUST_JS_AGENT || "-", unset };
+}
 
 /** Cargo's downloads, its registry's crates and sources and its git
  * checkouts, which its own GC holds: 2 GiB. */

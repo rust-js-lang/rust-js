@@ -354,3 +354,36 @@ imports and reads; check:fast's jobs; push's line; the OS branches; the
 audit), `test/test-map.test.ts` (the merge of parted files, CI's workflow,
 the fetch and the cache's pruning), `test/ci.test.ts`, and the mutations of
 `scripts/mutations/select.ts`, each rule dropped.
+
+### Amended: a sanity pass is the change's own (2026-11-16)
+
+Past a rebase that brought commits, `bun run push` checked again by the
+same selection: the map's diff to the new tree, which holds others'
+commits. Their non-function lines made it select everything, so a sanity
+pass took longer than the check: m3-max's took 594 s and 516 s after a
+491 s check, and m1-lisa's 1,228 s. Her push gave up after main moved
+three times (3,847 s, not pushed). Tu's rule: quick, then push; CI's full
+check covers the combination.
+
+**The full argument above holds for `check:fast` and CI's suite.** They
+select by the map's diff to the tree. **A sanity pass is deliberately the
+change's own** (`check:fast --sanity`, the push's `sanity` phase): it
+selects by the change's own diff since its merge-base with `main`, against
+the map. A src file others also changed since the map's commit can't be
+placed. Where even that says everything, the pass is capped: it runs the
+change's own test files and corpus cases, with no lint, nets or builds
+beyond the push's own build and std. The line says `capped`. Others'
+commits were checked by their own pushes, and CI checks the combination.
+With a pass this cheap, a push that meets a moved `main` rebases and runs
+it again until it lands, with no limit.
+
+**What changes how CI runs, not what a test does, `.github/**`, runs
+everything only of the change itself**, as CI's run of it changes. Of
+others' commits since the map's, it runs only what reads it.
+
+Every push's line says the map it selected by and how far behind HEAD it
+is (`map <sha> N behind`). If that is often past about 8, the map should
+be recorded as a check starts, not after it ends. The line says who ran it
+by `RUST_JS_MACHINE` and `RUST_JS_AGENT`, each machine's sessions' own
+(`whoRuns`), else the host's name with a note. It's written on every exit,
+including a signal's.

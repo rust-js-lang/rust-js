@@ -52,7 +52,7 @@ export const selectionFile = join(root, "target", "check-fast-selection.json");
  * cases (`forms`), its net's; `all` where it can't say, every one listed.
  * `why` says why each ran, or why everything did; `allOwn` whether that
  * reason is the branch's own change, not others' since the map's commit. */
-export type Selection = { all: boolean; allOwn?: boolean; files: string[]; cases: string[]; forms: string[]; why: string };
+export type Selection = { all: boolean; allOwn?: boolean; files: string[]; cases: string[]; forms: string[]; why: string; map?: string; behind?: number };
 
 /** What a change selects of: the push suite's test files (`suiteFiles`),
  * the corpus's cases, the map or why there's none, and, of each test file,
@@ -76,7 +76,6 @@ export type Reach = Map<string, { modules: Set<string>; reads: Set<string> }>;
  * toolchain, Bun's config and its preload's environment), and the selector
  * and the map themselves, whose rule a change of may be wrong. */
 export const everything = [
-  ".github/**",
   "package.json",
   "*/package.json",
   "*/*/package.json",
@@ -93,6 +92,12 @@ export const everything = [
   "scripts/testMap.ts",
   "scripts/testMapCompiler.ts",
 ];
+
+/** What changes how CI runs, not what a local test does: of the change
+ * itself, everything, as CI's run of it changes; of others' commits since
+ * the map's, only what reads it, `test/ci.test.ts`'s, as each was checked
+ * by its own push and CI. */
+export const ciOnly = [".github/**"];
 
 /** The top folders whose files a test reads or imports, so a change there
  * runs only its readers and importers: the rest are packages and crates the
@@ -139,6 +144,7 @@ export const baselines: { path: string; owners: string[] }[] = [
 
 const globs = (paths: string[]) => paths.map((path) => new Bun.Glob(path));
 const everythingGlobs = globs(everything);
+const ciOnlyGlobs = globs(ciOnly);
 const runtimeGlobs = globs(runtimePaths);
 const baselineGlobs = baselines.map(({ path, owners }) => ({ glob: new Bun.Glob(path), owners }));
 
@@ -179,6 +185,13 @@ export function select(changes: Change[], context: Context): Selection {
   for (const change of changes) {
     const { file } = change;
     if (everythingGlobs.some((glob) => glob.match(file))) return whole(`${file} is what every test runs under`, file);
+    if (ciOnlyGlobs.some((glob) => glob.match(file))) {
+      if (own(file)) return whole(`${file} is how CI runs every test`, file);
+      const found = readers(file);
+      ran(found);
+      say(file, `CI's, others': ${found.length} test${found.length === 1 ? "" : "s"} read it`);
+      continue;
+    }
     // A test file runs itself; the corpus's, every case.
     if (/^test\/[^/]+\.test\.ts$/.test(file)) {
       if (file === caseFiles[0]) {
@@ -309,25 +322,72 @@ function ownFiles(base: string): Set<string> {
 
 /** What this checkout's change selects: by the map of HEAD or its nearest
  * ancestor this machine keeps, the diff from its commit; the branch's own
- * change since `base`'s merge-base, the rest others'. */
-export function selectChange(base = "origin/main"): Selection & { map?: string } {
+ * change since `base`'s merge-base, the rest others'. Of `ownOnly`, a
+ * sanity pass's past a rebase (Tu's rule: quick, then push; CI's check
+ * covers the combination), the branch's own diff alone, never others'
+ * commits: a line of a file others changed since the map's commit too is
+ * one it can't place, everything (ADR 1101, amended). */
+export function selectChange(base = "origin/main", ownOnly = false): Selection & { map?: string } {
   const files = suiteFiles();
   const cases = corpusCases();
   const map = nearestMap(mapStore, root, toolchainOf());
   const own = ownFiles(base);
+  const reach = reachOf([...files, caseFiles[1]]);
   if (map === undefined) {
     // No map: the branch's own change, by the rules that need none, and
     // everything where one does.
     const changes = [...own].map((file): Change => ({ file, hunks: existsSync(join(root, file)) ? [[1, 1]] : "new" }));
-    return select(changes, { files, cases, map: `${noMap}: \`bun run test-map\` records one`, reach: reachOf([...files, caseFiles[1]]) });
+    return select(changes, { files, cases, map: `${noMap}: \`bun run test-map\` records one`, reach });
   }
-  const selection = select(changesSince(map.commit), { files, cases, map, reach: reachOf([...files, caseFiles[1]]), own: (file) => own.has(file) });
-  return { ...selection, map: map.commit };
+  const behind = commitsBehind(map.commit);
+  if (ownOnly) {
+    const since = mergeBase(base);
+    const changes = since === undefined ? [] : changesSince(since);
+    // A line of the branch's file is the map's line where nothing else
+    // changed the file since the map's commit.
+    const moved = changes.find((change) => change.file.startsWith("src/") && since !== undefined && differs(map.commit, since, change.file));
+    if (moved) return { ...select([{ file: moved.file, hunks: "new" }], { files, cases, map, reach }), why: `${moved.file} changed since the map's commit by others' commits too`, map: map.commit, behind };
+    return { ...select(changes, { files, cases, map, reach }), map: map.commit, behind };
+  }
+  const selection = select(changesSince(map.commit), { files, cases, map, reach, own: (file) => own.has(file) });
+  return { ...selection, map: map.commit, behind };
+}
+
+/** What `base` and HEAD have in common. */
+function mergeBase(base: string): string | undefined {
+  return Bun.spawnSync(["git", "merge-base", "HEAD", base], { cwd: root, stdout: "pipe" }).stdout.toString().trim() || undefined;
+}
+
+/** How many commits HEAD is past the map's. */
+function commitsBehind(commit: string): number | undefined {
+  const out = Bun.spawnSync(["git", "rev-list", "--count", `${commit}..HEAD`], { cwd: root, stdout: "pipe" }).stdout.toString().trim();
+  return out === "" ? undefined : Number(out);
+}
+
+/** Whether `file` differs between two commits. */
+function differs(from: string, to: string, file: string): boolean {
+  return Bun.spawnSync(["git", "diff", "--quiet", from, to, "--", file], { cwd: root }).exitCode !== 0;
+}
+
+/** Of a sanity pass whose own change the selector can't say of, the cap:
+ * the test files and corpus cases the change's own files are (Tu's rule:
+ * quick, then push; CI's check covers the combination). */
+export function sanityCap(base = "origin/main"): Selection {
+  const since = mergeBase(base);
+  const changed = since === undefined ? [] : Bun.spawnSync(["git", "diff", "--name-only", since], { cwd: root, stdout: "pipe" }).stdout.toString().split("\n").filter(Boolean);
+  const files = suiteFiles().filter((file) => changed.includes(file));
+  const cases = corpusCases().filter((name) => changed.some((file) => file.startsWith(`test/corpus/${name.replace(/\.rs$/, "")}.`)));
+  return { all: false, files, cases, forms: cases, why: "the sanity pass's cap: the change's own test files and cases" };
 }
 
 /** A selection in a line: `all (why)`, `some (N files, M cases)`, `none`;
  * every push's line and CI's summary say it. */
 export function outcome(selection: Selection): string {
+  const behind = selection.map ? `, map ${selection.map.slice(0, 9)} ${selection.behind ?? "?"} behind` : "";
+  return `${outcomeOf(selection)}${behind}`;
+}
+
+function outcomeOf(selection: Selection): string {
   if (selection.all) return `all (${selection.why})`;
   const files = selection.files.filter((file) => file !== caseFiles[0]).length;
   if (files === 0 && selection.cases.length === 0) return "none";
@@ -338,7 +398,7 @@ export function outcome(selection: Selection): string {
 if (import.meta.main) {
   const arg = (name: string) => process.argv.find((given) => given.startsWith(`--${name}=`))?.slice(name.length + 3);
   const json = arg("json");
-  const selection = selectChange(arg("base"));
+  const selection = selectChange(arg("base"), process.argv.includes("--own"));
   console.log(`${outcome(selection)}${selection.map ? `, by the test map of ${selection.map.slice(0, 9)}` : ""}`);
   if (!selection.all) {
     console.log(selection.why);

@@ -24,7 +24,7 @@ import { dirname, join, resolve } from "node:path";
 import { currentBuild, prune } from "../test/compiles";
 import {childWarnings} from "../test/child";
 import { changedCases, changePicks, metamorphicMost, runs, touchesAsync, touchesConsumers, touchesCrates, touchesDeclarations, touchesFormatting, touchesIterators, touchesMemory, touchesNumbers, touchesStdNet, touchesTwins } from "./iteratorSlice";
-import { outcome, readOnly, selectChange, selectionFile, suiteFiles } from "./select";
+import { outcome, readOnly, sanityCap, selectChange, selectionFile, suiteFiles } from "./select";
 import { browsers, caseParts, compilerBuilds, machine, memoryBudget, nightly, peakGB, pooledParts } from "./shard";
 import { said, strays } from "./strays";
 import { type CheckLogRun, checkLogRun } from "./checkLogs";
@@ -96,6 +96,9 @@ export type Scope = {
   cores: number;
   picked?: { files: Set<string>; cases: string[]; caseList: string; forms: string[]; formsList: string };
   forms?: { forms: string[]; formsList: string };
+  /** A sanity pass's cap: its picked test files and cases alone, no lint,
+   * no nets, no builds (Tu's rule: quick, then push). */
+  capped?: boolean;
 };
 
 /** The corpus's cases, which the corpus with std's iterator structs runs
@@ -163,7 +166,7 @@ export function touchesReadability(files: string[], paths = readabilityPaths()):
 /** The check's jobs, through the pool at once: of `--all`, or a change the
  * selector can't say, what a push's check runs (check.yml); else the test
  * files and cases it selected, and the nets and builds its paths run. */
-export function jobs({ all, changed, branch, added, extra, cores, picked, forms, rows }: Scope): { jobs: Job[] } {
+export function jobs({ all, changed, branch, added, extra, cores, picked, forms, rows, capped }: Scope): { jobs: Job[] } {
   // What the change touches, the working tree's and what the branch
   // committed since `main`: of the working tree's alone, a change committed
   // before its check, as one on `main` is, touched nothing, and its JSX,
@@ -304,6 +307,7 @@ export function jobs({ all, changed, branch, added, extra, cores, picked, forms,
       }),
     ),
   ];
+  if (capped) return { jobs: [...inParts("corpus", "test/corpus.test.ts"), ...everyFile, ...extra.map((file) => job(file, ["bun", "test", file]))] };
   return {
     jobs: [
       job("fmt", ["bun", "run", "fmt:check"], { ci: "bun run fmt:check" }),
@@ -839,7 +843,16 @@ if (import.meta.main) {
   // (scripts/select.ts, ADR 1101, amended); everything where it can't say.
   // Of `--all`, it says which cases with std's iterator structs run (#986).
   const cases = readdirSync(join(root, "test", "corpus")).filter((name) => name.endsWith(".rs"));
-  const selection = selectChange();
+  // A sanity pass past a rebase (`--sanity`, `bun run push`'s): the
+  // change's own diff alone, capped where even that can't be said.
+  const sanity = args.includes("--sanity");
+  let selection = selectChange("origin/main", sanity);
+  let capped = false;
+  if (sanity && selection.all) {
+    console.log(`the sanity pass can't say (${selection.why}): its cap, the change's own test files and cases`);
+    selection = { ...sanityCap(), map: selection.map, behind: selection.behind };
+    capped = true;
+  }
   let picked: Scope["picked"];
   let forms: Scope["forms"];
   const formsList = join(own, "forms.txt");
@@ -856,13 +869,13 @@ if (import.meta.main) {
     console.log(`the selection: ${outcome(selection)}${selection.all ? "" : `, of ${pushSuite} test files and ${cases.length} corpus cases: ${selection.why}`}`);
   }
   // What it selected, which `bun run push` says on its line.
-  writeFileSync(selectionFile, JSON.stringify({ outcome: outcome(selection), all: selection.all, allOwn: selection.allOwn ?? null }));
+  writeFileSync(selectionFile, JSON.stringify({ outcome: `${capped ? "capped " : ""}${outcome(selection)}`, all: selection.all, allOwn: selection.allOwn ?? null }));
   // Of a change to the iterators' code, the rows of their tables it names,
   // which size its job (#1364): some 0.1 s.
   const rows = touchesIterators([...changed, ...branch])
     ? changePicks(caseParts(machine().cores)).reduce((sum, p) => sum + p.rows, 0)
     : undefined;
-  const check = jobs({ all, changed, branch, added, extra, cores: machine().cores, picked, forms, rows });
+  const check = jobs({ all, changed, branch, added, extra, cores: machine().cores, picked, forms, rows, capped });
   const cores = machine().cores;
   const clock: Clock = { began: Date.now(), samples: [] };
   const logs = checkLogRun();

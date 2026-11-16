@@ -801,10 +801,14 @@ checked:
   origin/main` holds a file no pushed commit changes, and pushes. It first
   fetches CI's test map of the nearest commit of `main` where it's nearer
   than the machine's. Where `main` moved while it checked, it rebases again
-  and checks the selection of the new tree (`sanity`), the selector's
-  per-test staleness making that sound with nothing special for a rebase.
-  Its line of times names which (`check` or `sanity`) and what was selected,
-  `select all (why)`, `select some (N files, M cases)` or `select none`.
+  and runs a sanity pass (`check:fast --sanity`): the change's own diff
+  alone, capped to its own test files and cases where even that says
+  everything; CI checks the combination. It rebases and runs it again as
+  often as `main` moves, until it lands. Its line of times names which
+  (`check` or `sanity`) and what was selected, `select all (why)`,
+  `select some (N files, M cases)`, `select capped …` or `select none`, the
+  map's commit and how far behind it is. Each machine's sessions set
+  `RUST_JS_MACHINE` and `RUST_JS_AGENT`, which name its lines.
   A tracked change not committed is refused. `--bless-readability` blesses
   `docs/readability.txt` first, printing what changed and amending the top
   commit; without it a readability failure stops the push like any other.

@@ -10,15 +10,18 @@
 //             change can affect (scripts/select.ts, ADR 1101, amended),
 //             everything where it can't say; none at all, of a change
 //             nothing reads that isn't code (a doc's), straight to the push.
-//             Past a rebase that brought commits, `sanity`, the same
-//             selection of the new tree (Tu's decision, 2026-11-16)
+//             Past a rebase that brought commits, `sanity`, `check:fast
+//             --sanity`: the change's own diff alone, never others' commits,
+//             capped to its own test files and cases where even that says
+//             everything (Tu's rule: quick, then push; CI's check covers the
+//             combination). Rebased and checked so until it lands, no limit
 //   react     the React port at its pin (`react-in-rust.ts regen`), of a
 //             change to what compiles it (`touchesPort`), refused on any
 //             difference: a change the port takes moves the pin in this push
 //   files     `git diff origin/main` holds only the pushed commits' files
 //   push      `git push origin HEAD:main`, once `origin/main` is where the
 //             check saw it: where it moved meanwhile, the branch is rebased and
-//             checked again, so no commit lands that the check didn't see
+//             its sanity pass run again, so no commit lands that no pass saw
 //
 //   bun run push                        check and push HEAD
 //   bun run push --bless-readability    and bless docs/readability.txt first,
@@ -29,21 +32,20 @@
 // times, outside the repository (scripts/disk.ts's `devTimesLog`): `<ISO> |
 // <machine> | <agent> | push | <sha> | total <s> | <phase> <s>, .. | select
 // <outcome> | load <1m/5m/15m> | ok|fail | <note>`, the selection's outcome
-// `all (<why>)`, `some (N files, M cases)` or `none` (scripts/select.ts).
+// `all (<why>)`, `some (N files, M cases)` or `none` and the map's commit and
+// how far behind it is (scripts/select.ts); the machine and agent each
+// machine's sessions name (`whoRuns`). Written on every exit, a signal's too.
 import { spawnSync } from "node:child_process";
 import { appendFileSync, existsSync, readFileSync, rmSync } from "node:fs";
-import { hostname, loadavg } from "node:os";
+import { loadavg } from "node:os";
 import { selectionFile } from "./select";
-import { devTimesLog } from "./disk";
+import { devTimesLog, whoRuns } from "./disk";
 import { touchesPort } from "./iteratorSlice";
 
 /** The phases, in the order they run. */
 export const phases = ["rebase", "build", "std", "check", "sanity", "react", "files", "push"] as const;
 export type Phase = (typeof phases)[number];
 
-/** How many times the branch is rebased and checked again where `main` moves
- * while it's checked, before the push gives up and says to run it again. */
-export const attempts = 3;
 
 /** Whether `changed`, the files `git diff origin/main` names, are each one a
  * pushed commit changes, `pushed`'s: none another's, a tree older than
@@ -107,12 +109,44 @@ function main() {
   let ok = false;
   let note = "";
   let selection = "-";
+  // The machine's log's line, written once, however the run ends: past
+  // its end, a failure's, and a signal's, which stops `spawnSync`'s child
+  // and then runs here (m6-lily's push of b355dc824 wrote none).
+  let written = false;
+  const writeLine = () => {
+    if (written) return;
+    written = true;
+    const who = whoRuns();
+    const unset = who.unset.length > 0 ? ` (${who.unset.join(", ")} unset: the host's name)` : "";
+    appendFileSync(
+      devTimesLog,
+      `${timesLine({
+        at: new Date(),
+        machine: who.machine,
+        agent: who.agent,
+        sha: git("rev-parse", "--short", "HEAD").out.trim(),
+        total: (performance.now() - started) / 1000,
+        phases: timed,
+        selection,
+        load: loadavg(),
+        ok,
+        note: `${note}${unset}`,
+      })}\n`,
+    );
+  };
+  for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"] as const) {
+    process.on(signal, () => {
+      note = `stopped by ${signal}`;
+      writeLine();
+      process.exit(1);
+    });
+  }
   try {
     if (lines(git("status", "--porcelain", "--untracked-files=no").out).length > 0) {
       throw new Refused("a tracked change isn't committed: the check would see it and the push wouldn't; commit it first");
     }
     let checked = "";
-    for (let attempt = 1; ; attempt++) {
+    for (;;) {
       rebase(bless);
       phase("rebase");
       const base = git("rev-parse", "origin/main").out.trim();
@@ -143,7 +177,7 @@ function main() {
           console.log(`push: the selection is none, and nothing changed is code: no check`);
         } else {
           rmSync(selectionFile, { force: true });
-          run(name, ["bun", "run", "check:fast"]);
+          run(name, ["bun", "run", "check:fast", ...(name === "sanity" ? ["--sanity"] : [])]);
           selection = existsSync(selectionFile) ? JSON.parse(readFileSync(selectionFile, "utf8")).outcome : said;
         }
         // A map not fetched says why on the push's line (b355dc824's said
@@ -165,7 +199,6 @@ function main() {
       phase("files");
       git("fetch", "-q", "origin");
       if (git("rev-parse", "origin/main").out.trim() !== base) {
-        if (attempt >= attempts) throw new Refused(`main moved ${attempts} times while this was checked: run \`bun run push\` again`);
         console.log("push: main moved while this was checked; rebasing and checking again");
         continue;
       }
@@ -183,21 +216,7 @@ function main() {
     note = e instanceof Refused ? e.message.split("\n")[0] : String(e).split("\n")[0];
     console.error(`push: not pushed: ${e instanceof Error ? e.message : e}`);
   } finally {
-    appendFileSync(
-      devTimesLog,
-      `${timesLine({
-        at: new Date(),
-        machine: process.env.RUST_JS_MACHINE ?? hostname(),
-        agent: process.env.RUST_JS_AGENT ?? "-",
-        sha: git("rev-parse", "--short", "HEAD").out.trim(),
-        total: (performance.now() - started) / 1000,
-        phases: timed,
-        selection,
-        load: loadavg(),
-        ok,
-        note,
-      })}\n`,
-    );
+    writeLine();
   }
   process.exit(ok ? 0 : 1);
 }

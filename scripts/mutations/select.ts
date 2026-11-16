@@ -74,4 +74,12 @@ export const mutations: Mutation[] = [
     replace: "      if (typeof map === \"string\") continue;",
     tests: ["test/select.test.ts", "-t", "a change the map can't say of runs everything"],
   },
+  {
+    name: "select-others-workflow-everything",
+    breaks: "another agent's workflow change since the map's commit runs everything here, though it changes how CI runs, not what a local test does: most pushes ran all (m6-lily's)",
+    file: "scripts/select.ts",
+    find: "      if (own(file)) return whole(`${file} is how CI runs every test`, file);",
+    replace: "      if (true) return whole(`${file} is how CI runs every test`, file);",
+    tests: ["test/select.test.ts", "-t", "a workflow of the change's own"],
+  },
 ];

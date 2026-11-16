@@ -29,4 +29,12 @@ export const mutations: Mutation[] = [
     replace: "  const selected = (_file: string) => true;",
     tests: ["test/select.test.ts", "-t", "check:fast runs what the selection selected"],
   },
+  {
+    name: "check-fast-sanity-uncapped",
+    breaks: "a sanity pass whose own change the selector can't say of runs lint, the nets and the builds too, not only its own test files and cases: past a rebase it costs more than the check (m1-lisa's 1,228 s)",
+    file: "scripts/checkFast.ts",
+    find: "  if (capped) return { jobs:",
+    replace: "  if (false) return { jobs:",
+    tests: ["test/select.test.ts", "-t", "check:fast runs what the selection selected"],
+  },
 ];
