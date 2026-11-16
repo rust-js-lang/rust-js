@@ -213,6 +213,7 @@ impls write them, a crate's own `Hash` inside called as std calls it (ADR
 - A `VecDeque<u8>` as generic code's reader (#1302): `fn first<R: std::io::Read>(mut r: R) -> u8 { let mut b = [0u8]; r.read_exact(&mut b).unwrap(); b[0] } let _ = first(std::collections::VecDeque::from(vec![1u8]));`
 - A crate reader's `read_to_string` into a `String` not provably `String::new()` with nothing done to it, whose capacity a JS string doesn't carry (#1261): `use std::io::Read; struct R; impl Read for R { fn read(&mut self, _: &mut [u8]) -> std::io::Result<usize> { Ok(0) } } let mut s = String::from("x"); let _ = R.read_to_string(&mut s);`
 - `{:?}` of a `BufReader` (#1418): `let r = std::io::BufReader::new(&b"x"[..]); println!("{r:?}");`
+- `{:?}` of a `str`'s search, `split` and its kin, `matches` and `match_indices`, which shows std's searcher's state, that its JS, the pieces it finds, doesn't keep until std's search is compiled (#2004, [ADR 0060](../decisions/0060-debug.md), amended); given to generic code bound by `Debug` that never shows it, it compiles: `let s = "a b".split(' '); println!("{s:?}");`
 - `get_mut` of a `BufReader` of a `&mut` to an object, a reader: `let mut c = std::io::Cursor::new(vec![1u8]); let mut r = std::io::BufReader::new(&mut c); r.get_mut().set_position(0);`
 - `panic::take_hook`: `let h = std::panic::take_hook(); drop(h);`
 

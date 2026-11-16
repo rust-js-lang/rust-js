@@ -873,25 +873,33 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 .nth(1)
                 .is_some_and(|pattern| self.pattern_runs_code(pattern));
         }
-        std_path_under(self.tcx, adt.did(), StdPath::StrMod)
-            && matches!(
-                self.tcx.item_name(adt.did()).as_str(),
-                "Split"
-                    | "SplitN"
-                    | "RSplit"
-                    | "RSplitN"
-                    | "SplitTerminator"
-                    | "RSplitTerminator"
-                    | "SplitInclusive"
-                    | "Matches"
-                    | "RMatches"
-                    | "MatchIndices"
-                    | "RMatchIndices"
-            )
+        self.is_str_search(ty)
             && args
                 .types()
                 .next()
                 .is_some_and(|pattern| self.pattern_runs_code(pattern))
+    }
+
+    /// Whether `ty` is one of a `str`'s searches by a pattern, `split` and
+    /// its kin, `matches` and `match_indices`, whatever the pattern: std's
+    /// `Debug` of one shows its searcher's state (ADR 0060, #2004).
+    pub(in crate::lower) fn is_str_search(&self, ty: Ty<'tcx>) -> bool {
+        matches!(ty.kind(), ty::Adt(adt, _) if of_std_crate(self.tcx, adt.did(), StdCrate::Core)
+        && std_path_under(self.tcx, adt.did(), StdPath::StrMod)
+        && matches!(
+            self.tcx.item_name(adt.did()).as_str(),
+            "Split"
+                | "SplitN"
+                | "RSplit"
+                | "RSplitN"
+                | "SplitTerminator"
+                | "RSplitTerminator"
+                | "SplitInclusive"
+                | "Matches"
+                | "RMatches"
+                | "MatchIndices"
+                | "RMatchIndices"
+        ))
     }
 
     /// Of a search by a pattern that runs code (`search_runs_code`),

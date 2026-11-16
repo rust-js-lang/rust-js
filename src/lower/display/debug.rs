@@ -765,6 +765,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Adt(_, args) if let Some(adt) = self.std_tuple_variants(ty) => {
                 self.tuple_variants_debug(adt, args, value, span, pretty, false)
             }
+            // A `str`'s search, `split` and its kin: std's shows its
+            // searcher's state, which its JS, the pieces it finds, doesn't
+            // keep until std's search is compiled (ADR 0060, amended, #2004).
+            _ if self.recognition().is_str_search(ty) => Err(self.unsupported(
+                span,
+                &format!("`{{:?}}` of a `{ty}`, which shows std's searcher's state (#2004)"),
+            )),
             _ => Err(self.unsupported(span, &format!("`{{:?}}` of a `{ty}`"))),
         }
     }

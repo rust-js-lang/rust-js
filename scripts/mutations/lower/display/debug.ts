@@ -641,4 +641,12 @@ export const mutations: Mutation[] = [
     replace: "                crate::lower::recognition::StdPath::NumSaturating,\n",
     tests: ["test/corpus.test.ts","-t","^(local_with_scope_guards|one_thread_sync).rs$"],
   },
+  {
+    name: "str-search-debug-unnamed",
+    breaks: "`{:?}` of a `str`'s search is refused naming neither why nor its issue, `{:?}` of a `Split` alone, where std shows its searcher's state (ADR 0060, #2004)",
+    file: "src/lower/display/debug.rs",
+    find: "            _ if self.recognition().is_str_search(ty) => Err(self.unsupported(\n",
+    replace: "            _ if false && self.recognition().is_str_search(ty) => Err(self.unsupported(\n",
+    tests: ["test/diagnostics.test.ts", "-t", "a str split's Debug"],
+  },
 ];

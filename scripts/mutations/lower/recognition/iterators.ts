@@ -722,4 +722,12 @@ export const mutations: Mutation[] = [
     replace: "        let infallible = Ty::new_adt(tcx, tcx.adt_def(super::registry::by_path(tcx, StdCrate::Core, &[\"convert\", \"Infallible\"])?), ty::List::empty());\n",
     tests: ["test/corpus.test.ts", "-t", "^calculator.rs$"],
   },
+  {
+    name: "str-search-matches-unlisted",
+    breaks: "a `str`'s `matches` isn't one of its searches, so its `{:?}` is refused naming neither why nor its issue (ADR 0060, #2004), and a `matches` by a pattern that runs code is taken for the array of what it finds (#1501)",
+    file: "src/lower/recognition/iterators.rs",
+    find: "                | \"Matches\"\n                | \"RMatches\"\n",
+    replace: "                | \"RMatches\"\n",
+    tests: ["test/diagnostics.test.ts", "-t", "a str matches' Debug"],
+  },
 ];

@@ -191,3 +191,21 @@ both builds and through `METAMORPHIC=all` with the cases above. Mutations
 `builder-step-shown-plain` (`lower/display/written.ts`).
 `mir-dyn-debug-made-early`, `mir-writer-fields-plain`, `debug-dyn-twice` and
 `mir-pretty-dyn-debug-plain` went with their code.
+
+## Amendment: a `str`'s search's `{:?}`, a gap (2026-11-17, #1687, #2004)
+
+std's `{:?}` of a `str`'s search, `split` and its kin, `matches` and
+`match_indices`, shows its searcher's state: `Split(SplitInternal {
+start: 0, end: 5, matcher: CharSearcher { haystack: "a b c", finger: 0,
+finger_back: 5, needle: ' ', .. }, .. })`. Its JS is the pieces it finds,
+which keeps none of that, so it's refused, naming why and its issue:
+`` `{:?}` of a `std::str::Split<'_, char>`, which shows std's searcher's
+state (#2004) ``. It's a gap, not ADR 0262's last case, which the lead
+decided: the state is plain data in std's own struct, so once the str
+searches are std's compiled structs, std's MIR their meaning, their
+`Debug` prints it exactly. Which types are a search is recognition's one
+list, `is_str_search`, which `search_runs_code` asks too. Given to generic
+code bound by `Debug` that never shows it, as #1687 found, it compiles: a
+bound nothing reads is given no dictionary (ADR 1165). Corpus case
+`split_given_to_generic_code_bound_by_debug` holds that; diagnostics rows
+hold the refusals of a `split` and a `matches`.
