@@ -68,7 +68,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a loop body's last labeled block, its `break` the loop's `continue`, stays, a `bb` label left in `numbers`' while loop",
     file: "src/lower/mir/tidy/jumps/continues.rs",
-    find: "                if clashes || continues(&mut inner, block.word(), looped.as_deref(), false).is_none() {\n",
+    find: "                if clashes || continues(&mut inner, block.word(), looped.as_ref(), false).is_none() {\n",
     replace: "                if true {\n",
     tests: [
       "test/lowering-loops.test.ts",
@@ -324,7 +324,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `break 'rows` of an inner loop, which MIR makes a `break` of a block the outer turn ends, stays `bb22:` in a `while (true)`, not the outer loop's `break rows;` and its test (uz3)",
     file: "src/lower/mir/tidy/jumps/continues.rs",
-    find: "            super::tails::relabeled(&mut broken, block.word(), &js::Name::from(named));\n            *looped = Some(named.into());\n",
+    find: "            let named = js::Name::label(named);\n            super::tails::relabeled(&mut broken, block.word(), &named);\n            *looped = Some(named);\n",
     replace: "            continue;\n",
     tests: ["test/corpus.test.ts", "-t", "^labeled_loop_left_from_inner.rs$"],
     snapshots: true,
@@ -363,7 +363,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `continue 'outer` in an inner loop after a test that skips the turn stays MIR's `break bb25` of a block, `bb25: { .. }`, the label and the turn's trailing `continue` kept (#442)",
     file: "src/lower/mir/tidy/jumps/continues.rs",
-    find: "        {\n            named_continues(body, looped.word());\n        }\n",
+    find: "        {\n            named_continues(body, looped);\n        }\n",
     replace: "        {}\n",
     tests: [
       "test/corpus.test.ts",
@@ -377,7 +377,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a block's `break` in an inner loop, which goes on with the outer loop, is `continue;`, which goes on with the inner one, a wrong total (#442)",
     file: "src/lower/mir/tidy/jumps/continues.rs",
-    find: "                    rejump(body, label, &StmtKind::Continue(Some(looped.into())))\n",
+    find: "                    rejump(body, label, &StmtKind::Continue(Some(looped.clone())))\n",
     replace:
       "                    rejump(body, label, &StmtKind::Continue(None))\n",
     tests: ["test/corpus.test.ts", "-t", "^continue_outer_past_block.rs$"],

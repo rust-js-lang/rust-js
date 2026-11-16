@@ -70,9 +70,9 @@ export const mutations: Mutation[] = [
     breaks:
       "the `break outer;` left in an inner loop has no place, so the comment written above `break 'outer` is before the inner loop, not before the `break` (rd148)",
     file: "src/lower/mir/tidy/jumps/labels.rs",
-    find: "            StmtKind::Break(written.map(Into::into)).at(written_at.map_or(js::Span::NONE, |(_, at)| *at))\n",
+    find: "            StmtKind::Break(written).at(written_at.map_or(js::Span::NONE, |(_, at)| *at))\n",
     replace:
-      "            StmtKind::Break(written.map(Into::into)).at(written_at.map_or(js::Span::NONE, |_| js::Span::NONE))\n",
+      "            StmtKind::Break(written).at(written_at.map_or(js::Span::NONE, |_| js::Span::NONE))\n",
     tests: ["test/corpus.test.ts", "-t", "^loop_value_then_tail.rs$"],
     snapshots: true,
   },
@@ -377,7 +377,7 @@ export const mutations: Mutation[] = [
     name: "written-loop-label-unnamed",
     breaks: "a `for` MIR labels in a `'outer: loop` that runs once keeps MIR's label, `bb5: for (..)`, not the program's `outer:` (D1, #523)",
     file: "src/lower/mir/tidy/jumps/labels.rs",
-    find: "            let from = label.replace(to.into()).expect(\"labeled\");\n            relabeled(inner, from.word(), &js::Name::from(to));\n",
+    find: "            let from = label.replace(to.clone()).expect(\"labeled\");\n            relabeled(inner, from.word(), &to);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^loop_exit_moves.rs$"],
     snapshots: true,

@@ -19,10 +19,10 @@ pub(super) const LOOP_LABEL: &str = "loop";
 
 /// Each `break` of no label in `stmts`, not in a loop of their own, of
 /// `label`: the loop's around the `switch` they're a case of.
-pub(super) fn labeled_breaks(stmts: &mut [Stmt], label: &str) {
+pub(super) fn labeled_breaks(stmts: &mut [Stmt], label: &Name) {
     for stmt in stmts {
         match &mut stmt.kind {
-            StmtKind::Break(l @ None) => *l = Some(label.into()),
+            StmtKind::Break(l @ None) => *l = Some(label.clone()),
             StmtKind::If(_, a, b) => {
                 labeled_breaks(a, label);
                 if let Some(b) = b {

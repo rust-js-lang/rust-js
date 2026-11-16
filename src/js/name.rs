@@ -41,6 +41,8 @@ enum Of {
     /// A block's label MIR's lowering made, `bb7`, not one the program
     /// writes, `'rows` (S5).
     BlockLabel,
+    /// A label the program wrote, `'rows` (`label`).
+    Label,
 }
 
 impl Name {
@@ -114,6 +116,15 @@ impl Name {
     /// (`mir::queries::label`), not one the program writes (S5).
     pub fn block_label(word: String) -> Name {
         Name(word, Of::BlockLabel)
+    }
+
+    /// A label the program wrote, `'rows`, spelled `word`: JS resolves a
+    /// label by its word in scope, so the label is one by its word, its
+    /// `break`s and `continue`s the same (the lead's decision, ADR 1150).
+    /// One written inside a loop or a block of its word is given apart
+    /// where its hint is made, `a$1` (#1969), so it's never its outer's.
+    pub fn label(word: &str) -> Name {
+        Name(word.to_string(), Of::Label)
     }
 
     /// Whether it's a block's label (`block_label`).

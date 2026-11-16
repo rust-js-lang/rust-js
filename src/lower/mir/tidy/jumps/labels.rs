@@ -51,7 +51,7 @@ pub(super) fn exit_after(
     // of its own: its label's, where the program wrote one (rd148).
     let written = (label.as_ref())
         .filter(|l| !crate::lower::mir::is_block_label(l))
-        .map(|l| l.word().to_string());
+        .cloned();
     // The spans of what a block MIR made holds, which has none of its own:
     // where it's written is where they are. A `try` MIR made of what a
     // borrow tracked at run time unborrows if it throws too, `try { r =
@@ -210,7 +210,7 @@ pub(super) fn exit_after(
             let around = around_span(&kept, &path);
             // An `if`'s span is its test's.
             let written_at = (written_breaks.iter()).find(|(test, _)| !around.is_none() && *test == around);
-            StmtKind::Break(written.map(Into::into)).at(written_at.map_or(js::Span::NONE, |(_, at)| *at))
+            StmtKind::Break(written).at(written_at.map_or(js::Span::NONE, |(_, at)| *at))
         }
         false => StmtKind::Break(None).at(at),
     };
@@ -373,8 +373,9 @@ pub(in crate::lower::mir::tidy) fn named_labels(stmts: &mut [Stmt], loops: &[(js
                 && let Some(to) = written
                 && !around.contains(to)
             {
-                relabeled(body, label.word(), &js::Name::from(to));
-                *label = to.into();
+                let to = js::Name::label(to);
+                relabeled(body, label.word(), &to);
+                *label = to;
             }
             around.push(label.to_string());
             walk(body, loops, around);
@@ -438,14 +439,15 @@ pub(in crate::lower::mir::tidy) fn written_loop_breaks(
             let Some((_, _, Some(to))) = around else {
                 continue;
             };
-            if own.is_some_and(|(_, _, l)| l.is_some()) || !taken.insert(to.into()) {
+            let to = js::Name::label(to);
+            if own.is_some_and(|(_, _, l)| l.is_some()) || !taken.insert(to.clone()) {
                 continue;
             }
             let Some((label, inner)) = parts(s) else {
                 unreachable!("matched")
             };
-            let from = label.replace(to.into()).expect("labeled");
-            relabeled(inner, from.word(), &js::Name::from(to));
+            let from = label.replace(to.clone()).expect("labeled");
+            relabeled(inner, from.word(), &to);
         }
     });
 }
@@ -532,9 +534,10 @@ pub(in crate::lower::mir::tidy) fn written_blocks(body: &mut Vec<Stmt>, blocks: 
                 && taken.get(&to) == Some(&1)
                 && js::names_jump(inner, label.word())
             {
-                relabeled(inner, label.word(), &js::Name::from(&to));
-                taken.insert(to.clone(), 2);
-                *label = to.into();
+                let named = js::Name::label(&to);
+                relabeled(inner, label.word(), &named);
+                taken.insert(to, 2);
+                *label = named;
             }
         }
     });

@@ -37,7 +37,7 @@ pub(super) fn switches(body: &mut Vec<Stmt>, written: &Written) {
 /// The loop a `switch` is in: the label a `break` of it names, whether
 /// the program wrote it, and whether one does.
 struct Around<'l> {
-    label: &'l str,
+    label: &'l Name,
     written: bool,
     named: bool,
 }
@@ -131,7 +131,7 @@ fn walk(
                 // in it.
                 let written = written_loop(loops, span).and_then(|(.., l)| l.clone());
                 let (readable, written) = match label.as_ref() {
-                    Some(l) if !crate::lower::mir::is_block_label(l) => (l.to_string(), true),
+                    Some(l) if !crate::lower::mir::is_block_label(l) => (l.clone(), true),
                     _ => {
                         let mut taken: IndexSet<String> = labels.iter().cloned().collect();
                         labels_in(body, &mut taken);
@@ -142,7 +142,9 @@ fn walk(
                             }))
                             .find(|name| !taken.contains(name))
                             .expect("a name no label has");
-                        (readable.clone(), written.as_ref() == Some(&readable))
+                        // Made once, each `break` of it its clone: a label,
+                        // one by its word, the program's or tidy's `loop`.
+                        (js::Name::label(&readable), written.as_ref() == Some(&readable))
                     }
                 };
                 let mut inner = Around {
@@ -150,7 +152,7 @@ fn walk(
                     written,
                     named: false,
                 };
-                labels.push(readable.clone());
+                labels.push(readable.to_string());
                 walk(body, program, labels, Some(&mut inner), true);
                 labels.pop();
                 // A `continue` MIR made, past what an arm does, that ends
@@ -173,11 +175,11 @@ fn walk(
                 }
                 if inner.named {
                     if let Some(from) = label.as_ref().map(|n| n.word())
-                        && from != readable
+                        && from != readable.word()
                     {
-                        relabeled(body, from, &js::Name::from(&readable));
+                        relabeled(body, from, &readable);
                     }
-                    *label = Some(readable.into());
+                    *label = Some(readable);
                 }
             }
             _ => {}

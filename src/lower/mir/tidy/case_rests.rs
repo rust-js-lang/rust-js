@@ -316,7 +316,9 @@ pub(super) fn loops_left_by_cases(stmts: &mut [Stmt], loops: &[(js::Span, bool, 
         let Some((.., Some(written))) = super::written_loop(loops, span) else {
             continue;
         };
-        let written = written.clone();
+        // The label the program wrote, made once: each `break` of it its
+        // clone.
+        let written = js::Name::label(written);
         let own = |l: &Option<Name>| l.is_none() || *l == *label;
         // `b: { ..; continue; } break;`, a block MIR made of the turn whose
         // `break`s leave the loop, as its end does: its statements, each
@@ -336,7 +338,7 @@ pub(super) fn loops_left_by_cases(stmts: &mut [Stmt], loops: &[(js::Span, bool, 
             inner.pop();
             relabel(&mut inner, b.word(), &written);
             body.extend(inner);
-            *label = Some(written.into());
+            *label = Some(written);
             continue;
         }
         let [.., switch, last] = &body[..] else {
@@ -371,21 +373,21 @@ pub(super) fn loops_left_by_cases(stmts: &mut [Stmt], loops: &[(js::Span, bool, 
             leaving(&mut case.body, &written);
             if !case.falls && !case.body.last().is_some_and(js::ends) {
                 case.body
-                    .push(StmtKind::Break(Some(written.clone().into())).at(js::Span::NONE));
+                    .push(StmtKind::Break(Some(written.clone())).at(js::Span::NONE));
             }
         }
         body.extend(rest);
-        *label = Some(written.into());
+        *label = Some(written);
     }
 }
 
 /// Each `break` of no label in a case's `stmts`, not in a loop or a
 /// `switch` of their own, which leaves the `switch`, then the loop: the
 /// loop's, `written`'s.
-fn leaving(stmts: &mut [Stmt], written: &str) {
+fn leaving(stmts: &mut [Stmt], written: &js::Name) {
     for stmt in stmts {
         match &mut stmt.kind {
-            StmtKind::Break(l @ None) => *l = Some(written.into()),
+            StmtKind::Break(l @ None) => *l = Some(written.clone()),
             StmtKind::If(_, a, b) => {
                 leaving(a, written);
                 if let Some(b) = b {
@@ -402,11 +404,11 @@ fn leaving(stmts: &mut [Stmt], written: &str) {
 }
 
 /// Each `break from` in `stmts`, however deep, `break to`.
-fn relabel(stmts: &mut Vec<Stmt>, from: &str, to: &str) {
+fn relabel(stmts: &mut Vec<Stmt>, from: &str, to: &js::Name) {
     js::statement_lists(stmts, &mut |list| {
         for stmt in list.iter_mut() {
             if matches!(&stmt.kind, StmtKind::Break(Some(l)) if l.is(from)) {
-                stmt.kind = StmtKind::Break(Some(to.into()));
+                stmt.kind = StmtKind::Break(Some(to.clone()));
             }
         }
     });

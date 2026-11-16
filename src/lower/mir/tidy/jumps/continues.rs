@@ -41,11 +41,11 @@ pub(in crate::lower::mir::tidy) fn continued_blocks(
 }
 
 /// The label and body of `stmt`, where it's a loop a `continue` goes on with.
-fn looped(stmt: &mut Stmt) -> Option<(Option<String>, &mut Vec<Stmt>)> {
+fn looped(stmt: &mut Stmt) -> Option<(Option<Name>, &mut Vec<Stmt>)> {
     match &mut stmt.kind {
         StmtKind::While { label, body, .. }
         | StmtKind::ForOf { label, body, .. }
-        | StmtKind::For { label, body, .. } => Some((label.clone().map(Name::into_word), body)),
+        | StmtKind::For { label, body, .. } => Some((label.clone(), body)),
         _ => None,
     }
 }
@@ -55,7 +55,7 @@ fn looped(stmt: &mut Stmt) -> Option<(Option<String>, &mut Vec<Stmt>)> {
 /// of `&&`, `||` and `!` mixed, `logicals`; each `if` of `kept`, written
 /// with an `else`, kept as it is (`continued_blocks`).
 fn continued_loop(
-    looped: Option<String>,
+    looped: Option<Name>,
     body: &mut Vec<Stmt>,
     (guards, logicals): (&[(js::Span, js::Span)], &[js::Span]),
     kept: Option<&[(js::Span, js::Span, js::Span)]>,
@@ -87,11 +87,11 @@ fn continued_loop(
                     unreachable!("matched")
                 };
                 let clashes = declared(&inner).any(|name| declared(body).any(|n| n == name));
-                if clashes || continues(&mut inner, block.word(), looped.as_deref(), false).is_none() {
+                if clashes || continues(&mut inner, block.word(), looped.as_ref(), false).is_none() {
                     body.push(StmtKind::Labeled(block, inner).at(span));
                     break;
                 }
-                continues(&mut inner, block.word(), looped.as_deref(), true);
+                continues(&mut inner, block.word(), looped.as_ref(), true);
                 body.extend(inner);
             }
             // One the program ended with a `continue`, `if (t) { a;
@@ -495,7 +495,7 @@ pub(in crate::lower::mir::tidy) fn jumps_past_blocks(stmts: &mut [Stmt]) {
             ..
         } = &mut stmt.kind
         {
-            named_continues(body, looped.word());
+            named_continues(body, looped);
         }
     }
     for i in 0..stmts.len().saturating_sub(1) {
@@ -561,14 +561,14 @@ fn rejump(stmts: &mut [Stmt], label: &str, jump: &StmtKind) {
 /// `continue looped`, which goes on from the same place, as the program
 /// wrote `continue 'outer`; those of its own turn, `jumps_past_blocks`'
 /// `continue;` (#442).
-fn named_continues(stmts: &mut [Stmt], looped: &str) {
+fn named_continues(stmts: &mut [Stmt], looped: &Name) {
     // Each loop in `stmts`, through what isn't one: its `break label`s,
     // `continue looped`.
-    fn in_loops(stmts: &mut [Stmt], label: &str, looped: &str) {
+    fn in_loops(stmts: &mut [Stmt], label: &str, looped: &Name) {
         for stmt in stmts {
             match &mut stmt.kind {
                 StmtKind::While { body, .. } | StmtKind::ForOf { body, .. } | StmtKind::For { body, .. } => {
-                    rejump(body, label, &StmtKind::Continue(Some(looped.into())))
+                    rejump(body, label, &StmtKind::Continue(Some(looped.clone())))
                 }
                 StmtKind::If(_, a, b) => {
                     in_loops(a, label, looped);
@@ -588,7 +588,7 @@ fn named_continues(stmts: &mut [Stmt], looped: &str) {
     for i in 0..stmts.len() {
         let goes_on = matches!(
             stmts.get(i + 1).map(|s| &s.kind),
-            Some(StmtKind::Continue(l)) if l.as_ref().map(|n| n.word()).is_none_or(|l| l == looped)
+            Some(StmtKind::Continue(l)) if l.as_ref().map(|n| n.word()).is_none_or(|l| l == looped.word())
         );
         let written = !stmts[i].span.is_none();
         match &mut stmts[i].kind {
@@ -849,8 +849,10 @@ pub(in crate::lower::mir::tidy) fn blocks_breaking_loops(
             else {
                 continue;
             };
-            super::tails::relabeled(&mut broken, block.word(), &js::Name::from(named));
-            *looped = Some(named.into());
+            // The label the program wrote, made once.
+            let named = js::Name::label(named);
+            super::tails::relabeled(&mut broken, block.word(), &named);
+            *looped = Some(named);
         }
         body.splice(at..=at, broken);
         if body[..body.len() - 1].last().is_some_and(ends) {
@@ -1098,19 +1100,19 @@ pub(in crate::lower::mir::tidy) fn innermost_jumps(stmts: &mut [Stmt]) {
 pub(in crate::lower::mir::tidy) fn continues(
     stmts: &mut [Stmt],
     block: &str,
-    looped: Option<&str>,
+    looped: Option<&Name>,
     write: bool,
 ) -> Option<()> {
-    fn each(stmts: &mut [Stmt], block: &str, looped: Option<&str>, inner: bool, write: bool) -> Option<()> {
+    fn each(stmts: &mut [Stmt], block: &str, looped: Option<&Name>, inner: bool, write: bool) -> Option<()> {
         for stmt in stmts {
             match &mut stmt.kind {
                 StmtKind::Break(Some(l)) if l.is(block) => {
                     let label = match inner {
-                        true => Some(looped?.to_string()),
+                        true => Some(looped?.clone()),
                         false => None,
                     };
                     if write {
-                        stmt.kind = StmtKind::Continue(label.map(Into::into));
+                        stmt.kind = StmtKind::Continue(label);
                     }
                 }
                 StmtKind::If(_, a, b) => {
@@ -1133,7 +1135,7 @@ pub(in crate::lower::mir::tidy) fn continues(
         Some(())
     }
     // Not `looped` itself, a label the block's statements can't name twice.
-    if looped == Some(block) {
+    if looped.map(|l| l.word()) == Some(block) {
         return None;
     }
     each(stmts, block, looped, false, write)

@@ -1,13 +1,13 @@
 # shape	count	per 10,000 lines
-files	2632
-lines	349928
+files	2633
+lines	350003
 temporaries	0	0
 labeled blocks	0	0
-while (true)	224	6.4
-$iter	2917	83.4
+while (true)	225	6.4
+$iter	2917	83.3
 Iterator.from	354	10.1
 return;	337	9.6
-renamed x$1	16454	470.2
+renamed x$1	16454	470.1
 role fallbacks	8934	255.3
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1	role fallbacks
 test/corpus/adapter_drop_past_a_panic.js	50	0	0	0	1	0	0	0	1
@@ -1282,6 +1282,7 @@ test/corpus/key_functions_boxed.js	155	0	0	0	3	0	0	26	9
 test/corpus/keys_found_by_their_own_hash.js	473	0	0	0	0	0	0	4	8
 test/corpus/keys_of_rc_arc_and_unit.js	485	0	0	0	0	0	0	10	6
 test/corpus/keys_with_a_destructor_drop_where_std_drops_them.js	390	0	0	0	3	0	0	12	8
+test/corpus/label_shadowing_its_enclosing_label.js	75	0	0	1	0	0	0	0	0
 test/corpus/labeled_block_around_a_loop.js	86	0	0	0	0	0	0	2	2
 test/corpus/labeled_blocks.js	87	0	0	0	0	0	0	2	2
 test/corpus/labeled_loop_left_from_inner.js	36	0	0	0	0	0	0	0	0
