@@ -90,4 +90,28 @@ export const mutations: Mutation[] = [
     replace: "        const next = signature ? following(file, from + count - 1) : undefined;\n",
     tests: ["test/test-map.test.ts", "-t", "a comment, a new item nothing refers to"],
   },
+  {
+    name: "selector-const-value-runs-all",
+    breaks: "a constant's value changed, with an array's length, selects everything, where the functions that name it are what read it: every adapter-family flip ran the whole suite (dab80f433)",
+    file: "scripts/testMap.ts",
+    find: "      const readers = holding(file, from).length === 0 ? constValue(file, from, count, added, removed) : undefined;\n",
+    replace: "      const readers = undefined as number[] | undefined;\n",
+    tests: ["test/test-map.test.ts", "-t", "a constant's value"],
+  },
+  {
+    name: "selector-const-retyped-as-value",
+    breaks: "a constant whose type changed past an array's length is taken as its value's change, so its readers alone run where its type's change may reach any code (#2003's ledger)",
+    file: "scripts/testMap.ts",
+    find: "    if (declared !== undefined && !added.some((line) => withoutLength(line) === withoutLength(declared))) return undefined;\n",
+    replace: "",
+    tests: ["test/test-map.test.ts", "-t", "a constant's value"],
+  },
+  {
+    name: "selector-const-read-outside-kept",
+    breaks: "a constant read where no function is, another constant's initializer, is taken as read by its functions alone, so what that constant's readers run is left out",
+    file: "scripts/testMap.ts",
+    find: "      if (found.length === 0) return undefined;\n      readers.push(...found);\n",
+    replace: "      readers.push(...found);\n",
+    tests: ["test/test-map.test.ts", "-t", "a constant's value"],
+  },
 ];

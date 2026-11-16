@@ -606,3 +606,26 @@ and "a failed net no rerun can say"; test/ci.test.ts's "each job that runs
 a slice uploads its JUnit reports"; test/ci-spend.test.ts's "a
 micro-benchmark past 1.5 times"; mutations `attribute-slice-*`,
 `attribute-unrerunnable-unnamed` and `ci-spend-bench-unflagged`.
+
+### Amended: a constant's value is its readers' change (2026-11-17)
+
+m3-max's adapter-family flips each grew `HELD_FLIPPED: [&str; N]` by one
+entry, and each selected everything: the declaration's line is outside any
+function's code, and its type changed, its length. A constant's value is
+inlined where it's named, so its change is read only by the functions that
+name it. A hunk within a `const` or `static` item, from its declaration to
+its `;`, whose type is the same but for an array's length, and which writes
+no function, closure or other item, is now the change of each function that
+names it (`git grep -w` at the map's commit, comments and `use`s left out).
+A constant named where no function is, another constant's initializer,
+still selects everything, as does one whose type changes otherwise.
+
+On dab80f433's diff from the map at 1bfa70125: everything ("writes an
+item, `pub(in crate::lower) const HELD_FLIPPED`"), 620 s on CI, before;
+after, its one reader, in_place.rs:145, which every test reaches, so 364
+files and every case: the rule is right, and this constant's reader is a
+hub, which region coverage for hubs is to narrow.
+
+Proof: test/test-map.test.ts's "a constant's value"; mutations
+`selector-const-value-runs-all`, `selector-const-retyped-as-value` and
+`selector-const-read-outside-kept`.

@@ -7,7 +7,7 @@ import { expect, test } from "bun:test";
 import { mkdirSync, readdirSync, readFileSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
 
-import { cachePast, ciMapOf, ciMapPrefix, hunksOf, joinedSpans, mapFile, mapVersion, mergeRecordings, nearestMap, nestedItem, pick, planUnits, pruneMaps, readsOf, readsSources, type Change, type Plan, type TestMap } from "../scripts/testMap";
+import { cachePast, ciMapOf, ciMapPrefix, hunksOf, joinedSpans, mapFile, mapVersion, mergeRecordings, nearestMap, nestedItem, pick, planUnits, pruneMaps, readsOf, readsSources, type Change, type Plan, type Sources, type TestMap } from "../scripts/testMap";
 
 import { shard } from "../scripts/shard";
 import { caseShard, fixture, root } from "./support";
@@ -114,6 +114,30 @@ test("a change the map can't say runs what the check runs without it", () => {
   for (const file of ["test/support.ts", "std/lib.rs", "std/package.json", "Cargo.lock", "docs/guide/limitations.md", "test/corpus.test.ts"]) {
     expect(pick(map, [{ file, hunks: [[1, 1]] }], files, cases).kind).toBe("all");
   }
+});
+
+test("a constant's value, an array's length with it, is the change of the functions that name it (dab80f433's `HELD_FLIPPED`)", () => {
+  // src/a.rs: function 0 at 10-20 names `FLIPPED` at 15; the constant at 22-26.
+  const text = Array.from({ length: 50 }, (_, i) => `// line ${i + 1}`);
+  text[14] = "    let flipped = FLIPPED.iter();";
+  text[21] = "pub(in crate::lower) const FLIPPED: [&str; 2] = [";
+  text[22] = '    "a",';
+  text[23] = '    "b",';
+  text[24] = "];";
+  text[26] = "/// `FLIPPED`'s adapters, a comment that names it.";
+  text[44] = "const OTHER: usize = FLIPPED.len();";
+  const sources = (also: { file: string; line: number }[] = []): Sources => ({
+    text: (file) => (file === "src/a.rs" ? text.join("\n") : undefined),
+    naming: (word) => (word === "FLIPPED" ? [{ file: "src/a.rs", line: 15 }, { file: "src/a.rs", line: 22 }, { file: "src/a.rs", line: 27 }, ...also] : []),
+  });
+  const grown: Change = { file: "src/a.rs", hunks: [[22, 1, ["pub(in crate::lower) const FLIPPED: [&str; 3] = ["], ["pub(in crate::lower) const FLIPPED: [&str; 2] = ["]], [24, 0, ['    "c",'], []]] };
+  const asFunction = pick(map, [{ file: "src/a.rs", hunks: [[15, 1]] }], files, cases);
+  expect(pick(map, [grown], files, cases, sources())).toEqual({ ...asFunction, why: expect.any(String) } as never);
+  // Read where no function is, another constant's initializer: everything.
+  expect(pick(map, [grown], files, cases, sources([{ file: "src/a.rs", line: 45 }])).kind).toBe("all");
+  // Its type changed past its length: everything.
+  const retyped: Change = { file: "src/a.rs", hunks: [[22, 1, ["pub(in crate::lower) const FLIPPED: [String; 2] = ["], ["pub(in crate::lower) const FLIPPED: [&str; 2] = ["]]] };
+  expect(pick(map, [retyped], files, cases, sources()).kind).toBe("all");
 });
 
 test("a file read by `include_str!` is the line that reads it", () => {

@@ -112,6 +112,54 @@ const unreferencedOnly = (lines: string[]) =>
   !lines.some((line) => /^\s*(?:#\[.*\]\s*)*(?:pub(?:\([^)]*\))?\s+)?(?:(?:unsafe|default)\s+)*(?:impl|use|trait|macro)\b|macro_rules!/.test(line)) &&
   lines.some((line) => unreferencedItem.test(line));
 
+/** The compiler's sources as the map's commit has them: a file's text, and
+ * each line of `src/` that names `word`, as `git grep -w` finds it. */
+export type Sources = { text: (file: string) => string | undefined; naming: (word: string) => { file: string; line: number }[] };
+
+/** The sources at `commit`, by git. */
+export function sourcesAt(commit: string): Sources {
+  const git = (args: string[]) => Bun.spawnSync(["git", ...args], { cwd: root, stdout: "pipe", stderr: "pipe" });
+  return {
+    text: (file) => {
+      const p = git(["show", `${commit}:${file}`]);
+      return p.exitCode === 0 ? p.stdout.toString() : undefined;
+    },
+    naming: (word) =>
+      git(["grep", "-n", "-w", "-e", word, commit, "--", "src"])
+        .stdout.toString()
+        .split("\n")
+        .flatMap((line) => {
+          const m = /^[^:]+:([^:]+):(\d+):/.exec(line);
+          return m ? [{ file: m[1]!, line: Number(m[2]) }] : [];
+        }),
+  };
+}
+
+/** A `const` or `static` item's declaration line, its name the second group. */
+const constItem = /^\s*(?:pub(?:\([^)]*\))?\s+)?(const|static)\s+(?:mut\s+)?([A-Z_][A-Z0-9_]*)\s*:/;
+
+/** Of `lines` (1-based), the `const` or `static` item whose lines, from its
+ * declaration to its `;`, hold `from` to `to`: its name and its lines. */
+export function constHolding(lines: string[], from: number, to: number): { name: string; start: number; end: number } | undefined {
+  for (let start = Math.min(from, lines.length); start >= 1; start--) {
+    const m = constItem.exec(lines[start - 1]!);
+    if (!m) continue;
+    let depth = 0;
+    for (let end = start; end <= lines.length; end++) {
+      for (const c of lines[end - 1]!.replace(/\/\/.*$/, "").replace(/"(?:[^"\\]|\\.)*"/g, '""')) {
+        if ("([{".includes(c)) depth++;
+        else if (")]}".includes(c)) depth--;
+        else if (c === ";" && depth === 0) return from >= start && to <= end ? { name: m[2]!, start, end } : undefined;
+      }
+    }
+    return undefined;
+  }
+  return undefined;
+}
+
+/** `line` with an array type's length left out, `[&str; 18]` as `[&str; _]`. */
+const withoutLength = (line: string) => line.replace(/;\s*\d+\s*\]/g, "; _]");
+
 /** `line` with its visibility left out, `pub(super) fn f(` as `fn f(`. */
 const withoutVisibility = (line: string) => line.replace(/\bpub(?:\([^)]*\))?\s+/g, "");
 export type Change = { file: string; hunks: Hunk[] | "new" };
@@ -248,7 +296,7 @@ export function readsSources(file: string): boolean {
  * functions it touches: of `files`, the push suite's test files, and
  * `cases`, the corpus's; or `all`, where a change isn't a function's code.
  * What every other path runs is the selector's (scripts/select.ts). */
-export function pick(map: TestMap, changes: Change[], files: string[], cases: string[]): Picked {
+export function pick(map: TestMap, changes: Change[], files: string[], cases: string[], sources: Sources = sourcesAt(map.commit)): Picked {
   const touched = new Set<number>();
   // Each function's spans, by file, and the lines from its first to its last.
   const spans = new Map<string, { at: number; from: number; to: number }[]>();
@@ -273,6 +321,39 @@ export function pick(map: TestMap, changes: Change[], files: string[], cases: st
     const before = holding(file, line);
     const after = holding(file, line + 1);
     return before.some((a) => after.some((b) => a === b || within(a, b) || within(b, a)));
+  };
+  // A change of a `const` or `static`'s value, its lines within its item,
+  // its type the same or an array's length alone, `HELD_FLIPPED: [&str;
+  // 18]` to `19` with an entry added: the functions that name it, which are
+  // where its value is read, it being inlined there. A use of it outside
+  // any function's code, another constant's, is none of theirs: undefined,
+  // and so everything (ADR 1101, amended).
+  const constValue = (file: string, from: number, count: number, added: string[], removed: string[] | undefined): number[] | undefined => {
+    if (removed === undefined || added.some((line) => nestedItem.test(line) && !constItem.test(line)) || added.some((line) => /\bfn\b|\|[^|]*\|/.test(line))) return undefined;
+    const text = sources.text(file);
+    if (text === undefined) return undefined;
+    const lines = text.split("\n");
+    const item = constHolding(lines, Math.max(from, 1), count === 0 ? from + 1 : from + count - 1);
+    if (item === undefined || (count === 0 && from < item.start)) return undefined;
+    // Its declaration, where the hunk has it: the same but an array's length.
+    const declared = item.start >= from && item.start < from + count ? removed[item.start - from] : undefined;
+    if (declared !== undefined && !added.some((line) => withoutLength(line) === withoutLength(declared))) return undefined;
+    if (added.filter((line) => constItem.test(line)).length > (declared === undefined ? 0 : 1)) return undefined;
+    const readers: number[] = [];
+    const texts = new Map<string, string[]>();
+    const lineOf = (at: string, line: number) => {
+      if (!texts.has(at)) texts.set(at, (sources.text(at) ?? "").split("\n"));
+      return texts.get(at)![line - 1] ?? "";
+    };
+    for (const site of sources.naming(item.name)) {
+      if (site.file === file && site.line >= item.start && site.line <= item.end) continue;
+      // A comment that names it, or a `use` of it, reads nothing.
+      if (/^\s*(?:\/\/|(?:pub(?:\([^)]*\))?\s+)?use\b)/.test(lineOf(site.file, site.line))) continue;
+      const found = holding(site.file, site.line);
+      if (found.length === 0) return undefined;
+      readers.push(...found);
+    }
+    return readers;
   };
   for (const { file, hunks } of changes) {
     const sites = map.includes[file];
@@ -303,6 +384,11 @@ export function pick(map: TestMap, changes: Change[], files: string[], cases: st
           touched.add(next);
           continue;
         }
+      }
+      const readers = holding(file, from).length === 0 ? constValue(file, from, count, added, removed) : undefined;
+      if (readers !== undefined) {
+        for (const f of readers) touched.add(f);
+        continue;
       }
       // An item it writes inside a function, an `impl` say, may be used
       // where the function isn't run.
