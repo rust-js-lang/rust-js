@@ -4,7 +4,6 @@
 # (test/architecture-std-paths.test.ts). What's left, and why.
 #
 # The iterators' recognizers, the DefId step's next pass, m1-lisa's.
-src/lower/recognition/adapter_types.rs	62
 src/lower/recognition/iterators.rs	149
 src/lower/recognition/lengths.rs	126
 # `std_path` itself, std's path's text, which the table's rows are: `core::`
