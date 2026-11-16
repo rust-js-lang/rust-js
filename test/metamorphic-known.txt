@@ -113,6 +113,3 @@ plain std loud-call dyn_fn_handed_only.rs
 
 #1941 a `capacity()` of an in-place collect generic code makes of a chain it's given, whose source a call in that chain hides, `at_0(opaque(kept.into_iter()).map(f))`, throws where it runs, naming #1180: the read isn't in the body that collects, so it isn't refused where it's compiled (ADR 0419, amended for #1926)
 plain generic-instances in_place_collect_capacity_through_a_function.rs
-
-#2007 P0: a library's generic function given a value it gets back through a bound of its own, `relay_same<U>(x: impl Same<U>)`, never drops it where its consumer's value has a destructor
-plain std library impl_trait_value_given_to_generic_code.rs

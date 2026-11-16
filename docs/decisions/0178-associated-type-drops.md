@@ -212,3 +212,18 @@ Corpus case `impl_trait_value_given_to_generic_code` holds each path
 against native, in both builds and through the metamorphic rewrites, with
 an impl whose values drop nothing. Mutations `impl-trait-item-drop-unrevealed`
 and `evidence-word-of-an-impl-trait-unnamed` are caught.
+
+## Amendment: a library's trait's items drop in its consumer's analysis too (2026-11-17, #2007)
+
+`item_may_drop` asked only a trait of the crate's own whether an impl gives
+its associated type a type whose drop runs. A consumer compiling a
+library's generic function itself (ADR 0914), `relay_same<U>(x: impl
+Same<U>)` given `<T as Source>::Named` of the library's `Source`, so gave
+`U` no drop: `function relaySame(x, SameU)`, and the value was never
+dropped, though one crate's was. It asks a rust-js library's trait as the
+crate's own now; not std's, whose items ADR 0421's rule gives drops. Crate
+pair `library_trait_item_dropped_through_a_bound` holds a named type's and
+an `impl Trait`'s values of the library's impl and of the app's own,
+against native; mutation `library-trait-item-drop-unasked` is caught, and
+the metamorphic `library` rewrite of `impl_trait_value_given_to_generic_code`
+runs as native Rust.

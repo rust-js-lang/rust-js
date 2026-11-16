@@ -170,7 +170,7 @@ pub(super) fn drop_params<'tcx>(
             for (index, arg) in args.iter().enumerate() {
                 let Some(ty) = arg.as_type() else { continue };
                 let index = index as u32;
-                if runs(ty, caller) || item_may_drop(tcx, ty, &runs) {
+                if runs(ty, caller) || item_may_drop(tcx, foreign, ty, &runs) {
                     given.insert((callee, index));
                 }
                 for part in ty.walk() {
@@ -258,11 +258,18 @@ pub(super) fn drop_params<'tcx>(
     params
 }
 
-/// Whether `ty` is an associated type of a trait of the crate's,
-/// `<S as Source>::Iter`, that an impl gives a type whose drop runs: its
-/// dictionary's drop drops it (ADR 0178), which a callee given it is given
-/// (#978).
-fn item_may_drop<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>, runs: &impl Fn(Ty<'tcx>, DefId) -> bool) -> bool {
+/// Whether `ty` is an associated type of a trait of the crate's or a rust-js
+/// library's, `<S as Source>::Iter`, that an impl gives a type whose drop
+/// runs: its dictionary's drop drops it (ADR 0178), which a callee given it
+/// is given (#978). A library's generic function the crate compiles itself
+/// is given it as the library's is (#2007). Not std's traits', whose items
+/// their own rule gives drops (ADR 0421).
+fn item_may_drop<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    foreign: &crate::lower::library::Foreign<'_, 'tcx>,
+    ty: Ty<'tcx>,
+    runs: &impl Fn(Ty<'tcx>, DefId) -> bool,
+) -> bool {
     let ty::Alias(
         _,
         ty::AliasTy {
@@ -273,7 +280,7 @@ fn item_may_drop<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>, runs: &impl Fn(Ty<'tcx>,
     else {
         return false;
     };
-    let Some(trait_id) = tcx.trait_of_assoc(item).filter(|id| id.is_local()) else {
+    let Some(trait_id) = (tcx.trait_of_assoc(item)).filter(|id| id.is_local() || foreign.is_library(id.krate)) else {
         return false;
     };
     tcx.all_impls(trait_id).any(|imp| {

@@ -7,7 +7,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a function given an associated type whose impl's type drops is given no drop of it, so `*it = other` drops nothing (#978)",
     file: "src/lower/analysis/drops.rs",
-    find: "                if runs(ty, caller) || item_may_drop(tcx, ty, &runs) {\n",
+    find: "                if runs(ty, caller) || item_may_drop(tcx, foreign, ty, &runs) {\n",
     replace: "                if runs(ty, caller) {\n",
     tests: ["test/corpus.test.ts", "-t", "^associated_iterator_dropped.rs$"],
   },
@@ -88,8 +88,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a guard given to generic code isn't dropped there, so its cell stays borrowed and a later `borrow_mut()` panics",
     file: "src/lower/analysis/drops.rs",
-    find: "                if runs(ty, caller) || item_may_drop(tcx, ty, &runs) {\n",
-    replace: "                if false && runs(ty, caller) || item_may_drop(tcx, ty, &runs) {\n",
+    find: "                if runs(ty, caller) || item_may_drop(tcx, foreign, ty, &runs) {\n",
+    replace: "                if false && runs(ty, caller) || item_may_drop(tcx, foreign, ty, &runs) {\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_guard_drop.rs$"],
   },
   {
@@ -171,5 +171,13 @@ export const mutations: Mutation[] = [
     find: "            runs(hidden, imp)\n",
     replace: "            runs(declared, imp)\n",
     tests: ["test/corpus.test.ts", "-t", "^impl_trait_value_given_to_generic_code.rs$"],
+  },
+  {
+    name: "library-trait-item-drop-unasked",
+    breaks: "an associated type of a rust-js library's trait isn't asked whether its impls' types drop, so a library's generic function the crate compiles itself, `relay_same<U>(x: impl Same<U>)` given one, takes no `dropU` and never drops it (#2007)",
+    file: "src/lower/analysis/drops.rs",
+    find: "    let Some(trait_id) = (tcx.trait_of_assoc(item)).filter(|id| id.is_local() || foreign.is_library(id.krate)) else {\n",
+    replace: "    let Some(trait_id) = (tcx.trait_of_assoc(item)).filter(|id| id.is_local() || false && foreign.is_library(id.krate)) else {\n",
+    tests: ["test/crates.test.ts", "-t", "library_trait_item_dropped_through_a_bound"],
   },
 ];
