@@ -312,7 +312,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => continue,
             };
             // Each of the visitor and what it's given: nothing of a `null`.
-            let given: Vec<String> = match method {
+            let given: Vec<crate::js::Name> = match method {
                 VisitorMethod::Unit | VisitorMethod::None => Vec::new(),
                 _ => vec![self.fresh(Role::V)],
             };

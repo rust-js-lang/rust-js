@@ -219,7 +219,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     };
                     exprs.push(match unboxed {
                         Some((unboxed, back)) => {
-                            let params: Vec<String> = (0..unboxed.len())
+                            let params: Vec<crate::js::Name> = (0..unboxed.len())
                                 .map(|at| self.fresh(Base::Numbered(Role::X, at)))
                                 .collect();
                             let given = (params.iter().zip(&unboxed))
@@ -397,7 +397,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 None => place.clone(),
             };
             let boxed = crate::lower::mut_refs::boxed(held);
-            out.push(StmtKind::Const(name.clone().into(), boxed).at(self.js_span(span)));
+            out.push(StmtKind::Const(name.clone(), boxed).at(self.js_span(span)));
             if fixed_place(&place) {
                 let back = Expr::held(Expr::var(&name));
                 let back = match inner {

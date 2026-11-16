@@ -831,7 +831,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         method: DefId,
         args: ty::GenericArgsRef<'tcx>,
         declared: &[ty::TraitRef<'tcx>],
-        names: &[String],
+        names: &[js::Name],
         location: Expr,
         span: Span,
     ) -> R<Vec<Expr>> {

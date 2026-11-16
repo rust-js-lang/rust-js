@@ -37,6 +37,14 @@ enum Of {
 }
 
 impl Name {
+    /// A variable a pass declares, spelled `word`, the item's: the name its
+    /// declaration and each of its reads are made of, by cloning, never of
+    /// its word again ("names are ids", ADR 1150). What's still made of a
+    /// word alone, `From<&str>`, step 1 traces to one of these.
+    pub fn declared(word: String) -> Name {
+        Name(word, Of::Item)
+    }
+
     /// The global `word`, JS's `Array` or a binding's `document`, which the
     /// module declares nowhere: the one way a global's name is made
     /// (`Expr::global`), which `js::validate` takes for resolved where

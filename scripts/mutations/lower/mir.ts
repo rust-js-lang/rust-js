@@ -58,7 +58,7 @@ export const mutations: Mutation[] = [
     breaks:
       "an `on_load!` body from MIR returns at its module's top, which JS has no `return` at",
     file: "src/lower/mir.rs",
-    find: "                        stmt.kind = StmtKind::Break(Some(label.clone().into()));\n",
+    find: "                        stmt.kind = StmtKind::Break(Some(label.clone()));\n",
     replace: "",
     tests: ["test/lowering-bindings.test.ts", "-t", "on_load body's loop"],
   },

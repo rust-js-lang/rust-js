@@ -374,7 +374,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let param = self.fresh(Role::Each);
         let same = self.eq_value(Expr::var(&param), x.clone(), item, span, &mut body)?;
         let strict = matches!(&same.kind, js::ExprKind::Binary(Op::Eq, each, of)
-            if matches!(&each.kind, js::ExprKind::Var(v) if v.is(&param)) && **of == x);
+            if matches!(&each.kind, js::ExprKind::Var(v) if v.is(param.word())) && **of == x);
         // Of what's never `NaN`, an object equal only to itself (ADR
         // 1016), `includes`, which finds what `indexOf` does.
         if body.is_empty() && strict {
@@ -578,12 +578,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let mut list = vec![a, b];
             match &same.kind {
                 // `===`, which it compares by where it's given none.
-                js::ExprKind::Binary(Op::Eq, l, r) if made.is_empty() && is(l, &x) && is(r, &y) => {}
+                js::ExprKind::Binary(Op::Eq, l, r) if made.is_empty() && is(l, x.word()) && is(r, y.word()) => {}
                 // A helper of the two, `$eq`: the helper.
                 js::ExprKind::Call(callee, given)
                     if made.is_empty()
                         && callee.helper_name().is_some()
-                        && matches!(&given[..], [l, r] if is(l, &x) && is(r, &y)) =>
+                        && matches!(&given[..], [l, r] if is(l, x.word()) && is(r, y.word())) =>
                 {
                     list.push((**callee).clone());
                 }

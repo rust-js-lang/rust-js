@@ -68,13 +68,13 @@ pub(super) fn named_flags(body: &mut Vec<Stmt>, flags: &IndexSet<String>) {
             continue;
         };
         let named = dropped.split('$').next().unwrap_or(&dropped);
-        let to = crate::names::fresh_in(&mut taken, &format!("{named}${rest}"));
+        let to = Name::declared(crate::names::fresh_in(&mut taken, &format!("{named}${rest}")));
         js::statement_lists(body, &mut |list| {
             for stmt in list.iter_mut() {
                 if let StmtKind::Let(name, _) = &mut stmt.kind
                     && name == flag
                 {
-                    *name = Name::from(&to);
+                    *name = to.clone();
                 }
             }
         });
@@ -82,7 +82,7 @@ pub(super) fn named_flags(body: &mut Vec<Stmt>, flags: &IndexSet<String>) {
             if let ExprKind::Var(v) = &mut e.kind
                 && v == flag
             {
-                *v = js::Name::from(&to);
+                *v = to.clone();
             }
         });
     }

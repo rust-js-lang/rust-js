@@ -216,7 +216,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let name = self.fresh(crate::lower::Base::Named("item"));
             let body = self.kept_copy(Expr::var(&name), item, span)?;
             let copy = Expr::arrow(
-                vec![name.as_str().into()],
+                vec![name.clone().into()],
                 vec![js::StmtKind::Return(Some(body)).at(js::Span::NONE)],
             );
             Ok(Expr::builtin(place, "map", vec![copy]))

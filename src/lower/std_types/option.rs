@@ -549,7 +549,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let debug = match &shown.kind {
             js::ExprKind::Call(callee, args)
                 if matches!(callee.kind, js::ExprKind::Var(_))
-                    && matches!(args.as_slice(), [arg] if matches!(&arg.kind, js::ExprKind::Var(name) if name.is(&e))) =>
+                    && matches!(args.as_slice(), [arg] if matches!(&arg.kind, js::ExprKind::Var(name) if name.is(e.word()))) =>
             {
                 (**callee).clone()
             }
@@ -958,7 +958,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     StmtKind::Assign(Expr::var(&taken), place.clone()).at(js_span),
                     StmtKind::Assign(place, Expr::js_undefined()).at(js_span),
                 ];
-                out.push(StmtKind::Let(taken.clone().into(), None).at(js_span));
+                out.push(StmtKind::Let(taken.clone(), None).at(js_span));
                 out.push(StmtKind::If(Expr::bin(Op::And, present, holds), take, None).at(js_span));
                 return Ok(Expr::var(&taken));
             }

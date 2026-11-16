@@ -44,8 +44,8 @@ export const mutations: Mutation[] = [
     name: "drops-by-need-params-kept",
     breaks: "a function keeps the drop parameters it doesn't use",
     file: "src/lower/drops/uses.rs",
-    find: "if unused.contains(name.word())));\n",
-    replace: "if false && unused.contains(name.word())));\n",
+    find: "if unused.contains(name)));\n",
+    replace: "if false && unused.contains(name)));\n",
     tests: ["test/crates.test.ts", "-t", "takes the drops its body uses"],
   },
   {

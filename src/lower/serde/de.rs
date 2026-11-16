@@ -124,7 +124,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let json = self.fresh(Role::Json);
         let mut params = vec![json.clone().into()];
         params.extend(self.codec_params(args, "read"));
-        let value = self.read_adt(&json, adt, args, span)?;
+        let value = self.read_adt(json.word(), adt, args, span)?;
         let js_span = self.js_span(span);
         Ok(js::Function {
             name: self.krate.fns[&method].name.clone().into(),
@@ -478,7 +478,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             let read = self.field_reader(field.did, &attrs, field_ty, span)?;
             let missing = missing.map(|value| {
-                let params = defaults.iter().map(|d| Pattern::from(d.as_str())).collect();
+                let params = defaults.iter().map(|d| Pattern::from(d.word())).collect();
                 Expr::arrow(params, vec![StmtKind::Return(Some(value)).at(js::Span::NONE)])
             });
             let mut entry = Vec::new();
@@ -509,7 +509,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let build = (!as_read).then(|| {
             let value = self.construct(adt, variant, args, items);
             let mut patterns = vec![Pattern::names_array(params.into_iter().map(Some))];
-            patterns.extend(defaults.iter().map(|d| Pattern::from(d.as_str())));
+            patterns.extend(defaults.iter().map(|d| Pattern::from(d.word())));
             Expr::arrow(patterns, vec![StmtKind::Return(Some(value)).at(js::Span::NONE)])
         });
         let mut options = Vec::new();
@@ -672,7 +672,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let names = self.names.clone();
         if !tagged.is_empty() {
             let reader = self.fresh(Role::Content);
-            let value = self.read_tagged(&reader, &tagging, &tagged, adt, args, container, type_name, span)?;
+            let value = self.read_tagged(reader.word(), &tagging, &tagged, adt, args, container, type_name, span)?;
             let body = vec![StmtKind::Return(Some(value)).at(js::Span::NONE)];
             attempts.push(Expr::arrow(vec![reader.into()], body));
             self.names = names.clone();
@@ -681,7 +681,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let reader = self.fresh(Role::Content);
             let rule = attrs.de_rename_all.or(container.de_rename_all_fields);
             let body = self.read_variant(
-                &reader,
+                reader.word(),
                 Form::Untagged,
                 adt,
                 variant,
@@ -739,7 +739,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let rule = attrs.de_rename_all.or(container.de_rename_all_fields);
             // What one variant's reading names is its own.
             let names = self.names.clone();
-            let body = self.read_variant(&content, form, adt, variant, args, rule, container, type_name, span)?;
+            let body = self.read_variant(
+                content.word(),
+                form,
+                adt,
+                variant,
+                args,
+                rule,
+                container,
+                type_name,
+                span,
+            )?;
             self.names = names;
             branches.push((name, body));
         }

@@ -321,12 +321,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 (Some(name), _) => {
                     let named = tidy::user_name(name);
                     let base = Base::Named(&named);
-                    base.name(self.fresh(base))
+                    self.fresh(base)
                 }
-                (None, LocalKind::ReturnPointer) => self.fresh(Role::Result).into(),
+                (None, LocalKind::ReturnPointer) => self.fresh(Role::Result),
                 (None, _) => {
                     let temporary = Base::Local(local.as_usize());
-                    temporary.name(self.fresh(temporary))
+                    self.fresh(temporary)
                 }
             };
         }

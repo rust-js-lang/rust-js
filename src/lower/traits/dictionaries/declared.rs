@@ -36,7 +36,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
             js::each_expr_mut(body, &mut put);
             js::each_expr_mut(&mut declared, &mut put);
-            declared.insert(0, StmtKind::Const(name.into(), dictionary).at(js::Span::NONE));
+            declared.insert(0, StmtKind::Const(name, dictionary).at(js::Span::NONE));
         }
         declared
     }

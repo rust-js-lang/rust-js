@@ -213,7 +213,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             })
             .collect();
         let ((signature, used, given_names), hoisted) = self.lowered_in(body, id, nested, |cx| {
-            let given_names: Vec<Option<String>> = (words.iter())
+            let given_names: Vec<Option<js::Name>> = (words.iter())
                 .map(|word| word.map(|word| cx.fresh(Base::Named(word))))
                 .collect();
             let signature = match class_default.as_ref().or(body.mir.as_ref()) {
@@ -260,7 +260,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 *param = given.into();
             }
         }
-        let named = |names: &[(u32, String)], at: u32| names.iter().find(|&&(i, _)| i == at).map(|(_, n)| n.clone());
+        let named = |names: &[(u32, js::Name)], at: u32| names.iter().find(|&&(i, _)| i == at).map(|(_, n)| n.clone());
         // Its own drops last, those after the last it uses left out, as its
         // caller's `undefined`s at the end are.
         let own_used = |key: Ty<'tcx>| used.contains(&key);

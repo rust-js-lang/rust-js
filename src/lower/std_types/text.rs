@@ -308,7 +308,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let piece = self.fresh(Role::Piece);
         let mut push = Vec::new();
         crate::lower::display::append_written(place, Expr::var(&piece), false, js_span, &mut push);
-        out.push(StmtKind::Expr(extend_text(pieces, &piece, push)).at(js_span));
+        out.push(StmtKind::Expr(extend_text(pieces, piece.word(), push)).at(js_span));
         Ok(())
     }
 
@@ -1007,7 +1007,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         let mut dropped = Vec::new();
                         let name = self.fresh(crate::lower::Base::Named("item"));
                         self.drop_value(Expr::var(&name), ty, span, &mut dropped)?;
-                        Ok(Expr::arrow(vec![name.as_str().into()], dropped))
+                        Ok(Expr::arrow(vec![name.clone().into()], dropped))
                     };
                     let (made, left) = (dropper(output)?, dropper(*item)?);
                     return Ok(Some(Expr::call_helper(

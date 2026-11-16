@@ -302,7 +302,7 @@ struct Locals {
     vars: IndexMap<LocalVarId, Var>,
     /// A props pattern's rest, JS's `...props`, by its name: the keys the
     /// pattern names, which it never holds (ADRs 0195, 0205).
-    rests: IndexMap<String, Vec<String>>,
+    rests: IndexMap<js::Name, Vec<String>>,
     /// What lowering a body from its MIR found of its variables (ADR 0364),
     /// mir.rs's, which the rest ask of it.
     mir: mir::Found,
@@ -628,16 +628,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// a value the program gives never hides what that value reads,
     /// `next_if_eq(&item)`'s `(item$1) => item$1 === item` (#1667, #1681
     /// change 3, M2).
-    fn fresh<'b>(&self, base: impl Into<Base<'b>>) -> String {
-        fresh_in(&mut self.names.borrow_mut(), &base.into().word())
-    }
-
-    /// `fresh`'s name, of the form `base` makes (`Base::name`): one named
-    /// after a temporary, `_24$1` of `_24`, a temporary's still (#1681
-    /// change 3, S4).
-    fn fresh_name<'b>(&self, base: impl Into<Base<'b>>) -> js::Name {
+    /// Of the form `base` makes (`Base::name`): one named after a
+    /// temporary, `_24$1` of `_24`, a temporary's still (#1681 change 3,
+    /// S4); a variable of its own, whose reads are made of it ("names are
+    /// ids", ADR 1150).
+    fn fresh<'b>(&self, base: impl Into<Base<'b>>) -> js::Name {
         let base = base.into();
-        base.name(self.fresh(base))
+        base.name(fresh_in(&mut self.names.borrow_mut(), &base.word()))
     }
 
     /// A name lowering makes for a variable of its own, `base`'s, not
@@ -655,20 +652,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// A `catch`'s parameter each time it's asked, of the item's names,
     /// each its own (#1681 change 3, M2), as preparation spells it.
-    fn catch_names(&self) -> impl FnMut() -> String + '_ {
+    fn catch_names(&self) -> impl FnMut() -> js::Name + '_ {
         move || self.fresh(Role::Error)
     }
 
     /// The names a pattern gives the fields it leaves out, so the rest
     /// after them holds only the others (ADR 0205), each `_field`: one left
     /// out is `_` once it's known, as preparation names it.
-    fn left_out(&mut self, keys: &[&str]) -> Vec<String> {
+    fn left_out(&mut self, keys: &[&str]) -> Vec<js::Name> {
         (keys.iter())
             .map(|key| self.fresh(Base::Named(&format!("_{}", camel_case(&crate::names::js_ident(key))))))
             .collect()
     }
 
-    fn bind(&mut self, var: LocalVarId, name: &str, mutable: bool) -> String {
+    fn bind(&mut self, var: LocalVarId, name: &str, mutable: bool) -> js::Name {
         let name = self.fresh(Base::Named(&camel_case(name)));
         self.locals.vars.insert(
             var,
@@ -863,7 +860,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 ) {
                     return Ok(None);
                 }
-                let params: Vec<String> = (0..inputs.len())
+                let params: Vec<js::Name> = (0..inputs.len())
                     .map(|i| self.fresh(Base::Numbered(Role::Arg, i)))
                     .collect();
                 let mut values: Vec<Expr> = params.iter().map(Expr::var).collect();
@@ -879,7 +876,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     return Ok(None);
                 };
                 let mut patterns: Vec<js::Pattern> = params.into_iter().map(Into::into).collect();
-                patterns.extend(variadic.map(|v| js::Pattern::Rest(v.into())));
+                patterns.extend(variadic.map(js::Pattern::Rest));
                 let arrow = Expr::arrow(patterns, vec![StmtKind::Return(Some(call)).at(js_span)]);
                 // Its call's function, where the arrow only passes on what it's
                 // given (ADR 0538).
@@ -943,7 +940,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let options = formatter.is_some() && self.takes_options(def_id);
             let made = move |cx: &mut Self| {
                 let evidence = cx.evidence_args_with(def_id, args, location, span)?;
-                let mut params: Vec<String> = (param_names.iter()).map(|name| cx.fresh(Base::Named(name))).collect();
+                let mut params: Vec<crate::js::Name> =
+                    (param_names.iter()).map(|name| cx.fresh(Base::Named(name))).collect();
                 if options {
                     params.push(cx.fresh(Role::Options));
                 }
@@ -1058,7 +1056,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// tidy picks again, a call's name first (#890).
     fn spill<'b>(&mut self, base: impl Into<Base<'b>>, value: Expr, out: &mut Vec<Stmt>) -> Expr {
         let base = base.into();
-        let name = base.name(self.fresh(Base::Named(&unhyphenated(&base.word()))));
+        let name = self.fresh(Base::Named(&unhyphenated(&base.word())));
         // Of a role's, named again by tidy once the code is placed (#890).
         if let Base::Role(role) = base {
             self.note_spilled(name.word(), role);

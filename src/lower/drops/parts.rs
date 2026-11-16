@@ -147,7 +147,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let name = self.fresh(Role::Item);
                     let mut body = Vec::new();
                     self.drop_in(Expr::var(&name), item, span, made, &mut body)?;
-                    out.push(loop_dropped(items, js::Pattern::Name(name.into()), body, js_span));
+                    out.push(loop_dropped(items, js::Pattern::Name(name), body, js_span));
                 } else {
                     let entries = match self.is_sorted(ty) {
                         true => self.in_order_of(value, ty, span)?,
@@ -158,7 +158,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let pattern = match value_ty {
                         None => {
                             self.drop_in(Expr::var(&key), key_ty, span, made, &mut body)?;
-                            js::Pattern::Name(key.into())
+                            js::Pattern::Name(key)
                         }
                         Some(value_ty) => {
                             let mut value_dropped = Vec::new();
@@ -221,7 +221,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                                 ..
                             },
                         ] if matches!(callee.kind, js::ExprKind::Var(_))
-                            && matches!(given.as_slice(), [Expr { kind: js::ExprKind::Var(n), .. }] if n.is(&name)) =>
+                            && matches!(given.as_slice(), [Expr { kind: js::ExprKind::Var(n), .. }] if n.is(name.word())) =>
                         {
                             (**callee).clone()
                         }
@@ -383,7 +383,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut body = Vec::new();
         self.drop_in(Expr::var(&name), item, span, made, &mut body)?;
         let js_span = self.js_span(span);
-        out.push(items_dropped(items, js::Pattern::Name(name.into()), body, js_span));
+        out.push(items_dropped(items, js::Pattern::Name(name), body, js_span));
         Ok(())
     }
 
@@ -467,7 +467,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 pub(in crate::lower) fn each_dropped(
     parts: Vec<Vec<Stmt>>,
     js_span: js::Span,
-    error: &mut dyn FnMut() -> String,
+    error: &mut dyn FnMut() -> js::Name,
 ) -> Vec<Stmt> {
     let parts: Vec<Vec<Stmt>> = parts.into_iter().filter(|part| !part.is_empty()).collect();
     let mut rest: Vec<Stmt> = Vec::new();
@@ -498,7 +498,7 @@ pub(in crate::lower) fn dropped_after(
     body: Vec<Stmt>,
     dropped: Vec<Stmt>,
     js_span: js::Span,
-    error: &mut dyn FnMut() -> String,
+    error: &mut dyn FnMut() -> js::Name,
 ) -> Vec<Stmt> {
     after(body, (dropped.clone(), dropped), js_span, error)
 }
@@ -513,7 +513,7 @@ pub(super) fn dropped_after_unwinding(
     body: Vec<Stmt>,
     (unwinding, dropped): (Vec<Stmt>, Vec<Stmt>),
     js_span: js::Span,
-    error: &mut dyn FnMut() -> String,
+    error: &mut dyn FnMut() -> js::Name,
 ) -> Vec<Stmt> {
     if finally_holds(&dropped) {
         return vec![StmtKind::Try(body, dropped).at(js_span)];
@@ -529,7 +529,7 @@ fn after(
     body: Vec<Stmt>,
     (unwinding, dropped): (Vec<Stmt>, Vec<Stmt>),
     js_span: js::Span,
-    error: &mut dyn FnMut() -> String,
+    error: &mut dyn FnMut() -> js::Name,
 ) -> Vec<Stmt> {
     if finally_holds(&dropped) {
         return vec![StmtKind::Try(body, dropped).at(js_span)];
@@ -543,11 +543,11 @@ fn caught(
     body: Vec<Stmt>,
     (unwinding, dropped): (Vec<Stmt>, Vec<Stmt>),
     js_span: js::Span,
-    error: String,
+    error: js::Name,
 ) -> Vec<Stmt> {
     let mut handler = unwinding;
     handler.push(StmtKind::Throw(Expr::var(&error)).at(js_span));
-    let mut out = vec![StmtKind::TryCatch(body, Some(error.into()), handler).at(js_span)];
+    let mut out = vec![StmtKind::TryCatch(body, Some(error), handler).at(js_span)];
     out.extend(dropped);
     out
 }
@@ -559,7 +559,7 @@ pub(in crate::lower) fn dropped_unwinding(
     body: Vec<Stmt>,
     dropped: Vec<Stmt>,
     js_span: js::Span,
-    error: &mut dyn FnMut() -> String,
+    error: &mut dyn FnMut() -> js::Name,
 ) -> Vec<Stmt> {
     if dropped.is_empty() {
         return body;
@@ -567,7 +567,7 @@ pub(in crate::lower) fn dropped_unwinding(
     let error = error();
     let mut handler = cleanup(dropped, Some(&error), js_span);
     handler.push(StmtKind::Throw(Expr::var(&error)).at(js_span));
-    vec![StmtKind::TryCatch(body, Some(error.into()), handler).at(js_span)]
+    vec![StmtKind::TryCatch(body, Some(error), handler).at(js_span)]
 }
 
 /// What a panic runs as it unwinds, `cleanup`, the drops of what the frames
@@ -583,7 +583,7 @@ pub(in crate::lower) fn dropped_unwinding(
 /// program sees (`unseen`), which `$cleanup` aborts before. And in
 /// `$cleanup` where it asks whether a panic unwinds, which only `$cleanup`
 /// tells: a lock's guard's drop, which poisons it then (#1438).
-pub(in crate::lower) fn cleanup(cleanup: Vec<Stmt>, error: Option<&str>, js_span: js::Span) -> Vec<Stmt> {
+pub(in crate::lower) fn cleanup(cleanup: Vec<Stmt>, error: Option<&js::Name>, js_span: js::Span) -> Vec<Stmt> {
     let seen = error.is_some() && !unseen(&cleanup);
     if !may_throw(&cleanup) && !seen && !asks_unwinding(&cleanup) {
         return cleanup;
@@ -613,10 +613,11 @@ pub(in crate::lower) fn aborting_finally(stmt: &mut Stmt) {
     // overflow, `$catchable`'s, no other: preparation writes it as the
     // `try`'s own `catch` (ADR 0660).
     if !catches_unwind(body) {
-        let rethrown = Expr::call_helper("$unwindsOn", vec![Expr::var("error")]);
+        let error = js::Name::declared("error".to_string());
+        let rethrown = Expr::call_helper("$unwindsOn", vec![Expr::var(&error)]);
         let caught = StmtKind::TryCatch(
             std::mem::take(body),
-            Some("error".into()),
+            Some(error),
             vec![StmtKind::Throw(rethrown).at(span)],
         );
         *body = vec![caught.at(span)];

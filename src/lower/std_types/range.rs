@@ -628,7 +628,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // start's holds.
             (Some(below), Some(above)) => {
                 let name = self.fresh(Role::Contained);
-                out.push(StmtKind::Let(name.clone().into(), Some(below)).at(js::Span::NONE));
+                out.push(StmtKind::Let(name.clone(), Some(below)).at(js::Span::NONE));
                 later.push(StmtKind::Assign(Expr::var(&name), above).at(js::Span::NONE));
                 out.push(StmtKind::If(Expr::var(&name), later, None).at(js::Span::NONE));
                 Expr::var(&name)

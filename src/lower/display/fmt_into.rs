@@ -274,11 +274,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ => return Ok(None),
         };
         let (sink, value, options) = (self.fresh(Role::F), self.fresh(Role::Value), self.fresh(Role::Options));
-        let Some(writes) = self.std_writes_by_options(kind, shown, (&value, &options), span)? else {
+        let Some(writes) = self.std_writes_by_options(kind, shown, (value.word(), options.word()), span)? else {
             return Ok(None);
         };
         let f = Expr::var(&sink);
-        let mut body = vec![StmtKind::Const(sink.into(), Expr::call_helper("$sink", Vec::new())).at(js::Span::NONE)];
+        let mut body = vec![StmtKind::Const(sink, Expr::call_helper("$sink", Vec::new())).at(js::Span::NONE)];
         body.extend(writes.into_iter().map(|write| write.written_into(&f, js::Span::NONE)));
         body.push(StmtKind::Return(Some(Expr::call(Expr::member(f, "done"), Vec::new()))).at(js::Span::NONE));
         Ok(Some(Expr::arrow(vec![value.into(), options.into()], body)))
@@ -298,7 +298,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(None);
         }
         let (sink, value, options) = (self.fresh(Role::F), self.fresh(Role::Value), self.fresh(Role::Options));
-        let Some(writes) = self.std_writes_by_options(kind, ty.peel_refs(), (&value, &options), span)? else {
+        let Some(writes) = self.std_writes_by_options(kind, ty.peel_refs(), (value.word(), options.word()), span)?
+        else {
             if !written {
                 return Ok(None);
             }

@@ -505,11 +505,11 @@ enum Taken {
     Kept,
     /// Of one held in a variable, the array its steps add their parts to
     /// (ADR 0532).
-    Parts(String),
+    Parts(js::Name),
     /// Of a writer that writes through the line, std's builder's model, the
     /// runtime's, held in this variable, which writes each piece as it's
     /// taken, as std's does (#1533).
-    Streamed(String),
+    Streamed(js::Name),
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -547,12 +547,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let error = self.fresh(super::Role::Error);
             let thrown = Expr::call_helper("$cannotUnwind", vec![Expr::var(&error)]);
             out = vec![
-                js::StmtKind::TryCatch(
-                    out,
-                    Some(error.into()),
-                    vec![js::StmtKind::Throw(thrown).at(js::Span::NONE)],
-                )
-                .at(js::Span::NONE),
+                js::StmtKind::TryCatch(out, Some(error), vec![js::StmtKind::Throw(thrown).at(js::Span::NONE)])
+                    .at(js::Span::NONE),
             ];
         }
         // A C-variadic one's last parameter gathers the rest, which nothing
@@ -662,13 +658,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             js::statement_lists(&mut out, &mut |stmts| {
                 for stmt in stmts.iter_mut() {
                     if let StmtKind::Return(None) = stmt.kind {
-                        stmt.kind = StmtKind::Break(Some(label.clone().into()));
+                        stmt.kind = StmtKind::Break(Some(label.clone()));
                         returns = true;
                     }
                 }
             });
             if returns {
-                out = vec![StmtKind::Labeled(label.into(), out).at(js::Span::NONE)];
+                out = vec![StmtKind::Labeled(label, out).at(js::Span::NONE)];
             }
         }
         let is_async = self.tcx.asyncness(def_id).is_async();
@@ -751,7 +747,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         state: &mut State<'_, 'tcx>,
         (mir_body, local, closure): (&mir::Body<'tcx>, Local, bool),
         boxes: &mut IndexSet<String>,
-        cell_params: &mut Vec<(String, String)>,
+        cell_params: &mut Vec<(js::Name, js::Name)>,
     ) -> js::Pattern {
         state.locals.declared[local] = true;
         // One the program names nothing and reads nowhere, `_: Ref`,
@@ -760,7 +756,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             state.locals.names[local] = String::new().into();
         }
         let name = match state.locals.names[local].word() {
-            "" => Base::from(Role::Unread).name(self.fresh(Role::Unread)),
+            "" => self.fresh(Role::Unread),
             _ => state.locals.names[local].clone(),
         };
         state.locals.names[local].clone_from(&name);
@@ -781,8 +777,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // callers give the value.
         if !boxed && state.facts.pointed().locals.contains(&local) {
             let cell = self.fresh(Base::Named(name.word()));
-            state.locals.names[local] = cell.as_str().into();
-            cell_params.push((cell, name.word().to_string()));
+            state.locals.names[local] = cell.clone();
+            cell_params.push((cell, name.clone()));
             return js::Pattern::Name(name);
         }
         js::Pattern::Name(name)
@@ -995,7 +991,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let def_span = self.tcx.def_span(mir_body.source.def_id());
         self.check_signature_types(mir_body, (skip, formatter), def_span)?;
         let mut boxes = IndexSet::default();
-        let mut cell_params: Vec<(String, String)> = Vec::new();
+        let mut cell_params: Vec<(js::Name, js::Name)> = Vec::new();
         let mut params: Vec<js::Pattern> = mir_body
             .args_iter()
             .skip(skip)
@@ -1088,7 +1084,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Each parameter a pointer is taken to, its cell, of what it's given.
         for (name, given) in cell_params {
             let cell = Expr::object(vec![js::Prop::Field(js::HELD.into(), Expr::var(&given))]);
-            out.push(StmtKind::Const(name.into(), cell).at(js::Span::NONE));
+            out.push(StmtKind::Const(name, cell).at(js::Span::NONE));
         }
         // Each flag that says whether a value is there to drop, and the
         // values: a drop may be where their `const` isn't seen.
@@ -1103,7 +1099,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let place = drops.move_data.move_paths[path].place;
                 flagged[place.local.as_usize()] = true;
                 let flag = self.flag_name(&state, place);
-                out.push(StmtKind::Let(flag.clone().into(), Some(Expr::bool(drops.initial[path]))).at(js::Span::NONE));
+                out.push(StmtKind::Let(flag.clone(), Some(Expr::bool(drops.initial[path]))).at(js::Span::NONE));
                 flags[path] = Some(flag);
             }
         }
@@ -1134,13 +1130,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         self.last_params(mir_body, (&state.locals, options.is_some()), &mut params);
         let start = BasicBlock::from_usize(0);
-        let given = self.writer_options(&state, options.as_deref());
+        let given = self.writer_options(&state, options.as_ref().map(js::Name::word));
         let lowered = self.with_given(given, mir_body.source.def_id(), |cx| cx.mir_tree(&mut state, start))?;
         out.extend(state.settled_lets().chain(lowered));
         // Its scope struct's methods, declared after its `let` (ADR 1043).
         self.declare_scope_functions(&state, captures.is_none(), &mut out)?;
         if let Some(options) = options {
-            params.push(js::Pattern::Name(options.into()));
+            params.push(js::Pattern::Name(options));
         }
         // Each bounds check moved to where its element is read, made there.
         if !state.deferred.is_empty() {

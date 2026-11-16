@@ -383,7 +383,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// The parameter of `writer`'s `Formatter`'s options, where it has a
     /// `Formatter` and takes them (`compiled_writer_takes_options`).
-    pub(super) fn options_param(&mut self, writer: DefId, formatter: bool) -> Option<String> {
+    pub(super) fn options_param(&mut self, writer: DefId, formatter: bool) -> Option<js::Name> {
         (formatter && self.compiled_writer_takes_options(writer)).then(|| self.fresh(Role::Options))
     }
 

@@ -54,7 +54,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(in crate::lower) fn streamed_step(
         &mut self,
         kind: DebugBuilder,
-        builder: &str,
+        builder: &js::Name,
         (step, values, generic_args): (BuilderStep, Vec<(Expr, Ty<'tcx>)>, ty::GenericArgsRef<'tcx>),
         span: Span,
         out: &mut Vec<Stmt>,
@@ -104,7 +104,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(in crate::lower) fn streamed_step_written(
         &mut self,
         kind: DebugBuilder,
-        builder: &str,
+        builder: &js::Name,
         (step, values, generic_args): (BuilderStep, Vec<(Expr, Ty<'tcx>)>, ty::GenericArgsRef<'tcx>),
         span: Span,
         out: &mut Vec<Stmt>,
@@ -203,7 +203,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let (made, role) = self.streamed_builder(kind, Expr::var(sink), Some(type_name.clone()));
         let builder = self.fresh(role);
-        let mut written = vec![StmtKind::Const(builder.clone().into(), made).at(js_span)];
+        let mut written = vec![StmtKind::Const(builder.clone(), made).at(js_span)];
         for (name, value) in fields {
             let mut args: Vec<Expr> = name.into_iter().collect();
             args.push(made_when_taken(value));

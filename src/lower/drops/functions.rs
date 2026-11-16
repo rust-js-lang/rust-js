@@ -99,7 +99,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         ] = body.as_slice()
             && let js::ExprKind::Call(callee, args) = &call.kind
             && let [arg] = args.as_slice()
-            && matches!(&arg.kind, js::ExprKind::Var(name) if name.is(&param))
+            && matches!(&arg.kind, js::ExprKind::Var(name) if name.is(param.word()))
             && callee.is_named()
         {
             return Ok(Some(((**callee).clone(), false)));

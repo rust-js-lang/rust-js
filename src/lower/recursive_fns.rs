@@ -440,15 +440,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(name.clone());
         }
         let name = self.fresh(Base::Named(base));
-        let params: Vec<String> = params.iter().map(|&p| self.fresh(p)).collect();
-        self.recursive.0.push((kind, ty, name.clone()));
+        let params: Vec<crate::js::Name> = params.iter().map(|&p| self.fresh(p)).collect();
+        self.recursive.0.push((kind, ty, name.clone().into_word()));
         let mut body = Vec::new();
         let value = make(self, params.iter().map(Expr::var).collect(), &mut body);
         self.recursive.0.pop();
         body.push(StmtKind::Return(Some(value?)).at(js::Span::NONE));
         let f = Expr::arrow(params.into_iter().map(Into::into).collect(), body);
-        out.push(StmtKind::Const(name.clone().into(), f).at(js::Span::NONE));
-        Ok(name)
+        out.push(StmtKind::Const(name.clone(), f).at(js::Span::NONE));
+        Ok(name.into_word())
     }
 }
 

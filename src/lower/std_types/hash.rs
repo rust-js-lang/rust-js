@@ -737,7 +737,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out.push(
             StmtKind::ForOf {
                 label: None,
-                pattern: Pattern::Name(name.into()),
+                pattern: Pattern::Name(name),
                 mutable: false,
                 iterable: items,
                 body,

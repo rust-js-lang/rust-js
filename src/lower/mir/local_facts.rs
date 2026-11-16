@@ -394,14 +394,14 @@ impl<'m, 'tcx> LocalFacts<'m, 'tcx> {
 pub(super) struct NamingFacts {
     boxes: IndexSet<String>,
     borrowed_names: IndexSet<String>,
-    flags: IndexVec<MovePathIndex, Option<String>>,
+    flags: IndexVec<MovePathIndex, Option<js::Name>>,
 }
 
 impl NamingFacts {
     pub(super) fn new(
         boxes: IndexSet<String>,
         borrowed_names: IndexSet<String>,
-        flags: IndexVec<MovePathIndex, Option<String>>,
+        flags: IndexVec<MovePathIndex, Option<js::Name>>,
     ) -> Self {
         NamingFacts {
             boxes,
@@ -418,13 +418,17 @@ impl NamingFacts {
         &self.borrowed_names
     }
 
-    pub(super) fn flags(&self) -> &IndexVec<MovePathIndex, Option<String>> {
+    pub(super) fn flags(&self) -> &IndexVec<MovePathIndex, Option<js::Name>> {
         &self.flags
     }
 
     /// Each drop flag, by its name (`mir/drops.rs`).
     pub(super) fn flag_names(&self) -> IndexSet<String> {
-        self.flags.iter().flatten().cloned().collect()
+        self.flags
+            .iter()
+            .flatten()
+            .map(|flag| flag.word().to_string())
+            .collect()
     }
 }
 

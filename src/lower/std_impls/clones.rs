@@ -415,7 +415,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     body.push(StmtKind::Return(Some(value)).at(js::Span::NONE));
                     return Ok(Expr::call(
                         Expr::helper("$withBorrow"),
-                        vec![place, Expr::arrow(vec![param.as_str().into()], body), Expr::bool(true)],
+                        vec![place, Expr::arrow(vec![param.clone().into()], body), Expr::bool(true)],
                     ));
                 }
                 let cell = match self.quiet_ref_cell(ty, false) {
@@ -435,7 +435,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 body.push(StmtKind::Return(Some(value)).at(js::Span::NONE));
                 let value = Expr::call(
                     Expr::helper("$withBorrow"),
-                    vec![place, Expr::arrow(vec![param.as_str().into()], body)],
+                    vec![place, Expr::arrow(vec![param.clone().into()], body)],
                 );
                 return Ok(Expr::object(vec![Prop::Field(js::HELD.into(), value)]));
             }
@@ -759,7 +759,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 false => read,
             };
             if let (Some(made), true) = (&made, held[i]) {
-                field = self.made_part(made, field, t, span)?;
+                field = self.made_part(made.word(), field, t, span)?;
             }
             props.push(Prop::Field(name, self.holding(field, def, t)));
         }

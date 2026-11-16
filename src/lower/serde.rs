@@ -377,7 +377,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut params = vec![value.clone().into(), json.clone().into()];
         params.extend(self.codec_params(args, "write"));
         let mut body = Vec::new();
-        self.write_adt(Expr::var(&value), &json, adt, args, span, &mut body)?;
+        self.write_adt(Expr::var(&value), json.word(), adt, args, span, &mut body)?;
         let js_span = self.js_span(span);
         Ok(js::Function {
             name: self.krate.fns[&method].name.clone().into(),
@@ -422,7 +422,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let (item, json) = (self.fresh(Role::Value), self.fresh(Role::Json));
         let mut body = Vec::new();
-        self.write_json(Expr::var(&item), &json, ty, span, &mut body)?;
+        self.write_json(Expr::var(&item), json.word(), ty, span, &mut body)?;
         Ok(Expr::arrow(vec![item.into(), json.into()], body))
     }
 
@@ -609,7 +609,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out.push(
             StmtKind::ForOf {
                 label: None,
-                pattern: js::Pattern::Name(item.into()),
+                pattern: js::Pattern::Name(item),
                 mutable: false,
                 iterable: items,
                 body,

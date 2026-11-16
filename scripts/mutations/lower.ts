@@ -195,8 +195,8 @@ export const mutations: Mutation[] = [
     name: "spill-hyphenated-name",
     breaks: "an attribute read first is a variable of its hyphenated name, `const data-step`",
     file: "src/lower.rs",
-    find: "        let name = base.name(self.fresh(Base::Named(&unhyphenated(&base.word()))));\n",
-    replace: "        let name = base.name(self.fresh(base));\n",
+    find: "        let name = self.fresh(Base::Named(&unhyphenated(&base.word())));\n",
+    replace: "        let name = self.fresh(base);\n",
     tests: ["test/jsx-evaluation-order.test.ts", "-t", "a hyphenated attribute read first"],
   },
   {
@@ -252,8 +252,8 @@ export const mutations: Mutation[] = [
     name: "mut-method-value-unboxed",
     breaks: "a trait's `&mut self` method as a value is given what it's called with, not a box of it",
     file: "src/lower.rs",
-    find: "                    return Ok(None);\n                }\n                let params: Vec<String> = (0..inputs.len())",
-    replace: "                    let _ = ();\n                }\n                let params: Vec<String> = (0..inputs.len())",
+    find: "                    return Ok(None);\n                }\n                let params: Vec<js::Name> = (0..inputs.len())",
+    replace: "                    let _ = ();\n                }\n                let params: Vec<js::Name> = (0..inputs.len())",
     tests: ["test/corpus.test.ts", "-t", "^mut_method_pointer.rs$"],
   },
   {

@@ -140,8 +140,8 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-unread-count-underscore",
     breaks: "MIR's range count the body doesn't read is `_`, `_++`",
     file: "src/lower/mir/tidy/loops.rs",
-    find: '        "_" => std::iter::once("i".to_string())\n',
-    replace: '        "$never" => std::iter::once("i".to_string())\n',
+    find: "        \"_\" => js::Name::declared(\n            std::iter::once(\"i\".to_string())\n    ",
+    replace: "        \"$never\" => js::Name::declared(\n            std::iter::once(\"i\".to_string())\n    ",
     tests: ["test/lowering-loops.test.ts", "-t", "an unread count of a range"],
   },
   {

@@ -385,3 +385,32 @@ S2), but tidy can't tell shadowed variables apart, which is where
 
 M4 (statement facts) doesn't touch names, so it goes alongside (the
 lead's decision).
+
+## Names are ids, step 1's first part: lowering's names stay names (2026-11-16)
+
+A name lowering picks is a `Name` from where it's picked to each of its
+reads, never its word again: `fresh` gives the `Name` of the form its base
+makes (`Base::name`), where it gave a `String` that each read made a name
+of anew, and `fresh_name`, the one that gave a `Name`, is gone into it, so
+there's one way to pick one. THIR's `bind` gives the binding's `Name`, and
+what holds a picked name holds it as one: a drop given (`GivenDrop`), each
+drop flag (`NamingFacts::flags`), a catch's error name (`catch_names`),
+`names_array`'s names, a pattern's rest. Tidy's passes that put a name of
+their own in the place of another, its temporaries named (`temporaries`),
+a binding a temporary is taken into, a shadow's binding (`shadows`), a
+flag named after what it guards (`flags`), a loop's counter and its held
+end (`loops`), a literal's fields' variables (`scopes`), make the name
+once, `Name::declared`, and give the declaration and each read a clone of
+it, where each made one of the word. A name declared of a word the pass
+spells itself, a `catch (error)`'s, is `Name::declared` too.
+
+`Name::declared` is what `From<&str>` is to become once step 1 has traced
+each name made of a word to one: a name made of text, `Expr::var("x")`, is
+what's left. Names still compare by word, so nothing reads which name a
+name is yet: the corpus, the snapshots, std and the port are as they were.
+A probe of the corpus that records where each name made of text was made
+counted 176,065 uses of 250 sites at the start and 135,541 after this.
+Most of what's left is names the module declares, its runtime's helpers,
+its functions and its imports, which are no item's (the lead's decision of
+2026-11-16): their form, `Name::module`, is the next part, with a row of a
+local beside a helper and an imported function of its word.

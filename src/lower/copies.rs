@@ -227,7 +227,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let name = self.fresh(crate::lower::Base::Named("item"));
                     let body = self.copy_parts(Expr::var(&name), *item, stored);
                     let copy = Expr::arrow(
-                        vec![name.as_str().into()],
+                        vec![name.clone().into()],
                         vec![js::StmtKind::Return(Some(body)).at(js::Span::NONE)],
                     );
                     return Expr::builtin(place, "map", vec![copy]);
@@ -464,7 +464,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         place,
                         "map",
                         vec![Expr::arrow(
-                            vec![js::Pattern::Name(name.into())],
+                            vec![js::Pattern::Name(name)],
                             vec![js::StmtKind::Return(Some(copied)).at(js::Span::NONE)],
                         )],
                     ))
@@ -684,9 +684,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let item_name = self.fresh(crate::lower::Base::Named("item"));
         let copied = self.copy_if_needed(Expr::var(&item_name), item);
         match &copied.kind {
-            js::ExprKind::Var(name) if name.is(&item_name) => None,
+            js::ExprKind::Var(name) if name.is(item_name.word()) => None,
             _ => Some(Expr::arrow(
-                vec![item_name.as_str().into()],
+                vec![item_name.clone().into()],
                 vec![js::StmtKind::Return(Some(copied)).at(js::Span::NONE)],
             )),
         }

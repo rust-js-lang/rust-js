@@ -105,7 +105,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/patterns.rs",
     find: "                    self.locals.rests.insert(rest.clone(), taken);\n",
     replace:
-      "                    self.locals.rests.insert(String::new(), taken);\n",
+      "                    self.locals.rests.insert(js::Name::default(), taken);\n",
     tests: [
       "test/jsx-props.test.ts",
       "-t",

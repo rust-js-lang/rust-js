@@ -179,12 +179,12 @@ pub(super) type DefaultDrops<'tcx> = (IndexMap<Ty<'tcx>, GivenDrop>, IndexSet<ty
 #[derive(Clone, Debug)]
 pub(in crate::lower) struct GivenDrop {
     index: Option<u32>,
-    name: String,
+    name: crate::js::Name,
 }
 
 impl GivenDrop {
     /// One its function is given for its own slot `index`.
-    pub(in crate::lower) fn own(index: u32, name: String) -> GivenDrop {
+    pub(in crate::lower) fn own(index: u32, name: crate::js::Name) -> GivenDrop {
         GivenDrop {
             index: Some(index),
             name,
@@ -192,7 +192,7 @@ impl GivenDrop {
     }
 
     /// One given for a while, not its function's own slot.
-    pub(in crate::lower) fn lent(name: String) -> GivenDrop {
+    pub(in crate::lower) fn lent(name: crate::js::Name) -> GivenDrop {
         GivenDrop { index: None, name }
     }
 }
@@ -606,20 +606,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let js_span = self.js_span(span);
             // Declared once, at the top of the body, where it hoists them.
             match self.drop_state.hoisted.as_mut() {
-                Some(hoisted) => hoisted.functions.push((ty, name.clone())),
-                None => made.functions.push((ty, name.clone())),
+                Some(hoisted) => hoisted.functions.push((ty, name.clone().into_word())),
+                None => made.functions.push((ty, name.clone().into_word())),
             }
             let mut body = Vec::new();
             self.drop_parts(Expr::var(&param), ty, span, made, &mut body)?;
             if !parts::may_throw(&body) {
-                self.drop_state.quiet.insert(name.clone());
+                self.drop_state.quiet.insert(name.clone().into_word());
             }
-            let def = StmtKind::Const(name.clone().into(), Expr::arrow(vec![param.into()], body)).at(js_span);
+            let def = StmtKind::Const(name.clone(), Expr::arrow(vec![param.into()], body)).at(js_span);
             match self.drop_state.hoisted.as_mut() {
                 Some(hoisted) => hoisted.defs.push(def),
                 None => made.defs.push(def),
             }
-            out.push(StmtKind::Expr(self.drop_function_call(&name, value)).at(js_span));
+            out.push(StmtKind::Expr(self.drop_function_call(name.word(), value)).at(js_span));
             return Ok(());
         }
         self.drop_parts(value, ty, span, made, out)

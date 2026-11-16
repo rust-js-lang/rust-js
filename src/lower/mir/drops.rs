@@ -474,7 +474,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The flag that says whether `place` is there to drop: its variable's
     /// name, a part's by its field's, `pair$a$live`. A temporary's is MIR's
     /// local's until tidy names it for what its drop is of (`tidy/flags.rs`).
-    pub(super) fn flag_name(&mut self, state: &State<'_, 'tcx>, place: Place<'tcx>) -> String {
+    pub(super) fn flag_name(&mut self, state: &State<'_, 'tcx>, place: Place<'tcx>) -> js::Name {
         let mut name = match state.locals.names[place.local].word() {
             "" => super::tidy::temporary(place.local.as_usize()),
             name => name.to_string(),
@@ -1038,7 +1038,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let error = self.fresh(Role::Error);
         let mut handler = cleanup;
         handler.push(StmtKind::Throw(Expr::var(&error)).at(span));
-        out.push(StmtKind::TryCatch(inner, Some(error.into()), handler).at(span));
+        out.push(StmtKind::TryCatch(inner, Some(error), handler).at(span));
     }
 }
 

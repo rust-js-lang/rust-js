@@ -185,7 +185,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(in crate::lower) fn or_dropped(
         &mut self,
         test: Expr,
-        name: String,
+        name: js::Name,
         then: Vec<Stmt>,
         given_up: (Expr, Ty<'tcx>),
         otherwise: Expr,
@@ -205,7 +205,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             false => made,
         };
         dropped.extend(given_up_dropped);
-        out.push(StmtKind::Let(name.clone().into(), None).at(js_span));
+        out.push(StmtKind::Let(name.clone(), None).at(js_span));
         out.push(StmtKind::If(test, then, Some(dropped)).at(js_span));
         Ok(Expr::var(&name))
     }

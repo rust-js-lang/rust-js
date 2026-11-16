@@ -430,7 +430,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && let evidence = self.evidence_args(def_id, args, span)?
             && !evidence.is_empty()
         {
-            let mut params: Vec<String> = (0..sig.inputs().len())
+            let mut params: Vec<crate::js::Name> = (0..sig.inputs().len())
                 .filter(|&i| i != at)
                 .map(|i| self.fresh(Base::Numbered(Role::Arg, i)))
                 .collect();
@@ -445,7 +445,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ));
         }
         let mut inputs: Vec<Ty<'tcx>> = sig.inputs().to_vec();
-        let params: Vec<String> = match inputs.len() {
+        let params: Vec<js::Name> = match inputs.len() {
             // Named by its type: `(s) => ..` of a string.
             1 => vec![self.fresh(self.parameter_name(inputs[0].peel_refs()))],
             n => (0..n)
@@ -529,7 +529,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         body.push(StmtKind::Return(Some(value)).at(self.js_span(span)));
         let mut patterns: Vec<js::Pattern> = params.into_iter().map(Into::into).collect();
-        patterns.extend(variadic.map(|v| js::Pattern::Rest(v.into())));
+        patterns.extend(variadic.map(js::Pattern::Rest));
         let arrow = Expr::arrow(patterns, body);
         let taker = crate::lower::passed_on::Taker::FnValue;
         Ok(crate::lower::passed_on::passed_on(&arrow, taker, &[]).unwrap_or(arrow))

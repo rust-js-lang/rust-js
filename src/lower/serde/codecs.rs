@@ -119,7 +119,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         for p in codec_type_params(args) {
             let t = Ty::new_param(self.tcx, p.index, p.name);
             let name = self.fresh(Base::Named(&format!("{prefix}{}", p.name)));
-            self.codecs.push((t, name.clone()));
+            self.codecs.push((t, name.clone().into_word()));
             params.push(name.into());
         }
         params

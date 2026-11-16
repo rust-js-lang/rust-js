@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
     name: "shadow-of-itself-assigned",
     breaks: "`let mut stack = stack.as_str();` is `stack = stack;`",
     file: "src/lower/mir/tidy/shadows.rs",
-    find: "    let assigned = !matches!(&value.kind, ExprKind::Var(v) if v.is(&binding));\n",
+    find: "    let assigned = !matches!(&value.kind, ExprKind::Var(v) if *v == binding);\n",
     replace: "    let assigned = true;\n",
     tests: ["test/lowering-shadows.test.ts", "-t", "React's formatOwnerStack"],
   },
@@ -64,7 +64,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a binding read after its shadow, by a drop at the scope's end say, is assigned the shadow's value first",
     file: "src/lower/mir/tidy/shadows.rs",
-    find: "    if js::mentions_in(&stmts[i + 1..], &binding) > 0 {\n        return None;\n    }\n",
+    find: "    if js::mentions_in(&stmts[i + 1..], binding.word()) > 0 {\n        return None;\n    }\n",
     replace: "",
     tests: ["test/lowering-shadows.test.ts", "-t", "something still sees"],
   },
@@ -73,8 +73,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a binding a closure made before reads is assigned, so the closure sees the new value",
     file: "src/lower/mir/tidy/shadows.rs",
-    find: "    if !user.contains(shadow.word()) || !user.contains(&binding) || captured.contains(&binding) {\n",
-    replace: "    if !user.contains(shadow.word()) || !user.contains(&binding) {\n",
+    find: "    if !user.contains(shadow.word()) || !user.contains(binding.word()) || captured.contains(binding.word()) {\n",
+    replace: "    if !user.contains(shadow.word()) || !user.contains(binding.word()) {\n",
     tests: ["test/lowering-shadows.test.ts", "-t", "something still sees"],
   },
   {
@@ -92,8 +92,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a temporary rust-js holds, `tmp`, is reused for unrelated values, `tmp = tmp(next)`",
     file: "src/lower/mir/tidy/shadows.rs",
-    find: "    if !user.contains(shadow.word()) || !user.contains(&binding) || captured.contains(&binding) {\n",
-    replace: "    if captured.contains(&binding) {\n",
+    find: "    if !user.contains(shadow.word()) || !user.contains(binding.word()) || captured.contains(binding.word()) {\n",
+    replace: "    if captured.contains(binding.word()) {\n",
     tests: ["test/corpus.test.ts", "-t", "^iter_next_back.rs$"],
     snapshots: true,
   },
@@ -102,9 +102,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a `let x$1;` its `switch`'s cases set, shadowing a binding read no more, stays apart, `let priorityLevel$1; switch (priorityLevel) { .. priorityLevel$1 = priorityLevel; ..`, not upstream's `switch (priorityLevel) { .. default: priorityLevel = NormalPriority; }`",
     file: "src/lower/mir/tidy/shadows.rs",
-    find: "        set_after_last_read(&stmts[i + 1..], shadow.word(), &binding, false)?;\n",
+    find: "        set_after_last_read(&stmts[i + 1..], shadow.word(), binding.word(), false)?;\n",
     replace:
-      "        set_after_last_read(&stmts[i + 1..], shadow.word(), &binding, false).filter(|_| false)?;\n",
+      "        set_after_last_read(&stmts[i + 1..], shadow.word(), binding.word(), false).filter(|_| false)?;\n",
     tests: ["test/port-scheduler.test.ts"],
   },
   {

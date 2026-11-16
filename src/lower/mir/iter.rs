@@ -1217,7 +1217,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some(_) => self.copy_if_needed(Expr::var(&x), pointee),
             None => self.clone_value(Expr::var(&x), pointee, span, &mut body)?,
         };
-        if body.is_empty() && matches!(&copy.kind, js::ExprKind::Var(v) if v.is(&x)) {
+        if body.is_empty() && matches!(&copy.kind, js::ExprKind::Var(v) if v.is(x.word())) {
             return Ok(it);
         }
         body.push(StmtKind::Return(Some(copy)).at(js::Span::NONE));

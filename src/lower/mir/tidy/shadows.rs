@@ -17,7 +17,7 @@ use super::*;
 /// block of its own, so a `let` there never shadows what's outside it,
 /// which each turn reads anew. Of a closure's body too, which is a body.
 pub(super) fn shadowed(params: &[js::Pattern], body: &mut Vec<Stmt>, user: &IndexSet<String>) {
-    let heads: Vec<String> = params.iter().flat_map(|p| p.names()).map(str::to_string).collect();
+    let heads: Vec<js::Name> = params.iter().flat_map(|p| p.bound()).cloned().collect();
     let mut captured = captured(body);
     shadowed_block(body, &heads, user, &mut captured);
 }
@@ -27,7 +27,7 @@ pub(super) fn shadowed(params: &[js::Pattern], body: &mut Vec<Stmt>, user: &Inde
 /// `heads` is set now, which a `for`'s pattern then declares with `let`.
 fn shadowed_block(
     stmts: &mut Vec<Stmt>,
-    heads: &[String],
+    heads: &[js::Name],
     user: &IndexSet<String>,
     captured: &mut IndexSet<String>,
 ) -> bool {
@@ -54,7 +54,7 @@ fn shadowed_block(
             StmtKind::ForOf {
                 pattern, mutable, body, ..
             } => {
-                let names: Vec<String> = pattern.names().into_iter().map(str::to_string).collect();
+                let names: Vec<js::Name> = pattern.bound().into_iter().cloned().collect();
                 if shadowed_block(body, &names, user, captured) {
                     *mutable = true;
                 }
@@ -115,7 +115,7 @@ struct Shadowed {
 fn shadow_of(
     stmts: &mut Vec<Stmt>,
     i: usize,
-    heads: &[String],
+    heads: &[js::Name],
     user: &IndexSet<String>,
     captured: &mut IndexSet<String>,
 ) -> Option<Shadowed> {
@@ -128,18 +128,24 @@ fn shadow_of(
     // The nearest binding before it of its name, or of one given apart
     // from it, `stack$1` of `stack$2`.
     let kin = |name: &str| name == base || crate::names::apart(name).is_some_and(|(b, _)| b == base);
-    let declaring = |s: &Stmt| -> Vec<String> {
+    let declaring = |s: &Stmt| -> Vec<js::Name> {
         match &s.kind {
-            StmtKind::Const(name, _) | StmtKind::Let(name, _) => vec![name.to_string()],
-            StmtKind::Destructure { pattern, .. } => pattern.names().into_iter().map(str::to_string).collect(),
+            StmtKind::Const(name, _) | StmtKind::Let(name, _) => vec![name.clone()],
+            StmtKind::Destructure { pattern, .. } => pattern.bound().into_iter().cloned().collect(),
             _ => Vec::new(),
         }
     };
-    let (at, binding) = match stmts[..i].iter().rposition(|s| declaring(s).iter().any(|n| kin(n))) {
-        Some(at) => (Some(at), declaring(&stmts[at]).into_iter().rev().find(|n| kin(n))?),
-        None => (None, heads.iter().rev().find(|n| kin(n))?.clone()),
+    let (at, binding) = match stmts[..i]
+        .iter()
+        .rposition(|s| declaring(s).iter().any(|n| kin(n.word())))
+    {
+        Some(at) => (
+            Some(at),
+            declaring(&stmts[at]).into_iter().rev().find(|n| kin(n.word()))?,
+        ),
+        None => (None, heads.iter().rev().find(|n| kin(n.word()))?.clone()),
     };
-    if !user.contains(shadow.word()) || !user.contains(&binding) || captured.contains(&binding) {
+    if !user.contains(shadow.word()) || !user.contains(binding.word()) || captured.contains(binding.word()) {
         return None;
     }
     // `let x$1;`, `undefined` till it's set, where `x` isn't: set where a
@@ -158,7 +164,7 @@ fn shadow_of(
         let own = |s: &Stmt| {
             matches!(&s.kind, StmtKind::Assign(target, value)
                 if matches!(&target.kind, ExprKind::Var(v) if *v == shadow)
-                    && matches!(&value.kind, ExprKind::Var(v) if v.is(&binding)))
+                    && matches!(&value.kind, ExprKind::Var(v) if *v == binding))
         };
         let (mut owns, mut kept) = (0, 0);
         js::each_list(&stmts[i + 1..], &mut |list| {
@@ -177,7 +183,7 @@ fn shadow_of(
                 if let StmtKind::If(test, then, Some(otherwise)) = &s.kind {
                     let alone = |b: &[Stmt]| matches!(b, [one] if own(one));
                     let of_binding = |set| {
-                        js::null_test(test, set).is_some_and(|x| matches!(&x.kind, ExprKind::Var(v) if v.is(&binding)))
+                        js::null_test(test, set).is_some_and(|x| matches!(&x.kind, ExprKind::Var(v) if *v == binding))
                     };
                     kept += usize::from(of_binding(true) && alone(then) && !otherwise.is_empty() && !alone(otherwise));
                     kept += usize::from(of_binding(false) && alone(otherwise) && !then.is_empty() && !alone(then));
@@ -195,7 +201,7 @@ fn shadow_of(
         if owns != kept {
             return None;
         }
-        set_after_last_read(&stmts[i + 1..], shadow.word(), &binding, false)?;
+        set_after_last_read(&stmts[i + 1..], shadow.word(), binding.word(), false)?;
         let mut rest = stmts.split_off(i + 1);
         js::statement_lists(&mut rest, &mut |list| list.retain(|s| !own(s)));
         // An `if` a branch of which is left empty: its other way alone.
@@ -211,10 +217,10 @@ fn shadow_of(
                 }
             }
         });
-        js::renamed(&mut rest, shadow.word(), &binding);
+        js::renamed(&mut rest, shadow.word(), binding.word());
         stmts.append(&mut rest);
         if captured.contains(shadow.word()) {
-            captured.insert(binding);
+            captured.insert(binding.into_word());
         }
         return Some(Shadowed {
             at,
@@ -222,12 +228,12 @@ fn shadow_of(
             assigned: false,
         });
     };
-    if js::mentions_in(&stmts[i + 1..], &binding) > 0 {
+    if js::mentions_in(&stmts[i + 1..], binding.word()) > 0 {
         return None;
     }
     // Set now: assigned the shadow's value, but its own; or by what set the
     // shadow, a `let` the program sets.
-    let assigned = !matches!(&value.kind, ExprKind::Var(v) if v.is(&binding));
+    let assigned = !matches!(&value.kind, ExprKind::Var(v) if *v == binding);
     let set = assigned || is_let;
     if assigned {
         stmts[i] = StmtKind::Assign(Expr::var(&binding), value.clone()).at(stmts[i].span);
@@ -238,7 +244,7 @@ fn shadow_of(
         }
     });
     if captured.contains(shadow.word()) {
-        captured.insert(binding);
+        captured.insert(binding.into_word());
     }
     Some(Shadowed { at, set, assigned })
 }

@@ -206,7 +206,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             },
                         ] = body.as_slice() =>
                 {
-                    (name.to_string(), value.clone())
+                    (name.clone(), value.clone())
                 }
                 _ => {
                     let item = self.fresh(Role::Item);
@@ -253,7 +253,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             },
                         ] = body.as_slice() =>
                 {
-                    (name.to_string(), value.clone())
+                    (name.clone(), value.clone())
                 }
                 _ => {
                     let item = self.fresh(Role::Item);
@@ -345,7 +345,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let item = self.fresh(crate::lower::Base::Named("item"));
             let test = Expr::presence(Expr::var(&item), true);
             Expr::arrow(
-                vec![item.as_str().into()],
+                vec![item.clone().into()],
                 vec![StmtKind::Return(Some(test)).at(js::Span::NONE)],
             )
         };
@@ -406,7 +406,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let name = self.fresh(crate::lower::Base::Named("item"));
                     let stepped = self.stepped_items(Expr::var(&name));
                     let each = Expr::arrow(
-                        vec![name.as_str().into()],
+                        vec![name.clone().into()],
                         vec![StmtKind::Return(Some(stepped)).at(js::Span::NONE)],
                     );
                     self.flat_mapped(items, each, item, own_count)
@@ -417,7 +417,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => {
                     let item = self.fresh(crate::lower::Base::Named("item"));
                     let each = Expr::arrow(
-                        vec![item.as_str().into()],
+                        vec![item.clone().into()],
                         vec![StmtKind::Return(Some(Expr::var(&item))).at(js::Span::NONE)],
                     );
                     method(items, "flatMap", vec![each])
@@ -559,11 +559,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     ],
                     None => vec![StmtKind::Return(Some(keep)).at(js::Span::NONE)],
                 };
-                let param = if body.len() > 1 { item.as_str() } else { "_" };
+                let param = if body.len() > 1 { item.word() } else { "_" };
                 method(
                     items,
                     "filter",
-                    vec![Expr::arrow(vec![param.into(), i.as_str().into()], body)],
+                    vec![Expr::arrow(vec![param.into(), i.clone().into()], body)],
                 )
             }
             // Each passed over dropped as it's passed, of items with a

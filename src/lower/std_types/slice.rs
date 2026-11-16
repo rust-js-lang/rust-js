@@ -368,7 +368,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Expr::member(pointer.clone(), js::HELD),
                     pointer,
                     from_payload,
-                    Some(StmtKind::Const(name.into(), made).at(js::Span::NONE)),
+                    Some(StmtKind::Const(name, made).at(js::Span::NONE)),
                 )
             }
             false => (to.clone(), pointer, from.clone(), None),
@@ -384,7 +384,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut replaced = Vec::new();
         let clone = self.clone_value(from.clone(), ty, span, &mut replaced)?;
         let old = self.fresh(Role::Old);
-        replaced.push(StmtKind::Const(old.clone().into(), to.clone()).at(js::Span::NONE));
+        replaced.push(StmtKind::Const(old.clone(), to.clone()).at(js::Span::NONE));
         replaced.push(StmtKind::Assign(to.clone(), clone).at(js::Span::NONE));
         self.drop_value(Expr::var(&old), ty, span, &mut replaced)?;
         let written = StmtKind::Expr(written).at(js::Span::NONE);
@@ -446,7 +446,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 test = Expr::bin(Op::And, test, asked);
             }
             let body = vec![
-                StmtKind::Const(name.into(), made).at(js::Span::NONE),
+                StmtKind::Const(name, made).at(js::Span::NONE),
                 StmtKind::Expr(written).at(js::Span::NONE),
             ];
             sides.push((test, body));
@@ -458,7 +458,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let clone = self.clone_value(from.clone(), ty, span, &mut replaced)?;
         let old = self.fresh(Role::Old);
         let held = self.moved_out(to.clone(), ty);
-        replaced.push(StmtKind::Const(old.clone().into(), held).at(js::Span::NONE));
+        replaced.push(StmtKind::Const(old.clone(), held).at(js::Span::NONE));
         replaced.push(StmtKind::Assign(to.clone(), clone).at(js::Span::NONE));
         self.drop_value(Expr::var(&old), ty, span, &mut replaced)?;
         let mut otherwise = Some(replaced);

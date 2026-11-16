@@ -216,7 +216,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 &format!("cloning a `{output}` made where `{ty}` isn't bound by `Clone`"),
             ));
         }
-        let named: Vec<String> = names.iter().map(|&name| self.fresh(name)).collect();
+        let named: Vec<crate::js::Name> = names.iter().map(|&name| self.fresh(name)).collect();
         // `makeMap`, `makeChain`, `makeCopied`.
         let make = self.fresh(Base::Prefixed(Role::Make, &crate::lower::upper_first(name)));
         let adapter = build(self, named.iter().map(Expr::var).collect())?;
@@ -228,10 +228,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         cloned.push(StmtKind::Return(Some(Expr::call(Expr::var(&make), clones))).at(js::Span::NONE));
         let carried = Expr::call_helper("$cloning", vec![adapter, Expr::arrow(Vec::new(), cloned)]);
         let maker = Expr::arrow(
-            named.iter().map(|part| part.as_str().into()).collect(),
+            named.iter().map(|part| part.clone().into()).collect(),
             vec![StmtKind::Return(Some(carried)).at(js::Span::NONE)],
         );
-        made.push(StmtKind::Let(make.clone().into(), Some(maker)).at(self.js_span(span)));
+        made.push(StmtKind::Let(make.clone(), Some(maker)).at(self.js_span(span)));
         Ok(Expr::call(Expr::var(&make), parts))
     }
 

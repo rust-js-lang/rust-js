@@ -563,7 +563,7 @@ pub(super) fn guarded_cleanups(stmts: &mut [Stmt]) {
         }
         let last = handler.pop().expect("rethrown");
         let drops = std::mem::take(handler);
-        *handler = crate::lower::drops::cleanup(drops, Some(error.word()), span);
+        *handler = crate::lower::drops::cleanup(drops, Some(error), span);
         handler.push(last);
     }
 }

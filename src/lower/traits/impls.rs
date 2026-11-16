@@ -57,7 +57,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(value);
         }
         let name = self.fresh(Base::Named(method));
-        shared.push(StmtKind::Const(name.clone().into(), value).at(js::Span::NONE));
+        shared.push(StmtKind::Const(name.clone(), value).at(js::Span::NONE));
         for prop in props.iter_mut() {
             if let Prop::Field(field, value) = prop
                 && field == method
@@ -505,7 +505,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 - usize::from(self.formatter_param(method).is_some())
                 // A writer's options, where the crate's take them (ADRs 0058, 0137).
                 + usize::from(self.compiled_writer_takes_options(method) && self.formatter_param(method).is_some());
-            let mut params: Vec<String> = (0..count).map(|i| format!("arg{i}")).collect();
+            let mut params: Vec<js::Name> = (0..count).map(|i| js::Name::declared(format!("arg{i}"))).collect();
             let mut values: Vec<Expr> = params.iter().map(Expr::var).collect();
             // Where it's called, after its arguments, of one whose entries take
             // it (ADR 0427): its caller's, generic code's or a `dyn`'s where
@@ -551,7 +551,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         .skip_normalization()
                 })
                 .collect();
-            let names: Vec<String> = declared
+            let names: Vec<js::Name> = declared
                 .iter()
                 .map(|&d| {
                     let word = format!("{}{}", evidence_word(self.tcx, d.self_ty()), trait_word(self.tcx, d));
@@ -746,13 +746,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let call = call.unwrap_or_else(|| Expr::call(callee, values));
             let body = match given_back {
                 Some(adapted) => vec![
-                    StmtKind::Const(given.into(), call).at(js::Span::NONE),
+                    StmtKind::Const(given, call).at(js::Span::NONE),
                     StmtKind::Return(Some(adapted)).at(js::Span::NONE),
                 ],
                 None => vec![StmtKind::Return(Some(call)).at(js::Span::NONE)],
             };
             let patterns = params.into_iter().map(|name| match &defaulted {
-                Some((location, at)) if *location == name => js::Pattern::Defaulted(name.into(), at.clone()),
+                Some((location, at)) if *location == name => js::Pattern::Defaulted(name, at.clone()),
                 _ => name.into(),
             });
             let arrow = Expr::arrow(patterns.collect(), body);

@@ -19,8 +19,8 @@ impl Pattern {
     }
 
     /// An array of variables, `[count, setCount]`; `None` skips one.
-    pub fn names_array(names: impl IntoIterator<Item = Option<String>>) -> Pattern {
-        Pattern::Array(names.into_iter().map(|name| name.map(Pattern::from)).collect())
+    pub fn names_array(names: impl IntoIterator<Item = Option<Name>>) -> Pattern {
+        Pattern::Array(names.into_iter().map(|name| name.map(Pattern::Name)).collect())
     }
 
     /// The variables it binds, their words.

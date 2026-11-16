@@ -76,14 +76,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         parts: &[(Ty<'tcx>, bool)],
         span: Span,
         mut make: impl FnMut(&mut Self, usize) -> R<Expr>,
-    ) -> R<(Vec<Expr>, Option<String>)> {
+    ) -> R<(Vec<Expr>, Option<js::Name>)> {
         let held = self.held_in_turn(parts);
         let made = held.contains(&true).then(|| self.fresh(Role::Made));
         let mut out = Vec::new();
         for (i, &(ty, _)) in parts.iter().enumerate() {
             let part = make(self, i)?;
             out.push(match (&made, held[i]) {
-                (Some(made), true) => self.made_part(made, part, ty, span)?,
+                (Some(made), true) => self.made_part(made.word(), part, ty, span)?,
                 _ => part,
             });
         }
@@ -101,12 +101,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `value`, made of parts in turn, of which those `held_in_turn` says
     /// were given to `made`: `$madeInTurn((made) => value)`, where each is
     /// dropped as a later one unwinds; or, of none, `value` itself.
-    pub(super) fn in_turn(value: Expr, made: Option<String>) -> Expr {
+    pub(super) fn in_turn(value: Expr, made: Option<js::Name>) -> Expr {
         match made {
             Some(name) => Expr::call_helper(
                 "$madeInTurn",
                 vec![Expr::arrow(
-                    vec![name.as_str().into()],
+                    vec![name.into()],
                     vec![StmtKind::Return(Some(value)).at(js::Span::NONE)],
                 )],
             ),

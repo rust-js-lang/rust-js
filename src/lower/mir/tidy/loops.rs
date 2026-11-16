@@ -292,8 +292,8 @@ pub(super) fn for_of(
     let mut body = inner[taken..].to_vec();
     for (alias, of) in &aliases {
         js::each_expr_mut(&mut body, &mut |e| {
-            if matches!(&e.kind, ExprKind::Var(v) if v.is(alias)) {
-                e.kind = ExprKind::Var(of.clone().into());
+            if matches!(&e.kind, ExprKind::Var(v) if v == alias) {
+                e.kind = ExprKind::Var(of.clone());
             }
         });
     }
@@ -362,7 +362,7 @@ pub(super) fn for_of(
                 let (name, start, test, body) = down;
                 StmtKind::For {
                     label: label.clone(),
-                    name: name.into(),
+                    name,
                     start,
                     test,
                     step: js::Step::Down,
@@ -373,7 +373,7 @@ pub(super) fn for_of(
             {
                 StmtKind::For {
                     label: label.clone(),
-                    name: name.into(),
+                    name,
                     start,
                     test,
                     step: js::Step::Up,
@@ -475,11 +475,13 @@ fn counted_range(
     }
     // A count the body doesn't read, Rust's `_`: `i`.
     let name = match name.word() {
-        "_" => std::iter::once("i".to_string())
-            .chain((1..).map(|k| format!("i${k}")))
-            .find(|n| !mentions.contains_key(n))
-            .expect("a name"),
-        _ => name.into_word(),
+        "_" => js::Name::declared(
+            std::iter::once("i".to_string())
+                .chain((1..).map(|k| format!("i${k}")))
+                .find(|n| !mentions.contains_key(n))
+                .expect("a name"),
+        ),
+        _ => name,
     };
     let held = (!same).then(|| {
         let unused = |n: &String| !mentions.contains_key(n);
@@ -487,7 +489,7 @@ fn counted_range(
             .chain((1..).map(|k| format!("end${k}")))
             .find(unused)
             .expect("a name");
-        (name, end.clone())
+        (js::Name::declared(name), end.clone())
     });
     // Its end held first, read before its start where Rust reads it
     // after: of a start that reads only variables, which an end of
@@ -502,14 +504,14 @@ fn counted_range(
     let looped = StmtKind::For {
         label: label.clone(),
         test: Expr::bin(if inclusive { Op::Le } else { Op::Lt }, Expr::var(&name), test),
-        name: name.into(),
+        name,
         start: start.clone(),
         step,
         body,
     };
     let mut out: Vec<Stmt> = held
         .into_iter()
-        .map(|(n, e)| StmtKind::Const(n.into(), e).at(js::Span::NONE))
+        .map(|(n, e)| StmtKind::Const(n, e).at(js::Span::NONE))
         .collect();
     out.push(looped.at(span));
     out.extend(exit);
@@ -538,7 +540,7 @@ fn indexed(
     body: &[Stmt],
     span: js::Span,
     mentions: &IndexMap<String, usize>,
-) -> Option<(String, Expr, Expr, Vec<Stmt>)> {
+) -> Option<(js::Name, Expr, Expr, Vec<Stmt>)> {
     let (iterable, start, end) = match &iterable.kind {
         // Said so where it's stepped, `$iter(v.slice(a))`, as `unarrayed`
         // says nothing of what it gives.
@@ -579,6 +581,7 @@ fn indexed(
         .map(String::from)
         .chain((1..).map(|k| format!("i${k}")))
         .find(|n| unread(n) && js::mentions_in(&body, n) == 0)
+        .map(js::Name::declared)
         .expect("a name");
     let item = Expr::index(iterable.clone(), Expr::var(&index));
     let bound = match (pattern, mutable) {
@@ -662,11 +665,12 @@ fn from_the_end(
     body: &[Stmt],
     span: js::Span,
     (numbers, mentions): (&IndexSet<String>, &IndexMap<String, usize>),
-) -> Option<(String, Expr, Expr, Vec<Stmt>)> {
+) -> Option<(js::Name, Expr, Expr, Vec<Stmt>)> {
     let fresh = |base: &str| {
         std::iter::once(base.to_string())
             .chain((1..).map(|k| format!("{base}${k}")))
             .find(|n| !mentions.contains_key(n))
+            .map(js::Name::declared)
             .expect("a name")
     };
     if let Some(items) = iterators::reversed_source(iterable) {
@@ -730,7 +734,7 @@ fn from_the_end(
     }
     let name = match name.word() {
         "_" => fresh("i"),
-        _ => name.to_string(),
+        _ => name.clone(),
     };
     let start = match (range.inclusive, range.end.as_int()) {
         (true, _) => range.end.clone(),

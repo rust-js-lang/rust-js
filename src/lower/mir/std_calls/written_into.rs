@@ -206,7 +206,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let sink = self.fresh(Role::F);
         let mut body = vec![
             StmtKind::Const(
-                sink.clone().into(),
+                sink.clone(),
                 Expr::call_helper("$writerSink", vec![writer, write_str_entry, write_char_entry]),
             )
             .at(js_span),
@@ -295,10 +295,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let call = thrown.unwrap_or(call);
         body.push(StmtKind::Return(Some(call)).at(js::Span::NONE));
-        let arrow = Expr::arrow(
-            vec![js::Pattern::Name(writer.into()), js::Pattern::Name(written.into())],
-            body,
-        );
+        let arrow = Expr::arrow(vec![js::Pattern::Name(writer), js::Pattern::Name(written)], body);
         Ok(
             crate::lower::passed_on::passed_on(&arrow, crate::lower::passed_on::Taker::Made, self.forwarding())
                 .unwrap_or(arrow),

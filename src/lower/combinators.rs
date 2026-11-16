@@ -396,7 +396,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let mut dropped = Vec::new();
                 self.drop_value(fallback.clone(), tys[1], span, &mut dropped)?;
                 let js_span = self.js_span(span);
-                out.push(StmtKind::Let(result.clone().into(), None).at(js_span));
+                out.push(StmtKind::Let(result.clone(), None).at(js_span));
                 out.push(
                     StmtKind::If(
                         some,
@@ -507,7 +507,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.drop_value(value, inner, span, &mut drop)?;
                 let unkept = Expr::bin(Op::Eq, Expr::var(&kept), Expr::js_undefined());
                 let dropped = vec![StmtKind::If(Expr::bin(Op::And, some, unkept), drop, None).at(js_span)];
-                out.push(StmtKind::Let(kept.clone().into(), None).at(js_span));
+                out.push(StmtKind::Let(kept.clone(), None).at(js_span));
                 out.extend(dropped_after(body, dropped, js_span, &mut self.catch_names()));
                 Expr::var(&kept)
             }
@@ -786,7 +786,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let key = once(self, key, Role::Key, out);
                 let (a, b) = (self.fresh(Role::A), self.fresh(Role::B));
                 let mut body = Vec::new();
-                let mut keyed = |item: &str, named: Role, body: &mut Vec<Stmt>| {
+                let mut keyed = |item: &js::Name, named: Role, body: &mut Vec<Stmt>| {
                     let made = Expr::call(key.clone(), vec![Expr::var(item)]);
                     match self.eq_is_identity(key_ty) {
                         true => made,
@@ -1188,7 +1188,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out.push(
             StmtKind::For {
                 label: None,
-                name: i.clone().into(),
+                name: i.clone(),
                 start: Expr::int(0),
                 test: Expr::bin(Op::Lt, Expr::var(&i), Expr::member(list, "length")),
                 step: js::Step::Up,

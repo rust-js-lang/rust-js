@@ -324,7 +324,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 // Made of the values in the fields' order, as the struct
                 // holds them: `([start, end]) => ({ start, end })`.
-                let locals: Vec<String> = names.iter().map(|name| self.fresh(Base::Named(name))).collect();
+                let locals: Vec<crate::js::Name> = names.iter().map(|name| self.fresh(Base::Named(name))).collect();
                 let made = match held {
                     Held::Fields => Expr::object(
                         (names.iter().zip(&locals))
@@ -374,7 +374,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let type_name = self.tcx.item_name(adt.did()).to_string();
                 let variants: Vec<(&ty::VariantDef, Attrs)> = variants;
                 self.read_tagged(
-                    &json,
+                    json.word(),
                     &Tagging::External,
                     &variants,
                     adt,

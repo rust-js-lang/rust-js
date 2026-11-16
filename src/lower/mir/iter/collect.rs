@@ -926,7 +926,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let collected = self.untracked_where_in_place((collected, walk), (output, iter_ty, item), span)?;
         // Kept where its collect steps it, not where it's collected in place.
         Ok(match grown_call {
-            Some((name, call)) if collected.mentions_var(&name) => Expr::call_helper(
+            Some((name, call)) if collected.mentions_var(name.word()) => Expr::call_helper(
                 "$grownVec",
                 vec![
                     call,

@@ -268,8 +268,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a variadic binding's arrow takes rest arguments as one, `(data) => console.log(...data)`, so `prevLog = console.log` is that arrow",
     file: "src/lower/items.rs",
-    find: "                true => Pattern::Rest(name.into()),\n",
-    replace: "                true => name.into(),\n",
+    find: "                true => Pattern::Rest(name),\n",
+    replace: "                true => Pattern::Name(name),\n",
     tests: ["test/js-object.test.ts", "-t", "console is a value"],
   },
   {

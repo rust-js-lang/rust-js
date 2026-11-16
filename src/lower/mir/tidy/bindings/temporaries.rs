@@ -205,7 +205,7 @@ pub(in crate::lower::mir::tidy) fn readable_temporaries(
         if spilled.iter().any(|(name, _)| from.is(name)) && names.iter().all(|name| taken.contains(name)) {
             continue;
         }
-        let to = temporary_names::pick(names, role, &mut taken);
+        let to = js::Name::declared(temporary_names::pick(names, role, &mut taken));
         // Not a closure's own of its name, `(_2) => _2[0]` (ADR 0902).
         js::outside_shadows(body, from.word(), |body| {
             js::statement_lists(body, &mut |list| {
@@ -213,7 +213,7 @@ pub(in crate::lower::mir::tidy) fn readable_temporaries(
                     if let StmtKind::Const(name, _) | StmtKind::Let(name, _) = &mut stmt.kind
                         && *name == from
                     {
-                        *name = to.clone().into();
+                        *name = to.clone();
                     }
                 }
             });
@@ -221,7 +221,7 @@ pub(in crate::lower::mir::tidy) fn readable_temporaries(
                 if let ExprKind::Var(v) = &mut e.kind
                     && *v == from
                 {
-                    *v = to.clone().into();
+                    *v = to.clone();
                 }
             });
         });

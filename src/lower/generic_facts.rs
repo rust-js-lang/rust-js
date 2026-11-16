@@ -399,7 +399,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `mir_closure_call`'s), before its dictionaries (#1758).
         let options = formatter.is_some() && self.takes_options(def_id);
         let made = move |cx: &mut Self| -> super::R<Expr> {
-            let mut params: Vec<String> = (names.iter())
+            let mut params: Vec<crate::js::Name> = (names.iter())
                 .map(|name| cx.fresh(super::temporary_names::Base::Named(name)))
                 .collect();
             let mut given = (params.iter().zip(&inputs))

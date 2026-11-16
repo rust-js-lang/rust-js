@@ -541,7 +541,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .map(|(_, (key, _))| key.text())
             .collect();
         let named = (keys.iter().zip(self.left_out(&keys)))
-            .map(|(key, unused)| (key.to_string(), js::Pattern::Name(unused.into()), None))
+            .map(|(key, unused)| (key.to_string(), js::Pattern::Name(unused), None))
             .collect();
         self.flush(state, out)?;
         state.locals.declared[local] = true;

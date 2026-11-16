@@ -779,7 +779,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let items = self.fresh(Role::Items);
                     let knowing = self.as_double_ended(Expr::var(&items), into_iter, span)?;
                     let knowing = Expr::arrow(
-                        vec![items.as_str().into()],
+                        vec![items.clone().into()],
                         vec![StmtKind::Return(Some(knowing)).at(js::Span::NONE)],
                     );
                     Some(vec![each.clone(), knowing])

@@ -419,7 +419,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             StmtKind::Assign(place.clone(), Expr::bin(Op::Add, place.clone(), partial)).at(js_span),
                             StmtKind::Throw(Expr::var(&caught)).at(js_span),
                         ];
-                        let tried = vec![StmtKind::TryCatch(written, Some(caught.into()), handler).at(js_span)];
+                        let tried = vec![StmtKind::TryCatch(written, Some(caught), handler).at(js_span)];
                         return Ok(Value::Expr(this.fmt_try(tried)));
                     }
                     let value = this.value_expr(given, span)?;
@@ -1009,7 +1009,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         _ => Some(this.value_expr(dest.clone(), span)?),
                     };
                     let made = given_box.is_none().then(|| this.fresh(Role::To));
-                    let pointer = given_box.unwrap_or_else(|| Expr::var(made.as_deref().expect("a box made")));
+                    let pointer = given_box.unwrap_or_else(|| Expr::var(made.as_ref().expect("a box made")));
                     let held = inner.unwrap_or(ty);
                     if this
                         .written_over(held, (to.clone(), pointer.clone()), source.clone(), span)?

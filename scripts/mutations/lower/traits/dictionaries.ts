@@ -658,8 +658,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `String` extended in generic code, through `Extend`'s dictionary, is given nothing, where each piece is appended as it's stepped (#1127)",
     file: "src/lower/traits/dictionaries.rs",
-    find: "                let stepped = crate::lower::std_types::text::extend_text(items.clone(), &piece, push);\n",
-    replace: "                let stepped = crate::lower::std_types::text::extend_text(Expr::array(Vec::new()), &piece, push);\n",
+    find: "                let stepped = crate::lower::std_types::text::extend_text(items.clone(), piece.word(), push);\n",
+    replace: "                let stepped = crate::lower::std_types::text::extend_text(Expr::array(Vec::new()), piece.word(), push);\n",
     tests: ["test/corpus.test.ts", "-t", "^(iterator_consumed_by_extend_unzip_partition_eq|generic_extend).rs$"],
   },
   {

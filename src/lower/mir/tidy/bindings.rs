@@ -423,9 +423,9 @@ pub(super) fn named_temporaries(body: &mut Vec<Stmt>) {
             let Some((b, _)) = found.first() else { continue };
             let base = |name: &str| name.split('$').next().unwrap_or(name).to_string();
             if found.iter().any(|(other, after)| {
-                base(other) != base(b)
-                    || declared.get(other) != Some(&1)
-                    || reads.get(other).copied().unwrap_or(0) != *after
+                base(other.word()) != base(b.word())
+                    || declared.get(other.word()) != Some(&1)
+                    || reads.get(other.word()).copied().unwrap_or(0) != *after
             }) {
                 continue;
             }
@@ -434,29 +434,30 @@ pub(super) fn named_temporaries(body: &mut Vec<Stmt>) {
             // destructuring beside it, which would be `max$1` then.
             let set_in_try = matches!(stmts[i].kind, StmtKind::Let(..));
             if set_in_try
-                && (declared.keys()).any(|name| base(name) == base(b) && !found.iter().any(|(other, _)| other == name))
+                && (declared.keys())
+                    .any(|name| base(name) == base(b.word()) && !found.iter().any(|(other, _)| other.is(name)))
             {
                 continue;
             }
             let b = b.clone();
-            let taken: Vec<String> = found.iter().map(|(name, _)| name.clone()).collect();
+            let taken: Vec<js::Name> = found.iter().map(|(name, _)| name.clone()).collect();
             for name in &taken {
-                dropping(stmts, a.word(), name);
+                dropping(stmts, a.word(), name.word());
             }
             match &mut stmts[i].kind {
-                StmtKind::Const(name, _) | StmtKind::Let(name, _) => *name = b.clone().into(),
-                StmtKind::Destructure { pattern, .. } => pattern.each_name_mut(&mut |name| *name = b.clone().into()),
+                StmtKind::Const(name, _) | StmtKind::Let(name, _) => *name = b.clone(),
+                StmtKind::Destructure { pattern, .. } => pattern.each_name_mut(&mut |name| *name = b.clone()),
                 _ => unreachable!("matched"),
             }
             // Not a closure's own of a name, its parameter `(_2) => _2[0]`
             // where `_2` is a temporary here too (#1105).
-            for name in std::iter::once(a.word()).chain(taken.iter().map(String::as_str)) {
-                js::outside_shadows(stmts, name, |stmts| {
+            for name in std::iter::once(&a).chain(&taken) {
+                js::outside_shadows(stmts, name.word(), |stmts| {
                     js::each_expr_mut(&mut stmts[i + 1..], &mut |e| {
                         if let ExprKind::Var(v) = &mut e.kind
-                            && v.is(name)
+                            && v == name
                         {
-                            *v = b.clone().into();
+                            *v = b.clone();
                         }
                     });
                 });
@@ -485,11 +486,11 @@ pub(super) fn set_once_in_try(stmts: &[Stmt], a: &str) -> bool {
 
 /// Each `const b = a;` of a name the program gives in the blocks of
 /// `stmts`, not in their closures, and how often `b` is read after it.
-pub(super) fn taking(stmts: &[Stmt], a: &str, found: &mut Vec<(String, usize)>) {
+pub(super) fn taking(stmts: &[Stmt], a: &str, found: &mut Vec<(js::Name, usize)>) {
     for (j, stmt) in stmts.iter().enumerate() {
         match &stmt.kind {
             StmtKind::Const(b, value) if !is_temporary(b) && matches!(&value.kind, ExprKind::Var(v) if v.is(a)) => {
-                found.push((b.to_string(), js::mentions_in(&stmts[j + 1..], b.word())));
+                found.push((b.clone(), js::mentions_in(&stmts[j + 1..], b.word())));
             }
             StmtKind::If(_, then, otherwise) => {
                 taking(then, a, found);

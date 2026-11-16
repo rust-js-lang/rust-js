@@ -368,7 +368,7 @@ impl Base<'_> {
             Base::HeldArg => crate::js::Name::held_arg(word),
             _ if spelled_as_temporary(&word) => crate::js::Name::temporary(word),
             _ if spelled_as_held_arg(&word) => crate::js::Name::held_arg(word),
-            _ => word.into(),
+            _ => crate::js::Name::declared(word),
         }
     }
 

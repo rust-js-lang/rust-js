@@ -1006,7 +1006,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let name = self.fresh(crate::lower::Base::Named("item"));
                     let copy = self.copy(Expr::var(&name), item);
                     list.push(Expr::arrow(
-                        vec![name.as_str().into()],
+                        vec![name.clone().into()],
                         vec![StmtKind::Return(Some(copy)).at(js::Span::NONE)],
                     ));
                 }

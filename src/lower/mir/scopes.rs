@@ -223,28 +223,28 @@ pub(super) fn scope_fields(value: &str, params: &[js::Pattern], out: &mut Vec<St
     });
     let assigned = |name: &str| declared.contains(name) || handled.contains(name) || js::Writes::sets(out, name);
     let param_names: Vec<&str> = params.iter().flat_map(|p| p.names()).collect();
-    let mut names: IndexMap<String, String> = IndexMap::default();
+    let mut names: IndexMap<String, js::Name> = IndexMap::default();
     let mut lets = Vec::new();
     for (key, e) in fields {
         let given = e.as_ref().and_then(|e| match &e.kind {
             js::ExprKind::Var(p)
                 if param_names.contains(&p.word()) && !assigned(p.word()) && !written.contains(&key) =>
             {
-                Some(p.to_string())
+                Some(p.clone())
             }
             _ => None,
         });
         let name = match given {
             Some(p) => p,
             None => {
-                let name = crate::names::fresh_in(&mut taken, &key);
+                let name = js::Name::declared(crate::names::fresh_in(&mut taken, &key));
                 // Where its value is written, which a comment above the
                 // field is before; the first where the literal's `let` is.
                 let at = e.as_ref().map_or(js::Span::NONE, |e| e.span);
                 lets.push(
                     match (written.contains(&key), e) {
-                        (false, Some(e)) => StmtKind::Const(name.clone().into(), e),
-                        (_, e) => StmtKind::Let(name.clone().into(), e),
+                        (false, Some(e)) => StmtKind::Const(name.clone(), e),
+                        (_, e) => StmtKind::Let(name.clone(), e),
                     }
                     .at(at),
                 );

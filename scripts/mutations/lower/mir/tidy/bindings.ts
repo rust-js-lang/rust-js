@@ -15,7 +15,7 @@ export const mutations: Mutation[] = [
     breaks:
       "naming a temporary renames a closure's own parameter of its name's reads, `(_2) => { const a = ty523830[0]; .. }`, and the JS after tidy's `in place` stage throws `Cannot convert NaN to a BigInt` where Rust prints `2 [41, 52]` (#1105)",
     file: "src/lower/mir/tidy/bindings.rs",
-    find: "                js::outside_shadows(stmts, name, |stmts| {\n                    js::each_expr_mut(&mut stmts[i + 1..], &mut |e| {\n",
+    find: "                js::outside_shadows(stmts, name.word(), |stmts| {\n                    js::each_expr_mut(&mut stmts[i + 1..], &mut |e| {\n",
     replace: "                js::outside_shadows(stmts, \"no name\", |stmts| {\n                    js::each_expr_mut(&mut stmts[i + 1..], &mut |e| {\n",
     tests: ["test/tidy-stages.test.ts", "-t", "^closure_param_shadows_a_named_temporary after"],
   },
@@ -257,7 +257,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`n` that two arms bind, `n` and `n$1` until named in their scopes, stays `const n = length;` in each",
     file: "src/lower/mir/tidy/bindings.rs",
-    find: "                base(other) != base(b)\n",
+    find: "                base(other.word()) != base(b.word())\n",
     replace: "                *other != *b\n",
     tests: ["test/corpus.test.ts", "-t", "tuple_scrutinee_calls"],
     snapshots: true,

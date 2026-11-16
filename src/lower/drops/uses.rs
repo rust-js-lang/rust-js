@@ -123,7 +123,7 @@ pub(in crate::lower) struct DropsObserved {
     pub(in crate::lower) checks: Vec<DropCheck>,
     used: IndexSet<(DefId, u32)>,
     passed: Vec<((DefId, u32), (DefId, u32))>,
-    names: IndexMap<DefId, Vec<(u32, String)>>,
+    names: IndexMap<DefId, Vec<(u32, js::Name)>>,
 }
 
 impl DropsObserved {
@@ -170,14 +170,14 @@ impl DropsObserved {
         for (id, item) in items.iter_mut() {
             let id = *id;
             if let Some(names) = self.names.get(&id) {
-                let unused: IndexSet<&str> = names
+                let unused: IndexSet<&js::Name> = names
                     .iter()
                     .filter(|&&(index, _)| !kept.contains(&(id, index)))
-                    .map(|(_, name)| name.as_str())
+                    .map(|(_, name)| name)
                     .collect();
                 item.function
                     .params
-                    .retain(|param| !matches!(param, js::Pattern::Name(name) if unused.contains(name.word())));
+                    .retain(|param| !matches!(param, js::Pattern::Name(name) if unused.contains(name)));
             }
             js::each_expr_mut(&mut item.function.body, &mut |e| keep_arguments(e, &kept));
         }

@@ -439,7 +439,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let idents = self.tcx.fn_arg_idents(def_id);
         // Named as the binding names them, and `this` after its type:
         // `(signal) => signal.aborted`.
-        let params: Vec<String> = inputs
+        let params: Vec<js::Name> = inputs
             .iter()
             .enumerate()
             .map(
@@ -494,7 +494,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let count = params.len();
         let params = (params.into_iter().enumerate())
             .map(|(i, name)| match rest && i + 1 == count {
-                true => Pattern::Rest(name.into()),
+                true => Pattern::Rest(name),
                 false => name.into(),
             })
             .collect();

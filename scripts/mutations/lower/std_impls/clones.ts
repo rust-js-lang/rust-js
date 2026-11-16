@@ -283,9 +283,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a `RefCell` of an object's clone is a `{ value }` of the clone, read as the object it isn't",
     file: "src/lower/std_impls/clones.rs",
-    find: '                    return Ok(Expr::call(\n                        Expr::helper("$withBorrow"),\n                        vec![place, Expr::arrow(vec![param.as_str().into()], body), Expr::bool(true)],\n                    ));\n',
+    find: "                    return Ok(Expr::call(\n                        Expr::helper(\"$withBorrow\"),\n                        vec![place, Expr::arrow(vec![param.clone().into()], body), Expr::bool(true)],\n                    ));\n",
     replace:
-      '                    return Ok(Expr::object(vec![Prop::Field(js::HELD.into(), Expr::call(\n                        Expr::helper("$withBorrow"),\n                        vec![place, Expr::arrow(vec![param.as_str().into()], body), Expr::bool(true)],\n                    ))]));\n',
+      "                    return Ok(Expr::object(vec![Prop::Field(js::HELD.into(), Expr::call(\n                        Expr::helper(\"$withBorrow\"),\n                        vec![place, Expr::arrow(vec![param.clone().into()], body), Expr::bool(true)],\n                    ))]));\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_objects.rs$"],
   },
   {

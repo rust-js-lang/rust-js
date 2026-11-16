@@ -1021,12 +1021,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 for item in items {
                     own.push(match item {
                         Some(pattern) => pattern,
-                        None => js::Pattern::Name(self.fresh(Role::Unread).into()),
+                        None => js::Pattern::Name(self.fresh(Role::Unread)),
                     });
                 }
             }
             Some(js::Pattern::Name(tuple)) => {
-                let items: Vec<String> = (0..arity).map(|_| self.fresh(Base::Named(tuple.word()))).collect();
+                let items: Vec<crate::js::Name> = (0..arity).map(|_| self.fresh(Base::Named(tuple.word()))).collect();
                 let whole = match arity {
                     0 => Expr::js_undefined(),
                     _ => Expr::array(items.iter().map(Expr::var).collect()),

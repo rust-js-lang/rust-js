@@ -270,7 +270,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> Expr {
         let (made, role) = self.builder_of(kind, Expr::var("f"), type_name, pretty);
         let builder = self.fresh(role);
-        let mut body = vec![StmtKind::Const(builder.clone().into(), made).at(js::Span::NONE)];
+        let mut body = vec![StmtKind::Const(builder.clone(), made).at(js::Span::NONE)];
         for (method, args) in steps.into_iter().chain([(finish, Vec::new())]) {
             let step = Expr::call(Expr::member(Expr::var(&builder), method), args);
             body.push(StmtKind::Expr(step).at(js::Span::NONE));

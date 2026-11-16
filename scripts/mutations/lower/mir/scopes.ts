@@ -82,8 +82,8 @@ export const mutations: Mutation[] = [
     name: "scope-fields-named-unapart",
     breaks: "a scope struct's field's variable is named as its field where the function has a variable of that name, `parts`",
     file: "src/lower/mir/scopes.rs",
-    find: "                let name = crate::names::fresh_in(&mut taken, &key);",
-    replace: "                let name = key.clone();",
+    find: "                let name = js::Name::declared(crate::names::fresh_in(&mut taken, &key));",
+    replace: "                let name = js::Name::declared(key.clone());",
     tests: scopes,
   },
   {

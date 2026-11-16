@@ -429,7 +429,7 @@ export const mutations: Mutation[] = [
     name: "cleanups-left-unguarded",
     breaks: "a `catch` that throws on runs its drops unguarded, so a drop's panic there replaces the panic where Rust aborts (#847)",
     file: "src/lower/mir/tidy/unwinds.rs",
-    find: "        *handler = crate::lower::drops::cleanup(drops, Some(error.word()), span);\n",
+    find: "        *handler = crate::lower::drops::cleanup(drops, Some(error), span);\n",
     replace: "        *handler = drops;\n",
     tests: ["test/corpus.test.ts", "-t", "^unwinding_drop_aborts_locals.rs$"],
   },
