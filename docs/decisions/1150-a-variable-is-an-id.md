@@ -968,3 +968,35 @@ names is `Name::default()`, asked by `Name::is_unnamed`, not by its empty
 word; probed over the suite, the two never disagreed. A local that may have
 no name would read better as an `Option<Name>` than as that sentinel: a
 possible follow-up, not this step's. The ratchet stands at 290.
+
+## Names are ids: link decides what's imported, preparation spells it (2026-11-17)
+
+Link spelled each import of the crate's modules: it walked the module for
+every word a binding or a read takes and gave each import the first word
+none took, `useState$1`, then rewrote each read of what it imports to that
+word, and respelled a local a runtime helper's read is in the scope of
+(#1975). It decided both what a module imports and what it's called.
+
+Now it decides only the first. Each import is a `Name` of its own,
+`Name::imported`, a module's name with an id of its own, so two imports
+of one word are two variables; each read of what it imports is that
+`Name`; and link hands preparation what it spells them apart from,
+`js::ImportNames`: lowering's reserved words, and the imports that may be
+renamed in the order the module asked for them. `prepare/import_names.rs`,
+before any other pass, spells each with link's rule and walk, then gives
+a local way to a helper's read, as link did after it. A JS module's
+import and a helper's keep their words, a local giving way to them, as a
+reader expects `useState` imported as it is; two JS modules' of one word
+are imported apart, `f` and `f$1`, as before (`link.test.ts`'s row).
+Link reads no word (architecture test). Byte-identical over all of
+`check:fast --all` and React's port: an import's spelling is printed in
+its import and at each read, so the same JS is the same spelling, import
+by import.
+
+The word-reads ratchet falls by link's nine, but two files rise for now:
+`output.rs`, 0 → 2, whose test harness picks its imports' aliases, `test`
+and each module's namespace, against the module's names at output, and
+`js/scopes.rs`, 7 → 8, its tree's top words for `js::validate`, each
+reading an import's word now its local is a `Name`. The test harness's
+aliases are the next step: imports' `Name`s on `js::ImportNames`, spelled
+by preparation as link's are, which takes `output.rs` back to none.

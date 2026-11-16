@@ -9,11 +9,10 @@ src/js/applied/tried.rs	7
 src/js/expr_walk.rs	9
 src/js/make.rs	4
 src/js/pattern.rs	1
-src/js/scopes.rs	7
+src/js/scopes.rs	8
 src/js/stmt_walk.rs	9
 src/js/storage.rs	1
 src/js/validate.rs	2
-src/link.rs	9
 src/lower.rs	4
 src/lower/binding_calls.rs	2
 src/lower/calls.rs	1
@@ -92,3 +91,4 @@ src/lower/traits/impls.rs	1
 src/lower/traits/impls/defaults.rs	1
 src/lower/traits/words.rs	1
 src/lower/untagged/field_reads.rs	1
+src/output.rs	2

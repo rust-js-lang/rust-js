@@ -12,6 +12,7 @@ mod catches;
 mod declared;
 mod do_whiles;
 mod forwarding;
+mod import_names;
 mod initializers;
 mod labels;
 mod objects;
@@ -47,6 +48,8 @@ pub fn breaking_pass(
 }
 
 fn prepared_module(module: &mut js::Module) {
+    // Its imports spelled, before anything reads their names (ADR 1150).
+    import_names::spelled(module);
     // `(0, f)` is `f` (rd579).
     passes::run(Pass::UnboundReads, module, |module| {
         module.each_expr_mut(&mut Expr::unbound_variable_read)

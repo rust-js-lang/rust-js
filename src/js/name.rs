@@ -112,6 +112,13 @@ impl Name {
         Name(word.to_string(), Of::Module, Id::WORD)
     }
 
+    /// An import of another module of the crate's, spelled `word` as its
+    /// `use` gives it: a module's name, but each import its own, which
+    /// preparation may spell apart (link's, ADR 1150).
+    pub fn imported(word: &str) -> Name {
+        Name(word.to_string(), Of::Module, Id::fresh())
+    }
+
     /// The name of the crate's item `item` (its `DefIndex`), or of its copy
     /// `copy`, written in a function's body and declared there, `word`
     /// (ADRs 0296, 0308, 0031 amended): one variable of whichever lowering

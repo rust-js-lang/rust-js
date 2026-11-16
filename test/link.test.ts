@@ -170,3 +170,32 @@ test("module-load statements resolve imports around their local bindings", async
     delete globals.auditLoaded;
   }
 });
+
+// Two JS modules' imports of one word, each a fixed name a local gives way
+// to (ADR 1150): the first keeps it, the next is given apart, `f$1`, as
+// they were when link spelled imports, now preparation does.
+test("two JS modules' exports of one word are imported apart", async () => {
+  const dir = fixture("two-packages-one-word");
+  writeFileSync(join(dir, "a.js"), "export const f = () => 1;\n");
+  writeFileSync(join(dir, "b.js"), "export const f = () => 2;\n");
+  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "./a.js#f")]
+fn fa() -> f64 {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "./b.js#f")]
+fn fb() -> f64 {
+    unreachable!()
+}
+
+pub fn both() -> f64 {
+    fa() * 10.0 + fb()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain(`import { f } from "./a.js";\nimport { f as f$1 } from "./b.js";`);
+  expect(js).toContain("return f() * 10 + f$1();");
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.both()).toBe(12);
+});

@@ -273,6 +273,7 @@ impl OutputPlan {
                 directives: module.directives,
                 packages,
                 imports,
+                import_names: module.import_names,
                 reexports,
                 helpers: Vec::new(),
                 // Of std's own build, its package's `runtime.js` (#1095).
@@ -320,6 +321,7 @@ impl OutputPlan {
                 directives: Vec::new(),
                 packages: Vec::new(),
                 imports: Vec::new(),
+                import_names: js::ImportNames::default(),
                 reexports: Vec::new(),
                 helpers: Vec::new(),
                 helpers_from: None,

@@ -11,38 +11,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-structs-enums.test.ts", "-t", "a repr enum's variants are its module's consts"],
   },
   {
-    name: "module-load-symbols-unresolved",
-    breaks: "module-load statements reach the printer with unresolved cross-module symbols",
-    file: "src/link.rs",
-    find: "            Item::Statements(stmts) => block(stmts, visitor),\n",
-    replace: "            Item::Statements(_) => {}\n",
-    tests: ["test/link.test.ts", "-t", "module-load statements"],
-  },
-  {
-    name: "module-load-bindings-unreserved",
-    breaks: "an import alias collides with a module-load statement's local binding",
-    file: "src/link.rs",
-    find: "            Item::Statements(stmts) => block(stmts, visitor),\n",
-    replace: "            Item::Statements(stmts) => {\n                if visitor.replacements.is_some() {\n                    block(stmts, visitor)\n                }\n            }\n",
-    tests: ["test/link.test.ts", "-t", "module-load statements"],
-  },
-  {
-    name: "arrow-params-unreserved",
-    breaks: "an import alias isn't named around what a nested arrow binds, so the arrow's parameter, `Card$1`, shadows the import `<Card$1 />` there",
-    file: "src/link.rs",
-    find: "            for param in params {\n                pattern(param, visitor);\n            }\n            block(body, visitor);\n",
-    replace: "            if visitor.replacements.is_some() {\n                for param in params {\n                    pattern(param, visitor);\n                }\n                block(body, visitor);\n            }\n",
-    tests: ["test/jsx.test.ts", "-t", "named component imports avoid local functions"],
-  },
-  {
-    name: "local-function-unlinked",
-    breaks: "a function written in a body reaches the printer with another module's function unresolved",
-    file: "src/link.rs",
-    find: "            StmtKind::Function(function) => function_names(function, visitor),\n",
-    replace: "            StmtKind::Function(_) => {}\n",
-    tests: ["test/lowering-functions.test.ts", "-t", "local function there"],
-  },
-  {
     name: "written-helper-unasked",
     breaks: "a helper written as the runtime's, tidying's `$lazyRange(0, n)`, isn't asked for, and its module doesn't import it: a ReferenceError where it runs",
     file: "src/link.rs",
@@ -91,14 +59,5 @@ export const mutations: Mutation[] = [
     find: "            if finds_places_by_address {\n",
     replace: "            if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^addresses_of_short_lived_allocations.rs$"],
-  },
-  {
-    name: "link-locals-not-apart-from-helpers",
-    breaks:
-      "a local of a helper's word its scope reads keeps it, `const copiedClone = ..` beside std's `copiedClone(..)`: rust-js refuses its own output (#1975)",
-    file: "src/link.rs",
-    find: "            crate::js::scopes::locals_apart_from_module_reads(&top, &mut item.module.items);\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^(local_named_as_a_helper_its_scope_reads|clones_beside_a_generic_clone_of_a_copied_map).rs$"],
   },
 ];

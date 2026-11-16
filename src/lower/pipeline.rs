@@ -1119,6 +1119,7 @@ pub fn lower_crate<'tcx>(
                 directives,
                 packages,
                 imports: Vec::new(),
+                import_names: js::ImportNames::default(),
                 taken_into: Vec::new(),
                 reexports,
                 aliases,

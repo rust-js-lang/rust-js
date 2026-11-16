@@ -1,12 +1,11 @@
-//! Resolve symbolic module references after lowering and reachability.
-//! Locals keep their names; import aliases avoid every binding that could
-//! shadow them, including parameters of nested arrows and copied defaults.
-//! A runtime helper is imported by its word, so a local its read is in the
-//! scope of gives way instead, named apart (ADR 1150, #1975).
+//! Resolve symbolic module references after lowering and reachability:
+//! what each module imports, each import a `Name` of its own, which every
+//! read of what it imports is. It reads no words: preparation spells each
+//! import apart from the module's names, and a local apart from a runtime
+//! helper's read (`prepare::import_names`, ADR 1150, #1975).
 
 use crate::collections::{IndexMap, IndexSet};
-use crate::js::{Expr, ExprKind, Function, Item, JsxTag, Pattern, Prop, Stmt, StmtKind};
-use crate::names::fresh_in;
+use crate::js::{ExprKind, Name};
 use crate::program::{ImportRequest, Lowered, LoweredImport, LoweredModule, Unlinked};
 use std::collections::BTreeMap;
 
@@ -27,14 +26,6 @@ pub(crate) fn link(unlinked: Unlinked) -> Linked {
         .into_iter()
         .map(|mut item| {
             resolve(&mut item.module, &item.imports, item.reserved_names);
-            // A local a helper's read is in the scope of, given apart from
-            // it, now its tree's reads are all there (ADR 1150).
-            let top: Vec<String> = (item.module.imports.iter())
-                .flat_map(|import| import.named.iter().map(|(_, local)| local).chain(&import.namespace))
-                .map(|local| local.word().to_string())
-                .chain(crate::js::scopes::packaged(&item.module.packages).cloned())
-                .collect();
-            crate::js::scopes::locals_apart_from_module_reads(&top, &mut item.module.items);
             // Each helper its tree reads, asked for by being written.
             let mut written = Vec::new();
             let mut finds_places_by_address = false;
@@ -101,16 +92,14 @@ fn keep_imported(modules: &mut [LoweredModule]) {
     }
 }
 
-fn resolve(module: &mut LoweredModule, imports: &[ImportRequest], mut names: IndexSet<String>) {
-    let mut read = IndexSet::default();
-    visit(
-        module,
-        &mut Visitor {
-            names: &mut names,
-            replacements: None,
-            read: &mut read,
-        },
-    );
+fn resolve(module: &mut LoweredModule, imports: &[ImportRequest], reserved: IndexSet<String>) {
+    // The other modules' items the module reads, by their symbols.
+    let mut read: IndexSet<crate::js::Symbol> = IndexSet::default();
+    crate::js::each_item_expr_mut(&mut module.items, &mut |e| {
+        if let ExprKind::Symbol(symbol) = &e.kind {
+            read.insert(symbol.clone());
+        }
+    });
     // One import of each `use` of a module, where it's written (rd649): by
     // its path and its `use`'s place.
     type Written = (Vec<String>, (u32, u32));
@@ -119,21 +108,24 @@ fn resolve(module: &mut LoweredModule, imports: &[ImportRequest], mut names: Ind
     // An import of what the module reads: one its lowering asked for whose
     // read tidy took out, a test of a numbered enum's variant an
     // exhaustive `match` needn't write, `Dark` (ADR 0722), isn't written.
+    let mut apart = Vec::new();
     let replacements: IndexMap<_, _> = imports
         .iter()
         .filter(|request| request.always || read.contains(&request.symbol))
         .map(|request| {
-            // One the module reads by its name already has it.
-            let alias = match request.always {
-                true => request.local.clone(),
-                false => fresh_in(&mut names, &request.local),
-            };
+            // Its own `Name`, the word its `use` gives it, which preparation
+            // spells apart from the module's other names; one the module
+            // reads by its name already has it, as it is.
+            let alias = Name::imported(&request.local);
+            if !request.always {
+                apart.push(alias.clone());
+            }
             let key = (request.path.clone(), (request.at.lo, request.at.hi));
             let named = grouped.entry(key.clone()).or_default();
             // The module itself, its own `import * as` (rd114, ADR 1018).
             match request.export == crate::js::NAMESPACE {
-                true => _ = namespaces.insert(key, crate::js::Name::module(&alias)),
-                false => named.push((request.export.clone(), crate::js::Name::module(&alias))),
+                true => _ = namespaces.insert(key, alias.clone()),
+                false => named.push((request.export.clone(), alias.clone())),
             }
             (request.symbol.clone(), alias)
         })
@@ -151,254 +143,14 @@ fn resolve(module: &mut LoweredModule, imports: &[ImportRequest], mut names: Ind
             }
         })
         .collect();
-    visit(
-        module,
-        &mut Visitor {
-            names: &mut names,
-            replacements: Some(&replacements),
-            read: &mut IndexSet::default(),
-        },
-    );
-}
-
-struct Visitor<'a> {
-    names: &'a mut IndexSet<String>,
-    replacements: Option<&'a IndexMap<crate::js::Symbol, String>>,
-    /// The other modules' items the module reads, by their symbols.
-    read: &'a mut IndexSet<crate::js::Symbol>,
-}
-
-impl Visitor<'_> {
-    fn name(&mut self, name: &str) {
-        if self.replacements.is_none() {
-            self.names.insert(name.to_owned());
-        }
-    }
-}
-
-fn visit(module: &mut LoweredModule, visitor: &mut Visitor<'_>) {
-    for item in &mut module.items {
-        match item {
-            Item::Function(function) => function_names(function, visitor),
-            Item::Namespace(namespace) => {
-                visitor.name(namespace.name.word());
-                for constant in &mut namespace.constants {
-                    expr(&mut constant.value, visitor);
-                }
-                for function in &mut namespace.methods {
-                    function_names(function, visitor);
-                }
-            }
-            Item::Const(constant) => {
-                visitor.name(constant.name.word());
-                constant.fields.names.iter().for_each(|(field, _)| visitor.name(field));
-                expr(&mut constant.value, visitor);
-            }
-            Item::Statements(stmts) => block(stmts, visitor),
-        }
-    }
-}
-
-fn function_names(function: &mut Function, visitor: &mut Visitor<'_>) {
-    visitor.name(function.name.word());
-    for param in &mut function.params {
-        pattern(param, visitor);
-    }
-    block(&mut function.body, visitor);
-}
-
-fn pattern(p: &mut Pattern, visitor: &mut Visitor<'_>) {
-    // A default, `{ size = "md" }`, is a literal: it names nothing.
-    p.names_mut().into_iter().for_each(|n| visitor.name(n.word()));
-}
-
-fn block(body: &mut [Stmt], visitor: &mut Visitor<'_>) {
-    for statement in body {
-        match &mut statement.kind {
-            StmtKind::Const(n, e) => {
-                visitor.name(n.word());
-                expr(e, visitor);
-            }
-            StmtKind::Let(n, e) => {
-                visitor.name(n.word());
-                if let Some(e) = e {
-                    expr(e, visitor);
-                }
-            }
-            StmtKind::Destructure { pattern: p, value, .. } => {
-                pattern(p, visitor);
-                expr(value, visitor);
-            }
-            StmtKind::Assign(a, b) | StmtKind::Compound(_, a, b) => {
-                expr(a, visitor);
-                expr(b, visitor);
-            }
-            StmtKind::Expr(e) | StmtKind::Throw(e) | StmtKind::Return(Some(e)) => expr(e, visitor),
-            StmtKind::If(e, yes, no) => {
-                expr(e, visitor);
-                block(yes, visitor);
-                if let Some(no) = no {
-                    block(no, visitor);
-                }
-            }
-            StmtKind::While { cond, body, .. } | StmtKind::DoWhile { cond, body, .. } => {
-                expr(cond, visitor);
-                block(body, visitor);
-            }
-            StmtKind::ForOf {
-                pattern: p,
-                iterable,
-                body,
-                ..
-            } => {
-                pattern(p, visitor);
-                expr(iterable, visitor);
-                block(body, visitor);
-            }
-            StmtKind::For {
-                name: n,
-                start,
-                test,
-                step,
-                body,
-                ..
-            } => {
-                visitor.name(n.word());
-                expr(start, visitor);
-                expr(test, visitor);
-                if let Some(value) = step.value_mut() {
-                    expr(value, visitor);
-                }
-                block(body, visitor);
-            }
-            StmtKind::Labeled(_, body) => block(body, visitor),
-            StmtKind::Switch {
-                discriminant,
-                cases,
-                default,
-            } => {
-                expr(discriminant, visitor);
-                for crate::js::Case { values, body, .. } in cases.iter_mut() {
-                    values.iter_mut().for_each(|value| expr(value, visitor));
-                    block(body, visitor);
-                }
-                if let Some(default) = default {
-                    block(default, visitor);
-                }
-            }
-            StmtKind::Function(function) => function_names(function, visitor),
-            StmtKind::Try(body, finally) => {
-                block(body, visitor);
-                block(finally, visitor);
-            }
-            StmtKind::TryCatch(body, error, handler) => {
-                block(body, visitor);
-                if let Some(error) = error {
-                    visitor.name(error.word());
-                }
-                block(handler, visitor);
-            }
-            StmtKind::Return(None)
-            | StmtKind::Break(_)
-            | StmtKind::Continue(_)
-            | StmtKind::Directive(_)
-            | StmtKind::Comments => {}
-        }
-    }
-}
-
-fn expr(e: &mut Expr, visitor: &mut Visitor<'_>) {
-    if let ExprKind::Symbol(symbol) = &e.kind
-        && let Some(replacements) = visitor.replacements
-    {
-        e.kind = ExprKind::Var(crate::js::Name::module(
-            replacements
+    // Each read of another module's item, of its import's `Name`.
+    crate::js::each_item_expr_mut(&mut module.items, &mut |e| {
+        if let ExprKind::Symbol(symbol) = &e.kind {
+            let alias = replacements
                 .get(symbol)
-                .expect("every symbolic module reference has a dependency"),
-        ));
-    }
-    match &mut e.kind {
-        ExprKind::Symbol(symbol) => {
-            visitor.read.insert(symbol.clone());
+                .expect("every symbolic module reference has a dependency");
+            e.kind = ExprKind::Var(alias.clone());
         }
-        ExprKind::Var(n) => visitor.name(n.word()),
-        ExprKind::Assigned(target, a) => {
-            expr(target, visitor);
-            expr(a, visitor);
-        }
-        ExprKind::Member(a, _)
-        | ExprKind::OptionalMember(a, _)
-        | ExprKind::Unary(_, a)
-        | ExprKind::Await(a)
-        | ExprKind::Unbound(a)
-        | ExprKind::Spread(a)
-        | ExprKind::Stringed(a)
-        | ExprKind::Handle(a, _)
-        | ExprKind::Stepped(_, a)
-        | ExprKind::DropArgument(_, _, a) => expr(a, visitor),
-        ExprKind::Index(a, b) | ExprKind::OptionalIndex(a, b) | ExprKind::Binary(_, a, b) | ExprKind::Pair(a, b, _) => {
-            expr(a, visitor);
-            expr(b, visitor);
-        }
-        ExprKind::Cond(a, b, c) => {
-            expr(a, visitor);
-            expr(b, visitor);
-            expr(c, visitor);
-        }
-        ExprKind::Call(f, args) | ExprKind::OptionalCall(f, args) | ExprKind::New(f, args) => {
-            expr(f, visitor);
-            for a in args {
-                expr(a, visitor);
-            }
-        }
-        ExprKind::Array(items) | ExprKind::Template(_, items, _) | ExprKind::Sequence(items) => {
-            for item in items {
-                expr(item, visitor);
-            }
-        }
-        ExprKind::Object(props, ..) => properties(props, visitor),
-        ExprKind::Arrow(params, body) | ExprKind::AsyncArrow(params, body) => {
-            for param in params {
-                pattern(param, visitor);
-            }
-            block(body, visitor);
-        }
-        ExprKind::Function(function) => function_names(function, visitor),
-        ExprKind::Hole(_) | ExprKind::Import(_) | ExprKind::Specifier(_) => {}
-        ExprKind::Jsx(jsx) => {
-            if let JsxTag::Component(e) = &mut jsx.tag {
-                expr(e, visitor);
-            }
-            properties(&mut jsx.props, visitor);
-            for child in &mut jsx.children {
-                expr(child, visitor);
-            }
-        }
-        ExprKind::Num(_)
-        | ExprKind::BigInt(_)
-        | ExprKind::BigUint(_)
-        | ExprKind::Bool(_)
-        | ExprKind::Str(_)
-        | ExprKind::Written(_)
-        | ExprKind::Undefined
-        | ExprKind::GivenUndefined
-        | ExprKind::Null
-        | ExprKind::This
-        | ExprKind::Super
-        | ExprKind::Regex(_) => {}
-    }
-}
-
-fn properties(props: &mut [Prop], visitor: &mut Visitor<'_>) {
-    for prop in props {
-        match prop {
-            Prop::Field(_, e) | Prop::Getter(_, e) | Prop::Setter(_, e) | Prop::Method(_, e) | Prop::Spread(e) => {
-                expr(e, visitor)
-            }
-            Prop::Keyed(key, e) | Prop::KeyedMethod(key, e) => {
-                expr(key, visitor);
-                expr(e, visitor);
-            }
-        }
-    }
+    });
+    module.import_names = crate::js::ImportNames { reserved, apart };
 }

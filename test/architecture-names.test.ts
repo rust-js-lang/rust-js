@@ -138,6 +138,14 @@ test("a place is keyed by js::Path, never a name formatted with its fields", () 
   expect(scope.flatMap(file => shapes.filter(shape => shape.test(read(file))).map(shape => `${file}: ${shape}`))).toEqual([]);
 });
 
+// Link decides what each module imports, each import a `Name` of its own;
+// it reads no name's word: preparation spells every binding, imports
+// included (`prepare/import_names.rs`, ADR 1150).
+test("link reads no name's word", () => {
+  const text = read("src/link.rs");
+  expect(text.match(/\.(?:into_)?word\(\)/g) ?? []).toEqual([]);
+});
+
 // The spelling step (ADR 1150): a name's word is read where names are
 // spelled, preparation and printing, and asked of a `Name` everywhere
 // else. Each file's reads of a word outside them are at most

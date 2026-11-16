@@ -4,6 +4,7 @@
 //! (`ImportFrom`).
 
 use super::Span;
+use crate::collections::IndexSet;
 
 #[derive(Clone, PartialEq)]
 pub struct Import {
@@ -72,4 +73,14 @@ pub struct Package {
     /// (ADR 1063, amended): its `use`, or a binding of its module's own
     /// declared of it, whichever is first; `Span::NONE` of neither.
     pub named_at: Span,
+}
+
+/// What preparation spells a module's imports apart from, and in what
+/// order (`prepare::import_names`): the words lowering reserved for its
+/// own use in the module, and each import that may be renamed, in the
+/// order the module asked for them, link's (ADR 1150).
+#[derive(Clone, Default, PartialEq)]
+pub struct ImportNames {
+    pub reserved: IndexSet<String>,
+    pub apart: Vec<super::Name>,
 }

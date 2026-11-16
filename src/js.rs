@@ -40,7 +40,7 @@ pub use self::{
     },
     borrow_checks::borrow_checks_first,
     expr_walk::*,
-    imports::{Import, ImportFrom, Package, Reexport},
+    imports::{Import, ImportFrom, ImportNames, Package, Reexport},
     known::{Known, Role, forget as forget_known, found_names as known_found, remembering},
     stmt_walk::*,
     walk::*,
@@ -139,6 +139,8 @@ pub struct Module {
     pub packages: Vec<Package>,
     /// Named imports, one declaration per Rust module this one uses.
     pub imports: Vec<Import>,
+    /// What its imports are spelled apart from, as it's prepared.
+    pub import_names: ImportNames,
     /// What it exports of another module, `export { a } from "./b.js"`, its
     /// `pub use`s, in the order they're written (ADR 0240, amended).
     pub reexports: Vec<Reexport>,

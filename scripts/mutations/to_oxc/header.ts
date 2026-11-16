@@ -87,7 +87,7 @@ export const mutations: Mutation[] = [
     name: "namespace-import-unwritten",
     breaks: "a module read through its namespace, `Plugin.extractEvents(..)`, imports none, so `Plugin` is undefined (rd114, ADR 1018)",
     file: "src/to_oxc/header.rs",
-    find: "        if let Some(namespace) = &import.namespace {\n            named.push((relative, entry(Says::Namespace(namespace))));\n        }\n",
+    find: "        if let Some(namespace) = &import.namespace {\n            named.push((relative, entry(Says::Namespace(namespace.word()))));\n        }\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^module_path_namespace.rs$"],
   },
