@@ -217,12 +217,12 @@ fn moved(stmt: &Stmt, rest: &[Stmt], facts: &MoveFacts) -> Option<(Moved, Why)> 
     // wherever it's read.
     let mut stable = !value.has_effects();
     value.visit_names(&mut |v| stable &= !facts.changing.contains(v));
-    let read = read_of(&rest[at], name.word(), stable)?;
+    let read = read_of(&rest[at], name, stable)?;
     let expr = read.of(&rest[at]);
     let single = once && js::mentions_of(&rest[at..=at], name) == 1;
     // Or tested more than once there and nowhere else, an or-pattern's
     // tests of a field (ADR 0780).
-    if !single && (assigned || !tested_in_place(value, expr, name.word(), js::mentions_of(rest, name))) {
+    if !single && (assigned || !tested_in_place(value, expr, name, js::mentions_of(rest, name))) {
         return None;
     }
     // Not an arrow into a call of it it'd be left called where it's made
@@ -249,7 +249,7 @@ fn moved(stmt: &Stmt, rest: &[Stmt], facts: &MoveFacts) -> Option<(Moved, Why)> 
     };
     let why = match stable {
         true => Why::Stable,
-        false if leads(expr, name.word(), guard, &passes) == Some(true) => Why::ReadFirst,
+        false if leads(expr, name, guard, &passes) == Some(true) => Why::ReadFirst,
         false => return None,
     };
     let mut replaced = expr.substitute(&|v| name.is(v).then(|| value.clone()))?;
@@ -278,7 +278,7 @@ fn moved(stmt: &Stmt, rest: &[Stmt], facts: &MoveFacts) -> Option<(Moved, Why)> 
 /// 0780): a place's read, a variable's property no getter may answer, which
 /// reads the same where nothing between the tests does anything, and each
 /// read a side of a `===` or `!==`.
-fn tested_in_place(value: &Expr, expr: &Expr, name: &str, reads: usize) -> bool {
+fn tested_in_place(value: &Expr, expr: &Expr, name: &js::Name, reads: usize) -> bool {
     let mut place = value;
     while let ExprKind::Member(of, _) = &place.kind {
         if place.facts.has(js::Known::Getter) {
@@ -286,7 +286,7 @@ fn tested_in_place(value: &Expr, expr: &Expr, name: &str, reads: usize) -> bool 
         }
         place = of;
     }
-    let of_a_variable = matches!(&place.kind, ExprKind::Var(v) if !v.is(name)) || matches!(place.kind, ExprKind::This);
+    let of_a_variable = matches!(&place.kind, ExprKind::Var(v) if v != name) || matches!(place.kind, ExprKind::This);
     if !matches!(value.kind, ExprKind::Member(..)) || !of_a_variable || expr.has_effects() {
         return false;
     }
@@ -295,7 +295,7 @@ fn tested_in_place(value: &Expr, expr: &Expr, name: &str, reads: usize) -> bool 
         if let ExprKind::Binary(Op::Eq | Op::Ne, a, b) = &e.kind {
             compared += [a, b]
                 .into_iter()
-                .filter(|side| matches!(&side.kind, ExprKind::Var(v) if v.is(name)))
+                .filter(|side| matches!(&side.kind, ExprKind::Var(v) if v == name))
                 .count();
         }
     });
@@ -312,7 +312,7 @@ fn tested_in_place(value: &Expr, expr: &Expr, name: &str, reads: usize) -> bool 
 /// it, a closure given to a setter, `channel.port1.onmessage = () => { ..
 /// }` (#393); a setter of its own runs after the value, as Rust's set does,
 /// `this.task = console.createTask(name)` (rd633).
-fn read_of(stmt: &Stmt, name: &str, stable: bool) -> Option<Read> {
+fn read_of(stmt: &Stmt, name: &js::Name, stable: bool) -> Option<Read> {
     match &stmt.kind {
         StmtKind::Const(..)
         | StmtKind::Let(_, Some(_))
@@ -322,12 +322,12 @@ fn read_of(stmt: &Stmt, name: &str, stable: bool) -> Option<Read> {
         | StmtKind::Destructure { .. } => Some(Read::Value),
         StmtKind::Assign(target, _) if stable || !target.has_effects_before_assigned() => {
             let mut in_target = false;
-            target.visit_vars(&mut |v| in_target |= v == name);
+            target.visit_names(&mut |v| in_target |= v == name);
             let mut root = target;
             while let ExprKind::Index(of, _) | ExprKind::Member(of, _) = &root.kind {
                 root = of;
             }
-            let set_of = matches!(&root.kind, ExprKind::Var(v) if v.is(name));
+            let set_of = matches!(&root.kind, ExprKind::Var(v) if v == name);
             match (in_target, set_of) {
                 (false, _) => Some(Read::Value),
                 (true, true) => Some(Read::Target),
@@ -336,14 +336,14 @@ fn read_of(stmt: &Stmt, name: &str, stable: bool) -> Option<Read> {
         }
         StmtKind::If(test, ..) => {
             let mut in_test = false;
-            test.visit_vars(&mut |v| in_test |= v == name);
+            test.visit_names(&mut |v| in_test |= v == name);
             in_test.then_some(Read::Test)
         }
         // What a loop evaluates first, once: `for (let i = value; ..)` of
         // `&v[if c { 1 } else { 0 }..]`, a `for…of`'s iterable (rd376).
         StmtKind::For { start: e, .. } | StmtKind::ForOf { iterable: e, .. } => {
             let mut in_start = false;
-            e.visit_vars(&mut |v| in_start |= v == name);
+            e.visit_names(&mut |v| in_start |= v == name);
             in_start.then_some(Read::Start)
         }
         _ => None,
@@ -353,9 +353,9 @@ fn read_of(stmt: &Stmt, name: &str, stable: bool) -> Option<Read> {
 /// Whether `e` reads `name` where all that JS evaluates before it in `e`
 /// `passes`: `Some(true)`; `Some(false)` if something doesn't, or it's read
 /// where it may not be; `None` if it isn't read.
-pub(super) fn leads(e: &Expr, name: &str, guard: Option<&Expr>, passes: &dyn Fn(&Expr) -> bool) -> Option<bool> {
+pub(super) fn leads(e: &Expr, name: &js::Name, guard: Option<&Expr>, passes: &dyn Fn(&Expr) -> bool) -> Option<bool> {
     let mut reads = false;
-    e.visit_vars(&mut |v| reads |= v == name);
+    e.visit_names(&mut |v| reads |= v == name);
     if !reads {
         return None;
     }
@@ -370,7 +370,7 @@ pub(super) fn leads(e: &Expr, name: &str, guard: Option<&Expr>, passes: &dyn Fn(
         Some(false)
     };
     match &e.kind {
-        ExprKind::Var(v) => Some(v.is(name)),
+        ExprKind::Var(v) => Some(v == name),
         ExprKind::Member(a, _)
         | ExprKind::OptionalMember(a, _)
         | ExprKind::Unary(_, a)
@@ -511,7 +511,7 @@ fn tested_binding(test: &Expr, then: &[Stmt], named: &IndexSet<js::Name>) -> boo
         return false;
     };
     let own_name = matches!(&value.kind, ExprKind::Member(_, property) if name.is(property));
-    if !own_name || named.contains(name) || !place_read(value, name.word()) || test.has_effects() {
+    if !own_name || named.contains(name) || !place_read(value, name) || test.has_effects() {
         return false;
     }
     let mut read = false;
@@ -540,7 +540,7 @@ fn tested_read(stmt: &Stmt, rest: &[Stmt], named: &IndexSet<js::Name>) -> Option
     if !own_name || named.contains(name) {
         return None;
     }
-    let place = place_read(value, name.word());
+    let place = place_read(value, name);
     let mut tested = 0;
     test.visit_vars(&mut |v| tested += usize::from(name.is(v)));
     if !place || tested == 0 || test.has_effects() {
@@ -553,7 +553,7 @@ fn tested_read(stmt: &Stmt, rest: &[Stmt], named: &IndexSet<js::Name>) -> Option
         return None;
     }
     let first = then.first()?;
-    let read = read_of(first, name.word(), false)?;
+    let read = read_of(first, name, false)?;
     if js::mentions_of(std::slice::from_ref(first), name) != 1
         || !matches!(&read.of(first).kind, ExprKind::Var(v) if v == name)
     {
@@ -583,8 +583,8 @@ pub(super) fn ended_borrows(stmts: &mut Vec<Stmt>, ends_borrow: &IndexSet<js::Na
         if let StmtKind::Const(name, value) = &stmts[i].kind
             && ends_borrow.contains(name)
             && matches!(&value.kind, ExprKind::Member(..))
-            && place_read(value, name.word())
-            && stored_whole(&stmts[i + 1], name.word())
+            && place_read(value, name)
+            && stored_whole(&stmts[i + 1], name)
             && read_again(stmts, i)
         {
             continue;
@@ -623,7 +623,7 @@ fn fallback_read(stmts: &mut Vec<Stmt>, at: usize, named: &IndexSet<js::Name>) -
     if !named.contains(name) || !own_name || js::mentions_of(&stmts[at + 1..], name) != 1 {
         return false;
     }
-    let Some(read) = read_of(next, name.word(), false) else {
+    let Some(read) = read_of(next, name, false) else {
         return false;
     };
     let expr = read.of(next);
@@ -634,7 +634,7 @@ fn fallback_read(stmts: &mut Vec<Stmt>, at: usize, named: &IndexSet<js::Name>) -
         }
     });
     // The first thing the statement evaluates: nothing before it at all.
-    if !fallback || leads(expr, name.word(), None, &|_| false) != Some(true) {
+    if !fallback || leads(expr, name, None, &|_| false) != Some(true) {
         return false;
     }
     let Some(replaced) = expr.substitute(&|v| name.is(v).then(|| value.clone())) else {
@@ -694,7 +694,7 @@ fn receiver_read(stmts: &mut Vec<Stmt>, at: usize, lets: &LetNames) -> bool {
 /// would write the place (ADR 0866, amended). Not an argument's, `push(..,
 /// handlerOnStack, ..)`, a test's, `if (alternate == null && ..)`, nor a
 /// property's object, `alternate?.sibling`, where upstream keeps the name.
-fn stored_whole(stmt: &Stmt, name: &str) -> bool {
+fn stored_whole(stmt: &Stmt, name: &js::Name) -> bool {
     let StmtKind::Assign(_, value) = &stmt.kind else {
         return false;
     };
@@ -703,18 +703,18 @@ fn stored_whole(stmt: &Stmt, name: &str) -> bool {
         ExprKind::Binary(Op::Coalesce, value, null) if matches!(null.kind, ExprKind::Null) => value,
         _ => value,
     };
-    matches!(&value.kind, ExprKind::Var(v) if v.is(name))
+    matches!(&value.kind, ExprKind::Var(v) if v == name)
 }
 
 /// Whether `value`, `const name = value`, is a variable's property, or a
 /// chain of them, not `name`'s, which no getter may answer.
-fn place_read(value: &Expr, name: &str) -> bool {
+fn place_read(value: &Expr, name: &js::Name) -> bool {
     let mut root = value;
     while let ExprKind::Member(of, _) = &root.kind {
         root = of;
     }
     matches!(value.kind, ExprKind::Member(..))
-        && matches!(&root.kind, ExprKind::Var(v) if !v.is(name))
+        && matches!(&root.kind, ExprKind::Var(v) if v != name)
         && !value.has_effects()
 }
 
@@ -736,10 +736,10 @@ pub(super) fn read_again(stmts: &mut Vec<Stmt>, at: usize) -> bool {
     if js::mentions_of(&stmts[at + 1..], name) != 1 {
         return false;
     }
-    let Some(read) = read_of(next, name.word(), false) else {
+    let Some(read) = read_of(next, name, false) else {
         return false;
     };
-    if leads(read.of(next), name.word(), None, &|e| !e.has_effects()) != Some(true) {
+    if leads(read.of(next), name, None, &|e| !e.has_effects()) != Some(true) {
         return false;
     }
     let Some(replaced) = read.of(next).substitute(&|v| name.is(v).then(|| value.clone())) else {
@@ -776,7 +776,7 @@ pub(super) fn set_where_read(stmts: &mut Vec<Stmt>, at: usize) -> bool {
     let mut reads = 0;
     test.visit_vars(&mut |v| reads += usize::from(name.is(v)));
     let set = Expr::assigned(Expr::var(name), value.clone());
-    let in_place = (reads == 1 && leads(test, name.word(), None, &|e| !e.has_effects()) == Some(true))
+    let in_place = (reads == 1 && leads(test, name, None, &|e| !e.has_effects()) == Some(true))
         .then(|| test.substitute(&|v| name.is(v).then(|| set.clone())))
         .flatten();
     let tested = in_place.unwrap_or_else(|| Expr::sequence(vec![set.clone(), test.clone()]));

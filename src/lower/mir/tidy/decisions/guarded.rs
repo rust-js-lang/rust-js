@@ -33,7 +33,7 @@ pub(in crate::lower::mir::tidy) fn bound(body: &[Stmt], guards: &[Guard]) -> Ind
                 && let Some(StmtKind::Labeled(label, block)) = block_at.and_then(|j| list.get(j)).map(|s| &s.kind)
                 && crate::lower::mir::is_block_label(label)
                 && pure(value)
-                && let Some(reads) = tested_reads(block, name.word()).filter(|&n| n > 0)
+                && let Some(reads) = tested_reads(block, name).filter(|&n| n > 0)
             {
                 *given.entry(name.to_string()).or_default() += reads;
             }
@@ -58,12 +58,12 @@ pub(in crate::lower::mir::tidy) fn bound(body: &[Stmt], guards: &[Guard]) -> Ind
             let unread = !test.mentions_name(name)
                 && pure(value)
                 && !value.mentions_name(name)
-                && only_tested(then, name.word())
-                && otherwise.is_none_or(|o| only_tested(o, name.word()));
-            if unread || binds(name.word(), value, test, then, otherwise, guards) {
+                && only_tested(then, name)
+                && otherwise.is_none_or(|o| only_tested(o, name));
+            if unread || binds(name, value, test, then, otherwise, guards) {
                 let reads = js::mentions_of(&[StmtKind::Expr(test.clone()).at(list[at].span)], name)
-                    + tested_reads(then, name.word()).unwrap_or(0)
-                    + otherwise.and_then(|o| tested_reads(o, name.word())).unwrap_or(0);
+                    + tested_reads(then, name).unwrap_or(0)
+                    + otherwise.and_then(|o| tested_reads(o, name)).unwrap_or(0);
                 *given.entry(name.to_string()).or_default() += set + reads;
             }
         }
@@ -81,7 +81,7 @@ pub(in crate::lower::mir::tidy) fn bound(body: &[Stmt], guards: &[Guard]) -> Ind
 /// that calls nothing, `const _31 = heap[i]; if (_31 < heap[j])`, which
 /// reads as written.
 pub(super) fn binds(
-    name: &str,
+    name: &js::Name,
     value: &Expr,
     test: &Expr,
     then: &[Stmt],
@@ -94,9 +94,9 @@ pub(super) fn binds(
         (parts.iter()).all(|(_, at)| !at.is_none() && guards.iter().any(|g| within(*at, g.span)))
     };
     pure(value)
-        && !value.mentions_var(name)
+        && !value.mentions_name(name)
         && (!pure(test) || guard())
-        && test.mentions_var(name)
+        && test.mentions_name(name)
         && only_tested(then, name)
         && otherwise.is_none_or(|o| only_tested(o, name))
 }
@@ -123,7 +123,7 @@ pub(super) fn given_before(before: &[Stmt], body: &[Stmt], after: &[Stmt]) -> Ve
         // Given again in the tree, another alternative's binding: a `const
         // x = v[i];` the tree only tests, `switch (x)`'s, reads as named.
         if js::Writes::sets(body, name)
-            && tested_reads(body, name.word()).is_some_and(|n| n > 0)
+            && tested_reads(body, name).is_some_and(|n| n > 0)
             && js::mentions_of(after, name) == 0
         {
             given.push((name.to_string(), value.clone()));
@@ -151,7 +151,7 @@ pub(super) fn given_unread(stmts: &mut Vec<Stmt>, given: &[(String, Expr)]) {
 }
 
 /// Whether `stmts` read `name` only in their `if`s' tests (`tested_reads`).
-pub(super) fn only_tested(stmts: &[Stmt], name: &str) -> bool {
+pub(super) fn only_tested(stmts: &[Stmt], name: &js::Name) -> bool {
     tested_reads(stmts, name).is_some()
 }
 
@@ -160,28 +160,28 @@ pub(super) fn only_tested(stmts: &[Stmt], name: &str) -> bool {
 /// where one of them declares it again, the arm's own binding, `const x =
 /// b;`, or gives it again, another alternative's, `x$1 = s[0];`: `None`
 /// where another statement reads it (#771).
-fn tested_reads(stmts: &[Stmt], name: &str) -> Option<usize> {
+fn tested_reads(stmts: &[Stmt], name: &js::Name) -> Option<usize> {
     let mut reads = 0;
     for stmt in stmts {
         match &stmt.kind {
             StmtKind::If(test, then, otherwise) => {
                 let mut read = 0;
-                test.visit_vars(&mut |v| read += usize::from(v == name));
+                test.visit_names(&mut |v| read += usize::from(v == name));
                 reads += read
                     + tested_reads(then, name)?
                     + otherwise.as_deref().map_or(Some(0), |o| tested_reads(o, name))?;
             }
-            StmtKind::Const(declared, value) | StmtKind::Let(declared, Some(value)) if declared.is(name) => {
-                return (!value.mentions_var(name)).then_some(reads);
+            StmtKind::Const(declared, value) | StmtKind::Let(declared, Some(value)) if declared == name => {
+                return (!value.mentions_name(name)).then_some(reads);
             }
-            StmtKind::Let(declared, None) if declared.is(name) => return Some(reads),
+            StmtKind::Let(declared, None) if declared == name => return Some(reads),
             // Given again, another alternative's binding, `x$1 = s[0];`.
             StmtKind::Assign(target, value)
-                if matches!(&target.kind, ExprKind::Var(v) if v.is(name)) && !value.mentions_var(name) =>
+                if matches!(&target.kind, ExprKind::Var(v) if v == name) && !value.mentions_name(name) =>
             {
                 return Some(reads);
             }
-            _ if js::mentions_in(std::slice::from_ref(stmt), name) > 0 => return None,
+            _ if js::mentions_of(std::slice::from_ref(stmt), name) > 0 => return None,
             _ => {}
         }
     }
@@ -256,17 +256,16 @@ impl<'s> Walk<'s, '_> {
             let unread = !test.mentions_name(name)
                 && pure(value)
                 && !value.mentions_name(name)
-                && only_tested(then, name.word())
-                && otherwise.is_none_or(|o| only_tested(o, name.word()));
-            (binds(name.word(), value, test, then, otherwise, self.told.guards) || unread)
+                && only_tested(then, name)
+                && otherwise.is_none_or(|o| only_tested(o, name));
+            (binds(name, value, test, then, otherwise, self.told.guards) || unread)
                 && !(run.iter()).any(|(other, value, _)| other != name && value.mentions_name(name))
                 && !(*local && js::mentions_of(rest, name) > 0)
         };
         // Or none read at all, a binding the arm doesn't read either, `(2,
         // x) | (x, 0) if g(c, a * 2, 1) => break` (#771).
         let dead = |(name, ..): &(&Name, &Expr, bool)| {
-            tested_reads(then, name.word()) == Some(0)
-                && otherwise.is_none_or(|o| tested_reads(o, name.word()) == Some(0))
+            tested_reads(then, name) == Some(0) && otherwise.is_none_or(|o| tested_reads(o, name) == Some(0))
         };
         let tested = run.iter().any(|(name, ..)| test.mentions_name(name)) || run.iter().all(dead);
         if !run.iter().all(read) || !tested || !guard(test) {
@@ -384,7 +383,7 @@ impl Site {
         {
             let mut reads = 0;
             self.guard.visit_vars(&mut |v| reads += usize::from(name.is(v)));
-            if reads == 1 && super::super::moves::leads(&self.guard, name.word(), None, &|_| true) == Some(true) {
+            if reads == 1 && super::super::moves::leads(&self.guard, name, None, &|_| true) == Some(true) {
                 return self.guard.substitute(&|v| name.is(v).then(|| sets[0].clone()));
             }
         }

@@ -79,9 +79,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a `let` that ends a borrow is read in place only where its JS name is the property's, so `const return$ = node.return;` and `const debugHookTypes = current._debugHookTypes;` stay, though each is named as its field in Rust (ADR 0866, amended)",
     file: "src/lower/mir/tidy/moves.rs",
-    find: "            && matches!(&value.kind, ExprKind::Member(..))\n            && place_read(value, name.word())\n",
+    find: "            && matches!(&value.kind, ExprKind::Member(..))\n            && place_read(value, name)\n",
     replace:
-      "            && matches!(&value.kind, ExprKind::Member(_, property) if name.is(property))\n            && place_read(value, name.word())\n",
+      "            && matches!(&value.kind, ExprKind::Member(_, property) if name.is(property))\n            && place_read(value, name)\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_let_named_as_its_field.rs$"],
     snapshots: true,
   },
@@ -90,7 +90,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a field an or-pattern tests is held first, `const status = payload.status; status === 0 || status === -1`, not read in each test (ADR 0780)",
     file: "src/lower/mir/tidy/moves.rs",
-    find: "    if !single && (assigned || !tested_in_place(value, expr, name.word(), js::mentions_of(rest, name))) {\n",
+    find: "    if !single && (assigned || !tested_in_place(value, expr, name, js::mentions_of(rest, name))) {\n",
     replace: "    if !single {\n",
     tests: [
       "test/lowering-or-patterns.test.ts",
@@ -334,9 +334,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a temporary that does something, an assignment target's object, is held, `const document = window.document; document.title = t`",
     file: "src/lower/mir/tidy/moves.rs",
-    find: "            let set_of = matches!(&root.kind, ExprKind::Var(v) if v.is(name));\n",
+    find: "            let set_of = matches!(&root.kind, ExprKind::Var(v) if v == name);\n",
     replace:
-      "            let set_of = matches!(&root.kind, ExprKind::Var(v) if v.is(name)) && false;\n",
+      "            let set_of = matches!(&root.kind, ExprKind::Var(v) if v == name) && false;\n",
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^returned_references.rs$"],
   },
@@ -422,9 +422,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a let chain's binding read after code its statement runs first, `probe(f) + task.run(..)`, is the field read there, after `probe` changed it (ADR 0866, amended)",
     file: "src/lower/mir/tidy/moves.rs",
-    find: "    if leads(read.of(next), name.word(), None, &|e| !e.has_effects()) != Some(true) {\n",
+    find: "    if leads(read.of(next), name, None, &|e| !e.has_effects()) != Some(true) {\n",
     replace:
-      "    if leads(read.of(next), name.word(), None, &|_| true) != Some(true) {\n",
+      "    if leads(read.of(next), name, None, &|_| true) != Some(true) {\n",
     tests: [
       "test/lowering-written-branches.test.ts",
       "-t",
@@ -436,9 +436,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a let chain's binding read in a later statement, past one that changes the field, is the field read there (ADR 0866, amended)",
     file: "src/lower/mir/tidy/moves.rs",
-    find: "    if leads(read.of(next), name.word(), None, &|e| !e.has_effects()) != Some(true) {\n",
+    find: "    if leads(read.of(next), name, None, &|e| !e.has_effects()) != Some(true) {\n",
     replace:
-      "    if leads(read.of(next), name.word(), None, &|e| !e.has_effects()) == Some(false) {\n",
+      "    if leads(read.of(next), name, None, &|e| !e.has_effects()) == Some(false) {\n",
     tests: [
       "test/lowering-written-branches.test.ts",
       "-t",
@@ -534,16 +534,16 @@ export const mutations: Mutation[] = [
     name: "fallback-read-after-a-call",
     breaks: "a `let` read by a `||` after a call is read in place, past the call, `note(..) + (blob.type || ..)`, its getter read after the call where Rust reads it before (rd664)",
     file: "src/lower/mir/tidy/moves.rs",
-    find: "    if !fallback || leads(expr, name.word(), None, &|_| false) != Some(true) {\n",
-    replace: "    if !fallback || leads(expr, name.word(), None, &|_| true) != Some(true) {\n",
+    find: "    if !fallback || leads(expr, name, None, &|_| false) != Some(true) {\n",
+    replace: "    if !fallback || leads(expr, name, None, &|_| true) != Some(true) {\n",
     tests: ["test/lowering-moves.test.ts", "-t", "fallback"],
   },
   {
     name: "fallback-read-of-any-read",
     breaks: "a `let` the program wrote read first by what's no `||` nor `??`, `name != null`, is read in place, against rd226 (rd664)",
     file: "src/lower/mir/tidy/moves.rs",
-    find: "    if !fallback || leads(expr, name.word(), None, &|_| false) != Some(true) {\n",
-    replace: "    if leads(expr, name.word(), None, &|_| false) != Some(true) {\n",
+    find: "    if !fallback || leads(expr, name, None, &|_| false) != Some(true) {\n",
+    replace: "    if leads(expr, name, None, &|_| false) != Some(true) {\n",
     tests: ["test/lowering-moves.test.ts", "-t", "fallback"],
   },
   {
@@ -607,8 +607,8 @@ export const mutations: Mutation[] = [
     name: "set-where-read-of-each-read",
     breaks: "a let chain's binding its test reads twice, `r != null && r.lanes > 3`, is set at each read, `(r = inProgressRoot) != null && (r = inProgressRoot).lanes > 3`, not once first (B1, #523)",
     file: "src/lower/mir/tidy/moves.rs",
-    find: "    let in_place = (reads == 1 && leads(test, name.word(), None, &|e| !e.has_effects()) == Some(true))\n",
-    replace: "    let in_place = (reads >= 1 && leads(test, name.word(), None, &|e| !e.has_effects()) == Some(true))\n",
+    find: "    let in_place = (reads == 1 && leads(test, name, None, &|e| !e.has_effects()) == Some(true))\n",
+    replace: "    let in_place = (reads >= 1 && leads(test, name, None, &|e| !e.has_effects()) == Some(true))\n",
     tests: ["test/corpus.test.ts", "-t", "^let_chain_else_inside_if.rs$"],
     snapshots: true,
   },
@@ -616,8 +616,8 @@ export const mutations: Mutation[] = [
     name: "set-where-read-first",
     breaks: "a let chain's binding read once where its test is is set before the whole test, `((r = inProgressRoot), r != null && swapRoot())`, not where it's read, `(r = inProgressRoot) != null` (B1, the user's decision, #523)",
     file: "src/lower/mir/tidy/moves.rs",
-    find: "    let in_place = (reads == 1 && leads(test, name.word(), None, &|e| !e.has_effects()) == Some(true))\n",
-    replace: "    let in_place = (reads == 0 && leads(test, name.word(), None, &|e| !e.has_effects()) == Some(true))\n",
+    find: "    let in_place = (reads == 1 && leads(test, name, None, &|e| !e.has_effects()) == Some(true))\n",
+    replace: "    let in_place = (reads == 0 && leads(test, name, None, &|e| !e.has_effects()) == Some(true))\n",
     tests: ["test/corpus.test.ts", "-t", "^let_chain_else_inside_if.rs$"],
     snapshots: true,
   },
