@@ -45,7 +45,7 @@ pub(in crate::lower) fn prototype_defaults(
             body.insert(0, StmtKind::Const(receiver, Expr::this()).at(js::Span::NONE));
         }
         defaults.push(js::Function {
-            name: name.into(),
+            name: js::Name::module(&name),
             params,
             body,
             export: false,
