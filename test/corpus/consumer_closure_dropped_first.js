@@ -10,7 +10,6 @@ import {
   $iter,
   $iterator,
   $lazySkipWhile,
-  $lent,
   $live,
   $print,
   $rangeNext,
@@ -24,6 +23,7 @@ import {
   iterator_peekable,
   iterator_rev,
   iterator_skip,
+  iterator_take,
   iterator_zip,
 } from "@rust-js/std";
 
@@ -214,11 +214,11 @@ function main() {
   });
   case$("take", (g) => {
     let g$6$live = true;
-    let take;
+    let iter;
     try {
-      take = $closing($iterator(It.new(3, "it"), itIterator_next), (it) => {
-        dDrop_drop(it.of._held);
-      }).take(2);
+      iter = iterator_take(It.new(3, "it"), 2, { next: itIterator_next }, (it) => {
+        dDrop_drop(it._held);
+      });
       g$6$live = false;
     } catch (error) {
       $cleanup(() => {
@@ -229,9 +229,17 @@ function main() {
       throw error;
     }
     const f = (a, x) => (((a + x) >>> 0) + zero(g)) >>> 0;
-    return $consume(take, "fold", 0, f, undefined, () => {
-      dDrop_drop(g);
-    });
+    try {
+      return $consume(iter, "fold", 0, f, undefined, () => {
+        dDrop_drop(g);
+      });
+    } catch (error) {
+      throw $unwindsOn(error);
+    } finally {
+      if ($live()) {
+        iter.return();
+      }
+    }
   });
   case$("chain", (g) => {
     const it = It.new(2, "it");
@@ -285,11 +293,11 @@ function main() {
   });
   case$("taken past its end", (g) => {
     let g$8$live = true;
-    let take;
+    let iter;
     try {
-      take = $closing($iterator(It.new(3, "it"), itIterator_next), (it) => {
-        dDrop_drop(it.of._held);
-      }).take(5);
+      iter = iterator_take(It.new(3, "it"), 5, { next: itIterator_next }, (it) => {
+        dDrop_drop(it._held);
+      });
       g$8$live = false;
     } catch (error) {
       $cleanup(() => {
@@ -300,9 +308,17 @@ function main() {
       throw error;
     }
     const f = (a, x) => (((a + x) >>> 0) + zero(g)) >>> 0;
-    return $consume(take, "fold", 0, f, undefined, () => {
-      dDrop_drop(g);
-    });
+    try {
+      return $consume(iter, "fold", 0, f, undefined, () => {
+        dDrop_drop(g);
+      });
+    } catch (error) {
+      throw $unwindsOn(error);
+    } finally {
+      if ($live()) {
+        iter.return();
+      }
+    }
   });
   case$("fused", (g) => {
     let g$9$live = true;
@@ -595,7 +611,7 @@ function main() {
     const it = It.new(3, "it");
     let take;
     try {
-      take = $lent($iterator(it, itIterator_next)).take(2);
+      take = iterator_take(it, 2, { next: itIterator_next });
       g$19$live = false;
     } catch (error) {
       $cleanup(() => {

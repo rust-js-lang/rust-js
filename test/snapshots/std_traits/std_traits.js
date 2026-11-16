@@ -40,6 +40,7 @@ import {
   iterator_enumerate,
   iterator_map,
   iterator_skip,
+  iterator_take,
 } from "@rust-js/std";
 
 const semverPartialOrd = $partialOrd({
@@ -366,11 +367,21 @@ export function iterations() {
   return [
     total,
     first,
-    Array.from(iterator_skip(fibonacci(), 1, { next: fibonacciIterator_next }).take(6)),
-    $iterator(fibonacci(), fibonacciIterator_next)
-      .take(5)
-      .map((x) => (x * 2) >>> 0)
-      .reduce((a, b) => (a + b) >>> 0, 0),
+    Array.from(
+      $roomForHint(
+        iterator_take(iterator_skip(fibonacci(), 1, { next: fibonacciIterator_next }), 6, {
+          next: $next,
+          fold: $foldOf,
+        }),
+        4,
+        false,
+      ),
+    ),
+    iterator_map(
+      iterator_take(fibonacci(), 5, { next: fibonacciIterator_next }),
+      (x) => (x * 2) >>> 0,
+      { next: $next, fold: $foldOf },
+    ).reduce((a, b) => (a + b) >>> 0, 0),
     $iterator({ n: 4 }, countdownIterator_next).reduce((n) => n + 1, 0),
     $lent($iterator(fibonacci(), fibonacciIterator_next)).find((x) => x > 50),
   ];
@@ -597,7 +608,11 @@ export function total(items) {
 
 export function middle(items, k) {
   return $collectDropping(
-    $roomForHint(iterator_skip(Iterator.from(items), 1, $jsIterator).take(k), 4, false),
+    $roomForHint(
+      iterator_take(iterator_skip(Iterator.from(items), 1, $jsIterator), k, $jsIterator),
+      4,
+      false,
+    ),
   );
 }
 

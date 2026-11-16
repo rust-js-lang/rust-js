@@ -86,6 +86,10 @@ function counter(end) {
   return { at: 0, end };
 }
 
+function countDrop_drop(count) {
+  console.log(`drop count ${count.at} ${count.end}`);
+}
+
 function consume(n) {
   const skipped = $lazySkipWhile(
     $closing($iter(three()), $dropEach(loudDrop_drop)).take(n),
@@ -278,7 +282,7 @@ function consume(n) {
           countDoubleEndedIterator_nthBack,
         ),
         (it) => {
-          console.log(`drop count ${it.of.at} ${it.of.end}`);
+          countDrop_drop(it.of);
         },
       ),
       2,
@@ -301,7 +305,7 @@ function consume(n) {
         countDoubleEndedIterator_nthBack,
       ),
       (it) => {
-        console.log(`drop count ${it.of.at} ${it.of.end}`);
+        countDrop_drop(it.of);
       },
     ),
     2,
@@ -354,7 +358,7 @@ function consume(n) {
                   countDoubleEndedIterator_nthBack,
                 ),
                 (it) => {
-                  console.log(`drop count ${it.of.at} ${it.of.end}`);
+                  countDrop_drop(it.of);
                 },
               ),
               2,
@@ -374,7 +378,7 @@ function consume(n) {
                 countDoubleEndedIterator_nthBack,
               ),
               (it) => {
-                console.log(`drop count ${it.of.at} ${it.of.end}`);
+                countDrop_drop(it.of);
               },
             ),
           ),
@@ -483,7 +487,7 @@ function held(n) {
                     countDoubleEndedIterator_nthBack,
                   ),
                   (it) => {
-                    console.log(`drop count ${it.of.at} ${it.of.end}`);
+                    countDrop_drop(it.of);
                   },
                 ),
                 2,
@@ -513,24 +517,16 @@ function held(n) {
               try {
                 const stepped = $held(
                   $stepBy(
-                    $closing(
-                      $iterator(
-                        counter(5),
-                        countIterator_next,
-                        false,
-                        undefined,
-                        undefined,
-                        countIterator_sizeHint,
-                        undefined,
-                        countIterator_nth,
-                        undefined,
-                        undefined,
-                        countDoubleEndedIterator_nthBack,
-                      ),
-                      (it) => {
-                        console.log(`drop count ${it.of.at} ${it.of.end}`);
+                    iterator_take(
+                      counter(5),
+                      n,
+                      {
+                        next: countIterator_next,
+                        sizeHint: countIterator_sizeHint,
+                        nth: countIterator_nth,
                       },
-                    ).take(n),
+                      countDrop_drop,
+                    ),
                     2,
                   ),
                 );

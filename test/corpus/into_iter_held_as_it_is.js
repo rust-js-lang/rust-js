@@ -5,12 +5,12 @@ import {
   $chars,
   $collectDropping,
   $iter,
-  $iterator,
   $jsIteratorSome,
   $next,
   $rangeNext,
   $roomForHint,
   iterator_map,
+  iterator_take,
 } from "@rust-js/std";
 
 export function entry() {
@@ -67,30 +67,32 @@ function main() {
     IntoIterIterator: () => ({ next: $next }),
   };
   const clone = { clone: (value) => $iter(value.items.slice(value.at, value.end)) };
+  const twiceIterator$1 = {
+    next: (iterator) => twiceIterator_next(iterator, { next: $rangeNext }, clone$1),
+  };
+  const twiceIterator = {
+    next: (iterator) => twiceIterator_next(iterator, { next: $next }, clone),
+  };
   const a = Array.from(
-    $iterator(
-      twice({ start: 0, end: 3 }, intoIterator$1, clone$1),
-      (iterator) => twiceIterator_next(iterator, { next: $rangeNext }, clone$1),
-      true,
-    ).take(5),
+    $roomForHint(
+      iterator_take(twice({ start: 0, end: 3 }, intoIterator$1, clone$1), 5, twiceIterator$1),
+      4,
+      false,
+    ),
   );
   const b = Array.from(
-    $iterator(
-      twice([7, 8], intoIterator, clone),
-      (iterator) => twiceIterator_next(iterator, { next: $next }, clone),
-      true,
-    ).take(3),
+    $roomForHint(iterator_take(twice([7, 8], intoIterator, clone), 3, twiceIterator), 4, false),
   );
   const c = Array.from(
-    $iterator(
+    iterator_take(
       twice(
         $chars("ab"),
         { intoIter: (items) => items, IntoIterIterator: () => ({ next: $next }) },
         clone$2,
       ),
-      (iterator) => twiceIterator_next(iterator, { next: $next }, clone$2),
-      true,
-    ).take(3),
+      3,
+      { next: (iterator) => twiceIterator_next(iterator, { next: $next }, clone$2) },
+    ),
   ).join("");
   console.log(`[${a.join(", ")}] [${b.join(", ")}] ${c}`);
   for (const t of twices(
@@ -102,21 +104,11 @@ function main() {
     clone$1,
     16,
   )) {
-    const firsts = Array.from(
-      $iterator(
-        t,
-        (iterator) => twiceIterator_next(iterator, { next: $rangeNext }, clone$1),
-        true,
-      ).take(3),
-    );
+    const firsts = Array.from($roomForHint(iterator_take(t, 3, twiceIterator$1), 4, false));
     console.log(`[${firsts.join(", ")}]`);
   }
   for (const t of twices($iter([["a", "b"], ["c"]]), intoIterator, clone, 32)) {
-    const firsts = Array.from(
-      $iterator(t, (iterator) => twiceIterator_next(iterator, { next: $next }, clone), true).take(
-        3,
-      ),
-    ).join("");
+    const firsts = Array.from(iterator_take(t, 3, twiceIterator)).join("");
     console.log(`${firsts}`);
   }
 }

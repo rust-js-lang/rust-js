@@ -32,6 +32,7 @@ import {
   iterator_peekable,
   iterator_rev,
   iterator_skip,
+  iterator_take,
   iterator_zip,
   mapDoubleEndedIterator_rfold,
   mapExactSizeIterator_len,
@@ -570,26 +571,18 @@ function main() {
   });
   run("take fold", () => {
     const fold = $foldDropping(
-      $closing(
-        $iterator(
-          own({ start: 70, end: 75 }, 72),
-          ownIterator_next,
-          false,
-          undefined,
-          undefined,
-          ownIterator_sizeHint,
-          ownIterator_fold,
-          undefined,
-          undefined,
-          ownDoubleEndedIterator_rfold,
-        ),
-        (it) => {
+      iterator_take(
+        own({ start: 70, end: 75 }, 72),
+        4,
+        { next: ownIterator_next, sizeHint: ownIterator_sizeHint, fold: ownIterator_fold },
+        (own) => {
           console.log("drop own");
-          for (const item of it.of.items) {
+          for (const item of own.items) {
             dDrop_drop(item);
           }
         },
-      ).take(4),
+        dDrop_drop,
+      ),
       [],
       push,
       $dropEach(dDrop_drop),
@@ -1029,26 +1022,18 @@ function main() {
   run("take collect", () => {
     const collect = $collectDropping(
       $roomForHint(
-        $closing(
-          $iterator(
-            own({ start: 190, end: 195 }, 192),
-            ownIterator_next,
-            false,
-            undefined,
-            undefined,
-            ownIterator_sizeHint,
-            ownIterator_fold,
-            undefined,
-            undefined,
-            ownDoubleEndedIterator_rfold,
-          ),
-          (it) => {
+        iterator_take(
+          own({ start: 190, end: 195 }, 192),
+          4,
+          { next: ownIterator_next, sizeHint: ownIterator_sizeHint, fold: ownIterator_fold },
+          (own) => {
             console.log("drop own");
-            for (const item of it.of.items) {
+            for (const item of own.items) {
               dDrop_drop(item);
             }
           },
-        ).take(4),
+          dDrop_drop,
+        ),
         4,
         false,
         false,

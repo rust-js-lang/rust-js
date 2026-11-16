@@ -58,7 +58,7 @@ function countDoubleEndedIterator_nextBack(count) {
 
 function main() {
   const countExactSizeIterator = { len: (iterator) => $exactLen(countIterator_sizeHint(iterator)) };
-  const peekableDoubleEndedIterator = {
+  const peekableDoubleEndedIterator$1 = {
     next_back: (iterator) =>
       peekableDoubleEndedIterator_nextBack(iterator, {
         next_back: countDoubleEndedIterator_nextBack,
@@ -123,6 +123,33 @@ function main() {
         { next: countIterator_next, sizeHint: countIterator_sizeHint },
         { next_back: countDoubleEndedIterator_nextBack },
         countExactSizeIterator,
+        $tryOf(broke),
+        undefined,
+        unwind,
+        ends,
+      ),
+  };
+  const peekableDoubleEndedIterator = {
+    next_back: (iterator) =>
+      peekableDoubleEndedIterator_nextBack(iterator, takeDoubleEndedIterator),
+    rfold: (iterator, init, f, unwind, ends) =>
+      peekableDoubleEndedIterator_rfold(
+        iterator,
+        init,
+        f,
+        { next: $next, fold: $foldOf },
+        takeDoubleEndedIterator,
+        undefined,
+        unwind,
+        ends,
+      ),
+    tryRfold: (iterator, init, f, broke, unwind, ends) =>
+      peekableDoubleEndedIterator_tryRfold(
+        iterator,
+        init,
+        f,
+        { next: $next, fold: $foldOf },
+        takeDoubleEndedIterator,
         $tryOf(broke),
         undefined,
         unwind,
@@ -229,6 +256,65 @@ function main() {
             skipDoubleEndedIterator_nextBack(
               iterator,
               { next: $next, fold: $foldOf },
+              peekableDoubleEndedIterator$1,
+            ),
+          rfold: (iterator, init, f, unwind, ends) =>
+            skipDoubleEndedIterator_rfold(
+              iterator,
+              init,
+              f,
+              { next: $next, fold: $foldOf },
+              peekableDoubleEndedIterator$1,
+              undefined,
+              unwind,
+              ends,
+            ),
+          nthBack: (iterator, k) =>
+            skipDoubleEndedIterator_nthBack(
+              iterator,
+              k,
+              { next: $next, fold: $foldOf },
+              peekableDoubleEndedIterator$1,
+            ),
+          tryRfold: (iterator, init, f, broke, unwind, ends) =>
+            skipDoubleEndedIterator_tryRfold(
+              iterator,
+              init,
+              f,
+              { next: $next, fold: $foldOf },
+              peekableDoubleEndedIterator$1,
+              $tryOf(broke),
+              undefined,
+              unwind,
+              ends,
+            ),
+        },
+      ),
+      4,
+      false,
+    ),
+  );
+  console.log(`[${c.join(", ")}]`);
+  const t = Array.from(
+    $roomForHint(
+      iterator_rev(
+        iterator_skip(
+          iterator_peekable(
+            iterator_take({ at: 0, end: 5 }, 2, {
+              next: countIterator_next,
+              sizeHint: countIterator_sizeHint,
+            }),
+            { next: $next, fold: $foldOf },
+          ),
+          1,
+          { next: $next, fold: $foldOf },
+        ),
+        { next: $next, fold: $foldOf },
+        {
+          next_back: (iterator) =>
+            skipDoubleEndedIterator_nextBack(
+              iterator,
+              { next: $next, fold: $foldOf },
               peekableDoubleEndedIterator,
             ),
           rfold: (iterator, init, f, unwind, ends) =>
@@ -262,43 +348,6 @@ function main() {
               ends,
             ),
         },
-      ),
-      4,
-      false,
-    ),
-  );
-  console.log(`[${c.join(", ")}]`);
-  const t = Array.from(
-    $roomForHint(
-      $rev(
-        $skipping(
-          $knowing(
-            iterator_peekable(
-              iterator_take({ at: 0, end: 5 }, 2, {
-                next: countIterator_next,
-                sizeHint: countIterator_sizeHint,
-              }),
-              { next: $next, fold: $foldOf },
-            ),
-            (iterator) => peekableDoubleEndedIterator_nextBack(iterator, takeDoubleEndedIterator),
-            (iterator) => $exactLen($sizeHint(iterator)),
-            undefined,
-            undefined,
-            (iterator, init, f, broke, unwind, ends) =>
-              peekableDoubleEndedIterator_tryRfold(
-                iterator,
-                init,
-                f,
-                { next: $next, fold: $foldOf },
-                takeDoubleEndedIterator,
-                $tryOf(broke),
-                undefined,
-                unwind,
-                ends,
-              ),
-          ),
-          1,
-        ),
       ),
       4,
       false,

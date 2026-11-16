@@ -43,6 +43,7 @@ import {
   iterator_inspect,
   iterator_rev,
   iterator_skip,
+  iterator_take,
 } from "@rust-js/std";
 
 export function entry() {
@@ -836,15 +837,19 @@ function main() {
   });
   run("take of numbers", () => {
     const x = $foldDropping(
-      iterator_inspect(
-        { start: 70, end: 74 },
-        (n) => {
-          if (n === 72) {
-            throw new Error("72");
-          }
-        },
-        { next: $rangeNext },
-      ).take(3),
+      iterator_take(
+        iterator_inspect(
+          { start: 70, end: 74 },
+          (n) => {
+            if (n === 72) {
+              throw new Error("72");
+            }
+          },
+          { next: $rangeNext },
+        ),
+        3,
+        { next: $next, fold: $foldOf },
+      ),
       [],
       (acc, n) => {
         try {

@@ -22,6 +22,7 @@ import {
   iterator_map,
   iterator_peekable,
   iterator_skip,
+  iterator_take,
 } from "@rust-js/std";
 
 export function entry() {
@@ -254,9 +255,17 @@ function main() {
   const result$1 = iter$1.reduce((a, b) => (a + b) >>> 0, 0);
   iter$1.return();
   console.log(`${result$1}`);
-  console.log(
-    `[${Array.from(iterator_peekable(["q", 0], { next: plainIterator_next }, plainDrop_drop).take(1)).join(", ")}]`,
+  const iter$2 = iterator_take(
+    iterator_peekable(["q", 0], { next: plainIterator_next }, plainDrop_drop),
+    1,
+    { next: $next, fold: $foldOf },
+    (peekable) => {
+      peekable.return();
+    },
   );
+  const result$2 = Array.from($roomForHint(iter$2, 4, false));
+  iter$2.return();
+  console.log(`[${result$2.join(", ")}]`);
   console.log(
     `[${Array.from(iterator_fuse(["r", 0], { next: plainIterator_next }, false, plainDrop_drop).map((x) => (x + 1) >>> 0)).join(", ")}]`,
   );
@@ -269,7 +278,7 @@ function main() {
     }, error);
     throw error;
   }
-  const iter$2 = iterator_map(
+  const iter$3 = iterator_map(
     stepped,
     (x) => (x * 2) >>> 0,
     { next: $next, fold: $foldOf },
@@ -277,9 +286,9 @@ function main() {
       peekable.return();
     },
   );
-  const result$2 = Array.from($roomForHint(iter$2, 4, false));
-  iter$2.return();
-  console.log(`[${result$2.join(", ")}]`);
+  const result$3 = Array.from($roomForHint(iter$3, 4, false));
+  iter$3.return();
+  console.log(`[${result$3.join(", ")}]`);
   // A held map's and inspect's fold, std's: their source's, the crate's
   // own, through a peekable (#264).
   console.log(
@@ -338,16 +347,16 @@ function main() {
       },
     ).reduce((a, b) => (a + b) >>> 0, 0)}`,
   );
-  const iter$3 = iterator_peekable(
+  const iter$4 = iterator_peekable(
     iterator_map(["v", 0], (x) => (x + 1) >>> 0, { next: plainIterator_next }, plainDrop_drop),
     { next: $next, fold: $foldOf },
     (map) => {
       map.return();
     },
   );
-  const result$3 = iter$3.reduce((a, b) => (a + b) >>> 0, 0);
-  iter$3.return();
-  console.log(`${result$3}`);
+  const result$4 = iter$4.reduce((a, b) => (a + b) >>> 0, 0);
+  iter$4.return();
+  console.log(`${result$4}`);
   // A held flat map's fold, std's: its source's, through its `map`, the
   // crate's own, each item's array folded in turn (#297).
   console.log(

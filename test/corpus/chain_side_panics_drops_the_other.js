@@ -19,6 +19,7 @@ import {
   $unwindsOn,
   iterator_chain,
   iterator_skip,
+  iterator_take,
 } from "@rust-js/std";
 
 export function entry() {
@@ -196,8 +197,8 @@ function main() {
     }
   });
   console.log(`${r.TAG === "Err"}`);
-  r = $catchUnwind(() =>
-    $count(
+  r = $catchUnwind(() => {
+    const iter = iterator_take(
       iterator_chain(
         [0],
         [[6], [7]],
@@ -212,10 +213,24 @@ function main() {
         $dropEach(dDrop_drop),
         dDrop_drop,
         $dropEach(dDrop_drop),
-      ).take(3),
+      ),
+      3,
+      { next: $next, fold: $foldOf },
+      (chain) => {
+        chain.return();
+      },
       dDrop_drop,
-    ),
-  );
+    );
+    try {
+      return $count(iter, dDrop_drop);
+    } catch (error) {
+      throw $unwindsOn(error);
+    } finally {
+      if ($live()) {
+        iter.return();
+      }
+    }
+  });
   console.log(`${r.TAG === "Err"}`);
   r = $catchUnwind(() => {
     const iter = iterator_chain(

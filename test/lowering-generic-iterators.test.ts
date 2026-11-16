@@ -78,7 +78,7 @@ pub fn mapped(n: u32) -> u32 {
 }
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
-  expect(readFileSync(join(dir, "mir.js"), "utf8")).toContain("return $collectDropping(\n    $roomForHint(iterator_skip(Iterator.from(items), 1, $jsIterator).take(k), 4, false),\n  );");
+  expect(readFileSync(join(dir, "mir.js"), "utf8")).toContain("return $collectDropping(\n    $roomForHint(\n      iterator_take(iterator_skip(Iterator.from(items), 1, $jsIterator), k, $jsIterator),");
   const lib = await import(join(dir, "mir.js"));
   expect([lib.ofCountdown(5), lib.middle([7, 8, 9, 10], 2), lib.mapped(3)]).toEqual([[3, 2], [8, 9], 6]);
 });

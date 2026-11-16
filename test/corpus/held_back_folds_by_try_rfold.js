@@ -4,15 +4,12 @@ import {
   $exactLen,
   $findBack,
   $foldOf,
-  $folded,
-  $iterator,
   $knowing,
+  $last,
   $next,
-  $rev,
   $sizeHint,
-  $skipping,
-  $taking,
   $tryOf,
+  iterator_rev,
   iterator_skip,
   iterator_take,
   skipDoubleEndedIterator_nextBack,
@@ -128,28 +125,54 @@ function main() {
         ends,
       ),
   };
-  const held = $rev(
-    $skipping(
-      $taking(
-        $iterator(
-          count(),
-          countIterator_next,
-          false,
-          countDoubleEndedIterator_nextBack,
-          (it) => $exactLen(countIterator_sizeHint(it)),
-          countIterator_sizeHint,
-          undefined,
-          undefined,
-          undefined,
-          countDoubleEndedIterator_rfold,
-          countDoubleEndedIterator_nthBack,
-        ),
-        5,
+  const skipDoubleEndedIterator = {
+    next_back: (iterator) =>
+      skipDoubleEndedIterator_nextBack(
+        iterator,
+        { next: $next, fold: $foldOf },
+        takeDoubleEndedIterator,
       ),
+    rfold: (iterator, init, f, unwind, ends) =>
+      skipDoubleEndedIterator_rfold(
+        iterator,
+        init,
+        f,
+        { next: $next, fold: $foldOf },
+        takeDoubleEndedIterator,
+        undefined,
+        unwind,
+        ends,
+      ),
+    nthBack: (iterator, k) =>
+      skipDoubleEndedIterator_nthBack(
+        iterator,
+        k,
+        { next: $next, fold: $foldOf },
+        takeDoubleEndedIterator,
+      ),
+    tryRfold: (iterator, init, f, broke, unwind, ends) =>
+      skipDoubleEndedIterator_tryRfold(
+        iterator,
+        init,
+        f,
+        { next: $next, fold: $foldOf },
+        takeDoubleEndedIterator,
+        $tryOf(broke),
+        undefined,
+        unwind,
+        ends,
+      ),
+  };
+  const held = iterator_rev(
+    iterator_skip(
+      iterator_take(count(), 5, { next: countIterator_next, sizeHint: countIterator_sizeHint }),
       2,
+      { next: $next, fold: $foldOf },
     ),
+    { next: $next, fold: $foldOf },
+    skipDoubleEndedIterator,
   );
-  const last = Array.from($folded(held)).at(-1);
+  const last = $last(held);
   console.log(`${last == null ? "None" : `Some(${last})`}`);
   const back = iterator_skip(
     iterator_take(count(), 5, { next: countIterator_next, sizeHint: countIterator_sizeHint }),
@@ -200,26 +223,14 @@ function main() {
     (x) => x % 2 === 0,
   );
   console.log(`${rfind == null ? "None" : `Some(${rfind})`}`);
-  const summed = $rev(
-    $skipping(
-      $taking(
-        $iterator(
-          count(),
-          countIterator_next,
-          false,
-          countDoubleEndedIterator_nextBack,
-          (it) => $exactLen(countIterator_sizeHint(it)),
-          countIterator_sizeHint,
-          undefined,
-          undefined,
-          undefined,
-          countDoubleEndedIterator_rfold,
-          countDoubleEndedIterator_nthBack,
-        ),
-        6,
-      ),
+  const summed = iterator_rev(
+    iterator_skip(
+      iterator_take(count(), 6, { next: countIterator_next, sizeHint: countIterator_sizeHint }),
       1,
+      { next: $next, fold: $foldOf },
     ),
+    { next: $next, fold: $foldOf },
+    skipDoubleEndedIterator,
   ).reduce((a, b) => (a + b) | 0, 0);
   console.log(`${summed}`);
 }

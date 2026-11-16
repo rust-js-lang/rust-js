@@ -23,6 +23,7 @@ import {
   iterator_fuse,
   iterator_map,
   iterator_peekable,
+  iterator_take,
 } from "@rust-js/std";
 
 export function entry() {
@@ -261,19 +262,12 @@ function main() {
     () =>
       $collectDropping(
         $roomForHint(
-          $closing(
-            $iterator(
-              own(20, all, (n) => n & 255),
-              ownIterator_next,
-              true,
-              undefined,
-              undefined,
-              ownIterator_sizeHint,
-            ),
-            (it) => {
-              ownDrop_drop(it.of);
-            },
-          ).take(12),
+          iterator_take(
+            own(20, all, (n) => n & 255),
+            12,
+            { next: ownIterator_next, sizeHint: ownIterator_sizeHint },
+            ownDrop_drop,
+          ),
           1,
           false,
         ),

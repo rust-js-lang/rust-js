@@ -3,11 +3,9 @@
 import {
   $checked,
   $cleanup,
-  $closing,
   $foldOf,
   $held,
   $iter,
-  $iterator,
   $lazySkipWhile,
   $lazyTakeWhile,
   $lent,
@@ -19,6 +17,7 @@ import {
   iterator_flatten,
   iterator_map,
   iterator_skip,
+  iterator_take,
   mapIterator___iteratorGetUnchecked,
 } from "@rust-js/std";
 
@@ -143,13 +142,43 @@ function flaky() {
 }
 
 function counted() {
+  const intoIterator = {
+    intoIter: (items) => $iter(items),
+    IntoIterIterator: () => ({ next: $next }),
+  };
   const skipWhile = $held(
     $lazySkipWhile(
-      $closing($iterator(c("outer"), countIterator_next), (it) => {
-        countDrop_drop(it.of);
-      })
-        .take(2)
-        .flatMap(() => iterator_skip(c("inner"), 2, { next: countIterator_next }, countDrop_drop)),
+      iterator_flatMap(
+        iterator_take(c("outer"), 2, { next: countIterator_next }, countDrop_drop),
+        () => iterator_skip(c("inner"), 2, { next: countIterator_next }, countDrop_drop),
+        { next: $next, fold: $foldOf },
+        {
+          intoIter(items) {
+            return items;
+          },
+          IntoIterIterator() {
+            return { next: $next, fold: $foldOf };
+          },
+          $dropIntoIter(skip) {
+            skip.return();
+          },
+        },
+        false,
+        undefined,
+        false,
+        (take) => {
+          take.return();
+        },
+        (skip) => {
+          skip.return();
+        },
+        undefined,
+        undefined,
+        undefined,
+        (skip) => {
+          skip.return();
+        },
+      ),
       (x) => x < 4,
     ),
   );
@@ -166,17 +195,22 @@ function counted() {
   console.log(`found ${found}`);
   const byRef = c("held");
   try {
-    const total = $lent($iterator(byRef, countIterator_next))
-      .take(2)
-      .flatMap((x) => [x, x])
-      .reduce((a, b) => (a + b) >>> 0, 0);
+    const total = iterator_flatMap(
+      iterator_take(byRef, 2, { next: countIterator_next }),
+      (x) => [x, x],
+      { next: $next, fold: $foldOf },
+      intoIterator,
+      false,
+      undefined,
+      false,
+    ).reduce((a, b) => (a + b) >>> 0, 0);
     console.log(`total ${total}`);
     console.log("after by_ref");
     const f = $held(
       iterator_flatten(
         iterator_map(c("fused"), (x) => [x], { next: countIterator_next }, countDrop_drop),
         { next: $next, fold: $foldOf },
-        { intoIter: (items) => $iter(items), IntoIterIterator: () => ({ next: $next }) },
+        intoIterator,
         false,
         undefined,
         false,

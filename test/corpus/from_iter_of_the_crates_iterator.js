@@ -17,10 +17,12 @@ import {
   $live,
   $next,
   $rangeInclusiveNext,
+  $roomForHint,
   $sortedKeys,
   $traitImpl,
   $unwindsOn,
   iterator_map,
+  iterator_take,
 } from "@rust-js/std";
 
 export function entry() {
@@ -189,7 +191,9 @@ function main() {
   console.log(`[${result.join(", ")}]`);
   const held = [3, "held"];
   try {
-    console.log(`[${Array.from($lent($iterator(held, counterIterator_next)).take(1)).join(", ")}]`);
+    console.log(
+      `[${Array.from($roomForHint(iterator_take(held, 1, { next: counterIterator_next }), 4, false)).join(", ")}]`,
+    );
     console.log(`[${Array.from($lent($iterator(held, counterIterator_next))).join(", ")}]`);
     console.log("end");
   } catch (error) {

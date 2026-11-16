@@ -19,6 +19,7 @@ import {
   iterator_enumerate,
   iterator_map,
   iterator_skip,
+  iterator_take,
 } from "@rust-js/std";
 
 export function entry() {
@@ -78,47 +79,16 @@ function main() {
     `generic ${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
   );
   const value$3 = $nth(
-    $lent(
-      $iterator(
-        c(),
-        countIterator_next,
-        false,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        countIterator_nth,
-      ).take(10),
-    ),
+    $lent(iterator_take(c(), 10, { next: countIterator_next, nth: countIterator_nth })),
     3,
   );
   console.log(`take ${value$3 == null ? "None" : `Some(${value$3})`}`);
   const value$4 = $nth(
-    $lent(
-      $iterator(
-        c(),
-        countIterator_next,
-        false,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        countIterator_nth,
-      ).take(3),
-    ),
+    $lent(iterator_take(c(), 3, { next: countIterator_next, nth: countIterator_nth })),
     5,
   );
   console.log(`take ${value$4 == null ? "None" : `Some(${value$4})`}`);
-  const t = $iterator(
-    c(),
-    countIterator_next,
-    false,
-    undefined,
-    undefined,
-    undefined,
-    undefined,
-    countIterator_nth,
-  ).take(4);
+  const t = iterator_take(c(), 4, { next: countIterator_next, nth: countIterator_nth });
   const nth = $nth($lent(t), 1);
   const value$5 = $nth($lent(t), 1);
   const next = $next(t);
@@ -211,18 +181,9 @@ function main() {
     ),
   ).at(-1);
   console.log(`last ${value$11 == null ? "None" : `Some(${value$11})`}`);
-  const value$12 = Array.from(
-    $iterator(
-      c(),
-      countIterator_next,
-      false,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      countIterator_nth,
-    ).take(5),
-  ).at(-1);
+  const value$12 = $last(
+    iterator_take(c(), 5, { next: countIterator_next, nth: countIterator_nth }),
+  );
   console.log(`last ${value$12 == null ? "None" : `Some(${value$12})`}`);
   const text = Array.from(
     $folded(
@@ -241,20 +202,7 @@ function main() {
   console.log(`${value$13 == null ? "None" : `Some(${value$13})`}`);
   const held = c();
   const value$14 = $nth(
-    $lent(
-      $lent(
-        $iterator(
-          held,
-          countIterator_next,
-          false,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          countIterator_nth,
-        ),
-      ).take(3),
-    ),
+    $lent(iterator_take(held, 3, { next: countIterator_next, nth: countIterator_nth })),
     0,
   );
   const value$15 = countIterator_next(held);
@@ -262,18 +210,7 @@ function main() {
     `${value$14 == null ? "None" : `Some(${value$14})`} ${value$15 == null ? "None" : `Some(${value$15})`}`,
   );
   const value$16 = $nthSome(
-    $lent(
-      $iterator(
-        [0],
-        maybeIterator_next,
-        true,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        maybeIterator_nth,
-      ).take(4),
-    ),
+    $lent(iterator_take([0], 4, { next: maybeIterator_next, nth: maybeIterator_nth })),
     0,
   );
   const value$17 = $nthSome(

@@ -5,7 +5,6 @@ import {
   $exactLen,
   $foldOf,
   $iter,
-  $iterator,
   $knowing,
   $next,
   $nextBackSome,
@@ -13,9 +12,7 @@ import {
   $rangeNext,
   $rangeNextBack,
   $rangeNthBack,
-  $rev,
   $sizeHint,
-  $taking,
   $tryOf,
   enumerateDoubleEndedIterator_nextBack,
   enumerateDoubleEndedIterator_nthBack,
@@ -25,12 +22,17 @@ import {
   iterator_map,
   iterator_rev,
   iterator_skip,
+  iterator_take,
   revExactSizeIterator_len,
   skipDoubleEndedIterator_nextBack,
   skipDoubleEndedIterator_nthBack,
   skipDoubleEndedIterator_rfold,
   skipDoubleEndedIterator_tryRfold,
   skipIterator___iteratorGetUnchecked,
+  takeIDoubleEndedIterator_nextBack,
+  takeIDoubleEndedIterator_nthBack,
+  takeIDoubleEndedIterator_rfold,
+  takeIDoubleEndedIterator_tryRfold,
 } from "@rust-js/std";
 
 export function entry() {
@@ -51,6 +53,7 @@ function hint(it, IIterator, IClone) {
 }
 
 function main() {
+  const exactSizeIterator = { len: (iterator) => $exactLen($sizeHint(iterator)) };
   const value = first(
     $knowing(
       iterator_rev(
@@ -101,13 +104,59 @@ function main() {
         },
       ),
       undefined,
-      (iterator) =>
-        revExactSizeIterator_len(iterator, { len: (iterator) => $exactLen($sizeHint(iterator)) }),
+      (iterator) => revExactSizeIterator_len(iterator, exactSizeIterator),
     ),
   );
   const value$1 = first(
-    $rev(
-      $taking($iterator({ start: 0, end: 10 }, $rangeNext, false, $rangeNextBack, $rangeLen), 3),
+    $knowing(
+      iterator_rev(
+        iterator_take({ start: 0, end: 10 }, 3, { next: $rangeNext }),
+        { next: $next, fold: $foldOf },
+        {
+          next_back: (iterator) =>
+            takeIDoubleEndedIterator_nextBack(
+              iterator,
+              { next: $rangeNext },
+              { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+              { len: $rangeLen },
+            ),
+          rfold: (iterator, init, f, unwind, ends) =>
+            takeIDoubleEndedIterator_rfold(
+              iterator,
+              init,
+              f,
+              { next: $rangeNext },
+              { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+              { len: $rangeLen },
+              undefined,
+              unwind,
+              ends,
+            ),
+          nthBack: (iterator, k) =>
+            takeIDoubleEndedIterator_nthBack(
+              iterator,
+              k,
+              { next: $rangeNext },
+              { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+              { len: $rangeLen },
+            ),
+          tryRfold: (iterator, init, f, broke, unwind, ends) =>
+            takeIDoubleEndedIterator_tryRfold(
+              iterator,
+              init,
+              f,
+              { next: $rangeNext },
+              { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+              { len: $rangeLen },
+              $tryOf(broke),
+              undefined,
+              unwind,
+              ends,
+            ),
+        },
+      ),
+      undefined,
+      (iterator) => revExactSizeIterator_len(iterator, exactSizeIterator),
     ),
   );
   console.log(

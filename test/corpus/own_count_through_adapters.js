@@ -17,6 +17,7 @@ import {
   iterator_map,
   iterator_peekable,
   iterator_skip,
+  iterator_take,
 } from "@rust-js/std";
 
 export function entry() {
@@ -110,7 +111,7 @@ function main() {
     )}`,
   );
   console.log(
-    `${$count($iterator([0], countIterator_next, false, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, countIterator_count).take(2))}`,
+    `${$count(iterator_take([0], 2, { next: countIterator_next, count: countIterator_count }))}`,
   );
   console.log(
     `${$count(

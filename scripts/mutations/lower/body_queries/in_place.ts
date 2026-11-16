@@ -501,4 +501,14 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^held_skip_take.rs$"],
     snapshots: true,
   },
+  {
+    name: "take-not-flipped",
+    breaks:
+      "a `take()` of a chain the transparent-chain predicate doesn't admit is the recognizers' hand-written form again, where std's compiled struct is the meaning (#1681's change 2, the take family)",
+    file: "src/lower/body_queries/in_place.rs",
+    find: "    \"take\",\n",
+    replace: "    \"map\",\n",
+    tests: ["test/corpus.test.ts", "-t", "^drop_order_through_take_adapters.rs$"],
+    snapshots: true,
+  },
 ];

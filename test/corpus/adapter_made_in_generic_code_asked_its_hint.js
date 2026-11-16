@@ -3,26 +3,26 @@
 import {
   $catchUnwind,
   $cleanup,
-  $closing,
   $dropEach,
   $filterEnds,
+  $foldOf,
   $given,
   $held,
   $iter,
   $jsIterator,
   $last,
   $lazyRange,
-  $mapEnds,
   $next,
+  $nth,
   $rangeNext,
   $sizeHint,
   $skipping,
   $slicing,
   $some,
   $someValue,
-  $taking,
   iterator_map,
   iterator_skip,
+  iterator_take,
 } from "@rust-js/std";
 
 export function entry() {
@@ -60,7 +60,13 @@ function doubled(it) {
 }
 
 function firstTwo(it) {
-  return hint($mapEnds($taking(Iterator.from(it), 2), (x) => (x + 1) >>> 0));
+  return hint(
+    iterator_map(iterator_take(Iterator.from(it), 2, $jsIterator), (x) => (x + 1) >>> 0, {
+      next: $next,
+      fold: $foldOf,
+      nth: $nth,
+    }),
+  );
 }
 
 function rest(it) {
@@ -72,19 +78,27 @@ function restCloned(it, IIterator, IClone) {
 }
 
 function twoHinted(it, dropI) {
-  return hint($taking($closing(Iterator.from(it), dropI, false), 2, dDrop_drop), (take) => {
+  return hint(iterator_take(Iterator.from(it), 2, $jsIterator, dropI, dDrop_drop), (take) => {
     take.return();
   });
 }
 
 function lastOfFour(it, dropI) {
-  const iter = $closing(Iterator.from(it), dropI, false)
-    .take(4)
-    .map((d) => {
+  const iter = iterator_map(
+    iterator_take(Iterator.from(it), 4, $jsIterator, dropI, dDrop_drop),
+    (d) => {
       const result = d[0];
       dDrop_drop(d);
       return result;
-    });
+    },
+    { next: $next, fold: $foldOf, nth: $nth },
+    (take) => {
+      take.return();
+    },
+    undefined,
+    undefined,
+    dDrop_drop,
+  );
   let result;
   try {
     result = $last(iter);

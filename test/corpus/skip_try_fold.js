@@ -8,7 +8,6 @@ import {
   $held,
   $iterCmp,
   $iterEq,
-  $iterator,
   $jsIterator,
   $lazyMapWhile,
   $lazyRange,
@@ -25,8 +24,10 @@ import {
   $tryFoldSome,
   $unwindsOn,
   iterator_chain,
+  iterator_flatMap,
   iterator_map,
   iterator_skip,
+  iterator_take,
 } from "@rust-js/std";
 
 export function entry() {
@@ -106,20 +107,15 @@ function main() {
   console.log(
     `skip_while ${$lent(
       $lazySkipWhile(
-        $iterator(
-          c(),
-          countIterator_next,
+        iterator_flatMap(
+          iterator_take(c(), 2, { next: countIterator_next, nth: countIterator_nth }),
+          () => iterator_skip(c(), 2, { next: countIterator_next, nth: countIterator_nth }),
+          { next: $next, fold: $foldOf, nth: $nth },
+          skipIntoIterator,
           false,
           undefined,
-          undefined,
-          undefined,
-          undefined,
-          countIterator_nth,
-        )
-          .take(2)
-          .flatMap(() =>
-            iterator_skip(c(), 2, { next: countIterator_next, nth: countIterator_nth }),
-          ),
+          false,
+        ),
         (x) => x < 4,
       ),
     ).some((x) => x > 25)}`,
@@ -181,7 +177,11 @@ function main() {
   );
   console.log(
     `${$lent(
-      iterator_skip(c(), 2, { next: countIterator_next, nth: countIterator_nth }).take(3),
+      iterator_take(
+        iterator_skip(c(), 2, { next: countIterator_next, nth: countIterator_nth }),
+        3,
+        { next: $next, fold: $foldOf, nth: $nth },
+      ),
     ).some((x) => x > 10)}`,
   );
   const value$4 = $lent(
@@ -299,18 +299,15 @@ function main() {
   );
   console.log(
     `flat_map ${$lent(
-      $iterator(
-        c(),
-        countIterator_next,
+      iterator_flatMap(
+        iterator_take(c(), 2, { next: countIterator_next, nth: countIterator_nth }),
+        () => iterator_skip(c(), 2, { next: countIterator_next, nth: countIterator_nth }),
+        { next: $next, fold: $foldOf, nth: $nth },
+        skipIntoIterator,
         false,
         undefined,
-        undefined,
-        undefined,
-        undefined,
-        countIterator_nth,
-      )
-        .take(2)
-        .flatMap(() => iterator_skip(c(), 2, { next: countIterator_next, nth: countIterator_nth })),
+        false,
+      ),
     ).some((x) => x > 5)}`,
   );
   const map = $held(

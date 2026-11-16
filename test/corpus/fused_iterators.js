@@ -2,10 +2,10 @@
 
 import {
   $cleanup,
+  $foldOf,
   $foldToArray,
   $held,
   $iter,
-  $iterator,
   $lent,
   $live,
   $next,
@@ -16,6 +16,7 @@ import {
   fuseClone_clone,
   fuseDebug_fmt,
   iterator_fuse,
+  iterator_take,
 } from "@rust-js/std";
 
 export function entry() {
@@ -83,7 +84,11 @@ function main() {
   console.log(
     `${next == null ? "None" : `Some(${next})`} ${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${fuseDebug_fmt(f, undefined, flipDebug)}`,
   );
-  console.log(`[${Array.from(copy.take(4)).join(", ")}]`);
+  console.log(
+    `[${Array.from(
+      $roomForHint(iterator_take(copy, 4, { next: $next, fold: $foldOf }), 4, false),
+    ).join(", ")}]`,
+  );
   const v = iterator_fuse($iter([1, 2, 3]), { next: $next }, true);
   const sizeHint = $sizeHint(v);
   console.log(`(${sizeHint[0]}, ${sizeHint[1] == null ? "None" : `Some(${sizeHint[1]})`})`);
@@ -110,7 +115,13 @@ function main() {
   );
   console.log(`${pairDebug_fmt(again, flipDebug)}`);
   console.log(
-    `[${Array.from($roomForHint($iterator(again, pairIterator_next, true, undefined, undefined, pairIterator_sizeHint).take(3), 4, false)).join(", ")}]`,
+    `[${Array.from(
+      $roomForHint(
+        iterator_take(again, 3, { next: pairIterator_next, sizeHint: pairIterator_sizeHint }),
+        4,
+        false,
+      ),
+    ).join(", ")}]`,
   );
   const loud = $held(iterator_fuse(["loud", 3], { next: loudIterator_next }, false, loudDrop_drop));
   let loud$live;

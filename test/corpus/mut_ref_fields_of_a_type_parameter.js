@@ -7,11 +7,11 @@ import {
   $debugStr,
   $index,
   $iter,
-  $iterator,
-  $lent,
   $next,
+  $roomForHint,
   $some,
   $someValue,
+  iterator_take,
 } from "@rust-js/std";
 
 export function entry() {
@@ -239,9 +239,13 @@ function main() {
   const words = $iter(["a", "b", "c"]);
   const counted = { inner: $cellOf(words), count: 0 };
   const first = Array.from(
-    $lent(
-      $iterator(counted, (iterator) => countedIterator_next(iterator, { next: $next }), true),
-    ).take(2),
+    $roomForHint(
+      iterator_take(counted, 2, {
+        next: (iterator) => countedIterator_next(iterator, { next: $next }),
+      }),
+      8,
+      false,
+    ),
   );
   const arg = $next(words);
   console.log(

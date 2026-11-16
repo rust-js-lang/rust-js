@@ -11,6 +11,7 @@ import {
   $next,
   $roomForHint,
   $unwrap,
+  iterator_take,
 } from "@rust-js/std";
 
 export function entry() {
@@ -89,7 +90,7 @@ function lent(it, IIterator, IExactSizeIterator, IClone) {
 function lentPlain(it) {
   const copied = $lent(it);
   const n = copied.len();
-  const first = $collectDropping($roomForHint(copied.take(1), 4, false));
+  const first = $collectDropping($roomForHint(iterator_take(copied, 1), 4, false));
   return [n, first, $next(it)];
 }
 

@@ -14,6 +14,7 @@ import {
   $roomForHint,
   $unwindsOn,
   iterator_map,
+  iterator_take,
   iterator_zip,
 } from "@rust-js/std";
 
@@ -212,9 +213,9 @@ function main() {
   }
 
   const taken = $held(
-    $closing($iterator(count("take"), countIterator_next), (it) => {
-      loudDrop_drop(it.of._loud);
-    }).take(5),
+    iterator_take(count("take"), 5, { next: countIterator_next }, (count) => {
+      loudDrop_drop(count._loud);
+    }),
   );
   try {
     let x;

@@ -9,6 +9,7 @@ import {
   $next,
   $rangeNext,
   $roomForHint,
+  iterator_take,
 } from "@rust-js/std";
 
 export function entry() {
@@ -28,7 +29,7 @@ function twice(f, IsF) {
 
 function take2(it, IIterator, IsI) {
   it = IsI.is(it);
-  return $collectDropping($roomForHint($given(it, IIterator).take(2), 4, false));
+  return $collectDropping($roomForHint(iterator_take(it, 2, IIterator), 4, false));
 }
 
 function total(i, IIntoIterator, IsI) {

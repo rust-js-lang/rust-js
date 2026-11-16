@@ -1,4 +1,3 @@
-//@ library-differs
 // `pub` generic code, whose callers JS or a consumer may be too, that
 // cycles the `Map<I, F>` it makes in place, beside a bound of a type
 // parameter the `Map` doesn't hold, `L: Display`: what the `Map` stands for

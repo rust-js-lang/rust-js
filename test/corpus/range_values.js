@@ -21,6 +21,7 @@ import {
   $rangeNextBack,
   $roomForHint,
   $slice,
+  iterator_take,
   iterator_zip,
 } from "@rust-js/std";
 
@@ -194,7 +195,7 @@ function main() {
     `${labelledDebug_fmt(labelled)} ${value} [${spans.map((item) => `${item.start}..${item.end}`).join(", ")}] [${lens.join(", ")}]\n`,
   );
   $print(
-    `${sumAll($lazyRange(1, 4))} ${sumAll($iterator(rOf(3), $rangeNext))} ${sumAll($iterator({ start: 1 }, $rangeFromStep(0, 4294967295)).take(3))}\n`,
+    `${sumAll($lazyRange(1, 4))} ${sumAll($iterator(rOf(3), $rangeNext))} ${sumAll(iterator_take({ start: 1 }, 3, { next: $rangeFromStep(0, 4294967295) }))}\n`,
   );
   $print(
     `${shownTwice(

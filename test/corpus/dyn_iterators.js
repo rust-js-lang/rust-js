@@ -9,6 +9,7 @@ import {
   $print,
   $roomForHint,
   iterator_map,
+  iterator_take,
 } from "@rust-js/std";
 
 export function entry() {
@@ -82,6 +83,6 @@ function main() {
     $print(`see ${n}\n`);
     return n;
   });
-  $print(`[${Array.from($roomForHint(noisy.take(2), 4, false)).join(", ")}]\n`);
+  $print(`[${Array.from($roomForHint(iterator_take(noisy, 2), 4, false)).join(", ")}]\n`);
 }
 //# sourceMappingURL=case.js.map

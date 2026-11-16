@@ -24,7 +24,6 @@ import {
   $reserveHint,
   $rev,
   $sizeHint,
-  $takeHint,
   $unwindsOn,
   $upperOnly,
   iterator_chain,
@@ -32,6 +31,7 @@ import {
   iterator_flatMap,
   iterator_map,
   iterator_skip,
+  iterator_take,
   iterator_zip,
 } from "@rust-js/std";
 
@@ -168,24 +168,15 @@ function main() {
   );
   show(
     "take 0",
-    $takeHint(
-      $iterator(own(), ownIterator_next, false, undefined, undefined, ownIterator_sizeHint),
-      0,
-    ),
+    $sizeHint(iterator_take(own(), 0, { next: ownIterator_next, sizeHint: ownIterator_sizeHint })),
   );
   show(
     "take 3",
-    $takeHint(
-      $iterator(own(), ownIterator_next, false, undefined, undefined, ownIterator_sizeHint),
-      3,
-    ),
+    $sizeHint(iterator_take(own(), 3, { next: ownIterator_next, sizeHint: ownIterator_sizeHint })),
   );
   show(
     "take 9",
-    $takeHint(
-      $iterator(own(), ownIterator_next, false, undefined, undefined, ownIterator_sizeHint),
-      9,
-    ),
+    $sizeHint(iterator_take(own(), 9, { next: ownIterator_next, sizeHint: ownIterator_sizeHint })),
   );
   show(
     "skip 2",

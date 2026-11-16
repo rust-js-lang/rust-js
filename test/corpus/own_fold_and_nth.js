@@ -33,6 +33,7 @@ import {
   iterator_flatMap,
   iterator_map,
   iterator_skip,
+  iterator_take,
 } from "@rust-js/std";
 
 export function entry() {
@@ -184,18 +185,11 @@ function main() {
     `step_by [${Array.from($roomForHint($stepBy($iterator(up(), upIterator_next, false, undefined, undefined, undefined, upIterator_fold, upIterator_nth), 2), 4, false)).join(", ")}]`,
   );
   console.log(
-    `take sum ${$iterator(
-      up(),
-      upIterator_next,
-      false,
-      undefined,
-      undefined,
-      undefined,
-      upIterator_fold,
-      upIterator_nth,
-    )
-      .take(2)
-      .reduce((a, b) => (a + b) >>> 0, 0)}`,
+    `take sum ${iterator_take(up(), 2, {
+      next: upIterator_next,
+      fold: upIterator_fold,
+      nth: upIterator_nth,
+    }).reduce((a, b) => (a + b) >>> 0, 0)}`,
   );
   console.log(
     `chain ${iterator_chain(

@@ -10,6 +10,7 @@ import {
   $eq,
   $hashSlice,
   $iterator,
+  $jsIterator,
   $mutWriter,
   $ord,
   $ordered,
@@ -24,6 +25,7 @@ import {
   $stringWriter,
   $toUppercase,
   $unwrap,
+  iterator_take,
 } from "@rust-js/std";
 
 const kPartialOrd = $partialOrd({
@@ -72,7 +74,7 @@ function hashed(t, THash) {
   return h.finish();
 }
 function take2(it) {
-  return $collectDropping($roomForHint(Iterator.from(it).take(2), 4, false));
+  return $collectDropping($roomForHint(iterator_take(Iterator.from(it), 2, $jsIterator), 4, false));
 }
 function twice(f) {
   return f(f(1));

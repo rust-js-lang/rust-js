@@ -3,18 +3,16 @@
 import {
   $catchUnwind,
   $cleanup,
-  $closing,
   $dropItems,
   $foldOf,
   $foldToArray,
   $folded,
-  $iterator,
   $next,
   $panicking,
   $removeOutOfBounds,
-  $skipping,
   iterator_map,
   iterator_skip,
+  iterator_take,
 } from "@rust-js/std";
 
 export function entry() {
@@ -36,23 +34,49 @@ function ownIterator_next(own) {
 }
 function main() {
   const skipped = $catchUnwind(() => {
-    const text = $foldToArray(
-      $folded(
-        $skipping(
-          $closing($iterator([[[1], [2], [3], [4]]], ownIterator_next), (it) => {
+    const iter = iterator_map(
+      iterator_skip(
+        iterator_take(
+          [[[1], [2], [3], [4]]],
+          3,
+          { next: ownIterator_next },
+          (own) => {
             console.log("drop Own");
-            $dropItems(it.of[0], dDrop_drop);
-          }).take(3),
-          1,
+            $dropItems(own[0], dDrop_drop);
+          },
           dDrop_drop,
-        ).map((d) => {
-          const result = String(d[0]);
-          dDrop_drop(d);
-          return result;
-        }),
-        true,
+        ),
+        1,
+        { next: $next, fold: $foldOf },
+        (take) => {
+          take.return();
+        },
+        dDrop_drop,
       ),
-    ).join("");
+      (d) => {
+        const result = String(d[0]);
+        dDrop_drop(d);
+        return result;
+      },
+      { next: $next, fold: $foldOf },
+      (skip) => {
+        skip.return();
+      },
+      undefined,
+      undefined,
+      dDrop_drop,
+    );
+    let result;
+    try {
+      result = $foldToArray($folded(iter, true)).join("");
+    } catch (error) {
+      $cleanup(() => {
+        iter.return();
+      }, error);
+      throw error;
+    }
+    iter.return();
+    const text = result;
     return text;
   });
   console.log(`${skipped.TAG === "Err"}`);

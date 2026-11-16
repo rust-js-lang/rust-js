@@ -29,6 +29,7 @@ import {
   iterator_map,
   iterator_peekable,
   iterator_skip,
+  iterator_take,
   iterator_zip,
 } from "@rust-js/std";
 
@@ -99,7 +100,7 @@ function main() {
   console.log(
     `skip3 ([${value$5[0].join(", ")}], [${value$5[1].join(", ")}], [${value$5[2].join(", ")}])`,
   );
-  const value$6 = twice($iterator(f(), flakyIterator_next).take(4), "next");
+  const value$6 = twice(iterator_take(f(), 4, { next: flakyIterator_next }), "next");
   console.log(
     `take ([${value$6[0].join(", ")}], [${value$6[1].join(", ")}], [${value$6[2].join(", ")}])`,
   );

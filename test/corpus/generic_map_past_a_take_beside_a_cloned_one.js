@@ -2,20 +2,22 @@
 
 import {
   $cleanup,
-  $clone,
-  $cloning,
-  $closing,
   $collectDropping,
   $collectOptions,
   $collectsInPlace,
   $cycleOf,
   $dropEach,
+  $foldOf,
   $iter,
+  $jsIterator,
   $next,
+  $nth,
   $rangeNext,
   $roomForHint,
+  iterator_map,
   iterator_take,
-  takeClone_clone,
+  mapClone_clone,
+  takeClone,
 } from "@rust-js/std";
 
 export function entry() {
@@ -23,14 +25,17 @@ export function entry() {
 }
 
 export function cycled(items, f, IIterator, IClone, FClone) {
-  const makeMap = (it, f) =>
-    $cloning(
-      it.map((item) => f(item)),
-      () => makeMap(takeClone_clone(it, IClone), f),
-    );
   return $collectDropping(
     $roomForHint(
-      $cycleOf(makeMap(iterator_take(items, 9, IIterator), f), $clone, $next).take(5),
+      $cycleOf(
+        iterator_map(iterator_take(items, 9, IIterator), f, {
+          next: $next,
+          fold: $foldOf,
+          nth: $nth,
+        }),
+        (iterator) => mapClone_clone(iterator, takeClone(IClone), FClone),
+        $next,
+      ).take(5),
       4,
       false,
     ),
@@ -42,9 +47,21 @@ function dDrop_drop(d) {
 }
 
 function tried(src, IInPlace, dropI) {
-  const iter = $closing(Iterator.from(src), dropI, false)
-    .take(9)
-    .map((value) => value);
+  const iter = iterator_map(
+    iterator_take(Iterator.from(src), 9, $jsIterator, dropI, dDrop_drop),
+    (value) => value,
+    { next: $next, fold: $foldOf, nth: $nth },
+    (take) => {
+      take.return();
+    },
+    (option) => {
+      if (option != null) {
+        dDrop_drop(option);
+      }
+    },
+    undefined,
+    dDrop_drop,
+  );
   let result;
   try {
     result = $collectOptions(

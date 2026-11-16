@@ -2,14 +2,12 @@
 
 import {
   $cleanup,
-  $closing,
   $collectDropping,
-  $given,
-  $givenDrop,
   $held,
   $lent,
   $roomForHint,
   iterator_map,
+  iterator_take,
 } from "@rust-js/std";
 
 export function entry() {
@@ -26,9 +24,7 @@ function counterDrop_drop(counter) {
   console.log(`drop counter ${counter[0]}`);
 }
 function firstTwo(items, IIterator, IClone, dropI) {
-  const v = $collectDropping(
-    $roomForHint($closing($given(items, IIterator), $givenDrop(dropI), false).take(2), 4, false),
-  );
+  const v = $collectDropping($roomForHint(iterator_take(items, 2, IIterator, dropI), 4, false));
   console.log("collected");
   return v;
 }

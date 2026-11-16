@@ -2,9 +2,7 @@
 
 import {
   $cleanup,
-  $closing,
   $held,
-  $iterator,
   $lent,
   $live,
   $nthDropping,
@@ -14,6 +12,7 @@ import {
   iterator_enumerate,
   iterator_fuse,
   iterator_peekable,
+  iterator_take,
 } from "@rust-js/std";
 
 export function entry() {
@@ -60,21 +59,13 @@ function taken() {
     }, error);
     throw error;
   }
-  const take = $closing(
-    $iterator(
-      value,
-      loudsIterator_next,
-      false,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      loudsIterator_nth,
-    ),
-    (it) => {
-      loudsDrop_drop(it.of);
-    },
-  ).take(tmp);
+  const take = iterator_take(
+    value,
+    tmp,
+    { next: loudsIterator_next, nth: loudsIterator_nth },
+    loudsDrop_drop,
+    loudDrop_drop,
+  );
   let tmp$1;
   try {
     tmp$1 = id(2);

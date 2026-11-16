@@ -2,7 +2,6 @@
 
 import {
   $collectDropping,
-  $given,
   $intoIter,
   $iter,
   $iterator,
@@ -11,6 +10,7 @@ import {
   $roomForHint,
   $sizeHint,
   $traitImpl,
+  iterator_take,
 } from "@rust-js/std";
 
 export function entry() {
@@ -58,7 +58,7 @@ function tTools(TIterator, TItemSize) {
   return $traitImpl($tTools, [TIterator, TItemSize], () => ({
     thenAll: (self, other, JIntoIterator) => both(self, JIntoIterator.intoIter(other)),
     firsts: (self) =>
-      $collectDropping($roomForHint($given(self, TIterator, true).take(2), TItemSize, false)),
+      $collectDropping($roomForHint(iterator_take(self, 2, TIterator), TItemSize, false)),
     hinted: (self) => $sizeHint(self, TIterator),
   }));
 }

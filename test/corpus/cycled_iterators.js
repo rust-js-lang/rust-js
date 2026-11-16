@@ -2,7 +2,6 @@
 
 import {
   $cleanup,
-  $closing,
   $collectDropping,
   $collectsInPlace,
   $cycleOf,
@@ -10,9 +9,11 @@ import {
   $foldToArray,
   $iter,
   $iterator,
+  $jsIteratorSome,
   $next,
   $rangeNext,
   $roomForHint,
+  iterator_take,
 } from "@rust-js/std";
 
 export function entry() {
@@ -72,7 +73,7 @@ function firsts(iter, n, IIterator, IClone, IItemSize, dropI, dropIItem) {
 }
 
 function two(iter, IInPlace, IItemSize, IItemAlign, dropI, dropIItem) {
-  const iter$1 = $closing(Iterator.from(iter), dropI, false).take(2);
+  const iter$1 = iterator_take(Iterator.from(iter), 2, $jsIteratorSome, dropI, dropIItem);
   let result;
   try {
     result = $collectsInPlace(IInPlace, IItemSize, IItemAlign)

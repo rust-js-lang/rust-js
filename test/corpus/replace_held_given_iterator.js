@@ -4,11 +4,11 @@ import {
   $assign,
   $debugStr,
   $iter,
-  $iterator,
-  $lent,
   $next,
   $rangeNext,
+  $roomForHint,
   $take,
+  iterator_take,
 } from "@rust-js/std";
 
 export function entry() {
@@ -42,16 +42,18 @@ function main() {
     orig: { start: 5, end: 7 },
   };
   const all = Array.from(
-    $iterator(
-      ranges,
-      (iterator) =>
-        restartIterator_next(
-          iterator,
-          { next: $rangeNext },
-          { clone: (value) => ({ start: value.start, end: value.end }) },
-        ),
-      true,
-    ).take(5),
+    $roomForHint(
+      iterator_take(ranges, 5, {
+        next: (iterator) =>
+          restartIterator_next(
+            iterator,
+            { next: $rangeNext },
+            { clone: (value) => ({ start: value.start, end: value.end }) },
+          ),
+      }),
+      4,
+      false,
+    ),
   );
   console.log(`[${all.join(", ")}]`);
   const items = {
@@ -61,13 +63,9 @@ function main() {
   restartIterator_next(items, { next: $next }, intoIterClone);
   Restart.swapEnds(items, intoIterClone);
   const rest = Array.from(
-    $lent(
-      $iterator(
-        items,
-        (iterator) => restartIterator_next(iterator, { next: $next }, intoIterClone),
-        true,
-      ),
-    ).take(3),
+    iterator_take(items, 3, {
+      next: (iterator) => restartIterator_next(iterator, { next: $next }, intoIterClone),
+    }),
   ).join("");
   const kept = Array.from(items.orig);
   console.log(`${rest} [${kept.map((item) => $debugStr(item, "'")).join(", ")}]`);

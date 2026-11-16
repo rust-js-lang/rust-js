@@ -25,6 +25,7 @@ import {
   iterator_map,
   iterator_peekable,
   iterator_skip,
+  iterator_take,
   iterator_zip,
 } from "@rust-js/std";
 
@@ -370,7 +371,7 @@ function main() {
   });
   run("plain take fold", () => {
     const fold = $foldDropping(
-      $iterator({ n: 0, at: 3 }, plainIterator_next).take(4),
+      iterator_take({ n: 0, at: 3 }, 4, { next: plainIterator_next }),
       [],
       push,
       $dropEach(dDrop_drop),

@@ -17,6 +17,7 @@ import {
   $tryFoldSome,
   $unwindsOn,
   iterator_map,
+  iterator_take,
 } from "@rust-js/std";
 
 export function entry() {
@@ -431,13 +432,11 @@ function more() {
     const i = it(150);
     try {
       console.log(
-        `${$lent($iterator(i, itIterator_next))
-          .take(1)
-          .reduce((n, d) => {
-            const result = (n + d[0]) >>> 0;
-            dDrop_drop(d);
-            return result;
-          }, 0)}`,
+        `${iterator_take(i, 1, { next: itIterator_next }, undefined, dDrop_drop).reduce((n, d) => {
+          const result = (n + d[0]) >>> 0;
+          dDrop_drop(d);
+          return result;
+        }, 0)}`,
       );
     } catch (error) {
       $cleanup(() => {

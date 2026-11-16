@@ -10,19 +10,20 @@ import {
   $folded,
   $held,
   $iter,
-  $iterator,
   $last,
   $lastDropping,
   $lazyTakeWhile,
   $live,
   $mapFrom,
   $next,
+  $nth,
   $rev,
   $skipping,
   $unwindsOn,
   iterator_chain,
   iterator_map,
   iterator_skip,
+  iterator_take,
 } from "@rust-js/std";
 
 export function entry() {
@@ -203,65 +204,93 @@ function main() {
     ),
   ).join("");
   console.log(`folded ${text}`);
-  text = $foldToArray(
-    $folded(
-      $skipping(
-        $closing(
-          $iterator(
-            [ds()],
-            ownIterator_next,
-            false,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            ownIterator_nth,
-          ),
-          (it) => {
-            for (const item of it.of[0]) {
-              dDrop_drop(item);
-            }
-          },
-        ).take(3),
-        1,
+  const iter = iterator_map(
+    iterator_skip(
+      iterator_take(
+        [ds()],
+        3,
+        { next: ownIterator_next, nth: ownIterator_nth },
+        (own) => {
+          for (const item of own[0]) {
+            dDrop_drop(item);
+          }
+        },
         dDrop_drop,
-      ).map((d) => {
-        const result = String(d[0]);
-        dDrop_drop(d);
-        return result;
-      }),
-      true,
+      ),
+      1,
+      { next: $next, fold: $foldOf, nth: $nth },
+      (take) => {
+        take.return();
+      },
+      dDrop_drop,
     ),
-  ).join("");
-  console.log(`first by next ${text}`);
-  let m = $mapFrom(
-    new Map(),
-    $folded(
-      $skipping(
-        $closing(
-          $iterator(
-            [ds()],
-            ownIterator_next,
-            false,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            ownIterator_nth,
-          ),
-          (it) => {
-            for (const item of it.of[0]) {
-              dDrop_drop(item);
-            }
-          },
-        ).take(2),
-        0,
-        dDrop_drop,
-      ).map((d) => [1, d]),
-    ),
-    false,
+    (d) => {
+      const result$2 = String(d[0]);
+      dDrop_drop(d);
+      return result$2;
+    },
+    { next: $next, fold: $foldOf, nth: $nth },
+    (skip) => {
+      skip.return();
+    },
+    undefined,
+    undefined,
     dDrop_drop,
   );
+  let result;
+  try {
+    result = $foldToArray($folded(iter, true)).join("");
+  } catch (error) {
+    throw $unwindsOn(error);
+  } finally {
+    if ($live()) {
+      iter.return();
+    }
+  }
+  text = result;
+  console.log(`first by next ${text}`);
+  const iter$1 = iterator_map(
+    iterator_skip(
+      iterator_take(
+        [ds()],
+        2,
+        { next: ownIterator_next, nth: ownIterator_nth },
+        (own) => {
+          for (const item of own[0]) {
+            dDrop_drop(item);
+          }
+        },
+        dDrop_drop,
+      ),
+      0,
+      { next: $next, fold: $foldOf, nth: $nth },
+      (take) => {
+        take.return();
+      },
+      dDrop_drop,
+    ),
+    (d) => [1, d],
+    { next: $next, fold: $foldOf, nth: $nth },
+    (skip) => {
+      skip.return();
+    },
+    (value) => {
+      dDrop_drop(value[1]);
+    },
+    undefined,
+    dDrop_drop,
+  );
+  let result$1;
+  try {
+    result$1 = $mapFrom(new Map(), $folded(iter$1), false, dDrop_drop);
+  } catch (error) {
+    throw $unwindsOn(error);
+  } finally {
+    if ($live()) {
+      iter$1.return();
+    }
+  }
+  let m = result$1;
   try {
     console.log(
       `replaced [${Array.from(m.values())
@@ -332,7 +361,7 @@ function main() {
     ),
   );
   console.log(`list [${list.join(", ")}]`);
-  const iter = iterator_skip(
+  const iter$2 = iterator_skip(
     [ds()],
     1,
     { next: lastsIterator_next, last: lastsIterator_last },
@@ -343,17 +372,17 @@ function main() {
     },
     dDrop_drop,
   );
-  let result;
+  let result$2;
   try {
-    result = $lastDropping(iter, dDrop_drop);
+    result$2 = $lastDropping(iter$2, dDrop_drop);
   } catch (error) {
     throw $unwindsOn(error);
   } finally {
     if ($live()) {
-      iter.return();
+      iter$2.return();
     }
   }
-  last = result;
+  last = result$2;
   function map$1(d) {
     const result = d[0];
     dDrop_drop(d);
@@ -361,7 +390,7 @@ function main() {
   }
   const value$1 = last != null ? map$1(last) : undefined;
   console.log(`own last ${value$1 == null ? "None" : `Some(${value$1})`}`);
-  const iter$1 = iterator_skip(
+  const iter$3 = iterator_skip(
     iterator_chain(
       [ds()],
       [[[5], [6]]],
@@ -404,17 +433,17 @@ function main() {
     },
     dDrop_drop,
   );
-  let result$1;
+  let result$3;
   try {
-    result$1 = $lastDropping(iter$1, dDrop_drop);
+    result$3 = $lastDropping(iter$3, dDrop_drop);
   } catch (error) {
     throw $unwindsOn(error);
   } finally {
     if ($live()) {
-      iter$1.return();
+      iter$3.return();
     }
   }
-  last = result$1;
+  last = result$3;
   function map$2(d) {
     const result = d[0];
     dDrop_drop(d);
