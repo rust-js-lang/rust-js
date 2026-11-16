@@ -547,3 +547,22 @@ own name, is made once, `Name::declared`, and cloned. The probe of part 1
 counts no name of an item's made of text in the corpus as lowered, tidied
 included: step 1 is done, the flip of `Name: Eq` to ids next, whose
 output is judged as this ADR's "Names are ids" section says.
+
+## Names are ids, step 1's measure at creation (2026-11-16)
+
+The flip, run once, showed that the probe's zero held only for names left
+in the finished module: a pass that makes a name of a word and then merges
+or drops it, tidy's `flag_values`' `Expr::var(x.word())` beside the
+temporary `_3`, leaves no trace there, and at the flip `declarations` took
+the two for two variables and dropped the write, a wrong answer
+(`flag_of_a_guarded_match`). So step 1's gate is the creation of names: no
+name of an item's is made of a word (`From<&str>`, `From<String>`,
+`Expr::var` of one) anywhere in a compile of the corpus, std or the
+ports, which a probe of `#[track_caller]` on those reports by the line that
+made it (the lead's decision). Of 19,196 such creations in the corpus,
+lowering's are none now: a format's stand-ins (`_$argumentN`), lowering's
+placeholders for no name, a dictionary's and a variant tag's module
+`const`s, a namespace's, the sentinels a pass substitutes (`SUBJECT`,
+`HELD_SOME`, `value`), and parameters a pass spells itself (`it`, `lazy`,
+`cycle`, `location`). Tidy's and preparation's are m3-max's and ioCK's,
+the labels the program writes taking the form approved for them.

@@ -251,10 +251,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
         }
         for &alias in aliases.iter().chain(state.builders.keys()) {
-            state.locals.names[alias] = String::new().into();
+            state.locals.names[alias] = js::Name::default();
             state.locals.declared[alias] = true;
         }
-        state.locals.names[mir::RETURN_PLACE] = String::new().into();
+        state.locals.names[mir::RETURN_PLACE] = js::Name::default();
         state.writer = Some((aliases, name));
     }
 }
@@ -755,7 +755,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // One the program names nothing and reads nowhere, `_: Ref`,
         // is `_`.
         if unnamed(&state.locals, local) {
-            state.locals.names[local] = String::new().into();
+            state.locals.names[local] = js::Name::default();
         }
         let name = match state.locals.names[local].word() {
             "" => self.fresh(Role::Unread),

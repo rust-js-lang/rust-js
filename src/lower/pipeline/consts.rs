@@ -37,7 +37,7 @@ pub(super) struct Consts<'b, 'tcx> {
 pub(super) fn const_name(word: &str, key: LocalDefId, local: bool, owned: bool) -> js::Name {
     match (local, owned) {
         (true, _) => js::Name::item(word, key.local_def_index.as_u32(), None),
-        (false, true) => word.into(),
+        (false, true) => js::Name::declared(word.to_string()),
         (false, false) => js::Name::module(word),
     }
 }
@@ -235,7 +235,7 @@ pub(super) fn place_consts(
         let info = &fns[&id];
         let adt = tcx.adt_def(tcx.parent(id));
         const_items.entry(info.module).or_default().push(js::Const {
-            name: info.name.clone().into(),
+            name: js::Name::module(&info.name),
             value: crate::lower::bindings::variant_tag(tcx, adt.variant_with_id(id)),
             mutable: false,
             fields: js::Fields::default(),

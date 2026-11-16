@@ -206,7 +206,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // Of a value that's its own copy, a type parameter's no
                     // caller gives a copy function, the `Option` itself, not
                     // `value == null ? value : value` (ADR 0289, amended).
-                    let probe = Expr::var("value");
+                    let probe = Expr::var(js::Name::declared("value".to_string()));
                     if !boxed && self.copy_parts(probe.clone(), item, stored).kind == probe.kind {
                         return place;
                     }

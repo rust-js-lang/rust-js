@@ -951,7 +951,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 /// comparison of it with what's not it, `x === task`, the argument written
 /// `HELD_SOME`: the `===`, `HELD_SOME === task`.
 fn compared_with(p: &Expr) -> Option<Expr> {
-    let applied = crate::lower::calls::apply(p.clone(), vec![Expr::var(HELD_SOME)]);
+    let applied = crate::lower::calls::apply(p.clone(), vec![Expr::var(js::Name::declared(HELD_SOME.to_string()))]);
     let js::ExprKind::Binary(Op::Eq, a, b) = &applied.kind else {
         return None;
     };
@@ -965,7 +965,7 @@ fn compared_with(p: &Expr) -> Option<Expr> {
 /// empty, `$some !== ""` (`Expr::text_truth`): as JS's `||` tests what it's
 /// given (ADR 0635).
 fn tests_its_truth(p: &Expr) -> bool {
-    let applied = crate::lower::calls::apply(p.clone(), vec![Expr::var(HELD_SOME)]);
+    let applied = crate::lower::calls::apply(p.clone(), vec![Expr::var(js::Name::declared(HELD_SOME.to_string()))]);
     let tested = applied.text_truth().cloned().unwrap_or_else(|| applied.tested());
     matches!(&tested.kind, js::ExprKind::Var(v) if v.is(HELD_SOME))
 }

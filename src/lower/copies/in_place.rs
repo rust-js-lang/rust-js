@@ -70,7 +70,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// type nothing is known to change in place, whose copy is a value of
     /// its own, an object or an array, not the value itself, a number's.
     fn copies_left_out(&self, ty: Ty<'tcx>) -> bool {
-        let value = Expr::var("value");
+        let value = Expr::var(js::Name::declared("value".to_string()));
         self.is_copy(ty) && !self.contains_mutated(ty) && !js::same_path(&self.copy(value.clone(), ty), &value)
     }
 }

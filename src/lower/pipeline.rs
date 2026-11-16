@@ -732,8 +732,9 @@ pub fn lower_crate<'tcx>(
             let span = def_id
                 .as_local()
                 .map_or(js::Span::NONE, |local| sources.item_span(tcx, local));
+            // At the module's top, its names the module's (ADR 1150).
             let constant = |name: String, value: Expr, export: bool| js::Const {
-                name: name.into(),
+                name: js::Name::module(&name),
                 value,
                 mutable: false,
                 fields: js::Fields::default(),

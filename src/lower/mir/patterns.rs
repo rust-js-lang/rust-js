@@ -358,7 +358,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         for &(bound, of) in bindings {
             let read = Expr::var(&state.locals.names[of]);
             state.in_place.insert(bound, read);
-            state.locals.names[bound] = String::new().into();
+            state.locals.names[bound] = js::Name::default();
             state.locals.declared[bound] = true;
         }
     }

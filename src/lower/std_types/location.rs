@@ -120,9 +120,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// parts of it given a name, `((location) => ..)(at())`.
     pub(in crate::lower) fn location_shown(&mut self, value: Expr, debug: bool, span: Span) -> R<Expr> {
         if !value.reads_same() && !matches!(value.kind, ExprKind::Object(..)) {
-            let shown = self.location_shown(Expr::var("location"), debug, span)?;
+            let location = crate::js::Name::declared("location".to_string());
+            let shown = self.location_shown(Expr::var(&location), debug, span)?;
             let shown = Expr::arrow(
-                vec!["location".into()],
+                vec![location.into()],
                 vec![crate::js::StmtKind::Return(Some(shown)).at(crate::js::Span::NONE)],
             );
             return Ok(self.applied(shown, value));

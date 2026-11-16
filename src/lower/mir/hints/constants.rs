@@ -81,7 +81,7 @@ impl<'tcx> FnCx<'_, 'tcx> {
             thir::PatKind::Variant { .. } | thir::PatKind::Or { .. }
                 if let Some((adt, args, variants)) = self.untagged_variants(pattern) =>
             {
-                let subject = js::Expr::var(SUBJECT);
+                let subject = js::Expr::var(js::Name::declared(SUBJECT.to_string()));
                 let cases = (self.recognition()).untagged_cases(adt, args, &variants, &subject, present)?;
                 Some(cases.into_iter().map(|case| (Constant::Kind(case), None)).collect())
             }
@@ -91,7 +91,7 @@ impl<'tcx> FnCx<'_, 'tcx> {
                 subpatterns,
                 ..
             } if subpatterns.is_empty() && adt_def.variant(*variant_index).fields.is_empty() => {
-                let subject = js::Expr::var(SUBJECT);
+                let subject = js::Expr::var(js::Name::declared(SUBJECT.to_string()));
                 let test = self.variant_test(subject.clone(), pattern.ty, *adt_def, *variant_index, false);
                 match test.kind {
                     js::ExprKind::Binary(js::Op::Eq, s, variant) if *s == subject => {

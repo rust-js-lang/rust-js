@@ -27,10 +27,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if !effectful.contains(&true) {
             return Ok(false);
         }
-        let stand_in = |i: usize| format!("_$argument{i}");
+        let stand_ins: Vec<js::Name> = (0..items.len())
+            .map(|i| js::Name::declared(format!("_$argument{i}")))
+            .collect();
+        let stand_in = |i: usize| stand_ins[i].word();
         let stood: Vec<Value<'tcx>> = (items.iter().enumerate())
             .map(|(i, item)| match item {
-                Value::Fmt(kind, ty, _) => Value::Fmt(*kind, *ty, Expr::var(stand_in(i))),
+                Value::Fmt(kind, ty, _) => Value::Fmt(*kind, *ty, Expr::var(&stand_ins[i])),
                 other => other.clone(),
             })
             .collect();

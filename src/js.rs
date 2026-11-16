@@ -259,7 +259,7 @@ impl Namespace {
             Some(at) => &mut namespaces[at],
             None => {
                 namespaces.push(Namespace {
-                    name: name.into(),
+                    name: Name::module(name),
                     constants: Vec::new(),
                     methods: Vec::new(),
                     export: false,

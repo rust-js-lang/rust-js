@@ -365,9 +365,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // reads the same, or is `$iter(v)`, whose rest is `v`; else as an
             // arrow's parameter, which tidy makes a `const`.
             let in_place = value.reads_same() || crate::lower::iterators::fresh_iter_source(&value).is_some();
+            let it_name = js::Name::declared("it".to_string());
             let it = match in_place {
                 true => value.clone(),
-                false => Expr::var("it"),
+                false => Expr::var(&it_name),
             };
             let left = self.stepped_left(it, ty, false, span)?;
             let shown = self.debug_string_with(left, Ty::new_slice(self.tcx, item), span, pretty)?;
@@ -377,7 +378,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 true => shown,
                 false => Expr::call(
                     Expr::arrow(
-                        vec!["it".into()],
+                        vec![it_name.clone().into()],
                         vec![StmtKind::Return(Some(shown)).at(js::Span::NONE)],
                     ),
                     vec![value],
@@ -560,13 +561,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // `LazyCell(1)`, or `LazyCell(<uninit>)` where it isn't made yet.
             ty::Adt(adt, args) if std(StdItem::LazyCell) => {
                 let name = self.tcx.item_name(adt.did());
-                let shown = self.debug_string_with(Expr::held(Expr::var("lazy")), args.type_at(0), span, pretty)?;
-                let made = crate::lower::std_types::lazy::is_made(Expr::var("lazy"));
+                let lazy = js::Name::declared("lazy".to_string());
+                let shown = self.debug_string_with(Expr::held(Expr::var(&lazy)), args.type_at(0), span, pretty)?;
+                let made = crate::lower::std_types::lazy::is_made(Expr::var(&lazy));
                 let shown = Expr::cond(made, shown, Expr::str("<uninit>"));
                 let plain = join(vec![Expr::str(format!("{name}(")), shown.clone(), Expr::str(")")]);
                 let shown = self.pretty_or(pretty, plain, &format!("{name}("), Expr::array(vec![shown]), ")");
                 let f = Expr::arrow(
-                    vec!["lazy".into()],
+                    vec![lazy.clone().into()],
                     vec![StmtKind::Return(Some(shown)).at(js::Span::NONE)],
                 );
                 Ok(self.applied(f, value))
@@ -652,12 +654,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // left (ADR 0473).
             ty::Adt(..) if let Some(name) = self.recognition().shows_its_slice(ty) => {
                 let item = self.iterator_item(ty).expect("an iterator's item");
-                let left = self.stepped_left(Expr::var("it"), ty, false, span)?;
+                let it_name = js::Name::declared("it".to_string());
+                let left = self.stepped_left(Expr::var(&it_name), ty, false, span)?;
                 let items = self.debug_items(left, item, "[", "]", span, pretty)?;
                 let plain = join(vec![Expr::str(format!("{name}(")), items.clone(), Expr::str(")")]);
                 let shown = self.pretty_or(pretty, plain, &format!("{name}("), Expr::array(vec![items]), ")");
                 let show = Expr::arrow(
-                    vec!["it".into()],
+                    vec![it_name.clone().into()],
                     vec![StmtKind::Return(Some(shown)).at(js::Span::NONE)],
                 );
                 Ok(self.applied(show, value))
@@ -667,7 +670,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A `Cycle` a struct holds, which keeps what it started with and
             // what it steps (ADR 0544): `Cycle { orig: .., iter: .. }`.
             ty::Adt(..) if let Some(source) = self.held_cycle(ty) => {
-                let it = Expr::var("cycle");
+                let cycle_name = js::Name::declared("cycle".to_string());
+                let it = Expr::var(&cycle_name);
                 let orig = self.debug_string_with(Expr::member(it.clone(), "orig"), source, span, pretty)?;
                 let iter = self.debug_string_with(Expr::member(it, "iter"), source, span, pretty)?;
                 let plain = join(vec![
@@ -683,7 +687,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 ];
                 let shown = self.pretty_or(pretty, plain, "Cycle {", Expr::array(fields), "}");
                 let show = Expr::arrow(
-                    vec!["cycle".into()],
+                    vec![cycle_name.clone().into()],
                     vec![StmtKind::Return(Some(shown)).at(js::Span::NONE)],
                 );
                 Ok(self.applied(show, value))
