@@ -846,3 +846,16 @@ tidy-stages net's variant), the call still went through the dictionary,
 `writes_arguments_piecewise` holds each such call: the form is the
 dictionary's, as its entry takes it. Built as it is, nothing changes: the
 recogniser made the same answer of each such call.
+
+## Amendment: a range's `Debug`, a piece at a time (2026-11-16)
+
+A range written into a writer through generic code, or a derived `Debug`'s
+field of one in a writer shown into a writer, was refused (#1897): its
+`fmtInto` had no writes. std's `Debug` of a range writes straight to the
+formatter, `self.start.fmt(f)?; write!(f, "..")?; self.end.fmt(f)`, no
+builder, so `debug_sink_writes` gives it so: its start's writes, its dots,
+its end's, each bound by the same options. A `RangeInclusive` that may be
+exhausted, of numbers or `char`s, is left refused: std writes
+` (exhausted)` only where it is, and a sink's write of `""` in its place
+would be a call of the writer's too (#1963). Corpus case
+`range_written_into_a_generic_writer`, against native, records each call.

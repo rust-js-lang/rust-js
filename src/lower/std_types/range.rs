@@ -61,7 +61,7 @@ impl RangeKind {
     }
 
     /// What `{:?}` shows between its bounds.
-    fn dots(self) -> &'static str {
+    pub(in crate::lower) fn dots(self) -> &'static str {
         match self {
             RangeKind::Inclusive | RangeKind::ToInclusive => "..=",
             _ => "..",

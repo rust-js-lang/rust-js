@@ -225,6 +225,38 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 vec![Expr::str(name), Expr::array(vec![field]), pretty.clone()],
             );
         }
+        // A range's, which std writes straight to the formatter, no builder:
+        // `self.start.fmt(f)?; write!(f, "..")?; self.end.fmt(f)`, each bound
+        // by the same options (#1897). Not of a `RangeInclusive` that may be
+        // exhausted, whose ` (exhausted)` std writes only where it is: a
+        // write of `""` in its place would be a call of the writer's too.
+        if let Some(kind) = self.range_kind(ty) {
+            let mut out = Vec::new();
+            let (parts, exhausted) = self.range_state(value.clone(), ty, &mut out);
+            if !value.reads_same() || !out.is_empty() || exhausted.is_some() {
+                return Ok(None);
+            }
+            let mut writes = Vec::new();
+            let mut parts = parts.into_iter();
+            let bound = |cx: &mut Self, part: Option<Expr>, writes: &mut Vec<SinkWrite>| -> R<bool> {
+                let (Some(part), Some(index)) = (part, cx.range_index(ty)) else {
+                    return Ok(false);
+                };
+                let Some(written) = cx.debug_sink_writes(part, index, (options, pretty), span)? else {
+                    return Ok(false);
+                };
+                writes.extend(written);
+                Ok(true)
+            };
+            if kind.bounds().first() == Some(&"start") && !bound(self, parts.next(), &mut writes)? {
+                return Ok(None);
+            }
+            writes.push(SinkWrite::Str(Expr::str(kind.dots())));
+            if kind.bounds().last() == Some(&"end") && !bound(self, parts.next(), &mut writes)? {
+                return Ok(None);
+            }
+            return Ok(Some(writes));
+        }
         // A sequence's, `debug_list().entries(..)`.
         let item = match ty.kind() {
             ty::Array(item, _) | ty::Slice(item) => Some(*item),

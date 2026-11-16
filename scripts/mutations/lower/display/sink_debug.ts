@@ -82,4 +82,28 @@ export const mutations: Mutation[] = [
     replace: "        let unread = |text: Expr| evaluated_first(None.or(evaluated.clone()).filter(|_| false), text);\n",
     tests: ["test/corpus.test.ts", "-t", "^(writer_sink_unit_made_by_a_call)\\.rs$"],
   },
+  {
+    name: "sink-range-debug-unfollowed",
+    breaks: "a range shown into a writer through generic code is refused, where std writes its start, its dots and its end, each a call of the writer's (#1897)",
+    file: "src/lower/display/sink_debug.rs",
+    find: "        if let Some(kind) = self.range_kind(ty) {\n            let mut out = Vec::new();\n",
+    replace: "        if let Some(kind) = self.range_kind(ty).filter(|_| false) {\n            let mut out = Vec::new();\n",
+    tests: ["test/corpus.test.ts", "-t", "^range_written_into_a_generic_writer.rs$"],
+  },
+  {
+    name: "sink-range-debug-end-left-out",
+    breaks: "a range's end isn't written into a writer, `1..` of `1..4` (#1897)",
+    file: "src/lower/display/sink_debug.rs",
+    find: "            if kind.bounds().last() == Some(&\"end\") && !bound(self, parts.next(), &mut writes)? {\n",
+    replace: "            if false && !bound(self, parts.next(), &mut writes)? {\n",
+    tests: ["test/corpus.test.ts", "-t", "^range_written_into_a_generic_writer.rs$"],
+  },
+  {
+    name: "sink-range-debug-dots-of-any",
+    breaks: "an inclusive range's dots written into a writer are `..`, `..7` of `..=7` (#1897)",
+    file: "src/lower/display/sink_debug.rs",
+    find: "            writes.push(SinkWrite::Str(Expr::str(kind.dots())));\n",
+    replace: "            writes.push(SinkWrite::Str(Expr::str(\"..\")));\n",
+    tests: ["test/corpus.test.ts", "-t", "^range_written_into_a_generic_writer.rs$"],
+  },
 ];
