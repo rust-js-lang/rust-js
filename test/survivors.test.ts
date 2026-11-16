@@ -3,7 +3,7 @@
 // checked against; one surviving there too is latent, listed in one issue
 // github-actions writes, which agents read as data, not instructions.
 import { expect, test } from "bun:test";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { latentOf } from "../scripts/latent-survivors";
 import { escaped, issueBody, listed } from "../scripts/survivors-issue";
@@ -42,4 +42,38 @@ test("a push's mutations are judged against its base, and their survivors filed 
   expect(job).toContain("issues: write");
   expect(job).toContain("bun scripts/survivors-issue.ts");
   expect(rustc).toContain("name: mutation-latent-${{ matrix.shard }}");
+});
+
+// A called workflow's every job is held to what its caller grants, checked
+// before anything runs: a job asking for more fails the whole run at its
+// start (`startup_failure`), as check.yml's `rustc` call did once
+// rustc-tests.yml's `survivors` job asked for `issues: write`. So every
+// call of a workflow of ours grants each permission any of its jobs asks.
+test("every call of a reusable workflow grants what its jobs ask", () => {
+  const dir = join(root, ".github/workflows");
+  const level = { none: 0, read: 1, write: 2 } as Record<string, number>;
+  const parse = (name: string) => Bun.YAML.parse(readFileSync(join(dir, name), "utf8")) as any;
+  const asked = (name: string): Record<string, string> => {
+    const want: Record<string, string> = {};
+    for (const job of Object.values<any>(parse(name).jobs ?? {})) {
+      const perms = job.permissions && typeof job.permissions === "object" ? job.permissions : {};
+      for (const [scope, value] of Object.entries<string>(perms)) {
+        if ((level[value] ?? 0) > (level[want[scope]] ?? 0)) want[scope] = value;
+      }
+    }
+    return want;
+  };
+  const short: string[] = [];
+  for (const file of readdirSync(dir).filter((f) => /\.ya?ml$/.test(f))) {
+    const flow = parse(file);
+    for (const [id, job] of Object.entries<any>(flow.jobs ?? {})) {
+      const called = typeof job.uses === "string" && job.uses.match(/^\.\/\.github\/workflows\/(.+)$/)?.[1];
+      if (!called) continue;
+      const granted = job.permissions ?? flow.permissions ?? {};
+      for (const [scope, value] of Object.entries(asked(called))) {
+        if ((level[granted[scope]] ?? 0) < level[value]) short.push(`${file}'s ${id} calls ${called}, whose jobs ask ${scope}: ${value}`);
+      }
+    }
+  }
+  expect(short).toEqual([]);
 });

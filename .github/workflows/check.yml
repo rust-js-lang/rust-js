@@ -500,11 +500,13 @@ jobs:
     needs: plan
     if: ${{ inputs.nightly || needs.plan.outputs.rustc == 'true' }}
     uses: ./.github/workflows/rustc-tests.yml
-    # What its mutations job may read, though this runs none: a called
-    # workflow's every job is held to what its caller grants.
+    # What its mutations and survivors jobs may use, though this runs
+    # neither: a called workflow's every job is held to what its caller
+    # grants, and a job asking more fails the run before it starts.
     permissions:
       contents: read
       actions: read
+      issues: write
 
   # The mutations the change touches (ADR 0093): those in the functions and
   # tests it changes, and those it adds or edits, on as many machines as

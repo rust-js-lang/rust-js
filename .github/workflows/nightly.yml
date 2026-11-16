@@ -56,6 +56,12 @@ jobs:
   fuzz:
     needs: seeds
     uses: ./.github/workflows/rustc-tests.yml
+    # What its survivors job may use, though this runs no mutations: a
+    # called workflow's every job is held to what its caller grants.
+    permissions:
+      contents: read
+      actions: read
+      issues: write
     with:
       fuzz_seeds: '600'
       fuzz_start: ${{ needs.seeds.outputs.start }}
