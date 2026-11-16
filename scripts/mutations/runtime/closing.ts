@@ -72,7 +72,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/closing.js",
     find: "    nth: own ? sliceNth : it.nth !== undefined ? (k, dropItem) => done(it.nth(k, dropItem))",
     replace: "    nth: own ? sliceNth : false ? (k, dropItem) => done(it.nth(k, dropItem))",
-    tests: ["test/corpus.test.ts", "-t", "skip_try_fold"],
+    tests: ["test/corpus.test.ts", "-t", "^own_iterator_dropped_from_back.rs$"],
   },
   {
     name: "closing-length-unknown",

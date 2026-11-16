@@ -271,11 +271,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter/sources.rs",
     find: "                false => self.js_iterator(value),\n",
     replace: "                false => value,\n",
-    tests: [
-      "test/lowering-generic-iterators.test.ts",
-      "-t",
-      "takes the crate's own from behind",
-    ],
+    tests: ["test/corpus.test.ts", "-t", "^by_ref_lends.rs$"],
+    snapshots: true,
   },
   {
     name: "fresh-iter-len-stepped",

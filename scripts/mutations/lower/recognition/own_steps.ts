@@ -43,7 +43,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition/own_steps.rs",
     find: "            return self.is_unknown(ty) && (reach == Reach::May || step.asked_at_run_time());\n",
     replace: "            return self.is_unknown(ty) && step.asked_at_run_time();\n",
-    tests: ["test/corpus.test.ts", "-t", "^generic_collect_own_fold.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^adapter_made_in_generic_code_asked_its_hint.rs$"],
+    snapshots: true,
   },
   {
     name: "may-fold-its-own-not-through-adapters",
@@ -53,6 +54,7 @@ export const mutations: Mutation[] = [
     find: "self.reaches_its_own(source, asked, reach))",
     replace: "self.reaches_its_own(source, asked, Reach::Sure))",
     tests: ["test/corpus.test.ts", "-t", "^generic_collect_own_fold.rs$"],
+    snapshots: true,
   },
   {
     name: "folds-its-own-not-through-chain",

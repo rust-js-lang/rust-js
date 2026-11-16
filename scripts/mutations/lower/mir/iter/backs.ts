@@ -435,7 +435,8 @@ export const mutations: Mutation[] = [
     find: "        let Some(back) = self.own_next_back(iter_ty)? else {\n",
     replace:
       "        let Some(back) = self.own_next_back(iter_ty)?.filter(|_| false) else {\n",
-    tests: ["test/corpus.test.ts", "-t", "iterator_back_ends"],
+    tests: ["test/corpus.test.ts", "-t", "^rev_own_back_methods.rs$"],
+    snapshots: true,
   },
   {
     name: "rev-own-methods-peeled",

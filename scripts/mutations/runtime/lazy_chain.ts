@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/lazy_chain.js",
     find: "  $forward(chained, first, { fold, last, nth, tryFold, count, advanceBy });\n",
     replace: "  $forward(chained, first, { fold, last, nth, count, advanceBy });\n",
-    tests: ["test/corpus.test.ts", "-t", "skip_try_fold"],
+    tests: ["test/corpus.test.ts", "-t", "^chain_stepped_from_its_back_elsewhere.rs$"],
   },
   {
     name: "chain-last-first-unasked",
