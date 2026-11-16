@@ -629,6 +629,13 @@ function setterText(setter: Setter, it: string): string {
 const mapped = (from: Shape) =>
   nested(from.item) ? "x.v() + 100" : { D: "D(x.0 + 100)", N: "x + 100", S: "(x.v() + 100).to_string()", "&D": "x.0 + 100", "&N": "x + 100", "&S": "x.v() + 100", pair: "x.v()" }[from.item];
 
+/** Each stable std adapter neither catalog has, `adapters` nor
+ * `stepAdapters`, and why (test/adapter-catalog.test.ts holds them to
+ * std's own list). */
+export const excludedAdapters: Record<string, string> = {
+  cycle: "endless: no table's consumer would end; the corpus's cycle_* cases step it by `take`",
+};
+
 /** The adapters only the table runs, besides the matrix's. */
 export const stepAdapters: Adapter[] = [
   // Flattens of items whose sizes std's flatten counts, an array's

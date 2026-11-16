@@ -818,3 +818,29 @@ Its first run found three wrong answers:
   `NaN`. Fixed in the same push.
 - #1983: a `copied()` of a generic source asked its `len()` after a copy
   is made without its back.
+
+### Amended: the catalog held to std's, and three more routes (2026-11-16)
+
+The copy matrix missed `filter_map` and the `by_ref()` route, both of
+which #1981 throws on: its adapters were the iterator matrix's `adapters`,
+a hand-kept list (bug kinds' "enumerated cases"). It now steps the whole
+catalog, `adapters` and `stepAdapters`. test/adapter-catalog.test.ts holds
+that catalog to std's own list: each stable method of `Iterator` and
+`DoubleEndedIterator` that takes `self` and makes one of
+`core::iter::adapters`' structs is in the catalog, or `excludedAdapters`
+says why it isn't (`cycle`, endless). The list is read from the
+toolchain's std, so a toolchain that adds an adapter fails the test until
+the catalog has it.
+
+Three more routes join `clone`, `dup` and `pass`:
+- `by_ref`: `pass(a.by_ref())`, a lend through generic code, then `a`
+  again.
+- `dyn`: `&mut dyn DoubleEndedIterator`, then `a` again, by the abilities
+  a trait object has.
+- `steps`: `back_of(a)`, a callee that steps it from its back and gives
+  back only the item.
+
+That's 53,360 cases in 890 programs, 447 s on the mini in 10 parts. They
+found #1985 (a `vec::IntoIter` lent as `dyn` throws), #1986 (a lent
+`take()`'s `rfold` drops in the wrong order) and #1987 (a lent `scan()`'s
+hint loses its upper bound), and #1981's `filter_map` shapes.

@@ -10,10 +10,14 @@
 // both builds against native Rust, as the iterator tables are; a per-push
 // slice where the iterators' code changes, all of it nightly.
 //
-// The ways of copying:
+// The ways of copying, or of handing it on:
 //   clone      `b = a.clone()`
 //   dup        `b = dup(&a)`, a clone inside generic code, `I: Clone`
 //   pass       `b = pass(a)`, a move through an opaque generic identity
+//   by_ref     `b = pass(a.by_ref())`, a lend through the same, then `a` again
+//   dyn        `b: &mut dyn DoubleEndedIterator = &mut a`, then `a` again
+//   steps      `back_of(a)`, a callee that steps it from its back and gives
+//              back only the item, by `next_back` alone
 // A move apart, an iterator moved into what a JS unit holds, is the
 // runtime package's rows' (ADR 0561, amended with #1976), not here.
 //
@@ -24,7 +28,7 @@
 // its other end, interleaved, and drains what's left of each, every item's
 // value, clone and drop printed.
 
-import { adapters, sources, type Row } from "./iterator-matrix";
+import { adapters, sources, stepAdapters, type Row } from "./iterator-matrix";
 import { prelude } from "./iterator-matrix-prelude";
 
 type Source = (typeof sources)[number];
@@ -32,8 +36,16 @@ type Adapter = (typeof adapters)[number];
 type Shape = Source["shape"];
 
 /** A way of copying an iterator. */
-export type Way = "clone" | "dup" | "pass";
-export const ways: Way[] = ["clone", "dup", "pass"];
+export type Way = "clone" | "dup" | "pass" | "by_ref" | "dyn" | "steps";
+export const ways: Way[] = ["clone", "dup", "pass", "by_ref", "dyn", "steps"];
+
+/** Of a way, the abilities it steps by: a `dyn`'s, those a trait object
+ * has, not `Sized`'s folds nor `ExactSizeIterator`'s `len`; a callee's,
+ * `next_back` alone. */
+const waysAbilities: Partial<Record<Way, string[]>> = {
+  dyn: ["next", "next_back", "nth", "nth_back", "size_hint"],
+  steps: ["next_back"],
+};
 
 /** An ability of an iterator: what it needs of the chain's shape, and
  * whether it consumes the iterator. */
@@ -73,7 +85,11 @@ export const copySources = (): Source[] => [
  * has them, the paths a compiled form's knowledge takes (#1976's `rev` over
  * `copied` over `map`). `peekable`'s and `by_ref`'s lets aren't chains. */
 export function chainsOf(from: Shape): Adapter[][] {
-  const usable = adapters.filter((a) => a.name !== "peekable" && a.name !== "by_ref" && a.name !== "flatten");
+  // The catalog's adapters, the iterator matrix's and the table's
+  // (test/adapter-catalog.test.ts holds it to std's), but those made by
+  // a `let` of the case's own, `peekable`'s, `by_ref`'s and a holding
+  // `map`'s, which `copyFn` doesn't write.
+  const usable = [...adapters, ...stepAdapters].filter((a) => !["peekable", "by_ref", "flatten", "map holding", "map holding block"].includes(a.name));
   const shapeOf = (chain: Adapter[]) => chain.reduce<Shape | undefined>((shape, a) => (shape ? a.shape(shape) : undefined), from);
   const named = (name: string) => usable.find((a) => a.name === name)!;
   const chains: Adapter[][] = [[], ...usable.map((a) => [a])];
@@ -109,6 +125,8 @@ export function copyCases(): CopyCase[] {
         for (const way of ways) {
           for (const ability of abilities) {
             if ((ability.back && !shape.back) || (ability.exact && !shape.exact)) continue;
+            if (waysAbilities[way] && !waysAbilities[way]!.includes(ability.name)) continue;
+            if (way === "dyn" && !shape.back) continue;
             const id = `${source.name}${generic ? " generic" : ""} | ${chain.map((a) => a.name).join(".") || "-"} | ${way} | ${ability.name}`;
             cases.push({ n: cases.length, id, source, generic, chain, way, ability, shape });
           }
@@ -140,7 +158,16 @@ function copyFn(c: CopyCase, n: number): string {
   const other = c.shape.back ? "next_back" : "next";
   const copied = way === "clone" ? "a.clone()" : way === "dup" ? "dup(&a)" : "pass(a)";
   const body: string[] = [`let mut a = ${expr};`, `println!("a next {:?}", a.next().map(|x| x.v()));`, `let mut b = ${copied};`];
-  if (way === "pass") {
+  if (way === "steps") {
+    // A callee steps it from its back and gives back only the item.
+    body.splice(2, 1, `println!("callee back {:?}", back_of(a).map(|x| x.v()));`);
+  } else if (way === "by_ref" || way === "dyn") {
+    // Lent: the lend stepped, then the original again from its other end.
+    body.splice(2, 1, way === "by_ref" ? "let mut b = pass(a.by_ref());" : "let b: &mut dyn DoubleEndedIterator<Item = _> = &mut a;");
+    body.push(ability.text("b", "b"));
+    if (!ability.consumes) body.push(`println!("b next {:?}", b.next().map(|x| x.v()));`);
+    body.push(`println!("a ${other} {:?}", a.${other}().map(|x| x.v()));`, `for x in a {\n        println!("a rest {}", x.v());\n    }`);
+  } else if (way === "pass") {
     // The original is moved: its copy alone is stepped.
     body.push(ability.text("b", "b"));
     if (!ability.consumes) body.push(`for x in b {\n        println!("b rest {}", x.v());\n    }`);
@@ -169,7 +196,7 @@ function copyFn(c: CopyCase, n: number): string {
 }
 
 /** The generic helpers each way of copying is through. */
-const helpers = `fn dup<I: Clone>(it: &I) -> I {\n    it.clone()\n}\n\nfn pass<I>(it: I) -> I {\n    it\n}`;
+const helpers = `fn dup<I: Clone>(it: &I) -> I {\n    it.clone()\n}\n\nfn pass<I>(it: I) -> I {\n    it\n}\n\nfn back_of<I: DoubleEndedIterator>(mut it: I) -> Option<I::Item> {\n    it.next_back()\n}`;
 
 /** A program of `cases`, each run in turn. */
 export function copyProgram(cases: CopyCase[]): string {

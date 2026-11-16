@@ -23,6 +23,12 @@ The new `table_rows_resized_unseen.rs` covers each way a table's row may
 resize with no row's `&mut` given to a call (#1849).
 The historical suite totals and CI timings below have not been remeasured.
 
+Changed on 2026-11-16: the copy matrix steps the whole catalog of
+adapters, `filter_map` and the other step adapters too, and three more
+routes (`by_ref`, `dyn`, a callee stepping it back): 53,360 cases, 447 s
+whole on the mini in 10 parts. Added `test/adapter-catalog.test.ts`, which
+holds the catalog to std's own list of adapters.
+
 Added on 2026-11-16: the copy matrix, `ITERATOR_TABLE=copies`
 (`test/copy-matrix.ts`, ADR 1090, amended): each compiled iterator form
 copied by `.clone()`, a clone in generic code or a move through a generic

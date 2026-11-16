@@ -479,7 +479,12 @@ test("a readability owner's mutation the test map can't place names its case", (
     const reached = lines ? casesReaching(m.file, lines[0], lines[1], cases) : { kind: "all" as const, why: "its site isn't in its file once" };
     // A site of a file changed since the map's commit is the map's to
     // place again, not the mutation's: the machine's map, CI's fetched by
-    // `bun run push`, is often some commits behind (ADR 1101, amended).
+    // `bun run push`, is often some commits behind (ADR 1101, amended). It
+    // can't flake: a file unchanged since the map's commit is placed by
+    // spans of exactly HEAD's text, under the one toolchain, whichever map
+    // the machine has, so each mutation judged gets one answer everywhere;
+    // a staler map judges fewer, never turning a pass into a failure. A
+    // hand-made map in the test instead would drift from the sources.
     if (reached.kind === "all" && reached.why.endsWith("changed since the map's commit")) return [];
     return reached.kind === "all" ? [`${m.name}: ${reached.why}`] : [];
   });
