@@ -294,3 +294,6 @@ Now, the lead for the user:
 - **The tree's hash is held to the target's.** `build.sh` keeps it in
   `wasm/target/rustc-sources.sha256` and fails where a restored target's
   differs from the checkout's, before it touches anything.
+
+Measured: the new key's first run, cold, 14.6 min (check 43786120684); the
+next, warm, 6.6 min, its build 117 s where it was 413 (check 43788507577).
