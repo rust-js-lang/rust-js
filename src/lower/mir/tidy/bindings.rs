@@ -8,6 +8,64 @@ mod temporaries;
 pub(super) use given::given_last;
 pub(super) use temporaries::readable_temporaries;
 
+/// A `let` declared first, in the body or a block of it, that nothing's
+/// left to assign or read; or only a block that declares it again, an
+/// index loop's item (ADR 1042); and a function made that nothing reads;
+/// `mentions`, how many times `b` reads each variable.
+pub(super) fn unused_lets(b: &mut Vec<Stmt>, mentions: IndexMap<js::Name, usize>) {
+    let mut declared: IndexMap<js::Name, usize> = IndexMap::default();
+    js::each_list(b, &mut |s| {
+        for stmt in s {
+            if let StmtKind::Let(name, _) | StmtKind::Const(name, _) = &stmt.kind {
+                *declared.entry(name.clone()).or_default() += 1;
+            }
+        }
+    });
+    js::statement_lists(b, &mut |s| {
+        let unread: Vec<js::Name> = (s.iter())
+            .filter_map(|stmt| match &stmt.kind {
+                StmtKind::Let(name, None)
+                    if !mentions.contains_key(name)
+                        || declared.get(name).is_some_and(|&n| n > 1) && redeclared_only(s, name) =>
+                {
+                    Some(name.clone())
+                }
+                _ => None,
+            })
+            .collect();
+        s.retain(|stmt| !matches!(&stmt.kind, StmtKind::Let(name, None) if unread.contains(name)));
+        // A function made that nothing reads, which making does
+        // nothing: a binding's value MIR held in a variable of
+        // its function's type, whose `&` is read by the type,
+        // `make(&text_of)` of a thread-local's initializer (rd542);
+        // or read, the program's, an instance's `noopU32` (#974).
+        s.retain(|stmt| {
+            !matches!(&stmt.kind, StmtKind::Const(name, value)
+                if !mentions.contains_key(name) && (matches!(value.kind, js::ExprKind::Arrow(..) | js::ExprKind::AsyncArrow(..))
+                        || matches!(value.kind, js::ExprKind::Var(_)) && value.facts.has(js::Known::Item)))
+        })
+    })
+}
+
+/// Whether each read and write of `name` in `stmts`, past its own `let
+/// name;`, is in a block that declares it again, a loop's item, `const row
+/// = v[i];`, so none is of the `let`'s.
+fn redeclared_only(stmts: &[Stmt], name: &js::Name) -> bool {
+    let mut rest: Vec<Stmt> = (stmts.iter())
+        .filter(|s| !matches!(&s.kind, StmtKind::Let(n, None) if n == name))
+        .cloned()
+        .collect();
+    js::statement_lists(&mut rest, &mut |list| {
+        if list
+            .iter()
+            .any(|s| matches!(&s.kind, StmtKind::Let(n, _) | StmtKind::Const(n, _) if n == name))
+        {
+            list.clear();
+        }
+    });
+    js::mentions_of(&rest, name) == 0
+}
+
 /// `const x = [loud(1), 2]` nothing reads: each part that does something, in
 /// turn, `loud(1);`, as the array, made here, is never seen; `const x =
 /// f()`, what a call gave, its `fmt::Result` say: `f();`; and `const old =
@@ -15,11 +73,11 @@ pub(super) use temporaries::readable_temporaries;
 /// the place it writes, a copy apart of it too, `$apart(dest.value)` (#527):
 /// `task.callback = next;`. Not another read, which may be a binding's
 /// getter, `el.offsetWidth`, which lays the page out.
-pub(super) fn unread_made(stmts: &mut Vec<Stmt>, mentions: &IndexMap<String, usize>) {
+pub(super) fn unread_made(stmts: &mut Vec<Stmt>, mentions: &IndexMap<js::Name, usize>) {
     let mut i = 0;
     while i < stmts.len() {
         if let StmtKind::Const(name, value) = &stmts[i].kind
-            && !mentions.contains_key(name.word())
+            && !mentions.contains_key(name)
             && !value.has_effects()
             && let read = match &value.kind {
                 ExprKind::Call(callee, args) if callee.helper_name() == Some("$apart") && args.len() == 1 => &args[0],
@@ -32,7 +90,7 @@ pub(super) fn unread_made(stmts: &mut Vec<Stmt>, mentions: &IndexMap<String, usi
             continue;
         }
         if let StmtKind::Const(name, value) = &stmts[i].kind
-            && !mentions.contains_key(name.word())
+            && !mentions.contains_key(name)
             && let ExprKind::Array(parts) = &value.kind
             // A spread's effect is the stepping it does, which only an
             // array or a call's arguments write: the array whole (#256).
@@ -49,7 +107,7 @@ pub(super) fn unread_made(stmts: &mut Vec<Stmt>, mentions: &IndexMap<String, usi
             continue;
         }
         if let StmtKind::Const(name, value) = &stmts[i].kind
-            && !mentions.contains_key(name.word())
+            && !mentions.contains_key(name)
             && matches!(value.kind, ExprKind::Call(..))
         {
             stmts[i].kind = StmtKind::Expr(value.clone());

@@ -603,4 +603,43 @@ export const mutations: Mutation[] = [
     replace: "                                let _ = none;\n",
     tests: ["test/lowering-nullable-tests.test.ts", "-t", "a variable a part of an && shows there"],
   },
+  {
+    name: "unread-instance-value-kept",
+    breaks: "a `const` nothing reads of an instance's value, `const twice = count4`, is kept, and so the value it reads (#974)",
+    file: "src/lower/mir/tidy/bindings.rs",
+    find: "                        || matches!(value.kind, js::ExprKind::Var(_)) && value.facts.has(js::Known::Item)))\n",
+    replace: "                        || false))\n",
+    tests: ["test/corpus.test.ts", "-t", "^const_generics.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "mir-tidy-unused-let-kept",
+    breaks: "a `let iter;` nothing assigns any more stays declared",
+    file: "src/lower/mir/tidy/bindings.rs",
+    find: "        s.retain(|stmt| !matches!(&stmt.kind, StmtKind::Let(name, None) if unread.contains(name)));\n",
+    replace: "        let _ = &unread;\n",
+    tests: [
+      "test/lowering-loops.test.ts",
+      "-t",
+      "if-let chains and loops from MIR",
+    ],
+  },
+  {
+    name: "redeclared-let-kept",
+    breaks:
+      "a `let x;` whose every read is in a block that declares `x` again, an index loop's item, `const x = v[i];`, stays before the loop, read by nothing (ADR 1042)",
+    file: "src/lower/mir/tidy/bindings.rs",
+    find: "                        || declared.get(name).is_some_and(|&n| n > 1) && redeclared_only(s, name) =>\n",
+    replace: "                    =>\n",
+    tests: ["test/lowering-index-loops.test.ts", "-t", "a for loop of a mut binding"],
+  },
+  {
+    name: "unread-arrow-const-kept",
+    breaks:
+      "a binding's value MIR held in a variable nothing reads is kept, `export const NAMED = (() => { const value = (value) => String(value); return make(String); })();` (rd542)",
+    file: "src/lower/mir/tidy/bindings.rs",
+    find: "                if !mentions.contains_key(name) && (matches!(value.kind, js::ExprKind::Arrow(..) | js::ExprKind::AsyncArrow(..))\n",
+    replace: "                if !mentions.contains_key(name) && (false\n",
+    tests: ["test/lowering-module-variables.test.ts", "-t", "dyn Fn is what its call gave it"],
+  },
 ];

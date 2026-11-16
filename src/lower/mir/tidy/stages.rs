@@ -715,49 +715,11 @@ pub(super) const STAGES: &[Stage] = &[
             // A `let` declared first, in the body or a block of it, that
             // nothing's left to assign or read; or only a block that
             // declares its name again, an index loop's item (ADR 1042).
-            pass("unused lets", |b, _| {
-                let mentions = mentions(b);
-                let mut declared: IndexMap<String, usize> = IndexMap::default();
-                js::each_list(b, &mut |s| {
-                    for stmt in s {
-                        if let StmtKind::Let(name, _) | StmtKind::Const(name, _) = &stmt.kind {
-                            *declared.entry(name.to_string()).or_default() += 1;
-                        }
-                    }
-                });
-                js::statement_lists(b, &mut |s| {
-                    let unread: Vec<String> = (s.iter())
-                        .filter_map(|stmt| match &stmt.kind {
-                            StmtKind::Let(name, None)
-                                if !mentions.contains_key(name.word())
-                                    || declared.get(name.word()).is_some_and(|&n| n > 1)
-                                        && redeclared_only(s, name.word()) =>
-                            {
-                                Some(name.to_string())
-                            }
-                            _ => None,
-                        })
-                        .collect();
-                    s.retain(
-                        |stmt| !matches!(&stmt.kind, StmtKind::Let(name, None) if unread.iter().any(|u| name.is(u))),
-                    );
-                    // A function made that nothing reads, which making does
-                    // nothing: a binding's value MIR held in a variable of
-                    // its function's type, whose `&` is read by the type,
-                    // `make(&text_of)` of a thread-local's initializer (rd542);
-                    // or read, the program's, an instance's `noopU32` (#974).
-                    s.retain(|stmt| {
-                        !matches!(&stmt.kind, StmtKind::Const(name, value)
-                            if !mentions.contains_key(name.word())
-                                && (matches!(value.kind, js::ExprKind::Arrow(..) | js::ExprKind::AsyncArrow(..))
-                                    || matches!(value.kind, js::ExprKind::Var(_)) && value.facts.has(js::Known::Item)))
-                    })
-                })
-            }),
+            pass("unused lets", |b, _| unused_lets(b, mentioned(b))),
             // A `const` nothing reads, of a value made only to be dropped,
             // `drop(vec![..])`'s: what making it does.
             pass("unread made", |b, _| {
-                let mentions = mentions(b);
+                let mentions = mentioned(b);
                 js::statement_lists(b, &mut |s| unread_made(s, &mentions))
             }),
             // A `let` that ends a borrow, of a place's read only the
@@ -1261,6 +1223,13 @@ fn inlined_of(body: &mut Vec<Stmt>, hints: &Hints) {
     js::statement_lists(body, &mut |s| inlined(s, &facts));
 }
 
+/// How many times each variable is read, by its id.
+fn mentioned(body: &[Stmt]) -> IndexMap<js::Name, usize> {
+    let mut mentions: IndexMap<js::Name, usize> = IndexMap::default();
+    js::visit_stmt_names(body, &mut |name| *mentions.entry(name.clone()).or_default() += 1);
+    mentions
+}
+
 /// How many times each name is mentioned.
 fn mentions(body: &[Stmt]) -> IndexMap<String, usize> {
     let mut mentions: IndexMap<String, usize> = IndexMap::default();
@@ -1288,25 +1257,6 @@ fn statement_starts(body: &[Stmt]) -> Vec<u32> {
         starts.extend((list.iter()).filter(|s| !s.span.is_none()).map(|s| s.span.lo));
     });
     starts
-}
-
-/// Whether each read and write of `name` in `stmts`, past its own `let
-/// name;`, is in a block that declares it again, a loop's item, `const row
-/// = v[i];`, so none is of the `let`'s.
-fn redeclared_only(stmts: &[Stmt], name: &str) -> bool {
-    let mut rest: Vec<Stmt> = (stmts.iter())
-        .filter(|s| !matches!(&s.kind, StmtKind::Let(n, None) if n.is(name)))
-        .cloned()
-        .collect();
-    js::statement_lists(&mut rest, &mut |list| {
-        if list
-            .iter()
-            .any(|s| matches!(&s.kind, StmtKind::Let(n, _) | StmtKind::Const(n, _) if n.is(name)))
-        {
-            list.clear();
-        }
-    });
-    js::mentions_in(&rest, name) == 0
 }
 
 /// `decisions` of each list of `b`, inner first; `kept`, of the trees whose
