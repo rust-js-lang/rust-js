@@ -318,26 +318,26 @@ pub(super) fn bound_where_read(body: &[Stmt], told: &Told) -> Option<Vec<Stmt>> 
     let mut found = Vec::new();
     sites(tree, told, &mut found);
     // Each guard's binding read only by its guards, and given only there.
-    let given = |name: &String| {
+    let given = |name: &js::Name| {
         let at = |site: &Site| site.before.iter().filter(|(n, _)| n == name).count();
         let reads: usize = (found.iter())
             .filter(|site| at(site) > 0)
             .map(|site| {
                 let mut reads = 0;
-                site.guard.visit_vars(&mut |v| reads += usize::from(v == name));
+                site.guard.visit_vars(&mut |v| reads += usize::from(name.is(v)));
                 reads
             })
             .sum();
-        js::mentions_in(tree, name) == found.iter().map(at).sum::<usize>() + reads
+        js::mentions_in(tree, name.word()) == found.iter().map(at).sum::<usize>() + reads
     };
     let read: IndexSet<String> = (found.iter().flat_map(|site| &site.before))
         .map(|(name, _)| name)
         .filter(|name| given(name))
-        .cloned()
+        .map(|name| name.word().to_string())
         .collect();
-    found.retain(|site| site.before.iter().all(|(name, _)| read.contains(name)));
+    found.retain(|site| site.before.iter().all(|(name, _)| read.contains(name.word())));
     // Each binding two sites or more set, named nowhere else in the tree.
-    let set_by = |arm: &String| {
+    let set_by = |arm: &js::Name| {
         found
             .iter()
             .filter(|site| site.arms.iter().any(|(a, _)| a == arm))
@@ -345,8 +345,8 @@ pub(super) fn bound_where_read(body: &[Stmt], told: &Told) -> Option<Vec<Stmt>> 
     };
     let many: IndexSet<String> = (found.iter().flat_map(|site| &site.arms))
         .map(|(arm, _)| arm)
-        .filter(|arm| set_by(arm) > 1 && js::mentions_in(tree, arm) == set_by(arm))
-        .cloned()
+        .filter(|arm| set_by(arm) > 1 && js::mentions_in(tree, arm.word()) == set_by(arm))
+        .map(|arm| arm.word().to_string())
         .collect();
     if many.is_empty() {
         return None;
@@ -361,9 +361,9 @@ pub(super) fn bound_where_read(body: &[Stmt], told: &Told) -> Option<Vec<Stmt>> 
 /// given before it.
 struct Site {
     /// The arm's bindings, and what each is given.
-    arms: Vec<(String, Expr)>,
+    arms: Vec<(js::Name, Expr)>,
     /// The guard's, each given just before the `if`.
-    before: Vec<(String, Expr)>,
+    before: Vec<(js::Name, Expr)>,
     guard: Expr,
     /// Where the guard is written.
     at: js::Span,
@@ -373,25 +373,25 @@ impl Site {
     /// The test that sets the arm's bindings.
     fn test(&self) -> Option<Expr> {
         let sets: Vec<Expr> = (self.arms.iter())
-            .map(|(arm, value)| Expr::assigned(Expr::var(arm), value.clone()))
+            .map(|(arm, value)| Expr::assigned(Expr::var(arm.clone()), value.clone()))
             .collect();
         // The one guard's binding it reads, given what the arm's binding is.
-        let read: Vec<&(String, Expr)> = (self.before.iter())
-            .filter(|(name, _)| self.guard.mentions_var(name))
+        let read: Vec<&(js::Name, Expr)> = (self.before.iter())
+            .filter(|(name, _)| self.guard.mentions_var(name.word()))
             .collect();
         if let ([(name, value)], [(_, given)]) = (read.as_slice(), self.arms.as_slice())
             && given.written_alike(value)
         {
             let mut reads = 0;
-            self.guard.visit_vars(&mut |v| reads += usize::from(v == name));
-            if reads == 1 && super::super::moves::leads(&self.guard, name, None, &|_| true) == Some(true) {
-                return self.guard.substitute(&|v| (v == name).then(|| sets[0].clone()));
+            self.guard.visit_vars(&mut |v| reads += usize::from(name.is(v)));
+            if reads == 1 && super::super::moves::leads(&self.guard, name.word(), None, &|_| true) == Some(true) {
+                return self.guard.substitute(&|v| name.is(v).then(|| sets[0].clone()));
             }
         }
         let guard = self.guard.substitute(&|v| {
-            let (_, value) = self.before.iter().find(|(name, _)| name == v)?;
+            let (_, value) = self.before.iter().find(|(name, _)| name.is(v))?;
             Some(match self.arms.iter().find(|(_, given)| given.written_alike(value)) {
-                Some((arm, _)) => Expr::var(arm),
+                Some((arm, _)) => Expr::var(arm.clone()),
                 None => value.clone(),
             })
         })?;
@@ -420,23 +420,23 @@ fn site(list: &[Stmt], i: usize, told: &Told) -> Option<Site> {
     let binding = |s: &Stmt| match &s.kind {
         StmtKind::Assign(target, value) if within(s.span, *pattern) && !s.span.is_none() && pure(value) => {
             match &target.kind {
-                ExprKind::Var(name) => Some((name.to_string(), value.clone())),
+                ExprKind::Var(name) => Some((name.clone(), value.clone())),
                 _ => None,
             }
         }
         _ => None,
     };
-    let given: Vec<(String, Expr)> = {
-        let mut given: Vec<(String, Expr)> = list[..i].iter().rev().map_while(binding).collect();
+    let given: Vec<(js::Name, Expr)> = {
+        let mut given: Vec<(js::Name, Expr)> = list[..i].iter().rev().map_while(binding).collect();
         given.reverse();
         given
     };
-    let arms: Vec<(String, Expr)> = (then.iter())
+    let arms: Vec<(js::Name, Expr)> = (then.iter())
         .map_while(binding)
-        .filter(|(arm, _)| !test.mentions_var(arm))
+        .filter(|(arm, _)| !test.mentions_var(arm.word()))
         .collect();
     let calls = parts.iter().any(|(part, _)| !pure(part));
-    (!arms.is_empty() && (calls || given.iter().any(|(name, _)| test.mentions_var(name)))).then(|| Site {
+    (!arms.is_empty() && (calls || given.iter().any(|(name, _)| test.mentions_var(name.word())))).then(|| Site {
         arms,
         before: given,
         guard: test.clone(),
@@ -462,8 +462,8 @@ fn rewrite(list: &mut Vec<Stmt>, told: &Told, many: &IndexSet<String>, read: &In
     let mut i = 0;
     while i < list.len() {
         if let Some(site) = site(list, i, told)
-            && site.arms.iter().all(|(arm, _)| many.contains(arm))
-            && site.before.iter().all(|(name, _)| read.contains(name))
+            && site.arms.iter().all(|(arm, _)| many.contains(arm.word()))
+            && site.before.iter().all(|(name, _)| read.contains(name.word()))
             && let Some(test) = site.test()
         {
             let given = site.before.len();

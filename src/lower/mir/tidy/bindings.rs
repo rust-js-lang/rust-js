@@ -866,7 +866,7 @@ pub(super) fn sunk_lets(stmts: &mut Vec<Stmt>) {
 /// .. }`, as Rust binds `x` in each alternative of `(0, x) | (x, 3)` (#771),
 /// where each assigns it before anything reads it and no test names it.
 /// Whether it is so: otherwise `chain` is as it was.
-pub(super) fn declared_in_branches(name: &str, chain: &mut Stmt) -> bool {
+pub(super) fn declared_in_branches(name: &js::Name, chain: &mut Stmt) -> bool {
     fn branches<'s>(stmt: &'s mut Stmt, name: &str, out: &mut Vec<&'s mut Vec<Stmt>>) -> bool {
         let StmtKind::If(test, then, otherwise) = &mut stmt.kind else {
             return false;
@@ -889,15 +889,18 @@ pub(super) fn declared_in_branches(name: &str, chain: &mut Stmt) -> bool {
         }
     }
     let mut all = Vec::new();
-    if !branches(chain, name, &mut all) {
+    if !branches(chain, name.word(), &mut all) {
         return false;
     }
-    let named: Vec<&mut Vec<Stmt>> = all.into_iter().filter(|b| js::mentions_in(b, name) > 0).collect();
-    if named.len() < 2 || !named.iter().all(|b| assigned_first(b, name, &[])) {
+    let named: Vec<&mut Vec<Stmt>> = all
+        .into_iter()
+        .filter(|b| js::mentions_in(b, name.word()) > 0)
+        .collect();
+    if named.len() < 2 || !named.iter().all(|b| assigned_first(b, name.word(), &[])) {
         return false;
     }
     for branch in named {
-        branch.insert(0, StmtKind::Let(name.into(), None).at(js::Span::NONE));
+        branch.insert(0, StmtKind::Let(name.clone(), None).at(js::Span::NONE));
         declarations(branch);
     }
     true
@@ -1162,15 +1165,15 @@ pub(super) fn filled_lazily(stmts: &mut Vec<Stmt>) {
             let StmtKind::Const(_, made) = &stmts[at].kind else {
                 unreachable!("a `const` of what's read")
             };
-            let declared = StmtKind::Let(var.clone().into(), Some(made.clone())).at(stmts[at].span);
+            let declared = StmtKind::Let(var.clone(), Some(made.clone())).at(stmts[at].span);
             let StmtKind::If(test, then, Some(otherwise)) =
                 std::mem::replace(&mut stmts[i + 2].kind, StmtKind::Comments)
             else {
                 unreachable!("the `if` `lazily_filled` matched")
             };
-            let test =
-                (test.substitute(&|v| (v == read).then(|| Expr::var(&var)))).expect("`lazily_filled` renames the test");
-            stmts[i + 2].kind = match gives_read(&otherwise, &var, &read) {
+            let test = (test.substitute(&|v| (v == read).then(|| Expr::var(var.clone()))))
+                .expect("`lazily_filled` renames the test");
+            stmts[i + 2].kind = match gives_read(&otherwise, var.word(), &read) {
                 true => StmtKind::If(test, then, None),
                 false => StmtKind::If(test.negated_test(), otherwise, None),
             };
@@ -1181,7 +1184,7 @@ pub(super) fn filled_lazily(stmts: &mut Vec<Stmt>) {
 }
 
 /// Of `stmts[i..]`, `filled_lazily`'s: what's read and the variable.
-fn lazily_filled(stmts: &[Stmt], i: usize) -> Option<(String, String)> {
+fn lazily_filled(stmts: &[Stmt], i: usize) -> Option<(String, js::Name)> {
     let (read, var) = match (&stmts[i].kind, &stmts[i + 1].kind) {
         (StmtKind::Const(read, _), StmtKind::Let(var, None)) | (StmtKind::Let(var, None), StmtKind::Const(read, _)) => {
             (read, var)
@@ -1209,7 +1212,7 @@ fn lazily_filled(stmts: &[Stmt], i: usize) -> Option<(String, String)> {
         || js::mentions_in(other, read.word()) > 0
         || js::mentions_in(&stmts[i + 3..], read.word()) > 0
         || !renamed;
-    (!kept).then(|| (read.to_string(), var.to_string()))
+    (!kept).then(|| (read.to_string(), var.clone()))
 }
 
 /// Whether `branch` is `var = read;` alone.
@@ -1223,7 +1226,7 @@ fn gives_read(branch: &[Stmt], var: &str, read: &str) -> bool {
 /// declared before the `if` instead, as the program wrote them, in its
 /// scope; `None` where another declaration `after` reads would be made the
 /// branch's, `const v = ..`, which can't be (rd578, ADR 0237, amended).
-pub(super) fn kept_declarations(moved: &[Stmt], after: &[Stmt]) -> Option<Vec<String>> {
+pub(super) fn kept_declarations(moved: &[Stmt], after: &[Stmt]) -> Option<Vec<js::Name>> {
     let mut kept = Vec::new();
     for stmt in moved {
         for name in js::declared_here(stmt) {
@@ -1231,7 +1234,7 @@ pub(super) fn kept_declarations(moved: &[Stmt], after: &[Stmt]) -> Option<Vec<St
                 continue;
             }
             match &stmt.kind {
-                StmtKind::Let(_, None) => kept.push(name),
+                StmtKind::Let(declared, None) => kept.push(declared.clone()),
                 _ => return None,
             }
         }
@@ -1241,11 +1244,11 @@ pub(super) fn kept_declarations(moved: &[Stmt], after: &[Stmt]) -> Option<Vec<St
 
 /// `kept`'s late `let`s, `kept_declarations`', taken out of `moved` and
 /// declared in `stmts` before its `at`th: how many.
-pub(super) fn declared_before(stmts: &mut Vec<Stmt>, at: usize, moved: &mut Vec<Stmt>, kept: &[String]) -> usize {
-    moved.retain(|s| !matches!(&s.kind, StmtKind::Let(name, None) if kept.iter().any(|k| name.is(k))));
+pub(super) fn declared_before(stmts: &mut Vec<Stmt>, at: usize, moved: &mut Vec<Stmt>, kept: &[js::Name]) -> usize {
+    moved.retain(|s| !matches!(&s.kind, StmtKind::Let(name, None) if kept.iter().any(|k| name == k)));
     let declared = kept
         .iter()
-        .map(|name| StmtKind::Let(name.into(), None).at(js::Span::NONE));
+        .map(|name| StmtKind::Let(name.clone(), None).at(js::Span::NONE));
     stmts.splice(at..at, declared);
     kept.len()
 }

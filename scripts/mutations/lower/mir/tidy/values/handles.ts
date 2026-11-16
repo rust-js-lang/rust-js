@@ -141,8 +141,8 @@ export const mutations: Mutation[] = [
     breaks:
       "two whole writes through a flattened state's handle in one list each spill what they write as `state`, declared twice (#687)",
     file: "src/lower/mir/tidy/values/handles.rs",
-    find: "                        let fresh = crate::names::fresh_in(&mut taken, name);\n",
-    replace: "                        let fresh = String::from(name);\n",
+    find: "                        let fresh = js::Name::declared(crate::names::fresh_in(&mut taken, name));\n",
+    replace: "                        let fresh = js::Name::declared(String::from(name));\n",
     tests: ["test/corpus.test.ts", "-t", "^flattened_state_cell_swapped.rs$"],
   },
   {

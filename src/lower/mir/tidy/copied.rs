@@ -74,6 +74,8 @@ pub(super) fn copied_bindings(stmts: &mut Vec<Stmt>, user: &IndexSet<String>) {
             && !is_temporary(b)
             && a != b
         {
+            // `a` as it's read, of its own declaration, for a read of `b` made one of it.
+            let a_read = a.clone();
             let (a, b) = (a.to_string(), b.to_string());
             let rest = &stmts[i + 2..];
             if !set_before_read(rest, &a, &b) && !rebinds(rest, &b) && !in_closure(rest, &b) {
@@ -103,7 +105,12 @@ pub(super) fn copied_bindings(stmts: &mut Vec<Stmt>, user: &IndexSet<String>) {
                     if let ExprKind::Var(v) = &mut e.kind
                         && v.is(&from)
                     {
-                        *v = to.clone().into();
+                        // A read of what's renamed, renamed; one of the
+                        // binding gone, a read of the variable.
+                        match renamed {
+                            true => v.respell(to.clone()),
+                            false => *v = a_read.clone(),
+                        }
                     }
                 });
             }

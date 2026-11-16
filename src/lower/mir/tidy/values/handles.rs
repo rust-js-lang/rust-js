@@ -86,9 +86,9 @@ fn written_whole_in_place(body: &mut Vec<Stmt>) {
                     place,
                     value.clone(),
                     &mut |name, value, out| {
-                        let fresh = crate::names::fresh_in(&mut taken, name);
-                        out.push(StmtKind::Const(fresh.clone().into(), value).at(stmt.span));
-                        Expr::var(&fresh)
+                        let fresh = js::Name::declared(crate::names::fresh_in(&mut taken, name));
+                        out.push(StmtKind::Const(fresh.clone(), value).at(stmt.span));
+                        Expr::var(fresh)
                     },
                     stmt.span,
                 )

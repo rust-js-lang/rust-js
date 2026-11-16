@@ -109,7 +109,7 @@ fn index_loop(stmt: &Stmt, mentions: &mut IndexMap<String, usize>) -> Option<Vec
     {
         return None;
     }
-    let index = index.unwrap_or_else(|| fresh("i").into());
+    let index = index.unwrap_or_else(|| js::Name::declared(fresh("i")));
     let mut body = body.clone();
     js::each_expr_mut(&mut body, &mut |e| {
         if held(e) {
@@ -122,10 +122,10 @@ fn index_loop(stmt: &Stmt, mentions: &mut IndexMap<String, usize>) -> Option<Vec
         None => length(&array),
         // As long as the shorter, asked once, as Rust's zip asks it.
         Some((b, item)) => {
-            let bound = fresh("n");
+            let bound = js::Name::declared(fresh("n"));
             let min = Expr::member(Expr::js_global("Math"), "min");
             let shorter = Expr::call(min, vec![length(&array), length(b)]);
-            made.push(StmtKind::Const(bound.clone().into(), shorter).at(js::Span::NONE));
+            made.push(StmtKind::Const(bound.clone(), shorter).at(js::Span::NONE));
             let bound_item = match item {
                 js::Pattern::Name(name) => StmtKind::Const(name.clone(), Expr::index(b.clone(), Expr::var(&index))),
                 pattern => StmtKind::Destructure {
@@ -135,7 +135,7 @@ fn index_loop(stmt: &Stmt, mentions: &mut IndexMap<String, usize>) -> Option<Vec
                 },
             };
             body.insert(0, bound_item.at(js::Span::NONE));
-            Expr::var(&bound)
+            Expr::var(bound.clone())
         }
     };
     made.push(

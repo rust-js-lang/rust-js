@@ -420,7 +420,7 @@ pub(in crate::lower::mir) fn destructured_params(params: &mut [js::Pattern], bod
             continue;
         }
         let read: Vec<_> = (read.iter())
-            .map(|(path, bound, default)| (path.as_slice(), bound.as_str(), default.as_ref()))
+            .map(|(path, bound, default)| (path.as_slice(), bound, default.as_ref()))
             .collect();
         let Some(pattern) = nested_pattern(&read) else { continue };
         body.drain(start..start + count);
@@ -482,7 +482,7 @@ pub(super) fn part_read(value: &Expr, name: &str) -> Option<(Vec<Step>, Option<E
 /// The parts of `name` the first of `stmts` read, as `parts` finds them,
 /// however deep, `const name = _2[1].name;`, each a path, its variable,
 /// and a field's default.
-pub(super) fn nested_parts(stmts: &[Stmt], name: &str) -> Vec<(Vec<Step>, String, Option<Expr>)> {
+pub(super) fn nested_parts(stmts: &[Stmt], name: &str) -> Vec<(Vec<Step>, js::Name, Option<Expr>)> {
     let mut parts = Vec::new();
     for stmt in stmts {
         let (StmtKind::Const(bound, value) | StmtKind::Let(bound, Some(value))) = &stmt.kind else {
@@ -494,7 +494,7 @@ pub(super) fn nested_parts(stmts: &[Stmt], name: &str) -> Vec<(Vec<Step>, String
         let Some((steps, default)) = part_read(value, name) else {
             break;
         };
-        parts.push((steps, bound.to_string(), default));
+        parts.push((steps, bound.clone(), default));
     }
     parts
 }
@@ -503,8 +503,8 @@ pub(super) fn nested_parts(stmts: &[Stmt], name: &str) -> Vec<(Vec<Step>, String
 /// the first steps all indices, an array, all keys, an object, each part
 /// a variable or, where the paths go on, a pattern in turn, `[i, { name
 /// }]`.
-pub(super) fn nested_pattern(parts: &[(&[Step], &str, Option<&Expr>)]) -> Option<js::Pattern> {
-    type Group<'p> = Vec<(&'p [Step], &'p str, Option<&'p Expr>)>;
+pub(super) fn nested_pattern(parts: &[(&[Step], &js::Name, Option<&Expr>)]) -> Option<js::Pattern> {
+    type Group<'p> = Vec<(&'p [Step], &'p js::Name, Option<&'p Expr>)>;
     let mut groups: Vec<(&Step, Group)> = Vec::new();
     for &(steps, bound, default) in parts {
         let (first, rest) = steps.split_first()?;
@@ -514,7 +514,7 @@ pub(super) fn nested_pattern(parts: &[(&[Step], &str, Option<&Expr>)]) -> Option
         }
     }
     let part = |group: &Group| match group.as_slice() {
-        [([], bound, default)] => Some((js::Pattern::Name((*bound).into()), default.cloned())),
+        [([], bound, default)] => Some((js::Pattern::Name((*bound).clone()), default.cloned())),
         _ if group.iter().all(|(rest, ..)| !rest.is_empty()) => Some((nested_pattern(group)?, None)),
         _ => None,
     };

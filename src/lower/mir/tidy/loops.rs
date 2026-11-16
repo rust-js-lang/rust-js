@@ -80,15 +80,17 @@ fn held_end(stmt: &Stmt, mentions: &IndexMap<String, usize>, captured: &IndexSet
     if start_key != "start" || end_key != "end" || !same || !end.has_effects() {
         return None;
     }
-    let name = std::iter::once("end".to_string())
-        .chain((1..).map(|k| format!("end${k}")))
-        .find(|n| !mentions.contains_key(n))
-        .expect("a name");
-    let read = std::mem::replace(end, Expr::var(&name));
+    let name = js::Name::declared(
+        std::iter::once("end".to_string())
+            .chain((1..).map(|k| format!("end${k}")))
+            .find(|n| !mentions.contains_key(n))
+            .expect("a name"),
+    );
+    let read = std::mem::replace(end, Expr::var(name.clone()));
     let held = vec![
-        StmtKind::Let(name.clone().into(), None).at(js::Span::NONE),
+        StmtKind::Let(name.clone(), None).at(js::Span::NONE),
         StmtKind::TryCatch(
-            vec![StmtKind::Assign(Expr::var(&name), read).at(made.span)],
+            vec![StmtKind::Assign(Expr::var(name.clone()), read).at(made.span)],
             error.clone(),
             handler.clone(),
         )
@@ -778,7 +780,7 @@ pub(super) fn counted_to_lengths(stmts: &mut [Stmt], present_breaks: &[js::Span]
             let (name, start, test, step, body) = counted;
             stmt.kind = StmtKind::For {
                 label: label.clone(),
-                name: name.into(),
+                name,
                 start,
                 test,
                 step,
@@ -794,7 +796,7 @@ fn counted_to_length(
     pattern: &js::Pattern,
     body: &[Stmt],
     present_breaks: &[js::Span],
-) -> Option<(String, Expr, Expr, js::Step, Vec<Stmt>)> {
+) -> Option<(js::Name, Expr, Expr, js::Step, Vec<Stmt>)> {
     let (start, n) = crate::lower::iterators::stepped_from(iterable)?;
     let js::Pattern::Name(name) = pattern else {
         return None;
@@ -861,7 +863,7 @@ fn counted_to_length(
         }
     };
     stepped.extend(rest.iter().cloned());
-    Some((name.to_string(), start.clone(), test, step, stepped))
+    Some((name.clone(), start.clone(), test, step, stepped))
 }
 
 /// Of a loop of `[n, key]` of the keys `for…in` visits, enumerated,

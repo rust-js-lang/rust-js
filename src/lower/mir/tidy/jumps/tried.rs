@@ -55,7 +55,7 @@ pub(in crate::lower::mir::tidy) fn binding(body: &[Stmt], item: &js::Name) -> Op
     }
     let mutable = parts.iter().any(|&(_, _, m)| m);
     let pattern = match parts.as_slice() {
-        [] if js::mentions_in(body, item.word()) == 0 => js::Pattern::Name("_".into()),
+        [] if js::mentions_in(body, item.word()) == 0 => js::Pattern::Name(js::Name::declared("_".to_string())),
         // Read as it is, named already for the pattern that binds it, a
         // drop guard's `let item; try { item = $next(iter); } ..` (#444's
         // names): the `for`'s own, `let` where the body sets it.

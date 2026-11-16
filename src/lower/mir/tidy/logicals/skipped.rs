@@ -63,7 +63,7 @@ pub(in crate::lower::mir::tidy) fn skipped_test(
     };
     let (test, then, span) = skipped(body, label.word(), &within, &mut hoisting)?;
     let mut stmts: Vec<Stmt> = (hoisting.names.into_iter())
-        .map(|name| StmtKind::Let(name.into(), None).at(js::Span::NONE))
+        .map(|name| StmtKind::Let(name, None).at(js::Span::NONE))
         .collect();
     stmts.push(StmtKind::If(test, then, None).at(span));
     Some(stmts)
@@ -75,17 +75,17 @@ pub(in crate::lower::mir::tidy) fn skipped_test(
 /// before the `if` (A1, B1, the user's decisions).
 pub(super) struct Hoisting {
     pub(super) on: bool,
-    pub(super) names: Vec<String>,
+    pub(super) names: Vec<js::Name>,
 }
 
 impl Hoisting {
     /// `name` a `let` declared before the `if`, where they may be.
-    pub(super) fn declared(&mut self, name: &str) -> Option<()> {
+    pub(super) fn declared(&mut self, name: &js::Name) -> Option<()> {
         if !self.on {
             return None;
         }
         if !self.names.iter().any(|n| n == name) {
-            self.names.push(name.to_string());
+            self.names.push(name.clone());
         }
         Some(())
     }
@@ -116,7 +116,7 @@ fn skipped(
             // `bb12: { let d; if (.. (d = bump(flags)) ..) { break bb12; }
             // n += d; }`: declared before this one's.
             StmtKind::Let(name, None) if tree.is_empty() && bound.is_empty() && hoisting.on => {
-                hoisting.declared(name.word());
+                hoisting.declared(name);
             }
             _ => break,
         }
@@ -226,7 +226,7 @@ fn falls(stmts: &[Stmt], label: &str, hoisting: &mut Hoisting) -> Option<Truth> 
                 unreachable!("matched")
             };
             let name = name.clone();
-            hoisting.declared(name.word())?;
+            hoisting.declared(&name)?;
             let StmtKind::Const(_, value) = &read[k].kind else {
                 unreachable!("matched")
             };

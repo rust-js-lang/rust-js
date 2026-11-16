@@ -112,7 +112,7 @@ fn given_first(stmts: &mut Vec<Stmt>, (made, declared): (&IndexSet<String>, &Ind
         stmts[at].kind = StmtKind::Assign(Expr::var(&x), made);
         stmts.remove(given);
         js::each_expr_mut(&mut stmts[at + 1..given], &mut |e| {
-            if matches!(&e.kind, ExprKind::Var(v) if v.is(&y)) {
+            if matches!(&e.kind, ExprKind::Var(v) if *v == y) {
                 *e = Expr::var(&x).or_at(e.span);
             }
         });
@@ -125,7 +125,7 @@ fn given_from(
     stmts: &[Stmt],
     given: usize,
     (made, declared): (&IndexSet<String>, &IndexSet<String>),
-) -> Option<(usize, String, String)> {
+) -> Option<(usize, js::Name, js::Name)> {
     let StmtKind::Assign(target, value) = &stmts[given].kind else {
         return None;
     };
@@ -149,7 +149,7 @@ fn given_from(
         || js::mentions_in(between, x.word()) > 0
         || jumps(between)
         || js::mentions_in(&stmts[given + 1..], y.word()) > 0;
-    (!kept).then(|| (at, x.to_string(), y.to_string()))
+    (!kept).then(|| (at, x.clone(), y.clone()))
 }
 
 /// Whether a `break` or a `continue` is anywhere in `stmts`.

@@ -85,11 +85,9 @@ fn scoped_runs(stmts: &mut Vec<Stmt>, result: &str, guards: &[(u32, u32)], taken
             let (body, drop) = match marked {
                 None => (body, drop),
                 Some((poisoned, released)) => {
-                    let handler = vec![poisoned, StmtKind::Throw(Expr::var("error")).at(span)];
-                    (
-                        vec![StmtKind::TryCatch(body, Some("error".into()), handler).at(span)],
-                        released,
-                    )
+                    let error = js::Name::declared("error".to_string());
+                    let handler = vec![poisoned, StmtKind::Throw(Expr::var(error.clone())).at(span)];
+                    (vec![StmtKind::TryCatch(body, Some(error), handler).at(span)], released)
                 }
             };
             stmts.push(StmtKind::Try(body, vec![drop]).at(span));

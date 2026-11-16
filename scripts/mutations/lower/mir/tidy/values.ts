@@ -169,9 +169,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a list with holes read whole, or by another index, is its one item all the same",
     file: "src/lower/mir/tidy/values.rs",
-    find: "        if js::mentions_in(&rest, &name) != usize::from(assigned)\n            || js::mentions_in(body, &name) == usize::from(assigned)\n        {\n",
-    replace:
-      "        if js::mentions_in(body, &name) == usize::from(assigned) {\n",
+    find: "        if js::mentions_in(&rest, name.word()) != usize::from(assigned)\n            || js::mentions_in(body, name.word()) == usize::from(assigned)\n        {\n",
+    replace: "        if js::mentions_in(body, name.word()) == usize::from(assigned) {\n",
     tests: [
       "test/corpus.test.ts",
       "-t",

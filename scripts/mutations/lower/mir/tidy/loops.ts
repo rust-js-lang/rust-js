@@ -568,9 +568,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a range's end held first is named `end` where the program has an `end` of its own, which it then reads in its place",
     file: "src/lower/mir/tidy/loops.rs",
-    find: '        .find(|n| !mentions.contains_key(n))\n        .expect("a name");\n    let read = ',
-    replace:
-      '        .find(|_| true)\n        .expect("a name");\n    let read = ',
+    find: "            .find(|n| !mentions.contains_key(n))\n            .expect(\"a name\"),\n    );\n",
+    replace: "            .find(|_| true)\n            .expect(\"a name\"),\n    );\n",
     tests: ["test/corpus.test.ts", "-t", "^drop_reassigned_in_inner_loop.rs$"],
   },
   {

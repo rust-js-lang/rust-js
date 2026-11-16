@@ -337,18 +337,18 @@ pub(super) fn unread_maps(body: &mut Vec<Stmt>) {
 pub(super) fn holed_lists(body: &mut Vec<Stmt>) {
     // Each list with holes, by its name, its one item's index, and whether
     // it's assigned, not declared with it.
-    let mut lists: Vec<(String, i128, bool)> = Vec::new();
+    let mut lists: Vec<(js::Name, i128, bool)> = Vec::new();
     js::each_list(body, &mut |stmts| {
         for stmt in stmts.iter() {
             let (name, value, assigned) = match &stmt.kind {
-                StmtKind::Const(name, value) | StmtKind::Let(name, Some(value)) => (name.to_string(), value, false),
+                StmtKind::Const(name, value) | StmtKind::Let(name, Some(value)) => (name.clone(), value, false),
                 StmtKind::Assign(
                     Expr {
                         kind: ExprKind::Var(name),
                         ..
                     },
                     value,
-                ) => (name.to_string(), value, true),
+                ) => (name.clone(), value, true),
                 _ => continue,
             };
             let ExprKind::Array(items) = &value.kind else { continue };
@@ -365,7 +365,7 @@ pub(super) fn holed_lists(body: &mut Vec<Stmt>) {
     for (name, at, assigned) in lists {
         let read = |e: &Expr| {
             matches!(&e.kind, ExprKind::Index(of, index)
-                if matches!(&of.kind, ExprKind::Var(v) if v.is(&name)) && index.as_int() == Some(at))
+                if matches!(&of.kind, ExprKind::Var(v) if *v == name) && index.as_int() == Some(at))
         };
         // Each read of it one of its item's, and it made once.
         let mut rest = body.clone();
@@ -374,21 +374,21 @@ pub(super) fn holed_lists(body: &mut Vec<Stmt>) {
                 *e = Expr::js_undefined();
             }
         });
-        if js::mentions_in(&rest, &name) != usize::from(assigned)
-            || js::mentions_in(body, &name) == usize::from(assigned)
+        if js::mentions_in(&rest, name.word()) != usize::from(assigned)
+            || js::mentions_in(body, name.word()) == usize::from(assigned)
         {
             continue;
         }
         js::statement_lists(body, &mut |stmts| {
             for stmt in stmts.iter_mut() {
                 let value = match &mut stmt.kind {
-                    StmtKind::Const(n, value) | StmtKind::Let(n, Some(value)) if n.is(&name) => value,
+                    StmtKind::Const(n, value) | StmtKind::Let(n, Some(value)) if *n == name => value,
                     StmtKind::Assign(
                         Expr {
                             kind: ExprKind::Var(n), ..
                         },
                         value,
-                    ) if n.is(&name) => value,
+                    ) if *n == name => value,
                     _ => continue,
                 };
                 if let ExprKind::Array(items) = &mut value.kind {
@@ -400,7 +400,7 @@ pub(super) fn holed_lists(body: &mut Vec<Stmt>) {
             if read(e) {
                 *e = Expr {
                     span: e.span,
-                    ..Expr::var(&name)
+                    ..Expr::var(name.clone())
                 };
             }
         });
