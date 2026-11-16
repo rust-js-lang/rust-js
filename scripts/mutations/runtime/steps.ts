@@ -85,6 +85,14 @@ export const mutations: Mutation[] = [
     env: { ITERATOR_TABLE: "matrix", ITERATOR_MATRIX: "/js values \\| flatten \\| string \\| stage \\| captures/" },
   },
   {
+    name: "flat-fold-unguarded",
+    breaks: "a flatten's own fold doesn't stage its `f`: where `f` panics mid-fold, the accumulator it strands is never dropped (ADR 0465, #1971)",
+    file: "src/runtime/steps.js",
+    find: "        const made = unwind === undefined ? (x) => f(x, i++) : (x, a) => $staged(f, x, i++, a, unwind);\n",
+    replace: "        const made = (x) => f(x, i++);\n",
+    tests: ["test/runtime-package.test.ts", "-t", "a flatten's own fold drops what its stage strands"],
+  },
+  {
     name: "steps-flat-map-unfused",
     breaks: "a `flat_map` steps its source again after it's given `None`, where std's fuses it",
     file: "src/runtime/steps.js",

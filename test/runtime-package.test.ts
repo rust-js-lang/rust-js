@@ -921,6 +921,34 @@ console.log(seen.join(" "));
   expect(run([node ?? "node", "--input-type=module", "--eval", script])).toBe("4 3 4 4 3 2 4 3 4 3 3 2 4 3\n");
 });
 
+// A flatten's own fold, `$Steps.flatMap`'s, stages its `f`: where `f`
+// panics mid-fold, the accumulator it strands is dropped, then its source
+// closed, as std's `FlattenCompat::fold` closure drops what it was given as
+// it unwinds. No program makes that `f` panic today, a flatten's being
+// std's `into_iter` and one of the crate's own `IntoIterator` refused, so
+// the guard is held here (ADR 0465, #1971).
+test("a flatten's own fold drops what its stage strands as it panics", () => {
+  const module = join(fixture("runtime-flat-fold-staged"), "runtime.js");
+  writeFileSync(module, run([compiler, "--runtime-module"]));
+  const script = `
+const { $Steps } = await import(${JSON.stringify(module)});
+const seen = [];
+let n = 0;
+const source = new $Steps(() => (n < 3 ? { done: false, value: ++n } : { done: true, value: undefined }), () => seen.push("source closed"));
+const flat = source.flatMap((x) => {
+  if (x === 2) throw new Error("into_iter");
+  return [x * 10, x * 10 + 1];
+});
+try {
+  flat.fold([], (a, x) => (a.push(x), a), (a) => seen.push("dropped " + a.join(" ")));
+} catch (e) {
+  seen.push("panicked: " + e.message);
+}
+console.log(seen.join(" | "));
+`;
+  expect(run([node ?? "node", "--input-type=module", "--eval", script])).toBe("dropped 10 11 | source closed | panicked: into_iter\n");
+});
+
 // An iterator's lifecycle, `$state`, `$closing`'s and std's compiled
 // struct's (ADR 1092 S7, #870): each move no Rust program makes is
 // rust-js's internal error, never a panic, which no `catch_unwind` and no

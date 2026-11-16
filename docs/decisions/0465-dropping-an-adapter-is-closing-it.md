@@ -2623,3 +2623,21 @@ kinds (#1826) found it. Mutation `drop-each-written-out`
 by items whose drop may panic and by a struct's that holds a `D`.
 `drop-each-of-a-throwing-drop-unseen` is gone with the reading it broke;
 `owned-iter-left-undropped` is retargeted to `dropped_as_items`.
+
+## Amendment: a flatten's own fold's guard is held by a runtime row (2026-11-16, #1971)
+
+`$Steps.flatMap`'s `fold` stages its `f`, `$staged(f, x, i++, a, unwind)`,
+so a panic in it drops the accumulator it strands. Its mutation,
+`flat-fold-unguarded`, went with that fold in 06fb3d01f, and #1971's fix
+brought the fold back but not the mutation: no program can make that `f`
+panic today. A `flat_map`'s closure is the runtime's `$flatMap`, not this
+method. A `flatten`'s `f` is std's `into_iter`, which can't panic, and a
+flatten of the crate's own `IntoIterator`, whose `into_iter` could, is
+refused. The iterator matrix's rows reach the branch, every fold given an
+`unwind` does, but none with a panicking `f`, so all print the same
+unguarded. The guard is right, and a refusal's lifting will need it. So
+`test/runtime-package.test.ts`'s "a flatten's own fold drops what its
+stage strands as it panics" holds it, a `$Steps` made directly whose
+`f` panics mid-fold: the accumulator dropped, then the source closed,
+then the panic going on. `flat-fold-unguarded` is back, aimed at that
+row, and caught.
