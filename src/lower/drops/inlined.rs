@@ -422,12 +422,12 @@ fn unread_writes(stmts: &mut Vec<Stmt>, guard: &str, mut read_after: GuardReads)
 /// field was made of what isn't, as the field's own read is (ADR 0841,
 /// amended): `initializingChunk = prevChunk` of the drop's `old ?? null`
 /// (rd523).
-fn copies_read_as(body: &mut Vec<Stmt>, field: &dyn Fn(&Expr) -> bool, v: &str, defined: bool) {
+fn copies_read_as(body: &mut Vec<Stmt>, field: &dyn Fn(&Expr) -> bool, v: &js::Name, defined: bool) {
     let mut copies = Vec::new();
     js::each_block_mut(body, &mut |stmts| {
         for s in stmts.iter() {
             if let StmtKind::Const(n, value) = &s.kind
-                && !n.is(v)
+                && !n.is(v.word())
                 && field(value)
             {
                 copies.push(n.clone());
@@ -454,7 +454,7 @@ fn copies_read_as(body: &mut Vec<Stmt>, field: &dyn Fn(&Expr) -> bool, v: &str, 
         });
         js::each_expr_mut(body, &mut |e| {
             if matches!(&e.kind, ExprKind::Var(name) if *name == n) {
-                let read = Expr::var(v).or_at(e.span);
+                let read = Expr::var(v.clone()).or_at(e.span);
                 *e = match defined {
                     true => read.defined(),
                     false => read,
@@ -605,9 +605,15 @@ fn fields_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &str) -> Vec<Strin
     // `const` of its own, its key, where that names nothing else.
     let kept = kept_variables(body, params, guard, &fields);
     let read_as = |(key, value): &(String, Expr)| match &value.kind {
-        ExprKind::Var(v) if !written.contains(key) && kept.contains(v.word()) => Some(v.to_string()),
+        ExprKind::Var(v) if !written.contains(key) && kept.contains(v.word()) => Some(v.clone()),
         _ => None,
     };
+    // Each field's own, of its key, declared once, its `const` and its reads.
+    let own: IndexMap<String, js::Name> = (fields.iter())
+        .filter(|field| read_as(field).is_none())
+        .map(|(key, _)| (key.clone(), js::Name::declared(key.clone())))
+        .collect();
+    let reads_as = |field: &(String, Expr)| read_as(field).unwrap_or_else(|| own[&field.0].clone());
     if fields
         .iter()
         .any(|field| read_as(field).is_none() && (names.contains(&field.0) || !crate::names::is_identifier(&field.0)))
@@ -617,7 +623,7 @@ fn fields_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &str) -> Vec<Strin
     // A copy of a field nothing writes, `const old = guard.previous;`, is
     // what the field reads as.
     for field in fields.iter().filter(|(key, _)| !written.contains(key)) {
-        let (key, v) = (&field.0, read_as(field).unwrap_or_else(|| field.0.clone()));
+        let (key, v) = (&field.0, reads_as(field));
         let read = |e: &Expr| {
             matches!(&e.kind, ExprKind::Member(of, k)
                 if k == key && matches!(&of.kind, ExprKind::Var(g) if g.is(guard)))
@@ -632,7 +638,7 @@ fn fields_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &str) -> Vec<Strin
             && matches!(&of.kind, ExprKind::Var(v) if v.is(guard))
             && let Some(field) = fields.iter().find(|(k, _)| k == key)
         {
-            let read = Expr::var(read_as(field).unwrap_or_else(|| key.clone())).or_at(e.span);
+            let read = Expr::var(reads_as(field)).or_at(e.span);
             *e = match field.1.facts.has(js::Known::Defined) && !written.contains(key) {
                 true => read.defined(),
                 false => read,
@@ -654,8 +660,8 @@ fn fields_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &str) -> Vec<Strin
             let consts = (fields.iter())
                 .filter(|field| read_as(field).is_none())
                 .map(|(key, value)| match written.contains(key) {
-                    true => StmtKind::Let(key.into(), Some(value.clone())).at(span),
-                    false => StmtKind::Const(key.into(), value.clone()).at(span),
+                    true => StmtKind::Let(own[key].clone(), Some(value.clone())).at(span),
+                    false => StmtKind::Const(own[key].clone(), value.clone()).at(span),
                 });
             stmts.splice(k..=k, consts.collect::<Vec<_>>());
         }
@@ -727,6 +733,7 @@ fn kept_variables(body: &[Stmt], params: &[Pattern], guard: &str, fields: &[(Str
 /// made one.
 fn one_field_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &str) -> Option<String> {
     let mut made = None;
+    let mut guard_name = None;
     js::each_block_mut(body, &mut |stmts| {
         for s in stmts.iter() {
             if let StmtKind::Const(n, value) = &s.kind
@@ -735,10 +742,11 @@ fn one_field_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &str) -> Option
                 && let [item] = items.as_slice()
             {
                 made.get_or_insert(item.clone());
+                guard_name.get_or_insert(n.clone());
             }
         }
     });
-    let item = made?;
+    let (item, guard_name) = (made?, guard_name?);
     let known = item.facts;
     let field = |e: &Expr| {
         matches!(&e.kind, ExprKind::Index(of, at)
@@ -756,7 +764,7 @@ fn one_field_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &str) -> Option
     // The variable it was made of; or read now, so not by Rust's name for
     // what's only dropped, `_restore`, where `restore` is free.
     let variable = match &item.kind {
-        ExprKind::Var(v) if kept_variables(body, params, guard, &[]).contains(v.word()) => Some(v.to_string()),
+        ExprKind::Var(v) if kept_variables(body, params, guard, &[]).contains(v.word()) => Some(v.clone()),
         _ => None,
     };
     let mut names = IndexSet::default();
@@ -771,9 +779,9 @@ fn one_field_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &str) -> Option
                 && !names.contains(free)
                 && !crate::names::kept_word(free) =>
         {
-            free.to_string()
+            js::Name::declared(free.to_string())
         }
-        _ => guard.to_string(),
+        _ => guard_name,
     };
     // A copy of it, `const old = _restore[0];`, is what it reads as too.
     copies_read_as(body, &field, &read, known.has(js::Known::Defined));
@@ -781,7 +789,7 @@ fn one_field_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &str) -> Option
     // amended), as `fields_of` reads one.
     js::each_expr_mut(body, &mut |e| {
         if field(e) {
-            let read = Expr::var(&read).or_at(e.span);
+            let read = Expr::var(read.clone()).or_at(e.span);
             *e = match known.has(js::Known::Defined) {
                 true => read.defined(),
                 false => read,
@@ -802,10 +810,10 @@ fn one_field_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &str) -> Option
                 && let StmtKind::Const(n, value) = &mut s.kind
                 && let ExprKind::Array(items) = &mut value.kind
             {
-                *n = read.clone().into();
+                *n = read.clone();
                 *value = items.remove(0);
             }
         }
     });
-    variable.is_none().then_some(read)
+    variable.is_none().then(|| read.into_word())
 }

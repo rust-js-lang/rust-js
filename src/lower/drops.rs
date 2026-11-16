@@ -160,7 +160,7 @@ fn without_dictionaries<'a, 'tcx>(
 /// to one may be in a branch, as an `Option`'s, that another isn't in.
 #[derive(Default)]
 struct Made<'tcx> {
-    functions: Vec<(Ty<'tcx>, String)>,
+    functions: Vec<(Ty<'tcx>, js::Name)>,
     defs: Vec<Stmt>,
 }
 
@@ -261,7 +261,7 @@ pub(super) struct DropState<'tcx> {
 /// drop: its name, and its `const`.
 #[derive(Default)]
 pub(super) struct Hoisted<'tcx> {
-    functions: Vec<(Ty<'tcx>, String)>,
+    functions: Vec<(Ty<'tcx>, js::Name)>,
     defs: Vec<Stmt>,
 }
 
@@ -606,8 +606,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let js_span = self.js_span(span);
             // Declared once, at the top of the body, where it hoists them.
             match self.drop_state.hoisted.as_mut() {
-                Some(hoisted) => hoisted.functions.push((ty, name.clone().into_word())),
-                None => made.functions.push((ty, name.clone().into_word())),
+                Some(hoisted) => hoisted.functions.push((ty, name.clone())),
+                None => made.functions.push((ty, name.clone())),
             }
             let mut body = Vec::new();
             self.drop_parts(Expr::var(&param), ty, span, made, &mut body)?;
@@ -619,7 +619,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Some(hoisted) => hoisted.defs.push(def),
                 None => made.defs.push(def),
             }
-            out.push(StmtKind::Expr(self.drop_function_call(name.word(), value)).at(js_span));
+            out.push(StmtKind::Expr(self.drop_function_call(&name, value)).at(js_span));
             return Ok(());
         }
         self.drop_parts(value, ty, span, made, out)
@@ -627,9 +627,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// A call of `name`, a drop function made here, of `value`: known never
     /// to throw where its body never does (`quiet`).
-    fn drop_function_call(&self, name: &str, value: Expr) -> Expr {
-        let mut call = Expr::call(Expr::var(name), vec![value]);
-        if self.drop_state.quiet.contains(name) {
+    fn drop_function_call(&self, name: &js::Name, value: Expr) -> Expr {
+        let mut call = Expr::call(Expr::var(name.clone()), vec![value]);
+        if self.drop_state.quiet.contains(name.word()) {
             call.facts = call.facts.with(js::Known::NeverThrows);
         }
         call
