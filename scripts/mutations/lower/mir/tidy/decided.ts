@@ -87,4 +87,22 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^match_of_a_pair_tests_each_once.rs$"],
     snapshots: true,
   },
+  {
+    name: "decided-other-text-kept",
+    breaks:
+      "a variant's tag tested inside a test of another variant of the same value, `if (x.TAG === \"Continue\") { if (x.TAG === \"Break\") { .. } }`, stays though it can't hold: std's `FilterMap::next_back` keeps its dead drop (#1954)",
+    file: "src/lower/mir/tidy/decided.rs",
+    find: "    let (subject, text, equal) = against_a_text(test)?;\n",
+    replace: "    let (subject, text, equal) = against_a_text(test).filter(|_| false)?;\n",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies"],
+  },
+  {
+    name: "decided-other-text-where-it-fails",
+    breaks:
+      "a test of a value against a text decides one against another text where it fails, too, `x.TAG === \"A\"`'s `else` taken to make `x.TAG === \"B\"` fail, where `x` may be `B`: a `match`'s later arm dropped, the calculator's (#1954)",
+    file: "src/lower/mir/tidy/decided.rs",
+    find: "    if equal != holds {\n        return None;\n    }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^calculator.rs$"],
+  },
 ];

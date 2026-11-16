@@ -882,10 +882,31 @@ fn same_body(a: &[&Stmt], b: &[&Stmt]) -> bool {
 /// member's method, `observer.observe(child)` of an `IntersectionObserver |
 /// ResizeObserver` (rd238); JS's call is one, as upstream's is. A program
 /// writes no other: clippy's `if_same_then_else` says so of an `if`, and a
-/// `match`'s arms of one type are one, `A(o) | B(o)`.
-pub(super) fn alike_whole(stmts: &mut Vec<Stmt>) {
+/// `match`'s arms of one type are one, `A(o) | B(o)`. And one of no `else`
+/// whose `then` leaves, ending in a jump, as what follows it does alike,
+/// `if (t) { return result; } return result;`: its `else` is what follows,
+/// as std's `FilterMap::next_back`'s, once its decided tests emptied its
+/// `then` of the rest (#1954). Only MIR's: one the program wrote, a test
+/// of `ifs`, a program may write so, and it stays as written (ADR 0564's
+/// rd48).
+pub(super) fn alike_whole(stmts: &mut Vec<Stmt>, ifs: &[js::Span]) {
     let mut i = 0;
     while i < stmts.len() {
+        if let StmtKind::If(test, then, None) = &stmts[i].kind
+            && super::logicals::written_if(ifs, test.span).is_none()
+            && then.last().is_some_and(|last| {
+                matches!(
+                    last.kind,
+                    StmtKind::Return(_) | StmtKind::Break(_) | StmtKind::Continue(_) | StmtKind::Throw(_)
+                )
+            })
+            && stmts.len() - (i + 1) >= then.len()
+            && then.iter().zip(&stmts[i + 1..]).all(|(a, b)| same_stmt(a, b))
+            && !test.has_effects()
+        {
+            stmts.remove(i);
+            continue;
+        }
         if let StmtKind::If(test, then, Some(otherwise)) = &stmts[i].kind
             && !then.is_empty()
             && then.len() == otherwise.len()
@@ -1026,5 +1047,44 @@ fn conjuncts(test: Expr, out: &mut Vec<Expr>) {
             conjuncts(*b, out);
         }
         kind => out.push(Expr { kind, ..test }),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn returns(value: &str) -> Stmt {
+        StmtKind::Return(Some(Expr::var(value))).at(js::Span::NONE)
+    }
+
+    /// `if (test) { return r; } return r;`.
+    fn tail(test: Expr) -> Vec<Stmt> {
+        vec![
+            StmtKind::If(test, vec![returns("r")], None).at(js::Span::NONE),
+            returns("r"),
+        ]
+    }
+
+    /// MIR's `if (t) { return r; } return r;` of a test that does nothing
+    /// is its `return r;`; of one that calls, or one the program wrote, it
+    /// stays (#1954, ADR 0564's rd48).
+    #[test]
+    fn a_then_alike_what_follows_goes_only_of_mirs_test_that_does_nothing() {
+        let mut made = tail(Expr::var("t"));
+        alike_whole(&mut made, &[]);
+        assert_eq!(made.len(), 1);
+        assert!(matches!(made[0].kind, StmtKind::Return(_)));
+
+        let mut calls = tail(Expr::call(Expr::var("mark"), Vec::new()));
+        alike_whole(&mut calls, &[]);
+        assert_eq!(calls.len(), 2);
+
+        let span = js::Span { lo: 10, hi: 20 };
+        let mut test = Expr::var("t");
+        test.span = span;
+        let mut written = tail(test);
+        alike_whole(&mut written, &[span]);
+        assert_eq!(written.len(), 2);
     }
 }

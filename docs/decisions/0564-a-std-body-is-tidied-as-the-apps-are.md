@@ -266,3 +266,36 @@ program writes, kept) and `match_arms_with_a_panic_written_in_order`,
 against native in both builds; the corpus's JS otherwise unchanged; the
 React port's regeneration. Mutations `split-test-tested-again`,
 `written-test-split-away` and `panicking-arm-unordered`.
+
+## Amendment: a tag tested inside a test of another tag is decided (#1954, 2026-11-16)
+
+A decided test was only the same test, `t` or `!t`. Std's
+`FilterMap::next_back`, once its arms are in core's order, kept
+`if (tryRfold.TAG === "Continue") { if (tryRfold.TAG === "Break") { dropB?.(..) } }`:
+the inner test can't hold.
+
+Where `x === "A"` holds, or `x !== "A"` fails, `x` is that text, so a
+test of `x` against another text is decided: `x === "B"` fails and
+`x !== "B"` holds (`decided`). It's decided only where the test holds:
+in its `else`, `x` may be any other text, as a `match`'s later arms are.
+Numbers aren't compared this way, since two written apart may be one
+value, `0` and `-0`.
+
+The `if` it empties then goes. Here that `if` was MIR's
+`if (t) { return result; } return result;`, whose `then` does what
+follows it. `alike_whole`, the owner of an `if` whose two branches are
+alike, now takes that form too: an `if` with no `else` whose `then` ends
+in a jump, alike the statements after it, with a test that does nothing.
+It applies only to MIR's `if`s. One the program wrote, `if t { return r; }
+r`, stays as written, as rd48 above keeps a written `then` and what
+follows it.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): N. The same statements
+run on each path. `@rust-js/std` loses the dead five lines and nothing
+else, and every corpus case is byte for byte the same but
+`alike_branches`, which gains a written row that stays as written. Held by
+`test/std-package.test.ts`, the unit tests in `tidy/decided.rs` and
+`tidy/decisions.rs`, and mutations `decided-other-text-kept`,
+`decided-other-text-where-it-fails` (`calculator.rs`'s later arms),
+`alike-tail-kept`, `alike-tail-of-a-test-that-does-something` and
+`alike-tail-of-a-written-if`.

@@ -2,6 +2,8 @@
 // nothing, `v = 1.5`, `r._0` of either variant's payload; an `if` still
 // where the test calls, which runs as written, `if (mark(n)) { return 5; }
 // return 5;`, not `mark(n) ? 5 : 5`; and `0.0` and `-0.0` are two values.
+// One written so of a test that does nothing, `if (n > 3) { return 7; }
+// return 7;`, stays as written (ADR 0564's rd48, #1954).
 
 fn mark(n: u32) -> bool {
     println!("mark {n}");
@@ -31,6 +33,13 @@ fn early(n: u32) -> u32 {
     5
 }
 
+fn written(n: u32) -> u32 {
+    if n > 3 {
+        return 7;
+    }
+    7
+}
+
 fn joined(n: u32) -> u32 {
     let level = if n > 2 && mark(n) { 5 } else { 5 };
     level + 1
@@ -56,6 +65,7 @@ fn main() {
     println!("{} {}", returned(3), returned(4));
     println!("{} {}", assigned(0), assigned(7));
     println!("{} {} {} {}", early(1), early(2), joined(3), joined(1));
+    println!("{} {}", written(2), written(5));
     println!("{} {}", 1.0 / signed(5), 1.0 / signed(1));
     println!("{}", same(2));
     println!("{} {}", payload(Ok(1)), payload(Err(2)));

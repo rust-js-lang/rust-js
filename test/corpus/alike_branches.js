@@ -37,6 +37,13 @@ function early(n) {
   return 5;
 }
 
+function written(n) {
+  if (n > 3) {
+    return 7;
+  }
+  return 7;
+}
+
 function joined(n) {
   let level;
   if (n > 2 && mark(n)) {
@@ -65,6 +72,7 @@ function main() {
   console.log(`${returned(3)} ${returned(4)}`);
   console.log(`${assigned(0)} ${assigned(7)}`);
   console.log(`${early(1)} ${early(2)} ${joined(3)} ${joined(1)}`);
+  console.log(`${written(2)} ${written(5)}`);
   console.log(`${$displayF64(1 / signed(5))} ${$displayF64(1 / signed(1))}`);
   console.log(`${$displayF64(same(2))}`);
   console.log(`${payload({ TAG: "Ok", _0: 1 })} ${payload({ TAG: "Err", _0: 2 })}`);

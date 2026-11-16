@@ -513,7 +513,9 @@ pub(super) const STAGES: &[Stage] = &[
             // An `if` whose branches are alike whole, the arms of a `match`
             // of an untagged enum each calling its member's method: the
             // branch alone (rd238).
-            pass("alike branches", |b, _| bottom_up(b, &mut decisions::alike_whole)),
+            pass("alike branches", |b, h| {
+                bottom_up(b, &mut |s| decisions::alike_whole(s, &h.written.ifs))
+            }),
             // And one it wrote without an `else`, its body in it, of a body
             // too that goes on to the function's end, the `return;` `returns
             // past blocks` gave it (ADR 0879, amended).

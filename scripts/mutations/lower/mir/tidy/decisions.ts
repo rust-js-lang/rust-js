@@ -449,4 +449,31 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^match_trees_chained.rs$"],
     snapshots: true,
   },
+  {
+    name: "alike-tail-kept",
+    breaks:
+      "an `if` of no `else` whose `then` leaves as what follows it does alike, `if (t) { return result; } return result;`, stays: std's `FilterMap::next_back` keeps an `if` that does nothing (#1954)",
+    file: "src/lower/mir/tidy/decisions.rs",
+    find: "            && then.iter().zip(&stmts[i + 1..]).all(|(a, b)| same_stmt(a, b))\n",
+    replace: "            && then.iter().zip(&stmts[i + 1..]).all(|(a, b)| same_stmt(a, b))\n            && false\n",
+    tests: ["test/std-package.test.ts", "-t", "the committed @rust-js/std is std's bodies"],
+  },
+  {
+    name: "alike-tail-of-a-test-that-does-something",
+    breaks:
+      "an `if` of no `else` whose `then` returns as what follows does is dropped though its test calls, `if (mark()) { return r; } return r;`, so `mark` never runs (#1954)",
+    file: "src/lower/mir/tidy/decisions.rs",
+    find: "            && then.iter().zip(&stmts[i + 1..]).all(|(a, b)| same_stmt(a, b))\n            && !test.has_effects()\n",
+    replace: "            && then.iter().zip(&stmts[i + 1..]).all(|(a, b)| same_stmt(a, b))\n",
+    unitTests: "lower::mir::tidy::decisions::tests::a_then_alike_what_follows_goes_only_of_mirs_test_that_does_nothing",
+  },
+  {
+    name: "alike-tail-of-a-written-if",
+    breaks:
+      "an `if` the program wrote of no `else`, `if t { return r; } r`, whose `then` returns as what follows does, is dropped, where ADR 0564's rd48 keeps what it wrote (#1954)",
+    file: "src/lower/mir/tidy/decisions.rs",
+    find: "            && super::logicals::written_if(ifs, test.span).is_none()\n",
+    replace: "",
+    unitTests: "lower::mir::tidy::decisions::tests::a_then_alike_what_follows_goes_only_of_mirs_test_that_does_nothing",
+  },
 ];

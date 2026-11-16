@@ -4391,11 +4391,6 @@ export function filterMapDoubleEndedIterator_nextBack(
   } else {
     result = $some(tryRfold._0);
   }
-  if (tryRfold.TAG === "Continue") {
-    if (tryRfold.TAG === "Break") {
-      dropB?.(tryRfold._0);
-    }
-  }
   return result;
 }
 

@@ -65,7 +65,7 @@ fn split_decided(otherwise: &mut Vec<Stmt>, test: &Expr, written: &[js::Span]) {
     };
     let condition = |s: js::Span| super::logicals::written_if(written, s);
     let one_condition = !t.span.is_none() && condition(t.span).is_some() && condition(t.span) == condition(test.span);
-    if !one_condition || decided(t, test) != Some(false) || disturbs(t, test) {
+    if !one_condition || decided(t, test, false) != Some(true) || disturbs(t, test) {
         return;
     }
     let StmtKind::If(_, then, _) = otherwise.remove(0).kind else {
@@ -98,11 +98,11 @@ fn decided_in(stmts: &mut Vec<Stmt>, from: usize, (test, written): (&Expr, &[js:
     while j < stmts.len() {
         match &mut stmts[j].kind {
             StmtKind::If(t, ..) if disturbs(t, test) => return,
-            StmtKind::If(t, ..) if let Some(taken) = decided(t, test).filter(|_| !wrote(t)) => {
+            StmtKind::If(t, ..) if let Some(taken) = decided(t, test, holds).filter(|_| !wrote(t)) => {
                 let StmtKind::If(_, then, otherwise) = stmts.remove(j).kind else {
                     unreachable!("matched")
                 };
-                let branch = match taken == holds {
+                let branch = match taken {
                     true => then,
                     false => otherwise.unwrap_or_default(),
                 };
@@ -193,10 +193,10 @@ fn settled(stmts: &mut Vec<Stmt>, j: usize) -> bool {
 fn decided_part(t: &Expr, test: &Expr, holds: bool) -> Option<Expr> {
     fn fold(e: &Expr, test: &Expr, holds: bool, changed: &mut bool) -> Expr {
         let ExprKind::Binary(op @ (Op::And | Op::Or), a, b) = &e.kind else {
-            return match decided(e, test) {
+            return match decided(e, test, holds) {
                 Some(taken) => {
                     *changed = true;
-                    Expr::bool(taken == holds).or_at(e.span)
+                    Expr::bool(taken).or_at(e.span)
                 }
                 None => e.clone(),
             };
@@ -225,13 +225,38 @@ fn decided_part(t: &Expr, test: &Expr, holds: bool) -> Option<Expr> {
     changed.then_some(folded)
 }
 
-/// Whether `t` is `test`, `Some(true)`, or its negation, `Some(false)`.
-fn decided(t: &Expr, test: &Expr) -> Option<bool> {
+/// What `t` is where `test` holds, or fails, `holds`: of `test` itself,
+/// or its negation. And of a test of one value against a text, `x.TAG ===
+/// "Continue"`, where it holds, `x` is that text, so a test of `x` against
+/// another, `x.TAG === "Break"`, fails, and `x.TAG !== "Break"` holds: a
+/// variant's tag tested inside a test of another variant (#1954). Of texts
+/// alone: two numbers written apart may be one value, `0` and `-0`.
+fn decided(t: &Expr, test: &Expr, holds: bool) -> Option<bool> {
     let same = |a: &Expr, b: &Expr| same_test(a, b) || a.written_alike(b);
     if same(t, test) {
-        return Some(true);
+        return Some(holds);
     }
-    same(&t.clone().negated_test(), test).then_some(false)
+    if same(&t.clone().negated_test(), test) {
+        return Some(!holds);
+    }
+    let (subject, text, equal) = against_a_text(test)?;
+    if equal != holds {
+        return None;
+    }
+    let (of, other, equal) = against_a_text(t)?;
+    (of.written_alike(subject) && other != text).then_some(!equal)
+}
+
+/// Of `x === "A"`, `x`, `"A"` and that it's `===`; of `x !== "A"`, the
+/// same and that it's `!==`.
+fn against_a_text(e: &Expr) -> Option<(&Expr, &str, bool)> {
+    let ExprKind::Binary(op @ (Op::Eq | Op::Ne), subject, text) = &e.kind else {
+        return None;
+    };
+    let ExprKind::Str(text) = &text.kind else {
+        return None;
+    };
+    Some((subject, text, *op == Op::Eq))
 }
 
 /// Whether evaluating `e` may change what `test` reads: nothing, of a test
@@ -262,4 +287,41 @@ fn disturbs_any(stmts: &[Stmt], test: &Expr) -> bool {
     });
     js::each_expr_mut(&mut stmts, &mut |e| disturbed |= e.has_effects());
     disturbed
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// `x.TAG === "<tag>"`, or `!==`.
+    fn tag(tag: &str, equal: bool) -> Expr {
+        let op = if equal { Op::Eq } else { Op::Ne };
+        Expr::bin(op, Expr::member(Expr::var("x"), crate::js::TAG), Expr::str(tag))
+    }
+
+    /// Where `x.TAG === "A"` holds, a test of `x` against another text is
+    /// decided; where it fails, `x` may be any other, so none is (#1954).
+    #[test]
+    fn another_text_is_decided_only_where_the_test_holds() {
+        let a = tag("A", true);
+        assert_eq!(decided(&tag("B", true), &a, true), Some(false));
+        assert_eq!(decided(&tag("B", false), &a, true), Some(true));
+        assert_eq!(decided(&tag("B", true), &a, false), None);
+        assert_eq!(decided(&tag("B", false), &a, false), None);
+        // Where `x.TAG !== "A"` fails, `x` is `A`.
+        assert_eq!(decided(&tag("B", true), &tag("A", false), false), Some(false));
+        assert_eq!(decided(&tag("B", true), &tag("A", false), true), None);
+        // Of the same text, the test itself.
+        assert_eq!(decided(&tag("A", true), &a, true), Some(true));
+        assert_eq!(decided(&tag("A", true), &a, false), Some(false));
+    }
+
+    /// Of numbers, only the test itself: two written apart may be one
+    /// value, `0` and `-0`, which `same_test` reads as one test.
+    #[test]
+    fn another_number_is_not_decided() {
+        let n = |k: f64| Expr::bin(Op::Eq, Expr::var("n"), Expr::num(k));
+        assert_eq!(decided(&n(1.0), &n(0.0), true), None);
+        assert_eq!(decided(&n(-0.0), &n(0.0), true), Some(true));
+    }
 }
