@@ -393,14 +393,14 @@ impl<'m, 'tcx> LocalFacts<'m, 'tcx> {
 #[derive(Default)]
 pub(super) struct NamingFacts {
     boxes: IndexSet<String>,
-    borrowed_names: IndexSet<String>,
+    borrowed_names: IndexSet<js::Name>,
     flags: IndexVec<MovePathIndex, Option<js::Name>>,
 }
 
 impl NamingFacts {
     pub(super) fn new(
         boxes: IndexSet<String>,
-        borrowed_names: IndexSet<String>,
+        borrowed_names: IndexSet<js::Name>,
         flags: IndexVec<MovePathIndex, Option<js::Name>>,
     ) -> Self {
         NamingFacts {
@@ -414,7 +414,7 @@ impl NamingFacts {
         &self.boxes
     }
 
-    pub(super) fn borrowed_names(&self) -> &IndexSet<String> {
+    pub(super) fn borrowed_names(&self) -> &IndexSet<js::Name> {
         &self.borrowed_names
     }
 

@@ -1028,7 +1028,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let borrowed_names = (state.locals.borrowed.iter_enumerated())
             .filter(|&(_, &borrowed)| borrowed)
-            .map(|(local, _)| state.locals.names[local].word().to_string())
+            .map(|(local, _)| state.locals.names[local].clone())
             .collect();
         state.own_names = state.locals.named_locals();
         for (local, name) in state.locals.names.iter_enumerated() {
