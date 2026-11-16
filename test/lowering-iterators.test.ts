@@ -1159,3 +1159,30 @@ pub fn maybe(items: &[Option<u32>]) -> Option<Option<u32>> {
   // `Some(None)`, an item that's `undefined`, apart from `None`, its end.
   expect([lib.maybe([undefined]) !== undefined, lib.maybe([])]).toEqual([true, undefined]);
 });
+
+// An exported function's `impl Iterator` parameter a JS caller gives an
+// array, filtered then counted, stepped by `next()`, folded by
+// `try_fold`, and of an `impl DoubleEndedIterator` stepped from its back
+// (ADR 0061, #1962): std's compiled `Filter` over what JS gives, as Rust
+// steps it, a route no Rust caller of the crate's takes. A double-ended
+// one given an array is #1993's.
+test("an exported function's impl Iterator a JS caller gives an array to, filtered", async () => {
+  const dir = fixture("js-caller-filters");
+  writeFileSync(join(dir, "lib.rs"), `pub fn odd_count(items: impl Iterator<Item = u32>) -> usize {
+    items.filter(|x| x % 2 == 1).count()
+}
+
+pub fn first_big(items: impl Iterator<Item = u32>) -> Option<u32> {
+    let mut f = items.filter(|x| *x > 2);
+    f.next()
+}
+
+pub fn summed(items: impl Iterator<Item = u32>) -> u32 {
+    items.filter(|x| *x > 1).try_fold(0u32, |a, x| a.checked_add(x)).unwrap_or(0)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.oddCount([1, 2, 3, 4, 5]), lib.firstBig([1, 2, 3, 4]), lib.summed([1, 2, 3, 4])]).toEqual([3, 3, 9]);
+  expect([lib.oddCount([].values()), lib.firstBig([1, 2])]).toEqual([0, undefined]);
+});

@@ -823,3 +823,13 @@ The seventh is retired, with evidence:
   isn't the crate's to say it never unwinds. The writers' filter is the one
   guard, and the mutation, moved onto it, is caught by that case.
 
+
+## Amendment: a runtime retirement's evidence is of the tree pushed (2026-11-16)
+
+Evidence that retires runtime code runs on the tree that's pushed. Main
+can move during a long run and add the case that reaches the code: the
+filter flip's survivors were run whole, the corpus, the iterator matrix
+and the copy matrix's filter rows, all native, and then main gained three
+cases that `filter-next-by-next` changes, which the push's own check
+found. So the final push's full check, every test it selects, is part of
+the evidence, never skipped as a sanity pass.
