@@ -436,15 +436,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^type_constant_of_a_module_constant.rs$"],
   },
   {
-    name: "recursive-fn-names-unreserved",
-    breaks:
-      "a function lowered after its module's `eqExpr` was made names its variable `eq_expr` `eqExpr`, which hides the module's: `const eqExpr = eqExpr(a, b)` throws (#517)",
-    file: "src/lower/pipeline.rs",
-    find: "        names.extend(settled.module_fns.names(module).map(str::to_owned));\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^recursive_fns_per_module.rs$"],
-  },
-  {
     name: "library-ref-cells-unasked-unsaid",
     breaks:
       "a library none of whose bodies asks what its `RefCell`s are says none of its fields quiet, so a consumer's closure writes one through its one cell, `$fieldCell(metadata, \"action\")` (rd418)",

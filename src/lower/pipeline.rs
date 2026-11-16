@@ -522,10 +522,11 @@ pub fn lower_crate<'tcx>(
         let module = fns[&def_id].module;
         // Locals must never shadow a function or an import of this file; an
         // `on_load!` body's are at its top, beside an earlier body's, which
-        // they mustn't be either (ADR 0267).
-        // And its recursive types' functions' (`recursive_fns`).
+        // they mustn't be either (ADR 0267). Not its recursive types'
+        // functions' (`recursive_fns`), made after: a local of one's word
+        // that reads it is given apart from it where the module is prepared,
+        // as from any of the module's names its scope reads (ADR 1150).
         let mut names = taken[&module].clone();
-        names.extend(settled.module_fns.names(module).map(str::to_owned));
         if super::bindings::is_on_load(tcx, def_id) {
             let earlier = lowered_items
                 .iter()
