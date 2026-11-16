@@ -91,4 +91,3 @@ src/lower/traits/impls.rs	1
 src/lower/traits/impls/defaults.rs	1
 src/lower/traits/words.rs	1
 src/lower/untagged/field_reads.rs	1
-src/output.rs	2

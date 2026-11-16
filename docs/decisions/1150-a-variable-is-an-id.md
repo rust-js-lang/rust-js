@@ -1000,3 +1000,10 @@ and each module's namespace, against the module's names at output, and
 reading an import's word now its local is a `Name`. The test harness's
 aliases are the next step: imports' `Name`s on `js::ImportNames`, spelled
 by preparation as link's are, which takes `output.rs` back to none.
+
+The test harness's aliases are spelled so now too (2026-11-17): each other
+module's namespace a module's tests reach is an import of its own,
+`Name::imported`, on `js::ImportNames`, spelled apart by preparation after
+the crate's imports, and read as that `Name`; only the runner's `test`,
+a JS module's import, is given its word at output, against the names the
+module reads and declares. `output.rs` reads no word.

@@ -547,10 +547,6 @@ impl OutputPlan {
                 _ => taken.extend(item.declared().map(str::to_string)),
             }
         }
-        taken.extend(js_module.imports.iter().flat_map(|import| {
-            (import.named.iter().map(|(_, local)| local.word().to_string()))
-                .chain(import.namespace.as_ref().map(|n| n.word().to_string()))
-        }));
         taken.extend(js_module.packages.iter().flat_map(|package| {
             (package.named.iter().map(|(_, local)| local.clone()))
                 .chain(package.default.clone())
@@ -558,8 +554,10 @@ impl OutputPlan {
         }));
         let test = crate::names::fresh_in(&mut taken, "test");
         // One namespace import per other module, named as lowering names its
-        // namespace (rd114b, ADR 1018).
-        let mut aliases: Vec<(&[String], String)> = Vec::new();
+        // namespace (rd114b, ADR 1018): a `Name` of its own, which
+        // preparation spells apart from the module's names after the
+        // crate's imports, as it does theirs (ADR 1150).
+        let mut aliases: Vec<(&[String], js::Name)> = Vec::new();
         for registered in tests.iter().filter(|test| Some(test.module.as_slice()) != own) {
             if aliases
                 .iter()
@@ -567,10 +565,11 @@ impl OutputPlan {
             {
                 continue;
             }
-            let alias = crate::names::fresh_in(&mut taken, &registered.namespace);
+            let alias = js::Name::imported(&registered.namespace);
+            js_module.import_names.apart.push(alias.clone());
             js_module.imports.push(js::Import {
                 named: Vec::new(),
-                namespace: Some(js::Name::module(&alias)),
+                namespace: Some(alias.clone()),
                 from: self.specifier(beside, &registered.module),
                 span: js::Span::NONE,
             });
@@ -591,7 +590,7 @@ impl OutputPlan {
                 .iter()
                 .find(|(module, _)| *module == registered.module.as_slice())
             {
-                Some((_, alias)) => js::Expr::member(js::Expr::module(alias), &registered.name),
+                Some((_, alias)) => js::Expr::member(js::Expr::var(alias), &registered.name),
                 None => js::Expr::module(&registered.name),
             };
             let mut outcome = |(helper, name): (crate::runtime::Helper, &'static str), args: Vec<js::Expr>| {
