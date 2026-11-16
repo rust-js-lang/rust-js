@@ -889,6 +889,38 @@ console.log(typeof lengthless.back, typeof lengthless.len, known.back().value, k
   expect(run([node ?? "node", "--input-type=module", "--eval", script])).toBe("undefined undefined 2 1\n");
 });
 
+// What a use site gave std's compiled struct, `$knowing`'s back and length,
+// its clone and its move apart know too, each stepping itself (#1976): a
+// clone std's compiled `Clone` makes, `$stdIterator(fields, of.$steps,
+// of.$knows)`, as the corpus' clone_of_a_compiled_adapter_knowing_its_back
+// reaches it; and a move apart, `$copy`, which no program reaches, a move
+// of std's struct being of its fields where the crate's code makes it, so
+// the guard is held here. A later use that gives no back keeps the earlier
+// one's.
+test("a clone and a move of std's compiled struct know its back, each stepping itself", () => {
+  const module = join(fixture("runtime-std-iterator-knows"), "runtime.js");
+  writeFileSync(module, run([compiler, "--runtime-module"]));
+  const script = `
+const { $stdIterator, $knowing } = await import(${JSON.stringify(module)});
+const steps = { next: (it) => (it.at < it.end ? it.items[it.at++] : undefined) };
+const back = (it) => (it.at < it.end ? it.items[--it.end] : undefined);
+const len = (it) => it.end - it.at;
+const made = () => $stdIterator({ items: [1, 2, 3, 4], at: 0, end: 4 }, steps);
+const original = $knowing(made(), back, len);
+const fields = (of) => ({ items: of.items, at: of.at, end: of.end });
+const clone = $stdIterator(fields(original), original.$steps, original.$knows);
+const moved = original.$copy();
+const seen = [clone.back().value, clone.len(), original.len()];
+seen.push(moved.back().value, moved.back().value, moved.len(), original.len(), clone.len());
+seen.push(original.back().value, original.len(), clone.len(), moved.len());
+const twice = $knowing($knowing(made(), back), undefined, len);
+const later = $stdIterator(fields(twice), twice.$steps, twice.$knows);
+seen.push(later.back().value, later.len());
+console.log(seen.join(" "));
+`;
+  expect(run([node ?? "node", "--input-type=module", "--eval", script])).toBe("4 3 4 4 3 2 4 3 4 3 3 2 4 3\n");
+});
+
 // An iterator's lifecycle, `$state`, `$closing`'s and std's compiled
 // struct's (ADR 1092 S7, #870): each move no Rust program makes is
 // rust-js's internal error, never a panic, which no `catch_unwind` and no

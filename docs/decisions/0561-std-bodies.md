@@ -653,3 +653,40 @@ It found two dead rows on Rust 1.100, which compiled nothing:
 removed, `@rust-js/std` is byte for byte the same, and so is every
 compile. Mutations `net-addresses-uncompiled` (moved here) and
 `catalog-private-trait-unfound` are caught by `test/std-package.test.ts`.
+
+## Amendment: a clone and a move of std's struct know what it knows (2026-11-16, #1976)
+
+A use site gives std's compiled struct its back, its length and its
+compiled `rfold`, `nth_back` and `try_rfold`, through `$knowing`. The
+struct's `Iterator` dictionary can't hold them, because each comes from
+the use site's dictionaries. But std's compiled `Clone` made its struct
+only "as the one it clones is", `$stdIterator({ iter, f }, map.$steps)`,
+and a move apart, `$copy`, made it from the steps alone. Both lost what
+the use had given. A `rev()` over a clone of a `map` its use gave a back
+then called `.back` on nothing: `TypeError: it.back is not a function`,
+where Rust steps it. This happened in two ways: through generic identity
+functions (the metamorphic net's opaque rewrite), and with generic code
+given the chain beside the clone, `show<I: Iterator + Clone>`, which
+makes the chain std's struct.
+
+`$stdIterator`'s `knowing` now keeps what it's given as `$knows`, each
+entry still unbound, what an earlier use gave kept where a later one gives
+none. `$stdIterator(struct, steps, knows)` replays it, bound to the new
+struct, so a clone steps only itself. The `Clone` the aggregate lowering
+compiles passes `self.$knows` with `self.$steps`, and `$copy` passes
+`it.$knows`. What a clone knows comes from where `$knowing` put it, never
+from its type, because generic code can't know it statically. Outside
+`@rust-js/std`'s runtime and its compiled `Clone`s, every compile is byte
+for byte the same.
+
+No Rust program reaches `$copy`'s route today: a move of std's struct is
+of its fields where the crate's code makes it. So a unit row of
+`test/runtime-package.test.ts` holds that route, and the other two. Corpus
+case `clone_of_a_compiled_adapter_knowing_its_back` holds both routes
+against native, each row a function of its own. Each steps the clone from
+its back, by a `rev()`'s `next`, `nth` and `fold`, and checks the original
+is as it was, and the reverse. `len()` there is refused, `ExactSizeIterator`
+of a `Copied<Map<..>>`, a refusal of its own.
+Mutations `std-iterator-clone-unknowing`, `std-iterator-move-unknowing`,
+`std-iterator-knows-the-last-use-only` and `std-clone-unknowing` are each
+caught.

@@ -7,11 +7,13 @@
 // whose body reaches memory, `$peekableHint`. It keeps `steps` as `$steps`,
 // a name no field has, for its clone to step as it does. Its back and its
 // length a use site gives, of its compiled `next_back` and `len` with that
-// use's dictionaries, `$knowing`'s. It's a `$Steps` (ADR 0669), whose fold,
+// use's dictionaries, `$knowing`'s, which it keeps as `$knows`: a clone of
+// it, std's compiled `Clone` made as it is, and a move of it apart, given
+// them, know what it knows (#1976). It's a `$Steps` (ADR 0669), whose fold,
 // a peekable's or a fuse's, is std's, `steps.fold`, its source's (#162);
 // closing it closes nothing, but of a kind dropped by closing, a `Rev`'s,
 // whose `steps.close` drops what it holds.
-function $stdIterator(struct, steps) {
+function $stdIterator(struct, steps, knows) {
   const it = Object.assign(Object.create($Steps.prototype), struct);
   const step = (item) => (item === undefined ? { done: true, value: undefined } : { done: false, value: $someValue(item) });
   it.$steps = steps;
@@ -63,6 +65,9 @@ function $stdIterator(struct, steps) {
   // source's: `ownCount` (#1048).
   if (steps.count !== undefined) $owns(it, "count");
   it.knowing = (back, len, rfold, nthBack, tryRfold) => {
+    // Each given kept, what an earlier use gave where this one gives none.
+    const known = it.$knows ?? [];
+    it.$knows = [back, len, rfold, nthBack, tryRfold].map((given, at) => given ?? known[at]);
     if (back !== undefined) it.back = () => step(back(it));
     if (len !== undefined) it.len = () => len(it);
     // Its compiled `rfold` and `nth_back`, and `try_rfold`, which `rfind`
@@ -81,6 +86,10 @@ function $stdIterator(struct, steps) {
     // asks from its back (#834).
     if (nthBack !== undefined) $owns(it, "nthBack");
   };
+  if (knows !== undefined) {
+    const [back, len, rfold, nthBack, tryRfold] = knows;
+    it.knowing(back, len, rfold, nthBack, tryRfold);
+  }
   // Its fields, the struct's, are what a move copies and what a write of
   // the whole replaces; its methods step `it` itself (#537). Moved out
   // apart, `$apart`'s: another of a copy of its fields, stepped as it is.
@@ -90,7 +99,7 @@ function $stdIterator(struct, steps) {
   // length are each use site's, `$knowing`'s, as they were.
   const fields = Object.keys(struct);
   const of = (value) => Object.fromEntries(fields.map((field) => [field, value[field]]));
-  it.$copy = () => $stateFrom($stdIterator(of(it), steps), it);
+  it.$copy = () => $stateFrom($stdIterator(of(it), steps, it.$knows), it);
   it.$become = (value) => $stateFrom(Object.assign(it, of(value)), value);
   return it;
 }

@@ -270,6 +270,7 @@ test("each `$` name the compiler writes is the runtime's", () => {
     ["$someNone", "src/lower/std_types/option.rs"], // a `Some` of `None`'s box's field (ADR 0051)
     ["$drop", "src/js.rs"], // a `dyn`'s dictionary's destructor
     ["$steps", "src/lower/mir/rvalues/aggregate.rs"], // a compiled std iterator's `next` and `size_hint`, `$stdIterator`'s, its clone's too (ADR 0561)
+    ["$knows", "src/lower/mir/rvalues/aggregate.rs"], // what a use gave a compiled std iterator, `$knowing`'s, its clone's too (ADR 0561, #1976)
     ["$tested", "src/prepare.rs"], // a variable marked as a test reads it, never printed
     ["$subject", "src/lower/mir/hints.rs"], // what a variant's test is of, as a `switch`'s constant has it, never printed (ADR 0668)
     ["$circleShape", "src/names.rs"], // a dictionary's cache, in a unit test

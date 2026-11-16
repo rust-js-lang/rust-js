@@ -164,7 +164,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // it's made, stepped by the compiled impl's `next` and sized
                 // by its `size_hint`, given this body's dictionaries; in its
                 // `Clone`, which has none of `I: Iterator`'s, as the one it
-                // clones is, `self.$steps` (ADR 0561). Where it's no iterator,
+                // clones is, `self.$steps` (ADR 0561), knowing what that one
+                // knows, its back and length a use site gave it, `self.$knows`
+                // (#1976). Where it's no iterator,
                 // in `StepBy::new`, the struct, which its caller makes one
                 // (`mir_call_values`, ADR 0917).
                 let cloning = self.tcx.trait_impl_of_assoc(self.item).is_some_and(|imp| {
@@ -174,11 +176,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if crate::lower::recognition::is_compiled_std_iterator(self.tcx, ty)
                     && (cloning || crate::lower::recognition::std_struct_steps_in(self.tcx, self.typing_env, ty))
                 {
-                    let steps = match cloning {
-                        true => Expr::member(Expr::var(&state.locals.names[Local::from_u32(1)]), "$steps"),
-                        false => self.std_iterator_steps(ty, span)?,
+                    let given = match cloning {
+                        true => {
+                            let of = Expr::var(&state.locals.names[Local::from_u32(1)]);
+                            vec![value, Expr::member(of.clone(), "$steps"), Expr::member(of, "$knows")]
+                        }
+                        false => vec![value, self.std_iterator_steps(ty, span)?],
                     };
-                    return Ok(Value::Expr(Expr::call_helper("$stdIterator", vec![value, steps])));
+                    return Ok(Value::Expr(Expr::call_helper("$stdIterator", given)));
                 }
                 Ok(Value::Expr(value))
             }

@@ -1628,7 +1628,7 @@ export function peekableClone_clone(
       throw error;
     }
   }
-  return $stdIterator({ iter: value$1, peeked: tmp }, peekable.$steps);
+  return $stdIterator({ iter: value$1, peeked: tmp }, peekable.$steps, peekable.$knows);
 }
 
 export function peekableDebug_fmt(peekable, options, IDebug, IItemDebug) {
@@ -2273,6 +2273,7 @@ export function fuseClone_clone(fuse, IClone) {
   return $stdIterator(
     { iter: fuse.iter == null ? undefined : $some(IClone.clone($someValue(fuse.iter))) },
     fuse.$steps,
+    fuse.$knows,
   );
 }
 
@@ -2531,7 +2532,7 @@ export function revExactSizeIterator_len(rev, IExactSizeIterator, dropI, dropIIt
 }
 
 export function revClone_clone(rev, TClone) {
-  return $stdIterator({ iter: TClone.clone(rev.iter) }, rev.$steps);
+  return $stdIterator({ iter: TClone.clone(rev.iter) }, rev.$steps, rev.$knows);
 }
 
 export function revDebug_fmt(rev, options, TDebug) {
@@ -2882,6 +2883,7 @@ export function enumerateClone_clone(enumerate, IClone, dropI) {
   return $stdIterator(
     { iter: IClone.clone(enumerate.iter), count$: enumerate.count$ },
     enumerate.$steps,
+    enumerate.$knows,
   );
 }
 
@@ -3206,7 +3208,7 @@ export function mapClone_clone(map, IClone, FClone, dropI, dropF) {
   const value = IClone.clone(map.iter);
   let result;
   try {
-    result = $stdIterator({ iter: value, f: FClone.clone(map.f) }, map.$steps);
+    result = $stdIterator({ iter: value, f: FClone.clone(map.f) }, map.$steps, map.$knows);
   } catch (error) {
     $cleanup(() => {
       dropI?.(value);
@@ -3599,6 +3601,7 @@ export function filterClone_clone(filter, IClone, PClone, dropI, dropP) {
     result = $stdIterator(
       { iter: value, predicate: PClone.clone(filter.predicate) },
       filter.$steps,
+      filter.$knows,
     );
   } catch (error) {
     $cleanup(() => {
@@ -3890,7 +3893,7 @@ export function copiedExactSizeIterator_len(copied, IExactSizeIterator, TCopy, d
 }
 
 export function copiedClone_clone(copied, IClone) {
-  return $stdIterator({ it: IClone.clone(copied.it) }, copied.$steps);
+  return $stdIterator({ it: IClone.clone(copied.it) }, copied.$steps, copied.$knows);
 }
 
 export function copiedDebug_fmt(copied, options, IDebug) {
@@ -4198,7 +4201,7 @@ export function clonedExactSizeIterator_len(cloned, IExactSizeIterator, TClone, 
 }
 
 export function clonedClone_clone(cloned, IClone) {
-  return $stdIterator({ it: IClone.clone(cloned.it) }, cloned.$steps);
+  return $stdIterator({ it: IClone.clone(cloned.it) }, cloned.$steps, cloned.$knows);
 }
 
 export function clonedDebug_fmt(cloned, options, IDebug) {
@@ -4521,7 +4524,11 @@ export function filterMapClone_clone(filterMap, IClone, FClone, dropI, dropF) {
   const value = IClone.clone(filterMap.iter);
   let result;
   try {
-    result = $stdIterator({ iter: value, f: FClone.clone(filterMap.f) }, filterMap.$steps);
+    result = $stdIterator(
+      { iter: value, f: FClone.clone(filterMap.f) },
+      filterMap.$steps,
+      filterMap.$knows,
+    );
   } catch (error) {
     $cleanup(() => {
       dropI?.(value);
@@ -4718,6 +4725,7 @@ export function takeWhileClone_clone(takeWhile, IClone, PClone, dropI, dropP) {
     result = $stdIterator(
       { iter: value, flag: takeWhile.flag, predicate: PClone.clone(takeWhile.predicate) },
       takeWhile.$steps,
+      takeWhile.$knows,
     );
   } catch (error) {
     $cleanup(() => {
@@ -4989,6 +4997,7 @@ export function skipWhileClone_clone(skipWhile, IClone, PClone, dropI, dropP) {
     result = $stdIterator(
       { iter: value, flag: skipWhile.flag, predicate: PClone.clone(skipWhile.predicate) },
       skipWhile.$steps,
+      skipWhile.$knows,
     );
   } catch (error) {
     $cleanup(() => {
@@ -5154,6 +5163,7 @@ export function mapWhileClone_clone(mapWhile, IClone, PClone, dropI, dropP) {
     result = $stdIterator(
       { iter: value, predicate: PClone.clone(mapWhile.predicate) },
       mapWhile.$steps,
+      mapWhile.$knows,
     );
   } catch (error) {
     $cleanup(() => {
@@ -5373,7 +5383,11 @@ export function scanClone_clone(scan, IClone, StClone, FClone, dropI, dropSt, dr
   }
   let result;
   try {
-    result = $stdIterator({ iter: value, f: tmp, state: StClone.clone(scan.state) }, scan.$steps);
+    result = $stdIterator(
+      { iter: value, f: tmp, state: StClone.clone(scan.state) },
+      scan.$steps,
+      scan.$knows,
+    );
   } catch (error) {
     $cleanup(() => {
       dropF?.(tmp);
@@ -5650,7 +5664,11 @@ export function inspectClone_clone(inspect, IClone, FClone, dropI, dropF) {
   const value = IClone.clone(inspect.iter);
   let result;
   try {
-    result = $stdIterator({ iter: value, f: FClone.clone(inspect.f) }, inspect.$steps);
+    result = $stdIterator(
+      { iter: value, f: FClone.clone(inspect.f) },
+      inspect.$steps,
+      inspect.$knows,
+    );
   } catch (error) {
     $cleanup(() => {
       dropI?.(value);
@@ -7391,7 +7409,7 @@ export function skipDoubleEndedIterator_rfold(
 }
 
 export function skipClone_clone(skip, IClone, dropI) {
-  return $stdIterator({ iter: IClone.clone(skip.iter), n: skip.n }, skip.$steps);
+  return $stdIterator({ iter: IClone.clone(skip.iter), n: skip.n }, skip.$steps, skip.$knows);
 }
 
 export function skipDebug_fmt(skip, options, IDebug) {
@@ -7929,7 +7947,7 @@ export function takeRepeatWithFExactSizeIterator_len(take, dropF, dropA) {
 }
 
 export function takeClone_clone(take, IClone, dropI) {
-  return $stdIterator({ iter: IClone.clone(take.iter), n: take.n }, take.$steps);
+  return $stdIterator({ iter: IClone.clone(take.iter), n: take.n }, take.$steps, take.$knows);
 }
 
 export function takeIDebug_fmt(take, options, IDebug) {
@@ -8111,6 +8129,7 @@ export function stepByClone_clone(stepBy, IClone, dropI) {
       firstTake: stepBy.firstTake,
     },
     stepBy.$steps,
+    stepBy.$knows,
   );
 }
 
@@ -8866,7 +8885,7 @@ export function chainClone_clone(chain, AClone, BClone, dropA, dropB) {
       throw error;
     }
   }
-  return $stdIterator({ a: value, b: tmp }, chain.$steps);
+  return $stdIterator({ a: value, b: tmp }, chain.$steps, chain.$knows);
 }
 
 export function chainABDebug_fmt(chain, options, ADebug, BDebug) {
@@ -9178,6 +9197,7 @@ export function zipClone_clone(zip, AClone, BClone, dropA, dropB) {
     result = $stdIterator(
       { a: value, b: BClone.clone(zip.b), index: zip.index, len$: zip.len$ },
       zip.$steps,
+      zip.$knows,
     );
   } catch (error) {
     $cleanup(() => {
@@ -9346,6 +9366,7 @@ export function repeatNClone_clone(repeatN, AClone) {
           : { count: repeatN.inner.count, element: AClone.clone(repeatN.inner.element) },
     },
     repeatN.$steps,
+    repeatN.$knows,
   );
 }
 
@@ -9666,7 +9687,11 @@ export function cycleClone_clone(cycle, IClone, dropI) {
   const value = IClone.clone(cycle.orig);
   let result;
   try {
-    result = $stdIterator({ orig: value, iter: IClone.clone(cycle.iter) }, cycle.$steps);
+    result = $stdIterator(
+      { orig: value, iter: IClone.clone(cycle.iter) },
+      cycle.$steps,
+      cycle.$knows,
+    );
   } catch (error) {
     $cleanup(() => {
       dropI?.(value);

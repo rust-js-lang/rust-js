@@ -113,6 +113,3 @@ plain std loud-call dyn_fn_handed_only.rs
 
 #1941 a `capacity()` of an in-place collect generic code makes of a chain it's given, whose source a call in that chain hides, `at_0(opaque(kept.into_iter()).map(f))`, throws where it runs, naming #1180: the read isn't in the body that collects, so it isn't refused where it's compiled (ADR 0419, amended for #1926)
 plain generic-instances in_place_collect_capacity_through_a_function.rs
-
-#1976 P0: a rev() of a copied() of a map over a slice, each given through a generic identity function, throws 'it.back is not a function'
-plain opaque clone_of_a_compiled_adapter_over_a_copied_map.rs
