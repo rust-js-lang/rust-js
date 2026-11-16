@@ -83,7 +83,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         for (i, &(ty, _)) in parts.iter().enumerate() {
             let part = make(self, i)?;
             out.push(match (&made, held[i]) {
-                (Some(made), true) => self.made_part(made.word(), part, ty, span)?,
+                (Some(made), true) => self.made_part(made, part, ty, span)?,
                 _ => part,
             });
         }
@@ -93,9 +93,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `part`, a `ty` made in turn that `held_in_turn` says is held, given
     /// to `made`, `made(part, drop)`, which `in_turn`'s `$madeInTurn` drops
     /// by its `drop` as a later part unwinds.
-    pub(super) fn made_part(&mut self, made: &str, part: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {
+    pub(super) fn made_part(&mut self, made: &js::Name, part: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {
         let drop = self.drop_function(ty, span)?.unwrap_or_else(Expr::js_undefined);
-        Ok(Expr::call(Expr::var(made), vec![part, drop]))
+        Ok(Expr::call(Expr::var(made.clone()), vec![part, drop]))
     }
 
     /// `value`, made of parts in turn, of which those `held_in_turn` says

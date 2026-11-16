@@ -759,7 +759,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 false => read,
             };
             if let (Some(made), true) = (&made, held[i]) {
-                field = self.made_part(made.word(), field, t, span)?;
+                field = self.made_part(made, field, t, span)?;
             }
             props.push(Prop::Field(name, self.holding(field, def, t)));
         }
