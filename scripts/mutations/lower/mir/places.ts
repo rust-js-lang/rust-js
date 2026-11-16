@@ -254,4 +254,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^address_of_a_field_given_to_generic_code.rs$"],
   },
+  {
+    name: "dyn-of-a-whole-local-pointed",
+    breaks: "a `&mut dyn` made of a whole local, `fmt::write(&mut s, ..)`'s `String`, in a crate that asks an address, is given a pointer to the variable, which JS holds as it is, and refused: \"a raw pointer to this place\" (#1893)",
+    file: "src/lower/mir/places.rs",
+    find: "        if matches!(target.kind, js::ExprKind::Var(_)) {\n            return Ok(made);\n        }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_of_a_whole_local_beside_an_address.rs$"],
+  },
 ];

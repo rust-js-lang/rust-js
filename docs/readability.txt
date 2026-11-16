@@ -1,13 +1,13 @@
 # shape	count	per 10,000 lines
-files	2629
-lines	349720
+files	2630
+lines	349761
 temporaries	0	0
 labeled blocks	0	0
 while (true)	224	6.4
 $iter	2917	83.4
 Iterator.from	354	10.1
 return;	337	9.6
-renamed x$1	16454	470.5
+renamed x$1	16454	470.4
 role fallbacks	8933	255.4
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1	role fallbacks
 test/corpus/adapter_drop_past_a_panic.js	50	0	0	0	1	0	0	0	1
@@ -681,6 +681,7 @@ test/corpus/dyn_iterators.js	89	0	0	0	5	0	0	0	1
 test/corpus/dyn_mut.js	129	0	0	0	0	0	0	4	1
 test/corpus/dyn_of_a_generic_impl_written_whole.js	193	0	0	0	0	0	0	7	3
 test/corpus/dyn_of_a_lent_iterator_steps_it.js	90	0	0	0	2	0	0	10	6
+test/corpus/dyn_of_a_whole_local_beside_an_address.js	41	0	0	0	0	0	0	0	0
 test/corpus/dyn_pointers.js	91	0	0	0	0	0	0	0	0
 test/corpus/dyn_ref_cell_drop.js	99	0	0	0	0	0	0	0	1
 test/corpus/dyn_ref_cell_supertrait.js	50	0	0	0	0	0	0	6	3

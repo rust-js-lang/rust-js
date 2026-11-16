@@ -603,6 +603,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(made);
         }
         let target = self.mir_place(state, place, span, out)?;
+        // A variable JS holds as it is, a whole local the `&mut dyn` is made
+        // of, `fmt::write(&mut s, ..)`'s `String` or `run(&mut b)`'s `Box`: no
+        // place a pointer is to, so the pair as it is, as of a place no borrow
+        // here made, which the crate alone gives (#1893).
+        if matches!(target.kind, js::ExprKind::Var(_)) {
+            return Ok(made);
+        }
         let offset = self.field_offset(place, &state.body.local_decls);
         let handle = self.pointer_to(target, pointee, offset, span)?;
         Ok(Expr::call_helper("$withPlace", vec![made, handle]))

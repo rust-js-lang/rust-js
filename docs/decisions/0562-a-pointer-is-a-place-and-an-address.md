@@ -1606,3 +1606,17 @@ space, which ends loudly, never the heap
 and never a wrong answer. A program that never yields and asks addresses of more than wasm32 holds, 4 GiB of them, ends with `rust-js does not support more addresses than wasm32 has: the address space is used up`. A program that yields gives ranges back as before. `test/lowering.test.ts`'s "a million short-lived addresses run in a
 bounded heap" now runs in 64 MB, not 384, where the records took 130 MB.
 Mutation `releasing-unbounded` (`runtime/pointers.ts`), caught.
+
+## Amendment: a `&mut dyn` of a whole local is the pair as it is (2026-11-16, #1893)
+
+In a crate that asks an address, a `&mut dyn` made of a `&mut` to a place
+is given the place's handle, `$withPlace(pair, $ptr(..))` (#1519). The
+place can also be a whole local that JS holds as a variable:
+`fmt::write(&mut s, ..)`'s `String`, or `run(&mut b)`'s `Box<dyn FnMut>`.
+Then there's no handle to give, and `pointer_to` refused it as "a raw
+pointer to this place". Each case compiled alone, and was refused only
+beside a case that asks an address (the neighbour shuffle). Now such a
+local's pair is as it is, as for a place no borrow here made (#1527), and
+as the crate gives it without the address: a pointer through it is
+refused where it runs. Corpus case `dyn_of_a_whole_local_beside_an_address`,
+mutation `dyn-of-a-whole-local-pointed`.
