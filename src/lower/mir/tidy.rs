@@ -39,7 +39,7 @@ mod value_chains;
 mod values;
 
 pub(super) use self::again::Again;
-pub(super) use self::bindings::{is_temporary, spelled_as_temporary, temporary, unsuffixed_params, user_name};
+pub(super) use self::bindings::{checked, is_temporary, spelled_as_temporary, temporary, unsuffixed_params, user_name};
 pub(super) use self::destructuring::{copied_params, destructured_params};
 use self::stability::{plain_field, read_past_calls};
 pub(super) use self::values::{call_path, field_path, writer_body};
@@ -739,12 +739,12 @@ mod tests {
         use super::decisions::default_values;
         let none = js::Span::NONE;
         let set = |v: Expr| StmtKind::Assign(Expr::var("n"), v).at(none);
-        let leave = || StmtKind::Break(Some("bb7".into())).at(none);
+        let leave = || StmtKind::Break(Some(crate::js::Name::block_label("bb7".to_string()))).at(none);
         let branch =
             |test: &str, v: f64| StmtKind::If(Expr::var(test), vec![set(Expr::num(v)), leave()], None).at(none);
         let block = |mut body: Vec<Stmt>| {
             body.push(set(Expr::var("v")));
-            vec![StmtKind::Labeled("bb7".into(), body).at(none)]
+            vec![StmtKind::Labeled(crate::js::Name::block_label("bb7".to_string()), body).at(none)]
         };
         let mut copied = block(vec![branch("a", 1.0)]);
         default_values(&mut copied);

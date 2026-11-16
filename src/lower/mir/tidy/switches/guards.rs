@@ -23,7 +23,7 @@ pub(super) fn guards_once(list: &mut [Stmt], switches: &[Switch]) {
         let StmtKind::Labeled(label, body) = &mut stmt.kind else {
             continue;
         };
-        if !crate::lower::mir::is_block_label(label.word()) {
+        if !crate::lower::mir::is_block_label(label) {
             continue;
         }
         let [chain, tail @ ..] = &body[..] else { continue };

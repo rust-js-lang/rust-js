@@ -27,7 +27,7 @@ pub(in crate::lower::mir::tidy) fn chains_in_blocks(stmts: &mut Vec<Stmt>, lets:
             i += 1;
             continue;
         };
-        if !crate::lower::mir::is_block_label(label.word()) {
+        if !crate::lower::mir::is_block_label(label) {
             i += 1;
             continue;
         }

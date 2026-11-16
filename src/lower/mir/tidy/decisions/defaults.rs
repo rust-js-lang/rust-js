@@ -19,7 +19,7 @@ pub(in crate::lower::mir::tidy) fn default_values(stmts: &mut Vec<Stmt>) {
     let mut i = 0;
     while i < stmts.len() {
         if let StmtKind::Labeled(label, body) = &stmts[i].kind
-            && crate::lower::mir::is_block_label(label.word())
+            && crate::lower::mir::is_block_label(label)
             && let Some((last, rest)) = body.split_last()
             && let StmtKind::Assign(target, value) = &last.kind
             && let ExprKind::Var(x) = &target.kind

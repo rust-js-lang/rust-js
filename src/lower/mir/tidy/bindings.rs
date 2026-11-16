@@ -161,7 +161,7 @@ pub(in crate::lower::mir) fn is_temporary(name: &Name) -> bool {
 /// `spelled`, what its word says, the answer before names had forms (#1681
 /// change 3, S4): a name made of text, a `String`'s, where a name of its
 /// form should go on, is found where they differ.
-fn checked(name: &Name, typed: bool, spelled: bool) -> bool {
+pub(in crate::lower::mir) fn checked(name: &Name, typed: bool, spelled: bool) -> bool {
     static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
     if cfg!(debug_assertions) && *ON.get_or_init(|| std::env::var_os("RUST_JS_CHECK_NAMES").is_some()) {
         assert_eq!(typed, spelled, "`{name}`: its form and its word disagree");

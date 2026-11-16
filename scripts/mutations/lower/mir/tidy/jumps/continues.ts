@@ -324,7 +324,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `break 'rows` of an inner loop, which MIR makes a `break` of a block the outer turn ends, stays `bb22:` in a `while (true)`, not the outer loop's `break rows;` and its test (uz3)",
     file: "src/lower/mir/tidy/jumps/continues.rs",
-    find: "            super::tails::relabeled(&mut broken, block.word(), named);\n            *looped = Some(named.into());\n",
+    find: "            super::tails::relabeled(&mut broken, block.word(), &js::Name::from(named));\n            *looped = Some(named.into());\n",
     replace: "            continue;\n",
     tests: ["test/corpus.test.ts", "-t", "^labeled_loop_left_from_inner.rs$"],
     snapshots: true,

@@ -31,6 +31,9 @@ enum Of {
     /// The name MIR's lowering holds an argument by, `_arg`, which tidy
     /// names `arg` (S4).
     HeldArg,
+    /// A block's label MIR's lowering made, `bb7`, not one the program
+    /// writes, `'rows` (S5).
+    BlockLabel,
 }
 
 impl Name {
@@ -63,6 +66,17 @@ impl Name {
     /// or given apart, `_arg$1` (S4).
     pub fn held_arg(word: String) -> Name {
         Name(word, Of::HeldArg)
+    }
+
+    /// A block's label MIR's lowering made, spelled `word`, `bb7`
+    /// (`mir::queries::label`), not one the program writes (S5).
+    pub fn block_label(word: String) -> Name {
+        Name(word, Of::BlockLabel)
+    }
+
+    /// Whether it's a block's label (`block_label`).
+    pub fn is_block_label(&self) -> bool {
+        self.1 == Of::BlockLabel
     }
 
     /// Whether it's a held argument's (`held_arg`).

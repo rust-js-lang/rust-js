@@ -76,11 +76,11 @@ pub(super) const LABELS_NAMED: Contract = Contract {
         let mut found = None;
         crate::js::each_list(body, &mut |stmts| {
             for stmt in stmts.iter() {
-                let written = |l: &str| !crate::lower::mir::is_block_label(l);
+                let written = |l: &crate::js::Name| !crate::lower::mir::is_block_label(l);
                 if found.is_none()
                     && !matches!(&stmt.kind, StmtKind::While { label: Some(l), .. }
                         | StmtKind::ForOf { label: Some(l), .. }
-                        | StmtKind::For { label: Some(l), .. } if written(l.word()))
+                        | StmtKind::For { label: Some(l), .. } if written(l))
                     && let StmtKind::Labeled(label, inner)
                     | StmtKind::While {
                         label: Some(label),

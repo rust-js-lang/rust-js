@@ -48,9 +48,9 @@ pub(super) fn exit_after(
     // A loop the program labeled is left from a loop inside it too, `break
     // 'outer`, which MIR goes on from where it's written, as from a way out
     // of its own: its label's, where the program wrote one (rd148).
-    let written = (label.as_ref().map(|n| n.word()))
+    let written = (label.as_ref())
         .filter(|l| !crate::lower::mir::is_block_label(l))
-        .map(str::to_string);
+        .map(|l| l.word().to_string());
     // The spans of what a block MIR made holds, which has none of its own:
     // where it's written is where they are. A `try` MIR made of what a
     // borrow tracked at run time unborrows if it throws too, `try { r =
@@ -368,11 +368,11 @@ pub(in crate::lower::mir::tidy) fn named_labels(stmts: &mut [Stmt], loops: &[(js
                 StmtKind::Labeled(label, body) => (label, body, None),
                 _ => continue,
             };
-            if crate::lower::mir::is_block_label(label.word())
+            if crate::lower::mir::is_block_label(label)
                 && let Some(to) = written
                 && !around.contains(to)
             {
-                relabeled(body, label.word(), to);
+                relabeled(body, label.word(), &js::Name::from(to));
                 *label = to.into();
             }
             around.push(label.to_string());
@@ -425,7 +425,7 @@ pub(in crate::lower::mir::tidy) fn written_loop_breaks(
             let Some((Some(label), _)) = parts(s) else {
                 continue;
             };
-            if !crate::lower::mir::is_block_label(label.word()) || span.is_none() {
+            if !crate::lower::mir::is_block_label(label) || span.is_none() {
                 continue;
             }
             // Its own loop the program didn't label, and the innermost loop
@@ -444,7 +444,7 @@ pub(in crate::lower::mir::tidy) fn written_loop_breaks(
                 unreachable!("matched")
             };
             let from = label.replace(to.into()).expect("labeled");
-            relabeled(inner, from.word(), to);
+            relabeled(inner, from.word(), &js::Name::from(to));
         }
     });
 }
@@ -482,10 +482,10 @@ pub(in crate::lower::mir::tidy) fn written_blocks(body: &mut Vec<Stmt>, blocks: 
                 && written(stmts[i].span).is_some()
                 && spans.get(to.word()) == Some(&stmts[i].span)
                 && let StmtKind::Labeled(label, inner) = &mut stmts[i].kind
-                && crate::lower::mir::is_block_label(label.word())
+                && crate::lower::mir::is_block_label(label)
             {
                 let from = label.clone();
-                relabeled(inner, from.word(), to.word());
+                relabeled(inner, from.word(), &to);
             }
         }
         // A block of one that ends it, where it ends too.
@@ -497,10 +497,10 @@ pub(in crate::lower::mir::tidy) fn written_blocks(body: &mut Vec<Stmt>, blocks: 
                     span,
                 }) = inner.last_mut()
                 && written(*span).is_some()
-                && crate::lower::mir::is_block_label(last.word())
+                && crate::lower::mir::is_block_label(last)
             {
                 let from = last.clone();
-                relabeled(last_body, from.word(), outer.word());
+                relabeled(last_body, from.word(), outer);
             }
         }
     });
@@ -526,11 +526,11 @@ pub(in crate::lower::mir::tidy) fn written_blocks(body: &mut Vec<Stmt>, blocks: 
             let name = written(stmt.span).map(|b| b.label.clone());
             if let StmtKind::Labeled(label, inner) = &mut stmt.kind
                 && let Some(to) = name
-                && crate::lower::mir::is_block_label(label.word())
+                && crate::lower::mir::is_block_label(label)
                 && taken.get(&to) == Some(&1)
                 && js::names_jump(inner, label.word())
             {
-                relabeled(inner, label.word(), &to);
+                relabeled(inner, label.word(), &js::Name::from(&to));
                 taken.insert(to.clone(), 2);
                 *label = to.into();
             }
@@ -636,8 +636,7 @@ pub(in crate::lower::mir::tidy) fn unlabeled(stmts: &mut Vec<Stmt>) {
         | StmtKind::For { label, body, .. } = &mut stmts[i].kind
             && label
                 .as_ref()
-                .map(|n| n.word())
-                .is_some_and(|l| crate::lower::mir::is_block_label(l) && !js::names_jump(body, l))
+                .is_some_and(|l| crate::lower::mir::is_block_label(l) && !js::names_jump(body, l.word()))
         {
             *label = None;
         }
@@ -834,7 +833,7 @@ fn left_by(switch: &mut Stmt, leaving: &[String], returned: Option<&Option<Expr>
         for (k, stmt) in stmts.iter().enumerate() {
             match &stmt.kind {
                 StmtKind::Labeled(label, body)
-                    if !crate::lower::mir::is_block_label(label.word())
+                    if !crate::lower::mir::is_block_label(label)
                         && leaves(stmts.get(k + 1))
                         && js::names_jump(body, label.word())
                         && fits_in_place(stmts, k, body) =>

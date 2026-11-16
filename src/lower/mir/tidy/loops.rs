@@ -263,7 +263,7 @@ pub(super) fn for_of(
     }
     let label = match (label, block) {
         (Some(own), Some(block)) => {
-            relabeled(&mut inner, block.word(), own.word());
+            relabeled(&mut inner, block.word(), own);
             Some(own.clone())
         }
         (label, block) => label.clone().or(block),

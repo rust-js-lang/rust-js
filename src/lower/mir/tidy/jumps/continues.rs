@@ -72,7 +72,7 @@ fn continued_loop(
                 // give back, its test as written (`kept_in_turn`, rd72c).
                 let last = body.last().expect("matched");
                 if let StmtKind::Labeled(label, _) = &last.kind
-                    && let Some(test) = logicals::skipped_test(label.word(), last, false, logicals)
+                    && let Some(test) = logicals::skipped_test(label, last, false, logicals)
                 {
                     body.pop();
                     body.extend(test);
@@ -508,7 +508,7 @@ pub(in crate::lower::mir::tidy) fn jumps_past_blocks(stmts: &mut [Stmt]) {
         // (ADR 0742): where it's written is its span.
         let written = !stmts[i].span.is_none();
         if let StmtKind::Labeled(label, body) = &mut stmts[i].kind
-            && crate::lower::mir::is_block_label(label.word())
+            && crate::lower::mir::is_block_label(label)
             && !written
         {
             let label = label.clone();
@@ -591,7 +591,7 @@ fn named_continues(stmts: &mut [Stmt], looped: &str) {
         let written = !stmts[i].span.is_none();
         match &mut stmts[i].kind {
             StmtKind::Labeled(label, body) => {
-                if goes_on && !written && crate::lower::mir::is_block_label(label.word()) {
+                if goes_on && !written && crate::lower::mir::is_block_label(label) {
                     let label = label.clone();
                     in_loops(body, label.word(), looped);
                 }
@@ -826,7 +826,7 @@ pub(in crate::lower::mir::tidy) fn blocks_breaking_loops(
         let (StmtKind::Labeled(label, inner), StmtKind::Break(None)) = (&block.kind, &after.kind) else {
             continue;
         };
-        if !block.span.is_none() || !crate::lower::mir::is_block_label(label.word()) {
+        if !block.span.is_none() || !crate::lower::mir::is_block_label(label) {
             continue;
         }
         let (block, mut broken) = (label.clone(), inner.clone());
@@ -847,7 +847,7 @@ pub(in crate::lower::mir::tidy) fn blocks_breaking_loops(
             else {
                 continue;
             };
-            super::tails::relabeled(&mut broken, block.word(), named);
+            super::tails::relabeled(&mut broken, block.word(), &js::Name::from(named));
             *looped = Some(named.into());
         }
         body.splice(at..=at, broken);
@@ -949,7 +949,7 @@ pub(in crate::lower::mir::tidy) fn blocks_loops_end(stmts: &mut [Stmt], every: b
                 if let Some(looped) = looped
                     && js::names_break(body, label)
                 {
-                    super::tails::relabeled(body, label, looped.word());
+                    super::tails::relabeled(body, label, looped);
                 }
             }
             StmtKind::If(_, a, b) => {
@@ -964,7 +964,7 @@ pub(in crate::lower::mir::tidy) fn blocks_loops_end(stmts: &mut [Stmt], every: b
     }
     for stmt in stmts.iter_mut() {
         if let StmtKind::Labeled(label, body) = &mut stmt.kind
-            && crate::lower::mir::is_block_label(label.word())
+            && crate::lower::mir::is_block_label(label)
         {
             ending(body, label.word(), every);
         }

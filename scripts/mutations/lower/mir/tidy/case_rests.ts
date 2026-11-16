@@ -108,9 +108,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a block MIR made of a labeled loop's turn, `bb42: { switch (..) { .. break bb42; } ..; continue; } break;`, stays, not each `break bb42` the loop's `break findParent;` (ADR 0702, amended)",
     file: "src/lower/mir/tidy/case_rests.rs",
-    find: "            && crate::lower::mir::is_block_label(b.word())\n",
+    find: "            && crate::lower::mir::is_block_label(b)\n",
     replace:
-      "            && crate::lower::mir::is_block_label(b.word())\n            && false\n",
+      "            && crate::lower::mir::is_block_label(b)\n            && false\n",
     tests: ["test/corpus.test.ts", "-t", "^while_let_at_end.rs$"],
     snapshots: true,
   },

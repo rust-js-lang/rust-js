@@ -289,22 +289,28 @@ pub(in crate::lower::mir) fn function_start(tcx: ty::TyCtxt<'_>, whole: Span, na
     }
 }
 
-/// Labels, by block.
-pub(super) fn label(block: BasicBlock) -> String {
-    format!("bb{}", block.as_usize())
+/// Labels, by block: a block label's name (`Name::block_label`).
+pub(super) fn label(block: BasicBlock) -> js::Name {
+    js::Name::block_label(format!("bb{}", block.as_usize()))
 }
 
 /// Whether `name` is a label `label` made, of a block, not one the program
-/// writes, `'rows`.
-pub(in crate::lower::mir) fn is_block_label(name: &str) -> bool {
-    name.strip_prefix("bb")
+/// writes, `'rows`: its form (`Name::block_label`, #1681 change 3, S5),
+/// checked against its spelling where `RUST_JS_CHECK_NAMES` is set.
+pub(in crate::lower::mir) fn is_block_label(name: &js::Name) -> bool {
+    super::tidy::checked(name, name.is_block_label(), spelled_as_block_label(name.word()))
+}
+
+/// Whether `word` is spelled as `label` spells a block's label, `bb7`.
+fn spelled_as_block_label(word: &str) -> bool {
+    word.strip_prefix("bb")
         .is_some_and(|n| !n.is_empty() && n.bytes().all(|b| b.is_ascii_digit()))
 }
 
-/// The block a label `label` made labels, `bb7`'s, where `name` is one
-/// (`is_block_label`).
-pub(in crate::lower::mir) fn label_block(name: &str) -> Option<mir::BasicBlock> {
-    let index = name.strip_prefix("bb").filter(|_| is_block_label(name))?;
+/// The block of a block label's word, `bb7`'s, `label`'s spelling read
+/// back: of the words the census keeps of block labels alone.
+pub(in crate::lower::mir) fn block_of_label(word: &str) -> Option<mir::BasicBlock> {
+    let index = word.strip_prefix("bb").filter(|_| spelled_as_block_label(word))?;
     index.parse::<usize>().ok().map(mir::BasicBlock::from_usize)
 }
 

@@ -130,7 +130,7 @@ fn walk(
                 // program's, or `loop`, apart from the labels around it and
                 // in it.
                 let written = written_loop(loops, span).and_then(|(.., l)| l.clone());
-                let (readable, written) = match label.as_ref().map(|n| n.word()) {
+                let (readable, written) = match label.as_ref() {
                     Some(l) if !crate::lower::mir::is_block_label(l) => (l.to_string(), true),
                     _ => {
                         let mut taken: IndexSet<String> = labels.iter().cloned().collect();
@@ -175,7 +175,7 @@ fn walk(
                     if let Some(from) = label.as_ref().map(|n| n.word())
                         && from != readable
                     {
-                        relabeled(body, from, &readable);
+                        relabeled(body, from, &js::Name::from(&readable));
                     }
                     *label = Some(readable.into());
                 }

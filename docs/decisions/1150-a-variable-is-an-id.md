@@ -225,3 +225,19 @@ exactly, and a second record of it would be a second answer; the name's
 identity apart from its word is S8's, as each word becomes preparation's.
 The corpus, the snapshots and the port are as they were; five mutations
 retargeted, `given-last-of-another-name` breaking `given_apart_of`.
+
+## S5 (2026-11-16)
+
+A block's label MIR's lowering makes, `bb7`, is a name of its form,
+`Name::block_label`, made by `mir::queries::label`, and tidy asks
+`is_block_label` of the label, its form, never its word, where it parsed
+`bb` and digits: whether a label is MIR's, to be dropped or named, or one
+the program wrote, `'rows`, which stays as it's written. So the form goes
+on, what moves a jump from one label to another gives it the label itself
+(`tails::relabeled`, `case_rests::placed`, `branch_ends::ending`,
+`threaded_jumps`), never a word; a label tidy makes readable, `loop`, is
+the program's. The census of labels, which counts block labels by their
+words, reads a word's block by `block_of_label`, `label`'s spelling read
+back. `RUST_JS_CHECK_NAMES` checks `is_block_label`'s answers against the
+spelling as it does a temporary's. The corpus, the snapshots and the port
+are as they were; eight mutations retargeted.

@@ -80,7 +80,7 @@ pub(super) fn blocks_one_case_reaches(stmts: &mut [Stmt]) {
                 .count();
         });
         let mut rest = Some(rest);
-        if named != 1 || !placed(case, inner.word(), outer.word(), &mut rest) {
+        if named != 1 || !placed(case, inner.word(), &outer, &mut rest) {
             continue;
         }
         // The block, then its `break outer`, which its end does.
@@ -99,7 +99,7 @@ pub(super) fn blocks_one_case_reaches(stmts: &mut [Stmt]) {
 /// `if` in it, not in a loop, where a `continue` of no label in `rest`
 /// would be the loop's; then the `break outer` that ends the block it
 /// leaves where `rest` goes on. Whether it was.
-fn placed(case: &mut Vec<Stmt>, inner: &str, outer: &str, rest: &mut Option<Vec<Stmt>>) -> bool {
+fn placed(case: &mut Vec<Stmt>, inner: &str, outer: &js::Name, rest: &mut Option<Vec<Stmt>>) -> bool {
     if matches!(case.last().map(|s| &s.kind), Some(StmtKind::Break(Some(l))) if l.is(inner))
         && let Some(rest) = rest.take()
     {
@@ -107,7 +107,7 @@ fn placed(case: &mut Vec<Stmt>, inner: &str, outer: &str, rest: &mut Option<Vec<
         let ends = rest.last().is_some_and(js::ends);
         case.extend(rest);
         if !ends {
-            case.push(StmtKind::Break(Some(outer.into())).at(js::Span::NONE));
+            case.push(StmtKind::Break(Some(outer.clone())).at(js::Span::NONE));
         }
         return true;
     }
@@ -323,7 +323,7 @@ pub(super) fn loops_left_by_cases(stmts: &mut [Stmt], loops: &[(js::Span, bool, 
         // `break b` the loop's `break` of the program's label.
         if let [.., block, last] = &body[..]
             && let StmtKind::Labeled(b, inner) = &block.kind
-            && crate::lower::mir::is_block_label(b.word())
+            && crate::lower::mir::is_block_label(b)
             && matches!(&last.kind, StmtKind::Break(l) if own(l))
             && matches!(inner.last().map(|s| &s.kind), Some(StmtKind::Continue(l)) if own(l))
             && !super::declared(inner).any(|name| super::declared(&body[..body.len() - 2]).any(|n| n == name))

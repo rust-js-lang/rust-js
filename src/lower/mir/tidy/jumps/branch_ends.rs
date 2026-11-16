@@ -13,13 +13,13 @@ use super::*;
 pub(in crate::lower::mir::tidy) fn branch_ends(stmts: &mut [Stmt]) {
     for stmt in stmts {
         if let StmtKind::Labeled(label, body) = &mut stmt.kind {
-            ending(body, label.word());
+            ending(body, label);
         }
     }
 }
 
 /// `stmts`, which end where block `label` does, as `branch_ends` has them.
-pub(in crate::lower::mir::tidy) fn ending(stmts: &mut Vec<Stmt>, label: &str) {
+pub(in crate::lower::mir::tidy) fn ending(stmts: &mut Vec<Stmt>, label: &js::Name) {
     // Not a block the program labeled, `'desc: { .. }`, which is where
     // it's written, by the name it gave it (ADR 0742, 0745). Past the
     // comments after it, a last `_ => {}`'s, kept before the jump its
@@ -45,7 +45,7 @@ pub(in crate::lower::mir::tidy) fn ending(stmts: &mut Vec<Stmt>, label: &str) {
             ..
         },
     ] = stmts.as_slice()
-        && l.is(label)
+        && l.is(label.word())
         && commented(rest)
     {
         stmts.pop();
@@ -64,7 +64,7 @@ pub(in crate::lower::mir::tidy) fn ending(stmts: &mut Vec<Stmt>, label: &str) {
         js::statement_lists(&mut body, &mut |stmts| {
             for stmt in stmts {
                 if matches!(&stmt.kind, StmtKind::Break(Some(l)) if *l == inner) {
-                    stmt.kind = StmtKind::Break(Some(label.into()));
+                    stmt.kind = StmtKind::Break(Some(label.clone()));
                 }
             }
         });
@@ -95,9 +95,11 @@ pub(in crate::lower::mir::tidy) fn ending(stmts: &mut Vec<Stmt>, label: &str) {
     // (c) { .. } else { t }`, whose `then` then ends where the block does, to
     // be had so too (ADR 0745). Unless no `else`'s needed, as `unelsed`
     // writes it where its `then` still never goes on.
-    let left = |then: &Vec<Stmt>| then.last().is_some_and(ends) && js::names_jump(then, label);
+    let left = |then: &Vec<Stmt>| then.last().is_some_and(ends) && js::names_jump(then, label.word());
     let Some(at) = (stmts.iter())
-        .position(|s| matches!(&s.kind, StmtKind::If(_, then, None) if leaves(&ands(then).1, label) || left(then)))
+        .position(
+            |s| matches!(&s.kind, StmtKind::If(_, then, None) if leaves(&ands(then).1, label.word()) || left(then)),
+        )
         .filter(|_| !exits)
     else {
         if let Some(StmtKind::If(_, then, otherwise)) = stmts.last_mut().map(|s| &mut s.kind) {
@@ -116,7 +118,7 @@ pub(in crate::lower::mir::tidy) fn ending(stmts: &mut Vec<Stmt>, label: &str) {
     else {
         unreachable!("found")
     };
-    if !leaves(&ands(&then).1, label) {
+    if !leaves(&ands(&then).1, label.word()) {
         let (mut then, mut rest) = (then, rest);
         ending(&mut then, label);
         ending(&mut rest, label);

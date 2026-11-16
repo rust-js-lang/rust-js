@@ -58,7 +58,7 @@ pub(in crate::lower::mir::tidy) fn returned_from_block(stmts: &mut Vec<Stmt>, re
     };
     let label = label.clone();
     // Its jumps threaded to where it ends.
-    threaded_jumps(body, label.word());
+    threaded_jumps(body, &label);
     returned_where_made(body, label.word(), result);
     let mut jumps = !body.last().is_some_and(ends);
     js::statement_lists(body, &mut |list| jumps |= js::names_jump(list, label.word()));
@@ -100,10 +100,10 @@ fn returned_where_made(body: &mut Vec<Stmt>, label: &str, result: &str) {
 /// `returned_where_made`'s, which returns at the end of each. A `while
 /// (true)`'s own `break`s, after it, are `made_at_ends`', which returns
 /// where each makes the result.
-fn threaded_jumps(body: &mut Vec<Stmt>, label: &str) {
+fn threaded_jumps(body: &mut Vec<Stmt>, label: &js::Name) {
     js::statement_lists(body, &mut |list| {
         for i in (0..list.len().saturating_sub(1)).rev() {
-            if !matches!(&list[i + 1].kind, StmtKind::Break(Some(l)) if l.is(label)) {
+            if !matches!(&list[i + 1].kind, StmtKind::Break(Some(l)) if l.is(label.word())) {
                 continue;
             }
             if matches!(&list[i].kind, StmtKind::Labeled(_, block) if fits_in_place(list, i, block)) {
@@ -615,7 +615,7 @@ pub(in crate::lower::mir::tidy) fn returns_into_branches(stmts: &mut [Stmt]) {
     for stmt in stmts {
         if stmt.span.is_none()
             && let StmtKind::Labeled(label, body) = &mut stmt.kind
-            && crate::lower::mir::is_block_label(label.word())
+            && crate::lower::mir::is_block_label(label)
         {
             let label = label.clone();
             at_ends(body, label.word());
@@ -721,7 +721,7 @@ pub(in crate::lower::mir::tidy) fn leaves(stmts: &[Stmt], label: &str) -> bool {
 pub(in crate::lower::mir::tidy) fn drop_tail(stmts: &mut Vec<Stmt>, jump: &StmtKind) {
     let same = |stmt: &Stmt| match (&stmt.kind, jump) {
         (StmtKind::Break(Some(a)), StmtKind::Break(Some(_)))
-            if !crate::lower::mir::is_block_label(a.word()) && !stmt.span.is_none() =>
+            if !crate::lower::mir::is_block_label(a) && !stmt.span.is_none() =>
         {
             false
         }
@@ -762,13 +762,13 @@ pub(in crate::lower::mir::tidy) fn drop_tail(stmts: &mut Vec<Stmt>, jump: &StmtK
 }
 
 /// Each `break from` and `continue from` in `stmts`, however deep, `to`'s.
-pub(in crate::lower::mir::tidy) fn relabeled(stmts: &mut Vec<Stmt>, from: &str, to: &str) {
+pub(in crate::lower::mir::tidy) fn relabeled(stmts: &mut Vec<Stmt>, from: &str, to: &js::Name) {
     js::statement_lists(stmts, &mut |list| {
         for stmt in list.iter_mut() {
             if let StmtKind::Break(Some(l)) | StmtKind::Continue(Some(l)) = &mut stmt.kind
                 && l.is(from)
             {
-                *l = to.into();
+                *l = to.clone();
             }
         }
     });

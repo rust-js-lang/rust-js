@@ -76,8 +76,8 @@ fn walk(stmts: &[Stmt], around: &mut Vec<(Around, Option<String>)>, left: &mut B
         let label = |label: &Option<Name>| {
             label
                 .clone()
+                .filter(super::queries::is_block_label)
                 .map(Name::into_word)
-                .filter(|name| super::queries::is_block_label(name))
         };
         let (inside, kind, label, bodies): (Around, &'static str, Option<String>, Vec<&[Stmt]>) = match &stmt.kind {
             StmtKind::While { label: l, body, .. } => (Around::Loop, "while", label(l), vec![body]),
@@ -140,7 +140,7 @@ fn walk(stmts: &[Stmt], around: &mut Vec<(Around, Option<String>)>, left: &mut B
 /// `label`'s shape: what it labels, what decided each way to its block in
 /// MIR (`decider`), and how many jumps reach it and the most each crosses.
 fn key(body: &Body<'_>, label: &str, found: &Left) -> String {
-    let block = super::queries::label_block(label);
+    let block = super::queries::block_of_label(label);
     let from = match block.filter(|&b| b.as_usize() < body.basic_blocks.len()) {
         Some(block) => {
             let mut kinds: Vec<String> = (body.basic_blocks.predecessors()[block].iter())
@@ -219,10 +219,12 @@ mod tests {
     #[test]
     fn each_compiler_label_kept_and_how_far_its_jumps_reach() {
         let left_from_loop = stmt(StmtKind::Labeled(
-            "bb3".into(),
+            crate::js::Name::block_label("bb3".to_string()),
             vec![while_true(vec![stmt(StmtKind::If(
                 Expr::var("c"),
-                vec![stmt(StmtKind::Break(Some("bb3".into())))],
+                vec![stmt(StmtKind::Break(Some(crate::js::Name::block_label(
+                    "bb3".to_string(),
+                ))))],
                 None,
             ))])],
         ));
@@ -230,13 +232,15 @@ mod tests {
             discriminant: Expr::var("x"),
             cases: vec![Case {
                 values: vec![Expr::int(1)],
-                body: vec![stmt(StmtKind::Break(Some("bb7".into())))],
+                body: vec![stmt(StmtKind::Break(Some(crate::js::Name::block_label(
+                    "bb7".to_string(),
+                ))))],
                 falls: false,
             }],
             default: None,
         });
         let left_from_switch = stmt(StmtKind::While {
-            label: Some("bb7".into()),
+            label: Some(crate::js::Name::block_label("bb7".to_string())),
             cond: Expr::bool(true),
             body: vec![switch],
         });

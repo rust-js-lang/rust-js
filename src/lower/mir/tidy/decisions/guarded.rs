@@ -31,7 +31,7 @@ pub(in crate::lower::mir::tidy) fn bound(body: &[Stmt], guards: &[Guard]) -> Ind
             let block_at = (i + 1..list.len()).find(|&j| !matches!(list[j].kind, StmtKind::Let(_, None)));
             if let StmtKind::Let(name, Some(value)) = &stmt.kind
                 && let Some(StmtKind::Labeled(label, block)) = block_at.and_then(|j| list.get(j)).map(|s| &s.kind)
-                && crate::lower::mir::is_block_label(label.word())
+                && crate::lower::mir::is_block_label(label)
                 && pure(value)
                 && let Some(reads) = tested_reads(block, name.word()).filter(|&n| n > 0)
             {

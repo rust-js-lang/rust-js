@@ -26,7 +26,7 @@ pub(in crate::lower::mir::tidy) fn skipped_tests(stmts: &mut Vec<Stmt>, logicals
         // `bb10: { bb7: { .. } seen += 10; }`'s `if (..) { break bb10; }`.
         skipped_tests(body, logicals, lets);
         let label = label.clone();
-        let Some(test) = skipped_test(label.word(), &stmts[i], lets, logicals) else {
+        let Some(test) = skipped_test(&label, &stmts[i], lets, logicals) else {
             i += 1;
             continue;
         };
@@ -45,7 +45,7 @@ pub(in crate::lower::mir::tidy) fn skipped_tests(stmts: &mut Vec<Stmt>, logicals
 /// decision), declared before it: a body's names are its own till tidy is
 /// done (ADR 0352), so a `let` declared a block out shadows nothing.
 pub(in crate::lower::mir::tidy) fn skipped_test(
-    label: &str,
+    label: &js::Name,
     block: &Stmt,
     lets: bool,
     logicals: &[js::Span],
@@ -61,7 +61,7 @@ pub(in crate::lower::mir::tidy) fn skipped_test(
         on: lets,
         names: Vec::new(),
     };
-    let (test, then, span) = skipped(body, label, &within, &mut hoisting)?;
+    let (test, then, span) = skipped(body, label.word(), &within, &mut hoisting)?;
     let mut stmts: Vec<Stmt> = (hoisting.names.into_iter())
         .map(|name| StmtKind::Let(name.into(), None).at(js::Span::NONE))
         .collect();

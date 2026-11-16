@@ -116,7 +116,7 @@ pub(super) fn decisions(stmts: &mut Vec<Stmt>, told: &Told) {
         let StmtKind::Labeled(label, body) = &stmts[i].kind else {
             continue;
         };
-        if !crate::lower::mir::is_block_label(label.word()) {
+        if !crate::lower::mir::is_block_label(label) {
             continue;
         }
         // A block each `break` of which ends a branch it ends with, an
