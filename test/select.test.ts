@@ -163,6 +163,20 @@ test("a workflow of the change's own runs everything; another's since the map's 
   expect(select([{ file: ".github/workflows/check.yml", hunks: [[1, 1]] }], { ...context, reach: read, own: () => false }).files).toEqual(["test/tool.test.ts"]);
 });
 
+// The selector's and the map's own code changes which tests run, not what
+// one does: another agent's change of it since the map's commit runs what
+// reads it, as a workflow's does; the selector's frequent pushes, a map
+// behind, ran every agent's check whole.
+test("the selector or the map of the change's own runs everything; another's since the map's commit, only what reads it", () => {
+  for (const file of ["scripts/select.ts", "scripts/testMap.ts", "scripts/testMapCompiler.ts"]) {
+    const changed = (own: boolean) => select([{ file, hunks: [[1, 1]] }], { ...context, own: () => own });
+    expect([file, changed(true)]).toMatchObject([file, { all: true, allOwn: true }]);
+    expect([file, changed(false)]).toMatchObject([file, { all: false, files: [] }]);
+    const read: Reach = new Map([...reach, ["test/two.test.ts", { modules: new Set([file]), reads: new Set() }]]);
+    expect(select([{ file, hunks: [[1, 1]] }], { ...context, reach: read, own: () => false }).files).toEqual(["test/two.test.ts"]);
+  }
+});
+
 test("the workflows, the packages' manifests, the toolchain, the selector and the map run everything; so does a package's folder", () => {
   for (const file of [".github/workflows/check.yml", ".github/actions/build-rust-js/action.yml", "package.json", "webapi/package.json", "bun.lock", "Cargo.lock", "rust-toolchain.toml", "bunfig.toml", "scripts/select.ts", "scripts/testMap.ts", "webapi/src/lib.rs", "tooling/build.js", "vendor/x/lib.rs"]) {
     expect([file, of(file).all]).toEqual([file, true]);

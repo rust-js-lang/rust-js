@@ -386,9 +386,14 @@ commits were checked by their own pushes, and CI checks the combination.
 With a pass this cheap, a push that meets a moved `main` rebases and runs
 it again until it lands, with no limit.
 
-**What changes how CI runs, not what a test does, `.github/**`, runs
-everything only of the change itself**, as CI's run of it changes. Of
-others' commits since the map's, it runs only what reads it.
+**What changes which tests run, or how CI runs them, not what a test does,
+runs everything only of the change itself** (`ownRunsAll`): `.github/**`,
+as CI's run of it changes, and the selector and the map, `scripts/select.ts`,
+`scripts/testMap.ts` and `scripts/testMapCompiler.ts`, as their rule may be
+wrong. Of others' commits since the map's, each runs only what reads it.
+The selector's own frequent pushes, a map 12 behind, made every agent's
+check select everything, "scripts/select.ts is what every test runs under
+(others' since the map's commit)".
 
 Every push's line says the map it selected by and how far behind HEAD it
 is (`map <sha> N behind`). If that is often past about 8, the map should

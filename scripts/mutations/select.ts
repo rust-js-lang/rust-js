@@ -90,4 +90,12 @@ export const mutations: Mutation[] = [
     replace: '  return result(ownFiles, ownCases, "corpus");',
     tests: ["test/select.test.ts", "-t", "a sanity pass's cap is never empty"],
   },
+  {
+    name: "others-selector-change-runs-all",
+    breaks: "another agent's change to the selector or the map since the map's commit runs every test, so a selector's pushes run every agent's check whole a map behind them",
+    file: "scripts/select.ts",
+    find: "      if (own(file)) return whole(`${file} is ${runsAll.what}`, file);",
+    replace: "      return whole(`${file} is ${runsAll.what}`, file);",
+    tests: ["test/select.test.ts", "-t", "the selector or the map of the change's own runs everything"],
+  },
 ];

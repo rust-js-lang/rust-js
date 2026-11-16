@@ -72,9 +72,8 @@ export type Context = {
 export type Reach = Map<string, { modules: Set<string>; reads: Set<string> }>;
 
 /** The files whose change runs everything: what every test runs under (the
- * workflows and actions, the packages' manifests and lockfiles, the
- * toolchain, Bun's config and its preload's environment), and the selector
- * and the map themselves, whose rule a change of may be wrong. */
+ * packages' manifests and lockfiles, the toolchain, Bun's config and its
+ * preload's environment). */
 export const everything = [
   "package.json",
   "*/package.json",
@@ -88,16 +87,20 @@ export const everything = [
   "build.rs",
   "rust-toolchain.toml",
   "rustfmt.toml",
-  "scripts/select.ts",
-  "scripts/testMap.ts",
-  "scripts/testMapCompiler.ts",
 ];
 
-/** What changes how CI runs, not what a local test does: of the change
- * itself, everything, as CI's run of it changes; of others' commits since
- * the map's, only what reads it, `test/ci.test.ts`'s, as each was checked
- * by its own push and CI. */
-export const ciOnly = [".github/**"];
+/** What changes which tests run, or how CI runs them, not what a test
+ * does: of the change itself, everything, as its rule may be wrong; of
+ * others' commits since the map's, only what reads it, as each was checked
+ * by its own push and CI. Each with what it is: the workflows and actions,
+ * and the selector and the map themselves, whose others' changes, a
+ * selector's pushes, ran every agent's check whole a map behind them. */
+export const ownRunsAll: Record<string, string> = {
+  ".github/**": "how CI runs every test",
+  "scripts/select.ts": "the selector, which picks every test",
+  "scripts/testMap.ts": "the test map, which the selector picks every test by",
+  "scripts/testMapCompiler.ts": "the test map's counting build, which the selector picks every test by",
+};
 
 /** The top folders whose files a test reads or imports, so a change there
  * runs only its readers and importers: the rest are packages and crates the
@@ -144,7 +147,7 @@ export const baselines: { path: string; owners: string[] }[] = [
 
 const globs = (paths: string[]) => paths.map((path) => new Bun.Glob(path));
 const everythingGlobs = globs(everything);
-const ciOnlyGlobs = globs(ciOnly);
+const ownRunsAllGlobs = Object.entries(ownRunsAll).map(([path, what]) => ({ glob: new Bun.Glob(path), what }));
 const runtimeGlobs = globs(runtimePaths);
 const baselineGlobs = baselines.map(({ path, owners }) => ({ glob: new Bun.Glob(path), owners }));
 
@@ -185,11 +188,12 @@ export function select(changes: Change[], context: Context): Selection {
   for (const change of changes) {
     const { file } = change;
     if (everythingGlobs.some((glob) => glob.match(file))) return whole(`${file} is what every test runs under`, file);
-    if (ciOnlyGlobs.some((glob) => glob.match(file))) {
-      if (own(file)) return whole(`${file} is how CI runs every test`, file);
+    const runsAll = ownRunsAllGlobs.find(({ glob }) => glob.match(file));
+    if (runsAll) {
+      if (own(file)) return whole(`${file} is ${runsAll.what}`, file);
       const found = readers(file);
       ran(found);
-      say(file, `CI's, others': ${found.length} test${found.length === 1 ? "" : "s"} read it`);
+      say(file, `${runsAll.what}, others': ${found.length} test${found.length === 1 ? "" : "s"} read it`);
       continue;
     }
     // A test file runs itself; the corpus's, every case.
