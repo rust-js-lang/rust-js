@@ -393,9 +393,11 @@ what's held before it, as a browser's console takes whole lines
   iterator adapters' `Debug`, `Fuse { iter: Some(..) }`, is written so by
   `@rust-js/std`'s compiled bodies. A range's `Debug`, `1..4`, is its
   start, its dots and its end, each a call of the writer's, the bounds by
-  the same options, as std writes it; a `RangeInclusive` of numbers or
-  `char`s, which std shows ` (exhausted)` once stepped through, is refused
-  written so (#1963). A formatting impl of a reference to, a
+  the same options, as std writes it; of a `RangeInclusive` of numbers or
+  `char`s, then ` (exhausted)` where it's been stepped through, a write
+  made only where it is, `if (range.exhausted !== undefined) {
+  f.write(" (exhausted)"); }`, tested after its end is written, as std
+  tests it (#1963). A formatting impl of a reference to, a
   `Box` of or a `Pin<Box<..>>` of your own type, `impl Display for
   &ByRef`, is that type's: `{}` of a `&ByRef` calls it, as Rust does,
   and writes into a writer a piece at a time by it too (#1798). A `dyn` a

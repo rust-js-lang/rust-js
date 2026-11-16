@@ -132,4 +132,12 @@ export const mutations: Mutation[] = [
     replace: "        let ty = ty.peel_refs();\n        let int",
     tests: ["test/corpus.test.ts", "-t", "^display_impl_of_a_reference_box_or_pin.rs$"],
   },
+  {
+    name: "sink-write-if-always",
+    breaks: "a conditional write into a writer is made whether its test holds or not: a `RangeInclusive` not stepped through shows ` (exhausted)` (#1963)",
+    file: "src/lower/display/sink_writes.rs",
+    find: "                return StmtKind::If(test, then, None).at(js_span);\n",
+    replace: "                return StmtKind::If(Expr::bool(true), then, None).at(js_span);\n",
+    tests: ["test/corpus.test.ts", "-t", "^range_inclusive_written_into_a_generic_writer.rs$"],
+  },
 ];

@@ -106,4 +106,28 @@ export const mutations: Mutation[] = [
     replace: "            writes.push(SinkWrite::Str(Expr::str(\"..\")));\n",
     tests: ["test/corpus.test.ts", "-t", "^range_written_into_a_generic_writer.rs$"],
   },
+  {
+    name: "range-exhausted-write-dropped",
+    breaks: "a `RangeInclusive` stepped through, written into a writer, leaves out its ` (exhausted)` (#1963)",
+    file: "src/lower/display/sink_debug.rs",
+    find: "            if let Some(exhausted) = exhausted {\n                writes.push(SinkWrite::If(\n",
+    replace: "            if let Some(exhausted) = exhausted.filter(|_| false) {\n                writes.push(SinkWrite::If(\n",
+    tests: ["test/corpus.test.ts", "-t", "^range_inclusive_written_into_a_generic_writer.rs$"],
+  },
+  {
+    name: "range-exhausted-written-first",
+    breaks: "a `RangeInclusive`'s ` (exhausted)` is written before its bounds, where std tests it after its end (#1963)",
+    file: "src/lower/display/sink_debug.rs",
+    find: "            if let Some(exhausted) = exhausted {\n                writes.push(SinkWrite::If(\n",
+    replace: "            if let Some(exhausted) = exhausted {\n                writes.insert(0, SinkWrite::If(\n",
+    tests: ["test/corpus.test.ts", "-t", "^range_inclusive_written_into_a_generic_writer.rs$"],
+  },
+  {
+    name: "range-inclusive-written-refused",
+    breaks: "a `RangeInclusive` of numbers or `char`s written into a writer a piece at a time is refused again (#1963)",
+    file: "src/lower/display/sink_debug.rs",
+    find: "            if !value.reads_same() || !out.is_empty() {\n                return Ok(None);\n            }\n            let mut writes = Vec::new();\n",
+    replace: "            if !value.reads_same() || !out.is_empty() || exhausted.is_some() {\n                return Ok(None);\n            }\n            let mut writes = Vec::new();\n",
+    tests: ["test/corpus.test.ts", "-t", "^range_inclusive_written_into_a_generic_writer.rs$"],
+  },
 ];

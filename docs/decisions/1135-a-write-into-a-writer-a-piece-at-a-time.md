@@ -859,3 +859,33 @@ exhausted, of numbers or `char`s, is left refused: std writes
 ` (exhausted)` only where it is, and a sink's write of `""` in its place
 would be a call of the writer's too (#1963). Corpus case
 `range_written_into_a_generic_writer`, against native, records each call.
+
+## Amendment: a conditional write, `SinkWrite::If` (2026-11-16, #1963)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so Rust's
+behavior kept: a writer counts its calls, or fails at one, so a write std
+makes only where a test holds can be neither always made nor left out. A
+`RangeInclusive` of numbers or `char`s written into a writer a piece at a
+time was refused, as std writes ` (exhausted)` only where it's been stepped
+through, `if self.exhausted { write!(f, " (exhausted)")?; }`, and a sink
+had no conditional write. Now, the lead for the user:
+
+- **`SinkWrite::If(test, writes)` is the one form of a conditional write**
+  into a writer's sink, any value's whose `fmt` tests before it writes, not
+  a range's alone: `if (test) { f.write(..); }` in place, plain JS, no
+  helper. Its test is read where it's met among the writes, after those
+  before it, as std's `fmt` reads it; its writes are statements as any
+  write is, so a writer's error, thrown by its sink, stops the rest the same
+  way.
+- **A `RangeInclusive`'s** writes are its start's, its dots, its end's, then
+  `If(exhausted, [" (exhausted)"])`, the test `range_state`'s, the one the
+  range's text is made by.
+
+Corpus case `range_inclusive_written_into_a_generic_writer`, against native
+in both builds and its metamorphic rewrites: `u8` and `char` ranges used up
+and not, with options, `3..=3` and `255..=255` after a `next()`; a writer
+recording each call; and one failing at the third call and at the eighth,
+` (exhausted)` itself, each `Err` stopping the rest. Mutations
+`sink-write-if-always`, `range-exhausted-write-dropped`,
+`range-exhausted-written-first` and `range-inclusive-written-refused`,
+caught. Its line in the guide's limitations is gone.

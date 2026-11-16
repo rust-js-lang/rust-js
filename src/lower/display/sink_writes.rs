@@ -22,12 +22,25 @@ pub(in crate::lower) enum SinkWrite {
     /// `$writeInteger(f, n, options)`: `pad_integral`'s or `pad`'s; a
     /// dictionary's, `$writeBy(f, TDisplay, t, options)` (`fmt_into`).
     Helper(&'static str, Vec<Expr>),
+    /// Writes made only where `test` holds, read where it's met, after the
+    /// writes before it, as std's `fmt` tests it: `if (test) { f.write(..); }`
+    /// in place, the one form of a conditional write, each of its writes'
+    /// errors stopping the rest as any write's does. A `RangeInclusive`'s
+    /// ` (exhausted)` (#1963).
+    If(Expr, Vec<SinkWrite>),
 }
 
 impl SinkWrite {
     /// Its statement, written into `sink`.
     pub(in crate::lower) fn written_into(self, sink: &Expr, js_span: js::Span) -> Stmt {
         let call = match self {
+            SinkWrite::If(test, writes) => {
+                let then = writes
+                    .into_iter()
+                    .map(|write| write.written_into(sink, js_span))
+                    .collect();
+                return StmtKind::If(test, then, None).at(js_span);
+            }
             SinkWrite::Str(text) => Expr::call(Expr::member(sink.clone(), "write"), vec![text]),
             SinkWrite::Char(c) => Expr::call(Expr::member(sink.clone(), "writeChar"), vec![c]),
             SinkWrite::Helper(name, mut args) => {

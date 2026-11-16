@@ -227,13 +227,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // A range's, which std writes straight to the formatter, no builder:
         // `self.start.fmt(f)?; write!(f, "..")?; self.end.fmt(f)`, each bound
-        // by the same options (#1897). Not of a `RangeInclusive` that may be
-        // exhausted, whose ` (exhausted)` std writes only where it is: a
-        // write of `""` in its place would be a call of the writer's too.
+        // by the same options (#1897); and of a `RangeInclusive` that may be
+        // exhausted, then `if self.exhausted { write!(f, " (exhausted)")? }`,
+        // a write only where it is, tested after the end's (#1963).
         if let Some(kind) = self.range_kind(ty) {
             let mut out = Vec::new();
             let (parts, exhausted) = self.range_state(value.clone(), ty, &mut out);
-            if !value.reads_same() || !out.is_empty() || exhausted.is_some() {
+            if !value.reads_same() || !out.is_empty() {
                 return Ok(None);
             }
             let mut writes = Vec::new();
@@ -254,6 +254,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             writes.push(SinkWrite::Str(Expr::str(kind.dots())));
             if kind.bounds().last() == Some(&"end") && !bound(self, parts.next(), &mut writes)? {
                 return Ok(None);
+            }
+            if let Some(exhausted) = exhausted {
+                writes.push(SinkWrite::If(
+                    exhausted,
+                    vec![SinkWrite::Str(Expr::str(" (exhausted)"))],
+                ));
             }
             return Ok(Some(writes));
         }
