@@ -653,12 +653,12 @@ pub(in crate::lower::mir::tidy) fn unlabeled(stmts: &mut Vec<Stmt>) {
 /// Of `stmts`, run while `name` is still `""`: `f += s; return f` is
 /// `return s`, and `return f` is `return ""`, into each branch that
 /// starts so.
-pub(in crate::lower::mir::tidy) fn returned_unwritten(stmts: &mut Vec<Stmt>, name: &str) {
-    let is_name = |e: &Expr| matches!(&e.kind, ExprKind::Var(v) if v.is(name));
+pub(in crate::lower::mir::tidy) fn returned_unwritten(stmts: &mut Vec<Stmt>, name: &js::Name) {
+    let is_name = |e: &Expr| matches!(&e.kind, ExprKind::Var(v) if v == name);
     let mut i = 0;
     while i < stmts.len() {
         let returned = matches!(stmts.get(i + 1).map(|s| &s.kind), Some(StmtKind::Return(Some(r))) if is_name(r));
-        let mentioned = js::mentions_in(std::slice::from_ref(&stmts[i]), name) > 0;
+        let mentioned = js::mentions_of(std::slice::from_ref(&stmts[i]), name) > 0;
         let next = stmts.get(i + 1).cloned();
         match &mut stmts[i].kind {
             StmtKind::Assign(target, value)
@@ -688,7 +688,7 @@ pub(in crate::lower::mir::tidy) fn returned_unwritten(stmts: &mut Vec<Stmt>, nam
                 if let Some(els) = els {
                     returned_unwritten(els, name);
                 }
-                if js::mentions_in(std::slice::from_ref(&stmts[i]), name) > 0 {
+                if js::mentions_of(std::slice::from_ref(&stmts[i]), name) > 0 {
                     return;
                 }
             }

@@ -97,8 +97,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`const a = t[0]; const b = t[1];` of a variable stays, not `const [a, b] = t;`",
     file: "src/lower/mir/tidy/destructuring.rs",
-    find: "                (v.to_string(), i)\n",
-    replace: "                (v.to_string(), i + stmts.len())\n",
+    find: "                (v.clone(), i)\n",
+    replace: "                (v.clone(), i + stmts.len())\n",
     tests: [
       "test/lowering-matches.test.ts",
       "-t",
@@ -288,7 +288,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a parameter's parts with drop flags between, `([a, b, c, d], i)`, are `_1`, read part by part",
     file: "src/lower/mir/tidy/destructuring.rs",
-    find: "        constants_first(body, 0, 0, name.word());\n",
+    find: "        constants_first(body, 0, 0, &name);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^array_partial_moves.rs$"],
     snapshots: true,
@@ -371,13 +371,5 @@ export const mutations: Mutation[] = [
     replace: "        let other = items;\n",
     tests: ["test/corpus.test.ts", "-t", "^tuple_match_item_destructured.rs$"],
     snapshots: true,
-  },
-  {
-    name: "destructured-global-unmarked",
-    breaks: "a destructuring of a global's properties reads a variable of its name, the global's mark gone: `const { $RX: clientRender } = window;` refused, a read nothing declares (#1681)",
-    file: "src/lower/mir/tidy/destructuring.rs",
-    find: "                        ..read.clone()\n                    },\n                );\n                stmts.drain(i + 1..i + count);\n",
-    replace: "                        ..Expr::var(&name)\n                    },\n                );\n                stmts.drain(i + 1..i + count);\n",
-    tests: ["test/validate.test.ts", "-t", "a destructuring of a global's properties"],
   },
 ];

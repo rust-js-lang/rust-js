@@ -824,7 +824,7 @@ pub(in crate::lower::mir) fn writer_body(out: &mut Vec<Stmt>, name: &js::Name) {
     };
     let made = out.remove(at);
     let mut rest = out.split_off(at);
-    returned_unwritten(&mut rest, name.word());
+    returned_unwritten(&mut rest, name);
     if js::mentions_of(&rest, name) > 0 {
         match rest.first().map(|s| &s.kind) {
             Some(StmtKind::Assign(target, value))

@@ -67,7 +67,7 @@ src/lower/mir/tidy/decisions.rs	2
 src/lower/mir/tidy/decisions/defaults.rs	3
 src/lower/mir/tidy/decisions/guarded.rs	6
 src/lower/mir/tidy/decisions/presence.rs	1
-src/lower/mir/tidy/destructuring.rs	11
+src/lower/mir/tidy/destructuring.rs	6
 src/lower/mir/tidy/flags.rs	7
 src/lower/mir/tidy/jumps/branch_ends.rs	1
 src/lower/mir/tidy/jumps/continues.rs	3
@@ -82,7 +82,7 @@ src/lower/mir/tidy/options.rs	7
 src/lower/mir/tidy/shadows.rs	4
 src/lower/mir/tidy/switches.rs	2
 src/lower/mir/tidy/unwinds.rs	7
-src/lower/mir/tidy/values.rs	12
+src/lower/mir/tidy/values.rs	11
 src/lower/mir/tidy/values/handles.rs	1
 src/lower/mir/writer.rs	1
 src/lower/ordering.rs	4

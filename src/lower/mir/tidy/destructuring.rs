@@ -21,12 +21,12 @@ pub(super) fn destructured(
         // statement makes, the statements after it; or a variable this one
         // reads a part of, here.
         let (name, first) = match &stmts[i].kind {
-            StmtKind::Const(name, _) if is_temporary(name) => (name.to_string(), i + 1),
+            StmtKind::Const(name, _) if is_temporary(name) => (name.clone(), i + 1),
             StmtKind::Const(_, value) | StmtKind::Let(_, Some(value))
                 if let Some(v) = part_of(value)
                     && !is_temporary(v) =>
             {
-                (v.to_string(), i)
+                (v.clone(), i)
             }
             _ => {
                 i += 1;
@@ -59,7 +59,7 @@ pub(super) fn destructured(
         let enough = count >= if made || bound { 1 } else { 2 };
         let pattern = pattern_of(&parts);
         let other = items && (made || !indexed || count < 2);
-        if !enough || other || pattern.is_none() || (made && js::mentions_in(&stmts[first + count..], &name) > 0) {
+        if !enough || other || pattern.is_none() || (made && js::mentions_of(&stmts[first + count..], &name) > 0) {
             i += 1;
             continue;
         }
@@ -131,12 +131,12 @@ pub(super) fn destructured(
 /// read in a row, `const a = _1[0]; const b = _1[1];`, one pattern, a
 /// `let`'s or a parameter's. What it declares nothing before it can read.
 /// How many moved.
-fn constants_first(stmts: &mut Vec<Stmt>, at: usize, first: usize, name: &str) -> usize {
+fn constants_first(stmts: &mut Vec<Stmt>, at: usize, first: usize, name: &js::Name) -> usize {
     let mut end = first;
     let mut constants = Vec::new();
     while let Some(stmt) = stmts.get(end) {
         match &stmt.kind {
-            StmtKind::Let(bound, Some(value)) if value.is_constant() && !bound.is(name) => constants.push(end),
+            StmtKind::Let(bound, Some(value)) if value.is_constant() && bound != name => constants.push(end),
             StmtKind::Const(_, value) | StmtKind::Let(_, Some(value)) if part_read(value, name).is_some() => {}
             _ => break,
         }
@@ -277,7 +277,7 @@ pub(super) type Part = (Result<usize, String>, js::Name, bool, Option<Expr>);
 
 /// The parts of `name` the first of `stmts` read, each a `const` or a
 /// `let` of one, `const a = name[0];` or `const b = name.b;`.
-pub(super) fn parts(stmts: &[Stmt], name: &str) -> Vec<Part> {
+pub(super) fn parts(stmts: &[Stmt], name: &js::Name) -> Vec<Part> {
     let mut parts: Vec<Part> = Vec::new();
     for stmt in stmts {
         let (bound, value, mutable) = match &stmt.kind {
@@ -285,7 +285,7 @@ pub(super) fn parts(stmts: &[Stmt], name: &str) -> Vec<Part> {
             StmtKind::Let(bound, Some(value)) => (bound, value, true),
             _ => break,
         };
-        if bound.is(name) {
+        if bound == name {
             break;
         }
         // One step in, `name[0]` or `name.b`, as `part_read` reads one.
@@ -328,7 +328,7 @@ fn part_of_read(value: &Expr) -> Option<&Expr> {
     let ExprKind::Var(v) = &of.kind else {
         return None;
     };
-    part_read(value, v.word())
+    part_read(value, v)
         .is_some_and(|(steps, _)| steps.len() == 1)
         .then_some(&**of)
 }
@@ -404,13 +404,13 @@ pub(in crate::lower::mir) fn destructured_params(params: &mut [js::Pattern], bod
             continue;
         }
         // Read after the constants the body declares first, its drop flags.
-        constants_first(body, 0, 0, name.word());
+        constants_first(body, 0, 0, &name);
         let start = (body.iter())
             .take_while(
                 |stmt| matches!(&stmt.kind, StmtKind::Let(bound, Some(value)) if value.is_constant() && *bound != name),
             )
             .count();
-        let read = nested_parts(&body[start..], name.word());
+        let read = nested_parts(&body[start..], &name);
         let count = read.len();
         if js::mentions_of(&body[start + count..], &name) > 0 {
             continue;
@@ -434,9 +434,9 @@ pub(super) enum Step {
 
 /// The steps from `name` to what `e` reads, `[At(1), Key("name")]` of
 /// `_2[1].name`.
-pub(super) fn path(e: &Expr, name: &str) -> Option<Vec<Step>> {
+pub(super) fn path(e: &Expr, name: &js::Name) -> Option<Vec<Step>> {
     let (of, step) = match &e.kind {
-        ExprKind::Var(v) if v.is(name) => return Some(Vec::new()),
+        ExprKind::Var(v) if v == name => return Some(Vec::new()),
         // An item Rust's index reads, `v[0]`, is no part (ADR 0598,
         // amended).
         ExprKind::Index(of, index)
@@ -458,7 +458,7 @@ pub(super) fn path(e: &Expr, name: &str) -> Option<Vec<Step>> {
 /// The part of `name` that `value` reads, however deep: the steps to it,
 /// `_2[1].name`'s, and a field's default, `o.k === undefined ? d : o.k`'s.
 /// The one reading of a part, `parts`', `part_of`'s and `nested_parts`'.
-pub(super) fn part_read(value: &Expr, name: &str) -> Option<(Vec<Step>, Option<Expr>)> {
+pub(super) fn part_read(value: &Expr, name: &js::Name) -> Option<(Vec<Step>, Option<Expr>)> {
     match &value.kind {
         ExprKind::Cond(test, default, read)
             if let ExprKind::Binary(Op::Eq, tested, undefined) = &test.kind
@@ -478,13 +478,13 @@ pub(super) fn part_read(value: &Expr, name: &str) -> Option<(Vec<Step>, Option<E
 /// The parts of `name` the first of `stmts` read, as `parts` finds them,
 /// however deep, `const name = _2[1].name;`, each a path, its variable,
 /// and a field's default.
-pub(super) fn nested_parts(stmts: &[Stmt], name: &str) -> Vec<(Vec<Step>, js::Name, Option<Expr>)> {
+pub(super) fn nested_parts(stmts: &[Stmt], name: &js::Name) -> Vec<(Vec<Step>, js::Name, Option<Expr>)> {
     let mut parts = Vec::new();
     for stmt in stmts {
         let (StmtKind::Const(bound, value) | StmtKind::Let(bound, Some(value))) = &stmt.kind else {
             break;
         };
-        if bound.is(name) {
+        if bound == name {
             break;
         }
         let Some((steps, default)) = part_read(value, name) else {
@@ -898,7 +898,7 @@ fn assigned_tuple(stmts: &mut Vec<Stmt>, i: usize) -> Option<usize> {
     let StmtKind::If(_, then, Some(otherwise)) = &mut branches.kind else {
         return None;
     };
-    let assigned = parts_at_ends(then, t.word(), &names)? + parts_at_ends(otherwise, t.word(), &names)?;
+    let assigned = parts_at_ends(then, &t, &names)? + parts_at_ends(otherwise, &t, &names)?;
     // Nothing else reads or sets it: its branches' arrays and its parts.
     if js::mentions_of(&stmts[i + 1..], &t) != assigned + names.len() {
         return None;
@@ -918,10 +918,10 @@ fn assigned_tuple(stmts: &mut Vec<Stmt>, i: usize) -> Option<usize> {
 /// place: how many arrays it made, or `None` where one path goes on without
 /// making it. A branch that returns or throws is its guard's by now, `if
 /// (n !== 0) { throw .. }` before the array.
-fn parts_at_ends(stmts: &mut Vec<Stmt>, t: &str, names: &[js::Name]) -> Option<usize> {
+fn parts_at_ends(stmts: &mut Vec<Stmt>, t: &js::Name, names: &[js::Name]) -> Option<usize> {
     match &mut stmts.last_mut()?.kind {
         StmtKind::Assign(target, value)
-            if matches!(&target.kind, ExprKind::Var(v) if v.is(t))
+            if matches!(&target.kind, ExprKind::Var(v) if v == t)
                 && let ExprKind::Array(items) = &value.kind
                 && items.len() == names.len() =>
         {
