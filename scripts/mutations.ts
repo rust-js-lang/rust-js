@@ -91,6 +91,15 @@ export const ofReadabilityOwner = (file: string) => readabilityOwners.some((glob
 
 /** The lines of `source`, from 1, that `mutation`'s `find` is, where it's
  * there once. */
+/** Whether a run builds the compiler as it is itself: of a mutation of the
+ * crate, or of the corpus's harness, as each mutant is built beside it; or
+ * where none is given, a run of the scripts' mutations alone on a machine
+ * that built none, as CI's mutation shards are (check 43872319768 failed
+ * for the attribution's, "build the read-only compiler"). */
+export function buildsUnmutated({ crate, harness, given }: { crate: boolean; harness: boolean; given: boolean }): boolean {
+  return crate || harness || !given;
+}
+
 export function siteLines(mutation: Mutation, source: string): [number, number] | undefined {
   const at = source.indexOf(mutation.find);
   if (at < 0 || source.indexOf(mutation.find, at + 1) >= 0) return undefined;
@@ -1019,12 +1028,11 @@ async function main() {
   // an hour read the checkout's `src/` at each build, so an edit meanwhile
   // went into the mutants built after it, and the next edit waited for
   // the run to end.
-  if (chosen.some(m => !sources.has(m)) || harness) snapshotCrate(join(work, "snapshot"));
-  const unmutated = chosen.every(m => sources.has(m)) && !harness
-    ? resolve(process.env.RUST_JS_COMPILER ?? join(root, "target/debug/rust-js"))
-    : await build();
+  const given = resolve(process.env.RUST_JS_COMPILER ?? join(root, "target/debug/rust-js"));
+  const buildsItself = buildsUnmutated({ crate: chosen.some(m => !sources.has(m)), harness, given: existsSync(given) });
+  if (buildsItself) snapshotCrate(join(work, "snapshot"));
+  const unmutated = buildsItself ? await build() : given;
   if (typeof unmutated !== "string") throw new Error(`the compiler as it is ${unmutated.problem}`);
-  if (!existsSync(unmutated)) throw new Error("build the read-only compiler with cargo build before running source mutations");
   // And they use the compiler they're given: with one that compiles
   // nothing, each fails, or a mutation passing them would say nothing.
   // Its directory too: a run of source mutations alone builds no

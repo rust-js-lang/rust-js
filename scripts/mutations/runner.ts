@@ -1,5 +1,5 @@
 // The mutation runner's own rules (scripts/mutations.ts): what a run's
-// builds read.
+// builds read, and that a run starts where no compiler was built.
 import type { Mutation } from "../mutations";
 export const mutations: Mutation[] = [
   {
@@ -9,5 +9,13 @@ export const mutations: Mutation[] = [
     find: "  const touched = syncTree(from, to, crateFiles);\n  crateSource = to;\n",
     replace: "  const touched = syncTree(from, to, crateFiles);\n",
     tests: ["test/mutation-snapshot.test.ts"],
+  },
+  {
+    name: "scripts-mutations-need-a-built-compiler",
+    breaks: "a run of the scripts' mutations alone on a machine that built no compiler, CI's mutation shards, stops at once: \"build the read-only compiler with cargo build\"",
+    file: "scripts/mutations.ts",
+    find: "  return crate || harness || !given;",
+    replace: "  return crate || harness;",
+    tests: ["test/mutation-changes.test.ts", "-t", "builds the compiler where none is given"],
   },
 ];

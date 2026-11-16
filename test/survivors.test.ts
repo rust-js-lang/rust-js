@@ -6,7 +6,7 @@ import { expect, test } from "bun:test";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { latentOf } from "../scripts/latent-survivors";
-import { escaped, issueBody, listed } from "../scripts/survivors-issue";
+import { escaped, files, issueBody, listed } from "../scripts/survivors-issue";
 import { root } from "./support";
 
 test("a survivor surviving at the base too is latent; one caught there, or not run there, is the push's", () => {
@@ -76,4 +76,13 @@ test("every call of a reusable workflow grants what its jobs ask", () => {
     }
   }
   expect(short).toEqual([]);
+});
+
+// A push's run with no latent survivor uploads no `latent.json`, so the
+// `survivors` job downloads nothing: nothing to add, not a failure (main's
+// checks 43871190255 and 43872319768 failed on the missing directory).
+test("a push's run with no latent survivor has nothing to add to the issue", () => {
+  expect(files(join(root, "target", "no-such-survivors"), "latent.json")).toEqual([]);
+  const run = Bun.spawnSync([process.execPath, "scripts/survivors-issue.ts", "latent", join(root, "target", "no-such-survivors"), "https://example.invalid/run"], { cwd: root, env: { ...process.env, GH_TOKEN: "", PATH: "/nonexistent" }, stdout: "pipe", stderr: "pipe" });
+  expect([run.exitCode, run.stdout.toString().trim()]).toEqual([0, "Mutation survivors on main: no latent survivor to add"]);
 });

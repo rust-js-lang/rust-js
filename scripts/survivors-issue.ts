@@ -10,7 +10,7 @@
 //   bun scripts/survivors-issue.ts latent <dir> <run-url>    each <dir>/**/latent.json, added
 //   bun scripts/survivors-issue.ts nightly <dir> <run-url>   each <dir>/**/results.json's survivors, the list whole
 import { spawnSync } from "node:child_process";
-import { readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { mutations } from "./mutations";
@@ -48,7 +48,10 @@ export function issueBody(survivors: Survivor[], tracked: Map<string, number>, r
   return lines.join("\n") + "\n";
 }
 
-function files(dir: string, name: string): string[] {
+/** Each file named `name` under `dir`; none where `dir` isn't there, as no
+ * shard of a run with no latent survivor uploads its `latent.json`. */
+export function files(dir: string, name: string): string[] {
+  if (!existsSync(dir)) return [];
   return readdirSync(dir).flatMap((entry) => {
     const at = join(dir, entry);
     return statSync(at).isDirectory() ? files(at, name) : entry === name ? [at] : [];
@@ -72,6 +75,12 @@ function main() {
           const survived = Object.entries(results).filter(([, r]) => r.startsWith("SURVIVED"));
           return survived.map(([name]) => ({ name, breaks: mutations.find((m) => m.name === name)?.breaks ?? "" }));
         });
+  // A push's run with no latent survivor has nothing to add (d81d4bdaa:
+  // the latent ones aren't retried, so most runs have none).
+  if (mode === "latent" && found.length === 0) {
+    console.log(`${title}: no latent survivor to add`);
+    return;
+  }
   const open = JSON.parse(gh(["issue", "list", "--state", "open", "--search", `"${title}" in:title`, "--json", "number,title,body,author"])) as {
     number: number;
     title: string;

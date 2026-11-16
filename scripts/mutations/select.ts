@@ -22,8 +22,8 @@ export const mutations: Mutation[] = [
     name: "select-selector-not-everything",
     breaks: "a change to the selector itself runs only what reads it, not everything, though its rule may be what's wrong",
     file: "scripts/select.ts",
-    find: '  "scripts/select.ts",\n  "scripts/testMap.ts",',
-    replace: '  "scripts/testMap.ts",',
+    find: '  "scripts/select.ts": "the selector, which picks every test",\n',
+    replace: "",
     tests: ["test/select.test.ts", "-t", "the workflows, the packages' manifests"],
   },
   {
@@ -76,11 +76,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "select-others-workflow-everything",
-    breaks: "another agent's workflow change since the map's commit runs everything here, though it changes how CI runs, not what a local test does: most pushes ran all (m6-lily's)",
+    breaks: "another agent's workflow, selector or map change since the map's commit runs everything here, though it changes how CI runs or which tests run, not what a local test does: most pushes ran all (m6-lily's), and every agent's check behind the selector's pushes",
     file: "scripts/select.ts",
-    find: "      if (own(file)) return whole(`${file} is how CI runs every test`, file);",
-    replace: "      if (true) return whole(`${file} is how CI runs every test`, file);",
-    tests: ["test/select.test.ts", "-t", "a workflow of the change's own"],
+    find: "      if (own(file)) return whole(`${file} is ${runsAll.what}`, file);",
+    replace: "      return whole(`${file} is ${runsAll.what}`, file);",
+    tests: ["test/select.test.ts", "-t", "(a workflow|the selector or the map) of the change's own"],
   },
   {
     name: "sanity-cap-of-code-empty",
@@ -89,13 +89,5 @@ export const mutations: Mutation[] = [
     find: '  return result([...new Set([...ownFiles, "test/corpus.test.ts"])], cases, "corpus");',
     replace: '  return result(ownFiles, ownCases, "corpus");',
     tests: ["test/select.test.ts", "-t", "a sanity pass's cap is never empty"],
-  },
-  {
-    name: "others-selector-change-runs-all",
-    breaks: "another agent's change to the selector or the map since the map's commit runs every test, so a selector's pushes run every agent's check whole a map behind them",
-    file: "scripts/select.ts",
-    find: "      if (own(file)) return whole(`${file} is ${runsAll.what}`, file);",
-    replace: "      return whole(`${file} is ${runsAll.what}`, file);",
-    tests: ["test/select.test.ts", "-t", "the selector or the map of the change's own runs everything"],
   },
 ];

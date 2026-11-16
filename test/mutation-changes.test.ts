@@ -5,7 +5,7 @@
 import { expect, test } from "bun:test";
 import { cpSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { batches, type Change, changedLines, changedMutations, enclosingFunction, mutations, ownMutations, schema, setPasses, site, siteLines, type Sited, testBlocks, testResults, testSet, unitTestsModule } from "../scripts/mutations";
+import { batches, buildsUnmutated, type Change, changedLines, changedMutations, enclosingFunction, mutations, ownMutations, schema, setPasses, site, siteLines, type Sited, testBlocks, testResults, testSet, unitTestsModule } from "../scripts/mutations";
 import { fixture, root } from "./support";
 
 const mutation = (name: string, file: string, find = "a", replace = "b", tests = ["test/y.test.ts"]) => ({ name, breaks: "", file, find, replace, tests });
@@ -302,4 +302,14 @@ test("a diff's changed lines are where the file is changed now, and was", () => 
     { file: "src/a.rs", lines: [[4, 5], [11, 11], [21, 22]] },
     { file: "gone.rs", lines: [[1, 1]], base: true },
   ]);
+});
+
+// A run builds the compiler as it is itself where a mutant is built beside
+// it, of the crate or the corpus's harness, or where none is given: CI's
+// mutation shards build none, and a run of the scripts' mutations alone,
+// the attribution's, failed "build the read-only compiler" (check
+// 43872319768).
+test("a run of the scripts' mutations alone builds the compiler where none is given", () => {
+  const of = (crate: boolean, harness: boolean, given: boolean) => buildsUnmutated({ crate, harness, given });
+  expect([of(false, false, true), of(false, false, false), of(true, false, true), of(false, true, true)]).toEqual([false, true, true, true]);
 });
