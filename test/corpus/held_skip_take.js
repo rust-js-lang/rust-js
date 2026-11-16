@@ -4,7 +4,6 @@ import {
   $count,
   $extend,
   $foldOf,
-  $iterator,
   $last,
   $lent,
   $live,
@@ -44,18 +43,10 @@ function counted(end) {
 }
 
 function main() {
-  const held = $iterator(
-    counted(5),
-    countIterator_next,
-    false,
-    undefined,
-    undefined,
-    undefined,
-    undefined,
-    countIterator_nth,
-  )
-    .drop(1)
-    .take(3);
+  const held = iterator_skip(counted(5), 1, {
+    next: countIterator_next,
+    nth: countIterator_nth,
+  }).take(3);
   console.log(`sum ${held.reduce((a, b) => (a + b) | 0, 0)}`);
 
   const stepped = iterator_take(
@@ -67,33 +58,19 @@ function main() {
   console.log(`(${sizeHint[0]}, ${sizeHint[1] == null ? "None" : `Some(${sizeHint[1]})`})`);
   console.log(`fold ${stepped.reduce((a) => (a + 1) | 0, 0)}`);
 
-  const skipped = $iterator(
-    counted(5),
-    countIterator_next,
-    false,
-    undefined,
-    undefined,
-    undefined,
-    undefined,
-    countIterator_nth,
-  ).drop(2);
+  const skipped = iterator_skip(counted(5), 2, {
+    next: countIterator_next,
+    nth: countIterator_nth,
+  });
   const any = skipped.take(2);
   console.log(`any ${$lent(any).some((x) => x > 2)}`);
   const next = $next(any);
   console.log(`next ${next == null ? "None" : `Some(${next})`}`);
 
-  const tried = $iterator(
-    counted(9),
-    countIterator_next,
-    false,
-    undefined,
-    undefined,
-    undefined,
-    undefined,
-    countIterator_nth,
-  )
-    .drop(1)
-    .take(5);
+  const tried = iterator_skip(counted(9), 1, {
+    next: countIterator_next,
+    nth: countIterator_nth,
+  }).take(5);
   const first = $tryFoldSome(tried, 0, (a, x) => {
     if (x < 4) {
       return (a + x) | 0;
@@ -104,18 +81,10 @@ function main() {
     `tried ${first == null ? "None" : `Some(${first})`} then ${arg == null ? "None" : `Some(${arg})`}`,
   );
 
-  const counting = $iterator(
-    counted(9),
-    countIterator_next,
-    false,
-    undefined,
-    undefined,
-    undefined,
-    undefined,
-    countIterator_nth,
-  )
-    .drop(2)
-    .take(3);
+  const counting = iterator_skip(counted(9), 2, {
+    next: countIterator_next,
+    nth: countIterator_nth,
+  }).take(3);
   console.log(`count ${$count(counting)}`);
 
   const v = [];

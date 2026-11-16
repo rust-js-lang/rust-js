@@ -2,6 +2,8 @@
 
 import {
   $count,
+  $exactLen,
+  $foldOf,
   $iter,
   $iterator,
   $knowing,
@@ -13,7 +15,6 @@ import {
   $rangeNthBack,
   $rev,
   $sizeHint,
-  $skipping,
   $taking,
   $tryOf,
   enumerateDoubleEndedIterator_nextBack,
@@ -22,6 +23,14 @@ import {
   enumerateExactSizeIterator_len,
   iterator_enumerate,
   iterator_map,
+  iterator_rev,
+  iterator_skip,
+  revExactSizeIterator_len,
+  skipDoubleEndedIterator_nextBack,
+  skipDoubleEndedIterator_nthBack,
+  skipDoubleEndedIterator_rfold,
+  skipDoubleEndedIterator_tryRfold,
+  skipIterator___iteratorGetUnchecked,
 } from "@rust-js/std";
 
 export function entry() {
@@ -43,8 +52,57 @@ function hint(it, IIterator, IClone) {
 
 function main() {
   const value = first(
-    $rev(
-      $skipping($iterator({ start: 0, end: 10 }, $rangeNext, false, $rangeNextBack, $rangeLen), 6),
+    $knowing(
+      iterator_rev(
+        iterator_skip({ start: 0, end: 10 }, 6, { next: $rangeNext }),
+        {
+          next: $next,
+          fold: $foldOf,
+          getUnchecked: (iterator, i) =>
+            skipIterator___iteratorGetUnchecked(iterator, i, { next: $rangeNext }),
+        },
+        {
+          next_back: (iterator) =>
+            skipDoubleEndedIterator_nextBack(
+              iterator,
+              { next: $rangeNext },
+              { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+            ),
+          rfold: (iterator, init, f, unwind, ends) =>
+            skipDoubleEndedIterator_rfold(
+              iterator,
+              init,
+              f,
+              { next: $rangeNext },
+              { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+              undefined,
+              unwind,
+              ends,
+            ),
+          nthBack: (iterator, k) =>
+            skipDoubleEndedIterator_nthBack(
+              iterator,
+              k,
+              { next: $rangeNext },
+              { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+            ),
+          tryRfold: (iterator, init, f, broke, unwind, ends) =>
+            skipDoubleEndedIterator_tryRfold(
+              iterator,
+              init,
+              f,
+              { next: $rangeNext },
+              { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+              $tryOf(broke),
+              undefined,
+              unwind,
+              ends,
+            ),
+        },
+      ),
+      undefined,
+      (iterator) =>
+        revExactSizeIterator_len(iterator, { len: (iterator) => $exactLen($sizeHint(iterator)) }),
     ),
   );
   const value$1 = first(

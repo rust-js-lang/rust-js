@@ -7,6 +7,7 @@ import {
   $collectDropping,
   $count,
   $dropEach,
+  $foldOf,
   $iter,
   $iterator,
   $last,
@@ -17,6 +18,7 @@ import {
   $roomForHint,
   $unwindsOn,
   iterator_chain,
+  iterator_skip,
 } from "@rust-js/std";
 
 export function entry() {
@@ -85,8 +87,8 @@ function main() {
     }
   });
   console.log(`${r.TAG === "Err"}`);
-  r = $catchUnwind(() =>
-    $last(
+  r = $catchUnwind(() => {
+    const iter = iterator_skip(
       iterator_chain(
         [0],
         [0],
@@ -100,9 +102,23 @@ function main() {
         counterDrop_drop,
         undefined,
         counterDrop_drop,
-      ).drop(1),
-    ),
-  );
+      ),
+      1,
+      { next: $next, fold: $foldOf },
+      (chain) => {
+        chain.return();
+      },
+    );
+    try {
+      return $last(iter);
+    } catch (error) {
+      throw $unwindsOn(error);
+    } finally {
+      if ($live()) {
+        iter.return();
+      }
+    }
+  });
   console.log(`${r.TAG === "Err"}`);
   r = $catchUnwind(
     () =>

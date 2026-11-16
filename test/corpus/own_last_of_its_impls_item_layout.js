@@ -5,11 +5,11 @@ import {
   $debugStr,
   $given,
   $iter,
-  $iterator,
   $last,
   $next,
   $someAt,
   iterator_map,
+  iterator_skip,
 } from "@rust-js/std";
 
 export function entry() {
@@ -38,17 +38,10 @@ function main() {
   );
   console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
   const last = $last(
-    $iterator(
-      ["abc"[Symbol.iterator]()],
-      (iterator) => wrapIterator_next(iterator, { next: $next }),
-      true,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      (iterator) => wrapIterator_last(iterator, { next: $next }, "next", 4),
-    ).drop(1),
+    iterator_skip(["abc"[Symbol.iterator]()], 1, {
+      next: (iterator) => wrapIterator_next(iterator, { next: $next }),
+      last: (iterator) => wrapIterator_last(iterator, { next: $next }, "next", 4),
+    }),
   );
   console.log(`${last == null ? "None" : `Some(${$debugStr(last, "'")})`}`);
 }

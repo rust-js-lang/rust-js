@@ -20,7 +20,6 @@ import {
   $roomFor,
   $roomForHint,
   $sizeHint,
-  $skipping,
   $stepBy,
   $tryFoldOk,
   $tryFoldSome,
@@ -32,6 +31,7 @@ import {
   iterator_map,
   iterator_peekable,
   iterator_rev,
+  iterator_skip,
   iterator_zip,
   mapDoubleEndedIterator_rfold,
   mapExactSizeIterator_len,
@@ -472,28 +472,16 @@ function main() {
   });
   run("skip fold", () => {
     const fold = $foldDropping(
-      $skipping(
-        $closing(
-          $iterator(
-            own({ start: 50, end: 55 }, 53),
-            ownIterator_next,
-            false,
-            undefined,
-            undefined,
-            ownIterator_sizeHint,
-            ownIterator_fold,
-            undefined,
-            undefined,
-            ownDoubleEndedIterator_rfold,
-          ),
-          (it) => {
-            console.log("drop own");
-            for (const item of it.of.items) {
-              dDrop_drop(item);
-            }
-          },
-        ),
+      iterator_skip(
+        own({ start: 50, end: 55 }, 53),
         1,
+        { next: ownIterator_next, sizeHint: ownIterator_sizeHint, fold: ownIterator_fold },
+        (own) => {
+          console.log("drop own");
+          for (const item of own.items) {
+            dDrop_drop(item);
+          }
+        },
         dDrop_drop,
       ),
       [],
@@ -507,28 +495,16 @@ function main() {
   });
   run("skip fold in skip", () => {
     const fold = $foldDropping(
-      $skipping(
-        $closing(
-          $iterator(
-            own({ start: 50, end: 55 }, 50),
-            ownIterator_next,
-            false,
-            undefined,
-            undefined,
-            ownIterator_sizeHint,
-            ownIterator_fold,
-            undefined,
-            undefined,
-            ownDoubleEndedIterator_rfold,
-          ),
-          (it) => {
-            console.log("drop own");
-            for (const item of it.of.items) {
-              dDrop_drop(item);
-            }
-          },
-        ),
+      iterator_skip(
+        own({ start: 50, end: 55 }, 50),
         2,
+        { next: ownIterator_next, sizeHint: ownIterator_sizeHint, fold: ownIterator_fold },
+        (own) => {
+          console.log("drop own");
+          for (const item of own.items) {
+            dDrop_drop(item);
+          }
+        },
         dDrop_drop,
       ),
       [[59]],
@@ -542,28 +518,16 @@ function main() {
   });
   run("skip count in skip", () =>
     $count(
-      $skipping(
-        $closing(
-          $iterator(
-            own({ start: 50, end: 55 }, 50),
-            ownIterator_next,
-            false,
-            undefined,
-            undefined,
-            ownIterator_sizeHint,
-            ownIterator_fold,
-            undefined,
-            undefined,
-            ownDoubleEndedIterator_rfold,
-          ),
-          (it) => {
-            console.log("drop own");
-            for (const item of it.of.items) {
-              dDrop_drop(item);
-            }
-          },
-        ),
+      iterator_skip(
+        own({ start: 50, end: 55 }, 50),
         2,
+        { next: ownIterator_next, sizeHint: ownIterator_sizeHint, fold: ownIterator_fold },
+        (own) => {
+          console.log("drop own");
+          for (const item of own.items) {
+            dDrop_drop(item);
+          }
+        },
         dDrop_drop,
       ),
       dDrop_drop,
@@ -938,28 +902,16 @@ function main() {
   run("skip collect", () => {
     const collect = $collectDropping(
       $roomForHint(
-        $skipping(
-          $closing(
-            $iterator(
-              own({ start: 160, end: 164 }, 162),
-              ownIterator_next,
-              false,
-              undefined,
-              undefined,
-              ownIterator_sizeHint,
-              ownIterator_fold,
-              undefined,
-              undefined,
-              ownDoubleEndedIterator_rfold,
-            ),
-            (it) => {
-              console.log("drop own");
-              for (const item of it.of.items) {
-                dDrop_drop(item);
-              }
-            },
-          ),
+        iterator_skip(
+          own({ start: 160, end: 164 }, 162),
           1,
+          { next: ownIterator_next, sizeHint: ownIterator_sizeHint, fold: ownIterator_fold },
+          (own) => {
+            console.log("drop own");
+            for (const item of own.items) {
+              dDrop_drop(item);
+            }
+          },
           dDrop_drop,
         ),
         4,

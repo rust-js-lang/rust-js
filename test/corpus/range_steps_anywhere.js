@@ -14,6 +14,7 @@ import {
   $step,
   $stepBy,
   iterator_rev,
+  iterator_skip,
 } from "@rust-js/std";
 
 export function entry() {
@@ -44,7 +45,7 @@ function main() {
   const step$1 = $step((1 << 30) >>> 0);
   const w = Array.from($roomForHint($stepBy(back, step$1), 4, false));
   console.log(`[${w.join(", ")}]`);
-  const skipped = $lazyRange(3, 4294967295);
+  const skipped = iterator_skip({ start: 0, end: 4294967295 }, 3, { next: $rangeNext });
   const step$2 = $step((1 << 31) >>> 0);
   console.log(`[${Array.from($roomForHint($stepBy(skipped, step$2), 4, true)).join(", ")}]`);
   console.log(

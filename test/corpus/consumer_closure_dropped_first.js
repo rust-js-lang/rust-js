@@ -23,6 +23,7 @@ import {
   iterator_map,
   iterator_peekable,
   iterator_rev,
+  iterator_skip,
   iterator_zip,
 } from "@rust-js/std";
 
@@ -150,11 +151,11 @@ function main() {
   });
   case$("skip", (g) => {
     let g$4$live = true;
-    let skip;
+    let iter;
     try {
-      skip = $closing($iterator(It.new(3, "it"), itIterator_next), (it) => {
-        dDrop_drop(it.of._held);
-      }).drop(1);
+      iter = iterator_skip(It.new(3, "it"), 1, { next: itIterator_next }, (it) => {
+        dDrop_drop(it._held);
+      });
       g$4$live = false;
     } catch (error) {
       $cleanup(() => {
@@ -165,9 +166,17 @@ function main() {
       throw error;
     }
     const f = (a, x) => (((a + x) >>> 0) + zero(g)) >>> 0;
-    return $consume(skip, "fold", 0, f, undefined, () => {
-      dDrop_drop(g);
-    });
+    try {
+      return $consume(iter, "fold", 0, f, undefined, () => {
+        dDrop_drop(g);
+      });
+    } catch (error) {
+      throw $unwindsOn(error);
+    } finally {
+      if ($live()) {
+        iter.return();
+      }
+    }
   });
   case$("map", (g) => {
     let g$5$live = true;

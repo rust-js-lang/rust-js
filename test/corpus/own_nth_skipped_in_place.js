@@ -8,6 +8,7 @@ import {
   $nthDropping,
   $skipping,
   iterator_fuse,
+  iterator_skip,
 } from "@rust-js/std";
 
 export function entry() {
@@ -32,18 +33,11 @@ function countIterator_nth(count, n) {
 function main() {
   const nth = $nthDropping(
     $lent(
-      $skipping(
-        $iterator(
-          [0, 8],
-          countIterator_next,
-          false,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          countIterator_nth,
-        ),
+      iterator_skip(
+        [0, 8],
         1,
+        { next: countIterator_next, nth: countIterator_nth },
+        undefined,
         loudDrop_drop,
       ),
     ),
@@ -60,18 +54,11 @@ function main() {
   console.log(`${value == null ? "None" : `Some(${value})`}`);
   const nth$1 = $nthDropping(
     $lent(
-      $skipping(
-        $iterator(
-          [0, 8],
-          countIterator_next,
-          false,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          countIterator_nth,
-        ),
+      iterator_skip(
+        [0, 8],
         2,
+        { next: countIterator_next, nth: countIterator_nth },
+        undefined,
         loudDrop_drop,
       ),
     ),
@@ -224,18 +211,11 @@ function main() {
   const nth$6 = $nthDropping(
     $lent(
       $lazyChain(
-        $skipping(
-          $iterator(
-            [50, 56],
-            countIterator_next,
-            false,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            countIterator_nth,
-          ),
+        iterator_skip(
+          [50, 56],
           1,
+          { next: countIterator_next, nth: countIterator_nth },
+          undefined,
           loudDrop_drop,
         ).take(3),
         $iterator(

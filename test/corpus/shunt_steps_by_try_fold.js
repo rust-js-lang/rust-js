@@ -5,9 +5,17 @@ import {
   $collectDropping,
   $collectOptions,
   $collectResults,
+  $foldOf,
   $iterator,
   $lazyTakeWhile,
+  $live,
+  $next,
+  $nth,
+  $roomForHint,
   $stepBy,
+  $unwindsOn,
+  iterator_map,
+  iterator_skip,
 } from "@rust-js/std";
 
 export function entry() {
@@ -34,26 +42,35 @@ function countingIterator_nth(counting, n) {
   return countingIterator_next(counting);
 }
 
+function countingDrop_drop(counting) {
+  console.log(`drop at ${counting.at}`);
+}
+
 function main() {
-  const skipped = $collectOptions(
-    $closing(
-      $iterator(
-        { at: 0, end: 4 },
-        countingIterator_next,
-        false,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        countingIterator_nth,
-      ),
-      (it) => {
-        console.log(`drop at ${it.of.at}`);
-      },
-    )
-      .drop(1)
-      .map((value) => value),
+  const iter = iterator_map(
+    iterator_skip(
+      { at: 0, end: 4 },
+      1,
+      { next: countingIterator_next, nth: countingIterator_nth },
+      countingDrop_drop,
+    ),
+    (value) => value,
+    { next: $next, fold: $foldOf, nth: $nth },
+    (skip) => {
+      skip.return();
+    },
   );
+  let result;
+  try {
+    result = $collectOptions(iter);
+  } catch (error) {
+    throw $unwindsOn(error);
+  } finally {
+    if ($live()) {
+      iter.return();
+    }
+  }
+  const skipped = result;
   console.log(`${skipped == null ? "None" : `Some([${skipped.join(", ")}])`}`);
   const stepped = $collectResults(
     $stepBy(
@@ -69,7 +86,7 @@ function main() {
           countingIterator_nth,
         ),
         (it) => {
-          console.log(`drop at ${it.of.at}`);
+          countingDrop_drop(it.of);
         },
       ),
       2,
@@ -90,7 +107,7 @@ function main() {
           countingIterator_nth,
         ),
         (it) => {
-          console.log(`drop at ${it.of.at}`);
+          countingDrop_drop(it.of);
         },
       ),
       (n) => n < 3,
@@ -98,21 +115,16 @@ function main() {
   );
   console.log(`${taken == null ? "None" : `Some([${taken.join(", ")}])`}`);
   const plain = $collectDropping(
-    $closing(
-      $iterator(
+    $roomForHint(
+      iterator_skip(
         { at: 0, end: 3 },
-        countingIterator_next,
-        false,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        countingIterator_nth,
+        1,
+        { next: countingIterator_next, nth: countingIterator_nth },
+        countingDrop_drop,
       ),
-      (it) => {
-        console.log(`drop at ${it.of.at}`);
-      },
-    ).drop(1),
+      4,
+      false,
+    ),
   );
   console.log(`[${plain.join(", ")}]`);
 }

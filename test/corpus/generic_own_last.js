@@ -16,6 +16,7 @@ import {
   iterator_fuse,
   iterator_map,
   iterator_peekable,
+  iterator_skip,
 } from "@rust-js/std";
 
 export function entry() {
@@ -45,7 +46,7 @@ function plain(it) {
 }
 
 function skip(it) {
-  return $lastSome(Iterator.from(it).drop(1));
+  return $lastSome(iterator_skip(Iterator.from(it), 1, $jsIteratorSome));
 }
 
 function fuse(it, IFused) {
@@ -58,10 +59,14 @@ function peek(it) {
 
 function chain(a, b) {
   return $lastSome(
-    iterator_chain(Iterator.from(a), b, $jsIteratorSome, {
-      intoIter: (items) => $intoIter(items),
-      IntoIterIterator: () => $jsIteratorSome,
-    }).drop(1),
+    iterator_skip(
+      iterator_chain(Iterator.from(a), b, $jsIteratorSome, {
+        intoIter: (items) => $intoIter(items),
+        IntoIterIterator: () => $jsIteratorSome,
+      }),
+      1,
+      $jsIteratorSome,
+    ),
   );
 }
 

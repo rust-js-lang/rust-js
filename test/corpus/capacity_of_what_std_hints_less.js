@@ -33,6 +33,7 @@ import {
   $treeSetAlgebra,
   $zipEnds,
   iterator_peekable,
+  iterator_skip,
 } from "@rust-js/std";
 
 export function entry() {
@@ -125,7 +126,9 @@ function ranges(n) {
   );
   const rk2 = $iter(rk.items.slice(rk.at, rk.end), true);
   const rkv = $grownVec($roomForHint(rk, 4, false), (grown) => Array.from(grown));
-  const rkc = $grownVec($roomForHint(rk2.drop(3), 4, false), (grown) => Array.from(grown));
+  const rkc = $grownVec($roomForHint(iterator_skip(rk2, 3), 4, false), (grown) =>
+    Array.from(grown),
+  );
   const i = $grownVec(
     $roomForHint($treeSetAlgebra(b, c, "intersection", $cmp), 4, false),
     (grown) => Array.from(grown),

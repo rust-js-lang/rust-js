@@ -8,6 +8,7 @@ import {
   $enumerate,
   $exactLen,
   $foldDropping,
+  $foldOf,
   $iter,
   $iterator,
   $jsIterator,
@@ -21,7 +22,9 @@ import {
   $tryFoldSome,
   iterator_chain,
   iterator_fuse,
+  iterator_map,
   iterator_peekable,
+  iterator_skip,
   iterator_zip,
 } from "@rust-js/std";
 
@@ -319,7 +322,7 @@ function main() {
   });
   run("plain skip fold", () => {
     const fold = $foldDropping(
-      $iterator({ n: 0, at: 3 }, plainIterator_next).drop(1),
+      iterator_skip({ n: 0, at: 3 }, 1, { next: plainIterator_next }),
       [],
       push,
       $dropEach(dDrop_drop),
@@ -331,7 +334,7 @@ function main() {
   });
   run("plain skip panics in skip", () => {
     const fold = $foldDropping(
-      $iterator({ n: 0, at: 1 }, plainIterator_next).drop(2),
+      iterator_skip({ n: 0, at: 1 }, 2, { next: plainIterator_next }),
       [],
       push,
       $dropEach(dDrop_drop),
@@ -462,9 +465,19 @@ function main() {
   });
   run("plain skip collect", () => {
     const collect = $collectDropping(
-      $iterator({ n: 0, at: 3 }, plainIterator_next)
-        .drop(1)
-        .map((value) => [value]),
+      $roomForHint(
+        iterator_map(
+          iterator_skip({ n: 0, at: 3 }, 1, { next: plainIterator_next }),
+          (value) => [value],
+          { next: $next, fold: $foldOf },
+          undefined,
+          dDrop_drop,
+        ),
+        4,
+        false,
+        false,
+        dDrop_drop,
+      ),
       dDrop_drop,
       true,
     );

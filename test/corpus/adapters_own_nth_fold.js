@@ -16,6 +16,7 @@ import {
   $stepBy,
   iterator_chain,
   iterator_fuse,
+  iterator_map,
   iterator_skip,
   iterator_stepBy,
 } from "@rust-js/std";
@@ -66,22 +67,26 @@ function counted() {
 
 function main() {
   console.log(
-    `${$lazySkipWhile($iterator(counted(), countIterator_next, false, undefined, undefined, undefined, countIterator_fold, countIterator_nth).drop(2), (x) => x < 3).reduce((a, b) => (a + b) | 0, 0)}`,
+    `${$lazySkipWhile(
+      iterator_skip(counted(), 2, {
+        next: countIterator_next,
+        fold: countIterator_fold,
+        nth: countIterator_nth,
+      }),
+      (x) => x < 3,
+    ).reduce((a, b) => (a + b) | 0, 0)}`,
   );
   const value = Array.from(
     $lent(
-      $iterator(
-        counted(),
-        countIterator_next,
-        false,
-        undefined,
-        undefined,
-        undefined,
-        countIterator_fold,
-        countIterator_nth,
-      )
-        .drop(2)
-        .map((x) => (x * 2) | 0),
+      iterator_map(
+        iterator_skip(counted(), 2, {
+          next: countIterator_next,
+          fold: countIterator_fold,
+          nth: countIterator_nth,
+        }),
+        (x) => (x * 2) | 0,
+        { next: $next, fold: $foldOf, nth: $nth },
+      ),
     )
       .drop(1)
       .take(1),
@@ -216,16 +221,11 @@ function main() {
   const last = Array.from(
     $folded(
       $lazyTakeWhile(
-        $iterator(
-          counted(),
-          countIterator_next,
-          false,
-          undefined,
-          undefined,
-          undefined,
-          countIterator_fold,
-          countIterator_nth,
-        ).drop(2),
+        iterator_skip(counted(), 2, {
+          next: countIterator_next,
+          fold: countIterator_fold,
+          nth: countIterator_nth,
+        }),
         (x) => x < 7,
       ),
     ),
@@ -233,16 +233,11 @@ function main() {
   console.log(`${last == null ? "None" : `Some(${last})`}`);
   console.log(
     `${$lazyScan(
-      $iterator(
-        counted(),
-        countIterator_next,
-        false,
-        undefined,
-        undefined,
-        undefined,
-        countIterator_fold,
-        countIterator_nth,
-      ).drop(2),
+      iterator_skip(counted(), 2, {
+        next: countIterator_next,
+        fold: countIterator_fold,
+        nth: countIterator_nth,
+      }),
       0,
       (s, x) => {
         s.value = (s.value + x) | 0;

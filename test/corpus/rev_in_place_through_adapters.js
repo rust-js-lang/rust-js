@@ -15,13 +15,13 @@ import {
   $nth,
   $rev,
   $roomForHint,
-  $skipping,
   $stepByEnds,
   $taking,
   $tryOf,
   $unwindsOn,
   iterator_map,
   iterator_rev,
+  iterator_skip,
   mapDoubleEndedIterator_nextBack,
   mapDoubleEndedIterator_rfold,
   mapDoubleEndedIterator_tryRfold,
@@ -30,6 +30,10 @@ import {
   revDoubleEndedIterator_rfold,
   revDoubleEndedIterator_tryRfold,
   revExactSizeIterator_len,
+  skipDoubleEndedIterator_nextBack,
+  skipDoubleEndedIterator_nthBack,
+  skipDoubleEndedIterator_rfold,
+  skipDoubleEndedIterator_tryRfold,
 } from "@rust-js/std";
 
 export function entry() {
@@ -119,9 +123,8 @@ function c() {
 }
 
 function main() {
-  const plainExactSizeIterator = { len: (iterator) => $exactLen(plainIterator_sizeHint(iterator)) };
   const countExactSizeIterator = { len: (iterator) => $exactLen(countIterator_sizeHint(iterator)) };
-  const revDoubleEndedIterator = {
+  const revDoubleEndedIterator$1 = {
     next_back: (iterator) =>
       revDoubleEndedIterator_nextBack(iterator, {
         next: plainIterator_next,
@@ -154,77 +157,125 @@ function main() {
         ends,
       ),
   };
-  console.log(
-    `${$rev(
-      $skipping(
-        $knowing(
-          iterator_rev(
-            c(),
-            { next: countIterator_next, sizeHint: countIterator_sizeHint, nth: countIterator_nth },
-            {
-              next_back: countDoubleEndedIterator_nextBack,
-              rfold: countDoubleEndedIterator_rfold,
-              nthBack: countDoubleEndedIterator_nthBack,
-            },
-            countDrop_drop,
-          ),
-          (iterator) =>
-            revDoubleEndedIterator_nextBack(
-              iterator,
-              {
-                next: countIterator_next,
-                sizeHint: countIterator_sizeHint,
-                nth: countIterator_nth,
-              },
-              countDrop_drop,
-            ),
-          (iterator) => revExactSizeIterator_len(iterator, countExactSizeIterator, countDrop_drop),
-          (iterator, init, f, unwind, ends) =>
-            revDoubleEndedIterator_rfold(
-              iterator,
-              init,
-              f,
-              {
-                next: countIterator_next,
-                sizeHint: countIterator_sizeHint,
-                nth: countIterator_nth,
-              },
-              countDrop_drop,
-              unwind,
-              ends,
-            ),
-          (iterator, k) =>
-            revDoubleEndedIterator_nthBack(
-              iterator,
-              k,
-              {
-                next: countIterator_next,
-                sizeHint: countIterator_sizeHint,
-                nth: countIterator_nth,
-              },
-              countDrop_drop,
-            ),
-          (iterator, init, f, broke, unwind, ends) =>
-            revDoubleEndedIterator_tryRfold(
-              iterator,
-              init,
-              f,
-              {
-                next: countIterator_next,
-                sizeHint: countIterator_sizeHint,
-                nth: countIterator_nth,
-              },
-              $tryOf(broke),
-              countDrop_drop,
-              unwind,
-              ends,
-            ),
-        ),
-        2,
+  const revDoubleEndedIterator = {
+    next_back: (iterator) =>
+      revDoubleEndedIterator_nextBack(
+        iterator,
+        { next: countIterator_next, sizeHint: countIterator_sizeHint, nth: countIterator_nth },
+        countDrop_drop,
       ),
-    ).reduce((a, b) => (a + b) | 0, 0)}`,
+    rfold: (iterator, init, f, unwind, ends) =>
+      revDoubleEndedIterator_rfold(
+        iterator,
+        init,
+        f,
+        { next: countIterator_next, sizeHint: countIterator_sizeHint, nth: countIterator_nth },
+        countDrop_drop,
+        unwind,
+        ends,
+      ),
+    nthBack: (iterator, k) =>
+      revDoubleEndedIterator_nthBack(
+        iterator,
+        k,
+        { next: countIterator_next, sizeHint: countIterator_sizeHint, nth: countIterator_nth },
+        countDrop_drop,
+      ),
+    tryRfold: (iterator, init, f, broke, unwind, ends) =>
+      revDoubleEndedIterator_tryRfold(
+        iterator,
+        init,
+        f,
+        { next: countIterator_next, sizeHint: countIterator_sizeHint, nth: countIterator_nth },
+        $tryOf(broke),
+        countDrop_drop,
+        unwind,
+        ends,
+      ),
+  };
+  const iter = iterator_rev(
+    iterator_skip(
+      iterator_rev(
+        c(),
+        { next: countIterator_next, sizeHint: countIterator_sizeHint, nth: countIterator_nth },
+        {
+          next_back: countDoubleEndedIterator_nextBack,
+          rfold: countDoubleEndedIterator_rfold,
+          nthBack: countDoubleEndedIterator_nthBack,
+        },
+        countDrop_drop,
+      ),
+      2,
+      { next: $next, fold: $foldOf, nth: $nth },
+      (rev) => {
+        rev.return();
+      },
+    ),
+    { next: $next, fold: $foldOf, nth: $nth },
+    {
+      next_back: (iterator) =>
+        skipDoubleEndedIterator_nextBack(
+          iterator,
+          { next: $next, fold: $foldOf, nth: $nth },
+          revDoubleEndedIterator,
+          (rev) => {
+            rev.return();
+          },
+        ),
+      rfold: (iterator, init, f, unwind, ends) =>
+        skipDoubleEndedIterator_rfold(
+          iterator,
+          init,
+          f,
+          { next: $next, fold: $foldOf, nth: $nth },
+          revDoubleEndedIterator,
+          (rev) => {
+            rev.return();
+          },
+          unwind,
+          ends,
+        ),
+      nthBack: (iterator, k) =>
+        skipDoubleEndedIterator_nthBack(
+          iterator,
+          k,
+          { next: $next, fold: $foldOf, nth: $nth },
+          revDoubleEndedIterator,
+          (rev) => {
+            rev.return();
+          },
+        ),
+      tryRfold: (iterator, init, f, broke, unwind, ends) =>
+        skipDoubleEndedIterator_tryRfold(
+          iterator,
+          init,
+          f,
+          { next: $next, fold: $foldOf, nth: $nth },
+          revDoubleEndedIterator,
+          $tryOf(broke),
+          (rev) => {
+            rev.return();
+          },
+          unwind,
+          ends,
+        ),
+    },
+    (skip) => {
+      skip.return();
+    },
   );
-  const rev = $held(
+  let result;
+  try {
+    result = iter.reduce((a, b) => (a + b) | 0, 0);
+  } catch (error) {
+    throw $unwindsOn(error);
+  } finally {
+    if ($live()) {
+      iter.return();
+    }
+  }
+  console.log(`${result}`);
+  const value = $held(
     $rev(
       $taking(
         $knowing(
@@ -295,13 +346,13 @@ function main() {
     ),
   );
   try {
-    const nth = $nth($lent(rev), 1);
+    const nth = $nth($lent(value), 1);
     console.log(`${nth == null ? "None" : `Some(${nth})`}`);
   } catch (error) {
     throw $unwindsOn(error);
   } finally {
     if ($live()) {
-      rev.return();
+      value.return();
     }
   }
   console.log(
@@ -376,84 +427,87 @@ function main() {
       (a, x) => (a + x) | 0,
     )}`,
   );
-  const value = $held(
-    $rev(
-      $skipping(
-        $knowing(
-          iterator_rev(
-            c(),
-            { next: countIterator_next, sizeHint: countIterator_sizeHint, nth: countIterator_nth },
-            {
-              next_back: countDoubleEndedIterator_nextBack,
-              rfold: countDoubleEndedIterator_rfold,
-              nthBack: countDoubleEndedIterator_nthBack,
-            },
-            countDrop_drop,
-          ),
-          (iterator) =>
-            revDoubleEndedIterator_nextBack(
-              iterator,
-              {
-                next: countIterator_next,
-                sizeHint: countIterator_sizeHint,
-                nth: countIterator_nth,
-              },
-              countDrop_drop,
-            ),
-          (iterator) => revExactSizeIterator_len(iterator, countExactSizeIterator, countDrop_drop),
-          (iterator, init, f, unwind, ends) =>
-            revDoubleEndedIterator_rfold(
-              iterator,
-              init,
-              f,
-              {
-                next: countIterator_next,
-                sizeHint: countIterator_sizeHint,
-                nth: countIterator_nth,
-              },
-              countDrop_drop,
-              unwind,
-              ends,
-            ),
-          (iterator, k) =>
-            revDoubleEndedIterator_nthBack(
-              iterator,
-              k,
-              {
-                next: countIterator_next,
-                sizeHint: countIterator_sizeHint,
-                nth: countIterator_nth,
-              },
-              countDrop_drop,
-            ),
-          (iterator, init, f, broke, unwind, ends) =>
-            revDoubleEndedIterator_tryRfold(
-              iterator,
-              init,
-              f,
-              {
-                next: countIterator_next,
-                sizeHint: countIterator_sizeHint,
-                nth: countIterator_nth,
-              },
-              $tryOf(broke),
-              countDrop_drop,
-              unwind,
-              ends,
-            ),
+  const value$1 = $held(
+    iterator_rev(
+      iterator_skip(
+        iterator_rev(
+          c(),
+          { next: countIterator_next, sizeHint: countIterator_sizeHint, nth: countIterator_nth },
+          {
+            next_back: countDoubleEndedIterator_nextBack,
+            rfold: countDoubleEndedIterator_rfold,
+            nthBack: countDoubleEndedIterator_nthBack,
+          },
+          countDrop_drop,
         ),
         1,
+        { next: $next, fold: $foldOf, nth: $nth },
+        (rev) => {
+          rev.return();
+        },
       ),
+      { next: $next, fold: $foldOf, nth: $nth },
+      {
+        next_back: (iterator) =>
+          skipDoubleEndedIterator_nextBack(
+            iterator,
+            { next: $next, fold: $foldOf, nth: $nth },
+            revDoubleEndedIterator,
+            (rev) => {
+              rev.return();
+            },
+          ),
+        rfold: (iterator, init, f, unwind, ends) =>
+          skipDoubleEndedIterator_rfold(
+            iterator,
+            init,
+            f,
+            { next: $next, fold: $foldOf, nth: $nth },
+            revDoubleEndedIterator,
+            (rev) => {
+              rev.return();
+            },
+            unwind,
+            ends,
+          ),
+        nthBack: (iterator, k) =>
+          skipDoubleEndedIterator_nthBack(
+            iterator,
+            k,
+            { next: $next, fold: $foldOf, nth: $nth },
+            revDoubleEndedIterator,
+            (rev) => {
+              rev.return();
+            },
+          ),
+        tryRfold: (iterator, init, f, broke, unwind, ends) =>
+          skipDoubleEndedIterator_tryRfold(
+            iterator,
+            init,
+            f,
+            { next: $next, fold: $foldOf, nth: $nth },
+            revDoubleEndedIterator,
+            $tryOf(broke),
+            (rev) => {
+              rev.return();
+            },
+            unwind,
+            ends,
+          ),
+      },
+      (skip) => {
+        skip.return();
+      },
     ),
   );
   try {
-    const value$1 = $nth($lent(value), 2);
-    console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+    const value = $nth($lent(value$1), 2);
+    console.log(`${value == null ? "None" : `Some(${value})`}`);
   } catch (error) {
     throw $unwindsOn(error);
   } finally {
     if ($live()) {
-      value.return();
+      value$1.return();
     }
   }
   console.log(
@@ -470,7 +524,10 @@ function main() {
               next: plainIterator_next,
               sizeHint: plainIterator_sizeHint,
             }),
-          (iterator) => revExactSizeIterator_len(iterator, plainExactSizeIterator),
+          (iterator) =>
+            revExactSizeIterator_len(iterator, {
+              len: (iterator) => $exactLen(plainIterator_sizeHint(iterator)),
+            }),
           undefined,
           (iterator, k) =>
             revDoubleEndedIterator_nthBack(iterator, k, {
@@ -498,40 +555,55 @@ function main() {
   console.log(
     `[${Array.from(
       $roomForHint(
-        $rev(
-          $skipping(
-            $knowing(
-              iterator_rev(
-                [0, 6],
-                { next: plainIterator_next, sizeHint: plainIterator_sizeHint },
-                { next_back: plainDoubleEndedIterator_nextBack },
-              ),
-              (iterator) =>
-                revDoubleEndedIterator_nextBack(iterator, {
-                  next: plainIterator_next,
-                  sizeHint: plainIterator_sizeHint,
-                }),
-              (iterator) => revExactSizeIterator_len(iterator, plainExactSizeIterator),
-              undefined,
-              (iterator, k) =>
-                revDoubleEndedIterator_nthBack(iterator, k, {
-                  next: plainIterator_next,
-                  sizeHint: plainIterator_sizeHint,
-                }),
-              (iterator, init, f, broke, unwind, ends) =>
-                revDoubleEndedIterator_tryRfold(
-                  iterator,
-                  init,
-                  f,
-                  { next: plainIterator_next, sizeHint: plainIterator_sizeHint },
-                  $tryOf(broke),
-                  undefined,
-                  unwind,
-                  ends,
-                ),
+        iterator_rev(
+          iterator_skip(
+            iterator_rev(
+              [0, 6],
+              { next: plainIterator_next, sizeHint: plainIterator_sizeHint },
+              { next_back: plainDoubleEndedIterator_nextBack },
             ),
             2,
+            { next: $next, fold: $foldOf },
           ),
+          { next: $next, fold: $foldOf },
+          {
+            next_back: (iterator) =>
+              skipDoubleEndedIterator_nextBack(
+                iterator,
+                { next: $next, fold: $foldOf },
+                revDoubleEndedIterator$1,
+              ),
+            rfold: (iterator, init, f, unwind, ends) =>
+              skipDoubleEndedIterator_rfold(
+                iterator,
+                init,
+                f,
+                { next: $next, fold: $foldOf },
+                revDoubleEndedIterator$1,
+                undefined,
+                unwind,
+                ends,
+              ),
+            nthBack: (iterator, k) =>
+              skipDoubleEndedIterator_nthBack(
+                iterator,
+                k,
+                { next: $next, fold: $foldOf },
+                revDoubleEndedIterator$1,
+              ),
+            tryRfold: (iterator, init, f, broke, unwind, ends) =>
+              skipDoubleEndedIterator_tryRfold(
+                iterator,
+                init,
+                f,
+                { next: $next, fold: $foldOf },
+                revDoubleEndedIterator$1,
+                $tryOf(broke),
+                undefined,
+                unwind,
+                ends,
+              ),
+          },
         ),
         4,
         false,
@@ -554,14 +626,14 @@ function main() {
           { next: $next, fold: $foldOf },
           {
             next_back: (iterator) =>
-              mapDoubleEndedIterator_nextBack(iterator, revDoubleEndedIterator),
+              mapDoubleEndedIterator_nextBack(iterator, revDoubleEndedIterator$1),
             rfold: (iterator, init, f, unwind, ends) =>
               mapDoubleEndedIterator_rfold(
                 iterator,
                 init,
                 f,
                 { next: $next, fold: $foldOf },
-                revDoubleEndedIterator,
+                revDoubleEndedIterator$1,
                 undefined,
                 undefined,
                 undefined,
@@ -574,7 +646,7 @@ function main() {
                 init,
                 f,
                 { next: $next, fold: $foldOf },
-                revDoubleEndedIterator,
+                revDoubleEndedIterator$1,
                 $tryOf(broke),
                 undefined,
                 undefined,

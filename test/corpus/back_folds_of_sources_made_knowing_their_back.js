@@ -9,7 +9,6 @@ import {
   $foldBack,
   $foldOf,
   $iter,
-  $iterator,
   $knowing,
   $live,
   $mapEnds,
@@ -17,7 +16,6 @@ import {
   $nextBack,
   $range,
   $sizeHint,
-  $skipping,
   $tryOf,
   $unwindsOn,
   enumerateDoubleEndedIterator_rfold,
@@ -29,6 +27,7 @@ import {
   iterator_fuse,
   iterator_peekable,
   iterator_rev,
+  iterator_skip,
   peekableDoubleEndedIterator_nextBack,
   peekableDoubleEndedIterator_tryRfold,
   revDoubleEndedIterator_nextBack,
@@ -36,6 +35,10 @@ import {
   revDoubleEndedIterator_rfold,
   revDoubleEndedIterator_tryRfold,
   revExactSizeIterator_len,
+  skipDoubleEndedIterator_nextBack,
+  skipDoubleEndedIterator_nthBack,
+  skipDoubleEndedIterator_rfold,
+  skipDoubleEndedIterator_tryRfold,
 } from "@rust-js/std";
 
 export function entry() {
@@ -170,6 +173,7 @@ function givesDoubleEndedIterator_rfold(gives, init, f, dropB, dropF) {
 }
 
 function main() {
+  const skipExactSizeIterator = { len: (iterator) => $exactLen($sizeHint(iterator)) };
   const cs = [[1], [2], [3]];
   try {
     const acc = $foldBack(
@@ -184,29 +188,20 @@ function main() {
     );
     try {
       console.log(`${accDebug_fmt(acc)}`);
-      const acc$1 = $foldBack(
-        $enumerate(
-          $skipping(
-            $closing(
-              $iterator(
-                [0, 5],
-                givesIterator_next,
-                false,
-                givesDoubleEndedIterator_nextBack,
-                (it) => $exactLen(givesIterator_sizeHint(it)),
-                givesIterator_sizeHint,
-                undefined,
-                undefined,
-                undefined,
-                givesDoubleEndedIterator_rfold,
-              ),
-              (it) => {
-                givesDrop_drop(it.of);
-              },
-            ),
+      const acc$1 = enumerateDoubleEndedIterator_rfold(
+        iterator_enumerate(
+          iterator_skip(
+            [0, 5],
             1,
+            { next: givesIterator_next, sizeHint: givesIterator_sizeHint },
+            givesDrop_drop,
             dDrop_drop,
           ),
+          { next: $next, fold: $foldOf },
+          (skip) => {
+            skip.return();
+          },
+          dDrop_drop,
         ),
         [0],
         (a, [i, d]) => {
@@ -215,7 +210,71 @@ function main() {
           dDrop_drop(d);
           return result;
         },
+        { next: $next, fold: $foldOf },
+        skipExactSizeIterator,
+        {
+          next_back: (iterator) =>
+            skipDoubleEndedIterator_nextBack(
+              iterator,
+              { next: givesIterator_next, sizeHint: givesIterator_sizeHint },
+              {
+                next_back: givesDoubleEndedIterator_nextBack,
+                rfold: givesDoubleEndedIterator_rfold,
+              },
+              givesDrop_drop,
+              dDrop_drop,
+            ),
+          rfold: (iterator, init, f, unwind, ends) =>
+            skipDoubleEndedIterator_rfold(
+              iterator,
+              init,
+              f,
+              { next: givesIterator_next, sizeHint: givesIterator_sizeHint },
+              {
+                next_back: givesDoubleEndedIterator_nextBack,
+                rfold: givesDoubleEndedIterator_rfold,
+              },
+              givesDrop_drop,
+              unwind,
+              ends,
+              dDrop_drop,
+            ),
+          nthBack: (iterator, k) =>
+            skipDoubleEndedIterator_nthBack(
+              iterator,
+              k,
+              { next: givesIterator_next, sizeHint: givesIterator_sizeHint },
+              {
+                next_back: givesDoubleEndedIterator_nextBack,
+                rfold: givesDoubleEndedIterator_rfold,
+              },
+              givesDrop_drop,
+              dDrop_drop,
+            ),
+          tryRfold: (iterator, init, f, broke, unwind, ends) =>
+            skipDoubleEndedIterator_tryRfold(
+              iterator,
+              init,
+              f,
+              { next: givesIterator_next, sizeHint: givesIterator_sizeHint },
+              {
+                next_back: givesDoubleEndedIterator_nextBack,
+                rfold: givesDoubleEndedIterator_rfold,
+              },
+              $tryOf(broke),
+              givesDrop_drop,
+              unwind,
+              ends,
+              undefined,
+              dDrop_drop,
+            ),
+        },
+        (skip) => {
+          skip.return();
+        },
         accDrop_drop,
+        undefined,
+        dDrop_drop,
       );
       try {
         console.log(`${accDebug_fmt(acc$1)}`);
@@ -330,25 +389,60 @@ function main() {
             });
             try {
               console.log(`${accDebug_fmt(acc)}`);
-              const acc$1 = $foldBack(
-                $enumerate(
-                  $skipping(
-                    $iterator(
-                      [0, 5],
-                      everyIterator_next,
-                      false,
-                      everyDoubleEndedIterator_nextBack,
-                      (it) => $exactLen(everyIterator_sizeHint(it)),
-                      everyIterator_sizeHint,
-                    ),
-                    1,
-                  ),
+              const acc$1 = enumerateDoubleEndedIterator_rfold(
+                iterator_enumerate(
+                  iterator_skip([0, 5], 1, {
+                    next: everyIterator_next,
+                    sizeHint: everyIterator_sizeHint,
+                  }),
+                  { next: $next, fold: $foldOf },
                 ),
                 [0],
                 (a, [i, x]) => {
                   a[0] = (((((a[0] * 10) >>> 0) + i) >>> 0) + x) >>> 0;
                   return a;
                 },
+                { next: $next, fold: $foldOf },
+                skipExactSizeIterator,
+                {
+                  next_back: (iterator) =>
+                    skipDoubleEndedIterator_nextBack(
+                      iterator,
+                      { next: everyIterator_next, sizeHint: everyIterator_sizeHint },
+                      { next_back: everyDoubleEndedIterator_nextBack },
+                    ),
+                  rfold: (iterator, init, f, unwind, ends) =>
+                    skipDoubleEndedIterator_rfold(
+                      iterator,
+                      init,
+                      f,
+                      { next: everyIterator_next, sizeHint: everyIterator_sizeHint },
+                      { next_back: everyDoubleEndedIterator_nextBack },
+                      undefined,
+                      unwind,
+                      ends,
+                    ),
+                  nthBack: (iterator, k) =>
+                    skipDoubleEndedIterator_nthBack(
+                      iterator,
+                      k,
+                      { next: everyIterator_next, sizeHint: everyIterator_sizeHint },
+                      { next_back: everyDoubleEndedIterator_nextBack },
+                    ),
+                  tryRfold: (iterator, init, f, broke, unwind, ends) =>
+                    skipDoubleEndedIterator_tryRfold(
+                      iterator,
+                      init,
+                      f,
+                      { next: everyIterator_next, sizeHint: everyIterator_sizeHint },
+                      { next_back: everyDoubleEndedIterator_nextBack },
+                      $tryOf(broke),
+                      undefined,
+                      unwind,
+                      ends,
+                    ),
+                },
+                undefined,
                 accDrop_drop,
               );
               try {

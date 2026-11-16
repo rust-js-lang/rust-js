@@ -42,6 +42,7 @@ import {
   iterator_flatMap,
   iterator_inspect,
   iterator_rev,
+  iterator_skip,
 } from "@rust-js/std";
 
 export function entry() {
@@ -799,15 +800,19 @@ function main() {
   });
   run("skip of numbers", () => {
     const x = $foldDropping(
-      iterator_inspect(
-        { start: 60, end: 64 },
-        (n) => {
-          if (n === 62) {
-            throw new Error("62");
-          }
-        },
-        { next: $rangeNext },
-      ).drop(1),
+      iterator_skip(
+        iterator_inspect(
+          { start: 60, end: 64 },
+          (n) => {
+            if (n === 62) {
+              throw new Error("62");
+            }
+          },
+          { next: $rangeNext },
+        ),
+        1,
+        { next: $next, fold: $foldOf },
+      ),
       [],
       (acc, n) => {
         try {

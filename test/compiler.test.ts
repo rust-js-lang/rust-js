@@ -1170,7 +1170,7 @@ test("an Iterator impl is a JS iterator, lazy until something wants all of it", 
   expect(js).toContain("const iter = { n: 3 };\n  let x;\n  while ((x = countdownIterator_next(iter)) != null) {");
   expect(js).toContain("const first = countdownIterator_next(c) ?? 0;");
   // Endless, so only lazy helpers: `drop`, `take`, `find`.
-  expect(js).toContain("Array.from($iterator(fibonacci(), fibonacciIterator_next).drop(1).take(6))");
+  expect(js).toContain("Array.from(iterator_skip(fibonacci(), 1, { next: fibonacciIterator_next }).take(6))");
   expect(js).toContain("$lent($iterator(fibonacci(), fibonacciIterator_next)).find((x) => x > 50)");
   expect(js).toContain("$iterator({ n: 4 }, countdownIterator_next).reduce((n) => n + 1, 0)");
   // A generic `next` may box a `Some` that looks like `None`: unboxed as it comes out.
@@ -1382,7 +1382,7 @@ test("generic iterators take arrays and JS iterators alike", async () => {
   expect(js).toContain("export function evensBelow(n) {\n  return $lazyRange(0, n).filter((x) => x % 2 === 0);");
   // Its collect asks the hint of what it's given, which may be the crate's
   // own (ADR 1092, #733).
-  expect(js).toContain("export function middle(items, k) {\n  return $collectDropping($roomForHint(Iterator.from(items).drop(1).take(k), 4, false));");
+  expect(js).toContain("export function middle(items, k) {\n  return $collectDropping(\n    $roomForHint(iterator_skip(Iterator.from(items), 1, $jsIterator).take(k), 4, false),\n  );");
   expect(js).toContain("for (const x of items) {");
   // One of the crate's own, given where a generic one goes.
   expect(js).toContain("total($iterator({ n }, countdownIterator_next))");

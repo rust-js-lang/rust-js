@@ -2,20 +2,21 @@
 
 import {
   $cleanup,
-  $closing,
   $count,
+  $foldOf,
   $iter,
   $iterator,
   $jsIteratorSome,
   $lent,
   $live,
-  $skipping,
+  $next,
   $unwindsOn,
   iterator_chain,
   iterator_enumerate,
   iterator_fuse,
   iterator_map,
   iterator_peekable,
+  iterator_skip,
 } from "@rust-js/std";
 
 export function entry() {
@@ -59,7 +60,7 @@ function counted(it) {
 }
 
 function skipCounted(it) {
-  return $count(Iterator.from(it).drop(1));
+  return $count(iterator_skip(Iterator.from(it), 1, $jsIteratorSome));
 }
 
 function fuseCounted(it, IFused) {
@@ -73,10 +74,10 @@ function ds() {
 function main() {
   console.log(`${countIterator_count([0])}`);
   console.log(
-    `${$count($iterator([0], countIterator_next, false, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, countIterator_count).drop(1))}`,
+    `${$count(iterator_skip([0], 1, { next: countIterator_next, count: countIterator_count }))}`,
   );
   console.log(
-    `${$count($iterator([0], countIterator_next, false, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, countIterator_count).drop(9))}`,
+    `${$count(iterator_skip([0], 9, { next: countIterator_next, count: countIterator_count }))}`,
   );
   console.log(
     `${$count(
@@ -127,72 +128,10 @@ function main() {
   );
   console.log(`${counted($iter([1, 2]))}`);
   console.log(`${countsIterator_count([ds()])}`);
-  console.log(
-    `${$count(
-      $skipping(
-        $closing(
-          $iterator(
-            [ds()],
-            countsIterator_next,
-            false,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            countsIterator_count,
-          ),
-          (it) => {
-            for (const item of it.of[0]) {
-              dDrop_drop(item);
-            }
-          },
-        ),
-        1,
-        dDrop_drop,
-      ),
-      dDrop_drop,
-    )}`,
-  );
-  console.log(
-    `${$count(
-      $skipping(
-        $closing(
-          $iterator(
-            [ds()],
-            countsIterator_next,
-            false,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            countsIterator_count,
-          ),
-          (it) => {
-            for (const item of it.of[0]) {
-              dDrop_drop(item);
-            }
-          },
-        ),
-        5,
-        dDrop_drop,
-      ),
-      dDrop_drop,
-    )}`,
-  );
-  const iter = iterator_fuse(
+  const iter = iterator_skip(
     [ds()],
+    1,
     { next: countsIterator_next, count: countsIterator_count },
-    false,
     (counts) => {
       for (const item of counts[0]) {
         dDrop_drop(item);
@@ -211,6 +150,50 @@ function main() {
     }
   }
   console.log(`${result}`);
+  const iter$1 = iterator_skip(
+    [ds()],
+    5,
+    { next: countsIterator_next, count: countsIterator_count },
+    (counts) => {
+      for (const item of counts[0]) {
+        dDrop_drop(item);
+      }
+    },
+    dDrop_drop,
+  );
+  let result$1;
+  try {
+    result$1 = $count(iter$1, dDrop_drop);
+  } catch (error) {
+    throw $unwindsOn(error);
+  } finally {
+    if ($live()) {
+      iter$1.return();
+    }
+  }
+  console.log(`${result$1}`);
+  const iter$2 = iterator_fuse(
+    [ds()],
+    { next: countsIterator_next, count: countsIterator_count },
+    false,
+    (counts) => {
+      for (const item of counts[0]) {
+        dDrop_drop(item);
+      }
+    },
+    dDrop_drop,
+  );
+  let result$2;
+  try {
+    result$2 = $count(iter$2, dDrop_drop);
+  } catch (error) {
+    throw $unwindsOn(error);
+  } finally {
+    if ($live()) {
+      iter$2.return();
+    }
+  }
+  console.log(`${result$2}`);
   const value = [ds()];
   let tmp;
   try {
@@ -223,51 +206,61 @@ function main() {
     }, error);
     throw error;
   }
-  console.log(
-    `${$count(
-      $skipping(
-        iterator_chain(
-          value,
-          tmp,
-          { next: countsIterator_next, count: countsIterator_count },
-          {
-            intoIter(items) {
-              return items;
-            },
-            IntoIterIterator() {
-              return { next: countsIterator_next, count: countsIterator_count };
-            },
-            $dropItem: dDrop_drop,
-            $dropIntoIter(counts) {
-              for (const item of counts[0]) {
-                dDrop_drop(item);
-              }
-            },
-          },
-          (counts) => {
-            for (const item of counts[0]) {
-              dDrop_drop(item);
-            }
-          },
-          (counts) => {
-            for (const item of counts[0]) {
-              dDrop_drop(item);
-            }
-          },
-          dDrop_drop,
-          (counts) => {
-            for (const item of counts[0]) {
-              dDrop_drop(item);
-            }
-          },
-        ),
-        1,
-        dDrop_drop,
-      ),
+  const iter$3 = iterator_skip(
+    iterator_chain(
+      value,
+      tmp,
+      { next: countsIterator_next, count: countsIterator_count },
+      {
+        intoIter(items) {
+          return items;
+        },
+        IntoIterIterator() {
+          return { next: countsIterator_next, count: countsIterator_count };
+        },
+        $dropItem: dDrop_drop,
+        $dropIntoIter(counts) {
+          for (const item of counts[0]) {
+            dDrop_drop(item);
+          }
+        },
+      },
+      (counts) => {
+        for (const item of counts[0]) {
+          dDrop_drop(item);
+        }
+      },
+      (counts) => {
+        for (const item of counts[0]) {
+          dDrop_drop(item);
+        }
+      },
       dDrop_drop,
-    )}`,
+      (counts) => {
+        for (const item of counts[0]) {
+          dDrop_drop(item);
+        }
+      },
+    ),
+    1,
+    { next: $next, fold: $foldOf, count: $count },
+    (chain) => {
+      chain.return();
+    },
+    dDrop_drop,
   );
-  const iter$1 = iterator_enumerate(
+  let result$3;
+  try {
+    result$3 = $count(iter$3, dDrop_drop);
+  } catch (error) {
+    throw $unwindsOn(error);
+  } finally {
+    if ($live()) {
+      iter$3.return();
+    }
+  }
+  console.log(`${result$3}`);
+  const iter$4 = iterator_enumerate(
     [ds()],
     { next: countsIterator_next, count: countsIterator_count },
     (counts) => {
@@ -277,19 +270,19 @@ function main() {
     },
     dDrop_drop,
   );
-  let result$1;
+  let result$4;
   try {
-    result$1 = $count(iter$1, (value) => {
+    result$4 = $count(iter$4, (value) => {
       dDrop_drop(value[1]);
     });
   } catch (error) {
     throw $unwindsOn(error);
   } finally {
     if ($live()) {
-      iter$1.return();
+      iter$4.return();
     }
   }
-  console.log(`${result$1}`);
+  console.log(`${result$4}`);
   const it = [0];
   countIterator_next(it);
   console.log(

@@ -18,6 +18,7 @@ import {
   iterator_flatMap,
   iterator_flatten,
   iterator_map,
+  iterator_skip,
   mapIterator___iteratorGetUnchecked,
 } from "@rust-js/std";
 
@@ -148,11 +149,7 @@ function counted() {
         countDrop_drop(it.of);
       })
         .take(2)
-        .flatMap(() =>
-          $closing($iterator(c("inner"), countIterator_next), (it) => {
-            countDrop_drop(it.of);
-          }).drop(2),
-        ),
+        .flatMap(() => iterator_skip(c("inner"), 2, { next: countIterator_next }, countDrop_drop)),
       (x) => x < 4,
     ),
   );

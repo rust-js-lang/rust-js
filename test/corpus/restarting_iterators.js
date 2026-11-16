@@ -28,6 +28,7 @@ import {
   iterator_inspect,
   iterator_map,
   iterator_peekable,
+  iterator_skip,
   iterator_zip,
 } from "@rust-js/std";
 
@@ -90,11 +91,11 @@ function main() {
   console.log(
     `inspect ([${value$3[0].join(", ")}], [${value$3[1].join(", ")}], [${value$3[2].join(", ")}])`,
   );
-  const value$4 = twice($iterator(f(), flakyIterator_next).drop(1), "next");
+  const value$4 = twice(iterator_skip(f(), 1, { next: flakyIterator_next }), "next");
   console.log(
     `skip ([${value$4[0].join(", ")}], [${value$4[1].join(", ")}], [${value$4[2].join(", ")}])`,
   );
-  const value$5 = twice($iterator(f(), flakyIterator_next).drop(3), "next");
+  const value$5 = twice(iterator_skip(f(), 3, { next: flakyIterator_next }), "next");
   console.log(
     `skip3 ([${value$5[0].join(", ")}], [${value$5[1].join(", ")}], [${value$5[2].join(", ")}])`,
   );
@@ -235,7 +236,11 @@ function main() {
   // Std's `advance_by`, which a `map`'s `nth` steps its source by, stops
   // at the first `None`, the rest left to step.
   const skipped = twice(
-    iterator_map(f(), (x) => (x + 1) >>> 0, { next: flakyIterator_next }).drop(3),
+    iterator_skip(
+      iterator_map(f(), (x) => (x + 1) >>> 0, { next: flakyIterator_next }),
+      3,
+      { next: $next, fold: $foldOf },
+    ),
     "next",
   );
   console.log(

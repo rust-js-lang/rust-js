@@ -31,6 +31,7 @@ import {
   iterator_enumerate,
   iterator_flatMap,
   iterator_map,
+  iterator_skip,
   iterator_zip,
 } from "@rust-js/std";
 
@@ -188,9 +189,7 @@ function main() {
   );
   show(
     "skip 2",
-    $sizeHint(
-      $iterator(own(), ownIterator_next, false, undefined, undefined, ownIterator_sizeHint).drop(2),
-    ),
+    $sizeHint(iterator_skip(own(), 2, { next: ownIterator_next, sizeHint: ownIterator_sizeHint })),
   );
   show(
     "chain",

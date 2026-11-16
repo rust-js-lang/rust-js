@@ -33,6 +33,7 @@ import {
   fuseDoubleEndedIterator_tryRfold,
   fuseExactSizeIterator_len,
   iterator_fuse,
+  iterator_skip,
 } from "@rust-js/std";
 
 export function entry() {
@@ -117,6 +118,10 @@ function twiceIterator_next(twice) {
     twice.at = 2;
     return 2;
   }
+}
+
+function twiceDrop_drop(twice) {
+  console.log(`drop twice ${twice.at}`);
 }
 
 function main() {
@@ -748,15 +753,12 @@ function main() {
         value.return();
       }
     }
-    const twice = Array.from(
-      $closing($iterator({ at: 0 }, twiceIterator_next), (it) => {
-        console.log(`drop twice ${it.of.at}`);
-      }).drop(1),
-    );
+    const iter = iterator_skip({ at: 0 }, 1, { next: twiceIterator_next }, twiceDrop_drop);
+    const result = Array.from($roomForHint(iter, 1, false));
+    iter.return();
+    const twice = result;
     const stepped = $held(
-      $closing($iterator({ at: 0 }, twiceIterator_next), (it) => {
-        console.log(`drop twice ${it.of.at}`);
-      }).drop(0),
+      iterator_skip({ at: 0 }, 0, { next: twiceIterator_next }, twiceDrop_drop),
     );
     let head;
     try {
@@ -767,7 +769,10 @@ function main() {
       }, error);
       throw error;
     }
-    const tail = Array.from(stepped);
+    const iter$1 = stepped;
+    const result$1 = Array.from($roomForHint(iter$1, 1, false));
+    iter$1.return();
+    const tail = result$1;
     console.log(
       `${second == null ? "None" : `Some(${second})`} [${twice.join(", ")}] ${head == null ? "None" : `Some(${head})`} [${tail.join(", ")}] end`,
     );

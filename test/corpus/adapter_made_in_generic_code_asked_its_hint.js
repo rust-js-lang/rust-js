@@ -22,6 +22,7 @@ import {
   $someValue,
   $taking,
   iterator_map,
+  iterator_skip,
 } from "@rust-js/std";
 
 export function entry() {
@@ -63,7 +64,7 @@ function firstTwo(it) {
 }
 
 function rest(it) {
-  return hint($filterEnds($skipping(Iterator.from(it), 1), (x) => x % 2 === 0));
+  return hint($filterEnds(iterator_skip(Iterator.from(it), 1, $jsIterator), (x) => x % 2 === 0));
 }
 
 function restCloned(it, IIterator, IClone) {

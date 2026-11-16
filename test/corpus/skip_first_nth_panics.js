@@ -2,15 +2,17 @@
 
 import {
   $catchUnwind,
-  $closing,
   $count,
   $foldDropping,
+  $foldOf,
   $held,
-  $iterator,
   $last,
   $live,
+  $next,
   $tryFoldSome,
   $unwindsOn,
+  iterator_map,
+  iterator_skip,
 } from "@rust-js/std";
 
 export function entry() {
@@ -19,6 +21,10 @@ export function entry() {
 
 function accDrop_drop(acc) {
   console.log(`drop acc ${acc[0]}`);
+}
+
+function itDrop_drop(it) {
+  console.log("drop it");
 }
 
 function itIterator_next(it) {
@@ -31,25 +37,24 @@ function itIterator_next(it) {
 
 function main() {
   let r = $catchUnwind(() => {
-    const fold = $foldDropping(
-      $closing($iterator([0], itIterator_next), (it) => {
-        console.log("drop it");
-      }).drop(2),
-      [0],
-      (a) => a,
-      accDrop_drop,
-    );
-    const result = fold[0];
-    accDrop_drop(fold);
+    const iter = iterator_skip([0], 2, { next: itIterator_next }, itDrop_drop);
+    let result$1;
+    try {
+      result$1 = $foldDropping(iter, [0], (a) => a, accDrop_drop);
+    } catch (error) {
+      throw $unwindsOn(error);
+    } finally {
+      if ($live()) {
+        iter.return();
+      }
+    }
+    const result = result$1[0];
+    accDrop_drop(result$1);
     return result;
   });
   console.log(`fold ok ${r.TAG === "Ok"}`);
   r = $catchUnwind(() => {
-    const skip = $held(
-      $closing($iterator([0], itIterator_next), (it) => {
-        console.log("drop it");
-      }).drop(2),
-    );
+    const skip = $held(iterator_skip([0], 2, { next: itIterator_next }, itDrop_drop));
     try {
       const tryFold = $tryFoldSome(skip, [0], (a) => a, accDrop_drop);
       function map(a) {
@@ -67,36 +72,54 @@ function main() {
     }
   });
   console.log(`try_fold ok ${r.TAG === "Ok"}`);
-  r = $catchUnwind(() =>
-    $count(
-      $closing($iterator([0], itIterator_next), (it) => {
-        console.log("drop it");
-      }).drop(2),
-    ),
-  );
+  r = $catchUnwind(() => {
+    const iter = iterator_skip([0], 2, { next: itIterator_next }, itDrop_drop);
+    try {
+      return $count(iter);
+    } catch (error) {
+      throw $unwindsOn(error);
+    } finally {
+      if ($live()) {
+        iter.return();
+      }
+    }
+  });
   console.log(`count ok ${r.TAG === "Ok"}`);
-  r = $catchUnwind(() =>
-    $last(
-      $closing($iterator([0], itIterator_next), (it) => {
-        console.log("drop it");
-      }).drop(2),
-    ),
-  );
+  r = $catchUnwind(() => {
+    const iter = iterator_skip([0], 2, { next: itIterator_next }, itDrop_drop);
+    try {
+      return $last(iter);
+    } catch (error) {
+      throw $unwindsOn(error);
+    } finally {
+      if ($live()) {
+        iter.return();
+      }
+    }
+  });
   console.log(`last ok ${r.TAG === "Ok"}`);
   r = $catchUnwind(() => {
-    const fold = $foldDropping(
-      $closing($iterator([0], itIterator_next), (it) => {
-        console.log("drop it");
-      })
-        .drop(1)
-        .map((n) => (n * 10) >>> 0),
-      [1],
-      (a) => a,
-      accDrop_drop,
+    const iter = iterator_map(
+      iterator_skip([0], 1, { next: itIterator_next }, itDrop_drop),
+      (n) => (n * 10) >>> 0,
+      { next: $next, fold: $foldOf },
+      (skip) => {
+        skip.return();
+      },
     );
-    const result = fold[0];
-    accDrop_drop(fold);
-    return result;
+    let result;
+    try {
+      result = $foldDropping(iter, [1], (a) => a, accDrop_drop);
+    } catch (error) {
+      throw $unwindsOn(error);
+    } finally {
+      if ($live()) {
+        iter.return();
+      }
+    }
+    const result$1 = result[0];
+    accDrop_drop(result);
+    return result$1;
   });
   console.log(`mapped fold ok ${r.TAG === "Ok"}`);
 }

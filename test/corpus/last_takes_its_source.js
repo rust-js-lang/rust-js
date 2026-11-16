@@ -3,20 +3,22 @@
 import {
   $cleanup,
   $closing,
+  $foldOf,
   $held,
   $intsOrdered,
   $iterator,
   $last,
   $lastDropping,
   $live,
+  $next,
   $peek,
   $reduceBy,
-  $skipping,
   $unwindsOn,
   iterator_chain,
   iterator_fuse,
   iterator_map,
   iterator_peekable,
+  iterator_skip,
 } from "@rust-js/std";
 
 export function entry() {
@@ -128,8 +130,12 @@ function refsIterator_next(refs) {
 function refsIterator_last(refs) {
   console.log(`own last ${refs[1]}`);
   const result = refs[0].at(-1);
-  console.log(`drop refs ${refs[1]}`);
+  refsDrop_drop(refs);
   return result;
+}
+
+function refsDrop_drop(refs) {
+  console.log(`drop refs ${refs[1]}`);
 }
 
 function ds() {
@@ -225,38 +231,10 @@ function each(it, dropI) {
 }
 
 function main() {
-  show(
-    "skip",
-    $lastDropping(
-      $skipping(
-        $closing(
-          $iterator(
-            [ds()],
-            lastsIterator_next,
-            false,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            lastsIterator_last,
-          ),
-          (it) => {
-            for (const item of it.of[0]) {
-              dDrop_drop(item);
-            }
-          },
-        ),
-        1,
-        dDrop_drop,
-      ),
-      dDrop_drop,
-    ),
-  );
-  const iter = iterator_fuse(
+  const iter = iterator_skip(
     [ds()],
+    1,
     { next: lastsIterator_next, last: lastsIterator_last },
-    false,
     (lasts) => {
       for (const item of lasts[0]) {
         dDrop_drop(item);
@@ -274,10 +252,11 @@ function main() {
       iter.return();
     }
   }
-  show("fuse", result);
-  const iter$1 = iterator_peekable(
+  show("skip", result);
+  const iter$1 = iterator_fuse(
     [ds()],
     { next: lastsIterator_next, last: lastsIterator_last },
+    false,
     (lasts) => {
       for (const item of lasts[0]) {
         dDrop_drop(item);
@@ -295,7 +274,28 @@ function main() {
       iter$1.return();
     }
   }
-  show("peekable", result$1);
+  show("fuse", result$1);
+  const iter$2 = iterator_peekable(
+    [ds()],
+    { next: lastsIterator_next, last: lastsIterator_last },
+    (lasts) => {
+      for (const item of lasts[0]) {
+        dDrop_drop(item);
+      }
+    },
+    dDrop_drop,
+  );
+  let result$2;
+  try {
+    result$2 = $lastDropping(iter$2, dDrop_drop);
+  } catch (error) {
+    throw $unwindsOn(error);
+  } finally {
+    if ($live()) {
+      iter$2.return();
+    }
+  }
+  show("peekable", result$2);
   const peeked = $held(
     iterator_peekable(
       [ds()],
@@ -316,19 +316,19 @@ function main() {
     }, error);
     throw error;
   }
-  const iter$2 = peeked;
-  let result$2;
+  const iter$3 = peeked;
+  let result$3;
   try {
-    result$2 = $lastDropping(iter$2, dDrop_drop);
+    result$3 = $lastDropping(iter$3, dDrop_drop);
   } catch (error) {
     throw $unwindsOn(error);
   } finally {
     if ($live()) {
-      iter$2.return();
+      iter$3.return();
     }
   }
-  show("peeked", result$2);
-  const iter$3 = iterator_chain(
+  show("peeked", result$3);
+  const iter$4 = iterator_chain(
     [ds()],
     [[[5], [6]]],
     { next: lastsIterator_next, last: lastsIterator_last },
@@ -363,18 +363,18 @@ function main() {
       }
     },
   );
-  let result$3;
+  let result$4;
   try {
-    result$3 = $lastDropping(iter$3, dDrop_drop);
+    result$4 = $lastDropping(iter$4, dDrop_drop);
   } catch (error) {
     throw $unwindsOn(error);
   } finally {
     if ($live()) {
-      iter$3.return();
+      iter$4.return();
     }
   }
-  show("chain", result$3);
-  const iter$4 = iterator_chain(
+  show("chain", result$4);
+  const iter$5 = iterator_chain(
     [ds(), "a"],
     [[[5]]],
     { next: heldIterator_next },
@@ -410,18 +410,18 @@ function main() {
       }
     },
   );
-  let result$4;
+  let result$5;
   try {
-    result$4 = $lastDropping(iter$4, dDrop_drop);
+    result$5 = $lastDropping(iter$5, dDrop_drop);
   } catch (error) {
     throw $unwindsOn(error);
   } finally {
     if ($live()) {
-      iter$4.return();
+      iter$5.return();
     }
   }
-  show("chain held a", result$4);
-  const iter$5 = iterator_chain(
+  show("chain held a", result$5);
+  const iter$6 = iterator_chain(
     [ds()],
     [[[7]], "b"],
     { next: lastsIterator_next, last: lastsIterator_last },
@@ -459,90 +459,6 @@ function main() {
       }
     },
   );
-  let result$5;
-  try {
-    result$5 = $lastDropping(iter$5, dDrop_drop);
-  } catch (error) {
-    throw $unwindsOn(error);
-  } finally {
-    if ($live()) {
-      iter$5.return();
-    }
-  }
-  show("chain held b", result$5);
-  show(
-    "chain skip",
-    $lastDropping(
-      $skipping(
-        iterator_chain(
-          [ds()],
-          [[[5], [6]]],
-          { next: lastsIterator_next, last: lastsIterator_last },
-          {
-            intoIter(items) {
-              return items;
-            },
-            IntoIterIterator() {
-              return { next: lastsIterator_next, last: lastsIterator_last };
-            },
-            $dropItem: dDrop_drop,
-            $dropIntoIter(lasts) {
-              for (const item of lasts[0]) {
-                dDrop_drop(item);
-              }
-            },
-          },
-          (lasts) => {
-            for (const item of lasts[0]) {
-              dDrop_drop(item);
-            }
-          },
-          (lasts) => {
-            for (const item of lasts[0]) {
-              dDrop_drop(item);
-            }
-          },
-          dDrop_drop,
-          (lasts) => {
-            for (const item of lasts[0]) {
-              dDrop_drop(item);
-            }
-          },
-        ),
-        1,
-        dDrop_drop,
-      ),
-      dDrop_drop,
-    ),
-  );
-  show(
-    "skip held",
-    $lastDropping(
-      $skipping(
-        $closing($iterator([ds(), "s"], heldIterator_next), (it) => {
-          console.log(`drop held ${it.of[1]}`);
-          for (const item of it.of[0]) {
-            dDrop_drop(item);
-          }
-        }),
-        1,
-        dDrop_drop,
-      ),
-      dDrop_drop,
-    ),
-  );
-  const iter$6 = iterator_fuse(
-    [ds(), "f"],
-    { next: heldIterator_next },
-    false,
-    (held) => {
-      console.log(`drop held ${held[1]}`);
-      for (const item of held[0]) {
-        dDrop_drop(item);
-      }
-    },
-    dDrop_drop,
-  );
   let result$6;
   try {
     result$6 = $lastDropping(iter$6, dDrop_drop);
@@ -553,15 +469,47 @@ function main() {
       iter$6.return();
     }
   }
-  show("fuse held", result$6);
-  const iter$7 = iterator_peekable(
-    [ds(), "p"],
-    { next: heldIterator_next },
-    (held) => {
-      console.log(`drop held ${held[1]}`);
-      for (const item of held[0]) {
-        dDrop_drop(item);
-      }
+  show("chain held b", result$6);
+  const iter$7 = iterator_skip(
+    iterator_chain(
+      [ds()],
+      [[[5], [6]]],
+      { next: lastsIterator_next, last: lastsIterator_last },
+      {
+        intoIter(items) {
+          return items;
+        },
+        IntoIterIterator() {
+          return { next: lastsIterator_next, last: lastsIterator_last };
+        },
+        $dropItem: dDrop_drop,
+        $dropIntoIter(lasts) {
+          for (const item of lasts[0]) {
+            dDrop_drop(item);
+          }
+        },
+      },
+      (lasts) => {
+        for (const item of lasts[0]) {
+          dDrop_drop(item);
+        }
+      },
+      (lasts) => {
+        for (const item of lasts[0]) {
+          dDrop_drop(item);
+        }
+      },
+      dDrop_drop,
+      (lasts) => {
+        for (const item of lasts[0]) {
+          dDrop_drop(item);
+        }
+      },
+    ),
+    1,
+    { next: $next, fold: $foldOf, last: $last },
+    (chain) => {
+      chain.return();
     },
     dDrop_drop,
   );
@@ -575,22 +523,82 @@ function main() {
       iter$7.return();
     }
   }
-  show("peekable held", result$7);
+  show("chain skip", result$7);
+  const iter$8 = iterator_skip(
+    [ds(), "s"],
+    1,
+    { next: heldIterator_next },
+    (held) => {
+      console.log(`drop held ${held[1]}`);
+      for (const item of held[0]) {
+        dDrop_drop(item);
+      }
+    },
+    dDrop_drop,
+  );
+  let result$8;
+  try {
+    result$8 = $lastDropping(iter$8, dDrop_drop);
+  } catch (error) {
+    throw $unwindsOn(error);
+  } finally {
+    if ($live()) {
+      iter$8.return();
+    }
+  }
+  show("skip held", result$8);
+  const iter$9 = iterator_fuse(
+    [ds(), "f"],
+    { next: heldIterator_next },
+    false,
+    (held) => {
+      console.log(`drop held ${held[1]}`);
+      for (const item of held[0]) {
+        dDrop_drop(item);
+      }
+    },
+    dDrop_drop,
+  );
+  let result$9;
+  try {
+    result$9 = $lastDropping(iter$9, dDrop_drop);
+  } catch (error) {
+    throw $unwindsOn(error);
+  } finally {
+    if ($live()) {
+      iter$9.return();
+    }
+  }
+  show("fuse held", result$9);
+  const iter$10 = iterator_peekable(
+    [ds(), "p"],
+    { next: heldIterator_next },
+    (held) => {
+      console.log(`drop held ${held[1]}`);
+      for (const item of held[0]) {
+        dDrop_drop(item);
+      }
+    },
+    dDrop_drop,
+  );
+  let result$10;
+  try {
+    result$10 = $lastDropping(iter$10, dDrop_drop);
+  } catch (error) {
+    throw $unwindsOn(error);
+  } finally {
+    if ($live()) {
+      iter$10.return();
+    }
+  }
+  show("peekable held", result$10);
   const value = $last(
-    $closing(
-      $iterator(
-        [[1, 2, 3], "s"],
-        foldsIterator_next,
-        false,
-        undefined,
-        undefined,
-        undefined,
-        foldsIterator_fold,
-      ),
-      (it) => {
-        foldsDrop_drop(it.of);
-      },
-    ).drop(1),
+    iterator_skip(
+      [[1, 2, 3], "s"],
+      1,
+      { next: foldsIterator_next, fold: foldsIterator_fold },
+      foldsDrop_drop,
+    ),
   );
   console.log(`folds ${value == null ? "None" : `Some(${value})`}`);
   const value$1 = $last(
@@ -617,28 +625,18 @@ function main() {
         refsIterator_last,
       ),
       (it) => {
-        console.log(`drop refs ${it.of[1]}`);
+        refsDrop_drop(it.of);
       },
     ),
   );
   console.log(`copied ${last == null ? "None" : `Some(${last})`}`);
   const value$2 = $last(
-    $closing(
-      $iterator(
-        [items, "s"],
-        refsIterator_next,
-        false,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        refsIterator_last,
-      ),
-      (it) => {
-        console.log(`drop refs ${it.of[1]}`);
-      },
-    ).drop(1),
+    iterator_skip(
+      [items, "s"],
+      1,
+      { next: refsIterator_next, last: refsIterator_last },
+      refsDrop_drop,
+    ),
   );
   console.log(`copied ${value$2 == null ? "None" : `Some(${value$2})`}`);
   show(
@@ -679,26 +677,15 @@ function main() {
   show(
     "generic skip",
     end(
-      $skipping(
-        $closing(
-          $iterator(
-            [ds()],
-            lastsIterator_next,
-            false,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            lastsIterator_last,
-          ),
-          (it) => {
-            for (const item of it.of[0]) {
-              dDrop_drop(item);
-            }
-          },
-        ),
+      iterator_skip(
+        [ds()],
         2,
+        { next: lastsIterator_next, last: lastsIterator_last },
+        (lasts) => {
+          for (const item of lasts[0]) {
+            dDrop_drop(item);
+          }
+        },
         dDrop_drop,
       ),
       (skip) => {

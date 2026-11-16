@@ -32,6 +32,7 @@ import {
   iterator_enumerate,
   iterator_flatMap,
   iterator_map,
+  iterator_skip,
 } from "@rust-js/std";
 
 export function entry() {
@@ -172,32 +173,12 @@ function main() {
   );
   console.log(`min_by_key ${minByKey == null ? "None" : `Some(${minByKey})`}`);
   const value = $next(
-    $iterator(
-      up(),
-      upIterator_next,
-      false,
-      undefined,
-      undefined,
-      undefined,
-      upIterator_fold,
-      upIterator_nth,
-    ).drop(2),
+    iterator_skip(up(), 2, { next: upIterator_next, fold: upIterator_fold, nth: upIterator_nth }),
   );
   console.log(`skip next ${value == null ? "None" : `Some(${value})`}`);
-  const value$1 = Array.from(
-    $folded(
-      $iterator(
-        up(),
-        upIterator_next,
-        false,
-        undefined,
-        undefined,
-        undefined,
-        upIterator_fold,
-        upIterator_nth,
-      ).drop(1),
-    ),
-  ).at(-1);
+  const value$1 = $last(
+    iterator_skip(up(), 1, { next: upIterator_next, fold: upIterator_fold, nth: upIterator_nth }),
+  );
   console.log(`skip last ${value$1 == null ? "None" : `Some(${value$1})`}`);
   console.log(
     `step_by [${Array.from($roomForHint($stepBy($iterator(up(), upIterator_next, false, undefined, undefined, undefined, upIterator_fold, upIterator_nth), 2), 4, false)).join(", ")}]`,

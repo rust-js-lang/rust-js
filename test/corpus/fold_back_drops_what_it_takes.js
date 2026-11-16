@@ -2,14 +2,19 @@
 
 import {
   $cleanup,
-  $closing,
-  $exactLen,
-  $foldBack,
-  $iterator,
+  $foldOf,
   $live,
-  $mapEnds,
-  $skipping,
+  $next,
+  $nth,
+  $tryOf,
   $unwindsOn,
+  iterator_map,
+  iterator_skip,
+  mapDoubleEndedIterator_rfold,
+  skipDoubleEndedIterator_nextBack,
+  skipDoubleEndedIterator_nthBack,
+  skipDoubleEndedIterator_rfold,
+  skipDoubleEndedIterator_tryRfold,
 } from "@rust-js/std";
 
 export function entry() {
@@ -68,10 +73,14 @@ function countDoubleEndedIterator_rfold(count, init, f, dropB, dropF) {
     throw $unwindsOn(error);
   } finally {
     if ($live()) {
-      console.log(`drop ${count.at} ${count.end}`);
+      countDrop_drop(count);
     }
   }
   return result;
+}
+
+function countDrop_drop(count) {
+  console.log(`drop ${count.at} ${count.end}`);
 }
 
 function count() {
@@ -80,33 +89,83 @@ function count() {
 
 function main() {
   console.log(
-    `${$foldBack(
-      $mapEnds(
-        $skipping(
-          $closing(
-            $iterator(
-              count(),
-              countIterator_next,
-              false,
-              countDoubleEndedIterator_nextBack,
-              (it) => $exactLen(countIterator_sizeHint(it)),
-              countIterator_sizeHint,
-              undefined,
-              countIterator_nth,
-              undefined,
-              countDoubleEndedIterator_rfold,
-              countDoubleEndedIterator_nthBack,
-            ),
-            (it) => {
-              console.log(`drop ${it.of.at} ${it.of.end}`);
-            },
-          ),
+    `${mapDoubleEndedIterator_rfold(
+      iterator_map(
+        iterator_skip(
+          count(),
           2,
+          { next: countIterator_next, sizeHint: countIterator_sizeHint, nth: countIterator_nth },
+          countDrop_drop,
         ),
         (x) => (x * 2) | 0,
+        { next: $next, fold: $foldOf, nth: $nth },
+        (skip) => {
+          skip.return();
+        },
       ),
       0,
       (a, x) => (a + x) | 0,
+      { next: $next, fold: $foldOf, nth: $nth },
+      {
+        next_back: (iterator) =>
+          skipDoubleEndedIterator_nextBack(
+            iterator,
+            { next: countIterator_next, sizeHint: countIterator_sizeHint, nth: countIterator_nth },
+            {
+              next_back: countDoubleEndedIterator_nextBack,
+              rfold: countDoubleEndedIterator_rfold,
+              nthBack: countDoubleEndedIterator_nthBack,
+            },
+            countDrop_drop,
+          ),
+        rfold: (iterator, init, f, unwind, ends) =>
+          skipDoubleEndedIterator_rfold(
+            iterator,
+            init,
+            f,
+            { next: countIterator_next, sizeHint: countIterator_sizeHint, nth: countIterator_nth },
+            {
+              next_back: countDoubleEndedIterator_nextBack,
+              rfold: countDoubleEndedIterator_rfold,
+              nthBack: countDoubleEndedIterator_nthBack,
+            },
+            countDrop_drop,
+            unwind,
+            ends,
+          ),
+        nthBack: (iterator, k) =>
+          skipDoubleEndedIterator_nthBack(
+            iterator,
+            k,
+            { next: countIterator_next, sizeHint: countIterator_sizeHint, nth: countIterator_nth },
+            {
+              next_back: countDoubleEndedIterator_nextBack,
+              rfold: countDoubleEndedIterator_rfold,
+              nthBack: countDoubleEndedIterator_nthBack,
+            },
+            countDrop_drop,
+          ),
+        tryRfold: (iterator, init, f, broke, unwind, ends) =>
+          skipDoubleEndedIterator_tryRfold(
+            iterator,
+            init,
+            f,
+            { next: countIterator_next, sizeHint: countIterator_sizeHint, nth: countIterator_nth },
+            {
+              next_back: countDoubleEndedIterator_nextBack,
+              rfold: countDoubleEndedIterator_rfold,
+              nthBack: countDoubleEndedIterator_nthBack,
+            },
+            $tryOf(broke),
+            countDrop_drop,
+            unwind,
+            ends,
+          ),
+      },
+      undefined,
+      (skip) => {
+        skip.return();
+      },
     )}`,
   );
   console.log("end");

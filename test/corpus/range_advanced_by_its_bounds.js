@@ -3,6 +3,7 @@
 import {
   $foldOf,
   $iter,
+  $jsIteratorSome,
   $next,
   $nextSome,
   $rangeInclusiveNext,
@@ -11,6 +12,7 @@ import {
   $rangeNthBack,
   iterator_chain,
   iterator_rev,
+  iterator_skip,
 } from "@rust-js/std";
 
 export function entry() {
@@ -18,7 +20,7 @@ export function entry() {
 }
 
 function skipped(it, n) {
-  return $nextSome(Iterator.from(it).drop(n));
+  return $nextSome(iterator_skip(Iterator.from(it), n, $jsIteratorSome));
 }
 
 function main() {

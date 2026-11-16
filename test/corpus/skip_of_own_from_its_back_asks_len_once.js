@@ -3,11 +3,14 @@
 import {
   $exactLen,
   $findBack,
-  $foldBack,
-  $iterator,
-  $skipping,
+  $knowing,
+  $sizeHint,
+  $tryOf,
   iterator_skip,
   skipDoubleEndedIterator_nextBack,
+  skipDoubleEndedIterator_nthBack,
+  skipDoubleEndedIterator_rfold,
+  skipDoubleEndedIterator_tryRfold,
 } from "@rust-js/std";
 
 export function entry() {
@@ -41,36 +44,47 @@ function count() {
 }
 
 function main() {
-  const sum = $foldBack(
-    $skipping(
-      $iterator(
-        count(),
-        countIterator_next,
-        false,
-        countDoubleEndedIterator_nextBack,
-        (it) => $exactLen(countIterator_sizeHint(it)),
-        countIterator_sizeHint,
-      ),
-      1,
-    ),
+  const sum = skipDoubleEndedIterator_rfold(
+    iterator_skip(count(), 1, { next: countIterator_next, sizeHint: countIterator_sizeHint }),
     0,
     (sum, n) => {
       console.log(`item ${n}`);
       return (sum + n) >>> 0;
     },
+    { next: countIterator_next, sizeHint: countIterator_sizeHint },
+    { next_back: countDoubleEndedIterator_nextBack },
   );
   console.log(`rfold ${sum}`);
   const found = $findBack(
-    $skipping(
-      $iterator(
-        count(),
-        countIterator_next,
-        false,
-        countDoubleEndedIterator_nextBack,
-        (it) => $exactLen(countIterator_sizeHint(it)),
-        countIterator_sizeHint,
-      ),
-      1,
+    $knowing(
+      iterator_skip(count(), 1, { next: countIterator_next, sizeHint: countIterator_sizeHint }),
+      (iterator) =>
+        skipDoubleEndedIterator_nextBack(
+          iterator,
+          { next: countIterator_next, sizeHint: countIterator_sizeHint },
+          { next_back: countDoubleEndedIterator_nextBack },
+        ),
+      (iterator) => $exactLen($sizeHint(iterator)),
+      undefined,
+      (iterator, k) =>
+        skipDoubleEndedIterator_nthBack(
+          iterator,
+          k,
+          { next: countIterator_next, sizeHint: countIterator_sizeHint },
+          { next_back: countDoubleEndedIterator_nextBack },
+        ),
+      (iterator, init, f, broke, unwind, ends) =>
+        skipDoubleEndedIterator_tryRfold(
+          iterator,
+          init,
+          f,
+          { next: countIterator_next, sizeHint: countIterator_sizeHint },
+          { next_back: countDoubleEndedIterator_nextBack },
+          $tryOf(broke),
+          undefined,
+          unwind,
+          ends,
+        ),
     ),
     (n) => n % 2 === 0,
   );

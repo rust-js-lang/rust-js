@@ -491,4 +491,14 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^inspect_from_back.rs$"],
     snapshots: true,
   },
+  {
+    name: "skip-not-flipped",
+    breaks:
+      "a `skip()` of a chain the transparent-chain predicate doesn't admit is the recognizers' hand-written form again, where std's compiled struct is the meaning (#1681's change 2, the skip family)",
+    file: "src/lower/body_queries/in_place.rs",
+    find: "    \"skip\",\n",
+    replace: "    \"map\",\n",
+    tests: ["test/corpus.test.ts", "-t", "^held_skip_take.rs$"],
+    snapshots: true,
+  },
 ];

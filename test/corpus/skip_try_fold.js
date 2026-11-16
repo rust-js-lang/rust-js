@@ -4,12 +4,12 @@ import {
   $cleanup,
   $closing,
   $cmp,
+  $foldOf,
   $held,
   $iterCmp,
   $iterEq,
   $iterator,
   $jsIterator,
-  $lazyChain,
   $lazyMapWhile,
   $lazyRange,
   $lazyScan,
@@ -20,10 +20,13 @@ import {
   $next,
   $nth,
   $position,
+  $rangeNext,
   $tryFoldOk,
   $tryFoldSome,
   $unwindsOn,
+  iterator_chain,
   iterator_map,
+  iterator_skip,
 } from "@rust-js/std";
 
 export function entry() {
@@ -53,6 +56,10 @@ function heldIterator_next(held) {
 
 function heldIterator_nth(held, n) {
   return countIterator_nth(held[0], n);
+}
+
+function heldDrop_drop(held) {
+  console.log(`drop held at ${held[0].at}`);
 }
 
 function anyAbove(it, n, dropI) {
@@ -92,6 +99,10 @@ function anyKeptAbove(it, n, dropI) {
 }
 
 function main() {
+  const skipIntoIterator = {
+    intoIter: (items) => items,
+    IntoIterIterator: () => ({ next: $next, fold: $foldOf, nth: $nth }),
+  };
   console.log(
     `skip_while ${$lent(
       $lazySkipWhile(
@@ -107,16 +118,7 @@ function main() {
         )
           .take(2)
           .flatMap(() =>
-            $iterator(
-              c(),
-              countIterator_next,
-              false,
-              undefined,
-              undefined,
-              undefined,
-              undefined,
-              countIterator_nth,
-            ).drop(2),
+            iterator_skip(c(), 2, { next: countIterator_next, nth: countIterator_nth }),
           ),
         (x) => x < 4,
       ),
@@ -124,21 +126,7 @@ function main() {
   );
   console.log(
     `generic ${anyAbove(
-      $closing(
-        $iterator(
-          [c()],
-          heldIterator_next,
-          false,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          heldIterator_nth,
-        ),
-        (it) => {
-          console.log(`drop held at ${it.of[0].at}`);
-        },
-      ).drop(2),
+      iterator_skip([c()], 2, { next: heldIterator_next, nth: heldIterator_nth }, heldDrop_drop),
       5,
       (skip) => {
         skip.return();
@@ -147,21 +135,7 @@ function main() {
   );
   console.log(
     `generic kept ${anyKeptAbove(
-      $closing(
-        $iterator(
-          [c()],
-          heldIterator_next,
-          false,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          heldIterator_nth,
-        ),
-        (it) => {
-          console.log(`drop held at ${it.of[0].at}`);
-        },
-      ).drop(2),
+      iterator_skip([c()], 2, { next: heldIterator_next, nth: heldIterator_nth }, heldDrop_drop),
       5,
       (skip) => {
         skip.return();
@@ -169,131 +143,61 @@ function main() {
     )}`,
   );
   const value = $nth(
-    $lent(
-      $iterator(
-        c(),
-        countIterator_next,
-        false,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        countIterator_nth,
-      ).drop(2),
-    ),
+    $lent(iterator_skip(c(), 2, { next: countIterator_next, nth: countIterator_nth })),
     1,
   );
   console.log(`${value == null ? "None" : `Some(${value})`}`);
   console.log(
-    `${$lent($iterator(c(), countIterator_next, false, undefined, undefined, undefined, undefined, countIterator_nth).drop(2)).some((x) => x > 5)}`,
+    `${$lent(iterator_skip(c(), 2, { next: countIterator_next, nth: countIterator_nth })).some(
+      (x) => x > 5,
+    )}`,
   );
   console.log(
-    `${$lent($iterator(c(), countIterator_next, false, undefined, undefined, undefined, undefined, countIterator_nth).drop(2)).every((x) => x < 5)}`,
+    `${$lent(iterator_skip(c(), 2, { next: countIterator_next, nth: countIterator_nth })).every(
+      (x) => x < 5,
+    )}`,
   );
   const value$1 = $lent(
-    $iterator(
-      c(),
-      countIterator_next,
-      false,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      countIterator_nth,
-    ).drop(2),
+    iterator_skip(c(), 2, { next: countIterator_next, nth: countIterator_nth }),
   ).find((x) => x > 5);
   console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
   const value$2 = $position(
-    $lent(
-      $iterator(
-        c(),
-        countIterator_next,
-        false,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        countIterator_nth,
-      ).drop(2),
-    ),
+    $lent(iterator_skip(c(), 2, { next: countIterator_next, nth: countIterator_nth })),
     (x) => x > 5,
   );
   console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
-  const value$3 = $lent(
-    $iterator(
-      c(),
-      countIterator_next,
-      false,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      countIterator_nth,
-    ).drop(2),
-  )
+  const value$3 = $lent(iterator_skip(c(), 2, { next: countIterator_next, nth: countIterator_nth }))
     .map((x) => (x > 5 ? (x * 2) | 0 : undefined))
     .find((item) => item != null);
   console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
   console.log(
     `${$lent(
-      $iterator(
-        c(),
-        countIterator_next,
-        false,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        countIterator_nth,
-      )
-        .drop(2)
-        .map((x) => (x * 2) | 0),
+      iterator_map(
+        iterator_skip(c(), 2, { next: countIterator_next, nth: countIterator_nth }),
+        (x) => (x * 2) | 0,
+        { next: $next, fold: $foldOf, nth: $nth },
+      ),
     ).some((x) => x > 10)}`,
   );
   console.log(
-    `${$lent($iterator(c(), countIterator_next, false, undefined, undefined, undefined, undefined, countIterator_nth).drop(2).take(3)).some((x) => x > 10)}`,
+    `${$lent(
+      iterator_skip(c(), 2, { next: countIterator_next, nth: countIterator_nth }).take(3),
+    ).some((x) => x > 10)}`,
   );
   const value$4 = $lent(
-    $iterator(
-      c(),
-      countIterator_next,
-      false,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      countIterator_nth,
-    )
-      .drop(2)
-      .filter((x) => x % 2 === 0),
+    iterator_skip(c(), 2, { next: countIterator_next, nth: countIterator_nth }).filter(
+      (x) => x % 2 === 0,
+    ),
   ).find((x) => x > 7);
   console.log(`${value$4 == null ? "None" : `Some(${value$4})`}`);
   const value$5 = $next(
-    $iterator(
-      c(),
-      countIterator_next,
-      false,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      countIterator_nth,
-    )
-      .drop(2)
-      .filter((x) => x % 2 === 0),
+    iterator_skip(c(), 2, { next: countIterator_next, nth: countIterator_nth }).filter(
+      (x) => x % 2 === 0,
+    ),
   );
   console.log(`${value$5 == null ? "None" : `Some(${value$5})`}`);
   const value$6 = $tryFoldSome(
-    $iterator(
-      c(),
-      countIterator_next,
-      false,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      countIterator_nth,
-    ).drop(2),
+    iterator_skip(c(), 2, { next: countIterator_next, nth: countIterator_nth }),
     0,
     (a, x) => {
       if (x > 6) {
@@ -304,60 +208,63 @@ function main() {
   );
   console.log(`${value$6 == null ? "None" : `Some(${value$6})`}`);
   const value$7 = $tryFoldOk(
-    $iterator(
-      c(),
-      countIterator_next,
-      false,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      countIterator_nth,
-    ).drop(2),
+    iterator_skip(c(), 2, { next: countIterator_next, nth: countIterator_nth }),
     undefined,
     (_, x) => (x > 4 ? { TAG: "Err", _0: x } : { TAG: "Ok" }),
   );
   console.log(`${value$7.TAG === "Ok" ? "Ok(())" : `Err(${value$7._0})`}`);
-  const it = $iterator(
-    c(),
-    countIterator_next,
-    false,
-    undefined,
-    undefined,
-    undefined,
-    undefined,
-    countIterator_nth,
-  ).drop(3);
+  const it = iterator_skip(c(), 3, { next: countIterator_next, nth: countIterator_nth });
   console.log(
     `${$lent(it).some((x) => x === 5)} ${((value) => (value == null ? "None" : `Some(${value})`))($next(it))}`,
   );
   console.log(
-    `${$lent($iterator(c(), countIterator_next, false, undefined, undefined, undefined, undefined, countIterator_nth).drop(1).drop(2)).some((x) => x > 4)}`,
+    `${$lent(
+      iterator_skip(
+        iterator_skip(c(), 1, { next: countIterator_next, nth: countIterator_nth }),
+        2,
+        { next: $next, fold: $foldOf, nth: $nth },
+      ),
+    ).some((x) => x > 4)}`,
   );
   console.log(
-    `chain ${$lent($lazyChain($iterator(c(), countIterator_next, false, undefined, undefined, undefined, undefined, countIterator_nth).drop(2), $iterator(c(), countIterator_next, false, undefined, undefined, undefined, undefined, countIterator_nth).drop(3))).some((x) => x > 21)}`,
+    `chain ${$lent(
+      iterator_chain(
+        iterator_skip(c(), 2, { next: countIterator_next, nth: countIterator_nth }),
+        iterator_skip(c(), 3, { next: countIterator_next, nth: countIterator_nth }),
+        { next: $next, fold: $foldOf, nth: $nth },
+        skipIntoIterator,
+      ),
+    ).some((x) => x > 21)}`,
   );
   console.log(
-    `chain ${$lent($lazyChain($lazyRange(0, 2), $iterator(c(), countIterator_next, false, undefined, undefined, undefined, undefined, countIterator_nth).drop(3))).some((x) => x > 5)}`,
+    `chain ${$lent(
+      iterator_chain(
+        { start: 0, end: 2 },
+        iterator_skip(c(), 3, { next: countIterator_next, nth: countIterator_nth }),
+        { next: $rangeNext },
+        skipIntoIterator,
+      ),
+    ).some((x) => x > 5)}`,
   );
   console.log(
-    `take_while ${$lent($lazyTakeWhile($iterator(c(), countIterator_next, false, undefined, undefined, undefined, undefined, countIterator_nth).drop(2), (x) => x < 9)).some((x) => x > 5)}`,
+    `take_while ${$lent(
+      $lazyTakeWhile(
+        iterator_skip(c(), 2, { next: countIterator_next, nth: countIterator_nth }),
+        (x) => x < 9,
+      ),
+    ).some((x) => x > 5)}`,
   );
   console.log(
-    `skip_while ${$lent($lazySkipWhile($iterator(c(), countIterator_next, false, undefined, undefined, undefined, undefined, countIterator_nth).drop(2), (x) => x < 4)).some((x) => x > 5)}`,
+    `skip_while ${$lent(
+      $lazySkipWhile(
+        iterator_skip(c(), 2, { next: countIterator_next, nth: countIterator_nth }),
+        (x) => x < 4,
+      ),
+    ).some((x) => x > 5)}`,
   );
   const value$8 = $next(
     $lazySkipWhile(
-      $iterator(
-        c(),
-        countIterator_next,
-        false,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        countIterator_nth,
-      ).drop(2),
+      iterator_skip(c(), 2, { next: countIterator_next, nth: countIterator_nth }),
       (x) => x < 4,
     ),
   );
@@ -365,16 +272,7 @@ function main() {
   console.log(
     `scan ${$lent(
       $lazyScan(
-        $iterator(
-          c(),
-          countIterator_next,
-          false,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          countIterator_nth,
-        ).drop(2),
+        iterator_skip(c(), 2, { next: countIterator_next, nth: countIterator_nth }),
         0,
         (s, x) => {
           s.value = (s.value + x) | 0;
@@ -386,16 +284,7 @@ function main() {
   console.log(
     `map_while ${$lent(
       $lazyMapWhile(
-        $iterator(
-          c(),
-          countIterator_next,
-          false,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          countIterator_nth,
-        ).drop(2),
+        iterator_skip(c(), 2, { next: countIterator_next, nth: countIterator_nth }),
         (x) => (x < 9 ? x : undefined),
         (item) => item != null,
       ),
@@ -403,17 +292,7 @@ function main() {
   );
   console.log(
     `filter_map ${$lent(
-      $iterator(
-        c(),
-        countIterator_next,
-        false,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        countIterator_nth,
-      )
-        .drop(2)
+      iterator_skip(c(), 2, { next: countIterator_next, nth: countIterator_nth })
         .map((x) => (x % 2 === 0 ? x : undefined))
         .filter((item) => item != null),
     ).some((x) => x > 5)}`,
@@ -431,38 +310,18 @@ function main() {
         countIterator_nth,
       )
         .take(2)
-        .flatMap(() =>
-          $iterator(
-            c(),
-            countIterator_next,
-            false,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            countIterator_nth,
-          ).drop(2),
-        ),
+        .flatMap(() => iterator_skip(c(), 2, { next: countIterator_next, nth: countIterator_nth })),
     ).some((x) => x > 5)}`,
   );
   const map = $held(
-    $closing(
-      $iterator(
-        [c()],
-        heldIterator_next,
-        false,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        heldIterator_nth,
-      ),
-      (it) => {
-        console.log(`drop held at ${it.of[0].at}`);
+    iterator_map(
+      iterator_skip([c()], 2, { next: heldIterator_next, nth: heldIterator_nth }, heldDrop_drop),
+      (x) => (x + 1) | 0,
+      { next: $next, fold: $foldOf, nth: $nth },
+      (skip) => {
+        skip.return();
       },
-    )
-      .drop(2)
-      .map((x) => (x + 1) | 0),
+    ),
   );
   try {
     console.log(`held ${$lent(map).some((x) => x > 5)}`);
@@ -474,23 +333,14 @@ function main() {
     }
   }
   const chain = $held(
-    $lazyChain(
-      $closing(
-        $iterator(
-          [c()],
-          heldIterator_next,
-          false,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          heldIterator_nth,
-        ),
-        (it) => {
-          console.log(`drop held at ${it.of[0].at}`);
-        },
-      ).drop(2),
-      $lazyRange(0, 3),
+    iterator_chain(
+      iterator_skip([c()], 2, { next: heldIterator_next, nth: heldIterator_nth }, heldDrop_drop),
+      { start: 0, end: 3 },
+      { next: $next, fold: $foldOf, nth: $nth },
+      { intoIter: (items) => items, IntoIterIterator: () => ({ next: $rangeNext }) },
+      (skip) => {
+        skip.return();
+      },
     ),
   );
   try {
@@ -503,53 +353,32 @@ function main() {
     }
   }
   const value$9 = $tryFoldOk(
-    $iterator(
-      c(),
-      countIterator_next,
-      false,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      countIterator_nth,
-    ).drop(2),
+    iterator_skip(c(), 2, { next: countIterator_next, nth: countIterator_nth }),
     0,
     (a, x) => (x > 6 ? { TAG: "Err", _0: a } : { TAG: "Ok", _0: (a + x) | 0 }),
   );
   console.log(`${value$9.TAG === "Ok" ? `Ok(${value$9._0})` : `Err(${value$9._0})`}`);
   console.log(
-    `${$iterEq($iterator(c(), countIterator_next, false, undefined, undefined, undefined, undefined, countIterator_nth).drop(17), $lazyRange(18, 21))} ${$iterEq($lazyRange(18, 21), $iterator(c(), countIterator_next, false, undefined, undefined, undefined, undefined, countIterator_nth).drop(17))}`,
+    `${$iterEq(
+      iterator_skip(c(), 17, { next: countIterator_next, nth: countIterator_nth }),
+      $lazyRange(18, 21),
+    )} ${$iterEq(
+      $lazyRange(18, 21),
+      iterator_skip(c(), 17, { next: countIterator_next, nth: countIterator_nth }),
+    )}`,
   );
   console.log(
     `${
       ["Less", "Equal", "Greater"][
         $iterCmp(
-          $iterator(
-            c(),
-            countIterator_next,
-            false,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            countIterator_nth,
-          ).drop(17),
+          iterator_skip(c(), 17, { next: countIterator_next, nth: countIterator_nth }),
           $lazyRange(18, 21),
           $cmp,
         ) + 1
       ]
     } ${((value) => (value == null ? "None" : `Some(${["Less", "Equal", "Greater"][value + 1]})`))(
       $iterCmp(
-        $iterator(
-          c(),
-          countIterator_next,
-          false,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          countIterator_nth,
-        ).drop(16),
+        iterator_skip(c(), 16, { next: countIterator_next, nth: countIterator_nth }),
         $lazyRange(18, 21),
         $cmp,
       ),

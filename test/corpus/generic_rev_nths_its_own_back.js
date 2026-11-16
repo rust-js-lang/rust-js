@@ -5,15 +5,20 @@ import {
   $closing,
   $collectDropping,
   $dropEach,
+  $foldOf,
   $iter,
   $iterator,
   $lastDropping,
+  $next,
+  $nth,
   $rev,
   $roomForHint,
   $skipping,
   $slicing,
   $stepBy,
+  iterator_map,
   iterator_rev,
+  iterator_skip,
 } from "@rust-js/std";
 
 export function entry() {
@@ -213,21 +218,42 @@ function main() {
 
   // Not generic: the crate's own, as before.
   const direct = $collectDropping(
-    $skipping(
-      iterator_rev(
-        [0, 5],
-        { next: backsIterator_next },
-        { next_back: backsDoubleEndedIterator_nextBack, nthBack: backsDoubleEndedIterator_nthBack },
-        backsDrop_drop,
+    $roomForHint(
+      iterator_map(
+        iterator_skip(
+          iterator_rev(
+            [0, 5],
+            { next: backsIterator_next },
+            {
+              next_back: backsDoubleEndedIterator_nextBack,
+              nthBack: backsDoubleEndedIterator_nthBack,
+            },
+            backsDrop_drop,
+            dDrop_drop,
+          ),
+          2,
+          { next: $next, fold: $foldOf, nth: $nth },
+          (rev) => {
+            rev.return();
+          },
+          dDrop_drop,
+        ),
+        (d) => {
+          const result = d[0];
+          dDrop_drop(d);
+          return result;
+        },
+        { next: $next, fold: $foldOf, nth: $nth },
+        (skip) => {
+          skip.return();
+        },
+        undefined,
+        undefined,
         dDrop_drop,
       ),
-      2,
-      dDrop_drop,
-    ).map((d) => {
-      const result = d[0];
-      dDrop_drop(d);
-      return result;
-    }),
+      4,
+      false,
+    ),
   );
   console.log(`direct [${direct.join(", ")}]`);
 }

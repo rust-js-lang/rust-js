@@ -5,9 +5,9 @@ import {
   $cleanup,
   $closing,
   $dropEach,
+  $foldOf,
   $held,
   $iter,
-  $iterator,
   $lazyChain,
   $lent,
   $live,
@@ -18,6 +18,7 @@ import {
   $unwindsOn,
   iterator_chain,
   iterator_fuse,
+  iterator_skip,
 } from "@rust-js/std";
 
 export function entry() {
@@ -38,17 +39,18 @@ function louds(from, n) {
 }
 
 function main() {
+  const countIntoIterator = {
+    intoIter: (items) => items,
+    IntoIterIterator: () => ({ next: countIterator_next }),
+    $dropItem: loudDrop_drop,
+  };
   const nth = $nthDropping(
     $lent(
       iterator_chain(
         [100, 103],
         [110, 112],
         { next: countIterator_next },
-        {
-          intoIter: (items) => items,
-          IntoIterIterator: () => ({ next: countIterator_next }),
-          $dropItem: loudDrop_drop,
-        },
+        countIntoIterator,
         undefined,
         undefined,
         loudDrop_drop,
@@ -190,9 +192,14 @@ function main() {
   console.log("--");
   const nth$2 = $nthDropping(
     $lent(
-      $lazyChain(
-        $skipping($iterator([40, 43], countIterator_next), 1, loudDrop_drop),
-        $iterator([50, 52], countIterator_next),
+      iterator_chain(
+        iterator_skip([40, 43], 1, { next: countIterator_next }, undefined, loudDrop_drop),
+        [50, 52],
+        { next: $next, fold: $foldOf },
+        countIntoIterator,
+        undefined,
+        undefined,
+        loudDrop_drop,
       ),
     ),
     2,

@@ -4,7 +4,6 @@ import {
   $BTreeMap,
   $BTreeSet,
   $cleanup,
-  $closing,
   $cmp,
   $collectDropping,
   $extend,
@@ -25,6 +24,7 @@ import {
   $unwindsOn,
   $unwrap,
   iterator_map,
+  iterator_skip,
 } from "@rust-js/std";
 
 export function entry() {
@@ -158,12 +158,7 @@ function main() {
   const set3 = new Set();
   $extendMap(
     set3,
-    $closing(
-      $iterator(up(), upIterator_next, false, undefined, undefined, undefined, upIterator_fold),
-      (it) => {
-        upDrop_drop(it.of);
-      },
-    ).drop(1),
+    iterator_skip(up(), 1, { next: upIterator_next, fold: upIterator_fold }, upDrop_drop),
     true,
   );
   console.log(`skip set ${set3.size}`);

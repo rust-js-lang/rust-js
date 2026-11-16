@@ -3,11 +3,14 @@
 import {
   $cleanup,
   $count,
+  $foldOf,
   $iterator,
+  $next,
   $skipping,
   $stepBy,
   iterator_enumerate,
   iterator_fuse,
+  iterator_skip,
 } from "@rust-js/std";
 
 export function entry() {
@@ -100,11 +103,26 @@ function main() {
     ).reduce((a, x) => (a + x) >>> 0, 0)}`,
   );
   console.log(
-    `${$count($skipping($skipping($iterator([0], countsIterator_next, false, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, countsIterator_count), 1, dDrop_drop), 1, dDrop_drop), dDrop_drop)}`,
+    `${$count(
+      iterator_skip(
+        iterator_skip(
+          [0],
+          1,
+          { next: countsIterator_next, count: countsIterator_count },
+          undefined,
+          dDrop_drop,
+        ),
+        1,
+        { next: $next, fold: $foldOf, count: $count },
+        undefined,
+        dDrop_drop,
+      ),
+      dDrop_drop,
+    )}`,
   );
   console.log(
     `${$count(
-      $skipping(
+      iterator_skip(
         iterator_enumerate(
           [0],
           { next: countsIterator_next, count: countsIterator_count },
@@ -112,6 +130,8 @@ function main() {
           dDrop_drop,
         ),
         1,
+        { next: $next, fold: $foldOf, count: $count },
+        undefined,
         (value) => {
           dDrop_drop(value[1]);
         },
@@ -122,7 +142,16 @@ function main() {
     )}`,
   );
   console.log(
-    `${$count($skipping($iterator([0], countsIterator_next, false, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, countsIterator_count), 1, dDrop_drop), dDrop_drop)}`,
+    `${$count(
+      iterator_skip(
+        [0],
+        1,
+        { next: countsIterator_next, count: countsIterator_count },
+        undefined,
+        dDrop_drop,
+      ),
+      dDrop_drop,
+    )}`,
   );
   console.log(
     `${$count(
@@ -137,23 +166,11 @@ function main() {
       },
     )}`,
   );
-  const it = $skipping(
-    $iterator(
-      [0],
-      countsIterator_next,
-      false,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      countsIterator_count,
-    ),
+  const it = iterator_skip(
+    [0],
     1,
+    { next: countsIterator_next, count: countsIterator_count },
+    undefined,
     dDrop_drop,
   );
   console.log(`${$count($skipping(it, 1, dDrop_drop), dDrop_drop)}`);

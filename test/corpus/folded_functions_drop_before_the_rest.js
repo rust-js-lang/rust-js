@@ -31,6 +31,7 @@ import {
   iterator_fuse,
   iterator_map,
   iterator_peekable,
+  iterator_skip,
 } from "@rust-js/std";
 
 export function entry() {
@@ -182,21 +183,14 @@ function reachingItsOwnFold() {
   const g$1 = ["f"];
   let skip;
   try {
-    skip = $closing(
-      $iterator(
-        own(4, "own"),
-        ownIterator_next,
-        false,
-        undefined,
-        undefined,
-        undefined,
-        ownIterator_fold,
-        ownIterator_nth,
-      ),
-      (it) => {
-        dDrop_drop(it.of._held);
+    skip = iterator_skip(
+      own(4, "own"),
+      1,
+      { next: ownIterator_next, fold: ownIterator_fold, nth: ownIterator_nth },
+      (own) => {
+        dDrop_drop(own._held);
       },
-    ).drop(1);
+    );
     g$1$live = false;
   } catch (error) {
     $cleanup(() => {

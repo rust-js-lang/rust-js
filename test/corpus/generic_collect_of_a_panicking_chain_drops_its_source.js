@@ -5,11 +5,13 @@ import {
   $closing,
   $collectVec,
   $collectsInPlace,
+  $foldOf,
   $foldToArray,
   $folded,
-  $iterator,
+  $next,
   $vecCollectWay,
   iterator_map,
+  iterator_skip,
 } from "@rust-js/std";
 
 export function entry() {
@@ -47,16 +49,19 @@ function main() {
   };
   const text = $catchUnwind(() => {
     collected(
-      $closing($iterator([[[5], [6], [7]]], ownIterator_next), (it) => {
-        ownDrop_drop(it.of);
-      })
-        .drop(1)
-        .map((d) => {
+      iterator_map(
+        iterator_skip([[[5], [6], [7]]], 1, { next: ownIterator_next }, ownDrop_drop),
+        (d) => {
           if (d[0] === 6) {
             throw new Error("map");
           }
           return String(d[0]);
-        }),
+        },
+        { next: $next, fold: $foldOf },
+        (skip) => {
+          skip.return();
+        },
+      ),
       stringFromIterator,
       false,
       undefined,

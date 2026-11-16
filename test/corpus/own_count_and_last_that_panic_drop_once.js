@@ -3,15 +3,13 @@
 import {
   $catchUnwind,
   $cleanup,
-  $closing,
   $count,
-  $iterator,
   $lastDropping,
   $live,
-  $skipping,
   $unwindsOn,
   iterator_chain,
   iterator_enumerate,
+  iterator_skip,
 } from "@rust-js/std";
 
 export function entry() {
@@ -200,37 +198,28 @@ function main() {
     }
   });
   console.log(`chain count panicked: ${counted.TAG === "Err"}`);
-  counted = $catchUnwind(() =>
-    $count(
-      $skipping(
-        $closing(
-          $iterator(
-            counts(11, true),
-            countsIterator_next,
-            false,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            countsIterator_last,
-            undefined,
-            undefined,
-            undefined,
-            countsIterator_count,
-          ),
-          (it) => {
-            for (const item of it.of[0]) {
-              dDrop_drop(item);
-            }
-          },
-        ),
-        1,
-        dDrop_drop,
-      ),
+  counted = $catchUnwind(() => {
+    const iter$2 = iterator_skip(
+      counts(11, true),
+      1,
+      { next: countsIterator_next, last: countsIterator_last, count: countsIterator_count },
+      (counts) => {
+        for (const item of counts[0]) {
+          dDrop_drop(item);
+        }
+      },
       dDrop_drop,
-    ),
-  );
+    );
+    try {
+      return $count(iter$2, dDrop_drop);
+    } catch (error) {
+      throw $unwindsOn(error);
+    } finally {
+      if ($live()) {
+        iter$2.return();
+      }
+    }
+  });
   console.log(`skip count panicked: ${counted.TAG === "Err"}`);
   counted = $catchUnwind(() => {
     const iter = iterator_enumerate(
@@ -397,41 +386,33 @@ function main() {
   });
   console.log(`chain last panicked: ${last.TAG === "Err"}`);
   last = $catchUnwind(() => {
-    const d = $lastDropping(
-      $skipping(
-        $closing(
-          $iterator(
-            counts(31, true),
-            countsIterator_next,
-            false,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            countsIterator_last,
-            undefined,
-            undefined,
-            undefined,
-            countsIterator_count,
-          ),
-          (it) => {
-            for (const item of it.of[0]) {
-              dDrop_drop(item);
-            }
-          },
-        ),
-        1,
-        dDrop_drop,
-      ),
+    const iter = iterator_skip(
+      counts(31, true),
+      1,
+      { next: countsIterator_next, last: countsIterator_last, count: countsIterator_count },
+      (counts) => {
+        for (const item of counts[0]) {
+          dDrop_drop(item);
+        }
+      },
       dDrop_drop,
     );
+    let result;
+    try {
+      result = $lastDropping(iter, dDrop_drop);
+    } catch (error) {
+      throw $unwindsOn(error);
+    } finally {
+      if ($live()) {
+        iter.return();
+      }
+    }
     function map(d) {
       const result = d[0];
       dDrop_drop(d);
       return result;
     }
-    return d != null ? map(d) : undefined;
+    return result != null ? map(result) : undefined;
   });
   console.log(`skip last panicked: ${last.TAG === "Err"}`);
   const value = counts(41, false);
@@ -564,41 +545,33 @@ function main() {
   }
   const value$2 = result$1 != null ? map(result$1) : undefined;
   console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
-  const d = $lastDropping(
-    $skipping(
-      $closing(
-        $iterator(
-          counts(51, false),
-          countsIterator_next,
-          false,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          countsIterator_last,
-          undefined,
-          undefined,
-          undefined,
-          countsIterator_count,
-        ),
-        (it) => {
-          for (const item of it.of[0]) {
-            dDrop_drop(item);
-          }
-        },
-      ),
-      1,
-      dDrop_drop,
-    ),
+  const iter$2 = iterator_skip(
+    counts(51, false),
+    1,
+    { next: countsIterator_next, last: countsIterator_last, count: countsIterator_count },
+    (counts) => {
+      for (const item of counts[0]) {
+        dDrop_drop(item);
+      }
+    },
     dDrop_drop,
   );
+  let result$2;
+  try {
+    result$2 = $lastDropping(iter$2, dDrop_drop);
+  } catch (error) {
+    throw $unwindsOn(error);
+  } finally {
+    if ($live()) {
+      iter$2.return();
+    }
+  }
   function map$1(d) {
     const result = d[0];
     dDrop_drop(d);
     return result;
   }
-  const value$3 = d != null ? map$1(d) : undefined;
+  const value$3 = result$2 != null ? map$1(result$2) : undefined;
   console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
 }
 //# sourceMappingURL=case.js.map

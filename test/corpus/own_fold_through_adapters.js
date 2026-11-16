@@ -311,27 +311,32 @@ function main() {
     ).reduce((a, b) => (a + b) >>> 0, 0)}`,
   );
   console.log(
-    `${iterator_peekable(
-      iterator_inspect(
-        iterator_skip(
-          ["w", 0],
-          1,
-          { next: ownIterator_next, fold: ownIterator_fold, nth: ownIterator_nth },
-          ownDrop_drop,
+    `${iterator_map(
+      iterator_peekable(
+        iterator_inspect(
+          iterator_skip(
+            ["w", 0],
+            1,
+            { next: ownIterator_next, fold: ownIterator_fold, nth: ownIterator_nth },
+            ownDrop_drop,
+          ),
+          () => {},
+          { next: $next, fold: $foldOf, nth: $nth },
+          (skip) => {
+            skip.return();
+          },
         ),
-        () => {},
-        { next: $next, fold: $foldOf, nth: $nth },
-        (skip) => {
-          skip.return();
+        { next: $next, fold: $foldOf },
+        (inspect) => {
+          inspect.return();
         },
       ),
+      (x) => (x + 1) >>> 0,
       { next: $next, fold: $foldOf },
-      (inspect) => {
-        inspect.return();
+      (peekable) => {
+        peekable.return();
       },
-    )
-      .map((x) => (x + 1) >>> 0)
-      .reduce((a, b) => (a + b) >>> 0, 0)}`,
+    ).reduce((a, b) => (a + b) >>> 0, 0)}`,
   );
   const iter$3 = iterator_peekable(
     iterator_map(["v", 0], (x) => (x + 1) >>> 0, { next: plainIterator_next }, plainDrop_drop),

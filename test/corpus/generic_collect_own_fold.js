@@ -18,6 +18,7 @@ import {
   $reserveHint,
   iterator_enumerate,
   iterator_map,
+  iterator_skip,
 } from "@rust-js/std";
 
 export function entry() {
@@ -150,7 +151,7 @@ function main() {
       .join(", ")}]`,
   );
   console.log(
-    `${text($iterator([0], lettersIterator_next, false, undefined, undefined, undefined, lettersIterator_fold).drop(1))}`,
+    `${text(iterator_skip([0], 1, { next: lettersIterator_next, fold: lettersIterator_fold }))}`,
   );
   console.log(`${text($iterator([0], plainIterator_next))}`);
   console.log(`${upper($iterator([0], plainIterator_next))}`);

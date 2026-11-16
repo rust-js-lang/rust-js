@@ -16,9 +16,16 @@ import {
   $skipping,
   $tryOf,
   iterator_peekable,
+  iterator_rev,
+  iterator_skip,
   iterator_take,
   peekableDoubleEndedIterator_nextBack,
+  peekableDoubleEndedIterator_rfold,
   peekableDoubleEndedIterator_tryRfold,
+  skipDoubleEndedIterator_nextBack,
+  skipDoubleEndedIterator_nthBack,
+  skipDoubleEndedIterator_rfold,
+  skipDoubleEndedIterator_tryRfold,
   takeIDoubleEndedIterator_nextBack,
   takeIDoubleEndedIterator_nthBack,
   takeIDoubleEndedIterator_rfold,
@@ -51,6 +58,35 @@ function countDoubleEndedIterator_nextBack(count) {
 
 function main() {
   const countExactSizeIterator = { len: (iterator) => $exactLen(countIterator_sizeHint(iterator)) };
+  const peekableDoubleEndedIterator = {
+    next_back: (iterator) =>
+      peekableDoubleEndedIterator_nextBack(iterator, {
+        next_back: countDoubleEndedIterator_nextBack,
+      }),
+    rfold: (iterator, init, f, unwind, ends) =>
+      peekableDoubleEndedIterator_rfold(
+        iterator,
+        init,
+        f,
+        { next: countIterator_next, sizeHint: countIterator_sizeHint },
+        { next_back: countDoubleEndedIterator_nextBack },
+        undefined,
+        unwind,
+        ends,
+      ),
+    tryRfold: (iterator, init, f, broke, unwind, ends) =>
+      peekableDoubleEndedIterator_tryRfold(
+        iterator,
+        init,
+        f,
+        { next: countIterator_next, sizeHint: countIterator_sizeHint },
+        { next_back: countDoubleEndedIterator_nextBack },
+        $tryOf(broke),
+        undefined,
+        unwind,
+        ends,
+      ),
+  };
   const takeDoubleEndedIterator = {
     next_back: (iterator) =>
       takeIDoubleEndedIterator_nextBack(
@@ -178,35 +214,54 @@ function main() {
   });
   const c = Array.from(
     $roomForHint(
-      $rev(
-        $skipping(
-          $knowing(
-            iterator_peekable(
-              { at: 0, end: 4 },
-              { next: countIterator_next, sizeHint: countIterator_sizeHint },
-            ),
-            (iterator) =>
-              peekableDoubleEndedIterator_nextBack(iterator, {
-                next_back: countDoubleEndedIterator_nextBack,
-              }),
-            (iterator) => $exactLen($sizeHint(iterator)),
-            undefined,
-            undefined,
-            (iterator, init, f, broke, unwind, ends) =>
-              peekableDoubleEndedIterator_tryRfold(
-                iterator,
-                init,
-                f,
-                { next: countIterator_next, sizeHint: countIterator_sizeHint },
-                { next_back: countDoubleEndedIterator_nextBack },
-                $tryOf(broke),
-                undefined,
-                unwind,
-                ends,
-              ),
+      iterator_rev(
+        iterator_skip(
+          iterator_peekable(
+            { at: 0, end: 4 },
+            { next: countIterator_next, sizeHint: countIterator_sizeHint },
           ),
           1,
+          { next: $next, fold: $foldOf },
         ),
+        { next: $next, fold: $foldOf },
+        {
+          next_back: (iterator) =>
+            skipDoubleEndedIterator_nextBack(
+              iterator,
+              { next: $next, fold: $foldOf },
+              peekableDoubleEndedIterator,
+            ),
+          rfold: (iterator, init, f, unwind, ends) =>
+            skipDoubleEndedIterator_rfold(
+              iterator,
+              init,
+              f,
+              { next: $next, fold: $foldOf },
+              peekableDoubleEndedIterator,
+              undefined,
+              unwind,
+              ends,
+            ),
+          nthBack: (iterator, k) =>
+            skipDoubleEndedIterator_nthBack(
+              iterator,
+              k,
+              { next: $next, fold: $foldOf },
+              peekableDoubleEndedIterator,
+            ),
+          tryRfold: (iterator, init, f, broke, unwind, ends) =>
+            skipDoubleEndedIterator_tryRfold(
+              iterator,
+              init,
+              f,
+              { next: $next, fold: $foldOf },
+              peekableDoubleEndedIterator,
+              $tryOf(broke),
+              undefined,
+              unwind,
+              ends,
+            ),
+        },
       ),
       4,
       false,

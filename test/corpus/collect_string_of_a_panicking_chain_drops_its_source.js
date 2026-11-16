@@ -5,12 +5,16 @@ import {
   $cleanup,
   $closing,
   $dropItems,
+  $foldOf,
   $foldToArray,
   $folded,
   $iterator,
+  $next,
   $panicking,
   $removeOutOfBounds,
   $skipping,
+  iterator_map,
+  iterator_skip,
 } from "@rust-js/std";
 
 export function entry() {
@@ -53,33 +57,51 @@ function main() {
   });
   console.log(`${skipped.TAG === "Err"}`);
   const asserted = $catchUnwind(() => {
-    const text = $foldToArray(
-      $folded(
-        $skipping(
-          $closing($iterator([[[5], [6], [7]]], ownIterator_next), (it) => {
-            console.log("drop Own");
-            $dropItems(it.of[0], dDrop_drop);
-          }),
-          1,
-          dDrop_drop,
-        ).map((d) => {
-          if (d[0] === 6) {
-            try {
-              throw new Error("map");
-            } catch (error) {
-              $cleanup(() => {
-                dDrop_drop(d);
-              }, error);
-              throw error;
-            }
-          }
-          const result = String(d[0]);
-          dDrop_drop(d);
-          return result;
-        }),
-        true,
+    const iter = iterator_map(
+      iterator_skip(
+        [[[5], [6], [7]]],
+        1,
+        { next: ownIterator_next },
+        (own) => {
+          console.log("drop Own");
+          $dropItems(own[0], dDrop_drop);
+        },
+        dDrop_drop,
       ),
-    ).join("");
+      (d) => {
+        if (d[0] === 6) {
+          try {
+            throw new Error("map");
+          } catch (error) {
+            $cleanup(() => {
+              dDrop_drop(d);
+            }, error);
+            throw error;
+          }
+        }
+        const result = String(d[0]);
+        dDrop_drop(d);
+        return result;
+      },
+      { next: $next, fold: $foldOf },
+      (skip) => {
+        skip.return();
+      },
+      undefined,
+      undefined,
+      dDrop_drop,
+    );
+    let result;
+    try {
+      result = $foldToArray($folded(iter, true)).join("");
+    } catch (error) {
+      $cleanup(() => {
+        iter.return();
+      }, error);
+      throw error;
+    }
+    iter.return();
+    const text = result;
     return text;
   });
   console.log(`${asserted.TAG === "Err"}`);

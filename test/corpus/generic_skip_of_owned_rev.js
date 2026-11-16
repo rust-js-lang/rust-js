@@ -14,8 +14,9 @@ import {
   $range,
   $rev,
   $roomForHint,
-  $skipping,
   iterator_chain,
+  iterator_map,
+  iterator_skip,
 } from "@rust-js/std";
 
 export function entry() {
@@ -29,11 +30,21 @@ function noisyDrop_drop(noisy) {
 function skipped(it, dropI) {
   return $collectDropping(
     $roomForHint(
-      $skipping($closing(Iterator.from(it), dropI, false), 2, noisyDrop_drop).map((n) => {
-        const result = n[0];
-        noisyDrop_drop(n);
-        return result;
-      }),
+      iterator_map(
+        iterator_skip(Iterator.from(it), 2, $jsIterator, dropI, noisyDrop_drop),
+        (n) => {
+          const result = n[0];
+          noisyDrop_drop(n);
+          return result;
+        },
+        $jsIterator,
+        (skip) => {
+          skip.return();
+        },
+        undefined,
+        undefined,
+        noisyDrop_drop,
+      ),
       4,
       false,
     ),

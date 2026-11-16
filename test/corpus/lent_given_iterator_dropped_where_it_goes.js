@@ -199,14 +199,9 @@ function main() {
     })}`,
   );
   console.log(
-    `${byNext(
-      $closing($iterator(f(), flakyIterator_next), (it) => {
-        flakyDrop_drop(it.of);
-      }).drop(1),
-      (skip) => {
-        skip.return();
-      },
-    )}`,
+    `${byNext(iterator_skip(f(), 1, { next: flakyIterator_next }, flakyDrop_drop), (skip) => {
+      skip.return();
+    })}`,
   );
   console.log(
     `${byRefSum(
@@ -217,14 +212,9 @@ function main() {
     )}`,
   );
   console.log(
-    `${byRefSum(
-      $closing($iterator(f(), flakyIterator_next), (it) => {
-        flakyDrop_drop(it.of);
-      }).drop(1),
-      (skip) => {
-        skip.return();
-      },
-    )}`,
+    `${byRefSum(iterator_skip(f(), 1, { next: flakyIterator_next }, flakyDrop_drop), (skip) => {
+      skip.return();
+    })}`,
   );
   console.log(
     `${byFor(
@@ -245,7 +235,14 @@ function main() {
     )}`,
   );
   let skipped = twice(
-    iterator_map(f(), (x) => (x + 1) >>> 0, { next: flakyIterator_next }, flakyDrop_drop).drop(3),
+    iterator_skip(
+      iterator_map(f(), (x) => (x + 1) >>> 0, { next: flakyIterator_next }, flakyDrop_drop),
+      3,
+      { next: $next, fold: $foldOf },
+      (map) => {
+        map.return();
+      },
+    ),
     "next",
     (skip) => {
       skip.return();
@@ -255,9 +252,7 @@ function main() {
     `map skip3 ([${skipped[0].join(", ")}], [${skipped[1].join(", ")}], [${skipped[2].join(", ")}])`,
   );
   skipped = twice(
-    $closing($iterator(f(), flakyIterator_next), (it) => {
-      flakyDrop_drop(it.of);
-    }).drop(3),
+    iterator_skip(f(), 3, { next: flakyIterator_next }, flakyDrop_drop),
     "next",
     (skip) => {
       skip.return();
