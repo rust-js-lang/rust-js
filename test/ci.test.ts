@@ -27,6 +27,7 @@ import {
   unitTestsModule,
 } from "../scripts/mutations";
 import { installNeeded, jobs, leftToCi, manifestsHash, readabilityPaths, type Scope, touchesReadability } from "../scripts/checkFast";
+import { lostObject } from "../scripts/testMap";
 import { changedCases, runs, touchesCrates, importsOf, touchesPort, touchesRustc, touchesWasm, wasmInputs } from "../scripts/iteratorSlice";
 import { browsers, drivesBrowser } from "../scripts/shard";
 import { loadScale, underLoad } from "../scripts/timing";
@@ -1256,6 +1257,22 @@ test("the WASM build, rustc's tests and the mutations run where what they run ch
   expect(importsOf(["test/playground.test.ts"])).toEqual(expect.arrayContaining(["test/playground.test.ts", "test/support.ts", "test/sourcemap.ts", "test/packages-of.ts", "tooling/bounded.js"]));
   for (const file of importsOf(["test/snapshots.test.ts", "test/playground.test.ts"])) expect([file, touchesWasm([file])]).toEqual([file, true]);
   for (const file of importsOf(["scripts/rustc-suite.ts"])) expect([file, touchesRustc([file])]).toEqual([file, true]);
+});
+
+// The test map's counting build is made by testMap.ts alone, its flags
+// there and in no workflow's environment, and links an object that names
+// where an uncounted run writes by the runtime's API, defining no symbol the
+// instrumented crate defines: one that defined `__llvm_profile_filename`
+// linked on macOS, where the crate's is weak, and not on Linux, where it's
+// in a COMDAT (check 43786120684).
+test("the test map's counting build has its flags from testMap.ts alone, and links on Linux", () => {
+  const tests = readFileSync(join(root, ".github/workflows/rustc-tests.yml"), "utf8");
+  const job = tests.slice(tests.indexOf("\n  test-map:"), tests.indexOf("\n  mutations:"));
+  expect(job).toContain("bun scripts/testMap.ts");
+  for (const flag of ["RUSTFLAGS", "instrument-coverage", "CARGO_ENCODED_RUSTFLAGS", "profile"]) expect([flag, job.includes(flag)]).toEqual([flag, false]);
+  const lost = lostObject("/t/lost/%p.profraw");
+  expect(lost).toContain('__llvm_profile_set_filename("/t/lost/%p.profraw")');
+  expect(lost).not.toMatch(/char\s+__llvm_profile_filename/);
 });
 
 // The `wasm` job's build takes rustc's crates as the cache built them: its

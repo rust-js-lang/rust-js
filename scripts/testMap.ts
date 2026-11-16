@@ -598,6 +598,22 @@ async function runUnits(units: { name: string; cmd: string[]; env: Record<string
 
 /** Record HEAD's map: the counting build, then each test, then which
  * functions each ran. */
+/** The C of the object the counting build links, which names where a run
+ * given no `LLVM_PROFILE_FILE` writes its counts, `file`: by the runtime's
+ * `__llvm_profile_set_filename` as the process starts, never a definition
+ * of `__llvm_profile_filename`, which the instrumented crate defines itself
+ * on Linux, in a COMDAT, so a second one doesn't link (`duplicate symbol`,
+ * check 43786120684). The API's name outranks the environment's, so it's
+ * asked only where the environment names none. */
+export function lostObject(file: string): string {
+  return `#include <stdlib.h>
+void __llvm_profile_set_filename(const char *);
+__attribute__((constructor)) static void rust_js_lost(void) {
+  if (getenv("LLVM_PROFILE_FILE") == NULL) __llvm_profile_set_filename(${JSON.stringify(file)});
+}
+`;
+}
+
 async function record(keep: boolean) {
   const commit = git(["rev-parse", "HEAD"]).out.trim();
   const toolchain = toolchainOf();
@@ -619,12 +635,12 @@ async function record(keep: boolean) {
   // Where a run of it writes its counts given no `LLVM_PROFILE_FILE`, as
   // where a test starts it with an environment of its own: there, not in
   // its directory, which the test may remove, so a run the map didn't count
-  // is seen, and the recording fails (LLVM's runtime reads this name where
-  // the environment gives none).
+  // is seen, and the recording fails. Named by the runtime's API, as the
+  // process starts, where the environment gives none (`lostObject`).
   const lost = join(mapDir, "lost");
   rmSync(lost, { recursive: true, force: true });
   mkdirSync(lost, { recursive: true });
-  writeFileSync(join(mapDir, "lost.c"), `char __llvm_profile_filename[] = ${JSON.stringify(join(lost, "%p.profraw"))};\n`);
+  writeFileSync(join(mapDir, "lost.c"), lostObject(join(lost, "%p.profraw")));
   if (Bun.spawnSync(["cc", "-c", join(mapDir, "lost.c"), "-o", join(mapDir, "lost.o")], { stdout: "inherit", stderr: "inherit" }).exitCode !== 0) process.exit(1);
   const { CARGO_TARGET_DIR: _, ...env } = process.env;
   const built = Bun.spawnSync(
