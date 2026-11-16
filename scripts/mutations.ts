@@ -969,9 +969,15 @@ const valued: Record<string, string> = {
   "--base": "--base=<commit>",
 };
 
+/** The flags of `valued` whose value is a list, which may be empty: CI's
+ * `--also={retry}` is `--also=` where no mutation is retried, the usual
+ * case, an empty list (#2001's refusal of it made every shard red). */
+const listFlags = ["--also"];
+
 /** Of `args`, each flag `main` doesn't take as it's given: one it doesn't
  * know, or one that takes a value given none, a bare `--changed`, which ran
- * every mutation, about 14,000 (#2001), said with its form. */
+ * every mutation, about 14,000 (#2001), said with its form. A list's flag
+ * with `=` and nothing after is an empty list, not none. */
 export function refusedFlags(args: string[]): string[] {
   return args
     .filter((arg) => arg.startsWith("--"))
@@ -980,7 +986,8 @@ export function refusedFlags(args: string[]): string[] {
       const [flag, value] = arg.includes("=") ? [arg.slice(0, arg.indexOf("=")), arg.slice(arg.indexOf("=") + 1)] : [arg, undefined];
       const form = valued[flag];
       if (form === undefined) return [`no flag ${arg}; there are ${[...alone, ...Object.values(valued)].join(", ")}`];
-      return value ? [] : [`${flag} takes a value: ${form}`];
+      if (value === undefined || (value === "" && !listFlags.includes(flag))) return [`${flag} takes a value: ${form}`];
+      return [];
     });
 }
 

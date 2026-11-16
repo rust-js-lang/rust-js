@@ -9,7 +9,7 @@ import { join } from "node:path";
 import { checkedSince, latestRuns, MUTATION_SHARDS, mutationJobsPassed, mutationShards, mutationTimingsRun, nets, netsSummary, alwaysRun, resultsBase, testShards, timingsRun } from "../scripts/ci";
 import { readersOf } from "./part-settings";
 import { corpusRows, crashes, dependency, lockedVersion, lockOf, sampledHeader, sampledIn, sampledOneIn, written } from "../scripts/crate-corpus";
-import { mutations, site } from "../scripts/mutations";
+import { mutations, refusedFlags, site } from "../scripts/mutations";
 import { installNeeded, jobs, leftToCi, manifestsHash, readabilityPaths, type Scope, touchesReadability } from "../scripts/checkFast";
 import { lostObject } from "../scripts/testMap";
 import { changedCases, runs, touchesCrates, importsOf, touchesPort, touchesRustc, touchesWasm, wasmInputs } from "../scripts/iteratorSlice";
@@ -1089,4 +1089,16 @@ test("CI's plan selects by the full rule, the push by its own", () => {
   expect(read("scripts/ci.ts")).not.toContain('"push")');
   expect(read("scripts/checkFast.ts")).toContain('selectChange("origin/main", sanity, "push")');
   expect(read("scripts/push.ts")).toContain('["bun", "scripts/select.ts", "--push"]');
+});
+
+test("the mutation shards' arguments, as check.yml writes them, are ones the runner takes, a retry or none", () => {
+  // `--also={1}` is `--also=` where no mutation is retried: #2001's refusal
+  // of an empty value made every shard red (c502b22f6).
+  const yml = readFileSync(join(import.meta.dir, "../.github/workflows/check.yml"), "utf8");
+  const form = /format\('(--changed=\{0\} --also=\{1\} --base=\{0\})', needs\.plan\.outputs\.since, needs\.plan\.outputs\.retry\)/.exec(yml)?.[1];
+  expect(form).toBeDefined();
+  for (const retry of ["", "a-mutation,another"]) {
+    const args = form!.replaceAll("{0}", "0123456789abcdef").replaceAll("{1}", retry).split(" ");
+    expect(refusedFlags(args)).toEqual([]);
+  }
 });

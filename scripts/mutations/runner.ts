@@ -22,8 +22,16 @@ export const mutations: Mutation[] = [
     name: "mutations-bare-valued-flag-runs",
     breaks: "a bare `--changed` runs every mutation, about 14,000, not the change's (#2001)",
     file: "scripts/mutations.ts",
-    find: "      return value ? [] : [`${flag} takes a value: ${form}`];\n",
-    replace: "      return [];\n",
+    find: "      if (value === undefined || (value === \"\" && !listFlags.includes(flag))) return [`${flag} takes a value: ${form}`];\n",
+    replace: "",
     tests: ["test/mutations.test.ts", "-t", "a flag that takes a value, given none"],
+  },
+  {
+    name: "mutations-empty-list-refused",
+    breaks: "check.yml's `--also=`, no mutation retried, is refused as a flag given no value, and every mutation shard fails (c502b22f6)",
+    file: "scripts/mutations.ts",
+    find: " && !listFlags.includes(flag)",
+    replace: "",
+    tests: ["test/ci.test.ts", "-t", "the mutation shards' arguments, as check.yml writes them"],
   },
 ];
