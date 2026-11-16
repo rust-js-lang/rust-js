@@ -4,49 +4,37 @@
 <h1 align="center">Rust.js</h1>
 <p align="center"><b>Rust in. <i>Readable</i> JavaScript out.</b></p>
 
-Rust.js compiles Rust to readable JavaScript. Built on rustc and inspired by
-Scala.js and ReScript, it keeps Rust's type system, traits, ownership, borrow
-checking, and compiler diagnostics while replacing code generation with a
-JavaScript backend.
+Rust.js compiles idiomatic Rust to readable JavaScript, ES modules, and JSX.
+Built on rustc, it keeps Rust's type system, traits, ownership, borrow
+checking, and diagnostics. The goal is Rust across the stack: native on the
+server, JavaScript on the frontend, with shared types and logic.
 
-The goal is simple:
+[Guide](docs/guide/README.md) · [Getting started](docs/guide/tutorial/vite.md) ·
+[Examples](examples/) · [Roadmap](ROADMAP.md)
 
-> **Write Rust. Get *readable* JavaScript that works with every tool you already use.**
+## Current status
 
-**[Read the guide](docs/guide/README.md)**: how to write a JavaScript app in
-Rust.js, as it is today, from a first Vite app to bindings, React and the
-semantics.
+**Experimental; production readiness has not yet been established.**
+A substantial subset of Rust works today, but language, library, and
+feature-combination gaps remain.
 
-[Read the guide](https://rust-js-lang.github.io/rust-js/): how to write a
-JavaScript app in rust-js, each example's Rust beside the JavaScript it
-becomes.
+- Structs, enums, pattern matching, traits, generics, closures, and iterators.
+- Common standard-library types and operations, including collections,
+  `Option`, `Result`, strings, formatting, and `async` / `await`.
+- JavaScript imports and exports, browser and Node.js bindings, and
+  generated TypeScript declarations.
+- React and JSX, Vite and Next.js integration, Fast Refresh, and source maps.
+- Shared Cargo crates, supported crates.io dependencies, and Serde JSON.
 
-## Why Rust to JavaScript?
+rustc checks every program before JavaScript is emitted. Unsupported
+constructs are refused with diagnostics. Tests compare behavior with native
+Rust and check generated output; documented differences and remaining gaps
+are in the [semantics](docs/guide/semantics.md) and
+[limitations](docs/guide/limitations.md).
 
-Rust gives us a powerful way to describe programs and catch mistakes before
-they run. JavaScript gives us the runtime and ecosystem in which much of our
-software already lives: browsers, React, npm packages, and tools such as Vite
-and Bun.
+## Rust → JavaScript
 
-We want to use them together. Write a React component in Rust, import a
-JavaScript package, call a browser API, and inspect the result in DevTools.
-Let Rust check the program and let JavaScript run it.
-
-WebAssembly provides a way to run compiled Rust in the browser. Rust.js explores
-a different compilation target: JavaScript itself. Its output is ordinary ES
-modules and JSX that existing JavaScript applications can import, debug, and
-build with their usual tools.
-
-The longer-term motivation is Rust across the application stack. A server can
-use native Rust while a frontend uses Rust.js, with shared types and data
-models describing the contract between them. Support for
-`#[derive(Serialize, Deserialize)]` is one step toward that: for supported
-types and `#[serde(...)]` attributes, generated code writes and reads JSON
-with serde_json's behavior, including its deserialization errors.
-
-## What that looks like
-
-A React component written in Rust:
+A React counter:
 
 ```rust
 pub fn App() -> JSX::Element {
@@ -73,143 +61,29 @@ export function App() {
 ```
 
 Imports omitted; see the [React guide](react/README.md) for a complete example.
-
-The component remains a function, state remains a React hook, and the event
-handler remains an arrow function. The `| 0` keeps the addition within a signed
-32-bit integer, following Rust.js's release-style integer arithmetic.
-
-## Philosophy
-
-### Keep Rust's compiler in charge
-
-rustc handles parsing, macro expansion, name resolution, types, traits,
-ownership, lifetimes, and borrow checking. Rust.js uses its checked program
-representation to generate JavaScript.
-
-A program must pass Rust's checks before Rust.js emits output. Passing those
-checks is necessary, but the program must also use constructs that Rust.js
-supports. Unsupported constructs produce compiler errors.
-
-### Generated code is part of the product
-
-You should be able to open the generated file, understand it, debug it, and
-call it from JavaScript. Names, module structure, formatting, and source maps
-all matter because people will work with this code.
-
-That starts with representations a JavaScript programmer would recognize:
-
-| Rust | JavaScript |
-| --- | --- |
-| `struct` | object |
-| tuple | array |
-| closure | arrow function |
-| `Vec<T>` | `Array` |
-| `HashMap<K, V>` | `Map`, for supported key types |
-| `HashSet<T>` | `Set`, for supported element types |
-| `Option<T>` | usually a value or `undefined`; generic code boxes ambiguous values |
-| `async` / `.await` | `async` / `await`, with promises |
-| module | ES module |
-
-Runtime helpers are imported where the required behavior needs them, from
-[`@rust-js/std`](std/README.md), released with the compiler, as
-ReScript's are from `@rescript/runtime`: `import { $index } from "@rust-js/std";`.
-Each helper should earn its place; readable output is a design constraint
-throughout the compiler. What std does that reaches no memory, a
-`Peekable`'s `next`, is std's own body, compiled from the MIR the toolchain
-ships into the same package, imported the same way
-([ADR 0561](docs/decisions/0561-std-bodies.md)).
-
-### Work with JavaScript's runtime
-
-Rust and JavaScript have different runtime models. Reproducing every detail of
-native Rust would require machinery that can obscure the generated program.
-Rust.js favors JavaScript's own building blocks and makes the resulting
-semantic choices explicit.
-
-For example, calling an async function starts its work immediately, up to the
-first `await`, just as it does in JavaScript. Native Rust futures wait until
-they are polled. This choice lets JavaScript callers receive an ordinary
-promise and lets the JavaScript event loop run the work without a Rust executor.
-It also means a future that is never awaited can still have effects.
-
-These differences belong in the design, documentation, and tests.
-[How Rust behaves in Rust.js](docs/guide/semantics.md) lists each one, as it is
-today, and the [design decisions](docs/README.md) record their reasons and
-costs. When a feature has no supported translation, compilation fails
-clearly.
-
-### Make interop fundamental
-
-Importing JavaScript packages, exporting functions, using DOM APIs, and working
-with existing bundlers are core concerns. A Rust component should fit into a
-React application, and its output should remain useful to someone writing
-JavaScript.
-
-### Test the promise in real programs
-
-Where behavior should match native Rust, run the same program through both
-implementations and compare the results. Snapshot the generated JavaScript
-so changes to its readability can be reviewed too.
-
-Real applications test how those pieces fit together. The playground is
-written in Rust, compiled by Rust.js, and built with React and Vite. Developing
-it exercises the same compiler, bindings, and tooling that other applications
-use.
-
-## What works today
-
-Rust.js supports a growing subset of Rust aimed at JavaScript applications:
-
-- structs, tuples, enums, pattern matching, and methods
-- traits and generics within the [supported subset](docs/decisions/0049-traits-and-generics.md)
-- closures, iterators, `Option`, `Result`, and common collection operations
-- strings, formatting, and `async` / `await`
-- ES modules, JavaScript imports, and DOM bindings generated from WebIDL
-- React, JSX, Vite, Fast Refresh, and source maps
-- serde-compatible JSON writing and reading, `serde_json::Value` and `json!`
-  included (see the [design decisions](docs/README.md))
-
-Support is specific to each feature. For example, a `HashMap` iterates in
-insertion order, and `std::thread::spawn` and a `u128` in JSON are refused.
-[How Rust behaves in Rust.js](docs/guide/semantics.md) says what each part of Rust
-does today and how it differs from native Rust, and
-[the known limitations](docs/guide/limitations.md) what's refused.
+The `| 0` preserves signed 32-bit wrapping arithmetic.
 
 ## Get started
 
-Install [Bun](https://bun.sh/) and [Rust](https://rustup.rs/), then run these
-commands from the repository root.
-The repository pins the required Rust release and components.
+Install [Bun](https://bun.sh/) and [rustup](https://rustup.rs/), then create
+a React + Vite app:
 
 ```bash
-bun run setup
-bun run build
-bun run react-example                 # React + Vite at localhost:5173
-cd examples/vite-react && bunx rust-js build   # in another terminal, after you edit src/App.rs
+bun create @rust-js@latest my-app
+cd my-app
+# Run the rustup toolchain install command printed by the generator.
+bun install
+bun run dev
 ```
 
-An app's Rust is compiled one way: `rust-js build`, run in the app beside
-its own dev server, `next dev` or `vite`, which writes each module's JS and
-`.d.ts` beside its Rust ([ADR 0412](docs/decisions/0412-rust-js-build-is-its-own-process.md)).
+After editing Rust, run `bunx rust-js build` in another terminal in the app's
+directory. It writes JavaScript beside the Rust; the dev server picks it up.
+There is no watch mode. See the [setup tutorial](docs/guide/tutorial/vite.md)
+for host and toolchain requirements, or use `--template next` to create a
+Next.js app.
 
-## Testing
+## Contribute
 
-Run `bun run typecheck` for strict TypeScript checking with the pinned TypeScript 7 compiler.
-This checks scripts, tests, generators, and browser code without building Rust.
-Bun runs TypeScript directly but does not type-check it. The manual Check workflow
-also runs this command. JavaScript dependencies and generated JavaScript are not
-subject to strict source checking.
-
-Run `bun run test` for native Rust comparisons, output snapshots, compiler
-diagnostics, source maps, React, browser, and Vite integration tests, the
-files side by side ([ADR 0104](docs/decisions/0104-parallel-tests.md)), or
-`bun run test:serial` one after another.
-Run `bun run fmt` to format Rust and playground JSX, or `bun run fmt:check` to check.
-Run `bun run` to list all tasks.
-
-## Explore
-
-[Roadmap](ROADMAP.md) · [Design decisions](docs/README.md) · [Examples](examples/) ·
-[React + Vite](examples/vite-react/README.md) ·
-[DOM bindings](webapi/README.md) · [Browser tests](browser/README.md) ·
-[Compiler in WebAssembly](wasm/README.md)
+See [Contributing](CONTRIBUTING.md) for the correctness and review standards,
+[Development](DEVELOPMENT.md) for setup and checks, and
+[Design decisions](docs/README.md) for the reasoning behind the compiler.
