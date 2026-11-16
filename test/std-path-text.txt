@@ -1,10 +1,8 @@
 # Each file's asks of a std path's text, `std_path(`, a `"std::` literal, and
 # `def_path_str(` tested against text (#1681's change 2, the DefId step): a
-# ratchet the passes onto the `StdPath` table lower
-# (test/architecture-std-paths.test.ts). What's left, and why.
+# ratchet the passes onto the `StdPath` table lowered to what's text by
+# design (test/architecture-std-paths.test.ts): what's left, and why.
 #
-# The iterators' recognizers, the DefId step's next pass, m1-lisa's.
-src/lower/recognition/iterators.rs	149
 # `std_path` itself, std's path's text, which the table's rows are: `core::`
 # and `alloc::` written `std::`.
 src/lower/recognition/std_crates.rs	1

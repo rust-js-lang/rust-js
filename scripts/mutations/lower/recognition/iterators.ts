@@ -65,7 +65,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `flat_map()`'s function with a destructor isn't seen to be held by it, and is never dropped (ADR 0991)",
     file: "src/lower/recognition/iterators.rs",
-    find: '            "std::iter::FlatMap" => return Some((args.type_at(2), HeldFolded::Alone)),\n',
+    find: "            Some(StdPath::IterFlatMap) => return Some((args.type_at(2), HeldFolded::Alone)),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^adapter_functions_dropped.rs$"],
   },
@@ -83,8 +83,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `LinkedList`'s `into_iter()` isn't the array's items it owns: its drop reads std's field, `value.list`, of JS's iterator, `TypeError` (#377, ADR 0970)",
     file: "src/lower/recognition/iterators.rs",
-    find: '                    | "std::collections::linked_list::IntoIter"\n',
-    replace: "",
+    find: "                    // A list's, which is an array as a deque is (ADR 0316).\n                    | StdPath::LinkedListIntoIter\n",
+    replace: "                    // A list's, which is an array as a deque is (ADR 0316).\n",
     tests: ["test/corpus.test.ts", "-t", "^linked_list_into_iter.rs$"],
   },
   {
@@ -92,8 +92,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `Box<[T; N]>`'s `into_iter()`, 1.99's `BoxedArrayIntoIter`, isn't its array's items: with std's structs alone a `rev()` of one is refused, and `Array.from(names).map(f)` copies what `names.map(f)` reads (ADR 0941)",
     file: "src/lower/recognition/iterators.rs",
-    find: '                    | "std::boxed::BoxedArrayIntoIter"\n',
-    replace: "",
+    find: "                    // 0941).\n                    | StdPath::BoxedArrayIntoIter\n",
+    replace: "                    // 0941).\n",
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^boxed_array_iter.rs$"],
   },
@@ -101,9 +101,8 @@ export const mutations: Mutation[] = [
     name: "vec-into-iter-unknown",
     breaks: "a clone of a `Vec`'s `into_iter()` is refused",
     file: "src/lower/recognition/iterators.rs",
-    find: '            "std::vec::IntoIter"\n                    | "std::vec::Drain"\n',
-    replace:
-      '            "std::vec::Nothing"\n                    | "std::vec::Drain"\n',
+    find: "                StdPath::VecIntoIter\n                    | StdPath::VecDrain\n",
+    replace: "                StdPath::AllocLayout\n                    | StdPath::VecDrain\n",
     tests: ["test/corpus.test.ts", "-t", "iterator_clones"],
   },
   {
@@ -148,8 +147,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`skip(n)` of a `repeat` isn't closed to drop its value, and is refused",
     file: "src/lower/recognition/iterators.rs",
-    find: '            "std::iter::Take"\n            | "std::iter::Skip"\n',
-    replace: '            "std::iter::Take"\n',
+    find: "            Some(StdPath::IterTake\n            | StdPath::IterSkip\n",
+    replace: "            Some(StdPath::IterTake\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_rev_nths_its_own_back.rs$"],
   },
   {
@@ -174,8 +173,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a vector's `drain` isn't an iterator that owns what it took out, so one of values with destructors is refused",
     file: "src/lower/recognition/iterators.rs",
-    find: '            "std::vec::IntoIter"\n                    | "std::vec::Drain"\n',
-    replace: '            "std::vec::IntoIter"\n',
+    find: "                StdPath::VecIntoIter\n                    | StdPath::VecDrain\n",
+    replace: "                StdPath::VecIntoIter\n",
     tests: ["test/corpus.test.ts", "-t", "^drain_destructors.rs$"],
   },
   {
@@ -194,9 +193,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `BinaryHeap`'s `into_iter()` is taken to drop what it passes as one slice and take its `last` by its back, as a `Vec`'s does, where std's defaults drop each it passes from the back and fold it (#648)",
     file: "src/lower/recognition/iterators.rs",
-    find: '            "std::vec::IntoIter" | "std::array::IntoIter" | "std::collections::vec_deque::IntoIter"\n',
-    replace:
-      '            "std::vec::IntoIter"\n                | "std::array::IntoIter"\n                | "std::collections::vec_deque::IntoIter"\n                | "std::collections::binary_heap::IntoIter"\n',
+    find: "            Some(StdPath::VecIntoIter | StdPath::ArrayIntoIter | StdPath::VecDequeIntoIter)\n",
+    replace: "            Some(StdPath::VecIntoIter | StdPath::ArrayIntoIter | StdPath::VecDequeIntoIter | StdPath::BinaryHeapIntoIter)\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_last_takes_its_back.rs$"],
   },
   {
@@ -204,8 +202,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a heap's `drain()` isn't an iterator that owns what it took out, so one of values with destructors is refused",
     file: "src/lower/recognition/iterators.rs",
-    find: '                    | "std::collections::binary_heap::Drain"\n',
-    replace: "",
+    find: "                    | StdPath::VecDequeDrain\n                    | StdPath::BinaryHeapDrain\n",
+    replace: "                    | StdPath::VecDequeDrain\n",
     tests: ["test/corpus.test.ts", "-t", "^heap_destructors.rs$"],
   },
   {
@@ -267,8 +265,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `map` of an iterator of items with a destructor is refused, not closed to drop them",
     file: "src/lower/recognition/iterators.rs",
-    find: '            | "std::iter::Map"\n',
-    replace: "",
+    find: "            | StdPath::IterSkip\n            | StdPath::IterMap\n",
+    replace: "            | StdPath::IterSkip\n",
     tests: ["test/corpus.test.ts", "-t", "^adapter_drops.rs$"],
   },
   {
@@ -288,8 +286,8 @@ export const mutations: Mutation[] = [
     name: "array-iterator-debug-misnamed",
     breaks: "a `Vec`'s `IntoIter` shows as a slice's `Iter`",
     file: "src/lower/recognition/iterators.rs",
-    find: '            "std::vec::IntoIter" => Some("IntoIter"),\n',
-    replace: '            "std::vec::IntoIter" => Some("Iter"),\n',
+    find: "            Some(StdPath::VecIntoIter) => Some(\"IntoIter\"),\n",
+    replace: "            Some(StdPath::VecIntoIter) => Some(\"Iter\"),\n",
     tests: ["test/corpus.test.ts", "-t", "^fused_iterators.rs$"],
   },
   {
@@ -306,7 +304,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `Cycle` isn't closed as it's dropped, so what it holds isn't dropped",
     file: "src/lower/recognition/iterators.rs",
-    find: '            "std::iter::Cycle" => sources.next().filter(|&source| self.array_source(source).is_none()),\n',
+    find: "            Some(StdPath::IterCycle) => sources.next().filter(|&source| self.array_source(source).is_none()),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^cycled_iterators.rs$"],
   },
@@ -315,9 +313,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `FlatMap` held is a std type refused, not closed to drop what it holds",
     file: "src/lower/recognition/iterators.rs",
-    find: '            "std::iter::FlatMap" => {\n                let (source, inner) = (sources.next()?, sources.next()?);\n',
-    replace:
-      '            "std::iter::FlatMapNot" => {\n                let (source, inner) = (sources.next()?, sources.next()?);\n',
+    find: "            Some(StdPath::IterFlatMap) => {\n                let (source, inner) = (sources.next()?, sources.next()?);\n",
+    replace: "            Some(StdPath::AllocLayout) => {\n                let (source, inner) = (sources.next()?, sources.next()?);\n",
     tests: ["test/corpus.test.ts", "-t", "^flat_map_drops.rs$"],
   },
   {
@@ -334,9 +331,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `Rev` of an array's items with a destructor held is a std type refused",
     file: "src/lower/recognition/iterators.rs",
-    find: '            "std::iter::Rev" => {\n                let source = sources.next()?;\n',
-    replace:
-      '            "std::iter::Rev" if false => {\n                let source = sources.next()?;\n',
+    find: "            Some(StdPath::IterRev) => {\n                let source = sources.next()?;\n",
+    replace: "            Some(StdPath::IterRev) if false => {\n                let source = sources.next()?;\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_drops.rs$"],
   },
   {
@@ -344,8 +340,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `filter_map` or `map_while` held of items with a destructor is a std type refused",
     file: "src/lower/recognition/iterators.rs",
-    find: '            | "std::iter::FilterMap"\n            | "std::iter::MapWhile" => self.closing_source(sources.next()?)?,\n',
-    replace: "            => self.closing_source(sources.next()?)?,\n",
+    find: "            | StdPath::IterFilterMap\n            | StdPath::IterMapWhile) => self.closing_source(sources.next()?)?,\n",
+    replace: "            ) => self.closing_source(sources.next()?)?,\n",
     tests: ["test/corpus.test.ts", "-t", "^held_filter_map_drops.rs$"],
   },
   {
@@ -353,18 +349,16 @@ export const mutations: Mutation[] = [
     breaks:
       "a `LinkedList`'s `iter()` is a JS helper of it, which can't be cloned where it is",
     file: "src/lower/recognition/iterators.rs",
-    find: '            "std::option::Iter" | "std::option::IntoIter" | "std::result::Iter" | "std::collections::linked_list::Iter"\n',
-    replace:
-      '            "std::option::Iter" | "std::option::IntoIter" | "std::result::Iter"\n',
+    find: "            Some(StdPath::OptionIter | StdPath::OptionIntoIter | StdPath::ResultIter | StdPath::LinkedListIter\n",
+    replace: "            Some(StdPath::OptionIter | StdPath::OptionIntoIter | StdPath::ResultIter\n",
     tests: ["test/corpus.test.ts", "-t", "^std_iterator_clones.rs$"],
   },
   {
     name: "option-iter-not-items",
     breaks: "an `Option`'s `iter()` can't be cloned where it is",
     file: "src/lower/recognition/iterators.rs",
-    find: '            "std::option::Iter" | "std::option::IntoIter" | "std::result::Iter" | "std::collections::linked_list::Iter"\n',
-    replace:
-      '            "std::result::Iter" | "std::collections::linked_list::Iter"\n',
+    find: "            Some(StdPath::OptionIter | StdPath::OptionIntoIter | StdPath::ResultIter | StdPath::LinkedListIter\n",
+    replace: "            Some(StdPath::ResultIter | StdPath::LinkedListIter\n",
     tests: ["test/corpus.test.ts", "-t", "^std_iterator_clones.rs$"],
   },
   {
@@ -425,7 +419,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `copied()` or `cloned()` of an iterator with a destructor isn't closed to drop it, and is refused",
     file: "src/lower/recognition/iterators.rs",
-    find: '            // A copy or a clone of each it steps (ADR 0547).\n            | "std::iter::Copied"\n            | "std::iter::Cloned"\n',
+    find: "            // A copy or a clone of each it steps (ADR 0547).\n            | StdPath::IterCopied\n            | StdPath::IterCloned\n",
     replace: "",
     tests: ["test/iterator-forms.test.ts", "-t", "^last_takes_its_source with"],
   },
@@ -472,9 +466,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `Successors` holding a value with a destructor is refused, as a std type that holds one",
     file: "src/lower/recognition/iterators.rs",
-    find: '            "std::iter::Repeat" | "std::iter::RepeatN" | "std::iter::Successors" => sources.next(),\n',
-    replace:
-      '            "std::iter::Repeat" | "std::iter::RepeatN" => sources.next(),\n',
+    find: "            Some(StdPath::IterRepeat | StdPath::IterRepeatN | StdPath::IterSuccessors) => sources.next(),\n",
+    replace: "            Some(StdPath::IterRepeat | StdPath::IterRepeatN) => sources.next(),\n",
     tests: ["test/corpus.test.ts", "-t", "^successors_drops.rs$"],
   },
   {
@@ -482,7 +475,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a map's or a set's `into_iter()` of values with a destructor is refused, as a std type holding one",
     file: "src/lower/recognition/iterators.rs",
-    find: '                    | "std::collections::btree_map::IntoIter"\n                    | "std::collections::hash_set::IntoIter"\n                    | "std::collections::btree_set::IntoIter"\n',
+    find: "                    | StdPath::BtreeMapIntoIter\n                    | StdPath::HashSetIntoIter\n                    | StdPath::BtreeSetIntoIter\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^map_into_iter_drops.rs$"],
   },
@@ -500,8 +493,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an `Option`'s `into_iter()` can't be stepped from its back, so `chain(Some(x)).rev()` is refused",
     file: "src/lower/recognition/iterators.rs",
-    find: '"std::option::Iter" | "std::option::IntoIter" | ',
-    replace: '"std::option::Iter" | ',
+    find: "StdPath::OptionIter | StdPath::OptionIntoIter | ",
+    replace: "StdPath::OptionIter | ",
     tests: ["test/corpus.test.ts", "-t", "^rev_chain.rs$"],
   },
   {
@@ -509,7 +502,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a slice's chunks and windows aren't known for the arrays they're made, so stepping one from its back is refused",
     file: "src/lower/recognition/iterators.rs",
-    find: '            | "std::slice::Chunks" | "std::slice::ChunksMut" | "std::slice::Windows"\n',
+    find: "            | StdPath::SliceChunks | StdPath::SliceChunksMut | StdPath::SliceWindows\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^chunks_from_their_back.rs$"],
   },
@@ -526,8 +519,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `VecDeque`'s `into_iter()` doesn't own its items: behind `fuse()` its drop reads std's `inner`, which throws, and what `take_while` leaves is never dropped (#203)",
     file: "src/lower/recognition/iterators.rs",
-    find: '                    | "std::collections::vec_deque::IntoIter"\n',
-    replace: "",
+    find: "                    | StdPath::VecDequeIntoIter\n                    | StdPath::BinaryHeapIntoIter\n",
+    replace: "                    | StdPath::BinaryHeapIntoIter\n",
     tests: ["test/corpus.test.ts", "-t", "^deque_into_iter_drops.rs$"],
   },
   {
@@ -535,8 +528,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an `Inspect` whose closure took what has a destructor is refused, not dropped after its source as a `Map`'s is",
     file: "src/lower/recognition/iterators.rs",
-    find: '            "std::iter::Filter" | "std::iter::FilterMap" | "std::iter::Inspect" => HeldFolded::Before,\n',
-    replace: '            "std::iter::Filter" | "std::iter::FilterMap" => HeldFolded::Before,\n',
+    find: "            Some(StdPath::IterFilter | StdPath::IterFilterMap | StdPath::IterInspect) => HeldFolded::Before,\n",
+    replace: "            Some(StdPath::IterFilter | StdPath::IterFilterMap) => HeldFolded::Before,\n",
     tests: [
       "test/corpus.test.ts",
       "-t",
@@ -558,7 +551,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a map's `into_keys()` and `into_values()` own nothing, so `into_values().take(n)` is `Array.from(m.values()).slice(0, n)`, which never drops what it leaves (#432)",
     file: "src/lower/recognition/iterators.rs",
-    find: '                    | "std::collections::hash_map::IntoKeys"\n                    | "std::collections::hash_map::IntoValues"\n                    | "std::collections::btree_map::IntoKeys"\n                    | "std::collections::btree_map::IntoValues"\n',
+    find: "                    | StdPath::HashMapIntoKeys\n                    | StdPath::HashMapIntoValues\n                    | StdPath::BtreeMapIntoKeys\n                    | StdPath::BtreeMapIntoValues\n",
     replace: "",
     tests: [
       "test/corpus.test.ts",
@@ -570,7 +563,7 @@ export const mutations: Mutation[] = [
     name: "owned-vec-items-unsaid",
     breaks: "a `for` over a `Vec` it owns, `for s in v`, is a `for…of`, where one over its slice counts (ADR 1042)",
     file: "src/lower/recognition/iterators.rs",
-    find: "            ) && std_path(self.tcx, adt.did()) == \"std::vec::IntoIter\")\n",
+    find: "            ) && is_std_path(self.tcx, adt.did(), StdPath::VecIntoIter))\n",
     replace: "            ) && false)\n",
     tests: ["test/corpus.test.ts", "-t", "^array_counted_loops.rs$"],
     snapshots: true,
@@ -579,32 +572,32 @@ export const mutations: Mutation[] = [
     name: "map-folded-before",
     breaks: "a `map`'s function, folded inside another's, drops before what drops with the fold's `f` (#710)",
     file: "src/lower/recognition/iterators.rs",
-    find: "            \"std::iter::Map\" => HeldFolded::After,\n",
-    replace: "            \"std::iter::Map\" => HeldFolded::Before,\n",
+    find: "            Some(StdPath::IterMap) => HeldFolded::After,\n",
+    replace: "            Some(StdPath::IterMap) => HeldFolded::Before,\n",
     tests: ["test/corpus.test.ts", "-t", "^fold_drops_moved_function_first.rs$"],
   },
   {
     name: "filter-folded-after",
     breaks: "a `filter`'s function, folded, drops after the function of the `map` over it (#710)",
     file: "src/lower/recognition/iterators.rs",
-    find: "            \"std::iter::Filter\" | \"std::iter::FilterMap\" | \"std::iter::Inspect\" => HeldFolded::Before,\n",
-    replace: "            \"std::iter::Filter\" | \"std::iter::FilterMap\" | \"std::iter::Inspect\" => HeldFolded::After,\n",
+    find: "            Some(StdPath::IterFilter | StdPath::IterFilterMap | StdPath::IterInspect) => HeldFolded::Before,\n",
+    replace: "            Some(StdPath::IterFilter | StdPath::IterFilterMap | StdPath::IterInspect) => HeldFolded::After,\n",
     tests: ["test/corpus.test.ts", "-t", "^fold_drops_moved_function_first.rs$"],
   },
   {
     name: "flat-map-folded-after",
     breaks: "a `flat_map`'s function is folded as a `map`'s, with what drops with its `f`, after its source (#710)",
     file: "src/lower/recognition/iterators.rs",
-    find: "            \"std::iter::FlatMap\" => return Some((args.type_at(2), HeldFolded::Alone)),\n",
-    replace: "            \"std::iter::FlatMap\" => return Some((args.type_at(2), HeldFolded::After)),\n",
+    find: "            Some(StdPath::IterFlatMap) => return Some((args.type_at(2), HeldFolded::Alone)),\n",
+    replace: "            Some(StdPath::IterFlatMap) => return Some((args.type_at(2), HeldFolded::After)),\n",
     tests: ["test/corpus.test.ts", "-t", "^fold_drops_moved_function_first.rs$"],
   },
   {
     name: "take-while-folded",
     breaks: "a `take_while`'s predicate is moved by its fold, so it drops before what's left, where std's `try_fold` keeps it (#710)",
     file: "src/lower/recognition/iterators.rs",
-    find: "            \"std::iter::TakeWhile\" | \"std::iter::SkipWhile\" | \"std::iter::MapWhile\" => HeldFolded::Kept,\n",
-    replace: "            \"std::iter::TakeWhile\" | \"std::iter::SkipWhile\" | \"std::iter::MapWhile\" => HeldFolded::After,\n",
+    find: "            Some(StdPath::IterTakeWhile | StdPath::IterSkipWhile | StdPath::IterMapWhile) => HeldFolded::Kept,\n",
+    replace: "            Some(StdPath::IterTakeWhile | StdPath::IterSkipWhile | StdPath::IterMapWhile) => HeldFolded::After,\n",
     tests: ["test/corpus.test.ts", "-t", "^fold_drops_moved_function_first.rs$"],
   },
 
@@ -612,8 +605,8 @@ export const mutations: Mutation[] = [
     name: "scan-not-closed-on-drop",
     breaks: "a `scan()` isn't closed to drop what it holds, so a compiled one a consumer's fold took is dropped again by its fields, its source twice (#741, #748)",
     file: "src/lower/recognition/iterators.rs",
-    find: "            \"std::iter::Scan\" => {\n",
-    replace: "            \"std::iter::Scan\" if false => {\n",
+    find: "            Some(StdPath::IterScan) => {\n",
+    replace: "            Some(StdPath::IterScan) if false => {\n",
     tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^scan_dropped_once.rs$|^scan_dropped_once with"],
   },
   {
@@ -636,15 +629,15 @@ export const mutations: Mutation[] = [
     name: "btree-extract-if-not-closed-on-drop",
     breaks: "a B-tree's `extract_if` of owned bounds with a destructor isn't closed where a variable that holds it is dropped, so its bounds are never dropped (#945)",
     file: "src/lower/recognition/iterators.rs",
-    find: '            "std::collections::btree_map::ExtractIf" => {\n',
-    replace: '            "std::collections::btree_map::ExtractIf" if false => {\n',
+    find: "            Some(StdPath::BtreeMapExtractIf) => {\n",
+    replace: "            Some(StdPath::BtreeMapExtractIf) if false => {\n",
     tests: ["test/corpus.test.ts", "-t", "^extract_if_drops_what_it_holds.rs$"],
   },
   {
     name: "hash-extract-if-not-closed-on-drop",
     breaks: "a hashed map's `extract_if` whose test holds what has a destructor isn't closed where it's dropped, so its test is never dropped (#945)",
     file: "src/lower/recognition/iterators.rs",
-    find: '            "std::collections::hash_map::ExtractIf" => self.dropping_parts(&[sources.nth(2)?]),\n',
+    find: "            Some(StdPath::HashMapExtractIf) => self.dropping_parts(&[sources.nth(2)?]),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^extract_if_drops_what_it_holds.rs$"],
   },
@@ -685,8 +678,8 @@ export const mutations: Mutation[] = [
     name: "once-no-array-of-items",
     breaks: "`iter::once(x)`, `[x]`, isn't taken for an array of items, so its `size_hint()` is refused, \"from its MIR\", where std's is `(1, Some(1))` (#1375)",
     file: "src/lower/recognition/iterators.rs",
-    find: "            | \"std::iter::Once\"",
-    replace: "            | \"std::iter::OnceNever\"",
+    find: "            | StdPath::IterOnce\n",
+    replace: "",
     tests: ["test/corpus.test.ts", "-t", "^once_and_once_with_hint.rs$"],
   },
   {

@@ -69,4 +69,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts"],
     snapshots: true,
   },
+  {
+    name: "std-modules-without-slice",
+    breaks: "`std::slice`, a row asked of as a module, is no row of `STD_MODULES`, so nothing would be under it, a slice's searches no slice's: an internal error at the first question, not a wrong answer",
+    file: "src/lower/recognition/std_paths.rs",
+    find: "    StdPath::SliceMod,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^slice_methods.rs$"],
+  },
 ];

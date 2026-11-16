@@ -5,7 +5,7 @@ use super::*;
 impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// std's `iter::Empty<T>`: `[]`, as `iter::empty()` is (ADR 0128).
     pub(in crate::lower) fn is_iter_empty(&self, ty: Ty<'tcx>) -> bool {
-        matches!(ty.kind(), ty::Adt(empty, _) if std_path(self.tcx, empty.did()) == "std::iter::Empty")
+        matches!(ty.kind(), ty::Adt(empty, _) if is_std_path(self.tcx, empty.did(), StdPath::IterEmpty))
     }
 
     /// What `extend` of a std collection is, of `ty`: a `String`'s, a
@@ -75,14 +75,16 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     pub(in crate::lower) fn steps_past_a_slice(&self, ty: Ty<'tcx>) -> bool {
         let ty = self.reveal(ty.peel_refs());
         let ty::Adt(adt, args) = ty.kind() else { return false };
-        match std_path(self.tcx, adt.did()) {
-            "std::iter::Skip" => self.nths_a_slice(args.type_at(0)),
-            "std::iter::Map"
-            | "std::iter::Inspect"
-            | "std::iter::Fuse"
-            | "std::iter::Peekable"
-            | "std::iter::Enumerate"
-            | "std::iter::Take" => self.steps_past_a_slice(args.type_at(0)),
+        match std_path_item(self.tcx, adt.did()) {
+            Some(StdPath::IterSkip) => self.nths_a_slice(args.type_at(0)),
+            Some(
+                StdPath::IterMap
+                | StdPath::IterInspect
+                | StdPath::IterFuse
+                | StdPath::IterPeekable
+                | StdPath::IterEnumerate
+                | StdPath::IterTake,
+            ) => self.steps_past_a_slice(args.type_at(0)),
             _ => false,
         }
     }
@@ -146,8 +148,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let ty = self.reveal(ty.peel_refs());
         let ty::Adt(adt, _) = ty.kind() else { return false };
         matches!(
-            std_path(self.tcx, adt.did()),
-            "std::vec::IntoIter" | "std::array::IntoIter" | "std::collections::vec_deque::IntoIter"
+            std_path_item(self.tcx, adt.did()),
+            Some(StdPath::VecIntoIter | StdPath::ArrayIntoIter | StdPath::VecDequeIntoIter)
         )
     }
 
@@ -170,35 +172,37 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             std_crate(self.tcx, adt.did().krate),
             Some(StdCrate::Alloc | StdCrate::Std)
         ) && matches!(
-            std_path(self.tcx, adt.did()),
-            "std::vec::IntoIter"
-                    | "std::vec::Drain"
-                    | "std::collections::vec_deque::Drain"
-                    | "std::collections::binary_heap::Drain"
+            std_path_item(self.tcx, adt.did()),
+            Some(
+                StdPath::VecIntoIter
+                    | StdPath::VecDrain
+                    | StdPath::VecDequeDrain
+                    | StdPath::BinaryHeapDrain
                     // A deque's and a heap's `into_iter()`, the array it was
                     // (ADR 0068), as a `Vec`'s is (#203).
-                    | "std::collections::vec_deque::IntoIter"
-                    | "std::collections::binary_heap::IntoIter"
+                    | StdPath::VecDequeIntoIter
+                    | StdPath::BinaryHeapIntoIter
                     // A list's, which is an array as a deque is (ADR 0316).
-                    | "std::collections::linked_list::IntoIter"
-                    | "std::collections::hash_map::Drain"
-                    | "std::collections::hash_set::Drain"
+                    | StdPath::LinkedListIntoIter
+                    | StdPath::HashMapDrain
+                    | StdPath::HashSetDrain
                     // A map's or a set's `into_iter()`, the array of its
                     // entries or items (ADR 0059), which owns them.
-                    | "std::collections::hash_map::IntoIter"
-                    | "std::collections::btree_map::IntoIter"
-                    | "std::collections::hash_set::IntoIter"
-                    | "std::collections::btree_set::IntoIter"
+                    | StdPath::HashMapIntoIter
+                    | StdPath::BtreeMapIntoIter
+                    | StdPath::HashSetIntoIter
+                    | StdPath::BtreeSetIntoIter
                     // A map's `into_keys()` and `into_values()`, the array of
                     // its keys or its values (`map_items`), which owns them
                     // (#432).
-                    | "std::collections::hash_map::IntoKeys"
-                    | "std::collections::hash_map::IntoValues"
-                    | "std::collections::btree_map::IntoKeys"
-                    | "std::collections::btree_map::IntoValues"
+                    | StdPath::HashMapIntoKeys
+                    | StdPath::HashMapIntoValues
+                    | StdPath::BtreeMapIntoKeys
+                    | StdPath::BtreeMapIntoValues
                     // A `Box<[T; N]>`'s `into_iter()`, 1.99's, its array (ADR
                     // 0941).
-                    | "std::boxed::BoxedArrayIntoIter"
+                    | StdPath::BoxedArrayIntoIter
+            )
         );
         (self.is_std_type(ty, StdItem::ArrayIntoIter) || owning || self.is_iter_empty(ty)).then_some(true)
     }
@@ -215,7 +219,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             || (matches!(
                 std_crate(self.tcx, adt.did().krate),
                 Some(StdCrate::Alloc | StdCrate::Std)
-            ) && std_path(self.tcx, adt.did()) == "std::vec::IntoIter")
+            ) && is_std_path(self.tcx, adt.did(), StdPath::VecIntoIter))
     }
 
     /// std's iterator adapter, `iter::Map` and the like: a JS iterator's,
@@ -228,7 +232,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// whose drop puts its replacement in place, `$splice`'s, which knows
     /// its back and its length (ADR 0501, #1149).
     pub(crate) fn is_vec_splice(&self, ty: Ty<'tcx>) -> bool {
-        matches!(self.reveal(ty).kind(), ty::Adt(adt, _) if std_path(self.tcx, adt.did()) == "std::vec::Splice")
+        matches!(self.reveal(ty).kind(), ty::Adt(adt, _) if is_std_path(self.tcx, adt.did(), StdPath::VecSplice))
     }
 
     /// The name std's `Debug` gives an iterator over an array, which shows
@@ -242,9 +246,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if self.is_std_type(ty, StdItem::ArrayIntoIter) {
             return Some("IntoIter");
         }
-        match std_path(self.tcx, adt.did()) {
-            "std::vec::IntoIter" => Some("IntoIter"),
-            "std::vec::Drain" => Some("Drain"),
+        match std_path_item(self.tcx, adt.did()) {
+            Some(StdPath::VecIntoIter) => Some("IntoIter"),
+            Some(StdPath::VecDrain) => Some("Drain"),
             _ => None,
         }
     }
@@ -280,11 +284,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     fn held(&self, ty: Ty<'tcx>) -> Option<(Ty<'tcx>, HeldFolded)> {
         let ty = self.reveal(ty);
         let ty::Adt(adt, args) = ty.kind() else { return None };
-        let folded = match std_path(self.tcx, adt.did()) {
-            "std::iter::Map" => HeldFolded::After,
-            "std::iter::Filter" | "std::iter::FilterMap" | "std::iter::Inspect" => HeldFolded::Before,
-            "std::iter::TakeWhile" | "std::iter::SkipWhile" | "std::iter::MapWhile" => HeldFolded::Kept,
-            "std::iter::FlatMap" => return Some((args.type_at(2), HeldFolded::Alone)),
+        let folded = match std_path_item(self.tcx, adt.did()) {
+            Some(StdPath::IterMap) => HeldFolded::After,
+            Some(StdPath::IterFilter | StdPath::IterFilterMap | StdPath::IterInspect) => HeldFolded::Before,
+            Some(StdPath::IterTakeWhile | StdPath::IterSkipWhile | StdPath::IterMapWhile) => HeldFolded::Kept,
+            Some(StdPath::IterFlatMap) => return Some((args.type_at(2), HeldFolded::Alone)),
             _ => return None,
         };
         Some((args.type_at(1), folded))
@@ -296,8 +300,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     pub(crate) fn extract_if_test(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
         let ty = self.reveal(ty);
         let ty::Adt(adt, args) = ty.kind() else { return None };
-        let path = std_path(self.tcx, adt.did());
-        if !(path.starts_with("std::") && path.ends_with("::ExtractIf")) {
+        let extract_if = is_std_crate(self.tcx, adt.did()) && self.tcx.item_name(adt.did()).as_str() == "ExtractIf";
+        if !extract_if {
             return None;
         }
         let types: Vec<Ty<'tcx>> = args.types().collect();
@@ -316,32 +320,32 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let ty = self.reveal(ty);
         let ty::Adt(adt, args) = ty.kind() else { return None };
         let mut sources = args.types();
-        match std_path(self.tcx, adt.did()) {
+        match std_path_item(self.tcx, adt.did()) {
             // And `successors`' next item, which its closing drops.
-            "std::iter::Repeat" | "std::iter::RepeatN" | "std::iter::Successors" => sources.next(),
-            "std::iter::Cycle" => sources.next().filter(|&source| self.array_source(source).is_none()),
-            "std::iter::Take"
-            | "std::iter::Skip"
-            | "std::iter::Map"
-            | "std::iter::Filter"
-            | "std::iter::Enumerate"
-            | "std::iter::SkipWhile"
-            | "std::iter::TakeWhile"
-            | "std::iter::StepBy"
-            | "std::iter::Inspect"
+            Some(StdPath::IterRepeat | StdPath::IterRepeatN | StdPath::IterSuccessors) => sources.next(),
+            Some(StdPath::IterCycle) => sources.next().filter(|&source| self.array_source(source).is_none()),
+            Some(StdPath::IterTake
+            | StdPath::IterSkip
+            | StdPath::IterMap
+            | StdPath::IterFilter
+            | StdPath::IterEnumerate
+            | StdPath::IterSkipWhile
+            | StdPath::IterTakeWhile
+            | StdPath::IterStepBy
+            | StdPath::IterInspect
             // A copy or a clone of each it steps (ADR 0547).
-            | "std::iter::Copied"
-            | "std::iter::Cloned"
+            | StdPath::IterCopied
+            | StdPath::IterCloned
             // `filter_map`'s and `map_while`'s, a `map` and a `filter` or a
             // `take_while` of it (ADR 0518).
-            | "std::iter::FilterMap"
-            | "std::iter::MapWhile" => self.closing_source(sources.next()?)?,
+            | StdPath::IterFilterMap
+            | StdPath::IterMapWhile) => self.closing_source(sources.next()?)?,
             // `scan`'s: its source's, then its function and its state, as
             // `Scan { iter, f, state }` drops them, of each that drops
             // something. Closed whole, std's compiled struct's, whose own fold
             // closes it, so a consumer's drop after drops nothing again
             // (#741, #748).
-            "std::iter::Scan" => {
+            Some(StdPath::IterScan) => {
                 let (source, state, function) = (sources.next()?, sources.next()?, sources.next()?);
                 self.closing_both(source, self.dropping_parts(&[function, state]))
             }
@@ -349,35 +353,35 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             // range, as `ExtractIf { pred, inner: { range, .. } }` drops
             // them, of each that drops something (#945): what it takes out
             // is given, and what it doesn't reach stays.
-            "std::collections::btree_map::ExtractIf" => {
+            Some(StdPath::BtreeMapExtractIf) => {
                 let (range, test) = (sources.nth(2)?, sources.next()?);
                 self.dropping_parts(&[test, range])
             }
-            "std::collections::btree_set::ExtractIf" => {
+            Some(StdPath::BtreeSetExtractIf) => {
                 let (range, test) = (sources.nth(1)?, sources.next()?);
                 self.dropping_parts(&[test, range])
             }
-            "std::collections::hash_map::ExtractIf" => self.dropping_parts(&[sources.nth(2)?]),
-            "std::collections::hash_set::ExtractIf" => self.dropping_parts(&[sources.nth(1)?]),
-            "std::iter::Zip" | "std::iter::Chain" => {
+            Some(StdPath::HashMapExtractIf) => self.dropping_parts(&[sources.nth(2)?]),
+            Some(StdPath::HashSetExtractIf) => self.dropping_parts(&[sources.nth(1)?]),
+            Some(StdPath::IterZip | StdPath::IterChain) => {
                 let (a, b) = (sources.next()?, sources.next()?);
                 self.closing_both(a, self.closing_source(b)?)
             }
             // `flat_map`'s and `flatten`'s: its source, and the inner iterator
             // it steps, of `U`, its function's, or its source's items (ADR
             // 0510).
-            "std::iter::FlatMap" => {
+            Some(StdPath::IterFlatMap) => {
                 let (source, inner) = (sources.next()?, sources.next()?);
                 self.closing_both(source, self.closing_inner(inner)?)
             }
-            "std::iter::Flatten" => {
+            Some(StdPath::IterFlatten) => {
                 let source = sources.next()?;
                 self.closing_both(source, self.closing_inner(self.iterator_item(source)?)?)
             }
             // `rev()`'s of an array's items, stepped from its back (ADR 0516),
             // and of a chain closed to drop what it holds, `$rev`, which
             // closes it as it's closed.
-            "std::iter::Rev" => {
+            Some(StdPath::IterRev) => {
                 let source = sources.next()?;
                 match self.array_source(source) {
                     Some(_) => Some(source),
@@ -485,10 +489,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         };
         let mut types = args.types();
         let first = types.next();
-        let path = std_path(self.tcx, adt.did());
-        let Some(name) = path.strip_prefix("std::iter::") else {
+        let named = std_item_in(self.tcx, adt.did(), StdPath::IterMod);
+        let Some(named) = named else {
             return Vec::new();
         };
+        let name = named.as_str();
         let into_iter = |into: Ty<'tcx>| self.iterator_of(into).map(DropsExhausted);
         let clones = stepping_clones(self.tcx, self.typing_env, ty).map(Clones);
         match name {
@@ -605,8 +610,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     pub(in crate::lower) fn is_tree_iter(&self, ty: Ty<'tcx>) -> bool {
         let ty = self.reveal(ty);
         matches!(ty.kind(), ty::Adt(adt, _) if {
-            let path = std_path(self.tcx, adt.did());
-            path.starts_with("std::collections::btree_map::") || path.starts_with("std::collections::btree_set::")
+            std_path_under(self.tcx, adt.did(), StdPath::CollectionsBtreeMapMod)
+                || std_path_under(self.tcx, adt.did(), StdPath::CollectionsBtreeSetMod)
         })
     }
 
@@ -614,7 +619,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// them (ADR 0099).
     pub(in crate::lower) fn is_slice_iter_mut(&self, ty: Ty<'tcx>) -> bool {
         let ty = self.reveal(ty);
-        matches!(ty.kind(), ty::Adt(adt, _) if std_path(self.tcx, adt.did()) == "std::slice::IterMut")
+        matches!(ty.kind(), ty::Adt(adt, _) if is_std_path(self.tcx, adt.did(), StdPath::SliceIterMut))
     }
 
     /// `FromIterator`, the trait `collect` makes what it collects with.
@@ -743,16 +748,16 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// windows.
     pub(in crate::lower) fn iterates_items(&self, ty: Ty<'tcx>) -> bool {
         let ty = self.reveal(ty);
-        matches!(ty.kind(), ty::Adt(adt, _) if matches!(std_path(self.tcx, adt.did()),
-            "std::option::Iter" | "std::option::IntoIter" | "std::result::Iter" | "std::collections::linked_list::Iter"
+        matches!(ty.kind(), ty::Adt(adt, _) if matches!(std_path_item(self.tcx, adt.did()),
+            Some(StdPath::OptionIter | StdPath::OptionIntoIter | StdPath::ResultIter | StdPath::LinkedListIter
             // `once(x)`'s, `[x]`, as an `Option`'s `into_iter()` is (#1375).
-            | "std::iter::Once"
+            | StdPath::IterOnce
             // A slice's chunks and windows, the array of them `$chunks` and
             // the like make (ADR 0335).
-            | "std::slice::Chunks" | "std::slice::ChunksMut" | "std::slice::Windows"
-            | "std::slice::ChunksExact" | "std::slice::ChunksExactMut"
-            | "std::slice::RChunks" | "std::slice::RChunksMut"
-            | "std::slice::RChunksExact" | "std::slice::RChunksExactMut"))
+            | StdPath::SliceChunks | StdPath::SliceChunksMut | StdPath::SliceWindows
+            | StdPath::SliceChunksExact | StdPath::SliceChunksExactMut
+            | StdPath::SliceRChunks | StdPath::SliceRChunksMut
+            | StdPath::SliceRChunksExact | StdPath::SliceRChunksExactMut)))
             // A byte's escape, its bytes (ADR 0558), and a case mapping's or
             // a text escape's `char`s (ADRs 0070, 0971).
             || is_byte_escape(self.tcx, ty)
@@ -762,7 +767,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 
     pub(in crate::lower) fn is_deque_iter(&self, ty: Ty<'tcx>) -> bool {
         let ty = self.reveal(ty);
-        matches!(ty.kind(), ty::Adt(adt, _) if std_path(self.tcx, adt.did()) == "std::collections::vec_deque::Iter")
+        matches!(ty.kind(), ty::Adt(adt, _) if is_std_path(self.tcx, adt.did(), StdPath::VecDequeIter))
     }
 
     pub(in crate::lower) fn is_array_iter(&self, ty: Ty<'tcx>) -> bool {
@@ -773,64 +778,63 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if self.search_runs_code(ty) {
             return false;
         }
-        let path = std_path(self.tcx, adt.did());
+        let item = std_path_item(self.tcx, adt.did());
         let krate = std_crate(self.tcx, adt.did().krate);
+        let under_iter = std_path_under(self.tcx, adt.did(), StdPath::IterMod);
         matches!(krate, Some(StdCrate::Core | StdCrate::Alloc))
-            && (path.contains("::iter::")
-                || [
-                    "std::slice::Iter",
-                    "std::vec::IntoIter",
-                    "std::str::SplitN",
-                    "std::str::RSplitN",
-                    "std::str::RSplit",
-                    "std::str::SplitTerminator",
-                    "std::str::MatchIndices",
-                    "std::str::Matches",
-                    "std::str::SplitWhitespace",
-                    "std::str::Lines",
-                    "std::array::IntoIter",
-                    "std::collections::vec_deque::Iter",
-                    "std::collections::vec_deque::IntoIter",
-                    "std::collections::binary_heap::Iter",
-                    "std::collections::binary_heap::IntoIter",
-                    "std::option::Iter",
-                    "std::option::IntoIter",
-                    "std::result::IterMut",
-                    // A slice's chunks, windows and splits, copies or views (ADR 0335).
-                    "std::slice::Chunks",
-                    "std::slice::ChunksMut",
-                    "std::slice::Windows",
-                    "std::slice::ChunksExact",
-                    "std::slice::ChunksExactMut",
-                    "std::slice::RChunks",
-                    "std::slice::RChunksMut",
-                    "std::slice::RChunksExact",
-                    "std::slice::RChunksExactMut",
-                    "std::slice::Split",
-                    "std::slice::SplitMut",
-                    "std::slice::SplitN",
-                    "std::slice::SplitNMut",
-                    "std::slice::RSplit",
-                    "std::slice::RSplitMut",
-                    "std::slice::RSplitN",
-                    "std::slice::RSplitNMut",
-                    "std::slice::SplitInclusive",
-                    "std::slice::SplitInclusiveMut",
-                    "std::slice::ChunkBy",
-                    "std::slice::ChunkByMut",
-                ]
-                .contains(&path)
+            && (under_iter
+                || matches!(
+                    item,
+                    Some(
+                        StdPath::SliceIter
+                            | StdPath::VecIntoIter
+                            | StdPath::StrSplitN
+                            | StdPath::StrRSplitN
+                            | StdPath::StrRSplit
+                            | StdPath::StrSplitTerminator
+                            | StdPath::StrMatchIndices
+                            | StdPath::StrMatches
+                            | StdPath::StrSplitWhitespace
+                            | StdPath::StrLines
+                            | StdPath::ArrayIntoIter
+                            | StdPath::VecDequeIter
+                            | StdPath::VecDequeIntoIter
+                            | StdPath::BinaryHeapIter
+                            | StdPath::BinaryHeapIntoIter
+                            | StdPath::OptionIter
+                            | StdPath::OptionIntoIter
+                            | StdPath::ResultIterMut
+                            // A slice's chunks, windows and splits, copies or views (ADR 0335).
+                            | StdPath::SliceChunks
+                            | StdPath::SliceChunksMut
+                            | StdPath::SliceWindows
+                            | StdPath::SliceChunksExact
+                            | StdPath::SliceChunksExactMut
+                            | StdPath::SliceRChunks
+                            | StdPath::SliceRChunksMut
+                            | StdPath::SliceRChunksExact
+                            | StdPath::SliceRChunksExactMut
+                            | StdPath::SliceSplit
+                            | StdPath::SliceSplitMut
+                            | StdPath::SliceSplitN
+                            | StdPath::SliceSplitNMut
+                            | StdPath::SliceRSplit
+                            | StdPath::SliceRSplitMut
+                            | StdPath::SliceRSplitN
+                            | StdPath::SliceRSplitNMut
+                            | StdPath::SliceSplitInclusive
+                            | StdPath::SliceSplitInclusiveMut
+                            | StdPath::SliceChunkBy
+                            | StdPath::SliceChunkByMut
+                    )
+                )
                 || self.is_str_split(ty)
                 || self.iterates_items(ty))
             // A map's `iter()`, `keys()` and `values()` are arrays too (ADR 0059).
             || (matches!(krate, Some(StdCrate::Alloc | StdCrate::Std))
-                && ["btree_map::Iter", "btree_map::IterMut", "btree_map::Keys", "btree_map::Values", "btree_map::ValuesMut", "btree_map::IntoIter", "btree_set::Iter", "btree_set::IntoIter"]
-                    .iter()
-                    .any(|name| path == format!("std::collections::{name}")))
+                && matches!(item, Some(StdPath::BtreeMapIter | StdPath::BtreeMapIterMut | StdPath::BtreeMapKeys | StdPath::BtreeMapValues | StdPath::BtreeMapValuesMut | StdPath::BtreeMapIntoIter | StdPath::BtreeSetIter | StdPath::BtreeSetIntoIter)))
             || (krate == Some(StdCrate::Std)
-                && ["hash_map::Iter", "hash_map::IterMut", "hash_map::Keys", "hash_map::Values", "hash_map::ValuesMut", "hash_map::IntoIter", "hash_set::Iter", "hash_set::IntoIter"]
-                    .iter()
-                    .any(|name| path == format!("std::collections::{name}")))
+                && matches!(item, Some(StdPath::HashMapIter | StdPath::HashMapIterMut | StdPath::HashMapKeys | StdPath::HashMapValues | StdPath::HashMapValuesMut | StdPath::HashMapIntoIter | StdPath::HashSetIter | StdPath::HashSetIntoIter)))
     }
 
     /// Whether `ty` is one of a `str`'s searches, `split` and its kin,
@@ -844,10 +848,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         if !of_std_crate(self.tcx, adt.did(), StdCrate::Core) {
             return false;
         }
-        let path = std_path(self.tcx, adt.did());
         let name = self.tcx.item_name(adt.did());
         // A slice's, `Split<'a, T, P>`, its predicate its second type.
-        if path.starts_with("std::slice::")
+        let under_slice = std_path_under(self.tcx, adt.did(), StdPath::SliceMod);
+        if under_slice
             && matches!(
                 name.as_str(),
                 "Split"
@@ -869,7 +873,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 .nth(1)
                 .is_some_and(|pattern| self.pattern_runs_code(pattern));
         }
-        path.starts_with("std::str::")
+        std_path_under(self.tcx, adt.did(), StdPath::StrMod)
             && matches!(
                 self.tcx.item_name(adt.did()).as_str(),
                 "Split"
@@ -909,7 +913,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     pub(in crate::lower) fn is_str_split(&self, ty: Ty<'tcx>) -> bool {
         matches!(ty.kind(), ty::Adt(adt, _) if of_std_crate(self.tcx, adt.did(), StdCrate::Core)
             && self.tcx.item_name(adt.did()).as_str() == "Split"
-            && std_path(self.tcx, adt.did()).contains("str::"))
+            && std_path_under(self.tcx, adt.did(), StdPath::StrMod))
             && !self.search_runs_code(ty)
     }
 
