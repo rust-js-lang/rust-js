@@ -9,8 +9,12 @@ import {
   $nextSome,
   $rev,
   $some,
-  $someValue,
   $stepBy,
+  $tryOf,
+  filterMapDoubleEndedIterator_nextBack,
+  filterMapDoubleEndedIterator_rfold,
+  filterMapDoubleEndedIterator_tryRfold,
+  iterator_filterMap,
   iterator_fuse,
   iterator_rev,
 } from "@rust-js/std";
@@ -24,17 +28,48 @@ function same(x) {
 }
 
 function main() {
-  const kept = $mapEnds(
-    $filterEnds(
-      $mapEnds($iter([1, undefined, 3]), (value) => $some(value)),
-      (item) => item != null,
-    ),
-    $someValue,
-  );
+  const filterMapDoubleEndedIterator = {
+    next_back: (iterator) =>
+      filterMapDoubleEndedIterator_nextBack(
+        iterator,
+        { next: $nextSome },
+        { next_back: $nextBackSome },
+      ),
+    rfold: (iterator, init, f, unwind, ends) =>
+      filterMapDoubleEndedIterator_rfold(
+        iterator,
+        init,
+        f,
+        { next: $nextSome },
+        { next_back: $nextBackSome },
+        undefined,
+        undefined,
+        undefined,
+        unwind,
+        ends,
+      ),
+    tryRfold: (iterator, init, f, broke, unwind, ends) =>
+      filterMapDoubleEndedIterator_tryRfold(
+        iterator,
+        init,
+        f,
+        { next: $nextSome },
+        { next_back: $nextBackSome },
+        $tryOf(broke),
+        undefined,
+        undefined,
+        undefined,
+        unwind,
+        ends,
+      ),
+  };
+  const kept = iterator_filterMap($iter([1, undefined, 3]), (value) => $some(value), {
+    next: $nextSome,
+  });
   console.log(
     `[${Array.from(
       iterator_fuse(
-        iterator_rev(kept, { next: $nextSome }, { next_back: $nextBackSome }),
+        iterator_rev(kept, { next: $nextSome, fold: $foldOf }, filterMapDoubleEndedIterator),
         { next: $nextSome, fold: $foldOf },
         true,
       ),
@@ -47,14 +82,11 @@ function main() {
     (item) => item != null,
   );
   console.log(`[${Array.from($stepBy($rev(byClosure), 1)).join(", ")}]`);
-  const byFunction = $mapEnds(
-    $filterEnds($mapEnds($iter([1, undefined, 3]), same), (item) => item != null),
-    $someValue,
-  );
+  const byFunction = iterator_filterMap($iter([1, undefined, 3]), same, { next: $nextSome });
   console.log(
     `[${Array.from(
       iterator_fuse(
-        iterator_rev(byFunction, { next: $nextSome }, { next_back: $nextBackSome }),
+        iterator_rev(byFunction, { next: $nextSome, fold: $foldOf }, filterMapDoubleEndedIterator),
         { next: $nextSome, fold: $foldOf },
         true,
       ),

@@ -4,6 +4,7 @@ import {
   $filterEnds,
   $iter,
   $iterator,
+  $knowing,
   $mapEnds,
   $next,
   $nextBack,
@@ -14,6 +15,10 @@ import {
   $rev,
   $some,
   $someValue,
+  $tryOf,
+  filterMapDoubleEndedIterator_nextBack,
+  filterMapDoubleEndedIterator_tryRfold,
+  iterator_filterMap,
 } from "@rust-js/std";
 
 export function entry() {
@@ -73,11 +78,30 @@ function main() {
   );
   console.log(`[${Array.from($rev(more)).join(", ")}] [${Array.from($rev(odd)).join(", ")}]`);
 
-  const doubled = $filterEnds(
-    $mapEnds($iter(v), (x) => (x > 1 ? (x * 2) >>> 0 : undefined)),
-    (item) => item != null,
+  const doubled = iterator_filterMap($iter(v), (x) => (x > 1 ? (x * 2) >>> 0 : undefined));
+  const value$1 = last(
+    $knowing(
+      doubled,
+      filterMapDoubleEndedIterator_nextBack,
+      undefined,
+      undefined,
+      undefined,
+      (iterator, init, f, broke, unwind, ends) =>
+        filterMapDoubleEndedIterator_tryRfold(
+          iterator,
+          init,
+          f,
+          { next: $next },
+          { next_back: $nextBack },
+          $tryOf(broke),
+          undefined,
+          undefined,
+          undefined,
+          unwind,
+          ends,
+        ),
+    ),
   );
-  const value$1 = last(doubled);
   console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
 
   // Made where it's reversed, by its own form: the array's items

@@ -965,14 +965,14 @@
 + Filter::size_hint	safe
 + Filter::try_fold	safe
 + Filter::try_rfold	safe
-# FilterMap 3 of 7; bodies: 7 safe, 0 spec, 0 opaque, 0 memory, 0 none
+# FilterMap 7 of 7; bodies: 7 safe, 0 spec, 0 opaque, 0 memory, 0 none
 + FilterMap::fold	safe
 + FilterMap::next	safe
-- FilterMap::next_back	safe
-- FilterMap::rfold	safe
++ FilterMap::next_back	safe
++ FilterMap::rfold	safe
 + FilterMap::size_hint	safe
-- FilterMap::try_fold	safe
-- FilterMap::try_rfold	safe
++ FilterMap::try_fold	safe
++ FilterMap::try_rfold	safe
 # Peekable 14 of 16; bodies: 13 safe, 2 spec, 0 opaque, 1 memory, 0 none
 + Peekable::count	safe
 + Peekable::fold	safe

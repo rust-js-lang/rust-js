@@ -24,6 +24,7 @@ import {
   $unwindsOn,
   iterator_chain,
   iterator_filter,
+  iterator_filterMap,
   iterator_flatMap,
   iterator_map,
   iterator_skip,
@@ -301,9 +302,11 @@ function main() {
   );
   console.log(
     `filter_map ${$lent(
-      iterator_skip(c(), 2, { next: countIterator_next, nth: countIterator_nth })
-        .map((x) => (x % 2 === 0 ? x : undefined))
-        .filter((item) => item != null),
+      iterator_filterMap(
+        iterator_skip(c(), 2, { next: countIterator_next, nth: countIterator_nth }),
+        (x) => (x % 2 === 0 ? x : undefined),
+        { next: $next, fold: $foldOf, nth: $nth },
+      ),
     ).some((x) => x > 5)}`,
   );
   console.log(

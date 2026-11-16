@@ -7,7 +7,6 @@ import { buildCompiler, buildSerde, buildReact, compiler, fixture, root, run, ta
 beforeAll(buildCompiler, 600_000);
 
 for (const [name, source, message, crate] of [
-  ["size_hint of a filter_map of a type parameter's", "pub fn f<I: Iterator<Item = u32>>(it: I) -> (usize, Option<usize>) { it.filter_map(|x| x.checked_sub(1)).size_hint() }", "`size_hint()` of a `std::iter::FilterMap<I, "],
   ["type error", 'pub fn f() -> i32 { "wrong" }', "mismatched types"],
   // A library that asks no address holds what its generic code lends from
   // std's storage as no handle on its place, so a raw pointer it makes of
@@ -313,7 +312,6 @@ for (const [name, source, message, crate] of [
   // `drop`, which knows no hint: what's stepped from its back isn't made
   // knowing its hint, `$skipping`, which would know no back (#1427). Not a
   // `filter`'s, std's compiled `Filter` since its family's flip.
-  ["size_hint of a held rev of a filter_map of a skip", 'pub fn f() -> (usize, Option<usize>) { let it = vec![1u8, 2, 3].into_iter().skip(1).filter_map(|x| if x > 1 { Some(x) } else { None }).rev(); it.size_hint() }', "which holds an adapter made in place inside another, as JS's own, which keeps no hint (#1427)"],
   // A trait method's `impl Trait` of a type parameter of its own not bound by
   // `Copy`, which may hold a destructor of every instance's own: its drop
   // isn't one function its dictionary can carry, so generic code holding
@@ -346,8 +344,10 @@ for (const [name, source, message, crate] of [
   // A compiled struct's hint is what it holds' (ADR 0561): of a filter_map made here, a JS
   // iterator's, which knows nothing of its length, refused, not `(0, None)` where Rust gives
   // `(0, Some(3))` (#382). Not a `filter`'s, std's compiled `Filter` since its family's flip.
+  ["size_hint of a copied of a type parameter's", "pub fn f<'a, I: Iterator<Item = &'a u32>>(it: I) -> (usize, Option<usize>) { it.copied().size_hint() }", "`size_hint()` of a `std::iter::Copied<I>`"],
+  ["size_hint of a held rev of a copied of a skip", "pub fn f() -> (usize, Option<usize>) { let v = vec![1u8, 2, 3]; let it = v.iter().skip(1).copied().rev(); it.size_hint() }", "which holds an adapter made in place inside another, as JS's own, which keeps no hint (#1427)"],
+  ["the size hint of a peekable copied made here", "pub fn f(v: &[u32]) -> (usize, Option<usize>) { v.iter().copied().peekable().size_hint() }", "`size_hint()` of a `std::iter::Peekable<std::iter::Copied"],
   ["the size hint of a lent scan of a cloned beside a map's, the slice's iterator marked knowing in the map's function alone (#1987)", "struct D(u32);\nimpl Clone for D { fn clone(&self) -> D { D(self.0) } }\nfn pass<I>(it: I) -> I { it }\npub fn a(v: &[D]) -> (usize, Option<usize>) { let mut a = v.iter().cloned().scan(0u32, |s, x| { *s += 1; (*s < 4).then_some(x) }); let b = pass(a.by_ref()); b.size_hint() }\npub fn b(v: &[D]) -> (usize, Option<usize>) { let mut a = v.iter().map(|x| x.0).scan(0u32, |s, x| { *s += 1; (*s < 4).then_some(x) }); let b = pass(a.by_ref()); b.size_hint() }", "`size_hint()` of a `std::iter::Scan<std::iter::Cloned<std::slice::Iter<"],
-  ["the size hint of a peekable filter_map made here", "pub fn f(v: &[u32]) -> (usize, Option<usize>) { v.iter().filter_map(|x| if *x > 1 { Some(*x) } else { None }).peekable().size_hint() }", "`size_hint()` of a `std::iter::Peekable<std::iter::FilterMap"],
   // A map a variable holds made in place, JS's own `values().map(..)`, which knows no hint,
   // inspected and collected where a capacity is read: refused, not grown 4 then 8 where std's
   // `Inspect` of it reserves 5 (#1792).

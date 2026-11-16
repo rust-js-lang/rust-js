@@ -5,7 +5,6 @@ import {
   $chars,
   $debugStr,
   $filterEnds,
-  $foldBack,
   $foldOf,
   $isAlphabetic,
   $iter,
@@ -19,7 +18,11 @@ import {
   $rest,
   $sizeHint,
   $tryOf,
+  filterMapDoubleEndedIterator_nextBack,
+  filterMapDoubleEndedIterator_rfold,
+  filterMapDoubleEndedIterator_tryRfold,
   iterator_filter,
+  iterator_filterMap,
   iterator_map,
   mapDoubleEndedIterator_nextBack,
   mapDoubleEndedIterator_tryRfold,
@@ -46,18 +49,38 @@ function last(it) {
 
 function main() {
   const v = [1, 2, 3, 4, 5, 6, 7];
-  const a = $filterEnds(
-    $mapEnds($iter(v), (x) => {
-      if (x % 2 === 1) {
-        return x;
-      }
-    }),
-    (item) => item != null,
-  );
+  const a = iterator_filterMap($iter(v), (x) => {
+    if (x % 2 === 1) {
+      return x;
+    }
+  });
   $next(a);
   const b = pass(a);
-  const nextBack = $nextBack(b);
-  const nthBack = $nthBack(b, 0);
+  const nextBack = filterMapDoubleEndedIterator_nextBack(b);
+  const nthBack = $nthBack(
+    $knowing(
+      b,
+      filterMapDoubleEndedIterator_nextBack,
+      undefined,
+      undefined,
+      undefined,
+      (iterator, init, f, broke, unwind, ends) =>
+        filterMapDoubleEndedIterator_tryRfold(
+          iterator,
+          init,
+          f,
+          { next: $next },
+          { next_back: $nextBack },
+          $tryOf(broke),
+          undefined,
+          undefined,
+          undefined,
+          unwind,
+          ends,
+        ),
+    ),
+    0,
+  );
   console.log(
     `filter_map pass ${nextBack == null ? "None" : `Some(${nextBack})`} ${nthBack == null ? "None" : `Some(${nthBack})`}`,
   );
@@ -83,50 +106,114 @@ function main() {
     `copied dup ${value$4 == null ? "None" : `Some(${value$4})`} ${h.reduce((n) => n + 1, 0)}`,
   );
   let s = "abc";
-  const i = $filterEnds(
-    $mapEnds($chars(s), (c) => {
-      if (c !== "b") {
-        return c;
-      }
-    }),
-    (item) => item != null,
-  );
-  const j = pass($cellOf($lent(i))).value;
-  const value$5 = $nextBack(j);
+  const i = iterator_filterMap($chars(s), (c) => {
+    if (c !== "b") {
+      return c;
+    }
+  });
+  const j = pass(
+    $cellOf(
+      $lent(
+        $knowing(
+          i,
+          filterMapDoubleEndedIterator_nextBack,
+          undefined,
+          undefined,
+          undefined,
+          (iterator, init, f, broke, unwind, ends) =>
+            filterMapDoubleEndedIterator_tryRfold(
+              iterator,
+              init,
+              f,
+              { next: $next },
+              { next_back: $nextBack },
+              $tryOf(broke),
+              undefined,
+              undefined,
+              undefined,
+              unwind,
+              ends,
+            ),
+        ),
+      ),
+    ),
+  ).value;
+  const value$5 = filterMapDoubleEndedIterator_nextBack(j);
   console.log(`chars filter_map ${value$5 == null ? "None" : `Some(${$debugStr(value$5, "'")})`}`);
-  const k = $filterEnds(
-    $mapEnds($iter(v), (x) => {
-      if (x > 2) {
-        return (x * 10) | 0;
-      }
-    }),
-    (item) => item != null,
+  const k = iterator_filterMap($iter(v), (x) => {
+    if (x > 2) {
+      return (x * 10) | 0;
+    }
+  });
+  const total = filterMapDoubleEndedIterator_rfold(
+    pass(k),
+    0,
+    (acc, x) => (((acc * 2) | 0) + x) | 0,
   );
-  const total = $foldBack(pass(k), 0, (acc, x) => (((acc * 2) | 0) + x) | 0);
   console.log(`filter_map rfold ${total}`);
-  const l = $filterEnds(
-    $mapEnds($iter(v), (x) => {
-      if (x % 2 === 1) {
-        return x;
-      }
-    }),
-    (item) => item != null,
+  const l = iterator_filterMap($iter(v), (x) => {
+    if (x % 2 === 1) {
+      return x;
+    }
+  });
+  const value$6 = last(
+    $knowing(
+      l,
+      filterMapDoubleEndedIterator_nextBack,
+      undefined,
+      undefined,
+      undefined,
+      (iterator, init, f, broke, unwind, ends) =>
+        filterMapDoubleEndedIterator_tryRfold(
+          iterator,
+          init,
+          f,
+          { next: $next },
+          { next_back: $nextBack },
+          $tryOf(broke),
+          undefined,
+          undefined,
+          undefined,
+          unwind,
+          ends,
+        ),
+    ),
   );
-  const value$6 = last(l);
   console.log(`last filter_map ${value$6 == null ? "None" : `Some(${value$6})`}`);
   const value$7 = last($mapEnds($iter(v), (x) => (x * 2) | 0));
   console.log(`last map ${value$7 == null ? "None" : `Some(${value$7})`}`);
   const value$8 = last($filterEnds($iter(v), (x) => x > 3));
   console.log(`last filter ${value$8 == null ? "None" : `Some(${value$8})`}`);
-  const m = $filterEnds(
-    $mapEnds($iter(v), (x) => {
-      if (x > 2) {
-        return x;
-      }
-    }),
-    (item) => item != null,
+  const m = iterator_filterMap($iter(v), (x) => {
+    if (x > 2) {
+      return x;
+    }
+  });
+  const value$9 = last(
+    $lent(
+      $knowing(
+        m,
+        filterMapDoubleEndedIterator_nextBack,
+        undefined,
+        undefined,
+        undefined,
+        (iterator, init, f, broke, unwind, ends) =>
+          filterMapDoubleEndedIterator_tryRfold(
+            iterator,
+            init,
+            f,
+            { next: $next },
+            { next_back: $nextBack },
+            $tryOf(broke),
+            undefined,
+            undefined,
+            undefined,
+            unwind,
+            ends,
+          ),
+      ),
+    ),
   );
-  const value$9 = last($lent(m));
   const next = $next(m);
   console.log(
     `last by_ref ${value$9 == null ? "None" : `Some(${value$9})`} ${next == null ? "None" : `Some(${next})`}`,

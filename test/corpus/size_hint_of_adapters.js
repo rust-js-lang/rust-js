@@ -27,6 +27,7 @@ import {
   iterator_chain,
   iterator_enumerate,
   iterator_filter,
+  iterator_filterMap,
   iterator_flatMap,
   iterator_map,
   iterator_rev,
@@ -120,9 +121,10 @@ function main() {
   show(
     "filter_map",
     $sizeHint(
-      $iterator(own(), ownIterator_next, false, undefined, undefined, ownIterator_sizeHint)
-        .map((x) => (x % 2 === 1 ? x : undefined))
-        .filter((item) => item != null),
+      iterator_filterMap(own(), (x) => (x % 2 === 1 ? x : undefined), {
+        next: ownIterator_next,
+        sizeHint: ownIterator_sizeHint,
+      }),
     ),
   );
   show(

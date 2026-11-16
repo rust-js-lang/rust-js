@@ -23,6 +23,7 @@ import {
   iterator_chain,
   iterator_enumerate,
   iterator_filter,
+  iterator_filterMap,
   iterator_flatMap,
   iterator_fuse,
   iterator_inspect,
@@ -158,13 +159,15 @@ function main() {
     `chain ([${value$11[0].join(", ")}], [${value$11[1].join(", ")}], [${value$11[2].join(", ")}])`,
   );
   const value$12 = twice(
-    $iterator(f(), flakyIterator_next)
-      .map((x) => {
+    iterator_filterMap(
+      f(),
+      (x) => {
         if (x % 2 === 1) {
           return x;
         }
-      })
-      .filter((item) => item != null),
+      },
+      { next: flakyIterator_next },
+    ),
     "next",
   );
   console.log(

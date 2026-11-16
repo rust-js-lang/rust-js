@@ -1,8 +1,8 @@
 // A lazy adapter that holds a function with a destructor, `map(f)`'s,
-// `filter(p)`'s: made closing, `$closing(it, ..)`, which closes its source,
-// then drops its function, as Rust drops a `Map`'s fields, when it's
-// consumed, dropped or given to generic code; a generic `F` too, its caller's
-// drop (ADR 0485).
+// `filter(p)`'s, `take_while(p)`'s: made closing, `$closing(it, ..)`,
+// which closes its source, then drops its function, as Rust drops a
+// `Map`'s fields, when it's consumed, dropped or given to generic code; a
+// generic `F` too, its caller's drop (ADR 0485).
 struct Loud(u32);
 
 impl Drop for Loud {
@@ -69,5 +69,12 @@ fn main() {
             x + l.0
         })
     );
+    let limit = Loud(4);
+    let mut taken = [1u32, 2, 6, 3].into_iter().take_while(move |x| {
+        let l = &limit;
+        *x < l.0
+    });
+    println!("{:?}", taken.next());
+    drop(taken);
     println!("end");
 }

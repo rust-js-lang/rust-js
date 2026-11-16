@@ -260,4 +260,14 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^cycle_drops_what_it_replaces.rs$"],
     snapshots: true,
   },
+  {
+    name: "filter_map-meaning-only",
+    breaks:
+      "`FilterMap` is `MEANING_ONLY` again, so a `filter_map()` held apart, stepped from its back, is the recognizers' `$filterEnds` of a `$mapEnds`, not std's compiled struct (#1681's change 2, the filter_map family)",
+    file: "src/lower/recognition/compiled_std.rs",
+    find: "    StdPath::IterCycle,\n",
+    replace: "    StdPath::IterCycle,\n    StdPath::IterFilterMap,\n",
+    tests: ["test/corpus.test.ts", "-t", "^(held_filter_map_from_its_back|held_filter_map_reversed).rs$"],
+    snapshots: true,
+  },
 ];

@@ -267,7 +267,7 @@ export const mutations: Mutation[] = [
     tests: [
       "test/diagnostics.test.ts",
       "-t",
-      "the size hint of a peekable filter_map made here",
+      "the size hint of a peekable copied made here",
     ],
   },
   {
@@ -485,11 +485,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "adapted-hint-of-params",
-    breaks: "`size_hint()` of a `filter_map()` of what generic code is given is `(0, None)` where its caller gives an array's iterator, not refused (#733)",
+    breaks: "`size_hint()` of a `copied()` of what generic code is given is `(0, None)` where its caller gives an array's iterator, not refused (#733)",
     file: "src/lower/iterators/knowing.rs",
     find: "                !self.is_unknown(held.peel_refs())\n                    && (self.adapted_hint_known_of(held, false)",
     replace: "                true\n                    && (self.adapted_hint_known_of(held, false)",
-    tests: ["test/diagnostics.test.ts", "-t", "size_hint of a filter_map of a type parameter's"],
+    tests: ["test/diagnostics.test.ts", "-t", "size_hint of a copied of a type parameter's"],
   },
   {
     name: "adapted-hint-of-arrays",
@@ -497,7 +497,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/knowing.rs",
     find: "        if self.array_source(ty).is_some() && !self.made_knowing_here(ty) {\n            return false;\n        }\n",
     replace: "",
-    tests: ["test/diagnostics.test.ts", "-t", "the size hint of a peekable filter_map made here"],
+    tests: ["test/diagnostics.test.ts", "-t", "the size hint of a peekable copied made here"],
   },
   {
     name: "dropping-skip-uncounted",
@@ -823,7 +823,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/knowing.rs",
     find: "        let in_place = !outermost && self.made_in_place_of(ty);\n",
     replace: "        let in_place = false && !outermost && self.made_in_place_of(ty);\n",
-    tests: ["test/diagnostics.test.ts", "-t", "size_hint of a held rev of a filter_map of a skip"],
+    tests: ["test/diagnostics.test.ts", "-t", "size_hint of a held rev of a copied of a skip"],
   },
   {
     name: "dropping-filter-hintless",
@@ -839,7 +839,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/knowing.rs",
     find: "            true => \", which holds an adapter made in place inside another, as JS's own, which keeps no hint (#1427)\",\n",
     replace: '            true => "",\n',
-    tests: ["test/diagnostics.test.ts", "-t", "size_hint of a held rev of a filter_map of a skip"],
+    tests: ["test/diagnostics.test.ts", "-t", "size_hint of a held rev of a copied of a skip"],
   },
   {
     name: "closure-search-back-unknown",

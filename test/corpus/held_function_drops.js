@@ -8,6 +8,7 @@ import {
   $holding,
   $iter,
   $jsIteratorSome,
+  $lazyTakeWhile,
   $live,
   $next,
   $unwindsOn,
@@ -212,6 +213,39 @@ function main() {
       },
     )}`,
   );
+  let limit$live = true;
+  const limit = [4];
+  let tmp$3;
+  try {
+    tmp$3 = $iter([1, 2, 6, 3]);
+    limit$live = false;
+  } catch (error) {
+    $cleanup(() => {
+      if (limit$live) {
+        console.log(`drop ${limit[0]}`);
+      }
+    }, error);
+    throw error;
+  }
+  function f$2(x) {
+    const l = limit;
+    return x < l[0];
+  }
+  const taken = $held(
+    $holding($lazyTakeWhile(tmp$3, f$2), () => {
+      console.log(`drop ${limit[0]}`);
+    }),
+  );
+  try {
+    const value = $next(taken);
+    console.log(`${value == null ? "None" : `Some(${value})`}`);
+  } catch (error) {
+    throw $unwindsOn(error);
+  } finally {
+    if ($live()) {
+      taken.return();
+    }
+  }
   console.log("end");
 }
 //# sourceMappingURL=case.js.map

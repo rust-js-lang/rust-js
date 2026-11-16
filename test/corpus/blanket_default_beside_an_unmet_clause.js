@@ -3,14 +3,11 @@
 import {
   $advanceSlice,
   $cleanup,
-  $closing,
   $collectDropping,
   $collectsInPlace,
   $dropEach,
   $dropItems,
   $foldToArray,
-  $given,
-  $givenDrop,
   $held,
   $intoIter,
   $iter,
@@ -21,6 +18,7 @@ import {
   $someValue,
   $traitImpl,
   $unwindsOn,
+  iterator_filterMap,
 } from "@rust-js/std";
 
 export function entry() {
@@ -158,8 +156,9 @@ function tExt(
         return out;
       },
       firsts(self, SelfItemIntoIterator) {
-        const iter = $closing($given(self, TIterator, true), $givenDrop(dropT), false)
-          .map((items) => {
+        const iter = iterator_filterMap(
+          self,
+          (items) => {
             const value = $held(SelfItemIntoIterator.intoIter(items));
             let result;
             try {
@@ -172,9 +171,13 @@ function tExt(
             }
             dropTItemIntoIter?.(value);
             return result;
-          })
-          .filter((item) => item != null)
-          .map($someValue);
+          },
+          TIterator,
+          dropT,
+          dropTItemItem,
+          undefined,
+          dropTItem,
+        );
         let result;
         try {
           result = $collectsInPlace(TInPlace, TItemItemSize, TItemItemAlign)
