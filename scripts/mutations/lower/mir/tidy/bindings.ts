@@ -581,7 +581,7 @@ export const mutations: Mutation[] = [
     name: "alias-read-by-a-pair-dropped",
     breaks: "`const _10 = index` read by a pair's place, `lanes[_10]`, is `index` where it's read, so the pair made before `index++` reads the next item (#968)",
     file: "src/lower/mir/tidy/bindings.rs",
-    find: "                let deferred = set.contains(of) && handles_read(&stmts[i + 1..]).contains(alias.word());\n",
+    find: "                let deferred = set.contains(of) && handles_read(&stmts[i + 1..]).contains(alias);\n",
     replace: "                let deferred = false && set.contains(of);\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_of_a_generic_impl_written_whole.rs$"],
   },

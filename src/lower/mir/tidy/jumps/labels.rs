@@ -297,7 +297,7 @@ fn given_at_break(kept: &mut Vec<Stmt>, path: &[(usize, bool)], name: &js::Name)
     // `catch`, `try { hasMoreWork = cb(); } catch (error) { .. }`: where it
     // is, which the caller takes away once the way out's `break` is in.
     let declares = |s: &Stmt| matches!(&s.kind, StmtKind::Const(n, _) | StmtKind::Let(n, None) if n == name);
-    let captured = crate::lower::mir::tidy::bindings::captured(kept).contains(name.word());
+    let captured = crate::lower::mir::tidy::bindings::captured(kept).contains(name);
     let mut depth = path.len();
     let (list, d) = loop {
         let list = at_path(kept, &path[..depth]);

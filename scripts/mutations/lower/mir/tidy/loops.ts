@@ -578,7 +578,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a range's start a closure may set is read after its end's call, `for (let k = s; k < end; k++)` once `end = id(n)` has run, where Rust read it before",
     file: "src/lower/mir/tidy/loops.rs",
-    find: "    let same = start.is_constant() || matches!(&start.kind, ExprKind::Var(v) if !captured.contains(v.word()));\n",
+    find: "    let same = start.is_constant() || matches!(&start.kind, ExprKind::Var(v) if !captured.contains(v));\n",
     replace: "    let same = start.is_constant() || matches!(&start.kind, ExprKind::Var(_));\n",
     tests: ["test/corpus.test.ts", "-t", "^drop_reassigned_in_inner_loop.rs$"],
     snapshots: true,
@@ -588,7 +588,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a range's end that may throw, its start a variable, stays MIR's `try { iter = { start: s, end: id(n) }; } catch ..` and `while ((k = $rangeNext(iter)) != null)`",
     file: "src/lower/mir/tidy/loops.rs",
-    find: "    let same = start.is_constant() || matches!(&start.kind, ExprKind::Var(v) if !captured.contains(v.word()));\n",
+    find: "    let same = start.is_constant() || matches!(&start.kind, ExprKind::Var(v) if !captured.contains(v));\n",
     replace: "    let same = start.is_constant();\n",
     tests: ["test/corpus.test.ts", "-t", "^drop_reassigned_in_inner_loop.rs$"],
     snapshots: true,

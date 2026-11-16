@@ -18,20 +18,20 @@ use super::*;
 /// `return () => listeners.delete(l)` after `listeners = new Set()`
 /// (rd105), unless a loop around both makes it again first.
 pub(in crate::lower::mir::tidy) fn given_last(params: &[js::Pattern], body: &mut Vec<Stmt>) {
-    let mut declared: IndexSet<String> = params.iter().flat_map(|p| p.names()).map(str::to_string).collect();
+    let mut declared: IndexSet<js::Name> = params.iter().flat_map(|p| p.bound()).cloned().collect();
     declared_in(body, &mut declared);
     given_last_in(body, false, (&IndexSet::default(), &declared));
 }
 
 /// What `stmts` declare, in their blocks too: not their closures', which
 /// are their own bodies.
-fn declared_in(stmts: &[Stmt], declared: &mut IndexSet<String>) {
+fn declared_in(stmts: &[Stmt], declared: &mut IndexSet<js::Name>) {
     for stmt in stmts {
         match &stmt.kind {
             StmtKind::Const(name, _) | StmtKind::Let(name, _) | StmtKind::For { name, .. } => {
-                declared.insert(name.to_string());
+                declared.insert(name.clone());
             }
-            StmtKind::Destructure { pattern, .. } => declared.extend(pattern.names().into_iter().map(str::to_string)),
+            StmtKind::Destructure { pattern, .. } => declared.extend(pattern.bound().into_iter().cloned()),
             _ => {}
         }
         match &stmt.kind {
@@ -42,7 +42,7 @@ fn declared_in(stmts: &[Stmt], declared: &mut IndexSet<String>) {
                 }
             }
             StmtKind::ForOf { pattern, body, .. } => {
-                declared.extend(pattern.names().into_iter().map(str::to_string));
+                declared.extend(pattern.bound().into_iter().cloned());
                 declared_in(body, declared);
             }
             StmtKind::While { body, .. } | StmtKind::For { body, .. } | StmtKind::Labeled(_, body) => {
@@ -63,7 +63,7 @@ fn declared_in(stmts: &[Stmt], declared: &mut IndexSet<String>) {
 /// `given_last` of `stmts`, and of each block in them: in a `try`'s, none.
 /// `made` is what's captured by what's made before `stmts` run, and of the
 /// statements around them, a loop's again before them.
-fn given_last_in(stmts: &mut Vec<Stmt>, in_try: bool, (made, declared): (&IndexSet<String>, &IndexSet<String>)) {
+fn given_last_in(stmts: &mut Vec<Stmt>, in_try: bool, (made, declared): (&IndexSet<js::Name>, &IndexSet<js::Name>)) {
     if !in_try {
         given_first(stmts, (made, declared));
     }
@@ -98,7 +98,7 @@ fn given_last_in(stmts: &mut Vec<Stmt>, in_try: bool, (made, declared): (&IndexS
 
 /// `given_last` of the block `stmts` itself: each variable given a binding
 /// made before it in the block, the binding named nowhere after.
-fn given_first(stmts: &mut Vec<Stmt>, (made, declared): (&IndexSet<String>, &IndexSet<String>)) {
+fn given_first(stmts: &mut Vec<Stmt>, (made, declared): (&IndexSet<js::Name>, &IndexSet<js::Name>)) {
     let mut given = 0;
     while given < stmts.len() {
         let Some((at, x, y)) = given_from(stmts, given, (made, declared)) else {
@@ -124,7 +124,7 @@ fn given_first(stmts: &mut Vec<Stmt>, (made, declared): (&IndexSet<String>, &Ind
 fn given_from(
     stmts: &[Stmt],
     given: usize,
-    (made, declared): (&IndexSet<String>, &IndexSet<String>),
+    (made, declared): (&IndexSet<js::Name>, &IndexSet<js::Name>),
 ) -> Option<(usize, js::Name, js::Name)> {
     let StmtKind::Assign(target, value) = &stmts[given].kind else {
         return None;
@@ -132,12 +132,12 @@ fn given_from(
     let (ExprKind::Var(x), ExprKind::Var(y)) = (&target.kind, &value.kind) else {
         return None;
     };
-    if !y.given_apart_of(x) || !declared.contains(x.word()) {
+    if !y.given_apart_of(x) || !declared.contains(x) {
         return None;
     }
     let captured = captured(&stmts[..given]);
-    let early = |name: &str| made.contains(name) || captured.contains(name);
-    if early(x.word()) || early(y.word()) {
+    let early = |name: &js::Name| made.contains(name) || captured.contains(name);
+    if early(x) || early(y) {
         return None;
     }
     let at = (stmts[..given].iter()).position(|s| matches!(&s.kind, StmtKind::Const(n, _) if n == y))?;

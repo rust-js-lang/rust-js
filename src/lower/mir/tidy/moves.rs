@@ -192,7 +192,7 @@ fn moved(stmt: &Stmt, rest: &[Stmt], facts: &MoveFacts) -> Option<(Moved, Why)> 
     // it whenever its `value` is read or written: a value made there, `{
     // n: 3 }`, would be another each time (#985). A variable is a place.
     if !matches!(value.kind, ExprKind::Var(_))
-        && super::bindings::handles_read(std::slice::from_ref(&rest[at])).contains(name.word())
+        && super::bindings::handles_read(std::slice::from_ref(&rest[at])).contains(name)
     {
         return None;
     }

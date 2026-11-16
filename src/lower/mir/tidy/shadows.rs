@@ -29,7 +29,7 @@ fn shadowed_block(
     stmts: &mut Vec<Stmt>,
     heads: &[js::Name],
     user: &IndexSet<js::Name>,
-    captured: &mut IndexSet<String>,
+    captured: &mut IndexSet<js::Name>,
 ) -> bool {
     let mut heads_set = false;
     let mut i = 0;
@@ -117,7 +117,7 @@ fn shadow_of(
     i: usize,
     heads: &[js::Name],
     user: &IndexSet<js::Name>,
-    captured: &mut IndexSet<String>,
+    captured: &mut IndexSet<js::Name>,
 ) -> Option<Shadowed> {
     let (shadow, value, is_let) = match &stmts[i].kind {
         StmtKind::Const(shadow, value) => (shadow.clone(), Some(value), false),
@@ -145,7 +145,7 @@ fn shadow_of(
         ),
         None => (None, heads.iter().rev().find(|n| kin(n.word()))?.clone()),
     };
-    if !user.contains(&shadow) || !user.contains(&binding) || captured.contains(binding.word()) {
+    if !user.contains(&shadow) || !user.contains(&binding) || captured.contains(&binding) {
         return None;
     }
     // `let x$1;`, `undefined` till it's set, where `x` isn't: set where a
@@ -219,8 +219,8 @@ fn shadow_of(
         });
         js::merged(&mut rest, shadow.word(), &binding);
         stmts.append(&mut rest);
-        if captured.contains(shadow.word()) {
-            captured.insert(binding.into_word());
+        if captured.contains(&shadow) {
+            captured.insert(binding);
         }
         return Some(Shadowed {
             at,
@@ -243,8 +243,8 @@ fn shadow_of(
             *e = Expr::var(&binding).or_at(e.span);
         }
     });
-    if captured.contains(shadow.word()) {
-        captured.insert(binding.into_word());
+    if captured.contains(&shadow) {
+        captured.insert(binding);
     }
     Some(Shadowed { at, set, assigned })
 }

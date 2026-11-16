@@ -15,7 +15,7 @@ pub(super) fn loops(
     stmts: &mut Vec<Stmt>,
     mentions: &mut IndexMap<String, usize>,
     numbers: &IndexSet<js::Name>,
-    captured: &IndexSet<String>,
+    captured: &IndexSet<js::Name>,
 ) {
     let mut i = 0;
     while i + 1 < stmts.len() {
@@ -59,7 +59,11 @@ pub(super) fn loops(
 /// Rust reads it: a constant, or a variable nothing the end runs can set,
 /// one no closure, function or `&mut`'s handle of the body names
 /// (`captured`).
-fn held_end(stmt: &Stmt, mentions: &IndexMap<String, usize>, captured: &IndexSet<String>) -> Option<(Vec<Stmt>, Stmt)> {
+fn held_end(
+    stmt: &Stmt,
+    mentions: &IndexMap<String, usize>,
+    captured: &IndexSet<js::Name>,
+) -> Option<(Vec<Stmt>, Stmt)> {
     let StmtKind::TryCatch(body, error, handler) = &stmt.kind else {
         return None;
     };
@@ -76,7 +80,7 @@ fn held_end(stmt: &Stmt, mentions: &IndexMap<String, usize>, captured: &IndexSet
     let [js::Prop::Field(start_key, start), js::Prop::Field(end_key, end)] = props.as_mut_slice() else {
         return None;
     };
-    let same = start.is_constant() || matches!(&start.kind, ExprKind::Var(v) if !captured.contains(v.word()));
+    let same = start.is_constant() || matches!(&start.kind, ExprKind::Var(v) if !captured.contains(v));
     if start_key != "start" || end_key != "end" || !same || !end.has_effects() {
         return None;
     }

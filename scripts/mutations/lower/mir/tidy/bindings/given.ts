@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a closure reading `node`, run before `node` is given what's made, reads what's made, not what `node` was",
     file: "src/lower/mir/tidy/bindings/given.rs",
-    find: "    if early(x.word()) || early(y.word()) {\n",
+    find: "    if early(x) || early(y) {\n",
     replace: "    if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^cache_node_walk.rs$"],
   },
@@ -25,7 +25,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a closure's `x = { let x = k * 10; check(k); x }` of a variable it captures sets it before `check` unwinds, which `catch_unwind`'s caller then reads",
     file: "src/lower/mir/tidy/bindings/given.rs",
-    find: "    if !y.given_apart_of(x) || !declared.contains(x.word()) {\n",
+    find: "    if !y.given_apart_of(x) || !declared.contains(x) {\n",
     replace: "    if !y.given_apart_of(x) {\n",
     tests: ["test/corpus.test.ts", "-t", "^given_last_unwinds.rs$"],
   },
@@ -35,7 +35,7 @@ export const mutations: Mutation[] = [
       "a closure made before in the block, `const read = () => seen`, called between, reads what `seen` is given, not what it was (rd105, ADR 0853)",
     file: "src/lower/mir/tidy/bindings/given.rs",
     find: "    let captured = captured(&stmts[..given]);\n",
-    replace: "    let captured = IndexSet::<String>::default();\n",
+    replace: "    let captured = IndexSet::<js::Name>::default();\n",
     tests: ["test/corpus.test.ts", "-t", "^cache_node_walk.rs$"],
   },
   {

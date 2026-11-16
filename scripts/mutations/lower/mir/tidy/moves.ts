@@ -625,8 +625,8 @@ export const mutations: Mutation[] = [
     name: "temporary-moved-into-a-pair",
     breaks: "a temporary a `dyn`'s pair's place reads, `const count = { n: 3 }`, is moved into it, so each read of the pair's `value` makes another (#985)",
     file: "src/lower/mir/tidy/moves.rs",
-    find: "    if !matches!(value.kind, ExprKind::Var(_))\n        && super::bindings::handles_read(std::slice::from_ref(&rest[at])).contains(name.word())\n",
-    replace: "    if false && !matches!(value.kind, ExprKind::Var(_))\n        && super::bindings::handles_read(std::slice::from_ref(&rest[at])).contains(name.word())\n",
+    find: "    if !matches!(value.kind, ExprKind::Var(_))\n        && super::bindings::handles_read(std::slice::from_ref(&rest[at])).contains(name)\n",
+    replace: "    if false && !matches!(value.kind, ExprKind::Var(_))\n        && super::bindings::handles_read(std::slice::from_ref(&rest[at])).contains(name)\n",
     tests: ["test/corpus.test.ts", "-t", "^temporary_made_a_mut_dyn_stepped.rs$"],
   },
   {

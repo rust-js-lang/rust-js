@@ -251,7 +251,7 @@ pub(super) fn alias_variables(body: &mut Vec<Stmt>, fixed: &IndexSet<String>) {
                 // set only past each read on every way, `const _15 =
                 // newLast; if (_15 == null) { .. } else { _15.next = clone;
                 // newLast = clone; }`.
-                let deferred = set.contains(of) && handles_read(&stmts[i + 1..]).contains(alias.word());
+                let deferred = set.contains(of) && handles_read(&stmts[i + 1..]).contains(alias);
                 let kept = deferred
                     || last.is_some_and(|last| {
                         let reads = &stmts[i + 1..=last];
@@ -1134,11 +1134,11 @@ pub(super) fn paired_temporaries(body: &[Stmt]) -> IndexSet<String> {
 }
 
 /// What `body`'s handles and pairs read, whenever their `value` is (#968).
-pub(super) fn handles_read(body: &[Stmt]) -> IndexSet<String> {
+pub(super) fn handles_read(body: &[Stmt]) -> IndexSet<js::Name> {
     let mut read = IndexSet::default();
     js::each_expr(body, &mut |e| {
         if let ExprKind::Handle(place, _) | ExprKind::Pair(place, ..) = &e.kind {
-            place.visit_vars(&mut |name: &str| _ = read.insert(name.to_string()));
+            place.visit_names(&mut |name| _ = read.insert(name.clone()));
         }
     });
     read
@@ -1146,21 +1146,21 @@ pub(super) fn handles_read(body: &[Stmt]) -> IndexSet<String> {
 
 /// What `body`'s closures, the functions it declares and its `&mut`s'
 /// handles read or set: not where they're written, but whenever they run.
-pub(super) fn captured(body: &[Stmt]) -> IndexSet<String> {
+pub(super) fn captured(body: &[Stmt]) -> IndexSet<js::Name> {
     let mut captured = IndexSet::default();
-    let mut insert = |name: &str| _ = captured.insert(name.to_string());
+    let mut insert = |name: &js::Name| _ = captured.insert(name.clone());
     js::each_expr(body, &mut |e| match &e.kind {
         // Not one its call runs alone while it runs, which reads what it
         // captures before its statement ends (#1168).
         ExprKind::Arrow(..) if e.facts.has(js::Known::RunsInItsCall) => {}
-        ExprKind::Arrow(_, stmts) | ExprKind::AsyncArrow(_, stmts) => js::visit_stmts(stmts, &mut insert),
-        ExprKind::Function(function) => js::visit_stmts(&function.body, &mut insert),
+        ExprKind::Arrow(_, stmts) | ExprKind::AsyncArrow(_, stmts) => js::visit_stmt_names(stmts, &mut insert),
+        ExprKind::Function(function) => js::visit_stmt_names(&function.body, &mut insert),
         _ => {}
     });
     js::each_list(body, &mut |stmts| {
         for stmt in stmts.iter() {
             if let StmtKind::Function(function) = &stmt.kind {
-                js::visit_stmts(&function.body, &mut insert);
+                js::visit_stmt_names(&function.body, &mut insert);
             }
         }
     });
