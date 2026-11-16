@@ -123,7 +123,7 @@ struct Walk<'a, 'tcx> {
     captured: Vec<(usize, Local)>,
     /// Each `&mut` of a `Vec` a local holds, lent only to the calls it's
     /// given to, by the local holding it (`called_on`).
-    called_on: IndexMap<Local, Local>,
+    called_on: called_on::Holders,
     /// The `borrow_mut()` guards held while they live (`guards`).
     guards: guards::Guards,
     /// The row types of tables no `&mut` resizes (`tables::rows_kept`).
@@ -218,7 +218,7 @@ fn walk<'a, 'tcx>(
 fn facts<'tcx>(
     tcx: TyCtxt<'tcx>,
     body: &Body<'tcx>,
-    called_on: &IndexMap<Local, Local>,
+    called_on: &called_on::Holders,
     (guards, kept_rows): (&guards::Guards, &IndexSet<Ty<'tcx>>),
 ) -> (IndexSet<Local>, IndexSet<Local>, IndexSet<Local>, IndexSet<Local>) {
     // A local whose own place is lent; not a reference to a slice, an
@@ -241,7 +241,7 @@ fn facts<'tcx>(
         .filter(|place| !(matches!(place.projection.first(), Some(mir::PlaceElem::Deref)) && fixed_length(place.local)))
         .filter(|place| !lent_where_borrowed(body, place))
         // A `Vec` lent only to the calls it's given to, and those `&mut`s.
-        .filter(|place| !called_on.contains_key(&place.local) && !called_on.values().any(|&of| of == place.local))
+        .filter(|place| !called_on.contains_key(&place.local) && !called_on.values().flatten().any(|&of| of == place.local))
         // A held guard, lent only to its `deref_mut`, and what that lends.
         .filter(|place| !guards.held.contains(&place.local) && !guards.lends.contains(&place.local))
         // A row's `&mut` of a table whose rows nothing resizes (`rows_kept`).

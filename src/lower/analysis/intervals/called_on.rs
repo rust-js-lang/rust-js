@@ -23,13 +23,18 @@ use rustc_middle::ty::adjustment::PointerCoercion;
 use rustc_span::def_id::DefId;
 
 /// Of `body`, each `&mut` of a `Vec` a local holds that's given only to a
-/// call, by the local holding it: the `Vec`'s local. A local is only one
+/// call, by the local holding it: the `Vec`'s local, or each of them, of a
+/// closure that captures several (#1977). A local is only one
 /// whose every `&mut` is so; none kept that's lent any other way, its
 /// `&mut` stored or given on. What a call does with one it's given, kept
 /// in what it gives back or another argument, is done before the `Vec` is
 /// used again, as borrowck holds, and a call that may change its length
 /// forgets it (`called_on_mut`).
-pub(super) fn called_on<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> IndexMap<Local, Local> {
+/// Each holder's locals, those it holds a `&mut` of: one, but of a closure
+/// all it captures so, each forgotten at a call it's given (#1977).
+pub(super) type Holders = IndexMap<Local, IndexSet<Local>>;
+
+pub(super) fn called_on<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> Holders {
     let is_vec = |ty: Ty<'tcx>| {
         matches!(ty.kind(), ty::Adt(adt, _)
             if is_std_def(tcx, adt.did(), StdItem::Vec) || is_std_def(tcx, adt.did(), StdItem::VecDeque))
@@ -40,7 +45,13 @@ pub(super) fn called_on<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> IndexMap<
     // Each `&mut` of a `Vec` local, its own place whole, `&mut v`, or of
     // what a `&mut Vec` local points to, `&mut (*targets)`, or a reborrow
     // of one, `&mut (*t)`: by the local holding it.
-    let mut borrows: IndexMap<Local, Local> = IndexMap::default();
+    let mut borrows: Holders = IndexMap::default();
+    // A holder of what `from` holds: of all of it, a closure's every
+    // capture (#1977).
+    let holds_as = |borrows: &mut Holders, holder: Local, from: Local| {
+        let held = borrows[&from].clone();
+        borrows.entry(holder).or_default().extend(held);
+    };
     let mut lent_otherwise: IndexSet<Local> = IndexSet::default();
     // The closures that hold one, `{closure}(move _t)` of a `&mut` held,
     // each a holder of its own (#1946).
@@ -55,15 +66,15 @@ pub(super) fn called_on<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> IndexMap<
                     for operand in operands {
                         if let Operand::Move(moved) = operand
                             && let Some(held) = moved.as_local()
-                            && let Some(&of) = borrows.get(&held)
+                            && let Some(of) = borrows.get(&held).cloned()
                         {
                             match assign.0.as_local() {
                                 Some(closure) => {
-                                    borrows.insert(closure, of);
+                                    borrows.entry(closure).or_default().extend(of);
                                     closures.insert(closure);
                                 }
                                 None => {
-                                    lent_otherwise.insert(of);
+                                    lent_otherwise.extend(of);
                                 }
                             }
                         }
@@ -75,12 +86,8 @@ pub(super) fn called_on<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> IndexMap<
                     if of.projection.is_empty() && closures.contains(&of.local) =>
                 {
                     match assign.0.as_local() {
-                        Some(holder) => {
-                            borrows.insert(holder, borrows[&of.local]);
-                        }
-                        None => {
-                            lent_otherwise.insert(borrows[&of.local]);
-                        }
+                        Some(holder) => holds_as(&mut borrows, holder, of.local),
+                        None => lent_otherwise.extend(borrows[&of.local].iter().copied()),
                     }
                 }
                 Rvalue::Ref(_, mir::BorrowKind::Mut { .. }, of)
@@ -88,18 +95,14 @@ pub(super) fn called_on<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> IndexMap<
                         && borrows.contains_key(&of.local) =>
                 {
                     match assign.0.as_local() {
-                        Some(holder) => {
-                            borrows.insert(holder, borrows[&of.local]);
-                        }
-                        None => {
-                            lent_otherwise.insert(borrows[&of.local]);
-                        }
+                        Some(holder) => holds_as(&mut borrows, holder, of.local),
+                        None => lent_otherwise.extend(borrows[&of.local].iter().copied()),
                     }
                 }
                 Rvalue::Ref(_, mir::BorrowKind::Mut { .. }, of) if is_mut_of_vec(body.local_decls[of.local].ty) => {
                     match (assign.0.as_local(), of.projection.as_slice()) {
                         (Some(holder), [mir::PlaceElem::Deref]) => {
-                            borrows.insert(holder, of.local);
+                            borrows.entry(holder).or_default().insert(of.local);
                         }
                         _ => {
                             lent_otherwise.insert(of.local);
@@ -109,7 +112,7 @@ pub(super) fn called_on<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> IndexMap<
                 Rvalue::Ref(_, mir::BorrowKind::Mut { .. }, of) if is_vec(body.local_decls[of.local].ty) => {
                     match (assign.0.as_local(), of.projection.as_slice()) {
                         (Some(holder), []) => {
-                            borrows.insert(holder, of.local);
+                            borrows.entry(holder).or_default().insert(of.local);
                         }
                         _ => {
                             lent_otherwise.insert(of.local);
@@ -125,12 +128,8 @@ pub(super) fn called_on<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> IndexMap<
                     Operand::Copy(of) | Operand::Move(of),
                     _,
                 ) if of.projection.is_empty() && borrows.contains_key(&of.local) => match assign.0.as_local() {
-                    Some(holder) => {
-                        borrows.insert(holder, borrows[&of.local]);
-                    }
-                    None => {
-                        lent_otherwise.insert(borrows[&of.local]);
-                    }
+                    Some(holder) => holds_as(&mut borrows, holder, of.local),
+                    None => lent_otherwise.extend(borrows[&of.local].iter().copied()),
                 },
                 Rvalue::RawPtr(_, of) => {
                     lent_otherwise.insert(of.local);
@@ -142,14 +141,14 @@ pub(super) fn called_on<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> IndexMap<
     // Where each `&mut` is read: given a call, as itself, and reborrowed,
     // and nowhere else; and a `&mut Vec` local only borrowed through,
     // `&(*targets)` or `&mut (*targets)`, never itself copied or moved.
-    let pointers: IndexSet<Local> = (borrows.values().copied())
+    let pointers: IndexSet<Local> = (borrows.values().flatten().copied())
         .filter(|&of| is_mut_of_vec(body.local_decls[of].ty))
         .collect();
     for data in body.basic_blocks.iter() {
         for statement in &data.statements {
             for (holder, of) in borrows.iter() {
                 if mentions(statement, *holder) && !reborrows(statement, *holder, &closures, &borrows) {
-                    lent_otherwise.insert(*of);
+                    lent_otherwise.extend(of.iter().copied());
                 }
             }
             for &pointer in &pointers {
@@ -166,7 +165,7 @@ pub(super) fn called_on<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> IndexMap<
         // A call given one whole, as itself; not one it writes, nor a place
         // in one. Any other terminator reading one lends it.
         let terminator = data.terminator();
-        for (&holder, &of) in &borrows {
+        for (&holder, of) in &borrows {
             if !terminator_mentions(terminator, holder) {
                 continue;
             }
@@ -182,11 +181,13 @@ pub(super) fn called_on<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> IndexMap<
                 _ => false,
             };
             if !given {
-                lent_otherwise.insert(of);
+                lent_otherwise.extend(of.iter().copied());
             }
         }
     }
-    borrows.retain(|_, of| !lent_otherwise.contains(of));
+    // A holder holding any lent otherwise is dropped whole: a call given
+    // it can't then forget that one, which is lent for the whole body.
+    borrows.retain(|_, of| of.iter().all(|of| !lent_otherwise.contains(of)));
     borrows
 }
 
@@ -214,12 +215,7 @@ fn mentions(statement: &mir::Statement<'_>, local: Local) -> bool {
 /// Whether `statement` makes `local` or reborrows it, `&mut (*local)`, the
 /// one place it's allowed in a statement; or moves it into a closure that
 /// holds it, or borrows such a closure `&mut` whole (#1946).
-fn reborrows(
-    statement: &mir::Statement<'_>,
-    local: Local,
-    closures: &IndexSet<Local>,
-    borrows: &IndexMap<Local, Local>,
-) -> bool {
+fn reborrows(statement: &mir::Statement<'_>, local: Local, closures: &IndexSet<Local>, borrows: &Holders) -> bool {
     matches!(&statement.kind, StatementKind::Assign(assign)
         if assign.0.as_local() == Some(local)
             || matches!(&assign.1, Rvalue::Ref(_, mir::BorrowKind::Mut { .. }, of)
@@ -292,19 +288,23 @@ impl<'tcx> Walk<'_, 'tcx> {
             .is_some_and(|(callee, _)| is_std_crate(self.tcx, callee));
         let sig = (self.tcx).instantiate_bound_regions_with_erased(func.ty(&*self.body, self.tcx).fn_sig(self.tcx));
         for (i, arg) in args.iter().enumerate() {
-            if let Some(local) = arg.node.place().and_then(|p| p.as_local())
-                && let Some(&of) = self.called_on.get(&local)
-            {
+            let Some(local) = arg.node.place().and_then(|p| p.as_local()) else {
+                continue;
+            };
+            let given = self.body.local_decls[local].ty;
+            let lets_out = || lets_pointers_out_of(self.tcx, (sig.inputs(), sig.output()), i);
+            // Each the holder holds: of a closure, every `&mut` it captures
+            // (#1977).
+            for &of in self.called_on.get(&local).into_iter().flatten() {
                 after.forget_lengths(state.root(of));
-                let vec = matches!(*self.body.local_decls[local].ty.kind(), ty::Ref(_, to, ty::Mutability::Mut)
+                let vec = matches!(*given.kind(), ty::Ref(_, to, ty::Mutability::Mut)
                     if matches!(to.kind(), ty::Adt(adt, _)
                         if is_std_def(self.tcx, adt.did(), StdItem::Vec) || is_std_def(self.tcx, adt.did(), StdItem::VecDeque)));
-                let given = self.body.local_decls[local].ty;
                 let unseen = match std {
                     true => !vec,
                     false => kept(given),
                 };
-                if unseen || lets_pointers_out_of(self.tcx, (sig.inputs(), sig.output()), i) {
+                if unseen || lets_out() {
                     after.escaped.insert(state.root(of));
                 }
             }
