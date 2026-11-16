@@ -75,4 +75,12 @@ export const mutations: Mutation[] = [
     replace: "  const kept = [day];",
     tests: ["test/ci-spend.test.ts", "-t", "waste past 10%"],
   },
+  {
+    name: "ci-spend-bench-unflagged",
+    breaks: "a micro-benchmark that took past 1.5 times the night before's isn't flagged, so a runtime slowdown like d90bda6bc's goes unsaid (#2003)",
+    file: "scripts/ci-spend.ts",
+    find: "    if (then !== undefined && now > then * benchFlag) out.push(",
+    replace: "    if (then !== undefined && now > then * benchFlag * 100) out.push(",
+    tests: ["test/ci-spend.test.ts", "-t", "a micro-benchmark past 1.5 times"],
+  },
 ];

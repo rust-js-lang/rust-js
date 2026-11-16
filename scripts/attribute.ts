@@ -5,6 +5,10 @@
 // is said to have broken it (check.yml's `attribute`).
 //
 //   bun scripts/attribute.ts plan <junit dir> <base>   the failing tests (target/attribute/failing.json) and the commits to run them at, `commits=`
+//   (the suite's shards' reports, and the slices' and nets' of
+//   scripts/iteratorSlice.ts, `slices/`: each failing test of a slice run
+//   again by its run's file and settings, `runs`; a failed step of the
+//   nets' that no rerun can say, the newest commit that touched its inputs)
 //   (check.yml's `attribute` runs them at each commit by `bun test`, each
 //   commit's own harness, and writes which still fail, `result.json`)
 //   bun scripts/attribute.ts report <results dir>      attribution.json and the summary's lines, "<test> broke at <sha> (<subject>)"
@@ -20,7 +24,8 @@
 import { appendFileSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { lists, type Mutation } from "./mutations";
+import { lists, type Mutation, testResults } from "./mutations";
+import { cratePaths, portPaths, type SliceReport } from "./iteratorSlice";
 import { failedIn } from "./selector-audit";
 
 const root = join(import.meta.dir, "..");
@@ -29,8 +34,61 @@ const out = join(root, "target", "attribute");
 /** The most commits a batch's failures are run again at, each a machine. */
 export const mostCommits = 6;
 
-/** The failing tests' units, `test/x.test.ts` or a corpus case's `test/corpus/x.rs`. */
-export type Failing = { files: string[]; cases: string[] };
+/** The failing tests' units, `test/x.test.ts` or a corpus case's
+ * `test/corpus/x.rs`; and of each slice run, its failing tests, run again
+ * as `bun test <file> -t <pattern>` with its settings, `unit` its name. */
+export type Failing = { files: string[]; cases: string[]; runs: SliceRerun[] };
+
+/** A slice run's failing tests, run again at a commit: every part's at once. */
+export type SliceRerun = { unit: string; file: string; env: Record<string, string>; pattern: string };
+
+/** Of the slices' reports, `[report, its SliceReport, its JUnit]`, each
+ * run's failing tests, a rerun a run: the metamorphic rewrites' none, as
+ * their cases are the change's own, said by `unattributable`. */
+export function sliceReruns(reports: [SliceReport, string][]): SliceRerun[] {
+  const failing = new Map<string, { report: SliceReport; tests: Set<string> }>();
+  for (const [report, junit] of reports) {
+    if (report.of === "metamorphic") continue;
+    const tests = [...testResults(junit)].filter(([, passed]) => !passed).map(([name]) => name);
+    if (tests.length === 0) continue;
+    const key = JSON.stringify([report.name, report.file, report.env]);
+    const run = failing.get(key) ?? { report, tests: new Set<string>() };
+    for (const name of tests) run.tests.add(name);
+    failing.set(key, run);
+  }
+  const escaped = (name: string) => name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return [...failing.values()].map(({ report, tests }) => {
+    const names = [...tests].sort();
+    return {
+      unit: `${report.name}: ${names.length === 1 ? names[0] : `${names.length} tests, ${names.slice(0, 3).join("; ")}${names.length > 3 ? "; .." : ""}`}`,
+      file: report.file,
+      env: report.env,
+      pattern: `^(?:${names.map(escaped).join("|")})$`,
+    };
+  });
+}
+
+/** The nets' steps no rerun can say, by their names in check.yml, each with
+ * its inputs: the metamorphic rewrites, of the change's own cases; the
+ * crate corpus and React's port, which run no `bun test`. Where one fails,
+ * the newest commit of the batch that touched its inputs is named, as a
+ * mutations job's runner (`runnerFiles`). */
+export const unrerunnable: Record<string, string[]> = {
+  "metamorphic rewrites of the change's cases": ["src/**", "std/**", "test/corpus/*.rs", "test/metamorphic.test.ts", "test/metamorphic/**", "scripts/iteratorSlice.ts"],
+  "crate corpus": cratePaths,
+  "react-in-rust port": portPaths,
+};
+
+/** Of each failed step `unrerunnable` names, its line: the newest commit
+ * `touching(paths)` gives, `said(commit)`, or none of the batch. */
+export function unattributable(failed: string[], touching: (paths: string[]) => string | undefined, said: (commit: string) => string): string[] {
+  return failed
+    .filter((step) => step in unrerunnable)
+    .map((step) => {
+      const by = touching(unrerunnable[step]!);
+      return `${step} failed; not attributable by rerun: ${by ? `last change to its inputs was ${said(by)}` : "its inputs unchanged in the batch, so an earlier change's, its machine's or GitHub's"}`;
+    });
+}
 
 /** Of `commits`, oldest first, at most `most` to run at: each where there
  * are few enough, else spread from the oldest to the newest, both kept. */
@@ -108,22 +166,50 @@ export function siteLines(text: string, find: string): [number, number] | undefi
 
 const git = (args: string[]) => Bun.spawnSync(["git", ...args], { cwd: root, stdout: "pipe" }).stdout.toString().trim();
 
+/** The run's jobs, by GitHub's API, each with its steps' names and ends. */
+function runJobs(): { name: string; conclusion: string; steps?: { name: string; conclusion: string }[] }[] {
+  const run = process.env.GITHUB_RUN_ID;
+  if (!run) return [];
+  return Bun.spawnSync(["gh", "api", "--paginate", `repos/{owner}/{repo}/actions/runs/${run}/jobs?per_page=100`, "--jq", ".jobs[] | {name, conclusion, steps: [.steps[]? | {name, conclusion}]}"], { cwd: root, stdout: "pipe" })
+    .stdout.toString()
+    .split("\n")
+    .filter(Boolean)
+    .map((line) => JSON.parse(line));
+}
+
+/** The failed steps of the run's job `job`, by name. */
+function failedSteps(job: string): string[] {
+  return runJobs()
+    .filter(({ name }) => name === job)
+    .flatMap(({ steps }) => (steps ?? []).filter(({ conclusion }) => conclusion === "failure").map(({ name }) => name));
+}
+
 if (import.meta.main) {
   const [command, ...rest] = process.argv.slice(2);
   mkdirSync(out, { recursive: true });
   if (command === "plan") {
     const [junit, base] = rest;
     const reports = existsSync(junit!) ? readdirSync(junit!, { recursive: true }).map(String).filter((name) => name.endsWith(".xml")) : [];
-    const failed = reports.flatMap((name) => failedIn(readFileSync(join(junit!, name), "utf8")));
+    // A slice's report is read by what ran it, beside it; the suite's by its files.
+    const isSlice = (name: string) => existsSync(join(junit!, `${name}.json`));
+    const failed = reports.filter((name) => !isSlice(name)).flatMap((name) => failedIn(readFileSync(join(junit!, name), "utf8")));
+    const slices = reports.filter(isSlice).map((name): [SliceReport, string] => [JSON.parse(readFileSync(join(junit!, `${name}.json`), "utf8")), readFileSync(join(junit!, name), "utf8")]);
     const failing: Failing = {
       files: [...new Set(failed.filter(({ file }) => file !== "test/corpus.test.ts" || failed.every((f) => f.file !== file || f.cases.length === 0)).map(({ file }) => file))],
       cases: [...new Set(failed.flatMap(({ file, cases }) => (file === "test/corpus.test.ts" ? cases : [])))],
+      runs: sliceReruns(slices),
     };
     writeFileSync(join(out, "failing.json"), JSON.stringify(failing));
     const commits = git(["rev-list", "--reverse", `${base}..HEAD`]).split("\n").filter(Boolean);
-    const run = failing.files.length + failing.cases.length > 0 && commits.length > 1 ? commitsToRun(commits) : [];
+    const run = failing.files.length + failing.cases.length + failing.runs.length > 0 && commits.length > 1 ? commitsToRun(commits) : [];
     console.log(`commits=${JSON.stringify(run)}`);
-    console.error(`${failing.files.length} files and ${failing.cases.length} cases failed; the batch is ${commits.length} commits, run at ${run.length}`);
+    console.error(`${failing.files.length} files, ${failing.cases.length} cases and ${failing.runs.length} slice runs failed; the batch is ${commits.length} commits, run at ${run.length}`);
+    // The nets' failed steps no rerun can say, by the run's jobs' steps.
+    const said = (commit: string) => `${commit.slice(0, 9)} (${git(["log", "-1", "--format=%s", commit]).slice(0, 100)})`;
+    const touching = (paths: string[]) => git(["log", "-1", "--format=%H", `${base}..HEAD`, "--", ...paths.map((path) => `:(glob)${path}`)]) || undefined;
+    const lines = unattributable(failedSteps("nets"), touching, said);
+    if (lines.length > 0 && process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, `### Not attributable by rerun\n\n${lines.map((line) => `- ${line}`).join("\n")}\n`);
+    for (const line of lines) console.error(line);
   } else if (command === "report") {
     const [dir] = rest;
     const runs: { commit: string; failing: string[] }[] = readdirSync(dir!, { recursive: true })
@@ -133,7 +219,7 @@ if (import.meta.main) {
     const order = git(["rev-list", "--reverse", "HEAD"]).split("\n");
     runs.sort((a, b) => order.indexOf(a.commit) - order.indexOf(b.commit));
     const failing: Failing = JSON.parse(readFileSync(join(out, "failing.json"), "utf8"));
-    const units = [...failing.files, ...failing.cases.map((name) => `test/corpus/${name}`)];
+    const units = [...failing.files, ...failing.cases.map((name) => `test/corpus/${name}`), ...(failing.runs ?? []).map(({ unit }) => unit)];
     const said = runs.length === 0 ? [] : attribution(runs, units);
     const lines = said.map(({ unit, commit, since }) => `${unit} broke at ${commit.slice(0, 9)} (${git(["log", "-1", "--format=%s", commit]).slice(0, 100)})${since === "before" ? ", or before: it fails at the batch's first commit" : since === "passes" ? ": it passes there, so flaky or the check's machine's" : ""}`);
     writeFileSync(join(out, "attribution.json"), JSON.stringify({ head: git(["rev-parse", "HEAD"]), lines }, null, 2));

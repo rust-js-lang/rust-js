@@ -467,6 +467,15 @@ function twinTables({ all = false }: { all?: boolean }) {
   }));
 }
 
+/** Where each run's parts write their JUnit reports, each beside what ran
+ * it, `<report>.json`, a `SliceReport`: a check's jobs that run them
+ * upload them, and a failed check's `attribute` runs each failing test
+ * again at the batch's commits, by its run's file and settings (#2003). */
+export const sliceReports = join(root, "target", "junit", "slices");
+
+/** What ran a slice's report: the run's name, its file and its settings. */
+export type SliceReport = { of: string; name: string; file: string; env: Record<string, string> };
+
 /** `of`, in `parts` processes at once, each its share of the cases
  * (`RUST_JS_CASES`), or of those `list` names, a line each, as plain
  * `check:fast` picks the corpus's by the test map (#876), their logs
@@ -500,7 +509,10 @@ export async function run(of: keyof typeof runs | "rows", parts: number, list?: 
   for (const { name, file, env, rate } of each) {
     const start = Date.now();
     const parted = Array.from({ length: parts }, async (_, i) => {
-      const p = Bun.spawn(["bun", "test", "--timeout=600000", file], {
+      const report = join(sliceReports, `${of}-${name.replace(/\W+/g, "-")}-${i + 1}-of-${parts}.xml`);
+      mkdirSync(sliceReports, { recursive: true });
+      writeFileSync(`${report}.json`, JSON.stringify({ of, name, file, env } satisfies SliceReport));
+      const p = Bun.spawn(["bun", "test", "--timeout=600000", "--reporter=junit", `--reporter-outfile=${report}`, file], {
         cwd: root,
         env: { ...process.env, ...env, RUST_JS_CASES: `${i + 1}/${parts}${list === undefined ? "" : `:${list}`}` },
         stdout: "pipe",

@@ -562,3 +562,47 @@ and a signature's visibility select no more than they change"; mutations
 `selector-comment-runs-all`, `selector-pure-addition-runs-all`,
 `selector-added-impl-unreferenced`, `selector-signature-visibility-runs-all`
 and `selector-signature-types-as-its-fn`.
+
+### Amended: a red forms or nets job names a commit too (2026-11-17, #2003)
+
+Checks 43921007925 and 43925046527 failed only "iterator forms of the
+corpus", `runtime_long_writes with std's iterator structs` past its 10 s,
+and `attribute-plan`, which read only the suite's shards' JUnit reports,
+was skipped: the cause, baa87ac92, was found by hand.
+
+**Every slice run writes its JUnit reports** (`scripts/iteratorSlice.ts`'s
+`run`): each part's, in `target/junit/slices/`, beside a
+`<report>.json` saying what ran it, its run's name, file and settings
+(`SliceReport`). `iterator-forms` and `nets` upload them, `junit-forms`
+and `junit-nets`, as the suite's shards upload theirs, and
+`attribute-plan` needs both jobs and runs where any of the three failed.
+
+**Each slice run's failing tests are run again** at the batch's commits,
+by its file, its settings and a `-t` of their names, every part's at
+once (`sliceReruns`, failing.json's `runs`), each commit's own harness as
+the suite's are. A run whose file isn't at a commit is said not to fail
+there. Its line names the run and its tests: `the corpus with std's
+iterator structs: runtime_long_writes with std's iterator structs broke at
+<sha> (<subject>)`.
+
+**A failed net no rerun can say is named by blame** (`unrerunnable`): the
+metamorphic rewrites, whose cases are the change's own and differ at each
+commit, and the crate corpus and React's port, which run no `bun test`.
+Each is said `<step> failed; not attributable by rerun: last change to its
+inputs was <sha> (<subject>)`, the batch's newest commit that touched its
+inputs (the paths that run it, `cratePaths` and `portPaths`), as a
+mutations job's runner is (`runnerFiles`); where none did, an earlier
+change's, its machine's or GitHub's. Its failed steps are the run's, by
+GitHub's API, in `attribute-plan`'s summary.
+
+**And the slowdown itself is measured**: test/lend-bench.ts times a
+`$lent` made each step, of a JS iterator and of std's compiled struct, the
+best of five, reported and never asserted, as a loaded machine's times are
+noise. The nightly's `ci-spend` keeps them in #1989's comment with the
+days and flags one past 1.5 times the night before's.
+
+Proof: test/attribute.test.ts's "a slice run's failing tests run again"
+and "a failed net no rerun can say"; test/ci.test.ts's "each job that runs
+a slice uploads its JUnit reports"; test/ci-spend.test.ts's "a
+micro-benchmark past 1.5 times"; mutations `attribute-slice-*`,
+`attribute-unrerunnable-unnamed` and `ci-spend-bench-unflagged`.

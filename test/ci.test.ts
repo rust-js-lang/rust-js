@@ -5,14 +5,15 @@
 import { expect, test } from "bun:test";
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join, relative } from "node:path";
 import { checkedSince, latestRuns, MUTATION_SHARDS, mutationJobsPassed, mutationShards, mutationTimingsRun, nets, netsSummary, alwaysRun, resultsBase, testShards, timingsRun } from "../scripts/ci";
 import { readersOf } from "./part-settings";
 import { corpusRows, crashes, dependency, lockedVersion, lockOf, sampledHeader, sampledIn, sampledOneIn, written } from "../scripts/crate-corpus";
 import { mutations, refusedFlags, site } from "../scripts/mutations";
 import { installNeeded, jobs, leftToCi, manifestsHash, readabilityPaths, type Scope, touchesReadability } from "../scripts/checkFast";
 import { lostObject } from "../scripts/testMap";
-import { changedCases, runs, touchesCrates, importsOf, touchesPort, touchesRustc, touchesWasm, wasmInputs } from "../scripts/iteratorSlice";
+import { unrerunnable } from "../scripts/attribute";
+import { changedCases, runs, sliceReports, touchesCrates, importsOf, touchesPort, touchesRustc, touchesWasm, wasmInputs } from "../scripts/iteratorSlice";
 import { browsers, drivesBrowser } from "../scripts/shard";
 import { loadScale, underLoad } from "../scripts/timing";
 import { caseOf, partsOf, runParts, verdict } from "../scripts/parts";
@@ -1101,4 +1102,20 @@ test("the mutation shards' arguments, as check.yml writes them, are ones the run
     const args = form!.replaceAll("{0}", "0123456789abcdef").replaceAll("{1}", retry).split(" ");
     expect(refusedFlags(args)).toEqual([]);
   }
+});
+
+test("each job that runs a slice uploads its JUnit reports, and attribution reads them: a red forms or nets job names a commit (#2003)", () => {
+  type Step = { name?: string; run?: string; uses?: string; if?: string; with?: Record<string, string> };
+  const check = Bun.YAML.parse(readFileSync(join(root, ".github/workflows/check.yml"), "utf8")) as { jobs: Record<string, { needs?: string[]; if?: string; steps?: Step[] }> };
+  const slicing = Object.entries(check.jobs).filter(([, job]) => (job.steps ?? []).some((step) => /iteratorSlice\.ts run (?!metamorphic)/.test(step.run ?? "")));
+  expect(slicing.map(([name]) => name).sort()).toEqual(["iterator-forms", "nets"]);
+  const plan = check.jobs["attribute-plan"]!;
+  for (const [name, job] of slicing) {
+    const upload = job.steps!.find((step) => step.uses?.startsWith("actions/upload-artifact") && step.with?.name?.startsWith("junit-"));
+    expect([name, upload?.if, upload?.with?.path]).toEqual([name, "always()", relative(root, dirname(sliceReports))]);
+    expect([name, plan.needs?.includes(name), plan.if?.includes(`needs.${name}.result == 'failure'`)]).toEqual([name, true, true]);
+  }
+  // And each net no rerun can say is a step of `nets` by that name.
+  const nets = check.jobs.nets!.steps!.map((step) => step.name);
+  for (const step of Object.keys(unrerunnable)) expect([step, nets.includes(step)]).toEqual([step, true]);
 });

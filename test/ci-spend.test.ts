@@ -70,6 +70,15 @@ test("waste past 10% of the day and a job kind grown past 30% are flagged, and t
   expect(historyOf(body).map((d) => d.date)).toEqual(["2026-11-15", "2026-11-16"]);
   expect(body).toContain("| Check / test | 89 min | 0% | 100 min |");
   expect(body.startsWith("<!-- rust-js ci-spend -->")).toBe(true);
-  // The nightly writes it on the pinned issue.
-  expect(readFileSync(join(root, ".github/workflows/nightly.yml"), "utf8")).toContain("bun scripts/ci-spend.ts --comment=1989");
+  // The nightly writes it on the pinned issue, with its micro-benchmarks.
+  expect(readFileSync(join(root, ".github/workflows/nightly.yml"), "utf8")).toContain("bun scripts/ci-spend.ts --comment=1989 --bench=target/bench.json");
+});
+
+test("a micro-benchmark past 1.5 times the night before's is flagged, and kept with the days (#2003)", () => {
+  const day = { ...spend("2026-11-16", [], []), bench: { "$lent each step, a JS iterator": 31, "$lent each step, std's compiled struct": 40 } };
+  const before = { kinds: {}, bench: { "$lent each step, a JS iterator": 20, "$lent each step, std's compiled struct": 30 } };
+  expect(flags(day, before)).toEqual(["$lent each step, a JS iterator took 31 ms, 20 ms the night before, past 1.5 times"]);
+  const body = comment(day, [{ ...spend("2026-11-15", [], []), ...before }]);
+  expect(body).toContain("| $lent each step, a JS iterator | 31 | 20 |");
+  expect(historyOf(body).at(-1)?.bench).toEqual(day.bench);
 });

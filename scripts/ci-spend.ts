@@ -16,8 +16,15 @@
 // flags: waste over 10% of the day, or a job kind of 30 minutes or more
 // that grew more than 30% on the day before.
 //
+// And the night's micro-benchmarks, test/lend-bench.ts's (#2003): each
+// kept with the days, flagged where it took more than half again the
+// night before's.
+//
 //   bun scripts/ci-spend.ts                  the last 24 hours, printed
 //   bun scripts/ci-spend.ts --comment=1989   and the comment on that issue, edited in place (the nightly's)
+//   bun scripts/ci-spend.ts --bench=<file>   with the micro-benchmarks' times, `{ name: ms }`
+
+import { readFileSync } from "node:fs";
 
 const root = new URL("..", import.meta.url).pathname;
 
@@ -36,6 +43,8 @@ export const wasteFlag = 0.1;
 export const growthFlag = 0.3;
 /** …where it took at least this many minutes. */
 export const growthFloor = 30;
+/** A micro-benchmark that took more than this times the night before's is flagged. */
+export const benchFlag = 1.5;
 /** The jobs the free plan runs at once. */
 export const jobCap = 20;
 
@@ -88,6 +97,8 @@ export type Day = {
   verdictP50: number;
   verdictP90: number;
   verdicts: number;
+  /** The micro-benchmarks' times, in ms, where the night ran them. */
+  bench?: Record<string, number>;
 };
 
 const quantile = (values: number[], q: number) => {
@@ -152,7 +163,7 @@ export function spend(date: string, runs: Run[], jobs: Job[]): Day {
 }
 
 /** What a day's spend flags against the day before's. */
-export function flags(day: Day, before?: Pick<Day, "kinds">): string[] {
+export function flags(day: Day, before?: Pick<Day, "kinds" | "bench">): string[] {
   const out: string[] = [];
   const wasted = wastes.reduce((sum, kind) => sum + day.waste[kind], 0);
   if (day.minutes > 0 && wasted / day.minutes > wasteFlag) out.push(`waste is ${percent(wasted / day.minutes)} of the day (${minutes(wasted)} of ${minutes(day.minutes)}), past ${percent(wasteFlag)}`);
@@ -161,6 +172,10 @@ export function flags(day: Day, before?: Pick<Day, "kinds">): string[] {
       const then = before.kinds[kind] ?? 0;
       if (now >= growthFloor && now > then * (1 + growthFlag)) out.push(`${kind} grew ${then === 0 ? "from nothing" : `${percent(now / then - 1)}`}, ${minutes(then)} to ${minutes(now)}`);
     }
+  for (const [name, now] of Object.entries(day.bench ?? {})) {
+    const then = before?.bench?.[name];
+    if (then !== undefined && now > then * benchFlag) out.push(`${name} took ${now} ms, ${then} ms the night before, past ${benchFlag} times`);
+  }
   return out;
 }
 
@@ -218,6 +233,14 @@ export function comment(day: Day, history: Day[]): string {
       .slice(0, 25)
       .map(([kind, m]) => `| ${escape(kind)} | ${minutes(m)} | ${percent(m / (jobCap * 24 * 60))} | ${before ? minutes(before.kinds[kind] ?? 0) : "–"} |`),
     "",
+    ...(day.bench
+      ? [
+          "| Micro-benchmark (test/lend-bench.ts) | ms | The night before |",
+          "|---|---|---|",
+          ...Object.entries(day.bench).map(([name, ms]) => `| ${escape(name)} | ${ms} | ${before?.bench?.[name] ?? "–"} |`),
+          "",
+        ]
+      : []),
     `<!-- ci-spend-history ${JSON.stringify(kept.map((d) => ({ ...d, kinds: Object.fromEntries(Object.entries(d.kinds).map(([k, m]) => [k, Math.round(m * 10) / 10])) })))} -->`,
   ];
   return lines.join("\n");
@@ -261,6 +284,8 @@ if (import.meta.main) {
   const since = new Date(until.getTime() - 24 * 3600 * 1000);
   const { runs, jobs } = await fetchDay(since.toISOString().replace(/\.\d+Z$/, "Z"), until.toISOString().replace(/\.\d+Z$/, "Z"));
   const day = spend(until.toISOString().slice(0, 10), runs, jobs);
+  const bench = process.argv.find((arg) => arg.startsWith("--bench="))?.slice("--bench=".length);
+  if (bench) day.bench = JSON.parse(readFileSync(bench, "utf8")) as Record<string, number>;
   if (!issue) {
     console.log(comment(day, []));
   } else {

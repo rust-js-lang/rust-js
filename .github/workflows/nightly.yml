@@ -1382,7 +1382,8 @@ jobs:
   # the free plan's 20 jobs at once, queue waits, push-to-verdict latency
   # and the minutes wasted, one comment on the pinned "CI spend" issue,
   # #1989, edited in place each night with the days before; waste over 10%
-  # of the day or a job kind grown past 30% flagged.
+  # of the day, a job kind grown past 30% or a micro-benchmark past 1.5
+  # times the night before's flagged.
   ci-spend:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
@@ -1396,9 +1397,12 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version-file: package.json
+      # The runtime's micro-benchmarks, kept with the days and flagged where
+      # one took past half again the night before's (test/lend-bench.ts, #2003).
+      - run: bun test/lend-bench.ts target/bench.json
       - env:
           GH_TOKEN: ${{ github.token }}
-        run: bun scripts/ci-spend.ts --comment=1989 >> "$GITHUB_STEP_SUMMARY"
+        run: bun scripts/ci-spend.ts --comment=1989 --bench=target/bench.json >> "$GITHUB_STEP_SUMMARY"
 
   # A red night of `main` is an issue, "Nightly red: <date>", opened or, run
   # again that day, commented on, naming each failed job with its link: the

@@ -153,6 +153,15 @@ jobs:
         env:
           RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
         run: bun scripts/iteratorSlice.ts run forms
+      # Its parts' JUnit reports, each beside what ran it: a failed check's
+      # `attribute` runs each failing case again at the batch's commits (#2003).
+      - if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: junit-forms
+          path: target/junit
+          if-no-files-found: ignore
+          retention-days: 14
 
   # The nets of a check's change whose own run is a few minutes or less,
   # each a step of one machine, run at once (background steps, ten at a
@@ -314,6 +323,14 @@ jobs:
             target/react-in-rust.diff
           if-no-files-found: ignore
           retention-days: 14
+      # The slices' JUnit reports, as `iterator-forms`' (#2003).
+      - if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: junit-nets
+          path: target/junit
+          if-no-files-found: ignore
+          retention-days: 14
 
 
   lint:
@@ -466,10 +483,13 @@ jobs:
   # first it fails at is said, in the run's summary, an `attribution`
   # artifact and `bun run ci:status`: "<test> broke at <sha> (<subject>)".
   attribute-plan:
-    needs: [plan, test]
-    if: ${{ !cancelled() && !inputs.nightly && needs.test.result == 'failure' }}
+    needs: [plan, test, iterator-forms, nets]
+    if: ${{ !cancelled() && !inputs.nightly && (needs.test.result == 'failure' || needs.iterator-forms.result == 'failure' || needs.nets.result == 'failure') }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      actions: read
+      contents: read
     outputs:
       commits: ${{ steps.plan.outputs.commits }}
     steps:
@@ -484,6 +504,8 @@ jobs:
           pattern: junit-*
           path: junit
       - id: plan
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: bun scripts/attribute.ts plan junit ${{ needs.plan.outputs.batch_base || 'HEAD~1' }} >> "$GITHUB_OUTPUT"
       - uses: actions/upload-artifact@v7
         with:
@@ -520,7 +542,8 @@ jobs:
         with:
           name: attribute-failing
           path: target/attribute
-      # Each failing file, and each corpus case alone, by this commit's own
+      # Each failing file, each corpus case alone, and each slice run's
+      # failing tests by its file and settings, by this commit's own
       # harness; which still fail, `result.json`.
       - name: Run what failed, at this commit
         env:
@@ -536,6 +559,12 @@ jobs:
             echo "$name" > target/attribute/case.txt
             RUST_JS_CASES="1/1:$PWD/target/attribute/case.txt" bun test test/corpus.test.ts || still+=("test/corpus/$name")
           done
+          while IFS= read -r run; do
+            file=$(jq -r .file <<<"$run")
+            [ -f "$file" ] || continue
+            mapfile -t settings < <(jq -r '.env | to_entries[] | "\(.key)=\(.value)"' <<<"$run")
+            env "${settings[@]}" bun test --timeout=600000 "$file" -t "$(jq -r .pattern <<<"$run")" || still+=("$(jq -r .unit <<<"$run")")
+          done < <(jq -c '.runs[]?' target/attribute/failing.json)
           printf '%s\n' "${still[@]}" | jq -R . | jq -s "{commit: \"$(git rev-parse HEAD)\", failing: map(select(. != \"\"))}" > target/attribute/result.json
       - uses: actions/upload-artifact@v7
         with:
