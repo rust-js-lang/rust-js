@@ -34,8 +34,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// Whether `name`, such a local, is plain Rust data, whose fields don't
     /// change either.
-    pub(in crate::lower) fn plain_local(&self, name: &str) -> bool {
-        self.locals.mir.plain.contains(name)
+    pub(in crate::lower) fn plain_local(&self, name: &js::Name) -> bool {
+        self.locals.mir.plain.contains(&js::Path::var(name))
     }
 
     /// Of each closure of one call the body lowered from its MIR makes so

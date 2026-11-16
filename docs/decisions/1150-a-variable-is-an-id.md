@@ -835,3 +835,33 @@ used (`Made::captured`), hold each variable's `Name`, and `falsy_values`,
 `aliases`, `plain_reads`, `tuple_reads`, `guarded_lets` and `moved` ask
 whether a variable is one by its id. Byte-identical.
 
+## Names are ids, step 3's sixth slice: a place is a `js::Path` (2026-11-16)
+
+Tidy's typed sets and its plain values held words, and a place's key was a
+name's word spelled with its fields: `field_path`'s "element.editable",
+`call_path`'s "isItem()", plain's "q.title" and "...items", jsx's
+`path_of`. A place is a `js::Path` now (`js/path.rs`, the lead's
+decision): its root a variable by its id, or `this`, its fields property
+keys, which are words, and what it names, the place, what a call of it
+gives or an array's items. `Expr::path` and `Expr::called_path` make one
+of a tree, the one way; a chain with a computed member, an index or a call
+in it is none, as `field_path`'s was. `field_path`, `call_path` and the
+spelled keys are gone, and an architecture test refuses a function of an
+`Expr` that keys a place by a `String` and a spelled `...items`.
+
+`booleans` is a set of `Path`s, a variable one with no fields;
+`numbers` and `floats` sets of variables; `plain`, `locals.mir.plain` and
+`locals.mir.given` sets of `Path`s, the module's imports rooted at their
+module-form names; `locals.mir.paths` keyed by `Path`. The typed sets'
+subtraction stays, by id: several MIR locals can be one variable, which is
+a `bool` only where each of them is one.
+
+Asked by its word, a closure's own variable was found plain where its
+enclosing function had a plain variable spelled the same, `result$2` of
+each: a read of the closure's `Result` moved past calls by a coincidence of
+words. Asked by id it isn't, and React's port's `processReply` keeps the
+payload's `const`, so preparation makes its three `$catchUnwind` closures
+`try { .. } catch`, as upstream 83b9c29 writes them. Mutation
+plain-field-blocks-inline, whose JSX tests reached the plain root only
+through that coincidence, is held by two corpus cases' snapshots.
+

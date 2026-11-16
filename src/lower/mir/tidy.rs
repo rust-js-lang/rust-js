@@ -42,7 +42,7 @@ pub(super) use self::again::Again;
 pub(super) use self::bindings::{checked, is_temporary, spelled_as_temporary, temporary, unsuffixed_params, user_name};
 pub(super) use self::destructuring::{copied_params, destructured_params};
 use self::stability::{plain_field, read_past_calls};
-pub(super) use self::values::{call_path, field_path, writer_body};
+pub(super) use self::values::writer_body;
 use self::{
     bindings::*, branches::*, comparisons::*, copied::*, decided::*, destructuring::*, jumps::*, logicals::*, loops::*,
     moves::*, options::*, switches::switched, value_chains::*, values::*,
@@ -116,15 +116,15 @@ pub(super) struct Hints<'h> {
     /// never assigns again from where it makes it (ADR 0879).
     pub(super) kept: &'h IndexSet<js::Name>,
     /// The variables of Rust's `bool`: JS's `true` and `false` alone.
-    pub(super) booleans: &'h IndexSet<String>,
+    pub(super) booleans: &'h IndexSet<js::Path>,
     /// The variables of Rust's integers: JS's numbers, which `++` steps.
-    pub(super) numbers: &'h IndexSet<String>,
+    pub(super) numbers: &'h IndexSet<js::Name>,
     /// The variables of Rust's floats: JS's numbers, never an object whose
     /// `valueOf` a comparison runs (ADR 0966).
-    pub(super) floats: &'h IndexSet<String>,
+    pub(super) floats: &'h IndexSet<js::Name>,
     /// The variables of plain values, which nothing changes, and `...items`
     /// of arrays whose items nothing changes (`Locals::plain`).
-    pub(super) plain: &'h IndexSet<String>,
+    pub(super) plain: &'h IndexSet<js::Path>,
     /// Each closure of one call, where it's written and what it passes its
     /// call on to (ADR 0605, amended).
     pub(super) forwarding: &'h [crate::lower::passed_on::Forwarding],
@@ -283,7 +283,7 @@ fn falsy_values(body: &mut Vec<Stmt>, falsy: &IndexSet<js::Name>, tested: &Index
 /// <b />`, as JSX writes it (ADR 0235), of a boolean test, whose `false`
 /// renders nothing as `undefined` does; of another, its truth, `!!href &&
 /// <a />`, as `""` or `0` would render.
-fn shown_children(e: &mut Expr, booleans: &IndexSet<String>) {
+fn shown_children(e: &mut Expr, booleans: &IndexSet<js::Path>) {
     if let ExprKind::Jsx(jsx) = &mut e.kind {
         for child in jsx.children.iter_mut() {
             if let ExprKind::Cond(test, shown, none) = &child.kind
@@ -1057,10 +1057,11 @@ mod tests {
         let changing: IndexSet<String> = IndexSet::from_iter([t5.to_string(), t6.to_string()]);
         let none = IndexSet::default();
         let no_names: IndexSet<js::Name> = IndexSet::default();
+        let no_paths: IndexSet<js::Path> = IndexSet::default();
         let facts = MoveFacts {
             changing: &changing,
             set: &none,
-            plain: &none,
+            plain: &no_paths,
             captured: &no_names,
             fixed: &none,
             paired: &paired,
@@ -1163,12 +1164,13 @@ mod tests {
     // it stays.
     #[test]
     fn a_test_of_an_integer_is_turned_not_a_floats() {
-        let not_less = |x: &str| Expr::unary(UnaryOp::Not, Expr::bin(Op::Lt, Expr::var(x), Expr::int(5)));
-        let numbers: IndexSet<String> = IndexSet::from_iter(["n".to_string()]);
-        let mut of_int = not_less("n");
+        let not_less = |x: &js::Name| Expr::unary(UnaryOp::Not, Expr::bin(Op::Lt, Expr::var(x), Expr::int(5)));
+        let (n, x) = (lowered("n"), lowered("x"));
+        let numbers: IndexSet<js::Name> = IndexSet::from_iter([n.clone()]);
+        let mut of_int = not_less(&n);
         turned(&mut of_int, &numbers);
         assert!(matches!(of_int.kind, ExprKind::Binary(Op::Ge, ..)));
-        let mut of_float = not_less("x");
+        let mut of_float = not_less(&x);
         turned(&mut of_float, &numbers);
         assert!(matches!(of_float.kind, ExprKind::Unary(UnaryOp::Not, _)));
     }

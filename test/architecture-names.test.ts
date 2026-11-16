@@ -121,3 +121,19 @@ test("a name given apart is read by its name's API alone", () => {
   const reading = sources.filter((file) => file !== "src/names.rs" && /names::apart\(/.test(outsideTests(file)));
   expect(reading.sort()).toEqual(["src/js/name.rs", "src/lower/mir/tidy/shadows.rs", "src/prepare/catches.rs", "src/prepare/reclaim.rs"]);
 });
+
+// A place a tree reads is keyed by `js::Path` alone (ADR 1150, step 3): its
+// root a variable by its id, its fields property keys, made by
+// `Expr::path`, `Expr::called_path` and `Path`'s constructors. No key of a
+// place is a name's word formatted with its fields, as `field_path`'s
+// "element.editable", `call_path`'s "isItem()" and plain's "...items" were:
+// two variables of one word would be one key.
+test("a place is keyed by js::Path, never a name formatted with its fields", () => {
+  const scope = sources.filter(file => file.startsWith("src/lower/") || file.startsWith("src/js/") || file === "src/js.rs");
+  const shapes = [
+    /fn \w+\((?:e|expr|value): &(?:js::)?Expr\) -> Option<String>/,
+    /format!\("\.\.\.\{/,
+    /fn (?:field_path|call_path)\((?:e|expr): &/,
+  ];
+  expect(scope.flatMap(file => shapes.filter(shape => shape.test(read(file))).map(shape => `${file}: ${shape}`))).toEqual([]);
+});

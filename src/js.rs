@@ -17,6 +17,8 @@ mod make;
 mod name;
 pub use name::Name;
 mod optional_call;
+mod path;
+pub use path::{Path, PathRoot};
 mod pattern;
 pub mod result;
 pub mod scopes;

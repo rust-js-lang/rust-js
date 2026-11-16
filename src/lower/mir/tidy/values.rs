@@ -142,34 +142,6 @@ pub(super) fn pairs_index(f: &Expr) -> bool {
     false
 }
 
-/// `isItem()` of `isItem(item)`, `globalThis.isItem()`, what a call calls, as a key.
-pub(in crate::lower::mir) fn call_path(e: &Expr) -> Option<String> {
-    let ExprKind::Call(callee, _) = &e.kind else {
-        return None;
-    };
-    let callee = match &callee.kind {
-        ExprKind::Var(name) => name.to_string(),
-        _ => field_path(callee)?,
-    };
-    Some(format!("{callee}()"))
-}
-
-/// `element.editable`, a field's path of a variable, or of `this`, a
-/// class's method's `self` (`classes::receiver_as_this`), as a key.
-pub(in crate::lower::mir) fn field_path(e: &Expr) -> Option<String> {
-    match &e.kind {
-        ExprKind::Member(of, field) => {
-            let of = match &of.kind {
-                ExprKind::Var(name) => name.to_string(),
-                ExprKind::This => "this".to_string(),
-                _ => field_path(of)?,
-            };
-            Some(format!("{of}.{field}"))
-        }
-        _ => None,
-    }
-}
-
 /// `((e) => e.data)(r._0)`, an arrow called where it's made: what
 /// `calls::apply` makes of it, its value, where it can.
 pub(super) fn applied_arrows(e: &mut Expr) {
@@ -887,7 +859,7 @@ pub(in crate::lower::mir) fn writer_body(out: &mut Vec<Stmt>, name: &js::Name) {
 pub(super) fn applied_values(
     stmts: &mut Vec<Stmt>,
     set: &IndexSet<String>,
-    plain: &IndexSet<String>,
+    plain: &IndexSet<js::Path>,
     taken: &mut IndexSet<String>,
 ) {
     let mut i = 0;
@@ -941,7 +913,7 @@ fn first_applied(
     before: &mut Before,
     name: &js::Name,
     set: &IndexSet<String>,
-    plain: &IndexSet<String>,
+    plain: &IndexSet<js::Path>,
 ) -> Option<Expr> {
     if !before.past && !before.reads {
         return None;

@@ -60,15 +60,17 @@ impl<'tcx> FnCx<'_, 'tcx> {
             .collect()
     }
 
-    /// The names each of whose locals is a `bool`, a shared reference to one
-    /// too, which JS reads as it, of a closure what it captures too; the
-    /// names each of whose locals is an integer; and those each of whose
-    /// locals is a float, a JS number too (ADR 0966).
+    /// The variables each of whose locals is a `bool`, a shared reference to
+    /// one too, which JS reads as it, of a closure what it captures too, as
+    /// places (`js::Path`); those each of whose locals is an integer; and
+    /// those each of whose locals is a float, a JS number too (ADR 0966).
+    /// Each by its id: a variable several locals are, one MIR made alike,
+    /// is one only where each of them is (ADR 1150).
     pub(in crate::lower::mir) fn typed_names(
         &self,
         mir_body: &mir::Body<'tcx>,
         state: &State<'_, 'tcx>,
-    ) -> (IndexSet<String>, IndexSet<String>, IndexSet<String>) {
+    ) -> (IndexSet<js::Path>, IndexSet<js::Name>, IndexSet<js::Name>) {
         // A name each of whose locals is a `bool`, and one each of whose
         // locals is an integer.
         let mut booleans = IndexSet::default();
@@ -86,20 +88,20 @@ impl<'tcx> FnCx<'_, 'tcx> {
             // A shared reference to one too, `*show_hint`'s, which JS reads as it.
             let ty = mir_body.local_decls[local].ty;
             match ty.is_integral() {
-                true => numbers.insert(name.word().to_string()),
-                false => not_numbers.insert(name.word().to_string()),
+                true => numbers.insert(name.clone()),
+                false => not_numbers.insert(name.clone()),
             };
             match ty.is_floating_point() {
-                true => floats.insert(name.word().to_string()),
-                false => not_floats.insert(name.word().to_string()),
+                true => floats.insert(name.clone()),
+                false => not_floats.insert(name.clone()),
             };
             let bool = match ty.kind() {
                 ty::Ref(_, inner, ty::Mutability::Not) => inner.is_bool(),
                 _ => ty.is_bool(),
             };
             match bool {
-                true => booleans.insert(name.word().to_string()),
-                false => others.insert(name.word().to_string()),
+                true => booleans.insert(name.clone()),
+                false => others.insert(name.clone()),
             };
         }
         // And a closure's, of what it captures: its parent's.
@@ -111,8 +113,8 @@ impl<'tcx> FnCx<'_, 'tcx> {
             for (ty, (capture, _)) in args.as_closure().upvar_tys().iter().zip(state.facts.captures()) {
                 if let js::ExprKind::Var(name) = &capture.kind {
                     match ty.peel_refs().is_bool() {
-                        true => booleans.insert(name.to_string()),
-                        false => others.insert(name.to_string()),
+                        true => booleans.insert(name.clone()),
+                        false => others.insert(name.clone()),
                     };
                 }
             }
@@ -120,6 +122,7 @@ impl<'tcx> FnCx<'_, 'tcx> {
         booleans.retain(|name| !others.contains(name));
         numbers.retain(|name| !not_numbers.contains(name));
         floats.retain(|name| !not_floats.contains(name));
+        let booleans = booleans.iter().map(js::Path::var).collect();
         (booleans, numbers, floats)
     }
 }

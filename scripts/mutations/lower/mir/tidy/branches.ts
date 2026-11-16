@@ -158,7 +158,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a variable of `booleans` isn't a `bool` to `conditional`, `!!expanded`",
     file: "src/lower/mir/tidy/branches.rs",
-    find: "        ExprKind::Var(name) => booleans.contains(name.word()),\n",
+    find: "        ExprKind::Var(name) => booleans.contains(&js::Path::var(name)),\n",
     replace: "",
     tests: [
       "test/lowering-branches.test.ts",
@@ -323,7 +323,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `bool` field from MIR isn't known as one, `!!(element.editable || ..)`",
     file: "src/lower/mir/tidy/branches.rs",
-    find: "        ExprKind::Member(..) => field_path(e).is_some_and(|path| booleans.contains(&path)),\n",
+    find: "        ExprKind::Member(..) => e.path().is_some_and(|path| booleans.contains(&path)),\n",
     replace: "",
     tests: [
       "test/lowering-branches.test.ts",
@@ -358,7 +358,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a call giving a `bool` isn't one in a test, `!!isItem(item) && ..`",
     file: "src/lower/mir/tidy/branches.rs",
-    find: "        ExprKind::Call(..) if call_path(e).is_some_and(|path| booleans.contains(&path)) => true,\n",
+    find: "        ExprKind::Call(..) if e.called_path().is_some_and(|path| booleans.contains(&path)) => true,\n",
     replace: "",
     tests: [
       "test/lowering-branches.test.ts",

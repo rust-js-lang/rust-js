@@ -175,7 +175,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a range from a number variable, `k..n`, stays a `$rangeNext` loop, not a counted `for`",
     file: "src/lower/mir/tidy/loops.rs",
-    find: "        || matches!(&start.kind, ExprKind::Var(v) if numbers.contains(v.word()))\n",
+    find: "        || matches!(&start.kind, ExprKind::Var(v) if numbers.contains(v))\n",
     replace: "",
     tests: [
       "test/lowering-iterators.test.ts",

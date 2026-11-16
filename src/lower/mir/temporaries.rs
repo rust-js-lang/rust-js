@@ -361,8 +361,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some(guard) => IndexSet::from_iter([guard]),
             None => (state.body.local_decls.iter_enumerated())
                 .filter(|(_, decl)| decl.ty.is_ref())
-                .map(|(local, _)| state.locals.names[local].word())
-                .filter(|name| self.locals.mir.plain.contains(*name))
+                .map(|(local, _)| &state.locals.names[local])
+                .filter(|name| self.locals.mir.plain.contains(&js::Path::var(name)))
+                .map(js::Name::word)
                 .collect(),
         };
         let reads_reference = |e: &Expr| {
@@ -719,7 +720,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                     root = object;
                 }
-                matches!(&root.kind, js::ExprKind::Var(name) if self.locals.mir.plain.contains(name.word()))
+                matches!(&root.kind, js::ExprKind::Var(name) if self.locals.mir.plain.contains(&js::Path::var(name)))
             }
             _ => e.is_constant(),
         };

@@ -481,8 +481,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`debug_channel.writable.map(callback_of)`, `options.debugChannel.writable`, a field of a field of plain Rust data, goes in a `const option` first, and the `if` that gives the value is no conditional, as upstream's createResponseFromOptions writes it (rd614)",
     file: "src/lower/jsx.rs",
-    find: "        if objects.is_empty() || !self.plain_local(name.word()) {\n",
-    replace: "        if objects.len() != 1 || !self.plain_local(name.word()) {\n",
+    find: "        if objects.is_empty() || !self.plain_local(name) {\n",
+    replace: "        if objects.len() != 1 || !self.plain_local(name) {\n",
     tests: ["test/corpus.test.ts", "-t", "^map_of_a_field_of_a_field.rs$"],
     snapshots: true,
   },

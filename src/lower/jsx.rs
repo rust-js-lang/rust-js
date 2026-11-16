@@ -162,7 +162,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // given (ADR 0195).
             js::ExprKind::Member(object, _) => {
                 matches!(&object.kind, js::ExprKind::Var(name)
-                    if self.plain_local(name.word()) || self.locals.rests.contains_key(name))
+                    if self.plain_local(name) || self.locals.rests.contains_key(name))
                     && self.reads_alike(object, out)
             }
             js::ExprKind::Var(name) => {
@@ -203,10 +203,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let js::ExprKind::Var(name) = &of.kind else {
             return false;
         };
-        if objects.is_empty() || !self.plain_local(name.word()) {
+        if objects.is_empty() || !self.plain_local(name) {
             return false;
         }
-        let given = self.given_of(name.word());
+        let given = self.given_of(name);
         // Each object a field's read of, its path: `p`, `p.style`.
         !objects
             .iter()
@@ -923,10 +923,9 @@ fn jsx_tree(value: &Expr) -> bool {
 
 /// `a.b.c` of a chain of a variable's members, its path; `None` of another
 /// read.
-fn path_of(e: &Expr) -> Option<String> {
+fn path_of(e: &Expr) -> Option<js::Path> {
     match &e.kind {
-        js::ExprKind::Var(name) => Some(name.to_string()),
-        js::ExprKind::Member(object, field) => Some(format!("{}.{field}", path_of(object)?)),
-        _ => None,
+        js::ExprKind::Var(name) => Some(js::Path::var(name)),
+        _ => e.path(),
     }
 }

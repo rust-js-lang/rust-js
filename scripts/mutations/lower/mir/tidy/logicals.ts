@@ -196,7 +196,7 @@ export const mutations: Mutation[] = [
     breaks:
       "an integer variable's `if n != 0` is `if (n !== 0)`, not `if (n)` (ADR 0896, amended)",
     file: "src/lower/mir/tidy/logicals.rs",
-    find: "        ExprKind::Var(name) => integer(name.word()),\n",
+    find: "        ExprKind::Var(name) => integer(name),\n",
     replace: "        ExprKind::Var(_) => false,\n",
     tests: [
       "test/lowering-bits.test.ts",
@@ -246,7 +246,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a float's `if x != 0.0` is `if (x)`, which `NaN` fails where Rust's test passes (ADR 0896, amended)",
     file: "src/lower/mir/tidy/logicals.rs",
-    find: "        ExprKind::Var(name) => integer(name.word()),\n",
+    find: "        ExprKind::Var(name) => integer(name),\n",
     replace: "        ExprKind::Var(_) => true,\n",
     tests: [
       "test/lowering-bits.test.ts",

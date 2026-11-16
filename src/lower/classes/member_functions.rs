@@ -105,7 +105,7 @@ pub(in crate::lower) fn receiver_as_this(
     function: DefId,
     params: &mut Vec<Pattern>,
     body: &mut Vec<Stmt>,
-    booleans: &mut IndexSet<String>,
+    booleans: &mut IndexSet<js::Path>,
 ) -> Result<(), &'static str> {
     // A namespace's method has no `self`: what it calls through it is called
     // by its name (rd292, ADR 1037), and nothing else reads it.
@@ -137,12 +137,14 @@ pub(in crate::lower) fn receiver_as_this(
     if js::read_as_this(body, receiver.word()) {
         body.insert(0, StmtKind::Const(receiver.clone(), Expr::this()).at(js::Span::NONE));
     }
-    let through = format!("{receiver}.");
     *booleans = std::mem::take(booleans)
         .into_iter()
-        .map(|path| match path.strip_prefix(&through) {
-            Some(rest) => format!("this.{rest}"),
-            None => path,
+        .map(|path| match &path.root {
+            js::PathRoot::Var(root) if *root == receiver && !path.fields.is_empty() => js::Path {
+                root: js::PathRoot::This,
+                ..path
+            },
+            _ => path,
         })
         .collect();
     Ok(())

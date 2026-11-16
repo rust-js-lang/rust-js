@@ -274,7 +274,7 @@ export const mutations: Mutation[] = [
     breaks:
       "what a call of a `dyn Fn` or a fn pointer gives isn't recorded a `bool`, `!!keep(item) && ..` (a function item's is, ADR 0953, amended)",
     file: "src/lower/mir/assign.rs",
-    find: ".or_else(|| tidy::call_path(e))",
+    find: ".or_else(|| e.called_path())",
     replace: "",
     tests: [
       "test/lowering-branches.test.ts",

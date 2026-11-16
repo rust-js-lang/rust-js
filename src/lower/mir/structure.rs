@@ -1082,7 +1082,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let test = self.variants_test(subject, ty, adt, variants, written, present);
         if bindings::is_untagged(self.tcx, adt.did()) {
             test.clone().each_mut(&mut |e| {
-                if let Some(path) = tidy::call_path(e) {
+                if let Some(path) = e.called_path() {
                     self.locals.mir.paths.entry(path).or_insert(true);
                 }
             });

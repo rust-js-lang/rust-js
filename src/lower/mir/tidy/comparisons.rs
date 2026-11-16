@@ -8,7 +8,7 @@ use super::*;
 /// `length` or an `indexOf` gives; a string compared, to a string literal as Rust's types
 /// say, is ordered too. A float may be `NaN`, neither less nor more (ADR
 /// 0371).
-pub(super) fn turned(e: &mut Expr, numbers: &IndexSet<String>) {
+pub(super) fn turned(e: &mut Expr, numbers: &IndexSet<js::Name>) {
     let ExprKind::Unary(UnaryOp::Not, inner) = &e.kind else {
         return;
     };
@@ -23,7 +23,7 @@ pub(super) fn turned(e: &mut Expr, numbers: &IndexSet<String>) {
         _ => return,
     };
     let never_nan = |x: &Expr| match &x.kind {
-        ExprKind::Var(v) => numbers.contains(v.word()),
+        ExprKind::Var(v) => numbers.contains(v),
         ExprKind::Num(n) => n.fract() == 0.0,
         ExprKind::Binary(Op::BitOr | Op::BitAnd | Op::BitXor | Op::Shl | Op::Shr | Op::UShr, ..) => true,
         ExprKind::Member(_, m) => m == "length",
@@ -46,7 +46,7 @@ pub(super) fn turned(e: &mut Expr, numbers: &IndexSet<String>) {
 /// > b ? 1 : a === b ? 0 : undefined`, so each is its value, where `a` and
 /// `b` are floats or number literals, whose comparisons run nothing; not of
 /// a value of any shape, whose `valueOf` the helper may run twice (ADR 0966).
-pub(super) fn ordered_floats(e: &mut Expr, floats: &IndexSet<String>) {
+pub(super) fn ordered_floats(e: &mut Expr, floats: &IndexSet<js::Name>) {
     let ExprKind::Binary(eq @ (Op::Eq | Op::Ne), compared, ordering) = &e.kind else {
         return;
     };
@@ -64,7 +64,7 @@ pub(super) fn ordered_floats(e: &mut Expr, floats: &IndexSet<String>) {
         _ => return,
     };
     let number = |x: &Expr| match &x.kind {
-        ExprKind::Var(v) => floats.contains(v.word()),
+        ExprKind::Var(v) => floats.contains(v),
         ExprKind::Num(_) => true,
         _ => false,
     };

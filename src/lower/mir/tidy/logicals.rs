@@ -20,7 +20,7 @@ pub(super) fn logical_returns(
     stmts: &mut Vec<Stmt>,
     logicals: &[js::Span],
     returns: &[js::Span],
-    booleans: &IndexSet<String>,
+    booleans: &IndexSet<js::Path>,
 ) {
     let within = |s: js::Span| !s.is_none() && logicals.iter().any(|l| l.lo <= s.lo && s.hi <= l.hi);
     // The `then`'s `if`s of no `else`, each the one before's only
@@ -103,7 +103,7 @@ pub(super) fn returned_logicals(
     body: &mut Vec<Stmt>,
     logicals: &[js::Span],
     returns: &[js::Span],
-    booleans: &IndexSet<String>,
+    booleans: &IndexSet<js::Path>,
 ) {
     let within = |s: js::Span| !s.is_none() && logicals.iter().any(|l| l.lo <= s.lo && s.hi <= l.hi);
     // The tests of a chain of `if`s with no `else`, each the next's only
@@ -211,7 +211,7 @@ pub(super) fn logical_blocks(
     stmts: &mut Vec<Stmt>,
     logicals: &[js::Span],
     returns: &[js::Span],
-    booleans: &IndexSet<String>,
+    booleans: &IndexSet<js::Path>,
 ) {
     let within = |s: js::Span| !s.is_none() && logicals.iter().any(|l| l.lo <= s.lo && s.hi <= l.hi);
     let [.., block, last] = stmts.as_slice() else { return };
@@ -229,7 +229,7 @@ pub(super) fn logical_blocks(
         fall: &Expr,
         (label, after): (&str, &Expr),
         returns: &[js::Span],
-        booleans: &IndexSet<String>,
+        booleans: &IndexSet<js::Path>,
     ) -> Option<Expr> {
         match stmts {
             [] => Some(fall.clone()),
@@ -278,7 +278,7 @@ pub(super) fn logical_blocks(
 
 /// `c ? yes : no` of booleans, as `conditional` folds it, and `c ? (p ||
 /// no) : no` as `(c && p) || no`, a value both end with taken out.
-fn folded(test: Expr, yes: Expr, no: Expr, booleans: &IndexSet<String>) -> Expr {
+fn folded(test: Expr, yes: Expr, no: Expr, booleans: &IndexSet<js::Path>) -> Expr {
     // `p` of `p || no`, an `||` chain that ends with `no`.
     fn without(e: &Expr, tail: &Expr) -> Option<Expr> {
         match &e.kind {
@@ -1129,7 +1129,7 @@ fn tests_of(e: &Expr, spans: &mut Vec<js::Span>) -> bool {
 /// count, and so does a remainder's, `n % 2 === 0`. Of a test whose truth alone is read,
 /// an `if`'s, a `while`'s or a conditional's, and the parts of an `&&`,
 /// `||` or `!` of one (ADR 0896, amended).
-pub(super) fn bit_tests(body: &mut Vec<Stmt>, numbers: &IndexSet<String>, patterns: &[js::Span]) {
+pub(super) fn bit_tests(body: &mut Vec<Stmt>, numbers: &IndexSet<js::Name>, patterns: &[js::Span]) {
     // Not a name a closure in the body declares too, which may be a
     // float's: the walk of a conditional goes into closures.
     let mut declared = IndexSet::default();
@@ -1144,7 +1144,7 @@ pub(super) fn bit_tests(body: &mut Vec<Stmt>, numbers: &IndexSet<String>, patter
         }
         _ => {}
     });
-    let integer = |name: &str| numbers.contains(name) && !declared.contains(name);
+    let integer = |name: &js::Name| numbers.contains(name) && !declared.contains(name.word());
     // Not a `match`'s pattern's, `0 | 6 =>`, which compares what's matched
     // with its constants, as a `switch`'s `case 0:` would.
     let matched = |span: js::Span| {
@@ -1172,9 +1172,9 @@ pub(super) fn bit_tests(body: &mut Vec<Stmt>, numbers: &IndexSet<String>, patter
 /// `(a - b) >>> 0`, a number of 32 bits. Not a remainder's, wrapped or
 /// not, `n % 2 !== 0` or `$rem(n, m) | 0`: `n % 2 === 0` is how JS tests
 /// one (ADR 0896, amended).
-fn integer_value(e: &Expr, integer: &dyn Fn(&str) -> bool) -> bool {
+fn integer_value(e: &Expr, integer: &dyn Fn(&js::Name) -> bool) -> bool {
     match &e.kind {
-        ExprKind::Var(name) => integer(name.word()),
+        ExprKind::Var(name) => integer(name),
         ExprKind::Binary(Op::BitOr | Op::UShr, wrapped, zero) if zero.as_int() == Some(0) => matches!(
             wrapped.kind,
             ExprKind::Binary(Op::Add | Op::Sub | Op::Mul, ..) | ExprKind::Unary(UnaryOp::Neg, _)
@@ -1186,7 +1186,12 @@ fn integer_value(e: &Expr, integer: &dyn Fn(&str) -> bool) -> bool {
 /// `bit_tests` of one test, and of the tests it's made of.
 /// `matched` says whether a test, where it's written, its own span or
 /// `around`'s, the statement's or conditional's it's of, is a `match`'s pattern's.
-fn bit_test(test: &mut Expr, integer: &dyn Fn(&str) -> bool, matched: &dyn Fn(js::Span) -> bool, around: js::Span) {
+fn bit_test(
+    test: &mut Expr,
+    integer: &dyn Fn(&js::Name) -> bool,
+    matched: &dyn Fn(js::Span) -> bool,
+    around: js::Span,
+) {
     let at = if test.span.is_none() { around } else { test.span };
     match &mut test.kind {
         ExprKind::Binary(Op::And | Op::Or, a, b) => {
@@ -1254,7 +1259,7 @@ pub(super) fn alike_branches(yes: &Expr, no: &Expr) -> bool {
 /// user's decision; other branches, `c ? false : b`, and a test or a branch
 /// that isn't a `bool`, an `Option<bool>`'s `c ? o : false`, as it wrote
 /// them (ADR 0879, amended).
-pub(super) fn conditional(test: Expr, yes: Expr, no: Expr, booleans: &IndexSet<String>, written_if: bool) -> Expr {
+pub(super) fn conditional(test: Expr, yes: Expr, no: Expr, booleans: &IndexSet<js::Path>, written_if: bool) -> Expr {
     // Of branches alike, the value alone, where the test does nothing:
     // `value._0` of `value.TAG === "Continue" ? value._0 : value._0`. One
     // that does something keeps its `if` (`alike_branches`).

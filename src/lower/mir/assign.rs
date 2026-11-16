@@ -713,7 +713,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // of a place read (`mir_place`).
         if place.projection.is_empty()
             && let Value::Expr(e) = &value
-            && let Some(path) = tidy::field_path(e).or_else(|| tidy::call_path(e))
+            && let Some(path) = e.path().or_else(|| e.called_path())
         {
             let bool = state.body.local_decls[local].ty.is_bool();
             *self.locals.mir.paths.entry(path).or_insert(bool) &= bool;

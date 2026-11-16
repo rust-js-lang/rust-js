@@ -59,7 +59,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
         // A field's path, `element.editable`: whether it's a `bool`, which
         // tidy writes an `||` of as one.
-        if let Some(path) = tidy::field_path(&e) {
+        if let Some(path) = e.path() {
             let bool = place.ty(state.body, self.tcx).ty.is_bool();
             *self.locals.mir.paths.entry(path).or_insert(bool) &= bool;
         }

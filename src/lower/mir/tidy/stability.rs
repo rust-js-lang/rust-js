@@ -1,19 +1,18 @@
 //! Stability of expression reads across calls, consumed by tidy movement.
-use super::values::field_path;
 use crate::collections::IndexSet;
 use crate::js::{self, Expr, ExprKind, Op, Stmt, StmtKind, UnaryOp};
 
 /// Whether `e` is a read of plain Rust data, which nothing changes: a field
 /// however deep of a variable of plain data, or one of a plain variable's
 /// of a struct not all plain, `q.title` beside a `Cell` (`Found::plain`).
-pub(super) fn plain_field(e: &Expr, plain: &IndexSet<String>) -> bool {
+pub(super) fn plain_field(e: &Expr, plain: &IndexSet<js::Path>) -> bool {
     let mut root = e;
     while let ExprKind::Member(of, _) = &root.kind {
         root = of;
     }
     matches!(e.kind, ExprKind::Member(..))
-        && (matches!(&root.kind, ExprKind::Var(v) if plain.contains(v.word()))
-            || field_path(e).is_some_and(|path| plain.contains(&path)))
+        && (matches!(&root.kind, ExprKind::Var(v) if plain.contains(&js::Path::var(v)))
+            || e.path().is_some_and(|path| plain.contains(&path)))
 }
 
 /// Whether reading `e` after a call reads what it did before: a constant, a
@@ -23,13 +22,14 @@ pub(super) fn plain_field(e: &Expr, plain: &IndexSet<String>) -> bool {
 /// change, as MIR's lowering reads it where it's read, or a builtin's
 /// function, `Object.fromEntries`; an element of such, a closure made, and a
 /// test or a choice of such, `selected ? "page" : undefined`.
-pub(super) fn read_past_calls(e: &Expr, set: &IndexSet<String>, plain: &IndexSet<String>) -> bool {
+pub(super) fn read_past_calls(e: &Expr, set: &IndexSet<String>, plain: &IndexSet<js::Path>) -> bool {
     let past = |e: &Expr| read_past_calls(e, set, plain);
     let mut root = e;
     while let ExprKind::Member(of, _) | ExprKind::Index(of, _) = &root.kind {
         root = of;
     }
-    let plain_root = matches!(&root.kind, ExprKind::Var(v) if plain.contains(v.word()) && !set.contains(v.word()));
+    let plain_root =
+        matches!(&root.kind, ExprKind::Var(v) if plain.contains(&js::Path::var(v)) && !set.contains(v.word()));
     match &e.kind {
         ExprKind::Var(v) => !set.contains(v.word()),
         // An item of a plain value, `pair[0]`, as a field of one is.
@@ -54,7 +54,7 @@ pub(super) fn read_past_calls(e: &Expr, set: &IndexSet<String>, plain: &IndexSet
         // value's, an iterator's, a function's `inspect(see)`, which
         // spreading steps, running what it calls (#1015).
         ExprKind::Spread(a) => matches!(&a.kind, ExprKind::Var(v)
-            if !set.contains(v.word()) && plain.contains(&format!("...{v}"))),
+            if !set.contains(v.word()) && plain.contains(&js::Path::items(v))),
         ExprKind::Unary(UnaryOp::Not, a) => past(a),
         ExprKind::Binary(
             Op::Eq
@@ -94,7 +94,7 @@ pub(super) fn read_past_calls(e: &Expr, set: &IndexSet<String>, plain: &IndexSet
                 && let [given] = args.as_slice() =>
         {
             let mut plain = plain.clone();
-            plain.swap_remove(param.word());
+            plain.swap_remove(&js::Path::var(param));
             past(given) && read_past_calls(result, set, &plain)
         }
         _ => e.is_made_of_constants(),

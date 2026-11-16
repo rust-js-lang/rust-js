@@ -804,7 +804,7 @@ pub(in crate::lower::mir::tidy) fn returned_values(
     stmts: &mut Vec<Stmt>,
     elses: &[(js::Span, js::Span, js::Span)],
     returns: &[js::Span],
-    booleans: &IndexSet<String>,
+    booleans: &IndexSet<js::Path>,
 ) {
     let within = |c: &js::Span, s: js::Span| !s.is_none() && c.lo <= s.lo && s.hi <= c.hi;
     let Some(at) = stmts.len().checked_sub(2) else {
@@ -936,7 +936,7 @@ pub(in crate::lower::mir::tidy) fn written_jumps_of_ifs(stmts: &mut Vec<Stmt>, t
 pub(in crate::lower::mir::tidy) fn returned_branches(
     stmts: &mut Vec<Stmt>,
     returns: &[js::Span],
-    booleans: &IndexSet<String>,
+    booleans: &IndexSet<js::Path>,
     program: &crate::lower::mir::hints::Written,
 ) {
     let (continues, elses) = (&program.continues, &program.elses);

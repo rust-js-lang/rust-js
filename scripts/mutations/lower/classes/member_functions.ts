@@ -9,8 +9,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a class's method's `this.below(x) || ..` is `!!this.below(x) || ..`, its `bool` paths left of the receiver's name",
     file: "src/lower/classes/member_functions.rs",
-    find: '            Some(rest) => format!("this.{rest}"),\n',
-    replace: "            Some(_) => path,\n",
+    find: "            js::PathRoot::Var(root) if *root == receiver && !path.fields.is_empty() => js::Path {\n",
+    replace: "            js::PathRoot::Var(root) if false && *root == receiver && !path.fields.is_empty() => js::Path {\n",
     tests: ["test/corpus.test.ts", "-t", "^class_bool_methods.rs$"],
     snapshots: true,
   },

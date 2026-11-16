@@ -220,7 +220,7 @@ pub(super) fn table_read(arms: &[(Option<Expr>, Expr)], names: &[String]) -> Opt
 pub(super) fn branch_values(
     stmts: &mut Vec<Stmt>,
     returns: &[js::Span],
-    booleans: &IndexSet<String>,
+    booleans: &IndexSet<js::Path>,
     (result, switches): (&str, &[Switch]),
     program: &crate::lower::mir::hints::Written,
 ) {
@@ -559,7 +559,7 @@ pub(super) fn chain(body: &[Stmt], label: &str) -> Option<(Vec<Expr>, String, Ex
 
 /// `!e` of a chain of tests, part by part, `!!a || b !== c` of `!a && b ===
 /// c`: a `bool`, as `!e` is, each `!x` of what's not one `!!x`.
-pub(super) fn negated_bools(e: Expr, booleans: &IndexSet<String>) -> Expr {
+pub(super) fn negated_bools(e: Expr, booleans: &IndexSet<js::Path>) -> Expr {
     match e.kind {
         ExprKind::Binary(op @ (Op::And | Op::Or), left, right) => {
             let flipped = if op == Op::And { Op::Or } else { Op::And };
@@ -875,13 +875,13 @@ pub(super) fn guarded_chain(stmt: &Stmt, guard: &Expr) -> bool {
 /// call of a function item that gives a `bool`, std's `v.some(f)` and
 /// `s.startsWith(p)` too (`calls::given_by`, ADR 0953, amended), or `&&`
 /// and `||` of them.
-pub(super) fn is_boolean(e: &Expr, booleans: &IndexSet<String>) -> bool {
+pub(super) fn is_boolean(e: &Expr, booleans: &IndexSet<js::Path>) -> bool {
     match &e.kind {
         ExprKind::Bool(_) | ExprKind::Unary(UnaryOp::Not, _) => true,
         _ if e.facts.has(js::Known::Boolean) => true,
-        ExprKind::Var(name) => booleans.contains(name.word()),
-        ExprKind::Member(..) => field_path(e).is_some_and(|path| booleans.contains(&path)),
-        ExprKind::Call(..) if call_path(e).is_some_and(|path| booleans.contains(&path)) => true,
+        ExprKind::Var(name) => booleans.contains(&js::Path::var(name)),
+        ExprKind::Member(..) => e.path().is_some_and(|path| booleans.contains(&path)),
+        ExprKind::Call(..) if e.called_path().is_some_and(|path| booleans.contains(&path)) => true,
         ExprKind::Binary(
             Op::Eq | Op::Ne | Op::LooseEq | Op::LooseNe | Op::Lt | Op::Le | Op::Gt | Op::Ge | Op::InstanceOf | Op::In,
             ..,
@@ -1273,7 +1273,7 @@ fn reads_declared<'s>(tail: &[Stmt], branches: impl Iterator<Item = &'s Stmt>) -
 /// `bb: { if (t) { x = true; break bb; } x = false; }`: `x = t`, `!!t` of
 /// what's no `bool`, `!t` of its values the other way. No program writes a `bool`'s value with an
 /// `if`, clippy's `needless_bool`, so none's undone.
-pub(super) fn flag_values(stmts: &mut [Stmt], booleans: &IndexSet<String>) {
+pub(super) fn flag_values(stmts: &mut [Stmt], booleans: &IndexSet<js::Path>) {
     // `x = true;`'s `x`, the name it writes, and `true`.
     fn set(stmt: &Stmt) -> Option<(&js::Name, bool)> {
         match &stmt.kind {

@@ -172,10 +172,10 @@ pub(super) struct Found {
     /// either, which `reads_alike` and `plain_field` ask of.
     /// And of the others' arrays, their items, `...items`.
     pub(super) alike: IndexSet<String>,
-    pub(super) plain: IndexSet<String>,
+    pub(super) plain: IndexSet<js::Path>,
     /// Of those of plain data, each path to what they hold whose fields a
     /// getter may answer, each read anew, `p.style` (`given_paths`, #1908).
-    pub(super) given: IndexSet<String>,
+    pub(super) given: IndexSet<js::Path>,
     /// And those of plain Rust data written again, a `mut` parameter
     /// assigned after what it's read for: each the same until it's written
     /// (`written_before_read`, #121).
@@ -229,7 +229,7 @@ pub(super) struct Found {
     pub(super) concise: Vec<(js::Span, crate::lower::jsx::OneCall)>,
     /// Of a body lowered from its MIR, each field path it reads,
     /// `element.editable`, and whether it's a `bool` each time.
-    pub(super) paths: IndexMap<String, bool>,
+    pub(super) paths: IndexMap<js::Path, bool>,
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -1059,12 +1059,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             );
             // Of a struct not all plain, a `Cell` in it, each field that is,
             // `q.title`, which nothing changes either.
-            let fields: Vec<String> = match mir_body.local_decls[local].ty.peel_refs().kind() {
+            let fields: Vec<js::Path> = match mir_body.local_decls[local].ty.peel_refs().kind() {
                 ty::Adt(adt, _) if !plain && !through_mut && adt.is_struct() => {
                     match self.shape(mir_body.local_decls[local].ty.peel_refs()) {
                         Shape::Object(fields) => (fields.into_iter())
                             .filter(|(_, ty)| self.plain_type(*ty))
-                            .filter_map(|(field, _)| Some(format!("{name}.{}", field.name()?)))
+                            .filter_map(|(field, _)| Some(js::Path::var(name).field(field.name()?)))
                             .collect(),
                         _ => Vec::new(),
                     }
@@ -1072,14 +1072,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => Vec::new(),
             };
             if plain {
-                self.note_plain(name.word(), mir_body.local_decls[local].ty);
+                self.note_plain(name, mir_body.local_decls[local].ty);
             }
             self.locals.mir.plain.extend(fields);
             // Of an array, of what may be JS's, its items, which only a
             // `&mut` changes: `...items` (`read_past_calls`).
             let ty = mir_body.local_decls[local].ty.peel_refs();
             if !plain && !through_mut && (ty.is_slice() || ty.is_array() || self.is_vec_like(ty)) {
-                self.locals.mir.plain.insert(format!("...{name}"));
+                self.locals.mir.plain.insert(js::Path::items(name));
             }
         }
         let mut out = self.parameters_first(&state)?;
@@ -1218,7 +1218,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The names of plain values, which nothing changes (`Locals::plain`),
     /// and the module's imports, whose fields JS's modules never change
     /// either, `HighlightStyle.define`, as `reads_alike` has them.
-    fn plain_names(&self) -> IndexSet<String> {
+    fn plain_names(&self) -> IndexSet<js::Path> {
         let mut plain = self.locals.mir.plain.clone();
         let Some(imports) = self.krate.imports.get(&self.module) else {
             return plain;
@@ -1226,7 +1226,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // But a library's static whose value changes in place, read here
         // (`Dependencies::changing_imports`, #1028).
         let changing = &self.dependencies.borrow().changing_imports;
-        plain.extend(imports.values().filter(|name| !changing.contains(*name)).cloned());
+        plain.extend(
+            (imports.values())
+                .filter(|name| !changing.contains(*name))
+                .map(|name| js::Path::var(&js::Name::module(name))),
+        );
         plain
     }
 }

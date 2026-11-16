@@ -212,7 +212,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a field of plain data read twice is a `const _5 = route.title;`, not read where it's used",
     file: "src/lower/mir/temporaries.rs",
-    find: "                matches!(&root.kind, js::ExprKind::Var(name) if self.locals.mir.plain.contains(name.word()))\n",
+    find: "                matches!(&root.kind, js::ExprKind::Var(name) if self.locals.mir.plain.contains(&js::Path::var(name)))\n",
     replace: "                false\n",
     tests: [
       "test/lowering-matches.test.ts",

@@ -431,15 +431,15 @@ impl NamingFacts {
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Of `name`, a variable, each path to what it holds whose fields a
     /// getter may answer (`given_paths`).
-    pub(in crate::lower) fn given_of(&self, name: &str) -> crate::collections::IndexSet<String> {
-        let mut found: crate::collections::IndexSet<String> = (self.locals.mir.given.iter())
-            .filter(|path| *path == name || path.starts_with(&format!("{name}.")))
+    pub(in crate::lower) fn given_of(&self, name: &js::Name) -> crate::collections::IndexSet<js::Path> {
+        let mut found: crate::collections::IndexSet<js::Path> = (self.locals.mir.given.iter())
+            .filter(|path| matches!(&path.root, js::PathRoot::Var(root) if root == name))
             .cloned()
             .collect();
         for (id, var) in &self.locals.vars {
-            if matches!(&var.place.kind, js::ExprKind::Var(n) if n.is(name)) {
+            if matches!(&var.place.kind, js::ExprKind::Var(n) if n == name) {
                 let ty = self.tcx.typeck(id.0.owner.def_id).node_type(id.0);
-                self.given_paths(name, ty, &mut Default::default(), &mut found);
+                self.given_paths(js::Path::var(name), ty, &mut Default::default(), &mut found);
             }
         }
         found
@@ -447,10 +447,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `name`, a local of plain data of `ty`: its name, and each path to
     /// what it holds whose fields a getter may answer (`given_paths`).
-    pub(super) fn note_plain(&mut self, name: &str, ty: Ty<'tcx>) {
-        self.locals.mir.plain.insert(name.to_string());
+    pub(super) fn note_plain(&mut self, name: &js::Name, ty: Ty<'tcx>) {
+        self.locals.mir.plain.insert(js::Path::var(name));
         let mut found = IndexSet::default();
-        self.given_paths(name, ty, &mut IndexSet::default(), &mut found);
+        self.given_paths(js::Path::var(name), ty, &mut IndexSet::default(), &mut found);
         self.locals.mir.given.extend(found);
     }
 
@@ -461,14 +461,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// path, ends a recursive type's walk.
     fn given_paths(
         &self,
-        path: &str,
+        path: js::Path,
         ty: Ty<'tcx>,
         seen: &mut IndexSet<rustc_hir::def_id::DefId>,
-        found: &mut IndexSet<String>,
+        found: &mut IndexSet<js::Path>,
     ) {
         let ty = ty.peel_refs();
         if self.fields_read_once(ty) {
-            found.insert(path.to_string());
+            found.insert(path);
             return;
         }
         if let ty::Adt(adt, _) = *ty.kind()
@@ -478,7 +478,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             for (field, ty) in fields {
                 if let Some(name) = field.name() {
-                    self.given_paths(&format!("{path}.{name}"), ty, seen, found);
+                    self.given_paths(path.clone().field(name), ty, seen, found);
                 }
             }
             seen.swap_remove(&adt.did());

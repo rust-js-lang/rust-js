@@ -14,7 +14,7 @@ use crate::js::Name;
 pub(super) fn loops(
     stmts: &mut Vec<Stmt>,
     mentions: &mut IndexMap<String, usize>,
-    numbers: &IndexSet<String>,
+    numbers: &IndexSet<js::Name>,
     captured: &IndexSet<String>,
 ) {
     let mut i = 0;
@@ -155,7 +155,7 @@ pub(super) fn for_of(
     looped: &Stmt,
     after: &[Stmt],
     mentions: &IndexMap<String, usize>,
-    numbers: &IndexSet<String>,
+    numbers: &IndexSet<js::Name>,
 ) -> Option<Vec<Stmt>> {
     let (iter, source) = match &made.kind {
         StmtKind::Const(iter, source) => (iter, source),
@@ -450,7 +450,7 @@ struct Counted<'e> {
 fn counted_range(
     range: Counted<'_>,
     (label, pattern, mutable, body, exit, span): (&Option<Name>, js::Pattern, bool, Vec<Stmt>, Vec<Stmt>, js::Span),
-    (numbers, mentions): (&IndexSet<String>, &IndexMap<String, usize>),
+    (numbers, mentions): (&IndexSet<js::Name>, &IndexMap<String, usize>),
 ) -> Option<Vec<Stmt>> {
     let Counted {
         start,
@@ -468,7 +468,7 @@ fn counted_range(
     // its code point, past the surrogates, as `$rangeNext` does.
     // Of arithmetic, `i + 1`, an integer's: a `char` has none.
     let counted = start.as_int().is_some()
-        || matches!(&start.kind, ExprKind::Var(v) if numbers.contains(v.word()))
+        || matches!(&start.kind, ExprKind::Var(v) if numbers.contains(v))
         || matches!(&start.kind, ExprKind::Unary(UnaryOp::Neg, n) if n.as_int().is_some())
         || matches!(&start.kind, ExprKind::Binary(op, ..) if matches!(op, Op::Add | Op::Sub | Op::Mul
             | Op::Div | Op::Rem | Op::BitOr | Op::BitAnd | Op::BitXor | Op::Shl | Op::Shr | Op::UShr));
@@ -666,7 +666,7 @@ fn from_the_end(
     mutable: bool,
     body: &[Stmt],
     span: js::Span,
-    (numbers, mentions): (&IndexSet<String>, &IndexMap<String, usize>),
+    (numbers, mentions): (&IndexSet<js::Name>, &IndexMap<String, usize>),
 ) -> Option<(js::Name, Expr, Expr, Vec<Stmt>)> {
     let fresh = |base: &str| {
         std::iter::once(base.to_string())
@@ -704,9 +704,9 @@ fn from_the_end(
         return None;
     };
     // JS's `--` steps a number: of a `char`'s range, text, none.
-    fn number(e: &Expr, numbers: &IndexSet<String>) -> bool {
+    fn number(e: &Expr, numbers: &IndexSet<js::Name>) -> bool {
         e.as_int().is_some()
-            || matches!(&e.kind, ExprKind::Var(v) if numbers.contains(v.word()))
+            || matches!(&e.kind, ExprKind::Var(v) if numbers.contains(v))
             || matches!(&e.kind, ExprKind::Unary(UnaryOp::Neg, n) if n.as_int().is_some())
             || matches!(&e.kind, ExprKind::Member(_, length) if length == "length")
             || matches!(&e.kind, ExprKind::Binary(op, ..) if matches!(op, Op::Sub | Op::Mul | Op::Div | Op::Rem

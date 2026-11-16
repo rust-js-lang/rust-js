@@ -93,8 +93,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an import's member, `tags.link`, made before a branch that calls, is held, `const link = tags.link`, not read where it's given",
     file: "src/lower/mir.rs",
-    find: "        plain.extend(imports.values().filter(|name| !changing.contains(*name)).cloned());\n",
-    replace: "        plain.extend(imports.values().filter(|_| false).cloned());\n",
+    find: "        plain.extend(\n            (imports.values())\n                .filter(|name| !changing.contains(*name))\n                .map(|name| js::Path::var(&js::Name::module(name))),\n        );\n",
+    replace: "        plain.extend(\n            (imports.values())\n                .filter(|_| false)\n                .map(|name| js::Path::var(&js::Name::module(name))),\n        );\n",
     tests: [
       "test/lowering-moves.test.ts",
       "-t",
@@ -106,7 +106,7 @@ export const mutations: Mutation[] = [
     breaks:
       "an array of JS's values isn't known to keep its items past calls, so `[...first, ...]` holds what's made after",
     file: "src/lower/mir.rs",
-    find: '                self.locals.mir.plain.insert(format!("...{name}"));\n',
+    find: "                self.locals.mir.plain.insert(js::Path::items(name));\n",
     replace: "",
     tests: [
       "test/lowering-collections.test.ts",
@@ -448,8 +448,8 @@ export const mutations: Mutation[] = [
     name: "plain-names-of-changing-imports",
     breaks: "every import is plain to tidy, a library's changing static's too, its read moved past a write (#1028)",
     file: "src/lower/mir.rs",
-    find: "        plain.extend(imports.values().filter(|name| !changing.contains(*name)).cloned());\n",
-    replace: "        plain.extend(imports.values().filter(|name| changing.len() < usize::MAX || !changing.contains(*name)).cloned());\n",
+    find: "        plain.extend(\n            (imports.values())\n                .filter(|name| !changing.contains(*name))\n                .map(|name| js::Path::var(&js::Name::module(name))),\n        );\n",
+    replace: "        plain.extend(\n            (imports.values())\n                .filter(|name| changing.len() < usize::MAX || !changing.contains(*name))\n                .map(|name| js::Path::var(&js::Name::module(name))),\n        );\n",
     tests: ["test/crates.test.ts", "-t", "two crates: library_static_changing_in_place"],
   },
   {

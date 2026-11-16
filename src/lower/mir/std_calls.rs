@@ -506,7 +506,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         // part of plain data nothing changes, or what holds the
                         // string still where it's tested and cut.
                         let mut plain = part.reads_same();
-                        part.visit_vars(&mut |name| plain &= this.plain_local(name));
+                        part.visit_names(&mut |name| plain &= this.plain_local(name));
                         let kept = plain
                             || matches!(&part.kind, js::ExprKind::Var(name)
                             if holders.iter().any(|&held| name.is(state.locals.names[held].word())));

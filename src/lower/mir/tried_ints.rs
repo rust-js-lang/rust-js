@@ -50,7 +50,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Read at the test and where its `Ok` is: what reads the same
         // there, or held first.
         let mut plain = n.reads_same();
-        n.visit_vars(&mut |name| plain &= self.plain_local(name));
+        n.visit_names(&mut |name| plain &= self.plain_local(name));
         let n = match plain {
             true => n,
             false => {
