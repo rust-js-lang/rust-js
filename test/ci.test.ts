@@ -1050,3 +1050,31 @@ test("each job of a push's check is gated, or always runs for a reason it names"
     if ("push" in on) expect([file, (on.push?.paths ?? []).length > 0]).toEqual([file, true]);
   }
 });
+
+// The mutation shards' snapshot judge places a site by the test map, the
+// `test-map` artifact its run made: test-map.yml called by rustc-tests.yml.
+// A called workflow's event is its caller's, `push` of each
+// check of main, and test-map.yml named its artifact by it, so a call
+// uploaded `test-map-of-<sha>` and all 16 shards failed to download
+// `test-map` (check 43889550882). Each job that downloads `test-map` needs a
+// job of its run that calls test-map.yml, which tells a call from a push by
+// what only a call gives, `inputs.of`, never the event's name.
+test("each job that downloads the test map needs the job that makes it in its run", () => {
+  type Step = { uses?: string; with?: Record<string, string> };
+  type Job = { uses?: string; needs?: string | string[]; steps?: Step[]; with?: Record<string, string> };
+  const workflows = readdirSync(join(root, ".github/workflows")).filter((file) => file.endsWith(".yml"));
+  const downloads: string[] = [];
+  for (const file of workflows) {
+    const { jobs: all } = Bun.YAML.parse(readFileSync(join(root, ".github/workflows", file), "utf8")) as { jobs: Record<string, Job> };
+    for (const [id, job] of Object.entries(all)) {
+      if (!(job.steps ?? []).some((step) => step.uses?.startsWith("actions/download-artifact") && step.with?.name === "test-map")) continue;
+      downloads.push(`${file} ${id}`);
+      const needs = [job.needs ?? []].flat();
+      expect(needs.some((need) => all[need]?.uses === "./.github/workflows/test-map.yml" && all[need]?.with?.of !== undefined), `${file}'s ${id} downloads test-map: it needs a job that calls test-map.yml with \`of\``).toBe(true);
+    }
+  }
+  expect(downloads.length).toBeGreaterThan(0);
+  const made = readFileSync(join(root, ".github/workflows/test-map.yml"), "utf8");
+  expect(made).not.toContain("github.event_name");
+  expect(made.match(/name: \$\{\{ inputs\.of && 'test-map' \|\| format\('test-map-of-\{0\}', env\.SHA\) \}\}/g)?.length).toBe(2);
+});

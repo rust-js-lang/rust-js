@@ -37,8 +37,15 @@ permissions:
   contents: read
   actions: read
 
+# Called or pushed, by `inputs.of`, which only a call gives: a called
+# workflow's event is its caller's, `push` of each check of
+# main, so a call was taken for the push's own run: it uploaded
+# `test-map-of-<sha>`, and every mutation shard's download of `test-map`
+# failed (check 43889550882, 2026-11-16); it recorded HEAD's map where an
+# ancestor's served; and it joined the push's group, where a newer push's
+# run could replace it.
 concurrency:
-  group: ${{ github.event_name == 'push' && 'test-map' || format('test-map-{0}-{1}', github.run_id, github.workflow) }}
+  group: ${{ inputs.of && format('test-map-{0}-{1}', github.run_id, github.workflow) || 'test-map' }}
   cancel-in-progress: false
 
 env:
@@ -72,7 +79,7 @@ jobs:
       - name: The map kept, or the counting build and the plan of its recording
         id: map
         env:
-          OF: ${{ github.event_name == 'push' && 'head' || inputs.of }}
+          OF: ${{ inputs.of || 'head' }}
           SHARDS: '8'
         run: |
           if [ "$OF" = "head" ]; then of=--head; else of=; fi
@@ -88,7 +95,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           # Of main's check, by its commit, which `bun run push` fetches (`fetchMap`).
-          name: ${{ github.event_name == 'push' && format('test-map-of-{0}', env.SHA) || 'test-map' }}
+          name: ${{ inputs.of && 'test-map' || format('test-map-of-{0}', env.SHA) }}
           path: .cache/test-maps
           include-hidden-files: true
           retention-days: 3
@@ -183,7 +190,7 @@ jobs:
       - uses: actions/upload-artifact@v7
         with:
           # Of main's check, by its commit, which `bun run push` fetches (`fetchMap`).
-          name: ${{ github.event_name == 'push' && format('test-map-of-{0}', env.SHA) || 'test-map' }}
+          name: ${{ inputs.of && 'test-map' || format('test-map-of-{0}', env.SHA) }}
           path: .cache/test-maps
           include-hidden-files: true
           retention-days: 3
