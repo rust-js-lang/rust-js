@@ -44,7 +44,43 @@ struct Closing {
 pub(in crate::lower) struct IterValue {
     form: Form,
     closes: Option<Closing>,
-    lent: bool,
+    lent: Option<Lent>,
+}
+
+/// How a `&mut I` lends its iterator, `$lent`'s kind (src/runtime/lent.js's
+/// `$passedOn`): of a sized `I`, whose folds std's `&mut I` folds by `I`'s
+/// `try_fold` and `try_rfold`, `$lent(it)`; of an unsized one, a `dyn`'s,
+/// whose folds are std's defaults over `next` and `next_back`,
+/// `$lent(it, "lentUnsized")` (#1991).
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub(in crate::lower) enum Lent {
+    Sized,
+    Unsized,
+}
+
+impl Lent {
+    /// Its `$passedOn` kind, given after the iterator; none of a sized one's,
+    /// `$lent`'s default.
+    fn kind(self) -> Option<&'static str> {
+        match self {
+            Lent::Sized => None,
+            Lent::Unsized => Some("lentUnsized"),
+        }
+    }
+
+    /// How `e`, an iterator lent, `$lent(it, ..)`, is lent; a sized one's of
+    /// any other.
+    pub(in crate::lower) fn of(e: &Expr) -> Lent {
+        match &e.kind {
+            js::ExprKind::Call(_, of)
+                if e.facts.has(Known::IterLent)
+                    && matches!(of.get(1).map(|k| &k.kind), Some(js::ExprKind::Str(k)) if k == "lentUnsized") =>
+            {
+                Lent::Unsized
+            }
+            _ => Lent::Sized,
+        }
+    }
 }
 
 impl IterValue {
@@ -53,7 +89,7 @@ impl IterValue {
         IterValue {
             form,
             closes: None,
-            lent: false,
+            lent: None,
         }
     }
 
@@ -65,7 +101,7 @@ impl IterValue {
     /// It, closed by `drop`, `passes_each` or not (`closed_by`). Of one
     /// closed or lent already, that closed again around it.
     pub(in crate::lower) fn closed(self, drop: Expr, passes_each: bool) -> IterValue {
-        let mut value = match self.closes.is_some() || self.lent {
+        let mut value = match self.closes.is_some() || self.lent.is_some() {
             true => IterValue::js(self.emit()),
             false => self,
         };
@@ -73,9 +109,9 @@ impl IterValue {
         value
     }
 
-    /// It, lent (`lent_iterator`).
-    pub(in crate::lower) fn lent(mut self) -> IterValue {
-        self.lent = true;
+    /// It, lent as `how` lends it (`lent_iterator`).
+    pub(in crate::lower) fn lent(mut self, how: Lent) -> IterValue {
+        self.lent = Some(how);
         self
     }
 
@@ -122,7 +158,7 @@ impl IterValue {
             }
             e = made("$closing", args, &[Known::IterClosing]);
         }
-        if self.lent {
+        if let Some(how) = self.lent {
             // What it lends, never `Iterator.from(x)` of it, which calls a
             // `$Steps`' `[Symbol.iterator]()`, arming it to close itself at
             // its end, as a consumer that takes it by value does: `$lent(x)`,
@@ -130,7 +166,9 @@ impl IterValue {
             if let Some(x) = super::iterator_from(&e) {
                 e = x.clone();
             }
-            e = made("$lent", vec![e], &[Known::IterLent]);
+            let mut args = vec![e];
+            args.extend(how.kind().map(Expr::str));
+            e = made("$lent", args, &[Known::IterLent]);
         }
         e
     }
@@ -241,7 +279,7 @@ pub(in crate::lower) fn closed_parts(e: &Expr) -> Option<(&Expr, &Expr)> {
 /// `it`, made for this call alone, which no one else steps; or `e` itself.
 pub(in crate::lower) fn unlent(e: &Expr) -> &Expr {
     match &e.kind {
-        js::ExprKind::Call(_, of) if e.facts.has(Known::IterLent) && of.len() == 1 => &of[0],
+        js::ExprKind::Call(_, of) if e.facts.has(Known::IterLent) && matches!(of.len(), 1 | 2) => &of[0],
         _ => e,
     }
 }
@@ -865,7 +903,10 @@ mod tests {
         assert!(matches!(&range.kind, js::ExprKind::Call(callee, args)
             if callee.helper_name() == Some("$iterator") && args.len() == 2));
         assert!(range.facts.has(Known::IterStepped) && range.facts.has(Known::IterRange));
-        let closed = IterValue::js(var("it")).closed(var("drop"), true).lent().emit();
+        let closed = IterValue::js(var("it"))
+            .closed(var("drop"), true)
+            .lent(Lent::Sized)
+            .emit();
         assert!(closed.facts.has(Known::IterLent) && !closed.facts.has(Known::IterClosing));
         let js::ExprKind::Call(_, inner) = &closed.kind else {
             panic!("a call")

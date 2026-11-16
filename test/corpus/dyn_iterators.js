@@ -47,7 +47,7 @@ function firstTwo(it) {
 function doubled(it) {
   return Array.from(
     $roomForHint(
-      $lent(it).map((n) => (n * 2) >>> 0),
+      $lent(it, "lentUnsized").map((n) => (n * 2) >>> 0),
       4,
       false,
     ),

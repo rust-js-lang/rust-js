@@ -511,4 +511,12 @@ export const mutations: Mutation[] = [
     replace: "                && self.given_js_iterator(value.clone(), given, false, false).is_none()\n                && false\n",
     tests: ["test/lowering-generic-iterators.test.ts", "-t", "a std body compiled given a generic iterator takes an array too"],
   },
+  {
+    name: "lent-dyn-as-sized",
+    breaks: "a `&mut dyn` iterator is lent as a sized one's, `$lent(it)`, so its `rfold` is its iterator's `try_rfold`, where std's unsized `&mut I` takes the default (#1991)",
+    file: "src/lower/iterators/stepping.rs",
+    find: "            ty::Ref(_, to, _) if !to.is_sized(self.tcx, self.typing_env) => super::Lent::Unsized,\n",
+    replace: "            ty::Ref(_, to, _) if !to.is_sized(self.tcx, self.typing_env) => super::Lent::Sized,\n",
+    tests: ["test/corpus.test.ts", "-t", "^lent_iterator_folded_as_std_passes_it_on.rs$"],
+  },
 ];

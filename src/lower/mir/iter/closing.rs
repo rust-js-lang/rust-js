@@ -222,8 +222,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Of one lent, `by_ref()`'s, what it lends, whose steps it passes on.
         let lends = crate::lower::iterators::unlent(&it);
         if !std::ptr::eq(lends, &it) {
+            // Lent again as it was, of a sized iterator or not (#1991).
             let sliced = Expr::call_helper("$slicing", vec![lends.clone(), drop]);
-            return Ok(self.lent_iterator(sliced));
+            let how = crate::lower::iterators::Lent::of(&it);
+            return Ok(crate::lower::iterators::IterValue::js(sliced).lent(how).emit());
         }
         Ok(Expr::call_helper("$slicing", vec![it, drop]))
     }

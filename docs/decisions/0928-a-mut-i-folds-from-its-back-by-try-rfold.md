@@ -46,3 +46,44 @@ before the sum was done, where std's `&mut I` steps it by `try_fold`'s
 dictionary is lent, `$lent($given(..))`, as the crate's own iterator
 through a `&mut` is (`as_js_iterator`). Corpus case
 `by_ref_of_held_iterator`.
+
+## Amendment (2026-11-16, #1986, #1991): `$lent` folds by `try_rfold` too, and an unsized `I`'s `&mut` takes std's defaults
+
+Case C again: results change. `$lent`, the runtime's one owner of what a
+`&mut I` passes on, gave `try_rfold` but no `rfold`, so `$foldBack` of a
+lent iterator fell to `$foldBy(it, "back")`, std's default `rfold` by
+`next_back`. A `take()` lent through `pass(a.by_ref())` then dropped what
+it skips 4 then 5, by `Take`'s `nth_back(len - n)`, where std's `&mut I`
+folds by `Take`'s `try_rfold`, 5 then 4 (#1986). And a `&mut dyn
+DoubleEndedIterator` was lent as a sized one: through a compiled struct's
+proxy its `rfold` was the struct's own, 5 then 4, where std's `&mut I` of
+an unsized `I`, the `default` of `DoubleEndedIteratorRefSpec`, steps by
+`next_back`, 4 then 5; of a `skip()`, the item it skips was dropped inside
+the fold, where native drops it at the next `next()` (#1991).
+
+- What a `&mut I` passes on is data, `$passedOn` in src/runtime/lent.js:
+  `lent`, of a sized `I`, its `next`, `size_hint`, `advance_by`, `nth`,
+  `try_fold`, `next_back`, `advance_back_by`, `nth_back`, `try_rfold` and
+  `len`, its `fold` and `rfold` by `I`'s `try_fold` and `try_rfold`; and
+  `lentUnsized`, of a `dyn`, the same but none of the four folds. Each step
+  passed on is read of `I` when it's asked, so a compiled struct's back
+  `knowing` gives it after it's lent is passed on too; a step it doesn't
+  pass on is never read through a compiled struct's proxy.
+- The compiler says which: `lent_iterator(it, by)` of the `&mut` type,
+  `$lent(it)` of a sized referent, `$lent(it, "lentUnsized")` of an
+  unsized one (`iterators::Lent`); one lent again by `$slicing` keeps its
+  kind.
+- The lists are std's facts: test/passed-on.test.ts reads std's `impl ..
+  for &mut I` and `impl .. for Box<I>`, and their specializations, in this
+  toolchain's rust-src, and fails where `$passedOn`, or the compiler's
+  `BOX_PASSES_ON` (#1601), differs.
+
+A `Box` of a compiled std struct folded from its back still runs the
+struct's own `rfold` (#1995), and with std's iterator structs a `rev()` of
+a `&mut dyn` steps a `Vec`'s back without its slice steps (#1996): each
+its own issue. Corpus case `lent_iterator_folded_as_std_passes_it_on`,
+against native in both builds; copy matrix cells 217, 2421, 38013, 40011,
+42009, 44007, 46005, 48003 off the known list. Mutations
+`lent-rfold-by-its-back`, `lent-unsized-folds-its-own`,
+`lent-struct-steps-of-its-struct` and `lent-dyn-as-sized`; the earlier
+`lent-*` mutations retargeted to the lists.

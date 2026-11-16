@@ -86,7 +86,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     true => receiver,
                     false => self.as_double_ended(receiver, iter_ty, span)?,
                 };
-                let lent = if lends { back } else { self.lent_iterator(back) };
+                let lent = if lends {
+                    back
+                } else {
+                    self.lent_iterator(back, receiver_ty)
+                };
                 let lent = self.slicing(lent, iter_ty, true, span)?;
                 crate::lower::iterators::reversed_by(lent)
             }
@@ -262,7 +266,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // passes on `I`'s back and length, never its ownership (#749).
             Some(IterMethod::ByRef) if self.knows_its_back(iter_ty) => {
                 let back = self.as_double_ended(receiver.clone(), iter_ty, span)?;
-                self.lent_iterator(back)
+                self.lent_iterator(back, held)
             }
             // A copy that's its source, of numbers, stepped from its back:
             // its source made knowing its back, a `skip`'s or a `take`'s of a
@@ -564,7 +568,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // would take it from its owner (#747).
             let it = match self.consumer_closes(Some(method), iter_ty, lent, dropping) {
                 true => self.closing(it, iter_ty, span)?,
-                false if lent => self.lent_iterator(it),
+                false if lent => self.lent_iterator(it, arg_tys[0]),
                 false => it,
             };
             // Of a function it moves into its fold, `$consume`'s (#734).

@@ -7,7 +7,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`by_ref().sum()` of a type parameter given as it is calls its own `fold`, which takes it and drops it before the sum's done (#994)",
     file: "src/lower/mir/iter/sources.rs",
-    find: "                ty::Ref(_, _, Mutability::Mut) => self.lent_iterator(it),\n",
+    find: "                ty::Ref(_, _, Mutability::Mut) => self.lent_iterator(it, ty),\n",
     replace: "                ty::Ref(_, _, Mutability::Mut) => it,\n",
     tests: ["test/corpus.test.ts", "-t", "^by_ref_of_held_iterator.rs$"],
   },

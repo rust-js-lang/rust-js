@@ -1057,7 +1057,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let it = self.method_source(receiver, iter_ty, (std_method, output), span)?;
         let it = match lent {
-            true => self.lent_iterator(it),
+            true => self.lent_iterator(it, receiver_ty),
             false => it,
         };
         let item = self.iterator_item(iter_ty);

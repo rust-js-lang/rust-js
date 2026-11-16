@@ -8,8 +8,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a lazy chain lent to `it.take(2)` is closed by it, and its lender's `next()` finds it done",
     file: "src/lower/iterators/value.rs",
-    find: '            e = made("$lent", vec![e], &[Known::IterLent]);',
-    replace: '            e = Expr::call(Expr::member(Expr::var("Iterator"), "from"), vec![e]);',
+    find: '            e = made("$lent", args, &[Known::IterLent]);',
+    replace: '            e = Expr::call(Expr::member(Expr::var("Iterator"), "from"), args);',
     tests: ["test/corpus.test.ts", "-t", "^(lent_iterators|by_ref_lends|by_ref_chains).rs$"],
   },
   {
@@ -79,8 +79,8 @@ export const mutations: Mutation[] = [
     name: "iter-eager-lent-root-kept",
     breaks: "a chain on `$lent($iter(xs))` just made stays a JS iterator's",
     file: "src/lower/iterators/value.rs",
-    find: "        js::ExprKind::Call(_, of) if e.facts.has(Known::IterLent) && of.len() == 1 => &of[0],\n",
-    replace: "        js::ExprKind::Call(_, of) if e.facts.has(Known::IterLent) && of.len() == 1 => e,\n",
+    find: "        js::ExprKind::Call(_, of) if e.facts.has(Known::IterLent) && matches!(of.len(), 1 | 2) => &of[0],\n",
+    replace: "        js::ExprKind::Call(_, of) if e.facts.has(Known::IterLent) && matches!(of.len(), 1 | 2) => e,\n",
     tests: [
       "test/lowering-matches.test.ts",
       "-t",

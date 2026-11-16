@@ -139,7 +139,7 @@ function main() {
         undefined,
         countedIterator_sizeHint,
       );
-      return Array.from($roomForHint($lent(lent), 4, false));
+      return Array.from($roomForHint($lent(lent, "lentUnsized"), 4, false));
     },
     vecDebug,
   );
@@ -148,7 +148,7 @@ function main() {
     () => {
       const endless = { start: 0 };
       const lent = $iterator(endless, $rangeFromStep(0, 65535));
-      return Array.from($roomForHint($lent(lent), 2, false)).length;
+      return Array.from($roomForHint($lent(lent, "lentUnsized"), 2, false)).length;
     },
     usizeDebug,
   );

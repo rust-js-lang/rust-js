@@ -46,7 +46,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // I` passes on its `next` and not its own `fold`, which would
             // take it (ADR 0928, #994).
             None if let Some(it) = self.given_js_iterator(value.clone(), ty, false, false) => Ok(match ty.kind() {
-                ty::Ref(_, _, Mutability::Mut) => self.lent_iterator(it),
+                ty::Ref(_, _, Mutability::Mut) => self.lent_iterator(it, ty),
                 _ => it,
             }),
             // A type parameter's, which may be given an array (ADR 0061): JS's

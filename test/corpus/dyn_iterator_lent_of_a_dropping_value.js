@@ -14,7 +14,7 @@ function countdownIterator_next(countdown) {
 }
 
 function firstTwo(it) {
-  return Array.from($roomForHint($lent(it).take(2), 4, false));
+  return Array.from($roomForHint($lent(it, "lentUnsized").take(2), 4, false));
 }
 
 function main() {

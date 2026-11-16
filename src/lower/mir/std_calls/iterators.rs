@@ -90,7 +90,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // Of a consumer, where it closes it (#1120).
                     let method = this.recognition().iterator_method(def_id);
                     let it = match lent {
-                        true => this.lent_iterator(it),
+                        true => this.lent_iterator(it, arg_tys[0]),
                         false if comb.holds_its_sources() => this.closing(it, iter_ty, span)?,
                         false if keeps_each => {
                             this.consumer_closing(it, (method, iter_ty, false), dropping.is_some(), span)?

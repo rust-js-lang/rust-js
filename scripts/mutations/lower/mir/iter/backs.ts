@@ -628,7 +628,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`by_ref()` of what knows its back, a type parameter's, is the value itself, not lent, so `Total::sum` of it reaches the crate's own `fold`, which drops what the caller still owns (#749)",
     file: "src/lower/mir/iter/backs.rs",
-    find: "                self.lent_iterator(back)\n",
+    find: "                self.lent_iterator(back, held)\n",
     replace: "                back\n",
     tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^by_ref_lends.rs$|^by_ref_lends with"],
   },
@@ -637,7 +637,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`rfold` of a `&mut` to the crate's iterator, `by_ref().rfold(..)`, is its own `rfold`, which takes it, so it's dropped there and again by its owner (#747)",
     file: "src/lower/mir/iter/backs.rs",
-    find: "                false if lent => self.lent_iterator(it),\n",
+    find: "                false if lent => self.lent_iterator(it, arg_tys[0]),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^by_ref_lends.rs$|^by_ref_lends with"],
   },
