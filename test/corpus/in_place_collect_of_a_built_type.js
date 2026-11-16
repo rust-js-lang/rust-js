@@ -42,7 +42,7 @@ function held(
   dropHItemIntoIter,
 ) {
   const iter = iterator_map(
-    iters,
+    Iterator.from(iters),
     (i) => ({ iter: $held(HItemIntoIterator.intoIter(i)) }),
     $jsIteratorSome,
     dropH,

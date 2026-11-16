@@ -60,7 +60,7 @@ function sums(items, IItemIntoIterator) {
   return $collectDropping(
     $roomForHint(
       iterator_map(
-        items,
+        Iterator.from(items),
         (item) =>
           $given(
             hidden(IItemIntoIterator.intoIter(item)),

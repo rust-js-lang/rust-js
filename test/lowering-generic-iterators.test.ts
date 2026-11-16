@@ -83,6 +83,51 @@ pub fn mapped(n: u32) -> u32 {
   expect([lib.ofCountdown(5), lib.middle([7, 8, 9, 10], 2), lib.mapped(3)]).toEqual([[3, 2], [8, 9], 6]);
 });
 
+// A std body compiled into `@rust-js/std`, which holds what it's given as
+// it is and steps it by its dictionary, given an `impl Iterator`
+// parameter, which a JS caller may give an array (ADR 0061): JS's iterator
+// of it, `Iterator.from(items)`, as the hand-written forms step it. Each
+// threw `it.next is not a function` of an array (#1962).
+test("a std body compiled given a generic iterator takes an array too", async () => {
+  const dir = fixture("generic-iterator-compiled-given-an-array");
+  writeFileSync(join(dir, "lib.rs"), `pub fn chained(items: impl Iterator<Item = u32>) -> Vec<u32> {
+    items.chain(0..2).collect()
+}
+
+pub fn numbered(items: impl Iterator<Item = u32>) -> Vec<(usize, u32)> {
+    items.enumerate().collect()
+}
+
+pub fn peeked(items: impl Iterator<Item = u32>) -> Option<u32> {
+    let mut p = items.peekable();
+    p.peek().copied()
+}
+
+pub fn fused(items: impl Iterator<Item = u32>) -> Vec<u32> {
+    items.fuse().collect()
+}
+
+pub fn held<I: Iterator<Item = u32>>(items: I) -> Vec<u32> {
+    let mut it = items.enumerate();
+    it.next();
+    it.map(|(_, x)| x).collect()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain("iterator_peekable(Iterator.from(items), $jsIterator)");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.chained([5]), lib.numbered([7, 8]), lib.peeked([4, 5]), lib.fused([1, 2]), lib.held([1, 2, 3])]).toEqual([
+    [5, 0, 1],
+    [
+      [0, 7],
+      [1, 8],
+    ],
+    4,
+    [1, 2],
+    [2, 3],
+  ]);
+});
+
 // ADR 0480: a clone of a `copied()` is a clone of the iterator it copies,
 // its `Clone` dictionary's where it's generic: each goes on apart from
 // where it was.

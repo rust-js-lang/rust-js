@@ -65,7 +65,7 @@ function map(it) {
       new Map(),
       $reserveHint(
         $folded(
-          iterator_map(iterator_enumerate(it, $jsIterator), ([i, c]) => [c, i], {
+          iterator_map(iterator_enumerate(Iterator.from(it), $jsIterator), ([i, c]) => [c, i], {
             next: $next,
             fold: $foldOf,
             nth: $nth,
@@ -90,7 +90,11 @@ function upper(it) {
   return $foldToArray(
     $reserveHint(
       $folded(
-        iterator_map(it, (c) => c.replace(/[a-z]/, (letter) => letter.toUpperCase()), $jsIterator),
+        iterator_map(
+          Iterator.from(it),
+          (c) => c.replace(/[a-z]/, (letter) => letter.toUpperCase()),
+          $jsIterator,
+        ),
       ),
       1,
     ),

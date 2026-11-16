@@ -100,7 +100,13 @@ function nthBack(it, dropI) {
 
 function ends(it, dropI) {
   const r = $held(
-    iterator_rev(it, $jsIterator, { next_back: $nextBack, rfold: $foldBack }, dropI, dDrop_drop),
+    iterator_rev(
+      Iterator.from(it),
+      $jsIterator,
+      { next_back: $nextBack, rfold: $foldBack },
+      dropI,
+      dDrop_drop,
+    ),
   );
   let nextBack;
   function map(d) {

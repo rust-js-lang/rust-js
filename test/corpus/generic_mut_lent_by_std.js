@@ -104,7 +104,7 @@ function lazyForceMut(c, v) {
 }
 
 function peekMut(items, v, TSize) {
-  items = iterator_peekable(items, $jsIterator);
+  items = iterator_peekable(Iterator.from(items), $jsIterator);
   const x = $peekCell(items);
   if (x != null) {
     x.value = v;

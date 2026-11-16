@@ -202,7 +202,7 @@ function stepsDoubleEndedIterator_nextBack(steps) {
 function mappedFused(it, IFused, dropI) {
   const iter = iterator_fuse(
     iterator_map(
-      it,
+      Iterator.from(it),
       (d) => {
         const result = [(d[0] + 10) >>> 0];
         dDrop_drop(d);
@@ -239,7 +239,7 @@ function mappedFused(it, IFused, dropI) {
 }
 
 function peekedReversed(it, dropI) {
-  it = $held(iterator_peekable(it, $jsIterator, dropI, dDrop_drop));
+  it = $held(iterator_peekable(Iterator.from(it), $jsIterator, dropI, dDrop_drop));
   try {
     const value = $peek(it)?.[0];
     console.log(`peeked ${value == null ? "None" : `Some(${value})`}`);
@@ -297,7 +297,7 @@ function peekedReversed(it, dropI) {
 
 function fusedTotal(it, IFused) {
   const total = $foldDropping(
-    iterator_fuse(it, $jsIterator, IFused),
+    iterator_fuse(Iterator.from(it), $jsIterator, IFused),
     [0],
     (total, n) => {
       total[0] = (total[0] + n) >>> 0;
@@ -368,7 +368,7 @@ function heldTotal(it, dropI) {
 
 function heldMappedTotal(it, dropI) {
   return Holder.total(
-    { it: iterator_map(it, (n) => (n + 1) >>> 0, $jsIterator, dropI) },
+    { it: iterator_map(Iterator.from(it), (n) => (n + 1) >>> 0, $jsIterator, dropI) },
     { next: $next, fold: $foldOf },
     (map) => {
       map.return();

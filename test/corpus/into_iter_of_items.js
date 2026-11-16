@@ -57,7 +57,7 @@ function summed(items, IItemIntoIterator) {
   return $collectDropping(
     $roomForHint(
       iterator_map(
-        items,
+        Iterator.from(items),
         (item) =>
           $given(IItemIntoIterator.intoIter(item), IItemIntoIterator.IntoIterIterator()).reduce(
             (a, b) => (a + b) | 0,
@@ -73,7 +73,7 @@ function summed(items, IItemIntoIterator) {
 
 function flat(items, IItemIntoIterator, IFused, IItemConstSize, IItemIntoIterOneShot) {
   return iterator_flatten(
-    items,
+    Iterator.from(items),
     $jsIteratorSome,
     IItemIntoIterator,
     IFused,

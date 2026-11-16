@@ -29,7 +29,7 @@ function both(it) {
 
 function mapped(it) {
   return mapExactSizeIterator_len(
-    iterator_map(it, (n) => (n * 2) >>> 0, $jsIterator),
+    iterator_map(Iterator.from(it), (n) => (n * 2) >>> 0, $jsIterator),
     { len: (iterator) => iterator.len() },
   );
 }

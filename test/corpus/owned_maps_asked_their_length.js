@@ -63,7 +63,7 @@ function hinted(src, dropI) {
   const held = [9];
   const it = $held(
     iterator_map(
-      src,
+      Iterator.from(src),
       (x) => {
         const result = (x[0] + 1) >>> 0;
         loudDrop_drop(x);

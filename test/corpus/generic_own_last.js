@@ -49,16 +49,16 @@ function skip(it) {
 }
 
 function fuse(it, IFused) {
-  return $lastSome(iterator_fuse(it, $jsIteratorSome, IFused));
+  return $lastSome(Iterator.from(it));
 }
 
 function peek(it) {
-  return $lastSome(iterator_peekable(it, $jsIteratorSome));
+  return $lastSome(iterator_peekable(Iterator.from(it), $jsIteratorSome));
 }
 
 function chain(a, b) {
   return $lastSome(
-    iterator_chain(a, b, $jsIteratorSome, {
+    iterator_chain(Iterator.from(a), b, $jsIteratorSome, {
       intoIter: (items) => $intoIter(items),
       IntoIterIterator: () => $jsIteratorSome,
     }).drop(1),
@@ -66,11 +66,11 @@ function chain(a, b) {
 }
 
 function mapped(it) {
-  return $last(iterator_map(it, (x) => (x + 1) >>> 0, $jsIterator));
+  return $last(iterator_map(Iterator.from(it), (x) => (x + 1) >>> 0, $jsIterator));
 }
 
 function fuseNth(it, IFused) {
-  return $nthSome($lent(iterator_fuse(it, $jsIteratorSome, IFused)), 1);
+  return $nthSome($lent(iterator_fuse(Iterator.from(it), $jsIteratorSome, IFused)), 1);
 }
 
 function nthOf(it) {

@@ -73,7 +73,7 @@ function relayed(it, USize, JVecCollect) {
 function relayedTwice(it, JTrustedLen, JInPlace, JItemSize, JItemAlign) {
   return (
     (relayed(
-      iterator_map(it, (x) => x, $jsIteratorSome),
+      iterator_map(Iterator.from(it), (x) => x, $jsIteratorSome),
       JItemSize,
       $vecCollectWay($collectsInPlace(JInPlace, JItemSize, JItemAlign), JTrustedLen, JInPlace),
     ) +
@@ -95,7 +95,7 @@ function queued(it, TSize, IVecCollect) {
 function tagged(it, TU8Size) {
   return $collectDropping(
     $roomForHint(
-      iterator_map(it, (x) => [x, 0], $jsIterator),
+      iterator_map(Iterator.from(it), (x) => [x, 0], $jsIterator),
       TU8Size,
       false,
     ),
@@ -105,7 +105,7 @@ function tagged(it, TU8Size) {
 function wrapped(it, OptionSize) {
   return $collectDropping(
     $roomForHint(
-      iterator_map(it, (value) => $some(value), $jsIteratorSome),
+      iterator_map(Iterator.from(it), (value) => $some(value), $jsIteratorSome),
       OptionSize,
       false,
     ),

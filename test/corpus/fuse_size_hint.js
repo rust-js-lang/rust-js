@@ -16,7 +16,7 @@ export function entry() {
 }
 
 function hint(it, IFused) {
-  const fused = iterator_fuse(it, $jsIteratorSome, IFused);
+  const fused = iterator_fuse(Iterator.from(it), $jsIteratorSome, IFused);
   $nextSome(fused);
   return $sizeHint(fused);
 }

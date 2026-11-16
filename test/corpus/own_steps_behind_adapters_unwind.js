@@ -128,7 +128,7 @@ function boxed(at) {
 
 function tried(it, IteratorFused) {
   const v = $tryFoldSome(
-    iterator_fuse(it, $jsIterator, IteratorFused),
+    iterator_fuse(Iterator.from(it), $jsIterator, IteratorFused),
     [],
     (acc, n) => push(acc, n),
     $dropEach(dDrop_drop),

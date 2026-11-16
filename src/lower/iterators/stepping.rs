@@ -426,6 +426,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Some((back, len)) => self.as_knowing(held, given, (back, len), span)?,
                     None => self.iterable_items(held, given, span, out)?,
                 };
+            // A std body compiled into `@rust-js/std`, which holds what it's
+            // given as it is and steps it by its dictionary, given a type
+            // parameter's value stepped as JS's, given no dictionary of its
+            // own, which a JS caller may give an array (ADR 0061): JS's
+            // iterator of it, as the hand-written forms step it,
+            // `Iterator.from(items)` (#1962). One given its dictionary is
+            // what that dictionary steps, as it is.
+            } else if let Some(index) = crate::lower::generic_facts::type_parameter_of(input)
+                && crate::lower::generic_facts::is_type_parameter(given)
+                && crate::lower::recognition::is_compiled_std(self.tcx, callee)
+                && bound_by_iterator(self.tcx, callee, index)
+                && !is_js_iterator(value)
+                && self.given_js_iterator(value.clone(), given, false, false).is_none()
+            {
+                let held = std::mem::replace(value, Expr::taken());
+                *value = self.js_iterator(held);
             }
             // A `Vec`'s, given its steps that drop what they pass as one
             // slice, where generic code can't tell it from a `Drain`'s

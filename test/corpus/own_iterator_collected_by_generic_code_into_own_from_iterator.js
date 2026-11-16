@@ -124,7 +124,7 @@ function collected(it, BFromIteratorIItem, ITrustedLen, IInPlace, dropI) {
 }
 
 function doubled(it, BFromIteratorU32, ITrustedLen, IInPlace, dropI) {
-  const iter = iterator_map(it, (n) => (n * 2) >>> 0, $jsIterator, dropI);
+  const iter = iterator_map(Iterator.from(it), (n) => (n * 2) >>> 0, $jsIterator, dropI);
   let result;
   try {
     result = BFromIteratorU32.fromIter(

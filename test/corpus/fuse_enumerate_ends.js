@@ -38,7 +38,7 @@ function backPairs(it) {
 }
 
 function ends(it) {
-  const e = iterator_enumerate(it, $jsIterator);
+  const e = iterator_enumerate(Iterator.from(it), $jsIterator);
   const first = $next(e);
   const last = enumerateDoubleEndedIterator_nextBack(
     e,
@@ -49,14 +49,14 @@ function ends(it) {
 }
 
 function fusedLen(it, IFused) {
-  const f = iterator_fuse(it, $jsIterator, IFused);
+  const f = iterator_fuse(Iterator.from(it), $jsIterator, IFused);
   $next(f);
   const left = fuseExactSizeIterator_len(f, { len: (iterator) => iterator.len() });
   return [left, $count(f)];
 }
 
 function fusedBack(it, IFused) {
-  const f = iterator_fuse(it, $jsIterator, IFused);
+  const f = iterator_fuse(Iterator.from(it), $jsIterator, IFused);
   const last = fuseDoubleEndedIterator_nextBack(
     f,
     { next_back: $nextBack, rfold: $foldBack },

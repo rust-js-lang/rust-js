@@ -53,7 +53,7 @@ function held(
   dropHItemIntoIter,
 ) {
   const iter = iterator_map(
-    iters,
+    Iterator.from(iters),
     (i) => ({ iter: $held(HItemIntoIterator.intoIter(i)) }),
     $jsIteratorSome,
     dropH,
@@ -171,7 +171,7 @@ function listed(iters, HItemIntoIterator, dropH, dropHItem, dropHItemIntoIter) {
   return $collectDropping(
     $folded(
       iterator_map(
-        iters,
+        Iterator.from(iters),
         (i) => ({ iter: $held(HItemIntoIterator.intoIter(i)) }),
         $jsIteratorSome,
         dropH,
@@ -217,12 +217,24 @@ function listedRanged(t) {
 function holding(items, JInPlace, HeldSize, HeldAlign) {
   return $collectsInPlace(JInPlace, HeldSize, HeldAlign)
     ? $foldToArray(
-        iterator_map(items, (iter) => ({ iter }), $jsIteratorSome, undefined, heldDrop_drop),
+        iterator_map(
+          Iterator.from(items),
+          (iter) => ({ iter }),
+          $jsIteratorSome,
+          undefined,
+          heldDrop_drop,
+        ),
         heldDrop_drop,
       )
     : $collectDropping(
         $roomForHint(
-          iterator_map(items, (iter) => ({ iter }), $jsIteratorSome, undefined, heldDrop_drop),
+          iterator_map(
+            Iterator.from(items),
+            (iter) => ({ iter }),
+            $jsIteratorSome,
+            undefined,
+            heldDrop_drop,
+          ),
           HeldSize,
           false,
           false,
@@ -235,7 +247,7 @@ function holding(items, JInPlace, HeldSize, HeldAlign) {
 
 /** Of a tuple built of its own, `(usize, I::Item)`. */
 function enumerated(items, IInPlace, UsizeIItemSize, UsizeIItemAlign, dropI, dropIItem) {
-  const iter = iterator_enumerate(items, $jsIteratorSome, dropI, dropIItem);
+  const iter = iterator_enumerate(Iterator.from(items), $jsIteratorSome, dropI, dropIItem);
   let result;
   try {
     result = $collectsInPlace(IInPlace, UsizeIItemSize, UsizeIItemAlign)

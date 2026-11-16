@@ -193,7 +193,15 @@ function pair(d) {
 function rfolded(it, IFused, dropI) {
   return flattenDoubleEndedIterator_rfold(
     iterator_flatten(
-      iterator_map(it, pair, $jsIterator, dropI, $dropEach(dDrop_drop), undefined, dDrop_drop),
+      iterator_map(
+        Iterator.from(it),
+        pair,
+        $jsIterator,
+        dropI,
+        $dropEach(dDrop_drop),
+        undefined,
+        dDrop_drop,
+      ),
       { next: $next, fold: $foldOf },
       {
         intoIter: (items) => $iter(items),

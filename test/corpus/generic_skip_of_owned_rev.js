@@ -72,7 +72,7 @@ function nthOf(it, dropI) {
 function chainedNth(a, b, dropI) {
   const chain = $held(
     iterator_chain(
-      a,
+      Iterator.from(a),
       b,
       $jsIterator,
       {

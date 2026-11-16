@@ -74,7 +74,7 @@ function held(it) {
 function numbered(it) {
   return $collectDropping(
     $roomForHint(
-      iterator_map(it, ([i, x]) => (((i * 100) >>> 0) + x) >>> 0, $jsIterator),
+      iterator_map(Iterator.from(it), ([i, x]) => (((i * 100) >>> 0) + x) >>> 0, $jsIterator),
       4,
       false,
     ),

@@ -37,7 +37,7 @@ function seen(items) {
   const shown = (x) => {
     log.push(x);
   };
-  iterator_inspect(items, shown, $jsIterator).forEach((value) => {});
+  iterator_inspect(Iterator.from(items), shown, $jsIterator).forEach((value) => {});
   return log;
 }
 

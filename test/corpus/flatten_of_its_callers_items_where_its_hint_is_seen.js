@@ -32,7 +32,7 @@ function flat(it, IItemIntoIterator, IFused, IItemConstSize, IItemIntoIterOneSho
   return $collectDropping(
     $roomForHint(
       iterator_flatten(
-        it,
+        Iterator.from(it),
         $jsIteratorSome,
         IItemIntoIterator,
         IFused,

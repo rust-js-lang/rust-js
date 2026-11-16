@@ -533,12 +533,28 @@ fn names_given_as_it_is<'tcx>(tcx: ty::TyCtxt<'tcx>, id: DefId, param: ty::Param
 /// as it is (ADR 0061). One bound by neither holds what it's given, as
 /// `mem::replace`'s `T` and `Vec::push`'s do (#537).
 pub(in crate::lower) fn bound_as_iterator(tcx: ty::TyCtxt<'_>, callee: DefId, param: ty::ParamTy) -> bool {
-    let (iterator, into_iterator) = (std_item(tcx, StdItem::Iterator), std_item(tcx, StdItem::IntoIterator));
+    bound_by(
+        tcx,
+        callee,
+        param.index,
+        &[std_item(tcx, StdItem::Iterator), std_item(tcx, StdItem::IntoIterator)],
+    )
+}
+
+/// Whether `callee`'s type parameter of `index` is bound by `Iterator`
+/// itself, or a trait that extends it, not `IntoIterator` alone
+/// (`bound_as_iterator`): what's given for it is an iterator, stepped as
+/// it is, not what makes one.
+pub(in crate::lower) fn bound_by_iterator(tcx: ty::TyCtxt<'_>, callee: DefId, index: u32) -> bool {
+    bound_by(tcx, callee, index, &[std_item(tcx, StdItem::Iterator)])
+}
+
+fn bound_by(tcx: ty::TyCtxt<'_>, callee: DefId, index: u32, traits: &[DefId]) -> bool {
     (tcx.param_env(callee).caller_bounds())
         .filter_map(|clause| clause.as_trait_clause())
         .any(|bound| {
-            matches!(bound.self_ty().skip_binder().kind(), ty::Param(p) if p.index == param.index)
-                && (bound.def_id() == iterator || bound.def_id() == into_iterator)
+            matches!(bound.self_ty().skip_binder().kind(), ty::Param(p) if p.index == index)
+                && traits.contains(&bound.def_id())
         })
 }
 

@@ -17,7 +17,7 @@ export function entry() {
 
 function paired(a, b, JIterator, JClone) {
   return iterator_map(
-    a,
+    Iterator.from(a),
     (x) =>
       Math.imul(
         x,

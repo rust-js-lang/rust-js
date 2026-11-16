@@ -113,7 +113,7 @@ function flattened(src, IFused, dropI) {
       iterator_rev(
         iterator_map(
           iterator_flatten(
-            src,
+            Iterator.from(src),
             $jsIterator,
             {
               intoIter: (items) => $iter(items),

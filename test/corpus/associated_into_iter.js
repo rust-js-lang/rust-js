@@ -19,7 +19,7 @@ function lengths(iters, HItemIntoIterator) {
   return $collectDropping(
     $roomForHint(
       iterator_map(
-        iters,
+        Iterator.from(iters),
         (i) =>
           $count($given(HItemIntoIterator.intoIter(i), HItemIntoIterator.IntoIterIterator(), true)),
         $jsIteratorSome,

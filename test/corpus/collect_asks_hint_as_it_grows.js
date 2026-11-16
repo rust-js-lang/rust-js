@@ -442,7 +442,7 @@ function collected(it, dropI) {
 
 function text(it, dropI) {
   const iter = iterator_map(
-    it,
+    Iterator.from(it),
     (n) => String.fromCharCode((97 + (n & 255)) & 255),
     $jsIterator,
     dropI,

@@ -39,7 +39,7 @@ function twices(all, HItemIntoIterator, HItemIntoIterClone, TwiceSize) {
   return $collectDropping(
     $roomForHint(
       iterator_map(
-        all,
+        Iterator.from(all),
         (items) => {
           const iter = HItemIntoIterator.intoIter(items);
           return {

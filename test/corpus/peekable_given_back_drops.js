@@ -36,7 +36,7 @@ function counterIterator_next(counter) {
 }
 
 function consumed(it, dropI) {
-  const iter = iterator_peekable(it, $jsIterator, dropI);
+  const iter = iterator_peekable(Iterator.from(it), $jsIterator, dropI);
   let result;
   try {
     result = iter.reduce((a, b) => (a + b) >>> 0, 0);

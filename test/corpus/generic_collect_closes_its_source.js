@@ -41,7 +41,7 @@ function collected(src, IVecCollect, dropI) {
 
 function tried(src, IInPlace, dropI) {
   const iter = iterator_map(
-    src,
+    Iterator.from(src),
     (value) => value,
     $jsIterator,
     dropI,

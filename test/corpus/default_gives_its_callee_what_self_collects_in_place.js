@@ -40,7 +40,7 @@ function heldAll(
 ) {
   let n = 0;
   const iter = iterator_map(
-    iters,
+    Iterator.from(iters),
     (i) => {
       n = (n + 1) >>> 0;
       if (n >= 3) {

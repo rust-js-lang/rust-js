@@ -30,7 +30,7 @@ function noisyDrop_drop(noisy) {
 function chainedNth(a, b, dropI) {
   const chain = $held(
     iterator_chain(
-      a,
+      Iterator.from(a),
       b,
       $jsIterator,
       {

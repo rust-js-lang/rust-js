@@ -48,7 +48,7 @@ export function tExt(TIterator, TTrustedLen, TItemConstSize, TItemItemSize) {
 function chained(it, ITrustedLen) {
   return $grownVec(
     $roomForHint(
-      iterator_chain(it, ["x"], $jsIterator, {
+      iterator_chain(Iterator.from(it), ["x"], $jsIterator, {
         intoIter: (items) => $iter(items),
         IntoIterIterator: () => ({ next: $next }),
       }),

@@ -31,7 +31,7 @@ function reversedLen(it) {
 
 function mappedLen(it) {
   return mapExactSizeIterator_len(
-    iterator_map(it, (x) => (x + 1) >>> 0, $jsIterator),
+    iterator_map(Iterator.from(it), (x) => (x + 1) >>> 0, $jsIterator),
     { len: (iterator) => iterator.len() },
   );
 }

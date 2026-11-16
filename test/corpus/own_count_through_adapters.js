@@ -63,7 +63,7 @@ function skipCounted(it) {
 }
 
 function fuseCounted(it, IFused) {
-  return $count(iterator_fuse(it, $jsIteratorSome, IFused));
+  return $count(iterator_fuse(Iterator.from(it), $jsIteratorSome, IFused));
 }
 
 function ds() {

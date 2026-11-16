@@ -82,7 +82,7 @@ function fromItems(items, TItemSize, TIntoIterVecCollect) {
 function mapped(it, JTrustedLen, JInPlace) {
   return all(
     iterator_map(
-      it,
+      Iterator.from(it),
       (x) => {
         console.log(`stepped ${x}`);
         return (x + 1) >>> 0;

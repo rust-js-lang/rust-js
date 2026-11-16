@@ -55,7 +55,7 @@ function hint(it, dropI) {
 }
 
 function doubled(it) {
-  return hint(iterator_map(it, (x) => (x * 2) >>> 0, $jsIterator));
+  return hint(iterator_map(Iterator.from(it), (x) => (x * 2) >>> 0, $jsIterator));
 }
 
 function firstTwo(it) {

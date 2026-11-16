@@ -58,7 +58,7 @@ function fused(src, IFused, dropI) {
     $roomForHint(
       iterator_fuse(
         iterator_map(
-          src,
+          Iterator.from(src),
           (x) => {
             const result = [(x[0] + 100) >>> 0];
             dDrop_drop(x);
@@ -95,7 +95,7 @@ function peeked(src, dropI) {
     $roomForHint(
       iterator_peekable(
         iterator_map(
-          src,
+          Iterator.from(src),
           (x) => {
             const result = [(x[0] + 100) >>> 0];
             dDrop_drop(x);
@@ -131,7 +131,7 @@ function chained(src, dropI) {
     $roomForHint(
       iterator_chain(
         iterator_map(
-          src,
+          Iterator.from(src),
           (x) => {
             const result = [(x[0] + 100) >>> 0];
             dDrop_drop(x);
@@ -173,7 +173,7 @@ function chained(src, dropI) {
 function mapped(src, IInPlace, dropI) {
   BOOM = 3;
   const iter = iterator_map(
-    src,
+    Iterator.from(src),
     (x) => {
       const result = [(x[0] + 100) >>> 0];
       dDrop_drop(x);
@@ -206,7 +206,7 @@ function counted(src, IInPlace, dropI) {
   BOOM = 3;
   const iter = iterator_enumerate(
     iterator_map(
-      src,
+      Iterator.from(src),
       (x) => {
         const result = [(x[0] + 100) >>> 0];
         dDrop_drop(x);
@@ -290,7 +290,7 @@ function kept(src, TSize, TAlign, IInPlace, dropT, dropI) {
 function passed(src, JInPlace, dropJ) {
   return mapped(
     iterator_map(
-      src,
+      Iterator.from(src),
       (x) => {
         const result = [(x[0] + 10) >>> 0];
         dDrop_drop(x);
@@ -312,7 +312,7 @@ function passed(src, JInPlace, dropJ) {
 function tried(src, IInPlace, dropI) {
   BOOM = 3;
   const iter = iterator_map(
-    src,
+    Iterator.from(src),
     (x) => {
       const value = [(x[0] + 100) >>> 0];
       dDrop_drop(x);

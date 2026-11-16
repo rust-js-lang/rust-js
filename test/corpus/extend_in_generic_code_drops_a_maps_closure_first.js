@@ -30,7 +30,7 @@ function grow(src, ITrustedLen, dropI) {
   let calls$1 = calls;
   try {
     const iter = iterator_map(
-      src,
+      Iterator.from(src),
       (d) => {
         calls$1 = (calls$1 + 1) | 0;
         try {

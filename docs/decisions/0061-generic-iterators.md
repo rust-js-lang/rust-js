@@ -118,3 +118,23 @@ first, as its doc said: one bound by `Iterator` or `IntoIterator` is given
 the JS iterator, one bound by neither the value itself, which its
 dictionaries and its drop read (`iterated_slot` asks the same). Corpus
 case `iterator_given_where_no_iterator_goes`.
+
+## Amendment: what a compiled std body is given (2026-11-16, #1962)
+
+A std body compiled into `@rust-js/std` (ADR 0561) holds what it's given
+as it is and steps it through its dictionary, whose `next` is `$next`, a
+JS iterator's `next()`. Given a type parameter's value stepped as JS's,
+one given no dictionary of its own, `items.peekable()`, `items.fuse()`, a
+flipped `items.enumerate()` or `items.chain(..)` (ADR 1136), it stepped a
+JS caller's array by `.next()` and threw `it.next is not a function`,
+where this ADR says an array may be given. Such a value given to a
+compiled body as an `Iterator`-bound argument is now `Iterator.from(items)`,
+as the hand-written forms step it (`given_iterators`). One given its
+dictionary is what that dictionary steps, as it is, and an `IntoIterator`
+argument is its dictionary's to make an iterator of, as it was.
+
+Results changed, so this follows ADR 0262's third case. 46 corpus
+snapshots gain the `Iterator.from` (10,992 lines to 11,025), each as
+native prints. Test: `lowering-generic-iterators.test.ts`' "a std body
+compiled given a generic iterator takes an array too"; mutation
+`compiled-given-a-param-as-it-is`.

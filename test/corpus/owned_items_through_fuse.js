@@ -50,7 +50,7 @@ function louds(n) {
 function firsts(it, dropI) {
   const map = $held(
     iterator_map(
-      it,
+      Iterator.from(it),
       (l) => {
         const result = l[0];
         loudDrop_drop(l);

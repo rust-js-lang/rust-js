@@ -511,4 +511,12 @@ export const mutations: Mutation[] = [
     replace: "        if false && !inputs.iter().any(taken) {\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_count_takes_each_inner_count.rs$"],
   },
+  {
+    name: "compiled-given-a-param-as-it-is",
+    breaks: "a std body compiled into `@rust-js/std` given an `impl Iterator` parameter is given it as it is, so a JS caller's array, which ADR 0061 lets it give, is stepped by `.next()` and throws (#1962)",
+    file: "src/lower/iterators/stepping.rs",
+    find: "                && self.given_js_iterator(value.clone(), given, false, false).is_none()\n",
+    replace: "                && self.given_js_iterator(value.clone(), given, false, false).is_none()\n                && false\n",
+    tests: ["test/lowering-generic-iterators.test.ts", "-t", "a std body compiled given a generic iterator takes an array too"],
+  },
 ];
