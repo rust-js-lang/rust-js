@@ -546,11 +546,11 @@ export const mutations: Mutation[] = [
 
   {
     name: "unread-iter-kept",
-    breaks: "a `Splice` dropped where it's made is `$iter($splice(s, 0, 1, []));`, an iterator nothing steps (rd341)",
+    breaks: "a `Drain` dropped where it's made, `v.drain(start..end);`, is `$iter($drain(v, start, end));`, an iterator nothing steps (rd341)",
     file: "src/lower/mir/tidy/bindings.rs",
     find: "            && let Some(items) = crate::lower::iterators::fresh_iter_source(value)\n",
     replace: "            && let Some(items) = crate::lower::iterators::fresh_iter_source(value).filter(|_| false)\n",
-    tests: ["test/corpus.test.ts", "-t", "^vec_edits.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^slice_pointers.rs$"],
     snapshots: true,
   },
 

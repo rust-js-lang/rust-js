@@ -39,7 +39,12 @@ made only to be dropped, a statement `$iter(items)`, is what making
 `items` does, `$splice(newArgs, at, at, [..]);`** (tidy's `unread made`).
 Case ([0262](0262-when-rust-and-js-disagree.md)): N. Held by the corpus's
 `vec_edits` and `trailing_none_items`, run against native Rust, and the
-mutation `unread-iter-kept` (`tidy/bindings.ts`).
+mutation `unread-iter-kept` (`tidy/bindings.ts`). Since #1147, below, a
+`Splice` is `$splice`'s own iterator, not `$iter` of an array, so the
+drop no longer meets one; what it meets is a `Drain` dropped where it's
+made, `v.drain(start..end);`, `$drain(v, start, end);` not
+`$iter($drain(v, start, end));`, which `slice_pointers` writes and the
+mutation is held by (#1979).
 
 ## Amendment: a `Splice` puts its replacement in place as it's dropped (#1147, #1149)
 
