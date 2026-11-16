@@ -107,3 +107,23 @@ made it, in `reversed`, never decided it. The readability measure's
 `$iter` share grows, 62.4 to 62.5 in ten thousand lines, from the vectors
 it and `held_enumerate`'s widened case give as iterators, `$iter([1, 2,
 3])`.
+
+## Amendment: what a JS caller gives (#1993)
+
+A function JS calls, one its module exports, `pub` and no trait's, whose
+parameter is a type parameter bound by `DoubleEndedIterator` or
+`ExactSizeIterator` (ADR 0456), takes an array a JS caller gives as its
+`$iter`, made where it's received:
+
+```js
+export function lastOdd(items) {
+  items = Array.isArray(items) ? $iter(items) : items;
+  return $nextBack($filterEnds(items, (x) => x % 2 === 1)) ?? undefined;
+}
+```
+
+A JS caller can't name `$iter`, and its declaration admits an array
+(#1994). What the crate's own Rust gives is no array, and passes as it is.
+The line is a JS caller's alone, so `$iter`'s share of the generated JS
+grows by it, 84.1 to 84.2 in 10,000 lines. What such a function returns,
+rust-js's own form of the type it hides, is #1999's.

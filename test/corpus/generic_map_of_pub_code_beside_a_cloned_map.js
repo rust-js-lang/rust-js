@@ -32,6 +32,7 @@ export function entry() {
 }
 
 export function tripledBack(items, f) {
+  items = Array.isArray(items) ? $iter(items) : items;
   return $foldBack(
     $mapEnds(items, (item) => f(item)),
     [],
@@ -43,6 +44,8 @@ export function tripledBack(items, f) {
 }
 
 export function chainedBack(a, b) {
+  a = Array.isArray(a) ? $iter(a) : a;
+  b = Array.isArray(b) ? $iter(b) : b;
   return $nextBack($mapEnds($lazyChain(Iterator.from(a), b), (x) => (x + 1) >>> 0)) ?? undefined;
 }
 

@@ -233,6 +233,30 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         IterValue::js(it).lent(how).emit()
     }
 
+    /// Of a function JS calls, `function`, each of its parameters,
+    /// `params`, of its type and its JS name, that's a type parameter
+    /// bound by `DoubleEndedIterator` or `ExactSizeIterator`, stepped as a
+    /// JS iterator that knows its back or its length (ADRs 0429, 0456):
+    /// `items = Array.isArray(items) ? $iter(items) : items;`, an array a
+    /// JS caller gives made its `$iter`, which knows both, and what the
+    /// crate's own Rust gives as it is (#1993).
+    pub(in crate::lower) fn js_given_iterators<'n>(
+        &self,
+        function: DefId,
+        params: impl Iterator<Item = (ty::Ty<'tcx>, &'n js::Name)>,
+    ) -> Vec<Stmt> {
+        let stepped =
+            params.filter(|&(ty, _)| self.double_ended_param(function, ty) || self.exact_size_param(function, ty));
+        stepped
+            .map(|(_, name)| {
+                let given = Expr::var(name);
+                let is_array = Expr::call(Expr::member(Expr::global("Array"), "isArray"), vec![given.clone()]);
+                let stepped = Expr::cond(is_array, array_stepped(given.clone()), given.clone());
+                StmtKind::Assign(given, stepped).at(js::Span::NONE)
+            })
+            .collect()
+    }
+
     /// `$iter(items)`: a JS iterator of an array that knows where it is
     /// (ADR 0071).
     pub(in crate::lower) fn stepped_items(&mut self, items: Expr) -> Expr {

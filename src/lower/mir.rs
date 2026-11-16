@@ -741,6 +741,32 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// gives of a `&mut` to a value JS can't change in place, added to
     /// `boxes`; and of one taken by value whose address is taken, its name,
     /// its cell a fresh one, added to `cell_params` (#1381).
+    /// What a body does first of its parameters as its callers give them:
+    /// each a pointer is taken to, its cell, of what it's given (#1381);
+    /// and, of a function JS calls, each a JS caller may give as an array
+    /// that's stepped as a JS iterator that knows its back or its length,
+    /// its `$iter` (`js_given_iterators`, #1993).
+    fn parameters_as_given(
+        &self,
+        state: &State<'_, 'tcx>,
+        (mir_body, skip, closure): (&mir::Body<'tcx>, usize, bool),
+        cell_params: Vec<(js::Name, js::Name)>,
+    ) -> Vec<Stmt> {
+        let mut out = Vec::new();
+        for (name, given) in cell_params {
+            let cell = Expr::object(vec![js::Prop::Field(js::HELD.into(), Expr::var(&given))]);
+            out.push(StmtKind::Const(name, cell).at(js::Span::NONE));
+        }
+        let function = mir_body.source.def_id();
+        if !closure && self.copy.is_none() && super::analysis::js_facing(self.tcx, self.krate.foreign, function) {
+            let params = (mir_body.args_iter().skip(skip))
+                .filter(|&local| state.locals.reads[local] > 0)
+                .map(|local| (mir_body.local_decls[local].ty, &state.locals.names[local]));
+            out.extend(self.js_given_iterators(function, params));
+        }
+        out
+    }
+
     fn mir_param(
         &mut self,
         state: &mut State<'_, 'tcx>,
@@ -1080,11 +1106,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         }
         let mut out = self.parameters_first(&state)?;
-        // Each parameter a pointer is taken to, its cell, of what it's given.
-        for (name, given) in cell_params {
-            let cell = Expr::object(vec![js::Prop::Field(js::HELD.into(), Expr::var(&given))]);
-            out.push(StmtKind::Const(name, cell).at(js::Span::NONE));
-        }
+        out.extend(self.parameters_as_given(&state, (mir_body, skip, captures.is_some()), cell_params));
         // Each flag that says whether a value is there to drop, and the
         // values: a drop may be where their `const` isn't seen.
         let mut flagged = vec![false; mir_body.local_decls.len()];

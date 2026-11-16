@@ -1,14 +1,14 @@
 # shape	count	per 10,000 lines
-files	2651
-lines	354663
+files	2654
+lines	355787
 temporaries	0	0
 labeled blocks	0	0
 while (true)	224	6.3
-$iter	2983	84.1
-Iterator.from	360	10.2
+$iter	3001	84.3
+Iterator.from	360	10.1
 return;	341	9.6
-renamed x$1	16617	468.5
-role fallbacks	8977	253.1
+renamed x$1	16634	467.5
+role fallbacks	9015	253.4
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1	role fallbacks
 test/corpus/adapter_drop_past_a_panic.js	50	0	0	0	1	0	0	0	1
 test/corpus/adapter_drops.js	1849	0	0	1	18	2	1	98	61
@@ -492,6 +492,7 @@ test/corpus/copied_given_to_generic_backs.js	79	0	0	0	4	0	0	6	4
 test/corpus/copied_iterator_defaults.js	273	0	0	1	1	0	0	4	6
 test/corpus/copied_of_a_copy_with_its_own_clone.js	270	0	0	0	9	0	0	18	7
 test/corpus/copied_of_a_parameter.js	31	0	0	0	4	2	0	2	2
+test/corpus/copied_of_generic_code_knowing_its_back.js	69	0	0	0	3	0	0	0	0
 test/corpus/copied_skip_take_and_filter_stepped_from_back.js	226	0	0	0	5	0	0	3	5
 test/corpus/copied_structs_apart.js	79	0	0	0	0	0	0	0	0
 test/corpus/copies_of_forward_forms_stepped_from_their_back.js	144	0	0	0	5	0	0	0	3
@@ -1021,7 +1022,7 @@ test/corpus/generic_map_cloned_beside_another_bound.js	59	0	0	0	2	0	0	0	0
 test/corpus/generic_map_cloned_where_its_made.js	54	0	0	0	2	0	0	0	0
 test/corpus/generic_map_folded_and_rfolded.js	134	0	0	0	0	0	0	0	2
 test/corpus/generic_map_made_by_entry.js	202	0	0	0	0	0	0	2	4
-test/corpus/generic_map_of_pub_code_beside_a_cloned_map.js	113	0	0	0	6	1	0	2	2
+test/corpus/generic_map_of_pub_code_beside_a_cloned_map.js	116	0	0	0	9	1	0	2	2
 test/corpus/generic_map_past_a_take_beside_a_cloned_one.js	106	0	0	0	1	1	0	0	1
 test/corpus/generic_map_past_a_take_cloned_beside_another_bound.js	64	0	0	0	2	0	0	0	0
 test/corpus/generic_maps.js	204	0	0	0	6	0	0	9	7
@@ -1319,6 +1320,7 @@ test/corpus/len_made_in_place.js	90	0	0	0	3	2	0	0	1
 test/corpus/lengths_and_backs_given_on.js	216	0	0	0	2	1	0	7	5
 test/corpus/lent_field_iterator.js	25	0	0	0	1	0	0	3	3
 test/corpus/lent_given_iterator_dropped_where_it_goes.js	286	0	0	4	0	1	0	0	7
+test/corpus/lent_iterator_folded_as_std_passes_it_on.js	881	0	0	0	7	0	0	7	30
 test/corpus/lent_iterators.js	111	0	0	0	2	0	0	4	3
 test/corpus/lent_place_set_read_in_place.js	118	0	0	0	0	0	6	0	0
 test/corpus/let_chain_around_early_returns.js	93	0	0	0	0	0	4	0	0
@@ -2236,6 +2238,7 @@ test/corpus/step_by_source_dropped_at_its_folds_end.js	153	0	0	0	0	0	3	0	3
 test/corpus/step_by_stepped_from_its_back.js	194	0	0	0	11	0	0	8	16
 test/corpus/step_by_zero.js	22	0	0	0	0	0	0	2	0
 test/corpus/stepped_index_to_length.js	107	0	0	0	0	0	0	0	0
+test/corpus/stepped_iterator_lent_as_a_dyn.js	171	0	0	0	5	0	0	10	8
 test/corpus/stepped_nested.js	31	0	0	0	1	0	0	0	0
 test/corpus/stepped_range_loops.js	80	0	0	0	0	0	0	0	0
 test/corpus/stock_orders.js	318	0	0	0	0	0	1	12	7

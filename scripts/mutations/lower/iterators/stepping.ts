@@ -3,6 +3,24 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "js-caller-array-unstepped",
+    breaks:
+      "an exported function's DoubleEndedIterator or ExactSizeIterator parameter given an array by a JS caller is stepped as the array, which has no back() or len(), so the call throws (#1993)",
+    file: "src/lower/iterators/stepping.rs",
+    find: "            params.filter(|&(ty, _)| self.double_ended_param(function, ty) || self.exact_size_param(function, ty));\n",
+    replace: "            params.filter(|_| false);\n",
+    tests: ["test/lowering-iterators.test.ts", "-t", "a JS caller gives an array to"],
+  },
+  {
+    name: "js-caller-array-exact-only",
+    breaks:
+      "an exported function's ExactSizeIterator parameter given an array by a JS caller is stepped as the array, so len() throws (#1993)",
+    file: "src/lower/iterators/stepping.rs",
+    find: " || self.exact_size_param(function, ty));\n",
+    replace: ");\n",
+    tests: ["test/lowering-iterators.test.ts", "-t", "a JS caller gives an array to"],
+  },
+  {
     name: "unbounded-param-given-crate-iterator-wrapped",
     breaks:
       "the crate's iterator given for a `T: Debug` is made a JS iterator, which its dictionary reads as the struct: `Gen(undefined)` (#991)",

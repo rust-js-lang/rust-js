@@ -1161,11 +1161,10 @@ pub fn maybe(items: &[Option<u32>]) -> Option<Option<u32>> {
 });
 
 // An exported function's `impl Iterator` parameter a JS caller gives an
-// array, filtered then counted, stepped by `next()`, folded by
-// `try_fold`, and of an `impl DoubleEndedIterator` stepped from its back
+// array, filtered then counted, stepped by `next()` and folded by
+// `try_fold`
 // (ADR 0061, #1962): std's compiled `Filter` over what JS gives, as Rust
-// steps it, a route no Rust caller of the crate's takes. A double-ended
-// one given an array is #1993's.
+// steps it, a route no Rust caller of the crate's takes.
 test("an exported function's impl Iterator a JS caller gives an array to, filtered", async () => {
   const dir = fixture("js-caller-filters");
   writeFileSync(join(dir, "lib.rs"), `pub fn odd_count(items: impl Iterator<Item = u32>) -> usize {
@@ -1185,4 +1184,38 @@ pub fn summed(items: impl Iterator<Item = u32>) -> u32 {
   const lib = await import(join(dir, "lib.js"));
   expect([lib.oddCount([1, 2, 3, 4, 5]), lib.firstBig([1, 2, 3, 4]), lib.summed([1, 2, 3, 4])]).toEqual([3, 3, 9]);
   expect([lib.oddCount([].values()), lib.firstBig([1, 2])]).toEqual([0, undefined]);
+});
+
+// An exported function's parameter bound by `DoubleEndedIterator` or
+// `ExactSizeIterator`, which it steps as a JS iterator that knows its back
+// or its length (ADRs 0429, 0456), given an array by a JS caller: the
+// array's `$iter`, made where it's received, stepped from both ends and
+// asked its length as Rust's is; the crate's own Rust gives its own, as it
+// is (#1993).
+test("an exported function's DoubleEndedIterator or ExactSizeIterator a JS caller gives an array to", async () => {
+  const dir = fixture("js-caller-double-ended");
+  writeFileSync(join(dir, "lib.rs"), `pub fn last_odd(items: impl DoubleEndedIterator<Item = u32>) -> Option<u32> {
+    items.filter(|x| x % 2 == 1).next_back()
+}
+
+pub fn ends<I: DoubleEndedIterator<Item = u32>>(mut items: I) -> Vec<u32> {
+    let mut out = Vec::new();
+    while let (Some(a), Some(b)) = (items.next(), items.next_back()) {
+        out.push(b - a);
+    }
+    out
+}
+
+pub fn left(items: impl ExactSizeIterator<Item = u32>) -> usize {
+    items.len()
+}
+
+pub fn inside(v: Vec<u32>) -> (Option<u32>, Vec<u32>, usize) {
+    (last_odd(v.iter().copied()), ends(0..v.len() as u32), left(v.iter().copied().skip(1)))
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.lastOdd([1, 2, 3, 4]), lib.lastOdd([2, 4]), lib.ends([1, 2, 5, 9, 20]), lib.left([7, 8, 9]), lib.left([])]).toEqual([3, undefined, [19, 7], 3, 0]);
+  expect(lib.inside([1, 2, 3, 4])).toEqual([3, [3, 1], 3]);
 });
