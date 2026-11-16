@@ -181,6 +181,9 @@ export function stores(): Store[] {
       { name: label("compile-cache"), dir: at("compile-cache"), cap: compileCap(), bound: own ? (free) => void pruneCompiles({ root: compileCache, free }) : undefined },
       { name: label("mutants"), dir: at("mutants"), cap: mutantsCap, bound: bounded ? (free) => void boundEntries(at("mutants"), mutantsCap, free) : undefined },
       { name: label("native-sources"), dir: at("native-sources"), cap: 64 * 2 ** 20 },
+      // The npm crates' packs, one key's, which their packer keeps alone
+      // (scripts/package-npm-crates.ts): under 1 MiB.
+      { name: label("npm-crates"), dir: at("npm-crates"), cap: 16 * 2 ** 20 },
       { name: label("the build"), dir: join(tree, "target"), entries: (name) => !storedIn.has(name) },
     );
   }
@@ -205,7 +208,7 @@ export function stores(): Store[] {
 }
 
 /** A worktree's `target/` entries that are stores of their own. */
-const storedIn = new Set(["crate-corpus", "crater", "kept-apps", "compile-cache", "mutants", "native-sources"]);
+const storedIn = new Set(["crate-corpus", "crater", "kept-apps", "compile-cache", "mutants", "native-sources", "npm-crates"]);
 
 /** What `store` takes of the disk: its entries', or its directory's. */
 export function bytesOfStore(store: Store): number {
