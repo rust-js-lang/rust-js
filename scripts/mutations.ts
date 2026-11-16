@@ -1466,7 +1466,7 @@ async function main() {
   // Here, each one's time, its build and its tests, as many as run; CI's
   // are its own.
   if (!process.env.GITHUB_ACTIONS && rows.length > 0) {
-    console.log(timed("mutation, each", elapsed() / rows.length, `${rows.length} run`));
+    console.log(timed("mutation, each", elapsed() / rows.length, { detail: `${rows.length} run` }));
   }
   if (missed.length > 0) process.exitCode = 1;
   // And `--fresh`'s builds, each mutation's verdict the same as the build

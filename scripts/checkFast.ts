@@ -30,7 +30,7 @@ import { said, strays } from "./strays";
 import { type CheckLogRun, checkLogRun } from "./checkLogs";
 import { expected, jobTimesStore, readJobTimes, recordJobTimes } from "./jobTimes";
 import { fairShare, holdLease, leaseStore, liveLeases } from "./leases";
-import { elapsed, loadScale, median, timed } from "./timing";
+import { elapsed, loadScale, median, shown, timed } from "./timing";
 
 const root = join(import.meta.dir, "..");
 
@@ -73,6 +73,9 @@ export type Job = {
   ci?: string;
   group?: string;
   size?: number;
+  /** What it runs where the change picks it, which its usual is of:
+   * `ranKey`'s. */
+  ran?: string;
 };
 
 /** What the check is of: `--all`, or the files the change touches, those
@@ -104,6 +107,22 @@ export type Scope = {
 /** The corpus's cases, which the corpus with std's iterator structs runs
  * whole where no list picks some. */
 const corpusCases = () => readdirSync(join(root, "test", "corpus")).filter((name) => name.endsWith(".rs")).length;
+
+/** What a job the selection sizes ran, the key its usual time is of
+ * (scripts/timing.ts' `compared`): `all` of a whole run; of a selection, `some`,
+ * or `capped` of a sanity pass's cap, and a digest of its files, cases and
+ * forms, so a part of 8 cases is never said against a whole run's 200. */
+export function ranKey(picked: { files: Set<string>; cases: string[]; forms: string[] } | undefined, capped = false): string {
+  if (picked === undefined) return "all";
+  return listKey(capped ? "capped" : "some", [picked.files, picked.cases, picked.forms]);
+}
+
+/** `kind` and a digest of `lists`, each in any order: what a job sized by
+ * the change ran, its cases or mutations, the key of its usual. */
+function listKey(kind: string, lists: Iterable<string>[]): string {
+  const listed = lists.map((list) => [...list].sort().join("\n")).join("\n\n");
+  return `${kind} ${createHash("sha256").update(listed).digest("hex").slice(0, 12)}`;
+}
 
 const job = (name: string, cmd: string[], more: Partial<Job> = {}): Job => ({
   name,
@@ -178,6 +197,8 @@ export function jobs({ all, changed, branch, added, extra, cores, picked, forms,
   // Neither a selection nor `--all`: everything, as the selector says
   // where it can't.
   all ||= picked === undefined;
+  // What the jobs the selection sizes run, their usual's key.
+  const ran = ranKey(all ? undefined : picked, capped);
   // The compiler's unit tests, of a change to its Rust or its build; the
   // Vite example's build, of a change to any but what only tests and docs
   // read (scripts/select.ts's `readOnly`).
@@ -265,6 +286,7 @@ export function jobs({ all, changed, branch, added, extra, cores, picked, forms,
       job(`${name} ${i + 1}/${corpusParts}`, ["bun", "test", file], {
         env: { RUST_JS_CASES: `${i + 1}/${corpusParts}${!all && picked ? `:${picked.caseList}` : ""}` },
         ci: "bun run test",
+        ran,
       }),
     );
   // The suites a change can touch, as it touches them; or, with `--all`,
@@ -300,7 +322,7 @@ export function jobs({ all, changed, branch, added, extra, cores, picked, forms,
     ...testFiles
       .filter((file) => file !== "test/corpus.test.ts" && file !== metamorphic && !nightly.includes(file) && selected(file))
       .map((file) =>
-        job(file, ["bun", "test", file], { group: browsers.includes(file) ? "the browsers' test files" : "every other test file", ci: "bun run test" }),
+        job(file, ["bun", "test", file], { group: browsers.includes(file) ? "the browsers' test files" : "every other test file", ci: "bun run test", ran }),
       ),
     ...Array.from({ length: metamorphicParts }, (_, i) =>
       job(`the metamorphic sample ${i + 1}/${metamorphicParts}`, ["bun", "test", metamorphic], {
@@ -381,6 +403,9 @@ export function jobs({ all, changed, branch, added, extra, cores, picked, forms,
                     // them (#1364).
                     ...(of === "rows" && rows !== undefined ? { size: rows } : {}),
                     ...(of === "forms" ? { size: ((!all && picked) || forms)?.forms.length ?? corpusCases() } : {}),
+                    // Its usual of runs of the same rows or cases.
+                    ...(of === "rows" && rows !== undefined ? { ran: `${rows} rows` } : {}),
+                    ...(of === "forms" ? { ran: !all && picked ? ran : forms ? listKey("forms", [forms.forms]) : "all" } : {}),
                   },
                 ),
               ),
@@ -465,6 +490,7 @@ export function jobs({ all, changed, branch, added, extra, cores, picked, forms,
               ci: "bun scripts/iteratorSlice.ts run metamorphic",
               // Sized by the cases whose rewrites it runs (#1364).
               size: Math.min(cases.length, metamorphicMost),
+              ran: listKey("cases", [cases]),
             }),
           ]
         : []),
@@ -475,12 +501,26 @@ export function jobs({ all, changed, branch, added, extra, cores, picked, forms,
               memory: builds * peakGB.compilerBuild,
               // Sized by the mutations it runs (#1364).
               size: new Set(added).size,
+              ran: listKey("mutations", [added]),
             }),
           ]
         : []),
       ...extra.filter((file) => !everyFile.some((each) => each.name === file)).map((file) => job(file, ["bun", "test", file])),
     ],
   };
+}
+
+/** A group's time, its files' own seconds summed: what it's said against
+ * its usual by, as a slower file shows in it, not the pool's queue. */
+export function groupSeconds(done: { start: number; end: number }[]): number {
+  return done.reduce((sum, r) => sum + r.end - r.start, 0);
+}
+
+/** What else a group's line says: how many files, the longest of them, and
+ * the span from the first's start to the last's end. */
+export function groupSaid(done: { job: { name: string }; start: number; end: number }[], span: number): string {
+  const longest = done.reduce((a, r) => (r.end - r.start > a.end - a.start ? r : a));
+  return `(${done.length} files, summed; the longest ${longest.job.name} ${shown(longest.end - longest.start)}, all ${shown(span)} from the first's start)`;
 }
 
 /** When the jobs began, and the machine's busy share every two seconds
@@ -657,7 +697,7 @@ export function run(
           // Its whole output kept as it fails: a check an outer limit
           // stops keeps it (#1706).
           if (code !== 0) console.log(`FAIL ${name} (${seconds.toFixed(0)}s${stopped}), its whole output: ${logs.keep(name, result.log)}`);
-          else if (group === undefined) console.log(`ok   ${timed(`check:fast ${name}`, seconds, undefined, kept(cpu, start, Date.now()))}`);
+          else if (group === undefined) console.log(`ok   ${timed(`check:fast ${name}`, seconds, { cores: kept(cpu, start, Date.now()), ran: job.ran })}`);
           if (group !== undefined) {
             const done = groups.get(group)!;
             done.push(result);
@@ -669,7 +709,12 @@ export function run(
                 began + Math.max(...done.map((r) => r.end)) * 1000,
                 done.reduce((sum, r) => sum + r.end - r.start, 0),
               );
-              console.log(`ok   ${timed(`check:fast ${group}`, span, undefined, each)} (${done.length} files)`);
+              // Said as its files' own seconds, summed, the longest and the
+              // span beside: the span, its first file's start to its last's
+              // end, is most of the check where the pool starts its small
+              // files last, the browsers' nine 250-276 s whose longest,
+              // next.test.ts, takes 62-73 s (2026-11-17).
+              console.log(`ok   ${timed(`check:fast ${group}`, groupSeconds(done), { cores: each, ran: done[0]!.job.ran })} ${groupSaid(done, span)}`);
             }
           }
           return result;
@@ -900,7 +945,7 @@ if (import.meta.main) {
   const total = elapsed();
   const scope = all ? "check:fast --all" : picked ? "check:fast, what the change reaches" : "check:fast, everything";
   console.log(
-    `\n${failed.length === 0 ? `all passed: ${timed(scope, total)}` : `${failed.length} failed in ${total.toFixed(0)}s`}`,
+    `\n${failed.length === 0 ? `all passed: ${timed(scope, total, { ran: picked ? ranKey(picked, capped) : undefined })}` : `${failed.length} failed in ${total.toFixed(0)}s`}`,
   );
   process.exit(failed.length === 0 ? 0 : 1);
 }
@@ -946,6 +991,6 @@ function installed() {
     process.exit(1);
   }
   writeFileSync(stamp, now);
-  console.log(timed("bun install", (Date.now() - installing) / 1000, why));
+  console.log(timed("bun install", (Date.now() - installing) / 1000, { detail: why }));
 }
 

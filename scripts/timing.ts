@@ -26,8 +26,11 @@ export function elapsed(): number {
 /** A step's run: its seconds, when, at which commit, what else it says,
  * and, of a job of check:fast's, the cores it kept busy, its CPU seconds
  * over its own (a group's, each of its files'), which its pool runs it by
- * the next time. */
-export type Timing = { step: string; seconds: number; at: string; commit: string; detail?: string; cores?: number };
+ * the next time; and, of a step whose work the change picks, what it ran,
+ * `ran`: `all`, or the selection's key, `some <digest>` or `capped
+ * <digest>` (scripts/checkFast.ts' `ranKey`), its usual only of runs that
+ * ran the same. */
+export type Timing = { step: string; seconds: number; at: string; commit: string; detail?: string; cores?: number; ran?: string };
 
 /** Each run recorded, the oldest first. */
 export function timings(): Timing[] {
@@ -89,23 +92,27 @@ export function underLoad(ms: number): number {
   return Math.round(ms * Math.max(now, given >= 1 ? given : 1));
 }
 
-/** `seconds` against the step's last ten runs: `38 s (usual 36 s)`, and a
- * warning where it's slower. */
-export function compared(step: string, seconds: number, earlier = timings()): string {
-  const before = earlier.filter((t) => t.step === step).slice(-10).map((t) => t.seconds);
+/** `seconds` against the step's last ten runs that ran what it ran, `ran`:
+ * `38 s (usual 36 s)`, and a warning where it's slower. A corpus part of a
+ * selection's 8 cases, said against a full run's 200, was 9 s against a
+ * usual of 75 s, and a full run after selected ones was "slower than
+ * usual" for being whole. */
+export function compared(step: string, seconds: number, earlier = timings(), ran?: string): string {
+  const before = earlier.filter((t) => t.step === step && t.ran === ran).slice(-10).map((t) => t.seconds);
   if (before.length < 3) return `${step} ${shown(seconds)}`;
   const usual = median(before);
   const line = `${step} ${shown(seconds)} (usual ${shown(usual)})`;
   return slower(seconds, usual) ? `${line}  ⚠ slower than usual: why?` : line;
 }
 
-/** Record that `step` took `seconds`, keeping the `cores` it kept busy,
- * and say how it compares. */
-export function timed(step: string, seconds: number, detail?: string, cores?: number): string {
-  const line = compared(step, seconds);
+/** Record that `step` took `seconds`, keeping what else it says, the
+ * `cores` it kept busy and what it `ran`, and say how it compares with the
+ * runs that ran the same. */
+export function timed(step: string, seconds: number, { detail, cores, ran }: { detail?: string; cores?: number; ran?: string } = {}): string {
+  const line = compared(step, seconds, timings(), ran);
   const commit = Bun.spawnSync(["git", "rev-parse", "--short", "HEAD"], { cwd: root }).stdout.toString().trim();
   mkdirSync(join(root, "target"), { recursive: true });
-  const entry: Timing = { step, seconds: Math.round(seconds * 10) / 10, at: new Date().toISOString(), commit, ...(detail ? { detail } : {}), ...(cores !== undefined ? { cores: Math.round(cores * 100) / 100 } : {}) };
+  const entry: Timing = { step, seconds: Math.round(seconds * 10) / 10, at: new Date().toISOString(), commit, ...(detail ? { detail } : {}), ...(cores !== undefined ? { cores: Math.round(cores * 100) / 100 } : {}), ...(ran !== undefined ? { ran } : {}) };
   appendFileSync(file, JSON.stringify(entry) + "\n");
   return line;
 }
@@ -115,13 +122,15 @@ if (import.meta.main) {
   const all = timings();
   if (step) {
     for (const t of all.filter((t) => t.step === step).slice(-20)) {
-      console.log(`${t.at.slice(0, 16).replace("T", " ")}  ${t.commit}  ${shown(t.seconds).padStart(10)}${t.detail ? `  ${t.detail}` : ""}`);
+      console.log(`${t.at.slice(0, 16).replace("T", " ")}  ${t.commit}  ${shown(t.seconds).padStart(10)}${t.ran ? `  ${t.ran}` : ""}${t.detail ? `  ${t.detail}` : ""}`);
     }
   } else {
-    const steps = [...new Set(all.map((t) => t.step))].sort();
+    // Each step's whole runs: a selection's are said with `timings <step>`.
+    const whole = all.filter((t) => t.ran === undefined || t.ran === "all");
+    const steps = [...new Set(whole.map((t) => t.step))].sort();
     console.log(`${"step".padEnd(42)}${"runs".padStart(5)}${"last".padStart(12)}${"usual".padStart(12)}${"slowest".padStart(12)}`);
     for (const name of steps) {
-      const runs = all.filter((t) => t.step === name);
+      const runs = whole.filter((t) => t.step === name);
       const last = runs.at(-1)!.seconds;
       const before = runs.slice(-11, -1).map((t) => t.seconds);
       const usual = before.length ? median(before) : last;

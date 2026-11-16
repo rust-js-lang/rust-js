@@ -172,7 +172,7 @@ function timeChecks(all: Run[]) {
     const id = `run ${run.databaseId}`;
     if (kept.has(id)) continue;
     const seconds = (Date.parse(run.updatedAt!) - Date.parse(run.createdAt)) / 1000;
-    console.log(timed("CI check of main", seconds, id));
+    console.log(timed("CI check of main", seconds, { detail: id }));
   }
 }
 

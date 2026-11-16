@@ -7,6 +7,7 @@ import { join } from "node:path";
 import { keepFailedLogs } from "../scripts/checkLogs";
 import { expected, keptJobs, keptRuns, readJobTimes, recordJobTimes } from "../scripts/jobTimes";
 import { elapsedSeconds, said, strays, worktreeRoots, type Stray } from "../scripts/strays";
+import { groupSaid, groupSeconds, ranKey } from "../scripts/checkFast";
 import { compared, median, shown, slower, type Timing, underLoad } from "../scripts/timing";
 import { floorBytes, mainCheckoutOf } from "./bounded";
 import { fixture, root } from "./support";
@@ -32,6 +33,31 @@ test("a time is said against the step's last ten runs, once there are three", ()
   expect(compared("check:fast", 52, runs("check:fast", [36, 37, 35]))).toBe("check:fast 52 s (usual 36 s)  ⚠ slower than usual: why?");
   // Another step's runs aren't its usual.
   expect(compared("port build", 52, runs("check:fast", [36, 37, 35]))).toBe("port build 52 s");
+});
+
+// A step the selection sizes, a corpus part or the test files, is said
+// against the runs that ran what it ran: a part of a selection's 8 cases
+// said against a whole run's 200 reads fast, and a whole run after selected
+// ones "slower than usual".
+test("a step's usual is of the runs that ran the same, a selection's never a whole run's", () => {
+  const step = "check:fast corpus 1/12";
+  const keyed = (seconds: number[], ran: string) => runs(step, seconds).map((t) => ({ ...t, ran }));
+  const whole = keyed([75, 80, 78], "all");
+  const same = keyed([8, 9, 10], "some abc");
+  expect(compared(step, 9, whole, "some abc")).toBe(`${step} 9.0 s`);
+  expect(compared(step, 9, [...whole, ...same], "some abc")).toBe(`${step} 9.0 s (usual 9.0 s)`);
+  expect(compared(step, 80, [...same, ...whole, ...keyed([7], "some def")], "all")).toBe(`${step} 1 min 20 s (usual 1 min 18 s)`);
+  // Runs kept before the key, of either, are neither's usual.
+  expect(compared(step, 80, runs(step, [75, 80, 78]), "all")).toBe(`${step} 1 min 20 s`);
+  // The key: of no selection, all; of one, its files, cases and forms in
+  // any order; of a sanity pass's cap, said apart.
+  const picked = { files: new Set(["test/a.test.ts", "test/b.test.ts"]), cases: ["x.rs", "y.rs"], forms: [] };
+  expect(ranKey(undefined)).toBe("all");
+  expect(ranKey(picked)).toMatch(/^some [0-9a-f]{12}$/);
+  expect(ranKey({ ...picked, files: new Set(["test/b.test.ts", "test/a.test.ts"]), cases: ["y.rs", "x.rs"] })).toBe(ranKey(picked));
+  expect(ranKey({ ...picked, cases: ["x.rs"] })).not.toBe(ranKey(picked));
+  expect(ranKey({ ...picked, forms: ["x.rs"] })).not.toBe(ranKey(picked));
+  expect(ranKey(picked, true)).toBe(`capped ${ranKey(picked).slice("some ".length)}`);
 });
 
 // What the loop left running, parented by launchd and working in a
@@ -296,4 +322,18 @@ test("check:fast preserves a passing job's child observation warning", () => {
   expect([result.exitCode,result.signalCode ?? null]).toEqual([0,null]);
   expect(result.stderr.toString()).toContain("child observation job: warning: child observed ");
   expect(result.stderr.toString()).toContain("a blocked parent or a slow child");
+});
+
+// A group of files, the browsers' or every other one, is said by its files'
+// own seconds, summed, beside its longest and its span: the span, first
+// start to last end, held most of a check where the pool starts small
+// files last, 250-276 s of nine files whose longest took 73 s (2026-11-17).
+test("a group's time is its files' own, summed, its longest and its span beside", () => {
+  const done = [
+    { job: { name: "test/next.test.ts" }, start: 0, end: 70 },
+    { job: { name: "test/playground.test.ts" }, start: 240, end: 241 },
+    { job: { name: "test/pilot.test.ts" }, start: 10, end: 52 },
+  ];
+  expect(groupSeconds(done)).toBe(113);
+  expect(groupSaid(done, 241)).toBe("(3 files, summed; the longest test/next.test.ts 1 min 10 s, all 4 min 1 s from the first's start)");
 });

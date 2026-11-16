@@ -346,9 +346,19 @@ ok   check:fast bindings 26 s (usual 25 s)
 ok   check:fast corpus 1/3 52 s (usual 30 s)  ⚠ slower than usual: why?
 ```
 
-`bun run timings` shows every step, its last time, its usual and its
-slowest; `bun run timings <step>` its runs, by commit. A warning is the
-next thing to look at: what made it slower, before the loop is built on it.
+A step whose work the change picks, a corpus part, the test files, the
+cases with std's iterator structs or the rows a change names, is said
+against the runs that ran the same: of `--all` or a selection the
+selector can't say, `all`; of a selection, its files, cases and forms
+(`some <digest>`, `capped <digest>` of a sanity pass's cap,
+`checkFast.ts`' `ranKey`), so a part of a selection's 8 cases is never
+said against a whole run's 200, nor a whole run against a selection's.
+A selection met for the first time says no usual.
+
+`bun run timings` shows every step's whole runs, its last time, its usual
+and its slowest; `bun run timings <step>` its runs, by commit, with what
+each ran. A warning is the next thing to look at: what made it slower,
+before the loop is built on it.
 
 The compiler build and startup pruning run concurrently. The build is
 awaited asynchronously so the parent can observe and time the prune's exit

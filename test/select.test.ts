@@ -8,7 +8,7 @@ import { expect, test } from "bun:test";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { jobs } from "../scripts/checkFast";
+import { jobs, ranKey } from "../scripts/checkFast";
 import { onlyPushedFiles, phases as pushPhases, timesLine } from "../scripts/push";
 import { whoRuns } from "../scripts/disk";
 import { failedIn, misses } from "../scripts/selector-audit";
@@ -276,11 +276,17 @@ test("check:fast runs what the selection selected: its files, its cases in parts
   const testJobs = (list: typeof selected) => list.filter((job) => job.cmd[0] === "bun" && job.cmd[1] === "test").map((job) => job.name);
   expect(testJobs(selected).sort()).toEqual(["corpus 1/1", "test/jsx.test.ts", "test/lowering-cells.test.ts"]);
   expect(selected.find((job) => job.name === "corpus 1/1")?.env.RUST_JS_CASES).toBe("1/1:/cases.txt");
+  // What the selection sizes is timed against runs of the same selection,
+  // the corpus's parts and the files alike; lint against all of its runs.
+  const key = ranKey({ files: new Set(["test/lowering-cells.test.ts", "test/jsx.test.ts"]), cases: ["a.rs", "b.rs"], forms: [] });
+  expect(["corpus 1/1", "test/jsx.test.ts", "fmt"].map((name) => selected.find((job) => job.name === name)?.ran)).toEqual([key, key, undefined]);
   for (const name of ["fmt", "typecheck", "clippy", "cargo test"]) expect(selected.map((job) => job.name)).toContain(name);
   // A sanity pass's cap: its own test files and cases alone, no lint, nets
   // or builds.
   const capped = jobs({ ...plain, capped: true, picked: { ...given, files: new Set(["test/jsx.test.ts"]), cases: ["a.rs"], forms: [] } }).jobs.map((job) => job.name);
   expect(capped.sort()).toEqual(["corpus 1/1", "test/jsx.test.ts"]);
+  const cap = { files: new Set(["test/jsx.test.ts"]), cases: ["a.rs"], forms: [] };
+  expect(jobs({ ...plain, capped: true, picked: { ...given, ...cap } }).jobs.map((job) => job.ran)).toEqual([ranKey(cap, true), ranKey(cap, true)]);
   // None selected: lint alone, and of a doc's change neither the compiler's
   // unit tests nor the Vite example's build.
   const docs = jobs({ ...plain, changed: ["docs/guide/README.md"], picked: { ...given, files: new Set(), cases: [], forms: [] } }).jobs.map((job) => job.name);
@@ -289,6 +295,7 @@ test("check:fast runs what the selection selected: its files, its cases in parts
   const everything = jobs(plain).jobs;
   expect(everything.filter((job) => job.name.startsWith("corpus ")).length).toBe(12);
   expect(testJobs(everything)).toContain("test/snapshots.test.ts");
+  expect([...new Set(everything.filter((job) => job.name.startsWith("corpus ") || job.name === "test/snapshots.test.ts").map((job) => job.ran))]).toEqual(["all"]);
 });
 
 test("bun run push says its selection on its line, and runs the check and the port only where they can differ", () => {
