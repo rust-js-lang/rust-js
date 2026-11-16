@@ -677,3 +677,36 @@ shard (nightly 43650311159). Now, the lead for the user:
 `finally-holds-what-may-throw`, judged by the map of its commit on the
 Mac mini: caught by six cases' snapshots of the 1,099 that reach its site,
 10 s of tests.
+
+## Amendment: CI builds its mutants incrementally, each build held to being its mutants' (2026-11-16)
+
+CI's rustc was given no `-C incremental` for rust-js, so each mutant built
+alone, one a build of many can't hold, compiled the crate whole: 96–102 s
+each (dispatch 43769215091), 562 build-minutes of the nightly's 197 timed
+alone mutants, where the Mac's builds, incremental by Cargo's dev profile,
+take seconds. Now, the lead for the user:
+
+- **The mutation step sets `CARGO_INCREMENTAL=1`**, every build of the
+  shard incremental; the incremental directories are kept out of the
+  saved cache, gigabytes of each build's sessions, so a shard's first
+  build compiles the crate whole and each after it knows the last one's.
+- **Each build is held to being its mutants'** (scripts/mutant-builds.ts),
+  as a build that reused what it shouldn't would judge another mutant, or
+  the compiler as it is, by these mutations' names: its files are in the
+  crate as the mutation wrote them, none the crate's own; Cargo compiled
+  the crate again (`--message-format=json`'s `fresh: false`); and its
+  binary's hash is no other build's of the run, the compiler's as it is
+  among them. A build that isn't is each of its mutations' `INCONCLUSIVE`,
+  never split or judged.
+- **A run of every mutation, the nightly's, builds 5% of its builds again
+  fresh** (`--fresh=0.05`), with `CARGO_INCREMENTAL=0`, and judges each of
+  their mutations by both; the run fails where the two verdicts differ.
+
+On the Mac mini, an alone build of the mutants' crate after a one-line
+change to `tidy/stages.rs`: 33.8 s with no incremental cache, 3.1 s with
+it (three of each).
+
+Here sccache refuses `CARGO_INCREMENTAL=1` ("incremental compilation is
+prohibited"), and passes an incremental build through only where the
+variable is unset: the runner never sets it to 1, only `--fresh`'s 0, and
+the Mac's builds stay incremental by the profile.

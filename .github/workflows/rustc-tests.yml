@@ -54,11 +54,6 @@ on:
         required: false
         type: string
         default: ''
-      cargo_log:
-        description: 'Temporary, the alone builds'' diagnosis: CARGO_LOG of two builds of the crate in the mutants'' target, the second after a one-line change.'
-        required: false
-        type: string
-        default: ''
       ablation:
         description: 'Instead: ablate each MIR intervals rule (scripts/ablate.ts), the corpus shadow and the bounds matrix of each, and merge them into the rule table.'
         type: boolean
@@ -428,10 +423,13 @@ jobs:
       # only rust-js, for each mutation.
       - uses: actions/cache@v6
         with:
+          # Not its incremental directories, which hold each session of
+          # each build, gigabytes the cache's 10 GB needn't keep.
           path: |
             ~/.cargo/registry
             ~/.cargo/git
             target/mutants/target
+            !target/mutants/target*/debug/incremental
           key: mutants-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}
           restore-keys: mutants-${{ runner.os }}-
       # The corpus ships each case through Vite too.
@@ -475,30 +473,17 @@ jobs:
       - if: steps.browser.outputs.needed == 'browser'
         name: Install the browser
         run: bunx --bun playwright install --with-deps chromium
-      - if: inputs.cargo_log != ''
-        name: Diagnose the alone builds (temporary)
-        env:
-          LOG: ${{ inputs.cargo_log }}
-        run: |
-          set -x
-          mkdir -p target/mutants/diag/test target/mutants/diag/docs
-          cp -r Cargo.toml Cargo.lock build.rs rust-toolchain.toml src std vendor target/mutants/diag/
-          cp test/vec-collect-ways.txt target/mutants/diag/test/
-          cp docs/library-contract.md target/mutants/diag/docs/
-          cd target/mutants/diag
-          env | grep -i -E 'cargo|rust|incr' || true
-          ls -la ~/.cargo ~/.cargo/bin | head -40 || true
-          cat ~/.cargo/config.toml ~/.cargo/config /etc/cargo/config.toml 2>/dev/null || true
-          __CARGO_TEST_CHANNEL_OVERRIDE_DO_NOT_USE_THIS=nightly cargo -Zunstable-options config get --show-origin 2>&1 | head -40 || true
-          time CARGO_LOG="$LOG" cargo build --locked -v --target-dir ../target 2>&1 | grep -E 'incremental|Dirty|Finished' | cut -c1-300
-          echo '// a change' >> src/lower/mir/tidy/stages.rs
-          time CARGO_INCREMENTAL=1 cargo build --locked -v --target-dir ../target 2>&1 | grep -E 'Dirty|Finished|-C incremental' | cut -c1-200
-          ls -la ../target/debug/incremental || true
-          echo '// another' >> src/lower/mir/tidy/stages.rs
-          time CARGO_INCREMENTAL=1 cargo build --locked --quiet --target-dir ../target
+      # Incremental, as a dev build is on the Mac: Cargo gave CI's rustc no
+      # `-C incremental`, so each mutant built alone compiled the crate
+      # whole, 96–102 s, where a build that knows the last one's takes
+      # seconds (docs/dev-loop.md). Each build is held to being its
+      # mutants' (scripts/mutant-builds.ts), and a run of every mutation,
+      # the nightly's, builds 5% of its builds again fresh, with no
+      # incremental cache, and fails where a verdict differs.
       - name: Put back each known bug
         env:
-          ARGS: ${{ inputs.mutation_args }}
+          ARGS: ${{ inputs.mutation_args || '--fresh=0.05' }}
+          CARGO_INCREMENTAL: '1'
         # Split on spaces, with no globbing: each word is a name or a flag.
         # And every 20 s the memory in use and the largest processes, so a
         # shard the runner stops, as it did for its memory (#1097), says

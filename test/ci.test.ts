@@ -97,6 +97,9 @@ test("a check's mutation shards balance by the newest nightly that kept its muta
   const tests = readFileSync(join(root, ".github/workflows/rustc-tests.yml"), "utf8");
   const runs = [...tests.matchAll(/bun scripts\/mutations\.ts \$ARGS (.*)--shard=/g)].map((m) => m[1]);
   expect(runs).toEqual(["${{ steps.timings.outputs.args }} ", "${{ steps.timings.outputs.args }} "]);
+  // A run of every mutation, the nightly's, builds 5% of its builds again
+  // fresh (ADR 0093's incremental amendment).
+  expect(tests).toContain("ARGS: ${{ inputs.mutation_args || '--fresh=0.05' }}");
 });
 
 // The workflows' caches are one entry for each set of inputs, not one a

@@ -19,12 +19,12 @@ import {
   site,
   siteLines,
   syncTree,
-  testsBinary,
   testsEnv,
   unitTestsModule,
   unmatched,
   unparsed,
 } from "../scripts/mutations";
+import { builtBinary, freshShare, unapplied, verdictKind } from "../scripts/mutant-builds";
 import { casesReaching, noMap } from "../scripts/testMap";
 import { underLoad } from "../scripts/timing";
 import { run as runChild, type Exit } from "./child";
@@ -99,9 +99,47 @@ test("a unit-tested mutant is caught where its tests fail, and only then", () =>
   expect(judgeUnit(exit(0, ok.replace("1 passed", "0 passed")))).toBe("inconclusive");
   expect(judgeUnit(exit(null, failed, { timedOut: true, signal: "SIGTERM" }))).toBe("inconclusive");
   expect(judgeUnit(exit(101, "thread 'main' panicked at src/main.rs:1:1\n"))).toBe("inconclusive");
-  expect(testsBinary('{"reason":"compiler-artifact","profile":{"test":false},"executable":"/t/debug/rust-js"}\n{"reason":"compiler-artifact","profile":{"test":true},"executable":"/t/debug/deps/rust_js-1"}\n')).toBe(
-    "/t/debug/deps/rust_js-1",
-  );
+});
+
+// A mutant's build is held to being of it (scripts/mutant-builds.ts): its
+// files in the crate as written, and the crate compiled again, not left as
+// cargo had it; and a fresh build's verdict to its incremental build's.
+test("a mutant's build is its mutation's, compiled again", () => {
+  const artifact = (test: boolean, fresh: boolean, executable: string) =>
+    JSON.stringify({ reason: "compiler-artifact", target: { name: "rust-js" }, profile: { test }, fresh, executable });
+  const said = [
+    JSON.stringify({ reason: "compiler-artifact", target: { name: "oxc_formatter" }, profile: { test: false }, fresh: false, executable: null }),
+    artifact(false, true, "/t/debug/rust-js"),
+    artifact(true, false, "/t/debug/deps/rust_js-1"),
+  ].join("\n");
+  expect(builtBinary(said, true)).toEqual({ binary: "/t/debug/deps/rust_js-1", rebuilt: true });
+  expect(builtBinary(said, false)).toEqual({ binary: "/t/debug/rust-js", rebuilt: false });
+  expect(builtBinary("", false)).toBeUndefined();
+
+  const at = join(root, "target", "mutant-builds-test");
+  rmSync(at, { recursive: true, force: true });
+  try {
+    for (const dir of ["crate", "source"]) mkdirSync(join(at, dir, "src"), { recursive: true });
+    writeFileSync(join(at, "source", "src", "a.rs"), "fn a() {}\n");
+    writeFileSync(join(at, "crate", "src", "a.rs"), "fn a() { b() }\n");
+    const crate = join(at, "crate");
+    const source = join(at, "source");
+    expect(unapplied(new Map([["src/a.rs", "fn a() { b() }\n"]]), crate, source)).toBeUndefined();
+    expect(unapplied(new Map([["src/a.rs", "fn a() { c() }\n"]]), crate, source)).toBe("src/a.rs isn't as the mutation wrote it");
+    writeFileSync(join(at, "crate", "src", "a.rs"), "fn a() {}\n");
+    expect(unapplied(new Map([["src/a.rs", "fn a() {}\n"]]), crate, source)).toBe("src/a.rs is as the crate has it");
+    expect(unapplied(new Map([["src/new.js", "x"]]), crate, source)).toBe("src/new.js isn't as the mutation wrote it");
+  } finally {
+    rmSync(at, { recursive: true, force: true });
+  }
+
+  expect(verdictKind("caught")).toBe("caught");
+  expect(verdictKind("SURVIVED: its 3 tests passed with it")).toBe("SURVIVED");
+  expect(verdictKind("INCONCLUSIVE: see x.log")).toBe("INCONCLUSIVE");
+  expect(verdictKind("doesn't build: error[E0308]")).toBe("doesn't");
+  expect(freshShare(["--shard=1/2"])).toBe(0);
+  expect(freshShare(["--fresh=0.05"])).toBe(0.05);
+  expect(() => freshShare(["--fresh=5"])).toThrow("a share of the builds, 0 to 1");
 });
 
 // Each lexes, built alone and in a build of many, so a build of many fails

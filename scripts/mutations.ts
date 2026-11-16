@@ -29,6 +29,7 @@ import { elapsed, shown, timed } from "./timing";
 import { passed, summary } from "./test-summary";
 import { acquire, holdLease, ownShare } from "./leases";
 import { makeSourceWorkspace, sourceMutation } from "./source-mutations";
+import { binaryHash, builtBinary, freshShare, unapplied, verdictKind } from "./mutant-builds";
 
 const root = join(import.meta.dir, "..");
 
@@ -648,10 +649,11 @@ export function syncTree(from: string, to: string, paths: string[]): string[] {
 
 /** A compiler built from this checkout's crate with `files` written over
  * it, or as it is, or, `unit`, its unit tests' binary, `cargo test`'s; or
- * why it can't be built. The crate is kept from the last build, what it
+ * why it can't be built, `held` where the build isn't what it must be
+ * (scripts/mutant-builds.ts). The crate is kept from the last build, what it
  * wrote put back: one built as it is is kept too, while the crate's sources
- * are what it was built from. */
-async function build(files?: Map<string, string>, slot = 0, unit = false): Promise<string | { problem: string }> {
+ * are what it was built from. `fresh`, with no incremental cache. */
+async function build(files?: Map<string, string>, slot = 0, unit = false, fresh = false): Promise<string | { problem: string; held?: true }> {
   // Each worker builds in a crate and a target of its own (`--jobs`).
   const crate = slot === 0 ? join(work, "crate") : join(work, `crate-${slot}`);
   const target = slot === 0 ? join(work, "target") : join(work, `target-${slot}`);
@@ -667,35 +669,28 @@ async function build(files?: Map<string, string>, slot = 0, unit = false): Promi
     mkdirSync(dirname(join(crate, path)), { recursive: true });
     writeFileSync(join(crate, path), text);
   }
+  const missing = files && unapplied(files, crate, crateSource);
+  if (missing) return { problem: `INCONCLUSIVE: its build isn't of it: ${missing}`, held: true };
   // Unit tests are the binary's own, built in the same target as the
   // compiler, its dependencies shared: built once for a build of many,
   // each mutation's tests run as it by `RUST_JS_MUTANT` (#915).
   const command = unit
     ? ["cargo", "test", "--no-run", "--quiet", "--locked", "--bin", "rust-js", "--message-format=json", "--target-dir", target]
-    : ["cargo", "build", "--quiet", "--locked", "--target-dir", target];
-  const p = await run(command, crate, buildTimeout);
+    : ["cargo", "build", "--quiet", "--locked", "--message-format=json", "--target-dir", target];
+  const p = await run(command, crate, buildTimeout, fresh ? { CARGO_INCREMENTAL: "0" } : {});
   if (p.code !== 0 || stopped(p, buildTimeout)) {
     const why = stopped(p, buildTimeout) ?? p.stderr.split("\n").find((line) => line.startsWith("error")) ?? `exited ${p.code}`;
     return { problem: `doesn't build: ${why}` };
   }
-  const binary = unit ? testsBinary(p.stdout) : join(target, "debug", "rust-js");
-  if (binary === undefined) return { problem: "doesn't build: cargo named no unit tests' binary" };
+  const made = builtBinary(p.stdout, unit);
+  if (made === undefined) return { problem: `doesn't build: cargo named no ${unit ? "unit tests' " : ""}binary` };
+  if (files && !made.rebuilt) return { problem: "INCONCLUSIVE: cargo didn't compile the crate again with it", held: true };
+  const binary = made.binary;
   if (files) return binary;
   mkdirSync(join(work, "bin"), { recursive: true });
   cpSync(binary, kept);
   writeFileSync(stamp, built);
   return kept;
-}
-
-/** The unit tests' binary `cargo test --no-run --message-format=json`
- * says it built, of `stdout`. */
-export function testsBinary(stdout: string): string | undefined {
-  for (const line of stdout.split("\n")) {
-    if (!line.startsWith("{")) continue;
-    const message = JSON.parse(line);
-    if (message.reason === "compiler-artifact" && message.profile?.test === true && typeof message.executable === "string") return message.executable;
-  }
-  return undefined;
 }
 
 /** What a run of unit tests says of a mutant: `caught` where one failed,
@@ -949,7 +944,7 @@ function writeResults(results: Map<string, string>) {
 }
 
 /** The flags `main` takes, each alone or with `=` and its value. */
-const flags = ["--changed", "--also", "--list", "--shard", "--timings", "--jobs", "--batch", "--tests", "--browser"];
+const flags = ["--changed", "--also", "--list", "--shard", "--timings", "--jobs", "--batch", "--tests", "--browser", "--fresh"];
 
 async function main() {
   const args = process.argv.slice(2);
@@ -1209,6 +1204,73 @@ async function main() {
     const bytes = await makeSourceWorkspace(root, template, tracked);
     console.log(`source template: ${bytes} bytes in ${shown((performance.now() - started) / 1000)}`);
   }
+  // Each build's binary by its hash, what built it, and of `--fresh`'s
+  // builds, each mutation whose verdicts differ.
+  const binaries = new Map<string, string>();
+  if (chosen.some((m) => !sources.has(m)) || harness) binaries.set(binaryHash(unmutated), "the compiler as it is");
+  const freshly = freshShare(args);
+  const freshDiffers: string[] = [];
+  const keep = (compiler: string, name: string) => {
+    mkdirSync(join(work, "bin"), { recursive: true });
+    const kept = join(work, "bin", name);
+    cpSync(compiler, kept);
+    return kept;
+  };
+  // What `compiler`, a build with `mutation`, says of it, its log written
+  // as `log`: by its unit tests, or by its tests and, where they miss one
+  // of how the JS reads, its cases' snapshots (#864). Run as a link in
+  // `bin`, named as the mutation, which chooses it, beside the std sysroot
+  // its builds share.
+  const judgeMutant = async (mutation: Mutation, compiler: string, log: string, bin = join(work, "bin")): Promise<{ result: string; tests: number }> => {
+    const logged = join(work, "logs", `${log}.log`);
+    mkdirSync(join(work, "logs"), { recursive: true });
+    if (mutation.unitTests !== undefined) {
+      const started = performance.now();
+      const p = await beside(() => unitTest(compiler, mutation.unitTests!, mutation.name));
+      writeFileSync(logged, p.stdout + p.stderr);
+      const verdict = judgeUnit(p);
+      if (verdict === "inconclusive") console.log(`--- ${log}, inconclusive: its log's end\n${(p.stdout + p.stderr).split("\n").slice(-60).join("\n")}\n---`);
+      const result = verdict === "caught" ? "caught" : verdict === "survived" ? `SURVIVED: \`cargo test ${mutation.unitTests}\` passed with it` : `INCONCLUSIVE: see ${logged}`;
+      return { result, tests: (performance.now() - started) / 1000 };
+    }
+    const mutant = join(bin, mutation.name);
+    mkdirSync(bin, { recursive: true });
+    rmSync(mutant, { force: true });
+    try {
+      linkSync(compiler, mutant);
+    } catch {
+      cpSync(compiler, mutant);
+    }
+    let started = 0;
+    const byTests = await beside(() => {
+      started = performance.now();
+      return test(mutation.tests!, mutant, mutation.snapshots);
+    });
+    const { ran, exit } = byTests;
+    let output = byTests.output;
+    let verdict = judge(exit, output);
+    if (verdict === "survived" && ofReadabilityOwner(mutation.file)) {
+      const bySnapshots = await snapshotsJudge(mutation, mutant);
+      output += `\n--- the snapshots of the cases that reach it (#864): ${bySnapshots.said}\n${bySnapshots.output}`;
+      if (bySnapshots.caught) {
+        verdict = "caught";
+        console.log(`${log}: its tests passed; ${bySnapshots.said}`);
+      }
+    }
+    const tests = (performance.now() - started) / 1000;
+    rmSync(mutant, { force: true });
+    runtimes.delete(mutant);
+    // Its log, whatever it says, for what it caught or didn't; and its
+    // end, here, as on CI the log is left on the machine: two nightlies'
+    // inconclusive mutations, each caught here, said nothing of what
+    // stopped them.
+    writeFileSync(logged, output);
+    if (verdict === "inconclusive") console.log(`--- ${log}, inconclusive: its log's end\n${output.split("\n").slice(-60).join("\n")}\n---`);
+    const result = verdict === "caught" ? "caught" : verdict === "survived"
+      ? `SURVIVED: its ${ran} tests passed with it${mutation.snapshots ? "" : ", snapshots not compared"}`
+      : `INCONCLUSIVE: no test failed, or the runner didn't end; see ${logged}`;
+    return { result, tests };
+  };
   const one = async (batch: Sited[], slot: number) => {
     if (sources.has(batch[0].mutation)) {
       const mutation = batch[0].mutation;
@@ -1235,82 +1297,56 @@ async function main() {
     const unit = batch[0].mutation.unitTests !== undefined;
     const compiler = files instanceof Map ? await build(files, slot, unit) : files;
     const building = (performance.now() - began) / 1000;
+    const names = batch.length === 1 ? batch[0].mutation.name : `${batch[0].mutation.name} and ${batch.length - 1} more`;
     if (typeof compiler !== "string") {
       // A build of many that fails is two of half as many: the mutation that
-      // doesn't build alone says so as its own.
-      if (batch.length > 1) {
+      // doesn't build alone says so as its own. One that isn't of its
+      // mutations says so of each (scripts/mutant-builds.ts).
+      if (batch.length > 1 && !("held" in compiler)) {
         console.log(`a build of ${batch.length} mutations ${compiler.problem}: as two of ${Math.ceil(batch.length / 2)}`);
         queue.push(batch.slice(0, batch.length / 2), batch.slice(batch.length / 2));
-      } else results.set(batch[0].mutation, compiler.problem);
+      } else for (const { mutation } of batch) results.set(mutation, compiler.problem);
       return;
     }
+    // Its binary is no other build's of the run, the compiler's as it is
+    // among them: one that is, a build that reused what it shouldn't, would
+    // judge that one's mutations, or none, by these names.
+    const hash = binaryHash(compiler);
+    const same = binaries.get(hash);
+    if (same !== undefined) {
+      for (const { mutation } of batch) results.set(mutation, `INCONCLUSIVE: its build is byte for byte ${same}'s`);
+      return;
+    }
+    binaries.set(hash, `the build of ${names}`);
     // The build's tests run while the worker builds the next: its compiler
     // kept once, and each mutation's name a link to it, which chooses it.
-    mkdirSync(join(work, "bin"), { recursive: true });
-    const kept = join(work, "bin", `.build-${slot}-${++builds}`);
-    cpSync(compiler, kept);
+    const kept = keep(compiler, `.build-${slot}-${++builds}`);
+    // And, of `--fresh`'s share, the nightly's, built again with no
+    // incremental cache, each of its mutations judged by both.
+    let freshKept: string | undefined;
+    if (files instanceof Map && Math.random() < freshly) {
+      const again = await build(files, slot, unit, true);
+      if (typeof again === "string") freshKept = keep(again, `.fresh-${slot}-${builds}`);
+      else freshDiffers.push(`${names}: built fresh, ${again.problem}`);
+    }
     const tested = batch.map(async ({ mutation }) => {
-      if (mutation.unitTests !== undefined) {
-        const started = performance.now();
-        const p = await beside(() => unitTest(kept, mutation.unitTests!, mutation.name));
-        took.set(mutation, { build: building / batch.length, tests: (performance.now() - started) / 1000 });
-        const log = join(work, "logs", `${mutation.name}.log`);
-        mkdirSync(join(work, "logs"), { recursive: true });
-        writeFileSync(log, p.stdout + p.stderr);
-        const verdict = judgeUnit(p);
-        if (verdict === "inconclusive") console.log(`--- ${mutation.name}, inconclusive: its log's end\n${(p.stdout + p.stderr).split("\n").slice(-60).join("\n")}\n---`);
-        results.set(
-          mutation,
-          verdict === "caught" ? "caught" : verdict === "survived" ? `SURVIVED: \`cargo test ${mutation.unitTests}\` passed with it` : `INCONCLUSIVE: see ${log}`,
-        );
-        return;
-      }
-      const mutant = join(work, "bin", mutation.name);
-      rmSync(mutant, { force: true });
-      try {
-        linkSync(kept, mutant);
-      } catch {
-        cpSync(kept, mutant);
-      }
-      let started = 0;
-      const byTests = await beside(() => {
-        started = performance.now();
-        return test(mutation.tests!, mutant, mutation.snapshots);
-      });
-      const { ran, exit } = byTests;
-      let output = byTests.output;
-      let verdict = judge(exit, output);
-      // One of how the JS reads, that its tests miss, by its cases'
-      // snapshots (#864).
-      if (verdict === "survived" && ofReadabilityOwner(mutation.file)) {
-        const bySnapshots = await snapshotsJudge(mutation, mutant);
-        output += `\n--- the snapshots of the cases that reach it (#864): ${bySnapshots.said}\n${bySnapshots.output}`;
-        if (bySnapshots.caught) {
-          verdict = "caught";
-          console.log(`${mutation.name}: its tests passed; ${bySnapshots.said}`);
-        }
-      }
-      took.set(mutation, { build: building / batch.length, tests: (performance.now() - started) / 1000 });
-      rmSync(mutant, { force: true });
-      runtimes.delete(mutant);
-      // Its log, whatever it says, for what it caught or didn't.
-      const log = join(work, "logs", `${mutation.name}.log`);
-      mkdirSync(join(work, "logs"), { recursive: true });
-      writeFileSync(log, output);
-      // Its log's end, here, as on CI the log is left on the machine: two
-      // nightlies' inconclusive mutations, each caught here, said nothing
-      // of what stopped them.
-      if (verdict === "inconclusive") console.log(`--- ${mutation.name}, inconclusive: its log's end\n${output.split("\n").slice(-60).join("\n")}\n---`);
-      results.set(
-        mutation,
-        verdict === "caught" ? "caught" : verdict === "survived"
-          ? `SURVIVED: its ${ran} tests passed with it${mutation.snapshots ? "" : ", snapshots not compared"}`
-          : `INCONCLUSIVE: no test failed, or the runner didn't end; see ${log}`,
-      );
+      const judged = await judgeMutant(mutation, kept, mutation.name);
+      took.set(mutation, { build: building / batch.length, tests: judged.tests });
+      results.set(mutation, judged.result);
+      if (freshKept === undefined) return;
+      const fresh = await judgeMutant(mutation, freshKept, `${mutation.name}.fresh`, join(work, "bin", "fresh"));
+      const said = `${mutation.name}: built incrementally, ${judged.result}; fresh, ${fresh.result}`;
+      console.log(`fresh\t${said}`);
+      if (verdictKind(fresh.result) !== verdictKind(judged.result)) freshDiffers.push(said);
     });
     // A mutant's compiler is its tests' alone: a debug build, hundreds of
     // megabytes, which kept for each build would fill a disk.
-    buildsTesting.push(Promise.all(tested).finally(() => rmSync(kept, { force: true })));
+    buildsTesting.push(
+      Promise.all(tested).finally(() => {
+        rmSync(kept, { force: true });
+        if (freshKept) rmSync(freshKept, { force: true });
+      }),
+    );
   };
   // Each other worker's target, where it has none, a copy of the first's,
   // its dependencies built: CI's cache keeps the first's alone, so the
@@ -1375,6 +1411,10 @@ async function main() {
     console.log(timed("mutation, each", elapsed() / rows.length, `${rows.length} run`));
   }
   if (missed.length > 0) process.exitCode = 1;
+  // And `--fresh`'s builds, each mutation's verdict the same as the build
+  // with an incremental cache gave, or the run fails.
+  if (freshly > 0) console.log(freshDiffers.length === 0 ? "each fresh build's verdicts are its incremental build's" : `fresh builds that judged otherwise:\n${freshDiffers.join("\n")}`);
+  if (freshDiffers.length > 0) process.exitCode = 1;
 }
 
 if (import.meta.main) await main();
