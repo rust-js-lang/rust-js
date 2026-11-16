@@ -160,7 +160,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Not a held one std compiles, a `Map`, its struct (ADR 0871), whose
         // clone is its compiled `Clone`: one made in place is part of what
         // `clone_in_place` clones.
-        let held_compiled = crate::lower::recognition::is_held_compiled(self.tcx, ty);
+        // Unless this body made it in place, a JS iterator of that type,
+        // which its maker clones (#1973): asked of what decides how each
+        // link is made, never of the type alone.
+        let held_compiled = crate::lower::recognition::is_held_compiled(self.tcx, ty)
+            && !(self.frame.facts.in_place_adapters).makes_in_place(self.tcx, self.frame.thir, ty);
         if (self.iterator_cloned_apart(ty) && !held_compiled) || self.recognition().is_memchr_iter(ty) {
             return Ok(Expr::call_helper("$clone", vec![place]));
         }

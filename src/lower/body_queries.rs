@@ -451,6 +451,26 @@ impl InPlace {
     pub(in crate::lower) fn ground_made_at(&self, thir: &Thir<'_>, span: Span) -> bool {
         each_call_at(thir, span, |at| self.ground().contains(&at))
     }
+
+    /// Whether a value of `ty` is one the body makes in place, of both
+    /// stages: an adapter call of that type the ground made and none took
+    /// out, a JS iterator, though its type is one std's struct is held as,
+    /// `[..].iter().map(f)` under a `copied()` (#1973). A `map()`'s type
+    /// names its closure, so it's that call's. How it's cloned asks this,
+    /// so one answer covers how a link is made and how it's cloned.
+    pub(in crate::lower) fn makes_in_place<'tcx>(
+        &self,
+        tcx: TyCtxt<'tcx>,
+        thir: &Thir<'tcx>,
+        ty: ty::Ty<'tcx>,
+    ) -> bool {
+        let Some(held) = self.held.get() else {
+            panic!("rust-js: a body's in-place adapters read before the held ones are decided (decide_held)");
+        };
+        let erased = |t: ty::Ty<'tcx>| tcx.erase_and_anonymize_regions(t);
+        let ty = erased(ty);
+        (self.ground().iter()).any(|&at| !held.contains(&at) && erased(thir[at].ty) == ty)
+    }
 }
 
 pub(super) fn strip(thir: &Thir<'_>, mut e: ExprId) -> ExprId {

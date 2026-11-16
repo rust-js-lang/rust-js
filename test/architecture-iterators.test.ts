@@ -713,14 +713,18 @@ test("in-place adapters are decided in two stages, then read", () => {
   const reads = outside.flatMap((file) =>
     [...read(file).matchAll(/in_place_adapters\.(\w+)/g)].map((m) => `${file}: ${m[1]}`),
   );
-  expect(reads.filter((read) => !read.endsWith(": made_at") && read !== "src/lower/analysis/back_stepped.rs: ground_made_at")).toEqual([]);
+  // And how a value of a held-compiled type is cloned, `makes_in_place`,
+  // whether the body made one of that type in place (#1973): one answer
+  // for how a link is made and how it's cloned.
+  const ofOwner = new Set(["src/lower/analysis/back_stepped.rs: ground_made_at", "src/lower/std_impls/clones.rs: makes_in_place"]);
+  expect(reads.filter((read) => !read.endsWith(": made_at") && !ofOwner.has(read))).toEqual([]);
   expect(reads.filter((read) => read.endsWith(": ground_made_at"))).toEqual(["src/lower/analysis/back_stepped.rs: ground_made_at"]);
   const source = read("src/lower/body_queries.rs");
   expect(source).toMatch(/pub\(in crate::lower\) struct InPlace \{\n    ground: Option<IndexSet<ExprId>>,\n    held: std::cell::OnceCell<IndexSet<ExprId>>,\n\}/);
   expect(source).toMatch(/\n    fn decided\(set: IndexSet<ExprId>\) -> Self \{/);
   // Its one join, each THIR call at MIR's span, and no reader of a node alone.
   const in_place = source.slice(source.indexOf("impl InPlace {"), source.indexOf("pub(super) fn strip("));
-  expect(in_place.match(/pub\(in crate::lower\) fn \w+/g)).toEqual(["pub(in crate::lower) fn made_at", "pub(in crate::lower) fn ground_made_at"]);
+  expect(in_place.match(/pub\(in crate::lower\) fn \w+/g)).toEqual(["pub(in crate::lower) fn made_at", "pub(in crate::lower) fn ground_made_at", "pub(in crate::lower) fn makes_in_place"]);
   expect(in_place.match(/each_call_at\(thir, span, /g)?.length).toBe(2);
   const deciding = lowering.filter((file) => /decide_in_place\(/.test(read(file)));
   expect(deciding).toEqual(["src/lower/pipeline.rs"]);

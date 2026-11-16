@@ -556,4 +556,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^iter_cycle.rs$"],
     snapshots: true,
   },
+  {
+    name: "clone-dictionary-of-the-type",
+    breaks: "a source a body made in place, a `map` under a `copied()` over a slice, is cloned as std's compiled `Map` its type names, so the clone of the compiled adapter over it reads `items` of `undefined` and throws where Rust prints (#1973)",
+    file: "src/lower/std_impls/clones.rs",
+    find: "            && !(self.frame.facts.in_place_adapters).makes_in_place(self.tcx, self.frame.thir, ty);\n",
+    replace: ";\n",
+    tests: ["test/corpus.test.ts", "-t", "^clone_of_a_compiled_adapter_over_a_copied_map.rs$"],
+  },
 ];

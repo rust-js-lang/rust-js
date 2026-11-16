@@ -1,14 +1,14 @@
 # shape	count	per 10,000 lines
-files	2634
-lines	350434
+files	2635
+lines	350549
 temporaries	0	0
 labeled blocks	0	0
 while (true)	225	6.4
-$iter	2917	83.2
+$iter	2933	83.7
 Iterator.from	354	10.1
 return;	337	9.6
-renamed x$1	16457	469.6
-role fallbacks	8949	255.4
+renamed x$1	16478	470.1
+role fallbacks	8949	255.3
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1	role fallbacks
 test/corpus/adapter_drop_past_a_panic.js	50	0	0	0	1	0	0	0	1
 test/corpus/adapter_drops.js	1849	0	0	1	18	2	1	98	61
@@ -332,6 +332,7 @@ test/corpus/clone_from_slice_nested_option.js	36	0	0	0	0	0	0	0	0
 test/corpus/clone_from_slice_own.js	58	0	0	0	0	0	0	0	0
 test/corpus/clone_from_std_own.js	517	0	0	0	0	0	0	16	0
 test/corpus/clone_of_a_borrowed_parameter.js	97	0	0	0	0	0	0	2	0
+test/corpus/clone_of_a_compiled_adapter_over_a_copied_map.js	115	0	0	0	16	0	0	21	0
 test/corpus/clone_of_an_adapter_over_a_returned_impl.js	65	0	0	0	2	0	0	0	0
 test/corpus/clone_unwinds_what_it_made.js	390	0	0	0	0	0	0	0	0
 test/corpus/cloned_apart_adapter_drops_its_sources.js	401	0	0	0	0	0	1	9	4
