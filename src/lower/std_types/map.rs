@@ -1321,13 +1321,14 @@ pub(in crate::lower) fn counted_entries(stmts: &mut Vec<Stmt>) {
                 .chain((1..).map(|n| format!("current${n}")))
                 .find(|n| js::mentions_in(stmts, n) == 0)
                 .expect("a name");
+            let name = js::Name::declared(name);
             let mut value = vec![StmtKind::Expr(value.clone()).at(js::Span::NONE)];
             js::each_expr_mut(&mut value, &mut |e| {
                 if let js::ExprKind::Member(of, v) = &e.kind
                     && v == js::HELD
                     && matches!(&of.kind, js::ExprKind::Var(h) if h == handle)
                 {
-                    *e = Expr::var(&name);
+                    *e = Expr::var(name.clone());
                 }
             });
             if js::mentions_in(&value, handle.word()) > 0 {
@@ -1339,7 +1340,7 @@ pub(in crate::lower) fn counted_entries(stmts: &mut Vec<Stmt>) {
             };
             let set = Expr::call(Expr::member(map.clone(), "set"), vec![key.clone(), value]);
             let span = stmts[i + 2].span;
-            stmts[i].kind = StmtKind::Const(name.into(), inserted.clone());
+            stmts[i].kind = StmtKind::Const(name, inserted.clone());
             stmts.splice(i + 1..i + 3, [StmtKind::Expr(set).at(span)]);
         }
         i += 1;

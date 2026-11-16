@@ -1180,15 +1180,15 @@ pub(in crate::lower) fn appended(stmts: &mut Vec<Stmt>, text: &IndexSet<String>)
         if let Some((s, a)) = append_of(&stmts[i], text)
             && let Some((t, b)) = append_of(&stmts[i + 1], text)
             && s == t
-            && !b.mentions_var(s)
+            && !b.mentions_var(s.word())
             && values(a) + values(b) <= 1
         {
             let pieces = match (&a.kind, &b.kind) {
                 (ExprKind::Str(a), ExprKind::Str(b)) => Expr::str(format!("{a}{b}")),
                 _ => Expr::bin(Op::Add, a.clone(), b.clone()),
             };
-            let s = s.to_string();
-            stmts[i].kind = StmtKind::Assign(Expr::var(&s), Expr::bin(Op::Add, Expr::var(&s), pieces));
+            let s = s.clone();
+            stmts[i].kind = StmtKind::Assign(Expr::var(s.clone()), Expr::bin(Op::Add, Expr::var(s), pieces));
             stmts.remove(i + 1);
             continue;
         }
@@ -1243,14 +1243,14 @@ fn values(e: &Expr) -> usize {
 }
 
 /// The `String` `stmt` appends to, `s = s + a`, and what it appends.
-fn append_of<'s>(stmt: &'s Stmt, text: &IndexSet<String>) -> Option<(&'s str, &'s Expr)> {
+fn append_of<'s>(stmt: &'s Stmt, text: &IndexSet<String>) -> Option<(&'s js::Name, &'s Expr)> {
     let StmtKind::Assign(target, value) = &stmt.kind else {
         return None;
     };
     let (ExprKind::Var(s), ExprKind::Binary(Op::Add, to, appended)) = (&target.kind, &value.kind) else {
         return None;
     };
-    (text.contains(s.word()) && matches!(&to.kind, ExprKind::Var(t) if t == s)).then_some((s.word(), &**appended))
+    (text.contains(s.word()) && matches!(&to.kind, ExprKind::Var(t) if t == s)).then_some((s, &**appended))
 }
 
 /// The `char`s of `text`, an array made here, `Array.from(text)`: a case
