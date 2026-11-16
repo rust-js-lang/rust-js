@@ -1,10 +1,10 @@
-// What std's `&mut I` and `Box<I>` pass on to the iterator they hold,
-// `$lent`'s lists (src/runtime/lent.js's `$passedOn`) and the compiler's
-// `BOX_PASSES_ON` (src/lower/recognition/iterators.rs), read from std's own
-// source in this toolchain's rust-src: each impl's methods, and of `&mut I`
-// its `RefSpec` specializations, the sized one's folds by `try_fold`. A
-// toolchain whose std passes on another fails here, not as a wrong answer
-// (#1986, #1991).
+// What std's `&mut I` and `Box<I>` pass on to the iterator they hold: the
+// compiler's one catalog, `PASSED_ON` (src/lower/recognition/passed_on.rs,
+// `Wrapper::passes`, #2000), read from std's own source in this toolchain's
+// rust-src, each impl's methods, and of `&mut I` its `RefSpec`
+// specializations, the sized one's folds by `try_fold`; and `$lent`'s lists
+// (src/runtime/lent.js's `$passedOn`), the catalog's. A toolchain whose std
+// passes on another fails here, not as a wrong answer (#1986, #1991).
 import { expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -43,7 +43,18 @@ const js: Record<string, string> = {
   len: "len",
 };
 
-test("$lent and BOX_PASSES_ON pass on what std's &mut I and Box<I> pass on, of a sized and an unsized iterator", () => {
+/** The compiler's catalog, each wrapper's methods it passes on, own or by
+ * `try_fold`, in `Wrapper`'s order. */
+function catalog(): Record<"lent" | "lentUnsized" | "boxed" | "boxedUnsized", string[]> {
+  const recognition = readFileSync(join(root, "src/lower/recognition/passed_on.rs"), "utf8");
+  const table = recognition.match(/const PASSED_ON: \[\(&str, \[Passed; 4\]\); \d+\] = \{[\s\S]*?\n\};/);
+  if (!table) throw new Error("src/lower/recognition/passed_on.rs has no PASSED_ON");
+  const rows = [...table[0].matchAll(/\("(\w+)", \[(\w+), (\w+), (\w+), (\w+)\]\)/g)].map((m) => [m[1]!, m.slice(2, 6)] as const);
+  const of = (column: number) => rows.filter(([, passes]) => passes[column] !== "Default").map(([name]) => name).sort();
+  return { lent: of(0), lentUnsized: of(1), boxed: of(2), boxedUnsized: of(3) };
+}
+
+test("the compiler's catalog and $lent pass on what std's &mut I and Box<I> pass on, of a sized and an unsized iterator", () => {
   const iterator = read("core/src/iter/traits/iterator.rs");
   const doubleEnded = read("core/src/iter/traits/double_ended.rs");
   const exact = read("core/src/iter/traits/exact_size.rs");
@@ -71,19 +82,23 @@ test("$lent and BOX_PASSES_ON pass on what std's &mut I and Box<I> pass on, of a
   const lent = ref.filter((name) => !(name in specs) || sizedSpec.includes(specs[name]!));
   const lentUnsized = ref.filter((name) => !(name in specs));
   // `Box<I>`: its impls' methods, its `last` by `BoxIter`, of a sized `I`
-  // alone, as `BOX_PASSES_ON` lists them, the compiler's (#1601).
+  // alone, as the catalog lists them (#1601).
   const box = [
     ...methods(boxed, "impl<I: Iterator + ?Sized, A: Allocator> Iterator for Box<I, A> {"),
     ...methods(boxed, "impl<I: DoubleEndedIterator + ?Sized, A: Allocator> DoubleEndedIterator for Box<I, A> {"),
     ...methods(boxed, "impl<I: ExactSizeIterator + ?Sized, A: Allocator> ExactSizeIterator for Box<I, A> {"),
   ];
   expect(methods(boxed, "impl<I: Iterator, A: Allocator> BoxIter for Box<I, A> {")).toEqual(["last"]);
-  const recognition = readFileSync(join(root, "src/lower/recognition/iterators.rs"), "utf8");
-  const boxPassesOn = recognition.match(/pub\(in crate::lower\) const BOX_PASSES_ON: \[&str; \d+\] = \[([^\]]*)\];/);
-  expect(boxPassesOn).not.toBeNull();
-  expect([...boxPassesOn![1]!.matchAll(/"(\w+)"/g)].map((m) => m[1]!).sort()).toEqual([...new Set(box)].sort());
   const boxedSized = box;
   const boxedUnsized = box.filter((name) => name !== "last");
+  // The catalog, each wrapper's, std's; of the `&mut I`s, those std's
+  // `$forward` knows, as `count` and `last` they pass on to none.
+  const passes = catalog();
+  const std = (names: string[]) => [...new Set(names)].sort();
+  expect(passes.lent).toEqual(std(lent));
+  expect(passes.lentUnsized).toEqual(std(lentUnsized));
+  expect(passes.boxed).toEqual(std(boxedSized));
+  expect(passes.boxedUnsized).toEqual(std(boxedUnsized));
   const passedOn = readFileSync(join(root, "src/runtime/lent.js"), "utf8");
   const listed = (kind: string) => {
     const line = passedOn.match(new RegExp(`^ {2}${kind}: \\[([^\\]]*)\\],$`, "m"));
@@ -91,10 +106,8 @@ test("$lent and BOX_PASSES_ON pass on what std's &mut I and Box<I> pass on, of a
     return [...line[1]!.matchAll(/"(\w+)"/g)].map((m) => m[1]!).sort();
   };
   const ours = (names: string[]) => [...new Set(names.filter((name) => name in js).map((name) => js[name]!))].sort();
-  expect(listed("lent")).toEqual(ours(lent));
-  expect(listed("lentUnsized")).toEqual(ours(lentUnsized));
-  expect(listed("boxed")).toEqual(ours(boxedSized));
-  expect(listed("boxedUnsized")).toEqual(ours(boxedUnsized));
+  // `$passedOn`, the catalog's, by `$forward`'s names.
+  for (const kind of ["lent", "lentUnsized", "boxed", "boxedUnsized"] as const) expect([kind, listed(kind)]).toEqual([kind, ours(passes[kind])]);
   // Each std method named is one `$forward` knows, or `is_empty`, which
   // asks `len`.
   expect([...ref, ...box].filter((name) => !(name in js) && name !== "is_empty")).toEqual([]);

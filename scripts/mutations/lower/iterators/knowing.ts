@@ -911,7 +911,7 @@ export const mutations: Mutation[] = [
     name: "box-compiled-back-its-own",
     breaks: "a `Box` of std's compiled iterator stepped from its back is the iterator itself, its own `rfold` with it, not what std's `Box<I>` passes on (#1995)",
     file: "src/lower/iterators/knowing.rs",
-    find: "            return Ok(super::IterValue::js(it).lent(super::Lent::Boxed).emit());\n",
+    find: "            return Ok(super::IterValue::js(it)\n                .lent(crate::lower::recognition::Wrapper::BoxSized)\n                .emit());\n",
     replace: "            return Ok(it);\n",
     tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^boxed_iterator_folded_as_std_passes_it_on.rs$|^boxed_iterator_folded_as_std_passes_it_on with"],
   },

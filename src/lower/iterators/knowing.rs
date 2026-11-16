@@ -713,7 +713,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && inner.is_sized(self.tcx, self.typing_env)
         {
             let it = self.as_double_ended(value, inner, span)?;
-            return Ok(super::IterValue::js(it).lent(super::Lent::Boxed).emit());
+            return Ok(super::IterValue::js(it)
+                .lent(crate::lower::recognition::Wrapper::BoxSized)
+                .emit());
         }
         // One a struct holds, which keeps its source (ADR 0542): of one given
         // as it is, its back and length this use's dictionaries', wherever it

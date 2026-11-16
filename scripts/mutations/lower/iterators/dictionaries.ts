@@ -40,9 +40,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `&mut I`'s `DoubleEndedIterator` dictionary passes on `I`'s own `rfold`, which std's `&mut I` folds by `I`'s `try_rfold`: `(&mut it).rev().sum()` calls the crate's `rfold` where Rust doesn't (ADR 0928)",
     file: "src/lower/iterators/dictionaries.rs",
-    find: "        let passed_rfold = |rfold: Option<Expr>| rfold.filter(|_| !lent);\n",
-    replace:
-      "        let passed_rfold = |rfold: Option<Expr>| rfold.filter(|_| lent || !lent);\n",
+    find: "                Some(Passed::ByTry) => try_rfold.cloned().map(folded_by_try),\n",
+    replace: "                Some(Passed::ByTry) => rfold,\n",
     tests: ["test/iterator-forms.test.ts", "-t", "^rev_own_back_methods with"],
   },
   {
@@ -354,8 +353,8 @@ export const mutations: Mutation[] = [
     name: "box-dictionary-passes-folds",
     breaks: "a `Box<I>`'s dictionary of `I`'s passes on `I`'s own `count` and `fold`, which std's `Box<I>` never calls (#1611)",
     file: "src/lower/iterators/dictionaries.rs",
-    find: "        let passed: Vec<String> = (crate::lower::recognition::BOX_PASSES_ON.iter())\n",
-    replace: "        let passed: Vec<String> = ([\"next\", \"size_hint\", \"nth\", \"last\", \"count\", \"fold\"].iter())\n",
+    find: "        let passed: Vec<String> = (crate::lower::recognition::Wrapper::BoxSized.own_methods())\n",
+    replace: "        let passed: Vec<String> = ([\"next\", \"size_hint\", \"nth\", \"last\", \"count\", \"fold\"].into_iter())\n",
     tests: ["test/corpus.test.ts", "-t", "^boxed_iterator_steps_as_std_box_does.rs$"],
   },
   {
@@ -396,8 +395,8 @@ export const mutations: Mutation[] = [
     name: "mut-ref-dictionary-rfold-by-back",
     breaks: "a sized `&mut I`'s `DoubleEndedIterator` dictionary has no `rfold`, so std's compiled `Rev` of it folds by `next_back`, a `take()`'s skipped items 4 then 5, where std's `&mut I` folds by `I`'s `try_rfold`, 5 then 4 (#2002)",
     file: "src/lower/iterators/dictionaries.rs",
-    find: "                    if lent_sized {\n                        try_rfold.clone().map(folded_by_try)\n",
-    replace: "                    if false {\n                        try_rfold.clone().map(folded_by_try)\n",
+    find: "                Some(Passed::ByTry) => try_rfold.cloned().map(folded_by_try),\n",
+    replace: "                Some(Passed::ByTry) => None,\n",
     tests: ["test/iterator-forms.test.ts", "-t", "^lent_take_of_a_vec_folded_from_its_back with"],
   },
 ];

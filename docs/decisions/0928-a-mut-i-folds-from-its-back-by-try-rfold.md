@@ -142,3 +142,30 @@ Rust's behaviour is kept. Corpus case
 and of a sized `&mut`, against native, in both builds; in the std build
 the sized rows wait for #2002. Mutations `dyn-given-unlent` and
 `dyn-given-lend-of-any-ref` are caught.
+
+## Amendment: one catalog of what the wrappers pass on (2026-11-17, #2000)
+
+What std's `&mut I`, of a sized and an unsized `I`, and `Box<I>`, of each,
+pass on to the iterator they hold was decided in four places:
+
+- `OwnStep::through_a_mut_ref`: `nth` and `nth_back`;
+- the `&mut I` extension dictionary: its `rfold` by `try_rfold`;
+- `BOX_PASSES_ON`: what a `Box<I>` passes on;
+- src/runtime/lent.js's `$passedOn`.
+
+Each could drift from the others, and test/passed-on.test.ts held only the
+last two to std's source.
+
+There is now one catalog, `PASSED_ON` in src/lower/recognition/passed_on.rs.
+It is keyed by std's method name, with one column per wrapper (`Wrapper`):
+the iterator's own method (`Passed::Own`), its `try_fold` or `try_rfold`
+never stopped (`Passed::ByTry`, a sized `&mut I`'s `fold` and `rfold`), or
+the trait's default (`Passed::Default`). Every reader asks
+`Wrapper::passes`: own_steps.rs, the dictionaries, `own_method` and
+value.rs's `$lent` kinds. test/passed-on.test.ts holds the catalog to
+rust-src, and `$passedOn`'s lists to the catalog. The lists' bytes are
+unchanged, so the output is too.
+
+`$lent`'s kind stays an argument, `$lent(it, "lentUnsized")`. Whether `I`
+is sized is a fact of the Rust type, not of the JS value: a `dyn`'s
+iterator and a sized one's are alike at run time.

@@ -224,7 +224,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if !std::ptr::eq(lends, &it) {
             // Lent again as it was, of a sized iterator or not (#1991).
             let sliced = Expr::call_helper("$slicing", vec![lends.clone(), drop]);
-            let how = crate::lower::iterators::Lent::of(&it);
+            let how = crate::lower::iterators::lent_of(&it);
             return Ok(crate::lower::iterators::IterValue::js(sliced).lent(how).emit());
         }
         Ok(Expr::call_helper("$slicing", vec![it, drop]))

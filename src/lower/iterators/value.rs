@@ -6,6 +6,7 @@
 //! helper's name looks like.
 
 use crate::js::{self, Expr, Known};
+use crate::lower::recognition::Wrapper;
 use crate::lower::std_types::range::RangeKind;
 
 /// What a JS iterator is made as, each its maker's.
@@ -44,51 +45,38 @@ struct Closing {
 pub(in crate::lower) struct IterValue {
     form: Form,
     closes: Option<Closing>,
-    lent: Option<Lent>,
+    lent: Option<Wrapper>,
 }
 
-/// How a `&mut I` lends its iterator, `$lent`'s kind (src/runtime/lent.js's
-/// `$passedOn`): of a sized `I`, whose folds std's `&mut I` folds by `I`'s
-/// `try_fold` and `try_rfold`, `$lent(it)`; of an unsized one, a `dyn`'s,
-/// whose folds are std's defaults over `next` and `next_back`,
-/// `$lent(it, "lentUnsized")` (#1991). And a `Box<I>`'s, which lends
-/// nothing, owning `I`, but passes on only what std's `Box<I>` does,
-/// `$lent(it, "boxed")` (#1995).
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub(in crate::lower) enum Lent {
-    Sized,
-    Unsized,
-    Boxed,
+/// How a `&mut I` lends its iterator, or a `Box<I>` holds it, std's
+/// wrapper of it (`Wrapper`, the one catalog of what each passes on, #2000):
+/// `$lent`'s kind (src/runtime/lent.js's `$passedOn`), given after the
+/// iterator. Of a sized `I`, `$lent(it)`, whose folds std's `&mut I` folds
+/// by `I`'s `try_fold` and `try_rfold`; of an unsized one, a `dyn`'s,
+/// `$lent(it, "lentUnsized")`, its folds std's defaults (#1991); of a
+/// `Box<I>`, which lends nothing, owning `I`, `$lent(it, "boxed")` (#1995).
+/// The kind is a fact of the Rust type, which the JS iterator doesn't keep,
+/// so it's given, not read off the value at run time (#2000).
+fn lent_kind(how: Wrapper) -> Option<&'static str> {
+    match how {
+        Wrapper::MutRefSized => None,
+        Wrapper::MutRefUnsized => Some("lentUnsized"),
+        Wrapper::BoxSized => Some("boxed"),
+        Wrapper::BoxUnsized => Some("boxedUnsized"),
+    }
 }
 
-impl Lent {
-    /// Its `$passedOn` kind, given after the iterator; none of a sized one's,
-    /// `$lent`'s default.
-    fn kind(self) -> Option<&'static str> {
-        match self {
-            Lent::Sized => None,
-            Lent::Unsized => Some("lentUnsized"),
-            Lent::Boxed => Some("boxed"),
+/// How `e`, an iterator lent, `$lent(it, ..)`, is lent: a `&mut` of an
+/// unsized iterator's, or of a sized one's, as any other is.
+pub(in crate::lower) fn lent_of(e: &Expr) -> Wrapper {
+    match &e.kind {
+        js::ExprKind::Call(_, of)
+            if e.facts.has(Known::IterLent)
+                && matches!(of.get(1).map(|k| &k.kind), Some(js::ExprKind::Str(k)) if Some(k.as_str()) == lent_kind(Wrapper::MutRefUnsized)) =>
+        {
+            Wrapper::MutRefUnsized
         }
-    }
-
-    /// Whether it lends `it`, which nothing past it closes: a `Box`'s owns it.
-    fn lends(self) -> bool {
-        self != Lent::Boxed
-    }
-
-    /// How `e`, an iterator lent, `$lent(it, ..)`, is lent; a sized one's of
-    /// any other.
-    pub(in crate::lower) fn of(e: &Expr) -> Lent {
-        match &e.kind {
-            js::ExprKind::Call(_, of)
-                if e.facts.has(Known::IterLent)
-                    && matches!(of.get(1).map(|k| &k.kind), Some(js::ExprKind::Str(k)) if k == "lentUnsized") =>
-            {
-                Lent::Unsized
-            }
-            _ => Lent::Sized,
-        }
+        _ => Wrapper::MutRefSized,
     }
 }
 
@@ -119,7 +107,7 @@ impl IterValue {
     }
 
     /// It, lent as `how` lends it (`lent_iterator`).
-    pub(in crate::lower) fn lent(mut self, how: Lent) -> IterValue {
+    pub(in crate::lower) fn lent(mut self, how: Wrapper) -> IterValue {
         self.lent = Some(how);
         self
     }
@@ -176,8 +164,8 @@ impl IterValue {
                 e = x.clone();
             }
             let mut args = vec![e];
-            args.extend(how.kind().map(Expr::str));
-            let facts: &[Known] = if how.lends() { &[Known::IterLent] } else { &[] };
+            args.extend(lent_kind(how).map(Expr::str));
+            let facts: &[Known] = if how.owns() { &[] } else { &[Known::IterLent] };
             e = made("$lent", args, facts);
         }
         e
@@ -929,7 +917,7 @@ mod tests {
         assert!(range.facts.has(Known::IterStepped) && range.facts.has(Known::IterRange));
         let closed = IterValue::js(var("it"))
             .closed(var("drop"), true)
-            .lent(Lent::Sized)
+            .lent(Wrapper::MutRefSized)
             .emit();
         assert!(closed.facts.has(Known::IterLent) && !closed.facts.has(Known::IterClosing));
         let js::ExprKind::Call(_, inner) = &closed.kind else {

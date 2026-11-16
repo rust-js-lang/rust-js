@@ -219,8 +219,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `rev()` of a `&mut` of the crate's iterator is read as folding by its own `rfold`, `$folded(..)` of what has none (#217)",
     file: "src/lower/recognition/own_steps.rs",
-    find: "        matches!(self, OwnStep::Nth | OwnStep::NthBack)\n",
-    replace: "        matches!(self, OwnStep::Nth | OwnStep::NthBack | OwnStep::Rfold)\n",
+    find: "            .all(|w| w.passes(self.method()) == Passed::Own)\n",
+    replace: "            .any(|w| w.passes(self.method()) != Passed::Default)\n",
     tests: ["test/corpus.test.ts", "-t", "^rev_own_back_methods.rs$"],
     snapshots: true,
   },

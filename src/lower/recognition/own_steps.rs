@@ -55,11 +55,15 @@ impl OwnStep {
         matches!(self, OwnStep::Rfold | OwnStep::TryRfold | OwnStep::NthBack)
     }
 
-    /// Whether std's impl for a `&mut I` passes it on to `I`'s: `nth` and
-    /// `nth_back`; its `fold` and `rfold` are `I`'s `try_fold`s, its `last`
-    /// and `count` std's defaults, of `next`.
+    /// Whether std's impl for a `&mut I` passes it on to `I`'s own, of a
+    /// sized `I` or not (`Wrapper::passes`): `nth` and `nth_back`; its
+    /// `fold` and `rfold` are `I`'s `try_fold`s, its `last` and `count`
+    /// std's defaults, of `next`.
     fn through_a_mut_ref(self) -> bool {
-        matches!(self, OwnStep::Nth | OwnStep::NthBack)
+        use super::passed_on::{Passed, Wrapper};
+        [Wrapper::MutRefSized, Wrapper::MutRefUnsized]
+            .iter()
+            .all(|w| w.passes(self.method()) == Passed::Own)
     }
 
     /// Whether the helper that takes it, `$nth`, `$last` or `$count`, asks

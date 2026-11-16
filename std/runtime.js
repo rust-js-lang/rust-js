@@ -22340,15 +22340,14 @@ export function $formatFloat(value, options, show) {
 // ExactSizeIterator for &mut I`: of an `I: Sized`, `lent`, its `fold` and
 // `rfold` by `I`'s `try_fold` and `try_rfold`, as their `RefSpec`
 // specializations fold; of an unsized one, a `dyn`'s, `lentUnsized`,
-// neither, std's defaults over its `next` and `next_back`. A `Box<I>`'s
-// are `BOX_PASSES_ON`'s (src/lower/recognition/iterators.rs, #1601). Facts
-// of std's source: test/passed-on.test.ts reads each impl's items in
-// rust-src and fails where a list here, or `BOX_PASSES_ON`, differs, as a
-// toolchain's std may change them.
+// neither, std's defaults over its `next` and `next_back`; and of a
+// `Box<I>`, `boxed` and `boxedUnsized` (#1601, #1995). The compiler's one
+// catalog's, `PASSED_ON` (src/lower/recognition/passed_on.rs, #2000), by
+// `$forward`'s names: test/passed-on.test.ts holds the catalog to std's
+// source in rust-src, and each list here to the catalog.
 export const $passedOn = {
   lent: ["next", "sizeHint", "advanceBy", "nth", "fold", "tryFold", "back", "advanceBackBy", "nthBack", "rfold", "tryRfold", "len"],
   lentUnsized: ["next", "sizeHint", "advanceBy", "nth", "back", "advanceBackBy", "nthBack", "len"],
-  // TODO(#2000): `BOX_PASSES_ON`'s, which the one catalog is to give both.
   boxed: ["next", "sizeHint", "nth", "last", "back", "nthBack", "len"],
   boxedUnsized: ["next", "sizeHint", "nth", "back", "nthBack", "len"],
 };

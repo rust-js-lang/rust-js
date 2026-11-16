@@ -2,6 +2,7 @@
 //! iterated, and stepped from its back.
 
 use super::*;
+use crate::lower::recognition::Wrapper;
 use crate::lower::temporary_names::Role;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -220,15 +221,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `$lent(it)`: a generic iterator lent as a `&mut`, `by`, which steps
     /// `it` and can't close it, as its lender goes on stepping it (ADR 0071),
-    /// as `by` lends it, of a sized iterator or not (`Lent`, #1991); of one
+    /// as `by` lends it, of a sized iterator or not (`Wrapper`, #1991); of one
     /// already lent, `by_ref()`'s, itself, a JS iterator nothing closes.
     pub(in crate::lower) fn lent_iterator(&mut self, it: Expr, by: Ty<'tcx>) -> Expr {
         if is_lent(&it) {
             return it;
         }
         let how = match by.kind() {
-            ty::Ref(_, to, _) if !to.is_sized(self.tcx, self.typing_env) => super::Lent::Unsized,
-            _ => super::Lent::Sized,
+            ty::Ref(_, to, _) if !to.is_sized(self.tcx, self.typing_env) => Wrapper::MutRefUnsized,
+            _ => Wrapper::MutRefSized,
         };
         IterValue::js(it).lent(how).emit()
     }

@@ -105,15 +105,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A `&mut` to one is it, whose impls pass on to its own: its
         // `next_back` and `nth_back`, not its `rfold`, which std's `&mut I`
         // folds by `I`'s `try_rfold` (ADR 0928).
-        let lent = matches!(ty.kind(), ty::Ref(_, _, ty::Mutability::Mut));
-        let passed_rfold = |rfold: Option<Expr>| rfold.filter(|_| !lent);
-        // Of a sized one, its `rfold` by `I`'s `try_rfold`, never stopped, as
-        // std's `&mut I` folds (`DoubleEndedIteratorRefSpec`), `$lent`'s
-        // `lent`: without it, std's compiled `Rev` of it folded by
-        // `next_back`, a `take()`'s skipped items 4 then 5, where std's
-        // drops them 5 then 4 (#2002).
-        let lent_sized =
-            matches!(ty.kind(), ty::Ref(_, to, ty::Mutability::Mut) if to.is_sized(self.tcx, self.typing_env));
+        // Of a `&mut I`, its `rfold` as std's `&mut I` passes it on
+        // (`Wrapper::passes`): of a sized `I`, by `I`'s `try_rfold`, never
+        // stopped (`DoubleEndedIteratorRefSpec`), where std's compiled `Rev`
+        // of it folded by `next_back`, a `take()`'s skipped items 4 then 5,
+        // std's 5 then 4 (#2002); of an unsized one, none, std's default.
+        let lent = crate::lower::recognition::Wrapper::of(self.tcx, self.typing_env, ty).filter(|w| !w.owns());
+        let passed_rfold = |rfold: Option<Expr>, try_rfold: Option<&Expr>| {
+            use crate::lower::recognition::Passed;
+            match lent.map(|w| w.passes("rfold")) {
+                None | Some(Passed::Own) => rfold,
+                Some(Passed::ByTry) => try_rfold.cloned().map(folded_by_try),
+                Some(Passed::Default) => None,
+            }
+        };
         let ty = ty.peel_refs();
         let name = crate::lower::recognition::extension_entry(self.tcx, trait_id);
         // A `Box` of std's struct, compiled: what std's `Box<I>` passes on of
@@ -199,14 +204,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // `Skip`'s of its `Take`: as a JS iterator's `tryRfold` (ADR 0930).
             let try_rfold = self.compiled_try_fold(ty, (trait_id, "try_rfold"), span)?;
             for (method, own) in [
-                (
-                    "rfold",
-                    if lent_sized {
-                        try_rfold.clone().map(folded_by_try)
-                    } else {
-                        passed_rfold(rfold)
-                    },
-                ),
+                ("rfold", passed_rfold(rfold, try_rfold.as_ref())),
                 ("nth_back", nth_back),
                 ("try_rfold", try_rfold),
             ] {
@@ -240,7 +238,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 (false, Some(RangeKind::Inclusive)) if numbers => Some(Expr::helper("$rangeInclusiveNthBack")),
                 (false, _) => None,
             };
-            for (method, own) in [("rfold", passed_rfold(rfold)), ("nth_back", nth_back)] {
+            // Of a sized `&mut` to the crate's iterator, its `try_rfold` is the
+            // trait's default, over `next_back`, as it can't be written on
+            // stable Rust: so no `rfold` passed on, as before.
+            let rfold = passed_rfold(rfold, None);
+            for (method, own) in [("rfold", rfold), ("nth_back", nth_back)] {
                 if let Some(own) = own {
                     props.push(js::Prop::Field(
                         crate::lower::bindings::trait_method_name(self.tcx, trait_id, method),
@@ -472,7 +474,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// A dictionary of `trait_id`, `Iterator` or one of its extensions, of a
     /// `Box<I>`, of `I`'s, `of`: what std's impl for a `Box<I>` passes on
-    /// to `I`'s, `BOX_PASSES_ON`'s, its other steps the trait's defaults,
+    /// to `I`'s, `Wrapper::passes`', its other steps the trait's defaults,
     /// by `next`, never the crate's own of them a caller's dictionary may
     /// carry, its `fold` or `count` (#1611).
     pub(in crate::lower) fn boxed_iterator_dictionary(&self, trait_id: DefId, of: Expr) -> Expr {
@@ -482,9 +484,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             (self.tcx.associated_items(trait_id).in_definition_order())
                 .any(|item| item.is_fn() && item.name().as_str() == name)
         };
-        let passed: Vec<String> = (crate::lower::recognition::BOX_PASSES_ON.iter())
-            .filter(|&&name| declares(name))
-            .map(|&name| match entry {
+        let passed: Vec<String> = (crate::lower::recognition::Wrapper::BoxSized.own_methods())
+            .filter(|&name| declares(name))
+            .map(|name| match entry {
                 Some(entry) if declares(entry) && name == entry => entry.to_string(),
                 _ => crate::lower::bindings::trait_method_name(self.tcx, trait_id, name),
             })

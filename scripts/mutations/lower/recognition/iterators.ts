@@ -702,7 +702,7 @@ export const mutations: Mutation[] = [
     name: "box-passes-on-every-own-step",
     breaks: "a `Box` of the crate's iterator reaches its own `fold` and `count`, which std's `Box<I>` never calls (#1601)",
     file: "src/lower/recognition/iterators.rs",
-    find: "        if !self.is_user_iterator(ty) || (behind_a_box(ty) && !BOX_PASSES_ON.contains(&name)) {\n",
+    find: "        if !self.is_user_iterator(ty) || (behind_a_box(ty) && Wrapper::BoxSized.passes(name) != Passed::Own) {\n",
     replace: "        if !self.is_user_iterator(ty) {\n",
     tests: ["test/corpus.test.ts", "-t", "^boxed_iterator_steps_as_std_box_does.rs$"],
   },
