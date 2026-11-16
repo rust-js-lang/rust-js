@@ -9,7 +9,6 @@ import {
   $dropEach,
   $eq,
   $extend,
-  $filterDropping,
   $foldOf,
   $given,
   $givenDrop,
@@ -24,6 +23,7 @@ import {
   $partialEq,
   $traitImpl,
   $unwinds,
+  iterator_filter,
   iterator_skip,
   skipIterator___iteratorGetUnchecked,
 } from "@rust-js/std";
@@ -307,9 +307,12 @@ function main() {
   const value$1 = [[1], [3]];
   let tmp;
   try {
-    tmp = $filterDropping(
-      $closing($iter(value$1), $dropEach(loudDrop_drop)),
+    tmp = iterator_filter(
+      $iter(value$1),
       () => true,
+      { next: $next, advanceBy: $advanceSlice },
+      $dropEach(loudDrop_drop),
+      undefined,
       loudDrop_drop,
     );
   } catch (error) {
@@ -330,7 +333,7 @@ function main() {
           return items;
         },
         IntoIterIterator() {
-          return { next: $next };
+          return { next: $next, fold: $foldOf };
         },
         $dropItem: loudDrop_drop,
         $dropIntoIter(filter) {

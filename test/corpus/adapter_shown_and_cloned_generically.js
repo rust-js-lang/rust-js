@@ -2,8 +2,6 @@
 
 import {
   $byteLen,
-  $clone,
-  $cloning,
   $foldOf,
   $given,
   $iter,
@@ -14,7 +12,9 @@ import {
   clonedClone_clone,
   clonedDebug,
   clonedIterator___iteratorGetUnchecked,
+  filterClone,
   iterator_cloned,
+  iterator_filter,
   iterator_map,
 } from "@rust-js/std";
 
@@ -67,45 +67,41 @@ function tTools(TIterator) {
 }
 
 function main() {
-  const i32Clone = { clone: (value) => value };
-  const iterClone = { clone: (value) => $iter(value.items.slice(value.at, value.end)) };
+  const clone$1 = { clone: (value) => value };
+  const clone = { clone: (value) => $iter(value.items.slice(value.at, value.end)) };
   const clonedIterator = {
     next: $next,
     fold: $foldOf,
     getUnchecked: (iterator, i) =>
-      clonedIterator___iteratorGetUnchecked(iterator, i, { next: $next }, i32Clone),
+      clonedIterator___iteratorGetUnchecked(iterator, i, { next: $next }, clone$1),
   };
-  const ClonedIntoIterClone = clonedClone(iterClone);
+  const ClonedIntoIterClone = clonedClone(clone);
   const ClonedTools = tTools(clonedIterator);
   const clonedIntoIterator = { intoIter: (items) => items, IntoIterIterator: () => clonedIterator };
-  const w = { iter: iterator_cloned($iter([1, 2]), { next: $next }, i32Clone) };
+  const w = { iter: iterator_cloned($iter([1, 2]), { next: $next }, clone$1) };
   console.log(
     `${wrapDebug_fmt(w, clonedDebug({ fmt: (value) => `Iter([${value.items.slice(value.at, value.end).join(", ")}])` }))}`,
   );
-  console.log(
-    `${twice(clonedClone_clone(w.iter, iterClone), clonedIterator, ClonedIntoIterClone)}`,
-  );
+  console.log(`${twice(clonedClone_clone(w.iter, clone), clonedIterator, ClonedIntoIterClone)}`);
   console.log(
     `${twice(
-      iterator_cloned($iter([1, 2, 3]), { next: $next }, i32Clone),
+      iterator_cloned($iter([1, 2, 3]), { next: $next }, clone$1),
       clonedIterator,
       ClonedIntoIterClone,
     )}`,
   );
-  const makeFilter = (it, f) =>
-    $cloning(it.filter(f), () => makeFilter($iter(it.items.slice(it.at, it.end)), f));
   console.log(
     `${twice(
-      makeFilter($iter([1, 2, 3]), (x) => x % 2 === 1),
-      { next: $next },
-      { clone: (value) => $clone(value) },
+      iterator_filter($iter([1, 2, 3]), (x) => x % 2 === 1),
+      { next: $next, fold: $foldOf },
+      filterClone(clone, clone$1),
     )}`,
   );
   const xs = [10, 20, 30];
   console.log(
     `${shown(
       $iterator(
-        { iter: iterator_cloned($iter(xs), { next: $next }, i32Clone) },
+        { iter: iterator_cloned($iter(xs), { next: $next }, clone$1) },
         (iterator) => heldIterator_next(iterator, clonedIterator),
         true,
       ),
@@ -114,8 +110,8 @@ function main() {
   );
   console.log(
     `${ClonedTools.paired(
-      iterator_cloned($iter([0, 1, 2]), { next: $next }, i32Clone),
-      iterator_cloned($iter([0, 1, 2]), { next: $next }, i32Clone),
+      iterator_cloned($iter([0, 1, 2]), { next: $next }, clone$1),
+      iterator_cloned($iter([0, 1, 2]), { next: $next }, clone$1),
       clonedIterator,
       clonedIntoIterator,
       ClonedIntoIterClone,
@@ -123,8 +119,8 @@ function main() {
   );
   console.log(
     `${ClonedTools.paired(
-      iterator_cloned($iter([0, 1, 2]), { next: $next }, i32Clone),
-      iterator_cloned($iter([0, 1, 2]), { next: $next }, i32Clone),
+      iterator_cloned($iter([0, 1, 2]), { next: $next }, clone$1),
+      iterator_cloned($iter([0, 1, 2]), { next: $next }, clone$1),
       clonedIterator,
       clonedIntoIterator,
       ClonedIntoIterClone,

@@ -5,7 +5,6 @@ import {
   $cleanup,
   $closing,
   $dropEach,
-  $filterEnds,
   $findBack,
   $foldBack,
   $foldOf,
@@ -19,13 +18,18 @@ import {
   $nthBack,
   $rangeInclusiveNext,
   $rangeInclusiveNextBack,
+  $rangeInclusiveNthBack,
   $rangeNext,
   $rangeNextBack,
   $rangeNthBack,
   $rev,
   $slicing,
   $tryOf,
+  filterDoubleEndedIterator_nextBack,
+  filterDoubleEndedIterator_rfold,
+  filterDoubleEndedIterator_tryRfold,
   flattenDoubleEndedIterator_nextBack,
+  iterator_filter,
   iterator_flatten,
   iterator_map,
   iterator_rev,
@@ -349,15 +353,47 @@ function main() {
     mapIterator,
   );
   console.log(`${s}`);
-  s = $foldBack(
-    $rev(
-      $filterEnds(
-        $iterator({ start: 0, end: 4 }, $rangeInclusiveNext, false, $rangeInclusiveNextBack),
-        (n) => n % 2 === 0,
-      ),
+  s = revDoubleEndedIterator_rfold(
+    iterator_rev(
+      iterator_filter({ start: 0, end: 4 }, (n) => n % 2 === 0, { next: $rangeInclusiveNext }),
+      { next: $next, fold: $foldOf },
+      {
+        next_back: (iterator) =>
+          filterDoubleEndedIterator_nextBack(
+            iterator,
+            { next: $rangeInclusiveNext },
+            { next_back: $rangeInclusiveNextBack, nthBack: $rangeInclusiveNthBack },
+          ),
+        rfold: (iterator, init, f, unwind, ends) =>
+          filterDoubleEndedIterator_rfold(
+            iterator,
+            init,
+            f,
+            { next: $rangeInclusiveNext },
+            { next_back: $rangeInclusiveNextBack, nthBack: $rangeInclusiveNthBack },
+            undefined,
+            undefined,
+            unwind,
+            ends,
+          ),
+        tryRfold: (iterator, init, f, broke, unwind, ends) =>
+          filterDoubleEndedIterator_tryRfold(
+            iterator,
+            init,
+            f,
+            { next: $rangeInclusiveNext },
+            { next_back: $rangeInclusiveNextBack, nthBack: $rangeInclusiveNthBack },
+            $tryOf(broke),
+            undefined,
+            undefined,
+            unwind,
+            ends,
+          ),
+      },
     ),
     mk(),
     (s, n) => s + String(n),
+    { next: $next, fold: $foldOf },
   );
   console.log(`${s}`);
 

@@ -13,6 +13,7 @@ import {
   $cmpIn,
   $cmpItems,
   $collectDropping,
+  $count,
   $debugF64,
   $debugFields,
   $debugStr,
@@ -22,7 +23,6 @@ import {
   $index,
   $iterator,
   $jsIterator,
-  $lazyRange,
   $lent,
   $max,
   $minBy,
@@ -32,12 +32,14 @@ import {
   $partialEq,
   $partialOrd,
   $partiallyOrdered,
+  $rangeNext,
   $reduceBy,
   $roomForHint,
   $some,
   $thenCmp,
   $traitImpl,
   iterator_enumerate,
+  iterator_filter,
   iterator_map,
   iterator_skip,
   iterator_take,
@@ -394,9 +396,11 @@ export function genericIterations() {
       (n) => n + 1,
       0,
     ),
-    $iterator({ times: 2 }, (iterator) => repeatIterator_next(iterator, clone), true)
-      .filter((o) => o == null)
-      .reduce((n) => n + 1, 0),
+    $count(
+      iterator_filter({ times: 2 }, (o) => o == null, {
+        next: (iterator) => repeatIterator_next(iterator, clone),
+      }),
+    ),
     Array.from(
       $iterator({ item: 2, times: 3 }, (iterator) => repeatIterator_next(iterator, clone), true),
     ),
@@ -595,7 +599,7 @@ export function debugs(n) {
  * `Iterator.from`, and one of the crate's own is given as a JS iterator.
  */
 export function evensBelow(n) {
-  return $lazyRange(0, n).filter((x) => x % 2 === 0);
+  return iterator_filter({ start: 0, end: n }, (x) => x % 2 === 0, { next: $rangeNext });
 }
 
 export function countdown(n) {

@@ -983,7 +983,7 @@ pub fn evens(limit: u32) -> impl Iterator<Item = u32> {
 ```
 
 ```js
-import { $iterator, $lazyRange } from "@rust-js/std";
+import { $iterator, $rangeNext, iterator_filter } from "@rust-js/std";
 
 function countdownIterator_next(countdown) {
   if (countdown.from === 0) {
@@ -1008,7 +1008,7 @@ export function sumCountdown() {
 }
 
 export function evens(limit) {
-  return $lazyRange(0, limit).filter((n) => n % 2 === 0);
+  return iterator_filter({ start: 0, end: limit }, (n) => n % 2 === 0, { next: $rangeNext });
 }
 ```
 

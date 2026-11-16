@@ -6,12 +6,13 @@ import {
   $grownVec,
   $iter,
   $lazyChain,
-  $lazyRange,
   $next,
   $onceWith,
   $peek,
+  $rangeNext,
   $roomForHint,
   $sizeHint,
+  iterator_filter,
   iterator_peekable,
   iterator_zip,
 } from "@rust-js/std";
@@ -63,7 +64,15 @@ function main() {
     $roomForHint(
       $lazyChain(
         $onceWith(() => 1),
-        $lazyRange(0, 5).filter((x) => x % 2 === 0),
+        iterator_filter(
+          {
+            start: 0,
+
+            end: 5,
+          },
+          (x) => x % 2 === 0,
+          { next: $rangeNext },
+        ),
       ),
       4,
       false,

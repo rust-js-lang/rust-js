@@ -8,6 +8,7 @@ import {
   $next,
   $print,
   $roomForHint,
+  iterator_filter,
   iterator_map,
   iterator_take,
 } from "@rust-js/std";
@@ -24,7 +25,7 @@ function countdownIterator_next(countdown) {
 }
 
 function evens(v) {
-  return v.values().filter((n) => n % 2 === 0);
+  return iterator_filter($iter(v), (n) => n % 2 === 0);
 }
 
 function numbers(desc) {

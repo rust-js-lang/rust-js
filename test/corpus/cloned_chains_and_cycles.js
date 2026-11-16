@@ -10,7 +10,6 @@ import {
   $foldOf,
   $foldToArray,
   $iter,
-  $iterator,
   $lazyChain,
   $next,
   $nextSome,
@@ -19,7 +18,9 @@ import {
   $toUppercase,
   chainClone,
   chainClone_clone,
+  filterClone_clone,
   iterator_chain,
+  iterator_filter,
   iterator_map,
   iterator_skip,
   iterator_take,
@@ -52,15 +53,11 @@ function cycles() {
       ).take(5),
     ).join(", ")}]`,
   );
-  const makeFilter = (it, f) =>
-    $cloning($iterator(it, $rangeNext).filter(f), () =>
-      makeFilter({ start: it.start, end: it.end }, f),
-    );
   console.log(
     `[${Array.from(
       $cycleOf(
-        makeFilter({ start: 1, end: 10 }, (x) => x % 3 === 0),
-        $clone,
+        iterator_filter({ start: 1, end: 10 }, (x) => x % 3 === 0, { next: $rangeNext }),
+        (iterator) => filterClone_clone(iterator, rangeClone, clone),
         $next,
       ).take(5),
     ).join(", ")}]`,
@@ -110,7 +107,9 @@ function cycles() {
 }
 
 function clones() {
+  const clone = { clone: (value) => value };
   const intoIterator = { intoIter: (items) => items, IntoIterIterator: () => ({ next: $next }) };
+  const rangeClone = { clone: (value) => ({ start: value.start, end: value.end }) };
   const iterClone = { clone: (value) => $iter(value.items.slice(value.at, value.end)) };
   const a = [1, 2];
   const b = [3];
@@ -165,12 +164,7 @@ function clones() {
           false,
           false,
         ),
-        (iterator) =>
-          zipClone_clone(
-            iterator,
-            { clone: (value) => ({ start: value.start, end: value.end }) },
-            { clone: (value) => value.clone() },
-          ),
+        (iterator) => zipClone_clone(iterator, rangeClone, { clone: (value) => value.clone() }),
         $next,
       ).take(5),
     )
@@ -178,17 +172,13 @@ function clones() {
       .join(", ")}]`,
   );
   const m = iterator_map($iter(a), (x) => (x * 10) | 0);
-  const m2 = mapClone_clone(m, iterClone, { clone: (value) => value });
+  const m2 = mapClone_clone(m, iterClone, clone);
   console.log(`[${$foldToArray(m).join(", ")}] ${m2.reduce((a, b) => (a + b) | 0, 0)}`);
-  const makeFilter = (it, f) =>
-    $cloning($iterator(it, $rangeNext).filter(f), () =>
-      makeFilter({ start: it.start, end: it.end }, f),
-    );
   console.log(
     `[${Array.from(
       $cycleOf(
-        makeFilter({ start: 1, end: 10 }, (x) => x % 3 === 0),
-        $clone,
+        iterator_filter({ start: 1, end: 10 }, (x) => x % 3 === 0, { next: $rangeNext }),
+        (iterator) => filterClone_clone(iterator, rangeClone, clone),
         $next,
       ).take(5),
     ).join(", ")}]`,

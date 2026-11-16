@@ -2,7 +2,6 @@
 
 import {
   $cleanup,
-  $clone,
   $cloning,
   $closing,
   $collectDropping,
@@ -25,7 +24,9 @@ import {
   chainDoubleEndedIterator_nthBack,
   chainDoubleEndedIterator_rfold,
   chainDoubleEndedIterator_tryRfold,
+  filterClone_clone,
   iterator_chain,
+  iterator_filter,
   iterator_map,
   mapClone_clone,
   mapDoubleEndedIterator_nextBack,
@@ -55,6 +56,7 @@ function countdownDrop_drop(countdown) {
 }
 
 function main() {
+  const clone = { clone: (value) => value };
   const countdownClone = { clone: (value) => [value[0]] };
   const makeChain = (a, b) =>
     $cloning(
@@ -274,11 +276,7 @@ function main() {
   let copy;
   try {
     copy = $collectDropping(
-      $roomForHint(
-        mapClone_clone(mapped, countdownClone, { clone: (value) => value }, countdownDrop_drop),
-        4,
-        false,
-      ),
+      $roomForHint(mapClone_clone(mapped, countdownClone, clone, countdownDrop_drop), 4, false),
     );
   } catch (error) {
     $cleanup(() => {
@@ -294,16 +292,16 @@ function main() {
     }, error);
     throw error;
   }
-  const makeFilter = (it, f) =>
-    $cloning(
-      $closing($iterator(it, countdownIterator_next), (it) => {
-        countdownDrop_drop(it.of);
-      }).filter(f),
-      () => makeFilter([it[0]], f),
-    );
   let kept;
   try {
-    kept = $held(makeFilter([4], (n) => n % 2 === 1));
+    kept = $held(
+      iterator_filter(
+        [4],
+        (n) => n % 2 === 1,
+        { next: countdownIterator_next },
+        countdownDrop_drop,
+      ),
+    );
   } catch (error) {
     $cleanup(() => {
       mapped.return();
@@ -312,7 +310,7 @@ function main() {
   }
   let tmp;
   try {
-    tmp = $held($clone(kept));
+    tmp = $held(filterClone_clone(kept, countdownClone, clone, countdownDrop_drop));
   } catch (error) {
     $cleanup(() => {
       kept.return();
@@ -332,16 +330,25 @@ function main() {
     throw error;
   }
   tmp.return();
-  let arg;
+  const iter$1 = kept;
+  let result$1;
   try {
-    arg = kept.reduce((n) => n + 1, 0);
+    try {
+      result$1 = $count(iter$1);
+    } catch (error) {
+      throw $unwindsOn(error);
+    } finally {
+      if ($live()) {
+        iter$1.return();
+      }
+    }
   } catch (error) {
     $cleanup(() => {
       mapped.return();
     }, error);
     throw error;
   }
-  console.log(`${ahead == null ? "None" : `Some(${ahead})`} ${arg}`);
+  console.log(`${ahead == null ? "None" : `Some(${ahead})`} ${result$1}`);
   const rev = $held(
     $rev(
       $knowing(

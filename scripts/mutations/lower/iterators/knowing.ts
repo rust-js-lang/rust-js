@@ -267,7 +267,7 @@ export const mutations: Mutation[] = [
     tests: [
       "test/diagnostics.test.ts",
       "-t",
-      "the size hint of a peekable filter made here",
+      "the size hint of a peekable filter_map made here",
     ],
   },
   {
@@ -497,7 +497,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/knowing.rs",
     find: "        if self.array_source(ty).is_some() && !self.made_knowing_here(ty) {\n            return false;\n        }\n",
     replace: "",
-    tests: ["test/diagnostics.test.ts", "-t", "the size hint of a peekable filter made here"],
+    tests: ["test/diagnostics.test.ts", "-t", "the size hint of a peekable filter_map made here"],
   },
   {
     name: "dropping-skip-uncounted",
@@ -823,7 +823,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/knowing.rs",
     find: "        let in_place = !outermost && self.made_in_place_of(ty);\n",
     replace: "        let in_place = false && !outermost && self.made_in_place_of(ty);\n",
-    tests: ["test/diagnostics.test.ts", "-t", "size_hint of a held rev of a filter of a skip"],
+    tests: ["test/diagnostics.test.ts", "-t", "size_hint of a held rev of a filter_map of a skip"],
   },
   {
     name: "dropping-filter-hintless",
@@ -839,7 +839,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/iterators/knowing.rs",
     find: "            true => \", which holds an adapter made in place inside another, as JS's own, which keeps no hint (#1427)\",\n",
     replace: '            true => "",\n',
-    tests: ["test/diagnostics.test.ts", "-t", "size_hint of a held rev of a filter of a skip"],
+    tests: ["test/diagnostics.test.ts", "-t", "size_hint of a held rev of a filter_map of a skip"],
   },
   {
     name: "closure-search-back-unknown",

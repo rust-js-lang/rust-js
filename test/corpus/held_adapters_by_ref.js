@@ -2,7 +2,6 @@
 
 import {
   $exactLen,
-  $filterEnds,
   $iter,
   $knowing,
   $lent,
@@ -11,6 +10,9 @@ import {
   $rev,
   $sizeHint,
   $tryOf,
+  filterDoubleEndedIterator_nextBack,
+  filterDoubleEndedIterator_tryRfold,
+  iterator_filter,
   iterator_skip,
   skipDoubleEndedIterator_nextBack,
   skipDoubleEndedIterator_nthBack,
@@ -27,8 +29,31 @@ function even(x) {
 
 function main() {
   const v = [1, 2, 3, 4, 5, 6, 7, 8];
-  const e = { it: $filterEnds($iter(v), (item) => even(item)) };
-  const first = Array.from($lent(e.it).take(2));
+  const e = { it: iterator_filter($iter(v), even) };
+  const first = Array.from(
+    $lent(
+      $knowing(
+        e.it,
+        filterDoubleEndedIterator_nextBack,
+        undefined,
+        undefined,
+        undefined,
+        (iterator, init, f, broke, unwind, ends) =>
+          filterDoubleEndedIterator_tryRfold(
+            iterator,
+            init,
+            f,
+            { next: $next },
+            { next_back: $nextBack },
+            $tryOf(broke),
+            undefined,
+            undefined,
+            unwind,
+            ends,
+          ),
+      ),
+    ).take(2),
+  );
   const arg = $next(e.it);
   console.log(`[${first.join(", ")}] ${arg == null ? "None" : `Some(${arg})`}`);
   const r = { it: iterator_skip($iter(v), 2) };
@@ -68,11 +93,59 @@ function main() {
   );
   const arg$1 = $next(again.it);
   console.log(`[${back.join(", ")}] ${arg$1 == null ? "None" : `Some(${arg$1})`}`);
-  const odd = { it: $filterEnds($iter(v), (item) => even(item)) };
-  const last = $nextBack(odd.it);
-  const fromBack = Array.from($rev($lent(odd.it)).take(1));
+  const odd = { it: iterator_filter($iter(v), even) };
+  const last = filterDoubleEndedIterator_nextBack(
+    $lent(
+      $knowing(
+        odd.it,
+        filterDoubleEndedIterator_nextBack,
+        undefined,
+        undefined,
+        undefined,
+        (iterator, init, f, broke, unwind, ends) =>
+          filterDoubleEndedIterator_tryRfold(
+            iterator,
+            init,
+            f,
+            { next: $next },
+            { next_back: $nextBack },
+            $tryOf(broke),
+            undefined,
+            undefined,
+            unwind,
+            ends,
+          ),
+      ),
+    ),
+  );
+  const fromBack = Array.from(
+    $rev(
+      $lent(
+        $knowing(
+          odd.it,
+          filterDoubleEndedIterator_nextBack,
+          undefined,
+          undefined,
+          undefined,
+          (iterator, init, f, broke, unwind, ends) =>
+            filterDoubleEndedIterator_tryRfold(
+              iterator,
+              init,
+              f,
+              { next: $next },
+              { next_back: $nextBack },
+              $tryOf(broke),
+              undefined,
+              undefined,
+              unwind,
+              ends,
+            ),
+        ),
+      ),
+    ).take(1),
+  );
   const value = $next(odd.it);
-  const arg$2 = $nextBack(odd.it);
+  const arg$2 = filterDoubleEndedIterator_nextBack(odd.it);
   console.log(
     `${last == null ? "None" : `Some(${last})`} [${fromBack.join(", ")}] ${value == null ? "None" : `Some(${value})`} ${arg$2 == null ? "None" : `Some(${arg$2})`}`,
   );

@@ -3,6 +3,7 @@
 import {
   $capacity,
   $collectDropping,
+  $foldOf,
   $foldToArray,
   $grownVec,
   $iter,
@@ -11,6 +12,7 @@ import {
   $roomForHint,
   $traitImpl,
   iterator_chain,
+  iterator_filter,
   iterator_flatMap,
 } from "@rust-js/std";
 
@@ -90,8 +92,8 @@ function main() {
   );
   const arg$3 = $capacity(vecs, 4);
   console.log(`${vecs.length} ${arg$3}`);
-  const filtered = tExt({ next: $next }, false, 3, 4).flat(
-    [[1, 2, 3]].values().filter(() => true),
+  const filtered = tExt({ next: $next, fold: $foldOf }, false, 3, 4).flat(
+    iterator_filter($iter([[1, 2, 3]]), () => true),
     intoIterator,
     3,
     false,

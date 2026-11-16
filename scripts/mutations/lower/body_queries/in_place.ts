@@ -492,6 +492,16 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
+    name: "filter-not-flipped",
+    breaks:
+      "a `filter()` of a chain the transparent-chain predicate doesn't admit is the recognizers' hand-written form again, where std's compiled struct is the meaning (#1681's change 2, the filter family)",
+    file: "src/lower/body_queries/in_place.rs",
+    find: "    \"filter\",\n",
+    replace: "    \"map\",\n",
+    tests: ["test/corpus.test.ts", "-t", "^filter_folds_by_its_sources_fold.rs$"],
+    snapshots: true,
+  },
+  {
     name: "skip-not-flipped",
     breaks:
       "a `skip()` of a chain the transparent-chain predicate doesn't admit is the recognizers' hand-written form again, where std's compiled struct is the meaning (#1681's change 2, the skip family)",

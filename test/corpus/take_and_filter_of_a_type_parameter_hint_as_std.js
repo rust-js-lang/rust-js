@@ -7,7 +7,7 @@ import {
   $lazyRange,
   $repeating,
   $sizeHint,
-  $upperOnly,
+  iterator_filter,
   iterator_take,
 } from "@rust-js/std";
 
@@ -30,7 +30,7 @@ function taken(i) {
 }
 
 function filtered(i) {
-  return $upperOnly(i);
+  return $sizeHint(iterator_filter(Iterator.from(i), (x) => x > 0, $jsIterator));
 }
 
 function noneTaken(i) {

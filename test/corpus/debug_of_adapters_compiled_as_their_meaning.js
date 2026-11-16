@@ -139,7 +139,7 @@ function main() {
     )}`,
   );
   // Another filter, whose `{:?}` nothing asks, the recognizers'.
-  const other = $lazyRange(0, 10).filter((x) => x % 4 === 1);
+  const other = iterator_filter({ start: 0, end: 10 }, (x) => x % 4 === 1, { next: $rangeNext });
   const next = $next(other);
   const value = $next(other);
   console.log(

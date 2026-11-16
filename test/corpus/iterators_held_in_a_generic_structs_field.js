@@ -4,9 +4,7 @@ import {
   $advanceSlice,
   $collectDropping,
   $dropEach,
-  $filterEnds,
   $iter,
-  $iterator,
   $knowing,
   $next,
   $nextBack,
@@ -15,8 +13,11 @@ import {
   $rangeNthBack,
   $rest,
   $rev,
+  $roomForHint,
   $take,
   $tryOf,
+  filterDoubleEndedIterator_nextBack,
+  iterator_filter,
   iterator_map,
   iterator_rev,
   mapDoubleEndedIterator_nextBack,
@@ -133,17 +134,21 @@ function main() {
       }),
     ).join(", ")}]`,
   );
-  const filtered = [
-    $filterEnds($iterator({ start: 0, end: 6 }, $rangeNext, false, $rangeNextBack), odd),
-  ];
+  const filtered = [iterator_filter({ start: 0, end: 6 }, odd, { next: $rangeNext })];
   const next = $next(filtered[0]);
   console.log(`${next == null ? "None" : `Some(${next})`}`);
   const old = replaced(
     filtered[0],
-    $filterEnds($iterator({ start: 6, end: 10 }, $rangeNext, false, $rangeNextBack), odd),
+    iterator_filter({ start: 6, end: 10 }, odd, { next: $rangeNext }),
   );
-  const value = $nextBack(filtered[0]);
-  console.log(`${value == null ? "None" : `Some(${value})`} [${Array.from(old).join(", ")}]`);
-  console.log(`[${Array.from(filtered[0]).join(", ")}]`);
+  const value = filterDoubleEndedIterator_nextBack(
+    filtered[0],
+    { next: $rangeNext },
+    { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+  );
+  console.log(
+    `${value == null ? "None" : `Some(${value})`} [${Array.from($roomForHint(old, 4, false)).join(", ")}]`,
+  );
+  console.log(`[${Array.from($roomForHint(filtered[0], 4, false)).join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

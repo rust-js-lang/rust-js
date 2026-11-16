@@ -8,7 +8,6 @@ import {
   $consume,
   $dropEach,
   $enumerate,
-  $filterEnds,
   $flattenEnds,
   $foldBack,
   $foldOf,
@@ -25,8 +24,10 @@ import {
   $rangeNextBack,
   $rev,
   $unwindsOn,
+  filterDoubleEndedIterator_rfold,
   iterator_chain,
   iterator_enumerate,
+  iterator_filter,
   iterator_fuse,
   iterator_map,
   iterator_peekable,
@@ -446,9 +447,9 @@ function foldedFromTheBack() {
     dDrop_drop(d);
     return result;
   }
-  let map;
+  let iter;
   try {
-    map = $holding(
+    iter = $holding(
       $mapEnds($closing(tmp, $dropEach(dDrop_drop)), f),
       () => {
         dDrop_drop(g);
@@ -465,7 +466,6 @@ function foldedFromTheBack() {
     throw error;
   }
   const f$1 = (a, x) => (((a + x) >>> 0) + zero(h)) >>> 0;
-  const iter = map;
   let result;
   try {
     result = $consume(iter, "rfold", 0, f$1, undefined, () => {
@@ -484,32 +484,18 @@ function foldedFromTheBack() {
   let h$1$live = true;
   const h$1 = ["f"];
   const value$1 = own(4, "own");
-  const f$2 = (x) => x % 2 === 1 || zero(g$1) > 0;
   let filter;
   try {
-    filter = $holding(
-      $filterEnds(
-        $closing(
-          $iterator(
-            value$1,
-            ownIterator_next,
-            false,
-            ownDoubleEndedIterator_nextBack,
-            undefined,
-            undefined,
-            ownIterator_fold,
-            ownIterator_nth,
-          ),
-          (it) => {
-            dDrop_drop(it.of._held);
-          },
-        ),
-        f$2,
-      ),
-      () => {
+    filter = iterator_filter(
+      value$1,
+      (x) => x % 2 === 1 || zero(g$1) > 0,
+      { next: ownIterator_next, fold: ownIterator_fold, nth: ownIterator_nth },
+      (own) => {
+        dDrop_drop(own._held);
+      },
+      (value) => {
         dDrop_drop(g$1);
       },
-      "before",
     );
     h$1$live = false;
   } catch (error) {
@@ -520,21 +506,23 @@ function foldedFromTheBack() {
     }, error);
     throw error;
   }
-  const f$3 = (a, x) => (((a + x) >>> 0) + zero(h$1)) >>> 0;
-  const iter$1 = filter;
-  let result$1;
-  try {
-    result$1 = $consume(iter$1, "rfold", 0, f$3, undefined, () => {
+  n = filterDoubleEndedIterator_rfold(
+    filter,
+    0,
+    (a, x) => (((a + x) >>> 0) + zero(h$1)) >>> 0,
+    { next: ownIterator_next, fold: ownIterator_fold, nth: ownIterator_nth },
+    { next_back: ownDoubleEndedIterator_nextBack },
+    (own) => {
+      dDrop_drop(own._held);
+    },
+    (value) => {
+      dDrop_drop(g$1);
+    },
+    undefined,
+    (value) => {
       dDrop_drop(h$1);
-    });
-  } catch (error) {
-    throw $unwindsOn(error);
-  } finally {
-    if ($live()) {
-      iter$1.return();
-    }
-  }
-  n = result$1;
+    },
+  );
   console.log(`filter rfold ${n}`);
 }
 
@@ -912,13 +900,16 @@ function chainedUnderAMap() {
     }, error);
     throw error;
   }
-  const f = () => zero(g$1) === 0;
-  const iter$1 = $holding(
-    tmp$2.filter(f),
-    () => {
+  const iter$1 = iterator_filter(
+    tmp$2,
+    () => zero(g$1) === 0,
+    { next: $next, fold: $foldOf },
+    (chain) => {
+      chain.return();
+    },
+    (value) => {
       dDrop_drop(g$1);
     },
-    "before",
   );
   let result$1;
   try {

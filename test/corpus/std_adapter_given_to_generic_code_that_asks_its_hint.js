@@ -21,6 +21,7 @@ import {
   $stepBy,
   $taking,
   $tryOf,
+  iterator_filter,
   iterator_rev,
   iterator_stepBy,
   iterator_zip,
@@ -150,7 +151,7 @@ function main() {
   console.log(
     `(${value$12[0]}, ${value$12[1] == null ? "None" : `Some(${value$12[1]})`}) (${value$13[0]}, ${value$13[1] == null ? "None" : `Some(${value$13[1]})`})`,
   );
-  const kept = $filterEnds($iter(v), (x) => x > 0);
+  const kept = iterator_filter($iter(v), (x) => x > 0);
   $next(kept);
   const value$14 = hint(kept);
   const value$15 = outer($mapEnds($iter([1, 2]), (x) => (x * 2) >>> 0));

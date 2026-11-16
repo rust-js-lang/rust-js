@@ -10,7 +10,6 @@ import {
   $filterDropping,
   $flatMap,
   $iter,
-  $iterator,
   $lastDropping,
   $lazyRange,
   $lazyZip,
@@ -18,6 +17,7 @@ import {
   $rangeNext,
   $some,
   $someValue,
+  iterator_filter,
   iterator_zip,
 } from "@rust-js/std";
 
@@ -201,9 +201,12 @@ function main() {
   });
   run("a step panics", () => {
     const last = $lastDropping(
-      $filterDropping(
-        $iterator({ at: 0, n: 4 }, panicsIterator_next),
+      iterator_filter(
+        { at: 0, n: 4 },
         (d) => d[0] % 2 === 0,
+        { next: panicsIterator_next },
+        undefined,
+        undefined,
         dDrop_drop,
       ),
       dDrop_drop,

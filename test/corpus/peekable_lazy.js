@@ -14,6 +14,7 @@ import {
   $rangeNext,
   $roomForHint,
   $someValue,
+  iterator_filter,
   iterator_map,
   iterator_peekable,
   mapIterator___iteratorGetUnchecked,
@@ -25,7 +26,10 @@ export function entry() {
 
 function tokens(src) {
   const out = [];
-  const chars = iterator_peekable(src[Symbol.iterator]().filter((c) => !$isWhitespace(c)));
+  const chars = iterator_peekable(
+    iterator_filter(src[Symbol.iterator](), (c) => !$isWhitespace(c)),
+    { next: $next, fold: $foldOf },
+  );
   let c;
   while ((c = $next(chars)) != null) {
     if (/^[0-9]$/.test(c)) {

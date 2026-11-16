@@ -2,7 +2,6 @@
 
 import {
   $cleanup,
-  $closing,
   $collectVec,
   $foldOf,
   $held,
@@ -12,6 +11,7 @@ import {
   $next,
   $roomForHint,
   $unwindsOn,
+  iterator_filter,
   iterator_map,
   iterator_skip,
 } from "@rust-js/std";
@@ -226,9 +226,7 @@ function main() {
   );
   console.log(
     `${byFor(
-      $closing($iterator(f(), flakyIterator_next), (it) => {
-        flakyDrop_drop(it.of);
-      }).filter((x) => x % 2 === 0),
+      iterator_filter(f(), (x) => x % 2 === 0, { next: flakyIterator_next }, flakyDrop_drop),
       (filter) => {
         filter.return();
       },

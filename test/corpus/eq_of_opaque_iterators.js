@@ -12,6 +12,7 @@ import {
   $iterator,
   $lazyRange,
   $rangeNext,
+  iterator_filter,
 } from "@rust-js/std";
 
 export function entry() {
@@ -78,7 +79,7 @@ function odd(n) {
 }
 
 function filtered(to) {
-  return $lazyRange(1, to).filter(odd);
+  return iterator_filter({ start: 1, end: to }, odd, { next: $rangeNext });
 }
 
 function main() {

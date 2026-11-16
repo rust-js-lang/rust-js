@@ -210,7 +210,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/analysis/hint_asked.rs",
     find: "    if parts().any(|part| reversed_source(tcx, part.peel_refs()).is_some()) {\n",
     replace: "    if false {\n",
-    tests: ["test/diagnostics.test.ts", "-t", "size_hint of a held rev of a filter of a skip"],
+    tests: ["test/diagnostics.test.ts", "-t", "size_hint of a held rev of a filter_map of a skip"],
   },
   {
     name: "in-place-of-any-source-marked",

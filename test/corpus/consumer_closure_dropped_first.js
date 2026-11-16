@@ -17,6 +17,7 @@ import {
   $unwindsOn,
   iterator_chain,
   iterator_enumerate,
+  iterator_filter,
   iterator_fuse,
   iterator_map,
   iterator_peekable,
@@ -438,11 +439,16 @@ function main() {
   });
   case$("filter", (g) => {
     let g$13$live = true;
-    let filter;
+    let iter;
     try {
-      filter = $closing($iterator(It.new(3, "it"), itIterator_next), (it) => {
-        dDrop_drop(it.of._held);
-      }).filter((x) => x > 0);
+      iter = iterator_filter(
+        It.new(3, "it"),
+        (x) => x > 0,
+        { next: itIterator_next },
+        (it) => {
+          dDrop_drop(it._held);
+        },
+      );
       g$13$live = false;
     } catch (error) {
       $cleanup(() => {
@@ -453,9 +459,17 @@ function main() {
       throw error;
     }
     const f = (a, x) => (((a + x) >>> 0) + zero(g)) >>> 0;
-    return $consume(filter, "fold", 0, f, undefined, () => {
-      dDrop_drop(g);
-    });
+    try {
+      return $consume(iter, "fold", 0, f, undefined, () => {
+        dDrop_drop(g);
+      });
+    } catch (error) {
+      throw $unwindsOn(error);
+    } finally {
+      if ($live()) {
+        iter.return();
+      }
+    }
   });
   case$("zip", (g) => {
     let g$14$live = true;

@@ -4,7 +4,6 @@ import {
   $catchUnwind,
   $cleanup,
   $dropEach,
-  $filterEnds,
   $foldOf,
   $given,
   $held,
@@ -20,6 +19,7 @@ import {
   $slicing,
   $some,
   $someValue,
+  iterator_filter,
   iterator_map,
   iterator_skip,
   iterator_take,
@@ -70,7 +70,13 @@ function firstTwo(it) {
 }
 
 function rest(it) {
-  return hint($filterEnds(iterator_skip(Iterator.from(it), 1, $jsIterator), (x) => x % 2 === 0));
+  return hint(
+    iterator_filter(
+      iterator_skip(Iterator.from(it), 1, $jsIterator),
+      (x) => x % 2 === 0,
+      $jsIterator,
+    ),
+  );
 }
 
 function restCloned(it, IIterator, IClone) {

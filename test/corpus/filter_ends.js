@@ -6,6 +6,7 @@ import {
   $foldBack,
   $iter,
   $iterator,
+  $jsIterator,
   $mapEnds,
   $next,
   $nextBack,
@@ -15,6 +16,8 @@ import {
   $roomForHint,
   $some,
   $someValue,
+  filterDoubleEndedIterator_nextBack,
+  iterator_filter,
 } from "@rust-js/std";
 
 export function entry() {
@@ -43,8 +46,18 @@ function sumBack(it) {
 }
 
 function bothEnds(it) {
-  const kept = $filterEnds(it, (x) => x % 2 === 1);
-  return [$nextBack(kept), $next(kept), $nextBack(kept)];
+  const kept = iterator_filter(Iterator.from(it), (x) => x % 2 === 1, $jsIterator);
+  return [
+    filterDoubleEndedIterator_nextBack(kept, $jsIterator, {
+      next_back: $nextBack,
+      rfold: $foldBack,
+    }),
+    $next(kept),
+    filterDoubleEndedIterator_nextBack(kept, $jsIterator, {
+      next_back: $nextBack,
+      rfold: $foldBack,
+    }),
+  ];
 }
 
 function lastHalf(it) {

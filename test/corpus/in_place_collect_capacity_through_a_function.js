@@ -12,6 +12,7 @@ import {
   $nth,
   $withCapacity,
   iterator_enumerate,
+  iterator_filter,
   iterator_map,
 } from "@rust-js/std";
 
@@ -28,7 +29,7 @@ function doubled(it, IIterator) {
 }
 
 function evens(v) {
-  return v.values().filter((x) => x % 2 === 0);
+  return iterator_filter($iter(v), (x) => x % 2 === 0);
 }
 
 function second(first, it, IIterator) {

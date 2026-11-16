@@ -2,7 +2,6 @@
 
 import {
   $cycle,
-  $filterEnds,
   $foldOf,
   $iter,
   $iterator,
@@ -14,6 +13,7 @@ import {
   enumerateIterator___iteratorGetUnchecked,
   iterator_chain,
   iterator_enumerate,
+  iterator_filter,
   iterator_flatMap,
   iterator_map,
   iterator_rev,
@@ -109,13 +109,13 @@ function main() {
   const outer = iterator_skip($iter(v), 2);
   const value = $sizeHint(outer);
   console.log(`(${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`})`);
-  const local = $filterEnds($iter(v), (x) => x % 2 === 1);
+  const local = iterator_filter($iter(v), (x) => x % 2 === 1);
   const value$1 = hint(local);
   console.log(`(${value$1[0]}, ${value$1[1] == null ? "None" : `Some(${value$1[1]})`})`);
 }
 
 function boxed(v, even) {
-  return even ? $filterEnds($iter(v), (x) => x % 2 === 0) : iterator_skip($iter(v), 1);
+  return even ? iterator_filter($iter(v), (x) => x % 2 === 0) : iterator_skip($iter(v), 1);
 }
 
 function boxedHints() {

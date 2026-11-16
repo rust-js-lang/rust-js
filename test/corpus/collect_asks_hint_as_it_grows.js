@@ -4,9 +4,7 @@ import {
   $byteLen,
   $catchUnwind,
   $cleanup,
-  $closing,
   $collectDropping,
-  $filterDropping,
   $foldToArray,
   $folded,
   $iter,
@@ -19,6 +17,7 @@ import {
   $roomForHint,
   $some,
   iterator_chain,
+  iterator_filter,
   iterator_flatMap,
   iterator_fuse,
   iterator_map,
@@ -239,19 +238,12 @@ function main() {
     () =>
       $collectDropping(
         $roomForHint(
-          $closing(
-            $iterator(
-              own(20, half, (n) => n),
-              ownIterator_next,
-              true,
-              undefined,
-              undefined,
-              ownIterator_sizeHint,
-            ),
-            (it) => {
-              ownDrop_drop(it.of);
-            },
-          ).filter((n) => n % 3 !== 0),
+          iterator_filter(
+            own(20, half, (n) => n),
+            (n) => n % 3 !== 0,
+            { next: ownIterator_next, sizeHint: ownIterator_sizeHint },
+            ownDrop_drop,
+          ),
           4,
           false,
         ),
@@ -352,21 +344,15 @@ function main() {
     it.panicsAt = 7;
     const collect = $collectDropping(
       $roomForHint(
-        $filterDropping(
-          $closing(
-            $iterator(
-              it,
-              (iterator) => ownIterator_next(iterator, dDrop_drop),
-              true,
-              undefined,
-              undefined,
-              (iterator) => ownIterator_sizeHint(iterator, dDrop_drop),
-            ),
-            (it) => {
-              ownDrop_drop(it.of);
-            },
-          ),
+        iterator_filter(
+          it,
           (d) => d[0] % 2 === 1,
+          {
+            next: (iterator) => ownIterator_next(iterator, dDrop_drop),
+            sizeHint: (iterator) => ownIterator_sizeHint(iterator, dDrop_drop),
+          },
+          ownDrop_drop,
+          undefined,
           dDrop_drop,
         ),
         4,
@@ -427,7 +413,7 @@ function main() {
 function collected(it, dropI) {
   return $collectDropping(
     $roomForHint(
-      $closing(Iterator.from(it), dropI, false).filter((n) => n % 3 !== 0),
+      iterator_filter(Iterator.from(it), (n) => n % 3 !== 0, $jsIterator, dropI),
       4,
       false,
     ),

@@ -4,8 +4,6 @@ import {
   $BTreeMap,
   $BTreeSet,
   $capacity,
-  $clone,
-  $cloning,
   $cmp,
   $enumerate,
   $foldOf,
@@ -25,6 +23,8 @@ import {
   $stepByEnds,
   $taking,
   $treeRange,
+  filterClone_clone,
+  iterator_filter,
   iterator_fuse,
   iterator_skip,
 } from "@rust-js/std";
@@ -121,18 +121,24 @@ function caps(n) {
 // A chain of what's stepped as an array's `$iter`, whose hint is std's,
 // adapted after.
 function chains(n) {
+  const clone = { clone: (value) => value };
+  const iterClone = { clone: (value) => $iter(value.items.slice(value.at, value.end)) };
   const b = new $BTreeSet($range(0, n, 4));
   const a = $range(0, n, 4);
-  const makeFilter = (it, f) =>
-    $cloning(it.filter(f), () => makeFilter($iter(it.items.slice(it.at, it.end)), f));
-  const none = makeFilter($iter(a), (x) => x > 100);
+  const none = iterator_filter($iter(a), (x) => x > 100);
   const skipped = $grownVec(
-    $roomForHint($lazyChain($iter($sortedKeys(b, $cmp)), $clone(none)).drop(1), 4, false),
+    $roomForHint(
+      $lazyChain($iter($sortedKeys(b, $cmp)), filterClone_clone(none, iterClone, clone)).drop(1),
+      4,
+      false,
+    ),
     (grown) => Array.from(grown),
   );
   const enumerated = $grownVec(
     $roomForHint(
-      $enumerate($lazyChain($iter($sortedKeys(b, $cmp)), $clone(none))).drop(2),
+      $enumerate(
+        $lazyChain($iter($sortedKeys(b, $cmp)), filterClone_clone(none, iterClone, clone)),
+      ).drop(2),
       8,
       false,
     ),
@@ -140,14 +146,23 @@ function chains(n) {
   );
   const mapped = $grownVec(
     $roomForHint(
-      $lazyChain($iter($sortedKeys(b, $cmp)), $clone(none)).map((x) => (x + 1) >>> 0),
+      $lazyChain($iter($sortedKeys(b, $cmp)), filterClone_clone(none, iterClone, clone)).map(
+        (x) => (x + 1) >>> 0,
+      ),
       4,
       false,
     ),
     (grown) => Array.from(grown),
   );
   const stepped = $grownVec(
-    $roomForHint($stepBy($lazyChain($iter($sortedKeys(b, $cmp)), $clone(none)), 3), 4, false),
+    $roomForHint(
+      $stepBy(
+        $lazyChain($iter($sortedKeys(b, $cmp)), filterClone_clone(none, iterClone, clone)),
+        3,
+      ),
+      4,
+      false,
+    ),
     (grown) => Array.from(grown),
   );
   const taken = $grownVec(

@@ -4,7 +4,7 @@ import {
   $clone,
   $cloning,
   $collectVec,
-  $filterEnds,
+  $foldOf,
   $foldToArray,
   $given,
   $iter,
@@ -12,7 +12,10 @@ import {
   $rangeNext,
   $roomForHint,
   chainClone_clone,
+  filterClone,
+  filterClone_clone,
   iterator_chain,
+  iterator_filter,
   iterator_map,
   mapClone_clone,
 } from "@rust-js/std";
@@ -35,9 +38,7 @@ function scaled(it, k, IIterator, IClone) {
 // A `filter` and a `chain` a function gives as an `impl Iterator + Clone`,
 // cloned apart as what it hides (ADR 0525, #279).
 function evensOf(it, IIterator, IClone) {
-  const makeFilter = (it, f) =>
-    $cloning($given(it, IIterator).filter(f), () => makeFilter(IClone.clone(it), f));
-  return makeFilter(it, (x) => x % 2 === 0);
+  return iterator_filter(it, (x) => x % 2 === 0, IIterator);
 }
 
 function joined(a, b, IIterator, IClone) {
@@ -48,9 +49,10 @@ function joined(a, b, IIterator, IClone) {
 }
 
 function main() {
-  const clone$1 = { clone: (value) => value };
-  const clone = { clone: (value) => $clone(value) };
+  const clone$2 = { clone: (value) => value };
+  const clone$1 = { clone: (value) => $clone(value) };
   const rangeClone = { clone: (value) => ({ start: value.start, end: value.end }) };
+  const clone = { clone: (value) => $iter(value.items.slice(value.at, value.end)) };
   const calls = 0;
   const base = 10;
   let calls$1 = calls;
@@ -63,19 +65,18 @@ function main() {
       () => make(calls, base),
     );
   const it = iterator_map({ start: 1, end: 4 }, make(calls$1, base), { next: $rangeNext });
-  const copy = mapClone_clone(it, rangeClone, clone);
+  const copy = mapClone_clone(it, rangeClone, clone$1);
   const next = $next(copy);
   console.log(`${next == null ? "None" : `Some(${next})`}`);
   console.log(`[${$foldToArray($roomForHint(it, 4, true)).join(", ")}]`);
   console.log(`[${$foldToArray($roomForHint(copy, 4, true)).join(", ")}]`);
 
-  const makeFilter = (it, f) =>
-    $cloning(it.filter(f), () => makeFilter($iter(it.items.slice(it.at, it.end)), f));
   const evens = iterator_map(
-    makeFilter($iter([1, 2, 3, 4, 5, 6]), (x) => x % 2 === 0),
+    iterator_filter($iter([1, 2, 3, 4, 5, 6]), (x) => x % 2 === 0),
     (x) => (x * 3) | 0,
+    { next: $next, fold: $foldOf },
   );
-  const a = mapClone_clone(evens, clone, clone$1);
+  const a = mapClone_clone(evens, filterClone(clone, clone$2), clone$2);
   $next(a);
   console.log(`[${Array.from(a).join(", ")}] [${Array.from(evens).join(", ")}]`);
 
@@ -90,38 +91,35 @@ function main() {
       },
       () => make$1(seen),
     );
-  const makeFilter$1 = (it, f) =>
-    $cloning($filterEnds(it, f), () =>
-      makeFilter$1($iter(it.items.slice(it.at, it.end)), $clone(f)),
-    );
-  const odd = makeFilter$1(copied, make$1(seen$1));
-  const value = both(odd, { next: $next }, clone, "next");
+  const odd = iterator_filter(copied, make$1(seen$1));
+  const value = both(odd, { next: $next, fold: $foldOf }, filterClone(clone, clone$1), "next");
   console.log(`([${value[0].join(", ")}], [${value[1].join(", ")}])`);
 
   // A `copied()` of a map over a slice, cloned apart: its clone is what it
   // copies' (ADR 0480).
   const makeMap = (it, f) =>
     $cloning(it.map(f), () => makeMap($iter(it.items.slice(it.at, it.end)), f));
-  const makeFilter$2 = (it, f) => $cloning(it.filter(f), () => makeFilter$2($clone(it), f));
-  const doubled = makeFilter$2(
+  const doubled = iterator_filter(
     makeMap($iter([1, 2, 3, 4]), (x) => x),
     (x) => x % 2 === 0,
   );
-  const half = $clone(doubled);
+  const half = filterClone_clone(doubled, clone$1, clone$2);
   $next(half);
   console.log(`[${Array.from(half).join(", ")}] [${Array.from(doubled).join(", ")}]`);
 
   const tripled = scaled({ start: 1, end: 4 }, 3, { next: $rangeNext }, rangeClone);
-  const rest = mapClone_clone(tripled, rangeClone, clone$1);
+  const rest = mapClone_clone(tripled, rangeClone, clone$2);
   $next(rest);
   console.log(
     `[${$foldToArray($roomForHint(rest, 4, true)).join(", ")}] [${$foldToArray($roomForHint(tripled, 4, true)).join(", ")}]`,
   );
 
   const even = evensOf({ start: 1, end: 7 }, { next: $rangeNext }, rangeClone);
-  const later = $clone(even);
+  const later = filterClone_clone(even, rangeClone, clone$2);
   $next(later);
-  console.log(`[${Array.from(later).join(", ")}] [${Array.from(even).join(", ")}]`);
+  console.log(
+    `[${Array.from($roomForHint(later, 4, false)).join(", ")}] [${Array.from($roomForHint(even, 4, false)).join(", ")}]`,
+  );
 
   const bothRanges = joined(
     { start: 1, end: 3 },
@@ -138,7 +136,7 @@ function main() {
   const holder = {
     it: iterator_map({ start: 0, end: 3 }, (x) => (x + 100) | 0, { next: $rangeNext }),
   };
-  const again = { ...holder, it: mapClone_clone(holder.it, rangeClone, clone$1) };
+  const again = { ...holder, it: mapClone_clone(holder.it, rangeClone, clone$2) };
   $next(again.it);
   console.log(
     `[${$foldToArray($roomForHint(again.it, 4, true)).join(", ")}] [${$foldToArray($roomForHint(holder.it, 4, true)).join(", ")}]`,

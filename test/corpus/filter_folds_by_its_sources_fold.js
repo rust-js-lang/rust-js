@@ -3,14 +3,12 @@
 import {
   $advanceSlice,
   $cleanup,
-  $closing,
   $dropEach,
   $exactLen,
-  $filterDropping,
   $filterEnds,
   $foldBack,
+  $foldOf,
   $iter,
-  $iterator,
   $knowing,
   $live,
   $next,
@@ -21,14 +19,9 @@ import {
   $rangeNextBack,
   $rangeNthBack,
   $sizeHint,
-  $tryOf,
   $unwindsOn,
-  enumerateDoubleEndedIterator_nextBack,
-  enumerateDoubleEndedIterator_nthBack,
-  enumerateDoubleEndedIterator_rfold,
-  enumerateDoubleEndedIterator_tryRfold,
-  enumerateExactSizeIterator_len,
   iterator_enumerate,
+  iterator_filter,
   iterator_zip,
   zipDoubleEndedIterator_nextBack,
 } from "@rust-js/std";
@@ -122,65 +115,19 @@ function own() {
 }
 
 function main() {
-  const ownExactSizeIterator = { len: (iterator) => $exactLen(ownIterator_sizeHint(iterator)) };
-  let n = $filterEnds(
-    $knowing(
-      iterator_enumerate(
-        own(),
-        { next: ownIterator_next, sizeHint: ownIterator_sizeHint, fold: ownIterator_fold },
-        ownDrop_drop,
-        dDrop_drop,
-      ),
-      (iterator) =>
-        enumerateDoubleEndedIterator_nextBack(
-          iterator,
-          ownExactSizeIterator,
-          { next_back: ownDoubleEndedIterator_nextBack },
-          ownDrop_drop,
-          dDrop_drop,
-        ),
-      (iterator) =>
-        enumerateExactSizeIterator_len(iterator, ownExactSizeIterator, ownDrop_drop, dDrop_drop),
-      (iterator, init, f, unwind, ends) =>
-        enumerateDoubleEndedIterator_rfold(
-          iterator,
-          init,
-          f,
-          { next: ownIterator_next, sizeHint: ownIterator_sizeHint, fold: ownIterator_fold },
-          ownExactSizeIterator,
-          { next_back: ownDoubleEndedIterator_nextBack },
-          ownDrop_drop,
-          unwind,
-          ends,
-          dDrop_drop,
-        ),
-      (iterator, k) =>
-        enumerateDoubleEndedIterator_nthBack(
-          iterator,
-          k,
-          { next: ownIterator_next, sizeHint: ownIterator_sizeHint, fold: ownIterator_fold },
-          ownExactSizeIterator,
-          { next_back: ownDoubleEndedIterator_nextBack },
-          ownDrop_drop,
-          dDrop_drop,
-        ),
-      (iterator, init, f, broke, unwind, ends) =>
-        enumerateDoubleEndedIterator_tryRfold(
-          iterator,
-          init,
-          f,
-          { next: ownIterator_next, sizeHint: ownIterator_sizeHint, fold: ownIterator_fold },
-          ownExactSizeIterator,
-          { next_back: ownDoubleEndedIterator_nextBack },
-          $tryOf(broke),
-          ownDrop_drop,
-          unwind,
-          ends,
-          undefined,
-          dDrop_drop,
-        ),
+  let n = iterator_filter(
+    iterator_enumerate(
+      own(),
+      { next: ownIterator_next, sizeHint: ownIterator_sizeHint, fold: ownIterator_fold },
+      ownDrop_drop,
+      dDrop_drop,
     ),
     ([i]) => i % 2 === 0,
+    { next: $next, fold: $foldOf },
+    (enumerate) => {
+      enumerate.return();
+    },
+    undefined,
     (value) => {
       dDrop_drop(value[1]);
     },
@@ -190,30 +137,25 @@ function main() {
     return result;
   }, 0);
   console.log(`enumerate filter fold ${n}`);
-  n = $filterDropping(
-    $closing(
-      $iterator(
-        own(),
-        ownIterator_next,
-        false,
-        undefined,
-        undefined,
-        ownIterator_sizeHint,
-        ownIterator_fold,
-      ),
-      (it) => {
-        ownDrop_drop(it.of);
-      },
+  n = iterator_enumerate(
+    iterator_filter(
+      own(),
+      (d) => d[0] !== 3,
+      { next: ownIterator_next, sizeHint: ownIterator_sizeHint, fold: ownIterator_fold },
+      ownDrop_drop,
+      undefined,
+      dDrop_drop,
     ),
-    (d) => d[0] !== 3,
+    { next: $next, fold: $foldOf },
+    (filter) => {
+      filter.return();
+    },
     dDrop_drop,
-  )
-    .map((x, i) => [i, x])
-    .reduce((n, [i, d]) => {
-      const result = (n + (Math.imul(i, d[0]) >>> 0)) >>> 0;
-      dDrop_drop(d);
-      return result;
-    }, 0);
+  ).reduce((n, [i, d]) => {
+    const result = (n + (Math.imul(i, d[0]) >>> 0)) >>> 0;
+    dDrop_drop(d);
+    return result;
+  }, 0);
   console.log(`filter enumerate fold ${n}`);
   const ds = $range(1, 6).map((value) => [value]);
   n = $foldBack(

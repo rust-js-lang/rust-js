@@ -39,6 +39,7 @@ import {
   inspectDoubleEndedIterator_nextBack,
   inspectDoubleEndedIterator_rfold,
   inspectDoubleEndedIterator_tryRfold,
+  iterator_filter,
   iterator_flatMap,
   iterator_inspect,
   iterator_rev,
@@ -873,12 +874,16 @@ function main() {
   });
   run("filter of numbers", () => {
     const x = $foldDropping(
-      $lazyRange(80, 84).filter((n) => {
-        if (n === 82) {
-          throw new Error("82");
-        }
-        return true;
-      }),
+      iterator_filter(
+        { start: 80, end: 84 },
+        (n) => {
+          if (n === 82) {
+            throw new Error("82");
+          }
+          return true;
+        },
+        { next: $rangeNext },
+      ),
       [],
       (acc, n) => {
         try {

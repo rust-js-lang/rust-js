@@ -7,7 +7,6 @@ import {
   $dropItems,
   $held,
   $intoIter,
-  $iterator,
   $next,
   $rcDrop,
   $some,
@@ -15,14 +14,11 @@ import {
   $traitImpl,
   $unborrow,
   $unwrap,
+  iterator_filter,
 } from "@rust-js/std";
 
 export function entry() {
   main();
-}
-
-function loudDrop_drop(loud) {
-  console.log(`drop ${loud[0]}`);
 }
 
 function countIterator_next(count) {
@@ -227,9 +223,14 @@ function collected(it, BFromIteratorIItem, ITrustedLen, IInPlace, dropI) {
 
 function main() {
   collected(
-    $closing($iterator(count("cell"), countIterator_next), (it) => {
-      loudDrop_drop(it.of._loud);
-    }).filter(() => true),
+    iterator_filter(
+      count("cell"),
+      () => true,
+      { next: countIterator_next },
+      (count) => {
+        console.log(`drop ${count._loud[0]}`);
+      },
+    ),
     summedFromIteratorU32(0),
     false,
     undefined,
@@ -238,9 +239,14 @@ function main() {
     },
   );
   collected(
-    $closing($iterator(count("box"), countIterator_next), (it) => {
-      loudDrop_drop(it.of._loud);
-    }).filter(() => true),
+    iterator_filter(
+      count("box"),
+      () => true,
+      { next: countIterator_next },
+      (count) => {
+        console.log(`drop ${count._loud[0]}`);
+      },
+    ),
     summedFromIteratorU32(1),
     false,
     undefined,
@@ -249,9 +255,14 @@ function main() {
     },
   );
   collected(
-    $closing($iterator(count("option"), countIterator_next), (it) => {
-      loudDrop_drop(it.of._loud);
-    }).filter(() => true),
+    iterator_filter(
+      count("option"),
+      () => true,
+      { next: countIterator_next },
+      (count) => {
+        console.log(`drop ${count._loud[0]}`);
+      },
+    ),
     summedFromIteratorU32(2),
     false,
     undefined,
@@ -260,9 +271,14 @@ function main() {
     },
   );
   collected(
-    $closing($iterator(count("field"), countIterator_next), (it) => {
-      loudDrop_drop(it.of._loud);
-    }).filter(() => true),
+    iterator_filter(
+      count("field"),
+      () => true,
+      { next: countIterator_next },
+      (count) => {
+        console.log(`drop ${count._loud[0]}`);
+      },
+    ),
     summedFromIteratorU32(3),
     false,
     undefined,
@@ -271,9 +287,14 @@ function main() {
     },
   );
   collected(
-    $closing($iterator(count("array"), countIterator_next), (it) => {
-      loudDrop_drop(it.of._loud);
-    }).filter(() => true),
+    iterator_filter(
+      count("array"),
+      () => true,
+      { next: countIterator_next },
+      (count) => {
+        console.log(`drop ${count._loud[0]}`);
+      },
+    ),
     summedFromIteratorU32(4),
     false,
     undefined,
@@ -282,9 +303,14 @@ function main() {
     },
   );
   collected(
-    $closing($iterator(count("tuple"), countIterator_next), (it) => {
-      loudDrop_drop(it.of._loud);
-    }).filter(() => true),
+    iterator_filter(
+      count("tuple"),
+      () => true,
+      { next: countIterator_next },
+      (count) => {
+        console.log(`drop ${count._loud[0]}`);
+      },
+    ),
     summedFromIteratorU32(5),
     false,
     undefined,

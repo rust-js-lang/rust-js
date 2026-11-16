@@ -543,7 +543,6 @@ pub(crate) fn is_proved_link(tcx: TyCtxt<'_>, id: DefId) -> bool {
 const MEANING_ONLY: &[StdPath] = &[
     StdPath::IterRepeatN,
     StdPath::IterCycle,
-    StdPath::IterFilter,
     StdPath::IterFilterMap,
     StdPath::IterTakeWhile,
     StdPath::IterSkipWhile,

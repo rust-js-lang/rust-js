@@ -16,6 +16,7 @@ import {
   $roomForHint,
   $took,
   $unwindsOn,
+  iterator_filter,
   iterator_flatMap,
   iterator_fuse,
   iterator_inspect,
@@ -236,13 +237,20 @@ function main() {
       .reduce((a, b) => (a + b) >>> 0, 0)}`,
   );
   console.log(
-    `${iterator_peekable(
-      ["o", 0],
-      { next: ownIterator_next, fold: ownIterator_fold, nth: ownIterator_nth },
-      ownDrop_drop,
-    )
-      .filter((x) => x % 2 === 1)
-      .reduce((n) => n + 1, 0)}`,
+    `${$count(
+      iterator_filter(
+        iterator_peekable(
+          ["o", 0],
+          { next: ownIterator_next, fold: ownIterator_fold, nth: ownIterator_nth },
+          ownDrop_drop,
+        ),
+        (x) => x % 2 === 1,
+        { next: $next, fold: $foldOf, nth: $nth },
+        (peekable) => {
+          peekable.return();
+        },
+      ),
+    )}`,
   );
   const iter$1 = iterator_map(
     iterator_peekable(["p", 0], { next: plainIterator_next }, plainDrop_drop),

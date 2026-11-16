@@ -22,10 +22,14 @@ import {
   $unwindsOn,
   chainDoubleEndedIterator_nthBack,
   chainDoubleEndedIterator_rfold,
+  filterDoubleEndedIterator_nextBack,
+  filterDoubleEndedIterator_rfold,
+  filterDoubleEndedIterator_tryRfold,
   inspectDoubleEndedIterator_nextBack,
   inspectDoubleEndedIterator_rfold,
   inspectDoubleEndedIterator_tryRfold,
   iterator_chain,
+  iterator_filter,
   iterator_inspect,
   iterator_map,
   mapDoubleEndedIterator_nextBack,
@@ -140,9 +144,12 @@ function main() {
     .reduce((a, b) => (a + b) >>> 0, 0);
   console.log(`sum ${n}`);
 
-  const value$3 = $filterEnds(
-    $closing($iter(ds(1)), $dropEach(dDrop_drop)),
+  const value$3 = iterator_filter(
+    $iter(ds(1)),
     (d) => d[0] % 2 === 1,
+    { next: $next, advanceBy: $advanceSlice },
+    $dropEach(dDrop_drop),
+    undefined,
     dDrop_drop,
   );
   let tmp$3;
@@ -157,7 +164,7 @@ function main() {
   c = iterator_chain(
     value$3,
     tmp$3,
-    { next: $next },
+    { next: $next, fold: $foldOf },
     {
       intoIter: (items) => $iter(items),
       IntoIterIterator: () => ({ next: $next, advanceBy: $advanceSlice }),
@@ -179,8 +186,46 @@ function main() {
       dDrop_drop(d);
       return result;
     },
-    { next: $next },
-    { next_back: $nextBack },
+    { next: $next, fold: $foldOf },
+    {
+      next_back: (iterator) =>
+        filterDoubleEndedIterator_nextBack(
+          iterator,
+          { next: $next, advanceBy: $advanceSlice },
+          { next_back: $nextBack },
+          $dropEach(dDrop_drop),
+          undefined,
+          dDrop_drop,
+        ),
+      rfold: (iterator, init, f, unwind, ends) =>
+        filterDoubleEndedIterator_rfold(
+          iterator,
+          init,
+          f,
+          { next: $next, advanceBy: $advanceSlice },
+          { next_back: $nextBack },
+          $dropEach(dDrop_drop),
+          undefined,
+          unwind,
+          ends,
+          dDrop_drop,
+        ),
+      tryRfold: (iterator, init, f, broke, unwind, ends) =>
+        filterDoubleEndedIterator_tryRfold(
+          iterator,
+          init,
+          f,
+          { next: $next, advanceBy: $advanceSlice },
+          { next_back: $nextBack },
+          $tryOf(broke),
+          $dropEach(dDrop_drop),
+          undefined,
+          unwind,
+          ends,
+          undefined,
+          dDrop_drop,
+        ),
+    },
     { next: $next, advanceBy: $advanceSlice },
     { next_back: $nextBack },
     (filter) => {

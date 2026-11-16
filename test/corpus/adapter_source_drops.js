@@ -2,15 +2,14 @@
 
 import {
   $cleanup,
-  $closing,
   $collectDropping,
   $foldOf,
-  $iterator,
   $live,
   $next,
   $roomForHint,
   $unwindsOn,
   iterator_chain,
+  iterator_filter,
   iterator_inspect,
   iterator_map,
 } from "@rust-js/std";
@@ -51,9 +50,16 @@ function main() {
   const total = result;
   console.log(`total ${total}`);
   const all = $collectDropping(
-    $closing($iterator({ n: 2, name: "collect" }, counterIterator_next), (it) => {
-      counterDrop_drop(it.of);
-    }).filter((x) => x % 2 === 0),
+    $roomForHint(
+      iterator_filter(
+        { n: 2, name: "collect" },
+        (x) => x % 2 === 0,
+        { next: counterIterator_next },
+        counterDrop_drop,
+      ),
+      4,
+      false,
+    ),
   );
   console.log(`all [${all.join(", ")}]`);
   const iter$2 = iterator_map(

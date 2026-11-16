@@ -1265,6 +1265,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let inners_own = self.recognition().reaches_its_own(iter_ty, OwnStep::Count, Reach::Sure);
         // And a filter's, std's `Filter::count`, which asks its source's
         // hint first, where that may reach what the program sees (#733).
+        let filtered = crate::lower::recognition::filtered_source(self.tcx, iter_ty);
         let filter_asks = crate::lower::recognition::filtered_source(self.tcx, iter_ty)
             .is_some_and(|source| !self.compiled_struct(iter_ty, &it) && self.hint_reaches_own(source));
         // And a `Vec`'s, an array's or a `VecDeque`'s `IntoIter`'s, `len()`,
@@ -1278,7 +1279,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             || filter_asks
             || slice_count
             || source_own
-            || self.compiled_step(iter_ty, iterator, "count") && (!in_place_flatten || inners_own);
+            // Std's compiled one, but of a filter made in place, a JS iterator
+            // of a type std's is held as, `v.iter().filter(f)` counted where
+            // it's made, `v.filter(f).length`, as it was before its flip
+            // (#1681's change 2).
+            || self.compiled_step(iter_ty, iterator, "count")
+                && (filtered.is_none() || self.compiled_struct(iter_ty, &it))
+                && (!in_place_flatten || inners_own);
         if own_count {
             let mut given = vec![it];
             if let Some(item) = item

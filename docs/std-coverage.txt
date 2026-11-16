@@ -956,15 +956,15 @@
 + Map::size_hint	safe
 + Map::try_fold	safe
 + Map::try_rfold	safe
-# Filter 4 of 8; bodies: 8 safe, 0 spec, 0 opaque, 0 memory, 0 none
+# Filter 8 of 8; bodies: 8 safe, 0 spec, 0 opaque, 0 memory, 0 none
 + Filter::count	safe
 + Filter::fold	safe
 + Filter::next	safe
-- Filter::next_back	safe
-- Filter::rfold	safe
++ Filter::next_back	safe
++ Filter::rfold	safe
 + Filter::size_hint	safe
-- Filter::try_fold	safe
-- Filter::try_rfold	safe
++ Filter::try_fold	safe
++ Filter::try_rfold	safe
 # FilterMap 3 of 7; bodies: 7 safe, 0 spec, 0 opaque, 0 memory, 0 none
 + FilterMap::fold	safe
 + FilterMap::next	safe

@@ -20,6 +20,7 @@ import {
   $traitImpl,
   $treeFromSorted,
   $vecCollectWay,
+  iterator_filter,
   iterator_map,
 } from "@rust-js/std";
 
@@ -56,11 +57,7 @@ function items(it, IVecCollect, IItemSize) {
 /** Of a filter's, which passes on its source's hint's upper bound. */
 function kept(it, keep, TSize) {
   return $collectDropping(
-    $roomForHint(
-      Iterator.from(it).filter((item) => keep(item)),
-      TSize,
-      false,
-    ),
+    $roomForHint(iterator_filter(Iterator.from(it), keep, $jsIterator), TSize, false),
   );
 }
 

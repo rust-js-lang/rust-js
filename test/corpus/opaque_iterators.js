@@ -3,11 +3,12 @@
 import {
   $iter,
   $last,
-  $lazyRange,
   $lent,
   $max,
   $next,
   $position,
+  $rangeNext,
+  iterator_filter,
   iterator_map,
 } from "@rust-js/std";
 
@@ -20,7 +21,7 @@ function tens(v) {
 }
 
 function evens(n) {
-  return $lazyRange(0, n).filter((x) => x % 2 === 0);
+  return iterator_filter({ start: 0, end: n }, (x) => x % 2 === 0, { next: $rangeNext });
 }
 
 function first(it) {

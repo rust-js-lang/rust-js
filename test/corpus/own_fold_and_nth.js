@@ -8,6 +8,7 @@ import {
   $extend,
   $extendMap,
   $extendText,
+  $foldOf,
   $folded,
   $fromDigit,
   $heapExtend,
@@ -29,6 +30,7 @@ import {
   $unzip,
   iterator_chain,
   iterator_enumerate,
+  iterator_filter,
   iterator_flatMap,
   iterator_map,
   iterator_skip,
@@ -124,19 +126,15 @@ function main() {
     }).reduce((a, x) => (a + x) >>> 0, 0)}`,
   );
   console.log(
-    `filter map sum ${$iterator(
-      up(),
-      upIterator_next,
-      false,
-      undefined,
-      undefined,
-      undefined,
-      upIterator_fold,
-      upIterator_nth,
-    )
-      .filter((x) => x % 2 === 1)
-      .map((x) => (x + 1) >>> 0)
-      .reduce((a, b) => (a + b) >>> 0, 0)}`,
+    `filter map sum ${iterator_map(
+      iterator_filter(up(), (x) => x % 2 === 1, {
+        next: upIterator_next,
+        fold: upIterator_fold,
+        nth: upIterator_nth,
+      }),
+      (x) => (x + 1) >>> 0,
+      { next: $next, fold: $foldOf },
+    ).reduce((a, b) => (a + b) >>> 0, 0)}`,
   );
   console.log(
     `enumerate ${iterator_enumerate(up(), {

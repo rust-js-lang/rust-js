@@ -5,7 +5,7 @@ import {
   $cleanup,
   $closing,
   $collectDropping,
-  $filterDropping,
+  $count,
   $findDropping,
   $iterator,
   $lastDropping,
@@ -16,6 +16,7 @@ import {
   $tryFoldOk,
   $tryFoldSome,
   $unwindsOn,
+  iterator_filter,
   iterator_map,
   iterator_take,
 } from "@rust-js/std";
@@ -481,21 +482,30 @@ function more() {
     });
   });
   run("count of filter", () => {
-    console.log(
-      `${$filterDropping(
-        $closing($iterator(it(170), itIterator_next), (it) => {
-          console.log("drop it");
-          for (const item of it.of.items) {
-            dDrop_drop(item);
-          }
-        }),
-        (d) => d[0] > 170,
-        dDrop_drop,
-      ).reduce((n, item) => {
-        dDrop_drop(item);
-        return n + 1;
-      }, 0)}`,
+    const iter = iterator_filter(
+      it(170),
+      (d) => d[0] > 170,
+      { next: itIterator_next },
+      (it) => {
+        console.log("drop it");
+        for (const item of it.items) {
+          dDrop_drop(item);
+        }
+      },
+      undefined,
+      dDrop_drop,
     );
+    let result;
+    try {
+      result = $count(iter, dDrop_drop);
+    } catch (error) {
+      throw $unwindsOn(error);
+    } finally {
+      if ($live()) {
+        iter.return();
+      }
+    }
+    console.log(`${result}`);
   });
 }
 //# sourceMappingURL=case.js.map

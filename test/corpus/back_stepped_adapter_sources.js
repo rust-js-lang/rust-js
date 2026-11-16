@@ -24,10 +24,14 @@ import {
   $taking,
   $toUppercase,
   $tryOf,
+  filterDoubleEndedIterator_nextBack,
+  filterDoubleEndedIterator_rfold,
+  filterDoubleEndedIterator_tryRfold,
   fuseDoubleEndedIterator_nextBack,
   fuseDoubleEndedIterator_nthBack,
   fuseDoubleEndedIterator_tryRfold,
   fuseExactSizeIterator_len,
+  iterator_filter,
   iterator_fuse,
   iterator_map,
   mapDoubleEndedIterator_nextBack,
@@ -41,14 +45,7 @@ export function entry() {
 }
 
 function main() {
-  const v = [1, 2, 3, 4, 5, 6];
-  const doubled = iterator_map($iter(v), (x) => (x * 2) | 0);
-  const odd = iterator_map(doubled, (x) => (x + 1) | 0, {
-    next: $next,
-    fold: $foldOf,
-    getUnchecked: mapIterator___iteratorGetUnchecked,
-  });
-  let last = mapDoubleEndedIterator_nextBack(odd, {
+  const mapDoubleEndedIterator = {
     next_back: mapDoubleEndedIterator_nextBack,
     rfold: (iterator, init, f, unwind, ends) =>
       mapDoubleEndedIterator_rfold(
@@ -77,15 +74,59 @@ function main() {
         unwind,
         ends,
       ),
+  };
+  const v = [1, 2, 3, 4, 5, 6];
+  const doubled = iterator_map($iter(v), (x) => (x * 2) | 0);
+  const odd = iterator_map(doubled, (x) => (x + 1) | 0, {
+    next: $next,
+    fold: $foldOf,
+    getUnchecked: mapIterator___iteratorGetUnchecked,
   });
+  let last = mapDoubleEndedIterator_nextBack(odd, mapDoubleEndedIterator);
   let first = $next(odd);
   console.log(
     `${last == null ? "None" : `Some(${last})`} ${first == null ? "None" : `Some(${first})`}`,
   );
-  const tripled = $mapEnds($iter(v), (x) => (x * 3) | 0);
-  const even = $filterEnds(tripled, (x) => x % 2 === 0);
-  const halved = iterator_map(even, (x) => (x / 2) | 0);
-  last = mapDoubleEndedIterator_nextBack(halved);
+  const tripled = iterator_map($iter(v), (x) => (x * 3) | 0);
+  const even = iterator_filter(tripled, (x) => x % 2 === 0, {
+    next: $next,
+    fold: $foldOf,
+    getUnchecked: mapIterator___iteratorGetUnchecked,
+  });
+  const halved = iterator_map(even, (x) => (x / 2) | 0, { next: $next, fold: $foldOf });
+  last = mapDoubleEndedIterator_nextBack(halved, {
+    next_back: (iterator) =>
+      filterDoubleEndedIterator_nextBack(
+        iterator,
+        { next: $next, fold: $foldOf, getUnchecked: mapIterator___iteratorGetUnchecked },
+        mapDoubleEndedIterator,
+      ),
+    rfold: (iterator, init, f, unwind, ends) =>
+      filterDoubleEndedIterator_rfold(
+        iterator,
+        init,
+        f,
+        { next: $next, fold: $foldOf, getUnchecked: mapIterator___iteratorGetUnchecked },
+        mapDoubleEndedIterator,
+        undefined,
+        undefined,
+        unwind,
+        ends,
+      ),
+    tryRfold: (iterator, init, f, broke, unwind, ends) =>
+      filterDoubleEndedIterator_tryRfold(
+        iterator,
+        init,
+        f,
+        { next: $next, fold: $foldOf, getUnchecked: mapIterator___iteratorGetUnchecked },
+        mapDoubleEndedIterator,
+        $tryOf(broke),
+        undefined,
+        undefined,
+        unwind,
+        ends,
+      ),
+  });
   first = $next(halved);
   console.log(
     `${last == null ? "None" : `Some(${last})`} ${first == null ? "None" : `Some(${first})`}`,
@@ -185,13 +226,26 @@ function main() {
   console.log(
     `${short == null ? "None" : `Some(${$debugStr(short)})`} ${lengths == null ? "None" : `Some(${lengths})`}`,
   );
-  const sixes = $filterEnds(
-    $mapEnds($iter(v), (x) => (x * 2) | 0),
+  const sixes = iterator_filter(
+    iterator_map($iter(v), (x) => (x * 2) | 0),
     (x) => x % 3 === 0,
+    { next: $next, fold: $foldOf, getUnchecked: mapIterator___iteratorGetUnchecked },
   );
-  const twelve = $nextBack(sixes);
-  const six = $nextBack(sixes);
-  const none = $nextBack(sixes);
+  const twelve = filterDoubleEndedIterator_nextBack(
+    sixes,
+    { next: $next, fold: $foldOf, getUnchecked: mapIterator___iteratorGetUnchecked },
+    mapDoubleEndedIterator,
+  );
+  const six = filterDoubleEndedIterator_nextBack(
+    sixes,
+    { next: $next, fold: $foldOf, getUnchecked: mapIterator___iteratorGetUnchecked },
+    mapDoubleEndedIterator,
+  );
+  const none = filterDoubleEndedIterator_nextBack(
+    sixes,
+    { next: $next, fold: $foldOf, getUnchecked: mapIterator___iteratorGetUnchecked },
+    mapDoubleEndedIterator,
+  );
   console.log(
     `${twelve == null ? "None" : `Some(${twelve})`} ${six == null ? "None" : `Some(${six})`} ${none == null ? "None" : `Some(${none})`}`,
   );

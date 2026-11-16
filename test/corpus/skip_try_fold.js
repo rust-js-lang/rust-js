@@ -2,7 +2,6 @@
 
 import {
   $cleanup,
-  $closing,
   $cmp,
   $foldOf,
   $held,
@@ -24,6 +23,7 @@ import {
   $tryFoldSome,
   $unwindsOn,
   iterator_chain,
+  iterator_filter,
   iterator_flatMap,
   iterator_map,
   iterator_skip,
@@ -82,9 +82,14 @@ function anyAbove(it, n, dropI) {
 // hand-written form, and steps what it's given by its `try_fold` too.
 function anyKeptAbove(it, n, dropI) {
   const map = $held(
-    $closing(Iterator.from(it), dropI, false)
-      .filter((x) => x !== 0)
-      .map((x) => (x + 1) | 0),
+    iterator_map(
+      iterator_filter(Iterator.from(it), (x) => x !== 0, $jsIterator, dropI),
+      (x) => (x + 1) | 0,
+      { next: $next, fold: $foldOf },
+      (filter) => {
+        filter.return();
+      },
+    ),
   );
   let result;
   try {
@@ -185,14 +190,18 @@ function main() {
     ).some((x) => x > 10)}`,
   );
   const value$4 = $lent(
-    iterator_skip(c(), 2, { next: countIterator_next, nth: countIterator_nth }).filter(
+    iterator_filter(
+      iterator_skip(c(), 2, { next: countIterator_next, nth: countIterator_nth }),
       (x) => x % 2 === 0,
+      { next: $next, fold: $foldOf, nth: $nth },
     ),
   ).find((x) => x > 7);
   console.log(`${value$4 == null ? "None" : `Some(${value$4})`}`);
   const value$5 = $next(
-    iterator_skip(c(), 2, { next: countIterator_next, nth: countIterator_nth }).filter(
+    iterator_filter(
+      iterator_skip(c(), 2, { next: countIterator_next, nth: countIterator_nth }),
       (x) => x % 2 === 0,
+      { next: $next, fold: $foldOf, nth: $nth },
     ),
   );
   console.log(`${value$5 == null ? "None" : `Some(${value$5})`}`);

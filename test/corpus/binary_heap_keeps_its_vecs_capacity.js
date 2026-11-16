@@ -2,6 +2,7 @@
 
 import {
   $capacity,
+  $foldOf,
   $grew,
   $grownBy,
   $grownVec,
@@ -18,6 +19,7 @@ import {
   $roomForHint,
   $withCapacity,
   iterator_chain,
+  iterator_filter,
   iterator_flatMap,
 } from "@rust-js/std";
 
@@ -61,9 +63,9 @@ function main() {
       $roomForHint(
         iterator_chain(
           { start: 0, end: 10 },
-          $lazyRange(0, 30).filter((x) => x % 4 === 0),
+          iterator_filter({ start: 0, end: 30 }, (x) => x % 4 === 0, { next: $rangeNext }),
           { next: $rangeNext },
-          { intoIter: (items) => items, IntoIterIterator: () => ({ next: $next }) },
+          { intoIter: (items) => items, IntoIterIterator: () => ({ next: $next, fold: $foldOf }) },
         ),
         4,
         false,
@@ -115,7 +117,7 @@ function main() {
     h,
     $grownBy(
       h,
-      $lazyRange(0, 40).filter((x) => x % 7 === 0),
+      iterator_filter({ start: 0, end: 40 }, (x) => x % 7 === 0, { next: $rangeNext }),
       4,
     ),
     $partiallyOrdered,

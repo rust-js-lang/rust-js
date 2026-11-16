@@ -12,6 +12,7 @@ import {
   $foldDropping,
   $held,
   $iter,
+  $jsIterator,
   $lazySkipWhile,
   $lazyTakeWhile,
   $next,
@@ -19,6 +20,7 @@ import {
   $rangeNext,
   $slicing,
   $tryFoldOk,
+  iterator_filter,
   iterator_zip,
 } from "@rust-js/std";
 
@@ -62,7 +64,14 @@ function tryAdd(acc, d) {
 }
 
 function sumOdd(items, dropI) {
-  const iter = $filterDropping($closing(Iterator.from(items), dropI, false), odd, dDrop_drop);
+  const iter = iterator_filter(
+    Iterator.from(items),
+    odd,
+    $jsIterator,
+    dropI,
+    undefined,
+    dDrop_drop,
+  );
   let result$1;
   try {
     result$1 = $foldDropping(iter, [0], add, accDrop_drop);

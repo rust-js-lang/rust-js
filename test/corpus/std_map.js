@@ -16,8 +16,11 @@ import {
   $roomForHint,
   $sizeHint,
   $tryOf,
+  filterClone_clone,
+  iterator_filter,
   iterator_map,
   iterator_rev,
+  mapClone,
   mapClone_clone,
   mapDebug_fmt,
   mapDoubleEndedIterator_nextBack,
@@ -154,14 +157,12 @@ function main() {
   );
 
   // Made in place: part of a filter cloned apart, and cycled.
-  const makeMap = (it, f) =>
-    $cloning(it.map(f), () => makeMap($iter(it.items.slice(it.at, it.end)), f));
-  const makeFilter = (it, f) => $cloning(it.filter(f), () => makeFilter($clone(it), f));
-  const evens = makeFilter(
-    makeMap($iter([1, 2, 3, 4, 5, 6]), (x) => (x * 3) | 0),
+  const evens = iterator_filter(
+    iterator_map($iter([1, 2, 3, 4, 5, 6]), (x) => (x * 3) | 0),
     (x) => x % 2 === 0,
+    { next: $next, fold: $foldOf, getUnchecked: mapIterator___iteratorGetUnchecked },
   );
-  const first = $clone(evens);
+  const first = filterClone_clone(evens, mapClone(iterClone, clone), clone);
   $next(first);
   console.log(`[${Array.from(first).join(", ")}] [${Array.from(evens).join(", ")}]`);
   console.log(

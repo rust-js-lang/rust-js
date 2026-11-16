@@ -1250,7 +1250,7 @@ pub fn evens(limit: u32) -> impl Iterator<Item = u32> {
 ```
 
 ```js
-import { $fromFn, $lazyRange, $roomForHint, iterator_take } from "@rust-js/std";
+import { $fromFn, $rangeNext, $roomForHint, iterator_filter, iterator_take } from "@rust-js/std";
 
 function fibonacciIterator_next(fibonacci) {
   const value = fibonacci.current;
@@ -1286,7 +1286,7 @@ export function countdown(from) {
 }
 
 export function evens(limit) {
-  return $lazyRange(0, limit).filter((n) => n % 2 === 0);
+  return iterator_filter({ start: 0, end: limit }, (n) => n % 2 === 0, { next: $rangeNext });
 }
 ```
 

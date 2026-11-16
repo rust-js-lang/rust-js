@@ -3,7 +3,6 @@
 import {
   $catchUnwind,
   $cleanup,
-  $closing,
   $collectDropping,
   $collectsInPlace,
   $count,
@@ -11,12 +10,12 @@ import {
   $dropEach,
   $dropItems,
   $exactLen,
-  $filterEnds,
   $foldOf,
   $foldToArray,
   $held,
   $iter,
   $iterator,
+  $jsIterator,
   $live,
   $next,
   $reserveHint,
@@ -25,6 +24,7 @@ import {
   $tryFoldOk,
   $unwindsOn,
   iterator_enumerate,
+  iterator_filter,
   iterator_map,
 } from "@rust-js/std";
 
@@ -88,12 +88,26 @@ function every() {
 function oddOnes(src, IInPlace) {
   return $collectsInPlace(IInPlace, 4, 4)
     ? $foldToArray(
-        $filterEnds(src, (x) => x[0] % 2 === 1, dDrop_drop),
+        iterator_filter(
+          Iterator.from(src),
+          (x) => x[0] % 2 === 1,
+          $jsIterator,
+          undefined,
+          undefined,
+          dDrop_drop,
+        ),
         dDrop_drop,
       )
     : $collectDropping(
         $roomForHint(
-          $filterEnds(src, (x) => x[0] % 2 === 1, dDrop_drop),
+          iterator_filter(
+            Iterator.from(src),
+            (x) => x[0] % 2 === 1,
+            $jsIterator,
+            undefined,
+            undefined,
+            dDrop_drop,
+          ),
           4,
           false,
           false,
@@ -106,7 +120,14 @@ function oddOnes(src, IInPlace) {
 
 function oddCount(src) {
   return $count(
-    $filterEnds(src, (x) => x[0] % 2 === 1, dDrop_drop),
+    iterator_filter(
+      Iterator.from(src),
+      (x) => x[0] % 2 === 1,
+      $jsIterator,
+      undefined,
+      undefined,
+      dDrop_drop,
+    ),
     dDrop_drop,
   );
 }
@@ -114,12 +135,15 @@ function oddCount(src) {
 function folded(src, dropI) {
   let seen = 0;
   const filter = $held(
-    $filterEnds(
-      $closing(src, dropI, false),
+    iterator_filter(
+      Iterator.from(src),
       (x) => {
         point();
         return x[0] % 2 === 1;
       },
+      $jsIterator,
+      dropI,
+      undefined,
       dDrop_drop,
     ),
   );

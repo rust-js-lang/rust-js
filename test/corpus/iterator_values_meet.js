@@ -4,12 +4,9 @@ import {
   $assign,
   $cellOf,
   $exchange,
-  $filterEnds,
   $foldToArray,
-  $iterator,
   $knowing,
   $next,
-  $nextBack,
   $rangeLen,
   $rangeNext,
   $rangeNextBack,
@@ -19,7 +16,9 @@ import {
   $sizeHint,
   $take,
   $tryOf,
+  filterDoubleEndedIterator_nextBack,
   iterator_chain,
+  iterator_filter,
   iterator_map,
   iterator_rev,
   iterator_skip,
@@ -225,19 +224,19 @@ function main() {
   );
 
   // Other adapters: a filter, a chain, a rev, a take and a skip.
-  const filtered = $filterEnds(
-    $iterator({ start: 0, end: 6 }, $rangeNext, false, $rangeNextBack),
-    odd,
-  );
+  const filtered = iterator_filter({ start: 0, end: 6 }, odd, { next: $rangeNext });
   const value$12 = $next(filtered);
   console.log(`${value$12 == null ? "None" : `Some(${value$12})`}`);
-  old = replaced(
+  old = replaced(filtered, iterator_filter({ start: 6, end: 10 }, odd, { next: $rangeNext }));
+  const value$13 = filterDoubleEndedIterator_nextBack(
     filtered,
-    $filterEnds($iterator({ start: 6, end: 10 }, $rangeNext, false, $rangeNextBack), odd),
+    { next: $rangeNext },
+    { next_back: $rangeNextBack, nthBack: $rangeNthBack },
   );
-  const value$13 = $nextBack(filtered);
-  console.log(`${value$13 == null ? "None" : `Some(${value$13})`} [${Array.from(old).join(", ")}]`);
-  console.log(`[${Array.from(filtered).join(", ")}]`);
+  console.log(
+    `${value$13 == null ? "None" : `Some(${value$13})`} [${Array.from($roomForHint(old, 4, false)).join(", ")}]`,
+  );
+  console.log(`[${Array.from($roomForHint(filtered, 4, false)).join(", ")}]`);
 
   const chained = iterator_chain(
     { start: 0, end: 2 },

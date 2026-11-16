@@ -8,7 +8,6 @@ import {
   $collectsInPlace,
   $count,
   $dropEach,
-  $filterEnds,
   $foldOf,
   $intoIter,
   $iter,
@@ -28,6 +27,7 @@ import {
   $unwindsOn,
   $vecCollectWay,
   iterator_chain,
+  iterator_filter,
   iterator_map,
   iterator_rev,
   iterator_zip,
@@ -101,14 +101,17 @@ function mapped(it, JTrustedLen, JInPlace) {
  */
 function kept(it, JInPlace, dropJ) {
   const v = built(
-    $filterEnds(
-      $closing(it, dropJ, false),
+    iterator_filter(
+      Iterator.from(it),
       (l) => {
         if (l[0] === 3) {
           throw new Error(`at ${l[0]}`);
         }
         return true;
       },
+      $jsIterator,
+      dropJ,
+      undefined,
       loudDrop_drop,
     ),
     {
@@ -192,7 +195,7 @@ function main() {
   );
   shown("by next", v);
   v = all(
-    $lazyRange(0, 9).filter((x) => x % 2 === 0),
+    iterator_filter({ start: 0, end: 9 }, (x) => x % 2 === 0, { next: $rangeNext }),
     "next",
     4,
   );
@@ -426,7 +429,7 @@ function main() {
   shown(
     "mapped, by next",
     mapped(
-      $lazyRange(0, 5).filter((x) => x % 2 === 0),
+      iterator_filter({ start: 0, end: 5 }, (x) => x % 2 === 0, { next: $rangeNext }),
       false,
     ),
   );

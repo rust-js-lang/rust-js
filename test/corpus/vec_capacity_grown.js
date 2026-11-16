@@ -31,6 +31,7 @@ import {
   $unwrap,
   $unwrapOk,
   $withCapacity,
+  iterator_filter,
 } from "@rust-js/std";
 
 export function entry() {
@@ -226,7 +227,7 @@ function main() {
   const b = $withCapacity(3);
   fill(
     $cellOf(b),
-    $lazyRange(0, 5).filter(() => true),
+    iterator_filter({ start: 0, end: 5 }, () => true, { next: $rangeNext }),
     vecExtend,
   );
   $print(`${$capacity(b, 4)} `);

@@ -10,7 +10,6 @@ import {
   $collectsInPlace,
   $dropEach,
   $dropItems,
-  $filterDropping,
   $foldOf,
   $foldToArray,
   $iter,
@@ -23,6 +22,7 @@ import {
   $slicing,
   iterator_chain,
   iterator_enumerate,
+  iterator_filter,
   iterator_fuse,
   iterator_map,
   iterator_peekable,
@@ -255,8 +255,8 @@ function counted(src, IInPlace, dropI) {
 
 function kept(src, TSize, TAlign, IInPlace, dropT, dropI) {
   CALLS = 0;
-  const iter = $filterDropping(
-    $closing(Iterator.from(src), dropI, false),
+  const iter = iterator_filter(
+    Iterator.from(src),
     () => {
       const previous = CALLS;
       CALLS = (previous + 1) >>> 0;
@@ -265,6 +265,9 @@ function kept(src, TSize, TAlign, IInPlace, dropT, dropI) {
       }
       return true;
     },
+    $jsIterator,
+    dropI,
+    undefined,
     dropT,
   );
   let result$1;
@@ -349,9 +352,12 @@ function tried(src, IInPlace, dropI) {
 
 function discarded(src, IInPlace, dropI) {
   BOOM = 3;
-  const iter = $filterDropping(
-    $closing(Iterator.from(src), dropI, false),
+  const iter = iterator_filter(
+    Iterator.from(src),
     (d) => d[0] !== 3,
+    $jsIterator,
+    dropI,
+    undefined,
     dDrop_drop,
   );
   let result;

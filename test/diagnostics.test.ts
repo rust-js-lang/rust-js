@@ -309,10 +309,11 @@ for (const [name, source, message, crate] of [
   // parts, made in place, JS's own `values()`, know no hint, which std
   // grows a `Vec` by where its capacity is read (#1572).
   ["a Vec grown by a take of a cycle of a zip", "pub fn f() -> usize { let a = [1u8, 2, 3]; let v: Vec<(u8, u8)> = a.iter().copied().zip(a.iter().copied()).cycle().take(4).collect(); v.capacity() }", "whose lower bound JS's doesn't have"],
-  // A held `rev()` of a filter of a `skip(1)` made in place, JS's own
+  // A held `rev()` of a `filter_map` of a `skip(1)` made in place, JS's own
   // `drop`, which knows no hint: what's stepped from its back isn't made
-  // knowing its hint, `$skipping`, which would know no back (#1427).
-  ["size_hint of a held rev of a filter of a skip", 'pub fn f() -> (usize, Option<usize>) { let it = vec![1u8, 2, 3].into_iter().skip(1).filter(|x| *x > 1).rev(); it.size_hint() }', "which holds an adapter made in place inside another, as JS's own, which keeps no hint (#1427)"],
+  // knowing its hint, `$skipping`, which would know no back (#1427). Not a
+  // `filter`'s, std's compiled `Filter` since its family's flip.
+  ["size_hint of a held rev of a filter_map of a skip", 'pub fn f() -> (usize, Option<usize>) { let it = vec![1u8, 2, 3].into_iter().skip(1).filter_map(|x| if x > 1 { Some(x) } else { None }).rev(); it.size_hint() }', "which holds an adapter made in place inside another, as JS's own, which keeps no hint (#1427)"],
   // A trait method's `impl Trait` of a type parameter of its own not bound by
   // `Copy`, which may hold a destructor of every instance's own: its drop
   // isn't one function its dictionary can carry, so generic code holding
@@ -342,9 +343,10 @@ for (const [name, source, message, crate] of [
   ["a function with a destructor from_fn keeps", 'pub struct D(pub u32);\nimpl Drop for D { fn drop(&mut self) {} }\npub fn f(d: D) -> usize { std::iter::from_fn(move || { let _g = &d; None::<u32> }).count() }', "a function that holds a value with a destructor, kept by what it's given to"],
   // A refused `len()` names its adapter's type, not its closures', which name where they're written.
   ["len of a reversed step_by of a map", "pub fn f(v: &[u32]) -> usize { v.iter().map(|x| x + 1).step_by(2).rev().len() }", "`len()` of a lazy or generic `std::iter::Rev`, from its MIR"],
-  // A compiled struct's hint is what it holds' (ADR 0561): of a filter made here, a JS iterator's,
-  // which knows nothing of its length, refused, not `(0, None)` where Rust gives `(0, Some(3))` (#382).
-  ["the size hint of a peekable filter made here", "pub fn f(v: &[u32]) -> (usize, Option<usize>) { v.iter().filter(|x| **x > 1).peekable().size_hint() }", "`size_hint()` of a `std::iter::Peekable<std::iter::Filter"],
+  // A compiled struct's hint is what it holds' (ADR 0561): of a filter_map made here, a JS
+  // iterator's, which knows nothing of its length, refused, not `(0, None)` where Rust gives
+  // `(0, Some(3))` (#382). Not a `filter`'s, std's compiled `Filter` since its family's flip.
+  ["the size hint of a peekable filter_map made here", "pub fn f(v: &[u32]) -> (usize, Option<usize>) { v.iter().filter_map(|x| if *x > 1 { Some(*x) } else { None }).peekable().size_hint() }", "`size_hint()` of a `std::iter::Peekable<std::iter::FilterMap"],
   // A map a variable holds made in place, JS's own `values().map(..)`, which knows no hint,
   // inspected and collected where a capacity is read: refused, not grown 4 then 8 where std's
   // `Inspect` of it reserves 5 (#1792).
@@ -366,7 +368,6 @@ for (const [name, source, message, crate] of [
   // Of generic code whose callers aren't all seen, its own chain may be any instance, one
   // another generic function's clone makes apart among them (#1119).
   ["a pub generic chain stepped from its back beside another's cloned", "pub fn chained<I: DoubleEndedIterator<Item = i32>>(a: I, b: I) -> Option<i32> { a.chain(b).map(|x| x + 1).next_back() }\npub fn cycled<J: Iterator<Item = i32> + Clone>(a: J, b: J) -> Vec<i32> { a.chain(b).cycle().take(5).collect() }", "made where `I` isn't bound by `Clone`"],
-  ["a filter cloned where its source isn't bound by Clone", "pub fn evens<I: Iterator<Item = i32>>(it: I) -> std::iter::Filter<I, fn(&i32) -> bool> { it.filter(|x| x % 2 == 0) }\npub fn f() -> usize { let d = evens(1..9); d.clone().count() }", "made where `I` isn't bound by `Clone`"],
   ["a new closure assigned through a &mut to one", 'pub fn replace<F: FnMut()>(f: &mut F, g: F) { *f = g; }', "assigning a whole value through a `&mut`"],
   ["a collection of the crate's extending a Vec", "struct Bag { items: Vec<i32> }\nimpl IntoIterator for Bag { type Item = i32; type IntoIter = std::vec::IntoIter<i32>; fn into_iter(self) -> Self::IntoIter { self.items.into_iter() } }\npub fn f(v: &mut Vec<i32>, b: Bag) { v.extend(b) }", "a `Bag`, whose `IntoIterator` is the crate's"],
   ["a collection of the crate's given to generic code", "struct Bag { items: Vec<i32> }\nimpl IntoIterator for Bag { type Item = i32; type IntoIter = std::vec::IntoIter<i32>; fn into_iter(self) -> Self::IntoIter { self.items.into_iter() } }\nfn count<I: IntoIterator>(i: I) -> usize { i.into_iter().count() }\npub fn f(b: Bag) -> usize { count(b) }", "a `Bag`, whose `IntoIterator` is the crate's"],

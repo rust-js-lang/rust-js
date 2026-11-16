@@ -232,14 +232,14 @@ export const mutations: Mutation[] = [
   },
   {
     name: "cloned-apart-unbound-shared",
-    breaks: "generic code clones a `filter`'s source it has no `Clone` of",
+    breaks: "generic code clones an adapter's source it has no `Clone` of, a `chain` of two `I`s stepped from its back beside another function's cloned (a `filter`'s is std's compiled `Filter`, whose `Clone` its caller gives, since its family's flip)",
     file: "src/lower/mir/iter/backs.rs",
     find: "        if let Some(ty) = unbound {\n",
     replace: "        if let Some(ty) = unbound.filter(|_| false) {\n",
     tests: [
       "test/diagnostics.test.ts",
       "-t",
-      "a filter cloned where its source isn't bound by Clone",
+      "a pub generic chain stepped from its back beside another's cloned",
     ],
   },
   {

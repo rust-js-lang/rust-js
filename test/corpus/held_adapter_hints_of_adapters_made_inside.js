@@ -9,13 +9,13 @@ import {
   $mapEnds,
   $next,
   $sizeHint,
-  $skipping,
-  $taking,
+  iterator_filter,
   iterator_rev,
   iterator_skip,
   iterator_take,
   revClone,
   skipClone_clone,
+  skipIterator___iteratorGetUnchecked,
 } from "@rust-js/std";
 
 export function entry() {
@@ -24,13 +24,20 @@ export function entry() {
 
 function main() {
   const RevClone = revClone({ clone: (value) => $iter(value.items.slice(value.at, value.end)) });
-  const it = $skipping($iter([1, 2, 3]), 1).filter((x) => x > 1);
+  const it = iterator_filter(iterator_skip($iter([1, 2, 3]), 1), (x) => x > 1, {
+    next: $next,
+    fold: $foldOf,
+    getUnchecked: skipIterator___iteratorGetUnchecked,
+  });
   const sizeHint = $sizeHint(it);
   console.log(`(${sizeHint[0]}, ${sizeHint[1] == null ? "None" : `Some(${sizeHint[1]})`})`);
   $next(it);
   const value = $sizeHint(it);
   console.log(`(${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`})`);
-  const taken = $taking($iter([1, 2, 3]), 2).filter((x) => x > 0);
+  const taken = iterator_filter(iterator_take($iter([1, 2, 3]), 2), (x) => x > 0, {
+    next: $next,
+    fold: $foldOf,
+  });
   const value$1 = $sizeHint(taken);
   console.log(`(${value$1[0]}, ${value$1[1] == null ? "None" : `Some(${value$1[1]})`})`);
   $next(taken);
@@ -61,7 +68,10 @@ function main() {
     [2, "b"],
     [3, "c"],
   ]);
-  const values = $taking($iter(Array.from(n.values())), 2).filter((s) => s !== "");
+  const values = iterator_filter(iterator_take($iter(Array.from(n.values())), 2), (s) => s !== "", {
+    next: $next,
+    fold: $foldOf,
+  });
   const value$5 = $sizeHint(values);
   console.log(`(${value$5[0]}, ${value$5[1] == null ? "None" : `Some(${value$5[1]})`})`);
   $next(values);

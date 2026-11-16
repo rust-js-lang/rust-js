@@ -22,6 +22,7 @@ import {
   $roomForHint,
   iterator_chain,
   iterator_enumerate,
+  iterator_filter,
   iterator_flatMap,
   iterator_fuse,
   iterator_inspect,
@@ -68,7 +69,7 @@ function main() {
   );
   console.log(`map ([${value[0].join(", ")}], [${value[1].join(", ")}], [${value[2].join(", ")}])`);
   const value$1 = twice(
-    $iterator(f(), flakyIterator_next).filter((x) => x % 2 === 0),
+    iterator_filter(f(), (x) => x % 2 === 0, { next: flakyIterator_next }),
     "next",
   );
   console.log(

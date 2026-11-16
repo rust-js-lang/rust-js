@@ -576,16 +576,16 @@ export const mutations: Mutation[] = [
     name: "flatten-count-by-reduce",
     breaks: "a flatten made in place is counted by `reduce`, never by `$count`, so the inner iterators' own `count` that `$flatMap` asks is never reached (#736)",
     file: "src/lower/mir/iter.rs",
-    find: '            || self.compiled_step(iter_ty, iterator, "count") && (!in_place_flatten || inners_own);\n',
-    replace: '            || self.compiled_step(iter_ty, iterator, "count") && !in_place_flatten;\n',
+    find: "                && (!in_place_flatten || inners_own);\n",
+    replace: "                && !in_place_flatten;\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_count_takes_each_inner_count.rs$"],
   },
   {
     name: "flatten-count-always-own",
     breaks: "every flatten made in place is counted by `$count`, where JS's `flatMap` of inner iterators with no own `count` reads as `reduce` (#736)",
     file: "src/lower/mir/iter.rs",
-    find: '            || self.compiled_step(iter_ty, iterator, "count") && (!in_place_flatten || inners_own);\n',
-    replace: '            || self.compiled_step(iter_ty, iterator, "count");\n',
+    find: "                && (!in_place_flatten || inners_own);\n",
+    replace: "                && true;\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_count_takes_each_inner_count.rs$"],
     snapshots: true,
   },
@@ -958,4 +958,12 @@ export const mutations: Mutation[] = [
   },
 
 
+  {
+    name: "in-place-filter-counted-as-std",
+    breaks: "a `filter` made in place, a JS iterator, counted is std's compiled `count`, `$count(todos.values().filter(f))`, not `todos.filter(f).length` (#1681's change 2, the filter family)",
+    file: "src/lower/mir/iter.rs",
+    find: "                && (filtered.is_none() || self.compiled_struct(iter_ty, &it))\n",
+    replace: "                && (filtered.is_none() || true)\n",
+    tests: ["test/react.test.ts", "-t", "React components are hand-written JSX"],
+  },
 ];

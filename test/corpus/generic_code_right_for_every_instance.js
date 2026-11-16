@@ -26,6 +26,7 @@ import {
   $sortedKeys,
   $splitAtMut,
   $unwinds,
+  iterator_filter,
   iterator_map,
   iterator_skip,
   skipClone,
@@ -128,17 +129,21 @@ function main() {
     "next",
   );
   const c = gather(
-    iterator_map({ start: 0n, end: 7n }, (x) => [x, x], { next: $rangeNext }).filter(
+    iterator_filter(
+      iterator_map({ start: 0n, end: 7n }, (x) => [x, x], { next: $rangeNext }),
       (p) => p[0] % 2n === 0n,
+      { next: $next, fold: $foldOf },
     ),
     16,
     "next",
   );
   const d = gather($iter(new Array(3).fill("x")), 12, { inPlace: 12 });
   const e = gather(
-    $lazyRange(0, 9)
-      .filter((x) => x % 3 === 0)
-      .map((x) => new Array(4).fill(x)),
+    iterator_map(
+      iterator_filter({ start: 0, end: 9 }, (x) => x % 3 === 0, { next: $rangeNext }),
+      (x) => new Array(4).fill(x),
+      { next: $next, fold: $foldOf },
+    ),
     16,
     "next",
   );
@@ -151,9 +156,11 @@ function main() {
   const g = widen(b, $lazyRange(0, 20), 4);
   const h = widen(
     c,
-    $iterator({ start: 0n, end: 30n }, $rangeNext)
-      .filter((x) => x % 2n === 1n)
-      .map((x) => [x, x]),
+    iterator_map(
+      iterator_filter({ start: 0n, end: 30n }, (x) => x % 2n === 1n, { next: $rangeNext }),
+      (x) => [x, x],
+      { next: $next, fold: $foldOf },
+    ),
     16,
   );
   console.log(`${f.length} ${g.length} ${h.length}`);
@@ -163,7 +170,7 @@ function main() {
   console.log(`${w.length} ${$capacity(w, 4)}`);
   fill(
     $cellOf(w),
-    $lazyRange(0, 9).filter((x) => x % 2 === 0),
+    iterator_filter({ start: 0, end: 9 }, (x) => x % 2 === 0, { next: $rangeNext }),
     vecExtend,
   );
   console.log(`${w.length} ${$capacity(w, 4)}`);

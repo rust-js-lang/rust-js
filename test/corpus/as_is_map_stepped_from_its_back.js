@@ -6,16 +6,25 @@ import {
   $findBack,
   $flattenEnds,
   $foldBack,
+  $foldOf,
   $iterator,
   $mapEnds,
-  $nextBackSome,
   $nextSome,
   $rangeLen,
   $rangeNext,
   $rangeNextBack,
+  $rangeNthBack,
   $rev,
   $some,
   $someValue,
+  $tryOf,
+  filterDoubleEndedIterator_nextBack,
+  iterator_filter,
+  iterator_map,
+  mapDoubleEndedIterator_nextBack,
+  mapDoubleEndedIterator_rfold,
+  mapDoubleEndedIterator_tryRfold,
+  mapIterator___iteratorGetUnchecked,
 } from "@rust-js/std";
 
 export function entry() {
@@ -23,6 +32,46 @@ export function entry() {
 }
 
 function main() {
+  const mapIterator = {
+    next: $nextSome,
+    fold: $foldOf,
+    getUnchecked: (iterator, i) =>
+      mapIterator___iteratorGetUnchecked(iterator, i, { next: $rangeNext }),
+  };
+  const mapDoubleEndedIterator = {
+    next_back: (iterator) =>
+      mapDoubleEndedIterator_nextBack(iterator, {
+        next_back: $rangeNextBack,
+        nthBack: $rangeNthBack,
+      }),
+    rfold: (iterator, init, f, unwind, ends) =>
+      mapDoubleEndedIterator_rfold(
+        iterator,
+        init,
+        f,
+        { next: $rangeNext },
+        { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+        undefined,
+        undefined,
+        undefined,
+        unwind,
+        ends,
+      ),
+    tryRfold: (iterator, init, f, broke, unwind, ends) =>
+      mapDoubleEndedIterator_tryRfold(
+        iterator,
+        init,
+        f,
+        { next: $rangeNext },
+        { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+        $tryOf(broke),
+        undefined,
+        undefined,
+        undefined,
+        unwind,
+        ends,
+      ),
+  };
   const total = $foldBack(
     $filterEnds(
       $iterator({ start: 1, end: 6 }, $rangeNext, false, $rangeNextBack),
@@ -63,13 +112,14 @@ function main() {
     (a, x) => (((a * 10) >>> 0) + (x ?? 0)) >>> 0,
   );
   console.log(`${pairs}`);
-  const evens = $filterEnds(
-    $iterator({ start: 1, end: 6 }, $rangeNext, false, $rangeNextBack),
+  const evens = iterator_filter(
+    iterator_map({ start: 1, end: 6 }, (value) => value, { next: $rangeNext }),
     (x) => x != null && x % 2 === 0,
+    mapIterator,
   );
-  const nextBack = $nextBackSome(evens);
+  const nextBack = filterDoubleEndedIterator_nextBack(evens, mapIterator, mapDoubleEndedIterator);
   const next = $nextSome(evens);
-  const value = $nextBackSome(evens);
+  const value = filterDoubleEndedIterator_nextBack(evens, mapIterator, mapDoubleEndedIterator);
   console.log(
     `${nextBack == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(nextBack))})`} ${next == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(next))})`} ${value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`}`,
   );
