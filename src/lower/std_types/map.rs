@@ -444,11 +444,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             );
                             return Err(self.unsupported(span, &what));
                         }
+                        let param = js::Name::declared("key".to_string());
                         let fields = (indices.iter())
-                            .map(|&i| self.project(Expr::var("key"), key, i))
+                            .map(|&i| self.project(Expr::var(param.clone()), key, i))
                             .collect();
                         let read = Expr::arrow(
-                            vec!["key".into()],
+                            vec![param.into()],
                             vec![StmtKind::Return(Some(Expr::array(fields))).at(js::Span::NONE)],
                         );
                         args.push(read);
@@ -1142,11 +1143,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Part::Keys => 0,
                 Part::Values => 1,
             };
+            let entry = js::Name::declared("entry".to_string());
             let pick = Expr::arrow(
-                vec!["entry".into()],
-                vec![
-                    StmtKind::Return(Some(Expr::index(Expr::var("entry"), Expr::int(index)))).at(crate::js::Span::NONE),
-                ],
+                vec![entry.clone().into()],
+                vec![StmtKind::Return(Some(Expr::index(Expr::var(entry), Expr::int(index)))).at(crate::js::Span::NONE)],
             );
             return Ok(method(entries, "map", vec![pick]));
         }

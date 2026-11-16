@@ -703,12 +703,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let bytes = match num.bits() {
             8 if !num.signed() => items,
             bits => {
+                let n = js::Name::declared("n".to_string());
                 let to_bytes = Expr::call(
                     Expr::helper("$toBytes"),
-                    vec![Expr::var("n"), Expr::int(i128::from(bits / 8)), Expr::bool(true)],
+                    vec![Expr::var(n.clone()), Expr::int(i128::from(bits / 8)), Expr::bool(true)],
                 );
                 let each = Expr::arrow(
-                    vec!["n".into()],
+                    vec![n.into()],
                     vec![StmtKind::Return(Some(to_bytes)).at(js::Span::NONE)],
                 );
                 Expr::call(Expr::member(items, "flatMap"), vec![each])

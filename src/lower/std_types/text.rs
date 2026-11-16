@@ -458,11 +458,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     TextOp::ToAsciiUpper => ("/[a-z]/", "toUpperCase"),
                     _ => ("/[A-Z]/", "toLowerCase"),
                 };
+                let param = js::Name::declared("letter".to_string());
                 let letter = Expr::arrow(
-                    vec!["letter".into()],
-                    vec![
-                        StmtKind::Return(Some(method(Expr::var("letter"), case, Vec::new()))).at(crate::js::Span::NONE),
-                    ],
+                    vec![param.clone().into()],
+                    vec![StmtKind::Return(Some(method(Expr::var(param), case, Vec::new()))).at(crate::js::Span::NONE)],
                 );
                 method(arg(), "replace", vec![Expr::regex(letters), letter])
             }
@@ -664,9 +663,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // carriage return, not JS's `\s`.
             TextOp::SplitAsciiWhitespace => {
                 let pieces = method(arg(), "split", vec![Expr::regex("/[\\t\\n\\f\\r ]+/")]);
-                let word = Expr::bin(Op::Ne, Expr::var("word"), Expr::str(""));
+                let param = js::Name::declared("word".to_string());
+                let word = Expr::bin(Op::Ne, Expr::var(param.clone()), Expr::str(""));
                 let nonempty = Expr::arrow(
-                    vec!["word".into()],
+                    vec![param.into()],
                     vec![StmtKind::Return(Some(word)).at(js::Span::NONE)],
                 );
                 method(pieces, "filter", vec![nonempty])

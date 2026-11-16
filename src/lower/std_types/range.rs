@@ -452,19 +452,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return shown(self, (parts, None));
         }
         let fresh = self.never_exhausted(&range);
+        let param = js::Name::declared("range".to_string());
         let state = match fresh {
             true => (
                 kind.bounds()
                     .iter()
-                    .map(|name| Expr::member(Expr::var("range"), *name))
+                    .map(|name| Expr::member(Expr::var(param.clone()), *name))
                     .collect(),
                 None,
             ),
-            false => self.range_state(Expr::var("range"), ty, &mut Vec::new()),
+            false => self.range_state(Expr::var(param.clone()), ty, &mut Vec::new()),
         };
         let body = shown(self, state)?;
         let f = Expr::arrow(
-            vec!["range".into()],
+            vec![param.into()],
             vec![StmtKind::Return(Some(body)).at(js::Span::NONE)],
         );
         Ok(self.applied(f, range))

@@ -74,7 +74,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             false => "$force",
         };
         if op == LazyOp::Force || op == LazyOp::ForceMut && !self.mut_ref_form(item).is_cell() {
-            return Ok(Some(Expr::call(Expr::var(force), vec![lazy])));
+            return Ok(Some(Expr::call(Expr::helper(force), vec![lazy])));
         }
         if op == LazyOp::GetMut && self.boxed_payload(item) {
             return Err(self.unsupported(span, &format!("`get_mut` of a `LazyCell` of `{item}`")));
@@ -88,7 +88,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // the cell itself is once its value's made.
         let given = match op {
             LazyOp::ForceMut => {
-                let force = Expr::call(Expr::var(force), vec![lazy.clone()]);
+                let force = Expr::call(Expr::helper(force), vec![lazy.clone()]);
                 out.push(StmtKind::Expr(force).at(self.js_span(span)));
                 // In a crate that asks an address, a handle on its place in the
                 // cell, past its state's tag (#1474).

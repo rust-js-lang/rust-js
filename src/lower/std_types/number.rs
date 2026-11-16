@@ -907,7 +907,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             NumOp::Signum => unreachable!("`math::function`'s"),
             NumOp::Clamp if num.float() => {
                 let debug = if num == Num::F32 { "$debugF32" } else { "$debugF64" };
-                let list = vec![arg(), arg(), arg(), Expr::var(debug)];
+                let list = vec![arg(), arg(), arg(), Expr::helper(debug)];
                 helper("$clampFloat", list)
             }
             NumOp::Clamp => helper("$clamp", vec![arg(), arg(), arg()]),
