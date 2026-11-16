@@ -950,9 +950,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let mut args = values;
             args.push(compare);
             let show = ty.peel_refs().is_char().then(|| {
-                let c = Expr::var("c");
-                let shown = Expr::call_helper("$debugStr", vec![c, Expr::str("'")]);
-                Expr::arrow(vec!["c".into()], vec![StmtKind::Return(Some(shown)).at(js::Span::NONE)])
+                let c = js::Name::declared("c".to_string());
+                let shown = Expr::call_helper("$debugStr", vec![Expr::var(c.clone()), Expr::str("'")]);
+                Expr::arrow(vec![c.into()], vec![StmtKind::Return(Some(shown)).at(js::Span::NONE)])
             });
             let drop = self.std_drop_function(ty, span)?;
             if show.is_some() || drop.is_some() {
