@@ -362,3 +362,49 @@ clones is now each naming's obligations, elaborated through the impls
 selected for them ([0522](0522-a-closure-cloned-apart-is-made-again.md),
 amended), so each route is refused, the user's decision as it stands.
 Held by the clone routes' table, `rc_fn_cloned_by_*_refused.rs`.
+
+## Amendment: what's shared before is the `Rc`'s own, not any clone in the crate (2026-11-16, #1896)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): the refusal above stands
+wherever it applies, the user's decision; only what says it applies is
+made precise. `shared_apart` took an `Rc` of a `fn` item as shared before
+wherever the crate cloned any type that might be it: a bare type
+parameter's clone anywhere, a neighbour's `T: Clone` over numbers, so
+`dyn_fn_address_by_rc_as_ptr`, alone a program that compiles, was refused
+beside `evidence_paths` (the neighbour shuffle, #1896). Now, the lead for
+the user:
+
+- **A clone of a type that may be the `Rc`**, as before: each type the
+  crate's namings, called or as values, and its `dyn`s give a `Clone`
+  bound, through the impls selected for them in turn (`clones::Given`,
+  [0522](0522-a-closure-cloned-apart-is-made-again.md), amended for
+  #1968). So `dup<T: Clone>(&held)` clones the `Rc<fn(u32) -> u32
+  {double}>` itself, as does `outer<T: Dup>(&held)` through `impl<T:
+  Clone> Dup for T`, and `&held as &dyn Dup`, whose dictionary is that
+  impl's: a value made a `dyn` gives the `dyn`'s trait's obligation, and
+  each supertrait's, as a call gives its bounds.
+- **A bare type parameter's clone** counts only where what it's given
+  isn't elaborated where it's named: a library's body of MIR alone, or a
+  function whose every caller the crate doesn't see (`seen_whole`,
+  `Fact::CopiedApart`, as `cloned_params` asks). The last is no one-crate
+  program's, so it has no mutation: a caller the crate doesn't see is
+  another crate's, which compiles its own (ADR 0914).
+
+The first try (ioCJ's, unpushed) kept a bare parameter's clone wherever
+every caller is seen, and guessed the `dyn` route by what a `dyn` is
+made of. It compiled `outer(&held)` through a blanket impl, a route main
+refused, to `false` where Rust prints `true`: the impl's `T` was left a
+bare parameter, and nothing gave its instance. The 26 routes' table
+(#1968) found it; the elaborated obligations above close it, and the
+guess went.
+
+Proof: corpus case `dyn_fn_address_beside_a_generic_clone`, the pair's two
+halves in one crate, against native Rust in both builds; the pair off
+`test/neighbours-known.txt`; refused still,
+`dyn_fn_address_of_an_rc_given_to_generic_clone_refused`,
+`dyn_fn_address_of_an_rc_cloned_through_a_dyn_refused`,
+`rc_fn_cloned_by_a_supertraits_blanket_impl_refused` and the 26 routes
+`rc_fn_cloned_by_*_refused.rs`. Mutations `generic-clone-of-any-rc`,
+`dyn-obligations-unseen` and `supertraits-unelaborated`, caught;
+`shared-rc-of-a-fn-pointer-unrefused`, `upgraded-rc-of-a-fn-pointer-unrefused`
+and `generic-clones-unseen-by-rc-counts` retargeted, caught.

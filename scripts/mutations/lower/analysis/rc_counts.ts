@@ -475,8 +475,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an `Rc` of a `fn` pointer cloned before it's unsized is made two functions of its own, `ptr::addr_eq` `false` where Rust's is `true`, not refused (#1053)",
     file: "src/lower/analysis/rc_counts.rs",
-    find: "                && (cloned.with_compiled_here().any(|clone| may_be(tcx, clone, owner))\n",
-    replace: "                && (cloned.with_compiled_here().any(|clone| false && may_be(tcx, clone, owner))\n",
+    find: "        cloned.of_named_types().any(|clone| may_be(tcx, clone, owner))\n",
+    replace: "        cloned.of_named_types().any(|clone| false && may_be(tcx, clone, owner))\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_address_of_a_shared_rc_refused.rs$"],
   },
   {
@@ -484,8 +484,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an `Rc` of a `fn` pointer and the one its `Weak` upgrades to, each unsized, are two functions of their own, their addresses apart where Rust's are one, not refused (#1053)",
     file: "src/lower/analysis/rc_counts.rs",
-    find: "                    || weaks.iter().any(|&weak| may_be(tcx, weak, from)))\n",
-    replace: "                    || weaks.iter().any(|&weak| false && may_be(tcx, weak, from)))\n",
+    find: "                && (cloned_before(owner) || weaks.iter().any(|&weak| may_be(tcx, weak, from)))\n",
+    replace: "                && (cloned_before(owner) || weaks.iter().any(|&weak| false && may_be(tcx, weak, from)))\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_fn_address_of_an_upgraded_rc_refused.rs$"],
   },
   {
@@ -602,5 +602,13 @@ export const mutations: Mutation[] = [
       "-t",
       "^class_methods.rs$"
     ]
+  },
+  {
+    name: "generic-clone-of-any-rc",
+    breaks: "a clone of a bare type parameter anywhere in the crate makes an `Rc` of a function item that nothing gives generic code shared before: refused beside a neighbour's `T: Clone` (#1896)",
+    file: "src/lower/analysis/rc_counts.rs",
+    find: "            || cloned.of_bare_params().any(|clone| {\n                of_mir_alone\n",
+    replace: "            || cloned.of_bare_params().any(|clone| {\n                true || of_mir_alone\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_fn_address_beside_a_generic_clone.rs$"],
   },
 ];

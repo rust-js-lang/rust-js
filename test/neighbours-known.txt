@@ -51,8 +51,5 @@ plain inspect_by_a_function_before_a_chain_argument.rs beside repeat_n_hint_held
 #1892 P2 (neighbours): a Vec grown by an iterator rust-js can't count is refused in a crate that reads a Vec's capacity
 plain boxed_iterator_stepped_as_what_it_boxes.rs beside vec_set_len.rs
 
-#1896 P2 (neighbours): a dyn Fn made of an Rc<fn item> that may be shared before is refused beside a case of trait evidence paths
-plain std dyn_fn_address_by_rc_as_ptr.rs beside evidence_paths.rs
-
 #1898 P2 (neighbours): LocalKey<RefCell<T>>::with_borrow_mut of a value with a destructor is refused beside a Drop impl
 plain std rc_dyn_fn_counted_by_its_signature.rs beside drop_impl_indirect.rs

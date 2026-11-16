@@ -308,12 +308,13 @@ pub(super) type DropGiven<'a, 'tcx> = dyn Fn(DefId, u32, Ty<'tcx>) -> bool + 'a;
 /// `dyn Fn`s may drop, and its consumer counts what it hands (ADR 0959).
 pub(super) fn counted_rcs<'tcx>(
     tcx: TyCtxt<'tcx>,
-    (all_bodies, names, self_handles, cloned, library): (
+    (all_bodies, names, self_handles, cloned, library, foreign): (
         &[&Body<'tcx>],
         &crate::lower::call_graph::Names<'tcx>,
         &super::SelfHandles<'tcx>,
         &super::clones::Cloned<'tcx>,
         bool,
+        &crate::lower::library::Foreign<'_, 'tcx>,
     ),
     (params_may_drop, handed, drop_given): (bool, &[Ty<'tcx>], &DropGiven<'_, 'tcx>),
     runs: impl Fn(&Counted<'tcx>, Ty<'tcx>) -> bool,
@@ -382,6 +383,10 @@ pub(super) fn counted_rcs<'tcx>(
     // Each count read of an `Rc` of what holds a type parameter, by the
     // function and what it points at.
     let mut of_params: IndexSet<(DefId, Ty<'tcx>)> = IndexSet::default();
+    // Whether the crate compiles a library's body of MIR alone, whose
+    // clones of its type parameters aren't elaborated where it's named
+    // (#1896).
+    let mut of_mir_alone = false;
     for body in all_bodies {
         let owner = tcx.typeck_root_def_id(body.def_id);
         let env = ty::TypingEnv::non_body_analysis(tcx, owner);
@@ -403,6 +408,7 @@ pub(super) fn counted_rcs<'tcx>(
             && !is_std_crate(tcx, body.def_id)
             && let Some(mir) = &body.mir
         {
+            of_mir_alone = true;
             // And what its MIR has and asks, as a body's THIR's expressions
             // and calls are of the crate's own (#1332): each `Rc` and `Weak`
             // its locals hold, those owning a value a caller gives a drop
@@ -652,12 +658,30 @@ pub(super) fn counted_rcs<'tcx>(
         .partition(|&&(owner, from)| !owner.is_box() && from.is_closure());
     let rc_new_apart = rc_closures.into_iter().map(|&(_, from)| from).collect();
     let apart: IndexSet<Ty<'tcx>> = unsized_apart.iter().map(|&&(owner, _)| owner).collect();
+    // Whether an `Rc`, `owner`, may be cloned before it's unsized: by a clone
+    // of a type that may be it, which is each type the crate's namings and
+    // `dyn`s give a `Clone` bound, through the impls selected for them in
+    // turn (`clones::cloned_types`, #1968): `dup(&held)`, `held.dup()` of a
+    // blanket impl, `&held as &dyn Dup`. Generic code's clone of a bare type
+    // parameter is of what its namings give it, each elaborated where it's
+    // named, but where one isn't seen: a library's body of MIR alone, or a
+    // function whose every caller the crate doesn't see (`seen_whole`, as
+    // `cloned_params` asks). A neighbour's `T: Clone` of what's never such an
+    // `Rc` isn't one (#1896).
+    let cloned_before = |owner: Ty<'tcx>| {
+        cloned.of_named_types().any(|clone| may_be(tcx, clone, owner))
+            || cloned.of_bare_params().any(|clone| {
+                of_mir_alone
+                    || cloned
+                        .owners_of(clone)
+                        .any(|id| !crate::lower::instances::seen_whole(tcx, id, Fact::CopiedApart(foreign)))
+            })
+    };
     let shared_apart = (unsized_apart.iter())
         .filter(|&&&(owner, from)| {
             !owner.is_box()
                 && unsized_later.contains(&owner)
-                && (cloned.with_compiled_here().any(|clone| may_be(tcx, clone, owner))
-                    || weaks.iter().any(|&weak| may_be(tcx, weak, from)))
+                && (cloned_before(owner) || weaks.iter().any(|&weak| may_be(tcx, weak, from)))
         })
         .map(|&&(owner, _)| owner)
         .collect();

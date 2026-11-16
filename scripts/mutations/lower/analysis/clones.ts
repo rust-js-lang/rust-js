@@ -7,8 +7,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `pub` generic function's clone of whatever a consumer gives, `T`, may be any closure of the crate's, so an `Rc<dyn Fn()>` of one, compared, is counted, and the `Box<dyn Fn()>` holding it, handed a library whose `dyn Fn`s drop nothing, is refused: the react-in-rust port's react-reconciler (#1250)",
     file: "src/lower/analysis/clones.rs",
-    find: "            .filter(|ty| !matches!(ty.kind(), ty::Param(_)))\n",
-    replace: "",
+    find: "        self.with_compiled_here().filter(|&ty| !bare_param(ty))\n",
+    replace: "        self.with_compiled_here()\n",
     tests: ["test/cross-crate-dyn-fns.test.ts", "-t", "clone of any type"],
   },
   {
@@ -134,5 +134,23 @@ export const mutations: Mutation[] = [
     find: "                let clauses = tcx.clauses_of(imp.impl_def_id).instantiate(tcx, imp.args);\n                self.clauses(clauses.into_iter().map(|(clause, _)| clause.skip_normalization()));\n",
     replace: "                let _ = imp;\n",
     tests: ["test/corpus.test.ts", "-t", "^rc_fn_cloned_by_to_owned_refused.rs$"],
+  },
+  {
+    name: "dyn-obligations-unseen",
+    breaks:
+      "a value made a `dyn` gives no obligation, so an `Rc` of a function item made a `&dyn Dup`, whose blanket impl clones it by the dictionary, isn't seen shared before, and the two `Rc<dyn Fn>`s made of it are two functions (#1896)",
+    file: "src/lower/analysis/clones.rs",
+    find: "            given.made_dyn(thir[source].ty, expr.ty);\n",
+    replace: "            let _ = source;\n",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_fn_address_of_an_rc_cloned_through_a_dyn_refused.rs$"],
+  },
+  {
+    name: "supertraits-unelaborated",
+    breaks:
+      "an obligation's supertraits aren't elaborated, so `outer<T: Twin>(&held)`, `Twin: Dup` and `Dup` a blanket impl that clones, isn't seen to clone the `Rc`, and the two `Rc<dyn Fn>`s made of it are two functions (#1896)",
+    file: "src/lower/analysis/clones.rs",
+    find: "        for supertrait in supertraits {\n            self.obligation(supertrait);\n        }\n",
+    replace: "        let _ = supertraits;\n",
+    tests: ["test/corpus.test.ts", "-t", "^rc_fn_cloned_by_a_supertraits_blanket_impl_refused.rs$"],
   },
 ];

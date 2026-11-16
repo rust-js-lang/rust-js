@@ -8,7 +8,9 @@
 use crate::collections::{IndexMap, IndexSet};
 use crate::lower::Body;
 use rustc_hir::def_id::DefId;
+use rustc_middle::thir::ExprKind;
 use rustc_middle::traits::ImplSource;
+use rustc_middle::ty::adjustment::PointerCoercion;
 use rustc_middle::ty::{self, Ty, TyCtxt, TypeVisitableExt};
 
 /// The types the crate clones (`cloned_types`), and who calls each function
@@ -59,8 +61,15 @@ impl<'tcx> Cloned<'tcx> {
     /// of it once (#1249, #1250). An `Rc` made of what generic code gives
     /// back, `Rc::new(dup(&f))`, is made apart, counted whatever's cloned.
     pub(in crate::lower) fn of_named_types(&self) -> impl Iterator<Item = Ty<'tcx>> + '_ {
-        self.with_compiled_here()
-            .filter(|ty| !matches!(ty.kind(), ty::Param(_)))
+        self.with_compiled_here().filter(|&ty| !bare_param(ty))
+    }
+
+    /// `with_compiled_here`'s type parameters alone, each generic code's
+    /// clone of a type parameter as it is, where its instances aren't seen
+    /// (`instances_of`): what its namings give it is elaborated where
+    /// they're named, but of a caller the crate doesn't see (#1896).
+    pub(in crate::lower) fn of_bare_params(&self) -> impl Iterator<Item = Ty<'tcx>> + '_ {
+        self.with_compiled_here().filter(|&ty| bare_param(ty))
     }
 
     /// What `ty`, made in `owner`, of its type parameters, may be: each type
@@ -226,13 +235,23 @@ fn is_clone(tcx: TyCtxt<'_>, id: DefId) -> bool {
 
 /// The types `thir` clones (#1968): each type a `Clone` bound, or a bound of
 /// a trait that extends it, is given by an obligation the body gives, as
-/// `Given` elaborates it, of each function it names, called or as a value:
-/// `Some(&held).map(Rc::clone)`'s `Rc<..>: Clone` too.
+/// `Given` elaborates it: of each function it names, called or as a value,
+/// `Some(&held).map(Rc::clone)`'s `Rc<..>: Clone` too, and of each value it
+/// makes a `dyn` of, `&held as &dyn Dup`'s `Rc<..>: Dup` (#1896).
 fn given_clones<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> Vec<Ty<'tcx>> {
+    let thir = &body.thir;
     let mut given = Given::new(tcx, ty::TypingEnv::post_analysis(tcx, body.def_id));
-    for expr in body.thir.exprs.iter() {
+    for expr in thir.exprs.iter() {
         if let ty::FnDef(id, args) = *expr.ty.kind() {
             given.named(id, args.skip_binder());
+        }
+        if let ExprKind::PointerCoercion {
+            cast: PointerCoercion::Unsize,
+            source,
+            ..
+        } = expr.kind
+        {
+            given.made_dyn(thir[source].ty, expr.ty);
         }
     }
     given.cloned
@@ -240,28 +259,37 @@ fn given_clones<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> Vec<Ty<'tcx>> {
 
 /// The types a library's function the crate compiles itself, of MIR alone
 /// (ADR 0914), clones, as `given_clones` reads them of THIR: of each
-/// function its MIR names, called or as a value, a closure of another
-/// crate's given twice (#1053).
+/// function its MIR names, called or as a value, and of each unsizing, a
+/// closure of another crate's given twice (#1053).
 fn mir_given_clones<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> Vec<Ty<'tcx>> {
-    use rustc_middle::mir::{self, visit::Visitor};
+    use rustc_middle::mir::{self, CastKind, Rvalue, visit::Visitor};
     let Some(mir) = (body.mir.as_ref())
         .filter(|_| body.root().is_none() && !crate::lower::recognition::is_std_crate(tcx, body.def_id))
     else {
         return Vec::new();
     };
-    struct Found<'tcx> {
+    struct Found<'a, 'tcx> {
         obligations: Given<'tcx>,
+        body: &'a mir::Body<'tcx>,
     }
-    impl<'tcx> Visitor<'tcx> for Found<'tcx> {
+    impl<'tcx> Visitor<'tcx> for Found<'_, 'tcx> {
         fn visit_const_operand(&mut self, constant: &mir::ConstOperand<'tcx>, location: mir::Location) {
             if let ty::FnDef(id, args) = *constant.ty().kind() {
                 self.obligations.named(id, args.skip_binder());
             }
             self.super_const_operand(constant, location);
         }
+        fn visit_rvalue(&mut self, rvalue: &Rvalue<'tcx>, location: mir::Location) {
+            if let Rvalue::Cast(CastKind::PointerCoercion(PointerCoercion::Unsize, _), operand, to) = rvalue {
+                let from = operand.ty(&self.body.local_decls, self.obligations.tcx);
+                self.obligations.made_dyn(from, *to);
+            }
+            self.super_rvalue(rvalue, location);
+        }
     }
     let mut found = Found {
         obligations: Given::new(tcx, ty::TypingEnv::post_analysis(tcx, body.def_id)),
+        body: &mir.body,
     };
     found.visit_body(&mir.body);
     found.obligations.cloned
@@ -305,6 +333,26 @@ impl<'tcx> Given<'tcx> {
         }
         let clauses = self.tcx.clauses_of(id).instantiate(self.tcx, args);
         self.clauses(clauses.into_iter().map(|(clause, _)| clause.skip_normalization()));
+    }
+
+    /// A value of `from` made a `dyn` as `to`: of the `dyn`'s trait, the
+    /// value's evidence, whose impl its dictionary calls, and each trait it
+    /// extends (`obligation`). One whose pointee can't be told is taken as
+    /// cloned.
+    fn made_dyn(&mut self, from: Ty<'tcx>, to: Ty<'tcx>) {
+        let Some((from, to)) = unsized_parts(self.tcx, from, to) else {
+            self.cloned.push(from);
+            return;
+        };
+        let ty::Dynamic(predicates, ..) = *to.kind() else {
+            return;
+        };
+        if let Some(principal) = predicates.principal() {
+            let tr = self
+                .tcx
+                .instantiate_bound_regions_with_erased(principal.with_self_ty(self.tcx, from));
+            self.obligation(tr);
+        }
     }
 
     fn clauses(&mut self, clauses: impl IntoIterator<Item = ty::Clause<'tcx>>) {
@@ -360,6 +408,34 @@ impl<'tcx> Given<'tcx> {
             Ok(ImplSource::Param(_) | ImplSource::Builtin(..)) => {}
             Err(_) => self.cloned.push(tr.self_ty()),
         }
+    }
+}
+
+/// Whether `ty` is a type parameter as it is, `T`.
+fn bare_param(ty: Ty<'_>) -> bool {
+    matches!(ty.kind(), ty::Param(_))
+}
+
+/// What an unsizing coercion from `from` to `to` makes a `dyn` or a slice
+/// of, and what of: a `&`'s, a raw pointer's, and a `Box`'s, an `Rc`'s or
+/// another pointer struct's, its one argument that changes.
+fn unsized_parts<'tcx>(tcx: TyCtxt<'tcx>, from: Ty<'tcx>, to: Ty<'tcx>) -> Option<(Ty<'tcx>, Ty<'tcx>)> {
+    let pointee = |ty: Ty<'tcx>| match *ty.kind() {
+        ty::Ref(_, pointee, _) => Some(pointee),
+        _ => crate::lower::pointers::raw_pointee(tcx, ty).map(|(pointee, _)| pointee),
+    };
+    if let (Some(from), Some(to)) = (pointee(from), pointee(to)) {
+        return Some((from, to));
+    }
+    match (from.kind(), to.kind()) {
+        (ty::Adt(a, from), ty::Adt(b, to)) if a == b => {
+            let (from, to) = from.types().zip(to.types()).find(|(from, to)| from != to)?;
+            match to.kind() {
+                ty::Dynamic(..) | ty::Slice(_) | ty::Str => Some((from, to)),
+                _ => unsized_parts(tcx, from, to),
+            }
+        }
+        _ => None,
     }
 }
 
