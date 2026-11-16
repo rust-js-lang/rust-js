@@ -1274,11 +1274,11 @@ fn reads_declared<'s>(tail: &[Stmt], branches: impl Iterator<Item = &'s Stmt>) -
 /// what's no `bool`, `!t` of its values the other way. No program writes a `bool`'s value with an
 /// `if`, clippy's `needless_bool`, so none's undone.
 pub(super) fn flag_values(stmts: &mut [Stmt], booleans: &IndexSet<String>) {
-    // `x = true;`'s `x` and `true`.
-    fn set(stmt: &Stmt) -> Option<(&str, bool)> {
+    // `x = true;`'s `x`, the name it writes, and `true`.
+    fn set(stmt: &Stmt) -> Option<(&js::Name, bool)> {
         match &stmt.kind {
             StmtKind::Assign(target, value) => match (&target.kind, &value.kind) {
-                (ExprKind::Var(x), ExprKind::Bool(b)) => Some((x.word(), *b)),
+                (ExprKind::Var(x), ExprKind::Bool(b)) => Some((x, *b)),
                 _ => None,
             },
             _ => None,
@@ -1306,7 +1306,8 @@ pub(super) fn flag_values(stmts: &mut [Stmt], booleans: &IndexSet<String>) {
             && yes != no
         {
             let value = conditional(test.clone(), Expr::bool(yes), Expr::bool(no), booleans, false);
-            stmt.kind = StmtKind::Assign(Expr::var(x), value);
+            // The name the branches wrote, its declaration's (#1681).
+            stmt.kind = StmtKind::Assign(Expr::var(x.clone()), value);
         }
     }
 }
