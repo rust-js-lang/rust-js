@@ -148,7 +148,7 @@ lower/pipeline.rs: crate ground -> in-place adapters decided -> analyze crate
 program::Unlinked             owned data: no rustc types beyond this boundary
     |
     v
-link.rs -> link::Linked       resolve symbols and aliases; collect helpers
+link.rs -> link::Linked       resolve symbols and aliases; collect helpers; locals apart from helpers read
     |
     v
 output.rs                    plan paths; prepare JS; validate; choose imports

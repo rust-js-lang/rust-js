@@ -92,4 +92,13 @@ export const mutations: Mutation[] = [
     replace: "            if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^addresses_of_short_lived_allocations.rs$"],
   },
+  {
+    name: "link-locals-not-apart-from-helpers",
+    breaks:
+      "a local of a helper's word its scope reads keeps it, `const copiedClone = ..` beside std's `copiedClone(..)`: rust-js refuses its own output (#1975)",
+    file: "src/link.rs",
+    find: "            crate::js::scopes::locals_apart_from_module_reads(&top, &mut item.module.items);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^(local_named_as_a_helper_its_scope_reads|clones_beside_a_generic_clone_of_a_copied_map).rs$"],
+  },
 ];

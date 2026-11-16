@@ -1,6 +1,8 @@
 //! Resolve symbolic module references after lowering and reachability.
 //! Locals keep their names; import aliases avoid every binding that could
 //! shadow them, including parameters of nested arrows and copied defaults.
+//! A runtime helper is imported by its word, so a local its read is in the
+//! scope of gives way instead, named apart (ADR 1150, #1975).
 
 use crate::collections::{IndexMap, IndexSet};
 use crate::js::{Expr, ExprKind, Function, Item, JsxTag, Pattern, Prop, Stmt, StmtKind};
@@ -25,6 +27,14 @@ pub(crate) fn link(unlinked: Unlinked) -> Linked {
         .into_iter()
         .map(|mut item| {
             resolve(&mut item.module, &item.imports, item.reserved_names);
+            // A local a helper's read is in the scope of, given apart from
+            // it, now its tree's reads are all there (ADR 1150).
+            let top: Vec<String> = (item.module.imports.iter())
+                .flat_map(|import| import.named.iter().map(|(_, local)| local).chain(&import.namespace))
+                .chain(crate::js::scopes::packaged(&item.module.packages))
+                .cloned()
+                .collect();
+            crate::js::scopes::locals_apart_from_module_reads(&top, &mut item.module.items);
             // Each helper its tree reads, asked for by being written.
             let mut written = Vec::new();
             let mut finds_places_by_address = false;

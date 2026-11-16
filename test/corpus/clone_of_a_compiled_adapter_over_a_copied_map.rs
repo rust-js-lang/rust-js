@@ -4,7 +4,8 @@
 // clones its source as its maker does, never as std's `Map` its type
 // names (#1973). Not `flatten`, whose clone over this is refused, nor
 // `zip`, which std's build refuses to read by its index (#1974); nor one
-// given to generic code that clones it beside these, which crashes (#1975).
+// given to generic code that clones it beside these, whose `rev` row then
+// throws (#1976).
 fn main() {
     let items = [1, 2, 3, 4, 5];
     let a = items.iter().map(|x| x).copied().map(|x| x + 1);

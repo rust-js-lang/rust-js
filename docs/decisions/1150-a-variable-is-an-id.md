@@ -650,3 +650,37 @@ from every label around it and in it (`switches.rs`), so two nested are
 two words and two labels (#1969's rule); none reaches JS, and corpus case
 `switches_leaving_their_loops_nested` holds the nested loops' exits
 against native Rust.
+
+## A local apart from a helper its scope reads (2026-11-16, #1975)
+
+Lowering names a local apart from the module's functions, imports and
+globals (`fresh_in` of `module_names`), but not from the runtime's
+helpers: which a module imports is decided by the reads its linked tree
+has, and std's 510 helpers without a `$`, `copiedClone`, `mapClone`,
+`chain`, `lines`, are words a program's locals have too, so naming every
+local apart from all of them would respell `lines` wherever it's written.
+A local of a helper's word in whose scope the helper is read, `main`'s
+dictionary `copiedClone` that `declare_repeated` hoists (ADR 0979) beside
+a `show(..)` whose dictionary reads std's `copiedClone(..)`, or a program's
+own `let copied_clone`, was refused as `Problem::ModuleShadowed`.
+
+The linker, once a module's tree is linked and its reads are all there,
+gives each such local way: `js::scopes::locals_apart_from_module_reads`
+asks the module's scopes for each variable a module name's read is in
+the scope of (`Tree::taking_module_reads`, the validator's
+`ModuleShadowed` case, by the variable's `Name`, so its id), and respells
+it, its declaration and its reads, by its id, apart from every name the
+module has (`js::respelled`): `const copiedClone$1`. The apart spelling is
+`names::fresh_in`'s, the one lowering's locals are given apart by: no
+second way to pick a `$1`. A helper is imported by its word, and passes
+ask a helper's read by it (`helper_name()`), so the local gives way, as a
+local gives way to a function of the module's (`cmp$1`), not the import as
+a crate's import does (`parse$1`). It changes only modules refused before,
+and corpus cases `local_named_as_a_helper_its_scope_reads` (a program's
+`copied_clone`, `chain` and a loop's `map_clone`) and
+`clones_beside_a_generic_clone_of_a_copied_map` hold it against native Rust.
+
+It's the linker's because only the linker knows the final reads (the
+lead's decision). When preparation becomes the one speller, the spelling
+step's end, this moves into it, the linked module's reads given to it as
+an input, rather than staying a respelling at link time.

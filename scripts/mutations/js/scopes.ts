@@ -17,7 +17,7 @@ export const mutations: Mutation[] = [
     name: "scopes-not-hoisted",
     breaks: "`const m = n; const n = 1;` in a block, whose `n` JS reads before it's made",
     file: "src/js/scopes.rs",
-    find: "                StmtKind::Const(name, _) | StmtKind::Let(name, _) => self.declare(name.word()),",
+    find: "                StmtKind::Const(name, _) | StmtKind::Let(name, _) => self.bind(name),",
     replace: "                StmtKind::Const(..) | StmtKind::Let(..) => {}",
     tests: ["test/lowering-names.test.ts", "-t", "reuses a name"],
   },
@@ -93,5 +93,24 @@ export const mutations: Mutation[] = [
     find: "            js::Item::Namespace(namespace) => namespace.methods.iter().for_each(|m| self.function(m, false)),\n",
     replace: "            js::Item::Namespace(namespace) => namespace.methods.iter().for_each(|m| self.function(m, true)),\n",
     unitTests: "js::validate::tests::a_global_shadowed_is_refused",
+  },
+  {
+    name: "locals-apart-of-no-module-read",
+    breaks:
+      "a local of a helper's word its scope reads, `copiedClone` beside std's `copiedClone(..)` read, keeps its word: JS reads the local, refused as `ModuleShadowed` (#1975)",
+    file: "src/js/scopes.rs",
+    find: "                let Some(of) = read.of.filter(|&of| of != 0 && read.whose == Whose::Module) else {\n",
+    replace: "                let Some(of) = read.of.filter(|_| false) else {\n",
+    tests: ["test/corpus.test.ts", "-t", "^(local_named_as_a_helper_its_scope_reads|clones_beside_a_generic_clone_of_a_copied_map).rs$"],
+  },
+  {
+    name: "locals-apart-of-local-reads-too",
+    breaks:
+      "a read of a local's own variable is taken for a module name's, so every local read in its scope is respelled apart, `copiedClone$1` a name of no declaration's (#1975)",
+    file: "src/js/scopes.rs",
+    find: "                let Some(of) = read.of.filter(|&of| of != 0 && read.whose == Whose::Module) else {\n",
+    replace: "                let Some(of) = read.of.filter(|&of| of != 0) else {\n",
+    tests: ["test/corpus.test.ts", "-t", "^(local_named_as_a_helper_its_scope_reads|clones_beside_a_generic_clone_of_a_copied_map|locals_named_as_the_modules_names).rs$"],
+    snapshots: true,
   },
 ];

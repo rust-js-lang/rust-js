@@ -573,6 +573,43 @@ pub fn merged(stmts: &mut [Stmt], from: &str, into: &Name) {
     each_named(stmts, from, &mut |name| *name = into.clone());
 }
 
+/// `items` with each declaration and read of `variable`, by its id,
+/// spelled `to`: one variable respelled wherever it is in a module, a local
+/// given apart from a name of the module's its scope reads (ADR 1150).
+pub fn respelled(items: &mut [Item], variable: &Name, to: &str) {
+    let mut change = |name: &mut Name| {
+        if name == variable {
+            name.respell(to);
+        }
+    };
+    let of_function = |function: &mut Function, change: &mut dyn FnMut(&mut Name)| {
+        (function.params.iter_mut()).for_each(|param| param.each_name_mut(&mut |n| change(n)));
+        each_name(&mut function.body, false, change);
+    };
+    let of_value = |value: &mut Expr, change: &mut dyn FnMut(&mut Name)| {
+        let mut stmts = vec![StmtKind::Expr(value.clone()).at(super::Span::NONE)];
+        each_name(&mut stmts, false, change);
+        if let Some(Stmt {
+            kind: StmtKind::Expr(changed),
+            ..
+        }) = stmts.pop()
+        {
+            *value = changed;
+        }
+    };
+    for item in items {
+        match item {
+            Item::Function(function) => of_function(function, &mut change),
+            Item::Namespace(namespace) => {
+                (namespace.methods.iter_mut()).for_each(|method| of_function(method, &mut change));
+                (namespace.constants.iter_mut()).for_each(|constant| of_value(&mut constant.value, &mut change));
+            }
+            Item::Const(constant) => of_value(&mut constant.value, &mut change),
+            Item::Statements(stmts) => each_name(stmts, false, &mut change),
+        }
+    }
+}
+
 /// `stmts`, a tree used again, a body applied in place once more, each
 /// variable it declares a variable of its own, its reads with it: of the
 /// tree it's a clone of, none (ADR 1150, 4).

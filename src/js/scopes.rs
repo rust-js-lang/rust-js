@@ -12,6 +12,9 @@ use crate::js::{self, Expr, ExprKind, Function, JsxTag, Name, Pattern, Prop, Stm
 struct Scope {
     parent: Option<usize>,
     names: IndexMap<String, usize>,
+    /// The variable of each word a function's tree declares here, its
+    /// `Name` and so its id: the module's top's words alone have none.
+    bound: IndexMap<String, Name>,
 }
 
 /// A read: the scope it's in, and the scope of the declaration it's of,
@@ -93,18 +96,18 @@ impl Tree {
     /// `module`'s scopes: its imports', its packages' and its items' names
     /// the outermost's, then each item's own.
     pub(crate) fn of_module(module: &js::Module) -> Tree {
+        let imported = (module.imports.iter())
+            .flat_map(|import| import.named.iter().map(|(_, local)| local).chain(&import.namespace));
+        Tree::of_top(imported.chain(packaged(&module.packages)), &module.items)
+    }
+
+    /// A module's scopes, of what its top declares besides its items,
+    /// `top`, and its items.
+    fn of_top<'t>(top: impl Iterator<Item = &'t String>, items: &[js::Item]) -> Tree {
         let mut walk = Walk::default();
         walk.enter();
-        for import in &module.imports {
-            import.named.iter().for_each(|(_, local)| walk.declare(local));
-            import.namespace.iter().for_each(|name| walk.declare(name));
-        }
-        for package in &module.packages {
-            package.named.iter().for_each(|(_, local)| walk.declare(local));
-            package.default.iter().for_each(|name| walk.declare(name));
-            package.namespace.iter().for_each(|name| walk.declare(name));
-        }
-        for item in &module.items {
+        top.for_each(|name| walk.declare(name));
+        for item in items {
             match item {
                 js::Item::Function(function) => walk.declare(function.name.word()),
                 js::Item::Namespace(namespace) => walk.declare(namespace.name.word()),
@@ -112,7 +115,7 @@ impl Tree {
                 js::Item::Statements(stmts) => walk.hoist(stmts),
             }
         }
-        for item in &module.items {
+        for item in items {
             walk.item(item, false);
         }
         walk.tree
@@ -163,6 +166,26 @@ impl Tree {
         of_from.iter().all(|r| r.of.is_some() && !passes(r, to)) && of_to.iter().all(|r| !passes(r, from))
     }
 
+    /// Each variable a function declares in whose scope a read of a name
+    /// of the module's is, a helper's the module imports by its word: the
+    /// variable JS reads there instead (`Problem::ModuleShadowed`).
+    pub(crate) fn taking_module_reads(&self) -> Vec<Name> {
+        let mut taking: Vec<Name> = Vec::new();
+        for (word, reads) in &self.reads {
+            for read in reads {
+                let Some(of) = read.of.filter(|&of| of != 0 && read.whose == Whose::Module) else {
+                    continue;
+                };
+                if let Some(local) = self.scopes[of].bound.get(word)
+                    && !taking.contains(local)
+                {
+                    taking.push(local.clone());
+                }
+            }
+        }
+        taking
+    }
+
     /// `from` named `to`, where [`Tree::renames`] said it keeps each read.
     pub(crate) fn rename(&mut self, from: &str, to: &str) {
         let declaring = self.declaring.swap_remove(from).unwrap_or_default();
@@ -176,6 +199,35 @@ impl Tree {
             self.reads.entry(to.to_string()).or_default().extend(reads);
         }
     }
+}
+
+/// A module's `items`, beside what its top declares besides them, `top`,
+/// with each local in whose scope they read a name of the module's spelled
+/// apart from every name it has, `copiedClone$1`: a runtime helper's read,
+/// which lowering's locals can't be named apart from as they are from the
+/// module's own names (ADR 1150), what's imported decided only by the reads
+/// its linked tree has. A helper is imported by its word, so the local
+/// gives way, as a local does to a function of the module's.
+pub(crate) fn locals_apart_from_module_reads(top: &[String], items: &mut [js::Item]) {
+    let tree = Tree::of_top(top.iter(), items);
+    let taking = tree.taking_module_reads();
+    if taking.is_empty() {
+        return;
+    }
+    let mut taken: crate::collections::IndexSet<String> = tree.names().map(str::to_owned).collect();
+    for local in taking {
+        let to = crate::names::fresh_in(&mut taken, local.word());
+        js::respelled(items, &local, &to);
+    }
+}
+
+/// The names a module's packages' imports declare at its top.
+pub(crate) fn packaged(packages: &[js::Package]) -> impl Iterator<Item = &String> {
+    (packages.iter()).flat_map(|package| {
+        (package.named.iter().map(|(_, local)| local))
+            .chain(&package.default)
+            .chain(&package.namespace)
+    })
 }
 
 /// Whether `a` and `b` are the same but for what their declarations are
@@ -284,6 +336,7 @@ impl Walk {
         self.tree.scopes.push(Scope {
             parent,
             names: IndexMap::default(),
+            bound: IndexMap::default(),
         });
         self.stack.push(self.tree.scopes.len() - 1);
     }
@@ -301,6 +354,16 @@ impl Walk {
         }
         self.tree.declaring.entry(name.to_string()).or_default().push(scope);
         self.tree.events.push(Event::Declared);
+    }
+
+    /// `name`, a variable a function's tree declares: declared, and kept as
+    /// the variable its scope's word is.
+    fn bind(&mut self, name: &Name) {
+        self.declare(name.word());
+        let scope = *self.stack.last().expect("a declaration is in a scope");
+        self.tree.scopes[scope]
+            .bound
+            .insert(name.word().to_string(), name.clone());
     }
 
     fn read(&mut self, name: &str, whose: Whose) {
@@ -323,7 +386,7 @@ impl Walk {
     fn function(&mut self, function: &Function, named: bool) {
         if named {
             self.enter();
-            self.declare(function.name.word());
+            self.bind(&function.name);
         }
         self.enter();
         for param in &function.params {
@@ -347,11 +410,11 @@ impl Walk {
 
     fn pattern(&mut self, pattern: &Pattern) {
         match pattern {
-            Pattern::Name(name) | Pattern::Rest(name) => self.declare(name.word()),
+            Pattern::Name(name) | Pattern::Rest(name) => self.bind(name),
             // Its default is read where it's given none, before it's made.
             Pattern::Defaulted(name, default) => {
                 self.expr(default);
-                self.declare(name.word());
+                self.bind(name);
             }
             Pattern::Array(items) => items.iter().flatten().for_each(|item| self.pattern(item)),
             Pattern::Object(fields, rest) => {
@@ -363,7 +426,7 @@ impl Walk {
                     }
                     self.pattern(field);
                 }
-                rest.iter().for_each(|name| self.declare(name.word()));
+                rest.iter().for_each(|name| self.bind(name));
             }
         }
     }
@@ -385,9 +448,9 @@ impl Walk {
     fn hoist(&mut self, stmts: &[Stmt]) {
         for stmt in stmts {
             match &stmt.kind {
-                StmtKind::Const(name, _) | StmtKind::Let(name, _) => self.declare(name.word()),
+                StmtKind::Const(name, _) | StmtKind::Let(name, _) => self.bind(name),
                 StmtKind::Destructure { pattern, .. } => self.pattern_names(pattern),
-                StmtKind::Function(function) => self.declare(function.name.word()),
+                StmtKind::Function(function) => self.bind(&function.name),
                 _ => {}
             }
         }
@@ -402,7 +465,7 @@ impl Walk {
     /// What a hoisted pattern declares; its defaults are read as the
     /// statement runs.
     fn pattern_names(&mut self, pattern: &Pattern) {
-        pattern.names().into_iter().for_each(|name| self.declare(name));
+        pattern.bound().into_iter().for_each(|name| self.bind(name));
     }
 
     fn stmt(&mut self, stmt: &Stmt) {
@@ -451,7 +514,7 @@ impl Walk {
                 ..
             } => {
                 self.enter();
-                self.declare(name.word());
+                self.bind(name);
                 self.expr(start);
                 self.expr(test);
                 if let Some(value) = step.value() {
@@ -485,7 +548,7 @@ impl Walk {
                 self.block(body);
                 self.enter();
                 if let Some(error) = error {
-                    self.declare(error.word());
+                    self.bind(error);
                 }
                 self.block_in_scope(handler);
                 self.leave();
