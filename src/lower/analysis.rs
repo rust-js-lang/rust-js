@@ -142,6 +142,40 @@ use super::recognition::serde_derived;
 /// its `const _` block have impls too.
 pub(super) use super::recognition::serde_impl;
 
+/// What the crate's analyses say of its type parameters' bounds, which
+/// every lowering of the crate reads as one `traits::Given`, made of them
+/// in one place (`given`).
+pub struct BoundFacts {
+    /// The type parameters whose `Copy` bound takes a copy function (ADR 0289).
+    pub copied: IndexSet<(DefId, u32)>,
+    /// The type parameters whose `Clone` bound takes its dictionary (ADR
+    /// 0914, amended).
+    pub clones: IndexSet<(DefId, u32)>,
+    /// The type parameters a `Some` of which is the value, no caller giving
+    /// what may look like `None` (ADR 0051, amended).
+    pub unboxed: IndexSet<(DefId, u32)>,
+    /// The type parameters given as they are whose `Iterator` dictionary,
+    /// or an extension's, is given, as they're stepped by it (ADRs 0411,
+    /// 0487), with the trait's id.
+    pub stepped: IndexSet<(DefId, u32, DefId)>,
+    /// The bounds whose dictionary nothing reads, given none (#1915).
+    pub unread: IndexSet<(DefId, u32, DefId)>,
+}
+
+impl BoundFacts {
+    /// What a lowering reads of them, with what each function's JS takes.
+    pub(super) fn given<'a>(&'a self, js_given: &'a JsGiven) -> crate::lower::traits::Given<'a> {
+        crate::lower::traits::Given {
+            copied: &self.copied,
+            clones: &self.clones,
+            stepped: &self.stepped,
+            unread: &self.unread,
+            unboxed: &self.unboxed,
+            js_given,
+        }
+    }
+}
+
 /// Crate-wide facts collected before function emission. Body references point
 /// into the captured THIR; all collections are owned by this analysis result.
 pub(super) struct AnalyzedCrate<'a, 'tcx> {
@@ -220,23 +254,12 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     /// and a consumer, told of every library under it, asks each (ADR 0451,
     /// amended, #1591).
     pub drops_any: bool,
-    /// The type parameters whose `Copy` bound takes a copy function (ADR 0289).
-    pub copied: IndexSet<(DefId, u32)>,
-    /// The type parameters whose `Clone` bound takes its dictionary (ADR
-    /// 0914, amended).
-    pub clones: IndexSet<(DefId, u32)>,
-    /// The type parameters a `Some` of which is the value, no caller giving
-    /// what may look like `None` (ADR 0051, amended).
-    pub unboxed: IndexSet<(DefId, u32)>,
+    /// What the crate's analyses say of its type parameters' bounds, each
+    /// lowering's `traits::Given` (`BoundFacts::given`).
+    pub bounds: BoundFacts,
     /// What each function's JS takes its type parameters as, and the copies
     /// its calls need besides (ADR 0051, amended).
     pub js_given: JsGiven,
-    /// The type parameters given as they are whose `Iterator` dictionary,
-    /// or an extension's, is given, as they're stepped by it (ADRs 0411,
-    /// 0487), with the trait's id.
-    pub stepped: IndexSet<(DefId, u32, DefId)>,
-    /// The bounds whose dictionary nothing reads, given none (#1915).
-    pub unread: IndexSet<(DefId, u32, DefId)>,
     /// Each generic function's type parameters it's given a size, an
     /// alignment or a name of (ADR 0145), by their indices.
     pub type_facts: IndexMap<DefId, Vec<(u32, TypeFact)>>,
@@ -1114,14 +1137,14 @@ pub(super) fn analyze_crate<'a, 'tcx>(
             &mut name,
         )
     };
-    let given = crate::lower::traits::Given {
-        copied: &copied,
-        clones: &clones,
-        stepped: &stepped,
-        unread: &unread,
-        unboxed: &unboxed,
-        js_given: &js_given,
+    let bounds = BoundFacts {
+        copied,
+        clones,
+        stepped,
+        unread,
+        unboxed,
     };
+    let given = bounds.given(&js_given);
     // Whether a collect's items drop, as the lowering's drops answer it
     // where they're held, given the drops their function is (#737).
     let items_drop = |typing_env: ty::TypingEnv<'tcx>, ty: Ty<'tcx>, owner: DefId, taken: &[u32]| {
@@ -1247,12 +1270,8 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         stored_places,
         drop_params,
         drops_any,
-        copied,
-        clones,
-        unboxed,
+        bounds,
         js_given,
-        stepped,
-        unread,
         type_facts: facts.params,
         carried_super: facts.carried_super,
         built_slots: facts.built_slots,

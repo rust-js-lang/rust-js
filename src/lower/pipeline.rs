@@ -127,12 +127,8 @@ pub fn lower_crate<'tcx>(
         stored_places,
         drop_params,
         drops_any,
-        copied,
-        clones,
-        unboxed,
+        bounds,
         js_given,
-        stepped,
-        unread,
         type_facts,
         carried_super,
         built_slots,
@@ -203,14 +199,7 @@ pub fn lower_crate<'tcx>(
         vecs: &changed_vecs,
     };
     let copying = super::instances::Copying::new((&trait_impls, &foreign), changed);
-    let given = super::traits::Given {
-        copied: &copied,
-        clones: &clones,
-        stepped: &stepped,
-        unread: &unread,
-        unboxed: &unboxed,
-        js_given: &js_given,
-    };
+    let given = bounds.given(&js_given);
     // The library functions the crate's calls give more than they take,
     // compiled here first, before anything is lowered (ADR 0914).
     let analyzed = super::instances::Analyzed {
