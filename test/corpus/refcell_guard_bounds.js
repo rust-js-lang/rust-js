@@ -54,14 +54,12 @@ function check(what, f, TDebug) {
  * function of the crate's, a write through it.
  */
 function truncatedByItsGuard(queue, i) {
-  const items = $borrowMut(queue, true);
-  try {
-    if (i < items.length) {
-      $truncate(items, 0);
-      items[$at(items, i)] = 1;
-    }
-  } finally {
-    $unborrow(items);
+  if (queue.borrows) {
+    $alreadyBorrowed();
+  }
+  if (i < queue.length) {
+    $truncate(queue, 0);
+    queue[$at(queue, i)] = 1;
   }
   return 0;
 }
@@ -71,33 +69,25 @@ function shrink(items) {
 }
 
 function shrunkByACall(queue, i) {
-  const items = $borrowMut(queue, true);
-  try {
-    if (i < items.length) {
-      shrink(items);
-      return $index(items, i);
-    }
-  } finally {
-    $unborrow(items);
+  if (queue.borrows) {
+    $alreadyBorrowed();
+  }
+  if (i < queue.length) {
+    shrink(queue);
+    return $index(queue, i);
   }
   return 0;
 }
 
 function replacedThroughItsGuard(queue, i) {
-  const items = $borrowMut(queue, true);
-  let result;
-  if (i < items.length) {
-    $assign(items, []);
-    try {
-      result = $index(items, i);
-    } finally {
-      $unborrow(items);
-    }
-    return result;
+  if (queue.borrows) {
+    $alreadyBorrowed();
   }
-  result = 0;
-  $unborrow(items);
-  return result;
+  if (i < queue.length) {
+    $assign(queue, []);
+    return $index(queue, i);
+  }
+  return 0;
 }
 
 /** A `RefMut` a function gives, of another cell than the one it's given. */
@@ -125,13 +115,12 @@ function borrowedElsewhere(queue, other, i) {
  * of it: the index checked again.
  */
 function afterItsGuard(queue, clear, i) {
-  const items = $borrowMut(queue, true);
-  if (i >= items.length) {
-    const result = 0;
-    $unborrow(items);
-    return result;
+  if (queue.borrows) {
+    $alreadyBorrowed();
   }
-  $unborrow(items);
+  if (i >= queue.length) {
+    return 0;
+  }
   clear();
   if (queue.borrows < 0) {
     $alreadyMutablyBorrowed();

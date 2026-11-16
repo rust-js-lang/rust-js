@@ -1035,8 +1035,9 @@ fn direct<'tcx>(
         }
         // Each value the body's own expressions have, not what's behind a
         // reference, `*state`, which no body owns: what a call drops through
-        // one is the call's, above.
-        let behind_ref = matches!(e.kind, ExprKind::Deref { arg } if thir[arg].ty.is_ref());
+        // one is the call's, above; nor its scope's, `{ *history }` of a
+        // guard's deref in a closure, the same place (#1815).
+        let behind_ref = matches!(thir[strip(thir, at)].kind, ExprKind::Deref { arg } if thir[arg].ty.is_ref());
         if !behind_ref {
             dropped(&mut found, e.ty);
         }

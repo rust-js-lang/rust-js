@@ -32,7 +32,9 @@ struct Walk<'tcx> {
     /// Its type parameters, and what only their caller knows, drop nothing
     /// (ADR 0190): what's found is what it drops of its own.
     params_none: bool,
-    /// Guards drop nothing: what's found is what else it drops (ADR 0328).
+    /// Guards, and a counted `Rc`'s own count, drop nothing:
+    /// what's found is what else it runs, which may ask whether a cell is
+    /// borrowed (ADR 0328, #1815).
     guards_none: bool,
     /// Where it's asked whether the outermost type is inside itself, each
     /// type walked so far: one walked again reaches no more than it did,
@@ -271,9 +273,13 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
         )
     }
 
-    /// Whether dropping a `ty` runs more than a guard's, which only counts
-    /// its cell borrowed once fewer (ADR 0328).
-    pub(in crate::lower) fn drops_but_guards(&self, ty: Ty<'tcx>) -> bool {
+    /// Whether dropping a `ty` runs code that may ask whether a cell is
+    /// borrowed: more than a guard's drop, which only counts its cell
+    /// borrowed once fewer (ADR 0328), or a counted `Rc`'s, which only
+    /// counts, the last one running what its value's drop runs.
+    /// A type parameter runs what its drop runs where a caller gives one,
+    /// and nothing where none does: so the JS runs (#1815).
+    pub(in crate::lower) fn drop_may_ask(&self, ty: Ty<'tcx>) -> bool {
         self.drops_in(
             ty,
             &mut Walk {
@@ -563,6 +569,8 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
             {
                 match self.drops_in(pointee, walk) {
                     Drops::Unsupported(t, what) => Drops::Unsupported(t, what),
+                    // Its count asks no cell: what the last one drops may.
+                    found if walk.guards_none => found,
                     _ => Drops::Runs,
                 }
             }

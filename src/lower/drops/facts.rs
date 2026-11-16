@@ -41,6 +41,11 @@ pub(in crate::lower) struct Facts {
     /// moved but into `drop`, while nothing after it in its block can ask
     /// whether its cell is borrowed: not counted (ADR 0863).
     pub(in crate::lower) let_held: IndexSet<ExprId>,
+    /// Of `let_held`, each whose guard is read before it's dropped: checked
+    /// where it's made, and not counted, nor dropped, as a momentary one
+    /// (ADR 0863, amended, #1815). One dropped unread, `let g = c.borrow();
+    /// drop(g);`, a check alone, stays a count and its release.
+    pub(in crate::lower) let_momentary: IndexSet<ExprId>,
     /// Each other, by its call's `fun`, whose guard is held only while code
     /// of the crate's or std's runs, which rust-js sees, while it's held: no
     /// library's code, nor JS's (ADR 0863).
@@ -317,7 +322,7 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
         else {
             return;
         };
-        let drops = |ty| self.cx.drops_but_guards(self.cx.thir_ty(ty));
+        let drops = |ty| self.cx.drop_may_ask(self.cx.thir_ty(ty));
         if !self.borrows.bounds_ask(recognition, (id, generic_args), cell, &drops) {
             self.facts.momentary.insert(fun);
         }
@@ -404,7 +409,7 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
             (None, Some(extent))
                 if let ExprKind::Assign { lhs, .. } = self.thir[strip(self.thir, extent)].kind
                     && (lhs == e || self.stack.contains(&lhs))
-                    && !self.cx.drops_but_guards(self.cx.thir_ty(self.thir[lhs].ty)) =>
+                    && !self.cx.drop_may_ask(self.cx.thir_ty(self.thir[lhs].ty)) =>
             {
                 vec![lhs]
             }
@@ -603,6 +608,7 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
             thir: self.thir,
             var,
             moved: false,
+            read: false,
         };
         // Held until a statement of its block drops it, `drop(v);`, or
         // its block ends; a borrow of what it guards, until its block ends.
@@ -624,6 +630,9 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
         }
         if !moves.moved && self.held_quietly((fun, cell), (rest, value.as_slice()), &IndexSet::default()) {
             self.facts.let_held.insert(fun);
+            if moves.read || through.is_some() {
+                self.facts.let_momentary.insert(fun);
+            }
         }
     }
 
@@ -720,11 +729,14 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
 /// Whether a `let`'s guard `var` is moved, but into `drop`: given by value
 /// anywhere, which may keep it (ADR 0863). A reference to it can't outlive
 /// it.
+// Flags, not a state: a guard may be read and moved, either or neither.
 struct Moves<'c, 'a, 'tcx> {
     recognition: &'c crate::lower::recognition::Recognition<'c, 'tcx>,
     thir: &'a Thir<'tcx>,
     var: LocalVarId,
     moved: bool,
+    /// Whether it's read, through a reference to it.
+    read: bool,
 }
 
 impl<'c, 'a, 'tcx> Moves<'c, 'a, 'tcx> {
@@ -756,7 +768,10 @@ impl<'c, 'a, 'tcx> Visitor<'a, 'tcx> for Moves<'c, 'a, 'tcx> {
             return;
         }
         match expr.kind {
-            ExprKind::Borrow { arg, .. } | ExprKind::RawBorrow { arg, .. } if self.is_var(arg) => return,
+            ExprKind::Borrow { arg, .. } | ExprKind::RawBorrow { arg, .. } if self.is_var(arg) => {
+                self.read = true;
+                return;
+            }
             ExprKind::Call { .. } if self.is_drop(&expr.kind) => return,
             ExprKind::VarRef { id } if id == self.var => {
                 self.moved = true;

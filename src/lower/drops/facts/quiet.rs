@@ -40,7 +40,7 @@ pub(super) struct Quiet<'c, 'q, 'a, 'tcx> {
 
 impl<'c, 'q, 'a, 'tcx> Quiet<'c, 'q, 'a, 'tcx> {
     fn drops(&self, ty: Ty<'tcx>) -> bool {
-        self.cx.drops_but_guards(self.cx.thir_ty(ty))
+        self.cx.drop_may_ask(self.cx.thir_ty(ty))
     }
 
     /// `e` through what reads a place's value as it is: a borrow, a deref,

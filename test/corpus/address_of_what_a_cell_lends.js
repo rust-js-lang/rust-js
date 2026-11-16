@@ -2,6 +2,7 @@
 
 import {
   $addr,
+  $alreadyBorrowed,
   $alreadyMutablyBorrowed,
   $borrow,
   $borrowMut,
@@ -89,13 +90,15 @@ function main() {
   const one = { a: 5, b: 6 };
   let guard;
   try {
-    guard = $borrowMut(one, true);
+    if (one.borrows) {
+      $alreadyBorrowed();
+    }
+    guard = one;
   } catch (error) {
     $unborrow(borrow);
     throw error;
   }
   const lent = $addr($ptrTo(guard), 8);
-  $unborrow(guard);
   const own = $addr($ptrOuter(one, 4), 12);
   console.log(`object ${(lent - own) >>> 0} ${($addr($ptrTo(one), 8) - own) >>> 0}`);
   let tmp;
@@ -212,7 +215,7 @@ function main() {
   $storedIn(counter, "count", 0, 4);
   let count$1;
   try {
-    count$1 = $borrow($fieldCell(counter, "count"), true);
+    count$1 = $borrow($fieldCell(counter, "count"));
   } catch (error) {
     $unborrow(borrow);
     throw error;
@@ -221,11 +224,9 @@ function main() {
   try {
     value = ($addr($ptr(count$1, "value", 0), 4) - cs) >>> 0;
   } catch (error) {
-    $unborrow(count$1);
     $unborrow(borrow);
     throw error;
   }
-  $unborrow(count$1);
   const arg = ($addr($ptr(counter, "seen", 8), 2) - cs) >>> 0;
   console.log(`field ${count} ${value} ${arg}`);
   $storedIn(counter, "count", 0, 4);

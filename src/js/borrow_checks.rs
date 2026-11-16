@@ -81,12 +81,23 @@ impl Stmt {
 /// written as their checks before it (`Stmt::borrow_checks_first`).
 /// A `const` that held the borrow, `const borrowMut = $borrowMut(nodes)`,
 /// its cell once its check is first, is the cell, read by its name where
-/// nothing after sets either or declares the cell's again.
+/// nothing after sets either or declares the cell's again. A variable that
+/// held it, its own cell, a guard a `let` holds named as the parameter it
+/// borrows, `state = $borrowMut(state)`, is the check alone (#1815).
 pub fn borrow_checks_first(stmts: &mut Vec<Stmt>) {
     let mut i = 0;
     while i < stmts.len() {
         let checks = stmts[i].borrow_checks_first();
         let n = checks.len();
+        let itself = matches!(&stmts[i].kind, StmtKind::Assign(
+            Expr { kind: ExprKind::Var(to), .. },
+            Expr { kind: ExprKind::Var(cell), .. },
+        ) if n > 0 && to == cell);
+        if itself {
+            stmts.splice(i..=i, checks);
+            i += n;
+            continue;
+        }
         let alias = match &stmts[i].kind {
             StmtKind::Const(
                 name,

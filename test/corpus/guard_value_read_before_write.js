@@ -51,9 +51,8 @@ export function held(handler) {
 
 export function second(handler) {
   // Through a guard named, read then dropped.
-  const guard = $borrow($fieldCell(handler, "chunk"), true);
+  const guard = $borrow($fieldCell(handler, "chunk"));
   const chunk = guard.value;
-  $unborrow(guard);
   touch(handler);
   return chunk?.id ?? -1;
 }

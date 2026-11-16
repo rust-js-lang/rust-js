@@ -1572,3 +1572,62 @@ rewrites of `refcell_guard_bounds`, its four lines off
 holds a tuple's, a struct field's, an array item's and a nested one's, and
 a number's and a `String`'s, against native Rust; mutation
 `cell-guard-deref-a-place`, caught.
+
+## Amendment: a guard a `let` holds quietly is checked, not counted, beside a counted one; an `Rc`'s count asks no cell (2026-11-16, #1815)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none observable. A
+borrow that nothing can ask about while it's held is unobservable, so JS's
+form serves: it's checked where it's made, so a `BorrowError` is still
+raised wherever Rust raises one.
+
+An undo stack's `Rc<RefCell<History<State>>>`, as a port writes it, was
+counted at each of its guards: `$borrowMut(history, true)`, a `try`
+around the rest of its closure, and `$unborrow` at each way out (#1815).
+That was so though no code of the crate's, nor any callback, runs while
+those guards are held. Two answers were too wide, and one form was
+missing:
+
+- **An `Rc`'s count asks no cell.** What a drop runs that may ask whether
+  a cell is borrowed (`drop_may_ask`, formerly `drops_but_guards`) took a
+  counted `Rc` as running code: `entries[i] = state`, `truncate`, a
+  `push` of an `Rc<State>` and a `None` returned all kept the guard
+  counted. Its count is bookkeeping. The last `Rc` runs what its value's
+  drop runs: of a type parameter, its caller's drop where one is given,
+  and nothing where none is, as the JS runs it.
+- **A guard's deref in a closure is no dropped value.** A body's summary
+  of what it may drop (`cell_borrows::direct`) took `{ *history }`, a
+  `Scope` around the deref of a guard captured by reference, as a value
+  of `History<State>` the closure drops. That made every closure reading
+  through a guard in generic code ask anything. A place behind a
+  reference is seen through its scope now.
+- **A quiet `let` guard of a counted cell is a momentary one.** A guard
+  a `let` holds while nothing in its block can ask (`let_held`) only took
+  its cell out of the counted ones. Where another borrow of that cell is
+  counted (a guard held while a callback runs), it was lowered counted.
+  Now it's checked and not counted, as a momentary guard is (ADR 0328):
+  `if (history.borrows) { $alreadyBorrowed(); }`, then reads of the cell
+  itself (`let_momentary`), as ADR 1141 writes a momentary one; a guard
+  named as the parameter it borrows leaves no `state = state;`. One
+  dropped unread, `let g = c.borrow(); drop(g);`, a check alone, stays a
+  count and its release.
+
+A guard stays counted wherever a callback can overlap it: a call that
+may run code that borrows its cell (`call_asks`: a `dyn Fn`, a fn
+pointer, unseen code), a drop that may run such code (a type parameter
+whose drop a caller gives, or one the drop owner can't decide), and a
+caller the crate doesn't see.
+
+Proof: corpus cases `guard_held_while_its_rc_is_cloned_out`,
+`guard_held_in_an_undo_stack` (the issue's program),
+`guard_held_while_an_entry_whose_drop_borrows_is_written_over` (stays
+counted; `try_borrow_mut` fails inside the drop, natively and as JS),
+`guard_ended_before_its_value_is_dropped_by_the_caller` (the guard ends
+as the function returns; the value's drop later meets the caller's
+borrow) and `guard_let_checked_beside_a_counted_one`, each against
+native in both builds; 9 snapshots whose guards are no longer counted,
+their runs native's; test/borrow-forms.test.ts's forms. Mutations
+`rc-count-asks-a-cell`, `guard-deref-in-a-scope-dropped`,
+`let-held-guard-counted`, `let-held-unread-guard-checked-alone` and
+`guard-assigned-its-own-cell-kept`; `place-behind-ref-dropped`
+retargeted. The issue's `$index` and `>>> 0` arithmetic is
+the range owners' part, still open under #1815.

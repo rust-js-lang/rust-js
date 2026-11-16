@@ -168,3 +168,35 @@ test("a guard held while a Drop runs is counted, as it was", () => {
   expect(ran(dir, "counted_while_mutably_held")).toBe("RefCell already mutably borrowed 3\n");
   expect(ran(dir, "counted_while_held")).toBe("RefCell already borrowed [1, 2]\n");
 });
+
+/** A corpus case's JS, as a program. */
+function caseJs(name: string): string {
+  const dir = fixture(`borrow-forms-${name}`);
+  run([compiler, join(import.meta.dir, "corpus", `${name}.rs`), "-o", join(dir, "case.js"), "--", "--edition=2024", "-Awarnings"]);
+  return readFileSync(join(dir, "case.js"), "utf8");
+}
+
+// An undo stack's guards, each held while nothing that may borrow its cell
+// runs (#1815): an `Rc`'s count, `entries[i] = state` or `truncate` of an
+// `Rc<State>` whose `State` drops nothing, asks no cell, nor does a guard's
+// deref in a closure of generic code. No guard of it is counted or checked.
+test("an undo stack's guards, held while only Rc counts and reads run, are neither counted nor checked", () => {
+  const js = caseJs("guard_held_in_an_undo_stack");
+  expect(js).not.toContain("$borrowMut(");
+  expect(js).not.toContain("$unborrow(");
+});
+
+// A guard a `let` holds quietly beside another of its cell counted while a
+// callback runs: checked where it's made, not counted (#1815); and one
+// named as the parameter it borrows is its check alone, no `state = state;`.
+test("a quiet let guard of a counted cell is checked, not counted, and no self-assignment is left", () => {
+  const one = caseJs("guard_let_checked_beside_a_counted_one");
+  expect(one).toContain("if (history.borrows) {\n      $alreadyBorrowed();\n    }");
+  expect(one.match(/\$borrowMut\(/g) ?? []).toEqual([]);
+  const advance = caseJs("refcell_eq_through_guard");
+  expect(advance).toContain("if (state.borrows) {\n    $alreadyBorrowed();\n  }");
+  expect(advance).not.toContain("state = state;");
+  // One dropped unread, a check alone, stays a count and its release.
+  const unread = caseJs("nullable_written_through_borrows");
+  expect(unread).toContain("const guard = $borrow(COUNTED, true);\n  $unborrow(guard);");
+});

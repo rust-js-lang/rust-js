@@ -496,4 +496,12 @@ export const mutations: Mutation[] = [
       "backend's error drops nothing"
     ]
   },
+  {
+    name: "rc-count-asks-a-cell",
+    breaks: "a counted `Rc`'s own count is taken as code that may ask whether a cell is borrowed, so an undo stack's guard held while an `Rc<State>` entry is written over or truncated, `State` dropping nothing, is counted with a `try` and `$unborrow` (#1815)",
+    file: "src/lower/drops/types.rs",
+    find: "                    found if walk.guards_none => found,\n",
+    replace: "",
+    tests: ["test/borrow-forms.test.ts", "-t", "an undo stack's guards"],
+  },
 ];

@@ -110,7 +110,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a place behind a reference, `*state`, is taken as dropped where it's read, so a generic `Hash` runs anything and its cell is counted",
     file: "src/lower/analysis/cell_borrows.rs",
-    find: "        let behind_ref = matches!(e.kind, ExprKind::Deref { arg } if thir[arg].ty.is_ref());\n",
+    find: "        let behind_ref = matches!(thir[strip(thir, at)].kind, ExprKind::Deref { arg } if thir[arg].ty.is_ref());\n",
     replace: "        let behind_ref = false;\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_identity_set.rs$"],
     snapshots: true,
@@ -466,5 +466,13 @@ export const mutations: Mutation[] = [
     find: "        false if recognition.is_std(id) => Called::Std(id, instance.args),\n        false => Called::Unseen,\n",
     replace: "        false if recognition.is_std(id) => Called::Std(id, instance.args),\n        false => Called::Any,\n",
     tests: ["test/lowering-guard-extents.test.ts", "-t", "a guard that's only a call's receiver is held while the call runs"],
+  },
+  {
+    name: "guard-deref-in-a-scope-dropped",
+    breaks: "a closure's `{ *history }`, a guard's deref in its scope, is taken as a value the closure drops, so a closure of generic code reading through a guard may ask anything, and the guard held while it runs is counted (#1815)",
+    file: "src/lower/analysis/cell_borrows.rs",
+    find: "        let behind_ref = matches!(thir[strip(thir, at)].kind, ExprKind::Deref { arg } if thir[arg].ty.is_ref());\n",
+    replace: "        let behind_ref = matches!(e.kind, ExprKind::Deref { arg } if thir[arg].ty.is_ref());\n",
+    tests: ["test/borrow-forms.test.ts", "-t", "an undo stack's guards"],
   },
 ];

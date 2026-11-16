@@ -26,13 +26,11 @@ function totalsDebug_fmt(totals) {
 }
 
 function add(totals, name, n) {
-  totals = $borrowMut(totals, true);
-  totals.sum = BigInt.asIntN(64, totals.sum + n);
-  try {
-    totals.names.push(name);
-  } finally {
-    $unborrow(totals);
+  if (totals.borrows) {
+    $alreadyBorrowed();
   }
+  totals.sum = BigInt.asIntN(64, totals.sum + n);
+  totals.names.push(name);
 }
 
 function main() {

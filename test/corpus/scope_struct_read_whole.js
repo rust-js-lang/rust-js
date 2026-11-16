@@ -13,9 +13,8 @@ function run(k) {
   };
 
   function bump() {
-    const n = $borrowMut($fieldCell(tally, "n"), true);
+    const n = $borrowMut($fieldCell(tally, "n"));
     n.value = (n.value + tally.pair[0]) >>> 0;
-    $unborrow(n);
     return n.value;
   }
 

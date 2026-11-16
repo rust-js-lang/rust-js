@@ -33,4 +33,12 @@ export const mutations: Mutation[] = [
     replace: "        let checks: Vec<Stmt> = Vec::new();\n",
     tests: ["test/borrow-forms.test.ts", "-t", "checked where they're called"],
   },
+  {
+    name: "guard-assigned-its-own-cell-kept",
+    breaks: "a guard a `let` holds named as the parameter it borrows, checked alone, leaves `state = state;` (#1815)",
+    file: "src/js/borrow_checks.rs",
+    find: "        if itself {\n",
+    replace: "        if false && itself {\n",
+    tests: ["test/borrow-forms.test.ts", "-t", "a quiet let guard of a counted cell"],
+  },
 ];

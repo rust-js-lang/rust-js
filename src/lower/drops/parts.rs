@@ -389,12 +389,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// Where each of this body's momentary borrows is called, its call's
     /// `fun`'s span: a guard held only while nothing can ask whether its
-    /// cell is borrowed (ADR 0328), of the facts found already, which MIR's
-    /// lowering asks, found here where they aren't yet.
+    /// cell is borrowed (ADR 0328), a temporary's or a `let`'s to its
+    /// block's end (ADR 0863, amended, #1815), of the facts found already,
+    /// which MIR's lowering asks, found here where they aren't yet.
     pub(in crate::lower) fn momentary_borrows(&self) -> IndexSet<Span> {
         let key = std::ptr::from_ref(self.frame.thir) as usize;
         let spans = |facts: &Facts| -> IndexSet<Span> {
-            facts.momentary.iter().map(|&fun| self.frame.thir[fun].span).collect()
+            (facts.momentary.iter().chain(&facts.let_momentary))
+                .map(|&fun| self.frame.thir[fun].span)
+                .collect()
         };
         match self.drop_state.facts.get(&key) {
             Some(facts) => spans(facts),

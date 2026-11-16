@@ -406,4 +406,20 @@ export const mutations: Mutation[] = [
     replace: "                    if !placed && !carried && !false {\n",
     tests: ["test/effect-cleanup-drops.test.ts", "-t", "drops what it holds as React calls it"],
   },
+  {
+    name: "let-held-guard-counted",
+    breaks: "a guard a `let` holds while nothing in its block can ask, of a cell another guard is counted of, is counted, `$borrowMut(history, true)` and its `$unborrow`, not checked alone (#1815)",
+    file: "src/lower/drops/facts.rs",
+    find: "                self.facts.let_momentary.insert(fun);\n",
+    replace: "",
+    tests: ["test/borrow-forms.test.ts", "-t", "a quiet let guard of a counted cell"],
+  },
+  {
+    name: "let-held-unread-guard-checked-alone",
+    breaks: "a guard a `let` holds and drops unread, `let guard = t.borrow(); drop(guard);`, is checked alone, which leaves its cell read as a statement of its own, `COUNTED;` (#1815)",
+    file: "src/lower/drops/facts.rs",
+    find: "            if moves.read || through.is_some() {\n",
+    replace: "            if true || moves.read || through.is_some() {\n",
+    tests: ["test/borrow-forms.test.ts", "-t", "a quiet let guard of a counted cell"],
+  },
 ];
