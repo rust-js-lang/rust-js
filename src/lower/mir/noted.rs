@@ -60,14 +60,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `name`, a temporary a `test && value` given what skips what's falsy
     /// tests: read for its truth alone.
-    pub(in crate::lower) fn note_tested(&mut self, name: &str) {
-        self.locals.mir.tested.insert(name.to_string());
+    pub(in crate::lower) fn note_tested(&mut self, name: &js::Name) {
+        self.locals.mir.tested.insert(name.clone());
     }
 
     /// `name`, a temporary given to what skips what's falsy, whose `test ?
     /// value : undefined` is given as `test && value` where it's moved to.
-    pub(in crate::lower) fn note_falsy(&mut self, name: &str) {
-        self.locals.mir.falsy.insert(name.to_string());
+    pub(in crate::lower) fn note_falsy(&mut self, name: &js::Name) {
+        self.locals.mir.falsy.insert(name.clone());
     }
 
     /// A body's inclusive ranges no step can leave exhausted, by name

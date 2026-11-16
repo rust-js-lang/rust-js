@@ -244,7 +244,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let name = state.locals.names[local].clone();
                 let value = std::mem::replace(held, Expr::var(&name));
                 made.push(StmtKind::Const(name.clone(), value).at(js::Span::NONE));
-                self.locals.mir.made.captured.insert(name.clone().into_word());
+                self.locals.mir.made.captured.insert(name.clone());
                 self.locals.mir.alike.insert(name.clone().into_word());
                 state.own_names.insert(name.into_word());
                 state.in_place.insert(local, expr);
@@ -256,14 +256,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 for stmt in &made[before..] {
                     match &stmt.kind {
                         StmtKind::Const(name, _) => {
-                            self.locals.mir.made.captured.insert(name.to_string());
+                            self.locals.mir.made.captured.insert(name.clone());
                             self.locals.mir.alike.insert(name.to_string());
                             state.own_names.insert(name.to_string());
                         }
                         // What a branch's element reads, set where its test
                         // holds: no `const`, but MIR's too.
                         StmtKind::Let(name, None) => {
-                            self.locals.mir.made.captured.insert(name.to_string());
+                            self.locals.mir.made.captured.insert(name.clone());
                             state.own_names.insert(name.to_string());
                         }
                         _ => {}

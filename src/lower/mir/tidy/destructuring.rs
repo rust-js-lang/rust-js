@@ -550,7 +550,7 @@ pub(super) fn tuple_reads(
     stmts: &mut Vec<Stmt>,
     changing: &IndexSet<String>,
     set_elsewhere: &IndexSet<String>,
-    captured: &IndexSet<String>,
+    captured: &IndexSet<js::Name>,
 ) {
     let inert = |item: &Expr| {
         let mut inert = !item.has_effects();
@@ -562,7 +562,7 @@ pub(super) fn tuple_reads(
         let found = match &stmts[i].kind {
             StmtKind::Const(t, value)
                 if let ExprKind::Array(items) = &value.kind
-                    && (is_temporary(t) || (captured.contains(t.word()) && items.iter().all(inert))) =>
+                    && (is_temporary(t) || (captured.contains(t) && items.iter().all(inert))) =>
             {
                 Some((t.clone(), items.clone()))
             }

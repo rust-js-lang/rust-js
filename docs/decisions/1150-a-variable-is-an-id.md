@@ -826,3 +826,12 @@ word, as its reads are counted (`read`): a flag's name is lowering's own,
 apart from every other, so its word is one variable; they move with
 `js::Writes` and the walks of what's read by a word.
 
+## Names are ids, step 3's fifth slice: falsy, tested and what lowering moved in, by id (2026-11-16)
+
+The temporaries a binding's call skips what's falsy of (`falsy`), those
+read for their truth alone (`tested`), noted where they're made
+(`note_falsy`, `note_tested`), and the values lowering made where they're
+used (`Made::captured`), hold each variable's `Name`, and `falsy_values`,
+`aliases`, `plain_reads`, `tuple_reads`, `guarded_lets` and `moved` ask
+whether a variable is one by its id. Byte-identical.
+

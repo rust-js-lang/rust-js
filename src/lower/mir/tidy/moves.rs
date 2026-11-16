@@ -15,7 +15,7 @@ pub(super) struct MoveFacts<'a> {
     /// changes.
     pub plain: &'a IndexSet<String>,
     /// The elements made ahead of a branch, which may be read where it is.
-    pub captured: &'a IndexSet<String>,
+    pub captured: &'a IndexSet<js::Name>,
     /// What holds a place MIR's lowering fixed, `const item =
     /// $unwrap(resource.state);`: a temporary of its, named.
     pub fixed: &'a IndexSet<String>,
@@ -161,7 +161,7 @@ fn moved(stmt: &Stmt, rest: &[Stmt], facts: &MoveFacts) -> Option<(Moved, Why)> 
     };
     // A temporary MIR made, or an element made ahead of a branch: what the
     // program didn't name.
-    let element = facts.captured.contains(name.word());
+    let element = facts.captured.contains(name);
     if !is_temporary(name) && !element && !facts.fixed.contains(name.word()) {
         return None;
     }
@@ -894,11 +894,12 @@ mod tests {
     /// nothing in the body changed or set.
     fn decided(body: &[Stmt]) -> Option<Why> {
         let none = IndexSet::default();
+        let no_names: IndexSet<js::Name> = IndexSet::default();
         let facts = MoveFacts {
             changing: &none,
             set: &none,
             plain: &none,
-            captured: &none,
+            captured: &no_names,
             fixed: &none,
             paired: &none,
         };

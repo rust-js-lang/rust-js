@@ -95,9 +95,9 @@ pub(super) struct Hints<'h> {
     /// The name of the function's return place.
     pub(super) result: &'h str,
     /// The temporaries a function that skips what's falsy is given.
-    pub(super) falsy: &'h IndexSet<String>,
+    pub(super) falsy: &'h IndexSet<js::Name>,
     /// And the temporaries such a `test && value` tests.
-    pub(super) tested: &'h IndexSet<String>,
+    pub(super) tested: &'h IndexSet<js::Name>,
     /// Where the program writes its `if`s, loops, `&&`s, tables and
     /// comments (`hints::Written`).
     pub(super) written: &'h super::hints::Written,
@@ -258,24 +258,20 @@ fn unread_result(body: &mut Vec<Stmt>, result: &str) {
 /// value`: one read there alone, which nothing else tells from
 /// `undefined`. A test of one read there alone is read for its truth:
 /// `!!a || b`'s, `a || b`.
-fn falsy_values(body: &mut Vec<Stmt>, falsy: &IndexSet<String>, tested: &IndexSet<String>) {
-    let falsy: IndexSet<&str> = (falsy.iter().map(String::as_str))
-        .filter(|n| js::mentions_in(body, n) == 1)
-        .collect();
-    let tested: IndexSet<&str> = (tested.iter().map(String::as_str))
-        .filter(|n| js::mentions_in(body, n) == 1)
-        .collect();
+fn falsy_values(body: &mut Vec<Stmt>, falsy: &IndexSet<js::Name>, tested: &IndexSet<js::Name>) {
+    let falsy: IndexSet<&js::Name> = (falsy.iter()).filter(|n| js::mentions_of(body, n) == 1).collect();
+    let tested: IndexSet<&js::Name> = (tested.iter()).filter(|n| js::mentions_of(body, n) == 1).collect();
     js::statement_lists(body, &mut |stmts| {
         for stmt in stmts.iter_mut() {
             if let StmtKind::Const(name, value) = &mut stmt.kind
-                && falsy.contains(name.word())
+                && falsy.contains(&*name)
                 && let ExprKind::Cond(test, then, none) = &value.kind
                 && matches!(none.kind, ExprKind::Undefined)
             {
                 *value = Expr::bin(Op::And, test.tested(), (**then).clone());
             }
             if let StmtKind::Const(name, value) = &mut stmt.kind
-                && tested.contains(name.word())
+                && tested.contains(&*name)
             {
                 *value = value.tested();
             }
@@ -1060,11 +1056,12 @@ mod tests {
         assert_eq!(paired, [t5.to_string(), t6.to_string()].into());
         let changing: IndexSet<String> = IndexSet::from_iter([t5.to_string(), t6.to_string()]);
         let none = IndexSet::default();
+        let no_names: IndexSet<js::Name> = IndexSet::default();
         let facts = MoveFacts {
             changing: &changing,
             set: &none,
             plain: &none,
-            captured: &none,
+            captured: &no_names,
             fixed: &none,
             paired: &paired,
         };

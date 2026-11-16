@@ -197,10 +197,10 @@ pub(super) struct Found {
     /// Of a body lowered from its MIR, the temporaries a function that skips
     /// what's falsy is given, whose `test ? value : undefined` is given as
     /// `test && value` (`#[rust_js::skips_falsy]`) where it's moved to.
-    pub(super) falsy: IndexSet<String>,
+    pub(super) falsy: IndexSet<js::Name>,
     /// And the temporaries such a `test && value` tests: read for their
     /// truth alone.
-    pub(super) tested: IndexSet<String>,
+    pub(super) tested: IndexSet<js::Name>,
     /// Of a body lowered from its MIR, the `const`s it made that tidy
     /// reads in place where it can, as its temporaries.
     pub(super) made: Made,

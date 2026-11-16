@@ -136,11 +136,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     && matches!(none.kind, js::ExprKind::Undefined)
                 {
                     if let js::ExprKind::Var(name) = &test.kind {
-                        self.note_tested(name.word());
+                        self.note_tested(name);
                     }
                     *arg = Expr::bin(Op::And, test.tested(), (**value).clone());
                 } else if let js::ExprKind::Var(name) = &arg.kind {
-                    self.note_falsy(name.word());
+                    self.note_falsy(name);
                 }
             }
         }

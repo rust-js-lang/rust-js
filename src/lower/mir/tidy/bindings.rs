@@ -340,11 +340,11 @@ pub(super) fn last_assigns(stmts: &[Stmt], t: &str) -> bool {
 /// a temporary or what an element reads: `q.title` where `t` is read, each
 /// time. Not a read a getter may answer, which may give another value each
 /// time it's read (`Expr::reads_same`, #189).
-pub(super) fn plain_reads(stmts: &mut Vec<Stmt>, plain: &IndexSet<String>, captured: &IndexSet<String>) {
+pub(super) fn plain_reads(stmts: &mut Vec<Stmt>, plain: &IndexSet<String>, captured: &IndexSet<js::Name>) {
     let mut i = 0;
     while i < stmts.len() {
         let read = match &stmts[i].kind {
-            StmtKind::Const(name, value) if is_temporary(name) || captured.contains(name.word()) => {
+            StmtKind::Const(name, value) if is_temporary(name) || captured.contains(name) => {
                 (value.reads_same() && super::plain_field(value, plain)).then(|| (name.clone(), value.clone()))
             }
             _ => None,
@@ -540,7 +540,7 @@ pub(super) fn dropping(stmts: &mut Vec<Stmt>, a: &str, b: &str) {
 /// `let c; if (t) { c = e; }`, what MIR made of an element only where its
 /// test holds, ahead of a later child, read once: `const c = t ? e :
 /// undefined;`, which reads as one, and is read in place as one.
-pub(super) fn guarded_lets(stmts: &mut Vec<Stmt>, captured: &IndexSet<String>) {
+pub(super) fn guarded_lets(stmts: &mut Vec<Stmt>, captured: &IndexSet<js::Name>) {
     let mut i = 0;
     while i + 2 < stmts.len() {
         let made = match (&stmts[i].kind, &stmts[i + 1].kind) {
@@ -552,7 +552,7 @@ pub(super) fn guarded_lets(stmts: &mut Vec<Stmt>, captured: &IndexSet<String>) {
                     },
                 ] = then.as_slice()
                     && matches!(&target.kind, ExprKind::Var(v) if v == x)
-                    && (is_temporary(x) || captured.contains(x.word()))
+                    && (is_temporary(x) || captured.contains(x))
                     && js::mentions_of(&stmts[i + 2..], x) == 1 =>
             {
                 Some((x.clone(), Expr::cond(test.clone(), value.clone(), Expr::js_undefined())))
@@ -637,7 +637,7 @@ pub(super) fn in_closure(stmts: &[Stmt], name: &str) -> bool {
 /// both (ADR 1009).
 pub(super) fn aliases(
     body: &mut Vec<Stmt>,
-    captured: &IndexSet<String>,
+    captured: &IndexSet<js::Name>,
     (params, kept): (&[js::Pattern], &IndexSet<js::Name>),
     (clones, given): (&crate::lower::mir::hints::Clones, &IndexSet<js::Name>),
 ) {
@@ -666,7 +666,7 @@ pub(super) fn aliases(
                 // for a prop, `const code = activeCode`, or a temporary,
                 // `const _5 = props`: the variable, read where that was.
                 let named = given.contains(a) && !given.contains(&b);
-                if !is_temporary(a) && (captured.contains(b.word()) || is_temporary(&b) || named) {
+                if !is_temporary(a) && (captured.contains(&b) || is_temporary(&b) || named) {
                     let a = a.clone();
                     js::each_expr_mut(&mut stmts[j..], &mut |e| {
                         if let ExprKind::Var(v) = &mut e.kind

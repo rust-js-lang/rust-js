@@ -179,7 +179,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a named variable moved into a held prop takes the prop's name, `const code = ..`, and is read away",
     file: "src/lower/mir/tidy/bindings.rs",
-    find: "                if !is_temporary(a) && (captured.contains(b.word()) || is_temporary(&b) || named) {",
+    find: "                if !is_temporary(a) && (captured.contains(&b) || is_temporary(&b) || named) {",
     replace: "                if false {",
     tests: [
       "test/jsx-children.test.ts",
@@ -209,8 +209,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a variable the program names, `const props = {..}`, aliased by a temporary, takes the temporary's place and is read away",
     file: "src/lower/mir/tidy/bindings.rs",
-    find: "if !is_temporary(a) && (captured.contains(b.word()) || is_temporary(&b) || named) {",
-    replace: "if !is_temporary(a) && (captured.contains(b.word()) || named) {",
+    find: "if !is_temporary(a) && (captured.contains(&b) || is_temporary(&b) || named) {",
+    replace: "if !is_temporary(a) && (captured.contains(&b) || named) {",
     tests: [
       "test/jsx-children.test.ts",
       "test/jsx-evaluation-order.test.ts",

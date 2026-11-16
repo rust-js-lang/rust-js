@@ -395,7 +395,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a temporary a function that skips what's falsy is given, from MIR, stays `test ? value : undefined`",
     file: "src/lower/binding_calls.rs",
-    find: "                    self.note_falsy(name.word());\n",
+    find: "                    self.note_falsy(name);\n",
     replace: "",
     tests: ["test/bindings.test.ts", "-t", "skips what's falsy"],
   },
