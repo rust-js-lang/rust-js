@@ -404,19 +404,6 @@ export const mutations: Mutation[] = [
     ],
   },
   {
-    name: "reversed-unknowing-back",
-    breaks:
-      "an in-place `rev()` of the crate's iterator asked its back past a `step_by` isn't made knowing it: refused",
-    file: "src/lower/iterators/knowing.rs",
-    find: "            return self.reversed_user_knowing(value, source, (true, false), span);\n",
-    replace: '            return Err(self.unsupported(span, ""));\n',
-    tests: [
-      "test/corpus.test.ts",
-      "-t",
-      "^(rev_in_place_through_adapters).rs$",
-    ],
-  },
-  {
     name: "flatten-of-iterators-unknowing",
     breaks:
       "a flatten of an `Option`'s slice iterator, or of an associated `IntoIterator`'s items, stepped from its back, is a JS `flatMap` that has no back: it throws (#260, #1355)",

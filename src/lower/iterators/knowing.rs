@@ -698,14 +698,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.knows_its_back_of(&value, ty) {
             return Ok(value);
         }
-        // A `rev()` of the crate's iterator made in place, of its form, as
-        // `reversed_user_knowing` makes it again.
-        if let Some(source) = crate::lower::recognition::reversed_source(self.tcx, ty)
-            && made_in_place(&value)
-            && self.is_user_iterator(source)
-        {
-            return self.reversed_user_knowing(value, source, (true, false), span);
-        }
         if let Some(source) = crate::lower::recognition::reversed_source(self.tcx, ty)
             && let Some(knowing) = self.reversal_knowing(&value, source, span)?
         {
