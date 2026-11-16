@@ -634,8 +634,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// parameter whose bounds give none, forward alone, as the type it's
     /// mapped to is stepped from its back only where they do, which rustc
     /// asks (ADR 0545, amended): the `either` crate's `IterEither::fold`,
-    /// whose `Map<R, _>` its `rfold` steps from the back.
-    fn given_stepped(&self, value: Expr, iter_ty: Ty<'tcx>, back: bool, len: bool) -> Option<Expr> {
+    /// whose `Map<R, _>` its `rfold` steps from the back. And a `copied()`
+    /// of one, made knowing its length, `method_source`'s (#1983).
+    pub(super) fn given_stepped(&self, value: Expr, iter_ty: Ty<'tcx>, back: bool, len: bool) -> Option<Expr> {
         let parameter = matches!(iter_ty.peel_refs().kind(), ty::Param(_));
         (self.given_js_iterator(value.clone(), iter_ty, back, len))
             .or_else(|| {

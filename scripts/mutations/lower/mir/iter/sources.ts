@@ -57,10 +57,19 @@ export const mutations: Mutation[] = [
     breaks:
       "a `copied()` of an iterator generic code is given as it is, bound by `ExactSizeIterator`, is the JS iterator `$given` makes without its `len`, whose `len()` throws (#387)",
     file: "src/lower/mir/iter/sources.rs",
-    find: "            && let Some(it) = self.given_js_iterator(value.clone(), ty, false, true)\n",
+    find: "            && let Some(it) = self.given_stepped(value.clone(), ty, self.knows_its_back(output), true)\n",
     replace:
-      "            && let Some(it) = self.given_js_iterator(value.clone(), ty, false, false)\n",
+      "            && let Some(it) = self.given_stepped(value.clone(), ty, self.knows_its_back(output), false)\n",
     tests: ["test/corpus.test.ts", "-t", "^copied_given_len.rs$"],
+  },
+  {
+    name: "given-copied-backless",
+    breaks:
+      "a `copied()` of an iterator generic code is given as it is, made knowing its length, is the JS iterator `$given` makes without its back, so a clone of it, or one a generic function makes, steps nothing from its back and loses its length (#1983)",
+    file: "src/lower/mir/iter/sources.rs",
+    find: "            && let Some(it) = self.given_stepped(value.clone(), ty, self.knows_its_back(output), true)\n",
+    replace: "            && let Some(it) = self.given_stepped(value.clone(), ty, false, true)\n",
+    tests: ["test/corpus.test.ts", "-t", "^copied_of_generic_code_knowing_its_back.rs$"],
   },
   {
     name: "len-in-place-map-unread",

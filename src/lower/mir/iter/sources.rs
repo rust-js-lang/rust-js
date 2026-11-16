@@ -71,7 +71,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// of it, `method`, giving an `output`, steps: `as_js_iterator`'s, but
     /// of a `copied()` that knows its length, which knows it too, as what
     /// reads its `len()` asks (#387): of a type parameter given as it is,
-    /// the JS iterator made of it given its length.
+    /// the JS iterator made of it given its length, and its back where it
+    /// knows it and its bounds give one (#1983).
     pub(super) fn method_source(
         &mut self,
         value: Expr,
@@ -79,9 +80,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         (method, output): (Option<IterMethod>, Ty<'tcx>),
         span: Span,
     ) -> R<Expr> {
+        // Its back too where it knows it, so a clone of it, or one generic
+        // code makes, steps it (#1983), `given_stepped`'s.
         if method == Some(IterMethod::Copied)
             && self.knows_its_length(output)
-            && let Some(it) = self.given_js_iterator(value.clone(), ty, false, true)
+            && let Some(it) = self.given_stepped(value.clone(), ty, self.knows_its_back(output), true)
         {
             return Ok(it);
         }

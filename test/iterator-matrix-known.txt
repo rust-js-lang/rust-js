@@ -39,9 +39,6 @@ conformance:std 31708,31710,36502,36504,37976,38023-38025,38027
 points:plain 11997
 points:std 9487,11507,11997,12011-12012
 
-#1983 a copied() of a generic source asked its len() after a copy throws when stepped from its back
-copies:plain 23714,23724,23744
-
 #1985 a vec::IntoIter lent as &mut dyn DoubleEndedIterator throws (`a.values is not a function`)
 copies:plain 40,13540,19396,27204,31888,41832,45828
 copies:std 40,13540,19396,27204,31888,41832,45828
