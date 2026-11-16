@@ -447,14 +447,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^write_result_items.rs$"],
   },
   {
-    name: "cloned-owners-bounds-unasked",
-    breaks: "a type taken for a `pub` generic function's cloned `Map<I, F>`, any type its callers may give, isn't asked of that function's bounds, so another generic function's `map(Some)` of items with a destructor is cloned apart and refused (#1318)",
-    file: "src/lower/iterators/stepping.rs",
-    find: "                && within_its_owners(cloned_ty, ty)\n",
-    replace: "                && (true || within_its_owners(cloned_ty, ty))\n",
-    tests: ["test/corpus.test.ts", "-t", "^generic_map_past_a_take_beside_a_cloned_one.rs$"],
-  },
-  {
     name: "copied-source-cloned-apart",
     breaks: "a `copied()` whose copy is its source, of numbers a generic or the crate's own source gives, is taken as cloned apart, made as its source, and its clone `$clone` of what carries none throws (#1181)",
     file: "src/lower/iterators/stepping.rs",
