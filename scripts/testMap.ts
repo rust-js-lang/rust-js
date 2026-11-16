@@ -410,25 +410,53 @@ export function ciMapOf(
     .sort((a, b) => a.behind - b.behind)[0];
 }
 
+/** How many of test-map.yml's last runs of `main` `fetchMap` looks in,
+ * the newest first, each a map of the commit whose check it followed. */
+export const fetchedRuns = 12;
+
 /** `bun run push`'s: the map CI recorded of HEAD's nearest ancestor on
  * `main`, downloaded into the machine's store where it's nearer than the
  * nearest kept, a map as any other, read only where it's whole and of this
- * layout and toolchain (`nearestMap`). What it did, in a line. */
+ * layout and toolchain (`nearestMap`). test-map.yml's runs of `main` are
+ * asked, the newest first, each for its own artifacts: the repository's
+ * list of every artifact, 100 a page, held a run's `test-map-of-<sha>` past
+ * its first page, and none was found (b355dc824's push). What it did, or
+ * why it fetched none, in a line, which the push's line says. */
 export function fetchMap(): string {
-  const listed = Bun.spawnSync(["gh", "api", "repos/{owner}/{repo}/actions/artifacts?per_page=100", "--jq", "[.artifacts[] | {name, expired, workflow_run}]"], { cwd: root, stdout: "pipe", stderr: "pipe" });
-  if (listed.exitCode !== 0) return `no map fetched: GitHub's artifacts weren't listed (${listed.stderr.toString().trim().split("\n")[0]})`;
+  const gh = (args: string[]) => {
+    const p = Bun.spawnSync(["gh", ...args], { cwd: root, stdout: "pipe", stderr: "pipe" });
+    return { ok: p.exitCode === 0, out: p.stdout.toString(), err: p.stderr.toString().trim().split("\n")[0] ?? "" };
+  };
+  const runs = gh([
+    "api",
+    `repos/{owner}/{repo}/actions/workflows/test-map.yml/runs?branch=main&status=success&per_page=${fetchedRuns}`,
+    "--jq",
+    "[.workflow_runs[] | {id, head_branch, repository_id: .repository.id, head_repository_id: .head_repository.id}]",
+  ]);
+  if (!runs.ok) return `no map fetched: test-map.yml's runs weren't listed (${runs.err}; is \`gh\` logged in?)`;
   const behind = (commit: string) => {
     if (git(["merge-base", "--is-ancestor", commit, "HEAD"]).code !== 0) return undefined;
     return Number(git(["rev-list", "--count", `${commit}..HEAD`]).out.trim());
   };
-  const found = ciMapOf(JSON.parse(listed.stdout.toString()), behind);
-  if (found === undefined) return "no map of an ancestor of HEAD on CI";
+  let found: ReturnType<typeof ciMapOf>;
+  const listed: { id: number; head_branch: string; repository_id: number; head_repository_id: number }[] = JSON.parse(runs.out);
+  for (const run of listed) {
+    const artifacts = gh(["api", `repos/{owner}/{repo}/actions/runs/${run.id}/artifacts`, "--jq", "[.artifacts[] | {name, expired}]"]);
+    if (!artifacts.ok) return `no map fetched: run ${run.id}'s artifacts weren't listed (${artifacts.err})`;
+    const named: { name: string; expired: boolean }[] = JSON.parse(artifacts.out);
+    found = ciMapOf(
+      named.map((artifact) => ({ ...artifact, workflow_run: run })),
+      behind,
+    );
+    if (found !== undefined) break;
+  }
+  if (found === undefined) return `no map fetched: none of test-map.yml's last ${listed.length} runs of main is of an ancestor of HEAD`;
   const kept = nearestMap(mapStore, root, toolchainOf());
   if (kept !== undefined && behind(kept.commit)! <= found.behind) return `the map kept of ${kept.commit.slice(0, 9)} is as near as CI's`;
   const into = join(mapDir, "fetched");
   rmSync(into, { recursive: true, force: true });
-  const got = Bun.spawnSync(["gh", "run", "download", String(found.run), "--name", found.name, "--dir", into], { cwd: root, stdout: "pipe", stderr: "pipe" });
-  if (got.exitCode !== 0) return `no map fetched: run ${found.run}'s ${found.name} didn't download`;
+  const got = gh(["run", "download", String(found.run), "--name", found.name, "--dir", into]);
+  if (!got.ok) return `no map fetched: run ${found.run}'s ${found.name} didn't download (${got.err})`;
   mkdirSync(mapStore, { recursive: true });
   let moved = 0;
   for (const name of readdirSync(into)) {
@@ -438,7 +466,11 @@ export function fetchMap(): string {
   }
   rmSync(into, { recursive: true, force: true });
   pruneMaps(mapStore, keptMaps, () => freeBytes(mapStore), toolchainOf());
-  return moved === 0 ? `run ${found.run}'s ${found.name} held no map` : `fetched CI's map of ${found.commit.slice(0, 9)}, ${found.behind} commits behind HEAD`;
+  if (moved === 0) return `no map fetched: run ${found.run}'s ${found.name} held no map`;
+  // Read as any other: of this layout and toolchain, or not at all.
+  const read = nearestMap(mapStore, root, toolchainOf());
+  if (read?.commit !== found.commit) return `no map fetched: CI's map of ${found.commit.slice(0, 9)} isn't of this layout or toolchain`;
+  return `fetched CI's map of ${found.commit.slice(0, 9)}, ${found.behind} commits behind HEAD`;
 }
 
 /** The map of HEAD or its nearest ancestor, and the working tree's changes

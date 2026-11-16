@@ -477,6 +477,10 @@ test("a readability owner's mutation the test map can't place names its case", (
   const refused = judged.flatMap((m) => {
     const lines = siteLines(m, readFileSync(join(root, m.file), "utf8"));
     const reached = lines ? casesReaching(m.file, lines[0], lines[1], cases) : { kind: "all" as const, why: "its site isn't in its file once" };
+    // A site of a file changed since the map's commit is the map's to
+    // place again, not the mutation's: the machine's map, CI's fetched by
+    // `bun run push`, is often some commits behind (ADR 1101, amended).
+    if (reached.kind === "all" && reached.why.endsWith("changed since the map's commit")) return [];
     return reached.kind === "all" ? [`${m.name}: ${reached.why}`] : [];
   });
   expect(refused).toEqual([]);

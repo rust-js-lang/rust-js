@@ -328,7 +328,10 @@ pushes that land together only the newest gets one. Each map is cached by
 its commit, one per entry, the newest 8 kept (`test-map-prune.yml`, about
 22 MB each), and uploaded as `test-map-of-<sha>`, which `bun run push`
 downloads where it's nearer than the machine's (`fetchMap`; of this
-repository's `main` runs alone). rustc-tests.yml's mutations call the same
+repository's `main` runs alone: test-map.yml's last runs, each asked for
+its own artifacts, as the repository's list of all of them, 100 a page,
+held one past its first page). A map not fetched says why on the push's
+line, `[no map fetched: ...]`, a `gh` not logged in among them. rustc-tests.yml's mutations call the same
 workflow. The machine keeps 8 maps (`keptMaps`, scripts/disk.ts's LRU).
 
 ### Measured

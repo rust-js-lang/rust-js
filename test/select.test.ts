@@ -214,6 +214,8 @@ test("bun run push says its selection on its line, and runs the check and the po
   const push = readFileSync(join(root, "scripts/push.ts"), "utf8");
   expect(push).not.toContain('"check:fast", "--all"');
   expect(push).toContain("touchesPort(changed)");
+  // A map not fetched says why on the line, not only that there's none.
+  expect(push).toContain('if (fetched.startsWith("no map fetched")) selection += ` [${fetched}]`;');
 });
 
 // CI's maps are recorded on Linux and read on macOS by `bun run push`: sound

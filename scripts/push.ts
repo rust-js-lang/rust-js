@@ -133,7 +133,8 @@ function main() {
         const code = changed.some((file) => /\.(rs|ts|tsx|js|jsx|mjs|cjs)$/.test(file));
         // CI's map of the nearest commit of `main` it recorded, where it's
         // nearer than the machine's (scripts/testMap.ts's `fetchMap`).
-        console.log(`push: ${sh(["bun", "scripts/testMap.ts", "fetch"], true).out.trim().split("\n").at(-1)}`);
+        const fetched = sh(["bun", "scripts/testMap.ts", "fetch"], true).out.trim().split("\n").at(-1) ?? "";
+        console.log(`push: ${fetched}`);
         const selected = sh(["bun", "scripts/select.ts"], true);
         if (selected.code !== 0) throw new Refused(`the selector failed:\n${selected.out}`);
         const said = selected.out.split("\n")[0]!.replace(/, by the test map of .*$/, "");
@@ -145,6 +146,9 @@ function main() {
           run(name, ["bun", "run", "check:fast"]);
           selection = existsSync(selectionFile) ? JSON.parse(readFileSync(selectionFile, "utf8")).outcome : said;
         }
+        // A map not fetched says why on the push's line (b355dc824's said
+        // only that there was none).
+        if (fetched.startsWith("no map fetched")) selection += ` [${fetched}]`;
         console.log(`push: selected ${selection}`);
         phase(name);
         if (touchesPort(changed) && sh(["bun", "scripts/react-in-rust.ts", "regen"]).code !== 0) {
