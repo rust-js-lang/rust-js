@@ -192,16 +192,20 @@ CONTRIBUTING.md.
 | Playground compiler | | check's `wasm` job |
 
 Push with `bun run push`, the one way to push. It rebases onto `main`,
-rebuilds, checks that `std/` is regenerated, and runs
-`bun run check:fast --all`, which runs what a push's check runs that can
-run here: typecheck, `fmt:check`, clippy, `cargo test`, the Vite example's
-build and every file of the suite, the browsers' too (`test/ci.test.ts`
-holds it to `check.yml`); and the change's mutations. Then it runs the
-React port's gate and pushes only what it checked. When `main` moves while
-it runs and the rebase is clean, it runs a quick sanity pass over what the
-change touches rather than the whole check again; a conflicted rebase
-re-runs the whole check, as [DEVELOPMENT.md](DEVELOPMENT.md#landing-a-branch-on-a-moving-main)
-says. Never loop on full re-runs.
+rebuilds, checks that `std/` is regenerated, and runs what the change can
+affect: `scripts/select.ts` reads CI's test map (fetched first) and picks
+the suite files and corpus cases that ran what the change touches, and
+selects everything where it can't say (`bun run check:fast --all` is that
+run: typecheck, `fmt:check`, clippy, `cargo test`, the Vite example's
+build and every file of the suite, the browsers' too, and the change's
+mutations; `test/ci.test.ts` holds it to `check.yml`). A change that isn't
+code and selects nothing skips the check. It runs the React port's gate
+for a change that touches what compiles the port, and pushes only what it
+checked. When `main` moves while it runs and the rebase is clean, it runs
+the same selection over the new tree; a conflicted rebase re-runs it all,
+as [DEVELOPMENT.md](DEVELOPMENT.md#landing-a-branch-on-a-moving-main)
+says. Never loop on full re-runs. Its line says what it selected, `all`
+(with why, the change's own or others'), `some` or `none`.
 A push to `main` starts its own check, which runs to its end: read it
 with `bun run ci:status`, and don't start another after pushing, which
 only waits behind it. `bun run ci:check` is for another branch, or a
