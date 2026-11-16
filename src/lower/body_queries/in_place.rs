@@ -97,20 +97,21 @@ pub(in crate::lower) fn decide<'tcx>(
     }
 }
 
-/// The adapters the held flip makes std's compiled struct, `HELD_COMPILED`'s
-/// `enumerate()` and `map()` (#1681's step iii), and `chain()`, `zip()`,
-/// `flatten()`, `peekable()`, `rev()` and `flat_map()`, the families after
-/// them (#1681's change 2). `back_stepped`, which the flip reads, asks whether a `rev()`
+/// The adapters the held flip makes std's compiled struct, of
+/// `HELD_COMPILED`'s: `enumerate()` and `map()` first (#1681's step iii),
+/// then each family after them, one entry each (#1681's change 2, ADR
+/// 1136's amendments). `back_stepped`, which the flip reads, asks whether a `rev()`
 /// is made in place of the ground alone, before the flip: what it marks of
 /// an in-place one, what it's given made knowing its back, a JS iterator,
 /// blocks the `rev()`'s flip, as nothing flipped is given what the ground
 /// made (`held_links`), so the flip never changes what decided it (ADR
 /// 1136, amended).
-pub(in crate::lower) const HELD_FLIPPED: [&str; 8] = [
+pub(in crate::lower) const HELD_FLIPPED: [&str; 9] = [
     "chain",
     "enumerate",
     "flat_map",
     "flatten",
+    "inspect",
     "map",
     "peekable",
     "rev",

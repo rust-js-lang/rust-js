@@ -25,6 +25,7 @@ import {
   iterator_enumerate,
   iterator_flatMap,
   iterator_fuse,
+  iterator_inspect,
   iterator_map,
   iterator_peekable,
   iterator_zip,
@@ -82,12 +83,8 @@ function main() {
   console.log(
     `enumerate ([${value$2[0].join(", ")}], [${value$2[1].join(", ")}], [${value$2[2].join(", ")}])`,
   );
-  function inspect() {}
   const value$3 = twice(
-    $iterator(f(), flakyIterator_next).map((item) => {
-      inspect(item);
-      return item;
-    }),
+    iterator_inspect(f(), () => {}, { next: flakyIterator_next }),
     "next",
   );
   console.log(

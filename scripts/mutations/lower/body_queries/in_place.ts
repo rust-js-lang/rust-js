@@ -481,4 +481,14 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^flat_map_inner_iterables.rs$"],
     snapshots: true,
   },
+  {
+    name: "inspect-not-flipped",
+    breaks:
+      "a `inspect()` of a chain the transparent-chain predicate doesn't admit is the recognizers' hand-written form again, where std's compiled struct is the meaning (#1681's change 2, the inspect family)",
+    file: "src/lower/body_queries/in_place.rs",
+    find: "    \"inspect\",\n",
+    replace: "    \"map\",\n",
+    tests: ["test/corpus.test.ts", "-t", "^inspect_from_back.rs$"],
+    snapshots: true,
+  },
 ];

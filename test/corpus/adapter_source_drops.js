@@ -4,11 +4,14 @@ import {
   $cleanup,
   $closing,
   $collectDropping,
+  $foldOf,
   $iterator,
-  $lazyChain,
   $live,
   $next,
+  $roomForHint,
   $unwindsOn,
+  iterator_chain,
+  iterator_inspect,
   iterator_map,
 } from "@rust-js/std";
 
@@ -91,30 +94,60 @@ function main() {
   }
   // A chain's first part, done with before its second is stepped, as
   // Rust's `Chain` drops it.
-  const map = iterator_map(
+  const value = iterator_map(
     { n: 1, name: "first" },
     (x) => (x + 1) >>> 0,
     { next: counterIterator_next },
     counterDrop_drop,
   );
-  function inspect(x) {
-    console.log(`second ${x}`);
-  }
   let tmp;
   try {
-    tmp = $closing($iterator({ n: 1, name: "second" }, counterIterator_next), (it) => {
-      counterDrop_drop(it.of);
-    }).map((item) => {
-      inspect(item);
-      return item;
-    });
+    tmp = iterator_inspect(
+      { n: 1, name: "second" },
+      (x) => {
+        console.log(`second ${x}`);
+      },
+      { next: counterIterator_next },
+      counterDrop_drop,
+    );
   } catch (error) {
     $cleanup(() => {
-      map.return();
+      value.return();
     }, error);
     throw error;
   }
-  const both = $collectDropping($lazyChain(map, tmp));
+  const both = $collectDropping(
+    $roomForHint(
+      iterator_chain(
+        value,
+        tmp,
+        { next: $next, fold: $foldOf },
+        {
+          intoIter(items) {
+            return items;
+          },
+          IntoIterIterator() {
+            return { next: $next, fold: $foldOf };
+          },
+          $dropIntoIter(inspect) {
+            inspect.return();
+          },
+        },
+        (map) => {
+          map.return();
+        },
+        (inspect) => {
+          inspect.return();
+        },
+        undefined,
+        (inspect) => {
+          inspect.return();
+        },
+      ),
+      4,
+      false,
+    ),
+  );
   console.log(`both [${both.join(", ")}]`);
   console.log("end");
 }

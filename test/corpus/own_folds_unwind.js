@@ -15,6 +15,7 @@ import {
   $some,
   $someValue,
   $unwindsOn,
+  iterator_inspect,
   iterator_map,
 } from "@rust-js/std";
 
@@ -495,46 +496,30 @@ function main() {
   });
   run("inspect fold", () => {
     const w = { items: [[4], [5], [6]] };
-    function inspect(d) {
-      if (d[0] === 5) {
-        throw new Error("5");
-      }
-    }
     const x = $foldDropping(
-      $closing(
-        $iterator(
-          w,
-          (iterator) => wrapIterator_next(iterator, dDrop_drop),
-          true,
-          undefined,
-          undefined,
-          undefined,
-          (iterator, init, f, unwind, ends) =>
-            wrapIterator_fold(iterator, init, f, dDrop_drop, unwind, ends),
-          undefined,
-          undefined,
-          (iterator, init, f, unwind, ends) =>
-            wrapDoubleEndedIterator_rfold(iterator, init, f, dDrop_drop, unwind, ends),
-        ),
-        (it) => {
-          for (const item of it.of.items) {
-            dDrop_drop(item);
-          }
-          if (it.of.extra != null) {
-            dDrop_drop(it.of.extra);
+      iterator_inspect(
+        w,
+        (d) => {
+          if (d[0] === 5) {
+            throw new Error("5");
           }
         },
-      ).map((item) => {
-        try {
-          inspect(item);
-        } catch (error) {
-          $cleanup(() => {
+        {
+          next: (iterator) => wrapIterator_next(iterator, dDrop_drop),
+          fold: (iterator, init, f, unwind, ends) =>
+            wrapIterator_fold(iterator, init, f, dDrop_drop, unwind, ends),
+        },
+        (wrap) => {
+          for (const item of wrap.items) {
             dDrop_drop(item);
-          }, error);
-          throw error;
-        }
-        return item;
-      }),
+          }
+          if (wrap.extra != null) {
+            dDrop_drop(wrap.extra);
+          }
+        },
+        undefined,
+        dDrop_drop,
+      ),
       [],
       push,
       $dropEach(dDrop_drop),

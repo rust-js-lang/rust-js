@@ -1,14 +1,14 @@
 # shape	count	per 10,000 lines
 files	2624
-lines	348388
+lines	348495
 temporaries	0	0
 labeled blocks	0	0
 while (true)	224	6.4
 $iter	2917	83.7
-Iterator.from	281	8.1
+Iterator.from	280	8
 return;	337	9.7
-renamed x$1	16338	469
-role fallbacks	8898	255.4
+renamed x$1	16336	468.8
+role fallbacks	8899	255.4
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1	role fallbacks
 test/corpus/adapter_drop_past_a_panic.js	50	0	0	0	1	0	0	0	1
 test/corpus/adapter_drops.js	1849	0	0	1	18	2	1	98	61
@@ -18,7 +18,7 @@ test/corpus/adapter_of_a_borrowed_iterator_where_addresses_are_asked.js	208	0	0	
 test/corpus/adapter_of_a_value_given_as_it_is.js	63	0	0	0	0	0	0	0	1
 test/corpus/adapter_shown_and_cloned_generically.js	135	0	0	0	10	1	0	0	0
 test/corpus/adapter_size_hints.js	129	0	0	0	0	0	0	19	12
-test/corpus/adapter_source_drops.js	122	0	0	0	0	0	0	8	3
+test/corpus/adapter_source_drops.js	155	0	0	0	0	0	0	8	4
 test/corpus/adapter_stepped_from_its_back_past_an_arguments_statement.js	103	0	0	0	7	0	0	7	6
 test/corpus/adapters_given_to_generic_backs.js	54	0	0	0	2	0	0	4	3
 test/corpus/adapters_over_own_next_that_panics.js	1217	0	0	2	1	2	0	5	21
@@ -666,7 +666,7 @@ test/corpus/dyn_fn_handed_to_js.js	239	0	0	0	0	0	0	16	3
 test/corpus/dyn_fn_of_a_borrowed_function.js	182	0	0	0	0	0	0	0	2
 test/corpus/dyn_fn_of_a_params_function.js	31	0	0	0	0	0	0	0	0
 test/corpus/dyn_fn_of_a_params_function_drops.js	137	0	0	0	0	0	0	0	0
-test/corpus/dyn_fn_of_a_reference_given_to_adapters_in_generic_code.js	65	0	0	0	1	1	0	2	2
+test/corpus/dyn_fn_of_a_reference_given_to_adapters_in_generic_code.js	62	0	0	0	1	0	0	2	2
 test/corpus/dyn_fn_once_drops_itself.js	51	0	0	0	0	0	0	0	1
 test/corpus/dyn_fn_reference_changed_through_mut.js	39	0	0	0	0	0	0	3	0
 test/corpus/dyn_generic.js	91	0	0	0	0	0	0	6	0
@@ -1176,7 +1176,7 @@ test/corpus/inline_const_of_a_trait_constant.js	40	0	0	0	0	0	0	0	0
 test/corpus/inner_while_exit_in_catch.js	112	0	0	0	0	0	0	0	2
 test/corpus/inner_while_then_break.js	35	0	0	0	0	0	0	0	0
 test/corpus/inspect_by_a_function_before_a_chain_argument.js	34	0	0	0	0	0	0	5	4
-test/corpus/inspect_from_back.js	70	0	0	0	0	0	0	10	0
+test/corpus/inspect_from_back.js	118	0	0	0	0	0	0	8	0
 test/corpus/inspect_of_a_chain_stepped_from_its_back.js	61	0	0	0	2	0	0	0	0
 test/corpus/inspect_of_a_slice_collected_where_capacity_is_read.js	105	0	0	0	4	0	0	8	0
 test/corpus/inspect_of_dropping_items_from_its_back.js	195	0	0	0	5	0	0	9	8
@@ -1633,7 +1633,7 @@ test/corpus/own_fold_and_count_where_adapters_call_them.js	162	0	0	0	0	0	4	0	2
 test/corpus/own_fold_and_nth.js	494	0	0	0	0	1	0	6	4
 test/corpus/own_fold_through_adapters.js	370	0	0	0	1	0	0	12	6
 test/corpus/own_fold_unwind_given_on.js	324	0	0	1	7	0	0	0	2
-test/corpus/own_folds_unwind.js	586	0	0	3	0	0	0	0	6
+test/corpus/own_folds_unwind.js	571	0	0	3	0	0	0	0	6
 test/corpus/own_hasher_finished_through_its_mut.js	39	0	0	0	0	0	0	0	0
 test/corpus/own_iterator_collected_by_generic_code_into_own_from_iterator.js	199	0	0	1	1	1	0	4	3
 test/corpus/own_iterator_dropped_from_back.js	235	0	0	0	0	0	0	0	3
@@ -1680,10 +1680,10 @@ test/corpus/pad_integral.js	44	0	0	0	0	0	0	0	0
 test/corpus/pad_integral_plain.js	24	0	0	0	0	0	0	0	0
 test/corpus/panic_display.js	21	0	0	0	0	0	0	0	0
 test/corpus/panic_in_own_next_drops.js	287	0	0	0	7	0	1	6	3
-test/corpus/panic_in_own_rfold_drops.js	490	0	0	1	0	0	0	0	2
+test/corpus/panic_in_own_rfold_drops.js	498	0	0	1	0	0	0	0	2
 test/corpus/panic_in_std_bodies_drops.js	124	0	0	0	2	0	0	0	0
 test/corpus/panic_in_std_fold_drops.js	151	0	0	0	2	0	0	0	4
-test/corpus/panic_mid_fold_drops.js	1068	0	0	0	33	0	0	5	5
+test/corpus/panic_mid_fold_drops.js	1107	0	0	0	33	0	0	5	5
 test/corpus/panic_mid_iteration_drops.js	141	0	0	0	5	0	0	0	0
 test/corpus/panic_out_of_an_extern_c_function_aborts.js	43	0	0	0	0	0	0	0	0
 test/corpus/panic_part_way_drops.js	1435	0	0	1	51	0	1	9	16
@@ -1984,7 +1984,7 @@ test/corpus/repr_enum_numbers.js	108	0	0	0	0	0	0	0	2
 test/corpus/reserved_named_function_called_across_modules.js	47	0	0	0	4	0	0	0	1
 test/corpus/resize_fill_repeat_unwind.js	116	0	0	0	0	0	0	0	0
 test/corpus/rest_function_values.js	45	0	0	0	0	0	0	0	1
-test/corpus/restarting_iterators.js	343	0	0	0	1	2	0	40	21
+test/corpus/restarting_iterators.js	340	0	0	0	1	2	0	40	21
 test/corpus/result_given_as_items.js	93	0	0	0	4	1	0	13	8
 test/corpus/result_iter_and_order.js	106	0	0	0	0	0	0	5	2
 test/corpus/retain_map_drops_held.js	401	0	0	0	0	0	0	13	4

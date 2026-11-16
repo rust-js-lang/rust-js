@@ -4,10 +4,12 @@ import {
   $collectDropping,
   $intoIter,
   $iter,
+  $jsIterator,
   $lazyRange,
   $lent,
   $position,
   $roomForHint,
+  iterator_inspect,
 } from "@rust-js/std";
 
 export function entry() {
@@ -35,12 +37,7 @@ function seen(items) {
   const shown = (x) => {
     log.push(x);
   };
-  Iterator.from(items)
-    .map((item) => {
-      shown(item);
-      return item;
-    })
-    .forEach((value) => {});
+  iterator_inspect(items, shown, $jsIterator).forEach((value) => {});
   return log;
 }
 

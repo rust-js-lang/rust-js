@@ -595,3 +595,18 @@ Measured: 10 corpus snapshots move, each as native prints, 4,769 lines to
 renamed `x$1` goes from 469.2 to 469.1 and role fallbacks from 255.6 to
 255.5. Mutation `flat_map-not-flipped` (`lower/body_queries/in_place.ts`)
 is caught.
+
+## Amendment: the light families flipped (2026-11-16, #1681's change 2)
+
+After the heavier six, each light family is flipped in its own commit, an
+entry of `HELD_FLIPPED`: a chain the predicate doesn't admit makes it
+std's compiled struct, not the recognizers' hand-written form. `fuse` is
+none of them, as std's `Fuse` is its compiled struct wherever it's made.
+Each row below is measured as the heavier families were: the corpus
+snapshots it moves, each as native prints, the React port's JS (byte for
+byte in each), `@rust-js/std`'s size, and a mutation that takes its entry
+out, caught.
+
+| Family | Snapshots | Lines | `@rust-js/std` | Readability, in 10,000 lines | Mutation |
+|---|---|---|---|---|---|
+| `inspect` | 7 | 2,737 to 2,844 (×1.039) | 1,307,863 bytes, the same | renamed `x$1` 469.0 to 468.8, `Iterator.from` 8.1 to 8.0 | `inspect-not-flipped` |

@@ -10,7 +10,6 @@ import {
   $foldOf,
   $iterator,
   $live,
-  $mapEnds,
   $next,
   $rev,
   $stepBy,
@@ -20,7 +19,11 @@ import {
   enumerateDoubleEndedIterator_nthBack,
   enumerateDoubleEndedIterator_rfold,
   enumerateDoubleEndedIterator_tryRfold,
+  inspectDoubleEndedIterator_nextBack,
+  inspectDoubleEndedIterator_rfold,
+  inspectDoubleEndedIterator_tryRfold,
   iterator_enumerate,
+  iterator_inspect,
   iterator_map,
   iterator_rev,
   mapDoubleEndedIterator_nextBack,
@@ -354,33 +357,18 @@ function main() {
     }
   });
   run("own step_by", () => {
-    function inspect(d) {
-      boom(d, 44);
-    }
     const x = $foldDropping(
       $stepBy(
-        $iterator(
+        iterator_inspect(
           [40, 46],
-          countIterator_next,
-          false,
+          (d) => {
+            boom(d, 44);
+          },
+          { next: countIterator_next, sizeHint: countIterator_sizeHint },
           undefined,
           undefined,
-          countIterator_sizeHint,
-          undefined,
-          undefined,
-          undefined,
-          countDoubleEndedIterator_rfold,
-        ).map((item) => {
-          try {
-            inspect(item);
-          } catch (error) {
-            $cleanup(() => {
-              dDrop_drop(item);
-            }, error);
-            throw error;
-          }
-          return item;
-        }),
+          dDrop_drop,
+        ),
         2,
         dDrop_drop,
       ),
@@ -394,36 +382,68 @@ function main() {
     }
   });
   run("own inspect rev", () => {
-    function inspect(d) {
-      boom(d, 31);
-    }
     const x = $foldDropping(
-      $rev(
-        $mapEnds(
-          $iterator(
-            [30, 34],
-            countIterator_next,
-            false,
-            countDoubleEndedIterator_nextBack,
-            undefined,
-            countIterator_sizeHint,
-            undefined,
-            undefined,
-            undefined,
-            countDoubleEndedIterator_rfold,
-          ),
-          (item) => {
-            try {
-              inspect(item);
-            } catch (error) {
-              $cleanup(() => {
-                dDrop_drop(item);
-              }, error);
-              throw error;
-            }
-            return item;
+      iterator_rev(
+        iterator_inspect(
+          [30, 34],
+          (d) => {
+            boom(d, 31);
           },
+          { next: countIterator_next, sizeHint: countIterator_sizeHint },
+          undefined,
+          undefined,
+          dDrop_drop,
         ),
+        { next: $next, fold: $foldOf },
+        {
+          next_back: (iterator) =>
+            inspectDoubleEndedIterator_nextBack(
+              iterator,
+              {
+                next_back: countDoubleEndedIterator_nextBack,
+                rfold: countDoubleEndedIterator_rfold,
+              },
+              undefined,
+              undefined,
+              dDrop_drop,
+            ),
+          rfold: (iterator, init, f, unwind, ends) =>
+            inspectDoubleEndedIterator_rfold(
+              iterator,
+              init,
+              f,
+              { next: countIterator_next, sizeHint: countIterator_sizeHint },
+              {
+                next_back: countDoubleEndedIterator_nextBack,
+                rfold: countDoubleEndedIterator_rfold,
+              },
+              undefined,
+              undefined,
+              unwind,
+              ends,
+              dDrop_drop,
+            ),
+          tryRfold: (iterator, init, f, broke, unwind, ends) =>
+            inspectDoubleEndedIterator_tryRfold(
+              iterator,
+              init,
+              f,
+              { next: countIterator_next, sizeHint: countIterator_sizeHint },
+              {
+                next_back: countDoubleEndedIterator_nextBack,
+                rfold: countDoubleEndedIterator_rfold,
+              },
+              $tryOf(broke),
+              undefined,
+              undefined,
+              unwind,
+              ends,
+              undefined,
+              dDrop_drop,
+            ),
+        },
+        undefined,
+        dDrop_drop,
       ),
       [],
       push,
@@ -435,34 +455,22 @@ function main() {
     }
   });
   run("own stage then enumerate", () => {
-    function inspect(d) {
-      boom(d, 52);
-    }
     const x = $foldDropping(
-      $iterator(
-        [50, 54],
-        countIterator_next,
-        false,
+      iterator_enumerate(
+        iterator_inspect(
+          [50, 54],
+          (d) => {
+            boom(d, 52);
+          },
+          { next: countIterator_next, sizeHint: countIterator_sizeHint },
+          undefined,
+          undefined,
+          dDrop_drop,
+        ),
+        { next: $next, fold: $foldOf },
         undefined,
-        undefined,
-        countIterator_sizeHint,
-        undefined,
-        undefined,
-        undefined,
-        countDoubleEndedIterator_rfold,
-      )
-        .map((item) => {
-          try {
-            inspect(item);
-          } catch (error) {
-            $cleanup(() => {
-              dDrop_drop(item);
-            }, error);
-            throw error;
-          }
-          return item;
-        })
-        .map((x, i) => [i, x]),
+        dDrop_drop,
+      ),
       [],
       (acc, [i, d]) => {
         console.log(`at ${i}`);

@@ -11,6 +11,7 @@ import {
   $filterEnds,
   $flatMap,
   $foldDropping,
+  $foldOf,
   $iter,
   $iterator,
   $lastDropping,
@@ -27,13 +28,20 @@ import {
   $next,
   $rangeNext,
   $rangeNextBack,
+  $rangeNthBack,
   $reduce,
   $rev,
   $roomFor,
   $skipping,
   $stepBy,
+  $tryOf,
   $unwindsOn,
+  inspectDoubleEndedIterator_nextBack,
+  inspectDoubleEndedIterator_rfold,
+  inspectDoubleEndedIterator_tryRfold,
   iterator_flatMap,
+  iterator_inspect,
+  iterator_rev,
 } from "@rust-js/std";
 
 export function entry() {
@@ -790,18 +798,16 @@ function main() {
     }
   });
   run("skip of numbers", () => {
-    function inspect(n) {
-      if (n === 62) {
-        throw new Error("62");
-      }
-    }
     const x = $foldDropping(
-      $lazyRange(60, 64)
-        .map((item) => {
-          inspect(item);
-          return item;
-        })
-        .drop(1),
+      iterator_inspect(
+        { start: 60, end: 64 },
+        (n) => {
+          if (n === 62) {
+            throw new Error("62");
+          }
+        },
+        { next: $rangeNext },
+      ).drop(1),
       [],
       (acc, n) => {
         try {
@@ -824,18 +830,16 @@ function main() {
     }
   });
   run("take of numbers", () => {
-    function inspect(n) {
-      if (n === 72) {
-        throw new Error("72");
-      }
-    }
     const x = $foldDropping(
-      $lazyRange(70, 74)
-        .map((item) => {
-          inspect(item);
-          return item;
-        })
-        .take(3),
+      iterator_inspect(
+        { start: 70, end: 74 },
+        (n) => {
+          if (n === 72) {
+            throw new Error("72");
+          }
+        },
+        { next: $rangeNext },
+      ).take(3),
       [],
       (acc, n) => {
         try {
@@ -916,16 +920,51 @@ function main() {
     }
   });
   run("numbers map then rev", () => {
-    function inspect(n) {
-      if (n === 12) {
-        throw new Error("12");
-      }
-    }
     const x = $foldDropping(
-      $iterator({ start: 10, end: 14 }, $rangeNextBack).map((item) => {
-        inspect(item);
-        return item;
-      }),
+      iterator_rev(
+        iterator_inspect(
+          { start: 10, end: 14 },
+          (n) => {
+            if (n === 12) {
+              throw new Error("12");
+            }
+          },
+          { next: $rangeNext },
+        ),
+        { next: $next, fold: $foldOf },
+        {
+          next_back: (iterator) =>
+            inspectDoubleEndedIterator_nextBack(iterator, {
+              next_back: $rangeNextBack,
+              nthBack: $rangeNthBack,
+            }),
+          rfold: (iterator, init, f, unwind, ends) =>
+            inspectDoubleEndedIterator_rfold(
+              iterator,
+              init,
+              f,
+              { next: $rangeNext },
+              { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+              undefined,
+              undefined,
+              unwind,
+              ends,
+            ),
+          tryRfold: (iterator, init, f, broke, unwind, ends) =>
+            inspectDoubleEndedIterator_tryRfold(
+              iterator,
+              init,
+              f,
+              { next: $rangeNext },
+              { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+              $tryOf(broke),
+              undefined,
+              undefined,
+              unwind,
+              ends,
+            ),
+        },
+      ),
       [],
       (acc, n) => {
         try {
