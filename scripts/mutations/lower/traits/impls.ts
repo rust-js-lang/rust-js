@@ -25,8 +25,8 @@ export const mutations: Mutation[] = [
     breaks:
       "what the dictionary makes of an associated type the trait bounds by `DoubleEndedIterator` knows no back: `it.back is not a function` (#972)",
     file: "src/lower/traits/impls.rs",
-    find: "                (true, (true, false)) => self.as_double_ended(call, output, span).map(Some),\n",
-    replace: "                (true, (true, false)) => self.as_js_iterator(call, output, span).map(Some),\n",
+    find: "                (true, false) => self.as_double_ended(value.clone(), output, span)?,\n",
+    replace: "                (true, false) => self.as_js_iterator(value.clone(), output, span)?,\n",
     tests: ["test/corpus.test.ts", "-t", "^associated_iterator_dropped.rs$"],
   },
   {
@@ -684,5 +684,21 @@ export const mutations: Mutation[] = [
     find: "                    Some(_) => 0,\n",
     replace: "                    Some(_) => 1,\n",
     tests: ["test/corpus.test.ts", "-t", "^mut_impl_replaced_through_generic_code.rs$"],
+  },
+  {
+    name: "impl-iterator-within-tuple-unmade",
+    breaks: "a trait method's `impl Iterator` within a tuple it gives isn't made the JS iterator generic code steps, so a range's `{ start, end }` throws `it.reduce is not a function` (#2005)",
+    file: "src/lower/traits/impls.rs",
+    find: "        if parts.iter().all(Option::is_none) {\n",
+    replace: "        if true || parts.iter().all(Option::is_none) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^impl_iterator_within_a_trait_methods_result.rs$"],
+  },
+  {
+    name: "impl-iterator-within-option-unmade",
+    breaks: "a trait method's `Option<impl Iterator>` gives generic code its payload as the impl made it, a range's `{ start, end }`, which throws where it's stepped (#2005)",
+    file: "src/lower/traits/impls.rs",
+    find: "            && self.option_of(declared).is_none()\n",
+    replace: "            && false\n",
+    tests: ["test/corpus.test.ts", "-t", "^impl_iterator_within_a_trait_methods_result.rs$"],
   },
 ];

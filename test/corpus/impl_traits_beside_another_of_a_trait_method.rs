@@ -40,10 +40,8 @@ impl Pair for Quiet {
         (1u8, "two")
     }
 
-    // A range there, `{ start, end }`, reaches generic code unconverted,
-    // #2005's, as it does beside no other `impl Trait`.
     fn parts(&self) -> (impl Iterator<Item = u32>, impl Sized) {
-        ([0, 1].into_iter(), ())
+        (0..2, ())
     }
 
     fn one(&self) -> impl Iterator<Item = u32> {

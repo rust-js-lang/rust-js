@@ -138,3 +138,23 @@ snapshots gain the `Iterator.from` (10,992 lines to 11,025), each as
 native prints. Test: `lowering-generic-iterators.test.ts`' "a std body
 compiled given a generic iterator takes an array too"; mutation
 `compiled-given-a-param-as-it-is`.
+
+## Amendment: an `impl Iterator` within what a trait method gives (2026-11-17, #2005)
+
+An impl's dictionary entry makes what its method gives the JS iterator
+generic code steps where the trait declares an associated type or an
+`impl Iterator` bound by `Iterator` (#1292). It looked at the whole result
+alone, so one within it, `-> (impl Iterator<Item = u32>, u8)`'s field or
+`Option<impl Iterator>`'s payload, reached generic code as the impl made
+it: a range's `{ start, end }`, where `it.sum()` threw `it.reduce is not a
+function`. `made_for_generic_code` (traits/impls.rs), the one answer, walks
+a tuple's fields, nested ones too, and an `Option`'s payload, each made as
+its own would be, read of the value the entry holds first: `const given =
+aSrc_tup(arg0); return [$iterator(given[0], $rangeNext), given[1]];`. A
+result that holds both a `&mut` generic code's box adapts and an
+`impl Iterator` is refused, naming #2010. Corpus case
+`impl_iterator_within_a_trait_methods_result` holds a range, the crate's
+own iterator, one stepped from its back, a nested tuple's, an `Option`'s
+`Some` and `None`, and items and a field with a destructor against native
+in each build; mutations `impl-iterator-within-tuple-unmade` and
+`impl-iterator-within-option-unmade` are caught.

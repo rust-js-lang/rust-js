@@ -243,6 +243,10 @@ for (const [name, source, message, crate] of [
   // until std's search is compiled (ADR 0060, amended, #2004).
   ["a str split's Debug", "pub fn f() -> String { format!(\"{:?}\", \"a b\".split(' ')) }", "`{:?}` of a `std::str::Split<'_, char>`, which shows std's searcher's state (#2004)"],
   ["a str matches' Debug", "pub fn f() -> String { format!(\"{:?}\", \"a b\".matches(\"a\")) }", "`{:?}` of a `std::str::Matches<'_, &str>`, which shows std's searcher's state (#2004)"],
+
+  // A trait method's result holding both a `&mut` generic code's box
+  // adapts and an `impl Iterator` it makes the JS iterator (#2005, #2010).
+  ["a trait method's result of a boxed &mut beside an impl Iterator", "pub trait Src { type Item; fn pair(&mut self) -> (&mut Self::Item, impl Iterator<Item = u32>); }\npub struct A(Vec<u32>);\nimpl Src for A { type Item = Vec<u32>; fn pair(&mut self) -> (&mut Vec<u32>, impl Iterator<Item = u32>) { (&mut self.0, 0..3) } }\nfn read<T: Src>(t: &mut T, fresh: T::Item) -> u32 { let (held, it) = t.pair(); *held = fresh; it.sum::<u32>() }\npub fn f() -> u32 { read(&mut A(vec![1]), vec![7]) }", "a trait method's result holding both a `&mut` and an `impl Iterator` generic code takes apart (#2010)"],
   ["an OpenOptions' Debug", "pub fn f() -> String { format!(\"{:?}\", std::fs::OpenOptions::new()) }", "`{:?}` of a `std::fs::OpenOptions`, which shows what the OS says of it (#1418)"],
   // A write's result held inside what generic code has as a `Result` of its
   // type parameters, a `Vec<Result<T, E>>`'s items, `{ TAG }` there, where

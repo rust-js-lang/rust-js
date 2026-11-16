@@ -213,6 +213,57 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 || crate::lower::recognition::is_compiled_std_iterator(self.tcx, ty))
     }
 
+    /// What generic code takes of `value`, a value an impl's method gives of
+    /// type `output` where its trait declares `declared` under `env`: a JS
+    /// iterator where the trait's is bound by `Iterator`, an associated type
+    /// or an `impl Iterator` (`made_js_iterator`, ADR 0061, #1292), knowing
+    /// its back and its length where the trait bounds it so; and of a tuple,
+    /// each field so, `(impl Iterator, u8)`'s, and of an `Option`, its
+    /// payload, as its own would be (#2005).
+    /// `None` where it's as the impl gives it.
+    fn made_for_generic_code(
+        &mut self,
+        value: &Expr,
+        (declared, env, output): (Ty<'tcx>, ty::ParamEnv<'tcx>, Ty<'tcx>),
+        span: Span,
+    ) -> R<Option<Expr>> {
+        if self.made_js_iterator(declared, env, output) {
+            return Ok(Some(match self.made_iterator_ends(declared, env) {
+                (back, true) => self.as_exact_size(value.clone(), output, back, span)?,
+                (true, false) => self.as_double_ended(value.clone(), output, span)?,
+                (false, false) => self.as_js_iterator(value.clone(), output, span)?,
+            }));
+        }
+        // An `Option` of one, its payload's, or `undefined`, as `Within`'s
+        // `Some` makes it: what holds an iterator never looks like `None`.
+        if let (Some(declared), Some(output)) = (self.option_of(declared), self.option_of(output))
+            && self.option_of(declared).is_none()
+        {
+            let Some(made) = self.made_for_generic_code(&value.clone().present(), (declared, env, output), span)?
+            else {
+                return Ok(None);
+            };
+            return Ok(Some(Expr::cond(
+                Expr::presence(value.clone(), true),
+                made,
+                Expr::js_undefined(),
+            )));
+        }
+        let (ty::Tuple(fields), ty::Tuple(made)) = (declared.kind(), output.kind()) else {
+            return Ok(None);
+        };
+        let field = |at: usize| Expr::index(value.clone(), Expr::int(at as i128));
+        let mut parts = Vec::new();
+        for (at, (declared, output)) in fields.iter().zip(made.iter()).enumerate() {
+            parts.push(self.made_for_generic_code(&field(at), (declared, env, output), span)?);
+        }
+        if parts.iter().all(Option::is_none) {
+            return Ok(None);
+        }
+        let parts = (parts.into_iter().enumerate()).map(|(at, part)| part.unwrap_or_else(|| field(at)));
+        Ok(Some(Expr::array(parts.collect())))
+    }
+
     /// An impl's dictionary: given nothing, the function whose one `return`
     /// is its module's `const` (ADR 0592); given its type parameters' and
     /// consts', a function of them, and its cache's value, made where its
@@ -693,18 +744,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .try_normalize_erasing_regions(method_env, ty::Unnormalized::new_wip(output))
                 .unwrap_or(output);
             let env = tcx.param_env(item.def_id);
-            let iterates = self.made_js_iterator(declared_output, env, output);
             let call = Expr::call(callee.clone(), values.clone());
-            // Knowing its back and its length where the trait bounds it so.
+            // Of a tuple or an `Option` it gives, each field or its payload
+            // made so where it's one, read of the value held first, `(impl
+            // Iterator, u8)`'s (#2005).
+            let given = self.fresh(Role::Given);
+            let tuple = matches!(declared_output.kind(), ty::Tuple(_)) || self.option_of(declared_output).is_some();
             let dictionary_env = std::mem::replace(&mut self.typing_env, method_env);
-            let call = match (iterates, self.made_iterator_ends(declared_output, env)) {
-                (false, _) => Ok(None),
-                (true, (back, true)) => self.as_exact_size(call, output, back, span).map(Some),
-                (true, (true, false)) => self.as_double_ended(call, output, span).map(Some),
-                (true, (false, false)) => self.as_js_iterator(call, output, span).map(Some),
+            let made = match tuple {
+                true => self.made_for_generic_code(&Expr::var(&given), (declared_output, env, output), span),
+                false => self.made_for_generic_code(&call, (declared_output, env, output), span),
             };
             self.typing_env = dictionary_env;
-            let call = call?;
+            let (call, within_tuple) = match (tuple, made?) {
+                (false, made) => (made, None),
+                (true, made) => (None, made),
+            };
             // A `&mut` generic code has in a box by the trait's signature, `&mut
             // Self::Target` of a `Vec`, which the method gives as the object:
             // a box of it, which a write of the whole changes in place (ADR
@@ -737,10 +792,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
             // And a `&mut` within what it gives, `Option<&mut Self>`'s, the
             // impl's made generic code's box (#686).
-            let given = self.fresh(Role::Given);
             let given_back = match forms.result_within.as_ref() {
                 Some(within) => within.given_back(self, &Expr::var(&given), span)?,
                 None => None,
+            };
+            let given_back = match (given_back, within_tuple) {
+                (Some(_), Some(_)) => {
+                    return Err(self.unsupported(
+                        span,
+                        "a trait method's result holding both a `&mut` and an `impl Iterator` generic code takes apart (#2010)",
+                    ));
+                }
+                (adapted, iterators) => adapted.or(iterators),
             };
             let made = call.is_none() && given_back.is_none();
             let call = call.unwrap_or_else(|| Expr::call(callee, values));
