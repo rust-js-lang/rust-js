@@ -11,15 +11,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "counted_guard_value_named"],
     snapshots: true,
   },  {
-    name: "named-temporary-renamed-in-a-closure-of-its-own",
-    breaks:
-      "naming a temporary renames a closure's own parameter of its name's reads, `(_2) => { const a = ty523830[0]; .. }`, and the JS after tidy's `in place` stage throws `Cannot convert NaN to a BigInt` where Rust prints `2 [41, 52]` (#1105)",
-    file: "src/lower/mir/tidy/bindings.rs",
-    find: "                js::outside_shadows(stmts, name.word(), |stmts| {\n                    js::each_expr_mut(&mut stmts[i + 1..], &mut |e| {\n",
-    replace: "                js::outside_shadows(stmts, \"no name\", |stmts| {\n                    js::each_expr_mut(&mut stmts[i + 1..], &mut |e| {\n",
-    tests: ["test/tidy-stages.test.ts", "-t", "^closure_param_shadows_a_named_temporary after"],
-  },
-  {
     name: "clone-alias-of-a-variable-kept",
     breaks:
       "an `Rc`'s clone of a variable bound once is a variable of its own, `const closing = response;`, where it's the same object, read by its name (the user's decision, rd616; ADR 0846 amended)",
@@ -117,7 +108,7 @@ export const mutations: Mutation[] = [
     breaks:
       "the `const found = _4;` a temporary's renaming took stays, `const found = found;`",
     file: "src/lower/mir/tidy/bindings.rs",
-    find: "    stmts.retain(|s| {\n        !matches!(&s.kind, StmtKind::Const(n, value)\n            if n.is(b) && matches!(&value.kind, ExprKind::Var(v) if v.is(a)))\n    });\n",
+    find: "    stmts.retain(|s| {\n        !matches!(&s.kind, StmtKind::Const(n, value)\n            if n == b && matches!(&value.kind, ExprKind::Var(v) if v == a))\n    });\n",
     replace: "",
     tests: [
       "test/lowering-names.test.ts",
@@ -196,7 +187,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a value a `try` makes in each branch stays a temporary's, `children = tmp` after it",
     file: "src/lower/mir/tidy/bindings.rs",
-    find: "            && last_assigns(&stmts[i + 1..=i + 1], t.word())\n",
+    find: "            && last_assigns(&stmts[i + 1..=i + 1], t)\n",
     replace: "            && false\n",
     tests: [
       "test/lowering-functions.test.ts",

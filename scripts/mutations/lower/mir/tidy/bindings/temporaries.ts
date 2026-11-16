@@ -5,11 +5,12 @@ export const mutations: Mutation[] = [
   {
     name: "temporary-takes-a-name-items-read",
     breaks:
-      "a temporary beside a function written in the body takes a name of the module's that function reads, `const note = id(-1)`, and the function throws `note is not a function`",
+      "a temporary beside a function written in the body takes the name of the module's function that function reads, `note`, which preparation then gives apart, `const note$1 = id(k)`, not its own `value`, where it once threw `note is not a function` (ADR 1150)",
     file: "src/lower/mir/tidy/bindings/temporaries.rs",
     find: "    taken.extend(items_read.iter().cloned());\n",
     replace: "    _ = items_read;\n",
     tests: ["test/corpus.test.ts", "-t", "^temporaries_beside_items_written_in_the_body.rs$"],
+    snapshots: true,
   },
   {
     name: "held-prop-named-value",

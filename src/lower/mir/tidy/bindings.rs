@@ -347,7 +347,7 @@ pub(super) fn forwarded_values(stmts: &mut Vec<Stmt>) {
             && matches!(&value.kind, ExprKind::Var(v) if v == t)
             && js::mentions_of(&stmts[i + 1..=i + 1], x) == 0
             && js::mentions_of(&stmts[i + 3..], t) == 0
-            && last_assigns(&stmts[i + 1..=i + 1], t.word())
+            && last_assigns(&stmts[i + 1..=i + 1], t)
         {
             let (t, x) = (t.clone(), x.clone());
             let mut given = vec![stmts.remove(i + 1)];
@@ -370,8 +370,8 @@ pub(super) fn forwarded_values(stmts: &mut Vec<Stmt>) {
 /// Whether each way through `stmts` that goes on past them gives `t` its
 /// value last, `t = e` of what doesn't read it, in a branch of an `if` or
 /// a `try` that ends them, and nothing else names `t`.
-pub(super) fn last_assigns(stmts: &[Stmt], t: &str) -> bool {
-    let names = |s: &Stmt| js::mentions_in(std::slice::from_ref(s), t) > 0;
+pub(super) fn last_assigns(stmts: &[Stmt], t: &js::Name) -> bool {
+    let names = |s: &Stmt| js::mentions_of(std::slice::from_ref(s), t) > 0;
     let Some((last, before)) = stmts.split_last() else {
         return false;
     };
@@ -383,10 +383,10 @@ pub(super) fn last_assigns(stmts: &[Stmt], t: &str) -> bool {
     }
     match &last.kind {
         StmtKind::Assign(target, value) => {
-            matches!(&target.kind, ExprKind::Var(v) if v.is(t)) && !value.mentions_var(t)
+            matches!(&target.kind, ExprKind::Var(v) if v == t) && !value.mentions_name(t)
         }
         StmtKind::If(test, then, otherwise) => {
-            !test.mentions_var(t) && last_assigns(then, t) && otherwise.as_deref().is_some_and(|o| last_assigns(o, t))
+            !test.mentions_name(t) && last_assigns(then, t) && otherwise.as_deref().is_some_and(|o| last_assigns(o, t))
         }
         StmtKind::TryCatch(body, _, caught) => last_assigns(body, t) && last_assigns(caught, t),
         _ => false,
@@ -472,7 +472,7 @@ pub(super) fn named_temporaries(body: &mut Vec<Stmt>) {
                 continue;
             }
             let mut found = Vec::new();
-            taking(&stmts[i + 1..], a.word(), &mut found);
+            taking(&stmts[i + 1..], &a, &mut found);
             // One name, each arm's that binds it, `n` of `(n, Some(x))` and
             // `(n, None)`, given apart until they're named in their scopes,
             // `n` and `n$1` (ADR 0357): each declared nowhere else, and read
@@ -499,24 +499,23 @@ pub(super) fn named_temporaries(body: &mut Vec<Stmt>) {
             let b = b.clone();
             let taken: Vec<js::Name> = found.iter().map(|(name, _)| name.clone()).collect();
             for name in &taken {
-                dropping(stmts, a.word(), name.word());
+                dropping(stmts, &a, name);
             }
             match &mut stmts[i].kind {
                 StmtKind::Const(name, _) | StmtKind::Let(name, _) => *name = b.clone(),
                 StmtKind::Destructure { pattern, .. } => pattern.each_name_mut(&mut |name| *name = b.clone()),
                 _ => unreachable!("matched"),
             }
-            // Not a closure's own of a name, its parameter `(_2) => _2[0]`
-            // where `_2` is a temporary here too (#1105).
+            // Each read of them, by its id: a closure's own parameter of a
+            // name, `(_2) => _2[0]` where `_2` is a temporary here too, is
+            // another variable, never one of these (#1105; ADR 1150).
             for name in std::iter::once(&a).chain(&taken) {
-                js::outside_shadows(stmts, name.word(), |stmts| {
-                    js::each_expr_mut(&mut stmts[i + 1..], &mut |e| {
-                        if let ExprKind::Var(v) = &mut e.kind
-                            && v == name
-                        {
-                            *v = b.clone();
-                        }
-                    });
+                js::each_expr_mut(&mut stmts[i + 1..], &mut |e| {
+                    if let ExprKind::Var(v) = &mut e.kind
+                        && v == name
+                    {
+                        *v = b.clone();
+                    }
                 });
             }
         }
@@ -543,10 +542,10 @@ pub(super) fn set_once_in_try(stmts: &[Stmt], a: &js::Name) -> bool {
 
 /// Each `const b = a;` of a name the program gives in the blocks of
 /// `stmts`, not in their closures, and how often `b` is read after it.
-pub(super) fn taking(stmts: &[Stmt], a: &str, found: &mut Vec<(js::Name, usize)>) {
+pub(super) fn taking(stmts: &[Stmt], a: &js::Name, found: &mut Vec<(js::Name, usize)>) {
     for (j, stmt) in stmts.iter().enumerate() {
         match &stmt.kind {
-            StmtKind::Const(b, value) if !is_temporary(b) && matches!(&value.kind, ExprKind::Var(v) if v.is(a)) => {
+            StmtKind::Const(b, value) if !is_temporary(b) && matches!(&value.kind, ExprKind::Var(v) if v == a) => {
                 found.push((b.clone(), js::mentions_of(&stmts[j + 1..], b)));
             }
             StmtKind::If(_, then, otherwise) => {
@@ -572,10 +571,10 @@ pub(super) fn taking(stmts: &[Stmt], a: &str, found: &mut Vec<(js::Name, usize)>
 }
 
 /// `stmts` without `taking`'s `const b = a;`, theirs or their blocks'.
-pub(super) fn dropping(stmts: &mut Vec<Stmt>, a: &str, b: &str) {
+pub(super) fn dropping(stmts: &mut Vec<Stmt>, a: &js::Name, b: &js::Name) {
     stmts.retain(|s| {
         !matches!(&s.kind, StmtKind::Const(n, value)
-            if n.is(b) && matches!(&value.kind, ExprKind::Var(v) if v.is(a)))
+            if n == b && matches!(&value.kind, ExprKind::Var(v) if v == a))
     });
     for stmt in stmts.iter_mut() {
         let lists: Vec<&mut Vec<Stmt>> = match &mut stmt.kind {

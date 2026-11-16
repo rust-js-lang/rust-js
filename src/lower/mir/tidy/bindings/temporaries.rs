@@ -206,24 +206,23 @@ pub(in crate::lower::mir::tidy) fn readable_temporaries(
             continue;
         }
         let to = js::Name::declared(temporary_names::pick(names, role, &mut taken));
-        // Not a closure's own of its name, `(_2) => _2[0]` (ADR 0902).
-        js::outside_shadows(body, from.word(), |body| {
-            js::statement_lists(body, &mut |list| {
-                for stmt in list.iter_mut() {
-                    if let StmtKind::Const(name, _) | StmtKind::Let(name, _) = &mut stmt.kind
-                        && *name == from
-                    {
-                        *name = to.clone();
-                    }
-                }
-            });
-            js::each_expr_mut(body, &mut |e| {
-                if let ExprKind::Var(v) = &mut e.kind
-                    && *v == from
+        // By its id: a closure's own of its name, `(_2) => _2[0]`, is
+        // another variable, never this one (ADR 0902; ADR 1150).
+        js::statement_lists(body, &mut |list| {
+            for stmt in list.iter_mut() {
+                if let StmtKind::Const(name, _) | StmtKind::Let(name, _) = &mut stmt.kind
+                    && *name == from
                 {
-                    *v = to.clone();
+                    *name = to.clone();
                 }
-            });
+            }
+        });
+        js::each_expr_mut(body, &mut |e| {
+            if let ExprKind::Var(v) = &mut e.kind
+                && *v == from
+            {
+                *v = to.clone();
+            }
         });
     }
 }

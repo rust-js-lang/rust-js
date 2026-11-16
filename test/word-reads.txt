@@ -58,8 +58,8 @@ src/lower/mir/std_calls.rs	2
 src/lower/mir/std_calls/fmt_parts.rs	1
 src/lower/mir/structure.rs	2
 src/lower/mir/temporaries.rs	5
-src/lower/mir/tidy/bindings.rs	21
-src/lower/mir/tidy/bindings/temporaries.rs	7
+src/lower/mir/tidy/bindings.rs	16
+src/lower/mir/tidy/bindings/temporaries.rs	6
 src/lower/mir/tidy/branches.rs	3
 src/lower/mir/tidy/case_rests.rs	1
 src/lower/mir/tidy/copied.rs	1
