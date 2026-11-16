@@ -105,8 +105,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a constructor whose instance is set again, `c = C { .. }`, is `this = ..`, no JS",
     file: "src/lower/classes/member_functions.rs",
-    find: "    if js::Writes::sets(body, instance.word()) {\n",
-    replace: "    if false && js::Writes::sets(body, instance.word()) {\n",
+    find: "    if js::Writes::sets(body, &instance) {\n",
+    replace: "    if false && js::Writes::sets(body, &instance) {\n",
     tests: refusals,
   },
   {

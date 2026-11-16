@@ -715,7 +715,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `with_this` closure that sets its `this` assigns JS's, `this = undefined`, a `SyntaxError`, not a `let` of its own (ADR 0972)",
     file: "src/lower/binding_calls.rs",
-    find: "                if js::Writes::of(&body).may_replace(this.word()) {\n",
+    find: "                if js::Writes::of(&body).may_replace(&this) {\n",
     replace: "                if false {\n",
     tests: ["test/js-functions.test.ts", "-t", "sets its `this`"],
   },

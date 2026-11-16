@@ -53,7 +53,7 @@ export const mutations: Mutation[] = [
     name: "given-before-of-a-tested-const",
     breaks: "a `const x = v[i];` before a block that its tree only tests is read as its value, `v[i] === 0`, so `switch_tail_continues`'s `switch` of `0 => continue` is another tree, its `case 0: break;` a `continue;` (#771)",
     file: "src/lower/mir/tidy/decisions/guarded.rs",
-    find: "        if js::Writes::sets(body, name.word())\n            && tested_reads(",
+    find: "        if js::Writes::sets(body, name)\n            && tested_reads(",
     replace: "        if tested_reads(",
     tests: ["test/corpus.test.ts", "-t", "^(switch_tail_continues).rs$"],
     snapshots: true,

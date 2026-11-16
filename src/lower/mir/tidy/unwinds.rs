@@ -336,7 +336,7 @@ fn first_drop(stmts: &[Stmt]) -> Option<&Stmt> {
 struct Run<'a> {
     drop: &'a Stmt,
     declared: IndexSet<String>,
-    set_by_closures: IndexSet<String>,
+    set_by_closures: IndexSet<js::Name>,
     result: &'a str,
 }
 
@@ -417,8 +417,7 @@ impl<'a> Run<'a> {
             StmtKind::Return(None) => true,
             StmtKind::Return(Some(value)) => match &value.kind {
                 ExprKind::Var(name) => {
-                    name.is(self.result)
-                        || self.declared.contains(name.word()) && !self.set_by_closures.contains(name.word())
+                    name.is(self.result) || self.declared.contains(name.word()) && !self.set_by_closures.contains(name)
                 }
                 _ => value.is_constant(),
             },

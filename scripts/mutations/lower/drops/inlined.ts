@@ -250,7 +250,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a guard's field of a variable set once the guard's made reads that variable, its new value",
     file: "src/lower/drops/inlined.rs",
-    find: "                && !later.may_replace(name)\n",
+    find: "                && !later.may_replace_spelled(name)\n",
     replace: "",
     tests: [
       "test/lowering-drop-guards.test.ts",

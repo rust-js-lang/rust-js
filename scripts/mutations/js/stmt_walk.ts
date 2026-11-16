@@ -155,7 +155,7 @@ export const mutations: Mutation[] = [
     name: "set-let-made-const",
     breaks: "a `let` set again is a `const`, which JS refuses to set",
     file: "src/js/stmt_walk.rs",
-    find: "                && !writes.may_replace(name.word())\n",
+    find: "                && !writes.may_replace(name)\n",
     replace: "",
     tests: ["test/lowering-names.test.ts", "-t", "nothing sets again is a const"],
   },

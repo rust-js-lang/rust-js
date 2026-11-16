@@ -308,7 +308,7 @@ pub(crate) fn constants(body: &mut Vec<Stmt>) {
     each_block_mut(body, &mut |stmts| {
         for stmt in stmts.iter_mut() {
             if let StmtKind::Let(name, Some(value)) = &stmt.kind
-                && !writes.may_replace(name.word())
+                && !writes.may_replace(name)
             {
                 stmt.kind = StmtKind::Const(name.clone(), value.clone());
             }

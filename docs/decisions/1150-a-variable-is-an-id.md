@@ -865,3 +865,29 @@ payload's `const`, so preparation makes its three `$catchUnwind` closures
 plain-field-blocks-inline, whose JSX tests reached the plain root only
 through that coincidence, is held by two corpus cases' snapshots.
 
+## Names are ids, step 3's seventh slice: what a tree writes, by id (2026-11-16)
+
+`js::Writes` holds the variables a tree writes as `Name`s, its replaced,
+changed and handled ones, each kind in closures too, and how often each is
+set; its questions take a `Name`, `may_replace`, `sets`, `count`, and
+`replaces` and `changes` of the sets a pass read directly. Tidy's
+`set_elsewhere` and `changing`, made of them, are sets of `Name`s, and the
+passes asking them ask by id: `read_past_calls`, `moved`, `decided`,
+`destructuring`'s parts set, `implied_tests`, `filtered_guards`,
+`tested_options`, `unwinds`' closures' sets. Byte-identical, and a probe
+that asked each question by the variable's id and by its word over the
+corpus and React's port found no question they answer apart.
+
+A helper that still holds a word, not a `Name`, asks step 3's migration
+bridge, `Writes::sets_spelled`, `may_replace_spelled`,
+`replaces_in_closures_spelled` and `handles_spelled` (the lead's decision):
+`only_read`, `read_before_set` and `variable_clones`' and `bindings`' asks
+in tidy's `bindings.rs`, `set_after_last_read` in tidy's `shadows.rs`,
+`values.rs`' resets, `mir::scopes`' assigned parameters and
+`drops::inlined`'s declared bindings. `test/writes-spelled-bridge.txt`
+counts their calls, a ratchet that only falls; step 3 isn't done until
+it's empty. Preparation's `shadows` asks what a closure may replace by a
+variable's spelling, as JS reads it, its own question, the spelling step's
+API (`replaced_in_closures_spelled`, `may_replace_spelled` in
+`prepare/shadows.rs`), not the bridge.
+

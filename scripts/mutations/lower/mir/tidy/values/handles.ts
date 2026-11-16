@@ -35,7 +35,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a handle written through in a closure, `r.set(5)` of `let r = &context.value`, is read where it's made, `const r = context.value; .. r = 5`",
     file: "src/lower/mir/tidy/values/handles.rs",
-    find: "        *at_once &= !changed.contains(name.word());\n",
+    find: "        *at_once &= !changed.contains(name);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^cell_alias_in_a_closure.rs$"],
   },

@@ -555,11 +555,9 @@ fn in_place(
     // a first set the body's own statement, which no closure made before
     // it could see, else the call stays.
     if let Some((param, _)) = parameter
-        && Writes::sets(&body, param.word())
+        && Writes::sets(&body, param)
     {
-        let first = body
-            .iter()
-            .position(|s| Writes::sets(std::slice::from_ref(s), param.word()))?;
+        let first = body.iter().position(|s| Writes::sets(std::slice::from_ref(s), param))?;
         let StmtKind::Assign(target, value) = &body[first].kind else {
             return None;
         };
@@ -587,7 +585,7 @@ fn in_place(
         let to = Name::declared(to);
         let mut after = body.split_off(first + 1);
         merged(&mut after, param.word(), &to);
-        let again = Writes::sets(&after, to.word());
+        let again = Writes::sets(&after, &to);
         body[first].kind = match again {
             true => StmtKind::Let(to, Some(value)),
             false => StmtKind::Const(to, value),

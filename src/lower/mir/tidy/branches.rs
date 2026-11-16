@@ -679,12 +679,12 @@ fn written_arm(at: js::Span, code: &[Stmt], patterns: &[js::Span]) -> Option<js:
 
 /// `t && <div className={t ? e : undefined} />`: `e`, where `t` holds, of a
 /// test that does nothing and reads what nothing changes.
-pub(super) fn implied_tests(e: &mut Expr, changing: &IndexSet<String>) {
+pub(super) fn implied_tests(e: &mut Expr, changing: &IndexSet<js::Name>) {
     let (ExprKind::Binary(Op::And, test, child) | ExprKind::Cond(test, child, _)) = &mut e.kind else {
         return;
     };
     let mut unchanged = !test.has_effects();
-    test.visit_vars(&mut |v| unchanged &= !changing.contains(v));
+    test.visit_names(&mut |v| unchanged &= !changing.contains(v));
     if !unchanged {
         return;
     }
@@ -958,7 +958,7 @@ fn kept_by_truth(e: &Expr) -> Option<&Expr> {
 /// read there alone, `if (x) { s }`. Of an `x` that's no variable, a
 /// read, `type.contextTypes`, `h` is kept, its value `x`, which it is where
 /// the test lets it be read: `const h = x; if (!h) { exit }`.
-pub(super) fn filtered_guards(stmts: &mut Vec<Stmt>, changing: &IndexSet<String>) {
+pub(super) fn filtered_guards(stmts: &mut Vec<Stmt>, changing: &IndexSet<js::Name>) {
     let mut i = 0;
     while i + 1 < stmts.len() {
         i += 1;
@@ -972,7 +972,7 @@ pub(super) fn filtered_guards(stmts: &mut Vec<Stmt>, changing: &IndexSet<String>
             continue;
         };
         let variable = match &x.kind {
-            ExprKind::Var(x) if changing.contains(x.word()) => continue,
+            ExprKind::Var(x) if changing.contains(x) => continue,
             ExprKind::Var(x) => Some(x.clone()),
             _ => None,
         };

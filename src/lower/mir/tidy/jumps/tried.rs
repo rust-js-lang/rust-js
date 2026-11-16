@@ -41,7 +41,7 @@ pub(in crate::lower::mir::tidy) fn binding(body: &[Stmt], item: &js::Name) -> Op
                 if let ExprKind::Var(bound) = &target.kind
                     && parts.is_empty() =>
             {
-                (bound, value, js::Writes::sets(&body[1..], bound.word()))
+                (bound, value, js::Writes::sets(&body[1..], bound))
             }
             _ => break,
         };
@@ -62,7 +62,7 @@ pub(in crate::lower::mir::tidy) fn binding(body: &[Stmt], item: &js::Name) -> Op
         [] if !is_temporary(item) => {
             return Some((
                 js::Pattern::Name(item.clone()),
-                js::Writes::sets(body, item.word()),
+                js::Writes::sets(body, item),
                 0,
                 aliases,
             ));

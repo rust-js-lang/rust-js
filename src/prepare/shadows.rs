@@ -93,7 +93,7 @@ fn shadows(body: &mut Vec<Stmt>, own: &IndexSet<String>) {
 fn shadow(body: &[Stmt], own: &IndexSet<String>) -> Option<(String, String)> {
     // What closures set, and what their parameters are named, which a
     // name read in them would mean instead.
-    let mut in_closures = js::Writes::of(body).replaced_in_closures;
+    let mut in_closures = replaced_in_closures_spelled(body);
     js::each_expr(body, &mut |e| {
         if let ExprKind::Arrow(params, _) | ExprKind::AsyncArrow(params, _) = &e.kind {
             in_closures.extend(params.iter().flat_map(|p| p.names()).map(str::to_string));
@@ -158,7 +158,7 @@ fn read_later(stmts: &[Stmt], alias: &str) -> bool {
 /// the copy's list or an `if`'s of it (`after_ways`).
 fn read_before_set(stmts: &[Stmt], alias: &str, of: &str, set: &mut bool, top: bool) -> bool {
     let reads = |stmts: &[Stmt]| js::mentions_in(stmts, alias) > 0;
-    let sets = |stmts: &[Stmt]| js::Writes::of(stmts).may_replace(of);
+    let sets = |stmts: &[Stmt]| may_replace_spelled(stmts, of);
     for stmt in stmts {
         let one = std::slice::from_ref(stmt);
         let ok = match &stmt.kind {
@@ -487,7 +487,7 @@ fn write_back(body: &[Stmt], own: &IndexSet<String>) -> Option<(String, js::Name
             }
         }
     });
-    let in_closures = js::Writes::of(body).replaced_in_closures;
+    let in_closures = replaced_in_closures_spelled(body);
     lets.into_iter().find(|(alias, of)| {
         let of = of.word();
         let is = |e: &Expr, name: &str| matches!(&e.kind, ExprKind::Var(v) if v.is(name));
@@ -552,4 +552,22 @@ fn synced_reads(stmts: &[Stmt], alias: &str, of: &str, ran: &mut bool) -> bool {
         }
     }
     true
+}
+
+/// The spellings of the variables `body`'s closures replace: what a name
+/// read in one would mean, as JS reads a name by its spelling.
+/// Preparation's own question, the spelling step's API (ADR 1150), not
+/// step 3's migration bridge (`js::Writes::sets_spelled`).
+fn replaced_in_closures_spelled(body: &[Stmt]) -> IndexSet<String> {
+    (js::Writes::of(body).replaced_in_closures.iter())
+        .map(|name| name.word().to_string())
+        .collect()
+}
+
+/// Whether `stmts` may replace a variable spelled `word`, a binding JS
+/// would read by that spelling: preparation's own question
+/// (`replaced_in_closures_spelled`'s).
+fn may_replace_spelled(stmts: &[Stmt], word: &str) -> bool {
+    let writes = js::Writes::of(stmts);
+    writes.replaced.iter().chain(&writes.handled).any(|name| name.is(word))
 }

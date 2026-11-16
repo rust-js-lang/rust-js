@@ -221,7 +221,8 @@ pub(super) fn scope_fields(value: &str, params: &[js::Pattern], out: &mut Vec<St
             });
         }
     });
-    let assigned = |name: &str| declared.contains(name) || handled.contains(name) || js::Writes::sets(out, name);
+    let assigned =
+        |name: &str| declared.contains(name) || handled.contains(name) || js::Writes::sets_spelled(out, name);
     let param_names: Vec<&str> = params.iter().flat_map(|p| p.names()).collect();
     let mut names: IndexMap<String, js::Name> = IndexMap::default();
     let mut lets = Vec::new();

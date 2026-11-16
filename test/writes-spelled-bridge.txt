@@ -1,0 +1,11 @@
+# Each file's calls of step 3's migration bridge, `js::Writes::sets_spelled`,
+# `may_replace_spelled`, `replaces_in_closures_spelled` and `handles_spelled`
+# (ADR 1150): a helper that still holds a variable's word, not its `Name`.
+# A ratchet that only falls (test/architecture-names.test.ts); step 3 ends
+# when it's empty. Preparation's own spelled questions, `prepare/`'s, aren't
+# the bridge.
+src/lower/drops/inlined.rs	3
+src/lower/mir/scopes.rs	1
+src/lower/mir/tidy/bindings.rs	4
+src/lower/mir/tidy/shadows.rs	4
+src/lower/mir/tidy/values.rs	1

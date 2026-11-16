@@ -122,7 +122,7 @@ pub(super) fn given_before(before: &[Stmt], body: &[Stmt], after: &[Stmt]) -> Ve
         }
         // Given again in the tree, another alternative's binding: a `const
         // x = v[i];` the tree only tests, `switch (x)`'s, reads as named.
-        if js::Writes::sets(body, name.word())
+        if js::Writes::sets(body, name)
             && tested_reads(body, name.word()).is_some_and(|n| n > 0)
             && js::mentions_of(after, name) == 0
         {

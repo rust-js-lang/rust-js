@@ -722,9 +722,9 @@ fn kept_variables(body: &[Stmt], params: &[Pattern], guard: &str, fields: &[(Str
     (declared.into_iter())
         .filter(|(name, count)| {
             *count == 1
-                && !later.may_replace(name)
-                && !whole.replaced_in_closures.contains(name)
-                && !whole.handled.contains(name)
+                && !later.may_replace_spelled(name)
+                && !whole.replaces_in_closures_spelled(name)
+                && !whole.handles_spelled(name)
         })
         .map(|(name, _)| name)
         .collect()

@@ -1044,7 +1044,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         match this {
             Some(js::Pattern::Name(this)) => {
                 // Set, or a place lent: a variable of its own, `this` given first.
-                if js::Writes::of(&body).may_replace(this.word()) {
+                if js::Writes::of(&body).may_replace(&this) {
                     body.insert(0, StmtKind::Let(this, Some(Expr::this())).at(js::Span::NONE));
                 } else if js::read_as_this(&mut body, this.word()) {
                     body.insert(0, StmtKind::Const(this, Expr::this()).at(js::Span::NONE));

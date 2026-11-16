@@ -227,7 +227,7 @@ fn instance_as_this(body: &mut Vec<Stmt>) -> Result<(), &'static str> {
     }) else {
         return Ok(());
     };
-    if js::Writes::sets(body, instance.word()) {
+    if js::Writes::sets(body, &instance) {
         return Err("a constructor whose instance is set again, not changed in place");
     }
     let made = body.remove(at);

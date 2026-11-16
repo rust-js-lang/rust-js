@@ -190,7 +190,7 @@ pub(in crate::lower::mir::tidy) fn read_handles(
     // where its `value` is, read and written there, never read at once.
     let changed = js::Writes::of(body).changed;
     for (name, _, at_once, _) in &mut handles {
-        *at_once &= !changed.contains(name.word());
+        *at_once &= !changed.contains(name);
     }
     // A flattened state's written whole through it keeps it, whose setter
     // sets each key (ADR 1044), a closure's write too (#482).

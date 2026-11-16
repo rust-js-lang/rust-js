@@ -5,7 +5,7 @@ use crate::js::{Expr, Prop};
 
 #[test]
 fn fresh_literals_require_stable_contents() {
-    let set = IndexSet::from_iter(["changing".to_owned()]);
+    let set: IndexSet<crate::js::Name> = IndexSet::from_iter(["changing".into()]);
     let plain = IndexSet::default();
     let allowed = |value: Expr| read_past_calls(&value, &set, &plain);
     let field = |value: Expr| Expr::object(vec![Prop::Field("entry".to_owned(), value)]);

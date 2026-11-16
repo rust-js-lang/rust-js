@@ -23,7 +23,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a temporary that does something is written past reads of what it changes, `d.n + reset(d)`",
     file: "src/lower/mir/tidy/stability.rs",
-    find: "    let plain_root =\n        matches!(&root.kind, ExprKind::Var(v) if plain.contains(&js::Path::var(v)) && !set.contains(v.word()));\n",
+    find: "    let plain_root = matches!(&root.kind, ExprKind::Var(v) if plain.contains(&js::Path::var(v)) && !set.contains(v));\n",
     replace: "    let plain_root = true;\n",
     tests: ["test/corpus.test.ts", "-t", "assignment_order"],
   },
@@ -46,7 +46,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a prop MIR holds for a borrow stays a `const _14`, read past `meta.tag` of a plain value",
     file: "src/lower/mir/tidy/stability.rs",
-    find: "    let plain_root =\n        matches!(&root.kind, ExprKind::Var(v) if plain.contains(&js::Path::var(v)) && !set.contains(v.word()));\n",
+    find: "    let plain_root = matches!(&root.kind, ExprKind::Var(v) if plain.contains(&js::Path::var(v)) && !set.contains(v));\n",
     replace: "    let plain_root = false;\n",
     tests: ["test/corpus.test.ts", "-t", "^(chars_given_to_helpers|held_peekable).rs$"],
     snapshots: true,
@@ -134,8 +134,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`...first` of an array whose items nothing changes stops a later call's value being read in place",
     file: "src/lower/mir/tidy/stability.rs",
-    find: "            if !set.contains(v.word()) && plain.contains(&js::Path::items(v))),\n",
-    replace: "            if !set.contains(v.word()) && false),\n",
+    find: "            if !set.contains(v) && plain.contains(&js::Path::items(v))),\n",
+    replace: "            if !set.contains(v) && false),\n",
     tests: [
       "test/lowering-collections.test.ts",
       "-t",
@@ -186,8 +186,8 @@ export const mutations: Mutation[] = [
     name: "plain-iterator-spread-passes",
     breaks: "a spread of a plain value that's an iterator, a function's `inspect(see)`, is taken to do nothing, so `[...it, probe(9)]` runs `see` before `probe(9)` where Rust makes the chain's argument first (#1015)",
     file: "src/lower/mir/tidy/stability.rs",
-    find: "            if !set.contains(v.word()) && plain.contains(&js::Path::items(v))),\n",
-    replace: "            if !set.contains(v.word()) && (plain.contains(&js::Path::var(v)) || plain.contains(&js::Path::items(v)))),\n",
+    find: "            if !set.contains(v) && plain.contains(&js::Path::items(v))),\n",
+    replace: "            if !set.contains(v) && (plain.contains(&js::Path::var(v)) || plain.contains(&js::Path::items(v)))),\n",
     tests: ["test/corpus.test.ts", "-t", "^inspect_by_a_function_before_a_chain_argument.rs$"],
   },
   {
@@ -195,7 +195,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a struct literal of a struct with a `Cell` beside its plain fields hoists each value after a call into a temporary, `const value$2 = shouldSet(t) ? ..; return { .., text: value$2 }`, as its plain field `instance.id` isn't taken as unchanged by the call (#1045)",
     file: "src/lower/mir/tidy/stability.rs",
-    find: "                || (plain_field(e, plain) && matches!(&root.kind, ExprKind::Var(v) if !set.contains(v.word())))\n",
+    find: "                || (plain_field(e, plain) && matches!(&root.kind, ExprKind::Var(v) if !set.contains(v)))\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "literal_of_a_struct_beside_a_cell"],
     snapshots: true,

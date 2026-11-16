@@ -261,13 +261,13 @@ fn set_after_last_read(stmts: &[Stmt], shadow: &str, old: &str, mut set: bool) -
     let mut any = set;
     for (k, stmt) in stmts.iter().enumerate() {
         if js::mentions_in(&stmts[k..], old) == 0 {
-            let rest = set || js::Writes::sets(&stmts[k..], shadow);
+            let rest = set || js::Writes::sets_spelled(&stmts[k..], shadow);
             return Some((rest, any || rest));
         }
         if set && js::mentions_in(std::slice::from_ref(stmt), old) > 0 {
             return None;
         }
-        if !js::Writes::sets(std::slice::from_ref(stmt), shadow) {
+        if !js::Writes::sets_spelled(std::slice::from_ref(stmt), shadow) {
             continue;
         }
         // A branch that leaves goes on nowhere after it.
@@ -280,10 +280,10 @@ fn set_after_last_read(stmts: &[Stmt], shadow: &str, old: &str, mut set: bool) -
                 // it before either branch runs, and reads `old` there in
                 // an order this doesn't follow (#523).
                 let tested = [StmtKind::Expr(test.clone()).at(js::Span::NONE)];
-                if js::Writes::sets(&tested, shadow) && js::mentions_in(&tested, old) > 0 {
+                if js::Writes::sets_spelled(&tested, shadow) && js::mentions_in(&tested, old) > 0 {
                     return None;
                 }
-                let set = set || js::Writes::sets(&tested, shadow);
+                let set = set || js::Writes::sets_spelled(&tested, shadow);
                 let otherwise = otherwise.as_deref().unwrap_or_default();
                 let (a, b) = (
                     set_after_last_read(then, shadow, old, set)?,

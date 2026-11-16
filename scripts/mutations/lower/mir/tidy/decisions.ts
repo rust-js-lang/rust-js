@@ -444,7 +444,7 @@ export const mutations: Mutation[] = [
     breaks:
       "no parameter is known never replaced, so a guard's test of one read after another guard's call is taken for what the call may change, and the tree keeps its label (#771)",
     file: "src/lower/mir/tidy/decisions.rs",
-    find: "            if !writes.may_replace(name.word()) && !js::declares(body, name.word()) {\n",
+    find: "            if !writes.may_replace(name) && !js::declares(body, name.word()) {\n",
     replace: "            if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^match_trees_chained.rs$"],
     snapshots: true,

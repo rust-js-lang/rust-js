@@ -54,7 +54,7 @@ fn stepped(declared: &Stmt, looped: &Stmt, after: &[Stmt]) -> Option<StmtKind> {
         || !cond.mentions_var(name.word())
         || js::mentions_in(after, name.word()) > 0
         || js::continues(rest, label.as_ref().map(|n| n.word()))
-        || js::Writes::sets(rest, name.word())
+        || js::Writes::sets(rest, name)
         || in_function(body, name.word())
         || function_names(cond, name.word())
         || step

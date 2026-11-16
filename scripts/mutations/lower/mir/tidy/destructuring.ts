@@ -14,7 +14,7 @@ export const mutations: Mutation[] = [
     name: "tuple-part-set-through-a-handle-unseen",
     breaks: "`match (v.pop(), x.0)`'s `x.0` is read after a guard's call is given a handle on it that sets it (#1035)",
     file: "src/lower/mir/tidy/destructuring.rs",
-    find: "                    parts_set.insert(v.to_string());\n",
+    find: "                    parts_set.insert(v.clone());\n",
     replace: "                    let _ = v;\n",
     tests: ["test/corpus.test.ts", "-t", "^field_rewrite_singles.rs$"],
   },
@@ -198,8 +198,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a tuple MIR sets an item of, `t[0] = x`, is read as its items, which crashes printing what's assigned",
     file: "src/lower/mir/tidy/destructuring.rs",
-    find: "        if writes.replaced.contains(t.word())\n            || writes.changed.contains(t.word())\n            || indexed == 0\n",
-    replace: "        if indexed == 0\n",
+    find: "        if writes.replaces(&t) || writes.changes(&t) || indexed == 0 ||",
+    replace: "        if indexed == 0 ||",
     tests: ["test/corpus.test.ts", "-t", "mut_ref_temporary"],
   },
   {
@@ -269,8 +269,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a variable a guard sets after the tuple is made is read as the guard left it",
     file: "src/lower/mir/tidy/destructuring.rs",
-    find: "if !js::Writes::sets(after, v.word()) && !set_elsewhere.contains(v.word()))",
-    replace: "if !set_elsewhere.contains(v.word()))",
+    find: "if !js::Writes::sets(after, v) && !set_elsewhere.contains(v))",
+    replace: "if !set_elsewhere.contains(v))",
     tests: ["test/corpus.test.ts", "-t", "tuple_scrutinee_calls"],
   },
   {

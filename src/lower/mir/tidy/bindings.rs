@@ -87,7 +87,7 @@ pub(super) fn only_read(stmts: &[Stmt], name: &str) -> bool {
         }
         _ => {}
     });
-    all == read && !js::Writes::sets(&stmts, name)
+    all == read && !js::Writes::sets_spelled(&stmts, name)
 }
 
 /// An arrow's parameter its function's names made unique, `(value$1) =>
@@ -193,11 +193,11 @@ pub(super) fn alias_variables(body: &mut Vec<Stmt>, fixed: &IndexSet<String>) {
                 // set only past each read on every way, `const _15 =
                 // newLast; if (_15 == null) { .. } else { _15.next = clone;
                 // newLast = clone; }`.
-                let deferred = set.contains(of.word()) && handles_read(&stmts[i + 1..]).contains(alias.word());
+                let deferred = set.contains(of) && handles_read(&stmts[i + 1..]).contains(alias.word());
                 let kept = deferred
                     || last.is_some_and(|last| {
                         let reads = &stmts[i + 1..=last];
-                        js::Writes::of(reads).may_replace(of.word())
+                        js::Writes::of(reads).may_replace(of)
                             && (declares(reads, of.word())
                                 || !read_before_set(reads, alias.word(), of.word(), &mut false))
                     });
@@ -238,7 +238,7 @@ pub(super) fn alias_variables(body: &mut Vec<Stmt>, fixed: &IndexSet<String>) {
 /// `copied_bindings` takes none whose binding one reads.
 pub(super) fn read_before_set(stmts: &[Stmt], alias: &str, of: &str, set: &mut bool) -> bool {
     let reads = |stmts: &[Stmt]| js::mentions_in(stmts, alias) > 0;
-    let sets = |stmts: &[Stmt]| js::Writes::of(stmts).may_replace(of);
+    let sets = |stmts: &[Stmt]| js::Writes::of(stmts).may_replace_spelled(of);
     for stmt in stmts {
         let one = std::slice::from_ref(stmt);
         match &stmt.kind {
@@ -481,7 +481,7 @@ pub(super) fn set_once_in_try(stmts: &[Stmt], a: &str) -> bool {
         ),
         _ => false,
     };
-    set && mentions(&stmts[j]) == 1 && !js::Writes::of(&stmts[j + 1..]).may_replace(a)
+    set && mentions(&stmts[j]) == 1 && !js::Writes::of(&stmts[j + 1..]).may_replace_spelled(a)
 }
 
 /// Each `const b = a;` of a name the program gives in the blocks of
@@ -714,7 +714,7 @@ pub(super) fn clone_aliases(
 pub(super) fn variable_clones(body: &mut Vec<Stmt>, clones: &crate::lower::mir::hints::Clones) {
     let writes = js::Writes::of(body);
     let fixed: IndexSet<String> = (cloned_from(body, &clones.rcs).into_iter())
-        .filter(|(_, a)| bindings(body, a, false) == 1 && !writes.may_replace(a))
+        .filter(|(_, a)| bindings(body, a, false) == 1 && !writes.may_replace_spelled(a))
         .map(|(_, a)| a)
         .collect();
     clones_read_as(body, &fixed, &clones.rcs);

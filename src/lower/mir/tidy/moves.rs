@@ -8,9 +8,9 @@ use super::*;
 /// asked of the body as it is (ADR 0670).
 pub(super) struct MoveFacts<'a> {
     /// The variables something in the body changes.
-    pub changing: &'a IndexSet<String>,
+    pub changing: &'a IndexSet<js::Name>,
     /// The variables a closure sets: what a call can change of them.
-    pub set: &'a IndexSet<String>,
+    pub set: &'a IndexSet<js::Name>,
     /// The variables whose value is plain data, whose fields no call
     /// changes.
     pub plain: &'a IndexSet<js::Path>,
@@ -178,7 +178,7 @@ fn moved(stmt: &Stmt, rest: &[Stmt], facts: &MoveFacts) -> Option<(Moved, Why)> 
         false => unchanged_by_calls || !e.has_effects(),
         true if element => {
             let mut unchanged = !e.has_effects();
-            e.visit_vars(&mut |v| unchanged &= !facts.set.contains(v));
+            e.visit_names(&mut |v| unchanged &= !facts.set.contains(v));
             unchanged
         }
         true => read_past_calls(e, facts.set, facts.plain),
@@ -197,7 +197,7 @@ fn moved(stmt: &Stmt, rest: &[Stmt], facts: &MoveFacts) -> Option<(Moved, Why)> 
         return None;
     }
     let mut reads = Vec::new();
-    value.visit_vars(&mut |v| reads.push(v.to_string()));
+    value.visit_names(&mut |v| reads.push(v.clone()));
     // Of what does something, past what does nothing: a `const` of a
     // getter's read, `anyProps.href`, does something too, which the value
     // moved past it, `element.getAttribute("href")`, could see, or it see.
@@ -216,7 +216,7 @@ fn moved(stmt: &Stmt, rest: &[Stmt], facts: &MoveFacts) -> Option<(Moved, Why)> 
     // What does nothing, of variables nothing changes, gives the same
     // wherever it's read.
     let mut stable = !value.has_effects();
-    value.visit_vars(&mut |v| stable &= !facts.changing.contains(v));
+    value.visit_names(&mut |v| stable &= !facts.changing.contains(v));
     let read = read_of(&rest[at], name.word(), stable)?;
     let expr = read.of(&rest[at]);
     let single = once && js::mentions_of(&rest[at..=at], name) == 1;
@@ -897,8 +897,8 @@ mod tests {
         let no_names: IndexSet<js::Name> = IndexSet::default();
         let no_paths: IndexSet<js::Path> = IndexSet::default();
         let facts = MoveFacts {
-            changing: &none,
-            set: &none,
+            changing: &no_names,
+            set: &no_names,
             plain: &no_paths,
             captured: &no_names,
             fixed: &none,

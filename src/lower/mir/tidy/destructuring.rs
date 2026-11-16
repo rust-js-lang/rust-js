@@ -548,13 +548,13 @@ pub(super) fn nested_pattern(parts: &[(&[Step], &js::Name, Option<&Expr>)]) -> O
 /// before it with it (ADR 0369).
 pub(super) fn tuple_reads(
     stmts: &mut Vec<Stmt>,
-    changing: &IndexSet<String>,
-    set_elsewhere: &IndexSet<String>,
+    changing: &IndexSet<js::Name>,
+    set_elsewhere: &IndexSet<js::Name>,
     captured: &IndexSet<js::Name>,
 ) {
     let inert = |item: &Expr| {
         let mut inert = !item.has_effects();
-        item.visit_vars(&mut |v| inert &= !changing.contains(v));
+        item.visit_names(&mut |v| inert &= !changing.contains(v));
         inert
     };
     let mut i = 0;
@@ -583,10 +583,7 @@ pub(super) fn tuple_reads(
         js::each_expr_mut(&mut stmts[i + 1..], &mut |e| indexed += usize::from(item(e).is_some()));
         // Read only, not set through, `children[0] = ..`.
         let writes = js::Writes::of(&stmts[i + 1..]);
-        if writes.replaced.contains(t.word())
-            || writes.changed.contains(t.word())
-            || indexed == 0
-            || indexed != js::mentions_of(&stmts[i + 1..], &t)
+        if writes.replaces(&t) || writes.changes(&t) || indexed == 0 || indexed != js::mentions_of(&stmts[i + 1..], &t)
         {
             i += 1;
             continue;
@@ -612,7 +609,7 @@ pub(super) fn tuple_reads(
                     root = of;
                 }
                 if let ExprKind::Var(v) = &root.kind {
-                    parts_set.insert(v.to_string());
+                    parts_set.insert(v.clone());
                 }
             }
         });
@@ -629,14 +626,14 @@ pub(super) fn tuple_reads(
                         root = of;
                     }
                     if let ExprKind::Var(of) = &root.kind {
-                        aliased.push((alias.clone(), of.to_string()));
+                        aliased.push((alias.clone(), of.clone()));
                     }
                 }
             }
         });
         while let Some((_, of)) = aliased
             .iter()
-            .find(|(alias, of)| parts_set.contains(alias.word()) && !parts_set.contains(of))
+            .find(|(alias, of)| parts_set.contains(alias) && !parts_set.contains(of))
         {
             parts_set.insert(of.clone());
         }
@@ -644,13 +641,13 @@ pub(super) fn tuple_reads(
             let mut set = false;
             // Not a handle, which reads its place where it's used whatever.
             if !matches!(item.kind, ExprKind::Var(_) | ExprKind::Handle(..) | ExprKind::Pair(..)) {
-                item.visit_vars(&mut |v| set |= parts_set.contains(v));
+                item.visit_names(&mut |v| set |= parts_set.contains(v));
             }
             set
         };
         let acts = |item: &Expr| {
             (!inert(item) || reads_parts_set(item))
-                && !matches!(&item.kind, ExprKind::Var(v) if !js::Writes::sets(after, v.word()) && !set_elsewhere.contains(v.word()))
+                && !matches!(&item.kind, ExprKind::Var(v) if !js::Writes::sets(after, v) && !set_elsewhere.contains(v))
         };
         let last = items.iter().rposition(acts);
         let fixed = |item: &Expr| {

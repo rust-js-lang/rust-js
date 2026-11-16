@@ -16,21 +16,21 @@ use super::*;
 pub struct Writes {
     /// `x = ..` and `x += ..`: each variable whose binding is replaced, in a
     /// closure too.
-    pub replaced: IndexSet<String>,
+    pub replaced: IndexSet<Name>,
     /// Those a closure, or a function declared in the tree, replaces.
-    pub replaced_in_closures: IndexSet<String>,
+    pub replaced_in_closures: IndexSet<Name>,
     /// `x.f = ..` and `x[0] += ..`: each variable whose object a write
     /// changes, the one at the root of what's written, in a closure too.
-    pub changed: IndexSet<String>,
+    pub changed: IndexSet<Name>,
     /// Those a closure, or a function declared in the tree, changes.
-    pub changed_in_closures: IndexSet<String>,
+    pub changed_in_closures: IndexSet<Name>,
     /// `&mut x`'s handle, a getter and a setter of `x`: each variable one is
     /// made on, which what it's given may replace (ADR 0099); not one whose
     /// setter writes it in place (`Storage::rebinds`, #968).
-    pub handled: IndexSet<String>,
+    pub handled: IndexSet<Name>,
     /// How many places set each variable's binding, a handle on it among
     /// them, in a closure too: `Writes::count`'s.
-    set: IndexMap<String, usize>,
+    set: IndexMap<Name, usize>,
     /// Each place written, where `Writes::places` asks for them.
     places: Option<Vec<Expr>>,
 }
@@ -44,7 +44,7 @@ impl Writes {
 
     /// What a closure may write when it's called: each variable whose
     /// binding or object one writes.
-    pub fn by_closures(&self) -> IndexSet<String> {
+    pub fn by_closures(&self) -> IndexSet<Name> {
         self.replaced_in_closures
             .union(&self.changed_in_closures)
             .cloned()
@@ -53,22 +53,60 @@ impl Writes {
 
     /// Whether `name`'s binding may be replaced: assigned, or a handle made
     /// on it.
-    pub fn may_replace(&self, name: &str) -> bool {
+    pub fn may_replace(&self, name: &Name) -> bool {
         self.replaced.contains(name) || self.handled.contains(name)
+    }
+
+    /// Whether `name`'s binding is replaced, `name = ..`, in a closure too.
+    pub fn replaces(&self, name: &Name) -> bool {
+        self.replaced.contains(name)
+    }
+
+    /// Whether the object `name` holds is changed, `name.f = ..`.
+    pub fn changes(&self, name: &Name) -> bool {
+        self.changed.contains(name)
     }
 
     /// Whether `stmts` set `name`'s binding anywhere: `name = ..`, `name +=
     /// ..`, `(name = ..)` in an expression, `name++`, or a handle on it,
     /// which what it's given may set; in any block, a closure's and a
     /// declared function's too.
-    pub fn sets(stmts: &[Stmt], name: &str) -> bool {
+    pub fn sets(stmts: &[Stmt], name: &Name) -> bool {
         Writes::count(stmts, name) > 0
     }
 
     /// How many places in `stmts` set `name`'s binding, as `sets` finds
     /// them: what a pass that needs a variable set once asks.
-    pub fn count(stmts: &[Stmt], name: &str) -> usize {
+    pub fn count(stmts: &[Stmt], name: &Name) -> usize {
         Writes::of(stmts).set.get(name).copied().unwrap_or(0)
+    }
+
+    /// Step 3's migration bridge (ADR 1150): whether `stmts` set a variable
+    /// spelled `word`, for a helper that still holds a word, not a `Name`.
+    /// Its callers outside preparation are counted by
+    /// `test/architecture-names.test.ts`, a ratchet that only falls; step 3
+    /// ends when it's none. Ask `sets` of a `Name`.
+    pub fn sets_spelled(stmts: &[Stmt], word: &str) -> bool {
+        Writes::of(stmts).set.iter().any(|(name, &k)| k > 0 && name.is(word))
+    }
+
+    /// Step 3's migration bridge (`sets_spelled`'s): whether a variable
+    /// spelled `word` may be replaced. Ask `may_replace` of a `Name`.
+    pub fn may_replace_spelled(&self, word: &str) -> bool {
+        self.replaced.iter().chain(&self.handled).any(|name| name.is(word))
+    }
+
+    /// Step 3's migration bridge (`sets_spelled`'s): whether a closure, or a
+    /// function declared in the tree, replaces a variable spelled `word`.
+    /// Ask `replaces_in_closures` of a `Name`.
+    pub fn replaces_in_closures_spelled(&self, word: &str) -> bool {
+        self.replaced_in_closures.iter().any(|name| name.is(word))
+    }
+
+    /// Step 3's migration bridge (`sets_spelled`'s): whether a handle is made
+    /// on a variable spelled `word`. Ask `handles` of a `Name`.
+    pub fn handles_spelled(&self, word: &str) -> bool {
+        self.handled.iter().any(|name| name.is(word))
     }
 
     /// Each place `stmts` write, once each, in any block, a closure's and a
@@ -87,8 +125,8 @@ impl Writes {
         writes.places.unwrap_or_default()
     }
 
-    fn set(&mut self, name: &str) {
-        *self.set.entry(name.to_string()).or_default() += 1;
+    fn set(&mut self, name: &Name) {
+        *self.set.entry(name.clone()).or_default() += 1;
     }
 
     fn walk(&mut self, stmts: &[Stmt], in_closure: bool) {
@@ -106,8 +144,8 @@ impl Writes {
                 if let ExprKind::Var(name) = &place.kind
                     && storage.rebinds()
                 {
-                    self.handled.insert(name.to_string());
-                    self.set(name.word());
+                    self.handled.insert(name.clone());
+                    self.set(name);
                 }
             }
             // `(x.f = ..)` in an expression, a sequence's (#523), and `x++`
@@ -170,15 +208,15 @@ impl Writes {
         let ExprKind::Var(name) = &root.kind else { return };
         let replaced = std::ptr::eq(root, target);
         if replaced && counted {
-            self.set(name.word());
+            self.set(name);
         }
         let (all, closures) = match replaced {
             true => (&mut self.replaced, &mut self.replaced_in_closures),
             false => (&mut self.changed, &mut self.changed_in_closures),
         };
-        all.insert(name.to_string());
+        all.insert(name.clone());
         if in_closure {
-            closures.insert(name.to_string());
+            closures.insert(name.clone());
         }
     }
 }
@@ -195,8 +233,8 @@ mod tests {
         stmt(StmtKind::Assign(target, Expr::int(1)))
     }
 
-    fn names(set: &IndexSet<String>) -> Vec<&str> {
-        let mut names: Vec<&str> = set.iter().map(String::as_str).collect();
+    fn names(set: &IndexSet<Name>) -> Vec<&str> {
+        let mut names: Vec<&str> = set.iter().map(Name::word).collect();
         names.sort();
         names
     }
@@ -216,7 +254,7 @@ mod tests {
         assert_eq!(names(&writes.replaced), ["n", "x"]);
         assert_eq!(names(&writes.changed), ["a", "o"]);
         assert!(writes.by_closures().is_empty());
-        assert!(writes.may_replace("n") && !writes.may_replace("o"));
+        assert!(writes.may_replace(&"n".into()) && !writes.may_replace(&"o".into()));
     }
 
     #[test]
@@ -229,7 +267,7 @@ mod tests {
         assert_eq!(names(&writes.replaced_in_closures), ["x"]);
         assert_eq!(names(&writes.changed_in_closures), ["o"]);
         assert_eq!(names(&writes.by_closures()), ["o", "x"]);
-        assert!(writes.may_replace("x"));
+        assert!(writes.may_replace(&"x".into()));
     }
 
     /// Closures nested 64 deep, the innermost assigning: each closure's
@@ -282,9 +320,9 @@ mod tests {
             stmt(StmtKind::Expr(Expr::call(Expr::var("g"), vec![handle]))),
             assign(Expr::member(Expr::var("x"), "f")),
         ];
-        assert_eq!(Writes::count(&stmts, "x"), 5);
-        assert_eq!(Writes::count(&inner, "x"), 1);
-        assert!(Writes::sets(&inner, "x") && !Writes::sets(&stmts[5..], "x"));
+        assert_eq!(Writes::count(&stmts, &"x".into()), 5);
+        assert_eq!(Writes::count(&inner, &"x".into()), 1);
+        assert!(Writes::sets(&inner, &"x".into()) && !Writes::sets(&stmts[5..], &"x".into()));
         assert_eq!(names(&Writes::of(&inner).replaced_in_closures), ["x"]);
     }
 
@@ -315,7 +353,7 @@ mod tests {
         let writes = Writes::of(&stmts);
         assert_eq!(names(&writes.replaced), ["a"]);
         assert_eq!(names(&writes.changed), ["c", "g", "o"]);
-        assert_eq!(Writes::count(&stmts, "a"), 1);
+        assert_eq!(Writes::count(&stmts, &"a".into()), 1);
         let places = Writes::places(&stmts);
         let written = |of: &str| {
             places
@@ -335,6 +373,6 @@ mod tests {
         };
         let writes = Writes::of(&[stmt(StmtKind::Expr(Expr::call(Expr::var("g"), vec![handle])))]);
         assert_eq!(names(&writes.handled), ["h"]);
-        assert!(writes.may_replace("h") && writes.replaced.is_empty());
+        assert!(writes.may_replace(&"h".into()) && writes.replaced.is_empty());
     }
 }

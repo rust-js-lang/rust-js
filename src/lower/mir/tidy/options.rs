@@ -21,7 +21,7 @@ use super::*;
 /// read nowhere else, it's named `x`, the program's binding, one value
 /// tested where it's made, `const chunk = chunks.get(id); if (chunk == null
 /// || ..)`, as upstream React writes it (#1619).
-pub(super) fn tested_options(stmts: &mut Vec<Stmt>, changing: &IndexSet<String>, user: &IndexSet<js::Name>) {
+pub(super) fn tested_options(stmts: &mut Vec<Stmt>, changing: &IndexSet<js::Name>, user: &IndexSet<js::Name>) {
     let mut i = 0;
     while i + 1 < stmts.len() {
         let declared = |s: &Stmt| matches!(s.kind, StmtKind::Let(_, None));
@@ -80,7 +80,7 @@ fn tested_option(
     made: &Stmt,
     tested: &Stmt,
     rest: &[Stmt],
-    changing: &IndexSet<String>,
+    changing: &IndexSet<js::Name>,
 ) -> Option<(StmtKind, Option<Vec<Stmt>>)> {
     let StmtKind::Const(x, made) = &made.kind else {
         return None;
@@ -90,7 +90,7 @@ fn tested_option(
     };
     let ExprKind::Var(v) = &value.kind else { return None };
     let present = value.facts.has(js::Known::Present) || tests_present_first(test, v.word());
-    if !matches!(none.kind, ExprKind::Undefined) || !present || changing.contains(v.word()) {
+    if !matches!(none.kind, ExprKind::Undefined) || !present || changing.contains(v) {
         return None;
     }
     let StmtKind::If(presence, then, otherwise) = &tested.kind else {

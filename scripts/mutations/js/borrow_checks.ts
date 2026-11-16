@@ -21,7 +21,7 @@ export const mutations: Mutation[] = [
     name: "momentary-alias-kept",
     breaks: "a `const` that held a momentary borrow is kept once its check is first, `const borrowMut = nodes;`, where a person reads `nodes`",
     file: "src/js/borrow_checks.rs",
-    find: "            if !declared && !Writes::sets(rest, cell.word()) && !Writes::sets(rest, name.word()) {\n",
+    find: "            if !declared && !Writes::sets(rest, &cell) && !Writes::sets(rest, &name) {\n",
     replace: "            if false {\n",
     tests: ["test/borrow-forms.test.ts", "-t", "checked where they're called"],
   },

@@ -24,8 +24,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an `Rc`'s clone of a variable bound once is a variable of its own, `const closing = response;`, where it's the same object, read by its name (the user's decision, rd616; ADR 0846 amended)",
     file: "src/lower/mir/tidy/bindings.rs",
-    find: "        .filter(|(_, a)| bindings(body, a, false) == 1 && !writes.may_replace(a))\n",
-    replace: "        .filter(|(_, a)| bindings(body, a, false) == 1 && !writes.may_replace(a) && false)\n",
+    find: "        .filter(|(_, a)| bindings(body, a, false) == 1 && !writes.may_replace_spelled(a))\n",
+    replace: "        .filter(|(_, a)| bindings(body, a, false) == 1 && !writes.may_replace_spelled(a) && false)\n",
     tests: ["test/corpus.test.ts", "-t", "^rc_clone_aliases.rs$"],
     snapshots: true,
   },
@@ -34,7 +34,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a clone of a variable set after is read by the variable's name, its new value: `close 4` where Rust's clone closes the first `Rc`, `close 3` (rd616)",
     file: "src/lower/mir/tidy/bindings.rs",
-    find: "        .filter(|(_, a)| bindings(body, a, false) == 1 && !writes.may_replace(a))\n",
+    find: "        .filter(|(_, a)| bindings(body, a, false) == 1 && !writes.may_replace_spelled(a))\n",
     replace: "        .filter(|(_, a)| bindings(body, a, false) == 1)\n",
     tests: ["test/corpus.test.ts", "-t", "^rc_clone_aliases.rs$"],
   },
@@ -581,8 +581,8 @@ export const mutations: Mutation[] = [
     name: "alias-read-by-a-pair-dropped",
     breaks: "`const _10 = index` read by a pair's place, `lanes[_10]`, is `index` where it's read, so the pair made before `index++` reads the next item (#968)",
     file: "src/lower/mir/tidy/bindings.rs",
-    find: "                let deferred = set.contains(of.word()) && handles_read(&stmts[i + 1..]).contains(alias.word());\n",
-    replace: "                let deferred = false && set.contains(of.word());\n",
+    find: "                let deferred = set.contains(of) && handles_read(&stmts[i + 1..]).contains(alias.word());\n",
+    replace: "                let deferred = false && set.contains(of);\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_of_a_generic_impl_written_whole.rs$"],
   },
   {

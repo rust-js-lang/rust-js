@@ -461,7 +461,7 @@ fn counted_range(
     let js::Pattern::Name(name) = pattern else { return None };
     // Or `v.length` of what the body only reads, by index or its length.
     let same = end.is_constant()
-        || matches!(&end.kind, ExprKind::Var(v) if !js::Writes::sets(&body, v.word()))
+        || matches!(&end.kind, ExprKind::Var(v) if !js::Writes::sets(&body, v))
         || matches!(&end.kind, ExprKind::Member(of, length)
             if length == "length" && matches!(&of.kind, ExprKind::Var(v) if only_read(&body, v.word())));
     // JS's `++` steps a number: a `char`'s range, text, steps by
@@ -559,10 +559,10 @@ fn indexed(
     let ExprKind::Var(array) = &iterable.kind else {
         return None;
     };
-    if !source.facts.has(js::Known::ArrayItems) || js::Writes::sets(body, array.word()) {
+    if !source.facts.has(js::Known::ArrayItems) || js::Writes::sets(body, array) {
         return None;
     }
-    let same = |e: &Expr| e.is_constant() || matches!(&e.kind, ExprKind::Var(v) if !js::Writes::sets(body, v.word()));
+    let same = |e: &Expr| e.is_constant() || matches!(&e.kind, ExprKind::Var(v) if !js::Writes::sets(body, v));
     if end.as_ref().is_some_and(|end| !same(end)) {
         return None;
     }
@@ -679,7 +679,7 @@ fn from_the_end(
         let ExprKind::Var(array) = &items.kind else {
             return None;
         };
-        if js::Writes::sets(body, array.word()) {
+        if js::Writes::sets(body, array) {
             return None;
         }
         let index = fresh("i");
@@ -724,7 +724,7 @@ fn from_the_end(
     fn reads_same(e: &Expr, body: &[Stmt]) -> bool {
         match &e.kind {
             _ if e.is_constant() => true,
-            ExprKind::Var(v) => !js::Writes::sets(body, v.word()),
+            ExprKind::Var(v) => !js::Writes::sets(body, v),
             ExprKind::Binary(_, a, b) => reads_same(a, body) && reads_same(b, body),
             ExprKind::Unary(UnaryOp::Neg, a) => reads_same(a, body),
             _ => false,

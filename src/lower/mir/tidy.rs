@@ -466,7 +466,7 @@ fn written_first(stmts: &mut [Stmt], switches: &[Switch]) {
 
 /// The variables what's called may set: a closure's, and a getter's and
 /// setter's handle's, `{ get value() { return n; }, set value(v) { n = v; } }`.
-fn set_elsewhere(body: &[Stmt]) -> IndexSet<String> {
+fn set_elsewhere(body: &[Stmt]) -> IndexSet<js::Name> {
     let writes = js::Writes::of(body);
     let mut set = writes.by_closures();
     set.extend(writes.handled);
@@ -475,14 +475,14 @@ fn set_elsewhere(body: &[Stmt]) -> IndexSet<String> {
 
 /// The variables something may change: each `let`'s, each assigned, and
 /// each a handle's made on.
-fn changing(body: &mut Vec<Stmt>) -> IndexSet<String> {
+fn changing(body: &mut Vec<Stmt>) -> IndexSet<js::Name> {
     let writes = js::Writes::of(body);
     let mut changing = writes.replaced;
     changing.extend(writes.handled);
     js::each_block_mut(body, &mut |stmts| {
         for stmt in stmts.iter() {
             if let StmtKind::Let(name, _) = &stmt.kind {
-                changing.insert(name.to_string());
+                changing.insert(name.clone());
             }
         }
     });
@@ -1004,7 +1004,7 @@ mod tests {
             )
             .at(js::Span::NONE),
         ];
-        let changing: IndexSet<String> = IndexSet::from_iter(["r".to_string()]);
+        let changing: IndexSet<js::Name> = IndexSet::from_iter(["r".into()]);
         js::statement_lists(&mut within, &mut |stmts| decided_tests(stmts, &changing, &[]));
         let [
             Stmt {
@@ -1054,13 +1054,13 @@ mod tests {
         body.extend(pair("b", "g"));
         let paired = paired_temporaries(&body);
         assert_eq!(paired, [t5.to_string(), t6.to_string()].into());
-        let changing: IndexSet<String> = IndexSet::from_iter([t5.to_string(), t6.to_string()]);
+        let changing: IndexSet<js::Name> = IndexSet::from_iter([t5.clone(), t6.clone()]);
         let none = IndexSet::default();
         let no_names: IndexSet<js::Name> = IndexSet::default();
         let no_paths: IndexSet<js::Path> = IndexSet::default();
         let facts = MoveFacts {
             changing: &changing,
-            set: &none,
+            set: &no_names,
             plain: &no_paths,
             captured: &no_names,
             fixed: &none,

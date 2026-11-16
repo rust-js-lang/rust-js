@@ -191,7 +191,7 @@ export const mutations: Mutation[] = [
     name: "shadow-set-in-a-test-unseen",
     breaks: "a shadow a test sets, `if (.. (d$1 = bump(flags)) ..) { n += d; }`, is taken for one set only after the branches, so the parameter `d` it shadows becomes it and `n += d` reads what `bump` gave (#523)",
     file: "src/lower/mir/tidy/shadows.rs",
-    find: "                let set = set || js::Writes::sets(&tested, shadow);\n",
+    find: "                let set = set || js::Writes::sets_spelled(&tested, shadow);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^condition_block_sequence.rs$"],
   },

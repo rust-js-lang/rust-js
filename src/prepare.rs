@@ -689,7 +689,7 @@ fn fallen_declared(body: &mut Vec<Stmt>) {
                 span: value.span,
                 ..Expr::bin(op, value.clone(), fallback)
             };
-            body[i].kind = match js::Writes::of(&body[i + 2..]).may_replace(name.word()) {
+            body[i].kind = match js::Writes::of(&body[i + 2..]).may_replace(&name) {
                 true => StmtKind::Let(name, Some(value)),
                 false => StmtKind::Const(name, value),
             };

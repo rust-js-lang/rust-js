@@ -587,7 +587,7 @@ pub(super) fn unread_resets(body: &mut Vec<Stmt>) {
     if resets.is_empty() {
         return;
     }
-    let handled = js::Writes::of(body).handled;
+    let writes = js::Writes::of(body);
     let mut finally_read: IndexSet<String> = IndexSet::default();
     js::each_list(body, &mut |stmts| {
         for stmt in stmts {
@@ -600,7 +600,7 @@ pub(super) fn unread_resets(body: &mut Vec<Stmt>) {
     });
     let unread: IndexSet<String> = (resets.into_iter())
         .filter(|(name, appended)| {
-            !handled.contains(name) && !finally_read.contains(name) && !read_by_closures(body, name, *appended)
+            !writes.handles_spelled(name) && !finally_read.contains(name) && !read_by_closures(body, name, *appended)
         })
         .map(|(name, _)| name)
         .collect();
@@ -693,7 +693,7 @@ pub(super) fn arrows_out_of_tries(body: &mut Vec<Stmt>) {
             };
             let name = name.clone();
             // Set once, there alone, as `js::Writes` counts its sets (ADR 1088).
-            if js::Writes::count(&stmts[i + 1..], name.word()) != 1 {
+            if js::Writes::count(&stmts[i + 1..], &name) != 1 {
                 i += 1;
                 continue;
             }
@@ -858,7 +858,7 @@ pub(in crate::lower::mir) fn writer_body(out: &mut Vec<Stmt>, name: &js::Name) {
 /// after it, `read_past_calls`; not where a test decides whether it runs.
 pub(super) fn applied_values(
     stmts: &mut Vec<Stmt>,
-    set: &IndexSet<String>,
+    set: &IndexSet<js::Name>,
     plain: &IndexSet<js::Path>,
     taken: &mut IndexSet<String>,
 ) {
@@ -912,7 +912,7 @@ fn first_applied(
     e: &mut Expr,
     before: &mut Before,
     name: &js::Name,
-    set: &IndexSet<String>,
+    set: &IndexSet<js::Name>,
     plain: &IndexSet<js::Path>,
 ) -> Option<Expr> {
     if !before.past && !before.reads {
