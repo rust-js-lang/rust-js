@@ -1232,13 +1232,13 @@ fn copy_tested_first(stmt: &mut Stmt) -> Option<Vec<Stmt>> {
 }
 
 /// Whether loop `stmt`'s own test, start or what it steps names `name`.
-pub(super) fn looped_reads(stmt: &Stmt, name: &str) -> bool {
+pub(super) fn looped_reads(stmt: &Stmt, name: &js::Name) -> bool {
     match &stmt.kind {
-        StmtKind::While { cond, .. } => cond.mentions_var(name),
+        StmtKind::While { cond, .. } => cond.mentions_name(name),
         StmtKind::For { start, test, step, .. } => {
-            start.mentions_var(name) || test.mentions_var(name) || step.value().is_some_and(|v| v.mentions_var(name))
+            start.mentions_name(name) || test.mentions_name(name) || step.value().is_some_and(|v| v.mentions_name(name))
         }
-        StmtKind::ForOf { iterable, .. } => iterable.mentions_var(name),
+        StmtKind::ForOf { iterable, .. } => iterable.mentions_name(name),
         _ => true,
     }
 }

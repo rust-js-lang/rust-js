@@ -143,7 +143,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `let` a loop's body assigns before it's read is declared outside the loop, `let start;`",
     file: "src/lower/mir/tidy/bindings.rs",
-    find: "            && !looped_reads(&stmts[first], name.word())\n",
+    find: "            && !looped_reads(&stmts[first], &name)\n",
     replace: "            && false\n",
     tests: [
       "test/lowering-mir-lets.test.ts",

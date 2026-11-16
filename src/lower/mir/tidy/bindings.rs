@@ -808,8 +808,8 @@ pub(super) fn sunk_lets(stmts: &mut Vec<Stmt>) {
         if alone
             && let StmtKind::ForOf { body, .. } | StmtKind::For { body, .. } | StmtKind::While { body, .. } =
                 &mut stmts[first].kind
-            && assigned_first(body, name.word(), &[])
-            && !looped_reads(&stmts[first], name.word())
+            && assigned_first(body, &name, &[])
+            && !looped_reads(&stmts[first], &name)
         {
             let (StmtKind::ForOf { body, .. } | StmtKind::For { body, .. } | StmtKind::While { body, .. }) =
                 &mut stmts[first].kind
@@ -837,11 +837,11 @@ pub(super) fn sunk_lets(stmts: &mut Vec<Stmt>) {
 /// where each assigns it before anything reads it and no test names it.
 /// Whether it is so: otherwise `chain` is as it was.
 pub(super) fn declared_in_branches(name: &js::Name, chain: &mut Stmt) -> bool {
-    fn branches<'s>(stmt: &'s mut Stmt, name: &str, out: &mut Vec<&'s mut Vec<Stmt>>) -> bool {
+    fn branches<'s>(stmt: &'s mut Stmt, name: &js::Name, out: &mut Vec<&'s mut Vec<Stmt>>) -> bool {
         let StmtKind::If(test, then, otherwise) = &mut stmt.kind else {
             return false;
         };
-        if test.mentions_var(name) {
+        if test.mentions_name(name) {
             return false;
         }
         out.push(then);
@@ -859,11 +859,10 @@ pub(super) fn declared_in_branches(name: &js::Name, chain: &mut Stmt) -> bool {
         }
     }
     let mut all = Vec::new();
-    if !branches(chain, name.word(), &mut all) {
-        return false;
-    }
+    let walked = branches(chain, name, &mut all);
     let named: Vec<&mut Vec<Stmt>> = all.into_iter().filter(|b| js::mentions_of(b, name) > 0).collect();
-    if named.len() < 2 || !named.iter().all(|b| assigned_first(b, name.word(), &[])) {
+    let ok = walked && named.len() >= 2 && named.iter().all(|b| assigned_first(b, name, &[]));
+    if !ok {
         return false;
     }
     for branch in named {
@@ -881,8 +880,8 @@ pub(super) fn declared_in_branches(name: &js::Name, chain: &mut Stmt) -> bool {
 /// turn first, `let y = match x { 0 => continue, .. }`'s (`assigned_on`).
 /// `past`, of each block around, whether its `break` goes where nothing
 /// reads it unassigned.
-pub(super) fn assigned_first(stmts: &[Stmt], name: &str, past: &[(String, bool)]) -> bool {
-    let names = |s: &Stmt| js::mentions_in(std::slice::from_ref(s), name) > 0;
+pub(super) fn assigned_first(stmts: &[Stmt], name: &js::Name, past: &[(String, bool)]) -> bool {
+    let names = |s: &Stmt| js::mentions_of(std::slice::from_ref(s), name) > 0;
     let Some(at) = stmts.iter().position(names) else {
         return false;
     };
@@ -890,10 +889,10 @@ pub(super) fn assigned_first(stmts: &[Stmt], name: &str, past: &[(String, bool)]
     let assigned = |stmts: &[Stmt]| !stmts.iter().any(names) || assigned_first(stmts, name, past);
     match &stmts[at].kind {
         StmtKind::Assign(target, value) => {
-            matches!(&target.kind, ExprKind::Var(v) if v.is(name)) && !value.mentions_var(name)
+            matches!(&target.kind, ExprKind::Var(v) if v == name) && !value.mentions_name(name)
         }
         StmtKind::If(test, then, otherwise) => {
-            !test.mentions_var(name)
+            !test.mentions_name(name)
                 && (alone && assigned(then) && otherwise.as_deref().is_none_or(assigned)
                     || assigned_on(&stmts[at..], name, false, past))
         }
@@ -924,8 +923,8 @@ fn within(past: &[(String, bool)], label: &str, ok: bool) -> Vec<(String, bool)>
 /// `continue`, `return`, `throw` or the loop's own `break`, doesn't go on;
 /// one that `break`s a block or a loop inside the turn goes where `past`
 /// says, by its label, `""` the innermost loop's (`within`).
-pub(super) fn assigned_on(stmts: &[Stmt], name: &str, after: bool, past: &[(String, bool)]) -> bool {
-    let names = |s: &Stmt| js::mentions_in(std::slice::from_ref(s), name) > 0;
+pub(super) fn assigned_on(stmts: &[Stmt], name: &js::Name, after: bool, past: &[(String, bool)]) -> bool {
+    let names = |s: &Stmt| js::mentions_of(std::slice::from_ref(s), name) > 0;
     // Where a `break` of `label` goes is fine: one of none here leaves the turn.
     let broken_ok = |label: &str| past.iter().rev().find(|(l, _)| l == label).is_none_or(|(_, ok)| *ok);
     for (k, stmt) in stmts.iter().enumerate() {
@@ -933,11 +932,11 @@ pub(super) fn assigned_on(stmts: &[Stmt], name: &str, after: bool, past: &[(Stri
             let on = || assigned_on(&stmts[k + 1..], name, after, past);
             return match &stmt.kind {
                 StmtKind::Assign(target, value) => {
-                    matches!(&target.kind, ExprKind::Var(v) if v.is(name)) && !value.mentions_var(name)
+                    matches!(&target.kind, ExprKind::Var(v) if v == name) && !value.mentions_name(name)
                 }
                 StmtKind::If(test, then, otherwise) => {
                     let on = on();
-                    !test.mentions_var(name)
+                    !test.mentions_name(name)
                         && assigned_on(then, name, on, past)
                         && assigned_on(otherwise.as_deref().unwrap_or_default(), name, on, past)
                 }
