@@ -223,16 +223,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         &mut self,
         kind: Std,
         shown: Ty<'tcx>,
-        (value, options): (&str, &str),
+        (value, options): (&js::Name, &js::Name),
         span: Span,
     ) -> R<Option<Vec<SinkWrite>>> {
-        let given = Expr::var(options);
+        let given = Expr::var(options.clone());
         match kind {
             Std::FmtDebug => {
                 let pretty = Pretty::When(given.clone()).alternate();
-                self.debug_sink_writes(Expr::var(value), shown, (&given, &pretty), span)
+                self.debug_sink_writes(Expr::var(value.clone()), shown, (&given, &pretty), span)
             }
-            _ => self.sink_writes_given(Expr::var(value), (kind, shown), given, span),
+            _ => self.sink_writes_given(Expr::var(value.clone()), (kind, shown), given, span),
         }
     }
 
@@ -274,7 +274,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ => return Ok(None),
         };
         let (sink, value, options) = (self.fresh(Role::F), self.fresh(Role::Value), self.fresh(Role::Options));
-        let Some(writes) = self.std_writes_by_options(kind, shown, (value.word(), options.word()), span)? else {
+        let Some(writes) = self.std_writes_by_options(kind, shown, (&value, &options), span)? else {
             return Ok(None);
         };
         let f = Expr::var(&sink);
@@ -298,8 +298,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(None);
         }
         let (sink, value, options) = (self.fresh(Role::F), self.fresh(Role::Value), self.fresh(Role::Options));
-        let Some(writes) = self.std_writes_by_options(kind, ty.peel_refs(), (value.word(), options.word()), span)?
-        else {
+        let Some(writes) = self.std_writes_by_options(kind, ty.peel_refs(), (&value, &options), span)? else {
             if !written {
                 return Ok(None);
             }

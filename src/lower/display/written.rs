@@ -263,7 +263,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     _ => unreachable!("a show, or a key's and a value's"),
                 };
                 let each = Expr::arrow(
-                    vec!["entry".into()],
+                    vec![entries.entry.clone().into()],
                     vec![StmtKind::Return(Some(shown)).at(js::Span::NONE)],
                 );
                 BuilderPart::Many(match entries.closed {
@@ -301,13 +301,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let tys: Vec<Ty<'tcx>> = generic_args.types().collect();
         let iterable = *tys.last().expect("the entries' type");
         let items = self.iterable_items(items, iterable, span, out)?;
+        let entry = js::Name::declared("entry".to_string());
         let shows = if kind == DebugBuilder::Map {
-            let pair = Expr::var("entry");
+            let pair = Expr::var(entry.clone());
             let key = self.debug_string_with(Expr::index(pair.clone(), Expr::int(0)), tys[0], span, &pretty)?;
             let value = self.debug_string_with(Expr::index(pair, Expr::int(1)), tys[1], span, &pretty)?;
             vec![key, value]
         } else {
-            vec![self.debug_string_with(Expr::var("entry"), tys[0], span, &pretty)?]
+            vec![self.debug_string_with(Expr::var(entry.clone()), tys[0], span, &pretty)?]
         };
         let item = self.iterable_item(iterable);
         let drops = |ty| self.drops(ty) != crate::lower::drops::Drops::Nothing;
@@ -316,6 +317,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if !closed {
             return Ok(EntriesShown {
                 items,
+                entry,
                 shows,
                 closed,
                 drop: None,
@@ -326,6 +328,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let drop = self.std_drop_function(item, span)?;
         Ok(EntriesShown {
             items,
+            entry,
             shows,
             closed,
             drop,
@@ -713,6 +716,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 /// with the drop of each item, if it has one.
 pub(in crate::lower) struct EntriesShown {
     pub(in crate::lower) items: Expr,
+    /// What each show reads, the entry its closure is given, `(entry) => ..`.
+    pub(in crate::lower) entry: js::Name,
     pub(in crate::lower) shows: Vec<Expr>,
     pub(in crate::lower) closed: bool,
     pub(in crate::lower) drop: Option<Expr>,

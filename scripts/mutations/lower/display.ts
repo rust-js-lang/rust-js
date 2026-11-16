@@ -80,8 +80,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an `f64` a `fmt` hands its `Formatter` on to ignores the precision it's given",
     file: "src/lower/display.rs",
-    find: "                vec![value, options.clone(), Expr::var(show)],",
-    replace: "                vec![value, Expr::js_undefined(), Expr::var(show)],",
+    find: "                vec![value, options.clone(), Expr::helper(show)],",
+    replace: "                vec![value, Expr::js_undefined(), Expr::helper(show)],",
     tests: ["test/corpus.test.ts", "-t", "options_handed_on"],
   },
   {
@@ -107,7 +107,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a generic `T`'s `{:>6}` of a number shows it unpadded: std's `Display` dictionary ignores the options",
     file: "src/lower/display.rs",
-    find: "                Pretty::When(Expr::var(\"options\")),\n            ),\n            false => (vec![param.clone().into()], Pretty::Plain),\n        };\n        let shown = self.with_shown(shown_so, |cx| {\n",
+    find: "                Pretty::When(Expr::var(options)),\n            ),\n            false => (vec![param.clone().into()], Pretty::Plain),\n        };\n        let shown = self.with_shown(shown_so, |cx| {\n",
     replace:
       "                Pretty::Plain,\n            ),\n            false => (vec![param.clone().into()], Pretty::Plain),\n        };\n        let shown = self.with_shown(shown_so, |cx| {\n",
     tests: ["test/corpus.test.ts", "-t", "options_handed_on"],

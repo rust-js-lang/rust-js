@@ -15,8 +15,8 @@ export const mutations: Mutation[] = [
     name: "composed-map-keys-as-values",
     breaks: "a map's `Debug` through std's builders shows each entry's value as its key",
     file: "src/lower/display/composed.rs",
-    find: "                _ => Expr::index(Expr::var(\"entry\"), Expr::int(i as i128)),\n",
-    replace: "                _ => Expr::index(Expr::var(\"entry\"), Expr::int(0)),\n",
+    find: "                _ => Expr::index(Expr::var(entry.clone()), Expr::int(i as i128)),\n",
+    replace: "                _ => Expr::index(Expr::var(entry.clone()), Expr::int(0)),\n",
     tests: ["test/corpus.test.ts", "-t", "^(failing_std_value_debug_keeps_what_was_written|printing_std_value_stopped_part_way).rs$"],
   },
   {

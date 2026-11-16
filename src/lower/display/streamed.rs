@@ -82,9 +82,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let items = values.next().expect("the entries").0;
                 let entries = self.entries_shown(kind, items, generic_args, span, out)?;
                 let mut args = vec![entries.items];
+                let entry = entries.entry;
                 args.extend(entries.shows.into_iter().map(|shown| {
                     Expr::arrow(
-                        vec!["entry".into()],
+                        vec![entry.clone().into()],
                         vec![StmtKind::Return(Some(shown)).at(js::Span::NONE)],
                     )
                 }));

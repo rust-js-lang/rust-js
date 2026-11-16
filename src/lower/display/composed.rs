@@ -219,10 +219,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// piece that stops part-way leaves those before it written, and those
     /// after it unmade, as `?` returns (#1530).
     pub(in crate::lower) fn composed_written(&mut self, pieces: Vec<Expr>) -> Expr {
-        let written = (pieces.into_iter()).map(|piece| {
-            StmtKind::Expr(Expr::call(Expr::member(Expr::var("f"), "write"), vec![piece])).at(js::Span::NONE)
-        });
-        Expr::call_helper("$composed", vec![Expr::arrow(vec!["f".into()], written.collect())])
+        let f = js::Name::declared("f".to_string());
+        let written: Vec<Stmt> = (pieces.into_iter())
+            .map(|piece| {
+                StmtKind::Expr(Expr::call(Expr::member(Expr::var(f.clone()), "write"), vec![piece])).at(js::Span::NONE)
+            })
+            .collect();
+        Expr::call_helper("$composed", vec![Expr::arrow(vec![f.into()], written)])
     }
 
     /// `$composed((f) => { .. })` of entries, `entries(items, show..)`, a
@@ -237,11 +240,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<Expr> {
         let mut args = vec![items];
         for (i, &ty) in tys.iter().enumerate() {
-            let entry = match tys.len() {
-                1 => Expr::var("entry"),
-                _ => Expr::index(Expr::var("entry"), Expr::int(i as i128)),
+            // Each shown by a closure of its own, `(entry) => ..`.
+            let entry = js::Name::declared("entry".to_string());
+            let read = match tys.len() {
+                1 => Expr::var(entry.clone()),
+                _ => Expr::index(Expr::var(entry.clone()), Expr::int(i as i128)),
             };
-            args.push(arrow_of("entry", self.debug_string_with(entry, ty, span, pretty)?));
+            args.push(arrow_of(entry, self.debug_string_with(read, ty, span, pretty)?));
         }
         Ok(self.composed(kind, None, pretty, vec![("entries", args)]))
     }
@@ -268,14 +273,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         steps: Vec<(&str, Vec<Expr>)>,
         finish: &str,
     ) -> Expr {
-        let (made, role) = self.builder_of(kind, Expr::var("f"), type_name, pretty);
+        let f = js::Name::declared("f".to_string());
+        let (made, role) = self.builder_of(kind, Expr::var(f.clone()), type_name, pretty);
         let builder = self.fresh(role);
         let mut body = vec![StmtKind::Const(builder.clone(), made).at(js::Span::NONE)];
         for (method, args) in steps.into_iter().chain([(finish, Vec::new())]) {
             let step = Expr::call(Expr::member(Expr::var(&builder), method), args);
             body.push(StmtKind::Expr(step).at(js::Span::NONE));
         }
-        Expr::call_helper("$composed", vec![Expr::arrow(vec!["f".into()], body)])
+        Expr::call_helper("$composed", vec![Expr::arrow(vec![f.into()], body)])
     }
 }
 

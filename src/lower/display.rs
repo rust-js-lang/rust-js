@@ -453,7 +453,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
             return Some(Expr::call(
                 Expr::helper("$formatFloat"),
-                vec![value, options.clone(), Expr::var(show)],
+                vec![value, options.clone(), Expr::helper(show)],
             ));
         }
         let text = match kind {
@@ -751,10 +751,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // 0058), or a library's function shows the type with them (#1331).
         let shown_so = self.krate.shown.of_type(self.tcx, ty);
         let param = self.unspelled("value");
+        let options = js::Name::declared("options".to_string());
         let (params, pretty): (Vec<js::Pattern>, _) = match self.writers_take_options() || shown_so.any() {
             true => (
-                vec![param.clone().into(), "options".into()],
-                Pretty::When(Expr::var("options")),
+                vec![param.clone().into(), options.clone().into()],
+                Pretty::When(Expr::var(options)),
             ),
             false => (vec![param.clone().into()], Pretty::Plain),
         };
