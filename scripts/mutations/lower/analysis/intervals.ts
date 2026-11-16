@@ -153,8 +153,8 @@ export const mutations: Mutation[] = [
     name: "intervals-lent-unforgotten",
     breaks: "an integer local lent `&mut`, out of the body-wide lent, isn't forgotten where it's lent, so `k - 2` after `f(&mut k)` is proved in range though `f` may have made `k` anything",
     file: "src/lower/analysis/intervals.rs",
-    find: "            && lent_where_borrowed(&self.body, &mir::Place::from(of))\n        {\n            state.forget(of);\n",
-    replace: "            && lent_where_borrowed(&self.body, &mir::Place::from(of))\n        {\n            let _ = of;\n",
+    find: "            && !self.called_on.values().flatten().any(|&lent| lent == of)\n        {\n            state.forget(of);\n",
+    replace: "            && !self.called_on.values().flatten().any(|&lent| lent == of)\n        {\n            let _ = of;\n",
     tests: ["test/intervals-shadow.test.ts", "-t", "MIR decides"],
   },
   {

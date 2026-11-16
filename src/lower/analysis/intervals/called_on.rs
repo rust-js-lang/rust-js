@@ -15,12 +15,25 @@
 use super::*;
 use crate::lower::generic_facts::is_type_parameter;
 use crate::lower::mut_refs::{holds_a_raw_pointer, lets_pointers_out_of};
-use crate::lower::pointers::pointer_may_keep;
+use crate::lower::pointers::{closure_may_keep, pointer_may_keep, pointer_may_keep_behind};
 use crate::lower::recognition::{
     StdItem, StdPath, deref_call, is_std_crate, is_std_def, is_std_path, keeps_vec_length,
 };
 use rustc_middle::ty::adjustment::PointerCoercion;
 use rustc_span::def_id::DefId;
+
+/// Each holder's locals, those it holds a `&mut` of: one, but of a closure
+/// all it captures so, each forgotten at a call it's given (#1977).
+pub(super) type Holders = IndexMap<Local, IndexSet<Local>>;
+
+/// What `called_on` finds: each holder's `Vec`s or integers, and of each
+/// holder that is or holds a closure, `take` or `&mut take as &mut dyn
+/// FnMut`, that closure, whose body is what may keep a pointer to an
+/// integer it captures (#1947).
+pub(super) struct CalledOn<'tcx> {
+    pub(super) holders: Holders,
+    pub(super) closures: IndexMap<Local, (DefId, ty::GenericArgsRef<'tcx>)>,
+}
 
 /// Of `body`, each `&mut` of a `Vec` a local holds that's given only to a
 /// call, by the local holding it: the `Vec`'s local, or each of them, of a
@@ -29,12 +42,13 @@ use rustc_span::def_id::DefId;
 /// `&mut` stored or given on. What a call does with one it's given, kept
 /// in what it gives back or another argument, is done before the `Vec` is
 /// used again, as borrowck holds, and a call that may change its length
-/// forgets it (`called_on_mut`).
-/// Each holder's locals, those it holds a `&mut` of: one, but of a closure
-/// all it captures so, each forgotten at a call it's given (#1977).
-pub(super) type Holders = IndexMap<Local, IndexSet<Local>>;
-
-pub(super) fn called_on<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> Holders {
+/// forgets it (`called_on_mut`). And so of an integer's `&mut`, a
+/// closure's capture or given itself, `read_mappings(&mappings, &mut |..|
+/// { next_entry_idx += 1 })`'s (#1947): its value changes only in those
+/// calls, forgotten past each, not lent away for good, but where the
+/// closure, or the call given it, may keep a raw pointer that writes it
+/// after.
+pub(super) fn called_on<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> CalledOn<'tcx> {
     let is_vec = |ty: Ty<'tcx>| {
         matches!(ty.kind(), ty::Adt(adt, _)
             if is_std_def(tcx, adt.did(), StdItem::Vec) || is_std_def(tcx, adt.did(), StdItem::VecDeque))
@@ -47,15 +61,25 @@ pub(super) fn called_on<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> Holders {
     // of one, `&mut (*t)`: by the local holding it.
     let mut borrows: Holders = IndexMap::default();
     // A holder of what `from` holds: of all of it, a closure's every
-    // capture (#1977).
-    let holds_as = |borrows: &mut Holders, holder: Local, from: Local| {
+    // capture (#1977), and of its code.
+    fn holds_as<'tcx>(
+        borrows: &mut Holders,
+        code: &mut IndexMap<Local, (DefId, ty::GenericArgsRef<'tcx>)>,
+        holder: Local,
+        from: Local,
+    ) {
         let held = borrows[&from].clone();
         borrows.entry(holder).or_default().extend(held);
-    };
+        if let Some(&closure) = code.get(&from) {
+            code.insert(holder, closure);
+        }
+    }
     let mut lent_otherwise: IndexSet<Local> = IndexSet::default();
     // The closures that hold one, `{closure}(move _t)` of a `&mut` held,
     // each a holder of its own (#1946).
     let mut closures: IndexSet<Local> = IndexSet::default();
+    // Each holder that is or holds a closure, by that closure's code.
+    let mut code: IndexMap<Local, (DefId, ty::GenericArgsRef<'tcx>)> = IndexMap::default();
     for data in body.basic_blocks.iter() {
         for statement in &data.statements {
             let StatementKind::Assign(assign) = &statement.kind else {
@@ -72,6 +96,9 @@ pub(super) fn called_on<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> Holders {
                                 Some(closure) => {
                                     borrows.entry(closure).or_default().extend(of);
                                     closures.insert(closure);
+                                    if let mir::AggregateKind::Closure(def, args) = **kind {
+                                        code.insert(closure, (def, args));
+                                    }
                                 }
                                 None => {
                                     lent_otherwise.extend(of);
@@ -86,7 +113,7 @@ pub(super) fn called_on<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> Holders {
                     if of.projection.is_empty() && closures.contains(&of.local) =>
                 {
                     match assign.0.as_local() {
-                        Some(holder) => holds_as(&mut borrows, holder, of.local),
+                        Some(holder) => holds_as(&mut borrows, &mut code, holder, of.local),
                         None => lent_otherwise.extend(borrows[&of.local].iter().copied()),
                     }
                 }
@@ -95,7 +122,7 @@ pub(super) fn called_on<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> Holders {
                         && borrows.contains_key(&of.local) =>
                 {
                     match assign.0.as_local() {
-                        Some(holder) => holds_as(&mut borrows, holder, of.local),
+                        Some(holder) => holds_as(&mut borrows, &mut code, holder, of.local),
                         None => lent_otherwise.extend(borrows[&of.local].iter().copied()),
                     }
                 }
@@ -119,6 +146,18 @@ pub(super) fn called_on<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> Holders {
                         }
                     }
                 }
+                // An integer local's own place, `&mut next_entry_idx` a
+                // closure captures (#1947).
+                Rvalue::Ref(_, mir::BorrowKind::Mut { .. }, of) if body.local_decls[of.local].ty.is_integral() => {
+                    match (assign.0.as_local(), of.projection.as_slice()) {
+                        (Some(holder), []) => {
+                            borrows.entry(holder).or_default().insert(of.local);
+                        }
+                        _ => {
+                            lent_otherwise.insert(of.local);
+                        }
+                    }
+                }
                 // One cast to what it's given as, `&mut take as &mut dyn
                 // FnMut()` of a closure that holds one, or `&mut v as &mut
                 // [u32]`: a holder of the same, a call given it one of its
@@ -128,7 +167,7 @@ pub(super) fn called_on<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> Holders {
                     Operand::Copy(of) | Operand::Move(of),
                     _,
                 ) if of.projection.is_empty() && borrows.contains_key(&of.local) => match assign.0.as_local() {
-                    Some(holder) => holds_as(&mut borrows, holder, of.local),
+                    Some(holder) => holds_as(&mut borrows, &mut code, holder, of.local),
                     None => lent_otherwise.extend(borrows[&of.local].iter().copied()),
                 },
                 Rvalue::RawPtr(_, of) => {
@@ -188,7 +227,11 @@ pub(super) fn called_on<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> Holders {
     // A holder holding any lent otherwise is dropped whole: a call given
     // it can't then forget that one, which is lent for the whole body.
     borrows.retain(|_, of| of.iter().all(|of| !lent_otherwise.contains(of)));
-    borrows
+    code.retain(|holder, _| borrows.contains_key(holder));
+    CalledOn {
+        holders: borrows,
+        closures: code,
+    }
 }
 
 /// Whether `statement` reads or writes `local` at all. Not borrowck's
@@ -296,6 +339,38 @@ impl<'tcx> Walk<'_, 'tcx> {
             // Each the holder holds: of a closure, every `&mut` it captures
             // (#1977).
             for &of in self.called_on.get(&local).into_iter().flatten() {
+                if self.body.local_decls[of].ty.is_integral() {
+                    // An integer a closure given the call captures, or one
+                    // given it `&mut` itself: what it holds forgotten. Lent
+                    // away from then on, as one lent anywhere else is, where a
+                    // raw pointer to it may outlive the call (#1782): one the
+                    // closure keeps, one the call keeps of the closure, its
+                    // code known behind a `dyn` (`pointer_may_keep_behind`),
+                    // or of the `&mut` itself.
+                    let int_ref = Ty::new_mut_ref(self.tcx, self.tcx.lifetimes.re_erased, self.body.local_decls[of].ty);
+                    let escapes = match (self.called_on_code.get(&local), func.const_fn_def(), self.libraries) {
+                        (Some(&closure), Some(call), Some(libraries)) => {
+                            closure_may_keep(self.tcx, self.typing_env, &libraries, closure, int_ref)
+                                || (!std
+                                    && pointer_may_keep_behind(
+                                        self.tcx,
+                                        self.typing_env,
+                                        &libraries,
+                                        call,
+                                        given,
+                                        closure,
+                                    ))
+                        }
+                        (None, Some(_), Some(_)) if std => false,
+                        (None, Some(_), Some(_)) => kept(given),
+                        _ => true,
+                    };
+                    after.forget(of);
+                    if escapes || lets_out() {
+                        after.lent_away.insert(of);
+                    }
+                    continue;
+                }
                 after.forget_lengths(state.root(of));
                 let vec = matches!(*given.kind(), ty::Ref(_, to, ty::Mutability::Mut)
                     if matches!(to.kind(), ty::Adt(adt, _)

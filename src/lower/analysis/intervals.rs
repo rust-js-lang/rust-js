@@ -122,9 +122,12 @@ struct Walk<'a, 'tcx> {
     /// Of a closure's body, each capture's local given what it was made
     /// with, by field (`as_locals`, #1701).
     captured: Vec<(usize, Local)>,
-    /// Each `&mut` of a `Vec` a local holds, lent only to the calls it's
-    /// given to, by the local holding it (`called_on`).
+    /// Each `&mut` of a `Vec` or an integer a local holds, lent only to the
+    /// calls it's given to, by the local holding it (`called_on`).
     called_on: called_on::Holders,
+    /// Of each such holder that is or holds a closure, that closure's code
+    /// (`called_on`, #1947).
+    called_on_code: IndexMap<Local, (rustc_span::def_id::DefId, ty::GenericArgsRef<'tcx>)>,
     /// The `borrow_mut()` guards held while they live (`guards`).
     guards: guards::Guards,
     /// The row types of tables no `&mut` resizes (`tables::rows_kept`).
@@ -190,7 +193,10 @@ fn walk<'a, 'tcx>(
         Some(rewritten) => std::borrow::Cow::Owned(rewritten),
         None => body,
     };
-    let called_on = called_on::called_on(tcx, &body);
+    let called_on::CalledOn {
+        holders: called_on,
+        closures: called_on_code,
+    } = called_on::called_on(tcx, &body);
     let guards = guards::guards(tcx, &body);
     let kept_rows = tables::rows_kept(tcx, &body);
     let (lent, stepped, pointed, cells) = facts(tcx, &body, &called_on, (&guards, &kept_rows));
@@ -206,6 +212,7 @@ fn walk<'a, 'tcx>(
         cells,
         captured,
         called_on,
+        called_on_code,
         guards,
         kept_rows,
         formats_code,
@@ -620,10 +627,13 @@ impl<'tcx> Walk<'_, 'tcx> {
         };
         // An integer local lent `&mut` where the walk forgets it, not lent in
         // the whole body (`lent_where_borrowed`): what it held may be
-        // written through the borrow, until it's assigned again.
+        // written through the borrow, until it's assigned again. Not one
+        // lent only to calls, a closure's capture given only to them, which
+        // each such call forgets (`called_on_mut`, #1947).
         if let Rvalue::Ref(_, mir::BorrowKind::Mut { .. }, of) = rvalue
             && let Some(of) = of.as_local()
             && lent_where_borrowed(&self.body, &mir::Place::from(of))
+            && !self.called_on.values().flatten().any(|&lent| lent == of)
         {
             state.forget(of);
             state.lent_away.insert(of);

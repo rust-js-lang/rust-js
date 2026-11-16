@@ -51,9 +51,59 @@ pub(in crate::lower) fn pointer_may_keep<'tcx>(
     tcx: TyCtxt<'tcx>,
     typing_env: ty::TypingEnv<'tcx>,
     libraries: &Libraries<'_, 'tcx>,
-    (fn_id, generic_args): (DefId, ty::GenericArgsRef<'tcx>),
+    call: (DefId, ty::GenericArgsRef<'tcx>),
     given: Ty<'tcx>,
 ) -> bool {
+    may_keep(tcx, typing_env, libraries, Start::Call(call), given, None)
+}
+
+/// `pointer_may_keep` of a call given a `&mut dyn Fn*`, `given`, whose
+/// code is known to be the closure `behind`: a call of it through what
+/// it's given runs that closure, which is walked as the rest is, where
+/// `pointer_may_keep` can't follow a `dyn` and fails closed (#1947). It
+/// says whether the call may keep a pointer to the closure; what the
+/// closure itself may keep is `closure_may_keep`'s.
+pub(in crate::lower) fn pointer_may_keep_behind<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+    libraries: &Libraries<'_, 'tcx>,
+    call: (DefId, ty::GenericArgsRef<'tcx>),
+    given: Ty<'tcx>,
+    behind: (DefId, ty::GenericArgsRef<'tcx>),
+) -> bool {
+    may_keep(tcx, typing_env, libraries, Start::Call(call), given, Some(behind))
+}
+
+/// Whether the closure `closure`, of its maker's `typing_env`, may keep a
+/// raw pointer to what a `&mut` it captures, `given`, refers to, past its
+/// call: its body walked as `pointer_may_keep` walks a function's, what
+/// it calls too (#1947).
+pub(in crate::lower) fn closure_may_keep<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+    libraries: &Libraries<'_, 'tcx>,
+    closure: (DefId, ty::GenericArgsRef<'tcx>),
+    given: Ty<'tcx>,
+) -> bool {
+    may_keep(tcx, typing_env, libraries, Start::Body(closure), given, None)
+}
+
+/// Where `may_keep` starts: a call, whose bodies are as it resolves, or a
+/// body itself, a closure's.
+enum Start<'tcx> {
+    Call((DefId, ty::GenericArgsRef<'tcx>)),
+    Body((DefId, ty::GenericArgsRef<'tcx>)),
+}
+
+fn may_keep<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+    libraries: &Libraries<'_, 'tcx>,
+    start: Start<'tcx>,
+    given: Ty<'tcx>,
+    behind: Option<(DefId, ty::GenericArgsRef<'tcx>)>,
+) -> bool {
+    let start_env = typing_env;
     let erased = |ty: Ty<'tcx>| tcx.erase_and_anonymize_regions(ty);
     let Some(pointee) = given.builtin_deref(true).map(erased) else {
         return false;
@@ -179,8 +229,22 @@ pub(in crate::lower) fn pointer_may_keep<'tcx>(
         }
         false
     };
-    let Some(mut work) = runs(fn_id, generic_args, typing_env) else {
-        return true;
+    let mut work = match start {
+        Start::Call((fn_id, generic_args)) => match runs(fn_id, generic_args, typing_env) {
+            Some(bodies) => bodies,
+            None => return true,
+        },
+        Start::Body((body_id, args)) => vec![(body_id, args, typing_env)],
+    };
+    // A call of the `Fn` traits through what the call is given, `(*each)(at,
+    // c)` of an `each: &mut dyn FnMut`, where the code behind it is known:
+    // that closure's body, in its maker's terms.
+    let behind_call = |callee: DefId, first: Option<Ty<'tcx>>| {
+        behind.filter(|_| {
+            tcx.trait_of_assoc(callee)
+                .is_some_and(|trait_id| tcx.is_fn_trait(trait_id))
+                && first.and_then(|ty| ty.builtin_deref(true)).map(erased) == Some(pointee)
+        })
     };
     let mut seen: IndexSet<(DefId, ty::GenericArgsRef<'tcx>)> = IndexSet::default();
     while let Some((function, args, typing_env)) = work.pop() {
@@ -213,6 +277,15 @@ pub(in crate::lower) fn pointer_may_keep<'tcx>(
                         Some(ty) => held.insert(ty),
                         None => return true,
                     };
+                }
+                if let Some((callee, _)) = func.const_fn_def()
+                    && let Some((closure, closure_args)) = behind_call(
+                        callee,
+                        given_args.first().and_then(|arg| instantiated(arg.node.ty(body, tcx))),
+                    )
+                {
+                    work.push((closure, closure_args, start_env));
+                    continue;
                 }
                 let bodies = func.const_fn_def().and_then(|(callee, callee_args)| {
                     let callee_args = instantiated_args(tcx, args, typing_env, callee_args)?;

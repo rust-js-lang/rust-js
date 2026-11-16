@@ -1104,3 +1104,31 @@ length shifted, a step-2 loop's index and callers' facts. General
 difference bounds, `x ≤ y + c`, come with the first shape needing another
 `c` ([1168](1168-difference-bounds-in-the-mir-intervals.md)).
 
+## Amendment: an integer a closure captures, lent only to calls (2026-11-16, #1947)
+
+The Flight loaders' `exportedEntries[nextEntryIdx]` still read `$index`:
+`next_entry_idx` is captured `&mut` by a closure given to `read_mappings`
+as a `&mut dyn FnMut`. An integer lent `&mut` anywhere was lent away for
+the whole body, so the loader's own test of `nextEntryIdx` after the call
+bounded nothing.
+
+`called_on` now treats an integer as it treats a `Vec` (#1946, #1977). Its
+`&mut` held by a closure, or given `&mut` itself to a call, is lent only
+to the calls it's given to, and each of those calls forgets its value
+(`called_on_mut`); a fresh test after the call bounds it. Each holder that
+is a closure, or holds one (`&mut take as &mut dyn FnMut`), carries that
+closure's code, `CalledOn::closures`. A call that may keep a raw pointer
+to the integer lends it away from then on, as before: the closure's own
+body, `closure_may_keep`; the call given the closure, which runs that code
+behind the `dyn`, `pointer_may_keep_behind`, where `pointer_may_keep`
+alone fails closed; or, given the `&mut` itself, `pointer_may_keep` of the
+call, which fails closed on code it can't follow, a type parameter's
+`K::keep`. A holder used any other way, written through or stored, lends
+its integer for the whole body, as before.
+
+React's port: 117 `$index` to 114, the three Flight loaders'
+`exportedEntries[nextEntryIdx]`, and nothing else. Corpus case
+`integer_captured_by_a_closure_given_to_calls` holds the closure, twice
+called, given `&mut` itself, kept by the crate's `Keeper::keep`, and kept
+by generic code's `K::keep`, against native; each kept one panics as Rust's
+does, where its unkept form would read `undefined`.

@@ -220,6 +220,15 @@ pub fn later_lent(f: fn(&mut usize)) -> usize {
     let after = k - 2;
     before + after
 }
+pub fn later_written(w: usize) -> usize {
+    let mut k = 1;
+    k += 1;
+    let first = k - 2;
+    let r = &mut k;
+    *r = w;
+    let second = k - 2;
+    first + second
+}
 fn merged(limit: u32) -> u32 {
     let mut n = 0;
     loop {
@@ -274,6 +283,9 @@ pub fn every_other(v: &[u32]) -> u32 {
   expect(leading.slice(0, leading.indexOf("\n}\n"))).toContain("i++;");
   expect(js).toContain("const before = k - 2;");
   expect(js).toContain("const after = (k - 2) >>> 0;");
+  // And one written through the `&mut` itself, lent no call (#1947).
+  expect(js).toContain("const first = k - 2;");
+  expect(js).toContain("const second = (k - 2) >>> 0;");
 });
 
 test("text's `len()` is at most what an allocation holds: two summed never wrap", () => {

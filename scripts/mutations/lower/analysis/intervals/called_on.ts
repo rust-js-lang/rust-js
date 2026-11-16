@@ -129,6 +129,24 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
+    name: "integer-captured-lent-away",
+    breaks: "an integer a closure captures `&mut`, the closure given only to calls, is lent away for good, so a fresh test of it past the calls bounds no index: `seen[next]` checked again (#1947)",
+    file: "src/lower/analysis/intervals/called_on.rs",
+    find: "                Rvalue::Ref(_, mir::BorrowKind::Mut { .. }, of) if body.local_decls[of.local].ty.is_integral() => {\n",
+    replace: "                Rvalue::Ref(_, mir::BorrowKind::Mut { .. }, of) if false && body.local_decls[of.local].ty.is_integral() => {\n",
+    tests: ["test/corpus.test.ts", "-t", "^integer_captured_by_a_closure_given_to_calls.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "integer-given-kept-unlent",
+    breaks:
+      "an integer given `&mut` itself to the crate's call that may keep a pointer to it, `Keeper::keep`, isn't lent away past it: a test before a call that writes through that pointer is taken to bound it, and `v[i]` reads `undefined` where Rust panics (#1947)",
+    file: "src/lower/analysis/intervals/called_on.rs",
+    find: "                        (None, Some(_), Some(_)) => kept(given),\n",
+    replace: "                        (None, Some(_), Some(_)) => false,\n",
+    tests: ["test/corpus.test.ts", "-t", "^integer_captured_by_a_closure_given_to_calls.rs$"],
+  },
+  {
     name: "closure-holds-its-last-capture",
     breaks: "a closure that captures two `Vec`s `&mut` holds only the last, so a call given it forgets only that one's length: `a[2]` past a call whose closure cleared `a` reads no check, `undefined` where Rust panics (#1977)",
     file: "src/lower/analysis/intervals/called_on.rs",

@@ -29,7 +29,7 @@ mod into_copies;
 mod lending;
 pub(in crate::lower) use lending::{lends_a_place_handle, made_once_of};
 mod keeps;
-pub(in crate::lower) use keeps::{Libraries, pointer_may_keep};
+pub(in crate::lower) use keeps::{Libraries, closure_may_keep, pointer_may_keep, pointer_may_keep_behind};
 mod returned;
 pub(in crate::lower) use returned::{Returned, Via, returned_iterator};
 mod rewritten;

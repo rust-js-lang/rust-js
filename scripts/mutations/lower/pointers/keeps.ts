@@ -99,4 +99,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts","-t","^generic_extend.rs$"],
     snapshots: true,
   },
+  {
+    name: "behind-dyn-unfollowed",
+    breaks: "a call given a `&mut dyn FnMut` whose closure is known can't follow its call of it, so it may keep a pointer to the closure and the integer the closure captures is lent away for good: `seen[next]` checked again (#1947)",
+    file: "src/lower/pointers/keeps.rs",
+    find: "        behind.filter(|_| {\n",
+    replace: "        behind.filter(|_| false && {\n",
+    tests: ["test/corpus.test.ts", "-t", "^integer_captured_by_a_closure_given_to_calls.rs$"],
+    snapshots: true,
+  },
 ];
