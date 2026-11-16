@@ -11,7 +11,7 @@ import { buildRewriter, rewriter } from "./metamorphic";
 import { buildCompiler, fixture } from "./support";
 import { underLoad } from "../scripts/timing";
 import { checked, failure, reduce, size } from "../scripts/reduce";
-import { installMiri, miriInstalled } from "./miri";
+import { installMiri, miriInstalled, undefinedBehaviour } from "./miri";
 import { reducedRepros, toReduce } from "./reduced";
 import { partSetting } from "./part-settings";
 
@@ -182,4 +182,35 @@ test.skipIf(!miri)("a program that's undefined behaviour isn't reduced", async (
   const file = join(dir, "unwritten.rs");
   writeFileSync(file, allocated.replace("        p.add(1).write(9);\n", ""));
   expect(await reduce(file, { jobs: 2, budget: 60 })).toContain("is undefined behaviour, Miri finds");
+}, underLoad(300_000));
+
+// Miri runs the program native Rust runs, its arithmetic wrapping: at its
+// default, `v.len() - 1` panics first, and the write through a pointer a
+// `push` popped after it was never reached, so the program was taken as
+// defined and its native run's answer as one to compare (#1970).
+test.skipIf(!miri)("a program whose arithmetic wraps before its undefined behaviour is undefined behaviour", () => {
+  if (!miriInstalled()) throw new Error(`RUST_JS_REQUIRE_MIRI=1, and Miri isn't installed: ${installMiri}`);
+  const dir = fixture("miri-wraps-first");
+  mkdirSync(dir, { recursive: true });
+  const file = join(dir, "wraps_first.rs");
+  writeFileSync(
+    file,
+    `static mut STASH: *mut Vec<u32> = std::ptr::null_mut();
+fn stash(v: &mut Vec<u32>) {
+    unsafe { STASH = v as *mut Vec<u32> };
+}
+fn clear_it() {
+    unsafe { (*STASH).clear() };
+}
+fn main() {
+    let v: Vec<u32> = vec![];
+    println!("{}", (v.len() - 1) as u32);
+    let mut g: Vec<u32> = vec![1, 2, 3];
+    stash(&mut g);
+    g.push(4);
+    clear_it();
+}
+`,
+  );
+  expect(undefinedBehaviour(file)).toContain("Undefined Behavior");
 }, underLoad(300_000));

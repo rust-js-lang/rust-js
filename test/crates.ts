@@ -8,7 +8,7 @@ import { cargoBuild, cargoEnv, checkCargo } from "../tooling/cargo.js";
 import { nondeterministic } from "./corpus-cases";
 import { keepRun, keptRun, recheck, rechecked } from "./native-outcomes";
 import { node, type Run } from "./programs";
-import { compiler, fixture, nativeCrates, nativeCratesKey, root, run, target } from "./support";
+import { compiler, fixture, nativeCrates, nativeCratesKey, programFlags, root, run, target } from "./support";
 import { channel } from "../scripts/toolchain.ts";
 
 export const cargo = (manifest: string, ...args: string[]) => ["cargo", `+${channel}`, ...args, "--offline", "--quiet", "--manifest-path", manifest];
@@ -87,7 +87,7 @@ export function chain(cases: string, name: string, files: string[], refused?: st
   const native = nativeCratesOutput(
     crates.map((crate, i) => ({ name: crate, file: source(files[i]), uses: given(i), edition: editions[i] })),
     `fn main() {\n    ${app}::main();\n}\n`,
-    ["--edition=2024", "-Coverflow-checks=off"],
+    programFlags("2024"),
   );
   const compile = (crate: string, i: number) => {
     const used = before(i);

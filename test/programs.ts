@@ -13,7 +13,7 @@ import { decode, encode, same, type Outcome } from "./oracle";
 import { helpersModule, stdDir } from "./packages-of";
 import { directives } from "./corpus-cases";
 import { keepRun, keptRun, recheck, rechecked } from "./native-outcomes";
-import { compiler, contentDirectory, nativeBinary, nativeKey, root, run } from "./support";
+import { compiler, contentDirectory, nativeBinary, nativeKey, programFlags, root, run } from "./support";
 
 export const node = Bun.which("node");
 // The generated JS runs under Node, the runtime rust-js targets (ADR 0095);
@@ -259,7 +259,7 @@ export function ranOnce(built: { binary: string; kept: boolean }, run: Run): Run
  * debug info, which no run reads, a panic's message being its location's,
  * and which made each of Linux's builds several MB, std's, where it's a
  * few hundred KB without (#1108). */
-export const nativeFlags = (edition: string) => [`--edition=${edition}`, "-Coverflow-checks=off", "-Cstrip=debuginfo", "-Awarnings", remapRoot];
+export const nativeFlags = (edition: string) => [...programFlags(edition), "-Cstrip=debuginfo", "-Awarnings", remapRoot];
 
 // For `wasm32-wasip1`, whose `usize` is rust-js's (ADR 0090): the case's
 // `main` as it is, run by Bun's WASI, which writes its outcome where it
@@ -274,7 +274,7 @@ fn main() {
     case::entry();
 }
 `;
-  const flags = [`--edition=${edition}`, "--target=wasm32-wasip1", "-Coverflow-checks=off", "-Cstrip=debuginfo", "-Awarnings", remapRoot, ...rustc];
+  const flags = [...programFlags(edition), "--target=wasm32-wasip1", "-Cstrip=debuginfo", "-Awarnings", remapRoot, ...rustc];
   const built = nativeBinary(source, contentDirectory(source), flags, compileTimeout);
   if ("error" in built) return built.error;
   const outcomeFile = join(dir, "native.json");

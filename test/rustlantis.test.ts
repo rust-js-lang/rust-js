@@ -19,7 +19,7 @@ import { compileFailure, runSync } from "./child";
 import { partSetting } from "./part-settings";
 import { agree, execute, jsLimit, runJs, runtimes, show, type Run } from "./programs";
 import { configDir, generator, known, knownAs, type Known } from "./rustlantis";
-import { buildCompiler, compiler, fixture, root } from "./support";
+import { buildCompiler, compiler, fixture, programFlags, root } from "./support";
 
 // The first seed, the day's of the nightly's, beside how many.
 const startSetting = process.env.RUSTLANTIS_START;
@@ -63,7 +63,7 @@ function judge(seed: number): { held: string } | { failed: string } {
   const file = join(dir, "program.rs");
   writeFileSync(file, source);
   const wasm = join(dir, "native.wasm");
-  const built = Bun.spawnSync(["rustc", file, "--target=wasm32-wasip1", "--edition=2021", "-Coverflow-checks=off", "-Awarnings", "-o", wasm], {
+  const built = Bun.spawnSync(["rustc", file, "--target=wasm32-wasip1", ...programFlags("2021"), "-Awarnings", "-o", wasm], {
     // Where its program is, in the checkout, whose toolchain rustup finds
     // from there: a crash of rustc's writes its report, `rustc-ice-*.txt`,
     // where it runs, the fixture's directory, removed with it, not the

@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { buildCompiler, buildReact, target, compiler, fixture, root, run } from "./support";
+import { buildCompiler, buildReact, target, compiler, fixture, programFlags, root, run } from "./support";
 
 beforeAll(buildCompiler, 600_000);
 
@@ -73,7 +73,7 @@ describe.each([["MIR", {}]] as const)("from %s", (_, env) => {
       ["evaluation_order", "evaluationOrder"], ["primitive_dyn", "primitiveDyn"], ["enum_dyn", "enumDyn"], ["nan_max", "nanMax"],
       ["factory_bounds", "factoryBounds"], ["captured_evidence", "capturedEvidence"], ["lifetime_dyn", "lifetimeDyn"]];
     writeFileSync(join(directory, "native.rs"), `#[path="lib.rs"] mod cases; fn main() { ${names.map(([name]) => `println!("{}", cases::${name}());`).join("\n")} }`);
-    run(["rustc", "--edition=2024", "-Coverflow-checks=off", "-Awarnings", join(directory, "native.rs"), "-o", join(directory, "native")]);
+    run(["rustc", ...programFlags("2024"), "-Awarnings", join(directory, "native.rs"), "-o", join(directory, "native")]);
     const expected = run([join(directory, "native")]).trim().split("\n");
     expect(names.map(([, jsName]) => String(module[jsName]()))).toEqual(expected);
     expect(module.demo()).toBe(13.14);

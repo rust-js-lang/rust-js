@@ -21,6 +21,7 @@ import { homedir } from "node:os";
 import { basename, dirname, join, relative, resolve } from "node:path";
 
 import { compileFailure, printed, run, stopped, type Exit } from "../test/child";
+import { programFlags } from "../test/support";
 import { rustcCommit, rustcTests } from "./rustc-tests";
 import { machine } from "./shard";
 
@@ -374,7 +375,7 @@ export async function runTest(ui: string, file: string, listedChanging: Set<stri
     // Natively, as rust-js takes Rust: the release profile, where arithmetic wraps.
     const binary = join(dir, "native");
     const build = await run(
-      ["rustc", `--edition=${s.edition}`, "-Coverflow-checks=off", "-Awarnings", at(dirname(file)), file, "-o", binary],
+      ["rustc", ...programFlags(s.edition), "-Awarnings", at(dirname(file)), file, "-o", binary],
       dirname(file),
       120_000,
       unstable,

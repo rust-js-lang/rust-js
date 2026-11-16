@@ -197,6 +197,14 @@ the shadow, or by writing the case at the edge.
     Where a value is changed in place to make a view of it, read each
     view's identity as soon as it's made.
 
+16. **A judge must run the program the oracle runs.** Miri ran each
+    program at its default, overflow checks on, where every native build
+    wraps: a wrap panicked under Miri before the undefined behaviour after
+    it, and the program was taken as defined, its native answer one to
+    compare (#1970). Every native build and Miri now take their flags from
+    one source, `programFlags` (test/support.ts), which a `ci.test.ts`
+    row holds.
+
 ## Nets still to build
 
 | Net | Issue | What it would find |

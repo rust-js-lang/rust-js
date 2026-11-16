@@ -9,7 +9,7 @@ import { dirname, join, relative } from "node:path";
 
 import { decode, expected, same, type Outcome } from "./oracle";
 import { callInNode, type Call } from "./programs";
-import { root, target, run, buildCompiler, buildReact, buildSerde, compiler, fixture } from "./support";
+import { root, target, run, buildCompiler, buildReact, buildSerde, compiler, fixture, programFlags } from "./support";
 
 // Values are JSON: numbers, and objects and arrays for structs and tuples.
 type Case = { fn: string; args: unknown[]; value?: unknown; panic?: string };
@@ -17,9 +17,9 @@ type Case = { fn: string; args: unknown[]; value?: unknown; panic?: string };
 // Native Rust runs as the file loads, so each function it called is a test
 // of its own. Same semantics rust-js targets: the release profile, where
 // arithmetic wraps.
-run(["rustc", "--edition=2024", "-Coverflow-checks=off", "--crate-type=lib", "--crate-name=modules",
+run(["rustc", ...programFlags("2024"), "--crate-type=lib", "--crate-name=modules",
   "examples/modules/lib.rs", "-o", join(target, "libmodules.rlib")]);
-run(["rustc", "--edition=2024", "-Coverflow-checks=off", "--extern", `modules=${join(target, "libmodules.rlib")}`,
+run(["rustc", ...programFlags("2024"), "--extern", `modules=${join(target, "libmodules.rlib")}`,
   ...buildSerde("rlib"), "test/native.rs", "-o", join(target, "native")]);
 // A minute, well past what it takes, so one that doesn't end fails the file.
 const cases: Case[] = run([join(target, "native")], 60_000).trim().split("\n").map(decode);

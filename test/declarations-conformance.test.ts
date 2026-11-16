@@ -31,7 +31,7 @@
 import { expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { compiler, fixture, nativeBinary, root, run } from "./support";
+import { compiler, fixture, nativeBinary, programFlags, root, run } from "./support";
 import { readdirSync } from "node:fs";
 
 const cases = [
@@ -661,7 +661,7 @@ function conformance(name: string): number {
     .filter((s) => shown({ k: "named", n: s.name }, structsOf))
     .map((s) => `impl Show for ${s.name} {\n    fn show(&self) -> ::std::string::String {\n        ::std::format!("{{${s.fields.map((f) => `\\"${camel(f.name)}\\":{}`).join(",")}}}", ${s.fields.map((f) => `self.${f.name}.show()`).join(", ")})\n    }\n}`);
   const native = `mod case {\n    include!(${JSON.stringify(file)});\n    ${harness}\n    ${shows.join("\n")}\n    pub fn conformance() {\n${rs.join("\n")}\n    }\n}\nfn main() {\n    case::conformance();\n}\n`;
-  const built = nativeBinary(native, dir, ["--edition=2024", "-Coverflow-checks=off", "-Awarnings"]);
+  const built = nativeBinary(native, dir, [...programFlags("2024"), "-Awarnings"]);
   if ("error" in built) throw new Error(`${name}: ${built.error}`);
   const expected = run([built.binary]);
   writeFileSync(

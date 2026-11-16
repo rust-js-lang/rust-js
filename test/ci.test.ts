@@ -34,7 +34,8 @@ import { loadScale, underLoad } from "../scripts/timing";
 import { caseOf, partsOf, runParts, verdict } from "../scripts/parts";
 import { jobs as localNightly } from "../scripts/nightly";
 import { atOnce, caseFiles, caseParts, casePoolJobs, casePoolParts, casePoolWidth, caseShardParts, compilerBuilds, harness, memoryBudget, nightly, parts, peakGB, plainSuiteFiles, pooledParts, shard, timedShard, balanced } from "../scripts/shard";
-import { fixture, root } from "./support";
+import { fixture, programFlags, root } from "./support";
+import { miriCommand } from "./miri";
 
 const files = ["a", "b", "c", "d", "e", "f", "g"].map((name) => `test/${name}.test.ts`);
 
@@ -1325,4 +1326,15 @@ test("the nightly's test times follow each of its jobs, the suite's reports amon
   expect(others.filter((id) => !times.needs!.includes(id))).toEqual([]);
   expect(readFileSync(join(root, ".github/workflows/check.yml"), "utf8")).toContain("name: junit-${{ matrix.shard }}");
   expect(readFileSync(join(root, "scripts/test.ts"), "utf8")).toContain('"--reporter=junit"');
+});
+
+// Miri judges the program native Rust runs, its arithmetic wrapping: at
+// its default a wrap panics first, and undefined behaviour after it was
+// taken as defined (#1970). `programFlags` is the one source of the flags.
+test("Miri and every native build of a program take its flags from programFlags alone", () => {
+  expect(miriCommand("case.rs", "2021", "sysroot")).toEqual(expect.arrayContaining(programFlags("2021")));
+  const harness = [...readdirSync(join(root, "test")).map((f) => `test/${f}`), ...readdirSync(join(root, "scripts")).map((f) => `scripts/${f}`)]
+    .filter((f) => f.endsWith(".ts") && f !== "test/support.ts" && f !== "test/ci.test.ts");
+  const own = harness.filter((f) => readFileSync(join(root, f), "utf8").split("\n").some((l) => /"-Coverflow-checks/.test(l)));
+  expect(own).toEqual([]);
 });

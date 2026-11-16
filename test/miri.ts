@@ -3,14 +3,17 @@
 // JS at all. The generated programs ask it with `FUZZ_MIRI=1` (#1085), and
 // the reducer of each step that keeps `unsafe` code (#1104): a program that
 // is undefined behaviour prints what it happens to, natively, and its JS
-// differing from that is no bug. The nightly toolchain's Miri, of the
-// sysroot `cargo miri setup` makes once:
+// differing from that is no bug. It judges the program native Rust runs,
+// built with `programFlags` as every native build is: its arithmetic wraps,
+// so no overflow panic ends its run before undefined behaviour after it
+// (#1970). The nightly toolchain's Miri, of the sysroot `cargo miri setup`
+// makes once:
 //
 //   rustup toolchain install nightly --profile minimal --component miri,rust-src
 //   cargo +nightly miri setup
 import { spawnSync } from "node:child_process";
 
-import { root } from "./support";
+import { programFlags, root } from "./support";
 
 /** How to install Miri, where it's asked for and isn't. */
 export const installMiri = "rustup toolchain install nightly --profile minimal --component miri,rust-src && cargo +nightly miri setup";
@@ -35,11 +38,18 @@ export function miriSysroot(): string {
   return said;
 }
 
+/** Miri's command for `file`'s program, built as native Rust builds it
+ * (`programFlags`): its arithmetic wraps, so a wrap is no panic that ends
+ * the run before undefined behaviour after it (#1970). */
+export const miriCommand = (file: string, edition: string, sysroot: string) =>
+  ["rustup", "run", "nightly", "miri", "--sysroot", sysroot, ...programFlags(edition), "-Awarnings", file];
+
 /** What Miri finds of `file`'s program that's undefined behaviour, or
  * nothing: its run's own ends, a panic or an exit, are native Rust's to
  * compare. One that runs past its time says nothing of it either. */
 export function undefinedBehaviour(file: string, edition = "2024"): string | undefined {
-  const p = spawnSync("rustup", ["run", "nightly", "miri", "--sysroot", miriSysroot(), `--edition=${edition}`, "-Awarnings", file], {
+  const [command, ...args] = miriCommand(file, edition, miriSysroot());
+  const p = spawnSync(command, args, {
     cwd: root,
     encoding: "utf8",
     timeout: 300_000,

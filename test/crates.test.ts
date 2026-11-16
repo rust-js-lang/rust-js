@@ -10,7 +10,7 @@
 import { beforeAll, describe, expect, test } from "bun:test";
 import { chmodSync, cpSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { buildCompiler, buildReact, buildSerde, compiler, fixture, nativeCrates, root, run, target } from "./support";
+import { buildCompiler, buildReact, buildSerde, compiler, fixture, nativeCrates, programFlags, root, run, target } from "./support";
 import { chain, contract, counting, pairs, printed, triples } from "./crates";
 import { node } from "./programs";
 
@@ -40,12 +40,12 @@ function native(dir: string, src: string): string {
   mkdirSync(out, { recursive: true });
   const externs = (uses: string[]) => uses.flatMap((u) => ["--extern", `${u}=${join(out, `lib${u}.rlib`)}`]);
   for (const [name, uses] of graph) {
-    run(["rustc", "--edition=2024", "-Coverflow-checks=off", "--crate-type=rlib", "--crate-name", name, join(src, name, "lib.rs"),
+    run(["rustc", ...programFlags("2024"), "--crate-type=rlib", "--crate-name", name, join(src, name, "lib.rs"),
       "-o", join(out, `lib${name}.rlib`), ...externs(uses), "-L", `dependency=${out}`, ...serde.rlib()]);
   }
   const main = join(out, "main.rs");
   writeFileSync(main, "fn main() {\n    frontend::main();\n}\n");
-  run(["rustc", "--edition=2024", "-Coverflow-checks=off", main, "-o", join(out, "program"), ...externs(["frontend"]), "-L", `dependency=${out}`, ...serde.rlib()]);
+  run(["rustc", ...programFlags("2024"), main, "-o", join(out, "program"), ...externs(["frontend"]), "-L", `dependency=${out}`, ...serde.rlib()]);
   return run([join(out, "program")]);
 }
 

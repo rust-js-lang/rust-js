@@ -3,7 +3,7 @@ import { copyFileSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { decode, expected, type Outcome } from "./oracle";
 import { callInNode } from "./programs";
-import { buildCompiler, compiler, fixture, root, run } from "./support";
+import { buildCompiler, compiler, fixture, programFlags, root, run } from "./support";
 
 // Each case's Rust name, its JS name (camelCase, ADR 0573) and argument.
 const cases: [string, string, boolean | number][] = [
@@ -38,7 +38,7 @@ fn main() { ${cases.map(([name, , arg]) => `
     Ok(value) => println!("{{\\"value\\":{:?}}}", value),
     Err(e) => println!("{{\\"panic\\":{:?}}}", message(e)),
   }`).join("\n")} }`);
-  run(["rustc", "--edition=2024", "-Coverflow-checks=off", "-Awarnings", join(dir, "native.rs"), "-o", join(dir, "native")]);
+  run(["rustc", ...programFlags("2024"), "-Awarnings", join(dir, "native.rs"), "-o", join(dir, "native")]);
   native = run([join(dir, "native")]).trim().split("\n").map(line => expected(decode(line)));
   run([compiler, join(dir, "cases.rs"), "-o", join(dir, "cases.js")]);
   const calls = cases.map(([, jsName, arg]) => ({ module: "cases", fn: jsName, args: [arg] }));
