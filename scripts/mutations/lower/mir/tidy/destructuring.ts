@@ -108,12 +108,13 @@ export const mutations: Mutation[] = [
   {
     name: "mir-tidy-array-parts-kept",
     breaks:
-      "`let (root, files) = (chosen.root.clone(), ..)` isn't split here, and `root` is read as `const root = chosen.root;`, not taken from `chosen` as `const { root } = chosen;`",
+      "a tuple made where it's taken apart, `let (a, b) = (x, 6)`, isn't split into its parts, `const a = x; const b = 6;`: the array is made and read by its index (calculator's and unzip_into_maps' snapshots)",
     file: "src/lower/mir/tidy/destructuring.rs",
     find: "            stmts.splice(i..first + count, each);\n            continue;\n",
     replace:
       "            let _ = each;\n            i += 1;\n            continue;\n",
-    tests: ["test/snapshots.test.ts", "-t", "playground"],
+    tests: ["test/corpus.test.ts", "-t", "^(calculator|unzip_into_maps).rs$"],
+    snapshots: true,
   },
   {
     name: "mir-tidy-params-not-destructured",
