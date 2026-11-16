@@ -36,6 +36,7 @@ pub(super) fn decided_tests(stmts: &mut Vec<Stmt>, changing: &IndexSet<js::Name>
         };
         decided_in(then, 0, (&test, written), true, true);
         if let Some(otherwise) = otherwise {
+            split_decided(otherwise, &test, written);
             decided_in(otherwise, 0, (&test, written), false, true);
         }
         match (then_leaves, else_leaves) {
@@ -45,6 +46,32 @@ pub(super) fn decided_tests(stmts: &mut Vec<Stmt>, changing: &IndexSet<js::Name>
         }
         i += 1;
     }
+}
+
+/// The `else` of `if (t)`, `otherwise`, that starts with `if (!t)` of the
+/// same condition the program wrote, MIR's split of one test into its two
+/// ways, a `match`'s of a pair, `if (a == null) { .. } else if (a != null &&
+/// b != null)`: its `then` in its place, as the `else` says it holds
+/// (#1972). Not an `if (!t)` of a condition of its own the program wrote,
+/// which says what it says (ADR 0564, amended), nor one past anything that
+/// may change what `t` reads, which isn't first in the `else`.
+fn split_decided(otherwise: &mut Vec<Stmt>, test: &Expr, written: &[js::Span]) {
+    let Some(Stmt {
+        kind: StmtKind::If(t, ..),
+        ..
+    }) = otherwise.first()
+    else {
+        return;
+    };
+    let condition = |s: js::Span| super::logicals::written_if(written, s);
+    let one_condition = !t.span.is_none() && condition(t.span).is_some() && condition(t.span) == condition(test.span);
+    if !one_condition || decided(t, test) != Some(false) || disturbs(t, test) {
+        return;
+    }
+    let StmtKind::If(_, then, _) = otherwise.remove(0).kind else {
+        unreachable!("matched")
+    };
+    otherwise.splice(0..0, then);
 }
 
 /// Whether `test` can be decided by an earlier reading of it: it does

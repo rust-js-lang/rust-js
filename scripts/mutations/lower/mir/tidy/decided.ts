@@ -69,4 +69,22 @@ export const mutations: Mutation[] = [
     replace: "        i += 1;\n",
     tests: ["test/corpus.test.ts", "-t", "^or_pattern_(unreachable_alternative|guard_fails_some).rs$"],
   },
+  {
+    name: "split-test-tested-again",
+    breaks: "MIR's split of a `match` of a pair's first option into its two ways keeps the second's test in the `else`, `else if (tracked.contentKeyPath != null && keyPath != null)`, where the `else` says it holds (#1972)",
+    file: "src/lower/mir/tidy/decided.rs",
+    find: "            split_decided(otherwise, &test, written);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^match_of_a_pair_tests_each_once.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "written-test-split-away",
+    breaks: "a test the program wrote in a condition of its own, `else if path.is_some() && deep`, is dropped as one an earlier test decides, not as written (#1972, ADR 0564)",
+    file: "src/lower/mir/tidy/decided.rs",
+    find: "    let one_condition = !t.span.is_none() && condition(t.span).is_some() && condition(t.span) == condition(test.span);\n",
+    replace: "    let one_condition = condition(t.span) == condition(test.span) || true;\n",
+    tests: ["test/corpus.test.ts", "-t", "^match_of_a_pair_tests_each_once.rs$"],
+    snapshots: true,
+  },
 ];

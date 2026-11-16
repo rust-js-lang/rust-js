@@ -621,7 +621,10 @@ pub(super) fn chained_checks(stmts: &mut [Stmt], thens: &[(js::Span, js::Span)])
 /// one, whose comment, `// c\n (None, Some(b)) => {`, was the first `if`'s,
 /// at the function's top once a `return` ends `y` (#609). Not a `switch`'s
 /// test, of `switches`, which it reads where MIR placed it (ADR 0668).
-pub(super) fn written_chains(stmts: &mut [Stmt], (patterns, switches): (&[js::Span], &[Switch])) {
+pub(super) fn written_chains(
+    stmts: &mut [Stmt],
+    (patterns, switches, let_elses): (&[js::Span], &[Switch], &[js::Span]),
+) {
     for stmt in stmts {
         let StmtKind::If(_, then, Some(otherwise)) = &stmt.kind else {
             continue;
@@ -645,6 +648,23 @@ pub(super) fn written_chains(stmts: &mut [Stmt], (patterns, switches): (&[js::Sp
             ] => first_written(arm),
             // Or the arms after the one whose pattern the `if` tests (#608).
             _ if !stmt.span.is_none() && patterns.iter().any(|p| p.lo <= stmt.span.lo && stmt.span.hi <= p.hi) => {
+                first_written(then)
+            }
+            // Or an arm that panics, its `throw` alone, written before the
+            // arm the `then` is: a `match`'s arms in their order, `else if
+            // (typeof slots === "number") { throw .. } else { .. }`, as the
+            // chain `let else first` left of a check first in an `else`
+            // would be (#1972). Not a `let … else`'s, whose guard is first
+            // as written, `if (parentNext == null) { throw .. }`.
+            _ if let [
+                throw @ Stmt {
+                    kind: StmtKind::Throw(_),
+                    ..
+                },
+            ] = otherwise.as_slice()
+                && !(let_elses.iter())
+                    .any(|e| !throw.span.is_none() && e.lo <= throw.span.lo && throw.span.hi <= e.hi) =>
+            {
                 first_written(then)
             }
             _ => None,

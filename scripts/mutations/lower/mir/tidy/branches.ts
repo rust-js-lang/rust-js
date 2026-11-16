@@ -875,4 +875,22 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^interpreter.rs$"],
     snapshots: true,
   },
+  {
+    name: "panicking-arm-unordered",
+    breaks: "a `match`'s arm that panics, written between its others, is the chain's last `else`, `else if (typeof slots !== \"number\") { .. } else { throw .. }`, not in the arms' order (#1972)",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "                    .any(|e| !throw.span.is_none() && e.lo <= throw.span.lo && throw.span.hi <= e.hi) =>\n",
+    replace: "                    .any(|e| !throw.span.is_none() && e.lo <= throw.span.lo && throw.span.hi <= e.hi)\n                && false =>\n",
+    tests: ["test/corpus.test.ts", "-t", "^match_arms_with_a_panic_written_in_order.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "let-else-guard-chained",
+    breaks: "a `let … else`'s panic in a `match`'s arm is taken for an arm of the chain, `} else if (next == null) { throw .. } else { .. }`, not its guard first as written (#1972)",
+    file: "src/lower/mir/tidy/branches.rs",
+    find: "                && !(let_elses.iter())\n",
+    replace: "                && !(let_elses.iter().filter(|_| false))\n",
+    tests: ["test/corpus.test.ts", "-t", "^match_arms_with_a_panic_written_in_order.rs$"],
+    snapshots: true,
+  },
 ];

@@ -618,7 +618,7 @@ pub(super) const STAGES: &[Stage] = &[
             // A chain's arms, as statements, in the order written.
             pass("written chains", |b, h| {
                 js::statement_lists(b, &mut |s| {
-                    written_chains(s, (&h.written.patterns, &h.written.switches))
+                    written_chains(s, (&h.written.patterns, &h.written.switches, &h.written.let_elses))
                 })
             }),
             // A chain of `js::strict_equals` tests of one subject, before

@@ -235,3 +235,34 @@ Case ([0262](0262-when-rust-and-js-disagree.md)): N. Only `if`s that do
 nothing go. Held by `test/corpus/or_pattern_unreachable_alternative.rs`
 and `or_pattern_guard_fails_some.rs`, against native Rust, and mutation
 `decided-branch-left-empty` (`tidy/decided.ts`).
+
+## Amendment: MIR's split of one written test, and a panicking arm in its order (2026-11-16, #1972)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none observable; how
+the JS reads.
+
+- **One test MIR splits in two ways.** A `match` of a pair of options,
+  React's `trackPostpone`, tests the first option's two ways in turn,
+  `if (a == null) { .. } else if (a != null) { if (b != null) .. }`, and
+  `and tests` joined the second into `else if (a != null && b != null)`.
+  Both tests are of one condition the program wrote, so the rule above,
+  that an `if` the program wrote says what it says, kept the second. Now
+  an `if (!t)` first in the `else` of `if (t)`, of the same written
+  condition, is its `then` (`split_decided`): `else if (b != null)`. A
+  test the program writes itself, a condition of its own, `else if
+  path.is_some() && deep`, stays.
+- **A panicking arm in the arms' order.** `match slots { None => ..,
+  Root(_) => panic!(..), Indices(s) => s }` was `else if (typeof slots
+  !== "number") { .. } else { throw .. }` until `let else first` put its
+  check first, and only a later run of the chains stage, which a drop's
+  scope asked for, wrote it back as the arms are. Without that run, the
+  chain stayed `else { if (..) { throw .. } slots = .. }`. `written
+  chains` takes an `else` that's a lone `throw` written before the
+  `then` as an arm in its order now, `else if (typeof slots ===
+  "number") { throw .. } else { .. }`, as upstream writes it.
+
+Proof: corpus cases `match_of_a_pair_tests_each_once` (with a test the
+program writes, kept) and `match_arms_with_a_panic_written_in_order`,
+against native in both builds; the corpus's JS otherwise unchanged; the
+React port's regeneration. Mutations `split-test-tested-again`,
+`written-test-split-away` and `panicking-arm-unordered`.
