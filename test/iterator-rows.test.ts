@@ -5,7 +5,7 @@
 
 import { expect, test } from "bun:test";
 
-import { budgetOf, enclosingArm, entriesOf, named, naming, outsideFunctions, pattern, pickedOf, reached, rowsPerPart, type Hunk } from "../scripts/iteratorRows";
+import { budgetOf, enclosingArm, entriesOf, entryAdapters, named, naming, outsideFunctions, pattern, pickedOf, reached, rowsPerPart, type Hunk } from "../scripts/iteratorRows";
 import { adapterCalls } from "./iterator-matrix";
 
 const adapters = new Set(["map", "filter", "skip", "take", "fuse", "enumerate", "chain", "rev", "step_by", "zip", "take_while", "copied", "cloned"]);
@@ -178,4 +178,20 @@ test("a hunk outside any function names no rows: a comment after the last one, o
   expect(outsideFunctions(lines, 1, 3)).toBe(false);
   expect(outsideFunctions(lines, 1, 6)).toBe(true);
   expect(outsideFunctions(lines, -1, 0)).toBe(true);
+});
+
+// The filter_map flip's one entry, `"filter_map",` of in_place.rs's list
+// (009fdbb06): its words, `filter` and `map`, and what calls them,
+// `flatten`, ran 84,036 of the matrix's rows and 12,172 of the
+// conformance table's. A string entry names its adapter whole.
+test("a list's string entry names its adapter whole, never its words", () => {
+  const flip: Hunk = { file: "src/lower/body_queries/in_place.rs", at: 113, added: ['    "filter_map",'], removed: [], head: "", outside: true };
+  const entries = entriesOf(flip)!;
+  expect(entries.added).toEqual(['"filter_map"']);
+  const names = new Set([...adapters, "filter_map", "flatten", "flat_map"]);
+  expect(entryAdapters(entries, names)).toEqual(["filter_map"]);
+  // And through what calls it, nothing more: its words reached `flatten`.
+  expect([...reached(new Set(entryAdapters(entries, names)))]).toEqual(["filter_map"]);
+  // One no adapter is named whole by, its words as before.
+  expect(entryAdapters({ ...entries, added: ['"filter maps"'] }, names)).toBeUndefined();
 });

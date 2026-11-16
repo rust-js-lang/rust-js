@@ -35,4 +35,12 @@ export const mutations: Mutation[] = [
     replace: '  if (added.length === removed.length && added.every((line, i) => skeleton(line) === skeleton(removed[i]))) {\n',
     tests: ["test/iterator-rows.test.ts", "-t", "a list's entries alone decide"],
   },
+  {
+    name: "rows-of-an-entry-by-its-words",
+    breaks: "a list's entry `\"filter_map\"` names `filter` and `map` by its words, and through what calls them `flatten`: 84,036 matrix rows for one entry",
+    file: "scripts/iteratorRows.ts",
+    find: "  return whole.length > 0 ? whole : undefined;\n",
+    replace: "  return undefined;\n",
+    tests: ["test/iterator-rows.test.ts", "-t", "a list's string entry names its adapter whole"],
+  },
 ];

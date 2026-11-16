@@ -333,6 +333,18 @@ export function entriesOf(hunk: Hunk): Hunk | undefined {
   return { ...hunk, added: quoted(put.flatMap(strings)), removed: quoted(taken.flatMap(strings)), head: "", arm: undefined };
 }
 
+/** The adapters a list's entries name, `entriesOf`'s hunk: each string an
+ * entry adds or removes that's an adapter's name whole, `"filter_map"` the
+ * one adapter `filter_map`, never its words, `filter` and `map`, whose rows
+ * and, through what calls them, `flatten`'s, the filter_map flip's one
+ * entry ran, 84,036 of the matrix's and 12,172 of the conformance table's
+ * (009fdbb06, 2026-11-17). `undefined` where none is a name whole. */
+export function entryAdapters(entries: Hunk, adapters: Set<string>): string[] | undefined {
+  const names = [...entries.added, ...entries.removed].map((entry) => entry.replace(/^"|"$/g, ""));
+  const whole = [...new Set(names.filter((name) => adapters.has(name)))].sort();
+  return whole.length > 0 ? whole : undefined;
+}
+
 /** The rows of a table's cases each name is of: of adapters, those whose
  * chain has it; of consumers, those whose consumer it begins; generic, the
  * generic sources'. */
@@ -373,7 +385,8 @@ export function pickedOf(found: Hunk[], parts: number): Picked[] {
       // A list's entries alone, those its diff adds and removes.
       const entries = entriesOf(given);
       const hunk = entries ?? given;
-      const { adapters: a, consumers: c, generic, shared: sharedHunk, removes, decides } = named(hunk, adapters, consumers);
+      const { adapters: words, consumers: c, generic, shared: sharedHunk, removes, decides } = named(hunk, adapters, consumers);
+      const a = (entries !== undefined && hunk === entries ? entryAdapters(hunk, adapters) : undefined) ?? words;
       // What's taken away more than put back, or what decides each chain's
       // form, decides for each row of what it names: every one runs (#823,
       // #1780).
