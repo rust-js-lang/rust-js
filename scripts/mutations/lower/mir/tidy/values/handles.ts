@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     breaks:
       "MIR's handle on a `Cell` field is read where it's made, though set before it's read",
     file: "src/lower/mir/tidy/values/handles.rs",
-    find: "                let at_once = frozen.contains(name.word()) || read_at_once(stmts, k, name.word());\n",
+    find: "                let at_once = frozen.contains(name) || read_at_once(stmts, k, name.word());\n",
     replace: "                let at_once = true;\n",
     tests: ["test/lowering-cells.test.ts", "-t", "a Cell a let takes apart"],
   },
@@ -25,7 +25,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `let` of a `RefCell` field's `Ref` held across a call is read at each use, `store.chunks.get(key)`, its name lost (rd658)",
     file: "src/lower/mir/tidy/values/handles.rs",
-    find: "                let at_once = frozen.contains(name.word()) || read_at_once(stmts, k, name.word());\n",
+    find: "                let at_once = frozen.contains(name) || read_at_once(stmts, k, name.word());\n",
     replace: "                let at_once = read_at_once(stmts, k, name.word());\n",
     tests: ["test/corpus.test.ts", "-t", "^frozen_borrow_named.rs$"],
     snapshots: true,
@@ -35,7 +35,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a handle written through in a closure, `r.set(5)` of `let r = &context.value`, is read where it's made, `const r = context.value; .. r = 5`",
     file: "src/lower/mir/tidy/values/handles.rs",
-    find: "        *at_once &= !changed.contains(name);\n",
+    find: "        *at_once &= !changed.contains(name.word());\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^cell_alias_in_a_closure.rs$"],
   },
@@ -84,7 +84,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `match` arm's binding of a `Cell` field read once is held first, `const current = kind.current; return current;`, not `return kind.current;` (#532)",
     file: "src/lower/mir/tidy/values/handles.rs",
-    find: "        if *at_once && rereads && !written && js::mentions_in(body, name) == 1 {\n",
+    find: "        if *at_once && rereads && !written && js::mentions_of(body, name) == 1 {\n",
     replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^cell_binding_read_once.rs$"],
     snapshots: true,
@@ -94,8 +94,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `let` the program wrote of a cell field, `let Fiber { tag, type_, .. } = fiber;`, read once, loses its name, `fiber.tag` where it's read (#532)",
     file: "src/lower/mir/tidy/values/handles.rs",
-    find: "        if *at_once && rereads && !written && js::mentions_in(body, name) == 1 {\n",
-    replace: "        if *at_once && rereads && js::mentions_in(body, name) == 1 {\n",
+    find: "        if *at_once && rereads && !written && js::mentions_of(body, name) == 1 {\n",
+    replace: "        if *at_once && rereads && js::mentions_of(body, name) == 1 {\n",
     tests: ["test/lowering-field-cells.test.ts", "-t", "lets side by side are consts as written"],
   },
   {
@@ -132,8 +132,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`Cell::from_mut(&mut *state)` of a flattened state's guard given to a function, or `&mut *state` given to one that gives it back, is a handle on the class's object, `set value(value) { task = value; }`, which assigns the variable, not each key (#659)",
     file: "src/lower/mir/tidy/values/handles.rs",
-    find: "            && matches!(&of.kind, ExprKind::Var(v) if states.contains(v.word()))\n",
-    replace: "            && matches!(&of.kind, ExprKind::Var(v) if states.contains(v.word()) && v.word().is_empty())\n",
+    find: "            && matches!(&of.kind, ExprKind::Var(v) if states.contains(v))\n",
+    replace: "            && matches!(&of.kind, ExprKind::Var(v) if states.contains(v) && v.word().is_empty())\n",
     tests: ["test/corpus.test.ts", "-t", "^flattened_state_handed_on.rs$"],
   },
   {

@@ -203,7 +203,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     mir::VarDebugInfoContents::Place(place)
                         if place.projection.is_empty() && spans.contains(&info.source_info.span) =>
                     {
-                        Some(state.locals.names[place.local].word().to_string())
+                        Some(state.locals.names[place.local].clone())
                     }
                     _ => None,
                 })
@@ -211,7 +211,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         crate::lower::mir::tidy::LetNames {
             patterns: (self.let_pattern_bindings(body).into_iter())
-                .map(|(l, _)| state.locals.names[l].word().to_string())
+                .map(|(l, _)| state.locals.names[l].clone())
                 .collect(),
             named: names(&named),
             mutable: names(&mutable),

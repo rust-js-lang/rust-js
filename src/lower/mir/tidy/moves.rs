@@ -477,7 +477,7 @@ pub(super) fn leads(e: &Expr, name: &str, guard: Option<&Expr>, passes: &dyn Fn(
 /// field's own name first in the `then` of an `if` whose test read that
 /// field, read again where the statement after it reads it first, as a let
 /// chain's is (`tested_binding`, `read_again`; rd416, ADR 0866, amended).
-pub(super) fn tested_reads(stmts: &mut Vec<Stmt>, named: &IndexSet<String>) {
+pub(super) fn tested_reads(stmts: &mut Vec<Stmt>, named: &IndexSet<js::Name>) {
     for stmt in stmts.iter_mut() {
         if let StmtKind::If(test, then, _) = &mut stmt.kind
             && tested_binding(test, then, named)
@@ -506,12 +506,12 @@ pub(super) fn tested_reads(stmts: &mut Vec<Stmt>, named: &IndexSet<String>) {
 /// variable's property no getter may answer, which `test`, which does
 /// nothing, read: the place holds what the test read there, nothing run
 /// between.
-fn tested_binding(test: &Expr, then: &[Stmt], named: &IndexSet<String>) -> bool {
+fn tested_binding(test: &Expr, then: &[Stmt], named: &IndexSet<js::Name>) -> bool {
     let Some(StmtKind::Const(name, value)) = then.first().map(|s| &s.kind) else {
         return false;
     };
     let own_name = matches!(&value.kind, ExprKind::Member(_, property) if name.is(property));
-    if !own_name || named.contains(name.word()) || !place_read(value, name.word()) || test.has_effects() {
+    if !own_name || named.contains(name) || !place_read(value, name.word()) || test.has_effects() {
         return false;
     }
     let mut read = false;
@@ -529,7 +529,7 @@ fn tested_binding(test: &Expr, then: &[Stmt], named: &IndexSet<String>) -> bool 
 /// does nothing; the first statement reads `x` alone, once, nothing run
 /// before it, `return autoName`; and nothing else reads `x`, its branches
 /// nor what follows it.
-fn tested_read(stmt: &Stmt, rest: &[Stmt], named: &IndexSet<String>) -> Option<(Expr, (Read, Expr))> {
+fn tested_read(stmt: &Stmt, rest: &[Stmt], named: &IndexSet<js::Name>) -> Option<(Expr, (Read, Expr))> {
     let (StmtKind::Const(name, value), Some(StmtKind::If(test, then, _))) = (&stmt.kind, rest.first().map(|s| &s.kind))
     else {
         return None;
@@ -537,7 +537,7 @@ fn tested_read(stmt: &Stmt, rest: &[Stmt], named: &IndexSet<String>) -> Option<(
     // The property's own name, `const autoName = instance.autoName`, of a
     // pattern's binding, not a `let` the program wrote.
     let own_name = matches!(&value.kind, ExprKind::Member(_, property) if name.is(property));
-    if !own_name || named.contains(name.word()) {
+    if !own_name || named.contains(name) {
         return None;
     }
     let place = place_read(value, name.word());
@@ -577,11 +577,11 @@ fn tested_read(stmt: &Stmt, rest: &[Stmt], named: &IndexSet<String>) -> Option<(
 /// as upstream's is (ADR 0866, amended again). The names are Rust's, as
 /// `LetNames::ends_borrow` has them: `r#return` of `.return`, its JS name
 /// `return$`, and one of a field of a `#[rust_js::name]`, `_debugHookTypes`.
-pub(super) fn ended_borrows(stmts: &mut Vec<Stmt>, ends_borrow: &IndexSet<String>) {
+pub(super) fn ended_borrows(stmts: &mut Vec<Stmt>, ends_borrow: &IndexSet<js::Name>) {
     let mut i = 0;
     while i + 1 < stmts.len() {
         if let StmtKind::Const(name, value) = &stmts[i].kind
-            && ends_borrow.contains(name.word())
+            && ends_borrow.contains(name)
             && matches!(&value.kind, ExprKind::Member(..))
             && place_read(value, name.word())
             && stored_whole(&stmts[i + 1], name.word())
@@ -605,7 +605,7 @@ pub(super) fn ended_borrows(stmts: &mut Vec<Stmt>, ends_borrow: &IndexSet<String
 /// 2026-11-03, an exception to rd226's "a `let` the program wrote stays").
 /// Read twice, read after something else, named otherwise, or read past
 /// the next statement, it stays.
-pub(super) fn fallback_reads(stmts: &mut Vec<Stmt>, named: &IndexSet<String>) {
+pub(super) fn fallback_reads(stmts: &mut Vec<Stmt>, named: &IndexSet<js::Name>) {
     let mut i = 0;
     while i + 1 < stmts.len() {
         if !fallback_read(stmts, i, named) {
@@ -615,12 +615,12 @@ pub(super) fn fallback_reads(stmts: &mut Vec<Stmt>, named: &IndexSet<String>) {
 }
 
 /// `fallback_reads` of `stmts[at]`: whether it was read in place.
-fn fallback_read(stmts: &mut Vec<Stmt>, at: usize, named: &IndexSet<String>) -> bool {
+fn fallback_read(stmts: &mut Vec<Stmt>, at: usize, named: &IndexSet<js::Name>) -> bool {
     let (StmtKind::Const(name, value), Some(next)) = (&stmts[at].kind, stmts.get(at + 1)) else {
         return false;
     };
     let own_name = matches!(&value.kind, ExprKind::Member(_, property) if name.is(property));
-    if !named.contains(name.word()) || !own_name || js::mentions_of(&stmts[at + 1..], name) != 1 {
+    if !named.contains(name) || !own_name || js::mentions_of(&stmts[at + 1..], name) != 1 {
         return false;
     }
     let Some(read) = read_of(next, name.word(), false) else {
@@ -676,7 +676,7 @@ fn receiver_read(stmts: &mut Vec<Stmt>, at: usize, lets: &LetNames) -> bool {
     let StmtKind::Const(name, value) = &made[at].kind else {
         return false;
     };
-    if !lets.named.contains(name.word()) || lets.mutable.contains(name.word()) || js::mentions_of(rest, name) != 2 {
+    if !lets.named.contains(name) || lets.mutable.contains(name) || js::mentions_of(rest, name) != 2 {
         return false;
     }
     // The statement right after it, that call alone.

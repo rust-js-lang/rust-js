@@ -12,7 +12,7 @@ use super::*;
 /// more, `const [module, files] = tests;`.
 pub(super) fn destructured(
     stmts: &mut Vec<Stmt>,
-    (patterns, lets, user): (&IndexSet<String>, &IndexSet<String>, &IndexSet<js::Name>),
+    (patterns, lets, user): (&IndexSet<js::Name>, &IndexSet<js::Name>, &IndexSet<js::Name>),
     items: bool,
 ) {
     let mut i = 0;
@@ -43,7 +43,7 @@ pub(super) fn destructured(
         // program wrote as one, ends them, as MIR's temporary of one did,
         // `let port = channel.port2(); channel.port1()..` (ADR 0598,
         // amended).
-        if !made && let Some(k) = parts.iter().position(|(_, bound, ..)| lets.contains(bound.word())) {
+        if !made && let Some(k) = parts.iter().position(|(_, bound, ..)| lets.contains(bound)) {
             parts.truncate(k);
         }
         // Nor a name rust-js gave, a temporary's, `_2`, or of what an object
@@ -55,7 +55,7 @@ pub(super) fn destructured(
         }
         let count = parts.len();
         let indexed = parts.iter().all(|(p, ..)| p.is_ok());
-        let bound = parts.iter().all(|(_, name, ..)| patterns.contains(name.word()));
+        let bound = parts.iter().all(|(_, name, ..)| patterns.contains(name));
         let enough = count >= if made || bound { 1 } else { 2 };
         let pattern = pattern_of(&parts);
         let other = items && (made || !indexed || count < 2);

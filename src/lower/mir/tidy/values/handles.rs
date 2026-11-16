@@ -128,7 +128,7 @@ pub(in crate::lower::mir::tidy) fn read_handles(
     rerun: bool,
 ) {
     let frozen = &lets.frozen;
-    let mut handles: Vec<(String, Expr, bool, js::Storage)> = Vec::new();
+    let mut handles: Vec<(js::Name, Expr, bool, js::Storage)> = Vec::new();
     js::each_list(body, &mut |stmts| {
         for (k, stmt) in stmts.iter().enumerate() {
             if let StmtKind::Const(name, value) = &stmt.kind
@@ -143,8 +143,8 @@ pub(in crate::lower::mir::tidy) fn read_handles(
                         && (place.reads_same()
                             || matches!(&place.kind, ExprKind::Index(of, at) if of.reads_same() && at.reads_same())))
             {
-                let at_once = frozen.contains(name.word()) || read_at_once(stmts, k, name.word());
-                handles.push((name.to_string(), (**place).clone(), at_once, *storage));
+                let at_once = frozen.contains(name) || read_at_once(stmts, k, name.word());
+                handles.push((name.clone(), (**place).clone(), at_once, *storage));
             }
         }
     });
@@ -157,7 +157,7 @@ pub(in crate::lower::mir::tidy) fn read_handles(
             && let ExprKind::Member(of, key) = &place.kind
             && key == js::HELD
             && let ExprKind::Var(v) = &of.kind
-            && let Some((_, on, _, storage)) = handles.iter().find(|(name, ..)| v.is(name))
+            && let Some((_, on, _, storage)) = handles.iter().find(|(name, ..)| v == name)
             && *storage != js::Storage::AsGiven
         {
             *e = Expr {
@@ -170,7 +170,7 @@ pub(in crate::lower::mir::tidy) fn read_handles(
     // on, `Cell::from_mut(&mut *state)`'s or a call's that keeps it: that
     // handle, whose setter sets each key, not one on its place, whose
     // setter would assign the variable holding the class's object (#678).
-    let states: IndexSet<String> = (handles.iter())
+    let states: IndexSet<js::Name> = (handles.iter())
         .filter(|(.., storage)| matches!(storage, js::Storage::InPlace(_)))
         .map(|(name, ..)| name.clone())
         .collect();
@@ -178,7 +178,7 @@ pub(in crate::lower::mir::tidy) fn read_handles(
         if let ExprKind::Handle(place, js::Storage::AsGiven) = &e.kind
             && let ExprKind::Member(of, key) = &place.kind
             && key == js::HELD
-            && matches!(&of.kind, ExprKind::Var(v) if states.contains(v.word()))
+            && matches!(&of.kind, ExprKind::Var(v) if states.contains(v))
         {
             *e = Expr {
                 span: e.span,
@@ -190,7 +190,7 @@ pub(in crate::lower::mir::tidy) fn read_handles(
     // where its `value` is, read and written there, never read at once.
     let changed = js::Writes::of(body).changed;
     for (name, _, at_once, _) in &mut handles {
-        *at_once &= !changed.contains(name);
+        *at_once &= !changed.contains(name.word());
     }
     // A flattened state's written whole through it keeps it, whose setter
     // sets each key (ADR 1044), a closure's write too (#482).
@@ -202,25 +202,25 @@ pub(in crate::lower::mir::tidy) fn read_handles(
                 && key == js::HELD
                 && let ExprKind::Var(v) = &of.kind
             {
-                written_whole.insert(v.to_string());
+                written_whole.insert(v.clone());
             }
         }
     });
     // There, it's the handle itself where it's used, made of its place,
     // which reads the same: each whole write through it sets the object's
     // keys there (`handles_in_place`), each read is the object (#478).
-    let whole: Vec<(String, Expr)> = (handles.iter())
+    let whole: Vec<(js::Name, Expr)> = (handles.iter())
         .filter(|(name, _, _, storage)| matches!(storage, js::Storage::InPlace(_)) && written_whole.contains(name))
         .map(|(name, place, _, storage)| (name.clone(), Expr::stored_handle(place.clone(), *storage)))
         .collect();
     if !whole.is_empty() {
-        let of = |name: &str| whole.iter().find(|(n, _)| n == name).map(|(_, handle)| handle);
+        let of = |name: &js::Name| whole.iter().find(|(n, _)| n == name).map(|(_, handle)| handle);
         js::statement_lists(body, &mut |stmts| {
-            stmts.retain(|stmt| !matches!(&stmt.kind, StmtKind::Const(name, _) if of(name.word()).is_some()));
+            stmts.retain(|stmt| !matches!(&stmt.kind, StmtKind::Const(name, _) if of(name).is_some()));
         });
         let substitute = &mut |e: &mut Expr| {
             if let ExprKind::Var(v) = &e.kind
-                && let Some(handle) = of(v.word())
+                && let Some(handle) = of(v)
             {
                 *e = Expr {
                     span: e.span,
@@ -244,7 +244,7 @@ pub(in crate::lower::mir::tidy) fn read_handles(
         js::each_expr_mut(&mut rest, &mut |e| {
             if let ExprKind::Member(of, key) = &e.kind
                 && key == js::HELD
-                && matches!(&of.kind, ExprKind::Var(v) if v.is(name))
+                && matches!(&of.kind, ExprKind::Var(v) if v == name)
             {
                 *e = Expr::js_undefined();
             }
@@ -259,34 +259,34 @@ pub(in crate::lower::mir::tidy) fn read_handles(
         // => current.get()`, an arm's binding (#532). Not a `let`'s the
         // program wrote, `let Fiber { tag, .. } = fiber;`, which keeps its
         // name, as `lets side by side` does (ADR 0287, amended).
-        let written = lets.patterns.contains(name.as_str()) || lets.named.contains(name.as_str());
-        if *at_once && rereads && !written && js::mentions_in(body, name) == 1 {
+        let written = lets.patterns.contains(name) || lets.named.contains(name);
+        if *at_once && rereads && !written && js::mentions_of(body, name) == 1 {
             *at_once = false;
         }
         // A `&mut`'s handle on a nullable place nothing reads, its place
         // written as a path where it's used (`nulled::unhandled`, #541): none.
-        if matches!(storage, js::Storage::NullForNone) && js::mentions_in(body, name) == 0 {
+        if matches!(storage, js::Storage::NullForNone) && js::mentions_of(body, name) == 0 {
             *at_once = false;
         }
-        js::mentions_in(&rest, name) == 0 && (*at_once || rereads)
+        js::mentions_of(&rest, name) == 0 && (*at_once || rereads)
     });
     if handles.is_empty() {
         return;
     }
-    let read = |name: &str| (handles.iter()).find(|(h, ..)| h == name);
+    let read = |name: &js::Name| (handles.iter()).find(|(h, ..)| h == name);
     // What's written through one, as its storage stores it: a nullable
     // field's `None`, `null` (ADR 0791).
     written_as_stored(body, &|of| match &of.kind {
-        ExprKind::Var(v) => read(v.word()).map(|(.., storage)| *storage),
+        ExprKind::Var(v) => read(v).map(|(.., storage)| *storage),
         _ => None,
     });
     js::statement_lists(body, &mut |stmts| {
         stmts.retain(
-            |stmt| !matches!(&stmt.kind, StmtKind::Const(name, _) if read(name.word()).is_some_and(|(_, _, at_once, _)| !at_once)),
+            |stmt| !matches!(&stmt.kind, StmtKind::Const(name, _) if read(name).is_some_and(|(_, _, at_once, _)| !at_once)),
         );
         for stmt in stmts.iter_mut() {
             if let StmtKind::Const(name, value) = &mut stmt.kind
-                && read(name.word()).is_some()
+                && read(name).is_some()
                 && let ExprKind::Handle(place, _) = &value.kind
             {
                 *value = (**place).clone();
@@ -297,7 +297,7 @@ pub(in crate::lower::mir::tidy) fn read_handles(
         if let ExprKind::Member(of, key) = &e.kind
             && key == js::HELD
             && let ExprKind::Var(v) = &of.kind
-            && let Some((_, place, at_once, _)) = read(v.word())
+            && let Some((_, place, at_once, _)) = read(v)
         {
             let read = match at_once {
                 true => Expr::var(v),

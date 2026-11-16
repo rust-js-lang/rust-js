@@ -438,7 +438,7 @@ pub(super) fn and_tests(
     stmts: &mut Vec<Stmt>,
     conditions: &[(js::Span, js::Span)],
     switches: &[Switch],
-    own_field: &IndexSet<String>,
+    own_field: &IndexSet<js::Name>,
     guards: &[super::super::hints::Guard],
 ) {
     guards_before_others(stmts, conditions);
@@ -500,8 +500,7 @@ pub(super) fn and_tests(
         // rd706).
         let kept = bound - (made - then.len());
         for at in (0..kept).rev() {
-            if matches!(&then[at].kind, StmtKind::Const(name, _) if is_temporary(name) || own_field.contains(name.word()))
-            {
+            if matches!(&then[at].kind, StmtKind::Const(name, _) if is_temporary(name) || own_field.contains(name)) {
                 read_again(then, at);
             }
         }

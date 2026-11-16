@@ -60,22 +60,22 @@ pub(super) struct Named {
 /// What a body's `let`s bind, each by its name.
 pub(super) struct LetNames {
     /// What a struct or tuple pattern binds, `let Point { x, y } = p;`.
-    pub(super) patterns: IndexSet<String>,
+    pub(super) patterns: IndexSet<js::Name>,
     /// What a name alone binds, `let x = p.x;`.
-    pub(super) named: IndexSet<String>,
+    pub(super) named: IndexSet<js::Name>,
     /// Of those, `let mut`'s: what the program said it changes (rd226b).
-    pub(super) mutable: IndexSet<String>,
+    pub(super) mutable: IndexSet<js::Name>,
     /// Of those, one of a `RefCell` field's value cloned, named as the field, `let child =
     /// current.child.borrow().clone();`: a `let` that ends a borrow, which
     /// reads as its value written in the statement right after it where
     /// only that reads it (ADR 0866, amended).
-    pub(super) ends_borrow: IndexSet<String>,
+    pub(super) ends_borrow: IndexSet<js::Name>,
     /// Of those, one of a shared borrow, a `&T` or a `RefCell`'s `Ref<T>`,
     /// of a `T` with no cell of its own (`Freeze`), `let chunks =
     /// store.chunks.borrow();`: what it's to can't change while it's held,
     /// so a handle on its place reads, where it's made, what each of its
     /// uses would (rd658).
-    pub(super) frozen: IndexSet<String>,
+    pub(super) frozen: IndexSet<js::Name>,
     /// What an `if let`'s or a let chain's pattern binds of its scrutinee's
     /// whole payload, named as the field the scrutinee reads, by their Rust
     /// names: `debug_task` of `let Some(debug_task) =
@@ -83,7 +83,7 @@ pub(super) struct LetNames {
     /// so a chain's binding the test read is read again in its place
     /// (`moves::read_again`); `prev_state` of `current.memoized_state` is
     /// the program's name, which stays (ADR 0866, amended, rd706).
-    pub(super) own_field: IndexSet<String>,
+    pub(super) own_field: IndexSet<js::Name>,
     /// Where each `let` of a drop guard, a value of a type with a `Drop` of
     /// its own, is written, and where the block whose end drops it ends:
     /// the `try` its drop ends starts at the `let` (ADR 0865, amended).

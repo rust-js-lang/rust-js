@@ -60,9 +60,9 @@ export const mutations: Mutation[] = [
     breaks:
       "`let payload = &lazy.payload; let init = lazy.init;` is `const { _payload: payload, _init: init } = lazy;`",
     file: "src/lower/mir/tidy/destructuring.rs",
-    find: "        if !made && let Some(k) = parts.iter().position(|(_, bound, ..)| lets.contains(bound.word())) {\n",
+    find: "        if !made && let Some(k) = parts.iter().position(|(_, bound, ..)| lets.contains(bound)) {\n",
     replace:
-      "        if false && let Some(k) = parts.iter().position(|(_, bound, ..)| lets.contains(bound.word())) {\n",
+      "        if false && let Some(k) = parts.iter().position(|(_, bound, ..)| lets.contains(bound)) {\n",
     tests: ["test/lowering-parts.test.ts", "-t", "a let of a part"],
   },
   {

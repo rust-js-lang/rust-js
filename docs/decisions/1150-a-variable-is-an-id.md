@@ -800,3 +800,16 @@ name keeps the plain spelling by the rule above: flattened_state_handed_on's
 native Rust prints. Nothing else moved: the corpus, the snapshots, std,
 the guide and React's port are as they were.
 
+## Names are ids, step 3's third slice: what a body's `let`s bind, by id (2026-11-16)
+
+Tidy's `LetNames`, the variables a body's `let` patterns bind, those its
+`let`s name, the mutable, those whose borrow ends, the frozen and those of
+an own field, hold each local's `Name`, and the passes asking them,
+`destructured`, `tested_reads`, `ended_borrows`, `fallback_reads`,
+`receiver_reads`, `and_tests` and `read_handles`, ask by its id; and
+`read_handles` keeps each handle by its `Name`, not its word, from where
+it's found to where it's read. Byte-identical: the corpus, the snapshots,
+std, the guide and React's port are as they were. One ask by the word is
+left there, `js::Writes`' changed variables, a set of words of `js::writes`'
+own, which step 3 moves with that module.
+
