@@ -313,6 +313,42 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .flatten()
     }
 
+    /// Whether a trait fact of `of`, `TrustedRandomAccessNoCoerce`'s, may be
+    /// `true` as `type_fact_value` gives it, here or at run time: where
+    /// rustc says it here, that; of a type whose fact is what it holds',
+    /// `Cloned<I>`'s, `I`'s (`held_facts`), each's; of a type parameter,
+    /// where its caller gives it, `IRandomAccess`. One no caller gives is
+    /// never true here (ADR 0975, #1982).
+    /// It walks `of` as `type_fact_value` does, in its order, by the same
+    /// owners, so the two never answer apart: a type parameter's, its
+    /// caller's; one whose fact is what it holds' (`held_instead`), each's;
+    /// else rustc's here, `true` where `type_fact_value` is, and never
+    /// where it refuses as none gives it.
+    pub(in crate::lower) fn trait_fact_may_hold(&self, of: Ty<'tcx>, fact: TypeFact) -> bool {
+        let Some(fact_trait) = crate::lower::recognition::fact_trait(self.tcx, fact) else {
+            return false;
+        };
+        // One a caller gives, a type parameter's, its caller's, which rustc
+        // here takes for no.
+        if self.given_fact_of(of, fact).is_some() {
+            return true;
+        }
+        if let Some(held) = self.held_instead(of, fact) {
+            return held.iter().all(|&(held, fact)| self.trait_fact_may_hold(held, fact));
+        }
+        self.recognition().trait_holds(of, fact_trait) == Some(true)
+    }
+
+    /// Of a type whose fact is the facts of what it holds (`held_facts`),
+    /// those, where they're others' than its own: `TrustedLen` of a `&mut
+    /// I`, `I`'s; `TrustedRandomAccessNoCoerce` of a `Cloned<I>`, `I`'s.
+    /// The one walk `type_fact_value` makes a fact's value by and
+    /// `trait_fact_may_hold` asks it of (ADR 0975).
+    fn held_instead(&self, of: Ty<'tcx>, fact: TypeFact) -> Option<Vec<(Ty<'tcx>, TypeFact)>> {
+        let held = crate::lower::recognition::held_facts(self.tcx, self.typing_env, of, fact);
+        held.first().is_some_and(|&(first, _)| first != of).then_some(held)
+    }
+
     /// A fact of `of` (ADR 0145): its size or alignment, as rustc works it out
     /// for the wasm32 target, or its name; of a type parameter, the one this
     /// function was given for it.
@@ -419,11 +455,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // Of a type whose fact is the facts of what it holds, `TrustedLen` of
         // a `&mut I`, `I`'s, each's (ADR 0975).
-        if let [(held, _), ..] = crate::lower::recognition::held_facts(self.tcx, self.typing_env, of, fact)[..]
-            && held != of
-        {
+        if let Some(held) = self.held_instead(of, fact) {
             let mut holds: Option<Expr> = None;
-            for (held, fact) in crate::lower::recognition::held_facts(self.tcx, self.typing_env, of, fact) {
+            for (held, fact) in held {
                 let value = self.type_fact_value(held, fact, span)?;
                 holds = Some(match holds {
                     Some(both) => Expr::bin(crate::js::Op::And, both, value),

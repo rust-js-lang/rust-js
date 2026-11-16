@@ -168,3 +168,47 @@ drop) against native Rust, and the mutations
 `other-trait-bound-taken-for-none` and `built-trait-fact-unrelayed`.
 itertools' probe now compiles whole, nothing refused, and its JS fails at
 run time in `chunk_by`, `Groupbylazy.new$ is not a function` (#1390).
+
+## Amendment: a side's reader by index is there exactly where its fact may be true (2026-11-16, #1982)
+
+Take generic code's `src.cloned().zip(10..13)`, with `src` an `I` that
+its caller makes a slice's, moved through generic code so it's std's
+struct. std's zip of it takes the index path by the caller's facts,
+`IRandomAccess` of `I`. Its `Iterator` dictionary had a reader by index,
+`getUnchecked`, only where the side is `TrustedRandomAccess` where it's
+compiled (`implements_trait`). `Cloned<I>` is that only where `I` is, and
+only the caller can say whether `I` is. So std's zip read the struct as a
+range, `start + i`, and each pair's first item was `NaN` where native
+Rust pairs the source's. That was the std build's wrong answer, found by
+the copy matrix.
+
+**The one rule: the reader is present exactly where the side's
+`TrustedRandomAccessNoCoerce` fact, by which std's zip takes the index
+path, may be `true`.** `trait_fact_may_hold` in
+`src/lower/std_types/number/generic.rs` answers that, beside
+`type_fact_value`, which makes the fact. For a type parameter, the answer
+is whether its caller gives the fact (`IRandomAccess`); rustc takes a bare
+parameter for no. For a type whose fact is what it holds' (`held_facts`:
+`Cloned<I>`'s is `I`'s, a `Zip`'s is each side's), every held part's fact
+must be able to hold. Otherwise it's what rustc says where it's compiled.
+
+A fact no caller gives is never true, so std's own generic bodies, which
+are given none of these facts, get no reader. Building one there would
+step a parameter nothing gives (std's package refused it). A true fact
+never goes without its reader: `type_fact_value` already refuses where
+std's zip would read by index what rust-js can't read so.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's behavior is kept. Held by the corpus case
+`zip_of_a_generic_sources_copies_moved_through_generic_code` against
+native Rust in both builds, one of the iterator forms' few. Its rows, each
+moved through generic code:
+- a `cloned()` and a `copied()` zipped with a range;
+- that zip zipped again;
+- an `enumerate()` of a `copied()` zipped;
+- a range zipped with a `copied()`, on the right.
+
+Also held by the copy matrix's `cloned.map.zip`, `copied.map.zip` and
+`copied.enumerate.zip` rows, and the mutations
+`index-reader-only-where-generic-code-knows` and
+`random-access-of-a-param-taken-here`.

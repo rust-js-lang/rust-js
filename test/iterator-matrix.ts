@@ -1253,13 +1253,13 @@ export function segments(stdout: string): Map<string, string> {
 const header = `// The iterator matrix's cases (ADR 1090), the conformance table's (ADR
 // 1092), the points table's (#817), the unwind table's (#854), the
 // formatting grid's (#941), the numbers grid's (#940), the async table's
-// (#942) and the consumer net's that don't run as native Rust does yet,
-// each under its issue, \`#<issue>
+// (#942), the consumer net's and the copy matrix's that don't run as
+// native Rust does yet, each under its issue, \`#<issue>
 // <title>\`: a line a build, \`plain\` or \`std\` of the matrix's,
 // \`conformance:plain\` or \`unwind:std\` of a table's, the numbers of its
 // cases in \`allCases()\`, \`conformanceCases()\`, \`pointsCases()\`,
 // \`unwindCases()\`, \`formatCases()\`, \`numberCases()\`,
-// \`asyncCases()\` or \`consumerCases()\` as ranges. Each listed
+// \`asyncCases()\`, \`consumerCases()\` or \`copyCases()\` as ranges. Each listed
 // must still fail, so the list only shrinks: \`bun test/iterator-matrix.ts
 // take-off\` takes off what the last runs found fixed. Its numbers are of
 // each table's generator version below; a change to a table's cases makes

@@ -356,4 +356,12 @@ export const mutations: Mutation[] = [
     replace: "        if !matches!(t.kind(), ty::Param(_)) {\n",
     tests: ["test/corpus.test.ts", "-t", "^type_name_of_an_associated_type_within.rs$"],
   },
+  {
+    name: "random-access-of-a-param-taken-here",
+    breaks: "whether a type parameter's `TrustedRandomAccessNoCoerce` may hold is asked of rustc here, which takes it for no, not of its caller's `IRandomAccess`: generic code's `cloned()` of its source gets no reader by index, and std's zip of it reads `NaN` (#1982)",
+    file: "src/lower/std_types/number/generic.rs",
+    find: "        if self.given_fact_of(of, fact).is_some() {\n            return true;\n        }\n",
+    replace: "",
+    tests: ["test/iterator-forms.test.ts", "-t", "^zip_of_a_generic_sources_copies_moved_through_generic_code"],
+  },
 ];

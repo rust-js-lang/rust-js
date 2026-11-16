@@ -353,13 +353,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         }
         // Of one std reads by index, its reader of an item at `i`, which
-        // std's zip of it asks where it's compiled (ADR 0975).
+        // std's zip of it asks where it's compiled (ADR 0975): present
+        // exactly where its `TrustedRandomAccessNoCoerce` fact, by which
+        // std's zip takes the index path, may be `true`, here or as its
+        // caller says, `Cloned<I>`'s of a caller's `IRandomAccess`
+        // (`trait_fact_may_hold`, #1982).
         if crate::lower::recognition::zips_by_index_compiled(self.tcx)
-            && crate::lower::recognition::fact_trait(
-                self.tcx,
-                crate::lower::recognition::TypeFact::RandomAccessNoCoerce,
-            )
-            .is_some_and(|random_access| self.recognition().implements_trait(ty, random_access))
+            && self.trait_fact_may_hold(ty, crate::lower::recognition::TypeFact::RandomAccessNoCoerce)
             && let Some(Some(reader)) = self.index_reader(ty, span)?
         {
             props.push(js::Prop::Field("getUnchecked".into(), reader));

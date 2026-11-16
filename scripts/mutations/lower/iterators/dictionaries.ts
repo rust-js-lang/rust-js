@@ -3,6 +3,15 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "index-reader-only-where-generic-code-knows",
+    breaks:
+      "generic code's `cloned()` or `copied()` of its source, which only its caller can say is `TrustedRandomAccess`, is given no reader by index, so std's compiled zip of it, by index where the caller's source is a slice's, reads `start` of the struct: each pair's first item `NaN` (#1982)",
+    file: "src/lower/iterators/dictionaries.rs",
+    find: "            && self.trait_fact_may_hold(ty, crate::lower::recognition::TypeFact::RandomAccessNoCoerce)\n",
+    replace: "            && self.trait_fact_may_hold(ty, crate::lower::recognition::TypeFact::RandomAccessNoCoerce)\n            && !rustc_middle::ty::TypeVisitableExt::has_param(&ty)\n",
+    tests: ["test/iterator-forms.test.ts", "-t", "^zip_of_a_generic_sources_copies_moved_through_generic_code"],
+  },
+  {
     name: "index-reader-array-first",
     breaks:
       "a compiled `copied()` of a slice is read by index as the array's `$iter` its recognizers make, not by std's compiled reader: `$getUnchecked` reads `start` of the struct, `NaN` (ADR 0975)",

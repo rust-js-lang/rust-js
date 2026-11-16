@@ -53,6 +53,9 @@ const few = [
   // Std's `zip` given a `&I` whose `IntoIterator` is its caller's bound,
   // whose dictionary it's given (#1264).
   "into_iterator_of_a_reference_given_to_generic_code.rs",
+  // And std's zip by index of generic code's `cloned()` of its source,
+  // read by the reader its dictionary is given (#1982).
+  "zip_of_a_generic_sources_copies_moved_through_generic_code.rs",
   "held_adapters_by_ref.rs",
   "adapter_drops.rs",
   "own_fold_and_nth.rs",
