@@ -14,8 +14,8 @@ export const mutations: Mutation[] = [
     name: "try-processed-entry-given-no-drop",
     breaks: "a std `Option`'s or `Result`'s `fromIter` entry of a collection whose `from_iter` runs code gives the `GenericShunt` it passes no drop, so what's left of what generic code gave it drops after that `from_iter`, not as its loop ends (#1588)",
     file: "src/lower/traits/dictionaries/collecting.rs",
-    find: "            let lent = shunted.then(|| cx.lend_drop_param(\"dropI\".into(), param));\n",
-    replace: "            let lent = false.then(|| cx.lend_drop_param(\"dropI\".into(), param));\n",
+    find: "            let lent = shunted.then(|| cx.lend_drop_param(drop_i.clone(), param));\n",
+    replace: "            let lent = false.then(|| cx.lend_drop_param(drop_i.clone(), param));\n",
     tests: ["test/corpus.test.ts", "-t", "^fallible_collect_into_own_from_iter.rs$"],
   },
   {

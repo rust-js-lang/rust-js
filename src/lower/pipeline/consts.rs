@@ -30,6 +30,18 @@ pub(super) struct Consts<'b, 'tcx> {
 
 /// What the crate's constants and statics, `consts`, are, of their
 /// `initializers`, as `Consts` holds them.
+/// The name of the crate's `const` `key`, spelled `word`, of where it's
+/// placed: written in a function's body (`local`), its body's, the item's own
+/// (`js::Name::item`); a namespace's or a class's (`owned`), a field's name;
+/// else its module's top, the module's (`js::Name::module`, ADR 1150).
+pub(super) fn const_name(word: &str, key: LocalDefId, local: bool, owned: bool) -> js::Name {
+    match (local, owned) {
+        (true, _) => js::Name::item(word, key.local_def_index.as_u32(), None),
+        (false, true) => word.into(),
+        (false, false) => js::Name::module(word),
+    }
+}
+
 pub(super) fn lower_consts<'b, 'tcx>(
     tcx: TyCtxt<'tcx>,
     (consts, initializers): (&[LocalDefId], &'b [Body<'tcx>]),
@@ -163,8 +175,9 @@ pub(super) fn lower_consts<'b, 'tcx>(
             _ => value,
         };
         let info = &fns[&named.to_def_id()];
+        let local = local_consts.contains_key(&named.to_def_id());
         let constant = js::Const {
-            name: info.name.clone().into(),
+            name: const_name(&info.name, named, local, info.owner.is_some()),
             value,
             mutable: false,
             fields: js::Fields::default(),
@@ -172,14 +185,10 @@ pub(super) fn lower_consts<'b, 'tcx>(
             span: sources.item_span(tcx, named),
         };
         // One written in a function's body, where it's written there.
-        match local_consts.contains_key(&named.to_def_id()) {
+        match local {
             true => local_const_holes.push((named.to_def_id(), constant)),
             false if info.owner.is_some() => _ = owned_consts.insert(named.to_def_id(), constant),
-            // At the module's top, its name the module's (ADR 1150).
-            false => const_items.entry(info.module).or_default().push(js::Const {
-                name: js::Name::module(&info.name),
-                ..constant
-            }),
+            false => const_items.entry(info.module).or_default().push(constant),
         }
     }
     Consts {

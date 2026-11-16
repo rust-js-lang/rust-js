@@ -254,7 +254,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/writer.rs",
     find: "            (None, Some(captures)) => match self.captured_formatter(body, captures)? {\n",
     replace:
-      "            (None, Some(_)) => match None::<(FieldIdx, String)> {\n",
+      "            (None, Some(_)) => match None::<(FieldIdx, js::Name)> {\n",
     tests: [
       "test/corpus.test.ts",
       "-t",

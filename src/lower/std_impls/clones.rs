@@ -275,16 +275,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let may_panic = |this: &Self, ty: Option<Ty<'tcx>>| ty.is_some_and(|t| this.clone_may_panic(t));
         let (params, item, entry) = if set {
-            (vec!["item".into()], cloned(self, &"item".into(), key)?, key_ty)
+            let item = js::Name::declared("item".to_string());
+            let cloned = cloned(self, &item, key)?;
+            (vec![item.into()], cloned, key_ty)
         } else {
             let parts = [
                 (key_ty, may_panic(self, key)),
                 (value_ty.expect("a map's"), may_panic(self, value)),
             ];
             let param = self.unspelled("value");
-            let named = [("key".into(), key), (param.clone(), value)];
+            let key_name = js::Name::declared("key".to_string());
+            let named = [(key_name.clone(), key), (param.clone(), value)];
             let (pair, made) = self.parts_in_turn(&parts, span, |cx, i| cloned(cx, &named[i].0, named[i].1))?;
-            let pattern = js::Pattern::Array(vec![Some("key".into()), Some(param.clone().into())]);
+            let pattern = js::Pattern::Array(vec![Some(key_name.into()), Some(param.clone().into())]);
             let entry = Ty::new_tup(self.tcx, &[key_ty, parts[1].0]);
             (vec![pattern], Self::in_turn(Expr::array(pair), made), entry)
         };

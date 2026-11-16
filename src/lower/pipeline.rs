@@ -534,9 +534,14 @@ pub fn lower_crate<'tcx>(
         }
         // A function's scope struct's methods, functions declared in it, by
         // names none of its variables hide (ADR 1043).
-        let scope_functions: IndexMap<DefId, String> = (scopes.of_function(def_id))
+        let scope_functions: IndexMap<DefId, js::Name> = (scopes.of_function(def_id))
             .flat_map(|scope| scope.methods.iter())
-            .map(|&method| (method, crate::names::fresh_in(&mut names, &fns[&method].name)))
+            .map(|&method| {
+                (
+                    method,
+                    js::Name::declared(crate::names::fresh_in(&mut names, &fns[&method].name)),
+                )
+            })
             .collect();
         let mut cx = contexts::fn_cx(
             (&shared, &settled),
@@ -806,8 +811,9 @@ pub fn lower_crate<'tcx>(
                     _ => value,
                 };
                 let info = &fns[&key.to_def_id()];
+                let local = local_consts.contains_key(&key.to_def_id());
                 let constant = js::Const {
-                    name: info.name.clone().into(),
+                    name: consts::const_name(&info.name, key, local, info.owner.is_some()),
                     value,
                     mutable: false,
                     // A namespace's, its module's exports (ADR 1037, amended).
@@ -817,14 +823,10 @@ pub fn lower_crate<'tcx>(
                         || called_from_elsewhere.contains(&key.to_def_id()),
                     span: sources.item_span(tcx, key),
                 };
-                match local_consts.contains_key(&key.to_def_id()) {
+                match local {
                     true => local_const_holes.push((key.to_def_id(), constant)),
                     false if info.owner.is_some() => _ = owned_consts.insert(key.to_def_id(), constant),
-                    // At the module's top, its name the module's (ADR 1150).
-                    false => pass.local_consts.entry(info.module).or_default().push(js::Const {
-                        name: js::Name::module(&info.name),
-                        ..constant
-                    }),
+                    false => pass.local_consts.entry(info.module).or_default().push(constant),
                 }
                 if lowered.jsx {
                     pass.jsx.insert(module);
@@ -885,7 +887,7 @@ pub fn lower_crate<'tcx>(
                         js::visit_stmts(&function.body, &mut |name| {
                             read.insert(name.to_owned());
                         });
-                        function.name = super::fresh_in(&mut read, function.name.word()).into();
+                        function.name = js::Name::declared(super::fresh_in(&mut read, function.name.word()));
                         function.export = false;
                         pass.holes.functions.insert(def_id.index.as_u32(), function);
                     }

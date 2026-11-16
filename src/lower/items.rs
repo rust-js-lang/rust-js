@@ -272,6 +272,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         }
         let copied = copy.is_some();
+        let copy_at = copy.as_ref().map(|&(at, _)| at);
         let name = copy.map_or_else(|| target.name.clone(), |(_, name)| name);
         let export = target.owner.as_ref().unwrap_or(&name);
         let symbol = |export: &str| Expr {
@@ -291,10 +292,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Expr::member(symbol(js::NAMESPACE), exported)
         } else if target.module != self.module {
             symbol(export)
-        } else if self.krate.at_module_top(def_id) {
-            Expr::module(export)
         } else {
-            Expr::var(export)
+            Expr::var(self.krate.item_name(def_id, copy_at, export))
         };
         // A class's constant, its prototype's (ADR 0761).
         let reference = if namespaced {

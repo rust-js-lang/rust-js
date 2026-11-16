@@ -510,3 +510,40 @@ classes, `std_types`, display, combinators and `std_impls`; m3-max tidy):
 The corpus, the snapshots, std and the port are as they were. The probe
 counts 3,454 uses of names made of text left in all areas, of 7,027 after
 part 2.
+
+## Names are ids, step 1's third part, second batch: a body's items (2026-11-16)
+
+A crate function or `const` written in a function's body, or a function a
+block makes and gives, is declared there by the item's own lowering and
+read by the body's: two lowerings, neither of which holds the other's
+`Name`, and nothing moved with its names, so no remap (`js::rebound_into`)
+applies. Its name is the item's, `Name::item(word, item, copy)`, of its
+`DefIndex` and of the copy lowering emits of it, `None` of the item
+itself (the lead's decision, 2026-11-16): each lowering makes it of the
+item it knows, so the declaration and its reads are one variable, and two
+instances of one item, a generic inner function's copies, are two.
+`CrateFacts::item_name` is the one place that asks which form an item's
+name has, the module's at its top (part 2) or its body's, and the
+declaration (`mir.rs`), its reads (`items.rs`) and a body's `const`s
+(`pipeline`) ask it. A scope struct's methods, declared and read by one
+lowering, the function's, are named once there, `Name::declared`, and
+cloned.
+
+When names compare by id, `js::validate` refuses two declarations of one
+item's name in one scope, as it refuses two of one word today
+(`Problem::Twice`). Corpus case `inner_generic_fn_of_two_types` holds a
+generic inner function called with two types in one body, one function
+given each type's dictionary, beside a plain one and one read from a
+closure, against native Rust. A copy lowering emits of one, a dictionary
+given in place (ADR 0051), is keyed by its copy, so it's never its item.
+
+The rest of lowering's names are traced too: a parameter pattern's names
+and a scope method's `self` are the bindings' own (`ParamPattern`,
+`scope_self`), a closure's taken captures and a formatter it captured keep
+their `Name`s, a writer's `options` is read through its parameter's, and
+what a pass spells itself, `_`, `it`, `item`, `key`, `result`, `from`,
+`dropI`, a variant's positional parameters, a named function expression's
+own name, is made once, `Name::declared`, and cloned. The probe of part 1
+counts no name of an item's made of text in the corpus as lowered, tidied
+included: step 1 is done, the flip of `Name: Eq` to ids next, whose
+output is judged as this ADR's "Names are ids" section says.

@@ -53,7 +53,10 @@ pub(super) fn indexed_callback(items: &Expr, name: &str, f: Expr) -> Result<(Exp
             .expect("a name")
     };
     let mut params = leading.to_vec();
-    params.push(item.clone().unwrap_or_else(|| unread().into()));
+    params.push(
+        item.clone()
+            .unwrap_or_else(|| js::Pattern::Name(js::Name::declared(unread()))),
+    );
     params.extend(index.map(js::Pattern::Name));
     Ok((
         (**source).clone(),

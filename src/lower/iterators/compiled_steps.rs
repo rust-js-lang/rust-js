@@ -589,13 +589,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 /// `size_hint` or std's, which std's `len()` checks is exact (`$exactLen`,
 /// ADR 0456): `(it) => $exactLen(hint(it))`.
 fn exact_len_by(hint: &Option<Expr>) -> Expr {
+    let it = js::Name::declared("it".to_string());
     let hint_of = match hint {
-        Some(hint) => Expr::call(hint.clone(), vec![Expr::var("it")]),
+        Some(hint) => Expr::call(hint.clone(), vec![Expr::var(&it)]),
         None => Expr::array(vec![Expr::int(0), Expr::js_undefined()]),
     };
     let exact = Expr::call_helper("$exactLen", vec![hint_of]);
-    Expr::arrow(
-        vec!["it".into()],
-        vec![StmtKind::Return(Some(exact)).at(js::Span::NONE)],
-    )
+    Expr::arrow(vec![it.into()], vec![StmtKind::Return(Some(exact)).at(js::Span::NONE)])
 }

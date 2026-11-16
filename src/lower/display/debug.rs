@@ -714,14 +714,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Ok(self.pretty_or(pretty, plain, "{", mapped, "}"))
             }
             ty::Adt(_, args) if std(StdItem::Result) => {
-                let inside = || crate::js::result::held(Expr::var("result"));
+                let result_name = js::Name::declared("result".to_string());
+                let inside = || crate::js::result::held(Expr::var(&result_name));
                 let ok = self.debug_string_with(inside(), args.type_at(0), span, pretty)?;
                 let err = self.debug_string_with(inside(), args.type_at(1), span, pretty)?;
                 let f = Expr::arrow(
-                    vec!["result".into()],
+                    vec![result_name.clone().into()],
                     vec![
                         StmtKind::Return(Some(Expr::cond(
-                            result::is(Expr::var("result"), true),
+                            result::is(Expr::var(&result_name), true),
                             self.pretty_or(
                                 pretty,
                                 join(vec![Expr::str("Ok("), ok.clone(), Expr::str(")")]),

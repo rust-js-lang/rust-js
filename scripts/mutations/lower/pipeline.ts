@@ -252,7 +252,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a named function expression reading what's named as it is reads itself: `<Count>` in `Count` renders the unmemoized function",
     file: "src/lower/pipeline.rs",
-    find: "                        function.name = super::fresh_in(&mut read, function.name.word()).into();\n",
+    find: "                        function.name = js::Name::declared(super::fresh_in(&mut read, function.name.word()));\n",
     replace: "",
     tests: [
       "test/jsx-children.test.ts",
@@ -415,8 +415,8 @@ export const mutations: Mutation[] = [
     name: "scope-function-names-unreserved",
     breaks: "a scope struct's method's function is named as its method, which a variable of its function, `resolve`, hides",
     file: "src/lower/pipeline.rs",
-    find: ".map(|&method| (method, crate::names::fresh_in(&mut names, &fns[&method].name)))",
-    replace: ".map(|&method| (method, fns[&method].name.clone()))",
+    find: ".map(|&method| {\n                (\n                    method,\n                    js::Name::declared(crate::names::fresh_in(&mut names, &fns[&method].name)),\n                )\n            })",
+    replace: ".map(|&method| {\n                (\n                    method,\n                    js::Name::declared(fns[&method].name.clone()),\n                )\n            })",
     tests: ["test/corpus.test.ts", "-t", "scope_struct"],
   },
   {

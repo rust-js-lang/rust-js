@@ -548,7 +548,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             (None, Some(captures)) => match self.captured_formatter(body, captures)? {
                 Some((field, name)) => {
                     state.writes_captured = true;
-                    (formatter_aliases(body, &[], Some(field)), name.into())
+                    (formatter_aliases(body, &[], Some(field)), name)
                 }
                 None => return Ok(None),
             },
@@ -569,7 +569,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A writer's `Formatter`'s options, `options` its parameter of them,
     /// where the crate gives any (ADRs 0058, 0137); a closure's that writes
     /// its maker's, its maker's (ADR 0539).
-    pub(super) fn writer_options(&self, state: &State<'_, 'tcx>, options: Option<&str>) -> Option<Expr> {
+    pub(super) fn writer_options(&self, state: &State<'_, 'tcx>, options: Option<&js::Name>) -> Option<Expr> {
         match state.writes_captured {
             true => self.given_to_writer(None),
             false => options.map(Expr::var),
@@ -580,7 +580,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `captures`, what it took, as its maker read them: which of its
     /// environment's fields it is, and the string its maker writes to,
     /// which JS's closure writes as its maker does (ADR 0539).
-    fn captured_formatter(&self, body: &mir::Body<'tcx>, captures: &[(Expr, bool)]) -> R<Option<(FieldIdx, String)>> {
+    fn captured_formatter(&self, body: &mir::Body<'tcx>, captures: &[(Expr, bool)]) -> R<Option<(FieldIdx, js::Name)>> {
         let ty::Closure(_, args) = self.tcx.type_of(body.source.def_id()).skip_binder().kind() else {
             return Ok(None);
         };
@@ -592,7 +592,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(None);
         };
         match captures.get(at).map(|(e, _)| &e.kind) {
-            Some(js::ExprKind::Var(name)) => Ok(Some((FieldIdx::from_usize(at), name.to_string()))),
+            Some(js::ExprKind::Var(name)) => Ok(Some((FieldIdx::from_usize(at), name.clone()))),
             _ => Err(self.unsupported(self.tcx.def_span(body.source.def_id()), "this `Formatter`")),
         }
     }

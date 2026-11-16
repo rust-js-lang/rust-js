@@ -53,9 +53,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // One cloned apart: made by a function of the variables it took,
         // `make`, which its clone, `$cloning`'s, calls again with a clone of
         // each (ADR 0522).
-        let taken: Vec<(String, Ty<'tcx>)> = (self.closure_held(def_id).into_iter())
+        let taken: Vec<(js::Name, Ty<'tcx>)> = (self.closure_held(def_id).into_iter())
             .filter_map(|(e, ty)| match e.kind {
-                js::ExprKind::Var(name) => Some((name.into_word(), ty)),
+                js::ExprKind::Var(name) => Some((name, ty)),
                 _ => None,
             })
             .collect();
@@ -68,7 +68,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         cloned.push(StmtKind::Return(Some(Expr::call(Expr::var(&make), clones))).at(js::Span::NONE));
         let closure = Expr::call_helper("$cloning", vec![closure, Expr::arrow(Vec::new(), cloned)]);
         let closure = self.closure_carrying_drop(closure, ty, span)?;
-        let params = taken.iter().map(|(name, _)| name.as_str().into()).collect();
+        let params = taken.iter().map(|(name, _)| name.clone().into()).collect();
         let maker = Expr::arrow(params, vec![StmtKind::Return(Some(closure)).at(js::Span::NONE)]);
         out.push(StmtKind::Let(make.clone(), Some(maker)).at(self.js_span(span)));
         Ok(Expr::call(

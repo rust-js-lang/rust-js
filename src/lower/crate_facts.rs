@@ -193,6 +193,17 @@ impl CrateFacts<'_, '_> {
             && !self.local_consts.contains_key(&def_id)
     }
 
+    /// The name of the crate's item `def_id`, or of its copy `copy`, spelled
+    /// `word`: the module's at its top, else its body's, the item's own
+    /// (`js::Name::item`), whichever lowering asks, its declaration's or a
+    /// read's ("names are ids", ADR 1150).
+    pub(in crate::lower) fn item_name(&self, def_id: DefId, copy: Option<usize>, word: &str) -> crate::js::Name {
+        match self.at_module_top(def_id) {
+            true => crate::js::Name::module(word),
+            false => crate::js::Name::item(word, def_id.index.as_u32(), copy),
+        }
+    }
+
     /// Do its writers take their `Formatter`'s options after their
     /// arguments, whether to be pretty or a placeholder's (ADRs 0058, 0137)?
     pub(in crate::lower) fn writers_take_options(&self) -> bool {

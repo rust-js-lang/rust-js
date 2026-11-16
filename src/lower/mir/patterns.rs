@@ -758,10 +758,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let Some((pattern, _)) = self.js_pattern(pat) else {
                 continue;
             };
-            let named: Option<Vec<(Local, String)>> = (bound.iter().zip(locals))
+            let named: Option<Vec<(Local, js::Name)>> = (bound.iter().zip(locals))
                 .map(
                     |(&(var, _), local)| match self.locals.vars.get(&var).map(|v| &v.place.kind) {
-                        Some(js::ExprKind::Var(name)) => Some((local, name.to_string())),
+                        Some(js::ExprKind::Var(name)) => Some((local, name.clone())),
                         _ => None,
                     },
                 )

@@ -55,9 +55,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // of what's given, its to drop (#1588): what's given dropped as
         // generic code's call gives it, the drop after its facts, `dropI`,
         // which the shunt's drop glue calls.
+        let drop_i = js::Name::declared("dropI".to_string());
         let made = self.with_given_facts(typing_env, given, |cx| {
             let shunted = cx.try_processed_into(output, param)?.is_some();
-            let lent = shunted.then(|| cx.lend_drop_param("dropI".into(), param));
+            let lent = shunted.then(|| cx.lend_drop_param(drop_i.clone(), param));
             let made = cx.collected_into((Expr::var(&made_items), None), output, Some(item), Some(param), span);
             if let Some(lent) = lent {
                 cx.return_drop_param(lent);
@@ -66,7 +67,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         });
         let (made, shunted) = made?;
         if shunted {
-            params.push("dropI".into());
+            params.push(drop_i);
         }
         // What's left of what it's given is closed where collecting it
         // panics, as std drops the iterator its collect holds as it unwinds

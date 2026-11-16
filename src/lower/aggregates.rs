@@ -708,7 +708,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let param = self.unspelled("value");
         let params: Vec<js::Name> = match sig.inputs().len() {
             1 => vec![param.clone()],
-            count => (0..count).map(|k| js::positional(k).into()).collect(),
+            count => (0..count).map(|k| js::Name::declared(js::positional(k))).collect(),
         };
         let items: Vec<Expr> = params.iter().map(Expr::var).collect();
         // A `#[repr(transparent)]` struct is its field, as `adt_value` makes

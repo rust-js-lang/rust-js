@@ -268,9 +268,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     fn clone_over(&mut self, item: ty::Ty<'tcx>, what: &str, span: Span) -> R<(Option<Expr>, Option<Expr>)> {
         let made_i = self.unspelled("i");
         let made_items = self.unspelled("items");
+        let from = js::Name::declared("from".to_string());
         let written = |called: Expr| {
             Expr::arrow(
-                vec![made_items.clone().into(), made_i.clone().into(), "from".into()],
+                vec![made_items.clone().into(), made_i.clone().into(), from.clone().into()],
                 vec![StmtKind::Expr(called).at(js::Span::NONE)],
             )
         };
@@ -282,7 +283,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
             let clone_from = trait_method(self.tcx, self.clone_trait(), "clone_from");
             let args = self.args_of(self.clone_trait(), item);
-            let called = self.impl_call(clone_from, args, vec![target, Expr::var("from")], span)?;
+            let called = self.impl_call(clone_from, args, vec![target, Expr::var(&from)], span)?;
             return Ok((None, Some(written(called))));
         }
         // A type parameter's, or an associated type's, `A::Item`.
@@ -290,7 +291,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let clone = self.clone_arg(item, span)?;
             let clone_from = self.given_clone_from(item, span)?;
             let place = Expr::call(Expr::helper("$ptr"), vec![Expr::var(&made_items), Expr::var(&made_i)]);
-            let called = Expr::call(clone_from.clone(), vec![place, Expr::var("from")]);
+            let called = Expr::call(clone_from.clone(), vec![place, Expr::var(&from)]);
             return Ok((Some(clone), Some(Expr::bin(Op::And, clone_from, written(called)))));
         }
         // A `Vec`'s, a `VecDeque`'s, a map's, std's own, written in place,
@@ -298,16 +299,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // (#919, #922).
         let slot = || Expr::index(Expr::var(&made_items), Expr::var(&made_i));
         if let Some(into) = self.clone_into(item, span)? {
-            return Ok((None, Some(written(into.call(slot(), Expr::var("from"))))));
+            return Ok((None, Some(written(into.call(slot(), Expr::var(&from))))));
         }
         // An `Option`'s: its value's, where both are `Some`, and otherwise
         // a clone written over it, what it held dropped (#922).
         let pointer = Expr::call(Expr::helper("$ptr"), vec![Expr::var(&made_items), Expr::var(&made_i)]);
-        if let Some(over) = self.option_clone_over(item, (slot(), pointer), Expr::var("from"), span)? {
+        if let Some(over) = self.option_clone_over(item, (slot(), pointer), Expr::var(&from), span)? {
             return Ok((
                 None,
                 Some(Expr::arrow(
-                    vec![made_items.clone().into(), made_i.clone().into(), "from".into()],
+                    vec![made_items.clone().into(), made_i.clone().into(), from.clone().into()],
                     over,
                 )),
             ));
@@ -1240,14 +1241,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         kind: js::ExprKind::Arrow(mut params, body),
                         ..
                     } if params.len() == 1 => {
-                        params.insert(0, "_".into());
+                        params.insert(0, js::Name::declared("_".to_string()).into());
                         Expr::arrow(params, body)
                     }
                     f => {
                         let i = self.fresh(Role::I);
                         let call = Expr::call(f, vec![Expr::var(&i)]);
                         Expr::arrow(
-                            vec!["_".into(), i.into()],
+                            vec![js::Name::declared("_".to_string()).into(), i.into()],
                             vec![StmtKind::Return(Some(call)).at(js::Span::NONE)],
                         )
                     }

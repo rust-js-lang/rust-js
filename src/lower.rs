@@ -471,12 +471,12 @@ struct FnCx<'a, 'tcx> {
     /// Of a function whose scope struct's methods are functions declared
     /// in it, each method's function's name, which calls of it call (ADR
     /// 1043).
-    scope_functions: IndexMap<DefId, String>,
+    scope_functions: IndexMap<DefId, js::Name>,
     /// And the lowering of each this one declares, a copy or none (#500).
     scope_copies: IndexMap<DefId, Option<usize>>,
     /// While one of them is lowered, the name of the variable it closes
     /// over, its `self`'s.
-    scope_self: Option<String>,
+    scope_self: Option<js::Name>,
     /// Once a function's body is lowered, the variable of each of its
     /// scope structs' values, by the function, whose fields are then its
     /// variables (ADR 1043, amended).

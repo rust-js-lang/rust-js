@@ -28,6 +28,10 @@ enum Of {
     /// One the module declares at its top: its functions, its constants,
     /// its imports, the runtime's helpers it imports.
     Module,
+    /// A crate item written in a function's body, declared there: of the
+    /// item, by its index, and of its copy, `copy + 1`, `0` of the item
+    /// itself, so each instance lowering emits is its own.
+    BodyItem(u32, u32),
     /// A temporary MIR's lowering made, `_5`, or one given apart from
     /// one, `_5$1`, which tidy names for what it holds (S4).
     Temporary,
@@ -64,6 +68,18 @@ impl Name {
     /// that a declaration nearer takes.
     pub fn module(word: &str) -> Name {
         Name(word.to_string(), Of::Module)
+    }
+
+    /// The name of the crate's item `item` (its `DefIndex`), or of its copy
+    /// `copy`, written in a function's body and declared there, `word`
+    /// (ADRs 0296, 0308, 0031 amended): one variable of whichever lowering
+    /// makes it, its declaration's, which the item's own lowering makes, or
+    /// a read's, which the body's makes, as both know the item, so neither
+    /// is remapped into the other ("names are ids", ADR 1150). Each copy is
+    /// its own; no local of its word is it.
+    pub fn item(word: &str, item: u32, copy: Option<usize>) -> Name {
+        let copy = copy.map_or(0, |at| u32::try_from(at + 1).expect("a copy's index fits"));
+        Name(word.to_string(), Of::BodyItem(item, copy))
     }
 
     /// Whether it's the module's (`module`).

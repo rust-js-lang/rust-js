@@ -159,7 +159,7 @@ enum Value<'tcx> {
 
 /// A parameter taken apart: its index, THIR's pattern, and the local MIR
 /// binds each name the pattern binds to.
-type ParamPattern = (usize, js::Pattern, Vec<(Local, String)>);
+type ParamPattern = (usize, js::Pattern, Vec<(Local, js::Name)>);
 
 /// What lowering a body from its MIR found of its variables, which goes
 /// with them where a body inside it is lowered (`Locals`): each read and
@@ -587,9 +587,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             function: js::Function {
                 // A copy its callers need, by its own name (ADR 0051, amended).
                 name: match self.copy {
-                    Some(at) => js::Name::module(self.krate.given.js_given.name(def_id, at)),
-                    None if !self.krate.at_module_top(def_id) => self.krate.fns[&def_id].name.clone().into(),
-                    None => js::Name::module(&self.krate.fns[&def_id].name),
+                    Some(at) => self
+                        .krate
+                        .item_name(def_id, Some(at), self.krate.given.js_given.name(def_id, at)),
+                    None => self.krate.item_name(def_id, None, &self.krate.fns[&def_id].name),
                 },
                 params,
                 body: out,
@@ -917,7 +918,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             None => self.mir_param_patterns(mir_body),
             Some(_) => Vec::new(),
         };
-        let named: Vec<(Local, String)> = patterns.iter().flat_map(|(_, _, named)| named.clone()).collect();
+        let named: Vec<(Local, js::Name)> = patterns.iter().flat_map(|(_, _, named)| named.clone()).collect();
         let alternatives = self.mir_alike_alternatives(mir_body);
         let mut locals = self.mir_locals(mir_body, drops.as_ref(), &named, &alternatives.unreached);
         // A drop reads what it drops more than once, so it's a variable.
@@ -1131,7 +1132,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         self.last_params(mir_body, (&state.locals, options.is_some()), &mut params);
         let start = BasicBlock::from_usize(0);
-        let given = self.writer_options(&state, options.as_ref().map(js::Name::word));
+        let given = self.writer_options(&state, options.as_ref());
         let lowered = self.with_given(given, mir_body.source.def_id(), |cx| cx.mir_tree(&mut state, start))?;
         out.extend(state.settled_lets().chain(lowered));
         // Its scope struct's methods, declared after its `let` (ADR 1043).

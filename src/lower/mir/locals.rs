@@ -110,7 +110,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         &mut self,
         body: &mir::Body<'tcx>,
         drops: Option<&drops::Elaboration<'tcx>>,
-        named: &[(Local, String)],
+        named: &[(Local, js::Name)],
         unreached: &IndexSet<BasicBlock>,
     ) -> Locals {
         let n = body.local_decls.len();
@@ -314,7 +314,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             locals.text[local] = self.is_lang_adt(body.local_decls[local].ty, LangItem::String);
             // Bound by a parameter's pattern: the name THIR's pattern gives it.
             if let Some((_, name)) = named.iter().find(|(l, _)| *l == local) {
-                locals.names[local] = name.into();
+                locals.names[local] = name.clone();
                 continue;
             }
             locals.names[local] = match (&user[local], body.local_kind(local)) {

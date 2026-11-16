@@ -36,7 +36,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let value = state.locals.names[scope.local].clone();
             let mut functions = Vec::new();
             for &method in &scope.methods {
-                functions.push(self.scope_function(method, value.word())?);
+                functions.push(self.scope_function(method, &value)?);
             }
             let written = self.js_span(scope.written);
             let within = |s: &Stmt| !s.span.is_none() && s.span.lo >= written.lo && s.span.hi <= written.hi;
@@ -60,7 +60,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `method`, a scope struct's, a function declaration closing over
     /// `value`, its `self`.
-    fn scope_function(&mut self, method: rustc_span::def_id::DefId, value: &str) -> R<Stmt> {
+    fn scope_function(&mut self, method: rustc_span::def_id::DefId, value: &js::Name) -> R<Stmt> {
         let span = self.tcx.def_span(method);
         let body = (self.krate.bodies.get(&method).copied())
             .ok_or_else(|| self.unsupported(span, "a scope struct's method, without its body"))?;
@@ -75,7 +75,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // names apart from every one of its function's, which it may read.
         let typing_env = std::mem::replace(&mut self.typing_env, ty::TypingEnv::post_analysis(self.tcx, method));
         let copy = self.copy.take();
-        self.scope_self = Some(value.to_string());
+        self.scope_self = Some(value.clone());
         let nested = super::super::Nested::Closure {
             names: self.names.borrow().clone(),
         };
@@ -88,7 +88,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         stmts.splice(0..0, hoisted);
         // Its `self`, the variable it closes over.
         match params.first() {
-            Some(js::Pattern::Name(name)) if name.is(value) => {
+            Some(js::Pattern::Name(name)) if name == value => {
                 params.remove(0);
             }
             _ => return Err(self.unsupported(span, "a scope struct's method whose `self` isn't its value")),
@@ -96,7 +96,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let local = method.expect_local();
         let whole = self.tcx.hir_span_with_body(self.tcx.local_def_id_to_hir_id(local));
         let function = js::Function {
-            name: self.scope_functions[&method].clone().into(),
+            name: self.scope_functions[&method].clone(),
             params,
             body: stmts,
             export: false,

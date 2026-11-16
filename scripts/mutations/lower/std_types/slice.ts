@@ -290,7 +290,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`array::from_fn`'s arrow is given each item, `undefined`, not its index",
     file: "src/lower/std_types/slice.rs",
-    find: '                        params.insert(0, "_".into());\n',
+    find: "                        params.insert(0, js::Name::declared(\"_\".to_string()).into());\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^array_from_fn.rs$"],
   },
@@ -488,8 +488,8 @@ export const mutations: Mutation[] = [
     name: "option-items-cloned-over",
     breaks: "an array's `clone_from` of `Option<Vec<D>>`s writes each over by a clone, not its `Vec`'s in place where both are `Some` (#922)",
     file: "src/lower/std_types/slice.rs",
-    find: "        if let Some(over) = self.option_clone_over(item, (slot(), pointer), Expr::var(\"from\"), span)? {\n",
-    replace: "        if let Some(over) = self.option_clone_over(item, (slot(), pointer), Expr::var(\"from\"), span)?.filter(|_| false) {\n",
+    find: "        if let Some(over) = self.option_clone_over(item, (slot(), pointer), Expr::var(&from), span)? {\n",
+    replace: "        if let Some(over) = self.option_clone_over(item, (slot(), pointer), Expr::var(&from), span)?.filter(|_| false) {\n",
     tests: ["test/corpus.test.ts", "-t", "^clone_from_std_own.rs$"],
   },
   {
