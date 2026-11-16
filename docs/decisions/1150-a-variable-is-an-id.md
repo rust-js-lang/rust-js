@@ -39,6 +39,10 @@ It's reached in eight steps, each byte-identical:
    declares an id twice is refused.
 8. **S8**, a spelled name is preparation's alone; `Var(String)` is gone.
 
+S6, S7 and S8 are one step since 2026-11-16 ("Names are ids" below): each
+needs a name's identity apart from its word, which none of them can have
+alone.
+
 Then M4, the statement facts, and M5, the node-keyed forms, finish
 change 3.
 
@@ -241,3 +245,143 @@ words, reads a word's block by `block_of_label`, `label`'s spelling read
 back. `RUST_JS_CHECK_NAMES` checks `is_block_label`'s answers against the
 spelling as it does a temporary's. The corpus, the snapshots and the port
 are as they were; eight mutations retargeted.
+
+## Names are ids: S6–S8 as one step (2026-11-16, the lead's approval)
+
+### Where M3 stands
+
+S1–S5 put every name behind `js::Name` and gave the names whose kind a
+pass asks a form decided once, as they're made: a MIR temporary, a held
+argument, a block label, a global, a name lowering made (`value#1`). No
+pass reads a kind off a word. What's left is identity: two names are one
+where their words are, so a pass can't tell the program's inner `x` from
+its outer `x`, nor a tree used twice from two trees.
+
+### What identity needs, measured
+
+Equality by id holds only if every read of a variable is made from its
+declaration's name, never from its text. Today:
+
+- of `Expr::var`'s 731 sites, 211 read a literal word, `Expr::var("x")`,
+  how lowering writes its helpers' and roles' variables, and most of the
+  rest a `String` or a `&str`; 90 `Const`s and `Let`s declare a name made
+  of text (`.into()`), besides the patterns and parameters;
+- the passes that ask about a variable key by its word: `mentions_in(&str)`,
+  `substitute(&dyn Fn(&str))`, `Writes`' sets, `names_in`, tidy's 113
+  `IndexSet<String>`s, preparation's maps;
+- trees are cloned where needed twice (an arrow given twice, a closure's
+  body inlined), so one declaration appears twice.
+
+A name made of text can't know its id without the item's table, which
+`From<&str>` hasn't got. So ids can't be added beside words and switched
+on: every text-made read becomes a different variable, and the corpus
+fails everywhere. Nor can ids be optional, `Some` comparing by id and
+`None` by word: that equality isn't transitive (`a#1 == "a" == a#2` but
+`a#1 != a#2`), which `IndexSet` and every `==` would break on.
+
+### Decision proposed
+
+**1. The table.** Each item lowered has a `Names` table, `FnCx::names`
+extended from the words it takes today: `IndexVec<VarId, Entry>`, each
+entry its provisional word and its form (S2–S5's). A `Name` is
+`(VarId, Of)` with the item's table reachable where the name's read:
+lowering through `FnCx`, tidy through its `Hints` (the table moved into
+them as tidy starts, as `Named` and `LetNames` are), preparation through
+`js::Item`, which takes its table from lowering, so printing spells each
+id. A global's name stays its word, `Of::Global(String)`, as JS resolves
+it by spelling; a label is an id of the same table.
+
+**2. No text constructor, then equality by id.** First, while names
+still compare by word, so each commit is byte-identical:
+`From<&str>`/`From<String>` go, a variable declared with
+`names.declare(base, form) -> Name` and read with `name.clone()`, a
+helper's or a global's with `Name::global(word)` / `Expr::helper`. Each
+text-made read is traced to its declaration, as S4a traced each lost
+form, compiler error by compiler error, area by area (lowering, tidy,
+preparation), each area one commit; `RUST_JS_CHECK_NAMES` gains a check
+that a read's id is its declaration's. Last, one commit flips `Name: Eq`
+to compare ids: the only commit whose output can differ, and the one the
+judging below is of.
+
+**3. Every keyed structure keys by `Name`.** `mentions_in`,
+`substitute`, `Writes`, `names_in` and the sets take `&Name`; the pools of
+taken words `fresh_in` picks from stay words, as they're spellings, and
+go with step 5.
+
+**4. A tree used again gets its own binders (S7).** Where a subtree is
+cloned to be used twice, `js::rebound(&mut Expr, &mut Names)` gives each
+binder it declares a fresh id and its reads with it; `js::validate`
+refuses a module whose item declares one id twice (`Problem::DeclaredTwice`),
+so a clone that misses one is a compile error naming the pass, never a
+wrong answer.
+
+**4b. A subtree moved into another item's table is remapped, by one
+owner.** A pass that moves code from one item into another, or into the
+module's scope, carries names whose ids are of the item it came from: each
+is remapped into the item it goes to through `js::rebound` or its
+cross-item sibling, `js::rebound_into(&mut Expr, from: &Names, to: &mut
+Names)`, the one owner of it, never by a pass's own walk. The passes that
+move code so, from the survey of 2026-11-16, each confirmed as step 1
+reaches it: `prepare/initializers.rs` (a thread-local's initializer and a
+closure's `const` made the module's statements), `prepare/forwarding.rs`
+(a forwarding function's call taken apart where its value is made),
+`lower/drops/inlined.rs` (a `Drop` impl's body where it's dropped),
+`lower/pipeline/copies.rs` (a function's copy, alike another's),
+`lower/classes/prototypes.rs` (a class's statements placed at module
+scope), the dictionary caches the pipeline hoists (`keep_dictionary`,
+`names::dictionary_cache`), and `output.rs`' registrations. `js::validate`
+refuses an id that isn't in its item's table (`Problem::Foreign`), so a
+move that skips the remap is a compile error naming the pass, never a read
+of another item's variable; a pass found later is added to this list in
+the commit that remaps it.
+
+**4c. A name printed without its table.** Where a `Name` is shown with no
+table to spell it, its `Debug`, a refusal's text, `--explain`'s and
+`--knowns`' output, a contract's or a validator's `Problem`, it shows its
+provisional word and its id, `value#3`, so two alike are told apart. Those
+are the only outputs that may show an id: none reaches generated JS, which
+preparation's spelling alone writes, nor a declaration file, a manifest or
+a source map's names. An architecture test refuses `Name`'s `Display` in
+`to_oxc` and the declarations' printer, and the validator refuses a module
+whose printed word has `#`.
+
+**5. Spelling is preparation's (S8).** Lowering's words become
+suggestions (`Entry::base`): preparation spells every id once, apart from
+what's in scope, as `prepare::reclaim::spelled` spells a made name today,
+and `name.word()` is preparation's alone, an architecture test refusing
+it elsewhere.
+
+### How each output difference is judged (the lead's rule)
+
+Only the flip of step 2 changes which names are one (steps 1, 2's
+conversion, 3 and 4 are byte-identical, as names still compare by word): where two variables are spelled
+alike, a pass that took them for one now tells them apart. That commit is run over the corpus, the snapshots, std and both ports
+byte-diffed against main. Each difference is one of two:
+
+- **a fix**: the old JS read or wrote the wrong variable, a shadowing or
+  a capture bug. It gets a corpus row that shows it against native Rust
+  (the old JS failing it), and it's reported to the lead before the push;
+- **prevented**: a difference that changes readability only, where the old
+  JS was right, is made not to happen (the pass given the old answer by
+  the new key, e.g. the name's root), never accepted silently.
+
+No difference lands unjudged. Step 5 changes spelling only where a word
+would be spelled differently by preparation than by lowering's
+`fresh_in`; preparation reproduces `fresh_in`'s order (first come, `$k`
+apart), and a difference is a readability one, prevented or sent to the
+lead as a proposed change of the guide's naming.
+
+### Cost, honestly
+
+This is the biggest change of M3: every `Expr::var` of a text, every
+pass keyed by a word. My estimate is 4–6 working days, area by area:
+lowering's helpers and roles (~2 days), tidy (~1.5), preparation and js
+(~1), the flip and its judging (~0.5), spelling (~1). Each area lands
+alone, byte-identical; the flip lands with its differences judged. The
+alternative, stopping at S5, leaves a name its word for identity: correct
+today (Rust's names can't collide with what lowering makes, since M2 and
+S2), but tidy can't tell shadowed variables apart, which is where
+#1681's review found the risk.
+
+M4 (statement facts) doesn't touch names, so it goes alongside (the
+lead's decision).
