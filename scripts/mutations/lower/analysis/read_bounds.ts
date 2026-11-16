@@ -84,4 +84,13 @@ export const mutations: Mutation[] = [
     replace: "            || false && !id.is_local() && !foreign.reads(id, param.index, tr.def_id))\n",
     tests: crate,
   },
+  {
+    name: "read-bound-operator-reads",
+    breaks: "a comparison by JS's own operator counts as a read of its bound, which is given a dictionary nothing reads (#1874)",
+    file: "src/lower/analysis/read_bounds.rs",
+    find: "        if self.compares_by_operator(callee, args) {\n            return;\n        }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^compared_by_operator.rs$"],
+    snapshots: true,
+  },
 ];

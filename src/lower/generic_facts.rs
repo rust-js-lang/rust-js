@@ -36,6 +36,7 @@
 //! | whether generic code asks the hint of what it's given, each caller's instance made knowing it, and what a generic caller makes of its own parameters made so in it (ADR 0170, amended) | Instances | `src/lower/analysis/hint_asked.rs mark_hint_knowing` |
 //! | whether an `Rc` of it is counted (#1009) | Instances | `src/lower/analysis/rc_counts.rs counted_rcs` |
 //! | whether a clone of it is a copy apart (#1119) | Instances | `src/lower/analysis/clones.rs instances_of` |
+//! | whether its `<`, `<=`, `>`, `>=`, `==` and `!=` are JS's own, every caller of a function the crate sees whole giving a JS number, so they read no dictionary (#1874) | Instances | `src/lower/analysis/mutation.rs compared_params` |
 //! | where an object of it is stored (#1114) | Instances | `src/lower/analysis/stored_places.rs instances` |
 //! | whether every caller's `Some` of it is unboxed (ADR 0051, amended) | Instances | `src/lower/analysis/mutation.rs unboxed_params` |
 //! | what JS gives a function JS calls (ADR 0051, amended) | Instances | `src/lower/instances.rs given_calls_of` |

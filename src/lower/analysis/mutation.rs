@@ -646,6 +646,68 @@ pub(in crate::lower) fn clones_by_itself(
         && !clones.contains(&(tcx.typeck_root_def_id(id), index))
 }
 
+/// The type parameters of `items`, the crate's, compared by a bound,
+/// `PartialOrd`, `PartialEq` or a trait that extends one, `Ord` (`compare_bounded`),
+/// that some caller gives what isn't a JS number (`compares_by_operator`),
+/// carried through generic callers; and each of a function `compared_whole`
+/// says isn't: its operators are its dictionary's. Every other one's `<`,
+/// `<=`, `>`, `>=`, `==` and `!=` are JS's own, which read no dictionary
+/// (`compares_by_operator_param`, #1874).
+pub(in crate::lower) fn compared_params<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    (all_bodies, names): (&[&Body<'tcx>], &crate::lower::call_graph::Names<'tcx>),
+    items: &IndexSet<DefId>,
+    foreign: &crate::lower::library::Foreign<'_, 'tcx>,
+) -> IndexSet<(DefId, u32)> {
+    let callers = crate::lower::instances::callers_of(tcx, names, all_bodies);
+    crate::lower::instances::params_given(
+        tcx,
+        &callers,
+        (items.iter(), &|id| items.contains(&id)),
+        &|id| compared_whole(tcx, foreign, id),
+        &|id| compare_bounded(tcx, id),
+        &|ty| crate::lower::ordering::compares_by_operator(ty),
+    )
+}
+
+/// Whether every caller of `id` is one the crate sees, so its comparisons'
+/// instances are known: a function of the crate's whose every caller is its
+/// own call (`seen_whole`'s `Fact::CopiedApart`, as of a clone) and that no
+/// other crate or JS can name (`Fact::Shared`), as no library's contract
+/// says what an export compares by (#1874, exports to come).
+fn compared_whole(tcx: TyCtxt<'_>, foreign: &crate::lower::library::Foreign<'_, '_>, id: DefId) -> bool {
+    use crate::lower::instances::{Fact, seen_whole};
+    let id = tcx.typeck_root_def_id(id);
+    id.is_local() && seen_whole(tcx, id, Fact::CopiedApart(foreign)) && seen_whole(tcx, id, Fact::Shared)
+}
+
+/// Whether generic code's `<`, `<=`, `>`, `>=`, `==` and `!=` of `id`'s
+/// type parameter `index` are JS's own: one of a function `compared_whole`
+/// says is, compared by a bound, that no caller gives what isn't a JS number
+/// (`compared`, `compared_params`'s, #1874). The one answer the lowering of
+/// a comparison and the bounds a body reads ask.
+pub(in crate::lower) fn compares_by_operator_param(
+    tcx: TyCtxt<'_>,
+    foreign: &crate::lower::library::Foreign<'_, '_>,
+    compared: &IndexSet<(DefId, u32)>,
+    (id, index): (DefId, u32),
+) -> bool {
+    let root = tcx.typeck_root_def_id(id);
+    compared_whole(tcx, foreign, root)
+        && compare_bounded(tcx, root).contains(&index)
+        && !compared.contains(&(root, index))
+}
+
+/// The type parameters of `id` compared by a bound, `PartialOrd`'s or
+/// `PartialEq`'s or one of a trait that extends either, `Ord`, by their
+/// indices, an impl's with its own.
+fn compare_bounded(tcx: TyCtxt<'_>, id: DefId) -> Vec<u32> {
+    let compares = [LangItem::PartialOrd, LangItem::PartialEq].map(|item| tcx.lang_items().get(item));
+    bounded_where(tcx, id, &|tr| {
+        rustc_middle::ty::elaborate::supertrait_def_ids(tcx, tr).any(|tr| compares.contains(&Some(tr)))
+    })
+}
+
 /// The type parameters of `id` bound by `Copy`, by their indices, an
 /// impl's with its own.
 pub(in crate::lower) fn copy_bounded(tcx: TyCtxt<'_>, id: DefId) -> Vec<u32> {
@@ -666,10 +728,16 @@ pub(in crate::lower) fn clone_bounded(tcx: TyCtxt<'_>, id: DefId) -> Vec<u32> {
 
 /// The type parameters of `id` bound by `trait_id`, by their indices.
 fn bounded_by(tcx: TyCtxt<'_>, id: DefId, trait_id: DefId) -> Vec<u32> {
+    bounded_where(tcx, id, &|tr| tr == trait_id)
+}
+
+/// The type parameters of `id` bound by a trait `wanted` says, by their
+/// indices, each once.
+fn bounded_where(tcx: TyCtxt<'_>, id: DefId, wanted: &dyn Fn(DefId) -> bool) -> Vec<u32> {
     let mut indices = Vec::new();
     for (clause, _) in tcx.clauses_of(id).instantiate_identity(tcx) {
         if let ty::ClauseKind::Trait(predicate) = clause.skip_normalization().kind().skip_binder()
-            && predicate.def_id() == trait_id
+            && wanted(predicate.def_id())
             && let ty::Param(param) = predicate.self_ty().kind()
             && !indices.contains(&param.index)
         {

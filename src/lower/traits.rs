@@ -175,6 +175,9 @@ pub(super) struct Given<'a> {
     pub stepped: &'a IndexSet<(DefId, u32, DefId)>,
     /// The bounds whose dictionary nothing reads, given none (#1915).
     pub unread: &'a IndexSet<(DefId, u32, DefId)>,
+    /// The type parameters compared by a bound that some caller gives what
+    /// isn't a JS number, so compared by its dictionary (#1874).
+    pub compared: &'a IndexSet<(DefId, u32)>,
     /// The type parameters a `Some` of which is the value (ADR 0051, amended).
     pub unboxed: &'a IndexSet<(DefId, u32)>,
     /// What each function's JS takes its type parameters as, and the copies

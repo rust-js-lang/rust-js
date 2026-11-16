@@ -52,7 +52,7 @@ function tExt(TIterator, TVecCollect, TItemSize, dropT, dropTItem) {
       }
       const key$1 = (item) => key(item);
       try {
-        $sortUnstable(v, (a, b) => KOrd.PartialOrd().lt(key$1(a), key$1(b)), SelfItemSort);
+        $sortUnstable(v, (a, b) => key$1(a) < key$1(b), SelfItemSort);
       } catch (error) {
         $cleanup(() => {
           $dropItems(v, (item) => {

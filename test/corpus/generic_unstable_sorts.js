@@ -28,7 +28,7 @@ function sorted(items, compare, TSort) {
 }
 
 function smallest(items, k, TOrd, TSort) {
-  $selectNthUnstable(items, k, (a, b) => TOrd.PartialOrd().lt(a, b), TSort, true);
+  $selectNthUnstable(items, k, (a, b) => a < b, TSort, true);
   return $slice(items, 0, k).map((item) => item);
 }
 

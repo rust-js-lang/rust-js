@@ -78,7 +78,7 @@ function largest(items, TPartialOrd) {
   if (next != null) {
     let best = next;
     for (const x of it) {
-      if (TPartialOrd.gt(x, best)) {
+      if (x > best) {
         best = x;
       }
     }

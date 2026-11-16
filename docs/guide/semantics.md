@@ -188,6 +188,16 @@ sharing one is copying it: `clone()` is the string itself, and `push_str` is
   where it writes one; in generic code, `fn less<A: PartialOrd<B>, B>(a:
   &A, b: &B) -> bool { a < b }`, its dictionary's `lt`
   ([0057](../decisions/0057-ordering.md), amended).
+- **Generic code compares a type parameter every caller gives a number by
+  JS's own operators,** `fn clamp<T: PartialOrd>(value: T, min: T, max: T)
+  -> T` called with `i32`s and `f64`s alone is `value < min ? min : …`,
+  given no dictionary, as JS's `<`, `<=`, `>`, `>=`, `===` and `!==` are
+  Rust's of numbers, `NaN` and `-0` included. A function a caller gives
+  anything else (a struct, a `char`, an `i64`), a `pub` one, which JS or
+  another crate may call, and one that asks `partial_cmp`, `cmp`, `max` or
+  `min` keep their dictionary
+  ([1115](../decisions/1115-what-generic-code-needs-of-its-type-parameters-has-one-catalogue.md),
+  amended).
 - **`==`, `<`, `partial_cmp` and `cmp` each run what Rust's impls say,**
   never one for another: a derived `PartialOrd` beside your own `Ord`
   compares the fields, and your own `PartialOrd` beside a derived `Ord` is

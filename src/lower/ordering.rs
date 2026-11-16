@@ -18,7 +18,35 @@ use rustc_middle::ty::{self, Ty};
 use rustc_span::def_id::DefId;
 use rustc_span::{DUMMY_SP, Span};
 
+/// Whether std's `PartialOrd` and `PartialEq` of two `ty`s, every operator
+/// of them, `<`, `<=`, `>`, `>=`, `==` and `!=`, is JS's own of what JS
+/// holds: a number, an integer of 32 bits or fewer or a float, whose `NaN`
+/// JS's operators leave unordered and unequal to itself and whose `-0` equal
+/// to `0`, as Rust's do (ADR 0262: no difference). Not a 64- or 128-bit
+/// integer, a `BigInt`, nor text, which `<` orders by UTF-16 units (ADR
+/// 0183). What generic code compares a type parameter by where every caller
+/// gives one (`compared_params`, #1874).
+pub(in crate::lower) fn compares_by_operator(ty: Ty<'_>) -> bool {
+    Num::of(ty).is_some_and(|num| !num.big())
+}
+
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// Whether `ty`, a type parameter of the function being lowered, is
+    /// compared by JS's own operators, as every caller gives it a JS number
+    /// (`compares_by_operator_param`, #1874).
+    pub(in crate::lower) fn param_compares_by_operator(&self, ty: Ty<'tcx>) -> bool {
+        let Some(index) = super::generic_facts::type_parameter_of(ty) else {
+            return false;
+        };
+        let owner = self.tcx.typeck_root_def_id(self.frame.owner);
+        super::analysis::compares_by_operator_param(
+            self.tcx,
+            self.krate.foreign,
+            self.krate.given.compared,
+            (owner, index),
+        )
+    }
+
     pub(super) fn ord_trait(&self) -> DefId {
         std_item(self.tcx, StdItem::Ord)
     }
@@ -335,6 +363,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.is_unknown(inner) {
             let (a, _) = self.through_refs(a, ty);
             let (b, _) = self.through_refs(b, ty);
+            // Of one every caller gives a JS number, JS's own (#1874).
+            if self.param_compares_by_operator(inner) {
+                return Ok(Expr::bin(op, a, b));
+            }
             let partial_ord = self.partial_ord_trait();
             let tr = ty::TraitRef::new_from_args(self.tcx, partial_ord, self.args_of(partial_ord, inner));
             let dictionary = self.evidence_for(tr).ok_or_else(|| self.no_evidence(span, tr))?;

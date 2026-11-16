@@ -44,10 +44,10 @@ export const mutations: Mutation[] = [
   },
   {
     name: "test-map-ensure-again",
-    breaks: "a second way to ask for a kept map, `ensure`, which records on one machine where none is kept",
+    breaks: "a second way to ask for a kept map, `ensure` beside `kept`, a synonym (an `ensure` that recorded, as it did, never ended on CI, where none is kept: INCONCLUSIVE, check 43797578545)",
     file: "scripts/testMap.ts",
-    find: '  } else if (command === "build") {',
-    replace: '  } else if (command === "ensure") {\n    await ensureMap();\n  } else if (command === "build") {',
+    find: '  else if (command === "kept") {',
+    replace: '  else if (command === "kept" || command === "ensure") {',
     tests: ["test/test-map.test.ts", "-t", "CI's test map"],
   },
 ];

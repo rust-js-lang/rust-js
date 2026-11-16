@@ -88,6 +88,7 @@ pub(in crate::lower) fn unread_bounds<'tcx>(
     all_bodies: &[&Body<'tcx>],
     fns: &IndexMap<DefId, FnInfo>,
     foreign: &crate::lower::library::Foreign<'_, 'tcx>,
+    compared: &IndexSet<(DefId, u32)>,
 ) -> IndexSet<Bound> {
     // Each function's own bounds of its type parameters, of traits that
     // give a dictionary: what may go unread.
@@ -134,6 +135,7 @@ pub(in crate::lower) fn unread_bounds<'tcx>(
                     tcx,
                     root,
                     foreign,
+                    compared,
                     candidates: &candidates,
                     read: &read,
                     found: Vec::new(),
@@ -158,6 +160,7 @@ struct Reads<'a, 'b, 'tcx> {
     tcx: TyCtxt<'tcx>,
     root: DefId,
     foreign: &'a crate::lower::library::Foreign<'b, 'tcx>,
+    compared: &'a IndexSet<(DefId, u32)>,
     candidates: &'a IndexSet<Bound>,
     read: &'a IndexSet<Bound>,
     found: Vec<Bound>,
@@ -268,6 +271,11 @@ impl<'tcx> Reads<'_, '_, 'tcx> {
         for ty in args.types() {
             self.projections_of(ty);
         }
+        // A comparison of a parameter every caller gives a JS number, JS's
+        // own operator, which reads no dictionary (#1874).
+        if self.compares_by_operator(callee, args) {
+            return;
+        }
         // Of a trait, of a `Self` that is or holds a parameter: where no
         // dictionary of a parameter's carries it, the impl rustc selects,
         // `impl<A: PartialEq<B>, B> PartialEq<&B> for &A` of `&T == &T`,
@@ -298,6 +306,30 @@ impl<'tcx> Reads<'_, '_, 'tcx> {
             }
         }
         self.bounds_given(callee, args);
+    }
+
+    /// Whether `callee` of `args` is `PartialOrd`'s `lt`, `le`, `gt` or `ge`,
+    /// or `PartialEq`'s `eq` or `ne`, of two of a type parameter of the root's
+    /// that's compared by JS's own operators (`compares_by_operator_param`),
+    /// as the lowering writes them (#1874).
+    fn compares_by_operator(&self, callee: DefId, args: ty::GenericArgsRef<'tcx>) -> bool {
+        use rustc_hir::attrs::lang_items::LangItem;
+        let tcx = self.tcx;
+        let operators: &[&str] = match tcx.trait_of_assoc(callee) {
+            Some(tr) if tcx.is_lang_item(tr, LangItem::PartialOrd) => &["lt", "le", "gt", "ge"],
+            Some(tr) if tcx.is_lang_item(tr, LangItem::PartialEq) => &["eq", "ne"],
+            _ => return false,
+        };
+        let mut types = args.types();
+        let (Some(own), Some(other)) = (types.next(), types.next()) else {
+            return false;
+        };
+        let Some(index) = crate::lower::generic_facts::type_parameter_of(own) else {
+            return false;
+        };
+        own == other
+            && operators.contains(&tcx.item_name(callee).as_str())
+            && crate::lower::analysis::compares_by_operator_param(tcx, self.foreign, self.compared, (self.root, index))
     }
 
     /// Whether a dictionary of one of the parameter `own` is's bounds

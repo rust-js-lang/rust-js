@@ -751,4 +751,12 @@ export const mutations: Mutation[] = [
     replace: "        let ty = ty.peel_refs();\n        if seen.contains(&ty) {\n            return false;\n        }\n        let seen = &mut { let mut path = seen.clone(); path.insert(ty); path };\n",
     tests: ["test/type-depth.test.ts", "-t", "plain$"],
   },
+  {
+    name: "generic-number-equal-by-dictionary",
+    breaks: "generic code's `a == b` of a type parameter every caller gives a number asks its dictionary, which it isn't given (#1874)",
+    file: "src/lower/std_impls.rs",
+    find: "            if self.param_compares_by_operator(ty) {\n                return Ok(Expr::bin(Op::Eq, a, b));\n            }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^compared_by_operator.rs$"],
+  },
 ];

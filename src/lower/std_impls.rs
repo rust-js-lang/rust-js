@@ -500,6 +500,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         }
         if self.is_unknown(ty) {
+            // Of one every caller gives a JS number, JS's own (#1874).
+            if self.param_compares_by_operator(ty) {
+                return Ok(Expr::bin(Op::Eq, a, b));
+            }
             let tr = ty::TraitRef::new_from_args(
                 self.tcx,
                 self.partial_eq_trait(),

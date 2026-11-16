@@ -60,6 +60,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// type parameter's, whose dictionary may hold one; of one, `own_ne`'s.
     pub(in crate::lower) fn own_ne_between(&self, ty: Ty<'tcx>, rhs: Ty<'tcx>) -> bool {
         let (ty, rhs) = (ty.peel_refs(), rhs.peel_refs());
+        // Of a type parameter every caller gives a JS number, `!==` (#1874).
+        if ty == rhs && self.param_compares_by_operator(ty) {
+            return false;
+        }
         if ty == rhs {
             return self.own_ne(ty);
         }

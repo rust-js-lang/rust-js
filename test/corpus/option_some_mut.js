@@ -13,8 +13,8 @@ function write(o, v) {
   }
 }
 
-function read(o, v, TPartialEq) {
-  return o.value != null && TPartialEq.eq(o.value, v);
+function read(o, v) {
+  return o.value != null && o.value === v;
 }
 
 function setIfConsistent(old, new$, TPartialEq) {
@@ -40,7 +40,7 @@ function main() {
   write(o$2);
   back = o$2.value;
   const o$3 = { value: a };
-  const r = read(o$3, 2, $strictlyEqual);
+  const r = read(o$3, 2);
   a = o$3.value;
   console.log(
     `${a == null ? "None" : `Some(${a})`} ${n == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(n))})`} ${back == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(back))})`} ${r}`,

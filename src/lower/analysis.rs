@@ -99,9 +99,9 @@ pub(super) use debug::{WriterFacts, Writes};
 use drops::drop_params;
 use generic_consts::generic_consts;
 pub(in crate::lower) use mutation::Mutated;
-pub(super) use mutation::clones_by_itself;
 pub(super) use mutation::{clone_bounded, clones_itself, copies_itself, copy_bounded};
-use mutation::{cloned_params, copied_params, mutated_types, params_only_read, unboxed_params};
+use mutation::{cloned_params, compared_params, copied_params, mutated_types, params_only_read, unboxed_params};
+pub(super) use mutation::{clones_by_itself, compares_by_operator_param};
 use naming::{
     exported_across_modules, js_uses, local_consts, local_functions, name_imports, name_items, named_expressions,
     refuse_two_names, required_uses,
@@ -160,6 +160,9 @@ pub struct BoundFacts {
     pub stepped: IndexSet<(DefId, u32, DefId)>,
     /// The bounds whose dictionary nothing reads, given none (#1915).
     pub unread: IndexSet<(DefId, u32, DefId)>,
+    /// The type parameters compared by a bound that some caller gives what
+    /// isn't a JS number, so compared by its dictionary (#1874).
+    pub compared: IndexSet<(DefId, u32)>,
 }
 
 impl BoundFacts {
@@ -170,6 +173,7 @@ impl BoundFacts {
             clones: &self.clones,
             stepped: &self.stepped,
             unread: &self.unread,
+            compared: &self.compared,
             unboxed: &self.unboxed,
             js_given,
         }
@@ -867,6 +871,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // The type parameters whose `Clone` bound takes its dictionary: those a
     // caller gives what isn't its own clone (ADR 0914, amended).
     let clones = cloned_params(tcx, (all_bodies, calls.names()), &item_set, &foreign, &counted);
+    let compared = compared_params(tcx, (all_bodies, calls.names()), &item_set, &foreign);
     // The type parameters a `Some` of which is the value: those no caller
     // gives what may look like `None` (ADR 0051, amended).
     let unboxed = unboxed_params(&recognition, (all_bodies, calls.names()), &item_set);
@@ -1101,7 +1106,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     let copied = copied_params(tcx, (all_bodies, calls.names()), &fns, &foreign);
     let stepped = iterator_steps::stepped_params(tcx, all_bodies, &fns, &foreign);
     // The bounds whose dictionary nothing reads (#1915).
-    let unread = read_bounds::unread_bounds(tcx, all_bodies, &fns, &foreign);
+    let unread = read_bounds::unread_bounds(tcx, all_bodies, &fns, &foreign, &compared);
     // The functions JS calls, whose JS takes their type parameters as JS
     // gives them, and the copies their crate's calls need otherwise, each
     // named apart beside its function (ADR 0051, amended).
@@ -1142,6 +1147,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         clones,
         stepped,
         unread,
+        compared,
         unboxed,
     };
     let given = bounds.given(&js_given);

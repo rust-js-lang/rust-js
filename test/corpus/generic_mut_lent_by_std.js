@@ -113,12 +113,12 @@ function peekMut(items, v, TSize) {
 }
 
 function dedup(v, TPartialEq) {
-  $dedupByCells(v, (a, b) => TPartialEq.eq(a.value, b.value));
+  $dedupByCells(v, (a, b) => a.value === b.value);
   return v;
 }
 
 function popIf(v, t, TPartialEq) {
-  return $popIfCell(v, (x) => TPartialEq.eq(x.value, t));
+  return $popIfCell(v, (x) => x.value === t);
 }
 
 function heapPeekMut(h, v, TOrd) {

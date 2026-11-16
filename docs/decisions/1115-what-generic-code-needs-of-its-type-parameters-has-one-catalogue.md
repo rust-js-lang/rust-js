@@ -236,3 +236,58 @@ by a `try` and a clone of what's its own clone). Mutations
 `trait-family-namings-unshared`, caught; `trait-method-copies-by-callers`,
 which modelled a call through the dictionary unseen, removed as
 `trait-family-namings-unshared` models it now.
+
+## Amended (2026-11-16, #1874): a comparison of what every caller gives a number is JS's own
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): none, so JS's behavior,
+as JS's `<`, `<=`, `>`, `>=`, `===` and `!==` order and compare numbers as
+Rust's `PartialOrd` and `PartialEq` do, `NaN` unordered and unequal to
+itself, `-0` equal to `0`. Generic code compared a type parameter through
+its dictionary wherever every instance was a JS number: `clamp<T:
+PartialOrd>` called with `i32`s and `f64`s alone was `TPartialOrd.lt(value,
+min)`, given `f64PartialOrd` and `$partiallyOrdered` by its callers. Now,
+the lead for the user:
+
+- **Instances: `compared_params`** (analysis/mutation.rs), beside
+  `cloned_params`, by the carrier's `params_given`: the type parameters a
+  bound compares, `PartialOrd`, `PartialEq` or a trait that extends one,
+  `Ord` (`compare_bounded`), that some caller gives what isn't a JS number,
+  an integer of 32 bits or fewer or a float (`ordering::compares_by_operator`),
+  carried through generic callers. A function `seen_whole` says isn't seen
+  by `Fact::CopiedApart`, as of a clone, or that another crate or JS can
+  name, `Fact::Shared`, compares by its dictionary: no library's contract
+  says yet what an export compares by, so exports keep it.
+- **One answer, `compares_by_operator_param`,** which the lowering of a
+  comparison asks (`operator_value`, `eq_value`, `own_ne_between`) and the
+  bounds a body reads (`read_bounds`): `<`, `<=`, `>`, `>=`, `==` and `!=`
+  of such a parameter are JS's own and read no dictionary, so a bound
+  nothing else reads is given none (#1915). `partial_cmp`, `cmp`, `max` and
+  `min` still ask it, an `Option<Ordering>` or a choice no operator is.
+- **Not a `char` or text,** which `<` orders by UTF-16 units (ADR 0183),
+  nor a 64- or 128-bit integer, a `BigInt`, which keep their dictionary.
+
+An `Ord` bound's dictionary stays given though `<` reads none of it, as
+`Ord` extends `Eq`, whose bounds #1915's first step leaves to their old
+owner (`answered_elsewhere`): `at_most<T: Ord>(a, b)` is `a <= b`, still
+taking `TOrd`.
+
+Proof: corpus cases compared_by_operator (a `clamp`, `largest`, `==`, `!=`
+and the four orders of `i32`s, `u32`s, `u8`s, `i16`s, `f32`s and `f64`s with
+`NaN` and `-0`, a `u32` instance and an `i32` one each compared both ways, a
+generic caller giving its parameter on, an `Ord` bound and a function
+pointer) and compared_keeps_its_dictionary (a struct, `char`s, `i64`s, a
+caller giving on a `String`, `partial_cmp`, a `pub` function), against native
+Rust in both builds, and their metamorphic rewrites. Mutations
+`generic-number-compared-by-dictionary`, `generic-number-equal-by-dictionary`,
+`generic-number-not-equal-by-dictionary`, `compared-every-caller-a-number`,
+`chars-compared-by-operator`, and by their snapshots
+`bigints-compared-by-operator`, `compared-export-by-operator`,
+`compare-bounded-direct-only` and `read-bound-operator-reads`, caught.
+
+Five corpus snapshots and one example's read so now, each run as before:
+generic_unstable_sorts' `(a, b) => a < b` and
+copied_default_asks_its_drops_in_the_impls_terms' `key$1(a) < key$1(b)`,
+once `TOrd.PartialOrd().lt`; generic_mut_lent_by_std's and
+loop_exit_tested_after_the_loop's `===` and `!==`; option_some_mut's
+`read(o, v)`, given no `$strictlyEqual`; and the versions example's `x >
+best`.

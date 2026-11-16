@@ -84,4 +84,12 @@ export const mutations: Mutation[] = [
     replace: "            ty::Adt(..) if false => {\n                let (x, target) = self.pin_target(a, ty, span, out)?;\n                let (y, _) = self.pin_target(b, ty, span, out)?;\n                self.ne_value(",
     tests: own,
   },
+  {
+    name: "generic-number-not-equal-by-dictionary",
+    breaks: "generic code's `a != b` of a type parameter every caller gives a number asks its dictionary's `ne`, which it isn't given (#1874)",
+    file: "src/lower/std_impls/not_equal.rs",
+    find: "        if ty == rhs && self.param_compares_by_operator(ty) {\n            return false;\n        }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^compared_by_operator.rs$"],
+  },
 ];

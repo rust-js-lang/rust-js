@@ -33,12 +33,12 @@ function firstMissing(items, skip, XPartialEq, XDefault) {
     if (value != null) {
       const i = value[0];
       const item = value[1];
-      if (XPartialEq.ne(item, skip) && XPartialEq.eq(item, zero)) {
+      if (item !== skip && item === zero) {
         return i;
       }
       continue;
     }
-    if (!XPartialEq.eq(skip, zero) && items.length !== 0) {
+    if (skip !== zero && items.length !== 0) {
       break;
     }
     return;
