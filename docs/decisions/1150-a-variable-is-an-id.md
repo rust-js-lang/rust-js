@@ -881,8 +881,7 @@ corpus and React's port found no question they answer apart.
 A helper that still holds a word, not a `Name`, asks step 3's migration
 bridge, `Writes::sets_spelled`, `may_replace_spelled`,
 `replaces_in_closures_spelled` and `handles_spelled` (the lead's decision):
-`only_read`, `read_before_set` and `variable_clones`' and `bindings`' asks
-in tidy's `bindings.rs`, `set_after_last_read` in tidy's `shadows.rs`,
+`set_after_last_read` in tidy's `shadows.rs`,
 `values.rs`' resets, `mir::scopes`' assigned parameters and
 `drops::inlined`'s declared bindings. `test/writes-spelled-bridge.txt`
 counts their calls, a ratchet that only falls; step 3 isn't done until
@@ -890,4 +889,11 @@ it's empty. Preparation's `shadows` asks what a closure may replace by a
 variable's spelling, as JS reads it, its own question, the spelling step's
 API (`replaced_in_closures_spelled`, `may_replace_spelled` in
 `prepare/shadows.rs`), not the bridge.
+
+The bridge's first group, tidy's `bindings.rs`, asks by id: `only_read`,
+`set_once_in_try`, `read_before_set` (and `copied`'s `set_before_read`,
+given the `Name`s it had) and `variable_clones`' and `clone_aliases`'
+fixed variables, made of the parameters' and kept captures' `Name`s.
+Byte-identical; a probe asking each by id and by the word over the corpus
+and React's port found none apart. The ratchet falls from 13 to 9.
 

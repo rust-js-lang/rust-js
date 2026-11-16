@@ -50,7 +50,7 @@ pub(super) fn copied_bindings(stmts: &mut Vec<Stmt>, user: &IndexSet<js::Name>) 
             // The variable set again only past each read of the binding,
             // `last.next = clone; newLast = clone;`.
             let rest = &block[1..];
-            if set_before_read(rest, a.word(), b.word()) || rebinds(rest, b.word()) || in_closure(rest, b.word()) {
+            if set_before_read(rest, &a, &b) || rebinds(rest, b.word()) || in_closure(rest, b.word()) {
                 continue;
             }
             block.remove(0);
@@ -77,9 +77,10 @@ pub(super) fn copied_bindings(stmts: &mut Vec<Stmt>, user: &IndexSet<js::Name>) 
             // `a` as it's read, of its own declaration, for a read of `b` made one of it.
             let a_read = a.clone();
             let named = !user.contains(a) && user.contains(b);
+            let (a_name, b_name) = (a.clone(), b.clone());
             let (a, b) = (a.to_string(), b.to_string());
             let rest = &stmts[i + 2..];
-            if !set_before_read(rest, &a, &b) && !rebinds(rest, &b) && !in_closure(rest, &b) {
+            if !set_before_read(rest, &a_name, &b_name) && !rebinds(rest, &b) && !in_closure(rest, &b) {
                 // Of a variable rust-js named, `old` of `take()`'s value,
                 // declared here, and a binding the program named: the
                 // binding's name for both, as an `if let`'s is
@@ -122,8 +123,8 @@ pub(super) fn copied_bindings(stmts: &mut Vec<Stmt>, user: &IndexSet<js::Name>) 
 
 /// Whether `stmts` declare `a` again, or set it before a read of `b`, its
 /// copy, on a way to it (ADR 0434, amended): `b` is then no `a`.
-fn set_before_read(stmts: &[Stmt], a: &str, b: &str) -> bool {
-    rebinds(stmts, a) && (declares(stmts, a) || !read_before_set(stmts, b, a, &mut false))
+fn set_before_read(stmts: &[Stmt], a: &js::Name, b: &js::Name) -> bool {
+    rebinds(stmts, a.word()) && (declares(stmts, a.word()) || !read_before_set(stmts, b, a, &mut false))
 }
 
 /// `const old = x; .. if (old) { const updatesForLane = old; .. }` of a

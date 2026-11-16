@@ -74,20 +74,20 @@ pub(super) fn unread_made(stmts: &mut Vec<Stmt>, mentions: &IndexMap<String, usi
 
 /// Whether `stmts` read `name` alone, `name[i]` or `name.length`: not
 /// assign it, call a method of it, or give it to what could change it.
-pub(super) fn only_read(stmts: &[Stmt], name: &str) -> bool {
+pub(super) fn only_read(stmts: &[Stmt], name: &js::Name) -> bool {
     let mut stmts = stmts.to_vec();
     let (mut all, mut read) = (0, 0);
     js::each_expr_mut(&mut stmts, &mut |e| match &e.kind {
-        ExprKind::Var(v) if v.is(name) => all += 1,
+        ExprKind::Var(v) if v == name => all += 1,
         ExprKind::Index(of, _) | ExprKind::Member(of, _)
-            if matches!(&of.kind, ExprKind::Var(v) if v.is(name))
+            if matches!(&of.kind, ExprKind::Var(v) if v == name)
                 && !matches!(&e.kind, ExprKind::Member(_, m) if m != "length") =>
         {
             read += 1
         }
         _ => {}
     });
-    all == read && !js::Writes::sets_spelled(&stmts, name)
+    all == read && !js::Writes::sets(&stmts, name)
 }
 
 /// An arrow's parameter its function's names made unique, `(value$1) =>
@@ -198,8 +198,7 @@ pub(super) fn alias_variables(body: &mut Vec<Stmt>, fixed: &IndexSet<String>) {
                     || last.is_some_and(|last| {
                         let reads = &stmts[i + 1..=last];
                         js::Writes::of(reads).may_replace(of)
-                            && (declares(reads, of.word())
-                                || !read_before_set(reads, alias.word(), of.word(), &mut false))
+                            && (declares(reads, of.word()) || !read_before_set(reads, alias, of, &mut false))
                     });
                 if !kept {
                     // Each read where it's written, else where the
@@ -236,9 +235,9 @@ pub(super) fn alias_variables(body: &mut Vec<Stmt>, fixed: &IndexSet<String>) {
 /// not, but `of = e`, which reads `e` first. Not of a closure's read,
 /// which may run once `of` is set: no closure reads a temporary, and
 /// `copied_bindings` takes none whose binding one reads.
-pub(super) fn read_before_set(stmts: &[Stmt], alias: &str, of: &str, set: &mut bool) -> bool {
-    let reads = |stmts: &[Stmt]| js::mentions_in(stmts, alias) > 0;
-    let sets = |stmts: &[Stmt]| js::Writes::of(stmts).may_replace_spelled(of);
+pub(super) fn read_before_set(stmts: &[Stmt], alias: &js::Name, of: &js::Name, set: &mut bool) -> bool {
+    let reads = |stmts: &[Stmt]| js::mentions_of(stmts, alias) > 0;
+    let sets = |stmts: &[Stmt]| js::Writes::of(stmts).may_replace(of);
     for stmt in stmts {
         let one = std::slice::from_ref(stmt);
         match &stmt.kind {
@@ -262,7 +261,7 @@ pub(super) fn read_before_set(stmts: &[Stmt], alias: &str, of: &str, set: &mut b
                 let goes_on = |stmts: &[Stmt]| !stmts.last().is_some_and(js::ends);
                 *set = (goes_on(then) && *set) || (goes_on(otherwise) && other);
             }
-            StmtKind::Assign(target, value) if matches!(&target.kind, ExprKind::Var(v) if v.is(of)) => {
+            StmtKind::Assign(target, value) if matches!(&target.kind, ExprKind::Var(v) if v == of) => {
                 let value = [StmtKind::Expr(value.clone()).at(stmt.span)];
                 if *set && reads(&value) || reads(&value) && sets(&value) {
                     return false;
@@ -397,7 +396,7 @@ pub(super) fn named_temporaries(body: &mut Vec<Stmt>) {
             // and never again: as a `const` from there on (#444).
             let a = match &stmts[i].kind {
                 StmtKind::Const(a, _) => a.clone(),
-                StmtKind::Let(a, None) if set_once_in_try(&stmts[i + 1..], a.word()) => a.clone(),
+                StmtKind::Let(a, None) if set_once_in_try(&stmts[i + 1..], a) => a.clone(),
                 // Or the one name a `const` takes apart, a cell's value read
                 // while its guard is, `const { value: _4 } = $borrow(cell)`,
                 // `let Some(chunk) = cell.borrow().clone() else ..`'s (#452).
@@ -470,18 +469,18 @@ pub(super) fn named_temporaries(body: &mut Vec<Stmt>) {
 /// `try` of them, `try { a = e; } catch ..`, a drop guard's, set there
 /// and mentioned nowhere else in it, and never set again: what's after it
 /// reads one value, as of a `const`.
-pub(super) fn set_once_in_try(stmts: &[Stmt], a: &str) -> bool {
-    let mentions = |s: &Stmt| js::mentions_in(std::slice::from_ref(s), a);
+pub(super) fn set_once_in_try(stmts: &[Stmt], a: &js::Name) -> bool {
+    let mentions = |s: &Stmt| js::mentions_of(std::slice::from_ref(s), a);
     let Some(j) = stmts.iter().position(|s| mentions(s) > 0) else {
         return false;
     };
     let set = match &stmts[j].kind {
         StmtKind::Try(body, _) | StmtKind::TryCatch(body, _, _) => body.iter().find(|s| mentions(s) > 0).is_some_and(
-            |s| matches!(&s.kind, StmtKind::Assign(target, _) if matches!(&target.kind, ExprKind::Var(v) if v.is(a))),
+            |s| matches!(&s.kind, StmtKind::Assign(target, _) if matches!(&target.kind, ExprKind::Var(v) if v == a)),
         ),
         _ => false,
     };
-    set && mentions(&stmts[j]) == 1 && !js::Writes::of(&stmts[j + 1..]).may_replace_spelled(a)
+    set && mentions(&stmts[j]) == 1 && !js::Writes::of(&stmts[j + 1..]).may_replace(a)
 }
 
 /// Each `const b = a;` of a name the program gives in the blocks of
@@ -695,11 +694,11 @@ pub(super) fn clone_aliases(
     (params, kept): (&[js::Pattern], &IndexSet<js::Name>),
     clones: &crate::lower::mir::hints::Clones,
 ) {
-    let fixed: IndexSet<String> = (params.iter())
-        .flat_map(|param| param.names())
-        .chain(kept.iter().map(js::Name::word))
-        .filter(|name| !rebinds(body, name))
-        .map(str::to_string)
+    let fixed: IndexSet<js::Name> = (params.iter())
+        .flat_map(|param| param.bound())
+        .chain(kept)
+        .filter(|name| !rebinds(body, name.word()))
+        .cloned()
         .collect();
     clones_read_as(body, &fixed, &clones.all);
 }
@@ -713,8 +712,8 @@ pub(super) fn clone_aliases(
 /// guard among them, `const old = current;` whose `current` is set again.
 pub(super) fn variable_clones(body: &mut Vec<Stmt>, clones: &crate::lower::mir::hints::Clones) {
     let writes = js::Writes::of(body);
-    let fixed: IndexSet<String> = (cloned_from(body, &clones.rcs).into_iter())
-        .filter(|(_, a)| bindings(body, a, false) == 1 && !writes.may_replace_spelled(a))
+    let fixed: IndexSet<js::Name> = (cloned_from(body, &clones.rcs).into_iter())
+        .filter(|(_, a)| bindings(body, a.word(), false) == 1 && !writes.may_replace(a))
         .map(|(_, a)| a)
         .collect();
     clones_read_as(body, &fixed, &clones.rcs);
@@ -722,13 +721,13 @@ pub(super) fn variable_clones(body: &mut Vec<Stmt>, clones: &crate::lower::mir::
 
 /// Each `const b = a;` of `body`'s own lists, `b` one of `clones` and `a`
 /// one of `fixed`, gone, `b` read as `a` after it.
-fn clones_read_as(body: &mut Vec<Stmt>, fixed: &IndexSet<String>, clones: &IndexSet<String>) {
+fn clones_read_as(body: &mut Vec<Stmt>, fixed: &IndexSet<js::Name>, clones: &IndexSet<String>) {
     js::statement_lists(body, &mut |stmts| {
         let mut i = 0;
         while i < stmts.len() {
             if let StmtKind::Const(b, value) = &stmts[i].kind
                 && let ExprKind::Var(a) = &value.kind
-                && fixed.contains(a.word())
+                && fixed.contains(a)
                 && clones.contains(b.word())
                 && !rebinds(&stmts[i + 1..], b.word())
             {
@@ -750,7 +749,7 @@ fn clones_read_as(body: &mut Vec<Stmt>, fixed: &IndexSet<String>, clones: &Index
 
 /// Each `const b = a;` of `body`'s own lists that a `clone()` made,
 /// `clones`: `b` and `a`.
-fn cloned_from(body: &mut Vec<Stmt>, clones: &IndexSet<String>) -> Vec<(String, String)> {
+fn cloned_from(body: &mut Vec<Stmt>, clones: &IndexSet<String>) -> Vec<(js::Name, js::Name)> {
     let mut found = Vec::new();
     js::statement_lists(body, &mut |stmts| {
         for stmt in stmts.iter() {
@@ -758,7 +757,7 @@ fn cloned_from(body: &mut Vec<Stmt>, clones: &IndexSet<String>) -> Vec<(String, 
                 && let ExprKind::Var(a) = &value.kind
                 && clones.contains(b.word())
             {
-                found.push((b.to_string(), a.to_string()));
+                found.push((b.clone(), a.clone()));
             }
         }
     });

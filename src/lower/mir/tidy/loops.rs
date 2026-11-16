@@ -463,7 +463,7 @@ fn counted_range(
     let same = end.is_constant()
         || matches!(&end.kind, ExprKind::Var(v) if !js::Writes::sets(&body, v))
         || matches!(&end.kind, ExprKind::Member(of, length)
-            if length == "length" && matches!(&of.kind, ExprKind::Var(v) if only_read(&body, v.word())));
+            if length == "length" && matches!(&of.kind, ExprKind::Var(v) if only_read(&body, v)));
     // JS's `++` steps a number: a `char`'s range, text, steps by
     // its code point, past the surrogates, as `$rangeNext` does.
     // Of arithmetic, `i + 1`, an integer's: a `char` has none.

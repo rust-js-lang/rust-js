@@ -24,8 +24,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an `Rc`'s clone of a variable bound once is a variable of its own, `const closing = response;`, where it's the same object, read by its name (the user's decision, rd616; ADR 0846 amended)",
     file: "src/lower/mir/tidy/bindings.rs",
-    find: "        .filter(|(_, a)| bindings(body, a, false) == 1 && !writes.may_replace_spelled(a))\n",
-    replace: "        .filter(|(_, a)| bindings(body, a, false) == 1 && !writes.may_replace_spelled(a) && false)\n",
+    find: "        .filter(|(_, a)| bindings(body, a.word(), false) == 1 && !writes.may_replace(a))\n",
+    replace: "        .filter(|(_, a)| bindings(body, a.word(), false) == 1 && !writes.may_replace(a) && false)\n",
     tests: ["test/corpus.test.ts", "-t", "^rc_clone_aliases.rs$"],
     snapshots: true,
   },
@@ -34,8 +34,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a clone of a variable set after is read by the variable's name, its new value: `close 4` where Rust's clone closes the first `Rc`, `close 3` (rd616)",
     file: "src/lower/mir/tidy/bindings.rs",
-    find: "        .filter(|(_, a)| bindings(body, a, false) == 1 && !writes.may_replace_spelled(a))\n",
-    replace: "        .filter(|(_, a)| bindings(body, a, false) == 1)\n",
+    find: "        .filter(|(_, a)| bindings(body, a.word(), false) == 1 && !writes.may_replace(a))\n",
+    replace: "        .filter(|(_, a)| bindings(body, a.word(), false) == 1)\n",
     tests: ["test/corpus.test.ts", "-t", "^rc_clone_aliases.rs$"],
   },
   {
@@ -43,9 +43,9 @@ export const mutations: Mutation[] = [
     breaks:
       "an `Rc`'s clone of a parameter is a variable of its own, `const resolved = payload`, where it's the same object, read by its name (ADR 0846)",
     file: "src/lower/mir/tidy/bindings.rs",
-    find: "                && fixed.contains(a.word())\n                && clones.contains(b.word())\n",
+    find: "                && fixed.contains(a)\n                && clones.contains(b.word())\n",
     replace:
-      "                && fixed.contains(a.word())\n                && clones.contains(b.word())\n                && false\n",
+      "                && fixed.contains(a)\n                && clones.contains(b.word())\n                && false\n",
     tests: ["test/corpus.test.ts", "-t", "^rc_shared_by_closures.rs$"],
     snapshots: true,
   },
@@ -54,7 +54,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a clone of a parameter given another value after is read by the parameter's name, the other value: `payload.status = 9` of `first.status.set(9)`",
     file: "src/lower/mir/tidy/bindings.rs",
-    find: "        .filter(|name| !rebinds(body, name))\n",
+    find: "        .filter(|name| !rebinds(body, name.word()))\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^rc_shared_by_closures.rs$"],
   },
@@ -63,8 +63,8 @@ export const mutations: Mutation[] = [
     breaks:
       "any `const b = a` of a parameter is read as `a`, the name the program gave `b` lost: `const gas = n`'s `gas`",
     file: "src/lower/mir/tidy/bindings.rs",
-    find: "                && fixed.contains(a.word())\n                && clones.contains(b.word())\n",
-    replace: "                && fixed.contains(a.word())\n",
+    find: "                && fixed.contains(a)\n                && clones.contains(b.word())\n",
+    replace: "                && fixed.contains(a)\n",
     tests: ["test/corpus.test.ts", "-t", "^sort_unstable_adversary.rs$"],
     snapshots: true,
   },
@@ -430,7 +430,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a clone of what a `move` closure captured stays `const prev$1 = prev`, read by that name (ADR 0879)",
     file: "src/lower/mir/tidy/bindings.rs",
-    find: "        .chain(kept.iter().map(js::Name::word))\n",
+    find: "        .chain(kept)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^branches_as_written.rs$"],
     snapshots: true,
@@ -440,7 +440,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`const _15 = newLast;` of a variable set past each of its reads stays, named `last`, `if (last == null)`, not `newLast` where it's read",
     file: "src/lower/mir/tidy/bindings.rs",
-    find: "                        && (declares(reads, of.word())\n                                || !read_before_set(reads, alias.word(), of.word(), &mut false))\n",
+    find: "                        && (declares(reads, of.word()) || !read_before_set(reads, alias, of, &mut false))\n",
     replace: "",
     tests: [
       "test/lowering-shadows.test.ts",
@@ -538,7 +538,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a temporary a drop guard's `try` sets, `let _8; try { _8 = descriptorOf(name); }`, isn't named for the pattern that binds it, `const descriptorOf = ..` (#444)",
     file: "src/lower/mir/tidy/bindings.rs",
-    find: "                StmtKind::Let(a, None) if set_once_in_try(&stmts[i + 1..], a.word()) => a.clone(),\n",
+    find: "                StmtKind::Let(a, None) if set_once_in_try(&stmts[i + 1..], a) => a.clone(),\n",
     replace: "",
     tests: ["test/lowering-drop-guards.test.ts", "-t", "a field read of what JS made in a guard's scope"],
   },

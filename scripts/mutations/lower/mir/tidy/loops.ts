@@ -55,9 +55,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a range's loop to `v.length` of a `v` the body only reads stays `while (true)`",
     file: "src/lower/mir/tidy/loops.rs",
-    find: "            if length == \"length\" && matches!(&of.kind, ExprKind::Var(v) if only_read(&body, v.word())));\n",
+    find: "            if length == \"length\" && matches!(&of.kind, ExprKind::Var(v) if only_read(&body, v)));\n",
     replace:
-      "            if false && length == \"length\" && matches!(&of.kind, ExprKind::Var(v) if only_read(&body, v.word())));\n",
+      "            if false && length == \"length\" && matches!(&of.kind, ExprKind::Var(v) if only_read(&body, v)));\n",
     tests: [
       "test/lowering-loops.test.ts",
       "-t",

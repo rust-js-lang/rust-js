@@ -640,22 +640,23 @@ mod tests {
     #[test]
     fn set_once_in_a_try() {
         use super::bindings::set_once_in_try;
+        let t8 = lowered("_8");
         let tried = |body: Vec<Stmt>| {
             let rethrow = StmtKind::Throw(Expr::var("error")).at(js::Span::NONE);
             StmtKind::TryCatch(body, Some("error".into()), vec![rethrow]).at(js::Span::NONE)
         };
-        let read = StmtKind::Expr(Expr::call(Expr::var("g"), vec![Expr::var("_8")])).at(js::Span::NONE);
+        let read = StmtKind::Expr(Expr::call(Expr::var("g"), vec![Expr::var(&t8)])).at(js::Span::NONE);
         let set = tried(vec![assign("_8", Expr::call(Expr::var("f"), Vec::new()))]);
-        assert!(set_once_in_try(&[set.clone(), read.clone()], "_8"));
+        assert!(set_once_in_try(&[set.clone(), read.clone()], &t8));
         assert!(!set_once_in_try(
             &[set.clone(), assign("_8", Expr::num(1)), read.clone()],
-            "_8"
+            &t8
         ));
         assert!(!set_once_in_try(
             &[tried(vec![read.clone(), assign("_8", Expr::num(1))])],
-            "_8"
+            &t8
         ));
-        assert!(!set_once_in_try(&[read, set], "_8"));
+        assert!(!set_once_in_try(&[read, set], &t8));
     }
 
     /// Two arms that assign one variable are one assignment of a
