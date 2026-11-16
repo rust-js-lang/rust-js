@@ -552,6 +552,7 @@ export const mutations: Mutation[] = [
       "-t",
       "^(refcell_borrow_loops|take_destructors|loop_drops).rs$",
     ],
+    snapshots: true,
   },
   {
     name: "held-range-end-kept",
