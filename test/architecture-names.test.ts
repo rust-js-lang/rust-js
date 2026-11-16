@@ -137,21 +137,3 @@ test("a place is keyed by js::Path, never a name formatted with its fields", () 
   ];
   expect(scope.flatMap(file => shapes.filter(shape => shape.test(read(file))).map(shape => `${file}: ${shape}`))).toEqual([]);
 });
-
-// Step 3's migration bridge, `js::Writes`' asks of a variable's word, not
-// its `Name` (ADR 1150): each file's calls at most
-// `test/writes-spelled-bridge.txt`'s, a ratchet that only falls, none in a
-// file it doesn't list. Step 3 ends when the list is empty. Preparation's
-// own spelled questions, the spelling step's, aren't the bridge.
-test("step 3's bridge of a variable's word only falls", () => {
-  const allowed: Record<string, number> = Object.fromEntries(
-    read("test/writes-spelled-bridge.txt").split("\n").filter((line) => line && !line.startsWith("#"))
-      .map((line) => line.split("\t")).map(([file, n]) => [file, Number(n)]),
-  );
-  const bridge = /\b(?:sets_spelled|may_replace_spelled|replaces_in_closures_spelled|handles_spelled)\(/g;
-  const counted = sources
-    .filter((file) => !file.startsWith("src/prepare/") && file !== "src/js/writes.rs")
-    .map((file) => [file, (read(file).match(bridge) ?? []).length] as const)
-    .filter(([, n]) => n > 0);
-  expect(counted.filter(([file, n]) => n > (allowed[file] ?? 0)).map(([file, n]) => `${file}: ${n}, at most ${allowed[file] ?? 0}`)).toEqual([]);
-});

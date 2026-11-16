@@ -907,3 +907,31 @@ set by its id, and whether a nested declaration takes its spelling by its
 word, as JS reads it. Byte-identical, and the probe found none apart. The
 ratchet falls to 3, `drops::inlined`'s.
 
+## Names are ids, step 3's bridge ends: `kept_variables` asks JS's spelling (2026-11-16)
+
+The bridge's last asker, `drops::inlined`'s `kept_variables`, asks of the
+variables' spellings by design, a question of JS's names as preparation's
+shadows' is, and keeps asking it: `drops::inlined`'s own, not the bridge,
+which is gone, its ratchet with it. A guard's `Drop` binds its fields,
+`let Self { previous, .. } = self`, as variables named as the guard's
+fields' variables; inlining the guard makes each the one JS variable by
+their shared word, so a copy of a field into one of its name declares no
+other. And a variable whose word another declaration has isn't kept,
+since a read of it put where the field's read is may be in that one's
+scope, which JS reads instead.
+
+An attempt to ask it by an inlined copy's origin, a name `js::rebound`
+made keeping the id it's a copy of, broke test/lowering-drop-guards.ts'
+"a guard's fields are its variables, its scope read in place": the
+`Drop`'s binding is no rebound copy, but another Rust variable, so by
+origin the field's reads became the outer `previous` inside the binding's
+`const previous = (previous * 2) >>> 0`, which throws. It found that only
+because the whole suite ran, not the corpus alone: from now on a probe of
+by id against by the word runs over all of `check:fast --all`. The
+attempt, `origin` and `same_origin`, didn't land.
+
+What ends the word here is the spelling step's: the `Drop`'s binding that
+destructures a guard's field made that field's variable where it's
+lowered, and two variables of one word spelled apart by their ids, after
+which the guard needs neither the word's identity nor its capture guard.
+

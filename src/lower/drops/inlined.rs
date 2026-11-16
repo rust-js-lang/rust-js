@@ -681,6 +681,16 @@ fn fields_of(body: &mut Vec<Stmt>, params: &[Pattern], guard: &str) -> Vec<Strin
 /// variable, wherever the guard is read. A copy of the field into one of
 /// its name, `const prevProps = guard.prevProps;`, a `match`'s binding in
 /// its `Drop`, declares no other.
+///
+/// Asked by the variables' spellings, `drops::inlined`'s own question of
+/// JS's names, as preparation's shadows' is (ADR 1150): the `Drop`'s
+/// binding named as the field's variable, `let Self { previous, .. }`, is
+/// another Rust variable that inlining the guard makes that one JS
+/// variable by their shared word; and a variable whose word is declared
+/// again isn't kept, as a read of it put where the field's read is may be
+/// in that one's scope, which JS would read instead. Until the spelling
+/// step makes the binding the field's variable where it's lowered and
+/// spells two variables of one word apart by their ids.
 fn kept_variables(body: &[Stmt], params: &[Pattern], guard: &str, fields: &[(String, Expr)]) -> IndexSet<String> {
     let mut declared: IndexMap<String, usize> = IndexMap::default();
     js::each_declared(body, &mut |name| *declared.entry(name.to_string()).or_default() += 1);
@@ -692,8 +702,8 @@ fn kept_variables(body: &[Stmt], params: &[Pattern], guard: &str, fields: &[(Str
                 && matches!(&of.kind, ExprKind::Var(g) if g.is(guard))
                 && fields
                     .iter()
-                    // By its word, as `declared` counts: the drop's copy,
-                    // its body inlined anew (`js::rebound`), is of the word.
+                    // By its word, as `declared` counts: the `Drop`'s binding
+                    // named as the field's variable.
                     .any(|(k, v)| k == key && matches!(&v.kind, ExprKind::Var(v) if v.is(name.word())))
                 && let Some(count) = declared.get_mut(name.word())
             {
@@ -719,12 +729,15 @@ fn kept_variables(body: &[Stmt], params: &[Pattern], guard: &str, fields: &[(Str
     let Some(later) = later else {
         return IndexSet::default();
     };
+    // Written, by a variable of its word: the binding's writes are its.
+    let written = |set: &IndexSet<js::Name>, word: &str| set.iter().any(|n| n.is(word));
     (declared.into_iter())
         .filter(|(name, count)| {
             *count == 1
-                && !later.may_replace_spelled(name)
-                && !whole.replaces_in_closures_spelled(name)
-                && !whole.handles_spelled(name)
+                && !written(&later.replaced, name)
+                && !written(&later.handled, name)
+                && !written(&whole.replaced_in_closures, name)
+                && !written(&whole.handled, name)
         })
         .map(|(name, _)| name)
         .collect()

@@ -86,28 +86,6 @@ impl Writes {
         Writes::of(stmts).set.get(name).copied().unwrap_or(0)
     }
 
-    /// Step 3's migration bridge (ADR 1150): whether a variable spelled
-    /// `word` may be replaced, for a helper that still holds a word, not a
-    /// `Name`. Its callers outside preparation are counted by
-    /// `test/architecture-names.test.ts`, a ratchet that only falls; step 3
-    /// ends when it's none. Ask `may_replace` of a `Name`.
-    pub fn may_replace_spelled(&self, word: &str) -> bool {
-        self.replaced.iter().chain(&self.handled).any(|name| name.is(word))
-    }
-
-    /// Step 3's migration bridge (`may_replace_spelled`'s): whether a closure, or a
-    /// function declared in the tree, replaces a variable spelled `word`.
-    /// Ask `replaces_in_closures` of a `Name`.
-    pub fn replaces_in_closures_spelled(&self, word: &str) -> bool {
-        self.replaced_in_closures.iter().any(|name| name.is(word))
-    }
-
-    /// Step 3's migration bridge (`may_replace_spelled`'s): whether a handle is made
-    /// on a variable spelled `word`. Ask `handles` of a `Name`.
-    pub fn handles_spelled(&self, word: &str) -> bool {
-        self.handled.iter().any(|name| name.is(word))
-    }
-
     /// Each place `stmts` write, once each, in any block, a closure's and a
     /// declared function's too: an assignment's target, `x op= ..`'s, `(x =
     /// ..)`'s in an expression and `x++`'s; each target of a destructuring
