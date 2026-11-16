@@ -141,11 +141,15 @@ closing comment where they change.
 ## Reading the signal
 
 Count kind × area periodically, weekly and before choosing the next
-refactor:
-
-```sh
-gh issue list --state all --limit 2000 --json labels --jq '[.[] | [.labels[].name] | {k: (map(select(startswith("kind: ")))[0]), a: (map(select(startswith("area: ")))[0])} | select(.k != null and .a != null)] | group_by([.a, .k]) | sort_by(-length) | .[] | "\(length)\t\(.[0].a)\t\(.[0].k)"'
-```
+refactor, with `bun scripts/clusters.ts`: each cell's open and closed
+issues over the last 14 days (`--days=N`) and all time, of issues by
+`nguyenyou` and `github-actions` alone, each cluster marked with what its
+kind calls for, read from the table above. The nightly runs it and keeps
+one comment on the architecture review's campaign, #1681, edited in place:
+each open cluster, its open issues, and the issue tracking its refactor,
+an open one whose body has a line `cluster: <kind> × <area>` (the labels
+without their prefixes, `cluster: protocol gap × iterators`), or that
+there's none.
 
 Three or more of one kind in one area is a cluster. The kind's "A cluster
 calls for" column says what change it needs, made in that area's owners. A

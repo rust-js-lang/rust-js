@@ -23,6 +23,11 @@ The new `table_rows_resized_unseen.rs` covers each way a table's row may
 resize with no row's `&mut` given to a call (#1849).
 The historical suite totals and CI timings below have not been remeasured.
 
+Added on 2026-11-16: `test/clusters.test.ts`, the issues' kind × area count
+(`scripts/clusters.ts`, ADR 1085, amended): its cells, its threshold of 3,
+each cluster's refactor read from docs/bug-kinds.md's table, and the
+nightly's comment on #1681.
+
 Changed on 2026-11-16: the test selector (`scripts/select.ts`, ADR 1101,
 amended). `bun run push`'s check (`check:fast`) and CI's suite run only the
 test files and corpus cases a change can affect: of a change to `src/`,

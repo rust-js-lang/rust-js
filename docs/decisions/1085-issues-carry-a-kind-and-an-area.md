@@ -155,6 +155,21 @@ Changes 1 and 3 are oracles: they automate the hand probes that found 35
 of the 83 and the ports that found 28. Changes 2, 4, 5 and 6 are the
 ownership refactors that stop each family from recurring.
 
+## Amended: the count is a script the nightly runs (2026-11-16)
+
+The count was a `gh … --jq` line someone ran by hand, weekly in intent.
+**`scripts/clusters.ts` counts each kind × area cell**, open and closed,
+over a window (14 days by default) and all time, of issues by `nguyenyou`
+and `github-actions` alone, as the project acts on no one else's. A cell
+of 3 or more, in either, is a cluster, and the refactor it calls for is
+read from docs/bug-kinds.md's table of kinds, the one authority, never
+copied. **The nightly keeps one comment on the campaign, #1681, edited in
+place** (marked `<!-- rust-js clusters -->`): each open cluster, its open
+issues, and its tracking refactor, an open issue whose body has a line
+`cluster: <kind> × <area>`, or that there's none. A cluster with no
+tracking refactor is the next refactor's candidate. Held by
+`test/clusters.test.ts`.
+
 ## Amended: change 6's JS-boundary test (#822)
 
 Change 6's first half, one owner of a place's `None`, is #819's `NoneForm`
