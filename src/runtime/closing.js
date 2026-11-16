@@ -114,12 +114,6 @@ function $closing(it, drop, slices = true) {
     $closedAfter(ends, close);
     return folded;
   };
-  // Its `try_fold`, its iterator's, done with where it isn't stopped.
-  const tryFold = (init, f, broke, unwind, ends) => {
-    const folded = $lent(it).tryFold(init, f, broke, unwind, ends);
-    if (!broke(folded) && !closing.held) close();
-    return folded;
-  };
   $forward(closing, it, {
     advanceBackBy: slice ? advanceBackBy : undefined,
     // Its `advance_by`, its iterator's own, a compiled std struct's (#286).
@@ -132,7 +126,6 @@ function $closing(it, drop, slices = true) {
     last: it.ownLast || intoIter ? last : undefined,
     rfold: it.rfold !== undefined ? rfold : undefined,
     tryRfold: "tryRfold",
-    tryFold,
   });
   return closing;
 }

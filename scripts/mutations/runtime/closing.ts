@@ -59,14 +59,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^own_fold_through_adapters.rs$"],
   },
   {
-    name: "closing-try-fold-by-next",
-    breaks: "a closing's tryFold is its iterator's",
-    file: "src/runtime/closing.js",
-    find: "    tryRfold: \"tryRfold\",\n    tryFold,\n",
-    replace: "    tryRfold: \"tryRfold\",\n",
-    tests: ["test/corpus.test.ts", "-t", "skip_try_fold"],
-  },
-  {
     name: "closing-nth-by-next",
     breaks: "a closing's nth is its iterator's",
     file: "src/runtime/closing.js",

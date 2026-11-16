@@ -132,7 +132,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/steps.js",
     find: "        const found = this.tryFold(false, (_, x) => $kept(keep, drop, x, i++) && ((item = x), true), (found) => found);",
     replace: "        let step;\n        do step = this.next(); while (!step.done && !$kept(keep, drop, step.value, i++));\n        const found = !step.done && ((item = step.value), true);",
-    tests: ["test/corpus.test.ts", "-t", "skip_try_fold"],
+    tests: ["test/corpus.test.ts", "-t", "^(filter_of_a_take_reversed_trims_by_its_try_rfold|take_rev_trims_from_the_back_in_each_holder|range_inclusive_exhausted).rs$"],
   },
   {
     name: "try-fold-unbroken",

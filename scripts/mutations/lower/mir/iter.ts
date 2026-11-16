@@ -647,7 +647,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter.rs",
     find: "            || filter_asks\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^size_hint_of_adapters.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^(generic_map_folded_and_rfolded|map_ends_size_hint).rs$"],
+    snapshots: true,
   },
   {
     name: "mapped-hint-refused",
