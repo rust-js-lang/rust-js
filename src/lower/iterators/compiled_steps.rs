@@ -378,16 +378,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .unwrap_or(output);
             self.option_of(output).is_some_and(|item| self.boxed_payload(item))
         });
-        let given: Vec<Expr> = std::iter::once("iterator")
+        let names: Vec<js::Name> = std::iter::once("iterator")
             .chain(params.iter().copied())
-            .map(Expr::var)
+            .map(|word| js::Name::declared(word.to_string()))
             .collect();
+        let given: Vec<Expr> = names.iter().map(Expr::var).collect();
         let call = self.impl_call(next, args, given, span)?;
         let next = Expr::arrow(
-            std::iter::once("iterator")
-                .chain(params.iter().copied())
-                .map(Into::into)
-                .collect(),
+            names.into_iter().map(Into::into).collect(),
             vec![StmtKind::Return(Some(call)).at(js::Span::NONE)],
         );
         let next = passed_on(&next, Taker::Made, &[]).unwrap_or(next);

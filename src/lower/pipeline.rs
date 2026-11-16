@@ -820,7 +820,11 @@ pub fn lower_crate<'tcx>(
                 match local_consts.contains_key(&key.to_def_id()) {
                     true => local_const_holes.push((key.to_def_id(), constant)),
                     false if info.owner.is_some() => _ = owned_consts.insert(key.to_def_id(), constant),
-                    false => pass.local_consts.entry(info.module).or_default().push(constant),
+                    // At the module's top, its name the module's (ADR 1150).
+                    false => pass.local_consts.entry(info.module).or_default().push(js::Const {
+                        name: js::Name::module(&info.name),
+                        ..constant
+                    }),
                 }
                 if lowered.jsx {
                     pass.jsx.insert(module);

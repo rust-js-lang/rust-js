@@ -181,7 +181,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             } else {
                 "$rcClone"
             };
-            return Ok(Expr::call(Expr::var(clone), vec![place]));
+            return Ok(Expr::call(Expr::helper(clone), vec![place]));
         }
         // A flattened struct that may be its parent's object, whose derived
         // clone is its own fields alone (#1820).

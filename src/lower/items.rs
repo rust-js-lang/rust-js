@@ -684,8 +684,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let given = *input;
         let input = input.peel_refs();
-        let name = self.parameter_name(input).word();
-        let x = Expr::var(name);
+        let name = js::Name::declared(self.parameter_name(input).word().to_string());
+        let x = Expr::var(&name);
         let body = match known {
             Std::Trim { start, end } => self.trimmed(x, start, end),
             Std::Method(method) => Expr::call(Expr::member(x, method), vec![]),

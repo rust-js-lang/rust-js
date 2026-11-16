@@ -489,3 +489,24 @@ made of text left, of 135,541: the rest are the items' own, lowering's
 and tidy's (`cell/variables`' module cells, `destructuring`'s nested
 patterns, a dictionary's shared entries), and preparation's, step 1's
 third area, which ioCJ takes in parallel (the lead's split).
+
+## Names are ids, step 1's third part: lowering's own names, first batch (2026-11-16)
+
+Of lowering's modules that are mine in the lead's split (ioCJ takes drops,
+classes, `std_types`, display, combinators and `std_impls`; m3-max tidy):
+
+- A module's own functions and constants are the module's names: a
+  `const` at the module's top (`pipeline/consts.rs`, `pipeline.rs`) and
+  each function `module_fn` makes, a dictionary's, a function's value's,
+  a `fn` pointer's or a recursive one's, are `Name::module`, one written in
+  a function's body keeping its body's. `recursive_fn`, `module_fn` and
+  `local_recursive_fn` give the declaration's own `Name` on each path, so a
+  caller, `std_impls`' and `ordering`'s, reads it without asking which.
+- A runtime helper is `Expr::helper`'s, `$rcClone` and `$weakClone` too.
+- Parameters a pass spells itself, `(to, from)`, `(x, i)`, `[key, ..]`,
+  `I{fact}`, a transmute's, `iterator` and a user `next`'s, a probe's
+  `arg{i}`, are made once, `Name::declared`, and cloned into each read.
+
+The corpus, the snapshots, std and the port are as they were. The probe
+counts 3,454 uses of names made of text left in all areas, of 7,027 after
+part 2.

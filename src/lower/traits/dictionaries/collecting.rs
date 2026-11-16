@@ -45,8 +45,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut params: Vec<js::Name> = vec![made_items.clone()];
         let given: Vec<(Ty<'tcx>, crate::lower::recognition::TypeFact, Expr)> = (facts.iter())
             .map(|&(_, fact)| {
-                let name = format!("I{}", fact.word());
-                params.push(name.clone().into());
+                let name = js::Name::declared(format!("I{}", fact.word()));
+                params.push(name.clone());
                 (param, fact, Expr::var(&name))
             })
             .collect();

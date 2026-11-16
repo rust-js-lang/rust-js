@@ -281,9 +281,10 @@ pub(in crate::lower) fn enumerated(it: Expr) -> Expr {
 
 /// `(x, i) => [i, x]`, what `enumerated` maps each item by.
 fn enumerating() -> Expr {
-    let pair = Expr::array(vec![Expr::var("i"), Expr::var("x")]);
+    let (x, i) = (js::Name::declared("x".to_string()), js::Name::declared("i".to_string()));
+    let pair = Expr::array(vec![Expr::var(&i), Expr::var(&x)]);
     Expr::arrow(
-        vec!["x".into(), "i".into()],
+        vec![x.into(), i.into()],
         vec![js::StmtKind::Return(Some(pair)).at(js::Span::NONE)],
     )
 }

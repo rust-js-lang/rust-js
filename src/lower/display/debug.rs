@@ -696,11 +696,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let param = self.unspelled("value");
                 let value = self.in_order_of(value, ty, span)?;
                 let (key, item) = (args.type_at(0), args.type_at(1));
-                let key = self.debug_string_with(Expr::var("key"), key, span, pretty)?;
+                let key_name = js::Name::declared("key".to_string());
+                let key = self.debug_string_with(Expr::var(&key_name), key, span, pretty)?;
                 let item = self.debug_string_with(Expr::var(&param), item, span, pretty)?;
                 let pair = join(vec![key, Expr::str(": "), item]);
                 let f = Expr::arrow(
-                    vec![js::Pattern::Array(vec![Some("key".into()), Some(param.clone().into())])],
+                    vec![js::Pattern::Array(vec![
+                        Some(key_name.into()),
+                        Some(param.clone().into()),
+                    ])],
                     vec![StmtKind::Return(Some(pair)).at(js::Span::NONE)],
                 );
                 let entries = Expr::builtin(Expr::js_global("Array"), "from", vec![value]);

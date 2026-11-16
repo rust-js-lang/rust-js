@@ -175,7 +175,11 @@ pub(super) fn lower_consts<'b, 'tcx>(
         match local_consts.contains_key(&named.to_def_id()) {
             true => local_const_holes.push((named.to_def_id(), constant)),
             false if info.owner.is_some() => _ = owned_consts.insert(named.to_def_id(), constant),
-            false => const_items.entry(info.module).or_default().push(constant),
+            // At the module's top, its name the module's (ADR 1150).
+            false => const_items.entry(info.module).or_default().push(js::Const {
+                name: js::Name::module(&info.name),
+                ..constant
+            }),
         }
     }
     Consts {

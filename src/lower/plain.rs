@@ -67,7 +67,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let bytes = Ty::new_array(self.tcx, self.tcx.types.u8, size);
         let arrow = |cx: &mut Self, name: &str, from: Ty<'tcx>, to: Ty<'tcx>| -> R<Expr> {
             let mut body = Vec::new();
-            let made = cx.transmute(Expr::var(name), (from, to), span, &mut body)?;
+            let name = js::Name::declared(name.to_string());
+            let made = cx.transmute(Expr::var(&name), (from, to), span, &mut body)?;
             body.push(StmtKind::Return(Some(made)).at(js::Span::NONE));
             Ok(Expr::arrow(vec![name.into()], body))
         };

@@ -546,7 +546,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.is_unknown(ty) {
             return Ok(None);
         }
-        let (to, from) = (Expr::var("to"), Expr::var("from"));
+        let (to_name, from_name) = (
+            js::Name::declared("to".to_string()),
+            js::Name::declared("from".to_string()),
+        );
+        let (to, from) = (Expr::var(&to_name), Expr::var(&from_name));
         let place = Expr::member(to.clone(), js::HELD);
         let body = match self.written_over(ty, (place.clone(), to.clone()), from.clone(), span)? {
             Some((None, written)) => vec![StmtKind::Expr(written).at(js::Span::NONE)],
@@ -565,7 +569,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 None => return Ok(None),
             },
         };
-        Ok(Some(Expr::arrow(vec!["to".into(), "from".into()], body)))
+        Ok(Some(Expr::arrow(vec![to_name.into(), from_name.into()], body)))
     }
 
     /// How a `ty`, a JS object, is written over in place by a clone of

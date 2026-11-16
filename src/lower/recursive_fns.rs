@@ -272,7 +272,7 @@ fn names<'m>(made: &'m IndexMap<Key<'_>, Made<'_>>, module: LocalModId) -> impl 
 /// The functions a type only a caller knows has, being made: each by its
 /// kind and type, its name, which one inside it calls.
 #[derive(Default)]
-pub(super) struct Making<'tcx>(Vec<(Kind, Ty<'tcx>, String)>);
+pub(super) struct Making<'tcx>(Vec<(Kind, Ty<'tcx>, js::Name)>);
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The names this body's module's functions have, those the bodies
@@ -296,7 +296,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         params: &[Base<'_>],
         make: impl FnOnce(&mut Self, Vec<Expr>, &mut Vec<Stmt>) -> R<Expr>,
         out: &mut Vec<Stmt>,
-    ) -> R<String> {
+    ) -> R<js::Name> {
         if ty.has_param() || ty.has_aliases() {
             return self.local_recursive_fn((kind, ty, base), params, make, out);
         }
@@ -348,7 +348,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         (kind, ty, base): (Kind, Ty<'tcx>, &str),
         params: &[Base<'_>],
         make: impl FnOnce(&mut Self, Vec<Expr>, &mut Vec<Stmt>) -> R<Expr>,
-    ) -> R<String> {
+    ) -> R<js::Name> {
         let key = (self.module, kind, self.tcx.erase_and_anonymize_regions(ty));
         let mut here = self.module_fns_made.borrow_mut();
         let outer = here.building.last().copied();
@@ -362,7 +362,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             here.calls.push((outer, key, self.item));
             drop(here);
             self.names.borrow_mut().insert(name.clone());
-            return Ok(name);
+            return Ok(js::Name::module(&name));
         }
         // Apart from the module's names, its other functions', and this
         // body's, which mustn't hide it.
@@ -396,7 +396,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut names: IndexSet<String> = (self.module_names.iter().cloned())
             .chain(self.module_fn_names())
             .collect();
-        let params: Vec<String> = params.iter().map(|p| super::fresh_in(&mut names, &p.word())).collect();
+        let params: Vec<js::Name> = params
+            .iter()
+            .map(|p| js::Name::declared(super::fresh_in(&mut names, &p.word())))
+            .collect();
         let names = self.names.replace(names);
         let uses = self.dependencies.replace(Dependencies::default());
         let given = self.set_given_aside();
@@ -409,7 +412,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         body.push(StmtKind::Return(Some(value?)).at(js::Span::NONE));
         merge(&mut self.dependencies.borrow_mut(), &own, self.item);
         let function = js::Function {
-            name: name.clone().into(),
+            name: js::Name::module(&name),
             params: params.into_iter().map(js::Pattern::from).collect(),
             body,
             export: false,
@@ -423,7 +426,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut here = self.module_fns_made.borrow_mut();
         let made = here.made.get_mut(&key).expect("made above");
         made.lowered = Some((function, own));
-        Ok(name)
+        Ok(js::Name::module(&name))
     }
 
     /// `recursive_fn`'s of a type only a caller knows: a function of this
@@ -435,20 +438,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         params: &[Base<'_>],
         make: impl FnOnce(&mut Self, Vec<Expr>, &mut Vec<Stmt>) -> R<Expr>,
         out: &mut Vec<Stmt>,
-    ) -> R<String> {
+    ) -> R<js::Name> {
         if let Some((.., name)) = self.recursive.0.iter().find(|(k, t, _)| *k == kind && *t == ty) {
             return Ok(name.clone());
         }
         let name = self.fresh(Base::Named(base));
         let params: Vec<crate::js::Name> = params.iter().map(|&p| self.fresh(p)).collect();
-        self.recursive.0.push((kind, ty, name.clone().into_word()));
+        self.recursive.0.push((kind, ty, name.clone()));
         let mut body = Vec::new();
         let value = make(self, params.iter().map(Expr::var).collect(), &mut body);
         self.recursive.0.pop();
         body.push(StmtKind::Return(Some(value?)).at(js::Span::NONE));
         let f = Expr::arrow(params.into_iter().map(Into::into).collect(), body);
         out.push(StmtKind::Const(name.clone(), f).at(js::Span::NONE));
-        Ok(name.into_word())
+        Ok(name)
     }
 }
 
