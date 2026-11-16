@@ -63,6 +63,9 @@ type Holder = {
   bound?: string;
   /** A closure given it `&mut`, that shortens it. */
   given?: string;
+  /** A call of the crate's that shortens it through a raw pointer a call
+   * it was given `&mut` to kept, before the test (#1966). */
+  kept?: string;
   /** The tests, or a test's form, `<test>/<form>`, whose programs are
    * undefined behaviour under Miri, so no answer of theirs is wrong:
    * each left out, with what Miri says beside it, so none is added again. */
@@ -181,6 +184,38 @@ const holders: Record<string, Holder> = {
     direct: "v.truncate(1);",
     reassign: "v = vec![9];",
     lend: "shorten(&mut v);",
+  },
+  // Given `&mut` to a function that keeps a raw pointer to it, before the
+  // test: a call past the test may shorten it through the pointer (#1966).
+  vec_kept: {
+    params: "mut v: Vec<u32>",
+    setup: `static mut KEPT: *mut Vec<u32> = std::ptr::null_mut();
+    fn keep(v: &mut Vec<u32>) {
+        unsafe { KEPT = v as *mut Vec<u32> };
+    }
+    fn shorten_kept() {
+        unsafe { (*KEPT).truncate(1) };
+    }
+    keep(&mut v);`,
+    make: "",
+    args: four,
+    len: "v.len()",
+    at: (k) => `v[${k}]`,
+    swap: (k) => `{ v.swap(${k}, 0); v[0] }`,
+    drain: (k) => `v.drain(..${k} + 1).count() as u32`,
+    kept: "shorten_kept();",
+    // Undefined behaviour, Miri's Stacked Borrows (nightly, 2026-11-16):
+    // - `in_closure`: the write through `KEPT` invalidates the closure's
+    //   capture of `v`, which `v[k]` then reads: "trying to retag from
+    //   <47559> for SharedReadOnly permission ..., but that tag does not
+    //   exist in the borrow stack".
+    // - a loop's `swap` or `drain`: its `&mut` reborrow of `v` invalidates
+    //   `KEPT`, which the next step writes through, `loop_for`'s and
+    //   `loop_step`'s "trying to retag from <116726> for SharedReadWrite
+    //   permission ..., but that tag does not exist" at `(*KEPT).truncate(1)`.
+    //   Each loop's is left out, `loop_rev`'s and `loop_while`'s too, which
+    //   Miri passes only as their first step panics before a second.
+    undefined: ["in_closure", ...["loop_for", "loop_rev", "loop_step", "loop_while"].flatMap((loop) => [`${loop}/swap`, `${loop}/drain`])],
   },
   slice: {
     params: "mut v: &[u32]",
@@ -502,6 +537,7 @@ const betweens: Record<string, (h: Holder) => string | undefined> = {
   stored: (h) => h.stored,
   bound: (h) => h.bound,
   given: (h) => h.given,
+  kept: (h) => h.kept,
   pointer_write: (h) => h.pointer_write,
 };
 

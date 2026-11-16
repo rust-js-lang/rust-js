@@ -119,6 +119,12 @@ pub(super) struct State {
     /// through it leaves the pointer able to, so no test of it, nor any
     /// relation, tells what it is (#1782).
     pub(super) lent_away: IndexSet<Local>,
+    /// Each `Vec` given `&mut` to code that may keep a raw pointer to it
+    /// (`called_on_mut`), until it's assigned again: a call that may write,
+    /// a drop that runs code or a write through a raw pointer may change
+    /// its length, as a cell's, so a test of it holds only until one
+    /// (#1966).
+    pub(super) escaped: IndexSet<Local>,
     /// Each held guard's cell, by the guard, from its `borrow_mut()` to
     /// its drop: no code but through the guard changes it (`guards`,
     /// #1815).
@@ -238,6 +244,7 @@ impl State {
                 .map(|(&k, &v)| (k, v))
                 .collect(),
             lent_away: self.lent_away.union(&other.lent_away).copied().collect(),
+            escaped: self.escaped.union(&other.escaped).copied().collect(),
             pushed: (self.pushed.iter())
                 .filter(|l| other.pushed.contains(*l))
                 .copied()
@@ -342,6 +349,7 @@ impl State {
     /// `local` written: what it held, and each comparison of it, forgotten.
     pub(super) fn forget(&mut self, local: Local) {
         self.lent_away.shift_remove(&local);
+        self.escaped.shift_remove(&local);
         self.intervals[local] = None;
         self.comparisons.shift_remove(&local);
         self.comparisons

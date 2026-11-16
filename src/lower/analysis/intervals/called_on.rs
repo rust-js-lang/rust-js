@@ -5,10 +5,20 @@
 //! `deref_mut` to a slice, keeps it known. A closure that captures such a
 //! `&mut` holds it too, and lends it only to the calls of it it's given
 //! to, `take()`'s `call_mut`: past its last, nothing writes the `Vec`
-//! (#1946).
+//! (#1946). But through a raw pointer: one given to the crate's code, or
+//! to any as a closure that holds it, which may keep a pointer to it, is
+//! escaped from then on (`State::escaped`), its length known from a test
+//! only until a call that may write, a drop that runs code or a write
+//! through a raw pointer, as a cell's is; std's code given the `&mut
+//! Vec` itself keeps none (#1966).
 
 use super::*;
-use crate::lower::recognition::{StdItem, deref_call, is_std_def, keeps_vec_length};
+use crate::lower::generic_facts::is_type_parameter;
+use crate::lower::mut_refs::{holds_a_raw_pointer, lets_pointers_out_of};
+use crate::lower::recognition::{
+    StdItem, StdPath, deref_call, is_std_crate, is_std_def, is_std_path, keeps_vec_length,
+};
+use rustc_span::def_id::DefId;
 
 /// Of `body`, each `&mut` of a `Vec` a local holds that's given only to a
 /// call, by the local holding it: the `Vec`'s local. A local is only one
@@ -246,11 +256,25 @@ impl<'tcx> Walk<'_, 'tcx> {
         {
             return;
         }
-        for arg in args {
+        // Std's code given the `&mut Vec` itself keeps no pointer to it,
+        // but where its signature lets one out, `ptr::from_mut(&mut v)`'s
+        // result (`lets_pointers_out_of`); the crate's, or any given a
+        // closure that holds it, may (#1966).
+        let std = func
+            .const_fn_def()
+            .is_some_and(|(callee, _)| is_std_crate(self.tcx, callee));
+        let sig = (self.tcx).instantiate_bound_regions_with_erased(func.ty(&*self.body, self.tcx).fn_sig(self.tcx));
+        for (i, arg) in args.iter().enumerate() {
             if let Some(local) = arg.node.place().and_then(|p| p.as_local())
                 && let Some(&of) = self.called_on.get(&local)
             {
                 after.forget_lengths(state.root(of));
+                let vec = matches!(*self.body.local_decls[local].ty.kind(), ty::Ref(_, to, ty::Mutability::Mut)
+                    if matches!(to.kind(), ty::Adt(adt, _)
+                        if is_std_def(self.tcx, adt.did(), StdItem::Vec) || is_std_def(self.tcx, adt.did(), StdItem::VecDeque)));
+                if !(std && vec) || lets_pointers_out_of(self.tcx, (sig.inputs(), sig.output()), i) {
+                    after.escaped.insert(state.root(of));
+                }
             }
         }
     }
@@ -279,5 +303,113 @@ impl<'tcx> Walk<'_, 'tcx> {
         {
             after.copies.insert(local, state.root(of));
         }
+    }
+}
+
+impl State {
+    /// What's known of each escaped `Vec`'s length forgotten (#1966). Not
+    /// that a `push` made it hold an item: a push lends it `&mut`, which
+    /// leaves no pointer kept before able to write it (Miri's Stacked
+    /// Borrows), so none is known of an escaped one.
+    pub(super) fn forget_escaped(&mut self) {
+        for root in self.escaped.clone() {
+            self.forget_lengths(root);
+        }
+    }
+}
+
+/// Whether `ty` carries code a std function given it may run, which may
+/// write through a pointer kept of an escaped `Vec` (#1966): a closure, a
+/// `dyn`, a function pointer, a function or a type not std's, a type
+/// parameter; and, where the body's formatting may run code
+/// (`formats_code`), std's `fmt::Arguments` and `Argument`, which hide
+/// the `Display` impls they're made of.
+fn carries_code<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>, formats_code: bool) -> bool {
+    ty.walk().any(|part| {
+        part.as_type().is_some_and(|t| match *t.kind() {
+            _ if is_type_parameter(t) => true,
+            ty::Adt(adt, _) if formats_code && is_formatting(tcx, adt.did()) => true,
+            ty::Adt(adt, _) => !is_std_crate(tcx, adt.did()),
+            ty::FnDef(def, _) => !is_std_crate(tcx, def),
+            ty::Closure(..)
+            | ty::CoroutineClosure(..)
+            | ty::Coroutine(..)
+            | ty::Dynamic(..)
+            | ty::FnPtr(..)
+            | ty::Alias(..)
+            | ty::Foreign(_) => true,
+            _ => false,
+        })
+    })
+}
+
+/// Whether `id` is std's `fmt::Arguments` or `fmt::rt::Argument`.
+fn is_formatting(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    is_std_path(tcx, id, StdPath::FmtArguments) || is_std_path(tcx, id, StdPath::RtArgument)
+}
+
+/// Whether `body`'s formatting may run code: an `Argument` made of a
+/// type that carries code, `Argument::new_display::<T>`'s `T`; or an
+/// `Arguments` or `Argument` made elsewhere, a parameter's or a
+/// capture's, which no statement or call here makes, or a call's of code
+/// not std's, or given what carries code (#1966).
+pub(super) fn formats_code<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> bool {
+    let formatting = |ty: Ty<'tcx>| {
+        (ty.walk()).any(|part| {
+            part.as_type()
+                .is_some_and(|t| matches!(*t.kind(), ty::Adt(adt, _) if is_formatting(tcx, adt.did())))
+        })
+    };
+    let mut made: IndexSet<Local> = IndexSet::default();
+    for data in body.basic_blocks.iter() {
+        for statement in &data.statements {
+            if let StatementKind::Assign(assign) = &statement.kind {
+                made.insert(assign.0.local);
+            }
+        }
+        if let TerminatorKind::Call {
+            func,
+            args,
+            destination,
+            ..
+        } = &data.terminator().kind
+        {
+            made.insert(destination.local);
+            let returns = formatting(destination.ty(body, tcx).ty);
+            let code = match func.const_fn_def() {
+                Some((callee, callee_args)) => {
+                    !is_std_crate(tcx, callee)
+                        || callee_args.types().any(|t| carries_code(tcx, t, false))
+                        || (args.iter()).any(|a| carries_code(tcx, a.node.ty(body, tcx), false))
+                }
+                None => true,
+            };
+            if returns && code {
+                return true;
+            }
+        }
+    }
+    (body.local_decls.iter_enumerated()).any(|(local, decl)| !made.contains(&local) && formatting(decl.ty))
+}
+
+impl<'tcx> Walk<'_, 'tcx> {
+    /// Whether a call of `func` may write an escaped `Vec` through a pointer
+    /// kept of it (#1966): one that may run the crate's code, a call of a
+    /// `dyn`, a function pointer or code not std's, or std's given what
+    /// carries code (`carries_code`); or one given what may hold a raw
+    /// pointer, std's `ptr::write(p, ..)` or `NonNull::as_ptr`, which
+    /// writes through it running none (`holds_a_raw_pointer`). Not a global
+    /// allocator's, which JS never runs.
+    pub(super) fn may_write_escaped(&self, func: &Operand<'tcx>, args: &[rustc_span::Spanned<Operand<'tcx>>]) -> bool {
+        let Some((callee, callee_args)) = func.const_fn_def() else {
+            return true;
+        };
+        let given = |a: &rustc_span::Spanned<Operand<'tcx>>| a.node.ty(&*self.body, self.tcx);
+        !is_std_crate(self.tcx, callee)
+            || callee_args
+                .types()
+                .any(|t| carries_code(self.tcx, t, self.formats_code))
+            || (args.iter()).any(|a| carries_code(self.tcx, given(a), self.formats_code))
+            || (args.iter()).any(|a| holds_a_raw_pointer(self.tcx, given(a), &mut Vec::new()))
     }
 }

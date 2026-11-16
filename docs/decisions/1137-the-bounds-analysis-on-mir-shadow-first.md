@@ -1035,3 +1035,39 @@ counts as before; test/intervals-shadow.test.ts's expectations are those
 lists, and `wrapsDisagreed` is `wrapsProved`, the wraps MIR proves. The
 corpus's snapshots and React's port are unchanged. Change 1 of #1681,
 #1672's campaign, is done.
+
+## Amendment: a `Vec` that may have a raw pointer kept of it (2026-11-16, #1966)
+
+`called_on` (#1672 M3 step 5, #1946) took a `Vec` lent `&mut` only to
+calls as unlent, its length known again from a test past them. Borrowck
+holds what such a call does with the `&mut` until the `Vec` is used again,
+but not a raw pointer it keeps. Under Stacked Borrows and Tree Borrows
+alike, a read through `v` leaves that pointer able to write. So a later
+call truncated the `Vec` through it, and `v[k]` under `k < v.len()` read
+`undefined` where Rust panics. This is #1782's hole, for a length.
+
+A `Vec` given `&mut` to the crate's code, or to any as a closure that holds
+it, is now escaped from then on, until it's assigned again. Its length is
+known from a test only until a call that may run the crate's code, a
+drop that runs code, or a write through a raw pointer, as a cell's is. A
+call may run the crate's code where it's not std's, or is std's given what
+carries code: a closure, a `dyn`, a function pointer, a type of the
+crate's, a type parameter, or an `fmt::Arguments` where the body's
+formatting may run code, an `Argument` made of such a type or one made
+elsewhere (`may_write_escaped`, `formats_code`); or one given what may
+hold a raw pointer, `ptr::write(p, ..)`, and a `&mut` made through one,
+`(*STASH).truncate(0)`'s, which write through it running no crate code.
+So `format!` of numbers
+and `String + &str` keep the length. Std's code given the
+`&mut Vec` itself keeps no pointer to it, but where its signature lets
+one out, `ptr::from_mut`'s (`mut_refs`'s `lets_pointers_out_of`, whose
+`holds_a_raw_pointer` counts std's `NonNull`). A `push` lends it `&mut`,
+which leaves no pointer kept before able to write it, so what a push
+shows needs no forgetting. The bounds matrix's holder
+`vec_kept` gives the `Vec` to a function that keeps a pointer, and
+truncates it through the pointer between the test and the index: 13
+programs. Without the rule, 11 of them run otherwise than native Rust;
+`in_closure`'s and the loops' `swap`/`drain` are undefined behaviour under
+Miri, left out. Corpus case `vec_lent_to_code_that_keeps_a_pointer`;
+mutations `called-on-kept-pointer-not-escaped` and
+`escaped-kept-past-a-call`.

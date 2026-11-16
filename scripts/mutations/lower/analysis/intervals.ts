@@ -306,4 +306,20 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^position_index_removed_unchecked.rs$"],
     snapshots: true,
   },
+  {
+    name: "escaped-kept-past-a-call",
+    breaks: "an escaped `Vec`'s length is kept past a call that may write it through a raw pointer kept of it, so `v[k]` under `k < v.len()` past `shorten_kept()` reads `undefined` where Rust panics (#1966)",
+    file: "src/lower/analysis/intervals.rs",
+    find: "                if self.may_write_escaped(func, args) {\n                    after.forget_escaped();\n                }\n",
+    replace: "",
+    tests: ["test/bounds-matrix.test.ts", "-t", "vec_kept"],
+  },
+  {
+    name: "mut-through-a-raw-pointer-writes-none",
+    breaks: "a `&mut` made through a raw pointer, `(*STASH).truncate(0)`'s `&mut (*p)`, is taken to write no escaped `Vec`, though std's `truncate` writes through it, so `(t.len() - 3) as u32` prints -3 where Rust wraps (#1966)",
+    file: "src/lower/analysis/intervals.rs",
+    find: "            && let Rvalue::Ref(_, mir::BorrowKind::Mut { .. }, of) | Rvalue::RawPtr(_, of) = &assign.1\n            && self.written_through_a_pointer(of)\n",
+    replace: "            && let Rvalue::Ref(_, mir::BorrowKind::Mut { .. }, of) | Rvalue::RawPtr(_, of) = &assign.1\n            && false && self.written_through_a_pointer(of)\n",
+    tests: ["test/corpus.test.ts", "-t", "^vec_lent_to_code_that_keeps_a_pointer.rs$"],
+  },
 ];

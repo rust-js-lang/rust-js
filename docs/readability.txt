@@ -1,14 +1,14 @@
 # shape	count	per 10,000 lines
-files	2630
-lines	349761
+files	2632
+lines	349928
 temporaries	0	0
 labeled blocks	0	0
 while (true)	224	6.4
 $iter	2917	83.4
 Iterator.from	354	10.1
 return;	337	9.6
-renamed x$1	16454	470.4
-role fallbacks	8933	255.4
+renamed x$1	16454	470.2
+role fallbacks	8934	255.3
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1	role fallbacks
 test/corpus/adapter_drop_past_a_panic.js	50	0	0	0	1	0	0	0	1
 test/corpus/adapter_drops.js	1849	0	0	1	18	2	1	98	61
@@ -1176,6 +1176,7 @@ test/corpus/index_written_by_an_operation.js	71	0	0	0	0	0	0	0	1
 test/corpus/infallible_shown_through_a_bound.js	55	0	0	0	0	0	0	0	0
 test/corpus/initializer_chains.js	62	0	0	0	0	0	0	0	0
 test/corpus/inline_const_of_a_trait_constant.js	40	0	0	0	0	0	0	0	0
+test/corpus/inner_generic_fn_of_two_types.js	36	0	0	0	0	0	0	0	0
 test/corpus/inner_while_exit_in_catch.js	112	0	0	0	0	0	0	0	2
 test/corpus/inner_while_then_break.js	35	0	0	0	0	0	0	0	0
 test/corpus/inspect_by_a_function_before_a_chain_argument.js	34	0	0	0	0	0	0	5	4
@@ -2478,6 +2479,7 @@ test/corpus/vec_grown_by_iterators_whose_hint_is_stds.js	263	0	0	0	4	0	0	16	9
 test/corpus/vec_into_array.js	38	0	0	0	0	0	0	2	2
 test/corpus/vec_item_written_whole.js	62	0	0	0	0	0	0	0	0
 test/corpus/vec_last_takes_its_back.js	489	0	0	0	28	1	0	6	31
+test/corpus/vec_lent_to_code_that_keeps_a_pointer.js	131	0	0	0	0	0	0	0	1
 test/corpus/vec_push_mut.js	32	0	0	0	0	0	0	0	1
 test/corpus/vec_remove_insert_in_bounds.js	80	0	0	0	0	0	0	0	0
 test/corpus/vec_repeat_drops.js	76	0	0	0	0	0	0	2	0

@@ -10,6 +10,7 @@ use crate::js::{self, Expr, Prop, Stmt, StmtKind};
 use crate::lower::MutRefForm;
 use crate::lower::copies::InPlaceWriter;
 use crate::lower::generic_facts::{Crossing, Form};
+use crate::lower::recognition::{StdPath, is_std_crate, is_std_path};
 use crate::lower::temporary_names::Role;
 
 /// The forms generic code gives a function it calls as an `F`, of each
@@ -18,7 +19,7 @@ use crate::lower::temporary_names::Role;
 pub(super) type FormsGiven<'tcx> = (Vec<Option<(Form, Crossing<'tcx>)>>, Option<Form>);
 use rustc_ast::Mutability;
 use rustc_middle::thir::{ExprId, ExprKind};
-use rustc_middle::ty::{self, Ty};
+use rustc_middle::ty::{self, Ty, TyCtxt};
 use rustc_span::Span;
 use rustc_span::def_id::DefId;
 
@@ -737,59 +738,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// parameter given the borrow, `into_iter(self)`'s `Self` of `&mut C`,
     /// another parameter or the result that names that type parameter,
     /// `Self::IntoIter`, which may hold it (#973).
-    /// Whether a function of parameters `inputs` and result `output` may let
-    /// the reference its parameter `i` is given leave as a raw pointer,
-    /// which has no lifetime to say so: a raw pointer in its result, or in
-    /// another parameter behind a reference or a pointer, where the callee
-    /// may store one, `out: &mut *mut T`; not a raw pointer given by value,
-    /// `ptr::hash(p, state)`'s `p`, which takes nothing out (ADR 1114). A
-    /// raw pointer in a field of the crate's own type too, lock_api's
-    /// `ExclusiveGuardData<T>(*mut T)` (#1283). Of its signature alone, so
-    /// each call of it, direct, a dictionary's, a function pointer's, a
-    /// closure's or a library's, agrees.
-    fn lets_pointers_out_of(&self, (inputs, output): (&[Ty<'tcx>], Ty<'tcx>), i: usize) -> bool {
-        let raw = |ty: Ty<'tcx>| self.holds_a_raw_pointer(ty, &mut Vec::new());
-        let stores = |ty: Ty<'tcx>| {
-            ty.walk().any(|part| {
-                part.as_type()
-                    .and_then(|t| (t.is_ref() || t.is_raw_ptr()).then(|| t.builtin_deref(true)).flatten())
-                    .is_some_and(raw)
-            })
-        };
-        inputs.get(i).is_some_and(|input| input.is_ref())
-            && (raw(output) || (inputs.iter().enumerate()).any(|(j, &ty)| j != i && stores(ty)))
-    }
-
-    /// Whether `ty` holds a raw pointer: in it, or in a field of the
-    /// crate's own type in it, `seen` those walked already.
-    fn holds_a_raw_pointer(&self, ty: Ty<'tcx>, seen: &mut Vec<DefId>) -> bool {
-        let mut walk = ty.walk();
-        while let Some(part) = walk.next() {
-            let Some(part) = part.as_type() else {
-                continue;
-            };
-            match *part.kind() {
-                _ if part.is_raw_ptr() => return true,
-                // A `PhantomData` holds no value, a marker's `*const ()` none.
-                ty::Adt(marker, _) if marker.is_phantom_data() => walk.skip_current_subtree(),
-                ty::Adt(adt, args) if !self.is_std(adt.did()) && !seen.contains(&adt.did()) => {
-                    seen.push(adt.did());
-                    if (adt.all_fields())
-                        .any(|field| self.holds_a_raw_pointer(field.ty(self.tcx, args).skip_normalization(), seen))
-                    {
-                        return true;
-                    }
-                }
-                _ => {}
-            }
-        }
-        false
-    }
-
     /// `lets_pointers_out_of` of the function `fn_id`.
     pub(in crate::lower) fn lets_pointers_out(&self, fn_id: DefId, i: usize) -> bool {
         let (inputs, output) = self.signature_of(fn_id);
-        self.lets_pointers_out_of((&inputs, output), i)
+        lets_pointers_out_of(self.tcx, (&inputs, output), i)
     }
 
     /// Whether a call of `fn_id` is given, for its parameter `i`, the
@@ -805,7 +757,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `given_its_pointer` of a function value of signature `sig`, a
     /// function pointer's or a closure's, whose parameters are its types'.
     pub(in crate::lower) fn sig_given_its_pointer(&self, (inputs, output): (&[Ty<'tcx>], Ty<'tcx>), i: usize) -> bool {
-        self.lets_pointers_out_of((inputs, output), i)
+        lets_pointers_out_of(self.tcx, (inputs, output), i)
             && matches!(*inputs[i].kind(), ty::Ref(_, pointee, Mutability::Mut) if self.mut_ref_form(pointee).is_cell())
     }
 
@@ -1251,4 +1203,59 @@ fn instantiated_args<'tcx>(
 ) -> Option<ty::GenericArgsRef<'tcx>> {
     tcx.try_instantiate_and_normalize_erasing_regions(args, typing_env, ty::EarlyBinder::bind(tcx, of))
         .ok()
+}
+
+/// Whether a function of parameters `inputs` and result `output` may let
+/// the reference its parameter `i` is given leave as a raw pointer,
+/// which has no lifetime to say so: a raw pointer in its result, or in
+/// another parameter behind a reference or a pointer, where the callee
+/// may store one, `out: &mut *mut T`; not a raw pointer given by value,
+/// `ptr::hash(p, state)`'s `p`, which takes nothing out (ADR 1114). A
+/// raw pointer in a field of the crate's own type too, lock_api's
+/// `ExclusiveGuardData<T>(*mut T)` (#1283). Of its signature alone, so
+/// each call of it, direct, a dictionary's, a function pointer's, a
+/// closure's or a library's, agrees.
+pub(in crate::lower) fn lets_pointers_out_of<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    (inputs, output): (&[Ty<'tcx>], Ty<'tcx>),
+    i: usize,
+) -> bool {
+    let raw = |ty: Ty<'tcx>| holds_a_raw_pointer(tcx, ty, &mut Vec::new());
+    let stores = |ty: Ty<'tcx>| {
+        ty.walk().any(|part| {
+            part.as_type()
+                .and_then(|t| (t.is_ref() || t.is_raw_ptr()).then(|| t.builtin_deref(true)).flatten())
+                .is_some_and(raw)
+        })
+    };
+    inputs.get(i).is_some_and(|input| input.is_ref())
+        && (raw(output) || (inputs.iter().enumerate()).any(|(j, &ty)| j != i && stores(ty)))
+}
+
+/// Whether `ty` holds a raw pointer: in it, or in a field of the
+/// crate's own type in it, `seen` those walked already.
+pub(in crate::lower) fn holds_a_raw_pointer<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>, seen: &mut Vec<DefId>) -> bool {
+    let mut walk = ty.walk();
+    while let Some(part) = walk.next() {
+        let Some(part) = part.as_type() else {
+            continue;
+        };
+        match *part.kind() {
+            _ if part.is_raw_ptr() => return true,
+            // Std's `NonNull`, the raw pointer it holds (#1966).
+            ty::Adt(adt, _) if is_std_path(tcx, adt.did(), StdPath::PtrNonNull) => return true,
+            // A `PhantomData` holds no value, a marker's `*const ()` none.
+            ty::Adt(marker, _) if marker.is_phantom_data() => walk.skip_current_subtree(),
+            ty::Adt(adt, args) if !is_std_crate(tcx, adt.did()) && !seen.contains(&adt.did()) => {
+                seen.push(adt.did());
+                if (adt.all_fields())
+                    .any(|field| holds_a_raw_pointer(tcx, field.ty(tcx, args).skip_normalization(), seen))
+                {
+                    return true;
+                }
+            }
+            _ => {}
+        }
+    }
+    false
 }

@@ -127,6 +127,8 @@ struct Walk<'a, 'tcx> {
     guards: guards::Guards,
     /// The row types of tables no `&mut` resizes (`tables::rows_kept`).
     kept_rows: IndexSet<Ty<'tcx>>,
+    /// Whether the body's formatting may run code (`formats_code`).
+    formats_code: bool,
 }
 
 /// Whether `ty` is an integer a JS number holds as it is: of 32 bits at
@@ -179,6 +181,7 @@ fn walk<'a, 'tcx>(
     let guards = guards::guards(tcx, &body);
     let kept_rows = tables::rows_kept(tcx, &body);
     let (lent, stepped, pointed, cells) = facts(tcx, &body, &called_on, (&guards, &kept_rows));
+    let formats_code = called_on::formats_code(tcx, &body);
     Walk {
         tcx,
         typing_env,
@@ -192,6 +195,7 @@ fn walk<'a, 'tcx>(
         called_on,
         guards,
         kept_rows,
+        formats_code,
     }
 }
 
@@ -309,6 +313,7 @@ impl<'tcx> Walk<'_, 'tcx> {
             pushed: IndexSet::default(),
             lending: IndexMap::default(),
             lent_away: IndexSet::default(),
+            escaped: IndexSet::default(),
             guarded: IndexMap::default(),
             keys: IndexSet::default(),
             has_keys: IndexMap::default(),
@@ -559,12 +564,22 @@ impl<'tcx> Walk<'_, 'tcx> {
     fn statement(&self, statement: &mir::Statement<'tcx>, state: &mut State) {
         self.pushes(statement, state);
         // A write through a raw pointer, which may reach a cell's value with
-        // no call (`cells`, #1741).
+        // no call (`cells`, #1741), or an escaped `Vec` (#1966).
         if let StatementKind::Assign(assign) = &statement.kind
-            && !self.cells.is_empty()
             && self.written_through_a_pointer(&assign.0)
         {
             self.cells.iter().for_each(|&cell| state.forget_lengths(cell));
+            state.forget_escaped();
+        }
+        // A `&mut` or a raw pointer made through a raw pointer, `&mut
+        // (*p)` of `(*STASH).truncate(0)`, which std's code writes through
+        // running none of the crate's: an escaped `Vec` it may reach
+        // (#1966).
+        if let StatementKind::Assign(assign) = &statement.kind
+            && let Rvalue::Ref(_, mir::BorrowKind::Mut { .. }, of) | Rvalue::RawPtr(_, of) = &assign.1
+            && self.written_through_a_pointer(of)
+        {
+            state.forget_escaped();
         }
         let StatementKind::Assign(assign) = &statement.kind else {
             return;
@@ -1091,6 +1106,9 @@ impl<'tcx> Walk<'_, 'tcx> {
                         .filter(|&&cell| !state.is_guarded(cell))
                         .for_each(|&cell| after.forget_lengths(cell));
                 }
+                if self.may_write_escaped(func, args) {
+                    after.forget_escaped();
+                }
                 self.called_on_mut(func, args, state, &mut after);
                 self.guard_lent(func, args, state, &mut after);
                 if let Some(local) = destination.as_local() {
@@ -1116,9 +1134,13 @@ impl<'tcx> Walk<'_, 'tcx> {
                 terminator.successors().map(|t| (t, after.clone())).collect()
             }
             // A drop that may run code: of each cell but one a held guard
-            // guards, what's known of its length forgotten.
-            TerminatorKind::Drop { place, .. } if !self.cells.is_empty() && self.drop_may_write_cells(place) => {
+            // guards, and of each escaped `Vec`, what's known of its length
+            // forgotten.
+            TerminatorKind::Drop { place, .. }
+                if (!self.cells.is_empty() || !state.escaped.is_empty()) && self.drop_may_write_cells(place) =>
+            {
                 let mut after = state.clone();
+                after.forget_escaped();
                 (self.cells.iter())
                     .filter(|&&cell| !state.is_guarded(cell))
                     .for_each(|&cell| after.forget_lengths(cell));
