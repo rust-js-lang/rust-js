@@ -8,8 +8,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a cell given whole, `bump(c)`, is a variable too, and what it's given reads `undefined`",
     file: "src/lower/mir/tidy/values.rs",
-    find: "    let plain: IndexSet<&str> = (cells.iter().map(String::as_str))\n        .filter(|c| reads.get(*c) == kept.get(*c))\n        .collect();\n",
-    replace: "    let plain: IndexSet<&str> = cells.iter().map(String::as_str).collect();\n",
+    find: "    let plain: IndexSet<&js::Name> = cells.iter().filter(|c| reads.get(*c) == kept.get(*c)).collect();\n",
+    replace: "    let plain: IndexSet<&js::Name> = cells.iter().collect();\n",
     tests: [
       "test/lowering-cells.test.ts",
       "-t",

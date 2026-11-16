@@ -89,7 +89,7 @@ src/lower/mir/tidy/switches.rs	4
 src/lower/mir/tidy/switches/case_ends.rs	2
 src/lower/mir/tidy/switches/guards.rs	1
 src/lower/mir/tidy/unwinds.rs	11
-src/lower/mir/tidy/values.rs	19
+src/lower/mir/tidy/values.rs	12
 src/lower/mir/tidy/values/handles.rs	1
 src/lower/mir/writer.rs	1
 src/lower/ordering.rs	4

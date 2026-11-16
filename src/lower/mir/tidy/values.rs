@@ -421,11 +421,8 @@ pub(super) fn first_cell_values(stmts: &mut Vec<Stmt>) {
 /// sees it change; its closures, which share the `let`, too. A cell or a
 /// clone a closure makes is its own body's, tidied before its function's.
 pub(super) fn plain_cells(body: &mut Vec<Stmt>) {
-    let mut cells: Vec<String> = Vec::new();
-    // Each cell's name as it's declared, of its form, which a read of it
-    // keeps (S4).
-    let mut declared: IndexMap<String, js::Name> = IndexMap::default();
-    let mut clones: IndexMap<String, String> = IndexMap::default();
+    let mut cells: Vec<js::Name> = Vec::new();
+    let mut clones: IndexMap<js::Name, js::Name> = IndexMap::default();
     js::each_list(body, &mut |stmts| {
         for stmt in stmts {
             match &stmt.kind {
@@ -433,46 +430,44 @@ pub(super) fn plain_cells(body: &mut Vec<Stmt>) {
                     if matches!(&value.kind, ExprKind::Object(props, ..)
                         if matches!(props.as_slice(), [js::Prop::Field(key, _)] if key == js::HELD)) =>
                 {
-                    cells.push(name.to_string());
-                    declared.insert(name.to_string(), name.clone());
+                    cells.push(name.clone());
                 }
                 StmtKind::Const(name, value) if let ExprKind::Var(of) = &value.kind => {
-                    clones.insert(name.to_string(), of.to_string());
+                    clones.insert(name.clone(), of.clone());
                 }
                 _ => {}
             }
         }
     });
-    // Not one a closure's parameter or another declaration shadows, whose
-    // `value` isn't the cell's.
-    let mut bound: IndexMap<String, usize> = IndexMap::default();
+    // Not one declared again, whose `value` isn't the cell's.
+    let mut bound: IndexMap<js::Name, usize> = IndexMap::default();
     js::each_block_mut(&mut body.clone(), &mut |stmts| {
         for stmt in stmts.iter() {
             if let StmtKind::Const(name, _) | StmtKind::Let(name, _) = &stmt.kind {
-                *bound.entry(name.to_string()).or_default() += 1;
+                *bound.entry(name.clone()).or_default() += 1;
             }
         }
     });
     js::each_expr(body, &mut |e| {
         if let ExprKind::Arrow(params, _) | ExprKind::AsyncArrow(params, _) = &e.kind {
-            for name in params.iter().flat_map(|p| p.names()) {
-                *bound.entry(name.to_string()).or_default() += 1;
+            for name in params.iter().flat_map(|p| p.bound()) {
+                *bound.entry(name.clone()).or_default() += 1;
             }
         }
     });
     cells.retain(|c| bound.get(c).copied().unwrap_or(0) <= 1);
     // Each clone, to its cell.
-    let cell_of = |name: &str| {
+    let cell_of = |name: &js::Name| {
         let mut name = name;
         for _ in 0..clones.len() + 1 {
-            if cells.iter().any(|c| c == name) {
-                return Some(name.to_string());
+            if cells.contains(name) {
+                return Some(name.clone());
             }
             name = clones.get(name)?;
         }
         None
     };
-    let named: IndexMap<String, String> = (cells.iter().chain(clones.keys()))
+    let named: IndexMap<js::Name, js::Name> = (cells.iter().chain(clones.keys()))
         .filter_map(|n| cell_of(n).map(|c| (n.clone(), c)))
         .collect();
     if named.is_empty() {
@@ -480,19 +475,19 @@ pub(super) fn plain_cells(body: &mut Vec<Stmt>) {
     }
     // Each read of the names, and each read of a `value` of one, or one a
     // clone is made of: the same, or one is read otherwise.
-    let mut reads: IndexMap<String, usize> = IndexMap::default();
-    js::visit_stmts(body, &mut |v| {
+    let mut reads: IndexMap<js::Name, usize> = IndexMap::default();
+    js::visit_stmt_names(body, &mut |v| {
         if let Some(cell) = named.get(v) {
             *reads.entry(cell.clone()).or_default() += 1;
         }
     });
-    let mut kept: IndexMap<String, usize> = IndexMap::default();
+    let mut kept: IndexMap<js::Name, usize> = IndexMap::default();
     let mut each = body.clone();
     js::each_expr_mut(&mut each, &mut |e| {
         if let ExprKind::Member(of, key) = &e.kind
             && key == js::HELD
             && let ExprKind::Var(v) = &of.kind
-            && let Some(cell) = named.get(v.word())
+            && let Some(cell) = named.get(v)
         {
             *kept.entry(cell.clone()).or_default() += 1;
         }
@@ -501,28 +496,26 @@ pub(super) fn plain_cells(body: &mut Vec<Stmt>) {
         for stmt in stmts.iter() {
             if let StmtKind::Const(name, value) = &stmt.kind
                 && let ExprKind::Var(of) = &value.kind
-                && named.contains_key(name.word())
-                && let Some(cell) = named.get(of.word())
+                && named.contains_key(name)
+                && let Some(cell) = named.get(of)
             {
                 *kept.entry(cell.clone()).or_default() += 1;
             }
         }
     });
-    let plain: IndexSet<&str> = (cells.iter().map(String::as_str))
-        .filter(|c| reads.get(*c) == kept.get(*c))
-        .collect();
+    let plain: IndexSet<&js::Name> = cells.iter().filter(|c| reads.get(*c) == kept.get(*c)).collect();
     if plain.is_empty() {
         return;
     }
-    let of_plain = |v: &str| named.get(v).filter(|c| plain.contains(c.as_str())).cloned();
+    let of_plain = |v: &js::Name| named.get(v).filter(|c| plain.contains(c)).cloned();
     js::each_block_mut(body, &mut |stmts| {
         stmts.retain(|stmt| {
             !matches!(&stmt.kind, StmtKind::Const(name, value)
-            if matches!(value.kind, ExprKind::Var(_)) && !plain.contains(name.word()) && of_plain(name.word()).is_some())
+            if matches!(value.kind, ExprKind::Var(_)) && !plain.contains(name) && of_plain(name).is_some())
         });
         for stmt in stmts.iter_mut() {
             if let StmtKind::Const(name, value) = &mut stmt.kind
-                && plain.contains(name.word())
+                && plain.contains(name)
                 && let ExprKind::Object(props, ..) = &mut value.kind
                 && let Some(js::Prop::Field(_, init)) = props.pop()
             {
@@ -534,11 +527,11 @@ pub(super) fn plain_cells(body: &mut Vec<Stmt>) {
         if let ExprKind::Member(of, key) = &e.kind
             && key == js::HELD
             && let ExprKind::Var(v) = &of.kind
-            && let Some(cell) = of_plain(v.word())
+            && let Some(cell) = of_plain(v)
         {
             *e = Expr {
                 span: e.span,
-                ..Expr::var(&declared[&cell])
+                ..Expr::var(&cell)
             };
         }
     });
