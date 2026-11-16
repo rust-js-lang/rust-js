@@ -33,16 +33,18 @@ pub(in crate::lower) fn plain_statics(
     // function or in what the module runs when it's loaded, which no
     // `return` ends.
     applied_in_place(items);
-    let cells: Vec<String> = (items.iter())
+    // Each by its declaration's name, which its reads are made of.
+    let cells: Vec<js::Name> = (items.iter())
         .filter_map(|item| match item {
             js::Item::Const(c) if (!c.export || quiet.contains(c.name.word())) && is_box(&c.value) => {
-                Some(c.name.to_string())
+                Some(c.name.clone())
             }
             _ => None,
         })
         .collect();
     let mut exported = Vec::new();
-    for name in cells {
+    for cell in cells {
+        let name = cell.word().to_string();
         outside_own_bindings(items, &name.clone(), |items| {
             let (mut reads, mut values, mut sets) = (0, 0, 0);
             js::each_item_expr_mut(items, &mut |e| match &e.kind {
@@ -87,7 +89,7 @@ pub(in crate::lower) fn plain_statics(
                 {
                     *e = Expr {
                         span: e.span,
-                        ..Expr::var(&name)
+                        ..Expr::var(cell.clone())
                     };
                 }
             });
@@ -251,14 +253,15 @@ fn taken_whole(stmts: &mut Vec<Stmt>, name: &str) -> usize {
         }
         let mut names = IndexSet::default();
         js::names_in(stmts, &mut names);
-        let old = crate::lower::fresh_in(&mut names, "old");
+        // What it held, named apart from what's here: declared once.
+        let old = js::Name::declared(crate::lower::fresh_in(&mut names, "old"));
         let slot = match &mut stmts[i].kind {
             StmtKind::Return(Some(e)) | StmtKind::Expr(e) | StmtKind::Assign(_, e) => e,
             StmtKind::ForOf { iterable, .. } => iterable,
             _ => unreachable!("a slot"),
         };
-        *slot = Expr::var(&old);
-        stmts.splice(i..i, [StmtKind::Const(old.into(), variable).at(span), set]);
+        *slot = Expr::var(old.clone());
+        stmts.splice(i..i, [StmtKind::Const(old, variable).at(span), set]);
         i += 3;
     }
     count
@@ -307,7 +310,7 @@ fn outside_own_bindings<T>(items: &mut [js::Item], name: &str, change: impl FnOn
         for param in function.params.iter_mut() {
             param.each_name_mut(&mut |n| {
                 if n.is(APART) {
-                    *n = name.into();
+                    n.respell(name);
                 }
             });
         }
