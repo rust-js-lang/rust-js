@@ -8,7 +8,7 @@ import {
   $holding,
   $iter,
   $jsIteratorSome,
-  $lazyTakeWhile,
+  $lazyMapWhile,
   $live,
   $next,
   $unwindsOn,
@@ -229,12 +229,17 @@ function main() {
   }
   function f$2(x) {
     const l = limit;
-    return x < l[0];
+    if (x < l[0]) {
+      return (x * 10) >>> 0;
+    }
   }
   const taken = $held(
-    $holding($lazyTakeWhile(tmp$3, f$2), () => {
-      console.log(`drop ${limit[0]}`);
-    }),
+    $holding(
+      $lazyMapWhile(tmp$3, f$2, (item) => item != null),
+      () => {
+        console.log(`drop ${limit[0]}`);
+      },
+    ),
   );
   try {
     const value = $next(taken);

@@ -4,11 +4,11 @@ import {
   $count,
   $foldOf,
   $folded,
+  $last,
   $lazyChain,
   $lazyMapWhile,
   $lazyScan,
   $lazySkipWhile,
-  $lazyTakeWhile,
   $lent,
   $next,
   $nth,
@@ -19,6 +19,7 @@ import {
   iterator_skip,
   iterator_stepBy,
   iterator_take,
+  iterator_takeWhile,
 } from "@rust-js/std";
 
 export function entry() {
@@ -137,13 +138,14 @@ function main() {
     )}`,
   );
   console.log(
-    `${$lazyTakeWhile(
+    `${iterator_takeWhile(
       iterator_stepBy(counted(), 2, {
         next: countIterator_next,
         fold: countIterator_fold,
         nth: countIterator_nth,
       }),
       (x) => x < 7,
+      { next: $next, fold: $foldOf, nth: $nth },
     ).reduce((n) => n + 1, 0)}`,
   );
   console.log(
@@ -232,18 +234,17 @@ function main() {
       ) ?? 0
     }`,
   );
-  const last = Array.from(
-    $folded(
-      $lazyTakeWhile(
-        iterator_skip(counted(), 2, {
-          next: countIterator_next,
-          fold: countIterator_fold,
-          nth: countIterator_nth,
-        }),
-        (x) => x < 7,
-      ),
+  const last = $last(
+    iterator_takeWhile(
+      iterator_skip(counted(), 2, {
+        next: countIterator_next,
+        fold: countIterator_fold,
+        nth: countIterator_nth,
+      }),
+      (x) => x < 7,
+      { next: $next, fold: $foldOf, nth: $nth },
     ),
-  ).at(-1);
+  );
   console.log(`${last == null ? "None" : `Some(${last})`}`);
   console.log(
     `${$lazyScan(

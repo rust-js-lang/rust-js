@@ -12,7 +12,6 @@ import {
   $lazyRange,
   $lazyScan,
   $lazySkipWhile,
-  $lazyTakeWhile,
   $lent,
   $live,
   $next,
@@ -29,6 +28,7 @@ import {
   iterator_map,
   iterator_skip,
   iterator_take,
+  iterator_takeWhile,
 } from "@rust-js/std";
 
 export function entry() {
@@ -258,9 +258,10 @@ function main() {
   );
   console.log(
     `take_while ${$lent(
-      $lazyTakeWhile(
+      iterator_takeWhile(
         iterator_skip(c(), 2, { next: countIterator_next, nth: countIterator_nth }),
         (x) => x < 9,
+        { next: $next, fold: $foldOf, nth: $nth },
       ),
     ).some((x) => x > 5)}`,
   );

@@ -3,12 +3,10 @@
 import {
   $advanceSlice,
   $cleanup,
-  $closing,
   $dropEach,
   $foldOf,
   $held,
   $iter,
-  $lazyTakeWhile,
   $next,
   $nextBack,
   $peek,
@@ -22,6 +20,7 @@ import {
   iterator_rev,
   iterator_skip,
   iterator_stepBy,
+  iterator_takeWhile,
 } from "@rust-js/std";
 import * as ChainedSteps from "./chained_steps.js";
 import * as FlattenedSteps from "./flattened_steps.js";
@@ -210,9 +209,12 @@ export function flattened() {
 }
 
 export function takenWhile() {
-  return $lazyTakeWhile(
-    $closing($iter(louds(1)), $dropEach(loudDrop_drop)),
+  return iterator_takeWhile(
+    $iter(louds(1)),
     (l) => l[0] < 3,
+    { next: $next, advanceBy: $advanceSlice },
+    $dropEach(loudDrop_drop),
+    undefined,
     loudDrop_drop,
   );
 }

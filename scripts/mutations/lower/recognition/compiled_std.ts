@@ -270,4 +270,14 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^(held_filter_map_from_its_back|held_filter_map_reversed).rs$"],
     snapshots: true,
   },
+  {
+    name: "take_while-meaning-only",
+    breaks:
+      "`TakeWhile` is `MEANING_ONLY` again, so a `take_while()` made apart is the runtime's `$lazyTakeWhile`, not std's compiled struct (#1681's change 2, the take_while family)",
+    file: "src/lower/recognition/compiled_std.rs",
+    find: "    StdPath::IterSkipWhile,\n",
+    replace: "    StdPath::IterTakeWhile,\n    StdPath::IterSkipWhile,\n",
+    tests: ["test/corpus.test.ts", "-t", "^(held_lazy_adapters_hint|impl_trait_hides_std_adapters|own_iterator_holding_a_closure_dropped_by_generic_code).rs$"],
+    snapshots: true,
+  },
 ];

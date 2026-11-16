@@ -390,6 +390,16 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
+    name: "take_while-not-flipped",
+    breaks:
+      "a `take_while()` of a chain the transparent-chain predicate doesn't admit is the recognizers' hand-written form again, where std's compiled struct is the meaning (#1681's change 2, the take_while family)",
+    file: "src/lower/body_queries/in_place.rs",
+    find: "    \"take_while\",\n",
+    replace: "    \"map\",\n",
+    tests: ["test/corpus.test.ts", "-t", "^(shunt_steps_by_try_fold|flatten_drops_its_source_at_its_end).rs$"],
+    snapshots: true,
+  },
+  {
     name: "zip-not-flipped",
     breaks:
       "a `zip()` of a chain the transparent-chain predicate doesn't admit is the recognizers' hand-written `$trustedZip` or `$lazyZip` again, where std's compiled `Zip` is the meaning (#1681's change 2, the zip family)",

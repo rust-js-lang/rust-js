@@ -11,11 +11,11 @@ import {
   $held,
   $iter,
   $iterator,
-  $lazyTakeWhile,
   $next,
   $nextSome,
   $vecCollectWay,
   iterator_map,
+  iterator_takeWhile,
   iterator_zip,
 } from "@rust-js/std";
 
@@ -93,13 +93,20 @@ function main() {
   let tmp$1;
   try {
     tmp$1 = iterator_map(
-      $lazyTakeWhile($closing($iter(b), $dropEach(loudDrop_drop)), even, loudDrop_drop),
+      iterator_takeWhile(
+        $iter(b),
+        even,
+        { next: $next, advanceBy: $advanceSlice },
+        $dropEach(loudDrop_drop),
+        undefined,
+        loudDrop_drop,
+      ),
       (l) => {
         const result = l[0];
         loudDrop_drop(l);
         return result;
       },
-      { next: $next },
+      { next: $next, fold: $foldOf },
       (takeWhile) => {
         takeWhile.return();
       },

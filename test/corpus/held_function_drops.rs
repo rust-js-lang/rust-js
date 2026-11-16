@@ -1,5 +1,5 @@
 // A lazy adapter that holds a function with a destructor, `map(f)`'s,
-// `filter(p)`'s, `take_while(p)`'s: made closing, `$closing(it, ..)`,
+// `filter(p)`'s, `map_while(f)`'s: made closing, `$closing(it, ..)`,
 // which closes its source, then drops its function, as Rust drops a
 // `Map`'s fields, when it's consumed, dropped or given to generic code; a
 // generic `F` too, its caller's drop (ADR 0485).
@@ -70,9 +70,9 @@ fn main() {
         })
     );
     let limit = Loud(4);
-    let mut taken = [1u32, 2, 6, 3].into_iter().take_while(move |x| {
+    let mut taken = [1u32, 2, 6, 3].into_iter().map_while(move |x| {
         let l = &limit;
-        *x < l.0
+        if x < l.0 { Some(x * 10) } else { None }
     });
     println!("{:?}", taken.next());
     drop(taken);

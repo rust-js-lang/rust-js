@@ -15,7 +15,6 @@ import {
   $lazyMapWhile,
   $lazyScan,
   $lazySkipWhile,
-  $lazyTakeWhile,
   $lent,
   $live,
   $next,
@@ -33,6 +32,7 @@ import {
   iterator_rev,
   iterator_skip,
   iterator_take,
+  iterator_takeWhile,
   iterator_zip,
 } from "@rust-js/std";
 
@@ -130,16 +130,16 @@ function main() {
   show(
     "take_while",
     $sizeHint(
-      $lazyTakeWhile(
-        $iterator(own(), ownIterator_next, false, undefined, undefined, ownIterator_sizeHint),
-        (x) => x < 3,
-      ),
+      iterator_takeWhile(own(), (x) => x < 3, {
+        next: ownIterator_next,
+        sizeHint: ownIterator_sizeHint,
+      }),
     ),
   );
-  const done = $lazyTakeWhile(
-    $iterator(own(), ownIterator_next, false, undefined, undefined, ownIterator_sizeHint),
-    (x) => x < 2,
-  );
+  const done = iterator_takeWhile(own(), (x) => x < 2, {
+    next: ownIterator_next,
+    sizeHint: ownIterator_sizeHint,
+  });
   $lent(done).forEach((value) => {});
   show("take_while done", $sizeHint(done));
   show(

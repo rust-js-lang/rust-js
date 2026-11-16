@@ -14,7 +14,6 @@ import {
   $lazyMapWhile,
   $lazyScan,
   $lazySkipWhile,
-  $lazyTakeWhile,
   $lent,
   $next,
   $range,
@@ -32,6 +31,7 @@ import {
   iterator_skip,
   iterator_stepBy,
   iterator_take,
+  iterator_takeWhile,
   iterator_zip,
 } from "@rust-js/std";
 
@@ -118,7 +118,7 @@ function main() {
     `skip_while ([${value$8[0].join(", ")}], [${value$8[1].join(", ")}], [${value$8[2].join(", ")}])`,
   );
   const value$9 = twice(
-    $lazyTakeWhile($iterator(f(), flakyIterator_next), (x) => x < 5),
+    iterator_takeWhile(f(), (x) => x < 5, { next: flakyIterator_next }),
     "next",
   );
   console.log(

@@ -7,10 +7,10 @@ import {
   $held,
   $iter,
   $lazySkipWhile,
-  $lazyTakeWhile,
   $lent,
   $live,
   $next,
+  $roomForHint,
   $tryFoldSome,
   $unwindsOn,
   iterator_flatMap,
@@ -18,6 +18,7 @@ import {
   iterator_map,
   iterator_skip,
   iterator_take,
+  iterator_takeWhile,
   mapIterator___iteratorGetUnchecked,
 } from "@rust-js/std";
 
@@ -225,24 +226,29 @@ function counted() {
         console.log(`x ${x}`);
       }
       console.log("after while");
-      const k = Array.from(
-        $lazyTakeWhile(
-          iterator_flatMap(
-            c("tf"),
-            (x) => x,
-            { next: countIterator_next },
-            {
-              intoIter: (items) => $iter(items == null ? [] : [items]),
-              IntoIterIterator: () => ({ next: $next }),
-            },
-            false,
-            undefined,
-            true,
-            countDrop_drop,
-          ),
-          (x) => x < 9,
+      const iter = iterator_takeWhile(
+        iterator_flatMap(
+          c("tf"),
+          (x) => x,
+          { next: countIterator_next },
+          {
+            intoIter: (items) => $iter(items == null ? [] : [items]),
+            IntoIterIterator: () => ({ next: $next }),
+          },
+          false,
+          undefined,
+          true,
+          countDrop_drop,
         ),
+        (x) => x < 9,
+        { next: $next, fold: $foldOf },
+        (flatMap) => {
+          flatMap.return();
+        },
       );
+      const result = Array.from($roomForHint(iter, 4, false));
+      iter.return();
+      const k = result;
       console.log(`[${k.join(", ")}]`);
     } catch (error) {
       throw $unwindsOn(error);
