@@ -75,7 +75,8 @@ export function generatedTexts(dir: string, except: string[] = []): string[] {
 let sharedKey: string | undefined;
 export function shared(): string {
   if (sharedKey === undefined) {
-    const harness = ["corpus.test.ts", "corpus-cases.ts", "corpus-run.ts", "oracle.ts", "programs.ts", "child.ts", "native-outcomes.ts", "verified-runs.ts"].map((file) => join(root, "test", file));
+    // Each named whole, which the test selector reads as what it reads.
+    const harness = ["test/corpus.test.ts", "test/corpus-cases.ts", "test/corpus-run.ts", "test/oracle.ts", "test/programs.ts", "test/child.ts", "test/native-outcomes.ts", "test/verified-runs.ts"].map((file) => join(root, file));
     const files = [...jsFiles(stdDir), ...harness];
     const vite = JSON.parse(readFileSync(join(root, "node_modules", "vite", "package.json"), "utf8")).version;
     sharedKey = runKey([

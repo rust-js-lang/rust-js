@@ -1,0 +1,183 @@
+name: test map
+
+# The test map (scripts/testMap.ts, ADR 1101, amended): which of the
+# compiler's functions each test of the push suite and each corpus case
+# runs, recorded in parts. The selector reads it, each push's check here
+# (check.yml's `plan`) and `bun run push` (scripts/select.ts), and each
+# mutation shard's snapshot judge (ADR 0093, amended).
+#
+# Of each check of `main` that completes, red or green (a red commit's
+# failing tests are `null`, run on every change), HEAD's map, in a run of
+# its own after the check's, so it never takes a machine from a check's own
+# jobs; one run at a time, a newer commit's cancelling an older's, so when
+# pushes land together only the newest gets one. Kept in the Actions cache
+# by its commit, `test-map-<os>-<toolchain>-<sha>`, one map each, the
+# newest 8 (about 22 MB each, test-map-prune.yml); `bun run push` downloads the newest of an
+# ancestor of its HEAD (`fetchMap`). Called by rustc-tests.yml's mutations,
+# the map of HEAD or an ancestor kept, or HEAD's recorded where none is.
+on:
+  workflow_run:
+    workflows: [Check]
+    types: [completed]
+    branches: [main]
+  workflow_call:
+    inputs:
+      of:
+        description: "'head': HEAD's map, recorded where none is kept; 'any': HEAD's or an ancestor's kept."
+        type: string
+        default: 'any'
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: ${{ github.event_name == 'workflow_run' && 'test-map' || format('test-map-{0}-{1}', github.run_id, github.workflow) }}
+  cancel-in-progress: ${{ github.event_name == 'workflow_run' }}
+
+env:
+  # The commit the map is of: the check's, or the caller's.
+  SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+jobs:
+  # The map kept, or the counting build and the plan of its recording, in
+  # `SHARDS` parts: each part's tests about 9 min.
+  test-map:
+    name: test map
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      record: ${{ steps.map.outputs.record }}
+      shards: ${{ steps.map.outputs.shards }}
+      parts: ${{ steps.map.outputs.parts }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.SHA }}
+          fetch-depth: 0
+      - uses: ./.github/actions/rustc-tests-setup
+        with:
+          build: 'false'
+      - uses: actions/cache/restore@v6
+        with:
+          path: .cache/test-maps
+          key: test-map-${{ runner.os }}-${{ hashFiles('rust-toolchain.toml') }}-${{ env.SHA }}
+          restore-keys: test-map-${{ runner.os }}-${{ hashFiles('rust-toolchain.toml') }}-
+      - name: The map kept, or the counting build and the plan of its recording
+        id: map
+        env:
+          OF: ${{ github.event_name == 'workflow_run' && 'head' || inputs.of }}
+          SHARDS: '8'
+        run: |
+          if [ "$OF" = "head" ]; then of=--head; else of=; fi
+          if bun scripts/testMap.ts kept $of; then
+            echo "record=false" >> "$GITHUB_OUTPUT"
+          else
+            bun scripts/testMap.ts build --shards="$SHARDS"
+            # A tar, which keeps the binary's mode, as an artifact doesn't.
+            tar -cf test-map-build.tar target/test-map/build/debug/rust-js
+            echo "record=true" >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.map.outputs.record == 'false'
+        uses: actions/upload-artifact@v7
+        with:
+          # Of main's check, by its commit, which `bun run push` fetches (`fetchMap`).
+          name: ${{ github.event_name == 'workflow_run' && format('test-map-of-{0}', env.SHA) || 'test-map' }}
+          path: .cache/test-maps
+          include-hidden-files: true
+          retention-days: 3
+      - if: steps.map.outputs.record == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-map-build
+          path: test-map-build.tar
+          retention-days: 1
+      - if: steps.map.outputs.record == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-map-plan
+          path: target/test-map/plan.json
+          retention-days: 1
+
+  # A part of the map's recording, its plan's share of the tests, each run
+  # with the counting build; the browsers' too, as the push suite runs them.
+  test-map-part:
+    needs: test-map
+    if: ${{ needs.test-map.outputs.record == 'true' }}
+    name: test map (${{ matrix.part }}/${{ needs.test-map.outputs.shards }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      matrix:
+        part: ${{ fromJSON(needs.test-map.outputs.parts) }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.SHA }}
+          fetch-depth: 0
+      - uses: ./.github/actions/rustc-tests-setup
+        with:
+          build: 'false'
+      - uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+      - run: bunx --bun playwright install --with-deps chromium
+      - uses: actions/download-artifact@v8
+        with:
+          name: test-map-build
+      - uses: actions/download-artifact@v8
+        with:
+          name: test-map-plan
+          path: target/test-map
+      - name: The part's tests
+        run: |
+          tar -xf test-map-build.tar
+          bun scripts/testMap.ts units --shard=${{ matrix.part }}/${{ needs.test-map.outputs.shards }}
+          tar -cf test-map-part-${{ matrix.part }}.tar target/test-map/recordings/${{ matrix.part }}
+      - uses: actions/upload-artifact@v7
+        with:
+          name: test-map-part-${{ matrix.part }}
+          path: test-map-part-${{ matrix.part }}.tar
+          retention-days: 1
+
+  # The one map of every part's recording, alone in the cache's entry of
+  # its commit, and given to the caller's jobs. The cache's maps past the
+  # newest 8 are removed after (test-map-prune.yml, which may write).
+  test-map-merge:
+    needs: [test-map, test-map-part]
+    if: ${{ needs.test-map.outputs.record == 'true' }}
+    name: test map merge
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.SHA }}
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - run: bun install --frozen-lockfile
+      - uses: actions/download-artifact@v8
+        with:
+          name: test-map-plan
+          path: target/test-map
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: test-map-part-*
+          merge-multiple: true
+      - name: The map of every part
+        run: |
+          for part in test-map-part-*.tar; do tar -xf "$part"; done
+          bun scripts/testMap.ts merge
+      - uses: actions/cache/save@v6
+        with:
+          path: .cache/test-maps
+          key: test-map-${{ runner.os }}-${{ hashFiles('rust-toolchain.toml') }}-${{ env.SHA }}
+      - uses: actions/upload-artifact@v7
+        with:
+          # Of main's check, by its commit, which `bun run push` fetches (`fetchMap`).
+          name: ${{ github.event_name == 'workflow_run' && format('test-map-of-{0}', env.SHA) || 'test-map' }}
+          path: .cache/test-maps
+          include-hidden-files: true
+          retention-days: 3

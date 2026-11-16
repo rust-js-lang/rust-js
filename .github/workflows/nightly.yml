@@ -1284,6 +1284,33 @@ jobs:
           path: target/test-times/test-times.json
           retention-days: 30
 
+  # The test selector's audit (scripts/selector-audit.ts, ADR 1101,
+  # amended): each test file the night's suite failed that no push's check
+  # since the last green night selected is a miss, filed as a P1
+  # `selector: …`: the change that broke it went by unchecked.
+  selector-audit:
+    name: selector audit
+    needs: check
+    if: always() && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      actions: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: junit-*
+          path: junit
+      - env:
+          GH_TOKEN: ${{ github.token }}
+        run: bun scripts/selector-audit.ts junit
+
   # A red night of `main` is an issue, "Nightly red: <date>", opened or, run
   # again that day, commented on, naming each failed job with its link: the
   # issue watch gives it an owner that day, and no one polls for it.

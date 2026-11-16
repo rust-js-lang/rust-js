@@ -7,7 +7,10 @@
 // each other. `bun run test --shard=2/4` runs a quarter of each, as CI
 // splits the suite across its machines (DEVELOPMENT.md). The files only the
 // nightly runs (scripts/shard.ts's `nightly`) run with `--nightly`.
-import { existsSync } from "node:fs";
+// `--selection=<file>`, a selection the selector wrote (scripts/select.ts,
+// CI's `plan`), runs only the files and the corpus's cases it selected,
+// unless it's `all`.
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { stopGroup } from "../test/child";
@@ -49,6 +52,17 @@ done`], { stdout: "inherit", stderr: "inherit" });
 
 const atNight = process.argv.includes("--nightly");
 const shard = process.argv.slice(2).filter((arg) => arg.startsWith("--shard="));
+// What a selection selected, where it says some: each test file to run,
+// and the corpus's cases, a line each, `RUST_JS_CASES=i/n:<file>`.
+const selectionArg = process.argv.find((arg) => arg.startsWith("--selection="))?.slice("--selection=".length);
+const selection: { all: boolean; files: string[]; cases: string[] } | undefined = selectionArg ? JSON.parse(readFileSync(selectionArg, "utf8")) : undefined;
+const selected = selection && !selection.all ? selection : undefined;
+const caseList = join(root, "target", "selected-cases.txt");
+if (selected) {
+  mkdirSync(join(root, "target"), { recursive: true });
+  writeFileSync(caseList, selected.cases.map((name) => `${name}\n`).join(""));
+  console.log(`the selection: ${selected.files.length} test files, ${selected.cases.length} corpus cases`);
+}
 // The files of cases, the corpus and the metamorphic sample, in small
 // parts, each a process of its own, through one pool beside the rest
 // (scripts/shard.ts's `casePoolWidth`): a file of 1,300 cases one after
@@ -62,7 +76,11 @@ const shard = process.argv.slice(2).filter((arg) => arg.startsWith("--shard="));
 // part of it is longer.
 const { index, count } = shardArg(shard) ?? { index: 1, count: 1 };
 const { cores } = machine();
-const caseJobs = casePoolJobs(index, count, cores);
+// Of a selection, the corpus's parts of the cases it selected, none where
+// it selected none, and the metamorphic sample's where it selected it.
+const caseJobs = casePoolJobs(index, count, cores)
+  .filter(({ file }) => !selected || (file === caseFiles.corpus ? selected.cases.length > 0 || selected.files.includes(file) : selected.files.includes(file)))
+  .map((job) => (selected && job.file === caseFiles.corpus ? { ...job, part: `${job.part}:${caseList}` } : job));
 // How long each file took, this checkout's, and the last CI run's shards'
 // where `bun scripts/ci.ts timings` put them: `bun test` balances the
 // shards by them all, and writes this run's to the first.
@@ -109,7 +127,10 @@ const ignored = [...Object.values(caseFiles), ...browsers, ...(atNight ? [] : ni
 const junit = (name: string) => (atNight ? ["--reporter=junit", `--reporter-outfile=target/junit/${name.replace(/\W+/g, "-")}.xml`] : []);
 const of = `${index}-of-${count}`;
 let restRunning = true;
-const rested = run(["--parallel", ...shard, ...timings, "--update-timings", ...ignored, ...junit(`suite-${of}`)]);
+// Of a selection, the files it selected but the case files' and the
+// browsers', named; none where it selected none.
+const rest = selected?.files.filter((file) => !(Object.values(caseFiles) as string[]).includes(file) && !browsers.includes(file));
+const rested = rest?.length === 0 ? Promise.resolve(0) : run(["--parallel", ...shard, ...timings, "--update-timings", ...ignored, ...junit(`suite-${of}`), ...(rest ?? [])]);
 // The pool: a part starts as one ends, as many at once as `casePoolWidth`
 // says while the rest runs, and more as soon as it's ended. One not
 // started by the deadline fails. Each case built as a library too, a
@@ -141,7 +162,8 @@ const cases = await new Promise<number[]>((done) => {
   });
   fill();
 });
-const rest = await rested;
-const pages = Date.now() < deadline ? await run(["--parallel", ...shard, ...timings, ...browsers, ...junit(`browsers-${of}`)]) : 1;
+const restCode = await rested;
+const pageFiles = selected ? browsers.filter((file) => selected.files.includes(file)) : browsers;
+const pages = pageFiles.length === 0 ? 0 : Date.now() < deadline ? await run(["--parallel", ...shard, ...timings, ...pageFiles, ...junit(`browsers-${of}`)]) : 1;
 watchdog.kill();
-process.exit(rest || cases.find((code) => code !== 0) || pages);
+process.exit(restCode || cases.find((code) => code !== 0) || pages);

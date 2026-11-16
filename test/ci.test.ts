@@ -33,10 +33,9 @@ import { browsers, drivesBrowser } from "../scripts/shard";
 import { loadScale, underLoad } from "../scripts/timing";
 import { caseOf, partsOf, runParts, verdict } from "../scripts/parts";
 import { jobs as localNightly } from "../scripts/nightly";
-import { atOnce, caseFiles, caseParts, casePoolJobs, casePoolParts, casePoolWidth, caseShardParts, compilerBuilds, harness, memoryBudget, nightly, parts, peakGB, plainSuiteFiles, pooledParts, shard, timedShard, balanced } from "../scripts/shard";
+import { atOnce, caseFiles, caseParts, casePoolJobs, casePoolParts, casePoolWidth, caseShardParts, compilerBuilds, harness, memoryBudget, nightly, parts, peakGB, pooledParts, shard, timedShard, balanced } from "../scripts/shard";
 import { fixture, programFlags, root } from "./support";
 import { miriCommand } from "./miri";
-import { onlyPushedFiles, phases as pushPhases, timesLine } from "../scripts/push";
 
 const files = ["a", "b", "c", "d", "e", "f", "g"].map((name) => `test/${name}.test.ts`);
 
@@ -109,15 +108,18 @@ test("a check's mutation shards balance by the newest nightly that kept its muta
 // commit: six caches of some 450 MB an entry, each a push's, held the
 // repository's 10 GB full and evicted one another (docs/dev-loop.md).
 // And the native programs' kept runs are restored by any run and saved by
-// main's alone, which a branch's check can't write over.
-test("no cache is keyed by its commit, and only main's runs save the native outcomes", () => {
+// main's alone, which a branch's check can't write over. The test maps are
+// one a commit, held to the newest 8 by test-map-prune.yml (ADR 1101,
+// amended), about 180 MB.
+test("no cache is keyed by its commit but the test maps, held to 8, and only main's runs save the native outcomes", () => {
   const yamls = [".github/workflows", ".github/actions/build-rust-js", ".github/actions/rustc-tests-setup", ".github/actions/native-outcomes"].flatMap((dir) =>
     readdirSync(join(root, dir)).filter((file) => /\.ya?ml$/.test(file)).map((file) => join(dir, file)),
   );
   const keyed = yamls.flatMap((file) =>
-    [...readFileSync(join(root, file), "utf8").matchAll(/^\s*key: .*$/gm)].filter((m) => m[0].includes("github.sha")).map((m) => `${file}: ${m[0].trim()}`),
+    [...readFileSync(join(root, file), "utf8").matchAll(/^\s*key: .*$/gm)].filter((m) => /github\.sha|env\.SHA/.test(m[0])).map((m) => `${file}: ${m[0].trim()}`),
   );
-  expect(keyed).toEqual([]);
+  expect([...new Set(keyed)]).toEqual([".github/workflows/test-map.yml: key: test-map-${{ runner.os }}-${{ hashFiles('rust-toolchain.toml') }}-${{ env.SHA }}"]);
+  expect(readFileSync(join(root, ".github/workflows/test-map-prune.yml"), "utf8")).toContain('prune-cache --keep=8 --prefix="test-map-${{ runner.os }}-"');
   const outcomes = readFileSync(join(root, ".github/actions/native-outcomes/action.yml"), "utf8");
   expect(outcomes).toContain("- if: inputs.step == 'save' && github.ref == 'refs/heads/main'\n      uses: actions/cache/save@");
   expect(outcomes).not.toMatch(/uses: actions\/cache@/);
@@ -262,29 +264,14 @@ test("the suite's files of cases are small parts of one pool, wider once the res
 
 // What only the nightly's suite runs (ADR 1030): each a test file there is,
 // and run, by the check the nightly calls, which says `--nightly` to the
-// suite and to its bless, where a push's check says neither.
+// suite and to its bless, where a push's check gives both its selection.
 test("the files only the nightly runs are test files, which its check runs", () => {
   const tests = readdirSync(join(root, "test")).map((file) => `test/${file}`);
   for (const file of nightly) expect(tests).toContain(file);
   const check = readFileSync(join(root, ".github/workflows/check.yml"), "utf8");
   const suites = check.split("\n").filter((line) => /bun (run test|scripts\/test\.ts) --shard=/.test(line));
   expect(suites).toHaveLength(2);
-  for (const line of suites) expect(line).toContain("${{ inputs.nightly && ' --nightly' || '' }}");
-});
-
-// What a change can leave untrue unseen runs where the change is made, not
-// a night later (ADR 1030, amended): the guide's limitations, which a
-// lowering that lifts one or an example that doesn't compile makes red
-// (5096475be's), of a change to the compiler or std; the bindings'
-// coverage ratchets, which a binding added makes red, of every change.
-test("the guide's limitations and the coverage ratchets run each push and in plain check:fast", () => {
-  const recorded: Record<string, "shared" | undefined> = { "test/limitations.test.ts": "shared", "test/next-coverage.test.ts": undefined, "test/react-coverage.test.ts": undefined, "test/webapi-coverage.test.ts": undefined, "test/node-coverage.test.ts": undefined };
-  const tests = readdirSync(join(root, "test")).map((file) => `test/${file}`);
-  const suites = plainSuiteFiles(tests);
-  for (const [file, when] of Object.entries(recorded)) {
-    expect(nightly).not.toContain(file);
-    expect(suites.filter((suite) => suite.files.includes(file)).map((suite) => suite.when)).toEqual([when]);
-  }
+  for (const line of suites) expect(line).toContain("${{ inputs.nightly && ' --nightly' || ' --selection=target/selection.json' }}");
 });
 
 // `check:fast --all`, the check before a push, runs what a push's check
@@ -327,28 +314,13 @@ test("--all runs the metamorphic sample in parts, each once, and never the whole
   }
 });
 
-// Plain check:fast runs the JSX, snapshot and diagnostics tests of a change
-// committed before its check, as one on `main` is, as it does of the working
-// tree's: 216a72342, checked committed, skipped them and left bindings.test.ts's
-// snapshot unblessed (#1731).
-test("plain check:fast runs the snapshots, JSX and diagnostics of a committed change", () => {
-  const files = (scope: { changed: string[]; branch: string[] }) =>
-    jobs({ all: false, ...scope, added: [], extra: [], cores: 12 }).jobs.map((job) => job.name);
-  const shared = ["test/snapshots.test.ts", "test/diagnostics.test.ts"];
-  expect(files({ changed: [], branch: ["src/lower/representation.rs"] })).toEqual(expect.arrayContaining(shared));
-  expect(files({ changed: ["std/lib.rs"], branch: [] })).toEqual(expect.arrayContaining(shared));
-  expect(files({ changed: [], branch: ["src/lower/jsx/props.rs"] }).some((name) => name.startsWith("test/jsx"))).toBe(true);
-  const docs = files({ changed: [], branch: ["docs/guide/README.md"] });
-  expect(docs.filter((name) => shared.includes(name) || name.startsWith("test/jsx"))).toEqual([]);
-  expect(jobs({ all: false, changed: [], branch: ["src/lower/representation.rs"], added: [], extra: [], cores: 12 }).shared).toBe(true);
-});
-
 // The crate corpus runs of a change to what compiles it, plain check:fast's
 // and each push's (`plan`'s `crates`), not only `--all`'s and the
 // nightly's: 9353847cd refused itertools unseen (#1188).
 test("the crate corpus runs where its paths say, of plain check:fast too", () => {
+  const none = { files: new Set<string>(), cases: [], caseList: "/c.txt", forms: [], formsList: "/f.txt" };
   const named = (scope: { all: boolean; changed: string[]; branch: string[] }) =>
-    jobs({ ...scope, added: [], extra: [], cores: 12 }).jobs.some((job) => job.name === "the crate corpus");
+    jobs({ ...scope, added: [], extra: [], cores: 12, picked: none }).jobs.some((job) => job.name === "the crate corpus");
   expect(named({ all: false, changed: ["src/lower/mir/iter/closing.rs"], branch: [] })).toBe(true);
   expect(named({ all: false, changed: [], branch: ["src/runtime/byte_len.js"] })).toBe(true);
   expect(named({ all: false, changed: ["scripts/crate-corpus/itertools.rs"], branch: [] })).toBe(true);
@@ -514,7 +486,7 @@ test("the nightly, here, has each job the nightly has", () => {
     const text = readFileSync(join(root, ".github/workflows", file), "utf8");
     return [...text.slice(text.indexOf("\njobs:")).matchAll(/^  ([a-z-]+):$/gm)].map((m) => m[1]);
   };
-  const ran = [...ids("check.yml"), ...ids("nightly.yml")].filter((id) => !["plan", "seeds", "check", "issue", "iterator-forms", "nets", "crater-report", "decision-coverage", "test-times"].includes(id));
+  const ran = [...ids("check.yml"), ...ids("nightly.yml")].filter((id) => !["plan", "seeds", "check", "issue", "iterator-forms", "nets", "crater-report", "decision-coverage", "test-times", "selector-audit"].includes(id));
   expect(ran.filter((id) => !(id in localNightly))).toEqual([]);
 });
 
@@ -1268,8 +1240,7 @@ test("the WASM build, rustc's tests and the mutations run where what they run ch
 // linked on macOS, where the crate's is weak, and not on Linux, where it's
 // in a COMDAT (check 43786120684).
 test("the test map's counting build has its flags from testMap.ts alone, and links on Linux", () => {
-  const tests = readFileSync(join(root, ".github/workflows/rustc-tests.yml"), "utf8");
-  const job = tests.slice(tests.indexOf("\n  test-map:"), tests.indexOf("\n  mutations:"));
+  const job = readFileSync(join(root, ".github/workflows/test-map.yml"), "utf8");
   expect(job).toContain("bun scripts/testMap.ts");
   for (const flag of ["RUSTFLAGS", "instrument-coverage", "CARGO_ENCODED_RUSTFLAGS", "profile"]) expect([flag, job.includes(flag)]).toEqual([flag, false]);
   const lost = lostObject("/t/lost/%p.profraw");
@@ -1323,7 +1294,7 @@ test("the nightly's test times follow each of its jobs, the suite's reports amon
   const nightly = Bun.YAML.parse(readFileSync(join(root, ".github/workflows/nightly.yml"), "utf8")) as { jobs: Record<string, { needs?: string[]; if?: string }> };
   const times = nightly.jobs["test-times"]!;
   expect(times.if).toBe("always()");
-  const others = Object.keys(nightly.jobs).filter((id) => !["test-times", "issue", "decision-coverage", "seeds", "crater-report"].includes(id));
+  const others = Object.keys(nightly.jobs).filter((id) => !["test-times", "issue", "decision-coverage", "seeds", "crater-report", "selector-audit"].includes(id));
   expect(others.filter((id) => !times.needs!.includes(id))).toEqual([]);
   expect(readFileSync(join(root, ".github/workflows/check.yml"), "utf8")).toContain("name: junit-${{ matrix.shard }}");
   expect(readFileSync(join(root, "scripts/test.ts"), "utf8")).toContain('"--reporter=junit"');
@@ -1338,13 +1309,4 @@ test("Miri and every native build of a program take its flags from programFlags 
     .filter((f) => f.endsWith(".ts") && f !== "test/support.ts" && f !== "test/ci.test.ts");
   const own = harness.filter((f) => readFileSync(join(root, f), "utf8").split("\n").some((l) => /"-Coverflow-checks/.test(l)));
   expect(own).toEqual([]);
-});
-
-test("bun run push rebases, builds, checks std, the suite and the port, holds the diff to its files, then pushes", () => {
-  expect(pushPhases).toEqual(["rebase", "build", "std", "check", "sanity", "react", "files", "push"]);
-  expect(onlyPushedFiles(["a.rs", "b.rs"], ["a.rs"])).toEqual(["b.rs"]);
-  const line = timesLine({ at: new Date("2026-11-16T08:00:00Z"), machine: "m", agent: "a", sha: "abc", total: 61.4, phases: [["check", 300]], load: [1, 2, 3], ok: true, note: "" });
-  expect(line).toBe("2026-11-16T08:00:00Z | m | a | push | abc | total 61s | check 300s | load 1.00/2.00/3.00 | ok | ");
-  expect(JSON.parse(readFileSync(join(root, "package.json"), "utf8")).scripts.push).toBe("bun scripts/push.ts");
-  for (const doc of ["DEVELOPMENT.md", "CONTRIBUTING.md"]) expect(readFileSync(join(root, doc), "utf8")).toContain("`bun run push`");
 });

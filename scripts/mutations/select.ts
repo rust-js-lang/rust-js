@@ -1,0 +1,77 @@
+// The test selector (scripts/select.ts, ADR 1101, amended), each of its
+// rules dropped: a selector short of a rule skips a test a change can break.
+import type { Mutation } from "../mutations";
+export const mutations: Mutation[] = [
+  {
+    name: "select-readers-dropped",
+    breaks: "a script's, a helper's or a doc's change runs nothing, not what imports or reads it",
+    file: "scripts/select.ts",
+    find: "    const found = readers(file);\n    ran(found);",
+    replace: "    const found = readers(file);\n    ran([]);",
+    tests: ["test/select.test.ts", "-t", "a script's, a helper's or a doc's change"],
+  },
+  {
+    name: "select-preload-forgotten",
+    breaks: "a change to Bun's preload, test/setup.ts, runs no test, though every test runs it",
+    file: "scripts/select.ts",
+    find: "    const modules = new Set([...importsOf([file]), ...preload]);",
+    replace: "    const modules = new Set([...importsOf([file])]);",
+    tests: ["test/select.test.ts", "-t", "the suite's tests are found"],
+  },
+  {
+    name: "select-selector-not-everything",
+    breaks: "a change to the selector itself runs only what reads it, not everything, though its rule may be what's wrong",
+    file: "scripts/select.ts",
+    find: '  "scripts/select.ts",\n  "scripts/testMap.ts",',
+    replace: '  "scripts/testMap.ts",',
+    tests: ["test/select.test.ts", "-t", "the workflows, the packages' manifests"],
+  },
+  {
+    name: "select-package-folders-read-only",
+    breaks: "a change to a package's or crate's folder, which tests build as apps' dependencies, runs only what reads it",
+    file: "scripts/select.ts",
+    find: '    if (top !== "" && !readOnly.includes(top)) return whole(',
+    replace: '    if (top === "-" && !readOnly.includes(top)) return whole(',
+    tests: ["test/select.test.ts", "-t", "the workflows, the packages' manifests"],
+  },
+  {
+    name: "select-runtime-as-compiler",
+    breaks: "a change to std's package or the runtime's helpers runs what the map says of a function, not every test that compiles",
+    file: "scripts/select.ts",
+    find: "    if (runtimeGlobs.some((glob) => glob.match(file))) {",
+    replace: "    if (false && runtimeGlobs.some((glob) => glob.match(file))) {",
+    tests: ["test/select.test.ts", "-t", "std's package or the runtime"],
+  },
+  {
+    name: "select-corpus-file-one-case",
+    breaks: "a change to the corpus's test file runs none of its cases",
+    file: "scripts/select.ts",
+    find: "      if (file === caseFiles[0]) {\n        for (const name of cases) runCases.add(name);",
+    replace: "      if (file === caseFiles[0]) {\n        for (const name of cases.slice(0, 0)) runCases.add(name);",
+    tests: ["test/select.test.ts", "-t", "a test file runs itself"],
+  },
+  {
+    name: "select-case-without-readers",
+    breaks: "a corpus case's change runs the case, not the tests that read the corpus's files",
+    file: "scripts/select.ts",
+    find: "        for (const reader of map.corpusReaders) if (files.includes(reader)) runs.add(reader);",
+    replace: "        for (const reader of map.corpusReaders.slice(0, 0)) if (files.includes(reader)) runs.add(reader);",
+    tests: ["test/select.test.ts", "-t", "a test file runs itself"],
+  },
+  {
+    name: "select-others-all-said-own",
+    breaks: "everything run for another agent's change since the map's commit is counted as the change's own, which hides how often others' changes force it",
+    file: "scripts/select.ts",
+    find: "({ all: true, allOwn: own(file),",
+    replace: "({ all: true, allOwn: true,",
+    tests: ["test/select.test.ts", "-t", "a change the map can't say of runs everything"],
+  },
+  {
+    name: "select-no-map-guesses",
+    breaks: "with no test map, a change to the compiler runs only what reads its file, not everything",
+    file: "scripts/select.ts",
+    find: "      if (typeof map === \"string\") return whole(`${file} is the compiler's, and ${map}`, file);",
+    replace: "      if (typeof map === \"string\") continue;",
+    tests: ["test/select.test.ts", "-t", "a change the map can't say of runs everything"],
+  },
+];

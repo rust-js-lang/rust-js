@@ -1,0 +1,33 @@
+name: test map prune
+
+# The Actions cache's test maps past the newest 8 removed, after each run
+# of test-map.yml, the one write it needs: test-map.yml, which check.yml's
+# and the nightly's mutations call, is held to their read (ADR 1101,
+# amended). Each map about 22 MB, so about 180 MB kept.
+on:
+  workflow_run:
+    workflows: [test map]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  actions: write
+  contents: read
+
+concurrency:
+  group: test-map-prune
+  cancel-in-progress: true
+
+jobs:
+  prune:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - name: Keep the newest 8 maps in the cache
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bun scripts/testMap.ts prune-cache --keep=8 --prefix="test-map-${{ runner.os }}-"

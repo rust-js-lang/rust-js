@@ -69,7 +69,7 @@ branch's one running, and no branch's run touches another's.
 | The new test, seen to fail, then pass | yes, on the Mac: it's the point | in the suite | in the suite |
 | Its module's focused tests, `bun test test/<file>.test.ts -t <name>` | yes, on the Mac | in the suite | in the suite |
 | The new mutations, `bun scripts/mutations.ts <name>` | yes, on the Mac | the changed ones | all of them, on 16 machines |
-| `bun run check:fast`: lint, the corpus, the lowering, compiler and bindings suites, the snapshots, JSX and diagnostics a change touches, each file a job, its new mutations, at once; of a change the test map can say, only the files and corpus cases that ran a function it changes (ADR 1101); `--all`, what a push's check runs that can run here: typecheck, fmt, clippy, `cargo test`, the Vite example's build, and every test file of the suite, the browsers' after the rest | yes, before each commit; `--all` before a push, with the change's mutations: nothing else | | |
+| `bun run check:fast`: lint, and the test files and corpus cases the selector says the change can affect (`scripts/select.ts`, ADR 1101, amended), each file a job, the nets its paths run, `cargo test` and the Vite example's build where its change can reach them, its new mutations, at once; everything where the selector can't say; `--all`, everything a push's check runs that can run here: typecheck, fmt, clippy, `cargo test`, the Vite example's build, and every test file of the suite, the browsers' after the rest | yes, before each commit; `bun run push` runs it before a push, with the change's mutations: nothing else | | |
 | `bun run ci:status`: main's latest run | yes, before each commit: a red one is fixed first | | |
 | `bun run nightly`: every job the nightly runs, here, each in parts on all the cores (`scripts/nightly.ts`); `bun run nightly stages forms` runs some | yes, before a change the nightly would find, or to prove a night green | | |
 | Reading the generated JS and snapshot diffs | yes | the bless patch, read before it's committed | |
@@ -292,7 +292,7 @@ that no other script makes a path in the user's home.
 | The Rustlantis net's generator (ADR 1125) | `.cache/rustlantis/`, the machine's | Its build of the pinned commit and patch, about 120 MB; another removed as a build starts; 512 MB the store | `scripts/disk.ts` |
 | check:fast's job times (#1364) | `.cache/job-times/`, the machine's, which every worktree's pool reads | Each job's last 5 runs, a sized job's sizes beside them, of at most 1,000 jobs, the least recently run dropped first; 1 MiB the store; nothing written below the floor: about 30 KB | `test/timing.test.ts` |
 | check:fast's failing jobs' output (#1622) | `.cache/check-logs/`, the machine's, a directory each run, whose path the summary prints | Each failing job's whole output, a file each, so a flake under load keeps its evidence past the next run; the oldest runs dropped first; 64 MiB the store | `test/timing.test.ts` |
-| The test map's maps (ADR 1101) | `.cache/test-maps/`, the machine's, which every worktree reads (#932) | 3, about 12 MB each, the least recently used going first, each touched as a check reads it; one of another toolchain or layout removed as a recording ends; none kept below the floor | `test/test-map.test.ts` |
+| The test map's maps (ADR 1101) | `.cache/test-maps/`, the machine's, which every worktree reads (#932), CI's fetched there by `bun run push` | 8, about 22 MB each, the least recently used going first, each touched as a check reads it; one of another toolchain or layout removed as a recording ends; none kept below the floor | `test/test-map.test.ts` |
 | React's port, `bun scripts/react-in-rust.ts` | `$TMPDIR/react-in-rust-<checkout's hash>/` | 4 GB together; one whose checkout is gone removed as any run starts; then, of those no run used in the last hour, the least recently used past the cap or below the floor, never the run's own. Its build is of one build of the compiler, another's removed, and without rustc's incremental cache: about 215 MB after a regen | `test/support.test.ts` |
 | An app's cache, `rust-js build`'s, the examples' and every user's (#1057) | `<app>/node_modules/.cache/rust-js/`: a Cargo target for each of `target`, `editor`, `clippy` and `test` | 2 GB together, the least recently used target first, never the one in use, and none but it kept below 5 GB free; a target another build of the compiler made emptied as a build starts, but what its builds wrote in source (`holdTarget`); about 500 MB the Vite example's. `CARGO_TARGET_DIR`'s, the user's, isn't held | `test/in-source.test.ts` |
 
@@ -505,23 +505,20 @@ with its before and after, so the next agent sees what kind of fix pays.
 
 The ledger of every speed-up tried, with its numbers, its status (active, dropped or superseded) and its commit, is [docs/dev-loop.md](docs/dev-loop.md). Add to it there, never here.
 
-- **Record the test map when a task starts**: `bun run test-map` after
-  `git reset --hard origin/main`. The maps are the machine's, kept in
-  `.cache/test-maps/` for every worktree (#932): where any
-  worktree recorded the commit's, it ends at once; otherwise about 150 s on
-  the 12-core M6 (gate it as a heavy step), and each other worktree of that
-  commit, or of one after it, reads it. Plain `check:fast` then runs only the suites' files and
-  the corpus's cases that ran a function the change touches, of an
-  iterator change the cases built with std's iterator structs too, and
-  says what it picked or why it can't say (`scripts/testMap.ts`, ADR 1101):
-  an iterator's change ran in 74 s, not 153 s. It can say while all that's
-  changed since the map's commit is a function's code in `src/`, a plain
-  suite's test file or a corpus case; after committing a doc, a test's
-  helper or anything else outside `src/`, record it again, or the check
-  runs what the change's paths say, as without a map. `bun run test-map
-  pick` says what the working tree's change picks; `--keep` keeps a
-  recording's counts, to see why a test runs on every change. `--all` never
-  reads it.
+- **The test map comes from CI**: `test-map.yml` records `main`'s after
+  each check, and `bun run push` fetches the nearest
+  (`bun scripts/testMap.ts fetch`). `bun run test-map` records HEAD's here,
+  of a clean tree, where none is near (the whole push suite with the
+  counting build, a heavy step); the maps are the machine's, kept in
+  `.cache/test-maps/` for every worktree (#932). `check:fast` then runs only
+  the test files and corpus cases the selector says the change can affect
+  (`bun scripts/select.ts` says which, and why): of a change to `src/`,
+  those whose recorded functions it touches; of a script, a helper or a
+  doc, what imports or reads it; of a test file or a case, itself (ADR
+  1101, amended). Only a line outside any function's code in `src/` since
+  the map's commit, the branch's own or another agent's, runs everything.
+  `--keep` keeps a recording's counts, to see why a test runs on every
+  change. `--all` runs everything.
 
 - **Every step runs on all the machine's cores.** The Macs here have 8 to
   12 cores, and an agent's time is mostly waiting on a step, so a step
@@ -752,7 +749,7 @@ checked:
 | `test/compat.test.ts`'s "a graph with a crate rust-js's wasm-bindgen doesn't serve builds as before, of crates.io's" | 104 s on CI (check 43771429035), 18 s on the Mac mini, where sccache holds crates.io's wasm-bindgen family; CI compiles syn, the macro and its backend from cold in the fixture's target | A shared seed of crates.io's wasm-bindgen family, as `seeded()` is of the binding crates: saves about 25 CPU-s, as one other test, the lock put back, builds it (ioCI, 2026-11-16) |
 | `bun scripts/crater.ts httparse`, once its library compiles (#1513) | 2,532 s alone on the M3 Max (2026-11-13), Rust 1.100.0, against seconds while its library was refused: its 362 tests run natively and as JS, the JS ones in rounds each under its 1,200 s limit; a run beside four corpus shards passed 25 min with nothing written, as the script prints only at its end. So a run of it by hand fits a 5,000 s limit, about twice its measured time | Find which of its rounds or tests takes the time, and print each round as it ends |
 | `check:fast --all` of a change outside the iterators, bound by its CPU (#986, #996) | On the 12-core M6, quiet (load 1.42), warm with no change, 126 s and 1,160 job core-seconds after #882's round of 2026-11-09 (146 s and 1,219 before), the most the apps' Cargo builds: crates 68, docs 61, the crate corpus 57, next 53, pilot 51, cargo-workspace 46, libraries 46; before that, quiet (load 1.33), a compiler change: 128 s, the cores 96–97% busy each minute, some 1,475 core-seconds the machine's, about 1,295 the jobs' (the 208 test files about 780, the browsers' about 200, the crate corpus 80, the readability passes 36): a floor near 120 s on 12 cores. Each test file is a job of the pool already, the longest first; the four longest, libraries, vite, next and cargo-workspace, end at 1:29–1:32, before the files queued behind them, so splitting them saves 5–8 s at most | Less CPU in the suite. #998 took the readability passes off a change that isn't tidy's or preparation's (123 s, load 2.41, 1,251 core-seconds), kept the crate corpus in every `--all` (the user), and found the heaviest job, `test/docs.test.ts` at 117–119 core-seconds, and the apps' Cargo builds behind it and next, vite, crates, libraries and cargo-workspace: #892, each app's binding crates built under a key of its own and a Node session for each `-vV` |
-| Plain `check:fast` where the test map can't say (ADR 1101) | After any change outside a function's code in `src/` since the map's commit, a doc, a test's helper, a type or a constant, it runs what the paths say: 53–144 s of the five changes measured, not 56–121 s; recording again is about 130 s. And a change to a function every compile runs, tidy's or the runtime's `source`, picks nearly every file and case (101 of 101, 1,805 of 1,809), so the check is CPU-bound on all of it | A helper's change picks its importers (a test's text reads of the checkout now pick it, `readersOf`, 2026-11-09); and a map recorded once a push, not once a commit on each machine (#932 shares a worktree's with the machine's others; CI's runners are Linux's, whose `cfg`s compile other functions, so its map isn't the Mac's) |
+| Everything run where the selector can't say (ADR 1101, amended) | A line outside any function's counted code in `src/` since the map's commit, a type, a constant or an item, the branch's own or another agent's, runs every file and case; and a change to a function every compile runs, tidy's or the runtime's `source`, selects nearly all of them. Each push's line says how often (`select all (…)`, its own change's or others'); the map is CI's of the newest commit of `main` it recorded | A static, item-level layer under the map, rustc's incremental dependency graph (as RustyRTS does), if the count of `all`s says it pays (Tu, 2026-11-16) |
 | `check:fast --all`, now bound by its CPU, not by its cores idle (2026-11-07) | On the 12-core M6, about 1,800 CPU-seconds with no change, 900 of them the 200 files besides the corpus (the longest `crates`, `libraries`, `snapshots`, `cargo-workspace` and `compiler`, 45–80 s each), 350 the corpus's compiles, whose runs are cached; with an iterator change about 3,500, 1,270 of them the rows it names and the corpus with std's iterator structs. Its cores 90% busy, half of them efficiency cores. Measured by #874: rust-js's processes are 1,780 of its CPU-seconds, 9,050 calls: 380 the corpus's, 350 the fixtures' compiles, 260 the rest, and Cargo's builds of crates, which #885 measured again apart from the rustc each one runs: about 590, of which the binding crates are 140 (`webapi` 114 s, built 31 times, at 3.4–4.1 s each under load, 1.8 s alone; `react` and `js` 11 s each), the `-vV` probes 75 (about 590 a run, 0.13 s each, every one a Node session that asks which Prettier the app has), and the rest the crates the tests and the crate corpus compile. The file compiles are kept now, where the build is the same (1 min 39–50 s with no change); after a change to `src/` none is (3 min 4 s) | Less work, not more parallel. Not native Rust's outputs kept, under 2% of any job's CPU (dropped, docs/dev-loop.md, #875). Not the binding crates in a target the tests share, which can't share them: Cargo's `-vV` line names each app's crate directories, by which Prettier they find (ADR 1003), so `webapi`'s `-C metadata` differs in every app in the checkout, 31 keys for 31 builds (dropped, docs/dev-loop.md, #885; what would let them share, #892) |
 | Every mutation on the Mac, `bun run nightly mutations` | 65 min for 8,047 on the M3 Max (2026-10-30), the CPU 86% busy and its 16 GB full: 6.6 GB compressed, 1.3 GB swapped, 35% of the CPU the system's, each mutant's run starting bun, rust-js and Node | More memory, or a mutant's tests run in a process kept warm, as `bun test` with its compiler swapped, not started again for each |
 | A mutant's serde, shipped-crates and bound-maps tests (145 mutations) | Each builds its native program again in the mutant's own target, its wrapper `include!`ing a file beside it in a fixture there, so the path, and the kept build's key, is the mutant's; a serde build links serde's rlibs. The corpus's wrappers are kept by content in the checkout's target (#875) | The wrapper and the files it includes written to a `contentDirectory` of the checkout's, as `runNative` writes the corpus's |
@@ -795,15 +792,19 @@ checked:
 - **`bun run push` is the one way to push** (`scripts/push.ts`). It
   rebases onto `origin/main` (a conflict stops it, aborted), rebuilds,
   makes `std/` again and refuses where it differs from what's committed,
-  runs `check:fast --all`, refuses where the React port differs at its pin
-  (a change the port takes moves `ports/react-in-rust.pin` in the same
-  push), refuses where `git diff origin/main` holds a file no pushed
-  commit changes, and pushes. Where `main` moved while it checked, it
-  rebases again: past a clean rebase, a sanity check, the build, `std/`,
-  plain `check:fast` (what the pushed change touches) and the port, then
-  the push, CI's check of it covering the combination; past a rebase that
-  stopped on a conflict, the whole check again. Its line of times names
-  which (`check` or `sanity`).
+  runs `check:fast`, which runs what the test selector says the change can
+  affect (`scripts/select.ts`, ADR 1101, amended; everything where it
+  can't say, none of a change nothing reads that isn't code, straight to
+  the push), refuses where the React port differs at its pin, of a change
+  to what compiles it (a change the port takes moves
+  `ports/react-in-rust.pin` in the same push), refuses where `git diff
+  origin/main` holds a file no pushed commit changes, and pushes. It first
+  fetches CI's test map of the nearest commit of `main` where it's nearer
+  than the machine's. Where `main` moved while it checked, it rebases again
+  and checks the selection of the new tree (`sanity`), the selector's
+  per-test staleness making that sound with nothing special for a rebase.
+  Its line of times names which (`check` or `sanity`) and what was selected,
+  `select all (why)`, `select some (N files, M cases)` or `select none`.
   A tracked change not committed is refused. `--bless-readability` blesses
   `docs/readability.txt` first, printing what changed and amending the top
   commit; without it a readability failure stops the push like any other.

@@ -12,11 +12,12 @@
 // writes, as `bless-*` artifacts: applied here, to be read as a local bless
 // is, before they're committed.
 
-import { mkdirSync, readFileSync, readdirSync, rmSync } from "node:fs";
+import { appendFileSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { changedCases, touchesAsync, touchesConsumers, touchesCrates, touchesDeclarations, touchesFormatting, touchesIterators, touchesMemory, touchesNumbers, touchesPort, touchesRustc, touchesStdNet, touchesTwins, touchesWasm } from "./iteratorSlice";
 import { changedSince } from "./mutations";
+import { outcome, type Selection, selectChange } from "./select";
 import { shardTimings } from "./shard";
 import { timed, timings } from "./timing";
 
@@ -277,6 +278,28 @@ async function plan(given?: string) {
   console.log(`mutation_timings=${nightly ?? ""}`);
   console.log(`wasm=${touchesWasm(changed)}`);
   console.log(`rustc=${touchesRustc(changed)}`);
+  // The suite's selection (scripts/select.ts): by the newest test map of an
+  // ancestor the cache kept, the diff from its commit, `since`'s change the
+  // run's own; written for the test shards, `selection.json`, and said.
+  let selection: Selection & { map?: string };
+  try {
+    selection = selectChange(since);
+  } catch (error) {
+    selection = { all: true, files: [], cases: [], forms: [], why: `the selector failed: ${error instanceof Error ? error.message.split("\n")[0] : error}` };
+  }
+  mkdirSync(join(root, "target"), { recursive: true });
+  writeFileSync(join(root, "target", "selection.json"), JSON.stringify(selection));
+  console.log(`tests=${testsOutput(selection)}`);
+  const said = `The suite's selection: ${outcome(selection)}${selection.map ? `, by the test map of ${selection.map.slice(0, 9)}` : ""}`;
+  console.error(said);
+  if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${said}\n`);
+}
+
+/** `plan`'s `tests` output: what the suite's shards run of a selection,
+ * `all`, `some`, or `none`, where the shards are skipped. */
+export function testsOutput(selection: Selection): "all" | "some" | "none" {
+  if (selection.all) return "all";
+  return selection.files.length === 0 && selection.cases.length === 0 ? "none" : "some";
 }
 
 /** Each net of check.yml's `nets` job, by its step's id, and its name:

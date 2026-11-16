@@ -1,15 +1,15 @@
 // The test map (#877): which of the compiler's functions each test file of
-// plain `check:fast`'s suites runs, and each case of the corpus, as it's
-// built and as it's built with std's iterator structs (#876), recorded by
-// running them with a build of the compiler that counts each function's
-// runs. Plain `check:fast` reads it to run only the files and cases a
-// change can affect, and the mutation runner which cases reach a
-// mutation's site, whose snapshots judge one of how the JS reads (#864).
+// the push suite runs, and each case of the corpus, as it's built and as
+// it's built with std's iterator structs (#876), recorded by running them
+// with a build of the compiler that counts each function's runs. The
+// selector reads it to run only the files and cases a change can affect,
+// `bun run push`'s check and CI's suite alike (scripts/select.ts, ADR 1101,
+// amended), and the mutation runner which cases reach a mutation's site,
+// whose snapshots judge one of how the JS reads (#864).
 //
 //   bun run test-map           record HEAD's, of a clean tree: about 130 s on 12 cores,
 //                              none where any worktree of the machine recorded it
 //   bun run test-map --keep    and keep what it recorded, to see why a test runs always
-//   bun run test-map pick      what the working tree's change picks, and why
 //   bun scripts/testMap.ts kept [--head]
 //                              whether a map of HEAD or an ancestor (`--head`: of HEAD)
 //                              is kept, its exit status: CI's mutation jobs, whose
@@ -28,9 +28,10 @@
 // `include_str!` reads at such a line. Anything else, a type, a constant,
 // an attribute, an item written in a function, a file outside `src/` (a
 // test's helper, std, the runtime's package, the toolchain, a doc a test
-// reads), and the map can't say: the check runs what it runs without it
-// (`all`). What a test reaches is recorded where nothing is shared with
-// another (its own `RUST_JS_TARGET`, std's sysroot and no compile cache),
+// reads), and the map can't say: the selector says what runs of those
+// (scripts/select.ts), everything where it can't. What a test reaches is
+// recorded where nothing is shared with another (its own `RUST_JS_TARGET`,
+// std's sysroot and no compile cache),
 // so nothing one test made is read by another unrecorded. A test that ran
 // no compiler, or one whose compile wasn't counted whole (stopped,
 // aborted), or that failed, runs on every change, as does one that reads
@@ -54,7 +55,7 @@ import { bytesOf, evict, freeBytes } from "../tooling/bounded.js";
 import { floorBytes, machineStore } from "../test/bounded";
 import { machineVerifiedRuns } from "../test/kept";
 import { readJobTimes } from "./jobTimes";
-import { balanced, caseShardParts, machine, plainSuiteFiles, shard, shardArg } from "./shard";
+import { balanced, caseShardParts, machine, pushSuiteFiles, shard, shardArg } from "./shard";
 
 const root = join(import.meta.dir, "..");
 /** What records a map, the worktree's: its counting build and a recording's
@@ -63,9 +64,10 @@ export const mapDir = join(root, "target", "test-map");
 /** Where maps are kept, the machine's, every worktree's (#932). */
 export const mapStore = join(machineStore, "test-maps");
 /** The layout's version, which a change to it or to what's recorded bumps. */
-export const mapVersion = 3;
-/** The most maps kept: each about 12 MB. */
-export const keptMaps = 3;
+export const mapVersion = 4;
+/** The most maps kept: each about 22 MB, one a commit of `main` CI
+ * records (ADR 1101, amended). */
+export const keptMaps = 8;
 
 /** Each of the compiler's functions, by its index: the file it's in and the
  * line spans of its counted code; and of each test, the functions it ran,
@@ -84,6 +86,10 @@ export type TestMap = {
    * readability's ratchet reads its JS and a lowering test a case's
    * source: each runs where a case changes. */
   corpusReaders: string[];
+  /** The test files that ran no compiler, each `null` in `units`: one
+   * runs where std's package or the runtime changes only where it reads or
+   * imports it (scripts/select.ts). */
+  noCompiler: string[];
 };
 
 /** A change to a file: each hunk's lines of the map's commit, `[from,
@@ -133,13 +139,16 @@ export function mapFile(store: string, commit: string, toolchain: string): strin
  * layout's. */
 const keySuffix = (toolchain: string) => `-${toolchain.slice(0, 12)}-v${mapVersion}.json`;
 
-/** The test files the map records, by their suites (scripts/shard.ts). */
+/** The test files the map records, each a test of its own: the push
+ * suite's (scripts/shard.ts), but the corpus's, whose each case is one. */
 export function mappedFiles(): string[] {
-  const files = readdirSync(join(root, "test"))
-    .filter((name) => name.endsWith(".test.ts"))
-    .map((name) => `test/${name}`);
-  return plainSuiteFiles(files).flatMap(({ files }) => files);
+  return pushSuiteFiles(readdirSync(join(root, "test"))).filter((file) => !(caseFiles as readonly string[]).includes(file));
 }
+
+/** The mapped files recorded in parts, as the push suite runs them,
+ * `RUST_JS_CASES=i/n`, each part's compiles the file's: the metamorphic
+ * sample, some 4 min on one core. */
+export const partedFiles = ["test/metamorphic.test.ts"];
 
 /** What `file`, a test's module, reads of the checkout as text, as far as
  * its source and the source of each module of the checkout's it imports
@@ -168,8 +177,17 @@ export function readsOf(file: string, followed = true, seen = new Set<string>())
   };
   // `join(root, "a", "b")`, `resolve(root, "a/b")`, and `${root}/a/b`: of
   // the checkout's root, but where the file declares a `root` of its own,
-  // a fixture's.
-  const ownRoot = /\b(?:const|let)\s+root\s*=/.test(text);
+  // a fixture's; one it makes of its own folder, `join(import.meta.dir,
+  // "..")`, is the checkout's where that's where it leads (adr.test.ts's).
+  const parts = (args: string) => [...args.matchAll(/["'`]([^"'`$\n]+)["'`]/g)].map(([, part]) => part);
+  const declared = /\b(?:const|let)\s+root\s*=\s*([^;\n]*)/.exec(text)?.[1];
+  const ofItsFolder = declared === undefined ? undefined : /^(?:join|resolve)\(\s*import\.meta\.dir\s*((?:,\s*["'`][^"'`$\n]+["'`]\s*)*)\)$/.exec(declared.trim())?.[1];
+  const ownRoot = declared !== undefined && !(ofItsFolder !== undefined && resolve(dirname(path), ...parts(ofItsFolder)) === root);
+  // And `join(import.meta.dir, "a")`, of its own folder: mutations.ts's
+  // lists, `join(import.meta.dir, "mutations")`.
+  for (const [, args] of text.matchAll(/\b(?:join|resolve)\(\s*import\.meta\.dir\s*,\s*((?:["'`][^"'`$\n]+["'`]\s*,?\s*)+)\)/g)) {
+    there(relative(root, resolve(dirname(path), ...parts(args))));
+  }
   if (!ownRoot) for (const [, args] of text.matchAll(/\b(?:join|resolve)\(\s*root\s*,\s*((?:["'`][^"'`$\n]+["'`]\s*,?\s*)+)/g)) {
     there(join(...[...args.matchAll(/["'`]([^"'`$\n]+)["'`]/g)].map(([, part]) => part)));
   }
@@ -181,7 +199,7 @@ export function readsOf(file: string, followed = true, seen = new Set<string>())
     else if (tops.has(literal.split("/")[0])) there(literal, false);
   }
   // A glob of the checkout's files, `new Bun.Glob("test/corpus/*.js")`, its
-  // first part the root's, said as the glob, which `readersOf` matches:
+  // first part the root's, said as the glob, which the selector matches:
   // readability's ratchet reads the corpus's JS so, which a case's bless
   // changes (#1188's follow-up: main went red three times in a day where a
   // change blessed snapshots and plain check:fast didn't run it). Not one
@@ -208,25 +226,12 @@ export function readsSources(file: string): boolean {
   return [...readsOf(file)].some((read) => read === "src" || read.startsWith("src/"));
 }
 
-/** Of `testFiles`, each whose own text names a file of `changed`, or a
- * folder it's in (`readsOf`, not followed into its helpers, which name
- * what every test reads as it runs, `std/`), with the first: a change to a
- * file a test reads as text picks it, whatever else picks what runs. */
-export function readersOf(changed: string[], testFiles: string[]): Map<string, string> {
-  const readers = new Map<string, string>();
-  for (const test of testFiles) {
-    const reads = readsOf(test, false);
-    const read = changed.find((file) => file !== test && [...reads].some((r) => file === r || file.startsWith(`${r}/`) || (r.includes("*") && new Bun.Glob(r).match(file))));
-    if (read !== undefined) readers.set(test, read);
-  }
-  return readers;
-}
-
-/** What a change of `changes` runs, by `map`: of `files`, the test files the
- * plain suites have now, and `cases`, the corpus's. */
+/** What a change of `changes` to the compiler's code runs, by `map`, the
+ * functions it touches: of `files`, the push suite's test files, and
+ * `cases`, the corpus's; or `all`, where a change isn't a function's code.
+ * What every other path runs is the selector's (scripts/select.ts). */
 export function pick(map: TestMap, changes: Change[], files: string[], cases: string[]): Picked {
   const touched = new Set<number>();
-  const runs = new Set<string>();
   // Each function's spans, by file, and the lines from its first to its last.
   const spans = new Map<string, { at: number; from: number; to: number }[]>();
   const extent = map.functions.map(({ spans: of }) => [of[0]?.[0] ?? 0, of.at(-1)?.[1] ?? -1] as const);
@@ -239,27 +244,6 @@ export function pick(map: TestMap, changes: Change[], files: string[], cases: st
   const holding = (file: string, line: number) => (spans.get(file) ?? []).filter(({ from, to }) => from <= line && line <= to).map(({ at }) => at);
   const within = (outer: number, inner: number) => extent[outer][0] <= extent[inner][0] && extent[inner][1] <= extent[outer][1];
   for (const { file, hunks } of changes) {
-    // A case runs itself, and the tests that read the corpus's files.
-    if (file.startsWith("test/corpus/") && /\.(rs|js)$/.test(file) && !file.slice("test/corpus/".length).includes("/")) {
-      const name = file.slice("test/corpus/".length).replace(/\.js$/, ".rs");
-      for (const of of caseFiles) runs.add(caseUnit(of, name)!);
-      for (const reader of map.corpusReaders) runs.add(reader);
-      continue;
-    }
-    // The corpus's file checks every case.
-    if (file === "test/corpus.test.ts") return { kind: "all", why: `${file} checks every case` };
-    // And std's iterator structs' file checks every case of that build.
-    if (file === "test/iterator-forms.test.ts") {
-      for (const name of cases) runs.add(caseUnit(file, name)!);
-      runs.add(file);
-      continue;
-    }
-    // A test file runs itself: of the plain suites', it runs; another's is
-    // no other test's, which none imports.
-    if (/^test\/[^/]+\.test\.ts$/.test(file)) {
-      if (files.includes(file)) runs.add(file);
-      continue;
-    }
     const sites = map.includes[file];
     if (sites !== undefined && hunks !== "new") {
       for (const { file: at, line } of sites) {
@@ -296,7 +280,6 @@ export function pick(map: TestMap, changes: Change[], files: string[], cases: st
     }
   }
   const affected = (unit: string) => {
-    if (runs.has(unit)) return true;
     const bits = map.units[unit];
     if (bits === undefined || bits === null) return true;
     const bytes = Buffer.from(bits, "base64");
@@ -396,6 +379,68 @@ export function nearestMap(store: string, checkout: string, toolchain: string): 
   return undefined;
 }
 
+/** Of the Actions cache's test maps, the newest first, those past the
+ * newest `keep`, to remove. */
+export function cachePast(newestFirst: { id: number; key: string }[], keep: number): { id: number; key: string }[] {
+  return newestFirst.slice(keep);
+}
+
+/** What each test map CI recorded of a commit of `main` is named: the
+ * artifact `test-map-of-<sha>` of test-map.yml's run after that commit's
+ * check. */
+export const ciMapPrefix = "test-map-of-";
+
+/** Of the artifacts GitHub lists, `test-map-of-<sha>` each of a run of
+ * `main` in this repository, not a fork's, unexpired, the one of HEAD's
+ * nearest ancestor, `behind` saying how far each commit is, `undefined`
+ * where it's no ancestor: the run and the artifact's name. */
+export function ciMapOf(
+  artifacts: { name: string; expired: boolean; workflow_run: { id: number; head_branch: string; repository_id: number; head_repository_id: number } }[],
+  behind: (commit: string) => number | undefined,
+): { run: number; name: string; commit: string; behind: number } | undefined {
+  return artifacts
+    .flatMap((artifact) => {
+      const commit = artifact.name.slice(ciMapPrefix.length);
+      const run = artifact.workflow_run;
+      if (!artifact.name.startsWith(ciMapPrefix) || artifact.expired || !/^[0-9a-f]{40}$/.test(commit)) return [];
+      if (run.head_branch !== "main" || run.repository_id !== run.head_repository_id) return [];
+      const far = behind(commit);
+      return far === undefined ? [] : [{ run: run.id, name: artifact.name, commit, behind: far }];
+    })
+    .sort((a, b) => a.behind - b.behind)[0];
+}
+
+/** `bun run push`'s: the map CI recorded of HEAD's nearest ancestor on
+ * `main`, downloaded into the machine's store where it's nearer than the
+ * nearest kept, a map as any other, read only where it's whole and of this
+ * layout and toolchain (`nearestMap`). What it did, in a line. */
+export function fetchMap(): string {
+  const listed = Bun.spawnSync(["gh", "api", "repos/{owner}/{repo}/actions/artifacts?per_page=100", "--jq", "[.artifacts[] | {name, expired, workflow_run}]"], { cwd: root, stdout: "pipe", stderr: "pipe" });
+  if (listed.exitCode !== 0) return `no map fetched: GitHub's artifacts weren't listed (${listed.stderr.toString().trim().split("\n")[0]})`;
+  const behind = (commit: string) => {
+    if (git(["merge-base", "--is-ancestor", commit, "HEAD"]).code !== 0) return undefined;
+    return Number(git(["rev-list", "--count", `${commit}..HEAD`]).out.trim());
+  };
+  const found = ciMapOf(JSON.parse(listed.stdout.toString()), behind);
+  if (found === undefined) return "no map of an ancestor of HEAD on CI";
+  const kept = nearestMap(mapStore, root, toolchainOf());
+  if (kept !== undefined && behind(kept.commit)! <= found.behind) return `the map kept of ${kept.commit.slice(0, 9)} is as near as CI's`;
+  const into = join(mapDir, "fetched");
+  rmSync(into, { recursive: true, force: true });
+  const got = Bun.spawnSync(["gh", "run", "download", String(found.run), "--name", found.name, "--dir", into], { cwd: root, stdout: "pipe", stderr: "pipe" });
+  if (got.exitCode !== 0) return `no map fetched: run ${found.run}'s ${found.name} didn't download`;
+  mkdirSync(mapStore, { recursive: true });
+  let moved = 0;
+  for (const name of readdirSync(into)) {
+    if (!name.endsWith(".json")) continue;
+    renameSync(join(into, name), join(mapStore, name));
+    moved++;
+  }
+  rmSync(into, { recursive: true, force: true });
+  pruneMaps(mapStore, keptMaps, () => freeBytes(mapStore), toolchainOf());
+  return moved === 0 ? `run ${found.run}'s ${found.name} held no map` : `fetched CI's map of ${found.commit.slice(0, 9)}, ${found.behind} commits behind HEAD`;
+}
+
 /** The map of HEAD or its nearest ancestor, and the working tree's changes
  * since its commit, new files' too; or why there's none. */
 /** What `headMap` says where there's no map, which a caller that needs one
@@ -442,15 +487,6 @@ function readHeadMap(): { map: TestMap; changes: Change[] } | string {
 function said(map: TestMap, picked: Picked): Picked {
   const of = `the test map of ${map.commit.slice(0, 9)}`;
   return picked.kind === "all" ? { kind: "all", why: `${of} can't say: ${picked.why}` } : { ...picked, why: `${of}: ${picked.why}` };
-}
-
-/** What the working tree's change runs, by the newest map of an ancestor of
- * HEAD: its changes since the map's commit, the working tree's and new
- * files' too. */
-export function pickChange(files: string[], cases: string[]): Picked {
-  const found = headMap();
-  if (typeof found === "string") return { kind: "all", why: found };
-  return said(found.map, pick(found.map, found.changes, files, cases));
 }
 
 /** The corpus cases whose compiles ran `file`'s lines `first` to `last`,
@@ -649,7 +685,7 @@ export const countingBinary = join(mapDir, "build", "debug", "rust-js");
 
 /** Each test of a recording on `shards` machines of `perShard` cores:
  * each file of the corpus's cases in `shards * perShard` parts, each
- * machine `perShard` of each (`caseShardParts`), and the plain suites'
+ * machine `perShard` of each (`caseShardParts`), as are `partedFiles`, and the push suite's
  * `files`, dealt by `seconds` of each (`balanced`), in turn where it knows
  * none. Each in exactly one part. */
 export function planUnits(files: string[], shards: number, perShard: number, seconds: ReadonlyMap<string, number>): Plan["units"] {
@@ -672,7 +708,19 @@ export function planUnits(files: string[], shards: number, perShard: number, sec
         env: { ITERATOR_FORMS: "corpus", RUST_JS_CASES: part, RUST_JS_TEST_MAP_UNIT: "test/iterator-forms.test.ts" },
         shard: at,
       })),
-      ...balanced(files, at, shards, seconds).map((file) => ({ name: file, cmd: ["bun", "test", file], env: { RUST_JS_TEST_MAP_UNIT: file }, shard: at })),
+      // And each file the push suite runs in parts, in as many, its parts'
+      // compiles the file's.
+      ...partedFiles
+        .filter((file) => files.includes(file))
+        .flatMap((file) =>
+          caseParts.map((part) => ({ name: `${file} ${part}`, cmd: ["bun", "test", file], env: { RUST_JS_CASES: part, RUST_JS_TEST_MAP_UNIT: file }, shard: at })),
+        ),
+      ...balanced(
+        files.filter((file) => !partedFiles.includes(file)),
+        at,
+        shards,
+        seconds,
+      ).map((file) => ({ name: file, cmd: ["bun", "test", file], env: { RUST_JS_TEST_MAP_UNIT: file }, shard: at })),
     );
   }
   return units;
@@ -680,7 +728,7 @@ export function planUnits(files: string[], shards: number, perShard: number, sec
 
 /** The counting build of HEAD, of a clean tree, and its plan for `shards`
  * machines of this one's cores: the corpus's files in as many parts as
- * there are cores on all of them, the plain suites' files dealt by what
+ * there are cores on all of them, the push suite's files dealt by what
  * check:fast keeps of each one's time on this machine (scripts/jobTimes.ts),
  * none where it keeps none, CI's. */
 async function build(shards: number): Promise<Plan> {
@@ -733,7 +781,7 @@ async function build(shards: number): Promise<Plan> {
     files,
     caseNames: readdirSync(join(root, "test", "corpus")).filter((name) => name.endsWith(".rs")),
     readsSources: files.filter((file) => readsSources(file)),
-    // The plain suites' files that read the corpus's files: each says where.
+    // The push suite's files that read the corpus's files: each says where.
     corpusReaders: files.filter((file) => /\bcorpus\b/.test(readFileSync(join(root, file), "utf8"))),
     includes: includes(),
     units,
@@ -845,9 +893,13 @@ export function mergeRecordings(plan: Plan, parts: string[], made: number): { ma
   const caseUnits = caseFiles.flatMap((file) => plan.caseNames.map((name) => caseUnit(file, name)!));
   const units: TestMap["units"] = {};
   const always: string[] = [];
+  const noCompiler: string[] = [];
+  // A file recorded in parts failed where any part did.
+  const fileEnded = (file: string) =>
+    partedFiles.includes(file) ? plan.units.filter((unit) => unit.name.startsWith(`${file} `)).every((unit) => ended.get(unit.name) === 0) : ended.get(file) === 0;
   for (const unit of [...plan.files, ...caseFiles, ...caseUnits]) {
     const isFile = plan.files.includes(unit);
-    const failed = isFile ? ended.get(unit) !== 0 : failedUnits.has(unit);
+    const failed = isFile ? !fileEnded(unit) : failedUnits.has(unit);
     const own = bits.get(unit);
     const why = failed
       ? "it failed"
@@ -862,9 +914,10 @@ export function mergeRecordings(plan: Plan, parts: string[], made: number): { ma
               : undefined;
     units[unit] = why === undefined ? Buffer.from(own!).toString("base64") : null;
     if (why !== undefined) always.push(`${unit} (${why})`);
+    if (isFile && why === "it ran no compiler") noCompiler.push(unit);
   }
   const { version, commit, toolchain, functions, includes, corpusReaders } = plan;
-  return { map: { version, commit, toolchain, made, functions, units, includes, corpusReaders }, always };
+  return { map: { version, commit, toolchain, made, functions, units, includes, corpusReaders, noCompiler }, always };
 }
 
 /** The map of the plan's recording, every part's, kept in the machine's
@@ -941,16 +994,24 @@ if (import.meta.main) {
     await recordPart(plan, part.index);
   } else if (command === "merge") {
     merge(readPlan(), false);
-  } else if (command === "pick") {
-    const cases = readdirSync(join(root, "test", "corpus")).filter((name) => name.endsWith(".rs"));
-    const picked = pickChange(mappedFiles(), cases);
-    console.log(picked.why);
-    if (picked.kind === "picked") {
-      console.log(`files (${picked.files.length}): ${picked.files.join(" ")}`);
-      console.log(`cases (${picked.cases.length} of ${cases.length}), with std's iterator structs (${picked.forms.length})`);
+  } else if (command === "prune-cache") {
+    // CI's: the Actions cache's test maps past the newest `--keep`, by
+    // their key's `--prefix`, removed.
+    const keep = Number(args.find((arg) => arg.startsWith("--keep="))?.slice("--keep=".length));
+    const prefix = args.find((arg) => arg.startsWith("--prefix="))?.slice("--prefix=".length);
+    if (!Number.isInteger(keep) || keep < 1 || !prefix) throw new Error("prune-cache --keep=N --prefix=<key's start>");
+    const listed = Bun.spawnSync(["gh", "cache", "list", "--key", prefix, "--sort", "created_at", "--order", "desc", "--limit", "100", "--json", "id,key"], { cwd: root, stdout: "pipe", stderr: "inherit" });
+    if (listed.exitCode !== 0) process.exit(1);
+    const past = cachePast(JSON.parse(listed.stdout.toString()), keep);
+    for (const { id, key } of past) {
+      Bun.spawnSync(["gh", "cache", "delete", String(id)], { cwd: root, stdout: "inherit", stderr: "inherit" });
+      console.log(`removed ${key}`);
     }
+    console.log(`kept the newest ${keep} test maps of ${prefix}*; removed ${past.length}`);
+  } else if (command === "fetch") {
+    console.log(fetchMap());
   } else {
-    console.error("usage: bun run test-map [record | pick | kept [--head] | build --shards=N | units --shard=i/N | merge]");
+    console.error("usage: bun run test-map [record | kept [--head] | build --shards=N | units --shard=i/N | merge | prune-cache --keep=N --prefix=K | fetch] (what a change selects: bun scripts/select.ts)");
     process.exit(2);
   }
 }

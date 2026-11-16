@@ -301,8 +301,11 @@ export function importsOf(files: string[]): string[] {
   const walk = (file: string) => {
     if (seen.has(file) || !existsSync(join(root, file))) return;
     seen.add(file);
-    for (const [, from, bare] of readFileSync(join(root, file), "utf8").matchAll(/^(?:import|export)[^"';]*?from\s*["'](\.{1,2}\/[^"']+)["']|^import\s*["'](\.{1,2}\/[^"']+)["']/gm)) {
-      const base = join(dirname(file), (from ?? bare)!);
+    // Each `import .. from`, `export .. from`, bare `import "./x"`, and
+    // `await import("./x")`, a module a script loads as it needs it.
+    const text = readFileSync(join(root, file), "utf8");
+    for (const [, from, bare, loaded] of text.matchAll(/^(?:import|export)[^"';]*?from\s*["'](\.{1,2}\/[^"']+)["']|^import\s*["'](\.{1,2}\/[^"']+)["']|\bimport\(\s*["'](\.{1,2}\/[^"']+)["']\s*\)/gm)) {
+      const base = join(dirname(file), (from ?? bare ?? loaded)!);
       walk([base, `${base}.ts`, `${base}.js`].find((path) => existsSync(join(root, path)) && statSync(join(root, path)).isFile()) ?? base);
     }
   };

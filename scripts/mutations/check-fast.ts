@@ -17,8 +17,16 @@ export const mutations: Mutation[] = [
     name: "check-fast-corpus-libraries-only-marked",
     breaks: "check:fast's corpus builds as libraries only the cases marked `library-differs` (#1920)",
     file: "scripts/checkFast.ts",
-    find: "env: { RUST_JS_CASES: `${i + 1}/${corpusParts}${picked ? `:${picked.caseList}` : \"\"}` },",
-    replace: "env: { RUST_JS_CASES: `${i + 1}/${corpusParts}${picked ? `:${picked.caseList}` : \"\"}`, RUST_JS_LIBRARIES: \"differing\" },",
+    find: "env: { RUST_JS_CASES: `${i + 1}/${corpusParts}${!all && picked ? `:${picked.caseList}` : \"\"}` },",
+    replace: "env: { RUST_JS_CASES: `${i + 1}/${corpusParts}${!all && picked ? `:${picked.caseList}` : \"\"}`, RUST_JS_LIBRARIES: \"differing\" },",
     tests: ["test/ci.test.ts", "-t", "each push's corpus builds every case as a library"],
+  },
+  {
+    name: "select-check-fast-runs-everything-selected",
+    breaks: "check:fast runs every test file whatever the selection, the selector's saving lost",
+    file: "scripts/checkFast.ts",
+    find: "  const selected = (file: string) => all || picked === undefined || picked.files.has(file);",
+    replace: "  const selected = (_file: string) => true;",
+    tests: ["test/select.test.ts", "-t", "check:fast runs what the selection selected"],
   },
 ];

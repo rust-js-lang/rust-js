@@ -84,6 +84,7 @@ jobs:
       mutation_timings: ${{ steps.plan.outputs.mutation_timings }}
       wasm: ${{ steps.plan.outputs.wasm }}
       rustc: ${{ steps.plan.outputs.rustc }}
+      tests: ${{ steps.plan.outputs.tests }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -91,10 +92,25 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version-file: package.json
+      # The test map the selector reads (scripts/select.ts, ADR 1101,
+      # amended): the newest test-map.yml kept, of the toolchain its key's
+      # is of, a map's toolchain.
+      - run: rustup show
+      - uses: actions/cache/restore@v6
+        with:
+          path: .cache/test-maps
+          key: test-map-${{ runner.os }}-${{ hashFiles('rust-toolchain.toml') }}-${{ github.run_id }}
+          restore-keys: test-map-${{ runner.os }}-${{ hashFiles('rust-toolchain.toml') }}-
       - id: plan
         env:
           GH_TOKEN: ${{ github.token }}
         run: bun scripts/ci.ts plan ${{ inputs.since && format('--since={0}', inputs.since) || '' }} >> "$GITHUB_OUTPUT"
+      # What the suite's shards run of it.
+      - uses: actions/upload-artifact@v7
+        with:
+          name: selection
+          path: target/selection.json
+          retention-days: 7
 
   # rust-js's release build, once a run, for the jobs that use it
   # (./.github/actions/build-rust-js): each restores the binary it caches,
@@ -319,8 +335,13 @@ jobs:
   # --shard`): each shard uploads what it measured, `timings-<shard>`, and
   # the next run's shards read them all, so the shards finish together.
   # The nightly's adds the files only it runs (`--nightly`, ADR 1030).
+  # Of a push's check, the files and corpus cases its selection says the
+  # change can affect (`plan`'s `tests`, scripts/select.ts): none, and the
+  # shards are skipped; the nightly's, every one.
   test:
     name: test (${{ matrix.shard }}/${{ inputs.test_shards || '2' }})
+    needs: plan
+    if: ${{ inputs.nightly || needs.plan.outputs.tests != 'none' }}
     runs-on: ubuntu-latest
     timeout-minutes: 90
     permissions:
@@ -367,12 +388,17 @@ jobs:
           step: restore
           name: test-${{ matrix.shard }}-of-${{ inputs.test_shards || '2' }}${{ inputs.nightly && '-nightly' || '' }}
           nightly: ${{ inputs.nightly && 'true' || 'false' }}
+      - uses: actions/download-artifact@v8
+        if: ${{ !inputs.nightly }}
+        with:
+          name: selection
+          path: target
       - id: test
         env:
           # The nightly's counts each compile's decisions (ADR 1124).
           RUST_JS_DECISIONS: ${{ inputs.nightly && '/tmp/decisions.tsv' || '' }}
           RUST_JS_COMPILER: ${{ github.workspace }}/target/debug/rust-js
-        run: bun run test --shard=${{ matrix.shard }}/${{ inputs.test_shards || '2' }}${{ inputs.nightly && ' --nightly' || '' }}
+        run: bun run test --shard=${{ matrix.shard }}/${{ inputs.test_shards || '2' }}${{ inputs.nightly && ' --nightly' || ' --selection=target/selection.json' }}
       - if: always()
         uses: ./.github/actions/native-outcomes
         with:
@@ -402,7 +428,7 @@ jobs:
       - name: Bless what differs
         if: failure() && steps.test.outcome == 'failure'
         run: |
-          BLESS=1 RUST_JS_COMPILER="$PWD/target/debug/rust-js" bun scripts/test.ts --shard=${{ matrix.shard }}/${{ inputs.test_shards || '2' }}${{ inputs.nightly && ' --nightly' || '' }} || true
+          BLESS=1 RUST_JS_COMPILER="$PWD/target/debug/rust-js" bun scripts/test.ts --shard=${{ matrix.shard }}/${{ inputs.test_shards || '2' }}${{ inputs.nightly && ' --nightly' || ' --selection=target/selection.json' }} || true
           git add -A
           git diff --cached --binary > bless.patch
       - if: failure() && steps.test.outcome == 'failure'

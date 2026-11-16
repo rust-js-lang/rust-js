@@ -23,6 +23,22 @@ The new `table_rows_resized_unseen.rs` covers each way a table's row may
 resize with no row's `&mut` given to a call (#1849).
 The historical suite totals and CI timings below have not been remeasured.
 
+Changed on 2026-11-16: the test selector (`scripts/select.ts`, ADR 1101,
+amended). `bun run push`'s check (`check:fast`) and CI's suite run only the
+test files and corpus cases a change can affect: of a change to `src/`,
+those whose functions the test map recorded it touching; of a script, a
+helper or a doc, those that import or read it; of a test file or a case,
+itself; everything where it can't say. The test map records every file of
+the push suite now, not the plain suites', the metamorphic sample in parts,
+after each check of `main` on CI (`test-map.yml`), and `bun run push`
+fetches it. CI's `plan` writes the selection, `selection.json`, which the
+test shards run (`bun run test --selection=`), the shards skipped where it
+selects none. The nightly runs everything and audits the selection
+(`scripts/selector-audit.ts`): a test it failed that no push selected is a
+P1 `selector: …`. New: `test/select.test.ts` (the rules, the real suite's
+imports and reads, check:fast's jobs, push's line, one OS's map serving the
+other, the audit). The plain suites' list, `plainSuites`, is gone.
+
 Changed on 2026-11-15: the declarations' TypeScript callers
 (`test/declarations-conformance.test.ts`, 101 cases, some 22 s) run in each
 push's `declarations` job, and `check:fast`, where the change adds or edits

@@ -1,14 +1,12 @@
-// What a change is checked by before it's committed, all at once, in a
-// minute or so: lint, the corpus in parts, the suites that check the JS
-// bodies are lowered to from their MIR (ADR 0364), the snapshots and the
-// diagnostics where the change touches what they read, and the mutations it
-// adds or changes; of a change the test map can say, only the suites' files
-// and the corpus's cases that ran a function it changes (scripts/testMap.ts,
-// ADR 1101). CI runs the whole suite and every mutation of what the change
-// touched after each push (DEVELOPMENT.md).
+// What a change is checked by before it's pushed, all at once: lint, the
+// test files and corpus cases the selector says the change can affect
+// (scripts/select.ts, ADR 1101, amended), each net its paths run, and the
+// mutations it adds or changes; everything a push's check runs where the
+// selector can't say. `bun run push` runs it. CI's suite runs the same
+// selection after each push (DEVELOPMENT.md).
 //
 //   bun run check:fast                 the change's checks
-//   bun run check:fast --all           what a push's check runs, but what `leftToCi` says is CI's
+//   bun run check:fast --all           everything a push's check runs, but what `leftToCi` says is CI's
 //   bun run check:fast test/x.test.ts  and these files
 //   bun run check:fast --all --profile and how busy the cores were each minute, and each job when
 //
@@ -26,8 +24,8 @@ import { dirname, join, resolve } from "node:path";
 import { currentBuild, prune } from "../test/compiles";
 import {childWarnings} from "../test/child";
 import { changedCases, changePicks, metamorphicMost, runs, touchesAsync, touchesConsumers, touchesCrates, touchesDeclarations, touchesFormatting, touchesIterators, touchesMemory, touchesNumbers, touchesStdNet, touchesTwins } from "./iteratorSlice";
-import { mappedFiles, pickChange, readersOf } from "./testMap";
-import { browsers, caseParts, compilerBuilds, machine, memoryBudget, nightly, peakGB, plainSuiteFiles, pooledParts } from "./shard";
+import { outcome, readOnly, selectChange, selectionFile, suiteFiles } from "./select";
+import { browsers, caseParts, compilerBuilds, machine, memoryBudget, nightly, peakGB, pooledParts } from "./shard";
 import { said, strays } from "./strays";
 import { type CheckLogRun, checkLogRun } from "./checkLogs";
 import { expected, jobTimesStore, readJobTimes, recordJobTimes } from "./jobTimes";
@@ -35,6 +33,9 @@ import { fairShare, holdLease, leaseStore, liveLeases } from "./leases";
 import { elapsed, loadScale, median, timed } from "./timing";
 
 const root = join(import.meta.dir, "..");
+
+/** The push suite's test files, which a selection is of. */
+const pushSuite = suiteFiles().length;
 
 /** Build and prune before jobs can use either result. Commands are explicit
  * so the startup barrier and each child's observed duration can be tested
@@ -76,16 +77,15 @@ export type Job = {
 
 /** What the check is of: `--all`, or the files the change touches, those
  * the branch changed since `main`, the mutations it adds and the files
- * named; the machine's cores; and, of a plain check whose change the test
- * map can say, the test files and corpus cases it can affect, the cases
- * written to `caseList`, a line each, and those built with std's iterator
- * structs, to `formsList` (scripts/testMap.ts, #877, #876); and of `--all`,
- * those with std's iterator structs alone, `forms`, where the map can say:
- * the corpus whole runs in its plain build, as a push's check runs it, and
- * in std's of the cases whose compiles ran what the change touches, the
- * nightly and CI running it whole (#986); and of a change to the
- * iterators' code, the `rows` of their tables it names, as
- * `changePicks` picks them (#1364). */
+ * named; the machine's cores; and, of a check the selector can say, the
+ * test files and corpus cases it selects, `picked`, the cases written to
+ * `caseList`, a line each, and those built with std's iterator structs, to
+ * `formsList` (scripts/select.ts, #877, #876); none, `all`, where it
+ * can't; and of `--all`, those with std's iterator structs alone, `forms`,
+ * where it can say: the corpus whole runs in its plain build, and in std's
+ * of the cases whose compiles ran what the change touches, the nightly and
+ * CI running it whole (#986); and of a change to the iterators' code, the
+ * rows of their tables it names, as `changePicks` picks them (#1364). */
 export type Scope = {
   rows?: number;
   all: boolean;
@@ -160,20 +160,24 @@ export function touchesReadability(files: string[], paths = readabilityPaths()):
   return files.some((file) => globs.some((glob) => glob.match(file)));
 }
 
-/** The check's jobs, through the pool at once: of
- * `--all`, what a push's check runs (check.yml); else the suites the
- * change can touch, as it touches them, `shared` saying whether that's what
- * the snapshots and the diagnostics read. */
-export function jobs({ all, changed, branch, added, extra, cores, picked, forms, rows }: Scope): { jobs: Job[]; shared: boolean } {
+/** The check's jobs, through the pool at once: of `--all`, or a change the
+ * selector can't say, what a push's check runs (check.yml); else the test
+ * files and cases it selected, and the nets and builds its paths run. */
+export function jobs({ all, changed, branch, added, extra, cores, picked, forms, rows }: Scope): { jobs: Job[] } {
   // What the change touches, the working tree's and what the branch
   // committed since `main`: of the working tree's alone, a change committed
   // before its check, as one on `main` is, touched nothing, and its JSX,
   // snapshots and diagnostics were skipped; 216a72342 left bindings.test.ts's
   // snapshot unblessed, `main` red until 8257a8634 (#1731).
   const touched = [...changed, ...branch];
-  // What the snapshots and the diagnostics read: the compiler and `@rust-js/std`.
-  const shared = all || touched.some((file) => file.startsWith("src/") || file.startsWith("std/"));
-  const jsx = all || touched.some((file) => /^src\/(lower\/jsx|jsx_syntax)|^react\//.test(file));
+  // Neither a selection nor `--all`: everything, as the selector says
+  // where it can't.
+  all ||= picked === undefined;
+  // The compiler's unit tests, of a change to its Rust or its build; the
+  // Vite example's build, of a change to any but what only tests and docs
+  // read (scripts/select.ts's `readOnly`).
+  const rust = all || touched.some((file) => (file.startsWith("src/") && file.endsWith(".rs")) || /^(Cargo\.(toml|lock)|build\.rs|rust-toolchain\.toml|vendor\/)/.test(file));
+  const vite = all || touched.some((file) => (file.includes("/") ? !readOnly.includes(file.split("/")[0]!) : !file.endsWith(".md")));
   // A change to tidy or preparation, or to the oracles, is checked after
   // each of tidy's stages and without each of preparation's rewrites, and by
   // the read cases (ADRs 0659, 1087): of `--all` too only then, as a push's
@@ -242,10 +246,10 @@ export function jobs({ all, changed, branch, added, extra, cores, picked, forms,
   const builds = compilerBuilds(cores);
   // Each part of the corpus, a process of its own, a job of the pool's
   // (scripts/shard.ts's `pooledParts`).
-  // Of a change the test map can say, the cases it picked, in as many parts
-  // as there are cores, or fewer where fewer cases: none where it picked
-  // none, nor the file's own tests, which the first part runs.
-  const corpusParts = picked
+  // Of a selection, the cases it selected, in as many parts as there are
+  // cores, or fewer where fewer cases: none where it selected none, nor the
+  // file's own tests, which the first part runs.
+  const corpusParts = !all && picked
     ? picked.cases.length > 0 || picked.files.has("test/corpus.test.ts")
       ? Math.max(1, Math.min(pooledParts(cores), Math.ceil(picked.cases.length / 8)))
       : 0
@@ -254,7 +258,7 @@ export function jobs({ all, changed, branch, added, extra, cores, picked, forms,
     Array.from({ length: corpusParts }, (_, i) =>
       // As a push's: each case built as a library too (ADR 0360, #1920).
       job(`${name} ${i + 1}/${corpusParts}`, ["bun", "test", file], {
-        env: { RUST_JS_CASES: `${i + 1}/${corpusParts}${picked ? `:${picked.caseList}` : ""}` },
+        env: { RUST_JS_CASES: `${i + 1}/${corpusParts}${!all && picked ? `:${picked.caseList}` : ""}` },
         ci: "bun run test",
       }),
     );
@@ -283,11 +287,13 @@ export function jobs({ all, changed, branch, added, extra, cores, picked, forms,
   // as many as the corpus's, its own tests the first's: one `bun test` of
   // it, 204 to 238 s on about one core, ran on alone at a check's end, past
   // a consumer's 720 s (#1749).
+  // Of a selection, the files it selected.
+  const selected = (file: string) => all || picked === undefined || picked.files.has(file);
   const metamorphic = runs.metamorphic[0].file;
-  const metamorphicParts = pooledParts(cores);
+  const metamorphicParts = selected(metamorphic) ? pooledParts(cores) : 0;
   const everyFile = [
     ...testFiles
-      .filter((file) => file !== "test/corpus.test.ts" && file !== metamorphic && !nightly.includes(file))
+      .filter((file) => file !== "test/corpus.test.ts" && file !== metamorphic && !nightly.includes(file) && selected(file))
       .map((file) =>
         job(file, ["bun", "test", file], { group: browsers.includes(file) ? "the browsers' test files" : "every other test file", ci: "bun run test" }),
       ),
@@ -298,17 +304,6 @@ export function jobs({ all, changed, branch, added, extra, cores, picked, forms,
       }),
     ),
   ];
-  // The plain suites (scripts/shard.ts), each file a job of the pool's, said
-  // as its suite: as one `bun test` a suite, lowering's 74 files ran one
-  // after another, 70 s, the last job of every plain check, the cores half
-  // idle 44% of it (#877). Of a change the test map can say, the files it
-  // picked, of every suite, JSX's and the shared ones too where it reaches
-  // them; else as the change's paths say.
-  const suites: Job[] = plainSuiteFiles(testFiles).flatMap(({ name, files, when }) =>
-    files
-      .filter((file) => (picked ? picked.files.has(file) : when === undefined || (when === "jsx" ? jsx : shared)))
-      .map((file) => job(file, ["bun", "test", file], { group: name })),
-  );
   return {
     jobs: [
       job("fmt", ["bun", "run", "fmt:check"], { ci: "bun run fmt:check" }),
@@ -320,12 +315,12 @@ export function jobs({ all, changed, branch, added, extra, cores, picked, forms,
       // a cold build of its tests a minute or more. And the Vite example's
       // build, check.yml's `examples`, its committed JS against what
       // rust-js writes, then Vite's: 4 s.
-      ...(all
+      ...(rust
         ? [
             job("cargo test", ["cargo", "test", "--locked", "--quiet"], { timeout: 600, weight: 2, memory: peakGB.compilerCheck, ci: "cargo test --locked" }),
-            job("the Vite example's build", ["bun", "run", "--cwd", "examples/vite-react", "build"], { ci: "bun run --cwd examples/vite-react build" }),
           ]
         : []),
+      ...(vite ? [job("the Vite example's build", ["bun", "run", "--cwd", "examples/vite-react", "build"], { ci: "bun run --cwd examples/vite-react build" })] : []),
       // The crates of crates.io's corpus against docs/crate-corpus.md,
       // half the cores' at once: 22–33 s, which only the Nightly ran, so a
       // refusal that stopped itertools went unseen (#857, #1188). Its top
@@ -334,7 +329,7 @@ export function jobs({ all, changed, branch, added, extra, cores, picked, forms,
         ? [job("the crate corpus", ["bun", "scripts/crate-corpus.ts", "--check", "--sample"], { weight: half, memory: half * peakGB.crate, ci: "bun scripts/crate-corpus.ts --check --sample" })]
         : []),
       ...inParts("corpus", "test/corpus.test.ts"),
-      ...(all ? everyFile : suites),
+      ...everyFile,
       ...(tidy ? [job("readability passes", ["bun", "test", "test/tidy-stages.test.ts", "test/getter-reads.test.ts"], { weight: 2 })] : []),
       ...(mutRefs ? [job("the `&mut` matrix's sample", ["bun", "test", "test/mut-ref-matrix.test.ts"])] : []),
       // In a part a core, `RUST_JS_CASES=i/n`: one `bun test` of its 321
@@ -361,7 +356,7 @@ export function jobs({ all, changed, branch, added, extra, cores, picked, forms,
               .filter(
                 (of) =>
                   of !== "forms" ||
-                  (picked ? picked.forms.length > 0 || picked.files.has("test/iterator-forms.test.ts") : !forms || forms.forms.length > 0),
+                  (!all && picked ? picked.forms.length > 0 || picked.files.has("test/iterator-forms.test.ts") : !forms || forms.forms.length > 0),
               )
               .map((of) =>
                 // The rows a change names: a removal's run whole, some 28,000
@@ -370,7 +365,7 @@ export function jobs({ all, changed, branch, added, extra, cores, picked, forms,
                 // Each `parts` processes at once, throughout (m6-lily, #857).
                 job(
                   of === "rows" ? "the rows the change names" : runs[of][0].name,
-                  ["bun", "scripts/iteratorSlice.ts", "run", of, String(parts), ...(of === "forms" && (picked ?? forms) ? [(picked ?? forms)!.formsList] : [])],
+                  ["bun", "scripts/iteratorSlice.ts", "run", of, String(parts), ...(of === "forms" && ((!all && picked) || forms) ? [((!all && picked) || forms)!.formsList] : [])],
                   {
                     timeout: of === "rows" ? 1200 : 600,
                     weight: parts,
@@ -379,7 +374,7 @@ export function jobs({ all, changed, branch, added, extra, cores, picked, forms,
                     // cases with std's iterator structs it picks, or all of
                     // them (#1364).
                     ...(of === "rows" && rows !== undefined ? { size: rows } : {}),
-                    ...(of === "forms" ? { size: (picked ?? forms)?.forms.length ?? corpusCases() } : {}),
+                    ...(of === "forms" ? { size: ((!all && picked) || forms)?.forms.length ?? corpusCases() } : {}),
                   },
                 ),
               ),
@@ -477,9 +472,8 @@ export function jobs({ all, changed, branch, added, extra, cores, picked, forms,
             }),
           ]
         : []),
-      ...extra.filter((file) => !suites.some((suite) => suite.name === file)).map((file) => job(file, ["bun", "test", file])),
+      ...extra.filter((file) => !everyFile.some((each) => each.name === file)).map((file) => job(file, ["bun", "test", file])),
     ],
-    shared,
   };
 }
 
@@ -841,51 +835,28 @@ if (import.meta.main) {
   if (node.exitCode !== 0) process.exit(1);
   console.log(timed("node bindings build", (Date.now() - binding) / 1000));
 
-  // Of a plain check, the files and corpus cases the change can affect, by
-  // the test map (scripts/testMap.ts, #877); or, where it can't say, what
-  // the change's paths run.
+  // The test files and corpus cases the change can affect, by the selector
+  // (scripts/select.ts, ADR 1101, amended); everything where it can't say.
+  // Of `--all`, it says which cases with std's iterator structs run (#986).
+  const cases = readdirSync(join(root, "test", "corpus")).filter((name) => name.endsWith(".rs"));
+  const selection = selectChange();
   let picked: Scope["picked"];
   let forms: Scope["forms"];
-  // Of `--all`, the cases built with std's iterator structs the map picks,
-  // where it can say (#986).
+  const formsList = join(own, "forms.txt");
+  if (!selection.all) writeFileSync(formsList, selection.forms.map((name) => `${name}\n`).join(""));
   if (all) {
-    const cases = readdirSync(join(root, "test", "corpus")).filter((name) => name.endsWith(".rs"));
-    const pick = pickChange(mappedFiles(), cases);
-    if (pick.kind === "picked") {
-      const formsList = join(own, "forms.txt");
-      writeFileSync(formsList, pick.forms.map((name) => `${name}\n`).join(""));
-      forms = { forms: pick.forms, formsList };
-      console.log(`${pick.why}: ${pick.forms.length} of ${cases.length} corpus cases with std's iterator structs where the change is the iterators'`);
-    } else console.log(`${pick.why}: the corpus with std's iterator structs runs whole`);
-  }
-  if (!all) {
-    const cases = readdirSync(join(root, "test", "corpus")).filter((name) => name.endsWith(".rs"));
-    const files = mappedFiles();
-    const pick = pickChange(files, cases);
-    if (pick.kind === "picked") {
+    if (!selection.all) forms = { forms: selection.forms, formsList };
+    console.log(`${selection.why}: ${selection.all ? "the corpus with std's iterator structs runs whole" : `${selection.forms.length} of ${cases.length} corpus cases with std's iterator structs where the change is the iterators'`}`);
+  } else {
+    if (!selection.all) {
       const caseList = join(own, "cases.txt");
-      const formsList = join(own, "forms.txt");
-      writeFileSync(caseList, pick.cases.map((name) => `${name}\n`).join(""));
-      writeFileSync(formsList, pick.forms.map((name) => `${name}\n`).join(""));
-      picked = { files: new Set(pick.files), cases: pick.cases, caseList, forms: pick.forms, formsList };
-      console.log(
-        `${pick.why}: ${pick.files.length} of ${files.length + 2} test files, ${pick.cases.length} of ${cases.length} corpus cases, ${pick.forms.length} of them with std's iterator structs where the change is the iterators'`,
-      );
-    } else console.log(`${pick.why}: the change's paths say what runs`);
-  }
-  // Each test file that reads a changed file as text, its source says,
-  // `ci.test.ts` of `scripts/`: it can fail on a change it runs no code of,
-  // and runs of it, whatever the map or the paths pick (a9aedb875).
-  if (!all) {
-    const testFiles = readdirSync(join(root, "test"))
-      .filter((name) => name.endsWith(".test.ts"))
-      .map((name) => `test/${name}`);
-    for (const [test, read] of readersOf([...new Set([...changed, ...branch])], testFiles)) {
-      if (extra.includes(test)) continue;
-      extra.push(test);
-      console.log(`${test} reads ${read}: it runs`);
+      writeFileSync(caseList, selection.cases.map((name) => `${name}\n`).join(""));
+      picked = { files: new Set(selection.files), cases: selection.cases, caseList, forms: selection.forms, formsList };
     }
+    console.log(`the selection: ${outcome(selection)}${selection.all ? "" : `, of ${pushSuite} test files and ${cases.length} corpus cases: ${selection.why}`}`);
   }
+  // What it selected, which `bun run push` says on its line.
+  writeFileSync(selectionFile, JSON.stringify({ outcome: outcome(selection), all: selection.all, allOwn: selection.allOwn ?? null }));
   // Of a change to the iterators' code, the rows of their tables it names,
   // which size its job (#1364): some 0.1 s.
   const rows = touchesIterators([...changed, ...branch])
@@ -908,9 +879,9 @@ if (import.meta.main) {
   if (keptLogs !== undefined) console.log(`\neach failing job's whole output: ${keptLogs}`);
   // From its start, its build too.
   const total = elapsed();
-  const scope = all ? "check:fast --all" : picked ? "check:fast, what the change reaches" : check.shared ? "check:fast" : "check:fast, the change's";
+  const scope = all ? "check:fast --all" : picked ? "check:fast, what the change reaches" : "check:fast, everything";
   console.log(
-    `\n${failed.length === 0 ? `all passed: ${timed(scope, total)}` : `${failed.length} failed in ${total.toFixed(0)}s`}${picked || check.shared ? "" : " (JSX, snapshots and diagnostics skipped)"}`,
+    `\n${failed.length === 0 ? `all passed: ${timed(scope, total)}` : `${failed.length} failed in ${total.toFixed(0)}s`}`,
   );
   process.exit(failed.length === 0 ? 0 : 1);
 }

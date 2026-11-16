@@ -298,51 +298,17 @@ export const nightly = [
   "history",
 ].map((name) => `test/${name}.test.ts`);
 
-/** The suites plain `check:fast` runs of a change, each file a job of its
- * pool's (scripts/checkFast.ts), by the starts of their files' paths: what
- * checks the JS bodies are lowered to, and, where the change is the
- * compiler's or the runtime's (`shared`), what pins the JS written, the
- * names it gives and what it refuses, the guide's examples compiled, std's
- * package, the runtime package's helpers and the readability ratchet, each
- * of which a lowering or a runtime change has turned `main` red with (#212,
- * #222, #253); JSX's where it's JSX's. The test map records what each of
- * their files reaches of the compiler, and the corpus's each case, so that a
- * change runs only those it can affect (scripts/testMap.ts, #877). */
-export const plainSuites: { name: string; starts: string[]; when?: "shared" | "jsx" }[] = [
-  // Every architecture test by its name's start, each of which reads the
-  // compiler's sources by their folders, a `src/lower` change able to fail
-  // it: listed one by one, the four added since, `architecture-generic-facts`
-  // among them, ran in no plain check, and main went red twice in a day.
-  { name: "architecture, mutation lists", starts: ["architecture", "mutations.test.ts"] },
-  // Each a file of a concept's (ADR 0572), `test/lowering` all of lowering's.
-  { name: "lowering", starts: ["lowering"] },
-  { name: "compiler", starts: ["compiler.test.ts"] },
-  {
-    name: "bindings",
-    starts: ["bindings.test.ts", "bindings-require.test.ts", "js-builtins.test.ts", "js-errors.test.ts", "throwing-calls.test.ts", "node-bindings.test.ts", "webapi-bindings.test.ts"],
-  },
-  // The bindings crates' coverage ratchets, which a binding added or taken
-  // out changes: when only the nightly ran them, a change that did was
-  // found up to a day later (ADR 1030, amended). About 15 s of CPU.
-  { name: "bindings' coverage", starts: ["next-coverage", "react-coverage", "webapi-coverage", "node-coverage"] },
-  { name: "JSX", starts: ["jsx"], when: "jsx" },
-  // The guide's limitations, each compiled to see it's still refused: a
-  // lowering that lifts one, or a limitation whose example doesn't compile,
-  // left main red a day unseen when only the nightly ran it (5096475be's,
-  // ADR 1030, amended). About 7 s of CPU.
-  { name: "guide, packages, readability", starts: ["docs.test.ts", "limitations.test.ts", "std-package.test.ts", "runtime-package.test.ts", "readability.test.ts"], when: "shared" },
-  { name: "React's ports", starts: ["port-"], when: "shared" },
-  { name: "snapshots", starts: ["snapshots.test.ts"], when: "shared" },
-  { name: "diagnostics", starts: ["diagnostics.test.ts"], when: "shared" },
-];
-
-/** Each plain suite's test files, of `files`, `test/<name>.test.ts` each. */
-export function plainSuiteFiles(files: string[]): { name: string; files: string[]; when?: "shared" | "jsx" }[] {
-  return plainSuites.map(({ name, starts, when }) => ({
-    name,
-    when,
-    files: files.filter((file) => file.endsWith(".test.ts") && starts.some((start) => file.startsWith(`test/${start}`))).sort(),
-  }));
+/** The push suite's test files of `names`, the test folder's entries,
+ * `test/<name>.test.ts` each: every one but the nightly's alone
+ * (`nightly`), as `bun run test` runs them. What the test map records and
+ * the selector selects of (scripts/select.ts). The folder is read by its
+ * callers, not here, which every test imports. */
+export function pushSuiteFiles(names: string[]): string[] {
+  return names
+    .filter((name) => name.endsWith(".test.ts"))
+    .map((name) => `test/${name}`)
+    .filter((file) => !nightly.includes(file))
+    .sort();
 }
 
 /** A part of a test file that a setting of its environment selects, and

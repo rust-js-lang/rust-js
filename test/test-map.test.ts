@@ -1,14 +1,14 @@
-// The test map, which plain `check:fast` reads to run only the test files
-// and corpus cases a change can affect (scripts/testMap.ts, #877): what a
-// change picks, where it can't say and runs what it runs without one, and
-// how many maps it keeps.
+// The test map, which the selector reads to run only the test files and
+// corpus cases a change to the compiler's code can affect
+// (scripts/testMap.ts, #877; scripts/select.ts, test/select.test.ts): what
+// such a change picks, where it can't say, and how many maps it keeps.
 
 import { expect, test } from "bun:test";
 import { mkdirSync, readdirSync, readFileSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
 
-import { hunksOf, joinedSpans, mapFile, mapVersion, mergeRecordings, nearestMap, nestedItem, pick, planUnits, pruneMaps, readersOf, readsOf, readsSources, type Change, type Plan, type TestMap } from "../scripts/testMap";
-import { jobs } from "../scripts/checkFast";
+import { cachePast, ciMapOf, ciMapPrefix, hunksOf, joinedSpans, mapFile, mapVersion, mergeRecordings, nearestMap, nestedItem, pick, planUnits, pruneMaps, readsOf, readsSources, type Change, type Plan, type TestMap } from "../scripts/testMap";
+
 import { shard } from "../scripts/shard";
 import { caseShard, fixture, root } from "./support";
 
@@ -62,6 +62,7 @@ const map: TestMap = {
   },
   includes: { "src/runtime/helper.js": [{ file: "src/runtime.rs", line: 5 }] },
   corpusReaders: ["test/two.test.ts"],
+  noCompiler: [],
 };
 const files = ["test/one.test.ts", "test/two.test.ts", "test/reads.test.ts"];
 const cases = ["x.rs", "y.rs"];
@@ -119,21 +120,6 @@ test("a file read by `include_str!` is the line that reads it", () => {
   expect(pick(map, [{ file: "src/runtime/helper.js", hunks: [[1, 1]] }], files, cases)).toMatchObject({ files: ["test/two.test.ts", "test/reads.test.ts"], cases: ["y.rs"], forms: [] });
   const outside = { ...map, includes: { "src/runtime/helper.js": [{ file: "src/runtime.rs", line: 12 }] } };
   expect(pick(outside, [{ file: "src/runtime/helper.js", hunks: [[1, 1]] }], files, cases).kind).toBe("all");
-});
-
-test("a changed test file or corpus case runs itself, and a test the map hasn't recorded runs", () => {
-  expect(pick(map, [{ file: "test/one.test.ts", hunks: [[1, 1]] }], files, cases)).toMatchObject({ files: ["test/one.test.ts", "test/reads.test.ts"], cases: [] });
-  // And each test that reads the corpus's files itself.
-  expect(pick(map, [{ file: "test/corpus/y.js", hunks: [[1, 1]] }], files, cases)).toMatchObject({ files: ["test/two.test.ts", "test/reads.test.ts"], cases: ["y.rs"], forms: ["y.rs"] });
-  // std's iterator structs' file runs each of its cases, and its own tests.
-  expect(pick(map, [{ file: "test/iterator-forms.test.ts", hunks: [[1, 1]] }], files, cases)).toMatchObject({
-    files: ["test/reads.test.ts", "test/iterator-forms.test.ts"],
-    cases: [],
-    forms: ["x.rs", "y.rs"],
-  });
-  // Another suite's test file is no plain test's.
-  expect(pick(map, [{ file: "test/crates.test.ts", hunks: [[1, 1]] }], files, cases)).toMatchObject({ files: ["test/reads.test.ts"] });
-  expect(pick(map, [], [...files, "test/three.test.ts"], [...cases, "z.rs"])).toMatchObject({ files: ["test/reads.test.ts", "test/three.test.ts"], cases: ["z.rs"], forms: ["z.rs"] });
 });
 
 test("a function's counted lines are joined over what's its own, not over an item nested in it", () => {
@@ -205,42 +191,6 @@ test("a test that reads the compiler's sources is found, through what it imports
   expect(readsSources("test/architecture.test.ts")).toBe(true);
   expect(readsSources("test/runtime-package.test.ts")).toBe(true);
   expect(readsSources("test/lowering-cells.test.ts")).toBe(false);
-});
-
-test("plain check:fast runs each suite's file as a job, and of a change the map can say, only those it picked", () => {
-  const plain = { all: false, changed: ["src/lower/drops.rs"], branch: [], added: [], extra: [], cores: 12 };
-  const unpicked = jobs(plain).jobs;
-  const lowering = unpicked.filter((job) => job.group === "lowering");
-  expect(lowering.length).toBeGreaterThan(50);
-  for (const job of lowering) expect(job.cmd).toEqual(["bun", "test", job.name]);
-  // Of the paths' rules, JSX's only where the change is JSX's.
-  expect(unpicked.some((job) => job.group === "JSX")).toBe(false);
-  expect(unpicked.filter((job) => job.name.startsWith("corpus ")).length).toBe(12);
-
-  const given = { caseList: "/cases.txt", formsList: "/forms.txt" };
-  const picked = jobs({ ...plain, picked: { ...given, files: new Set(["test/lowering-cells.test.ts", "test/jsx.test.ts"]), cases: ["a.rs", "b.rs"], forms: [] } }).jobs;
-  expect(picked.filter((job) => job.group !== undefined).map((job) => job.name)).toEqual(["test/lowering-cells.test.ts", "test/jsx.test.ts"]);
-  expect(picked.filter((job) => job.name.startsWith("corpus ")).map((job) => job.env.RUST_JS_CASES)).toEqual(["1/1:/cases.txt"]);
-  // No case picked, nor the corpus's own tests: no part.
-  const none = jobs({ ...plain, picked: { ...given, files: new Set(), cases: [], forms: [] } }).jobs;
-  expect(none.filter((job) => job.name.startsWith("corpus ") || job.group !== undefined)).toEqual([]);
-
-  // Of an iterator change, the corpus with std's iterator structs runs the
-  // cases picked, and none where none is picked (#876).
-  const iterators = { ...plain, changed: ["src/lower/mir/iter/collect.rs"] };
-  const forms = (of: Parameters<typeof jobs>[0]) => jobs(of).jobs.find((job) => job.name === "the corpus with std's iterator structs");
-  expect(forms(iterators)?.cmd).toEqual(["bun", "scripts/iteratorSlice.ts", "run", "forms", "6"]);
-  expect(forms({ ...iterators, picked: { ...given, files: new Set(), cases: [], forms: ["a.rs"] } })?.cmd).toEqual(["bun", "scripts/iteratorSlice.ts", "run", "forms", "6", "/forms.txt"]);
-  expect(forms({ ...iterators, picked: { ...given, files: new Set(), cases: [], forms: [] } })).toBeUndefined();
-  expect(forms({ ...iterators, picked: { ...given, files: new Set(["test/iterator-forms.test.ts"]), cases: [], forms: [] } })).toBeDefined();
-
-  // Of `--all`, the corpus whole in its plain build, and in std's the cases
-  // the map picks where it can say, none where it picks none (#986).
-  const all = { ...iterators, all: true };
-  expect(jobs({ ...all, forms: { forms: ["a.rs"], formsList: "/forms.txt" } }).jobs.filter((job) => job.name.startsWith("corpus ")).length).toBe(12);
-  expect(forms({ ...all, forms: { forms: ["a.rs"], formsList: "/forms.txt" } })?.cmd).toEqual(["bun", "scripts/iteratorSlice.ts", "run", "forms", "6", "/forms.txt"]);
-  expect(forms({ ...all, forms: { forms: [], formsList: "/forms.txt" } })).toBeUndefined();
-  expect(forms(all)?.cmd).toEqual(["bun", "scripts/iteratorSlice.ts", "run", "forms", "6"]);
 });
 
 test("`RUST_JS_CASES=i/n:<file>` is a part of the cases the file names", () => {
@@ -336,60 +286,6 @@ test("a worktree reads the map another recorded of its commit or its nearest anc
 // moved a Cargo run ci.test.ts counts, and plain check:fast didn't run it).
 // What a test names is read; what a comment names, a fixture's own `root`,
 // or a folder a literal names, which is as often an app's, isn't.
-test("a change to a file a test reads as text picks the test", () => {
-  const files = readdirSync(join(root, "test"))
-    .filter((name) => name.endsWith(".test.ts"))
-    .map((name) => `test/${name}`);
-  expect(readersOf(["scripts/crate-corpus.ts"], files).get("test/ci.test.ts")).toBe("scripts/crate-corpus.ts");
-  expect(readersOf(["tooling/build.js"], files).get("test/architecture.test.ts")).toBe("tooling/build.js");
-  // A test file isn't its own reader: it runs as itself.
-  expect(readersOf(["test/ci.test.ts"], files).has("test/ci.test.ts")).toBe(false);
-  // packages.test.ts's `join(root, "src")` is of its own fixture's `root`;
-  // compiles.test.ts's is the checkout's, every source of it read.
-  const ofSources = readersOf(["src/lower/mir/tidy/bindings.rs"], files);
-  expect([ofSources.has("test/packages.test.ts"), ofSources.get("test/compiles.test.ts")]).toEqual([false, "src/lower/mir/tidy/bindings.rs"]);
-  const dir = fixture("test-map-reads");
-  const reader = join(dir, "reader.test.ts");
-  writeFileSync(reader, `// Of scripts/shard.ts, said in a comment.\nconst text = readFileSync(join(root, "scripts", "crate-corpus.ts"), "utf8");\nconst app = "src/";\n`);
-  const reads = readsOf(relative(root, reader), false);
-  expect([...reads]).toEqual(["scripts/crate-corpus.ts"]);
-});
-
-// What a test globs is read too: readability's ratchet reads every corpus
-// case's and snapshot's JS by `new Bun.Glob("test/corpus/*.js")`, and its
-// baseline, so a change that blesses a snapshot, or the baseline, picks it,
-// with the test map or without; main went red three times in a day where
-// one didn't. A fixture's glob, `"*.rs"` of a folder it names, isn't read.
-test("a change to a corpus case's or a snapshot's JS, or readability's baseline, picks readability's ratchet", () => {
-  const files = readdirSync(join(root, "test"))
-    .filter((name) => name.endsWith(".test.ts"))
-    .map((name) => `test/${name}`);
-  for (const changed of ["test/corpus/vec_edits.js", "test/snapshots/std/iterators.js", "docs/readability.txt"]) {
-    expect([changed, readersOf([changed], files).has("test/readability.test.ts")]).toEqual([changed, true]);
-  }
-  expect(readersOf(["test/corpus/vec_edits.rs"], files).has("test/readability.test.ts")).toBe(false);
-  const dir = fixture("test-map-globs");
-  const reader = join(dir, "reader.test.ts");
-  writeFileSync(reader, `const js = [...new Bun.Glob("test/corpus/*.js").scanSync(root)];\nconst own = [...new Bun.Glob("*.rs").scanSync(dir)];\n`);
-  expect([...readsOf(relative(root, reader), false)]).toEqual(["test/corpus/*.js"]);
-});
-
-// A test that reads the compiler's sources by their folders, as each
-// architecture test does, `files("src/lower")`, fails on a change to any of
-// them: each is a plain suite's file, so a `src/lower` change runs it with
-// the map, which runs a sources' reader on every change, or without, by its
-// suite. `architecture-generic-facts.test.ts` was in none, and main went red
-// twice in a day (7121088df, adfe4aeb0).
-test("every architecture test is a plain suite's, which a compiler change runs", () => {
-  const files = readdirSync(join(root, "test"))
-    .filter((name) => name.endsWith(".test.ts"))
-    .map((name) => `test/${name}`);
-  const architecture = files.filter((file) => file.startsWith("test/architecture"));
-  expect(architecture).toContain("test/architecture-generic-facts.test.ts");
-  const plain = jobs({ all: false, changed: ["src/lower/mir/iter.rs"], branch: [], added: [], extra: [], cores: 12 }).jobs.map((job) => job.name);
-  expect(architecture.filter((file) => !plain.includes(file) || !readsSources(file))).toEqual([]);
-});
-
 // A recording in parts on many machines, CI's (`build --shards=N`, `units
 // --shard=i/N`, `merge`), writes the map one machine's recording does: of
 // a small fixture's tests, each compile's bits written where its part ran,
@@ -397,7 +293,8 @@ test("every architecture test is a plain suite's, which a compiler change runs",
 // lost, or one read twice, is refused, never a map short of it.
 test("the merge of a recording's parts is the map of one part's recording", () => {
   const caseNames = ["a.rs", "b.rs", "c.rs", "d.rs", "e.rs"];
-  const files = ["test/one.test.ts", "test/two.test.ts", "test/fails.test.ts", "test/reads.test.ts", "test/unknown.test.ts"];
+  // And the metamorphic sample, recorded in parts as the push suite runs it.
+  const files = ["test/one.test.ts", "test/two.test.ts", "test/fails.test.ts", "test/reads.test.ts", "test/unknown.test.ts", "test/metamorphic.test.ts", "test/none.test.ts"];
   const names = Array.from({ length: 12 }, (_, i) => `f${i}`);
   // Some functions of the twelve, by what was compiled.
   const ran = (compiled: string) => {
@@ -436,6 +333,12 @@ test("the merge of a recording's parts is the map of one part's recording", () =
       for (const unit of plan.units.filter((unit) => unit.shard === at)) {
         ended[unit.name] = unit.name === "test/fails.test.ts" ? 1 : 0;
         const [file, cases] = unit.name.split(" ");
+        if (file === "test/metamorphic.test.ts") {
+          const [i, n] = cases.split("/").map(Number);
+          for (const name of shard(plan.caseNames, i, n)) write(part, file, `${file} ${name}`);
+          continue;
+        }
+        if (file === "test/none.test.ts") continue;
         if (cases === undefined) {
           write(part, file, file);
           if (file === "test/unknown.test.ts") writeFileSync(join(part, "unknown"), `${file}\tf99\n`);
@@ -459,7 +362,7 @@ test("the merge of a recording's parts is the map of one part's recording", () =
   // Each test in exactly one part, each part two of the corpus's six.
   const named = three.units.map((unit) => unit.name);
   expect(new Set(named).size).toBe(named.length);
-  expect(new Set(three.units.filter((unit) => files.includes(unit.name)).map((unit) => unit.name))).toEqual(new Set(files));
+  expect(new Set(three.units.filter((unit) => files.includes(unit.name)).map((unit) => unit.name))).toEqual(new Set(files.filter((file) => file !== "test/metamorphic.test.ts")));
   const corpusParts = three.units.filter((unit) => unit.name.startsWith("test/corpus.test.ts ")).map((unit) => `${unit.shard} ${unit.env.RUST_JS_CASES}`);
   expect(corpusParts).toEqual(["1 1/6", "1 4/6", "2 2/6", "2 5/6", "3 3/6", "3 6/6"]);
   const whole = mergeRecordings(one, record(one, join(dir, "one")), 1);
@@ -470,7 +373,17 @@ test("the merge of a recording's parts is the map of one part's recording", () =
   const union = (...compiled: string[]) => Buffer.from(compiled.map(ran).reduce((a, b) => a.map((byte, i) => byte | b[i]))).toString("base64");
   expect(parted.map.units["test/corpus/c.rs"]).toBe(union("test/corpus/c.rs", "test/corpus/c.rs!"));
   expect(parted.map.units["test/corpus.test.ts"]).toBe(union(...caseNames.map((name) => `test/corpus.test.ts ${name}`)));
-  expect(whole.always).toEqual(["test/fails.test.ts (it failed)", "test/reads.test.ts (it reads the compiler's sources)", "test/unknown.test.ts (a compile of it ran a function the table hasn't)"]);
+  // A file recorded in parts is each part's compiles'; one that ran no
+  // compiler is said so.
+  expect(three.units.filter((unit) => unit.name.startsWith("test/metamorphic.test.ts ")).map((unit) => unit.env.RUST_JS_CASES)).toEqual(["1/6", "4/6", "2/6", "5/6", "3/6", "6/6"]);
+  expect(parted.map.units["test/metamorphic.test.ts"]).toBe(union(...caseNames.map((name) => `test/metamorphic.test.ts ${name}`)));
+  expect(parted.map.noCompiler).toEqual(["test/none.test.ts"]);
+  expect(whole.always).toEqual([
+    "test/fails.test.ts (it failed)",
+    "test/reads.test.ts (it reads the compiler's sources)",
+    "test/unknown.test.ts (a compile of it ran a function the table hasn't)",
+    "test/none.test.ts (it ran no compiler)",
+  ]);
   // A part lost, and a part read twice.
   const parts = readdirSync(join(dir, "three")).map((name) => join(dir, "three", name));
   expect(() => mergeRecordings(three, parts.slice(1), 1)).toThrow(/no part of the recording ran/);
@@ -479,31 +392,66 @@ test("the merge of a recording's parts is the map of one part's recording", () =
 });
 
 // CI's test map is the kept one, `kept`'s, or recorded in parts on many
-// machines and merged: the parts and the merge are jobs only where none is
-// kept, skipped outright where one is, so a push adds none to the free
-// plan's 20 at once; the mutations wait for the map either way. One way to
-// ask whether one's kept: `ensure`, which recorded it on one machine, 38.6
-// min (check 43789968835), is gone, and refused.
+// machines and merged (test-map.yml, the one recording): the parts and the
+// merge are jobs only where none is kept, skipped outright where one is.
+// Of each check of `main` it records HEAD's, in a run of its own after the
+// check's (`workflow_run`), one at a time, the newest cancelling the rest,
+// named by its commit for `bun run push` to fetch; rustc-tests.yml's
+// mutations call it, and wait for it. One way to ask whether one's kept:
+// `ensure`, which recorded it on one machine, 38.6 min (check
+// 43789968835), is gone, and refused.
 test("CI's test map is the kept one, or recorded in parts and merged where none is", () => {
-  const tests = readFileSync(join(root, ".github/workflows/rustc-tests.yml"), "utf8");
-  const job = (name: string) => {
-    const at = tests.indexOf(`\n  ${name}:\n`);
+  const map = readFileSync(join(root, ".github/workflows/test-map.yml"), "utf8");
+  const job = (text: string, name: string) => {
+    const at = text.indexOf(`\n  ${name}:\n`);
     expect([name, at]).not.toEqual([name, -1]);
-    return tests.slice(at, tests.indexOf("\n\n  ", at + 1));
+    const end = text.indexOf("\n\n  ", at + 1);
+    return text.slice(at, end === -1 ? undefined : end);
   };
-  expect(job("test-map")).toContain("bun scripts/testMap.ts kept");
-  expect(job("test-map")).toContain("bun scripts/testMap.ts build --shards=");
-  expect(job("test-map-part")).toContain("bun scripts/testMap.ts units --shard=${{ matrix.part }}/${{ needs.test-map.outputs.shards }}");
-  expect(job("test-map-merge")).toContain("bun scripts/testMap.ts merge");
+  const on = (Bun.YAML.parse(map) as { on: Record<string, unknown> }).on;
+  expect(on.workflow_run).toEqual({ workflows: ["Check"], types: ["completed"], branches: ["main"] });
+  expect(Object.keys(on)).toContain("workflow_call");
+  expect(map).toContain("cancel-in-progress: ${{ github.event_name == 'workflow_run' }}");
+  expect(map).toContain("format('test-map-of-{0}', env.SHA)");
+  expect(job(map, "test-map")).toContain("bun scripts/testMap.ts kept");
+  expect(job(map, "test-map")).toContain("bun scripts/testMap.ts build --shards=");
+  expect(job(map, "test-map-part")).toContain("bun scripts/testMap.ts units --shard=${{ matrix.part }}/${{ needs.test-map.outputs.shards }}");
+  expect(job(map, "test-map-merge")).toContain("bun scripts/testMap.ts merge");
   for (const name of ["test-map-part", "test-map-merge"]) {
-    expect([name, job(name)]).toEqual([name, expect.stringContaining("    if: ${{ inputs.mutations && needs.test-map.outputs.record == 'true' }}\n")]);
+    expect([name, job(map, name)]).toEqual([name, expect.stringContaining("    if: ${{ needs.test-map.outputs.record == 'true' }}\n")]);
   }
-  expect(job("mutations")).toContain("needs: [test-map, test-map-merge]");
-  expect(job("mutations")).toContain("(needs.test-map.outputs.record == 'false' || needs.test-map-merge.result == 'success')");
+  // The merge's map alone in its commit's cache entry: none restored first.
+  expect(job(map, "test-map-merge")).not.toContain("actions/cache/restore");
+  const tests = readFileSync(join(root, ".github/workflows/rustc-tests.yml"), "utf8");
+  expect(job(tests, "test-map")).toContain("uses: ./.github/workflows/test-map.yml");
+  expect(job(tests, "mutations")).toContain("needs: test-map");
+  expect(job(tests, "mutations")).toContain("needs.test-map.result == 'success'");
   for (const file of readdirSync(join(root, ".github/workflows"))) {
     expect([file, readFileSync(join(root, ".github/workflows", file), "utf8").includes("testMap.ts ensure")]).toEqual([file, false]);
   }
   const ensure = Bun.spawnSync(["bun", "scripts/testMap.ts", "ensure"], { cwd: root, stdout: "pipe", stderr: "pipe" });
   expect(ensure.exitCode).toBe(2);
   expect(ensure.stderr.toString()).toContain("kept [--head]");
+});
+
+// `bun run push` fetches CI's map of HEAD's nearest ancestor on `main`, of
+// this repository's runs alone, a fork's never; and the cache's maps past
+// the newest 8 go.
+test("CI's map of HEAD's nearest ancestor on main is the one fetched, and the cache keeps the newest 8", () => {
+  const run = (id: number, branch = "main", fork = false) => ({ id, head_branch: branch, repository_id: 1, head_repository_id: fork ? 2 : 1 });
+  const sha = (c: string) => c.repeat(40);
+  const artifacts = [
+    { name: `${ciMapPrefix}${sha("a")}`, expired: false, workflow_run: run(1) },
+    { name: `${ciMapPrefix}${sha("b")}`, expired: false, workflow_run: run(2) },
+    { name: `${ciMapPrefix}${sha("c")}`, expired: false, workflow_run: run(3, "other") },
+    { name: `${ciMapPrefix}${sha("d")}`, expired: false, workflow_run: run(4, "main", true) },
+    { name: `${ciMapPrefix}${sha("e")}`, expired: true, workflow_run: run(5) },
+    { name: "test-map", expired: false, workflow_run: run(6) },
+  ];
+  const behind: Record<string, number> = { [sha("a")]: 5, [sha("b")]: 2, [sha("c")]: 0, [sha("d")]: 0, [sha("e")]: 0 };
+  expect(ciMapOf(artifacts, (commit) => behind[commit])).toEqual({ run: 2, name: `${ciMapPrefix}${sha("b")}`, commit: sha("b"), behind: 2 });
+  expect(ciMapOf(artifacts, (commit) => (commit === sha("a") ? 5 : undefined))?.run).toBe(1);
+  expect(ciMapOf(artifacts, () => undefined)).toBeUndefined();
+  const listed = Array.from({ length: 11 }, (_, i) => ({ id: 100 - i, key: `test-map-Linux-t-${i}` }));
+  expect(cachePast(listed, 8).map(({ id }) => id)).toEqual([92, 91, 90]);
 });

@@ -6,12 +6,15 @@
 //   build     the compiler
 //   std       std/ made again (`bun run std`), refused where it differs from
 //             what's committed
-//   check     `check:fast --all`; or, past a clean rebase that brought in
-//             commits after the whole check passed, `sanity`, plain
-//             `check:fast`, what the pushed change touches: CI's check of
-//             the push covers the combination (Tu's decision, 2026-11-16)
-//   react     the React port at its pin (`react-in-rust.ts regen`), refused on
-//             any difference: a change the port takes moves the pin in this push
+//   check     `check:fast`: the test files and cases the selector says the
+//             change can affect (scripts/select.ts, ADR 1101, amended),
+//             everything where it can't say; none at all, of a change
+//             nothing reads that isn't code (a doc's), straight to the push.
+//             Past a rebase that brought commits, `sanity`, the same
+//             selection of the new tree (Tu's decision, 2026-11-16)
+//   react     the React port at its pin (`react-in-rust.ts regen`), of a
+//             change to what compiles it (`touchesPort`), refused on any
+//             difference: a change the port takes moves the pin in this push
 //   files     `git diff origin/main` holds only the pushed commits' files
 //   push      `git push origin HEAD:main`, once `origin/main` is where the
 //             check saw it: where it moved meanwhile, the branch is rebased and
@@ -24,12 +27,15 @@
 // A tracked change not committed is refused: the check would see it, the push
 // wouldn't. Each run, however it ends, appends a line to the machine's log of
 // times, outside the repository (scripts/disk.ts's `devTimesLog`): `<ISO> |
-// <machine> | <agent> | push | <sha> | total <s> | <phase> <s>, .. | load
-// <1m/5m/15m> | ok|fail | <note>`.
+// <machine> | <agent> | push | <sha> | total <s> | <phase> <s>, .. | select
+// <outcome> | load <1m/5m/15m> | ok|fail | <note>`, the selection's outcome
+// `all (<why>)`, `some (N files, M cases)` or `none` (scripts/select.ts).
 import { spawnSync } from "node:child_process";
-import { appendFileSync } from "node:fs";
+import { appendFileSync, existsSync, readFileSync, rmSync } from "node:fs";
 import { hostname, loadavg } from "node:os";
+import { selectionFile } from "./select";
 import { devTimesLog } from "./disk";
+import { touchesPort } from "./iteratorSlice";
 
 /** The phases, in the order they run. */
 export const phases = ["rebase", "build", "std", "check", "sanity", "react", "files", "push"] as const;
@@ -55,6 +61,7 @@ export function timesLine(run: {
   sha: string;
   total: number;
   phases: [string, number][];
+  selection: string;
   load: number[];
   ok: boolean;
   note: string;
@@ -69,6 +76,7 @@ export function timesLine(run: {
     run.sha,
     `total ${Math.round(run.total)}s`,
     phases,
+    `select ${run.selection}`,
     `load ${load}`,
     run.ok ? "ok" : "fail",
     run.note,
@@ -98,13 +106,14 @@ function main() {
   };
   let ok = false;
   let note = "";
+  let selection = "-";
   try {
     if (lines(git("status", "--porcelain", "--untracked-files=no").out).length > 0) {
       throw new Refused("a tracked change isn't committed: the check would see it and the push wouldn't; commit it first");
     }
     let checked = "";
     for (let attempt = 1; ; attempt++) {
-      const conflicted = rebase(bless);
+      rebase(bless);
       phase("rebase");
       const base = git("rev-parse", "origin/main").out.trim();
       if (checked === "" || git("rev-parse", "HEAD").out.trim() !== checked) {
@@ -115,12 +124,30 @@ function main() {
         const std = lines(git("status", "--porcelain", "--", "std").out);
         if (std.length > 0) throw new Refused(`std/ differs from what's committed, made again from this tree:\n${std.join("\n")}\ncommit it, or rebase onto the commit that does`);
         phase("std");
-        // The whole check first, and again past a rebase that stopped on a
-        // conflict; past a clean one, what the change touches.
-        const whole = checked === "" || conflicted;
-        run(whole ? "check" : "sanity", ["bun", "run", "check:fast", ...(whole ? ["--all"] : [])]);
-        phase(whole ? "check" : "sanity");
-        if (sh(["bun", "scripts/react-in-rust.ts", "regen"]).code !== 0) {
+        // The selection of what the change can affect, by the test map's
+        // diff to this tree: first, and again, of the new tree, past a
+        // rebase that brought commits (`sanity`), conflicted or not. None
+        // of a change that isn't code goes straight on.
+        const changed = lines(git("diff", "--name-only", "origin/main").out);
+        const name = checked === "" ? "check" : "sanity";
+        const code = changed.some((file) => /\.(rs|ts|tsx|js|jsx|mjs|cjs)$/.test(file));
+        // CI's map of the nearest commit of `main` it recorded, where it's
+        // nearer than the machine's (scripts/testMap.ts's `fetchMap`).
+        console.log(`push: ${sh(["bun", "scripts/testMap.ts", "fetch"], true).out.trim().split("\n").at(-1)}`);
+        const selected = sh(["bun", "scripts/select.ts"], true);
+        if (selected.code !== 0) throw new Refused(`the selector failed:\n${selected.out}`);
+        const said = selected.out.split("\n")[0]!.replace(/, by the test map of .*$/, "");
+        if (said === "none" && !code) {
+          selection = "none";
+          console.log(`push: the selection is none, and nothing changed is code: no check`);
+        } else {
+          rmSync(selectionFile, { force: true });
+          run(name, ["bun", "run", "check:fast"]);
+          selection = existsSync(selectionFile) ? JSON.parse(readFileSync(selectionFile, "utf8")).outcome : said;
+        }
+        console.log(`push: selected ${selection}`);
+        phase(name);
+        if (touchesPort(changed) && sh(["bun", "scripts/react-in-rust.ts", "regen"]).code !== 0) {
           throw new Refused("the React port differs at its pin (target/react-in-rust.diff): regenerate the port and move ports/react-in-rust.pin in this push");
         }
         phase("react");
@@ -161,6 +188,7 @@ function main() {
         sha: git("rev-parse", "--short", "HEAD").out.trim(),
         total: (performance.now() - started) / 1000,
         phases: timed,
+        selection,
         load: loadavg(),
         ok,
         note,

@@ -240,3 +240,114 @@ its source. `readsSources`, a test that reads the compiler's sources, runs
 on every change, is the same reading followed into its helpers, the mapped
 files' answers as they were. Held by `test/test-map.test.ts`'s "a change to
 a file a test reads as text picks the test".
+
+## Amendment: one selector, for `bun run push` and CI's suite (2026-11-16)
+
+Tu's direction: test only what a change can affect. A push ran `check:fast
+--all`, about 4–5 min here, and CI's suite every file and case on two
+machines, whatever the change was. Four agents on four machines push to
+`main` every 15–30 min, so most of that runs tests a change can't reach.
+
+**One selector, `scripts/select.ts`, answers which test files and corpus
+cases a change can affect**: `{all, files, cases, forms, why}`. Plain
+`check:fast` runs what it selects, which `bun run push` runs, the same check
+again of the new tree past a rebase that brought commits (`sanity`); CI's
+`plan` selects too, and its test shards run that (`bun run test
+--selection=`, the corpus by `RUST_JS_CASES=i/n:<file>` as before). `--all`
+stays everything, and the nightly runs everything.
+
+Its rules, by the changed file's path:
+
+| Path | Runs |
+|---|---|
+| `src/**`, a file `include_str!` reads | the map: the tests and cases whose recorded functions it touches; `all` where it's no function's code |
+| `std/**`, `src/runtime/**` | its package tests, every case, every file the map saw compile (not those that ran no compiler) |
+| `test/<x>.test.ts` | itself; the corpus's file, every case |
+| `test/corpus/<case>.*` | the case, the map's corpus readers and the baselines' owners |
+| the workflows, the packages' manifests and lockfile, the toolchain, Bun's config, the selector and the map | everything |
+| a package's or crate's folder (`webapi/`, `react/`, `vendor/`, `tooling/`, …) | everything: tests build them as apps' dependencies, which no import or read says |
+| any other (`scripts/`, `test/`'s helpers and data, `docs/`, root docs) | each test that imports it, transitively, Bun's preload `test/setup.ts` every test's, or reads it as text, itself or through a module it imports (`readsOf`, `join(import.meta.dir, …)` too); none where none does |
+
+Baselines a test reads by a path its source doesn't spell are listed with
+their owners in the selector (`baselines`).
+
+**The map records the whole push suite**, every file but the nightly's,
+not the plain suites': 355 files, the metamorphic sample in parts as the
+suite runs it, and of each file that ran no compiler, `noCompiler`. The
+plain suites' list, `plainSuites`, is gone.
+
+### Why it's sound under four agents pushing
+
+The diff is the map's commit `M`'s to the working tree, one diff. It holds
+others' commits since `M` (`M..B`, `B` the branch's base) and the branch's
+own (`B..` the tree). A test is skipped only where nothing it reaches
+changed in either: no line of a function the map recorded it running, not
+itself, no module it imports and no file it reads. Then it runs at the
+working tree exactly as at `M`, where the map recorded it passing (one
+that failed, didn't finish, ran no compiler or read the compiler's sources
+is `null`, run on every change to the compiler). So staleness is per test,
+not per map: a test whose functions another agent's commit touched runs; a
+commit that makes test T reach a function f of this change touched one of
+T's recorded functions (the call to f is in one), so T runs. Only a change
+the map can't place, a line outside any function's counted code (a type, a
+constant, an item) or a new file of `src/`, runs everything, and the
+selection says whether that change is the branch's own or others'
+(`allOwn`), on every push's line and in CI's summary, which count how
+often each forces it.
+
+A red or still-running parent needs nothing more: CI diffs against `M`,
+never the parent, so a test red at the parent `P` was broken by a change
+in `M..P`, which is in `M..HEAD` too, and runs again (unless reverted, and
+then it passes). No failure is carried over from run to run. The hole: a
+test red with no change behind it, a flaky one's or the environment's. The
+nightly runs everything, and its audit (`scripts/selector-audit.ts`) asks
+of each test file it failed whether any push's selection since the last
+green night ran it; a miss is filed as a P1 `selector: …`.
+
+**Unsure means more**: no map of HEAD or an ancestor (a change to the
+compiler, std or the runtime then runs everything; one that needs no map,
+a doc's or a script's, still runs its readers), a stale line, a new file of
+`src/`, a map of another layout or toolchain, or a change to the selector
+or the map.
+
+### One OS's map serves the other
+
+CI records the maps on Linux; `bun run push` reads them on macOS. That's
+sound because each test runs the same compiler code on both: `src/`
+branches on no OS but WASI, and the harness's OS branches each change
+nothing a test compiles (`osBranches`, with why), both held by
+`test/select.test.ts`. A new branch is listed with its reason, or the maps
+get keyed by OS.
+
+### Fresh maps
+
+`test-map.yml` records HEAD's map after each check of `main` completes, red
+or green, in a run of its own (`workflow_run`), so it never takes a machine
+from a check's jobs; one at a time, the newest cancelling the rest, so of
+pushes that land together only the newest gets one. Each map is cached by
+its commit, one per entry, the newest 8 kept (`test-map-prune.yml`, about
+22 MB each), and uploaded as `test-map-of-<sha>`, which `bun run push`
+downloads where it's nearer than the machine's (`fetchMap`; of this
+repository's `main` runs alone). rustc-tests.yml's mutations call the same
+workflow. The machine keeps 8 maps (`keptMaps`, scripts/disk.ts's LRU).
+
+### Measured
+
+On the 12-core Mac mini, the map of the whole push suite recorded in
+598 s (the counting build 55 s; 22,643 functions, 5,655 tests; 157 run on
+every change: 40 read the compiler's sources, 73 run no compiler, 5 failed
+under the recording, the rest cases with std's iterator structs that run
+none), 22 MB. Each run here its own processes alone, the load 9–15 from
+them (2026-11-16):
+
+| Change | Before, `check:fast --all` | After, the selection |
+|---|---|---|
+| A line in a function of `src/lower/std_types/slice.rs` | 353 s | 214 s: 94 of 356 files, 71 of 2,649 cases; the nets its paths run are most of it (the twin net 101 s, the crate corpus 69 s) |
+| A script, `scripts/push.ts` | the same | 5 files, 21 s of their own; 152 s with the iterator nets, which the branch's change to `scripts/iteratorSlice.ts` ran |
+| A doc nothing reads | the same | none: `bun run push` goes straight to the push |
+
+Held by `test/select.test.ts` (each kind of change; the real suite's
+imports and reads; check:fast's jobs; push's line; the OS branches; the
+audit), `test/test-map.test.ts` (the merge of parted files, CI's workflow,
+the fetch and the cache's pruning), `test/ci.test.ts`, and the mutations of
+`scripts/mutations/select.ts`, each rule dropped.
