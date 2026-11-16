@@ -11,10 +11,10 @@ use crate::js::{self, Expr, ExprKind, Name, Pattern, Stmt, StmtKind};
 /// `thrown$1`, where the `catch`'s `payload` is `thrown` or its `handler`
 /// reads or declares one, React's renderNode's `let thrown;` it sets
 /// (rd551): a name of the program's own never keeps it a `$catchUnwind`.
-fn thrown_name(payload: &str, handler: &[Stmt]) -> String {
+fn thrown_name(payload: &str, handler: &[Stmt]) -> Name {
     let mut taken = IndexSet::from_iter([payload.to_string()]);
     js::names_in(handler, &mut taken);
-    crate::names::fresh_apart(&mut taken, "thrown")
+    Name::declared(crate::names::fresh_apart(&mut taken, "thrown"))
 }
 
 /// Of `body`, which `ends` a function or doesn't: where it ends, the
@@ -749,7 +749,7 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt], ends: b
     let (binding, in_catch) = match (caught, &error) {
         (js::Caught::Unwound, Some(payload)) => {
             let thrown = thrown_name(payload.word(), err);
-            let unwound = Expr::call_helper("$unwound", vec![Expr::var(&thrown)]);
+            let unwound = Expr::call_helper("$unwound", vec![Expr::var(thrown.clone())]);
             let made = match set_again {
                 true => StmtKind::Let(payload.clone(), Some(unwound)),
                 false => StmtKind::Const(payload.clone(), unwound),
@@ -757,10 +757,7 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt], ends: b
             // Where its `if let Err(e)` binds it, after what's said above
             // that `if`, of one the program wrote (#489).
             .at(said.as_ref().map_or(span, |said| said.span));
-            (
-                Some(thrown.into()),
-                std::iter::once(made).chain(err.iter().cloned()).collect(),
-            )
+            (Some(thrown), std::iter::once(made).chain(err.iter().cloned()).collect())
         }
         _ => (error.clone(), err.to_vec()),
     };
@@ -1035,7 +1032,7 @@ fn unwound_let(before: &[Stmt], stmt: &Stmt, rest: &[Stmt]) -> Option<(Stmt, usi
         return None;
     }
     let thrown = thrown_name(payload.word(), &rest[..caught]);
-    let unwound = Expr::call_helper("$unwound", vec![Expr::var(&thrown)]);
+    let unwound = Expr::call_helper("$unwound", vec![Expr::var(thrown.clone())]);
     let made = if mutable {
         StmtKind::Let(payload.clone(), Some(unwound))
     } else {
@@ -1044,7 +1041,7 @@ fn unwound_let(before: &[Stmt], stmt: &Stmt, rest: &[Stmt]) -> Option<(Stmt, usi
     let mut handler = vec![made.at(stmt.span)];
     handler.extend(rest[..caught].iter().cloned());
     let tried = js::applied_tried(vec![StmtKind::Expr(call).at(stmt.span)]);
-    let (binding, handler) = read_as_thrown(Some(thrown.into()), handler);
+    let (binding, handler) = read_as_thrown(Some(thrown), handler);
     let (binding, handler) = catchable(js::Caught::Unwound, binding, handler, stmt.span);
     Some((
         StmtKind::TryCatch(tried, binding, handler).at(stmt.span),
@@ -1108,11 +1105,11 @@ fn catchable(
         while js::mentions_in(&handler, &name) > 0 {
             name.push('_');
         }
-        name.into()
+        Name::declared(name)
     });
     handler.insert(
         0,
-        StmtKind::Expr(Expr::call_helper("$catchable", vec![Expr::var(&name)])).at(span),
+        StmtKind::Expr(Expr::call_helper("$catchable", vec![Expr::var(name.clone())])).at(span),
     );
     (Some(name), handler)
 }

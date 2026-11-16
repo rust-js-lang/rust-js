@@ -231,8 +231,8 @@ export const mutations: Mutation[] = [
     name: "shadow-of-a-global-unmarked",
     breaks: "a `const performance$1 = performance;` made `performance` leaves each read of it a name that isn't the global's: refused, a read nothing declares (#1681)",
     file: "src/prepare/shadows.rs",
-    find: "                        true => js::Name::global(&of),\n",
-    replace: "                        true => of.clone().into(),\n",
+    find: "                    read = Some(v.clone());\n",
+    replace: "                    read = Some(js::Name::declared(v.word().to_string()));\n",
     tests: ["test/js-object.test.ts", "-t", "a function bound to its first arguments is a function of the parameters left"],
   },
 ];

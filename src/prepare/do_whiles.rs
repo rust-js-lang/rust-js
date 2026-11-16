@@ -35,7 +35,7 @@ pub(super) fn do_whiles(stmts: &mut [Stmt]) {
 /// An advance at the end of a way through the loop: what's tested, given
 /// the variable, and the statements it's written as.
 struct Advance {
-    variable: String,
+    variable: Name,
     test: Expr,
 }
 
@@ -73,14 +73,14 @@ fn do_while(before: &[Stmt], looped: &Stmt, after: &[Stmt]) -> Option<StmtKind> 
     };
     let declared = before
         .iter()
-        .any(|s| matches!(&s.kind, StmtKind::Let(n, _) if n.is(variable)));
+        .any(|s| matches!(&s.kind, StmtKind::Let(n, _) if n.is(variable.word())));
     if !declared
         || others
             .iter()
-            .any(|a| a.variable != *variable || !same(&a.test, &first.test))
+            .any(|a| !a.variable.is(variable.word()) || !same(&a.test, &first.test))
         || js::continues(&turn, label.as_ref().map(|n| n.word()))
-        || js::mentions_in(after, variable) > 0
-        || in_function(&turn, variable)
+        || js::mentions_in(after, variable.word()) > 0
+        || in_function(&turn, variable.word())
     {
         return None;
     }
@@ -222,7 +222,7 @@ fn advanced(stmts: &mut Vec<Stmt>, label: Option<&str>, advances: &mut Vec<Advan
             if !(l.is_none() || l.as_ref().map(|n| n.word()) == label) {
                 return None;
             }
-            let (variable, value, test) = (variable.to_string(), value.clone(), test.clone());
+            let (variable, value, test) = (variable.clone(), value.clone(), test.clone());
             // Its value a `const` made right before it, read nowhere else:
             // what made it, given in its place.
             let at = stmts.len() - 1;
@@ -239,7 +239,7 @@ fn advanced(stmts: &mut Vec<Stmt>, label: Option<&str>, advances: &mut Vec<Advan
             let test = given(&test, &value, &variable)?;
             let span = stmts[at].span;
             let given = made.clone().unwrap_or(value);
-            stmts[at] = StmtKind::Assign(Expr::var(&variable), given).at(span);
+            stmts[at] = StmtKind::Assign(Expr::var(variable.clone()), given).at(span);
             if made.is_some() {
                 stmts.remove(at - 1);
             }
@@ -253,7 +253,7 @@ fn advanced(stmts: &mut Vec<Stmt>, label: Option<&str>, advances: &mut Vec<Advan
 /// `T(x)` of `test`, `T(value)`: each read of `value` in it, `variable`.
 /// `None` where it reads `variable` otherwise, which the `do`'s test would
 /// read after it's given its next value, where the advance read it before.
-fn given(test: &Expr, value: &Expr, variable: &str) -> Option<Expr> {
+fn given(test: &Expr, value: &Expr, variable: &Name) -> Option<Expr> {
     const HOLE: &str = "$given";
     let mut holed = test.clone();
     holed.each_mut(&mut |e| {
@@ -261,12 +261,12 @@ fn given(test: &Expr, value: &Expr, variable: &str) -> Option<Expr> {
             *e = Expr::var(HOLE).or_at(e.span);
         }
     });
-    if holed.mentions_var(variable) || !holed.mentions_var(HOLE) {
+    if holed.mentions_var(variable.word()) || !holed.mentions_var(HOLE) {
         return None;
     }
     holed.each_mut(&mut |e| {
         if matches!(&e.kind, ExprKind::Var(v) if v.is(HOLE)) {
-            *e = Expr::var(variable).or_at(e.span);
+            *e = Expr::var(variable.clone()).or_at(e.span);
         }
     });
     Some(holed)

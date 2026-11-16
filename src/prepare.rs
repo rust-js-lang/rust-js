@@ -946,16 +946,17 @@ fn expr(e: &mut Expr) {
         while place.mentions_var(&param) {
             param.push('_');
         }
+        let param = js::Name::declared(param);
         let get = Expr::arrow(
             Vec::new(),
             vec![StmtKind::Return(Some((**place).clone())).at(place.span)],
         );
-        let written = storage.written(Expr::var(&param), false);
+        let written = storage.written(Expr::var(param.clone()), false);
         // A flattened state's, each of its keys set on its object (ADR
         // 1044); an object's whole, `$assign` (#968).
-        let sets = storage.written_in_place(place, Expr::var(&param), &mut |_, value, _| value, place.span);
+        let sets = storage.written_in_place(place, Expr::var(param.clone()), &mut |_, value, _| value, place.span);
         let set = Expr::arrow(
-            vec![param.as_str().into()],
+            vec![param.into()],
             sets.unwrap_or_else(|| vec![StmtKind::Assign((**place).clone(), written).at(place.span)]),
         );
         let dictionary = match &e.kind {

@@ -466,8 +466,8 @@ export const mutations: Mutation[] = [
     name: "handle-setter-stores-as-given",
     breaks: "a handle's setter stores what it's given, where its storage says `?? null`",
     file: "src/prepare.rs",
-    find: "        let written = storage.written(Expr::var(&param), false);\n",
-    replace: "        let written = Expr::var(&param);\n",
+    find: "        let written = storage.written(Expr::var(param.clone()), false);\n",
+    replace: "        let written = Expr::var(param.clone());\n",
     tests: ["test/lowering-nullable.test.ts", "-t", "through a reference and a helper"],
   },
   {

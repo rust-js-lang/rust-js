@@ -52,27 +52,26 @@ fn shadows(body: &mut Vec<Stmt>, own: &IndexSet<String>) {
     while let Some((alias, of)) = shadow(body, own) {
         // Of a global, `const performance$1 = performance;`, each read the
         // global's still, as `Expr::global` made it (`js::validate`).
-        let mut global = false;
+        let mut read: Option<js::Name> = None;
         js::each_block_mut(body, &mut |stmts| {
             for s in stmts.iter() {
                 if let StmtKind::Const(name, value) = &s.kind
                     && name.is(&alias)
                     && let ExprKind::Var(v) = &value.kind
                     && v.is(&of)
+                    && read.as_ref().is_none_or(|read| !read.is_global())
                 {
-                    global |= v.is_global();
+                    read = Some(v.clone());
                 }
             }
         });
+        let read = read.expect("the `const` a shadow is of");
         // Not a closure's own of the name, its `catch_unwind`'s result
         // named `value$1` apart from the `value` it captures (#457).
         js::outside_shadows(body, &alias, |body| {
             js::each_expr_mut(body, &mut |e| {
                 if matches!(&e.kind, ExprKind::Var(name) if name.is(&alias)) {
-                    e.kind = ExprKind::Var(match global {
-                        true => js::Name::global(&of),
-                        false => of.clone().into(),
-                    });
+                    e.kind = ExprKind::Var(read.clone());
                 }
             });
             js::each_block_mut(body, &mut |stmts| {

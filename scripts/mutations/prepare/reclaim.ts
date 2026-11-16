@@ -40,8 +40,8 @@ export const mutations: Mutation[] = [
     name: "reclaim-conversion-unread",
     breaks: "a local is `String` where a conversion, `String(n)`, reads the global",
     file: "src/prepare/reclaim.rs",
-    find: "        ExprKind::Stringed(_) if reads => f(&mut \"String\".into()),",
-    replace: "        ExprKind::Stringed(_) if false => f(&mut \"String\".into()),",
+    find: "        ExprKind::Stringed(_) if reads => f(&mut Name::global(\"String\")),",
+    replace: "        ExprKind::Stringed(_) if false => f(&mut Name::global(\"String\")),",
     tests: ["test/lowering-names.test.ts", "-t", "an import named as a global"],
   },
   {
