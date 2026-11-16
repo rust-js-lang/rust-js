@@ -109,6 +109,19 @@ test("others' changes since the map's commit run the tests whose functions they 
   expect(selection.cases).toEqual(["x.rs"]);
 });
 
+// A check is a batch: where pending checks are superseded, the next one's
+// selection, of the map's diff to its tree, holds every commit's since the
+// map's, so a skipped commit's tests run in it. Each commit's selection is
+// a part of the batch's, whatever the batch (ADR 1101, amended).
+test("a batch of commits selects every test any one of them selects", () => {
+  const commits = [["src/a.rs"], ["test/helper.ts"], ["test/corpus/y.rs"], ["docs/notes.md"], ["src/lower/helper.txt"]];
+  const batch = of(...commits.flat());
+  for (const changed of commits) {
+    const alone = of(...changed);
+    expect([changed, alone.files.filter((file) => !batch.files.includes(file)), alone.cases.filter((name) => !batch.cases.includes(name))]).toEqual([changed, [], []]);
+  }
+});
+
 test("a test file runs itself; the corpus's runs every case; a case runs itself and the corpus's readers", () => {
   expect(picked(of("test/one.test.ts"))).toEqual({ files: ["test/one.test.ts"], cases: [], forms: [] });
   expect(picked(of("test/corpus.test.ts"))).toEqual({ files: ["test/corpus.test.ts"], cases, forms: [] });
