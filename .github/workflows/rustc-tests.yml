@@ -116,8 +116,9 @@ on:
 permissions:
   contents: read
 
-# Started by hand, one run at a time of the same branch, a new one
-# cancelling the one running: a group of its own, apart from check.yml's,
+# Started by hand, one run at a time of the same branch, the running one
+# never cancelled, its verdict being what it's for, and of those waiting
+# only the newest kept: a group of its own, apart from check.yml's,
 # so a run started here never cancels a check (check.yml). Called by
 # check.yml, a group of its own too, of the caller's branch: in the
 # caller's group, it would wait for the caller, or cancel it, and without
@@ -125,7 +126,7 @@ permissions:
 # its rustc tests, mutations and generated programs each one.
 concurrency:
   group: ${{ github.workflow == 'rustc tests' && format('rustc-{0}', github.ref) || format('ci-{0}-{1}-{2}-{3}', github.workflow, github.ref, inputs.mutations, inputs.fuzz_seeds) }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   # The tests named, each against what the known failures say of it.

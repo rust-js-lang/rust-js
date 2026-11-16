@@ -1310,3 +1310,17 @@ test("Miri and every native build of a program take its flags from programFlags 
   const own = harness.filter((f) => readFileSync(join(root, f), "utf8").split("\n").some((l) => /"-Coverflow-checks/.test(l)));
   expect(own).toEqual([]);
 });
+
+// A run whose verdict, map or report lasts is never cancelled as it runs:
+// with four agents pushing, checks of main end every few minutes, and each
+// cancelling the one running left none to finish (test-map.yml's 5 of 7).
+// Of those waiting, GitHub keeps only the newest. Cancelling is for jobs
+// that take seconds and leave nothing undone, each named here.
+test("no workflow cancels a run in progress but the seconds-long idempotent ones", () => {
+  const idempotent = ["test-map-prune.yml"];
+  const dir = join(root, ".github/workflows");
+  for (const file of readdirSync(dir).filter((name) => name.endsWith(".yml"))) {
+    const cancels = (Bun.YAML.parse(readFileSync(join(dir, file), "utf8")) as { concurrency?: { "cancel-in-progress"?: unknown } }).concurrency?.["cancel-in-progress"];
+    expect([file, cancels === undefined || cancels === false || idempotent.includes(file)]).toEqual([file, true]);
+  }
+});

@@ -26,9 +26,11 @@ on:
 permissions:
   contents: read
 
+# One run at a time, the running one never cancelled: its verdict is what
+# the run is for. Of those waiting, GitHub keeps only the newest.
 concurrency:
   group: readability-passes-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   sample:
