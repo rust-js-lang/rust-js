@@ -110,11 +110,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "cloned-owners-unrecorded",
-    breaks: "a type cloned as it is of its function's own parameters keeps no owner, so no bounds of it are asked, and another generic function's `map(Some)` is cloned apart and refused (#1318)",
+    breaks: "a type cloned as it is of its function's own parameters keeps no owner, so no function's callers are asked: a `Drop` impl's clone of its bare `T`, which no naming's obligation gives, never counts, and an `Rc` of a function item it clones, made two `Rc<dyn Fn>`s, is two functions where Rust's are one (#1318, #1896)",
     file: "src/lower/analysis/clones.rs",
     find: "            cloned.owners.entry(ty).or_default().insert(owner);\n",
     replace: "            let _ = owner;\n",
-    tests: ["test/corpus.test.ts", "-t", "^generic_map_past_a_take_beside_a_cloned_one.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^rc_fn_cloned_by_a_drop_of_generic_code_refused.rs$"],
   },
   {
     name: "clone-named-as-a-value-unseen",
