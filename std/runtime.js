@@ -22322,11 +22322,14 @@ export function $formatFloat(value, options, show) {
 export const $passedOn = {
   lent: ["next", "sizeHint", "advanceBy", "nth", "fold", "tryFold", "back", "advanceBackBy", "nthBack", "rfold", "tryRfold", "len"],
   lentUnsized: ["next", "sizeHint", "advanceBy", "nth", "back", "advanceBackBy", "nthBack", "len"],
+  // TODO(#2000): `BOX_PASSES_ON`'s, which the one catalog is to give both.
+  boxed: ["next", "sizeHint", "nth", "last", "back", "nthBack", "len"],
+  boxedUnsized: ["next", "sizeHint", "nth", "back", "nthBack", "len"],
 };
 
 // Every step a `&mut I` may pass on, and those std's defaults are of:
 // `count` and `last`, which it doesn't.
-export const $stepNames = /* @__PURE__ */ (() => new Set(["count", "last"].concat($passedOn.lent, $passedOn.lentUnsized)))();
+export const $stepNames = /* @__PURE__ */ (() => new Set(["count", "last"].concat($passedOn.lent, $passedOn.lentUnsized, $passedOn.boxed)))();
 
 // A JS iterator lent as a `&mut` (ADR 0071), of a sized iterator or not,
 // `kind`, `$passedOn`'s: it steps `it`, and what takes from it and stops
@@ -22346,7 +22349,9 @@ export function $lent(it, kind = "lent") {
   // a consumer that takes it by value does, so its lender's would be
   // dropped at its first `None` (#1508).
   if (typeof it.next !== "function") it = Iterator.from(it);
-  const lent = new $Steps(() => it.next());
+  // A `Box<I>`'s, `boxed`, owns `it`: closing it closes `it` (#1995).
+  const owns = kind === "boxed" || kind === "boxedUnsized";
+  const lent = new $Steps(() => it.next(), owns ? () => it.return?.() : undefined);
   // Each step it passes on, `it`'s as `it` is when it's asked, so one a
   // compiled struct is given after, its `knowing`'s back, is too; where
   // `it` has none, std's default, `$Steps`'. Written over, it's what's

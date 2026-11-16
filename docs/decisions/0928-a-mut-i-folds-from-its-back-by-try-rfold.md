@@ -87,3 +87,31 @@ against native in both builds; copy matrix cells 217, 2421, 38013, 40011,
 `lent-rfold-by-its-back`, `lent-unsized-folds-its-own`,
 `lent-struct-steps-of-its-struct` and `lent-dyn-as-sized`; the earlier
 `lent-*` mutations retargeted to the lists.
+
+## Amendment (2026-11-17, #1995): a `Box` of std's compiled iterator takes the traits' defaults, as std's `Box<I>` does
+
+Case C: results change. `passed_through_box` called a trait's default on
+a `Box<I>` as `I`'s for any std iterator, "a default's too". So
+`Box::new(take).rfold(..)`, and a `rev()` of it folded, ran `Take`'s own
+`rfold`, dropping what it skips 5 then 4. std's `impl DoubleEndedIterator
+for Box<I>` writes only `next_back` and `nth_back`, so its `rfold` is the
+trait's default by `next_back`: 4 then 5.
+
+- A `Box` of std's compiled iterator passes a call through to `I` only
+  where std's impl writes it (`std_impl_writes`), as a `Box` of the crate's
+  iterator already did (#1601). Any other, a default, stays the box's.
+- Stepped from its back (`as_double_ended`), it's `$lent(it, "boxed")`:
+  `I` made knowing its back, passing on only what `Box<I>` passes on, and
+  closing `I` as it closes, since a box owns what it holds.
+- With std's iterator structs, its extension dictionary gives its
+  `next_back` and `nth_back`, `I`'s compiled ones, and no fold of `I`'s.
+
+`$passedOn`'s `boxed` and `boxedUnsized` lists are held to std's
+`impl .. for Box<I>`, and to `BOX_PASSES_ON`, by test/passed-on.test.ts
+until #2000 makes them one catalog. Corpus case
+`boxed_iterator_folded_as_std_passes_it_on`, against native in both
+builds, in test/iterator-forms.test.ts's few. Mutations
+`box-compiled-default-passed-through`, `box-compiled-back-its-own` and
+`box-compiled-dictionary-unboxed`; the box mutations of std_items.rs,
+`compiled-struct-rfold-as-js` and `double-ended-of-a-js-iterator-again`
+retargeted.

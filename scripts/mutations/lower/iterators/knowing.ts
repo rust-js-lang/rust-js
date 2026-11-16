@@ -206,9 +206,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a map's source made a JS iterator, `$iterator(range, $rangeNext)`, is stepped as a range again, and gives nothing",
     file: "src/lower/iterators/knowing.rs",
-    find: "        }\n        let value = stepped_value(&value).unwrap_or(value);\n        // One a struct holds, which keeps its source (ADR 0542): of one given\n",
+    find: "        }\n        let value = stepped_value(&value).unwrap_or(value);\n        // A `Box` of std's compiled struct: what std's `Box<I>` passes on of\n",
     replace:
-      "        }\n        // One a struct holds, which keeps its source (ADR 0542): of one given\n",
+      "        }\n        // A `Box` of std's compiled struct: what std's `Box<I>` passes on of\n",
     tests: ["test/corpus.test.ts", "-t", "^range_mapped_by_a_function.rs$"],
   },
   {
@@ -906,5 +906,13 @@ export const mutations: Mutation[] = [
     find: "            return Ok(self.std_iterator_as_it_is(value, ty));\n        }\n        // An enumeration made here",
     replace: "            return Ok(self.std_iterator(value, ty));\n        }\n        // An enumeration made here",
     tests: ["test/corpus.test.ts", "-t", "^stepped_iterator_lent_as_a_dyn.rs$"],
+  },
+  {
+    name: "box-compiled-back-its-own",
+    breaks: "a `Box` of std's compiled iterator stepped from its back is the iterator itself, its own `rfold` with it, not what std's `Box<I>` passes on (#1995)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "            return Ok(super::IterValue::js(it).lent(super::Lent::Boxed).emit());\n",
+    replace: "            return Ok(it);\n",
+    tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^boxed_iterator_folded_as_std_passes_it_on.rs$|^boxed_iterator_folded_as_std_passes_it_on with"],
   },
 ];

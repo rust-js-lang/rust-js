@@ -51,11 +51,14 @@ pub(in crate::lower) struct IterValue {
 /// `$passedOn`): of a sized `I`, whose folds std's `&mut I` folds by `I`'s
 /// `try_fold` and `try_rfold`, `$lent(it)`; of an unsized one, a `dyn`'s,
 /// whose folds are std's defaults over `next` and `next_back`,
-/// `$lent(it, "lentUnsized")` (#1991).
+/// `$lent(it, "lentUnsized")` (#1991). And a `Box<I>`'s, which lends
+/// nothing, owning `I`, but passes on only what std's `Box<I>` does,
+/// `$lent(it, "boxed")` (#1995).
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub(in crate::lower) enum Lent {
     Sized,
     Unsized,
+    Boxed,
 }
 
 impl Lent {
@@ -65,7 +68,13 @@ impl Lent {
         match self {
             Lent::Sized => None,
             Lent::Unsized => Some("lentUnsized"),
+            Lent::Boxed => Some("boxed"),
         }
+    }
+
+    /// Whether it lends `it`, which nothing past it closes: a `Box`'s owns it.
+    fn lends(self) -> bool {
+        self != Lent::Boxed
     }
 
     /// How `e`, an iterator lent, `$lent(it, ..)`, is lent; a sized one's of
@@ -168,7 +177,8 @@ impl IterValue {
             }
             let mut args = vec![e];
             args.extend(how.kind().map(Expr::str));
-            e = made("$lent", args, &[Known::IterLent]);
+            let facts: &[Known] = if how.lends() { &[Known::IterLent] } else { &[] };
+            e = made("$lent", args, facts);
         }
         e
     }

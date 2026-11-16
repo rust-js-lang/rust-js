@@ -57,6 +57,9 @@ const few = [
   // read by the reader its dictionary is given (#1982).
   "zip_of_a_generic_sources_copies_moved_through_generic_code.rs",
   "held_adapters_by_ref.rs",
+  // A `Box` of std's struct folded from its back, by its traits' defaults,
+  // its extension dictionary's back alone (#1995).
+  "boxed_iterator_folded_as_std_passes_it_on.rs",
   "adapter_drops.rs",
   "own_fold_and_nth.rs",
   "by_ref_steps.rs",

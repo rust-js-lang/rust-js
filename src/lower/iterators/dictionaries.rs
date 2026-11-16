@@ -109,6 +109,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let passed_rfold = |rfold: Option<Expr>| rfold.filter(|_| !lent);
         let ty = ty.peel_refs();
         let name = crate::lower::recognition::extension_entry(self.tcx, trait_id);
+        // A `Box` of std's struct, compiled: what std's `Box<I>` passes on of
+        // it, its `next_back`, `nth_back` and `len`; its folds the traits'
+        // defaults, none of its own (#1995).
+        let boxed = ty
+            .boxed_ty()
+            .filter(|&inner| crate::lower::recognition::is_compiled_std_iterator(self.tcx, inner));
         let double_ended = crate::lower::recognition::is_double_ended(self.tcx, trait_id);
         let returned = |value: Expr| {
             Expr::arrow(
@@ -127,6 +133,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // where it's held, a `Map`'s (ADR 0871): its compiled
             // `next_back` or `len`.
             (_, None) if self.compiled_step(ty, trait_id, name) => Some(self.user_next(ty, trait_id, name, span)?.0),
+            (_, None)
+                if let Some(inner) = boxed
+                    && self.compiled_step(inner, trait_id, name) =>
+            {
+                Some(self.user_next(inner, trait_id, name, span)?.0)
+            }
             // Of one whose `len` is std's default, `Skip`'s (ADR 0918).
             (false, None) if let Some(len) = self.default_len(ty, trait_id) => Some(len),
             (true, None) if self.is_user_iterator(ty) => Some(self.user_next(ty, trait_id, name, span)?.0),
@@ -162,7 +174,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Of std's adapter over the crate's own, the JS iterator's, which
         // passes it on as std's does, `$foldBack`.
         // Of std's struct, a held `Map`'s, its compiled ones (ADR 0871).
-        if double_ended && crate::lower::recognition::is_compiled_std_iterator(self.tcx, ty) {
+        if let Some(inner) = boxed {
+            if double_ended && self.compiled_step(inner, trait_id, "nth_back") {
+                let nth_back = self.user_method(inner, trait_id, "nth_back", &["k"], span)?.0;
+                props.push(js::Prop::Field(
+                    crate::lower::bindings::trait_method_name(self.tcx, trait_id, "nth_back"),
+                    nth_back,
+                ));
+            }
+        } else if double_ended && crate::lower::recognition::is_compiled_std_iterator(self.tcx, ty) {
             let rfold = self.compiled_fold(ty, (trait_id, "rfold"), span)?;
             let nth_back = match self.compiled_step(ty, trait_id, "nth_back") {
                 true => Some(self.user_method(ty, trait_id, "nth_back", &["k"], span)?.0),

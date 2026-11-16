@@ -258,8 +258,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a held `Map`'s `rfold`, given to a compiled `fuse()`, is a JS iterator's `$foldBack`, which it isn't",
     file: "src/lower/iterators/dictionaries.rs",
-    find: "        if double_ended && crate::lower::recognition::is_compiled_std_iterator(self.tcx, ty) {\n",
-    replace: "        if false {\n",
+    find: "        } else if double_ended && crate::lower::recognition::is_compiled_std_iterator(self.tcx, ty) {\n",
+    replace: "        } else if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^(own_back_through_adapters).rs$"],
   },
   {
@@ -383,5 +383,13 @@ export const mutations: Mutation[] = [
     replace: "        if false && props == named(\"$nextSome\", \"$nthSome\", \"$lastSome\") {\n",
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^blanket_default_beside_an_unmet_clause.rs$"],
+  },
+  {
+    name: "box-compiled-dictionary-unboxed",
+    breaks: "a `Box` of std's compiled iterator has no `DoubleEndedIterator` dictionary of its own in the build of std's iterator structs, so generic code given it, a `rev()`'s, is refused (#1995)",
+    file: "src/lower/iterators/dictionaries.rs",
+    find: "                if let Some(inner) = boxed\n                    && self.compiled_step(inner, trait_id, name) =>\n",
+    replace: "                if let Some(inner) = boxed.filter(|_| false)\n                    && self.compiled_step(inner, trait_id, name) =>\n",
+    tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^boxed_iterator_folded_as_std_passes_it_on.rs$|^boxed_iterator_folded_as_std_passes_it_on with"],
   },
 ];

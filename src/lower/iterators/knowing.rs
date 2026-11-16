@@ -704,6 +704,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(knowing);
         }
         let value = stepped_value(&value).unwrap_or(value);
+        // A `Box` of std's compiled struct: what std's `Box<I>` passes on of
+        // `I` made knowing its back, its `next_back` and `nth_back`, the rest
+        // the traits' defaults over them, so its `rfold` steps it by
+        // `next_back`, never `I`'s own (#1995), `$lent(it, "boxed")`.
+        if let Some(inner) = ty.boxed_ty()
+            && crate::lower::recognition::is_compiled_std_iterator(self.tcx, inner)
+            && inner.is_sized(self.tcx, self.typing_env)
+        {
+            let it = self.as_double_ended(value, inner, span)?;
+            return Ok(super::IterValue::js(it).lent(super::Lent::Boxed).emit());
+        }
         // One a struct holds, which keeps its source (ADR 0542): of one given
         // as it is, its back and length this use's dictionaries', wherever it
         // was made; of one made knowing them, an array's or a range's, itself.

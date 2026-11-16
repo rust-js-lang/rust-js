@@ -82,6 +82,8 @@ test("$lent and BOX_PASSES_ON pass on what std's &mut I and Box<I> pass on, of a
   const boxPassesOn = recognition.match(/pub\(in crate::lower\) const BOX_PASSES_ON: \[&str; \d+\] = \[([^\]]*)\];/);
   expect(boxPassesOn).not.toBeNull();
   expect([...boxPassesOn![1]!.matchAll(/"(\w+)"/g)].map((m) => m[1]!).sort()).toEqual([...new Set(box)].sort());
+  const boxedSized = box;
+  const boxedUnsized = box.filter((name) => name !== "last");
   const passedOn = readFileSync(join(root, "src/runtime/lent.js"), "utf8");
   const listed = (kind: string) => {
     const line = passedOn.match(new RegExp(`^ {2}${kind}: \\[([^\\]]*)\\],$`, "m"));
@@ -91,6 +93,8 @@ test("$lent and BOX_PASSES_ON pass on what std's &mut I and Box<I> pass on, of a
   const ours = (names: string[]) => [...new Set(names.filter((name) => name in js).map((name) => js[name]!))].sort();
   expect(listed("lent")).toEqual(ours(lent));
   expect(listed("lentUnsized")).toEqual(ours(lentUnsized));
+  expect(listed("boxed")).toEqual(ours(boxedSized));
+  expect(listed("boxedUnsized")).toEqual(ours(boxedUnsized));
   // Each std method named is one `$forward` knows, or `is_empty`, which
   // asks `len`.
   expect([...ref, ...box].filter((name) => !(name in js) && name !== "is_empty")).toEqual([]);

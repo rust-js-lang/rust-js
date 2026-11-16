@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a lazy chain lent to `it.take(2)` is closed by it, and its lender's `next()` finds it done",
     file: "src/lower/iterators/value.rs",
-    find: '            e = made("$lent", args, &[Known::IterLent]);',
+    find: '            e = made("$lent", args, facts);',
     replace: '            e = Expr::call(Expr::member(Expr::var("Iterator"), "from"), args);',
     tests: ["test/corpus.test.ts", "-t", "^(lent_iterators|by_ref_lends|by_ref_chains).rs$"],
   },
