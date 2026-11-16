@@ -421,8 +421,8 @@ export const mutations: Mutation[] = [
     name: "mir-push-str-lost",
     breaks: "`write!` or `push_str` to a `String` from MIR writes nothing",
     file: "src/lower/mir/std_calls.rs",
-    find: "                        false => crate::lower::display::append_written(&place, value, false, this.js_span(span), out),\n",
-    replace: "                        false => {}\n",
+    find: "                            crate::lower::display::append_written(&place, value, false, this.js_span(span), out)\n                        }\n",
+    replace: "                        }\n",
     tests: ["test/corpus.test.ts", "-t", "string_pushes"],
   },
   {

@@ -13,7 +13,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// or a set's, each pair set, or item added (ADR 0325). None of another
     /// type's, whose impl's is its own.
     pub(in crate::lower) fn std_extend(&self, ty: Ty<'tcx>) -> Option<Std> {
-        if self.is_lang_adt(ty, LangItem::String) {
+        // A `PathBuf`'s, each part pushed, `extended_path` (#1640).
+        if self.is_lang_adt(ty, LangItem::String)
+            || matches!(ty.kind(), ty::Adt(adt, _) if is_std_path(self.tcx, adt.did(), StdPath::PathBuf))
+        {
             Some(Std::PushStr)
         } else if self.is_vec_like(ty) {
             Some(Std::Comb(Comb::Extend))

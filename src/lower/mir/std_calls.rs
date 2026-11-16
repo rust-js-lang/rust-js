@@ -423,11 +423,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         return Ok(Value::Expr(this.fmt_try(tried)));
                     }
                     let value = this.value_expr(given, span)?;
-                    // `s.extend(items)`: their text, joined (ADR 0445).
+                    // `s.extend(items)`: their text, joined (ADR 0445); a
+                    // `PathBuf`'s, each part pushed (#1640).
                     let extended = (this.tcx.trait_of_assoc(def_id))
                         .is_some_and(|t| crate::lower::recognition::is_extend(this.tcx, t));
+                    let path = this.recognition().is_path_like(arg_tys[0]);
                     // Its hint asked first, as std's `Extend<char>` reserves by
-                    // it (#849).
+                    // it (#849), `extend_room`'s; a `PathBuf`'s asks none.
                     let value = match extended {
                         true => {
                             let into = arg_tys[0].peel_refs();
@@ -450,9 +452,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             held_as: Default::default(),
                         },
                     };
-                    match extended {
-                        true => this.extended_text(&place, value, arg_tys[1], span, out)?,
-                        false => crate::lower::display::append_written(&place, value, false, this.js_span(span), out),
+                    match (extended, path) {
+                        (true, true) => this.extended_path(&place, value, arg_tys[1], span, out)?,
+                        (true, false) => this.extended_text(&place, value, arg_tys[1], span, out)?,
+                        (false, _) => {
+                            crate::lower::display::append_written(&place, value, false, this.js_span(span), out)
+                        }
                     }
                     Expr::js_undefined()
                 }))

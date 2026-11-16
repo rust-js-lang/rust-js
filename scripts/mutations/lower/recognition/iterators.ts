@@ -227,8 +227,8 @@ export const mutations: Mutation[] = [
     name: "string-extend-unrecognized",
     breaks: "`s.extend(chars)` of a `String` is refused",
     file: "src/lower/recognition/iterators.rs",
-    find: "        if self.is_lang_adt(ty, LangItem::String) {\n            Some(Std::PushStr)\n",
-    replace: "        if false {\n            Some(Std::PushStr)\n",
+    find: "        if self.is_lang_adt(ty, LangItem::String)\n            || matches!(",
+    replace: "        if false\n            || matches!(",
     tests: ["test/corpus.test.ts", "-t", "^generic_extend.rs$"],
   },
   {
@@ -729,5 +729,13 @@ export const mutations: Mutation[] = [
     find: "                | \"Matches\"\n                | \"RMatches\"\n",
     replace: "                | \"RMatches\"\n",
     tests: ["test/diagnostics.test.ts", "-t", "a str matches' Debug"],
+  },
+  {
+    name: "path-buf-extend-unrecognized",
+    breaks: "a `PathBuf`'s `extend` isn't std's, so it's refused, `calling std::iter::Extend::extend`, where std pushes each part (#1640)",
+    file: "src/lower/recognition/iterators.rs",
+    find: "            || matches!(ty.kind(), ty::Adt(adt, _) if is_std_path(self.tcx, adt.did(), StdPath::PathBuf))\n",
+    replace: "            || false\n",
+    tests: ["test/corpus.test.ts", "-t", "^path_buf_extended_by_each_part.rs$"],
   },
 ];

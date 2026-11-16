@@ -42,4 +42,28 @@ export const mutations: Mutation[] = [
     replace: "            None if op == PathOp::IntoString => values.next().expect(\"the text\"),\n",
     tests: ["test/corpus.test.ts", "-t", "^os_string_into_string_and_bound_clone.rs$"],
   },
+  {
+    name: "path-buf-extend-part-not-as-ref",
+    breaks: "a `PathBuf`'s `extend` pushes a crate type's part as it is, not its `as_ref()`, `$pathJoin(d, [\"one\"])` of `Dir(\"one\")` (#1640)",
+    file: "src/lower/std_types/path.rs",
+    find: "        let given = match of.is_str() || recognition.is_string_like(of) || recognition.is_path_like(of) {\n",
+    replace: "        let given = match true || of.is_str() || recognition.is_string_like(of) || recognition.is_path_like(of) {\n",
+    tests: ["test/corpus.test.ts", "-t", "^path_buf_extended_by_each_part.rs$"],
+  },
+  {
+    name: "path-buf-extend-part-undropped",
+    breaks: "a `PathBuf`'s `extend` never drops a part it takes by value, `Dir`'s drop unrun, where std's `for_each(move |p| self.push(p.as_ref()))` drops each `p` after its push (#1640)",
+    file: "src/lower/std_types/path.rs",
+    find: "        let push = match self.std_drop_call(self.iterable_item(ty), Expr::var(&part), span)? {\n",
+    replace: "        let push = match None::<Expr> {\n",
+    tests: ["test/corpus.test.ts", "-t", "^path_buf_extended_by_each_part.rs$"],
+  },
+  {
+    name: "path-buf-extend-rest-unclosed",
+    breaks: "a `PathBuf`'s `extend` that unwinds at a part leaves what's after it undropped, `Dir(\"y\")`'s drop unrun, where std drops its iterator as `for_each` unwinds (#1640)",
+    file: "src/lower/std_types/path.rs",
+    find: "                self.closing(parts, ty, span)?\n",
+    replace: "                parts\n",
+    tests: ["test/corpus.test.ts", "-t", "^path_buf_extended_by_each_part.rs$"],
+  },
 ];

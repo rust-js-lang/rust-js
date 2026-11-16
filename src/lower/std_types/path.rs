@@ -96,9 +96,83 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let Some(target) = self.as_ref_target(callee, at) else {
             return Ok(value);
         };
+        self.as_ref_given(value, (of, target), span)
+    }
+
+    /// `value`, of type `of`, as its impl's `as_ref()` of `target` gives it,
+    /// through its dictionary.
+    fn as_ref_given(
+        &mut self,
+        value: Expr,
+        (of, target): (rustc_middle::ty::Ty<'tcx>, rustc_middle::ty::Ty<'tcx>),
+        span: Span,
+    ) -> R<Expr> {
         let as_ref = crate::lower::recognition::std_item(self.tcx, crate::lower::recognition::StdItem::AsRef);
         let dictionary = self.dictionary(rustc_middle::ty::TraitRef::new(self.tcx, as_ref, [of, target]), span)?;
         Ok(Expr::call(Expr::member(dictionary, "asRef"), vec![value]))
+    }
+
+    /// `p.extend(parts)` of a `PathBuf`, `parts` of type `ty`: each part
+    /// pushed as it's stepped, `$extendText(parts, (part) => { p =
+    /// $pathJoin(p, part); })`, as std's `for_each` of `push(part.as_ref())`
+    /// does, so what's pushed before a panic stays, and what's left of it is
+    /// closed as it unwinds (#1640). A part is its text, a path's, a
+    /// string's or an `OsStr`'s (ADR 0173), or another type's `as_ref()`;
+    /// one taken by value is dropped after its push, as the closure's `p`.
+    pub(in crate::lower) fn extended_path(
+        &mut self,
+        place: &Expr,
+        parts: Expr,
+        ty: rustc_middle::ty::Ty<'tcx>,
+        span: Span,
+        out: &mut Vec<crate::js::Stmt>,
+    ) -> R<()> {
+        let parts = self.iterable_items(parts, ty, span, out)?;
+        let of = self.iterable_item(ty).peel_refs();
+        // Of parts with a destructor, what's left of them dropped as a push
+        // unwinds, as std's `for_each` drops its iterator: closed to drop it
+        // (`closing`), an array's or a `Vec`'s, its items as it steps them.
+        let parts = match self.drops(of) == crate::lower::drops::Drops::Nothing {
+            true => parts,
+            false => {
+                let peeled = ty.peel_refs();
+                let parts = match peeled.is_array() || self.is_vec_like(peeled) {
+                    true => self.stepped_items(parts),
+                    false => parts,
+                };
+                self.closing(parts, ty, span)?
+            }
+        };
+        let part = self.fresh(crate::lower::temporary_names::Role::Part);
+        let recognition = self.recognition();
+        let given = match of.is_str() || recognition.is_string_like(of) || recognition.is_path_like(of) {
+            true => Expr::var(&part),
+            false => {
+                let path = crate::lower::recognition::std_path_id(self.tcx, crate::lower::recognition::StdPath::Path)
+                    .ok_or_else(|| self.unsupported(span, "`PathBuf::extend` where std has no `Path`"))?;
+                let target = self.tcx.type_of(path).instantiate_identity().skip_normalization();
+                self.as_ref_given(Expr::var(&part), (of, target), span)?
+            }
+        };
+        let joined = Expr::call(Expr::helper("$pathJoin"), vec![place.clone(), given]);
+        let js_span = self.js_span(span);
+        let push = vec![crate::js::StmtKind::Assign(place.clone(), joined).at(js_span)];
+        // Each part taken by value dropped as the closure ends, `move |p|
+        // self.push(p.as_ref())`'s `p`, as its push unwinds too (#1640).
+        let push = match self.std_drop_call(self.iterable_item(ty), Expr::var(&part), span)? {
+            Some(drop) => crate::lower::drops::dropped_after(
+                push,
+                vec![crate::js::StmtKind::Expr(drop).at(js_span)],
+                js_span,
+                &mut self.catch_names(),
+            ),
+            None => push,
+        };
+        out.push(
+            crate::js::StmtKind::Expr(crate::lower::std_types::text::extend_text(parts, &part, push))
+                .at(self.js_span(span)),
+        );
+        Ok(())
     }
 
     /// What `callee`'s `at`th parameter, a type parameter or a `&` of one, is
