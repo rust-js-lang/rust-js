@@ -38,6 +38,9 @@ cases in both builds against native Rust. Its slice runs in each push's
 the mini in 10 parts. The nightly's `copies` job runs it whole, 205 s on the
 mini in 10 parts.
 
+Changed on 2026-11-16: `test/ci.test.ts`'s tests of which mutations a change
+touches are `test/mutation-changes.test.ts`, split by concept near the cap.
+
 Added on 2026-11-16: `test/ci-spend.test.ts`, the nightly's CI spend report
 (`scripts/ci-spend.ts`, docs/dev-loop.md's "CI spend"): each waste, the
 cap's minutes, push-to-verdict, the flags and the days kept in the comment

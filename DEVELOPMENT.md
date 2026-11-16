@@ -62,6 +62,11 @@ or another branch's, left half of `main`'s runs unfinished, at fifty to a
 hundred and fifty pushes a day.) A run started by hand cancels the
 branch's one running, and no branch's run touches another's.
 
+**Never cancel a nightly**, by hand or to free the queue. It holds no
+push's queue, as its group is its own, and cancelling it loses the night:
+nightly 43774107468, cancelled at 01:09 UTC on 2026-11-16 with runs stuck
+behind `main`'s queue, was 2,156 runner-minutes, all wasted (#1989).
+
 ## What runs where
 
 | Check | Inner loop (local) | Each push to `main` | Nightly, of `main` |

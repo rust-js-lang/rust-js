@@ -1016,6 +1016,11 @@ test("no workflow cancels a run in progress but the seconds-long idempotent ones
     const cancels = (Bun.YAML.parse(readFileSync(join(dir, file), "utf8")) as { concurrency?: { "cancel-in-progress"?: unknown } }).concurrency?.["cancel-in-progress"];
     expect([file, cancels === undefined || cancels === false || idempotent.includes(file)]).toEqual([file, true]);
   }
+  // The nightly is in a group of its own, never cancelled by a run of
+  // anything else, nor one of its own: cancelling it loses the night (#1989).
+  const nightly = (Bun.YAML.parse(readFileSync(join(dir, "nightly.yml"), "utf8")) as { concurrency?: { group?: string; "cancel-in-progress"?: unknown } }).concurrency;
+  expect(nightly).toEqual({ group: "nightly", "cancel-in-progress": false });
+  expect(readFileSync(join(root, "DEVELOPMENT.md"), "utf8")).toContain("**Never cancel a nightly**");
 });
 
 // The suite's shards are as many as its selection needs: one of a small
