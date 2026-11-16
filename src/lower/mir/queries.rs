@@ -149,8 +149,8 @@ pub(super) fn movable(state: &State<'_, '_>, value: &Value<'_>) -> bool {
         | Value::Branch(e, _)
         | Value::Tested(e) => {
             let mut stable = true;
-            e.visit_vars(&mut |name| {
-                stable &= !state.naming.borrowed_names().contains(name) && state.own_names.contains(name);
+            e.visit_names(&mut |name| {
+                stable &= !state.naming.borrowed_names().contains(name.word()) && state.own_names.contains(name);
             });
             e.reads_only_vars() && stable
         }
@@ -891,9 +891,9 @@ pub(super) fn own_borrow_of_a_variable(state: &State<'_, '_>, local: Local) -> O
 }
 
 /// The variable a place is of, `route` of `route.title[0]`.
-pub(super) fn root_var(place: &Expr) -> Option<&str> {
+pub(super) fn root_var(place: &Expr) -> Option<&js::Name> {
     match &place.kind {
-        js::ExprKind::Var(name) => Some(name.word()),
+        js::ExprKind::Var(name) => Some(name),
         js::ExprKind::Member(object, _) | js::ExprKind::Index(object, _) => root_var(object),
         _ => None,
     }

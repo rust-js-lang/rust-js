@@ -94,7 +94,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// now, as `h.node = other` may follow (#988).
     fn reached_where_made(&mut self, e: Expr, out: &mut Vec<Stmt>) -> Expr {
         match &e.kind {
-            js::ExprKind::Var(name) if !self.alike_local(name.word()) && !self.module_names.contains(name.word()) => {
+            js::ExprKind::Var(name) if !self.alike_local(name) && !self.module_names.contains(name.word()) => {
                 let name = name.clone();
                 self.spill(Base::Named(name.word()), e, out)
             }
@@ -245,8 +245,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let value = std::mem::replace(held, Expr::var(&name));
                 made.push(StmtKind::Const(name.clone(), value).at(js::Span::NONE));
                 self.locals.mir.made.captured.insert(name.clone());
-                self.locals.mir.alike.insert(name.clone().into_word());
-                state.own_names.insert(name.into_word());
+                self.locals.mir.alike.insert(name.clone());
+                state.own_names.insert(name);
                 state.in_place.insert(local, expr);
                 continue;
             }
@@ -257,14 +257,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     match &stmt.kind {
                         StmtKind::Const(name, _) => {
                             self.locals.mir.made.captured.insert(name.clone());
-                            self.locals.mir.alike.insert(name.to_string());
-                            state.own_names.insert(name.to_string());
+                            self.locals.mir.alike.insert(name.clone());
+                            state.own_names.insert(name.clone());
                         }
                         // What a branch's element reads, set where its test
                         // holds: no `const`, but MIR's too.
                         StmtKind::Let(name, None) => {
                             self.locals.mir.made.captured.insert(name.clone());
-                            state.own_names.insert(name.to_string());
+                            state.own_names.insert(name.clone());
                         }
                         _ => {}
                     }
@@ -706,9 +706,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// nothing changes or a field of plain data in one, of type `ty`.
     pub(super) fn reads_same_anywhere(&self, e: &Expr, ty: Ty<'tcx>) -> bool {
         let alike = |e: &Expr| match &e.kind {
-            js::ExprKind::Var(name) => {
-                self.module_names.contains(name.word()) || self.locals.mir.alike.contains(name.word())
-            }
+            js::ExprKind::Var(name) => self.module_names.contains(name.word()) || self.alike_local(name),
             js::ExprKind::Symbol(_) => true,
             // Of a plain variable, but not a read a getter may answer, which
             // may give another value each time (`Expr::reads_same`).
@@ -767,8 +765,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             root = object;
         }
-        !std::ptr::eq(root, &**place)
-            && matches!(&root.kind, js::ExprKind::Var(name) if self.locals.mir.alike.contains(name.word()))
+        !std::ptr::eq(root, &**place) && matches!(&root.kind, js::ExprKind::Var(name) if self.alike_local(name))
     }
 
     /// How an `Assert`, `terminator`, isn't an `if` that throws: left out,

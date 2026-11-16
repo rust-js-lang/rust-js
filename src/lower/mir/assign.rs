@@ -571,7 +571,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let at = state.location();
         let read: IndexSet<Local> = (state.refs.iter())
             .chain(state.in_place.iter())
-            .filter(|(_, target)| root_var(target) == Some(name.word()))
+            .filter(|(_, target)| root_var(target) == Some(&name))
             .map(|(&l, _)| l)
             .filter(|&l| read_past(state.body, at, l))
             .collect();
@@ -613,7 +613,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return false;
         };
         root != local
-            && self.locals.mir.settled.contains(name.word())
+            && self.locals.mir.settled.contains(name)
             && !written_before_read(state.body, state.location(), root, local)
     }
 
@@ -837,7 +837,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Value::Place(target)
                 if !rewritten
                     && same_place(state, target)
-                    && root_var(target).is_some_and(|root| self.locals.mir.alike.contains(root)) =>
+                    && root_var(target).is_some_and(|root| self.alike_local(root)) =>
             {
                 Some(target.clone())
             }

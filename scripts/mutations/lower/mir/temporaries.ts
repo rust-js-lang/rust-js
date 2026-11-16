@@ -158,9 +158,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a static's component made before it's used is a `const` of a temporary's name, no tag",
     file: "src/lower/mir/temporaries.rs",
-    find: "                self.module_names.contains(name.word()) || self.locals.mir.alike.contains(name.word())\n",
-    replace:
-      "                self.locals.mir.alike.contains(name.word())\n",
+    find: "            js::ExprKind::Var(name) => self.module_names.contains(name.word()) || self.alike_local(name),\n",
+    replace: "            js::ExprKind::Var(name) => self.alike_local(name),\n",
     tests: [
       "test/jsx-children.test.ts",
       "test/jsx-evaluation-order.test.ts",
@@ -176,9 +175,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a variable nothing changes, a tag, made before it's used is a `const` of a temporary's name, no tag",
     file: "src/lower/mir/temporaries.rs",
-    find: "                self.module_names.contains(name.word()) || self.locals.mir.alike.contains(name.word())\n",
-    replace:
-      "                self.module_names.contains(name.word())\n",
+    find: "            js::ExprKind::Var(name) => self.module_names.contains(name.word()) || self.alike_local(name),\n",
+    replace: "            js::ExprKind::Var(name) => self.module_names.contains(name.word()),\n",
     tests: [
       "test/jsx-children.test.ts",
       "test/jsx-evaluation-order.test.ts",
@@ -623,8 +621,8 @@ export const mutations: Mutation[] = [
     name: "pair-place-holder-unnamed",
     breaks: "what a pair's place is reached through, a reassigned `x` of `x.value`, isn't named where the pair's made, so the pair reads what `x` is later (#968)",
     file: "src/lower/mir/temporaries.rs",
-    find: "            js::ExprKind::Var(name) if !self.alike_local(name.word()) && !self.module_names.contains(name.word()) => {\n",
-    replace: "            js::ExprKind::Var(name) if false && !self.alike_local(name.word()) => {\n",
+    find: "            js::ExprKind::Var(name) if !self.alike_local(name) && !self.module_names.contains(name.word()) => {\n",
+    replace: "            js::ExprKind::Var(name) if false && !self.alike_local(name) => {\n",
     tests: ["test/corpus.test.ts", "-t", "^dyn_of_a_generic_impl_written_whole.rs$"],
   },
   {

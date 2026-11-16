@@ -96,8 +96,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // set it (ADR 0881); and a `const` read by its name, `SyncLaneIndex`,
             // which nothing assigns (ADR 0894, amended).
             let at_once = written_through_at_once(state.body, state.at);
-            let index_kept = index.is_fixed()
-                || matches!(&index.kind, js::ExprKind::Var(v) if at_once || self.locals.mir.alike.contains(v.word()));
+            let index_kept =
+                index.is_fixed() || matches!(&index.kind, js::ExprKind::Var(v) if at_once || self.alike_local(v));
             if checked || !index_kept || !items.reads_same() {
                 self.flush(state, out)?;
             }

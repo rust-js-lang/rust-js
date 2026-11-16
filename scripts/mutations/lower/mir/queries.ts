@@ -54,9 +54,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a read of a static, which any call may change, is moved past a call that changes it",
     file: "src/lower/mir/queries.rs",
-    find: "                stable &= !state.naming.borrowed_names().contains(name) && state.own_names.contains(name);\n",
+    find: "                stable &= !state.naming.borrowed_names().contains(name.word()) && state.own_names.contains(name);\n",
     replace:
-      "                stable &= !state.naming.borrowed_names().contains(name);\n",
+      "                stable &= !state.naming.borrowed_names().contains(name.word());\n",
     tests: [
       "test/jsx-children.test.ts",
       "test/jsx-evaluation-order.test.ts",

@@ -166,7 +166,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     && self.reads_alike(object, out)
             }
             js::ExprKind::Var(name) => {
-                self.alike_local(name.word())
+                self.alike_local(name)
                     || self
                         .locals
                         .vars

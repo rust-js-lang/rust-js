@@ -763,9 +763,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a temporary's place read in place, `s.v`, through a reference reassigned while it's borrowed, `s = o`, is the new one's",
     file: "src/lower/mir/assign.rs",
-    find: "            .chain(state.in_place.iter())\n            .filter(|(_, target)| root_var(target) == Some(name.word()))\n",
+    find: "            .chain(state.in_place.iter())\n            .filter(|(_, target)| root_var(target) == Some(&name))\n",
     replace:
-      "            .filter(|(_, target)| root_var(target) == Some(name.word()))\n",
+      "            .filter(|(_, target)| root_var(target) == Some(&name))\n",
     tests: [
       "test/corpus.test.ts",
       "-t",

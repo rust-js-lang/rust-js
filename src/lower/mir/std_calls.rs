@@ -1078,7 +1078,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // Of a variable of this body or a field of one, `copy.pages`.
                     let local = match root_var(&place) {
                         Some(name) if fixed_place(&place) => {
-                            state.locals.names.iter_enumerated().find(|(_, n)| n.is(name))
+                            state.locals.names.iter_enumerated().find(|(_, n)| *n == name)
                         }
                         _ => None,
                     };

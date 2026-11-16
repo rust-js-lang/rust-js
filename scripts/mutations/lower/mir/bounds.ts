@@ -148,7 +148,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a parameter MIR checks an element's place at is copied first, `const index = i;`, and the item a handle, where what's lent there is used after more runs (`at_once` the rest, ADR 0881, amended)",
     file: "src/lower/mir/bounds.rs",
-    find: "js::ExprKind::Var(v) if at_once || self.locals.mir.alike.contains(v.word()));\n",
+    find: "js::ExprKind::Var(v) if at_once || self.alike_local(v));\n",
     replace: "js::ExprKind::Var(v) if at_once);\n",
     tests: [
       "test/lowering-collections.test.ts",
@@ -174,8 +174,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a `const` index, `SYNC_LANE_INDEX`, is held in a variable of its own, its element a getter and a setter (ADR 0894, amended)",
     file: "src/lower/mir/bounds.rs",
-    find: "            let index_kept = index.is_fixed()\n",
-    replace: "            let index_kept = index.is_constant()\n",
+    find: "            let index_kept =\n                index.is_fixed() ||",
+    replace: "            let index_kept =\n                index.is_constant() ||",
     tests: [
       "test/lowering-bits.test.ts",
       "-t",

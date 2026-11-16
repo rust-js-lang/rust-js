@@ -171,7 +171,7 @@ pub(super) struct Found {
     /// borrowed, and of those of plain Rust data, whose fields don't change
     /// either, which `reads_alike` and `plain_field` ask of.
     /// And of the others' arrays, their items, `...items`.
-    pub(super) alike: IndexSet<String>,
+    pub(super) alike: IndexSet<js::Name>,
     pub(super) plain: IndexSet<js::Path>,
     /// Of those of plain data, each path to what they hold whose fields a
     /// getter may answer, each read anew, `p.style` (`given_paths`, #1908).
@@ -179,7 +179,7 @@ pub(super) struct Found {
     /// And those of plain Rust data written again, a `mut` parameter
     /// assigned after what it's read for: each the same until it's written
     /// (`written_before_read`, #121).
-    pub(super) settled: IndexSet<String>,
+    pub(super) settled: IndexSet<js::Name>,
     /// And the places that hold its cells, `&mut`s to what JS can't change
     /// in place: a box or a handle, whose `value` is what it points at,
     /// unlike a struct's field of that name. Its locals', by name, and a
@@ -290,11 +290,8 @@ struct Locals {
 impl Locals {
     /// Each one's name's word, of those that hold something (S4a: till S4b
     /// gives the sets of names their names).
-    fn words(&self) -> IndexSet<String> {
-        (self.names.iter())
-            .filter(|n| !n.word().is_empty())
-            .map(|n| n.word().to_string())
-            .collect()
+    fn named_locals(&self) -> IndexSet<js::Name> {
+        (self.names.iter()).filter(|n| !n.word().is_empty()).cloned().collect()
     }
 
     /// What tidy's last passes ask of them, by name: those the program
@@ -402,7 +399,7 @@ struct State<'m, 'tcx> {
     taken: Vec<Local>,
     /// The names of the body's own locals: another variable, a static's, may
     /// change by any call.
-    own_names: IndexSet<String>,
+    own_names: IndexSet<js::Name>,
     /// The cleanup the temporaries made and not yet used unwind to, if one
     /// that drops something: the statement that runs them is its `try`.
     unwind: Option<BasicBlock>,
@@ -1033,7 +1030,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .filter(|&(_, &borrowed)| borrowed)
             .map(|(local, _)| state.locals.names[local].word().to_string())
             .collect();
-        state.own_names = state.locals.words();
+        state.own_names = state.locals.named_locals();
         for (local, name) in state.locals.names.iter_enumerated() {
             if !name.word().is_empty() && self.is_cell(mir_body.local_decls[local].ty) {
                 self.locals.mir.cells.push(Expr::var(name));
@@ -1047,11 +1044,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let plain = self.plain_type(mir_body.local_decls[local].ty);
             if written_apart(&state, local, |place| self.whole(mir_body, place)) {
                 if plain {
-                    self.locals.mir.settled.insert(name.clone().into_word());
+                    self.locals.mir.settled.insert(name.clone());
                 }
                 continue;
             }
-            self.locals.mir.alike.insert(name.clone().into_word());
+            self.locals.mir.alike.insert(name.clone());
             // What's to through a `&mut` changes by what it's given to.
             let through_mut = matches!(
                 mir_body.local_decls[local].ty.kind(),

@@ -10,7 +10,7 @@ use super::*;
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether `name`, a local of the body lowered from its MIR, reads the
     /// same wherever it's read: assigned once and never borrowed.
-    pub(in crate::lower) fn alike_local(&self, name: &str) -> bool {
+    pub(in crate::lower) fn alike_local(&self, name: &js::Name) -> bool {
         self.locals.mir.alike.contains(name)
     }
 
