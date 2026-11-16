@@ -298,6 +298,20 @@ export function pick(map: TestMap, changes: Change[], files: string[], cases: st
   };
 }
 
+/** The tests the map recorded running any function of `files`, the
+ * compiler's sources: each by its unit's name, the corpus's cases
+ * `test/corpus/x.rs`. Those that run on every change, `null`, aren't
+ * said: a sanity pass's cap asks what a file's functions reach. */
+export function unitsReaching(map: TestMap, files: string[]): string[] {
+  const of = new Set(files);
+  const functions = map.functions.flatMap(({ file }, at) => (of.has(file) ? [at] : []));
+  return Object.entries(map.units).flatMap(([unit, bits]) => {
+    if (bits === null) return [];
+    const bytes = Buffer.from(bits, "base64");
+    return functions.some((f) => bytes[f >> 3]! & (1 << (f & 7))) ? [unit] : [];
+  });
+}
+
 /** Each hunk of `git diff -U0`'s, by file: its lines of the old side, and
  * the lines it writes. */
 export function hunksOf(diff: string): Change[] {

@@ -375,7 +375,13 @@ selects by the change's own diff since its merge-base with `main`, against
 the map. A src file others also changed since the map's commit can't be
 placed. Where even that says everything, the pass is capped: it runs the
 change's own test files and corpus cases, with no lint, nets or builds
-beyond the push's own build and std. The line says `capped`. Others'
+beyond the push's own build and std. The line says `capped`. **A cap is
+never empty for a change to the compiler's sources** (#1988): it takes the
+tests and cases the map, as of its commit, recorded running any function
+of the files the change touches, an approximation, `capped some (from the
+map at <sha>: N files, M cases)`; or, where that's none, the whole corpus,
+`capped corpus`. Two changes to one file, the change's and others', are
+where they most meet: m6-lily's tidy refactor's cap ran nothing. Others'
 commits were checked by their own pushes, and CI checks the combination.
 With a pass this cheap, a push that meets a moved `main` rebases and runs
 it again until it lands, with no limit.

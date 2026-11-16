@@ -82,4 +82,12 @@ export const mutations: Mutation[] = [
     replace: "      if (true) return whole(`${file} is how CI runs every test`, file);",
     tests: ["test/select.test.ts", "-t", "a workflow of the change's own"],
   },
+  {
+    name: "sanity-cap-of-code-empty",
+    breaks: "a sanity pass of a change to the compiler's sources that the selector can't say of, and the map reaches nothing of, runs only its own test files, none, not the corpus: two changes to one file went unchecked (m6-lily's tidy refactor)",
+    file: "scripts/select.ts",
+    find: '  return result([...new Set([...ownFiles, "test/corpus.test.ts"])], cases, "corpus");',
+    replace: '  return result(ownFiles, ownCases, "corpus");',
+    tests: ["test/select.test.ts", "-t", "a sanity pass's cap is never empty"],
+  },
 ];

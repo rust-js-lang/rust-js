@@ -39,7 +39,7 @@ import { join } from "node:path";
 
 import { importsOf } from "./iteratorSlice";
 import { pushSuiteFiles } from "./shard";
-import { type Change, caseFiles, hunksOf, mapStore, nearestMap, noMap, pick, readsOf, type TestMap, toolchainOf } from "./testMap";
+import { type Change, caseFiles, hunksOf, mapStore, nearestMap, noMap, pick, readsOf, type TestMap, toolchainOf, unitsReaching } from "./testMap";
 
 const root = join(import.meta.dir, "..");
 
@@ -52,7 +52,7 @@ export const selectionFile = join(root, "target", "check-fast-selection.json");
  * cases (`forms`), its net's; `all` where it can't say, every one listed.
  * `why` says why each ran, or why everything did; `allOwn` whether that
  * reason is the branch's own change, not others' since the map's commit. */
-export type Selection = { all: boolean; allOwn?: boolean; files: string[]; cases: string[]; forms: string[]; why: string; map?: string; behind?: number };
+export type Selection = { all: boolean; allOwn?: boolean; files: string[]; cases: string[]; forms: string[]; why: string; map?: string; behind?: number; capped?: string };
 
 /** What a change selects of: the push suite's test files (`suiteFiles`),
  * the corpus's cases, the map or why there's none, and, of each test file,
@@ -369,15 +369,39 @@ function differs(from: string, to: string, file: string): boolean {
   return Bun.spawnSync(["git", "diff", "--quiet", from, to, "--", file], { cwd: root }).exitCode !== 0;
 }
 
-/** Of a sanity pass whose own change the selector can't say of, the cap:
- * the test files and corpus cases the change's own files are (Tu's rule:
- * quick, then push; CI's check covers the combination). */
+/** Of a sanity pass whose own change the selector can't say of, the cap
+ * (Tu's rule: quick, then push; CI's check covers the combination): the
+ * change's own test files and corpus cases; and of a change to the
+ * compiler's sources, never none, as two changes to one file are where
+ * they most meet (m6-lily's tidy refactor's cap ran nothing): the tests
+ * and cases the map, as of its commit, recorded running any function of
+ * the files it changes, an approximation; or, where that's none, the whole
+ * corpus. `capped` says which. */
+export function capOf(changed: string[], files: string[], cases: string[], map?: TestMap): Selection {
+  const ownFiles = files.filter((file) => changed.includes(file));
+  const ownCases = cases.filter((name) => changed.some((file) => file.startsWith(`test/corpus/${name.replace(/\.rs$/, "")}.`)));
+  const sources = changed.filter((file) => file.startsWith("src/"));
+  const result = (picked: string[], picks: string[], capped: string): Selection => ({
+    all: false,
+    files: picked,
+    cases: picks,
+    forms: picks,
+    why: "the sanity pass's cap",
+    capped,
+  });
+  if (sources.length === 0) return result(ownFiles, ownCases, `some (${ownFiles.length} files, ${ownCases.length} cases)`);
+  const reached = map ? unitsReaching(map, sources) : [];
+  const mapFiles = files.filter((file) => reached.includes(file) || ownFiles.includes(file));
+  const mapCases = cases.filter((name) => reached.includes(`test/corpus/${name}`) || ownCases.includes(name));
+  if (map && reached.length > 0) return result(mapFiles, mapCases, `some (from the map at ${map.commit.slice(0, 9)}: ${mapFiles.length} files, ${mapCases.length} cases)`);
+  return result([...new Set([...ownFiles, "test/corpus.test.ts"])], cases, "corpus");
+}
+
+/** `capOf` of this checkout's change since `base`'s merge-base. */
 export function sanityCap(base = "origin/main"): Selection {
   const since = mergeBase(base);
   const changed = since === undefined ? [] : Bun.spawnSync(["git", "diff", "--name-only", since], { cwd: root, stdout: "pipe" }).stdout.toString().split("\n").filter(Boolean);
-  const files = suiteFiles().filter((file) => changed.includes(file));
-  const cases = corpusCases().filter((name) => changed.some((file) => file.startsWith(`test/corpus/${name.replace(/\.rs$/, "")}.`)));
-  return { all: false, files, cases, forms: cases, why: "the sanity pass's cap: the change's own test files and cases" };
+  return capOf(changed, suiteFiles(), corpusCases(), nearestMap(mapStore, root, toolchainOf()));
 }
 
 /** A selection in a line: `all (why)`, `some (N files, M cases)`, `none`;
@@ -388,6 +412,7 @@ export function outcome(selection: Selection): string {
 }
 
 function outcomeOf(selection: Selection): string {
+  if (selection.capped) return `capped ${selection.capped}`;
   if (selection.all) return `all (${selection.why})`;
   const files = selection.files.filter((file) => file !== caseFiles[0]).length;
   if (files === 0 && selection.cases.length === 0) return "none";

@@ -869,7 +869,7 @@ if (import.meta.main) {
     console.log(`the selection: ${outcome(selection)}${selection.all ? "" : `, of ${pushSuite} test files and ${cases.length} corpus cases: ${selection.why}`}`);
   }
   // What it selected, which `bun run push` says on its line.
-  writeFileSync(selectionFile, JSON.stringify({ outcome: `${capped ? "capped " : ""}${outcome(selection)}`, all: selection.all, allOwn: selection.allOwn ?? null }));
+  writeFileSync(selectionFile, JSON.stringify({ outcome: outcome(selection), all: selection.all, allOwn: selection.allOwn ?? null }));
   // Of a change to the iterators' code, the rows of their tables it names,
   // which size its job (#1364): some 0.1 s.
   const rows = touchesIterators([...changed, ...branch])

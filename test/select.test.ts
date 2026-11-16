@@ -12,7 +12,7 @@ import { jobs } from "../scripts/checkFast";
 import { onlyPushedFiles, phases as pushPhases, timesLine } from "../scripts/push";
 import { whoRuns } from "../scripts/disk";
 import { failedIn, misses } from "../scripts/selector-audit";
-import { baselines, osBranches, outcome, reachOf, type Reach, select, type Selection, suiteFiles } from "../scripts/select";
+import { baselines, capOf, osBranches, outcome, reachOf, type Reach, select, type Selection, suiteFiles } from "../scripts/select";
 import { readsSources, type TestMap } from "../scripts/testMap";
 import { root } from "./support";
 
@@ -173,6 +173,24 @@ test("a baseline a test reads by a path its source doesn't spell picks its owner
   const owners = (file: string) => baselines.filter(({ path }) => new Bun.Glob(path).match(file)).flatMap(({ owners }) => owners);
   expect(owners("test/snapshots/std/iterators.js")).toEqual(["test/snapshots.test.ts", "test/readability.test.ts"]);
   for (const { owners } of baselines) for (const owner of owners) expect(suiteFiles()).toContain(owner);
+});
+
+// A sanity pass the selector can't say of is capped: the change's own
+// test files and cases; and of a change to the compiler's sources never
+// none, as two changes to one file are where they most meet: m6-lily's
+// tidy refactor, rebased onto others' edits to the same tidy.rs, was
+// capped to its own test files, none, and ran nothing.
+test("a sanity pass's cap is never empty for the compiler's code: the map's tests of its files, else the corpus", () => {
+  expect(capOf(["test/one.test.ts", "docs/notes.md"], files, cases, map)).toMatchObject({ files: ["test/one.test.ts"], cases: [], capped: "some (1 files, 0 cases)" });
+  // Its files' functions, as the map recorded them, approximate.
+  const fromMap = capOf(["src/a.rs"], files, cases, map);
+  expect([fromMap.files, fromMap.cases, fromMap.capped]).toEqual([["test/one.test.ts", "test/two.test.ts"], ["x.rs"], "some (from the map at 0: 2 files, 1 cases)"]);
+  // A file the map has no function of, one others changed too: the corpus.
+  for (const given of [map, undefined]) {
+    const corpus = capOf(["src/lower/mir/tidy.rs"], files, cases, given);
+    expect([corpus.files, corpus.cases, corpus.capped]).toEqual([["test/corpus.test.ts"], cases, "corpus"]);
+    expect(outcome(corpus)).toBe("capped corpus");
+  }
 });
 
 test("a selection says itself in a line: all and why, some and how many, or none", () => {
