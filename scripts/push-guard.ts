@@ -35,9 +35,9 @@ function git(cwd: string, args: string[], env: Record<string, string> = {}, inpu
  * with all its context: one's own edit within three lines of another's
  * change isn't read as undoing it, as `-C1` read the removal of a refusal's
  * test case once it compiled (34ab92bb2's) beside others' (2026-11-09). */
-function appliesTo(cwd: string, commit: string, patch: string, index: string): boolean {
+function appliesTo(cwd: string, commit: string, patch: string, index: string, reverse = false): boolean {
   const env = { GIT_INDEX_FILE: index };
-  return git(cwd, ["read-tree", commit], env) !== undefined && git(cwd, ["apply", "--cached", "--check", "-"], env, patch) !== undefined;
+  return git(cwd, ["read-tree", commit], env) !== undefined && git(cwd, ["apply", "--cached", "--check", ...(reverse ? ["-R"] : []), "-"], env, patch) !== undefined;
 }
 
 /** The blob `file` is at `commit`, or `-` where it isn't there. */
@@ -66,7 +66,12 @@ export function undone(cwd: string, remote: string, local: string, { now = Date.
       const patch = git(cwd, ["diff", "--binary", "--no-renames", `${commit}^`, commit]);
       if (!patch) continue;
       const index = join(scratch, commit);
-      if (appliesTo(cwd, local, `${patch}\n`, `${index}.local`) && !appliesTo(cwd, remote, `${patch}\n`, `${index}.remote`)) {
+      // And the remote still has it, its change taken off again there: a
+      // commit a later one undid, 24e269c11's section that 11084981b took
+      // off, doesn't apply to the remote either, where its section was at
+      // the file's end and another's follows it now (#2009).
+      const has = appliesTo(cwd, remote, `${patch}\n`, `${index}.has`, true);
+      if (has && appliesTo(cwd, local, `${patch}\n`, `${index}.local`) && !appliesTo(cwd, remote, `${patch}\n`, `${index}.remote`)) {
         const files = (git(cwd, ["diff", "--name-only", "--no-renames", `${commit}^`, commit]) ?? "").split("\n").filter(Boolean);
         for (const file of files) found.push({ file, commit, subject: words.join(" ") });
       }
@@ -77,14 +82,21 @@ export function undone(cwd: string, remote: string, local: string, { now = Date.
   for (const file of changed) {
     const pushed = blob(cwd, local, file);
     const history = (git(cwd, ["log", `-n${recent}`, "--format=%H %ct %s", remote, "--", file]) ?? "").split("\n").filter(Boolean);
+    // What a later commit of the remote's made the file, newest first: a
+    // file as it was before a commit that a later one put back already,
+    // as 11084981b took off the section 24e269c11 added, undoes nothing
+    // of it (#2009).
+    const later = new Set<string>();
     for (const line of history) {
       const [commit, time, ...words] = line.split(" ");
       if (now - Number(time) > day) break;
       const before = blob(cwd, `${commit}^`, file);
-      if (before === pushed && blob(cwd, commit, file) !== pushed && !named(commit)) {
+      const after = blob(cwd, commit, file);
+      if (before === pushed && after !== pushed && !later.has(pushed) && !named(commit)) {
         if (!found.some((u) => u.file === file && u.commit === commit)) found.push({ file, commit, subject: words.join(" ") });
         break;
       }
+      later.add(after);
     }
   }
   return found;

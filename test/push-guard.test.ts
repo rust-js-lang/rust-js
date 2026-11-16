@@ -73,6 +73,31 @@ test("a push that undoes another's lines in files it edits too is refused, but a
   expect(undone(dir, own, rewrite)).toEqual([]);
 });
 
+test("a file as it was before a commit that a later commit already undid undoes neither (#2009)", () => {
+  const dir = fixture("push-guard-undone-already");
+  const git = (...args: string[]) => run(["git", "-c", "user.name=t", "-c", "user.email=t@t", ...args], undefined, { GIT_DIR: join(dir, ".git"), GIT_WORK_TREE: dir }).trim();
+  git("init", "-q", "-b", "main");
+  const commit = (message: string, files: Record<string, string>) => {
+    for (const [name, text] of Object.entries(files)) writeFileSync(join(dir, name), text);
+    git("add", "-A");
+    git("commit", "-q", "-m", message);
+    return git("rev-parse", "HEAD");
+  };
+  commit("base", { "known.txt": "a\n" });
+  // One appends a section, a later one takes it off, a third appends another.
+  commit("appends #1976", { "known.txt": "a\n#1976\n" });
+  commit("fixes #1976", { "known.txt": "a\n" });
+  const appended = commit("appends #2007", { "known.txt": "a\n#2007\n" });
+  // The fix of #2007 takes its section off: the file is as it was before
+  // the first append, which the second commit undid already.
+  const fix = commit(`fixes #2007, as ${appended.slice(0, 9)} said`, { "known.txt": "a\n" });
+  expect(undone(dir, appended, fix)).toEqual([]);
+  // Unnamed, it undoes the newest append alone.
+  git("checkout", "-q", appended);
+  const unnamed = commit("fixes #2007", { "known.txt": "a\n" });
+  expect(undone(dir, appended, unnamed).map((u) => u.commit)).toEqual([appended]);
+});
+
 test("the guard runs before a push", () => {
   expect(JSON.parse(readFileSync(join(root, "package.json"), "utf8")).scripts.prepare).toBe("git config core.hooksPath .githooks");
   expect(readFileSync(join(root, ".githooks", "pre-push"), "utf8")).toContain("scripts/push-guard.ts");
