@@ -65,7 +65,7 @@ fn split_decided(otherwise: &mut Vec<Stmt>, test: &Expr, written: &[js::Span]) {
     };
     let condition = |s: js::Span| super::logicals::written_if(written, s);
     let one_condition = !t.span.is_none() && condition(t.span).is_some() && condition(t.span) == condition(test.span);
-    if !one_condition || decided(t, test, false) != Some(true) || disturbs(t, test) {
+    if !one_condition || !negates(t, test) || disturbs(t, test) {
         return;
     }
     let StmtKind::If(_, then, _) = otherwise.remove(0).kind else {
@@ -232,11 +232,10 @@ fn decided_part(t: &Expr, test: &Expr, holds: bool) -> Option<Expr> {
 /// variant's tag tested inside a test of another variant (#1954). Of texts
 /// alone: two numbers written apart may be one value, `0` and `-0`.
 fn decided(t: &Expr, test: &Expr, holds: bool) -> Option<bool> {
-    let same = |a: &Expr, b: &Expr| same_test(a, b) || a.written_alike(b);
-    if same(t, test) {
+    if alike(t, test) {
         return Some(holds);
     }
-    if same(&t.clone().negated_test(), test) {
+    if negates(t, test) {
         return Some(!holds);
     }
     let (subject, text, equal) = against_a_text(test)?;
@@ -245,6 +244,19 @@ fn decided(t: &Expr, test: &Expr, holds: bool) -> Option<bool> {
     }
     let (of, other, equal) = against_a_text(t)?;
     (of.written_alike(subject) && other != text).then_some(!equal)
+}
+
+/// Whether `a` is the test `b` is, as written or as MIR made it.
+fn alike(a: &Expr, b: &Expr) -> bool {
+    same_test(a, b) || a.written_alike(b)
+}
+
+/// Whether `t` is `test`'s negation: `if (!t)` in the `else` of `if (t)`,
+/// which `split_decided` takes as holding there. Never a test of another
+/// text, which #1954's `decided` decides elsewhere: MIR's split of one
+/// written test is of one value (#1972).
+fn negates(t: &Expr, test: &Expr) -> bool {
+    alike(&t.clone().negated_test(), test)
 }
 
 /// Of `x === "A"`, `x`, `"A"` and that it's `===`; of `x !== "A"`, the
@@ -323,5 +335,15 @@ mod tests {
         let n = |k: f64| Expr::bin(Op::Eq, Expr::var("n"), Expr::num(k));
         assert_eq!(decided(&n(1.0), &n(0.0), true), None);
         assert_eq!(decided(&n(-0.0), &n(0.0), true), Some(true));
+    }
+
+    /// MIR's split of one written test takes only its negation as holding
+    /// in the `else`: a test of another text, which `decided` decides
+    /// there, is no split of the same test (#1972, #1954).
+    #[test]
+    fn a_split_is_of_the_negation_alone() {
+        assert!(negates(&tag("A", false), &tag("A", true)));
+        assert!(!negates(&tag("B", true), &tag("A", false)));
+        assert_eq!(decided(&tag("B", true), &tag("A", false), false), Some(false));
     }
 }
