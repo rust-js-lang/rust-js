@@ -6,23 +6,26 @@ name: test map
 # (check.yml's `plan`) and `bun run push` (scripts/select.ts), and each
 # mutation shard's snapshot judge (ADR 0093, amended).
 #
-# Of each check of `main` that completes, red or green (a red commit's
-# failing tests are `null`, run on every change), HEAD's map, in a run of
-# its own after the check's, so it never takes a machine from a check's own
-# jobs; one run at a time, the running one never cancelled, and of those
-# waiting only the newest kept (GitHub replaces a pending run of the group
-# with the next): checks of `main` end about every 10 min and a recording
-# takes longer, so cancelling the running one cancelled every one, and no
-# map was recorded for 9 commits (ADR 1101, amended). Kept in the Actions cache
+# Of each push to `main` that changes what a test runs (`paths`), HEAD's
+# map (a failing test's units are `null`, run on every change), beside the
+# push's check: started after the check ended, 22–28 min, and taking 10–17
+# min, the map trailed some 40 min of pushes, 10 to 16 commits behind each
+# push's line; the check's suite, on one machine of a small selection, now
+# leaves it room. One run at a time, the running one never cancelled, and
+# of those waiting only the newest kept (GitHub replaces a pending run of
+# the group with the next): cancelling the running one cancelled every one,
+# and no map was recorded for 9 commits (ADR 1101, amended). Kept in the Actions cache
 # by its commit, `test-map-<os>-<toolchain>-<sha>`, one map each, the
 # newest 8 (about 22 MB each, test-map-prune.yml); `bun run push` downloads the newest of an
 # ancestor of its HEAD (`fetchMap`). Called by rustc-tests.yml's mutations,
 # the map of HEAD or an ancestor kept, or HEAD's recorded where none is.
 on:
-  workflow_run:
-    workflows: [Check]
-    types: [completed]
+  push:
     branches: [main]
+    paths:
+      - '**'
+      - '!docs/**'
+      - '!**/*.md'
   workflow_call:
     inputs:
       of:
@@ -35,12 +38,12 @@ permissions:
   actions: read
 
 concurrency:
-  group: ${{ github.event_name == 'workflow_run' && 'test-map' || format('test-map-{0}-{1}', github.run_id, github.workflow) }}
+  group: ${{ github.event_name == 'push' && 'test-map' || format('test-map-{0}-{1}', github.run_id, github.workflow) }}
   cancel-in-progress: false
 
 env:
-  # The commit the map is of: the check's, or the caller's.
-  SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+  # The commit the map is of: the push's, or the caller's.
+  SHA: ${{ github.sha }}
 
 jobs:
   # The map kept, or the counting build and the plan of its recording, in
@@ -69,7 +72,7 @@ jobs:
       - name: The map kept, or the counting build and the plan of its recording
         id: map
         env:
-          OF: ${{ github.event_name == 'workflow_run' && 'head' || inputs.of }}
+          OF: ${{ github.event_name == 'push' && 'head' || inputs.of }}
           SHARDS: '8'
         run: |
           if [ "$OF" = "head" ]; then of=--head; else of=; fi
@@ -85,7 +88,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           # Of main's check, by its commit, which `bun run push` fetches (`fetchMap`).
-          name: ${{ github.event_name == 'workflow_run' && format('test-map-of-{0}', env.SHA) || 'test-map' }}
+          name: ${{ github.event_name == 'push' && format('test-map-of-{0}', env.SHA) || 'test-map' }}
           path: .cache/test-maps
           include-hidden-files: true
           retention-days: 3
@@ -180,7 +183,7 @@ jobs:
       - uses: actions/upload-artifact@v7
         with:
           # Of main's check, by its commit, which `bun run push` fetches (`fetchMap`).
-          name: ${{ github.event_name == 'workflow_run' && format('test-map-of-{0}', env.SHA) || 'test-map' }}
+          name: ${{ github.event_name == 'push' && format('test-map-of-{0}', env.SHA) || 'test-map' }}
           path: .cache/test-maps
           include-hidden-files: true
           retention-days: 3

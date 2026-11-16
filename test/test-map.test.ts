@@ -394,8 +394,8 @@ test("the merge of a recording's parts is the map of one part's recording", () =
 // CI's test map is the kept one, `kept`'s, or recorded in parts on many
 // machines and merged (test-map.yml, the one recording): the parts and the
 // merge are jobs only where none is kept, skipped outright where one is.
-// Of each check of `main` it records HEAD's, in a run of its own after the
-// check's (`workflow_run`), one at a time, the newest cancelling the rest,
+// Of each push to `main` that changes what a test runs it records HEAD's,
+// beside the push's check, not after it, one at a time, the newest waiting,
 // named by its commit for `bun run push` to fetch; rustc-tests.yml's
 // mutations call it, and wait for it. One way to ask whether one's kept:
 // `ensure`, which recorded it on one machine, 38.6 min (check
@@ -409,7 +409,9 @@ test("CI's test map is the kept one, or recorded in parts and merged where none 
     return text.slice(at, end === -1 ? undefined : end);
   };
   const on = (Bun.YAML.parse(map) as { on: Record<string, unknown> }).on;
-  expect(on.workflow_run).toEqual({ workflows: ["Check"], types: ["completed"], branches: ["main"] });
+  // Beside the check, not after it: the map trailed some 40 min of pushes.
+  expect(on.push).toEqual({ branches: ["main"], paths: ["**", "!docs/**", "!**/*.md"] });
+  expect(Object.keys(on)).not.toContain("workflow_run");
   expect(Object.keys(on)).toContain("workflow_call");
   // The running recording is never cancelled, or one a check's end
   // cancelled every one (no map for 9 commits); of those waiting, GitHub

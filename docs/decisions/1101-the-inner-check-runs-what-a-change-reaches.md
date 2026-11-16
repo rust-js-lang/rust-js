@@ -419,8 +419,16 @@ check select everything, "scripts/select.ts is what every test runs under
 (others' since the map's commit)".
 
 Every push's line says the map it selected by and how far behind HEAD it
-is (`map <sha> N behind`). If that is often past about 8, the map should
-be recorded as a check starts, not after it ends. The line says who ran it
+is (`map <sha> N behind`). It was often past 8: 10 at the median and 16
+at most of the Mac mini's ten push lines of 2026-11-16, since the
+recording started only once a check ended, 22–28 min, and took 10–17 min.
+**So the map is recorded on each push to `main` that changes what a test
+runs, beside the push's check** (test-map.yml's `push` trigger, `paths`
+without `docs/**` and `*.md`). It's still one recording at a time, the
+running one never cancelled and only the newest waiting one kept. The
+check's suite takes one machine of a small selection, which leaves room
+for it. The lag and the 20-job cap's minutes before and after are in
+#1989. The line says who ran it
 by `RUST_JS_MACHINE` and `RUST_JS_AGENT`, each machine's sessions' own
 (`whoRuns`), else the host's name with a note. It's written on every exit,
 including a signal's.
