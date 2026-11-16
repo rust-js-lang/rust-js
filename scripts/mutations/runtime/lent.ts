@@ -14,8 +14,8 @@ export const mutations: Mutation[] = [
     name: "lent-nth-drop-unpassed",
     breaks: "a lent iterator's `nth` doesn't pass on the items' drop, so a chain's `nth` past a compiled `fuse()`'s items never drops them (#285)",
     file: "src/runtime/lent.js",
-    find: "      pass(name, called(name));\n",
-    replace: "      pass(name, name === \"nth\" ? () => it.nth && ((k) => it.nth(k)) : called(name));\n",
+    find: "    nth: passed(\"nth\"),\n",
+    replace: "    nth: it.nth && ((k) => it.nth(k)),\n",
     tests: ["test/corpus.test.ts", "-t", "^(chain_nth_drops_what_it_passes|own_nth_last_dropping).rs$"],
   },
   {
@@ -54,8 +54,8 @@ export const mutations: Mutation[] = [
     name: "lent-try-fold-unwind-lost",
     breaks: "a `&mut`'s `try_fold` gives what it lends no `unwind`: a stage's panic leaves the accumulator undropped (#423)",
     file: "src/runtime/lent.js",
-    find: "      pass(name, called(name));\n",
-    replace: "      pass(name, name === \"tryFold\" ? () => it.tryFold && ((init, f, broke) => it.tryFold(init, f, broke)) : called(name));\n",
+    find: "    tryFold: passed(\"tryFold\"),\n",
+    replace: "    tryFold: it.tryFold && ((init, f, broke) => it.tryFold(init, f, broke)),\n",
     tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^generic_folds_unwind.rs$|^panic_mid_fold_drops with"],
   },
   {
@@ -96,8 +96,8 @@ export const mutations: Mutation[] = [
     name: "lent-struct-steps-of-its-struct",
     breaks: "a compiled std struct lent as a `&mut dyn` reads the steps it doesn't pass on, its `rfold`, from the struct, where std's unsized `&mut I` takes the default (#1991)",
     file: "src/runtime/lent.js",
-    find: "    const of = (target, key) => (Object.hasOwn(target, key) || step(key) || !Object.hasOwn(it, key) ? target : it);\n",
-    replace: "    const of = (target, key) => (Object.hasOwn(target, key) || !Object.hasOwn(it, key) ? target : it);\n",
+    find: "        if (!passes.includes(step)) return target[key];\n",
+    replace: "        if (!passes.includes(step)) return it[key];\n",
     tests: ["test/corpus.test.ts", "-t", "^lent_iterator_folded_as_std_passes_it_on.rs$"],
   },
 ];

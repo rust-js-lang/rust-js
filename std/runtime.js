@@ -22331,6 +22331,10 @@ export const $passedOn = {
 // `count` and `last`, which it doesn't.
 export const $stepNames = /* @__PURE__ */ (() => new Set(["count", "last"].concat($passedOn.lent, $passedOn.lentUnsized, $passedOn.boxed)))();
 
+// And what says each is its own, `ownRfold` (`$ownStep`), and of which.
+export const $stepOf = /* @__PURE__ */ (() => new Map(Array.from($stepNames, (step) => [`own${step[0].toUpperCase()}${step.slice(1)}`, step])))();
+export const $ownStepNames = /* @__PURE__ */ (() => new Set($stepOf.keys()))();
+
 // A JS iterator lent as a `&mut` (ADR 0071), of a sized iterator or not,
 // `kind`, `$passedOn`'s: it steps `it`, and what takes from it and stops
 // early, as `take` or a loop that breaks does, closes this, not `it`,
@@ -22349,38 +22353,32 @@ export function $lent(it, kind = "lent") {
   // a consumer that takes it by value does, so its lender's would be
   // dropped at its first `None` (#1508).
   if (typeof it.next !== "function") it = Iterator.from(it);
+  const passes = $passedOn[kind];
+  const passed = (step) => (passes.includes(step) ? step : undefined);
   // A `Box<I>`'s, `boxed`, owns `it`: closing it closes `it` (#1995).
   const owns = kind === "boxed" || kind === "boxedUnsized";
-  const lent = new $Steps(() => it.next(), owns ? () => it.return?.() : undefined);
-  // Each step it passes on, `it`'s as `it` is when it's asked, so one a
-  // compiled struct is given after, its `knowing`'s back, is too; where
-  // `it` has none, std's default, `$Steps`'. Written over, it's what's
-  // written, as an adapter's own step is.
-  const defaults = Object.getPrototypeOf(lent);
-  const pass = (name, step) =>
-    Object.defineProperty(lent, name, {
-      get: () => step() ?? defaults[name],
-      set: (value) => Object.defineProperty(lent, name, { value, writable: true, configurable: true, enumerable: true }),
-      configurable: true,
-      enumerable: true,
-    });
-  const called = (name) => () => (it[name] === undefined ? undefined : (...args) => it[name](...args));
-  for (const name of $passedOn[kind]) {
-    if (name === "next" || name === "sizeHint") continue;
-    // Its `fold` and `rfold`, `it`'s `try_fold` and `try_rfold`, never
-    // stopped.
-    if (name === "fold") pass(name, () => (it.tryFold === undefined ? undefined : (init, f, unwind) => it.tryFold(init, f, () => false, unwind)));
-    else if (name === "rfold") pass(name, () => (it.tryRfold === undefined ? undefined : (init, f, unwind, ends) => it.tryRfold(init, f, () => false, unwind, ends)));
-    // Its `advance_by` and `advance_back_by`, `it`'s own where it has one
-    // (ADR 0913); else std's default, which `it`'s would be too.
-    else if (name === "advanceBy" || name === "advanceBackBy") pass(name, () => (Object.hasOwn(it, name) ? (...args) => it[name](...args) : undefined));
-    else {
-      pass(name, called(name));
-      // And whether it's `it`'s own, the crate's, which drops what it
-      // passes itself (ADR 1092 §4).
-      pass($ownStep(name), () => it[$ownStep(name)]);
-    }
-  }
+  // Each step it passes on that `it` has, as `$forward` gives one, its own
+  // where `it`'s is: its `advance_by` and `advance_back_by` where `it` has
+  // its own (ADR 0913); its `fold` and `rfold`, where passed on, `it`'s
+  // `try_fold` and `try_rfold`, never stopped. Given once, as a lend is
+  // made: a compiled `filter`'s `next` lends its source each step, and a
+  // getter of each step on each lend held runtime_long_writes past its
+  // 10 s (2026-11-17).
+  const fold = (init, f, unwind, ends) => it.tryFold(init, f, () => false, unwind, ends);
+  const rfold = (init, f, unwind, ends) => it.tryRfold(init, f, () => false, unwind, ends);
+  const lent = $forward(new $Steps(() => it.next(), owns ? () => it.return?.() : undefined), it, {
+    nth: passed("nth"),
+    advanceBy: passed("advanceBy") && Object.hasOwn(it, "advanceBy") ? "advanceBy" : undefined,
+    tryFold: passed("tryFold"),
+    fold: passed("fold") && it.tryFold !== undefined ? fold : undefined,
+    last: passed("last"),
+    nthBack: passed("nthBack"),
+    advanceBackBy: passed("advanceBackBy") && Object.hasOwn(it, "advanceBackBy") ? "advanceBackBy" : undefined,
+    tryRfold: passed("tryRfold"),
+    rfold: passed("rfold") && it.tryRfold !== undefined ? rfold : undefined,
+  });
+  if (passed("back") && it.back !== undefined) lent.back = () => it.back();
+  if (passed("len") && it.len !== undefined) lent.len = () => it.len();
   // Its `size_hint`, `it`'s, as std's `&mut I` passes it on (#745).
   lent.sizeHint = () => $sizeHint(it);
   // What it lends, whose facts are its own: `$slicing` gives it its
@@ -22390,16 +22388,27 @@ export function $lent(it, kind = "lent") {
   // written through it, so its compiled bodies step `it` where it is, as
   // std's `&mut I` steps its `I`; what stops early closes `lent`, not it.
   if (it.$steps !== undefined) {
-    // Its own steps first, then `it`'s fields, `iter` and `count$`, which
-    // a helper's name never hides (ADR 0912). Never a step of `it`'s it
-    // doesn't pass on, nor what says one is its own, `ownRfold`: an
-    // unsized one's `rfold`, std's default, isn't its struct's (#1991).
-    const step = (key) => typeof key === "string" && ($stepNames.has(key) || /^own[A-Z]/.test(key));
-    const of = (target, key) => (Object.hasOwn(target, key) || step(key) || !Object.hasOwn(it, key) ? target : it);
+    // Its own first; then a step it passes on, or what says one is `it`'s
+    // own, `it`'s as it is now, a back its `knowing` gives after it's lent
+    // (ADR 0912), its `fold` and `rfold` by `it`'s `try_fold`s; never a step
+    // it doesn't pass on, an unsized one's `rfold`, std's default (#1991);
+    // and `it`'s fields, `iter` and `count$`, which a helper's name never
+    // hides.
+    const late = { fold: () => it.tryFold !== undefined && fold, rfold: () => it.tryRfold !== undefined && rfold };
+    const get = (target, key) => {
+      if (Object.hasOwn(target, key)) return target[key];
+      if ($stepNames.has(key) || $ownStepNames.has(key)) {
+        const step = $ownStepNames.has(key) ? $stepOf.get(key) : key;
+        if (!passes.includes(step)) return target[key];
+        if (key === step && late[key] !== undefined) return late[key]() || undefined;
+        return it[key];
+      }
+      return (Object.hasOwn(it, key) ? it : target)[key];
+    };
     return new Proxy(lent, {
-      get: (target, key) => of(target, key)[key],
+      get,
       set: (target, key, value) => {
-        of(target, key)[key] = value;
+        (Object.hasOwn(target, key) || !Object.hasOwn(it, key) ? target : it)[key] = value;
         return true;
       },
     });
