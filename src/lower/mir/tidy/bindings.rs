@@ -938,7 +938,7 @@ pub(super) fn declared_in_branches(name: &js::Name, chain: &mut Stmt) -> bool {
 /// turn first, `let y = match x { 0 => continue, .. }`'s (`assigned_on`).
 /// `past`, of each block around, whether its `break` goes where nothing
 /// reads it unassigned.
-pub(super) fn assigned_first(stmts: &[Stmt], name: &js::Name, past: &[(String, bool)]) -> bool {
+pub(super) fn assigned_first(stmts: &[Stmt], name: &js::Name, past: &[(Option<js::Name>, bool)]) -> bool {
     let names = |s: &Stmt| js::mentions_of(std::slice::from_ref(s), name) > 0;
     let Some(at) = stmts.iter().position(names) else {
         return false;
@@ -971,8 +971,8 @@ pub(super) fn assigned_first(stmts: &[Stmt], name: &js::Name, past: &[(String, b
 }
 
 /// `past` and the block `label`, whose `break` goes where `ok` says.
-fn within(past: &[(String, bool)], label: &str, ok: bool) -> Vec<(String, bool)> {
-    past.iter().cloned().chain([(label.to_string(), ok)]).collect()
+fn within(past: &[(Option<js::Name>, bool)], label: Option<&js::Name>, ok: bool) -> Vec<(Option<js::Name>, bool)> {
+    past.iter().cloned().chain([(label.cloned(), ok)]).collect()
 }
 
 /// Whether each way through `stmts` that goes on past them assigns `name`
@@ -981,10 +981,15 @@ fn within(past: &[(String, bool)], label: &str, ok: bool) -> Vec<(String, bool)>
 /// `continue`, `return`, `throw` or the loop's own `break`, doesn't go on;
 /// one that `break`s a block or a loop inside the turn goes where `past`
 /// says, by its label, `""` the innermost loop's (`within`).
-pub(super) fn assigned_on(stmts: &[Stmt], name: &js::Name, after: bool, past: &[(String, bool)]) -> bool {
+pub(super) fn assigned_on(stmts: &[Stmt], name: &js::Name, after: bool, past: &[(Option<js::Name>, bool)]) -> bool {
     let names = |s: &Stmt| js::mentions_of(std::slice::from_ref(s), name) > 0;
     // Where a `break` of `label` goes is fine: one of none here leaves the turn.
-    let broken_ok = |label: &str| past.iter().rev().find(|(l, _)| l == label).is_none_or(|(_, ok)| *ok);
+    let broken_ok = |label: Option<&js::Name>| {
+        past.iter()
+            .rev()
+            .find(|(l, _)| l.as_ref() == label)
+            .is_none_or(|(_, ok)| *ok)
+    };
     for (k, stmt) in stmts.iter().enumerate() {
         if names(stmt) {
             let on = || assigned_on(&stmts[k + 1..], name, after, past);
@@ -1000,15 +1005,15 @@ pub(super) fn assigned_on(stmts: &[Stmt], name: &js::Name, after: bool, past: &[
                 }
                 StmtKind::Labeled(label, body) => {
                     let on = on();
-                    assigned_on(body, name, on, &within(past, label.word(), on))
+                    assigned_on(body, name, on, &within(past, Some(label), on))
                 }
                 // A loop it leaves only by its `break`s, each of which goes on
                 // set, or to what sets it: its end goes round again.
                 StmtKind::While { cond, body, label } if matches!(cond.kind, ExprKind::Bool(true)) => {
                     let on = on();
-                    let inner = within(past, "", on);
+                    let inner = within(past, None, on);
                     let inner = match label {
-                        Some(label) => within(&inner, label.word(), on),
+                        Some(label) => within(&inner, Some(label), on),
                         None => inner,
                     };
                     assigned_on(body, name, true, &inner)
@@ -1018,17 +1023,17 @@ pub(super) fn assigned_on(stmts: &[Stmt], name: &js::Name, after: bool, past: &[
         }
         match &stmt.kind {
             StmtKind::Continue(_) | StmtKind::Return(_) | StmtKind::Throw(_) => return true,
-            StmtKind::Break(label) => return broken_ok(label.as_ref().map(|n| n.word()).unwrap_or_default()),
+            StmtKind::Break(label) => return broken_ok(label.as_ref()),
             _ => {}
         }
         // What it names nothing in may `break` a block or a loop it's in,
         // unset.
         let one = std::slice::from_ref(stmt);
-        let innermost = past.iter().rposition(|(l, _)| l.is_empty());
+        let innermost = past.iter().rposition(|(l, _)| l.is_none());
         let unset = past.iter().enumerate().any(|(i, (label, ok))| {
-            !ok && match label.as_str() {
-                "" => Some(i) == innermost && js::breaks(one, None),
-                label => js::names_break(one, label),
+            !ok && match label {
+                None => Some(i) == innermost && js::breaks(one, None),
+                Some(label) => js::names_break(one, label),
             }
         });
         if unset {

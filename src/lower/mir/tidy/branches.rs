@@ -340,7 +340,7 @@ pub(super) fn branch_values(
             // { if (a) { if (b) { s; break l; } } t }`, `&&`'s, `if (a && b) {
             // s } else { t }`, whose branches `written`'s stage puts back in
             // the order the program wrote them (ADRs 0683, 0879).
-            StmtKind::Labeled(label, body) if let Some((tests, otherwise, then)) = or_chain(&body, label.word()) => {
+            StmtKind::Labeled(label, body) if let Some((tests, otherwise, then)) = or_chain(&body, &label) => {
                 span = made_where(span, &body);
                 let test = (tests.into_iter())
                     .rev()
@@ -354,7 +354,7 @@ pub(super) fn branch_values(
                     }
                 }
             }
-            StmtKind::Labeled(label, body) => match chain(&body, label.word()) {
+            StmtKind::Labeled(label, body) => match chain(&body, &label) {
                 Some((tests, x, yes, no)) => {
                     let test = (tests.into_iter())
                         .rev()
@@ -537,7 +537,7 @@ pub(super) fn assigned_only(stmts: &[Stmt]) -> Option<(&js::Name, &Expr)> {
 
 /// Of `l: { if (a) { if (b) { x = t; break l; } } x = f; }`: its tests,
 /// `[a, b]`, `x`, `t` and `f`.
-pub(super) fn chain(body: &[Stmt], label: &str) -> Option<(Vec<Expr>, String, Expr, Expr)> {
+pub(super) fn chain(body: &[Stmt], label: &js::Name) -> Option<(Vec<Expr>, String, Expr, Expr)> {
     let [
         Stmt {
             kind: StmtKind::If(test, inner, None),
@@ -783,7 +783,7 @@ pub(super) fn or_all(a: Expr, b: Expr) -> Expr {
 }
 
 /// Of `if (b) { x = t; break l; }`, nested: its tests, `x` and `t`.
-pub(super) fn inner_chain(stmts: &[Stmt], label: &str) -> Option<(Vec<Expr>, String, Expr)> {
+pub(super) fn inner_chain(stmts: &[Stmt], label: &js::Name) -> Option<(Vec<Expr>, String, Expr)> {
     match stmts {
         [
             assign,
@@ -791,7 +791,7 @@ pub(super) fn inner_chain(stmts: &[Stmt], label: &str) -> Option<(Vec<Expr>, Str
                 kind: StmtKind::Break(Some(l)),
                 ..
             },
-        ] if l.is(label) => {
+        ] if l == label => {
             let (x, yes) = assigned_only(std::slice::from_ref(assign))?;
             Some((Vec::new(), x.to_string(), yes.clone()))
         }

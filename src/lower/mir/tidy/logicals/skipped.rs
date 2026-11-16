@@ -61,7 +61,7 @@ pub(in crate::lower::mir::tidy) fn skipped_test(
         on: lets,
         names: Vec::new(),
     };
-    let (test, then, span) = skipped(body, label.word(), &within, &mut hoisting)?;
+    let (test, then, span) = skipped(body, label, &within, &mut hoisting)?;
     let mut stmts: Vec<Stmt> = (hoisting.names.into_iter())
         .map(|name| StmtKind::Let(name, None).at(js::Span::NONE))
         .collect();
@@ -100,7 +100,7 @@ impl Hoisting {
 /// nothing (ADR 0946, amended).
 fn skipped(
     body: &[Stmt],
-    label: &str,
+    label: &js::Name,
     within: &dyn Fn(js::Span) -> bool,
     hoisting: &mut Hoisting,
 ) -> Option<(Expr, Vec<Stmt>, js::Span)> {
@@ -210,7 +210,7 @@ enum Truth {
 /// `if ((next = node.firstChild) === null)` (ReactDOMSelection.js:76, 96;
 /// A1, the user's decision, 2026-11-04). Each runs where it ran: the ones
 /// before it are read in their places or set before it.
-fn falls(stmts: &[Stmt], label: &str, hoisting: &mut Hoisting) -> Option<Truth> {
+fn falls(stmts: &[Stmt], label: &js::Name, hoisting: &mut Hoisting) -> Option<Truth> {
     if stmts.iter().any(|s| matches!(s.kind, StmtKind::Const(..))) {
         let mut read = stmts.to_vec();
         let mut before = read.len();
@@ -266,7 +266,7 @@ fn falls(stmts: &[Stmt], label: &str, hoisting: &mut Hoisting) -> Option<Truth> 
                 done.push(Expr::assigned(target.clone(), value.clone()));
                 continue;
             }
-            StmtKind::Break(Some(l)) if l.is(label) => after(&mut done, Truth::Never),
+            StmtKind::Break(Some(l)) if l == label => after(&mut done, Truth::Never),
             StmtKind::If(test, then, otherwise) => {
                 let yes = falls(then, label, hoisting)?;
                 let no = falls(otherwise.as_deref().unwrap_or_default(), label, hoisting)?;

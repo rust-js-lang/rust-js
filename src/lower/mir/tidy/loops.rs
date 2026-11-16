@@ -222,14 +222,14 @@ pub(super) fn for_of(
         StmtKind::If(test, then, None) if present(test, item) => (rest.to_vec(), then.clone(), true),
         _ => return None,
     };
-    if !exit.last().is_some_and(ends) || breaks(&inner, label.as_ref().map(|n| n.word())) {
+    if !exit.last().is_some_and(ends) || breaks(&inner, label.as_ref()) {
         return None;
     }
     // An exit that leaves by the loop's own `break`, `$unborrow(borrow);
     // break;` once its drop is a `finally`'s: after the `for`, where it goes
     // on anyway, no jump (#442).
     if matches!(exit.last().map(|s| &s.kind), Some(StmtKind::Break(l)) if l.is_none() || l == label)
-        && !breaks(&exit[..exit.len() - 1], label.as_ref().map(|n| n.word()))
+        && !breaks(&exit[..exit.len() - 1], label.as_ref())
     {
         exit.pop();
     }
@@ -246,8 +246,8 @@ pub(super) fn for_of(
     };
     if let Some(at) = exit.iter().position(|s| own_break(s).is_some())
         && let Some(test) = own_break(&exit[at])
-        && !breaks(&exit[..at], label.as_ref().map(|n| n.word()))
-        && !js::continues(&exit[..at], label.as_ref().map(|n| n.word()))
+        && !breaks(&exit[..at], label.as_ref())
+        && !js::continues(&exit[..at], label.as_ref())
         && exit.last().is_some_and(ends)
         && at + 1 < exit.len()
     {
@@ -257,7 +257,7 @@ pub(super) fn for_of(
     }
     // Another that leaves or goes on with the loop from inside: after the
     // `for`, its jump would be in no loop. Left as it is.
-    if breaks(&exit, label.as_ref().map(|n| n.word())) || js::continues(&exit, label.as_ref().map(|n| n.word())) {
+    if breaks(&exit, label.as_ref()) || js::continues(&exit, label.as_ref()) {
         return None;
     }
     // Going on to the exit where it ends: a `break`, which `unreachable`
@@ -267,7 +267,7 @@ pub(super) fn for_of(
     }
     let label = match (label, block) {
         (Some(own), Some(block)) => {
-            relabeled(&mut inner, block.word(), own);
+            relabeled(&mut inner, &block, own);
             Some(own.clone())
         }
         (label, block) => label.clone().or(block),
@@ -332,7 +332,7 @@ pub(super) fn for_of(
                 // Of their `enumerate()`, `[n, key]`: `let n = 0;` before the
                 // `for…in`, each turn of which ends `n++`, as a person counts.
                 let mut body = body;
-                counted(&mut body, &counter, label.as_ref().map(|n| n.word()));
+                counted(&mut body, &counter, label.as_ref());
                 let mut out = vec![StmtKind::Let(counter, Some(Expr::int(0))).at(js::Span::NONE)];
                 out.push(
                     StmtKind::ForOf {
@@ -910,14 +910,14 @@ fn counted_keys(iterable: &Expr, pattern: &js::Pattern, body: &[Stmt]) -> Option
 /// `body`, a loop's, each turn of which ends `counter++`: where it goes on
 /// to the next turn, at its end and before each `continue` of the loop's,
 /// one of no label not in a loop of its own, or of `label`.
-fn counted(body: &mut Vec<Stmt>, counter: &js::Name, label: Option<&str>) {
+fn counted(body: &mut Vec<Stmt>, counter: &js::Name, label: Option<&js::Name>) {
     let step = || StmtKind::Compound(Op::Add, Expr::var(counter), Expr::int(1)).at(js::Span::NONE);
-    fn before_continues(stmts: &mut Vec<Stmt>, step: &dyn Fn() -> Stmt, label: Option<&str>, nested: bool) {
+    fn before_continues(stmts: &mut Vec<Stmt>, step: &dyn Fn() -> Stmt, label: Option<&js::Name>, nested: bool) {
         let mut i = 0;
         while i < stmts.len() {
             let ours = match &stmts[i].kind {
                 StmtKind::Continue(None) => !nested,
-                StmtKind::Continue(Some(l)) => Some(l.word()) == label,
+                StmtKind::Continue(Some(l)) => Some(l) == label,
                 _ => false,
             };
             if ours {
@@ -1135,12 +1135,12 @@ pub(super) fn while_tests(stmts: &mut Vec<Stmt>, loops: &[(js::Span, bool, Optio
             && let Some(last) = exit.last()
             && let broken = matches!(&last.kind, StmtKind::Break(l) if l.is_none() || *l == *label)
             && (broken || matches!(last.kind, StmtKind::Return(_) | StmtKind::Throw(_)))
-            && !breaks(&exit[..exit.len() - usize::from(broken)], label.as_ref().map(|n| n.word()))
+            && !breaks(&exit[..exit.len() - usize::from(broken)], label.as_ref())
             // A `continue` in the exit, after the loop, would go on with
             // another, the one around it (ADR 0683, amended).
-            && !js::continues(exit, label.as_ref().map(|n| n.word()))
+            && !js::continues(exit, label.as_ref())
             // A `break` in it would run the exit, which it skips.
-            && (exit.len() == usize::from(broken) || !breaks(rest, label.as_ref().map(|n| n.word())))
+            && (exit.len() == usize::from(broken) || !breaks(rest, label.as_ref()))
         {
             let span = stmts[i].span;
             let StmtKind::While { label, body, .. } = std::mem::replace(&mut stmts[i].kind, StmtKind::Break(None))

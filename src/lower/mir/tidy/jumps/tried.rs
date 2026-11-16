@@ -467,11 +467,11 @@ pub(in crate::lower::mir::tidy) fn while_heads(stmts: &mut Vec<Stmt>, written: &
     while i < stmts.len() {
         if let StmtKind::While { label, cond, body } = &stmts[i].kind
             && matches!(cond.kind, ExprKind::Bool(true))
-            && let Some((test, then, rest)) = tested_at_head(body, label.as_ref().map(|n| n.word()), {
+            && let Some((test, then, rest)) = tested_at_head(body, label.as_ref(), {
                 written_loop(written, stmts[i].span).is_some_and(|&(_, w, _)| w)
             })
             && rest.last().is_some_and(ends)
-            && let Some(rest) = fallen(rest, label.as_ref().map(|n| n.word()))
+            && let Some(rest) = fallen(rest, label.as_ref())
         {
             let span = stmts[i].span;
             let looped = StmtKind::While {
@@ -490,8 +490,8 @@ pub(in crate::lower::mir::tidy) fn while_heads(stmts: &mut Vec<Stmt>, written: &
 /// with what's after it, which never runs, as it falls out to there once
 /// `rest` is after the loop (ADR 0702, amended). None where it jumps to
 /// the loop otherwise.
-fn fallen(rest: &[Stmt], label: Option<&str>) -> Option<Vec<Stmt>> {
-    let own_break = |s: &Stmt| matches!(&s.kind, StmtKind::Break(l) if l.as_ref().map(|n| n.word()).is_none_or(|l| Some(l) == label));
+fn fallen(rest: &[Stmt], label: Option<&js::Name>) -> Option<Vec<Stmt>> {
+    let own_break = |s: &Stmt| matches!(&s.kind, StmtKind::Break(l) if l.as_ref().is_none_or(|l| Some(l) == label));
     let Some(at) = rest.iter().position(|s| own_jumps(std::slice::from_ref(s), label)) else {
         return Some(rest.to_vec());
     };
@@ -502,10 +502,11 @@ fn fallen(rest: &[Stmt], label: Option<&str>) -> Option<Vec<Stmt>> {
 /// does then, without its `continue` at the end, and what's after.
 fn tested_at_head<'s>(
     body: &'s [Stmt],
-    label: Option<&str>,
+    label: Option<&js::Name>,
     written: bool,
 ) -> Option<(&'s Expr, &'s [Stmt], &'s [Stmt])> {
-    let own_continue = |s: &Stmt| matches!(&s.kind, StmtKind::Continue(l) if l.as_ref().map(|n| n.word()).is_none_or(|l| Some(l) == label));
+    let own_continue =
+        |s: &Stmt| matches!(&s.kind, StmtKind::Continue(l) if l.as_ref().is_none_or(|l| Some(l) == label));
     let [
         Stmt {
             kind: StmtKind::If(test, then, None),

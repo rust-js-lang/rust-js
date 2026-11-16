@@ -5,10 +5,10 @@ use super::*;
 
 /// Whether `stmts` jump for loop `label`: an unnamed `break` or `continue`
 /// of its own, or one that names it, however deep.
-pub(in crate::lower::mir::tidy) fn own_jumps(stmts: &[Stmt], label: Option<&str>) -> bool {
+pub(in crate::lower::mir::tidy) fn own_jumps(stmts: &[Stmt], label: Option<&js::Name>) -> bool {
     stmts.iter().any(|stmt| match &stmt.kind {
         StmtKind::Break(None) | StmtKind::Continue(None) => true,
-        StmtKind::Break(Some(l)) | StmtKind::Continue(Some(l)) => Some(l.word()) == label,
+        StmtKind::Break(Some(l)) | StmtKind::Continue(Some(l)) => Some(l) == label,
         StmtKind::If(_, a, b) => own_jumps(a, label) || b.as_deref().is_some_and(|b| own_jumps(b, label)),
         StmtKind::Labeled(_, body) => own_jumps(body, label),
         // Whose `break` of a loop names it (ADR 0629), its `continue` the loop's.
@@ -59,9 +59,9 @@ pub(in crate::lower::mir::tidy) fn returned_from_block(stmts: &mut Vec<Stmt>, re
     let label = label.clone();
     // Its jumps threaded to where it ends.
     threaded_jumps(body, &label);
-    returned_where_made(body, label.word(), result);
+    returned_where_made(body, &label, result);
     let mut jumps = !body.last().is_some_and(ends);
-    js::statement_lists(body, &mut |list| jumps |= js::names_jump(list, label.word()));
+    js::statement_lists(body, &mut |list| jumps |= js::names_jump(list, &label));
     // Where nothing goes on to its end, and its statements fit in its place.
     let at = stmts.len() - 2;
     if jumps || !matches!(&stmts[at].kind, StmtKind::Labeled(_, body) if fits_in_place(stmts, at, body)) {
@@ -76,11 +76,11 @@ pub(in crate::lower::mir::tidy) fn returned_from_block(stmts: &mut Vec<Stmt>, re
 
 /// Of block `label`, followed by `return result`: each `break label` once
 /// the result is made, a `return` where it's made.
-fn returned_where_made(body: &mut Vec<Stmt>, label: &str, result: &str) {
+fn returned_where_made(body: &mut Vec<Stmt>, label: &js::Name, result: &str) {
     js::statement_lists(body, &mut |list| {
         let mut i = 1;
         while i < list.len() {
-            if matches!(&list[i].kind, StmtKind::Break(Some(l)) if l.is(label)) && made_at_ends(&list[..i], result) {
+            if matches!(&list[i].kind, StmtKind::Break(Some(l)) if l == label) && made_at_ends(&list[..i], result) {
                 returned_at_ends(&mut list[..i]);
                 list.remove(i);
             } else {
@@ -110,7 +110,7 @@ fn threaded_jumps(body: &mut Vec<Stmt>, label: &js::Name) {
                 let StmtKind::Labeled(inner, mut block) = list.remove(i).kind else {
                     unreachable!("matched")
                 };
-                relabeled(&mut block, inner.word(), label);
+                relabeled(&mut block, &inner, label);
                 list.splice(i..i, block);
             }
         }
@@ -172,7 +172,7 @@ fn returns_past(
         // go on to it, `if let Some(x) = a { if x > 2 && .. { ..; return; }
         // } return;`, stays theirs.
         let joins = if joined.is_none() {
-            joined_returns(body, label.word(), returns, starts)
+            joined_returns(body, label, returns, starts)
         } else if joined_past.contains(label.word()) {
             let mut taken = Vec::new();
             js::each_list(body, &mut |list| {
@@ -183,7 +183,7 @@ fn returns_past(
                 )
             });
             let left: Vec<js::Span> = (returns.iter()).filter(|r| !taken.contains(r)).copied().collect();
-            joined_returns(body, label.word(), &left, starts)
+            joined_returns(body, label, &left, starts)
         } else {
             None
         };
@@ -215,7 +215,7 @@ fn returns_past(
                 }
             }
         });
-        returned_as_written(body, label.word(), &returned, (&joins, &written.let_elses), 0);
+        returned_as_written(body, &label, &returned, (&joins, &written.let_elses), 0);
         if !inner.is_empty()
             && let StmtKind::Labeled(_, body) = &mut stmts[i].kind
         {
@@ -270,14 +270,14 @@ pub(in crate::lower::mir::tidy) fn returns_past_blocks_in_try(
 /// next statement of the function, of `starts`, is written: a comment
 /// before it, `target.blocked_on.set(Some(n)); // We don't .. return;`, is
 /// then its own (rd108).
-fn joined_returns(body: &[Stmt], label: &str, returns: &[js::Span], starts: &[u32]) -> Option<Vec<js::Span>> {
+fn joined_returns(body: &[Stmt], label: &js::Name, returns: &[js::Span], starts: &[u32]) -> Option<Vec<js::Span>> {
     let ((lo, hi), mut breaks) = (placed(body), 0);
     // The places of the blocks inside it a `return;` MIR joined follows,
     // whose own the `return`s written in them are.
     let mut inner = Vec::new();
     js::each_list(body, &mut |list| {
         for (i, stmt) in list.iter().enumerate() {
-            breaks += usize::from(matches!(&stmt.kind, StmtKind::Break(Some(l)) if l.is(label)));
+            breaks += usize::from(matches!(&stmt.kind, StmtKind::Break(Some(l)) if l == label));
             if let StmtKind::Labeled(_, block) = &stmt.kind
                 && list
                     .get(i + 1)
@@ -339,13 +339,13 @@ pub(in crate::lower::mir::tidy) fn placed(stmts: &[Stmt]) -> (u32, u32) {
 /// 0879, amended, #437).
 fn returned_as_written(
     stmts: &mut [Stmt],
-    label: &str,
+    label: &js::Name,
     returned: &StmtKind,
     (written, let_elses): (&[js::Span], &[js::Span]),
     mut at: u32,
 ) -> u32 {
     for stmt in stmts {
-        if matches!(&stmt.kind, StmtKind::Break(Some(l)) if l.is(label)) {
+        if matches!(&stmt.kind, StmtKind::Break(Some(l)) if l == label) {
             stmt.kind = returned.clone();
             if let Some(place) = (written.iter()).filter(|r| r.lo >= at).min_by_key(|r| r.lo) {
                 (stmt.span, at) = (*place, place.hi);
@@ -463,8 +463,7 @@ pub(in crate::lower::mir::tidy) fn made_at_ends(stmts: &[Stmt], result: &str) ->
         // Or a `while (true)` left only once the result is made, where it
         // goes on to what they end at, or never left.
         Some(StmtKind::While { cond, body, label }) => {
-            matches!(cond.kind, ExprKind::Bool(true))
-                && broken_made(body, true, label.as_ref().map(|n| n.word()), result)
+            matches!(cond.kind, ExprKind::Bool(true)) && broken_made(body, true, label.as_ref(), result)
         }
         Some(StmtKind::If(_, then, Some(otherwise))) => made_at_ends(then, result) && made_at_ends(otherwise, result),
         // Or a block each of whose `break`s follows what makes it, as its
@@ -472,7 +471,7 @@ pub(in crate::lower::mir::tidy) fn made_at_ends(stmts: &[Stmt], result: &str) ->
         // its place, where they fit, once those are `return`s.
         Some(StmtKind::Labeled(label, body)) => {
             made_at_ends(body, result)
-                && broken_made(body, false, Some(label.word()), result)
+                && broken_made(body, false, Some(label), result)
                 && fits_in_place(stmts, stmts.len() - 1, body)
         }
         _ => false,
@@ -482,9 +481,9 @@ pub(in crate::lower::mir::tidy) fn made_at_ends(stmts: &[Stmt], result: &str) ->
 /// Whether each `break` in `stmts` that leaves loop `looped` follows what
 /// makes `result`, as `made_at_ends` says: one of no label where `own`,
 /// not in a loop or a `switch` of their own, and one of its label.
-fn broken_made(stmts: &[Stmt], own: bool, looped: Option<&str>, result: &str) -> bool {
+fn broken_made(stmts: &[Stmt], own: bool, looped: Option<&js::Name>, result: &str) -> bool {
     stmts.iter().enumerate().all(|(i, stmt)| match &stmt.kind {
-        StmtKind::Break(l) if (own && l.is_none()) || (l.is_some() && l.as_ref().map(|n| n.word()) == looped) => {
+        StmtKind::Break(l) if (own && l.is_none()) || (l.is_some() && l.as_ref() == looped) => {
             made_at_ends(&stmts[..i], result)
         }
         StmtKind::If(_, a, b) => {
@@ -517,9 +516,9 @@ pub(in crate::lower::mir::tidy) fn returned_at_ends(stmts: &mut [Stmt]) {
             returned_at_ends(then);
             returned_at_ends(otherwise);
         }
-        StmtKind::While { body, label, .. } => returned_breaks(body, true, label.as_ref().map(|n| n.word())),
+        StmtKind::While { body, label, .. } => returned_breaks(body, true, label.as_ref()),
         StmtKind::Labeled(label, body) => {
-            returned_breaks(body, false, Some(label.word()));
+            returned_breaks(body, false, Some(label));
             returned_at_ends(body);
         }
         _ => {}
@@ -528,11 +527,11 @@ pub(in crate::lower::mir::tidy) fn returned_at_ends(stmts: &mut [Stmt]) {
 
 /// Each `break` of `broken_made`'s in `stmts`, the `return` of what makes
 /// the result before it.
-fn returned_breaks(stmts: &mut Vec<Stmt>, own: bool, looped: Option<&str>) {
+fn returned_breaks(stmts: &mut Vec<Stmt>, own: bool, looped: Option<&js::Name>) {
     let mut i = 0;
     while i < stmts.len() {
         match &mut stmts[i].kind {
-            StmtKind::Break(l) if (own && l.is_none()) || (l.is_some() && l.as_ref().map(|n| n.word()) == looped) => {
+            StmtKind::Break(l) if (own && l.is_none()) || (l.is_some() && l.as_ref() == looped) => {
                 returned_at_ends(&mut stmts[..i]);
                 stmts.remove(i);
                 continue;
@@ -601,7 +600,7 @@ pub(in crate::lower::mir::tidy) fn tail_jumps(stmts: &mut [Stmt]) {
 pub(in crate::lower::mir::tidy) fn returns_into_branches(stmts: &mut [Stmt]) {
     // `stmts`, which end where block `label` does: theirs, or of the
     // branches of the `if` they end with.
-    fn at_ends(stmts: &mut Vec<Stmt>, label: &str) {
+    fn at_ends(stmts: &mut Vec<Stmt>, label: &js::Name) {
         if returned_into_branches(stmts, label) {
             return;
         }
@@ -618,7 +617,7 @@ pub(in crate::lower::mir::tidy) fn returns_into_branches(stmts: &mut [Stmt]) {
             && crate::lower::mir::is_block_label(label)
         {
             let label = label.clone();
-            at_ends(body, label.word());
+            at_ends(body, &label);
         }
     }
 }
@@ -643,12 +642,12 @@ pub(in crate::lower::mir::tidy) fn returns_one_value(stmt: &Stmt) -> bool {
 
 /// `stmts`, which end where block `label` does, as `returns_into_branches`
 /// has them; whether they were.
-fn returned_into_branches(stmts: &mut Vec<Stmt>, label: &str) -> bool {
+fn returned_into_branches(stmts: &mut Vec<Stmt>, label: &js::Name) -> bool {
     // `stmts`, `exit` at the end of each path of them that goes on, and the
     // `break label` each that leaves ends with gone.
-    fn into(stmts: &mut Vec<Stmt>, exit: &Stmt, label: &str) {
+    fn into(stmts: &mut Vec<Stmt>, exit: &Stmt, label: &js::Name) {
         let leaves = |last: &Stmt| match &last.kind {
-            StmtKind::Break(Some(l)) => !l.is(label),
+            StmtKind::Break(Some(l)) => l != label,
             StmtKind::If(_, _, Some(_)) => false,
             _ => ends(last),
         };
@@ -660,7 +659,7 @@ fn returned_into_branches(stmts: &mut Vec<Stmt>, label: &str) -> bool {
             return;
         };
         match &mut last.kind {
-            StmtKind::Break(Some(l)) if l.is(label) => {
+            StmtKind::Break(Some(l)) if l == label => {
                 stmts.pop();
             }
             StmtKind::If(test, then, otherwise @ Some(_)) => {
@@ -707,9 +706,9 @@ fn returned_into_branches(stmts: &mut Vec<Stmt>, label: &str) -> bool {
 }
 
 /// Whether `stmts` always end with a `break label`.
-pub(in crate::lower::mir::tidy) fn leaves(stmts: &[Stmt], label: &str) -> bool {
+pub(in crate::lower::mir::tidy) fn leaves(stmts: &[Stmt], label: &js::Name) -> bool {
     match stmts.last().map(|s| &s.kind) {
-        Some(StmtKind::Break(Some(l))) => l.is(label),
+        Some(StmtKind::Break(Some(l))) => l == label,
         Some(StmtKind::If(_, then, Some(otherwise))) => leaves(then, label) && leaves(otherwise, label),
         _ => false,
     }
@@ -762,11 +761,11 @@ pub(in crate::lower::mir::tidy) fn drop_tail(stmts: &mut Vec<Stmt>, jump: &StmtK
 }
 
 /// Each `break from` and `continue from` in `stmts`, however deep, `to`'s.
-pub(in crate::lower::mir::tidy) fn relabeled(stmts: &mut Vec<Stmt>, from: &str, to: &js::Name) {
+pub(in crate::lower::mir::tidy) fn relabeled(stmts: &mut Vec<Stmt>, from: &js::Name, to: &js::Name) {
     js::statement_lists(stmts, &mut |list| {
         for stmt in list.iter_mut() {
             if let StmtKind::Break(Some(l)) | StmtKind::Continue(Some(l)) = &mut stmt.kind
-                && l.is(from)
+                && l == from
             {
                 *l = to.clone();
             }

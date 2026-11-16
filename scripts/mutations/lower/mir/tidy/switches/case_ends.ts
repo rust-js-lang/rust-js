@@ -42,7 +42,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a block's `break` in a case of a `switch` it ends with stays, `break bb374;`, its label around the `if`",
     file: "src/lower/mir/tidy/switches/case_ends.rs",
-    find: "            StmtKind::Break(Some(l)) if l.is(label) => stmt.kind = StmtKind::Break(None),\n",
+    find: "            StmtKind::Break(Some(l)) if l == label => stmt.kind = StmtKind::Break(None),\n",
     replace: "",
     tests: ["test/lowering-switch-ends.test.ts", "-t", "past the switch"],
   },
@@ -61,7 +61,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a block a case ends with keeps its label, `desc: { .. break desc; }`, not the case's `break;` (ADR 0790)",
     file: "src/lower/mir/tidy/switches/case_ends.rs",
-    find: "                let label = label.clone();\n                case_breaks(body, label.word());\n                ending(body, elses);",
+    find: "                let label = label.clone();\n                case_breaks(body, &label);\n                ending(body, elses);",
     replace: "                ending(body, elses);",
     tests: [
       "test/lowering-labels.test.ts",

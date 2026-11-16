@@ -227,7 +227,7 @@ pub(super) fn logical_blocks(
     fn value(
         stmts: &[Stmt],
         fall: &Expr,
-        (label, after): (&str, &Expr),
+        (label, after): (&js::Name, &Expr),
         returns: &[js::Span],
         booleans: &IndexSet<js::Path>,
     ) -> Option<Expr> {
@@ -247,7 +247,7 @@ pub(super) fn logical_blocks(
                     ..
                 },
                 ..,
-            ] if l.is(label) => Some(after.clone()),
+            ] if l == label => Some(after.clone()),
             [
                 Stmt {
                     kind: StmtKind::If(test, then, None),
@@ -262,7 +262,7 @@ pub(super) fn logical_blocks(
             _ => None,
         }
     }
-    let Some(made) = value(body, after, (label.word(), after), returns, booleans) else {
+    let Some(made) = value(body, after, (label, after), returns, booleans) else {
         return;
     };
     // What's returned after it, once, as the program wrote it.
@@ -623,7 +623,7 @@ pub(super) fn chain_values(stmts: &mut Vec<Stmt>, returns: &[js::Span]) {
         let StmtKind::Labeled(label, body) = &mut stmt.kind else {
             continue;
         };
-        let label = Some(label.word());
+        let label = Some(&*label);
         let made = match body.as_slice() {
             [chain, rest @ ..] => valued_chain(chain, rest, label, returns, &body[1..]),
             [] => None,
@@ -652,7 +652,7 @@ pub(super) fn chain_values(stmts: &mut Vec<Stmt>, returns: &[js::Span]) {
 fn valued_chain(
     chain: &Stmt,
     rest: &[Stmt],
-    label: Option<&str>,
+    label: Option<&js::Name>,
     returns: &[js::Span],
     others: &[Stmt],
 ) -> Option<(Stmt, Stmt)> {
@@ -707,7 +707,7 @@ enum Valued<'s> {
 /// Of `stmts`, a branch's: one value, `v = t;` and its `break` to `label`,
 /// or `v = f;` the block ends with, `last`, or `return t;` the program
 /// didn't write.
-fn one_value<'s>(stmts: &'s [Stmt], label: Option<&str>, returns: &[js::Span], last: bool) -> Option<Valued<'s>> {
+fn one_value<'s>(stmts: &'s [Stmt], label: Option<&js::Name>, returns: &[js::Span], last: bool) -> Option<Valued<'s>> {
     let assigned = |s: &'s Stmt| match &s.kind {
         StmtKind::Assign(target, value) => match &target.kind {
             ExprKind::Var(x) => Some(Valued::Assigned(x.word(), value)),
@@ -730,7 +730,7 @@ fn one_value<'s>(stmts: &'s [Stmt], label: Option<&str>, returns: &[js::Span], l
                 kind: StmtKind::Break(Some(l)),
                 ..
             },
-        ] if Some(l.word()) == label => assigned(assign),
+        ] if Some(l) == label => assigned(assign),
         _ => None,
     }
 }
@@ -927,7 +927,7 @@ fn read_of_a_path(e: &Expr) -> bool {
 
 /// Of `l: { if (a) { if (b) { s; break l; } } t }`: its tests, `[a, b]`,
 /// `s` and `t`, where `l` is named nowhere else.
-pub(super) fn or_chain(body: &[Stmt], label: &str) -> Option<(Vec<Expr>, Vec<Stmt>, Vec<Stmt>)> {
+pub(super) fn or_chain(body: &[Stmt], label: &js::Name) -> Option<(Vec<Expr>, Vec<Stmt>, Vec<Stmt>)> {
     let [first, then @ ..] = body else { return None };
     let (tests, otherwise) = broken_chain(std::slice::from_ref(first), label)?;
     if tests.is_empty() || js::names_jump(then, label) || js::names_jump(&otherwise, label) {
@@ -937,7 +937,7 @@ pub(super) fn or_chain(body: &[Stmt], label: &str) -> Option<(Vec<Expr>, Vec<Stm
 }
 
 /// Of `if (a) { if (b) { s; break l; } }`: `[a, b]` and `s`.
-pub(super) fn broken_chain(stmts: &[Stmt], label: &str) -> Option<(Vec<Expr>, Vec<Stmt>)> {
+pub(super) fn broken_chain(stmts: &[Stmt], label: &js::Name) -> Option<(Vec<Expr>, Vec<Stmt>)> {
     match stmts {
         [
             Stmt {
@@ -955,7 +955,7 @@ pub(super) fn broken_chain(stmts: &[Stmt], label: &str) -> Option<(Vec<Expr>, Ve
                 kind: StmtKind::Break(Some(l)),
                 ..
             },
-        ] if l.is(label) => Some((Vec::new(), rest.to_vec())),
+        ] if l == label => Some((Vec::new(), rest.to_vec())),
         _ => None,
     }
 }

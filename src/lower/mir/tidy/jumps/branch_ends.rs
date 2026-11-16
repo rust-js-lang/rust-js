@@ -96,11 +96,9 @@ pub(in crate::lower::mir::tidy) fn ending(stmts: &mut Vec<Stmt>, label: &js::Nam
     // (c) { .. } else { t }`, whose `then` then ends where the block does, to
     // be had so too (ADR 0745). Unless no `else`'s needed, as `unelsed`
     // writes it where its `then` still never goes on.
-    let left = |then: &Vec<Stmt>| then.last().is_some_and(ends) && js::names_jump(then, label.word());
+    let left = |then: &Vec<Stmt>| then.last().is_some_and(ends) && js::names_jump(then, label);
     let Some(at) = (stmts.iter())
-        .position(
-            |s| matches!(&s.kind, StmtKind::If(_, then, None) if leaves(&ands(then).1, label.word()) || left(then)),
-        )
+        .position(|s| matches!(&s.kind, StmtKind::If(_, then, None) if leaves(&ands(then).1, label) || left(then)))
         .filter(|_| !exits)
     else {
         if let Some(StmtKind::If(_, then, otherwise)) = stmts.last_mut().map(|s| &mut s.kind) {
@@ -120,7 +118,7 @@ pub(in crate::lower::mir::tidy) fn ending(stmts: &mut Vec<Stmt>, label: &js::Nam
     else {
         unreachable!("found")
     };
-    if !leaves(&ands(&then).1, label.word()) {
+    if !leaves(&ands(&then).1, label) {
         let (mut then, mut rest) = (then, rest);
         ending(&mut then, label);
         ending(&mut rest, label);

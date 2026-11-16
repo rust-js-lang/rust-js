@@ -396,7 +396,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `while (true) { if (t) { exit } rest }` whose exit goes on with the loop is `while (!t) { rest } exit`, its `continue` the outer loop's",
     file: "src/lower/mir/tidy/loops.rs",
-    find: "            && !js::continues(exit, label.as_ref().map(|n| n.word()))\n",
+    find: "            && !js::continues(exit, label.as_ref())\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^while_exit_continues.rs$"],
   },
@@ -762,7 +762,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a loop's way out that leaves by the loop's own `break` where a test holds, `if (!eq) { break; } return ..;`, is moved past the `for` as it is: its `break` in no loop, the JS a syntax error, rand 0.7's `update_weights` (#1422)",
     file: "src/lower/mir/tidy/loops.rs",
-    find: "    if breaks(&exit, label.as_ref().map(|n| n.word())) || js::continues(&exit, label.as_ref().map(|n| n.word())) {\n",
+    find: "    if breaks(&exit, label.as_ref()) || js::continues(&exit, label.as_ref()) {\n",
     replace: "    if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^loop_exit_tested_after_the_loop.rs$"],
   },

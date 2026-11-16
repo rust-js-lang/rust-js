@@ -363,7 +363,7 @@ impl<'a> Run<'a> {
     /// `try` that drops it last, or an `if` or a loop whose test can't
     /// throw, of such statements; and each way out of the run, a `return`,
     /// or a `break` or a `continue` of what's outside it, after the drop.
-    fn covers(&self, stmts: &[Stmt], loops: usize, labels: &mut Vec<String>) -> bool {
+    fn covers(&self, stmts: &[Stmt], loops: usize, labels: &mut Vec<Name>) -> bool {
         let mut i = 0;
         while i < stmts.len() {
             let stmt = &stmts[i];
@@ -384,20 +384,20 @@ impl<'a> Run<'a> {
                         && b.as_deref().is_none_or(|b| self.covers(b, loops, labels))
                 }
                 StmtKind::While { label, cond, body } => {
-                    labels.extend(label.as_ref().map(Name::to_string));
+                    labels.extend(label.clone());
                     let covered = !cond.may_throw() && self.covers(body, loops + 1, labels);
                     labels.truncate(labels.len() - usize::from(label.is_some()));
                     covered
                 }
                 StmtKind::Labeled(label, body) => {
-                    labels.push(label.to_string());
+                    labels.push(label.clone());
                     let covered = self.covers(body, loops, labels);
                     labels.pop();
                     covered
                 }
                 // A jump that stays in the run.
                 StmtKind::Break(None) | StmtKind::Continue(None) => loops > 0,
-                StmtKind::Break(Some(label)) | StmtKind::Continue(Some(label)) => labels.iter().any(|l| label.is(l)),
+                StmtKind::Break(Some(label)) | StmtKind::Continue(Some(label)) => labels.contains(label),
                 // One made of values, which can't throw, or the run ends.
                 _ => stmt.only_makes_values(),
             };
@@ -412,7 +412,7 @@ impl<'a> Run<'a> {
     /// Whether `out`, after the drop, leaves the run: a `return` of what the
     /// drop can't change, a variable of the run's own no closure sets, the
     /// function's return place, a constant or nothing; or a jump out of it.
-    fn leaves_after_drop(&self, out: &Stmt, loops: usize, labels: &[String]) -> bool {
+    fn leaves_after_drop(&self, out: &Stmt, loops: usize, labels: &[Name]) -> bool {
         match &out.kind {
             StmtKind::Return(None) => true,
             StmtKind::Return(Some(value)) => match &value.kind {
@@ -422,7 +422,7 @@ impl<'a> Run<'a> {
                 _ => value.is_constant(),
             },
             StmtKind::Break(None) | StmtKind::Continue(None) => loops == 0,
-            StmtKind::Break(Some(label)) | StmtKind::Continue(Some(label)) => !labels.iter().any(|l| label.is(l)),
+            StmtKind::Break(Some(label)) | StmtKind::Continue(Some(label)) => !labels.contains(label),
             _ => false,
         }
     }
@@ -740,7 +740,7 @@ pub(super) fn looped_drops(stmts: &mut Vec<Stmt>, for_made: bool, tidied: &mut d
         js::statement_lists(body, &mut |list| {
             let left = list.iter().position(|stmt| {
                 matches!(&stmt.kind, StmtKind::Labeled(label, inner)
-                    if inner.last().is_some_and(js::ends) && !js::breaks(inner, Some(label.word())))
+                    if inner.last().is_some_and(js::ends) && !js::breaks(inner, Some(label)))
             });
             if let Some(at) = left {
                 list.truncate(at + 1);
@@ -748,7 +748,7 @@ pub(super) fn looped_drops(stmts: &mut Vec<Stmt>, for_made: bool, tidied: &mut d
         });
         let inside = Inside {
             labels: &labels,
-            own: own.as_ref().map(|n| n.word()),
+            own: own.as_ref(),
         };
         if !dropped_at_each_exit(body, &drop, (0, false, inside)) {
             k += 1;
@@ -769,15 +769,15 @@ pub(super) fn looped_drops(stmts: &mut Vec<Stmt>, for_made: bool, tidied: &mut d
 }
 
 /// The labels of the blocks and loops in `stmts`.
-fn own_labels(stmts: &mut Vec<Stmt>) -> Vec<String> {
+fn own_labels(stmts: &mut Vec<Stmt>) -> Vec<Name> {
     let mut labels = Vec::new();
     js::statement_lists(stmts, &mut |list| {
         labels.extend(list.iter().filter_map(|stmt| match &stmt.kind {
-            StmtKind::Labeled(label, _) => Some(label.to_string()),
+            StmtKind::Labeled(label, _) => Some(label.clone()),
             StmtKind::While { label, .. }
             | StmtKind::DoWhile { label, .. }
             | StmtKind::For { label, .. }
-            | StmtKind::ForOf { label, .. } => label.as_ref().map(Name::to_string),
+            | StmtKind::ForOf { label, .. } => label.clone(),
             _ => None,
         }))
     });
@@ -995,8 +995,8 @@ fn names_dropped(stmt: &Stmt, drop: &Stmt) -> bool {
 /// too, and whose `break bb5` a way out (rd200, #440).
 #[derive(Clone, Copy, Default)]
 struct Inside<'a> {
-    labels: &'a [String],
-    own: Option<&'a str>,
+    labels: &'a [Name],
+    own: Option<&'a Name>,
 }
 
 /// `stmts`, `depth` loops into the loop that drops `drop` before each way
@@ -1038,12 +1038,10 @@ fn dropped_at_each_exit(stmts: &mut Vec<Stmt>, drop: &Stmt, (depth, caught, insi
             // it, as a loop's in it does, `continue bb10;`; another label's
             // leaves it, as a `return` does, the program's `break
             // 'get_instance` out of the block the loop's in (rd200).
-            StmtKind::Break(Some(label)) => !inside.labels.iter().any(|l| label.is(l)),
+            StmtKind::Break(Some(label)) => !inside.labels.contains(label),
             // The loop's own `continue bb5`, in a loop in it too, is a turn
             // (#440).
-            StmtKind::Continue(Some(label)) => {
-                !inside.labels.iter().any(|l| label.is(l)) && inside.own != Some(label.word())
-            }
+            StmtKind::Continue(Some(label)) => !inside.labels.contains(label) && inside.own != Some(label),
             _ => false,
         };
         if exit {
@@ -1077,7 +1075,7 @@ fn dropped_at_each_exit(stmts: &mut Vec<Stmt>, drop: &Stmt, (depth, caught, insi
             }
             // What goes on in it, a block's own `break`, a turn's `continue`.
             StmtKind::Break(_) | StmtKind::Continue(_) => true,
-            StmtKind::Labeled(label, body) if inside.labels.iter().any(|l| label.is(l)) => {
+            StmtKind::Labeled(label, body) if inside.labels.contains(label) => {
                 dropped_at_each_exit(body, drop, (depth, caught, inside))
             }
             StmtKind::Labeled(..)
@@ -1145,7 +1143,7 @@ pub(super) fn dropped_at_breaks(stmts: &mut [Stmt]) -> bool {
             unreachable!("matched")
         };
         let mut taken = body.clone();
-        if breaks_dropped(&mut taken, label.word(), &tail, true) {
+        if breaks_dropped(&mut taken, &label, &tail, true) {
             *body = taken;
             took = true;
         }
@@ -1183,10 +1181,10 @@ fn caught_drops(stmts: &[Stmt]) -> Vec<&Stmt> {
 
 /// `stmts`, each `break label` in it `tail`, where `free`, outside any
 /// `try`: whether none was in one.
-fn breaks_dropped(stmts: &mut Vec<Stmt>, label: &str, tail: &[Stmt], free: bool) -> bool {
+fn breaks_dropped(stmts: &mut Vec<Stmt>, label: &js::Name, tail: &[Stmt], free: bool) -> bool {
     let mut i = 0;
     while i < stmts.len() {
-        if matches!(&stmts[i].kind, StmtKind::Break(Some(l)) if l.is(label)) {
+        if matches!(&stmts[i].kind, StmtKind::Break(Some(l)) if l == label) {
             if !free {
                 return false;
             }

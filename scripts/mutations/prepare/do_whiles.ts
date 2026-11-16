@@ -76,7 +76,7 @@ export const mutations: Mutation[] = [
     name: "do-while-tested-last-continued",
     breaks: "a `loop` ending `if n < 2 { break; }` with a `continue` in it is a `do`, whose `continue` goes on to the test, so an odd `n` below 2 leaves where Rust's loop goes on (ADR 0978, amended)",
     file: "src/prepare/do_whiles.rs",
-    find: "        || js::continues(turn, label.as_ref().map(|n| n.word()))\n        || js::declared_names",
+    find: "        || js::continues(turn, label.as_ref())\n        || js::declared_names",
     replace: "        || js::declared_names",
     tests: ["test/corpus.test.ts", "-t", "^do_while_tested_last.rs$"],
   },

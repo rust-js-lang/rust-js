@@ -17,7 +17,7 @@ export const mutations: Mutation[] = [
     name: "stepped-while-continued",
     breaks: "a `while` whose body has a `continue` before its step is a `for`, whose `continue` runs the step the `while`'s skips (ADR 0974)",
     file: "src/prepare/stepped_whiles.rs",
-    find: "        || js::continues(rest, label.as_ref().map(|n| n.word()))\n",
+    find: "        || js::continues(rest, label.as_ref())\n",
     replace: "",
     tests: corpus,
   },

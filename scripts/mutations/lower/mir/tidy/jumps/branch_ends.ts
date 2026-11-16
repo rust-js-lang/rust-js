@@ -50,8 +50,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an `if` whose `then` never goes on but breaks out to the block's end inside stays a guard, the block its label (ADR 0745)",
     file: "src/lower/mir/tidy/jumps/branch_ends.rs",
-    find: " if leaves(&ands(then).1, label.word()) || left(then)),\n        )\n",
-    replace: " if leaves(&ands(then).1, label.word())),\n        )\n",
+    find: " if leaves(&ands(then).1, label) || left(then)))\n",
+    replace: " if leaves(&ands(then).1, label)))\n",
     tests: [
       "test/lowering-early-exits.test.ts",
       "-t",

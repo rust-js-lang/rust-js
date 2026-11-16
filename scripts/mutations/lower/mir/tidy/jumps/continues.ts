@@ -68,13 +68,10 @@ export const mutations: Mutation[] = [
     breaks:
       "a loop body's last labeled block, its `break` the loop's `continue`, stays, a `bb` label left in `numbers`' while loop",
     file: "src/lower/mir/tidy/jumps/continues.rs",
-    find: "                if clashes || continues(&mut inner, block.word(), looped.as_ref(), false).is_none() {\n",
+    find: "                if clashes || continues(&mut inner, &block, looped.as_ref(), false).is_none() {\n",
     replace: "                if true {\n",
-    tests: [
-      "test/lowering-loops.test.ts",
-      "-t",
-      "returns in a loop are where they're written",
-    ],
+    tests: ["test/corpus.test.ts", "-t", "^continue_arms_of_else_if.rs$"],
+    snapshots: true,
   },
   {
     name: "ending-continue-as-else",
@@ -105,7 +102,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a labeled block's `break` to a `continue` of the loop after it stays, `bb3: { .. break bb3; } continue bb1;`",
     file: "src/lower/mir/tidy/jumps/continues.rs",
-    find: "            StmtKind::Break(Some(l)) if l.is(label) => stmt.kind = jump.clone(),\n",
+    find: "            StmtKind::Break(Some(l)) if l == label => stmt.kind = jump.clone(),\n",
     replace: "",
     tests: [
       "test/corpus.test.ts",
@@ -314,7 +311,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a loop the program labeled, left through a block MIR made, has its arms' `break`s of no label, not its own, so its `match` is no `switch` of `break findParent;` cases (#389c)",
     file: "src/lower/mir/tidy/jumps/continues.rs",
-    find: "        if !js::names_break(&broken, block.word()) && named.is_some() {\n",
+    find: "        if !js::names_break(&broken, &block) && named.is_some() {\n",
     replace: "        if false {\n",
     tests: ["test/corpus.test.ts", "-t", "^while_let_at_end.rs$"],
     snapshots: true,
@@ -324,7 +321,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `break 'rows` of an inner loop, which MIR makes a `break` of a block the outer turn ends, stays `bb22:` in a `while (true)`, not the outer loop's `break rows;` and its test (uz3)",
     file: "src/lower/mir/tidy/jumps/continues.rs",
-    find: "            let named = js::Name::label(named);\n            super::tails::relabeled(&mut broken, block.word(), &named);\n            *looped = Some(named);\n",
+    find: "            let named = js::Name::label(named);\n            super::tails::relabeled(&mut broken, &block, &named);\n            *looped = Some(named);\n",
     replace: "            continue;\n",
     tests: ["test/corpus.test.ts", "-t", "^labeled_loop_left_from_inner.rs$"],
     snapshots: true,
@@ -334,7 +331,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a block whose `break` is in a loop of its own, an arm's inner `loop` MIR leaves by the outer's way out (`counted`), is spliced in, its `break bb19` left with no block, which tidy's \"each jump lands\" refuses; a `break;` there would leave only the inner loop",
     file: "src/lower/mir/tidy/jumps/continues.rs",
-    find: "        if js::names_break(&broken, block.word()) {\n",
+    find: "        if js::names_break(&broken, &block) {\n",
     replace: "        if false {\n",
     tests: [
       "test/corpus.test.ts",

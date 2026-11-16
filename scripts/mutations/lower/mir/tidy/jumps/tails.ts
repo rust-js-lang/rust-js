@@ -52,9 +52,9 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-jump-ends-not-made",
     breaks: "MIR's block that ends in a loop it never leaves isn't seen to end",
     file: "src/lower/mir/tidy/jumps/tails.rs",
-    find: "            matches!(cond.kind, ExprKind::Bool(true))\n                && broken_made(body, true, label.as_ref().map(|n| n.word()), result)\n        }\n        Some(StmtKind::If(",
+    find: "            matches!(cond.kind, ExprKind::Bool(true)) && broken_made(body, true, label.as_ref(), result)\n        }\n        Some(StmtKind::If(",
     replace:
-      "            matches!(cond.kind, ExprKind::Bool(true))\n                && broken_made(body, true, label.as_ref().map(|n| n.word()), result) && false\n        }\n        Some(StmtKind::If(",
+      "            matches!(cond.kind, ExprKind::Bool(true)) && broken_made(body, true, label.as_ref(), result) && false\n        }\n        Some(StmtKind::If(",
     tests: ["test/corpus.test.ts", "-t", "^returns_in_place.rs$"],
     snapshots: true,
   },
@@ -63,7 +63,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `while (true)` that makes the function's value before each `break` keeps the `break`, its `return` gone: returns_in_place's `?` in a loop of `,`s leaves the loop, not the function, a wrong answer",
     file: "src/lower/mir/tidy/jumps/tails.rs",
-    find: "        StmtKind::While { body, label, .. } => returned_breaks(body, true, label.as_ref().map(|n| n.word())),\n",
+    find: "        StmtKind::While { body, label, .. } => returned_breaks(body, true, label.as_ref()),\n",
     replace: "        StmtKind::While { .. } => {}\n",
     tests: ["test/corpus.test.ts", "-t", "^returns_in_place.rs$"],
   },
@@ -171,7 +171,7 @@ export const mutations: Mutation[] = [
     breaks:
       'a `match`\'s `return` some arms go on to and others leave past stays a block MIR made, `bb12: { .. break bb12; .. return "Complex"; }`',
     file: "src/lower/mir/tidy/jumps/tails.rs",
-    find: "            at_ends(body, label.word());\n",
+    find: "            at_ends(body, &label);\n",
     replace: "            let _ = (body, label);\n",
     tests: [
       "test/lowering-labels.test.ts",
@@ -184,9 +184,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a path that leaves a block MIR made for a `return` some arms go on to keeps its `break`, so the block stays",
     file: "src/lower/mir/tidy/jumps/tails.rs",
-    find: "            StmtKind::Break(Some(l)) if l.is(label) => {\n                stmts.pop();\n",
+    find: "            StmtKind::Break(Some(l)) if l == label => {\n                stmts.pop();\n",
     replace:
-      "            StmtKind::Break(Some(l)) if l.is(label) && false => {\n                stmts.pop();\n",
+      "            StmtKind::Break(Some(l)) if l == label && false => {\n                stmts.pop();\n",
     tests: [
       "test/lowering-labels.test.ts",
       "-t",
@@ -396,7 +396,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a block's `break`s that follow the result made aren't returned, so the block stays, `bb24: { .. result = false; break bb24; }` (ADR 0432, amended)",
     file: "src/lower/mir/tidy/jumps/tails.rs",
-    find: "            returned_breaks(body, false, Some(label.word()));\n",
+    find: "            returned_breaks(body, false, Some(label));\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^returns_in_held_branches.rs$"],
     snapshots: true,
@@ -416,7 +416,7 @@ export const mutations: Mutation[] = [
     breaks:
       "returns the program wrote in each branch, which MIR joins into one `return;` after a block, keep that block and its `break`s, `bb33: { if (tag === 1) { .. } else { break bb33; } .. } return; }` (rd100, rd98)",
     file: "src/lower/mir/tidy/jumps/tails.rs",
-    find: "        let joins = if joined.is_none() {\n            joined_returns(body, label.word(), returns, starts)\n",
+    find: "        let joins = if joined.is_none() {\n            joined_returns(body, label, returns, starts)\n",
     replace: "        let joins = if joined.is_none() {\n            None\n",
     tests: ["test/corpus.test.ts", "-t", "^returns_joined_past_blocks.rs$"],
     snapshots: true,
@@ -478,7 +478,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy/jumps/tails.rs",
     find: "            _ if !stmt.span.is_none() => at = at.max(stmt.span.hi),\n",
     replace:
-      "            StmtKind::Labeled(own, body) if js::names_jump(body, own.word()) => {\n                js::each_list(body, &mut |list| {\n                    for s in list.iter().filter(|s| !s.span.is_none()) {\n                        at = at.max(s.span.hi);\n                    }\n                });\n            }\n            _ if !stmt.span.is_none() => at = at.max(stmt.span.hi),\n",
+      "            StmtKind::Labeled(own, body) if js::names_jump(body, own) => {\n                js::each_list(body, &mut |list| {\n                    for s in list.iter().filter(|s| !s.span.is_none()) {\n                        at = at.max(s.span.hi);\n                    }\n                });\n            }\n            _ if !stmt.span.is_none() => at = at.max(stmt.span.hi),\n",
     tests: ["test/corpus.test.ts", "-t", "^let_else_returns_in_arms\\.rs$"],
     snapshots: true,
   },

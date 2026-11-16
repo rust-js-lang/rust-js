@@ -97,7 +97,7 @@ pub(super) const LABELS_NAMED: Contract = Contract {
                         body: inner,
                         ..
                     } = &stmt.kind
-                    && !crate::js::names_jump(inner, label.word())
+                    && !crate::js::names_jump(inner, label)
                 {
                     found = Some(format!("`{label}` named by no jump"));
                 }

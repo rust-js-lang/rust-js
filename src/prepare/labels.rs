@@ -13,10 +13,7 @@ pub(super) fn loops(stmts: &mut [Stmt]) {
         | StmtKind::DoWhile { label, body, .. }
         | StmtKind::ForOf { label, body, .. }
         | StmtKind::For { label, body, .. } = &mut stmt.kind
-            && label
-                .as_ref()
-                .map(|n| n.word())
-                .is_some_and(|l| !js::names_jump(body, l))
+            && label.as_ref().is_some_and(|l| !js::names_jump(body, l))
         {
             *label = None;
         }

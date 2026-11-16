@@ -78,7 +78,7 @@ fn do_while(before: &[Stmt], looped: &Stmt, after: &[Stmt]) -> Option<StmtKind> 
         || others
             .iter()
             .any(|a| !a.variable.is(variable.word()) || !same(&a.test, &first.test))
-        || js::continues(&turn, label.as_ref().map(|n| n.word()))
+        || js::continues(&turn, label.as_ref())
         || js::mentions_in(after, variable.word()) > 0
         || in_function(&turn, variable.word())
     {
@@ -113,7 +113,7 @@ fn tested_last(label: &Option<Name>, body: &[Stmt], looped: js::Span) -> Option<
         return None;
     };
     if !matches!(&then[..], [Stmt { kind: StmtKind::Break(l), .. }] if ours(l))
-        || js::continues(turn, label.as_ref().map(|n| n.word()))
+        || js::continues(turn, label.as_ref())
         || js::declared_names(turn).iter().any(|name| done.mentions_var(name))
     {
         return None;

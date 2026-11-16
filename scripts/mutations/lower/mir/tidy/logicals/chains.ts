@@ -7,8 +7,8 @@ export const mutations: Mutation[] = [
     breaks:
       "React's attachSuspenseRetryListeners' let chain with an `else` inside an `if`, `if (lanes != null && root != null) { .. } else { throw .. }`, tests that break `bb23`",
     file: "src/lower/mir/tidy/logicals/chains.rs",
-    find: "                match chain_within(body, label.word(), &mut hoisting) {\n",
-    replace: "                match false && chain_within(body, label.word(), &mut hoisting) {\n",
+    find: "                match chain_within(body, label, &mut hoisting) {\n",
+    replace: "                match false && chain_within(body, label, &mut hoisting) {\n",
     tests: ["test/corpus.test.ts", "-t", "^let_chain_else_inside_if.rs$"],
     snapshots: true,
   },
@@ -17,8 +17,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a let chain with an `else` whose binding is between its tests, `if (DEV) { const readable = ..; if (readable != null) { .. } }`, is left nested, the tail after it copied into an early `return`, not `if (DEV && options?.debugChannel?.readable != null) { .. } else { .. }` (rd614 b)",
     file: "src/lower/mir/tidy/logicals/chains.rs",
-    find: "            Some((0, chain)) if chain != *body => Some(chain_if(&chain, label.word(), stmts[i].span, lets)),\n",
-    replace: "            Some((0, chain)) if false && chain != *body => Some(chain_if(&chain, label.word(), stmts[i].span, lets)),\n",
+    find: "            Some((0, chain)) if chain != *body => Some(chain_if(&chain, label, stmts[i].span, lets)),\n",
+    replace: "            Some((0, chain)) if false && chain != *body => Some(chain_if(&chain, label, stmts[i].span, lets)),\n",
     tests: ["test/corpus.test.ts", "-t", "^let_chain_else_of_an_optional_read.rs$"],
     snapshots: true,
   },
@@ -27,8 +27,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a block's chain of no binding, a flag's, `const value = m.TAG === \"Rows\" && ..`, is made an `if` of its `else`, `let tmp; if (..) { tmp = false; } else { tmp = true; }`, before `flag values` sees it (rd614 b)",
     file: "src/lower/mir/tidy/logicals/chains.rs",
-    find: "            Some((0, chain)) if chain != *body => Some(chain_if(&chain, label.word(), stmts[i].span, lets)),\n",
-    replace: "            Some((0, chain)) => Some(chain_if(&chain, label.word(), stmts[i].span, lets)),\n",
+    find: "            Some((0, chain)) if chain != *body => Some(chain_if(&chain, label, stmts[i].span, lets)),\n",
+    replace: "            Some((0, chain)) => Some(chain_if(&chain, label, stmts[i].span, lets)),\n",
     tests: ["test/corpus.test.ts", "-t", "^flag_of_a_guarded_match.rs$"],
     snapshots: true,
   },

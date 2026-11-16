@@ -54,9 +54,9 @@ pub(super) fn blocks_one_case_reaches(stmts: &mut [Stmt]) {
         let left = match tail {
             [] => js::ends(switch),
             [_] if broken => true,
-            _ => tail.last().is_some_and(js::ends) && !js::names_jump(tail, inner.word()),
+            _ => tail.last().is_some_and(js::ends) && !js::names_jump(tail, &inner),
         };
-        if !left || js::names_jump(head, inner.word()) {
+        if !left || js::names_jump(head, &inner) {
             continue;
         }
         let broken = broken && tail.len() == 1;
@@ -64,7 +64,7 @@ pub(super) fn blocks_one_case_reaches(stmts: &mut [Stmt]) {
             continue;
         };
         let reaching: Vec<usize> = (js::case_lists(cases, default).enumerate())
-            .filter(|(_, case)| js::names_jump(case, inner.word()))
+            .filter(|(_, case)| js::names_jump(case, &inner))
             .map(|(k, _)| k)
             .collect();
         let [only] = reaching[..] else {
@@ -157,7 +157,7 @@ pub(super) fn rest_one_case_reaches(stmts: &mut Vec<Stmt>, at_end: bool) {
                 if let StmtKind::Switch { cases, default, .. } = &mut stmt.kind {
                     for case in js::case_lists_mut(cases, default) {
                         if matches!(case.last().map(|s| &s.kind), Some(StmtKind::Break(Some(l))) if *l == label)
-                            && !js::names_jump(&case[..case.len() - 1], label.word())
+                            && !js::names_jump(&case[..case.len() - 1], &label)
                         {
                             found = Some(found.map_or(1, |n: usize| n + 1));
                         }
@@ -336,7 +336,7 @@ pub(super) fn loops_left_by_cases(stmts: &mut [Stmt], loops: &[(js::Span, bool, 
                 unreachable!("matched")
             };
             inner.pop();
-            relabel(&mut inner, b.word(), &written);
+            relabel(&mut inner, &b, &written);
             body.extend(inner);
             *label = Some(written);
             continue;
@@ -357,7 +357,7 @@ pub(super) fn loops_left_by_cases(stmts: &mut [Stmt], loops: &[(js::Span, bool, 
         if !matches!(&last.kind, StmtKind::Break(l) if own(l))
             || !continued
             || cases.is_empty()
-            || js::continues(rest, label.as_ref().map(|n| n.word()))
+            || js::continues(rest, label.as_ref())
             || super::declared(rest).any(|name| super::declared(&body[..body.len() - 2]).any(|n| n == name))
         {
             continue;
@@ -404,10 +404,10 @@ fn leaving(stmts: &mut [Stmt], written: &js::Name) {
 }
 
 /// Each `break from` in `stmts`, however deep, `break to`.
-fn relabel(stmts: &mut Vec<Stmt>, from: &str, to: &js::Name) {
+fn relabel(stmts: &mut Vec<Stmt>, from: &js::Name, to: &js::Name) {
     js::statement_lists(stmts, &mut |list| {
         for stmt in list.iter_mut() {
-            if matches!(&stmt.kind, StmtKind::Break(Some(l)) if l.is(from)) {
+            if matches!(&stmt.kind, StmtKind::Break(Some(l)) if l == from) {
                 stmt.kind = StmtKind::Break(Some(to.clone()));
             }
         }

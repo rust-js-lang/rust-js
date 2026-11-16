@@ -79,7 +79,7 @@ export const mutations: Mutation[] = [
     breaks:
       "MIR's loop's rest, moved out, keeps a jump of the loop, which then goes to another",
     file: "src/lower/mir/tidy/jumps/tried.rs",
-    find: "            && let Some(rest) = fallen(rest, label.as_ref().map(|n| n.word()))\n",
+    find: "            && let Some(rest) = fallen(rest, label.as_ref())\n",
     replace: "            && let Some(rest) = Some(rest.to_vec())\n",
     tests: ["test/lowering-loops.test.ts", "-t", "returns in a loop are where"],
   },

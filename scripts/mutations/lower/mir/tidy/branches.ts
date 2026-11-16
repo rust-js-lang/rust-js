@@ -126,9 +126,9 @@ export const mutations: Mutation[] = [
     breaks:
       "`l: { if (!a) { if (!b) { s; break l; } } t }` stays, not `if (a || b) { t } else { s }`",
     file: "src/lower/mir/tidy/branches.rs",
-    find: "            StmtKind::Labeled(label, body) if let Some((tests, otherwise, then)) = or_chain(&body, label.word()) => {\n",
+    find: "            StmtKind::Labeled(label, body) if let Some((tests, otherwise, then)) = or_chain(&body, &label) => {\n",
     replace:
-      "            StmtKind::Labeled(label, body) if let Some((tests, otherwise, then)) = or_chain(&body, label.word()).filter(|_| false) => {\n",
+      "            StmtKind::Labeled(label, body) if let Some((tests, otherwise, then)) = or_chain(&body, &label).filter(|_| false) => {\n",
     tests: [
       "test/lowering-matches.test.ts",
       "test/lowering-written-branches.test.ts",

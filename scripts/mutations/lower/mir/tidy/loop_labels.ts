@@ -25,7 +25,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a loop a `switch` of guarded arms that fall through breaks keeps tidy's `loop:` label and `break loop;`, a label the program didn't write (#389b)",
     file: "src/lower/mir/tidy/loop_labels.rs",
-    find: "            chained_in(body, name.word(), &locals);\n",
+    find: "            chained_in(body, &name, &locals);\n",
     replace: "",
     tests: ["test/lowering-switch-ends.test.ts", "-t", "guarded arms"],
   },

@@ -121,11 +121,11 @@ pub(super) fn decisions(stmts: &mut Vec<Stmt>, told: &Told) {
         }
         // A block each `break` of which ends a branch it ends with, an
         // inner tree's chain whose arms go on past the block: what it holds.
-        if let Some(ended) = breaks_ended(label.word(), body).filter(|_| calls_in(body, told)) {
+        if let Some(ended) = breaks_ended(label, body).filter(|_| calls_in(body, told)) {
             stmts.splice(i..i + 1, ended);
             continue;
         }
-        let at = (label.word(), stmts[i].span);
+        let at = (label, stmts[i].span);
         let after = &stmts[i + 1..];
         // What a guard's binding the `let`s before the block give, its tree
         // the binding's only reader (`given_before`, #771).
@@ -137,10 +137,10 @@ pub(super) fn decisions(stmts: &mut Vec<Stmt>, told: &Told) {
             // the block: its chain there, and the block's again; a block no
             // `break` leaves then, what it holds.
             if told.kept
-                && let Some(tails) = tails(label.word(), body, told)
+                && let Some(tails) = tails(label, body, told)
             {
                 let made = chain(at, &tails, after, told, (true, &given));
-                let left = names_break(&tails, label.word());
+                let left = names_break(&tails, label);
                 match made {
                     Some((chain, true)) => {
                         stmts.truncate(i);
@@ -148,7 +148,7 @@ pub(super) fn decisions(stmts: &mut Vec<Stmt>, told: &Told) {
                     }
                     Some((chain, false)) => drop(stmts.splice(i..i + 1, chain)),
                     None if !left => drop(stmts.splice(i..i + 1, tails)),
-                    None => match nested(label.word(), &tails) {
+                    None => match nested(label, &tails) {
                         Some(nested) => drop(stmts.splice(i..i + 1, nested)),
                         None => {
                             if let StmtKind::Labeled(_, body) = &mut stmts[i].kind {
@@ -158,7 +158,7 @@ pub(super) fn decisions(stmts: &mut Vec<Stmt>, told: &Told) {
                     },
                 }
             } else if told.kept
-                && let Some(nested) = nested(label.word(), body)
+                && let Some(nested) = nested(label, body)
             {
                 stmts.splice(i..i + 1, nested);
             }
@@ -217,7 +217,7 @@ fn switched(tested: &[(&Expr, Expr)], told: &Told) -> bool {
 /// `kept`: the label stays where there's no chain, so one of tests read
 /// again that do nothing is the chain, however long (C1, #523).
 fn chain(
-    (label, block): (&str, js::Span),
+    (label, block): (&js::Name, js::Span),
     body: &[Stmt],
     after: &[Stmt],
     told: &Told,
@@ -816,7 +816,7 @@ fn leaf_tests<'e>(test: &'e Expr, at: js::Span, out: &mut Vec<(&'e Expr, js::Spa
 
 /// Whether each `break` of `label` in a loop's body `stmts` is in no loop
 /// of its own: the loop's, unlabeled.
-fn loop_breaks(stmts: &[Stmt], label: &str) -> bool {
+fn loop_breaks(stmts: &[Stmt], label: &js::Name) -> bool {
     stmts.iter().all(|stmt| match &stmt.kind {
         StmtKind::If(_, a, b) => loop_breaks(a, label) && b.as_deref().is_none_or(|b| loop_breaks(b, label)),
         StmtKind::Labeled(_, body) => loop_breaks(body, label),
@@ -829,10 +829,10 @@ fn loop_breaks(stmts: &[Stmt], label: &str) -> bool {
 }
 
 /// Each `break` of `label` `loop_breaks` found: `break`.
-fn unlabel_breaks(stmts: &mut [Stmt], label: &str) {
+fn unlabel_breaks(stmts: &mut [Stmt], label: &js::Name) {
     for stmt in stmts {
         match &mut stmt.kind {
-            StmtKind::Break(l) if l.as_ref().map(|n| n.word()) == Some(label) => *l = None,
+            StmtKind::Break(l) if l.as_ref() == Some(label) => *l = None,
             StmtKind::If(_, a, b) => {
                 unlabel_breaks(a, label);
                 if let Some(b) = b {

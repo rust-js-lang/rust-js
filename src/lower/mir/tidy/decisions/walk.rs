@@ -18,7 +18,7 @@ pub(super) struct Leaf<'s> {
 /// A walk of a tree's tests to its leaves: the block it's in, and what it
 /// finds.
 pub(super) struct Walk<'s, 'w> {
-    pub(super) label: &'s str,
+    pub(super) label: &'s js::Name,
     pub(super) told: &'w Told<'w>,
     pub(super) leaves: &'w mut Vec<Leaf<'s>>,
     /// Each test of the tree, once: the `if`'s, and what it tests, a
@@ -129,7 +129,7 @@ impl<'s> Walk<'s, '_> {
         }
         let label = self.label;
         match &stmt.kind {
-            StmtKind::Break(Some(l)) if l.is(label) => {
+            StmtKind::Break(Some(l)) if l == label => {
                 self.leaves.push(Leaf {
                     tests,
                     body: Vec::new(),
@@ -162,7 +162,7 @@ impl<'s> Walk<'s, '_> {
             body.truncate(end + 1);
         }
         let out = match body.last().map(|s| &s.kind) {
-            Some(StmtKind::Break(Some(l))) if l.is(label) => {
+            Some(StmtKind::Break(Some(l))) if l == label => {
                 body.pop();
                 true
             }

@@ -27,7 +27,7 @@ pub(super) fn guards_once(list: &mut [Stmt], switches: &[Switch]) {
             continue;
         }
         let [chain, tail @ ..] = &body[..] else { continue };
-        if !tail.last().is_some_and(js::ends) || js::names_break(tail, label.word()) {
+        if !tail.last().is_some_and(js::ends) || js::names_break(tail, label) {
             continue;
         }
         let broken = |stmts: &[Stmt]| matches!(stmts, [Stmt { kind: StmtKind::Break(Some(l)), .. }] if l == label);

@@ -166,16 +166,14 @@ fn walk(
                     ..
                 }) = body.last_mut()
                 {
-                    let of_it = |l: &Option<Name>| {
-                        l.is_none() || l.as_ref().map(|n| n.word()) == label.as_ref().map(|n| n.word())
-                    };
+                    let of_it = |l: &Option<Name>| l.is_none() || l.as_ref() == label.as_ref();
                     for case in js::case_lists_mut(cases, default) {
                         made_continues_broken(case, &of_it, program);
                     }
                 }
                 if inner.named {
-                    if let Some(from) = label.as_ref().map(|n| n.word())
-                        && from != readable.word()
+                    if let Some(from) = label.as_ref()
+                        && from.word() != readable.word()
                     {
                         relabeled(body, from, &readable);
                     }

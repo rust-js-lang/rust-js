@@ -46,7 +46,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a flag a loop's `break` or `continue` leaves the block with is given first, and read after it given",
     file: "src/lower/mir/tidy/decisions/defaults.rs",
-    find: "                    if !self.local && !inside.holds(label.as_ref().map(|n| n.word()), is_continue) {\n",
+    find: "                    if !self.local && !inside.holds(label.as_ref(), is_continue) {\n",
     replace: "                    if false {\n",
     tests: [
       "test/lowering-switch-symbols.test.ts",

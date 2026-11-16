@@ -53,7 +53,7 @@ fn stepped(declared: &Stmt, looped: &Stmt, after: &[Stmt]) -> Option<StmtKind> {
     if !matches!(&target.kind, ExprKind::Var(v) if v == name)
         || !cond.mentions_var(name.word())
         || js::mentions_in(after, name.word()) > 0
-        || js::continues(rest, label.as_ref().map(|n| n.word()))
+        || js::continues(rest, label.as_ref())
         || js::Writes::sets(rest, name)
         || in_function(body, name.word())
         || function_names(cond, name.word())

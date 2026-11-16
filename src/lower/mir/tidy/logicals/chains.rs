@@ -37,14 +37,14 @@ pub(in crate::lower::mir::tidy) fn chains_in_blocks(stmts: &mut Vec<Stmt>, lets:
         };
         // Of a binding sunk alone: a chain of none is `branch_values`', or
         // a flag's (`flag values`).
-        let made = match chained(body, label.word(), &mut hoisting) {
-            Some((0, chain)) if chain != *body => Some(chain_if(&chain, label.word(), stmts[i].span, lets)),
+        let made = match chained(body, label, &mut hoisting) {
+            Some((0, chain)) if chain != *body => Some(chain_if(&chain, label, stmts[i].span, lets)),
             _ => {
                 hoisting.names.clear();
-                match chain_within(body, label.word(), &mut hoisting) {
+                match chain_within(body, label, &mut hoisting) {
                     true => {
                         let (label, mut body) = (label.clone(), body.clone());
-                        fold_within(&mut body, label.word(), &mut hoisting, lets);
+                        fold_within(&mut body, &label, &mut hoisting, lets);
                         Some(body.pop().expect("chain_within's `if`"))
                     }
                     false => None,
@@ -66,7 +66,7 @@ pub(in crate::lower::mir::tidy) fn chains_in_blocks(stmts: &mut Vec<Stmt>, lets:
 
 /// `chains_in_blocks`' fold of `list`, `chain_within` it: the chain where
 /// it is, in the innermost `if`, after the bindings before it.
-fn fold_within(list: &mut [Stmt], label: &str, hoisting: &mut Hoisting, lets: bool) {
+fn fold_within(list: &mut [Stmt], label: &js::Name, hoisting: &mut Hoisting, lets: bool) {
     let [
         Stmt {
             kind: StmtKind::If(_, inner, None),
@@ -88,7 +88,7 @@ fn fold_within(list: &mut [Stmt], label: &str, hoisting: &mut Hoisting, lets: bo
 /// negated, for `written elses` to write as the program did, but `lets`',
 /// late, after that pass, as the let chain's written, `if (a && b) { s }
 /// else { t }`.
-fn chain_if(chain: &[Stmt], label: &str, span: js::Span, lets: bool) -> Stmt {
+fn chain_if(chain: &[Stmt], label: &js::Name, span: js::Span, lets: bool) -> Stmt {
     let Some((tests, mut otherwise, then)) = or_chain(chain, label) else {
         unreachable!("chained")
     };
@@ -112,7 +112,7 @@ fn chain_if(chain: &[Stmt], label: &str, span: js::Span, lets: bool) -> Stmt {
 /// stay where they are, read once, a getter's too (rd639); those between
 /// its tests are sunk, read again, of what reads the same (`rereadable`);
 /// or, where the tests call, set where they're read (`set_in_tests`).
-fn chained(list: &[Stmt], label: &str, hoisting: &mut Hoisting) -> Option<(usize, Vec<Stmt>)> {
+fn chained(list: &[Stmt], label: &js::Name, hoisting: &mut Hoisting) -> Option<(usize, Vec<Stmt>)> {
     let k = (list.iter())
         .take_while(|s| matches!(&s.kind, StmtKind::Const(_, value) if read_of_a_path(value)))
         .count();
@@ -233,7 +233,7 @@ fn sunk(stmt: &mut Stmt, mut carried: Vec<Stmt>) {
 /// Whether `body`, a block `label`'s, is an `if` of no `else` alone, of
 /// such an `if` or of `or_chain`'s `&&` chain (`chained`), to the block's
 /// end: the chain each `if` is all of the block within (`chains_in_blocks`).
-fn chain_within(body: &[Stmt], label: &str, hoisting: &mut Hoisting) -> bool {
+fn chain_within(body: &[Stmt], label: &js::Name, hoisting: &mut Hoisting) -> bool {
     let [
         Stmt {
             kind: StmtKind::If(_, inner, None),

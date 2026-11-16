@@ -27,7 +27,7 @@ pub(super) fn exit_after(
     }
     // Not of a loop that `break`s: what it does after its own `break` is
     // put after it as written by the stages before (ADR 0702, amended).
-    if breaks(body, label.as_ref().map(|n| n.word())) {
+    if breaks(body, label.as_ref()) {
         return None;
     }
     // The labels inside it, whose jumps don't leave it.
@@ -100,7 +100,7 @@ pub(super) fn exit_after(
         StmtKind::Return(_) | StmtKind::Throw(_) => true,
         StmtKind::Break(Some(l)) | StmtKind::Continue(Some(l)) => !inner.contains(l.word()),
         StmtKind::While { label, cond, body } => {
-            matches!(cond.kind, ExprKind::Bool(true)) && !breaks(body, label.as_ref().map(|n| n.word())) && stays(s)
+            matches!(cond.kind, ExprKind::Bool(true)) && !breaks(body, label.as_ref()) && stays(s)
         }
         _ => false,
     };
@@ -374,7 +374,7 @@ pub(in crate::lower::mir::tidy) fn named_labels(stmts: &mut [Stmt], loops: &[(js
                 && !around.contains(to)
             {
                 let to = js::Name::label(to);
-                relabeled(body, label.word(), &to);
+                relabeled(body, label, &to);
                 *label = to;
             }
             around.push(label.to_string());
@@ -447,7 +447,7 @@ pub(in crate::lower::mir::tidy) fn written_loop_breaks(
                 unreachable!("matched")
             };
             let from = label.replace(to.clone()).expect("labeled");
-            relabeled(inner, from.word(), &to);
+            relabeled(inner, &from, &to);
         }
     });
 }
@@ -488,7 +488,7 @@ pub(in crate::lower::mir::tidy) fn written_blocks(body: &mut Vec<Stmt>, blocks: 
                 && crate::lower::mir::is_block_label(label)
             {
                 let from = label.clone();
-                relabeled(inner, from.word(), &to);
+                relabeled(inner, &from, &to);
             }
         }
         // A block of one that ends it, where it ends too.
@@ -504,7 +504,7 @@ pub(in crate::lower::mir::tidy) fn written_blocks(body: &mut Vec<Stmt>, blocks: 
                 && crate::lower::mir::is_block_label(last)
             {
                 let from = last.clone();
-                relabeled(last_body, from.word(), outer);
+                relabeled(last_body, &from, outer);
             }
         }
     });
@@ -532,10 +532,10 @@ pub(in crate::lower::mir::tidy) fn written_blocks(body: &mut Vec<Stmt>, blocks: 
                 && let Some(to) = name
                 && crate::lower::mir::is_block_label(label)
                 && taken.get(&to) == Some(&1)
-                && js::names_jump(inner, label.word())
+                && js::names_jump(inner, label)
             {
                 let named = js::Name::label(&to);
-                relabeled(inner, label.word(), &named);
+                relabeled(inner, label, &named);
                 taken.insert(to, 2);
                 *label = named;
             }
@@ -572,7 +572,7 @@ fn around_loops(stmts: &mut Vec<Stmt>, blocks: &[LabeledBlock]) {
                 let after = &body[k + 1..];
                 after.last().is_some_and(ends)
                     && matches!(&body[k].kind, StmtKind::Labeled(_, b) if b.last().is_some_and(ends))
-                    && !js::names_jump(after, l.word())
+                    && !js::names_jump(after, l)
                     && !declared(&body[..k]).any(|name| js::mentions_in(after, name) > 0)
             }),
             _ => None,
@@ -628,7 +628,7 @@ pub(in crate::lower::mir::tidy) fn unlabeled(stmts: &mut Vec<Stmt>) {
     let mut i = 0;
     while i < stmts.len() {
         let splice = matches!(&stmts[i].kind, StmtKind::Labeled(label, body)
-            if !js::names_jump(body, label.word()) && fits_in_place(stmts, i, body));
+            if !js::names_jump(body, label) && fits_in_place(stmts, i, body));
         if splice {
             let StmtKind::Labeled(_, body) = stmts.remove(i).kind else {
                 unreachable!("matched")
@@ -642,7 +642,7 @@ pub(in crate::lower::mir::tidy) fn unlabeled(stmts: &mut Vec<Stmt>) {
         | StmtKind::For { label, body, .. } = &mut stmts[i].kind
             && label
                 .as_ref()
-                .is_some_and(|l| crate::lower::mir::is_block_label(l) && !js::names_jump(body, l.word()))
+                .is_some_and(|l| crate::lower::mir::is_block_label(l) && !js::names_jump(body, l))
         {
             *label = None;
         }
@@ -835,16 +835,16 @@ fn left_by(switch: &mut Stmt, leaving: &[String], returned: Option<&Option<Expr>
         (Some(StmtKind::Return(Some(value))), Some(Some(after))) => super::super::switches::alike(value, after),
         _ => false,
     };
-    fn blocks(stmts: &[Stmt], leaves: &dyn Fn(Option<&Stmt>) -> bool, found: &mut Vec<String>) {
+    fn blocks(stmts: &[Stmt], leaves: &dyn Fn(Option<&Stmt>) -> bool, found: &mut Vec<js::Name>) {
         for (k, stmt) in stmts.iter().enumerate() {
             match &stmt.kind {
                 StmtKind::Labeled(label, body)
                     if !crate::lower::mir::is_block_label(label)
                         && leaves(stmts.get(k + 1))
-                        && js::names_jump(body, label.word())
+                        && js::names_jump(body, label)
                         && fits_in_place(stmts, k, body) =>
                 {
-                    found.push(label.to_string());
+                    found.push(label.clone());
                 }
                 StmtKind::Labeled(_, body) => blocks(body, leaves, found),
                 StmtKind::If(_, a, b) => {
@@ -855,11 +855,11 @@ fn left_by(switch: &mut Stmt, leaving: &[String], returned: Option<&Option<Expr>
             }
         }
     }
-    fn unwrapped(stmts: &mut Vec<Stmt>, label: &str) {
+    fn unwrapped(stmts: &mut Vec<Stmt>, label: &js::Name) {
         let mut k = 0;
         while k < stmts.len() {
             match &mut stmts[k].kind {
-                StmtKind::Labeled(l, _) if l.is(label) => {
+                StmtKind::Labeled(l, _) if l == label => {
                     let StmtKind::Labeled(_, body) = stmts.remove(k).kind else {
                         unreachable!("matched")
                     };
@@ -900,7 +900,7 @@ fn left_by(switch: &mut Stmt, leaving: &[String], returned: Option<&Option<Expr>
     };
     let label = label.clone();
     js::case_lists_mut(cases, default).for_each(|case| unwrapped(case, &label));
-    Some(label)
+    Some(label.into_word())
 }
 
 /// Whether `stmt` never goes on to what's after it: a jump past it, a

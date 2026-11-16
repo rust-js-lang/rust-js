@@ -388,7 +388,7 @@ pub(super) fn early_return(stmt: &mut Stmt, elses: &[(js::Span, js::Span, js::Sp
     // The `return` after the loop: of no other way out of it, so nothing
     // after it ran, nor of what it declares.
     let after = goes_on && !in_else;
-    if after && (breaks(body, label.as_ref().map(|n| n.word())) || inside) {
+    if after && (breaks(body, label.as_ref()) || inside) {
         return None;
     }
     if !in_else && !goes_on && !then.last().is_some_and(ends) {
@@ -797,14 +797,12 @@ pub(super) fn guarded(stmts: &mut Vec<Stmt>) {
             continue;
         };
         let tail = &stmts[i + 1..];
-        let guards = (body.iter())
-            .take_while(|s| break_test(s, label.word()).is_some())
-            .count();
+        let guards = (body.iter()).take_while(|s| break_test(s, label).is_some()).count();
         let rest = &body[guards..];
         if !tail.last().is_some_and(ends) {
             continue;
         }
-        if guards == 0 || js::names_jump(rest, label.word()) || !rest.last().is_some_and(ends) {
+        if guards == 0 || js::names_jump(rest, label) || !rest.last().is_some_and(ends) {
             continue;
         }
         // What `rest` declares, now beside what's before it.
@@ -812,7 +810,7 @@ pub(super) fn guarded(stmts: &mut Vec<Stmt>) {
             continue;
         }
         let test = (body[..guards].iter())
-            .map(|s| break_test(s, label.word()).expect("a guard"))
+            .map(|s| break_test(s, label).expect("a guard"))
             .reduce(|a, b| Expr::bin(Op::Or, a, b))
             .expect("one");
         // Where the block is, or of one MIR made, where its first guard is.
@@ -829,9 +827,9 @@ pub(super) fn guarded(stmts: &mut Vec<Stmt>) {
 /// When `stmt` breaks out to `label`, `if (c) { break l; }`: its test,
 /// `c`. One that tests on, `if (k) { if (m) { break l; } }`, or breaks in
 /// its `else`, is `skipped_tests`' (ADR 0946), whose one test is the same.
-pub(super) fn break_test(stmt: &Stmt, label: &str) -> Option<Expr> {
+pub(super) fn break_test(stmt: &Stmt, label: &js::Name) -> Option<Expr> {
     match &stmt.kind {
-        StmtKind::If(test, then, None) if matches!(then.as_slice(), [Stmt { kind: StmtKind::Break(Some(l)), .. }] if l.is(label)) => {
+        StmtKind::If(test, then, None) if matches!(then.as_slice(), [Stmt { kind: StmtKind::Break(Some(l)), .. }] if l == label) => {
             Some(test.clone())
         }
         _ => None,

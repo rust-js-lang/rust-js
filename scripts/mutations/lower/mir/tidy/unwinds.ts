@@ -65,11 +65,11 @@ export const mutations: Mutation[] = [
     find: "                StmtKind::If(test, a, b) => {\n                    !test.may_throw()\n",
     replace:
       "                StmtKind::If(test, a, b) => {\n                    false && !test.may_throw()\n",
-    // What the JS does is the same, so its case passes; how it reads isn't,
-    // which the snapshots of the cases that reach it catch, the runner's
-    // own (#864), where #847 left it caught only by a lowering test written
-    // for it.
-    tests: ["test/corpus.test.ts", "-t", "^drop_guard_scope_returns.rs$"],
+    // What the JS does is the same, so a case's run passes; how it reads
+    // isn't, which a case's snapshot catches (#864), where #847 left it
+    // caught only by a lowering test written for it.
+    tests: ["test/corpus.test.ts", "-t", "^called_once_closure_drops_after.rs$"],
+    snapshots: true,
   },
   {
     name: "scoped-drops-exit-kept",
@@ -279,9 +279,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a loop over a borrow that leaves the block it's in, `break 'get_instance`, keeps a `catch` of the drop around each step, React Float's hydrateHoistable's `bb93:` (rd200)",
     file: "src/lower/mir/tidy/unwinds.rs",
-    find: "            StmtKind::Break(Some(label)) => !inside.labels.iter().any(|l| label.is(l)),\n",
+    find: "            StmtKind::Break(Some(label)) => !inside.labels.contains(label),\n",
     replace:
-      "            StmtKind::Break(Some(label)) if inside.labels.iter().any(|l| label.is(l)) => false,\n            StmtKind::Break(Some(_)) => return false,\n",
+      "            StmtKind::Break(Some(label)) if inside.labels.contains(label) => false,\n            StmtKind::Break(Some(_)) => return false,\n",
     tests: ["test/corpus.test.ts", "-t", "^refcell_borrow_loops.rs$"],
     snapshots: true,
   },
@@ -290,7 +290,7 @@ export const mutations: Mutation[] = [
     breaks:
       "every labeled `continue` is a way out of the loop that drops, an inner loop's `continue bb10` and its own `continue bb5` alike: the drop of a value given again in an inner loop is the outer loop's `finally`, run once at its end (generated program 12454574), or a loop over a borrow with a `continue 'outer` keeps a `catch` of the drop around each step (#440)",
     file: "src/lower/mir/tidy/unwinds.rs",
-    find: "            StmtKind::Continue(Some(label)) => {\n                !inside.labels.iter().any(|l| label.is(l)) && inside.own != Some(label.word())\n            }\n",
+    find: "            StmtKind::Continue(Some(label)) => !inside.labels.contains(label) && inside.own != Some(label),\n",
     replace: "            StmtKind::Continue(Some(_)) => true,\n",
     tests: [
       "test/corpus.test.ts",
@@ -304,7 +304,7 @@ export const mutations: Mutation[] = [
     breaks:
       "the labels of the loops inside a loop that drops a value aren't its own, so an inner loop's `continue bb10` leaves it: a value given again there was dropped once, at the outer loop's end (generated program 12454574), which `names_dropped` now refuses too (#463), and a loop over a borrow with an inner loop's `continue` is a `catch` of the drop around each step, not one `try`",
     file: "src/lower/mir/tidy/unwinds.rs",
-    find: "            StmtKind::While { label, .. }\n            | StmtKind::DoWhile { label, .. }\n            | StmtKind::For { label, .. }\n            | StmtKind::ForOf { label, .. } => label.as_ref().map(Name::to_string),\n",
+    find: "            StmtKind::While { label, .. }\n            | StmtKind::DoWhile { label, .. }\n            | StmtKind::For { label, .. }\n            | StmtKind::ForOf { label, .. } => label.clone(),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^(drop_reassigned_in_inner_loop|looped_drops_jumps)\\.rs$"],
     snapshots: true,
@@ -314,9 +314,8 @@ export const mutations: Mutation[] = [
     breaks:
       "the loop's own `continue bb2`, kept in a loop in it, is a way out of it, so a loop over a borrow with one stays a `catch` of the drop around each step (#440)",
     file: "src/lower/mir/tidy/unwinds.rs",
-    find: "            StmtKind::Continue(Some(label)) => {\n                !inside.labels.iter().any(|l| label.is(l)) && inside.own != Some(label.word())\n            }\n",
-    replace:
-      "            StmtKind::Continue(Some(label)) => !inside.labels.iter().any(|l| label.is(l)),\n",
+    find: "            StmtKind::Continue(Some(label)) => !inside.labels.contains(label) && inside.own != Some(label),\n",
+    replace: "            StmtKind::Continue(Some(label)) => !inside.labels.contains(label),\n",
     tests: ["test/corpus.test.ts", "-t", "^looped_drops_jumps.rs$"],
     snapshots: true,
   },
@@ -340,7 +339,7 @@ export const mutations: Mutation[] = [
       "a block's `break` in what's before a loop, `bb42: { .. break bb42; }`, is a way out of the run, so a scope's `try` is cut around it (#442)",
     file: "src/lower/mir/tidy/unwinds.rs",
     find: "            let labels = own_labels(&mut run);\n",
-    replace: "            let labels: Vec<String> = Vec::new();\n",
+    replace: "            let labels: Vec<Name> = Vec::new();\n",
     tests: [
       "test/corpus.test.ts",
       "-t",
@@ -445,8 +444,8 @@ export const mutations: Mutation[] = [
     name: "dropped-at-breaks-off",
     breaks: "an early return out of a guard's scope whose drop may throw is a `break` of MIR's label to the drop after it, a label the program never wrote (#861)",
     file: "src/lower/mir/tidy/unwinds.rs",
-    find: "        if breaks_dropped(&mut taken, label.word(), &tail, true) {\n",
-    replace: "        if false && breaks_dropped(&mut taken, label.word(), &tail, true) {\n",
+    find: "        if breaks_dropped(&mut taken, &label, &tail, true) {\n",
+    replace: "        if false && breaks_dropped(&mut taken, &label, &tail, true) {\n",
     tests: ["test/lowering-drop-guards.test.ts", "-t", "drops where it leaves"],
   },
 ];

@@ -70,10 +70,10 @@ fn copied_into_branches(stmts: &mut Vec<Stmt>, i: usize) -> bool {
     }
     // `stmts`, which end where the block does: the block's `break` at the
     // end of each, gone, and `tail` where it goes on to the end.
-    fn tailed(stmts: &mut Vec<Stmt>, tail: &Stmt, label: &str) -> bool {
+    fn tailed(stmts: &mut Vec<Stmt>, tail: &Stmt, label: &js::Name) -> bool {
         let ended = stmts.last().is_some_and(js::ends);
         match stmts.last_mut().map(|s| &mut s.kind) {
-            Some(StmtKind::Break(Some(l))) if l.is(label) => {
+            Some(StmtKind::Break(Some(l))) if l == label => {
                 stmts.pop();
                 true
             }
@@ -99,7 +99,7 @@ fn copied_into_branches(stmts: &mut Vec<Stmt>, i: usize) -> bool {
     if !matches!(rest.last().map(|s| &s.kind), Some(StmtKind::If(..))) {
         return false;
     }
-    if !tailed(&mut rest, last, label.word()) || js::names_jump(&rest, label.word()) {
+    if !tailed(&mut rest, last, label) || js::names_jump(&rest, label) {
         return false;
     }
     stmts.splice(i..=i, rest);
@@ -155,13 +155,13 @@ struct Given<'a> {
 /// no label leaves, or a loop, which a `continue` does.
 #[derive(Clone, Default)]
 struct Inside<'s> {
-    labels: Vec<&'s str>,
+    labels: Vec<&'s js::Name>,
     in_loop: bool,
     in_switch: bool,
 }
 
 impl<'s> Inside<'s> {
-    fn labeled(&self, label: Option<&'s str>, is_loop: bool, is_switch: bool) -> Inside<'s> {
+    fn labeled(&self, label: Option<&'s js::Name>, is_loop: bool, is_switch: bool) -> Inside<'s> {
         let mut inside = self.clone();
         inside.labels.extend(label);
         inside.in_loop |= is_loop;
@@ -170,7 +170,7 @@ impl<'s> Inside<'s> {
     }
 
     /// Whether a jump to `label`, or of no label, stays in the block.
-    fn holds(&self, label: Option<&str>, is_continue: bool) -> bool {
+    fn holds(&self, label: Option<&js::Name>, is_continue: bool) -> bool {
         match label {
             Some(l) => self.labels.contains(&l),
             None if is_continue => self.in_loop,
@@ -212,7 +212,7 @@ impl Given<'_> {
                 }
                 StmtKind::Break(label) | StmtKind::Continue(label) => {
                     let is_continue = matches!(stmt.kind, StmtKind::Continue(_));
-                    if !self.local && !inside.holds(label.as_ref().map(|n| n.word()), is_continue) {
+                    if !self.local && !inside.holds(label.as_ref(), is_continue) {
                         return None;
                     }
                     0
@@ -225,13 +225,13 @@ impl Given<'_> {
                     self.before_breaks(a, inside)? + b.as_deref().map_or(Some(0), |b| self.before_breaks(b, inside))?
                 }
                 StmtKind::Labeled(label, body) => {
-                    self.before_breaks(body, &inside.labeled(Some(label.word()), false, false))?
+                    self.before_breaks(body, &inside.labeled(Some(label), false, false))?
                 }
                 StmtKind::While { label, cond, body } => {
                     if !quiet(cond) {
                         return None;
                     }
-                    self.before_breaks(body, &inside.labeled(label.as_ref().map(|n| n.word()), true, false))?
+                    self.before_breaks(body, &inside.labeled(label.as_ref(), true, false))?
                 }
                 StmtKind::For {
                     label,
@@ -244,11 +244,11 @@ impl Given<'_> {
                     if !quiet(start) || !quiet(test) || step.value().is_some_and(|v| !quiet(v)) {
                         return None;
                     }
-                    self.before_breaks(body, &inside.labeled(label.as_ref().map(|n| n.word()), true, false))?
+                    self.before_breaks(body, &inside.labeled(label.as_ref(), true, false))?
                 }
                 // Its iterator's `next` may be the program's.
                 StmtKind::ForOf { label, body, .. } if self.local => {
-                    self.before_breaks(body, &inside.labeled(label.as_ref().map(|n| n.word()), true, false))?
+                    self.before_breaks(body, &inside.labeled(label.as_ref(), true, false))?
                 }
                 StmtKind::Switch {
                     discriminant,

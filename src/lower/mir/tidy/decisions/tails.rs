@@ -18,13 +18,13 @@ use super::*;
 /// `Some((op, v)) => { .. match (op, l) { .. } }` after `Some((0, 0)) =>
 /// 6`'s `break` (#771). The list with each so, inner first; `None` where
 /// none is.
-pub(super) fn tails(label: &str, list: &[Stmt], told: &Told) -> Option<Vec<Stmt>> {
+pub(super) fn tails(label: &js::Name, list: &[Stmt], told: &Told) -> Option<Vec<Stmt>> {
     tails_in(label, list, told, true)
 }
 
 /// `tails` of `list`, the block's own where `whole`, whose tree from its
 /// first statement `chain` tried already.
-fn tails_in(label: &str, list: &[Stmt], told: &Told, whole: bool) -> Option<Vec<Stmt>> {
+fn tails_in(label: &js::Name, list: &[Stmt], told: &Told, whole: bool) -> Option<Vec<Stmt>> {
     let mut list = list.to_vec();
     let mut changed = false;
     if let Some(StmtKind::If(_, then, otherwise)) = list.last_mut().map(|s| &mut s.kind) {
@@ -74,10 +74,10 @@ fn tails_in(label: &str, list: &[Stmt], told: &Told, whole: bool) -> Option<Vec<
 /// again in each arm (#771), the nesting of #523's decisions 1 and 5.
 /// `None` where a `break` of the block is left, in a loop or a branch that
 /// goes on.
-pub(super) fn nested(label: &str, list: &[Stmt]) -> Option<Vec<Stmt>> {
-    fn nest(list: &mut Vec<Stmt>, label: &str) {
+pub(super) fn nested(label: &js::Name, list: &[Stmt]) -> Option<Vec<Stmt>> {
+    fn nest(list: &mut Vec<Stmt>, label: &js::Name) {
         // Where the list ends, its `break` goes nowhere else.
-        if matches!(list.last().map(|s| &s.kind), Some(StmtKind::Break(Some(l))) if l.is(label)) {
+        if matches!(list.last().map(|s| &s.kind), Some(StmtKind::Break(Some(l))) if l == label) {
             list.pop();
         }
         if let Some(StmtKind::If(_, then, otherwise)) = list.last_mut().map(|s| &mut s.kind) {
@@ -90,7 +90,7 @@ pub(super) fn nested(label: &str, list: &[Stmt]) -> Option<Vec<Stmt>> {
             let StmtKind::If(_, then, _) = &list[k].kind else {
                 continue;
             };
-            if !matches!(then.last().map(|s| &s.kind), Some(StmtKind::Break(Some(l))) if l.is(label)) {
+            if !matches!(then.last().map(|s| &s.kind), Some(StmtKind::Break(Some(l))) if l == label) {
                 continue;
             }
             // What follows declares in a scope of its own then: none of it
@@ -146,10 +146,10 @@ pub(super) fn calls_in(body: &[Stmt], told: &Told) -> bool {
 /// where there's none or another. Of a tree whose guard calls, the chain
 /// of an inner tree, which made again would read its calls' arms out of
 /// the order they're written.
-pub(super) fn breaks_ended(label: &str, body: &[Stmt]) -> Option<Vec<Stmt>> {
-    fn ended(list: &mut Vec<Stmt>, label: &str) -> bool {
+pub(super) fn breaks_ended(label: &js::Name, body: &[Stmt]) -> Option<Vec<Stmt>> {
+    fn ended(list: &mut Vec<Stmt>, label: &js::Name) -> bool {
         match list.last_mut().map(|s| &mut s.kind) {
-            Some(StmtKind::Break(Some(l))) if l.is(label) => {
+            Some(StmtKind::Break(Some(l))) if l == label => {
                 list.pop();
                 true
             }

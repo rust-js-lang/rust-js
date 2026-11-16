@@ -111,8 +111,8 @@ pub(super) fn guarded_loops(stmts: &mut Vec<Stmt>) {
             let Some(name) = label.clone().filter(|l| tidy_made(l.word())) else {
                 continue;
             };
-            chained_in(body, name.word(), &locals);
-            if !js::names_jump(body, name.word()) {
+            chained_in(body, &name, &locals);
+            if !js::names_jump(body, &name) {
                 *label = None;
             }
         }
@@ -160,7 +160,7 @@ fn tidy_made(label: &str) -> bool {
 /// what's matched forbids it, or a temporary that holds what does
 /// something, `const nextCode = c.nextCode();`; and a `switch` that stays,
 /// held still where the `switch` stays one.
-fn chained_in(stmts: &mut Vec<Stmt>, label: &str, locals: &IndexSet<String>) {
+fn chained_in(stmts: &mut Vec<Stmt>, label: &js::Name, locals: &IndexSet<String>) {
     let mut k = 0;
     while k < stmts.len() {
         let span = stmts[k].span;
@@ -254,7 +254,7 @@ fn guarded_chain(
     subject: &Expr,
     cases: &[js::Case],
     default: Option<&[Stmt]>,
-    label: &str,
+    label: &js::Name,
     span: js::Span,
 ) -> Option<Stmt> {
     let mut links: Vec<(Option<Expr>, Vec<Stmt>)> = Vec::new();
@@ -363,11 +363,11 @@ fn elses_of_breaks(stmts: &mut Vec<Stmt>) {
 /// of no label, not in a loop or a `switch` of its own, whose jumps stay
 /// as they are, the loop keeping its label; `None` where one leaves the
 /// `switch`, `break;`.
-fn own_jumps(stmts: &mut [Stmt], label: &str) -> Option<()> {
+fn own_jumps(stmts: &mut [Stmt], label: &js::Name) -> Option<()> {
     for stmt in stmts.iter_mut() {
         match &mut stmt.kind {
             StmtKind::Break(None) => return None,
-            StmtKind::Break(l) | StmtKind::Continue(l) if l.as_ref().map(|n| n.word()) == Some(label) => *l = None,
+            StmtKind::Break(l) | StmtKind::Continue(l) if l.as_ref() == Some(label) => *l = None,
             StmtKind::If(_, a, b) => {
                 own_jumps(a, label)?;
                 own_jumps(b.as_deref_mut().unwrap_or_default(), label)?;

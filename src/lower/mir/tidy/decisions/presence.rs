@@ -44,7 +44,7 @@ fn said_at(stmts: &[Stmt], i: usize, switches: &[Switch]) -> Option<Vec<Stmt>> {
     let after = &stmts[i + 1..];
     if !matches!(none.kind, ExprKind::Null | ExprKind::Undefined)
         || !after.last().is_some_and(ends)
-        || names_break(after, label.word())
+        || names_break(after, label)
     {
         return None;
     }
@@ -60,7 +60,7 @@ fn said_at(stmts: &[Stmt], i: usize, switches: &[Switch]) -> Option<Vec<Stmt>> {
     // What the chain's arms go on to leaves, as what follows the block
     // does: neither runs after the other.
     let (chain, rest) = then.split_first()?;
-    if names_break(rest, label.word()) || !rest.last().is_some_and(ends) {
+    if names_break(rest, label) || !rest.last().is_some_and(ends) {
         return None;
     }
     let valued = |e: &Expr| valued(e, switches);
@@ -82,7 +82,7 @@ fn said_at(stmts: &[Stmt], i: usize, switches: &[Switch]) -> Option<Vec<Stmt>> {
             *test = std::mem::replace(test, Expr::taken()).negated_test();
             std::mem::swap(then, otherwise);
         }
-        if names_break(then, label.word()) {
+        if names_break(then, label) {
             return None;
         }
         if !says(subject, test, &valued) {

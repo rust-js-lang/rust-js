@@ -294,7 +294,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`(x == y && (x != 0.0 || ..)) || ..` is a labelled block of its tests",
     file: "src/lower/mir/tidy/logicals.rs",
-    find: "    let Some(made) = value(body, after, (label.word(), after), returns, booleans) else {\n",
+    find: "    let Some(made) = value(body, after, (label, after), returns, booleans) else {\n",
     replace: "    let Some(made) = None::<Expr> else {\n",
     tests: ["test/lowering-branches.test.ts", "-t", "a value of && and"],
   },
