@@ -121,6 +121,8 @@ const job = (name: string, cmd: string[], more: Partial<Job> = {}): Job => ({
  * check.yml's that's neither a job's `ci` nor one of these. */
 export const leftToCi: { run: string; why: string }[] = [
   { run: "bun scripts/ci.ts", why: "the run's own planning: what its mutations are since, and the last run's timings its shards balance by" },
+  { run: "bun scripts/attribute.ts", why: "a failed check's attribution, its failing tests at each commit of its batch, which only CI's run has" },
+  { run: "still=()", why: "the same attribution's run of the failing tests at one commit of the batch, by that commit's own harness" },
   { run: "rustup show", why: "a machine's setup: the toolchain, here installed already" },
   { run: "bun install --frozen-lockfile", why: "a machine's setup: the packages, here installed already" },
   { run: "bunx --bun playwright install", why: "a machine's setup: the browser, here installed by `bun run setup`" },

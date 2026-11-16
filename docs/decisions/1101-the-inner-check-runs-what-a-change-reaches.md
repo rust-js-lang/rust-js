@@ -396,3 +396,26 @@ be recorded as a check starts, not after it ends. The line says who ran it
 by `RUST_JS_MACHINE` and `RUST_JS_AGENT`, each machine's sessions' own
 (`whoRuns`), else the host's name with a note. It's written on every exit,
 including a signal's.
+
+### Amended: a failed check says which commit broke what (2026-11-16)
+
+A check of `main` is a batch: it runs once over the commits since the last
+completed check, so a red one named no commit, and every agent with a
+commit in it looked. **Where a check's suite fails, it attributes each
+failure** (`scripts/attribute.ts`, check.yml's `attribute-plan`,
+`attribute` and `attribute-report`). Each suite shard writes its JUnit
+report, now of every run, not only the nightly's. The failing test files
+and corpus cases run again at the batch's commits: each of them if six or
+fewer, else six spread from the oldest to the newest. Each commit gets a
+machine of its own, its own build and its own harness. The batch's base is
+the newest check of `main` that completed, red or green (`plan`'s
+`batch_base`). The first commit each failure fails at from there on broke
+it. A failure that fails at the first commit is said "or before", and one
+that passes at the newest is said "flaky or the check's machine's".
+
+The lines, `<test> broke at <sha> (<subject>)`, are in the run's summary,
+in an `attribution` artifact, and under the red run in `bun run ci:status`.
+Nothing is posted to a commit: a commit comment notifies its author's
+account, which is Tu's. The jobs run only after a failed suite, so a green
+check costs nothing more. Proof: `test/attribute.test.ts` and the
+`attribute-*` mutations.

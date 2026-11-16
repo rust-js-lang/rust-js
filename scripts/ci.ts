@@ -193,6 +193,21 @@ function status() {
       failed = jobs.filter((job) => job.conclusion === "failure").map((job) => job.name).join(", ");
     }
     console.log([run.headBranch, result, failed, `gh run view ${run.databaseId}`].filter(Boolean).join("\t"));
+    // What broke what, where a failed check attributed it (scripts/attribute.ts).
+    if (run.conclusion === "failure") for (const line of attributionOf(run.databaseId)) console.log(`  ${line}`);
+  }
+}
+
+/** The lines of a run's `attribution` artifact, or none. */
+function attributionOf(run: number): string[] {
+  const dir = join(root, "target", "ci-attribution", String(run));
+  rmSync(dir, { recursive: true, force: true });
+  const got = Bun.spawnSync(["gh", "run", "download", String(run), "--name", "attribution", `--dir=${dir}`], { cwd: root, stdout: "pipe", stderr: "pipe" });
+  if (got.exitCode !== 0) return [];
+  try {
+    return (JSON.parse(readFileSync(join(dir, "attribution.json"), "utf8")) as { lines: string[] }).lines;
+  } catch {
+    return [];
   }
 }
 
@@ -301,9 +316,24 @@ async function plan(given?: string) {
   writeFileSync(join(root, "target", "selection.json"), JSON.stringify(selection));
   console.log(`tests=${testsOutput(selection)}`);
   console.log(`test_shards=${testShards(selection)}`);
+  // The batch a failure is attributed in: since the newest check of
+  // `main` that completed, red or green (scripts/attribute.ts).
+  let batchBase = "";
+  try {
+    batchBase = completedBase(runs(), Bun.spawnSync(["git", "rev-parse", "HEAD"], { cwd: root }).stdout.toString().trim()) ?? "";
+  } catch {}
+  console.log(`batch_base=${batchBase}`);
   const said = `The suite's selection: ${outcome(selection)}${selection.map ? `, by the test map of ${selection.map.slice(0, 9)}` : ""}`;
   console.error(said);
   if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${said}\n`);
+}
+
+/** The commit of the newest check of `main` that completed, red or green,
+ * but HEAD's own: a batch's base, the commits after it its check runs over. */
+export function completedBase(all: Run[], head: string): string | undefined {
+  return [...all]
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    .find((run) => run.headBranch === "main" && run.status === "completed" && (run.conclusion === "success" || run.conclusion === "failure") && run.headSha && run.headSha !== head)?.headSha;
 }
 
 /** How many machines the suite's shards of a selection take: one of a

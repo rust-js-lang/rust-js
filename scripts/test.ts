@@ -124,7 +124,9 @@ const ignored = [...Object.values(caseFiles), ...browsers, ...(atNight ? [] : ni
 // The nightly's keeps how long each file and test of each run took, as
 // bun's JUnit reporter measures them, one report a run in target/junit/,
 // which nightly.yml's `test-times` merges (scripts/testTimes.ts).
-const junit = (name: string) => (atNight ? ["--reporter=junit", `--reporter-outfile=target/junit/${name.replace(/\W+/g, "-")}.xml`] : []);
+// And CI's every run's, which a failed check's `attribute` reads the
+// failing tests of (scripts/attribute.ts).
+const junit = (name: string) => (atNight || selectionArg ? ["--reporter=junit", `--reporter-outfile=target/junit/${name.replace(/\W+/g, "-")}.xml`] : []);
 const of = `${index}-of-${count}`;
 let restRunning = true;
 // Of a selection, the files it selected but the case files' and the

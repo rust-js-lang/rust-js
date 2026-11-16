@@ -38,6 +38,15 @@ cases in both builds against native Rust. Its slice runs in each push's
 the mini in 10 parts. The nightly's `copies` job runs it whole, 205 s on the
 mini in 10 parts.
 
+Added on 2026-11-16: `test/attribute.test.ts`, a failed check's
+attribution (`scripts/attribute.ts`, ADR 1101, amended): the batch's
+commits its failing tests run again at, at most six, and the first each
+fails at. check.yml's `attribute-plan`, `attribute` and `attribute-report`
+run only after a failed suite; every suite run writes its JUnit report now.
+A check's suite takes one machine of a small selection (`plan`'s
+`test_shards`), and the Vite example's build runs in `lint`, its own job
+gone.
+
 Added on 2026-11-16: `test/clusters.test.ts`, the issues' kind × area count
 (`scripts/clusters.ts`, ADR 1085, amended): its cells, its threshold of 3,
 each cluster's refactor read from docs/bug-kinds.md's table, and the

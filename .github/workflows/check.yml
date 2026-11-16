@@ -85,6 +85,7 @@ jobs:
       wasm: ${{ steps.plan.outputs.wasm }}
       rustc: ${{ steps.plan.outputs.rustc }}
       tests: ${{ steps.plan.outputs.tests }}
+      batch_base: ${{ steps.plan.outputs.batch_base }}
       test_shards: ${{ steps.plan.outputs.test_shards }}
     steps:
       - uses: actions/checkout@v7
@@ -432,9 +433,10 @@ jobs:
         uses: ./.github/actions/decision-counts
         with:
           name: suite.${{ matrix.shard }}
-      # The nightly's suite's times, each run's JUnit report, which
-      # nightly.yml's `test-times` merges.
-      - if: always() && inputs.nightly
+      # Each run's JUnit report: the nightly's suite's times, which
+      # nightly.yml's `test-times` merges, and a failed check's failing
+      # tests, which `attribute` runs again at each commit of its batch.
+      - if: always()
         uses: actions/upload-artifact@v7
         with:
           name: junit-${{ matrix.shard }}
@@ -455,6 +457,118 @@ jobs:
           path: bless.patch
           if-no-files-found: ignore
           retention-days: 7
+
+  # Which commit of the batch broke each test a failed check failed
+  # (scripts/attribute.ts): a check of `main` runs once over the commits
+  # since the last completed check, so where it fails, each failing test
+  # file and corpus case runs again at each commit of that batch, at most
+  # 6, each on a machine of its own, after the check's own jobs, and the
+  # first it fails at is said, in the run's summary, an `attribution`
+  # artifact and `bun run ci:status`: "<test> broke at <sha> (<subject>)".
+  attribute-plan:
+    needs: [plan, test]
+    if: ${{ !cancelled() && !inputs.nightly && needs.test.result == 'failure' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      commits: ${{ steps.plan.outputs.commits }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: junit-*
+          path: junit
+      - id: plan
+        run: bun scripts/attribute.ts plan junit ${{ needs.plan.outputs.batch_base || 'HEAD~1' }} >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: attribute-failing
+          path: target/attribute/failing.json
+          retention-days: 7
+
+  attribute:
+    needs: attribute-plan
+    if: ${{ !cancelled() && needs.attribute-plan.outputs.commits != '' && needs.attribute-plan.outputs.commits != '[]' }}
+    name: attribute (${{ matrix.commit }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        commit: ${{ fromJSON(needs.attribute-plan.outputs.commits) }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ matrix.commit }}
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - run: bun install --frozen-lockfile
+      - run: rustup show
+      - uses: ./.github/actions/build-rust-js
+        with:
+          profile: debug
+      - uses: actions/download-artifact@v8
+        with:
+          name: attribute-failing
+          path: target/attribute
+      # Each failing file, and each corpus case alone, by this commit's own
+      # harness; which still fail, `result.json`.
+      - name: Run what failed, at this commit
+        env:
+          RUST_JS_COMPILER: ${{ github.workspace }}/target/debug/rust-js
+        run: |
+          still=()
+          for file in $(jq -r '.files[]' target/attribute/failing.json); do
+            [ -f "$file" ] || continue
+            bun test "$file" || still+=("$file")
+          done
+          for name in $(jq -r '.cases[]' target/attribute/failing.json); do
+            [ -f "test/corpus/$name" ] || continue
+            echo "$name" > target/attribute/case.txt
+            RUST_JS_CASES="1/1:$PWD/target/attribute/case.txt" bun test test/corpus.test.ts || still+=("test/corpus/$name")
+          done
+          printf '%s\n' "${still[@]}" | jq -R . | jq -s "{commit: \"$(git rev-parse HEAD)\", failing: map(select(. != \"\"))}" > target/attribute/result.json
+      - uses: actions/upload-artifact@v7
+        with:
+          name: attribute-result-${{ strategy.job-index }}
+          path: target/attribute/result.json
+          retention-days: 7
+
+  attribute-report:
+    needs: [attribute-plan, attribute]
+    if: ${{ !cancelled() && needs.attribute-plan.result == 'success' && needs.attribute-plan.outputs.commits != '' && needs.attribute-plan.outputs.commits != '[]' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - uses: actions/download-artifact@v8
+        with:
+          name: attribute-failing
+          path: target/attribute
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: attribute-result-*
+          path: target/attribute/results
+      - run: bun scripts/attribute.ts report target/attribute/results
+      - uses: actions/upload-artifact@v7
+        with:
+          name: attribution
+          path: target/attribute/attribution.json
+          retention-days: 14
 
   # The playground's compiler, rust-js built to WASM with rustc's front
   # end, and the snapshots and the playground it compiles, of a change to

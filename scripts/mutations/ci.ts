@@ -42,4 +42,12 @@ export const mutations: Mutation[] = [
     replace: 'result !== "caught"',
     tests: ["test/ci.test.ts", "-t", "main's mutations follow"],
   },
+  {
+    name: "attribute-base-cancelled",
+    breaks: "a batch's base is a cancelled check's commit, which never ran its tests, so a commit before it that broke one is outside the batch",
+    file: "scripts/ci.ts",
+    find: '(run.conclusion === "success" || run.conclusion === "failure") && run.headSha',
+    replace: "run.headSha",
+    tests: ["test/attribute.test.ts", "-t", "a batch's base is the newest check"],
+  },
 ];
