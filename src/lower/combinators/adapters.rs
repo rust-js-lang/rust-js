@@ -477,7 +477,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let param = if state_drops.is_some() {
                         made_state.clone()
                     } else {
-                        "_".into()
+                        js::Name::declared("_".to_string())
                     };
                     args.push(Expr::arrow(vec![param.into()], dropped));
                 }
@@ -559,7 +559,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     ],
                     None => vec![StmtKind::Return(Some(keep)).at(js::Span::NONE)],
                 };
-                let param = if body.len() > 1 { item.word() } else { "_" };
+                let param = if body.len() > 1 {
+                    item.clone()
+                } else {
+                    js::Name::declared("_".to_string())
+                };
                 method(
                     items,
                     "filter",
