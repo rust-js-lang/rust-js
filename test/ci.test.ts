@@ -36,6 +36,7 @@ import { jobs as localNightly } from "../scripts/nightly";
 import { atOnce, caseFiles, caseParts, casePoolJobs, casePoolParts, casePoolWidth, caseShardParts, compilerBuilds, harness, memoryBudget, nightly, parts, peakGB, plainSuiteFiles, pooledParts, shard, timedShard, balanced } from "../scripts/shard";
 import { fixture, programFlags, root } from "./support";
 import { miriCommand } from "./miri";
+import { onlyPushedFiles, phases as pushPhases, timesLine } from "../scripts/push";
 
 const files = ["a", "b", "c", "d", "e", "f", "g"].map((name) => `test/${name}.test.ts`);
 
@@ -1337,4 +1338,13 @@ test("Miri and every native build of a program take its flags from programFlags 
     .filter((f) => f.endsWith(".ts") && f !== "test/support.ts" && f !== "test/ci.test.ts");
   const own = harness.filter((f) => readFileSync(join(root, f), "utf8").split("\n").some((l) => /"-Coverflow-checks/.test(l)));
   expect(own).toEqual([]);
+});
+
+test("bun run push rebases, builds, checks std, the suite and the port, holds the diff to its files, then pushes", () => {
+  expect(pushPhases).toEqual(["rebase", "build", "std", "check", "react", "files", "push"]);
+  expect(onlyPushedFiles(["a.rs", "b.rs"], ["a.rs"])).toEqual(["b.rs"]);
+  const line = timesLine({ at: new Date("2026-11-16T08:00:00Z"), machine: "m", agent: "a", sha: "abc", total: 61.4, phases: [["check", 300]], load: [1, 2, 3], ok: true, note: "" });
+  expect(line).toBe("2026-11-16T08:00:00Z | m | a | push | abc | total 61s | check 300s | load 1.00/2.00/3.00 | ok | ");
+  expect(JSON.parse(readFileSync(join(root, "package.json"), "utf8")).scripts.push).toBe("bun scripts/push.ts");
+  for (const doc of ["DEVELOPMENT.md", "CONTRIBUTING.md"]) expect(readFileSync(join(root, doc), "utf8")).toContain("`bun run push`");
 });

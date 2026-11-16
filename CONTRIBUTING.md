@@ -191,6 +191,11 @@ examples or the playground when the change affects integration.
 
 ## Verification and review
 
+Push with `bun run push`, the one way (DEVELOPMENT.md, "Working on `main`"):
+it rebases onto `origin/main`, rebuilds, checks `std/`, runs `check:fast
+--all` and the React port's gate, holds the diff to the pushed commits'
+files, and pushes only what it checked.
+
 Use the pinned Rust toolchain and Bun for JavaScript tooling. Commands are
 in [package.json](package.json).
 

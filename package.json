@@ -57,6 +57,7 @@
     "adr:amended": "bun scripts/adr.ts amended",
     "ci:check": "bun scripts/ci.ts check",
     "ci:status": "bun scripts/ci.ts status",
+    "push": "bun scripts/push.ts",
     "ci:bless": "bun scripts/ci.ts bless",
     "bench:lowering": "cargo build --locked && bun bench/lowering.ts",
     "typecheck": "tsc --noEmit",

@@ -109,6 +109,9 @@ export function unpinnedToolchains(names: string[], pins: Set<string>): string[]
 export const cargoHome = process.env.CARGO_HOME ?? join(homedir(), ".cargo");
 const rustupHome = process.env.RUSTUP_HOME ?? join(homedir(), ".rustup");
 const bunCache = process.env.BUN_INSTALL_CACHE_DIR ?? join(process.env.BUN_INSTALL ?? join(homedir(), ".bun"), "install", "cache");
+/** The machine's log of times, a line of each `bun run push` (scripts/push.ts),
+ * outside the checkouts: a line a run, a few KB a week. */
+export const devTimesLog = process.env.RUST_JS_DEV_TIMES ?? join(homedir(), "rust-js-dev-times.log");
 
 /** Cargo's downloads, its registry's crates and sources and its git
  * checkouts, which its own GC holds: 2 GiB. */

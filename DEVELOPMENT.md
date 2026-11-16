@@ -792,6 +792,21 @@ checked:
 
 - **Each change is a commit on `main`, pushed directly**: no branches, no
   pull requests. Its message is titled `feat(rust-js): …`.
+- **`bun run push` is the one way to push** (`scripts/push.ts`). It
+  rebases onto `origin/main` (a conflict stops it, aborted), rebuilds,
+  makes `std/` again and refuses where it differs from what's committed,
+  runs `check:fast --all`, refuses where the React port differs at its pin
+  (a change the port takes moves `ports/react-in-rust.pin` in the same
+  push), refuses where `git diff origin/main` holds a file no pushed
+  commit changes, and pushes. Where `main` moved while it checked, it
+  rebases and checks again, so no commit lands that the check didn't see.
+  A tracked change not committed is refused. `--bless-readability` blesses
+  `docs/readability.txt` first, printing what changed and amending the top
+  commit; without it a readability failure stops the push like any other.
+  Each phase's time is printed, and one line of them is appended to the
+  machine's log of times, outside the repository (`RUST_JS_DEV_TIMES`,
+  `~/rust-js-dev-times.log` unless given; `RUST_JS_MACHINE` and
+  `RUST_JS_AGENT` name the machine and the agent).
 - **A push that undoes a commit already on `main` is refused** by the
   pre-push hook `bun install` sets git to run (`.githooks/pre-push`,
   `scripts/push-guard.ts`): a commit made from an older tree, as `git
