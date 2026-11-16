@@ -277,8 +277,15 @@ fn item_may_drop<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>, runs: &impl Fn(Ty<'tcx>,
         return false;
     };
     tcx.all_impls(trait_id).any(|imp| {
-        (tcx.impl_item_implementor_ids(imp).get(&item))
-            .is_some_and(|&own| runs(tcx.type_of(own).instantiate_identity().skip_normalization(), imp))
+        (tcx.impl_item_implementor_ids(imp).get(&item)).is_some_and(|&own| {
+            // An impl's method's `impl Trait`, its opaque type: what it hides,
+            // as a named associated type's is the type it names (#2006).
+            let declared = tcx.type_of(own).instantiate_identity().skip_normalization();
+            let typing_env = ty::TypingEnv::post_analysis(tcx, imp);
+            let hidden = (tcx.try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(declared)))
+                .unwrap_or(declared);
+            runs(hidden, imp)
+        })
     })
 }
 

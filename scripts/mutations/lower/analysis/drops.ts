@@ -164,4 +164,12 @@ export const mutations: Mutation[] = [
     replace: "                    true => false,\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_struct_with_a_destructor_dropped_on_an_early_return.rs$"],
   },
+  {
+    name: "impl-trait-item-drop-unrevealed",
+    breaks: "a trait method's `impl Trait` is taken to drop as its impl's opaque type, which runs nothing, not as what it hides, so generic code given one by value takes no `dropT` and never drops it, `drop hidden alone` unprinted (#2006)",
+    file: "src/lower/analysis/drops.rs",
+    find: "            runs(hidden, imp)\n",
+    replace: "            runs(declared, imp)\n",
+    tests: ["test/corpus.test.ts", "-t", "^impl_trait_value_given_to_generic_code.rs$"],
+  },
 ];

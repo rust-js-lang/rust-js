@@ -668,7 +668,7 @@ pub(super) fn item_bounds<'tcx>(
             ) = *of.kind()
                 && def_id != item.def_id
             {
-                path.insert_str(0, tcx.item_name(def_id).as_str());
+                path.insert_str(0, &words::item_word(tcx, def_id));
                 of = alias.self_ty();
             }
             let item_word = words::item_word(tcx, item.def_id);

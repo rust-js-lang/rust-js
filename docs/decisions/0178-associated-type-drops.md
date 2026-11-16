@@ -189,3 +189,26 @@ refusal of a non-`Copy` one, #1575's neighbour pair off
 `test/neighbours-known.txt`, and the mutations `impl-trait-of-any-generic-carried`,
 `impl-trait-of-own-generics-uncarried` and `generic-impl-trait-drop-unmade`.
 
+## Amendment: an `impl Trait`'s value given to generic code is dropped (2026-11-17, #2006)
+
+Generic code given a trait method's `impl Trait` value by value, `at_2(t.hidden())`
+of `fn at_2<T>(_: T)`, took no `dropT`, so the value was never dropped where
+Rust drops it, though the dictionary carries `$dropHidden`. A named
+associated type's value was dropped. `item_may_drop` (`analysis/drops.rs`),
+which says a projection may drop by its impls' types, read an impl's
+`impl Trait` as its type: the impl method's opaque, which runs nothing.
+It now reads what that hides, revealed in the impl's post-analysis typing
+env, as a named associated type's is the type it names. Its value given
+alone, in a tuple, a field, an `Option`, a `Vec` or on through generic
+code is dropped as Rust drops it.
+
+An evidence name of a projection, `evidence_word`, and a bound's path of
+nested projections asked `item_name` of the item, which an `impl Trait`'s
+anonymous associated type hasn't: rust-js crashed where generic code is
+given one through a bound of its own. Both ask `item_word`, the one owner of
+an item's word, `THidden`.
+
+Corpus case `impl_trait_value_given_to_generic_code` holds each path
+against native, in both builds and through the metamorphic rewrites, with
+an impl whose values drop nothing. Mutations `impl-trait-item-drop-unrevealed`
+and `evidence-word-of-an-impl-trait-unnamed` are caught.

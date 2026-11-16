@@ -221,7 +221,8 @@ pub(in crate::lower) fn super_item_fact_key(tcx: TyCtxt<'_>, item: DefId, fact: 
 }
 
 /// A type as a word of an evidence name: a type parameter's, `T`, or an
-/// associated type's of one, `SItem` of `<S as Source>::Item`.
+/// associated type's of one, `SItem` of `<S as Source>::Item`, a trait
+/// method's `impl Trait` by its word, `THidden` (`item_word`, #2006).
 pub(super) fn evidence_word<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> String {
     match ty.kind() {
         ty::Alias(
@@ -231,7 +232,7 @@ pub(super) fn evidence_word<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> String {
                 ..
             },
         ) => {
-            format!("{}{}", evidence_word(tcx, alias.self_ty()), tcx.item_name(*def_id))
+            format!("{}{}", evidence_word(tcx, alias.self_ty()), item_word(tcx, *def_id))
         }
         // `name: impl Into<String>`'s, which rustc names as it's written: its
         // trait's word alone, `IntoString`.

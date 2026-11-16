@@ -148,4 +148,12 @@ export const mutations: Mutation[] = [
     replace: "    generics.own_params.is_empty() && generics.own_params.iter().all(|param| match param.kind {\n",
     tests: ["test/corpus.test.ts", "-t", "^impl_trait_of_a_method_with_its_own_generics_dropped.rs$"],
   },
+  {
+    name: "evidence-word-of-an-impl-trait-unnamed",
+    breaks: "an evidence name of a projection asks its item's own name, which a trait method's `impl Trait` hasn't: rust-js crashes, `item_name: no name for .. AnonAssocTy`, where generic code is given one through a bound of its own (#2006)",
+    file: "src/lower/traits/words.rs",
+    find: "            format!(\"{}{}\", evidence_word(tcx, alias.self_ty()), item_word(tcx, *def_id))\n",
+    replace: "            format!(\"{}{}\", evidence_word(tcx, alias.self_ty()), tcx.item_name(*def_id))\n",
+    tests: ["test/corpus.test.ts", "-t", "^impl_trait_value_given_to_generic_code.rs$"],
+  },
 ];

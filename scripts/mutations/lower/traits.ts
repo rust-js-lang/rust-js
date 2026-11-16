@@ -381,7 +381,7 @@ export const mutations: Mutation[] = [
     name: "nested-bound-named-as-its-type",
     breaks: "a bound of what an associated type projects, `IntoIter: DoubleEndedIterator`, is named as one of the type's own, `PairsDoubleEndedIterator`, which a bound of it would share (#1355)",
     file: "src/lower/traits.rs",
-    find: "                path.insert_str(0, tcx.item_name(def_id).as_str());\n",
+    find: "                path.insert_str(0, &words::item_word(tcx, def_id));\n",
     replace: "                let _ = def_id;\n",
     tests: ["test/corpus.test.ts", "-t", "^associated_into_iterator_flattened_from_its_back.rs$"],
     snapshots: true,
