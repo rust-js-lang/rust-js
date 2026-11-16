@@ -300,9 +300,17 @@ async function plan(given?: string) {
   mkdirSync(join(root, "target"), { recursive: true });
   writeFileSync(join(root, "target", "selection.json"), JSON.stringify(selection));
   console.log(`tests=${testsOutput(selection)}`);
+  console.log(`test_shards=${testShards(selection)}`);
   const said = `The suite's selection: ${outcome(selection)}${selection.map ? `, by the test map of ${selection.map.slice(0, 9)}` : ""}`;
   console.error(said);
   if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${said}\n`);
+}
+
+/** How many machines the suite's shards of a selection take: one of a
+ * small one, at most 60 files and 400 corpus cases, whose setup would be
+ * most of a second machine's minutes; two of more, everything's too. */
+export function testShards(selection: Selection): "1" | "2" {
+  return !selection.all && selection.files.length <= 60 && selection.cases.length <= 400 ? "1" : "2";
 }
 
 /** `plan`'s `tests` output: what the suite's shards run of a selection,

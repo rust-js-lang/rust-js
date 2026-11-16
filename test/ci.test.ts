@@ -5,7 +5,7 @@ import { expect, test } from "bun:test";
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { checkedSince, latestRuns, MUTATION_SHARDS, mutationJobsPassed, mutationShards, mutationTimingsRun, nets, netsSummary, resultsBase, timingsRun } from "../scripts/ci";
+import { checkedSince, latestRuns, MUTATION_SHARDS, mutationJobsPassed, mutationShards, mutationTimingsRun, nets, netsSummary, resultsBase, testShards, timingsRun } from "../scripts/ci";
 import { readersOf } from "./part-settings";
 import { corpusRows, crashes, dependency, lockedVersion, lockOf, sampledHeader, sampledIn, sampledOneIn, written } from "../scripts/crate-corpus";
 import {
@@ -1328,4 +1328,15 @@ test("no workflow cancels a run in progress but the seconds-long idempotent ones
     const cancels = (Bun.YAML.parse(readFileSync(join(dir, file), "utf8")) as { concurrency?: { "cancel-in-progress"?: unknown } }).concurrency?.["cancel-in-progress"];
     expect([file, cancels === undefined || cancels === false || idempotent.includes(file)]).toEqual([file, true]);
   }
+});
+
+// The suite's shards are as many as its selection needs: one of a small
+// selection, so the free plan's 20 jobs at once keep room for the map's
+// recording and the nets; two of a larger one or everything.
+test("a check's suite takes the machines its selection needs", () => {
+  const some = (files: number, cases: number) => ({ all: false, files: Array.from({ length: files }, (_, i) => `test/f${i}.test.ts`), cases: Array.from({ length: cases }, (_, i) => `c${i}.rs`), forms: [], why: "" });
+  expect([testShards(some(5, 30)), testShards(some(60, 400)), testShards(some(61, 0)), testShards(some(0, 401)), testShards({ ...some(0, 0), all: true })]).toEqual(["1", "1", "2", "2", "2"]);
+  const check = readFileSync(join(root, ".github/workflows/check.yml"), "utf8");
+  expect(check).toContain("test_shards: ${{ steps.plan.outputs.test_shards }}");
+  expect(check).toContain("${{ inputs.test_shards || needs.plan.outputs.test_shards || '2' }}");
 });

@@ -317,7 +317,7 @@ export function jobs({ all, changed, branch, added, extra, cores, picked, forms,
       // decisions, red on `main` unseen after 801d40c55 (#523, #732): its
       // build waits on clippy's lock of `target/`, then takes 13 s here,
       // a cold build of its tests a minute or more. And the Vite example's
-      // build, check.yml's `examples`, its committed JS against what
+      // build, check.yml's `lint` job's last steps, its committed JS against what
       // rust-js writes, then Vite's: 4 s.
       ...(rust
         ? [

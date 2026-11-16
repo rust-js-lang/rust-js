@@ -78,7 +78,7 @@ branch's one running, and no branch's run touches another's.
 | The files only the nightly runs, `nightly` in `scripts/shard.ts` (ADR 1030): the release's packaging, React's releases, the editor's check, the harness's own, build history | `bun test test/<file>.test.ts` when a change touches what one checks | | in the suite |
 | WASM compiler parity | | **wasm** job | |
 | rustc's test suite and its lists | | **rustc** jobs, 6 shards | |
-| The Vite example's build | in `check:fast --all` | **examples** job | |
+| The Vite example's build | in `check:fast --all` | **lint** job, after `cargo test` | |
 | Generated programs (fuzz) | | | yes, and the suite's 12 seeds |
 | Each corpus case after each of tidy's stages and without each of preparation's rewrites that changed it, `test/tidy-stages.test.ts` (ADR 1087) | its nine cases, in `check:fast` when tidy, preparation or the oracles change, `--all` too, readability-passes.yml's paths (#998): 31–38 s alone on the M1, 51 s beside the corpus, its runs kept and each case's variants compiled at once (#808) | its nine cases, the read cases and six generated programs, **Readability passes** workflow, of a push that changes tidy or preparation | its nine cases in the suite; every case, on 6 machines |
 | The day's 600 generated programs through the same, `TIDY_STAGES=programs` | | | yes (`programs`, 6 machines of 100) |
