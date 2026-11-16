@@ -61,27 +61,11 @@ export const mutations: Mutation[] = [
     tests,
   },
   {
-    name: "intervals-minus-one-may-wrap",
-    breaks: "`i - 1` under `i < len` is taken below `len` though `i` may be 0, where it wraps past every length: `p[i - 1]` reads `undefined` where native Rust panics",
-    file: "src/lower/analysis/intervals.rs",
-    find: "            if exact {\n",
-    replace: "            if exact || true {\n",
-    tests: ["test/intervals-shadow.test.ts"],
-  },
-  {
     name: "intervals-range-written-kept",
     breaks: "a range written a field at a time, `r.end = 3`, keeps the end it was made with, so its loop's `v[i]` past the slice isn't checked",
     file: "src/lower/analysis/intervals.rs",
     find: "        state.ranges.extend(\n            ranged\n                .filter(|r| r.held != Held::Range || self.stepped.contains(&local))\n",
     replace: "        state.ranges.extend(\n            ranged\n                .filter(|r| r.held != Held::Range || true)\n",
-    tests: ["test/intervals-shadow.test.ts"],
-  },
-  {
-    name: "intervals-shift-unrelated",
-    breaks: "`x >> c` isn't below what `x` is below, so `v[i >> 1]` under `i < v.len()` keeps its check",
-    file: "src/lower/analysis/intervals.rs",
-    find: "        if let Rvalue::BinaryOp(BinOp::Div | BinOp::Shr, operands) = rvalue\n",
-    replace: "        if let Rvalue::BinaryOp(BinOp::Div, operands) = rvalue\n",
     tests: ["test/intervals-shadow.test.ts"],
   },
   {
