@@ -192,9 +192,14 @@ function main() {
         phase("react");
         checked = git("rev-parse", "HEAD").out.trim();
       }
+      // Of the commit it was rebased onto and checked over, `base`, not
+      // `origin/main` as it is now: a fetch while it was checked, a test's or
+      // another worktree's, moved it, and its new commits' files were said
+      // to be the branch's, refusing a push the next step would have
+      // rebased (#1976's, 2026-11-16).
       const stray = onlyPushedFiles(
-        lines(git("diff", "--name-only", "origin/main").out),
-        lines(git("log", "--format=", "--name-only", "origin/main..HEAD").out),
+        lines(git("diff", "--name-only", base).out),
+        lines(git("log", "--format=", "--name-only", `${base}..HEAD`).out),
       );
       if (stray.length > 0) throw new Refused(`the diff against origin/main holds files no pushed commit changes:\n${stray.join("\n")}`);
       phase("files");

@@ -10,4 +10,12 @@ export const mutations: Mutation[] = [
     replace: "...([] as string[])",
     tests: ["test/select.test.ts", "-t", "bun run push says its selection"],
   },
+  {
+    name: "push-files-of-a-moved-main",
+    breaks: "a fetch while the push was checked moved origin/main, and its new commits' files are said to be stray, refusing a push the next step would rebase",
+    file: "scripts/push.ts",
+    find: 'lines(git("diff", "--name-only", base).out)',
+    replace: 'lines(git("diff", "--name-only", "origin/main").out)',
+    tests: ["test/select.test.ts", "-t", "bun run push says its selection on its line"],
+  },
 ];
