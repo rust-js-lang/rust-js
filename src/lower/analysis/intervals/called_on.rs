@@ -18,6 +18,7 @@ use crate::lower::mut_refs::{holds_a_raw_pointer, lets_pointers_out_of};
 use crate::lower::recognition::{
     StdItem, StdPath, deref_call, is_std_crate, is_std_def, is_std_path, keeps_vec_length,
 };
+use rustc_middle::ty::adjustment::PointerCoercion;
 use rustc_span::def_id::DefId;
 
 /// Of `body`, each `&mut` of a `Vec` a local holds that's given only to a
@@ -114,6 +115,22 @@ pub(super) fn called_on<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> IndexMap<
                         }
                     }
                 }
+                // One cast to what it's given as, `&mut take as &mut dyn
+                // FnMut()` of a closure that holds one, or `&mut v as &mut
+                // [u32]`: a holder of the same, a call given it one of its
+                // `&mut` (#1947).
+                Rvalue::Cast(
+                    mir::CastKind::PointerCoercion(PointerCoercion::Unsize, _),
+                    Operand::Copy(of) | Operand::Move(of),
+                    _,
+                ) if of.projection.is_empty() && borrows.contains_key(&of.local) => match assign.0.as_local() {
+                    Some(holder) => {
+                        borrows.insert(holder, borrows[&of.local]);
+                    }
+                    None => {
+                        lent_otherwise.insert(borrows[&of.local]);
+                    }
+                },
                 Rvalue::RawPtr(_, of) => {
                     lent_otherwise.insert(of.local);
                 }
@@ -210,7 +227,10 @@ fn reborrows(
                 if of.local == local && of.projection.is_empty() && closures.contains(&local)
                     && assign.0.as_local().is_some_and(|holder| borrows.contains_key(&holder)))
             || matches!(&assign.1, Rvalue::Aggregate(kind, _) if matches!(**kind, mir::AggregateKind::Closure(..))
-                && assign.0.as_local().is_some_and(|closure| closures.contains(&closure))))
+                && assign.0.as_local().is_some_and(|closure| closures.contains(&closure)))
+            || matches!(&assign.1, Rvalue::Cast(mir::CastKind::PointerCoercion(PointerCoercion::Unsize, _), Operand::Copy(of) | Operand::Move(of), _)
+                if of.local == local && of.projection.is_empty()
+                    && assign.0.as_local().is_some_and(|holder| borrows.contains_key(&holder))))
 }
 
 /// Whether `statement` borrows what `pointer` points to, `&(*pointer)`

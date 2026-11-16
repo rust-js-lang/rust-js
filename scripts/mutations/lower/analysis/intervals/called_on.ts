@@ -110,4 +110,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^vec_lent_to_code_that_keeps_a_pointer.rs$"],
   },
+  {
+    name: "called-on-cast-holder-lends",
+    breaks: "a closure holding a `Vec`'s `&mut`, cast to the `&mut dyn FnMut` a call is given, lends the `Vec` for the whole body, so `args[0]` under `!args.is_empty()` before the call is `$index(args, 0)` (#1947)",
+    file: "src/lower/analysis/intervals/called_on.rs",
+    find: "                ) if of.projection.is_empty() && borrows.contains_key(&of.local) => match assign.0.as_local() {\n",
+    replace: "                ) if false && of.projection.is_empty() && borrows.contains_key(&of.local) => match assign.0.as_local() {\n",
+    tests: ["test/lowering-loops.test.ts", "-t", "Console's loops, spreads and calls read as written"],
+    snapshots: true,
+  },
 ];

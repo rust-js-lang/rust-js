@@ -459,6 +459,29 @@ pub fn shifted(mut args: VecDeque<u32>) -> String {
     formatted
 }
 
+fn each(f: &mut dyn FnMut()) {
+    f();
+}
+
+pub fn handed(mut args: Vec<u32>) -> u32 {
+    let mut first = 0;
+    if !args.is_empty() {
+        first = args[0];
+        each(&mut || {
+            args.pop();
+        });
+    }
+    first
+}
+
+pub fn handed_after(mut args: Vec<u32>) -> u32 {
+    if args.len() > 1 {
+        each(&mut || args.clear());
+        return args[1];
+    }
+    0
+}
+
 pub fn drained(mut args: Vec<u32>) -> u32 {
     let mut total = 0;
     for _ in 0..args.len() {
@@ -498,6 +521,11 @@ pub fn twice() -> u32 {
   // Changed before the loop only, by a closure even, as Rust's borrows
   // allow nothing else while the loop reads it.
   expect(js).toMatch(/export function shifted\(args\) \{[^]*for \(let i = 0; i < args\.length; i\+\+\) \{\n    formatted \+= ` \$\{args\[i\]\}`;/);
+  // Read before a closure that holds it `&mut` is given a call as a
+  // `&mut dyn FnMut`, which is that call's to change (#1947); and past
+  // such a call, which may, checked.
+  expect(js).toContain("first = args[0];");
+  expect(js).toMatch(/export function handedAfter\(args\) \{[^]*\$index\(args, 1/);
   // One whose body changes the length reads its end once, as Rust does.
   expect(js).toContain("const end = args.length;");
   expect(js).toContain("return [...prev, ...next];");
@@ -506,6 +534,8 @@ pub fn twice() -> u32 {
   expect(js).toContain("return (shown(2) + alone(undefined)) >>> 0;");
   const lib = await import(join(dir, "lib.js"));
   expect([lib.unescaped(undefined), lib.unescaped(""), lib.unescaped("%")]).toEqual([true, true, false]);
+  expect([lib.handed([4, 5]), lib.handed([])]).toEqual([4, 0]);
+  expect(() => lib.handedAfter([1, 2])).toThrow("index out of bounds");
   expect([lib.joined([1, 2]), lib.shifted([1, 2, 3]), lib.drained([1, 2, 3]), lib.both([1], [2, 3]), lib.hi()]).toEqual([" 1 2", " 2 3", 6, [1, 2, 3], "Ada"]);
 });
 

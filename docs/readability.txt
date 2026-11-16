@@ -1,14 +1,14 @@
 # shape	count	per 10,000 lines
-files	2633
-lines	350003
+files	2634
+lines	350080
 temporaries	0	0
 labeled blocks	0	0
 while (true)	225	6.4
 $iter	2917	83.3
 Iterator.from	354	10.1
 return;	337	9.6
-renamed x$1	16454	470.1
-role fallbacks	8934	255.3
+renamed x$1	16457	470.1
+role fallbacks	8937	255.3
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1	role fallbacks
 test/corpus/adapter_drop_past_a_panic.js	50	0	0	0	1	0	0	0	1
 test/corpus/adapter_drops.js	1849	0	0	1	18	2	1	98	61
@@ -654,6 +654,7 @@ test/corpus/dyn_error_downcast.js	170	0	0	0	0	0	0	2	3
 test/corpus/dyn_error_made_by_from_drops.js	50	0	0	0	0	0	0	0	0
 test/corpus/dyn_error_made_by_into_drops.js	50	0	0	0	0	0	0	0	0
 test/corpus/dyn_error_made_by_question_drops.js	64	0	0	0	0	0	0	0	2
+test/corpus/dyn_fn_address_beside_a_generic_clone.js	76	0	0	0	0	0	0	3	3
 test/corpus/dyn_fn_address_by_rc_as_ptr.js	272	0	0	0	0	0	0	13	8
 test/corpus/dyn_fn_addresses_of_boxes.js	123	0	0	0	0	0	0	0	2
 test/corpus/dyn_fn_addresses_of_rcs.js	63	0	0	0	0	0	0	0	0
@@ -1016,7 +1017,7 @@ test/corpus/generic_map_folded_and_rfolded.js	134	0	0	0	0	0	0	0	2
 test/corpus/generic_map_made_by_entry.js	202	0	0	0	0	0	0	2	4
 test/corpus/generic_map_of_pub_code_beside_a_cloned_map.js	113	0	0	0	6	1	0	2	2
 test/corpus/generic_map_past_a_take_beside_a_cloned_one.js	106	0	0	0	1	1	0	0	1
-test/corpus/generic_map_past_a_take_cloned_beside_another_bound.js	67	0	0	0	2	0	0	0	0
+test/corpus/generic_map_past_a_take_cloned_beside_another_bound.js	64	0	0	0	2	0	0	0	0
 test/corpus/generic_maps.js	204	0	0	0	6	0	0	9	7
 test/corpus/generic_method_drops.js	106	0	0	1	0	0	1	0	1
 test/corpus/generic_mut_lent_by_std.js	235	0	0	0	1	1	0	11	4
@@ -1398,7 +1399,7 @@ test/corpus/map_none_held_as_null.js	118	0	0	0	0	0	0	0	5
 test/corpus/map_of_a_field_of_a_field.js	52	0	0	0	0	0	0	0	1
 test/corpus/map_of_a_map_given_for_its_len.js	82	0	0	0	2	0	0	0	0
 test/corpus/map_of_a_reversed_range_given_for_its_length.js	107	0	0	0	0	0	0	2	2
-test/corpus/map_of_another_closure_not_cloned_apart.js	133	0	0	0	3	0	0	9	3
+test/corpus/map_of_another_closure_not_cloned_apart.js	137	0	0	0	3	0	0	9	3
 test/corpus/map_of_own_size_hint.js	80	0	0	0	0	0	0	4	4
 test/corpus/map_option_values.js	114	0	0	0	0	0	0	9	11
 test/corpus/map_set_methods.js	264	0	0	0	6	1	0	5	4
