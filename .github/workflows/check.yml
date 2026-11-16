@@ -464,14 +464,19 @@ jobs:
               git -C wasm/rustc sparse-checkout set --cone $(bun scripts/toolchain.ts sources)
               git -C wasm/rustc fetch -q --depth=1 --filter=blob:none origin "$(bun scripts/toolchain.ts commit)"
               git -C wasm/rustc checkout -q FETCH_HEAD
+          # Keyed first by what decides rustc's tree, its commit, sparse
+          # paths and patches, and only a target of the same tree restored:
+          # build.sh makes the tree as old as `RUST_JS_RUSTC_MTIME`, so Cargo
+          # takes its crates as built, and holds the tree's hash to the
+          # target's.
           - uses: actions/cache@v6
             with:
               path: |
                 ~/.cargo/registry
                 ~/.cargo/git
                 wasm/target
-              key: wasm-check-${{ runner.os }}-${{ hashFiles('wasm/Cargo.lock', 'wasm/patches/*', 'wasm/.cargo/config.toml', 'rust-toolchain.toml') }}
-              restore-keys: wasm-check-${{ runner.os }}-
+              key: wasm-check-${{ runner.os }}-${{ hashFiles('rust-toolchain.toml', 'scripts/toolchain.ts', 'wasm/patches/*', 'wasm/build.sh') }}-${{ hashFiles('wasm/Cargo.lock', 'wasm/Cargo.toml', 'wasm/.cargo/config.toml') }}
+              restore-keys: wasm-check-${{ runner.os }}-${{ hashFiles('rust-toolchain.toml', 'scripts/toolchain.ts', 'wasm/patches/*', 'wasm/build.sh') }}-
           - run: bun install --frozen-lockfile
       # The browser, while the WASM builds: the tests after need it.
       - name: Install the browser
@@ -479,6 +484,8 @@ jobs:
         run: bunx --bun playwright install --with-deps chromium
         background: true
       - name: Build WASM from the candidate sources
+        env:
+          RUST_JS_RUSTC_MTIME: '200001010000'
         run: bun run wasm
       - wait: browser
       - name: Require native snapshots and browser parity

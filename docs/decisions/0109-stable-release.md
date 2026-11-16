@@ -272,3 +272,25 @@ Each fix has a mutation: `crate-hash-from-metadata`,
 mutations of the code those changes moved were retargeted at its new form;
 `reexports-alone-list-stem-own` is gone, as a list has no stem item of its
 own to count since 1.100, its leaves read through `uses`.
+
+## Amendment: CI's WASM build takes rustc's crates as the cache built them (2026-11-16)
+
+The `wasm` job checks rustc's source out at the toolchain's commit and
+`wasm/build.sh` patches it, each run anew: every file was newer than the
+cached `wasm/target`'s outputs, and Cargo compiled all of rustc's crates
+again, 4 min 51 s of the build's 6 min 51 s and the job's 12.1 min, the
+check's longest leg (check 43771429035). Cargo's `-Zchecksum-freshness`,
+which would judge them by their content, took no effect on 1.100's Cargo.
+Now, the lead for the user:
+
+- **The tree is made as old as one fixed time** on CI, `RUST_JS_RUSTC_MTIME`,
+  after the patches and before the build: Cargo takes each of rustc's crates
+  as built. rust-js's own sources keep their checkout's times.
+- **Only a target of the same tree is restored.** The cache's key begins with
+  what decides the tree's bytes, `rust-toolchain.toml` (its commit),
+  `scripts/toolchain.ts` (its sparse paths), the patches and `build.sh`, and
+  its `restore-keys` fall back only within that; the lockfile and Cargo's
+  config come after, a dependency Cargo judges by its version.
+- **The tree's hash is held to the target's.** `build.sh` keeps it in
+  `wasm/target/rustc-sources.sha256` and fails where a restored target's
+  differs from the checkout's, before it touches anything.

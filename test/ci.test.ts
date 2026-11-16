@@ -1258,6 +1258,22 @@ test("the WASM build, rustc's tests and the mutations run where what they run ch
   for (const file of importsOf(["scripts/rustc-suite.ts"])) expect([file, touchesRustc([file])]).toEqual([file, true]);
 });
 
+// The `wasm` job's build takes rustc's crates as the cache built them: its
+// tree made as old as one time, only a target of the same tree restored, by
+// a key of what decides it, and the tree's hash held to the target's
+// (wasm/build.sh). Built again each run, they were 4 min 51 s of its 12.
+test("the WASM build takes rustc's crates as built where the cache holds the same tree", () => {
+  const check = readFileSync(join(root, ".github/workflows/check.yml"), "utf8");
+  const tree = "${{ hashFiles('rust-toolchain.toml', 'scripts/toolchain.ts', 'wasm/patches/*', 'wasm/build.sh') }}";
+  expect(check).toContain(`key: wasm-check-\${{ runner.os }}-${tree}-`);
+  expect(check).toContain(`restore-keys: wasm-check-\${{ runner.os }}-${tree}-\n`);
+  expect(check).toContain("RUST_JS_RUSTC_MTIME: '200001010000'");
+  const build = readFileSync(join(root, "wasm/build.sh"), "utf8");
+  expect(build.indexOf("RUST_JS_RUSTC_MTIME")).toBeGreaterThan(build.indexOf("patches/*.patch"));
+  expect(build.indexOf("RUST_JS_RUSTC_MTIME")).toBeLessThan(build.indexOf('cargo "+$TOOLCHAIN" build'));
+  expect(build).toContain("built from other rustc sources");
+});
+
 // The nets of a few minutes are steps of one job, `nets`, each in the
 // background where `plan` says its change runs it: each a job of its own
 // spent most of its minutes setting up. A red `nets` says which net failed
