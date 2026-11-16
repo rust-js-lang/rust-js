@@ -156,7 +156,7 @@ fn named_for_bindings(stmts: &mut [Stmt], user: &IndexSet<String>) {
             || !own
             || !tests_present(test, a.word())
             || declared(b.word(), stmts) != 1
-            || js::mentions_in(stmts, b.word()) != js::mentions_in(then, b.word())
+            || js::mentions_of(stmts, b) != js::mentions_of(then, b)
             || in_closure(&then[1..], b.word())
         {
             continue;

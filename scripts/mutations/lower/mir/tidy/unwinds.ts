@@ -99,7 +99,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `let x;` only a scope reads stays before its `try`, `let tmp; try { tmp = .. }`",
     file: "src/lower/mir/tidy/unwinds.rs",
-    find: "        if elsewhere == 0\n            && js::mentions_in(rest, name.word()) == 0\n            && js::mentions_in(std::slice::from_ref(drop), name.word()) == 0\n",
+    find: "        if elsewhere == 0 && js::mentions_of(rest, name) == 0 && js::mentions_of(std::slice::from_ref(drop), name) == 0\n",
     replace: "        if false\n",
     tests: panics,
     snapshots: true,

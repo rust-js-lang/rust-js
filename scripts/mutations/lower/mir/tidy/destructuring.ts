@@ -49,7 +49,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a tuple assigned to variables, `(a, b) = e`, reads `const [_18, _19] = e; a = _18; b = _19;`, not `[a, b] = e;` (#331)",
     file: "src/lower/mir/tidy/destructuring.rs",
-    find: "        if !distinct\n            || parts\n                .iter()\n                .any(|part| js::mentions_in(&stmts[after..], part.word()) > 0)\n        {\n",
+    find: "        if !distinct || parts.iter().any(|part| js::mentions_of(&stmts[after..], part) > 0) {\n",
     replace: "        if true {\n",
     tests: ["test/corpus.test.ts", "-t", "^tuple_assigned_to_variables.rs$"],
     snapshots: true,
@@ -228,7 +228,7 @@ export const mutations: Mutation[] = [
     breaks:
       "MIR's `async fn` copies its parameter where its body starts, `let n$1 = n`",
     file: "src/lower/mir/tidy/destructuring.rs",
-    find: "        && js::mentions_in(body, param.word()) == 1\n",
+    find: "        && js::mentions_of(body, param) == 1\n",
     replace: "        && false\n",
     tests: [
       "test/compiler.test.ts",

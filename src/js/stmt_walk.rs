@@ -316,7 +316,17 @@ pub(crate) fn constants(body: &mut Vec<Stmt>) {
     });
 }
 
-/// How many times `stmts` name the variable `name`, read or written.
+/// How many times `stmts` name the variable `name`, read or written: the
+/// variable, by its id, not what's spelled as it (ADR 1150, step 3).
+pub fn mentions_of(stmts: &[Stmt], name: &Name) -> usize {
+    let mut count = 0;
+    visit_stmt_names(stmts, &mut |var| count += usize::from(var == name));
+    count
+}
+
+/// How many times `stmts` name a variable spelled `name`, read or written:
+/// what JS reads by the word, preparation's question (`mentions_of` asks
+/// of a variable).
 pub fn mentions_in(stmts: &[Stmt], name: &str) -> usize {
     let mut count = 0;
     visit_stmts(stmts, &mut |var| {
@@ -327,37 +337,43 @@ pub fn mentions_in(stmts: &[Stmt], name: &str) -> usize {
     count
 }
 
-/// Each variable `stmts` read, in every statement and expression.
+/// The word of each variable `stmts` read, `visit_stmt_names`' spelled.
 pub fn visit_stmts<'a>(stmts: &'a [Stmt], read: &mut dyn FnMut(&'a str)) {
+    visit_stmt_names(stmts, &mut |name| read(name.word()));
+}
+
+/// Each variable `stmts` read, in every statement and expression: its
+/// `Name`, so its id (ADR 1150).
+pub fn visit_stmt_names<'a>(stmts: &'a [Stmt], read: &mut dyn FnMut(&'a Name)) {
     for stmt in stmts {
         match &stmt.kind {
             StmtKind::Const(_, value)
             | StmtKind::Destructure { value, .. }
             | StmtKind::Expr(value)
-            | StmtKind::Throw(value) => value.visit_vars(read),
+            | StmtKind::Throw(value) => value.visit_names(read),
             StmtKind::Let(_, value) | StmtKind::Return(value) => {
                 if let Some(value) = value {
-                    value.visit_vars(read);
+                    value.visit_names(read);
                 }
             }
             StmtKind::Assign(target, value) | StmtKind::Compound(_, target, value) => {
-                target.visit_vars(read);
-                value.visit_vars(read);
+                target.visit_names(read);
+                value.visit_names(read);
             }
             StmtKind::If(test, then, els) => {
-                test.visit_vars(read);
-                visit_stmts(then, read);
+                test.visit_names(read);
+                visit_stmt_names(then, read);
                 if let Some(els) = els {
-                    visit_stmts(els, read);
+                    visit_stmt_names(els, read);
                 }
             }
             StmtKind::While { cond, body, .. } | StmtKind::DoWhile { cond, body, .. } => {
-                cond.visit_vars(read);
-                visit_stmts(body, read);
+                cond.visit_names(read);
+                visit_stmt_names(body, read);
             }
             StmtKind::ForOf { iterable, body, .. } => {
-                iterable.visit_vars(read);
-                visit_stmts(body, read);
+                iterable.visit_names(read);
+                visit_stmt_names(body, read);
             }
             StmtKind::For {
                 start,
@@ -366,33 +382,33 @@ pub fn visit_stmts<'a>(stmts: &'a [Stmt], read: &mut dyn FnMut(&'a str)) {
                 body,
                 ..
             } => {
-                start.visit_vars(read);
-                test.visit_vars(read);
-                visit_stmts(body, read);
+                start.visit_names(read);
+                test.visit_names(read);
+                visit_stmt_names(body, read);
                 if let Some(value) = step.value() {
-                    value.visit_vars(read);
+                    value.visit_names(read);
                 }
             }
-            StmtKind::Labeled(_, body) => visit_stmts(body, read),
+            StmtKind::Labeled(_, body) => visit_stmt_names(body, read),
             StmtKind::Switch {
                 discriminant,
                 cases,
                 default,
             } => {
-                discriminant.visit_vars(read);
+                discriminant.visit_names(read);
                 for Case { values, body, .. } in cases {
-                    values.iter().for_each(|value| value.visit_vars(read));
-                    visit_stmts(body, read);
+                    values.iter().for_each(|value| value.visit_names(read));
+                    visit_stmt_names(body, read);
                 }
                 if let Some(default) = default {
-                    visit_stmts(default, read);
+                    visit_stmt_names(default, read);
                 }
             }
             StmtKind::Try(body, finally) | StmtKind::TryCatch(body, _, finally) => {
-                visit_stmts(body, read);
-                visit_stmts(finally, read);
+                visit_stmt_names(body, read);
+                visit_stmt_names(finally, read);
             }
-            StmtKind::Function(function) => visit_stmts(&function.body, read),
+            StmtKind::Function(function) => visit_stmt_names(&function.body, read),
             StmtKind::Break(_) | StmtKind::Continue(_) | StmtKind::Directive(_) | StmtKind::Comments => {}
         }
     }

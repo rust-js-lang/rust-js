@@ -294,7 +294,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a closure that reads an enumerate's count is given the one counter, which it reads changed, not its turn's",
     file: "src/lower/mir/tidy/loops.rs",
-    find: "            closed_over |= js::mentions_in(inner, counter.word()) > 0;\n",
+    find: "            closed_over |= js::mentions_of(inner, counter) > 0;\n",
     replace: "            closed_over |= false;\n",
     tests: ["test/js-object.test.ts", "-t", "a for loop of keys_in"],
   },

@@ -84,7 +84,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // One that writes nothing, its string made `""` and given as it
             // is, `return "";`, whose `let` tidy took: what it wrote before
             // is `""`, and its body gives what it gives.
-            true if js::mentions_in(out, name.word()) == 0 => {
+            true if js::mentions_of(out, name) == 0 => {
                 let error = self.fresh(Role::Error);
                 let written = Expr::call(Expr::helper("$fmtWritten"), vec![Expr::var(&error), Expr::str("")]);
                 let handler = vec![StmtKind::Throw(written).at(js::Span::NONE)];

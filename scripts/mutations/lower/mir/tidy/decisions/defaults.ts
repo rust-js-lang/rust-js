@@ -15,7 +15,7 @@ export const mutations: Mutation[] = [
     name: "default-value-read-before",
     breaks: "a value read in the block before its end is given first",
     file: "src/lower/mir/tidy/decisions/defaults.rs",
-    find: "            && js::mentions_in(rest, x.word()) == given\n",
+    find: "            && js::mentions_of(rest, x) == given\n",
     replace: "",
     tests: ["test/lowering-matches.test.ts", "-t", "no arm sets it"],
   },

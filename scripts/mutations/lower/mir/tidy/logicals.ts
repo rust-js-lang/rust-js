@@ -284,7 +284,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a test merged into `a && b` leaves its bound read, `const captured = child.type`, read again and unread",
     file: "src/lower/mir/tidy/logicals.rs",
-    find: "            && js::mentions_in(&stmts[at + 1..], name.word()) == 0\n",
+    find: "            && js::mentions_of(&stmts[at + 1..], name) == 0\n",
     replace: "            && false\n",
     tests: ["test/corpus.test.ts", "-t", "^(signed_index|signed_counter).rs$"],
     snapshots: true,
@@ -425,8 +425,8 @@ export const mutations: Mutation[] = [
     breaks:
       'a chain whose test `undefined` can\'t be asked, `parse.TAG === "Ok"`, reads its binding first, `const parse = on ? .. : undefined`, and throws where `on` fails (ADR 0870)',
     file: "src/lower/mir/tidy/logicals.rs",
-    find: "    if second.has_effects() || !tests.iter().any(|t| implies(t, &defined)) || test.mentions_var(name.word()) {\n",
-    replace: "    if second.has_effects() || test.mentions_var(name.word()) {\n",
+    find: "    if second.has_effects() || !tests.iter().any(|t| implies(t, &defined)) || test.mentions_name(name) {\n",
+    replace: "    if second.has_effects() || test.mentions_name(name) {\n",
     tests: ["test/corpus.test.ts", "-t", "^let_chain_values.rs$"],
     snapshots: true,
   },

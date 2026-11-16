@@ -32,18 +32,11 @@ export const mutations: Mutation[] = [
     name: "closure-reads-unseen",
     breaks: "a helper only a closure calls isn't imported, and the module throws when the closure runs",
     file: "src/js/expr_walk.rs",
-    find: "                params\n                    .iter()\n                    .flat_map(Pattern::defaults)\n                    .for_each(|d| d.visit_vars(read));\n                visit_stmts(body, read);\n",
+    find: "                params\n                    .iter()\n                    .flat_map(Pattern::defaults)\n                    .for_each(|d| d.visit_names(read));\n                visit_stmt_names(body, read);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "char_from_code"],
   },
-  {
-    name: "strings-read-as-vars",
-    breaks: "a string that spells a helper's name imports it, as scanning the printed text did",
-    file: "src/js/expr_walk.rs",
-    find: "            ExprKind::Var(name) => read(name.word()),\n",
-    replace: "            ExprKind::Var(name) => read(name.word()),\n            ExprKind::Str(name) => read(name),\n",
-    tests: ["test/link.test.ts", "-t", "spells a helper"],
-  },
+
   {
     name: "closure-blocks-substitution",
     breaks: "a closure called in place, with closures in it, is named and called: `const value = () => ..; ok ? value() : undefined`",

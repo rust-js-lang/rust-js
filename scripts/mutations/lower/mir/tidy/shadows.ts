@@ -64,7 +64,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a binding read after its shadow, by a drop at the scope's end say, is assigned the shadow's value first",
     file: "src/lower/mir/tidy/shadows.rs",
-    find: "    if js::mentions_in(&stmts[i + 1..], binding.word()) > 0 {\n        return None;\n    }\n",
+    find: "    if js::mentions_of(&stmts[i + 1..], &binding) > 0 {\n        return None;\n    }\n",
     replace: "",
     tests: ["test/lowering-shadows.test.ts", "-t", "something still sees"],
   },

@@ -222,7 +222,7 @@ pub(super) fn exit_after(
     let mut own: IndexSet<js::Name> = IndexSet::default();
     js::statement_lists(&mut kept, &mut |list| own.extend(declared_names(list).cloned()));
     let mut given: Vec<js::Name> = (own.into_iter())
-        .filter(|name| !made.contains(name.word()) && js::mentions_in(&moved, name.word()) > 0)
+        .filter(|name| !made.contains(name.word()) && js::mentions_of(&moved, name) > 0)
         .collect();
     given.sort_by(|a, b| a.word().cmp(b.word()));
     // Its name is apart from what's beside the loop, as the Rust's is,

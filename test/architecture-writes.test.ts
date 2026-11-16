@@ -71,7 +71,7 @@ test("whether a tree sets a variable is js::Writes' alone", () => {
     // The first mention of a variable in a `try`, its assignment.
     "src/lower/mir/tidy/bindings.rs: StmtKind::Try(body, _) | StmtKind::TryCatch(body, _, _) => body.iter().find(|s| mentions(s) > 0).is_some_and(",
     // `let x; .. x = e;`'s first mention of `x`, the assignment it's declared at.
-    "src/lower/mir/tidy/bindings.rs: .find(|&j| js::mentions_in(&stmts[j..=j], name.word()) > 0)",
+    "src/lower/mir/tidy/bindings.rs: .find(|&j| js::mentions_of(&stmts[j..=j], name) > 0)",
   ];
   const searching = /(\.any\(|\.filter\(|\.position\(|\.find\(|\.take_while\(|\|=)[^;]{0,160}?StmtKind::Assign\([^;]{0,200}?ExprKind::Var\(\w+\)\s*if\s+(?:\*?\w+\s*==|\w+\.is\()/g;
   const found = files("src")

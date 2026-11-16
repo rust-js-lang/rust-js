@@ -123,7 +123,7 @@ pub(super) fn loop_bound_lets(body: &mut Vec<Stmt>) {
     });
     body.retain(|s| {
         !matches!(&s.kind, StmtKind::Let(name, None)
-            if bound.contains(name) && js::mentions_in(&without, name.word()) == 0)
+            if bound.contains(name) && js::mentions_of(&without, name) == 0)
     });
 }
 
@@ -198,7 +198,7 @@ pub(super) fn for_of(
         ) if it == iter => (f, bounds),
         _ => return None,
     };
-    if js::mentions_in(std::slice::from_ref(looped), iter.word()) != 1 || js::mentions_in(after, iter.word()) != 0 {
+    if js::mentions_of(std::slice::from_ref(looped), iter) != 1 || js::mentions_of(after, iter) != 0 {
         return None;
     }
     // The other shape inside a block, `l: { if (t != null) { body } } exit`,
@@ -300,7 +300,7 @@ pub(super) fn for_of(
         });
     }
     let own = matches!(&pattern, js::Pattern::Name(name) if name == item);
-    if (!own && js::mentions_in(&body, item.word()) > 0) || js::mentions_in(&exit, item.word()) > 0 {
+    if (!own && js::mentions_of(&body, item) > 0) || js::mentions_of(&exit, item) > 0 {
         return None;
     }
     let looped = match step {
@@ -818,7 +818,7 @@ fn counted_to_length(
                 && let StmtKind::Const(_, value) = &unboxed.kind
                 && crate::lower::std_types::option::some_value_of(value)
                     .is_some_and(|of| matches!(&of.kind, ExprKind::Var(v) if v == item))
-                && js::mentions_in(rest, item.word()) == 0 =>
+                && js::mentions_of(rest, item) == 0 =>
         {
             (items, index, rest)
         }
@@ -887,10 +887,10 @@ fn counted_keys(iterable: &Expr, pattern: &js::Pattern, body: &[Stmt]) -> Option
     let mut closed_over = false;
     js::each_expr(body, &mut |e| {
         if let ExprKind::Arrow(_, inner) | ExprKind::AsyncArrow(_, inner) = &e.kind {
-            closed_over |= js::mentions_in(inner, counter.word()) > 0;
+            closed_over |= js::mentions_of(inner, counter) > 0;
         }
         if let ExprKind::Function(function) = &e.kind {
-            closed_over |= js::mentions_in(&function.body, counter.word()) > 0;
+            closed_over |= js::mentions_of(&function.body, counter) > 0;
         }
     });
     let declared = |stmts: &[Stmt]| {
@@ -898,7 +898,7 @@ fn counted_keys(iterable: &Expr, pattern: &js::Pattern, body: &[Stmt]) -> Option
         js::each_list(stmts, &mut |list| {
             found |= list
                 .iter()
-                .any(|s| matches!(&s.kind, StmtKind::Function(f) if js::mentions_in(&f.body, counter.word()) > 0));
+                .any(|s| matches!(&s.kind, StmtKind::Function(f) if js::mentions_of(&f.body, counter) > 0));
         });
         found
     };
@@ -1217,8 +1217,8 @@ fn copy_tested_first(stmt: &mut Stmt) -> Option<Vec<Stmt>> {
         || !value.reads_same()
         || !matches!(cond.kind, ExprKind::Bool(true))
         || !test.reads_only_vars()
-        || !test.mentions_var(copy.word())
-        || js::mentions_in(exit, copy.word()) > 0
+        || !test.mentions_name(copy)
+        || js::mentions_of(exit, copy) > 0
     {
         return None;
     }

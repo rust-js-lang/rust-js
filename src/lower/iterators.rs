@@ -585,7 +585,7 @@ pub(in crate::lower) fn sought(test: &Expr) -> Option<Expr> {
         (false, true) => a,
         _ => return None,
     };
-    (value.reads_same() && !value.mentions_var(param.word())).then(|| (**value).clone())
+    (value.reads_same() && !value.mentions_name(param)).then(|| (**value).clone())
 }
 
 /// Whether `test`, one `sought` reads, compares what's never a NaN, as
@@ -1153,7 +1153,7 @@ pub(in crate::lower) fn stepped_slices(body: &mut Vec<Stmt>) {
                 .filter(|s| matches!(&s.kind, StmtKind::Const(n, _) | StmtKind::Let(n, _) if *n == name))
                 .count();
         });
-        if declared != 1 || steps == 0 || js::mentions_in(body, name.word()) != steps {
+        if declared != 1 || steps == 0 || js::mentions_of(body, &name) != steps {
             continue;
         }
         js::statement_lists(body, &mut |stmts| {

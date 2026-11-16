@@ -234,9 +234,7 @@ fn copy_read_in_place(stmts: &mut Vec<Stmt>, k: usize, locals: &IndexSet<String>
             None => read = false,
         }
     });
-    if !read
-        || js::mentions_in(std::slice::from_ref(&chain), copy.word()) > 0
-        || js::mentions_in(&stmts[k + 1..], copy.word()) > 0
+    if !read || js::mentions_of(std::slice::from_ref(&chain), &copy) > 0 || js::mentions_of(&stmts[k + 1..], &copy) > 0
     {
         return false;
     }

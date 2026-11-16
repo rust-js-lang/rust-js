@@ -228,7 +228,7 @@ fn shadow_of(
             assigned: false,
         });
     };
-    if js::mentions_in(&stmts[i + 1..], binding.word()) > 0 {
+    if js::mentions_of(&stmts[i + 1..], &binding) > 0 {
         return None;
     }
     // Set now: assigned the shadow's value, but its own; or by what set the

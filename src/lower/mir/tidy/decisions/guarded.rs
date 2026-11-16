@@ -55,13 +55,13 @@ pub(in crate::lower::mir::tidy) fn bound(body: &[Stmt], guards: &[Guard]) -> Ind
                 continue;
             };
             let otherwise = otherwise.as_deref();
-            let unread = !test.mentions_var(name.word())
+            let unread = !test.mentions_name(name)
                 && pure(value)
-                && !value.mentions_var(name.word())
+                && !value.mentions_name(name)
                 && only_tested(then, name.word())
                 && otherwise.is_none_or(|o| only_tested(o, name.word()));
             if unread || binds(name.word(), value, test, then, otherwise, guards) {
-                let reads = js::mentions_in(&[StmtKind::Expr(test.clone()).at(list[at].span)], name.word())
+                let reads = js::mentions_of(&[StmtKind::Expr(test.clone()).at(list[at].span)], name)
                     + tested_reads(then, name.word()).unwrap_or(0)
                     + otherwise.and_then(|o| tested_reads(o, name.word())).unwrap_or(0);
                 *given.entry(name.to_string()).or_default() += set + reads;
@@ -117,14 +117,14 @@ pub(super) fn given_before(before: &[Stmt], body: &[Stmt], after: &[Stmt]) -> Ve
         let (StmtKind::Let(name, Some(value)) | StmtKind::Const(name, value)) = &stmt.kind else {
             break;
         };
-        if !pure(value) || value.mentions_var(name.word()) {
+        if !pure(value) || value.mentions_name(name) {
             break;
         }
         // Given again in the tree, another alternative's binding: a `const
         // x = v[i];` the tree only tests, `switch (x)`'s, reads as named.
         if js::Writes::sets(body, name.word())
             && tested_reads(body, name.word()).is_some_and(|n| n > 0)
-            && js::mentions_in(after, name.word()) == 0
+            && js::mentions_of(after, name) == 0
         {
             given.push((name.to_string(), value.clone()));
         }
@@ -253,14 +253,14 @@ impl<'s> Walk<'s, '_> {
         // doesn't read, `const x = s[0];` of `&[x, .., y] if y * 2 > 1`; one
         // at least by the test.
         let read = |(name, value, local): &(&Name, &Expr, bool)| {
-            let unread = !test.mentions_var(name.word())
+            let unread = !test.mentions_name(name)
                 && pure(value)
-                && !value.mentions_var(name.word())
+                && !value.mentions_name(name)
                 && only_tested(then, name.word())
                 && otherwise.is_none_or(|o| only_tested(o, name.word()));
             (binds(name.word(), value, test, then, otherwise, self.told.guards) || unread)
-                && !(run.iter()).any(|(other, value, _)| other != name && value.mentions_var(name.word()))
-                && !(*local && js::mentions_in(rest, name.word()) > 0)
+                && !(run.iter()).any(|(other, value, _)| other != name && value.mentions_name(name))
+                && !(*local && js::mentions_of(rest, name) > 0)
         };
         // Or none read at all, a binding the arm doesn't read either, `(2,
         // x) | (x, 0) if g(c, a * 2, 1) => break` (#771).
@@ -268,7 +268,7 @@ impl<'s> Walk<'s, '_> {
             tested_reads(then, name.word()) == Some(0)
                 && otherwise.is_none_or(|o| tested_reads(o, name.word()) == Some(0))
         };
-        let tested = run.iter().any(|(name, ..)| test.mentions_var(name.word())) || run.iter().all(dead);
+        let tested = run.iter().any(|(name, ..)| test.mentions_name(name)) || run.iter().all(dead);
         if !run.iter().all(read) || !tested || !guard(test) {
             return None;
         }
@@ -328,7 +328,7 @@ pub(super) fn bound_where_read(body: &[Stmt], told: &Told) -> Option<Vec<Stmt>> 
                 reads
             })
             .sum();
-        js::mentions_in(tree, name.word()) == found.iter().map(at).sum::<usize>() + reads
+        js::mentions_of(tree, name) == found.iter().map(at).sum::<usize>() + reads
     };
     let read: IndexSet<String> = (found.iter().flat_map(|site| &site.before))
         .map(|(name, _)| name)
@@ -345,7 +345,7 @@ pub(super) fn bound_where_read(body: &[Stmt], told: &Told) -> Option<Vec<Stmt>> 
     };
     let many: IndexSet<String> = (found.iter().flat_map(|site| &site.arms))
         .map(|(arm, _)| arm)
-        .filter(|arm| set_by(arm) > 1 && js::mentions_in(tree, arm.word()) == set_by(arm))
+        .filter(|arm| set_by(arm) > 1 && js::mentions_of(tree, arm) == set_by(arm))
         .map(|arm| arm.word().to_string())
         .collect();
     if many.is_empty() {
@@ -377,7 +377,7 @@ impl Site {
             .collect();
         // The one guard's binding it reads, given what the arm's binding is.
         let read: Vec<&(js::Name, Expr)> = (self.before.iter())
-            .filter(|(name, _)| self.guard.mentions_var(name.word()))
+            .filter(|(name, _)| self.guard.mentions_name(name))
             .collect();
         if let ([(name, value)], [(_, given)]) = (read.as_slice(), self.arms.as_slice())
             && given.written_alike(value)
@@ -433,10 +433,10 @@ fn site(list: &[Stmt], i: usize, told: &Told) -> Option<Site> {
     };
     let arms: Vec<(js::Name, Expr)> = (then.iter())
         .map_while(binding)
-        .filter(|(arm, _)| !test.mentions_var(arm.word()))
+        .filter(|(arm, _)| !test.mentions_name(arm))
         .collect();
     let calls = parts.iter().any(|(part, _)| !pure(part));
-    (!arms.is_empty() && (calls || given.iter().any(|(name, _)| test.mentions_var(name.word())))).then(|| Site {
+    (!arms.is_empty() && (calls || given.iter().any(|(name, _)| test.mentions_name(name)))).then(|| Site {
         arms,
         before: given,
         guard: test.clone(),

@@ -354,7 +354,7 @@ pub(in crate::lower) fn eager_spreads(stmts: &mut [Stmt]) {
             StmtKind::Const(_, e) | StmtKind::Let(_, Some(e)) | StmtKind::Return(Some(e)) => spread(e),
             _ => false,
         };
-        if !next || js::mentions_in(rest, name.word()) != 1 {
+        if !next || js::mentions_of(rest, name) != 1 {
             continue;
         }
         if let Some((items, stages)) = eager_items(value, false, None)

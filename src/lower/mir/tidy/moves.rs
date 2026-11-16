@@ -57,11 +57,9 @@ fn entered(stmt: &Stmt, rest: &mut [Stmt], facts: &MoveFacts) -> bool {
         return false;
     };
     match &mut first.kind {
-        StmtKind::Labeled(_, body) if js::mentions_in(after, name.word()) == 0 => entered(stmt, body, facts),
+        StmtKind::Labeled(_, body) if js::mentions_of(after, name) == 0 => entered(stmt, body, facts),
         StmtKind::Try(body, caught) | StmtKind::TryCatch(body, _, caught)
-            if !value.may_throw()
-                && js::mentions_in(after, name.word()) == 0
-                && js::mentions_in(caught, name.word()) == 0 =>
+            if !value.may_throw() && js::mentions_of(after, name) == 0 && js::mentions_of(caught, name) == 0 =>
         {
             entered(stmt, body, facts)
         }
@@ -189,7 +187,7 @@ fn moved(stmt: &Stmt, rest: &[Stmt], facts: &MoveFacts) -> Option<(Moved, Why)> 
     // past, `const list$1 = list;` a callback's borrow; and what does
     // nothing and reads what no call changes, past any statement that
     // assigns nothing it reads, a loop's too.
-    let at = (rest.iter()).position(|s| js::mentions_in(std::slice::from_ref(s), name.word()) > 0)?;
+    let at = (rest.iter()).position(|s| js::mentions_of(std::slice::from_ref(s), name) > 0)?;
     // Not into a `&mut`'s handle's or a `dyn`'s pair's place, which reads
     // it whenever its `value` is read or written: a value made there, `{
     // n: 3 }`, would be another each time (#985). A variable is a place.
@@ -212,8 +210,8 @@ fn moved(stmt: &Stmt, rest: &[Stmt], facts: &MoveFacts) -> Option<(Moved, Why)> 
     // Read once in what follows, and once there; of a paired temporary,
     // assigned again after, once by the statement after it.
     let once = match assigned {
-        true => js::mentions_in(&rest[..=at], name.word()) == 1,
-        false => js::mentions_in(rest, name.word()) == 1,
+        true => js::mentions_of(&rest[..=at], name) == 1,
+        false => js::mentions_of(rest, name) == 1,
     };
     // What does nothing, of variables nothing changes, gives the same
     // wherever it's read.
@@ -221,10 +219,10 @@ fn moved(stmt: &Stmt, rest: &[Stmt], facts: &MoveFacts) -> Option<(Moved, Why)> 
     value.visit_vars(&mut |v| stable &= !facts.changing.contains(v));
     let read = read_of(&rest[at], name.word(), stable)?;
     let expr = read.of(&rest[at]);
-    let single = once && js::mentions_in(&rest[at..=at], name.word()) == 1;
+    let single = once && js::mentions_of(&rest[at..=at], name) == 1;
     // Or tested more than once there and nowhere else, an or-pattern's
     // tests of a field (ADR 0780).
-    if !single && (assigned || !tested_in_place(value, expr, name.word(), js::mentions_in(rest, name.word()))) {
+    if !single && (assigned || !tested_in_place(value, expr, name.word(), js::mentions_of(rest, name))) {
         return None;
     }
     // Not an arrow into a call of it it'd be left called where it's made
@@ -551,12 +549,12 @@ fn tested_read(stmt: &Stmt, rest: &[Stmt], named: &IndexSet<String>) -> Option<(
     let substituted = |e: &Expr| e.substitute(&|v| name.is(v).then(|| value.clone()));
     // Read once more by the `then`'s first statement, nothing it
     // evaluates first doing anything.
-    if js::mentions_in(rest, name.word()) - tested != 1 {
+    if js::mentions_of(rest, name) - tested != 1 {
         return None;
     }
     let first = then.first()?;
     let read = read_of(first, name.word(), false)?;
-    if js::mentions_in(std::slice::from_ref(first), name.word()) != 1
+    if js::mentions_of(std::slice::from_ref(first), name) != 1
         || !matches!(&read.of(first).kind, ExprKind::Var(v) if v == name)
     {
         return None;
@@ -622,7 +620,7 @@ fn fallback_read(stmts: &mut Vec<Stmt>, at: usize, named: &IndexSet<String>) -> 
         return false;
     };
     let own_name = matches!(&value.kind, ExprKind::Member(_, property) if name.is(property));
-    if !named.contains(name.word()) || !own_name || js::mentions_in(&stmts[at + 1..], name.word()) != 1 {
+    if !named.contains(name.word()) || !own_name || js::mentions_of(&stmts[at + 1..], name) != 1 {
         return false;
     }
     let Some(read) = read_of(next, name.word(), false) else {
@@ -678,10 +676,7 @@ fn receiver_read(stmts: &mut Vec<Stmt>, at: usize, lets: &LetNames) -> bool {
     let StmtKind::Const(name, value) = &made[at].kind else {
         return false;
     };
-    if !lets.named.contains(name.word())
-        || lets.mutable.contains(name.word())
-        || js::mentions_in(rest, name.word()) != 2
-    {
+    if !lets.named.contains(name.word()) || lets.mutable.contains(name.word()) || js::mentions_of(rest, name) != 2 {
         return false;
     }
     // The statement right after it, that call alone.
@@ -738,7 +733,7 @@ pub(super) fn read_again(stmts: &mut Vec<Stmt>, at: usize) -> bool {
     let (StmtKind::Const(name, value), Some(next)) = (&stmts[at].kind, stmts.get(at + 1)) else {
         return false;
     };
-    if js::mentions_in(&stmts[at + 1..], name.word()) != 1 {
+    if js::mentions_of(&stmts[at + 1..], name) != 1 {
         return false;
     }
     let Some(read) = read_of(next, name.word(), false) else {
@@ -815,12 +810,12 @@ pub(super) fn held_receivers(stmts: &mut Vec<Stmt>) {
         let ExprKind::Member(object, property) = &value.kind else {
             continue;
         };
-        let mentions = js::mentions_in(&stmts[i + 1..], name.word());
+        let mentions = js::mentions_of(&stmts[i + 1..], name);
         if !is_temporary(name) || mentions == 0 {
             continue;
         }
         let (name, object, property) = (name.clone(), (**object).clone(), property.clone());
-        let Some(at) = (i + 1..stmts.len()).find(|&j| js::mentions_in(&stmts[j..=j], name.word()) == mentions) else {
+        let Some(at) = (i + 1..stmts.len()).find(|&j| js::mentions_of(&stmts[j..=j], &name) == mentions) else {
             continue;
         };
         // Of one Rust may change, called in each branch of a call of each
@@ -886,8 +881,13 @@ mod tests {
     }
 
     /// The temporary `_1`, as lowering makes it.
+    /// The temporary `_1`, one variable however often it's asked for: a
+    /// declaration and its reads are one by their id (ADR 1150).
     fn t1() -> js::Name {
-        js::Name::temporary("_1".to_string())
+        thread_local! {
+            static T1: js::Name = js::Name::temporary("_1".to_string());
+        }
+        T1.with(Clone::clone)
     }
 
     /// What `moved` says of `body`'s first statement, a temporary, given

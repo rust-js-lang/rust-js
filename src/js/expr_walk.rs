@@ -16,33 +16,39 @@ const READS: &[&str] = &[
 ];
 
 impl Expr {
-    /// Each variable this reads, closures' bodies too, but not a string's
-    /// or a regular expression's text, nor a property's name.
+    /// The word of each variable this reads, `visit_names`' spelled.
     pub fn visit_vars<'a>(&'a self, read: &mut dyn FnMut(&'a str)) {
+        self.visit_names(&mut |name| read(name.word()));
+    }
+
+    /// Each variable this reads, closures' bodies too, but not a string's
+    /// or a regular expression's text, nor a property's name: its `Name`,
+    /// so its id, the one walk of what an expression reads (ADR 1150).
+    pub fn visit_names<'a>(&'a self, read: &mut dyn FnMut(&'a Name)) {
         if self.facts.has(Known::Literal) {
             return;
         }
-        let props = |props: &'a [Prop], read: &mut dyn FnMut(&'a str)| {
+        let props = |props: &'a [Prop], read: &mut dyn FnMut(&'a Name)| {
             for prop in props {
                 match prop {
                     Prop::Field(_, value)
                     | Prop::Spread(value)
                     | Prop::Getter(_, value)
                     | Prop::Setter(_, value)
-                    | Prop::Method(_, value) => value.visit_vars(read),
+                    | Prop::Method(_, value) => value.visit_names(read),
                     Prop::Keyed(key, value) | Prop::KeyedMethod(key, value) => {
-                        key.visit_vars(read);
-                        value.visit_vars(read);
+                        key.visit_names(read);
+                        value.visit_names(read);
                     }
                 }
             }
         };
         match &self.kind {
-            ExprKind::Var(name) => read(name.word()),
+            ExprKind::Var(name) => read(name),
             // The name it sets, which JS resolves as it does a read.
             ExprKind::Assigned(target, value) => {
-                target.visit_vars(read);
-                value.visit_vars(read);
+                target.visit_names(read);
+                value.visit_names(read);
             }
             ExprKind::Member(a, _)
             | ExprKind::OptionalMember(a, _)
@@ -53,25 +59,25 @@ impl Expr {
             | ExprKind::Stringed(a)
             | ExprKind::Handle(a, _)
             | ExprKind::Stepped(_, a)
-            | ExprKind::DropArgument(_, _, a) => a.visit_vars(read),
+            | ExprKind::DropArgument(_, _, a) => a.visit_names(read),
             ExprKind::Index(a, b)
             | ExprKind::OptionalIndex(a, b)
             | ExprKind::Binary(_, a, b)
             | ExprKind::Pair(a, b, _) => {
-                a.visit_vars(read);
-                b.visit_vars(read);
+                a.visit_names(read);
+                b.visit_names(read);
             }
             ExprKind::Cond(a, b, c) => {
-                a.visit_vars(read);
-                b.visit_vars(read);
-                c.visit_vars(read);
+                a.visit_names(read);
+                b.visit_names(read);
+                c.visit_names(read);
             }
             ExprKind::Call(f, args) | ExprKind::OptionalCall(f, args) | ExprKind::New(f, args) => {
-                f.visit_vars(read);
-                args.iter().for_each(|a| a.visit_vars(read));
+                f.visit_names(read);
+                args.iter().for_each(|a| a.visit_names(read));
             }
             ExprKind::Array(items) | ExprKind::Template(_, items, _) | ExprKind::Sequence(items) => {
-                items.iter().for_each(|a| a.visit_vars(read))
+                items.iter().for_each(|a| a.visit_names(read))
             }
             ExprKind::Object(fields, ..) => props(fields, read),
             // Its parameters' defaults too, read where it's called.
@@ -79,16 +85,16 @@ impl Expr {
                 params
                     .iter()
                     .flat_map(Pattern::defaults)
-                    .for_each(|d| d.visit_vars(read));
-                visit_stmts(body, read);
+                    .for_each(|d| d.visit_names(read));
+                visit_stmt_names(body, read);
             }
-            ExprKind::Function(function) => function.visit_vars(read),
+            ExprKind::Function(function) => function.visit_names(read),
             ExprKind::Jsx(jsx) => {
                 if let JsxTag::Component(tag) = &jsx.tag {
-                    tag.visit_vars(read);
+                    tag.visit_names(read);
                 }
                 props(&jsx.props, read);
-                jsx.children.iter().for_each(|c| c.visit_vars(read));
+                jsx.children.iter().for_each(|c| c.visit_names(read));
             }
             ExprKind::Num(_)
             | ExprKind::BigInt(_)
@@ -305,9 +311,17 @@ impl Expr {
         })
     }
 
-    /// Does this name the variable `name` anywhere in it, a template's, an
-    /// object's, JSX's or a closure's part too: `visit_vars`' answer, the one
-    /// walk of what an expression reads.
+    /// Does this name the variable `name`, by its id, anywhere in it, a
+    /// template's, an object's, JSX's or a closure's part too:
+    /// `visit_names`' answer (ADR 1150, step 3).
+    pub fn mentions_name(&self, name: &Name) -> bool {
+        let mut found = false;
+        self.visit_names(&mut |var| found |= var == name);
+        found
+    }
+
+    /// Does this name a variable spelled `name` anywhere in it, as
+    /// `mentions_name` does of a variable: what JS reads by the word.
     pub fn mentions_var(&self, name: &str) -> bool {
         let mut found = false;
         self.visit_vars(&mut |var| found |= var == name);

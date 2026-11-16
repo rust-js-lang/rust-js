@@ -82,9 +82,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a `let` moves to its next assignment past a read of it, which reads it before it's declared",
     file: "src/lower/mir/tidy/bindings.rs",
-    find: "                    .find(|&j| js::mentions_in(&stmts[j..=j], name.word()) > 0)\n",
+    find: "                    .find(|&j| js::mentions_of(&stmts[j..=j], name) > 0)\n",
     replace:
-      "                    .find(|&j| matches!(stmts[j].kind, StmtKind::Assign(..)) && js::mentions_in(&stmts[j..=j], name.word()) > 0)\n",
+      "                    .find(|&j| matches!(stmts[j].kind, StmtKind::Assign(..)) && js::mentions_of(&stmts[j..=j], name) > 0)\n",
     tests: ["test/corpus.test.ts", "-t", "declarations_assigned_later"],
   },
   {
@@ -92,7 +92,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `const` read once, by another `const` of it, stays a name for a name",
     file: "src/lower/mir/tidy/bindings.rs",
-    find: "                            && js::mentions_in(&stmts[j..], a.word()) == 1\n",
+    find: "                            && js::mentions_of(&stmts[j..], a) == 1\n",
     replace: "                            && false\n",
     tests: ["test/lowering-loops.test.ts", "-t", "stepped by hand"],
   },
@@ -355,16 +355,7 @@ export const mutations: Mutation[] = [
       "                Some(StmtKind::Assign(target, _)) if false && target.kind == read.kind)\n",
     tests: ["test/lowering-takes.test.ts", "-t", "whose old value nothing reads"],
   },
-  {
-    name: "sunk-let-at-shadowing-closure",
-    breaks:
-      "a `let` sinks only as far as a closure whose parameter shadows it, `(a, b) => ..`, and isn't merged with the write after",
-    file: "src/lower/mir/tidy/bindings.rs",
-    find: " && reads_past_shadows(&stmts[j], name.word()))",
-    replace: ")",
-    tests: ["test/corpus.test.ts", "-t", "^entry_or_insert_with_key.rs$"],
-    snapshots: true,
-  },
+
   {
     name: "sunk-let-block-unset",
     breaks:
@@ -553,15 +544,7 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering-drop-guards.test.ts", "-t", "a field read of what JS made in a guard's scope"],
   },
 
-  {
-    name: "sunk-let-past-closure-counter-unseen",
-    breaks:
-      "an index loop's `for (let i = 0; ..)` in a thread-local's closure reads as the function's `i`, so the program's later `let mut i = 0` is `let i;` above the loop (rd356)",
-    file: "src/lower/mir/tidy/bindings.rs",
-    find: "            js::statement_lists(body, &mut |list| counted(list))\n",
-    replace: "            _ = body;\n",
-    tests: ["test/lowering-index-loops.test.ts", "-t", "an index loop's counter is no program's later let"],
-  },
+
   {
     name: "unread-iter-kept",
     breaks: "a `Splice` dropped where it's made is `$iter($splice(s, 0, 1, []));`, an iterator nothing steps (rd341)",

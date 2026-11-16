@@ -37,7 +37,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a value that can't throw made before a guard's `try` stays held there, `const focus = element.focus; try { (focus || ..).call(..) }`, not read in the `try` where its call is (rd233)",
     file: "src/lower/mir/tidy/moves.rs",
-    find: "            if !value.may_throw()\n                && js::mentions_in(after, name.word()) == 0\n                && js::mentions_in(caught, name.word()) == 0 =>\n",
+    find: "            if !value.may_throw() && js::mentions_of(after, name) == 0 && js::mentions_of(caught, name) == 0 =>\n",
     replace: "            if false =>\n",
     tests: [
       "test/lowering-is-function.test.ts",
@@ -50,9 +50,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a value that may throw, made before a guard exists, is read in the guard's `try`, so its panic drops the guard it ran before (rd233)",
     file: "src/lower/mir/tidy/moves.rs",
-    find: "            if !value.may_throw()\n                && js::mentions_in(after, name.word()) == 0\n                && js::mentions_in(caught, name.word()) == 0 =>\n",
+    find: "            if !value.may_throw() && js::mentions_of(after, name) == 0 && js::mentions_of(caught, name) == 0 =>\n",
     replace:
-      "            if js::mentions_in(after, name.word()) == 0\n                && js::mentions_in(caught, name.word()) == 0 =>\n",
+      "            if js::mentions_of(after, name) == 0 && js::mentions_of(caught, name) == 0 =>\n",
     tests: ["test/corpus.test.ts", "-t", "^value_read_in_a_guards_try.rs$"],
   },
   {
@@ -60,9 +60,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a value its `try`'s `catch` reads too is read only in the `try`, so the `catch` reads a variable nothing declares (rd233)",
     file: "src/lower/mir/tidy/moves.rs",
-    find: "            if !value.may_throw()\n                && js::mentions_in(after, name.word()) == 0\n                && js::mentions_in(caught, name.word()) == 0 =>\n",
-    replace:
-      "            if !value.may_throw() && js::mentions_in(after, name.word()) == 0 =>\n",
+    find: "            if !value.may_throw() && js::mentions_of(after, name) == 0 && js::mentions_of(caught, name) == 0 =>\n",
+    replace: "            if !value.may_throw() && js::mentions_of(after, name) == 0 =>\n",
     tests: ["test/corpus.test.ts", "-t", "^value_read_in_a_guards_try.rs$"],
   },
   {
@@ -91,7 +90,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a field an or-pattern tests is held first, `const status = payload.status; status === 0 || status === -1`, not read in each test (ADR 0780)",
     file: "src/lower/mir/tidy/moves.rs",
-    find: "    if !single && (assigned || !tested_in_place(value, expr, name.word(), js::mentions_in(rest, name.word()))) {\n",
+    find: "    if !single && (assigned || !tested_in_place(value, expr, name.word(), js::mentions_of(rest, name))) {\n",
     replace: "    if !single {\n",
     tests: [
       "test/lowering-or-patterns.test.ts",
@@ -312,9 +311,9 @@ export const mutations: Mutation[] = [
     breaks:
       "a test MIR holds before the blocks its arms leave stays a `const value = ..`, not read where it's tested",
     file: "src/lower/mir/tidy/moves.rs",
-    find: "        StmtKind::Labeled(_, body) if js::mentions_in(after, name.word()) == 0 => entered(stmt, body, facts),\n",
+    find: "        StmtKind::Labeled(_, body) if js::mentions_of(after, name) == 0 => entered(stmt, body, facts),\n",
     replace:
-      "        StmtKind::Labeled(_, body) if false && js::mentions_in(after, name.word()) == 0 => entered(stmt, body, facts),\n",
+      "        StmtKind::Labeled(_, body) if false && js::mentions_of(after, name) == 0 => entered(stmt, body, facts),\n",
     tests: ["test/lowering-moves.test.ts", "-t", "block after it"],
   },
   {
@@ -410,8 +409,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a let chain's binding read twice in the body is the field read twice, the second after the first's call, which may change it (ADR 0866, amended)",
     file: "src/lower/mir/tidy/moves.rs",
-    find: "    if js::mentions_in(&stmts[at + 1..], name.word()) != 1 {\n",
-    replace: "    if js::mentions_in(&stmts[at + 1..], name.word()) == 0 {\n",
+    find: "    if js::mentions_of(&stmts[at + 1..], name) != 1 {\n",
+    replace: "    if js::mentions_of(&stmts[at + 1..], name) == 0 {\n",
     tests: [
       "test/lowering-written-branches.test.ts",
       "-t",
@@ -519,16 +518,16 @@ export const mutations: Mutation[] = [
     name: "fallback-read-twice",
     breaks: "a `let` read by the next statement's `||` and again after is read in place there and its `const` dropped, what reads it after reading nothing (rd664)",
     file: "src/lower/mir/tidy/moves.rs",
-    find: "    if !named.contains(name.word()) || !own_name || js::mentions_in(&stmts[at + 1..], name.word()) != 1 {\n",
-    replace: "    if !named.contains(name.word()) || !own_name || js::mentions_in(&stmts[at + 1..at + 2], name.word()) == 0 {\n",
+    find: "    if !named.contains(name.word()) || !own_name || js::mentions_of(&stmts[at + 1..], name) != 1 {\n",
+    replace: "    if !named.contains(name.word()) || !own_name || js::mentions_of(&stmts[at + 1..at + 2], name) == 0 {\n",
     tests: ["test/lowering-moves.test.ts", "-t", "fallback"],
   },
   {
     name: "fallback-read-of-another-name",
     breaks: "a `let` the program named otherwise than the property it reads, `const t = blob.type;`, is read in place, its name lost (rd664)",
     file: "src/lower/mir/tidy/moves.rs",
-    find: "    if !named.contains(name.word()) || !own_name || js::mentions_in(&stmts[at + 1..], name.word()) != 1 {\n",
-    replace: "    if !named.contains(name.word()) || js::mentions_in(&stmts[at + 1..], name.word()) != 1 {\n",
+    find: "    if !named.contains(name.word()) || !own_name || js::mentions_of(&stmts[at + 1..], name) != 1 {\n",
+    replace: "    if !named.contains(name.word()) || js::mentions_of(&stmts[at + 1..], name) != 1 {\n",
     tests: ["test/lowering-moves.test.ts", "-t", "fallback"],
   },
   {
@@ -560,32 +559,32 @@ export const mutations: Mutation[] = [
     name: "receiver-read-again",
     breaks: "a `let` read by the next keyed method call and again after it is read in place there, its `const` gone, what reads it after reading nothing (rd226b)",
     file: "src/lower/mir/tidy/moves.rs",
-    find: "    if !lets.named.contains(name.word())\n        || lets.mutable.contains(name.word())\n        || js::mentions_in(rest, name.word()) != 2\n    {\n",
-    replace: "    if !lets.named.contains(name.word())\n        || lets.mutable.contains(name.word())\n        || js::mentions_in(&rest[..1], name.word()) != 2\n    {\n",
+    find: "    if !lets.named.contains(name.word()) || lets.mutable.contains(name.word()) || js::mentions_of(rest, name) != 2 {\n",
+    replace: "    if !lets.named.contains(name.word()) || lets.mutable.contains(name.word()) || js::mentions_of(&rest[..1], name) != 2 {\n",
     tests: ["test/lowering-is-function.test.ts", "-t", "keyed method call is read there"],
   },
   {
     name: "receiver-read-by-an-argument",
     breaks: "a `let` the next keyed method call is also given, `fill.applyFill(fill)`, is read in place as its receiver, the argument reading nothing (rd226b)",
     file: "src/lower/mir/tidy/moves.rs",
-    find: "    if !lets.named.contains(name.word())\n        || lets.mutable.contains(name.word())\n        || js::mentions_in(rest, name.word()) != 2\n    {\n",
-    replace: "    if !lets.named.contains(name.word())\n        || lets.mutable.contains(name.word())\n        || js::mentions_in(rest, name.word()) < 2\n    {\n",
+    find: "    if !lets.named.contains(name.word()) || lets.mutable.contains(name.word()) || js::mentions_of(rest, name) != 2 {\n",
+    replace: "    if !lets.named.contains(name.word()) || lets.mutable.contains(name.word()) || js::mentions_of(rest, name) < 2 {\n",
     tests: ["test/lowering-is-function.test.ts", "-t", "keyed method call is read there"],
   },
   {
     name: "receiver-read-mutable",
     breaks: "a `let mut` read only by the next keyed method call is read in place, though the program said it changes it (rd226b)",
     file: "src/lower/mir/tidy/moves.rs",
-    find: "    if !lets.named.contains(name.word())\n        || lets.mutable.contains(name.word())\n        || js::mentions_in(rest, name.word()) != 2\n",
-    replace: "    if !lets.named.contains(name.word())\n        || js::mentions_in(rest, name.word()) != 2\n",
+    find: "    if !lets.named.contains(name.word()) || lets.mutable.contains(name.word()) || js::mentions_of(rest, name) !",
+    replace: "    if !lets.named.contains(name.word()) || js::mentions_of(rest, name) !",
     tests: ["test/lowering-is-function.test.ts", "-t", "keyed method call is read there"],
   },
   {
     name: "receiver-read-of-any-let",
     breaks: "a `match` arm's binding read only by its keyed method call is read in place too, beyond the decision's `let` the program wrote (rd226b)",
     file: "src/lower/mir/tidy/moves.rs",
-    find: "    if !lets.named.contains(name.word())\n        || lets.mutable.contains(name.word())\n        || js::mentions_in(rest, name.word()) != 2\n",
-    replace: "    if lets.mutable.contains(name.word())\n        || js::mentions_in(rest, name.word()) != 2\n",
+    find: "    if !lets.named.contains(name.word()) || lets.mutable.contains(name.word()) || js::mentions_of(rest, name) !",
+    replace: "    if lets.mutable.contains(name.word()) || js::mentions_of(rest, name) !",
     tests: ["test/lowering-is-function.test.ts", "-t", "keyed method call is read there"],
   },
   {

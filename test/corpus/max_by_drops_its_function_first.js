@@ -168,8 +168,7 @@ function edges() {
       dDrop_drop(iter._held);
     }
   }
-  const value = result;
-  let m = value;
+  let m = result;
   $print(`| empty ${m == null ? "None" : `Some(${m})`}\n`);
   const iter$1 = it(0);
   let result$1;
@@ -186,7 +185,7 @@ function edges() {
   $print(`| empty key ${m == null ? "None" : `Some(${m})`}\n`);
   const g$1 = ["f"];
   const f$1 = (a, b) => $cmp((a[0] + zero(g$1)) >>> 0, b[0]);
-  const value$1 = $maxBy(
+  const value = $maxBy(
     $closing($iterator(items(3), itemsIterator_next), (it) => {
       dDrop_drop(it.of._held);
     }),
@@ -202,7 +201,7 @@ function edges() {
     iDrop_drop(i);
     return result;
   }
-  m = value$1 != null ? map(value$1) : undefined;
+  m = value != null ? map(value) : undefined;
   $print(`| items ${m == null ? "None" : `Some(${m})`}\n`);
   const minByKey = $minByKey(
     $closing($iterator(items(3), itemsIterator_next), (it) => {
@@ -272,10 +271,10 @@ function edges() {
   $print(`| panic key ${r.TAG === "Err"}\n`);
   let g$3$live = true;
   const g$3 = ["f"];
-  const value$2 = [[5], [7]];
+  const value$1 = [[5], [7]];
   let tmp;
   try {
-    tmp = $iter(value$2);
+    tmp = $iter(value$1);
     g$3$live = false;
   } catch (error) {
     $cleanup(() => {
@@ -286,7 +285,7 @@ function edges() {
     throw error;
   }
   const f$2 = (a) => (a[0] + zero(g$3)) >>> 0;
-  const value$3 = $maxByKey(
+  const value$2 = $maxByKey(
     $closing(tmp, $dropEach(iDrop_drop)),
     f$2,
     $cmp,
@@ -301,7 +300,7 @@ function edges() {
     iDrop_drop(i);
     return result;
   }
-  m = value$3 != null ? map$2(value$3) : undefined;
+  m = value$2 != null ? map$2(value$2) : undefined;
   $print(`| vec key ${m == null ? "None" : `Some(${m})`}\n`);
   let g$4$live = true;
   const g$4 = ["f"];
@@ -318,7 +317,7 @@ function edges() {
     throw error;
   }
   const f$3 = (a) => (a[0] + zero(g$4)) >>> 0;
-  const value$4 = $maxByKey(
+  const value$3 = $maxByKey(
     $closing(tmp$1, $dropEach(iDrop_drop)),
     f$3,
     $cmp,
@@ -333,7 +332,7 @@ function edges() {
     iDrop_drop(i);
     return result;
   }
-  m = value$4 != null ? map$3(value$4) : undefined;
+  m = value$3 != null ? map$3(value$3) : undefined;
   $print(`| vec empty key ${m == null ? "None" : `Some(${m})`}\n`);
   const g$5 = ["f"];
   r = $catchUnwind(() => {

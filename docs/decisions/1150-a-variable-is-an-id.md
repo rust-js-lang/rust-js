@@ -684,3 +684,65 @@ It's the linker's because only the linker knows the final reads (the
 lead's decision). When preparation becomes the one speller, the spelling
 step's end, this moves into it, the linked module's reads given to it as
 an input, rather than staying a respelling at link time.
+
+## Names are ids, step 3: what a tree mentions, by id (2026-11-16)
+
+Step 3 moves the questions lowering and tidy ask by a variable's word to
+its id, a slice at a time. The first is what a tree mentions. The one
+walk of what an expression or statements read yields each read's `Name`
+(`Expr::visit_names`, `js::visit_stmt_names`, `Function::visit_names`),
+so its id; `visit_vars` and `visit_stmts` are its words, a view of it, not
+a second walk. `js::mentions_of(stmts, &Name)` and `Expr::mentions_name`
+count and find a variable by its id; `js::mentions_in` and
+`Expr::mentions_var` are kept for what JS reads by a word, preparation's
+questions of spelling and shadowing until the spelling step. Lowering's
+and tidy's 138 asks of a variable by its word, `mentions_in(x,
+name.word())`, ask `mentions_of(x, name)`.
+
+Asked by its word, a variable another of its word was in the scope of
+looked mentioned where it wasn't, and tidy kept what it could take out.
+Four corpus cases read better, each as native Rust prints: std_enumerate's
+`while (true) { const value = $next(chars); .. }` is a `for .. of`, a later
+`value` having blocked it; max_by_drops_its_function_first's `const value
+= result; let m = value;` is `let m = result;`; temporaries_taken_apart's
+`const value = make(4); loudDrop_drop(value);` is
+`loudDrop_drop(make(4));`; write_result_items' hoisted `let fails;` is
+declared where it's set, a closure's own `fails` having blocked it. React's
+port's `renderSuspenseListRows` declares `const i` in its loop, as upstream
+does, not a hoisted `let i`.
+
+Reading a string literal's text as a variable, which mutation
+strings-read-as-vars stood for, is a type error now: the walk yields
+`&Name`, and a literal holds a `String`. The mutation, which no longer
+builds, is gone; the type holds it.
+
+The block asked by a word wasn't guarding anything else by accident: a
+moved read is the variable it is, and preparation spells two variables of
+one word apart by their ids, so it never lands where another of its word
+takes it. Corpus case `moved_reads_beside_variables_of_their_word` holds
+it: `make(4)`'s temporary moved into its drop beside the program's own
+`value`, one shadowing it in a block, a closure's own `value` and `fails`,
+and a loop's `value` after a `while let`, each against native Rust. The
+four changed cases and it pass the tidy-stages net (each stage of tidy,
+and preparation without each of its rewrites, against native) and the
+metamorphic net's rewrites in both builds. And one guard of tidy's
+`sunk_lets` that asked by a word is gone: `reads_past_shadows` kept a
+`let` from sinking to a closure whose parameter of its word shadowed it,
+`(a, b) => ..`; asked by its id, the closure's `b` is never the `let`'s
+variable, so the guard decided nothing, and its mutation,
+sunk-let-at-shadowing-closure, survived with every snapshot compared. Its
+part for an index loop's `for (let i = 0; ..)` in a closure, another `i`
+than the program's later `let mut i` (rd356), went with it: that loop's
+`i` is a variable of its own, and the test that held it,
+`lowering-index-loops`' "an index loop's counter is no program's later
+let", still passes; its mutation, sunk-let-past-closure-counter-unseen, had
+nothing left to change. Nothing else moved: the
+corpus, std, the guide's fences, alien-signals and the Vite example are as
+they were.
+
+These readability gains are the step's expected effect, the lead's
+decision: a later slice of step 3 whose only differences are of this kind,
+a rewrite of tidy's or preparation's that asking by a word blocked where
+another variable shared it, each case still as native Rust prints, may
+push under the standing approval without asking. Any other kind of
+difference still goes to the lead first.

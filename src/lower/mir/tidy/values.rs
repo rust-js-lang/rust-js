@@ -374,8 +374,8 @@ pub(super) fn holed_lists(body: &mut Vec<Stmt>) {
                 *e = Expr::js_undefined();
             }
         });
-        if js::mentions_in(&rest, name.word()) != usize::from(assigned)
-            || js::mentions_in(body, name.word()) == usize::from(assigned)
+        if js::mentions_of(&rest, &name) != usize::from(assigned)
+            || js::mentions_of(body, &name) == usize::from(assigned)
         {
             continue;
         }
@@ -421,12 +421,12 @@ pub(super) fn first_cell_values(stmts: &mut Vec<Stmt>) {
         let empty = matches!(&value.kind, ExprKind::Object(props, ..)
             if matches!(props.as_slice(), [js::Prop::Field(key, held)] if key == js::HELD && matches!(held.kind, ExprKind::Undefined)));
         let name = name.clone();
-        let first = (i + 1..stmts.len()).find(|&j| js::mentions_in(&stmts[j..=j], name.word()) > 0);
+        let first = (i + 1..stmts.len()).find(|&j| js::mentions_of(&stmts[j..=j], &name) > 0);
         let set = first.and_then(|j| match &stmts[j].kind {
             StmtKind::Assign(target, value)
                 if matches!(&target.kind, ExprKind::Member(cell, key)
                     if key == js::HELD && matches!(&cell.kind, ExprKind::Var(v) if *v == name))
-                    && !value.mentions_var(name.word()) =>
+                    && !value.mentions_name(&name) =>
             {
                 Some((j, value.clone()))
             }
@@ -725,8 +725,7 @@ pub(super) fn arrows_out_of_tries(body: &mut Vec<Stmt>) {
                 i += 1;
                 continue;
             }
-            let Some(j) =
-                (i + 1..stmts.len()).find(|&j| js::mentions_in(std::slice::from_ref(&stmts[j]), name.word()) > 0)
+            let Some(j) = (i + 1..stmts.len()).find(|&j| js::mentions_of(std::slice::from_ref(&stmts[j]), &name) > 0)
             else {
                 i += 1;
                 continue;
@@ -737,7 +736,7 @@ pub(super) fn arrows_out_of_tries(body: &mut Vec<Stmt>) {
             };
             let Some(k) = block
                 .iter()
-                .position(|s| js::mentions_in(std::slice::from_ref(s), name.word()) > 0)
+                .position(|s| js::mentions_of(std::slice::from_ref(s), &name) > 0)
             else {
                 i += 1;
                 continue;
@@ -799,7 +798,7 @@ pub(super) fn named_callbacks(stmts: &mut Vec<Stmt>, callbacks: &IndexSet<String
         if let StmtKind::Const(name, value) = &stmts[i].kind
             && callbacks.contains(name.word())
             && matches!(value.kind, ExprKind::Arrow(..) | ExprKind::AsyncArrow(..))
-            && !value.mentions_var(name.word())
+            && !value.mentions_name(name)
             // Nor one reading what it would be named, `step` of `step$1`
             // (ADR 0297).
             && name.word().split('$').next().is_none_or(|base| {
@@ -807,7 +806,7 @@ pub(super) fn named_callbacks(stmts: &mut Vec<Stmt>, callbacks: &IndexSet<String
                 value.visit_vars(&mut |v| reads |= v == base);
                 !reads
             })
-            && js::mentions_in(&stmts[i + 1..], name.word()) == 1
+            && js::mentions_of(&stmts[i + 1..], name) == 1
         {
             let span = stmts[i].span;
             let StmtKind::Const(name, value) = stmts.remove(i).kind else {
@@ -861,7 +860,7 @@ pub(in crate::lower::mir) fn writer_body(out: &mut Vec<Stmt>, name: &js::Name) {
     let made = out.remove(at);
     let mut rest = out.split_off(at);
     returned_unwritten(&mut rest, name.word());
-    if js::mentions_in(&rest, name.word()) > 0 {
+    if js::mentions_of(&rest, name) > 0 {
         match rest.first().map(|s| &s.kind) {
             Some(StmtKind::Assign(target, value))
                 if matches!(&target.kind, ExprKind::Var(v) if v.is(name.word()))

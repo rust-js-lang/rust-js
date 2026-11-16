@@ -1180,7 +1180,7 @@ pub(in crate::lower) fn appended(stmts: &mut Vec<Stmt>, text: &IndexSet<String>)
         if let Some((s, a)) = append_of(&stmts[i], text)
             && let Some((t, b)) = append_of(&stmts[i + 1], text)
             && s == t
-            && !b.mentions_var(s.word())
+            && !b.mentions_name(s)
             && values(a) + values(b) <= 1
         {
             let pieces = match (&a.kind, &b.kind) {

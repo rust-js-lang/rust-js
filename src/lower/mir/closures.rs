@@ -294,7 +294,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // THIR binds as `__arg0`: read nowhere, none either.
         while let Some(js::Pattern::Name(name)) = params.last()
             && (name.is("_") || name.word().starts_with("_$"))
-            && js::mentions_in(&stmts, name.word()) == 0
+            && js::mentions_of(&stmts, name) == 0
         {
             params.pop();
         }

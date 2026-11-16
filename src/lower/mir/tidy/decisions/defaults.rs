@@ -30,7 +30,7 @@ pub(in crate::lower::mir::tidy) fn default_values(stmts: &mut Vec<Stmt>) {
                 local: declared_unread(&stmts[..i], x.word()),
             })
             .before_breaks(rest, &Inside::default())
-            && js::mentions_in(rest, x.word()) == given
+            && js::mentions_of(rest, x) == given
         {
             let StmtKind::Labeled(_, body) = &mut stmts[i].kind else {
                 unreachable!("matched")

@@ -393,14 +393,19 @@ pub struct Function {
 }
 
 impl Function {
-    /// Each variable it reads: its parameters' defaults', `IIterator = {
-    /// next: $next }`'s (ADR 0995), and its body's.
+    /// The word of each variable it reads, `visit_names`' spelled.
     pub fn visit_vars<'a>(&'a self, read: &mut dyn FnMut(&'a str)) {
+        self.visit_names(&mut |name| read(name.word()));
+    }
+
+    /// Each variable it reads: its parameters' defaults', `IIterator = {
+    /// next: $next }`'s (ADR 0995), and its body's; its `Name`, so its id.
+    pub fn visit_names<'a>(&'a self, read: &mut dyn FnMut(&'a Name)) {
         self.params
             .iter()
             .flat_map(Pattern::defaults)
-            .for_each(|d| d.visit_vars(read));
-        visit_stmts(&self.body, read);
+            .for_each(|d| d.visit_names(read));
+        visit_stmt_names(&self.body, read);
     }
 }
 

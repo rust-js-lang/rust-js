@@ -654,7 +654,7 @@ fn chain(
     {
         stmts.retain(|s| match &s.kind {
             StmtKind::Let(name, None) => {
-                !((takes_rest || js::mentions_in(after, name.word()) == 0)
+                !((takes_rest || js::mentions_of(after, name) == 0)
                     && super::bindings::declared_in_branches(name, only))
             }
             _ => true,

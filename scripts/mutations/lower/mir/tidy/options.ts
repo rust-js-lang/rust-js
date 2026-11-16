@@ -58,8 +58,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a take tested whose binding is read past the test is taken in its branch, so `return cancel` reads what the branch declared (ADR 0996)",
     file: "src/lower/mir/tidy/options.rs",
-    find: "    if js::mentions_in(none_branch, c.word()) > 0 || js::mentions_in(rest, c.word()) > 0 {\n",
-    replace: "    if js::mentions_in(none_branch, c.word()) > 0 {\n",
+    find: "    if js::mentions_of(none_branch, c) > 0 || js::mentions_of(rest, c) > 0 {\n",
+    replace: "    if js::mentions_of(none_branch, c) > 0 {\n",
     tests: ["test/lowering-takes.test.ts", "-t", "an Option taken then tested"],
   },
   {

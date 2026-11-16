@@ -107,45 +107,37 @@ function main() {
   $print(`${value$2 == null ? "None" : `Some((${value$2[0]}, ${value$2[1]}))`}\n`);
 
   // Stepped through a variable alone.
-  const chars = "abc"[Symbol.iterator]().map((x, i) => [i, x]);
-  while (true) {
-    const value = $next(chars);
-    if (value != null) {
-      const i = value[0];
-      const c = value[1];
-      $print(`${i}${c} `);
-    } else {
-      $print("\n");
-      const words = ["x", "y", "z"].entries();
-      for (const [i, w] of $lent(words)) {
-        if (i === 1) {
-          break;
-        }
-        $print(w);
-      }
-      const value = $next(words);
-      $print(` ${value == null ? "None" : `Some((${value[0]}, ${$debugStr(value[1])}))`}\n`);
-      // Of a `&mut` to the crate's iterator, its length the iterator's own.
-      const counting = [3];
-      const byMut = iterator_enumerate(counting, {
-        next: countdownIterator_next,
-        sizeHint: countdownIterator_sizeHint,
-      });
-      const value$1 = enumerateDoubleEndedIterator_nextBack(byMut, countdownExactSizeIterator, {
-        next_back: countdownDoubleEndedIterator_nextBack,
-      });
-      $print(
-        `${value$1 == null ? "None" : `Some((${value$1[0]}, ${value$1[1]}))`} ${enumerateExactSizeIterator_len(byMut, countdownExactSizeIterator)}\n`,
-      );
-      // Lent where its own impl steps it, from its back: std's struct.
-      const ends = iterator_enumerate($iter(v));
-      const value$2 = enumerateDoubleEndedIterator_nextBack($lent(ends), exactSizeIterator);
-      const value$3 = $next(ends);
-      $print(
-        `${value$2 == null ? "None" : `Some((${value$2[0]}, ${value$2[1]}))`} ${value$3 == null ? "None" : `Some((${value$3[0]}, ${value$3[1]}))`}\n`,
-      );
-      return;
-    }
+  for (const [i, c] of "abc"[Symbol.iterator]().map((x, i) => [i, x])) {
+    $print(`${i}${c} `);
   }
+  $print("\n");
+  const words = ["x", "y", "z"].entries();
+  for (const [i, w] of $lent(words)) {
+    if (i === 1) {
+      break;
+    }
+    $print(w);
+  }
+  const value$3 = $next(words);
+  $print(` ${value$3 == null ? "None" : `Some((${value$3[0]}, ${$debugStr(value$3[1])}))`}\n`);
+  // Of a `&mut` to the crate's iterator, its length the iterator's own.
+  const counting = [3];
+  const byMut = iterator_enumerate(counting, {
+    next: countdownIterator_next,
+    sizeHint: countdownIterator_sizeHint,
+  });
+  const value$4 = enumerateDoubleEndedIterator_nextBack(byMut, countdownExactSizeIterator, {
+    next_back: countdownDoubleEndedIterator_nextBack,
+  });
+  $print(
+    `${value$4 == null ? "None" : `Some((${value$4[0]}, ${value$4[1]}))`} ${enumerateExactSizeIterator_len(byMut, countdownExactSizeIterator)}\n`,
+  );
+  // Lent where its own impl steps it, from its back: std's struct.
+  const ends = iterator_enumerate($iter(v));
+  const value$5 = enumerateDoubleEndedIterator_nextBack($lent(ends), exactSizeIterator);
+  const value$6 = $next(ends);
+  $print(
+    `${value$5 == null ? "None" : `Some((${value$5[0]}, ${value$5[1]}))`} ${value$6 == null ? "None" : `Some((${value$6[0]}, ${value$6[1]}))`}\n`,
+  );
 }
 //# sourceMappingURL=case.js.map

@@ -82,7 +82,7 @@ pub(super) fn spread_state(tcx: TyCtxt<'_>, ctor: DefId, function: &mut js::Func
             *props = flat;
         }
     });
-    if spread != 1 || js::mentions_in(&function.body, state.word()) > 0 {
+    if spread != 1 || js::mentions_of(&function.body, &state) > 0 {
         return Err(
             "a constructor that reads its flattened state but to make its instance's: it's given as its keys, `function ReactPromise(status, value, reason)`",
         );

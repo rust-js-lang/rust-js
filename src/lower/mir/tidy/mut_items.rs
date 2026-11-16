@@ -103,7 +103,7 @@ fn index_loop(stmt: &Stmt, mentions: &mut IndexMap<String, usize>) -> Option<Vec
         _ => None,
     });
     if values == 0
-        || js::mentions_in(body, handle.word()) != values
+        || js::mentions_of(body, &handle) != values
         || js::Writes::sets(body, array_name.word())
         || other_name.as_ref().is_some_and(|b| js::Writes::sets(body, b.word()))
     {

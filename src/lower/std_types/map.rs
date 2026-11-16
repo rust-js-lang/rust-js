@@ -1315,7 +1315,7 @@ pub(in crate::lower) fn counted_entries(stmts: &mut Vec<Stmt>) {
             && let StmtKind::Assign(target, value) = &stmts[i + 2].kind
             && matches!(&target.kind, js::ExprKind::Member(of, v)
                 if v == js::HELD && matches!(&of.kind, js::ExprKind::Var(h) if h == handle))
-            && js::mentions_in(&stmts[i + 3..], handle.word()) == 0
+            && js::mentions_of(&stmts[i + 3..], handle) == 0
         {
             let name = (std::iter::once("current".to_string()))
                 .chain((1..).map(|n| format!("current${n}")))
@@ -1331,7 +1331,7 @@ pub(in crate::lower) fn counted_entries(stmts: &mut Vec<Stmt>) {
                     *e = Expr::var(name.clone());
                 }
             });
-            if js::mentions_in(&value, handle.word()) > 0 {
+            if js::mentions_of(&value, handle) > 0 {
                 i += 1;
                 continue;
             }

@@ -339,7 +339,7 @@ export const mutations: Mutation[] = [
     breaks:
       "an append that reads the string, `s += s`, is joined to the one before, and reads it without that one",
     file: "src/lower/std_types/text.rs",
-    find: "            && !b.mentions_var(s.word())\n",
+    find: "            && !b.mentions_name(s)\n",
     replace: "",
     tests: ["test/lowering-strings.test.ts", "-t", "consecutive appends"],
   },

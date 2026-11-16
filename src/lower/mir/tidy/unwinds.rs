@@ -151,7 +151,7 @@ pub(super) fn tested_unwraps(stmts: &mut Vec<Stmt>) -> bool {
         let given = option.reads_same()
             && rest.iter().all(Stmt::cannot_throw)
             && rethrows(std::slice::from_ref(last), error.word())
-            && js::mentions_in(drops, error.word()) == 0;
+            && js::mentions_of(drops, error) == 0;
         given.then(|| (test, option.clone(), panic))
     };
     if !stmts.iter().any(|stmt| tested(stmt).is_some()) {
@@ -220,13 +220,13 @@ pub(super) fn returned_through_finally(stmts: &mut Vec<Stmt>) {
             (StmtKind::Let(name, None), StmtKind::Try(body, finally), StmtKind::Return(Some(value))) => {
                 let (body, handler) = scope_body(body);
                 matches!(&value.kind, ExprKind::Var(v) if v == name)
-                    && js::mentions_in(finally, name.word()) == 0
-                    && js::mentions_in(handler, name.word()) == 0
+                    && js::mentions_of(finally, name) == 0
+                    && js::mentions_of(handler, name) == 0
                     && body.last().is_some_and(|last| {
                         let mut returned = last.clone();
                         given_returned(&mut returned, name.word())
-                            && js::mentions_in(std::slice::from_ref(&returned), name.word()) == 0
-                            && js::mentions_in(&body[..body.len() - 1], name.word()) == 0
+                            && js::mentions_of(std::slice::from_ref(&returned), name) == 0
+                            && js::mentions_of(&body[..body.len() - 1], name) == 0
                     })
             }
             _ => false,
@@ -449,8 +449,8 @@ fn unwound(stmts: Vec<Stmt>, drop: &Stmt) -> Vec<Stmt> {
             })) = &leaving.kind
                 && let Some(made) = out.last().and_then(made_here)
                 && name.is(made)
-                && js::mentions_in(&all, name.word()) == 2 + usize::from(declared_unset(&all, name.word()))
-                && js::mentions_in(std::slice::from_ref(drop), name.word()) == 0
+                && js::mentions_of(&all, name) == 2 + usize::from(declared_unset(&all, name.word()))
+                && js::mentions_of(std::slice::from_ref(drop), name) == 0
                 && let Some(Stmt {
                     kind: StmtKind::Const(_, value) | StmtKind::Assign(_, value),
                     ..
@@ -528,7 +528,7 @@ fn dropped_last(stmt: &Stmt) -> Option<&Stmt> {
     // not in each `catch` that calls it (ADR 0901, amended).
     // One that leaves another way already dropped what it leaves; lowering
     // wraps no `return` in a `try`, but a `finally` would drop it again.
-    (rethrown && !leaves(inner, 0) && js::mentions_in(std::slice::from_ref(drop), error.word()) == 0).then_some(drop)
+    (rethrown && !leaves(inner, 0) && js::mentions_of(std::slice::from_ref(drop), error) == 0).then_some(drop)
 }
 
 /// A `catch` that only throws on what it caught.
@@ -672,8 +672,8 @@ pub(super) fn looped_drops(stmts: &mut Vec<Stmt>, for_made: bool, tidied: &mut d
         let only_it_reads = |stmt: &Stmt| match &stmt.kind {
             StmtKind::Assign(target, _) => matches!(&target.kind, ExprKind::Var(name)
                 if stmt.cannot_throw()
-                    && js::mentions_in(&after, name.word()) == 0
-                    && js::mentions_in(std::slice::from_ref(&drop), name.word()) == 0),
+                    && js::mentions_of(&after, name) == 0
+                    && js::mentions_of(std::slice::from_ref(&drop), name) == 0),
             _ => false,
         };
         // Early, back to the first of them, past what has no way out of
@@ -697,7 +697,7 @@ pub(super) fn looped_drops(stmts: &mut Vec<Stmt>, for_made: bool, tidied: &mut d
             // it steps, before it, `let sum = 0;` (#442).
             while start < k
                 && match &stmts[start].kind {
-                    StmtKind::Let(name, None) => js::mentions_in(&after, name.word()) > 0,
+                    StmtKind::Let(name, None) => js::mentions_of(&after, name) > 0,
                     StmtKind::Assign(target, _) => {
                         for_made
                             && stmts[start].cannot_throw()
@@ -940,10 +940,8 @@ fn gathered_lets(before: &mut Vec<Stmt>, body: &mut Vec<Stmt>, rest: &[Stmt], dr
         let StmtKind::Let(name, None) = &before[i].kind else {
             continue;
         };
-        let elsewhere = js::mentions_in(&before[..i], name.word()) + js::mentions_in(&before[i + 1..], name.word());
-        if elsewhere == 0
-            && js::mentions_in(rest, name.word()) == 0
-            && js::mentions_in(std::slice::from_ref(drop), name.word()) == 0
+        let elsewhere = js::mentions_of(&before[..i], name) + js::mentions_of(&before[i + 1..], name);
+        if elsewhere == 0 && js::mentions_of(rest, name) == 0 && js::mentions_of(std::slice::from_ref(drop), name) == 0
         {
             taken.push(before.remove(i));
         }
@@ -1135,7 +1133,7 @@ pub(super) fn dropped_at_breaks(stmts: &mut [Stmt]) -> bool {
                 StmtKind::Return(_) | StmtKind::Throw(_) => !drops.is_empty(),
                 _ => guarded_throw && drops.is_empty(),
             };
-        if !dropped || js::mentions_in(tail, label.word()) > 0 {
+        if !dropped || js::mentions_of(tail, label) > 0 {
             continue;
         }
         let (label, tail) = (label.clone(), tail.to_vec());

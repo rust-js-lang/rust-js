@@ -1085,7 +1085,7 @@ mod tests {
         };
         assert!(matches!(&test.kind, ExprKind::Unary(UnaryOp::Not, inner)
             if matches!(&inner.kind, ExprKind::Unary(UnaryOp::Not, e) if matches!(&e.kind, ExprKind::Binary(Op::LooseNe, ..)))));
-        assert_eq!(js::mentions_in(&body, t5.word()) + js::mentions_in(&body, t6.word()), 0);
+        assert_eq!(js::mentions_of(&body, &t5) + js::mentions_of(&body, &t6), 0);
     }
 
     // `if (c) { a(); x = v; } else { b(); x = v; }`, one assignment MIR

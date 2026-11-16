@@ -212,7 +212,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a let-else of what `filter` keeps tests `const h = x ? x : undefined` for `null`, not `!x`",
     file: "src/lower/mir/tidy/branches.rs",
-    find: "            Op::LooseEq => otherwise.is_none() && then.last().is_some_and(ends) && js::mentions_in(then, h.word()) == 0,\n",
+    find: "            Op::LooseEq => otherwise.is_none() && then.last().is_some_and(ends) && js::mentions_of(then, h) == 0,\n",
     replace: "            Op::LooseEq => false,\n",
     tests: ["test/lowering-matches.test.ts", "-t", "what .filter. keeps"],
   },
@@ -234,7 +234,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`if (h != null) { s }` of what `filter` keeps stays, `h` and its binding `const href = h`",
     file: "src/lower/mir/tidy/branches.rs",
-    find: "                otherwise.as_deref().is_none_or(|o| js::mentions_in(o, h.word()) == 0)\n                    && js::mentions_in(&stmts[i + 1..], h.word()) == 0\n",
+    find: "                otherwise.as_deref().is_none_or(|o| js::mentions_of(o, h) == 0)\n                    && js::mentions_of(&stmts[i + 1..], h) == 0\n",
     replace: "                false\n",
     tests: [
       "test/jsx-children.test.ts",
@@ -632,7 +632,7 @@ export const mutations: Mutation[] = [
     breaks:
       'a let-else\'s exit that reads the `Option` it kept, `None`, is given what was filtered, `""`, `Some("")` where Rust says `None`',
     file: "src/lower/mir/tidy/branches.rs",
-    find: "            Op::LooseEq => otherwise.is_none() && then.last().is_some_and(ends) && js::mentions_in(then, h.word()) == 0,\n",
+    find: "            Op::LooseEq => otherwise.is_none() && then.last().is_some_and(ends) && js::mentions_of(then, h) == 0,\n",
     replace:
       "            Op::LooseEq => otherwise.is_none() && then.last().is_some_and(ends),\n",
     tests: ["test/corpus.test.ts", "-t", "^let_else_read_truth.rs$"],

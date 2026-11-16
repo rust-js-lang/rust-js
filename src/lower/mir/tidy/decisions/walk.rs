@@ -79,8 +79,8 @@ impl<'s> Walk<'s, '_> {
         if let StmtKind::Let(name, None) = &stmt.kind
             && !rest.is_empty()
             && leaving
-            && js::mentions_in(body, name.word()) == js::mentions_in(current, name.word())
-            && js::mentions_in(after, name.word()) == 0
+            && js::mentions_of(body, name) == js::mentions_of(current, name)
+            && js::mentions_of(after, name) == 0
         {
             self.declared.push(stmt);
             *frame = rest;

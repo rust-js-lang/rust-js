@@ -316,7 +316,7 @@ pub(super) fn bound_into(test: &Expr, bound: &[Stmt], again: &dyn Fn(usize, &str
     let getter = reads_a_getter;
     (bound.iter().enumerate().rev()).try_fold(test.clone(), |test, (at, stmt)| match &stmt.kind {
         StmtKind::Const(name, value) if value.reads_same() => {
-            let tested = js::mentions_in(&[StmtKind::Expr(test.clone()).at(js::Span::NONE)], name.word());
+            let tested = js::mentions_of(&[StmtKind::Expr(test.clone()).at(js::Span::NONE)], name);
             if getter(value) && tested > 0 && tested + again(at, name.word()) > 1 {
                 return None;
             }
@@ -331,7 +331,7 @@ pub(super) fn bound_into(test: &Expr, bound: &[Stmt], again: &dyn Fn(usize, &str
 pub(super) fn unread_bound(stmts: &mut Vec<Stmt>, bound: usize) {
     for at in (0..bound).rev() {
         if let StmtKind::Const(name, _) = &stmts[at].kind
-            && js::mentions_in(&stmts[at + 1..], name.word()) == 0
+            && js::mentions_of(&stmts[at + 1..], name) == 0
         {
             stmts.remove(at);
         }
@@ -536,7 +536,7 @@ fn read_twice_apart(a: &Expr, bound: &[Stmt], b: &Expr, again: &dyn Fn(usize, &s
         };
         let mut apart = true;
         value.visit_vars(&mut |v| apart &= !tested.contains(v));
-        let tested = js::mentions_in(&test, name.word());
+        let tested = js::mentions_of(&test, name);
         apart && tested > 0 && tested + again(at, name.word()) > 1
     })
 }
@@ -596,7 +596,7 @@ fn read_first(test: &Expr, read: &Stmt, inner: &Stmt) -> Option<(Stmt, StmtKind)
     let defined = Expr::bin(Op::LooseNe, Expr::var(name), Expr::null());
     let mut tests = Vec::new();
     and_parts(second, &mut tests);
-    if second.has_effects() || !tests.iter().any(|t| implies(t, &defined)) || test.mentions_var(name.word()) {
+    if second.has_effects() || !tests.iter().any(|t| implies(t, &defined)) || test.mentions_name(name) {
         return None;
     }
     let first = StmtKind::Const(
@@ -689,7 +689,7 @@ fn valued_chain(
     if !one {
         return None;
     }
-    if js::mentions_in(others, name.word()) > 0 || declared(others).any(|n| name.is(n)) {
+    if js::mentions_of(others, name) > 0 || declared(others).any(|n| name.is(n)) {
         return None;
     }
     let test = (tests.into_iter())

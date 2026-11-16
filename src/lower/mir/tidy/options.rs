@@ -110,7 +110,7 @@ fn tested_option(
         (false, None) if then.last().is_some_and(ends) => (rest, [then, &[]]),
         (false, _) => return None,
     };
-    let read_elsewhere = unread.iter().any(|stmts| js::mentions_in(stmts, x.word()) > 0) || test.mentions_var(x.word());
+    let read_elsewhere = unread.iter().any(|stmts| js::mentions_of(stmts, x) > 0) || test.mentions_name(x);
     if read_elsewhere || js::declares(reads, x.word()) || js::read_where_other(reads, x.word(), v.word()) {
         return None;
     }
@@ -266,7 +266,7 @@ fn taken_option(made: &Stmt, written: &Stmt, tested: &Stmt, rest: &[Stmt]) -> Op
         true => (then.as_slice(), otherwise.as_deref().unwrap_or_default()),
         false => (otherwise.as_deref()?, then.as_slice()),
     };
-    if js::mentions_in(none_branch, c.word()) > 0 || js::mentions_in(rest, c.word()) > 0 {
+    if js::mentions_of(none_branch, c) > 0 || js::mentions_of(rest, c) > 0 {
         return None;
     }
     let mut taken = vec![made.clone(), written.clone()];

@@ -989,10 +989,10 @@ pub(super) fn filtered_guards(stmts: &mut Vec<Stmt>, changing: &IndexSet<String>
         }
         let kept = match op {
             // The exit's `h` is `undefined`, which `x` may not be.
-            Op::LooseEq => otherwise.is_none() && then.last().is_some_and(ends) && js::mentions_in(then, h.word()) == 0,
+            Op::LooseEq => otherwise.is_none() && then.last().is_some_and(ends) && js::mentions_of(then, h) == 0,
             _ => {
-                otherwise.as_deref().is_none_or(|o| js::mentions_in(o, h.word()) == 0)
-                    && js::mentions_in(&stmts[i + 1..], h.word()) == 0
+                otherwise.as_deref().is_none_or(|o| js::mentions_of(o, h) == 0)
+                    && js::mentions_of(&stmts[i + 1..], h) == 0
             }
         };
         if !kept {

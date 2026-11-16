@@ -260,7 +260,7 @@ fn discriminant_in_place(list: &mut Vec<Stmt>, i: usize) -> bool {
         && is_temporary(name)
         && let StmtKind::Switch { discriminant, .. } = &list[i].kind
         && matches!(&discriminant.kind, ExprKind::Var(v) if v == name)
-        && js::mentions_in(&list[at + 1..], name.word()) == 1
+        && js::mentions_of(&list[at + 1..], name) == 1
     {
         let value = value.clone();
         if let StmtKind::Switch { discriminant, .. } = &mut list[i].kind {
@@ -301,8 +301,8 @@ fn named_value(list: &mut Vec<Stmt>, i: usize) {
             )
             .count();
     });
-    let in_switch = js::mentions_in(&list[i..=i], temporary.word());
-    if !is_temporary(temporary) || assigned != in_switch || js::mentions_in(list, temporary.word()) != in_switch + 1 {
+    let in_switch = js::mentions_of(&list[i..=i], temporary);
+    if !is_temporary(temporary) || assigned != in_switch || js::mentions_of(list, temporary) != in_switch + 1 {
         return;
     }
     let (temporary, name) = (temporary.clone(), name.clone());

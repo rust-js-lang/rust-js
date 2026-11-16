@@ -212,7 +212,7 @@ pub(super) fn returned_else_ifs(stmts: &mut Vec<Stmt>, links: &[js::Span], retur
     // wrote.
     let bound = head > 0
         && matches!(&stmts[head - 1].kind, StmtKind::Const(name, _) | StmtKind::Let(name, Some(_))
-            if tested[0].1.mentions_var(name.word()));
+            if tested[0].1.mentions_name(name));
     if link(tested[0].0) && !bound || !tested[1..].iter().all(|(s, ..)| link(s)) {
         return;
     }

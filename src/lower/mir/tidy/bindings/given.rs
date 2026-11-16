@@ -145,10 +145,10 @@ fn given_from(
         return None;
     };
     let between = &stmts[at + 1..given];
-    let kept = made.mentions_var(x.word())
-        || js::mentions_in(between, x.word()) > 0
+    let kept = made.mentions_name(x)
+        || js::mentions_of(between, x) > 0
         || jumps(between)
-        || js::mentions_in(&stmts[given + 1..], y.word()) > 0;
+        || js::mentions_of(&stmts[given + 1..], y) > 0;
     (!kept).then(|| (at, x.clone(), y.clone()))
 }
 

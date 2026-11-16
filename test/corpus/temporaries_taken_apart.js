@@ -55,8 +55,7 @@ function allMoved([a, b]) {
 function main() {
   let two$0$live = false;
   const x = make(3);
-  const value = make(4);
-  loudDrop_drop(value);
+  loudDrop_drop(make(4));
   console.log(`after let ${x[0]}`);
   const loud = make(30);
   let pair;
@@ -115,13 +114,13 @@ function main() {
   }
 
   const y = make(5);
-  const value$1 = make(6);
+  const value = make(6);
   console.log("arm");
-  loudDrop_drop(value$1);
+  loudDrop_drop(value);
   console.log(`after y ${y[0]}`);
 
   const z = make(7);
-  const value$2 = make(8);
+  const value$1 = make(8);
   try {
     try {
       try {
@@ -129,7 +128,7 @@ function main() {
           console.log(`if ${z[0]}`);
           loudDrop_drop(z);
         }
-        loudDrop_drop(value$2);
+        loudDrop_drop(value$1);
         // `ref b` keeps the temporary for the block, less what `a` moves out.
         const before = make(1);
         const a = make(40);

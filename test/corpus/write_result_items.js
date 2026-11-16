@@ -132,7 +132,6 @@ function main() {
     oks.values().flatMap((item) => (item === undefined ? [undefined] : [])),
   );
   console.log(`${firsts.length}`);
-  let fails;
   const made = ["i", "j"].map((w) =>
     $writeTry(() => {
       let fails;
@@ -151,7 +150,7 @@ function main() {
   );
   const arg = made.every((r) => r !== undefined);
   console.log(`${made.length} ${arg}`);
-  fails = 0;
+  let fails = 0;
   for (const r of ["k", "l"].values().map((w) =>
     $writeTry(() => {
       let fails;

@@ -199,11 +199,7 @@ pub(super) fn assigned_parts(stmts: &mut Vec<Stmt>) {
         };
         let distinct = (targets.iter()).all(|t| targets.iter().filter(|u| *u == t).count() == 1);
         let after = i + 1 + parts.len();
-        if !distinct
-            || parts
-                .iter()
-                .any(|part| js::mentions_in(&stmts[after..], part.word()) > 0)
-        {
+        if !distinct || parts.iter().any(|part| js::mentions_of(&stmts[after..], part) > 0) {
             i += 1;
             continue;
         }
@@ -381,7 +377,7 @@ pub(in crate::lower::mir) fn destructured_params(params: &mut [js::Pattern], bod
             ..
         }) = body.first()
             && matches!(&value.kind, ExprKind::Var(v) if *v == name)
-            && js::mentions_in(&body[1..], name.word()) == 0
+            && js::mentions_of(&body[1..], &name) == 0
         {
             name = bound.clone();
             *param = js::Pattern::Name(name.clone());
@@ -401,7 +397,7 @@ pub(in crate::lower::mir) fn destructured_params(params: &mut [js::Pattern], bod
             ..
         }) = body.first()
             && matches!(&value.kind, ExprKind::Var(v) if *v == name)
-            && js::mentions_in(&body[1..], name.word()) == 0
+            && js::mentions_of(&body[1..], &name) == 0
         {
             *param = pattern.clone();
             body.remove(0);
@@ -416,7 +412,7 @@ pub(in crate::lower::mir) fn destructured_params(params: &mut [js::Pattern], bod
             .count();
         let read = nested_parts(&body[start..], name.word());
         let count = read.len();
-        if js::mentions_in(&body[start + count..], name.word()) > 0 {
+        if js::mentions_of(&body[start + count..], &name) > 0 {
             continue;
         }
         let read: Vec<_> = (read.iter())
@@ -590,7 +586,7 @@ pub(super) fn tuple_reads(
         if writes.replaced.contains(t.word())
             || writes.changed.contains(t.word())
             || indexed == 0
-            || indexed != js::mentions_in(&stmts[i + 1..], t.word())
+            || indexed != js::mentions_of(&stmts[i + 1..], &t)
         {
             i += 1;
             continue;
@@ -764,10 +760,7 @@ pub(super) fn unwrapped_values(stmts: &mut [Stmt]) {
         let StmtKind::Const(t, value) = &stmts[i].kind else {
             continue;
         };
-        if !is_temporary(t)
-            || !matches!(value.kind, ExprKind::Array(_))
-            || js::mentions_in(&stmts[i + 1..], t.word()) != 1
-        {
+        if !is_temporary(t) || !matches!(value.kind, ExprKind::Array(_)) || js::mentions_of(&stmts[i + 1..], t) != 1 {
             continue;
         }
         let t = t.clone();
@@ -813,7 +806,7 @@ pub(in crate::lower::mir) fn copied_params(params: &[js::Pattern], body: &mut Ve
         && names.contains(&param.word())
         && !names.contains(&copy.word())
         && copy.word().split('$').next() == param.word().split('$').next()
-        && js::mentions_in(body, param.word()) == 1
+        && js::mentions_of(body, param) == 1
     {
         let (copy, param) = (copy.clone(), param.clone());
         body.remove(0);
@@ -910,7 +903,7 @@ fn assigned_tuple(stmts: &mut Vec<Stmt>, i: usize) -> Option<usize> {
     };
     let assigned = parts_at_ends(then, t.word(), &names)? + parts_at_ends(otherwise, t.word(), &names)?;
     // Nothing else reads or sets it: its branches' arrays and its parts.
-    if js::mentions_in(&stmts[i + 1..], t.word()) != assigned + names.len() {
+    if js::mentions_of(&stmts[i + 1..], &t) != assigned + names.len() {
         return None;
     }
     let span = stmts[i].span;
@@ -950,7 +943,7 @@ fn parts_at_ends(stmts: &mut Vec<Stmt>, t: &str, names: &[js::Name]) -> Option<u
                 // `a = x.value;`, as nothing reads the part before.
                 if let ExprKind::Var(held) = &item.kind
                     && let Some(k) = (stmts.iter()).rposition(|s| matches!(&s.kind, StmtKind::Const(v, _) if v == held))
-                    && js::mentions_in(&stmts[k + 1..], held.word()) == 0
+                    && js::mentions_of(&stmts[k + 1..], held) == 0
                     && reads_in_items(held.word()) == 1
                     && let StmtKind::Const(_, value) = &stmts[k].kind
                 {
