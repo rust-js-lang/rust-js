@@ -54,6 +54,7 @@ pub(in crate::lower) fn body_proofs<'tcx>(
     tcx: TyCtxt<'tcx>,
     typing_env: ty::TypingEnv<'tcx>,
     body: &Body<'tcx>,
+    libraries: Libraries<'_, 'tcx>,
 ) -> ProofsScope<'tcx> {
     let caches = crate::lower::session::caches(tcx);
     let given = (caches.intervals.borrow().given.get(&body.source.def_id()).cloned()).unwrap_or_default();
@@ -73,7 +74,7 @@ pub(in crate::lower) fn body_proofs<'tcx>(
             })
     });
     let mut proofs = match asks {
-        true => proofs(tcx, typing_env, body, given),
+        true => proofs(tcx, typing_env, body, given, Some(libraries)),
         false => Proofs::default(),
     };
     // Of a body that sets a `OnceCell`, which cells are still empty there.

@@ -173,8 +173,8 @@ export const mutations: Mutation[] = [
     name: "mut-given-pointer-kept-unseen",
     breaks: "a `&mut` given to a function that keeps a raw pointer of it is a box copied back, so the pointer's later write, `*kept = 0`, reaches the box and not the caller's `n`, which prints `4` where Rust's is `u32::MAX` (#1781)",
     file: "src/lower/mir/assign/boxed_args.rs",
-    find: "            if self.borrow_outlives_call(def_id, i) || self.pointer_may_keep((def_id, generic_args), param) {\n",
-    replace: "            if self.borrow_outlives_call(def_id, i) {\n",
+    find: "            if self.borrow_outlives_call(def_id, i)\n                || pointer_may_keep(\n",
+    replace: "            if self.borrow_outlives_call(def_id, i)\n                || false && pointer_may_keep(\n",
     tests: ["test/corpus.test.ts", "-t", "^pointer_kept_of_a_mut_given.rs$"],
   },
   {

@@ -47,6 +47,7 @@ mod session;
 mod state;
 mod tables;
 
+use crate::lower::pointers::Libraries;
 use callers::parameter_intervals;
 use captures::{capture_intervals, closure_results};
 use ranges::stepped_ranges;
@@ -129,6 +130,9 @@ struct Walk<'a, 'tcx> {
     kept_rows: IndexSet<Ty<'tcx>>,
     /// Whether the body's formatting may run code (`formats_code`).
     formats_code: bool,
+    /// The crate's libraries, which `pointer_may_keep` asks, where the
+    /// walk lowers a body; none of a walk for what callers give (#1947).
+    libraries: Option<Libraries<'a, 'tcx>>,
 }
 
 /// Whether `ty` is an integer a JS number holds as it is: of 32 bits at
@@ -143,8 +147,16 @@ fn held_by_a_number(ty: Ty<'_>) -> bool {
 }
 
 /// What MIR proves of `body`, the one the emitter reads.
-fn proofs<'tcx>(tcx: TyCtxt<'tcx>, typing_env: ty::TypingEnv<'tcx>, body: &Body<'tcx>, given: Given) -> Proofs {
-    walk(tcx, typing_env, body, given).run()
+fn proofs<'a, 'tcx>(
+    tcx: TyCtxt<'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+    body: &'a Body<'tcx>,
+    given: Given,
+    libraries: Option<Libraries<'a, 'tcx>>,
+) -> Proofs {
+    let mut walk = walk(tcx, typing_env, body, given);
+    walk.libraries = libraries;
+    walk.run()
 }
 
 /// Whether `place`, lent `&mut`, is an integer local the walk forgets
@@ -196,6 +208,7 @@ fn walk<'a, 'tcx>(
         guards,
         kept_rows,
         formats_code,
+        libraries: None,
     }
 }
 

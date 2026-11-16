@@ -482,6 +482,23 @@ pub fn handed_after(mut args: Vec<u32>) -> u32 {
     0
 }
 
+fn fill(v: &mut Vec<u32>) {
+    v.push(7);
+}
+
+fn noted(n: u32) -> u32 {
+    n + 1
+}
+
+pub fn filled(mut args: Vec<u32>) -> u32 {
+    fill(&mut args);
+    if !args.is_empty() {
+        let k = noted(1);
+        return args[0] + k;
+    }
+    0
+}
+
 pub fn drained(mut args: Vec<u32>) -> u32 {
     let mut total = 0;
     for _ in 0..args.len() {
@@ -526,6 +543,9 @@ pub fn twice() -> u32 {
   // such a call, which may, checked.
   expect(js).toContain("first = args[0];");
   expect(js).toMatch(/export function handedAfter\(args\) \{[^]*\$index\(args, 1/);
+  // Given `&mut` to the crate's code that keeps no pointer to it, so a
+  // call of the crate's past its test can't change it (#1947).
+  expect(js).toMatch(/export function filled\(args\) \{[^]*return \(args\[0\] \+ k\) >>> 0;/);
   // One whose body changes the length reads its end once, as Rust does.
   expect(js).toContain("const end = args.length;");
   expect(js).toContain("return [...prev, ...next];");
@@ -535,6 +555,7 @@ pub fn twice() -> u32 {
   const lib = await import(join(dir, "lib.js"));
   expect([lib.unescaped(undefined), lib.unescaped(""), lib.unescaped("%")]).toEqual([true, true, false]);
   expect([lib.handed([4, 5]), lib.handed([])]).toEqual([4, 0]);
+  expect([lib.filled([]), lib.filled([3])]).toEqual([9, 5]);
   expect(() => lib.handedAfter([1, 2])).toThrow("index out of bounds");
   expect([lib.joined([1, 2]), lib.shifted([1, 2, 3]), lib.drained([1, 2, 3]), lib.both([1], [2, 3]), lib.hi()]).toEqual([" 1 2", " 2 3", 6, [1, 2, 3], "Ada"]);
 });

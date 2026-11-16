@@ -15,6 +15,7 @@
 use super::*;
 use crate::lower::generic_facts::is_type_parameter;
 use crate::lower::mut_refs::{holds_a_raw_pointer, lets_pointers_out_of};
+use crate::lower::pointers::pointer_may_keep;
 use crate::lower::recognition::{
     StdItem, StdPath, deref_call, is_std_crate, is_std_def, is_std_path, keeps_vec_length,
 };
@@ -278,8 +279,14 @@ impl<'tcx> Walk<'_, 'tcx> {
         }
         // Std's code given the `&mut Vec` itself keeps no pointer to it,
         // but where its signature lets one out, `ptr::from_mut(&mut v)`'s
-        // result (`lets_pointers_out_of`); the crate's, or any given a
-        // closure that holds it, may (#1966).
+        // result (`lets_pointers_out_of`); any given a closure that holds
+        // it may (#1966). The crate's and a library's, where the session
+        // knows its libraries, as `pointer_may_keep` says, which walks what
+        // it runs (#1947); else, may.
+        let kept = |given: Ty<'tcx>| match (func.const_fn_def(), self.libraries) {
+            (Some(call), Some(libraries)) => pointer_may_keep(self.tcx, self.typing_env, &libraries, call, given),
+            _ => true,
+        };
         let std = func
             .const_fn_def()
             .is_some_and(|(callee, _)| is_std_crate(self.tcx, callee));
@@ -292,7 +299,12 @@ impl<'tcx> Walk<'_, 'tcx> {
                 let vec = matches!(*self.body.local_decls[local].ty.kind(), ty::Ref(_, to, ty::Mutability::Mut)
                     if matches!(to.kind(), ty::Adt(adt, _)
                         if is_std_def(self.tcx, adt.did(), StdItem::Vec) || is_std_def(self.tcx, adt.did(), StdItem::VecDeque)));
-                if !(std && vec) || lets_pointers_out_of(self.tcx, (sig.inputs(), sig.output()), i) {
+                let given = self.body.local_decls[local].ty;
+                let unseen = match std {
+                    true => !vec,
+                    false => kept(given),
+                };
+                if unseen || lets_pointers_out_of(self.tcx, (sig.inputs(), sig.output()), i) {
                     after.escaped.insert(state.root(of));
                 }
             }

@@ -1071,3 +1071,26 @@ programs. Without the rule, 11 of them run otherwise than native Rust;
 Miri, left out. Corpus case `vec_lent_to_code_that_keeps_a_pointer`;
 mutations `called-on-kept-pointer-not-escaped` and
 `escaped-kept-past-a-call`.
+
+## Amendment: the crate's code that keeps no pointer, as pointer provenance says (2026-11-16, #1947)
+
+#1966 escaped a `Vec` given `&mut` to any of the crate's code. Whether a
+call may keep a raw pointer to what a `&mut` it's given refers to has one
+answer already, `pointer_may_keep` (#1781), which walks every body the
+call runs: the crate's functions and closures, each trait impl it may
+reach, and what it holds. It is now a function of `tcx`, the typing
+environment and the crate's libraries, in `pointers/keeps.rs` beside
+`returned_from`, and the walk asks it of a call that isn't std's: such a
+call escapes the `Vec` only where it may keep one. A std call keeps
+#1966's rules, since `pointer_may_keep` takes std's signatures at their
+word, and `ptr::from_mut` returns a raw pointer its signature names no
+lifetime for. A walk that doesn't lower a body, what callers give or a
+closure's result, isn't given the crate's libraries and keeps #1966's
+escape. Test/architecture-pointers.test.ts holds that only `pointers/`
+answers it.
+
+React's port: 123 `$index` to 117, the Flight loaders'
+`exportedEntries[0]`, given to `add_local_exported_names` before
+`js::truthy` between the test and the index, a plain index, none added.
+The bounds matrix's `vec_kept`, whose `keep` stores a raw pointer, stays
+escaped, its 13 programs as native Rust runs them.
