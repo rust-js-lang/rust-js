@@ -600,7 +600,7 @@ pub(super) fn unread_resets(body: &mut Vec<Stmt>) {
     });
     let unread: IndexSet<js::Name> = (resets.into_iter())
         .filter(|(name, appended)| {
-            !writes.handles(name) && !finally_read.contains(name) && !read_by_closures(body, name.word(), *appended)
+            !writes.handles(name) && !finally_read.contains(name) && !read_by_closures(body, name, *appended)
         })
         .map(|(name, _)| name)
         .collect();
@@ -647,9 +647,9 @@ fn returned_reset<'a>(stmts: &'a [Stmt], mentions: &IndexMap<String, usize>) -> 
 /// Whether a closure in `body`, or a function declared in it, reads
 /// `name`, past writing it with what reads nothing of it, or appending to
 /// it where `appended`.
-fn read_by_closures(body: &[Stmt], name: &str, appended: bool) -> bool {
-    let unread = |value: &Expr| !value.mentions_var(name);
-    let of_it = |target: &Expr| matches!(&target.kind, ExprKind::Var(v) if v.is(name));
+fn read_by_closures(body: &[Stmt], name: &js::Name, appended: bool) -> bool {
+    let unread = |value: &Expr| !value.mentions_name(name);
+    let of_it = |target: &Expr| matches!(&target.kind, ExprKind::Var(v) if v == name);
     // `x = x + e`, which preparation writes `x += e`.
     let append = |value: &Expr| matches!(&value.kind, ExprKind::Binary(Op::Add, to, more) if of_it(to) && unread(more));
     let mut body = body.to_vec();
@@ -663,13 +663,13 @@ fn read_by_closures(body: &[Stmt], name: &str, appended: bool) -> bool {
     let mut read = false;
     js::each_expr(&body, &mut |e| {
         if let ExprKind::Arrow(..) | ExprKind::AsyncArrow(..) | ExprKind::Function(_) = &e.kind {
-            read |= e.mentions_var(name);
+            read |= e.mentions_name(name);
         }
     });
     js::each_block_mut(&mut body, &mut |stmts| {
         for stmt in stmts.iter() {
             if let StmtKind::Function(function) = &stmt.kind {
-                function.visit_vars(&mut |v| read |= v == name);
+                function.visit_names(&mut |v| read |= v == name);
             }
         }
     });

@@ -40,8 +40,8 @@ pub(super) fn copied_bindings(stmts: &mut Vec<Stmt>, user: &IndexSet<js::Name>) 
                 continue;
             };
             let tested = match there {
-                true => tests_present(test, a.word()),
-                false => absent(test, a.word()),
+                true => tests_present(test, a),
+                false => absent(test, a),
             };
             let (a, b) = (a.clone(), b.clone());
             if !tested || is_temporary(&a) || is_temporary(&b) || a == b {
@@ -50,7 +50,7 @@ pub(super) fn copied_bindings(stmts: &mut Vec<Stmt>, user: &IndexSet<js::Name>) 
             // The variable set again only past each read of the binding,
             // `last.next = clone; newLast = clone;`.
             let rest = &block[1..];
-            if set_before_read(rest, &a, &b) || rebinds(rest, b.word()) || in_closure(rest, b.word()) {
+            if set_before_read(rest, &a, &b) || rebinds(rest, &b) || in_closure(rest, &b) {
                 continue;
             }
             block.remove(0);
@@ -69,7 +69,7 @@ pub(super) fn copied_bindings(stmts: &mut Vec<Stmt>, user: &IndexSet<js::Name>) 
             && then.last().is_some_and(ends)
             && let StmtKind::Const(b, value) = &stmts[i + 1].kind
             && let ExprKind::Var(a) = &value.kind
-            && absent(test, a.word())
+            && absent(test, a)
             && !is_temporary(a)
             && !is_temporary(b)
             && a != b
@@ -80,7 +80,7 @@ pub(super) fn copied_bindings(stmts: &mut Vec<Stmt>, user: &IndexSet<js::Name>) 
             let (a_name, b_name) = (a.clone(), b.clone());
             let (a, b) = (a.to_string(), b.to_string());
             let rest = &stmts[i + 2..];
-            if !set_before_read(rest, &a_name, &b_name) && !rebinds(rest, &b) && !in_closure(rest, &b) {
+            if !set_before_read(rest, &a_name, &b_name) && !rebinds(rest, &b_name) && !in_closure(rest, &b_name) {
                 // Of a variable rust-js named, `old` of `take()`'s value,
                 // declared here, and a binding the program named: the
                 // binding's name for both, as an `if let`'s is
@@ -124,7 +124,7 @@ pub(super) fn copied_bindings(stmts: &mut Vec<Stmt>, user: &IndexSet<js::Name>) 
 /// Whether `stmts` declare `a` again, or set it before a read of `b`, its
 /// copy, on a way to it (ADR 0434, amended): `b` is then no `a`.
 fn set_before_read(stmts: &[Stmt], a: &js::Name, b: &js::Name) -> bool {
-    rebinds(stmts, a.word()) && (declares(stmts, a.word()) || !read_before_set(stmts, b, a, &mut false))
+    rebinds(stmts, a) && (declares(stmts, a) || !read_before_set(stmts, b, a, &mut false))
 }
 
 /// `const old = x; .. if (old) { const updatesForLane = old; .. }` of a
@@ -156,10 +156,10 @@ fn named_for_bindings(stmts: &mut [Stmt], user: &IndexSet<js::Name>) {
             || is_temporary(a)
             || is_temporary(b)
             || !own
-            || !tests_present(test, a.word())
+            || !tests_present(test, a)
             || declared(b.word(), stmts) != 1
             || js::mentions_of(stmts, b) != js::mentions_of(then, b)
-            || in_closure(&then[1..], b.word())
+            || in_closure(&then[1..], b)
         {
             continue;
         }
@@ -185,7 +185,7 @@ fn named_for_bindings(stmts: &mut [Stmt], user: &IndexSet<js::Name>) {
 }
 
 /// Whether `test` says `a` is there: `a` of `a && ..`, `!!a` or `a != null`.
-fn tests_present(test: &Expr, a: &str) -> bool {
+fn tests_present(test: &Expr, a: &js::Name) -> bool {
     let mut first = test;
     while let ExprKind::Binary(Op::And, x, _) = &first.kind {
         first = x;
@@ -196,7 +196,7 @@ fn tests_present(test: &Expr, a: &str) -> bool {
         first = x;
     }
     match &first.kind {
-        ExprKind::Var(v) => v.is(a),
-        _ => js::null_test(first, true).is_some_and(|v| matches!(&v.kind, ExprKind::Var(v) if v.is(a))),
+        ExprKind::Var(v) => v == a,
+        _ => js::null_test(first, true).is_some_and(|v| matches!(&v.kind, ExprKind::Var(v) if v == a)),
     }
 }

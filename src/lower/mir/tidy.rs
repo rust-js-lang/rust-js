@@ -939,8 +939,8 @@ mod tests {
         for _ in 0..64 {
             body = vec![StmtKind::Expr(Expr::arrow(Vec::new(), body)).at(js::Span::NONE)];
         }
-        assert!(super::bindings::rebinds(&body, "x"));
-        assert!(!super::bindings::rebinds(&body, "y"));
+        assert!(super::bindings::rebinds(&body, &js::Name::from("x")));
+        assert!(!super::bindings::rebinds(&body, &js::Name::from("y")));
     }
     #[test]
     fn a_test_an_earlier_one_decided_goes() {

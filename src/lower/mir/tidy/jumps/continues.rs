@@ -1143,8 +1143,8 @@ pub(in crate::lower::mir::tidy) fn continues(
 
 /// Whether `test` says `item`, what `$next` gave, is none: `item == null`,
 /// or `!item` of an array's.
-pub(in crate::lower::mir::tidy) fn absent(test: &Expr, item: &str) -> bool {
-    let is_item = |e: &Expr| matches!(&e.kind, ExprKind::Var(v) if v.is(item));
+pub(in crate::lower::mir::tidy) fn absent(test: &Expr, item: &js::Name) -> bool {
+    let is_item = |e: &Expr| matches!(&e.kind, ExprKind::Var(v) if v == item);
     match &test.kind {
         ExprKind::Unary(UnaryOp::Not, a) => is_item(a),
         _ => js::null_test(test, false).is_some_and(is_item),
@@ -1152,9 +1152,9 @@ pub(in crate::lower::mir::tidy) fn absent(test: &Expr, item: &str) -> bool {
 }
 
 /// Whether `test` says `item` is there: `item != null`, or `item`.
-pub(in crate::lower::mir::tidy) fn present(test: &Expr, item: &str) -> bool {
+pub(in crate::lower::mir::tidy) fn present(test: &Expr, item: &js::Name) -> bool {
     match &test.kind {
-        ExprKind::Var(v) => v.is(item),
-        _ => js::null_test(test, true).is_some_and(|e| matches!(&e.kind, ExprKind::Var(v) if v.is(item))),
+        ExprKind::Var(v) => v == item,
+        _ => js::null_test(test, true).is_some_and(|e| matches!(&e.kind, ExprKind::Var(v) if v == item)),
     }
 }

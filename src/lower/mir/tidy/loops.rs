@@ -211,13 +211,11 @@ pub(super) fn for_of(
     // When it's done, the exit; else, the body, which in the other shape goes
     // on to the exit, out of the loop.
     let (mut exit, mut inner, falls_out) = match &second.kind {
-        StmtKind::If(test, then, None) if absent(test, item.word()) && block.is_none() => {
-            (then.clone(), rest.to_vec(), false)
-        }
-        StmtKind::If(test, then, Some(other)) if absent(test, item.word()) && rest.is_empty() && block.is_none() => {
+        StmtKind::If(test, then, None) if absent(test, item) && block.is_none() => (then.clone(), rest.to_vec(), false),
+        StmtKind::If(test, then, Some(other)) if absent(test, item) && rest.is_empty() && block.is_none() => {
             (then.clone(), other.clone(), false)
         }
-        StmtKind::If(test, then, None) if present(test, item.word()) => (rest.to_vec(), then.clone(), true),
+        StmtKind::If(test, then, None) if present(test, item) => (rest.to_vec(), then.clone(), true),
         _ => return None,
     };
     if !exit.last().is_some_and(ends) || breaks(&inner, label.as_ref().map(|n| n.word())) {

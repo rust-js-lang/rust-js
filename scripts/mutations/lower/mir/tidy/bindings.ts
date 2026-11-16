@@ -24,8 +24,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an `Rc`'s clone of a variable bound once is a variable of its own, `const closing = response;`, where it's the same object, read by its name (the user's decision, rd616; ADR 0846 amended)",
     file: "src/lower/mir/tidy/bindings.rs",
-    find: "        .filter(|(_, a)| bindings(body, a.word(), false) == 1 && !writes.may_replace(a))\n",
-    replace: "        .filter(|(_, a)| bindings(body, a.word(), false) == 1 && !writes.may_replace(a) && false)\n",
+    find: "        .filter(|(_, a)| bindings(body, a, false) == 1 && !writes.may_replace(a))\n",
+    replace: "        .filter(|(_, a)| bindings(body, a, false) == 1 && !writes.may_replace(a) && false)\n",
     tests: ["test/corpus.test.ts", "-t", "^rc_clone_aliases.rs$"],
     snapshots: true,
   },
@@ -34,8 +34,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a clone of a variable set after is read by the variable's name, its new value: `close 4` where Rust's clone closes the first `Rc`, `close 3` (rd616)",
     file: "src/lower/mir/tidy/bindings.rs",
-    find: "        .filter(|(_, a)| bindings(body, a.word(), false) == 1 && !writes.may_replace(a))\n",
-    replace: "        .filter(|(_, a)| bindings(body, a.word(), false) == 1)\n",
+    find: "        .filter(|(_, a)| bindings(body, a, false) == 1 && !writes.may_replace(a))\n",
+    replace: "        .filter(|(_, a)| bindings(body, a, false) == 1)\n",
     tests: ["test/corpus.test.ts", "-t", "^rc_clone_aliases.rs$"],
   },
   {
@@ -54,7 +54,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a clone of a parameter given another value after is read by the parameter's name, the other value: `payload.status = 9` of `first.status.set(9)`",
     file: "src/lower/mir/tidy/bindings.rs",
-    find: "        .filter(|name| !rebinds(body, name.word()))\n",
+    find: "        .filter(|name| !rebinds(body, name))\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^rc_shared_by_closures.rs$"],
   },
@@ -440,7 +440,7 @@ export const mutations: Mutation[] = [
     breaks:
       "`const _15 = newLast;` of a variable set past each of its reads stays, named `last`, `if (last == null)`, not `newLast` where it's read",
     file: "src/lower/mir/tidy/bindings.rs",
-    find: "                        && (declares(reads, of.word()) || !read_before_set(reads, alias, of, &mut false))\n",
+    find: "                        && (declares(reads, of) || !read_before_set(reads, alias, of, &mut false))\n",
     replace: "",
     tests: [
       "test/lowering-shadows.test.ts",

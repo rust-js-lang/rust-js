@@ -108,7 +108,7 @@ fn scoped_runs(stmts: &mut Vec<Stmt>, result: &str, guards: &[(u32, u32)], taken
 pub(super) fn unthrown_catches(stmts: &mut Vec<Stmt>) -> bool {
     let unthrown = |stmt: &Stmt| {
         matches!(&stmt.kind, StmtKind::TryCatch(body, Some(error), handler)
-            if body.iter().all(Stmt::cannot_throw) && handler.last().is_some_and(|last| rethrows(std::slice::from_ref(last), error.word())))
+            if body.iter().all(Stmt::cannot_throw) && handler.last().is_some_and(|last| rethrows(std::slice::from_ref(last), error)))
     };
     if !stmts.iter().any(unthrown) {
         return false;
@@ -150,7 +150,7 @@ pub(super) fn tested_unwraps(stmts: &mut Vec<Stmt>) -> bool {
         let (last, drops) = handler.split_last()?;
         let given = option.reads_same()
             && rest.iter().all(Stmt::cannot_throw)
-            && rethrows(std::slice::from_ref(last), error.word())
+            && rethrows(std::slice::from_ref(last), error)
             && js::mentions_of(drops, error) == 0;
         given.then(|| (test, option.clone(), panic))
     };
@@ -466,7 +466,7 @@ fn unwound(stmts: Vec<Stmt>, drop: &Stmt) -> Vec<Stmt> {
             StmtKind::TryCatch(inner, Some(error), mut handler) => {
                 // The drop before its `throw`, the scope's own.
                 handler.remove(handler.len() - 2);
-                if rethrows(&handler, error.word()) {
+                if rethrows(&handler, &error) {
                     out.extend(inner);
                     continue;
                 }
@@ -554,7 +554,7 @@ pub(super) fn guarded_cleanups(stmts: &mut [Stmt]) {
         };
         let rethrown = handler
             .last()
-            .is_some_and(|last| rethrows(std::slice::from_ref(last), error.word()));
+            .is_some_and(|last| rethrows(std::slice::from_ref(last), error));
         if !rethrown || handler.len() == 1 || crate::lower::drops::is_cleanup(&handler[..handler.len() - 1]) {
             continue;
         }
@@ -565,8 +565,8 @@ pub(super) fn guarded_cleanups(stmts: &mut [Stmt]) {
     }
 }
 
-fn rethrows(handler: &[Stmt], error: &str) -> bool {
-    matches!(handler, [Stmt { kind: StmtKind::Throw(Expr { kind: ExprKind::Var(v), .. }), .. }] if v.is(error))
+fn rethrows(handler: &[Stmt], error: &js::Name) -> bool {
+    matches!(handler, [Stmt { kind: StmtKind::Throw(Expr { kind: ExprKind::Var(v), .. }), .. }] if v == error)
 }
 
 /// Whether running `stmts` may leave them other than at their end or by a
@@ -643,7 +643,7 @@ pub(super) fn looped_drops(stmts: &mut Vec<Stmt>, for_made: bool, tidied: &mut d
         // asks, only of a loop whose first statement past `let`s is a step
         // `loops` makes a `for` of (`stepped`): what reading it early is
         // for. Another's left to the scope it's in.
-        let item = stepped(&stmts[k]).map(|(item, _)| item.to_owned());
+        let item = stepped(&stmts[k]).map(|(item, _)| item.clone());
         if for_made && item.is_none() {
             k += 1;
             continue;
@@ -680,7 +680,7 @@ pub(super) fn looped_drops(stmts: &mut Vec<Stmt>, for_made: bool, tidied: &mut d
         // there: one `try` of the value's scope, `try { $exchange(..); if
         // (..) { .. } for (..) { .. } } finally { .. }` (#442).
         let first = stmts[..k].iter().position(|stmt| dropping_catch(stmt, &drop).is_some());
-        let stepped = stepped(&stmts[k]).map(|(_, iter)| iter.to_owned());
+        let stepped = stepped(&stmts[k]).map(|(_, iter)| iter.clone());
         let start_of = |wide: bool| {
             let mut start = k;
             while start > 0
@@ -700,7 +700,7 @@ pub(super) fn looped_drops(stmts: &mut Vec<Stmt>, for_made: bool, tidied: &mut d
                     StmtKind::Assign(target, _) => {
                         for_made
                             && stmts[start].cannot_throw()
-                            && !matches!(&target.kind, ExprKind::Var(name) if stepped.as_deref() == Some(name.word()))
+                            && !matches!(&target.kind, ExprKind::Var(name) if stepped.as_ref() == Some(name))
                     }
                     _ => false,
                 }
@@ -818,19 +818,19 @@ fn escapes(stmts: &[Stmt]) -> bool {
 /// What loop `looped`'s first step gives and reads, `t` and `iter` of
 /// `const t = $rangeNext(iter)`, or of `try { t = $next(iter); } catch ..`
 /// as MIR holds it where it may throw: a step `loops` makes a `for` of.
-fn stepped(looped: &Stmt) -> Option<(&str, &str)> {
+fn stepped(looped: &Stmt) -> Option<(&js::Name, &js::Name)> {
     let StmtKind::While { body, .. } = &looped.kind else {
         return None;
     };
     let first = body.iter().find(|stmt| !matches!(stmt.kind, StmtKind::Let(_, None)))?;
-    fn assigned(target: &Expr) -> Option<&str> {
+    fn assigned(target: &Expr) -> Option<&js::Name> {
         match &target.kind {
-            ExprKind::Var(item) => Some(item.word()),
+            ExprKind::Var(item) => Some(item),
             _ => None,
         }
     }
     let (item, value) = match &first.kind {
-        StmtKind::Const(item, value) | StmtKind::Let(item, Some(value)) => (item.word(), value),
+        StmtKind::Const(item, value) | StmtKind::Let(item, Some(value)) => (item, value),
         StmtKind::Assign(target, value) => (assigned(target)?, value),
         StmtKind::TryCatch(inner, ..) => match inner.as_slice() {
             [
@@ -850,7 +850,7 @@ fn stepped(looped: &Stmt) -> Option<(&str, &str)> {
                     kind: ExprKind::Var(iter),
                     ..
                 },
-            ] => Some((item, iter.word())),
+            ] => Some((item, iter)),
             _ => None,
         },
         _ => None,
@@ -865,7 +865,12 @@ fn stepped(looped: &Stmt) -> Option<(&str, &str)> {
 /// { $unborrow(borrow); } return total;`, as the loop's end is written
 /// (#442). Only what returns or throws, of no jump of its own, reading
 /// nothing `declared` in the loop or the run before it.
-fn ended_exit(body: &mut Vec<Stmt>, item: &str, drop: &Stmt, declared: &dyn Fn(&str) -> bool) -> Option<Vec<Stmt>> {
+fn ended_exit(
+    body: &mut Vec<Stmt>,
+    item: &js::Name,
+    drop: &Stmt,
+    declared: &dyn Fn(&str) -> bool,
+) -> Option<Vec<Stmt>> {
     // Whether `stmts` jump, but by a `return` or a `throw`.
     fn jump(stmts: &[Stmt]) -> bool {
         stmts.iter().any(|stmt| match &stmt.kind {
@@ -954,7 +959,7 @@ fn dropping_catch<'s>(stmt: &'s Stmt, drop: &Stmt) -> Option<&'s Vec<Stmt>> {
     match &stmt.kind {
         StmtKind::TryCatch(inner, Some(error), handler)
             if matches!(handler.as_slice(), [dropped, thrown]
-                if alike(dropped, drop) && rethrows(std::slice::from_ref(thrown), error.word())) =>
+                if alike(dropped, drop) && rethrows(std::slice::from_ref(thrown), error)) =>
         {
             Some(inner)
         }

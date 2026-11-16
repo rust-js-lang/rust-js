@@ -192,7 +192,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a take's reset is dropped where a closure kept past the take reads the cell, which then sees what was taken, not what the take left (rd598)",
     file: "src/lower/mir/tidy/values.rs",
-    find: "            !writes.handles(name) && !finally_read.contains(name) && !read_by_closures(body, name.word(), *appended)\n",
+    find: "            !writes.handles(name) && !finally_read.contains(name) && !read_by_closures(body, name, *appended)\n",
     replace: "            !writes.handles(name) && !finally_read.contains(name)\n",
     tests: ["test/corpus.test.ts", "-t", "^taken_and_returned.rs$"],
   },

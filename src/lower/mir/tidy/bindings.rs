@@ -198,7 +198,7 @@ pub(super) fn alias_variables(body: &mut Vec<Stmt>, fixed: &IndexSet<String>) {
                     || last.is_some_and(|last| {
                         let reads = &stmts[i + 1..=last];
                         js::Writes::of(reads).may_replace(of)
-                            && (declares(reads, of.word()) || !read_before_set(reads, alias, of, &mut false))
+                            && (declares(reads, of) || !read_before_set(reads, alias, of, &mut false))
                     });
                 if !kept {
                     // Each read where it's written, else where the
@@ -569,34 +569,34 @@ pub(super) fn guarded_lets(stmts: &mut Vec<Stmt>, captured: &IndexSet<js::Name>)
 /// Whether `stmts` set `name` again, or declare it, a closure's in them too:
 /// their own lists, then each closure's, each found once by `each_expr`,
 /// however deep.
-pub(super) fn rebinds(stmts: &[Stmt], name: &str) -> bool {
+pub(super) fn rebinds(stmts: &[Stmt], name: &js::Name) -> bool {
     binds(stmts, name, true)
 }
 
 /// Whether `stmts` declare `name` again, a closure's parameter too, as
 /// `rebinds` says, but for what assigns it.
-pub(super) fn declares(stmts: &[Stmt], name: &str) -> bool {
+pub(super) fn declares(stmts: &[Stmt], name: &js::Name) -> bool {
     binds(stmts, name, false)
 }
 
-fn binds(stmts: &[Stmt], name: &str, assigned: bool) -> bool {
+fn binds(stmts: &[Stmt], name: &js::Name, assigned: bool) -> bool {
     bindings(stmts, name, assigned) > 0
 }
 
 /// How many times `stmts` declare `name`, a closure's parameter too, and
 /// set it, where `assigned`: as `binds` finds them.
-fn bindings(stmts: &[Stmt], name: &str, assigned: bool) -> usize {
+fn bindings(stmts: &[Stmt], name: &js::Name, assigned: bool) -> usize {
     let own = |stmts: &[Stmt]| {
         let mut found = 0;
         js::each_list(stmts, &mut |list| {
             for stmt in list.iter() {
                 found += usize::from(match &stmt.kind {
-                    StmtKind::Const(n, _) | StmtKind::Let(n, _) => n.is(name),
+                    StmtKind::Const(n, _) | StmtKind::Let(n, _) => n == name,
                     StmtKind::Destructure { pattern, .. } | StmtKind::ForOf { pattern, .. } => {
-                        pattern.names().contains(&name)
+                        pattern.bound().contains(&name)
                     }
-                    StmtKind::For { name: n, .. } => n.is(name),
-                    StmtKind::Assign(target, _) => assigned && matches!(&target.kind, ExprKind::Var(v) if v.is(name)),
+                    StmtKind::For { name: n, .. } => n == name,
+                    StmtKind::Assign(target, _) => assigned && matches!(&target.kind, ExprKind::Var(v) if v == name),
                     _ => false,
                 });
             }
@@ -606,18 +606,18 @@ fn bindings(stmts: &[Stmt], name: &str, assigned: bool) -> usize {
     let mut found = own(stmts);
     js::each_expr(stmts, &mut |e| {
         if let ExprKind::Arrow(params, body) | ExprKind::AsyncArrow(params, body) = &e.kind {
-            found += (params.iter()).filter(|p| p.names().contains(&name)).count() + own(body);
+            found += (params.iter()).filter(|p| p.bound().contains(&name)).count() + own(body);
         }
     });
     found
 }
 
 /// Whether a closure in `stmts` reads `name`.
-pub(super) fn in_closure(stmts: &[Stmt], name: &str) -> bool {
+pub(super) fn in_closure(stmts: &[Stmt], name: &js::Name) -> bool {
     let mut found = false;
     js::each_expr(stmts, &mut |e| {
         if let ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) = &e.kind {
-            found |= js::mentions_in(body, name) > 0;
+            found |= js::mentions_of(body, name) > 0;
         }
     });
     found
@@ -697,7 +697,7 @@ pub(super) fn clone_aliases(
     let fixed: IndexSet<js::Name> = (params.iter())
         .flat_map(|param| param.bound())
         .chain(kept)
-        .filter(|name| !rebinds(body, name.word()))
+        .filter(|name| !rebinds(body, name))
         .cloned()
         .collect();
     clones_read_as(body, &fixed, &clones.all);
@@ -713,7 +713,7 @@ pub(super) fn clone_aliases(
 pub(super) fn variable_clones(body: &mut Vec<Stmt>, clones: &crate::lower::mir::hints::Clones) {
     let writes = js::Writes::of(body);
     let fixed: IndexSet<js::Name> = (cloned_from(body, &clones.rcs).into_iter())
-        .filter(|(_, a)| bindings(body, a.word(), false) == 1 && !writes.may_replace(a))
+        .filter(|(_, a)| bindings(body, a, false) == 1 && !writes.may_replace(a))
         .map(|(_, a)| a)
         .collect();
     clones_read_as(body, &fixed, &clones.rcs);
@@ -729,7 +729,7 @@ fn clones_read_as(body: &mut Vec<Stmt>, fixed: &IndexSet<js::Name>, clones: &Ind
                 && let ExprKind::Var(a) = &value.kind
                 && fixed.contains(a)
                 && clones.contains(b.word())
-                && !rebinds(&stmts[i + 1..], b.word())
+                && !rebinds(&stmts[i + 1..], b)
             {
                 let (a, b) = (a.clone(), b.clone());
                 stmts.remove(i);
