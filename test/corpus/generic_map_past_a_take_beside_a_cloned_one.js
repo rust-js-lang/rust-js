@@ -2,6 +2,8 @@
 
 import {
   $cleanup,
+  $clone,
+  $cloning,
   $collectDropping,
   $collectOptions,
   $collectsInPlace,
@@ -14,28 +16,25 @@ import {
   $nth,
   $rangeNext,
   $roomForHint,
+  fuseClone_clone,
+  iterator_fuse,
   iterator_map,
   iterator_take,
-  mapClone_clone,
-  takeClone,
 } from "@rust-js/std";
 
 export function entry() {
   main();
 }
 
-export function cycled(items, f, IIterator, IClone, FClone) {
+export function cycled(items, f, IIterator, IClone, FClone, IFused) {
+  const makeMap = (it, f) =>
+    $cloning(
+      it.map((item) => f(item)),
+      () => makeMap(fuseClone_clone(it, IClone), f),
+    );
   return $collectDropping(
     $roomForHint(
-      $cycleOf(
-        iterator_map(iterator_take(items, 9, IIterator), f, {
-          next: $next,
-          fold: $foldOf,
-          nth: $nth,
-        }),
-        (iterator) => mapClone_clone(iterator, takeClone(IClone), FClone),
-        $next,
-      ).take(5),
+      $cycleOf(makeMap(iterator_fuse(items, IIterator, IFused), f), $clone, $next).take(5),
       4,
       false,
     ),
@@ -97,6 +96,7 @@ function main() {
       { next: $rangeNext },
       { clone: (value) => ({ start: value.start, end: value.end }) },
       { clone: (value) => value },
+      true,
     ).join(", ")}]`,
   );
   console.log(`${tried($iter([[1], [2]]), [4, 4], $dropEach(dDrop_drop))}`);

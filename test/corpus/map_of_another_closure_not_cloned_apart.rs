@@ -1,9 +1,12 @@
+//@ library-differs
 // A generic function's `Map<I, F>` cloned, cycled, of `F: FnMut(i32) ->
 // i32`, beside another generic function's own `Map` of its own closure,
 // `|held: U| Held { held }`, collected in place: no `U` makes that
 // closure an `FnMut(i32) -> i32`, so it's never the `Map` that's cloned,
 // and isn't made cloned apart, whose items, which drop, it couldn't be
-// (#1895).
+// (#1895). Its `map` is past a `fuse()`, std's struct wherever it's made,
+// which the held flip never takes out, so the `map` stays the hand-written
+// form whose cloning is in question (#1780).
 use std::fmt::Display;
 
 pub fn cycled<I, F, L>(items: I, f: F, label: L) -> Vec<i32>
@@ -13,7 +16,7 @@ where
     L: Display,
 {
     println!("{label}");
-    items.map(f).cycle().take(5).collect()
+    items.fuse().map(f).cycle().take(5).collect()
 }
 
 struct D(u8);

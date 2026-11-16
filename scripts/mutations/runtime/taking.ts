@@ -107,7 +107,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/taking.js",
     find: "  $forward(taking, iter, { advanceBy, count, nth: of(\"nth\", nth), tryFold: of(\"tryFold\", tryFold), fold: of(\"tryFold\", fold) });\n",
     replace: "  $forward(taking, iter, { advanceBy, count, nth: of(\"nth\", nth), fold: of(\"tryFold\", fold) });\n",
-    tests: ["test/corpus.test.ts", "-t", "skip_try_fold"],
+    tests: ["test/corpus.test.ts", "-t", "^held_skip_take.rs$"],
   },
   {
     name: "take-nth-past-end-undropped",
@@ -147,7 +147,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/taking.js",
     find: "      (a) => (stopped = broke(a)) || full,",
     replace: "      (a) => (stopped = broke(a)),",
-    tests: ["test/corpus.test.ts", "-t", "skip_try_fold"],
+    tests: ["test/corpus.test.ts", "-t", "^capacity_of_chains_of_exact_size_adapters.rs$"],
   },
   {
     name: "take-fold-by-next",

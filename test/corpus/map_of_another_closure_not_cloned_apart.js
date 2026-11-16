@@ -2,6 +2,8 @@
 
 import {
   $cleanup,
+  $clone,
+  $cloning,
   $closing,
   $collectDropping,
   $collectsInPlace,
@@ -14,23 +16,24 @@ import {
   $rangeNext,
   $roomForHint,
   $traitImpl,
-  iterator_map,
-  mapClone_clone,
+  fuseClone_clone,
+  iterator_fuse,
 } from "@rust-js/std";
 
 export function entry() {
   main();
 }
 
-export function cycled(items, f, label, IIterator, IClone, FClone, LDisplay) {
+export function cycled(items, f, label, IIterator, IClone, FClone, LDisplay, IFused) {
   console.log(`${LDisplay.fmt(label)}`);
+  const makeMap = (it, f) =>
+    $cloning(
+      it.map((item) => f(item)),
+      () => makeMap(fuseClone_clone(it, IClone), f),
+    );
   return $collectDropping(
     $roomForHint(
-      $cycleOf(
-        iterator_map(items, f, IIterator),
-        (iterator) => mapClone_clone(iterator, IClone, FClone),
-        $next,
-      ).take(5),
+      $cycleOf(makeMap(iterator_fuse(items, IIterator, IFused), f), $clone, $next).take(5),
       4,
       false,
     ),
@@ -120,6 +123,7 @@ function main() {
       { clone: (value) => ({ start: value.start, end: value.end }) },
       { clone: (value) => value },
       { fmt: (value) => value },
+      true,
     ).join(", ")}]`,
   );
   const paired = [$iter([[1]]), 5];

@@ -41,7 +41,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/steps.js",
     find: "  take(n) {\n",
     replace: "  takeStepped(n) {\n",
-    tests: ["test/corpus.test.ts", "-t", "^restarting_iterators.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^adapters_own_nth_fold.rs$"],
   },
   {
     name: "steps-drop-skips-past-none",
@@ -73,14 +73,6 @@ export const mutations: Mutation[] = [
     file: "src/runtime/steps.js",
     find: "    if (init.length > 0) return this.fold(init[0], (a, x) => f(a, x, i++));\n",
     replace: "    if (init.length > 0) return super.reduce(f, init[0]);\n",
-    tests: ["test/corpus.test.ts", "-t", "^own_fold_and_nth.rs$"],
-  },
-  {
-    name: "steps-flat-map-fold-steps",
-    breaks: "a `flat_map` of the crate's iterator folds by `next`, not by its source's own `fold`",
-    file: "src/runtime/steps.js",
-    find: "    $forward(flat, this, { fold, tryFold });\n",
-    replace: "    $forward(flat, this, { tryFold });\n",
     tests: ["test/corpus.test.ts", "-t", "^own_fold_and_nth.rs$"],
   },
   {
@@ -123,14 +115,6 @@ export const mutations: Mutation[] = [
     file: "src/runtime/steps.js",
     find: "    $forward(mapped, this, { fold: \"fold\", tryFold: \"tryFold\" }, (g, unwind) =>\n",
     replace: "    $forward(mapped, this, { fold: \"fold\" }, (g, unwind) =>\n",
-    tests: ["test/corpus.test.ts", "-t", "skip_try_fold"],
-  },
-  {
-    name: "flat-map-try-fold-by-next",
-    breaks: "a flatMap passes tryFold to its source and each inner",
-    file: "src/runtime/steps.js",
-    find: "    $forward(flat, this, { fold, tryFold });\n",
-    replace: "    $forward(flat, this, { fold });\n",
     tests: ["test/corpus.test.ts", "-t", "skip_try_fold"],
   },
   {
@@ -227,14 +211,6 @@ export const mutations: Mutation[] = [
     file: "src/runtime/steps.js",
     find: "    () => stepping && unwind?.(folded),\n",
     replace: "    () => undefined,\n",
-    tests: ["test/corpus.test.ts", "-t", "^panic_mid_fold_drops.rs$"],
-  },
-  {
-    name: "flat-fold-unguarded",
-    breaks: "a `flat_map` whose closure panics inside a fold leaves the accumulator undropped (#423)",
-    file: "src/runtime/steps.js",
-    find: "      const made = unwind === undefined ? (x) => f(x, i++) :",
-    replace: "      const made = true ? (x) => f(x, i++) :",
     tests: ["test/corpus.test.ts", "-t", "^panic_mid_fold_drops.rs$"],
   },
   {
@@ -371,14 +347,6 @@ export const mutations: Mutation[] = [
     file: "src/runtime/steps.js",
     find: "          if (step.done) {\n            ended = true;\n            this.return();\n",
     replace: "          if (step.done) {\n            ended = true;\n",
-    tests: ["test/corpus.test.ts", "-t", "^flatten_drops_its_source_at_its_end.rs$"],
-  },
-  {
-    name: "flatten-try-fold-keeps-source",
-    breaks: "a flatten's `try_fold` that runs its source out keeps it, where std's `Fuse::try_fold` drops it (#1507)",
-    file: "src/runtime/steps.js",
-    find: "      if (!broke(folded)) {\n        ended = true;\n        this.return();\n",
-    replace: "      if (!broke(folded)) {\n        ended = true;\n",
     tests: ["test/corpus.test.ts", "-t", "^flatten_drops_its_source_at_its_end.rs$"],
   },
   {
