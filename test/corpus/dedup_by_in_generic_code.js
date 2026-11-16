@@ -21,17 +21,15 @@ function main() {
 
   // Each run's length counted into the item kept.
   const runs = [4, 4, 4, 5, 6, 6].map((value) => ({ value, length: 1 }));
-  deduped(runs, (x0, x1) =>
-    ((next, kept) => {
-      if (next.value === kept.value) {
-        kept.length = (kept.length + next.length) >>> 0;
-        return true;
-      } else {
-        next.length = (next.length * 10) >>> 0;
-        return false;
-      }
-    })(x0.value, x1.value),
-  );
+  deduped(runs, (next, kept) => {
+    if (next.value.value === kept.value.value) {
+      kept.value.length = (kept.value.length + next.value.length) >>> 0;
+      return true;
+    } else {
+      next.value.length = (next.value.length * 10) >>> 0;
+      return false;
+    }
+  });
   console.log(`[${runs.map((item) => runDebug_fmt(item)).join(", ")}]`);
 
   // Strings, sorted and deduplicated ignoring case, the kept one made

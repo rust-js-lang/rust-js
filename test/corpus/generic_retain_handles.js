@@ -29,9 +29,9 @@ function main() {
     return n.value % 2 === 0;
   });
   const counters = [{ n: 1 }, { n: 2 }];
-  keepSome(counters, (x0) => {
-    x0.value.n = (x0.value.n + 10) >>> 0;
-    return x0.value.n > 11;
+  keepSome(counters, (c) => {
+    c.value.n = (c.value.n + 10) >>> 0;
+    return c.value.n > 11;
   });
   console.log(
     `[${numbers.join(", ")}] [${counters.map((item) => counterDebug_fmt(item)).join(", ")}]`,

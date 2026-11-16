@@ -1,13 +1,13 @@
 # shape	count	per 10,000 lines
-files	2661
-lines	358080
+files	2662
+lines	358126
 temporaries	0	0
 labeled blocks	0	0
 while (true)	224	6.3
-$iter	3016	84.2
+$iter	3020	84.3
 Iterator.from	361	10.1
-return;	344	9.6
-renamed x$1	16707	466.6
+return;	345	9.6
+renamed x$1	16707	466.5
 role fallbacks	9060	253
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1	role fallbacks
 test/corpus/adapter_drop_past_a_panic.js	50	0	0	0	1	0	0	0	1
@@ -550,7 +550,7 @@ test/corpus/declarations_assigned_later.js	39	0	0	0	0	0	0	0	0
 test/corpus/declared_signatures.js	164	0	0	0	0	0	0	17	8
 test/corpus/decode_utf16_steps_as_asked.js	85	0	0	0	2	0	0	8	5
 test/corpus/dedup_by_drops_as_it_finds.js	225	0	0	0	0	0	0	0	0
-test/corpus/dedup_by_in_generic_code.js	51	0	0	0	0	0	0	0	0
+test/corpus/dedup_by_in_generic_code.js	49	0	0	0	0	0	0	0	0
 test/corpus/default_and_pop_if_drops.js	168	0	0	0	0	0	0	3	6
 test/corpus/default_const_numbered_as_the_impls.js	29	0	0	0	0	0	0	0	0
 test/corpus/default_crate_index.js	40	0	0	0	0	0	0	0	0
@@ -2072,10 +2072,11 @@ test/corpus/same_length_tables.js	116	0	0	0	0	0	1	4	6
 test/corpus/saturating_ops_at_every_width.js	1005	0	0	0	0	0	0	46	24
 test/corpus/saturating_ops_that_panic.js	173	0	0	0	0	0	0	92	0
 test/corpus/scan_dropped_once.js	330	0	0	0	4	0	0	18	9
-test/corpus/scan_drops_its_function_and_state.js	226	0	0	0	0	0	0	13	2
+test/corpus/scan_drops_its_function_and_state.js	225	0	0	0	0	0	0	13	2
 test/corpus/scan_lazy_drops.js	67	0	0	0	3	0	0	0	1
 test/corpus/scan_map_while_unfused.js	46	0	0	0	2	0	0	2	3
-test/corpus/scan_object_state.js	74	0	0	0	4	0	0	0	0
+test/corpus/scan_object_state.js	73	0	0	0	4	0	0	0	0
+test/corpus/scan_state_through_its_box.js	46	0	0	0	4	0	1	0	0
 test/corpus/scope_field_copies.js	84	0	0	0	0	0	0	7	0
 test/corpus/scope_method_closure_addr_eq.js	26	0	0	0	0	0	0	0	1
 test/corpus/scope_method_closure_ptr_eq.js	26	0	0	0	0	0	0	0	1
@@ -2656,7 +2657,7 @@ test/snapshots/ports/scheduler/forks/Scheduler.js	492	0	0	1	0	0	3	9	1
 test/snapshots/queues/queues.js	293	0	0	0	0	2	1	5	7
 test/snapshots/report/report.js	173	0	0	0	1	0	0	11	10
 test/snapshots/results/results.js	108	0	0	0	0	0	2	8	5
-test/snapshots/std_traits/std_traits.js	644	0	0	0	0	3	1	26	17
+test/snapshots/std_traits/std_traits.js	648	0	0	0	0	3	1	26	17
 test/snapshots/strings/strings.js	167	0	0	0	0	0	0	0	1
 test/snapshots/structs/structs.js	187	0	0	0	0	0	0	4	3
 test/snapshots/text/text.js	165	0	0	0	0	0	0	2	9

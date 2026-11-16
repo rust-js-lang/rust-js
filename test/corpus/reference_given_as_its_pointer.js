@@ -245,7 +245,7 @@ function main() {
   const xp = givenOn($ptr(x, "value", 0), (r) => r);
   xp.value = (xp.value + 1) >>> 0;
   const list = [1];
-  const lp = givenOn($ptrTo(list), (x0) => $ptrTo(x0.value));
+  const lp = givenOn($ptrTo(list), (r) => $ptrTo(r.value));
   lp.value.push(2);
   const arg$9 = $ptrEq(xp, $ptr(x, "value", 0), 4);
   console.log(`${x.value} ${arg$9} [${list.join(", ")}]`);

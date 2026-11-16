@@ -31,12 +31,11 @@ function main() {
       iterator_scan(
         { start: 0, end: 8 },
         [0n, 1n],
-        (x0, x1) =>
-          ((pair) => {
-            const out = pair[0];
-            $assign(pair, [pair[1], BigInt.asUintN(64, pair[0] + pair[1])]);
-            return out;
-          })(x0.value, x1),
+        (pair) => {
+          const out = pair.value[0];
+          $assign(pair.value, [pair.value[1], BigInt.asUintN(64, pair.value[0] + pair.value[1])]);
+          return out;
+        },
         { next: $rangeNext },
       ),
       8,

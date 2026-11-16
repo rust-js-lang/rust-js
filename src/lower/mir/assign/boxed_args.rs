@@ -218,6 +218,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         }
                         false => None,
                     };
+                    // A closure written here given boxes where it takes what's in
+                    // them, read and written through them in its own body,
+                    // `(pair, x) => { $assign(pair.value, ..) }` (#2008).
+                    if let Some((forms, None)) = &unboxed
+                        && boxed_drop.is_none()
+                        && let Some(arrow) = self.read_through_boxes(&f, forms)
+                    {
+                        exprs.push(arrow);
+                        continue;
+                    }
                     exprs.push(match unboxed {
                         Some((unboxed, back)) => {
                             let params: Vec<crate::js::Name> = (0..unboxed.len())
@@ -423,5 +433,66 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             exprs.push(Expr::bool(true));
         }
         Ok(exprs)
+    }
+
+    /// `f`, a closure, given where generic code gives some of its
+    /// parameters boxed (`forms`, `unboxed_by_function`'s), made one that
+    /// takes the boxes itself: each parameter given boxed read and written
+    /// through its box, `pair.value`, in its own body, `(pair, x) => {
+    /// $assign(pair.value, ..) }`, where the arrow that unboxes them would
+    /// call it, `(x0, x1) => ((pair) => { .. })(x0.value, x1)` (#2008). Of
+    /// an arrow of names alone; `None` of another. A closure in its body
+    /// that reads the box reads it within the call, as Rust's borrow of the
+    /// `&mut` it captures ends there.
+    fn read_through_boxes(&mut self, f: &Expr, forms: &[Option<(Form, Crossing<'tcx>)>]) -> Option<Expr> {
+        let js::ExprKind::Arrow(params, body) = &f.kind else {
+            return None;
+        };
+        let names: Vec<js::Name> = (params.iter())
+            .map(|param| match param {
+                js::Pattern::Name(name) => Some(name.clone()),
+                _ => None,
+            })
+            .collect::<Option<_>>()?;
+        // One that takes fewer, its last unread, `(pair) => ..` of `|pair, _|`,
+        // is given the rest as JS gives an arrow more than it takes.
+        if names.len() > forms.len() {
+            return None;
+        }
+        let mut boxed = Vec::new();
+        for (name, form) in names.iter().zip(forms) {
+            let Some((form, crossing)) = *form else { continue };
+            // Given as it is, a form generic code holds too; a box's
+            // `value`, read through it; another, a held box's or a write
+            // result's, which no program gives a closure today (a `&mut` of
+            // a `&mut` in a generic function's parameters is refused,
+            // #1421), the arrow that unboxes it.
+            let read = self.form_back(form, crossing, Expr::var(name));
+            match read.held_by() {
+                _ if matches!(&read.kind, js::ExprKind::Var(n) if n == name) => {}
+                Some(of) if matches!(&of.kind, js::ExprKind::Var(n) if n == name) => boxed.push(name.clone()),
+                _ => return None,
+            }
+        }
+        if boxed.is_empty() {
+            return None;
+        }
+        let mut body = body.clone();
+        // Each read of a boxed one its box's `value`, through a name of its
+        // own first, so the walk doesn't read the box again.
+        for name in boxed {
+            let marker = self.fresh(Base::Numbered(Role::X, 0));
+            js::each_expr_mut(&mut body, &mut |e| {
+                if matches!(&e.kind, js::ExprKind::Var(n) if *n == name) {
+                    *e = Expr::held(Expr::var(&marker));
+                }
+            });
+            js::each_expr_mut(&mut body, &mut |e| {
+                if matches!(&e.kind, js::ExprKind::Var(n) if *n == marker) {
+                    *e = Expr::var(&name);
+                }
+            });
+        }
+        Some(Expr::arrow(params.clone(), body))
     }
 }

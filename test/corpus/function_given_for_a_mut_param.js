@@ -17,8 +17,8 @@ function bump(c) {
 
 function main() {
   const c = { n: 1 };
-  apply($cellOf(c), (x0) => {
-    x0.value.n = (x0.value.n + 1) | 0;
+  apply($cellOf(c), (x) => {
+    x.value.n = (x.value.n + 1) | 0;
   });
   console.log(`${c.n}`);
   apply($cellOf(c), (x0) => bump(x0.value));

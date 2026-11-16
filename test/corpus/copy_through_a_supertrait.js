@@ -94,8 +94,8 @@ function main() {
   console.log(
     `${bumped(
       { x: 1 },
-      (x0) => {
-        x0.value.x = (x0.value.x + 1) >>> 0;
+      (p) => {
+        p.value.x = (p.value.x + 1) >>> 0;
       },
       pointCopied,
       pointDebug,
@@ -114,8 +114,8 @@ function main() {
   console.log(
     `${deeper(
       { x: 1 },
-      (x0) => {
-        x0.value.x = (x0.value.x + 1) >>> 0;
+      (p) => {
+        p.value.x = (p.value.x + 1) >>> 0;
       },
       pointDeeper,
       pointDebug,
@@ -124,8 +124,8 @@ function main() {
   console.log(
     `${whereBound(
       { x: 1 },
-      (x0) => {
-        x0.value.x = (x0.value.x + 1) >>> 0;
+      (p) => {
+        p.value.x = (p.value.x + 1) >>> 0;
       },
       pointCopied,
       pointDebug,
@@ -134,8 +134,8 @@ function main() {
   console.log(
     `${duped(
       { x: 1 },
-      (x0) => {
-        x0.value.x = (x0.value.x + 1) >>> 0;
+      (p) => {
+        p.value.x = (p.value.x + 1) >>> 0;
       },
       pointDup,
       pointDebug,

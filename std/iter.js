@@ -2114,7 +2114,7 @@ export function fuseExactSizeIterator_len(fuse, IExactSizeIterator, dropI, dropI
 export function fuseFuseImplI_next(fuse, IIterator = { next: $next }, dropI, dropIItem) {
   const opt = { value: fuse.iter };
   try {
-    return andThenOrClear(opt, (x0) => IIterator.next(x0.value), dropI, dropIItem);
+    return andThenOrClear(opt, (x) => IIterator.next(x.value), dropI, dropIItem);
   } catch (error) {
     throw $unwindsOn(error);
   } finally {
@@ -2168,7 +2168,7 @@ export function fuseFuseImplI_nth(fuse, n, IIterator = { next: $next }, dropI, d
   try {
     return andThenOrClear(
       opt,
-      (x0) => $nthDropping($lent($given(x0.value, IIterator, true)), n, dropIItem, true),
+      (iter) => $nthDropping($lent($given(iter.value, IIterator, true)), n, dropIItem, true),
       dropI,
       dropIItem,
     );
@@ -2202,7 +2202,12 @@ export function fuseFuseImplI_nextBack(
 ) {
   const opt = { value: fuse.iter };
   try {
-    return andThenOrClear(opt, (x0) => IDoubleEndedIterator.next_back(x0.value), dropI, dropIItem);
+    return andThenOrClear(
+      opt,
+      (iter) => IDoubleEndedIterator.next_back(iter.value),
+      dropI,
+      dropIItem,
+    );
   } catch (error) {
     throw $unwindsOn(error);
   } finally {
@@ -2236,8 +2241,8 @@ export function fuseFuseImplI_nthBack(
   try {
     return andThenOrClear(
       opt,
-      (x0) =>
-        $nthBack($given(x0.value, IIterator, true, IDoubleEndedIterator), n, $some, dropIItem),
+      (iter) =>
+        $nthBack($given(iter.value, IIterator, true, IDoubleEndedIterator), n, $some, dropIItem),
       dropI,
       dropIItem,
     );
@@ -8139,7 +8144,7 @@ export function chainIterator_next(
   const opt = { value: chain.a };
   let andThenOrClear;
   try {
-    andThenOrClear = andThenOrClear$1(opt, (x0) => AIterator.next(x0.value), dropA, dropAItem);
+    andThenOrClear = andThenOrClear$1(opt, (x) => AIterator.next(x.value), dropA, dropAItem);
   } catch (error) {
     throw $unwindsOn(error);
   } finally {
@@ -8603,7 +8608,7 @@ export function chainDoubleEndedIterator_nextBack(
   try {
     andThenOrClear = andThenOrClear$1(
       opt,
-      (x0) => BDoubleEndedIterator.next_back(x0.value),
+      (b) => BDoubleEndedIterator.next_back(b.value),
       dropB,
       dropAItem,
     );
@@ -11769,7 +11774,7 @@ export function flattenCompatIUIterator_next(
     const opt = { value: flattenCompat.frontiter };
     let andThenOrClear;
     try {
-      andThenOrClear = andThenOrClear$2(opt, (x0) => UIterator.next(x0.value), dropU, dropUItem);
+      andThenOrClear = andThenOrClear$2(opt, (x) => UIterator.next(x.value), dropU, dropUItem);
     } catch (error) {
       throw $unwindsOn(error);
     } finally {
@@ -11789,7 +11794,7 @@ export function flattenCompatIUIterator_next(
     if (value == null) {
       const opt = { value: flattenCompat.backiter };
       try {
-        elt = andThenOrClear$2(opt, (x0) => UIterator.next(x0.value), dropU, dropUItem);
+        elt = andThenOrClear$2(opt, (x) => UIterator.next(x.value), dropU, dropUItem);
       } catch (error) {
         throw $unwindsOn(error);
       } finally {
@@ -12632,7 +12637,7 @@ export function flattenCompatIUDoubleEndedIterator_nextBack(
     try {
       andThenOrClear = andThenOrClear$2(
         opt,
-        (x0) => UDoubleEndedIterator.next_back(x0.value),
+        (b) => UDoubleEndedIterator.next_back(b.value),
         dropU,
         dropUItem,
       );
@@ -12662,7 +12667,7 @@ export function flattenCompatIUDoubleEndedIterator_nextBack(
       try {
         elt = andThenOrClear$2(
           opt,
-          (x0) => UDoubleEndedIterator.next_back(x0.value),
+          (f) => UDoubleEndedIterator.next_back(f.value),
           dropU,
           dropUItem,
         );

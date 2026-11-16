@@ -73,7 +73,7 @@ function main() {
   const iter = iterator_scan(
     it(3),
     ["st"],
-    (x0, x1) => (x1 + zero(g$1)) >>> 0,
+    (_, x) => (x + zero(g$1)) >>> 0,
     { next: itIterator_next },
     (it) => {
       dDrop_drop(it._held);
@@ -101,7 +101,7 @@ function main() {
     iterator_scan(
       it(3),
       ["st"],
-      (x0, x1) => (x1 + zero(g$2)) >>> 0,
+      (_, x) => (x + zero(g$2)) >>> 0,
       { next: itIterator_next },
       (it) => {
         dDrop_drop(it._held);
@@ -145,13 +145,12 @@ function main() {
     const iter = iterator_scan(
       it(3),
       ["st"],
-      (x0, x1) =>
-        ((_, x) => {
-          if (x === 1) {
-            throw new Error("scan");
-          }
-          return (x + zero(g$3)) >>> 0;
-        })(x0.value, x1),
+      (_, x) => {
+        if (x === 1) {
+          throw new Error("scan");
+        }
+        return (x + zero(g$3)) >>> 0;
+      },
       { next: itIterator_next },
       (it) => {
         dDrop_drop(it._held);

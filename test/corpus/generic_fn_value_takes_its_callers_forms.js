@@ -76,8 +76,8 @@ function main() {
   console.log(`[${grown.join(", ")}] [${rows.map((item) => `[${item.join(", ")}]`).join(", ")}]`);
   console.log(`${firstLen(viewVecU8Fn, rows)}`);
   generic($cellOf($index(rows, 1)), emptiedVecU8);
-  generic($cellOf(rows), (x0) => {
-    x0.value.push([9]);
+  generic($cellOf(rows), (rows) => {
+    rows.value.push([9]);
   });
   console.log(`[${rows.map((item) => `[${item.join(", ")}]`).join(", ")}]`);
   console.log(`${concrete(v, viewVecU8Fn)}`);

@@ -3,6 +3,26 @@ import type { Mutation } from "../../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "boxes-not-read-through",
+    breaks:
+      "a closure given boxes where it takes what's in them is called by an arrow that unboxes them again, `(x0, x1) => ((pair) => { .. })(x0.value, x1)` (#2008)",
+    file: "src/lower/mir/assign/boxed_args.rs",
+    find: "                        && let Some(arrow) = self.read_through_boxes(&f, forms)\n",
+    replace: "                        && let Some(arrow) = self.read_through_boxes(&f, forms).filter(|_| false)\n",
+    tests: ["test/corpus.test.ts", "-t", "^(scan_state_through_its_box|scan_object_state).rs$"],
+    snapshots: true,
+  },
+  {
+    name: "boxes-read-through-of-as-many-only",
+    breaks:
+      "a closure that takes fewer than generic code gives, `(pair) => ..` of `|pair, _|`, isn't read through its box, but called by the arrow that unboxes it (#2008)",
+    file: "src/lower/mir/assign/boxed_args.rs",
+    find: "        if names.len() > forms.len() {\n",
+    replace: "        if names.len() != forms.len() {\n",
+    tests: ["test/corpus.test.ts", "-t", "^scan_object_state.rs$"],
+    snapshots: true,
+  },
+  {
     name: "fn-box-called-and-given-back-allowed",
     breaks: "a `&mut` to a boxed function given for an `F` that's called and given back compiles, given as its box, whose call throws `TypeError: f is not a function` (#1909)",
     file: "src/lower/mir/assign/boxed_args.rs",
