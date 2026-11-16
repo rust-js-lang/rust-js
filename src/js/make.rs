@@ -52,6 +52,12 @@ impl Expr {
         Expr::var(Name::global(name))
     }
 
+    /// A read of the module's `name`, one it declares at its top: its
+    /// function's, its constant's or its import's (`Name::module`).
+    pub fn module(name: &str) -> Expr {
+        Expr::var(Name::module(name))
+    }
+
     /// This, a call of one of JS's own functions or methods
     /// (`Known::BuiltIn`), `String(n)`, beside what else is known of it.
     pub fn built_in(mut self) -> Expr {
@@ -225,7 +231,7 @@ impl Expr {
     /// named apart from the runtime's (`names::dictionary_cache`).
     pub fn helper(name: &'static str) -> Expr {
         assert!(crate::runtime::exports(name), "the runtime exports no `{name}`");
-        Expr::var(name)
+        Expr::module(name)
     }
 
     /// The runtime's helper this is, by the name it exports (ADR 0103).

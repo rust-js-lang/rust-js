@@ -587,8 +587,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             function: js::Function {
                 // A copy its callers need, by its own name (ADR 0051, amended).
                 name: match self.copy {
-                    Some(at) => self.krate.given.js_given.name(def_id, at).into(),
-                    None => self.krate.fns[&def_id].name.clone().into(),
+                    Some(at) => js::Name::module(self.krate.given.js_given.name(def_id, at)),
+                    None if !self.krate.at_module_top(def_id) => self.krate.fns[&def_id].name.clone().into(),
+                    None => js::Name::module(&self.krate.fns[&def_id].name),
                 },
                 params,
                 body: out,

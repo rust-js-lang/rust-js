@@ -15,12 +15,35 @@ struct Scope {
 }
 
 /// A read: the scope it's in, and the scope of the declaration it's of,
-/// `None` of a name from outside; and whether it's a global's, one
-/// `Expr::global` made (`Name::global`) or the printer writes, `String(x)`'s.
+/// `None` of a name from outside; and whose name it reads.
 pub(crate) struct Read {
     scope: usize,
     pub(crate) of: Option<usize>,
-    pub(crate) global: bool,
+    pub(crate) whose: Whose,
+}
+
+/// Whose name a read reads, of its name's form.
+#[derive(Clone, Copy, PartialEq)]
+pub(crate) enum Whose {
+    /// A name in scope: a local's, or one the module declares.
+    Local,
+    /// A global's, one `Expr::global` made (`Name::global`) or the printer
+    /// writes, `String(x)`'s: declared nowhere in the module.
+    Global,
+    /// One the module declares at its top (`Name::module`), its function's,
+    /// its import's or the runtime's helper's.
+    Module,
+}
+
+impl Whose {
+    /// Of a read of `name`, by its form.
+    fn of(name: &js::Name) -> Whose {
+        match () {
+            _ if name.is_global() => Whose::Global,
+            _ if name.is_module() => Whose::Module,
+            _ => Whose::Local,
+        }
+    }
 }
 
 /// What the walk met, in its order: a declaration, or a read of the
@@ -271,7 +294,7 @@ impl Walk {
         self.tree.events.push(Event::Declared);
     }
 
-    fn read(&mut self, name: &str, global: bool) {
+    fn read(&mut self, name: &str, whose: Whose) {
         let scope = *self.stack.last().expect("a read is in a scope");
         let of = self.stack.iter().rev().copied().find(|&s| self.tree.declares(s, name));
         // Of the declaration it's of, by its number: what it's named apart.
@@ -283,7 +306,7 @@ impl Walk {
             .reads
             .entry(name.to_string())
             .or_default()
-            .push(Read { scope, of, global });
+            .push(Read { scope, of, whose });
     }
 
     /// A function's parameters and its body's own declarations are one scope;
@@ -481,7 +504,7 @@ impl Walk {
 
     fn expr(&mut self, e: &Expr) {
         match &e.kind {
-            ExprKind::Var(name) => self.read(name.word(), name.is_global()),
+            ExprKind::Var(name) => self.read(name.word(), Whose::of(name)),
             // What it sets is resolved as a read is.
             ExprKind::Assigned(target, a) => {
                 self.expr(target);
@@ -490,12 +513,12 @@ impl Walk {
             // What the printer writes of JS's own: `String(x)`, `undefined`,
             // `NaN` and `Infinity`.
             ExprKind::Stringed(a) => {
-                self.read("String", true);
+                self.read("String", Whose::Global);
                 self.expr(a);
             }
-            ExprKind::Undefined | ExprKind::GivenUndefined => self.read("undefined", true),
-            ExprKind::Num(n) if n.is_nan() => self.read("NaN", true),
-            ExprKind::Num(n) if n.is_infinite() => self.read("Infinity", true),
+            ExprKind::Undefined | ExprKind::GivenUndefined => self.read("undefined", Whose::Global),
+            ExprKind::Num(n) if n.is_nan() => self.read("NaN", Whose::Global),
+            ExprKind::Num(n) if n.is_infinite() => self.read("Infinity", Whose::Global),
             ExprKind::Num(_)
             | ExprKind::BigInt(_)
             | ExprKind::BigUint(_)

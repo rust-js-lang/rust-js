@@ -380,7 +380,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.write_adt(Expr::var(&value), json.word(), adt, args, span, &mut body)?;
         let js_span = self.js_span(span);
         Ok(js::Function {
-            name: self.krate.fns[&method].name.clone().into(),
+            name: js::Name::module(&self.krate.fns[&method].name),
             params,
             body,
             export: false,

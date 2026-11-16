@@ -446,3 +446,45 @@ uses, are none of 183 (131,638 uses). The uses that are left are
 lowering's, its module names and its own, whose names the passes above now
 keep where they replaced them. The corpus's JS is byte-identical under
 `RUST_JS_CHECK_NAMES=1`, as are the snapshots and the React port.
+
+## Names are ids, step 1's second part: the module's names (2026-11-16)
+
+A name the module declares at its top is a form of its own,
+`Name::module(word)`, the lead's decision: its functions' names and the
+reads of them, its imports' locals, the linker's `Symbol`s made reads,
+the trait impls' caches, and the runtime's helpers it imports,
+`Expr::helper`'s. A function or a `const` written in a function's body,
+or one a block makes and gives, is declared where it's written, so its
+name is its body's (`CrateFacts::at_module_top`), as is a drop function,
+declared at the top of the body that drops. They're no item's: an item's table, which step 2 gives ids, never holds one, and a
+read of one is the module's wherever in the module it is, as JS resolves
+it. `Name::global` stays what the module declares nowhere, `Array`'s or a
+binding's `document`, which `js::validate` checks apart: a global's read
+must find nothing in scope, a module name's read the module's top.
+
+**Equality across forms.** A module name is never an item's local, even
+of its word: a local of a module name's word reads the local in JS, so no
+read meant for the module's may be inside it. Lowering names a local apart
+from every name the module has, as it has since M2 (`fresh_in` starts of
+`module_names`, its functions, imports and globals), and preparation's
+`reclaim` respells one apart from them too; `js::validate` refuses a
+module name's read that a nearer declaration takes
+(`Problem::ModuleShadowed`), so a pass that would let a local capture
+one is a compile error, never a read of the wrong variable. Whose name a
+read is, a local's, a global's or the module's, is one state,
+`js::scopes::Whose`, where a read had a flag of each. Corpus case
+`locals_named_as_the_modules_names` holds it: `let parse = parse(a) ..`
+of an imported `parse`, a local `cmp` beside the module's `cmp` and the
+`$cmp` a comparison of strings reads, each against native Rust.
+
+**One authority for the helpers a module imports.** The linker imports
+each runtime helper its module's tree reads, by the read's word, as it
+did: `Name::module` keeps the word, so what's imported is decided where it
+was, of the same names, and no second list says it.
+
+The corpus, the snapshots and the port are as they were, and no module
+name's read was refused. The probe of part 1 counts 10,813 uses of names
+made of text left, of 135,541: the rest are the items' own, lowering's
+and tidy's (`cell/variables`' module cells, `destructuring`'s nested
+patterns, a dictionary's shared entries), and preparation's, step 1's
+third area, which ioCJ takes in parallel (the lead's split).

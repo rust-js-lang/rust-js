@@ -301,12 +301,11 @@ fn expr(e: &mut Expr, visitor: &mut Visitor<'_>) {
     if let ExprKind::Symbol(symbol) = &e.kind
         && let Some(replacements) = visitor.replacements
     {
-        e.kind = ExprKind::Var(
+        e.kind = ExprKind::Var(crate::js::Name::module(
             replacements
                 .get(symbol)
-                .expect("every symbolic module reference has a dependency")
-                .into(),
-        );
+                .expect("every symbolic module reference has a dependency"),
+        ));
     }
     match &mut e.kind {
         ExprKind::Symbol(symbol) => {

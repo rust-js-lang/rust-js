@@ -85,7 +85,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .insert((self.module, export.clone()));
             let local = &self.krate.imports[&self.module][&export];
             self.read_import_of(def_id, local);
-            let reference = Expr::var(local);
+            let reference = Expr::module(local);
             return match &item.member {
                 // A class's constant, its prototype's, as the crate's own is
                 // (ADR 0761; #1032).
@@ -291,6 +291,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Expr::member(symbol(js::NAMESPACE), exported)
         } else if target.module != self.module {
             symbol(export)
+        } else if self.krate.at_module_top(def_id) {
+            Expr::module(export)
         } else {
             Expr::var(export)
         };

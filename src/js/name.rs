@@ -25,6 +25,9 @@ enum Of {
     Item,
     /// A global's, JS's `Array` or a binding's `document`.
     Global,
+    /// One the module declares at its top: its functions, its constants,
+    /// its imports, the runtime's helpers it imports.
+    Module,
     /// A temporary MIR's lowering made, `_5`, or one given apart from
     /// one, `_5$1`, which tidy names for what it holds (S4).
     Temporary,
@@ -51,6 +54,21 @@ impl Name {
     /// nothing in scope declares its word (#1681 change 3, S3).
     pub fn global(word: &str) -> Name {
         Name(word.to_string(), Of::Global)
+    }
+
+    /// The module's `word`, a name it declares at its top, no item's: a
+    /// function's, a constant's, an import's, `$cmp` of the runtime's
+    /// helpers. Its reads are its, from anywhere in the module, never a
+    /// local's of its word, which lowering and preparation name apart from
+    /// it ("names are ids", ADR 1150); `js::validate` refuses a read of one
+    /// that a declaration nearer takes.
+    pub fn module(word: &str) -> Name {
+        Name(word.to_string(), Of::Module)
+    }
+
+    /// Whether it's the module's (`module`).
+    pub fn is_module(&self) -> bool {
+        self.1 == Of::Module
     }
 
     /// Whether it's a global's (`global`).

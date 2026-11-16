@@ -210,7 +210,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a generic impl's dictionary is made anew on each call, so two of the same impl given the same aren't the same object",
     file: "src/lower/traits/impls.rs",
-    find: "                    vec![Expr::var(cache), keys, make],\n",
+    find: "                    vec![Expr::module(cache), keys, make],\n",
     replace:
       '                    vec![Expr::new_(Expr::var("WeakMap"), Vec::new()), keys, make],\n',
     tests: ["test/traits.test.ts", "-t", "dictionaries are explicit"],

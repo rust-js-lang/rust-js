@@ -2,7 +2,8 @@
 //! M1): each name it reads resolves, to a declaration in scope, an import,
 //! the runtime's helper (`runtime::exports`) or a global (`Expr::global`,
 //! `Name::global`), and no global's read is of a name a declaration in
-//! scope takes; a block declares a name once; each `break` and `continue`
+//! scope takes, nor a module name's (`Name::module`) of one a declaration
+//! nearer than the module's top takes; a block declares a name once; each `break` and `continue`
 //! lands on a loop, a `switch` or a label around it, within its function.
 //! It keeps no list of names: what may be read undeclared is what its
 //! owners made so; what a read resolves to is `js::scopes`'s, the one
@@ -26,6 +27,10 @@ pub enum Problem {
     /// A global's read of a name a declaration in scope takes, which JS
     /// reads instead.
     Shadowed(String),
+    /// A read of the module's name (`Name::module`) that a declaration
+    /// nearer than the module's top takes, a local of its word, which JS
+    /// reads instead.
+    ModuleShadowed(String),
     /// A name lowering made that was never spelled, `value#1`
     /// (`js::Name::made`).
     Unspelled(String),
@@ -46,6 +51,10 @@ impl std::fmt::Display for Problem {
                 write!(f, "it holds {}, taken at {at}", super::Hole::Taken(at).what())
             }
             Problem::Hole(hole) => write!(f, "it holds {}", hole.what()),
+            Problem::ModuleShadowed(name) => write!(
+                f,
+                "the module's `{name}` is read where a local declaration of `{name}` is in scope, which JS reads instead"
+            ),
             Problem::Shadowed(name) => {
                 write!(
                     f,
@@ -105,14 +114,20 @@ pub fn body(body: &[Stmt]) -> Vec<Problem> {
 
 /// What `tree`'s names break: a name a scope declares twice; a read of what
 /// nothing declares, made no global and no helper; a global's read of a
-/// name a declaration in scope takes.
+/// name a declaration in scope takes; a module name's read that a
+/// declaration nearer than the module's top takes.
 fn names(tree: &scopes::Tree) -> Vec<Problem> {
     let mut problems: Vec<Problem> = tree.twice.iter().cloned().map(Problem::Twice).collect();
     for (name, reads) in &tree.reads {
         for read in reads {
-            match (read.of.is_some(), read.global) {
-                (true, true) => problems.push(Problem::Shadowed(name.clone())),
-                (false, false) if !crate::runtime::exports(name) => problems.push(Problem::Unresolved(name.clone())),
+            match (read.of, read.whose) {
+                // The module's: of its top, the outermost scope, or a
+                // helper the linker imports.
+                (Some(of), scopes::Whose::Module) if of != 0 => problems.push(Problem::ModuleShadowed(name.clone())),
+                (Some(_), scopes::Whose::Global) => problems.push(Problem::Shadowed(name.clone())),
+                (None, scopes::Whose::Local | scopes::Whose::Module) if !crate::runtime::exports(name) => {
+                    problems.push(Problem::Unresolved(name.clone()))
+                }
                 _ => {}
             }
         }
@@ -444,6 +459,22 @@ mod tests {
         );
         assert_eq!(value.made_base(), Some("value"));
         assert_eq!(Name::from("value$1").made_base(), None);
+    }
+
+    // A module name's read is of the module's top: there, or a helper the
+    // linker imports, it resolves; where a local of its word is nearer, JS
+    // reads the local, a wrong answer, refused ("names are ids", ADR 1150).
+    #[test]
+    fn a_module_name_a_local_takes_is_refused() {
+        let declared = stmt(StmtKind::Const("parse".into(), Expr::num(1.0)));
+        assert_eq!(of(vec![declared.clone(), read(Expr::module("parse"))]), vec![]);
+        assert_eq!(of(vec![read(Expr::helper("$cmp"))]), vec![]);
+        let local = stmt(StmtKind::Let("parse".into(), None));
+        let f = Expr::arrow(Vec::new(), vec![local, read(Expr::module("parse"))]);
+        assert_eq!(
+            of(vec![declared, read(f)]),
+            vec![Problem::ModuleShadowed("parse".into())]
+        );
     }
 
     // A global's read where a declaration of its name is in scope reads

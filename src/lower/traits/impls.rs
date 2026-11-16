@@ -869,13 +869,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             body.push(
                 StmtKind::Return(Some(Expr::call(
                     Expr::helper("$traitImpl"),
-                    vec![Expr::var(cache), keys, make],
+                    vec![Expr::module(cache), keys, make],
                 )))
                 .at(js::Span::NONE),
             );
         }
         let function = js::Function {
-            name: self.krate.fns[&id].name.clone().into(),
+            name: js::Name::module(&self.krate.fns[&id].name),
             params,
             body,
             // Not a library's the crate compiles itself, its own (ADR 0914).
