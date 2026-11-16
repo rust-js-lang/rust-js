@@ -831,3 +831,18 @@ shows the library's writer in stdout's line beside a `catch_unwind`, is
 refused as #1633 refuses one now, not left as rust-js's bug. Mutation
 `trait-default-armed-by-its-own-function`
 (`lower/mir/std_calls/written_into.ts`).
+
+## Amendment: a dictionary's `write_fmt` is the trait's method, recognised or not (2026-11-16)
+
+Whether a `write!` gives the function of its `Arguments`, which every
+writer dictionary's `writeFmt` takes, was asked of what `write_fmt`'s
+recogniser made of the call (`Std::UserWrite`). Without that recogniser
+(ADR 1128's `--without-recognizer std::fmt::Write::write_fmt`, the
+tidy-stages net's variant), the call still went through the dictionary,
+`W.writeFmt(w, args)`, but was given the `Arguments`' text, and threw
+`make is not a function` in eight corpus cases (#1891). Now
+`writes_through_a_dictionary` is the trait's method by its identity,
+`fmt::Write::write_fmt` of a writer only a dictionary says, and
+`writes_arguments_piecewise` holds each such call: the form is the
+dictionary's, as its entry takes it. Built as it is, nothing changes: the
+recogniser made the same answer of each such call.

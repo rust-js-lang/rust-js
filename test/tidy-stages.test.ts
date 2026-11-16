@@ -482,6 +482,25 @@ test("a &mut given to an IntoIterator bound is adapted by its type, without into
   }
 });
 
+// A `write!` into a writer only a dictionary says, a `W: fmt::Write`'s or
+// a `&mut W`'s, gives it the function of its `Arguments`, which every
+// dictionary's `writeFmt` takes, without `write_fmt`'s recogniser too: the
+// call's the trait's, whatever a recogniser made of it. Given its text, it
+// threw `make is not a function` (#1891).
+test("a write! into a writer a dictionary says gives it the Arguments' function, without write_fmt's recogniser", async () => {
+  buildCompiler();
+  for (const name of ["generic_writers.rs", "arguments_given_to_a_generic_writer.rs", "references_given_to_generics.rs"]) {
+    const file = join(corpus, name);
+    const want = directives(readFileSync(file, "utf8"));
+    if (typeof want === "string" || want.kind === "compile-fail" || want.kind === "ignore-rust-js") throw new Error(`${name}: no run`);
+    const dir = caseDir(name);
+    const native = runNative(file, dir, want.edition, want.native);
+    if (typeof native === "string") throw new Error(native);
+    const only = "without the recogniser of std::fmt::Write::write_fmt";
+    expect((await differences(file, dir, want.edition, native, only)).join("\n\n")).toBe("");
+  }
+});
+
 // A name that's no case is the test above's to report.
 for (const name of chosen.filter((name) => cases.includes(name))) {
   const file = join(corpus, name);

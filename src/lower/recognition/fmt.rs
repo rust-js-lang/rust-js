@@ -166,7 +166,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         def_id: DefId,
         generic_args: ty::GenericArgsRef<'tcx>,
     ) -> bool {
-        if self.is_fmt_write(def_id) {
+        if self.is_fmt_write(def_id) || self.writes_through_a_dictionary(def_id, generic_args) {
             return true;
         }
         self.tcx.item_name(def_id).as_str() == "write_fmt"
@@ -177,16 +177,17 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// only a caller's dictionary says, a `W: fmt::Write`'s or a `dyn`'s,
     /// which may define its own `write_fmt`: given the function of its
     /// `Arguments`, `W.writeFmt(w, args)`, as Rust calls `W::write_fmt`
-    /// (#1652, step 6 of ADR 1135).
+    /// (#1652, step 6 of ADR 1135). The trait's method by its identity, not
+    /// by what a recogniser made of it: the function is what every
+    /// dictionary's `writeFmt` takes, recognised or not (#1891). Not
+    /// `fmt::write`, std's own `write_fmt`, which writes through the
+    /// writer's `write_str` whatever its own `write_fmt` (#1697).
     pub(in crate::lower) fn writes_through_a_dictionary(
         &self,
         def_id: DefId,
         generic_args: ty::GenericArgsRef<'tcx>,
     ) -> bool {
-        // Not `fmt::write`, std's own `write_fmt`, which writes through the
-        // writer's `write_str` whatever its own `write_fmt` (#1697).
-        !self.is_fmt_write(def_id)
-            && self.writes_arguments_piecewise(def_id, generic_args)
+        super::is_write_fmt(self.tcx, def_id)
             && (generic_args.types().next()).is_some_and(|writer| super::known_by_a_dictionary(writer.peel_refs()))
     }
 
