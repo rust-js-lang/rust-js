@@ -62,6 +62,11 @@ impl Writes {
         self.replaced.contains(name)
     }
 
+    /// Whether a handle is made on `name`, which what it's given may set.
+    pub fn handles(&self, name: &Name) -> bool {
+        self.handled.contains(name)
+    }
+
     /// Whether the object `name` holds is changed, `name.f = ..`.
     pub fn changes(&self, name: &Name) -> bool {
         self.changed.contains(name)
@@ -81,29 +86,23 @@ impl Writes {
         Writes::of(stmts).set.get(name).copied().unwrap_or(0)
     }
 
-    /// Step 3's migration bridge (ADR 1150): whether `stmts` set a variable
-    /// spelled `word`, for a helper that still holds a word, not a `Name`.
-    /// Its callers outside preparation are counted by
+    /// Step 3's migration bridge (ADR 1150): whether a variable spelled
+    /// `word` may be replaced, for a helper that still holds a word, not a
+    /// `Name`. Its callers outside preparation are counted by
     /// `test/architecture-names.test.ts`, a ratchet that only falls; step 3
-    /// ends when it's none. Ask `sets` of a `Name`.
-    pub fn sets_spelled(stmts: &[Stmt], word: &str) -> bool {
-        Writes::of(stmts).set.iter().any(|(name, &k)| k > 0 && name.is(word))
-    }
-
-    /// Step 3's migration bridge (`sets_spelled`'s): whether a variable
-    /// spelled `word` may be replaced. Ask `may_replace` of a `Name`.
+    /// ends when it's none. Ask `may_replace` of a `Name`.
     pub fn may_replace_spelled(&self, word: &str) -> bool {
         self.replaced.iter().chain(&self.handled).any(|name| name.is(word))
     }
 
-    /// Step 3's migration bridge (`sets_spelled`'s): whether a closure, or a
+    /// Step 3's migration bridge (`may_replace_spelled`'s): whether a closure, or a
     /// function declared in the tree, replaces a variable spelled `word`.
     /// Ask `replaces_in_closures` of a `Name`.
     pub fn replaces_in_closures_spelled(&self, word: &str) -> bool {
         self.replaced_in_closures.iter().any(|name| name.is(word))
     }
 
-    /// Step 3's migration bridge (`sets_spelled`'s): whether a handle is made
+    /// Step 3's migration bridge (`may_replace_spelled`'s): whether a handle is made
     /// on a variable spelled `word`. Ask `handles` of a `Name`.
     pub fn handles_spelled(&self, word: &str) -> bool {
         self.handled.iter().any(|name| name.is(word))

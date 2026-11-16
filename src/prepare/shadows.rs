@@ -557,7 +557,7 @@ fn synced_reads(stmts: &[Stmt], alias: &str, of: &str, ran: &mut bool) -> bool {
 /// The spellings of the variables `body`'s closures replace: what a name
 /// read in one would mean, as JS reads a name by its spelling.
 /// Preparation's own question, the spelling step's API (ADR 1150), not
-/// step 3's migration bridge (`js::Writes::sets_spelled`).
+/// step 3's migration bridge (`js::Writes::may_replace_spelled`).
 fn replaced_in_closures_spelled(body: &[Stmt]) -> IndexSet<String> {
     (js::Writes::of(body).replaced_in_closures.iter())
         .map(|name| name.word().to_string())

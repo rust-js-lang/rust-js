@@ -211,26 +211,26 @@ pub(super) fn scope_fields(value: &str, params: &[js::Pattern], out: &mut Vec<St
     js::each_declared(out, &mut |name| {
         declared.insert(name.to_string());
     });
-    let mut handled = IndexSet::default();
+    let mut handled: IndexSet<js::Name> = IndexSet::default();
     js::each_expr(out, &mut |e| {
         if let js::ExprKind::Handle(place, _) = &e.kind {
             place.each(&mut |e| {
                 if let js::ExprKind::Var(name) = &e.kind {
-                    handled.insert(name.word().to_string());
+                    handled.insert(name.clone());
                 }
             });
         }
     });
+    // Declared again by its spelling, which JS reads it by; handled and
+    // set by the variable it is.
     let assigned =
-        |name: &str| declared.contains(name) || handled.contains(name) || js::Writes::sets_spelled(out, name);
+        |name: &js::Name| declared.contains(name.word()) || handled.contains(name) || js::Writes::sets(out, name);
     let param_names: Vec<&str> = params.iter().flat_map(|p| p.names()).collect();
     let mut names: IndexMap<String, js::Name> = IndexMap::default();
     let mut lets = Vec::new();
     for (key, e) in fields {
         let given = e.as_ref().and_then(|e| match &e.kind {
-            js::ExprKind::Var(p)
-                if param_names.contains(&p.word()) && !assigned(p.word()) && !written.contains(&key) =>
-            {
+            js::ExprKind::Var(p) if param_names.contains(&p.word()) && !assigned(p) && !written.contains(&key) => {
                 Some(p.clone())
             }
             _ => None,

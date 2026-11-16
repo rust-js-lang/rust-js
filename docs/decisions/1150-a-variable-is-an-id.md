@@ -879,9 +879,9 @@ that asked each question by the variable's id and by its word over the
 corpus and React's port found no question they answer apart.
 
 A helper that still holds a word, not a `Name`, asks step 3's migration
-bridge, `Writes::sets_spelled`, `may_replace_spelled`,
-`replaces_in_closures_spelled` and `handles_spelled` (the lead's decision):
-`values.rs`' resets, `mir::scopes`' assigned parameters and
+bridge, `Writes::may_replace_spelled`,
+`replaces_in_closures_spelled` and `handles_spelled` (`sets_spelled`
+too, until its last caller, `mir::scopes`, asked by id) (the lead's decision):
 `drops::inlined`'s declared bindings. `test/writes-spelled-bridge.txt`
 counts their calls, a ratchet that only falls; step 3 isn't done until
 it's empty. Preparation's `shadows` asks what a closure may replace by a
@@ -899,4 +899,11 @@ and React's port found none apart. The ratchet falls from 13 to 9.
 The bridge's second group, tidy's `shadows.rs`: `set_after_last_read`
 asks whether the shadow is set and the old variable read by their ids.
 Byte-identical, and the probe found none apart. The ratchet falls to 5.
+
+The bridge's third group: `values.rs`' `unread_resets` keeps each reset's
+`Name` and asks whether a handle is made on it, and whether a `finally`
+reads it, by its id; `mir::scopes` asks whether a parameter is handled or
+set by its id, and whether a nested declaration takes its spelling by its
+word, as JS reads it. Byte-identical, and the probe found none apart. The
+ratchet falls to 3, `drops::inlined`'s.
 

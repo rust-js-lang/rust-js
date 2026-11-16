@@ -570,17 +570,17 @@ pub(super) fn unread_resets(body: &mut Vec<Stmt>) {
     js::visit_stmts(body, &mut |name| *mentions.entry(name.to_string()).or_default() += 1);
     // Each reset returned, the variable's name and whether the take left
     // text or a number, which an append reads only to write.
-    let mut resets: Vec<(String, bool)> = Vec::new();
+    let mut resets: Vec<(js::Name, bool)> = Vec::new();
     js::each_list(body, &mut |stmts| {
         for window in stmts.windows(3) {
             if let Some((name, reset)) = returned_reset(window, &mentions)
-                && lets.contains(name)
+                && lets.contains(name.word())
             {
                 let appended = matches!(
                     reset.kind,
                     ExprKind::Str(_) | ExprKind::Num(_) | ExprKind::BigInt(_) | ExprKind::BigUint(_)
                 );
-                resets.push((name.to_string(), appended));
+                resets.push((name.clone(), appended));
             }
         }
     });
@@ -588,19 +588,19 @@ pub(super) fn unread_resets(body: &mut Vec<Stmt>) {
         return;
     }
     let writes = js::Writes::of(body);
-    let mut finally_read: IndexSet<String> = IndexSet::default();
+    let mut finally_read: IndexSet<js::Name> = IndexSet::default();
     js::each_list(body, &mut |stmts| {
         for stmt in stmts {
             if let StmtKind::Try(_, finally) = &stmt.kind {
-                js::visit_stmts(finally, &mut |name| {
-                    finally_read.insert(name.to_string());
+                js::visit_stmt_names(finally, &mut |name| {
+                    finally_read.insert(name.clone());
                 });
             }
         }
     });
-    let unread: IndexSet<String> = (resets.into_iter())
+    let unread: IndexSet<js::Name> = (resets.into_iter())
         .filter(|(name, appended)| {
-            !writes.handles_spelled(name) && !finally_read.contains(name) && !read_by_closures(body, name, *appended)
+            !writes.handles(name) && !finally_read.contains(name) && !read_by_closures(body, name.word(), *appended)
         })
         .map(|(name, _)| name)
         .collect();
@@ -627,7 +627,7 @@ pub(super) fn unread_resets(body: &mut Vec<Stmt>) {
 
 /// `const old = x; x = c; return old;` of a constant `c`, `old` read
 /// nowhere else: `x`, and `c`.
-fn returned_reset<'a>(stmts: &'a [Stmt], mentions: &IndexMap<String, usize>) -> Option<(&'a str, &'a Expr)> {
+fn returned_reset<'a>(stmts: &'a [Stmt], mentions: &IndexMap<String, usize>) -> Option<(&'a js::Name, &'a Expr)> {
     let [read, written, returned] = stmts else { return None };
     let StmtKind::Const(old, value) = &read.kind else {
         return None;
@@ -641,7 +641,7 @@ fn returned_reset<'a>(stmts: &'a [Stmt], mentions: &IndexMap<String, usize>) -> 
     };
     let same = matches!(&target.kind, ExprKind::Var(v) if v == name) && name != old;
     let read_once = matches!(&of.kind, ExprKind::Var(v) if v == old) && mentions.get(old.word()) == Some(&1);
-    (same && read_once && reset.is_constant()).then_some((name.word(), reset))
+    (same && read_once && reset.is_constant()).then_some((name, reset))
 }
 
 /// Whether a closure in `body`, or a function declared in it, reads
