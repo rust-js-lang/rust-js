@@ -94,4 +94,20 @@ export const mutations: Mutation[] = [
     replace: "        _ => (rc_pointee(tcx, ty).or_else(|| ty.boxed_ty()))\n            .is_some_and(|of| matches!(of.kind(), ty::Adt(adt, _) if is_std_def(tcx, adt.did(), StdItem::RefCell))),\n",
     tests: ["test/intervals-shadow.test.ts", "-t", "gives its cell, the same each time"],
   },
+  {
+    name: "range-step-writes-cells",
+    breaks: "a `for` loop's `next()` of a range, std's, is taken to may write a cell, so `batch.borrow()[i]` of `i` in `(0..batch.borrow().len()).step_by(2)` keeps its check (ADR 1168, #1948)",
+    file,
+    find: "            || range_step(self.tcx, callee, callee_args).is_some()\n",
+    replace: "",
+    tests: ["test/lowering-cell-flow.test.ts", "-t", "a held borrow counts the cells"],
+  },
+  {
+    name: "any-call-reads-cells",
+    breaks: "any call is taken to write no cell, so past a held length's `borrow_mut().clear()` in the loop `batch.borrow()[i]` reads past the end, `undefined` where Rust panics (ADR 1168, #1948)",
+    file,
+    find: "            || range_step(self.tcx, callee, callee_args).is_some()\n",
+    replace: "            || true\n",
+    tests: ["test/corpus.test.ts", "-t", "^cell_length_across_a_loops_steps.rs$"],
+  },
 ];

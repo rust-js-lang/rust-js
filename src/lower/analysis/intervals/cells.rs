@@ -8,7 +8,8 @@
 //! the local isn't reassigned or lent `&mut`. Code anyone can reach the cell from, a
 //! shared `&RefCell`, may write it: what's known of a cell's length is
 //! forgotten at any call but a `borrow()`, a `Ref`'s or an `Rc`'s `Deref`, a length, an
-//! `is_empty()` or an index's read; at a `borrow_mut()`; at a drop that may
+//! `is_empty()`, an index's read or a `for` loop's step of a range or a
+//! slice's iterator; at a `borrow_mut()`; at a drop that may
 //! run code; and at a write through a raw pointer, which may reach it with
 //! no call.
 
@@ -51,8 +52,11 @@ impl<'tcx> Walk<'_, 'tcx> {
     }
 
     /// Whether a call of `func` may write a cell: none but a `borrow()`, a
-    /// `Ref`'s or an `Rc`'s `Deref`, a length, an `is_empty()` or an
-    /// index's read.
+    /// `Ref`'s or an `Rc`'s `Deref`, a length, an `is_empty()`, an index's
+    /// read, or a step of a range of integers or a slice's iterator the walk
+    /// knows (`range_step`), std's, which runs none of the crate's code:
+    /// `for i in (0..batch.borrow().len()).step_by(2)`'s `next()` (ADR 1168,
+    /// #1948).
     pub(super) fn may_write_cells(&self, func: &Operand<'tcx>) -> bool {
         let Some((callee, callee_args)) = func.const_fn_def() else {
             return true;
@@ -60,6 +64,7 @@ impl<'tcx> Walk<'_, 'tcx> {
         let reads = refcell_borrow(self.tcx, callee) == Some(false)
             || ref_deref(self.tcx, callee, callee_args)
             || rc_deref(self.tcx, callee, callee_args)
+            || range_step(self.tcx, callee, callee_args).is_some()
             || matches!(
                 slice_length(self.tcx, callee, callee_args),
                 Some(SliceLength::Len | SliceLength::IsEmpty | SliceLength::Index)

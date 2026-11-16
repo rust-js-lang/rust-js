@@ -755,6 +755,43 @@ fn below_another(a: &[u32], b: &mut Vec<u32>, i: usize) -> u32 {
       `check("below another", || below_another(&[1, 2, 3], &mut Vec::new(), 2))`,
     ],
   },
+  // A `RefCell`'s length across a `for` loop's steps, its range's `next()`
+  // std's, which writes no cell: `batch.borrow()[i]` of `i` in `(0..
+  // batch.borrow().len()).step_by(2)` (ADR 1168, #1948). Not past a
+  // `borrow_mut().clear()` in the loop of a held length, nor `0..=len`.
+  cell_steps: {
+    fns: `fn stepped(batch: &RefCell<Vec<u32>>) -> u32 {
+    let mut total = 0;
+    for i in (0..batch.borrow().len()).step_by(2) {
+        total += batch.borrow()[i];
+    }
+    total
+}
+
+fn held_cleared(batch: &RefCell<Vec<u32>>) -> u32 {
+    let mut total = 0;
+    let end = batch.borrow().len();
+    for i in (0..end).step_by(2) {
+        total += batch.borrow()[i];
+        batch.borrow_mut().clear();
+    }
+    total
+}
+
+fn past_the_end(batch: &RefCell<Vec<u32>>) -> u32 {
+    let mut total = 0;
+    for i in (0..=batch.borrow().len()).step_by(2) {
+        total += batch.borrow()[i];
+    }
+    total
+}
+`,
+    calls: [
+      `check("stepped", || stepped(&RefCell::new(vec![1, 2, 3, 4, 5])))`,
+      `check("held cleared", || held_cleared(&RefCell::new(vec![1, 2, 3])))`,
+      `check("past the end", || past_the_end(&RefCell::new(vec![1, 2])))`,
+    ],
+  },
   // A slice's `get(i)`'s `Some` puts `i` below its length: `i += 1` never
   // wraps.
   got: {

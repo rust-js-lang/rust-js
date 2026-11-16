@@ -142,3 +142,26 @@ Each patch carries:
   `pushed-at-most-unread`, `pushed-held-length-unread`,
   `pushed-below-of-any-length`, `equal-length-unrelated` and
   `equal-length-below` are caught.
+- The step-2 loop, step 3, needed no relation. `step_by(2)` of a range was
+  proved already, of a slice; what kept `batch[i]` checked was the cell:
+  a `for` loop's `next()` was a call that may write a cell, so each turn
+  forgot the `RefCell`'s length. A step the walk knows (`range_step`: a
+  range of integers' `into_iter()` and `next()`, its `rev()`, `step_by()`
+  and `skip()`, a slice's `iter()` and `enumerate()`) is std's code over
+  integers or a slice's iterator, which runs none of the crate's and writes
+  no cell, so `may_write_cells` reads it as it does a `borrow()` or a
+  length (`cells.rs`). With it `batch[i]` of `i` in `(0..batch.borrow().
+  len()).step_by(2)` reads plain, the length held or the range's own; its
+  `for` reads `batch.length` each turn, as of a slice the body only reads,
+  the range's own borrow held the whole loop letting nothing change it;
+  and `refcell_drained_in_a_loop`'s `v.borrow()[j]`. React's port has no
+  such loop. Corpus case `cell_length_across_a_loops_steps` and the bounds
+  matrix's shape `cell_steps` hold them against native, with rows that
+  keep their checks and panic as Rust's: `0..=len`, `i + 1`, a held
+  length past a `clear()`, a push or a crate call that empties the cell,
+  and the range's own borrow that a `borrow_mut()` in the body panics at.
+  Mutations `range-step-writes-cells` and `any-call-reads-cells` are
+  caught. The callers' facts need no step of their own: `callers.rs`
+  passes `index < heap.len()` of `sift_up(heap, index)` given the length
+  before a push (step 2), or `heap.len() - 1` past one, which the `push`
+  makes at least one and `t = i - 1` of `i <= len` puts below it.
