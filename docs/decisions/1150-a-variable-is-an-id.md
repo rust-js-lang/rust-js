@@ -414,3 +414,35 @@ Most of what's left is names the module declares, its runtime's helpers,
 its functions and its imports, which are no item's (the lead's decision of
 2026-11-16): their form, `Name::module`, is the next part, with a row of a
 local beside a helper and an imported function of its word.
+
+## Names are ids, step 1's third area: preparation's and js's names stay names (2026-11-16)
+
+Preparation's passes and `js`'s helpers that declare a variable of their
+own, a word they pick, declare it once, `Name::declared`, and give each
+read a clone of it; one that puts back a read, or moves a name aside and
+back, keeps the name it had, never one made again of its word:
+
+- **Declared once:** a handle's setter's parameter (`prepare.rs`, `value`,
+  `newValue` or `value_`), a `catch`'s thrown payload's binding
+  (`catches::thrown_name`, `thrown`) and its own `error`, `this`'s `const`
+  a function's handles read (`js::this_outside_accessors`), and a
+  parameter written again, given its own name apart (`js::applied`).
+- **Kept as it was:** a shadow's reads, put back as the read the `const`
+  shadowed was, a global's first (`shadows`); an advance's variable, the
+  name its assignment writes (`do_whiles`); a parameter set apart while a
+  renaming runs, respelled and given back, not replaced
+  (`js::outside_shadows`).
+- **A global's:** the `String` a template's conversion reads, which
+  `reclaim::names_mut` gives as `Name::global("String")`.
+
+Their word comparisons, `mentions_in`, `mentions_var` and `Writes::sets`
+of a word, stay words, which step 3 keys by `Name`. The two placeholders a
+pass writes and takes out again before it ends, `do_whiles`' `$given` hole
+and `this_outside_accessors`' nested-body marks, are no variable and stay.
+
+Measured by step 1's probe, run after `prepare::module`, over the
+corpus: preparation's and js's sites, 17 of 202 with 2,183 of 133,783
+uses, are none of 183 (131,638 uses). The uses that are left are
+lowering's, its module names and its own, whose names the passes above now
+keep where they replaced them. The corpus's JS is byte-identical under
+`RUST_JS_CHECK_NAMES=1`, as are the snapshots and the React port.

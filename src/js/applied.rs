@@ -581,12 +581,13 @@ fn in_place(
             .map(|k| crate::names::given_apart(root, k))
             .find(|to| !mentioned.contains(to))
             .expect("a name nothing mentions");
+        let to = Name::declared(to);
         let mut after = body.split_off(first + 1);
-        renamed(&mut after, param.word(), &to);
-        let again = Writes::sets(&after, &to);
+        renamed(&mut after, param.word(), to.word());
+        let again = Writes::sets(&after, to.word());
         body[first].kind = match again {
-            true => StmtKind::Let(to.into(), Some(value)),
-            false => StmtKind::Const(to.into(), value),
+            true => StmtKind::Let(to, Some(value)),
+            false => StmtKind::Const(to, value),
         };
         body.extend(after);
     }

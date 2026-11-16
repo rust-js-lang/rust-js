@@ -598,7 +598,7 @@ pub fn outside_shadows(stmts: &mut Vec<Stmt>, name: &str, change: impl FnOnce(&m
             for param in params.iter_mut() {
                 param.each_name_mut(&mut |n| {
                     if n.is(name) {
-                        *n = APART.into();
+                        n.respell(APART);
                     }
                 });
             }
@@ -712,13 +712,13 @@ pub fn this_outside_accessors(body: &mut Vec<Stmt>, name: &str) -> bool {
             nested.push(std::mem::replace(&mut function.body, marked));
         }
     });
-    let instance = crate::names::fresh_in(&mut taken, name);
+    let instance = Name::declared(crate::names::fresh_in(&mut taken, name));
     let mut kept = false;
     each_expr_mut(body, &mut |e| {
         if let ExprKind::Handle(place, _) | ExprKind::Pair(place, ..) = &mut e.kind {
             place.each_mut(&mut |part| {
                 if matches!(part.kind, ExprKind::This) {
-                    part.kind = ExprKind::Var(instance.clone().into());
+                    part.kind = ExprKind::Var(instance.clone());
                     kept = true;
                 }
             });
@@ -743,7 +743,7 @@ pub fn this_outside_accessors(body: &mut Vec<Stmt>, name: &str) -> bool {
         }
     });
     if kept {
-        body.insert(0, StmtKind::Const(instance.into(), Expr::this()).at(Span::NONE));
+        body.insert(0, StmtKind::Const(instance, Expr::this()).at(Span::NONE));
     }
     kept
 }
