@@ -58,21 +58,21 @@ fn tried_jumps(stmts: &mut [Stmt]) {
             {
                 let mut next = tried.clone();
                 next.push(StmtKind::Continue(None).at(*span));
-                if let Some(mut inlined) = jumped(&next, label.as_ref().map(|n| n.word())) {
+                if let Some(mut inlined) = jumped(&next, label.as_ref()) {
                     if matches!(inlined.last().map(|s| &s.kind), Some(StmtKind::Continue(None))) {
                         inlined.pop();
                     }
                     *tried = inlined;
                 }
             }
-            in_loop(body, label.as_ref().map(|n| n.word()));
+            in_loop(body, label.as_ref());
         }
     }
 }
 
 /// Of `stmts`, a loop's body, its `label`'s: each `try` an unlabeled jump
 /// in it leaves the loop by.
-fn in_loop(stmts: &mut [Stmt], label: Option<&str>) {
+fn in_loop(stmts: &mut [Stmt], label: Option<&js::Name>) {
     for stmt in stmts.iter_mut() {
         match &mut stmt.kind {
             StmtKind::TryCatch(tried, ..) => {
@@ -94,7 +94,7 @@ fn in_loop(stmts: &mut [Stmt], label: Option<&str>) {
 
 /// `tried`'s body, `(() => { .. })(); jump;`, a closure of no value whose
 /// each `return;` is `jump`, where `label` says each where it must.
-fn jumped(tried: &[Stmt], label: Option<&str>) -> Option<Vec<Stmt>> {
+fn jumped(tried: &[Stmt], label: Option<&js::Name>) -> Option<Vec<Stmt>> {
     // What's said above the `Ok` arm, before its jump, stays before it,
     // at the closure's end (#489).
     let [
@@ -125,7 +125,7 @@ fn jumped(tried: &[Stmt], label: Option<&str>) -> Option<Vec<Stmt>> {
     }
     // Not where it labels something the loop's label, which JS refuses
     // inside the loop.
-    if label.is_some_and(|label| labels(body, label)) {
+    if label.is_some_and(|label| labels(body, label.word())) {
         return None;
     }
     let mut body = body.clone();
@@ -141,13 +141,13 @@ fn jumped(tried: &[Stmt], label: Option<&str>) -> Option<Vec<Stmt>> {
 /// Each `return;` of `stmts`, a closure's, `jump`: of `label` where what's
 /// around it, `(a switch, a loop)`, would take it as it is. `None` where
 /// one needs a label and the loop has none.
-fn rejumped(stmts: &mut [Stmt], jump: &StmtKind, label: Option<&str>, around: (bool, bool)) -> Option<()> {
+fn rejumped(stmts: &mut [Stmt], jump: &StmtKind, label: Option<&js::Name>, around: (bool, bool)) -> Option<()> {
     for stmt in stmts.iter_mut() {
         match &mut stmt.kind {
             StmtKind::Return(None) => {
                 stmt.kind = match jump {
-                    StmtKind::Break(None) if around.0 || around.1 => StmtKind::Break(Some(label?.into())),
-                    StmtKind::Continue(None) if around.1 => StmtKind::Continue(Some(label?.into())),
+                    StmtKind::Break(None) if around.0 || around.1 => StmtKind::Break(Some(label?.clone())),
+                    StmtKind::Continue(None) if around.1 => StmtKind::Continue(Some(label?.clone())),
                     _ => jump.clone(),
                 };
             }

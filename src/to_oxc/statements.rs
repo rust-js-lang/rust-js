@@ -229,7 +229,7 @@ impl<'a> Cx<'a> {
                 assigned.push(defined(f.name.word(), value, f.span));
                 // Each other class that shares it, its own prototype's.
                 for other in shared.into_iter().flat_map(|(_, others)| others) {
-                    let to = js::Expr::member(js::Expr::member(js::Expr::var(other), "prototype"), f.name.word());
+                    let to = js::Expr::member(js::Expr::member(js::Expr::module(other), "prototype"), f.name.word());
                     let own = js::Expr::member(prototype(), f.name.word());
                     assigned.push(js::StmtKind::Assign(to, own).at(f.span));
                 }
@@ -241,7 +241,7 @@ impl<'a> Cx<'a> {
                     span: f.span,
                     ..js::Expr::assigned(target, value)
                 };
-                target = js::Expr::member(js::Expr::member(js::Expr::var(other), "prototype"), f.name.word());
+                target = js::Expr::member(js::Expr::member(js::Expr::module(other), "prototype"), f.name.word());
             }
             assigned.push(js::StmtKind::Assign(target, value).at(f.span));
         }

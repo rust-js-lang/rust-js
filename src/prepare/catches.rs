@@ -337,7 +337,8 @@ fn made_where_tested(stmt: &Stmt) -> Option<(Stmt, Stmt)> {
     let (head, rest) = split_chain(test);
     let (call, ok, eq) = js::result::tested(&head)?;
     let (call, _) = (call.clone(), call.caught()?);
-    let head = js::result::is(Expr::var(TESTED), ok == eq).or_at(head.span);
+    let tested_name = js::Name::declared(TESTED.into());
+    let head = js::result::is(Expr::var(tested_name.clone()), ok == eq).or_at(head.span);
     let test = match rest {
         Some(rest) => Expr::bin(js::Op::And, head, rest).or_at(test.span),
         None => head,
@@ -351,7 +352,7 @@ fn made_where_tested(stmt: &Stmt) -> Option<(Stmt, Stmt)> {
         })) => **at = test,
         _ => unreachable!("matched above"),
     }
-    Some((StmtKind::Const(TESTED.into(), call).at(stmt.span), tested))
+    Some((StmtKind::Const(tested_name, call).at(stmt.span), tested))
 }
 
 /// `if (c && $catchUnwind(f).TAG === "Err" && d) { .. }`, with no `else`,

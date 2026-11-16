@@ -255,10 +255,11 @@ fn advanced(stmts: &mut Vec<Stmt>, label: Option<&str>, advances: &mut Vec<Advan
 /// read after it's given its next value, where the advance read it before.
 fn given(test: &Expr, value: &Expr, variable: &Name) -> Option<Expr> {
     const HOLE: &str = "$given";
+    let hole = Name::declared(HOLE.into());
     let mut holed = test.clone();
     holed.each_mut(&mut |e| {
         if js::same_path(e, value) {
-            *e = Expr::var(HOLE).or_at(e.span);
+            *e = Expr::var(hole.clone()).or_at(e.span);
         }
     });
     if holed.mentions_var(variable.word()) || !holed.mentions_var(HOLE) {

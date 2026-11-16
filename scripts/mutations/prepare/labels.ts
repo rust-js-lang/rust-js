@@ -17,8 +17,8 @@ export const mutations: Mutation[] = [
     name: "tried-jump-taken-by-its-switch",
     breaks: "a closure's `return` inside a `switch` is the `Ok` arm's `break` as it is, which leaves the `switch`, not the loop: `status = 6; break;` then `status = 1`, a different answer (wl4)",
     file: "src/prepare/labels.rs",
-    find: "                    StmtKind::Break(None) if around.0 || around.1 => StmtKind::Break(Some(label?.into())),\n",
-    replace: "                    StmtKind::Break(None) if around.1 => StmtKind::Break(Some(label?.into())),\n",
+    find: "                    StmtKind::Break(None) if around.0 || around.1 => StmtKind::Break(Some(label?.clone())),\n",
+    replace: "                    StmtKind::Break(None) if around.1 => StmtKind::Break(Some(label?.clone())),\n",
     tests: corpus("tried_loop_jumps"),
   },
   {

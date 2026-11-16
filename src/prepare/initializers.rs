@@ -37,7 +37,7 @@ pub(super) fn assigned_in_place(items: &mut [js::Item]) {
         if !params.is_empty() || !args.is_empty() {
             continue;
         }
-        let Some(assigned) = assigned(body, constant.name.word()) else {
+        let Some(assigned) = assigned(body, &constant.name) else {
             continue;
         };
         let declares = |s: &Stmt| {
@@ -171,14 +171,14 @@ fn chained(body: &[Stmt]) -> Option<Expr> {
 
 /// `stmts`, which end in a `return`, each `return v` at their ends
 /// `name = v`; `None` where one is elsewhere.
-fn assigned(stmts: &[Stmt], name: &str) -> Option<Vec<Stmt>> {
+fn assigned(stmts: &[Stmt], name: &js::Name) -> Option<Vec<Stmt>> {
     let mut out = Vec::new();
     for (i, stmt) in stmts.iter().enumerate() {
         let last = i + 1 == stmts.len();
         match &stmt.kind {
             StmtKind::Return(Some(value)) if last => {
                 if !matches!(value.kind, ExprKind::Undefined) {
-                    out.push(StmtKind::Assign(Expr::var(name), value.clone()).at(stmt.span));
+                    out.push(StmtKind::Assign(Expr::var(name.clone()), value.clone()).at(stmt.span));
                 }
             }
             StmtKind::If(test, then, otherwise) if js::returns(std::slice::from_ref(stmt)).0 => {
