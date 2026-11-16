@@ -390,6 +390,16 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
+    name: "map_while-not-flipped",
+    breaks:
+      "a `map_while()` of a chain the transparent-chain predicate doesn't admit is the runtime's hand-written form again, where std's compiled struct is the meaning (#1681's change 2, the map_while family)",
+    file: "src/lower/body_queries/in_place.rs",
+    find: "    \"map_while\",\n",
+    replace: "    \"map\",\n",
+    tests: ["test/corpus.test.ts", "-t", "^(map_while|adapters_own_nth_fold).rs$"],
+    snapshots: true,
+  },
+  {
     name: "skip_while-not-flipped",
     breaks:
       "a `skip_while()` of a chain the transparent-chain predicate doesn't admit is the runtime's hand-written form again, where std's compiled struct is the meaning (#1681's change 2, the skip_while family)",

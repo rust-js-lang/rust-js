@@ -624,23 +624,6 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
                 let mut fields = adt.all_fields().map(|f| self.recognition.field_ty(f, args));
                 all(self, &mut fields, walk)
             }
-            // An adapter that holds a function, `map(f)`'s: its source closed,
-            // then its function dropped (ADR 0485). A source it can't close
-            // that has something to drop, as before.
-            ty::Adt(_, args) if let Some(function) = self.recognition.held_function(ty) => {
-                let source = match self.recognition.closed_on_drop(ty) {
-                    Some(held) => self.drops_in(held, walk),
-                    None => match self.drops_in(args.type_at(0), walk) {
-                        Drops::Nothing => Drops::Nothing,
-                        _ => Drops::Unsupported(ty, "a std type holding a value with a destructor"),
-                    },
-                };
-                match (source, self.drops_in(function, walk)) {
-                    (Drops::Unsupported(t, what), _) | (_, Drops::Unsupported(t, what)) => Drops::Unsupported(t, what),
-                    (Drops::Nothing, Drops::Nothing) => Drops::Nothing,
-                    _ => Drops::Runs,
-                }
-            }
             // One closed to drop what it holds, `repeat`'s value (ADR 0422).
             ty::Adt(..) if let Some(held) = self.recognition.closed_on_drop(ty) => self.drops_in(held, walk),
             // An `extract_if()`'s: its test, what it hasn't reached left in

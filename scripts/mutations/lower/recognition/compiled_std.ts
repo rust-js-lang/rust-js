@@ -275,8 +275,8 @@ export const mutations: Mutation[] = [
     breaks:
       "`TakeWhile` is `MEANING_ONLY` again, so a `take_while()` made apart is the runtime's `$lazyTakeWhile`, not std's compiled struct (#1681's change 2, the take_while family)",
     file: "src/lower/recognition/compiled_std.rs",
-    find: "    StdPath::IterMapWhile,\n",
-    replace: "    StdPath::IterTakeWhile,\n    StdPath::IterMapWhile,\n",
+    find: "    StdPath::IterScan,\n",
+    replace: "    StdPath::IterTakeWhile,\n    StdPath::IterScan,\n",
     tests: ["test/corpus.test.ts", "-t", "^(held_lazy_adapters_hint|impl_trait_hides_std_adapters|own_iterator_holding_a_closure_dropped_by_generic_code).rs$"],
     snapshots: true,
   },
@@ -285,8 +285,18 @@ export const mutations: Mutation[] = [
     breaks:
       "`SkipWhile` is `MEANING_ONLY` again, so a `skip_while()` made apart is the runtime's `$lazySkipWhile`, not std's compiled struct (#1681's change 2, the skip_while family)",
     file: "src/lower/recognition/compiled_std.rs",
-    find: "    StdPath::IterMapWhile,\n",
-    replace: "    StdPath::IterSkipWhile,\n    StdPath::IterMapWhile,\n",
+    find: "    StdPath::IterScan,\n",
+    replace: "    StdPath::IterSkipWhile,\n    StdPath::IterScan,\n",
+    tests: ["test/corpus.test.ts", "-t", "^(held_lazy_adapters_hint|size_hint_of_adapters).rs$"],
+    snapshots: true,
+  },
+  {
+    name: "map_while-meaning-only",
+    breaks:
+      "`MapWhile` is `MEANING_ONLY` again, so a `map_while()` made apart is the runtime's `$lazyMapWhile`, not std's compiled struct (#1681's change 2, the map_while family)",
+    file: "src/lower/recognition/compiled_std.rs",
+    find: "    StdPath::IterScan,\n",
+    replace: "    StdPath::IterMapWhile,\n    StdPath::IterScan,\n",
     tests: ["test/corpus.test.ts", "-t", "^(held_lazy_adapters_hint|size_hint_of_adapters).rs$"],
     snapshots: true,
   },

@@ -12,7 +12,6 @@ import {
   $held,
   $iter,
   $iterator,
-  $lazyMapWhile,
   $lazyScan,
   $lent,
   $live,
@@ -28,6 +27,7 @@ import {
   iterator_filterMap,
   iterator_flatMap,
   iterator_map,
+  iterator_mapWhile,
   iterator_rev,
   iterator_skip,
   iterator_skipWhile,
@@ -154,11 +154,10 @@ function main() {
   show(
     "map_while",
     $sizeHint(
-      $lazyMapWhile(
-        $iterator(own(), ownIterator_next, false, undefined, undefined, ownIterator_sizeHint),
-        (x) => (x < 4 ? x : undefined),
-        (item) => item != null,
-      ),
+      iterator_mapWhile(own(), (x) => (x < 4 ? x : undefined), {
+        next: ownIterator_next,
+        sizeHint: ownIterator_sizeHint,
+      }),
     ),
   );
   show(

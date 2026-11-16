@@ -1065,11 +1065,11 @@
 + TakeWhile::next	safe
 + TakeWhile::size_hint	safe
 + TakeWhile::try_fold	spec
-# MapWhile 3 of 4; bodies: 2 safe, 2 spec, 0 opaque, 0 memory, 0 none
+# MapWhile 4 of 4; bodies: 2 safe, 2 spec, 0 opaque, 0 memory, 0 none
 + MapWhile::fold	spec
 + MapWhile::next	safe
 + MapWhile::size_hint	safe
-- MapWhile::try_fold	spec
++ MapWhile::try_fold	spec
 # Scan 3 of 4; bodies: 3 safe, 1 spec, 0 opaque, 0 memory, 0 none
 + Scan::fold	safe
 + Scan::next	safe

@@ -6,7 +6,6 @@ import {
   $dropEach,
   $held,
   $iter,
-  $lazyMapWhile,
   $lazyScan,
   $live,
   $next,
@@ -14,6 +13,7 @@ import {
   $sizeHint,
   $unwindsOn,
   iterator_filter,
+  iterator_mapWhile,
   iterator_skipWhile,
   iterator_takeWhile,
 } from "@rust-js/std";
@@ -268,11 +268,7 @@ function plain() {
   console.log(
     `${value$4 == null ? "None" : `Some(${value$4})`} (${value$5[0]}, ${value$5[1] == null ? "None" : `Some(${value$5[1]})`})`,
   );
-  const m = $lazyMapWhile(
-    $iter([1, 2, 3]),
-    (x) => (x < 3 ? (x * 2) & 255 : undefined),
-    (item) => item != null,
-  );
+  const m = iterator_mapWhile($iter([1, 2, 3]), (x) => (x < 3 ? (x * 2) & 255 : undefined));
   const value$6 = $sizeHint(m);
   const value$7 = $next(m);
   const value$8 = $sizeHint(m);

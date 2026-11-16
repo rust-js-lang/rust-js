@@ -11,7 +11,6 @@ import {
   $held,
   $iter,
   $iterator,
-  $lazyMapWhile,
   $lazyScan,
   $lent,
   $next,
@@ -26,6 +25,7 @@ import {
   iterator_fuse,
   iterator_inspect,
   iterator_map,
+  iterator_mapWhile,
   iterator_peekable,
   iterator_skip,
   iterator_skipWhile,
@@ -174,14 +174,14 @@ function main() {
     `filter_map ([${value$12[0].join(", ")}], [${value$12[1].join(", ")}], [${value$12[2].join(", ")}])`,
   );
   const value$13 = twice(
-    $lazyMapWhile(
-      $iterator(f(), flakyIterator_next),
+    iterator_mapWhile(
+      f(),
       (x) => {
         if (x < 9) {
           return x;
         }
       },
-      (item) => item != null,
+      { next: flakyIterator_next },
     ),
     "next",
   );

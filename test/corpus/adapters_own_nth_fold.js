@@ -3,10 +3,8 @@
 import {
   $count,
   $foldOf,
-  $folded,
   $last,
   $lazyChain,
-  $lazyMapWhile,
   $lazyScan,
   $lent,
   $next,
@@ -15,6 +13,7 @@ import {
   iterator_chain,
   iterator_fuse,
   iterator_map,
+  iterator_mapWhile,
   iterator_skip,
   iterator_skipWhile,
   iterator_stepBy,
@@ -261,23 +260,21 @@ function main() {
       },
     ).reduce((n) => n + 1, 0)}`,
   );
-  const value$3 = Array.from(
-    $folded(
-      $lazyMapWhile(
-        iterator_stepBy(counted(), 2, {
-          next: countIterator_next,
-          fold: countIterator_fold,
-          nth: countIterator_nth,
-        }),
-        (x) => {
-          if (x < 7) {
-            return x;
-          }
-        },
-        (item) => item != null,
-      ),
+  const value$3 = $last(
+    iterator_mapWhile(
+      iterator_stepBy(counted(), 2, {
+        next: countIterator_next,
+        fold: countIterator_fold,
+        nth: countIterator_nth,
+      }),
+      (x) => {
+        if (x < 7) {
+          return x;
+        }
+      },
+      { next: $next, fold: $foldOf, nth: $nth },
     ),
-  ).at(-1);
+  );
   console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
   const base = counted();
   console.log(

@@ -8,7 +8,6 @@ import {
   $iterCmp,
   $iterEq,
   $jsIterator,
-  $lazyMapWhile,
   $lazyRange,
   $lazyScan,
   $lent,
@@ -25,6 +24,7 @@ import {
   iterator_filterMap,
   iterator_flatMap,
   iterator_map,
+  iterator_mapWhile,
   iterator_skip,
   iterator_skipWhile,
   iterator_take,
@@ -297,10 +297,10 @@ function main() {
   );
   console.log(
     `map_while ${$lent(
-      $lazyMapWhile(
+      iterator_mapWhile(
         iterator_skip(c(), 2, { next: countIterator_next, nth: countIterator_nth }),
         (x) => (x < 9 ? x : undefined),
-        (item) => item != null,
+        { next: $next, fold: $foldOf, nth: $nth },
       ),
     ).some((x) => x > 5)}`,
   );

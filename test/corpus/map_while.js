@@ -3,11 +3,11 @@
 import {
   $checked,
   $iter,
-  $iterator,
   $lazyMapWhile,
   $lazyRange,
   $lent,
   $parseInt,
+  iterator_mapWhile,
 } from "@rust-js/std";
 
 export function entry() {
@@ -43,11 +43,9 @@ function main() {
     ),
   );
   console.log(`[${halves.join(", ")}]`);
-  const total = $lazyMapWhile(
-    $iterator([6], countdownIterator_next),
-    (n) => $checked(n - 2, 0, 4294967295),
-    (item) => item != null,
-  ).reduce((a, b) => (a + b) >>> 0, 0);
+  const total = iterator_mapWhile([6], (n) => $checked(n - 2, 0, 4294967295), {
+    next: countdownIterator_next,
+  }).reduce((a, b) => (a + b) >>> 0, 0);
   console.log(`${total}`);
   const it = $iter([1, 2, 0, 4, 5]);
   const before = Array.from(
