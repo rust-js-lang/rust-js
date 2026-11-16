@@ -53,6 +53,9 @@ export type Mutation = {
    * the JS reads, as one that takes away the readable form of something
    * a more general one also does right, and how it reads is what's checked. */
   snapshots?: boolean;
+  /** What its tests run with besides, the iterator matrix's row that
+   * catches it, `ITERATOR_MATRIX`'s (#1971). */
+  env?: Record<string, string>;
 };
 
 // Mutations are grouped by their repository source file. Each list's
@@ -1261,7 +1264,7 @@ async function main() {
     let started = 0;
     const byTests = await beside(() => {
       started = performance.now();
-      return test(mutation.tests!, mutant, mutation.snapshots);
+      return test(mutation.tests!, mutant, mutation.snapshots, { env: mutation.env });
     });
     const { ran, exit } = byTests;
     let output = byTests.output;
@@ -1294,7 +1297,7 @@ async function main() {
       const execute = async (ownsTestSlot = false) => {
         const answer = await sourceMutation(mutation, template, work, tracked,
           (directory, env) => {
-            const run = () => test(mutation.tests!, unmutated, mutation.snapshots, {directory, env});
+            const run = () => test(mutation.tests!, unmutated, mutation.snapshots, {directory, env: {...env, ...mutation.env}});
             return ownsTestSlot ? run() : beside(run);
           }, judge, mutate);
         results.set(mutation, answer.result);

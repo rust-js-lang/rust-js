@@ -76,6 +76,15 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^own_fold_and_nth.rs$"],
   },
   {
+    name: "steps-flat-map-fold-steps",
+    breaks: "a `flat_map` folds by `next`, not by its own `fold`, so a panic past the inner iterator it's in drops its source before what's left of that one, 92 before 91, where std drops 91 first (#1971)",
+    file: "src/runtime/steps.js",
+    find: "    $forward(flat, this, { fold });\n",
+    replace: "    $forward(flat, this, {});\n",
+    tests: ["test/iterator-matrix.test.ts"],
+    env: { ITERATOR_TABLE: "matrix", ITERATOR_MATRIX: "/js values \\| flatten \\| string \\| stage \\| captures/" },
+  },
+  {
     name: "steps-flat-map-unfused",
     breaks: "a `flat_map` steps its source again after it's given `None`, where std's fuses it",
     file: "src/runtime/steps.js",

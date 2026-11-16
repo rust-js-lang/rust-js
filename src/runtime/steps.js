@@ -244,13 +244,26 @@ class $Steps extends /* @__PURE__ */ (() => Iterator)() {
         ),
     );
     flat.from = [this];
-    // Its `fold` and `try_fold` are `$forward`'s, of its `next()`: a source
-    // the recognizers' form steps here, a range's or one stepped by
-    // `next()` alone, holds nothing that drops, so std's, which drop its
-    // source as it runs out and its function after, are the same (#1681's
-    // change 2; the flat_map flip makes every other std's compiled
-    // `FlatMap`).
-    $forward(flat, this, {});
+    // Its source's by `&mut` of what drops with `g`, `ends`, which it drops
+    // after, as std's `FlattenCompat::fold` folds its source by `&mut fold`;
+    // `own`, its function, `$holding`'s, moved into its source's, as its
+    // `Map` is (#710).
+    const fold = (init, g, unwind, ends, own) =>
+      $endsAfter(ends, () => {
+        let folded = init;
+        if (inner !== undefined) folded = $foldDropping(inner, folded, g, unwind);
+        inner = undefined;
+        if (ended) return folded;
+        ended = true;
+        const made = unwind === undefined ? (x) => f(x, i++) : (x, a) => $staged(f, x, i++, a, unwind);
+        return this.fold(folded, (a, x) => $foldDropping(Iterator.from(made(x, a)), a, g, unwind), unwind, own);
+      });
+    // Its `try_fold` is `$forward`'s, of its `next()`, which runs as std's
+    // does: every row of a `flat_map` or a `flatten` folded so, its panic
+    // points too (06fb3d01f, #1971). Its `fold` isn't: a panic past the
+    // one it's in drops what's left of that one before its source, as std's
+    // `FlattenCompat::fold` does.
+    $forward(flat, this, { fold });
     // Std's `FlattenCompat::size_hint` (flatten.rs:534): the one it's in's,
     // then its source's, fused, none of a source it's done with; where its
     // source may give more, each of which may give any number, no upper
