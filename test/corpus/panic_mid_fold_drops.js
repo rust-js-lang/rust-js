@@ -17,8 +17,6 @@ import {
   $lastDropping,
   $lazyChain,
   $lazyMapWhile,
-  $lazyRange,
-  $lazyScan,
   $lazySkipWhile,
   $lazyTakeWhile,
   $lent,
@@ -43,6 +41,7 @@ import {
   iterator_flatMap,
   iterator_inspect,
   iterator_rev,
+  iterator_scan,
   iterator_skip,
   iterator_take,
 } from "@rust-js/std";
@@ -607,12 +606,17 @@ function main() {
   });
   run("scan acc", () => {
     const x = $foldDropping(
-      $lazyScan($lazyRange(90, 94), 0, (_, n) => {
-        if (n === 92) {
-          throw new Error("92");
-        }
-        return n;
-      }),
+      iterator_scan(
+        { start: 90, end: 94 },
+        0,
+        (_, n) => {
+          if (n === 92) {
+            throw new Error("92");
+          }
+          return n;
+        },
+        { next: $rangeNext },
+      ),
       [],
       (acc, n) => {
         try {

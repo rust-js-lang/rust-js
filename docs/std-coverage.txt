@@ -1070,11 +1070,11 @@
 + MapWhile::next	safe
 + MapWhile::size_hint	safe
 + MapWhile::try_fold	spec
-# Scan 3 of 4; bodies: 3 safe, 1 spec, 0 opaque, 0 memory, 0 none
+# Scan 4 of 4; bodies: 3 safe, 1 spec, 0 opaque, 0 memory, 0 none
 + Scan::fold	safe
 + Scan::next	safe
 + Scan::size_hint	safe
-- Scan::try_fold	spec
++ Scan::try_fold	spec
 # Chain 12 of 13; bodies: 8 safe, 2 spec, 0 opaque, 3 memory, 0 none
 + Chain::count	safe
 + Chain::find	safe

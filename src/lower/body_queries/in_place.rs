@@ -106,7 +106,7 @@ pub(in crate::lower) fn decide<'tcx>(
 /// blocks the `rev()`'s flip, as nothing flipped is given what the ground
 /// made (`held_links`), so the flip never changes what decided it (ADR
 /// 1136, amended).
-pub(in crate::lower) const HELD_FLIPPED: [&str; 17] = [
+pub(in crate::lower) const HELD_FLIPPED: [&str; 18] = [
     "chain",
     "enumerate",
     "filter",
@@ -118,6 +118,7 @@ pub(in crate::lower) const HELD_FLIPPED: [&str; 17] = [
     "map_while",
     "peekable",
     "rev",
+    "scan",
     "skip",
     "skip_while",
     "step_by",

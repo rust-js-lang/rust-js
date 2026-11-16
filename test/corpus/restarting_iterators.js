@@ -10,8 +10,6 @@ import {
   $fromFn,
   $held,
   $iter,
-  $iterator,
-  $lazyScan,
   $lent,
   $next,
   $range,
@@ -27,6 +25,7 @@ import {
   iterator_map,
   iterator_mapWhile,
   iterator_peekable,
+  iterator_scan,
   iterator_skip,
   iterator_skipWhile,
   iterator_stepBy,
@@ -189,10 +188,15 @@ function main() {
     `map_while ([${value$13[0].join(", ")}], [${value$13[1].join(", ")}], [${value$13[2].join(", ")}])`,
   );
   const value$14 = twice(
-    $lazyScan($iterator(f(), flakyIterator_next), 0, (s, x) => {
-      s.value = (s.value + x) >>> 0;
-      return s.value;
-    }),
+    iterator_scan(
+      f(),
+      0,
+      (s, x) => {
+        s.value = (s.value + x) >>> 0;
+        return s.value;
+      },
+      { next: flakyIterator_next },
+    ),
     "next",
   );
   console.log(

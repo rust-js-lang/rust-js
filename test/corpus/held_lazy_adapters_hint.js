@@ -6,7 +6,6 @@ import {
   $dropEach,
   $held,
   $iter,
-  $lazyScan,
   $live,
   $next,
   $rangeNext,
@@ -14,6 +13,7 @@ import {
   $unwindsOn,
   iterator_filter,
   iterator_mapWhile,
+  iterator_scan,
   iterator_skipWhile,
   iterator_takeWhile,
 } from "@rust-js/std";
@@ -275,7 +275,7 @@ function plain() {
   console.log(
     `(${value$6[0]}, ${value$6[1] == null ? "None" : `Some(${value$6[1]})`}) ${value$7 == null ? "None" : `Some(${value$7})`} (${value$8[0]}, ${value$8[1] == null ? "None" : `Some(${value$8[1]})`})`,
   );
-  const c = $lazyScan($iter([1, 2, 3]), 0, (sum, x) => {
+  const c = iterator_scan($iter([1, 2, 3]), 0, (sum, x) => {
     sum.value = (sum.value + x) & 255;
     return sum.value;
   });

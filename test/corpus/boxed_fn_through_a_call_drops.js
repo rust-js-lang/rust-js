@@ -3,20 +3,22 @@
 import {
   $catchUnwind,
   $cleanup,
-  $closing,
   $collectDropping,
   $dispose,
   $dropping,
   $droppingOnce,
   $entry,
+  $foldOf,
   $held,
   $iter,
-  $iterator,
-  $lazyRange,
   $lazyScan,
   $mutGet,
   $next,
   $orInsertWith,
+  $rangeNext,
+  $roomForHint,
+  iterator_map,
+  iterator_scan,
 } from "@rust-js/std";
 
 export function entry() {
@@ -180,21 +182,38 @@ function zero(g) {
 
 function scans() {
   const g = ["f"];
-  const f = at0(
-    $dropping(
-      (s, x) => {
-        const value = (x + zero(g)) >>> 0;
-        s.value = (s.value + value) >>> 0;
-        return s.value;
-      },
-      () => {
-        dDrop_drop(g);
-      },
+  const iter = iterator_scan(
+    { start: 0, end: 3 },
+    0,
+    at0(
+      $dropping(
+        (s, x) => {
+          const value = (x + zero(g)) >>> 0;
+          s.value = (s.value + value) >>> 0;
+          return s.value;
+        },
+        () => {
+          dDrop_drop(g);
+        },
+      ),
     ),
+    { next: $rangeNext },
+    undefined,
+    undefined,
+    undefined,
+    $dispose,
   );
-  let n = $lazyScan($lazyRange(0, 3), 0, f, true, (_) => {
-    $dispose(f);
-  }).reduce((a, b) => (a + b) >>> 0, 0);
+  let result;
+  try {
+    result = iter.reduce((a, b) => (a + b) >>> 0, 0);
+  } catch (error) {
+    $cleanup(() => {
+      iter.return();
+    }, error);
+    throw error;
+  }
+  iter.return();
+  let n = result;
   console.log(`function sum ${n}`);
   const g$1 = ["f"];
   const value = it(3);
@@ -215,18 +234,34 @@ function scans() {
     }, error);
     throw error;
   }
-  n = $lazyScan(
-    $closing($iterator(value, itIterator_next), (it) => {
-      dDrop_drop(it.of._held);
-    }),
+  const iter$1 = iterator_scan(
+    value,
     d,
-    tmp,
-    false,
-    (state) => {
-      $dispose(tmp);
-      dDrop_drop(state);
+    $dropping(
+      (x0, x1) => tmp(x0.value, x1),
+      () => {
+        $dispose(tmp);
+      },
+    ),
+    { next: itIterator_next },
+    (it) => {
+      dDrop_drop(it._held);
     },
-  ).reduce((a, x) => (a + x) >>> 0, 0);
+    dDrop_drop,
+    undefined,
+    $dispose,
+  );
+  let result$1;
+  try {
+    result$1 = iter$1.reduce((a, x) => (a + x) >>> 0, 0);
+  } catch (error) {
+    $cleanup(() => {
+      iter$1.return();
+    }, error);
+    throw error;
+  }
+  iter$1.return();
+  n = result$1;
   console.log(`both fold ${n}`);
   const g$2 = ["f"];
   const value$2 = it(3);
@@ -248,17 +283,22 @@ function scans() {
     throw error;
   }
   const held = $held(
-    $lazyScan(
-      $closing($iterator(value$2, itIterator_next), (it) => {
-        dDrop_drop(it.of._held);
-      }),
+    iterator_scan(
+      value$2,
       value$4,
-      tmp$1,
-      false,
-      (state) => {
-        $dispose(tmp$1);
-        dDrop_drop(state);
+      $dropping(
+        (x0, x1) => tmp$1(x0.value, x1),
+        () => {
+          $dispose(tmp$1);
+        },
+      ),
+      { next: itIterator_next },
+      (it) => {
+        dDrop_drop(it._held);
       },
+      dDrop_drop,
+      undefined,
+      $dispose,
     ),
   );
   try {
@@ -290,10 +330,32 @@ function scans() {
     throw error;
   }
   const v = $collectDropping(
-    $lazyScan($lazyRange(0, 3), value$5, tmp$2, false, (state) => {
-      $dispose(tmp$2);
-      dDrop_drop(state);
-    }).map((x) => (x * 2) >>> 0),
+    $roomForHint(
+      iterator_map(
+        iterator_scan(
+          { start: 0, end: 3 },
+          value$5,
+          $dropping(
+            (x0, x1) => tmp$2(x0.value, x1),
+            () => {
+              $dispose(tmp$2);
+            },
+          ),
+          { next: $rangeNext },
+          undefined,
+          dDrop_drop,
+          undefined,
+          $dispose,
+        ),
+        (x) => (x * 2) >>> 0,
+        { next: $next, fold: $foldOf },
+        (scan) => {
+          scan.return();
+        },
+      ),
+      4,
+      false,
+    ),
   );
   console.log(`then map [${v.join(", ")}]`);
 }

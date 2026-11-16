@@ -5,7 +5,6 @@ import {
   $foldOf,
   $last,
   $lazyChain,
-  $lazyScan,
   $lent,
   $next,
   $nth,
@@ -14,6 +13,7 @@ import {
   iterator_fuse,
   iterator_map,
   iterator_mapWhile,
+  iterator_scan,
   iterator_skip,
   iterator_skipWhile,
   iterator_stepBy,
@@ -247,7 +247,7 @@ function main() {
   );
   console.log(`${last == null ? "None" : `Some(${last})`}`);
   console.log(
-    `${$lazyScan(
+    `${iterator_scan(
       iterator_skip(counted(), 2, {
         next: countIterator_next,
         fold: countIterator_fold,
@@ -258,6 +258,7 @@ function main() {
         s.value = (s.value + x) | 0;
         return s.value;
       },
+      { next: $next, fold: $foldOf, nth: $nth },
     ).reduce((n) => n + 1, 0)}`,
   );
   const value$3 = $last(

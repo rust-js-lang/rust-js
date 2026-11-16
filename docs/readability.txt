@@ -1,14 +1,14 @@
 # shape	count	per 10,000 lines
 files	2657
-lines	357389
+lines	357594
 temporaries	0	0
 labeled blocks	0	0
 while (true)	224	6.3
 $iter	3014	84.3
 Iterator.from	361	10.1
 return;	341	9.5
-renamed x$1	16686	466.9
-role fallbacks	9049	253.2
+renamed x$1	16707	467.2
+role fallbacks	9055	253.2
 # file	lines	temporaries	labeled blocks	while (true)	$iter	Iterator.from	return;	renamed x$1	role fallbacks
 test/corpus/adapter_drop_past_a_panic.js	50	0	0	0	1	0	0	0	1
 test/corpus/adapter_drops.js	1849	0	0	1	18	2	1	98	61
@@ -23,7 +23,7 @@ test/corpus/adapter_source_drops.js	161	0	0	0	0	0	0	8	4
 test/corpus/adapter_stepped_from_its_back_past_an_arguments_statement.js	103	0	0	0	7	0	0	7	6
 test/corpus/adapters_given_to_generic_backs.js	57	0	0	0	2	0	0	4	3
 test/corpus/adapters_over_own_next_that_panics.js	1147	0	0	2	1	2	0	5	23
-test/corpus/adapters_own_nth_fold.js	287	0	0	0	0	0	0	6	4
+test/corpus/adapters_own_nth_fold.js	288	0	0	0	0	0	0	6	4
 test/corpus/adapters_own_work_that_panics.js	687	0	0	0	8	0	0	12	15
 test/corpus/address_kept_when_assigned_again.js	252	0	0	0	0	0	0	22	11
 test/corpus/address_of_a_byte_view_of_a_stored_array.js	53	0	0	0	0	0	0	0	0
@@ -163,7 +163,7 @@ test/corpus/boxed_copy_captured_written.js	31	0	0	0	0	0	0	0	0
 test/corpus/boxed_copy_written_whole.js	26	0	0	0	0	0	0	0	0
 test/corpus/boxed_dyn_debug.js	37	0	0	0	0	0	0	0	1
 test/corpus/boxed_fn_given_to_consumers_drops.js	255	0	0	0	6	0	0	38	13
-test/corpus/boxed_fn_through_a_call_drops.js	306	0	0	0	1	0	0	50	22
+test/corpus/boxed_fn_through_a_call_drops.js	368	0	0	0	1	0	0	57	24
 test/corpus/boxed_function_boxed_again.js	166	0	0	0	0	0	0	0	0
 test/corpus/boxed_function_panics_drop_the_consumed_iterator.js	56	0	0	0	0	0	0	0	0
 test/corpus/boxed_iterator_drop_panicking_as_it_unwinds_aborts.js	40	0	0	0	1	0	0	0	0
@@ -1710,7 +1710,7 @@ test/corpus/panic_in_own_next_drops.js	287	0	0	0	7	0	1	6	3
 test/corpus/panic_in_own_rfold_drops.js	544	0	0	1	0	0	0	0	2
 test/corpus/panic_in_std_bodies_drops.js	124	0	0	0	2	0	0	0	0
 test/corpus/panic_in_std_fold_drops.js	151	0	0	0	2	0	0	0	4
-test/corpus/panic_mid_fold_drops.js	1122	0	0	0	33	0	0	5	5
+test/corpus/panic_mid_fold_drops.js	1126	0	0	0	33	0	0	5	5
 test/corpus/panic_mid_iteration_drops.js	141	0	0	0	5	0	0	0	0
 test/corpus/panic_out_of_an_extern_c_function_aborts.js	43	0	0	0	0	0	0	0	0
 test/corpus/panic_part_way_drops.js	1435	0	0	1	51	0	1	9	16
@@ -2013,7 +2013,7 @@ test/corpus/repr_enum_numbers.js	108	0	0	0	0	0	0	0	2
 test/corpus/reserved_named_function_called_across_modules.js	47	0	0	0	4	0	0	0	1
 test/corpus/resize_fill_repeat_unwind.js	116	0	0	0	0	0	0	0	0
 test/corpus/rest_function_values.js	45	0	0	0	0	0	0	0	1
-test/corpus/restarting_iterators.js	350	0	0	0	1	2	0	40	21
+test/corpus/restarting_iterators.js	354	0	0	0	1	2	0	40	21
 test/corpus/result_given_as_items.js	93	0	0	0	4	1	0	13	8
 test/corpus/result_iter_and_order.js	106	0	0	0	0	0	0	5	2
 test/corpus/retain_map_drops_held.js	401	0	0	0	0	0	0	13	4
@@ -2067,11 +2067,11 @@ test/corpus/sales_report.js	107	0	0	0	2	0	0	0	1
 test/corpus/same_length_tables.js	116	0	0	0	0	0	1	4	6
 test/corpus/saturating_ops_at_every_width.js	1005	0	0	0	0	0	0	46	24
 test/corpus/saturating_ops_that_panic.js	173	0	0	0	0	0	0	92	0
-test/corpus/scan_dropped_once.js	242	0	0	0	4	0	0	0	6
-test/corpus/scan_drops_its_function_and_state.js	203	0	0	0	0	0	0	17	1
+test/corpus/scan_dropped_once.js	330	0	0	0	4	0	0	18	9
+test/corpus/scan_drops_its_function_and_state.js	226	0	0	0	0	0	0	13	2
 test/corpus/scan_lazy_drops.js	67	0	0	0	3	0	0	0	1
-test/corpus/scan_map_while_unfused.js	38	0	0	0	2	0	0	2	3
-test/corpus/scan_object_state.js	61	0	0	0	4	0	0	0	0
+test/corpus/scan_map_while_unfused.js	46	0	0	0	2	0	0	2	3
+test/corpus/scan_object_state.js	74	0	0	0	4	0	0	0	0
 test/corpus/scope_field_copies.js	84	0	0	0	0	0	0	7	0
 test/corpus/scope_method_closure_addr_eq.js	26	0	0	0	0	0	0	0	1
 test/corpus/scope_method_closure_ptr_eq.js	26	0	0	0	0	0	0	0	1
@@ -2107,7 +2107,7 @@ test/corpus/signed_counter.js	72	0	0	0	0	0	0	0	0
 test/corpus/signed_index.js	70	0	0	0	0	0	0	0	0
 test/corpus/size_hint.js	81	0	0	0	6	0	2	11	8
 test/corpus/size_hint_into_iter.js	27	0	0	0	0	1	0	3	1
-test/corpus/size_hint_of_adapters.js	343	0	0	0	2	0	0	0	1
+test/corpus/size_hint_of_adapters.js	344	0	0	0	2	0	0	0	1
 test/corpus/size_hints_made_in_place.js	27	0	0	0	1	0	0	9	4
 test/corpus/size_of.js	23	0	0	0	0	0	0	2	2
 test/corpus/size_of_an_iterators_item.js	84	0	0	0	2	0	1	6	4
@@ -2125,7 +2125,7 @@ test/corpus/skip_passed_item_drop_unwinds.js	174	0	0	0	6	0	0	3	5
 test/corpus/skip_rfold_closes_as_it_unwinds.js	61	0	0	0	2	0	0	0	1
 test/corpus/skip_take_of_droppers_from_back.js	719	0	0	0	22	0	0	25	36
 test/corpus/skip_take_own_nth.js	107	0	0	0	0	0	0	0	0
-test/corpus/skip_try_fold.js	406	0	0	0	0	2	1	22	14
+test/corpus/skip_try_fold.js	407	0	0	0	0	2	1	22	14
 test/corpus/skip_while_first_step_unwinds.js	575	0	0	0	7	0	0	44	21
 test/corpus/slice_arrays.js	78	0	0	0	0	0	0	18	3
 test/corpus/slice_bytes_text.js	30	0	0	0	3	2	0	0	1

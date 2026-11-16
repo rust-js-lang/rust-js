@@ -400,6 +400,16 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
+    name: "scan-not-flipped",
+    breaks:
+      "a `scan()` of a chain the transparent-chain predicate doesn't admit is the runtime's hand-written form again, where std's compiled struct is the meaning (#1681's change 2, the scan family)",
+    file: "src/lower/body_queries/in_place.rs",
+    find: "    \"scan\",\n",
+    replace: "    \"map\",\n",
+    tests: ["test/corpus.test.ts", "-t", "^(scan_object_state|scan_dropped_once).rs$"],
+    snapshots: true,
+  },
+  {
     name: "skip_while-not-flipped",
     breaks:
       "a `skip_while()` of a chain the transparent-chain predicate doesn't admit is the runtime's hand-written form again, where std's compiled struct is the meaning (#1681's change 2, the skip_while family)",

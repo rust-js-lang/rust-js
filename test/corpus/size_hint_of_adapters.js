@@ -12,7 +12,6 @@ import {
   $held,
   $iter,
   $iterator,
-  $lazyScan,
   $lent,
   $live,
   $next,
@@ -29,6 +28,7 @@ import {
   iterator_map,
   iterator_mapWhile,
   iterator_rev,
+  iterator_scan,
   iterator_skip,
   iterator_skipWhile,
   iterator_take,
@@ -163,13 +163,14 @@ function main() {
   show(
     "scan",
     $sizeHint(
-      $lazyScan(
-        $iterator(own(), ownIterator_next, false, undefined, undefined, ownIterator_sizeHint),
+      iterator_scan(
+        own(),
         0,
         (s, x) => {
           s.value = (s.value + x) >>> 0;
           return s.value;
         },
+        { next: ownIterator_next, sizeHint: ownIterator_sizeHint },
       ),
     ),
   );

@@ -9,7 +9,6 @@ import {
   $iterEq,
   $jsIterator,
   $lazyRange,
-  $lazyScan,
   $lent,
   $live,
   $next,
@@ -25,6 +24,7 @@ import {
   iterator_flatMap,
   iterator_map,
   iterator_mapWhile,
+  iterator_scan,
   iterator_skip,
   iterator_skipWhile,
   iterator_take,
@@ -285,13 +285,14 @@ function main() {
   console.log(`skip_while ${value$8 == null ? "None" : `Some(${value$8})`}`);
   console.log(
     `scan ${$lent(
-      $lazyScan(
+      iterator_scan(
         iterator_skip(c(), 2, { next: countIterator_next, nth: countIterator_nth }),
         0,
         (s, x) => {
           s.value = (s.value + x) | 0;
           return s.value;
         },
+        { next: $next, fold: $foldOf, nth: $nth },
       ),
     ).some((x) => x > 5)}`,
   );

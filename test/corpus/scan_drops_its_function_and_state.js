@@ -3,14 +3,13 @@
 import {
   $assign,
   $catchUnwind,
-  $closing,
   $held,
-  $iterator,
   $lazyRange,
   $lazyScan,
   $live,
   $next,
   $unwindsOn,
+  iterator_scan,
 } from "@rust-js/std";
 
 export function entry() {
@@ -71,33 +70,46 @@ function main() {
   }).reduce((a, b) => (a + b) >>> 0, 0);
   console.log(`function sum ${n}`);
   const g$1 = ["f"];
-  const f$1 = (_, x) => (x + zero(g$1)) >>> 0;
-  n = $lazyScan(
-    $closing($iterator(it(3), itIterator_next), (it) => {
-      dDrop_drop(it.of._held);
-    }),
+  const iter = iterator_scan(
+    it(3),
     ["st"],
-    f$1,
-    false,
-    (state) => {
-      dDrop_drop(g$1);
-      dDrop_drop(state);
+    (x0, x1) => (x1 + zero(g$1)) >>> 0,
+    { next: itIterator_next },
+    (it) => {
+      dDrop_drop(it._held);
     },
-  ).reduce((a, x) => (a + x) >>> 0, 0);
+    dDrop_drop,
+    undefined,
+    (value) => {
+      dDrop_drop(g$1);
+    },
+  );
+  let result;
+  try {
+    result = iter.reduce((a, x) => (a + x) >>> 0, 0);
+  } catch (error) {
+    throw $unwindsOn(error);
+  } finally {
+    if ($live()) {
+      iter.return();
+    }
+  }
+  n = result;
   console.log(`both fold ${n}`);
   const g$2 = ["f"];
-  const f$2 = (_, x) => (x + zero(g$2)) >>> 0;
   const held = $held(
-    $lazyScan(
-      $closing($iterator(it(3), itIterator_next), (it) => {
-        dDrop_drop(it.of._held);
-      }),
+    iterator_scan(
+      it(3),
       ["st"],
-      f$2,
-      false,
-      (state) => {
+      (x0, x1) => (x1 + zero(g$2)) >>> 0,
+      { next: itIterator_next },
+      (it) => {
+        dDrop_drop(it._held);
+      },
+      dDrop_drop,
+      undefined,
+      (value) => {
         dDrop_drop(g$2);
-        dDrop_drop(state);
       },
     ),
   );
@@ -130,30 +142,41 @@ function main() {
   console.log(`replaced ${n}`);
   const g$3 = ["f"];
   const r = $catchUnwind(() => {
-    function f$3(_, x) {
-      if (x === 1) {
-        throw new Error("scan");
-      }
-      return (x + zero(g$3)) >>> 0;
-    }
-    return $lazyScan(
-      $closing($iterator(it(3), itIterator_next), (it) => {
-        dDrop_drop(it.of._held);
-      }),
+    const iter = iterator_scan(
+      it(3),
       ["st"],
-      f$3,
-      false,
-      (state) => {
-        dDrop_drop(g$3);
-        dDrop_drop(state);
+      (x0, x1) =>
+        ((_, x) => {
+          if (x === 1) {
+            throw new Error("scan");
+          }
+          return (x + zero(g$3)) >>> 0;
+        })(x0.value, x1),
+      { next: itIterator_next },
+      (it) => {
+        dDrop_drop(it._held);
       },
-    ).reduce((n) => n + 1, 0);
+      dDrop_drop,
+      undefined,
+      (value) => {
+        dDrop_drop(g$3);
+      },
+    );
+    try {
+      return iter.reduce((n) => n + 1, 0);
+    } catch (error) {
+      throw $unwindsOn(error);
+    } finally {
+      if ($live()) {
+        iter.return();
+      }
+    }
   });
   console.log(`panicked ${r.TAG === "Err"}`);
   const g$4 = ["f"];
-  const f$3 = (_, x) => (x + zero(g$4)) >>> 0;
+  const f$1 = (_, x) => (x + zero(g$4)) >>> 0;
   v = Array.from(
-    $lazyScan($lazyRange(0, 3), ["st"], f$3, false, (state) => {
+    $lazyScan($lazyRange(0, 3), ["st"], f$1, false, (state) => {
       dDrop_drop(g$4);
       dDrop_drop(state);
     }).map((x) => (x * 2) >>> 0),
