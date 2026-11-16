@@ -803,17 +803,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if !self.takes_evidence(id) {
             // Given nothing, it's its module's `const` (ADR 0592): what its
             // entries share is the module's too, named apart by its cache's
-            // name, `$smallWrite_writeStr`.
-            let renamed: Vec<(String, String)> = (shared.iter())
+            // name, `$smallWrite_writeStr`: the module's, its declaration's
+            // name and each read's one.
+            let renamed: Vec<(String, js::Name)> = (shared.iter())
                 .filter_map(|stmt| match &stmt.kind {
-                    StmtKind::Const(name, _) => Some((name.to_string(), format!("{cache}_{name}"))),
+                    StmtKind::Const(name, _) => Some((name.to_string(), js::Name::module(&format!("{cache}_{name}")))),
                     _ => None,
                 })
                 .collect();
             let rename = |v: &str| {
                 (renamed.iter())
                     .find(|(from, _)| from == v)
-                    .map(|(_, to)| Expr::var(to))
+                    .map(|(_, to)| Expr::var(to.clone()))
             };
             // Renamed wherever they're read: a closure in what reads one, which
             // `substitute` won't go into, would leave it reading a name no
@@ -831,7 +832,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             for stmt in &mut shared {
                 if let StmtKind::Const(name, value) = &mut stmt.kind {
                     *value = renamed_in(value).ok_or_else(dangling)?;
-                    *name = format!("{cache}_{name}").into();
+                    let to = (renamed.iter())
+                        .find(|(from, _)| name.is(from))
+                        .map(|(_, to)| to.clone());
+                    *name = to.expect("each shared `const` renamed");
                 }
             }
             body.extend(shared);

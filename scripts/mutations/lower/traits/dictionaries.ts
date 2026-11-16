@@ -311,8 +311,8 @@ export const mutations: Mutation[] = [
     breaks:
       "std's `Deref` of a `&mut` in a dictionary is the box, not what's in it",
     file: "src/lower/traits/dictionaries.rs",
-    find: '                let value = Expr::held(Expr::var("x"));\n',
-    replace: '                let value = Expr::var("x");\n',
+    find: '                let value = Expr::held(Expr::var(x.clone()));\n',
+    replace: '                let value = Expr::var(x.clone());\n',
     tests: ["test/corpus.test.ts", "-t", "^mut_given_as_type_param.rs$"],
   },
   {
@@ -347,9 +347,9 @@ export const mutations: Mutation[] = [
     breaks:
       "std's `DerefMut` of a `&mut` gives the box around it, not the one it is",
     file: "src/lower/traits/dictionaries.rs",
-    find: '                _ if matches!(ty.kind(), ty::Ref(_, _, Mutability::Mut)) => Some(Expr::held(Expr::var("cell"))),\n',
+    find: '                _ if matches!(ty.kind(), ty::Ref(_, _, Mutability::Mut)) => Some(Expr::held(Expr::var(cell.clone()))),\n',
     replace:
-      '                _ if matches!(ty.kind(), ty::Ref(_, _, Mutability::Mut)) => Some(Expr::var("cell")),\n',
+      '                _ if matches!(ty.kind(), ty::Ref(_, _, Mutability::Mut)) => Some(Expr::var(cell.clone())),\n',
     tests: ["test/corpus.test.ts", "-t", "^generic_deref_mut.rs$"],
   },
   {
@@ -357,9 +357,9 @@ export const mutations: Mutation[] = [
     breaks:
       "std's `DerefMut` of a guard gives the box around it, not the guard, which holds its value",
     file: "src/lower/traits/dictionaries.rs",
-    find: '                Some(Std::GuardValue { .. }) => Some(Expr::held(Expr::var("cell"))),\n',
+    find: '                Some(Std::GuardValue { .. }) => Some(Expr::held(Expr::var(cell.clone()))),\n',
     replace:
-      '                Some(Std::GuardValue { .. }) => Some(Expr::var("cell")),\n',
+      '                Some(Std::GuardValue { .. }) => Some(Expr::var(cell.clone())),\n',
     tests: ["test/corpus.test.ts", "-t", "^generic_deref_mut.rs$"],
   },
   {
@@ -367,7 +367,7 @@ export const mutations: Mutation[] = [
     breaks:
       "std's `DerefMut` of a `Box`, which MIR never calls, has no dictionary",
     file: "src/lower/traits/dictionaries.rs",
-    find: '                _ if ty.is_box() => Some(Expr::var("cell")),\n',
+    find: '                _ if ty.is_box() => Some(Expr::var(cell.clone())),\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^generic_deref_mut.rs$"],
   },

@@ -26,7 +26,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// another type, the crate's, whose impl's dictionary is its own.
     fn extend_dictionary(&mut self, ty: Ty<'tcx>, item: Ty<'tcx>, span: Span) -> R<Option<Expr>> {
         let made_items = self.unspelled("items");
-        let collection = Expr::member(Expr::var("collection"), js::HELD);
+        // Its parameters and the variables it declares, each its own name, of
+        // the word it's spelled: declared once, each read a clone.
+        let [
+            collection_param,
+            it_name,
+            drop_it_name,
+            drop_iter_param,
+            in_place_param,
+            drop_items_param,
+        ] = ["collection", "it", "dropIt", "dropIter", "inPlace", "dropItems"]
+            .map(|word| js::Name::declared(word.to_string()));
+        let collection = Expr::member(Expr::var(collection_param.clone()), js::HELD);
         let known = self.recognition().std_extend(ty);
         // What's stepped of what it's given: a collection's or a table's
         // iterator held, `it`, as std's `extend` holds it, stepped by
@@ -34,8 +45,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `$folded(it)` (#1511); a string's, the items as they are.
         let by_fold = self.extends_by_fold(ty);
         let stepped = match known {
-            Some(Std::Comb(_) | Std::Map(_)) if by_fold => Expr::call_helper("$folded", vec![Expr::var("it")]),
-            Some(Std::Comb(_) | Std::Map(_)) => Expr::var("it"),
+            Some(Std::Comb(_) | Std::Map(_)) if by_fold => {
+                Expr::call_helper("$folded", vec![Expr::var(it_name.clone())])
+            }
+            Some(Std::Comb(_) | Std::Map(_)) => Expr::var(it_name.clone()),
             _ => Expr::var(&made_items),
         };
         // Its hint asked first where the collection reserves by it, a
@@ -65,7 +78,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // at its end and as a step's panic unwinds, but where its own
             // `fold` took it, which drops it itself (#1511).
             Some(known @ (Std::Comb(_) | Std::Map(_))) => {
-                let it = Expr::var("it");
+                let it = Expr::var(it_name.clone());
                 let extended = match known {
                     Std::Comb(comb) => self.comb_values(
                         comb,
@@ -83,18 +96,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // `dropIter`, or of a list's or a table's, taken by its fold,
                 // none where that's its own, which drops it.
                 let drop_it = match by_fold {
-                    true => Expr::var("dropIt"),
-                    false => Expr::var("dropIter"),
+                    true => Expr::var(drop_it_name.clone()),
+                    false => Expr::var(drop_iter_param.clone()),
                 };
                 let made = Expr::call_helper("$intoIter", vec![Expr::var(&made_items)]);
-                body.insert(0, StmtKind::Const("it".into(), made).at(js::Span::NONE));
+                body.insert(0, StmtKind::Const(it_name, made).at(js::Span::NONE));
                 if by_fold {
                     let own = Expr::cond(
                         Expr::member(it.clone(), "ownFold"),
                         Expr::js_undefined(),
-                        Expr::var("dropIter"),
+                        Expr::var(drop_iter_param.clone()),
                     );
-                    body.insert(1, StmtKind::Const("dropIt".into(), own).at(js::Span::NONE));
+                    body.insert(1, StmtKind::Const(drop_it_name, own).at(js::Span::NONE));
                 }
                 let dropped = || Expr::optional_call(drop_it.clone(), vec![it.clone()]);
                 let run = Expr::arrow(Vec::new(), vec![StmtKind::Return(Some(extended)).at(js::Span::NONE)]);
@@ -102,11 +115,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 body.push(StmtKind::Expr(Expr::call_helper("$unwinds", vec![run, unwound])).at(js::Span::NONE));
                 body.push(StmtKind::Expr(dropped()).at(js::Span::NONE));
                 let params = vec![
-                    "collection".into(),
+                    collection_param.into(),
                     made_items.into(),
-                    "inPlace".into(),
-                    "dropItems".into(),
-                    "dropIter".into(),
+                    in_place_param.into(),
+                    drop_items_param.into(),
+                    drop_iter_param.into(),
                 ];
                 let extend = Expr::arrow(params, body);
                 return Ok(Some(Expr::object(vec![Prop::Field("extend".into(), extend)])));
@@ -114,7 +127,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ => return Ok(None),
         };
         body.extend(value.map(|value| StmtKind::Expr(value).at(js::Span::NONE)));
-        let extend = Expr::arrow(vec!["collection".into(), made_items.clone().into()], body);
+        let extend = Expr::arrow(vec![collection_param.into(), made_items.clone().into()], body);
         Ok(Some(Expr::object(vec![Prop::Field("extend".into(), extend)])))
     }
 
@@ -376,7 +389,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.tcx.fn_sig(start_bound).map_bound(|sig| sig.skip_binder().output()),
             );
             let mut made = Vec::new();
-            let values = self.range_bound_values(Expr::var("range"), ty, bound, span, &mut made)?;
+            let range = js::Name::declared("range".to_string());
+            let values = self.range_bound_values(Expr::var(range.clone()), ty, bound, span, &mut made)?;
             let values = values.expect("a range's bounds, as `range_bounds` found them");
             let props = ["start_bound", "end_bound"]
                 .into_iter()
@@ -384,7 +398,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .map(|(name, value)| {
                     let body = vec![StmtKind::Return(Some(value)).at(js::Span::NONE)];
                     let name = bindings::trait_method_name(self.tcx, tr.def_id, name);
-                    Prop::Field(name, Expr::arrow(vec!["range".into()], body))
+                    Prop::Field(name, Expr::arrow(vec![range.clone().into()], body))
                 });
             return Ok(Expr::object(props.collect()));
         }
@@ -490,10 +504,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && !self.has_user_impl(tr.def_id, ty)
         {
             let param = self.unspelled("value");
+            let options = js::Name::declared("options".to_string());
             let (params, pretty): (Vec<js::Pattern>, _) = match self.writers_take_options() {
                 true => (
-                    vec![param.clone().into(), "options".into()],
-                    Pretty::When(Expr::var("options")),
+                    vec![param.clone().into(), options.clone().into()],
+                    Pretty::When(Expr::var(options)),
                 ),
                 false => (vec![param.clone().into()], Pretty::Plain),
             };
@@ -531,10 +546,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // them (#1331).
                 let shown_so = self.krate.shown.of_type(self.tcx, ty);
                 let param = self.unspelled("value");
+                let options = js::Name::declared("options".to_string());
                 let (params, pretty): (Vec<js::Pattern>, _) = match self.writers_take_options() || shown_so.any() {
                     true => (
-                        vec![param.clone().into(), "options".into()],
-                        crate::lower::display::Pretty::When(Expr::var("options")),
+                        vec![param.clone().into(), options.clone().into()],
+                        crate::lower::display::Pretty::When(Expr::var(options)),
                     ),
                     false => (vec![param.clone().into()], crate::lower::display::Pretty::Plain),
                 };
@@ -689,8 +705,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A `&mut`'s, which generic code is given in a box: what's in it
             // (ADR 0454).
             if let ty::Ref(_, _, Mutability::Mut) = ty.kind() {
-                let value = Expr::held(Expr::var("x"));
-                let f = Expr::arrow(vec!["x".into()], vec![StmtKind::Return(Some(value)).at(js::Span::NONE)]);
+                let x = js::Name::declared("x".to_string());
+                let value = Expr::held(Expr::var(x.clone()));
+                let f = Expr::arrow(vec![x.into()], vec![StmtKind::Return(Some(value)).at(js::Span::NONE)]);
                 return Ok(Expr::object(vec![Prop::Field("deref".into(), f)]));
             }
             let deref = crate::lower::recognition::trait_method(self.tcx, tr.def_id, "deref");
@@ -708,16 +725,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // guard, which holds a cell of its target, what's in it (ADR 0394).
         if self.tcx.is_lang_item(tr.def_id, LangItem::DerefMut) && !self.has_user_impl(tr.def_id, ty) {
             let deref_mut = crate::lower::recognition::trait_method(self.tcx, tr.def_id, "deref_mut");
+            let cell = js::Name::declared("cell".to_string());
             let target = match self.recognition().classify(deref_mut, tr.args) {
-                _ if matches!(ty.kind(), ty::Ref(_, _, Mutability::Mut)) => Some(Expr::held(Expr::var("cell"))),
-                Some(Std::GuardValue { .. }) => Some(Expr::held(Expr::var("cell"))),
-                Some(Std::Same) => Some(Expr::var("cell")),
-                _ if ty.is_box() => Some(Expr::var("cell")),
+                _ if matches!(ty.kind(), ty::Ref(_, _, Mutability::Mut)) => Some(Expr::held(Expr::var(cell.clone()))),
+                Some(Std::GuardValue { .. }) => Some(Expr::held(Expr::var(cell.clone()))),
+                Some(Std::Same) => Some(Expr::var(cell.clone())),
+                _ if ty.is_box() => Some(Expr::var(cell.clone())),
                 _ => None,
             };
             if let Some(target) = target {
                 let f = Expr::arrow(
-                    vec!["cell".into()],
+                    vec![cell.into()],
                     vec![StmtKind::Return(Some(target)).at(js::Span::NONE)],
                 );
                 let mut props = self.supertrait_entries(tr, span)?;
@@ -819,7 +837,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `impl AsMut<U> for &mut T`, that one's, through the cell the `&mut`
         // is: one `value` further for each.
         if is_std_def(self.tcx, tr.def_id, StdItem::AsMut) && !self.has_user_impl(tr.def_id, ty) {
-            let mut cell = Expr::var("cell");
+            let param = js::Name::declared("cell".to_string());
+            let mut cell = Expr::var(param.clone());
             let mut at = ty;
             while let ty::Ref(_, inner, Mutability::Mut) = *at.kind() {
                 cell = Expr::held(cell);
@@ -827,7 +846,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             if self.recognition().as_mut_is_itself(ty, tr.args.type_at(1)) {
                 let f = Expr::arrow(
-                    vec!["cell".into()],
+                    vec![param.into()],
                     vec![StmtKind::Return(Some(cell)).at(js::Span::NONE)],
                 );
                 return Ok(Expr::object(vec![Prop::Field(
@@ -950,9 +969,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             || self.is_lang_adt(ty, LangItem::String);
         if crate::lower::recognition::is_from_str(self.tcx, tr.def_id) && parsed_by_std {
             let mut body = Vec::new();
-            let parsed = self.parse_as(Expr::var("s"), ty, span, &mut body)?;
+            let text = js::Name::declared("s".to_string());
+            let parsed = self.parse_as(Expr::var(text.clone()), ty, span, &mut body)?;
             body.push(StmtKind::Return(Some(parsed)).at(js::Span::NONE));
-            let from_str = Expr::arrow(vec!["s".into()], body);
+            let from_str = Expr::arrow(vec![text.into()], body);
             return Ok(Expr::object(vec![Prop::Field(
                 bindings::trait_method_name(self.tcx, tr.def_id, "from_str"),
                 from_str,
@@ -1006,7 +1026,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(op) = crate::lower::recognition::assign_operator(self.tcx, tr.def_id)
             && (self.primitive_operands(tr) || (op == BinOp::Add && tr.args.types().all(text)))
         {
-            let place = Expr::member(Expr::var("cell"), js::HELD);
+            let cell = js::Name::declared("cell".to_string());
+            let place = Expr::member(Expr::var(cell.clone()), js::HELD);
             let value = match self.primitive_operands(tr) {
                 true => self.number_operator(Ok(op), place.clone(), Some(Expr::var(&made_b)), tr, span)?,
                 false => Expr::bin(Op::Add, place.clone(), Expr::var(&made_b)),
@@ -1014,7 +1035,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(Expr::object(vec![Prop::Field(
                 self.operator_entry(tr.def_id),
                 Expr::arrow(
-                    vec!["cell".into(), made_b.clone().into()],
+                    vec![cell.into(), made_b.clone().into()],
                     vec![StmtKind::Assign(place, value).at(js::Span::NONE)],
                 ),
             )]));
@@ -1188,13 +1209,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let into_iter = crate::lower::recognition::trait_method(self.tcx, tr.def_id, "into_iter");
         // A `&mut`'s, the cell generic code has, a box of an object's.
-        let name = match mutability {
-            Mutability::Mut => Role::Cell.word(),
-            Mutability::Not => self.parameter_name(pointee).word(),
+        let role = match mutability {
+            Mutability::Mut => Role::Cell,
+            Mutability::Not => self.parameter_name(pointee),
         };
+        let name = js::Name::declared(role.word().to_string());
         let given = match boxed {
-            true => Expr::held(Expr::var(name)),
-            false => Expr::var(name),
+            true => Expr::held(Expr::var(name.clone())),
+            false => Expr::var(name.clone()),
         };
         let mut body = Vec::new();
         let items = (self.ref_into_iter(given, ty, span, &mut body)?).ok_or_else(|| self.no_evidence(span, tr))?;
@@ -1258,7 +1280,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     fn object_dictionary(&mut self, tr: ty::TraitRef<'tcx>, span: Span) -> R<Expr> {
-        let object = Expr::var("object");
+        let object_param = js::Name::declared("object".to_string());
+        let object = Expr::var(object_param.clone());
         let principal = self
             .dyn_trait_ref(tr.self_ty(), tr.self_ty())
             .ok_or_else(|| self.no_evidence(span, tr))?;
@@ -1304,11 +1327,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 true => pair,
                 false => Expr::held(pair),
             };
-            let mut params: Vec<js::Pattern> = vec!["object".into()];
+            let mut params: Vec<js::Pattern> = vec![object_param.clone().into()];
             let mut values = vec![this];
             for i in 1..count {
-                params.push(format!("arg{i}").into());
-                values.push(Expr::var(format!("arg{i}")));
+                let arg = js::Name::declared(format!("arg{i}"));
+                params.push(arg.clone().into());
+                values.push(Expr::var(arg));
             }
             let name = bindings::fn_name(self.tcx, item.def_id);
             let call = Expr::call(Expr::member(dictionary.clone(), name.clone()), values);

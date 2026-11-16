@@ -803,9 +803,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let ty = self.drop_slot_of(id, index, generic_args);
                     drops.push(match closed == Some(ty) {
                         true => {
-                            let close = Expr::call(Expr::member(Expr::var("closing"), "return"), Vec::new());
+                            let closing = js::Name::declared("closing".to_string());
+                            let close = Expr::call(Expr::member(Expr::var(closing.clone()), "return"), Vec::new());
                             Some(Expr::arrow(
-                                vec!["closing".into()],
+                                vec![closing.into()],
                                 vec![StmtKind::Expr(close).at(js::Span::NONE)],
                             ))
                         }
