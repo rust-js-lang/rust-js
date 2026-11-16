@@ -512,6 +512,7 @@ impl<'tcx> Declarations<'_, 'tcx> {
     fn generics(&mut self, def_id: DefId) -> Vec<Value> {
         let erased = erasures(self.tcx, def_id);
         let callables = self.callables(def_id);
+        let boundary = self.boundary_params(def_id);
         let mut indexed = self.indexed_params(def_id);
         // Of a bound that says what a type it bounds is, where its identity
         // shows, that type, `T extends Element` (#1866).
@@ -525,6 +526,7 @@ impl<'tcx> Declarations<'_, 'tcx> {
             .filter(|param| matches!(param.kind, ty::GenericParamDefKind::Type { synthetic: false, .. }))
             .filter(|param| !erased.iter().any(|(index, _)| *index == param.index))
             .filter(|param| !callables.iter().any(|callable| callable.index == param.index))
+            .filter(|param| !boundary.iter().any(|(index, _)| *index == param.index))
             .map(|param| {
                 let mut declared = match indexed.swap_remove(&param.index) {
                     // Of a key a binding trait's projection is indexed by,
@@ -603,8 +605,64 @@ impl<'tcx> Declarations<'_, 'tcx> {
                 slot.insert(self.function_type(callable.inputs, callable.output, &[], true));
             }
         }
+        // A function's type parameter bound by `Iterator` or its extensions,
+        // which a JS caller gives: what it takes of JS, `Iterable<T>`, or
+        // an array or the iterator that knows its back or its length
+        // (`boundary`, #1994).
+        for (index, boundary) in self.boundary_params(def_id) {
+            if let indexmap::map::Entry::Vacant(slot) = erased.entry(index) {
+                slot.insert(self.boundary_ts(boundary, true));
+            }
+        }
         self.erased = outer;
         erased
+    }
+
+    /// Of a function's own type parameters, each an iterator at the JS
+    /// boundary, by its index (`boundary::of_param`); none of another item.
+    fn boundary_params(&self, def_id: DefId) -> Vec<(u32, super::iterators::boundary::BoundaryIterator<'tcx>)> {
+        if !matches!(self.tcx.def_kind(def_id), DefKind::Fn | DefKind::AssocFn) {
+            return Vec::new();
+        }
+        (self.tcx.generics_of(def_id).own_params.iter())
+            .filter(|param| matches!(param.kind, ty::GenericParamDefKind::Type { .. }))
+            .filter_map(|param| {
+                let of = ty::ParamTy::new(param.index, param.name);
+                super::iterators::boundary::of_param(self.tcx, def_id, of).map(|b| (param.index, b))
+            })
+            .collect()
+    }
+
+    /// What TypeScript names an iterator at the JS boundary: of a
+    /// parameter, `given`, what a JS caller gives, `Iterable<T>` of an
+    /// `Iterator`, else an array or the iterator `@rust-js/std` declares
+    /// that knows its back or its length; of what's given back, that
+    /// iterator, `IterableIterator<T>` of an `Iterator` (#1994, #1999).
+    fn boundary_ts(&mut self, boundary: super::iterators::boundary::BoundaryIterator<'tcx>, given: bool) -> Value {
+        let item = self.ts(boundary.item);
+        let mut knowing = Vec::new();
+        if boundary.back {
+            let name = self.imported_from(Some(std_types::PACKAGE), std_types::DOUBLE_ENDED, None);
+            knowing.push(reference(&name, vec![item.clone()]));
+        }
+        if boundary.len {
+            let name = self.imported_from(Some(std_types::PACKAGE), std_types::EXACT_SIZE, None);
+            knowing.push(reference(&name, vec![item.clone()]));
+        }
+        let knowing = match knowing.len() {
+            0 => None,
+            1 => knowing.pop(),
+            _ => Some(json!({ "kind": "intersection", "types": knowing })),
+        };
+        match (knowing, given) {
+            (None, true) => reference("Iterable", vec![item]),
+            (None, false) => reference("IterableIterator", vec![item]),
+            (Some(knowing), true) => json!({
+                "kind": "union",
+                "types": [json!({ "kind": "array", "element": item, "readonly": true }), knowing],
+            }),
+            (Some(knowing), false) => knowing,
+        }
     }
 
     /// The arguments `did`'s declaration takes of `args`: those of its
@@ -1023,6 +1081,18 @@ impl<'tcx> Declarations<'_, 'tcx> {
                     self.ts(output)
                 };
                 reference("Promise", vec![payload])
+            }
+            // An `impl Iterator` a function gives, or one of its extensions:
+            // the JS iterator it gives back, which knows its back or its
+            // length where its bounds say (`boundary::of_opaque`, #1999).
+            ty::Alias(
+                _,
+                alias @ ty::AliasTy {
+                    kind: ty::Opaque { .. },
+                    ..
+                },
+            ) if let Some(boundary) = super::iterators::boundary::of_opaque(tcx, *alias) => {
+                self.boundary_ts(boundary, false)
             }
             // An `impl Fn(A) -> R` a function gives: the function it says, as
             // a parameter's is, `cache`'s `(...args: unknown[]) => unknown`.

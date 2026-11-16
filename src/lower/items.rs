@@ -357,6 +357,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .map(|&(_, index)| index)
                     .collect(),
                 js: Default::default(),
+                returns_js: false,
             }
         });
         (self.krate.given.js_given.called(&self.recognition(), &params, (callee, args))).map_err(|()| {

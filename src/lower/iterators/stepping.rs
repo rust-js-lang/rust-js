@@ -569,7 +569,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `held`, an iterator of type `given`, made a JS iterator that knows its
     /// back, `back`, and its length, `len`, where it's asked them.
-    fn as_knowing(&mut self, held: Expr, given: ty::Ty<'tcx>, (back, len): (bool, bool), span: Span) -> R<Expr> {
+    pub(super) fn as_knowing(
+        &mut self,
+        held: Expr,
+        given: ty::Ty<'tcx>,
+        (back, len): (bool, bool),
+        span: Span,
+    ) -> R<Expr> {
         match len {
             true => self.as_exact_size(held, given, back, span),
             false => self.as_double_ended(held, given, span),

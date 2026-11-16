@@ -315,4 +315,12 @@ export const mutations: Mutation[] = [
       "^two crates: (rc_two_pointees_of_one_parameter)$"
     ]
   },
+  {
+    name: "library-returns-js-unread",
+    breaks: "a consumer's Rust call of a library's function its contract says gives back the JS iterator calls its export, stepping that iterator as what it reveals, which aborts (#1999)",
+    file: "src/lower/instances/needed.rs",
+    find: "        || item.is_some_and(|item| item.calling.has(crate::library::ItemFact::ReturnsJs))\n",
+    replace: "",
+    tests: ["test/crates.test.ts", "-t", "impl_iterator_of_a_library"],
+  },
 ];

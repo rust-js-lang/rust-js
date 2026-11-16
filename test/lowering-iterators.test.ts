@@ -1219,3 +1219,56 @@ pub fn inside(v: Vec<u32>) -> (Option<u32>, Vec<u32>, usize) {
   expect([lib.lastOdd([1, 2, 3, 4]), lib.lastOdd([2, 4]), lib.ends([1, 2, 5, 9, 20]), lib.left([7, 8, 9]), lib.left([])]).toEqual([3, undefined, [19, 7], 3, 0]);
   expect(lib.inside([1, 2, 3, 4])).toEqual([3, [3, 1], 3]);
 });
+
+// An exported function's `impl Iterator` given back to a JS caller: the
+// JS iterator that knows its back and its length where its bounds say,
+// `$iterator` of a range, `$knowing` of std's compiled `Filter`, spread by
+// `[...it]`, its `back()` and `len()` public API, and given to another
+// exported function's `DoubleEndedIterator` or `ExactSizeIterator` as it is.
+// The crate's own Rust calls the copy that gives what it reveals, a range's
+// `{ start, end }`, `uptoRevealed` (ADR 1169, #1999).
+test("an exported function's impl Iterator is given back to JS as the iterator it says", async () => {
+  const dir = fixture("js-caller-returned-iterators");
+  writeFileSync(join(dir, "lib.rs"), `pub fn upto(n: u32) -> impl DoubleEndedIterator<Item = u32> + ExactSizeIterator {
+    0..n
+}
+
+pub fn evens(v: Vec<u32>) -> impl DoubleEndedIterator<Item = u32> {
+    v.into_iter().filter(|x| x % 2 == 0)
+}
+
+pub fn counted(n: u32) -> impl Iterator<Item = u32> {
+    0..n
+}
+
+pub fn last_of(items: impl DoubleEndedIterator<Item = u32>) -> Option<u32> {
+    let mut items = items;
+    items.next_back()
+}
+
+pub fn left(items: impl ExactSizeIterator<Item = u32>) -> usize {
+    items.len()
+}
+
+pub fn total<I: Iterator<Item = u32>>(items: I) -> u32 {
+    items.sum()
+}
+
+pub fn inside() -> (Option<u32>, usize, u32) {
+    (last_of(upto(3)), left(upto(5)), total(counted(4)))
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("export function upto(n) {\n  return $iterator({ start: 0, end: n }, $rangeNext, false, $rangeNextBack, $rangeLen);\n}");
+  expect(js).toContain("function uptoRevealed(n) {\n  return { start: 0, end: n };\n}");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.lastOf(lib.upto(4)), [...lib.upto(4)], lib.lastOf(lib.evens([1, 2, 3, 4])), lib.left(lib.upto(4))]).toEqual([3, [0, 1, 2, 3], 4, 4]);
+  expect([lib.total(lib.upto(4)), [...lib.counted(3)], lib.total(lib.counted(3))]).toEqual([6, [0, 1, 2], 3]);
+  // A closure lowered inside it gives back what it gives, its filter's `bool`.
+  expect([[...lib.evens([1, 2, 3, 4])], lib.evens([1, 2, 3, 4]).back().value]).toEqual([[2, 4], 4]);
+  const made = lib.upto(5);
+  made.next();
+  expect([made.back().value, made.len(), [...made]]).toEqual([4, 3, [1, 2, 3]]);
+  expect(lib.inside()).toEqual([2, 5, 6]);
+});

@@ -387,6 +387,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     (None, true) => None,
                     (None, false) => Some(self.read_local(state, ret, &mut out)?),
                 };
+                // Of a function JS calls that gives back an `impl Iterator`,
+                // its own JS: the JS iterator a JS caller steps; the copy the
+                // crate's own Rust calls gives what it reveals (#1999). Its own
+                // body's alone: a closure's, lowered inside it with its item,
+                // `filter(|x| x % 2 == 1)`'s, gives back what it gives.
+                let value = match value {
+                    Some(value)
+                        if state.body.source.def_id() == self.item
+                            && (self.krate.given.js_given)
+                                .params(self.tcx, self.item, self.copy)
+                                .returns_js =>
+                    {
+                        Some(self.returned_to_js(value, span)?)
+                    }
+                    value => value,
+                };
                 self.flush(state, &mut out)?;
                 // Of a `fn` a macro wrote around its block, `js::export_default!
                 // { fn .. }`'s, where its block ends, as one written alone's.

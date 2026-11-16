@@ -83,6 +83,7 @@ pub(crate) enum ContractField {
     ItemFactThis,
     ItemFactLazy,
     ItemFactVariable,
+    ItemFactReturnsJs,
     CallingOwnedByReturn,
     CallingQuietByReturn,
     CallingWrittenArguments,
@@ -273,6 +274,11 @@ impl ContractField {
                 "a thread-local made where it's first used, read by calling it",
             ),
             ItemFactVariable => ("ItemFact::Variable", Summary, "its module's variable, read by its name"),
+            ItemFactReturnsJs => (
+                "ItemFact::ReturnsJs",
+                Summary,
+                "its JS gives back the JS iterator of its `impl Iterator`: a consumer's Rust call calls a copy of its own (#1999)",
+            ),
             CallingOwnedByReturn => (
                 "Calling.owned_by_return",
                 Summary,
@@ -683,6 +689,7 @@ variants! {
     Rest => ItemFactRest,
     Lazy => ItemFactLazy,
     Variable => ItemFactVariable,
+    ReturnsJs => ItemFactReturnsJs,
 }
 
 variants! {

@@ -760,4 +760,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: given1840,
   },
+  {
+    name: "returned-iterator-of-a-closure",
+    breaks: "a closure lowered inside a library's function giving back an `impl Iterator` has its own return converted too, `filter(|x| x % 2 == 1)`'s `bool` made a JS iterator, always truthy, so `[...Bag.odds(bag)]` is every item (#1999)",
+    file: "src/lower/mir/structure.rs",
+    find: "                        if state.body.source.def_id() == self.item\n                            && (self.krate.given.js_given)\n",
+    replace: "                        if (self.krate.given.js_given)\n",
+    tests: ["test/crates-iterators.test.ts"],
+  },
 ];

@@ -83,6 +83,10 @@ export const iteratorPaths = [
   "src/lower/analysis/hint_asked.rs",
   "src/lower/body_queries.rs",
   "src/lower/body_queries/in_place.rs",
+  // What an iterator at the JS boundary is, its readers' (ADR 1169).
+  "src/lower/declarations.rs",
+  "src/lower/analysis/js_given.rs",
+  "src/lower/mir/structure.rs",
   "src/runtime.rs",
   "src/runtime/**",
   "std/runtime.js",

@@ -42,6 +42,13 @@ pub(crate) const OPAQUE: &[Opaque] = &[
     },
 ];
 
+/// The iterators `@rust-js/std` declares structural, by the trait each
+/// mirrors: a JS iterator that knows its back, `back()`, or its length,
+/// `len()`, as an exported function gives one back and takes one (ADRs
+/// 0429, 0456, #1999). `back()` and `len()` are public API.
+pub(crate) const DOUBLE_ENDED: &str = "DoubleEndedIterator";
+pub(crate) const EXACT_SIZE: &str = "ExactSizeIterator";
+
 /// The opaque std type `did` is, if it's one.
 pub(in crate::lower) fn opaque(tcx: TyCtxt<'_>, did: DefId) -> Option<&'static Opaque> {
     let lock = of_std_crate(tcx, did, StdCrate::Std);
@@ -63,5 +70,11 @@ pub(crate) fn module() -> String {
             opaque.doc, opaque.name
         ));
     }
+    out.push_str(&format!(
+        "\n/** A `DoubleEndedIterator`: a JS iterator that knows its back, `back()` its last item, as `next()` its first (#1999). */\nexport interface {DOUBLE_ENDED}<T> extends IterableIterator<T> {{\n  back(): IteratorResult<T>;\n}}\n"
+    ));
+    out.push_str(&format!(
+        "\n/** An `ExactSizeIterator`: a JS iterator that knows its length, `len()` how many items it has left (#1999). */\nexport interface {EXACT_SIZE}<T> extends IterableIterator<T> {{\n  len(): number;\n}}\n"
+    ));
     out
 }

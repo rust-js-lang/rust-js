@@ -12,3 +12,13 @@ declare const lazyLock: unique symbol;
 export interface LazyLock<T> {
   readonly [lazyLock]: T;
 }
+
+/** A `DoubleEndedIterator`: a JS iterator that knows its back, `back()` its last item, as `next()` its first (#1999). */
+export interface DoubleEndedIterator<T> extends IterableIterator<T> {
+  back(): IteratorResult<T>;
+}
+
+/** An `ExactSizeIterator`: a JS iterator that knows its length, `len()` how many items it has left (#1999). */
+export interface ExactSizeIterator<T> extends IterableIterator<T> {
+  len(): number;
+}

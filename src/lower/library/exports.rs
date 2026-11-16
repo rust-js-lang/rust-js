@@ -111,6 +111,7 @@ pub(in crate::lower) fn exports<'tcx>(
                             .is_some_and(|local| contracts.lazy_locals.contains(&local)),
                     ),
                     (ItemFact::Variable, variables.contains(&id)),
+                    (ItemFact::ReturnsJs, contracts.given.js_given.main(tcx, id).returns_js),
                 ]
                 .into_iter()
                 .filter_map(|(fact, holds)| holds.then_some(fact))

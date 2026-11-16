@@ -13,6 +13,7 @@ it writes, without its header comment and source-map line.
 - [Functions](#functions)
 - [Names](#names)
 - [Parameters and results](#parameters-and-results)
+- [Iterators](#iterators)
 - [Optional parameters](#optional-parameters)
 - [Rest parameters](#rest-parameters)
 - [Structs, enums and their methods](#structs-enums-and-their-methods)
@@ -356,6 +357,95 @@ console.log(await fetchCount()); // 1
   A library's takes one only where its own crate's calls give one, so its
   JS is its program's; another crate whose call needs one compiles its
   own of the function ([ADR 0914](../../decisions/0914-a-librarys-generic-function-is-its-programs.md)).
+
+## Iterators
+
+A function JS calls takes and gives iterators as JS has them
+([ADR 1169](../../decisions/1169-an-iterator-at-the-js-boundary.md)):
+
+- **A parameter of `Iterator`** takes any of JS's iterables: an array, a
+  `Set`, a generator.
+- **A parameter of `DoubleEndedIterator` or `ExactSizeIterator`** takes an
+  array, or the iterator another such function gives back, which knows its
+  back or its length.
+- **An `impl Iterator` it gives back** is a JS iterator, spread by
+  `[...it]`. Of `DoubleEndedIterator` it knows its back, `back()` its last
+  item, as `next()` its first; of `ExactSizeIterator` its length, `len()`
+  how many are left. `back()` and `len()` are public API, which
+  `@rust-js/std` declares.
+
+```rust
+pub fn upto(n: u32) -> impl DoubleEndedIterator<Item = u32> + ExactSizeIterator {
+    0..n
+}
+
+pub fn last_of(items: impl DoubleEndedIterator<Item = u32>) -> Option<u32> {
+    let mut items = items;
+    items.next_back()
+}
+
+pub fn left(items: impl ExactSizeIterator<Item = u32>) -> usize {
+    items.len()
+}
+
+pub fn total<I: Iterator<Item = u32>>(items: I) -> u32 {
+    items.sum()
+}
+```
+
+```js
+import { $iter, $iterator, $nextBack, $rangeLen, $rangeNext, $rangeNextBack } from "@rust-js/std";
+
+export function upto(n) {
+  return $iterator({ start: 0, end: n }, $rangeNext, false, $rangeNextBack, $rangeLen);
+}
+
+export function lastOf(items) {
+  items = Array.isArray(items) ? $iter(items) : items;
+  return $nextBack(items) ?? undefined;
+}
+
+export function left(items) {
+  items = Array.isArray(items) ? $iter(items) : items;
+  return items.len();
+}
+
+export function total(items) {
+  return Iterator.from(items).reduce((a, b) => (a + b) >>> 0, 0);
+}
+```
+
+```ts
+import type { DoubleEndedIterator, ExactSizeIterator } from "@rust-js/std";
+
+export function upto(n: number): DoubleEndedIterator<number> & ExactSizeIterator<number>;
+
+export function lastOf(items: readonly number[] | DoubleEndedIterator<number>): number | null | undefined;
+
+export function left(items: readonly number[] | ExactSizeIterator<number>): number;
+
+export function total(items: Iterable<number>): number;
+```
+
+A JS caller of these:
+
+```js
+import { lastOf, left, total, upto } from "./lib.js";
+
+console.log([...upto(4)]); // [0, 1, 2, 3]
+console.log(lastOf(upto(4))); // 3
+console.log(lastOf([5, 6, 7])); // 7
+console.log(left(upto(4))); // 4
+console.log(total(new Set([1, 2, 3]))); // 6
+
+const it = upto(5);
+it.next();
+console.log(it.back().value, it.len()); // 4 3
+```
+
+The crate's own Rust calls a copy of `upto` that gives what its body
+does, a range, so only a JS caller gets the JS iterator; so does another
+crate's Rust that calls it, a library's, compiling its own copy.
 
 ## Optional parameters
 

@@ -756,7 +756,11 @@ export function $shift(items) {
 // crate's impl's, std's consumers call them (#162); and its own `rfold` and
 // `nth_back`, which std's consumers and adapters stepped from the back call
 // (#220), and `try_rfold`, std's compiled struct's, a `Take`'s, which what
-// folds it from its back asks (ADR 0930).
+// folds it from its back asks (ADR 0930). An exported function's `impl
+// Iterator` is given back to JS as one, which knows its back and its length
+// where its bounds say: its `back()` and `len()`, beside `next()`, are public
+// API, `@rust-js/std`'s `DoubleEndedIterator` and `ExactSizeIterator`
+// (ADR 1169, #1999).
 export function $iterator(iterator, next, boxed = false, nextBack, len, hint, fold, nth, last, rfold, nthBack, tryRfold, count) {
   // A range's, stepped by its own step, has std's `Range::nth` (#231), and
   // from its back std's `Range::nth_back`, which a `rev()` of it is asked
@@ -836,7 +840,9 @@ export function $iterator(iterator, next, boxed = false, nextBack, len, hint, fo
 
 // `it`, a compiled std iterator's struct (ADR 0561), `$stdIterator`'s,
 // given its back and length, a use site's, and its compiled `rfold` and
-// `nth_back`, which pass the crate's own on (#224).
+// `nth_back`, which pass the crate's own on (#224). Given back to JS by an
+// exported function, its `back()` and `len()` are public API, as
+// `$iterator`'s are (ADR 1169, #1999).
 export function $knowing(it, back, len, rfold, nthBack, tryRfold) {
   let source = it;
   while (source.knowing === undefined && source.iter !== undefined) source = source.iter;

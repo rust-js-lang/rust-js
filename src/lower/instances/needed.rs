@@ -264,6 +264,9 @@ fn gives_more<'tcx>(
             || (clones && cloned.contains(&index) && !takes(index, ParamFact::Clone))
     }) || items_given_drops(calls, (caller, callee, args), &takes)
         || counts_otherwise(calls, (caller, callee, args), &takes)
+        // Its JS gives back the JS iterator of its `impl Iterator`, where the
+        // crate's Rust reads what it reveals (ADR 1169, #1999).
+        || item.is_some_and(|item| item.calling.has(crate::library::ItemFact::ReturnsJs))
         || super::failing::fails_given(calls.tcx, calls.foreign, calls.failing, (caller, callee, args))
 }
 

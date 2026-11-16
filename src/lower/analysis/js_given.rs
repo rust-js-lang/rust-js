@@ -30,6 +30,11 @@ use crate::lower::recognition::Recognition;
 pub(in crate::lower) struct Params {
     pub unboxed: BTreeSet<u32>,
     pub js: BTreeSet<u32>,
+    /// Whether it gives back its `impl Iterator` as the JS iterator a JS
+    /// caller steps, its own JS's of one JS calls; never a copy the
+    /// crate's own Rust calls, which reads the type it reveals, a range's
+    /// `{ start, end }` (`boundary`, #1999).
+    pub returns_js: bool,
 }
 
 /// Each function's lowerings: the one its module names it by, its JS's,
@@ -80,7 +85,7 @@ impl JsGiven {
                         id,
                         crate::lower::instances::Fact::CopiedApart(recognition.foreign),
                     )
-                    && !super::mutation::type_params(tcx, id).is_empty()
+                    && (!super::mutation::type_params(tcx, id).is_empty() || gives_js_iterator(tcx, recognition, id))
                     && copyable(id)
             })
             .collect();
@@ -110,12 +115,18 @@ impl JsGiven {
                 // Named for what it does apart from its own JS: of one JS
                 // calls, the copy Rust's calls box in; of another, the one
                 // JS's values reach.
+                // Of one only its result sets apart, the copy that gives
+                // Rust what it reveals (#1999).
+                let main = given.main(tcx, callee);
                 let named = name(
                     callee,
-                    if given.facing.contains(&callee) {
-                        "Boxed"
-                    } else {
-                        "Unboxed"
+                    match (
+                        given.facing.contains(&callee),
+                        needed.unboxed == main.unboxed && needed.js == main.js,
+                    ) {
+                        (true, true) => "Revealed",
+                        (true, false) => "Boxed",
+                        (false, _) => "Unboxed",
                     },
                 );
                 given.copies.entry(callee).or_default().push((needed.clone(), named));
@@ -134,6 +145,7 @@ impl JsGiven {
             true => Params {
                 unboxed: all.clone(),
                 js: all,
+                returns_js: returns_iterator(tcx, id),
             },
             false => Params {
                 unboxed: all
@@ -141,6 +153,7 @@ impl JsGiven {
                     .filter(|&index| self.unboxed.contains(&(id, index)))
                     .collect(),
                 js: BTreeSet::new(),
+                returns_js: false,
             },
         }
     }
@@ -209,14 +222,20 @@ impl JsGiven {
                 Given::Defined => {}
             }
         }
+        // The crate's own Rust reads what it reveals, never the JS iterator
+        // its own JS gives back of an `impl Iterator` (#1999).
         let main = self.main(tcx, callee);
-        if main.unboxed.is_disjoint(&nullish) && js.is_subset(&main.js) {
+        if main.unboxed.is_disjoint(&nullish) && js.is_subset(&main.js) && !main.returns_js {
             return None;
         }
         let unboxed = (super::mutation::type_params(tcx, callee).into_iter())
             .filter(|&index| self.unboxed.contains(&(callee, index)) || js.contains(&index))
             .collect();
-        Some(Params { unboxed, js })
+        Some(Params {
+            unboxed,
+            js,
+            returns_js: false,
+        })
     }
 }
 
@@ -563,4 +582,19 @@ fn made_and_returned<'tcx>(
         }
     }
     true
+}
+
+/// Whether `id`, a function JS calls, gives back an `impl Iterator`, or
+/// one of its extensions, which its own JS converts to the JS iterator at
+/// the boundary (`boundary::Returned::converts`, #1999).
+fn returns_iterator(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    crate::lower::iterators::boundary::returned(tcx, id).is_some_and(|returned| returned.converts(tcx))
+}
+
+/// Whether `id` is a function JS calls that gives back an `impl Iterator`
+/// (`returns_iterator`), routed for the copy the crate's own Rust calls.
+fn gives_js_iterator(tcx: TyCtxt<'_>, recognition: &Recognition<'_, '_>, id: DefId) -> bool {
+    matches!(tcx.def_kind(id), DefKind::Fn | DefKind::AssocFn)
+        && js_facing(tcx, recognition.foreign, id)
+        && returns_iterator(tcx, id)
 }

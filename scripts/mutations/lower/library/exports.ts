@@ -416,4 +416,12 @@ export const mutations: Mutation[] = [
     replace: "        rustc_hir::def::DefKind::Trait => false,\n",
     tests: ["test/declarations-libraries.test.ts", "-t", "a dyn of a library"],
   },
+  {
+    name: "library-returns-js-unwritten",
+    breaks: "a library's function whose JS gives back the JS iterator of its `impl Iterator` isn't said so in its contract, so its consumer's Rust calls its export and steps that iterator as what it reveals, `queueIterator_next` of an `$iterator`, which aborts (#1999)",
+    file: "src/lower/library/exports.rs",
+    find: "                    (ItemFact::ReturnsJs, contracts.given.js_given.main(tcx, id).returns_js),\n",
+    replace: "                    (ItemFact::ReturnsJs, false),\n",
+    tests: ["test/crates.test.ts", "-t", "impl_iterator_of_a_library"],
+  },
 ];

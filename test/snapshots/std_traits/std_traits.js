@@ -603,6 +603,10 @@ export function evensBelow(n) {
 }
 
 export function countdown(n) {
+  return $iterator({ n }, countdownIterator_next);
+}
+
+function countdownRevealed(n) {
   return { n };
 }
 
@@ -631,11 +635,11 @@ export function looped(items) {
 export function genericIterators(n) {
   return [
     total(evensBelow(n)),
-    middle($iterator(countdown(n), countdownIterator_next), 2),
+    middle($iterator(countdownRevealed(n), countdownIterator_next), 2),
     middle(evensBelow((n * 2) >>> 0), 3),
     looped([n, 2, 3]),
     total($iterator({ n }, countdownIterator_next)),
-    $iterator(countdown(n), countdownIterator_next)
+    $iterator(countdownRevealed(n), countdownIterator_next)
       .map((x) => (x + 1) >>> 0)
       .reduce((a, b) => (a + b) >>> 0, 0),
   ];

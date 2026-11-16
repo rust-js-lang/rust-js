@@ -120,7 +120,9 @@ pub use dependencies::Dependencies;
 /// 41: `makes_fmt_dyns`, a dictionary the lowering left without it (#1797).
 /// 42: a type parameter's `unread`, the bounds it's given no dictionary of
 /// (#1915).
-pub const VERSION: u32 = 42;
+/// 43: `ReturnsJs`, a function whose JS gives back the JS iterator of its
+/// `impl Iterator`, which a consumer's Rust call doesn't read (#1999).
+pub const VERSION: u32 = 43;
 
 /// A function, method or impl method another crate can reach.
 #[derive(Clone, Serialize, Deserialize)]
@@ -220,6 +222,10 @@ pub enum ItemFact {
     /// hasBadMapPolyfill` (ADR 0270, amended), or a `static mut`, `export
     /// let LINES` (ADR 0096, amended).
     Variable,
+    /// It gives back an `impl Iterator` its JS converts to the JS iterator
+    /// a JS caller steps (ADR 1169, #1999): a consumer's Rust call, which
+    /// reads what it reveals, calls a copy of its own.
+    ReturnsJs,
 }
 
 impl Calling {

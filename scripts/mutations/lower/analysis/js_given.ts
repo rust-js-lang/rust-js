@@ -7,7 +7,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a call of a function JS calls that gives it `()` calls its own JS, which unboxes, so `relay(()).is_some()` is `false`",
     file: "src/lower/analysis/js_given.rs",
-    find: "        if main.unboxed.is_disjoint(&nullish) && js.is_subset(&main.js) {",
+    find: "        if main.unboxed.is_disjoint(&nullish) && js.is_subset(&main.js) && !main.returns_js {",
     replace: "        if true {",
     tests: ["test/corpus.test.ts", "-t", "js_given_copies"],
   },
@@ -88,5 +88,29 @@ export const mutations: Mutation[] = [
     find: "        && (destinations.iter()).all(|&d| read_by_flatten(recognition, body, d));\n",
     replace: "        ;\n",
     tests: ["test/namespaces.test.ts", "-t", "by its name is its library"],
+  },
+  {
+    name: "returned-iterator-unrouted",
+    breaks: "a JS-facing function giving back an `impl Iterator` isn't routed, so its own JS gives a range's `{ start, end }`, which `[...upto(4)]` can't spread (#1999)",
+    file: "src/lower/analysis/js_given.rs",
+    find: "                    && (!super::mutation::type_params(tcx, id).is_empty() || gives_js_iterator(tcx, recognition, id))\n",
+    replace: "                    && !super::mutation::type_params(tcx, id).is_empty()\n",
+    tests: ["test/lowering-iterators.test.ts", "-t", "given back to JS"],
+  },
+  {
+    name: "returned-iterator-not-js",
+    breaks: "a JS-facing function's own JS gives back what its `impl Iterator` reveals, not the JS iterator a JS caller steps (#1999)",
+    file: "src/lower/analysis/js_given.rs",
+    find: "                returns_js: returns_iterator(tcx, id),\n",
+    replace: "                returns_js: false,\n",
+    tests: ["test/lowering-iterators.test.ts", "-t", "given back to JS"],
+  },
+  {
+    name: "returned-iterator-no-rust-copy",
+    breaks: "the crate's own Rust calls a JS-facing function's own JS, which gives back the JS iterator, where it reads what the `impl Iterator` reveals: no `uptoRevealed` (#1999)",
+    file: "src/lower/analysis/js_given.rs",
+    find: "        if main.unboxed.is_disjoint(&nullish) && js.is_subset(&main.js) && !main.returns_js {\n",
+    replace: "        if main.unboxed.is_disjoint(&nullish) && js.is_subset(&main.js) {\n",
+    tests: ["test/lowering-iterators.test.ts", "-t", "given back to JS"],
   },
 ];

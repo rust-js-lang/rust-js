@@ -1057,4 +1057,28 @@ export const mutations: Mutation[] = [
     replace: "            && (from.is_some() || true)\n",
     tests: ["test/declarations-bounds.test.ts", "-t", "an IsA bound is TypeScript's constraint"],
   },
+  {
+    name: "boundary-param-undeclared",
+    breaks: "a parameter bound by `Iterator` or its extensions isn't declared what a JS caller gives: `impl` ones print `unknown` (#1994)",
+    file: "src/lower/declarations.rs",
+    find: "        for (index, boundary) in self.boundary_params(def_id) {\n",
+    replace: "        for (index, boundary) in self.boundary_params(def_id).into_iter().filter(|_| false) {\n",
+    tests: ["test/declarations-iterators.test.ts"],
+  },
+  {
+    name: "boundary-param-still-generic",
+    breaks: "a named `I: Iterator` parameter, declared what a JS caller gives, stays a type parameter too, `total<I>(items: Iterable<number>)` (#1994)",
+    file: "src/lower/declarations.rs",
+    find: "            .filter(|param| !boundary.iter().any(|(index, _)| *index == param.index))\n",
+    replace: "",
+    tests: ["test/declarations-iterators.test.ts"],
+  },
+  {
+    name: "boundary-returned-undeclared",
+    breaks: "an `impl Iterator` a function gives back is declared `any`, not the iterator it gives JS (#1999)",
+    file: "src/lower/declarations.rs",
+    find: "            ) if let Some(boundary) = super::iterators::boundary::of_opaque(tcx, *alias) => {\n",
+    replace: "            ) if let Some(boundary) = super::iterators::boundary::of_opaque(tcx, *alias).filter(|_| false) => {\n",
+    tests: ["test/declarations-iterators.test.ts"],
+  },
 ];

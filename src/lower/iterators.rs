@@ -3,6 +3,7 @@
 //! (ADR 0139), and what a chain that owns its items drops (ADR 0098).
 
 mod back_facts;
+pub(in crate::lower) mod boundary;
 mod clones;
 mod compiled_steps;
 mod dictionaries;
