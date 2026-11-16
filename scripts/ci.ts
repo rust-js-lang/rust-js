@@ -61,7 +61,7 @@ export function checkedSince(runs: Run[], branch: string, mutationsPassed: (run:
 /** What a run's mutation shards found, each `mutation-results-<k>`'s, of
  * the commit it ran at (`mutations.ts`'s `Results`), and how many shards
  * ran, each completed, passed or not. */
-export type RunResults = { run: Run; shards: number; completed: number; results: { commit: string; results: Record<string, string> }[] };
+export type RunResults = { run: Run; shards: number; completed: number; results: { commit: string; results: Record<string, string> }[]; latent?: string[] };
 
 /** The last check of `main` this one's mutations follow: the newest whose
  * every mutation shard completed and kept what it found, each of that run's
@@ -73,10 +73,15 @@ export type RunResults = { run: Run; shards: number; completed: number; results:
  * last check whose mutations passed is the base, as before. The nightly
  * runs every mutation, whatever this says. */
 export function resultsBase(newestFirst: RunResults[]): { since: string; retry: string[] } | undefined {
-  for (const { run, shards, completed, results } of newestFirst) {
+  for (const { run, shards, completed, results, latent = [] } of newestFirst) {
     if (run.status !== "completed" || !run.headSha || shards === 0 || completed !== shards || results.length !== shards) continue;
     if (!results.every((r) => r.commit === run.headSha)) continue;
-    const retry = results.flatMap((r) => Object.entries(r.results).filter(([, result]) => result !== "caught").map(([name]) => name));
+    // Not one it judged latent, surviving at its base too: no push's, filed
+    // in the survivors' issue, and the nightly runs it. Retried, the 6–7 of
+    // the crate tests held a shard up in every check, 40% of a check's
+    // runner-minutes the mutations'. A push that changes its site or its
+    // tests still runs it, `--changed`'s, whatever the retry list says.
+    const retry = results.flatMap((r) => Object.entries(r.results).filter(([name, result]) => result !== "caught" && !latent.includes(name)).map(([name]) => name));
     return { since: run.headSha, retry: [...new Set(retry)].sort() };
   }
   return undefined;
@@ -100,17 +105,22 @@ function runResults(limit = 6, looked = 30): RunResults[] {
     rmSync(dir, { recursive: true, force: true });
     mkdirSync(dir, { recursive: true });
     const results: RunResults["results"] = [];
+    const latent: string[] = [];
     // Its artifacts first, as a download of none asks again, three times.
     const kept = () =>
       (JSON.parse(gh(["api", `repos/{owner}/{repo}/actions/runs/${run.databaseId}/artifacts?per_page=100`, "--jq", "[.artifacts[].name]"])) as string[])
         .some((name) => name.startsWith("mutation-results-"));
     if (shardJobs.length > 0 && completed === shardJobs.length && kept()) {
       try {
-        gh(["run", "download", String(run.databaseId), "--pattern=mutation-results-*", `--dir=${dir}`]);
-        for (const shard of readdirSync(dir)) results.push(JSON.parse(readFileSync(join(dir, shard, "results.json"), "utf8")));
+        gh(["run", "download", String(run.databaseId), "--pattern=mutation-results-*", "--pattern=mutation-latent-*", `--dir=${dir}`]);
+        for (const shard of readdirSync(dir).filter((name) => name.startsWith("mutation-results-"))) results.push(JSON.parse(readFileSync(join(dir, shard, "results.json"), "utf8")));
+        for (const shard of readdirSync(dir).filter((name) => name.startsWith("mutation-latent-"))) {
+          const kept: { latent: { name: string }[] } = JSON.parse(readFileSync(join(dir, shard, "latent.json"), "utf8"));
+          latent.push(...kept.latent.map(({ name }) => name));
+        }
       } catch {}
     }
-    out.push({ run, shards: shardJobs.length, completed, results });
+    out.push({ run, shards: shardJobs.length, completed, results, latent });
     if (resultsBase(out)) break;
   }
   return out;

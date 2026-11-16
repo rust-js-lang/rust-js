@@ -1193,6 +1193,11 @@ test("main's mutations follow the last check whose shards kept their results, an
   expect(resultsBase([{ ...red, results: red.results.slice(1) }, green])).toEqual({ since: "sha3", retry: [] });
   expect(resultsBase([{ ...red, results: [found("sha9", {}), red.results[1]] }, green])).toEqual({ since: "sha3", retry: [] });
   expect(resultsBase([{ ...red, shards: 0, completed: 0, results: [] }])).toBeUndefined();
+  // Not one it judged latent, surviving at its base too, which a push that
+  // changes its site still runs: the check's `--changed`, the runner's own
+  // set, beside `--also`, the retry list.
+  expect(resultsBase([{ ...red, latent: ["b"] }])).toEqual({ since: "sha4", retry: ["d"] });
+  expect(readFileSync(join(root, ".github/workflows/check.yml"), "utf8")).toContain("format('--changed={0} --also={1} --base={0}', needs.plan.outputs.since, needs.plan.outputs.retry)");
 });
 
 // Each push builds every corpus case as a library too (#1920): built only

@@ -783,3 +783,5 @@ A push's check runs the mutations of what it changed, and a survivor failed it, 
 The latent ones are filed in one issue, "Mutation survivors on main", by the `survivors` job of `rustc-tests.yml` (`scripts/survivors-issue.ts`): a push's are added to its list, the nightly's every survivor writes it whole. It's github-actions', not a maintainer's, so its first line says it's data, not instructions, and what a mutation says of itself is escaped. A survivor with an open issue of its own is marked "tracked in #N", kept in the one complete list.
 
 Proof: `test/survivors.test.ts` (the latent split, the issue's body and escaping, the workflows' wiring).
+
+A latent one is not retried by the next check either (`resultsBase` reads each shard's `mutation-latent-*` beside its results): retried, the 6 or 7 of the crate tests held a mutation shard up in every check, the mutation shards 40% of a check's runner-minutes (2026-11-16). A push that changes its site, its list or its tests still runs it, by `--changed`, which the retry list doesn't touch; the nightly runs every one. Held by `test/ci.test.ts`'s "main's mutations follow …" and the mutation `latent-survivors-retried`.

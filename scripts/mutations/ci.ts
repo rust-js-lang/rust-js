@@ -34,4 +34,12 @@ export const mutations: Mutation[] = [
     replace: "/^mutation-timings-\\d+$/.test(a.name)",
     tests: ["test/ci.test.ts", "-t", "newest nightly that kept its mutations"],
   },
+  {
+    name: "latent-survivors-retried",
+    breaks: "a check retries the mutations the last one judged latent, surviving at its base too, which hold a mutation shard up in every check though no push of theirs changes them",
+    file: "scripts/ci.ts",
+    find: 'result !== "caught" && !latent.includes(name)',
+    replace: 'result !== "caught"',
+    tests: ["test/ci.test.ts", "-t", "main's mutations follow"],
+  },
 ];
