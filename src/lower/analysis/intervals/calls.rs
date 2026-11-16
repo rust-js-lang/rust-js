@@ -69,6 +69,17 @@ impl<'tcx> Walk<'_, 'tcx> {
                 Some(SliceLength::Push) => {
                     if let Some(&root) = state.lending.get(&given) {
                         after.pushed.insert(root);
+                        // Its length one more, which never wraps: what was
+                        // at most it is below it, `v[n]` of `n = v.len()`
+                        // before the push (ADR 1168, #1948).
+                        let at_most: Vec<Local> = (state.below.iter())
+                            .filter(|&&(_, y, _)| y == Term::Len(root))
+                            .map(|&(x, _, _)| x)
+                            .chain((state.lens.iter()).filter(|&(_, &of)| of == root).map(|(&n, _)| n))
+                            .collect();
+                        for x in at_most {
+                            after.related(x, Term::Len(root), true);
+                        }
                     }
                 }
                 Some(SliceLength::Len) if state.pushed.contains(&given) => {

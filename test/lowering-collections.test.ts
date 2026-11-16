@@ -1127,8 +1127,9 @@ pub fn each(width: usize, height: usize) -> f64 {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("board[r][c] = board[r - 1][c] + board[r][c - 1];");
-  expect(js.match(/\$index\(board\[r\], c\)/g)?.length).toBe(4);
-  expect(js).toContain("sum += $index($index(board, r), c);");
+  // And `added`'s, whose `board[r]` under `r <= height` is below the
+  // length its `push` made one more (ADR 1168, #1948).
+  expect(js.match(/\$index\(board\[r\], c\)/g)?.length).toBe(5);
   // Each row at least 2 long, of a count of 2, till one's cleared.
   // A table's row as long as its row count: MIR doesn't prove it since it
   // decides call indexes (#1949).

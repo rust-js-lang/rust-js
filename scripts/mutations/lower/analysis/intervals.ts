@@ -306,4 +306,20 @@ export const mutations: Mutation[] = [
     replace: "            && let Rvalue::Ref(_, mir::BorrowKind::Mut { .. }, of) | Rvalue::RawPtr(_, of) = &assign.1\n            && false && self.written_through_a_pointer(of)\n",
     tests: ["test/corpus.test.ts", "-t", "^vec_lent_to_code_that_keeps_a_pointer.rs$"],
   },
+  {
+    name: "equal-length-unrelated",
+    breaks: "a held length tested equal to a length again isn't known at most it, so `properties[prev_length - 1]` keeps its check (ADR 1168, #1948)",
+    file: "src/lower/analysis/intervals.rs",
+    find: "        if op == BinOp::Eq\n            && let (Value::Local(a), Value::Local(b)) = (c.a, c.b)\n",
+    replace: "        if op == BinOp::Eq\n            && false\n            && let (Value::Local(a), Value::Local(b)) = (c.a, c.b)\n",
+    tests: ["test/lowering-integer-ranges.test.ts", "-t", "a length held in a variable"],
+  },
+  {
+    name: "equal-length-below",
+    breaks: "a local tested equal to a length is taken below it, so `v[n]` under `n == v.len()` reads past the end, `undefined` where Rust panics (ADR 1168, #1948)",
+    file: "src/lower/analysis/intervals.rs",
+    find: "                if let Some(y) = term(Value::Local(y), state) {\n                    state.related(x, y, false);\n",
+    replace: "                if let Some(y) = term(Value::Local(y), state) {\n                    state.related(x, y, true);\n",
+    tests: ["test/corpus.test.ts", "-t", "^length_shifted_past_a_push.rs$"],
+  },
 ];

@@ -519,9 +519,9 @@ pub fn first_of_some(keys: &[String]) -> String {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   // `prevLength - 1` is JS's own: the `push` before made the vector at
   // least one long (#1700).
-  // A length held in a variable, then tested again: MIR doesn't prove
-  // `prevLength - 1` below it since it decides call indexes (#1949).
-  expect(js).toContain('$index(properties, prevLength - 1)[1] = "unchanged";');
+  // A length held in a variable, then tested equal to it again: at most
+  // it, so `prevLength - 1` below it (ADR 1168, #1948).
+  expect(js).toContain('properties[prevLength - 1][1] = "unchanged";');
   expect(js).toContain('return length === 1 && keys[0] === "children";');
   expect(js).toContain("length >= 2 ? keys[1] : $index(keys, 0)");
   const lib = await import(join(dir, "lib.js"));
@@ -534,9 +534,8 @@ pub fn first_of_some(keys: &[String]) -> String {
   expect(lib.firstOfSome(["ab", "c"])).toBe("c");
   expect(() => lib.firstOfSome([])).toThrow("index out of bounds");
   const of = performanceTrack();
-  // As above, past its `push` (#1700), checked since MIR decides call
-  // indexes (#1949).
-  expect(of("addObjectDiffToProperties")).toContain("$index(properties, prevLength - 1)[1] =");
+  // As above, past its `push` (#1700) and tested equal again (#1948).
+  expect(of("addObjectDiffToProperties")).toContain("properties[prevLength - 1][1] =");
   expect(of("addValueToProperties")).toContain('(propsLength === 1 && propsKeys[0] === "children" && key == null)');
 }, underLoad(60_000));
 

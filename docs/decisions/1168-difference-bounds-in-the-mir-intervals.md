@@ -119,3 +119,26 @@ Each patch carries:
   be): the heap's reads are pure again.
 - Precision mutation `intervals-callers-relations-unpassed` keeps its
   meaning.
+- A length shifted, step 2, landed with two rules. **A `push`'s length is
+  one more**, and never wraps, so what was at most the length before it,
+  a local holding it or one known `<=` it, is below the length past it
+  (`calls.rs`, as `pushed` keeps it: of a `Vec` lent whole, no raw pointer
+  made of it). **`x == y` gives each at most the other**, `prev_length ==
+  properties.len()`, so the existing `t = i - 1` of `i <= len` puts
+  `prev_length - 1` below it, where `prev_length` is at least one. With
+  them `v[n]` past `n = v.len(); v.push(x)`, the heap's `sift_up` given
+  `index = heap.len()` before its push (as `callers.rs` passes it), a
+  table's `board[r]` under `r <= height` past a pushed row, and the outer
+  `v[i]` of `v[i] += { let x = v[i]; v.push(0); x }` past its right side's
+  checked `v[i]` read plain; React's port's `siftUp` reads and
+  `properties[prevLength - 1]`. `v[n + 1]` past two pushes keeps its check:
+  two below is no `c` of `-1` or `0`. Corpus case
+  `length_shifted_past_a_push` and the bounds matrix's shape
+  `pushed_length` hold them against native, with rows that keep their
+  checks and panic as Rust's: `n - 1` of an empty vector, a length past a
+  `pop()`, a `clear()` or a new vector, another vector's push, an index
+  below another slice's length, a wrapping add, an `==` that may be 0 and
+  an index at the length itself. Mutations `pushed-held-length-unrelated`,
+  `pushed-at-most-unread`, `pushed-held-length-unread`,
+  `pushed-below-of-any-length`, `equal-length-unrelated` and
+  `equal-length-below` are caught.

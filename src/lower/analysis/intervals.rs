@@ -1151,6 +1151,17 @@ impl<'tcx> Walk<'_, 'tcx> {
                 state.related(x, Term::Int(of), false);
             }
         }
+        // `x == y`: each at most the other, `prev_length ==
+        // properties.len()` (ADR 1168, #1948).
+        if op == BinOp::Eq
+            && let (Value::Local(a), Value::Local(b)) = (c.a, c.b)
+        {
+            for (x, y) in [(a, b), (b, a)] {
+                if let Some(y) = term(Value::Local(y), state) {
+                    state.related(x, y, false);
+                }
+            }
+        }
         // `x <= y` known and `x != y`: `x < y`, `s != len` of `s <= len`.
         if op == BinOp::Ne
             && let (Value::Local(a), Value::Local(b)) = (c.a, c.b)

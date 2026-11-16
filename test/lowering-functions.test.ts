@@ -542,10 +542,10 @@ pub fn popped(v: &mut Vec<u32>) -> u32 {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
-  // Its reads keep their checks: MIR knows no relation a caller gives
-  // between parameters, `index < heap.len()`, nor `push`'s effect on a
-  // length (#1700); the swap of two in bounds is JS's own.
-  expect(js).toContain("    const parent = (index - 1) >>> 1;\n    if ($index(heap, parent) > $index(heap, index)) {\n      [heap[parent], heap[index]] = [heap[index], heap[parent]];\n");
+  // Its reads are JS's own: `index`, the length before the `push`, is
+  // below the length past it, which its one caller gives as `index <
+  // heap.len()` (ADR 1168, #1948); the swap of two in bounds too.
+  expect(js).toContain("    const parent = (index - 1) >>> 1;\n    if (heap[parent] > heap[index]) {\n      [heap[parent], heap[index]] = [heap[index], heap[parent]];\n");
   expect(js).toContain("function item(items, i) {\n  return items[i];\n}");
   // Called where nothing bounds it too, named as a value, or a JS caller's.
   expect(js).toContain("function other(items, i) {\n  return $index(items, i);\n}");
@@ -553,9 +553,9 @@ pub fn popped(v: &mut Vec<u32>) -> u32 {
   expect(js).toContain("export function half(n) {\n  return (n - 1) >>> 0;\n}");
   // Its own calls' too, until what it's given holds.
   expect(js).toContain("count(n - 1, (total + 1) >>> 0)");
-  // `n` of the length before the push, below it after: MIR doesn't relate
-  // them since it decides call indexes, which THIR's ranges did (#1949).
-  expect(js).toContain("  v.push(7);\n  return $index(v, n);\n");
+  // `n` of the length before the push, below it after (ADR 1168, #1948);
+  // past a `pop`, `n - 1` is the length, and keeps its check.
+  expect(js).toContain("  v.push(7);\n  return v[n];\n");
   expect(js).toContain("return $index(v, n - 1);");
   const lib = await import(join(dir, "lib.js"));
   const heap: number[] = [];

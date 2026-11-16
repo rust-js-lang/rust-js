@@ -5,8 +5,6 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-import { $index } from "@rust-js/std";
-
 export function push(heap, node) {
   const index = heap.length;
   heap.push(node);
@@ -35,7 +33,7 @@ function siftUp(heap, i) {
   let index = i;
   while (index > 0) {
     const parentIndex = (index - 1) >>> 1;
-    if (compare($index(heap, parentIndex), $index(heap, index)) > 0) {
+    if (compare(heap[parentIndex], heap[index]) > 0) {
       // The parent is larger. Swap positions.
       [heap[parentIndex], heap[index]] = [heap[index], heap[parentIndex]];
       index = parentIndex;

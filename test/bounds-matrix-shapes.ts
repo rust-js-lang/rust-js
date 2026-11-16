@@ -694,6 +694,67 @@ fn pair(v: &[i32], k: usize) -> [i32; 2] {
       `check("pair past", || pair(&[1, 2, 3], 2))`,
     ],
   },
+  // A length held before a `push` is below the length past it, and one
+  // tested equal to a length is at most it: `v[n]`, `v[n - 1]` (ADR 1168,
+  // #1948). Not past a `clear()`, a `pop()` or the vector made another,
+  // nor of a length indexed at, or another slice's. A held length that may
+  // be 0, whose `n - 1` wraps, is corpus case `length_shifted_past_a_push`'s,
+  // which prints no index, `usize::MAX` JS's 32 bits.
+  pushed_length: {
+    fns: `fn pushed(v: &mut Vec<u32>) -> u32 {
+    let n = v.len();
+    v.push(7);
+    v[n]
+}
+
+fn pushed_then_cleared(v: &mut Vec<u32>) -> u32 {
+    let n = v.len();
+    v.push(7);
+    v.clear();
+    v[n]
+}
+
+fn pushed_then_popped(v: &mut Vec<u32>) -> u32 {
+    let n = v.len();
+    v.push(7);
+    v.pop();
+    v[n]
+}
+
+fn pushed_then_replaced(v: &mut Vec<u32>) -> u32 {
+    let n = v.len();
+    v.push(7);
+    *v = Vec::new();
+    v[n]
+}
+
+fn equal(v: &[u32], n: usize) -> u32 {
+    if n >= 1 && n == v.len() { v[n - 1] } else { 0 }
+}
+
+fn equal_at(v: &[u32], n: usize) -> u32 {
+    if n == v.len() { v[n] } else { 0 }
+}
+
+fn below_another(a: &[u32], b: &mut Vec<u32>, i: usize) -> u32 {
+    if i < a.len() {
+        b.push(7);
+        b[i]
+    } else {
+        0
+    }
+}
+`,
+    calls: [
+      `check("pushed", || pushed(&mut vec![1, 2]))`,
+      `check("pushed then cleared", || pushed_then_cleared(&mut vec![1]))`,
+      `check("pushed then popped", || pushed_then_popped(&mut vec![1]))`,
+      `check("pushed then replaced", || pushed_then_replaced(&mut vec![1]))`,
+      `check("equal", || equal(&[1, 2], 2))`,
+      `check("equal at", || equal_at(&[1, 2], 2))`,
+      `check("below another", || below_another(&[1, 2, 3], &mut Vec::new(), 2))`,
+    ],
+  },
   // A slice's `get(i)`'s `Some` puts `i` below its length: `i += 1` never
   // wraps.
   got: {
