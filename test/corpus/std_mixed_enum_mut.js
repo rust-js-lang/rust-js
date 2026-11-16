@@ -35,8 +35,8 @@ function main() {
     `${bound.TAG === "Included" ? `Included(${bound._0})` : bound.TAG === "Excluded" ? `Excluded(${bound._0})` : "Unbounded"}`,
   );
   const bounds = [{ TAG: "Excluded", _0: 1 }, "Unbounded", { TAG: "Included", _0: 9 }];
-  for (const bound$1 of $mutItems(bounds)) {
-    widen(bound$1);
+  for (const bound of $mutItems(bounds)) {
+    widen(bound);
   }
   $index(bounds, 2);
   const bound$4 = { value: bounds[2] };

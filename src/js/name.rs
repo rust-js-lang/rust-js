@@ -42,9 +42,14 @@ impl Id {
 /// Whose a name is.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Default)]
 enum Of {
-    /// The program's, or one lowering made.
+    /// One lowering made, or the program's but for a local it named
+    /// (`Program`).
     #[default]
     Item,
+    /// A local the program named, `let state`: where one lowering made
+    /// shares its word in a scope, the program's keeps the plain spelling
+    /// and the one lowering made gives way (`prepare::reclaim`, ADR 1150).
+    Program,
     /// A global's, JS's `Array` or a binding's `document`.
     Global,
     /// One the module declares at its top: its functions, its constants,
@@ -74,6 +79,19 @@ impl Name {
     /// word alone, `From<&str>`, step 1 traces to one of these.
     pub fn declared(word: String) -> Name {
         Name(word, Of::Item, Id::fresh())
+    }
+
+    /// A local the program named, spelled `word`: `declared`'s, but the
+    /// program's, which keeps the plain spelling where a name lowering
+    /// made shares its word (`is_the_programs`, ADR 1150).
+    pub fn program(word: String) -> Name {
+        Name(word, Of::Program, Id::fresh())
+    }
+
+    /// Whether the program named it: a local (`program`), or a crate item
+    /// written in a function's body (`item`'s of one).
+    pub fn is_the_programs(&self) -> bool {
+        matches!(self.1, Of::Program | Of::BodyItem(..))
     }
 
     /// The global `word`, JS's `Array` or a binding's `document`, which the

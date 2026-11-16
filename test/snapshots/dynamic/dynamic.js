@@ -864,8 +864,8 @@ export function report() {
     obj.set("e", { TAG: "Bool", _0: false });
   }
   out += `${$jsonValueText(v, false)}\n${$jsonValueText(copy, false)}\n`;
-  for (const [key, value$1] of $sortedEntries($unwrap($jsonValueAs(v, "Object")), $cmp)) {
-    out += `${key}=${$jsonValueText(value$1, false)};`;
+  for (const [key, value] of $sortedEntries($unwrap($jsonValueAs(v, "Object")), $cmp)) {
+    out += `${key}=${$jsonValueText(value, false)};`;
   }
   out += "\n";
   const keys = $sortedEntries($unwrap($jsonValueAs(v, "Object")), $cmp).map((entry) => entry[0]);

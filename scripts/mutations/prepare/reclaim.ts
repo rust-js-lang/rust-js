@@ -125,4 +125,24 @@ export const mutations: Mutation[] = [
     replace: "            let to = in_scope.unwrap_or_else(|| base.to_string());\n",
     unitTests: "prepare::reclaim::tests::an_unspelled_name_is_spelled_apart_from_the_modules",
   },
+  {
+    name: "program-name-without-way-given",
+    breaks:
+      "a name lowering made keeps the plain spelling a local the program named wants, `const state` of a spill beside the program's `state$1` (ADR 1150)",
+    file: "src/prepare/reclaim.rs",
+    find: "        if programs.contains(local.word()) || !wanted.contains(local.word()) {\n",
+    replace: "        if true {\n",
+    tests: ["test/corpus.test.ts", "-t", "^(flattened_state_handed_on|taken_and_returned|copied_default_box_named_apart).rs$"],
+    snapshots: true,
+  },
+  {
+    name: "program-names-not-first",
+    breaks:
+      "the names lowering made reclaim spellings in the order they're met, ahead of the program's, `bound$1` of a `for` loop's `bound` (ADR 1150)",
+    file: "src/prepare/reclaim.rs",
+    find: "    declared.sort_by_key(|local| !programs.contains(local.word()));\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^(std_mixed_enum_mut|taken_and_returned|flattened_state_handed_on).rs$"],
+    snapshots: true,
+  },
 ];

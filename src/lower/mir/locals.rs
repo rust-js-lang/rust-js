@@ -320,8 +320,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             locals.names[local] = match (&user[local], body.local_kind(local)) {
                 (Some(name), _) => {
                     let named = tidy::user_name(name);
-                    let base = Base::Named(&named);
-                    self.fresh(base)
+                    self.fresh(Base::Program(&named))
                 }
                 (None, LocalKind::ReturnPointer) => self.fresh(Role::Result),
                 (None, _) => {
@@ -329,6 +328,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     self.fresh(temporary)
                 }
             };
+        }
+        // Each local rustc says the program named, a user variable's, is the
+        // program's (`js::Name::is_the_programs`, ADR 1150): checked in a
+        // debug build where `RUST_JS_CHECK_NAMES` is set, as names' forms are.
+        if cfg!(debug_assertions) && std::env::var_os("RUST_JS_CHECK_NAMES").is_some() {
+            for local in body.local_decls.indices() {
+                let name = &locals.names[local];
+                assert!(
+                    user[local].is_none()
+                        || name.word().is_empty()
+                        || name.is_the_programs()
+                        || name.is_temporary()
+                        || name.is_held_arg(),
+                    "{name:?}, a variable the program named, isn't the program's (ADR 1150)",
+                );
+            }
         }
         // Its inclusive ranges no step can leave exhausted, by name (#418).
         let fresh = self.fresh_ranges(body, &locals.names);

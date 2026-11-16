@@ -665,8 +665,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .collect()
     }
 
+    /// A variable a pattern binds, rustc's `LocalVarId`, the program's:
+    /// its name the program's (`js::Name::program`, ADR 1150).
     fn bind(&mut self, var: LocalVarId, name: &str, mutable: bool) -> js::Name {
-        let name = self.fresh(Base::Named(&camel_case(name)));
+        let name = self.fresh(Base::Program(&camel_case(name)));
         self.locals.vars.insert(
             var,
             Var {

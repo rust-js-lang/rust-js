@@ -173,7 +173,7 @@ function main() {
 
   let name = "n";
   let count = 2;
-  const name$2 = {
+  const name$1 = {
     get value() {
       return name;
     },
@@ -181,7 +181,7 @@ function main() {
       name = value;
     },
   };
-  const count$2 = {
+  const count$1 = {
     get value() {
       return count;
     },
@@ -191,14 +191,14 @@ function main() {
   };
 
   function shown() {
-    const name = name$2.value;
-    const count = count$2.value;
+    const name = name$1.value;
+    const count = count$1.value;
     return `${name}:${count}`;
   }
 
   function renamed(to) {
-    name$2.value += to;
-    const name = name$2.value;
+    name$1.value += to;
+    const name = name$1.value;
     return $byteLen(name);
   }
 

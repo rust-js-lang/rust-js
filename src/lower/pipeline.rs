@@ -539,7 +539,7 @@ pub fn lower_crate<'tcx>(
             .map(|&method| {
                 (
                     method,
-                    js::Name::declared(crate::names::fresh_in(&mut names, &fns[&method].name)),
+                    js::Name::program(crate::names::fresh_in(&mut names, &fns[&method].name)),
                 )
             })
             .collect();

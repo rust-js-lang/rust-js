@@ -32,13 +32,13 @@ const _u32__2_Touch = {
   touch(arg0, arg1) {
     return _u32__2_Touch_touch(arg0.value, arg1);
   },
-  touchTwice(boxed, by) {
-    const self = boxed.value;
-    const boxed$1 = (by.value + 1) >>> 0;
+  touchTwice(boxed$1, by) {
+    const self = boxed$1.value;
+    const boxed = (by.value + 1) >>> 0;
     _u32__2_Touch_touch(self, by);
-    by.value = (by.value + boxed$1) >>> 0;
+    by.value = (by.value + boxed) >>> 0;
     _u32__2_Touch_touch(self, by);
-    by.value = (by.value + boxed$1) >>> 0;
+    by.value = (by.value + boxed) >>> 0;
   },
 };
 function _u32__2_Touch_touch(self, by) {

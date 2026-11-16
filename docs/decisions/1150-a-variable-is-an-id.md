@@ -746,3 +746,42 @@ a rewrite of tidy's or preparation's that asking by a word blocked where
 another variable shared it, each case still as native Rust prints, may
 push under the standing approval without asking. Any other kind of
 difference still goes to the lead first.
+
+## The program's names first (2026-11-16)
+
+The spelling step's first rule, landed early (the lead's decision): where
+a local the program named and a name rust-js made share a word in a
+scope, the program's keeps the plain spelling and rust-js's gives way.
+Generated names are a product feature, and a program's `state` taking
+`$1` because a role word, a flattened state's spill `state`, got there
+first reads as if the program had named it so.
+
+Which names are the program's is rustc's answer, decided where a name is
+made, as a name's other forms are, never kept by hand: `Name::program`,
+of `Base::Program`, is a MIR local whose debuginfo is a user variable's
+(`mir_locals`) and each variable a pattern binds, rustc's `LocalVarId`
+(`FnCx::bind`), a destructured parameter's too; a crate item written in a
+body, of its `DefId`, is the program's too (`Name::is_the_programs`); and
+two names made of one, a scope struct's method of the program's method
+(ADR 1043) and a closure's own copy of a captured local the program named,
+the variable moved in, are the program's as what they're of. In a debug
+build where `RUST_JS_CHECK_NAMES` is set, each local rustc says the
+program named is checked to be the program's.
+
+Preparation's `reclaim::locals`, the one pass that gives a name back its
+spelling, gives way first: a local rust-js made whose spelling is the base
+a local the program named, given apart, would reclaim, `state` of
+`state$3`, is spelled apart from every name its item has (`names::fresh_in`,
+the one apart spelling), where its scopes let it be; then the program's
+names reclaim theirs before rust-js's do. Where none contends, every
+spelling is as it was. Five corpus cases and a snapshot changed, each as
+native Rust prints, the program's name now plain: taken_and_returned's
+`result` (the return's `result$1`), dyn_fn_generic_closure_drops' `result`
+parameter (its closure's function `result$1`), copied_default_box_named_apart's
+own `boxed` (the parameter's box `boxed$1`), std_mixed_enum_mut's loop
+`bound`, the dynamic snapshot's loop `value`, and as_ref_and_borrow_through_a_mut's
+boxes a suffix shorter; React's port, `processReply`'s `formData$2` a
+suffix shorter (react-in-rust d546994). Mutations
+program-name-without-way-given, program-names-not-first and
+program-names-not-the-programs hold it.
+

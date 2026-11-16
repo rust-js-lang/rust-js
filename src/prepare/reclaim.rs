@@ -273,32 +273,61 @@ fn own_items(module: &mut js::Module) {
 fn locals(item: &mut js::Item) {
     let Some(mut tree) = scopes::Tree::of(item) else { return };
     let mut declared = Vec::new();
+    // The words of the locals the program named (`Name::is_the_programs`).
+    let mut programs: IndexSet<String> = IndexSet::default();
     // By its word, as the scopes and the renames below are keyed: what's
     // reclaimed is a spelling (#1681 change 3).
     names_mut(item, false, &mut |name| {
+        if name.is_the_programs() {
+            programs.insert(name.word().to_string());
+        }
         if !declared.iter().any(|d: &Name| d.is(name.word())) {
             declared.push(name.clone());
         }
     });
     // Each name renamed, as it's written in the item, to what it is now.
     let mut renamed: IndexMap<String, String> = IndexMap::default();
+    // The program's names first: where a local lowering made has the
+    // spelling a local the program named, given apart, would reclaim,
+    // `state` of `state$3`, it gives way, spelled apart from every name the
+    // item has, then reclaims what's left after the program's (ADR 1150).
+    let wanted: IndexSet<&str> = (programs.iter())
+        .filter_map(|word| crate::names::apart(word).map(|(base, _)| base))
+        .collect();
+    let mut taken: IndexSet<String> = tree.names().map(str::to_owned).collect();
+    for local in &declared {
+        if programs.contains(local.word()) || !wanted.contains(local.word()) {
+            continue;
+        }
+        let aside = crate::names::fresh_in(&mut taken, local.word());
+        if tree.renames(local.word(), &aside) {
+            tree.rename(local.word(), &aside);
+            renamed.insert(local.word().to_string(), aside);
+        }
+    }
+    declared.sort_by_key(|local| !programs.contains(local.word()));
     for local in declared {
-        let Some(base) = reclaimable(local.word(), &IndexSet::default()) else {
+        // As it's spelled now, of one given way above.
+        let now = renamed
+            .get(local.word())
+            .cloned()
+            .unwrap_or_else(|| local.word().to_string());
+        let Some(base) = reclaimable(&now, &IndexSet::default()) else {
             continue;
         };
-        let suffix: usize = local.word()[base.len() + 1..].parse().unwrap_or(0);
+        let suffix: usize = now[base.len() + 1..].parse().unwrap_or(0);
         let Some(to) = std::iter::once(base.to_string())
             .chain((1..suffix).map(|i| crate::names::given_apart(base, i)))
-            .find(|to| tree.renames(local.word(), to))
+            .find(|to| tree.renames(&now, to))
         else {
             continue;
         };
-        tree.rename(local.word(), &to);
+        tree.rename(&now, &to);
         // What was renamed to `local` before is `to` now, as writing the
         // item each time would have made it.
-        for now in renamed.values_mut() {
-            if local.is(now) {
-                now.clone_from(&to);
+        for was in renamed.values_mut() {
+            if *was == now {
+                was.clone_from(&to);
             }
         }
         renamed.insert(local.into_word(), to);

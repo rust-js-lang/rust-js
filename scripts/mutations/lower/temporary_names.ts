@@ -60,4 +60,14 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^interpreter.rs$"],
     snapshots: true,
   },
+  {
+    name: "program-names-not-the-programs",
+    breaks:
+      "a local the program named is made as one lowering made, so a name lowering made keeps the spelling the program's wants, and the check of user variables fails (ADR 1150)",
+    file: "src/lower/temporary_names.rs",
+    find: "            Base::Program(_) => crate::js::Name::program(word),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^(flattened_state_handed_on|taken_and_returned|std_mixed_enum_mut).rs$"],
+    snapshots: true,
+  },
 ];

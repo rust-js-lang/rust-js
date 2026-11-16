@@ -28,14 +28,14 @@ function holding(value, dropT) {
   );
 }
 
-function guarded(result$1, guard) {
+function guarded(result, guard) {
   const captured = guard[0];
-  function result() {
+  function result$1() {
     console.log(`guard ${captured}`);
-    return result$1;
+    return result;
   }
   guardDrop_drop(guard);
-  return result;
+  return result$1;
 }
 
 function main() {

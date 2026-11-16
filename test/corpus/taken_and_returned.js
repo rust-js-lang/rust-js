@@ -93,13 +93,13 @@ function counted(steps, kept) {
 
 // A drop after the take reads the cell.
 function guarded(chunks) {
-  const result$1 = { value: "" };
+  const result = { value: "" };
   let iter;
   try {
     iter = $iter(chunks);
   } catch (error) {
     $cleanup(() => {
-      console.log(`dropped with ${$debugStr(result$1.value)}`);
+      console.log(`dropped with ${$debugStr(result.value)}`);
     }, error);
     throw error;
   }
@@ -109,19 +109,19 @@ function guarded(chunks) {
       chunk = $next(iter);
     } catch (error) {
       $cleanup(() => {
-        console.log(`dropped with ${$debugStr(result$1.value)}`);
+        console.log(`dropped with ${$debugStr(result.value)}`);
       }, error);
       throw error;
     }
     if (chunk == null) {
       break;
     }
-    result$1.value += chunk;
+    result.value += chunk;
   }
-  const result = result$1.value;
-  result$1.value = "";
-  console.log(`dropped with ${$debugStr(result$1.value)}`);
-  return result;
+  const result$1 = result.value;
+  result.value = "";
+  console.log(`dropped with ${$debugStr(result.value)}`);
+  return result$1;
 }
 
 // A count, taken and returned, its closure counting by one.
