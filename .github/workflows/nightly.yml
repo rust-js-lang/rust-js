@@ -941,6 +941,53 @@ jobs:
         with:
           name: ${{ github.job }}.${{ strategy.job-index }}
 
+  # The copy matrix (test/copy-matrix.ts, ADR 1090, amended): each
+  # compiled iterator form copied each way and stepped by each ability
+  # beside its original, all 23,000 or so cases, in both builds against
+  # native Rust, but the `copies:` rows of test/iterator-matrix-known.txt.
+  copies:
+    name: copy matrix
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - run: bun install --frozen-lockfile
+      - run: rustup show
+      - uses: ./.github/actions/build-rust-js
+      - uses: ./.github/actions/native-outcomes
+        with:
+          step: restore
+          name: ${{ github.job }}-${{ strategy.job-index }}
+          nightly: 'true'
+      - name: Run it in 4 parts
+        env:
+          ITERATOR_TABLE: copies
+          ITERATOR_MATRIX: all
+          RUST_JS_COMPILER: ${{ github.workspace }}/target/release/rust-js
+        run: bun scripts/parts.ts 4 test/iterator-matrix.test.ts --timeout=1800000
+      - if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: copy-matrix
+          path: target/iterator-matrix
+          if-no-files-found: ignore
+          retention-days: 14
+      - if: always()
+        uses: ./.github/actions/native-outcomes
+        with:
+          step: save
+          name: ${{ github.job }}-${{ strategy.job-index }}
+      - if: always()
+        uses: ./.github/actions/decision-counts
+        with:
+          name: ${{ github.job }}.${{ strategy.job-index }}
+
   # The consumer net (test/consumer-net.ts): each std method that takes an
   # iterator by value, of each source, as it is and with a closure's or a
   # step's panic, in both builds against native Rust, but the `consumers:`
@@ -1226,7 +1273,7 @@ jobs:
   # a corpus case to write; a red night is the nets', not this.
   decision-coverage:
     name: decision coverage
-    needs: [check, fuzz, stages, programs, forms, determinism, metamorphic, object-model, nones, neighbours, memory, rustlantis, mut-refs, matrix, conformance, points, unwind, format, numbers, async, consumers, std, twins, crates, crater, port]
+    needs: [check, fuzz, stages, programs, forms, determinism, metamorphic, object-model, nones, neighbours, memory, rustlantis, mut-refs, matrix, conformance, points, unwind, format, numbers, async, consumers, copies, std, twins, crates, crater, port]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -1260,7 +1307,7 @@ jobs:
   # `test-times`, which the next night compares with.
   test-times:
     name: test times
-    needs: [check, fuzz, stages, programs, forms, determinism, react-compiler, metamorphic, object-model, nones, neighbours, memory, rustlantis, mut-refs, matrix, conformance, points, unwind, format, numbers, async, consumers, std, twins, crates, crater, port]
+    needs: [check, fuzz, stages, programs, forms, determinism, react-compiler, metamorphic, object-model, nones, neighbours, memory, rustlantis, mut-refs, matrix, conformance, points, unwind, format, numbers, async, consumers, copies, std, twins, crates, crater, port]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -1334,7 +1381,7 @@ jobs:
   # again that day, commented on, naming each failed job with its link: the
   # issue watch gives it an owner that day, and no one polls for it.
   issue:
-    needs: [check, seeds, fuzz, stages, programs, forms, determinism, memory, rustlantis, mut-refs, matrix, conformance, points, unwind, format, numbers, async, consumers, std, crates, crater-report, port]
+    needs: [check, seeds, fuzz, stages, programs, forms, determinism, memory, rustlantis, mut-refs, matrix, conformance, points, unwind, format, numbers, async, consumers, copies, std, crates, crater-report, port]
     if: always() && github.ref == 'refs/heads/main' && contains(needs.*.result, 'failure')
     runs-on: ubuntu-latest
     timeout-minutes: 10

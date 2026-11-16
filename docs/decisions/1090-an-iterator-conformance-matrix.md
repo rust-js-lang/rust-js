@@ -768,3 +768,53 @@ native Rust does in both builds and the twin net, but those under #1180.
 They found #1803 (a zip's leftovers dropped in reverse), #1804 (#1792 by
 `extend`) and #1805 (a generic map's capture dropped after its source's
 rest), each fixed before they land (ADRs 0991 and 0419, amended).
+
+## Amendment: every compiled form copied each way, the copy matrix (2026-11-16)
+
+#1973, #1974 and #1976 were each found by hand: a compiled iterator form
+whose knowledge is attached where it's used, not carried in its type,
+lost it when copied. Examples are a std struct's `$knowing`, an in-place
+maker's `$cloning` and generic code's `$given` wrapper. Two cases showed
+it: a `rev()` of a `copied()` of a `map` cloned through generic code, and
+a clone of a `zip` of a `copied()`. They form a cluster, iterators ×
+reconstructed fact, which calls for a table.
+
+**The copy matrix, `ITERATOR_TABLE=copies` (test/copy-matrix.ts)**, crosses
+three axes:
+- **Form.** Each of the iterator matrix's sources that's `Clone`, plus
+  `Chars` made numbers by a `map`, under each chain of its adapters: none,
+  each alone, each followed by `rev`, each after `copied`, `cloned` or
+  `map`, and two of three. Each chain runs plain and through generic code,
+  the source given as `I`, its bounds the source's.
+- **Copy.** `.clone()`; `dup(&a)`, a clone in generic code bound
+  `I: Clone`; and `pass(a)`, a move through an opaque generic identity.
+  A move apart, into what a JS unit holds, is the runtime package's rows'
+  (ADR 0561, amended with #1976).
+- **Ability.** `next`, `next_back`, `len`, `size_hint`, `nth`, `nth_back`,
+  `fold`, `rfold`, `try_fold` and `try_rfold`, each where the chain's
+  shape has it.
+
+Each case steps the original once and copies it. It then steps the copy
+by the ability and the original from its other end, interleaved, and
+drains both; every item's value, clone and drop is printed. Its sources
+and adapters are the iterator matrix's own catalog, `sources` and
+`adapters`, never a second list.
+
+It has some 23,700 cases in 396 programs, run in both builds against native
+Rust as the other tables are. A change to the iterators' code runs its
+slice in each push's check and `check:fast`: each adapter and source with
+each way and ability, some 25 s on the mini in 10 parts. The nightly runs
+all of it (`copies`), 205 s on the mini in 10 parts. Its known cases are
+`copies:` rows of test/iterator-matrix-known.txt.
+
+Its first run found three wrong answers:
+- #1981: a filter, `map.filter`, `cloned.filter` or `copied.filter`
+  copied or moved through generic code threw when stepped from its back,
+  as `back_stepped` decided its back on the local and didn't follow the
+  value across copies, and its hint lost its upper bound: 355 cells, each
+  right once #1681's change 2 made the filter family std's struct
+  (b19de88fb), before the matrix landed.
+- #1982: the std build's zip by index of generic code's `cloned()` read
+  `NaN`. Fixed in the same push.
+- #1983: a `copied()` of a generic source asked its `len()` after a copy
+  is made without its back.

@@ -349,7 +349,7 @@ export function jobs({ all, changed, branch, added, extra, cores, picked, forms,
         ? [
             // And the rows of both tables the change names, sized to it
             // (scripts/iteratorRows.ts, #818).
-            ...(["matrix", "conformance", "forms", "rows"] as const)
+            ...(["matrix", "conformance", "copies", "forms", "rows"] as const)
               // Of a change the test map can say, the corpus with std's
               // iterator structs runs the cases it picked, none where it
               // picked none, nor the file's own tests (#876).

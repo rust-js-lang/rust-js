@@ -10,6 +10,7 @@
 //
 //   bun scripts/iteratorSlice.ts run matrix [parts]        the matrix's slice, in parts at once, against native Rust
 //   bun scripts/iteratorSlice.ts run conformance [parts]   the conformance table's
+//   bun scripts/iteratorSlice.ts run copies [parts]        the copy matrix's slice (test/copy-matrix.ts)
 //   bun scripts/iteratorSlice.ts run forms [parts]         the corpus with std's iterator structs
 //   bun scripts/iteratorSlice.ts run rows [parts]          the rows of both tables the change names (scripts/iteratorRows.ts, #818)
 //   bun scripts/iteratorSlice.ts run format [parts]        the formatting grid's slice (#941), of a change to the formatting code
@@ -91,6 +92,7 @@ export const iteratorPaths = [
   "test/iterator-matrix.test.ts",
   "test/iterator-matrix-known.txt",
   "test/iterator-forms.test.ts",
+  "test/copy-matrix.ts",
   "scripts/iteratorSlice.ts",
 ];
 
@@ -414,6 +416,9 @@ export function touchesIterators(files: string[]): boolean {
 export const runs = {
   matrix: [{ name: "the matrix's slice", file: "test/iterator-matrix.test.ts", env: { ITERATOR_TABLE: "matrix" } }],
   conformance: [{ name: "the conformance table's slice", file: "test/iterator-matrix.test.ts", env: { ITERATOR_TABLE: "conformance" } }],
+  // Each compiled form copied each way and stepped by each ability beside
+  // its original, its slice (test/copy-matrix.ts): some 25 s in 10 parts.
+  copies: [{ name: "the copy matrix's slice", file: "test/iterator-matrix.test.ts", env: { ITERATOR_TABLE: "copies" } }],
   forms: [{ name: "the corpus with std's iterator structs", file: "test/iterator-forms.test.ts", env: { ITERATOR_FORMS: "corpus" } }],
   format: [{ name: "the formatting grid's slice", file: "test/iterator-matrix.test.ts", env: { ITERATOR_TABLE: "format" } }],
   numbers: [{ name: "the numbers grid's slice", file: "test/iterator-matrix.test.ts", env: { ITERATOR_TABLE: "numbers" } }],

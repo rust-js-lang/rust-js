@@ -202,6 +202,14 @@ jobs:
         if: needs.plan.outputs.iterators == 'true'
         background: true
         run: bun scripts/iteratorSlice.ts run conformance 1
+      # And the copy matrix's slice (test/copy-matrix.ts, ADR 1090,
+      # amended): each compiled form copied each way and stepped by each
+      # ability beside its original. The nightly's `copies` runs all of it.
+      - name: copy matrix slice
+        id: copies
+        if: needs.plan.outputs.iterators == 'true'
+        background: true
+        run: bun scripts/iteratorSlice.ts run copies 2
       # The formatting grid's slice (test/format-grid.ts, #941), of a change
       # to the formatting code (`formatPaths`).
       - name: formatting grid slice

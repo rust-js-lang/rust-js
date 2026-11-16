@@ -5,6 +5,7 @@
 
 import { asyncCases, asyncProgram, asyncStrata, type AsyncCase } from "./async-points";
 import { consumerCases, consumerProgram, consumerStrata, type ConsumerCase } from "./consumer-net";
+import { copyCases, copyProgram, copyStrata, type CopyCase } from "./copy-matrix";
 import { formatCases, formatProgram, formatStrata, type FormatCase } from "./format-grid";
 import {
   allCases,
@@ -114,8 +115,19 @@ const stdTable: TableOf<NetCase> = {
   slice: (all) => slice(all, stdNetStrata),
 };
 
+/** The copy matrix, test/copy-matrix.ts's cases: each compiled iterator
+ * form copied each way and stepped by each ability, interleaved with its
+ * original; its slice, each adapter and source with each way and ability. */
+const copiesTable: TableOf<CopyCase> = {
+  cases: copyCases,
+  program: copyProgram,
+  batches: (all) => batches(all),
+  slice: (all) => slice(all, copyStrata),
+};
+
 /** The table `of`, as test/iterator-matrix.test.ts runs it. */
 export function tableOf(of: Table): TableOf<Row> {
+  if (of === "copies") return copiesTable;
   if (of === "std") return stdTable;
   if (of === "consumers") return consumersTable;
   if (of === "unwind") return unwindTable;

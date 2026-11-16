@@ -227,6 +227,16 @@ export const jobs: Record<string, Part[]> = {
     cores: 1,
     timeout: 10 * minutes,
   })),
+  // Each compiled iterator form copied each way and stepped by each
+  // ability beside its original, the copy matrix (test/copy-matrix.ts), in
+  // both builds.
+  copies: parts("copies", cores, (i) => ({
+    cmd: ["bun", "test", "--timeout=1800000", "test/iterator-matrix.test.ts"],
+    env: { ...compiler, ITERATOR_TABLE: "copies", ITERATOR_MATRIX: "all", RUST_JS_CASES: `${i}/${cores}` },
+    after: ["build"],
+    cores: 1,
+    timeout: 15 * minutes,
+  })),
   // Each std method that changes a collection in place or calls what it's
   // given, the std net (#1171), in both builds.
   std: parts("std", cores, (i) => ({

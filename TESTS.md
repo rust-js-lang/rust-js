@@ -23,6 +23,15 @@ The new `table_rows_resized_unseen.rs` covers each way a table's row may
 resize with no row's `&mut` given to a call (#1849).
 The historical suite totals and CI timings below have not been remeasured.
 
+Added on 2026-11-16: the copy matrix, `ITERATOR_TABLE=copies`
+(`test/copy-matrix.ts`, ADR 1090, amended): each compiled iterator form
+copied by `.clone()`, a clone in generic code or a move through a generic
+identity, then stepped by each ability beside its original, about 23,700
+cases in both builds against native Rust. Its slice runs in each push's
+`nets` job and `check:fast` where the iterators' code changes, some 25 s on
+the mini in 10 parts. The nightly's `copies` job runs it whole, 205 s on the
+mini in 10 parts.
+
 Added on 2026-11-16: `test/clusters.test.ts`, the issues' kind × area count
 (`scripts/clusters.ts`, ADR 1085, amended): its cells, its threshold of 3,
 each cluster's refactor read from docs/bug-kinds.md's table, and the
