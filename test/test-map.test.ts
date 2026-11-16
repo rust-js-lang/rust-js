@@ -4,11 +4,12 @@
 // how many maps it keeps.
 
 import { expect, test } from "bun:test";
-import { mkdirSync, readdirSync, rmSync, utimesSync, writeFileSync } from "node:fs";
+import { mkdirSync, readdirSync, readFileSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
 
-import { hunksOf, joinedSpans, mapFile, mapVersion, nearestMap, nestedItem, pick, pruneMaps, readersOf, readsOf, readsSources, type Change, type TestMap } from "../scripts/testMap";
+import { hunksOf, joinedSpans, mapFile, mapVersion, mergeRecordings, nearestMap, nestedItem, pick, planUnits, pruneMaps, readersOf, readsOf, readsSources, type Change, type Plan, type TestMap } from "../scripts/testMap";
 import { jobs } from "../scripts/checkFast";
+import { shard } from "../scripts/shard";
 import { caseShard, fixture, root } from "./support";
 
 const bits = (...functions: number[]) => {
@@ -387,4 +388,122 @@ test("every architecture test is a plain suite's, which a compiler change runs",
   expect(architecture).toContain("test/architecture-generic-facts.test.ts");
   const plain = jobs({ all: false, changed: ["src/lower/mir/iter.rs"], branch: [], added: [], extra: [], cores: 12 }).jobs.map((job) => job.name);
   expect(architecture.filter((file) => !plain.includes(file) || !readsSources(file))).toEqual([]);
+});
+
+// A recording in parts on many machines, CI's (`build --shards=N`, `units
+// --shard=i/N`, `merge`), writes the map one machine's recording does: of
+// a small fixture's tests, each compile's bits written where its part ran,
+// the merge of three parts is the merge of one, byte for byte; and a part
+// lost, or one read twice, is refused, never a map short of it.
+test("the merge of a recording's parts is the map of one part's recording", () => {
+  const caseNames = ["a.rs", "b.rs", "c.rs", "d.rs", "e.rs"];
+  const files = ["test/one.test.ts", "test/two.test.ts", "test/fails.test.ts", "test/reads.test.ts", "test/unknown.test.ts"];
+  const names = Array.from({ length: 12 }, (_, i) => `f${i}`);
+  // Some functions of the twelve, by what was compiled.
+  const ran = (compiled: string) => {
+    const bytes = new Uint8Array(2);
+    for (let i = 0; i < compiled.length; i++) {
+      const at = (compiled.charCodeAt(i) * 7 + i) % 12;
+      bytes[at >> 3] |= 1 << (at & 7);
+    }
+    return bytes;
+  };
+  const planOf = (shards: number, perShard: number): Plan => ({
+    version: mapVersion,
+    commit: "c0",
+    toolchain: "t0",
+    shards,
+    parts: shards * perShard,
+    names,
+    functions: names.map((_, i) => ({ file: "src/a.rs", spans: [[i * 10 + 1, i * 10 + 5]] })),
+    files,
+    caseNames,
+    readsSources: ["test/reads.test.ts"],
+    corpusReaders: ["test/two.test.ts"],
+    includes: { "src/runtime/helper.js": [{ file: "src/a.rs", line: 3 }] },
+    units: planUnits(files, shards, perShard, new Map([["test/two.test.ts", 30]])),
+  });
+  // What each part's tests write, as testMapCompiler.ts does: a file of
+  // bits for each compile, of the test or the case it ran for, two of each
+  // case, and one of its file's own for each case, a helper's compile.
+  const record = (plan: Plan, dir: string) => {
+    let id = 0;
+    const write = (part: string, unit: string, compiled: string) => writeFileSync(join(part, "units", `${unit.replaceAll("/", "__")}.1-${id++}.bits`), ran(compiled));
+    for (let at = 1; at <= plan.shards; at++) {
+      const part = join(dir, String(at));
+      mkdirSync(join(part, "units"), { recursive: true });
+      const ended: Record<string, number> = {};
+      for (const unit of plan.units.filter((unit) => unit.shard === at)) {
+        ended[unit.name] = unit.name === "test/fails.test.ts" ? 1 : 0;
+        const [file, cases] = unit.name.split(" ");
+        if (cases === undefined) {
+          write(part, file, file);
+          if (file === "test/unknown.test.ts") writeFileSync(join(part, "unknown"), `${file}\tf99\n`);
+          continue;
+        }
+        const [i, n] = cases.split("/").map(Number);
+        for (const name of shard(plan.caseNames, i, n)) {
+          const unitName = file === "test/corpus.test.ts" ? `test/corpus/${name}` : `${file} test/corpus/${name}`;
+          write(part, unitName, unitName);
+          write(part, unitName, `${unitName}!`);
+          write(part, file, `${file} ${name}`);
+        }
+      }
+      writeFileSync(join(part, "ended.json"), JSON.stringify(ended));
+    }
+    return readdirSync(dir).map((name) => join(dir, name));
+  };
+  const dir = fixture("test-map-merge");
+  const one = planOf(1, 2);
+  const three = planOf(3, 2);
+  // Each test in exactly one part, each part two of the corpus's six.
+  const named = three.units.map((unit) => unit.name);
+  expect(new Set(named).size).toBe(named.length);
+  expect(new Set(three.units.filter((unit) => files.includes(unit.name)).map((unit) => unit.name))).toEqual(new Set(files));
+  const corpusParts = three.units.filter((unit) => unit.name.startsWith("test/corpus.test.ts ")).map((unit) => `${unit.shard} ${unit.env.RUST_JS_CASES}`);
+  expect(corpusParts).toEqual(["1 1/6", "1 4/6", "2 2/6", "2 5/6", "3 3/6", "3 6/6"]);
+  const whole = mergeRecordings(one, record(one, join(dir, "one")), 1);
+  const parted = mergeRecordings(three, record(three, join(dir, "three")), 1);
+  expect(JSON.stringify(parted.map)).toBe(JSON.stringify(whole.map));
+  expect(parted.always).toEqual(whole.always);
+  // A test's functions are the union of its compiles'.
+  const union = (...compiled: string[]) => Buffer.from(compiled.map(ran).reduce((a, b) => a.map((byte, i) => byte | b[i]))).toString("base64");
+  expect(parted.map.units["test/corpus/c.rs"]).toBe(union("test/corpus/c.rs", "test/corpus/c.rs!"));
+  expect(parted.map.units["test/corpus.test.ts"]).toBe(union(...caseNames.map((name) => `test/corpus.test.ts ${name}`)));
+  expect(whole.always).toEqual(["test/fails.test.ts (it failed)", "test/reads.test.ts (it reads the compiler's sources)", "test/unknown.test.ts (a compile of it ran a function the table hasn't)"]);
+  // A part lost, and a part read twice.
+  const parts = readdirSync(join(dir, "three")).map((name) => join(dir, "three", name));
+  expect(() => mergeRecordings(three, parts.slice(1), 1)).toThrow(/no part of the recording ran/);
+  expect(() => mergeRecordings(three, [...parts, parts[0]], 1)).toThrow(/ended in two parts/);
+  rmSync(dir, { recursive: true, force: true });
+});
+
+// CI's test map is the kept one, `kept`'s, or recorded in parts on many
+// machines and merged: the parts and the merge are jobs only where none is
+// kept, skipped outright where one is, so a push adds none to the free
+// plan's 20 at once; the mutations wait for the map either way. One way to
+// ask whether one's kept: `ensure`, which recorded it on one machine, 38.6
+// min (check 43789968835), is gone, and refused.
+test("CI's test map is the kept one, or recorded in parts and merged where none is", () => {
+  const tests = readFileSync(join(root, ".github/workflows/rustc-tests.yml"), "utf8");
+  const job = (name: string) => {
+    const at = tests.indexOf(`\n  ${name}:\n`);
+    expect([name, at]).not.toEqual([name, -1]);
+    return tests.slice(at, tests.indexOf("\n\n  ", at + 1));
+  };
+  expect(job("test-map")).toContain("bun scripts/testMap.ts kept");
+  expect(job("test-map")).toContain("bun scripts/testMap.ts build --shards=");
+  expect(job("test-map-part")).toContain("bun scripts/testMap.ts units --shard=${{ matrix.part }}/${{ needs.test-map.outputs.shards }}");
+  expect(job("test-map-merge")).toContain("bun scripts/testMap.ts merge");
+  for (const name of ["test-map-part", "test-map-merge"]) {
+    expect([name, job(name)]).toEqual([name, expect.stringContaining("    if: ${{ inputs.mutations && needs.test-map.outputs.record == 'true' }}\n")]);
+  }
+  expect(job("mutations")).toContain("needs: [test-map, test-map-merge]");
+  expect(job("mutations")).toContain("(needs.test-map.outputs.record == 'false' || needs.test-map-merge.result == 'success')");
+  for (const file of readdirSync(join(root, ".github/workflows"))) {
+    expect([file, readFileSync(join(root, ".github/workflows", file), "utf8").includes("testMap.ts ensure")]).toEqual([file, false]);
+  }
+  const ensure = Bun.spawnSync(["bun", "scripts/testMap.ts", "ensure"], { cwd: root, stdout: "pipe", stderr: "pipe" });
+  expect(ensure.exitCode).toBe(2);
+  expect(ensure.stderr.toString()).toContain("kept [--head]");
 });

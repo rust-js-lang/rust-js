@@ -349,16 +349,24 @@ jobs:
 
   # The test map each shard's snapshot judge places a mutation's site by
   # (ADR 0093, amended): which corpus cases ran which of the compiler's
-  # functions. Of a run of every mutation, the nightly's, HEAD's, recorded;
-  # of a change's, the nearest ancestor's the cache kept, HEAD's recorded
-  # only where there's none (`ensure`): a site whose file changed since its
-  # commit it can't place, and says so. Given to each shard; without one a
-  # shard whose judge needs it fails.
+  # functions. Of a run of every mutation, the nightly's, HEAD's; of a
+  # change's, the nearest ancestor's the cache kept (`kept`): a site whose
+  # file changed since its commit it can't place, and says so. Where none
+  # is kept, recorded in parts: this job's counting build and plan, each
+  # `test-map-part`'s share of the tests on a machine of its own, and
+  # `test-map-merge`'s one map of them all. On one machine its tests took
+  # 33.6 of its 38.6 min (check 43789968835). Where a map is kept, the parts
+  # and the merge are skipped, no jobs at all. Given to each shard; without
+  # one a shard whose judge needs it fails.
   test-map:
     if: inputs.mutations
     name: test map
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 30
+    outputs:
+      record: ${{ steps.map.outputs.record }}
+      shards: ${{ steps.map.outputs.shards }}
+      parts: ${{ steps.map.outputs.parts }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -371,19 +379,112 @@ jobs:
           path: .cache/test-maps
           key: test-map-${{ runner.os }}-${{ hashFiles('rust-toolchain.toml') }}-${{ github.run_id }}
           restore-keys: test-map-${{ runner.os }}-${{ hashFiles('rust-toolchain.toml') }}-
-      - name: The map, kept or recorded
+      # The recording's machines, `SHARDS`: each part's tests about 4 min
+      # of the 33.6 one machine's took. `build` says them, `shards` and
+      # each part's number, `parts`.
+      - name: The map kept, or the counting build and the plan of its recording
         id: map
         env:
           EVERY: ${{ inputs.mutation_args == '' }}
+          SHARDS: '8'
         run: |
-          if [ "$EVERY" = "true" ]; then
-            bun scripts/testMap.ts record
-            echo "recorded=true" >> "$GITHUB_OUTPUT"
+          if [ "$EVERY" = "true" ]; then of=--head; else of=; fi
+          if bun scripts/testMap.ts kept $of; then
+            echo "record=false" >> "$GITHUB_OUTPUT"
           else
-            bun scripts/testMap.ts ensure
+            bun scripts/testMap.ts build --shards="$SHARDS"
+            # A tar, which keeps the binary's mode, as an artifact doesn't.
+            tar -cf test-map-build.tar target/test-map/build/debug/rust-js
+            echo "record=true" >> "$GITHUB_OUTPUT"
           fi
-      - if: steps.map.outputs.recorded == 'true'
-        uses: actions/cache/save@v6
+      - if: steps.map.outputs.record == 'false'
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-map
+          path: .cache/test-maps
+          include-hidden-files: true
+          retention-days: 3
+      - if: steps.map.outputs.record == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-map-build
+          path: test-map-build.tar
+          retention-days: 1
+      - if: steps.map.outputs.record == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-map-plan
+          path: target/test-map/plan.json
+          retention-days: 1
+
+  # A part of the map's recording, its plan's share of the tests, each run
+  # with the counting build.
+  test-map-part:
+    needs: test-map
+    if: ${{ inputs.mutations && needs.test-map.outputs.record == 'true' }}
+    name: test map (${{ matrix.part }}/${{ needs.test-map.outputs.shards }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      matrix:
+        part: ${{ fromJSON(needs.test-map.outputs.parts) }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/rustc-tests-setup
+        with:
+          build: 'false'
+      - uses: actions/download-artifact@v8
+        with:
+          name: test-map-build
+      - uses: actions/download-artifact@v8
+        with:
+          name: test-map-plan
+          path: target/test-map
+      - name: The part's tests
+        run: |
+          tar -xf test-map-build.tar
+          bun scripts/testMap.ts units --shard=${{ matrix.part }}/${{ needs.test-map.outputs.shards }}
+          tar -cf test-map-part-${{ matrix.part }}.tar target/test-map/recordings/${{ matrix.part }}
+      - uses: actions/upload-artifact@v7
+        with:
+          name: test-map-part-${{ matrix.part }}
+          path: test-map-part-${{ matrix.part }}.tar
+          retention-days: 1
+
+  # The one map of every part's recording, kept in the cache beside those
+  # it kept, and given to the mutations' shards.
+  test-map-merge:
+    needs: [test-map, test-map-part]
+    if: ${{ inputs.mutations && needs.test-map.outputs.record == 'true' }}
+    name: test map merge
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - run: bun install --frozen-lockfile
+      - uses: actions/cache/restore@v6
+        with:
+          path: .cache/test-maps
+          key: test-map-${{ runner.os }}-${{ hashFiles('rust-toolchain.toml') }}-${{ github.run_id }}
+          restore-keys: test-map-${{ runner.os }}-${{ hashFiles('rust-toolchain.toml') }}-
+      - uses: actions/download-artifact@v8
+        with:
+          name: test-map-plan
+          path: target/test-map
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: test-map-part-*
+          merge-multiple: true
+      - name: The map of every part
+        run: |
+          for part in test-map-part-*.tar; do tar -xf "$part"; done
+          bun scripts/testMap.ts merge
+      - uses: actions/cache/save@v6
         with:
           path: .cache/test-maps
           key: test-map-${{ runner.os }}-${{ hashFiles('rust-toolchain.toml') }}-${{ github.run_id }}
@@ -397,8 +498,9 @@ jobs:
   # Known bugs, each put back into the compiler, one at a time: the tests
   # named for each must fail against it, and pass as the compiler is.
   mutations:
-    if: inputs.mutations
-    needs: test-map
+    # Once the map's there: the kept one, or the merge of its recording.
+    if: ${{ inputs.mutations && !cancelled() && needs.test-map.result == 'success' && (needs.test-map.outputs.record == 'false' || needs.test-map-merge.result == 'success') }}
+    needs: [test-map, test-map-merge]
     name: mutations (${{ matrix.shard }}/${{ inputs.mutation_shards }})
     runs-on: ubuntu-latest
     timeout-minutes: 300

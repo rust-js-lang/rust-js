@@ -10,10 +10,16 @@
 //                              none where any worktree of the machine recorded it
 //   bun run test-map --keep    and keep what it recorded, to see why a test runs always
 //   bun run test-map pick      what the working tree's change picks, and why
-//   bun scripts/testMap.ts ensure
-//                              a map of HEAD or an ancestor of it kept, or HEAD's
-//                              recorded: CI's mutation jobs, whose snapshot judge
-//                              places each site by it (ADR 0093, amended)
+//   bun scripts/testMap.ts kept [--head]
+//                              whether a map of HEAD or an ancestor (`--head`: of HEAD)
+//                              is kept, its exit status: CI's mutation jobs, whose
+//                              snapshot judge places each site by it (ADR 0093, amended)
+//   bun scripts/testMap.ts build --shards=N
+//   bun scripts/testMap.ts units --shard=i/N
+//   bun scripts/testMap.ts merge
+//                              a recording in N parts on N machines, CI's: the counting
+//                              build and the plan, each part's tests, then the one map
+//                              of them all, the same map `record` writes (`mergeRecordings`)
 //
 // Why a skip is sound (ADR 1101): a test whose compiles ran none of the
 // functions a change touches runs the same compiler code after it, so ends
@@ -48,8 +54,7 @@ import { bytesOf, evict, freeBytes } from "../tooling/bounded.js";
 import { floorBytes, machineStore } from "../test/bounded";
 import { machineVerifiedRuns } from "../test/kept";
 import { readJobTimes } from "./jobTimes";
-import { plainSuiteFiles, shard } from "./shard";
-import { machine } from "./shard";
+import { balanced, caseShardParts, machine, plainSuiteFiles, shard, shardArg } from "./shard";
 
 const root = join(import.meta.dir, "..");
 /** What records a map, the worktree's: its counting build and a recording's
@@ -596,8 +601,6 @@ async function runUnits(units: { name: string; cmd: string[]; env: Record<string
   return ended;
 }
 
-/** Record HEAD's map: the counting build, then each test, then which
- * functions each ran. */
 /** The C of the object the counting build links, which names where a run
  * given no `LLVM_PROFILE_FILE` writes its counts, `file`: by the runtime's
  * `__llvm_profile_set_filename` as the process starts, never a definition
@@ -614,16 +617,73 @@ __attribute__((constructor)) static void rust_js_lost(void) {
 `;
 }
 
-async function record(keep: boolean) {
-  const commit = git(["rev-parse", "HEAD"]).out.trim();
-  const toolchain = toolchainOf();
-  const file = mapFile(mapStore, commit, toolchain);
-  // One any worktree recorded of this commit is this one's (#932); `--keep`
-  // records again, to see why a test runs on every change.
-  if (!keep && nearestMap(mapStore, root, toolchain)?.commit === commit) {
-    console.log(`the test map of ${commit.slice(0, 9)} is recorded already, by this worktree or another: ${file}`);
-    return;
+/** What a recording is of, `build`'s, which each part's `units` and `merge`
+ * read: the commit and toolchain, the counting build's function table and
+ * its functions' names, what the map says of the checkout's sources, and
+ * each test to run, the corpus's files in `parts` parts, each dealt to one
+ * of `shards` machines (`shard`, from 1). Made once, so every part runs
+ * its own share and the merge knows each test it must have heard of. */
+export type Plan = {
+  version: number;
+  commit: string;
+  toolchain: string;
+  shards: number;
+  parts: number;
+  names: string[];
+  functions: TestMap["functions"];
+  files: string[];
+  caseNames: string[];
+  readsSources: string[];
+  corpusReaders: string[];
+  includes: TestMap["includes"];
+  units: { name: string; cmd: string[]; env: Record<string, string>; shard: number }[];
+};
+
+/** Where `build` writes the plan and each part's recording is, the merge's
+ * input: `plan.json`, and `recordings/<shard>/`, each the part's `ended.json`,
+ * its tests' bits (`units/`) and its `unknown`. */
+const planFile = join(mapDir, "plan.json");
+const recordings = join(mapDir, "recordings");
+/** The counting build's binary, which each part runs. */
+export const countingBinary = join(mapDir, "build", "debug", "rust-js");
+
+/** Each test of a recording on `shards` machines of `perShard` cores:
+ * each file of the corpus's cases in `shards * perShard` parts, each
+ * machine `perShard` of each (`caseShardParts`), and the plain suites'
+ * `files`, dealt by `seconds` of each (`balanced`), in turn where it knows
+ * none. Each in exactly one part. */
+export function planUnits(files: string[], shards: number, perShard: number, seconds: ReadonlyMap<string, number>): Plan["units"] {
+  const units: Plan["units"] = [];
+  for (let at = 1; at <= shards; at++) {
+    const caseParts = caseShardParts(at, shards, perShard);
+    units.push(
+      // The corpus in parts, each case a test of its own (testMapCompiler.ts).
+      ...caseParts.map((part) => ({
+        name: `test/corpus.test.ts ${part}`,
+        cmd: ["bun", "test", "test/corpus.test.ts"],
+        env: { RUST_JS_CASES: part, RUST_JS_TEST_MAP_UNIT: "test/corpus.test.ts" },
+        shard: at,
+      })),
+      // And the corpus built with std's iterator structs, as an iterator
+      // change's check runs it, each case a test of its own too.
+      ...caseParts.map((part) => ({
+        name: `test/iterator-forms.test.ts ${part}`,
+        cmd: ["bun", "test", "test/iterator-forms.test.ts"],
+        env: { ITERATOR_FORMS: "corpus", RUST_JS_CASES: part, RUST_JS_TEST_MAP_UNIT: "test/iterator-forms.test.ts" },
+        shard: at,
+      })),
+      ...balanced(files, at, shards, seconds).map((file) => ({ name: file, cmd: ["bun", "test", file], env: { RUST_JS_TEST_MAP_UNIT: file }, shard: at })),
+    );
   }
+  return units;
+}
+
+/** The counting build of HEAD, of a clean tree, and its plan for `shards`
+ * machines of this one's cores: the corpus's files in as many parts as
+ * there are cores on all of them, the plain suites' files dealt by what
+ * check:fast keeps of each one's time on this machine (scripts/jobTimes.ts),
+ * none where it keeps none, CI's. */
+async function build(shards: number): Promise<Plan> {
   if (git(["status", "--porcelain"]).out.trim() !== "") throw new Error(unclean);
   const started = Date.now();
   const tools = llvmTools();
@@ -636,11 +696,10 @@ async function record(keep: boolean) {
   // where a test starts it with an environment of its own: there, not in
   // its directory, which the test may remove, so a run the map didn't count
   // is seen, and the recording fails. Named by the runtime's API, as the
-  // process starts, where the environment gives none (`lostObject`).
-  const lost = join(mapDir, "lost");
-  rmSync(lost, { recursive: true, force: true });
-  mkdirSync(lost, { recursive: true });
-  writeFileSync(join(mapDir, "lost.c"), lostObject(join(lost, "%p.profraw")));
+  // process starts, where the environment gives none (`lostObject`): the
+  // same path on each machine a part runs on, its checkout's.
+  mkdirSync(mapDir, { recursive: true });
+  writeFileSync(join(mapDir, "lost.c"), lostObject(join(mapDir, "lost", "%p.profraw")));
   if (Bun.spawnSync(["cc", "-c", join(mapDir, "lost.c"), "-o", join(mapDir, "lost.o")], { stdout: "inherit", stderr: "inherit" }).exitCode !== 0) process.exit(1);
   const { CARGO_TARGET_DIR: _, ...env } = process.env;
   const built = Bun.spawnSync(
@@ -648,34 +707,66 @@ async function record(keep: boolean) {
     { cwd: root, env, stdout: "inherit", stderr: "inherit" },
   );
   if (built.exitCode !== 0) process.exit(1);
-  const binary = join(build, "debug", "rust-js");
   console.log(`the counting build: ${((Date.now() - started) / 1000).toFixed(0)} s`);
 
-  const recording = join(mapDir, "recording");
+  rmSync(recordings, { recursive: true, force: true });
+  const table = join(mapDir, "table");
+  rmSync(table, { recursive: true, force: true });
+  mkdirSync(table, { recursive: true });
+  const { names, functions } = functionTable(countingBinary, table, tools);
+  rmSync(table, { recursive: true, force: true });
+
+  const perShard = machine().cores;
+  const parts = shards * perShard;
+  const files = mappedFiles();
+  const times = readJobTimes();
+  const seconds = new Map(files.map((file) => [file, Math.max(0, ...(times[file]?.seconds ?? []))] as const).filter(([, s]) => s > 0));
+  const units = planUnits(files, shards, perShard, seconds);
+  const plan: Plan = {
+    version: mapVersion,
+    commit: git(["rev-parse", "HEAD"]).out.trim(),
+    toolchain: toolchainOf(),
+    shards,
+    parts,
+    names,
+    functions,
+    files,
+    caseNames: readdirSync(join(root, "test", "corpus")).filter((name) => name.endsWith(".rs")),
+    readsSources: files.filter((file) => readsSources(file)),
+    // The plain suites' files that read the corpus's files: each says where.
+    corpusReaders: files.filter((file) => /\bcorpus\b/.test(readFileSync(join(root, file), "utf8"))),
+    includes: includes(),
+    units,
+  };
+  writeFileSync(planFile, JSON.stringify(plan));
+  return plan;
+}
+
+/** The plan `build` wrote, of HEAD's commit, or why there's none. */
+function readPlan(): Plan {
+  if (!existsSync(planFile)) throw new Error(`no plan of a recording: \`bun scripts/testMap.ts build\` writes ${relative(root, planFile)}`);
+  const plan: Plan = JSON.parse(readFileSync(planFile, "utf8"));
+  const head = git(["rev-parse", "HEAD"]).out.trim();
+  if (plan.version !== mapVersion || plan.commit !== head) throw new Error(`the plan is of ${plan.commit.slice(0, 9)}, layout ${plan.version}, not HEAD's ${head.slice(0, 9)}, layout ${mapVersion}`);
+  return plan;
+}
+
+/** Run part `shard` of `plan`'s tests with the counting build, its cores'
+ * worth at once, into `recordings/<shard>/`: how each test ended
+ * (`ended.json`), each compile's bits, and what it couldn't count. */
+async function recordPart(plan: Plan, shard: number): Promise<string> {
+  if (!Number.isInteger(shard) || shard < 1 || shard > plan.shards) throw new Error(`the plan has ${plan.shards} parts, not ${shard}`);
+  if (!existsSync(countingBinary)) throw new Error(`no counting build at ${relative(root, countingBinary)}: \`bun scripts/testMap.ts build\` makes it`);
+  const started = Date.now();
+  const tools = llvmTools();
+  const lost = join(mapDir, "lost");
+  rmSync(lost, { recursive: true, force: true });
+  mkdirSync(lost, { recursive: true });
+  const recording = join(recordings, String(shard));
   rmSync(recording, { recursive: true, force: true });
   for (const dir of ["raw", "units", "targets"]) mkdirSync(join(recording, dir), { recursive: true });
-  const { names, functions } = functionTable(binary, recording, tools);
-  writeFileSync(join(recording, "names.json"), JSON.stringify(names));
-
-  const cores = machine().cores;
-  const files = mappedFiles();
-  const parts = cores;
-  const units = [
-    // The corpus in parts, each case a test of its own (testMapCompiler.ts).
-    ...Array.from({ length: parts }, (_, i) => ({
-      name: `test/corpus.test.ts ${i + 1}/${parts}`,
-      cmd: ["bun", "test", "test/corpus.test.ts"],
-      env: { RUST_JS_CASES: `${i + 1}/${parts}`, RUST_JS_TEST_MAP_UNIT: "test/corpus.test.ts" },
-    })),
-    // And the corpus built with std's iterator structs, as an iterator
-    // change's check runs it, each case a test of its own too.
-    ...Array.from({ length: parts }, (_, i) => ({
-      name: `test/iterator-forms.test.ts ${i + 1}/${parts}`,
-      cmd: ["bun", "test", "test/iterator-forms.test.ts"],
-      env: { ITERATOR_FORMS: "corpus", RUST_JS_CASES: `${i + 1}/${parts}`, RUST_JS_TEST_MAP_UNIT: "test/iterator-forms.test.ts" },
-    })),
-    ...files.map((file) => ({ name: file, cmd: ["bun", "test", file], env: { RUST_JS_TEST_MAP_UNIT: file } })),
-  ];
+  writeFileSync(join(recording, "names.json"), JSON.stringify(plan.names));
+  const units = plan.units.filter((unit) => unit.shard === shard);
   // The longest first, by what check:fast keeps of each file's time on this
   // machine (scripts/jobTimes.ts), so no long one runs alone at the end; the
   // corpus's parts first of all.
@@ -683,63 +774,79 @@ async function record(keep: boolean) {
   const took = (name: string) => Math.max(0, ...(times[name]?.seconds ?? []));
   const parted = (name: string) => (caseFiles.some((file) => name.startsWith(`${file} `)) ? -1 : 0);
   units.sort((a, b) => parted(a.name) - parted(b.name) || took(b.name) - took(a.name));
-  const ended = await runUnits(units, cores, recording, {
+  const ended = await runUnits(units, machine().cores, recording, {
     RUST_JS_COMPILER: join(root, "scripts", "testMapCompiler.ts"),
-    RUST_JS_TEST_MAP_COMPILER: binary,
+    RUST_JS_TEST_MAP_COMPILER: countingBinary,
     RUST_JS_TEST_MAP_DIR: recording,
     RUST_JS_TEST_MAP_PROFDATA: tools.profdata,
     RUST_JS_TEST_MAP_ROOT: root,
     RUST_JS_COMPILE_CACHE_MB: "0",
     RUST_JS_LOAD_SCALE: "3",
   });
-
   // A run the map didn't count: which test's, it can't say.
   const uncounted = readdirSync(lost);
   if (uncounted.length > 0) {
     console.error(`${uncounted.length} runs of the compiler had no LLVM_PROFILE_FILE, so no test's: find the test that starts it with an environment of its own (the map isn't written)`);
     process.exit(1);
   }
+  writeFileSync(join(recording, "ended.json"), JSON.stringify(Object.fromEntries(ended)));
+  for (const dir of ["raw", "targets", "names.json"]) rmSync(join(recording, dir), { recursive: true, force: true });
+  console.log(`part ${shard} of ${plan.shards}: ${units.length} tests, ${((Date.now() - started) / 1000).toFixed(0)} s`);
+  return recording;
+}
 
-  // Each test's functions, the union of its compiles'.
+/** The map of `plan`'s recording in `parts`, each a part's recording
+ * directory, `made` its time: each test's functions the union of its
+ * compiles', in whichever part it ran; one that failed, ran no compiler,
+ * wasn't counted whole, ran a function the table hasn't, or reads the
+ * compiler's sources, `null`, run on every change. The same map of the
+ * same tests however they're parted (test/test-map.test.ts). A test of the
+ * plan no part, or two, said ended of is refused: a part was lost. */
+export function mergeRecordings(plan: Plan, parts: string[], made: number): { map: TestMap; always: string[] } {
+  const ended = new Map<string, number>();
   const bits = new Map<string, Uint8Array>();
   const unfinished = new Set<string>();
-  for (const name of readdirSync(join(recording, "units"))) {
-    const [, slug, kind] = /^(.*)\.\d+-\d+\.(bits|start)$/.exec(name) ?? [];
-    if (slug === undefined) continue;
-    const unit = slug.replaceAll("__", "/");
-    if (kind === "start") {
-      unfinished.add(unit);
-      continue;
+  const unknown = new Set<string>();
+  for (const part of parts) {
+    const said: Record<string, number> = JSON.parse(readFileSync(join(part, "ended.json"), "utf8"));
+    for (const [name, code] of Object.entries(said)) {
+      if (ended.has(name)) throw new Error(`${name} ended in two parts of the recording`);
+      ended.set(name, code);
     }
-    const own = bits.get(unit) ?? new Uint8Array(Math.ceil(names.length / 8));
-    const read = readFileSync(join(recording, "units", name));
-    for (let i = 0; i < own.length; i++) own[i] |= read[i];
-    bits.set(unit, own);
+    for (const name of readdirSync(join(part, "units"))) {
+      const [, slug, kind] = /^(.*)\.\d+-\d+\.(bits|start)$/.exec(name) ?? [];
+      if (slug === undefined) continue;
+      const unit = slug.replaceAll("__", "/");
+      if (kind === "start") {
+        unfinished.add(unit);
+        continue;
+      }
+      const own = bits.get(unit) ?? new Uint8Array(Math.ceil(plan.names.length / 8));
+      const read = readFileSync(join(part, "units", name));
+      for (let i = 0; i < own.length; i++) own[i] |= read[i];
+      bits.set(unit, own);
+    }
+    if (existsSync(join(part, "unknown"))) {
+      for (const line of readFileSync(join(part, "unknown"), "utf8").split("\n").filter(Boolean)) unknown.add(line.split("\t")[0]);
+    }
   }
-  const unknown = existsSync(join(recording, "unknown"))
-    ? new Set(
-        readFileSync(join(recording, "unknown"), "utf8")
-          .split("\n")
-          .filter(Boolean)
-          .map((line) => line.split("\t")[0]),
-      )
-    : new Set<string>();
-  const caseNames = readdirSync(join(root, "test", "corpus")).filter((name) => name.endsWith(".rs"));
+  const missing = plan.units.filter((unit) => !ended.has(unit.name)).map((unit) => unit.name);
+  if (missing.length > 0) throw new Error(`no part of the recording ran ${missing.length} of its tests: ${missing.slice(0, 5).join(", ")}`);
   // Of a part that failed, each of its cases, as the files shard them, and
   // the file's own tests.
   const failedUnits = new Set<string>();
   for (const file of caseFiles) {
-    for (let i = 1; i <= parts; i++) {
-      if (ended.get(`${file} ${i}/${parts}`) === 0) continue;
+    for (let i = 1; i <= plan.parts; i++) {
+      if (ended.get(`${file} ${i}/${plan.parts}`) === 0) continue;
       failedUnits.add(file);
-      for (const name of shard(caseNames, i, parts)) failedUnits.add(caseUnit(file, name)!);
+      for (const name of shard(plan.caseNames, i, plan.parts)) failedUnits.add(caseUnit(file, name)!);
     }
   }
-  const caseUnits = caseFiles.flatMap((file) => caseNames.map((name) => caseUnit(file, name)!));
-  const units_: TestMap["units"] = {};
+  const caseUnits = caseFiles.flatMap((file) => plan.caseNames.map((name) => caseUnit(file, name)!));
+  const units: TestMap["units"] = {};
   const always: string[] = [];
-  for (const unit of [...files, ...caseFiles, ...caseUnits]) {
-    const isFile = files.includes(unit);
+  for (const unit of [...plan.files, ...caseFiles, ...caseUnits]) {
+    const isFile = plan.files.includes(unit);
     const failed = isFile ? ended.get(unit) !== 0 : failedUnits.has(unit);
     const own = bits.get(unit);
     const why = failed
@@ -750,44 +857,90 @@ async function record(keep: boolean) {
           ? "a compile of it wasn't counted whole"
           : unknown.has(unit)
             ? "a compile of it ran a function the table hasn't"
-            : isFile && readsSources(unit)
+            : isFile && plan.readsSources.includes(unit)
               ? "it reads the compiler's sources"
               : undefined;
-    units_[unit] = why === undefined ? Buffer.from(own!).toString("base64") : null;
+    units[unit] = why === undefined ? Buffer.from(own!).toString("base64") : null;
     if (why !== undefined) always.push(`${unit} (${why})`);
   }
-  // The plain suites' files that read the corpus's files: each says where.
-  const corpusReaders = files.filter((file) => /\bcorpus\b/.test(readFileSync(join(root, file), "utf8")));
-  const map: TestMap = { version: mapVersion, commit, toolchain, made: Date.now(), functions, units: units_, includes: includes(), corpusReaders };
+  const { version, commit, toolchain, functions, includes, corpusReaders } = plan;
+  return { map: { version, commit, toolchain, made, functions, units, includes, corpusReaders }, always };
+}
+
+/** The map of the plan's recording, every part's, kept in the machine's
+ * store; what only the recording needed removed, unless `keep`. */
+function merge(plan: Plan, keep: boolean) {
+  const parts = existsSync(recordings) ? readdirSync(recordings).map((name) => join(recordings, name)) : [];
+  if (parts.length !== plan.shards) throw new Error(`the plan has ${plan.shards} parts, and ${parts.length} were recorded in ${relative(root, recordings)}`);
+  const { map, always } = mergeRecordings(plan, parts, Date.now());
+  const file = mapFile(mapStore, plan.commit, plan.toolchain);
   // Written whole, then named, so another worktree never reads half of it.
   mkdirSync(mapStore, { recursive: true });
   const writing = `${file}.${process.pid}.tmp`;
   writeFileSync(writing, JSON.stringify(map));
   renameSync(writing, file);
-  pruneMaps(mapStore, keptMaps, () => freeBytes(mapStore), toolchain);
+  pruneMaps(mapStore, keptMaps, () => freeBytes(mapStore), plan.toolchain);
   // What only this recording needed, its counts and each test's target,
   // kept with `--keep`, to see why a test runs on every change. Its build is
   // kept, one, as `target/debug` is, so the next recording builds only
   // what changed.
-  if (!keep) rmSync(recording, { recursive: true, force: true });
+  if (!keep) {
+    rmSync(recordings, { recursive: true, force: true });
+    rmSync(planFile, { force: true });
+  }
   const isCase = (unit: string) => /test\/corpus\/[^ ]+\.rs/.test(unit);
   const cased = always.filter(isCase);
-  console.log(`the test map of ${commit.slice(0, 9)}: ${functions.length} functions, ${Object.keys(units_).length} tests; ${always.length} run on every change:`);
+  console.log(`the test map of ${plan.commit.slice(0, 9)}: ${map.functions.length} functions, ${Object.keys(map.units).length} tests; ${always.length} run on every change:`);
   for (const unit of always.filter((unit) => !isCase(unit))) console.log(`  ${unit}`);
   if (cased.length > 0) console.log(`  ${cased.length} cases: ${cased.slice(0, 10).join(", ")}${cased.length > 10 ? ", …" : ""}`);
+}
+
+/** Record HEAD's map on this machine: the counting build, then each test,
+ * then which functions each ran, one part of one. */
+async function record(keep: boolean) {
+  const commit = git(["rev-parse", "HEAD"]).out.trim();
+  // One any worktree recorded of this commit is this one's (#932); `--keep`
+  // records again, to see why a test runs on every change.
+  if (!keep && nearestMap(mapStore, root, toolchainOf())?.commit === commit) {
+    console.log(`the test map of ${commit.slice(0, 9)} is recorded already, by this worktree or another: ${mapFile(mapStore, commit, toolchainOf())}`);
+    return;
+  }
+  const started = Date.now();
+  const plan = await build(1);
+  await recordPart(plan, 1);
+  merge(plan, keep);
   console.log(`${((Date.now() - started) / 1000).toFixed(0)} s`);
 }
 
 if (import.meta.main) {
-  const [command] = process.argv.slice(2);
-  if (command === undefined || command === "record" || command === "--keep") await record(process.argv.includes("--keep"));
-  else if (command === "ensure") {
-    // CI's: a map of the nearest ancestor its cache kept serves, as one
-    // does a worktree's check (`headMap`, the changes since its commit
-    // can't be placed by it); HEAD's recorded only where there's none.
-    const { recorded, commit } = await ensureMap();
-    if (!recorded) console.log(`the test map of ${commit.slice(0, 9)}, an ancestor of HEAD, serves`);
-    if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, `recorded=${recorded}\n`);
+  const args = process.argv.slice(2);
+  const [command] = args;
+  if (command === undefined || command === "record" || command === "--keep") await record(args.includes("--keep"));
+  else if (command === "kept") {
+    // CI's: whether a map of the nearest ancestor its cache kept serves, as
+    // one does a worktree's check (`headMap`, the changes since its commit
+    // can't be placed by it), or, `--head`, the nightly's, one of HEAD; its
+    // exit status. Where none does, the recording is CI's to make, in parts.
+    const map = nearestMap(mapStore, root, toolchainOf());
+    const head = git(["rev-parse", "HEAD"]).out.trim();
+    const serves = map !== undefined && (!args.includes("--head") || map.commit === head);
+    console.log(serves ? `the test map of ${map.commit.slice(0, 9)}${map.commit === head ? ", HEAD's," : ", an ancestor of HEAD,"} serves` : `no test map of ${args.includes("--head") ? "HEAD" : "HEAD or an ancestor of it"} is kept`);
+    process.exit(serves ? 0 : 1);
+  } else if (command === "build") {
+    const shards = Number(args.find((arg) => arg.startsWith("--shards="))?.slice("--shards=".length));
+    if (!Number.isInteger(shards) || shards < 1) throw new Error("build --shards=N: the machines the recording's parts run on, at least 1");
+    const plan = await build(shards);
+    console.log(`the plan of ${plan.commit.slice(0, 9)}: ${plan.units.length} tests in ${plan.shards} parts, the corpus's files in ${plan.parts}`);
+    // CI's parts, a job each: their count and each one's number.
+    const parts = Array.from({ length: plan.shards }, (_, i) => i + 1);
+    if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, `shards=${plan.shards}\nparts=${JSON.stringify(parts)}\n`);
+  } else if (command === "units") {
+    const part = shardArg(args);
+    const plan = readPlan();
+    if (part === undefined || part.count !== plan.shards) throw new Error(`units --shard=i/${plan.shards}: the plan's parts`);
+    await recordPart(plan, part.index);
+  } else if (command === "merge") {
+    merge(readPlan(), false);
   } else if (command === "pick") {
     const cases = readdirSync(join(root, "test", "corpus")).filter((name) => name.endsWith(".rs"));
     const picked = pickChange(mappedFiles(), cases);
@@ -797,7 +950,7 @@ if (import.meta.main) {
       console.log(`cases (${picked.cases.length} of ${cases.length}), with std's iterator structs (${picked.forms.length})`);
     }
   } else {
-    console.error("usage: bun run test-map [record | pick | ensure]");
+    console.error("usage: bun run test-map [record | pick | kept [--head] | build --shards=N | units --shard=i/N | merge]");
     process.exit(2);
   }
 }

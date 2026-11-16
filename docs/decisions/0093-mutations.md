@@ -660,13 +660,13 @@ shard (nightly 43650311159). Now, the lead for the user:
 
 - **CI has a map.** rustc-tests.yml's `test-map` job, which every mutation
   shard needs: of a run of every mutation, the nightly's, HEAD's recorded
-  (`bun scripts/testMap.ts record`) and cached by its run; of a change's,
-  the nearest ancestor's the cache kept, HEAD's recorded only where there's
-  none (`ensure`). Each shard downloads it.
+  and cached by its run; of a change's, the nearest ancestor's the cache
+  kept, HEAD's recorded only where there's none (`kept`; recorded in parts
+  since the amendment below). Each shard downloads it.
 - **No map fails CI's run.** The judge throws, naming CI's job, where the
   machine has none; it never falls back to every case. A run here records
   HEAD's map itself where the machine keeps none of HEAD or an ancestor,
-  once a run as its first survivor asks (`ensureMap`, CI's `ensure` too),
+  once a run as its first survivor asks (`ensureMap`),
   of a clean tree, and says how long it took; of a working tree that
   changes HEAD it fails, saying to commit first (the lead, 2026-11-16).
 - **A site the map can't place is a survivor that says what to write.** One
@@ -717,3 +717,35 @@ Here sccache refuses `CARGO_INCREMENTAL=1` ("incremental compilation is
 prohibited"), and passes an incremental build through only where the
 variable is unset: the runner never sets it to 1, only `--fresh`'s 0, and
 the Mac's builds stay incremental by the profile.
+
+## Amendment: CI records the test map in parts, on eight machines, and merges them (2026-11-16)
+
+CI's `test-map` job recorded a map on one machine wherever its cache kept
+none of HEAD or an ancestor, the nightly's every night: 38.6 min of check
+43789968835, its counting build 251 s and its tests 33.6 min, 7,916
+seconds of tests on four cores, the corpus's four parts about 980 s each.
+Now, the lead for the user:
+
+- **Recorded in parts.** `scripts/testMap.ts build --shards=N` makes the
+  counting build and the recording's plan: the function table, what the map
+  says of the checkout's sources, and each test dealt to one part, the
+  corpus's files in `N` times the machine's cores of parts. `units
+  --shard=i/N` runs part `i`'s tests with that build; `merge` writes the
+  one map of every part's recording (`mergeRecordings`), and refuses a
+  recording a test of the plan is missing from, or said twice by. `bun run
+  test-map` is the same three, one part, on one machine: one recording, one
+  merge, whatever the parts.
+- **The parts are jobs only where they're needed.** `test-map` asks
+  `kept` (`--head` of a run of every mutation): where a map serves it's
+  given to the shards as it was, and `test-map-part`'s eight jobs and
+  `test-map-merge` are skipped outright, so a push adds none to the free
+  plan's 20 at once. Where none does, `test-map` builds, eight parts record
+  and the merge caches the map and gives it to the shards, which wait for
+  it either way. `ensure`, which recorded on one machine, is gone: `kept`
+  is the one question (test/test-map.test.ts).
+- **The merge is the map of one recording.** test/test-map.test.ts merges a
+  fixture's recording in three parts and in one, byte for byte; and of the
+  real tests on the Mac mini, HEAD's map recorded whole, 318 s, and in three
+  parts one after another, 101, 90 and 97 s, merged in 1 s, were the same
+  map byte for byte but its time made: 22,575 functions, 5,373 tests, 71
+  run on every change.

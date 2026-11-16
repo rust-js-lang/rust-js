@@ -1,0 +1,53 @@
+// The test map's recording in parts, CI's on many machines, and the one map
+// its merge writes (scripts/testMap.ts).
+import type { Mutation } from "../mutations";
+export const mutations: Mutation[] = [
+  {
+    name: "test-map-merge-reads-one-part",
+    breaks: "the merge of a recording's parts reads only the first, the other machines' tests lost",
+    file: "scripts/testMap.ts",
+    find: "  for (const part of parts) {\n    const said",
+    replace: "  for (const part of parts.slice(0, 1)) {\n    const said",
+    tests: ["test/test-map.test.ts", "-t", "merge of a recording's parts"],
+  },
+  {
+    name: "test-map-merge-forgets-lost-parts",
+    breaks: "a recording whose part was lost merges into a map short of that part's tests, each of them a test that ran no compiler",
+    file: "scripts/testMap.ts",
+    find: "if (missing.length > 0) throw",
+    replace: "if (missing.length < 0) throw",
+    tests: ["test/test-map.test.ts", "-t", "merge of a recording's parts"],
+  },
+  {
+    name: "test-map-merge-takes-a-test-twice",
+    breaks: "a test two parts said ended of is merged, the later part's exit kept, where a part was read twice",
+    file: "scripts/testMap.ts",
+    find: "if (ended.has(name)) throw new Error",
+    replace: "if (ended.has(name) && false) throw new Error",
+    tests: ["test/test-map.test.ts", "-t", "merge of a recording's parts"],
+  },
+  {
+    name: "test-map-merge-keeps-the-last-compile",
+    breaks: "a test's functions are its last compile's, not the union of its compiles'",
+    file: "scripts/testMap.ts",
+    find: "for (let i = 0; i < own.length; i++) own[i] |= read[i];",
+    replace: "for (let i = 0; i < own.length; i++) own[i] = read[i];",
+    tests: ["test/test-map.test.ts", "-t", "merge of a recording's parts"],
+  },
+  {
+    name: "test-map-plan-deals-one-part-everywhere",
+    breaks: "every machine of a recording runs the first machine's parts of the corpus, the rest never run",
+    file: "scripts/testMap.ts",
+    find: "const caseParts = caseShardParts(at, shards, perShard);",
+    replace: "const caseParts = caseShardParts(1, shards, perShard);",
+    tests: ["test/test-map.test.ts", "-t", "merge of a recording's parts"],
+  },
+  {
+    name: "test-map-ensure-again",
+    breaks: "a second way to ask for a kept map, `ensure`, which records on one machine where none is kept",
+    file: "scripts/testMap.ts",
+    find: '  } else if (command === "build") {',
+    replace: '  } else if (command === "ensure") {\n    await ensureMap();\n  } else if (command === "build") {',
+    tests: ["test/test-map.test.ts", "-t", "CI's test map"],
+  },
+];
