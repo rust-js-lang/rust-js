@@ -25,8 +25,8 @@ export const mutations: Mutation[] = [
     breaks:
       "an `Option` read past its test is folded away, so what reads it after reads a variable no longer declared (ADR 0910)",
     file: "src/lower/mir/tidy/options.rs",
-    find: "    if read_elsewhere || js::declares(reads, x.word()) || js::read_where_other(reads, x.word(), v.word()) {\n",
-    replace: "    if js::declares(reads, x.word()) || js::read_where_other(reads, x.word(), v.word()) {\n",
+    find: "    if read_elsewhere || js::declares(reads, x) || js::read_where_other(reads, x.word(), v.word()) {\n",
+    replace: "    if js::declares(reads, x) || js::read_where_other(reads, x.word(), v.word()) {\n",
     tests: ["test/corpus.test.ts", "-t", "tested_options"],
   },
   {

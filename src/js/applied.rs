@@ -310,7 +310,7 @@ fn tested_of(stmts: &[Stmt], at: usize, whole: &[Stmt]) -> Option<Vec<Stmt>> {
         }
         _ => false,
     };
-    if !leaves(&yes) || !leaves(&no) || mentions_in(whole, name.word()) != 1 {
+    if !leaves(&yes) || !leaves(&no) || mentions_of(whole, name) != 1 {
         return None;
     }
     let beside = StmtKind::Const(name.clone(), Expr::js_undefined()).at(stmts[at].span);
@@ -368,7 +368,7 @@ fn set_of(stmt: &Stmt, whole: &[Stmt]) -> Option<Vec<Stmt>> {
     // Not where the body names `x`, a block's own, which its sets would
     // be of: lowering names such a block's `x` apart, `x$1`, as JS's `const
     // x` isn't made until the call's done.
-    if declares(&inlined, name.word()) || mentions_in(&inlined, name.word()) > 0 {
+    if declares(&inlined, name) || mentions_of(&inlined, name) > 0 {
         return None;
     }
     let to = Expr::var(name);
@@ -427,19 +427,19 @@ fn first_of<'s>(stmt: &'s mut Stmt, is: &dyn Fn(&Expr) -> bool) -> Option<&'s mu
 /// evaluates: `v` there, `if (!objectIs(getSnapshot(), renderedValue))`,
 /// as React writes it. The same program: nothing is evaluated between
 /// (ADR 0706, amended).
-pub fn read_where_made(stmts: &mut Vec<Stmt>, name: &str) {
-    let Some(at) = (stmts.iter()).position(|s| matches!(&s.kind, StmtKind::Const(n, _) if n.is(name))) else {
+pub fn read_where_made(stmts: &mut Vec<Stmt>, name: &Name) {
+    let Some(at) = (stmts.iter()).position(|s| matches!(&s.kind, StmtKind::Const(n, _) if n == name)) else {
         return;
     };
     let rest = &stmts[at + 1..];
-    if rest.is_empty() || mentions_in(rest, name) != 1 || declares(rest, name) {
+    if rest.is_empty() || mentions_of(rest, name) != 1 || declares(rest, name) {
         return;
     }
     let StmtKind::Const(_, value) = &stmts[at].kind else {
         unreachable!("found above")
     };
     let value = value.clone();
-    let is_read = |e: &Expr| matches!(&e.kind, ExprKind::Var(v) if v.is(name));
+    let is_read = |e: &Expr| matches!(&e.kind, ExprKind::Var(v) if v == name);
     let Some(read) = first_of(&mut stmts[at + 1], &is_read) else {
         return;
     };
@@ -485,7 +485,7 @@ fn in_place(
         ([], []) => None,
         ([Pattern::Name(param), unread @ ..], [arg, extra @ ..])
             if extra.len() <= unread.len()
-                && (unread.iter()).all(|p| matches!(p, Pattern::Name(n) if mentions_in(&body, n.word()) == 0))
+                && (unread.iter()).all(|p| matches!(p, Pattern::Name(n) if mentions_of(&body, n) == 0))
                 && !extra.iter().any(Expr::has_effects) =>
         {
             Some((param, arg))
@@ -525,7 +525,7 @@ fn in_place(
             // What a body that never reads its parameter is given, of no
             // effects: nothing, `finishDrop({ value: _finish })` of a unit
             // struct's `Drop`, which reads no `self` (ADR 0608, amended).
-            _ if !arg.has_effects() && mentions_in(&body, param.word()) == 0 => (None, false),
+            _ if !arg.has_effects() && mentions_of(&body, param) == 0 => (None, false),
             _ => return None,
         },
     };
@@ -563,10 +563,8 @@ fn in_place(
         };
         let mut seen_before = false;
         each_expr(&body[..first], &mut |e| match &e.kind {
-            ExprKind::Arrow(_, inner) | ExprKind::AsyncArrow(_, inner) => {
-                seen_before |= mentions_in(inner, param.word()) > 0
-            }
-            ExprKind::Function(function) => seen_before |= mentions_in(&function.body, param.word()) > 0,
+            ExprKind::Arrow(_, inner) | ExprKind::AsyncArrow(_, inner) => seen_before |= mentions_of(inner, param) > 0,
+            ExprKind::Function(function) => seen_before |= mentions_of(&function.body, param) > 0,
             _ => {}
         });
         if !matches!(&target.kind, ExprKind::Var(v) if v == param) || seen_before {
@@ -629,7 +627,7 @@ fn in_place(
         return Some(body);
     };
     if let ExprKind::Handle(..) = arg.kind {
-        set_values_held(&mut body, param.word());
+        set_values_held(&mut body, param);
     }
     let mut read = arg.clone();
     read.each_mut(&mut |e| e.span = Span::NONE);
@@ -657,10 +655,10 @@ fn in_place(
 /// throughout it. Not where it does, `*handle = None;` after the binding's
 /// last read, nor where a closure in the branch reads `set`, which
 /// `substituted` refuses (ADR 0840, amended).
-fn set_values_held(body: &mut Vec<Stmt>, handle: &str) {
+fn set_values_held(body: &mut Vec<Stmt>, handle: &Name) {
     let is_held = |e: &Expr| {
         matches!(&e.kind, ExprKind::Member(of, key)
-            if key == crate::js::HELD && matches!(&of.kind, ExprKind::Var(v) if v.is(handle)))
+            if key == crate::js::HELD && matches!(&of.kind, ExprKind::Var(v) if v == handle))
     };
     statement_lists(body, &mut |stmts| {
         for stmt in stmts.iter_mut() {
@@ -680,7 +678,7 @@ fn set_values_held(body: &mut Vec<Stmt>, handle: &str) {
             else {
                 continue;
             };
-            if !is_held(value) || mentions_in(rest, handle) > 0 || declares(rest, set.word()) {
+            if !is_held(value) || mentions_of(rest, handle) > 0 || declares(rest, set) {
                 continue;
             }
             let mut read = rest.to_vec();
@@ -1122,7 +1120,7 @@ mod tests {
         let add = |to: Expr| StmtKind::Expr(Expr::call(Expr::member(to, "add"), vec![Expr::int(1)])).at(Span::NONE);
         let after = |rest: Vec<Stmt>| {
             let mut body = branch(rest);
-            set_values_held(&mut body, "h");
+            set_values_held(&mut body, &Name::from("h"));
             body
         };
         // `s.add(1)`: `h.value.add(1)`, the binding's statement what's said.

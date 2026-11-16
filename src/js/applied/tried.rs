@@ -111,7 +111,7 @@ pub fn applied_tried(mut tried: Vec<Stmt>) -> Vec<Stmt> {
                 };
                 // Not where the body declares the variable's name, which
                 // its blocks would set in its place.
-                let shadowed = matches!(&to.kind, ExprKind::Var(name) if declares(&body, name.word()));
+                let shadowed = matches!(&to.kind, ExprKind::Var(name) if declares(&body, name));
                 let set = |value: &Expr, at: Span| Some(vec![StmtKind::Assign(to.clone(), value.clone()).at(at)]);
                 let Some(set) = returns_replaced(&body, &set).filter(|_| !shadowed) else {
                     return tried;
@@ -228,17 +228,17 @@ fn set_where_made(
         // The `catch` leaves the variable's block, naming it nowhere, or
         // sets it before it names it.
         let unseen = |caught: &[Stmt]| {
-            let leaves = caught.last().is_some_and(ends) && mentions_in(caught, variable.word()) == 0;
+            let leaves = caught.last().is_some_and(ends) && mentions_of(caught, variable) == 0;
             let first_set = caught.iter().position(|s| {
                 matches!(&s.kind, StmtKind::Assign(t, v)
                     if matches!(&t.kind, ExprKind::Var(n) if n == variable) && !v.mentions_var(variable.word()))
             });
-            leaves || first_set.is_some_and(|first| mentions_in(&caught[..first], variable.word()) == 0)
+            leaves || first_set.is_some_and(|first| mentions_of(&caught[..first], variable) == 0)
         };
         let same = declared(variable.word())
-            && mentions_in(&tried[..set], variable.word()) == 0
-            && !declares(between, variable.word())
-            && mentions_in(&tried[set + 1..], value.word()) == 0
+            && mentions_of(&tried[..set], variable) == 0
+            && !declares(between, variable)
+            && mentions_of(&tried[set + 1..], value) == 0
             && !read_in_a_closure(between, value.word())
             && (between.iter().all(Stmt::cannot_throw) || binding != Some(variable.word()) && unseen(caught));
         same.then(|| (made, set, variable.to_string()))

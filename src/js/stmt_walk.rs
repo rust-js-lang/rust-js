@@ -554,20 +554,20 @@ fn canonical(stmts: &[Stmt], facts: bool) -> Vec<Stmt> {
 /// Whether `stmts` declare the name `name`, however deep, a closure's
 /// parameter or declaration in them too: where a read of it there may be
 /// of another than the one before them.
-pub fn declares(stmts: &[Stmt], name: &str) -> bool {
+pub fn declares(stmts: &[Stmt], name: &Name) -> bool {
     let mut copy = stmts.to_vec();
     let mut found = false;
-    rename_binders(&mut copy, &mut |n| found |= n.is(name));
+    rename_binders(&mut copy, &mut |n| found |= n == name);
     each_expr_mut(&mut copy, &mut |e| match &mut e.kind {
         ExprKind::Arrow(params, body) | ExprKind::AsyncArrow(params, body) => {
             params
                 .iter_mut()
-                .for_each(|p| p.each_name_mut(&mut |n| found |= n.is(name)));
-            rename_binders(body, &mut |n| found |= n.is(name));
+                .for_each(|p| p.each_name_mut(&mut |n| found |= n == name));
+            rename_binders(body, &mut |n| found |= n == name);
         }
         ExprKind::Function(function) => {
-            (function.params.iter_mut()).for_each(|p| p.each_name_mut(&mut |n| found |= n.is(name)));
-            rename_binders(&mut function.body, &mut |n| found |= n.is(name));
+            (function.params.iter_mut()).for_each(|p| p.each_name_mut(&mut |n| found |= n == name));
+            rename_binders(&mut function.body, &mut |n| found |= n == name);
         }
         _ => {}
     });

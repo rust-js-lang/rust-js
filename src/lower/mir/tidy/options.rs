@@ -111,7 +111,7 @@ fn tested_option(
         (false, _) => return None,
     };
     let read_elsewhere = unread.iter().any(|stmts| js::mentions_of(stmts, x) > 0) || test.mentions_name(x);
-    if read_elsewhere || js::declares(reads, x.word()) || js::read_where_other(reads, x.word(), v.word()) {
+    if read_elsewhere || js::declares(reads, x) || js::read_where_other(reads, x.word(), v.word()) {
         return None;
     }
     let mut reads = reads.to_vec();

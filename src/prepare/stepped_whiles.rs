@@ -78,7 +78,7 @@ fn stepped(declared: &Stmt, looped: &Stmt, after: &[Stmt]) -> Option<StmtKind> {
 /// `const stride = ..;` in it.
 fn reads_declared(value: &Expr, stmts: &[Stmt]) -> bool {
     let mut declared = false;
-    value.visit_vars(&mut |v| declared |= js::declares(stmts, v));
+    value.visit_names(&mut |v| declared |= js::declares(stmts, v));
     declared
 }
 

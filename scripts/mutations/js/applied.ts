@@ -164,7 +164,7 @@ export const mutations: Mutation[] = [
     name: "unused-parameter-argument-kept",
     breaks: "a unit struct's `Drop`, given its guard's box, stays a function each drop calls, `finishFlushingDrop_drop({ value: _finish })` (ADR 0608, amended)",
     file: "src/js/applied.rs",
-    find: "        _ if !arg.has_effects() && mentions_in(&body, param.word()) == 0 => (None, false),\n",
+    find: "        _ if !arg.has_effects() && mentions_of(&body, param) == 0 => (None, false),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^drop_unit_guard.rs$"],
     snapshots: true,
@@ -257,7 +257,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a generic `Drop` whose body reads what it's given for its type parameter, `TDefault.default()` and `dropT?.(old)`, is its body where it's dropped, which reads names the caller hasn't (#501)",
     file: "src/js/applied.rs",
-    find: "                && (unread.iter()).all(|p| matches!(p, Pattern::Name(n) if mentions_in(&body, n.word()) == 0))\n",
+    find: "                && (unread.iter()).all(|p| matches!(p, Pattern::Name(n) if mentions_of(&body, n) == 0))\n",
     replace: "                && (unread.iter()).all(|p| matches!(p, Pattern::Name(_)))\n",
     tests: ["test/corpus.test.ts", "-t", "^drop_guard_of_a_closure.rs$"],
     snapshots: true,
@@ -324,7 +324,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a flag read again after the `if` that tests it, `format!(\"seen {fresh}\")`, is folded into the closure's returns, and that read finds no variable (#571)",
     file: "src/js/applied.rs",
-    find: " || mentions_in(whole, name.word()) != 1 {\n",
+    find: " || mentions_of(whole, name) != 1 {\n",
     replace: " {\n",
     tests: ["test/corpus.test.ts", "-t", "^closure_returned_early_tested.rs$"],
   },
@@ -352,7 +352,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `Some` arm's binding into a nullable thread-local's lent place, in place, stays a copy of the module's variable, `const didWarn$1 = didWarn;` (rd723)",
     file: "src/js/applied.rs",
-    find: "        set_values_held(&mut body, param.word());\n",
+    find: "        set_values_held(&mut body, param);\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^lent_place_set_read_in_place.rs$"],
     snapshots: true,
@@ -362,7 +362,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a branch that sets the place through the handle, `*count = Some(n + 1);`, reads its binding as the place after the write, so `n > 1` reads the new count (rd723)",
     file: "src/js/applied.rs",
-    find: " || mentions_in(rest, handle) > 0 || ",
+    find: " || mentions_of(rest, handle) > 0 || ",
     replace: " || ",
     tests: ["test/corpus.test.ts", "-t", "^lent_place_set_read_in_place.rs$"],
   },

@@ -778,7 +778,7 @@ fn try_catch(made: &Stmt, tested: &Stmt, before: &[Stmt], rest: &[Stmt], ends: b
         // it names, `Ok(active_element) => active_element`'s `return
         // activeElement ?? null;` of a nullable result (rd16), as tidy reads
         // any `const` read once where it's read.
-        if let Some(name) = value_name.as_ref().map(|n| n.word()) {
+        if let Some(name) = value_name.as_ref() {
             js::read_where_made(&mut tried, name);
         }
         let at = tried.len().saturating_sub(own);

@@ -716,7 +716,7 @@ pub(super) fn looped_drops(stmts: &mut Vec<Stmt>, for_made: bool, tidied: &mut d
         let run = [start_of(for_made), start_of(false)].into_iter().find_map(|start| {
             let mut run: Vec<Stmt> = stmts[start..k].to_vec();
             let mut declared = false;
-            js::visit_stmts(&exit, &mut |name| declared |= js::declares(&run, name));
+            js::visit_stmt_names(&exit, &mut |name| declared |= js::declares(&run, name));
             // The blocks it labels, whose `break`s go on in it.
             let labels = own_labels(&mut run);
             let inside = Inside {
@@ -869,7 +869,7 @@ fn ended_exit(
     body: &mut Vec<Stmt>,
     item: &js::Name,
     drop: &Stmt,
-    declared: &dyn Fn(&str) -> bool,
+    declared: &dyn Fn(&js::Name) -> bool,
 ) -> Option<Vec<Stmt>> {
     // Whether `stmts` jump, but by a `return` or a `throw`.
     fn jump(stmts: &[Stmt]) -> bool {
@@ -896,7 +896,7 @@ fn ended_exit(
             return None;
         }
         let mut read = false;
-        js::visit_stmts(exit, &mut |name| read |= declared(name));
+        js::visit_stmt_names(exit, &mut |name| read |= declared(name));
         if read {
             return None;
         }

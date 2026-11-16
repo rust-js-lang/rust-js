@@ -54,7 +54,7 @@ fn said_at(stmts: &[Stmt], i: usize, switches: &[Switch]) -> Option<Vec<Stmt>> {
         .take_while(|s| matches!(s.kind, StmtKind::Let(_, None)))
         .count();
     let (lets, then) = then.split_at(declared);
-    if (lets.iter()).any(|s| matches!(&s.kind, StmtKind::Let(name, _) if js::declares(&stmts[..i], name.word()))) {
+    if (lets.iter()).any(|s| matches!(&s.kind, StmtKind::Let(name, _) if js::declares(&stmts[..i], name))) {
         return None;
     }
     // What the chain's arms go on to leaves, as what follows the block
