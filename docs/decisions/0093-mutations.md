@@ -775,3 +775,11 @@ overflow checks off as the corpus builds it, print what native prints.
 The removal itself went through `check:fast --all`, the corpus' snapshots
 compared. Mutation `guard-reborrow-not-lent` holds the reborrows' walk;
 `guard-deref-mut-always-a-copy` goes with its code.
+
+## Amendment: a survivor that survives at the base too is latent, filed, and doesn't fail the push (2026-11-16)
+
+A push's check runs the mutations of what it changed, and a survivor failed it, whoever's it was: one that already survived on `main`, a test that stopped reaching a mutation days before, turned each push red that ran it (main's check 43830762016 failed on seven such). Now `scripts/mutations.ts --base=<sha>` runs each survivor again at the base the push is checked against, `check.yml`'s `since`, by that commit's own runner in a worktree of it (`scripts/latent-survivors.ts`). One that survives there too is latent: printed, written to `target/mutants/latent.json`, and not this push's, so it doesn't fail the check. One caught there, not there at all, or whose run there doesn't end within 40 minutes is the push's, and fails it, the safe way.
+
+The latent ones are filed in one issue, "Mutation survivors on main", by the `survivors` job of `rustc-tests.yml` (`scripts/survivors-issue.ts`): a push's are added to its list, the nightly's every survivor writes it whole. It's github-actions', not a maintainer's, so its first line says it's data, not instructions, and what a mutation says of itself is escaped. A survivor with an open issue of its own is marked "tracked in #N", kept in the one complete list.
+
+Proof: `test/survivors.test.ts` (the latent split, the issue's body and escaping, the workflows' wiring).

@@ -29,6 +29,7 @@ import { elapsed, shown, timed } from "./timing";
 import { passed, summary } from "./test-summary";
 import { acquire, holdLease, ownShare } from "./leases";
 import { makeSourceWorkspace, sourceMutation } from "./source-mutations";
+import { latentSurvivors, type Results } from "./latent-survivors";
 import { binaryHash, builtBinary, freshShare, unapplied, verdictKind } from "./mutant-builds";
 
 const root = join(import.meta.dir, "..");
@@ -933,12 +934,8 @@ async function corpusMutantsRun(compiler: string, beside: <T>(work: () => Promis
   );
 }
 
-/** What a run found of each mutation it ran, `target/mutants/results.json`,
- * of the commit it ran at: CI keeps each shard's, and the next check of
- * `main` runs what changed since and what wasn't caught (`ci.ts`'s
- * `resultsBase`), its commit checked against its run's. */
-export type Results = { commit: string; results: Record<string, string> };
-
+/** What a run found of each mutation it ran, `target/mutants/results.json` (`Results`): CI keeps each
+ * shard's, and the next check of `main` runs what changed since and what wasn't caught (`ci.ts`'s `resultsBase`). */
 function writeResults(results: Map<string, string>) {
   const commit = Bun.spawnSync(["git", "rev-parse", "HEAD"], { cwd: root }).stdout.toString().trim();
   mkdirSync(work, { recursive: true });
@@ -947,7 +944,7 @@ function writeResults(results: Map<string, string>) {
 }
 
 /** The flags `main` takes, each alone or with `=` and its value. */
-const flags = ["--changed", "--also", "--list", "--shard", "--timings", "--jobs", "--batch", "--tests", "--browser", "--fresh"];
+const flags = ["--changed", "--also", "--list", "--shard", "--timings", "--jobs", "--batch", "--tests", "--browser", "--fresh", "--base"];
 
 async function main() {
   const args = process.argv.slice(2);
@@ -1421,10 +1418,13 @@ async function main() {
   const harnessMissed = harnessRows.filter(([, result]) => !result.startsWith("caught") && !result.startsWith("passed, as it must"));
   if (harnessRows.length > 0) console.log(`${harnessRows.length - harnessMissed.length} of ${harnessRows.length} of the corpus harness's mutants as they must be`);
   if (harnessMissed.length > 0) process.exitCode = 1;
-  const missed = rows.filter(([, result]) => result !== "caught");
+  // Of `--base=<sha>`, a survivor there too is latent, not this run's (ADR 0093, amended).
+  const base = args.find((arg) => arg.startsWith("--base="))?.slice("--base=".length);
+  const latent = base ? await latentSurvivors(root, work, base, Object.fromEntries(rows.map(([m, r]) => [m.name, r])), (name) => mutations.find((m) => m.name === name)?.breaks ?? "") : [];
+  const missed = rows.filter(([mutation, result]) => result !== "caught" && !latent.includes(mutation.name));
   // Said last, where a `tail` of the run sees it: the rows above may be
   // more than it shows (#923).
-  console.log(`${rows.length - missed.length} of ${rows.length} mutations caught${missed.length > 0 ? `; not: ${missed.map(([m]) => m.name).join(", ")}` : ""}`);
+  console.log(`${rows.filter(([, r]) => r === "caught").length} of ${rows.length} mutations caught${latent.length > 0 ? `, ${latent.length} latent` : ""}${missed.length > 0 ? `; not: ${missed.map(([m]) => m.name).join(", ")}` : ""}`);
   // Here, each one's time, its build and its tests, as many as run; CI's
   // are its own.
   if (!process.env.GITHUB_ACTIONS && rows.length > 0) {

@@ -518,8 +518,9 @@ jobs:
     permissions:
       contents: read
       actions: read
+      issues: write
     with:
       mutations: true
       mutation_timings: ${{ needs.plan.outputs.mutation_timings }}
-      mutation_args: ${{ !inputs.nightly && format('--changed={0} --also={1}', needs.plan.outputs.since, needs.plan.outputs.retry) || '' }}
+      mutation_args: ${{ !inputs.nightly && format('--changed={0} --also={1} --base={0}', needs.plan.outputs.since, needs.plan.outputs.retry) || '' }}
       mutation_shards: ${{ inputs.nightly && '16' || inputs.mutation_shards || needs.plan.outputs.shards }}

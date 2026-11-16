@@ -35,6 +35,11 @@ concurrency:
 jobs:
   check:
     uses: ./.github/workflows/check.yml
+    # Its mutations file the night's survivors (ADR 0093, amended).
+    permissions:
+      contents: read
+      actions: read
+      issues: write
     with:
       test_shards: '2'
       nightly: true

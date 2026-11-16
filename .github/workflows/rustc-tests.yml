@@ -619,6 +619,41 @@ jobs:
           name: mutation-logs-${{ matrix.shard }}
           path: target/mutants/logs
           if-no-files-found: ignore
+      # The survivors that survive at the base too (`--base`), which didn't
+      # fail this run: for the tracking issue (`survivors`).
+      - if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: mutation-latent-${{ matrix.shard }}
+          path: target/mutants/latent.json
+          if-no-files-found: ignore
+
+  # The one issue listing the mutations surviving on `main` (ADR 0093,
+  # amended): a push's latent survivors added to it, the nightly's every
+  # survivor, the list whole (scripts/survivors-issue.ts). Written by
+  # github-actions, its first line says it's data, not instructions.
+  survivors:
+    if: ${{ always() && inputs.mutations && needs.mutations.result != 'skipped' && needs.mutations.result != 'cancelled' }}
+    needs: mutations
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: ${{ inputs.mutation_args == '' && 'mutation-results-*' || 'mutation-latent-*' }}
+          path: target/survivors
+      - name: File the survivors
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MODE: ${{ inputs.mutation_args == '' && 'nightly' || 'latent' }}
+          RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: bun scripts/survivors-issue.ts "$MODE" target/survivors "$RUN"
 
   # Each MIR intervals rule's mutation, applied in turn: the compiler built,
   # the corpus shadow and the bounds matrix compiled again, and the sites and
