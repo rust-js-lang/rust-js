@@ -42,6 +42,3 @@ points:std 9487,11507,11997,12011-12012
 #1986 rfold of a lent take() of a vec::IntoIter drops what it skips in the wrong order
 copies:plain 217,2421,38013,40011,42009,44007,46005,48003
 copies:std 217,2421,38013,40011,42009,44007,46005,48003
-
-#1987 size_hint() of a lent scan() of a cloned() loses its upper bound where its batch compiles it
-copies:plain 15964

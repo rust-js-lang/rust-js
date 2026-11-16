@@ -346,6 +346,7 @@ for (const [name, source, message, crate] of [
   // A compiled struct's hint is what it holds' (ADR 0561): of a filter_map made here, a JS
   // iterator's, which knows nothing of its length, refused, not `(0, None)` where Rust gives
   // `(0, Some(3))` (#382). Not a `filter`'s, std's compiled `Filter` since its family's flip.
+  ["the size hint of a lent scan of a cloned beside a map's, the slice's iterator marked knowing in the map's function alone (#1987)", "struct D(u32);\nimpl Clone for D { fn clone(&self) -> D { D(self.0) } }\nfn pass<I>(it: I) -> I { it }\npub fn a(v: &[D]) -> (usize, Option<usize>) { let mut a = v.iter().cloned().scan(0u32, |s, x| { *s += 1; (*s < 4).then_some(x) }); let b = pass(a.by_ref()); b.size_hint() }\npub fn b(v: &[D]) -> (usize, Option<usize>) { let mut a = v.iter().map(|x| x.0).scan(0u32, |s, x| { *s += 1; (*s < 4).then_some(x) }); let b = pass(a.by_ref()); b.size_hint() }", "`size_hint()` of a `std::iter::Scan<std::iter::Cloned<std::slice::Iter<"],
   ["the size hint of a peekable filter_map made here", "pub fn f(v: &[u32]) -> (usize, Option<usize>) { v.iter().filter_map(|x| if *x > 1 { Some(*x) } else { None }).peekable().size_hint() }", "`size_hint()` of a `std::iter::Peekable<std::iter::FilterMap"],
   // A map a variable holds made in place, JS's own `values().map(..)`, which knows no hint,
   // inspected and collected where a capacity is read: refused, not grown 4 then 8 where std's

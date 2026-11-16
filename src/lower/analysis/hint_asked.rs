@@ -45,6 +45,11 @@ pub(in crate::lower) struct Hinted<'tcx> {
     /// And those made knowing their back, which knows their hint, keyed
     /// into `knowing_in` the same way: empty after `of_crate` (#1427).
     pub(in crate::lower) knowing_types: IndexSet<Ty<'tcx>>,
+    /// Each of those made in place over an array's items with its source,
+    /// made `$iter` with it: keyed by the makers of its adapter, never by
+    /// its own, which another function holds in its own adapter, JS's
+    /// own, `values()` (#1987): empty after `of_crate`.
+    pub(in crate::lower) sources: IndexSet<(Ty<'tcx>, Ty<'tcx>)>,
     pub(in crate::lower) counted_in: IndexSet<(DefId, Ty<'tcx>)>,
     pub(in crate::lower) knowing_in: IndexSet<(DefId, Ty<'tcx>)>,
     /// What generic code grows a `Vec` by, `extend`'s iterator, by its
@@ -259,6 +264,7 @@ pub(super) fn of_crate<'tcx>(
     let knowing = std::mem::take(&mut asked.hinted.knowing_types)
         .into_iter()
         .map(|ty| (ty, false));
+    let sources = std::mem::take(&mut asked.hinted.sources);
     for (ty, counts) in counted.chain(knowing).collect::<Vec<_>>() {
         for body in all_bodies {
             let makes = body
@@ -271,6 +277,9 @@ pub(super) fn of_crate<'tcx>(
                 match counts {
                     true => _ = asked.hinted.counted_in.insert((maker, ty)),
                     false => _ = asked.hinted.knowing_in.insert((maker, ty)),
+                }
+                for &(_, source) in sources.iter().filter(|&&(part, _)| part == ty) {
+                    asked.hinted.knowing_in.insert((maker, source));
                 }
             }
         }
@@ -544,7 +553,7 @@ fn mark_in_place<'tcx>(
         }
         let source = tcx.erase_and_anonymize_regions(source.peel_refs());
         asked.hinted.knowing_in.insert((maker, source));
-        asked.hinted.knowing_types.insert(source);
+        asked.hinted.sources.insert((part, source));
     }
 }
 
