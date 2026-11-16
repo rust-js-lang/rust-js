@@ -426,14 +426,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^impl_trait_of_a_trait_method_dropped_by_its_dictionary.rs$"],
   },
   {
-    name: "impl-traits-beside-another-unnamed",
-    breaks: "the refusal of a value of a trait method's `impl Trait` beside another in its signature doesn't name #1320, which would carry it",
-    file: "src/lower/drops/types.rs",
-    find: "                (false, true) if self.shares_its_word(ty) => Drops::Unsupported(\n",
-    replace: "                (false, true) if false && self.shares_its_word(ty) => Drops::Unsupported(\n",
-    tests: ["test/corpus.test.ts", "-t", "^impl_traits_beside_another_of_a_trait_method.rs$"],
-  },
-  {
     name: "thir-ty-unnormalized",
     breaks:
       "a copied default's `Vec<Self::Item>` of a `Wrapper<I>` impl is asked what it drops as `<Wrapper<I> as Iterator>::Item`, which the slots take for one dropping nothing, so a closure holding it made in a tuple, where JS can't see what it took, compiles by luck where the blanket impl's and a generic function's are refused (#1337)",

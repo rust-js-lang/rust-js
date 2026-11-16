@@ -1265,9 +1265,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         items
             .filter(|item| {
                 // A trait method's `impl Trait` too, of a method of no
-                // generics of its own and no other (#1296).
+                // generics of its own, each under its own word (#1296, #1320).
                 self.tcx.def_kind(item.def_id) == DefKind::AssocTy
-                    && (!item.is_impl_trait_in_trait() || super::words::one_impl_trait_of(self.tcx, item.def_id))
                     && self.tcx.generics_of(item.def_id).own_params.is_empty()
             })
             .filter_map(|item| {

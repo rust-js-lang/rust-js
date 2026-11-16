@@ -148,23 +148,31 @@ fn full_type_word<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> String {
 /// name, `Item`; of a trait method's `impl Trait`, which has none, its
 /// method's, capitalized as an associated type's name is, `Hidden` of
 /// `hidden`'s, so each key reads as `Item`'s does, `$dropHidden` and
-/// `HiddenConstSize` (#1296, #1312), of a method with one alone
-/// (`one_impl_trait_of`).
+/// `HiddenConstSize` (#1296, #1312). Of a method with several, each its
+/// method's word and its 0-based position among them in rustc's order, its
+/// signature's, `Pair0` and `Pair1` of `pair() -> (impl A, impl B)`: a
+/// suffix only where it's needed, as apart-spelling's `$1` is, read as the
+/// tuple fields they usually are (ADR 0178, amended, #1320).
 pub(in crate::lower) fn item_word(tcx: TyCtxt<'_>, item: DefId) -> String {
     match tcx.opt_rpitit_info(item) {
         Some(ty::ImplTraitInTraitData::Trait { fn_def_id, .. }) => {
             let name = crate::lower::bindings::fn_name(tcx, fn_def_id);
             let mut chars = name.chars();
-            chars
+            let word: String = chars
                 .next()
-                .map_or(name.clone(), |first| first.to_uppercase().chain(chars).collect())
+                .map_or(name.clone(), |first| first.to_uppercase().chain(chars).collect());
+            let hidden = tcx.associated_types_for_impl_traits_in_associated_fn(fn_def_id);
+            match (hidden.len(), hidden.iter().position(|&of| of == item)) {
+                (2.., Some(at)) => format!("{word}{at}"),
+                _ => word,
+            }
         }
         _ => tcx.item_name(item).to_string(),
     }
 }
 
 /// Whether a dictionary carries the drop of `item`, a trait method's `impl
-/// Trait` the one its signature has (`one_impl_trait_of`), as of an
+/// Trait`, each under its own word (`item_word`, #1320), as of an
 /// associated type (#1296): of a method of no generics of its own, or of
 /// those its drop can't depend on, each a lifetime, a constant or a type
 /// bound by `Copy`, which has no destructor, `tagged<U: Copy>`'s, `hidden<const
@@ -175,9 +183,6 @@ pub(in crate::lower) fn drop_carried_impl_trait(tcx: TyCtxt<'_>, item: DefId) ->
     let Some(ty::ImplTraitInTraitData::Trait { fn_def_id, .. }) = tcx.opt_rpitit_info(item) else {
         return false;
     };
-    if !one_impl_trait_of(tcx, item) {
-        return false;
-    }
     let generics = tcx.generics_of(fn_def_id);
     let copy = tcx.lang_items().copy_trait();
     let bounds = tcx.param_env(fn_def_id).caller_bounds();
@@ -191,18 +196,6 @@ pub(in crate::lower) fn drop_carried_impl_trait(tcx: TyCtxt<'_>, item: DefId) ->
             })
         }
     })
-}
-
-/// Whether `item`, a trait method's `impl Trait`, is the one its method's
-/// signature has, which `item_word` names after it; two of one method's,
-/// `-> (impl A, impl B)`, would share its name.
-pub(in crate::lower) fn one_impl_trait_of(tcx: TyCtxt<'_>, item: DefId) -> bool {
-    match tcx.opt_rpitit_info(item) {
-        Some(ty::ImplTraitInTraitData::Trait { fn_def_id, .. }) => {
-            tcx.associated_types_for_impl_traits_in_associated_fn(fn_def_id).len() == 1
-        }
-        _ => false,
-    }
 }
 
 /// The key a dictionary has a fact of its associated type `item` under,

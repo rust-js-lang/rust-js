@@ -218,15 +218,6 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
         self.state.slots.contains(&alias)
     }
 
-    /// Whether `ty` is a trait method's `impl Trait` beside another in its
-    /// signature, which its dictionary carries nothing of (`one_impl_trait_of`,
-    /// #1320).
-    fn shares_its_word(&self, ty: Ty<'tcx>) -> bool {
-        let tcx = self.recognition.tcx;
-        matches!(*ty.kind(), ty::Alias(_, ty::AliasTy { kind: ty::Projection { def_id }, .. })
-            if tcx.is_impl_trait_in_trait(def_id) && !crate::lower::traits::one_impl_trait_of(tcx, def_id))
-    }
-
     /// Is an associated type's drop given, in a dictionary this function has?
     fn has_item_drop(&self, ty: Ty<'tcx>) -> bool {
         self.item_drop_of(ty)
@@ -516,12 +507,6 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
                 },
             ) if self.recognition.is_unknown(ty) => match (self.has_item_drop(ty), self.may_have_destructors()) {
                 (true, true) => Drops::Runs,
-                // A trait method's `impl Trait` of more than one its signature
-                // has, which its dictionary carries no drop of (#1320).
-                (false, true) if self.shares_its_word(ty) => Drops::Unsupported(
-                    ty,
-                    "a value of a trait method's `impl Trait` beside another in its signature (#1320), where a type may have a destructor",
-                ),
                 (false, true) => {
                     Drops::Unsupported(ty, "a value of an associated type, where a type may have a destructor")
                 }

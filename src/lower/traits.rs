@@ -618,11 +618,9 @@ pub(super) fn item_bounds<'tcx>(
 ) -> Vec<(String, ty::TraitRef<'tcx>)> {
     let mut found = Vec::new();
     for item in tcx.associated_items(trait_id).in_definition_order() {
-        // A trait method's `impl Trait` too, named by its method, of one
-        // that has one alone (`item_word`, #1345).
-        if tcx.def_kind(item.def_id) != DefKind::AssocTy
-            || item.is_impl_trait_in_trait() && !words::one_impl_trait_of(tcx, item.def_id)
-        {
+        // A trait method's `impl Trait` too, named by its method, and its
+        // position among several (`item_word`, #1345, #1320).
+        if tcx.def_kind(item.def_id) != DefKind::AssocTy {
             continue;
         }
         // A generic associated type's own lifetimes are erased, as JS has

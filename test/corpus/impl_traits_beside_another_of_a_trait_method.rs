@@ -1,8 +1,8 @@
-//@ compile-fail: a value of a trait method's `impl Trait` beside another in its signature (#1320), where a type may have a destructor
-// Two `impl Trait`s of one trait method's signature, which one word would
-// name both of in its dictionary, so it carries the drop of neither:
-// generic code holding one, where a type may have a destructor, is refused,
-// naming the issue that would carry them (#1320).
+// Two `impl Trait`s of one trait method's signature: each named in its
+// dictionary by its method's word and its 0-based position, `Pair0` and
+// `Pair1`, so it carries each one's drop and facts, where one word would
+// name both (#1320, ADR 0178, amended). A method with one keeps its word,
+// `One`. Generic code holding each part drops it as Rust does, in order.
 struct Loud(&'static str);
 
 impl Drop for Loud {
@@ -13,6 +13,8 @@ impl Drop for Loud {
 
 trait Pair {
     fn both() -> (impl Sized, impl Sized);
+    fn parts(&self) -> (impl Iterator<Item = u32>, impl Sized);
+    fn one(&self) -> impl Iterator<Item = u32>;
 }
 
 struct Louds;
@@ -21,6 +23,32 @@ impl Pair for Louds {
     fn both() -> (impl Sized, impl Sized) {
         (Loud("a"), Loud("b"))
     }
+
+    fn parts(&self) -> (impl Iterator<Item = u32>, impl Sized) {
+        (vec![1, 2, 3].into_iter().map(|x| x * 10), Loud("held"))
+    }
+
+    fn one(&self) -> impl Iterator<Item = u32> {
+        [4, 5].into_iter()
+    }
+}
+
+struct Quiet;
+
+impl Pair for Quiet {
+    fn both() -> (impl Sized, impl Sized) {
+        (1u8, "two")
+    }
+
+    // A range there, `{ start, end }`, reaches generic code unconverted,
+    // #2005's, as it does beside no other `impl Trait`.
+    fn parts(&self) -> (impl Iterator<Item = u32>, impl Sized) {
+        ([0, 1].into_iter(), ())
+    }
+
+    fn one(&self) -> impl Iterator<Item = u32> {
+        std::iter::empty()
+    }
 }
 
 fn held<T: Pair>() {
@@ -28,6 +56,25 @@ fn held<T: Pair>() {
     println!("holding");
 }
 
+fn first_dropped<T: Pair>() {
+    let (a, b) = T::both();
+    drop(b);
+    println!("second dropped first");
+    drop(a);
+}
+
+fn summed<T: Pair>(t: &T) -> u32 {
+    let (it, held) = t.parts();
+    let n: u32 = it.sum();
+    println!("summed {n}");
+    drop(held);
+    n + t.one().sum::<u32>()
+}
+
 fn main() {
     held::<Louds>();
+    first_dropped::<Louds>();
+    println!("{}", summed(&Louds));
+    held::<Quiet>();
+    println!("{}", summed(&Quiet));
 }

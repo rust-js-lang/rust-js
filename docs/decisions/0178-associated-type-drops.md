@@ -103,11 +103,10 @@ it is, `$knowing(struct, ..)` (#1292), the drop is its own,
 same was latent in #1292's `type Iter = Map<..>` wherever its closure
 holds a value with a destructor (`held_drop_function`).
 
-Left out: a method with more than one `impl Trait` in its signature, `->
-(impl A, impl B)`, whose two would share a word. Its value is refused as
-before, now naming #1320 (`one_impl_trait_of`, `shares_its_word`). A
-method with generics of its own, whose `impl Trait`'s entry is a function
-of them, is #1312's.
+A method with more than one `impl Trait` in its signature, `->
+(impl A, impl B)`, was left out, its two sharing a word, its value refused
+naming #1320; amended below, each has its own. A method with generics of
+its own, whose `impl Trait`'s entry is a function of them, is #1312's.
 
 `test/corpus/impl_trait_of_a_trait_method_dropped_by_its_dictionary.rs`
 (a compiled `Map` whose closure holds a `Loud`, an `impl Sized` that is
@@ -115,8 +114,8 @@ one, and an impl of neither) runs against native Rust in both builds and
 as a library. `test/crates.test.ts`'s "a library's generic code drops a
 consumer's impl Trait by its dictionary" covers a library's generic code
 and a consumer's impl. `test/corpus/impl_traits_beside_another_of_a_trait_method.rs`
-holds the #1320 refusal. Mutations: `impl-trait-item-uncarried`,
-`impl-trait-item-drop-unasked`, `impl-traits-beside-another-unnamed`,
+held the #1320 refusal, which runs now (below). Mutations: `impl-trait-item-uncarried`,
+`impl-trait-item-drop-unasked`,
 `compiled-struct-dropped-as-made-of` and `impl-trait-word-uncapitalized`;
 `operator-output-drop-unseen` refitted. The same refusal of the
 neighbours net, `associated_iterator_of_stds_struct_from_its_back.rs`
@@ -227,3 +226,24 @@ an `impl Trait`'s values of the library's impl and of the app's own,
 against native; mutation `library-trait-item-drop-unasked` is caught, and
 the metamorphic `library` rewrite of `impl_trait_value_given_to_generic_code`
 runs as native Rust.
+
+## Amendment: each `impl Trait` of a method its own word (2026-11-17, #1320)
+
+The rule, the lead's: a trait method's `impl Trait` is named by its
+method's word, and by its 0-based position among its method's, in
+rustc's order, its signature's, only where the method has several:
+`pair() -> (impl A, impl B)`'s `Pair0` and `Pair1`, `$dropPair0` and
+`Pair1Size`; `hidden() -> impl A`'s `Hidden` as before. A suffix only
+where it's needed, as apart-spelling's `$1` is, read as the tuple fields
+they usually are. `item_word` (traits/words.rs) says it, the one owner,
+and each dictionary carries each one's drop and facts, so generic code
+holding one drops it and steps it as its impl's. `one_impl_trait_of`,
+which gated three readers on a method's having one, and #1320's refusal,
+`shares_its_word`, are gone. Corpus case
+`impl_traits_beside_another_of_a_trait_method` runs against native in
+the plain build, with std's iterator structs and through the metamorphic
+rewrites: two `impl Sized` dropped in order, an iterator beside a `Loud`
+summed and dropped, and a method with one beside them, whose keys are
+as before. A range inside the tuple is #2005's. Mutations
+`impl-trait-position-unnamed` and `impl-trait-position-always` are
+caught; `impl-traits-beside-another-unnamed` went with its refusal.

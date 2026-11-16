@@ -128,8 +128,8 @@ export const mutations: Mutation[] = [
     name: "impl-trait-word-uncapitalized",
     breaks: "what a trait method's `impl Trait` is called in its dictionary's keys is its method's name as it is, `$drophidden`, not as an associated type's reads, `$dropHidden` (#1296)",
     file: "src/lower/traits/words.rs",
-    find: "                .map_or(name.clone(), |first| first.to_uppercase().chain(chars).collect())\n",
-    replace: "                .map_or(name.clone(), |first| std::iter::once(first).chain(chars).collect())\n",
+    find: "                .map_or(name.clone(), |first| first.to_uppercase().chain(chars).collect());\n",
+    replace: "                .map_or(name.clone(), |first| std::iter::once(first).chain(chars).collect());\n",
     tests: ["test/crates.test.ts", "-t", "drops a consumer's impl Trait by its dictionary"],
   },
   {
@@ -155,5 +155,22 @@ export const mutations: Mutation[] = [
     find: "            format!(\"{}{}\", evidence_word(tcx, alias.self_ty()), item_word(tcx, *def_id))\n",
     replace: "            format!(\"{}{}\", evidence_word(tcx, alias.self_ty()), tcx.item_name(*def_id))\n",
     tests: ["test/corpus.test.ts", "-t", "^impl_trait_value_given_to_generic_code.rs$"],
+  },
+  {
+    name: "impl-trait-position-unnamed",
+    breaks: "a trait method's several `impl Trait`s share its word, `$dropParts` of both its iterator and its `Loud`, so one's entry is the other's (#1320)",
+    file: "src/lower/traits/words.rs",
+    find: "                (2.., Some(at)) => format!(\"{word}{at}\"),\n",
+    replace: "                (2.., Some(_)) => word,\n",
+    tests: ["test/corpus.test.ts", "-t", "^impl_traits_beside_another_of_a_trait_method.rs$"],
+  },
+  {
+    name: "impl-trait-position-always",
+    breaks: "a trait method's one `impl Trait` is named with a position it needn't have, `$dropOne0`, where its word alone names it, `$dropOne` (#1320, the lead's rule: a suffix only where needed)",
+    file: "src/lower/traits/words.rs",
+    find: "                (2.., Some(at)) => format!(\"{word}{at}\"),\n",
+    replace: "                (1.., Some(at)) => format!(\"{word}{at}\"),\n",
+    tests: ["test/corpus.test.ts", "-t", "^impl_traits_beside_another_of_a_trait_method.rs$"],
+    snapshots: true,
   },
 ];
