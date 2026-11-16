@@ -4,13 +4,13 @@ import {
   $cleanup,
   $count,
   $foldOf,
-  $iterator,
   $next,
   $skipping,
   $stepBy,
   iterator_enumerate,
   iterator_fuse,
   iterator_skip,
+  iterator_stepBy,
 } from "@rust-js/std";
 
 export function entry() {
@@ -88,7 +88,10 @@ function main() {
     ).reduce((n) => n + 1, 0)}`,
   );
   console.log(
-    `${$stepBy($iterator([5], foldsIterator_next, false, undefined, undefined, undefined, foldsIterator_fold), 2).reduce((n) => n + 1, 0)}`,
+    `${iterator_stepBy([5], 2, { next: foldsIterator_next, fold: foldsIterator_fold }).reduce(
+      (n) => n + 1,
+      0,
+    )}`,
   );
   console.log(
     `${$stepBy(

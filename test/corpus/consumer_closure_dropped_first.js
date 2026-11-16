@@ -14,7 +14,6 @@ import {
   $print,
   $rangeNext,
   $rev,
-  $stepBy,
   $unwindsOn,
   iterator_chain,
   iterator_enumerate,
@@ -23,6 +22,7 @@ import {
   iterator_peekable,
   iterator_rev,
   iterator_skip,
+  iterator_stepBy,
   iterator_take,
   iterator_zip,
 } from "@rust-js/std";
@@ -380,14 +380,11 @@ function main() {
   });
   case$("step_by", (g) => {
     let g$11$live = true;
-    let stepBy;
+    let iter;
     try {
-      stepBy = $stepBy(
-        $closing($iterator(It.new(4, "it"), itIterator_next), (it) => {
-          dDrop_drop(it.of._held);
-        }),
-        2,
-      );
+      iter = iterator_stepBy(It.new(4, "it"), 2, { next: itIterator_next }, (it) => {
+        dDrop_drop(it._held);
+      });
       g$11$live = false;
     } catch (error) {
       $cleanup(() => {
@@ -398,9 +395,17 @@ function main() {
       throw error;
     }
     const f = (a, x) => (((a + x) >>> 0) + zero(g)) >>> 0;
-    return $consume(stepBy, "fold", 0, f, undefined, () => {
-      dDrop_drop(g);
-    });
+    try {
+      return $consume(iter, "fold", 0, f, undefined, () => {
+        dDrop_drop(g);
+      });
+    } catch (error) {
+      throw $unwindsOn(error);
+    } finally {
+      if ($live()) {
+        iter.return();
+      }
+    }
   });
   case$("peekable", (g) => {
     let g$12$live = true;

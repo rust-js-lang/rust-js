@@ -9,7 +9,6 @@ import {
   $dropEach,
   $held,
   $iter,
-  $iterator,
   $lazyRange,
   $lazySkipWhile,
   $lent,
@@ -19,6 +18,7 @@ import {
   $tryFoldOk,
   $tryFoldSome,
   $unwindsOn,
+  iterator_stepBy,
 } from "@rust-js/std";
 
 export function entry() {
@@ -354,7 +354,7 @@ function main() {
     let stepBy;
     let d;
     try {
-      stepBy = $stepBy($iterator([0], ownIterator_next), 2, dDrop_drop);
+      stepBy = iterator_stepBy([0], 2, { next: ownIterator_next }, undefined, dDrop_drop);
       d = ["acc"];
       g$7$live = false;
     } catch (error) {
@@ -379,7 +379,7 @@ function main() {
     const g = ["f"];
     let stepBy;
     try {
-      stepBy = $stepBy($iterator([0], ownIterator_next), 2, dDrop_drop);
+      stepBy = iterator_stepBy([0], 2, { next: ownIterator_next }, undefined, dDrop_drop);
     } catch (error) {
       $cleanup(() => {
         dDrop_drop(g);

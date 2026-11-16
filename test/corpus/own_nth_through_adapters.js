@@ -15,10 +15,10 @@ import {
   $roomForHint,
   $some,
   $someValue,
-  $stepBy,
   iterator_enumerate,
   iterator_map,
   iterator_skip,
+  iterator_stepBy,
   iterator_take,
 } from "@rust-js/std";
 
@@ -96,65 +96,36 @@ function main() {
     `take ${nth == null ? "None" : `Some(${nth})`} ${value$5 == null ? "None" : `Some(${value$5})`} ${next == null ? "None" : `Some(${next})`}`,
   );
   const value$6 = $nth(
-    $lent(
-      $stepBy(
-        $iterator(
-          c(),
-          countIterator_next,
-          false,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          countIterator_nth,
-        ),
-        3,
-      ),
-    ),
+    $lent(iterator_stepBy(c(), 3, { next: countIterator_next, nth: countIterator_nth })),
     1,
   );
   console.log(`step ${value$6 == null ? "None" : `Some(${value$6})`}`);
   const value$7 = $nth(
-    $lent(
-      $stepBy(
-        $iterator(
-          c(),
-          countIterator_next,
-          false,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          countIterator_nth,
-        ),
-        3,
-      ),
-    ),
+    $lent(iterator_stepBy(c(), 3, { next: countIterator_next, nth: countIterator_nth })),
     0,
   );
   console.log(`step ${value$7 == null ? "None" : `Some(${value$7})`}`);
   console.log(
-    `step ${$lent($stepBy($iterator(c(), countIterator_next, false, undefined, undefined, undefined, undefined, countIterator_nth), 4)).some((x) => x > 6)}`,
+    `step ${$lent(
+      iterator_stepBy(c(), 4, { next: countIterator_next, nth: countIterator_nth }),
+    ).some((x) => x > 6)}`,
   );
   console.log(
-    `step ${$stepBy($iterator(c(), countIterator_next, false, undefined, undefined, undefined, undefined, countIterator_nth), 4).reduce((a, b) => (a + b) | 0, 0)}`,
+    `step ${iterator_stepBy(c(), 4, { next: countIterator_next, nth: countIterator_nth }).reduce(
+      (a, b) => (a + b) | 0,
+      0,
+    )}`,
   );
   console.log(
-    `step [${Array.from($roomForHint($stepBy($iterator(c(), countIterator_next, false, undefined, undefined, undefined, undefined, countIterator_nth), 4), 4, false)).join(", ")}]`,
+    `step [${Array.from(
+      $roomForHint(
+        iterator_stepBy(c(), 4, { next: countIterator_next, nth: countIterator_nth }),
+        4,
+        false,
+      ),
+    ).join(", ")}]`,
   );
-  const s = $stepBy(
-    $iterator(
-      c(),
-      countIterator_next,
-      false,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      countIterator_nth,
-    ),
-    5,
-  );
+  const s = iterator_stepBy(c(), 5, { next: countIterator_next, nth: countIterator_nth });
   const value$8 = $next(s);
   const value$9 = $nth($lent(s), 1);
   const value$10 = $next(s);
@@ -163,23 +134,9 @@ function main() {
   );
   const last = $last(iterator_skip(c(), 2, { next: countIterator_next, nth: countIterator_nth }));
   console.log(`last ${last == null ? "None" : `Some(${last})`}`);
-  const value$11 = Array.from(
-    $folded(
-      $stepBy(
-        $iterator(
-          c(),
-          countIterator_next,
-          false,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          countIterator_nth,
-        ),
-        7,
-      ),
-    ),
-  ).at(-1);
+  const value$11 = $last(
+    iterator_stepBy(c(), 7, { next: countIterator_next, nth: countIterator_nth }),
+  );
   console.log(`last ${value$11 == null ? "None" : `Some(${value$11})`}`);
   const value$12 = $last(
     iterator_take(c(), 5, { next: countIterator_next, nth: countIterator_nth }),

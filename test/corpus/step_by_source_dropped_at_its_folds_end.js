@@ -2,14 +2,15 @@
 
 import {
   $catchUnwind,
-  $closing,
+  $cleanup,
   $exactLen,
-  $foldBack,
   $foldDropping,
-  $iterator,
+  $foldOf,
   $lastDropping,
-  $stepBy,
-  $stepByEnds,
+  $next,
+  iterator_map,
+  iterator_stepBy,
+  stepByDoubleEndedIterator_rfold,
 } from "@rust-js/std";
 
 export function entry() {
@@ -50,75 +51,63 @@ function itDoubleEndedIterator_nthBack(it, n) {
   return itDoubleEndedIterator_nextBack(it);
 }
 
+function itDrop_drop(it) {
+  console.log("drop it");
+  throw new Error("drop");
+}
+
 function it() {
   return { at: 0, end: 5 };
 }
 
 function main() {
   let r = $catchUnwind(() => {
-    const acc = $foldDropping(
-      $stepBy(
-        $closing(
-          $iterator(
-            it(),
-            itIterator_next,
-            false,
-            undefined,
-            undefined,
-            itIterator_sizeHint,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            itDoubleEndedIterator_nthBack,
-          ),
-          (it) => {
-            console.log("drop it");
-            throw new Error("drop");
-          },
-        ),
-        2,
-      ),
-      [0],
-      (a, x) => {
-        a[0] = (a[0] + x) >>> 0;
-        return a;
-      },
-      accDrop_drop,
+    const iter = iterator_stepBy(
+      it(),
+      2,
+      { next: itIterator_next, sizeHint: itIterator_sizeHint },
+      itDrop_drop,
     );
+    let result;
+    try {
+      result = $foldDropping(
+        iter,
+        [0],
+        (a, x) => {
+          a[0] = (a[0] + x) >>> 0;
+          return a;
+        },
+        accDrop_drop,
+      );
+    } catch (error) {
+      $cleanup(() => {
+        iter.return();
+      }, error);
+      throw error;
+    }
+    iter.return();
+    const acc = result;
     console.log(`fold ${acc[0]}`);
     accDrop_drop(acc);
   });
   console.log(`${r.TAG === "Err"}`);
   r = $catchUnwind(() => {
-    const acc = $foldBack(
-      $stepByEnds(
-        $closing(
-          $iterator(
-            it(),
-            itIterator_next,
-            false,
-            itDoubleEndedIterator_nextBack,
-            (it) => $exactLen(itIterator_sizeHint(it)),
-            itIterator_sizeHint,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            itDoubleEndedIterator_nthBack,
-          ),
-          (it) => {
-            console.log("drop it");
-            throw new Error("drop");
-          },
-        ),
+    const acc = stepByDoubleEndedIterator_rfold(
+      iterator_stepBy(
+        it(),
         2,
+        { next: itIterator_next, sizeHint: itIterator_sizeHint },
+        itDrop_drop,
       ),
       [0],
       (a, x) => {
         a[0] = (a[0] + x) >>> 0;
         return a;
       },
+      { next: itIterator_next, sizeHint: itIterator_sizeHint },
+      { next_back: itDoubleEndedIterator_nextBack, nthBack: itDoubleEndedIterator_nthBack },
+      { len: (iterator) => $exactLen(itIterator_sizeHint(iterator)) },
+      itDrop_drop,
       accDrop_drop,
     );
     console.log(`rfold ${acc[0]}`);
@@ -126,31 +115,31 @@ function main() {
   });
   console.log(`${r.TAG === "Err"}`);
   r = $catchUnwind(() => {
-    const l = $lastDropping(
-      $stepBy(
-        $closing(
-          $iterator(
-            it(),
-            itIterator_next,
-            false,
-            undefined,
-            undefined,
-            itIterator_sizeHint,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            itDoubleEndedIterator_nthBack,
-          ),
-          (it) => {
-            console.log("drop it");
-            throw new Error("drop");
-          },
-        ),
+    const iter = iterator_map(
+      iterator_stepBy(
+        it(),
         2,
-      ).map((value) => [value]),
+        { next: itIterator_next, sizeHint: itIterator_sizeHint },
+        itDrop_drop,
+      ),
+      (value) => [value],
+      { next: $next, fold: $foldOf },
+      (stepBy) => {
+        stepBy.return();
+      },
       accDrop_drop,
     );
+    let result;
+    try {
+      result = $lastDropping(iter, accDrop_drop);
+    } catch (error) {
+      $cleanup(() => {
+        iter.return();
+      }, error);
+      throw error;
+    }
+    iter.return();
+    const l = result;
     function map(a) {
       const result = a[0];
       accDrop_drop(a);

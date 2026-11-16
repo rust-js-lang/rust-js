@@ -2,6 +2,7 @@
 
 import {
   $eq,
+  $exactLen,
   $iterEq,
   $iterator,
   $lazyChain,
@@ -13,9 +14,9 @@ import {
   $repeating,
   $repeatingN,
   $sizeHint,
-  $step,
   $unwrap,
   $zipEnds,
+  iterator_stepBy,
   iterator_zip,
 } from "@rust-js/std";
 
@@ -80,8 +81,9 @@ function main() {
   const repeated = $repeatingN(1, $unwrap(held)).len();
   const mapped = $unwrap(held);
   const throughTake = $repeating(1).take($unwrap(held)).len();
-  const step$1 = $step($unwrap(2));
-  const step = Math.ceil(10 / step$1);
+  const step = $exactLen(
+    $sizeHint(iterator_stepBy({ start: 0, end: 10 }, $unwrap(2), { next: $rangeNext })),
+  );
   console.log(`read once: ${repeated} ${mapped} ${throughTake} ${step}`);
 }
 //# sourceMappingURL=case.js.map

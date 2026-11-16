@@ -17,14 +17,13 @@ import {
   $holding,
   $iter,
   $iterator,
-  $lazyChain,
   $live,
   $mapEnds,
   $next,
+  $nth,
   $rangeNext,
   $rangeNextBack,
   $rev,
-  $stepBy,
   $unwindsOn,
   iterator_chain,
   iterator_enumerate,
@@ -32,6 +31,7 @@ import {
   iterator_map,
   iterator_peekable,
   iterator_skip,
+  iterator_stepBy,
   iterator_take,
 } from "@rust-js/std";
 
@@ -332,25 +332,15 @@ function reachingItsOwnFold() {
 function steppedToItsEnd() {
   let g$live = true;
   const g = ["map"];
-  let stepBy;
+  let tmp;
   try {
-    stepBy = $stepBy(
-      $closing(
-        $iterator(
-          own(5, "own"),
-          ownIterator_next,
-          false,
-          undefined,
-          undefined,
-          undefined,
-          ownIterator_fold,
-          ownIterator_nth,
-        ),
-        (it) => {
-          dDrop_drop(it.of._held);
-        },
-      ),
+    tmp = iterator_stepBy(
+      own(5, "own"),
       2,
+      { next: ownIterator_next, fold: ownIterator_fold, nth: ownIterator_nth },
+      (own) => {
+        dDrop_drop(own._held);
+      },
     );
     g$live = false;
   } catch (error) {
@@ -361,13 +351,17 @@ function steppedToItsEnd() {
     }, error);
     throw error;
   }
-  const f = (x) => (x + zero(g)) >>> 0;
-  const iter = $holding(
-    stepBy.map(f),
-    () => {
+  const iter = iterator_map(
+    tmp,
+    (x) => (x + zero(g)) >>> 0,
+    { next: $next, fold: $foldOf, nth: $nth },
+    (stepBy) => {
+      stepBy.return();
+    },
+    undefined,
+    (value) => {
       dDrop_drop(g);
     },
-    "after",
   );
   let result;
   try {
@@ -383,25 +377,15 @@ function steppedToItsEnd() {
   console.log(`step_by fold ${n}`);
   let g$1$live = true;
   const g$1 = ["map"];
-  let tmp;
+  let tmp$1;
   try {
-    tmp = $stepBy(
-      $closing(
-        $iterator(
-          own(5, "own"),
-          ownIterator_next,
-          false,
-          undefined,
-          undefined,
-          undefined,
-          ownIterator_fold,
-          ownIterator_nth,
-        ),
-        (it) => {
-          dDrop_drop(it.of._held);
-        },
-      ),
+    tmp$1 = iterator_stepBy(
+      own(5, "own"),
       2,
+      { next: ownIterator_next, fold: ownIterator_fold, nth: ownIterator_nth },
+      (own) => {
+        dDrop_drop(own._held);
+      },
     );
     g$1$live = false;
   } catch (error) {
@@ -412,13 +396,17 @@ function steppedToItsEnd() {
     }, error);
     throw error;
   }
-  const f$1 = (x) => String.fromCharCode((97 + (((x + zero(g$1)) >>> 0) & 255)) & 255);
-  const iter$1 = $holding(
-    tmp.map(f$1),
-    () => {
+  const iter$1 = iterator_map(
+    tmp$1,
+    (x) => String.fromCharCode((97 + (((x + zero(g$1)) >>> 0) & 255)) & 255),
+    { next: $next, fold: $foldOf, nth: $nth },
+    (stepBy) => {
+      stepBy.return();
+    },
+    undefined,
+    (value) => {
       dDrop_drop(g$1);
     },
-    "after",
   );
   let result$1;
   try {
@@ -878,14 +866,11 @@ function chainedUnderAMap() {
   let n = result;
   console.log(`chain map fold ${n}`);
   const g$1 = ["filter"];
-  let stepBy;
+  let tmp$1;
   try {
-    stepBy = $stepBy(
-      $closing($iterator(plain(2, "a"), plainIterator_next), (it) => {
-        dDrop_drop(it.of._held);
-      }),
-      1,
-    );
+    tmp$1 = iterator_stepBy(plain(2, "a"), 1, { next: plainIterator_next }, (plain) => {
+      dDrop_drop(plain._held);
+    });
   } catch (error) {
     $cleanup(() => {
       dDrop_drop(g$1);
@@ -893,13 +878,33 @@ function chainedUnderAMap() {
     throw error;
   }
   const value$2 = plain(1, "b");
-  let tmp$1;
+  let tmp$2;
   try {
-    tmp$1 = $lazyChain(
-      stepBy,
-      $closing($iterator(value$2, plainIterator_next), (it) => {
-        dDrop_drop(it.of._held);
-      }),
+    tmp$2 = iterator_chain(
+      tmp$1,
+      value$2,
+      { next: $next, fold: $foldOf },
+      {
+        intoIter(items) {
+          return items;
+        },
+        IntoIterIterator() {
+          return { next: plainIterator_next };
+        },
+        $dropIntoIter(plain) {
+          dDrop_drop(plain._held);
+        },
+      },
+      (stepBy) => {
+        stepBy.return();
+      },
+      (plain) => {
+        dDrop_drop(plain._held);
+      },
+      undefined,
+      (plain) => {
+        dDrop_drop(plain._held);
+      },
     );
   } catch (error) {
     $cleanup(() => {
@@ -909,7 +914,7 @@ function chainedUnderAMap() {
   }
   const f = () => zero(g$1) === 0;
   const iter$1 = $holding(
-    tmp$1.filter(f),
+    tmp$2.filter(f),
     () => {
       dDrop_drop(g$1);
     },

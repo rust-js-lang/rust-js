@@ -12,10 +12,10 @@ import {
   $next,
   $nth,
   $roomForHint,
-  $stepBy,
   $unwindsOn,
   iterator_map,
   iterator_skip,
+  iterator_stepBy,
 } from "@rust-js/std";
 
 export function entry() {
@@ -72,26 +72,30 @@ function main() {
   }
   const skipped = result;
   console.log(`${skipped == null ? "None" : `Some([${skipped.join(", ")}])`}`);
-  const stepped = $collectResults(
-    $stepBy(
-      $closing(
-        $iterator(
-          { at: 0, end: 5 },
-          countingIterator_next,
-          false,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          countingIterator_nth,
-        ),
-        (it) => {
-          countingDrop_drop(it.of);
-        },
-      ),
+  const iter$1 = iterator_map(
+    iterator_stepBy(
+      { at: 0, end: 5 },
       2,
-    ).map((value) => ({ TAG: "Ok", _0: value })),
+      { next: countingIterator_next, nth: countingIterator_nth },
+      countingDrop_drop,
+    ),
+    (value) => ({ TAG: "Ok", _0: value }),
+    { next: $next, fold: $foldOf, nth: $nth },
+    (stepBy) => {
+      stepBy.return();
+    },
   );
+  let result$1;
+  try {
+    result$1 = $collectResults(iter$1);
+  } catch (error) {
+    throw $unwindsOn(error);
+  } finally {
+    if ($live()) {
+      iter$1.return();
+    }
+  }
+  const stepped = result$1;
   console.log(`${stepped.TAG === "Ok" ? `Ok([${stepped._0.join(", ")}])` : "Err(())"}`);
   const taken = $collectOptions(
     $lazyTakeWhile(

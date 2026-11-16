@@ -18,13 +18,13 @@ import {
   $rangeNext,
   $roomForHint,
   $sizeHint,
-  $stepBy,
   $tryFoldSome,
   iterator_chain,
   iterator_fuse,
   iterator_map,
   iterator_peekable,
   iterator_skip,
+  iterator_stepBy,
   iterator_take,
   iterator_zip,
 } from "@rust-js/std";
@@ -347,7 +347,7 @@ function main() {
   });
   run("plain step_by fold", () => {
     const fold = $foldDropping(
-      $stepBy($iterator({ n: 0, at: 4 }, plainIterator_next), 2),
+      iterator_stepBy({ n: 0, at: 4 }, 2, { next: plainIterator_next }),
       [],
       push,
       $dropEach(dDrop_drop),

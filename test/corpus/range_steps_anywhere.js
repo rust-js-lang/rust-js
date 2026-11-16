@@ -3,18 +3,20 @@
 import {
   $collectDropping,
   $debugStr,
+  $foldToArray,
   $iterator,
+  $jsIterator,
   $lazyRange,
   $next,
   $rangeNext,
   $rangeNextBack,
   $rangeNthBack,
-  $roomFor,
   $roomForHint,
   $step,
   $stepBy,
   iterator_rev,
   iterator_skip,
+  iterator_stepBy,
 } from "@rust-js/std";
 
 export function entry() {
@@ -22,16 +24,16 @@ export function entry() {
 }
 
 function every(it, n) {
-  const step = $step(n);
-  return $collectDropping($roomForHint($stepBy(Iterator.from(it), step), 4, false));
+  return $collectDropping(
+    $roomForHint(iterator_stepBy(Iterator.from(it), n, $jsIterator), 4, false),
+  );
 }
 
 function main() {
   const held = { start: 0, end: 4294967295 };
-  const step = $step((1 << 30) >>> 0);
-  const it = $stepBy($iterator(held, $rangeNext), step);
-  $roomFor(Math.ceil(Math.max(held.end - held.start, 0) / step), 4);
-  const v = Array.from(it);
+  const v = $foldToArray(
+    $roomForHint(iterator_stepBy(held, (1 << 30) >>> 0, { next: $rangeNext }), 4, true),
+  );
   console.log(`[${v.join(", ")}]`);
   console.log(`[${every($lazyRange(0, 4294967295), (1 << 30) >>> 0).join(", ")}]`);
   const start = 0;
@@ -42,12 +44,12 @@ function main() {
     { next: $rangeNext },
     { next_back: $rangeNextBack, nthBack: $rangeNthBack },
   );
-  const step$1 = $step((1 << 30) >>> 0);
-  const w = Array.from($roomForHint($stepBy(back, step$1), 4, false));
+  const step = $step((1 << 30) >>> 0);
+  const w = Array.from($roomForHint($stepBy(back, step), 4, false));
   console.log(`[${w.join(", ")}]`);
   const skipped = iterator_skip({ start: 0, end: 4294967295 }, 3, { next: $rangeNext });
-  const step$2 = $step((1 << 31) >>> 0);
-  console.log(`[${Array.from($roomForHint($stepBy(skipped, step$2), 4, true)).join(", ")}]`);
+  const step$1 = $step((1 << 31) >>> 0);
+  console.log(`[${Array.from($roomForHint($stepBy(skipped, step$1), 4, true)).join(", ")}]`);
   console.log(
     `${$debugStr(
       Array.from($stepBy($iterator({ start: "a", end: "k" }, $rangeNext), 3)).join(""),

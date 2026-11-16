@@ -20,7 +20,6 @@ import {
   $range,
   $rangeNext,
   $roomForHint,
-  $stepBy,
   iterator_chain,
   iterator_enumerate,
   iterator_flatMap,
@@ -29,6 +28,7 @@ import {
   iterator_map,
   iterator_peekable,
   iterator_skip,
+  iterator_stepBy,
   iterator_take,
   iterator_zip,
 } from "@rust-js/std";
@@ -104,7 +104,7 @@ function main() {
   console.log(
     `take ([${value$6[0].join(", ")}], [${value$6[1].join(", ")}], [${value$6[2].join(", ")}])`,
   );
-  const value$7 = twice($stepBy($iterator(f(), flakyIterator_next), 2), "next");
+  const value$7 = twice(iterator_stepBy(f(), 2, { next: flakyIterator_next }), "next");
   console.log(
     `step_by ([${value$7[0].join(", ")}], [${value$7[1].join(", ")}], [${value$7[2].join(", ")}])`,
   );

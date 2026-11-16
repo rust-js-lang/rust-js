@@ -25,7 +25,6 @@ import {
   $roomForHint,
   $sortedEntries,
   $sortedKeys,
-  $stepBy,
   $unwrap,
   $unzip,
   iterator_chain,
@@ -33,6 +32,7 @@ import {
   iterator_flatMap,
   iterator_map,
   iterator_skip,
+  iterator_stepBy,
   iterator_take,
 } from "@rust-js/std";
 
@@ -182,7 +182,17 @@ function main() {
   );
   console.log(`skip last ${value$1 == null ? "None" : `Some(${value$1})`}`);
   console.log(
-    `step_by [${Array.from($roomForHint($stepBy($iterator(up(), upIterator_next, false, undefined, undefined, undefined, upIterator_fold, upIterator_nth), 2), 4, false)).join(", ")}]`,
+    `step_by [${Array.from(
+      $roomForHint(
+        iterator_stepBy(up(), 2, {
+          next: upIterator_next,
+          fold: upIterator_fold,
+          nth: upIterator_nth,
+        }),
+        4,
+        false,
+      ),
+    ).join(", ")}]`,
   );
   console.log(
     `take sum ${iterator_take(up(), 2, {

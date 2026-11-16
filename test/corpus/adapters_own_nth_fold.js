@@ -4,7 +4,6 @@ import {
   $count,
   $foldOf,
   $folded,
-  $iterator,
   $lazyChain,
   $lazyMapWhile,
   $lazyScan,
@@ -19,6 +18,7 @@ import {
   iterator_map,
   iterator_skip,
   iterator_stepBy,
+  iterator_take,
 } from "@rust-js/std";
 
 export function entry() {
@@ -94,19 +94,15 @@ function main() {
   console.log(`${value == null ? "None" : `Some(${value})`}`);
   const value$1 = Array.from(
     $lent(
-      $stepBy(
-        $iterator(
-          counted(),
-          countIterator_next,
-          false,
-          undefined,
-          undefined,
-          undefined,
-          countIterator_fold,
-          countIterator_nth,
-        ),
-        2,
-      ).map((x) => (x * 2) | 0),
+      iterator_map(
+        iterator_stepBy(counted(), 2, {
+          next: countIterator_next,
+          fold: countIterator_fold,
+          nth: countIterator_nth,
+        }),
+        (x) => (x * 2) | 0,
+        { next: $next, fold: $foldOf, nth: $nth },
+      ),
     )
       .drop(1)
       .take(1),
@@ -128,10 +124,27 @@ function main() {
   );
   console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
   console.log(
-    `${$count($stepBy($iterator(counted(), countIterator_next, false, undefined, undefined, undefined, countIterator_fold, countIterator_nth), 2).take(4))}`,
+    `${$count(
+      iterator_take(
+        iterator_stepBy(counted(), 2, {
+          next: countIterator_next,
+          fold: countIterator_fold,
+          nth: countIterator_nth,
+        }),
+        4,
+        { next: $next, fold: $foldOf, nth: $nth },
+      ),
+    )}`,
   );
   console.log(
-    `${$lazyTakeWhile($stepBy($iterator(counted(), countIterator_next, false, undefined, undefined, undefined, countIterator_fold, countIterator_nth), 2), (x) => x < 7).reduce((n) => n + 1, 0)}`,
+    `${$lazyTakeWhile(
+      iterator_stepBy(counted(), 2, {
+        next: countIterator_next,
+        fold: countIterator_fold,
+        nth: countIterator_nth,
+      }),
+      (x) => x < 7,
+    ).reduce((n) => n + 1, 0)}`,
   );
   console.log(
     `${$lent(
@@ -157,7 +170,7 @@ function main() {
     ).reduce((a, b) => (a + b) | 0, 0)}`,
   );
   console.log(
-    `${$stepBy(
+    `${iterator_stepBy(
       iterator_chain(
         counted(),
         counted(),
@@ -172,6 +185,7 @@ function main() {
         },
       ),
       2,
+      { next: $next, fold: $foldOf, nth: $nth },
     ).reduce((n) => n + 1, 0)}`,
   );
   console.log(
@@ -248,19 +262,11 @@ function main() {
   const value$3 = Array.from(
     $folded(
       $lazyMapWhile(
-        $stepBy(
-          $iterator(
-            counted(),
-            countIterator_next,
-            false,
-            undefined,
-            undefined,
-            undefined,
-            countIterator_fold,
-            countIterator_nth,
-          ),
-          2,
-        ),
+        iterator_stepBy(counted(), 2, {
+          next: countIterator_next,
+          fold: countIterator_fold,
+          nth: countIterator_nth,
+        }),
         (x) => {
           if (x < 7) {
             return x;

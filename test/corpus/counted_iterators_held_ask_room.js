@@ -4,8 +4,11 @@ import {
   $borrow,
   $catchable,
   $cleanup,
+  $foldOf,
+  $foldToArray,
   $lazyRange,
   $lazyZip,
+  $next,
   $panicMessage,
   $rangeInclusiveNext,
   $rangeInclusiveNextBack,
@@ -20,6 +23,8 @@ import {
   $unborrow,
   $unwound,
   iterator_rev,
+  iterator_stepBy,
+  iterator_take,
 } from "@rust-js/std";
 
 export function entry() {
@@ -89,21 +94,22 @@ function main() {
     check(
       "range step_by",
       () => {
-        const it = $lazyRange(0, n, 2);
-        return Array.from($roomForHint(it, 4, true));
+        const it = iterator_stepBy({ start: 0, end: n }, 2, { next: $rangeNext });
+        return $foldToArray($roomForHint(it, 4, true));
       },
       vecDebug,
     );
     check(
       "reversed range step_by",
       () => {
-        const it = $stepBy(
+        const it = iterator_stepBy(
           iterator_rev(
             { start: 0, end: n },
             { next: $rangeNext },
             { next_back: $rangeNextBack, nthBack: $rangeNthBack },
           ),
           2,
+          { next: $next, fold: $foldOf },
         );
         return Array.from($roomForHint(it, 4, false));
       },
@@ -112,14 +118,19 @@ function main() {
     check(
       "reversed range step_by take",
       () => {
-        const it = $stepBy(
-          iterator_rev(
-            { start: 0, end: n },
-            { next: $rangeNext },
-            { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+        const it = iterator_take(
+          iterator_stepBy(
+            iterator_rev(
+              { start: 0, end: n },
+              { next: $rangeNext },
+              { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+            ),
+            1,
+            { next: $next, fold: $foldOf },
           ),
-          1,
-        ).take(n);
+          n,
+          { next: $next, fold: $foldOf },
+        );
         return Array.from($roomForHint(it, 4, false));
       },
       vecDebug,
@@ -198,46 +209,50 @@ function main() {
     );
   }
   const value = hinted(
-    $stepBy(
+    iterator_stepBy(
       iterator_rev(
         { start: 0, end: 10 },
         { next: $rangeNext },
         { next_back: $rangeNextBack, nthBack: $rangeNthBack },
       ),
       3,
+      { next: $next, fold: $foldOf },
     ),
   );
   console.log(`(${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`})`);
   const value$1 = hinted(
-    $stepBy(
+    iterator_stepBy(
       iterator_rev(
         { start: "a", end: "e" },
         { next: $rangeInclusiveNext },
         { next_back: $rangeInclusiveNextBack },
       ),
       2,
+      { next: $next, fold: $foldOf },
     ),
   );
   console.log(`(${value$1[0]}, ${value$1[1] == null ? "None" : `Some(${value$1[1]})`})`);
   const value$2 = hinted(
-    $stepBy(
+    iterator_stepBy(
       iterator_rev(
         { start: 0n, end: 10n },
         { next: $rangeNext },
         { next_back: $rangeNextBack, nthBack: $rangeNthBack },
       ),
       4,
+      { next: $next, fold: $foldOf },
     ),
   );
   console.log(`(${value$2[0]}, ${value$2[1] == null ? "None" : `Some(${value$2[1]})`})`);
   const value$3 = hinted(
-    $stepBy(
+    iterator_stepBy(
       iterator_rev(
         { start: 0, end: 0 },
         { next: $rangeNext },
         { next_back: $rangeNextBack, nthBack: $rangeNthBack },
       ),
       4,
+      { next: $next, fold: $foldOf },
     ),
   );
   console.log(`(${value$3[0]}, ${value$3[1] == null ? "None" : `Some(${value$3[1]})`})`);

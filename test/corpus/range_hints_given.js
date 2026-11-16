@@ -13,6 +13,7 @@ import {
   $sizeHint,
   $skipping,
   $stepByEnds,
+  iterator_stepBy,
 } from "@rust-js/std";
 
 export function entry() {
@@ -34,7 +35,7 @@ function main() {
     `(${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`}) (${value$1[0]}, ${value$1[1] == null ? "None" : `Some(${value$1[1]})`})`,
   );
   const value$2 = hint($lazyRange(2, 7));
-  const value$3 = hint($lazyRange(0, 10, 3));
+  const value$3 = hint(iterator_stepBy({ start: 0, end: 10 }, 3, { next: $rangeNext }));
   console.log(
     `(${value$2[0]}, ${value$2[1] == null ? "None" : `Some(${value$2[1]})`}) (${value$3[0]}, ${value$3[1] == null ? "None" : `Some(${value$3[1]})`})`,
   );

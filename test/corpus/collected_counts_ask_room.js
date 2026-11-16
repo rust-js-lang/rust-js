@@ -2,18 +2,20 @@
 
 import {
   $catchable,
+  $foldToArray,
   $iterator,
   $lazyChain,
   $lazyRange,
   $panicMessage,
+  $rangeNext,
   $repeating,
   $repeatingN,
   $roomFor,
   $roomForHint,
   $step,
-  $stepBy,
   $unwound,
   $unwrap,
+  iterator_stepBy,
 } from "@rust-js/std";
 
 export function entry() {
@@ -181,12 +183,14 @@ function main() {
   );
   check(
     "step_by of a held step",
-    () => {
-      const step = $step($unwrap(1));
-      const it = $lazyRange(0, all, step);
-      $roomFor(Math.ceil(Math.max(all - 0, 0) / step), 4);
-      return Array.from(it).length;
-    },
+    () =>
+      $foldToArray(
+        $roomForHint(
+          iterator_stepBy({ start: 0, end: all }, $unwrap(1), { next: $rangeNext }),
+          4,
+          true,
+        ),
+      ).length,
     usizeDebug,
   );
   check(
@@ -219,19 +223,17 @@ function main() {
   );
   check(
     "own step_by of a counted step",
-    () => {
-      const step = $step(counted(2));
-      return Array.from(
+    () =>
+      Array.from(
         $roomForHint(
-          $stepBy(
-            $iterator([0], upIterator_next, false, undefined, undefined, upIterator_sizeHint),
-            step,
-          ),
+          iterator_stepBy([0], counted(2), {
+            next: upIterator_next,
+            sizeHint: upIterator_sizeHint,
+          }),
           4,
           false,
         ),
-      );
-    },
+      ),
     vecDebug,
   );
   check(

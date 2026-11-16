@@ -13,7 +13,6 @@ import {
   $held,
   $iter,
   $iterCmp,
-  $iterator,
   $lastDropping,
   $lazyChain,
   $lazySkipWhile,
@@ -24,15 +23,21 @@ import {
   $mapFrom,
   $max,
   $next,
+  $nth,
   $reduce,
-  $rev,
   $roomForHint,
   $skipping,
-  $stepBy,
-  $stepByEnds,
+  $tryOf,
   $unwindsOn,
+  iterator_chain,
   iterator_peekable,
+  iterator_rev,
+  iterator_stepBy,
   iterator_take,
+  stepByDoubleEndedIterator_nextBack,
+  stepByDoubleEndedIterator_nthBack,
+  stepByDoubleEndedIterator_rfold,
+  stepByDoubleEndedIterator_tryRfold,
 } from "@rust-js/std";
 
 export function entry() {
@@ -91,6 +96,7 @@ function countDrop_drop(count) {
 }
 
 function consume(n) {
+  const countExactSizeIterator = { len: (iterator) => $exactLen(countIterator_sizeHint(iterator)) };
   const skipped = $lazySkipWhile(
     $closing($iter(three()), $dropEach(loudDrop_drop)).take(n),
     (l) => l[0] < 11,
@@ -265,51 +271,92 @@ function consume(n) {
       chain.return();
     }
   }
-  const back = $rev(
-    $stepByEnds(
-      $closing(
-        $iterator(
-          { at: 0, end: 9 },
-          countIterator_next,
-          false,
-          countDoubleEndedIterator_nextBack,
-          (it) => $exactLen(countIterator_sizeHint(it)),
-          countIterator_sizeHint,
-          undefined,
-          countIterator_nth,
-          undefined,
-          undefined,
-          countDoubleEndedIterator_nthBack,
-        ),
-        (it) => {
-          countDrop_drop(it.of);
-        },
-      ),
+  const back = iterator_rev(
+    iterator_stepBy(
+      { at: 0, end: 9 },
       2,
+      { next: countIterator_next, sizeHint: countIterator_sizeHint, nth: countIterator_nth },
+      countDrop_drop,
     ),
+    { next: $next, fold: $foldOf, nth: $nth },
+    {
+      next_back: (iterator) =>
+        stepByDoubleEndedIterator_nextBack(
+          iterator,
+          { next: countIterator_next, sizeHint: countIterator_sizeHint, nth: countIterator_nth },
+          {
+            next_back: countDoubleEndedIterator_nextBack,
+            nthBack: countDoubleEndedIterator_nthBack,
+          },
+          countExactSizeIterator,
+          countDrop_drop,
+        ),
+      rfold: (iterator, init, f, unwind, ends) =>
+        stepByDoubleEndedIterator_rfold(
+          iterator,
+          init,
+          f,
+          { next: countIterator_next, sizeHint: countIterator_sizeHint, nth: countIterator_nth },
+          {
+            next_back: countDoubleEndedIterator_nextBack,
+            nthBack: countDoubleEndedIterator_nthBack,
+          },
+          countExactSizeIterator,
+          countDrop_drop,
+          unwind,
+          ends,
+        ),
+      nthBack: (iterator, k) =>
+        stepByDoubleEndedIterator_nthBack(
+          iterator,
+          k,
+          { next: countIterator_next, sizeHint: countIterator_sizeHint, nth: countIterator_nth },
+          {
+            next_back: countDoubleEndedIterator_nextBack,
+            nthBack: countDoubleEndedIterator_nthBack,
+          },
+          countExactSizeIterator,
+          countDrop_drop,
+        ),
+      tryRfold: (iterator, init, f, broke, unwind, ends) =>
+        stepByDoubleEndedIterator_tryRfold(
+          iterator,
+          init,
+          f,
+          { next: countIterator_next, sizeHint: countIterator_sizeHint, nth: countIterator_nth },
+          {
+            next_back: countDoubleEndedIterator_nextBack,
+            nthBack: countDoubleEndedIterator_nthBack,
+          },
+          countExactSizeIterator,
+          $tryOf(broke),
+          countDrop_drop,
+          unwind,
+          ends,
+        ),
+    },
+    (stepBy) => {
+      stepBy.return();
+    },
   ).reduce((a, b) => (a + b) | 0, 0);
   console.log(`back ${back}`);
-  const front = $stepBy(
-    $closing(
-      $iterator(
-        { at: 0, end: 5 },
-        countIterator_next,
-        false,
-        undefined,
-        undefined,
-        countIterator_sizeHint,
-        undefined,
-        countIterator_nth,
-        undefined,
-        undefined,
-        countDoubleEndedIterator_nthBack,
-      ),
-      (it) => {
-        countDrop_drop(it.of);
-      },
-    ),
+  const iter = iterator_stepBy(
+    { at: 0, end: 5 },
     2,
-  ).reduce((a, b) => (a + b) | 0, 0);
+    { next: countIterator_next, sizeHint: countIterator_sizeHint, nth: countIterator_nth },
+    countDrop_drop,
+  );
+  let result;
+  try {
+    result = iter.reduce((a, b) => (a + b) | 0, 0);
+  } catch (error) {
+    throw $unwindsOn(error);
+  } finally {
+    if ($live()) {
+      iter.return();
+    }
+  }
+  const front = result;
   console.log(`front ${front}`);
   const value$9 = $closing($iter(three()), $dropEach(loudDrop_drop)).take(n);
   const value$10 = [[20]];
@@ -341,46 +388,34 @@ function consume(n) {
     console.log(
       `[${$collectDropping(
         $roomForHint(
-          $lazyChain(
-            $stepBy(
-              $closing(
-                $iterator(
-                  counter(3),
-                  countIterator_next,
-                  false,
-                  undefined,
-                  undefined,
-                  countIterator_sizeHint,
-                  undefined,
-                  countIterator_nth,
-                  undefined,
-                  undefined,
-                  countDoubleEndedIterator_nthBack,
-                ),
-                (it) => {
-                  countDrop_drop(it.of);
-                },
-              ),
+          iterator_chain(
+            iterator_stepBy(
+              counter(3),
               2,
-            ),
-            $closing(
-              $iterator(
-                counter(2),
-                countIterator_next,
-                false,
-                undefined,
-                undefined,
-                countIterator_sizeHint,
-                undefined,
-                countIterator_nth,
-                undefined,
-                undefined,
-                countDoubleEndedIterator_nthBack,
-              ),
-              (it) => {
-                countDrop_drop(it.of);
+              {
+                next: countIterator_next,
+                sizeHint: countIterator_sizeHint,
+                nth: countIterator_nth,
               },
+              countDrop_drop,
             ),
+            counter(2),
+            { next: $next, fold: $foldOf, nth: $nth },
+            {
+              intoIter: (items) => items,
+              IntoIterIterator: () => ({
+                next: countIterator_next,
+                sizeHint: countIterator_sizeHint,
+                nth: countIterator_nth,
+              }),
+              $dropIntoIter: countDrop_drop,
+            },
+            (stepBy) => {
+              stepBy.return();
+            },
+            countDrop_drop,
+            undefined,
+            countDrop_drop,
           ),
           4,
           false,
@@ -471,32 +506,32 @@ function held(n) {
           }
           try {
             const stepped = $held(
-              $stepBy(
-                $closing(
-                  $iterator(
-                    counter(5),
-                    countIterator_next,
-                    false,
-                    undefined,
-                    undefined,
-                    countIterator_sizeHint,
-                    undefined,
-                    countIterator_nth,
-                    undefined,
-                    undefined,
-                    countDoubleEndedIterator_nthBack,
-                  ),
-                  (it) => {
-                    countDrop_drop(it.of);
-                  },
-                ),
+              iterator_stepBy(
+                counter(5),
                 2,
+                {
+                  next: countIterator_next,
+                  sizeHint: countIterator_sizeHint,
+                  nth: countIterator_nth,
+                },
+                countDrop_drop,
               ),
             );
             let stepped$live = true;
             if (n > 0) {
               stepped$live = false;
-              console.log(`held front ${stepped.reduce((a, b) => (a + b) | 0, 0)}`);
+              const iter = stepped;
+              let result;
+              try {
+                result = iter.reduce((a, b) => (a + b) | 0, 0);
+              } catch (error) {
+                throw $unwindsOn(error);
+              } finally {
+                if ($live()) {
+                  iter.return();
+                }
+              }
+              console.log(`held front ${result}`);
             }
             try {
               const taken = $held($closing($iter(three()), $dropEach(loudDrop_drop)).take(n));
@@ -516,7 +551,7 @@ function held(n) {
               }
               try {
                 const stepped = $held(
-                  $stepBy(
+                  iterator_stepBy(
                     iterator_take(
                       counter(5),
                       n,
@@ -528,6 +563,10 @@ function held(n) {
                       countDrop_drop,
                     ),
                     2,
+                    { next: $next, fold: $foldOf, nth: $nth },
+                    (take) => {
+                      take.return();
+                    },
                   ),
                 );
                 try {

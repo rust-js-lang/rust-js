@@ -511,4 +511,14 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^drop_order_through_take_adapters.rs$"],
     snapshots: true,
   },
+  {
+    name: "step_by-not-flipped",
+    breaks:
+      "a `step_by()` of a chain the transparent-chain predicate doesn't admit is the recognizers' hand-written form again, where std's compiled struct is the meaning (#1681's change 2, the step_by family)",
+    file: "src/lower/body_queries/in_place.rs",
+    find: "    \"step_by\",\n",
+    replace: "    \"map\",\n",
+    tests: ["test/corpus.test.ts", "-t", "^held_step_by_of_a_reversed_range_grows_as_std.rs$"],
+    snapshots: true,
+  },
 ];

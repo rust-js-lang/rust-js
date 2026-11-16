@@ -12,7 +12,6 @@ import {
   $live,
   $next,
   $rev,
-  $stepBy,
   $tryOf,
   $unwindsOn,
   enumerateDoubleEndedIterator_nextBack,
@@ -26,6 +25,7 @@ import {
   iterator_inspect,
   iterator_map,
   iterator_rev,
+  iterator_stepBy,
   mapDoubleEndedIterator_nextBack,
   mapDoubleEndedIterator_rfold,
   mapDoubleEndedIterator_tryRfold,
@@ -358,7 +358,7 @@ function main() {
   });
   run("own step_by", () => {
     const x = $foldDropping(
-      $stepBy(
+      iterator_stepBy(
         iterator_inspect(
           [40, 46],
           (d) => {
@@ -370,6 +370,8 @@ function main() {
           dDrop_drop,
         ),
         2,
+        { next: $next, fold: $foldOf },
+        undefined,
         dDrop_drop,
       ),
       [],

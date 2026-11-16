@@ -2,9 +2,12 @@
 
 import {
   $cleanup,
+  $foldOf,
   $held,
   $lent,
   $live,
+  $next,
+  $nth,
   $nthDropping,
   $step,
   $stepBy,
@@ -12,6 +15,7 @@ import {
   iterator_enumerate,
   iterator_fuse,
   iterator_peekable,
+  iterator_stepBy,
   iterator_take,
 } from "@rust-js/std";
 
@@ -59,7 +63,7 @@ function taken() {
     }, error);
     throw error;
   }
-  const take = iterator_take(
+  const value$1 = iterator_take(
     value,
     tmp,
     { next: loudsIterator_next, nth: loudsIterator_nth },
@@ -71,12 +75,21 @@ function taken() {
     tmp$1 = id(2);
   } catch (error) {
     $cleanup(() => {
-      take.return();
+      value$1.return();
     }, error);
     throw error;
   }
-  const step = $step(tmp$1);
-  const stepBy = $held($stepBy(take, step, loudDrop_drop));
+  const stepBy = $held(
+    iterator_stepBy(
+      value$1,
+      tmp$1,
+      { next: $next, fold: $foldOf, nth: $nth },
+      (take) => {
+        take.return();
+      },
+      loudDrop_drop,
+    ),
+  );
   try {
     const nth = $nthDropping($lent(stepBy), id(1), loudDrop_drop, false);
     function map(l) {
@@ -95,7 +108,7 @@ function taken() {
 }
 
 function counted() {
-  const enumerate = iterator_enumerate(
+  const value = iterator_enumerate(
     louds(),
     { next: loudsIterator_next, nth: loudsIterator_nth },
     loudsDrop_drop,
@@ -106,15 +119,22 @@ function counted() {
     tmp = id(2);
   } catch (error) {
     $cleanup(() => {
-      enumerate.return();
+      value.return();
     }, error);
     throw error;
   }
-  const step = $step(tmp);
   const stepBy = $held(
-    $stepBy(enumerate, step, (value) => {
-      loudDrop_drop(value[1]);
-    }),
+    iterator_stepBy(
+      value,
+      tmp,
+      { next: $next, fold: $foldOf, nth: $nth },
+      (enumerate) => {
+        enumerate.return();
+      },
+      (value) => {
+        loudDrop_drop(value[1]);
+      },
+    ),
   );
   try {
     const nth = $nthDropping(
@@ -177,7 +197,7 @@ function fused() {
 }
 
 function peeked() {
-  const peekable = iterator_peekable(
+  const value = iterator_peekable(
     louds(),
     { next: loudsIterator_next, nth: loudsIterator_nth },
     loudsDrop_drop,
@@ -188,12 +208,21 @@ function peeked() {
     tmp = id(2);
   } catch (error) {
     $cleanup(() => {
-      peekable.return();
+      value.return();
     }, error);
     throw error;
   }
-  const step = $step(tmp);
-  const stepBy = $held($stepBy(peekable, step, loudDrop_drop));
+  const stepBy = $held(
+    iterator_stepBy(
+      value,
+      tmp,
+      { next: $next, fold: $foldOf, nth: $nth },
+      (peekable) => {
+        peekable.return();
+      },
+      loudDrop_drop,
+    ),
+  );
   try {
     const nth = $nthDropping($lent(stepBy), id(2), loudDrop_drop, false);
     function map(l) {

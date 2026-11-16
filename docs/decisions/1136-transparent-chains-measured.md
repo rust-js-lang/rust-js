@@ -612,3 +612,4 @@ out, caught.
 | `inspect` | 7 | 2,737 to 2,844 (×1.039) | 1,307,863 bytes, the same | renamed `x$1` 469.0 to 468.8, `Iterator.from` 8.1 to 8.0 | `inspect-not-flipped` |
 | `skip` | 53 | 17,433 to 17,622 (×1.011) | 1,307,863 bytes, the same | renamed `x$1` 468.7 to 470.3, role fallbacks 255.3 to 255.7, `$iter` 83.7 to 83.6 | `skip-not-flipped` |
 | `take` | 56 | 16,761 to 17,227 (×1.028); two cases' library builds now run as their programs, `library-differs` taken off | 1,307,863 bytes, the same | renamed `x$1` 470.1 to 470.5, role fallbacks 255.6 to 255.5, `$iter` 83.6 to 83.5 | `take-not-flipped` |
+| `step_by` | 29 | 9,975 to 10,329 (×1.035) | the same: std's `StepBy` was compiled already | renamed `x$1` 470.1 to 469.6 | `step_by-not-flipped` |

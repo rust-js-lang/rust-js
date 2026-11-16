@@ -2,14 +2,15 @@
 
 import {
   $capacity,
+  $foldOf,
   $grownVec,
+  $next,
   $rangeNext,
   $rangeNextBack,
   $rangeNthBack,
   $roomForHint,
-  $step,
-  $stepBy,
   iterator_rev,
+  iterator_stepBy,
 } from "@rust-js/std";
 
 export function entry() {
@@ -26,14 +27,14 @@ function main() {
     [1000, 7],
     [0, 3],
   ]) {
-    const step$1 = $step(step);
-    const it = $stepBy(
+    const it = iterator_stepBy(
       iterator_rev(
         { start: 0, end: n },
         { next: $rangeNext },
         { next_back: $rangeNextBack, nthBack: $rangeNthBack },
       ),
-      step$1,
+      step,
+      { next: $next, fold: $foldOf },
     );
     const v = $grownVec($roomForHint(it, 4, false), (grown) => Array.from(grown));
     console.log(

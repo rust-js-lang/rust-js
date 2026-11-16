@@ -4,8 +4,8 @@ import {
   $checked,
   $enumerate,
   $filterEnds,
+  $foldOf,
   $iter,
-  $iterator,
   $lazyChain,
   $lazyRange,
   $lazyTakeWhile,
@@ -15,13 +15,19 @@ import {
   $rangeLen,
   $rangeNext,
   $rangeNextBack,
-  $rev,
+  $rangeNthBack,
   $sizeHint,
   $skipping,
   $stepBy,
-  $stepByEnds,
   $taking,
+  $tryOf,
+  iterator_rev,
+  iterator_stepBy,
   iterator_zip,
+  stepByDoubleEndedIterator_nextBack,
+  stepByDoubleEndedIterator_nthBack,
+  stepByDoubleEndedIterator_rfold,
+  stepByDoubleEndedIterator_tryRfold,
 } from "@rust-js/std";
 
 export function entry() {
@@ -94,11 +100,51 @@ function main() {
   );
   const value$12 = hint($lazyRange(0, 10));
   const value$13 = hint(
-    $rev(
-      $stepByEnds(
-        $iterator({ start: 0, end: 10 }, $rangeNext, false, $rangeNextBack, $rangeLen),
-        3,
-      ),
+    iterator_rev(
+      iterator_stepBy({ start: 0, end: 10 }, 3, { next: $rangeNext }),
+      { next: $next, fold: $foldOf },
+      {
+        next_back: (iterator) =>
+          stepByDoubleEndedIterator_nextBack(
+            iterator,
+            { next: $rangeNext },
+            { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+            { len: $rangeLen },
+          ),
+        rfold: (iterator, init, f, unwind, ends) =>
+          stepByDoubleEndedIterator_rfold(
+            iterator,
+            init,
+            f,
+            { next: $rangeNext },
+            { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+            { len: $rangeLen },
+            undefined,
+            unwind,
+            ends,
+          ),
+        nthBack: (iterator, k) =>
+          stepByDoubleEndedIterator_nthBack(
+            iterator,
+            k,
+            { next: $rangeNext },
+            { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+            { len: $rangeLen },
+          ),
+        tryRfold: (iterator, init, f, broke, unwind, ends) =>
+          stepByDoubleEndedIterator_tryRfold(
+            iterator,
+            init,
+            f,
+            { next: $rangeNext },
+            { next_back: $rangeNextBack, nthBack: $rangeNthBack },
+            { len: $rangeLen },
+            $tryOf(broke),
+            undefined,
+            unwind,
+            ends,
+          ),
+      },
     ),
   );
   console.log(

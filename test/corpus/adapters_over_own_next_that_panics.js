@@ -3,7 +3,6 @@
 import {
   $catchUnwind,
   $cleanup,
-  $closing,
   $collectDropping,
   $count,
   $dropEach,
@@ -20,7 +19,6 @@ import {
   $roomFor,
   $roomForHint,
   $sizeHint,
-  $stepBy,
   $tryFoldOk,
   $tryFoldSome,
   $unwindsOn,
@@ -32,6 +30,7 @@ import {
   iterator_peekable,
   iterator_rev,
   iterator_skip,
+  iterator_stepBy,
   iterator_take,
   iterator_zip,
   mapDoubleEndedIterator_rfold,
@@ -535,39 +534,33 @@ function main() {
     ),
   );
   run("step_by fold", () => {
-    const fold = $foldDropping(
-      $stepBy(
-        $closing(
-          $iterator(
-            own({ start: 60, end: 66 }, 64),
-            ownIterator_next,
-            false,
-            undefined,
-            undefined,
-            ownIterator_sizeHint,
-            ownIterator_fold,
-            undefined,
-            undefined,
-            ownDoubleEndedIterator_rfold,
-          ),
-          (it) => {
-            console.log("drop own");
-            for (const item of it.of.items) {
-              dDrop_drop(item);
-            }
-          },
-        ),
-        2,
-        dDrop_drop,
-      ),
-      [],
-      push,
-      $dropEach(dDrop_drop),
+    const iter = iterator_stepBy(
+      own({ start: 60, end: 66 }, 64),
+      2,
+      { next: ownIterator_next, sizeHint: ownIterator_sizeHint, fold: ownIterator_fold },
+      (own) => {
+        console.log("drop own");
+        for (const item of own.items) {
+          dDrop_drop(item);
+        }
+      },
+      dDrop_drop,
     );
-    for (const item of fold) {
+    const value = [];
+    let result;
+    try {
+      result = $foldDropping(iter, value, push, $dropEach(dDrop_drop));
+    } catch (error) {
+      throw $unwindsOn(error);
+    } finally {
+      if ($live()) {
+        iter.return();
+      }
+    }
+    for (const item of result) {
       dDrop_drop(item);
     }
-    return fold.length;
+    return result.length;
   });
   run("take fold", () => {
     const fold = $foldDropping(
