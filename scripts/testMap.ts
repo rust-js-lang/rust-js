@@ -95,7 +95,25 @@ export type TestMap = {
 /** A change to a file: each hunk's lines of the map's commit, `[from,
  * count]`, a count of 0 lines added after `from`, and the lines it writes
  * there; or `new`, a file the commit didn't have. */
-export type Hunk = [from: number, count: number, added?: string[]];
+export type Hunk = [from: number, count: number, added?: string[], removed?: string[]];
+
+/** A line that's a comment or blank, which changes no test's outcome but
+ * a reader of the sources' (`readsSources`), which runs on every change. */
+const commentOnly = (line: string) => /^\s*(\/\/.*)?$/.test(line);
+
+/** An item a pure addition may write that nothing written before refers
+ * to, so it changes no test's outcome but through the functions changed to
+ * use it, which their own hunks select: a `fn`, a type, a constant, a
+ * `mod`. Not an `impl`, whose methods may be found where nothing names it,
+ * a new inherent method shadowing a trait's; not a `use`, which may shadow
+ * a glob's name; not a macro, which may be expanded where it's named. */
+const unreferencedItem = /^\s*(?:#\[.*\]\s*)*(?:pub(?:\([^)]*\))?\s+)?(?:(?:unsafe|const|async|extern\s+"[^"]*")\s+)*(?:fn|struct|enum|union|const|static|type|mod)\b/;
+const unreferencedOnly = (lines: string[]) =>
+  !lines.some((line) => /^\s*(?:#\[.*\]\s*)*(?:pub(?:\([^)]*\))?\s+)?(?:(?:unsafe|default)\s+)*(?:impl|use|trait|macro)\b|macro_rules!/.test(line)) &&
+  lines.some((line) => unreferencedItem.test(line));
+
+/** `line` with its visibility left out, `pub(super) fn f(` as `fn f(`. */
+const withoutVisibility = (line: string) => line.replace(/\bpub(?:\([^)]*\))?\s+/g, "");
 export type Change = { file: string; hunks: Hunk[] | "new" };
 
 /** What a change runs: the files and cases it can affect, or all of them,
@@ -243,6 +261,19 @@ export function pick(map: TestMap, changes: Change[], files: string[], cases: st
   // The functions whose counted code holds `line` of `file`.
   const holding = (file: string, line: number) => (spans.get(file) ?? []).filter(({ from, to }) => from <= line && line <= to).map(({ at }) => at);
   const within = (outer: number, inner: number) => extent[outer][0] <= extent[inner][0] && extent[inner][1] <= extent[outer][1];
+  // The function whose counted code is the first of `file`'s after `line`,
+  // within the few lines a signature spans: the one a signature line is of.
+  const following = (file: string, line: number) => {
+    const after = (spans.get(file) ?? []).filter(({ from }) => from > line && from <= line + 8).sort((a, b) => a.from - b.from);
+    return after[0]?.at;
+  };
+  // Whether lines added between `line` and the next are in a function's
+  // code, as the counting below asks of a pure addition.
+  const insideAt = (file: string, line: number) => {
+    const before = holding(file, line);
+    const after = holding(file, line + 1);
+    return before.some((a) => after.some((b) => a === b || within(a, b) || within(b, a)));
+  };
   for (const { file, hunks } of changes) {
     const sites = map.includes[file];
     if (sites !== undefined && hunks !== "new") {
@@ -255,7 +286,24 @@ export function pick(map: TestMap, changes: Change[], files: string[], cases: st
     }
     if (!file.startsWith("src/") || !file.endsWith(".rs")) return { kind: "all", why: `${file} isn't the compiler's code` };
     if (hunks === "new") return { kind: "all", why: `${file} is new since the map's commit` };
-    for (const [from, count, added = []] of hunks) {
+    for (const [from, count, added = [], removed] of hunks) {
+      // Comments alone, or blank lines, change nothing a test runs.
+      if (removed !== undefined && [...added, ...removed].every(commentOnly)) continue;
+      // A pure addition of items nothing referred to before, a `mod`, a
+      // `fn` or a type, outside any function's code: nothing until a
+      // function is changed to use it, whose own hunk selects its tests.
+      if (count === 0 && removed !== undefined && unreferencedOnly(added) && !insideAt(file, from)) continue;
+      // A function's signature line whose change is only its visibility,
+      // or its docs, `pub(super) fn f(` for `fn f(`: that function's change.
+      if (removed !== undefined && count > 0 && removed.length === added.length && removed.length > 0) {
+        const same = removed.every((line, i) => withoutVisibility(line) === withoutVisibility(added[i]!) || (commentOnly(line) && commentOnly(added[i]!)));
+        const signature = removed.some((line) => /\bfn\s+\w+/.test(line));
+        const next = signature && same ? following(file, from + count - 1) : undefined;
+        if (next !== undefined) {
+          touched.add(next);
+          continue;
+        }
+      }
       // An item it writes inside a function, an `impl` say, may be used
       // where the function isn't run.
       const item = added.find((line) => nestedItem.test(line));
@@ -332,9 +380,10 @@ export function hunksOf(diff: string): Change[] {
     if (!inHunks && line.startsWith("new file mode")) current.hunks = "new";
     const hunk = /^@@ -(\d+)(?:,(\d+))? \+/.exec(line);
     if (hunk && current.hunks !== "new") {
-      current.hunks.push([Number(hunk[1]), hunk[2] === undefined ? 1 : Number(hunk[2]), []]);
+      current.hunks.push([Number(hunk[1]), hunk[2] === undefined ? 1 : Number(hunk[2]), [], []]);
       inHunks = true;
     } else if (inHunks && line.startsWith("+") && current.hunks !== "new") current.hunks.at(-1)?.[2]?.push(line.slice(1));
+    else if (inHunks && line.startsWith("-") && current.hunks !== "new") current.hunks.at(-1)?.[3]?.push(line.slice(1));
   }
   return changes;
 }

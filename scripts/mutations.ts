@@ -952,15 +952,45 @@ function writeResults(results: Map<string, string>) {
   writeFileSync(join(work, "results.json"), JSON.stringify(found, null, 2) + "\n");
 }
 
-/** The flags `main` takes, each alone or with `=` and its value. */
-const flags = ["--changed", "--also", "--list", "--shard", "--timings", "--jobs", "--batch", "--tests", "--browser", "--fresh", "--base"];
+/** The flags `main` takes alone. */
+const alone = ["--list", "--browser"];
+
+/** The flags `main` takes with `=` and a value, each with the form it's
+ * given in. */
+const valued: Record<string, string> = {
+  "--changed": "--changed=<base>",
+  "--also": "--also=<name>,<name>",
+  "--shard": "--shard=<i>/<n>",
+  "--timings": "--timings=<file>",
+  "--jobs": "--jobs=<n>",
+  "--batch": "--batch=<n>",
+  "--tests": "--tests=<n>",
+  "--fresh": "--fresh=<share>",
+  "--base": "--base=<commit>",
+};
+
+/** Of `args`, each flag `main` doesn't take as it's given: one it doesn't
+ * know, or one that takes a value given none, a bare `--changed`, which ran
+ * every mutation, about 14,000 (#2001), said with its form. */
+export function refusedFlags(args: string[]): string[] {
+  return args
+    .filter((arg) => arg.startsWith("--"))
+    .flatMap((arg) => {
+      if (alone.includes(arg)) return [];
+      const [flag, value] = arg.includes("=") ? [arg.slice(0, arg.indexOf("=")), arg.slice(arg.indexOf("=") + 1)] : [arg, undefined];
+      const form = valued[flag];
+      if (form === undefined) return [`no flag ${arg}; there are ${[...alone, ...Object.values(valued)].join(", ")}`];
+      return value ? [] : [`${flag} takes a value: ${form}`];
+    });
+}
 
 async function main() {
   const args = process.argv.slice(2);
   // A flag it doesn't know is refused, not run past: `--list`, before it
-  // was one, ran all a change's mutations (#923).
-  const unknownFlags = args.filter((arg) => arg.startsWith("--") && !flags.some((flag) => arg === flag || arg.startsWith(`${flag}=`)));
-  if (unknownFlags.length > 0) throw new Error(`no flag ${unknownFlags.join(", ")}; there are ${flags.join(", ")}`);
+  // was one, ran all a change's mutations (#923); and one that takes a
+  // value given none, a bare `--changed`, which ran every one (#2001).
+  const refused = refusedFlags(args);
+  if (refused.length > 0) throw new Error(refused.join("\n"));
   const named = args.filter((arg) => !arg.startsWith("--"));
   const unknown = named.filter((name) => !mutations.some((m) => m.name === name));
   if (unknown.length > 0) throw new Error(`no mutation ${unknown.join(", ")}; there are ${mutations.map((m) => m.name).join(", ")}`);

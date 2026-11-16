@@ -178,9 +178,9 @@ test("a diff's hunks are the lines of the map's commit it changes", () => {
     {
       file: "src/a.rs",
       hunks: [
-        [12, 1, ["    b();"]],
-        [15, 0, ["    c();", "+++ d;"]],
-        [20, 3, []],
+        [12, 1, ["    b();"], ["    a();"]],
+        [15, 0, ["    c();", "+++ d;"], []],
+        [20, 3, [], []],
       ],
     },
     { file: "src/b.rs", hunks: "new" },
@@ -460,4 +460,32 @@ test("CI's map of HEAD's nearest ancestor on main is the one fetched, and the ca
   expect(ciMapOf(artifacts, () => undefined)).toBeUndefined();
   const listed = Array.from({ length: 11 }, (_, i) => ({ id: 100 - i, key: `test-map-Linux-t-${i}` }));
   expect(cachePast(listed, 8).map(({ id }) => id)).toEqual([92, 91, 90]);
+});
+
+// Of a diff's own lines, what can't change a test (ADR 1101, amended): a
+// comment, a pure addition of items nothing referred to before, `mod
+// derived;` of m1-lisa's heap split, and a signature line's visibility,
+// `pub(super) fn`, #1983's, which is that function's change. An `impl`, a
+// `use` or a macro added, or a signature's types changed, still can't be
+// said.
+test("a comment, a new item nothing refers to, and a signature's visibility select no more than they change", () => {
+  const one = (hunk: [number, number, string[], string[]]) => pick(map, [{ file: "src/a.rs", hunks: [hunk] }], files, cases);
+  expect(one([25, 1, ["// the new words"], ["// the old words"]]).kind).toBe("picked");
+  expect(one([25, 1, ["// the new words"], ["const OLD: u32 = 1;"]]).kind).toBe("all");
+  expect(one([22, 0, ["mod derived;"], []]).kind).toBe("picked");
+  expect(one([22, 0, ["pub(super) fn helper() -> u32 {", "    1", "}"], []]).kind).toBe("picked");
+  expect(one([22, 0, ["struct Fresh(u32);", "const LIMIT: u32 = 2;"], []]).kind).toBe("picked");
+  for (const added of [["impl Fresh {", "    fn len(&self) -> u32 { 0 }", "}"], ["use std::fmt::Write;"], ["macro_rules! m { () => {} }"]]) {
+    expect(one([22, 0, added, []]).kind).toBe("all");
+  }
+  // In a function, as before: its change.
+  expect(one([15, 0, ["    let x = 1;"], []])).toMatchObject({ kind: "picked", files: ["test/one.test.ts", "test/reads.test.ts", "test/corpus.test.ts"] });
+  // A signature's visibility: the function after it, `a.rs`'s second.
+  const visible = one([29, 1, ["pub(super) fn second(x: u32) -> u32 {"], ["fn second(x: u32) -> u32 {"]]);
+  expect(visible).toMatchObject({ kind: "picked", files: ["test/two.test.ts", "test/reads.test.ts", "test/iterator-forms.test.ts"], cases: ["x.rs"] });
+  expect(one([29, 1, ["fn second(x: u64) -> u32 {"], ["fn second(x: u32) -> u32 {"]]).kind).toBe("all");
+  // A diff's removed lines, which a hunk now keeps.
+  expect(hunksOf("diff --git a/src/a.rs b/src/a.rs\n--- a/src/a.rs\n+++ b/src/a.rs\n@@ -29 +29 @@\n-fn second() {\n+pub fn second() {\n")).toEqual([
+    { file: "src/a.rs", hunks: [[29, 1, ["pub fn second() {"], ["fn second() {"]]] },
+  ]);
 });

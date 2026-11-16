@@ -536,3 +536,29 @@ their all":
 - its own item, everything.
 Mutations `push-selection-inherits-others-all` and
 `push-selection-drops-others-functions`.
+
+### Amended: comments, new items and a signature's visibility select no more than they change (2026-11-17)
+
+Every M1 handoff of 2026-11-16 selected everything for a line no test's
+outcome can turn on: m1-lisa's heap split's `mod derived;` ("writes an
+item"), #1983's `fn given_stepped` made `pub(super)` ("outside any
+function's counted code"). A hunk now keeps its removed lines too, and
+(`pick`):
+
+- a hunk of comments or blank lines alone selects nothing;
+- a pure addition outside any function's code, of items nothing written
+  before refers to (a `fn`, a type, a `const` or `static`, a `mod`), selects
+  nothing: a test reaches it only through a function changed to use it,
+  whose own hunk selects that function's tests. An `impl` (whose methods
+  are found where nothing names it, a new inherent method shadowing a
+  trait's), a `use` (which may shadow a glob's name), a `trait` or a macro
+  still selects everything;
+- a function's signature line changed only in its visibility, or its docs,
+  is that function's change, the function whose counted code follows it.
+  A signature whose types change is still everything: its callers change.
+
+Proof: test/test-map.test.ts's "a comment, a new item nothing refers to,
+and a signature's visibility select no more than they change"; mutations
+`selector-comment-runs-all`, `selector-pure-addition-runs-all`,
+`selector-added-impl-unreferenced`, `selector-signature-visibility-runs-all`
+and `selector-signature-types-as-its-fn`.

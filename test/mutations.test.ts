@@ -7,23 +7,7 @@ import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, st
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
-import {
-  crateFiles,
-  judge,
-  judgeUnit,
-  lists,
-  mutate,
-  mutations,
-  ofReadabilityOwner,
-  readabilityOwners,
-  site,
-  siteLines,
-  syncTree,
-  testsEnv,
-  unitTestsModule,
-  unmatched,
-  unparsed,
-} from "../scripts/mutations";
+import { crateFiles, judge, judgeUnit, lists, mutate, mutations, ofReadabilityOwner, readabilityOwners, site, siteLines, syncTree, testsEnv, unitTestsModule, unmatched, unparsed, refusedFlags } from "../scripts/mutations";
 import { builtBinary, freshShare, unapplied, verdictKind } from "../scripts/mutant-builds";
 import { casesReaching, noMap } from "../scripts/testMap";
 import { underLoad } from "../scripts/timing";
@@ -489,4 +473,14 @@ test("a readability owner's mutation the test map can't place names its case", (
     return reached.kind === "all" ? [`${m.name}: ${reached.why}`] : [];
   });
   expect(refused).toEqual([]);
+});
+
+// A flag that takes a value is refused given none: a bare `--changed` ran
+// every mutation, about 14,000, where `--changed=origin/main` meant a
+// change's few (#2001); one it doesn't know, as before (#923).
+test("a flag that takes a value, given none, is refused with its form", () => {
+  expect(refusedFlags(["--changed"])).toEqual(["--changed takes a value: --changed=<base>"]);
+  expect(refusedFlags(["--base="])).toEqual(["--base takes a value: --base=<commit>"]);
+  expect(refusedFlags(["--changed=origin/main", "--list", "--browser", "--shard=2/16", "a-mutation"])).toEqual([]);
+  expect(refusedFlags(["--bogus"])[0]).toStartWith("no flag --bogus; there are --list, --browser, --changed=<base>");
 });

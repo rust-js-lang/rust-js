@@ -18,4 +18,12 @@ export const mutations: Mutation[] = [
     replace: "  return crate || harness;",
     tests: ["test/mutation-changes.test.ts", "-t", "builds the compiler where none is given"],
   },
+  {
+    name: "mutations-bare-valued-flag-runs",
+    breaks: "a bare `--changed` runs every mutation, about 14,000, not the change's (#2001)",
+    file: "scripts/mutations.ts",
+    find: "      return value ? [] : [`${flag} takes a value: ${form}`];\n",
+    replace: "      return [];\n",
+    tests: ["test/mutations.test.ts", "-t", "a flag that takes a value, given none"],
+  },
 ];
