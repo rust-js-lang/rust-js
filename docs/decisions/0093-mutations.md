@@ -663,8 +663,12 @@ shard (nightly 43650311159). Now, the lead for the user:
   (`bun scripts/testMap.ts record`) and cached by its run; of a change's,
   the nearest ancestor's the cache kept, HEAD's recorded only where there's
   none (`ensure`). Each shard downloads it.
-- **No map fails the run.** The judge throws, naming CI's job, where the
-  machine has none; it never falls back to every case.
+- **No map fails CI's run.** The judge throws, naming CI's job, where the
+  machine has none; it never falls back to every case. A run here records
+  HEAD's map itself where the machine keeps none of HEAD or an ancestor,
+  once a run as its first survivor asks (`ensureMap`, CI's `ensure` too),
+  of a clean tree, and says how long it took; of a working tree that
+  changes HEAD it fails, saying to commit first (the lead, 2026-11-16).
 - **A site the map can't place is a survivor that says what to write.** One
   outside a function's counted code, or of a file changed since the map's
   commit (`casesReaching`: a derived fact of its commit, never a stale
@@ -704,7 +708,10 @@ take seconds. Now, the lead for the user:
 
 On the Mac mini, an alone build of the mutants' crate after a one-line
 change to `tidy/stages.rs`: 33.8 s with no incremental cache, 3.1 s with
-it (three of each).
+it (three of each). On CI, dispatch 43776546919's diagnosis: the crate built
+with no setting, 2 min 0 s, no `-C incremental`; again with
+`CARGO_INCREMENTAL=1`, 1 min 59 s, its incremental directories made; and
+after a one-line change, 8.5 s.
 
 Here sccache refuses `CARGO_INCREMENTAL=1` ("incremental compilation is
 prohibited"), and passes an incremental build through only where the

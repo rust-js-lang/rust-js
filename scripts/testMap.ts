@@ -397,6 +397,25 @@ export function nearestMap(store: string, checkout: string, toolchain: string): 
  * tells apart from a site it can't place. */
 export const noMap = "no test map of HEAD or an ancestor of it on this machine";
 
+/** Why HEAD's map isn't recorded of a working tree that changes it. */
+const unclean = "the test map is of a commit: commit or remove what the working tree changes first";
+
+/** A map of HEAD or an ancestor of it the machine keeps, or, where there's
+ * none, HEAD's recorded, of a clean tree: CI's `ensure`, and a local
+ * mutation run's snapshot judge, which records its own (ADR 0093, amended).
+ * Whether it recorded one, and in how many seconds; `headMap` reads it
+ * again after. */
+export async function ensureMap(): Promise<{ recorded: boolean; seconds: number; commit: string }> {
+  const kept = nearestMap(mapStore, root, toolchainOf());
+  if (kept) return { recorded: false, seconds: 0, commit: kept.commit };
+  const started = Date.now();
+  await record(false);
+  headMapRead = undefined;
+  const made = nearestMap(mapStore, root, toolchainOf());
+  if (made === undefined) throw new Error(`${noMap}, though HEAD's was recorded`);
+  return { recorded: true, seconds: (Date.now() - started) / 1000, commit: made.commit };
+}
+
 function headMap(): { map: TestMap; changes: Change[] } | string {
   headMapRead ??= readHeadMap();
   return headMapRead;
@@ -589,10 +608,7 @@ async function record(keep: boolean) {
     console.log(`the test map of ${commit.slice(0, 9)} is recorded already, by this worktree or another: ${file}`);
     return;
   }
-  if (git(["status", "--porcelain"]).out.trim() !== "") {
-    console.error("the test map is of a commit: commit or remove what the working tree changes first");
-    process.exit(1);
-  }
+  if (git(["status", "--porcelain"]).out.trim() !== "") throw new Error(unclean);
   const started = Date.now();
   const tools = llvmTools();
   // The counting build, in a target of its own, so `target/debug`'s isn't
@@ -753,10 +769,8 @@ if (import.meta.main) {
     // CI's: a map of the nearest ancestor its cache kept serves, as one
     // does a worktree's check (`headMap`, the changes since its commit
     // can't be placed by it); HEAD's recorded only where there's none.
-    const kept = nearestMap(mapStore, root, toolchainOf());
-    const recorded = kept === undefined;
-    if (kept) console.log(`the test map of ${kept.commit.slice(0, 9)}, an ancestor of HEAD, serves`);
-    else await record(false);
+    const { recorded, commit } = await ensureMap();
+    if (!recorded) console.log(`the test map of ${commit.slice(0, 9)}, an ancestor of HEAD, serves`);
     if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, `recorded=${recorded}\n`);
   } else if (command === "pick") {
     const cases = readdirSync(join(root, "test", "corpus")).filter((name) => name.endsWith(".rs"));

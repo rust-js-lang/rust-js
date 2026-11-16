@@ -24,7 +24,7 @@ import { run, runSync, stopped, type Exit } from "../test/child";
 import { corpusHarness, corpusMutantCases, corpusMutants, mutantOf } from "../test/corpus-mutants";
 import { installPackages } from "../test/packages-of";
 import { caseParts, compilerBuilds, drivesBrowser, machine, memoryBudget, shardArg, timedShard } from "./shard";
-import { casesReaching, noMap } from "./testMap";
+import { casesReaching, ensureMap, noMap } from "./testMap";
 import { elapsed, shown, timed } from "./timing";
 import { passed, summary } from "./test-summary";
 import { acquire, holdLease, ownShare } from "./leases";
@@ -1161,10 +1161,27 @@ async function main() {
   // where the compiler as it is makes that snapshot; the first in each part
   // ends it.
   const caseNames = readdirSync(join(root, "test", "corpus")).filter((name) => name.endsWith(".rs"));
-  const snapshotsJudge = async (mutation: Mutation, mutant: string): Promise<{ caught: boolean; said: string; output: string }> => {
+  // HEAD's map, recorded here where the machine keeps none of HEAD or an
+  // ancestor, once a run, as the first survivor asks it: CI's comes of its
+  // `test-map` job, and its run fails without one.
+  let recording: ReturnType<typeof ensureMap> | undefined;
+  const reaching = async (mutation: Mutation) => {
     const lines = siteLines(mutation, read(mutation.file));
-    const reached = lines ? casesReaching(mutation.file, lines[0], lines[1], caseNames) : { kind: "all" as const, why: "its site isn't in its file once" };
-    // Never every case: without a map the run fails (`noMap`, CI's
+    if (!lines) return { kind: "all" as const, why: "its site isn't in its file once" };
+    const reached = casesReaching(mutation.file, lines[0], lines[1], caseNames);
+    if (reached.kind !== "all" || !reached.why.startsWith(noMap) || process.env.GITHUB_ACTIONS) return reached;
+    recording ??= (async () => {
+      console.log(`${mutation.name}: its tests passed, and ${noMap}: recording HEAD's`);
+      const made = await ensureMap();
+      console.log(`the test map of ${made.commit.slice(0, 9)}, recorded in ${shown(made.seconds)}`);
+      return made;
+    })();
+    await recording;
+    return casesReaching(mutation.file, lines[0], lines[1], caseNames);
+  };
+  const snapshotsJudge = async (mutation: Mutation, mutant: string): Promise<{ caught: boolean; said: string; output: string }> => {
+    const reached = await reaching(mutation);
+    // Never every case: without a map CI's run fails (`noMap`, its
     // `test-map` job keeps one), and a site the map can't place is the
     // mutation's to name the case that catches it, `snapshots: true`.
     if (reached.kind === "all") {
