@@ -13,7 +13,6 @@ import {
   $iterator,
   $lazyMapWhile,
   $lazyScan,
-  $lazySkipWhile,
   $lent,
   $next,
   $range,
@@ -29,6 +28,7 @@ import {
   iterator_map,
   iterator_peekable,
   iterator_skip,
+  iterator_skipWhile,
   iterator_stepBy,
   iterator_take,
   iterator_takeWhile,
@@ -111,7 +111,7 @@ function main() {
     `step_by ([${value$7[0].join(", ")}], [${value$7[1].join(", ")}], [${value$7[2].join(", ")}])`,
   );
   const value$8 = twice(
-    $lazySkipWhile($iterator(f(), flakyIterator_next), (x) => x < 2),
+    iterator_skipWhile(f(), (x) => x < 2, { next: flakyIterator_next }),
     "next",
   );
   console.log(

@@ -3,19 +3,18 @@
 import {
   $advanceSlice,
   $cleanup,
-  $closing,
   $dropEach,
   $held,
   $iter,
   $lazyMapWhile,
-  $lazyRange,
   $lazyScan,
-  $lazySkipWhile,
   $live,
   $next,
+  $rangeNext,
   $sizeHint,
   $unwindsOn,
   iterator_filter,
+  iterator_skipWhile,
   iterator_takeWhile,
 } from "@rust-js/std";
 
@@ -83,9 +82,12 @@ function dropping() {
     }
   }
   const s = $held(
-    $lazySkipWhile(
-      $closing($iter(louds([5, 6, 7])), $dropEach(loudDrop_drop)),
+    iterator_skipWhile(
+      $iter(louds([5, 6, 7])),
       (l) => l[0] < 6,
+      { next: $next, advanceBy: $advanceSlice },
+      $dropEach(loudDrop_drop),
+      undefined,
       loudDrop_drop,
     ),
   );
@@ -247,7 +249,7 @@ function dropping() {
 }
 
 function plain() {
-  const s = $lazySkipWhile($iter([1, 2, 3]), (x) => x < 2);
+  const s = iterator_skipWhile($iter([1, 2, 3]), (x) => x < 2);
   const sizeHint = $sizeHint(s);
   const next = $next(s);
   const value = $sizeHint(s);
@@ -290,7 +292,9 @@ function plain() {
   const v = [1, 2, 3];
   const value$12 = $sizeHint(iterator_takeWhile($iter(v), (x) => x > 1));
   console.log(`(${value$12[0]}, ${value$12[1] == null ? "None" : `Some(${value$12[1]})`})`);
-  const value$13 = $sizeHint($lazySkipWhile($lazyRange(1, 10), (x) => x < 4));
+  const value$13 = $sizeHint(
+    iterator_skipWhile({ start: 1, end: 10 }, (x) => x < 4, { next: $rangeNext }),
+  );
   console.log(`(${value$13[0]}, ${value$13[1] == null ? "None" : `Some(${value$13[1]})`})`);
 }
 

@@ -9,7 +9,6 @@ import {
   $iter,
   $iterator,
   $lazyChain,
-  $lazySkipWhile,
   $lazyTakeWhile,
   $lazyZip,
   $next,
@@ -22,6 +21,7 @@ import {
   $toUppercase,
   $unzip,
   iterator_map,
+  iterator_skipWhile,
   iterator_zip,
 } from "@rust-js/std";
 
@@ -134,7 +134,13 @@ function main() {
   console.log(
     `${a == null ? "None" : `Some(${a})`} ${b == null ? "None" : `Some(${b})`} [${rest.join(", ")}]`,
   );
-  const short = Array.from($lazySkipWhile($iterator([0], counterIterator_next), (n) => n < 2));
+  const short = Array.from(
+    $roomForHint(
+      iterator_skipWhile([0], (n) => n < 2, { next: counterIterator_next }),
+      4,
+      false,
+    ),
+  );
   console.log(
     `[${short.join(", ")}] [${repeated(undefined, 2)
       .map((item) => (item == null ? "None" : `Some(${item})`))

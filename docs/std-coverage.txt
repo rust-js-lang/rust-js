@@ -1055,11 +1055,11 @@
 + Take::size_hint	memory
 + Take::try_fold	spec
 + Take::try_rfold	spec
-# SkipWhile 3 of 4; bodies: 3 safe, 1 spec, 0 opaque, 0 memory, 0 none
+# SkipWhile 4 of 4; bodies: 3 safe, 1 spec, 0 opaque, 0 memory, 0 none
 + SkipWhile::fold	safe
 + SkipWhile::next	safe
 + SkipWhile::size_hint	safe
-- SkipWhile::try_fold	spec
++ SkipWhile::try_fold	spec
 # TakeWhile 4 of 4; bodies: 2 safe, 2 spec, 0 opaque, 0 memory, 0 none
 + TakeWhile::fold	spec
 + TakeWhile::next	safe

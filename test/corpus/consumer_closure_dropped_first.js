@@ -9,7 +9,6 @@ import {
   $flatMap,
   $iter,
   $iterator,
-  $lazySkipWhile,
   $live,
   $print,
   $rangeNext,
@@ -23,6 +22,7 @@ import {
   iterator_peekable,
   iterator_rev,
   iterator_skip,
+  iterator_skipWhile,
   iterator_stepBy,
   iterator_take,
   iterator_zip,
@@ -548,13 +548,15 @@ function main() {
   });
   case$("skip_while", (g) => {
     let g$16$live = true;
-    let skipWhile;
+    let iter;
     try {
-      skipWhile = $lazySkipWhile(
-        $closing($iterator(It.new(3, "it"), itIterator_next), (it) => {
-          dDrop_drop(it.of._held);
-        }),
+      iter = iterator_skipWhile(
+        It.new(3, "it"),
         (x) => x > 1,
+        { next: itIterator_next },
+        (it) => {
+          dDrop_drop(it._held);
+        },
       );
       g$16$live = false;
     } catch (error) {
@@ -566,9 +568,17 @@ function main() {
       throw error;
     }
     const f = (a, x) => (((a + x) >>> 0) + zero(g)) >>> 0;
-    return $consume(skipWhile, "fold", 0, f, undefined, () => {
-      dDrop_drop(g);
-    });
+    try {
+      return $consume(iter, "fold", 0, f, undefined, () => {
+        dDrop_drop(g);
+      });
+    } catch (error) {
+      throw $unwindsOn(error);
+    } finally {
+      if ($live()) {
+        iter.return();
+      }
+    }
   });
   case$("flatten", (g) => {
     let g$17$live = true;

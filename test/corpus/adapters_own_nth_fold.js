@@ -8,7 +8,6 @@ import {
   $lazyChain,
   $lazyMapWhile,
   $lazyScan,
-  $lazySkipWhile,
   $lent,
   $next,
   $nth,
@@ -17,6 +16,7 @@ import {
   iterator_fuse,
   iterator_map,
   iterator_skip,
+  iterator_skipWhile,
   iterator_stepBy,
   iterator_take,
   iterator_takeWhile,
@@ -68,13 +68,14 @@ function counted() {
 
 function main() {
   console.log(
-    `${$lazySkipWhile(
+    `${iterator_skipWhile(
       iterator_skip(counted(), 2, {
         next: countIterator_next,
         fold: countIterator_fold,
         nth: countIterator_nth,
       }),
       (x) => x < 3,
+      { next: $next, fold: $foldOf, nth: $nth },
     ).reduce((a, b) => (a + b) | 0, 0)}`,
   );
   const value = Array.from(

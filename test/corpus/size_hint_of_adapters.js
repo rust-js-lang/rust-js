@@ -14,7 +14,6 @@ import {
   $iterator,
   $lazyMapWhile,
   $lazyScan,
-  $lazySkipWhile,
   $lent,
   $live,
   $next,
@@ -31,6 +30,7 @@ import {
   iterator_map,
   iterator_rev,
   iterator_skip,
+  iterator_skipWhile,
   iterator_take,
   iterator_takeWhile,
   iterator_zip,
@@ -145,10 +145,10 @@ function main() {
   show(
     "skip_while",
     $sizeHint(
-      $lazySkipWhile(
-        $iterator(own(), ownIterator_next, false, undefined, undefined, ownIterator_sizeHint),
-        (x) => x < 3,
-      ),
+      iterator_skipWhile(own(), (x) => x < 3, {
+        next: ownIterator_next,
+        sizeHint: ownIterator_sizeHint,
+      }),
     ),
   );
   show(

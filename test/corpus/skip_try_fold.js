@@ -11,7 +11,6 @@ import {
   $lazyMapWhile,
   $lazyRange,
   $lazyScan,
-  $lazySkipWhile,
   $lent,
   $live,
   $next,
@@ -27,6 +26,7 @@ import {
   iterator_flatMap,
   iterator_map,
   iterator_skip,
+  iterator_skipWhile,
   iterator_take,
   iterator_takeWhile,
 } from "@rust-js/std";
@@ -112,7 +112,7 @@ function main() {
   };
   console.log(
     `skip_while ${$lent(
-      $lazySkipWhile(
+      iterator_skipWhile(
         iterator_flatMap(
           iterator_take(c(), 2, { next: countIterator_next, nth: countIterator_nth }),
           () => iterator_skip(c(), 2, { next: countIterator_next, nth: countIterator_nth }),
@@ -123,6 +123,7 @@ function main() {
           false,
         ),
         (x) => x < 4,
+        { next: $next, fold: $foldOf },
       ),
     ).some((x) => x > 25)}`,
   );
@@ -267,16 +268,18 @@ function main() {
   );
   console.log(
     `skip_while ${$lent(
-      $lazySkipWhile(
+      iterator_skipWhile(
         iterator_skip(c(), 2, { next: countIterator_next, nth: countIterator_nth }),
         (x) => x < 4,
+        { next: $next, fold: $foldOf, nth: $nth },
       ),
     ).some((x) => x > 5)}`,
   );
   const value$8 = $next(
-    $lazySkipWhile(
+    iterator_skipWhile(
       iterator_skip(c(), 2, { next: countIterator_next, nth: countIterator_nth }),
       (x) => x < 4,
+      { next: $next, fold: $foldOf, nth: $nth },
     ),
   );
   console.log(`skip_while ${value$8 == null ? "None" : `Some(${value$8})`}`);

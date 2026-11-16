@@ -6,7 +6,6 @@ import {
   $foldOf,
   $held,
   $iter,
-  $lazySkipWhile,
   $lent,
   $live,
   $next,
@@ -17,6 +16,7 @@ import {
   iterator_flatten,
   iterator_map,
   iterator_skip,
+  iterator_skipWhile,
   iterator_take,
   iterator_takeWhile,
   mapIterator___iteratorGetUnchecked,
@@ -148,7 +148,7 @@ function counted() {
     IntoIterIterator: () => ({ next: $next }),
   };
   const skipWhile = $held(
-    $lazySkipWhile(
+    iterator_skipWhile(
       iterator_flatMap(
         iterator_take(c("outer"), 2, { next: countIterator_next }, countDrop_drop),
         () => iterator_skip(c("inner"), 2, { next: countIterator_next }, countDrop_drop),
@@ -181,6 +181,10 @@ function counted() {
         },
       ),
       (x) => x < 4,
+      { next: $next, fold: $foldOf },
+      (flatMap) => {
+        flatMap.return();
+      },
     ),
   );
   let found;
