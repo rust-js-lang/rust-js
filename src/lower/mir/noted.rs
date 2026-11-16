@@ -72,7 +72,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// A body's inclusive ranges no step can leave exhausted, by name
     /// (`fresh_ranges`, #418).
-    pub(in crate::lower) fn note_fresh_ranges(&mut self, names: Vec<String>) {
+    pub(in crate::lower) fn note_fresh_ranges(&mut self, names: Vec<js::Name>) {
         self.locals.mir.fresh_ranges.extend(names);
     }
 
@@ -118,6 +118,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether `range` is a variable no step can leave exhausted, a `let`
     /// not `mut` of `a..=b` (`fresh_ranges`, #418).
     pub(in crate::lower) fn never_exhausted(&self, range: &Expr) -> bool {
-        matches!(&range.kind, js::ExprKind::Var(name) if self.locals.mir.fresh_ranges.contains(name.word()))
+        matches!(&range.kind, js::ExprKind::Var(name) if self.locals.mir.fresh_ranges.contains(name))
     }
 }

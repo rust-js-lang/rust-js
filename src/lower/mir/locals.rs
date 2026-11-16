@@ -73,7 +73,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Of `body`, the names of its inclusive ranges no step can leave
     /// exhausted: each a `let` not `mut`, which nothing lends as a `&mut`,
     /// whose every write is `RangeInclusive::new(a, b)`, `a..=b` (#418).
-    pub(super) fn fresh_ranges(&self, body: &mir::Body<'tcx>, names: &IndexVec<Local, js::Name>) -> Vec<String> {
+    pub(super) fn fresh_ranges(&self, body: &mir::Body<'tcx>, names: &IndexVec<Local, js::Name>) -> Vec<js::Name> {
         use crate::lower::std_types::range::RangeKind;
         let n = body.local_decls.len();
         let (mut writes, mut made): (IndexVec<Local, usize>, IndexVec<Local, usize>) =
@@ -101,7 +101,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     && writes[local] == made[local]
                     && self.range_kind(decl.ty) == Some(RangeKind::Inclusive)
             })
-            .map(|(local, _)| names[local].word().to_string())
+            .map(|(local, _)| names[local].clone())
             .collect()
     }
 

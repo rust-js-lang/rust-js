@@ -392,14 +392,14 @@ impl<'m, 'tcx> LocalFacts<'m, 'tcx> {
 /// never changed after; `State`'s `naming` (the review's P3, ADR 0872).
 #[derive(Default)]
 pub(super) struct NamingFacts {
-    boxes: IndexSet<String>,
+    boxes: IndexSet<js::Name>,
     borrowed_names: IndexSet<js::Name>,
     flags: IndexVec<MovePathIndex, Option<js::Name>>,
 }
 
 impl NamingFacts {
     pub(super) fn new(
-        boxes: IndexSet<String>,
+        boxes: IndexSet<js::Name>,
         borrowed_names: IndexSet<js::Name>,
         flags: IndexVec<MovePathIndex, Option<js::Name>>,
     ) -> Self {
@@ -410,7 +410,7 @@ impl NamingFacts {
         }
     }
 
-    pub(super) fn boxes(&self) -> &IndexSet<String> {
+    pub(super) fn boxes(&self) -> &IndexSet<js::Name> {
         &self.boxes
     }
 

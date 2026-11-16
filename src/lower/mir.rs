@@ -189,7 +189,7 @@ pub(super) struct Found {
     /// leave exhausted, by name: each a `let` not `mut`, so never lent as a
     /// `&mut`, made only by `a..=b`, which `range_state` reads as it is
     /// (#418).
-    pub(super) fresh_ranges: IndexSet<String>,
+    pub(super) fresh_ranges: IndexSet<js::Name>,
     /// Of a body lowered from its MIR, the `Vec` each `collect()` std may
     /// make in place is made of, by the call's span: its variable's name,
     /// `in_place_collect_sources`'s (#1259).
@@ -771,7 +771,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         &mut self,
         state: &mut State<'_, 'tcx>,
         (mir_body, local, closure): (&mir::Body<'tcx>, Local, bool),
-        boxes: &mut IndexSet<String>,
+        boxes: &mut IndexSet<js::Name>,
         cell_params: &mut Vec<(js::Name, js::Name)>,
     ) -> js::Pattern {
         state.locals.declared[local] = true;
@@ -780,9 +780,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if unnamed(&state.locals, local) {
             state.locals.names[local] = js::Name::default();
         }
-        let name = match state.locals.names[local].word() {
-            "" => self.fresh(Role::Unread),
-            _ => state.locals.names[local].clone(),
+        let name = match state.locals.names[local].is_unnamed() {
+            true => self.fresh(Role::Unread),
+            false => state.locals.names[local].clone(),
         };
         state.locals.names[local].clone_from(&name);
         // A `&mut` to a value JS can't change in place: the box its
@@ -794,7 +794,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             false => self.param_is_box(mir_body.source.def_id(), local.as_usize() - 1),
         };
         if boxed {
-            boxes.insert(name.word().to_string());
+            boxes.insert(name.clone());
         }
         // One taken by value whose address is taken, `&raw mut n`:
         // a cell of its own, made of what it's given, as a local
