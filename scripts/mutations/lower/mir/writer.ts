@@ -271,15 +271,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^fmt_error_unwritten.rs$"],
   },
   {
-    name: "held-builder-finished-first-lost",
-    breaks:
-      "a `Debug` builder held in a variable is forgotten at its `finish`, which a loop's exit lowers before its body's steps, refused (#1026)",
-    file: "src/lower/mir/writer.rs",
-    find: "                        .insert(root, (kind, type_name.clone(), Vec::new(), Taken::Parts(parts.clone())));\n",
-    replace: "                        .get(&root);\n",
-    tests: ["test/crates.test.ts", "-t", "two crates: held_builder_in_a_librarys_generic_writer"],
-  },
-  {
     name: "text-place-through-a-cell-unread",
     breaks:
       "a write from a body's MIR to text given by a `&mut` as it is, `copy _1` of a `&mut String` parameter or `quoted[0]` of a held `Formatter`, writes its cell's variable, not its `value`, so a library's `impl AddAssign<Tag> for String` and `Quoted`'s `write_str` its consumer compiles lose what they write (#1026)",

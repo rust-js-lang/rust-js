@@ -80,3 +80,23 @@ builder's parts are its array's, which a later step pushes to and its
 `finish` reads, so it's kept. Mutation `held-builder-finished-first-lost`
 (`lower/mir/writer.ts`), by the pair test
 `library_writers_given_options`'s `Row`.
+
+## Amendment: not kept after its `finish` again (#1776, 2026-11-16)
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): R, refused where it can't
+be kept. Since #1760 a library frames every writer function another crate
+can reach, so a library's writer its consumer compiles from optimized MIR,
+the one where a loop's exit, its `finish`, is lowered before its body's
+steps, writes through its sink and takes the streamed builder's arm
+(#1533), which keeps the builder as before. No program reaches the held
+builder's `finish` before its steps any more: the pair the mutation asked,
+`held_builder_in_a_librarys_generic_writer`, takes the streamed arm, and
+#1776 tried a library's private generic `Debug` shown by a public generic
+function, its copy of its items, and std's regenerated bodies, none of
+which reach it. So the held builder isn't kept past its `finish` (the
+lead's decision, 2026-11-16): a step lowered after it finds no builder and
+is refused, "this `Debug` builder, from its MIR", never written, so an
+order not found yet is a compile error, not a wrong answer. Mutation
+`held-builder-finished-first-lost` is retired with the code it mutated.
+The corpus, the snapshots, the pair tests, std and the port are as they
+were.

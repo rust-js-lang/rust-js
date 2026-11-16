@@ -201,13 +201,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     self.append_to_writer(state, &name, written, false, self.js_span(span), out);
                 }
                 // Held in a variable: its parts so far, none perhaps, where a
-                // struct's or a tuple's is its name alone (ADR 0532).
-                // Kept: a loop's exit, its `finish`, may be lowered before the
-                // steps its body makes (#1026).
+                // struct's or a tuple's is its name alone (ADR 0532). Not kept
+                // past its `finish`: a step lowered after it, the order of a
+                // library's writer instance compiled of optimized MIR (#1026),
+                // reaches only a writer that writes through its sink since
+                // #1760, `Taken::Streamed`'s, and one that didn't would be
+                // refused above, never written (#1776).
                 (BuilderStep::Finish { non_exhaustive }, Taken::Parts(parts)) => {
-                    state
-                        .built
-                        .insert(root, (kind, type_name.clone(), Vec::new(), Taken::Parts(parts.clone())));
                     let all = vec![crate::lower::display::BuilderPart::Many(Expr::var(&parts))];
                     let written = self.builder_assembled(kind, type_name.clone(), all, non_exhaustive);
                     let written = match (kind, type_name) {

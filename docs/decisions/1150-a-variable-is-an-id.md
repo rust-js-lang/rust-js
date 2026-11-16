@@ -80,7 +80,8 @@ Two mutations no program reaches since M2 made each callback's name the
 item's own, `js-substitute-shadowed` and `mir-tidy-plain-cell-shadowed`,
 are each held by a unit test of a tree that binds a name twice, as a tree
 used again still does till S7. `held-builder-finished-first-lost` is
-#1776's, its branch unreachable since #1760.
+#1776's, its branch unreachable since #1760, and retired with it since
+(ADR 0532, amended).
 
 ## S1b's second part (2026-11-15)
 
