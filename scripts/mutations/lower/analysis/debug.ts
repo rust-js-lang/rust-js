@@ -27,11 +27,11 @@ export const mutations: Mutation[] = [
   {
     name: "library-options-unapplied",
     breaks:
-      "a library's writers that take a `Formatter`'s options, its `{:#?}`'s, apply none a consumer gives: a width, a fill and a `+` are lost where its `fmt` forwards by path",
+      "a library's writers that take a `Formatter`'s options, its `{:#?}`'s, apply none a consumer gives, where the library asks no option itself: a width, a fill and a `+` are lost of a `dyn Debug` it hands its consumer",
     file: "src/lower/analysis/debug.rs",
     find: "            format_options: uses_format_options(tcx, all_bodies) || (library && pretty_debug),",
     replace: "            format_options: uses_format_options(tcx, all_bodies),",
-    tests: ["test/crates.test.ts", "-t", "library_fmt_forwarded_by_path"],
+    tests: ["test/crates.test.ts", "-t", "two crates: library_pretty_debug_given_options$"],
   },
   {
     name: "format-options-flag-primitive",

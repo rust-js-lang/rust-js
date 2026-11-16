@@ -63,11 +63,12 @@ test("a library's functions that may merge what its consumer compares are compil
   expect(dep).toContain("  return { compute: (previous) => (previous != null ? getter(previous) : getter()) };\n");
   expect(dep).toContain("  const first = bump;\n  const second = bump;\n");
   expect(dep).toContain("  return [ping, ping];\n");
-  expect(contract(out).merges_identities).toHaveLength(7);
+  expect(contract(out).merges_identities).toHaveLength(8);
   const app = readFileSync(join(out, "app", "lib.js"), "utf8");
   expect(app).toContain("  const first = { value: read, strong: 1, weak: 0 };\n  const second = { value: read, strong: 1, weak: 0 };\n");
   expect(app).toContain("\nfunction computed(getter) {\n  return { compute: (previous) => getter(previous) };\n}\n");
   expect(app).toContain("\nfunction doubled() {\n");
+  expect(app).toContain("\nfunction pinged() {\n");
   expect(app).toContain("  const first = (by) => Counter.bump(counter, by);\n  const second = (by) => Counter.bump(counter, by);\n");
   expect(app).toContain('import { double, rcStableDeref, total } from "../dep/lib.js";');
   counting(out, "pub fn main() {\n    println!(\"{}\", (dep::doubled().compute)(Some(std::rc::Rc::new(2))));\n}\n");

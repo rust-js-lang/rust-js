@@ -431,6 +431,22 @@ test("a std function's call without its recogniser is refused, and what a compil
   expect(named).toContain(`without the recogniser of ${sqrt}`);
 });
 
+// What a compile recognised names std's functions alone: a crate's own
+// impl of a std trait that a recogniser takes, `Whole`'s own `read_to_end`
+// and `Text`'s `seek`, has no std path, and isn't listed, nor left out by
+// `--without-recognizer` (std_crates.rs's `std_path`, ADR 1054).
+test("what a compile recognised is std's functions, never the crate's own impls", async () => {
+  buildCompiler();
+  const recognised = async (name: string) => {
+    const { compiled, recognized } = await compileFull(join(corpus, name), caseDir(name), "2024");
+    if (!("js" in compiled)) throw new Error(compiled.error);
+    return recognized;
+  };
+  const all = [...(await recognised("read_of_a_crates_own_reader.rs")), ...(await recognised("readers_of_the_crates_own_and_boxed.rs"))];
+  expect(all).toContain("std::io::Read::read_to_end");
+  expect(all.filter((path) => /^<(Whole|Text) as /.test(path))).toEqual([]);
+});
+
 // A trait's method of std's impl, of a type known where it's called, that
 // takes a `&mut` is refused without its recogniser too: it went by the trait
 // call generic code makes, to a dictionary that reads a `&mut` as generic

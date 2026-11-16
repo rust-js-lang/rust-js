@@ -1305,7 +1305,7 @@ test("a #![no_std] crate's trait calls compile, though it has no ToString", asyn
 
 // In a `#![no_std]` crate std's items are `core's` by path, `core::str::Chars`,
 // which recognition took for no std item: num-traits' `chars()` stepped and
-// asked `as_str()` was a raw pointer (docs/crate-corpus.md).
+// asked `as_str()` was a raw pointer (docs/crate-corpus.md); std's path each.
 test("a #![no_std] crate's std items are std's, though core names them", async () => {
   const dir = fixture("no-std-paths");
   writeFileSync(join(dir, "lib.rs"), [
@@ -1326,9 +1326,11 @@ test("a #![no_std] crate's std items are std's, though core names them", async (
     "}",
     "",
   ].join("\n"));
-  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--recognizers-found", join(dir, "found.txt")]);
   const lib = await import(join(dir, "lib.js"));
   expect([lib.shift("héllo"), lib.left([1, 2, 3]), lib.taken()]).toEqual([5, 2, 7]);
+  // Each recognised by std's path, as `--without-recognizer` names it.
+  expect(readFileSync(join(dir, "found.txt"), "utf8").split("\n").filter((path) => path.startsWith("std::mem::") || path.startsWith("core::"))).toEqual(["std::mem::take"]);
 }, 300_000);
 
 // A library's trait method without a default whose entries take their

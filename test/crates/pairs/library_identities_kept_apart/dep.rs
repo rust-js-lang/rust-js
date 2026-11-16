@@ -98,3 +98,10 @@ fn ping() {
 pub fn pings() -> (Rc<dyn Fn(bool)>, Rc<dyn Fn(bool)>) {
     (Rc::new(|_| ping()), Rc::new(|_| ping()))
 }
+
+/// The same, through another function of the library's: its consumer
+/// compiles its own of each, as the library's `pings` gives one function
+/// twice.
+pub fn pinged() -> (Rc<dyn Fn(bool)>, Rc<dyn Fn(bool)>) {
+    pings()
+}

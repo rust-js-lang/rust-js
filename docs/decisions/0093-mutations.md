@@ -785,3 +785,40 @@ The latent ones are filed in one issue, "Mutation survivors on main", by the `su
 Proof: `test/survivors.test.ts` (the latent split, the issue's body and escaping, the workflows' wiring).
 
 A latent one is not retried by the next check either (`resultsBase` reads each shard's `mutation-latent-*` beside its results): retried, the 6 or 7 of the crate tests held a mutation shard up in every check, the mutation shards 40% of a check's runner-minutes (2026-11-16). A push that changes its site, its list or its tests still runs it, by `--changed`, which the retry list doesn't touch; the nightly runs every one. Held by `test/ci.test.ts`'s "main's mutations follow …" and the mutation `latent-survivors-retried`.
+
+## Amendment: the crate tests' six latent survivors (2026-11-16, #1979)
+
+Seven mutations whose crate tests no longer reached them survived at
+`main` too, latent. Six are now caught by a row that reaches their site.
+The seventh is retired, with evidence:
+
+- `merging-unlisted-of-its-callers`: `library_identities_kept_apart`'s
+  library calls its merging `pings` from `pinged`. Unlisted, the consumer
+  calls the library's JS, and its compile is refused.
+- `rc-public-callers-seen`, `unseen-callers-made-unmarked`:
+  `library_adapter_made_in_generic_code_asked_its_hint`'s `map` and `take`
+  are std's compiled structs since the held flip, whose hint is std's
+  whatever the mark says. `filter_map`, `fuse` and `take_while`, which
+  aren't flipped, ask the mark: `(0, None)` where std says `(0, Some(5))`.
+- `library-options-unapplied`: `library_pretty_debug_given_options` is a
+  library that asks no option itself and writes `{:#?}`, and hands its
+  consumer a `dyn Debug` of its derived `Point`. Without its options, the
+  consumer's width, fill and `+` are lost.
+- `no-std-paths-core`: the `#![no_std]` crate's `--recognizers-found` names
+  `std::mem::take`, not `core::mem::take`.
+- `std-path-of-any-crate`: tidy-stages' "what a compile recognised is std's
+  functions" row. A crate's own impl of a std trait that a recogniser
+  takes, `Whole`'s `read_to_end` and `Text`'s `seek`, isn't listed. The
+  mutant listed both, found by running the whole corpus with
+  `--recognizers-found` under it.
+- `another-crates-writer-taken-to-stop`: retired; the code is kept. With
+  the mutant, every crate test's JS, all 182 pairs and 12 triples, was byte
+  for byte the base's. The whole corpus, 2,669 cases, ran as native does
+  with its snapshots. Without the filter, a body of another crate's is in
+  `direct`, as `never_unwinding` holds only local functions
+  (`unwinding.rs`'s `callable`). That matters only to a local writer whose
+  run follows into such a body, and none in the corpus or the crate tests
+  does. The writers' own filter, `ran`'s, which keeps #1496's refusal out,
+  mutated the same way also survived the crate test. Both filters stay as
+  the rule they state. A program that reaches either is a row for it.
+

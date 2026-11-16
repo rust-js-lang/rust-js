@@ -120,14 +120,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^panic_part_way_through_a_line_kept_where_caught.rs$"],
   },
   {
-    name: "another-crates-writer-taken-to-stop",
-    breaks: "a dependency's writer, which rust-js can't tell never unwinds, is taken to stop part-way, so `{:?}` of its derived `Debug` in a `println!` of a crate that catches panics is refused (#1496)",
-    file: "src/lower/analysis/prints.rs",
-    find: "        .filter(|body| body.def_id.is_local())\n        .collect();\n    let ran",
-    replace: "        .collect();\n    let ran",
-    tests: ["test/crates.test.ts", "-t", "writers_of_a_dependency_where_a_panic_is_caught"],
-  },
-  {
     name: "failing-builders-not-through-a-sink",
     breaks: "a writer whose builder's step or derived `Debug`'s field may give `Err` makes its text whole, so what it wrote before the `Err` is lost, `Holder { n: 1, bad: ` (#1557)",
     file: "src/lower/analysis/prints.rs",

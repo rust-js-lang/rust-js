@@ -1,5 +1,5 @@
 //! Each identity as Rust keeps it (#1052).
-use dep::{Pair, Twice, bumps, cloned, computed, double, doubled, pings, total};
+use dep::{Pair, Twice, bumps, cloned, computed, double, doubled, pinged, pings, total};
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -21,6 +21,9 @@ pub fn main() {
     println!("{} {} {}", first(2), second(3), std::ptr::addr_eq(&*first, &*second));
     let (first, second) = pings();
     first(true);
+    println!("{}", Rc::ptr_eq(&first, &second));
+    let (first, second) = pinged();
+    second(false);
     println!("{}", Rc::ptr_eq(&first, &second));
     let (first, second) = Twice(5).pair();
     println!("{} {}", first(), Rc::ptr_eq(&first, &second));
