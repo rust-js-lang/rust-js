@@ -545,11 +545,10 @@ impl OutputPlan {
                 _ => taken.extend(item.declared().map(str::to_string)),
             }
         }
-        taken.extend(
-            js_module.imports.iter().flat_map(|import| {
-                (import.named.iter().map(|(_, local)| local.clone())).chain(import.namespace.clone())
-            }),
-        );
+        taken.extend(js_module.imports.iter().flat_map(|import| {
+            (import.named.iter().map(|(_, local)| local.word().to_string()))
+                .chain(import.namespace.as_ref().map(|n| n.word().to_string()))
+        }));
         taken.extend(js_module.packages.iter().flat_map(|package| {
             (package.named.iter().map(|(_, local)| local.clone()))
                 .chain(package.default.clone())
@@ -569,7 +568,7 @@ impl OutputPlan {
             let alias = crate::names::fresh_in(&mut taken, &registered.namespace);
             js_module.imports.push(js::Import {
                 named: Vec::new(),
-                namespace: Some(alias.clone()),
+                namespace: Some(js::Name::module(&alias)),
                 from: self.specifier(beside, &registered.module),
                 span: js::Span::NONE,
             });

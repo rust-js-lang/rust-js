@@ -316,8 +316,8 @@ pub(super) fn members(module: &mut js::Module) {
         }
     }
     for import in &module.imports {
-        names.extend(import.named.iter().map(|(_, local)| local.clone()));
-        names.extend(import.namespace.clone());
+        names.extend(import.named.iter().map(|(_, local)| local.word().to_string()));
+        names.extend(import.namespace.as_ref().map(|n| n.word().to_string()));
     }
     for package in &module.packages {
         names.extend(package.named.iter().map(|(_, local)| local.clone()));

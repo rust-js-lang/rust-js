@@ -75,8 +75,14 @@ pub(super) fn spelled(module: &mut js::Module) {
 fn aliased_imports(module: &mut js::Module) {
     let locals: Vec<String> = (module.packages.iter())
         .flat_map(|p| p.default.iter().chain(p.named.iter().map(|(_, local)| local)))
-        .chain(module.imports.iter().flat_map(js::Import::locals))
         .cloned()
+        .chain(
+            module
+                .imports
+                .iter()
+                .flat_map(js::Import::locals)
+                .map(|l| l.word().to_string()),
+        )
         .collect();
     for local in locals {
         // How often the module reads it.
@@ -118,8 +124,8 @@ fn aliased_imports(module: &mut js::Module) {
                     .chain(p.named.iter().map(|(_, l)| l))
                     .chain(&p.namespace)
             })
-            .chain(module.imports.iter().flat_map(js::Import::locals))
-            .any(|l| alias.is(l));
+            .any(|l| alias.is(l))
+            || (module.imports.iter().flat_map(js::Import::locals)).any(|l| alias.is(l.word()));
         if declared != 1 || imported {
             continue;
         }
@@ -144,7 +150,11 @@ fn aliased_imports(module: &mut js::Module) {
                 .for_each(rename);
         }
         for import in &mut module.imports {
-            import.locals_mut().for_each(rename);
+            import.locals_mut().for_each(|name| {
+                if name.is(&local) {
+                    name.respell(alias.word());
+                }
+            });
         }
     }
 }
@@ -158,8 +168,14 @@ fn imports(module: &mut js::Module) {
                 .chain(p.named.iter().map(|(_, local)| local))
                 .chain(&p.namespace)
         })
-        .chain(module.imports.iter().flat_map(js::Import::locals))
         .cloned()
+        .chain(
+            module
+                .imports
+                .iter()
+                .flat_map(js::Import::locals)
+                .map(|l| l.word().to_string()),
+        )
         .collect();
     // What the module mentions, read once: a name reclaimed is one more
     // base mentioned, and the name it was, `label$1`, is no base, as a base
@@ -189,7 +205,7 @@ fn imports(module: &mut js::Module) {
                 .for_each(&mut rename);
         }
         for import in &mut module.imports {
-            import.locals_mut().for_each(&mut rename);
+            import.locals_mut().for_each(&mut respell);
         }
         module.default_export.iter_mut().for_each(&mut rename);
         for item in &mut module.items {
@@ -379,7 +395,12 @@ pub(super) fn mentions(module: &mut js::Module) -> IndexSet<String> {
                 .cloned(),
         );
     }
-    names.extend(module.imports.iter().flat_map(|i| i.locals().cloned()));
+    names.extend(
+        module
+            .imports
+            .iter()
+            .flat_map(|i| i.locals().map(|l| l.word().to_string())),
+    );
     names.extend(module.default_export.iter().cloned());
     names.extend(module.aliases.iter().map(|(local, _)| local.clone()));
     names

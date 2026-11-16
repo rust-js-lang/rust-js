@@ -241,7 +241,7 @@ fn read_together(module: &mut js::Module) {
             module
                 .imports
                 .iter()
-                .flat_map(|import| import.named.iter().map(|(_, local)| local.clone())),
+                .flat_map(|import| import.named.iter().map(|(_, local)| local.word().to_string())),
         )
         .collect();
     // What a constant reads, the variable and the property, if it's one,

@@ -159,9 +159,9 @@ pub struct Reexport {
 
 pub struct LoweredImport {
     pub path: Vec<String>,
-    pub named: Vec<(String, String)>,
+    pub named: Vec<(String, js::Name)>,
     /// The module itself, `js::Import::namespace`'s.
-    pub namespace: Option<String>,
+    pub namespace: Option<js::Name>,
     /// The `use` that makes it (`js::Import::span`).
     pub span: js::Span,
 }

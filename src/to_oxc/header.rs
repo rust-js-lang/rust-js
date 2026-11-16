@@ -182,8 +182,8 @@ impl Entry<'_> {
 pub(super) fn entries<'a>(module: &'a Module) -> Vec<Entry<'a>> {
     let mut named: Vec<(bool, Entry<'_>)> = Vec::new();
     let mut effects = Vec::new();
-    fn pairs<'m>(pairs: impl Iterator<Item = &'m (String, String)>) -> Vec<(&'m str, &'m str)> {
-        pairs.map(|(export, local)| (export.as_str(), local.as_str())).collect()
+    fn pairs<'m>(pairs: impl Iterator<Item = (&'m str, &'m str)>) -> Vec<(&'m str, &'m str)> {
+        pairs.collect()
     }
     for package in &module.packages {
         let relative = crate::program::is_relative_specifier(&package.from);
@@ -199,7 +199,12 @@ pub(super) fn entries<'a>(module: &'a Module) -> Vec<Entry<'a>> {
             },
             declared: package.named_at != package.span,
         };
-        let names = pairs(package.named.iter());
+        let names = pairs(
+            package
+                .named
+                .iter()
+                .map(|(export, local)| (export.as_str(), local.as_str())),
+        );
         let clause = package.default.is_some() || !names.is_empty();
         if clause {
             named.push((relative, entry(Says::Named(package.default.as_deref(), names))));
@@ -223,14 +228,18 @@ pub(super) fn entries<'a>(module: &'a Module) -> Vec<Entry<'a>> {
         if !import.named.is_empty() {
             let default = (import.named.iter())
                 .find(|(export, _)| export == "default")
-                .map(|(_, local)| local.as_str());
-            let names = pairs(import.named.iter().filter(|(export, _)| export != "default"));
+                .map(|(_, local)| local.word());
+            let names = pairs(
+                (import.named.iter())
+                    .filter(|(export, _)| export != "default")
+                    .map(|(export, local)| (export.as_str(), local.word())),
+            );
             named.push((relative, entry(Says::Named(default, names))));
         }
         // The module itself, its own statement after what's named, as a
         // package's (rd114, ADR 1018).
         if let Some(namespace) = &import.namespace {
-            named.push((relative, entry(Says::Namespace(namespace))));
+            named.push((relative, entry(Says::Namespace(namespace.word()))));
         }
     }
     // What the module imports, by where from and what's exported there:
@@ -248,7 +257,7 @@ pub(super) fn entries<'a>(module: &'a Module) -> Vec<Entry<'a>> {
     }
     for import in &module.imports {
         for (export, local) in &import.named {
-            (imported.entry((import.from.as_str(), export.as_str()))).or_insert((local.as_str(), import.span));
+            (imported.entry((import.from.as_str(), export.as_str()))).or_insert((local.word(), import.span));
         }
     }
     for reexport in &module.reexports {

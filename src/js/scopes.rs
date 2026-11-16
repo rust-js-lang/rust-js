@@ -96,9 +96,11 @@ impl Tree {
     /// `module`'s scopes: its imports', its packages' and its items' names
     /// the outermost's, then each item's own.
     pub(crate) fn of_module(module: &js::Module) -> Tree {
-        let imported = (module.imports.iter())
-            .flat_map(|import| import.named.iter().map(|(_, local)| local).chain(&import.namespace));
-        Tree::of_top(imported.chain(packaged(&module.packages)), &module.items)
+        let imported: Vec<String> = (module.imports.iter())
+            .flat_map(|import| import.named.iter().map(|(_, local)| local).chain(&import.namespace))
+            .map(|local| local.word().to_string())
+            .collect();
+        Tree::of_top(imported.iter().chain(packaged(&module.packages)), &module.items)
     }
 
     /// A module's scopes, of what its top declares besides its items,

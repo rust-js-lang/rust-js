@@ -31,8 +31,8 @@ pub(crate) fn link(unlinked: Unlinked) -> Linked {
             // it, now its tree's reads are all there (ADR 1150).
             let top: Vec<String> = (item.module.imports.iter())
                 .flat_map(|import| import.named.iter().map(|(_, local)| local).chain(&import.namespace))
-                .chain(crate::js::scopes::packaged(&item.module.packages))
-                .cloned()
+                .map(|local| local.word().to_string())
+                .chain(crate::js::scopes::packaged(&item.module.packages).cloned())
                 .collect();
             crate::js::scopes::locals_apart_from_module_reads(&top, &mut item.module.items);
             // Each helper its tree reads, asked for by being written.
@@ -114,8 +114,8 @@ fn resolve(module: &mut LoweredModule, imports: &[ImportRequest], mut names: Ind
     // One import of each `use` of a module, where it's written (rd649): by
     // its path and its `use`'s place.
     type Written = (Vec<String>, (u32, u32));
-    let mut grouped: BTreeMap<Written, Vec<(String, String)>> = BTreeMap::new();
-    let mut namespaces: IndexMap<Written, String> = IndexMap::default();
+    let mut grouped: BTreeMap<Written, Vec<(String, crate::js::Name)>> = BTreeMap::new();
+    let mut namespaces: IndexMap<Written, crate::js::Name> = IndexMap::default();
     // An import of what the module reads: one its lowering asked for whose
     // read tidy took out, a test of a numbered enum's variant an
     // exhaustive `match` needn't write, `Dark` (ADR 0722), isn't written.
@@ -132,8 +132,8 @@ fn resolve(module: &mut LoweredModule, imports: &[ImportRequest], mut names: Ind
             let named = grouped.entry(key.clone()).or_default();
             // The module itself, its own `import * as` (rd114, ADR 1018).
             match request.export == crate::js::NAMESPACE {
-                true => _ = namespaces.insert(key, alias.clone()),
-                false => named.push((request.export.clone(), alias.clone())),
+                true => _ = namespaces.insert(key, crate::js::Name::module(&alias)),
+                false => named.push((request.export.clone(), crate::js::Name::module(&alias))),
             }
             (request.symbol.clone(), alias)
         })

@@ -7,11 +7,12 @@ use super::Span;
 
 #[derive(Clone, PartialEq)]
 pub struct Import {
-    /// Exports as `(export, local)`, aliased only for name collisions.
-    pub named: Vec<(String, String)>,
+    /// Exports as `(export, local)`, aliased only for name collisions: the
+    /// local a module-level `Name`, as each read of it is (ADR 1150).
+    pub named: Vec<(String, super::Name)>,
     /// The module itself, `import * as Plugin` (rd114, ADR 1018), as
     /// `Package::namespace` is: its own `import`, beside a named one.
-    pub namespace: Option<String>,
+    pub namespace: Option<super::Name>,
     /// A relative specifier, like `./math.js` or `../lib.js`, or another
     /// package's subpath, `shared/ReactDOMFragmentRefShared`, of a module
     /// whose file is in that package (ADR 0770, amended).
@@ -23,12 +24,12 @@ pub struct Import {
 
 impl Import {
     /// Each name it binds in its module, its namespace's too.
-    pub fn locals(&self) -> impl Iterator<Item = &String> {
+    pub fn locals(&self) -> impl Iterator<Item = &super::Name> {
         self.named.iter().map(|(_, local)| local).chain(&self.namespace)
     }
 
     /// Each name it binds in its module, to rename.
-    pub fn locals_mut(&mut self) -> impl Iterator<Item = &mut String> {
+    pub fn locals_mut(&mut self) -> impl Iterator<Item = &mut super::Name> {
         self.named.iter_mut().map(|(_, local)| local).chain(&mut self.namespace)
     }
 }
