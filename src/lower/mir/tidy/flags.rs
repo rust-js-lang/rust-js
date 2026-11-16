@@ -11,7 +11,7 @@ use crate::collections::{IndexMap, IndexSet};
 use crate::js::{self, Expr, ExprKind, Name, Stmt, StmtKind};
 
 /// What's known of each flag where a statement runs: `true` or `false`.
-type Known = IndexMap<String, bool>;
+type Known = IndexMap<js::Name, bool>;
 
 /// `body` with what's known of its `flags` settled.
 pub(in crate::lower::mir) fn settled_flags(body: &mut Vec<Stmt>, flags: &IndexSet<js::Name>) {
@@ -25,11 +25,11 @@ pub(in crate::lower::mir) fn settled_flags(body: &mut Vec<Stmt>, flags: &IndexSe
 /// Each of `flags` nothing reads, only written, gone with its writes.
 fn unread_gone(body: &mut Vec<Stmt>, flags: &IndexSet<js::Name>) {
     for flag in flags {
-        if !read(body, flag.word()) {
+        if !read(body, flag) {
             js::statement_lists(body, &mut |list| {
                 list.retain(|stmt| match &stmt.kind {
                     StmtKind::Let(name, _) => name != flag,
-                    StmtKind::Assign(target, _) => flag_of(target, flags) != Some(flag.word()),
+                    StmtKind::Assign(target, _) => flag_of(target, flags) != Some(flag),
                     _ => true,
                 })
             });
@@ -64,7 +64,7 @@ pub(super) fn named_flags(body: &mut Vec<Stmt>, flags: &IndexSet<js::Name>) {
         if !super::spelled_as_temporary(base) {
             continue;
         }
-        let Some(dropped) = guarded(body, flag.word()) else {
+        let Some(dropped) = guarded(body, flag) else {
             continue;
         };
         let named = dropped.split('$').next().unwrap_or(&dropped);
@@ -91,7 +91,7 @@ pub(super) fn named_flags(body: &mut Vec<Stmt>, flags: &IndexSet<js::Name>) {
 /// The variable the drop `flag` guards is of: `x` of `if (flag) {
 /// drop(x); }`, and of a part of it, `drop(x.a)`: what the drop reads
 /// last, but the runtime's helpers.
-fn guarded(body: &mut [Stmt], flag: &str) -> Option<String> {
+fn guarded(body: &mut [Stmt], flag: &js::Name) -> Option<String> {
     let mut found = None;
     let mut copy = body.to_vec();
     js::statement_lists(&mut copy, &mut |list| {
@@ -113,30 +113,30 @@ fn guarded(body: &mut [Stmt], flag: &str) -> Option<String> {
 
 /// Whether `test` is `flag`, or a part of an `&&` of it, `d && _13$0$live`,
 /// a pattern's test joined with it (ADR 0614).
-fn tests_flag(test: &Expr, flag: &str) -> bool {
+fn tests_flag(test: &Expr, flag: &js::Name) -> bool {
     match &test.kind {
-        ExprKind::Var(v) => v.is(flag),
+        ExprKind::Var(v) => v == flag,
         ExprKind::Binary(js::Op::And, a, b) => tests_flag(a, flag) || tests_flag(b, flag),
         _ => false,
     }
 }
 
-fn flag_of<'e>(e: &'e Expr, flags: &IndexSet<js::Name>) -> Option<&'e str> {
+fn flag_of<'e>(e: &'e Expr, flags: &IndexSet<js::Name>) -> Option<&'e js::Name> {
     match &e.kind {
-        ExprKind::Var(v) if flags.contains(v) => Some(v.word()),
+        ExprKind::Var(v) if flags.contains(v) => Some(v),
         _ => None,
     }
 }
 
 /// Whether `flag` is read anywhere in `body`, not only written.
-fn read(body: &[Stmt], flag: &str) -> bool {
+fn read(body: &[Stmt], flag: &js::Name) -> bool {
     let mut mentions = 0;
-    js::visit_stmts(body, &mut |name| mentions += usize::from(name == flag));
+    js::visit_stmt_names(body, &mut |name| mentions += usize::from(name == flag));
     let mut written = 0;
     js::each_list(body, &mut |list| {
         for stmt in list.iter() {
             if let StmtKind::Assign(target, _) = &stmt.kind
-                && matches!(&target.kind, ExprKind::Var(v) if v.is(flag))
+                && matches!(&target.kind, ExprKind::Var(v) if v == flag)
             {
                 written += 1;
             }
@@ -147,8 +147,8 @@ fn read(body: &[Stmt], flag: &str) -> bool {
 
 /// Each flag `stmts` assign, anywhere in them, and what to: `None` of one
 /// assigned both, or what isn't `true` or `false`.
-fn assigned(stmts: &[Stmt], flags: &IndexSet<js::Name>) -> IndexMap<String, Option<bool>> {
-    let mut found: IndexMap<String, Option<bool>> = IndexMap::default();
+fn assigned(stmts: &[Stmt], flags: &IndexSet<js::Name>) -> IndexMap<js::Name, Option<bool>> {
+    let mut found: IndexMap<js::Name, Option<bool>> = IndexMap::default();
     js::each_list(stmts, &mut |list| {
         for stmt in list.iter() {
             if let StmtKind::Assign(target, value) = &stmt.kind
@@ -159,7 +159,7 @@ fn assigned(stmts: &[Stmt], flags: &IndexSet<js::Name>) -> IndexMap<String, Opti
                     _ => None,
                 };
                 found
-                    .entry(flag.to_string())
+                    .entry(flag.clone())
                     .and_modify(|was| {
                         if *was != value {
                             *was = None;
@@ -209,10 +209,10 @@ fn settle(stmts: &mut Vec<Stmt>, known: &mut Known, flags: &IndexSet<js::Name>) 
         // What a flag is set to: one set again to what it is goes.
         let set = match &stmts[i].kind {
             StmtKind::Let(name, value) if flags.contains(name) => {
-                Some((name.to_string(), value.as_ref().and_then(bool_of), false))
+                Some((name.clone(), value.as_ref().and_then(bool_of), false))
             }
             StmtKind::Assign(target, value) if let Some(flag) = flag_of(target, flags) => {
-                Some((flag.to_string(), bool_of(value), true))
+                Some((flag.clone(), bool_of(value), true))
             }
             _ => None,
         };
@@ -260,9 +260,9 @@ fn settle(stmts: &mut Vec<Stmt>, known: &mut Known, flags: &IndexSet<js::Name>) 
                     .collect();
                 settle(handler, &mut caught, flags);
                 let rethrows = matches!(
-                    (error.as_ref().map(|n| n.word()), handler.as_slice()),
+                    (error.as_ref(), handler.as_slice()),
                     (Some(error), [Stmt { kind: StmtKind::Throw(Expr { kind: ExprKind::Var(thrown), .. }), .. }])
-                        if thrown.is(error)
+                        if thrown == error
                 );
                 if rethrows {
                     let inner = std::mem::take(inner);
@@ -281,10 +281,10 @@ fn settle(stmts: &mut Vec<Stmt>, known: &mut Known, flags: &IndexSet<js::Name>) 
                         ..
                     },
                 ] = inner.as_slice()
-                    && let Some(error) = error.as_ref().map(|n| n.word())
+                    && let Some(error) = error.as_ref()
                     && let Some((last, dropping)) = handler.split_last()
-                    && matches!(&last.kind, StmtKind::Throw(Expr { kind: ExprKind::Var(thrown), .. }) if thrown.is(error))
-                    && js::mentions_in(dropping, error) == 0
+                    && matches!(&last.kind, StmtKind::Throw(Expr { kind: ExprKind::Var(thrown), .. }) if thrown == error)
+                    && js::mentions_of(dropping, error) == 0
                     && made_of_values(panic)
                 {
                     // The drops guarded as any cleanup is, as they run while

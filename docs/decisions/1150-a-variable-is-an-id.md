@@ -1007,3 +1007,17 @@ module's namespace a module's tests reach is an import of its own,
 the crate's imports, and read as that `Name`; only the runner's `test`,
 a JS module's import, is given its word at output, against the names the
 module reads and declares. `output.rs` reads no word.
+
+JS's scoping is by spelling: its one owner reads words (2026-11-17, the
+lead's decision). `js::scopes` models how JS resolves a name, by the word
+it's printed as, which is what reclaim asks of a rename, `js::validate` of
+a printed read and `alpha_eq` of two trees alike but for their names; its
+reads of words are the spelling view, as preparation's and printing's
+are, and the ratchet counts them with theirs. So that isn't a way around
+it, an architecture test holds that what's asked of `js::scopes` by words,
+its trees, renames and a local given apart from a module's read, is
+asked only in preparation, printing and `js::validate`; lowering and
+tidy ask it only `alpha_eq`, which asks no word. Tidy's drop flags are
+asked of by their `Name`s, what each is known to hold, what's assigned
+it and whether it's read or tested; the word a flag is named after, of
+the variable whose drop it guards, stays its spelling. The ratchet: 263.

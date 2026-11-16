@@ -146,6 +146,27 @@ test("link reads no name's word", () => {
   expect(text.match(/\.(?:into_)?word\(\)/g) ?? []).toEqual([]);
 });
 
+// JS's scoping is by spelling: `js::scopes`, its one owner, reads words, as
+// preparation and printing do (ADR 1150). So that isn't a way around the
+// ratchet, what's asked of it by words, its trees, renames and a local
+// given apart from a module's read, is asked where names are spelled or
+// checked: preparation and `js::validate`; anywhere else only whether two
+// trees are alike but for their names (`alpha_eq`), which asks no word.
+test("js::scopes' words are asked only where names are spelled or checked", () => {
+  const spelling = (file: string) => file.startsWith("src/prepare/") || file === "src/prepare.rs"
+    || file.startsWith("src/to_oxc") || file === "src/js/scopes.rs" || file === "src/js/validate.rs";
+  const asked = sources.filter(file => !spelling(file)).flatMap(file => {
+    const text = read(file);
+    const items = [...text.matchAll(/js::scopes::(\w+)/g)].map(m => m[1])
+      .filter(item => item !== "alpha_eq" && item !== "alpha_eq_functions")
+      .map(item => `${file}: js::scopes::${item}`);
+    // Nor brought in to be asked unqualified.
+    const imported = /use crate::js::scopes\b|js::\{[^}]*\bscopes\b/.test(text) ? [`${file}: imports js::scopes`] : [];
+    return [...items, ...imported];
+  });
+  expect(asked).toEqual([]);
+});
+
 // The spelling step (ADR 1150): a name's word is read where names are
 // spelled, preparation and printing, and asked of a `Name` everywhere
 // else. Each file's reads of a word outside them are at most
@@ -157,7 +178,7 @@ test("a name's word is read outside preparation and printing only as the ratchet
       .map((line) => line.split("\t")).map(([file, n]) => [file, Number(n)]),
   );
   const outside = (file: string) => !file.startsWith("src/prepare/") && file !== "src/prepare.rs"
-    && !file.startsWith("src/to_oxc") && file !== "src/js/name.rs";
+    && !file.startsWith("src/to_oxc") && file !== "src/js/name.rs" && file !== "src/js/scopes.rs";
   const counted = sources.filter(outside)
     .map((file) => [file, (read(file).match(/\.(?:into_)?word\(\)/g) ?? []).length] as const)
     .filter(([, n]) => n > 0);
