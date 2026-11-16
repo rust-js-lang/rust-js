@@ -6,11 +6,30 @@
 
 Rust.js compiles idiomatic Rust to readable JavaScript, ES modules, and JSX.
 Built on rustc, it keeps Rust's type system, traits, ownership, borrow
-checking, and diagnostics. The goal is Rust across the stack: native on the
-server, JavaScript on the frontend, with shared types and logic.
+checking, and diagnostics.
 
 [Guide](docs/guide/README.md) · [Getting started](docs/guide/tutorial/vite.md) ·
 [Examples](examples/) · [Roadmap](ROADMAP.md)
+
+## Goals and delivery promise
+
+1. **Idiomatic Rust in. Readable, correct JavaScript out.** Preserve Rust's
+   behavior and enable full-stack Rust apps with business logic and data
+   models shared between native servers and JavaScript frontends.
+2. **Express anything JavaScript can express.** Build any JavaScript library,
+   framework, or application in Rust, preserving its JavaScript APIs and
+   runtime behavior. The compiler adapts to the software developers need
+   to write.
+
+**Proving goal 1:** Our [test harness](TESTS.md) compares generated JavaScript
+with native Rust using regression programs, rustc's tests, real crates, and
+generated edge cases. Mutations test the tests; snapshots and readability
+checks guard the output; integration tests verify shared logic and JSON models.
+
+**Proving goal 2:** We will port all major JavaScript libraries and frameworks,
+keep their existing tests passing, and continuously compile and test each port
+with the latest Rust.js to catch downstream regressions. Compiler gaps are
+fixed before a port continues.
 
 ## Current status
 
@@ -27,9 +46,8 @@ feature-combination gaps remain.
 - Shared Cargo crates, supported crates.io dependencies, and Serde JSON.
 
 rustc checks every program before JavaScript is emitted. Unsupported
-constructs are refused with diagnostics. Tests compare behavior with native
-Rust and check generated output; documented differences and remaining gaps
-are in the [semantics](docs/guide/semantics.md) and
+constructs are refused with diagnostics. Documented differences and remaining
+gaps are in the [semantics](docs/guide/semantics.md) and
 [limitations](docs/guide/limitations.md).
 
 ## Rust → JavaScript
