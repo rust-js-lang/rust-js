@@ -813,3 +813,16 @@ std, the guide and React's port are as they were. One ask by the word is
 left there, `js::Writes`' changed variables, a set of words of `js::writes`'
 own, which step 3 moves with that module.
 
+## Names are ids, step 3's fourth slice: callbacks, kept captures and drop flags, by id (2026-11-16)
+
+Tidy's hints of the closures a `let` names that a hook's function alone is
+(`callbacks`), of the captures a closure keeps (`kept`) and of a body's drop
+flags (`flags`) hold each variable's `Name`, made where lowering names it
+(`callback_names`, `kept_captures`, `drops::flag_names`), and
+`named_callbacks`, `aliases`' fixed names and `flags`' passes ask whether a
+variable is one by its id. Byte-identical. Within `flags`, what's known of
+each flag once it's found, `Known` and `assigned`, is still keyed by its
+word, as its reads are counted (`read`): a flag's name is lowering's own,
+apart from every other, so its word is one variable; they move with
+`js::Writes` and the walks of what's read by a word.
+

@@ -14,7 +14,7 @@ use crate::js::{self, Expr, ExprKind, Name, Stmt, StmtKind};
 type Known = IndexMap<String, bool>;
 
 /// `body` with what's known of its `flags` settled.
-pub(in crate::lower::mir) fn settled_flags(body: &mut Vec<Stmt>, flags: &IndexSet<String>) {
+pub(in crate::lower::mir) fn settled_flags(body: &mut Vec<Stmt>, flags: &IndexSet<js::Name>) {
     if flags.is_empty() {
         return;
     }
@@ -23,13 +23,13 @@ pub(in crate::lower::mir) fn settled_flags(body: &mut Vec<Stmt>, flags: &IndexSe
 }
 
 /// Each of `flags` nothing reads, only written, gone with its writes.
-fn unread_gone(body: &mut Vec<Stmt>, flags: &IndexSet<String>) {
+fn unread_gone(body: &mut Vec<Stmt>, flags: &IndexSet<js::Name>) {
     for flag in flags {
-        if !read(body, flag) {
+        if !read(body, flag.word()) {
             js::statement_lists(body, &mut |list| {
                 list.retain(|stmt| match &stmt.kind {
-                    StmtKind::Let(name, _) => !name.is(flag),
-                    StmtKind::Assign(target, _) => flag_of(target, flags) != Some(flag.as_str()),
+                    StmtKind::Let(name, _) => name != flag,
+                    StmtKind::Assign(target, _) => flag_of(target, flags) != Some(flag.word()),
                     _ => true,
                 })
             });
@@ -42,7 +42,7 @@ fn unread_gone(body: &mut Vec<Stmt>, flags: &IndexSet<String>) {
 /// drop a later pass took away, where its value was read in place, is read
 /// by nothing now: gone, as `settled_flags` takes one, not left named after
 /// MIR's local, `_12$0$live` (#841).
-pub(super) fn named_flags(body: &mut Vec<Stmt>, flags: &IndexSet<String>) {
+pub(super) fn named_flags(body: &mut Vec<Stmt>, flags: &IndexSet<js::Name>) {
     unread_gone(body, flags);
     let mut taken = IndexSet::default();
     js::names_in(body, &mut taken);
@@ -51,7 +51,7 @@ pub(super) fn named_flags(body: &mut Vec<Stmt>, flags: &IndexSet<String>) {
     js::statement_lists(body, &mut |list| {
         for stmt in list.iter() {
             if let StmtKind::Let(name, _) = &stmt.kind
-                && flags.contains(name.word())
+                && flags.contains(name)
             {
                 declared.push(name.clone());
             }
@@ -121,9 +121,9 @@ fn tests_flag(test: &Expr, flag: &str) -> bool {
     }
 }
 
-fn flag_of<'e>(e: &'e Expr, flags: &IndexSet<String>) -> Option<&'e str> {
+fn flag_of<'e>(e: &'e Expr, flags: &IndexSet<js::Name>) -> Option<&'e str> {
     match &e.kind {
-        ExprKind::Var(v) if flags.contains(v.word()) => Some(v.word()),
+        ExprKind::Var(v) if flags.contains(v) => Some(v.word()),
         _ => None,
     }
 }
@@ -147,7 +147,7 @@ fn read(body: &[Stmt], flag: &str) -> bool {
 
 /// Each flag `stmts` assign, anywhere in them, and what to: `None` of one
 /// assigned both, or what isn't `true` or `false`.
-fn assigned(stmts: &[Stmt], flags: &IndexSet<String>) -> IndexMap<String, Option<bool>> {
+fn assigned(stmts: &[Stmt], flags: &IndexSet<js::Name>) -> IndexMap<String, Option<bool>> {
     let mut found: IndexMap<String, Option<bool>> = IndexMap::default();
     js::each_list(stmts, &mut |list| {
         for stmt in list.iter() {
@@ -174,7 +174,7 @@ fn assigned(stmts: &[Stmt], flags: &IndexSet<String>) -> IndexMap<String, Option
 
 /// `known` with each flag `stmts` assign forgotten: what's known after them,
 /// where they may or may not have run.
-fn forget(known: &mut Known, stmts: &[Stmt], flags: &IndexSet<String>) {
+fn forget(known: &mut Known, stmts: &[Stmt], flags: &IndexSet<js::Name>) {
     for flag in assigned(stmts, flags).keys() {
         known.swap_remove(flag);
     }
@@ -203,12 +203,12 @@ fn bool_of(value: &Expr) -> Option<bool> {
 
 /// `stmts`, run where `known` is known, settled: `known` is then what's
 /// known after them.
-fn settle(stmts: &mut Vec<Stmt>, known: &mut Known, flags: &IndexSet<String>) {
+fn settle(stmts: &mut Vec<Stmt>, known: &mut Known, flags: &IndexSet<js::Name>) {
     let mut i = 0;
     while i < stmts.len() {
         // What a flag is set to: one set again to what it is goes.
         let set = match &stmts[i].kind {
-            StmtKind::Let(name, value) if flags.contains(name.word()) => {
+            StmtKind::Let(name, value) if flags.contains(name) => {
                 Some((name.to_string(), value.as_ref().and_then(bool_of), false))
             }
             StmtKind::Assign(target, value) if let Some(flag) = flag_of(target, flags) => {

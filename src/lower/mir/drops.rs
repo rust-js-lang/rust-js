@@ -1093,10 +1093,10 @@ pub(super) fn cleans_up<'tcx>(
 
 /// The names of `body`'s drop flags, for `tidy`: rust-js's own, and those
 /// it was given (`constant_flags`).
-pub(super) fn flag_names(state: &State<'_, '_>, body: &mir::Body<'_>) -> IndexSet<String> {
+pub(super) fn flag_names(state: &State<'_, '_>, body: &mir::Body<'_>) -> IndexSet<js::Name> {
     let given = constant_flags(body)
         .into_iter()
-        .map(|local| state.locals.names[local].clone().into_word());
+        .map(|local| state.locals.names[local].clone());
     state.naming.flag_names().into_iter().chain(given).collect()
 }
 

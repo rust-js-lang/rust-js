@@ -414,7 +414,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// The names of the closures a `let` names that a hook's function
     /// alone is (ADR 0297).
-    pub(super) fn callback_names(&self, state: &State<'_, 'tcx>) -> IndexSet<String> {
+    pub(super) fn callback_names(&self, state: &State<'_, 'tcx>) -> IndexSet<js::Name> {
         let named: Vec<rustc_span::Span> = (self.frame.thir.stmts.iter())
             .filter_map(|stmt| match &stmt.kind {
                 thir::StmtKind::Let { pattern, .. }
@@ -431,7 +431,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 mir::VarDebugInfoContents::Place(place)
                     if place.projection.is_empty() && named.contains(&info.source_info.span) =>
                 {
-                    Some(state.locals.names[place.local].word().to_string())
+                    Some(state.locals.names[place.local].clone())
                 }
                 _ => None,
             })

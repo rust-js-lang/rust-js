@@ -102,7 +102,7 @@ pub(super) struct Hints<'h> {
     /// comments (`hints::Written`).
     pub(super) written: &'h super::hints::Written,
     /// The closures a `let` names that a hook's function alone is (ADR 0297).
-    pub(super) callbacks: &'h IndexSet<String>,
+    pub(super) callbacks: &'h IndexSet<js::Name>,
     /// What the body's `let`s bind, by name.
     pub(super) lets: &'h LetNames,
     /// Whether the body is a closure's, tidied again in its function's.
@@ -114,7 +114,7 @@ pub(super) struct Hints<'h> {
     pub(super) clones: &'h crate::lower::mir::hints::Clones,
     /// Of a closure, the variables it captured by value, which its maker
     /// never assigns again from where it makes it (ADR 0879).
-    pub(super) kept: &'h IndexSet<String>,
+    pub(super) kept: &'h IndexSet<js::Name>,
     /// The variables of Rust's `bool`: JS's `true` and `false` alone.
     pub(super) booleans: &'h IndexSet<String>,
     /// The variables of Rust's integers: JS's numbers, which `++` steps.
@@ -132,7 +132,7 @@ pub(super) struct Hints<'h> {
     /// a component's handler of one, `() => f()` (ADR 0040).
     pub(super) concise: &'h [(js::Span, crate::lower::jsx::OneCall)],
     /// Each drop flag, `noisy$live`: whether a value is there to drop.
-    pub(super) flags: &'h IndexSet<String>,
+    pub(super) flags: &'h IndexSet<js::Name>,
     /// What `Iterator::fuse`'s compiled body is called here, `iterator_fuse`,
     /// where the module imports it: a `Fuse` stepped till it ends is its
     /// source (ADR 0561).

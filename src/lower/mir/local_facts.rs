@@ -423,12 +423,8 @@ impl NamingFacts {
     }
 
     /// Each drop flag, by its name (`mir/drops.rs`).
-    pub(super) fn flag_names(&self) -> IndexSet<String> {
-        self.flags
-            .iter()
-            .flatten()
-            .map(|flag| flag.word().to_string())
-            .collect()
+    pub(super) fn flag_names(&self) -> IndexSet<js::Name> {
+        self.flags.iter().flatten().cloned().collect()
     }
 }
 

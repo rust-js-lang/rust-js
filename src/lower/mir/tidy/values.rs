@@ -792,11 +792,11 @@ pub(super) fn arrows_out_of_tries(body: &mut Vec<Stmt>) {
 /// `const tick = () => { … }; useEffect(tick, [count]);`, a closure only a
 /// hook's function is: written there, a function its `let` names, `function
 /// tick() { … }`, unless it reads that name (ADR 0297).
-pub(super) fn named_callbacks(stmts: &mut Vec<Stmt>, callbacks: &IndexSet<String>) {
+pub(super) fn named_callbacks(stmts: &mut Vec<Stmt>, callbacks: &IndexSet<js::Name>) {
     let mut i = 0;
     while i < stmts.len() {
         if let StmtKind::Const(name, value) = &stmts[i].kind
-            && callbacks.contains(name.word())
+            && callbacks.contains(name)
             && matches!(value.kind, ExprKind::Arrow(..) | ExprKind::AsyncArrow(..))
             && !value.mentions_name(name)
             // Nor one reading what it would be named, `step` of `step$1`

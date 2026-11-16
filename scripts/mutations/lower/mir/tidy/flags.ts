@@ -81,8 +81,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a drop flag whose drop a later pass took away stays, written and never read, named after MIR's local, `let _12$0$live = false;` (#841)",
     file: "src/lower/mir/tidy/flags.rs",
-    find: "pub(super) fn named_flags(body: &mut Vec<Stmt>, flags: &IndexSet<String>) {\n    unread_gone(body, flags);\n",
-    replace: "pub(super) fn named_flags(body: &mut Vec<Stmt>, flags: &IndexSet<String>) {\n",
+    find: "pub(super) fn named_flags(body: &mut Vec<Stmt>, flags: &IndexSet<js::Name>) {\n    unread_gone(body, flags);\n",
+    replace: "pub(super) fn named_flags(body: &mut Vec<Stmt>, flags: &IndexSet<js::Name>) {\n",
     tests: ["test/corpus.test.ts", "-t", "^generic_rc_drops.rs$"],
     snapshots: true,
   },

@@ -638,7 +638,7 @@ pub(super) fn in_closure(stmts: &[Stmt], name: &str) -> bool {
 pub(super) fn aliases(
     body: &mut Vec<Stmt>,
     captured: &IndexSet<String>,
-    (params, kept): (&[js::Pattern], &IndexSet<String>),
+    (params, kept): (&[js::Pattern], &IndexSet<js::Name>),
     (clones, given): (&crate::lower::mir::hints::Clones, &IndexSet<js::Name>),
 ) {
     clone_aliases(body, (params, kept), clones);
@@ -692,12 +692,12 @@ pub(super) fn aliases(
 /// (rd515).
 pub(super) fn clone_aliases(
     body: &mut Vec<Stmt>,
-    (params, kept): (&[js::Pattern], &IndexSet<String>),
+    (params, kept): (&[js::Pattern], &IndexSet<js::Name>),
     clones: &crate::lower::mir::hints::Clones,
 ) {
     let fixed: IndexSet<String> = (params.iter())
         .flat_map(|param| param.names())
-        .chain(kept.iter().map(String::as_str))
+        .chain(kept.iter().map(js::Name::word))
         .filter(|name| !rebinds(body, name))
         .map(str::to_string)
         .collect();

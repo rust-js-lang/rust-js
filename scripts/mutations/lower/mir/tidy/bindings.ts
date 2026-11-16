@@ -430,7 +430,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a clone of what a `move` closure captured stays `const prev$1 = prev`, read by that name (ADR 0879)",
     file: "src/lower/mir/tidy/bindings.rs",
-    find: "        .chain(kept.iter().map(String::as_str))\n",
+    find: "        .chain(kept.iter().map(js::Name::word))\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^branches_as_written.rs$"],
     snapshots: true,

@@ -93,13 +93,13 @@ pub(in crate::lower::mir) fn kept_captures(
     tcx: ty::TyCtxt<'_>,
     closure: rustc_span::def_id::DefId,
     state: &State<'_, '_>,
-) -> IndexSet<String> {
+) -> IndexSet<js::Name> {
     let fixed = crate::lower::analysis::borrowed_fixed_bindings(tcx, closure);
     let fixed = (fixed.len() == state.facts.captures().len()).then_some(fixed);
     (state.facts.captures().iter().enumerate())
         .filter(|(i, (_, place))| !place || fixed.as_ref().is_some_and(|fixed| fixed[*i]))
         .filter_map(|(_, (capture, _))| match &capture.kind {
-            js::ExprKind::Var(name) => Some(name.to_string()),
+            js::ExprKind::Var(name) => Some(name.clone()),
             _ => None,
         })
         .collect()
