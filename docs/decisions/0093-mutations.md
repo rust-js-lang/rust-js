@@ -811,14 +811,15 @@ The seventh is retired, with evidence:
   takes, `Whole`'s `read_to_end` and `Text`'s `seek`, isn't listed. The
   mutant listed both, found by running the whole corpus with
   `--recognizers-found` under it.
-- `another-crates-writer-taken-to-stop`: retired; the code is kept. With
-  the mutant, every crate test's JS, all 182 pairs and 12 triples, was byte
-  for byte the base's. The whole corpus, 2,669 cases, ran as native does
-  with its snapshots. Without the filter, a body of another crate's is in
-  `direct`, as `never_unwinding` holds only local functions
-  (`unwinding.rs`'s `callable`). That matters only to a local writer whose
-  run follows into such a body, and none in the corpus or the crate tests
-  does. The writers' own filter, `ran`'s, which keeps #1496's refusal out,
-  mutated the same way also survived the crate test. Both filters stay as
-  the rule they state. A program that reaches either is a row for it.
+- `another-crates-writer-taken-to-stop`: `stopping` kept #1496's
+  refusal out twice, by filtering `all_bodies` to the crate's own and by
+  filtering the writers it runs (`ran`). Each mutated alone survived. Both
+  removed, `writers_of_a_dependency_where_a_panic_is_caught` is refused
+  (`{:?}` of a `dep::Label` whose `Debug` may stop, #1633). With the
+  `all_bodies` filter removed alone, all 182 pairs' and 12 triples' JS was
+  the base's byte for byte, and the whole corpus, 2,669 cases, ran as
+  native with its snapshots. So that duplicate is deleted. A body of
+  another crate's that a writer of the crate's runs may now stop, as it
+  isn't the crate's to say it never unwinds. The writers' filter is the one
+  guard, and the mutation, moved onto it, is caught by that case.
 

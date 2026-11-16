@@ -406,4 +406,12 @@ export const mutations: Mutation[] = [
     replace: "    let type_of = |writer: DefId| {\n        Some(tcx.type_of(tcx.impl_of_assoc(writer)?).skip_binder().ty_adt_def()?.did())\n    };\n    // Each type shown",
     tests: ["test/corpus.test.ts", "-t", "^fmt_of_a_reference_impl_given_a_formatter.rs$"],
   },
+  {
+    name: "another-crates-writer-taken-to-stop",
+    breaks: "a dependency's writer, compiled here, which rust-js can't tell never unwinds, is taken to stop part-way, so `{:?}` of its derived `Debug` in a `println!` of a crate that catches panics is refused (#1496)",
+    file: "src/lower/analysis/prints.rs",
+    find: "    let ran: Vec<(&Body<'tcx>, Option<Vec<DefId>>)> = (writers.iter().copied())\n        .filter(|writer| writer.def_id.is_local())\n",
+    replace: "    let ran: Vec<(&Body<'tcx>, Option<Vec<DefId>>)> = (writers.iter().copied())\n",
+    tests: ["test/crates.test.ts", "-t", "writers_of_a_dependency_where_a_panic_is_caught"],
+  },
 ];

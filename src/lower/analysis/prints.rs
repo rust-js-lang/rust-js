@@ -747,10 +747,12 @@ fn stopping<'tcx>(
     type_of: &dyn Fn(DefId) -> Option<DefId>,
     foreign_stopping: &IndexSet<DefId>,
 ) -> IndexSet<DefId> {
-    // The crate's own: another crate's writer is shown whole (`unknown_part`).
-    let all_bodies: Vec<&Body<'tcx>> = (all_bodies.iter().copied())
-        .filter(|body| body.def_id.is_local())
-        .collect();
+    // The crate's own writers alone: another crate's, compiled here or not,
+    // is shown whole (`unknown_part`), and whether it may stop is its
+    // contract's (`foreign_stopping`), so `{:?}` of a library's derived
+    // `Debug` where a panic is caught isn't refused (#1496). The one guard:
+    // a body of another crate's that a writer of the crate's runs may stop,
+    // as it isn't the crate's to say it never unwinds.
     let ran: Vec<(&Body<'tcx>, Option<Vec<DefId>>)> = (writers.iter().copied())
         .filter(|writer| writer.def_id.is_local())
         .map(|writer| (writer, runs.of(writer.def_id)))
