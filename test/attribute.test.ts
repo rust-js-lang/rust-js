@@ -3,10 +3,10 @@
 // fails at from there on.
 
 import { expect, test } from "bun:test";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { attribution, commitsToRun, mostCommits } from "../scripts/attribute";
+import { attribution, commitsToRun, mostCommits, mutationLines, runnerFiles, runnerOf, siteLines } from "../scripts/attribute";
 import { completedBase, type Run } from "../scripts/ci";
 import { root } from "./support";
 
@@ -40,4 +40,31 @@ test("a batch's base is the newest check of main that completed, red or green, n
   const check = readFileSync(join(root, ".github/workflows/check.yml"), "utf8");
   expect(check).toContain("bun scripts/attribute.ts plan junit ${{ needs.plan.outputs.batch_base || 'HEAD~1' }}");
   expect(check).toContain("bun scripts/attribute.ts report target/attribute/results");
+});
+
+// A failed check's mutations, by blame, no rerun: each it didn't catch, not
+// latent, the newest commit of the batch that touched it; a job that failed
+// with no verdict, the newest that touched the runner (main's checks
+// 43871190255 and 43872319768, red with no commit named).
+test("a failed mutations job names the batch commit that touched each mutation it missed, or the runner", () => {
+  const touching = (name: string | undefined, job: string) => (name === "a-survivor" ? ["c3", "c1"] : name === undefined && runnerOf(job) === "shard" ? ["c2"] : []);
+  const said = (commit: string) => `${commit} (its subject)`;
+  const failed = [
+    { job: "mutations / mutations (1/2)", verdicts: { "a-survivor": "SURVIVED: its tests passed", caught: "caught", "old-one": "SURVIVED: its tests passed", "a-latent": "SURVIVED: its tests passed" } },
+    { job: "mutations / mutations (2/2)" },
+  ];
+  expect(mutationLines(failed, ["a-latent"], touching, said)).toEqual([
+    "mutation a-survivor survived: its site, list or tests changed at c3 (its subject)",
+    "mutation old-one survived: nothing of it changed in the batch, so it's latent, before it",
+    "mutations / mutations (2/2) failed with no mutation's verdict: the runner changed at c2 (its subject)",
+  ]);
+  // The survivors' job by its own files: a shard's runner changed, not it.
+  expect(mutationLines([{ job: "mutations / survivors" }], [], touching, said)).toEqual(["mutations / survivors failed with no mutation's verdict: its runner unchanged in the batch, so an earlier change's, its machine's or GitHub's"]);
+  expect(siteLines("a\nb\nc\nd\n", "b\nc")).toEqual([2, 3]);
+  expect(siteLines("a\n", "z")).toBeUndefined();
+  // The runner's files are there, and the job reads the run's verdicts.
+  for (const file of Object.values(runnerFiles).flat()) expect([file, existsSync(join(root, file))]).toEqual([file, true]);
+  const check = readFileSync(join(root, ".github/workflows/check.yml"), "utf8");
+  expect(check).toContain("bun scripts/attribute.ts mutations target/attribute/mutations ${{ needs.plan.outputs.batch_base || 'HEAD~1' }}");
+  expect(check).toContain("needs.mutations.result == 'failure'");
 });

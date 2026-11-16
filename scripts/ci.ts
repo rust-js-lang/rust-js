@@ -194,18 +194,19 @@ function status() {
     }
     console.log([run.headBranch, result, failed, `gh run view ${run.databaseId}`].filter(Boolean).join("\t"));
     // What broke what, where a failed check attributed it (scripts/attribute.ts).
-    if (run.conclusion === "failure") for (const line of attributionOf(run.databaseId)) console.log(`  ${line}`);
+    if (run.conclusion === "failure") for (const name of ["attribution", "attribution-mutations"]) for (const line of attributionOf(run.databaseId, name)) console.log(`  ${line}`);
   }
 }
 
-/** The lines of a run's `attribution` artifact, or none. */
-function attributionOf(run: number): string[] {
-  const dir = join(root, "target", "ci-attribution", String(run));
+/** The lines of a run's attribution artifact `name`, the suite's or the
+ * mutations', or none. */
+function attributionOf(run: number, name: string): string[] {
+  const dir = join(root, "target", "ci-attribution", String(run), name);
   rmSync(dir, { recursive: true, force: true });
-  const got = Bun.spawnSync(["gh", "run", "download", String(run), "--name", "attribution", `--dir=${dir}`], { cwd: root, stdout: "pipe", stderr: "pipe" });
+  const got = Bun.spawnSync(["gh", "run", "download", String(run), "--name", name, `--dir=${dir}`], { cwd: root, stdout: "pipe", stderr: "pipe" });
   if (got.exitCode !== 0) return [];
   try {
-    return (JSON.parse(readFileSync(join(dir, "attribution.json"), "utf8")) as { lines: string[] }).lines;
+    return (JSON.parse(readFileSync(join(dir, `${name}.json`), "utf8")) as { lines: string[] }).lines;
   } catch {
     return [];
   }

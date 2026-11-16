@@ -8,10 +8,19 @@
 //   (check.yml's `attribute` runs them at each commit by `bun test`, each
 //   commit's own harness, and writes which still fail, `result.json`)
 //   bun scripts/attribute.ts report <results dir>      attribution.json and the summary's lines, "<test> broke at <sha> (<subject>)"
+//
+// Where its mutations fail, no rerun: each mutation a shard didn't catch,
+// not latent, is said changed by the batch's newest commit that touched its
+// site's lines, its list or its tests (`git log -L`, a blame); a shard or
+// the survivors' job that failed with no verdict, by the newest that touched
+// the runner's own files (check.yml's `attribute-mutations`).
+//
+//   bun scripts/attribute.ts mutations <artifacts dir> <base> [head]   attribution-mutations.json and the summary's lines; of a past run, its head
 
 import { appendFileSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
+import { lists, type Mutation } from "./mutations";
 import { failedIn } from "./selector-audit";
 
 const root = join(import.meta.dir, "..");
@@ -44,6 +53,57 @@ export function attribution(runs: { commit: string; failing: string[] }[], units
     if (at === runs.length) return { unit, commit: runs.at(-1)!.commit, since: "passes" as const };
     return at === 0 ? { unit, commit: runs[0]!.commit, since: "before" as const } : { unit, commit: runs[at]!.commit, since: "batch" as const };
   });
+}
+
+/** What each kind of mutations job runs by, besides each mutation's own
+ * files: a shard, or the survivors' job, that fails with no verdict is said
+ * broken by the batch's newest commit that touched one of its own. */
+export const runnerFiles = {
+  shard: [
+    "scripts/mutations.ts",
+    "scripts/source-mutations.ts",
+    "scripts/mutant-builds.ts",
+    "scripts/latent-survivors.ts",
+    "scripts/shard.ts",
+    "scripts/ci.ts",
+    ".github/workflows/rustc-tests.yml",
+    ".github/actions/rustc-tests-setup",
+  ],
+  survivors: ["scripts/survivors-issue.ts", ".github/workflows/rustc-tests.yml"],
+};
+
+/** Which kind of mutations job `job` is, by its name. */
+export const runnerOf = (job: string): keyof typeof runnerFiles => (/\/ survivors$/.test(job) ? "survivors" : "shard");
+
+/** A failed mutations job, each of its shards' verdicts where it kept them,
+ * or none. */
+export type FailedJob = { job: string; verdicts?: Record<string, string> };
+
+/** Of each failed mutations job, its lines: each mutation it didn't catch,
+ * not `latent`, said changed by `touching(mutation)`'s newest commit, or
+ * not by the batch; a job with no verdict, by `touching()`'s, the runner's
+ * files'. `said(commit)` is `<sha> (<subject>)`. */
+export function mutationLines(failed: FailedJob[], latent: string[], touching: (mutation: string | undefined, job: string) => string[], said: (commit: string) => string): string[] {
+  return failed.flatMap(({ job, verdicts }) => {
+    const missed = Object.entries(verdicts ?? {}).filter(([name, verdict]) => verdict !== "caught" && !latent.includes(name));
+    if (missed.length === 0) {
+      const by = touching(undefined, job)[0];
+      return [`${job} failed with no mutation's verdict: ${by ? `the runner changed at ${said(by)}` : "its runner unchanged in the batch, so an earlier change's, its machine's or GitHub's"}`];
+    }
+    return missed.map(([name, verdict]) => {
+      const by = touching(name, job)[0];
+      const what = verdict.startsWith("SURVIVED") ? "survived" : "was inconclusive";
+      return `mutation ${name} ${what}: ${by ? `its site, list or tests changed at ${said(by)}` : "nothing of it changed in the batch, so it's latent, before it"}`;
+    });
+  });
+}
+
+/** The lines of `file` that `find` spans, 1-based, or none. */
+export function siteLines(text: string, find: string): [number, number] | undefined {
+  const at = text.indexOf(find);
+  if (at === -1) return undefined;
+  const start = text.slice(0, at).split("\n").length;
+  return [start, start + find.split("\n").length - 1];
 }
 
 const git = (args: string[]) => Bun.spawnSync(["git", ...args], { cwd: root, stdout: "pipe" }).stdout.toString().trim();
@@ -79,8 +139,48 @@ if (import.meta.main) {
     writeFileSync(join(out, "attribution.json"), JSON.stringify({ head: git(["rev-parse", "HEAD"]), lines }, null, 2));
     if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, `### What broke what\n\n${lines.map((line) => `- ${line}`).join("\n") || "- nothing attributed"}\n`);
     for (const line of lines) console.log(line);
+  } else if (command === "mutations") {
+    const [dir, base, head = "HEAD"] = rest;
+    const found = (name: string) => (existsSync(dir!) ? readdirSync(dir!, { recursive: true }).map(String).filter((file) => file.endsWith(name)) : []);
+    const verdictsOf = new Map<string, Record<string, string>>();
+    for (const file of found("results.json")) {
+      const shard = /mutation-results-(\d+)/.exec(file)?.[1];
+      if (shard) verdictsOf.set(shard, (JSON.parse(readFileSync(join(dir!, file), "utf8")) as { results: Record<string, string> }).results);
+    }
+    const latent = found("latent.json").flatMap((file) => (JSON.parse(readFileSync(join(dir!, file), "utf8")) as { latent: { name: string }[] }).latent.map(({ name }) => name));
+    // The run's failed mutations jobs, by GitHub's API.
+    const run = process.env.GITHUB_RUN_ID;
+    const jobs: { name: string; conclusion: string }[] = run
+      ? Bun.spawnSync(["gh", "api", "--paginate", `repos/{owner}/{repo}/actions/runs/${run}/jobs?per_page=100`, "--jq", ".jobs[] | {name, conclusion}"], { cwd: root, stdout: "pipe" })
+          .stdout.toString()
+          .split("\n")
+          .filter(Boolean)
+          .map((line) => JSON.parse(line))
+      : [];
+    const failed: FailedJob[] = jobs
+      .filter(({ name, conclusion }) => conclusion === "failure" && /^mutations \//.test(name))
+      .map(({ name }) => ({ job: name, verdicts: verdictsOf.get(/\((\d+)\/\d+\)$/.exec(name)?.[1] ?? "") }));
+    const byName = new Map<string, Mutation>(lists.flatMap((list) => list.mutations.map((m) => [m.name, m] as const)));
+    const listOf = new Map(lists.flatMap((list) => list.mutations.map((m) => [m.name, join("scripts/mutations", list.path)] as const)));
+    const touching = (name: string | undefined, job: string): string[] => {
+      const range = `${base}..${head}`;
+      if (!name) return git(["log", "--format=%H", range, "--", ...runnerFiles[runnerOf(job)]]).split("\n").filter(Boolean);
+      const mutation = byName.get(name);
+      if (!mutation) return [];
+      const tests = (mutation.tests ?? []).filter((arg) => /^test\//.test(arg));
+      const plain = git(["log", "--format=%H", range, "--", listOf.get(name)!, ...tests]).split("\n").filter(Boolean);
+      const lines = existsSync(join(root, mutation.file)) ? siteLines(readFileSync(join(root, mutation.file), "utf8"), mutation.find) : undefined;
+      const site = lines ? git(["log", "--format=%H", "--no-patch", `-L${lines[0]},${lines[1]}:${mutation.file}`, range]).split("\n").filter((line) => /^[0-9a-f]{40}$/.test(line)) : [];
+      const order = git(["rev-list", range]).split("\n");
+      return [...new Set([...plain, ...site])].sort((a, b) => order.indexOf(a) - order.indexOf(b));
+    };
+    const said = (commit: string) => `${commit.slice(0, 9)} (${git(["log", "-1", "--format=%s", commit]).slice(0, 100)})`;
+    const lines = mutationLines(failed, latent, touching, said);
+    writeFileSync(join(out, "attribution-mutations.json"), JSON.stringify({ head: git(["rev-parse", "HEAD"]), lines }, null, 2));
+    if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, `### What broke the mutations\n\n${lines.map((line) => `- ${line}`).join("\n") || "- nothing attributed"}\n`);
+    for (const line of lines) console.log(line);
   } else {
-    console.error("usage: bun scripts/attribute.ts plan <junit dir> <base> | run | report <results dir>");
+    console.error("usage: bun scripts/attribute.ts plan <junit dir> <base> | report <results dir> | mutations <artifacts dir> <base>");
     process.exit(2);
   }
 }

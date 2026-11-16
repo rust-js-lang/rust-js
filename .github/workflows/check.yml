@@ -570,6 +570,40 @@ jobs:
           path: target/attribute/attribution.json
           retention-days: 14
 
+  # Which commit of the batch broke a failed check's mutations, by blame,
+  # no rerun (scripts/attribute.ts `mutations`): each mutation a shard
+  # didn't catch, not latent, the newest commit that touched its site, list
+  # or tests; a shard or the survivors' job that failed with no verdict, the
+  # newest that touched the runner's files. In the run's summary, an
+  # `attribution-mutations` artifact and `bun run ci:status`.
+  attribute-mutations:
+    needs: [plan, mutations]
+    if: ${{ !cancelled() && !inputs.nightly && needs.mutations.result == 'failure' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: mutation-*-*
+          path: target/attribute/mutations
+      - env:
+          GH_TOKEN: ${{ github.token }}
+        run: bun scripts/attribute.ts mutations target/attribute/mutations ${{ needs.plan.outputs.batch_base || 'HEAD~1' }}
+      - uses: actions/upload-artifact@v7
+        with:
+          name: attribution-mutations
+          path: target/attribute/attribution-mutations.json
+          retention-days: 14
+
   # The playground's compiler, rust-js built to WASM with rustc's front
   # end, and the snapshots and the playground it compiles, of a change to
   # what decides them (scripts/iteratorSlice.ts's `wasmPaths`, of

@@ -425,6 +425,21 @@ account, which is Tu's. The jobs run only after a failed suite, so a green
 check costs nothing more. Proof: `test/attribute.test.ts` and the
 `attribute-*` mutations.
 
+**A failed check's mutations are attributed too, by blame, with no rerun**
+(check.yml's `attribute-mutations`, `scripts/attribute.ts mutations`).
+Mutation survivors were the day's most common red `main`, and two red
+checks named no commit (43871190255, 43872319768). Each mutation a shard
+didn't catch, if it isn't latent, is said to be changed by the batch's
+newest commit that touched its site's lines (`git log -L`), its list or
+its tests; one nothing in the batch touched is said to be latent, from
+before the batch. A shard, or the survivors' job, that failed with no
+verdict is said to be broken by the batch's newest commit that touched
+that job's own runner files (`runnerFiles`); where none did, by an earlier
+change, its machine or GitHub. The lines are in the run's summary, an
+`attribution-mutations` artifact, and `bun run ci:status`.
+`bun scripts/attribute.ts mutations <dir> <base> <head>` says it of a past
+run.
+
 ### Amended: every Actions minute counts (2026-11-16)
 
 Tu's standing guarantee. It rests on two rules, kept in docs/dev-loop.md's
