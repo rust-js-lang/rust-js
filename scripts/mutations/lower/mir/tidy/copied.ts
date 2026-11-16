@@ -7,7 +7,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a `let`-`else`'s binding of what `take()` gives is `old`, rust-js's name, not the program's, `thenable` (ADR 0598, amended)",
     file: "src/lower/mir/tidy/copied.rs",
-    find: "                let named = !user.contains(a.as_str()) && user.contains(b.as_str()) && own;\n",
+    find: "                let named = named && own;\n",
     replace: "                let named = false;\n",
     tests: ["test/lowering-shadows.test.ts", "-t", "let else's binding"],
   },

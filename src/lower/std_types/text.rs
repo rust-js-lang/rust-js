@@ -1174,7 +1174,7 @@ pub(in crate::lower) fn utf8_bytes(text: Expr) -> Expr {
 /// throws. Nothing else can see `s` before it's appended to: Rust lends it
 /// to nothing while it's changed. Two pieces of text written out are one,
 /// `t += "!?"`.
-pub(in crate::lower) fn appended(stmts: &mut Vec<Stmt>, text: &IndexSet<String>) {
+pub(in crate::lower) fn appended(stmts: &mut Vec<Stmt>, text: &IndexSet<js::Name>) {
     let mut i = 0;
     while i + 1 < stmts.len() {
         if let Some((s, a)) = append_of(&stmts[i], text)
@@ -1243,14 +1243,14 @@ fn values(e: &Expr) -> usize {
 }
 
 /// The `String` `stmt` appends to, `s = s + a`, and what it appends.
-fn append_of<'s>(stmt: &'s Stmt, text: &IndexSet<String>) -> Option<(&'s js::Name, &'s Expr)> {
+fn append_of<'s>(stmt: &'s Stmt, text: &IndexSet<js::Name>) -> Option<(&'s js::Name, &'s Expr)> {
     let StmtKind::Assign(target, value) = &stmt.kind else {
         return None;
     };
     let (ExprKind::Var(s), ExprKind::Binary(Op::Add, to, appended)) = (&target.kind, &value.kind) else {
         return None;
     };
-    (text.contains(s.word()) && matches!(&to.kind, ExprKind::Var(t) if t == s)).then_some((s, &**appended))
+    (text.contains(s) && matches!(&to.kind, ExprKind::Var(t) if t == s)).then_some((s, &**appended))
 }
 
 /// The `char`s of `text`, an array made here, `Array.from(text)`: a case

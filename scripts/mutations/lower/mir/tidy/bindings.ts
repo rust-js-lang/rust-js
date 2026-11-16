@@ -525,9 +525,8 @@ export const mutations: Mutation[] = [
     breaks:
       "a variable a `let`'s `#[rust_js::name]` names, moved into another, `let made = synthetic_event`, takes the other's name: `const made = createSyntheticEvent(..)`, the name the program gave gone",
     file: "src/lower/mir/tidy/bindings.rs",
-    find: "                let named = given.contains(a.word()) && !given.contains(b.word());\n",
-    replace:
-      "                let named = given.contains(a.word()) && false;\n",
+    find: "                let named = given.contains(a) && !given.contains(&b);\n",
+    replace: "                let named = given.contains(a) && false;\n",
     tests: [
       "test/js-constructors.test.ts",
       "-t",

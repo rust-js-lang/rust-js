@@ -68,15 +68,15 @@ function main() {
       : task.status === "done"
         ? { status: task.status, value: task.value }
         : { status: task.status };
-  let state =
+  const state$1 =
     cell.value.status === "pending"
       ? { status: cell.value.status, tries: cell.value.tries }
       : cell.value.status === "done"
         ? { status: cell.value.status, value: cell.value.value }
         : { status: cell.value.status };
-  task.status = state.status;
-  task.tries = state.tries;
-  task.value = state.value;
+  task.status = state$1.status;
+  task.tries = state$1.tries;
+  task.value = state$1.value;
   cell.value = t;
   console.log(`swap ${shown(task)}, ${statusDebug_fmt(other)}`);
   const old =
@@ -91,7 +91,7 @@ function main() {
   task.status = "pending";
   task.tries = 2;
   console.log(`set ${shown(task)}`);
-  state = {
+  let state = {
     get value() {
       return task;
     },
@@ -116,17 +116,17 @@ function main() {
   const r = kept(state);
   r.value = { status: "done", value: "kept" };
   console.log(`kept ${shown(task)}`);
-  const state$1 = { value: task };
+  const state$2 = { value: task };
   const other$1 = { value: other };
   try {
-    swapped(state$1, other$1);
+    swapped(state$2, other$1);
   } catch (error) {
     throw $unwindsOn(error);
   } finally {
     if ($live()) {
-      task.status = state$1.value.status;
-      task.tries = state$1.value.tries;
-      task.value = state$1.value.value;
+      task.status = state$2.value.status;
+      task.tries = state$2.value.tries;
+      task.value = state$2.value.value;
       other = other$1.value;
     }
   }

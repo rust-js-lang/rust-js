@@ -70,9 +70,9 @@ export const mutations: Mutation[] = [
     breaks:
       "`Cell::new(update.lane.get())`'s read ahead of the next field's is `const { lane: value, tag: value$1 } = update;`, names the program never gave (ADR 0598, amended)",
     file: "src/lower/mir/tidy/destructuring.rs",
-    find: "        if !made && let Some(k) = parts.iter().position(|(_, bound, ..)| !user.contains(bound.word())) {\n",
+    find: "        if !made && let Some(k) = parts.iter().position(|(_, bound, ..)| !user.contains(bound)) {\n",
     replace:
-      "        if false && let Some(k) = parts.iter().position(|(_, bound, ..)| !user.contains(bound.word())) {\n",
+      "        if false && let Some(k) = parts.iter().position(|(_, bound, ..)| !user.contains(bound)) {\n",
     tests: [
       "test/lowering-field-cells.test.ts",
       "-t",

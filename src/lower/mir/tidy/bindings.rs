@@ -639,7 +639,7 @@ pub(super) fn aliases(
     body: &mut Vec<Stmt>,
     captured: &IndexSet<String>,
     (params, kept): (&[js::Pattern], &IndexSet<String>),
-    (clones, given): (&crate::lower::mir::hints::Clones, &IndexSet<String>),
+    (clones, given): (&crate::lower::mir::hints::Clones, &IndexSet<js::Name>),
 ) {
     clone_aliases(body, (params, kept), clones);
     js::statement_lists(body, &mut |stmts| {
@@ -665,7 +665,7 @@ pub(super) fn aliases(
                 // A variable the program names, of one MIR's lowering made
                 // for a prop, `const code = activeCode`, or a temporary,
                 // `const _5 = props`: the variable, read where that was.
-                let named = given.contains(a.word()) && !given.contains(b.word());
+                let named = given.contains(a) && !given.contains(&b);
                 if !is_temporary(a) && (captured.contains(b.word()) || is_temporary(&b) || named) {
                     let a = a.clone();
                     js::each_expr_mut(&mut stmts[j..], &mut |e| {

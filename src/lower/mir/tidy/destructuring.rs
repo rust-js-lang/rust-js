@@ -12,7 +12,7 @@ use super::*;
 /// more, `const [module, files] = tests;`.
 pub(super) fn destructured(
     stmts: &mut Vec<Stmt>,
-    (patterns, lets, user): (&IndexSet<String>, &IndexSet<String>, &IndexSet<String>),
+    (patterns, lets, user): (&IndexSet<String>, &IndexSet<String>, &IndexSet<js::Name>),
     items: bool,
 ) {
     let mut i = 0;
@@ -50,7 +50,7 @@ pub(super) fn destructured(
         // made later is made of, `value` of `Cell::new(u.a.get())`'s `{ value
         // }`: no name of the program's, read where it's used, `{ lane:
         // update.lane }`, once it's moved there (ADR 0598, amended).
-        if !made && let Some(k) = parts.iter().position(|(_, bound, ..)| !user.contains(bound.word())) {
+        if !made && let Some(k) = parts.iter().position(|(_, bound, ..)| !user.contains(bound)) {
             parts.truncate(k);
         }
         let count = parts.len();

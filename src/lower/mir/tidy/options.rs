@@ -21,7 +21,7 @@ use super::*;
 /// read nowhere else, it's named `x`, the program's binding, one value
 /// tested where it's made, `const chunk = chunks.get(id); if (chunk == null
 /// || ..)`, as upstream React writes it (#1619).
-pub(super) fn tested_options(stmts: &mut Vec<Stmt>, changing: &IndexSet<String>, user: &IndexSet<String>) {
+pub(super) fn tested_options(stmts: &mut Vec<Stmt>, changing: &IndexSet<String>, user: &IndexSet<js::Name>) {
     let mut i = 0;
     while i + 1 < stmts.len() {
         let declared = |s: &Stmt| matches!(s.kind, StmtKind::Let(_, None));
@@ -38,11 +38,11 @@ pub(super) fn tested_options(stmts: &mut Vec<Stmt>, changing: &IndexSet<String>,
             // The filter's temporary named as the program's binding.
             if let Some((x, v)) = filtered
                 && i > 0
-                && matches!(&stmts[i - 1].kind, StmtKind::Const(name, _) if name.is(&v))
+                && matches!(&stmts[i - 1].kind, StmtKind::Const(name, _) if *name == v)
                 && !user.contains(&v)
-                && js::mentions_in(&stmts[i - 1..], &x) == 0
+                && js::mentions_of(&stmts[i - 1..], &x) == 0
             {
-                js::renamed(&mut stmts[i - 1..], &v, &x);
+                js::renamed(&mut stmts[i - 1..], v.word(), x.word());
             }
         }
         i += 1;
@@ -62,7 +62,7 @@ fn tests_present_first(test: &Expr, v: &str) -> bool {
 
 /// Of `const x = v != null && .. ? v : undefined`, a filter's `Option`,
 /// `x` and `v`.
-fn filtered_names(made: &Stmt) -> Option<(String, String)> {
+fn filtered_names(made: &Stmt) -> Option<(js::Name, js::Name)> {
     let StmtKind::Const(x, made) = &made.kind else {
         return None;
     };
@@ -70,7 +70,7 @@ fn filtered_names(made: &Stmt) -> Option<(String, String)> {
         return None;
     };
     let ExprKind::Var(v) = &value.kind else { return None };
-    tests_present_first(test, v.word()).then(|| (x.to_string(), v.to_string()))
+    tests_present_first(test, v.word()).then(|| (x.clone(), v.clone()))
 }
 
 /// `tested_options`'s rewrite of `made`, the `Option`'s `const`, and

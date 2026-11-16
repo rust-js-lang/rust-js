@@ -785,3 +785,18 @@ suffix shorter (react-in-rust d546994). Mutations
 program-name-without-way-given, program-names-not-first and
 program-names-not-the-programs hold it.
 
+## Names are ids, step 3's second slice: the program's names asked by id (2026-11-16)
+
+Tidy's `Named` sets, the locals the program named (`user`), those a
+`#[rust_js::name]` names (`given`) and the `String`s (`text`), hold each
+local's `Name`, and the passes that ask them, `aliases`, `copied_bindings`,
+`destructured`, `tested_options`, `shadowed` and `appended`, ask by its id.
+Asked by its word, a `state` rust-js made, a flattened state's spill
+(`Storage::written_in_place`), was found among the program's names by its
+word alone, and the shadow pass merged the program's later `state` into
+it, one `let` for two values; asked by id it's rust-js's, and the program's
+name keeps the plain spelling by the rule above: flattened_state_handed_on's
+`let state` is the program's handle and the spill `const state$1`, as
+native Rust prints. Nothing else moved: the corpus, the snapshots, std,
+the guide and React's port are as they were.
+

@@ -17,7 +17,7 @@ use super::*;
 /// program's name for both, `const updatesForLane = hidden[i]; ..
 /// if (updatesForLane)`, where the variable is declared in `stmts` and the
 /// binding's name is nowhere else in them (`user`, the program's names).
-pub(super) fn copied_bindings(stmts: &mut Vec<Stmt>, user: &IndexSet<String>) {
+pub(super) fn copied_bindings(stmts: &mut Vec<Stmt>, user: &IndexSet<js::Name>) {
     named_for_bindings(stmts, user);
     for stmt in stmts.iter_mut() {
         let StmtKind::If(test, then, otherwise) = &mut stmt.kind else {
@@ -76,6 +76,7 @@ pub(super) fn copied_bindings(stmts: &mut Vec<Stmt>, user: &IndexSet<String>) {
         {
             // `a` as it's read, of its own declaration, for a read of `b` made one of it.
             let a_read = a.clone();
+            let named = !user.contains(a) && user.contains(b);
             let (a, b) = (a.to_string(), b.to_string());
             let rest = &stmts[i + 2..];
             if !set_before_read(rest, &a, &b) && !rebinds(rest, &b) && !in_closure(rest, &b) {
@@ -85,7 +86,7 @@ pub(super) fn copied_bindings(stmts: &mut Vec<Stmt>, user: &IndexSet<String>) {
                 // (`named_for_bindings`, ADR 0598, amended).
                 let own = (stmts[..i].iter())
                     .any(|s| matches!(&s.kind, StmtKind::Const(n, _) | StmtKind::Let(n, _) if n.is(&a)));
-                let named = !user.contains(a.as_str()) && user.contains(b.as_str()) && own;
+                let named = named && own;
                 let renamed = named && js::mentions_in(stmts, &b) == js::mentions_in(&stmts[i + 1..], &b);
                 stmts.remove(i + 1);
                 // The variable named so where it's declared and read, or
@@ -128,7 +129,7 @@ fn set_before_read(stmts: &[Stmt], a: &str, b: &str) -> bool {
 /// `const old = x; .. if (old) { const updatesForLane = old; .. }` of a
 /// variable rust-js named and a binding the program did: `updatesForLane`
 /// for both (`copied_bindings`).
-fn named_for_bindings(stmts: &mut [Stmt], user: &IndexSet<String>) {
+fn named_for_bindings(stmts: &mut [Stmt], user: &IndexSet<js::Name>) {
     for i in 0..stmts.len() {
         let StmtKind::If(test, then, _) = &stmts[i].kind else {
             continue;
@@ -149,8 +150,8 @@ fn named_for_bindings(stmts: &mut [Stmt], user: &IndexSet<String>) {
             n
         };
         let own = (stmts[..i].iter()).any(|s| matches!(&s.kind, StmtKind::Const(n, _) | StmtKind::Let(n, _) if n == a));
-        if user.contains(a.word())
-            || !user.contains(b.word())
+        if user.contains(a)
+            || !user.contains(b)
             || is_temporary(a)
             || is_temporary(b)
             || !own

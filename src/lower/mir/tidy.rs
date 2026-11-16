@@ -52,9 +52,9 @@ use super::hints::{LabeledBlock, Switch};
 /// What a body's last passes ask of its locals, by name: those the program
 /// names, those a `let`'s `#[rust_js::name]` names, and its `String`s.
 pub(super) struct Named {
-    pub(super) user: IndexSet<String>,
-    pub(super) given: IndexSet<String>,
-    pub(super) text: IndexSet<String>,
+    pub(super) user: IndexSet<js::Name>,
+    pub(super) given: IndexSet<js::Name>,
+    pub(super) text: IndexSet<js::Name>,
 }
 
 /// What a body's `let`s bind, each by its name.

@@ -301,10 +301,10 @@ impl Locals {
     /// names (`user`), those it gives a JS name (`given`), and its
     /// `String`s (`text`).
     fn named(&self) -> tidy::Named {
-        let names = |of: &IndexVec<Local, bool>| -> IndexSet<String> {
+        let names = |of: &IndexVec<Local, bool>| -> IndexSet<js::Name> {
             (self.names.iter_enumerated())
                 .filter(|&(local, name)| of[local] && !name.word().is_empty())
-                .map(|(_, name)| name.word().to_string())
+                .map(|(_, name)| name.clone())
                 .collect()
         };
         tidy::Named {

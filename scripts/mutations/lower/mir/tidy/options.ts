@@ -141,7 +141,7 @@ export const mutations: Mutation[] = [
     name: "filtered-temporary-unnamed",
     breaks: "a `filter`'s temporary keeps its own name where it's tested where it's made, `const option = chunks.get(id); if (option == null || ..)`, not the program's binding's, `chunk`, as upstream writes it (#1619)",
     file: "src/lower/mir/tidy/options.rs",
-    find: "                js::renamed(&mut stmts[i - 1..], &v, &x);\n",
+    find: "                js::renamed(&mut stmts[i - 1..], v.word(), x.word());\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^filter_then_let_else_tests_one_value.rs$"],
     snapshots: true,
