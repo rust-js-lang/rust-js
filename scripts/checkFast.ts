@@ -845,11 +845,13 @@ if (import.meta.main) {
   // (scripts/select.ts, ADR 1101, amended); everything where it can't say.
   // Of `--all`, it says which cases with std's iterator structs run (#986).
   const cases = readdirSync(join(root, "test", "corpus")).filter((name) => name.endsWith(".rs"));
-  // A sanity pass past a rebase (`--sanity`, `bun run push`'s): the
-  // change's own diff alone, capped where even that can't be said.
-  const sanity = args.includes("--sanity");
+  // A sanity pass past a rebase (`--sanity=<the commit checked before
+  // it>`, `bun run push`'s): the interaction of the change and the commits
+  // the rebase brought, capped where even that can't be said.
+  if (args.includes("--sanity")) throw new Error("--sanity names the commit checked before the rebase: --sanity=<sha>");
+  const sanity = args.find((arg) => arg.startsWith("--sanity="))?.slice("--sanity=".length);
   let selection = selectChange("origin/main", sanity);
-  let capped = false;
+  let capped = selection.capped !== undefined;
   if (sanity && selection.all) {
     console.log(`the sanity pass can't say (${selection.why}): its cap, the change's own test files and cases`);
     selection = { ...sanityCap(), map: selection.map, behind: selection.behind };

@@ -90,4 +90,28 @@ export const mutations: Mutation[] = [
     replace: '  return result(ownFiles, ownCases, "corpus");',
     tests: ["test/select.test.ts", "-t", "a sanity pass's cap is never empty"],
   },
+  {
+    name: "sanity-not-the-interaction",
+    breaks: "a sanity pass past a rebase runs all the change's own selection, not what the rebase's commits can affect too: a runtime change's 360 files ran again after every rebase and never landed (#1976)",
+    file: "scripts/select.ts",
+    find: "    files: own.files.filter((file) => incoming.files.includes(file)),",
+    replace: "    files: own.files,",
+    tests: ["test/select.test.ts", "-t", "a sanity pass runs what both"],
+  },
+  {
+    name: "sanity-everything-side-wins",
+    breaks: "a sanity pass where one side selects everything runs everything, not the other side's selection",
+    file: "scripts/select.ts",
+    find: "  const both = own.all ? incoming : incoming.all ? own : {",
+    replace: "  const both = own.all ? own : incoming.all ? incoming : {",
+    tests: ["test/select.test.ts", "-t", "a sanity pass runs what both"],
+  },
+  {
+    name: "sanity-past-its-budget",
+    breaks: "a sanity pass whose interaction is past its budget runs every file of it, not its corpus cases alone",
+    file: "scripts/select.ts",
+    find: "  if (both.files.length <= budget) return { ...both, all: false, why };",
+    replace: "  return { ...both, all: false, why };",
+    tests: ["test/select.test.ts", "-t", "a sanity pass runs what both"],
+  },
 ];

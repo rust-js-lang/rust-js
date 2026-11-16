@@ -4,9 +4,9 @@ import type { Mutation } from "../mutations";
 export const mutations: Mutation[] = [
   {
     name: "push-sanity-whole",
-    breaks: "a push's sanity pass past a rebase selects by the map's diff to the new tree, others' commits too, not by the change's own: it ran all and outlasted the check",
+    breaks: "a push's sanity pass past a rebase selects by the map's diff to the new tree, not the interaction of the change and the rebase's commits: it ran all and outlasted the check",
     file: "scripts/push.ts",
-    find: '...(name === "sanity" ? ["--sanity"] : [])',
+    find: '...(name === "sanity" ? [`--sanity=${checked}`] : [])',
     replace: "...([] as string[])",
     tests: ["test/select.test.ts", "-t", "bun run push says its selection"],
   },

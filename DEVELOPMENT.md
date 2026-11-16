@@ -806,9 +806,11 @@ checked:
   origin/main` holds a file no pushed commit changes, and pushes. It first
   fetches CI's test map of the nearest commit of `main` where it's nearer
   than the machine's. Where `main` moved while it checked, it rebases again
-  and runs a sanity pass (`check:fast --sanity`): the change's own diff
-  alone, capped to its own test files and cases where even that says
-  everything; CI checks the combination. It rebases and runs it again as
+  and runs a sanity pass (`check:fast --sanity=<the commit checked>`): the
+  interaction, the tests both the change and the commits the rebase
+  brought can affect, its corpus cases alone past 40 files, and capped to
+  the change's own test files and cases where both sides say everything;
+  CI checks the combination. It rebases and runs it again as
   often as `main` moves, until it lands. Its line of times names which
   (`check` or `sanity`) and what was selected, `select all (why)`,
   `select some (N files, M cases)`, `select capped …` or `select none`, the

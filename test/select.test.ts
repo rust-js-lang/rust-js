@@ -12,7 +12,7 @@ import { jobs } from "../scripts/checkFast";
 import { onlyPushedFiles, phases as pushPhases, timesLine } from "../scripts/push";
 import { whoRuns } from "../scripts/disk";
 import { failedIn, misses } from "../scripts/selector-audit";
-import { baselines, capOf, osBranches, outcome, reachOf, type Reach, select, type Selection, suiteFiles } from "../scripts/select";
+import { baselines, capOf, interaction, osBranches, outcome, reachOf, type Reach, select, type Selection, suiteFiles } from "../scripts/select";
 import { readsSources, type TestMap } from "../scripts/testMap";
 import { root } from "./support";
 
@@ -189,6 +189,30 @@ test("a baseline a test reads by a path its source doesn't spell picks its owner
   for (const { owners } of baselines) for (const owner of owners) expect(suiteFiles()).toContain(owner);
 });
 
+// A sanity pass past a rebase runs the interaction: what both the change
+// and the commits the rebase brought can affect. m1-lisa's runtime change,
+// some 360 of 361 files and every case, ran all of it again after each
+// rebase, some 1,120 s on the M1, and lost to a moving main three times
+// until her push's bound stopped it (#1976).
+test("a sanity pass runs what both the change and the rebase's commits can affect", () => {
+  const some = (files: string[], cases: string[]): Selection => ({ all: false, files, cases, forms: cases, why: "" });
+  const many = Array.from({ length: 360 }, (_, i) => `test/f${i}.test.ts`);
+  const every = Array.from({ length: 2600 }, (_, i) => `c${i}.rs`);
+  // The runtime's change against two small commits: theirs, where it meets.
+  const small = interaction(some(many, every), some(["test/f3.test.ts", "test/other.test.ts"], ["c1.rs", "x.rs"]));
+  expect([small.files, small.cases, small.capped]).toEqual([["test/f3.test.ts"], ["c1.rs"], undefined]);
+  expect(small.why).toBe("the interaction: the change's 360 files, 2600 cases and the rebase's commits' 2 files, 2 cases");
+  // A side that selects everything gives way to the other.
+  const all: Selection = { all: true, files: [], cases: [], forms: [], why: "a workflow" };
+  expect(interaction(all, some(["test/a.test.ts"], ["c1.rs"]))).toMatchObject({ all: false, files: ["test/a.test.ts"], cases: ["c1.rs"] });
+  expect(interaction(some(["test/a.test.ts"], []), all)).toMatchObject({ all: false, files: ["test/a.test.ts"], cases: [] });
+  expect(interaction(all, all).all).toBe(true);
+  // Past the budget, the interaction's corpus cases alone.
+  const big = interaction(some(many, every), some(many.slice(0, 50), every.slice(0, 7)), 40);
+  expect([big.files, big.cases.length, big.capped]).toEqual([["test/corpus.test.ts"], 7, "corpus of the interaction (50 files, past 40)"]);
+  expect(outcome(big)).toBe("capped corpus of the interaction (50 files, past 40)");
+});
+
 // A sanity pass the selector can't say of is capped: the change's own
 // test files and cases; and of a change to the compiler's sources never
 // none, as two changes to one file are where they most meet: m6-lily's
@@ -278,7 +302,7 @@ test("bun run push says its selection on its line, and runs the check and the po
   expect(push).not.toContain('"check:fast", "--all"');
   expect(push).toContain("touchesPort(changed)");
   // Past a rebase, the change's own sanity pass, as often as main moves.
-  expect(push).toContain('...(name === "sanity" ? ["--sanity"] : [])');
+  expect(push).toContain('...(name === "sanity" ? [`--sanity=${checked}`] : [])');
   expect(push).not.toMatch(/attempts|main moved \$\{/);
   // Its line on every exit, a signal's too, and who ran it, each machine's.
   expect(push).toContain('for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"] as const)');

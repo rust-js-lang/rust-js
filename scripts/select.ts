@@ -309,6 +309,14 @@ export function reachOf(files: string[]): Reach {
 }
 
 /** The map's commit's diff to the working tree, untracked files too. */
+/** The changes from `from` to `to`, or to the working tree with what it
+ * doesn't track. */
+function changesBetween(from: string, to?: string): Change[] {
+  if (to === undefined) return changesSince(from);
+  const diff = Bun.spawnSync(["git", "diff", "-U0", "--no-color", "--no-ext-diff", "--no-renames", from, to], { cwd: root, stdout: "pipe" }).stdout.toString();
+  return hunksOf(diff);
+}
+
 function changesSince(commit: string): Change[] {
   const git = (args: string[]) => Bun.spawnSync(["git", ...args], { cwd: root, stdout: "pipe" }).stdout.toString();
   const diff = git(["diff", "-U0", "--no-color", "--no-ext-diff", "--no-renames", commit]);
@@ -326,12 +334,11 @@ function ownFiles(base: string): Set<string> {
 
 /** What this checkout's change selects: by the map of HEAD or its nearest
  * ancestor this machine keeps, the diff from its commit; the branch's own
- * change since `base`'s merge-base, the rest others'. Of `ownOnly`, a
- * sanity pass's past a rebase (Tu's rule: quick, then push; CI's check
- * covers the combination), the branch's own diff alone, never others'
- * commits: a line of a file others changed since the map's commit too is
- * one it can't place, everything (ADR 1101, amended). */
-export function selectChange(base = "origin/main", ownOnly = false): Selection & { map?: string } {
+ * change since `base`'s merge-base, the rest others'. Of `sanity`, a pass
+ * past a rebase that brought commits, given the commit last checked before
+ * it: the interaction alone (`interaction`), what both the branch's own
+ * change and the commits the rebase brought can affect. */
+export function selectChange(base = "origin/main", sanity?: string): Selection & { map?: string } {
   const files = suiteFiles();
   const cases = corpusCases();
   const map = nearestMap(mapStore, root, toolchainOf());
@@ -344,17 +351,70 @@ export function selectChange(base = "origin/main", ownOnly = false): Selection &
     return select(changes, { files, cases, map: `${noMap}: \`bun run test-map\` records one`, reach });
   }
   const behind = commitsBehind(map.commit);
-  if (ownOnly) {
-    const since = mergeBase(base);
-    const changes = since === undefined ? [] : changesSince(since);
-    // A line of the branch's file is the map's line where nothing else
-    // changed the file since the map's commit.
-    const moved = changes.find((change) => change.file.startsWith("src/") && since !== undefined && differs(map.commit, since, change.file));
-    if (moved) return { ...select([{ file: moved.file, hunks: "new" }], { files, cases, map, reach }), why: `${moved.file} changed since the map's commit by others' commits too`, map: map.commit, behind };
-    return { ...select(changes, { files, cases, map, reach }), map: map.commit, behind };
+  if (sanity !== undefined) {
+    const now = mergeBase(base);
+    const before = now === undefined ? undefined : Bun.spawnSync(["git", "merge-base", sanity, now], { cwd: root, stdout: "pipe" }).stdout.toString().trim() || undefined;
+    if (now === undefined || before === undefined) return { all: true, files: [], cases: [], forms: [], why: "the sanity pass can't find the commits the rebase brought", map: map.commit, behind };
+    // The incoming commits are others', each checked by its own push.
+    const side = (from: string, to: string | undefined, mine: boolean) => sideSelection(changesBetween(from, to), from, { files, cases, map, reach, own: () => mine });
+    return { ...interaction(side(now, undefined, true), side(before, now, false)), map: map.commit, behind };
   }
   const selection = select(changesSince(map.commit), { files, cases, map, reach, own: (file) => own.has(file) });
   return { ...selection, map: map.commit, behind };
+}
+
+/** What one side of a rebase selects, its changes since `from` by the map:
+ * a line of a compiler's file the map's commit and `from` differ on isn't
+ * the map's line, so of such a file, every test the map saw run any of its
+ * functions (`unitsReaching`). */
+function sideSelection(changes: Change[], from: string, context: { files: string[]; cases: string[]; map: TestMap; reach: Reach; own: (file: string) => boolean }): Selection {
+  const moved = changes.filter((change) => change.file.startsWith("src/") && change.hunks !== "new" && differs(context.map.commit, from, change.file)).map(({ file }) => file);
+  const selection = select(changes.filter((change) => !moved.includes(change.file)), context);
+  if (moved.length === 0 || selection.all) return selection;
+  const reached = new Set(unitsReaching(context.map, moved));
+  const byCase = context.cases.filter((name) => reached.has(`test/corpus/${name}`));
+  return {
+    ...selection,
+    files: [...new Set([...selection.files, ...context.files.filter((file) => reached.has(file))])],
+    cases: [...new Set([...selection.cases, ...byCase])],
+    forms: [...new Set([...selection.forms, ...byCase])],
+    why: `${selection.why}; ${moved.join(", ")} by every test of its functions`,
+  };
+}
+
+/** The most test files a sanity pass runs past a rebase, about five
+ * minutes on the Mac mini; past it, the interaction's corpus cases alone. */
+export const sanityBudget = 40;
+
+/** A sanity pass past a rebase: what both the branch's own change, `own`,
+ * and the commits the rebase brought, `incoming`, can affect. A test only
+ * the branch's change affects ran with it before the rebase, and its
+ * outcome changes only if the incoming commits affect it too; a test only
+ * the incoming commits affect was checked by their pushers, and changes
+ * only if the branch's change affects it too (ADR 1101, amended). Where a
+ * side selects everything, the other side's; where both do, everything,
+ * for the cap. Past `sanityBudget`'s files, the interaction's corpus cases
+ * alone, and the test files the branch changes itself. */
+export function interaction(own: Selection, incoming: Selection, budget = sanityBudget): Selection {
+  if (own.all && incoming.all) return { ...own, why: `both the change and the commits the rebase brought select everything (${own.why}; ${incoming.why})` };
+  const say = (selection: Selection) => (selection.all ? "everything" : `${selection.files.length} files, ${selection.cases.length} cases`);
+  const why = `the interaction: the change's ${say(own)} and the rebase's commits' ${say(incoming)}`;
+  const both = own.all ? incoming : incoming.all ? own : {
+    all: false,
+    files: own.files.filter((file) => incoming.files.includes(file)),
+    cases: own.cases.filter((name) => incoming.cases.includes(name)),
+    forms: own.forms.filter((name) => incoming.forms.includes(name)),
+    why,
+  };
+  if (both.files.length <= budget) return { ...both, all: false, why };
+  return {
+    all: false,
+    files: both.cases.length > 0 ? ["test/corpus.test.ts"] : [],
+    cases: both.cases,
+    forms: [],
+    why,
+    capped: `corpus of the interaction (${both.files.length} files, past ${budget})`,
+  };
 }
 
 /** What `base` and HEAD have in common. */
@@ -427,7 +487,7 @@ function outcomeOf(selection: Selection): string {
 if (import.meta.main) {
   const arg = (name: string) => process.argv.find((given) => given.startsWith(`--${name}=`))?.slice(name.length + 3);
   const json = arg("json");
-  const selection = selectChange(arg("base"), process.argv.includes("--own"));
+  const selection = selectChange(arg("base"), arg("sanity"));
   console.log(`${outcome(selection)}${selection.map ? `, by the test map of ${selection.map.slice(0, 9)}` : ""}`);
   if (!selection.all) {
     console.log(selection.why);

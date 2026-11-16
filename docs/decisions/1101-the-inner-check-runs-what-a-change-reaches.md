@@ -368,12 +368,35 @@ pass took longer than the check: m3-max's took 594 s and 516 s after a
 three times (3,847 s, not pushed). Tu's rule: quick, then push; CI's full
 check covers the combination.
 
-**The full argument above holds for `check:fast` and CI's suite.** They
-select by the map's diff to the tree. **A sanity pass is deliberately the
-change's own** (`check:fast --sanity`, the push's `sanity` phase): it
-selects by the change's own diff since its merge-base with `main`, against
-the map. A src file others also changed since the map's commit can't be
-placed. Where even that says everything, the pass is capped: it runs the
+**The full argument above holds for `check:fast` and CI's suite.**
+
+**A sanity pass runs the interaction** (`check:fast --sanity=<the commit
+checked before the rebase>`, the push's `sanity` phase, `interaction`): the
+tests both the change and the commits the rebase brought can affect. The
+argument for this, which the earlier "the change's own" pass lacked:
+
+- A test that only the change affects ran with the change before the
+  rebase. Its outcome can differ now only if the incoming commits affect it
+  too.
+- A test that only the incoming commits affect was checked by their
+  pushers. Its outcome can differ only if the change affects it too.
+- A test that neither affects keeps the outcome both checks saw.
+
+So the pass is the intersection of two selections by the fetched map: the
+change's own diff since its merge-base with `main`, and the incoming
+commits' diff from the old merge-base to the new one, which counts as
+others' (`ownRunsAll`'s files run only what reads them). A compiler file
+the map's commit and a side's base differ on has no line of the map's, so
+that side takes every test the map saw run any of its functions
+(`unitsReaching`). Where one side selects everything, the pass is the
+other side's. Where both do, it's the cap below. Past `sanityBudget`'s 40
+test files, about five minutes on the Mac mini, it's the interaction's
+corpus cases alone, `capped corpus of the interaction`. m1-lisa's runtime
+change (#1976), "some (360 of 361 files, every case)", ran all of it again
+after each rebase, about 1,120 s on the M1. It lost to a moving `main`
+three times, until her push's 4,200 s bound stopped it.
+
+Where both sides select everything, the pass is capped. It runs the
 change's own test files and corpus cases, with no lint, nets or builds
 beyond the push's own build and std. The line says `capped`. **A cap is
 never empty for a change to the compiler's sources** (#1988): it takes the

@@ -11,7 +11,8 @@
 //             everything where it can't say; none at all, of a change
 //             nothing reads that isn't code (a doc's), straight to the push.
 //             Past a rebase that brought commits, `sanity`, `check:fast
-//             --sanity`: the change's own diff alone, never others' commits,
+//             --sanity=<checked>`: the interaction of the change's own diff
+//             and the commits the rebase brought, what both can affect,
 //             capped to its own test files and cases where even that says
 //             everything (Tu's rule: quick, then push; CI's check covers the
 //             combination). Rebased and checked so until it lands, no limit
@@ -177,7 +178,7 @@ function main() {
           console.log(`push: the selection is none, and nothing changed is code: no check`);
         } else {
           rmSync(selectionFile, { force: true });
-          run(name, ["bun", "run", "check:fast", ...(name === "sanity" ? ["--sanity"] : [])]);
+          run(name, ["bun", "run", "check:fast", ...(name === "sanity" ? [`--sanity=${checked}`] : [])]);
           selection = existsSync(selectionFile) ? JSON.parse(readFileSync(selectionFile, "utf8")).outcome : said;
         }
         // A map not fetched says why on the push's line (b355dc824's said
