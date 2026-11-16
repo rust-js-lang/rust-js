@@ -428,6 +428,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ if let Some(inner) = input.boxed_ty() => (inner, given),
                 _ => (input, given),
             };
+            // A `&mut dyn` iterator given as a type parameter, `rev(self)`'s
+            // `Self` of a `&mut dyn DoubleEndedIterator`, or generic code's
+            // `I`: lent as unsized, std's `&mut dyn I`, which folds by
+            // `next_back`, as a `dyn`'s vtable holds no fold, never by what
+            // it lends's own `rfold`. What it lends knows its back already,
+            // as the coercion to a `dyn` made it (`lent_iterator`, #1996).
+            if matches!(input.kind(), ty::Param(_))
+                && let ty::Ref(_, referent, ty::Mutability::Mut) = *given.kind()
+                && !referent.is_sized(self.tcx, self.typing_env)
+                && self.implements_iterator(given)
+            {
+                let held = std::mem::replace(value, Expr::taken());
+                *value = self.lent_iterator(held, given);
+                continue;
+            }
             let made_knowing = self.made_knowing_into_iter(callee, input, given);
             // One that asks its length, a JS iterator that knows it, its back
             // too where it steps it from there (ADR 0456).

@@ -537,4 +537,20 @@ export const mutations: Mutation[] = [
     replace: "            ty::Ref(_, to, _) if !to.is_sized(self.tcx, self.typing_env) => super::Lent::Sized,\n",
     tests: ["test/corpus.test.ts", "-t", "^lent_iterator_folded_as_std_passes_it_on.rs$"],
   },
+  {
+    name: "dyn-given-unlent",
+    breaks: "a `&mut dyn DoubleEndedIterator` given as a type parameter isn't lent, so generic code's `rfold` of it, or std's compiled `Rev`'s, folds by what it lends's own `rfold`, a `take()`'s `nth_back(len - n - 1)`: what it skips dropped back to front, where Rust drops them as one slice (#1996)",
+    file: "src/lower/iterators/stepping.rs",
+    find: "                *value = self.lent_iterator(held, given);\n                continue;\n",
+    replace: "                *value = held;\n                continue;\n",
+    tests: ["test/corpus.test.ts", "-t", "^lent_take_of_a_vec_folded_from_its_back.rs$"],
+  },
+  {
+    name: "dyn-given-lend-of-any-ref",
+    breaks: "a sized `&mut I` given as a type parameter is lent as a `dyn` is, made knowing its back first, where its own paths lend it as std's `&mut I` passes it on: generic code's and adapters' steps of it break (#1996)",
+    file: "src/lower/iterators/stepping.rs",
+    find: "                && !referent.is_sized(self.tcx, self.typing_env)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^lent_iterator_folded_as_std_passes_it_on.rs$"],
+  },
 ];

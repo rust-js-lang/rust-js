@@ -115,3 +115,30 @@ builds, in test/iterator-forms.test.ts's few. Mutations
 `box-compiled-dictionary-unboxed`; the box mutations of std_items.rs,
 `compiled-struct-rfold-as-js` and `double-ended-of-a-js-iterator-again`
 retargeted.
+
+## Amendment: a `&mut dyn` given as a type parameter is lent unsized (2026-11-17, #1996)
+
+#1986 and #1991 gave `$lent` its two kinds, picked by `lent_iterator`
+from whether what the `&mut` refers to is sized. One route still gave a
+`&mut dyn DoubleEndedIterator` raw: as a type parameter of a function it
+called, std's compiled `rev(self)` with `Self = &mut dyn ..` (std's
+iterator structs), or the crate's generic code given it as its `I`.
+There, the value was what it lent, made knowing its back and its own
+`rfold`, `take()`'s `nth_back(len - n - 1)`. So what the `take()` skipped
+was dropped back to front, where std's `&mut dyn` folds by `next_back`,
+as a `dyn`'s vtable holds no fold, and drops it as one slice.
+
+`given_iterators` now lends a `&mut` whose referent is unsized, given as
+a type parameter, by `lent_iterator`'s unsized kind, before its other
+rules. What it lends already knows its back, as the coercion to a `dyn`
+made it. A sized `&mut I` keeps its own paths. Its std-build fold by
+`I`'s `try_rfold`, which a `&mut I`'s dictionary leaves to its consumer,
+is #2002.
+
+Case ([0262](0262-when-rust-and-js-disagree.md)): results change, so
+Rust's behaviour is kept. Corpus case
+`lent_take_of_a_vec_folded_from_its_back` holds a `rev()`'s fold, an
+`rfold`, a `try_rfold` and generic code's `rfold`, each of a `&mut dyn`
+and of a sized `&mut`, against native, in both builds; in the std build
+the sized rows wait for #2002. Mutations `dyn-given-unlent` and
+`dyn-given-lend-of-any-ref` are caught.
