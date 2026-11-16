@@ -6,7 +6,10 @@
 //   build     the compiler
 //   std       std/ made again (`bun run std`), refused where it differs from
 //             what's committed
-//   check     `check:fast --all`
+//   check     `check:fast --all`; or, past a clean rebase that brought in
+//             commits after the whole check passed, `sanity`, plain
+//             `check:fast`, what the pushed change touches: CI's check of
+//             the push covers the combination (Tu's decision, 2026-11-16)
 //   react     the React port at its pin (`react-in-rust.ts regen`), refused on
 //             any difference: a change the port takes moves the pin in this push
 //   files     `git diff origin/main` holds only the pushed commits' files
@@ -29,7 +32,7 @@ import { hostname, loadavg } from "node:os";
 import { devTimesLog } from "./disk";
 
 /** The phases, in the order they run. */
-export const phases = ["rebase", "build", "std", "check", "react", "files", "push"] as const;
+export const phases = ["rebase", "build", "std", "check", "sanity", "react", "files", "push"] as const;
 export type Phase = (typeof phases)[number];
 
 /** How many times the branch is rebased and checked again where `main` moves
@@ -101,7 +104,7 @@ function main() {
     }
     let checked = "";
     for (let attempt = 1; ; attempt++) {
-      rebase(bless);
+      const conflicted = rebase(bless);
       phase("rebase");
       const base = git("rev-parse", "origin/main").out.trim();
       if (checked === "" || git("rev-parse", "HEAD").out.trim() !== checked) {
@@ -112,8 +115,11 @@ function main() {
         const std = lines(git("status", "--porcelain", "--", "std").out);
         if (std.length > 0) throw new Refused(`std/ differs from what's committed, made again from this tree:\n${std.join("\n")}\ncommit it, or rebase onto the commit that does`);
         phase("std");
-        run("check", ["bun", "run", "check:fast", "--all"]);
-        phase("check");
+        // The whole check first, and again past a rebase that stopped on a
+        // conflict; past a clean one, what the change touches.
+        const whole = checked === "" || conflicted;
+        run(whole ? "check" : "sanity", ["bun", "run", "check:fast", ...(whole ? ["--all"] : [])]);
+        phase(whole ? "check" : "sanity");
         if (sh(["bun", "scripts/react-in-rust.ts", "regen"]).code !== 0) {
           throw new Refused("the React port differs at its pin (target/react-in-rust.diff): regenerate the port and move ports/react-in-rust.pin in this push");
         }
@@ -172,10 +178,11 @@ function run(name: Phase, cmd: string[]) {
 
 /** Onto origin/main; a conflict aborts it. Of docs/readability.txt alone, a
  * blessed baseline (`merge=binary`), with `--bless-readability`: main's, then
- * blessed again from the rebased tree (DEVELOPMENT.md, "Landing a branch"). */
-function rebase(bless: boolean) {
+ * blessed again from the rebased tree (DEVELOPMENT.md, "Landing a branch").
+ * Whether it stopped on a conflict, resolved so. */
+function rebase(bless: boolean): boolean {
   git("fetch", "-q", "origin");
-  if (git("rebase", "origin/main").code === 0) return;
+  if (git("rebase", "origin/main").code === 0) return false;
   for (;;) {
     const conflicts = lines(git("diff", "--name-only", "--diff-filter=U").out);
     if (conflicts.length === 0) break;
@@ -187,6 +194,7 @@ function rebase(bless: boolean) {
     git("add", "docs/readability.txt");
     if (sh(["git", "-c", "core.editor=true", "rebase", "--continue"], true).code === 0) break;
   }
+  return true;
 }
 
 /** docs/readability.txt blessed from this tree, its diff printed, and the top

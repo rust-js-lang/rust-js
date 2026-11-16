@@ -1341,7 +1341,7 @@ test("Miri and every native build of a program take its flags from programFlags 
 });
 
 test("bun run push rebases, builds, checks std, the suite and the port, holds the diff to its files, then pushes", () => {
-  expect(pushPhases).toEqual(["rebase", "build", "std", "check", "react", "files", "push"]);
+  expect(pushPhases).toEqual(["rebase", "build", "std", "check", "sanity", "react", "files", "push"]);
   expect(onlyPushedFiles(["a.rs", "b.rs"], ["a.rs"])).toEqual(["b.rs"]);
   const line = timesLine({ at: new Date("2026-11-16T08:00:00Z"), machine: "m", agent: "a", sha: "abc", total: 61.4, phases: [["check", 300]], load: [1, 2, 3], ok: true, note: "" });
   expect(line).toBe("2026-11-16T08:00:00Z | m | a | push | abc | total 61s | check 300s | load 1.00/2.00/3.00 | ok | ");

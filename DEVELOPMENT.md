@@ -799,7 +799,11 @@ checked:
   (a change the port takes moves `ports/react-in-rust.pin` in the same
   push), refuses where `git diff origin/main` holds a file no pushed
   commit changes, and pushes. Where `main` moved while it checked, it
-  rebases and checks again, so no commit lands that the check didn't see.
+  rebases again: past a clean rebase, a sanity check, the build, `std/`,
+  plain `check:fast` (what the pushed change touches) and the port, then
+  the push, CI's check of it covering the combination; past a rebase that
+  stopped on a conflict, the whole check again. Its line of times names
+  which (`check` or `sanity`).
   A tracked change not committed is refused. `--bless-readability` blesses
   `docs/readability.txt` first, printing what changed and amending the top
   commit; without it a readability failure stops the push like any other.
