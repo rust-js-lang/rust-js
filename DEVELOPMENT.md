@@ -728,9 +728,12 @@ checked:
   have carried far fewer surprises.
 - **A form-only mutation of tidy, preparation or the printer is judged by
   the corpus's snapshots, by the runner**: where its tests pass, the cases
-  that reach its site (by the test map, or every case without one) are
-  compiled by the mutant and each JS compared with its snapshot alone; one
-  that differs catches it (#864, ADR 0093 amended). Name the case it's for,
+  that reach its site, by the test map, are compiled by the mutant and each
+  JS compared with its snapshot alone; one that differs catches it (#864,
+  ADR 0093 amended). Without a map the run fails (CI's `test-map` job keeps
+  one); a site the map can't place, outside a function's counted code or
+  of a file changed since the map's commit, survives, its mutation to name
+  the case that catches it with `snapshots: true`. Name the case it's for,
   as with any mutation; no lowering test of its form is needed. Of other
   code, the runner judges the corpus by what the JS does alone
   (`RUST_JS_SNAPSHOTS=ignore`), so a form-only mutation there still needs a
@@ -750,7 +753,7 @@ checked:
 | A mutant's serde, shipped-crates and bound-maps tests (145 mutations) | Each builds its native program again in the mutant's own target, its wrapper `include!`ing a file beside it in a fixture there, so the path, and the kept build's key, is the mutant's; a serde build links serde's rlibs. The corpus's wrappers are kept by content in the checkout's target (#875) | The wrapper and the files it includes written to a `contentDirectory` of the checkout's, as `runNative` writes the corpus's |
 | `bun scripts/mutations.ts --changed=origin/main` of a large change | More than five minutes even in three shards, so it's left to CI | Shards picked to fit, by each mutation's usual time: CI's shards are dealt by it now (ADR 0093, amended), their count still by how many |
 | The nightly's wall, 2 h 48 min (nightly 43650311159, 2026-11-15) | 91 jobs, 2,231 runner-minutes against the Free plan's 20 at once, so from minute 30 to 90 every slot is held and jobs wait: the mutation shards started 16 to 45 min in. GitHub's start, about 4 h after the cron's 19:00 UTC, is outside our control | Fewer runner-minutes, below: the five longest jobs are the next five rows |
-| The nightly's mutations, 16 shards, 13–136 min each | 67% of the night's runner-minutes. Of the 10,410 mutations timed, the 210 whose site isn't in a function (`site`) are built alone, 600 of the 2,012 build-minutes; about two a shard aren't caught by their tests and fall back to every corpus snapshot, 15 min each, without a test map on CI (`lent-string-iterator-kept`'s 709 s). Dealt by time since ADR 0093's amendment | A batch that can hold a site outside a function; each fallback given its reaching row (#1953) |
+| The nightly's mutations, 16 shards, 13–136 min each | 67% of the night's runner-minutes. Of the 10,410 mutations timed, the 210 whose site isn't in a function (`site`) are built alone, 600 of the 2,012 build-minutes; about two a shard aren't caught by their tests and fell back to every corpus snapshot, 15 min each, without a test map on CI (`lent-string-iterator-kept`'s 709 s), each now judged by the cases CI's `test-map` job's map says reach it (ADR 0093, amended). Dealt by time since ADR 0093's amendment | A batch that can hold a site outside a function |
 | The nightly's metamorphic net, 3 machines, ~104 min each | 853 cases a machine, a median of 27 s each, 405 min summed in 4 parts: each rewrite of each case built natively again every night, as nothing native is kept between CI runs. Locally the corpus's part 1/8 is 236 s with the native and verified-run stores cold, 44.8 s with the natives warm, 5.6 s with both (Mac mini, load 2.0) | Kept since ADR 0567's amendment: a native program's run by its build's key beside what the build read, a few MB that CI caches, so a rewrite unchanged since the last night is neither built nor run. To measure: the first night with them |
 | The nightly's small Crater 4 of 4, 43 min | 2,545 s of one step, against 11–15 min for the other three: httparse's 363 tests (the row above) | The row above |
 | The suite's shards, `check / test`, 24–28 min of the nightly and 15–18 of a push | The nightly's files beside the rest (the metamorphic sample 648 s, the iterator matrix's 423 s); of a push, the corpus's parts are each shard's longest leg (check 43740041639: the rest of shard 2 ended at 424 s, its corpus parts 172–325 s each, all their natives built cold) | The native outcomes kept, two rows up (ADR 0567 amended): to measure, the first push's check with them |

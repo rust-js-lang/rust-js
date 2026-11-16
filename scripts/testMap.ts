@@ -10,6 +10,10 @@
 //                              none where any worktree of the machine recorded it
 //   bun run test-map --keep    and keep what it recorded, to see why a test runs always
 //   bun run test-map pick      what the working tree's change picks, and why
+//   bun scripts/testMap.ts ensure
+//                              a map of HEAD or an ancestor of it kept, or HEAD's
+//                              recorded: CI's mutation jobs, whose snapshot judge
+//                              places each site by it (ADR 0093, amended)
 //
 // Why a skip is sound (ADR 1101): a test whose compiles ran none of the
 // functions a change touches runs the same compiler code after it, so ends
@@ -37,7 +41,7 @@
 // of those of HEAD's ancestors, the nearest is read. One whose commit isn't
 // HEAD's ancestor, or of another version or toolchain, is never read.
 
-import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync, symlinkSync, utimesSync, writeFileSync } from "node:fs";
+import { appendFileSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync, symlinkSync, utimesSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 
 import { bytesOf, evict, freeBytes } from "../tooling/bounded.js";
@@ -389,9 +393,22 @@ export function nearestMap(store: string, checkout: string, toolchain: string): 
 
 /** The map of HEAD or its nearest ancestor, and the working tree's changes
  * since its commit, new files' too; or why there's none. */
+/** What `headMap` says where there's no map, which a caller that needs one
+ * tells apart from a site it can't place. */
+export const noMap = "no test map of HEAD or an ancestor of it on this machine";
+
 function headMap(): { map: TestMap; changes: Change[] } | string {
+  headMapRead ??= readHeadMap();
+  return headMapRead;
+}
+
+/** `headMap`'s, read once a process: a mutation run asks it of each
+ * survivor, and test/mutations.test.ts of every mutation. */
+let headMapRead: ReturnType<typeof readHeadMap> | undefined;
+
+function readHeadMap(): { map: TestMap; changes: Change[] } | string {
   const map = nearestMap(mapStore, root, toolchainOf());
-  if (map === undefined) return "no test map of HEAD or an ancestor of it on this machine: `bun run test-map` records one";
+  if (map === undefined) return `${noMap}: \`bun run test-map\` records one`;
   const diff = git(["diff", "-U0", "--no-color", "--no-ext-diff", "--no-renames", map.commit]).out;
   const untracked = git(["ls-files", "--others", "--exclude-standard"]).out.split("\n").filter(Boolean);
   return { map, changes: [...hunksOf(diff), ...untracked.map((file): Change => ({ file, hunks: "new" }))] };
@@ -412,46 +429,20 @@ export function pickChange(files: string[], cases: string[]): Picked {
   return said(found.map, pick(found.map, found.changes, files, cases));
 }
 
-/** Lines `first` to `last` of a file as the working tree has it, as lines
- * of the map's commit, by `change`, what the working tree changes of it:
- * each line the change wrote is left out, as the change touches what holds
- * it already; each other line moved by what the change wrote before it. */
-export function linesAtCommit(change: Change | undefined, first: number, last: number): Hunk[] {
-  if (change?.hunks === "new") return [];
-  const lines: Hunk[] = [];
-  for (let line = first; line <= last; line++) {
-    let offset = 0;
-    let at: number | undefined = line;
-    for (const [from, count, added = []] of change?.hunks ?? []) {
-      // Where what it writes starts in the working tree's file: past `from`
-      // where it only adds (`-U0`'s `-from,0`), at it where it replaces.
-      const start = (count === 0 ? from + 1 : from) + offset;
-      if (line < start) break;
-      if (line < start + added.length) {
-        at = undefined;
-        break;
-      }
-      offset += added.length - count;
-    }
-    if (at !== undefined) lines.push([line - offset, 1]);
-  }
-  return lines;
-}
-
-/** The corpus's cases, of `cases`, a change to lines `first` to `last` of
- * `file`, as the working tree has it, can affect: by the newest map of an
- * ancestor of HEAD, with the working tree's changes since its commit, as
- * plain `check:fast` picks them; or `all`, and why, where it can't say.
- * A mutation's site, whose cases' snapshots judge it (scripts/mutations.ts,
- * #864). */
+/** The corpus cases whose compiles ran `file`'s lines `first` to `last`,
+ * a mutation's site, by the map of HEAD or its nearest ancestor: the
+ * mutation runner's snapshot judge's (#864). A derived fact, as of the map's
+ * commit: a site whose file changed since can't be placed by it, nor one
+ * outside a function's counted code, and is said so, `all`, never a stale
+ * answer (ADR 0093, amended). What else changed since, another file's
+ * code, leaves the cases the map says reach the site's as they were. */
 export function casesReaching(file: string, first: number, last: number, cases: string[]): Picked {
   const found = headMap();
   if (typeof found === "string") return { kind: "all", why: found };
   const { map, changes } = found;
-  const of = changes.find((change) => change.file === file);
-  if (of?.hunks === "new") return said(map, { kind: "all", why: `${file} is new since the map's commit` });
-  const site: Change = { file, hunks: linesAtCommit(of, first, last) };
-  return said(map, pick(map, [...changes, site], [], cases));
+  if (changes.some((change) => change.file === file)) return said(map, { kind: "all", why: `${file} changed since the map's commit` });
+  const site: Change = { file, hunks: [[first, last - first + 1]] };
+  return said(map, pick(map, [site], [], cases));
 }
 
 /** The toolchain's `llvm-profdata` and `llvm-cov`, rustup's
@@ -758,7 +749,16 @@ async function record(keep: boolean) {
 if (import.meta.main) {
   const [command] = process.argv.slice(2);
   if (command === undefined || command === "record" || command === "--keep") await record(process.argv.includes("--keep"));
-  else if (command === "pick") {
+  else if (command === "ensure") {
+    // CI's: a map of the nearest ancestor its cache kept serves, as one
+    // does a worktree's check (`headMap`, the changes since its commit
+    // can't be placed by it); HEAD's recorded only where there's none.
+    const kept = nearestMap(mapStore, root, toolchainOf());
+    const recorded = kept === undefined;
+    if (kept) console.log(`the test map of ${kept.commit.slice(0, 9)}, an ancestor of HEAD, serves`);
+    else await record(false);
+    if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, `recorded=${recorded}\n`);
+  } else if (command === "pick") {
     const cases = readdirSync(join(root, "test", "corpus")).filter((name) => name.endsWith(".rs"));
     const picked = pickChange(mappedFiles(), cases);
     console.log(picked.why);
@@ -767,7 +767,7 @@ if (import.meta.main) {
       console.log(`cases (${picked.cases.length} of ${cases.length}), with std's iterator structs (${picked.forms.length})`);
     }
   } else {
-    console.error("usage: bun run test-map [record | pick]");
+    console.error("usage: bun run test-map [record | pick | ensure]");
     process.exit(2);
   }
 }

@@ -352,10 +352,58 @@ jobs:
           fi
           echo "all $SEEDS seeds from $START ran, each once"
 
+  # The test map each shard's snapshot judge places a mutation's site by
+  # (ADR 0093, amended): which corpus cases ran which of the compiler's
+  # functions. Of a run of every mutation, the nightly's, HEAD's, recorded;
+  # of a change's, the nearest ancestor's the cache kept, HEAD's recorded
+  # only where there's none (`ensure`): a site whose file changed since its
+  # commit it can't place, and says so. Given to each shard; without one a
+  # shard whose judge needs it fails.
+  test-map:
+    if: inputs.mutations
+    name: test map
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/rustc-tests-setup
+        with:
+          build: 'false'
+      - uses: actions/cache/restore@v6
+        with:
+          path: .cache/test-maps
+          key: test-map-${{ runner.os }}-${{ hashFiles('rust-toolchain.toml') }}-${{ github.run_id }}
+          restore-keys: test-map-${{ runner.os }}-${{ hashFiles('rust-toolchain.toml') }}-
+      - name: The map, kept or recorded
+        id: map
+        env:
+          EVERY: ${{ inputs.mutation_args == '' }}
+        run: |
+          if [ "$EVERY" = "true" ]; then
+            bun scripts/testMap.ts record
+            echo "recorded=true" >> "$GITHUB_OUTPUT"
+          else
+            bun scripts/testMap.ts ensure
+          fi
+      - if: steps.map.outputs.recorded == 'true'
+        uses: actions/cache/save@v6
+        with:
+          path: .cache/test-maps
+          key: test-map-${{ runner.os }}-${{ hashFiles('rust-toolchain.toml') }}-${{ github.run_id }}
+      - uses: actions/upload-artifact@v7
+        with:
+          name: test-map
+          path: .cache/test-maps
+          include-hidden-files: true
+          retention-days: 3
+
   # Known bugs, each put back into the compiler, one at a time: the tests
   # named for each must fail against it, and pass as the compiler is.
   mutations:
     if: inputs.mutations
+    needs: test-map
     name: mutations (${{ matrix.shard }}/${{ inputs.mutation_shards }})
     runs-on: ubuntu-latest
     timeout-minutes: 300
@@ -388,6 +436,12 @@ jobs:
           restore-keys: mutants-${{ runner.os }}-
       # The corpus ships each case through Vite too.
       - run: bun install --frozen-lockfile
+      # The test map its snapshot judge places each site by, the
+      # `test-map` job's.
+      - uses: actions/download-artifact@v8
+        with:
+          name: test-map
+          path: .cache/test-maps
       # What each mutation took the nightly `plan` picked, each shard of
       # this run given the same, so each deals the same (scripts/shard.ts's
       # `balanced`): dealt in turn, one shard of the nightly's 16 took 411

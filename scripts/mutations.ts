@@ -24,7 +24,7 @@ import { run, runSync, stopped, type Exit } from "../test/child";
 import { corpusHarness, corpusMutantCases, corpusMutants, mutantOf } from "../test/corpus-mutants";
 import { installPackages } from "../test/packages-of";
 import { caseParts, compilerBuilds, drivesBrowser, machine, memoryBudget, shardArg, timedShard } from "./shard";
-import { casesReaching } from "./testMap";
+import { casesReaching, noMap } from "./testMap";
 import { elapsed, shown, timed } from "./timing";
 import { passed, summary } from "./test-summary";
 import { acquire, holdLease, ownShare } from "./leases";
@@ -1169,7 +1169,14 @@ async function main() {
   const snapshotsJudge = async (mutation: Mutation, mutant: string): Promise<{ caught: boolean; said: string; output: string }> => {
     const lines = siteLines(mutation, read(mutation.file));
     const reached = lines ? casesReaching(mutation.file, lines[0], lines[1], caseNames) : { kind: "all" as const, why: "its site isn't in its file once" };
-    const chosen = reached.kind === "picked" ? reached.cases : caseNames;
+    // Never every case: without a map the run fails (`noMap`, CI's
+    // `test-map` job keeps one), and a site the map can't place is the
+    // mutation's to name the case that catches it, `snapshots: true`.
+    if (reached.kind === "all") {
+      if (reached.why.startsWith(noMap)) throw new Error(`${mutation.name}: its tests passed, and ${reached.why}; CI's \`test-map\` job keeps one`);
+      return { caught: false, said: `${reached.why}: name the corpus case that catches it in its tests, \`snapshots: true\``, output: "" };
+    }
+    const chosen = reached.cases;
     if (chosen.length === 0) return { caught: false, said: `${reached.why}: no case reaches it`, output: "" };
     const named = (names: string[]) => `^(${names.map((name) => name.replaceAll(".", "\\.")).join("|")})$`;
     const parts = Math.max(1, Math.min(caseParts(machine().cores), Math.ceil(chosen.length / 50)));
@@ -1180,7 +1187,7 @@ async function main() {
     );
     const output = ran.map((r) => r.output).join("\n");
     const failed = [...output.matchAll(/^\(fail\) (\S+\.rs)\b/gm)].map((m) => m[1]);
-    const of = `${chosen.length} cases${reached.kind === "picked" ? "" : `, every one (${reached.why})`}`;
+    const of = `${chosen.length} cases`;
     if (failed.length === 0) return { caught: false, said: `of ${of}, each is its snapshot`, output };
     // Each that caught it is its snapshot as the compiler is.
     const control = await beside(() => test(["test/corpus.test.ts", "-t", named(failed)], unmutated, "alone", { bail: false }));

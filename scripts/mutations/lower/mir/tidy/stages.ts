@@ -829,6 +829,7 @@ export const mutations: Mutation[] = [
     find: '            // (generated program 2900000355; #247).\n            pass("never taken", |b, _| bottom_up(b, &mut never_taken)),\n',
     replace: "            // (generated program 2900000355; #247).\n",
     tests: ["test/corpus.test.ts", "-t", "^empty_if_let_in_a_loop.rs$"],
+    snapshots: true,
   },
   {
     name: "names-empty-if-kept",
@@ -839,6 +840,7 @@ export const mutations: Mutation[] = [
     replace:
       "                js::statement_lists(b, &mut |s| unwrapped_values(s))\n            }),\n",
     tests: ["test/corpus.test.ts", "-t", "^loop_branch_emptied.rs$"],
+    snapshots: true,
   },
   {
     name: "written-empty-if-kept",
@@ -849,6 +851,7 @@ export const mutations: Mutation[] = [
     replace:
       '            pass("tried first", |b, _| js::statement_lists(b, &mut tried_first)),\n',
     tests: ["test/corpus.test.ts", "-t", "^loop_branch_emptied.rs$"],
+    snapshots: true,
   },
   {
     name: "unwrap-tested-not",

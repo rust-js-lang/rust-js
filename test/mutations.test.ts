@@ -25,6 +25,7 @@ import {
   unmatched,
   unparsed,
 } from "../scripts/mutations";
+import { casesReaching, noMap } from "../scripts/testMap";
 import { underLoad } from "../scripts/timing";
 import { run as runChild, type Exit } from "./child";
 import { corpusHarness, corpusMutantCases, corpusMutants, mutantOf } from "./corpus-mutants";
@@ -418,4 +419,27 @@ test("a mutant whose tests outgrew their memory is caught", () => {
   const exit = { code: null, signal: "SIGKILL", timedOut: false, overflowed: false, overgrown: true, stdout: "", stderr: "", bytes: { stdout: Buffer.from(""), stderr: Buffer.from("") } };
   expect(judge(exit, "")).toBe("caught");
   expect(judge({ ...exit, overgrown: false }, "")).toBe("inconclusive");
+});
+
+// A mutation of how the JS reads that only the corpus's native runs name,
+// which no run catches, is judged by the snapshots of the cases the test
+// map says reach its site (#864); one whose site the map can't place, one
+// outside a function's counted code or of a file changed since the map's
+// commit, would be judged by none, so it names the case that catches it,
+// `snapshots: true` (ADR 0093, amended). Where this machine has no map the
+// runner's judge fails the run instead.
+test("a readability owner's mutation the test map can't place names its case", () => {
+  const cases = readdirSync(join(root, "test", "corpus")).filter((name) => name.endsWith(".rs"));
+  const probe = casesReaching("src/main.rs", 1, 1, []);
+  if (probe.kind === "all" && probe.why.includes(noMap)) {
+    console.log(`skipped: ${probe.why}`);
+    return;
+  }
+  const judged = mutations.filter((m) => ofReadabilityOwner(m.file) && m.snapshots !== true && m.tests?.[0] === "test/corpus.test.ts");
+  const refused = judged.flatMap((m) => {
+    const lines = siteLines(m, readFileSync(join(root, m.file), "utf8"));
+    const reached = lines ? casesReaching(m.file, lines[0], lines[1], cases) : { kind: "all" as const, why: "its site isn't in its file once" };
+    return reached.kind === "all" ? [`${m.name}: ${reached.why}`] : [];
+  });
+  expect(refused).toEqual([]);
 });

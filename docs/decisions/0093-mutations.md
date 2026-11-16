@@ -648,3 +648,32 @@ above: a survivor justifies retiring code only of a run that compares the
 corpus' snapshots, the mutation with `snapshots: true`, or the change
 itself through `check:fast --all`. The runner says it of each survivor
 whose run didn't, "snapshots not compared".
+
+## Amendment: the snapshot judge places each site by a test map, CI's too, never every case (2026-11-16)
+
+A mutation of how the JS reads whose tests miss it is judged by the
+snapshots of the cases the test map says reach its site (#864). CI kept no
+map, so each such survivor was judged by every case: the nightly's
+`finally-holds-what-may-throw`, "of 2553 cases, every one (no test map of
+HEAD or an ancestor of it on this machine)", about 15 minutes, some two a
+shard (nightly 43650311159). Now, the lead for the user:
+
+- **CI has a map.** rustc-tests.yml's `test-map` job, which every mutation
+  shard needs: of a run of every mutation, the nightly's, HEAD's recorded
+  (`bun scripts/testMap.ts record`) and cached by its run; of a change's,
+  the nearest ancestor's the cache kept, HEAD's recorded only where there's
+  none (`ensure`). Each shard downloads it.
+- **No map fails the run.** The judge throws, naming CI's job, where the
+  machine has none; it never falls back to every case.
+- **A site the map can't place is a survivor that says what to write.** One
+  outside a function's counted code, or of a file changed since the map's
+  commit (`casesReaching`: a derived fact of its commit, never a stale
+  answer), is judged by no case: its mutation names the corpus case that
+  catches it, `snapshots: true`. test/mutations.test.ts refuses, where the
+  machine has a map, each readability owner's mutation named only by the
+  corpus's native runs whose site the map can't place: three of 1,935,
+  tidy stages' `never taken` passes, each now `snapshots: true`.
+
+`finally-holds-what-may-throw`, judged by the map of its commit on the
+Mac mini: caught by six cases' snapshots of the 1,099 that reach its site,
+10 s of tests.
