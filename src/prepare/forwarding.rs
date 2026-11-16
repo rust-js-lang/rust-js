@@ -362,14 +362,14 @@ pub(super) fn members(module: &mut js::Module) {
             if let Some(member) = member_called(e, value.word()).map(str::to_string)
                 && let ExprKind::Call(callee, _) = &mut e.kind
             {
-                **callee = Expr::var(&member);
+                **callee = Expr::module(&member);
             }
         });
         let js::Item::Const(constant) = &module.items[at] else {
             unreachable!("found")
         };
         let pattern = (members.iter())
-            .map(|member| (member.clone(), js::Pattern::Name(member.into()), None))
+            .map(|member| (member.clone(), js::Pattern::Name(js::Name::module(member)), None))
             .collect();
         let destructure = StmtKind::Destructure {
             pattern: js::Pattern::Object(pattern, None),

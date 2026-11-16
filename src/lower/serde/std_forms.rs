@@ -185,7 +185,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         &mut self,
         form: StdForm<'tcx>,
         value: Expr,
-        json: &str,
+        json: &js::Name,
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<()> {
@@ -374,7 +374,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let type_name = self.tcx.item_name(adt.did()).to_string();
                 let variants: Vec<(&ty::VariantDef, Attrs)> = variants;
                 self.read_tagged(
-                    json.word(),
+                    &json,
                     &Tagging::External,
                     &variants,
                     adt,

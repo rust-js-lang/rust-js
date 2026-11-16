@@ -566,3 +566,23 @@ placeholders for no name, a dictionary's and a variant tag's module
 `HELD_SOME`, `value`), and parameters a pass spells itself (`it`, `lazy`,
 `cycle`, `location`). Tidy's and preparation's are m3-max's and ioCK's,
 the labels the program writes taking the form approved for them.
+
+## Names are ids, step 1 at creation across the whole check (2026-11-16)
+
+The corpus alone reached too little of the compiler: the flip, judged
+over the guide, the tests and React's port, stopped on a label tidy made
+of its word, `getTag`, beside the program's `Name::label` of it. So
+step 1's measure is the creation of a name of an item's from a word over
+everything a push checks: `check:fast --all`, std, `bun run docs`, React's
+port and alien-signals (the lead's decision). It counted 9,100 such
+creations at 217 sites, which are none now but in unit tests, whose trees
+are built of words alike and compare so: serde's writers and readers carry
+their `json`, `content` and codecs' names as names; an import's local, a
+namespace's, a held module read, a test's registration and a module's held
+`const` are the module's (`Name::module`); a labeled `switch`'s label is
+the program's (`Name::label`); a variable written back is the variable's,
+its reads its `Name`; and what a pass spells itself, a left-out field's
+`_`, a named function expression's property, a `Deref`'s parameter, an
+`Error`'s held field, a dynamic import's `m`, `peekable`, `it`, `m` and
+`drop`, is made once and cloned. Names still compare by word: the corpus,
+the snapshots, std and the port are as they were.

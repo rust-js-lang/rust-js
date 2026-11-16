@@ -217,9 +217,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// same read before or after anything else: a `useState` value, a
     /// parameter, and elements of them.
     pub(super) fn reads_unchanging(&self, value: &Expr, out: &[Stmt]) -> bool {
+        if !value.reads_only_vars() {
+            return false;
+        }
+        // Each variable it reads, by its own name, of what reads only them.
         let mut vars = Vec::new();
-        value.visit_vars(&mut |var| vars.push(var));
-        value.reads_only_vars() && vars.into_iter().all(|var| self.reads_alike(&Expr::var(var), out))
+        value.clone().each_mut(&mut |e| {
+            if let js::ExprKind::Var(var) = &e.kind {
+                vars.push(var.clone());
+            }
+        });
+        vars.into_iter().all(|var| self.reads_alike(&Expr::var(var), out))
     }
 
     fn capture_jsx_input(&mut self, base: Base<'_>, value: &mut Expr, out: &mut Vec<Stmt>) {

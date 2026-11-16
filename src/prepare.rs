@@ -498,7 +498,7 @@ fn left_out(body: &mut [Stmt]) {
         } = &mut body[i].kind
             && passes::applies(Pass::LeftOutFields)
         {
-            fields[k].1 = js::Pattern::Name("_".into());
+            fields[k].1 = js::Pattern::Name(js::Name::declared("_".to_string()));
         }
     }
 }
@@ -519,7 +519,7 @@ fn left_out_params(params: &mut [js::Pattern], body: &[Stmt]) {
         if let js::Pattern::Object(fields, _) = &mut params[i]
             && passes::applies(Pass::LeftOutFields)
         {
-            fields[k].1 = js::Pattern::Name("_".into());
+            fields[k].1 = js::Pattern::Name(js::Name::declared("_".to_string()));
         }
     }
 }

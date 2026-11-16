@@ -118,8 +118,8 @@ pub(super) fn super_of_fields(
             ExprKind::Member(_, key) if key == MESSAGE => message = Some(value),
             ExprKind::Member(_, key) if key == CAUSE => cause = Some(value),
             ExprKind::Member(_, key) if value.has_effects() => {
-                let held = fresh(&mut names, key);
-                before.push(StmtKind::Const(held.as_str().into(), value).at(span));
+                let held = js::Name::declared(fresh(&mut names, key));
+                before.push(StmtKind::Const(held.clone(), value).at(span));
                 after.push(StmtKind::Assign(target, Expr::var(&held)).at(span));
             }
             _ => after.push(StmtKind::Assign(target, value).at(span)),

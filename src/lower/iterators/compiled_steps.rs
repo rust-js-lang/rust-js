@@ -150,13 +150,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     ty::Adt(_, args) => args.type_at(0),
                     _ => unreachable!("a `Peekable`"),
                 };
+                let peekable = js::Name::declared("peekable".to_string());
                 Some(match self.iterator_evidence(source, iterator) {
                     Some(dictionary) => Expr::arrow(
-                        vec!["peekable".into()],
+                        vec![peekable.clone().into()],
                         vec![
                             StmtKind::Return(Some(Expr::call_helper(
                                 "$peekableHint",
-                                vec![Expr::var("peekable"), dictionary],
+                                vec![Expr::var(&peekable), dictionary],
                             )))
                             .at(js::Span::NONE),
                         ],
@@ -226,7 +227,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Not where std's is compiled, `steps.advance` (ADR 0913).
         let advance = advance.filter(|_| !self.compiled_step(ty, iterator, "advance_by"));
         if let Some((helper, given)) = advance {
-            let mut args = vec![Expr::var("it"), Expr::var("m"), Expr::var("drop")];
+            let [it, m, drop] = ["it", "m", "drop"].map(|word| js::Name::declared(word.to_string()));
+            let mut args = vec![Expr::var(&it), Expr::var(&m), Expr::var(&drop)];
             args.extend(given);
             // Its trailing `undefined`s left off, as a call writes none.
             while args.len() > 3
@@ -238,7 +240,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 args.pop();
             }
             let advance = Expr::arrow(
-                vec!["it".into(), "m".into(), "drop".into()],
+                vec![it.into(), m.into(), drop.into()],
                 vec![StmtKind::Return(Some(Expr::call_helper(helper, args))).at(js::Span::NONE)],
             );
             props.push(crate::js::Prop::Field("advanceBy".into(), advance));

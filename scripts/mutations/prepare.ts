@@ -369,7 +369,7 @@ export const mutations: Mutation[] = [
     name: "left-out-named-field",
     breaks: "the one field a rest's pattern leaves out keeps its `_field` name, where a person writes `_`",
     file: "src/prepare.rs",
-    find: "            fields[k].1 = js::Pattern::Name(\"_\".into());\n        }\n    }\n}\n\n/// A function's parameters",
+    find: "            fields[k].1 = js::Pattern::Name(js::Name::declared(\"_\".to_string()));\n        }\n    }\n}\n\n/// A function's parameters",
     replace: "            let _ = (fields, k);\n        }\n    }\n}\n\n/// A function's parameters",
     tests: ["test/jsx-props.test.ts", "-t", "flattened field is the rest"],
   },

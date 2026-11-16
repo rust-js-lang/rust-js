@@ -686,8 +686,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             let (method, param) = if deref { ("deref", "x") } else { ("deref_mut", "cell") };
             let method = crate::lower::recognition::trait_method(self.tcx, tr.def_id, method);
+            let param = js::Name::declared(param.to_string());
             let f = Expr::arrow(
-                vec![param.into()],
+                vec![param.clone().into()],
                 vec![StmtKind::Return(Some(Expr::var(param))).at(js::Span::NONE)],
             );
             let mut props = match deref {

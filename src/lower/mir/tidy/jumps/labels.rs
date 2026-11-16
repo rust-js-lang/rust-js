@@ -786,7 +786,7 @@ pub(in crate::lower::mir::tidy) fn labeled_switches(body: &mut [Stmt]) {
             if let Some(label) = left_by(&mut stmts[i], leaving, returned.as_ref()) {
                 let switch = std::mem::replace(&mut stmts[i], StmtKind::Comments.at(js::Span::NONE));
                 let span = switch.span;
-                stmts[i] = StmtKind::Labeled(label.into(), vec![switch]).at(span);
+                stmts[i] = StmtKind::Labeled(js::Name::label(&label), vec![switch]).at(span);
             }
         }
         for i in 0..n {

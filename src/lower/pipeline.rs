@@ -1064,7 +1064,7 @@ pub fn lower_crate<'tcx>(
                 (module_held.iter())
                     .filter(|held| held.through.is_none())
                     .map(|held| js::Const {
-                        name: held.name.clone().into(),
+                        name: js::Name::module(&held.name),
                         value: super::path_read(&held.path, &required, |export| {
                             names.expect("its imports")[export].clone()
                         }),

@@ -377,7 +377,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut params = vec![value.clone().into(), json.clone().into()];
         params.extend(self.codec_params(args, "write"));
         let mut body = Vec::new();
-        self.write_adt(Expr::var(&value), json.word(), adt, args, span, &mut body)?;
+        self.write_adt(Expr::var(&value), &json, adt, args, span, &mut body)?;
         let js_span = self.js_span(span);
         Ok(js::Function {
             name: js::Name::module(&self.krate.fns[&method].name),
@@ -422,12 +422,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let (item, json) = (self.fresh(Role::Value), self.fresh(Role::Json));
         let mut body = Vec::new();
-        self.write_json(Expr::var(&item), json.word(), ty, span, &mut body)?;
+        self.write_json(Expr::var(&item), &json, ty, span, &mut body)?;
         Ok(Expr::arrow(vec![item.into(), json.into()], body))
     }
 
     /// `json.method(args)` as a statement.
-    fn emit(&self, json: &str, method: &str, args: Vec<Expr>, out: &mut Vec<Stmt>) {
+    fn emit(&self, json: &js::Name, method: &str, args: Vec<Expr>, out: &mut Vec<Stmt>) {
         let call = Expr::call(Expr::member(Expr::var(json), method), args);
         out.push(StmtKind::Expr(call).at(js::Span::NONE));
     }
@@ -436,7 +436,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn write_json(
         &mut self,
         value: Expr,
-        json: &str,
+        json: &js::Name,
         ty: Ty<'tcx>,
         span: Span,
         out: &mut Vec<Stmt>,
@@ -595,7 +595,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     fn write_items(
         &mut self,
         items: Expr,
-        json: &str,
+        json: &js::Name,
         begin: &str,
         item_ty: Ty<'tcx>,
         span: Span,
@@ -638,7 +638,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     fn write_adt(
         &mut self,
         value: Expr,
-        json: &str,
+        json: &js::Name,
         adt: ty::AdtDef<'tcx>,
         args: ty::GenericArgsRef<'tcx>,
         span: Span,
@@ -775,7 +775,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(written)
     }
 
-    fn write_struct_tag(&self, json: &str, adt: ty::AdtDef<'tcx>, attrs: &Attrs, out: &mut Vec<Stmt>) {
+    fn write_struct_tag(&self, json: &js::Name, adt: ty::AdtDef<'tcx>, attrs: &Attrs, out: &mut Vec<Stmt>) {
         if let Some(tag) = &attrs.tag {
             let name = attrs
                 .rename
@@ -788,7 +788,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     fn write_tuple_fields(
         &mut self,
-        json: &str,
+        json: &js::Name,
         variant: &ty::VariantDef,
         fields: &[(Expr, Ty<'tcx>)],
         span: Span,
@@ -825,7 +825,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     fn write_tagged_payload(
         &mut self,
         value: Expr,
-        json: &str,
+        json: &js::Name,
         ty: Ty<'tcx>,
         within: String,
         opening: Vec<Stmt>,
@@ -923,7 +923,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A struct's (or a struct variant's) fields, inside its `{ .. }`.
     fn write_fields(
         &mut self,
-        json: &str,
+        json: &js::Name,
         variant: &ty::VariantDef,
         fields: &[(Expr, Ty<'tcx>)],
         rule: Option<Rule>,
@@ -1062,7 +1062,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         &mut self,
         codec: Option<Expr>,
         value: Expr,
-        json: &str,
+        json: &js::Name,
         ty: Ty<'tcx>,
         span: Span,
         out: &mut Vec<Stmt>,
@@ -1141,7 +1141,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     #[allow(clippy::too_many_arguments)]
     fn write_variant(
         &mut self,
-        json: &str,
+        json: &js::Name,
         tagging: &Tagging,
         name: &str,
         variant: &ty::VariantDef,

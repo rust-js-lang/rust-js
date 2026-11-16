@@ -118,6 +118,6 @@ fn named_as(value: &mut Expr, property: &str) {
         && !crate::names::kept_word(property)
         && js::mentions_in(&function.body, property) == 0
     {
-        function.name = property.into();
+        function.name = js::Name::declared(property.to_string());
     }
 }

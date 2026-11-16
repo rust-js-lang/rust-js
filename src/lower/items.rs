@@ -153,7 +153,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let namespace = (self.krate.foreign.item(method)?.from.clone(), js::NAMESPACE.to_string());
             let local = self.krate.imports[&self.module].get(&namespace)?.clone();
             (self.dependencies.borrow_mut().package_uses).insert((self.module, namespace));
-            return Some(Expr::var(&local).item());
+            return Some(Expr::module(&local).item());
         };
         let module = self.tcx.parent_module_from_def_id(adt);
         self.dependencies.borrow_mut().reexporters.insert((self.module, module));
@@ -216,7 +216,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let local = local.clone();
                 self.read_import_of(def_id, &local);
                 (self.dependencies.borrow_mut().package_uses).insert((self.module, namespace));
-                return Expr::member(Expr::var(&local), export).item();
+                return Expr::member(Expr::module(&local), export).item();
             }
         }
         match copy {
@@ -388,7 +388,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return self.js_ref(path);
         };
         match &read.holder {
-            Holder::Module(module) if *module == self.module => Expr::var(&read.name),
+            Holder::Module(module) if *module == self.module => Expr::module(&read.name),
             Holder::Module(module) => {
                 let default = read.import == "default";
                 (self.dependencies.borrow_mut().held).insert((
@@ -412,7 +412,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .borrow_mut()
                     .package_uses
                     .insert((self.module, export));
-                Expr::var(&name)
+                Expr::module(&name)
             }
         }
     }

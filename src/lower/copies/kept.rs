@@ -120,7 +120,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         &self,
         body: &mir::Body<'tcx>,
         parts: &IndexMap<mir::Local, mir::Local>,
-        name_of: &dyn Fn(mir::Local) -> String,
+        name_of: &dyn Fn(mir::Local) -> js::Name,
     ) -> R<Vec<js::Stmt>> {
         let copies = self.kept_copies(body);
         let copied = |param: &mir::Local| copies.at_start.contains(param) || copies.at_moves.contains(param);
@@ -130,7 +130,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let name = name_of(local);
             let decl = &body.local_decls[local];
             let copy = self.kept_copy(Expr::var(&name), decl.ty, decl.source_info.span)?;
-            if !name.is_empty() && copy.kind != Expr::var(&name).kind {
+            if !name.word().is_empty() && copy.kind != Expr::var(&name).kind {
                 out.push(js::StmtKind::Assign(Expr::var(&name), copy).at(js::Span::NONE));
             }
         }

@@ -437,7 +437,7 @@ struct FnCx<'a, 'tcx> {
     given: Given<'tcx>,
     /// In a generic type's derived `serialize` or `deserialize` (ADR
     /// 0080): each type parameter, and the parameter that writes or reads it.
-    codecs: Vec<(Ty<'tcx>, String)>,
+    codecs: Vec<(Ty<'tcx>, js::Name)>,
     /// The body being lowered: its own, or a nested one's (`lowered_in`).
     frame: BodyFrame<'a, 'tcx>,
     /// The module receiving this function and its recorded dependencies.
@@ -1098,7 +1098,7 @@ fn path_read(path: &str, required: &IndexSet<Export>, import: impl FnOnce(&Expor
     match bindings::js_import(path) {
         Some((export, rest)) if required.contains(&export) => bindings::read_path(bindings::required(&export), rest),
         // The import's name, which its declaration declares.
-        Some((export, rest)) => rooted(&format!("{}{rest}", import(&export)), |word| Expr::var(word)),
+        Some((export, rest)) => rooted(&format!("{}{rest}", import(&export)), Expr::module),
         None => rooted(path, Expr::global),
     }
 }

@@ -124,7 +124,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let json = self.fresh(Role::Json);
         let mut params = vec![json.clone().into()];
         params.extend(self.codec_params(args, "read"));
-        let value = self.read_adt(json.word(), adt, args, span)?;
+        let value = self.read_adt(&json, adt, args, span)?;
         let js_span = self.js_span(span);
         Ok(js::Function {
             name: js::Name::module(&self.krate.fns[&method].name),
@@ -246,10 +246,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // 0404), as JSON's `set` makes a `Set`.
                 let class = self.map_class(true, self.is_sorted(ty), (Some(item), None), span)?;
                 if !matches!(&class.kind, js::ExprKind::Var(name) if name.is("Set")) {
-                    let items = Expr::call(Expr::call(reader("vec"), vec![read]), vec![Expr::var("json")]);
+                    let json = js::Name::declared("json".to_string());
+                    let items = Expr::call(Expr::call(reader("vec"), vec![read]), vec![Expr::var(&json)]);
                     let made = Expr::new_(class, vec![items]);
                     return Ok(Expr::arrow(
-                        vec!["json".into()],
+                        vec![json.into()],
                         vec![StmtKind::Return(Some(made)).at(js::Span::NONE)],
                     ));
                 }
@@ -312,7 +313,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// derived `deserialize` reads it.
     pub(super) fn read_adt(
         &mut self,
-        json: &str,
+        json: &js::Name,
         adt: ty::AdtDef<'tcx>,
         args: ty::GenericArgsRef<'tcx>,
         span: Span,
@@ -398,7 +399,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// others are their defaults.
     fn read_transparent(
         &mut self,
-        json: &str,
+        json: &js::Name,
         adt: ty::AdtDef<'tcx>,
         variant: &ty::VariantDef,
         args: ty::GenericArgsRef<'tcx>,
@@ -478,7 +479,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             let read = self.field_reader(field.did, &attrs, field_ty, span)?;
             let missing = missing.map(|value| {
-                let params = defaults.iter().map(|d| Pattern::from(d.word())).collect();
+                let params = defaults.iter().map(|d| Pattern::Name(d.clone())).collect();
                 Expr::arrow(params, vec![StmtKind::Return(Some(value)).at(js::Span::NONE)])
             });
             let mut entry = Vec::new();
@@ -509,7 +510,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let build = (!as_read).then(|| {
             let value = self.construct(adt, variant, args, items);
             let mut patterns = vec![Pattern::names_array(params.into_iter().map(Some))];
-            patterns.extend(defaults.iter().map(|d| Pattern::from(d.word())));
+            patterns.extend(defaults.iter().map(|d| Pattern::Name(d.clone())));
             Expr::arrow(patterns, vec![StmtKind::Return(Some(value)).at(js::Span::NONE)])
         });
         let mut options = Vec::new();
@@ -636,7 +637,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `#[serde(untagged)]`, which come last, are tried after the others.
     fn read_enum(
         &mut self,
-        json: &str,
+        json: &js::Name,
         adt: ty::AdtDef<'tcx>,
         args: ty::GenericArgsRef<'tcx>,
         container: &Attrs,
@@ -672,7 +673,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let names = self.names.clone();
         if !tagged.is_empty() {
             let reader = self.fresh(Role::Content);
-            let value = self.read_tagged(reader.word(), &tagging, &tagged, adt, args, container, type_name, span)?;
+            let value = self.read_tagged(&reader, &tagging, &tagged, adt, args, container, type_name, span)?;
             let body = vec![StmtKind::Return(Some(value)).at(js::Span::NONE)];
             attempts.push(Expr::arrow(vec![reader.into()], body));
             self.names = names.clone();
@@ -681,7 +682,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let reader = self.fresh(Role::Content);
             let rule = attrs.de_rename_all.or(container.de_rename_all_fields);
             let body = self.read_variant(
-                reader.word(),
+                &reader,
                 Form::Untagged,
                 adt,
                 variant,
@@ -707,7 +708,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     #[allow(clippy::too_many_arguments)]
     pub(super) fn read_tagged(
         &mut self,
-        json: &str,
+        json: &js::Name,
         tagging: &Tagging,
         variants: &[(&ty::VariantDef, Attrs)],
         adt: ty::AdtDef<'tcx>,
@@ -739,17 +740,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let rule = attrs.de_rename_all.or(container.de_rename_all_fields);
             // What one variant's reading names is its own.
             let names = self.names.clone();
-            let body = self.read_variant(
-                content.word(),
-                form,
-                adt,
-                variant,
-                args,
-                rule,
-                container,
-                type_name,
-                span,
-            )?;
+            let body = self.read_variant(&content, form, adt, variant, args, rule, container, type_name, span)?;
             self.names = names;
             branches.push((name, body));
         }
@@ -811,7 +802,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     #[allow(clippy::too_many_arguments)]
     fn read_variant(
         &mut self,
-        content: &str,
+        content: &js::Name,
         form: Form,
         adt: ty::AdtDef<'tcx>,
         variant: &ty::VariantDef,

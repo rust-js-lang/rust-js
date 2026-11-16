@@ -456,25 +456,26 @@ fn written_back(body: &mut Vec<Stmt>, own: &IndexSet<String>) {
         js::each_block_mut(body, &mut |stmts| {
             stmts.retain(|s| match &s.kind {
                 StmtKind::Let(name, Some(value)) => {
-                    !(name.is(&alias) && matches!(&value.kind, ExprKind::Var(v) if v.is(&of)))
+                    !(name.is(&alias) && matches!(&value.kind, ExprKind::Var(v) if v.is(of.word())))
                 }
                 StmtKind::Assign(target, value) => {
-                    !(matches!(&target.kind, ExprKind::Var(t) if t.is(&of))
+                    !(matches!(&target.kind, ExprKind::Var(t) if t.is(of.word()))
                         && matches!(&value.kind, ExprKind::Var(v) if v.is(&alias)))
                 }
                 _ => true,
             });
         });
+        // Its reads the variable's it was written back to, as it's one now.
         js::each_expr_mut(body, &mut |e| {
             if matches!(&e.kind, ExprKind::Var(name) if name.is(&alias)) {
-                e.kind = ExprKind::Var(of.clone().into());
+                e.kind = ExprKind::Var(of.clone());
             }
         });
     }
 }
 
 /// A `let n$1 = n;` that `written_back` makes `n`, and `n`.
-fn write_back(body: &[Stmt], own: &IndexSet<String>) -> Option<(String, String)> {
+fn write_back(body: &[Stmt], own: &IndexSet<String>) -> Option<(String, js::Name)> {
     let mut lets = Vec::new();
     js::each_list(body, &mut |list| {
         for stmt in list {
@@ -482,12 +483,13 @@ fn write_back(body: &[Stmt], own: &IndexSet<String>) -> Option<(String, String)>
                 && let ExprKind::Var(of) = &value.kind
                 && alias.apart_of().is_some_and(|(base, _)| of.is(base))
             {
-                lets.push((alias.to_string(), of.to_string()));
+                lets.push((alias.to_string(), of.clone()));
             }
         }
     });
     let in_closures = js::Writes::of(body).replaced_in_closures;
     lets.into_iter().find(|(alias, of)| {
+        let of = of.word();
         let is = |e: &Expr, name: &str| matches!(&e.kind, ExprKind::Var(v) if v.is(name));
         // Each write of either: of `n$1` right before `n = n$1;`, of `n`
         // only that.

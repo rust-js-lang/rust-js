@@ -590,8 +590,8 @@ impl OutputPlan {
                 .iter()
                 .find(|(module, _)| *module == registered.module.as_slice())
             {
-                Some((_, alias)) => js::Expr::member(js::Expr::var(alias), &registered.name),
-                None => js::Expr::var(&registered.name),
+                Some((_, alias)) => js::Expr::member(js::Expr::module(alias), &registered.name),
+                None => js::Expr::module(&registered.name),
             };
             let mut outcome = |(helper, name): (crate::runtime::Helper, &'static str), args: Vec<js::Expr>| {
                 helpers.push(helper);
@@ -612,8 +612,8 @@ impl OutputPlan {
                 }
             };
             let register = match registered.ignore {
-                true => js::Expr::member(js::Expr::var(&test), "skip"),
-                false => js::Expr::var(&test),
+                true => js::Expr::member(js::Expr::module(&test), "skip"),
+                false => js::Expr::module(&test),
             };
             registrations.push(
                 js::StmtKind::Expr(js::Expr::call(register, vec![js::Expr::str(&registered.label), body]))

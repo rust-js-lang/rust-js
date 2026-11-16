@@ -330,7 +330,7 @@ pub(super) fn for_of(
                 // Of their `enumerate()`, `[n, key]`: `let n = 0;` before the
                 // `for…in`, each turn of which ends `n++`, as a person counts.
                 let mut body = body;
-                counted(&mut body, counter.word(), label.as_ref().map(|n| n.word()));
+                counted(&mut body, &counter, label.as_ref().map(|n| n.word()));
                 let mut out = vec![StmtKind::Let(counter, Some(Expr::int(0))).at(js::Span::NONE)];
                 out.push(
                     StmtKind::ForOf {
@@ -908,7 +908,7 @@ fn counted_keys(iterable: &Expr, pattern: &js::Pattern, body: &[Stmt]) -> Option
 /// `body`, a loop's, each turn of which ends `counter++`: where it goes on
 /// to the next turn, at its end and before each `continue` of the loop's,
 /// one of no label not in a loop of its own, or of `label`.
-fn counted(body: &mut Vec<Stmt>, counter: &str, label: Option<&str>) {
+fn counted(body: &mut Vec<Stmt>, counter: &js::Name, label: Option<&str>) {
     let step = || StmtKind::Compound(Op::Add, Expr::var(counter), Expr::int(1)).at(js::Span::NONE);
     fn before_continues(stmts: &mut Vec<Stmt>, step: &dyn Fn() -> Stmt, label: Option<&str>, nested: bool) {
         let mut i = 0;

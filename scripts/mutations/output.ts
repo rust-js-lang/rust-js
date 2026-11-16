@@ -346,8 +346,8 @@ export const mutations: Mutation[] = [
     name: "ignored-test-run",
     breaks: "an `#[ignore]` test is registered by `test`, not `test.skip`, and runs (ADR 0026)",
     file: "src/output.rs",
-    find: "                true => js::Expr::member(js::Expr::var(&test), \"skip\"),\n",
-    replace: "                true => js::Expr::var(&test),\n",
+    find: "                true => js::Expr::member(js::Expr::module(&test), \"skip\"),\n",
+    replace: "                true => js::Expr::module(&test),\n",
     tests: ["test/test-files.test.ts", "-t", "one module of tests is its test file"],
   },
   {

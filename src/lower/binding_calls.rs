@@ -815,7 +815,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             return Ok(Expr::import(from));
         }
-        let m = "m".to_string();
+        let m = js::Name::declared("m".to_string());
         let value = match getter {
             true => {
                 let export = match export == js::NAMESPACE {
