@@ -11,14 +11,14 @@
   },
   "dependencies": {
     "@rust-js/std": "workspace:*",
-    "next": "16.4.3",
+    "next": "16.4.5",
     "react": "19.2.8",
     "react-dom": "19.2.8"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "eslint": "^9",
-    "eslint-config-next": "16.4.3",
+    "eslint-config-next": "16.4.5",
     "tailwindcss": "^4",
     "@rust-js/build": "workspace:*"
   }

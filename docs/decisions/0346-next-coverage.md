@@ -97,6 +97,17 @@ security advisory over 16.4.0 that made `next build` refuse to run. Its
 declarations bind as 16.4.0's did; only the generated fonts' header names
 the version.
 
+## Amendment: Next.js 16.4.5 (2026-11-17)
+
+The example is of Next.js 16.4.5 (2026-11-03), the first release past
+GHSA-mfr8-8qww-v76h (`>= 16.3.0, <= 16.4.4`, medium), which GitHub's
+advisory database listed on 2026-11-16: from then 16.4.3's `next build`
+and `next dev`, run under an agent, stopped with a `SecurityFatalError`
+(its `experimental.agentUpgrade: 'security'` default, which asks npm's
+advisories), and test/next.test.ts and test/css-modules-parity.test.ts
+failed. Its declarations bind as 16.4.3's did; only the generated fonts'
+header names the version.
+
 ## Amendment: what's left to JavaScript
 
 The app's config, next.config.js, and a deployment adapter, the module its
