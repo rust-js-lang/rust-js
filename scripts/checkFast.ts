@@ -850,7 +850,9 @@ if (import.meta.main) {
   // the rebase brought, capped where even that can't be said.
   if (args.includes("--sanity")) throw new Error("--sanity names the commit checked before the rebase: --sanity=<sha>");
   const sanity = args.find((arg) => arg.startsWith("--sanity="))?.slice("--sanity=".length);
-  let selection = selectChange("origin/main", sanity);
+  // The push's rule: the change's own, never others' `all` (ADR 1101,
+  // amended); CI's check keeps the full rule.
+  let selection = selectChange("origin/main", sanity, "push");
   let capped = selection.capped !== undefined;
   if (sanity && selection.all) {
     console.log(`the sanity pass can't say (${selection.why}): its cap, the change's own test files and cases`);

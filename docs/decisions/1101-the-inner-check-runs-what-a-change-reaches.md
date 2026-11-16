@@ -496,3 +496,43 @@ Proof: `test/ci-spend.test.ts` and the `ci-spend-*` mutations;
 `test/ci.test.ts`'s "each job of a push's check is gated" and the mutation
 `always-run-reason-dropped`.
 
+### Amended: a push's check is its own change's, never others' `all` (2026-11-16)
+
+m1-lisa's test-only push selected everything: "src/js/writes.rs's change
+at line 89 is outside any function's counted code (others' since the map's
+commit)". The first check of a push took the whole diff from the map's
+commit, so any other agent's item, type or new file since the map ran
+every agent's whole suite until the next map. On the M1 it was most pushes.
+
+**A push's first check is the change's own** (`pushSelection`, `Rule`
+`push`, `bun run push` and `check:fast`):
+
+- It runs what the branch's own change since its merge-base can affect, by
+  the map. A file the map's commit and the merge-base differ on is taken
+  as each test of its functions, as the sanity pass does.
+- Where the change touches the compiler's code (`src/**`), it also runs
+  what others' commits since the map reach by their functions' changes.
+  Their commit may have made a test reach one of this change's functions,
+  which the map at its commit can't say.
+- Never others' `all`. Their item, type or new file was checked by their
+  own push and by CI.
+
+**What it leaves, and who holds it.** An item of another's that a function
+neither side changed reads (a `const ENABLE` read by `h`), which makes a
+test reach this change's function `f`: neither side selects that test.
+CI's check of `main` keeps the full rule (`plan`'s `selectChange(since)`):
+the whole diff from its map's commit, others' `all` inherited. So the
+combination is checked there, on every push. `test/ci.test.ts`'s "CI's
+plan selects by the full rule, the push by its own" holds both callers.
+
+Proof: `test/select.test.ts`'s "a push's check runs its own change's
+tests, others' function changes only beside its compiler code, never
+their all":
+- her case, her own test file beside another's item, selects her file
+  alone;
+- an own compiler change beside another's function change runs both
+  sides';
+- beside another's item, its own alone;
+- its own item, everything.
+Mutations `push-selection-inherits-others-all` and
+`push-selection-drops-others-functions`.

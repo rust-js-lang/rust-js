@@ -170,7 +170,7 @@ function main() {
         // nearer than the machine's (scripts/testMap.ts's `fetchMap`).
         const fetched = sh(["bun", "scripts/testMap.ts", "fetch"], true).out.trim().split("\n").at(-1) ?? "";
         console.log(`push: ${fetched}`);
-        const selected = sh(["bun", "scripts/select.ts"], true);
+        const selected = sh(["bun", "scripts/select.ts", "--push"], true);
         if (selected.code !== 0) throw new Refused(`the selector failed:\n${selected.out}`);
         const said = selected.out.split("\n")[0]!.replace(/, by the test map of .*$/, "");
         if (said === "none" && !code) {

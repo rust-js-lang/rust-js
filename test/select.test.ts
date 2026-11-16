@@ -12,7 +12,7 @@ import { jobs } from "../scripts/checkFast";
 import { onlyPushedFiles, phases as pushPhases, timesLine } from "../scripts/push";
 import { whoRuns } from "../scripts/disk";
 import { failedIn, misses } from "../scripts/selector-audit";
-import { baselines, capOf, interaction, osBranches, outcome, reachOf, type Reach, select, type Selection, suiteFiles } from "../scripts/select";
+import { baselines, capOf, interaction, osBranches, outcome, pushSelection, reachOf, type Reach, select, type Selection, suiteFiles } from "../scripts/select";
 import { readsSources, type TestMap } from "../scripts/testMap";
 import { root } from "./support";
 
@@ -363,4 +363,33 @@ test("a test the night failed that no push's selection ran is a selector's miss"
   expect(misses(failed, [check([], ["two_fold.rs"]), check(["test/a.test.ts"])])).toEqual([]);
   expect(misses(failed, [check([], [], true)])).toEqual([]);
   expect(misses(failed, [])).toEqual(failed);
+});
+
+// A push's check runs what its own change can affect (ADR 1101, amended):
+// others' commits since the map's were checked by their pushes and by CI,
+// whose check keeps the full rule. m1-lisa's test-only push selected all,
+// "src/js/writes.rs's change at line 89 is outside any function's counted
+// code (others' since the map's commit)": an item of theirs. Their function
+// changes still count where this change touches the compiler's code, as a
+// test their change made reach one of its functions runs.
+test("a push's check runs its own change's tests, others' function changes only beside its compiler code, never their all", () => {
+  const side = (file: string, hunks: [number, number][], own: boolean) => select([{ file, hunks }], { ...context, own: () => own });
+  // Her case: her own test file, and another's item since the map.
+  const hers = side("test/two.test.ts", [[3, 1]], true);
+  const item = side("src/a.rs", [[25, 1]], false);
+  expect(item.all).toBe(true);
+  const pushed = pushSelection(hers, item, false);
+  expect([pushed.all, pushed.files, pushed.cases]).toEqual([false, ["test/two.test.ts"], []]);
+  expect(pushed.why).toContain("not run here, which CI's check runs");
+  // Her own compiler change beside another's function change: both sides'.
+  const mine = side("src/a.rs", [[32, 1]], true);
+  const theirs = side("src/a.rs", [[12, 1]], false);
+  const both = pushSelection(mine, theirs, true);
+  expect(both.all).toBe(false);
+  expect(both.files).toEqual(expect.arrayContaining([...mine.files, ...theirs.files]));
+  expect(both.forms).toEqual(expect.arrayContaining(["x.rs"]));
+  // Beside another's item: her own alone.
+  expect(pushSelection(mine, item, true)).toMatchObject({ all: false, files: mine.files, cases: mine.cases });
+  // Her own item: everything.
+  expect(pushSelection(side("src/a.rs", [[25, 1]], true), theirs, true).all).toBe(true);
 });

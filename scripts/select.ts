@@ -5,6 +5,7 @@
 //
 //   bun scripts/select.ts                  what the working tree's change selects, and why
 //   bun scripts/select.ts --json=<file>    and the selection, written as JSON (CI's `plan`)
+//   bun scripts/select.ts --push           by the push's rule (`pushSelection`), as `bun run push` checks
 //
 // The change is the diff from the map's commit `M` to the working tree, one
 // diff: it holds what others pushed since `M` (`M..B`, B the branch's base)
@@ -332,13 +333,21 @@ function ownFiles(base: string): Set<string> {
   return new Set([...(since ? git(["diff", "--name-only", since]) : []), ...git(["ls-files", "--others", "--exclude-standard"])]);
 }
 
+/** Which rule a selection is of: `full`, CI's check of `main` (check.yml's
+ * `plan`), the whole diff from the map's commit, others' commits since it
+ * too, their `all` inherited; `push`, `bun run push`'s check, the
+ * branch's own change and what others' function changes reach
+ * (`pushSelection`, ADR 1101 amended). */
+export type Rule = "full" | "push";
+
 /** What this checkout's change selects: by the map of HEAD or its nearest
  * ancestor this machine keeps, the diff from its commit; the branch's own
- * change since `base`'s merge-base, the rest others'. Of `sanity`, a pass
- * past a rebase that brought commits, given the commit last checked before
- * it: the interaction alone (`interaction`), what both the branch's own
- * change and the commits the rebase brought can affect. */
-export function selectChange(base = "origin/main", sanity?: string): Selection & { map?: string } {
+ * change since `base`'s merge-base, the rest others'. Of `rule` `push`,
+ * `pushSelection`'s. Of `sanity`, a pass past a rebase that brought
+ * commits, given the commit last checked before it: the interaction alone
+ * (`interaction`), what both the branch's own change and the commits the
+ * rebase brought can affect. */
+export function selectChange(base = "origin/main", sanity?: string, rule: Rule = "full"): Selection & { map?: string } {
   const files = suiteFiles();
   const cases = corpusCases();
   const map = nearestMap(mapStore, root, toolchainOf());
@@ -359,8 +368,40 @@ export function selectChange(base = "origin/main", sanity?: string): Selection &
     const side = (from: string, to: string | undefined, mine: boolean) => sideSelection(changesBetween(from, to), from, { files, cases, map, reach, own: () => mine });
     return { ...interaction(side(now, undefined, true), side(before, now, false)), map: map.commit, behind };
   }
+  const since = rule === "push" ? mergeBase(base) : undefined;
+  if (since !== undefined) {
+    const mine = sideSelection(changesBetween(since), since, { files, cases, map, reach, own: () => true });
+    const theirs = sideSelection(changesBetween(map.commit, since), map.commit, { files, cases, map, reach, own: () => false });
+    return { ...pushSelection(mine, theirs, [...own].some((file) => file.startsWith("src/"))), map: map.commit, behind };
+  }
   const selection = select(changesSince(map.commit), { files, cases, map, reach, own: (file) => own.has(file) });
   return { ...selection, map: map.commit, behind };
+}
+
+/** What a push's check runs (ADR 1101, amended): what the branch's own
+ * change, `mine`, can affect; and where it touches the compiler's code,
+ * `compiler`, what others' commits since the map's commit, `theirs`, reach
+ * by their functions' changes too: a test their change made reach a
+ * function of this one runs, as the map at its commit can't say it does.
+ * Never their `all`, an item, a type or a new file of theirs, which their
+ * own push and CI checked: one push's item no longer runs every other
+ * agent's whole suite. CI's check keeps the full rule (`Rule`), which
+ * holds what this leaves: an item of theirs, `const ENABLE`, read by a
+ * function neither side changed, that now reaches a function of this
+ * change. */
+export function pushSelection(mine: Selection, theirs: Selection, compiler: boolean): Selection {
+  if (mine.all) return mine;
+  if (!compiler || theirs.all) {
+    const left = theirs.all ? `; others' since the map's commit not run here, which CI's check runs: ${theirs.why}` : "";
+    return { ...mine, why: `the change's own: ${mine.why}${left}` };
+  }
+  return {
+    all: false,
+    files: [...new Set([...mine.files, ...theirs.files])],
+    cases: [...new Set([...mine.cases, ...theirs.cases])],
+    forms: [...new Set([...mine.forms, ...theirs.forms])],
+    why: `the change's own: ${mine.why}; and what others' function changes reach: ${theirs.why}`,
+  };
 }
 
 /** What one side of a rebase selects, its changes since `from` by the map:
@@ -487,7 +528,7 @@ function outcomeOf(selection: Selection): string {
 if (import.meta.main) {
   const arg = (name: string) => process.argv.find((given) => given.startsWith(`--${name}=`))?.slice(name.length + 3);
   const json = arg("json");
-  const selection = selectChange(arg("base"), arg("sanity"));
+  const selection = selectChange(arg("base"), arg("sanity"), process.argv.includes("--push") ? "push" : "full");
   console.log(`${outcome(selection)}${selection.map ? `, by the test map of ${selection.map.slice(0, 9)}` : ""}`);
   if (!selection.all) {
     console.log(selection.why);

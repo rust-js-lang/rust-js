@@ -114,4 +114,20 @@ export const mutations: Mutation[] = [
     replace: "  return { ...both, all: false, why };",
     tests: ["test/select.test.ts", "-t", "a sanity pass runs what both"],
   },
+  {
+    name: "push-selection-inherits-others-all",
+    breaks: "a push's check inherits another agent's `all`, an item of theirs since the map's commit, and runs every test of a test-only change (m1-lisa's push)",
+    file: "scripts/select.ts",
+    find: "  if (!compiler || theirs.all) {",
+    replace: "  if (theirs.all) return theirs;\n  if (!compiler) {",
+    tests: ["test/select.test.ts", "-t", "a push's check runs its own change's tests"],
+  },
+  {
+    name: "push-selection-drops-others-functions",
+    breaks: "a push's compiler change runs none of what others' function changes since the map reach, though their change may have made a test reach one of its functions",
+    file: "scripts/select.ts",
+    find: "  if (!compiler || theirs.all) {",
+    replace: "  if (true) {",
+    tests: ["test/select.test.ts", "-t", "a push's check runs its own change's tests"],
+  },
 ];

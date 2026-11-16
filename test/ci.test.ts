@@ -1078,3 +1078,15 @@ test("each job that downloads the test map needs the job that makes it in its ru
   expect(made).not.toContain("github.event_name");
   expect(made.match(/name: \$\{\{ inputs\.of && 'test-map' \|\| format\('test-map-of-\{0\}', env\.SHA\) \}\}/g)?.length).toBe(2);
 });
+
+// CI's check of main selects by the full rule, the whole diff from its
+// map's commit, others' `all` inherited, so what a push's own rule leaves,
+// an item of another's read by a function neither changed, is run there;
+// `bun run push` and check:fast by the push's (ADR 1101, amended).
+test("CI's plan selects by the full rule, the push by its own", () => {
+  const read = (file: string) => readFileSync(join(root, file), "utf8");
+  expect(read("scripts/ci.ts")).toContain("selection = selectChange(since);");
+  expect(read("scripts/ci.ts")).not.toContain('"push")');
+  expect(read("scripts/checkFast.ts")).toContain('selectChange("origin/main", sanity, "push")');
+  expect(read("scripts/push.ts")).toContain('["bun", "scripts/select.ts", "--push"]');
+});
