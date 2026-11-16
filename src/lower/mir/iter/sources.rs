@@ -391,13 +391,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// MIR steps it: over an array, a `$iter`, which knows where it is, so a
     /// clone of it does (ADR 0181); another, the JS iterator of `value`.
     pub(in crate::lower) fn std_iterator(&mut self, value: Expr, ty: Ty<'tcx>) -> Expr {
+        self.std_iterator_of(value, ty, true)
+    }
+
+    /// `std_iterator`'s, of `value`, a std iterator of type `ty` itself, not
+    /// what it's made of: a variable's `$iter`, which `$iter` gives as it
+    /// is, may have been stepped, so it's never said to be over an array's
+    /// items from their start; only an array made here is (#1985).
+    pub(in crate::lower) fn std_iterator_as_it_is(&mut self, value: Expr, ty: Ty<'tcx>) -> Expr {
+        self.std_iterator_of(value, ty, false)
+    }
+
+    fn std_iterator_of(&mut self, value: Expr, ty: Ty<'tcx>, of_items: bool) -> Expr {
         if is_js_iterator(&value) {
             value
         } else if made_array(&value) || self.steps_an_array(ty) || self.counted_where_kept(ty) {
             // An array made of it, `s.split(",")`'s, or one `steps_an_array`
             // lists, a `VecDeque`'s say: a `$iter` of it, as of an array's;
             // std's over an array's items, said so (`Known::ArrayItems`).
-            let items = self.recognition().steps_its_array(ty);
+            let items = self.recognition().steps_its_array(ty) && (of_items || made_array(&value));
             let mut it = self.stepped_items_of(value, ty);
             if items {
                 it.facts = it.facts.with(js::Known::ArrayItems);

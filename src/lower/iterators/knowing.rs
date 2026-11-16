@@ -574,7 +574,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ));
         }
         if self.steps_an_array(ty) {
-            return Ok(self.std_iterator(value, ty));
+            return Ok(self.std_iterator_as_it_is(value, ty));
         }
         if let Some(zipped) = self.zip_knowing(&value, ty, back, span)? {
             return Ok(zipped);
@@ -919,7 +919,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return self.as_exact_size(value, ty, true, span);
         }
         if self.steps_an_array(ty) {
-            return Ok(self.std_iterator(value, ty));
+            return Ok(self.std_iterator_as_it_is(value, ty));
         }
         // An enumeration made here, `src.map((x, i) => [i, x])`: `$enumerate`
         // of its source made knowing its back and its length, whose index

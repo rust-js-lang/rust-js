@@ -39,10 +39,6 @@ conformance:std 31708,31710,36502,36504,37976,38023-38025,38027
 points:plain 11997
 points:std 9487,11507,11997,12011-12012
 
-#1985 a vec::IntoIter lent as &mut dyn DoubleEndedIterator throws (`a.values is not a function`)
-copies:plain 40,13540,19396,27204,31888,41832,45828
-copies:std 40,13540,19396,27204,31888,41832,45828
-
 #1986 rfold of a lent take() of a vec::IntoIter drops what it skips in the wrong order
 copies:plain 217,2421,38013,40011,42009,44007,46005,48003
 copies:std 217,2421,38013,40011,42009,44007,46005,48003

@@ -898,4 +898,13 @@ export const mutations: Mutation[] = [
     snapshots: true,
     tests: ["test/corpus.test.ts", "-t", "^map_of_a_map_given_for_its_len.rs$"],
   },
+  {
+    name: "double-ended-held-as-its-items",
+    breaks:
+      "a std iterator of an array's items made double-ended as it is, a variable's lent as a `&mut dyn DoubleEndedIterator`, is said to be its array's items from their start, so the `dyn`, only stepped, is the array's own iterator, `a.values()`, of a `$iter`, which throws (#1985)",
+    file: "src/lower/iterators/knowing.rs",
+    find: "            return Ok(self.std_iterator_as_it_is(value, ty));\n        }\n        // An enumeration made here",
+    replace: "            return Ok(self.std_iterator(value, ty));\n        }\n        // An enumeration made here",
+    tests: ["test/corpus.test.ts", "-t", "^stepped_iterator_lent_as_a_dyn.rs$"],
+  },
 ];

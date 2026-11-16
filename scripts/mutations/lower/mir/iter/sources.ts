@@ -400,7 +400,7 @@ export const mutations: Mutation[] = [
     breaks:
       "a slice's iterator only stepped is `$iter(items)` and `$next(it)`, helpers a page's inline script can't carry, not `items.values()` (rd270)",
     file: "src/lower/mir/iter/sources.rs",
-    find: "            let items = self.recognition().steps_its_array(ty);\n",
+    find: "            let items = self.recognition().steps_its_array(ty) && (of_items || made_array(&value));\n",
     replace: "            let items = false;\n",
     tests: ["test/lowering-iterators.test.ts", "-t", "only stepped"],
   },
@@ -546,5 +546,14 @@ export const mutations: Mutation[] = [
     find: "            r::chained_sources(self.tcx, ty),\n",
     replace: "            r::chained_sources(self.tcx, ty).filter(|_| false),\n",
     tests: ["test/vec-capacity.test.ts", "-t", "a collect whose count surely fits"],
+  },
+  {
+    name: "std-iterator-held-as-its-items",
+    breaks:
+      "a std iterator of an array's items given as it is, a variable's `$iter` that's been stepped, is said to be over the array's items from their start, so lent as a `dyn` and only stepped it's the array's own iterator, `a.values()`, of a `$iter`, which throws (#1985)",
+    file: "src/lower/mir/iter/sources.rs",
+    find: "            let items = self.recognition().steps_its_array(ty) && (of_items || made_array(&value));\n",
+    replace: "            let items = self.recognition().steps_its_array(ty);\n",
+    tests: ["test/corpus.test.ts", "-t", "^stepped_iterator_lent_as_a_dyn.rs$"],
   },
 ];
