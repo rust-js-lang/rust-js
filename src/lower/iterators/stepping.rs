@@ -434,7 +434,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // `next_back`, as a `dyn`'s vtable holds no fold, never by what
             // it lends's own `rfold`. What it lends knows its back already,
             // as the coercion to a `dyn` made it (`lent_iterator`, #1996).
-            if matches!(input.kind(), ty::Param(_))
+            if crate::lower::generic_facts::is_type_parameter(input)
                 && let ty::Ref(_, referent, ty::Mutability::Mut) = *given.kind()
                 && !referent.is_sized(self.tcx, self.typing_env)
                 && self.implements_iterator(given)

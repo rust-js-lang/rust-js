@@ -60,6 +60,9 @@ const few = [
   // A `Box` of std's struct folded from its back, by its traits' defaults,
   // its extension dictionary's back alone (#1995).
   "boxed_iterator_folded_as_std_passes_it_on.rs",
+  // A `rev()` of a sized `&mut I` folded, by its dictionary's `rfold`, `I`'s
+  // `try_rfold` (#2002); of a `&mut dyn`, lent unsized (#1996).
+  "lent_take_of_a_vec_folded_from_its_back.rs",
   "adapter_drops.rs",
   "own_fold_and_nth.rs",
   "by_ref_steps.rs",

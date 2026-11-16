@@ -107,6 +107,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // folds by `I`'s `try_rfold` (ADR 0928).
         let lent = matches!(ty.kind(), ty::Ref(_, _, ty::Mutability::Mut));
         let passed_rfold = |rfold: Option<Expr>| rfold.filter(|_| !lent);
+        // Of a sized one, its `rfold` by `I`'s `try_rfold`, never stopped, as
+        // std's `&mut I` folds (`DoubleEndedIteratorRefSpec`), `$lent`'s
+        // `lent`: without it, std's compiled `Rev` of it folded by
+        // `next_back`, a `take()`'s skipped items 4 then 5, where std's
+        // drops them 5 then 4 (#2002).
+        let lent_sized =
+            matches!(ty.kind(), ty::Ref(_, to, ty::Mutability::Mut) if to.is_sized(self.tcx, self.typing_env));
         let ty = ty.peel_refs();
         let name = crate::lower::recognition::extension_entry(self.tcx, trait_id);
         // A `Box` of std's struct, compiled: what std's `Box<I>` passes on of
@@ -192,7 +199,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // `Skip`'s of its `Take`: as a JS iterator's `tryRfold` (ADR 0930).
             let try_rfold = self.compiled_try_fold(ty, (trait_id, "try_rfold"), span)?;
             for (method, own) in [
-                ("rfold", passed_rfold(rfold)),
+                (
+                    "rfold",
+                    if lent_sized {
+                        try_rfold.clone().map(folded_by_try)
+                    } else {
+                        passed_rfold(rfold)
+                    },
+                ),
                 ("nth_back", nth_back),
                 ("try_rfold", try_rfold),
             ] {
@@ -510,6 +524,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(projection))
             .unwrap_or(projection)
     }
+}
+
+/// A dictionary's `rfold`, `(iterator, init, f, unwind, ends) =>
+/// tried(iterator, init, f, () => false, unwind, ends)`: its `try_rfold`,
+/// `tried`, never stopped, as std folds by `try_fold` (`impl_fold_via_try_fold`).
+fn folded_by_try(tried: Expr) -> Expr {
+    let names: Vec<js::Name> = ["iterator", "init", "f", "unwind", "ends"]
+        .map(|word| js::Name::declared(word.to_string()))
+        .to_vec();
+    let never = Expr::arrow(
+        Vec::new(),
+        vec![StmtKind::Return(Some(Expr::bool(false))).at(js::Span::NONE)],
+    );
+    let mut given: Vec<Expr> = names[..3].iter().map(Expr::var).collect();
+    given.push(never);
+    given.extend(names[3..].iter().map(Expr::var));
+    let call = Expr::call(tried, given);
+    Expr::arrow(
+        names.into_iter().map(Into::into).collect(),
+        vec![StmtKind::Return(Some(call)).at(js::Span::NONE)],
+    )
 }
 
 /// The entries of a dictionary, `of`, a `&mut` to what it's of passes on,

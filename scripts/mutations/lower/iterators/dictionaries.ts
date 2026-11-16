@@ -392,4 +392,12 @@ export const mutations: Mutation[] = [
     replace: "                if let Some(inner) = boxed.filter(|_| false)\n                    && self.compiled_step(inner, trait_id, name) =>\n",
     tests: ["test/corpus.test.ts", "test/iterator-forms.test.ts", "-t", "^boxed_iterator_folded_as_std_passes_it_on.rs$|^boxed_iterator_folded_as_std_passes_it_on with"],
   },
+  {
+    name: "mut-ref-dictionary-rfold-by-back",
+    breaks: "a sized `&mut I`'s `DoubleEndedIterator` dictionary has no `rfold`, so std's compiled `Rev` of it folds by `next_back`, a `take()`'s skipped items 4 then 5, where std's `&mut I` folds by `I`'s `try_rfold`, 5 then 4 (#2002)",
+    file: "src/lower/iterators/dictionaries.rs",
+    find: "                    if lent_sized {\n                        try_rfold.clone().map(folded_by_try)\n",
+    replace: "                    if false {\n                        try_rfold.clone().map(folded_by_try)\n",
+    tests: ["test/iterator-forms.test.ts", "-t", "^lent_take_of_a_vec_folded_from_its_back with"],
+  },
 ];
